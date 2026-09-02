@@ -100,7 +100,7 @@ export function DemoModeBanner() {
         <Icon
           name="sergeant"
           size={16}
-          className="shrink-0 text-brand-strong dark:text-brand"
+          className="shrink-0 text-brand-strong"
           aria-hidden
         />
         <span className="min-w-0 flex-1 truncate text-style-caption text-muted">
@@ -110,7 +110,7 @@ export function DemoModeBanner() {
           type="button"
           variant="ghost"
           size="xs"
-          className="shrink-0 text-brand-strong dark:text-brand"
+          className="shrink-0 text-brand-strong"
           onClick={goToWizard}
         >
           Створити свій
@@ -137,7 +137,7 @@ export function DemoModeBanner() {
     >
       <div className="flex items-start gap-3">
         <span
-          className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/15 text-brand-strong dark:text-brand flex items-center justify-center"
+          className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/15 text-brand-strong flex items-center justify-center"
           aria-hidden
         >
           <Icon name="sergeant" size={18} />

@@ -207,7 +207,7 @@ export function CollapsibleSection({
             <span
               className={cn(
                 "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center",
-                "bg-brand-500/10 text-brand-strong dark:text-brand",
+                "bg-brand-500/10 text-brand-strong",
               )}
               aria-hidden
             >

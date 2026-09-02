@@ -172,6 +172,25 @@ export declare const statusStrongHex: Readonly<Record<StatusColor, string>>;
  */
 export declare const statusInkHex: Readonly<Record<StatusColor, string>>;
 
+/** Accent families that carry an ink/strong text pair: brand + 4 modules. */
+export type AccentFamily = "brand" | ModuleAccent;
+
+/**
+ * «Чорнило» companions to the accent `-strong` tier — the DARK-theme ink
+ * that `text-{accent}-strong` resolves to (via `--c-{accent}-ink`). The
+ * four modules sit on `-400`, the same tier as `--c-{module}-accent` and
+ * `--c-chart-{module}` in dark; the neutral hub brand sits on stone-300,
+ * matching `--c-brand-soft-fg`. `contrast.test.js` pins them against the
+ * ink surfaces, and documents the light `-800` tier as failing there.
+ */
+export declare const accentInkHex: Readonly<Record<AccentFamily, string>>;
+
+/**
+ * The LIGHT-theme (fill) companions to `accentInkHex` — the `-800` tier
+ * that `bg-{accent}-strong` fills with under `text-white` in both themes.
+ */
+export declare const accentStrongHex: Readonly<Record<AccentFamily, string>>;
+
 /** Semantic chart colour identifiers (macro scale + structural). */
 export type ChartHexKey = "limit" | "neutral" | "protein" | "fat" | "carbs";
 

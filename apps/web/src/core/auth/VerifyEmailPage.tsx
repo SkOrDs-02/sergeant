@@ -119,7 +119,7 @@ export function VerifyEmailPage() {
               className={
                 failed
                   ? "inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-danger/10 text-danger-strong dark:text-danger"
-                  : "inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-strong dark:text-brand"
+                  : "inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-strong"
               }
             >
               <Icon

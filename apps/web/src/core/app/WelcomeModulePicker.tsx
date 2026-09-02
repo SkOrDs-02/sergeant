@@ -241,7 +241,7 @@ export function WelcomeModulePicker({
           onClick={onSecondaryAction}
           variant="secondary"
           size="md"
-          className="w-full border-brand-500/50 bg-brand-500/10 text-brand-strong hover:bg-brand-500/15 hover:border-brand-500/60 dark:text-brand"
+          className="w-full border-brand-500/50 bg-brand-500/10 text-brand-strong hover:bg-brand-500/15 hover:border-brand-500/60"
         >
           <Icon name="sergeant" size={16} strokeWidth={2} aria-hidden />
           <span>{copy.demoCta}</span>

@@ -88,9 +88,7 @@ function InsightCard({ iconName, title, stat, detail }: InsightCardProps) {
       <div className="min-w-0 flex-1 space-y-1">
         <p className="text-style-label text-text leading-snug">{title}</p>
         <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-style-title text-brand-strong dark:text-brand">
-            {stat}
-          </span>
+          <span className="text-style-title text-brand-strong">{stat}</span>
           {detail && (
             <span className="text-style-caption text-muted truncate">
               {detail}

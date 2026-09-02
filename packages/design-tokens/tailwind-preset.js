@@ -12,6 +12,7 @@
  */
 
 import {
+  accentStrongHex,
   brandColors,
   chartPalette,
   moduleColors,
@@ -571,6 +572,25 @@ const preset = {
         "warning-strong": `rgb(var(--c-warning-ink, ${hexToRgbTriple(statusStrongHex.warning)}) / <alpha-value>)`,
         "danger-strong": `rgb(var(--c-danger-ink, ${hexToRgbTriple(statusStrongHex.danger)}) / <alpha-value>)`,
         "info-strong": `rgb(var(--c-info-ink, ${hexToRgbTriple(statusStrongHex.info)}) / <alpha-value>)`,
+
+        // AI-CONTEXT (2026-09-02): бренд-модульна половина того самого
+        // дефекту. `text-{accent}-strong` резолвився в статичний тир -800 і
+        // в темній темі давав 1.11…2.74:1 — темне по темному у спільних
+        // примітивах (`Tabs`, `Badge`, `Stat`, `KeyboardAccessory`), на
+        // екрані входу й у повідомленнях чату. Розбір, заміри й пояснення,
+        // чому 33 ручні `dark:text-brand` пари довелося зняти, а не
+        // доповнити, — у `accentInkHex` (tokens.js).
+        //
+        // Тут перекривається РІВНО утиліта `text-`: `colors.{accent}.strong`
+        // лишається джерелом для `bg-{accent}-strong` / `border-…`, тож
+        // заливки під `text-white` тримають вивірений тир -800 і не
+        // рухаються. Fallback — той самий світлий тир, щоб платформа без
+        // цих змінних рендерила рівно те, що й раніше.
+        "brand-strong": `rgb(var(--c-brand-ink, ${hexToRgbTriple(accentStrongHex.brand)}) / <alpha-value>)`,
+        "finyk-strong": `rgb(var(--c-finyk-ink, ${hexToRgbTriple(accentStrongHex.finyk)}) / <alpha-value>)`,
+        "fizruk-strong": `rgb(var(--c-fizruk-ink, ${hexToRgbTriple(accentStrongHex.fizruk)}) / <alpha-value>)`,
+        "routine-strong": `rgb(var(--c-routine-ink, ${hexToRgbTriple(accentStrongHex.routine)}) / <alpha-value>)`,
+        "nutrition-strong": `rgb(var(--c-nutrition-ink, ${hexToRgbTriple(accentStrongHex.nutrition)}) / <alpha-value>)`,
       },
 
       // ═══════════════════════════════════════════════════════════════════

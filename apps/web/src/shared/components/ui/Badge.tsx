@@ -57,8 +57,7 @@ const solidVariants: Record<BadgeVariant, string> = {
 // a step darker — `-soft-fg` follows the surface per theme. See theme.css.
 const softVariants: Record<BadgeVariant, string> = {
   neutral: "bg-surface-muted text-fg-muted border-line",
-  accent:
-    "bg-brand-soft text-brand-strong border-brand-soft-border/60 dark:text-brand",
+  accent: "bg-brand-soft text-brand-strong border-brand-soft-border/60",
   success: "bg-success-soft text-success-soft-fg border-success/30",
   warning: "bg-warning-soft text-warning-soft-fg border-warning/30",
   danger: "bg-danger-soft text-danger-soft-fg border-danger/30",

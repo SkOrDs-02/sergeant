@@ -187,7 +187,7 @@ function MemoryFact({
             onClick={() => setExpanded((v) => !v)}
             aria-expanded={expanded}
             className={cn(
-              "mt-1 text-style-caption text-brand-strong dark:text-brand",
+              "mt-1 text-style-caption text-brand-strong",
               "hover:text-brand-600 transition-colors",
               "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-lg",
             )}
