@@ -1,7 +1,7 @@
 # Запис заняття за тривалістю і витрата калорій
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-10-09.
-> **Status:** Active
+> **Last touched:** 2026-09-02 by @claude (звірка з `origin/main`). **Next review:** 2027-10-09.
+> **Status:** Implemented - PR [#1004](https://github.com/SkOrDs-02/sergeant/pull/1004): міграція `132_fizruk_kcal_and_custom_activities`, `kcalBurned.ts` і `activities.ts` у `packages/fizruk-domain`, форма запису в `LogPastWorkoutSheet.tsx`, E2E `apps/web/tests/smoke/activity-logging.spec.ts`. Обсяг понад початкову спеку описано в § «Що додалось понад спеку».
 
 ## Проблема
 

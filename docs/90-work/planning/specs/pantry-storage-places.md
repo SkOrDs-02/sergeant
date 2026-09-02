@@ -1,7 +1,7 @@
 # Місця зберігання: комора перестає бути однією полицею
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-10-24.
-> **Status:** Active (реалізовано)
+> **Last touched:** 2026-09-02 by @claude (звірка з `origin/main`). **Next review:** 2027-10-24.
+> **Status:** Implemented - PR [#995](https://github.com/SkOrDs-02/sergeant/pull/995) (`c35471c7a`): `usePantryPlaces.ts`, `PantryManagerSheet.tsx`, `pantryPlacement.ts`, E2E `apps/web/tests/mobile/pantry-storage-places.spec.ts`.
 
 > **Два свідомі відхилення від тексту нижче.**
 >

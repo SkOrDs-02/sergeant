@@ -1,7 +1,8 @@
 # ADR-0091: Ціль КБЖВ не перефарбовує минуле; реконструйовані дні позначаються
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-02
+- **Accepted:** 2026-09-02 (PR злито; статус переведено окремим PR за `README.md` § Життєвий цикл)
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**

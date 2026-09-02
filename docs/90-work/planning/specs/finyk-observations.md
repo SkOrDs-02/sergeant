@@ -1,7 +1,7 @@
 # SPEC: Фінік - борги, прогноз, перекази (огляд 2026-07-31)
 
-> **Last touched:** 2026-08-31 by @claude (звірка з `origin/main` після виконання: PR-1 змерджено, PR-2 змерджено й реверснуто, PR-4 виявився зайвим). **Next review:** 2027-11-08.
-> **Status:** In progress - з пʼяти запланованих PR-ів лишається реально зробити два: PR-3 (Фаза 5, категорія «Борг») як є, і PR-5 (Фаза 2, прогноз) у скороченому обсязі. PR-1 виконано, PR-2 виконано-і-реверснуто, PR-4 зайвий (уже зроблено PR #596).
+> **Last touched:** 2026-09-02 by @claude (звірка з `origin/main`: PR-3 і PR-5 знайдено в коді, спека закрита). **Next review:** 2027-11-08.
+> **Status:** Implemented - усі PR-и, що лишались, у `main`. PR-3 (категорія «Борг»): [#983](https://github.com/SkOrDs-02/sergeant/pull/983), `in_debt` у `constants.ts` + `DebtIncomeLinkSection.tsx`. PR-5 (прогноз): [#985](https://github.com/SkOrDs-02/sergeant/pull/985), `projectedSpendRaw = linearProjectedSpend + recurringOutThisMonth` з обрізанням по `availableForSpend` і рядком `projectedSpendCapped` в `OverviewTextRows.tsx`. PR-1 виконано, PR-2 виконано-і-реверснуто, PR-4 зайвий (уже зроблено PR #596).
 
 ## Проблема
 
