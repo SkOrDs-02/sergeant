@@ -10,32 +10,34 @@ import {
 } from "../components/HomeSections";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "../lib/analytics";
+import { CONFIDENCE } from "../content/confidenceLevels";
 
 /**
  * Сценарії «живого звʼязку» в hero: скільки тренувань – стільки доставки.
  * Дані ілюстративні (підпис у нотатці про це каже) – сенс віджета в тому,
- * щоб показати причину-наслідок, а не конкретні числа.
+ * щоб показати причину-наслідок, а не конкретні числа. Рівень впевненості
+ * один на всі три стани: це та сама закономірність, а не три різні, і
+ * підпис береться з канонічної шкали (`CONFIDENCE`), а не вигадується.
  */
 const HERO_SCENARIOS = {
   1: {
     spend: "2 260",
     pct: 90,
     note: "У тижні з одним тренуванням доставки найбільше",
-    meta: "закономірність тримається · 6 тижнів даних",
   },
   3: {
     spend: "1 840",
     pct: 74,
     note: "Три тренування, і замовлень доставки вже менше",
-    meta: "закономірність тримається · 6 тижнів даних",
   },
   5: {
     spend: "1 320",
     pct: 53,
     note: "Пʼять тренувань, і доставка падає майже вдвічі",
-    meta: "впевненість висока · 6 тижнів даних",
   },
 } as const;
+
+const HERO_META = `${CONFIDENCE.stable} · 6 тижнів даних`;
 
 type HeroTrainings = keyof typeof HERO_SCENARIOS;
 
@@ -129,7 +131,7 @@ function HeroCollage() {
           «{scenario.note}»
         </blockquote>
         <figcaption className="text-xs text-subtle">
-          записав Sergeant · {scenario.meta} · ілюстративний приклад
+          записав Sergeant · {HERO_META} · ілюстративний приклад
         </figcaption>
       </figure>
     </div>
@@ -147,7 +149,9 @@ export default function HomePage() {
       name: "Sergeant",
       inLanguage: "uk",
       applicationCategory: "LifestyleApplication",
-      operatingSystem: "Web, iOS, Android",
+      // Лише веб: мобільний застосунок існує, але його публічний вихід
+      // відкладено (рішення §10.1 спеки site-ia), а схему читають без контексту.
+      operatingSystem: "Web",
       offers: { "@type": "Offer", price: 0, priceCurrency: "UAH" },
     },
   });

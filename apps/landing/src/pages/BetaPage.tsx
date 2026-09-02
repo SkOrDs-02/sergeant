@@ -1,6 +1,7 @@
 import SiteLayout from "../components/SiteLayout";
 import TelegramCta from "../components/TelegramCta";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import { EXPORT_CLAIM } from "../content/exportClaim";
 
 const GIVE = [
   "Повний доступ до всіх чотирьох модулів. Ядро безкоштовне назавжди, а на час бети відкрито й те, що потім стане платним: безлімітний AI, фото їжі, автосинк.",
@@ -22,7 +23,7 @@ const MINI_FAQ = [
   },
   {
     q: "Що з моїми даними, якщо бета закриється?",
-    a: "Експорт в один клік у стандартні формати. Дані твої за будь-якого сценарію.",
+    a: `${EXPORT_CLAIM} Дані твої за будь-якого сценарію.`,
   },
 ];
 
@@ -106,9 +107,9 @@ export default function BetaPage() {
               <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
                 {item.a ?? (
                   <>
-                    Чесний список – у розділі{" "}
+                    Список відомих проблем – у розділі{" "}
                     <a
-                      href="/stan"
+                      href="/stan#vidomi-problemy"
                       className="text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                     >
                       «Доповідь про стан»

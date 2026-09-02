@@ -1,5 +1,8 @@
 import TelegramCta from "./TelegramCta";
 import { LogoMark } from "./Wordmark";
+import { CONFIDENCE } from "../content/confidenceLevels";
+import { formatDateUk } from "../lib/dates";
+import { STATUS_UPDATED } from "../pages/StanPage";
 
 /** Стрілка звʼязку між парою модулів. */
 function PairArrow() {
@@ -116,7 +119,7 @@ export function ConnectionExamples() {
           «У дні, коли тренуєшся зранку, інші звички зриваються рідше»
         </blockquote>
         <figcaption className="mt-auto text-xs text-subtle">
-          тримається стабільно · 6 тижнів даних
+          {CONFIDENCE.stable} · 34 спільні дні
         </figcaption>
       </figure>
 
@@ -133,7 +136,7 @@ export function ConnectionExamples() {
           «Коли снідаєш удома, ранкова рутина тримається довше»
         </blockquote>
         <figcaption className="mt-auto text-xs text-subtle">
-          поки що збіг · 2 тижні даних
+          {CONFIDENCE.coincidence} · 2 тижні даних
         </figcaption>
       </figure>
 
@@ -184,7 +187,7 @@ export function ConnectionsSection() {
           «У дні, коли тренуєшся зранку, інші звички зриваються рідше»
         </blockquote>
         <figcaption className="mt-auto text-xs text-subtle">
-          тримається стабільно · 34 спільні дні
+          {CONFIDENCE.stable} · 34 спільні дні
         </figcaption>
       </figure>
 
@@ -225,8 +228,8 @@ export function FounderSection() {
 /** Доповідь про стан – чесний список працює/в розробці. */
 /**
  * Рядок-місток замість винесеної `StatusSection`. Не опційний елемент:
- * без нього сигнал життя продукту зникає з першої сторінки. Дата мусить
- * збігатися зі `STATUS_UPDATED` у `pages/StanPage.tsx`.
+ * без нього сигнал життя продукту зникає з першої сторінки. Дата береться
+ * зі `STATUS_UPDATED` у `pages/StanPage.tsx`, а не дублюється руками.
  */
 export function StatusBridge() {
   return (
@@ -244,8 +247,8 @@ export function StatusBridge() {
         </p>
         <p className="mt-2 text-sm text-subtle">
           Оновлено:{" "}
-          <time dateTime="2026-08-31" className="font-semibold">
-            31 серпня 2026
+          <time dateTime={STATUS_UPDATED} className="font-semibold">
+            {formatDateUk(STATUS_UPDATED)}
           </time>
         </p>
       </div>
