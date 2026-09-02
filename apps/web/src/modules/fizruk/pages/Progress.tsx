@@ -575,7 +575,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                     both outside this change's file scope — tracked as a
                     follow-up.
                   */}
-                  <p className="text-style-caption text-subtle mb-3">
+                  <p className="text-style-body text-subtle mb-3">
                     {messages.fizruk.progress.muscleVolumeUnitsHint}
                   </p>
                   {muscleMatrix.rows.length === 0 ? (

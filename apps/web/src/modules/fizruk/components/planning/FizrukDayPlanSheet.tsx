@@ -13,6 +13,7 @@ import { useMonthlyPlan } from "../../hooks/useMonthlyPlan";
 import { useWorkoutTemplates } from "../../hooks/useWorkoutTemplates";
 import { useExerciseCatalog } from "../../hooks/useExerciseCatalog";
 import { parseDateKey } from "../../../routine/lib/hubCalendarAggregate";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 
 interface CatalogExercise {
   id: string;
@@ -53,13 +54,7 @@ export function FizrukDayPlanSheet({
       .filter((e): e is CatalogExercise => Boolean(e));
   }, [currentTemplate, exercises]);
 
-  const dateLabel = dateKey
-    ? parseDateKey(dateKey).toLocaleDateString("uk-UA", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-      })
-    : "";
+  const dateLabel = dateKey ? formatUaWeekdayDate(parseDateKey(dateKey)) : "";
 
   const handleAssign = (templateId: string | null) => {
     if (!dateKey) return;
@@ -154,7 +149,7 @@ export function FizrukDayPlanSheet({
                 : messages.fizruk.dayPlan.chooseTemplate}
             </SectionHeading>
             {templates.length === 0 ? (
-              <p className="text-style-caption text-subtle">
+              <p className="text-style-body text-subtle">
                 {messages.fizruk.dayPlan.noTemplates}
               </p>
             ) : (

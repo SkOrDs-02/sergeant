@@ -30,6 +30,7 @@
     "lint": "turbo run lint && node scripts/check-imports.mjs && node tools/tsconfig-guard/check.mjs && pnpm lint:plugins && pnpm lint:skills && pnpm eval:playbooks && pnpm lint:harness-version-freshness && pnpm lint:playbook-language && pnpm lint:tech-debt-freshness && pnpm lint:initiative-status-sync && pnpm lint:initiative-agent-ready && pnpm lint:localstorage-allowlist && pnpm lint:env-single-source && pnpm lint:kvstore-deep-imports && pnpm lint:archive-move-depth && pnpm lint:vi-mock-cap && pnpm lint:posthog-manifests && pnpm lint:discoverability && pnpm lint:agents-family-sync && pnpm lint:codex-agents && pnpm lint:pii-handling-drift && pnpm docs:check-adr-index && pnpm docs:check-freshness-single-marker && pnpm docs:check-playbook-3way-sync && pnpm docs:check-repo-map && pnpm docs:check-service-catalog && pnpm docs:check-pr-ledger && pnpm design:check-md && pnpm lint:design-conventions && pnpm lint:patches && pnpm api:check-openapi && pnpm docs:check-readme-scripts",
     "design:gen-md": "node scripts/gen-design-md.mjs",
     "design:check-md": "node scripts/gen-design-md.mjs --check",
+    "design:scan-captions": "node scripts/scan-caption-sentences.mjs",
     "lint:design-conventions": "node scripts/check-design-conventions.mjs && node --test scripts/__tests__/check-design-conventions.test.mjs",
     "lint:imports": "node scripts/check-imports.mjs",
     "lint:eslint-config-diff": "node scripts/eslint-print-config-diff.mjs",

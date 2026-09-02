@@ -1,6 +1,6 @@
 # Дизайн
 
-> **Last touched:** 2026-08-07 by @claude. **Next review:** 2027-03-21.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-02.
 > **Status:** Active
 
 Брендбук, дизайн-система, спеціалізовані патерни, активний v2-rollout і архів закритих аудитів.
@@ -109,15 +109,16 @@ companions, module-accent containment — свідомо не покриті gre
 
 ## Спеціалізовані патерни
 
-| Документ                                               | Опис                                                                      |
-| ------------------------------------------------------ | ------------------------------------------------------------------------- |
-| [`anti-slop-strategy.md`](./anti-slop-strategy.md)     | Диференціація від «генерованого» вигляду: аудит, 5 принципів, slop-тест   |
-| [`cross-module-prompts.md`](./cross-module-prompts.md) | Cross-module nudges із anti-nag-механікою                                 |
-| [`empty-states.md`](./empty-states.md)                 | Правила empty / error / zero-data станів (3 tier-и)                       |
-| [`module-accent.md`](./module-accent.md)               | Module-accent CSS variables, ESLint containment, Tailwind utilities       |
-| [`radius-rhythm.md`](./radius-rhythm.md)               | Size-driven border-radius scale (Swatch / Marker / Control / Card / Hero) |
-| [`undo-pattern.md`](./undo-pattern.md)                 | Soft-delete + 5-секундний undo-toast для destructive-дій                  |
-| [`unified-bottom-nav.md`](./unified-bottom-nav.md)     | Єдиний bottom-nav патерн для hub / modules                                |
+| Документ                                                   | Опис                                                                      |
+| ---------------------------------------------------------- | ------------------------------------------------------------------------- |
+| [`anti-slop-strategy.md`](./anti-slop-strategy.md)         | Диференціація від «генерованого» вигляду: аудит, 5 принципів, slop-тест   |
+| [`cross-module-prompts.md`](./cross-module-prompts.md)     | Cross-module nudges із anti-nag-механікою                                 |
+| [`density-hierarchy-spec.md`](./density-hierarchy-spec.md) | Правила 1–2 типографіки по геро-блоках модулів + межа застосовності П2    |
+| [`empty-states.md`](./empty-states.md)                     | Правила empty / error / zero-data станів (3 tier-и)                       |
+| [`module-accent.md`](./module-accent.md)                   | Module-accent CSS variables, ESLint containment, Tailwind utilities       |
+| [`radius-rhythm.md`](./radius-rhythm.md)                   | Size-driven border-radius scale (Swatch / Marker / Control / Card / Hero) |
+| [`undo-pattern.md`](./undo-pattern.md)                     | Soft-delete + 5-секундний undo-toast для destructive-дій                  |
+| [`unified-bottom-nav.md`](./unified-bottom-nav.md)         | Єдиний bottom-nav патерн для hub / modules                                |
 
 ## Tooling / process
 

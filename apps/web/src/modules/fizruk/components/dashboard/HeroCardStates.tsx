@@ -246,13 +246,13 @@ export function ActiveState({
       <HeroKicker {...kicker} />
       <HeroStateLabel>Тренування триває</HeroStateLabel>
       <p
-        className="mt-1 text-hero font-black text-hero-ink leading-none tabular-nums"
+        className="mt-1 text-style-headline font-black text-hero-ink leading-none tabular-nums"
         role="timer"
         aria-label="Тривалість активного тренування"
       >
         {formatElapsed(elapsedSec)}
       </p>
-      <p className="mt-2 text-style-caption text-hero-ink">{meta}</p>
+      <p className="mt-2 text-style-body text-hero-ink">{meta}</p>
       <div className="mt-6">
         <button
           type="button"
@@ -414,10 +414,10 @@ export function EmptyState({
     <HeroShell ariaLabel="План на сьогодні порожній" cornerSlot={cornerSlot}>
       <HeroKicker {...kicker} />
       <HeroStateLabel>План порожній</HeroStateLabel>
-      <h2 className="text-hero font-black text-hero-ink mt-1 leading-tight text-balance">
+      <h2 className="text-style-headline font-black text-hero-ink mt-1 leading-tight text-balance">
         Обери шаблон або заплануй день
       </h2>
-      <p className="mt-2 text-style-caption text-hero-ink">
+      <p className="mt-2 text-style-body text-hero-ink">
         {state.hasTemplates
           ? "Нічого не заплановано, запусти готовий шаблон або відкрий програми."
           : "У тебе ще немає шаблонів. Створи свій перший або обери програму."}

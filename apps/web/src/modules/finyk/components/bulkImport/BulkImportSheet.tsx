@@ -445,7 +445,7 @@ export function BulkImportSheet({
               яку Приват24 віддає під іменем .xls, але СТАРИЙ бінарний .xls
               (Excel 97) свідомо відхиляє з підказкою перезберегти. Обіцяти
               тут «XLS» — обіцяти те, чого немає. */}
-          <p className="text-style-caption text-subtle">
+          <p className="text-style-body text-subtle">
             Виписка – CSV або XLSX, один файл за раз; файл .xls з банку теж
             спробую. Фото чеків – через «Сканувати чек», там можна кілька
             одразу.
