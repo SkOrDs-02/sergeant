@@ -41,6 +41,20 @@
     --c-danger-soft-fg: 185 28 28; /* red-700 on red-100 */
     --c-info-soft-fg: 7 89 133; /* sky-800 on sky-100 */
 
+    /* Чорнильний (текстовий) тир — те, у що резолвиться
+       `text-{family}-strong`. Світла тема лишає рівно ті значення, які
+       пресет віддавав статично; пара до них — у `.dark` нижче. Дзеркалить
+       `--c-{family}-ink` з apps/web/src/styles/theme.css. */
+    --c-success-ink: 6 95 70; /* emerald-800 */
+    --c-warning-ink: 146 64 14; /* amber-800 */
+    --c-danger-ink: 153 27 27; /* red-800 */
+    --c-info-ink: 7 89 133; /* sky-800 */
+    --c-brand-ink: 41 37 36; /* stone-800 */
+    --c-finyk-ink: 17 94 89; /* teal-800 */
+    --c-fizruk-ink: 21 94 117; /* cyan-800 */
+    --c-routine-ink: 141 66 86; /* rose-800 */
+    --c-nutrition-ink: 70 98 18; /* lime-800 */
+
     /* ───────────────────────────────────────────────────────────────────
        SOFT BRAND & MODULE TINTS — mirror apps/web/src/styles/theme.css.
        `-soft` is the tinted surface wash, `-soft-border` the paired
@@ -128,6 +142,24 @@
     --c-warning-soft-fg: 252 211 77; /* amber-300 */
     --c-danger-soft-fg: 254 202 202; /* red-200 */
     --c-info-soft-fg: 125 211 252; /* sky-300 */
+
+    /* Чорнильний (текстовий) тир — щабель -400, у парі зі світлим тиром
+       у `:root`. Без цих змінних пресет віддає статичний тир -800, і на
+       поверхнях цього блоку (#171412 / #201c19 / #302a25) текст статусу
+       та модуля виходить 1.70…2.66:1 — темне по темному. Заміри на
+       `panel-hi` (найтісніша поверхня): danger 1.70 → 5.12, finyk
+       1.87 → 7.60, routine 2.05 → 6.24, nutrition 2.03 → 9.58.
+       Гейт значень — `contrast.test.js` у @sergeant/design-tokens
+       (`statusInkHex` / `accentInkHex`). */
+    --c-success-ink: 52 211 153; /* emerald-400 */
+    --c-warning-ink: 251 191 36; /* amber-400 */
+    --c-danger-ink: 248 113 113; /* red-400 */
+    --c-info-ink: 56 189 248; /* sky-400 */
+    --c-brand-ink: 214 211 209; /* stone-300 */
+    --c-finyk-ink: 45 212 191; /* teal-400 */
+    --c-fizruk-ink: 34 211 238; /* cyan-400 */
+    --c-routine-ink: 246 141 164; /* rose-400 */
+    --c-nutrition-ink: 176 230 54; /* lime-400 */
 
     /* Dark-theme overrides for the soft brand/module tints — mirror
        apps/web/src/styles/theme.css. Values are deliberately deep

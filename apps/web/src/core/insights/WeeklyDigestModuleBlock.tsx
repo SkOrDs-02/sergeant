@@ -29,7 +29,7 @@ const MODULE_CONFIG: Record<
   finyk: {
     icon: "credit-card",
     label: "Фінанси",
-    colorClass: "text-brand-strong dark:text-brand",
+    colorClass: "text-brand-strong",
     bgClass: "bg-finyk-soft",
     borderClass: "border-finyk-soft-border/60",
   },

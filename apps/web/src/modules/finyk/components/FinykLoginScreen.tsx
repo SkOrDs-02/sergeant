@@ -94,7 +94,7 @@ export function FinykLoginScreen({
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-brand-strong dark:text-brand"
+              className="text-brand-strong"
               aria-hidden
             >
               <rect x="3" y="8" width="18" height="12" rx="2" />

@@ -84,7 +84,7 @@ function SwitchIconButton({ choice, isActive, onSelect }: SwitchButtonProps) {
         "flex-1 min-h-11 flex flex-col items-center justify-center gap-1 px-1.5 py-1.5 rounded-xl border transition-[background-color,border-color,color,box-shadow] motion-reduce:transition-none",
         FOCUS_RING,
         isActive
-          ? "bg-brand-soft border-brand-soft-border text-brand-strong dark:text-brand shadow-sm"
+          ? "bg-brand-soft border-brand-soft-border text-brand-strong shadow-sm"
           : "bg-transparent border-transparent text-muted hover:text-text hover:bg-panelHi",
       )}
     >

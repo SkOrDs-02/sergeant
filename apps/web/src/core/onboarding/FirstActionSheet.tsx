@@ -449,7 +449,7 @@ export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
             <Icon
               name="chevron-right"
               size={18}
-              className="text-brand-strong dark:text-brand"
+              className="text-brand-strong"
             />
           </div>
         </button>

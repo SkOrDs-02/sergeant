@@ -466,7 +466,7 @@ interface BadgeChipProps {
 function BadgeChip({ tone, icon, label, title }: BadgeChipProps) {
   const cls =
     tone === "brand"
-      ? "text-brand-strong dark:text-brand bg-brand-500/8 border-brand-500/25"
+      ? "text-brand-strong bg-brand-500/8 border-brand-500/25"
       : tone === "warning"
         ? "text-warning-strong dark:text-warning bg-panel border-warning/25"
         : "text-success-strong dark:text-success bg-success/8 border-success/25";

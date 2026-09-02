@@ -100,7 +100,7 @@ export function SyncStatusSheet({
           }}
           className={cn(
             "mt-3 w-full min-h-[44px] rounded-xl font-semibold transition-colors",
-            "bg-brand-soft text-brand-strong dark:text-brand hover:bg-brand-soft-hover",
+            "bg-brand-soft text-brand-strong hover:bg-brand-soft-hover",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
         >

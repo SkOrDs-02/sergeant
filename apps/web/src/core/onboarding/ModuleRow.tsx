@@ -66,7 +66,7 @@ export function ModuleRow({
   const activeClasses = MODULE_ACTIVE_CLASSES[card.id] ?? {
     border: "border-brand-500/60",
     bg: "bg-brand-500/8",
-    icon: "bg-brand-500/15 text-brand-strong dark:text-brand",
+    icon: "bg-brand-500/15 text-brand-strong",
     check: "bg-brand-strong",
   };
 
