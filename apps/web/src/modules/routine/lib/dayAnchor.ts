@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-24
+ * Last validated: 2026-09-01
  * Status: Active
  *
  * Єдине місце, де web-routine вирішує, ЗА ЯКИМ годинником рахується
@@ -14,44 +14,69 @@
  * ключ приходив київський. Тому анкер і генератор тепер в одному файлі —
  * перемкнути одне, не помітивши іншого, більше не вийде.
  *
- * **Чому саме `kyiv`, а не `device-local` за ADR-0078.** ADR-0078
- * (`docs/04-governance/adr/0078-day-boundary-device-local.md`) визначає
- * device-local цільовою доктриною для особистого дня, і саме туди цей
- * модуль має приїхати. Але web-routine київський НАСКРІЗЬ — не лише в
- * записі: `RoutineStatsPanel`, `HabitHeatmap`, `HabitRangeGrid`,
- * `HabitLeadersBlock`, `useDayRollover`, `useRoutineReminders`,
- * `useTodoEveningInsight`, `useStreakRecordPendingInsight`,
- * `useRoutineQuickStatsWriter` однаково читають київське «сьогодні».
- * Перемкнути ОДИН лише шлях запису означало б писати відмітку під
- * девайсовий день, а малювати її проти київського — галочка просто не
- * засвітилась би. Тож поки перемикається все разом (окремий крок,
- * W1-TIME-DOCTRINE), колонка мусить казати правду про поточний стан:
- * ключ київський — анкер `kyiv`.
+ * **Cutover 2026-09-01 (продуктовий аудит LOG-3, founder-рішення):**
+ * ROUTINE_DAY_ANCHOR перемкнуто `kyiv` → `device-local` за ADR-0078
+ * (`docs/04-governance/adr/0078-day-boundary-device-local.md`). До цієї
+ * дати web-routine був київський НАСКРІЗЬ, і саме тому досить було
+ * перемкнути лише цей файл: `RoutineStatsPanel`, `HabitHeatmap`,
+ * `HabitRangeGrid`, `HabitLeadersBlock`, `HabitDetailSheet`,
+ * `useDayRollover`, `useTodoEveningInsight`, `useStreakRecordPendingInsight`,
+ * `useRoutineQuickStatsWriter` усі читають «сьогодні» через
+ * `anchoredTodayDate`/`anchoredTodayKey` (прямо чи через `RoutineApp.helpers.todayDate`)
+ * — жодного з них не довелось чіпати окремо, крім трьох місць, де «сьогодні»
+ * рахувалось Kyiv-хелпером НАПРЯМУ, в обхід цього файлу (перемкнуті тим
+ * самим PR): `useDayRollover` (київська північ → девайсова), `HabitHeatmap`
+ * (місячні мітки хітмапу рахувались через `getKyivDateParts` на вже
+ * локально-побудованій даті — тепер просто локальні геттери),
+ * `HabitLeadersBlock` (початок 30-денного вікна лідерів), `HabitDetailSheet`
+ * (курсор місяця календаря) і `useTodoEveningInsight` (поріг «після 20:00» —
+ * тепер 20:00 за годинником пристрою, не Києва).
  *
- * Слід за собою: рядки, записані ДО 2026-08-24, стоять із
- * `day_anchor = 'device-local'`, хоча ключ у них київський. Бекфіл тих
- * рядків — окремий пункт, тут його не зробити.
+ * Реміндери (`useRoutineReminders`) НЕ перемкнуті цим PR: вони йдуть через
+ * спільний Hub-механізм engagement (`useModuleReminder`, ADR-0067),
+ * який ділять routine/fizruk/nutrition — зміна його доктрини часу зачепила
+ * б інші модулі і виходить за межі цього PR.
+ *
+ * **Історія не переанкорюється (ADR-0078 §4).** Рядки, записані ДО
+ * 2026-09-01, стоять із `day_anchor = 'kyiv'` (а рядки ДО 2026-08-24 — з
+ * `day_anchor = 'device-local'`, хоча тодішній ключ був київський, див. git
+ * history цього файлу) — жодного з цих станів не бекфілиться заднім числом.
+ * Читачі журналу (стріки, heatmap, статистика) не звертаються до
+ * `day_anchor` для розрахунків — вони довіряють уже записаному `date_key`
+ * як є, тож мішана історія (частина рядків kyiv, частина device-local)
+ * коректно читається без спеціальної гілки: колонка `day_anchor` — метадані
+ * для майбутньої аналітики/міграції, а не вхід поточних агрегаторів.
  */
 import { dateKeyFromDate } from "@sergeant/routine-domain";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 
 /**
  * Значення для `routine_completion_events.day_anchor`. Словник колонки —
  * `device-local | kyiv | unknown`.
  */
-export const ROUTINE_DAY_ANCHOR = "kyiv";
+export const ROUTINE_DAY_ANCHOR = "device-local";
 
 /**
- * «Сьогодні» web-routine як `Date`, чиї ЛОКАЛЬНІ year/month/day збігаються
- * з київськими, виставлений на локальний полудень.
+ * «Сьогодні» web-routine як `Date`, виставлений на локальний (пристрою)
+ * полудень.
  *
- * Полудень тут не косметика: `dateKeyFromDate` за контрактом
- * `routine-domain` читає локальні геттери, тож у пристрою поза Києвом
- * лише опівденний якір гарантує, що вони повернуть саме київську дату.
+ * Полудень тут не косметика: снапить дату на середину доби, щоб DST-зсув
+ * годинника не перекинув її межу через північ під час подальшого
+ * date-math (`addDays`/`dateKeyMinusDays` тощо, які теж снапляться на
+ * 12:00 у `@sergeant/routine-domain`).
  */
 export function anchoredTodayDate(): Date {
-  const { year, month, day } = getKyivDateParts();
-  return new Date(year, month - 1, day, 12, 0, 0, 0);
+  // ADR-0078: межа доби routine — годинник ПРИСТРОЮ, а не Києва; це єдине
+  // легітимне місце web-routine, де «сьогодні» читає host-local `new Date()`
+  // і його рік/місяць/день напряму.
+  // eslint-disable-next-line no-restricted-syntax -- див. коментар вище
+  const now = new Date();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- див. коментар вище
+  const year = now.getFullYear();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- те саме
+  const month = now.getMonth();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- те саме
+  const day = now.getDate();
+  return new Date(year, month, day, 12, 0, 0, 0);
 }
 
 /** «Сьогодні» web-routine як `YYYY-MM-DD`. Анкер — `ROUTINE_DAY_ANCHOR`. */

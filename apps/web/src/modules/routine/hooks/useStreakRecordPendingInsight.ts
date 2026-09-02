@@ -10,8 +10,8 @@ import type { Insight } from "@shared/lib/insights/types";
  * the user's personal all-time record — i.e. `currentStreak === longestStreak - 1`.
  *
  * `currentStreak` = `flexibleMaxActiveStreak` across all active habits
- * (today's date in Kyiv tz as anchor) — гнучкий стрік, тож заявлена пауза
- * чи пропуск із причиною рекорд не обнуляють.
+ * (today's date, device-local anchor per ADR-0078) — гнучкий стрік, тож
+ * заявлена пауза чи пропуск із причиною рекорд не обнуляють.
  * `longestStreak` = max of `maxStreakAllTime` per active habit — purely local,
  * derived from completion history.
  *
