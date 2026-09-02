@@ -249,6 +249,13 @@ ENV NODE_ENV=production
 ARG GIT_SHA=""
 ENV GIT_SHA=${GIT_SHA}
 
+# ЗАЛИШОК OpenClaw (ADR-0075): рантайм `read_strategy_docs` видалено, цей
+# ENV і COPY docs нижче ніщо не читає. Лишаються навмисно: зняття — non-comment
+# зміна deploy-конфігу, яка вимагає лейбла `verified-on-staging` за
+# `docs/00-start/playbooks/deploy-config-change.md` (§3, Coolify prod-деплой).
+# Зняти окремим PR після спостереження одного деплой-циклу.
+ENV OPENCLAW_REPO_ROOT=/app
+
 # Production node_modules + workspace symlinks з deps-stage. Зберігаємо
 # обидва шари (root + apps/server) — pnpm symlinks у `apps/server/node_modules`
 # вказують у `/app/node_modules/.pnpm/...`, тож обидва шляхи мають існувати
@@ -265,6 +272,13 @@ COPY --from=deps --chown=nonroot:nonroot /app/apps/server/package.json /app/apps
 # Build артефакт: `dist-server/index.js` + bundled `dist-server/migrations/*.sql`
 # (esbuild build.mjs копіює migrations поряд із bundle).
 COPY --from=builder --chown=nonroot:nonroot /app/apps/server/dist-server /app/apps/server/dist-server
+
+# ЗАЛИШОК OpenClaw (ADR-0075) — див. примітку біля `OPENCLAW_REPO_ROOT` вище:
+# ці COPY ніщо не читає, зняти окремим deploy-config PR.
+COPY --chown=nonroot:nonroot docs/04-governance/adr /app/docs/04-governance/adr
+COPY --chown=nonroot:nonroot docs/01-product/launch /app/docs/01-product/launch
+COPY --chown=nonroot:nonroot docs/02-engineering/integrations /app/docs/02-engineering/integrations
+COPY --chown=nonroot:nonroot docs/04-governance/governance /app/docs/04-governance/governance
 
 WORKDIR /app/apps/server
 
