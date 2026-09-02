@@ -403,7 +403,10 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
         </Text>
         <WeekKcalChart
           rows={weekRows}
-          targetKcal={prefs.dailyTargetKcal || 0}
+          // Однакове значення на всі дні: джерело поки `prefs`. Сходинка
+          // зʼявиться, коли мобілка отримає стадію 3 (окрема поставка,
+          // EAS-лаг — ADR-0091 § Consequences).
+          goalsByDay={weekRows.map(() => prefs.dailyTargetKcal || null)}
           todayIso={today}
         />
       </Card>

@@ -32,16 +32,21 @@ function fmtKcal(n: number): string {
 
 export interface WeekKcalChartProps {
   rows: MacrosRow[];
-  targetKcal: number;
+  /**
+   * Ціль на КОЖЕН день тижня, вирівняна з `rows`. Не одне число: ціль може
+   * змінитись серед тижня, і минулі дні судяться тією, що діяла тоді
+   * (ADR-0091). `null` — цілі на той день не було.
+   */
+  goalsByDay: readonly (number | null)[];
   todayIso: string;
 }
 
 export function WeekKcalChart({
   rows,
-  targetKcal,
+  goalsByDay,
   todayIso,
 }: WeekKcalChartProps) {
-  const model = computeWeekKcalChart(rows, targetKcal);
+  const model = computeWeekKcalChart(rows, goalsByDay);
 
   const summaryText =
     model.daysLogged > 0
@@ -79,13 +84,15 @@ export function WeekKcalChart({
                 style={{ height: CHART_HEIGHT, justifyContent: "flex-end" }}
                 className="w-full items-center"
               >
-                {model.goalRatio !== null && (
+                {bar.goalRatio !== null && (
+                  // Висота — з ЦЬОГО дня, тож у тижні зі зміненою ціллю
+                  // лінія йде сходинкою (ADR-0091).
                   <View
                     style={{
                       position: "absolute",
                       left: 0,
                       right: 0,
-                      bottom: model.goalRatio * CHART_HEIGHT,
+                      bottom: bar.goalRatio * CHART_HEIGHT,
                       borderTopWidth: 1,
                       borderStyle: "dashed",
                     }}

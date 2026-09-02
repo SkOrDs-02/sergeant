@@ -48,17 +48,26 @@ export interface WeekKcalBar {
   ratio: number;
   /** День без записів. UI малює плаский трек, НЕ стовпчик (канон §5.2). */
   isEmpty: boolean;
-  /** Перебір понад ціль із допуском `WEEK_KCAL_OVER_TOLERANCE`. */
+  /** Перебір понад ціль ЦЬОГО дня з допуском `WEEK_KCAL_OVER_TOLERANCE`. */
   isOver: boolean;
+  /** Ціль, чинна на цей день, або `0` коли її не було. */
+  goalKcal: number;
+  /**
+   * Позиція лінії цілі ЦЬОГО дня `[0..1]`, або `null` коли цілі не було.
+   * UI малює сегмент над своїм стовпчиком, а не одну лінію на весь графік.
+   */
+  goalRatio: number | null;
 }
 
 export interface WeekKcalChartModel {
   bars: WeekKcalBar[];
   /** Стеля осі в ккал — те, що дорівнює повній висоті плоту. */
   ceiling: number;
-  /** Позиція лінії цілі `[0..1]`, або `null` коли цілі немає. */
-  goalRatio: number | null;
-  /** Ціль у ккал, або `0` коли не задана. */
+  /**
+   * Ціль останнього дня тижня, який її мав, або `0`. Це підпис шкали, а не
+   * знаменник: судить кожен день своя ціль (`bars[].goalKcal`). Коли ціль
+   * серед тижня не мінялась — а це поки завжди, — число те саме, що й було.
+   */
   goalKcal: number;
   /** Сума ккал за тиждень. */
   totalKcal: number;
@@ -73,37 +82,59 @@ function toKcal(value: unknown): number {
   return Number.isFinite(n) && n > 0 ? n : 0;
 }
 
+/**
+ * Ціль на КОЖЕН день тижня, вирівняна з `rows` за індексом. `null` означає
+ * «на цей день цілі не було» і малюється як день без лінії, а не як нуль.
+ */
+export type WeekKcalGoals = readonly (number | null | undefined)[];
+
+function toGoal(value: unknown): number {
+  const n = Number(value);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}
+
 export function computeWeekKcalChart(
   rows: readonly MacrosRow[] | null | undefined,
-  targetKcal: unknown,
+  goalsByDay: WeekKcalGoals | null | undefined,
 ): WeekKcalChartModel {
   const safeRows = Array.isArray(rows) ? rows : [];
-  const goalRaw = Number(targetKcal);
-  const goalKcal = Number.isFinite(goalRaw) && goalRaw > 0 ? goalRaw : 0;
+  const safeGoals = Array.isArray(goalsByDay) ? goalsByDay : [];
 
   const kcals = safeRows.map((r) => toKcal(r?.kcal));
+  const goals = safeRows.map((_, i) => toGoal(safeGoals[i]));
   const maxKcal = kcals.length > 0 ? Math.max(...kcals) : 0;
+  const maxGoal = goals.length > 0 ? Math.max(...goals) : 0;
 
+  // Стелю задає НАЙБІЛЬША ціль тижня, не ціль «на сьогодні»: інакше тиждень,
+  // у якому ціль упала з 2400 на 1800, стиснув би перші дні під стелю
+  // останнього, і висота стовпчика знову перестала б щось означати.
+  //
   // Без цілі стеля — максимум тижня (інакше немає від чого рахувати
   // висоту взагалі), АЛЕ UI зобовʼязаний підписати це число: саме
   // непідписана самонормалізація і робила графік нечитабельним.
   const ceiling =
-    goalKcal > 0
-      ? Math.max(goalKcal * WEEK_KCAL_CEILING_HEADROOM, maxKcal)
+    maxGoal > 0
+      ? Math.max(maxGoal * WEEK_KCAL_CEILING_HEADROOM, maxKcal)
       : Math.max(maxKcal, 1);
-
-  const overThreshold = goalKcal * WEEK_KCAL_OVER_TOLERANCE;
 
   const bars: WeekKcalBar[] = safeRows.map((row, i) => {
     const kcal = kcals[i] ?? 0;
+    const dayGoal = goals[i] ?? 0;
     return {
       date: String(row?.date ?? ""),
       kcal,
       ratio: ceiling > 0 ? Math.min(1, kcal / ceiling) : 0,
       isEmpty: kcal <= 0,
-      isOver: goalKcal > 0 && kcal > overThreshold,
+      isOver: dayGoal > 0 && kcal > dayGoal * WEEK_KCAL_OVER_TOLERANCE,
+      goalKcal: dayGoal,
+      goalRatio:
+        dayGoal > 0 && ceiling > 0 ? Math.min(1, dayGoal / ceiling) : null,
     };
   });
+
+  // Підпис шкали бере ціль ОСТАННЬОГО дня, який її мав: він і є «поточна»
+  // ціль у межах намальованого тижня.
+  const lastGoal = [...goals].reverse().find((g) => g > 0) ?? 0;
 
   const totalKcal = kcals.reduce((sum, k) => sum + k, 0);
   const daysLogged = kcals.filter((k) => k > 0).length;
@@ -111,8 +142,7 @@ export function computeWeekKcalChart(
   return {
     bars,
     ceiling,
-    goalRatio: goalKcal > 0 ? Math.min(1, goalKcal / ceiling) : null,
-    goalKcal,
+    goalKcal: lastGoal,
     totalKcal,
     avgKcal: daysLogged > 0 ? Math.round(totalKcal / daysLogged) : 0,
     daysLogged,
