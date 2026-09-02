@@ -1,6 +1,6 @@
 # pnpm Overrides Rationale
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-17.
+> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-16.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
