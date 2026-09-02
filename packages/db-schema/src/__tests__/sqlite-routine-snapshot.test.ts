@@ -378,6 +378,7 @@ describe("sqlite/routineHabits schema snapshot", () => {
       "reminder_times_json",
       "weekdays_json",
       "pause_intervals_json",
+      "weekly_target_history_json",
       "created_at",
       "updated_at",
       "deleted_at",
@@ -528,8 +529,8 @@ describe("sqlite/routineCompletionNotes schema snapshot", () => {
 });
 
 describe("sqlite/migrations exports", () => {
-  it("exports the ordered Routine migrations through habit-skips migration 009", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(9);
+  it("exports the ordered Routine migrations through weekly-target migration 010", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(10);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
@@ -688,6 +689,23 @@ describe("sqlite/migrations exports", () => {
     );
     expect(ROUTINE_CLIENT_MIGRATIONS[7]!.sql).toMatch(
       /CHECK \(status IN \('pending', 'completed'\)\)/,
+    );
+
+    expect(ROUTINE_CLIENT_MIGRATIONS[8]!.name).toBe(
+      "009_routine_habit_skips.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[8]!.sql).toMatch(
+      /ALTER TABLE routine_habits ADD COLUMN pause_intervals_json/,
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[8]!.sql).toMatch(
+      /CREATE TABLE IF NOT EXISTS routine_habit_skips/,
+    );
+
+    expect(ROUTINE_CLIENT_MIGRATIONS[9]!.name).toBe(
+      "010_routine_weekly_target_history.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[9]!.sql).toMatch(
+      /ALTER TABLE routine_habits ADD COLUMN weekly_target_history_json TEXT NOT NULL DEFAULT '\[\]'/,
     );
   });
 

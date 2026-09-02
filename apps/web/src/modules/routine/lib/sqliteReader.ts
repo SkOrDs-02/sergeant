@@ -32,6 +32,7 @@ import {
   type Category,
   type RoutinePrefs,
   type SkipReason,
+  type WeeklyTargetInterval,
 } from "@sergeant/routine-domain";
 
 // -----------------------------------------------------------------------
@@ -306,6 +307,7 @@ interface HabitRow extends Record<string, unknown> {
   reminder_times_json: string;
   weekdays_json: string;
   pause_intervals_json: string;
+  weekly_target_history_json: string;
   created_at: string;
 }
 
@@ -317,7 +319,7 @@ async function readHabits(
     `SELECT id, name, emoji, tag_ids_json, category_id,
             archived, paused, recurrence, start_date, end_date,
             time_of_day, reminder_times_json, weekdays_json,
-            pause_intervals_json, created_at
+            pause_intervals_json, weekly_target_history_json, created_at
        FROM routine_habits
       WHERE user_id = ? AND deleted_at IS NULL
       ORDER BY id ASC`,
@@ -338,6 +340,10 @@ async function readHabits(
     reminderTimes: safeJsonParse<string[]>(r.reminder_times_json, []),
     weekdays: safeJsonParse<number[]>(r.weekdays_json, []),
     pauseIntervals: safeJsonParse<PauseInterval[]>(r.pause_intervals_json, []),
+    weeklyTargetHistory: safeJsonParse<WeeklyTargetInterval[]>(
+      r.weekly_target_history_json,
+      [],
+    ),
     createdAt: r.created_at,
   }));
 }

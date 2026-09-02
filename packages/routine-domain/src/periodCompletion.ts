@@ -24,6 +24,12 @@
 
 import { habitCountsTowardMetrics, habitScheduledOnDate } from "./schedule.js";
 import type { Habit, HabitSkip } from "./types.js";
+import {
+  isFlexibleHabit,
+  weekEndKeyForDateKey,
+  weekStartKeyForDateKey,
+  weeklyTargetForDate,
+} from "./weeklyTarget.js";
 
 /** Зріз по одній звичці за період. */
 export interface HabitPeriodCompletion {
@@ -106,6 +112,44 @@ export function calcRoutinePeriodCompletion(
     const habitSkips = opts.skips?.[habit.id];
     let habitDone = 0;
     let habitScheduled = 0;
+
+    if (isFlexibleHabit(habit)) {
+      const byWeek = new Map<string, { done: number; days: number }>();
+      for (const dk of keys) {
+        if (
+          !habitScheduledOnDate(habit, dk, {
+            ...scheduleOpts,
+            weekDoneCount: 0,
+          })
+        ) {
+          continue;
+        }
+        if (habitSkips?.[dk] && !doneSet.has(dk)) continue;
+        const weekStart = weekStartKeyForDateKey(dk);
+        const row = byWeek.get(weekStart) ?? { done: 0, days: 0 };
+        row.days += 1;
+        if (doneSet.has(dk)) row.done += 1;
+        byWeek.set(weekStart, row);
+      }
+      for (const [weekStart, row] of byWeek) {
+        const target = Math.min(
+          row.days,
+          weeklyTargetForDate(habit, weekEndKeyForDateKey(weekStart)),
+        );
+        habitScheduled += target;
+        habitDone += Math.min(row.done, target);
+      }
+      completed += habitDone;
+      scheduled += habitScheduled;
+      perHabit.push({
+        id: habit.id,
+        name: habit.name || "Звичка",
+        done: habitDone,
+        scheduled: habitScheduled,
+        completionRate: pctOf(habitDone, habitScheduled),
+      });
+      continue;
+    }
 
     for (const dk of keys) {
       if (!habitScheduledOnDate(habit, dk, scheduleOpts)) continue;

@@ -5,3 +5,4 @@ export * from "./speechParsers";
 export * from "./ukApostrophe";
 export * from "./ukrainianPlural";
 export * from "./productSearchKey";
+export * from "./weeklyStreak";

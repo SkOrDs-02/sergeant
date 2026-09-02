@@ -220,6 +220,9 @@ describe("050_routine_full_state migration", () => {
         // дописує колонку В КІНЕЦЬ, тому вона тут після `deleted_at`, а не
         // поруч із легасі-прапором `paused`.
         "pause_intervals",
+        // 135_routine_weekly_target_history.sql — історія тижневої цілі для
+        // `recurrence='flexible'`. Так само фізично додається в кінець.
+        "weekly_target_history",
       ]);
 
       const byName = Object.fromEntries(cols.map((c) => [c.name, c]));
@@ -234,6 +237,8 @@ describe("050_routine_full_state migration", () => {
       expect(byName["tag_ids"]!.nullable).toBe("NO");
       expect(byName["reminder_times"]!.type).toBe("jsonb");
       expect(byName["weekdays"]!.type).toBe("jsonb");
+      expect(byName["weekly_target_history"]!.type).toBe("jsonb");
+      expect(byName["weekly_target_history"]!.nullable).toBe("NO");
       expect(byName["archived"]!.type).toBe("boolean");
       expect(byName["paused"]!.type).toBe("boolean");
       expect(byName["created_at"]!.type).toBe("timestamp with time zone");

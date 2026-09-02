@@ -331,6 +331,7 @@ async function upsertHabit(
     JSON.stringify(h.reminderTimes ?? []),
     JSON.stringify(h.weekdays ?? [0, 1, 2, 3, 4, 5, 6]),
     JSON.stringify(h.pauseIntervals ?? []),
+    JSON.stringify(h.weeklyTargetHistory ?? []),
     h.createdAt ?? clientTs,
     clientTs,
   ]);
@@ -355,6 +356,7 @@ async function upsertHabit(
       reminder_times_json: JSON.stringify(h.reminderTimes ?? []),
       weekdays_json: JSON.stringify(h.weekdays ?? [0, 1, 2, 3, 4, 5, 6]),
       pause_intervals_json: JSON.stringify(h.pauseIntervals ?? []),
+      weekly_target_history_json: JSON.stringify(h.weeklyTargetHistory ?? []),
       created_at: h.createdAt ?? clientTs,
     },
   });

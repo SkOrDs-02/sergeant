@@ -503,6 +503,21 @@ CREATE INDEX IF NOT EXISTS routine_habit_skips_user_active_idx_lite
 `;
 
 /**
+ * Client migration 010 — історія тижневої цілі для `recurrence='flexible'`.
+ *
+ * Дзеркалить серверну `135_routine_weekly_target_history.sql`.
+ * SQLite не має JSONB, тому поле зберігається як JSON-рядок у TEXT,
+ * за тим самим патерном, що `weekdays_json` і `pause_intervals_json`.
+ *
+ * `ALTER TABLE ... ADD COLUMN` у SQLite не має `IF NOT EXISTS`, але
+ * міграції append-only і ведуться леджером `__migrations`, тож повторного
+ * застосування не буде.
+ */
+const ROUTINE_010_WEEKLY_TARGET_HISTORY_SQL = `
+ALTER TABLE routine_habits ADD COLUMN weekly_target_history_json TEXT NOT NULL DEFAULT '[]';
+`;
+
+/**
  * Ordered list of bundled client migrations for the routine module on
  * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate/runner`.
@@ -675,6 +690,10 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "009_routine_habit_skips.sql",
     sql: ROUTINE_009_HABIT_SKIPS_SQL,
+  },
+  {
+    name: "010_routine_weekly_target_history.sql",
+    sql: ROUTINE_010_WEEKLY_TARGET_HISTORY_SQL,
   },
 ] as const;
 

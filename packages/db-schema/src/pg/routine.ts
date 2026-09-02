@@ -135,8 +135,9 @@ export const routineStreaks = pgTable("routine_streaks", {
 /**
  * Postgres schema for `routine_habits` table.
  *
- * Один рядок на звичку. JSON-масиви (tagIds, reminderTimes, weekdays)
- * зберігаються як `jsonb`. Boolean поля — нативний `boolean`.
+ * Один рядок на звичку. JSON-масиви (tagIds, reminderTimes, weekdays,
+ * weeklyTargetHistory) зберігаються як `jsonb`. Boolean поля — нативний
+ * `boolean`.
  */
 export const routineHabits = pgTable(
   "routine_habits",
@@ -173,6 +174,7 @@ export const routineHabits = pgTable(
      * server-side PR, що це зробить.
      */
     pauseIntervals: jsonb("pause_intervals").notNull().default([]),
+    weeklyTargetHistory: jsonb("weekly_target_history").notNull().default([]),
     createdAt: timestamp("created_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

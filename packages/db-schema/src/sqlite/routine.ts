@@ -151,8 +151,8 @@ export const routineStreaks = sqliteTable("routine_streaks", {
  *
  * Один рядок на звичку. Поля дзеркалять `Habit` з
  * `@sergeant/routine-domain`. JSON-масиви (`tagIds`, `reminderTimes`,
- * `weekdays`) зберігаються як TEXT (JSON string) — SQLite не має
- * нативного JSONB.
+ * `weekdays`, `weeklyTargetHistory`) зберігаються як TEXT (JSON string) —
+ * SQLite не має нативного JSONB.
  *
  * Stage 10 / PR #070r-schema of `docs/planning/storage-roadmap.md`.
  */
@@ -185,6 +185,9 @@ export const routineHabits = sqliteTable(
      * DROP COLUMN.
      */
     pauseIntervalsJson: text("pause_intervals_json").notNull().default("[]"),
+    weeklyTargetHistoryJson: text("weekly_target_history_json")
+      .notNull()
+      .default("[]"),
     createdAt: text("created_at")
       .notNull()
       .default(sql`(datetime('now'))`),

@@ -15,6 +15,12 @@ import type {
   HabitDraftPatch,
   ReminderPreset,
 } from "./types.js";
+import {
+  DEFAULT_WEEKLY_TARGET,
+  appendWeeklyTargetInterval,
+  normalizeWeeklyTarget,
+  weeklyTargetForDate,
+} from "./weeklyTarget.js";
 
 /**
  * Inline validation errors surfaced by `HabitForm` next to the offending
@@ -28,6 +34,7 @@ import type {
 export interface HabitFormErrors {
   name?: string;
   weekdays?: string;
+  weeklyTarget?: string;
 }
 
 export function routineTodayDate(): Date {
@@ -151,6 +158,8 @@ export function emptyHabitDraft(): HabitDraft {
     reminderTimes: [],
     weekdays: [0, 1, 2, 3, 4, 5, 6],
     paused: false,
+    weeklyTarget: DEFAULT_WEEKLY_TARGET,
+    weeklyTargetHistory: [],
   };
 }
 
@@ -170,23 +179,38 @@ export function habitDraftToPatch(draft: HabitDraft): HabitDraftPatch {
       ? String(draft.timeOfDay).trim().slice(0, 5)
       : "");
 
+  const recurrence = draft.recurrence || "daily";
+  const startDate = draft.startDate || dateKeyFromDate(routineTodayDate());
+  const weeklyTarget = normalizeWeeklyTarget(draft.weeklyTarget);
+
   return {
     name: draft.name.trim(),
     emoji: resolveHabitGlyph(draft.emoji),
     tagIds,
     categoryId: draft.categoryId || null,
-    recurrence: draft.recurrence || "daily",
-    startDate: draft.startDate || dateKeyFromDate(routineTodayDate()),
+    recurrence,
+    startDate,
     endDate:
       draft.endDate && String(draft.endDate).trim()
         ? String(draft.endDate).trim()
         : null,
     timeOfDay,
     reminderTimes,
-    weekdays: Array.isArray(draft.weekdays)
-      ? draft.weekdays
-      : [0, 1, 2, 3, 4, 5, 6],
+    weekdays:
+      recurrence === "flexible"
+        ? []
+        : Array.isArray(draft.weekdays)
+          ? draft.weekdays
+          : [0, 1, 2, 3, 4, 5, 6],
     paused: draft.paused === true,
+    weeklyTargetHistory:
+      recurrence === "flexible"
+        ? appendWeeklyTargetInterval(
+            draft.weeklyTargetHistory,
+            startDate,
+            weeklyTarget,
+          )
+        : draft.weeklyTargetHistory,
   };
 }
 
@@ -216,6 +240,10 @@ export function habitToDraft(h: Habit): HabitDraft {
     reminderTimes,
     weekdays,
     paused: h.paused === true,
+    weeklyTarget: weeklyTargetForDate(h, dateKeyFromDate(routineTodayDate())),
+    weeklyTargetHistory: Array.isArray(h.weeklyTargetHistory)
+      ? [...h.weeklyTargetHistory]
+      : [],
   };
 }
 
@@ -241,11 +269,17 @@ export function validateHabitDraft(draft: HabitDraft): HabitFormErrors {
   ) {
     errors.weekdays = "Обери хоча б один день тижня.";
   }
+  if (
+    patch.recurrence === "flexible" &&
+    (draft.weeklyTarget < 1 || draft.weeklyTarget > 7)
+  ) {
+    errors.weeklyTarget = "Обери ціль від 1 до 7 разів.";
+  }
   return errors;
 }
 
 /** Convenience: `true` if there are no validation errors. */
 export function isHabitDraftValid(draft: HabitDraft): boolean {
   const errors = validateHabitDraft(draft);
-  return !errors.name && !errors.weekdays;
+  return !errors.name && !errors.weekdays && !errors.weeklyTarget;
 }
