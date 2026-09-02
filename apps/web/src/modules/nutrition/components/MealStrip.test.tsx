@@ -143,6 +143,22 @@ describe("MealStrip", () => {
     expect(onSetGoal).toHaveBeenCalledTimes(1);
   });
 
+  it("hides the CTA when there is no norm and no navigation handler", () => {
+    // Увімкнена кнопка без обробника — це «мертвий» елемент: виглядає
+    // клікабельною і нічого не робить. Порожній стан лишається чесним.
+    render(
+      <MealStrip
+        segments={FOUR_SEGMENTS}
+        goalKcal={null}
+        remainingLabel="лишилось на сніданок"
+        macros={MACROS}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: "Задати норму" }),
+    ).not.toBeInTheDocument();
+  });
+
   it("does not render the CTA when a goal is set", () => {
     const segments: MealStripSegment[] = [
       { type: "breakfast", label: "Сніданок", kcal: 500 },

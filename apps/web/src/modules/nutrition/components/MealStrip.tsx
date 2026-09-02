@@ -58,7 +58,11 @@ export interface MealStripProps {
   /** «лишилось на …» / «лишилось сьогодні» — з `nextMealLabel`. */
   remainingLabel: string;
   macros: MealStripMacro[];
-  /** CTA-обробник, коли норми немає. */
+  /**
+   * CTA-обробник, коли норми немає. Без нього кнопка НЕ рендериться:
+   * увімкнена кнопка, яка нічого не робить, гірша за її відсутність
+   * (порожній стан лишається чесним — стрічка за фактом без залишку).
+   */
   onSetGoal?: (() => void) | undefined;
   /**
    * «Записано N із 4» — канон §5.2, неповний день лишається чесним, не
@@ -227,7 +231,7 @@ export function MealStrip({
         </p>
       )}
 
-      {goalKcal == null && (
+      {goalKcal == null && onSetGoal && (
         <div className="flex justify-center">
           <Button variant="nutrition" size="md" onClick={onSetGoal}>
             {messages.nutrition.heroStrip.ctaSetGoal}

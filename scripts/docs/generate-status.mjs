@@ -158,6 +158,20 @@ export function summariseInFlight(report) {
   return { perTracker, total, recent: all.slice(0, INFLIGHT_N) };
 }
 
+/**
+ * Українське узгодження для «N відкритий/відкритих документ(и/ів)».
+ * Форма «71 відкритих» неграматична: 71 вимагає однини, 72-74 —
+ * «відкриті документи», решта — родового множини.
+ */
+function pluralOpen(n) {
+  const abs = Math.abs(n) % 100;
+  const last = abs % 10;
+  if (abs > 10 && abs < 20) return "відкритих документів";
+  if (last === 1) return "відкритий документ";
+  if (last >= 2 && last <= 4) return "відкриті документи";
+  return "відкритих документів";
+}
+
 function fmtInFlight(item) {
   // First sentence of the status, trimmed — enough to know what's happening
   // without the full open-work prose.
@@ -223,7 +237,9 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("");
 
   // ── 🔵 Doing ──────────────────────────────────────────────────────────────
-  lines.push(`## 🔵 В роботі — ${inflight.total} відкритих`);
+  lines.push(
+    `## 🔵 В роботі — ${inflight.total} ${pluralOpen(inflight.total)}`,
+  );
   lines.push("");
   lines.push("| Трекер | Відкрито |");
   lines.push("| --- | --- |");
