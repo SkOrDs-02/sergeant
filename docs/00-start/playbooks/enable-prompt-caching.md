@@ -1,6 +1,6 @@
 # Playbook: Enable Anthropic Prompt Caching
 
-> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-10.
+> **Last touched:** 2026-08-28 by @github-actions[bot]. **Next review:** 2026-12-01.
 > **Status:** Active
 
 **Status:** ✅ active (PR-12.A, Sprint 0)

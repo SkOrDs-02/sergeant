@@ -22,6 +22,13 @@ import {
   useNutritionQuickChips,
   type QuickChip,
 } from "../hooks/useNutritionQuickChips";
+import {
+  markComposeSaved,
+  useComposeTelemetry,
+} from "../../../core/observability/composeTelemetry";
+
+/** Стабільний ключ виміру тертя — той самий на всіх відкриттях шита. */
+const NUTRITION_MEAL_COMPOSE_KEY = "nutrition:add-meal";
 
 type PantryController = ReturnType<typeof useNutritionPantries>;
 type LogController = ReturnType<typeof useNutritionLog>;
@@ -75,6 +82,22 @@ export function NutritionOverlays({
   addMealInitialStep,
   onQuickAddMeal,
 }: NutritionOverlaysProps) {
+  // Тертя запису їжі (`entry_compose_finished`, §6 контракту). Вимір
+  // висить на ЄДИНОМУ прапорці відкриття шита, а не на кнопках, які його
+  // відкривають: тих кнопок чотири (FAB, quick-chip, журнал, PWA-екшен),
+  // і телеметрія в кожній з них розійшлася б із першим же новим входом.
+  //
+  // `entry_kind` розділяє додавання і редагування: у них різний профіль
+  // тертя (в редагуванні поля вже заповнені), і схлопування їх в одне
+  // значення зробило б медіану несумісною сама з собою.
+  useComposeTelemetry({
+    key: NUTRITION_MEAL_COMPOSE_KEY,
+    open: log.addMealSheetOpen,
+    module: "nutrition",
+    entryKind: editingMeal ? "meal_edit" : "meal",
+    surface: addMealInitialStep ?? "source",
+  });
+
   const quickChips = useNutritionQuickChips(
     log.nutritionLog,
     pantry.effectiveItems,
@@ -86,8 +109,6 @@ export function NutritionOverlays({
         open={pantry.pantryManagerOpen}
         onClose={() => pantry.setPantryManagerOpen(false)}
         pantries={pantry.pantries}
-        activePantryId={pantry.activePantryId}
-        setActivePantryId={pantry.setActivePantryId}
         pantryForm={pantry.pantryForm}
         setPantryForm={pantry.setPantryForm}
         busy={busy}
@@ -95,31 +116,22 @@ export function NutritionOverlays({
         onBeginCreate={pantry.beginCreatePantry}
         onBeginRename={pantry.beginRenamePantry}
         onBeginDelete={pantry.beginDeletePantry}
+        redistributePlan={pantry.redistributePlan}
+        onRedistribute={pantry.applyRedistribute}
       />
 
+      {/*
+        Видаляються лише ВЛАСНІ місця — три відомі лишаються завжди, бо
+        вони адреси автовизначення. Гейт стоїть у хуку
+        (`beginDeletePantry`), тут — лише підтвердження.
+      */}
       <ConfirmDialog
         open={pantry.confirmDeleteOpen}
-        title="Видалити комору?"
-        description={
-          (Array.isArray(pantry.pantries) ? pantry.pantries.length : 0) <= 1
-            ? "Не можна видалити останню комору."
-            : "Це прибере всі продукти в ньому. Дію не можна відмінити."
-        }
+        title="Видалити місце?"
+        description="Це прибере всі продукти в ньому. Дію не можна відмінити."
         confirmLabel="Видалити"
         danger
-        onConfirm={() => {
-          // Mirror the original `ConfirmDeleteSheet` guard: if only one
-          // pantry remains we swallow the confirm so deletion is a no-op.
-          // The warning description above already communicates that state.
-          const count = Array.isArray(pantry.pantries)
-            ? pantry.pantries.length
-            : 0;
-          if (count <= 1) {
-            pantry.setConfirmDeleteOpen(false);
-            return;
-          }
-          pantry.onConfirmDeletePantry();
-        }}
+        onConfirm={pantry.onConfirmDeletePantry}
         onCancel={() => pantry.setConfirmDeleteOpen(false)}
       />
 
@@ -133,6 +145,7 @@ export function NutritionOverlays({
           }))
         }
         onSave={pantry.onSaveItemEdit}
+        places={pantry.pantries}
       />
 
       <PantryVariantChoiceSheet
@@ -153,7 +166,14 @@ export function NutritionOverlays({
           log.setAddMealSheetOpen(false);
           setEditingMeal(null);
         }}
-        onSave={wrappedSaveMeal}
+        onSave={(meal, photoFile) => {
+          // Позначка ДО консюмерського шляху: подію емітить закриття шита
+          // (перехід `open` → false), і воно прилітає вже після цього
+          // виклику. Без позначки збережений запис пішов би в статистику
+          // як `abandoned`.
+          markComposeSaved(NUTRITION_MEAL_COMPOSE_KEY);
+          return wrappedSaveMeal(meal, photoFile);
+        }}
         initialStep={addMealInitialStep}
         initialMeal={editingMeal}
         mealTemplates={prefs.mealTemplates || []}

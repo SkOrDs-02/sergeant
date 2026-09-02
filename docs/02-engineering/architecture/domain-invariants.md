@@ -1,6 +1,6 @@
 # Domain invariants
 
-> **Last touched:** 2026-08-18 by @claude (анти-патерн #7: читання tombstone-нутого LS-ключа після міграції у SQLite). **Next review:** 2026-11-06.
+> **Last touched:** 2026-08-18 by @claude (анти-патерн #7: читання tombstone-нутого LS-ключа після міграції у SQLite). **Next review:** 2026-12-03.
 > **Status:** Active
 
 > Things that bite hard if assumed wrong. Compact pointer in [`AGENTS.md § Domain invariants`](../../../AGENTS.md#domain-invariants); deep prose lives here. Treat this file as canonical when web ↔ mobile ↔ server logic disagrees.

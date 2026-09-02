@@ -1,6 +1,6 @@
 # Playbook: Enable / Operate Silpo Integration
 
-> **Last touched:** 2026-08-25 by @Skords-01. **Next review:** 2026-12-18.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-04.
 > **Status:** Active
 
 **Trigger:** вмикаємо `SILPO_ENABLED` у проді вперше · користувачі скаржаться,

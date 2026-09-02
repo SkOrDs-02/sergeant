@@ -26,17 +26,17 @@ describe("resolveSentryRelease (L9)", () => {
     ).toBe("v1.2.3");
   });
 
-  it("віддає перевагу Railway SHA коли немає явного `SENTRY_RELEASE`", () => {
+  it("віддає перевагу GIT_SHA (Coolify/ghcr) коли немає явного `SENTRY_RELEASE`", () => {
     expect(
       resolveSentryRelease({
-        RAILWAY_GIT_COMMIT_SHA: "abc123",
+        GIT_SHA: "abc123",
         VERCEL_GIT_COMMIT_SHA: "def456",
         GITHUB_SHA: "ghi789",
       }),
     ).toBe("abc123");
   });
 
-  it("падає на Vercel SHA коли немає Railway", () => {
+  it("падає на Vercel SHA коли немає GIT_SHA", () => {
     expect(
       resolveSentryRelease({
         VERCEL_GIT_COMMIT_SHA: "def456",
@@ -57,7 +57,7 @@ describe("resolveSentryRelease (L9)", () => {
     expect(
       resolveSentryRelease({
         SENTRY_RELEASE: "",
-        RAILWAY_GIT_COMMIT_SHA: "   ",
+        GIT_SHA: "   ",
         VERCEL_GIT_COMMIT_SHA: "real-sha",
       }),
     ).toBe("real-sha");

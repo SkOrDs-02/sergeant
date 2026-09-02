@@ -203,6 +203,11 @@ describe("ANALYTICS_EVENTS registry", () => {
     // Стабільний крос-девайсний advice_id (беta-хардненінг).
     expect(ANALYTICS_EVENTS.ADVICE_SHOWN).toBe("advice_shown");
     expect(ANALYTICS_EVENTS.ADVICE_DISMISSED).toBe("advice_dismissed");
+
+    // Тертя запису: «від кнопки до збереженого».
+    expect(ANALYTICS_EVENTS.ENTRY_COMPOSE_FINISHED).toBe(
+      "entry_compose_finished",
+    );
   });
 
   it("keeps the Wave-2 value-loop group reachable through the single registry", () => {
@@ -231,6 +236,7 @@ describe("ANALYTICS_EVENTS registry", () => {
       ANALYTICS_EVENTS.ROUTINE_STREAK_SHOWN,
       ANALYTICS_EVENTS.ADVICE_SHOWN,
       ANALYTICS_EVENTS.ADVICE_DISMISSED,
+      ANALYTICS_EVENTS.ENTRY_COMPOSE_FINISHED,
     ];
 
     // Тип мусить лишатись ЛІТЕРАЛЬНИМ після spread-у, а не розширитись до

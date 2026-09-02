@@ -4,8 +4,65 @@
 import type { Pantry } from "./nutritionTypes.js";
 import type { PantryItem, PantryItemSource } from "./pantryTextParser.js";
 
+export interface StoragePlace {
+  readonly id: string;
+  readonly name: string;
+}
+
+/**
+ * Місця зберігання: комора перестала бути одним контекстом і стала
+ * набором місць у межах одного дому.
+ *
+ * AI-CONTEXT: id тут фіксовані, бо автовизначення місця (`placeForFood`)
+ * має куди класти результат, а назву людина може перейменувати будь-коли.
+ * Id дефолтного місця лишається `home` — це id наявної комори і в
+ * `nutrition_pantries`, і в append-only журналі руху (ADR-0077). Змінити
+ * його на `pantry` заради красивішого рядка означало б осиротити історію
+ * подій, тобто переписати минуле там, де ADR це прямо забороняє.
+ */
+export const STORAGE_PLACES: readonly StoragePlace[] = [
+  { id: "fridge", name: "Холодильник" },
+  { id: "freezer", name: "Морозилка" },
+  { id: "home", name: "Комора" },
+];
+
+export const DEFAULT_PLACE_ID = "home";
+
+const KNOWN_PLACE_IDS = new Set(STORAGE_PLACES.map((p) => p.id));
+
+/** Легасі-назва дефолтної комори до введення місць зберігання. */
+const LEGACY_DEFAULT_NAME = "Дім";
+
+export function isKnownStoragePlace(id: unknown): boolean {
+  return KNOWN_PLACE_IDS.has(String(id));
+}
+
 export function makeDefaultPantry(): Pantry {
-  return { id: "home", name: "Дім", items: [], text: "" };
+  return { id: DEFAULT_PLACE_ID, name: "Комора", items: [], text: "" };
+}
+
+/**
+ * Гарантує наявність трьох відомих місць, не рухаючи жодної позиції.
+ *
+ * Холодильник і морозилка створюються ПОРОЖНІМИ (спека § «Наявні дані не
+ * переїжджають мовчки»): розкладання наявного запасу — окрема дія людини,
+ * бо в append-only ledger-і це подія історії, а не косметика.
+ */
+export function ensureStoragePlaces(
+  raw: Pantry[] | null | undefined,
+): Pantry[] {
+  const arr = Array.isArray(raw) ? raw : [];
+  const byId = new Map(arr.map((p) => [p.id, p]));
+  const known = STORAGE_PLACES.map((place): Pantry => {
+    const existing = byId.get(place.id);
+    if (!existing)
+      return { id: place.id, name: place.name, items: [], text: "" };
+    // Перейменування від людини лишається; переїжджає лише легасі-дефолт.
+    return existing.name === LEGACY_DEFAULT_NAME
+      ? { ...existing, name: place.name }
+      : existing;
+  });
+  return [...known, ...arr.filter((p) => !KNOWN_PLACE_IDS.has(p.id))];
 }
 
 /**

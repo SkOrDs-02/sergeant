@@ -1,6 +1,6 @@
 # Інфра-модуль Billing
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-05.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-03.
 > **Status:** Active
 
 Контекст: `Read .agents/skills/sergeant-module-billing/SKILL.md` (журнал рішень — у самому скілі).

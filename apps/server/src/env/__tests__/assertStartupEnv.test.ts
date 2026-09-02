@@ -52,7 +52,7 @@ const PROD_BASELINE = {
 };
 
 describe("isDeployedProduction — host-agnostic prod detection", () => {
-  it("returns true under the Coolify env shape (NODE_ENV=production, no RAILWAY_*)", () => {
+  it("returns true under the Coolify env shape (NODE_ENV=production)", () => {
     expect(isDeployedProduction({ NODE_ENV: "production" })).toBe(true);
   });
 
@@ -60,15 +60,6 @@ describe("isDeployedProduction — host-agnostic prod detection", () => {
     expect(isDeployedProduction({ APP_ENV: "production" })).toBe(true);
     expect(
       isDeployedProduction({ NODE_ENV: "test", APP_ENV: "production" }),
-    ).toBe(true);
-  });
-
-  it("returns true via legacy Railway signals", () => {
-    expect(
-      isDeployedProduction({ NODE_ENV: "test", RAILWAY_ENVIRONMENT: "prod" }),
-    ).toBe(true);
-    expect(
-      isDeployedProduction({ NODE_ENV: "test", RAILWAY_SERVICE_NAME: "api" }),
     ).toBe(true);
   });
 
@@ -102,27 +93,18 @@ describe("assertStartupEnv — AI_QUOTA_DISABLED hard-block (H9)", () => {
     expect(() => assertStartupEnv()).toThrow(/AI_QUOTA_DISABLED/);
   });
 
-  it("throws when only RAILWAY_ENVIRONMENT is set (Railway prod without NODE_ENV)", async () => {
+  it("does not treat retired Railway env names as production (ADR-0074)", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       ...PROD_BASELINE,
       NODE_ENV: "test",
       RAILWAY_ENVIRONMENT: "production",
-      AI_QUOTA_DISABLED: "true",
-    });
-    expect(() => assertStartupEnv()).toThrow(/AI_QUOTA_DISABLED/);
-  });
-
-  it("throws when only RAILWAY_SERVICE_NAME is set", async () => {
-    const assertStartupEnv = await loadAssertStartupEnv({
-      ...PROD_BASELINE,
-      NODE_ENV: "test",
       RAILWAY_SERVICE_NAME: "sergeant-api",
       AI_QUOTA_DISABLED: "true",
     });
-    expect(() => assertStartupEnv()).toThrow(/AI_QUOTA_DISABLED/);
+    expect(() => assertStartupEnv()).not.toThrow();
   });
 
-  it("throws via APP_ENV=production on Coolify (no NODE_ENV=production, no RAILWAY_*)", async () => {
+  it("throws via APP_ENV=production on Coolify (no NODE_ENV=production)", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       ...PROD_BASELINE,
       NODE_ENV: "test",
@@ -203,11 +185,11 @@ describe("assertStartupEnv — Hard Rule #20: no OpenClaw PAT in production", ()
     expect(() => assertStartupEnv()).toThrow(/OPENCLAW_GITHUB_PAT, Git_PAT/);
   });
 
-  it("throws under Railway prod even without NODE_ENV=production", async () => {
+  it("throws via APP_ENV=production even without NODE_ENV=production", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       ...PROD_BASELINE,
       NODE_ENV: "test",
-      RAILWAY_ENVIRONMENT: "production",
+      APP_ENV: "production",
       OPENCLAW_GITHUB_PAT: "ghp_a",
     });
     expect(() => assertStartupEnv()).toThrow(/Hard Rule #20/);
@@ -526,11 +508,11 @@ describe("assertStartupEnv — AI_MEMORY_ENABLED requires VOYAGE_API_KEY (D3)", 
     expect(() => assertStartupEnv()).toThrow(/VOYAGE_API_KEY/);
   });
 
-  it("throws під Railway prod без NODE_ENV=production", async () => {
+  it("throws через APP_ENV=production без NODE_ENV=production", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       ...PROD_BASELINE,
       NODE_ENV: "test",
-      RAILWAY_ENVIRONMENT: "production",
+      APP_ENV: "production",
       AI_MEMORY_ENABLED: "true",
       VOYAGE_API_KEY: "",
     });
@@ -700,11 +682,11 @@ describe("assertStartupEnv — SENTRY_DSN required in production (audit 2026-06-
     expect(() => assertStartupEnv()).toThrow(/SENTRY_DSN/);
   });
 
-  it("throws under Railway prod even without NODE_ENV=production", async () => {
+  it("throws via APP_ENV=production even without NODE_ENV=production", async () => {
     const assertStartupEnv = await loadAssertStartupEnv({
       ...SENTRY_MISSING_BASELINE,
       NODE_ENV: "test",
-      RAILWAY_ENVIRONMENT: "production",
+      APP_ENV: "production",
     });
     expect(() => assertStartupEnv()).toThrow(/SENTRY_DSN/);
   });

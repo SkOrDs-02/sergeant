@@ -15,7 +15,7 @@ describe("resolveServerBuildId", () => {
     expect(
       resolveServerBuildId({
         SENTRY_RELEASE: "   ",
-        RAILWAY_GIT_COMMIT_SHA: "   ",
+        GIT_SHA: "   ",
       }),
     ).toBeNull();
   });
@@ -24,7 +24,7 @@ describe("resolveServerBuildId", () => {
     expect(
       resolveServerBuildId({
         SENTRY_RELEASE: "explicit",
-        RAILWAY_GIT_COMMIT_SHA: "railsha",
+        GIT_SHA: "gitsha0",
         VERCEL_GIT_COMMIT_SHA: "vercel0",
         GITHUB_SHA: "github0",
         BUILD_ID: "build00",
@@ -32,13 +32,13 @@ describe("resolveServerBuildId", () => {
     ).toBe("explici");
   });
 
-  it("падає на RAILWAY_GIT_COMMIT_SHA коли SENTRY_RELEASE відсутній", () => {
+  it("падає на GIT_SHA (Coolify/ghcr build-arg) коли SENTRY_RELEASE відсутній", () => {
     expect(
       resolveServerBuildId({
-        RAILWAY_GIT_COMMIT_SHA: "railwayfull",
+        GIT_SHA: "gitshafull",
         VERCEL_GIT_COMMIT_SHA: "vercelfull",
       }),
-    ).toBe("railway");
+    ).toBe("gitshaf");
   });
 
   it("падає на VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID", () => {
@@ -61,7 +61,7 @@ describe("resolveServerBuildId", () => {
 describe("serverBuildIdMiddleware", () => {
   it("ставить X-Server-Build-Id коли env містить SHA", async () => {
     const app = express();
-    app.use(serverBuildIdMiddleware({ RAILWAY_GIT_COMMIT_SHA: "abc1234567" }));
+    app.use(serverBuildIdMiddleware({ GIT_SHA: "abc1234567" }));
     app.get("/ping", (_req, res) => res.json({ ok: true }));
 
     const res = await request(app).get("/ping");

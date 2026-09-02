@@ -58,7 +58,6 @@ export default defineConfig(({ mode }) => {
     process.env.SENTRY_RELEASE ||
     process.env.VERCEL_GIT_COMMIT_SHA ||
     process.env.GITHUB_SHA ||
-    process.env.RAILWAY_GIT_COMMIT_SHA ||
     "";
   if (sentryReleaseSha && !process.env.VITE_SENTRY_RELEASE) {
     process.env.VITE_SENTRY_RELEASE = sentryReleaseSha;

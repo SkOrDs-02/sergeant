@@ -1,6 +1,6 @@
 # Продуктовий аудит 2026-09: тестові акаунти і наповнення
 
-> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-01.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-10-16.
 > **Status:** Active
 
 Матриця тимчасових акаунтів для прогону за [`README.md`](./README.md). Кожен

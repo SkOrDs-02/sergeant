@@ -1,6 +1,6 @@
 # @sergeant/landing
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-26.
+> **Last touched:** 2026-09-02 by @Skords-01. **Next review:** 2026-12-05.
 > **Status:** Active
 
 Маркетинговий лендінг Sergeant. Одна сторінка, одна дія — перехід у
@@ -16,13 +16,19 @@ pnpm --filter @sergeant/landing dev     # http://localhost:3100
 Бекенд не потрібен ні для запуску, ні для роботи: сторінка не робить жодного
 запиту до API — конверсія веде на `t.me`.
 
-## Перевірки
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/landing <script>`.
 
 ```bash
-pnpm --filter @sergeant/landing lint
-pnpm --filter @sergeant/landing typecheck
-pnpm --filter @sergeant/landing test
-pnpm --filter @sergeant/landing build
+pnpm --filter @sergeant/landing dev             # Vite dev-сервер → http://localhost:3100
+pnpm --filter @sergeant/landing build           # клієнтська + SSR-збірка, post-build SEO і prerender сторінок
+pnpm --filter @sergeant/landing preview         # превʼю збірки на :3100
+pnpm --filter @sergeant/landing lint            # ESLint
+pnpm --filter @sergeant/landing test            # Vitest
+pnpm --filter @sergeant/landing typecheck       # TypeScript
+pnpm --filter @sergeant/landing shots           # скріншоти сторінок (`scripts/shot-pages.mjs`)
+pnpm --filter @sergeant/landing verify:browser  # браузерна перевірка збірки (`scripts/verify-browser.mjs`)
 ```
 
 ## Деплой на Vercel
@@ -55,6 +61,21 @@ pnpm --filter @sergeant/landing build
 
 `VITE_*` вкомпільовуються в бандл під час білду, а не читаються в рантаймі —
 зміна такої змінної в UI не діє, поки не перебілдиш.
+
+### 404 і статичні маршрути
+
+У `vercel.json` немає catch-all rewrite. Кожен маршрут із `routeMeta.json`
+існує як `dist/<path>/index.html` (postbuild-seo + prerender), а для
+невідомого шляху Vercel віддає `dist/404.html` зі статусом 404: її кладе
+`prerender.mjs` з тіла маршруту `/404`. До 2026-09-02 rewrite віддавав 200 і
+пререндер головної на будь-який битий URL, тобто soft-404 (знахідка
+GEO-аудиту 2026-08-27, P1-1), і краулер індексував дубль головної під кожним
+таким URL. Перевірка після деплою:
+
+```bash
+curl -o /dev/null -w "%{http_code}\n" https://sergeant.com.ua/nope     # 404
+curl -o /dev/null -w "%{http_code}\n" https://sergeant.com.ua/hroshi   # 200
+```
 
 ### Якщо тут колись зʼявиться запит до API
 

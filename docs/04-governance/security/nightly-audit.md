@@ -1,6 +1,6 @@
 # Nightly-audit — потік triage
 
-> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-05.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-09-14.
 > **Status:** Active
 
 ## Огляд

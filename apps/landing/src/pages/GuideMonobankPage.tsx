@@ -2,6 +2,7 @@ import SiteLayout from "../components/SiteLayout";
 import GuideHomeModule from "../components/GuideHomeModule";
 import MonoAccessTable from "../components/MonoAccessTable";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import UpdatedOn from "../components/UpdatedOn";
 
 const STEPS = [
   "Відкрий api.monobank.ua і авторизуйся через застосунок банку: QR-кодом, як звичайний вхід.",
@@ -21,7 +22,7 @@ export default function GuideMonobankPage() {
       headline:
         "Як підʼєднати Monobank до трекера витрат – і що він реально бачить",
       inLanguage: "uk",
-      dateModified: "2026-08-28",
+      dateModified: ROUTE_META["/guides/monobank"].lastmod,
       author: { "@type": "Person", name: "Автор Sergeant" },
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
@@ -41,7 +42,8 @@ export default function GuideMonobankPage() {
             Як підʼєднати Monobank до трекера витрат – і що він реально бачить
           </h1>
           <p className="mt-4 text-sm text-subtle">
-            Оновлено 28.08.2026 · автор Sergeant
+            Оновлено <UpdatedOn iso={ROUTE_META["/guides/monobank"].lastmod} />{" "}
+            · автор Sergeant
           </p>
           <GuideHomeModule href="/hroshi" label="Гроші" />
         </div>

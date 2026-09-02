@@ -131,13 +131,10 @@ describe("useNutritionPantries", () => {
     });
   });
 
-  describe("regression: pantryId captured at mutate-time (issue #189)", () => {
-    it("merges parsed items into the ORIGINAL pantry even if user switches active pantry mid-flight", async () => {
+  describe("розбір списку кладе позиції по місцях", () => {
+    it("розкладає підтверджені позиції за суттю, а не в одну купу", async () => {
       seedPantries(
-        [
-          { id: "home", name: "Дім", items: [], text: "молоко" },
-          { id: "work", name: "Робота", items: [], text: "" },
-        ],
+        [{ id: "home", name: "Дім", items: [], text: "молоко" }],
         "home",
       );
 
@@ -153,24 +150,19 @@ describe("useNutritionPantries", () => {
       );
 
       const { result } = renderHarness();
-      expect(result.current.activePantryId).toBe("home");
 
-      // Kick off parse — captures pantryId = "home" at mutate-time.
       act(() => {
         result.current.parsePantry();
       });
-      // Wait for mutationFn to actually invoke the mock (resolveParse set).
       await waitFor(() => expect(apiParsePantry).toHaveBeenCalled());
 
-      // User switches to "work" while API is still in flight.
-      act(() => {
-        result.current.setActivePantryId("work");
-      });
-      expect(result.current.activePantryId).toBe("work");
-
-      // Now resolve — items must still go to "home", not "work".
       await act(async () => {
-        resolveParse!({ items: [{ name: "молоко", qty: 1, unit: "л" }] });
+        resolveParse!({
+          items: [
+            { name: "молоко", qty: 1, unit: "л" },
+            { name: "пельмені", qty: 1, unit: "кг" },
+          ],
+        });
       });
 
       await waitFor(() => expect(result.current.parsePreview).not.toBeNull());
@@ -178,19 +170,22 @@ describe("useNutritionPantries", () => {
         result.current.confirmParsePreview(result.current.parsePreview!.items);
       });
 
-      await waitFor(() => {
-        const home = result.current.pantries.find(
-          (p: Pantry) => p.id === "home",
-        );
-        expect(home?.items?.length).toBe(1);
-      });
+      await waitFor(() =>
+        expect(result.current.pantryItems.length).toBeGreaterThan(0),
+      );
 
+      const fridge = result.current.pantries.find(
+        (p: Pantry) => p.id === "fridge",
+      );
+      const freezer = result.current.pantries.find(
+        (p: Pantry) => p.id === "freezer",
+      );
       const home = result.current.pantries.find((p: Pantry) => p.id === "home");
-      const work = result.current.pantries.find((p: Pantry) => p.id === "work");
-      expect(home!.items[0]!.name).toBe("молоко");
-      expect(work!.items).toEqual([]);
-      // Active remained "work" (user's choice).
-      expect(result.current.activePantryId).toBe("work");
+      expect(fridge!.items.map((i) => i.name)).toEqual(["молоко"]);
+      expect(freezer!.items.map((i) => i.name)).toEqual(["пельмені"]);
+      expect(home!.items).toEqual([]);
+      // Чернетка тексту очистилась саме там, де жила.
+      expect(home!.text).toBe("");
     });
   });
 });

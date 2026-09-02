@@ -39,7 +39,7 @@
 //                    that will be translated in a follow-up commit.
 //   --json         — emit machine-readable JSON instead of human output.
 //
-// Linked initiative: docs/90-work/initiatives/archive/_0009-agent-os-hardening.md (PR 1.2).
+// Linked initiative: https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md (PR 1.2).
 
 import { readdirSync, readFileSync, statSync } from "node:fs";
 import { dirname, join, relative, resolve, basename } from "node:path";

@@ -65,8 +65,6 @@
       "audienceTier": "P1",
       "hmacSigned": false,
       "requiredEnv": [
-        "RAILWAY_TOKEN",
-        "RAILWAY_PROJECT_ID",
         "TELEGRAM_ALERT_CHAT_ID",
         "TELEGRAM_TOPIC_OPS",
         "TELEGRAM_TOPIC_INCIDENTS",
@@ -77,7 +75,7 @@
         "Sergeant Postgres (sergeant-db)",
         "Telegram (Sergeant_alert_bot)"
       ],
-      "notes": "Cron 03:00 UTC → Railway API latest deployments → Sanity SQL check → Telegram OK / CRITICAL+ack-row. Wave 3 §3.2 (ADR-0038): the CRITICAL branch posts an idempotent row to /api/internal/alerts/post and adds a 3-button inline-keyboard (✅ Прочитав / 🔄 Розбираю / 🔕 Замутити 30хв) — clicks land in WF-104. Reference impl for the alert ack-button surface; other 17 alert workflows wired in follow-up sub-PRs."
+      "notes": "Cron 03:00 UTC → Sanity SQL check (user_count, mono_transaction count) → Telegram OK / CRITICAL+ack-row. Крок Railway API прибрано (ADR-0074, Railway retired); тижневий restore-rehearsal — GitHub Actions `db-backup-verify.yml`. Wave 3 §3.2 (ADR-0038): the CRITICAL branch posts an idempotent row to /api/internal/alerts/post and adds a 3-button inline-keyboard (✅ Прочитав / 🔄 Розбираю / 🔕 Замутити 30хв) — clicks land in WF-104. Reference impl for the alert ack-button surface; other 17 alert workflows wired in follow-up sub-PRs."
     },
     "05-renovate-pr-auto-handler.json": {
       "owner": "devex",

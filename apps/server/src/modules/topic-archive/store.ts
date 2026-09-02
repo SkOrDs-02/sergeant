@@ -1,7 +1,7 @@
 /**
  * DB helpers for `tg_topic_archive` (migration 047). Backs
- * `read_telegram_topic_history` (ADR-0031 §5; OpenClaw roadmap Phase 3 /
- * Pain P8).
+ * `read_telegram_topic_history` (ADR-0031 §5; historically the OpenClaw
+ * roadmap Phase 3 / Pain P8 — gateway removed, ADR-0075).
  *
  * Pure functions over a `pg.Pool`. No caching, no singletons. Same
  * pattern as `modules/alerts/store.ts` and `modules/openclaw/store.ts`.

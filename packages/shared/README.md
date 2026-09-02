@@ -26,11 +26,17 @@ import { ChatRequestSchema, MeResponseSchema } from "@sergeant/shared";
 import { toKyivDate, macros } from "@sergeant/shared";
 ```
 
-## Тести
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/shared <script>`.
 
 ```bash
-pnpm --filter @sergeant/shared test       # Vitest
-pnpm --filter @sergeant/shared typecheck
+pnpm --filter @sergeant/shared typecheck       # TypeScript
+pnpm --filter @sergeant/shared lint            # ESLint
+pnpm --filter @sergeant/shared test            # Vitest (`TZ=Europe/Kyiv`)
+pnpm --filter @sergeant/shared test:watch      # Vitest у watch-режимі
+pnpm --filter @sergeant/shared test:coverage   # Vitest з покриттям
+pnpm --filter @sergeant/shared mutation:utils  # Stryker mutation-тести утиліт
 ```
 
 ## Глибше

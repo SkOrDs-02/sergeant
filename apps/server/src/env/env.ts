@@ -112,10 +112,6 @@ const envSchema = z.object({
 
   ALLOWED_ORIGIN_REGEX: z.string().optional(),
 
-  RAILWAY_ENVIRONMENT: z.string().optional(),
-  RAILWAY_SERVICE_NAME: z.string().optional(),
-  RAILWAY_GIT_COMMIT_SHA: z.string().optional(),
-
   GIT_SHA: z.string().optional(),
 
   GIT_COMMIT: z.string().optional(),
@@ -639,10 +635,7 @@ export function isDeployedProduction(
   procEnv: NodeJS.ProcessEnv = process.env,
 ): boolean {
   return (
-    procEnv["NODE_ENV"] === "production" ||
-    procEnv["APP_ENV"] === "production" ||
-    Boolean(procEnv["RAILWAY_ENVIRONMENT"]) ||
-    Boolean(procEnv["RAILWAY_SERVICE_NAME"])
+    procEnv["NODE_ENV"] === "production" || procEnv["APP_ENV"] === "production"
   );
 }
 
@@ -835,7 +828,7 @@ export function assertStartupEnv(): void {
 
   if (isProduction && env.AI_QUOTA_DISABLED) {
     throw new Error(
-      "AI_QUOTA_DISABLED MUST NOT be set in production. It disables every per-user / per-IP AI cap and lets clients burn the entire Anthropic budget. If you really need this in production (e.g. emergency disable of the quota subsystem itself), unset NODE_ENV / APP_ENV / RAILWAY_ENVIRONMENT for that run, document the reason in the runbook, and remove the override immediately after.",
+      "AI_QUOTA_DISABLED MUST NOT be set in production. It disables every per-user / per-IP AI cap and lets clients burn the entire Anthropic budget. If you really need this in production (e.g. emergency disable of the quota subsystem itself), unset NODE_ENV / APP_ENV for that run, document the reason in the runbook, and remove the override immediately after.",
     );
   }
 
@@ -934,7 +927,7 @@ export function assertStartupEnv(): void {
 
   if (isProduction && !env.SENTRY_DSN) {
     throw new Error(
-      "SENTRY_DSN is required in production. Without it server exceptions are invisible — the Sentry → n8n → Telegram alert chain never fires while /health stays green. Copy the DSN from sentry.io → Project Settings → Client Keys (DSN). For a deliberate no-Sentry run, unset NODE_ENV/APP_ENV/RAILWAY_ENVIRONMENT for that run and document the reason in the runbook.",
+      "SENTRY_DSN is required in production. Without it server exceptions are invisible — the Sentry → n8n → Telegram alert chain never fires while /health stays green. Copy the DSN from sentry.io → Project Settings → Client Keys (DSN). For a deliberate no-Sentry run, unset NODE_ENV/APP_ENV for that run and document the reason in the runbook.",
     );
   } else if (!env.SENTRY_DSN) {
     warnings.push("SENTRY_DSN is not set — error tracking is disabled.");

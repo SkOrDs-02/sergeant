@@ -15,8 +15,8 @@ import {
 } from "./foodCategories.js";
 
 describe("FOOD_CATEGORIES catalog", () => {
-  it("має 17 базових категорій", () => {
-    expect(FOOD_CATEGORIES).toHaveLength(17);
+  it("має 16 базових категорій", () => {
+    expect(FOOD_CATEGORIES).toHaveLength(16);
   });
 
   it("всі id унікальні", () => {
@@ -52,7 +52,6 @@ describe("FOOD_CATEGORIES catalog", () => {
       "sauces",
       "nuts_seeds",
       "canned",
-      "frozen",
       "vegetables",
       "legumes",
       "fruits",
@@ -93,7 +92,6 @@ describe("FOOD_CATEGORIES catalog", () => {
     expect(categorizeFood("щось геть невпізнаване").collapseBrand).toBe(false);
     for (const id of [
       "nuts_seeds",
-      "frozen",
       "canned",
       "sauces",
       "ready_meals",
@@ -164,7 +162,7 @@ describe("categorizeFood", () => {
     ["Шоколад молочний", "sweets_snacks"],
     ["Кока-Кола Zero", "drinks"],
     ["Оливки зелені без кісточки", "canned"],
-    ["Овочі заморожені", "frozen"],
+    ["Овочі заморожені", "vegetables"],
   ])("'%s' → %s", (input, expectedId) => {
     expect(categorizeFood(input).id).toBe(expectedId);
   });
@@ -225,13 +223,28 @@ describe("categorizeFood", () => {
 // хибну категорію через короткий корінь у чужому слові («г-риб-и» →
 // риба). Цей гейт робить той самий прогін частиною CI, тож нова позиція
 // корпусу без даху червонить збірку одразу, а не через місяць у UI.
+// Корпусна категорія «Заморожене» навмисно лишилась без відповідника в
+// коморі: заморожене — це МІСЦЕ, а не смак, тож категорії `frozen` більше
+// немає (спека `pantry-storage-places` §6). Її шість записів розходяться
+// по суті, чого мапа категорія→категорія зробити не вміє, тому очікування
+// задане поіменно — і саме цей набір стереже, що вони не осіли в «Іншому».
+const FROZEN_CORPUS_EXPECTED: Readonly<Record<string, string>> = {
+  "Млинці заморожені": "ready_meals",
+  "Пельмені заморожені": "ready_meals",
+  "Вареники заморожені": "ready_meals",
+  "Котлета рибна": "ready_meals",
+  "Ягоди заморожені": "fruits",
+  "Овочева суміш заморожена": "vegetables",
+};
+
 describe("гейт 1 — корпус GENERIC_FOODS покритий цілком", () => {
   it("кожна категорія корпусу має відповідник у каталозі комори", () => {
     const known = new Set(FOOD_CATEGORIES.map((c) => c.id));
     const unmapped = [...new Set(GENERIC_FOODS.map((f) => f.category))].filter(
-      (c) => !CORPUS_CATEGORY_TO_ID[c],
+      (c) => c !== "Заморожене" && !CORPUS_CATEGORY_TO_ID[c],
     );
     expect(unmapped).toEqual([]);
+    expect(CORPUS_CATEGORY_TO_ID["Заморожене"]).toBeUndefined();
 
     const danglingTargets = Object.entries(CORPUS_CATEGORY_TO_ID)
       .filter(([, id]) => !known.has(id))
@@ -244,7 +257,8 @@ describe("гейт 1 — корпус GENERIC_FOODS покритий цілко�
       const expected =
         food.alcohol_g != null
           ? "alcohol"
-          : CORPUS_CATEGORY_TO_ID[food.category];
+          : (FROZEN_CORPUS_EXPECTED[food.name] ??
+            CORPUS_CATEGORY_TO_ID[food.category]);
       const actual = categorizeFood(food.name).id;
       return actual === expected
         ? null
@@ -295,9 +309,16 @@ describe("гейт 2 — брендові назви з реальних чек�
     ["Удон з куркою та печерицями в соусі терияки", "ready_meals"],
     ["Онігірі з куркою та соусом кімчі", "ready_meals"],
     ["Рол з сосискою", "ready_meals"],
-    ["Курячий шашлик з ананасом", "meat"],
+    // Спершу цей рядок стояв як `meat`: він падав у фрукти на «ананасом»,
+    // і я витяг його в мʼясо. Скріншот комори власника 2026-09-01 показав,
+    // що ціль була не та — шашлик із вітрини це готова страва.
+    ["Курячий шашлик з ананасом", "ready_meals"],
     ["Холодник зі свининою та вареною ковбасою", "ready_meals"],
     ["Айран Премія 1,8% пл", "dairy_eggs"],
+    // Родова назва категорії має впізнаватись не гірше за конкретний
+    // продукт: «мʼясо» падало в «Інше», поки «Куряча грудка» лягала вірно.
+    ["мʼясо 500 г", "meat"],
+    ["Мʼясо яловиче охолоджене", "meat"],
     ["Форель, стейк охолоджений", "fish"],
     ["Хліб Сумська Паляниця Grains тостовий нарізний", "grains"],
   ])("'%s' → %s (регресія з живого чека)", (input, expectedId) => {
@@ -312,6 +333,56 @@ describe("гейт 2 — брендові назви з реальних чек�
     "Виріб тютюновий д/елек нагр Terea Sun Pearl",
   ])("'%s' лишається в «Іншому»", (input) => {
     expect(categorizeFood(input).id).toBe("other");
+  });
+
+  // Звіт власника 2026-09-01 зі скріншотом комори: готова кулінарія
+  // розтеклась по трьох чужих категоріях, бо страву впізнавали за
+  // інгредієнтом, а не за формою. Ліва колонка — те, що бачив власник.
+  it.each([
+    // їхало в Консерви на корені «маринован»
+    ["Салат з баликом та маринованими огірками", "ready_meals"],
+    // їхало в Мʼясо
+    ["Холодець по-домашньому в упаковці", "ready_meals"],
+    ["Курячий шашлик з ананасом", "ready_meals"],
+    ["Сосиска в здобному тісті", "ready_meals"],
+    // їхало в Овочі: будь-який салат із вітрини поза корпусом
+    ["Салат вітамінний ваговий", "ready_meals"],
+    ["Салат олівʼє 300 г", "ready_meals"],
+  ])("'%s' → %s (вітрина готової їжі)", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
+  });
+
+  // Питання власника 2026-09-01: чи відрізняти шашлик, замаринований
+  // удома, від купленого готовим. Відповідь у словнику, не в новому полі
+  // моделі: різницю несе стан продукту, і людина називає його по-різному.
+  // Хто маринує сам, пише «мʼясо / шия», хто купив — «шашлик».
+  it.each([
+    ["Мʼясо мариноване для шашлику", "meat"],
+    ["Шия свиняча маринована", "meat"],
+    ["Свиняча шия охолоджена", "meat"],
+    ["Свинина для шашлику", "meat"],
+  ])("'%s' → %s (сировина для домашнього шашлику)", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
+  });
+
+  it.each([
+    ["Шашлик свинячий", "ready_meals"],
+    ["Шашлик з курки готовий", "ready_meals"],
+  ])("'%s' → %s (куплений готовим)", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
+  });
+
+  // Зворотний бік тієї ж правки: слово страви не має тягнути за собою
+  // сировину й напівфабрикати.
+  it.each([
+    ["Салат листовий", "vegetables"],
+    ["Салат айсберг 200 г", "vegetables"],
+    ["Тісто листкове заморожене", "grains"],
+    ["Ковбаса краківська с/к", "meat"],
+    ["Сосиски молочні", "meat"],
+    ["Куряча грудка охолоджена", "meat"],
+  ])("'%s' → %s (сировина лишається сировиною)", (input, expectedId) => {
+    expect(categorizeFood(input).id).toBe(expectedId);
   });
 
   // Рядки з клік-скрипта спеки — по представнику кожної нової категорії

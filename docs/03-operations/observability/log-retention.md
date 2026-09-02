@@ -1,6 +1,6 @@
 # Log retention archive cron
 
-> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-20.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-21.
 > **Status:** Active.
 > **Code:** [`apps/server/src/modules/logRetention/archivePoller.ts`](../../../apps/server/src/modules/logRetention/archivePoller.ts).
 

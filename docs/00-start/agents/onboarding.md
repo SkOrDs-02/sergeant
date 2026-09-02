@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-11.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-07.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Claude Code, Codex, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.

@@ -1,7 +1,60 @@
 # Довідник Prometheus-метрик
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-01.
-> **Status:** Active
+> **Last touched:** 2026-09-02 by @claude (звірка назв метрик проти `metrics.ts`). **Next review:** 2026-12-21.
+> **Status:** Active — **каталог неповний**, див. врізку одразу нижче
+
+> **⚠️ Звірка 2026-09-02: каталог відстав від коду.**
+>
+> Перевірка була вимушеною і вузькою: гейт `Docs freshness cadence` став червоним
+> на `main` (`Next review` минув 2026-09-01), і його треба було або чесно
+> закрити, або зрозуміти чому. Зроблено рівно одну механічну перевірку — усі
+> імена метрик, оголошені в
+> [`metrics.ts`](../../../apps/server/src/obs/metrics.ts) через `name:`, знайдено
+> пошуком по цьому файлу.
+>
+> **Результат: із 42 оголошених метрик 28 не згадані тут жодного разу.**
+> Тобто довідник описує приблизно третину того, що бекенд реально експортує, і
+> покладатись на нього як на повний каталог не можна.
+>
+> Не задокументовані:
+>
+> - `ai_first_token_ms`
+> - `auth_session_lookup_failure_total`
+> - `auth_token_lazy_reencrypt_total`
+> - `circuit_breaker_state`
+> - `circuit_breaker_trips_total`
+> - `csp_violation_total`
+> - `gdpr_cleanup_queue_depth`
+> - `llm_provider_invocations_total`
+> - `mono_enrichment_duration_ms`
+> - `mono_enrichment_processed_total`
+> - `mono_enrichment_queue_depth`
+> - `mono_mcc_batch_duration_ms`
+> - `mono_mcc_batch_processed_total`
+> - `mono_mcc_batch_size`
+> - `mono_mcc_buffer_depth`
+> - `mono_mcc_match_total`
+> - `mono_token_lazy_reencrypt_total`
+> - `openclaw_log_archive_rows_total`
+> - `rag_eval_last_run_status`
+> - `rag_eval_last_run_timestamp_seconds`
+> - `rag_eval_mrr`
+> - `rag_eval_precision_at_1`
+> - `rag_eval_recall_at_4`
+> - `rag_eval_records_total`
+> - `rate_limit_cost_total`
+> - `rate_limit_degraded_total`
+> - `runtime_kill_switch_activations_total`
+> - `runtime_kill_switch_active`
+>
+> **Що НЕ перевірялось:** лейбли, типи, посилання на рядки емітерів, оцінки
+> кардинальності й PromQL-приклади для вже описаних метрик. Вони можуть бути
+> так само застарілими — просто цей прохід їх не торкався.
+>
+> **Чому дата оновлена попри неповноту.** `Last touched` фіксує «хтось дивився
+> на документ у цю дату», а не «документ бездоганний». Прогалину названо тут
+> явно, щоб наступний читач побачив її одразу, а не вивів із тиші. Дописати ці
+> 28 метрик — окрема робота, а не побічний ефект PR, який їх не вносив.
 
 Каталог усіх Prometheus-метрик бекенду Sergeant (`GET /metrics`, bearer `METRICS_TOKEN`).
 Джерело істини — [`metrics.ts`](../../../apps/server/src/obs/metrics.ts).
@@ -409,8 +462,8 @@ increase(uncaught_exceptions_total[5m]) > 0     # process state corrupted
 завантаження процесу. Лейбли беруться з env-vars (із fallback `unknown`):
 
 - `version` — `npm_package_version` (npm/pnpm runtime env).
-- `commit` — `RAILWAY_GIT_COMMIT_SHA` → `GIT_COMMIT` → `VERCEL_GIT_COMMIT_SHA` (перші 12 символів).
-- `release` — `SENTRY_RELEASE` → `RAILWAY_GIT_COMMIT_SHA` (узгоджено з Sentry release).
+- `commit` — `GIT_SHA` (build-arg із `deploy-api.yml`, запечений у образ) → `GIT_COMMIT` → `VERCEL_GIT_COMMIT_SHA` (перші 12 символів).
+- `release` — `SENTRY_RELEASE` → `GIT_SHA` (узгоджено з Sentry release).
 - `env` — `NODE_ENV` (`development` / `production`).
 - `node_version` — `process.version` (наприклад `v20.18.0`).
 

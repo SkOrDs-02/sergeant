@@ -1,6 +1,6 @@
 # Доповідь про стан: що працює сьогодні
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-12-11.
 > **Status:** Implemented - сторінка відвантажена (`apps/landing/src/pages/StanPage.tsx`), PR #955/#956.
 
 ## Мета сторінки

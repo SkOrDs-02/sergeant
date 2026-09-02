@@ -1,6 +1,6 @@
 # Playbook: Migrate localStorage to typedStore
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-02.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-02.
 > **Status:** Active
 
 **Trigger:** "Мігрувати файл X з прямого localStorage на typedStore" / зменшити TODO-список у ESLint allowlist / `frontend-tech-debt.md` #2.

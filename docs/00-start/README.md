@@ -1,16 +1,16 @@
 # 00 · Start — точка входу
 
-> **Last touched:** 2026-07-19 by @claude. **Next review:** 2026-11-14.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-29.
 > **Status:** Active
 
 Звідси починають і люди, і агенти: онбординг, маршрутизація в skill-и,
 покрокові рецепти й глосарій. Жанр — **informational** (довідка).
 
-| Розділ                                | Що тут                                                                      |
-| ------------------------------------- | --------------------------------------------------------------------------- |
-| [`agents/`](./agents/README.md)       | Agent OS: routing-каталог skill-ів, workflow-дерева, онбординг агентів.     |
-| [`playbooks/`](./playbooks/README.md) | Канонічні execution-рецепти для повторюваних задач (з тригерами).           |
-| [`glossary.md`](./glossary.md)        | Доменні й платформні терміни (Finyk, Fizruk, HubChat, OpenClaw, syncV2, …). |
+| Розділ                                | Що тут                                                                  |
+| ------------------------------------- | ----------------------------------------------------------------------- |
+| [`agents/`](./agents/README.md)       | Agent OS: routing-каталог skill-ів, workflow-дерева, онбординг агентів. |
+| [`playbooks/`](./playbooks/README.md) | Канонічні execution-рецепти для повторюваних задач (з тригерами).       |
+| [`glossary.md`](./glossary.md)        | Доменні й платформні терміни (Finyk, Fizruk, HubChat, syncV2, …).       |
 
 ## Контракт жанрів
 

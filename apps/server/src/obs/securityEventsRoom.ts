@@ -2,12 +2,10 @@
  * I7 — Bridge: connects the in-process `securityEvents` emitter to a direct
  * Telegram push via `SERGEANT_ALERT_BOT_TOKEN`.
  *
- * Architecture note: the API server and OpenClaw bot run in separate
- * processes. The server sends Telegram messages directly — the same pattern
- * used by `modules/alerts/telegramShipper.ts`. The formatter lives in
- * `tools/openclaw/src/openclaw/securityRoom.ts` (OpenClaw package) for
- * symmetry with the bot side, but since server → openclaw is not a declared
- * pnpm workspace dependency, we replicate the minimal send logic here.
+ * Architecture note: the server sends Telegram messages directly — the same
+ * pattern as `modules/alerts/telegramShipper.ts`. The formatter below was
+ * originally mirrored from the OpenClaw bot package (`tools/openclaw`), which
+ * is gone (ADR-0075); this file is now the only copy.
  *
  * Muting: set `SECURITY_EVENTS_MUTED=1` to suppress Telegram push without
  * removing call sites (useful for load-test windows).
@@ -25,7 +23,7 @@ import {
 } from "./securityEvents.js";
 
 // ─────────────────────────────────────────────────────────────────────────────
-// Formatter (mirrors securityRoom.ts in the openclaw tool package)
+// Formatter (sole copy since the OpenClaw bot package was removed, ADR-0075)
 // ─────────────────────────────────────────────────────────────────────────────
 
 const SEVERITY_EMOJI: Record<ResolvedSecurityEvent["severity"], string> = {

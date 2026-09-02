@@ -1,6 +1,6 @@
 # Пакет routine-domain
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-07.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-29.
 > **Status:** Active
 
 Продуктовий контекст модуля: `Read .agents/skills/sergeant-module-routine/SKILL.md` → канон `docs/01-product/model/routine.md`.

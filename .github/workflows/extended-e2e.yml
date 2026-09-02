@@ -2,7 +2,7 @@ name: Extended E2E (nightly)
 
 # Owner: @SkOrDs-02 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 on:
   schedule:
@@ -70,7 +70,7 @@ jobs:
     env:
       # NODE_ENV=test is mandatory: the server hard-blocks startup if
       # AI_QUOTA_DISABLED is truthy alongside NODE_ENV=production /
-      # RAILWAY_*. Without this var the workflow would fail to boot the
+      # APP_ENV=production. Without this var the workflow would fail to boot the
       # API server (see assertStartupEnv in apps/server/src/env/env.ts).
       NODE_ENV: test
       DATABASE_URL: postgresql://hub:hub@127.0.0.1:5432/hub

@@ -2,7 +2,7 @@ name: CI
 
 # Owner: @SkOrDs-02 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
-# Schedule rationale: див. docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
 # Audit 2026-06-11 ws-11: bare `push:` + `pull_request:` ran the full
 # 14-job pipeline TWICE for every push to a PR branch (different
@@ -233,7 +233,7 @@ jobs:
         # PWA precache manifest. Catches the case where a Vite plugin
         # silently inlines a 3rd-party CDN asset into `dist/`.
         # Cache-poisoning + CSP-bypass + GDPR risk all in one go;
-        # see docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md.
+        # see https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md.
         run: pnpm lint:pwa-precache
 
       - name: Bundle size guard (size-limit)

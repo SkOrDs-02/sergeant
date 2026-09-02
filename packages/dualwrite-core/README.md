@@ -22,3 +22,15 @@
 - Жодних платформних залежностей у `src/` — mobile typecheck входить у гейт кожного міграційного кроку.
 - LWW-семантика (ADR-0004): guard `excluded.updated_at > table.updated_at` — **строго новіший**, ніколи `>=`.
 - Міграційні PR (кроки 2–9) не змінюють SQL-snapshot тести адаптерів — байт-ідентичність за визначенням.
+
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/dualwrite-core <script>`.
+
+```bash
+pnpm --filter @sergeant/dualwrite-core typecheck      # TypeScript
+pnpm --filter @sergeant/dualwrite-core lint           # ESLint
+pnpm --filter @sergeant/dualwrite-core test           # Vitest
+pnpm --filter @sergeant/dualwrite-core test:watch     # Vitest у watch-режимі
+pnpm --filter @sergeant/dualwrite-core test:coverage  # Vitest з покриттям
+```

@@ -1,6 +1,6 @@
 # Specialists ↔ skills mapping
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-07.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-05.
 > **Status:** Active
 
 Цей файл — канонічний міст між **історичними runtime specialist agents** (колишній Telegram `/assign` dispatcher у видаленому `tools/openclaw`) і **governance skills** ([`./agent-skills-catalog.md`](./agent-skills-catalog.md)), якими оперують агенти під час роботи в репо.

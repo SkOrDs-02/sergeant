@@ -1401,7 +1401,8 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
   {
     slug: "shashlyk-svyniachyi",
     name: "Шашлик свинячий",
-    category: "Мʼясо і птиця",
+    // Шашлик у чеку це готова страва з мангала, а не сире мʼясо.
+    category: "Готові страви",
     aliases: ["шашлик"],
     per100: { kcal: 280, protein_g: 18, fat_g: 22, carbs_g: 2 },
   },
@@ -1444,7 +1445,9 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
   {
     slug: "kholodets",
     name: "Холодець",
-    category: "Мʼясо і птиця",
+    // Готова страва, не мʼясний виріб: із вітрини «Холодець
+    // по-домашньому» їхав у Мʼясо замість кулінарії.
+    category: "Українська кухня",
     per100: { kcal: 120, protein_g: 12, fat_g: 8, carbs_g: 0.5 },
   },
   {
@@ -2555,6 +2558,23 @@ export const GENERIC_FOODS: readonly GenericFood[] = [
     name: "Лосось слабосолений",
     category: "Риба і морепродукти",
     per100: { kcal: 202, protein_g: 21, fat_g: 13, carbs_g: 0 },
+  },
+  {
+    slug: "svyniacha-shyia",
+    name: "Свиняча шия",
+    category: "Мʼясо і птиця",
+    per100: { kcal: 267, protein_g: 16, fat_g: 22, carbs_g: 0 },
+    aliases: ["шия свиняча", "шия"],
+  },
+  {
+    slug: "miaso-marynovane",
+    name: "Мʼясо мариноване",
+    // Сировина, не страва: людина, яка маринує сама, пише саме так, і
+    // без цієї позиції рядок ішов у кулінарію на корені «шашлик» або в
+    // консерви на «маринован».
+    category: "Мʼясо і птиця",
+    per100: { kcal: 240, protein_g: 17, fat_g: 19, carbs_g: 1 },
+    aliases: ["мясо для шашлику", "свинина для шашлику"],
   },
   {
     slug: "indychyi-farsh",

@@ -1,10 +1,10 @@
 /**
- * Shared types for the `tg_topic_archive` surface (ADR-0031 §5,
- * OpenClaw roadmap Phase 3 / Pain P8).
+ * Shared types for the `tg_topic_archive` surface (ADR-0031 §5; born in the
+ * OpenClaw roadmap Phase 3 / Pain P8 — gateway removed, ADR-0075).
  *
  * Kept in a leaf file to avoid circular imports between `store.ts` (DB
- * helpers) and the consumers in `modules/openclaw/tools.ts` (read path)
- * + `routes/internal/alerts.ts` (write path).
+ * helpers) and its consumers (`routes/internal/alerts.ts` write path;
+ * the former `modules/openclaw/tools.ts` read path is gone).
  */
 
 /**
@@ -13,7 +13,8 @@
  * call-sites honest.
  *
  *   - `alert`         — n8n WF posted via `/api/internal/alerts/post`.
- *   - `post_to_topic` — OpenClaw `post_to_topic` write-tool (ADR-0036).
+ *   - `post_to_topic` — former OpenClaw `post_to_topic` write-tool (ADR-0036;
+ *                       gateway removed ADR-0075 — tag kept for historical rows).
  */
 export type TgTopicArchiveSource = "alert" | "post_to_topic";
 

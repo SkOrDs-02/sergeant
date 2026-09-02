@@ -1,6 +1,6 @@
 # Продуктовий аудит 2026-09: чек-листи по вимірах
 
-> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-01.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-10-07.
 > **Status:** Active
 
 Критерії «пройдено / знахідка» для кожного виміру з [`README.md` § 3](./README.md#3-виміри).

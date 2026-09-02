@@ -22,7 +22,7 @@ ops/
     ├── 02-failed-payment-recovery.json   # Failed payment → email + downgrade
     │  — Ops / Alerting —
     ├── 03-sentry-alert-routing.json      # Sentry → Telegram (fatal / warning)
-    ├── 04-daily-backup-verification.json # Cron 03:00 → Railway → sanity SQL
+    ├── 04-daily-backup-verification.json # Cron 03:00 → sanity SQL → Telegram
     ├── 05-renovate-pr-auto-handler.json  # Renovate PR → auto-approve patch / notify
     │  — Finance —
     ├── 06-mono-webhook-enrichment.json   # Mono tx → AI categorize → budget alert
@@ -80,17 +80,9 @@ n8n UI: [http://localhost:5678](http://localhost:5678)
 3. Відкрий кожен workflow → налаштуй **Credentials** (Postgres, Telegram, Stripe, etc.)
 4. Активуй workflow (toggle → **Active**)
 
-### 4. Deploy на Railway
+### 4. Deploy (Coolify / будь-який Docker-хост)
 
-```bash
-# Варіант A: Railway CLI
-railway login
-railway init
-railway up --detach
-
-# Варіант B: Railway UI
-# railway.app → New Project → Docker Compose → upload ops/docker-compose.ops.yml
-```
+Railway виведено з експлуатації ([ADR-0074](../docs/04-governance/adr/0074-hosting-hetzner-coolify.md)). Ops-стек деплоїться як Docker Compose-ресурс у Coolify з того самого `ops/docker-compose.ops.yml` (env — через Coolify UI, не `.env.ops`).
 
 Після деплою:
 
@@ -118,7 +110,7 @@ railway up --detach
 ### 04. Щоденна перевірка бекапів
 
 **Тригер:** Cron 03:00 UTC
-**Дія:** Railway API → restore на staging → sanity SQL → Telegram OK / CRITICAL
+**Дія:** Sanity SQL по живій БД (`user`, `mono_transaction`) → Telegram OK / CRITICAL. Крок Railway API прибрано (ADR-0074); тижневий restore-rehearsal — GitHub Actions `db-backup-verify.yml`
 
 ### 05. Auto-handler для Renovate-PR
 
@@ -150,10 +142,9 @@ railway up --detach
 **Тригер:** Cron 10:00 Kyiv (щодня)
 **Дія:** Postgres → борги/дебіторка з `dueDate` ≤ +3 дні → push для кожного + Telegram summary
 
-### 15. Railway-деплой — нотифікація
+### 15. Railway-деплой — нотифікація (видалено)
 
-**Тригер:** Railway webhook (`deployment.success` / `deployment.failed`)
-**Дія:** Парсинг payload → Telegram `#deploys` з гілкою, хешем, статусом
+Видалено разом із Railway-хостингом (ADR-0074); номер 15 не перевикористовується. Деплой-нотифікації — GitHub Actions `deploy-api.yml`.
 
 ### 16. Щоденні PostHog-метрики
 
@@ -207,17 +198,16 @@ railway up --detach
 | Resend            | API Key                | 02                    |
 | Anthropic         | API Key                | 06, 08                |
 | GitHub            | Token / Webhook secret | 05, 17, 18            |
-| Railway           | API Token              | 04                    |
 
 ### Нові env-змінні для workflow-ів 07–99
 
-Додай у n8n → Settings → Environment Variables (або на Railway service «n8n» як env vars):
+Додай у n8n → Settings → Environment Variables (або як env vars n8n-сервісу в Coolify):
 
 | Змінна                       | Використовується в       | Де взяти                                                                                           |
 | ---------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------- |
 | `API_SECRET`                 | 07, 09, 10               | `.env` сервера (той самий `API_SECRET`)                                                            |
 | `INTERNAL_API_KEY`           | 60, 63                   | `.env` сервера (той самий `INTERNAL_API_KEY`, у самого Sergeant API)                               |
-| `PUBLIC_API_BASE_URL`        | 07, 09, 10, 60, 63       | `https://your-api.railway.app` (в проді: `https://sergeant-production.up.railway.app`)             |
+| `PUBLIC_API_BASE_URL`        | 07, 09, 10, 60, 63       | публічний URL API за Coolify (в проді — значення `PUBLIC_API_BASE_URL` з env сервера)              |
 | `POSTHOG_API_KEY`            | 16, 60, 63               | PostHog → Settings → **Personal** API Keys (префікс `phx_…`, scopes: `project:read`, `query:read`) |
 | `POSTHOG_PROJECT_ID`         | 16, 60, 63               | PostHog → Settings → Project → ID у URL                                                            |
 | `POSTHOG_HOST`               | 16, 60, 63               | `https://eu.i.posthog.com` (EU instance) або `https://us.i.posthog.com` (US)                       |
@@ -233,11 +223,6 @@ railway up --detach
 | `OPS_ALERT_EMAIL`            | 98, 99                   | Email для P0 fallback (Resend `From: ops@…`)                                                       |
 
 > **Увага:** в n8n env vars ключ фігурує як `POSTHOG_API_KEY` (не `POSTHOG_PERSONAL_API_KEY`). `POSTHOG_PERSONAL_API_KEY` — це GitHub Actions secret для `posthog-release-annotation.yml` (інший контекст). Саме ключ — однаковий (`phx_…`), просто різні імена змінних в різних рантаймах.
-
-### Railway-webhook (для workflow 15)
-
-1. n8n UI → Workflow 15 → скопіюй webhook URL (вигляд: `https://n8n.your-domain.com/webhook/railway-deploy`)
-2. Railway → твій проект → Settings → Webhooks → Add webhook → вставити URL
 
 ## Розв’язання проблем
 
@@ -314,9 +299,9 @@ Grafana автоматично підключає Prometheus як datasource т�
 METRICS_TOKEN=<той самий що у .env сервера>
 ```
 
-### Увімкнення метрик на Railway production
+### Увімкнення метрик на production n8n
 
-На production Railway n8n потрібно додати env vars:
+На production n8n (Coolify) потрібно додати env vars:
 
 ```
 N8N_METRICS=true
@@ -344,7 +329,7 @@ http://localhost:9090/targets
 production-метрики йдуть у Grafana Cloud free tier через лёгкого
 [Grafana Alloy](https://grafana.com/docs/alloy/latest/) агента.
 
-Конфіг агента, Dockerfile і повна інструкція деплою на Railway —
+Конфіг агента, Dockerfile і повна інструкція деплою (історично писана під Railway; на Coolify — окремий Docker-сервіс) —
 [`ops/grafana-alloy/README.md`](./grafana-alloy/README.md).
 
 TL;DR:
@@ -356,7 +341,7 @@ TL;DR:
 #    GRAFANA_CLOUD_PROMETHEUS_API_KEY (scope metrics:write)
 # 3. Локальна перевірка конфіга:
 docker compose -f ops/docker-compose.ops.yml --env-file ops/.env.ops --profile cloud up -d grafana-alloy
-# 4. Production: задеплой ops/grafana-alloy/ як окремий Railway сервіс
+# 4. Production: задеплой ops/grafana-alloy/ як окремий Docker-сервіс у Coolify
 ```
 
 Після того як `up{project="sergeant"} == 1` для обох targets — імпортуй
@@ -374,8 +359,8 @@ docker compose -f ops/docker-compose.ops.yml --env-file ops/.env.ops --profile c
 
 ## Вартість
 
-| Компонент            | Вартість/міс  |
-| -------------------- | ------------- |
-| n8n (Railway shared) | $3–5          |
-| n8n Postgres         | included      |
-| **Total**            | **~$3–5/міс** |
+| Компонент         | Вартість/міс  |
+| ----------------- | ------------- |
+| n8n (self-hosted) | $3–5          |
+| n8n Postgres      | included      |
+| **Total**         | **~$3–5/міс** |

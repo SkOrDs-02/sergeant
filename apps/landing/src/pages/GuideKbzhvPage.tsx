@@ -1,6 +1,7 @@
 import SiteLayout from "../components/SiteLayout";
 import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import UpdatedOn from "../components/UpdatedOn";
 
 const SITUATIONS = [
   {
@@ -43,7 +44,7 @@ export default function GuideKbzhvPage() {
       "@type": "HowTo",
       name: "Як рахувати КБЖВ, коли в базі немає українських продуктів",
       inLanguage: "uk",
-      dateModified: "2026-08-28",
+      dateModified: ROUTE_META["/guides/kbzhv"].lastmod,
       step: STEPS.map((text, i) => ({
         "@type": "HowToStep",
         position: i + 1,
@@ -66,7 +67,8 @@ export default function GuideKbzhvPage() {
             Як рахувати КБЖВ, коли в базі немає українських продуктів
           </h1>
           <p className="mt-4 text-sm text-subtle">
-            Оновлено 28.08.2026 · автор Sergeant
+            Оновлено <UpdatedOn iso={ROUTE_META["/guides/kbzhv"].lastmod} /> ·
+            автор Sergeant
           </p>
           <GuideHomeModule href="/yizha" label="Їжа" />
         </div>

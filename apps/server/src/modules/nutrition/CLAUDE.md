@@ -1,6 +1,6 @@
 # Модуль Nutrition (server)
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-24.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-04.
 > **Status:** Active
 
 Продуктовий контекст: `Read .agents/skills/sergeant-module-nutrition/SKILL.md` → канон `docs/01-product/model/nutrition.md` (§ Журнал рішень).

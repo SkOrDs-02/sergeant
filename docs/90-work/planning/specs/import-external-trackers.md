@@ -1,6 +1,6 @@
 # SPEC: Імпорт з зовнішніх трекерів - спільний шар і адаптер Strong
 
-> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-01.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-11-07.
 > **Status:** In progress - PR-1 і PR-2 зроблені (пакет `packages/tabular-import`,
 > розкол фінансового шару). Крок 0 закрито: формат Strong звірено на живому
 > експорті 2026-09-01. Лишився PR-3 (адаптер).

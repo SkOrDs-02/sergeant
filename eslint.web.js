@@ -253,7 +253,7 @@ export const webBlocks = [
   // `useRoutineRoute` або через injected `onNavigate` prop із module
   // shell-а. Rule піднята з `warn` (canary) до `error` — нові hash-
   // assignments у модулях ламають lint і CI, як заплановано в
-  // `docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md` §Phase 2.
+  // `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md` §Phase 2.
   {
     files: ["apps/web/src/modules/**/*.{ts,tsx}"],
     rules: {
@@ -422,9 +422,10 @@ export const webBlocks = [
   // Module-size guardrail (initiative 0001) — `max-lines: [error, 600]`
   // for `apps/web/src/**/*.{ts,tsx}`. Enforces decomposition discipline:
   // a single TS/TSX file in the web bundle must not exceed 600 LOC
-  // (skipBlankLines + skipComments). New violations fail CI; existing
-  // monoliths are explicitly allowlisted with a deadline TODO so the
-  // queue stays visible. See `docs/90-work/initiatives/archive/_0001-module-decomposition.md`.
+  // (skipBlankLines + skipComments). Violations fail CI; the initiative-0001
+  // allowlist of grandfathered monoliths was burned down and removed, so
+  // there are no exemptions beyond tests and generated files.
+  // See `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md`.
   //
   // Scope rationale:
   // - Limited to `apps/web/src/**` — the audit's red-flag table flagged

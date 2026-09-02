@@ -59,7 +59,7 @@
         // (ADR-0083), який поки не підключений — робочий шлях іде через
         // `useInjuries` → `triggerFizrukDualWrite`. Маркер у файлі поважає
         // `pnpm dead-code:files`, але CI-джоба «Dead Code (Knip)» запускає
-        // сирий `knip`, тож потрібен ще й цей запис. TODO(0589-injury-repo).
+        // сирий `knip`, тож потрібен ще й цей запис. TODO(0589-injury-repo): 2026-09-15.
         "src/modules/fizruk/lib/injuryRepository.ts",
         "src/modules/nutrition/index.ts",
         "src/modules/routine/index.ts",

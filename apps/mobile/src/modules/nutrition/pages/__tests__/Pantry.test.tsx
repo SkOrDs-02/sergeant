@@ -22,7 +22,8 @@ const mockedPantries = useNutritionPantries as jest.MockedFunction<
 >;
 
 const pantryActions = {
-  setActivePantryId: jest.fn(),
+  setPlaceFilter: jest.fn(),
+  moveItemTo: jest.fn(),
   addLine: jest.fn(),
   applyParsedItems: jest.fn(),
   removeItemAt: jest.fn(),
@@ -78,19 +79,24 @@ function mockPantryState() {
       },
       { id: "office", name: "Офіс", text: "", items: [] },
     ],
-    activePantryId: "home",
-    activePantry: {
-      id: "home",
-      name: "Дім",
-      text: "",
-      items: [
-        { name: "молоко", qty: 2, unit: "л", notes: null },
-        { name: "яйця", qty: 10, unit: "шт", notes: null },
-      ],
-    },
+    placeFilter: null,
     pantryItems: [
-      { name: "молоко", qty: 2, unit: "л", notes: null },
-      { name: "яйця", qty: 10, unit: "шт", notes: null },
+      {
+        name: "молоко",
+        qty: 2,
+        unit: "л",
+        notes: null,
+        pantryId: "home",
+        localIdx: 0,
+      },
+      {
+        name: "яйця",
+        qty: 10,
+        unit: "шт",
+        notes: null,
+        pantryId: "home",
+        localIdx: 1,
+      },
     ],
     ...pantryActions,
   });
@@ -118,15 +124,15 @@ beforeEach(() => {
 });
 
 describe("PantryPage", () => {
-  it("renders grouped pantry items and switches active pantry", () => {
+  it("renders every place together and filters instead of switching", () => {
     const { getByText } = renderPage();
 
     expect(getByText("молоко")).toBeTruthy();
     expect(getByText("2 л")).toBeTruthy();
     expect(getByText("яйця")).toBeTruthy();
 
-    fireEvent.press(getByText("Офіс"));
-    expect(pantryActions.setActivePantryId).toHaveBeenCalledWith("office");
+    fireEvent.press(getByText("Офіс 0"));
+    expect(pantryActions.setPlaceFilter).toHaveBeenCalledWith("office");
   });
 
   it("adds a loose pantry line and clears the draft", () => {
@@ -202,14 +208,13 @@ describe("PantryPage", () => {
 
     const undo = mockShowUndoToast.mock.calls[0]![1] as { onUndo: () => void };
     undo.onUndo();
-    expect(pantryActions.restoreItemAt).toHaveBeenCalledWith(0, {
-      name: "молоко",
-      qty: 2,
-      unit: "л",
-      notes: null,
-    });
+    expect(pantryActions.restoreItemAt).toHaveBeenCalledWith(
+      0,
+      expect.objectContaining({ name: "молоко", qty: 2, unit: "л" }),
+      "home",
+    );
 
-    fireEvent.changeText(getByPlaceholderText("Назва (напр. Офіс)"), "Дача");
+    fireEvent.changeText(getByPlaceholderText("Назва (напр. Балкон)"), "Дача");
     fireEvent.press(getByText("Створити"));
     expect(pantryActions.addPantry).toHaveBeenCalledWith("Дача");
   });

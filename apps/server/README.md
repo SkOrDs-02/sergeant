@@ -31,14 +31,30 @@ src/
 
 ## Команди
 
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/server <script>`. База: `pnpm dev:db` (= `db:up` + `db:migrate`) у корені.
+
 ```bash
-pnpm dev:server                                 # Express API → http://localhost:3000
-pnpm db:up                                      # Docker Compose — Postgres на :5432
-pnpm db:migrate                                 # Запустити SQL-міграції
-pnpm --filter @sergeant/server test             # Vitest
-pnpm --filter @sergeant/server test:integration # Testcontainers
-pnpm --filter @sergeant/server typecheck        # TypeScript
-pnpm --filter @sergeant/server build            # Production build
+pnpm --filter @sergeant/server dev                   # API з `tsx` і `.env` → http://localhost:3000; з кореня — `pnpm dev:server`
+pnpm --filter @sergeant/server build                 # esbuild-бандл у `dist-server/` (`build.mjs`)
+pnpm --filter @sergeant/server start                 # запуск зібраного `dist-server/index.js`
+pnpm --filter @sergeant/server lint                  # ESLint
+pnpm --filter @sergeant/server typecheck             # TypeScript
+pnpm --filter @sergeant/server test                  # Vitest (unit)
+pnpm --filter @sergeant/server test:integration      # Vitest + Testcontainers (Postgres)
+pnpm --filter @sergeant/server test:rag-eval         # RAG-eval сьют (`vitest.rag-eval.config.ts`)
+pnpm --filter @sergeant/server test:tool-eval        # eval вибору chat-tool-ів + покриття tool-ів
+pnpm --filter @sergeant/server test:coverage         # Vitest з покриттям
+pnpm --filter @sergeant/server mutation:normalizers  # Stryker mutation-тести нормалайзерів
+pnpm --filter @sergeant/server db:migrate            # SQL-міграції зі збірки (`dist-server/migrate.js`) — так само в pre-deploy Coolify
+pnpm --filter @sergeant/server db:migrate:dev        # SQL-міграції з сорсів через `tsx` (локально)
+pnpm --filter @sergeant/server reencrypt:tokens      # ротація ключа шифрування токенів (`scripts/token-reencrypt-rollover.ts`)
+pnpm --filter @sergeant/server eval:models           # оцінка моделей (`scripts/model-eval.ts`)
+pnpm --filter @sergeant/server eval:tools            # eval вибору tool-ів на корпусі
+pnpm --filter @sergeant/server eval:stream           # перевірка стрімінгу відповідей чату
+pnpm --filter @sergeant/server eval:vision           # eval розпізнавання фото (vision)
+pnpm --filter @sergeant/server rag-eval:embed        # побудова ембедингів для RAG-eval корпусу
+pnpm --filter @sergeant/server eval:tools:judge      # LLM-judge поверх результатів `eval:tools`
+pnpm --filter @sergeant/server rag-eval:live         # RAG-eval проти живого API
 ```
 
 ## Деплой

@@ -22,6 +22,7 @@ import {
   aggregateNutrition,
 } from "./useWeeklyDigest";
 import { WeeklyDigestStories } from "./WeeklyDigestStories";
+import { AdviceFeedback } from "./AdviceFeedback";
 import {
   adviceIdForScope,
   markAdviceShown,
@@ -351,6 +352,20 @@ function DigestContent({
                       )}
                     </div>
                   )}
+                {/* Підпис авторства + оцінка стоять під ТІЛОМ звіту і лише
+                    коли тіло є: та сама умова видимості, що гейтить
+                    `markAdviceShown` вище. Підписувати порожній стан нема
+                    чого — там немає згенерованого тексту, а питати «чи
+                    корисно» про нього означало б збирати шум у той самий
+                    знаменник. */}
+                {!loading && hasDigestBody(digest) && (
+                  <div className="flex items-center justify-between gap-2">
+                    <p className="text-style-caption text-subtle leading-snug">
+                      {messages.sergeant.weeklyDigestAiSignature}
+                    </p>
+                    <AdviceFeedback adviceId={adviceId} />
+                  </div>
+                )}
                 {canGenerate && (
                   <button
                     type="button"

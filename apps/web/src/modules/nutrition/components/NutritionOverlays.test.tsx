@@ -122,10 +122,10 @@ function makePantry(overrides: Record<string, unknown> = {}) {
   return {
     pantryManagerOpen: false,
     setPantryManagerOpen: vi.fn(),
-    pantries: [{ id: "p1", name: "Дім", items: [] }],
-    activePantryId: "p1",
-    setActivePantryId: vi.fn(),
-    pantryForm: { mode: "idle" as const, name: "" },
+    pantries: [{ id: "home", name: "Комора", items: [] }],
+    redistributePlan: [],
+    applyRedistribute: vi.fn(),
+    pantryForm: { mode: "idle" as const, name: "", err: "", targetId: null },
     setPantryForm: vi.fn(),
     onSavePantryForm: vi.fn(),
     beginCreatePantry: vi.fn(),
@@ -395,7 +395,7 @@ describe("NutritionOverlays", () => {
     );
     const dialogs = screen.getAllByTestId("confirm-dialog");
     const deleteDialog = dialogs.find(
-      (el) => el.getAttribute("data-title") === "Видалити комору?",
+      (el) => el.getAttribute("data-title") === "Видалити місце?",
     );
     expect(deleteDialog).toBeTruthy();
   });
@@ -411,7 +411,7 @@ describe("NutritionOverlays", () => {
     );
     const deleteDialog = screen
       .getAllByTestId("confirm-dialog")
-      .find((el) => el.getAttribute("data-title") === "Видалити комору?")!;
+      .find((el) => el.getAttribute("data-title") === "Видалити місце?")!;
     fireEvent.click(
       Array.from(deleteDialog.querySelectorAll("button")).find(
         (button) => button.textContent === "cancel",
@@ -421,51 +421,23 @@ describe("NutritionOverlays", () => {
     expect(setConfirmDeleteOpen).toHaveBeenCalledWith(false);
   });
 
-  it("swallows delete confirm when only one pantry remains (guard)", () => {
-    const onConfirmDeletePantry = vi.fn();
-    const setConfirmDeleteOpen = vi.fn();
-    render(
-      <NutritionOverlays
-        {...baseProps({
-          pantry: makePantry({
-            confirmDeleteOpen: true,
-            pantries: [{ id: "p1", name: "Дім", items: [] }], // only one
-            onConfirmDeletePantry,
-            setConfirmDeleteOpen,
-          }),
-        })}
-      />,
-    );
-    const dialogs = screen.getAllByTestId("confirm-dialog");
-    const deleteDialog = dialogs.find(
-      (el) => el.getAttribute("data-title") === "Видалити комору?",
-    )!;
-    fireEvent.click(deleteDialog.querySelector("button")!);
-    // Guard: should NOT call actual delete, but should close the dialog
-    expect(onConfirmDeletePantry).not.toHaveBeenCalled();
-    expect(setConfirmDeleteOpen).toHaveBeenCalledWith(false);
-  });
-
-  it("calls onConfirmDeletePantry when multiple pantries exist", () => {
+  // Гейт «які місця можна видалити» переїхав у хук (`beginDeletePantry` не
+  // відкриває діалог для відомого місця) — тут лишається саме підтвердження.
+  it("calls onConfirmDeletePantry on confirm", () => {
     const onConfirmDeletePantry = vi.fn();
     render(
       <NutritionOverlays
         {...baseProps({
           pantry: makePantry({
             confirmDeleteOpen: true,
-            pantries: [
-              { id: "p1", name: "Дім", items: [] },
-              { id: "p2", name: "Робота", items: [] },
-            ],
             onConfirmDeletePantry,
           }),
         })}
       />,
     );
-    const dialogs = screen.getAllByTestId("confirm-dialog");
-    const deleteDialog = dialogs.find(
-      (el) => el.getAttribute("data-title") === "Видалити комору?",
-    )!;
+    const deleteDialog = screen
+      .getAllByTestId("confirm-dialog")
+      .find((el) => el.getAttribute("data-title") === "Видалити місце?")!;
     fireEvent.click(deleteDialog.querySelector("button")!);
     expect(onConfirmDeletePantry).toHaveBeenCalledTimes(1);
   });

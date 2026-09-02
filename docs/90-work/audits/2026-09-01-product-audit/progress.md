@@ -1,6 +1,6 @@
 # Продуктовий аудит 2026-09: трекер прогресу
 
-> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-01.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-11-24.
 > **Status:** Active
 
 Живий трекер прогону за [`README.md`](./README.md). Оновлюється в кінці кожної

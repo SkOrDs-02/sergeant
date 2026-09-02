@@ -33,6 +33,16 @@ const TODO_WITH_DEADLINE =
 const TODO_WITHOUT_DEADLINE =
   /(?:TODO|FIXME|HACK|XXX)(?:\s*:|\s+(?!\())(?![^)]+\):\s*\d{4}-\d{2}-\d{2})/;
 
+// Тегована форма без дати: `TODO(slug)` / `TODO(slug):` без `YYYY-MM-DD`.
+// Саме ця форма за контрактом гейта МАЄ нести дедлайн, тож її відсутність —
+// завжди `missing-deadline`, без евристики за ключовими словами нижче.
+// До 2026-09-02 гейт її не бачив узагалі: `TODO(billing):` не матчив
+// жоден із двох патернів, і дев'ять таких TODO жили поза радаром.
+// Виняток — згадки самого формату: у бектиках (`TODO(design-lint)`) або з
+// template-підстановкою (`TODO(${id})`) — це текст ПРО TODO, а не TODO.
+const TAGGED_TODO_WITHOUT_DEADLINE =
+  /(?<!`)(?:TODO|FIXME|HACK|XXX)\((?![^)]*\$\{)[^)]+\)(?!:?\s*\d{4}-\d{2}-\d{2})/;
+
 // Директорії та файли для виключення
 const IGNORE_DIRS = new Set([
   "node_modules",
@@ -110,7 +120,7 @@ function walkDir(dir, baseDir = dir) {
 /**
  * Перевіряє один файл на наявність TODO з простроченими дедлайнами.
  */
-function checkFile(filePath) {
+export function checkFile(filePath) {
   const issues = [];
   let content;
 
@@ -144,6 +154,16 @@ function checkFile(filePath) {
           content: line.trim(),
         });
       }
+      continue;
+    }
+
+    if (!filePath.endsWith(".md") && TAGGED_TODO_WITHOUT_DEADLINE.test(line)) {
+      issues.push({
+        file: relative(ROOT, filePath),
+        line: lineNum,
+        type: "missing-deadline",
+        content: line.trim(),
+      });
       continue;
     }
 
@@ -229,4 +249,8 @@ function main() {
   process.exit(1);
 }
 
-main();
+const isMain =
+  process.argv[1] &&
+  resolve(process.argv[1]) === fileURLToPath(import.meta.url);
+
+if (isMain) main();

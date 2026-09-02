@@ -125,6 +125,7 @@ export function NutritionPantryPage({
                 setPantryScanStatus("");
                 setPantryScannerOpen(true);
               }}
+              placeFilter={pantry.placeFilter}
             />
             {pantryScanStatus && !pantryBarcodeNotice && (
               <div className="text-style-caption text-subtle px-1">

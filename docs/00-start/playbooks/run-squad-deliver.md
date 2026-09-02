@@ -2,7 +2,7 @@
 
 # Playbook: Squad deliver — sequential cross-surface feature delivery
 
-> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-05.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-24.
 > **Status:** Active
 
 **Trigger:** Фіча потребує змін у ≥2 surfaces з contract dependencies: DB schema → server serializer → api-client types → web/mobile UI.

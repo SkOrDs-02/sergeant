@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last validated:** 2026-09-02 by @Skords-01
+> **Last validated:** 2026-09-02 by @Skords-01 і @claude (звірено з `eslint.web.js` / `eslint.server.js`)
 > **Next review:** 2026-12-01
 > **Status:** Active
 
@@ -15,7 +15,7 @@
 
 ## Enforced by
 
-- **convention** — eslint.config.js → max-lines: [error, { max: 600, skipBlankLines: true, skipComments: true }] (scoped to `apps/web/src/**/*.{ts,tsx}` and `apps/server/src/**/*.{js,ts}`; tests, `__tests__/**` exempt)
+- **convention** — max-lines: [error, { max: 600, skipBlankLines: true, skipComments: true }] (scoped to `apps/web/src/**/*.{ts,tsx}` and `apps/server/src/**/*.{js,ts}`; tests, `__tests__/**` exempt). Блоки живуть у `eslint.web.js` і `eslint.server.js`, які `eslint.config.js` збирає докупи — не в самому `eslint.config.js` (звірка 2026-09-02).
 - **doc** — docs/90-work/initiatives/archive/\_0001-module-decomposition.md (decomposition queue — closed)
 
 ## Why / What is enforced
@@ -56,7 +56,9 @@
 }
 ```
 
-**Allowlist (закрито).** Декомпозиція завершена в межах ініціативи [0001](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md) (closed) — окремого allowlist-блоку файлів-монолітів у `eslint.config.js` більше **немає**: `max-lines: 600` діє на весь `apps/web/src/**` та `apps/server/src/**` без винятків (виключені лише `*.{test,spec}` / `__tests__/**` / `generated/**`). Метрику «Файлів ≥600 LOC: 16 → 11 → ≤ 2» досягнуто, тому правило промовано з `active-initiative` у `lint-enforced-convention`. Якщо колись знадобиться тимчасовий виняток — його додають свідомо + апрув ревьюерів (розпухлий назад файл > 600 LOC падає).
+**Allowlist (порожній).** Декомпозиція завершена в межах ініціативи [0001](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md) (closed): жодного файла-винятку немає, `max-lines: 600` діє на весь `apps/web/src/**` та `apps/server/src/**` (виключені лише `*.{test,spec}` / `__tests__/**` / `generated/**`).
+
+> **Уточнення звірки 2026-09-02.** До цього дня механізм allowlist ще існував: `eslint.server.js` читав окремий server-allowlist JSON і розкладав його в `ignores`, але файл уже містив `[]`. Порожній файл і loader прибрано разом (PR #1017), тож тепер винятків немає ні фактично, ні механічно: повернути allowlist означає свідомо додати його назад у конфіг з апрувом ревьюерів.
 
 **Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/` (`chat.ts` thin orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/`) довів цінність декомпозиції в продакшні. Без жорсткого ліміту декомпозиція — це постійний «уторгований борг» (зробили — наповзло знову).
 
@@ -69,7 +71,7 @@
 
 - Новий `apps/web/src/**/*.tsx` ≥ 600 LOC падає на `pnpm lint` — mandatory у CI (Hard Rule #15).
 - Новий `apps/server/src/**/*.{js,ts}` ≥ 600 LOC падає на `pnpm lint` — mandatory у CI (Hard Rule #15).
-- Декомпонований файл, який «розпух» назад > 600 LOC, теж падає (allowlist треба свідомо знову додати + апрув ревьюерів).
+- Декомпонований файл, який «розпух» назад > 600 LOC, теж падає. Allowlist-файлів більше немає (порожній server-allowlist JSON прибрано 2026-09-02 разом із loader-ом в `eslint.server.js`) — виняток означає свідомо повернути allowlist у конфіг + апрув ревьюерів.
 
 **What this rule does NOT block:**
 

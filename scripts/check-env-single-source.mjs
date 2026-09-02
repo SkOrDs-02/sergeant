@@ -2,7 +2,7 @@
 // scripts/check-env-single-source.mjs
 //
 // CI guard for the env-modules unification (stack-pulse-2026-05 PR-01,
-// `docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-01-unify-env-modules.md`).
+// `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-01-unify-env-modules.md`).
 //
 // **Phase 1 — burn-down budget.**
 //
@@ -235,7 +235,7 @@ if (isCli) {
       `so values pass through Zod validation + defaults. Phase-2 plan:`,
     );
     console.error(
-      `docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-01-unify-env-modules.md`,
+      `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-01-unify-env-modules.md`,
     );
     process.exit(1);
   }
