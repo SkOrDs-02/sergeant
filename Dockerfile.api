@@ -109,6 +109,12 @@ COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
 # усередині образу падає на відсутньому workspace-пакеті, і образ не
 # збирається взагалі.
 COPY packages/routine-domain/package.json ./packages/routine-domain/package.json
+# `@sergeant/tabular-import` — спільний шар імпорту виписок (#1001):
+# `apps/server/src/modules/finyk/import/statement*.ts` резолвить його при
+# esbuild-збірці. Без цього рядка `pnpm build` у builder-стейджі падає на
+# «Could not resolve "@sergeant/tabular-import"» — той самий клас поломки,
+# що описано в нагадуванні вище.
+COPY packages/tabular-import/package.json ./packages/tabular-import/package.json
 COPY apps/server/package.json ./apps/server/package.json
 
 RUN pnpm install --frozen-lockfile --ignore-scripts \
@@ -117,6 +123,7 @@ RUN pnpm install --frozen-lockfile --ignore-scripts \
       --filter @sergeant/db-schema... \
       --filter @sergeant/finyk-domain... \
       --filter @sergeant/routine-domain...
+      --filter @sergeant/tabular-import...
 
 # --- Джерела ---
 COPY packages/shared ./packages/shared
@@ -124,6 +131,7 @@ COPY packages/config ./packages/config
 COPY packages/db-schema ./packages/db-schema
 COPY packages/finyk-domain ./packages/finyk-domain
 COPY packages/routine-domain ./packages/routine-domain
+COPY packages/tabular-import ./packages/tabular-import
 COPY apps/server ./apps/server
 
 # `@sergeant/db-schema` мусить бути ЗБИЛДЖЕНИЙ ДО серверного `pnpm build`:
@@ -150,6 +158,12 @@ COPY packages/config/package.json ./packages/config/package.json
 COPY packages/db-schema/package.json ./packages/db-schema/package.json
 COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
 COPY packages/routine-domain/package.json ./packages/routine-domain/package.json
+# `@sergeant/tabular-import` — спільний шар імпорту виписок (#1001):
+# `apps/server/src/modules/finyk/import/statement*.ts` резолвить його при
+# esbuild-збірці. Без цього рядка `pnpm build` у builder-стейджі падає на
+# «Could not resolve "@sergeant/tabular-import"» — той самий клас поломки,
+# що описано в нагадуванні вище.
+COPY packages/tabular-import/package.json ./packages/tabular-import/package.json
 COPY apps/server/package.json ./apps/server/package.json
 
 # `pnpm install --prod --filter @sergeant/server...` обходить deps-граф, у
