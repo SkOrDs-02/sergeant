@@ -95,6 +95,17 @@ describe("nutrition analyze-photo handler — Anthropic invocation", () => {
         { name: "Буряк", notes: "варений" },
         { name: "Капуста", notes: null },
       ],
+      // Модель відповіла без `items` (стара форма) — нормалізатор синтезує
+      // одну позицію з `dishName`, щоб екран мав що показати рядком, і сума
+      // лишається тим самим числом. Ініціатива 0023, PR-1.
+      items: [
+        {
+          name: "Борщ",
+          macros: { kcal: 180, protein_g: 6, fat_g: 7, carbs_g: 22 },
+          gramsApprox: 350,
+          confidence: 0.82,
+        },
+      ],
       macros: { kcal: 180, protein_g: 6, fat_g: 7, carbs_g: 22 },
       questions: ["Зі сметаною?"],
     });

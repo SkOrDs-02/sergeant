@@ -1,3 +1,5 @@
+import { normalizeMacrosNullable, sumMacrosNullable } from "@sergeant/shared";
+
 function safeString(x: unknown, fallback = ""): string {
   return x == null ? fallback : String(x);
 }
@@ -38,6 +40,20 @@ export interface PhotoIngredient {
 }
 
 /**
+ * Одна позиція кадру — страва, а не інгредієнт. Стеля 5 стоїть і в промпті,
+ * і тут: промпт її просить, нормалізатор гарантує навіть коли модель просить
+ * пробачення і віддає вісім.
+ */
+export interface PhotoItem {
+  name: string;
+  macros: PhotoMacros;
+  gramsApprox: number | null;
+  confidence: number;
+}
+
+export const PHOTO_ITEMS_LIMIT = 5;
+
+/**
  * Категорія кадру, коли їжі на ньому немає. Рівно три значення, бо рівно три
  * різні репліки: тваринці кажемо погладити, людині — навести камеру на
  * тарілку, решті (предмет, краєвид, скріншот, порожній кадр) — нейтральне
@@ -60,6 +76,14 @@ export interface NormalizedPhotoResult {
   confidence: number;
   portion: PhotoPortion | null;
   ingredients: PhotoIngredient[];
+  /**
+   * Позиції кадру. При `isFood: true` тут завжди щонайменше одна: коли модель
+   * не віддала масив, нормалізатор синтезує позицію з `dishName` + `macros`,
+   * щоб жоден споживач не малював порожній список. При `isFood: false` —
+   * порожньо, як і решта полів відмови.
+   */
+  items: PhotoItem[];
+  /** Сума `items` — не окреме число моделі. Див. `normalizePhotoResult`. */
   macros: PhotoMacros;
   questions: string[];
 }
@@ -130,6 +154,32 @@ export function normalizePhotoResult(
         .filter((v): v is PhotoIngredient => Boolean(v))
     : [];
 
+  const rawItems: PhotoItem[] = Array.isArray(obj["items"])
+    ? (obj["items"] as unknown[])
+        .slice(0, PHOTO_ITEMS_LIMIT)
+        .map((x): PhotoItem | null => {
+          if (!x || typeof x !== "object") return null;
+          const rec = x as Record<string, unknown>;
+          const name = safeString(rec["name"], "").trim();
+          if (!name) return null;
+          // `normalizeMacrosNullable`, а не локальний `safeNonNegNumberOrNull`:
+          // останній жене `null` через `Number()`, а `Number(null)` — це `0`,
+          // тож невідомий макрос позиції став би нулем ще до підсумовування.
+          // Верхньорівневі `macros` живуть зі старою поведінкою під наглядом
+          // `unknownMacrosAsNull`; у позицій такої страхувальної сітки немає.
+          return {
+            name,
+            macros: normalizeMacrosNullable(rec["macros"]),
+            gramsApprox:
+              rec["gramsApprox"] == null
+                ? null
+                : safeNonNegNumberOrNull(rec["gramsApprox"]),
+            confidence: clamp01(rec["confidence"]),
+          };
+        })
+        .filter((v): v is PhotoItem => Boolean(v))
+    : [];
+
   const macrosRaw = obj["macros"];
   const macros =
     macrosRaw && typeof macrosRaw === "object" && !Array.isArray(macrosRaw)
@@ -169,10 +219,28 @@ export function normalizePhotoResult(
       confidence,
       portion: finalPortion,
       ingredients,
+      items: [],
       macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
       questions: [],
     };
   }
+
+  // Підсумок рахуємо з позицій, а не беремо окреме число моделі: інакше
+  // видалення рядка на картці нічого б не змінило в сумі, і це рівно той
+  // баг, від якого ініціатива 0023 тікає. Коли масиву немає (стара модель,
+  // порваний вивід), синтезуємо одну позицію з `dishName` — споживач завжди
+  // має щонайменше один рядок, а сума лишається тим самим числом, що й досі.
+  const normalizedMacros = unknownMacrosAsNull(outMacros, questions);
+  const items: PhotoItem[] = rawItems.length
+    ? rawItems
+    : [
+        {
+          name: dishName,
+          macros: normalizedMacros,
+          gramsApprox: finalPortion?.gramsApprox ?? null,
+          confidence,
+        },
+      ];
 
   return {
     isFood,
@@ -181,7 +249,10 @@ export function normalizePhotoResult(
     confidence,
     portion: finalPortion,
     ingredients,
-    macros: unknownMacrosAsNull(outMacros, questions),
+    items,
+    macros: rawItems.length
+      ? sumMacrosNullable(rawItems.map((i) => i.macros))
+      : normalizedMacros,
     questions,
   };
 }

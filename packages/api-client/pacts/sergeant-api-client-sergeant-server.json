@@ -2508,6 +2508,30 @@
               }
             ],
             "isFood": true,
+            "items": [
+              {
+                "confidence": 0.88,
+                "gramsApprox": 300,
+                "macros": {
+                  "carbs_g": 20,
+                  "fat_g": 8,
+                  "kcal": 220,
+                  "protein_g": 14
+                },
+                "name": "Борщ"
+              },
+              {
+                "confidence": 0.72,
+                "gramsApprox": 50,
+                "macros": {
+                  "carbs_g": 2,
+                  "fat_g": 4,
+                  "kcal": 60,
+                  "protein_g": 4
+                },
+                "name": "Сметана"
+              }
+            ],
             "macros": {
               "carbs_g": 22,
               "fat_g": 12,
