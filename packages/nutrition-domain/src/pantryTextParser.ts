@@ -46,6 +46,36 @@ export interface PantryItem {
    * немає — позиція введена руками або створена до цієї фічі.
    */
   sources?: readonly PantryItemSource[] | null;
+  /**
+   * `true`, коли `unit` тут — здогадка парсера, не факт: людина написала
+   * голе хвостове число БЕЗ жодної одиниці, і воно ≥
+   * {@link PANTRY_AMBIGUOUS_QTY_THRESHOLD} (аудит 2026-09 UX-4: «Нутелла
+   * 350» мовчки ставало «350 шт», хоча малось на увазі 350 г). Нижче порога
+   * («Яйця 10», «Coca-Cola 2») штучний зміст і так очевидний — прапорець не
+   * ставиться, `unit` лишається тихим «шт», як і раніше.
+   *
+   * UI має перепитати («350 шт чи г?»), а не мовчки прийняти цю здогадку;
+   * саме поле — лише сигнал для UI, доменна логіка (злиття, списання) його
+   * не читає.
+   */
+  ambiguousQty?: boolean;
+}
+
+/**
+ * Поріг, з якого голе хвостове число без одиниці вважається неоднозначним.
+ * Дані аудиту 2026-09 (UX-4): «Coca-Cola 2» і «рис 2» — це справді штуки,
+ * «Нутелла 350» — це грами. Межа між «очевидна кількість predметів» і
+ * «схоже на вагу/обʼєм» лежить десь у районі сотні: пачка яєць чи огірків
+ * рідко переходить за неї, а вага типової упаковки (крупа, солодощі,
+ * снеки) — майже завжди. Founder-рішення 2026-09-01 (канон nutrition §6,
+ * Журнал рішень): не вгадувати, а перепитувати саме тут.
+ */
+export const PANTRY_AMBIGUOUS_QTY_THRESHOLD = 100;
+
+function isAmbiguousBareQty(qty: number | null): boolean {
+  return (
+    qty != null && Number.isFinite(qty) && qty >= PANTRY_AMBIGUOUS_QTY_THRESHOLD
+  );
 }
 
 /**
@@ -271,7 +301,9 @@ function buildLeadingResult(m: RegExpMatchArray, raw: string): PantryItem {
   const unitRaw = displayFoodName(m[2] || "");
   const rest = displayFoodName(m[3] || "");
 
-  // "2 яйця" — одне слово після числа = назва, не одиниця
+  // "2 яйця" — одне слово після числа = назва, не одиниця. Число тут завжди
+  // рахує самі предмети ("2 яйця" = дві штуки), тож неоднозначності немає
+  // навіть за великих значень — прапорець не ставиться.
   if (!rest && unitRaw) {
     return {
       name: unitRaw,
@@ -287,11 +319,15 @@ function buildLeadingResult(m: RegExpMatchArray, raw: string): PantryItem {
     displayFoodName(raw);
   const unit = unitRaw ? normalizeUnit(unitRaw) : null;
   const resolvedQty = qty != null && Number.isFinite(qty) ? qty : null;
+  const isBareQty = resolvedQty != null && unit == null;
   return {
     name,
     qty: resolvedQty,
-    unit: resolvedQty != null && unit == null ? "шт" : unit,
+    unit: isBareQty ? "шт" : unit,
     notes: null,
+    ...(isBareQty && isAmbiguousBareQty(resolvedQty)
+      ? { ambiguousQty: true }
+      : {}),
   };
 }
 
@@ -302,11 +338,15 @@ function buildTrailingResult(tm: RegExpMatchArray): PantryItem | null {
   const unitRaw = displayFoodName(tm[3] || "");
   const unit = unitRaw ? normalizeUnit(unitRaw) : null;
   const resolvedQty = Number.isFinite(qty) ? qty : null;
+  const isBareQty = resolvedQty != null && unit == null;
   return {
     name,
     qty: resolvedQty,
-    unit: resolvedQty != null && unit == null ? "шт" : unit,
+    unit: isBareQty ? "шт" : unit,
     notes: null,
+    ...(isBareQty && isAmbiguousBareQty(resolvedQty)
+      ? { ambiguousQty: true }
+      : {}),
   };
 }
 

@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-02
+ * Last validated: 2026-09-01
  * Status: Active
  *
  * Два допоміжні блоки режиму «Списком» у Коморі:
@@ -7,6 +7,13 @@
  *   тому нуль стану і нуль записів у localStorage);
  * - `PantryParsePreview` — підтвердження розібраних позицій перед тим,
  *   як вони потраплять у комору.
+ *
+ * UX-4 (аудит 2026-09-01): рядки з `ambiguousQty` (голе хвостове число без
+ * одиниці ≥ порога — «Нутелла 350») несуть інлайн-вибір «шт»/«г» ПРЯМО в
+ * рядку, а не окрему модалку. Це навмисно: у списку може одночасно
+ * зʼявитись кілька неоднозначних позицій, і жодна з них не має блокувати
+ * підтвердження решти — «Додати N» лишається доступним із дефолтом «шт»,
+ * доки людина не тапне.
  */
 import { useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
@@ -14,6 +21,7 @@ import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { PantryItem } from "../lib/pantryTextParser";
 import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
+import type { AmbiguousPantryUnit } from "../lib/pantryAmbiguousUnitMemory";
 
 function formatQty(item: PantryItem): string {
   if (item.qty != null && item.unit) return `${item.qty} ${item.unit}`;
@@ -23,6 +31,7 @@ function formatQty(item: PantryItem): string {
 
 const GUIDE = messages.nutrition.pantryGuide;
 const PREVIEW = messages.nutrition.pantryPreview;
+const AMBIGUOUS = messages.nutrition.pantryAmbiguousQty;
 
 export function PantryListGuide() {
   return (
@@ -65,6 +74,15 @@ interface PantryParsePreviewProps {
   onConfirm: (items: PantryItem[]) => void;
   onDismiss: () => void;
   busy: boolean;
+  /**
+   * Викликається одразу на тап «шт»/«г» для неоднозначного рядка (не чекає
+   * «Додати N») — вибір запамʼятовується для продукту незалежно від того,
+   * підтвердить людина решту списку чи скасує його.
+   */
+  onResolveAmbiguousUnit?: (
+    item: PantryItem,
+    unit: AmbiguousPantryUnit,
+  ) => void;
 }
 
 export function PantryParsePreview({
@@ -72,18 +90,39 @@ export function PantryParsePreview({
   onConfirm,
   onDismiss,
   busy,
+  onResolveAmbiguousUnit,
 }: PantryParsePreviewProps) {
   const [excluded, setExcluded] = useState<Set<number>>(() => new Set());
+  const [unitOverrides, setUnitOverrides] = useState<
+    Record<number, AmbiguousPantryUnit>
+  >({});
 
   // Новий розбір приходить у той самий змонтований блок — знята галочка
-  // з попереднього результату не повинна тихо викидати позицію з нового.
+  // (і будь-який раніше обраний «шт»/«г») з попереднього результату не
+  // повинна тихо тягнутись у новий.
   const [prevPreview, setPrevPreview] = useState(preview);
   if (prevPreview !== preview) {
     setPrevPreview(preview);
     setExcluded(new Set());
+    setUnitOverrides({});
   }
 
-  const selected = preview.items.filter((_, i) => !excluded.has(i));
+  function chooseUnit(i: number, unit: AmbiguousPantryUnit) {
+    setUnitOverrides((cur) => ({ ...cur, [i]: unit }));
+    const item = preview.items[i];
+    if (item) onResolveAmbiguousUnit?.(item, unit);
+  }
+
+  // Підтвердження несе фінальну одиницю (обрану чи дефолтну «шт»), а
+  // прапорець неоднозначності далі не тече — комора його не читає.
+  const resolvedItems = preview.items.map((item, i) => {
+    const override = unitOverrides[i];
+    if (!override) return item;
+    const { ambiguousQty: _drop, ...rest } = item;
+    void _drop;
+    return { ...rest, unit: override };
+  });
+  const selected = resolvedItems.filter((_, i) => !excluded.has(i));
 
   return (
     <div className="mt-3 rounded-2xl border border-nutrition/30 bg-nutrition/5 p-3">
@@ -100,7 +139,10 @@ export function PantryParsePreview({
 
       <ul className="grid gap-0.5 mb-3">
         {preview.items.map((item, i) => {
-          const qty = formatQty(item);
+          const resolvedUnit = unitOverrides[i] ?? item.unit;
+          const qty = item.ambiguousQty
+            ? String(item.qty ?? "")
+            : formatQty(item);
           return (
             <li key={`${item.name}_${i}`}>
               <label className="flex items-center gap-2.5 px-1 min-h-[44px] cursor-pointer">
@@ -130,7 +172,36 @@ export function PantryParsePreview({
                     {qty}
                   </span>
                 )}
+                {item.ambiguousQty && (
+                  <span className="text-style-caption text-warning-strong dark:text-warning shrink-0">
+                    {AMBIGUOUS.badge}
+                  </span>
+                )}
               </label>
+              {item.ambiguousQty && (
+                <div className="flex items-center gap-2 pl-8 pb-1.5">
+                  <span className="text-style-caption text-subtle">
+                    {AMBIGUOUS.question}
+                  </span>
+                  {(["шт", "г"] as const).map((unit) => (
+                    <button
+                      key={unit}
+                      type="button"
+                      onClick={() => chooseUnit(i, unit)}
+                      aria-pressed={resolvedUnit === unit}
+                      className={cn(
+                        "text-style-caption px-2.5 py-1 min-h-[32px] rounded-xl border transition-colors",
+                        resolvedUnit === unit
+                          ? "bg-nutrition-strong text-white border-nutrition-strong"
+                          : "border-line text-subtle hover:text-text hover:border-nutrition/50",
+                      )}
+                    >
+                      {item.qty}{" "}
+                      {unit === "шт" ? AMBIGUOUS.piecesCta : AMBIGUOUS.gramsCta}
+                    </button>
+                  ))}
+                </div>
+              )}
             </li>
           );
         })}
