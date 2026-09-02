@@ -1,6 +1,6 @@
 # Playbook: Enable / Operate Silpo Integration
 
-> **Last touched:** 2026-08-25 by @Skords-01. **Next review:** 2026-11-26.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-04.
 > **Status:** Active
 
 **Trigger:** вмикаємо `SILPO_ENABLED` у проді вперше · користувачі скаржаться,
@@ -64,7 +64,7 @@ Silpo (`assertStartupEnv` кидає на старті, не деградує).
    через 5 хвилин після старту (щоб серія передеплоїв не била Сільпо),
    далі щогодини перевіряє, кого не синкали понад 20 годин.
 
-   > **Не n8n.** Зовнішнього крона тут свідомо немає: n8n у проді на паузі,
+   > **Не n8n.** Зовнішнього крона тут свідомо немає: n8n виведено з експлуатації ([ADR-0090](../../04-governance/adr/0090-n8n-decommissioned.md)),
    > і ~20 роутів у репо вже висять під воркфлоу, яких ніхто не створив
    > (див. [orphaned-code аудит](../../90-work/audits/2026-08-05-orphaned-code-audit.md)).
    > Патерн узятий з `modules/billing/plataScheduler.ts`.

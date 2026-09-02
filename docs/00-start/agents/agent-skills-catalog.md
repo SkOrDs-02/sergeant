@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-22.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-24.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -48,7 +48,7 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | [`sergeant-feature-flags`](../../../.agents/skills/sergeant-feature-flags/SKILL.md)                       | Додавання/зняття фіче-прапорців                                  | Реєстр feature-flags.md у тому ж PR, вибір із 4 систем, умова зняття обовʼязкова                                                    |
 | [`sergeant-analytics`](../../../.agents/skills/sergeant-analytics/SKILL.md)                               | PostHog-івенти, неймінг, дашборд-манифести                       | trackEvent + ANALYTICS_EVENTS, PII-скрабінг, lint:posthog-manifests                                                                 |
 | [`sergeant-monorepo-boundaries`](../../../.agents/skills/sergeant-monorepo-boundaries/SKILL.md)           | Unsure where code belongs                                        | App vs package placement, shared logic boundaries                                                                                   |
-| [`sergeant-deploy-and-observability`](../../../.agents/skills/sergeant-deploy-and-observability/SKILL.md) | Deploys, env vars, health, Sentry, n8n                           | Runtime verification, operator docs, release safety                                                                                 |
+| [`sergeant-deploy-and-observability`](../../../.agents/skills/sergeant-deploy-and-observability/SKILL.md) | Deploys, env vars, health, Sentry                                | Runtime verification, operator docs, release safety                                                                                 |
 | [`better-auth-best-practices`](../../../.agents/skills/better-auth-best-practices/SKILL.md)               | Login/session/cookie/account lifecycle                           | Better Auth wiring, cross-site cookies, auth env safety                                                                             |
 | [`sergeant-e2e-testing`](../../../.agents/skills/sergeant-e2e-testing/SKILL.md)                           | Playwright E2E tests, smoke tests, a11y                          | 8 golden rules, seedFTUX, no waitForTimeout, role selectors                                                                         |
 | [`sergeant-security-audit`](../../../.agents/skills/sergeant-security-audit/SKILL.md)                     | Security reviews, pnpm audit, PAT/cred safety                    | Hard Rules #20/#21/#22, Pino redaction, Drizzle SQL, supply chain                                                                   |

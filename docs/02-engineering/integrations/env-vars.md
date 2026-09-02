@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2027-04-15.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-04-17.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -213,10 +213,6 @@ env-var **недостатньо** — треба змінювати сам defa
 - `AI_CIRCUIT_BREAKER_THRESHOLD=5` (default) — скільки помилок відкривають breaker.
 - `AI_CIRCUIT_BREAKER_RESET_MS=30000` (default) — інтервал half-open тесту.
 
-### `N8N_AGENT_DISPATCHER_WEBHOOK_URL` _(optional)_
-
-Console → n8n dispatcher webhook для Telegram-controlled AI agents. Скопіюйте production webhook URL з workflow 20 після імпорту в n8n. Приклад: `https://n8n.your-domain.com/webhook/agent-dispatcher`.
-
 ### `ANTHROPIC_PROMPT_CACHE` _(dead — OpenClaw gateway decommissioned)_
 
 > ⚠️ **OpenClaw gateway повністю decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Ця змінна конфігурувала prompt caching у gateway agent-loop, якого більше не існує ні в цьому репо, ні деінде (`git grep ANTHROPIC_PROMPT_CACHE -- apps/server` → 0 hits). Env var може лишатися в Coolify, але **runtime consumer відсутній**. Для HubChat/server prompt caching див. [ADR-0039](../../04-governance/adr/0039-anthropic-prompt-cache-policy.md). Секція лишена як історичний запис (PR-39, ADR-0057).
@@ -297,10 +293,12 @@ Decision-point Day 30 — [`docs/03-operations/observability/runbook.md § AI me
 
 ### `MONO_AI_MEMORY_DIGEST_ENABLED` _(optional, default `false`, ⚠ prod required)_
 
-Operator-toggle для n8n WF-30 [`30-ai-memory-daily-digest.json`](../../../ops/n8n-workflows/30-ai-memory-daily-digest.json) (PR-21). Cron 09:05 Europe/Kyiv → SELECT агрегати з `ai_memories` за rolling 24h → Telegram #digest. Aggregated-only payload (без `user_id` у тексті); Voyage cost estimate включений у текст digest-а.
+> ⚠️ n8n виведено з репо ([ADR-0090](../../04-governance/adr/0090-n8n-decommissioned.md)) — toggle лишився без споживача; секція історична, кроки нижче не виконувати.
+
+Operator-toggle для n8n WF-30 [`30-ai-memory-daily-digest.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/30-ai-memory-daily-digest.json) (PR-21). Cron 09:05 Europe/Kyiv → SELECT агрегати з `ai_memories` за rolling 24h → Telegram #digest. Aggregated-only payload (без `user_id` у тексті); Voyage cost estimate включений у текст digest-а.
 
 - Суто n8n-side toggle: server-side digest-hook не існує (PR-21 — n8n-only activation). Дублювальний server-env парсинг «для парності» прибрано 2026-08-06 (0 production-читань) — `apps/server/src/env/env.ts` цю змінну більше не знає.
-- **Activation step:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=true` на n8n Railway env (Settings → Environment Variables), потім flip workflow toggle у self-hosted n8n UI. Без цього кроку workflow JSON залишається `active=false` у git per hard-rule [`validate-n8n-workflows.mjs`](../../../scripts/n8n/validate-n8n-workflows.mjs) («workflows in git must be inactive by default»).
+- **Activation step:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=true` на n8n Railway env (Settings → Environment Variables), потім flip workflow toggle у self-hosted n8n UI. Без цього кроку workflow JSON залишається `active=false` у git per hard-rule [`validate-n8n-workflows.mjs`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/scripts/n8n/validate-n8n-workflows.mjs) («workflows in git must be inactive by default»).
 - **Pre-requisites:** `AI_MEMORY_ENABLED=true` (master) + `MONO_AI_MEMORY_INGEST_ENABLED=true` (PR-19 ingest) — щоб `ai_memories` наповнювалась. Без цього digest буде слати graceful «За добу нічого не записано» kожен ранок.
 - **Monitoring:** [`docs/03-operations/observability/runbook.md § WF-30 AI memory daily digest (PR-21)`](../../03-operations/observability/runbook.md#wf-30-ai-memory-daily-digest-pr-21).
 
@@ -505,9 +503,9 @@ Base URL бекенд-API (Coolify), який [`apps/web/middleware.ts`](../../.
 - `VITE_POSTHOG_KEY=phc_…` — Project API Key з PostHog. Public — можна тримати у клієнтському бандлі. Без ключа PostHog SDK не підтягується, трекінг залишається тільки у локальному ring-buffer (`hub_analytics_log_v1`).
 - `VITE_POSTHOG_HOST=https://eu.i.posthog.com` (default — EU Cloud, GDPR-friendly). Для US-регіону: `https://us.i.posthog.com`.
 
-### Server-side (GDPR cleanup + n8n WF-16/60/63)
+### Server-side (GDPR cleanup)
 
-[ADR-0016 §6.3](../../04-governance/adr/0016-user-deletion-and-pii-handling.md). Цей же триплет змінних читають n8n PostHog-workflow-и (`ops/n8n-workflows/16-posthog-daily-metrics.json`, `60-growth-funnel-snapshot.json`, `63-growth-acquisition-snapshot.json`) — вони мають бути виставлені на n8n Railway (Settings → Environment Variables), а не лише на API-service.
+[ADR-0016 §6.3](../../04-governance/adr/0016-user-deletion-and-pii-handling.md). Історично цей же триплет читали n8n PostHog-workflow-и (виведено — ADR-0090) (`ops/n8n-workflows/16-posthog-daily-metrics.json`, `60-growth-funnel-snapshot.json`, `63-growth-acquisition-snapshot.json`) — вони мають бути виставлені на n8n Railway (Settings → Environment Variables), а не лише на API-service.
 
 - `POSTHOG_API_KEY=phx_…` — Personal API key із project-scope доступом (scopes: `project:read`, `query:read` для n8n HogQL, `persons:write` для GDPR cleanup). Використовується в `deletePostHogPerson(userId)` із cleanup-черги при hard-delete акаунта та у WF-16 HogQL daily query. Без ключа cleanup-job + n8n повертають `outcome: "skipped"` / graceful Telegram alert — рекомендовано виставити у production.
 - `POSTHOG_PROJECT_ID=12345` — числовий ID проєкту (Settings → Project → ID).
@@ -651,7 +649,7 @@ Telegram bot-token для alert-бота (`Sergeant_alert_bot`). OpenClaw gatewa
 - `/alerts/post` / `/alerts/ack` / `/alerts/escalate` / `/alerts/pending` — продовжують працювати (DB-only).
 - `/alerts/send` (O4 / B.1 dedup-шипер) — повертає `503 { error: "telegram_not_configured" }`.
 
-Виставляти у Coolify prod-environment-і. У dev НЕ обовʼязково — n8n WF-и шлють alert-и напряму через `sendMessage`-HTTP-node-и, dedup pipeline увімкнеться лише після того, як n8n WF мігрують на `/api/internal/alerts/send`.
+Виставляти у Coolify prod-environment-і. У dev НЕ обовʼязково. n8n-шар виведено (ADR-0090): усі alert-и йдуть через `/api/internal/alerts/send`.
 
 ### Dedup behaviour (server-side)
 
@@ -663,7 +661,7 @@ Endpoint `/api/internal/alerts/send` приймає `dedupSignature` (stable has
 
 ## 23. `/api/internal/*` HMAC webhook signing (PR-48 follow-up)
 
-> Defence-in-depth поверх `INTERNAL_API_KEY`. Trio змінних читається в [`apps/server/src/http/verifyWebhookSignature.ts`](../../../apps/server/src/http/verifyWebhookSignature.ts) і застосовується middleware-ом на `/api/internal/*` ПІСЛЯ bearer-token guard. Same trio має бути виставлений на n8n Railway env — workflow Function-node читає `$env.WEBHOOK_HMAC_SECRET` (template: [`ops/n8n-workflows/_lib/sign-internal-request.js`](../../../ops/n8n-workflows/_lib/sign-internal-request.js)).
+> Defence-in-depth поверх `INTERNAL_API_KEY`. Trio змінних читається в [`apps/server/src/http/verifyWebhookSignature.ts`](../../../apps/server/src/http/verifyWebhookSignature.ts) і застосовується middleware-ом на `/api/internal/*` ПІСЛЯ bearer-token guard. Same trio має бути виставлений на n8n Railway env — workflow Function-node читає `$env.WEBHOOK_HMAC_SECRET` (template: [`ops/n8n-workflows/_lib/sign-internal-request.js`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/_lib/sign-internal-request.js)).
 
 ### `WEBHOOK_HMAC_SECRET` _(optional, recommended for prod)_
 

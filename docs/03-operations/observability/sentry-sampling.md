@@ -1,6 +1,6 @@
 # Sentry tracesSampler — per-route sampling policy
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-17.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-19.
 > **Status:** Active
 >
 > Source of truth for **server** rules: `apps/server/src/sentry.ts`
@@ -36,7 +36,7 @@ to keep the audit pattern consistent.
 | Match prefix                    | Rate    | Reason                                                                                                                                                              |
 | ------------------------------- | ------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `/api/internal/openclaw/write/` | `1.0`   | OpenClaw write-tool mutations (ADR-0036 §3). Every founder-approved side-effect captured for audit reconstruction. Low-volume, high blast radius.                   |
-| `/api/internal/`                | `1.0`   | All internal-namespace routes (n8n/cron/admin tooling). PR-07 (backend-perf-2026-05). Reduce to `0.5` if Sentry quota is impacted on webhook spikes.                |
+| `/api/internal/`                | `1.0`   | All internal-namespace routes (cron/admin tooling). PR-07 (backend-perf-2026-05). Reduce to `0.5` if Sentry quota is impacted on webhook spikes.                    |
 | `/api/account/recovery`         | `1.0`   | Security-critical, low volume — capture every trace.                                                                                                                |
 | `/api/admin/`                   | `1.0`   | Admin tooling, low volume + high blast radius.                                                                                                                      |
 | `/api/auth/`                    | `1.0`   | Login / signup / SSO — security-critical, low-volume.                                                                                                               |
@@ -54,7 +54,7 @@ to keep the audit pattern consistent.
 The `/api/internal/` rule (added in PR-07, 2026-06-02) captures all internal-namespace
 routes at 100%. The specific `/api/internal/openclaw/write/` rule precedes it in the
 table and still matches first (longest-prefix-first ordering). Sentry quota risk on
-n8n/cron webhook spikes should be measured in the first week post-deploy; if span
+cron/webhook spikes should be measured in the first week post-deploy; if span
 volume exceeds quota headroom, reduce the `/api/internal/` rate to `0.5` in a follow-up
 PR and update this table accordingly.
 

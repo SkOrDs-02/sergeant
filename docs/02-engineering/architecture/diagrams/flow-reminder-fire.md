@@ -1,7 +1,9 @@
 # Flow — Reminder fire (n8n morning briefing push)
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-09-27.
-> **Status:** Active
+> ⚠️ **Історична діаграма.** n8n виведено з репо ([ADR-0090](../../../04-governance/adr/0090-n8n-decommissioned.md)); ранковий брифінг і reminder-fire тепер виконує серверний sweep-таймер (`apps/server/src/lib/reminders/sweep.ts`, [ADR-0089](../../../04-governance/adr/0089-job-substrates-outbox-broker-timer.md)). Крок `POST /api/push/send` і далі — чинний, тригер — ні.
+
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-02.
+> **Status:** Deprecated (n8n decommissioned — ADR-0090)
 
 n8n cron спрацьовує о 07:30 за Києвом, читає підписників з Postgres, дзвонить у server `/api/push/send`. Server відправляє push через APNs / FCM / Web Push на пристрій.
 
@@ -48,7 +50,7 @@ sequenceDiagram
 - Ту саму schedule-trigger інфраструктуру шарять інші flow-и (mono webhook enrich, weekly digest, sentry alert routing).
 - Сервер залишається stateless щодо schedule-ів — це робить horizontal scaling тривіальним (1 replica зараз, але можна).
 
-Trade-off — ще одна movable частина у production. Пом'якшено тим, що n8n self-hosted у тому ж Railway проєкті, той самий VPC.
+Trade-off — ще одна movable частина у production. Пом'якшено тим, що n8n був self-hosted у тому ж Railway проєкті, той самий VPC (обидва виведено).
 
 ## Контракт `/api/push/send`
 

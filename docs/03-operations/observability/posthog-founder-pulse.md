@@ -1,6 +1,6 @@
 # PostHog Founder Pulse dashboard — runbook
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-26.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-28.
 > **Status:** Active
 
 > **⚠️ Дашборд не працює станом на 2026-07-26 — цифрам не вір.**
@@ -37,7 +37,7 @@ funnel breakdown, D1/D7/D30 retention, activation rate, new-MRR і
 > [`docs/03-operations/observability/posthog-ftux-dashboards.md`](./posthog-ftux-dashboards.md) — FTUX-overview runbook (5 інсайтів, інший umbrella) ·
 > [`docs/03-operations/observability/frontend.md`](./frontend.md) — analytics transport (web) ·
 > [`packages/shared/src/lib/analyticsEvents.ts`](../../../packages/shared/src/lib/analyticsEvents.ts) — canonical event-name registry (single source of truth) ·
-> [`ops/n8n-workflows/60-growth-funnel-snapshot.json`](../../../ops/n8n-workflows/60-growth-funnel-snapshot.json) — daily HogQL snapshot, що читає ті самі funnel-події (WF-60 і PR-10 узгоджені).
+> [`ops/n8n-workflows/60-growth-funnel-snapshot.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/60-growth-funnel-snapshot.json) — daily HogQL snapshot, що читає ті самі funnel-події (WF-60 і PR-10 узгоджені).
 
 ---
 
@@ -319,11 +319,11 @@ ORDER BY day, environment
 
 ## 5. Alert thresholds
 
-PostHog → **Alerts** (subscriptions, Telegram-mirror через n8n WF-16 → topic `#growth` / `#ops`):
+PostHog → **Alerts** (subscriptions, Telegram-mirror через server-side digest timer — ADR-0089; n8n WF-16 виведено → topic `#growth` / `#ops`):
 
 | Alert                    | Source | Condition                                                              | Severity | Channel                                                                 |
 | ------------------------ | ------ | ---------------------------------------------------------------------- | -------- | ----------------------------------------------------------------------- |
-| Funnel ZEROES            | §3.7   | будь-який крок = 0 / 24h while previous 7d > 0                         | P1       | Telegram `#ops` (via n8n WF-16) + PostHog subscription                  |
+| Funnel ZEROES            | §3.7   | будь-який крок = 0 / 24h while previous 7d > 0                         | P1       | Telegram `#ops` (server-side digest timer) + PostHog subscription       |
 | Activation rate collapse | §3.4   | `d1_activation_rate` < 0.10 over the last 7 days                       | P1       | Telegram `#growth` + PostHog subscription                               |
 | New-MRR stall            | §3.5   | `sum(new_subs)` = 0 over 7 rolling days while signups/day average > 10 | P1       | Telegram `#ops` + PostHog subscription                                  |
 | D1 retention regression  | §3.6   | D1 drops > 5pp from the 28-day baseline for any signup-cohort          | P2       | Telegram `#growth`                                                      |
@@ -356,7 +356,7 @@ PostHog → **Alerts** (subscriptions, Telegram-mirror через n8n WF-16 → 
 
 ## 7. Open questions / TODOs
 
-- **Auto-import.** Manifest у `ops/posthog/dashboards/founder-pulse.json` — portable shape. Зараз — manual import via PostHog UI. Auto-import (CLI або n8n) — окремий PR під [PR-11 з pr-plan-2026-05](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-2026-05.md) (WF-16 розширення або новий планований скрипт `scripts/posthog/import-dashboard` (`.mjs`)).
+- **Auto-import.** Manifest у `ops/posthog/dashboards/founder-pulse.json` — portable shape. Зараз — manual import via PostHog UI. Auto-import (CLI) — окремий PR під [PR-11 з pr-plan-2026-05](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-2026-05.md) (WF-16 розширення або новий планований скрипт `scripts/posthog/import-dashboard` (`.mjs`)).
 - **Mobile parity.** Поки `apps/mobile` не пише в PostHog (планується в [`ftux-sprint-plan.md` §2 S0.3](../../01-product/launch/archive/product-os/ftux-sprint-plan.md#2-sprint-0--analytics-live-1-тиждень)), усі панелі представляють **web-only** користувачів. Super-property `platform` уже зареєстрована, тож insights почнуть segmenting cleanly щойно mobile приземлиться без правок dashboard.
 - **MRR з renewals/cancellations.** Поки [`stripe.ts`](../../../apps/server/src/modules/billing/stripe.ts) не fire-ить `SUBSCRIPTION_CANCELED` / `SUBSCRIPTION_RENEWED` (TODO у PR-09), §3.5 показує **new-MRR contribution**, не cumulative active-MRR. Коли події приземляться — додати §3.6.5 cumulative-MRR панель і апдейтити targets.
 - **A/B testing.** Sprint 5 (goal-first wizard з `ftux-sprint-plan.md`) вводить feature flags. Коли це лендиться — додати §3.8 insight, що breaks down §3.2 by активним variant.
@@ -584,7 +584,7 @@ WHERE timestamp >= toStartOfDay(now() - INTERVAL 1 DAY)
 …і при цьому підписують рядок датою, обчисленою в JS **у Kyiv**:
 
 ```js
-// ops/n8n-workflows/60-growth-funnel-snapshot.json → "Build funnel rows"
+// історичний n8n WF-60 (прибрано, ADR-0090) → "Build funnel rows"
 const fmt = new Intl.DateTimeFormat('en-CA', { timeZone: 'Europe/Kyiv', … });
 const snapshotDate = fmt.format(yesterday);
 ```

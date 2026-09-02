@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-18.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-19.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -34,7 +34,7 @@ Sergeant is **tool-agnostic**: any AI agent harness drives this repo through the
 | Touches `apps/server/**`, API contract, `api-client`, pino, OpenAPI  | `sergeant-server-api`                 |
 | Touches `apps/mobile/**` or `apps/mobile-shell/**`, Expo, EAS        | `sergeant-mobile-expo`                |
 | Touches `db-schema/`, migrations, drill-down, index audit            | `sergeant-data-and-migrations`        |
-| Coolify / Vercel / Sentry / alerting/SLO / CI workflow change / n8n  | `sergeant-deploy-and-observability`   |
+| Coolify / Vercel / Sentry / alerting/SLO / CI workflow change        | `sergeant-deploy-and-observability`   |
 | Writing or running E2E (Playwright/Vitest browser)                   | `sergeant-e2e-testing`                |
 | Security review, vuln triage, secret scan, dependency CVE            | `sergeant-security-audit`             |
 | New feature, new screen, endpoint, workflow, behavior change         | `sergeant-feature-delivery`           |

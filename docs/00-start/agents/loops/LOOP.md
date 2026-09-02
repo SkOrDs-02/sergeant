@@ -110,7 +110,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 - **Hard rules:** #6, #21.
 - **Tools:** claude-code, github-actions, sentry-webhooks.
 - **Counterpart:** `ci-sweeper` (deploy variant).
-- **Status:** **blocked-on-infra** — Grafana Alloy + n8n паузовано 2026-06-28 (`railway down`); Sentry→Telegram alert chain непрацездатний — вмикати після redeploy observability.
+- **Status:** **blocked-on-infra** — Grafana Alloy працює під Coolify; n8n паузовано 2026-06-28 (`railway down`) і виведено з репо 2026-09-02 ([ADR-0090](../../../04-governance/adr/0090-n8n-decommissioned.md)); Sentry→Telegram alert chain треба перепідключити на server-side alert shipper — вмикати після цього.
 - **Cost:** 500k tokens/day cap.
 
 ### e2e-flake-watch

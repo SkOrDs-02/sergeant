@@ -287,14 +287,14 @@ Response: `{ ok: true, alreadyEscalated: boolean }`.
 
 **n8n wiring (W3 PR-2):**
 
-- [`ops/n8n-workflows/04-daily-backup-verification.json`](../../../ops/n8n-workflows/04-daily-backup-verification.json) — reference impl: `Build alert payload` → `POST /api/internal/alerts/post` → `Telegram → CRITICAL` з `reply_markup`.
-- [`ops/n8n-workflows/103-alert-escalation-cron.json`](../../../ops/n8n-workflows/103-alert-escalation-cron.json) — escalation cron `*/5min`.
-- [`ops/n8n-workflows/104-alert-callback-router.json`](../../../ops/n8n-workflows/104-alert-callback-router.json) — Telegram callback router.
+- [`ops/n8n-workflows/04-daily-backup-verification.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/04-daily-backup-verification.json) — reference impl: `Build alert payload` → `POST /api/internal/alerts/post` → `Telegram → CRITICAL` з `reply_markup`.
+- [`ops/n8n-workflows/103-alert-escalation-cron.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/103-alert-escalation-cron.json) — escalation cron `*/5min`.
+- [`ops/n8n-workflows/104-alert-callback-router.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/104-alert-callback-router.json) — Telegram callback router.
 
 **Context:**
 
 - [`docs/01-product/launch/tech/telegram-improvements-roadmap.md` §3.2](../../01-product/launch/archive/tech/telegram-improvements-roadmap.md#32-acknowledge-кнопка-на-p0p1-alert-ах--15-min-escalation) — pain P2 context.
-- [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md) — WF-04/103/104/105/106 rows + footnotes ⁽⁵⁾⁽⁶⁾.
+- [`ops/n8n-workflows/REPORTING-MATRIX.md`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md) — WF-04/103/104/105/106 rows + footnotes ⁽⁵⁾⁽⁶⁾.
 
 ## Follow-on — Sprint 6 escalation tiers (T2 @ 60 min, T3 @ 120 min)
 
@@ -348,6 +348,6 @@ Snooze, на відміну, **latest-write-wins** (`SET snoozed_until_at = $2`
 - Migration: [`063_tg_alert_acks_escalation_tiers.sql`](../../../apps/server/src/migrations/063_tg_alert_acks_escalation_tiers.sql)
 - Store: `markAlertRepeated`, `markAlertSentryWarned`, `markAlertSnoozed` у [`apps/server/src/modules/alerts/store.ts`](../../../apps/server/src/modules/alerts/store.ts).
 - Routes: `POST /api/internal/alerts/repeat`, `/alerts/sentry-warn`, `/alerts/snooze` у [`apps/server/src/routes/internal/alerts.ts`](../../../apps/server/src/routes/internal/alerts.ts).
-- Workflows: [`105-alert-repeat-ping-cron.json`](../../../ops/n8n-workflows/105-alert-repeat-ping-cron.json) (T2), [`106-alert-sentry-warn-cron.json`](../../../ops/n8n-workflows/106-alert-sentry-warn-cron.json) (T3); [`104-alert-callback-router.json`](../../../ops/n8n-workflows/104-alert-callback-router.json) updated with snooze branch.
+- Workflows: [`105-alert-repeat-ping-cron.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/105-alert-repeat-ping-cron.json) (T2), [`106-alert-sentry-warn-cron.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/106-alert-sentry-warn-cron.json) (T3); [`104-alert-callback-router.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/104-alert-callback-router.json) updated with snooze branch.
 - Runbook: [`docs/03-operations/observability/runbook.md`](../../03-operations/observability/runbook.md) § "Alert-bot escalation ladder".
 - Lifecycle diagram + keyboard spec: [`docs/03-operations/observability/alert-bot-routing.md`](../../03-operations/observability/alert-bot-routing.md) § "Acknowledgment lifecycle" + § "T2 repeat-ping inline keyboard".

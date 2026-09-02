@@ -49,7 +49,7 @@
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "566a11ddeeb0a8244406f814d87aa9575d2de5cb05aecd7792756d464da7ae38"
+      "computedHash": "0ca55ae5e2cc9c5d55581dd8f500a0f4e46ec2f4b51f654ec16a1ec1caeee0c5"
     },
     "sergeant-e2e-testing": {
       "source": "local",
@@ -99,7 +99,7 @@
     "sergeant-module-integrations": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "63d51efb18f5e1d33cecf10afabef8bb58b34335c4826bd36a4d8fa7a26f6d20"
+      "computedHash": "c1463f6eef9ccc671a3408af15e8d9cb68f0c8216ccc6c2136558701bf8cdd03"
     },
     "sergeant-module-nutrition": {
       "source": "local",
@@ -159,7 +159,7 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "9c91e811bbca35b8315815c2c1e7d269bbbb2fa3c57f8d69a3aa021cd740ed98"
+      "computedHash": "b14d3e7d032dba409d0db5683de79a6f31bbe01008a8e762cb7c789d7e8485ca"
     },
     "sergeant-tech-debt": {
       "source": "local",

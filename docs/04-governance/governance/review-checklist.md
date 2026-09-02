@@ -1,6 +1,6 @@
 # Review Checklist
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-23.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-21.
 > **Status:** Active
 
 Checklist для reviewer'ів і pre-merge self-review.
@@ -23,5 +23,5 @@ Checklist для reviewer'ів і pre-merge self-review.
 - Migrations: sequential numbering, two-phase DROP, local migrate path, review notes для rollout?
 - HubChat: tool defs, executor path, action cards, risky labelling і prompt budget узгоджені?
 - Mobile: немає DOM leakage, web-only imports або дублювання shared domain logic?
-- HubChat/n8n/ops: немає write-side effects у read-only agents, metadata і manifests синхронізовані?
+- HubChat/ops: немає write-side effects у read-only agents, metadata і manifests синхронізовані?
 - Docs/governance: оновлено індекси, schema gates, freshness headers?

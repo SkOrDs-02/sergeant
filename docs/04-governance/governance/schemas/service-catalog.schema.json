@@ -25,7 +25,6 @@
         "vercel",
         "expo-eas",
         "capacitor-stores",
-        "n8n-runtime",
         "vercel+capacitor"
       ]
     },
@@ -42,7 +41,7 @@
         "title": { "type": "string", "minLength": 1 },
         "workspace": {
           "type": ["string", "null"],
-          "description": "Workspace path (relative to repo root) when the surface is hosted by a single workspace; null for cross-cutting surfaces like n8n workflows."
+          "description": "Workspace path (relative to repo root) when the surface is hosted by a single workspace; null for cross-cutting surfaces."
         },
         "deployTarget": { "$ref": "#/definitions/deployTarget" },
         "deployArtifact": {

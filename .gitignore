@@ -50,7 +50,7 @@ apps/mobile/.expo/
 apps/mobile/ios/
 apps/mobile/android/
 
-# Ops stack secrets (n8n)
+# Ops stack secrets (Prometheus / Grafana)
 ops/.env.ops
 
 # Sandbox / experimental prototypes

@@ -1,6 +1,6 @@
 # Security Events — Операційний Playbook
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-12.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-10.
 > **Status:** Active
 
 ## Загальна архітектура
@@ -91,8 +91,8 @@ prompt-injection (наприклад «ignore previous instructions», `<system>
 
 **Можливі причини:**
 
-- Компрометований upstream: поле `description` Mono webhook, відповідь n8n
-  webhook або відповідь GitHub API містять injected-текст.
+- Компрометований upstream: поле `description` Mono webhook
+  або відповідь GitHub API містять injected-текст.
 - Зловмисник сформував шкідливу відповідь tool (для цього потрібно скомпрометувати
   шлях виконання tool або підʼязаний акаунт користувача).
 - Хибне спрацювання: легітимний текст збігся з широким патерном (наприклад
@@ -103,7 +103,7 @@ prompt-injection (наприклад «ignore previous instructions», `<system>
 1. Перевірити мітку `tool` у лозі для ідентифікації tool, що спрацював.
 2. Якщо `tool=unknown` — отримано сирий блок `tool_result`; перевірити клієнт
    на пошкодження стану.
-3. Перевірити upstream-джерело для цього tool (Mono API, n8n-workflow, GitHub).
+3. Перевірити upstream-джерело для цього tool (Mono API, GitHub).
 4. Якщо патерн є хибним спрацьовуванням — переглянути `PROMPT_INJECTION_PATTERNS`
    у `modules/chat/toolOutputWrapping.ts` і звузити regex, якщо безпечно.
 5. Якщо сталий: розглянути тимчасове вимкнення відповідного tool через

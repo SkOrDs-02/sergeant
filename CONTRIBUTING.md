@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-25.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-27.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/00-start/playbooks/README.md](./docs/00-start/playbooks/README.md).
@@ -148,7 +148,6 @@ Playbooks - це канонічні покрокові рецепти викон
 - Prod incident: `hotfix-prod-regression.md`
 - Alerts і деградація: `investigate-alert.md`
 - Web -> mobile porting: `port-web-screen-to-mobile.md`
-- n8n workflows: `modify-n8n-workflow.md`
 
 ## Commit і PR дисципліна
 

@@ -1,7 +1,9 @@
 # Telegram як control plane для Sergeant Ops
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-24.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-22.
 > **Status:** Active
+
+> ⚠️ **n8n виведено з репо ([ADR-0090](../../04-governance/adr/0090-n8n-decommissioned.md), 2026-09-02).** Висновки про Telegram як control plane і структуру каналів (ADR-0030) чинні; згадки n8n-механізмів (WF-98, `n8n_errors`, reporting-матриця) — історичні, файли — у permalink-снапшоті.
 
 Це architectural review: **чи достатньо Telegram-бота, щоб масштабувати
 Sergeant Ops у повноцінний "console управління"?** Чи треба готуватись до
@@ -10,7 +12,7 @@ Sergeant Ops у повноцінний "console управління"?** Чи т
 TL;DR — **так, достатньо, поки solo-founder + ≤1 team member + alert-volume
 < 50/день**. Міграція стає виправданою тільки після одного з конкретних
 тригерів у розділі "When to migrate". Поточний layout каналів і workflow
-mapping живе у [`../../ops/n8n-workflows/REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md);
+mapping живе у [`../../ops/n8n-workflows/REPORTING-MATRIX.md`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md);
 формальне рішення — у [ADR-0030](../../04-governance/adr/0030-telegram-reporting-channel-structure.md).
 
 ## Що ми називаємо "control plane"
@@ -116,7 +118,7 @@ true → відкривати ADR-0031 та ставити migration в roadmap.
 
 - WF-98 Postgres dual-store — вже є.
 - `riskTier` у `manifest.json` — формалізує priority.
-- Structured matrix у [`REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md) — формалізує routing.
+- Structured matrix у [`REPORTING-MATRIX.md`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md) — формалізує routing.
 
 Це 80% переробки, яка все одно знадобилась би при міграції. Тобто Telegram
 **не мертвий шлях**: те, що зараз вкладається в формалізацію, прозоро
@@ -160,7 +162,7 @@ supergroup — operator surface; user push — окрема система че�
 
 - [ADR-0030: Telegram reporting channel structure](../../04-governance/adr/0030-telegram-reporting-channel-structure.md)
 - [ADR-0026: n8n workflow source of truth](../../04-governance/adr/0026-n8n-workflow-source-of-truth.md)
-- [Reporting Matrix](../../../ops/n8n-workflows/REPORTING-MATRIX.md)
+- [Reporting Matrix](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md)
 - [Observability runbook](./runbook.md)
 - [Hosting evolution (when to scale infra)](../../02-engineering/architecture/hosting-evolution.md)
 - [HubChat orchestration playbook (бот-команди)](../../00-start/playbooks/add-hubchat-tool.md)

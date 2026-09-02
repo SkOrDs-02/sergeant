@@ -1,6 +1,6 @@
 # Playbooks — Trigger Index
 
-> **Last validated:** 2026-08-18 by @devin-ai. **Next review:** 2026-11-16.
+> **Last validated:** 2026-09-02 by @devin-ai. **Next review:** 2026-12-01.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-playbook-index`. -->
@@ -43,7 +43,6 @@ Lookup table for agents and humans: find the playbook that matches a user reques
 | [`hotfix-prod-regression.md`](./hotfix-prod-regression.md)                         | Hotfix Production Regression                              | "Прод впав" / користувачі скаржаться / `/health` деградував / Sentry або ops канал показує активну регресію після релізу.                                                                                                                  |
 | [`investigate-alert.md`](./investigate-alert.md)                                   | Розслідування alert-у                                     | спрацював Prometheus alert / росте Sentry issue / підозрілі 5xx, latency або деградація health-ендпоїнтів, але ще не очевидно, чи це інцидент, false positive або транзитний шум.                                                          |
 | [`migrate-localstorage-to-typedstore.md`](./migrate-localstorage-to-typedstore.md) | Migrate localStorage to typedStore                        | "Мігрувати файл X з прямого localStorage на typedStore" / зменшити TODO-список у ESLint allowlist / `frontend-tech-debt.md` #2.                                                                                                            |
-| [`modify-n8n-workflow.md`](./modify-n8n-workflow.md)                               | Зміна або додавання n8n-воркфлоу                          | "Додай новий n8n workflow" / "Зміни логіку workflow X" / зміна в `ops/n8n-workflows/` або `manifest.json`.                                                                                                                                 |
 | [`onboard-external-api.md`](./onboard-external-api.md)                             | Onboard External API                                      | "Інтегрувати нову зовнішню API" / додати новий third-party сервіс / нова банківська інтеграція / новий AI-провайдер.                                                                                                                       |
 | [`operational-continuity.md`](./operational-continuity.md)                         | Operational continuity                                    | @Skords-01 is unavailable (vacation, illness, emergency). You need to keep Sergeant running.                                                                                                                                               |
 | [`port-web-screen-to-mobile.md`](./port-web-screen-to-mobile.md)                   | Порт web-екрану в mobile                                  | "Перенести екран з `apps/web` у `apps/mobile`" / чергова фаза RN migration / mobile-фіча повинна повторити існуючий web capability без дублювання domain-логіки.                                                                           |

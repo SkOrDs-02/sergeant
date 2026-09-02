@@ -3,7 +3,7 @@
 <!-- Last validated: 2026-06-03 -->
 <!-- Next review: 2026-09-03 -->
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2027-09-06.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-10-11.
 > **Status:** Active
 
 # Ротація Production Secrets
@@ -104,29 +104,9 @@
 
 ---
 
-### 4. n8n API Key
+### 4. n8n API Key _(retired)_
 
-**Поточний ключ:** `eyJhbGci...` (JWT формат)
-
-#### Revoke
-
-1. Перейди на n8n instance (наприклад, https://n8n.sergeant.app або self-hosted URL)
-2. Увійди як admin
-3. Перейди на **Settings** → **API**
-4. Знайди API key у списку
-5. Натисни **Delete** або **Revoke**
-
-#### Створити новий
-
-1. На тій самій сторінці натисни **Create an API Key**
-2. **Label:** `Sergeant Local 2026-06`
-3. Натисни **Create**
-4. Скопіюй ключ (показується один раз)
-
-#### Оновити
-
-- **Локально:** заміни `N8N_API_KEY` у `.env`
-- **n8n workflows:** якщо workflows використовують цей ключ для HTTP Request nodes → онови credentials у n8n UI
+n8n виведено з експлуатації ([ADR-0090](../adr/0090-n8n-decommissioned.md)); інстансу немає, ключ ротації не потребує — якщо `N8N_API_KEY` ще лежить у локальному `.env`, просто видали його. Історичні кроки — у git history цього файлу.
 
 ---
 

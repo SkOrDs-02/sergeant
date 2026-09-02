@@ -1,9 +1,9 @@
 # Grafana Alloy — Phase 2 metrics scraper
 
-> **Last touched:** 2026-07-26 by @Skords-01. **Next review:** 2026-10-24.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-02.
 > **Status:** Active
 
-Лёгкий scrape-only агент, який ходить по `/metrics` n8n + apps/server і пушить
+Лёгкий scrape-only агент, який ходить по `/metrics` apps/server і пушить
 все у Grafana Cloud Prometheus. Без локального TSDB — це робота Grafana Cloud.
 
 Контекст рішення — [`docs/02-engineering/architecture/hosting-evolution.md`](../../docs/02-engineering/architecture/hosting-evolution.md)
@@ -14,7 +14,6 @@
 
 | Job               | Endpoint                            | Auth                   |
 | ----------------- | ----------------------------------- | ---------------------- |
-| `n8n`             | `${N8N_METRICS_TARGET}/metrics`     | none                   |
 | `sergeant-server` | `${SERGEANT_SERVER_TARGET}/metrics` | bearer `METRICS_TOKEN` |
 
 External label `project=sergeant` додається до кожної серії — щоб у Grafana
@@ -58,10 +57,9 @@ Coolify не дає стабільного internal-DNS-імені між окр
 `/metrics` тягнеться через traefik-проксі по HTTPS. Ендпоїнт закритий
 `METRICS_TOKEN`-ом (bearer), тож публічність шляху не означає публічність даних.
 
-**`N8N_METRICS_TARGET` більше не потрібен** — n8n на Coolify не задеплоєний.
-У production-конфізі scrape-джоб `n8n` **вилучено**, інакше `up{job="n8n"}=0`
-висів би вічно й тригерив алерти. [`config.alloy`](./config.alloy) у репо все
-ще містить цей джоб — синхронізуй перед наступним деплоєм.
+**`N8N_METRICS_TARGET` більше не існує** — n8n виведено з експлуатації
+([ADR-0090](../../docs/04-governance/adr/0090-n8n-decommissioned.md)); scrape-джоб `n8n`
+прибрано і з [`config.alloy`](./config.alloy), і з production-конфіга. Єдиний target — `sergeant-server`.
 
 **Перевірка після деплою:** у логах має бути `{^_^} Alloy is running`, а в
 Grafana Cloud → Explore → Prometheus запит `up{job="sergeant-server"}` має
@@ -69,7 +67,7 @@ Grafana Cloud → Explore → Prometheus запит `up{job="sergeant-server"}` 
 
 ## Імпорт дашбордів у Grafana Cloud
 
-Після того як `up{project="sergeant"} == 1` для обох targets — імпортуй
+Після того як `up{job="sergeant-server"} == 1` — імпортуй
 дашборди з `docs/03-operations/observability/dashboards/` через **Dashboards → Import →
 Upload JSON**. Datasource — той самий `grafanacloud-<instance>-prom`.
 
@@ -82,8 +80,7 @@ Upload JSON**. Datasource — той самий `grafanacloud-<instance>-prom`.
 
 Alert rules у [`docs/03-operations/observability/prometheus/alert_rules.yml`](../../docs/03-operations/observability/prometheus/alert_rules.yml)
 вантажаться так само (`mimirtool rules sync`). Contact point — Telegram
-через webhook (див. `ops/n8n-workflows/03-sentry-alert-routing.json` як
-референс для формату повідомлень).
+через webhook — маршрутизація у [`alert-bot-routing.md`](../../docs/03-operations/observability/alert-bot-routing.md).
 
 ## Чому Alloy, а не повний Prometheus
 
@@ -103,7 +100,12 @@ Alert rules у [`docs/03-operations/observability/prometheus/alert_rules.yml`](.
 - **`429 Too Many Requests`** — впираєшся у rate limit free tier (10K
   active series). Зменш `scrape_interval` до 60s або упрости labels.
 
-## Міграція: перенести у проєкт `Sergeant` (план)
+## Міграція: перенести у проєкт `Sergeant` (план) — історичний
+
+> **Історично.** План нижче написано під Railway і під двохтаргетний scrape
+> (API + n8n). Railway виведено з експлуатації ([ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md)),
+> n8n — теж ([ADR-0090](../../docs/04-governance/adr/0090-n8n-decommissioned.md)). Не виконуй; лишено як контекст
+> інциденту 2026-07-14.
 
 > **Чому.** Зараз сервіс живе у Railway-проєкті `SERGEANT_N8N`, тому скрейпить
 > `apps/server` через **публічний** домен (`SERGEANT_SERVER_TARGET=sergeant-production.up.railway.app:443`,

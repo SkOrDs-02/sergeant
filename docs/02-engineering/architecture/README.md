@@ -1,6 +1,6 @@
 # 🏗️ Architecture
 
-> **Last touched:** 2026-08-02 by @claude. **Next review:** 2026-11-29.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-30.
 > **Status:** Active
 
 System architecture and runtime surface inventory for Sergeant.
@@ -29,7 +29,7 @@ System architecture and runtime surface inventory for Sergeant.
 | [`diagrams/flow-signin.md`](./diagrams/flow-signin.md)               | Better Auth sign-in flow (email + password)                                          | 2026-05-05    |
 | [`diagrams/flow-cloudsync.md`](./diagrams/flow-cloudsync.md)         | Sync v2 push/pull: web ↔ `/api/v2/sync/push` ↔ Postgres; v1 → 410 Gone               | 2026-06-09    |
 | [`diagrams/flow-chat-tool-use.md`](./diagrams/flow-chat-tool-use.md) | Runtime tool-use cycle within a chat session                                         | 2026-05-05    |
-| [`diagrams/flow-reminder-fire.md`](./diagrams/flow-reminder-fire.md) | n8n cron → server push → APNs/FCM → device                                           | 2026-05-05    |
+| [`diagrams/flow-reminder-fire.md`](./diagrams/flow-reminder-fire.md) | cron → server push → APNs/FCM → device (історично n8n; ADR-0090)                     | 2026-05-05    |
 
 ### API, модулі, дані
 

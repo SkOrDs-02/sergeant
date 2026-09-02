@@ -1,6 +1,6 @@
 # Status-матриця apps і packages
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-25.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-27.
 > **Status:** Active
 
 Одна сторінка — хто живий, хто стабілізується, хто в міграції, хто legacy.
@@ -57,7 +57,7 @@
 | `ai-memory`     | `apps/server/src/modules/ai-memory/`     | `active`    | Voyage embeddings ingest/recall, BullMQ queue (Redis when `REDIS_URL` set).                                                                                                | [`docs/02-engineering/integrations/voyage-pgvector.md`](../integrations/voyage-pgvector.md)                                                                                                                                                                     |
 | `digest`        | `apps/server/src/modules/digest/`        | `active`    | Weekly digest generation (`POST /api/v1/weekly-digest`).                                                                                                                   | [`packages/insights`](../../../packages/insights)                                                                                                                                                                                                               |
 | `telegram`      | `apps/server/src/modules/telegram/`      | `active`    | Telegram waitlist bot (`/start`, `/stop`, broadcast) і shared Telegram API client.                                                                                         | migration 089, [`apps/landing/README.md`](../../../apps/landing/README.md)                                                                                                                                                                                      |
-| `webhooks`      | `apps/server/src/modules/webhooks/`      | `active`    | Inbound webhook surfaces (Stripe, Mono, n8n internal).                                                                                                                     | [`docs/02-engineering/architecture/data-exchange-storage-audit.md`](./data-exchange-storage-audit.md)                                                                                                                                                           |
+| `webhooks`      | `apps/server/src/modules/webhooks/`      | `active`    | Inbound webhook surfaces (Stripe, Mono, internal replay).                                                                                                                  | [`docs/02-engineering/architecture/data-exchange-storage-audit.md`](./data-exchange-storage-audit.md)                                                                                                                                                           |
 
 ---
 

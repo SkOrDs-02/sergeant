@@ -106,9 +106,6 @@ jobs:
         # scripts/__tests__/ci-dedupe-gate.test.mjs.
         run: node --test scripts/__tests__/ci-dedupe-gate.test.mjs
 
-      - name: Validate n8n workflow definitions
-        run: pnpm ops:n8n:validate
-
       - name: Governance sync (Hard Rules + Status badges + dangling refs)
         run: pnpm lint:governance-sync
 

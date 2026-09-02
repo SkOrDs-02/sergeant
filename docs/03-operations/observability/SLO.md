@@ -1,6 +1,6 @@
 # Service Level Objectives й Burn-rate-алерти
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-24.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-22.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.
@@ -350,7 +350,7 @@ rule_files:
   - "docs/03-operations/observability/prometheus/alert_rules.yml"
 ```
 
-Current production routing: `severity=page` → n8n WF-98 / Telegram incidents +
+Current production routing: `severity=page` → Telegram incidents (n8n WF-98 виведено — ADR-0090) +
 founder DM, `severity=ticket` → Sentry issue or backlog ticket. PagerDuty is not
 currently wired and should be treated as a future escalation option, not an
 active dependency.

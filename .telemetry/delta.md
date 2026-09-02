@@ -136,7 +136,7 @@ dismissals (localStorage, назавжди) занижують кількіст�
 
 **Why:**
 
-- 94 LIVE events feeding production dashboards (WF-60 growth funnel, FTUX dashboards, dozens of saved PostHog insights, n8n cron snapshots in `ops/n8n-workflows/60-growth-funnel-snapshot.json`).
+- 94 LIVE events feeding production dashboards (WF-60 growth funnel, FTUX dashboards, dozens of saved PostHog insights, server-side growth-funnel snapshot timer — колишній n8n WF-60, виведено ADR-0090).
 - Rename = lose historical continuity in every chart that filters by event name. Migrations either drop history or maintain a permanent rename map.
 - The current style is internally consistent (always snake_case, always past tense, almost always object-first). Codify what exists; enforce on new events.
 

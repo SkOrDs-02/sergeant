@@ -1,6 +1,6 @@
 # Access Policy
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2027-11-04.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-12-09.
 > **Status:** Active
 
 Canonical policy for privileged access in Sergeant. This policy is optimized for a Founder+1 operating model: minimal ceremony, explicit ownership, and zero reliance on tribal memory.
@@ -14,11 +14,11 @@ Canonical policy for privileged access in Sergeant. This policy is optimized for
 
 ## Access tiers
 
-| Tier     | Meaning                                                                                    | Typical examples                                                                         |
-| -------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------------- |
-| `Tier 0` | Identity, billing, or root recovery access that can lock out or fully recover the business | GitHub owner/admin, domain registrar, app store owner, Stripe/Paddle billing admin       |
-| `Tier 1` | Production mutation access that can change runtime behavior, data, or release state        | Coolify/Hetzner prod, Vercel prod, Postgres prod, Sentry admin, PostHog admin, n8n admin |
-| `Tier 2` | Read-only operational visibility                                                           | logs, dashboards, release views, metrics, Sentry read-only                               |
+| Tier     | Meaning                                                                                    | Typical examples                                                                   |
+| -------- | ------------------------------------------------------------------------------------------ | ---------------------------------------------------------------------------------- |
+| `Tier 0` | Identity, billing, or root recovery access that can lock out or fully recover the business | GitHub owner/admin, domain registrar, app store owner, Stripe/Paddle billing admin |
+| `Tier 1` | Production mutation access that can change runtime behavior, data, or release state        | Coolify/Hetzner prod, Vercel prod, Postgres prod, Sentry admin, PostHog admin      |
+| `Tier 2` | Read-only operational visibility                                                           | logs, dashboards, release views, metrics, Sentry read-only                         |
 
 ## Allowed holder types
 

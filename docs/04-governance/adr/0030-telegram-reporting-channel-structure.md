@@ -10,7 +10,7 @@ render_with_liquid: false
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md) — workflow → topic routing matrix.
+  - [`ops/n8n-workflows/REPORTING-MATRIX.md`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md) — workflow → topic routing matrix.
   - [`docs/03-operations/observability/telegram-control-plane.md`](../../03-operations/observability/telegram-control-plane.md) — architectural review.
   - [ADR-0026 — n8n workflow source of truth](./0026-n8n-workflow-source-of-truth.md) — Git-as-truth для workflow JSON.
   - [`docs/00-start/playbooks/modify-n8n-workflow.md`](../../00-start/playbooks/modify-n8n-workflow.md) — playbook оновлення matrix-у разом з workflow.
@@ -51,7 +51,7 @@ n8n-side errors змішувалися. Як наслідок:
    monitoring/alerting workflow-ів.
 2. **Forum mode** активований; топіки — **canonical 8** з фіксованим
    призначенням (див.
-   [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md)):
+   [`ops/n8n-workflows/REPORTING-MATRIX.md`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md)):
 
    | Topic             | Tier | Owner area     |
    | ----------------- | ---- | -------------- |
@@ -74,7 +74,7 @@ n8n-side errors змішувалися. Як наслідок:
    `errorWorkflow` посилання) залишається.
 
 5. **Source of truth для маппінгу workflow→topic** — файл
-   [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md).
+   [`ops/n8n-workflows/REPORTING-MATRIX.md`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md).
    `manifest.json` лишається source of truth для технічних параметрів
    (env, credentials, riskTier).
 
@@ -165,7 +165,7 @@ PII у P0 alerts, > 5 одночасних bot commands, > 30 workflow × > 8
 - [x] Оновити всі 17 workflow JSON-ів — додати
       `additionalFields.message_thread_id =
 "={{ $env.TELEGRAM_TOPIC_<NAME> }}"` per
-      [`REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md).
+      [`REPORTING-MATRIX.md`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md).
       WF-15 використовує тернарне routing на `$json.ok`.
 - [x] Розширити `manifest.json` полями `telegramTopic` + `audienceTier`
       (machine-readable mapping). Schema cross-check у
@@ -185,6 +185,6 @@ PII у P0 alerts, > 5 одночасних bot commands, > 30 workflow × > 8
 ## Related
 
 - [ADR-0026: n8n workflow source of truth](./0026-n8n-workflow-source-of-truth.md)
-- [Reporting matrix](../../../ops/n8n-workflows/REPORTING-MATRIX.md)
+- [Reporting matrix](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md)
 - [Telegram-as-control-plane analysis](../../03-operations/observability/telegram-control-plane.md)
 - [Modify n8n workflow playbook](../../00-start/playbooks/modify-n8n-workflow.md)

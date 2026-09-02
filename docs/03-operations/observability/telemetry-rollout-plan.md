@@ -1,6 +1,6 @@
 # Telemetry rollout plan
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2026-10-05.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-29.
 > **Status:** Active
 
 > Канонічний план перебудови product-telemetry layer Sergeant. Згенеровано
@@ -197,7 +197,7 @@ switch на new name; PR-7 видаляє dual-write.
 
 **Risk:** medium — забутий dashboard продовжить читати old name → стрибок
 до нуля після PR-7. **Mitigation:** перед PR-7 grep
-[`ops/n8n-workflows/`](../../../ops/n8n-workflows) + audit PostHog saved
+[`ops/n8n-workflows/`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows) + audit PostHog saved
 insights.
 
 **Rollback:** revert. Dual-write дозволяє безболісний revert до PR-7.
@@ -335,7 +335,7 @@ Mitigation: PR-6 робиться **паралельно** з PR-3/4/5, але �
 - EDIT `trackEvent` — прибрати `RENAMED_EVENTS` dual-write
 - DELETE `ONBOARDING_GOAL_FIRST_SHOWN` з [`analyticsEvents.ts`](../../../packages/shared/src/lib/analyticsEvents.ts)
 - EDIT callsite у [`GoalFirstScreen.tsx`](../../../apps/web/src/core/onboarding/GoalFirstScreen.tsx) — replace з `experiment_exposed { experiment_id: "goal_first", variant }`
-- VERIFY: grep [`ops/n8n-workflows/`](../../../ops/n8n-workflows) + PostHog saved insights — ніхто не читає старі назви
+- VERIFY: grep [`ops/n8n-workflows/`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows) + PostHog saved insights — ніхто не читає старі назви
 
 **Tests:** snapshot test для GoalFirstScreen що fires `experiment_exposed` з правильним `experiment_id`.
 

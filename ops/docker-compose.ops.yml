@@ -1,4 +1,4 @@
-# Sergeant Operations Stack — n8n + Postgres + Prometheus + Grafana
+# Sergeant Operations Stack — Prometheus + Grafana (+ Grafana Alloy)
 # Docs: ops/README.md
 #
 # Usage:
@@ -6,73 +6,10 @@
 #   docker compose -f ops/docker-compose.ops.yml --env-file ops/.env.ops up -d
 #
 # Ports:
-#   n8n UI        — http://localhost:5678
 #   Prometheus    — http://127.0.0.1:9090  (loopback-only)
 #   Grafana       — http://127.0.0.1:3001  (loopback-only; admin / $GF_ADMIN_PASSWORD)
 
 services:
-  n8n:
-    image: n8nio/n8n:latest
-    restart: unless-stopped
-    ports:
-      - "${N8N_PORT:-5678}:5678"
-    environment:
-      - N8N_HOST=${N8N_HOST:-localhost}
-      - N8N_PROTOCOL=${N8N_PROTOCOL:-http}
-      - N8N_PORT=5678
-      - WEBHOOK_URL=${WEBHOOK_URL:-http://localhost:5678/}
-      # Auth: User Management (n8n 1.0+). Basic auth removed — deprecated.
-      # On first start, n8n will prompt you to create an owner account in the UI.
-      # Enable MFA per-user via Settings → Two-factor Authentication.
-      - N8N_ENCRYPTION_KEY=${N8N_ENCRYPTION_KEY:?Set N8N_ENCRYPTION_KEY in .env.ops}
-      - DB_TYPE=postgresdb
-      - DB_POSTGRESDB_HOST=n8n-db
-      - DB_POSTGRESDB_PORT=5432
-      - DB_POSTGRESDB_DATABASE=n8n
-      - DB_POSTGRESDB_USER=n8n
-      - DB_POSTGRESDB_PASSWORD=${N8N_DB_PASSWORD:?Set N8N_DB_PASSWORD in .env.ops}
-      - GENERIC_TIMEZONE=Europe/Kyiv
-      - TZ=Europe/Kyiv
-      # Expose Prometheus metrics at /metrics
-      - N8N_METRICS=true
-      - N8N_METRICS_INCLUDE_DEFAULT_METRICS=true
-      - N8N_METRICS_INCLUDE_QUEUE_METRICS=true
-      # Telegram (used by workflows)
-      - TELEGRAM_BOT_TOKEN=${TELEGRAM_BOT_TOKEN:-}
-      - TELEGRAM_ALERT_CHAT_ID=${TELEGRAM_ALERT_CHAT_ID:-}
-      # Internal API — n8n workflows use this to call apps/server
-      - INTERNAL_API_KEY=${INTERNAL_API_KEY:?Set INTERNAL_API_KEY in .env.ops}
-      - SERVER_INTERNAL_URL=${SERVER_INTERNAL_URL:-http://host.docker.internal:3000}
-    extra_hosts:
-      - "host.docker.internal:host-gateway"
-    volumes:
-      - n8n-data:/home/node/.n8n
-    depends_on:
-      n8n-db:
-        condition: service_healthy
-    healthcheck:
-      test: ["CMD-SHELL", "wget -qO- http://localhost:5678/healthz || exit 1"]
-      interval: 30s
-      timeout: 10s
-      retries: 3
-      start_period: 30s
-
-  n8n-db:
-    image: postgres:17-alpine
-    restart: unless-stopped
-    environment:
-      POSTGRES_DB: n8n
-      POSTGRES_USER: n8n
-      POSTGRES_PASSWORD: ${N8N_DB_PASSWORD:?Set N8N_DB_PASSWORD in .env.ops}
-    volumes:
-      - n8n-db-data:/var/lib/postgresql/data
-    healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U n8n -d n8n"]
-      interval: 10s
-      timeout: 5s
-      retries: 5
-      start_period: 10s
-
   prometheus:
     image: prom/prometheus:v3.4.0
     restart: unless-stopped
@@ -113,7 +50,6 @@ services:
       - grafana-data:/var/lib/grafana
       - ./grafana/datasources:/etc/grafana/provisioning/datasources:ro
       - ./grafana/dashboards/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
-      - ./grafana/dashboards/n8n-overview.json:/etc/grafana/provisioning/dashboards/n8n-overview.json:ro
       # Server-side dashboards (HTTP RED, DB USE, SLO burn-rate, sync, auth, AI cost, hubchat, frontend CWV)
       # — JSON sources of truth live next to the docs.
       - ../docs/03-operations/observability/dashboards:/etc/grafana/provisioning/dashboards/sergeant:ro
@@ -143,7 +79,6 @@ services:
       # Targets — defaults work for the local stack. Override with public
       # URLs when running the alloy container outside the local compose
       # network (e.g. on Railway as a standalone service).
-      - N8N_METRICS_TARGET=${N8N_METRICS_TARGET:-n8n:5678}
       - SERGEANT_SERVER_TARGET=${SERGEANT_SERVER_TARGET:-host.docker.internal:3000}
       - SERGEANT_SERVER_SCHEME=${SERGEANT_SERVER_SCHEME:-http}
     volumes:
@@ -154,7 +89,5 @@ services:
       - /etc/alloy/config.alloy
 
 volumes:
-  n8n-data:
-  n8n-db-data:
   prometheus-data:
   grafana-data:

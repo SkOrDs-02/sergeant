@@ -79,7 +79,7 @@
       "type": "funnel",
       "size": "wide",
       "description": "Strict-sequence funnel over the four canonical activation milestones. Conversion window: 7 days from signup. Time range: last 28 days. Use to spot WoW regressions in any single step.",
-      "rationale": "PR-06/07/08/09 wire these events. The funnel here is the single chart that compresses 'are new sign-ups becoming activated users?' into one number. Cross-references `60-growth-funnel-snapshot.json` n8n cron which snapshots the same four steps daily.",
+      "rationale": "PR-06/07/08/09 wire these events. The funnel here is the single chart that compresses 'are new sign-ups becoming activated users?' into one number. Cross-references the server-side growth-funnel snapshot timer (ADR-0089, formerly n8n WF-60) which snapshots the same four steps daily.",
       "targets": {
         "signup → onboarding": "≥70% within 24h (P2 below 50%, P1 below 30%)",
         "onboarding → first_action": "≥60% within 7 days (P2 below 40%, P1 below 20%)",
@@ -148,7 +148,7 @@
       "type": "hogql",
       "size": "wide",
       "description": "Daily count of `subscription_started` events plus the new-MRR contribution (monthly-equivalent revenue) split by cadence. PostHog `$revenue` super-property is set in `apps/server/src/modules/billing/stripe.ts` and stores the major-unit amount.",
-      "rationale": "Until a renewals/cancellations feed is wired into PostHog (TBD), the new-MRR contribution per day is the cleanest revenue-pulse signal. Yearly subs are normalised by /12 so monthly + yearly stack on the same axis. Active-MRR (cumulative) is computed downstream in n8n (WF-60) — this panel is the per-day delta.",
+      "rationale": "Until a renewals/cancellations feed is wired into PostHog (TBD), the new-MRR contribution per day is the cleanest revenue-pulse signal. Yearly subs are normalised by /12 so monthly + yearly stack on the same axis. Active-MRR (cumulative) is computed downstream by the growth snapshot timer (ADR-0089) — this panel is the per-day delta.",
       "targets": {
         "new-MRR run-rate": "≥$50/month aggregated over trailing 7 days (P2 below; baseline tracked in docs/01-product/launch/business/01-monetization-and-pricing.md)",
         "subscription_started ZEROES": "If new subs = 0 over 7 days while ≥10 signups/day → Stripe webhook regression. P1."
@@ -224,7 +224,7 @@
       "panel": "funnel-zeroes-canary",
       "condition": "any one of signups / onboardings / first_actions / subscriptions = 0 over 24h while the previous 7-day window had > 0",
       "severity": "P1",
-      "channel": "Telegram #ops (via n8n WF-16) + PostHog subscription"
+      "channel": "Telegram #ops (server-side digest timer, ADR-0089) + PostHog subscription"
     },
     {
       "key": "activation-rate-collapse",

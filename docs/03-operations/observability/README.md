@@ -1,6 +1,6 @@
 # Observability
 
-> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-22.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-04.
 > **Status:** Active
 
 SLOs, runtime signals, dashboards, and production operations.
@@ -19,7 +19,7 @@ SLOs, runtime signals, dashboards, and production operations.
 | [`lighthouse-ci.md`](./lighthouse-ci.md)                     | Lighthouse CI perf-budget gate (LCP/FCP/TBT, S10-T3)        |
 | [`runbook.md`](./runbook.md)                                 | Runtime incident runbook                                    |
 | [`engineering-metrics.md`](./engineering-metrics.md)         | DevEx / operating-system metrics and weekly digest ritual   |
-| [`alert-bot-routing.md`](./alert-bot-routing.md)             | Маршрутизація алертів через n8n-воркфлоу до `tg_alert_acks` |
+| [`alert-bot-routing.md`](./alert-bot-routing.md)             | Маршрутизація алертів до `tg_alert_acks` (n8n — історично)  |
 | [`csp-monitoring.md`](./csp-monitoring.md)                   | Моніторинг порушень Content Security Policy                 |
 | [`env-vars.md`](./env-vars.md)                               | Змінні середовища для observability-підсистем               |
 | [`hub-perf-baseline.md`](./hub-perf-baseline.md)             | RUM-baseline продуктивності вкладок HubChat                 |

@@ -7,12 +7,11 @@
     "ghcr.io/devcontainers/features/github-cli:1": {}
   },
 
-  "forwardPorts": [5173, 3000, 5432, 5678, 9090, 3001],
+  "forwardPorts": [5173, 3000, 5432, 9090, 3001],
   "portsAttributes": {
     "5173": { "label": "Web (Vite)", "onAutoForward": "notify" },
     "3000": { "label": "API (Express)", "onAutoForward": "notify" },
     "5432": { "label": "PostgreSQL 17", "onAutoForward": "silent" },
-    "5678": { "label": "n8n", "onAutoForward": "silent" },
     "9090": { "label": "Prometheus", "onAutoForward": "silent" },
     "3001": { "label": "Grafana", "onAutoForward": "silent" }
   },

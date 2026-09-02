@@ -124,7 +124,7 @@
       "panel": "tti-trend",
       "condition": "P95 ttiMs for any tab increases ≥20% WoW (rolling 7-day windows)",
       "severity": "P2",
-      "channel": "Telegram #ops (via n8n WF-16 ingest) + PostHog subscription",
+      "channel": "Telegram #ops (server-side digest timer, ADR-0089) + PostHog subscription",
       "notes": "Likely cause: recent deploy added eager-mount cost to a Settings/Reports section. Bisect via Sergeant deploy log."
     },
     {

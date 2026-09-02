@@ -1,6 +1,6 @@
 # 03. Сервіси та тулстек
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2027-12-11.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-12-13.
 > **Status:** Active
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
@@ -227,7 +227,7 @@
 > - **BullMQ** — internal background jobs всередині сервера (auth email, FTUX drip, AI-memory embedding ingest). Mono-AI enrichment живе на Postgres-outbox (enqueue атомарний із webhook-транзакцією), не в BullMQ — критерій вибору субстрату: ADR-0089.
 > - **n8n** — cross-system workflow automation (Stripe webhook → DB + Telegram, Sentry alerts → Telegram, daily/weekly digests, GitHub PR stale alerts, security audit).
 >
-> Деталі автоматизації — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-6--automation-мета-зона) і [`ops/n8n-workflows/manifest.json`](../../../../ops/n8n-workflows/manifest.json).
+> Деталі автоматизації — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-6--automation-мета-зона) і [`ops/n8n-workflows/manifest.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/manifest.json).
 
 ### 2.13 File storage (Phase 2+)
 
