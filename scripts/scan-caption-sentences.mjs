@@ -106,9 +106,22 @@ if (bundled) {
     const mod = await import(pathToFileURL(bundled.out).href);
     flatten(mod.messages, "", catalogue);
   } catch {
-    /* каталог не зібрався — рахуємо лише літерали; це видно в підсумку */
+    /* впаде на порожньому каталозі нижче — мовчки не проходить */
   }
   rmSync(bundled.dir, { recursive: true, force: true });
+}
+
+// Тиха деградація тут була б гіршою за падіння. Без каталогу скрипт
+// віддає число, менше за справжнє на ~30%, і виглядає воно як звичайний
+// результат — рівно та помилка, через яку перша редакція заміру рахувала
+// 134 замість 190. Тож або каталог є, або скрипт каже, чому його нема.
+if (catalogue.size === 0) {
+  console.error(
+    "✗ Каталог `@shared/i18n/uk` не зібрався — половина заміру (тіла зі\n" +
+      "  словника) була б втрачена мовчки. Перевір, що встановлений `esbuild`\n" +
+      "  (root devDependency) і що каталог компілюється.",
+  );
+  process.exit(1);
 }
 
 /** `const m = messages.durability.localOnly` → { m: "durability.localOnly" }. */
