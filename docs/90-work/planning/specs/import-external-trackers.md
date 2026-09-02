@@ -1,9 +1,12 @@
 # SPEC: Імпорт з зовнішніх трекерів - спільний шар і адаптер Strong
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-11-07.
-> **Status:** In progress - PR-1 і PR-2 зроблені (пакет `packages/tabular-import`,
-> розкол фінансового шару). Крок 0 закрито: формат Strong звірено на живому
-> експорті 2026-09-01. Лишився PR-3 (адаптер).
+> **Last touched:** 2026-09-02 by @claude (звірка з `origin/main`: PR-3 знайдено в коді). **Next review:** 2027-11-07.
+> **Status:** Implemented - усі три PR-и в `main`. PR-1 і PR-2: пакет
+> `packages/tabular-import`, розкол фінансового шару. Крок 0: формат Strong
+> звірено на живому експорті 2026-09-01. PR-3 (адаптер):
+> [#1015](https://github.com/SkOrDs-02/sergeant/pull/1015) - `strongImport.ts`
+> і `strongMatch.ts` в `apps/web/src/modules/fizruk/lib/`.
+> Відкладені адаптери з ініціативи лишаються поза цією спекою.
 
 Виконує ініціативу [`0022-import-from-external-trackers`](../../initiatives/0022-import-from-external-trackers.md)
 і **уточнює її план у трьох місцях** (див. § Розбіжності з ініціативою).
