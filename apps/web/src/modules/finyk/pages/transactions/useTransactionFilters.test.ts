@@ -282,6 +282,32 @@ describe("useTransactionFilters", () => {
         "yesterday",
       ]);
     });
+
+    // Регресія: сама лише регулярка `^\d{4}-\d{2}-\d{2}$` пропускає
+    // неіснуючі дати, а `Date.UTC(2026, 12, 45)` мовчки перекочується в
+    // інший рік — список виходив порожній, а чип над ним підписаний чужою
+    // датою. Такий параметр має ігноруватись так само, як "not-a-date".
+    it.each(["2025-13-04", "2025-06-31", "2025-02-30", "2025-00-10"])(
+      "ignores a well-shaped but non-existent day key (%s)",
+      (dayFilter) => {
+        const today = mkTx("today", -100, {
+          time: Math.floor(new Date("2025-06-04T07:00:00Z").getTime() / 1000),
+        });
+        const yesterday = mkTx("yesterday", -200, {
+          time: Math.floor(new Date("2025-06-03T07:00:00Z").getTime() / 1000),
+        });
+        const { result } = renderHook(() =>
+          useTransactionFilters(
+            buildDefaultParams({ realTx: [today, yesterday], dayFilter }),
+          ),
+        );
+
+        expect(result.current.filtered.map((item) => item.id).sort()).toEqual([
+          "today",
+          "yesterday",
+        ]);
+      },
+    );
   });
 
   describe("month navigation", () => {

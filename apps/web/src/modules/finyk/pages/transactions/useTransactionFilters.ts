@@ -20,7 +20,7 @@ import {
 } from "../../utils";
 import {
   DAY_COLLAPSE_KEY,
-  DAY_FILTER_KEY_RE,
+  isDayFilterKey,
   computeDaySummary,
   dayKeyFromTx,
   findAddedManualExpenseDayKey,
@@ -327,7 +327,7 @@ export function useTransactionFilters({
     const dayFilterKey =
       dayFilter === "today"
         ? getKyivDayKey()
-        : dayFilter && DAY_FILTER_KEY_RE.test(dayFilter)
+        : dayFilter && isDayFilterKey(dayFilter)
           ? dayFilter
           : null;
     const res = sortedTxs.filter((t) => {
