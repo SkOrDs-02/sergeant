@@ -11,7 +11,12 @@ import {
   type SetStateAction,
 } from "react";
 import { useMutation } from "@tanstack/react-query";
-import { nutritionApi, type NutritionPhotoResult } from "@shared/api";
+import {
+  nutritionApi,
+  type NutritionPhotoItem,
+  type NutritionPhotoResult,
+} from "@shared/api";
+import { sumMacrosNullable } from "@sergeant/shared";
 import { compressImageFile } from "@shared/lib/media/compressImage";
 import { fileToBase64 } from "../lib/fileToBase64";
 import { formatNutritionError } from "../lib/nutritionErrors";
@@ -61,6 +66,10 @@ export interface UsePhotoAnalysisResult {
   onPickPhoto: (file: File | null | undefined) => Promise<void>;
   analyzePhoto: () => void;
   refinePhoto: () => void;
+  /** Прибрати позицію з результату; підсумок перераховується тут же. */
+  removePhotoItem: (index: number) => void;
+  /** Додати позицію з каталогу; підсумок перераховується тут же. */
+  addPhotoItem: (item: NutritionPhotoItem) => void;
   /** Mirrors `analyzeMutation.isPending` — drives the in-card status line. */
   isAnalyzing: boolean;
   /** Mirrors `refineMutation.isPending` — drives the in-card status line. */
@@ -283,9 +292,50 @@ export function usePhotoAnalysis({
     [refineMutation],
   );
 
+  // Підсумок ЗАВЖДИ перераховується з позицій — тією самою
+  // `sumMacrosNullable`, якою його рахує сервер. Тримати тут окрему
+  // арифметику означало б два джерела правди для числа, яке людина бачить
+  // на екрані: прибрала рядок, а сума лишилась старою (ініціатива 0023).
+  const withRecomputedTotal = useCallback(
+    (
+      result: NutritionPhotoResult,
+      items: NutritionPhotoItem[],
+    ): NutritionPhotoResult => ({
+      ...result,
+      items,
+      macros: sumMacrosNullable(items.map((i) => i.macros)),
+    }),
+    [],
+  );
+
+  const removePhotoItem = useCallback(
+    (index: number) => {
+      setPhotoResult((prev) => {
+        if (!prev) return prev;
+        const items = prev.items.filter((_, i) => i !== index);
+        // Порожній список не лишаємо: без жодної позиції картка показала б
+        // прочерки замість КБЖВ і кнопку збереження порожнього прийому.
+        if (!items.length) return prev;
+        return withRecomputedTotal(prev, items);
+      });
+    },
+    [withRecomputedTotal],
+  );
+
+  const addPhotoItem = useCallback(
+    (item: NutritionPhotoItem) => {
+      setPhotoResult((prev) =>
+        prev ? withRecomputedTotal(prev, [...prev.items, item]) : prev,
+      );
+    },
+    [withRecomputedTotal],
+  );
+
   return {
     fileRef,
     photoPreviewUrl,
+    removePhotoItem,
+    addPhotoItem,
     photoResult,
     lastPhotoPayload,
     answers,
