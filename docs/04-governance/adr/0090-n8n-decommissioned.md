@@ -1,7 +1,8 @@
 # ADR-0090: Виведення n8n-шару з репозиторію
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-09-02
+- **Accepted:** 2026-09-02 (PR-носій злито; `ops/n8n-workflows/` і `scripts/n8n/` прибрані, ADR-0026 вже несе `Superseded by ADR-0090`)
 - **Deciders:** @Skords-01
 - **Supersedes:** [ADR-0026](./0026-n8n-workflow-source-of-truth.md)
 - **Related:**

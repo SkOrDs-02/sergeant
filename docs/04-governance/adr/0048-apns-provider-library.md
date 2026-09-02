@@ -2,8 +2,9 @@
 
 > **Last validated:** 2026-05-13 by Codex. **Next review:** 2026-08-11.
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-05-06
+- **Accepted:** 2026-05-06 (PR-носій злито; рішення-hold діє: `@parse/node-apn` у `apps/server/package.json`, ізоляція за `apnsClient.ts`)
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
