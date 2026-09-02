@@ -13,7 +13,6 @@ import { cn } from "@shared/lib/ui/cn";
 import { BackfillProgressPill } from "@finyk/components/BackfillProgressPill";
 import { useMonoBackfillProgress } from "@finyk/hooks/useMonoBackfillProgress";
 import { removeItem as removeFinykStorageItem } from "@finyk/lib/finykStorage";
-import { PaywallModal, usePlan } from "../billing";
 // V-8 (аудит Профілю/Налаштувань 2026-08-08): раніше тут був локальний
 // `ConfirmModal` із `SettingsPrimitives` — друга оболонка підтвердження з
 // власним затемненням і, головне, без `createPortal`: вона малювалась у
@@ -30,9 +29,6 @@ interface FinykWebhookServiceSectionProps {
 }
 
 const COPY = {
-  paywallTitle: "Авто-Mono sync доступний у Pro",
-  paywallDescription:
-    "Free лишається для ручного ведення фінансів. Pro підключає серверний Monobank webhook, backfill і автоматичне оновлення транзакцій.",
   clearCacheTitle: "Очистити кеш?",
   disconnectTitle: "Вийти з Monobank?",
   clearCacheBody:
@@ -72,13 +68,23 @@ const COPY = {
   reconnect: "Підключити новий токен",
 } as const;
 
+/**
+ * AI-CONTEXT: підключення Monobank і backfill — БЕЗКОШТОВНІ, і Pro-гейта тут
+ * бути не має. Канон: `docs/01-product/model/product-overview.md`, рядок 7 —
+ * «Ядро безкоштовне + банк-sync Free назавжди; AI — пейвол». До 2026-09-02
+ * пейволл стояв саме тут, і лише тут: другий вхід у те саме
+ * `POST /api/mono/connect` (Фінік → `NoBankBanner` → `FinykLoginScreen`)
+ * гейта не мав ніколи, тож Free-юзер підключав банк повз пейволл з одного
+ * екрана і бачив пропозицію купити Pro з іншого. Не помічали, бо тест мокає
+ * `usePlan: () => ({ isPro: true })` — гілка пейволу не виконувалась жодного
+ * разу. Знято за рішенням власника; `requirePlan` на сервер для цього
+ * маршруту НЕ додаємо — платити тут нема за що.
+ */
 export function FinykWebhookServiceSection({
   inView,
 }: FinykWebhookServiceSectionProps) {
   const queryClient = useQueryClient();
-  const { isPro } = usePlan();
   const [confirmKind, setConfirmKind] = useState<ConfirmKind>(null);
-  const [paywallOpen, setPaywallOpen] = useState(false);
   const [webhookTokenInput, setWebhookTokenInput] = useState("");
   const [webhookConnecting, setWebhookConnecting] = useState(false);
   const [webhookError, setWebhookError] = useState("");
@@ -126,10 +132,6 @@ export function FinykWebhookServiceSection({
   });
 
   const connectWebhook = async () => {
-    if (!isPro) {
-      setPaywallOpen(true);
-      return;
-    }
     const clean = webhookTokenInput.trim();
     if (!clean) {
       setWebhookError("Введи токен");
@@ -188,10 +190,6 @@ export function FinykWebhookServiceSection({
   };
 
   const triggerBackfill = async () => {
-    if (!isPro) {
-      setPaywallOpen(true);
-      return;
-    }
     setWebhookError("");
     try {
       await monoWebhookApi.backfill();
@@ -236,13 +234,6 @@ export function FinykWebhookServiceSection({
 
   return (
     <>
-      <PaywallModal
-        open={paywallOpen}
-        onClose={() => setPaywallOpen(false)}
-        surface="mono_auto_sync"
-        title={COPY.paywallTitle}
-        description={COPY.paywallDescription}
-      />
       <ConfirmDialog
         open={confirmKind !== null}
         title={

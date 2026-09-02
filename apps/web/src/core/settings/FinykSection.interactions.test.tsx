@@ -216,17 +216,19 @@ describe("FinykSection interactions", () => {
     expect(mockedConnect).not.toHaveBeenCalled();
   });
 
-  it("opens the paywall on connect when the user is not Pro", async () => {
+  // Регресія навпаки: до 2026-09-02 тут стояв пейволл, і цей тест вимагав
+  // його появи. Канон каже протилежне — «банк-sync Free назавжди»
+  // (product-overview.md, рядок 7), тож перевіряємо, що Free-юзер
+  // підключається без жодної перепони.
+  it("connects for a Free user — bank sync is not gated", async () => {
     apiState.isPro = false;
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
     const input = await screen.findByPlaceholderText("Токен Monobank API");
     fireEvent.change(input, { target: { value: "tok" } });
     fireEvent.click(screen.getByText("Підключити Monobank"));
-    expect(
-      await screen.findByText("Авто-Mono sync доступний у Pro"),
-    ).toBeInTheDocument();
-    expect(mockedConnect).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockedConnect).toHaveBeenCalled());
+    expect(mockedConnect).toHaveBeenCalledWith("tok", expect.anything());
   });
 
   it("surfaces a server message when connect throws an auth error", async () => {
@@ -377,7 +379,9 @@ describe("FinykSection interactions", () => {
     );
   });
 
-  it("opens paywall when non-Pro user triggers backfill", async () => {
+  // Друга половина того самого рішення: backfill — теж частина
+  // безкоштовного банк-синку, не окрема Pro-фіча.
+  it("runs backfill for a Free user — history sync is not gated", async () => {
     apiState.isPro = false;
     mockedSyncState.mockResolvedValue({
       status: "active",
@@ -389,10 +393,7 @@ describe("FinykSection interactions", () => {
     renderSection();
     const btn = await screen.findByText("Синхронізувати історію");
     fireEvent.click(btn);
-    expect(
-      await screen.findByText("Авто-Mono sync доступний у Pro"),
-    ).toBeInTheDocument();
-    expect(mockedBackfill).not.toHaveBeenCalled();
+    await waitFor(() => expect(mockedBackfill).toHaveBeenCalled());
   });
 
   it("shows a backfill API error in the connected state and clears it after retry", async () => {
