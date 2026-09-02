@@ -182,7 +182,7 @@ export function WorkoutTemplatesSection({
 
   return (
     <div className="space-y-3">
-      <div className="text-style-caption text-muted leading-relaxed">
+      <div className="text-style-body text-muted leading-relaxed">
         Шаблони – лише твої: додай назву й послідовність вправ з каталогу. План
         на головній будується з цих шаблонів. Щоб стартувати тренування зі
         списку нижче, натисни «Почати» біля шаблону (відкриється журнал з

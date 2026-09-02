@@ -41,7 +41,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
     <div className="mb-3 space-y-0">
       {liabilitiesEmpty && (
         <div className="space-y-2 mb-3">
-          <p className="text-style-caption text-muted px-1">
+          <p className="text-style-body text-muted px-1">
             Кредити, розстрочки, позики, комунальні борги, додавайте з датою
             повернення, привʼязуйте транзакції-платежі, і картка сама покаже
             прогрес «Сплачено N з M».

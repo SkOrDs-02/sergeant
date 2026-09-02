@@ -82,7 +82,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         </button>
         <div hidden={!receivablesExpanded} className="space-y-2">
           {receivables.length === 0 && !showRecvForm && (
-            <p className="text-style-caption text-muted px-1">
+            <p className="text-style-body text-muted px-1">
               Зберігайте облік боргів і дат повернення, привʼязуйте вхідні
               транзакції, щоб автоматично рахувати повернене.
             </p>
@@ -203,7 +203,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
         <div hidden={!assetsExpanded} className="space-y-2">
           {manualAssets.length === 0 && !showAssetForm && (
             <div className="space-y-2">
-              <p className="text-style-caption text-muted px-1">
+              <p className="text-style-body text-muted px-1">
                 Готівка, заощадження, депозит, інвестиції, нерухомість, авто:
                 усе, що не на картці Monobank.
               </p>

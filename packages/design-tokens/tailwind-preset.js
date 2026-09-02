@@ -833,9 +833,12 @@ const preset = {
         lg: ["18px", { lineHeight: "28px" }],
         xl: ["20px", { lineHeight: "28px" }],
         "2xl": ["24px", { lineHeight: "32px" }],
-        // `hero`: hero-section H1s and hero stat numbers (slightly larger
-        // than 2xl for the page-greeting / headline-stat slot).
-        hero: ["26px", { lineHeight: "32px" }],
+        // `hero` вилучено 2026-09-02: він дублював слот
+        // `.text-style-headline` фіксованими 26px і був третьою паралельною
+        // шкалою поряд із двома, які закрило правило 5 типографіки
+        // (`docs/05-design/design/anti-slop-strategy.md` §4). Сім call-site-ів
+        // переведено на роль; заміри й обґрунтування —
+        // `docs/05-design/design/density-hierarchy-spec.md` §3.2.
         "3xl": ["30px", { lineHeight: "36px" }],
         "4xl": ["36px", { lineHeight: "40px" }],
         "5xl": ["48px", { lineHeight: "1" }],

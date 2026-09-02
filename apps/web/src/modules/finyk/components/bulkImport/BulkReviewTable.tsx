@@ -158,14 +158,14 @@ export function BulkReviewTable({
       </div>
 
       {hasTransferLikelyRows && (
-        <p className="text-style-caption text-subtle">
+        <p className="text-style-body text-subtle">
           Рядки «схоже на переказ» (рух між власними рахунками) за замовчуванням
           не імпортуються, постав галочку, якщо це насправді витрата чи дохід.
         </p>
       )}
 
       {hasDuplicateLikelyRows && (
-        <p className="text-style-caption text-subtle">
+        <p className="text-style-body text-subtle">
           Рядки «схоже, вже є» збігаються датою і сумою з уже збереженими
           витратами (наприклад, цей документ уже імпортували), постав галочку,
           якщо це справді окрема операція.

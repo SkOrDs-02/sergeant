@@ -5,6 +5,7 @@
    Tx splits stay on LS; bank transactions now come from the Mono mirror
    reader (Dual-write teardown Phase 3). */
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 import { workoutTonnageKg } from "@sergeant/fizruk-domain";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
@@ -16,12 +17,7 @@ import { readFizrukWorkouts } from "../fizrukActions/shared";
 export function morningBriefing(): string {
   const now = new Date();
   const todayKey = getKyivDayKey(now);
-  const dateLabel = new Intl.DateTimeFormat("uk-UA", {
-    timeZone: "Europe/Kyiv",
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  }).format(now);
+  const dateLabel = formatUaWeekdayDate(now, { timeZone: "Europe/Kyiv" });
   const parts: string[] = [`Доброго ранку! Сьогодні ${dateLabel}`];
   const routineState = loadRoutineState();
   if (routineState.habits.length > 0) {

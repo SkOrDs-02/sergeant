@@ -43,6 +43,7 @@ import { useStreakRecordPendingInsight } from "../hooks/useStreakRecordPendingIn
 import { useTodoEveningInsight } from "../hooks/useTodoEveningInsight";
 import type { HubCalendarEvent } from "../lib/types";
 import { Icon } from "@shared/components/ui/Icon";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 
 type GroupedListItem =
   { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
@@ -166,11 +167,8 @@ export function RoutineCalendarPanel({
     [todayKey],
   );
 
-  const dayLabel = parseDateKey(todayKey).toLocaleDateString("uk-UA", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-    year: "numeric",
+  const dayLabel = formatUaWeekdayDate(parseDateKey(todayKey), {
+    withYear: true,
   });
   return (
     <div

@@ -58,7 +58,7 @@ export function InjurySection({ onOpenBody }: InjurySectionProps = {}) {
       </SectionHeading>
 
       {active.length === 0 ? (
-        <p className="text-style-caption text-muted mt-2">{t.empty}</p>
+        <p className="text-style-body text-muted mt-2">{t.empty}</p>
       ) : (
         <ul className="mt-3 space-y-2">
           {active.map((m) => (

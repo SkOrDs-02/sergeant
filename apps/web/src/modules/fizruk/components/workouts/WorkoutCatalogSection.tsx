@@ -242,7 +242,7 @@ export function WorkoutCatalogSection({
       </Sheet>
 
       {mode === "log" && (
-        <p className="text-style-caption text-muted mb-2 leading-relaxed">
+        <p className="text-style-body text-muted mb-2 leading-relaxed">
           Розкрий групу й тапни по вправі, додасться в активне тренування.
           Кнопка «Інфо» праворуч: мʼязи й обладнання без додавання.
         </p>

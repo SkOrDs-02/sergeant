@@ -42,6 +42,7 @@ import type {
 } from "./context/RoutineCalendarContext";
 import type { HubCalendarEvent, RoutineState } from "./lib/types";
 import type { TimeState } from "./useRoutineTimeState";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 
 export interface UseRoutineDerivedDataParams {
   routine: RoutineState;
@@ -75,11 +76,7 @@ export interface RoutineDerivedData {
 }
 
 function fmtUk(key: string): string {
-  return parseDateKey(key).toLocaleDateString("uk-UA", {
-    weekday: "long",
-    day: "numeric",
-    month: "long",
-  });
+  return formatUaWeekdayDate(parseDateKey(key));
 }
 
 export function useRoutineDerivedData({
@@ -180,11 +177,7 @@ export function useRoutineDerivedData({
     if (timeMode === "today") return "Сьогодні";
     if (timeMode === "tomorrow") return "Завтра";
     if (timeMode === "day") {
-      return parseDateKey(selectedDay).toLocaleDateString("uk-UA", {
-        weekday: "long",
-        day: "numeric",
-        month: "long",
-      });
+      return formatUaWeekdayDate(parseDateKey(selectedDay));
     }
     if (timeMode === "week") return "Цей тиждень";
     return monthTitle;

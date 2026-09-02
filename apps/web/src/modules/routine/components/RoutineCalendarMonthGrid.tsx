@@ -11,6 +11,7 @@ import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import { parseDateKey } from "../lib/hubCalendarAggregate";
 import type { HubCalendarEvent } from "../lib/types";
 import { Icon } from "@shared/components/ui/Icon";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 
 type GroupedListItem =
   { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
@@ -109,11 +110,8 @@ export function RoutineCalendarMonthGrid({
             const key = `${monthCursor.y}-${String(monthCursor.m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
             const n = dayCounts.get(key) || 0;
             const sel = selectedDay === key;
-            const label = parseDateKey(key).toLocaleDateString("uk-UA", {
-              weekday: "long",
-              day: "numeric",
-              month: "long",
-              year: "numeric",
+            const label = formatUaWeekdayDate(parseDateKey(key), {
+              withYear: true,
             });
             const aria =
               n > 0
@@ -149,12 +147,7 @@ export function RoutineCalendarMonthGrid({
           })}
         </div>
         <p className="text-style-caption text-subtle mt-3 pt-3 border-t border-line">
-          Обрано:{" "}
-          {parseDateKey(selectedDay).toLocaleDateString("uk-UA", {
-            weekday: "long",
-            day: "numeric",
-            month: "long",
-          })}
+          Обрано: {formatUaWeekdayDate(parseDateKey(selectedDay))}
         </p>
         {showFizrukShortcut && (
           <Button

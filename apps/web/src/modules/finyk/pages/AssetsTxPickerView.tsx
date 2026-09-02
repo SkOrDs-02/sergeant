@@ -310,7 +310,7 @@ export function AssetsTxPickerView({
                 />
               </div>
             </Card>
-            <p className="text-style-caption text-subtle mb-3 px-1">
+            <p className="text-style-body text-subtle mb-3 px-1">
               Тапни транзакцію щоб привʼязати як погашення. Виділені зеленим:
               автоматично виявлені поповнення картки.
             </p>
@@ -400,7 +400,7 @@ export function AssetsTxPickerView({
         <div className="flex-1 overflow-y-auto">
           <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
             <Card variant="flat" radius="md" className="mb-4">
-              <p className="text-style-caption text-subtle leading-relaxed">
+              <p className="text-style-body text-subtle leading-relaxed">
                 Обери списання (наприклад через Apple/Google). День місяця з
                 транзакції підставиться в «день списання»; сума піде в огляд і в
                 Рутину.

@@ -92,7 +92,7 @@ export function RecoveryFocusCard({
               <span className="block text-style-title text-text">
                 Відновлення й фокус
               </span>
-              <p className="text-style-caption text-muted mt-1 leading-snug">
+              <p className="text-style-body text-muted mt-1 leading-snug">
                 Колір на силуеті – готовність груп; чіпи – пріоритет після
                 відпочинку.
               </p>
@@ -145,7 +145,7 @@ export function RecoveryFocusCard({
                 className="shrink-0 text-warning-strong dark:text-warning"
                 aria-hidden
               />
-              <p className="text-style-caption text-warning-strong dark:text-warning leading-snug">
+              <p className="text-style-body text-warning-strong dark:text-warning leading-snug">
                 {rec.wellbeingMult >= 1.3
                   ? "Поганий сон або дуже низька енергія, відновлення значно сповільнене."
                   : "Недостатній сон або низька енергія, відновлення сповільнене."}{" "}

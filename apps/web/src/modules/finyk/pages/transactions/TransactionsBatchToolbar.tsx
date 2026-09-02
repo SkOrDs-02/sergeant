@@ -80,7 +80,7 @@ export function TransactionsBatchToolbar({
                 </button>
               </div>
             </div>
-            <div className="mt-2 rounded-xl border border-line bg-panelHi px-3 py-2 text-style-caption text-muted">
+            <div className="mt-2 rounded-xl border border-line bg-panelHi px-3 py-2 text-style-body text-muted">
               <p>
                 <strong className="text-text">Приховати</strong>: прибере
                 операції зі звичайного списку, але їх можна повернути в
