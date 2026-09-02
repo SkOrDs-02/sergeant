@@ -3073,6 +3073,13 @@ const ukrainianCopy = {
 const CAPTION_SENTENCE_MIN = 60;
 const RX_CAPTION_CYRILLIC = /[А-Яа-яЇїІіЄєҐґ]/;
 const CAPTION_SUPPRESSION_LINES = 6;
+// Глушник — саме КАНОНІЧНИЙ маркер, той самий, що вимагає
+// `ai-marker-syntax` вище: якір на початку рядка коментаря (після `/`,
+// `*`, пробілів) плюс двокрапка з пробілом. Без якоря й двокрапки
+// глушила б будь-яка згадка — `// додати AI-NOTE колись` прибирав би
+// попередження, не давши жодної причини, тобто рівно навпаки до задуму:
+// сенс гейта в тому, що поруч ЛИШАЄТЬСЯ записана причина.
+const CAPTION_SUPPRESSION_RE = /^[\s/*]*AI-(NOTE|DANGER):\s/;
 
 /** Збирає рядкові частини `className`, включно з аргументами `cn(...)`. */
 function collectClassNameStrings(attrValue) {
@@ -3163,17 +3170,16 @@ const noSentenceInCaption = {
     }
     const sourceCode = context.sourceCode ?? context.getSourceCode();
 
-    /** Коментар AI-NOTE / AI-DANGER не далі кількох рядків над вузлом. */
+    /** Канонічний `AI-NOTE:` / `AI-DANGER:` не далі кількох рядків над вузлом. */
     function hasSuppression(node) {
       const line = node.loc.start.line;
-      return sourceCode
-        .getAllComments()
-        .some(
-          (c) =>
-            /AI-(NOTE|DANGER)/.test(c.value) &&
-            c.loc.end.line < line &&
-            line - c.loc.end.line <= CAPTION_SUPPRESSION_LINES,
-        );
+      return sourceCode.getAllComments().some((c) => {
+        if (c.loc.end.line >= line) return false;
+        if (line - c.loc.end.line > CAPTION_SUPPRESSION_LINES) return false;
+        // Блоковий коментар — багаторядковий; маркер може стояти на
+        // будь-якому його рядку, але щоразу на ПОЧАТКУ рядка.
+        return c.value.split("\n").some((l) => CAPTION_SUPPRESSION_RE.test(l));
+      });
     }
 
     return {

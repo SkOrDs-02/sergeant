@@ -121,6 +121,53 @@ describe("no-sentence-in-caption", () => {
     assert.equal(msgs.length, 0);
   });
 
+  it("не глушиться ЗГАДКОЮ маркера в тексті коментаря", () => {
+    // Регресія на рев'ю CodeRabbit (PR #1033): вільна згадка `AI-NOTE`
+    // усередині рядка прибирала б попередження, не лишивши жодної
+    // причини — тобто навпаки до задуму гейта.
+    const msgs = lint(`
+      function Foo() {
+        return (
+          <>
+            {/* треба буде додати AI-NOTE колись потім */}
+            <p className="text-style-caption">${SENTENCE}</p>
+          </>
+        );
+      }
+    `);
+    assert.equal(msgs.length, 1);
+  });
+
+  it("не глушиться маркером без двокрапки", () => {
+    // Канонічна форма — та сама, що вимагає `ai-marker-syntax`:
+    // якір на початку рядка плюс `:` з пробілом.
+    const msgs = lint(`
+      function Foo() {
+        return (
+          <>
+            {/* AI-NOTE підказка під полем вводу */}
+            <p className="text-style-caption">${SENTENCE}</p>
+          </>
+        );
+      }
+    `);
+    assert.equal(msgs.length, 1);
+  });
+
+  it("глушиться канонічним AI-DANGER:", () => {
+    const msgs = lint(`
+      function Foo() {
+        return (
+          <>
+            {/* AI-DANGER: кегль тут тримає геометрію рядка в сітці. */}
+            <p className="text-style-caption">${SENTENCE}</p>
+          </>
+        );
+      }
+    `);
+    assert.equal(msgs.length, 0);
+  });
+
   it("не глушиться коментарем задалеко вгорі", () => {
     const msgs = lint(`
       function Foo() {
