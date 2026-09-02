@@ -32,7 +32,17 @@ Hero Фініка стає **стрічкою місяця**: ряд кліти�
 ## Поверхня змін
 
 - `packages/finyk-domain/src/…` — новий селектор `dailySpendSeries(transactions, {year, month, daysInMonth, todayKey}, opts): {dayKey, spent}[]` за київським день-ключем (фінансові періоди — Europe/Kyiv, [ADR-0078](../../../04-governance/adr/0078-day-boundary-device-local.md) стосується особистих сутностей, не фінперіодів). Виключення (`excludedTxIds`, `hiddenTxIds`, переказ між своїми рахунками) — ті самі правила, що вже дають `spent` у `useOverviewData` (перевикористати існуючий предикат, не дублювати). Тест поруч.
-- `apps/web/src/modules/finyk/pages/overview/useOverviewData.ts` — повертати `dailySpend: {dayKey, spent, ratio, over120}[]` і `todayRemaining = dayBudget − todaySpent`. **Контракт `ratio` — завжди число 0…1+, ніколи `null`:** з планом `ratio = spent / dayBudget`; без плану `ratio = spent / maxMonthlySpend` (відносна шкала з рішення 5), а при нульовому максимумі `ratio = 0`. `over120` без плану завжди `false` — рахувати перебір нема від чого. Так `MonthStrip` дістає один тип для обох режимів і не має гілки під `null`; `useOverviewData.test.ts` — кейси з планом / без / перший день / перебір 120%.
+- `apps/web/src/modules/finyk/pages/overview/useOverviewData.ts` — повертати `dailySpend: {dayKey, spent, ratio, over120}[]` і `todayRemaining: number | null`.
+
+  **`todayRemaining` — `number | null`, і `null` саме тоді, коли `dayBudget === null`** (плану немає). Не писати `dayBudget − todaySpent` без гілки: у JS `null − 5` дає `−5`, тобто без плану hero показав би бадьоре «−5 ₴ понад бюджет» замість CTA «Постав план». З планом — `dayBudget − todaySpent`, як і було.
+
+  **Контракт `ratio` — завжди скінченне число 0…1+, ніколи `null`, ніколи `Infinity` чи відʼємне.** Три режими:
+  - **план і `dayBudget > 0`:** `ratio = spent / dayBudget`, `over120 = ratio > 1.2`;
+  - **плану немає:** `ratio = spent / maxMonthlySpend` (відносна шкала з рішення 5), при нульовому максимумі `ratio = 0`, `over120` завжди `false` — рахувати перебір нема від чого;
+  - **план є, але `dayBudget ≤ 0`** — стан не екзотичний, а найімовірніший момент, коли в цей hero дивляться: `dayBudget = (planExpense − spent − recurringOut + recurringIn) / remainingDays`, тож щойно місячний план перевитрачено, чисельник стає відʼємним. Ділити на це не можна (`spent / 0` дає `Infinity`, `spent / −N` — відʼємний ratio, і обидва ламають шкалу заповнення). Тому `ratio` рахується за **відносною шкалою**, як у режимі без плану, а `over120 = spent > 0`: будь-яка витрата в цьому стані вже понад бюджет дня. Стрічка лишається інформативною (дні порівнюються між собою), акцент перебору чесний, головне число лишається відʼємним із підписом «понад бюджет дня».
+
+  Так `MonthStrip` дістає один тип для обох режимів і не має гілки під `null`. `useOverviewData.test.ts` — кейси з планом / без плану (`todayRemaining === null`) / перший день / перебір 120% / **`dayBudget === 0` і `dayBudget < 0`** (ratio скінченний, `over120 === true` при ненульових витратах).
+
 - `apps/web/src/modules/finyk/pages/overview/HeroCard.tsx` — головне число за рішенням 2, стрічка (`MonthStrip.tsx` новий + `MonthStrip.test.tsx`), футер із витратами місяця і відсотком плану; `HeroCard.test.tsx` оновити. `pulseStyle.ts` (`statusText`, колір стану) — лишити, статус-текст переїжджає під число.
 - `apps/web/src/modules/finyk/pages/overview/OverviewTextRows.tsx` (новий) — два текстові рядки з рішення 3 + тест; приймає ті самі пропи, що мали `TodaySummaryCard`/`MonthPulseCard`.
 - `apps/web/src/modules/finyk/pages/Overview.tsx` — прибрати `<TodaySummaryCard>` і `<MonthPulseCard>`, додати `<OverviewTextRows>` одразу під `<HeroCard>` (до `FinykInsightsBlock`).

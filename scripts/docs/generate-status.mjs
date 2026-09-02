@@ -172,6 +172,13 @@ export function summariseInFlight(report) {
  * карти, яку стереже `docs:check-repo-map`. Раніше число було вписане в
  * рядок і розходилося з фактом при кожному новому воркспейсі
  * (`@sergeant/tabular-import` зробив «12 пакетів» неправдою).
+ *
+ * `categoryFor` у `generate-repo-map.mjs` знає ТРИ категорії: `app`,
+ * `package` і `tool` (для `tools/*`). Сьогодні воркспейсів у `tools/` немає,
+ * тож «усе, що не app» і «саме package» дають однакове число — але щойно
+ * такий воркспейс зʼявиться, перший варіант тихо назве його пакетом.
+ * Рахуємо кожну категорію окремо; `tool` дописується в рядок лише коли він
+ * ненульовий, щоб у звичайному стані фраза не змінилась.
  */
 function workspaceCounts() {
   try {
@@ -179,7 +186,8 @@ function workspaceCounts() {
     const list = Array.isArray(map.workspaces) ? map.workspaces : [];
     return {
       apps: list.filter((w) => w.category === "app").length,
-      packages: list.filter((w) => w.category !== "app").length,
+      packages: list.filter((w) => w.category === "package").length,
+      tools: list.filter((w) => w.category === "tool").length,
     };
   } catch {
     return null;
@@ -304,9 +312,12 @@ function render({ focus, shipped, inflight, priority }) {
   lines.push("## 🧱 Стек");
   lines.push("");
   const counts = workspaceCounts();
-  const stackLine = counts
-    ? `pnpm 9 + Turborepo monorepo, Node 22, TypeScript. ${counts.apps} застосунків + ${counts.packages} пакетів. Канонічні джерела:`
-    : "pnpm 9 + Turborepo monorepo, Node 22, TypeScript. Канонічні джерела:";
+  const workspacesPart = counts
+    ? `${counts.apps} застосунків + ${counts.packages} пакетів${
+        counts.tools > 0 ? ` + ${counts.tools} інструментів` : ""
+      }. `
+    : "";
+  const stackLine = `pnpm 9 + Turborepo monorepo, Node 22, TypeScript. ${workspacesPart}Канонічні джерела:`;
   lines.push(stackLine);
   lines.push("");
   lines.push(
