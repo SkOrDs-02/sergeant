@@ -27,6 +27,7 @@ import { logger } from "@shared/lib";
 import {
   ANALYTICS_EVENTS,
   getToolModule,
+  getToolOutcomeClass,
   type ChatPreset,
 } from "@sergeant/shared";
 import { trackEvent } from "../../observability/analytics";
@@ -680,14 +681,48 @@ export function useChatSend({
             }
           } catch (e2) {
             setMessages((m) =>
-              m.map((x) =>
-                x.id === assistantId
-                  ? // `prefix` уже закінчується порожнім рядком, коли не
-                    // порожній сам; окремі `\n\n` дали б чотири переноси
-                    // з карткою і два ведучі — без неї.
-                    { ...x, text: `${prefix}${friendlyChatError(e2)}` }
-                  : x,
-              ),
+              m.map((x) => {
+                if (x.id !== assistantId) return x;
+                // AI-6 (`docs/90-work/audits/2026-09-01-product-audit/
+                // findings.md`) — синтез (другий тур) упав, але картки вже
+                // побудовані з результату ВИКОНАННЯ tool-а на клієнті, до
+                // того, як стало відомо, чи синтез узагалі відбудеться.
+                // `getToolOutcomeClass` (`@sergeant/shared`) вирішує, як
+                // саме картка має про це сказати:
+                //   - `state-mutating` (mark_habit_done, create_transaction,
+                //     …) — дія вже сталась незалежно від синтезу; картка
+                //     лишається «Виконано», лише дописуємо, що пояснення
+                //     не дійшло;
+                //   - `advice` (suggest_meal, query_*, …) — цінність саме
+                //     в синтезованому тексті, якого нема, тож «completed»-
+                //     картка з проміжними даними виглядала б як завершена
+                //     рекомендація, якою вона не є — переводимо у `failed`.
+                // Чіпаємо лише картки, що самі стартували як «completed»:
+                // якщо локальний виконавець уже позначив картку `failed`
+                // (сам tool впав), це не про синтез — не переписуємо.
+                const patchedCards = x.cards?.map((c) => {
+                  if (c.status !== "completed") return c;
+                  if (getToolOutcomeClass(c.toolName) === "state-mutating") {
+                    return {
+                      ...c,
+                      summary: `${c.summary} · Пояснення не дійшло.`,
+                    };
+                  }
+                  return {
+                    ...c,
+                    status: "failed" as const,
+                    summary: "Не вдалося отримати відповідь. Спробуй ще раз.",
+                  };
+                });
+                return {
+                  ...x,
+                  // `prefix` уже закінчується порожнім рядком, коли не
+                  // порожній сам; окремі `\n\n` дали б чотири переноси
+                  // з карткою і два ведучі — без неї.
+                  text: `${prefix}${friendlyChatError(e2)}`,
+                  ...(patchedCards ? { cards: patchedCards } : {}),
+                };
+              }),
             );
           }
 

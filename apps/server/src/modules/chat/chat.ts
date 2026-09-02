@@ -8,6 +8,7 @@ import {
   extractAnthropicText,
 } from "../../lib/anthropic.js";
 import { resolveProTier } from "./aiQuota.js";
+import { issueRoundTripTicket } from "./chatRoundTripTicket.js";
 import {
   type AnthropicContentBlock,
   type AnthropicMessagesResponseData,
@@ -246,6 +247,37 @@ function buildMergedContent(
   if (mergedText) out.push({ type: "text", text: mergedText });
   out.push(...nonTextBlocks);
   return out;
+}
+
+/**
+ * AI-5 рішення 1 — приклеює `round_trip_ticket` до першого-турового
+ * `tool_calls`-response, ЯКЩО (а) юзер відомий (`ledgerUserId`; анонім сюди
+ * не доходить — `requireSession()`) і (б) відповідь дійсно несе непорожній
+ * `tool_calls` (без нього другого запиту не буде взагалі — квитка не
+ * видаємо, він лише засмічував би in-memory Map).
+ *
+ * Викликається на КОЖНОМУ send-і (і на живому виклику, і на cache-hit-і),
+ * а не при `setCachedChatResponse` — кеш зберігає body БЕЗ квитка, тож
+ * повторний cache-hit того самого запиту видає СВІЖИЙ одноразовий квиток
+ * замість повторного використання/replay уже спожитого.
+ */
+function attachRoundTripTicket(
+  body: unknown,
+  ledgerUserId: string | undefined,
+): unknown {
+  if (!ledgerUserId) return body;
+  if (
+    !body ||
+    typeof body !== "object" ||
+    !Array.isArray((body as { tool_calls?: unknown }).tool_calls) ||
+    (body as { tool_calls: unknown[] }).tool_calls.length === 0
+  ) {
+    return body;
+  }
+  return {
+    ...(body as Record<string, unknown>),
+    round_trip_ticket: issueRoundTripTicket({ userId: ledgerUserId }),
+  };
 }
 
 /**
@@ -542,7 +574,9 @@ export default async function handler(
   });
   const cached = getCachedChatResponse(cacheKey);
   if (cached) {
-    res.status(cached.status).json(cached.body);
+    res
+      .status(cached.status)
+      .json(attachRoundTripTicket(cached.body, ledgerUserId));
     return;
   }
 
@@ -637,8 +671,11 @@ export default async function handler(
     };
     // Кешуємо tool_use-пропозицію: вона детермінована для цього prompt-у, а
     // клієнт усе одно виконає інструменти проти ЖИВИХ даних — тож stale немає.
+    // Квиток (AI-5 рішення 1) НЕ йде в кеш — він одноразовий і per-request;
+    // `attachRoundTripTicket` видає свіжий на кожен send, кеш зберігає лише
+    // канонічне тіло без нього.
     setCachedChatResponse(cacheKey, { status: 200, body });
-    res.status(200).json(body);
+    res.status(200).json(attachRoundTripTicket(body, ledgerUserId));
     return;
   }
 

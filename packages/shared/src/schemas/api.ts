@@ -405,6 +405,17 @@ export const ChatRequestSchema = z.object({
   // рубати легітимний пошуковий трафік нашою ж валідацією.
   tool_calls_raw: z.array(ToolCallsRawBlockSchema).max(60).optional(),
   stream: z.boolean().optional(),
+  /**
+   * AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+   * — echo-иться назад із першого-турового `tool_calls`-відповіді на другому
+   * (tool-result-синтезному) запиті того самого ходу. Сервер видає його лише
+   * своєму ж юзеру (`chatRoundTripTicket.ts`), одноразово й короткоживуче;
+   * невалідний/відсутній квиток просто НЕ звільняє від звичайного списання
+   * квоти (safe default) — це не контракт довіри до клієнта, а суто
+   * best-effort optimization, тож поле опційне й без додаткової семантики
+   * тут, у схемі.
+   */
+  round_trip_ticket: z.string().max(200).optional(),
 });
 
 /**
