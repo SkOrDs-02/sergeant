@@ -18,7 +18,9 @@ import { messages } from "@shared/i18n/uk";
 import {
   dateKeyMinusDays,
   habitScheduledOnDate,
+  isFlexibleHabit,
   monthGrid,
+  weeklyGoalStreakBreakdown,
 } from "@sergeant/routine-domain";
 import { completionNoteKey } from "../lib/completionNoteKey";
 import { anchoredTodayDate, anchoredTodayKey } from "../lib/dayAnchor";
@@ -189,7 +191,20 @@ export function HabitDetailSheet({
         : null,
     [habit, completions, tk, routine.skips, habitId],
   );
-  const currentStreak = streak?.days ?? 0;
+  // Гнучка звичка («N разів на тиждень») міряється тижнями, не днями.
+  // `flexibleStreakBreakdown` вище — це ІНША гнучкість: поденна серія з
+  // бюджетом прощень. Прогнати через неї звичку, яка й не планується щодня,
+  // означає порахувати пропуском кожен день, у який людина нічого й не мала
+  // робити. Назви збігаються, сутності різні.
+  const weeklyStreak = useMemo(
+    () =>
+      habit && isFlexibleHabit(habit)
+        ? weeklyGoalStreakBreakdown(habit, completions, tk)
+        : null,
+    [habit, completions, tk],
+  );
+  const isFlex = weeklyStreak !== null;
+  const currentStreak = isFlex ? weeklyStreak.weeks : (streak?.days ?? 0);
   // AI-CONTEXT: тут був `streakHint` — рядок «пауза: 2 дн. · не зміг: 1 дн. ·
   // заморозки: 1» під числом серії. Прибрано 2026-08-05 разом із додаванням
   // `HabitStreakCanvas` вище: полотно показує ті самі пʼять типів дня формою
@@ -429,7 +444,7 @@ export function HabitDetailSheet({
                   {currentStreak}
                 </p>
                 <p className="text-style-caption text-subtle mt-0.5">
-                  Поточна серія
+                  {isFlex ? "Тижнів поспіль" : "Поточна серія"}
                 </p>
               </div>
             )}
@@ -439,7 +454,18 @@ export function HabitDetailSheet({
                   {bestStreak}
                 </p>
                 <p className="text-style-caption text-subtle mt-0.5">
-                  Макс серія
+                  {isFlex ? "Макс тижнів" : "Макс серія"}
+                </p>
+              </div>
+            )}
+            {isFlex && (
+              <div className={C.statCard}>
+                <p className="text-style-headline text-text tabular-nums">
+                  {weeklyStreak.currentWeekWorkouts} з{" "}
+                  {weeklyStreak.targetPerWeek}
+                </p>
+                <p className="text-style-caption text-subtle mt-0.5">
+                  Цього тижня
                 </p>
               </div>
             )}
