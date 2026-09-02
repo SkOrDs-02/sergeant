@@ -203,7 +203,9 @@ pnpm --filter @sergeant/nutrition-domain test adaptiveTdee
 автоматичне перефарбовування історії.
 
 Стадія 3 дає одноразовий стрибок цифр і потребує `metricsVersion`-бампу — це
-її власна поставка, не частина цієї спеки.
+її власна поставка, не частина цієї спеки. Її спека:
+[`nutrition-goal-journal-cutover.md`](./nutrition-goal-journal-cutover.md)
+(девʼять читачів перелічені там пофайлово).
 
 ## Співвідношення з каноном §12
 
