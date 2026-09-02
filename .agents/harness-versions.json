@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "5.0.8",
+  "current": "5.1.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -430,6 +430,16 @@
       "releasedAt": "2026-09-02",
       "changes": [
         "bump from 5.0.7 -> 5.0.8: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.1.0": {
+      "releasedAt": "2026-09-02",
+      "changes": [
+        "AGENTS.md § Performance budgets: SLO чату розділено на два. Перший хід /api/chat НЕ стрімиться, тож обіцянка про перший токен на ньому не мала предмета — тепер це p95 повної відповіді < 15 с за chat_first_turn_phase_ms{phase=\"total\"} (стеля-детектор із заміру, не продуктова ціль). Тур синтезу стрімиться і лишає p95 першого токена < 1,5 с за ai_first_token_ms.",
+        "apps/server/AGENTS.md § Health & deploy: та сама декларація в канонічному місці, з поправкою на моделезалежність TTFT.",
+        "Наслідок для агента: порожні серії ai_first_token_ms НЕ означають «швидко» — першого ходу в них немає взагалі. Розбір: знахідка AI-2 і docs/03-operations/observability/metrics.md § 6a."
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null

@@ -13,12 +13,14 @@
 > пошуком по цьому файлу.
 >
 > **Результат: із 42 оголошених метрик 28 не згадані тут жодного разу.**
+> Одну з них — `ai_first_token_ms` — описано в §6a разом із
+> `chat_first_turn_phase_ms`, бо друга існує саме через межі першої;
+> лишається 27.
 > Тобто довідник описує приблизно третину того, що бекенд реально експортує, і
 > покладатись на нього як на повний каталог не можна.
 >
 > Не задокументовані:
 >
-> - `ai_first_token_ms`
 > - `auth_session_lookup_failure_total`
 > - `auth_token_lazy_reencrypt_total`
 > - `circuit_breaker_state`
@@ -278,6 +280,92 @@ Join-pattern із `app_build_info` (один gauge=1 на інстанс із л
 Для per-model дашбордів у Grafana: підставте `model="..."` фільтр у будь-який із PromQL-блоків вище, або зніміть фільтр для top-N breakdown через `topk(5, sum by (model) (...))`. Cost-counter не інкрементується для невідомого Voyage `model` ([embeddings.ts:59](../../../apps/server/src/modules/ai-memory/embeddings.ts#L59)), тому per-model USD-серії завжди матчаться до прайс-таблиці — token-counter тим часом інкрементується завжди, що дозволяє ловити drift нових Voyage-моделей через `sum by (model) (rate(ai_tokens_total{provider="voyage"}[1h])) unless on(model) sum by (model) (ai_cost_estimate_usd_total{provider="voyage"})`.
 
 **SLO/alerts**: [SLO.md §5](./SLO.md#5-ai-anthropic-slo-970-) · `AiErrorBudgetBurn{Fast,Slow}` · `AiLatencyP95High` · `AiQuotaStoreDown` — [runbook.md](./runbook.md#aierrorbudgetburn).
+
+---
+
+## 6a. Очікування на першому ході чату
+
+| Metric                     | Type      | Labels                            | Emitter                                                                           |
+| -------------------------- | --------- | --------------------------------- | --------------------------------------------------------------------------------- |
+| `ai_first_token_ms`        | Histogram | `provider` · `model` · `endpoint` | [chatStream.ts](../../../apps/server/src/modules/chat/chatStream.ts) — SSE-шлях   |
+| `chat_first_turn_phase_ms` | Histogram | `phase`                           | [chat.ts](../../../apps/server/src/modules/chat/chat.ts) — нестрімовий перший хід |
+
+**Ці дві метрики міряють різні шляхи, і плутати їх — головна пастка секції.**
+`/api/chat` має два ходи, і стрімиться лише **другий** — синтез після
+tool-результатів. Перший хід не стрімиться взагалі: клієнт не просить
+(`useChatSend.ts` шле `send()` без прапорця), а сервер і не підтримав би —
+єдиний `if (stream)` у `chat.ts` живе всередині гілки tool-результатів. Тому
+`ai_first_token_ms`, який живе в `streamAnthropicToSse`, першого ходу **не
+бачить у принципі**, і порожнеча в його серіях не означає «швидко».
+
+Друге застереження до `ai_first_token_ms`: її відлік стартує з
+`streamStartedAtMs` — моменту, коли upstream **уже відповів заголовками**. Тобто
+вона міряє латентність токенів моделі, а не очікування людини: ні наш серверний
+час, ні час upstream до заголовків у неї не входять. Розбір — AI-2 у
+[`findings.md`](../../90-work/audits/2026-09-01-product-audit/findings.md).
+
+`chat_first_turn_phase_ms` закриває саме цю прогалину. `phase`: `session` ·
+`counterparties` · `correlations` · `rag` · `preferences` · `pre_upstream` ·
+`upstream` · `total`. Перші пʼять — серійний ланцюг до виклику моделі;
+`pre_upstream` накриває **все** наше від входу в handler, включно з парсингом і
+валідацією. Тому `pre_upstream` мінус сума названих фаз — це неврахована
+робота, і саме ця різниця ловить кроки, яких ми не назвали.
+
+`total` — власна серія, а не сума решти на дашборді, і це не надмірність:
+**p95 суми не дорівнює сумі p95**. Складати квантилі гістограм не можна, тож
+без окремої серії обіцянка «повна відповідь за N секунд» лишалась би
+невимірною — рівно та вада, через яку SLO про перший токен протримався так
+довго.
+
+Три фази умовні й порожні в анона: `correlations` і `preferences` потребують
+сесії, `upstream` не пишеться при попаданні в response-cache. Відсутність серії
+тут — відповідь, а не діра.
+
+**Кардинальність**: 8 phase × (9 buckets + `_sum` + `_count` + `+Inf`) ≈ **96**
+серій. Бакети навмисно рідші за сусідні гістограми (`5, 25, 100, 250, 500,
+1000, 2000, 5000, 15000` ms): межі тут вирішують порядки — десятки мс на
+point-lookup проти секунд на upstream, — а не десятки мс.
+
+```promql
+# SLO першого ходу: p95 повної відповіді (стеля 15 с)
+histogram_quantile(0.95, sum by (le) (rate(chat_first_turn_phase_ms_bucket{phase="total"}[5m])))
+
+# З чого складається очікування людини: медіана по фазах
+histogram_quantile(0.5, sum by (le, phase) (rate(chat_first_turn_phase_ms_bucket[5m])))
+
+# Скільки з очікування наше, а скільки провайдера
+sum(rate(chat_first_turn_phase_ms_sum{phase="pre_upstream"}[5m]))
+  / sum(rate(chat_first_turn_phase_ms_sum{phase="upstream"}[5m]))
+
+# Неврахована робота: pre_upstream мінус названі фази
+sum(rate(chat_first_turn_phase_ms_sum{phase="pre_upstream"}[5m]))
+  - sum(rate(chat_first_turn_phase_ms_sum{phase=~"session|counterparties|correlations|rag|preferences"}[5m]))
+
+# Частка ходів, що взагалі не дійшли до моделі (cache-hit)
+1 - sum(rate(chat_first_turn_phase_ms_count{phase="upstream"}[5m]))
+  / sum(rate(chat_first_turn_phase_ms_count{phase="pre_upstream"}[5m]))
+```
+
+**SLO — переписано 2026-09-02 (рішення founder-а, варіант «б» по AI-2).** Стара
+редакція «Anthropic `/api/chat` p95 first token < 1.5 s» була однією обіцянкою на
+два різні шляхи, і на першому з них не мала предмета. Тепер їх двоє:
+
+| Шлях                       | SLO                                                       | Метрика                                   |
+| -------------------------- | --------------------------------------------------------- | ----------------------------------------- |
+| Перший хід (не стрімиться) | p95 повної відповіді **< 15 с** — стеля-детектор, не ціль | `chat_first_turn_phase_ms{phase="total"}` |
+| Тур синтезу (стрімиться)   | p95 першого токена **< 1,5 с**, моделезалежно             | `ai_first_token_ms`                       |
+
+**Чому 15 с, а не 1,5 і не 3.** Число взято із заміру, а не з побажання: 12
+промптів 2026-09-01 дали медіану ≈6,7 с і максимум 13,7 с. Поріг нижчий за факт
+зробив би гейт червоним із народження, а «червоний завжди» інформаційно дорівнює
+«вимкнений» — той самий урок, що тричі записаний у `AGENTS.md § Performance
+budgets` про бандл-ратчети. Тому 15 с — це **детектор катастрофи** (модель
+зависла, RAG не віддає), а не заява «так і має бути». Продуктова ціль лишається
+відкритою: її ставити з прод-даних цієї метрики, не з 12 промптів на стенді.
+
+Що ця редакція НЕ лікує: людина далі дивиться в порожній екран, доки відповідь
+не допишеться. Це варіант «а» (стрімити перший хід) — окрема робота, AI-2 у
+[`report.md § 4`](../../90-work/audits/2026-09-01-product-audit/report.md).
 
 ---
 

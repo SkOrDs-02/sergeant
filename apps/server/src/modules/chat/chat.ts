@@ -35,7 +35,10 @@ import { prepareToolResults } from "./prepareToolResults.js";
 import { validateToolCallsRawProvenance } from "./validateToolCallsRaw.js";
 import { als } from "../../obs/requestContext.js";
 import { makeAiProviderError, ValidationError } from "../../obs/errors.js";
-import { chatToolIterationCapHitTotal } from "../../obs/metrics.js";
+import {
+  chatFirstTurnPhaseMs,
+  chatToolIterationCapHitTotal,
+} from "../../obs/metrics.js";
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { getSessionUser } from "../../auth.js";
 import { getCounterpartyNames } from "../../lib/counterpartyNames.js";
@@ -290,6 +293,38 @@ export default async function handler(
 ): Promise<void> {
   const apiKey = (req as WithAnthropicKey).anthropicKey as string;
 
+  // AI-2 — з чого складається очікування людини на першому ході.
+  //
+  // Фази накопичуємо в мапу і віддаємо в метрику ОДНИМ спалахом пізніше, а
+  // не по місцю заміру. Причина: `getSessionUser` і `getCounterpartyNames`
+  // нижче платить і тур синтезу теж, а змішані серії не відповіли б на
+  // питання знахідки — вони описували б «середній хід», якого не існує.
+  // Спалах стоїть там, де вже точно відомо, що хід перший.
+  const handlerStartedAt = Date.now();
+  const phaseMs = new Map<string, number>();
+  const timePhase = async <T>(
+    phase: string,
+    run: () => Promise<T>,
+  ): Promise<T> => {
+    const startedAt = Date.now();
+    try {
+      return await run();
+    } finally {
+      phaseMs.set(phase, Date.now() - startedAt);
+    }
+  };
+  const flushFirstTurnPhases = (): void => {
+    // `total` рахуємо тут, а не складаємо з фаз на дашборді: p95 суми НЕ
+    // дорівнює сумі p95, тож без власної серії обіцянка «повна відповідь за
+    // N секунд» лишалась би невимірною — рівно та вада, через яку SLO про
+    // перший токен і протримався так довго.
+    phaseMs.set("total", Date.now() - handlerStartedAt);
+    for (const [phase, ms] of phaseMs) {
+      chatFirstTurnPhaseMs.observe({ phase }, ms);
+    }
+    phaseMs.clear();
+  };
+
   // AbortController мапить client-disconnect (Express `req.close`) на
   // Anthropic-виклик, щоб upstream не дограв запит, на який уже ніхто не чекає
   // (і не спалив токени). Прокидається у всі виклики anthropicMessages*.
@@ -348,7 +383,9 @@ export default async function handler(
   // Резолвимо сесію один раз — для RAG-injection (перший тур) і для per-user
   // cost-ledger (`ai_usage_daily` рядок `u:<id>` поряд із global aggregate).
   // anon / lookup-error → null: cost тоді пишеться лише глобально.
-  const sessionUser = await getSessionUser(req).catch(() => null);
+  const sessionUser = await timePhase("session", () =>
+    getSessionUser(req).catch(() => null),
+  );
   const ledgerUserId = sessionUser?.id ?? undefined;
 
   // Маскування перед відправкою за периметр (рішення founder-а #10).
@@ -365,7 +402,9 @@ export default async function handler(
   // і глибше («про всяк випадок») робить кожну точку окремо необовʼязковою
   // — тоді видалення однієї з них не ловиться жодним тестом, бо друга
   // ще тримає. Ідемпотентність маски це приховує, а не рятує.
-  const knownValues = await getCounterpartyNames(ledgerUserId);
+  const knownValues = await timePhase("counterparties", () =>
+    getCounterpartyNames(ledgerUserId),
+  );
   const maskedMessages = messages.map((m) => ({
     ...m,
     content: maskUserText(m.content),
@@ -539,7 +578,9 @@ export default async function handler(
   // Дешевий point-lookup (<1мс) — на відміну від RAG не ходить у Voyage,
   // тож fail-safe і без помітної затримки.
   const correlationsBlock = sessionUser?.id
-    ? await getCoachCorrelationsBlock(sessionUser.id)
+    ? await timePhase("correlations", () =>
+        getCoachCorrelationsBlock(sessionUser.id),
+      )
     : "";
   const contextWithCorrelations = correlationsBlock
     ? `${context}\n${correlationsBlock}`
@@ -550,11 +591,13 @@ export default async function handler(
   // за дизайном: блокуємо handler на ≤RAG_TIMEOUT_MS перш ніж дзвонити
   // Anthropic. Failure-mode → no-op (повертає baseContext).
   const augmentedContext = maskMachineText(
-    await buildRagContext({
-      userId: sessionUser?.id ?? null,
-      baseContext: contextWithCorrelations,
-      messages: cleaned,
-    }),
+    await timePhase("rag", () =>
+      buildRagContext({
+        userId: sessionUser?.id ?? null,
+        baseContext: contextWithCorrelations,
+        messages: cleaned,
+      }),
+    ),
     knownValues,
   );
 
@@ -574,6 +617,11 @@ export default async function handler(
   });
   const cached = getCachedChatResponse(cacheKey);
   if (cached) {
+    // Попадання в кеш пропускає модель, але роботу до неї вже оплачено —
+    // тож фази пишемо. `upstream` тут не буде, і це не діра: розподіл
+    // «скільки коштує хід без моделі» видно саме за відсутністю фази.
+    phaseMs.set("pre_upstream", Date.now() - handlerStartedAt);
+    flushFirstTurnPhases();
     res
       .status(cached.status)
       .json(attachRoundTripTicket(cached.body, ledgerUserId));
@@ -589,12 +637,20 @@ export default async function handler(
   // потрібний tool дорожче, ніж заплатити за зайвий. Анонім теж отримує
   // повний.
   const activeModules = sessionUser?.id
-    ? await getUserPreferences(pool, sessionUser.id)
-        .then((p) => p.activeModules)
-        .catch(() => null)
+    ? await timePhase("preferences", () =>
+        getUserPreferences(pool, sessionUser.id)
+          .then((p) => p.activeModules)
+          .catch(() => null),
+      )
     : null;
 
+  // Ставимо ПЕРЕД викликом моделі, а не після: фаза має накрити все наше,
+  // включно з парсингом тіла, валідацією і збіркою system-промпта. Різниця
+  // між цим числом і сумою названих фаз — робота, якої ми не назвали.
+  phaseMs.set("pre_upstream", Date.now() - handlerStartedAt);
+
   let response, data;
+  const upstreamStartedAt = Date.now();
   try {
     ({ response, data } = await callAnthropicWithContinuation(
       apiKey,
@@ -628,6 +684,12 @@ export default async function handler(
   } catch (e) {
     await refundQuotaOnUpstreamFailure(req);
     throw e;
+  } finally {
+    // `finally`, а не рядок після виклику: провал upstream — це найдовше
+    // очікування, яке людина взагалі бачить (таймаут `CHAT_TOOL_TIMEOUT_MS`),
+    // і викинути саме його з розподілу означало б міряти лише щасливий шлях.
+    phaseMs.set("upstream", Date.now() - upstreamStartedAt);
+    flushFirstTurnPhases();
   }
 
   if (!response?.ok) {

@@ -76,8 +76,14 @@
   - `sum by (reason) (rate(ai_quota_blocks_total[5m]))`
 - **AI quota fail-open (критично для білінгу)**:
   - `sum by (reason) (rate(ai_quota_fail_open_total[5m]))`
-- **TTFT чату — час до першого токена** (SLO `< 1.5 s` p95, `apps/server/AGENTS.md`):
+- **TTFT туру синтезу — час до першого токена** (SLO `< 1.5 s` p95, `apps/server/AGENTS.md`):
   - `histogram_quantile(0.95, sum by (le, model, endpoint) (rate(ai_first_token_ms_bucket[5m])))`
+  - ⚠️ Панель накриває ЛИШЕ тур синтезу після tool-результатів. Перший хід чату
+    не стрімиться, тож у цих серіях його немає взагалі — порожнеча тут не
+    означає «швидко» (розбір: [`metrics.md § 6a`](./metrics.md)).
+- **Повна відповідь першого ходу** (SLO `< 15 s` p95 — стеля-детектор):
+  - `histogram_quantile(0.95, sum by (le) (rate(chat_first_turn_phase_ms_bucket{phase="total"}[5m])))`
+  - Розклад очікування по фазах — той самий гістограм із `phase=~"session|counterparties|correlations|rag|preferences|pre_upstream|upstream"`.
   - Це НЕ `ai_request_duration_ms`: та міряє стрім цілком, а людина дивиться на
     порожній екран рівно до першого фрагмента. Розрив між двома панелями —
     нормальний і очікуваний; тривожить саме перша.
