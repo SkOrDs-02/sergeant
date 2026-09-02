@@ -122,7 +122,7 @@ RUN pnpm install --frozen-lockfile --ignore-scripts \
       --filter @sergeant/shared... \
       --filter @sergeant/db-schema... \
       --filter @sergeant/finyk-domain... \
-      --filter @sergeant/routine-domain...
+      --filter @sergeant/routine-domain... \
       --filter @sergeant/tabular-import...
 
 # --- Джерела ---
