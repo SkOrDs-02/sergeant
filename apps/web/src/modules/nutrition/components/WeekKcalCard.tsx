@@ -50,20 +50,25 @@ function dayLabel(dateIso: string): string {
 
 export interface WeekKcalCardProps {
   rows: MacrosRow[];
-  targetKcal: number;
+  /**
+   * Ціль на КОЖЕН день тижня, вирівняна з `rows`. Не одне число: ціль може
+   * змінитись серед тижня, і минулі дні судяться тією, що діяла тоді
+   * (ADR-0091). `null` — цілі на той день не було.
+   */
+  goalsByDay: readonly (number | null)[];
   todayIso: string;
   onGoToLog?: (() => void) | undefined;
 }
 
 export function WeekKcalCard({
   rows,
-  targetKcal,
+  goalsByDay,
   todayIso,
   onGoToLog,
 }: WeekKcalCardProps) {
   const model = useMemo(
-    () => computeWeekKcalChart(rows, targetKcal),
-    [rows, targetKcal],
+    () => computeWeekKcalChart(rows, goalsByDay),
+    [rows, goalsByDay],
   );
   const [selectedDate, setSelectedDate] = useState<string | null>(null);
 
@@ -153,16 +158,15 @@ export function WeekKcalCard({
                 className="relative w-full flex justify-center items-end"
                 style={{ height: `${PLOT_HEIGHT}px` }}
               >
-                {model.goalRatio !== null && (
-                  // Лінія цілі малюється в КОЖНІЙ колонці окремо, а не одним
-                  // елементом поверх плоту: так вона не залежить від висоти
-                  // рядка підписів і не потребує абсолютного позиціювання
-                  // відносно всієї картки. Пунктир і так має розриви, тож
-                  // 4px проміжки між колонками не видно.
+                {bar.goalRatio !== null && (
+                  // Лінія цілі малюється в КОЖНІЙ колонці окремо — і тепер це
+                  // не лише зручність розмітки: висота береться з ЦЬОГО дня,
+                  // тож у тижні зі зміненою ціллю лінія йде сходинкою.
+                  // Пунктир і так має розриви, тож 4px проміжки не видно.
                   <div
                     aria-hidden="true"
                     className="absolute inset-x-0 border-t border-dashed border-text/25"
-                    style={{ bottom: `${model.goalRatio * PLOT_HEIGHT}px` }}
+                    style={{ bottom: `${bar.goalRatio * PLOT_HEIGHT}px` }}
                   />
                 )}
                 {bar.isEmpty ? (

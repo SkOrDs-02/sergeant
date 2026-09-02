@@ -74,6 +74,16 @@ export function NutritionDashboard({
     return getMacrosForDateRange(log, weekEnd, 7);
   }, [log]);
 
+  // Ціль на кожен день тижня. Поки джерело — `prefs`, тож значення однакові
+  // й графік виглядає рівно як раніше; сходинка зʼявиться на стадії 3, коли
+  // сюди приїде `resolveEffectiveGoalForRange` (спека
+  // `nutrition-goal-journal-cutover.md`, PR-3). Форма вже правильна, тому
+  // той PR міняє лише цей `useMemo`, а не компонент.
+  const weekGoals = useMemo(
+    () => weekRows.map(() => prefs.dailyTargetKcal || null),
+    [weekRows, prefs.dailyTargetKcal],
+  );
+
   const hasGoal = (prefs.dailyTargetKcal || 0) > 0;
 
   // ponytail: honesty threshold for "incomplete day" (canon §5.2 — a
@@ -278,7 +288,7 @@ export function NutritionDashboard({
 
       <WeekKcalCard
         rows={weekRows}
-        targetKcal={prefs.dailyTargetKcal || 0}
+        goalsByDay={weekGoals}
         todayIso={today}
         onGoToLog={onGoToLog}
       />

@@ -27,48 +27,83 @@ const WEEK: MacrosRow[] = [
   row("2026-08-16", 0),
 ];
 
+/** Ціль, незмінна весь тиждень — той самий випадок, що був до ряду цілей. */
+function flat(goal: number, rows: readonly unknown[]): (number | null)[] {
+  return rows.map(() => (goal > 0 ? goal : null));
+}
+
 const TODAY = "2026-08-12";
 
 describe("WeekKcalCard", () => {
   it("називає опору шкали ціллю, коли ціль задана", () => {
-    render(<WeekKcalCard rows={WEEK} targetKcal={2000} todayIso={TODAY} />);
+    render(
+      <WeekKcalCard
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+      />,
+    );
     expect(screen.getByText(/ціль\s2\s?000/)).toBeTruthy();
   });
 
   it("називає стелю максимумом, коли цілі немає", () => {
     // Саме цей стан був на скріншоті тестера: цілі немає, шкала
     // самонормалізована — тож стеля мусить бути хоч підписана.
-    render(<WeekKcalCard rows={WEEK} targetKcal={0} todayIso={TODAY} />);
+    render(
+      <WeekKcalCard rows={WEEK} goalsByDay={flat(0, WEEK)} todayIso={TODAY} />,
+    );
     expect(screen.getByText(/макс\s1\s?800/)).toBeTruthy();
     expect(screen.queryByText(/ціль/)).toBeNull();
   });
 
   it("малює лінію цілі лише коли ціль задана", () => {
     const { container: withGoal } = render(
-      <WeekKcalCard rows={WEEK} targetKcal={2000} todayIso={TODAY} />,
+      <WeekKcalCard
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+      />,
     );
     expect(withGoal.querySelectorAll(".border-dashed").length).toBe(7);
 
     const { container: noGoal } = render(
-      <WeekKcalCard rows={WEEK} targetKcal={0} todayIso={TODAY} />,
+      <WeekKcalCard rows={WEEK} goalsByDay={flat(0, WEEK)} todayIso={TODAY} />,
     );
     expect(noGoal.querySelectorAll(".border-dashed").length).toBe(0);
   });
 
   it("малює порожній день пласким треком, а не стовпчиком", () => {
-    render(<WeekKcalCard rows={WEEK} targetKcal={2000} todayIso={TODAY} />);
+    render(
+      <WeekKcalCard
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+      />,
+    );
     expect(screen.getByTestId("week-kcal-empty-2026-08-10")).toBeTruthy();
     expect(screen.queryByTestId("week-kcal-bar-2026-08-10")).toBeNull();
     expect(screen.getByTestId("week-kcal-bar-2026-08-11")).toBeTruthy();
   });
 
   it("показує агрегат тижня, поки день не вибрано", () => {
-    render(<WeekKcalCard rows={WEEK} targetKcal={2000} todayIso={TODAY} />);
+    render(
+      <WeekKcalCard
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+      />,
+    );
     expect(screen.getByText(/3\s?000 ккал · сер\. 1\s?500\/день/)).toBeTruthy();
   });
 
   it("показує ккал вибраного дня і знімає вибір повторним тапом", () => {
-    render(<WeekKcalCard rows={WEEK} targetKcal={2000} todayIso={TODAY} />);
+    render(
+      <WeekKcalCard
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+      />,
+    );
     const tuesday = screen.getByRole("button", { name: /Вт, 1\s?200 ккал/ });
 
     fireEvent.click(tuesday);
@@ -81,7 +116,13 @@ describe("WeekKcalCard", () => {
   });
 
   it("не вигадує ккал для дня без записів при виборі", () => {
-    render(<WeekKcalCard rows={WEEK} targetKcal={2000} todayIso={TODAY} />);
+    render(
+      <WeekKcalCard
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+      />,
+    );
     fireEvent.click(screen.getByRole("button", { name: "Пн, немає записів" }));
     expect(screen.getByText("Пн · немає записів")).toBeTruthy();
   });
@@ -90,7 +131,7 @@ describe("WeekKcalCard", () => {
     render(
       <WeekKcalCard
         rows={[row("2026-08-10", 3000)]}
-        targetKcal={2000}
+        goalsByDay={flat(2000, WEEK)}
         todayIso={TODAY}
       />,
     );
@@ -101,7 +142,13 @@ describe("WeekKcalCard", () => {
 
   it("чесно повідомляє порожній тиждень замість порожнього графіка", () => {
     const emptyWeek = WEEK.map((r) => row(r.date, 0));
-    render(<WeekKcalCard rows={emptyWeek} targetKcal={0} todayIso={TODAY} />);
+    render(
+      <WeekKcalCard
+        rows={emptyWeek}
+        goalsByDay={flat(0, emptyWeek)}
+        todayIso={TODAY}
+      />,
+    );
     expect(screen.getByText("Ще немає записів цього тижня")).toBeTruthy();
     // Без даних і без цілі підписувати нічого — «макс 1» було б брехнею.
     expect(screen.queryByText(/макс/)).toBeNull();
@@ -111,7 +158,11 @@ describe("WeekKcalCard", () => {
     // Сім колонок фізично не влазять по 44px на мобільному — опт-аут
     // мусить бути на кожній, інакше падає гейт Mobile UI audit.
     const { container } = render(
-      <WeekKcalCard rows={WEEK} targetKcal={2000} todayIso={TODAY} />,
+      <WeekKcalCard
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+      />,
     );
     expect(container.querySelectorAll("button[data-compact]").length).toBe(7);
   });
@@ -121,7 +172,7 @@ describe("WeekKcalCard", () => {
     render(
       <WeekKcalCard
         rows={WEEK}
-        targetKcal={2000}
+        goalsByDay={flat(2000, WEEK)}
         todayIso={TODAY}
         onGoToLog={() => {
           clicked += 1;
