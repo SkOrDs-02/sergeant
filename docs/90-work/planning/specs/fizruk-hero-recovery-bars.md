@@ -1,7 +1,7 @@
 # Спека: hero Фізрука «Смуги відновлення»
 
 > **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-30.
-> **Status:** Implemented - PR #1021 (`HeroRecoveryBars` замінив `StatusStrip`; `selectHeroRecoveryRows`, `load14d`, `focusMuscleId` в атласі, канон і анти-слоп аудит оновлені в тому ж PR). Другий із трьох hero-PR (порядок: Їжа → Фізрук → Фінік).
+> **Status:** Implemented - PR #1021 (`HeroRecoveryBars` замінив `StatusStrip`; `selectHeroRecoveryRows`, `load14d`, `focusMuscleId` в атласі, канон і анти-слоп аудит оновлені в тому ж PR). **Блокувальний гейт `Mobile UI audit (44px touch targets)` виконується в CI цього PR — локально його прогнати нема чим (потрібен живий браузер), тож підтвердження приходить із CI, а не від виконавця.** Другий із трьох hero-PR (порядок: Їжа → Фізрук → Фінік).
 > **Виконання:** чиста сесія у свіжому worktree від main. Governing skills: `sergeant-module-fizruk` (owner) + `sergeant-web-ui`. Виконавець: `fizruk-owner` (або `spec-executor` з тими самими скілами).
 > **Мокап:** Claude Design canvas «Hero-картки модулів», артборд `Fizruk B` — `https://claude.ai/code/artifact/f20e1268-7695-4ed2-8db2-f5ec2d230863` (демо-стан: «Субота, 12 вересня · серія 1 тиждень»; втомлені груди / плечі / трицепс / корпус, свіжі спина / ноги; CTA «Ноги і спина»).
 
