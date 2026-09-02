@@ -1,7 +1,7 @@
 # Спека: hero Фізрука «Смуги відновлення»
 
 > **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-12-13.
-> **Status:** Active — рішення founder-а зафіксовано інтервʼю 2026-09-01; виконання не почато. Другий із трьох hero-PR (порядок: Їжа → Фізрук → Фінік).
+> **Status:** Implemented - PR #1021 (`HeroRecoveryBars` замінив `StatusStrip`; `selectHeroRecoveryRows`, `load14d`, `focusMuscleId` в атласі, канон і анти-слоп аудит оновлені в тому ж PR). **Блокувальний гейт `Mobile UI audit (44px touch targets)` виконується в CI цього PR — локально його прогнати нема чим (потрібен живий браузер), тож підтвердження приходить із CI, а не від виконавця.** Другий із трьох hero-PR (порядок: Їжа → Фізрук → Фінік).
 > **Виконання:** чиста сесія у свіжому worktree від main. Governing skills: `sergeant-module-fizruk` (owner) + `sergeant-web-ui`. Виконавець: `fizruk-owner` (або `spec-executor` з тими самими скілами).
 > **Мокап:** Claude Design canvas «Hero-картки модулів», артборд `Fizruk B` — `https://claude.ai/code/artifact/f20e1268-7695-4ed2-8db2-f5ec2d230863` (демо-стан: «Субота, 12 вересня · серія 1 тиждень»; втомлені груди / плечі / трицепс / корпус, свіжі спина / ноги; CTA «Ноги і спина»).
 
@@ -52,10 +52,11 @@ pnpm --filter @sergeant/fizruk-domain test               # load14d, selectHeroRe
 pnpm --filter @sergeant/web test -- fizruk
 pnpm --filter @sergeant/web typecheck
 pnpm lint
-grep -rn "StatusStrip" apps packages docs --include=*.ts --include=*.tsx --include=*.md \
-  | grep -v "docs/90-work/audits/\|/archive/"   # має бути порожньо
+grep -rn "StatusStrip" apps packages --include=*.ts --include=*.tsx   # має бути порожньо
 SERGEANT_HEAVY_OK=1 pnpm --filter @sergeant/web size:eager
 ```
+
+> **Чому грепу по `docs/**` тут немає.** Перша редакція гейта шукала й у доках із виключенням аудитів і архіву — і не могла пройти за побудовою: § Поверхня змін цієї ж спеки диктує рядок журналу рішень, який дослівно містить `StatusStrip`, плюс сама спека і кілька історичних changelog-записів його називають. Гейт стежить за тим, щоб на компонент не лишилось **живих посилань у коді**; доки, які фіксують, що компонент прибрано, — це не борг, а історія, і переписувати їх заради зеленого грепу було б підміною мети гейта.
 
 Click-through у демо-режимі (393×852, світла й темна тема):
 

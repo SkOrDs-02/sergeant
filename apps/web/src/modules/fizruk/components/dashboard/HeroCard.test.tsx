@@ -11,6 +11,7 @@ import {
 
 import { HeroCard, type HeroCardState } from "./HeroCard";
 import { ScreenReaderAnnouncerProvider } from "@shared/components/ui/ScreenReaderAnnouncer";
+import type { HeroRecoveryRow } from "@sergeant/fizruk-domain";
 
 /**
  * Default callback prop bag reused across tests — each test only needs
@@ -23,6 +24,7 @@ function makeCallbacks() {
     onOpenPlan: vi.fn(),
     onOpenTemplates: vi.fn(),
     onOpenPrograms: vi.fn(),
+    onOpenAtlas: vi.fn(),
   };
 }
 
@@ -34,14 +36,26 @@ function renderHero(
   const utils = render(
     <HeroCard
       state={state}
-      greeting="Доброго дня"
       today="середа, 23 квітня"
+      streakWeeks={0}
+      weeklyWorkoutsCount={0}
+      recoveryRows={[]}
+      recoverByDate={{}}
       {...cbs}
       {...overrides}
     />,
   );
   return { ...utils, ...cbs };
 }
+
+const CHEST_ROW: HeroRecoveryRow = {
+  atlasId: "chest",
+  label: "Груди",
+  kind: "muscle",
+  status: "yellow",
+  fatigue: 0.5,
+  domainMuscleId: "pectoralis_major",
+};
 
 afterEach(() => {
   cleanup();
@@ -64,7 +78,7 @@ describe("HeroCard · active state", () => {
       itemsCount: 3,
     });
 
-    expect(screen.getByText(/Доброго дня/i)).toBeInTheDocument();
+    expect(screen.getByText(/середа, 23 квітня/i)).toBeInTheDocument();
     expect(screen.getByText("1:05")).toBeInTheDocument();
     expect(screen.getByText(/Тренування триває/i)).toBeInTheDocument();
     expect(screen.getByText(/3 вправи у сесії/i)).toBeInTheDocument();
@@ -138,21 +152,18 @@ describe("HeroCard · active state", () => {
 // that cross-test fake-clock interaction entirely.
 describe("HeroCard · active state — screen-reader milestone announce", () => {
   it("announces the elapsed duration once via the shared live region on mount", async () => {
-    const cbs = {
-      onResume: vi.fn(),
-      onStartToday: vi.fn(),
-      onOpenPlan: vi.fn(),
-      onOpenTemplates: vi.fn(),
-      onOpenPrograms: vi.fn(),
-    };
+    const cbs = makeCallbacks();
     render(
       <ScreenReaderAnnouncerProvider>
         <HeroCard
           // `startedAtIso` = "now" so the elapsed seconds stay near 0
           // regardless of real wall-clock time when the test runs.
           state={{ kind: "active", startedAtIso: new Date().toISOString() }}
-          greeting="Доброго дня"
           today="середа, 23 квітня"
+          streakWeeks={0}
+          weeklyWorkoutsCount={0}
+          recoveryRows={[]}
+          recoverByDate={{}}
           {...cbs}
         />
       </ScreenReaderAnnouncerProvider>,
@@ -166,7 +177,7 @@ describe("HeroCard · active state — screen-reader milestone announce", () => 
 });
 
 describe("HeroCard · today state", () => {
-  it("renders the template name, meta and 'Почати' CTA", () => {
+  it("names the template once — in the CTA, not as a second heading", () => {
     const { onStartToday } = renderHero({
       kind: "today",
       label: "Push A",
@@ -175,8 +186,10 @@ describe("HeroCard · today state", () => {
       hint: "З місячного плану",
     });
 
-    expect(screen.getByText(/Сьогоднішнє тренування/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Push A" })).toBeInTheDocument();
+    // Hero відповідає на «що з тілом», а не «що в розкладі»: заголовка з
+    // назвою шаблону тут немає, назва живе рівно в одному місці — у CTA.
+    expect(screen.queryByRole("heading", { name: "Push A" })).toBeNull();
+    expect(screen.queryByText(/Сьогоднішнє тренування/i)).toBeNull();
     expect(
       screen.getByText(/6 вправ · ~45 хв · З місячного плану/i),
     ).toBeInTheDocument();
@@ -207,9 +220,10 @@ describe("HeroCard · upcoming state", () => {
       exerciseCount: 5,
     });
 
-    expect(screen.getByText(/Наступне тренування/i)).toBeInTheDocument();
-    expect(screen.getByRole("heading", { name: "Push B" })).toBeInTheDocument();
-    expect(screen.getByText(/За 2 дні/i)).toBeInTheDocument();
+    // Тут CTA («Відкрити план») назви не несе, тож вона переїхала в голову
+    // мета-рядка — заголовка немає, але з екрана вона не зникла.
+    expect(screen.queryByRole("heading", { name: "Push B" })).toBeNull();
+    expect(screen.getByText(/Push B · За 2 дні/i)).toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Відкрити план/i }));
     expect(onOpenPlan).toHaveBeenCalledTimes(1);
@@ -281,5 +295,62 @@ describe("HeroCard · empty state", () => {
     expect(
       screen.getByRole("button", { name: /Створити шаблон/i }),
     ).toBeInTheDocument();
+  });
+});
+
+// Спека `fizruk-hero-recovery-bars.md` § Рішення дизайну 1-3: рядки «стан
+// тіла» рендеряться в `today`/`upcoming`/`empty`, ніколи в `active`, а
+// кікер несе серію/тиждень замість колишнього тайл-рядка знизу hero.
+describe("HeroCard · recovery bars + kicker", () => {
+  it.each([
+    ["today", { kind: "today", label: "Push A", exerciseCount: 6 }],
+    [
+      "upcoming",
+      {
+        kind: "upcoming",
+        label: "Push B",
+        daysFromNow: 2,
+        dateKey: "2026-04-25",
+        exerciseCount: 5,
+      },
+    ],
+    ["empty", { kind: "empty", hasTemplates: true }],
+  ] as const)("renders recovery rows in the %s state", (_label, state) => {
+    renderHero(state, { recoveryRows: [CHEST_ROW] });
+    expect(screen.getByRole("button", { name: /Груди/ })).toBeInTheDocument();
+  });
+
+  it("does not render recovery rows in the active state", () => {
+    renderHero(
+      { kind: "active", startedAtIso: new Date().toISOString() },
+      { recoveryRows: [CHEST_ROW] },
+    );
+    expect(
+      screen.queryByRole("button", { name: /Груди/ }),
+    ).not.toBeInTheDocument();
+  });
+
+  it("shows the empty-body message when there are no recovery rows", () => {
+    renderHero({ kind: "empty", hasTemplates: false });
+    expect(screen.getByText(/Тіло ще не має історії/)).toBeInTheDocument();
+  });
+
+  it("kicker contains the streak-weeks and weekly-workouts readout", () => {
+    renderHero(
+      { kind: "empty", hasTemplates: false },
+      { streakWeeks: 1, weeklyWorkoutsCount: 1 },
+    );
+    expect(
+      screen.getByText(/серія 1 тижн\. · 1 тренування/),
+    ).toBeInTheDocument();
+  });
+
+  it("tapping a recovery row calls onOpenAtlas with the row's atlasId", () => {
+    const { onOpenAtlas } = renderHero(
+      { kind: "today", label: "Push A", exerciseCount: 6 },
+      { recoveryRows: [CHEST_ROW] },
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Груди/ }));
+    expect(onOpenAtlas).toHaveBeenCalledWith("chest");
   });
 });

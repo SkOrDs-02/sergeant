@@ -116,6 +116,83 @@ describe("fizruk/recoveryCompute", () => {
     expect(by["chest"]!.daysSince).toBe(0);
   });
 
+  it("load14d includes workouts 8-14 days old that load7d excludes", () => {
+    const nowMs = Date.parse("2026-01-15T12:00:00Z");
+    // 10 days before `now` — inside the 14-day window, outside the 7-day one.
+    const workouts = [
+      {
+        startedAt: "2026-01-05T10:00:00Z",
+        items: [
+          {
+            type: "strength",
+            sets: [{ weightKg: 60, reps: 10 }],
+            musclesPrimary: ["chest"],
+          },
+        ],
+      },
+    ];
+    const by = computeRecoveryBy(
+      workouts as never,
+      { chest: "Груди" },
+      nowMs,
+      [],
+    );
+    expect(by["chest"]!.load7d).toBe(0);
+    expect(by["chest"]!.load14d).toBeGreaterThan(0);
+  });
+
+  it("load14d excludes workouts older than 14 days", () => {
+    const nowMs = Date.parse("2026-01-15T12:00:00Z");
+    // 20 days before `now` — outside both the 7- and 14-day windows.
+    const workouts = [
+      {
+        startedAt: "2025-12-26T10:00:00Z",
+        items: [
+          {
+            type: "strength",
+            sets: [{ weightKg: 60, reps: 10 }],
+            musclesPrimary: ["chest"],
+          },
+        ],
+      },
+    ];
+    const by = computeRecoveryBy(
+      workouts as never,
+      { chest: "Груди" },
+      nowMs,
+      [],
+    );
+    expect(by["chest"]!.load7d).toBe(0);
+    expect(by["chest"]!.load14d).toBe(0);
+  });
+
+  it("counts no load for a workout dated in the future", () => {
+    const nowMs = Date.parse("2026-01-15T12:00:00Z");
+    // 3 дні ПОПЕРЕДУ. Без нижньої межі `nowMs - t <= WEEK` істинне і для
+    // відʼємної різниці, тож заплановане тренування читалось би як уже
+    // виконане навантаження — і в hero група зʼявилась би як тренована.
+    const workouts = [
+      {
+        startedAt: "2026-01-18T10:00:00Z",
+        items: [
+          {
+            type: "strength",
+            sets: [{ weightKg: 60, reps: 10 }],
+            musclesPrimary: ["chest"],
+          },
+        ],
+      },
+    ];
+    const by = computeRecoveryBy(
+      workouts as never,
+      { chest: "Груди" },
+      nowMs,
+      [],
+    );
+    expect(by["chest"]!.load7d).toBe(0);
+    expect(by["chest"]!.load14d).toBe(0);
+  });
+
   it("loadPointsForItem handles empty and degenerate sets", () => {
     expect(loadPointsForItem(null)).toBe(0);
     expect(loadPointsForItem(undefined)).toBe(0);

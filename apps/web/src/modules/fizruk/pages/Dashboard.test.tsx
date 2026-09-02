@@ -10,8 +10,7 @@
  * (`useExerciseCatalog`, `useWorkouts`, `useRecovery`,
  * `useWorkoutTemplates`, `useMonthlyPlan`, `useMeasurements`,
  * `useRestDayOverdueInsight`, `usePrPendingInsight`, `usePrLatest`,
- * `useActiveFizrukWorkout`, `useAuth`) plus its 4 real children
- * (`HeroCard`, `StatusStrip`, `RecentWorkoutsSection`, `PrBadge`) to
+ * `useActiveFizrukWorkout`, `useAuth`) plus its real children to
  * `data-testid` divs, and asserted only "mounts without crashing" /
  * testid-presence — none of it protected the props contract between
  * `Dashboard` and its children.
@@ -21,10 +20,12 @@
  * `FizrukApp` shell, out of scope for a page-level test) or plain
  * `localStorage`/pure-selector hooks — with **no network calls and no
  * heavy browser API**, so none of them need mocking: this file renders
- * them for real, plus the real `HeroCard`/`StatusStrip`/
- * `RecentWorkoutsSection`/`PrBadge` children, wired to a real
- * `AuthProvider`/`ApiClientProvider` and a real MSW `/api/v1/me`
- * transport (the only network call in the render tree).
+ * them for real, plus the real `HeroCard`/`RecentWorkoutsSection`/
+ * `PrBadge` children, wired to a real `AuthProvider`/`ApiClientProvider`
+ * and a real MSW `/api/v1/me` transport (the only network call in the
+ * render tree). `HeroCard`'s old streak/week sibling — a three-tile strip
+ * rendered below it — is gone (спека `fizruk-hero-recovery-bars.md`
+ * рішення 3): that readout moved into the hero's own kicker.
  */
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -91,7 +92,7 @@ function renderDashboard(props: Partial<typeof defaultProps> = {}) {
 }
 
 describe("Dashboard — guest, no data (real hooks + real children)", () => {
-  it("renders the real HeroCard empty state with a Kyiv-anchored greeting", async () => {
+  it("renders the real HeroCard empty state with the date+streak kicker", async () => {
     renderDashboard();
 
     // Real sr-only page heading (not a stubbed testid).
@@ -100,9 +101,13 @@ describe("Dashboard — guest, no data (real hooks + real children)", () => {
     ).toBeInTheDocument();
 
     // Real `HeroCard` in its "empty" state (no templates, no active
-    // workout, no plan session) renders the Kyiv-anchored greeting +
-    // date kicker and the "no templates yet" copy.
-    expect(screen.getByText(/Доброго ранку ·/)).toBeInTheDocument();
+    // workout, no plan session) renders the kicker (date · серія · тижн.)
+    // and the "no templates yet" copy — the old three-tile strip below the
+    // hero is gone (спека `fizruk-hero-recovery-bars.md` рішення 3), so the
+    // streak/week readout now lives here instead of a greeting.
+    expect(
+      screen.getByText(/серія 0 тижн\. · 0 тренувань/),
+    ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Створити шаблон" }),
     ).toBeInTheDocument();
@@ -111,23 +116,16 @@ describe("Dashboard — guest, no data (real hooks + real children)", () => {
     ).toBeInTheDocument();
   });
 
-  it("renders the real StatusStrip with zero-state KPI chips", async () => {
+  it("renders the hero body-empty message for a guest with no training history (рішення 1)", async () => {
     renderDashboard();
-    const strip = await screen.findByRole("region", {
-      name: "Статус: готовність, серія, тиждень",
-    });
     expect(
-      screen.getByRole("button", { name: /Готовність: ОК/ }),
+      await screen.findByText(/Тіло ще не має історії/),
     ).toBeInTheDocument();
-    expect(
-      screen.getByRole("button", { name: /Серія: 0 тижнів/ }),
-    ).toBeInTheDocument();
-    expect(strip).toBeInTheDocument();
   });
 
   it("does not render RecentWorkoutsSection when there are no completed workouts", async () => {
     renderDashboard();
-    await screen.findByText(/Доброго ранку ·/);
+    await screen.findByRole("button", { name: "Створити шаблон" });
     expect(
       screen.queryByRole("heading", { name: "Останні тренування" }),
     ).not.toBeInTheDocument();
@@ -143,15 +141,6 @@ describe("Dashboard — guest, no data (real hooks + real children)", () => {
     expect(window.sessionStorage.getItem("fizruk_workouts_mode")).toBe(
       "templates",
     );
-  });
-
-  it("clicking the 'Готовність' status chip navigates to Тіло (real onNavigate wiring)", async () => {
-    const user = userEvent.setup();
-    renderDashboard();
-    await user.click(
-      await screen.findByRole("button", { name: /Готовність: ОК/ }),
-    );
-    expect(mockNavigate).toHaveBeenCalledWith("body");
   });
 });
 

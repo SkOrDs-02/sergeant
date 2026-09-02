@@ -24,15 +24,30 @@
  * State selection lives in the Dashboard page (it has all the inputs);
  * this component stays pure/presentational so it can be storybooked and
  * unit-tested in isolation.
+ *
+ * Спека `docs/90-work/planning/specs/fizruk-hero-recovery-bars.md` added a
+ * fifth cross-cutting concern in `today` / `upcoming` / `empty` (never
+ * `active` — рішення 2): up to six "стан тіла" rows under the kicker
+ * (`HeroRecoveryBars.tsx`), and folded the streak/week readout that used to
+ * live in its own three-tile strip below the hero into the kicker itself
+ * (`HeroKicker` in `HeroCardStates.tsx`).
+ * The four state layouts + their shared chrome (`HeroShell`, `HeroKicker`,
+ * timer helpers, …) live in `HeroCardStates.tsx` — this file only keeps the
+ * public type surface and the state-selection switch, to stay under Hard
+ * Rule #18's 600-line cap.
  */
 
-import { useEffect, useRef, useState, type ReactNode } from "react";
+import type { ReactNode } from "react";
 
-import { pluralDays, pluralExercises } from "@sergeant/shared";
-import { Button } from "@shared/components/ui/Button";
-import { Card } from "@shared/components/ui/Card";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
+import type { HeroRecoveryRow } from "@sergeant/fizruk-domain";
+import {
+  ActiveState,
+  EmptyState,
+  TodayState,
+  UpcomingState,
+  type HeroBodyInfo,
+  type HeroKickerInfo,
+} from "./HeroCardStates";
 
 /**
  * Discriminated union for the four hero states. Keeping each state's
@@ -82,10 +97,26 @@ export type HeroCardState =
 
 export interface HeroCardProps {
   readonly state: HeroCardState;
-  /** Localized greeting, e.g. "Доброго дня". */
-  readonly greeting: string;
   /** Localized date label, e.g. "середа, 23 квітня". */
   readonly today: string;
+  /**
+   * Kicker streak/week readout (спека рішення 3 — заміняє тристрічковий
+   * тайл-рядок, знятий разом із цим hero). Канон §7: `streakDays` тут
+   * навмисно немає — стрік лише тижневий.
+   */
+  readonly streakWeeks: number;
+  /** Тренувань цього тижня — те саме поле, що раніше рендерив тайл-рядок. */
+  readonly weeklyWorkoutsCount: number;
+  /**
+   * До шести рядків «стан тіла» (рішення 1/5) — рендеряться в станах
+   * `today` / `upcoming` / `empty`, відсутні в `active`. Порожній масив
+   * рендерить порожній-тіла текст замість смуг.
+   */
+  readonly recoveryRows: readonly HeroRecoveryRow[];
+  /** Domain `MuscleState.id` → forecast full-recovery date key, для `red`-підписів. */
+  readonly recoverByDate: Readonly<Record<string, string | null>>;
+  /** Тап по рядку групи → відкрити атлас, сфокусований на цій групі (рішення 4). */
+  readonly onOpenAtlas: (atlasId: string) => void;
   /** Invoked for the primary CTA on the `active` state. */
   readonly onResume: () => void;
   /** Invoked for the primary CTA on the `today` state. */
@@ -106,414 +137,29 @@ export interface HeroCardProps {
 }
 
 /**
- * Phase 2.3 v2 redesign (C4): chrome тепер через `<Card prominence="hero"
- * module="fizruk">` + decorative `--hero-grad-fizruk` wash overlay.
- * Замінив рукописний `bg-hero-teal` + dark gradient на orthogonal Card
- * primitive — module identity та dark-mode parity тепер тримаються
- * через `MODULE_PROMINENCE.fizruk.hero` у `Card.tsx`, без дублювання
- * gradient-літералів у feature-коді.
- */
-function HeroShell({
-  ariaLabel,
-  children,
-  cornerSlot,
-}: {
-  readonly ariaLabel: string;
-  readonly children: ReactNode;
-  readonly cornerSlot?: ReactNode;
-}) {
-  return (
-    <Card
-      as="section"
-      prominence="hero"
-      module="fizruk"
-      edge="rule"
-      padding="none"
-      className="relative overflow-hidden"
-      aria-label={ariaLabel}
-    >
-      <div
-        aria-hidden
-        className="absolute inset-0 pointer-events-none"
-        style={{
-          background: "var(--hero-grad-fizruk)",
-          opacity: 0.08,
-        }}
-      />
-      <div className="relative p-6">{children}</div>
-      {cornerSlot}
-    </Card>
-  );
-}
-
-function formatElapsed(sec: number): string {
-  if (!Number.isFinite(sec) || sec <= 0) return "0:00";
-  const total = Math.floor(sec);
-  const h = Math.floor(total / 3600);
-  const m = Math.floor((total % 3600) / 60);
-  const s = total % 60;
-  if (h > 0) {
-    return `${h}:${String(m).padStart(2, "0")}:${String(s).padStart(2, "0")}`;
-  }
-  return `${m}:${String(s).padStart(2, "0")}`;
-}
-
-/**
- * Seconds between now and `startedAtIso`. Guarded so malformed ISO
- * strings (or a future-dated `startedAt` from clock skew) produce `0`
- * instead of NaN / negatives in the rendered "00:00".
- */
-function diffSecFromNow(startedAtIso: string): number {
-  const start = Date.parse(startedAtIso);
-  if (!Number.isFinite(start)) return 0;
-  const diffMs = Date.now() - start;
-  if (!Number.isFinite(diffMs) || diffMs <= 0) return 0;
-  return Math.floor(diffMs / 1000);
-}
-
-/**
- * Ticks a 1-second elapsed counter for the active-workout hero without
- * pulling the rest of the Dashboard into a 1Hz re-render loop. Returns
- * `0` on the server / before mount so SSR and first paint stay stable.
- */
-function useElapsedSec(startedAtIso: string): number {
-  const [sec, setSec] = useState<number>(() => diffSecFromNow(startedAtIso));
-  const [prevStartedAtIso, setPrevStartedAtIso] = useState(startedAtIso);
-  if (startedAtIso !== prevStartedAtIso) {
-    setPrevStartedAtIso(startedAtIso);
-    setSec(diffSecFromNow(startedAtIso));
-  }
-  useEffect(() => {
-    const id = setInterval(() => {
-      setSec(diffSecFromNow(startedAtIso));
-    }, 1000);
-    const onVisibility = () => {
-      if (document.visibilityState === "visible") {
-        setSec(diffSecFromNow(startedAtIso));
-      }
-    };
-    document.addEventListener("visibilitychange", onVisibility);
-    return () => {
-      clearInterval(id);
-      document.removeEventListener("visibilitychange", onVisibility);
-    };
-  }, [startedAtIso]);
-  return sec;
-}
-
-function formatDateShort(dateKey: string): string {
-  try {
-    const d = new Date(`${dateKey}T12:00:00`);
-    if (Number.isNaN(d.getTime())) return dateKey;
-    return d.toLocaleDateString("uk-UA", { day: "numeric", month: "long" });
-  } catch {
-    return dateKey;
-  }
-}
-
-function formatDaysAway(days: number): string {
-  if (days === 0) return "Сьогодні";
-  if (days === 1) return "Завтра";
-  return `За ${days} ${pluralDays(days)}`;
-}
-
-/**
- * Renders the `greeting · today` kicker. Shared across all states so
- * the top of the hero always anchors "when am I".
- */
-function HeroKicker({
-  greeting,
-  today,
-}: {
-  readonly greeting: string;
-  readonly today: string;
-}) {
-  return (
-    // «Чорнило» v3.1 § 3: overrides the light `text-fizruk-strong` (now
-    // invisible on the saturated hero gradient) with hero-ink;
-    // `dark:text-fizruk-300/70` already reads fine on the dark hero.
-    <SectionHeading as="p" size="xs" variant="fizruk" className="text-hero-ink">
-      {greeting} · {today}
-    </SectionHeading>
-  );
-}
-
-/**
- * Secondary eyebrow that labels each state ("Тренування триває", etc.)
- * Sits directly under the `HeroKicker` and uses the theme-invariant
- * `hero-ink/80` so it reads as an overlay label on the saturated fizruk
- * hero gradient («Чорнило» v3.1 § 3 — same treatment in both themes).
- */
-function HeroStateLabel({ children }: { readonly children: ReactNode }) {
-  return (
-    <SectionHeading as="p" size="xs" className="mt-3 text-hero-ink">
-      {children}
-    </SectionHeading>
-  );
-}
-
-/**
- * "Play" icon that headlines the primary CTA. Inlined (rather than an
- * `Icon name="play"` call) so the hero stays self-contained and zero
- * extra import surfaces get dragged in.
- */
-function PlayIcon() {
-  return (
-    <svg
-      width="18"
-      height="18"
-      viewBox="0 0 24 24"
-      fill="currentColor"
-      aria-hidden
-    >
-      <path d="M8 5v14l11-7z" />
-    </svg>
-  );
-}
-
-function ActiveState({
-  state,
-  greeting,
-  today,
-  onResume,
-  cornerSlot,
-}: {
-  readonly state: Extract<HeroCardState, { kind: "active" }>;
-  readonly greeting: string;
-  readonly today: string;
-  readonly onResume: () => void;
-  readonly cornerSlot?: ReactNode;
-}) {
-  const elapsedSec = useElapsedSec(state.startedAtIso);
-  const { announce } = useAnnounce();
-  const hasAnnouncedStartRef = useRef(false);
-  // A11y (fixed 2026-08-08): this used to be `aria-live="polite"` plus an
-  // `aria-label` embedding `elapsedSec` — i.e. a label that changes every
-  // second inside a live region, so a screen reader read the elapsed
-  // duration out loud continuously for the whole active session. The
-  // visible digits still tick every second for sighted users; a screen
-  // reader only needs the duration once, at the moment the card first
-  // shows the active session (mount-only announce, deliberately `[]`
-  // deps — see `RestTimerOverlay.tsx` for the same pattern).
-  useEffect(() => {
-    if (hasAnnouncedStartRef.current) return;
-    hasAnnouncedStartRef.current = true;
-    announce(`Тренування триває, ${formatElapsed(elapsedSec)}`);
-    // eslint-disable-next-line react-hooks/exhaustive-deps -- mount-only announce, see comment above.
-  }, []);
-  const meta =
-    state.itemsCount != null && state.itemsCount > 0
-      ? `${state.itemsCount} ${pluralExercises(state.itemsCount)} у сесії`
-      : "Сесія відкрита, підходи й таймер чекають";
-  return (
-    <HeroShell ariaLabel="Активне тренування" cornerSlot={cornerSlot}>
-      <HeroKicker greeting={greeting} today={today} />
-      <HeroStateLabel>Тренування триває</HeroStateLabel>
-      <p
-        className="mt-1 text-hero font-black text-hero-ink leading-none tabular-nums"
-        role="timer"
-        aria-label="Тривалість активного тренування"
-      >
-        {formatElapsed(elapsedSec)}
-      </p>
-      <p className="mt-2 text-style-caption text-hero-ink">{meta}</p>
-      <div className="mt-6">
-        <button
-          type="button"
-          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-          onClick={onResume}
-          aria-label="Повернутись до активного тренування"
-        >
-          <span
-            className="shrink-0 w-11 h-11 rounded-full bg-white/15 flex items-center justify-center"
-            aria-hidden
-          >
-            <PlayIcon />
-          </span>
-          <span className="min-w-0 flex-1">
-            <SectionHeading as="span" size="xs" className="block text-white/70">
-              Продовжити
-            </SectionHeading>
-            <span className="block text-style-title leading-tight">
-              Повернутись у сесію
-            </span>
-          </span>
-        </button>
-      </div>
-    </HeroShell>
-  );
-}
-
-function TodayState({
-  state,
-  greeting,
-  today,
-  onStartToday,
-  cornerSlot,
-}: {
-  readonly state: Extract<HeroCardState, { kind: "today" }>;
-  readonly greeting: string;
-  readonly today: string;
-  readonly onStartToday: () => void;
-  readonly cornerSlot?: ReactNode;
-}) {
-  const metaParts: string[] = [
-    `${state.exerciseCount} ${pluralExercises(state.exerciseCount)}`,
-  ];
-  if (state.estimatedMin) metaParts.push(`~${state.estimatedMin} хв`);
-  if (state.hint) metaParts.push(state.hint);
-  return (
-    <HeroShell ariaLabel="Сьогоднішнє тренування" cornerSlot={cornerSlot}>
-      <HeroKicker greeting={greeting} today={today} />
-      <HeroStateLabel>Сьогоднішнє тренування</HeroStateLabel>
-      <h2 className="text-hero font-black text-hero-ink mt-1 leading-tight truncate">
-        {state.label}
-      </h2>
-      <p className="mt-2 text-style-caption text-hero-ink truncate">
-        {metaParts.join(" · ")}
-      </p>
-      <div className="mt-6">
-        <button
-          type="button"
-          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-          onClick={onStartToday}
-          aria-label={`Почати тренування: ${state.label}`}
-        >
-          <span
-            className="shrink-0 w-11 h-11 rounded-full bg-white/15 flex items-center justify-center"
-            aria-hidden
-          >
-            <PlayIcon />
-          </span>
-          <span className="min-w-0 flex-1">
-            <SectionHeading as="span" size="xs" className="block text-white/70">
-              Почати
-            </SectionHeading>
-            <span className="block text-style-title truncate leading-tight">
-              {state.label}
-            </span>
-          </span>
-        </button>
-      </div>
-    </HeroShell>
-  );
-}
-
-function UpcomingState({
-  state,
-  greeting,
-  today,
-  onOpenPlan,
-  cornerSlot,
-}: {
-  readonly state: Extract<HeroCardState, { kind: "upcoming" }>;
-  readonly greeting: string;
-  readonly today: string;
-  readonly onOpenPlan: () => void;
-  readonly cornerSlot?: ReactNode;
-}) {
-  const metaParts: string[] = [
-    formatDaysAway(state.daysFromNow),
-    formatDateShort(state.dateKey),
-  ];
-  if (state.exerciseCount != null && state.exerciseCount > 0) {
-    metaParts.push(
-      `${state.exerciseCount} ${pluralExercises(state.exerciseCount)}`,
-    );
-  }
-  return (
-    <HeroShell ariaLabel="Наступне тренування" cornerSlot={cornerSlot}>
-      <HeroKicker greeting={greeting} today={today} />
-      <HeroStateLabel>Наступне тренування</HeroStateLabel>
-      <h2 className="text-hero font-black text-hero-ink mt-1 leading-tight truncate">
-        {state.label}
-      </h2>
-      <p className="mt-2 text-style-caption text-hero-ink truncate">
-        {metaParts.join(" · ")}
-      </p>
-      <div className="mt-6">
-        <Button
-          variant="fizruk-soft"
-          className="w-full h-12 min-h-[44px]"
-          onClick={onOpenPlan}
-          aria-label="Відкрити план тренувань"
-        >
-          Відкрити план
-        </Button>
-      </div>
-    </HeroShell>
-  );
-}
-
-function EmptyState({
-  state,
-  greeting,
-  today,
-  onOpenTemplates,
-  onOpenPrograms,
-  cornerSlot,
-}: {
-  readonly state: Extract<HeroCardState, { kind: "empty" }>;
-  readonly greeting: string;
-  readonly today: string;
-  readonly onOpenTemplates: () => void;
-  readonly onOpenPrograms: () => void;
-  readonly cornerSlot?: ReactNode;
-}) {
-  const primaryLabel = state.hasTemplates ? "Обрати шаблон" : "Створити шаблон";
-  return (
-    <HeroShell ariaLabel="План на сьогодні порожній" cornerSlot={cornerSlot}>
-      <HeroKicker greeting={greeting} today={today} />
-      <HeroStateLabel>План порожній</HeroStateLabel>
-      <h2 className="text-hero font-black text-hero-ink mt-1 leading-tight text-balance">
-        Обери шаблон або заплануй день
-      </h2>
-      <p className="mt-2 text-style-caption text-hero-ink">
-        {state.hasTemplates
-          ? "Нічого не заплановано, запусти готовий шаблон або відкрий програми."
-          : "У тебе ще немає шаблонів. Створи свій перший або обери програму."}
-      </p>
-      <div className="mt-6 flex flex-col gap-3">
-        {/*
-          Primary CTA uses the raw `bg-fizruk-strong` surface (cyan-800,
-          #155e75) rather than the `variant="fizruk"` default (cyan-700,
-          #0e7490). The latter ships contrast 2.48:1 against white text —
-          below WCAG AA — and so the axe-core check flags it. cyan-800 +
-          white clears 4.5:1 comfortably.
-        */}
-        <button
-          type="button"
-          className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-          onClick={onOpenTemplates}
-        >
-          {primaryLabel}
-        </button>
-        <Button
-          variant="fizruk-soft"
-          className="w-full h-12 min-h-[44px]"
-          onClick={onOpenPrograms}
-        >
-          До програм
-        </Button>
-      </div>
-    </HeroShell>
-  );
-}
-
-/**
  * The Dashboard hero. State-driven (see `HeroCardState`) — callers
  * compute the state from their hooks and pass one of four shapes; the
  * component renders the right layout.
  */
 export function HeroCard(props: HeroCardProps) {
-  const { state, greeting, today, cornerSlot } = props;
+  const {
+    state,
+    today,
+    streakWeeks,
+    weeklyWorkoutsCount,
+    recoveryRows,
+    recoverByDate,
+    onOpenAtlas,
+    cornerSlot,
+  } = props;
+  const kicker: HeroKickerInfo = { today, streakWeeks, weeklyWorkoutsCount };
+  const body: HeroBodyInfo = { recoveryRows, recoverByDate, onOpenAtlas };
   switch (state.kind) {
     case "active":
       return (
         <ActiveState
           state={state}
-          greeting={greeting}
-          today={today}
+          kicker={kicker}
           onResume={props.onResume}
           cornerSlot={cornerSlot}
         />
@@ -522,8 +168,8 @@ export function HeroCard(props: HeroCardProps) {
       return (
         <TodayState
           state={state}
-          greeting={greeting}
-          today={today}
+          kicker={kicker}
+          body={body}
           onStartToday={props.onStartToday}
           cornerSlot={cornerSlot}
         />
@@ -532,8 +178,8 @@ export function HeroCard(props: HeroCardProps) {
       return (
         <UpcomingState
           state={state}
-          greeting={greeting}
-          today={today}
+          kicker={kicker}
+          body={body}
           onOpenPlan={props.onOpenPlan}
           cornerSlot={cornerSlot}
         />
@@ -542,8 +188,8 @@ export function HeroCard(props: HeroCardProps) {
       return (
         <EmptyState
           state={state}
-          greeting={greeting}
-          today={today}
+          kicker={kicker}
+          body={body}
           onOpenTemplates={props.onOpenTemplates}
           onOpenPrograms={props.onOpenPrograms}
           cornerSlot={cornerSlot}

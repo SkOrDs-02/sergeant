@@ -44,7 +44,9 @@ vi.mock("../pages/Dashboard", () => ({
   ),
 }));
 vi.mock("../pages/Atlas", () => ({
-  Atlas: () => <div data-testid="page-atlas" />,
+  Atlas: (p: { focusMuscleId?: string }) => (
+    <div data-testid="page-atlas">{p.focusMuscleId ?? ""}</div>
+  ),
 }));
 vi.mock("../pages/Exercise", () => ({
   Exercise: (p: { exerciseId: string }) => (
@@ -182,6 +184,16 @@ describe("FizrukRouter — prop wiring", () => {
     render(<FizrukRouter {...baseProps({ page: "body", onNavigate })} />);
     fireEvent.click(await screen.findByText("body-open-atlas"));
     expect(onNavigate).toHaveBeenCalledWith("atlas");
+  });
+
+  // Спека `fizruk-hero-recovery-bars.md` рішення 4.
+  it("atlas forwards atlasMuscleId as focusMuscleId", async () => {
+    render(
+      <FizrukRouter
+        {...baseProps({ page: "atlas", atlasMuscleId: "chest" })}
+      />,
+    );
+    expect(await screen.findByTestId("page-atlas")).toHaveTextContent("chest");
   });
 
   it("exercise forwards the exerciseId (and falls back to empty string)", async () => {

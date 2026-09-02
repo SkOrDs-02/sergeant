@@ -8,10 +8,7 @@ import type { FizrukPage } from "../shell/fizrukRoute";
 
 import { safeWriteLS, safeWriteSS } from "@shared/lib/storage/storage";
 import { pluralExercises } from "@sergeant/shared";
-import {
-  formatKyivNominativeDate,
-  getKyivGreeting,
-} from "@shared/lib/time/greeting";
+import { formatKyivNominativeDate } from "@shared/lib/time/greeting";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Sheet } from "@shared/components/ui/Sheet";
@@ -26,10 +23,11 @@ import { useMonthlyPlan } from "../hooks/useMonthlyPlan";
 import { HeroCard, type HeroCardState } from "../components/dashboard/HeroCard";
 import { PrBadge } from "../components/dashboard/PrBadge";
 import { RecentWorkoutsSection } from "../components/dashboard/RecentWorkoutsSection";
-import { StatusStrip } from "../components/dashboard/StatusStrip";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
 import { workoutDurationSec } from "@sergeant/fizruk-domain";
 import { ACTIVE_WORKOUT_KEY } from "@sergeant/fizruk-domain";
+import { selectHeroRecoveryRows } from "@sergeant/fizruk-domain";
+import { forecastFullRecoveryByDate } from "@sergeant/fizruk-domain";
 import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
 import {
   computeDashboardKpis,
@@ -100,7 +98,7 @@ export function Dashboard({
     endWorkout,
     deleteWorkout,
   } = useWorkouts();
-  const { exercises } = useExerciseCatalog();
+  const { exercises, musclesUk } = useExerciseCatalog();
   const {
     templates,
     loaded: templatesLoaded,
@@ -146,10 +144,6 @@ export function Dashboard({
     const sum = done.reduce((s, w) => s + workoutDurationSec(w), 0);
     return Math.round(sum / done.length);
   }, [workouts]);
-
-  // Use the shared Kyiv-anchored greeting so thresholds match HubHeader
-  // (5/12/17/22 buckets including "Доброї ночі" for 22:00–05:00).
-  const greeting = useMemo(() => getKyivGreeting(), []);
 
   const executeWorkoutFromPlan = (
     picks: RawExerciseDef[],
@@ -337,6 +331,25 @@ export function Dashboard({
     [workouts],
   );
 
+  // Спека `fizruk-hero-recovery-bars.md` рішення 1: до 6 рядків «стан тіла»
+  // для hero — травми першими, далі мʼязи з навантаженням за 14 днів.
+  const heroRecoveryRows = useMemo(
+    () => selectHeroRecoveryRows(rec.by, rec.injurySites),
+    [rec.by, rec.injurySites],
+  );
+
+  // Рішення 5: підпис `red`-рядка йде через `forecastFullRecoveryByDate` —
+  // рахуємо лише коли справді є червоний мʼязовий рядок (21-денний
+  // sweep по `computeRecoveryBy` не дешевий, і порожні/усі-зелені hero не
+  // мають його викликати взагалі).
+  const heroRecoverByDate = useMemo(() => {
+    const hasRedMuscleRow = heroRecoveryRows.some(
+      (r) => r.kind === "muscle" && r.status === "red",
+    );
+    if (!hasRedMuscleRow) return {};
+    return forecastFullRecoveryByDate(workouts || [], musclesUk);
+  }, [heroRecoveryRows, workouts, musclesUk]);
+
   const heroState: HeroCardState = useMemo(() => {
     if (activeWorkout?.startedAt) {
       return {
@@ -386,11 +399,12 @@ export function Dashboard({
     // overview, which now owns the planning/schedule surface.
     onNavigate("workouts");
   };
-  const openProgress = () => {
-    onNavigate("progress");
-  };
-  const openBody = () => {
-    onNavigate("body");
+  // Рішення 4: тап по рядку «стан тіла» відкриває атлас, сфокусований на
+  // цій групі — `useFizrukRoute`/`parseFizrukSegments` несуть id як тейл
+  // сегмент `atlas/<id>` (той самий приймач, що вже носить `exercise/<id>`
+  // і `workout/<id>`).
+  const openAtlas = (atlasId: string) => {
+    onNavigate(`atlas/${atlasId}`);
   };
 
   // Gate the data-derived hero/KPI body on hydration for signed-in users.
@@ -425,8 +439,12 @@ export function Dashboard({
         <h1 className="sr-only">{messages.nav.fizrukOverview}</h1>
         <HeroCard
           state={heroState}
-          greeting={greeting}
           today={today}
+          streakWeeks={dashboardKpis.streakWeeks}
+          weeklyWorkoutsCount={dashboardKpis.weeklyWorkoutsCount}
+          recoveryRows={heroRecoveryRows}
+          recoverByDate={heroRecoverByDate}
+          onOpenAtlas={openAtlas}
           onResume={openWorkoutsTab}
           onStartToday={handleStartPrimary}
           onOpenPlan={openPlan}
@@ -455,14 +473,6 @@ export function Dashboard({
             askAiDisabled={askAiDisabled}
           />
         ))}
-
-        <StatusStrip
-          kpis={dashboardKpis}
-          recovery={{ avoid: rec.avoid }}
-          onOpenBody={openBody}
-          onOpenProgress={openProgress}
-          onOpenWorkouts={openWorkoutsTab}
-        />
 
         {templates.length > 0 &&
           (() => {

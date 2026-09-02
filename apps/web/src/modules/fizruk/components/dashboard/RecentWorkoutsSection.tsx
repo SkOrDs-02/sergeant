@@ -53,7 +53,8 @@ function formatTonnage(kg: number): string {
     const rounded =
       thousands >= 10 ? Math.round(thousands) : Math.round(thousands * 10) / 10;
     // Кома, а не крапка: `${rounded}` дає «1.5 т» посеред українського
-    // набору. Рядок тут лишається рядком свідомо — див. `StatusStrip`.
+    // набору. Рядок тут лишається рядком свідомо — той самий виняток,
+    // що і в `Money`-таблиці: значення йде і в чип, і в межу рядкового API.
     return `${formatNumberUk(rounded)} т`;
   }
   return `${Math.round(kg)} кг`;

@@ -261,8 +261,12 @@ function render({ priority, overdue, wipRows }) {
     : wipRows.some((r) => r.severity === "warn")
       ? "warn"
       : "ok";
+  // `warn` — це `count >= soft`, тобто ліміт ДОСЯГНУТО (контракт
+  // `check-wip-limits.mjs`: ok — count < soft; warn — soft ≤ count < hard).
+  // Тому підпис каже «досягнуто», а не «перевищено»: рядок «Активних 28,
+  // soft 28» під старим формулюванням стверджував неправду.
   lines.push(
-    `## WIP load — ${worst === "ok" ? "🟢 healthy" : worst === "warn" ? "🟡 over soft" : "🔴 OVER HARD"}`,
+    `## WIP load — ${worst === "ok" ? "🟢 healthy" : worst === "warn" ? "🟡 soft-ліміт досягнуто" : "🔴 OVER HARD"}`,
   );
   lines.push("");
   if (worst === "ok") {
@@ -271,7 +275,7 @@ function render({ priority, overdue, wipRows }) {
     );
   } else {
     lines.push(
-      "Принаймні один tracker перевищив soft або hard. Подумай чи закрити старе перед відкриттям нового.",
+      "Принаймні один tracker досяг soft-ліміту або перевищив hard. Подумай чи закрити старе перед відкриттям нового.",
     );
     lines.push("");
     lines.push("| Severity | Tracker | Active | Soft / Hard |");

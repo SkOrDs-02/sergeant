@@ -105,8 +105,10 @@ vi.mock("@shared/hooks/useActiveFizrukWorkout", () => ({
 vi.mock("../components/dashboard/HeroCard", () => ({
   HeroCard: ({
     state,
-    greeting,
     today,
+    streakWeeks,
+    weeklyWorkoutsCount,
+    onOpenAtlas,
     onResume,
     onStartToday,
     onOpenPlan,
@@ -115,8 +117,10 @@ vi.mock("../components/dashboard/HeroCard", () => ({
     cornerSlot,
   }: {
     state: { kind: string };
-    greeting: string;
     today: string;
+    streakWeeks: number;
+    weeklyWorkoutsCount: number;
+    onOpenAtlas: (atlasId: string) => void;
     onResume: () => void;
     onStartToday: () => void;
     onOpenPlan: () => void;
@@ -125,8 +129,9 @@ vi.mock("../components/dashboard/HeroCard", () => ({
     cornerSlot?: React.ReactNode;
   }) => (
     <div data-testid="hero-card" data-hero-kind={state.kind}>
-      <span data-testid="hero-greeting">{greeting}</span>
       <span data-testid="hero-today">{today}</span>
+      <span data-testid="hero-streak-weeks">{streakWeeks}</span>
+      <span data-testid="hero-weekly-workouts">{weeklyWorkoutsCount}</span>
       <button type="button" data-testid="hero-resume" onClick={onResume}>
         Resume
       </button>
@@ -154,41 +159,14 @@ vi.mock("../components/dashboard/HeroCard", () => ({
       >
         Programs
       </button>
+      <button
+        type="button"
+        data-testid="hero-open-atlas"
+        onClick={() => onOpenAtlas("chest")}
+      >
+        Atlas
+      </button>
       {cornerSlot}
-    </div>
-  ),
-}));
-
-vi.mock("../components/dashboard/StatusStrip", () => ({
-  StatusStrip: ({
-    onOpenBody,
-    onOpenProgress,
-    onOpenWorkouts,
-  }: {
-    kpis: unknown;
-    recovery: unknown;
-    onOpenBody: () => void;
-    onOpenProgress: () => void;
-    onOpenWorkouts: () => void;
-  }) => (
-    <div data-testid="status-strip">
-      <button type="button" data-testid="status-open-body" onClick={onOpenBody}>
-        Тіло
-      </button>
-      <button
-        type="button"
-        data-testid="status-open-progress"
-        onClick={onOpenProgress}
-      >
-        Прогрес
-      </button>
-      <button
-        type="button"
-        data-testid="status-open-workouts"
-        onClick={onOpenWorkouts}
-      >
-        Тренування
-      </button>
     </div>
   ),
 }));
@@ -531,22 +509,27 @@ describe("Dashboard extended coverage", () => {
 });
 
 describe("Dashboard — navigation callbacks", () => {
-  it("calls onNavigate('workouts') when StatusStrip opens workouts", () => {
+  // The old three-tile streak/week strip below the hero is gone (спека
+  // `fizruk-hero-recovery-bars.md` рішення 3); its "Тренування" chip's
+  // target — `onNavigate("workouts")` with no active workout — is now
+  // exercised through the hero's own resume CTA, which used to hit only the
+  // active-workout branch (see "deep-links to the active workout route"
+  // below).
+  it("calls onNavigate('workouts') via HeroCard resume button when there is no active workout", () => {
     render(<Dashboard {...defaultProps} />);
-    fireEvent.click(screen.getByTestId("status-open-workouts"));
+    fireEvent.click(screen.getByTestId("hero-resume"));
     expect(mockNavigate).toHaveBeenCalledWith("workouts");
   });
 
-  it("calls onNavigate('progress') when StatusStrip opens progress", () => {
+  // `openBody`/`onOpenProgress` were call sites owned only by that old
+  // strip; the readiness row's navigation target became `onOpenAtlas`
+  // (рішення 4) — hero rows now open the atlas focused on the tapped group
+  // instead of «Тіло». Прогрес лишається доступний з таббару без окремого
+  // входу.
+  it("calls onNavigate('atlas/<id>') via HeroCard's onOpenAtlas", () => {
     render(<Dashboard {...defaultProps} />);
-    fireEvent.click(screen.getByTestId("status-open-progress"));
-    expect(mockNavigate).toHaveBeenCalledWith("progress");
-  });
-
-  it("calls onNavigate('body') when StatusStrip opens body", () => {
-    render(<Dashboard {...defaultProps} />);
-    fireEvent.click(screen.getByTestId("status-open-body"));
-    expect(mockNavigate).toHaveBeenCalledWith("body");
+    fireEvent.click(screen.getByTestId("hero-open-atlas"));
+    expect(mockNavigate).toHaveBeenCalledWith("atlas/chest");
   });
 
   it("deep-links to the active workout route via HeroCard resume button", () => {

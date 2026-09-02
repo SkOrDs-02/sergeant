@@ -203,6 +203,7 @@ export function computeRecoveryBy(
 ): Record<string, MuscleState> {
   const WEEK = 7 * 24 * 60 * 60 * 1000;
   const DAY = 24 * 60 * 60 * 1000;
+  const FORTNIGHT = 14 * DAY;
 
   // `nowMs` передаємо далі навмисно: без нього вікно свіжості рахувалось би
   // від справжнього годинника, а решта функції — від переданого часу, і
@@ -225,6 +226,7 @@ export function computeRecoveryBy(
       lastAt: null,
       daysSince: null,
       load7d: 0,
+      load14d: 0,
       fatigue: 0,
       status: "green",
     };
@@ -233,7 +235,17 @@ export function computeRecoveryBy(
   for (const w of workouts || []) {
     const t = w.startedAt ? Date.parse(w.startedAt) : NaN;
     if (!Number.isFinite(t)) continue;
-    const in7d = nowMs - t <= WEEK;
+    // AI-DANGER: нижня межа обовʼязкова. `nowMs - t <= WEEK` саме по собі
+    // істинне і для ВІДʼЄМНОЇ різниці, тож тренування з майбутньою датою
+    // зараховувалось би як уже виконане навантаження. Форма ретро-запису
+    // відсікає майбутні дні в пікері (`LogPastWorkoutSheet`), але дані
+    // приходять ще й через sync з іншого пристрою, годинник якого нам
+    // не підпорядкований. Що кламп тут — початковий намір, видно нижче:
+    // `ageDays` уже загорнутий у `Math.max(0, …)`, тобто `fatigue` майбутнє
+    // тренування трактує як «щойно», а не як від'ємний вік.
+    const age = nowMs - t;
+    const in7d = age >= 0 && age <= WEEK;
+    const in14d = age >= 0 && age <= FORTNIGHT;
     for (const it of w.items || []) {
       const ptsBase = loadPointsForItem(it);
       const ageDays = Math.max(0, (nowMs - t) / DAY);
@@ -248,13 +260,16 @@ export function computeRecoveryBy(
             lastAt: null,
             daysSince: null,
             load7d: 0,
+            load14d: 0,
             fatigue: 0,
             status: "green",
           };
         }
-        by[m].lastAt = by[m].lastAt == null ? t : Math.max(by[m].lastAt, t);
-        if (in7d) by[m].load7d += ptsBase * wgt;
-        by[m].fatigue += ptsBase * wgt * decay * wellbeingMult;
+        const row = by[m];
+        row.lastAt = row.lastAt == null ? t : Math.max(row.lastAt, t);
+        if (in7d) row.load7d += ptsBase * wgt;
+        if (in14d) row.load14d = (row.load14d ?? 0) + ptsBase * wgt;
+        row.fatigue += ptsBase * wgt * decay * wellbeingMult;
       };
 
       for (const m of it.musclesPrimary || []) apply(m, 1);

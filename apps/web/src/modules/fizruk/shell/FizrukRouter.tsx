@@ -65,6 +65,11 @@ export interface FizrukRouterProps {
   page: FizrukPage;
   exerciseId?: string | undefined;
   workoutId?: string | undefined;
+  /**
+   * Спека `fizruk-hero-recovery-bars.md` рішення 4 — атласна зона (або
+   * зона травми), яку hero-рядок просить підсвітити на сторінці «Атлас».
+   */
+  atlasMuscleId?: string | undefined;
   activeProgramId: string | null;
   activeProgram: TrainingProgramDef | null;
   activateProgram: (id: string) => void;
@@ -91,6 +96,7 @@ function renderPage(props: FizrukRouterProps) {
     page,
     exerciseId,
     workoutId,
+    atlasMuscleId,
     activeProgramId,
     activeProgram,
     activateProgram,
@@ -112,7 +118,12 @@ function renderPage(props: FizrukRouterProps) {
         />
       );
     case "atlas":
-      return <Atlas onOpenBody={() => onNavigate("body")} />;
+      return (
+        <Atlas
+          onOpenBody={() => onNavigate("body")}
+          focusMuscleId={atlasMuscleId}
+        />
+      );
     case "workouts":
       return (
         <Workouts

@@ -36,7 +36,11 @@ const VALID_FIZRUK_PAGES: readonly FizrukPage[] = [
 
 export interface ParsedFizrukRoute {
   page: FizrukPage;
-  /** Tail segment after `<page>/` — used by `exercise/<id>` and `workout/<id>`. */
+  /**
+   * Tail segment after `<page>/` — used by `exercise/<id>`, `workout/<id>`
+   * and `atlas/<muscleId>` (спека `fizruk-hero-recovery-bars.md` рішення 4:
+   * the id a hero-row tap wants the atlas to focus).
+   */
   segment?: string;
   redirectFrom?: string;
 }
@@ -61,8 +65,8 @@ export function parseFizrukSegments(
     return { page: "dashboard" };
   }
   const tail = segments[1];
-  if ((page === "exercise" || page === "workout") && tail) {
-    return { page: page as "exercise" | "workout", segment: tail };
+  if ((page === "exercise" || page === "workout" || page === "atlas") && tail) {
+    return { page: page as "exercise" | "workout" | "atlas", segment: tail };
   }
   return { page: page as FizrukPage };
 }
