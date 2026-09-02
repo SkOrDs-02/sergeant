@@ -617,7 +617,7 @@ two-phase DROP цього класу змін не покриває.
 - **Високий** — метрики відсутні на nutrition-handler-ах (лише загальна RED через Express-middleware; немає per-endpoint ms-histogram для AI-викликів з breakdown по endpoint/model/tokens).
 - **Середній** — немає `app_build_info` gauge (version/commit/release) — корисно для readiness-dashboard.
 - **Середній** — per-route error-rate не має окремого шардингу на `route_pattern` (зараз `module` label — достатньо для топ-рівня).
-- **Низький** — Sentry release береться з `RAILWAY_GIT_COMMIT_SHA` / `GIT_COMMIT` / `SENTRY_RELEASE` (див. `.env.example`); Coolify може інжектити commit через build-args — перевірити mapping при зміні deploy pipeline (ADR-0074).
+- **Низький** — ✅ закрито 2026-09-02: Sentry release / `app_build_info` беруть `GIT_SHA`, запечений у образ build-arg-ом із `deploy-api.yml`; `RAILWAY_GIT_COMMIT_SHA` знято з усіх каскадів (ADR-0074).
 
 ---
 

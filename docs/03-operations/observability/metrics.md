@@ -409,8 +409,8 @@ increase(uncaught_exceptions_total[5m]) > 0     # process state corrupted
 завантаження процесу. Лейбли беруться з env-vars (із fallback `unknown`):
 
 - `version` — `npm_package_version` (npm/pnpm runtime env).
-- `commit` — `RAILWAY_GIT_COMMIT_SHA` → `GIT_COMMIT` → `VERCEL_GIT_COMMIT_SHA` (перші 12 символів).
-- `release` — `SENTRY_RELEASE` → `RAILWAY_GIT_COMMIT_SHA` (узгоджено з Sentry release).
+- `commit` — `GIT_SHA` (build-arg із `deploy-api.yml`, запечений у образ) → `GIT_COMMIT` → `VERCEL_GIT_COMMIT_SHA` (перші 12 символів).
+- `release` — `SENTRY_RELEASE` → `GIT_SHA` (узгоджено з Sentry release).
 - `env` — `NODE_ENV` (`development` / `production`).
 - `node_version` — `process.version` (наприклад `v20.18.0`).
 

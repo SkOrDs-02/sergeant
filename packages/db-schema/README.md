@@ -18,9 +18,15 @@ Drizzle-схеми обох баз і раннер міграцій. Єдине 
 - **Hard Rule #1** — `bigint` → `number` у серіалізаторах, не в схемі.
 - Специалист-скіл: `sergeant-data-and-migrations`; sub-tree нотатки — [`CLAUDE.md`](./CLAUDE.md).
 
-## Тести
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/db-schema <script>`.
 
 ```bash
-pnpm --filter @sergeant/db-schema test
-pnpm --filter @sergeant/db-schema typecheck
+pnpm --filter @sergeant/db-schema typecheck      # TypeScript
+pnpm --filter @sergeant/db-schema build          # `tsc -p tsconfig.build.json` — потрібен консумерам (`@sergeant/db-schema/pg` резолвиться з `dist/`)
+pnpm --filter @sergeant/db-schema lint           # ESLint
+pnpm --filter @sergeant/db-schema test           # Vitest
+pnpm --filter @sergeant/db-schema test:watch     # Vitest у watch-режимі
+pnpm --filter @sergeant/db-schema test:coverage  # Vitest з покриттям
 ```

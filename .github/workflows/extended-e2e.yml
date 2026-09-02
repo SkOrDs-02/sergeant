@@ -70,7 +70,7 @@ jobs:
     env:
       # NODE_ENV=test is mandatory: the server hard-blocks startup if
       # AI_QUOTA_DISABLED is truthy alongside NODE_ENV=production /
-      # RAILWAY_*. Without this var the workflow would fail to boot the
+      # APP_ENV=production. Without this var the workflow would fail to boot the
       # API server (see assertStartupEnv in apps/server/src/env/env.ts).
       NODE_ENV: test
       DATABASE_URL: postgresql://hub:hub@127.0.0.1:5432/hub

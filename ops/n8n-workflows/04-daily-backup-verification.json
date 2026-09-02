@@ -1,5 +1,5 @@
 {
-  "name": "04 — Daily Backup Verification (Cron → Railway → Telegram)",
+  "name": "04 — Daily Backup Verification (Cron → Sanity SQL → Telegram)",
   "nodes": [
     {
       "parameters": {
@@ -20,36 +20,8 @@
     },
     {
       "parameters": {
-        "method": "POST",
-        "url": "https://backboard.railway.com/graphql/v2",
-        "sendHeaders": true,
-        "headerParameters": {
-          "parameters": [
-            {
-              "name": "Project-Access-Token",
-              "value": "={{ $env.RAILWAY_TOKEN }}"
-            },
-            {
-              "name": "Content-Type",
-              "value": "application/json"
-            }
-          ]
-        },
-        "sendBody": true,
-        "specifyBody": "json",
-        "jsonBody": "={\n  \"query\": \"query LatestDeployments($projectId: String!) { project(id: $projectId) { services { edges { node { name deployments(first: 1) { edges { node { id status createdAt } } } } } } } }\",\n  \"variables\": { \"projectId\": \"{{ $env.RAILWAY_PROJECT_ID }}\" }\n}",
-        "options": {}
-      },
-      "id": "railway-api",
-      "name": "Railway → latest deployments",
-      "type": "n8n-nodes-base.httpRequest",
-      "typeVersion": 4.2,
-      "position": [460, 300]
-    },
-    {
-      "parameters": {
         "operation": "executeQuery",
-        "query": "SELECT (SELECT count(*) FROM \"user\")::int AS user_count, (SELECT count(*) FROM module_data WHERE module = 'finyk')::int AS tx_count;",
+        "query": "SELECT (SELECT count(*) FROM \"user\")::int AS user_count, (SELECT count(*) FROM mono_transaction)::int AS tx_count;",
         "options": {}
       },
       "id": "sanity-check",
@@ -62,7 +34,8 @@
           "id": "pwwVNTLBw43PJgey",
           "name": "Sergeant Postgres (sergeant-db)"
         }
-      }
+      },
+      "notes": "Sanity-перевірка живої БД після нічного бекапу. `module_data` дропнута міграцією 046 — рахуємо `mono_transaction`. Крок «Railway → latest deployments» прибрано після ADR-0074 (Railway retired); перевірка рестору живе у GitHub Actions `db-backup-verify.yml`."
     },
     {
       "parameters": {
@@ -178,17 +151,6 @@
   ],
   "connections": {
     "Cron 03:00 UTC": {
-      "main": [
-        [
-          {
-            "node": "Railway → latest deployments",
-            "type": "main",
-            "index": 0
-          }
-        ]
-      ]
-    },
-    "Railway → latest deployments": {
       "main": [
         [
           {

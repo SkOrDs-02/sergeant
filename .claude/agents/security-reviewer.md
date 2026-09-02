@@ -13,7 +13,7 @@ Get the changed files with `git diff origin/main..HEAD` (or `--name-only` then r
 
 ## Hard Rule #20 — No OpenClaw PATs in production
 
-PATs must never reach a production path outside the `assertStartupEnv()` guard (`apps/server/src/env/env.ts`), which throws when a PAT env-var is set under `NODE_ENV=production` or `RAILWAY_ENVIRONMENT=production`.
+PATs must never reach a production path outside the `assertStartupEnv()` guard (`apps/server/src/env/env.ts`), which throws when a PAT env-var is set under `NODE_ENV=production` or `APP_ENV=production` (`isDeployedProduction()`; Railway signals retired — ADR-0074).
 
 - Grep the diff for the env names `OPENCLAW_GITHUB_PAT` and `Git_PAT`, and for bearer/token-like literals.
 - Check surfaces `apps/server/src/env/**` plus `.env.example` / committed config. (The OpenClaw *runtime* is gone — ADR-0075 — but these env names are still live in `env.ts`, so the guard and this check stay.)

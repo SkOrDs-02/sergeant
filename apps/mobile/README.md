@@ -74,6 +74,29 @@ pnpm --filter @sergeant/mobile start
 > Фізичний пристрій не бачить `localhost` хост-машини — вкажи IP у
 > `.env` або прокинь тунель (ngrok / `expo start --tunnel`).
 
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/mobile <script>`.
+
+```bash
+pnpm --filter @sergeant/mobile start                # Expo dev-сервер (`i` — iOS, `a` — Android, QR — Expo Go)
+pnpm --filter @sergeant/mobile android              # Expo одразу в Android-емулятор
+pnpm --filter @sergeant/mobile ios                  # Expo одразу в iOS-симулятор
+pnpm --filter @sergeant/mobile web                  # Expo у браузері
+pnpm --filter @sergeant/mobile prebuild             # `expo prebuild` — генерація нативних проєктів
+pnpm --filter @sergeant/mobile check-build-config   # перевірка узгодженості build-конфігів (`scripts/check-build-config.ts`)
+pnpm --filter @sergeant/mobile lint                 # ESLint (`app/`, `src/`, `scripts/`)
+pnpm --filter @sergeant/mobile typecheck            # TypeScript
+pnpm --filter @sergeant/mobile test                 # Jest
+pnpm --filter @sergeant/mobile test:coverage        # Jest з покриттям
+pnpm --filter @sergeant/mobile e2e:build:ios        # Detox build (iOS simulator, debug)
+pnpm --filter @sergeant/mobile e2e:test:ios         # Detox tests (iOS simulator)
+pnpm --filter @sergeant/mobile e2e:test:ios:ci      # Detox tests iOS у headless-режимі з логами (CI)
+pnpm --filter @sergeant/mobile e2e:build:android    # Detox build (Android emulator, debug)
+pnpm --filter @sergeant/mobile e2e:test:android     # Detox tests (Android emulator)
+pnpm --filter @sergeant/mobile e2e:test:android:ci  # Detox tests Android у headless-режимі з логами (CI)
+```
+
 ## Dev Client (on-device development)
 
 We build a **custom Expo Dev Client** instead of using Expo Go, because we

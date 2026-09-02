@@ -10,18 +10,19 @@
  *   - затримку readiness-проба пропорційну часу міграції.
  *
  * Правильна модель — Release-stage: цей скрипт запускається окремим job-ом
- * (на Railway це pre-deploy command, на Replit — вручну), перед тим як нові
+ * (на Coolify — `pre_deployment_command`, ADR-0074; локально — вручну), перед тим як нові
  * інстанси server-а почнуть приймати трафік. Web-процес на старті більше
  * НЕ виконує міграції.
  *
  * Вибір URL-а:
  *   `MIGRATE_DATABASE_URL` (якщо виставлений) має пріоритет над `DATABASE_URL`.
- *   Сенс: на Railway internal DNS `postgres.railway.internal` не резолвиться
- *   у Pre-Deploy контейнері (він ще не в runtime-мережі), тому runtime-значення
- *   `DATABASE_URL` там непридатне. Виставляєш `MIGRATE_DATABASE_URL` на
- *   публічний proxy-URL Postgres (`${{ Postgres.DATABASE_PUBLIC_URL }}`), а
- *   web-процес продовжує ходити в БД через швидший internal DNS. На Replit,
- *   docker-compose, CI/local — достатньо одного `DATABASE_URL`.
+ *   Сенс: pre-deploy контейнер може не бути в runtime-мережі (так було на
+ *   Railway з internal DNS; на Coolify `pre_deployment_command` теж виконується
+ *   до того, як новий контейнер стане healthy), тому runtime-значення
+ *   `DATABASE_URL` там не завжди придатне. `MIGRATE_DATABASE_URL` задається у
+ *   Coolify env і вказує на доступний з pre-deploy URL Postgres, а web-процес
+ *   продовжує ходити в БД через `DATABASE_URL`. На docker-compose, CI/local —
+ *   достатньо одного `DATABASE_URL`.
  *
  * Вихідні коди: 0 — все ок, 1 — будь-яка помилка (URL відсутній, міграція
  * впала, pg недоступний тощо).
@@ -40,7 +41,7 @@ if (!process.env.DATABASE_URL) {
     JSON.stringify({
       level: "error",
       msg: "migrate_database_url_missing",
-      hint: "Set MIGRATE_DATABASE_URL (preferred for Railway pre-deploy, points to Postgres public URL) or DATABASE_URL.",
+      hint: "Set MIGRATE_DATABASE_URL (Coolify pre_deployment_command; Postgres URL reachable from the pre-deploy container) or DATABASE_URL.",
     }),
   );
   process.exit(1);

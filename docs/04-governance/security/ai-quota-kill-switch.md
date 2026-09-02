@@ -1,6 +1,6 @@
 # AI quota kill-switch policy
 
-> **Last touched:** 2026-08-24 by @claude. **Next review:** 2027-11-13.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-11-22.
 > **Status:** Active
 
 ## TL;DR
@@ -47,10 +47,9 @@ Once it's true, every resolved daily limit becomes `null`,
 row gets touched, and there is **no other gate** between an authenticated
 user and Anthropic.
 
-A single misconfigured Railway secret (copy-pasted from the staging or
-test environment, dropped in by a helm-chart typo, or smuggled in via
-`RAILWAY_ENVIRONMENT=production` + a `.env.local` left over from local
-debugging) lets any client burn unlimited Anthropic budget. There is no
+A single misconfigured Coolify secret (copy-pasted from the staging or
+test environment, or smuggled in via `APP_ENV=production` + a `.env.local`
+left over from local debugging) lets any client burn unlimited Anthropic budget. There is no
 per-user cost cap below the quota, and the upstream Anthropic budget
 guard is account-wide — by the time the alert fires, the damage is
 already done.
@@ -83,11 +82,11 @@ if (isProduction && env.AI_QUOTA_DISABLED) {
 }
 ```
 
-`isProduction` covers both `NODE_ENV=production` **and** any
-`RAILWAY_ENVIRONMENT` / `RAILWAY_SERVICE_NAME` value being set. The
-latter two cover the case where Railway boots the server without
-`NODE_ENV` explicitly set to production — which is the default for
-service deployments.
+`isProduction` (= `isDeployedProduction()`) covers both `NODE_ENV=production`
+**and** `APP_ENV=production`. The second signal covers a host that boots the
+server without `NODE_ENV` explicitly set to production. The legacy
+`RAILWAY_ENVIRONMENT` / `RAILWAY_SERVICE_NAME` signals were removed after
+ADR-0074 (Railway retired) and are no longer treated as production.
 
 `assertStartupEnv()` is invoked from `apps/server/src/index.ts` before
 the HTTP listener binds, so a tripped check produces an unrecoverable
@@ -102,7 +101,7 @@ boot error and the process exits non-zero.
 | CI (`NODE_ENV=test`)               | `true` / `1`        | Allowed — quota disabled                |
 | Production (`NODE_ENV=production`) | `false` (default)   | Quota active, normal per-day limits     |
 | Production (`NODE_ENV=production`) | `true` / `1`        | **Hard-block** — server refuses to boot |
-| Railway (`RAILWAY_ENVIRONMENT=*`)  | `true` / `1`        | **Hard-block** — server refuses to boot |
+| Coolify (`APP_ENV=production`)     | `true` / `1`        | **Hard-block** — server refuses to boot |
 
 ## Test coverage
 
@@ -110,8 +109,8 @@ boot error and the process exits non-zero.
 covering:
 
 - Production + truthy spelling (`true`, `1`) → throws.
-- Production via Railway env (`RAILWAY_ENVIRONMENT`,
-  `RAILWAY_SERVICE_NAME`) without `NODE_ENV=production` → throws.
+- Production via `APP_ENV=production` without `NODE_ENV=production` → throws;
+  retired `RAILWAY_*` names alone do not.
 - Production + falsy spelling (`false`, `0`, unset) → does not throw.
 - `NODE_ENV=test` + `AI_QUOTA_DISABLED=true` → does not throw.
 - `NODE_ENV=development` + `AI_QUOTA_DISABLED=1` → does not throw.
@@ -132,8 +131,8 @@ disable the quota subsystem in production while you fix it:
 1. Acknowledge that this exposes the Anthropic budget. Decide whether
    to hard-pause AI routes at the gateway / feature flag instead — that
    is the safer alternative.
-2. If you still need to flip the flag, **un-set** `RAILWAY_ENVIRONMENT`,
-   `RAILWAY_SERVICE_NAME`, **and** set `NODE_ENV=development` for the
+2. If you still need to flip the flag, **un-set** `APP_ENV` **and** set
+   `NODE_ENV=development` for the
    affected service. The service will boot but will be visibly
    misconfigured (Sentry / metrics / `BETTER_AUTH_TOKEN_ENC_KEY`
    warnings will surface).

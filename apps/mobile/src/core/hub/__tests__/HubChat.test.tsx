@@ -11,7 +11,7 @@
  *     assistant-bubble (`text-fg`).
  *
  * Tool-call execution, streaming follow-up і session persistence
- * перевіряються окремо (TODO Phase 2 follow-up). Тут — happy-path
+ * перевіряються окремо (Phase 2 follow-up, поза цим файлом). Тут — happy-path
  * smoke, щоб майбутні regressions у render/wire-up ловилися ранньо.
  */
 import { fireEvent, render, waitFor, act } from "@testing-library/react-native";

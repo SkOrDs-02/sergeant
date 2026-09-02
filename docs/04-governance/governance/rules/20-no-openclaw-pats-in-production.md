@@ -2,7 +2,7 @@
 
 > **Category:** `blocker-invariant`
 > **Severity:** `blocker`
-> **Last validated:** 2026-05-13 by @Skords-01. **Next review:** 2026-11-19.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-03-11.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #20. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/04-governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -23,7 +23,7 @@
 
 > Why a hard rule? До stack-pulse-2026-05 PR-06 OpenClaw авторизувався у GitHub довго-живущим PAT-ом (`OPENCLAW_GITHUB_PAT`, з Devin-конвенційним `Git_PAT` fallback-ом). PAT-и не мають TTL, видно за актором у audit log як user а не bot, і витік дає атакеру `contents:read` + `pull-requests:write` на репо до моменту, коли хтось помітить аномалію в логах. Phase 1 (PR #1816) завів App-flow поряд з PAT-flow за feature-прапором; Phase 2 (поточний PR) — видалив PAT-flow з коду й env-схеми та підняв `assertStartupEnv()`, що не дає prod-серверу стартувати, поки залишок PAT-у лежить у secret-store.
 
-**Rule.** У production (`NODE_ENV=production` або `RAILWAY_ENVIRONMENT=production`) OpenClaw авторизується у GitHub **виключно** через GitHub App-flow (`OPENCLAW_GITHUB_APP_ID` + `OPENCLAW_GITHUB_APP_PRIVATE_KEY` + `OPENCLAW_GITHUB_APP_INSTALLATION_ID`). Жодне з:
+**Rule.** У production (`NODE_ENV=production` або `APP_ENV=production` — `isDeployedProduction()`; Railway-сигнали зняті після ADR-0074) OpenClaw авторизується у GitHub **виключно** через GitHub App-flow (`OPENCLAW_GITHUB_APP_ID` + `OPENCLAW_GITHUB_APP_PRIVATE_KEY` + `OPENCLAW_GITHUB_APP_INSTALLATION_ID`). Жодне з:
 
 - `OPENCLAW_GITHUB_PAT`
 - `Git_PAT`

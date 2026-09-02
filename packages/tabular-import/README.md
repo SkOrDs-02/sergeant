@@ -22,9 +22,14 @@ import { gridFromTabularFile, tokenizeCsv } from "@sergeant/tabular-import";
 
 Консумери: `apps/server/src/modules/finyk/import/*` (виписки), імпорт зовнішніх трекерів fizruk ([спека](../../docs/90-work/planning/specs/import-external-trackers.md)).
 
-## Тести
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/tabular-import <script>`.
 
 ```bash
-pnpm --filter @sergeant/tabular-import test       # Vitest
-pnpm --filter @sergeant/tabular-import typecheck
+pnpm --filter @sergeant/tabular-import typecheck      # TypeScript
+pnpm --filter @sergeant/tabular-import lint           # ESLint
+pnpm --filter @sergeant/tabular-import test           # Vitest
+pnpm --filter @sergeant/tabular-import test:watch     # Vitest у watch-режимі
+pnpm --filter @sergeant/tabular-import test:coverage  # Vitest з покриттям
 ```

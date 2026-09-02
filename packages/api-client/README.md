@@ -403,3 +403,15 @@ register.mutate({ platform: "ios", token: deviceToken });
 ```
 
 Ключ мутації — `apiMutationKeys.push.register()`; придатний для `useIsMutating` у UI (блокувати кнопку «Увімкнути нотифікації», поки мутація in-flight).
+
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/api-client <script>`.
+
+```bash
+pnpm --filter @sergeant/api-client typecheck      # TypeScript
+pnpm --filter @sergeant/api-client lint           # ESLint
+pnpm --filter @sergeant/api-client test           # Vitest (у т.ч. contract-тести Hard Rule #3)
+pnpm --filter @sergeant/api-client test:watch     # Vitest у watch-режимі
+pnpm --filter @sergeant/api-client test:coverage  # Vitest з покриттям
+```

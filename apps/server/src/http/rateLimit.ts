@@ -666,7 +666,8 @@ export function rateLimitExpress({
     // M9: secondary per-IP bucket for authenticated requests.
     // Primary per-user bucket passed; now enforce the shared IP cap so an
     // attacker with N accounts cannot multiply effective throughput by N.
-    // TODO(M9): (IP,ASN) keying for CGNAT fairness — needs ASN datasource, deferred.
+    // Deferred by design (M9): (IP,ASN) keying for CGNAT fairness needs an
+    // ASN datasource we do not run; revisit only if CGNAT users report 429s.
     //
     // `reportedLimit` is the cap surfaced in the `RateLimit-Limit` header. It
     // follows whichever bucket actually constrains the response, so a 429 from

@@ -35,14 +35,15 @@ const RELEASE_PREFIX = "sergeant";
 /**
  * Deploy-host env-vars in priority order:
  *   1. `SENTRY_RELEASE`         — explicit override (release-please, custom CI)
- *   2. `RAILWAY_GIT_COMMIT_SHA` — Railway auto-injects this per deploy
+ *   2. `GIT_SHA`                — Coolify/ghcr: baked into the API image by
+ *                                 `Dockerfile.api` (build-arg from deploy-api.yml)
  *   3. `VERCEL_GIT_COMMIT_SHA`  — Vercel auto-injects this per deploy
  *   4. `GITHUB_SHA`             — fallback when running in GitHub Actions
  *                                 (mobile-shell builds, container scans, etc.)
  */
 const SHA_ENV_KEYS = [
   "SENTRY_RELEASE",
-  "RAILWAY_GIT_COMMIT_SHA",
+  "GIT_SHA",
   "VERCEL_GIT_COMMIT_SHA",
   "GITHUB_SHA",
 ] as const;
