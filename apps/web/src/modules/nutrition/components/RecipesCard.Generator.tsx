@@ -14,14 +14,13 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
-import type { NutritionPrefs, Pantry } from "@sergeant/nutrition-domain";
+import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 import type { RecipeCacheEntry } from "../lib/recipeCache";
 import type { RecipeLike } from "./RecipesCard.helpers";
 import { PantryModeSelect } from "./PantryModeSelect";
 
 interface GeneratorProps {
   busy?: boolean | undefined;
-  activePantry?: Pantry | null | undefined;
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
   recommendRecipes: () => void | Promise<void>;
@@ -37,7 +36,6 @@ interface GeneratorProps {
 
 export function GeneratorCard({
   busy,
-  activePantry,
   prefs,
   setPrefs,
   recommendRecipes,
@@ -52,9 +50,7 @@ export function GeneratorCard({
 }: GeneratorProps) {
   return (
     <Card className="p-4">
-      <div className="text-style-label text-text">
-        Рецепти ({activePantry?.name || "Комора"})
-      </div>
+      <div className="text-style-label text-text">Рецепти</div>
       <div className="text-style-caption text-muted mt-0.5">
         Рекомендації на базі продуктів з комори. Можна вказати час, порції та
         &quot;не хочу&quot;.

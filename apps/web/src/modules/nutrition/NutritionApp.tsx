@@ -194,16 +194,17 @@ export default function NutritionApp({
     setPantryScanStatus,
   } = ui;
 
+  // Комора одна на всі місця, тож і кеш рецептів один: скоуп ключа —
+  // увесь запас, а не окрема полиця (активної комори більше немає).
   const recipeCacheKey = useMemo(
     () =>
-      buildRecipeCacheKey(pantry.activePantryId, pantry.effectiveItems, {
+      buildRecipeCacheKey("all", pantry.effectiveItems, {
         goal: prefs.goal,
         servings: prefs.servings,
         timeMinutes: prefs.timeMinutes,
         exclude: prefs.exclude,
       }),
     [
-      pantry.activePantryId,
       pantry.effectiveItems,
       prefs.goal,
       prefs.servings,

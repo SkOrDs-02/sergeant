@@ -340,6 +340,94 @@ describe("nutrition day-plan handler", () => {
     );
   });
 
+  // Прогін живого генератора 2026-09-01 повернув прийоми на 166 г
+  // вуглеводів при заявлених моделлю 171. Тотали більше не беруться на
+  // віру: рахуємо їх із прийомів, що реально лишились у плані.
+  describe("тотали рахуються з прийомів, а не беруться від моделі", () => {
+    function mealOf(kcal: number, p: number, f: number, c: number) {
+      return {
+        type: "snack",
+        label: "Перекус",
+        name: `Страва ${String(kcal)}`,
+        description: "",
+        ingredients: [],
+        kcal,
+        protein_g: p,
+        fat_g: f,
+        carbs_g: c,
+      };
+    }
+
+    it("арифметична помилка моделі не доїжджає до користувача", async () => {
+      invokeLLM.mockResolvedValueOnce({
+        ok: true,
+        text: JSON.stringify({
+          meals: [mealOf(350, 30, 20, 10), mealOf(650, 55, 10, 80)],
+          totalKcal: 1900,
+          totalProtein_g: 162,
+          totalFat_g: 60,
+          totalCarbs_g: 171,
+          note: "",
+        }),
+      });
+
+      const res = makeRes();
+      await handler(makeReq({ pantry: [], locale: "uk-UA" }), res);
+
+      const plan = asRecord(asRecord(res.body)["plan"]);
+      expect(plan["totalKcal"]).toBe(1000);
+      expect(plan["totalProtein_g"]).toBe(85);
+      expect(plan["totalFat_g"]).toBe(30);
+      expect(plan["totalCarbs_g"]).toBe(90);
+    });
+
+    it("прийоми понад ліміт відрізаються разом зі своїм внеском у підсумок", async () => {
+      invokeLLM.mockResolvedValueOnce({
+        ok: true,
+        text: JSON.stringify({
+          meals: Array.from({ length: 8 }, () => mealOf(100, 10, 5, 20)),
+          totalKcal: 800,
+          totalProtein_g: 80,
+          totalFat_g: 40,
+          totalCarbs_g: 160,
+          note: "",
+        }),
+      });
+
+      const res = makeRes();
+      await handler(makeReq({ pantry: [], locale: "uk-UA" }), res);
+
+      const plan = asRecord(asRecord(res.body)["plan"]);
+      expect((plan["meals"] as unknown[]).length).toBe(6);
+      expect(plan["totalKcal"]).toBe(600);
+      expect(plan["totalCarbs_g"]).toBe(120);
+    });
+
+    it("дірка в макросі лишає число моделі — занижена сума гірша", async () => {
+      invokeLLM.mockResolvedValueOnce({
+        ok: true,
+        text: JSON.stringify({
+          meals: [
+            mealOf(350, 30, 20, 10),
+            { ...mealOf(650, 55, 10, 80), protein_g: null },
+          ],
+          totalKcal: 1000,
+          totalProtein_g: 85,
+          totalFat_g: 30,
+          totalCarbs_g: 90,
+          note: "",
+        }),
+      });
+
+      const res = makeRes();
+      await handler(makeReq({ pantry: [], locale: "uk-UA" }), res);
+
+      const plan = asRecord(asRecord(res.body)["plan"]);
+      expect(plan["totalProtein_g"]).toBe(85);
+      expect(plan["totalKcal"]).toBe(1000);
+    });
+  });
+
   it("passes userId to the provider when session user is present", async () => {
     invokeLLM.mockResolvedValueOnce({ ok: true, text: '{"meals":[]}' });
 

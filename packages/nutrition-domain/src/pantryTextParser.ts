@@ -132,6 +132,9 @@ export function normalizeUnit(u: unknown): string | null {
   if (["шт", "штук", "штуки"].includes(s)) return "шт";
   if (["уп", "упак", "упаковка", "пач", "пачка", "пак", "пакет"].includes(s))
     return "уп";
+  // Відсоток це жирність, а не кількість. Без цього «Йогурт 2,2%» давав
+  // позицію з одиницею «%», а «400 г 2 %» — безіменний запис у коморі.
+  if (s.includes("%")) return null;
   return s;
 }
 
@@ -286,29 +289,56 @@ export function canonicalFoodKey(name: unknown): string {
 }
 
 const UNIT_CHAR_RE = "[a-zA-Zа-яА-ЯіїєґІЇЄҐ%]+";
+/**
+ * Число з можливим знаком і показником степеня. Знак і `e` тут не для
+ * того, щоб їх ПІДТРИМАТИ, а щоб їх ЗЛОВИТИ: без них «Молоко -5 г» і
+ * «Сіль 1e9 г» не матчились узагалі й цілком осідали в назві продукту,
+ * тобто сміття тихо ставало товаром у коморі. Тепер вони розбираються
+ * і відхиляються `sanitizeQty`.
+ */
+const NUM_RE = "[+-]?\\d+(?:[.,]\\d+)?(?:[eE][+-]?\\d+)?";
 const LEADING_QTY_RE = new RegExp(
-  `^(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_CHAR_RE})?\\s*(.+)?$`,
+  `^(${NUM_RE})\\s*(${UNIT_CHAR_RE})?\\s*(.+)?$`,
 );
 const TRAILING_QTY_RE = new RegExp(
-  `^(.+?)\\s+(\\d+(?:[.,]\\d+)?)\\s*(${UNIT_CHAR_RE})?$`,
+  `^(.+?)\\s+(${NUM_RE})\\s*(${UNIT_CHAR_RE})?$`,
 );
+
+/**
+ * Стеля кількості. Мішок цукру на 50 кг це 50000 г, тож мільйон із
+ * запасом накриває будь-яку побутову покупку і водночас відсікає
+ * «1e9», яке в комору потрапити не може.
+ */
+const MAX_QTY = 1_000_000;
+
+/** `null` для всього, що не є додатною побутовою кількістю. */
+function sanitizeQty(raw: string | undefined): number | null {
+  if (!raw) return null;
+  const n = Number(String(raw).replace(",", "."));
+  if (!Number.isFinite(n) || n <= 0 || n > MAX_QTY) return null;
+  return n;
+}
 
 // `unitRaw` лишається у display-регістрі: `normalizeUnit` сам опускає
 // регістр, тож «0.5Л молоко» так само дасть одиницю «л», а гілка
 // «одне слово після числа = насправді назва» отримує назву як введено.
 function buildLeadingResult(m: RegExpMatchArray, raw: string): PantryItem {
-  const qty = m[1] ? Number(String(m[1]).replace(",", ".")) : null;
+  const qty = sanitizeQty(m[1]);
   const unitRaw = displayFoodName(m[2] || "");
   const rest = displayFoodName(m[3] || "");
 
   // "2 яйця" — одне слово після числа = назва, не одиниця. Число тут завжди
   // рахує самі предмети ("2 яйця" = дві штуки), тож неоднозначності немає
-  // навіть за великих значень — прапорець не ставиться.
+  // навіть за великих значень — прапорець не ставиться. Але «2 %» — не
+  // назва: відсоток продуктом не буває, і без цієї перевірки в коморі
+  // зʼявлявся товар на імʼя «%».
   if (!rest && unitRaw) {
+    if (unitRaw.includes("%"))
+      return { name: "", qty: null, unit: null, notes: null };
     return {
       name: unitRaw,
-      qty: qty != null && Number.isFinite(qty) ? qty : null,
-      unit: qty != null && Number.isFinite(qty) ? "шт" : null,
+      qty,
+      unit: qty != null ? "шт" : null,
       notes: null,
     };
   }
@@ -317,43 +347,65 @@ function buildLeadingResult(m: RegExpMatchArray, raw: string): PantryItem {
     rest ||
     displayFoodName(raw.replace(m[0], "").trim()) ||
     displayFoodName(raw);
+  return { name, ...resolveQtyUnit(qty, unitRaw), notes: null };
+}
+
+/**
+ * Кількість і одиниця йдуть парою або не йдуть зовсім.
+ *
+ * Відсоток після числа означає жирність («сметана 20%»), тож саме число
+ * кількістю не є. А негодяще число («-5», «1e9», «0») забирає з собою й
+ * одиницю: позиція «Цукор» без нічого чесніша за «Цукор 0 г», яку потім
+ * не знайде ані пошук, ані математика списку покупок.
+ *
+ * Уціліле голе число без одиниці лишається тихим «шт», але позначається
+ * `ambiguousQty`, коли воно ≥ порога: «Нутелла 350» це майже напевно
+ * грами, і UI має перепитати, а не мовчки прийняти здогадку.
+ */
+function resolveQtyUnit(
+  qty: number | null,
+  unitRaw: string,
+): { qty: number | null; unit: string | null; ambiguousQty?: boolean } {
+  if (unitRaw.includes("%")) return { qty: null, unit: null };
+  if (qty == null) return { qty: null, unit: null };
   const unit = unitRaw ? normalizeUnit(unitRaw) : null;
-  const resolvedQty = qty != null && Number.isFinite(qty) ? qty : null;
-  const isBareQty = resolvedQty != null && unit == null;
+  const isBareQty = unit == null;
   return {
-    name,
-    qty: resolvedQty,
+    qty,
     unit: isBareQty ? "шт" : unit,
-    notes: null,
-    ...(isBareQty && isAmbiguousBareQty(resolvedQty)
-      ? { ambiguousQty: true }
-      : {}),
+    ...(isBareQty && isAmbiguousBareQty(qty) ? { ambiguousQty: true } : {}),
   };
 }
 
 function buildTrailingResult(tm: RegExpMatchArray): PantryItem | null {
   const name = displayFoodName(tm[1]);
   if (!name) return null;
-  const qty = Number(String(tm[2]).replace(",", "."));
-  const unitRaw = displayFoodName(tm[3] || "");
-  const unit = unitRaw ? normalizeUnit(unitRaw) : null;
-  const resolvedQty = Number.isFinite(qty) ? qty : null;
-  const isBareQty = resolvedQty != null && unit == null;
+  // Число розібрано, але воно негодяще («-5», «1e9»): лишаємо саму назву
+  // без кількості. Повертати назву разом із хвостом не можна — тоді в
+  // коморі осідає позиція «Молоко -5 г», якої ніколи не знайде пошук.
   return {
     name,
-    qty: resolvedQty,
-    unit: isBareQty ? "шт" : unit,
+    ...resolveQtyUnit(sanitizeQty(tm[2]), displayFoodName(tm[3] || "")),
     notes: null,
-    ...(isBareQty && isAmbiguousBareQty(resolvedQty)
-      ? { ambiguousQty: true }
-      : {}),
   };
 }
 
+/**
+ * AI-DANGER: кома тут двозначна — це і роздільник списку, і десяткова
+ * крапка українською. Різати по ній наосліп не можна: «Йогурт чорниця
+ * 2,2%» розпадався на «Йогурт чорниця 2» плюс окремий товар на імʼя «%»,
+ * тобто ОДИН введений рядок давав ДВА записи, і жирність підмінялась
+ * кількістю «2 шт». Регекси нижче десяткову кому підтримують від початку
+ * (`[.,]` у `NUM_RE`), тож спліт суперечив власному матчеру.
+ *
+ * Правило: кома розділяє, ЯКЩО з якогось боку від неї не цифра.
+ * «2,2» лишається числом, «молоко, яйця» і «огірок 2, яйця» діляться.
+ */
+const PART_SPLIT_RE = /[\n;]+|(?<!\d),|,(?!\d)/g;
+
 export function parseLoosePantryText(raw: unknown): PantryItem[] {
   const parts = String(raw || "")
-    .replace(/\n+/g, ",")
-    .split(/[;,]/g)
+    .split(PART_SPLIT_RE)
     .map((s) => s.trim())
     .filter(Boolean);
 

@@ -125,7 +125,7 @@ describe("useNutritionPantries — persist + SQLite overlay branches", () => {
   it("overlays pantries from a warm SQLite cache when the read tick bumps", () => {
     seed([{ id: "home", name: "Дім", items: [], text: "" }], "home");
     const { result, rerender } = renderHarness();
-    expect(result.current.activePantry.name).toBe("Дім");
+    expect(result.current.pantries.some((p) => p.name === "Офіс")).toBe(false);
 
     __setNutritionSqliteCacheForTests({
       pantries: [{ id: "work", name: "Офіс", items: [], text: "" }],
@@ -135,8 +135,14 @@ describe("useNutritionPantries — persist + SQLite overlay branches", () => {
     notifyNutritionSqliteCacheRefresh();
     rerender();
 
-    expect(result.current.activePantryId).toBe("work");
-    expect(result.current.activePantry.name).toBe("Офіс");
+    // Відомі місця виживають овердей теплого кешу — інакше холодильник і
+    // морозилка зникали б з екрана до наступного перезавантаження.
+    expect(result.current.pantries.map((p) => p.id)).toEqual([
+      "fridge",
+      "freezer",
+      "home",
+      "work",
+    ]);
   });
 
   it("skips overlay when SQLite cache is cold (refreshedAt null)", () => {
@@ -151,8 +157,7 @@ describe("useNutritionPantries — persist + SQLite overlay branches", () => {
     notifyNutritionSqliteCacheRefresh();
     rerender();
 
-    expect(result.current.activePantryId).toBe("home");
-    expect(result.current.activePantry.name).toBe("Дім");
+    expect(result.current.pantries.some((p) => p.name === "Офіс")).toBe(false);
   });
 });
 
@@ -197,7 +202,7 @@ describe("useNutritionPantries — item + pantry helper branches", () => {
     expect(result.current.pantryItems).toHaveLength(1);
   });
 
-  it("falls back to the first pantry when activePantryId is unknown", () => {
+  it("keeps custom places after the known ones", () => {
     seed(
       [
         { id: "home", name: "Дім", items: [], text: "" },
@@ -206,7 +211,12 @@ describe("useNutritionPantries — item + pantry helper branches", () => {
       "missing",
     );
     const { result } = renderHarness();
-    expect(result.current.activePantry.name).toBe("Дім");
+    expect(result.current.pantries.map((p) => p.id)).toEqual([
+      "fridge",
+      "freezer",
+      "home",
+      "work",
+    ]);
   });
 
   it("ensureStructuredItems hydrates from loose text before removeItemAt", async () => {
