@@ -12,8 +12,31 @@ export const DAY_COLLAPSE_KEY = STORAGE_KEYS.FINYK_TX_DAY_COLLAPSE;
  * `"today"` shortcut (Overview's «Операції за сьогодні» row) or a concrete
  * Kyiv day key tapped from `MonthStrip` — anything else is ignored (falls
  * back to «показати всі дні» instead of an empty list).
+ *
+ * Форму перевіряє, існування дати — ні: цим займається `isDayFilterKey`.
  */
 export const DAY_FILTER_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Чи є рядок реальним день-ключем, а не лише схожим на нього.
+ *
+ * AI-DANGER: самої регулярки замало. `"2026-13-45"` її проходить, але
+ * `new Date(Date.UTC(2026, 12, 45))` мовчки перекочується у 2027 рік — тоді
+ * список порожній (жодна транзакція не має такого дня), а чип над ним
+ * підписаний зовсім іншою датою. Порожнеча з брехливим підписом гірша за
+ * ігнорування параметра, тож перевіряємо round-trip: рік/місяць/день після
+ * нормалізації мають збігтись із вхідними.
+ */
+export function isDayFilterKey(value: string): boolean {
+  if (!DAY_FILTER_KEY_RE.test(value)) return false;
+  const [y = 0, m = 0, d = 0] = value.split("-").map(Number);
+  const dt = new Date(Date.UTC(y, m - 1, d));
+  return (
+    dt.getUTCFullYear() === y &&
+    dt.getUTCMonth() === m - 1 &&
+    dt.getUTCDate() === d
+  );
+}
 
 /**
  * Localised date for the day-filter chip (`12 вересня`). UTC-anchored

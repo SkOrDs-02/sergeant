@@ -10,7 +10,7 @@ import { TransactionFilters } from "./TransactionFilters";
 import { TransactionList } from "./TransactionList";
 import { TransactionSyncPill } from "./TransactionSyncPill";
 import { useTransactionFilters } from "./useTransactionFilters";
-import { DAY_FILTER_KEY_RE, formatDayFilterDate } from "./transactionsLib";
+import { formatDayFilterDate, isDayFilterKey } from "./transactionsLib";
 import { useTransactionSelection } from "./useTransactionSelection";
 import { BankTransactionDetailsSheet } from "../../components/BankTransactionDetailsSheet";
 import type { UseFinykReceiptLinksResult } from "../../hooks/useFinykReceiptLinks";
@@ -239,8 +239,7 @@ export function Transactions({
   // «Операції за сьогодні») і для конкретної дати (тап по клітинці
   // `MonthStrip`); різниться лише лівий текст, кнопка «Усі дні» спільна.
   const isDayFilterValid =
-    dayFilter === "today" ||
-    (dayFilter != null && DAY_FILTER_KEY_RE.test(dayFilter));
+    dayFilter === "today" || (dayFilter != null && isDayFilterKey(dayFilter));
   const dayFilterLabel =
     dayFilter === "today"
       ? messages.finyk.todayFilter.label

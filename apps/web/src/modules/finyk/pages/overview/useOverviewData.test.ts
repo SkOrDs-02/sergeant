@@ -632,8 +632,18 @@ describe("useOverviewData", () => {
           } as Partial<UseOverviewDataParams["storage"]>),
         }),
       );
-      // План 31 000 − витрачено 250, поділити на 31 день, що лишився.
-      expect(result.current.dayBudget).toBeCloseTo((31_000 - 250) / 31, 5);
+      // План 31 000 поділити на 31 день, що лишився (`daysInMonth −
+      // daysPassed + 1` — сьогодні входить у решту).
+      //
+      // Очікування змінено на PR #1025 разом із виправленням формули, і це
+      // не підгін під новий код: у цій фікстурі `cur-1` (250 ₴) датований
+      // 1 серпня, тобто це витрата САМЕ сьогодні. Старий чисельник
+      // `31 000 − 250` амортизував її по всіх 31 дні, а `todayRemaining =
+      // dayBudget − todaySpent` віднімав ще раз повністю — 250 ₴ вилітали
+      // двічі. Тепер знаменник рахується на витратах до сьогодні (тут 0),
+      // тож норма дня — рівно 1 000, а залишок на сьогодні — 750.
+      expect(result.current.dayBudget).toBeCloseTo(31_000 / 31, 5);
+      expect(result.current.todayRemaining).toBeCloseTo(31_000 / 31 - 250, 5);
     });
   });
 
@@ -711,6 +721,110 @@ describe("useOverviewData", () => {
       );
       expect(typeof result.current.dateLabel).toBe("string");
       expect(result.current.dateLabel.length).toBeGreaterThan(0);
+    });
+  });
+  // Спека finyk-hero-month-strip.md § Верифікація вимагає саме цих кейсів:
+  // `todayRemaining` з планом і без, межа `over120` і порожній місяць.
+  describe("hero month strip (todayRemaining, dailySpend)", () => {
+    // 2026-08-10 12:00 за Києвом → день 10 із 31, лишається 22 дні
+    // (`remainingDays = 31 − 10 + 1`).
+    const NOW_ISO = "2026-08-10T09:00:00Z";
+    const sec = (iso: string) => Math.floor(new Date(iso).getTime() / 1000);
+
+    beforeEach(() => {
+      vi.setSystemTime(new Date(NOW_ISO));
+    });
+
+    function planStorage(expense: number) {
+      return buildStorage({
+        monthlyPlan: { income: 0, expense, savings: 0 },
+      } as Partial<UseOverviewDataParams["storage"]>);
+    }
+
+    it("does not subtract today's spending twice from todayRemaining", () => {
+      // Регресія (знахідка ревʼю на PR #1025). `remainingDays` ВКЛЮЧАЄ
+      // сьогодні, тож із повним місячним `spent` у чисельнику сьогоднішня
+      // витрата вилітала двічі: раз амортизовано в `dayBudget`, раз у
+      // `dayBudget − todaySpent`. Тут: план 22 000 на 22 дні, що лишились,
+      // сьогодні витрачено 500 і більше нічого. Норма дня на ранок — рівно
+      // 1 000, залишок — 500. Стара формула давала 977.27 і 477.27, тобто
+      // витрата 500 ₴ зрізала залишок на 522.73.
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({
+            realTx: [mkTx("t1", -500_00, { time: sec(NOW_ISO) })],
+          } as Partial<UseOverviewDataParams["mono"]>),
+          storage: planStorage(22_000),
+        }),
+      );
+      expect(result.current.dayBudget).toBeCloseTo(1_000, 5);
+      expect(result.current.todayRemaining).toBeCloseTo(500, 5);
+    });
+
+    it("keeps todayRemaining null when there is no monthly plan", () => {
+      // `null − 500` у JS дало б −500, тобто без плану hero показав би
+      // «−500 ₴ понад бюджет дня» замість CTA «Постав план».
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({
+            realTx: [mkTx("t1", -500_00, { time: sec(NOW_ISO) })],
+          } as Partial<UseOverviewDataParams["mono"]>),
+          storage: buildStorage(),
+        }),
+      );
+      expect(result.current.dayBudget).toBeNull();
+      expect(result.current.todayRemaining).toBeNull();
+    });
+
+    it("treats exactly 120% of the day budget as not over, and 121% as over", () => {
+      // План 23 200, витрата 1 200 п'ятого серпня, сьогодні нічого:
+      // dayBudget = (23 200 − 1 200) / 22 = 1 000, тобто рівно 120%.
+      const atThreshold = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({
+            realTx: [
+              mkTx("past", -1_200_00, { time: sec("2026-08-05T09:00:00Z") }),
+            ],
+          } as Partial<UseOverviewDataParams["mono"]>),
+          storage: planStorage(23_200),
+        }),
+      );
+      const day5 = atThreshold.result.current.dailySpend.find(
+        (d) => d.dayKey === "2026-08-05",
+      );
+      expect(atThreshold.result.current.dayBudget).toBeCloseTo(1_000, 5);
+      expect(day5?.ratio).toBeCloseTo(1.2, 5);
+      expect(day5?.over120).toBe(false);
+
+      const overThreshold = renderHook(() =>
+        useOverviewData({
+          mono: buildMono({
+            realTx: [
+              mkTx("past", -1_210_00, { time: sec("2026-08-05T09:00:00Z") }),
+            ],
+          } as Partial<UseOverviewDataParams["mono"]>),
+          storage: planStorage(23_200),
+        }),
+      );
+      const day5Over = overThreshold.result.current.dailySpend.find(
+        (d) => d.dayKey === "2026-08-05",
+      );
+      expect(day5Over?.ratio).toBeGreaterThan(1.2);
+      expect(day5Over?.over120).toBe(true);
+    });
+
+    it("gives every day ratio 0 (never NaN) for an empty month without a plan", () => {
+      // Відносна шкала ділить на максимум місяця; порожній місяць дав би
+      // 0/0 = NaN і бар нульової висоти з `style={{height: "NaN%"}}`.
+      const { result } = renderHook(() =>
+        useOverviewData({ mono: buildMono(), storage: buildStorage() }),
+      );
+      expect(result.current.dailySpend).toHaveLength(31);
+      for (const day of result.current.dailySpend) {
+        expect(day.spent).toBe(0);
+        expect(day.ratio).toBe(0);
+        expect(day.over120).toBe(false);
+      }
     });
   });
 });

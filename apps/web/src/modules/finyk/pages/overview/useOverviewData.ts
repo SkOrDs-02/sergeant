@@ -491,8 +491,22 @@ export function useOverviewData({
   // `forecastTrendPct` below: a budget needs an independent reference
   // (a user plan), and without one there is no honest number to show — the
   // hero renders a "постав план" CTA instead.
+  //
+  // AI-DANGER: знаменник рахується на витратах ДО сьогодні, а не на місячних
+  // `spent`. Причина — `remainingDays = daysInMonth − daysPassed + 1`, тобто
+  // сьогодні ВХОДИТЬ у решту днів. Якби в чисельнику стояв повний `spent`,
+  // сьогоднішня витрата вилітала б двічі: один раз амортизовано в самому
+  // `dayBudget` і вдруге в `todayRemaining = dayBudget − todaySpent`. На
+  // екрані це виглядало як «витратив 500 ₴ — залишок упав на 524 ₴»
+  // (надлишок рівно `todaySpent / remainingDays`). Тепер `dayBudget` —
+  // денна норма на початок дня: вона не смикається протягом доби, і саме
+  // тому лишається чесним спільним знаменником стрічки (ADR-0079).
+  const spentBeforeToday = spent - todaySummary.spent;
   const dayBudget = hasExpensePlan
-    ? (planExpense - spent - recurringOutThisMonth + recurringInThisMonth) /
+    ? (planExpense -
+        spentBeforeToday -
+        recurringOutThisMonth +
+        recurringInThisMonth) /
       remainingDays
     : null;
 
