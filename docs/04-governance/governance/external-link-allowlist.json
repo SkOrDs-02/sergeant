@@ -12,7 +12,7 @@
     },
     {
       "pattern": "^https?://localhost(:\\d+)?(/|$)",
-      "reason": "localhost URLs are documented for local dev (e.g. n8n at :5678 in ops/README.md) and are never reachable from CI runners."
+      "reason": "localhost URLs are documented for local dev (e.g. Prometheus at :9090 / Grafana at :3001 in ops/README.md) and are never reachable from CI runners."
     },
     {
       "pattern": "^https?://stripe\\.com/docs/account/closing",

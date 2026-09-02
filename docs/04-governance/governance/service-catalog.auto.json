@@ -1,7 +1,7 @@
 {
   "$schema": "./schemas/service-catalog.schema.json",
   "version": 1,
-  "generated_at": "2026-08-31",
+  "generated_at": "2026-09-02",
   "surfaces": [
     {
       "id": "web-pwa",
@@ -49,16 +49,6 @@
       "workspace": "apps/mobile-shell",
       "deployTarget": "capacitor-stores",
       "deployArtifact": "capacitor.config.ts",
-      "railwayService": null,
-      "healthcheckPath": null,
-      "owner": null
-    },
-    {
-      "id": "n8n-workflows",
-      "title": "n8n workflows",
-      "workspace": null,
-      "deployTarget": "n8n-runtime",
-      "deployArtifact": "ops/n8n-workflows/",
       "railwayService": null,
       "healthcheckPath": null,
       "owner": null

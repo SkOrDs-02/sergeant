@@ -1,10 +1,12 @@
-# Alert-bot routing — n8n broadcast workflows → `tg_alert_acks`
+# Alert-bot routing — broadcast workflows → `tg_alert_acks`
 
-> **Last touched:** 2026-05-13 by Devin. **Next review:** 2026-09-02.
+> ⚠️ **n8n виведено з репо ([ADR-0090](../../04-governance/adr/0090-n8n-decommissioned.md), 2026-09-02).** Server-side частина (`tg_alert_acks`, `/api/internal/alerts/*`, escalation ladder) чинна; n8n-специфічні кроки (workflow-ID, manifest `requiredEnv`, validator) — історичні, workflow-JSON — у permalink-снапшоті.
+
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-23.
 > **Status:** Active. **Owner:** ops.
 > **Spec:** [`docs/04-governance/adr/0038-tg-alert-acks-and-escalation.md`](../../04-governance/adr/0038-tg-alert-acks-and-escalation.md)
 > §3.2; reporting matrix footnote 5 in
-> [`ops/n8n-workflows/REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md).
+> [`ops/n8n-workflows/REPORTING-MATRIX.md`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md).
 
 This file documents how each Sergeant n8n broadcast workflow maps onto the
 alert-bot accountability layer. It is the canonical wire-map for:
@@ -40,7 +42,7 @@ The Telegram node then renders an inline-keyboard with the three ack buttons
 (✅ Прочитав / 🔄 Розбираю / 🔕 Замутити 30хв). Each button carries
 `callback_data = "ack:<r|i|m>:<alertId>"`, which is consumed by WF-104.
 
-Validator gates (`pnpm ops:n8n:validate`):
+Validator gates (історичний `pnpm ops:n8n:validate`, прибрано ADR-0090):
 
 - Workflow JSON in git must keep `"active": false`. Activation is a manual
   step in the n8n UI after all `requiredEnv` are set on the n8n host (ops docker-compose stack).
@@ -50,7 +52,7 @@ Validator gates (`pnpm ops:n8n:validate`):
 ## Wired workflows
 
 The 17 broadcast workflows currently emitting ack rows. Cross-reference with
-[`REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md) for
+[`REPORTING-MATRIX.md`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md) for
 cadence + owner. PR column links the wave that wired the ack pattern.
 
 | WF | Workflow | Topic | Severity | `alertId` shape | PR |
@@ -217,7 +219,7 @@ When introducing a new WF-NN broadcast workflow:
 
 1. Insert the Build alert payload + POST `/alerts/post` nodes upstream of
    the Telegram node — copy the pattern from
-   [`ops/n8n-workflows/04-daily-backup-verification.json`](../../../ops/n8n-workflows/04-daily-backup-verification.json).
+   [`ops/n8n-workflows/04-daily-backup-verification.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/04-daily-backup-verification.json).
 2. Pick a stable `alertId` shape — append a suffix when one execution emits
    multiple alerts. The suffix should be the smallest piece of state that
    makes the alert distinguishable for dedup.
@@ -227,6 +229,6 @@ When introducing a new WF-NN broadcast workflow:
 4. Append the workflow to the table above with topic / severity /
    `alertId` shape / PR.
 5. Add `PUBLIC_API_BASE_URL` + `INTERNAL_API_KEY` to
-   `manifest.json.requiredEnv`. Run `pnpm ops:n8n:validate` before pushing.
-6. Update [`REPORTING-MATRIX.md`](../../../ops/n8n-workflows/REPORTING-MATRIX.md)
+   `manifest.json.requiredEnv`.
+6. Update [`REPORTING-MATRIX.md`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/REPORTING-MATRIX.md)
    footnote 5 so the wired-workflow list stays in sync.

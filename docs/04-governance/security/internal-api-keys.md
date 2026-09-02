@@ -9,7 +9,7 @@
 
 ## Why
 
-`INTERNAL_API_KEY` is the single shared secret guarding every `/api/internal/*` route. Anyone who exfiltrates it (an n8n debug log, a CI env-var leak, an accidental `console.log` in a Function node) can forge requests as a trusted internal caller. HMAC signing ([`api-internal-hmac.md`](./api-internal-hmac.md)) adds a second factor, but the bearer itself is still:
+`INTERNAL_API_KEY` is the single shared secret guarding every `/api/internal/*` route. Anyone who exfiltrates it (a CI env-var leak, an accidental `console.log` in a Function node) can forge requests as a trusted internal caller. HMAC signing ([`api-internal-hmac.md`](./api-internal-hmac.md)) adds a second factor, but the bearer itself is still:
 
 - **One key for all consumers** — a single rotation event breaks every consumer at once.
 - **TTL-less** — it never expires on its own.
@@ -36,7 +36,7 @@ All four consume the same shared bearer via the `index.ts` guard (PR-27 §Contex
 | Monobank webhook intake     | `apps/server/src/routes/internal/mono.ts`                              | payment webhook callbacks                             |
 | Sentry alerts router        | `apps/server/src/routes/internal/alerts.ts`                            | alert post / ack / escalate                           |
 
-> n8n workflows (`ops/n8n-workflows/*`) are the largest external consumer of the bearer — ~25 workflows send `Authorization: Bearer <INTERNAL_API_KEY>` (see the HMAC rollout playbook). They are not a server route but must be re-pointed on every rotation.
+> n8n workflows were historically the largest external consumer of the bearer (~25 workflows); n8n is decommissioned ([ADR-0090](../adr/0090-n8n-decommissioned.md)), so the remaining consumers are CI jobs and admin tooling.
 
 ### Secret ownership
 
@@ -49,7 +49,6 @@ Because it is a single shared secret, a rotation is a coordinated, brief-downtim
 1. **Generate** a new key: `openssl rand -hex 32`.
 2. **Set** the new value as `INTERNAL_API_KEY` in Coolify app `sergeant-api` (this is the source of truth the guard compares against). Redeploy.
 3. **Update every consumer** to send the new bearer, in lockstep:
-   - n8n: the ~25 `INTERNAL_API_KEY`-using workflows (set `INTERNAL_API_KEY` on the n8n Railway env; see [`api-internal-hmac.md`](./api-internal-hmac.md) for the workflow list pattern).
    - Monobank webhook secret config, if it references this key.
 4. **Verify** internal traffic recovers: watch `401` rate on `/api/internal/*` in Grafana / Sentry. A spike means a consumer wasn't updated.
 5. If compromise is suspected, also rotate `WEBHOOK_HMAC_SECRET` per [`api-internal-hmac.md`](./api-internal-hmac.md) so a captured signature is invalidated immediately (the 5-minute replay window means a leaked signature is useless after a few minutes regardless).

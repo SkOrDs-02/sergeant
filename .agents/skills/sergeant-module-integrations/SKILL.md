@@ -14,7 +14,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 - Silpo: імпорт чеків у finyk/nutrition — `apps/server/src/modules/silpo/` (branchContext, cart, фікстури зі снапшотами).
 - Telegram: `apps/server/src/modules/telegram/` (waitlist-бот, beta-тексти); структура каналів репортингу — [ADR-0030](../../../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md).
 - Transcribe: `apps/server/src/modules/transcribe/` з USD-капом витрат (`usdCap.ts`).
-- Webhooks: `apps/server/src/modules/webhooks/` — запис, replay, retention-полер вхідних подій; автоматизаційні воркфлоу — джерело істини n8n ([ADR-0026](../../../docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md)).
+- Webhooks: `apps/server/src/modules/webhooks/` — запис, replay, retention-полер вхідних подій; n8n-шар виведено з репо ([ADR-0090](../../../docs/04-governance/adr/0090-n8n-decommissioned.md)); періодичні задачі — серверні таймери ([ADR-0089](../../../docs/04-governance/adr/0089-job-substrates-outbox-broker-timer.md)).
 
 ## Інваріанти модуля
 

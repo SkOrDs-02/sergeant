@@ -1,6 +1,6 @@
 # Access Matrix
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2027-11-22.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-12-27.
 > **Status:** Active
 
 Canonical inventory of privileged surfaces and access expectations for Sergeant.
@@ -18,7 +18,6 @@ Canonical inventory of privileged surfaces and access expectations for Sergeant.
 | PostgreSQL production admin                | `Tier 1` | Founder | Founder, core engineer                       | Can mutate or destroy system-of-record data                  | Via Coolify Postgres resource / restricted credentials | Biweekly       |
 | Sentry admin                               | `Tier 1` | Founder | Founder, core engineer                       | Can alter alerts, integrations, retention, issue workflow    | Vendor membership                                      | Monthly        |
 | PostHog admin                              | `Tier 1` | Founder | Founder, core engineer, temporary contractor | Can view behavioral data and change analytics config         | Vendor membership                                      | Monthly        |
-| n8n admin / workflow editor                | `Tier 1` | Founder | Founder, core engineer                       | Can change production automations and integrations           | n8n workspace access                                   | Biweekly       |
 | Anthropic/OpenAI provider key management   | `Tier 1` | Founder | Founder                                      | Controls AI cost, availability, and prompt-serving paths     | Provider console + secret rotation playbook            | Monthly        |
 | Telegram bot token / console-agent control | `Tier 1` | Founder | Founder, core engineer                       | Can impersonate internal bot actions                         | Bot secret owners only                                 | Monthly        |
 | Grafana / metrics read access              | `Tier 2` | Founder | Founder, core engineer, temporary contractor | Operational visibility only                                  | Vendor access or read token                            | Monthly        |

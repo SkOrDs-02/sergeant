@@ -198,20 +198,6 @@ export function buildServiceCatalog() {
     });
   }
 
-  // n8n workflows (operate as ops surface, no Dockerfile)
-  if (existsSync(resolve(REPO_ROOT, "ops/n8n-workflows"))) {
-    surfaces.push({
-      id: "n8n-workflows",
-      title: "n8n workflows",
-      workspace: null,
-      deployTarget: "n8n-runtime",
-      deployArtifact: "ops/n8n-workflows/",
-      railwayService: null,
-      healthcheckPath: null,
-      owner: ownerFor("ops/n8n-workflows", owners),
-    });
-  }
-
   return {
     $schema: "./schemas/service-catalog.schema.json",
     version: SCHEMA_VERSION,

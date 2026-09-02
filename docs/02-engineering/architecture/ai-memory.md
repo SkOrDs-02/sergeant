@@ -52,7 +52,7 @@ Permanent-fail jobs пишуться у [`ai_memory_ingest_failed`](../../../app
 
 DLQ-row — `(user_id, source, source_ref, payload_json, error_msg, attempts, last_attempt_at, replayed_at, replay_count)`. Partial-UNIQUE `(user_id, source, source_ref) WHERE source_ref IS NOT NULL AND replayed_at IS NULL` гарантує idempotent INSERT — повторне permanent-fail тієї ж job-и bump-ить `attempts/last_attempt_at`, не плодить дублі.
 
-Sentry warning на DLQ-write шле `error_signature='ai-memory-ingest-dlq'` (routing-ключ для n8n alert-dedup, WF-22/WF-98), rate-limited 1 alert/хв per process (anti-spam при Voyage incident-і коли 100s падінь за секунди).
+Sentry warning на DLQ-write шле `error_signature='ai-memory-ingest-dlq'` (routing-ключ для alert-dedup; історично n8n WF-22/WF-98, виведено — ADR-0090), rate-limited 1 alert/хв per process (anti-spam при Voyage incident-і коли 100s падінь за секунди).
 
 ### Replay tooling
 

@@ -1,50 +1,33 @@
-# Sergeant Operations Stack — n8n
+# Sergeant Operations Stack — Prometheus + Grafana
 
-Self-hosted n8n для автоматизації ops-задач Sergeant.
-Повний контекст — [docs/01-product/launch/business/05-operations-and-automation.md](../docs/01-product/launch/business/05-operations-and-automation.md).
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-02.
+> **Status:** Active
 
-> **Routing & ownership matrix:** [`n8n-workflows/REPORTING-MATRIX.md`](./n8n-workflows/REPORTING-MATRIX.md) — workflow → Telegram topic → audience → cadence → escalation. Архітектурне обґрунтування — [`docs/03-operations/observability/telegram-control-plane.md`](../docs/03-operations/observability/telegram-control-plane.md), формальне рішення — [ADR-0030](../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md).
+Локальний стек моніторингу для Sergeant: Prometheus скрейпить `/metrics` бекенду, Grafana провіжнить дашборди з репо, Grafana Alloy (профіль `cloud`) шле ті самі метрики у Grafana Cloud для production.
+
+> **n8n виведено з експлуатації** ([ADR-0090](../docs/04-governance/adr/0090-n8n-decommissioned.md)). Workflow-и, manifest, reporting-матриця та валідатор прибрані з репо; крони, які вони виконували, живуть у серверних таймерах ([ADR-0089](../docs/04-governance/adr/0089-job-substrates-outbox-broker-timer.md)). Історичний стан шару — у [permalink-снапшоті](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/).
 
 ## Що всередині
 
 ```
 ops/
-├── docker-compose.ops.yml      # n8n + Postgres (compose stack)
+├── docker-compose.ops.yml      # Prometheus + Grafana (+ Alloy під профілем `cloud`)
 ├── .env.ops.example            # Шаблон env-змінних
 ├── README.md                   # Цей файл
-├── posthog/                              # PostHog dashboards as portable manifests (PR-10+)
-│   ├── README.md                         # Folder contract + import workflow
-│   └── dashboards/
-│       └── founder-pulse.json            # Founder Pulse — WF-60 growth dashboard
-└── n8n-workflows/
-    │  — Revenue / Billing —
-    ├── 01-billing-pipeline.json          # Stripe → DB → Telegram
-    ├── 02-failed-payment-recovery.json   # Failed payment → email + downgrade
-    │  — Ops / Alerting —
-    ├── 03-sentry-alert-routing.json      # Sentry → Telegram (fatal / warning)
-    ├── 04-daily-backup-verification.json # Cron 03:00 → sanity SQL → Telegram
-    ├── 05-renovate-pr-auto-handler.json  # Renovate PR → auto-approve patch / notify
-    │  — Finance —
-    ├── 06-mono-webhook-enrichment.json   # Mono tx → AI categorize → budget alert
-    │  — Product / User notifications —
-    ├── 07-morning-briefing-push.json     # Cron 07:30 Kyiv → push all subscribers
-    ├── 08-weekly-financial-digest.json   # Cron Sun 20:00 → SQL + Claude Haiku → Telegram
-    ├── 09-habit-streak-alert.json        # Cron 21:00 Kyiv → push habit reminder
-    ├── 10-debt-receivable-reminder.json  # Cron 10:00 → debts due in 3 days → push + Telegram
-    │  — Developer / Ops —
-    ├── 16-posthog-daily-metrics.json     # Cron 09:00 → PostHog HogQL → Telegram #growth
-    ├── 17-github-pr-stale-alert.json     # Cron 10:00 Mon–Fri → PRs >48h → Telegram
-    ├── 18-nightly-security-audit.json    # Cron 04:00 UTC → GitHub audit run → Telegram
-    ├── 19-db-health-report.json          # Cron Mon 07:00 → DB size + slow queries → Telegram
-    │  — Growth —
-    ├── 60-growth-funnel-snapshot.json    # Cron 02:30 → PostHog funnel → /api/internal/growth/funnel → Telegram #growth
-    ├── 63-growth-acquisition-snapshot.json # Cron 02:35 → PostHog UTM → /api/internal/growth/acquisition → Telegram #growth
-    │  — Meta (n8n control plane) —
-    ├── 98-error-handler.json             # n8n error trigger → Postgres `n8n_errors` + Telegram #meta + email (P0)
-    └── 99-heartbeat.json                 # Cron */3h → Telegram #meta + Resend email fallback
+├── prometheus/
+│   ├── prometheus.template.yml # scrape-конфіг (METRICS_TOKEN підставляється на старті)
+│   └── rules/                  # alert rules (server.yml, gdpr.yml, voyage-cost.yml)
+├── grafana/
+│   ├── datasources/            # Prometheus datasource
+│   └── dashboards/             # provisioning-конфіг дашбордів
+├── grafana-alloy/              # Phase 2: scrape-only агент → Grafana Cloud
+│   ├── config.alloy
+│   ├── Dockerfile
+│   └── README.md
+└── posthog/                    # PostHog dashboards as portable manifests (PR-10+)
+    ├── README.md               # Folder contract + import workflow
+    └── dashboards/             # founder-pulse.json, hub-tab-perf.json
 ```
-
-Повний routing-таблиця workflow → Telegram topic → owner → escalation — у [`n8n-workflows/REPORTING-MATRIX.md`](./n8n-workflows/REPORTING-MATRIX.md).
 
 ## Швидкий старт
 
@@ -57,13 +40,10 @@ cp ops/.env.ops.example ops/.env.ops
 
 Мінімум для старту:
 
-| Змінна                   | Звідки                                                  |
-| ------------------------ | ------------------------------------------------------- |
-| `N8N_PASSWORD`           | `openssl rand -base64 24`                               |
-| `N8N_ENCRYPTION_KEY`     | `openssl rand -hex 32`                                  |
-| `N8N_DB_PASSWORD`        | `openssl rand -base64 24`                               |
-| `TELEGRAM_BOT_TOKEN`     | [@BotFather](https://t.me/BotFather) → `/newbot`        |
-| `TELEGRAM_ALERT_CHAT_ID` | `curl "https://api.telegram.org/bot<TOKEN>/getUpdates"` |
+| Змінна              | Звідки                                                 |
+| ------------------- | ------------------------------------------------------ |
+| `METRICS_TOKEN`     | той самий, що у `.env` сервера (bearer для `/metrics`) |
+| `GF_ADMIN_PASSWORD` | `openssl rand -base64 24`                              |
 
 ### 2. Запуск (локально)
 
@@ -71,206 +51,25 @@ cp ops/.env.ops.example ops/.env.ops
 docker compose -f ops/docker-compose.ops.yml --env-file ops/.env.ops up -d
 ```
 
-n8n UI: [http://localhost:5678](http://localhost:5678)
+| Сервіс     | URL                   | Логін                            |
+| ---------- | --------------------- | -------------------------------- |
+| Prometheus | http://127.0.0.1:9090 | —                                |
+| Grafana    | http://127.0.0.1:3001 | `admin` / `${GF_ADMIN_PASSWORD}` |
 
-### 3. Імпорт workflows
+Обидва порти прив'язані до loopback — стек не виставляється назовні навіть на VPS.
 
-1. Відкрий n8n UI → **Workflows** → **Import from File**
-2. Імпортуй кожен `.json` з `ops/n8n-workflows/`
-3. Відкрий кожен workflow → налаштуй **Credentials** (Postgres, Telegram, Stripe, etc.)
-4. Активуй workflow (toggle → **Active**)
+### 3. Deploy (Coolify / будь-який Docker-хост)
 
-### 4. Deploy (Coolify / будь-який Docker-хост)
-
-Railway виведено з експлуатації ([ADR-0074](../docs/04-governance/adr/0074-hosting-hetzner-coolify.md)). Ops-стек деплоїться як Docker Compose-ресурс у Coolify з того самого `ops/docker-compose.ops.yml` (env — через Coolify UI, не `.env.ops`).
-
-Після деплою:
-
-- Встанови custom domain (Cloudflare DNS → CNAME)
-- Оновити `WEBHOOK_URL` та `N8N_HOST` у env vars
-- Переконайся що persistent volume підключено до `/home/node/.n8n`
-
-## Workflow-и — деталі
-
-### 01. Billing-пайплайн
-
-**Тригер:** Stripe webhook `customer.subscription.created`
-**Дія:** Update user plan → Pro в БД → Telegram повідомлення в `#revenue`
-
-### 02. Відновлення після невдалого платежу
-
-**Тригер:** Stripe webhook `invoice.payment_failed`
-**Дія:** Telegram alert → Email "оновіть картку" → Retry wait → Downgrade після 4 спроб
-
-### 03. Маршрутизація Sentry-алертів
-
-**Тригер:** Sentry webhook (new issue / spike)
-**Дія:** Filter severity ≥ warning → Telegram `#incidents` (fatal отримує окремий формат)
-
-### 04. Щоденна перевірка бекапів
-
-**Тригер:** Cron 03:00 UTC
-**Дія:** Sanity SQL по живій БД (`user`, `mono_transaction`) → Telegram OK / CRITICAL. Крок Railway API прибрано (ADR-0074); тижневий restore-rehearsal — GitHub Actions `db-backup-verify.yml`
-
-### 05. Auto-handler для Renovate-PR
-
-**Тригер:** GitHub webhook `pull_request.opened` (author = renovate[bot])
-**Дія:** Patch → auto-approve; minor/major → Telegram review needed
-
-### 06. Mono-webhook enrichment
-
-**Тригер:** Mono webhook (нова транзакція)
-**Дія:** Save → AI categorize (Claude) → Update DB → Budget threshold check → Telegram alert
-
-### 07. Ранковий push-брифінг
-
-**Тригер:** Cron 07:30 Kyiv (щодня)
-**Дія:** Postgres → список юзерів з push-підписками → POST `/api/push/send` для кожного → "Доброго ранку! Відкрий Sergeant"
-
-### 08. Тижневий фін-дайджест
-
-**Тригер:** Cron неділя 20:00 Kyiv
-**Дія:** Postgres → витрати за 7 днів по категоріях → Claude Haiku → Telegram дайджест
-
-### 09. Алерт про ризик втрати стріку
-
-**Тригер:** Cron 21:00 Kyiv (щодня)
-**Дія:** Postgres → юзери з push-підписками → push "Не забудь звички!"
-
-### 10. Нагадування про борги
-
-**Тригер:** Cron 10:00 Kyiv (щодня)
-**Дія:** Postgres → борги/дебіторка з `dueDate` ≤ +3 дні → push для кожного + Telegram summary
-
-### 15. Railway-деплой — нотифікація (видалено)
-
-Видалено разом із Railway-хостингом (ADR-0074); номер 15 не перевикористовується. Деплой-нотифікації — GitHub Actions `deploy-api.yml`.
-
-### 16. Щоденні PostHog-метрики
-
-**Тригер:** Cron 09:00 Kyiv (щодня)
-**Дія:** PostHog HogQL → DAU + pageviews за вчора → Telegram `#growth`
-
-### 17. Алерт про застоялі GitHub-PR
-
-**Тригер:** Cron 10:00 Kyiv (Пн–Пт)
-**Дія:** GitHub API → open PRs → фільтр >48h без активності → Telegram якщо є
-
-### 18. Підсумок нічного security-аудиту
-
-**Тригер:** Cron 04:00 UTC (після `nightly-audit.yml` о 03:00)
-**Дія:** GitHub API → останній запуск `nightly-audit.yml` → Telegram `#incidents` якщо `failure`
-
-### 19. Репорт про здоров’я БД
-
-**Тригер:** Cron понеділок 07:00 Kyiv
-**Дія:** Postgres → розмір DB, топ-5 таблиць, повільні запити (`pg_stat_statements`) → Telegram `#ops`
-
-### 60. Snapshot growth-funnel-у
-
-**Тригер:** Cron 02:30 Kyiv (щодня)
-**Дія:** PostHog HogQL → distinct users по 5 funnel-кроках (visit/signup/onboard/first_action/paid) за вчора → POST `/api/internal/growth/funnel` (mig 019, `growth_funnel_daily`) → Telegram `#growth` summary. PostHog events потрібні: `$pageview`, `signup_completed`, `onboarding_completed`, `first_action_completed`, `subscription_started`.
-
-### 63. Snapshot acquisition-каналів
-
-**Тригер:** Cron 02:35 Kyiv (щодня)
-**Дія:** PostHog HogQL → signups згруповані по `($utm_source, $utm_medium, $utm_campaign)` за вчора → POST `/api/internal/growth/acquisition` (mig 019, `growth_acquisition_daily`) → Telegram `#growth` top-5 каналів. `spendCents` / `cacCents` лишаються 0/null поки ad-platform integration не wired.
-
-### 98. Error-handler (n8n control plane)
-
-**Тригер:** n8n Error Workflow trigger (configured у Settings).
-**Дія:** Збагачує payload (workflow name, execution ID, severity) → Postgres `n8n_errors` insert → Telegram `#meta` повідомлення → для P0 (`riskTier=P0` з manifest) додатково — Resend email на `OPS_ALERT_EMAIL`. **Anti-loop:** WF-98 сам не має `errorWorkflow` посилання — Hard rule.
-
-### 99. Heartbeat
-
-**Тригер:** Cron `0 */3 * * *` (кожні 3 години).
-**Дія:** POST у Telegram `#meta` (“n8n alive @ <ts>”). При помилці — fallback на Resend email (`OPS_ALERT_EMAIL`). Відсутність хартбіту > 6 год → ручний сигнал для operator-а перевірити n8n status (n8n down / Railway down / network).
-
-## Credential-и у n8n
-
-Після імпорту workflows — налаштуй credentials через n8n UI:
-
-| Credential        | Тип                    | Потрібно для          |
-| ----------------- | ---------------------- | --------------------- |
-| Sergeant Postgres | PostgreSQL             | 01, 02, 04, 06–10, 19 |
-| Sergeant Ops Bot  | Telegram Bot API       | 01–10, 15–19          |
-| Stripe            | Webhook signing secret | 01, 02                |
-| Resend            | API Key                | 02                    |
-| Anthropic         | API Key                | 06, 08                |
-| GitHub            | Token / Webhook secret | 05, 17, 18            |
-
-### Нові env-змінні для workflow-ів 07–99
-
-Додай у n8n → Settings → Environment Variables (або як env vars n8n-сервісу в Coolify):
-
-| Змінна                       | Використовується в       | Де взяти                                                                                           |
-| ---------------------------- | ------------------------ | -------------------------------------------------------------------------------------------------- |
-| `API_SECRET`                 | 07, 09, 10               | `.env` сервера (той самий `API_SECRET`)                                                            |
-| `INTERNAL_API_KEY`           | 60, 63                   | `.env` сервера (той самий `INTERNAL_API_KEY`, у самого Sergeant API)                               |
-| `PUBLIC_API_BASE_URL`        | 07, 09, 10, 60, 63       | публічний URL API за Coolify (в проді — значення `PUBLIC_API_BASE_URL` з env сервера)              |
-| `POSTHOG_API_KEY`            | 16, 60, 63               | PostHog → Settings → **Personal** API Keys (префікс `phx_…`, scopes: `project:read`, `query:read`) |
-| `POSTHOG_PROJECT_ID`         | 16, 60, 63               | PostHog → Settings → Project → ID у URL                                                            |
-| `POSTHOG_HOST`               | 16, 60, 63               | `https://eu.i.posthog.com` (EU instance) або `https://us.i.posthog.com` (US)                       |
-| `GITHUB_PAT`                 | 17, 18                   | GitHub → Settings → Developer settings → PAT (classic), scope: `repo`                              |
-| `TELEGRAM_ALERT_CHAT_ID`     | більшість                | Supergroup ID (від’ємне число з `getUpdates`, формат `-100…`)                                      |
-| `TELEGRAM_TOPIC_INCIDENTS`   | 02-fail, 03, 04-fail, 18 | `message_thread_id` топіка `🔴 Інциденти` у Sergeant Ops                                           |
-| `TELEGRAM_TOPIC_REVENUE`     | 01, 02, 06               | `message_thread_id` топіка `💰 Виторг`                                                             |
-| `TELEGRAM_TOPIC_META`        | 98, 99                   | `message_thread_id` топіка `⚙️ Контрол-план`                                                       |
-| `TELEGRAM_TOPIC_OPS`         | 04-ok, 10, 15-ok, 19     | `message_thread_id` топіка `🟡 Опс`                                                                |
-| `TELEGRAM_TOPIC_ENGINEERING` | 05, 17                   | `message_thread_id` топіка `🛠️ Інженерія`                                                          |
-| `TELEGRAM_TOPIC_GROWTH`      | 16, 60, 63               | `message_thread_id` топіка `🚀 Зростання`                                                          |
-| `TELEGRAM_TOPIC_DIGEST`      | 08                       | `message_thread_id` топіка `📊 Дайджести`                                                          |
-| `OPS_ALERT_EMAIL`            | 98, 99                   | Email для P0 fallback (Resend `From: ops@…`)                                                       |
-
-> **Увага:** в n8n env vars ключ фігурує як `POSTHOG_API_KEY` (не `POSTHOG_PERSONAL_API_KEY`). `POSTHOG_PERSONAL_API_KEY` — це GitHub Actions secret для `posthog-release-annotation.yml` (інший контекст). Саме ключ — однаковий (`phx_…`), просто різні імена змінних в різних рантаймах.
-
-## Розв’язання проблем
-
-### n8n не стартує
-
-```bash
-docker compose -f ops/docker-compose.ops.yml logs n8n
-```
-
-Частіше за все — неправильний `N8N_DB_PASSWORD` або Postgres ще не ready.
-
-### Webhook не працює
-
-- Перевір `WEBHOOK_URL` — має бути публічний URL (не localhost у prod)
-- Stripe/GitHub/Sentry webhook endpoint: `{WEBHOOK_URL}/webhook/{path}`
-
-### Telegram не відправляє
-
-- Перевір `TELEGRAM_BOT_TOKEN` і `TELEGRAM_ALERT_CHAT_ID`
-- Бот має бути адміном каналу
-- Тест: `curl -X POST "https://api.telegram.org/bot<TOKEN>/sendMessage" -d chat_id=<ID> -d text="test"`
+Railway виведено з експлуатації ([ADR-0074](../docs/04-governance/adr/0074-hosting-hetzner-coolify.md)). Локальний `prometheus`/`grafana` — для дев-дебагу; production-метрики йдуть через Alloy у Grafana Cloud (див. § Phase 2 нижче).
 
 ## Моніторинг (Prometheus + Grafana)
 
-Prometheus і Grafana включені в той самий compose-файл.
-
-| Сервіс     | URL                   | Логін                                               |
-| ---------- | --------------------- | --------------------------------------------------- |
-| Prometheus | http://localhost:9090 | —                                                   |
-| Grafana    | http://localhost:3001 | `admin` / `${GF_ADMIN_PASSWORD}` (default: `admin`) |
-
 Grafana автоматично підключає Prometheus як datasource та провіжнить
-дашборди з двох локацій:
+дашборди з `docs/03-operations/observability/dashboards/*.json` — `http-red`, `db-use`, `slo-burn-rate`, `sync`, `auth`, `ai-cost`, `hubchat`, `frontend-cwv`.
 
-- `ops/grafana/dashboards/n8n-overview.json` — n8n + Sergeant server health
-- `docs/03-operations/observability/dashboards/*.json` — `http-red`, `db-use`, `slo-burn-rate`, `sync`, `auth`, `ai-cost`, `hubchat`, `frontend-cwv`
-
-Усі дашборди потрапляють у папку **Sergeant Ops** у Grafana UI. Дашборди з
-`docs/03-operations/observability/dashboards/` — сирі JSON-файли з `__inputs`-секцією; під
+Усі дашборди потрапляють у папку **Sergeant Ops** у Grafana UI. Це сирі JSON-файли з `__inputs`-секцією; під
 час провіженінгу Grafana 11 підставляє єдину Prometheus datasource у
 `DS_PROMETHEUS`-змінну автоматично.
-
-### Що показує `n8n-overview` dashboard
-
-- **n8n Instance Health** — UP/DOWN, uptime, RAM, event loop lag
-- **Workflow Executions** — success/error counters, rate, success rate over time
-- **n8n Process Resources** — CPU, memory, heap, GC, event loop
-- **Sergeant Server** — UP/DOWN, CPU, memory
 
 ### Server-side дашборди
 
@@ -283,43 +82,25 @@ Grafana автоматично підключає Prometheus як datasource т�
 
 ### Alert rules (Prometheus)
 
-| Alert                 | Умова                              | Severity |
-| --------------------- | ---------------------------------- | -------- |
-| `N8nDown`             | n8n не відповідає 5 хв             | page     |
-| `N8nWorkflowErrors`   | будь-яка помилка workflow за 15 хв | ticket   |
-| `N8nHighErrorRate`    | >50% помилок за 30 хв              | page     |
-| `N8nHighMemory`       | RSS >512 MB протягом 10 хв         | warning  |
-| `N8nHighEventLoopLag` | event loop lag >1s протягом 5 хв   | warning  |
-| `ServerDown`          | сервер не відповідає 5 хв          | page     |
-| `ServerHighMemory`    | сервер RSS >512 MB протягом 10 хв  | warning  |
+Джерела — [`ops/prometheus/rules/`](./prometheus/rules/): `server.yml` (health бекенду), `gdpr.yml` (stuck-рядки cleanup-черги, ADR-0016), `voyage-cost.yml` (денний бюджет embeddings).
 
-### Потрібні змінні в `.env.ops`
-
-```
-METRICS_TOKEN=<той самий що у .env сервера>
-```
-
-### Увімкнення метрик на production n8n
-
-На production n8n (Coolify) потрібно додати env vars:
-
-```
-N8N_METRICS=true
-N8N_METRICS_INCLUDE_DEFAULT_METRICS=true
-```
-
-Після цього `/metrics` endpoint стане доступний для scraping.
+| Alert                         | Умова                                 | Severity |
+| ----------------------------- | ------------------------------------- | -------- |
+| `ServerDown`                  | сервер не відповідає 5 хв             | page     |
+| `ServerHighMemory`            | сервер RSS >512 MB протягом 10 хв     | warning  |
+| `GdprCleanupQueueStuckRows`   | є stuck-рядки у `gdpr_cleanup_queue`  | ticket   |
+| `VoyageDailyBudgetSoftBreach` | денний бюджет Voyage — м'який поріг   | warning  |
+| `VoyageDailyBudgetHardBreach` | денний бюджет Voyage — жорсткий поріг | page     |
 
 ### Prometheus targets
 
-http://localhost:9090/targets
+http://127.0.0.1:9090/targets
 
 ### Troubleshooting — метрики не збираються
 
 1. Переконайся що `pnpm dev:server` запущений
 2. Перевір збіг `METRICS_TOKEN` у `.env.ops` і `.env`
 3. `curl -H "Authorization: Bearer <token>" http://localhost:3000/metrics`
-4. Для n8n: `curl http://localhost:5678/metrics` (без auth)
 
 ### Phase 2 — Grafana Cloud + Alloy (production scrape)
 
@@ -329,7 +110,7 @@ http://localhost:9090/targets
 production-метрики йдуть у Grafana Cloud free tier через лёгкого
 [Grafana Alloy](https://grafana.com/docs/alloy/latest/) агента.
 
-Конфіг агента, Dockerfile і повна інструкція деплою (історично писана під Railway; на Coolify — окремий Docker-сервіс) —
+Конфіг агента, Dockerfile і повна інструкція деплою —
 [`ops/grafana-alloy/README.md`](./grafana-alloy/README.md).
 
 TL;DR:
@@ -344,23 +125,23 @@ docker compose -f ops/docker-compose.ops.yml --env-file ops/.env.ops --profile c
 # 4. Production: задеплой ops/grafana-alloy/ як окремий Docker-сервіс у Coolify
 ```
 
-Після того як `up{project="sergeant"} == 1` для обох targets — імпортуй
+Після того як `up{job="sergeant-server"} == 1` — імпортуй
 дашборди з `docs/03-operations/observability/dashboards/` через Grafana Cloud UI та
 завантаж recording + alert rules через `mimirtool rules sync`. Деталі — у
 [`ops/grafana-alloy/README.md`](./grafana-alloy/README.md#імпорт-дашбордів-у-grafana-cloud).
 
-## Додавання нового workflow-у
+## Telegram-алерти
 
-1. [Playbook: modify-or-add an n8n workflow](../docs/00-start/playbooks/modify-n8n-workflow.md) — канонічна послідовність кроків.
-2. [ADR-0026 «n8n workflow source of truth»](../docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md) — «Workflow basics» розділ + Git-as-truth інваріант.
-3. [Reporting matrix](./n8n-workflows/REPORTING-MATRIX.md) — оновити **разом з PR**, інакше ламає Hard Rule #15.
-4. [`manifest.json`](./n8n-workflows/manifest.json) — owner / status / riskTier / requiredEnv / requiredCredentials.
-5. Приклади JSON — у `ops/n8n-workflows/`.
+Бот і chat ID для алертів — у Coolify env бекенду (`TELEGRAM_BOT_TOKEN`, `TELEGRAM_ALERT_CHAT_ID`); маршрутизація — [`docs/03-operations/observability/alert-bot-routing.md`](../docs/03-operations/observability/alert-bot-routing.md).
+
+- Перевір `TELEGRAM_BOT_TOKEN` і `TELEGRAM_ALERT_CHAT_ID`
+- Бот має бути адміном каналу
+- Тест: `curl -X POST "https://api.telegram.org/bot<TOKEN>/sendMessage" -d chat_id=<ID> -d text="test"`
 
 ## Вартість
 
-| Компонент         | Вартість/міс  |
-| ----------------- | ------------- |
-| n8n (self-hosted) | $3–5          |
-| n8n Postgres      | included      |
-| **Total**         | **~$3–5/міс** |
+| Компонент                    | Вартість/міс |
+| ---------------------------- | ------------ |
+| Prometheus + Grafana (local) | $0           |
+| Grafana Cloud free tier      | $0           |
+| **Total**                    | **$0**       |

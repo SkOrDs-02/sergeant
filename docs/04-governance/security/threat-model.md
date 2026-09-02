@@ -1,6 +1,6 @@
 # STRIDE threat model
 
-> **Last touched:** 2026-07-31 by @Skords-01. **Next review:** 2027-10-15.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-11-17.
 > **Status:** Active
 
 Закриває [I6 — Document the STRIDE threat model per module](hardening/archive/I6-threat-model.md).
@@ -35,7 +35,7 @@ Sergeant — multi-tenant фінансовий + здоров'я-трекер. T
 2. **Authenticated user** — користувач з Better-Auth-сесією, доступ до
    власних даних (RBAC-enforced ownership).
 3. **Founder + 1** — privileged операції (DB-restore, secret rotation,
-   Coolify/Vercel/n8n administration). Інвентар у
+   Coolify/Vercel administration). Інвентар у
    [`./access-matrix.md`](./access-matrix.md).
 4. **External APIs** — Mono (webhook + REST), Anthropic, Groq,
    PostHog, Sentry, OpenFoodFacts. Кожен — окрема trust-zone з

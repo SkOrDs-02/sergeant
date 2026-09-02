@@ -1,6 +1,6 @@
 # C1 — System Context
 
-> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-21.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-03.
 > **Status:** Active
 
 Sergeant у контексті користувача та зовнішніх систем.
@@ -21,7 +21,6 @@ flowchart TB
     Redis[("⚡ Redis<br/><i>BullMQ queues</i>")]
     Anthropic{{"🤖 Anthropic Claude API<br/><i>chat, coach, weekly-digest</i>"}}
     Sentry{{"🔭 Sentry<br/><i>error & perf telemetry</i>"}}
-    n8n{{"⏰ n8n workflows<br/><i>cron + webhook</i>"}}
     Mono{{"💳 Monobank API<br/><i>transactions + webhooks</i>"}}
     OFF{{"🥗 OpenFoodFacts<br/><i>barcode lookup</i>"}}
     SMTP{{"📧 SMTP<br/><i>Better Auth mail</i>"}}
@@ -46,14 +45,13 @@ flowchart TB
     Server -->|auth mail| SMTP
     Server -->|notifications| Push
     Server -->|alerts| Telegram
-    n8n -->|HTTP| Server
 
     classDef sys fill:#0f766e,stroke:#0d9488,color:#fff,stroke-width:2px
     classDef ext fill:#1f2937,stroke:#475569,color:#e5e7eb
     classDef store fill:#7c2d12,stroke:#b45309,color:#fff
     class Sergeant sys
     class Postgres,Redis store
-    class Anthropic,Sentry,n8n,Mono,OFF,SMTP,Push,Telegram ext
+    class Anthropic,Sentry,Mono,OFF,SMTP,Push,Telegram ext
 ```
 
 ## Зауваження

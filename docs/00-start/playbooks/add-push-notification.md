@@ -1,6 +1,6 @@
 # Playbook: Add Push Notification
 
-> **Last touched:** 2026-08-07 by @Skords-01. **Next review:** 2026-11-26.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-22.
 > **Status:** Active
 
 **Trigger:** «Надсилай push коли X» / «Додати новий тип сповіщення» / нагадування / реакція на зовнішню подію (Mono webhook, AI insight, scheduler).
@@ -34,13 +34,13 @@ Push-інфраструктура вже зібрана (див. `apps/server/sr
 
 Запитай: коли саме push має полетіти?
 
-| Тип тригера                            | Куди вставити                                                                                                                                        |
-| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Реакція на user-action (POST/PUT)      | Всередині відповідного handler-а в `apps/server/src/modules/<domain>/`, після успішного write.                                                       |
-| Mono webhook event                     | `apps/server/src/modules/mono/webhook.ts`. Див. `add-monobank-event-handler.md` для скелета.                                                         |
-| За розкладом користувача (нагадування) | `apps/server/src/lib/reminders/due.ts` — додай предикат «що спрацьовує на цю хвилину» і завантажувач стану у `sweep.ts`. Планувальник уже крутиться. |
-| Періодичний (раз на день/тиждень)      | Додай як HTTP endpoint, що тригериться зовнішнім cron-ом (GitHub Actions schedule / n8n), або повісь на добову гілку reminder-sweep-у.               |
-| Side effect AI insight                 | Дивись `coach.ts` як приклад: викликає `sendToUserQuietly` після генерації insight-а.                                                                |
+| Тип тригера                            | Куди вставити                                                                                                                                                                                                                            |
+| -------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Реакція на user-action (POST/PUT)      | Всередині відповідного handler-а в `apps/server/src/modules/<domain>/`, після успішного write.                                                                                                                                           |
+| Mono webhook event                     | `apps/server/src/modules/mono/webhook.ts`. Див. `add-monobank-event-handler.md` для скелета.                                                                                                                                             |
+| За розкладом користувача (нагадування) | `apps/server/src/lib/reminders/due.ts` — додай предикат «що спрацьовує на цю хвилину» і завантажувач стану у `sweep.ts`. Планувальник уже крутиться.                                                                                     |
+| Періодичний (раз на день/тиждень)      | Додай як HTTP endpoint, що тригериться зовнішнім cron-ом (GitHub Actions schedule) або серверним таймером ([ADR-0089](../../04-governance/adr/0089-job-substrates-outbox-broker-timer.md)), або повісь на добову гілку reminder-sweep-у. |
+| Side effect AI insight                 | Дивись `coach.ts` як приклад: викликає `sendToUserQuietly` після генерації insight-а.                                                                                                                                                    |
 
 **Не клади** push логіку в `chat.ts` (порушує тонко-passthrough архітектуру; див. `AGENTS.md`).
 

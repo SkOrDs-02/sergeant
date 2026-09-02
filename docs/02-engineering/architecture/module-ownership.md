@@ -1,6 +1,6 @@
 # Module ownership map
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-10.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-08.
 > **Status:** Active
 
 > Per-path ownership, test stack, RQ keys factory, and conventions. Quick look-up before editing. Compact summary table lives in [`AGENTS.md § Module ownership map`](../../../AGENTS.md#module-ownership-map); deep per-path table is here so the Stack-pulse PR-04 secondary-column contract and the per-module ownership map stay close to one another. Механічного гейта більше немає — CODEOWNERS + coverage-перевірку прибрано [ADR-0082](../../04-governance/adr/0082-private-storage-repo-posture.md) §3.
@@ -45,7 +45,6 @@
 
 | Path                      | Owner        | Secondary ¹        | Notes                                                                                                                            |
 | ------------------------- | ------------ | ------------------ | -------------------------------------------------------------------------------------------------------------------------------- |
-| `ops/n8n-workflows/**`    | `@SkOrDs-02` | TBD (any-engineer) | n8n workflow JSON manifests (heartbeat, agent-dispatcher). Validate via `pnpm ops:n8n:validate`.                                 |
 | `tools/tsconfig-guard/**` | `@SkOrDs-02` | TBD (any-engineer) | Strict-family flag guard (Hard Rule #19). Allowlist with expiry/owner; gates `pnpm lint`.                                        |
 | `scripts/**`              | `@SkOrDs-02` | TBD (any-engineer) | Governance / docs / API / CI helpers. See [`docs/04-governance/governance/README.md`](../../04-governance/governance/README.md). |
 

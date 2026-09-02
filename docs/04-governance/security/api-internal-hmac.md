@@ -1,7 +1,9 @@
 # `/api/internal/*` HMAC signing — rollout playbook
 
-> **Last validated:** 2026-06-09 by @claude. **Next review:** 2027-06-17.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-09-10.
 > **Status:** Active (grace mode).
+
+> ⚠️ **n8n виведено з репо ([ADR-0090](../adr/0090-n8n-decommissioned.md), 2026-09-02).** Server-side middleware і env-тріо чинні; n8n-side кроки (Function-node template, manifest `hmacSigned`, validator) — історичні, файли — у permalink-снапшоті.
 > **Owner:** ops + server.
 > **Related:** [`better-auth-audit-2026-05.md`](./better-auth-audit-2026-05.md), [`logging-redaction-policy.md`](./logging-redaction-policy.md), [`docs/03-operations/observability/alert-bot-routing.md`](../../03-operations/observability/alert-bot-routing.md).
 
@@ -30,7 +32,7 @@ The timestamp prefix is what prevents replay if `WEBHOOK_HMAC_SECRET`
 leaks and an attacker captures a single legitimate request body.
 
 Server side: [`apps/server/src/http/verifyWebhookSignature.ts`](../../../apps/server/src/http/verifyWebhookSignature.ts).
-n8n side template: [`ops/n8n-workflows/_lib/sign-internal-request.js`](../../../ops/n8n-workflows/_lib/sign-internal-request.js).
+n8n side template: [`ops/n8n-workflows/_lib/sign-internal-request.js`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/_lib/sign-internal-request.js).
 
 ## Three env-vars
 
@@ -64,7 +66,7 @@ Per-workflow checklist:
 
 1. **Add the signer Function-node** to the workflow JSON immediately
    before the HTTP-Request node that calls `/api/internal/...`. Use
-   the template at [`ops/n8n-workflows/_lib/sign-internal-request.js`](../../../ops/n8n-workflows/_lib/sign-internal-request.js).
+   the template at [`ops/n8n-workflows/_lib/sign-internal-request.js`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/_lib/sign-internal-request.js).
 2. **Switch the HTTP-Request body type to "Raw"** and reference
    `={{ $json.bodyJson }}` so the bytes don't get re-encoded.
 3. **Add `X-Signature` and `X-Timestamp` headers** in the same node,
@@ -76,7 +78,7 @@ Per-workflow checklist:
    "hmacSigned": true,
    "requiredEnv": ["…", "WEBHOOK_HMAC_SECRET"]
    ```
-   The validator (`pnpm ops:n8n:validate`) enforces that
+   The (historical, removed) validator `pnpm ops:n8n:validate` enforced that
    `hmacSigned: true` ⇒ `WEBHOOK_HMAC_SECRET` ∈ `requiredEnv`.
 6. **Test against staging.** With the server still on
    `WEBHOOK_HMAC_REQUIRED=false`, you'll see in Grafana / Sentry whether

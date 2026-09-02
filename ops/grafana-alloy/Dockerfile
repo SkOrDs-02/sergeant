@@ -1,5 +1,5 @@
 # Grafana Alloy — Sergeant Phase 2 metrics scraper.
-# Deployed as a standalone Railway service that scrapes n8n + apps/server
+# Deployed as a standalone Docker service (Coolify) that scrapes apps/server
 # and ships everything to Grafana Cloud Prometheus.
 #
 # Build context is `ops/grafana-alloy/`.

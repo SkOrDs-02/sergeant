@@ -24,7 +24,6 @@ Scenario catalog: which playbook to open, which skill governs the work, and whet
 | Run a backup restore rehearsal                 | [`test-backup-restore.md`](./test-backup-restore.md)                                      | `sergeant-data-and-migrations`                          | Human + agent |
 | Run weekly operator review                     | [`run-weekly-operator-digest.md`](./run-weekly-operator-digest.md)                        | `sergeant-review-and-merge`                             | Human + agent |
 | Port a web screen to mobile                    | [`port-web-screen-to-mobile.md`](./port-web-screen-to-mobile.md)                          | `sergeant-mobile-expo` + `sergeant-monorepo-boundaries` | Human + agent |
-| Modify or add an n8n workflow                  | [`modify-n8n-workflow.md`](./modify-n8n-workflow.md)                                      | `sergeant-deploy-and-observability`                     | Human + agent |
 | Clean up Codex branch after merged PR          | [`cleanup-codex-branch-after-pr.md`](./cleanup-codex-branch-after-pr.md)                  | `sergeant-review-and-merge`                             | Human + agent |
 | Review / merge gate                            | [`../governance/review-checklist.md`](../../04-governance/governance/review-checklist.md) | `sergeant-review-and-merge`                             | Human + agent |
 | PR review across 3+ governed surfaces          | [`run-squad-review.md`](./run-squad-review.md)                                            | `sergeant-review-squad`                                 | Human + agent |
@@ -77,9 +76,10 @@ Curated table вище лишається швидким роутером для
 
 Ці файли збережені для старих посилань і PR-контексту. Для виконання відкривай canonical playbook у другій колонці. Redirect-стаби ініціативи 0009 (`grant-/revoke-privileged-access`, `run-access-review`, `respond-to-suspected-account-compromise`, `release-web-and-api`, `release-mobile-shell`, `release-expo-mobile`) видалені — відкривай [`access-governance.md`](./access-governance.md) і [`release.md`](./release.md).
 
-| Historical file                  | Canonical owner                                                                                                                                    |
-| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `rotate-openclaw-credentials.md` | [`rotate-secrets.md`](./rotate-secrets.md) — OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)) |
+| Historical file                  | Canonical owner                                                                                                                                                                              |
+| -------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `rotate-openclaw-credentials.md` | [`rotate-secrets.md`](./rotate-secrets.md) — OpenClaw decommissioned ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md))                                           |
+| `modify-n8n-workflow.md`         | серверні таймери ([ADR-0089](../../04-governance/adr/0089-job-substrates-outbox-broker-timer.md)) — n8n-шар виведено з репо ([ADR-0090](../../04-governance/adr/0090-n8n-decommissioned.md)) |
 
 ## Notes
 

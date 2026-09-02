@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-05.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-07.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Claude Code, Codex, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -65,7 +65,7 @@ CI hard-rules ловляться різними механізмами. Стар
 
 **Backend (ADR-0074):** API + Postgres + Redis на **Hetzner CX23 під Coolify**. Образ API — `ghcr.io` через `deploy-api.yml`; pre-deploy migrate — `node dist-server/migrate.js`. Railway виведено ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)).
 
-**OpenClaw (ADR-0075):** повністю **decommissioned** 2026-07-20 — `tools/openclaw`, gateway, `packages/openclaw-plugin`, `ops/openclaw` прибрано з репо. Hard Rule #20 лишається (fail-closed guard проти `OPENCLAW_GITHUB_PAT` у prod). Для Telegram ops — n8n + alert bot, не OpenClaw.
+**OpenClaw (ADR-0075):** повністю **decommissioned** 2026-07-20 — `tools/openclaw`, gateway, `packages/openclaw-plugin`, `ops/openclaw` прибрано з репо. Hard Rule #20 лишається (fail-closed guard проти `OPENCLAW_GITHUB_PAT` у prod). Для Telegram ops — server-side alert bot, не OpenClaw (n8n теж виведено — [ADR-0090](../../04-governance/adr/0090-n8n-decommissioned.md)).
 
 **Pricing (ADR-0068):** `Free + Pro`, ₴199/₴1490, reverse trial 7d. ADR-0051 superseded.
 
@@ -74,7 +74,7 @@ CI hard-rules ловляться різними механізмами. Стар
 ## 5. Plop generators (boilerplate без копіпаста)
 
 - `pnpm gen:adr` — створює `docs/04-governance/adr/NNNN-<slug>.md` із валідною шапкою (Status / Date / Reviewers / Supersedes / Related). Номер обчислюється через `nextAdrNumber()` у [`plopfile.mjs`](../../../plopfile.mjs), gaps пропускаються.
-- `pnpm gen new-skill` … `pnpm gen new-n8n-workflow` … — інтерактивні prompt'и зі smoke-тестами. ~~`new-console-specialist`~~ (historical OpenClaw) — **removed** разом із `tools/openclaw` (ADR-0075).
+- `pnpm gen new-skill` … `pnpm gen adr` … — інтерактивні prompt'и зі smoke-тестами. ~~`new-console-specialist`~~ (historical OpenClaw) — **removed** разом із `tools/openclaw` (ADR-0075).
 
 ## 6. Verification before PR
 

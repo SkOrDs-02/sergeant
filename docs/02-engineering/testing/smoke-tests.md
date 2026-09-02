@@ -1,6 +1,6 @@
 # Post-deploy smoke tests — runbook
 
-> **Last touched:** 2026-08-24 by @claude. **Next review:** 2027-04-02.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-04-11.
 > **Status:** Active
 
 > **Статус автоматизації:** [`.github/workflows/post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) закомічений — `deployment_status` + cron 06:30 UTC + `workflow_dispatch`. Локально — CLI [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) + [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json).
@@ -169,7 +169,7 @@ node scripts/post-deploy-smoke.mjs --tier all --strict
 
 - **Rollback automation:** на `critical`-tier fail після `deployment_status` — автоматичний rollback у Coolify / Vercel API.
 - **Latency histograms:** замість єдиного `latencyBudgetMs`, мати p50/p95/p99 budgets, заміряти кілька runs.
-- **Sentry route**: окремий alert-route `smoke-test-fail` через існуючий n8n WF-98 alert-bot pipeline (#2535).
+- **Sentry route**: окремий alert-route `smoke-test-fail` через server-side alert pipeline `/api/internal/alerts/send` (#2535; n8n WF-98 виведено — ADR-0090).
 - **Mutation tests opt-in:** `--include-mutations` для `POST /api/auth/sign-in` із dedicated test-user-ом — щоб ловити Better Auth regression. Зараз skipped, бо мутації забруднюють staging state.
 
 ## Workflow YAML

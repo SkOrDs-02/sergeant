@@ -1,6 +1,6 @@
 # Playbooks
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-14.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-12.
 > **Status:** Active
 
 Playbooks are the canonical execution layer for repeatable tasks in Sergeant. Skills decide the governing surface and repo rules; playbooks define the execution order.
@@ -12,7 +12,7 @@ Playbooks are the canonical execution layer for repeatable tasks in Sergeant. Sk
 - `data/migrations` - schema changes, rollout safety, DB hygiene, restore drills
 - `AI/HubChat` - tools, prompts, chat executors
 - `mobile` - Expo, RN porting, migration progress, mobile releases
-- `deploy/ops` - releases, prod hotfixes, incidents, secrets, runtime safety, n8n workflows
+- `deploy/ops` - releases, prod hotfixes, incidents, secrets, runtime safety
 - `governance/docs` - hard rules, review, docs upkeep, operating-system hygiene, access governance
 
 ## Standard for every playbook
@@ -55,7 +55,6 @@ Each playbook must include:
 - [restore-from-backup.md](./restore-from-backup.md)
 - [access-governance.md](./access-governance.md)
 - [port-web-screen-to-mobile.md](./port-web-screen-to-mobile.md)
-- [modify-n8n-workflow.md](./modify-n8n-workflow.md)
 - [write-e2e-test.md](./write-e2e-test.md)
 - [change-auth-flow.md](./change-auth-flow.md)
 - [author-skill.md](./author-skill.md)

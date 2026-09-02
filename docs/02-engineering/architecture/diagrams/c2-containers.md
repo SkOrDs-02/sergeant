@@ -1,6 +1,6 @@
 # C2 — Containers
 
-> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2026-10-27.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-09.
 > **Status:** Active
 
 Деплоймент-топологія Sergeant. Кожен контейнер — окремий процес або deploy target.
@@ -31,7 +31,6 @@ flowchart TB
         end
     end
 
-    N8N["n8n<br/><i>cron, mono enrich, morning briefing<br/>(self-host; статус — див. observability-нотатки)</i>"]
 
     Anthropic{{"Anthropic API"}}
     Sentry{{"Sentry SaaS"}}
@@ -61,13 +60,12 @@ flowchart TB
     Server -->|web-push / device tokens| FCM
     Server -->|alert delivery, telegramShipper.ts| Telegram
 
-    N8N -->|HTTP `/api/internal/*`<br/>internal token| Server
     Mono -->|webhook| Server
 
     classDef cont fill:#0f766e,stroke:#0d9488,color:#fff
     classDef store fill:#7c2d12,stroke:#b45309,color:#fff
     classDef ext fill:#1f2937,stroke:#475569,color:#e5e7eb
-    class Web,Shell,Mobile,Server,N8N cont
+    class Web,Shell,Mobile,Server cont
     class PG,R store
     class Anthropic,Sentry,Mono,OFF,SMTP,APNs,FCM,Telegram ext
 ```
@@ -110,7 +108,6 @@ flowchart TB
 
 - `User → Web/Mobile/Shell`: HTTPS (Vercel cert / app store).
 - `Web/Mobile → Server`: HTTPS через Vercel edge-proxy (env `BACKEND_URL`) → Coolify Traefik → app. CSP заблокує усе нелисловане (див. `helmet` setup). ⚠️ ланцюг `Vercel edge → Traefik → app` (кілька hop-ів) впливає на `TRUST_PROXY` — калібрування у ADR-0074 позначене TBD.
-- `n8n → Server`: запит проходить публічний URL із **internal token** (`INTERNAL_API_KEY`).
 - `Server → Postgres / Redis`: Coolify internal Docker network (той самий VPS).
 
 ## Деталі деплоя

@@ -201,7 +201,7 @@ HMAC-SHA256 signed requests з timestamp anti-replay.
   warn-logs `webhook_hmac_mismatch` на mismatch, але пропускає запит,
   щоб n8n workflows можна було мігрувати по одному. Після `hmacSigned: true`
   на всіх 25 workflow-ах (`manifest.json`) — flip `WEBHOOK_HMAC_REQUIRED=true`.
-- **Manifest validator** (`scripts/n8n/validate-n8n-workflows.mjs`): якщо
+- **Manifest validator** (`scripts/n8n/validate-n8n-workflows.mjs` <!-- removed -->, прибрано ADR-0090): якщо
   `hmacSigned: true`, тоді `WEBHOOK_HMAC_SECRET` обов'язково в
   `requiredEnv` — щоб ops не забули виставити змінну на n8n Railway.
 

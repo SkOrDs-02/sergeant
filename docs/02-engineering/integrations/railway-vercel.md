@@ -1,6 +1,6 @@
 # Хостинг: Hetzner + Coolify (бекенд) + Vercel (фронт)
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2027-03-25.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-04-22.
 > **Status:** Active — але лише Vercel-частина; Railway-секції (§1–2, §8) історичні (див. банер нижче)
 >
 > **⚠️ Hosting-частина superseded [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Railway-секції нижче (§1–2, §8) — історичний контекст доміграційного стеку; Railway config видалено, а OpenClaw повністю декомісовано [ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md). **Актуальними залишаються** Vercel-налаштування та same-origin cookie/proxy контракт (`/api/*` через Vercel edge) з `BACKEND_URL` на Coolify API.
@@ -116,7 +116,7 @@ Error-алерти йдуть з обох Sentry-проєктів (`sergeant-api
    `body.data.issue.{level,title,project.name,count,permalink}` і шле в `TELEGRAM_ALERT_CHAT_ID`.
    Гілки: `level=fatal` → `🚨 FATAL`, інші не-`info` → `⚠️ <level>`.
 
-Воркфлоу/маніфест джерела істини — в [`ops/n8n-workflows/`](../../../ops/n8n-workflows);
+Воркфлоу/маніфест джерела істини — в [`ops/n8n-workflows/`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows);
 ADR — [`docs/04-governance/adr/0026-n8n-workflow-source-of-truth.md`](../../04-governance/adr/0026-n8n-workflow-source-of-truth.md).
 У git `active: false` навмисно (per ADR-0026 — активація це окрема операція в середовищі).
 

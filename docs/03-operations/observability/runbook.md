@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-11-12.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-11-14.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -486,7 +486,9 @@ WHERE inserted_at >= now() - interval '7 days';
 
 ## WF-30 AI memory daily digest (PR-21)
 
-> **Owner:** `@Skords-01` (manifest owner `ops`). **Scope:** n8n workflow (server-side flag-canonical у `env.ts`). **Last validated:** 2026-05-13 by Devin (PR-21). **Related:** [`ops/n8n-workflows/30-ai-memory-daily-digest.json`](../../../ops/n8n-workflows/30-ai-memory-daily-digest.json), [`docs/02-engineering/integrations/env-vars.md § MONO_AI_MEMORY_DIGEST_ENABLED`](../../02-engineering/integrations/env-vars.md#mono_ai_memory_digest_enabled-optional-default-false--prod-required), [PR-19 AI memory ingest](#ai-memory-activation--day-30-decision-point).
+> ⚠️ **Історична секція.** n8n виведено з репо ([ADR-0090](../../04-governance/adr/0090-n8n-decommissioned.md)); workflow-JSON — у permalink-снапшоті, кроки activation/kill нижче виконувати нема чим. Digest-функція як така не має заміни у сервері (відкритий follow-up).
+
+> **Owner:** `@Skords-01` (manifest owner `ops`). **Scope:** n8n workflow (server-side flag-canonical у `env.ts`). **Last validated:** 2026-05-13 by Devin (PR-21). **Related:** [`ops/n8n-workflows/30-ai-memory-daily-digest.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/30-ai-memory-daily-digest.json), [`docs/02-engineering/integrations/env-vars.md § MONO_AI_MEMORY_DIGEST_ENABLED`](../../02-engineering/integrations/env-vars.md#mono_ai_memory_digest_enabled-optional-default-false--prod-required), [PR-19 AI memory ingest](#ai-memory-activation--day-30-decision-point).
 
 ### Контекст
 
@@ -496,7 +498,7 @@ WF-30 — щоденний 09:05 Kyiv n8n workflow, що SELECT-ить агре�
 
 1. **Pre-flight:** `AI_MEMORY_ENABLED=true` (master) і `MONO_AI_MEMORY_INGEST_ENABLED=true` (PR-19) уже виставлені у Coolify. Без цього `ai_memories` порожня → digest буде слати «За добу нічого не записано».
 2. **n8n Railway env:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=true` у self-hosted n8n service (Settings → Environment Variables). Це canonical-toggle (parsed у `apps/server/src/env/env.ts` для парності з ingest-flag-ом).
-3. **n8n UI:** flip toggle workflow `30 — AI Memory Daily Digest` в active. Hard-rule [`validate-n8n-workflows.mjs`](../../../scripts/n8n/validate-n8n-workflows.mjs) тримає JSON `active=false` у git, тож активація — manual у UI.
+3. **n8n UI:** flip toggle workflow `30 — AI Memory Daily Digest` в active. Hard-rule [`validate-n8n-workflows.mjs`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/scripts/n8n/validate-n8n-workflows.mjs) тримає JSON `active=false` у git, тож активація — manual у UI.
 4. **Verification (T+24h):** наступний ранок о 09:05 Kyiv → перевір канал Telegram `#digest`, має зʼявитись повідомлення `🧠 AI Memory — <дата>`.
 
 ### Що моніторити
@@ -736,13 +738,15 @@ ADR-0035.
 
 ## Alert-bot escalation ladder (T1 → T2 → T3)
 
+> ⚠️ **n8n-крони T1–T3 (WF-104/105/106) виведено з репо ([ADR-0090](../../04-governance/adr/0090-n8n-decommissioned.md)).** SQL-предикати й схема `tg_alert_acks` чинні; тригери ladder-а треба перенести на серверний таймер (ADR-0089) — follow-up. Kill-switch-кроки «n8n UI → toggle» нижче історичні.
+
 **Що це.** Trois-tier ladder для unACKed alerts на `tg_alert_acks`, кожен рівень — окремий n8n cron + idempotency-stamp у DB. ADR-0038 §3.2 ladder, перші колонки — `escalated_at` (T1, PR-O9), решта — `repeated_at` / `sentry_warned_at` / `snoozed_until_at` (Sprint 6 alert-escalation; migration `063_tg_alert_acks_escalation_tiers.sql`).
 
-| Tier   | Trigger                                                                                           | Action                                                                                                                                                                                                         | Marker column      | n8n workflow                                                                                                 |
-| ------ | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | ------------------------------------------------------------------------------------------------------------ |
-| **T1** | `posted_at < NOW() - 15 min` AND `ack_at IS NULL` AND `escalated_at IS NULL`                      | DM founder via `SERGEANT_ALERT_BOT_TOKEN` bot (raw HTTP)                                                                                                                                                       | `escalated_at`     | [`103-alert-escalation-cron.json`](../../../ops/n8n-workflows/103-alert-escalation-cron.json) (`*/5 min`)    |
-| **T2** | `posted_at < NOW() - 60 min` AND `ack_at IS NULL` AND `repeated_at IS NULL` AND not-snoozed       | Re-post original alert у same topic з prefix `⚠ REPEAT (Nхв без ack)` + inline keyboard (✅ Прочитав / 🕐 Snooze 1h / 🕓 Snooze 4h)                                                                            | `repeated_at`      | [`105-alert-repeat-ping-cron.json`](../../../ops/n8n-workflows/105-alert-repeat-ping-cron.json) (`*/15 min`) |
-| **T3** | `posted_at < NOW() - 120 min` AND `ack_at IS NULL` AND `sentry_warned_at IS NULL` AND not-snoozed | Server-side `Sentry.captureMessage("unacked-alert-escalation:<id>", level=warning, tags.kind=unacked-alert-escalation)` — Sentry dashboard + email є off-channel fallback коли founder offline / Telegram down | `sentry_warned_at` | [`106-alert-sentry-warn-cron.json`](../../../ops/n8n-workflows/106-alert-sentry-warn-cron.json) (`*/15 min`) |
+| Tier   | Trigger                                                                                           | Action                                                                                                                                                                                                         | Marker column      | n8n workflow                                                                                                                                                                            |
+| ------ | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **T1** | `posted_at < NOW() - 15 min` AND `ack_at IS NULL` AND `escalated_at IS NULL`                      | DM founder via `SERGEANT_ALERT_BOT_TOKEN` bot (raw HTTP)                                                                                                                                                       | `escalated_at`     | [`103-alert-escalation-cron.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/103-alert-escalation-cron.json) (`*/5 min`)    |
+| **T2** | `posted_at < NOW() - 60 min` AND `ack_at IS NULL` AND `repeated_at IS NULL` AND not-snoozed       | Re-post original alert у same topic з prefix `⚠ REPEAT (Nхв без ack)` + inline keyboard (✅ Прочитав / 🕐 Snooze 1h / 🕓 Snooze 4h)                                                                            | `repeated_at`      | [`105-alert-repeat-ping-cron.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/105-alert-repeat-ping-cron.json) (`*/15 min`) |
+| **T3** | `posted_at < NOW() - 120 min` AND `ack_at IS NULL` AND `sentry_warned_at IS NULL` AND not-snoozed | Server-side `Sentry.captureMessage("unacked-alert-escalation:<id>", level=warning, tags.kind=unacked-alert-escalation)` — Sentry dashboard + email є off-channel fallback коли founder offline / Telegram down | `sentry_warned_at` | [`106-alert-sentry-warn-cron.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/106-alert-sentry-warn-cron.json) (`*/15 min`) |
 
 **Snooze (operator-driven cancel).** Кнопка `🕐 Snooze 1h` / `🕓 Snooze 4h` у T2 keyboard викликає `POST /api/internal/alerts/snooze` → `snoozed_until_at = NOW() + N min`. Latest-write-wins (натискання іншої кнопки просто overwrite). WF-105 і WF-106 фільтрують `snoozed_until_at IS NULL OR snoozed_until_at < NOW()` — тимчасово пригнічує обидва (T1 НЕ фільтрується по snooze, бо T1 вже пройшов до того як юзер бачить T2-keyboard). Manual `UPDATE tg_alert_acks SET snoozed_until_at = NOW() + INTERVAL '12 hours' WHERE alert_id = '<id>'` — emergency operator tool.
 
