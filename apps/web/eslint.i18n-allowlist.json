@@ -190,7 +190,6 @@
   "apps/web/src/modules/finyk/pages/budgets/BudgetsLimitsSection.tsx",
   "apps/web/src/modules/finyk/pages/overview/FirstInsightBanner.tsx",
   "apps/web/src/modules/finyk/pages/overview/HeroCard.tsx",
-  "apps/web/src/modules/finyk/pages/overview/MonthPulseCard.tsx",
   "apps/web/src/modules/finyk/pages/overview/NetworthSection.tsx",
   "apps/web/src/modules/finyk/pages/overview/PlannedFlowsCard.tsx",
   "apps/web/src/modules/finyk/pages/transactions/TransactionList.tsx",

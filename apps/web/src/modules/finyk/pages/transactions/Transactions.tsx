@@ -10,6 +10,7 @@ import { TransactionFilters } from "./TransactionFilters";
 import { TransactionList } from "./TransactionList";
 import { TransactionSyncPill } from "./TransactionSyncPill";
 import { useTransactionFilters } from "./useTransactionFilters";
+import { DAY_FILTER_KEY_RE, formatDayFilterDate } from "./transactionsLib";
 import { useTransactionSelection } from "./useTransactionSelection";
 import { BankTransactionDetailsSheet } from "../../components/BankTransactionDetailsSheet";
 import type { UseFinykReceiptLinksResult } from "../../hooks/useFinykReceiptLinks";
@@ -234,6 +235,19 @@ export function Transactions({
     dayFilter,
   });
 
+  // Чіп дня — той самий візуальний блок для «сьогодні» (Overview, рядок
+  // «Операції за сьогодні») і для конкретної дати (тап по клітинці
+  // `MonthStrip`); різниться лише лівий текст, кнопка «Усі дні» спільна.
+  const isDayFilterValid =
+    dayFilter === "today" ||
+    (dayFilter != null && DAY_FILTER_KEY_RE.test(dayFilter));
+  const dayFilterLabel =
+    dayFilter === "today"
+      ? messages.finyk.todayFilter.label
+      : dayFilter && isDayFilterValid
+        ? formatDayFilterDate(dayFilter)
+        : "";
+
   // Both actions below persist device-locally (no cross-device sync — see
   // `FINYK_TRANSFER_SUGGESTION_REJECTED_KEY` / `_SNOOZED_KEY` docs), so a
   // rejected/snoozed pair survives reload instead of only lasting for the
@@ -405,10 +419,10 @@ export function Transactions({
               }}
               lastUpdated={lastUpdated}
             />
-            {dayFilter === "today" && (
+            {isDayFilterValid && (
               <div className="flex items-center justify-between gap-3 rounded-xl border border-finyk/25 bg-finyk-soft px-3 py-2">
                 <span className="text-style-caption text-finyk-strong dark:text-finyk">
-                  {messages.finyk.todayFilter.label}
+                  {dayFilterLabel}
                 </span>
                 {onClearDayFilter && (
                   <Button

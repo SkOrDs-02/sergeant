@@ -54,22 +54,47 @@ export const finykPageMessages = {
         "Мені повернули цю суму, вона віднімається від залишку.",
     },
   },
+  /**
+   * Рядок 1 «Сьогодні» під hero (`OverviewTextRows`, спека
+   * finyk-hero-month-strip.md § Рішення дизайну п.3). Решта ключів групи
+   * (`expense`/`income`/`dailyPlan`/`planMissing`/`paceHidden`/`paceAhead`/
+   * `paceOver`/`dayScope`) прибрано разом із `TodaySummaryCard` — той
+   * бокс-варіант картки більше не рендериться ніде.
+   */
   todaySummary: {
     title: "Сьогодні",
-    dayScope: "Київська доба",
     // Без гліфа «→»: стрілку малює `Icon name="chevron-right"` на call-site
-    // (`TodaySummaryCard`) — та сама причина, що в `debtTxLink.back`.
+    // (`OverviewTextRows`) — та сама причина, що в `debtTxLink.back`.
     operations: "Операції",
     openAria: "Відкрити операції за сьогодні",
-    expense: "Витрати",
-    income: "Надходження",
-    dailyPlan: "Денний план",
-    planMissing: "Не задано",
-    paceHidden: "Темп приховано",
-    // Хвости фрази «<сума> до темпу» / «<сума> понад темп»: сума тепер
-    // окремий вузол (`Money`), тож текст навколо неї живе тут.
-    paceAhead: "до темпу",
-    paceOver: "понад темп",
+  },
+  /**
+   * Рядок 2 «Місяць» під hero (`OverviewTextRows`) — те, що лишилось від
+   * `MonthPulseCard` після видалення: дохід місяця й прогноз. Витрати
+   * місяця та відсоток плану переїхали у футер стрічки hero (`HeroCard`).
+   */
+  monthRow: {
+    label: "Місяць",
+    currencyTooltip:
+      "Огляд, категорії та бюджети – у гривні (UAH). Інші валюти рахунків у загальному балансі не конвертуються автоматично.",
+    currencyInfoAria: "Про валюту в підрахунках",
+    incomePrefix: "дохід",
+    forecastPrefix: "прогноз ~",
+    forecastCapped:
+      "Прогноз обмежений залишком коштів: витратити більше нема з чого.",
+    recurringPrefix: "Враховано планових:",
+    recurringSuffixNoSum: "без суми",
+  },
+  /**
+   * Стрічка місяця hero (`MonthStrip`) — `aria-label` групи й кожної
+   * клітинки-кнопки (спека finyk-hero-month-strip.md § Верифікація, п.6).
+   */
+  monthStrip: {
+    groupAriaPrefix: "Витрати за днями",
+    openDaySuffix: "Відкрити операції",
+    hiddenAmount: "сума прихована",
+    spentPrefix: "витрачено",
+    ofJoiner: "із",
   },
   todayFilter: {
     label: "Лише сьогодні",

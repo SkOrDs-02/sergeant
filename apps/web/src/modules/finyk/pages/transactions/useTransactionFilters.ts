@@ -20,6 +20,7 @@ import {
 } from "../../utils";
 import {
   DAY_COLLAPSE_KEY,
+  DAY_FILTER_KEY_RE,
   computeDaySummary,
   dayKeyFromTx,
   findAddedManualExpenseDayKey,
@@ -59,7 +60,11 @@ export interface UseTransactionFiltersParams {
   /** External-driven category filter (e.g. tap on a category card). */
   categoryFilter: string | null | undefined;
   onClearCategoryFilter?: (() => void) | undefined;
-  /** URL-driven calendar shortcut from Overview (`date=today`). */
+  /**
+   * URL-driven calendar shortcut (`?date=...`): `"today"` from Overview's
+   * «Операції за сьогодні» row, or a concrete `YYYY-MM-DD` Kyiv day key from
+   * a tapped `MonthStrip` cell. Anything else is ignored.
+   */
   dayFilter?: string | null | undefined;
 }
 
@@ -314,12 +319,22 @@ export function useTransactionFilters({
 
   const filtered = useMemo(() => {
     const m = perfMark("finyk:tx:filter");
-    const todayKey = dayFilter === "today" ? getKyivDayKey() : null;
+    // `dayFilter` accepts the `"today"` shortcut (resolved fresh, not
+    // cached — the Kyiv day can roll over while the tab is open) or a
+    // concrete `YYYY-MM-DD` Kyiv day key from a `MonthStrip` cell tap. An
+    // unrecognised value (stale/garbled URL) is ignored, not treated as
+    // "match nothing".
+    const dayFilterKey =
+      dayFilter === "today"
+        ? getKyivDayKey()
+        : dayFilter && DAY_FILTER_KEY_RE.test(dayFilter)
+          ? dayFilter
+          : null;
     const res = sortedTxs.filter((t) => {
-      if (todayKey) {
+      if (dayFilterKey) {
         const timeMs = txTimeMs(t.time);
         if (!Number.isFinite(timeMs) || timeMs <= 0) return false;
-        if (getKyivDayKey(timeMs) !== todayKey) return false;
+        if (getKyivDayKey(timeMs) !== dayFilterKey) return false;
       }
       if (effectiveFilter === "all") return true;
       if (effectiveFilter === "income") return t.amount > 0;

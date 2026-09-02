@@ -213,15 +213,16 @@ export const webBlocks = [
   //   • вимкнений / неактивний контрол — WCAG 1.4.3 їх не покриває
   //     (Programs, HabitDetailSheet, WorkoutSetRow:137);
   //   • неозначальна іконка з `aria-label` на кнопці — поріг 3:1, і
-  //     subtle/70 дає 3.05, тобто проходить (WorkoutSetRow:146);
-  //   • MonthPulseCard — збіг усередині JSDoc-прози, що ЦИТУЄ старий
-  //     поганий приклад; коду там немає.
+  //     subtle/70 дає 3.05, тобто проходить (WorkoutSetRow:146).
+  //
+  // `MonthPulseCard` виведено зі списку разом із самим файлом (спека
+  // finyk-hero-month-strip.md — картку прибрано, JSDoc-приклад, що збігався
+  // з правилом, прибрано разом із нею).
   //
   // Список закритий і може лише коротшати.
   {
     files: [
       "apps/web/src/core/profile/PersonalInfoSection.tsx",
-      "apps/web/src/modules/finyk/pages/overview/MonthPulseCard.tsx",
       "apps/web/src/modules/fizruk/components/workouts/WorkoutSetRow.tsx",
       "apps/web/src/modules/fizruk/pages/Programs.tsx",
       "apps/web/src/modules/nutrition/components/PantryManagerSheet.tsx",

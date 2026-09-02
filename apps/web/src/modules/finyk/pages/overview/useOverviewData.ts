@@ -25,6 +25,7 @@ import {
   limitBudgetCategoryIds,
 } from "@sergeant/finyk-domain/domain/budget";
 import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
+import { dailySpendSeries } from "@sergeant/finyk-domain/lib/dailySpendSeries";
 import {
   filterStatTransactions,
   withManualExpenses,
@@ -143,6 +144,10 @@ export function useOverviewData({
   // `YYYY-MM` prefix of the current Kyiv month — the single window every
   // "цього місяця" aggregate below is clamped to.
   const kyivMonthPrefix = `${kyivYear}-${String(kyivMonth + 1).padStart(2, "0")}`;
+  // Київський день-ключ «сьогодні» — межа минуле/сьогодні/майбутнє для
+  // MonthStrip (стрічка місяця завжди Europe/Kyiv, не device-local:
+  // ADR-0078 стосується особистих сутностей, не фінансових періодів).
+  const todayKey = getKyivDayKey(nowMs);
 
   // Той самий потік, що годує місячні агрегати нижче, але БЕЗ місячного
   // clamp-у: інсайт-хуки мають власні вікна (`useCoffeeLimitInsight`
@@ -185,7 +190,6 @@ export function useOverviewData({
   );
   const income = monthlySummary.income;
   const todaySummary = useMemo(() => {
-    const todayKey = getKyivDayKey(nowMs);
     const todayTransactions = txForStats.filter((tx) => {
       const ms = txEpochMs(tx);
       return ms != null && getKyivDayKey(ms) === todayKey;
@@ -194,7 +198,7 @@ export function useOverviewData({
       excludedTxIds,
       txSplits,
     });
-  }, [txForStats, excludedTxIds, txSplits, nowMs]);
+  }, [txForStats, excludedTxIds, txSplits, todayKey]);
   const assetsSummary = useMemo(
     () =>
       computeAssetsSummary({
@@ -492,6 +496,62 @@ export function useOverviewData({
       remainingDays
     : null;
 
+  // `todayRemaining` — «Лишилось на сьогодні» (hero, рішення 2 спеки
+  // finyk-hero-month-strip). `null` РІВНО тоді, коли `dayBudget === null`
+  // (плану немає) — без цієї гілки `null − todaySpent` дав би у JS `-todaySpent`,
+  // тобто без плану hero показав би бадьоре «−495 ₴ понад бюджет дня» замість
+  // CTA «Постав план». З планом лишається живим протягом дня: зменшується з
+  // кожною витратою сьогодні, може піти у мінус.
+  const todayRemaining =
+    dayBudget === null ? null : dayBudget - todaySummary.spent;
+
+  // Стрічка місяця (`MonthStrip`) — по одному елементу на кожен день місяця,
+  // за тими самими правилами виключення, що дають `spent` вище
+  // (`filterStatTransactions`/`excludedTxIds`, не дублюємо). `ratio` — ЗАВЖДИ
+  // скінченне число 0…1+, ніколи `null`/`Infinity`/відʼємне: три режими
+  // (канон finyk.md § Журнал рішень 2026-09-01, спека
+  // finyk-hero-month-strip.md § Поверхня змін):
+  //   1. план і `dayBudget > 0` — `ratio = spent / dayBudget`, `over120` на
+  //      перевищенні 120% (акцент «перебору дня»);
+  //   2. плану немає — відносна шкала `spent / maxMonthlySpend` (нема
+  //      незалежного орієнтира для «перебору»), `over120` завжди `false`;
+  //   3. план є, але `dayBudget ≤ 0` (місячний план уже перевитрачено —
+  //      найімовірніший момент, коли на цей hero дивляться): ділити на
+  //      `dayBudget` не можна (`spent / 0` → `Infinity`, `spent / −N` →
+  //      відʼємне), тож та сама відносна шкала, а `over120 = spent > 0` —
+  //      будь-яка витрата в цьому стані вже понад бюджет дня.
+  const rawDailySpend = useMemo(
+    () =>
+      dailySpendSeries(
+        txForStats,
+        { year: kyivYear, month: kyivMonth + 1, daysInMonth },
+        { excludedTxIds, txSplits },
+      ),
+    [txForStats, kyivYear, kyivMonth, daysInMonth, excludedTxIds, txSplits],
+  );
+  const dailySpend = useMemo(() => {
+    const maxMonthlySpend = rawDailySpend.reduce(
+      (max, d) => Math.max(max, d.spent),
+      0,
+    );
+    return rawDailySpend.map((d) => {
+      if (hasExpensePlan && dayBudget !== null && dayBudget > 0) {
+        const ratio = d.spent / dayBudget;
+        return { ...d, ratio, over120: ratio > 1.2 };
+      }
+      // Без незалежного знаменника (без плану, або план перевитрачено й
+      // dayBudget ≤ 0) — відносна шкала: дні порівнюються між собою, а не
+      // проти бюджету. Порожній місяць (maxMonthlySpend === 0) дає
+      // `ratio = 0` для всіх — ділення на нуль не робимо навмисно.
+      const ratio = maxMonthlySpend > 0 ? d.spent / maxMonthlySpend : 0;
+      return {
+        ...d,
+        ratio,
+        over120: hasExpensePlan ? d.spent > 0 : false,
+      };
+    });
+  }, [rawDailySpend, hasExpensePlan, dayBudget]);
+
   const showMonthForecast = daysPassed > 0 && projectedSpend > 0;
   // No `forecastTrendPct` here on purpose. It used to be
   // `spent / projectedSpend`, but `projectedSpend` is itself
@@ -531,6 +591,9 @@ export function useOverviewData({
     daysInMonth,
     daysPassed,
     dayBudget,
+    todayRemaining,
+    dailySpend,
+    todayKey,
     hasExpensePlan,
     spendPlanRatio,
     dateLabel,

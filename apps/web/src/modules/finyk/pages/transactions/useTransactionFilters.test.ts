@@ -239,6 +239,49 @@ describe("useTransactionFilters", () => {
 
       expect(result.current.filtered.map((item) => item.id)).toEqual(["today"]);
     });
+
+    it("keeps only the given day for a concrete YYYY-MM-DD dayFilter (MonthStrip cell tap)", () => {
+      const target = mkTx("target", -100, {
+        time: Math.floor(new Date("2025-06-03T07:00:00Z").getTime() / 1000),
+      });
+      const other = mkTx("other", -200, {
+        time: Math.floor(new Date("2025-06-04T07:00:00Z").getTime() / 1000),
+      });
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [target, other],
+            dayFilter: "2025-06-03",
+          }),
+        ),
+      );
+
+      expect(result.current.filtered.map((item) => item.id)).toEqual([
+        "target",
+      ]);
+    });
+
+    it("ignores an invalid dayFilter string and shows all transactions", () => {
+      const today = mkTx("today", -100, {
+        time: Math.floor(new Date("2025-06-04T07:00:00Z").getTime() / 1000),
+      });
+      const yesterday = mkTx("yesterday", -200, {
+        time: Math.floor(new Date("2025-06-03T07:00:00Z").getTime() / 1000),
+      });
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({
+            realTx: [today, yesterday],
+            dayFilter: "not-a-date",
+          }),
+        ),
+      );
+
+      expect(result.current.filtered.map((item) => item.id).sort()).toEqual([
+        "today",
+        "yesterday",
+      ]);
+    });
   });
 
   describe("month navigation", () => {
