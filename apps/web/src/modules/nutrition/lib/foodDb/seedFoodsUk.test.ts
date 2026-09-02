@@ -2,8 +2,8 @@ import { describe, expect, it } from "vitest";
 import { SEED_FOODS_UK } from "./seedFoodsUk";
 
 describe("SEED_FOODS_UK", () => {
-  it("should contain exactly 390 seed foods", () => {
-    expect(SEED_FOODS_UK).toHaveLength(390);
+  it("should contain exactly 424 seed foods", () => {
+    expect(SEED_FOODS_UK).toHaveLength(424);
   });
 
   it("should have the correct structure for every item", () => {
