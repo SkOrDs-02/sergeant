@@ -42,7 +42,7 @@ const NutritionCard = lazy(() => import("./reports/NutritionCard"));
 
 // PDF export is a Premium feature on web (`useFeatureGate`). Mobile has no
 // billing surface yet, so we gate behind the existing feature-flag
-// mechanism. TODO(billing): swap `useFlag` for the real entitlement gate
+// mechanism. TODO(mobile-entitlement-gate): 2027-03-31 — swap `useFlag` for the real entitlement gate
 // (mirror of web `useFeatureGate("analytics-export-pdf")`) once mobile
 // billing lands.
 const EXPORT_FLAG_ID = "analytics-export-pdf";
@@ -120,7 +120,7 @@ function InsightCard({ title, stat, detail }: InsightCardProps) {
  * Local weekly-digest placeholder. The real week-shaped digest card for
  * the Reports surface is built in parallel under H4.
  *
- * TODO(H4): swap for WeeklyDigestCard once it lands.
+ * TODO(mobile-weekly-digest-card): 2027-03-31 — swap for WeeklyDigestCard once it lands.
  */
 function WeeklyDigestPlaceholder() {
   return (
@@ -160,7 +160,7 @@ export function HubReports({ onClose }: HubReportsProps) {
 
   const handleExport = useCallback(() => {
     if (!exportEnabled) {
-      // TODO(billing): open the Premium paywall instead of a no-op once
+      // TODO(mobile-entitlement-gate): 2027-03-31 — open the Premium paywall instead of a no-op once
       // the mobile entitlement surface exists (web opens PaywallModal here).
       return;
     }

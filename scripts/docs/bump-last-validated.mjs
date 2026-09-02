@@ -42,7 +42,7 @@ import {
   writeSync,
 } from "node:fs";
 import { execSync } from "node:child_process";
-import { resolve, dirname } from "node:path";
+import { resolve, dirname, isAbsolute, relative } from "node:path";
 import { performance } from "node:perf_hooks";
 import { fileURLToPath } from "node:url";
 
@@ -242,7 +242,13 @@ export function bumpFiles({
   log = () => {},
 }) {
   const modified = [];
-  for (const rel of paths) {
+  for (const raw of paths) {
+    // lint-staged передає АБСОЛЮТНІ шляхи. Exclude-глоби, каденція і
+    // `reviewJitterDays` рахуються від repo-relative шляху (як у
+    // `check-freshness` і `restamp-next-review`), тож без нормалізації
+    // бампер писав іншу дату перегляду, ніж очікує `docs:restamp-check`,
+    // і не бачив exclude-глобів.
+    const rel = isAbsolute(raw) ? relative(rootDir, raw) : raw;
     if (matchesAnyGlob(rel, config.excludeGlobs)) {
       log(`  skip (excluded): ${rel}`);
       continue;

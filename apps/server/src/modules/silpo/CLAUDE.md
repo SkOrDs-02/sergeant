@@ -1,6 +1,6 @@
 # Інфра-модуль Silpo (інтеграція)
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-19.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-11.
 > **Status:** Active
 
 Контекст: `Read .agents/skills/sergeant-module-integrations/SKILL.md` (журнал рішень — у самому скілі).

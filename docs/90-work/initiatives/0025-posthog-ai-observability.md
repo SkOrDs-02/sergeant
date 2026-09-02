@@ -1,6 +1,6 @@
 # 0025 — PostHog AI Observability для AI-шару (traces + evals)
 
-> **Last touched:** 2026-08-25 by @claude (спека за результатами розвідки екосистеми — сесія research-plugins-news). **Next review:** 2027-02-25.
+> **Last touched:** 2026-08-25 by @claude (спека за результатами розвідки екосистеми — сесія research-plugins-news). **Next review:** 2027-03-14.
 > **Status:** Proposed (2026-08-25) — драфт плану; не почато. Фази 1–2 виконуються без рішень власника; Фаза 3 (LLM-judge evals) чекає рішень — див. § Відкриті рішення.
 > **Agent-ready:** yes
 > **Priority:** P2 (не блокер launch-у [0010](./0010-revenue-first-launch.md); без цього AI-шар лишається чорною скринькою на рівні розмов — дебаг скарг і контроль якості коуча зараз неможливі)

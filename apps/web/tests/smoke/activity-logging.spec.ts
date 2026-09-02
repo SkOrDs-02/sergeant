@@ -3,6 +3,16 @@ import { test, expect } from "@playwright/test";
 import { seedFTUX } from "../utils/seedFTUX";
 import { collectPageErrors, waitForInitialSqliteRefresh } from "./smokeHelpers";
 
+/** `YYYY-MM-DD` учорашнього дня за локальним годинником раннера (той самий TZ, що й у браузера). */
+function yesterdayLocalDateString(): string {
+  const d = new Date();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: день тренування — особиста сутність, її межу задає пристрій; тест дзеркалить форму, яка теж бере локальний день.
+  d.setDate(d.getDate() - 1);
+  const pad = (n: number) => String(n).padStart(2, "0");
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: те саме — локальний день пристрою, як у `todayLocalDateString()` форми.
+  return `${d.getFullYear()}-${pad(d.getMonth() + 1)}-${pad(d.getDate())}`;
+}
+
 /**
  * Smoke - короткий запис заняття («заняття + тривалість»).
  *
@@ -29,6 +39,11 @@ test("@critical fizruk: заняття з каталогу пишеться од
   await expect(sheet).toBeVisible();
 
   await sheet.getByLabel("Заняття").selectOption("body_pump");
+  // Учорашня дата, а не дефолтне «сьогодні»: форма блокує «Записати», якщо
+  // початок + тривалість ще в майбутньому (`times.inFuture`). Із «сьогодні
+  // 10:00» тест був зелений лише після 10:45 за годинником раннера і
+  // червонів на ранкових прогонах CI.
+  await sheet.getByLabel("Дата").fill(yesterdayLocalDateString());
   await sheet.getByLabel("Початок").fill("10:00");
   // 45 хв - дефолт форми; клікаємо явно, щоб тест ловив і зникнення чипів.
   await sheet.getByRole("tab", { name: "45 хв" }).click();

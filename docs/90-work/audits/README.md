@@ -1,6 +1,6 @@
 # Audits — каталог документів та статусів
 
-> **Last validated:** 2026-09-01 by @claude (додано product-audit 2026-09). **Next review:** 2027-08-18.
+> **Last validated:** 2026-09-01 by @claude (додано product-audit 2026-09). **Next review:** 2027-09-21.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../../AGENTS.md).** Цей файл —

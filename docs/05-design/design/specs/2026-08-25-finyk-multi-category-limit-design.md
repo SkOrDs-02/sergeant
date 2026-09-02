@@ -1,6 +1,6 @@
 # Мульти-категорійний ліміт бюджету (Фінік)
 
-> **Last touched:** 2026-08-25 by Claude. **Next review:** 2026-11-25.
+> **Last touched:** 2026-08-25 by Claude. **Next review:** 2027-04-12.
 > **Status:** Shipped
 
 ## Запит

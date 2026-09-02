@@ -16,13 +16,19 @@ pnpm --filter @sergeant/landing dev     # http://localhost:3100
 Бекенд не потрібен ні для запуску, ні для роботи: сторінка не робить жодного
 запиту до API — конверсія веде на `t.me`.
 
-## Перевірки
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/landing <script>`.
 
 ```bash
-pnpm --filter @sergeant/landing lint
-pnpm --filter @sergeant/landing typecheck
-pnpm --filter @sergeant/landing test
-pnpm --filter @sergeant/landing build
+pnpm --filter @sergeant/landing dev             # Vite dev-сервер → http://localhost:3100
+pnpm --filter @sergeant/landing build           # клієнтська + SSR-збірка, post-build SEO і prerender сторінок
+pnpm --filter @sergeant/landing preview         # превʼю збірки на :3100
+pnpm --filter @sergeant/landing lint            # ESLint
+pnpm --filter @sergeant/landing test            # Vitest
+pnpm --filter @sergeant/landing typecheck       # TypeScript
+pnpm --filter @sergeant/landing shots           # скріншоти сторінок (`scripts/shot-pages.mjs`)
+pnpm --filter @sergeant/landing verify:browser  # браузерна перевірка збірки (`scripts/verify-browser.mjs`)
 ```
 
 ## Деплой на Vercel

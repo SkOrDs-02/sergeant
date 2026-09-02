@@ -3,7 +3,7 @@
  * @owner @Skords-01
  * @nextStep Перевести існуючих caller-ів (`routes/ai-memory.ts`,
  *           `modules/digest/weekly-digest.ts`, `modules/mono/webhook.ts`,
- *           `modules/chat/chat.ts`, `modules/openclaw/tools.ts`,
+ *           `modules/chat/chat.ts`,
  *           `modules/ai-memory/{ingestRoute,recallRoute,ragContext}.ts`,
  *           `index.ts`) на цей barrel замість deep imports у
  *           `./{service,types,embeddings,vectorStore,ingestQueue,bootstrap}.js`.

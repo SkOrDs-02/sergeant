@@ -236,7 +236,7 @@ Service Worker fetches → showNotification(...)
 pnpm exec web-push generate-vapid-keys
 ```
 
-Поставити у Railway env: `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT=mailto:admin@yourdomain`.
+Поставити у Coolify env (Railway retired — ADR-0074): `VAPID_PUBLIC_KEY`, `VAPID_PRIVATE_KEY`, `VAPID_SUBJECT=mailto:admin@yourdomain`.
 
 **2. Нова таблиця `push_subscription`:**
 
@@ -411,7 +411,7 @@ async function rotateWebhookSecret(req, res) {
 
 - **Observability у Prometheus / Datadog.** Зараз метрики `mono_webhook_received_total{status}` збираються в `prom-client`, але не експортуються наверх. Окремий PR на observability stack — узагальнено для всього додатку.
 - **Retention policy для `mono_transaction`.** На горизонті 2-3 років таблиця може стати великою. Партиціонування по `time` або archiving у cold storage — окрема задача.
-- **MIGRATE_DATABASE_URL** через Railway internal DNS — залежить від змін у Railway, не у нас.
+- **MIGRATE_DATABASE_URL** — задається у Coolify env і читається `pre_deployment_command` (див. `AGENTS.md § Deployment`); історична згадка про Railway internal DNS знята (ADR-0074).
 - **Phase out `useMonoTokenMigration`** — через 1-2 місяці після того як cleanup PR-А зайде, коли впевнені що ніхто не має старих `finyk_token` у localStorage.
 - **MonoCorporate / Provider API** («натисни → підтверди доступ у застосунку Монобанк», як у сторонніх трекерах). Окрема інтеграція, окрема задача — повний план, передумови й декомпозиція на PR-и у [`monobank-provider-api-plan.md`](./monobank-provider-api-plan.md). Блокована зовнішнім схваленням провайдера від Монобанку.
 - **Розширити push-нотифікації** на інші модулі (Routine reminders, Coach, weekly digest) — окремий PR після D.

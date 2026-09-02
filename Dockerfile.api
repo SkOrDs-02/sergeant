@@ -1,12 +1,12 @@
 # Hub API container — multi-stage with distroless runtime (PR-30 / L3).
 #
-# Build (Railway / Docker): docker buildx build --platform linux/amd64 \
+# Build (Coolify / Docker): docker buildx build --platform linux/amd64 \
 #     -f Dockerfile.api -t hub-api .
 #
 # `--platform=linux/amd64` піниться явно на FROM-рівні (closes hardening
-# card L13 — `docs/04-governance/security/hardening/L13-docker-platform-pin.md`). Railway
+# card L13 — `docs/04-governance/security/hardening/L13-docker-platform-pin.md`). Hetzner/Coolify
 # runtime це amd64, і dev-машина на Apple Silicon (arm64) без явного pin-у
-# зібрала б arm64-image, який локально проходить smoke, але на Railway
+# зібрала б arm64-image, який локально проходить smoke, але на сервері
 # падає з "exec format error".
 #
 # Stage map (PR-30 — `docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
@@ -59,8 +59,8 @@
 # external HTTP-probe». Railway виведено з експлуатації (ADR-0074), а
 # Coolify влаштований інакше — перевірка внутрішня, не зовнішня.
 #
-# Railway Pre-Deploy винятки: Railway виконує `preDeployCommand`
-# (`node dist-server/migrate.js`, задано у `railway.toml` → `[deploy]`)
+# Pre-deploy міграції: Coolify виконує `pre_deployment_command`
+# (`node dist-server/migrate.js`; те саме робив Railway `preDeployCommand`)
 # через `/bin/sh -c "<cmd>"` всередині того ж runtime-образу. Distroless
 # шела не має, тому pre-deploy мовчки фейлиться (deploy-логи порожні,
 # контейнер не встигає нічого написати). Щоб не ламати release-stage
@@ -200,8 +200,8 @@ RUN find node_modules -maxdepth 3 -type d \
 # `corepack` / `npm` / `pnpm` / `yarn`. Entrypoint = `/nodejs/bin/node`.
 #
 # Єдиний shell-binary — busybox з `busybox:stable-musl` (static-pie,
-# self-contained ~800 KB). Потрібен виключно тому, що Railway виконує
-# `preDeployCommand` через `/bin/sh -c "..."`; без нього release-stage
+# self-contained ~800 KB). Потрібен виключно тому, що Coolify виконує
+# `pre_deployment_command` через `/bin/sh -c "..."`; без нього release-stage
 # міграцій падає мовчки ще до того, як `node dist-server/migrate.js`
 # встигне щось вивести.
 FROM --platform=linux/amd64 gcr.io/distroless/nodejs22-debian13:nonroot AS runtime
@@ -212,7 +212,7 @@ WORKDIR /app
 # `node:*-alpine /bin/busybox`: alpine-овий busybox dynamically linked
 # проти `/lib/ld-musl-x86_64.so.1`, якого немає у distroless-debian, і
 # kernel мовчки повертає `exec /bin/sh: no such file or directory` ще
-# до user-space — Railway pre-deploy не отримує жодного логу.
+# до user-space — pre-deploy не отримує жодного логу.
 # Власник `root:root`, права `0755` — runtime user `nonroot` (uid
 # 65532) виконує його через PATH-lookup, write-доступ йому не потрібен.
 COPY --from=busybox:stable-musl /bin/busybox /bin/sh
@@ -230,7 +230,7 @@ COPY --from=busybox:stable-musl /bin/busybox /bin/sh
 # цілком справним. Саме так і сталося 2026-08-06.
 COPY --from=busybox:stable-musl /bin/busybox /bin/wget
 
-# Railway виконує `preDeployCommand` через `/bin/sh -c "<cmd>"`. Default
+# Coolify виконує `pre_deployment_command` через `/bin/sh -c "<cmd>"`. Default
 # PATH у distroless — `/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
 # `node` живе у `/nodejs/bin/node` і у цьому списку відсутній. Без
 # наступного override-у sh не знаходить `node` і pre-deploy валиться
@@ -249,10 +249,11 @@ ENV NODE_ENV=production
 ARG GIT_SHA=""
 ENV GIT_SHA=${GIT_SHA}
 
-# OpenClaw `read_strategy_docs` (ADR-0031 §5) reads from repo-relative
-# `docs/<allowlisted-prefix>/`. `OPENCLAW_REPO_ROOT=/app` робить tool
-# детермінованим у container-i (без цього `resolveRepoRoot()` ішов 5 рівнів
-# угору і отримував `/`, тож `fs.stat('/docs/decisions')` валив у ENOENT).
+# ЗАЛИШОК OpenClaw (ADR-0075): рантайм `read_strategy_docs` видалено, цей
+# ENV і COPY docs нижче ніщо не читає. Лишаються навмисно: зняття — non-comment
+# зміна deploy-конфігу, яка вимагає лейбла `verified-on-staging` за
+# `docs/00-start/playbooks/deploy-config-change.md` (§3, Coolify prod-деплой).
+# Зняти окремим PR після спостереження одного деплой-циклу.
 ENV OPENCLAW_REPO_ROOT=/app
 
 # Production node_modules + workspace symlinks з deps-stage. Зберігаємо
@@ -272,10 +273,8 @@ COPY --from=deps --chown=nonroot:nonroot /app/apps/server/package.json /app/apps
 # (esbuild build.mjs копіює migrations поряд із bundle).
 COPY --from=builder --chown=nonroot:nonroot /app/apps/server/dist-server /app/apps/server/dist-server
 
-# OpenClaw strategy docs — runtime read-only через `read_strategy_docs`.
-# Копіюємо ТІЛЬКИ існуючі директорії з `READ_STRATEGY_DOCS_ALLOWED_PATHS`
-# (`apps/server/src/modules/openclaw/types.ts`). `docs/decisions/` і
-# `docs/strategy/` навмисно НЕ скопійовано — це aspirational paths.
+# ЗАЛИШОК OpenClaw (ADR-0075) — див. примітку біля `OPENCLAW_REPO_ROOT` вище:
+# ці COPY ніщо не читає, зняти окремим deploy-config PR.
 COPY --chown=nonroot:nonroot docs/04-governance/adr /app/docs/04-governance/adr
 COPY --chown=nonroot:nonroot docs/01-product/launch /app/docs/01-product/launch
 COPY --chown=nonroot:nonroot docs/02-engineering/integrations /app/docs/02-engineering/integrations
@@ -286,5 +285,5 @@ WORKDIR /app/apps/server
 EXPOSE 3000
 
 # Distroless entrypoint = `/nodejs/bin/node`. CMD = args only. NO
-# HEALTHCHECK — Railway моніторить через external HTTP-probe на /health.
+# HEALTHCHECK у самому образі — Coolify додає власний (див. примітку вище).
 CMD ["dist-server/index.js"]

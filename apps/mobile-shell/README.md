@@ -118,6 +118,28 @@ Per-domain винятки (`NSExceptionDomains`) дозволені — дода
 із записом у [`docs/04-governance/security/audit-exceptions.md`](../../docs/04-governance/security/audit-exceptions.md).
 Деталі — у [`docs/04-governance/security/hardening/L12-ios-app-transport-security.md`](../../docs/04-governance/security/hardening/archive/L12-ios-app-transport-security.md).
 
+## Команди
+
+Усі скрипти `package.json`; з кореня — `pnpm --filter @sergeant/mobile-shell <script>`.
+
+```bash
+pnpm --filter @sergeant/mobile-shell sync           # `cap sync` — копіювання web-збірки й оновлення нативних залежностей
+pnpm --filter @sergeant/mobile-shell copy           # `cap copy` — лише копіювання web-збірки
+pnpm --filter @sergeant/mobile-shell open:android   # відкрити Android-проєкт в Android Studio
+pnpm --filter @sergeant/mobile-shell open:ios       # відкрити iOS-проєкт у Xcode
+pnpm --filter @sergeant/mobile-shell add:android    # додати Android-платформу (одноразово)
+pnpm --filter @sergeant/mobile-shell add:ios        # додати iOS-платформу (одноразово)
+pnpm --filter @sergeant/mobile-shell build:web      # збірка `apps/web` під Capacitor (`build:capacitor`)
+pnpm --filter @sergeant/mobile-shell build:android  # web-збірка + `cap sync android`
+pnpm --filter @sergeant/mobile-shell build:ios      # web-збірка + `cap sync ios`
+pnpm --filter @sergeant/mobile-shell lint           # ESLint
+pnpm --filter @sergeant/mobile-shell typecheck      # TypeScript
+pnpm --filter @sergeant/mobile-shell test           # Vitest + `test:scripts`
+pnpm --filter @sergeant/mobile-shell test:scripts   # node:test для `scripts/__tests__/*.test.mjs` (Info.plist-чекер тощо)
+pnpm --filter @sergeant/mobile-shell test:watch     # Vitest у watch-режимі
+pnpm --filter @sergeant/mobile-shell test:coverage  # Vitest з покриттям
+```
+
 ## Що НЕ зроблено
 
 - **Play Store upload workflow (internal track)** — release-signing +

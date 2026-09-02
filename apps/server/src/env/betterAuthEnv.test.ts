@@ -38,9 +38,9 @@ describe("assertBetterAuthStartupEnv", () => {
     expect(() => assertBetterAuthStartupEnv()).not.toThrow();
   });
 
-  it("Railway без NODE_ENV=production теж вимагає секрет", async () => {
+  it("APP_ENV=production без NODE_ENV=production теж вимагає секрет", async () => {
     vi.stubEnv("NODE_ENV", "test");
-    vi.stubEnv("RAILWAY_ENVIRONMENT", "production");
+    vi.stubEnv("APP_ENV", "production");
     vi.stubEnv("BETTER_AUTH_SECRET", "");
     const { assertBetterAuthStartupEnv } = await import("./betterAuthEnv.js");
     expect(() => assertBetterAuthStartupEnv()).toThrow(/BETTER_AUTH_SECRET/);

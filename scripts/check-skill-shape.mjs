@@ -20,7 +20,7 @@
 // This is the entrypoint for `pnpm lint:skills`. It exits non-zero with a
 // structured error report so CI logs are easy to scan.
 //
-// Linked initiative: docs/90-work/initiatives/archive/_0009-agent-os-hardening.md (PR 1.1).
+// Linked initiative: https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md (PR 1.1).
 
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import path from "node:path";
@@ -220,7 +220,7 @@ function main() {
     console.error("");
     console.error(
       "Fix the SKILL.md files above (frontmatter shape, paths/commands, playbook links) " +
-        "or update .agents/skills-lock.json. See docs/90-work/initiatives/archive/_0009-agent-os-hardening.md (PR 1.1).",
+        "or update .agents/skills-lock.json. See https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md (PR 1.1).",
     );
     process.exit(1);
   }

@@ -1,6 +1,6 @@
 # PostHog Founder Pulse dashboard — runbook
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-16.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-26.
 > **Status:** Active
 
 > **⚠️ Дашборд не працює станом на 2026-07-26 — цифрам не вір.**

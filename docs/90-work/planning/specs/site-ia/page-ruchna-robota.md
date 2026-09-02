@@ -1,6 +1,6 @@
 # Скільки ручної роботи лишається
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-17.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2027-11-16.
 > **Status:** Scaffolded
 
 ## Мета сторінки

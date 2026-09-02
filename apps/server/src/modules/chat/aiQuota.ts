@@ -129,10 +129,10 @@ const DEFAULT_STANDARD_LIMIT = 80;
  *
  * Production safety lives at startup — `assertStartupEnv()` in
  * `apps/server/src/env/env.ts` hard-blocks server boot when this flag is
- * truthy alongside `NODE_ENV=production` (or any RAILWAY_* env). The module
+ * truthy alongside `NODE_ENV=production` / `APP_ENV=production`. The module
  * here trusts the startup check and does not re-validate at runtime. The
  * startup gate uses the host-agnostic `isDeployedProduction()` (NODE_ENV /
- * APP_ENV / legacy RAILWAY_*), so it fires on Coolify/Hetzner too.
+ * APP_ENV), so it fires on Coolify/Hetzner regardless of the host shape.
  */
 export function isAiQuotaDisabled(): boolean {
   const v = process.env["AI_QUOTA_DISABLED"]?.toLowerCase();

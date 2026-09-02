@@ -1,6 +1,6 @@
 # Design specs
 
-> **Last touched:** 2026-08-25 by Claude. **Next review:** 2027-02-23.
+> **Last touched:** 2026-08-25 by Claude. **Next review:** 2027-03-22.
 > **Status:** Active
 
 Design-специ для нетривіальних product-side фіч (раніше `agents/specs/`).

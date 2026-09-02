@@ -215,11 +215,10 @@ export function pickTracesSampleRate(
  * happens to be". The cascade lets one helper serve every host:
  *
  *   1. `SENTRY_RELEASE`        — explicit override (release-please, custom CI)
- *   2. `RAILWAY_GIT_COMMIT_SHA`— Railway auto-injects this per deploy (legacy)
- *   3. `GIT_SHA`               — Coolify/ghcr: baked into the image by
+ *   2. `GIT_SHA`               — Coolify/ghcr: baked into the image by
  *                                `Dockerfile.api` (build-arg `${github.sha}`)
- *   4. `VERCEL_GIT_COMMIT_SHA` — Vercel auto-injects this per deploy
- *   5. `GITHUB_SHA`            — fallback when running in GitHub Actions
+ *   3. `VERCEL_GIT_COMMIT_SHA` — Vercel auto-injects this per deploy
+ *   4. `GITHUB_SHA`            — fallback when running in GitHub Actions
  *                                (mobile-shell builds, container scans, etc.)
  *
  * Returns `undefined` when none of the variables are set so Sentry's own
@@ -233,7 +232,6 @@ export function resolveSentryRelease(
 ): string | undefined {
   const candidates = [
     env["SENTRY_RELEASE"],
-    env["RAILWAY_GIT_COMMIT_SHA"],
     env["GIT_SHA"],
     env["VERCEL_GIT_COMMIT_SHA"],
     env["GITHUB_SHA"],

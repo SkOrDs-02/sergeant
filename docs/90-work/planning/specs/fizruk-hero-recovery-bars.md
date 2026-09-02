@@ -1,6 +1,6 @@
 # Спека: hero Фізрука «Смуги відновлення»
 
-> **Last touched:** 2026-09-02 by @Skords-01. **Next review:** 2026-12-30.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-12-13.
 > **Status:** Active — рішення founder-а зафіксовано інтервʼю 2026-09-01; виконання не почато. Другий із трьох hero-PR (порядок: Їжа → Фізрук → Фінік).
 > **Виконання:** чиста сесія у свіжому worktree від main. Governing skills: `sergeant-module-fizruk` (owner) + `sergeant-web-ui`. Виконавець: `fizruk-owner` (або `spec-executor` з тими самими скілами).
 > **Мокап:** Claude Design canvas «Hero-картки модулів», артборд `Fizruk B` — `https://claude.ai/code/artifact/f20e1268-7695-4ed2-8db2-f5ec2d230863` (демо-стан: «Субота, 12 вересня · серія 1 тиждень»; втомлені груди / плечі / трицепс / корпус, свіжі спина / ноги; CTA «Ноги і спина»).

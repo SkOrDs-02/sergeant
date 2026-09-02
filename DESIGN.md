@@ -1,6 +1,6 @@
 # DESIGN.md — Sergeant
 
-> **Last touched:** 2026-09-02 by @Skords-01. **Next review:** 2026-12-24.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-11.
 > **Status:** Active. **Призначення:** портативний конфіг візуальної системи для AI-агентів (Hallmark, frontend-design, Superdesign, будь-який SKILL.md-сумісний тул). Агент читає цей файл ПЕРЕД стилізацією і НЕ вигадує власну систему.
 > **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` — лише runtime-, security-, storage-, API- і domain-інваріанти. Естетичні AST-правила retired [ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md); візуальні конвенції тримають design tokens, Storybook і design-review.
 
