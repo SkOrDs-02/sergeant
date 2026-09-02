@@ -59,6 +59,25 @@ describe("useRestDayOverdueInsight", () => {
     });
   });
 
+  it("питання до AI каже те саме, що й заголовок", () => {
+    // Регресія, яку власник побачив на екрані 2026-09-02: заголовок казав
+    // «23 дні БЕЗ ТРЕНУВАННЯ», а префіл чату — «23 дні поспіль БЕЗ ДНЯ
+    // ВІДНОВЛЕННЯ», тобто протилежне: ніби людина тренувалась без пауз і їй
+    // треба відпочинок. Один екран казав дві протилежні речі.
+    const { result } = renderHook(() =>
+      useRestDayOverdueInsight([completed("w1", "2024-01-01T10:00:00Z")], true),
+    );
+    const insight = result.current!;
+    expect(insight.askAiPrompt).toContain("без тренування");
+    // Головне твердження: у питанні НЕ може бути мови про відновлення чи
+    // відпочинок — це рамка протилежного стану.
+    expect(insight.askAiPrompt).not.toMatch(/відновлення|відпочин/i);
+    // І заголовок, і питання мусять називати те саме число днів.
+    const daysInTitle = insight.title.match(/^\d+/)?.[0];
+    expect(daysInTitle).toBeTruthy();
+    expect(insight.askAiPrompt.startsWith(daysInTitle!)).toBe(true);
+  });
+
   it("uses the most recent completed workout for the gap", () => {
     const { result } = renderHook(() =>
       useRestDayOverdueInsight(

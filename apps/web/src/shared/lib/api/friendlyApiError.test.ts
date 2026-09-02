@@ -29,6 +29,15 @@ describe("friendlyApiError (shared)", () => {
     expect(friendlyApiError(502, "upstream down")).toBe("upstream down");
   });
 
+  it("шлюзові збої лишаються у формі `Помилка N` — і це навмисно", () => {
+    // Спокуса дати тут текст із дією велика, але `formatApiError` розпізнає
+    // саме цю форму як «маперу нема чого сказати» і підставляє
+    // caller-специфічний fallback, конкретніший за будь-який загальний
+    // текст про шлюз. Доменний текст живе в обгортці HubChat.
+    expect(friendlyApiError(504)).toBe("Помилка 504");
+    expect(friendlyApiError(502)).toBe("Помилка 502");
+  });
+
   it("фолбек `Помилка {status}`, коли повідомлення порожнє", () => {
     expect(friendlyApiError(500)).toBe("Помилка 500");
     expect(friendlyApiError(418, "")).toBe("Помилка 418");
