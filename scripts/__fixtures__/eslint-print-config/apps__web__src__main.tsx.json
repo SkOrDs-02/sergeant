@@ -3154,6 +3154,8 @@
           "apps/web/src/modules/routine/components/HabitDetailSheet.tsx",
           "apps/web/src/modules/routine/components/HabitHeatmap.tsx",
           "apps/web/src/modules/routine/components/HabitLeadersBlock.tsx",
+          "apps/web/src/modules/routine/components/HabitMonthCalendar.tsx",
+          "apps/web/src/modules/routine/components/HabitStatsSection.tsx",
           "apps/web/src/modules/routine/components/RoutineBottomNav.tsx",
           "apps/web/src/modules/routine/components/RoutineCalendarHero.tsx",
           "apps/web/src/modules/routine/components/RoutineCalendarMonthGrid.tsx",
