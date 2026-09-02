@@ -51,7 +51,7 @@ export function ModulesSection() {
         >
           <p className={label}>01 · Гроші</p>
           <h3 className={`${title} group-hover:underline`}>Фінік</h3>
-          <p className={`${body} text-ink-text/90`}>
+          <p className={`${body} text-ink-text`}>
             Чотири входи витрат замість одного банку.
           </p>
         </a>
@@ -62,7 +62,7 @@ export function ModulesSection() {
         >
           <p className={label}>02 · Тіло</p>
           <h3 className={`${title} group-hover:underline`}>Фізрук</h3>
-          <p className={`${body} text-ink-text/90`}>
+          <p className={`${body} text-ink-text`}>
             Щоденник тренувань і чесні межі поради.
           </p>
         </a>

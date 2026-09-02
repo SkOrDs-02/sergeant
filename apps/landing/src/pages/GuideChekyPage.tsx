@@ -1,6 +1,7 @@
 import SiteLayout from "../components/SiteLayout";
 import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import UpdatedOn from "../components/UpdatedOn";
 
 const SOURCES = [
   { data: "Сума і час покупки", from: "Виписка банку", cheque: false },
@@ -30,7 +31,7 @@ export default function GuideChekyPage() {
       headline:
         "Як перетворити паперовий чек на облік витрат, коли QR не сканується",
       inLanguage: "uk",
-      dateModified: "2026-08-28",
+      dateModified: ROUTE_META["/guides/cheky"].lastmod,
       author: { "@type": "Person", name: "Автор Sergeant" },
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
@@ -50,7 +51,8 @@ export default function GuideChekyPage() {
             Як перетворити паперовий чек на облік витрат, коли QR не сканується
           </h1>
           <p className="mt-4 text-sm text-subtle">
-            Оновлено 28.08.2026 · автор Sergeant
+            Оновлено <UpdatedOn iso={ROUTE_META["/guides/cheky"].lastmod} /> ·
+            автор Sergeant
           </p>
           <GuideHomeModule href="/hroshi" label="Гроші" />
         </div>
