@@ -8,6 +8,13 @@ import type { Habit, WeeklyTargetInterval } from "./types.js";
 
 export const DEFAULT_WEEKLY_TARGET = 3;
 
+/**
+ * Стеля 7 — не круглe число, а межа моделі: відмітка звички одна на день,
+ * тож «8 разів на тиждень» просити нічого не може. Ряд експортується, щоб
+ * UI не перевигадував діапазон окремо від `normalizeWeeklyTarget`.
+ */
+export const WEEKLY_TARGET_CHOICES: readonly number[] = [1, 2, 3, 4, 5, 6, 7];
+
 const DATE_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
 
 export function normalizeWeeklyTarget(value: unknown): number {

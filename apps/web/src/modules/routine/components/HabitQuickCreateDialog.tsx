@@ -1,5 +1,10 @@
 import { useState } from "react";
-import { resolveHabitGlyph, routineUid } from "@sergeant/routine-domain";
+import {
+  normalizeWeeklyTargetHistory,
+  resolveHabitGlyph,
+  routineUid,
+  weeklyTargetForDate,
+} from "@sergeant/routine-domain";
 import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { cn } from "@shared/lib/ui/cn";
@@ -68,6 +73,13 @@ function habitToDraft(habit: Habit): HabitDraft {
         ? habit.weekdays
         : [0, 1, 2, 3, 4, 5, 6],
     paused: habit.paused === true,
+    weeklyTarget: weeklyTargetForDate(
+      habit,
+      dateKeyFromDate(routineTodayDate()),
+    ),
+    weeklyTargetHistory: normalizeWeeklyTargetHistory(
+      habit.weeklyTargetHistory,
+    ),
   };
 }
 
