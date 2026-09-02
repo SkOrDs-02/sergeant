@@ -1,6 +1,6 @@
 # Repo map — apps, packages, and tooling
 
-> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-06.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-07.
 > **Status:** Active
 
 > **Machine-readable mirror:** [`docs/04-governance/governance/repo-map.auto.json`](../../04-governance/governance/repo-map.auto.json) (auto-gen via `pnpm docs:gen-repo-map`; CI gate `pnpm docs:check-repo-map` enforces that every workspace listed here is mentioned in this file). The auto-mirror enumerates workspaces + framework deps + owner from CODEOWNERS; editorial Purpose / Stack-narrative / Test-stacks-per-surface stays hand-maintained below.
@@ -41,7 +41,7 @@
 | `@sergeant/fizruk-domain`       | Fizruk module domain logic (workouts, sets, biometrics).                                                                                                         |
 | `@sergeant/nutrition-domain`    | Nutrition module domain logic (meals, OFF lookups, kcal math).                                                                                                   |
 | `@sergeant/routine-domain`      | Routine module domain logic (habits, streaks, calendar).                                                                                                         |
-| `@sergeant/tabular-import`      | Спільний шар імпорту табличних файлів (CSV / XLSX / HTML-таблиці, zip-reader) для finyk та fizruk імпортерів (#1001).                                            |
+| `@sergeant/tabular-import`      | Спільний шар імпорту табличних виписок (CSV/XLSX/HTML-таблиці, zip-читач) для finyk і fizruk — витягнуто з дублів у #1001.                                       |
 
 ## Ops & tooling (`ops/`, `tools/`, `scripts/`) та інші теки кореня
 

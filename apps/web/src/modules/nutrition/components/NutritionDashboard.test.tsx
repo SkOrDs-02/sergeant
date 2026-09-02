@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-06-23
+ * Last validated: 2026-09-01
  * Status: Active
  * Unit tests for the `NutritionDashboard` hero/insights/week render.
  */
@@ -91,7 +91,7 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe("NutritionDashboard", () => {
-  it("renders the kcal ring and macro bars when a goal is set", () => {
+  it("renders the hero meal strip and macro bars when a goal is set", () => {
     render(
       <NutritionDashboard
         log={logWith(1000, 50, 20, 100)}
@@ -99,9 +99,20 @@ describe("NutritionDashboard", () => {
       />,
     );
     expect(screen.getByText("Сьогодні")).toBeInTheDocument();
-    expect(screen.getByLabelText(/Калорії: 1000 з 2000/)).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: /обід 1000 ккал/ }),
+    ).toBeInTheDocument();
     expect(screen.getByText("Білки")).toBeInTheDocument();
     expect(screen.getByTestId("water-card")).toBeInTheDocument();
+  });
+
+  it("hero has no ProgressRing/MacroRings — the meal strip replaces both (anti-slop Q3/F6)", () => {
+    render(<NutritionDashboard log={logWith(500)} prefs={GOAL_PREFS} />);
+    // ProgressRing renders `role="progressbar"`; MacroRings rendered three
+    // of them. Neither exists in the hero anymore.
+    expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
+    // The strip itself is the single `role="img"` carrying "ккал" text.
+    expect(screen.getByRole("img", { name: /ккал/ })).toBeInTheDocument();
   });
 
   it("renders the set-goal CTA when no goal is configured", () => {
@@ -113,13 +124,8 @@ describe("NutritionDashboard", () => {
         onGoToDailyPlan={onGoToDailyPlan}
       />,
     );
-    const cta = screen.getByRole("button", {
-      name: "Встановити денну ціль, щоб бачити прогрес",
-    });
+    const cta = screen.getByRole("button", { name: "Задати норму" });
     expect(cta).toBeInTheDocument();
-    expect(
-      screen.queryByText(/Налаштувати денні цілі КБЖВ/),
-    ).not.toBeInTheDocument();
     fireEvent.click(cta);
     expect(onGoToDailyPlan).toHaveBeenCalledTimes(1);
   });
@@ -151,22 +157,14 @@ describe("NutritionDashboard", () => {
     expect(toastSuccess).toHaveBeenCalledWith("Денну норму виконано");
   });
 
-  it("dashes the kcal ring on an incomplete day (fewer than 3 meals)", () => {
+  it("shows an honest 'записано N із 4' note on an incomplete day (canon §5.2)", () => {
     render(<NutritionDashboard log={logWithMealCount(1)} prefs={GOAL_PREFS} />);
-    const ring = screen.getByLabelText(/Калорії: 300 з 2000/);
-    expect(ring.getAttribute("aria-label")).toContain("неповні дані за день");
-    const track = ring.querySelectorAll("circle")[0];
-    expect(track!.getAttribute("stroke-dasharray")).toBe("4 3");
+    expect(screen.getByText("Записано 1 із 4")).toBeInTheDocument();
   });
 
-  it("renders a solid kcal ring once 3+ meals are logged", () => {
+  it("hides the incomplete-day note once 3+ meals are logged", () => {
     render(<NutritionDashboard log={logWithMealCount(3)} prefs={GOAL_PREFS} />);
-    const ring = screen.getByLabelText(/Калорії: 900 з 2000/);
-    expect(ring.getAttribute("aria-label")).not.toContain(
-      "неповні дані за день",
-    );
-    const track = ring.querySelectorAll("circle")[0];
-    expect(track!.getAttribute("stroke-dasharray")).toBeNull();
+    expect(screen.queryByText(/Записано \d+ із 4/)).not.toBeInTheDocument();
   });
 
   it("shows the ≈ badge and caption when photoAI kcal share is above 50% (nutrition audit E-5)", () => {
@@ -179,10 +177,7 @@ describe("NutritionDashboard", () => {
         prefs={GOAL_PREFS}
       />,
     );
-    const ring = screen.getByLabelText(/Калорії: 1000 з 2000/);
-    expect(ring.getAttribute("aria-label")).toContain(
-      "переважно оцінка з фото",
-    );
+    expect(screen.getByText("≈")).toBeInTheDocument();
     expect(screen.getByText(/Більшість ккал сьогодні/)).toBeInTheDocument();
   });
 
@@ -196,10 +191,7 @@ describe("NutritionDashboard", () => {
         prefs={GOAL_PREFS}
       />,
     );
-    const ring = screen.getByLabelText(/Калорії: 1000 з 2000/);
-    expect(ring.getAttribute("aria-label")).not.toContain(
-      "переважно оцінка з фото",
-    );
+    expect(screen.queryByText("≈")).not.toBeInTheDocument();
     expect(
       screen.queryByText(/Більшість ккал сьогодні/),
     ).not.toBeInTheDocument();

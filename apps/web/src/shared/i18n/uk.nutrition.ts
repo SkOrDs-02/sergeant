@@ -42,6 +42,19 @@ export const nutritionPageMessages = {
     srKcal: "Калорії",
     srEstimated: "З них оцінка з фото",
   },
+  /**
+   * Hero-стрічка дня (`MealStrip.tsx`, спека
+   * `docs/90-work/planning/specs/nutrition-hero-day-strip.md`) — заміна
+   * `ProgressRing`/`MacroRings` у hero (анти-слоп Q3/F6). Не плутати з
+   * `dayStrip` вище — та секція описує ІНШУ signature-view (годинний
+   * розподіл калорій у `DayStrip.tsx`/`DayLogSheet`).
+   */
+  heroStrip: {
+    ctaSetGoal: "Задати норму",
+    kcalUnit: "ккал",
+    overshootSuffix: "ккал понад норму",
+  },
+
   /** Помʼякшена копія `nutrition-protein-low` при високій частці photoAI. */
   proteinLowEstimated: {
     subtitle: "Схоже, білка малувато, але сьогодні багато цифр з фото-оцінки.",

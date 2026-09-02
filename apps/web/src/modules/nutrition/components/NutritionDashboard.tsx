@@ -1,21 +1,21 @@
 /**
- * Last validated: 2026-05-19
+ * Last validated: 2026-09-01
  * Status: Active
  */
 import { useMemo, useEffect, useRef } from "react";
 import { InsightCard } from "@shared/components/ui/InsightCard";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
-import { Measure } from "@shared/components/ui/Measure";
 import { useProteinLowInsight } from "../hooks/useProteinLowInsight";
 import { useStreakSevenDaysInsight } from "../hooks/useStreakSevenDaysInsight";
 import { Card } from "@shared/components/ui/Card";
-import { ProgressRing } from "@shared/components/ui/ProgressRing";
-import { MacroRings } from "./MacroRings";
+import { MealStrip, type MealStripSegment } from "./MealStrip";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { pluralUa } from "@sergeant/shared";
 import {
+  MEAL_META,
+  MEAL_ORDER,
   WEEK_KCAL_OVER_TOLERANCE,
   deviceWeekStartKey,
   todayISODate,
@@ -29,6 +29,8 @@ import {
   getDaySummary,
   getMacrosForDateRange,
 } from "../lib/nutritionStorage";
+import { mealTypeKcalForDay } from "../lib/nutritionStats";
+import { nextMealLabel } from "../lib/nextMealLabel";
 import { WaterTrackerCard } from "./WaterTrackerCard";
 import { WeekKcalCard } from "./WeekKcalCard";
 import { useToast } from "@shared/hooks/useToast";
@@ -40,41 +42,6 @@ import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 // пристрою (useNutritionLog). unification-modules.md #1.18.
 function todayISO(): string {
   return todayISODate();
-}
-
-/**
- * Outcome-framed sub-label for macro stats. Replaces neutral "X / Y г"
- * with gap- or surplus-aware text on the Nutrition hero. Returns only
- * the right-hand outcome portion — the macro name is rendered separately
- * by MacroRings' caption slot. Bands mirror the Phase 4.2 onboarding
- * outcome-copy heuristic but stay Nutrition-local.
- *
- * Bands (upper bound — `WEEK_KCAL_OVER_TOLERANCE`, shared with the weekly
- * kcal chart's "over" threshold — unification-modules.md #2.18):
- *  - hit window: consumed ∈ [goal, goal*TOLERANCE] → "ціль виконано"
- *  - overshoot:  consumed > goal*TOLERANCE         → "+N г понад ціль"
- *  - on-track:   consumed >= goal*0.6              → "N г запас"
- *  - lagging:    else                               → "N г до цілі"
- *
- * Returns `undefined` when goal is not set so the primitive falls back
- * to its default "value / max" rendering.
- */
-function formatMacroOutcome(
-  consumed: number,
-  goal: number,
-): string | undefined {
-  if (goal <= 0) return undefined;
-  if (consumed >= goal && consumed <= goal * WEEK_KCAL_OVER_TOLERANCE) {
-    return "ціль виконано";
-  }
-  if (consumed > goal * WEEK_KCAL_OVER_TOLERANCE) {
-    return `+${Math.round(consumed - goal)} г понад ціль`;
-  }
-  const gap = goal - consumed;
-  if (consumed >= goal * 0.6) {
-    return `${Math.round(gap)} г запас`;
-  }
-  return `${Math.round(gap)} г до цілі`;
 }
 
 interface NutritionDashboardProps {
@@ -127,6 +94,23 @@ export function NutritionDashboard({
 
   const kcalConsumed = Math.round(macros.kcal || 0);
   const kcalGoal = prefs.dailyTargetKcal || 0;
+
+  // Hero стрічка дня (спека nutrition-hero-day-strip.md) — чотири сегменти
+  // за MEAL_ORDER, не за фактичним порядком запису.
+  const kcalByType = useMemo(
+    () => mealTypeKcalForDay(log, today),
+    [log, today],
+  );
+  const segments: MealStripSegment[] = useMemo(
+    () =>
+      MEAL_ORDER.map((type) => ({
+        type,
+        label: MEAL_META[type].label,
+        kcal: kcalByType[type],
+      })),
+    [kcalByType],
+  );
+  const remainingLabel = useMemo(() => nextMealLabel(kcalByType), [kcalByType]);
 
   // W4 — fire a success toast once per calendar day when consumed kcal enters
   // the 95–105% window of the daily goal. Dedupe key is stored via the typed
@@ -220,91 +204,47 @@ export function NutritionDashboard({
             </button>
           </div>
 
-          {hasGoal ? (
-            <div className="flex flex-col gap-4">
-              <div className="flex flex-col items-center justify-center gap-1.5">
-                <ProgressRing
-                  variant="nutrition"
-                  value={kcalConsumed}
-                  max={kcalGoal}
-                  size="lg"
-                  incomplete={isIncompleteDay}
-                  // Both ring groups live on the `prominence="hero"` fill —
-                  // without this the arc is lime-800 on the lime-800→-700
-                  // hero gradient (invisible in light theme).
-                  onHero
-                  aria-label={
-                    isMostlyEstimated
-                      ? `Калорії: ${kcalConsumed} з ${kcalGoal} · ${messages.nutrition.estimatedBadge.a11ySuffix}`
-                      : `Калорії: ${kcalConsumed} з ${kcalGoal}`
-                  }
-                  label={
-                    <span className="flex flex-col items-center leading-none gap-0.5">
-                      <span className="text-style-title text-hero-ink tabular-nums">
-                        {isMostlyEstimated && (
-                          <span aria-hidden="true">
-                            {messages.nutrition.estimatedBadge.label}
-                          </span>
-                        )}
-                        {kcalConsumed}
-                      </span>
-                      <span className="text-style-caption text-hero-ink">
-                        /{" "}
-                        <Measure value={kcalGoal} unit="ккал" tone="inherit" />
-                      </span>
-                    </span>
-                  }
-                />
-                {isMostlyEstimated && (
-                  <p className="text-style-caption text-hero-ink text-center text-pretty">
-                    {messages.nutrition.estimatedBadge.caption}
-                  </p>
-                )}
-              </div>
-              <MacroRings
-                aria-label={messages.nutrition.macrosToday}
-                incomplete={isIncompleteDay}
-                onHero
-                macros={[
-                  {
-                    label: "Білки",
-                    consumed: protein.consumed,
-                    goal: protein.goal,
-                    variant: "nutrition",
-                    unit: "г",
-                    outcome: formatMacroOutcome(protein.consumed, protein.goal),
-                  },
-                  {
-                    label: "Жири",
-                    consumed: fat.consumed,
-                    goal: fat.goal,
-                    variant: "warning",
-                    unit: "г",
-                    outcome: formatMacroOutcome(fat.consumed, fat.goal),
-                  },
-                  {
-                    label: "Вугл.",
-                    consumed: carbs.consumed,
-                    goal: carbs.goal,
-                    variant: "routine",
-                    unit: "г",
-                    outcome: formatMacroOutcome(carbs.consumed, carbs.goal),
-                  },
-                ]}
-              />
-            </div>
-          ) : (
-            <div className="flex justify-center py-2">
-              <button
-                type="button"
-                onClick={onGoToDailyPlan ?? onGoToLog}
-                className="text-style-caption min-h-[44px] min-w-[44px] rounded-xl px-4 text-center text-hero-ink hover:underline focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink/60"
-              >
-                Встановити денну ціль, щоб бачити прогрес
-                <span aria-hidden="true"> →</span>
-              </button>
-            </div>
-          )}
+          <div className="flex flex-col gap-2">
+            {hasGoal && isMostlyEstimated && (
+              <p className="text-style-caption text-hero-ink text-center text-pretty">
+                <span aria-hidden="true">
+                  {messages.nutrition.estimatedBadge.label}{" "}
+                </span>
+                {messages.nutrition.estimatedBadge.caption}
+              </p>
+            )}
+            <MealStrip
+              segments={segments}
+              goalKcal={hasGoal ? kcalGoal : null}
+              remainingLabel={remainingLabel}
+              macros={[
+                {
+                  label: "Білки",
+                  consumed: protein.consumed,
+                  goal: protein.goal,
+                  unit: "г",
+                },
+                {
+                  label: "Жири",
+                  consumed: fat.consumed,
+                  goal: fat.goal,
+                  unit: "г",
+                },
+                {
+                  label: "Вугл.",
+                  consumed: carbs.consumed,
+                  goal: carbs.goal,
+                  unit: "г",
+                },
+              ]}
+              onSetGoal={onGoToDailyPlan ?? onGoToLog}
+              incompleteNote={
+                hasGoal && isIncompleteDay
+                  ? `Записано ${summary.mealCount} із 4`
+                  : undefined
+              }
+            />
+          </div>
         </div>
       </Card>
 

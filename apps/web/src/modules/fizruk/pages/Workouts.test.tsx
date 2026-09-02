@@ -4,6 +4,7 @@
  * Heavy sub-components and the orchestrator hook are stubbed so the tests
  * stay focused on view-switching logic and prop wiring, not internals.
  */
+import type { ComponentProps } from "react";
 import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 
@@ -128,12 +129,6 @@ vi.mock("../components/WorkoutTemplatesSection", () => ({
   WorkoutTemplatesSection: () => (
     <div data-testid="workout-templates-section" />
   ),
-}));
-
-// Без моку компонент рендериться справді і кличе `useToast`, а цей сьют
-// монтує сторінку без `ToastProvider` — падав увесь файл, не один тест.
-vi.mock("../components/StrongImportReview", () => ({
-  StrongImportReview: () => <div data-testid="strong-import-review" />,
 }));
 
 vi.mock("../components/workouts/ExerciseDetailSheet", () => ({
@@ -273,7 +268,20 @@ vi.mock("@shared/components/ui/Skeleton", () => ({
 // ── Helpers ──────────────────────────────────────────────────────────────────
 
 import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
+import { ToastProvider } from "@shared/hooks/useToast";
 import { Workouts } from "./Workouts";
+
+// `StrongImportReview` НЕ мокаємо: замість стаба дитини сьют дає сторінці
+// справжній `ToastProvider`, якого тій дитині бракувало. Так тест перевіряє
+// реальний контракт props сторінка↔дитина, а не власний стаб
+// (`scripts/ci/check-vi-mock-cap.mjs` — храповик проти over-mocking).
+function renderWorkouts(props: ComponentProps<typeof Workouts> = {}) {
+  return render(
+    <ToastProvider>
+      <Workouts {...props} />
+    </ToastProvider>,
+  );
+}
 
 const mockedOrchestrator = vi.mocked(useWorkoutsOrchestrator);
 
@@ -383,12 +391,12 @@ describe("Workouts page — home view", () => {
   });
 
   it("renders WorkoutsHome in home view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("workouts-home")).toBeInTheDocument();
   });
 
   it("does not render journal or catalog sections in home view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(
       screen.queryByTestId("workout-journal-section"),
     ).not.toBeInTheDocument();
@@ -408,7 +416,7 @@ describe("Workouts page — log view", () => {
   });
 
   it("renders the journal section in log view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("workout-journal-section")).toBeInTheDocument();
   });
 
@@ -417,7 +425,7 @@ describe("Workouts page — log view", () => {
   // ~800px on a 1280px viewport. The active-workout panel (a vertical
   // list of short numeric fields) now gets its own narrower `max-w-xl`.
   it("wraps the active-workout panel in a narrower max-w for desktop", () => {
-    render(<Workouts />);
+    renderWorkouts();
     const journal = screen.getByTestId("workout-journal-section");
     expect(journal.closest(".max-w-xl")).not.toBeNull();
   });
@@ -431,13 +439,13 @@ describe("Workouts page — log view", () => {
         activeWorkout: { id: "w1", endedAt: null },
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
-    render(<Workouts />);
+    renderWorkouts();
     const catalog = screen.getByTestId("workout-catalog-section");
     expect(catalog.closest(".max-w-xl")).toBeNull();
   });
 
   it("does not render WorkoutsHome in log view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.queryByTestId("workouts-home")).not.toBeInTheDocument();
   });
 
@@ -445,7 +453,7 @@ describe("Workouts page — log view", () => {
   // even when the routed workout was finished or missing (the dead-end
   // "Активне тренування не знайдено" + full catalog combo from the audit).
   it("does not render the catalog when there is no in-flight active workout", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(
       screen.queryByTestId("workout-catalog-section"),
     ).not.toBeInTheDocument();
@@ -457,7 +465,7 @@ describe("Workouts page — log view", () => {
         activeWorkout: { id: "w1", endedAt: "2026-01-01T00:00:00Z" },
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
-    render(<Workouts />);
+    renderWorkouts();
     expect(
       screen.queryByTestId("workout-catalog-section"),
     ).not.toBeInTheDocument();
@@ -469,7 +477,7 @@ describe("Workouts page — log view", () => {
         activeWorkout: { id: "w1", endedAt: null },
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("workout-catalog-section")).toBeInTheDocument();
   });
 });
@@ -484,12 +492,12 @@ describe("Workouts page — catalog view", () => {
   });
 
   it("renders catalog section in catalog view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("workout-catalog-section")).toBeInTheDocument();
   });
 
   it("does not render journal section in catalog view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(
       screen.queryByTestId("workout-journal-section"),
     ).not.toBeInTheDocument();
@@ -506,7 +514,7 @@ describe("Workouts page — templates view", () => {
   });
 
   it("renders templates section in templates view", () => {
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("workout-templates-section")).toBeInTheDocument();
   });
 });
@@ -518,7 +526,7 @@ describe("Workouts page — header wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("workouts-header")).toHaveAttribute(
       "data-view",
       "log",
@@ -532,7 +540,7 @@ describe("Workouts page — header wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("back-btn"));
     expect(setView).toHaveBeenCalledWith("home");
   });
@@ -544,7 +552,7 @@ describe("Workouts page — header wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("add-catalog-btn"));
     expect(setAddOpen).toHaveBeenCalledWith(true);
   });
@@ -558,7 +566,7 @@ describe("Workouts page — home action wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("open-session"));
     expect(setView).toHaveBeenCalledWith("log");
   });
@@ -574,7 +582,7 @@ describe("Workouts page — home action wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts onNavigate={onNavigate} />);
+    renderWorkouts({ onNavigate });
     fireEvent.click(screen.getByTestId("open-catalog"));
     expect(onNavigate).toHaveBeenCalledWith("catalog");
     expect(setView).not.toHaveBeenCalled();
@@ -587,7 +595,7 @@ describe("Workouts page — home action wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts onNavigate={onNavigate} />);
+    renderWorkouts({ onNavigate });
     fireEvent.click(screen.getByTestId("open-templates"));
     expect(onNavigate).toHaveBeenCalledWith("templates");
   });
@@ -600,7 +608,7 @@ describe("Workouts page — home action wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts section="catalog" onNavigate={onNavigate} />);
+    renderWorkouts({ section: "catalog", onNavigate });
     fireEvent.click(screen.getByTestId("back-btn"));
     expect(onNavigate).toHaveBeenCalledWith("workouts");
     expect(setView).not.toHaveBeenCalled();
@@ -614,7 +622,7 @@ describe("Workouts page — home action wiring", () => {
       >,
     );
 
-    render(<Workouts onOpenRoutine={onOpenRoutine} />);
+    renderWorkouts({ onOpenRoutine });
     fireEvent.click(screen.getByTestId("open-schedule"));
 
     expect(onOpenRoutine).toHaveBeenCalledTimes(1);
@@ -628,7 +636,7 @@ describe("Workouts page — home action wiring", () => {
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
 
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("request-start"));
 
     expect(handleQuickStart).toHaveBeenCalledTimes(1);
@@ -644,7 +652,7 @@ describe("Workouts page — home action wiring", () => {
     );
     const onNavigate = vi.fn();
 
-    render(<Workouts onNavigate={onNavigate} />);
+    renderWorkouts({ onNavigate });
     fireEvent.click(screen.getByTestId("open-journal"));
 
     expect(onNavigate).toHaveBeenCalledWith("history");
@@ -659,7 +667,7 @@ describe("Workouts page — home action wiring", () => {
     );
     const onNavigate = vi.fn();
 
-    render(<Workouts onNavigate={onNavigate} />);
+    renderWorkouts({ onNavigate });
     fireEvent.click(screen.getByTestId("open-programs"));
 
     expect(onNavigate).toHaveBeenCalledWith("programs");
@@ -678,7 +686,7 @@ describe("Workouts page — sheet and confirm callback wiring", () => {
         typeof useWorkoutsOrchestrator
       >,
     );
-    render(<Workouts />);
+    renderWorkouts();
     expect(screen.getByTestId("exercise-detail-sheet")).toHaveAttribute(
       "data-has-update-item",
       "true",
@@ -697,7 +705,7 @@ describe("Workouts page — sheet and confirm callback wiring", () => {
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
 
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("close-detail"));
     fireEvent.click(screen.getByTestId("delete-exercise"));
     fireEvent.click(screen.getByTestId("close-add-exercise"));
@@ -723,7 +731,7 @@ describe("Workouts page — sheet and confirm callback wiring", () => {
       }) as unknown as ReturnType<typeof useWorkoutsOrchestrator>,
     );
 
-    render(<Workouts />);
+    renderWorkouts();
     fireEvent.click(screen.getByTestId("clear-finish-flash"));
     fireEvent.click(screen.getByTestId("confirm-delete-exercise"));
     fireEvent.click(screen.getByTestId("cancel-delete-exercise"));
