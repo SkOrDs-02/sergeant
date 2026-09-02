@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFTUX } from "../utils/seedFTUX";
+import { waitForSqliteRefreshAfter } from "../utils/sqliteRefresh";
 import { auditPage, mockApi } from "./audit";
 
 /**
@@ -99,7 +100,31 @@ test.describe("комора: місця зберігання", () => {
     // Переїзд застосовується разом зі «Зберегти» — поруч стоїть
     // «Скасувати», і зміна, яка сталася б до нього, зробила б ту кнопку
     // брехнею.
-    await page.getByRole("button", { name: "Зберегти" }).click();
+    //
+    // Запис у SQLite асинхронний (`triggerNutritionDualWrite` ставить задачу
+    // в чергу через `setTimeout(0)`), а `click()` повертається одразу після
+    // диспатчу події — тож голий `reload()` поруч із кліком перегонив запис.
+    // Цей барʼєр гарантує, що ХОЧА Б один запис модуля долетів; він НЕ є
+    // повним доказом, бо лічильник спільний на модуль, і збігтися може
+    // сусідній запис із тієї ж черги (`appendNutritionPantryEvent`).
+    //
+    // Заміряно, щоб не видавати бажане за дійсне: сам по собі цей барʼєр
+    // давав 1 прохід із 5 — тобто фіксом він НЕ був. Детермінованим тест
+    // робить перевірка нижче, перед `reload()`. Барʼєр лишається як явна
+    // межа для асинхронного запису, а не як пояснення фіксу.
+    await waitForSqliteRefreshAfter(page, "nutrition", async () => {
+      await page.getByRole("button", { name: "Зберегти" }).click();
+    });
+
+    // Діагностичний рубіж: переїзд має бути видимий ЩЕ ДО рестарту.
+    // Без нього падіння нижче не розрізняє «не застосувалось» і «не
+    // збереглось» — а це два різні дефекти в різних місцях.
+    const filterBeforeReload = page.getByLabel("Місце зберігання");
+    await filterBeforeReload.selectOption({ label: "Комора" });
+    await expect(
+      page.getByRole("button", { name: "Редагувати молоко" }),
+    ).toBeVisible();
+    await filterBeforeReload.selectOption({ label: "Усі місця" });
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await page
