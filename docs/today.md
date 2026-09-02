@@ -20,9 +20,13 @@ Sorted: `blocked` items first, далі явні `agent-ready`, потім за 
 
 _Жодного документа не пропустило `Next review:` дату. 🎉_
 
-## WIP load — 🟢 healthy
+## WIP load — 🟡 soft-ліміт досягнуто
 
-Усі trackers під soft-лімітом. Заводь нові ініціативи / аудити вільно.
+Принаймні один tracker досяг soft-ліміту або перевищив hard. Подумай чи закрити старе перед відкриттям нового.
+
+| Severity | Tracker    | Active | Soft / Hard |
+| -------- | ---------- | ------ | ----------- |
+| 🟡 SOFT  | Планування | 28     | 28 / 35     |
 
 ## Quick links
 
