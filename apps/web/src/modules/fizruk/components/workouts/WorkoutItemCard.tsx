@@ -301,7 +301,13 @@ export function WorkoutItemCard({
           last={last}
           exerciseId={it.exerciseId}
           isReadOnly={isReadOnly}
-          onApply={(weightKg, reps) => {
+          readiness={activeWorkout.wellbeing ?? null}
+          onApply={(weightKg, reps, variant) => {
+            // Вибір записуємо ЗАВЖДИ, навіть коли він плановий: інакше
+            // історія не відрізнить «взяв за планом» від «нічого не обирав»,
+            // і лічильник полегшень не зможе обірвати стрічку. Йде одним
+            // `updateItem` разом із підходами — два виклики поспіль на той
+            // самий item дали б зайвий запис у дуал-райт.
             // Підказка заповнює перший порожній рядок, а якщо всі вже
             // заповнені — додає новий підхід. Наявні значення не чіпаємо:
             // це підказка, а не автомат.
@@ -310,13 +316,17 @@ export function WorkoutItemCard({
             if (emptyIdx === -1) {
               setSetIds((prev) => [...prev, crypto.randomUUID()]);
               updateItem(activeWorkout.id, it.id, {
+                chosenVariant: variant,
                 sets: [...currentSets, { weightKg, reps }],
               });
               return;
             }
             const next = [...currentSets];
             next[emptyIdx] = { ...next[emptyIdx], weightKg, reps };
-            updateItem(activeWorkout.id, it.id, { sets: next });
+            updateItem(activeWorkout.id, it.id, {
+              chosenVariant: variant,
+              sets: next,
+            });
           }}
         />
       )}

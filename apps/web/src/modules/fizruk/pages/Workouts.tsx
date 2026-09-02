@@ -8,6 +8,7 @@ import { Skeleton } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
 import { DataState } from "@shared/components/ui/DataState";
 import { WorkoutTemplatesSection } from "../components/WorkoutTemplatesSection";
+import { ReadinessSheet } from "../components/workouts/ReadinessSheet";
 import { WorkoutFinishSheets } from "../components/workouts/WorkoutFinishSheets";
 import { AddExerciseSheet } from "../components/workouts/AddExerciseSheet";
 import { ExerciseDetailSheet } from "../components/workouts/ExerciseDetailSheet";
@@ -298,6 +299,43 @@ export function Workouts({
           musclesUk={o.musclesUk}
           musclesByPrimaryGroup={o.musclesByPrimaryGroup}
           addExercise={o.addExercise}
+        />
+
+        {/*
+          Питаємо ОДИН раз на тренування. Ознака «вже питали» — наявність
+          ключів `sleep`/`soreness` у `wellbeing`, навіть зі значенням `null`:
+          пропуск теж пишеться, інакше аркуш вигулькував би після кожного
+          перезавантаження. `null` домен читає як «нема даних», а не як
+          «погано».
+        */}
+        <ReadinessSheet
+          open={
+            !!o.activeWorkout &&
+            !o.activeWorkout.endedAt &&
+            !(
+              o.activeWorkout.wellbeing &&
+              ("sleep" in o.activeWorkout.wellbeing ||
+                "soreness" in o.activeWorkout.wellbeing)
+            )
+          }
+          onSubmit={(answer) => {
+            const w = o.activeWorkout;
+            if (!w) return;
+            o.updateWorkout(w.id, {
+              wellbeing: { ...(w.wellbeing ?? {}), ...answer },
+            });
+          }}
+          onSkip={() => {
+            const w = o.activeWorkout;
+            if (!w) return;
+            o.updateWorkout(w.id, {
+              wellbeing: {
+                ...(w.wellbeing ?? {}),
+                sleep: null,
+                soreness: null,
+              },
+            });
+          }}
         />
 
         <WorkoutFinishSheets

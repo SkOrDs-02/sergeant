@@ -62,8 +62,8 @@ const WORKOUT_ITEM_UPSERT_SPEC: TableSpec = {
   insertClause: `INSERT INTO fizruk_workout_items
        (id, workout_id, user_id, exercise_id, name_uk, primary_group,
         muscles_primary, muscles_secondary, type, duration_sec, distance_m,
-        sort_order, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
+        chosen_variant, sort_order, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)`,
   conflictTarget: ["id"],
   updateColumns: [
     { column: "workout_id" },
@@ -75,6 +75,7 @@ const WORKOUT_ITEM_UPSERT_SPEC: TableSpec = {
     { column: "type" },
     { column: "duration_sec" },
     { column: "distance_m" },
+    { column: "chosen_variant" },
     { column: "sort_order" },
     { column: "updated_at" },
     { column: "deleted_at", value: "NULL" },

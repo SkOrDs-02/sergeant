@@ -48,6 +48,7 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
       "strength",
       null,
       null,
+      null,
       0,
       "2026-06-23T00:00:00.000Z",
       "2026-06-23T00:00:00.000Z",
@@ -55,8 +56,8 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
     "sql": "INSERT INTO fizruk_workout_items
        (id, workout_id, user_id, exercise_id, name_uk, primary_group,
         muscles_primary, muscles_secondary, type, duration_sec, distance_m,
-        sort_order, created_at, updated_at, deleted_at)
-     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+        chosen_variant, sort_order, created_at, updated_at, deleted_at)
+     VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
      ON CONFLICT(id) DO UPDATE SET
        workout_id        = excluded.workout_id,
        exercise_id       = excluded.exercise_id,
@@ -67,6 +68,7 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
        type              = excluded.type,
        duration_sec      = excluded.duration_sec,
        distance_m        = excluded.distance_m,
+       chosen_variant    = excluded.chosen_variant,
        sort_order        = excluded.sort_order,
        updated_at        = excluded.updated_at,
        deleted_at        = NULL
@@ -171,7 +173,7 @@ exports[`fizruk dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-sta
       "u1",
       "fizruk_workout_items",
       "insert",
-      "{"id":"i1","user_id":"u1","workout_id":"w1","exercise_id":"bench-press","name_uk":"Жим лежачи","primary_group":"chest","muscles_primary":"[\\"chest\\"]","muscles_secondary":"[\\"triceps\\"]","type":"strength","duration_sec":null,"distance_m":null,"sort_order":0,"created_at":"2026-06-23T00:00:00.000Z","deleted_at":null}",
+      "{"id":"i1","user_id":"u1","workout_id":"w1","exercise_id":"bench-press","name_uk":"Жим лежачи","primary_group":"chest","muscles_primary":"[\\"chest\\"]","muscles_secondary":"[\\"triceps\\"]","type":"strength","duration_sec":null,"distance_m":null,"chosen_variant":null,"sort_order":0,"created_at":"2026-06-23T00:00:00.000Z","deleted_at":null}",
       "2026-06-23T00:00:00.000Z",
       "00000000-0000-4000-8000-000000000002",
     ],

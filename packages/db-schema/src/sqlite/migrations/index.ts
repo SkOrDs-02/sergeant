@@ -970,6 +970,19 @@ CREATE INDEX IF NOT EXISTS fizruk_custom_activities_user_idx_lite
 `;
 
 /**
+ * 006 - вибір варіанта підказки на позиції тренування.
+ *
+ * Дзеркалить серверну міграцію 134. `CHECK` тут навмисно немає: клієнтський
+ * SQLite приймає лише те, що записав власний адаптер, а валідація значення
+ * стоїть на серверному боці sync (`applySync` віддає
+ * `invalid_chosen_variant`). Дублювати обмеження в двох діалектах дорожче,
+ * ніж користі: розійтись вони можуть, а зловити розбіжність нічим.
+ */
+const FIZRUK_006_ITEM_CHOSEN_VARIANT_SQL = `
+ALTER TABLE fizruk_workout_items ADD COLUMN chosen_variant TEXT;
+`;
+
+/**
  * Ordered list of bundled client migrations for the Fizruk module on
  * SQLite. Pass this directly to `runMigrations` from
  * `@sergeant/db-schema/migrate/runner`.
@@ -1002,6 +1015,10 @@ export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "005_fizruk_kcal_and_custom_activities.sql",
     sql: FIZRUK_005_KCAL_AND_ACTIVITIES_SQL,
+  },
+  {
+    name: "006_fizruk_item_chosen_variant.sql",
+    sql: FIZRUK_006_ITEM_CHOSEN_VARIANT_SQL,
   },
 ] as const;
 

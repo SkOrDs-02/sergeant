@@ -109,6 +109,8 @@ describe("pg/fizrukWorkoutItems schema snapshot", () => {
       "type",
       "duration_sec",
       "distance_m",
+      // Міграція 134 (pg) / 006 (клієнт): обраний варіант підказки.
+      "chosen_variant",
       "sort_order",
       "created_at",
       "updated_at",

@@ -12,7 +12,10 @@ describe("syncV2 wire reason/type registries", () => {
   it("keeps apply-level reject reasons unique and label-safe", () => {
     // CodeRabbit PR #627: +1 `invalid_tz_offset_min` (tz_offset_min range
     // validation) — mirrors the count bump in `obs/metrics.test.ts`.
-    expect(APPLY_REJECT_REASONS).toHaveLength(64);
+    // Спека fizruk-readiness-check: +1 `invalid_chosen_variant` — значення
+    // поза переліком відкидається на рівні sync, а не доходить до CHECK у
+    // міграції 134 і не стає 500-кою.
+    expect(APPLY_REJECT_REASONS).toHaveLength(65);
     expect(new Set(APPLY_REJECT_REASONS).size).toBe(
       APPLY_REJECT_REASONS.length,
     );

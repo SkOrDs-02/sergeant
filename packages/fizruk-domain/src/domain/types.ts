@@ -53,6 +53,9 @@ export interface WorkoutSet {
 /** Kind of exercise entry. */
 export type WorkoutItemType = "strength" | "distance" | "time";
 
+/** Вибір людини між плановим варіантом підказки і другою кнопкою. */
+export type WorkoutVariantChoice = "planned" | "easier" | "harder";
+
 /** A single exercise entry within a workout session. */
 export interface WorkoutItem {
   id: string;
@@ -65,6 +68,16 @@ export interface WorkoutItem {
   sets?: WorkoutSet[] | undefined;
   durationSec?: number | undefined;
   distanceM?: number | undefined;
+  /**
+   * Який варіант підказки людина обрала на цій вправі.
+   *
+   * Відсутнє поле означає `"planned"` — так тренування, зроблені до появи
+   * готовності, читаються без міграції й не потрапляють у лічильник
+   * полегшень. Живе саме тут, а не в `Workout.wellbeing`, бо лічильник
+   * «три полегшення поспіль» рахується ПО ВПРАВІ, і однієї відповіді на все
+   * заняття для нього замало.
+   */
+  chosenVariant?: WorkoutVariantChoice | undefined;
   /**
    * MET (metabolic equivalent) вправи чи заняття — вхід формули витрат
    * (`computeKcalBurned`). Необовʼязкове: записи, зроблені до появи поля,
@@ -93,10 +106,28 @@ export interface WorkoutGroup {
   restSec?: number | undefined;
 }
 
-/** Optional self-reported wellbeing snapshot attached to a workout. */
+/**
+ * Optional self-reported wellbeing snapshot attached to a workout.
+ *
+ * `energy` / `mood` пише аркуш ФІНІШУ тренування; `sleep` / `soreness` —
+ * аркуш ГОТОВНОСТІ на старті. Різні моменти, одна сутність, бо обидва
+ * описують стан людини саме на це заняття.
+ *
+ * AI-DANGER: індексна сигнатура НЕ означає, що нове поле збережеться.
+ * Дуал-райт іде через `toWellbeingSnapshot` у
+ * `apps/web/src/modules/fizruk/lib/fizrukDualWriteState.ts`, і той віддає
+ * білий список полів. Додав поле сюди — проведи його ще через снапшот,
+ * колонку `wellbeing_json`, `sqliteReader` і тест на перезавантаження,
+ * інакше воно гине мовчки: типи й тести лишаються зеленими, зникає лише
+ * продукт (той самий сценарій, що описаний в `AI-DANGER` у `sqliteReader`).
+ */
 export interface WorkoutWellbeing {
   energy?: number | null;
   mood?: number | null;
+  /** Сон, 1-5, де 1 = погано. Шкала збігається за напрямком із `soreness`. */
+  sleep?: number | null;
+  /** «Як почуваються мʼязи», 1-5, де 1 = дуже болить. */
+  soreness?: number | null;
   [key: string]: unknown;
 }
 

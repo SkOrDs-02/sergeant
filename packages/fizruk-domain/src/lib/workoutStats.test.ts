@@ -1,6 +1,9 @@
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
+  classifyReadiness,
   compareIsoDesc,
+  countConsecutiveEasings,
+  EASING_STREAK_THRESHOLD,
   completedWorkoutsCount,
   countCompletedInCurrentWeek,
   epley1rm,
@@ -526,5 +529,224 @@ describe("suggestNextSet — три сесії за програмою", () => {
     expect(third!.softMode).toBe(true);
     expect(third!.returnReason).toBe("layoff");
     expect(third!.weightKg).toBeLessThan(second!.weightKg);
+  });
+});
+
+describe("classifyReadiness", () => {
+  it("нема відповіді — нейтрально", () => {
+    expect(classifyReadiness(null)).toBe("neutral");
+    expect(classifyReadiness(undefined)).toBe("neutral");
+    expect(classifyReadiness({})).toBe("neutral");
+  });
+
+  it("будь-яка шкала ≤2 робить готовність низькою", () => {
+    expect(classifyReadiness({ sleep: 2, soreness: 5 })).toBe("low");
+    expect(classifyReadiness({ sleep: 5, soreness: 1 })).toBe("low");
+    expect(classifyReadiness({ sleep: 1 })).toBe("low");
+  });
+
+  it("високою — лише коли ОБИДВІ ≥4", () => {
+    expect(classifyReadiness({ sleep: 4, soreness: 4 })).toBe("high");
+    expect(classifyReadiness({ sleep: 5, soreness: 3 })).toBe("neutral");
+    // Недомовка не підвищує навантаження: однієї доброї шкали замало.
+    expect(classifyReadiness({ sleep: 5 })).toBe("neutral");
+  });
+
+  it("сміття поза шкалою ігнорується, а не ламає класифікацію", () => {
+    expect(classifyReadiness({ sleep: 0, soreness: 9 })).toBe("neutral");
+    expect(classifyReadiness({ sleep: Number.NaN, soreness: 1 })).toBe("low");
+  });
+});
+
+describe("suggestNextSet + готовність", () => {
+  const press = { equipment: ["dumbbell"], primaryGroup: "chest" };
+
+  it("нейтральна чи відсутня готовність лишає результат ТИМ САМИМ", () => {
+    // Найдорожча регресія цієї фічі — зламати наявну підказку тим, хто на
+    // питання не відповідав. Тому порівняння повне, а не за полями.
+    const base = suggestNextSet({ weightKg: 80, reps: 8 });
+    expect(suggestNextSet({ weightKg: 80, reps: 8 }, {})).toEqual(base);
+    expect(
+      suggestNextSet({ weightKg: 80, reps: 8 }, { readiness: null }),
+    ).toEqual(base);
+    expect(
+      suggestNextSet({ weightKg: 80, reps: 8 }, { readiness: { sleep: 3 } }),
+    ).toEqual(base);
+    expect(base!.secondOption).toBeUndefined();
+    expect(base!.easedWeightKg).toBeUndefined();
+  });
+
+  it("низька готовність додає полегшений варіант, не чіпаючи планового", () => {
+    const plain = suggestNextSet({ weightKg: 80, reps: 8 });
+    const eased = suggestNextSet(
+      { weightKg: 80, reps: 8 },
+      { readiness: { sleep: 1, soreness: 4 } },
+    );
+    expect(eased!.weightKg).toBe(plain!.weightKg);
+    expect(eased!.reps).toBe(plain!.reps);
+    expect(eased!.secondOption).toBe("easier");
+    expect(eased!.easedWeightKg).toBe(77.5);
+    expect(eased!.easedReps).toBe(8);
+  });
+
+  it("полегшений варіант НІКОЛИ не важчий за плановий", () => {
+    const cases: Array<[number, number]> = [
+      [80, 8],
+      [40, 12],
+      [2.5, 8],
+      [5, 12],
+    ];
+    for (const [weightKg, reps] of cases) {
+      const s = suggestNextSet(
+        { weightKg, reps },
+        { readiness: { sleep: 1, soreness: 1 } },
+      );
+      expect(s!.easedWeightKg!).toBeLessThanOrEqual(s!.weightKg);
+      // І не провалюється в нуль чи мінус на легких вправах.
+      expect(s!.easedWeightKg!).toBeGreaterThan(0);
+    }
+  });
+
+  it("висока готовність відкриває вже пораховане «важче»", () => {
+    const s = suggestNextSet(
+      { weightKg: 80, reps: 8 },
+      { readiness: { sleep: 5, soreness: 4 } },
+    );
+    expect(s!.secondOption).toBe("harder");
+    expect(s!.altWeightKg).toBe(82.5);
+    expect(s!.easedWeightKg).toBeUndefined();
+  });
+
+  it("на стелі діапазону «важче» не пропонується — план і так росте", () => {
+    const s = suggestNextSet(
+      { weightKg: 40, reps: 12 },
+      { readiness: { sleep: 5, soreness: 5 } },
+    );
+    expect(s!.weightKg).toBe(42.5);
+    expect(s!.secondOption).toBeUndefined();
+  });
+
+  it("режим повернення НЕ пропонує більше навіть на добрій готовності", () => {
+    const aging = computeOneRmAging({
+      peak1rm: epley1rm(32.5, 8),
+      lastSessionAt: new Date(Date.now() - 40 * 86_400_000).toISOString(),
+    });
+    expect(aging.returnMode).toBe(true);
+    const s = suggestNextSet(
+      { weightKg: 32.5, reps: 12 },
+      { exercise: press, aging, readiness: { sleep: 5, soreness: 5 } },
+    );
+    // Сенс режиму саме в тому, щоб не піднімати вагу; добре самопочуття
+    // після паузи не є доказом, що тканина відновилась.
+    expect(s!.softMode).toBe(true);
+    expect(s!.secondOption).toBeUndefined();
+  });
+
+  it("режим повернення + низька готовність дає ще легший варіант", () => {
+    const aging = computeOneRmAging({
+      peak1rm: epley1rm(32.5, 8),
+      lastSessionAt: new Date(Date.now() - 40 * 86_400_000).toISOString(),
+    });
+    const s = suggestNextSet(
+      { weightKg: 32.5, reps: 12 },
+      { exercise: press, aging, readiness: { sleep: 1, soreness: 2 } },
+    );
+    expect(s!.secondOption).toBe("easier");
+    expect(s!.easedWeightKg!).toBeLessThan(s!.weightKg);
+  });
+});
+
+describe("countConsecutiveEasings", () => {
+  const wk = (
+    startedAt: string,
+    chosenVariant: string | undefined,
+    opts: { ended?: boolean; withExercise?: boolean } = {},
+  ) => ({
+    startedAt,
+    endedAt: opts.ended === false ? null : `${startedAt}`,
+    items:
+      opts.withExercise === false
+        ? [{ exerciseId: "other" }]
+        : [
+            {
+              exerciseId: "squat",
+              ...(chosenVariant ? { chosenVariant } : {}),
+            },
+          ],
+  });
+
+  it("рахує від найсвіжішого назад, поки йдуть полегшення", () => {
+    const workouts = [
+      wk("2026-09-01T10:00:00.000Z", "easier"),
+      wk("2026-08-30T10:00:00.000Z", "easier"),
+      wk("2026-08-28T10:00:00.000Z", "easier"),
+      wk("2026-08-26T10:00:00.000Z", "planned"),
+    ];
+    expect(countConsecutiveEasings(workouts, "squat")).toBe(3);
+    expect(countConsecutiveEasings(workouts, "squat")).toBeGreaterThanOrEqual(
+      EASING_STREAK_THRESHOLD,
+    );
+  });
+
+  it("порядок у масиві ролі не грає — сортує сам", () => {
+    const workouts = [
+      wk("2026-08-28T10:00:00.000Z", "easier"),
+      wk("2026-09-01T10:00:00.000Z", "planned"),
+      wk("2026-08-30T10:00:00.000Z", "easier"),
+    ];
+    // Найсвіжіше — planned, тож стрічки немає взагалі.
+    expect(countConsecutiveEasings(workouts, "squat")).toBe(0);
+  });
+
+  it("planned і harder скидають, відсутнє поле читається як planned", () => {
+    expect(
+      countConsecutiveEasings(
+        [
+          wk("2026-09-01T10:00:00.000Z", "easier"),
+          wk("2026-08-30T10:00:00.000Z", "harder"),
+          wk("2026-08-28T10:00:00.000Z", "easier"),
+        ],
+        "squat",
+      ),
+    ).toBe(1);
+    expect(
+      countConsecutiveEasings(
+        [
+          wk("2026-09-01T10:00:00.000Z", "easier"),
+          wk("2026-08-30T10:00:00.000Z", undefined),
+        ],
+        "squat",
+      ),
+    ).toBe(1);
+  });
+
+  it("пропуск вправи не скидає стрічку і не додає до неї", () => {
+    const workouts = [
+      wk("2026-09-01T10:00:00.000Z", "easier"),
+      wk("2026-08-30T10:00:00.000Z", undefined, { withExercise: false }),
+      wk("2026-08-28T10:00:00.000Z", "easier"),
+    ];
+    // Рахуються появи вправи, а не календар: тиждень без присідань стрічку
+    // не обнуляє.
+    expect(countConsecutiveEasings(workouts, "squat")).toBe(2);
+  });
+
+  it("незавершене тренування не рахується взагалі", () => {
+    const workouts = [
+      wk("2026-09-02T10:00:00.000Z", "planned", { ended: false }),
+      wk("2026-09-01T10:00:00.000Z", "easier"),
+      wk("2026-08-30T10:00:00.000Z", "easier"),
+    ];
+    // Незавершене не скидає стрічку — інакше відкрите тренування ховало б
+    // сигнал, який уже назбирався.
+    expect(countConsecutiveEasings(workouts, "squat")).toBe(2);
+  });
+
+  it("порожні входи дають нуль, а не виняток", () => {
+    expect(countConsecutiveEasings(null, "squat")).toBe(0);
+    expect(countConsecutiveEasings([], "squat")).toBe(0);
+    expect(
+      countConsecutiveEasings([wk("2026-09-01T10:00:00.000Z", "easier")], ""),
+    ).toBe(0);
   });
 });

@@ -157,7 +157,7 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // CodeRabbit PR #627 review: +1 `invalid_tz_offset_min` — `tz_offset_min`
     // had no range check at all; a present value outside the real UTC-offset
     // range now rejects instead of silently passing through.
-    expect(APPLY_REJECT_REASONS.length).toBe(64);
+    expect(APPLY_REJECT_REASONS.length).toBe(65);
     expect(ENGINE_REJECT_REASONS.length).toBe(5);
 
     // Ключові CRDT-інваріанти, на які привʼязаний sync health alerting,
