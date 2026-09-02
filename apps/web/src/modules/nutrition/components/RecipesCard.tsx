@@ -24,7 +24,6 @@ import {
   deviceTimeOfDay,
   type Meal,
   type NutritionPrefs,
-  type Pantry,
 } from "@sergeant/nutrition-domain";
 import {
   deleteSavedRecipe,
@@ -44,7 +43,6 @@ import { GeneratorCard } from "./RecipesCard.Generator";
 
 interface RecipesCardProps {
   busy?: boolean;
-  activePantry?: Pantry | null;
   prefs: NutritionPrefs;
   setPrefs: Dispatch<SetStateAction<NutritionPrefs>>;
   recommendRecipes: () => void | Promise<void>;
@@ -60,7 +58,6 @@ interface RecipesCardProps {
 
 export function RecipesCard({
   busy,
-  activePantry,
   prefs,
   setPrefs,
   recommendRecipes,
@@ -205,7 +202,6 @@ export function RecipesCard({
       {/* ── Генератор рецептів ── */}
       <GeneratorCard
         busy={busy}
-        activePantry={activePantry}
         prefs={prefs}
         setPrefs={setPrefs}
         recommendRecipes={recommendRecipes}

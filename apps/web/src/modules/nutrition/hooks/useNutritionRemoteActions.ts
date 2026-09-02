@@ -6,7 +6,11 @@ import {
   generatePrefixedId,
   pantryModeAvailabilityError,
 } from "@sergeant/shared";
-import { deviceDayKey, deviceTimeOfDay } from "@sergeant/nutrition-domain";
+import {
+  deviceDayKey,
+  deviceTimeOfDay,
+  stripPlacement,
+} from "@sergeant/nutrition-domain";
 import type {
   NutritionDayMeal,
   NutritionDayPlan as ApiNutritionDayPlan,
@@ -186,7 +190,7 @@ function pantryPayload(
   mode: "prefer" | "only" | "ignore",
   limit: number,
 ): PantryItem[] {
-  return mode === "ignore" ? [] : items.slice(0, limit);
+  return mode === "ignore" ? [] : stripPlacement(items.slice(0, limit));
 }
 
 function assertPantryModeAvailable(

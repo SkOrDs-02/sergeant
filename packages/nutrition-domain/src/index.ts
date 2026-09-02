@@ -42,6 +42,9 @@ export * from "./deviceDayKey.js";
 export * from "./nutritionTypes.js";
 export * from "./nutritionPrefs.js";
 export * from "./nutritionPantries.js";
+// Місця зберігання: плаский погляд на всі комори разом + правила, за
+// якими позиція потрапляє в місце. Ручний вибір сильніший за вгадування.
+export * from "./pantryPlacement.js";
 export * from "./nutritionLog.js";
 export * from "./quickStats.js";
 // Модель тижневого ккал-графіка (стеля осі, лінія цілі, порожні дні) —

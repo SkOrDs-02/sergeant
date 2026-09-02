@@ -1,7 +1,7 @@
 import { logger } from "@shared/lib";
 import { pluralUa, type UaPluralForms } from "@sergeant/shared";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { canonicalFoodKey } from "@sergeant/nutrition-domain";
+import { buildPlacedItems, canonicalFoodKey } from "@sergeant/nutrition-domain";
 import { saveRecipeToBook } from "../../../modules/nutrition/lib/recipeBook";
 import { recordBodyWeight } from "../../profile/recordBodyWeight";
 import {
@@ -17,7 +17,6 @@ import {
 import {
   addLogEntry,
   appendNutritionPantryEvent,
-  loadActivePantryId,
   loadNutritionLog,
   loadNutritionPrefs,
   loadPantries,
@@ -260,24 +259,29 @@ export function handleNutritionAction(
       const { name } = (action as ConsumeFromPantryAction).input;
       const rawName = (name || "").trim();
       if (!rawName) return "Потрібна назва продукту.";
-      const activeId = loadActivePantryId();
+      // Шукаємо в УСІХ місцях, не в «активному»: активної комори більше
+      // немає, і пошук в одній полиці означав би «не знайдено» для всього,
+      // що лежить у холодильнику чи морозилці.
       const pantries = loadPantries();
-      const idx = pantries.findIndex((p) => p.id === activeId);
-      const pantry = idx >= 0 ? pantries[idx] : undefined;
-      if (!pantry) return `Активну комору (${activeId}) не знайдено.`;
       const lower = rawName.toLowerCase();
-      const items = Array.isArray(pantry.items) ? pantry.items : [];
-      const itemIdx = items.findIndex(
+      const placed = buildPlacedItems(pantries).find(
         (it) =>
           String(it.name || "")
             .trim()
             .toLowerCase() === lower,
       );
-      if (itemIdx < 0) {
+      if (!placed) {
         return `Продукт "${rawName}" у коморі не знайдено.`;
       }
-      // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- itemIdx validated via findIndex >= 0 check above
-      const item = items[itemIdx]!;
+      const activeId = placed.pantryId;
+      const idx = pantries.findIndex((p) => p.id === activeId);
+      const pantry = pantries[idx];
+      if (!pantry) return `Продукт "${rawName}" у коморі не знайдено.`;
+      const items = Array.isArray(pantry.items) ? pantry.items : [];
+      const itemIdx = placed.localIdx;
+      // `placed` прийшов саме з цього масиву, тож індекс валідний; сама
+      // позиція — те, що ми вже знайшли.
+      const item = placed;
       const stock = Number(item.qty);
       const hasStock = Number.isFinite(stock) && stock > 0;
 
@@ -330,19 +334,21 @@ export function handleNutritionAction(
       return `Продукт "${rawName}" прибрано з комори "${pantry.name}"`;
     }
     case "clear_pantry": {
-      const activeId = loadActivePantryId();
+      // «Очистити комору» очищає ВСІ місця: комора одна, місця це її
+      // полиці, і лишити холодильник повним після цієї команди означало б
+      // збрехати про виконану дію.
       const pantries = loadPantries();
-      const idx = pantries.findIndex((p) => p.id === activeId);
-      const pantry = idx >= 0 ? pantries[idx] : undefined;
-      if (!pantry) return `Активну комору (${activeId}) не знайдено.`;
-      const items = Array.isArray(pantry.items) ? pantry.items : [];
+      const items = buildPlacedItems(pantries);
       if (items.length === 0) {
-        return `Комора "${pantry.name}" і так порожня.`;
+        return "Комора і так порожня.";
       }
 
-      const next = [...pantries];
-      next[idx] = { ...pantry, items: [] };
-      persistPantries(undefined, undefined, next, activeId);
+      persistPantries(
+        undefined,
+        undefined,
+        pantries.map((p) => ({ ...p, items: [] })),
+        null,
+      );
 
       // Подія на позицію — `adjust` з `absQty: 0`, а не `consume` з дельтою.
       // Чекпойнт каже «тепер нуль» і не потребує знати попередній залишок:
@@ -351,7 +357,7 @@ export function handleNutritionAction(
       for (const item of items) {
         appendNutritionPantryEvent({
           id: null,
-          pantryId: activeId,
+          pantryId: item.pantryId,
           itemId: null,
           itemKey: canonicalFoodKey(String(item.name || "")),
           kind: "adjust",
@@ -364,7 +370,7 @@ export function handleNutritionAction(
       }
 
       const n = items.length;
-      return `Комору "${pantry.name}" очищено: прибрано ${n} ${pluralUa(n, PANTRY_ITEM_FORMS)}`;
+      return `Комору очищено: прибрано ${n} ${pluralUa(n, PANTRY_ITEM_FORMS)}`;
     }
     case "set_daily_plan": {
       const { kcal, protein_g, fat_g, carbs_g, water_ml } = (

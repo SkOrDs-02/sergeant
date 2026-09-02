@@ -10,13 +10,10 @@ import {
 import { useMutation } from "@tanstack/react-query";
 import { nutritionApi } from "@shared/api";
 import { formatNutritionError } from "../lib/nutritionErrors";
-import { mergeItems } from "../lib/mergeItems";
 import {
   appendNutritionPantryEvent,
   backfillNutritionPantryCheckpoints,
-  loadActivePantryId,
   loadPantries,
-  makeDefaultPantry,
   persistPantries,
   updatePantry,
   NUTRITION_PANTRIES_KEY,
@@ -34,17 +31,20 @@ import {
 } from "../lib/pantryTextParser";
 import {
   applyConsumeToPantryItem,
+  buildPlacedItems,
+  ensureStoragePlaces,
+  mergeItemsIntoPlaces,
+  movePantryItem,
+  resolvePlaceForItem,
+  DEFAULT_PLACE_ID,
   type PantryItemSource,
 } from "@sergeant/nutrition-domain";
+import { usePantryPlaces } from "./usePantryPlaces";
 import {
   getRememberedAmbiguousUnit,
   rememberAmbiguousUnitChoice,
   type AmbiguousPantryUnit,
 } from "../lib/pantryAmbiguousUnitMemory";
-import type {
-  PantryForm,
-  PantryFormMode,
-} from "../components/PantryManagerSheet";
 
 export interface UseNutritionPantriesParams {
   setBusy: Dispatch<SetStateAction<boolean>>;
@@ -64,9 +64,9 @@ export interface PantryParsePreview {
   items: PantryItem[];
   source: PantryParseSource;
   /**
-   * Комора, для якої запускався розбір. Тримаємо її тут, бо між запитом
-   * і підтвердженням користувач може перемкнути активну комору —
-   * позиції все одно мають лягти туди, звідки їх диктували (issue #189).
+   * Місце, у чернетці якого лежав текст. Потрібне не для розкладання
+   * (позиції їдуть по вгаданих місцях), а щоб очистити рівно ту чернетку,
+   * з якої розбір запускався.
    */
   pantryId: string;
 }
@@ -116,11 +116,13 @@ export function useNutritionPantries({
   setErr,
   setStatusText,
 }: UseNutritionPantriesParams) {
+  // `ensureStoragePlaces` стоїть на КОЖНОМУ вході даних у стан, а не лише
+  // на першому: інакше після теплого SQLite-кешу холодильник і морозилка
+  // зникали б з екрана до наступного перезавантаження.
   const [pantries, setPantries] = useState(() =>
-    loadPantries(NUTRITION_PANTRIES_KEY, NUTRITION_ACTIVE_PANTRY_KEY),
-  );
-  const [activePantryId, setActivePantryId] = useState(() =>
-    loadActivePantryId(NUTRITION_ACTIVE_PANTRY_KEY),
+    ensureStoragePlaces(
+      loadPantries(NUTRITION_PANTRIES_KEY, NUTRITION_ACTIVE_PANTRY_KEY),
+    ),
   );
 
   const sqliteCacheTick = useNutritionSqliteReadTick();
@@ -129,45 +131,32 @@ export function useNutritionPantries({
     setPrevSqliteTick(sqliteCacheTick);
     const cache = getCachedNutritionSqliteState();
     if (cache.refreshedAt !== null) {
-      setPantries(cache.pantries);
-      if (cache.activePantryId) setActivePantryId(cache.activePantryId);
+      setPantries(ensureStoragePlaces(cache.pantries));
     }
   }
 
-  const activePantry = useMemo(() => {
-    const arr = Array.isArray(pantries) ? pantries : [];
-    // Explicit precedence so the fallback chain reads as intent, not a
-    // bug-magnet: active-by-id → first pantry → freshly-built default.
-    // `arr[0]` is `Pantry | undefined` under noUncheckedIndexedAccess, so the
-    // `??` keeps the return type a concrete `Pantry` (page-audit-08 F17).
-    const active = arr.find((p) => p.id === activePantryId);
-    const fallback = arr[0] ?? makeDefaultPantry();
-    return active ?? fallback;
-  }, [pantries, activePantryId]);
+  /**
+   * Фільтр місця — суто екранний стан, і це не недогляд. Персистований
+   * фільтр — це рівно та активна комора, яку ця робота знімає: після
+   * перезавантаження людина знову бачила б одне місце замість усіх.
+   */
+  const [placeFilter, setPlaceFilter] = useState<string | null>(null);
 
-  const pantryText = activePantry?.text || "";
-  // Depend on the `items` field directly (not the whole `activePantry`) so the
-  // React Compiler infers the same dependency the array declares and the manual
-  // memoization is preserved.
-  const activePantryItems = activePantry?.items;
-  const pantryItems = useMemo(
-    () => (Array.isArray(activePantryItems) ? activePantryItems : []),
-    [activePantryItems],
+  // Чернетка списку живе в дефолтному місці: текст ще не розібраний на
+  // позиції, тож місця в нього немає — воно зʼявиться у кожної позиції
+  // окремо при підтвердженні розбору.
+  const draftPantry = useMemo(
+    () =>
+      pantries.find((p) => p.id === DEFAULT_PLACE_ID) ?? pantries[0] ?? null,
+    [pantries],
   );
+  const pantryText = draftPantry?.text || "";
+
+  /** Усі позиції всіх місць одним списком; його індекс — адреса мутації. */
+  const pantryItems = useMemo(() => buildPlacedItems(pantries), [pantries]);
   const [newItemName, setNewItemName] = useState("");
 
-  const [pantryManagerOpen, setPantryManagerOpen] = useState(false);
-
-  // UX-roast 2026-05 §3.4: дефолтний mode `idle` — поле «Назва складу»
-  // не показується, доки користувач явно не натиснув «+ Новий склад»
-  // або «Перейменувати». Це робить ці кнопки видимо реактивними.
-  const [pantryForm, setPantryForm] = useState<PantryForm>(() => ({
-    mode: "idle",
-    name: "",
-    err: "",
-  }));
-
-  const [confirmDeleteOpen, setConfirmDeleteOpen] = useState(false);
+  const places = usePantryPlaces({ pantries, setPantries, setPlaceFilter });
 
   const [itemEdit, setItemEdit] = useState(() => ({
     open: false,
@@ -176,6 +165,7 @@ export function useNutritionPantries({
     qty: "",
     unit: "",
     err: "",
+    pantryId: "",
   }));
 
   const [pantryStorageErr, setPantryStorageErr] = useState("");
@@ -206,14 +196,18 @@ export function useNutritionPantries({
       pantriesHydratedRef.current = true;
       return;
     }
+    // `null` замість активного місця: активної комори більше немає, а
+    // збережене значення лишається недоторканим (persistPantries падає на
+    // попереднє). Переписати його тут означало б зафіксувати фільтр у
+    // сховищі — саме те, чого ця робота позбувається.
     const ok = persistPantries(
       NUTRITION_PANTRIES_KEY,
       NUTRITION_ACTIVE_PANTRY_KEY,
       pantries,
-      activePantryId,
+      null,
     );
     setPantryStorageErr(ok ? "" : "Не вдалося зберегти дані комор.");
-  }, [pantries, activePantryId]);
+  }, [pantries]);
 
   // W1-PANTRY-APPEND стадія 2 — чекпойнт 'initial' на живу позицію (ADR-0077
   // §5); ідемпотентно, гейт повтору — усередині функції.
@@ -238,18 +232,20 @@ export function useNutritionPantries({
     return parseLoosePantryText(raw);
   }, [pantryItems, pantryText]);
 
-  // Витягнуто з колишнього тіла `upsertItem`: злиття в комору + одна
+  /**
+   * Куди лягає позиція. Порядок тут і є гейтом «ручне сильніше за
+   * автовизначення»: місце вже наявної позиції виграє вгадування завжди,
+   * тож доливання молока не тягне його назад у холодильник із балкона.
+   */
+  const placeOf = (name: unknown) => resolvePlaceForItem(pantryItems, name);
+
+  // Витягнуто з колишнього тіла `upsertItem`: злиття по місцях + одна
   // 'replenish'-подія на позицію з відомою кількістю. Використовується і
   // прямим шляхом (немає неоднозначних чисел), і з дозволу підказки
   // «шт чи г?» нижче — обидва мають записати рівно те саме.
   const mergeParsedItems = (items: PantryItem[]) => {
     if (!items.length) return;
-    setPantries((cur) =>
-      updatePantry(cur, activePantryId, (p) => ({
-        ...p,
-        items: mergeItems(Array.isArray(p.items) ? p.items : [], items),
-      })),
-    );
+    setPantries((cur) => mergeItemsIntoPlaces(cur, items, placeOf));
     // W1-PANTRY-APPEND стадія 2 — паралельно до запису `qty` вище: одна
     // 'replenish'-подія на кожну позицію з відомою кількістю. Позиції без
     // qty (гола назва — «сіль») дельту не несуть, тож пропускаємо.
@@ -257,7 +253,7 @@ export function useNutritionPantries({
       if (item.qty == null || !Number.isFinite(item.qty)) continue;
       appendNutritionPantryEvent({
         id: null,
-        pantryId: activePantryId,
+        pantryId: placeOf(item.name),
         itemId: null,
         itemKey: canonicalFoodKey(item.name),
         kind: "replenish",
@@ -320,8 +316,10 @@ export function useNutritionPantries({
     // нові — як їх ввели, і видалення має ловити і ті, і ті.
     const n = matchFoodName(name);
     if (!n) return;
+    const target = pantryItems.find((x) => matchFoodName(x.name) === n);
+    if (!target) return;
     setPantries((cur) =>
-      updatePantry(cur, activePantryId, (p) => ({
+      updatePantry(cur, target.pantryId, (p) => ({
         ...p,
         items: (Array.isArray(p.items) ? p.items : []).filter(
           (x) => matchFoodName(x?.name) !== n,
@@ -333,7 +331,7 @@ export function useNutritionPantries({
     // сталось із залишком) — симетрично до `removeItemAt` нижче.
     appendNutritionPantryEvent({
       id: null,
-      pantryId: activePantryId,
+      pantryId: target.pantryId,
       itemId: null,
       itemKey: canonicalFoodKey(n),
       kind: "adjust",
@@ -345,11 +343,18 @@ export function useNutritionPantries({
     });
   };
 
+  /**
+   * Легасі-шлях: комора, набита сирим текстом до появи структурованих
+   * позицій. Текст переїжджає в дефолтне місце ОДНИМ блоком і в тому ж
+   * порядку — розкладати його по місцях тут не можна, бо індекси рядків
+   * зараз і є адресами редагування; місце ставиться потім, руками або
+   * дією «розкласти по місцях».
+   */
   const ensureStructuredItems = () => {
     if (pantryItems.length > 0) return true;
     if (effectiveItems.length === 0) return false;
     setPantries((cur) =>
-      updatePantry(cur, activePantryId, (p) => ({
+      updatePantry(cur, draftPantry?.id ?? DEFAULT_PLACE_ID, (p) => ({
         ...p,
         items: effectiveItems.map((x) => ({
           name: displayFoodName(x?.name),
@@ -364,9 +369,7 @@ export function useNutritionPantries({
 
   const editItemAt = (idx: number) => {
     if (!ensureStructuredItems()) return;
-    const cur = (Array.isArray(activePantry?.items) ? activePantry.items : [])[
-      idx
-    ];
+    const cur = pantryItems[idx] ?? effectiveItems[idx];
     if (!cur) return;
     // Поле «Назва» в редакторі показує людині її ж назву — display, не match.
     const curName = displayFoodName(cur.name) || "Продукт";
@@ -377,21 +380,25 @@ export function useNutritionPantries({
       qty: cur.qty != null ? String(cur.qty) : "",
       unit: cur.unit != null ? String(cur.unit) : "",
       err: "",
+      pantryId: pantryItems[idx]?.pantryId ?? "",
     });
   };
 
   const removeItemAt = (idx: number) => {
     if (!ensureStructuredItems()) return;
-    // Читаємо імʼя ДО setPantries — той самий закриттєвий патерн, що вже
-    // працює у `editItemAt` вище: `activePantry` в цьому рендері ще бачить
-    // структуровані items, які щойно поставив `ensureStructuredItems`.
-    const removedName = (
-      Array.isArray(activePantry?.items) ? activePantry.items : []
-    )[idx]?.name;
+    // Читаємо адресу ДО setPantries — той самий закриттєвий патерн, що вже
+    // працює у `editItemAt` вище. Коли позиції щойно народились із тексту,
+    // `pantryItems` цього рендера їх ще не бачить, тож фолбек на дефолтне
+    // місце з тим самим індексом — це рівно те, що записав
+    // `ensureStructuredItems`.
+    const target = pantryItems[idx];
+    const pantryId = target?.pantryId ?? draftPantry?.id ?? DEFAULT_PLACE_ID;
+    const localIdx = target?.localIdx ?? idx;
+    const removedName = target?.name ?? effectiveItems[idx]?.name;
     setPantries((curPantries) =>
-      updatePantry(curPantries, activePantryId, (p) => {
+      updatePantry(curPantries, pantryId, (p) => {
         const items = Array.isArray(p.items) ? [...p.items] : [];
-        items.splice(idx, 1);
+        items.splice(localIdx, 1);
         return { ...p, items };
       }),
     );
@@ -401,7 +408,7 @@ export function useNutritionPantries({
     if (n) {
       appendNutritionPantryEvent({
         id: null,
-        pantryId: activePantryId,
+        pantryId,
         itemId: null,
         itemKey: canonicalFoodKey(n),
         kind: "adjust",
@@ -412,51 +419,6 @@ export function useNutritionPantries({
         mealId: null,
       });
     }
-  };
-
-  const beginRenamePantry = () => {
-    const curName = String(activePantry?.name || "").trim() || "Комора";
-    setPantryForm({ mode: "rename", name: curName, err: "" });
-    setPantryManagerOpen(true);
-  };
-
-  const beginCreatePantry = () => {
-    setPantryForm({ mode: "create", name: "", err: "" });
-    setPantryManagerOpen(true);
-  };
-
-  const beginDeletePantry = () => {
-    setConfirmDeleteOpen(true);
-  };
-
-  const onSavePantryForm = (
-    name: string,
-    mode: Exclude<PantryFormMode, "idle">,
-  ) => {
-    if (mode === "rename") {
-      setPantries((cur) =>
-        updatePantry(cur, activePantryId, (p) => ({ ...p, name })),
-      );
-    } else {
-      const id = `p_${Date.now()}`;
-      setPantries((cur) => [
-        ...(Array.isArray(cur) ? cur : []),
-        { id, name, items: [], text: "" },
-      ]);
-      setActivePantryId(id);
-    }
-    setPantryForm({ mode: "idle", name: "", err: "" });
-    setPantryManagerOpen(false);
-  };
-
-  const onConfirmDeletePantry = () => {
-    const arr = Array.isArray(pantries) ? pantries : [];
-    if (arr.length <= 1) return;
-    const next = arr.filter((p) => p.id !== activePantryId);
-    setPantries(next);
-    setActivePantryId(next[0]?.id || "home");
-    setConfirmDeleteOpen(false);
-    setPantryManagerOpen(false);
   };
 
   /**
@@ -476,16 +438,20 @@ export function useNutritionPantries({
     name: string | null,
     qty: number | string | null,
     unit: string | null,
+    nextPantryId?: string | null,
   ) => {
     // `setPantries`-updater виконується синхронно (React зве його одразу,
     // щоб порахувати наступний стан) — той самий патерн, що вже несе
     // `consumePantryItem` нижче для передачі значень поза замикання.
+    const target = pantryItems[idx];
+    const pantryId = target?.pantryId ?? draftPantry?.id ?? DEFAULT_PLACE_ID;
+    const localIdx = target?.localIdx ?? idx;
     let editedName: string | null = null;
     let editedQty: number | null = null;
     setPantries((curPantries) =>
-      updatePantry(curPantries, activePantryId, (p) => {
+      updatePantry(curPantries, pantryId, (p) => {
         const items = Array.isArray(p.items) ? [...p.items] : [];
-        const item = items[idx];
+        const item = items[localIdx];
         if (!item) return p;
         const qtyNum = qty == null || qty === "" ? null : Number(qty);
         const normalizedQty =
@@ -494,7 +460,7 @@ export function useNutritionPantries({
         editedName = nextName;
         editedQty = normalizedQty;
         const qtyChanged = normalizedQty !== item.qty || unit !== item.unit;
-        items[idx] = {
+        items[localIdx] = {
           ...item,
           name: nextName,
           qty: normalizedQty,
@@ -505,6 +471,10 @@ export function useNutritionPantries({
       }),
     );
     setItemEdit((s) => ({ ...s, open: false }));
+    // Переїзд — після збереження правок і тільки якщо місце справді інше.
+    if (nextPantryId && target && nextPantryId !== target.pantryId) {
+      moveItemTo(idx, nextPantryId);
+    }
     // W1-PANTRY-APPEND стадія 2 — ручне редагування qty = чекпойнт 'adjust',
     // це буквально "тепер знаю, що насправді X". Пропускаємо, коли юзер
     // очистив кількість (null) — без числа чекпойнт нести нічого (ADR §3.1).
@@ -512,7 +482,7 @@ export function useNutritionPantries({
     if (n && editedQty != null) {
       appendNutritionPantryEvent({
         id: null,
-        pantryId: activePantryId,
+        pantryId,
         itemId: null,
         itemKey: canonicalFoodKey(n),
         kind: "adjust",
@@ -552,10 +522,15 @@ export function useNutritionPantries({
   ) => {
     const norm = matchFoodName(name);
     if (!norm) return;
+    // Списуємо там, де позиція лежить, а не там, куди дивиться екран:
+    // прийом їжі не знає й не має знати про фільтр місця.
+    const holder = pantryItems.find((x) => matchFoodName(x.name) === norm);
+    if (!holder) return;
+    const holderId = holder.pantryId;
     let deductedQty: number | null = null;
     let deductedUnit: string | null = null;
     setPantries((cur) =>
-      updatePantry(cur, activePantryId, (p) => {
+      updatePantry(cur, holderId, (p) => {
         const items = Array.isArray(p.items) ? [...p.items] : [];
         const idx = items.findIndex((x) => matchFoodName(x?.name) === norm);
         if (idx < 0) return p;
@@ -580,7 +555,7 @@ export function useNutritionPantries({
     if (deductedQty != null) {
       appendNutritionPantryEvent({
         id: null,
-        pantryId: activePantryId,
+        pantryId: holderId,
         itemId: null,
         itemKey: canonicalFoodKey(norm),
         kind: "consume",
@@ -621,9 +596,8 @@ export function useNutritionPantries({
   };
 
   const setPantryText = (text: string) => {
-    setPantries((cur) =>
-      updatePantry(cur, activePantryId, (p) => ({ ...p, text })),
-    );
+    const id = draftPantry?.id ?? DEFAULT_PLACE_ID;
+    setPantries((cur) => updatePantry(cur, id, (p) => ({ ...p, text })));
   };
 
   // AI-CONTEXT: розбір списку ніколи не має лишати користувача з нулем
@@ -686,17 +660,20 @@ export function useNutritionPantries({
 
   const confirmParsePreview = (items: PantryItem[]) => {
     if (!items.length || !parsePreview) return;
+    const draftId = parsePreview.pantryId;
     setPantries((cur) =>
-      updatePantry(cur, parsePreview.pantryId, (p) => ({
-        ...p,
-        items: mergeItems(p.items, items),
-        text: "",
-      })),
+      mergeItemsIntoPlaces(
+        cur.map((p) => (p.id === draftId ? { ...p, text: "" } : p)),
+        items,
+        placeOf,
+      ),
     );
     setParsePreview(null);
   };
 
   const dismissParsePreview = () => setParsePreview(null);
+
+  const draftPantryId = draftPantry?.id ?? DEFAULT_PLACE_ID;
 
   /**
    * `PantryParsePreview` викликає це одразу при тапі на «шт»/«г» для
@@ -710,27 +687,70 @@ export function useNutritionPantries({
   const parsePantry = useCallback(
     () =>
       parsePantryMutation.mutate({
-        pantryId: activePantryId,
+        pantryId: draftPantryId,
         text: pantryText.trim(),
       }),
-    [parsePantryMutation, activePantryId, pantryText],
+    [parsePantryMutation, draftPantryId, pantryText],
   );
 
+  /**
+   * Зміна місця в один дотик. Ledger дізнається про переїзд двома
+   * чекпойнтами, а не вигаданою дельтою: у старому місці залишок стає 0,
+   * у новому — рівно тим, що приїхало. Мовчазний перенос зробив би
+   * залишок місця неправдою, а комора — це журнал (ADR-0077).
+   */
+  const moveItemTo = (idx: number, targetId: string) => {
+    const src = pantryItems[idx];
+    if (!src || src.pantryId === targetId) return;
+    setPantries((cur) => {
+      const res = movePantryItem(
+        cur,
+        { pantryId: src.pantryId, localIdx: src.localIdx },
+        targetId,
+      );
+      return res.moved ? res.pantries : cur;
+    });
+    const key = matchFoodName(src.name);
+    if (!key) return;
+    const itemKey = canonicalFoodKey(key);
+    appendNutritionPantryEvent({
+      id: null,
+      pantryId: src.pantryId,
+      itemId: null,
+      itemKey,
+      kind: "adjust",
+      deltaQty: null,
+      absQty: 0,
+      unit: null,
+      source: "manual",
+      mealId: null,
+    });
+    if (src.qty != null && Number.isFinite(src.qty)) {
+      appendNutritionPantryEvent({
+        id: null,
+        pantryId: targetId,
+        itemId: null,
+        itemKey,
+        kind: "adjust",
+        deltaQty: null,
+        absQty: src.qty,
+        unit: src.unit ?? null,
+        source: "manual",
+        mealId: null,
+      });
+    }
+  };
+
   return {
+    ...places,
     pantries,
-    activePantryId,
-    setActivePantryId,
-    activePantry,
+    placeFilter,
+    setPlaceFilter,
+    moveItemTo,
     pantryText,
     pantryItems,
     newItemName,
     setNewItemName,
-    pantryManagerOpen,
-    setPantryManagerOpen,
-    pantryForm,
-    setPantryForm,
-    confirmDeleteOpen,
-    setConfirmDeleteOpen,
     itemEdit,
     setItemEdit,
     upsertItem,
@@ -741,11 +761,6 @@ export function useNutritionPantries({
     removeItem,
     editItemAt,
     removeItemAt,
-    beginRenamePantry,
-    beginCreatePantry,
-    beginDeletePantry,
-    onSavePantryForm,
-    onConfirmDeletePantry,
     onSaveItemEdit,
     setPantryText,
     effectiveItems,

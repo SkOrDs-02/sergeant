@@ -1,6 +1,6 @@
 # Спека: hero Їжі «Стрічка дня»
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-02 by @Skords-01. **Next review:** 2026-12-16.
 > **Status:** Implemented - PR #1014 (`MealStrip.tsx` замінив `ProgressRing`/`MacroRings` у hero `NutritionDashboard`; `mealTypeKcalForDay`, `nextMealLabel`, канон і анти-слоп аудит оновлені в тому ж PR). Перший із трьох hero-PR (порядок: Їжа → Фізрук → Фінік).
 > **Виконання:** чиста сесія у свіжому worktree від main. Governing skills: `sergeant-module-nutrition` (owner) + `sergeant-web-ui`. Виконавець: `nutrition-owner` (або `spec-executor` з тими самими скілами).
 > **Мокап:** Claude Design canvas «Hero-картки модулів», артборд `Nutrition C` — `https://claude.ai/code/artifact/f20e1268-7695-4ed2-8db2-f5ec2d230863` (демо-стан: 1 240 із 2 200 ккал; сніданок 520, обід 720; білки 62/140, жири 41/70, вуглеводи 150/240).

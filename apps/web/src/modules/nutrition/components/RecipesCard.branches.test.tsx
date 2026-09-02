@@ -14,7 +14,7 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import type { Meal, NutritionPrefs, Pantry } from "@sergeant/nutrition-domain";
+import type { Meal, NutritionPrefs } from "@sergeant/nutrition-domain";
 
 const {
   mockListSavedRecipes,
@@ -102,13 +102,6 @@ const PREFS: NutritionPrefs = {
   exclude: "",
 } as NutritionPrefs;
 
-const PANTRY: Pantry = {
-  id: "pantry-1",
-  name: "Дім",
-  items: [],
-  text: "",
-};
-
 const SAVED_RECIPE: import("../lib/recipeBook").SavedRecipe = {
   id: "rcp_saved_001",
   title: "Вівсяна каша",
@@ -143,7 +136,6 @@ function makeProps(
 ): Parameters<typeof RecipesCard>[0] {
   return {
     busy: false,
-    activePantry: PANTRY,
     prefs: PREFS,
     setPrefs: vi.fn(),
     recommendRecipes: vi.fn(),

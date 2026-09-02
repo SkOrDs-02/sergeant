@@ -12,7 +12,7 @@ import type { Pantry } from "./nutritionTypes.js";
 describe("makeDefaultPantry", () => {
   it("повертає початковий 'home' Pantry з порожніми items + text", () => {
     const p = makeDefaultPantry();
-    expect(p).toEqual({ id: "home", name: "Дім", items: [], text: "" });
+    expect(p).toEqual({ id: "home", name: "Комора", items: [], text: "" });
   });
 
   it("кожен виклик дає НОВИЙ обʼєкт (не shared reference)", () => {
@@ -102,7 +102,7 @@ describe("normalizePantries", () => {
 
 describe("updatePantry", () => {
   const items: Pantry[] = [
-    { id: "home", name: "Дім", items: [], text: "" },
+    { id: "home", name: "Комора", items: [], text: "" },
     { id: "office", name: "Офіс", items: [], text: "lunch" },
   ];
 
@@ -126,7 +126,7 @@ describe("updatePantry", () => {
     expect(next).toHaveLength(3);
     expect(next[0]).toEqual({
       id: "home",
-      name: "Дім",
+      name: "Комора",
       items: [],
       text: "fresh",
     });
@@ -147,7 +147,7 @@ describe("updatePantry", () => {
       text: "init",
     }));
     expect(next).toEqual([
-      { id: "home", name: "Дім", items: [], text: "init" },
+      { id: "home", name: "Комора", items: [], text: "init" },
     ]);
   });
 });

@@ -31,7 +31,11 @@ import type { AmbiguousPantryUnit } from "../lib/pantryAmbiguousUnitMemory";
  * значеннях, але типізуючий контракт відсікає "тихі" перейменування
  * полів (`name` → `title`), які раніше провалювались у `: any`.
  */
-type PantryItemView = Partial<PantryItem> & { name?: string };
+type PantryItemView = Partial<PantryItem> & {
+  name?: string;
+  /** Місце зберігання позиції. Відсутнє лише на легасі-шляху сирого тексту. */
+  pantryId?: string;
+};
 
 // Назви описують спосіб вводу, а не те, що вводиться: «Продукт»/«Список»
 // читалось як два різні типи запису, ще й плуталось із вкладкою «Покупки».
@@ -128,17 +132,33 @@ function ItemRow({
           type="button"
           onClick={() => editItemAt(idx)}
           disabled={busy}
-          className="flex-1 min-w-0 flex items-baseline gap-1.5 text-left min-h-[44px]"
+          // `items-center` тримає текст по центру 44px-кнопки, а базову
+          // лінію між назвою і кількістю дає внутрішній `items-baseline`.
+          // З одним лише `items-baseline` вміст прилипав до верху, і після
+          // зняття перемикача місця (який раніше тримав висоту) хрестик
+          // видалення поїхав нижче назви.
+          className="flex-1 min-w-0 flex items-center gap-1.5 text-left min-h-[44px]"
           aria-label={`Редагувати ${item?.name || "продукт"}`}
         >
-          <span className="text-style-label text-text truncate">
-            {item?.name || "—"}
-          </span>
-          {qtyLabel && (
-            <span className="text-style-caption text-subtle shrink-0">
-              {qtyLabel}
+          {/*
+           * `title` тут не косметика: назви з чека довші за рядок майже
+           * завжди («Йогурт Галичина Карпатський чорниця» — 248 px при
+           * доступних 202), і без підказки повний текст видно лише в
+           * аркуші редагування (браузерний аудит 2026-09-01).
+           */}
+          <span className="min-w-0 flex items-baseline gap-1.5">
+            <span
+              className="text-style-label text-text truncate"
+              title={item?.name || undefined}
+            >
+              {item?.name || "—"}
             </span>
-          )}
+            {qtyLabel && (
+              <span className="text-style-caption text-subtle shrink-0">
+                {qtyLabel}
+              </span>
+            )}
+          </span>
           {isPantryItemLowStock(item) && (
             <span className="inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning shrink-0">
               <Icon name="trending-down" size={12} aria-hidden />
@@ -230,6 +250,7 @@ interface InventoryCardProps {
   removeItemAtOrByName: (idx: number, name?: string) => void;
   pantryItemsLength: number;
   busy: boolean;
+  placeFilter: string | null;
 }
 
 function InventoryCard({
@@ -238,13 +259,28 @@ function InventoryCard({
   removeItemAtOrByName,
   pantryItemsLength,
   busy,
+  placeFilter,
 }: InventoryCardProps) {
   const userToggledRef = useRef(false);
   const [mainOpen, setMainOpen] = useState(true);
 
-  const groups = useMemo(
-    () => groupItemsByCategory<PantryItemView>(effectiveItems),
-    [effectiveItems],
+  // Групування рахується по ПОВНОМУ списку, а фільтр звужує вже його.
+  // Інакше `idx` усередині категорії перестав би бути глобальною адресою
+  // позиції, і редагування правило б чужий продукт.
+  const groups = useMemo(() => {
+    const all = groupItemsByCategory<PantryItemView>(effectiveItems);
+    if (!placeFilter) return all;
+    return all
+      .map((g) => ({
+        ...g,
+        items: g.items.filter(({ item }) => item?.pantryId === placeFilter),
+      }))
+      .filter((g) => g.items.length > 0);
+  }, [effectiveItems, placeFilter]);
+
+  const visibleCount = useMemo(
+    () => groups.reduce((sum, g) => sum + g.items.length, 0),
+    [groups],
   );
 
   useEffect(() => {
@@ -292,7 +328,11 @@ function InventoryCard({
           <ChevronIcon open={mainOpen} />
           <span className="text-style-label text-text">Моя комора</span>
           <span className="text-style-caption text-subtle">
-            ({pantryItemsLength})
+            (
+            {placeFilter
+              ? `${visibleCount} з ${pantryItemsLength}`
+              : pantryItemsLength}
+            )
           </span>
         </div>
       </button>
@@ -341,6 +381,7 @@ interface PantryCardProps {
   parsePreview?: PantryParsePreviewData | null;
   confirmParsePreview?: (items: PantryItem[]) => void;
   dismissParsePreview?: () => void;
+  placeFilter: string | null;
   /**
    * UX-4 (аудит 2026-09-01) — позиції з `upsertItem`, чиє хвостове число без
    * одиниці лишилось неоднозначним. Необовʼязкові — сторінки, що ще не
@@ -372,6 +413,7 @@ export function PantryCard({
   parsePreview,
   confirmParsePreview,
   dismissParsePreview,
+  placeFilter,
   ambiguousPantryItems,
   resolveAmbiguousPantryItem,
   dismissAmbiguousPantryItem,
@@ -512,6 +554,7 @@ export function PantryCard({
         removeItemAtOrByName={removeItemAtOrByName}
         pantryItemsLength={pantryItemsLength}
         busy={busy}
+        placeFilter={placeFilter}
       />
     </>
   );
