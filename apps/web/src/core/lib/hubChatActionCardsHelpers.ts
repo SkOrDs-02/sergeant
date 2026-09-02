@@ -1,4 +1,8 @@
 import type { ChatActionCardModule } from "./hubChatActionCards";
+import { MCC_CATEGORIES } from "@sergeant/finyk-domain";
+import { MANUAL_TAXONOMY_BY_ID } from "@sergeant/finyk-domain/lib/manualTaxonomy";
+import { isMealTypeId, labelForMealType } from "@sergeant/nutrition-domain";
+import { loadRoutineState } from "../../modules/routine/lib/routineStorage";
 
 export function moduleFor(name: string): ChatActionCardModule {
   // Finyk tools
@@ -221,6 +225,82 @@ export function iconFor(name: string): string | undefined {
     default:
       return undefined;
   }
+}
+
+/**
+ * AI-4 / AI-6 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+ * один мапер ключ → підпис на всі три родини «карта показує сирий id/enum
+ * замість людського тексту»: звичка (`hab_<uuid>`), категорія Фініка
+ * (`restaurant`), тип прийому їжі (`dinner`). Кожна функція повертає
+ * `undefined`, коли резолв не вдався (звичку видалено, категорію
+ * не впізнано) — виклики нижче в `hubChatActionCardsRegistry.ts` тоді
+ * падають назад на raw id, а не на порожній рядок.
+ */
+
+const MCC_CATEGORY_LABEL_BY_ID: ReadonlyMap<string, string> = new Map(
+  MCC_CATEGORIES.map((c) => [c.id, c.label]),
+);
+
+/** Модель шле `id:`-префіксовані значення час від часу (той самий шум, що
+ * `normalizeHabitId` у `chatActions/routineActions.ts` вже чистить для
+ * запису) — тут та сама нормалізація для читання, окрема копія навмисно:
+ * дві-три рядки не варті спільного експорту через модульну межу. */
+function stripIdPrefix(raw: string): string {
+  return raw
+    .trim()
+    .replace(/^id:\s*/i, "")
+    .trim();
+}
+
+/**
+ * Назва звички з локального стану Рутини (`loadRoutineState().habits`) —
+ * той самий джерело істини, що читає UI. `undefined`, якщо звичку вже
+ * видалено/архівовано локально або id не резолвиться — виклик нижче
+ * falls back на сирий id, не ховає інформацію повністю.
+ */
+export function habitNameFor(habitId: string | undefined): string | undefined {
+  if (!habitId) return undefined;
+  const id = stripIdPrefix(habitId);
+  if (!id) return undefined;
+  return loadRoutineState().habits.find((h) => h.id === id)?.name;
+}
+
+/**
+ * Людський підпис категорії Фініка з канонічного реєстру `MCC_CATEGORIES`
+ * (той самий, що керує бюджетами/лімітами), з fallback на ручну таксономію
+ * (`MANUAL_TAXONOMY_BY_ID`) для legacy manual-слагів. Користувацькі
+ * (custom) категорії тут не резолвляться — картка тоді показує raw id,
+ * що не гірше за поточну поведінку.
+ */
+export function categoryLabelFor(
+  categoryId: string | undefined,
+): string | undefined {
+  if (!categoryId) return undefined;
+  const id = categoryId.trim();
+  if (!id) return undefined;
+  return (
+    MCC_CATEGORY_LABEL_BY_ID.get(id) ?? MANUAL_TAXONOMY_BY_ID.get(id)?.label
+  );
+}
+
+/**
+ * Українська назва типу прийому їжі через канонічний
+ * `labelForMealType` з `@sergeant/nutrition-domain` (той самий, що керує
+ * рендером плану харчування) — не власна копія словника.
+ *
+ * Tool-схема (`toolDefs/nutrition.ts`) описує `meal_type` як вільний
+ * рядок із підказкою `'breakfast' | 'lunch' | 'dinner' | 'snack'` — БЕЗ
+ * enum-обмеження, тож модель штатно шле і вже українське слово («обід»,
+ * «сніданок»), яке саме по собі читабельне. Перекладаємо лише РОЗПІЗНАНИЙ
+ * канонічний enum (`isMealTypeId`); усе інше повертаємо як є — інакше
+ * `labelForMealType`-фолбек «Прийом їжі» затер би вже нормальний текст,
+ * замінивши конкретне на загальне.
+ */
+export function mealTypeLabelFor(
+  mealType: string | undefined,
+): string | undefined {
+  if (!mealType) return undefined;
+  return isMealTypeId(mealType) ? labelForMealType(mealType) : mealType;
 }
 
 export function titleFor(name: string, status: "completed" | "failed"): string {

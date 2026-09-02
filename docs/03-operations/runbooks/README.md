@@ -1,6 +1,6 @@
 # Runbooks
 
-> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-29.
+> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-29.
 > **Status:** Active
 
 Operational runbooks для on-call та incident-flow-ів — точне «як» для нашого

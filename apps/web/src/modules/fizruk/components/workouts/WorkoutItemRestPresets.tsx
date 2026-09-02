@@ -59,7 +59,9 @@ export function WorkoutItemRestPresets({
       <Button
         type="button"
         variant="soft"
-        tone="success"
+        // SLOP-2 (аудит 2026-09): «рекомендований» пресет — це вибір, не
+        // успіх; зелений тут конфліктував із модульним акцентом Фізрука.
+        tone="fizruk"
         size="sm"
         className="flex-1 justify-start"
         onClick={() => setRestTimer({ remaining: defSec, total: defSec })}

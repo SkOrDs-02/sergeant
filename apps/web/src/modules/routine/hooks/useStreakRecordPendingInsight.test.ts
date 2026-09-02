@@ -1,22 +1,17 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 import type { RoutineState, Habit } from "../lib/types";
 import { useStreakRecordPendingInsight } from "./useStreakRecordPendingInsight";
 
-vi.mock("@shared/lib/time/kyivTime", () => ({
-  getKyivDateParts: vi.fn(),
-}));
 vi.mock("../lib/streaks", () => ({
   // Хук перейшов на гнучкий стрік (Хвиля 4) — мок іде за ним.
   flexibleMaxActiveStreak: vi.fn(),
   maxStreakAllTime: vi.fn(),
 }));
 
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { flexibleMaxActiveStreak, maxStreakAllTime } from "../lib/streaks";
 
-const mockDateParts = vi.mocked(getKyivDateParts);
 const mockActive = vi.mocked(flexibleMaxActiveStreak);
 const mockAllTime = vi.mocked(maxStreakAllTime);
 
@@ -38,12 +33,16 @@ function makeState(habits: Habit[]): RoutineState {
 }
 
 beforeEach(() => {
-  mockDateParts.mockReturnValue({
-    year: 2026,
-    month: 7,
-    day: 19,
-    hour: 12,
-  } as ReturnType<typeof getKyivDateParts>);
+  // `todayKey` (`lib/dayAnchor.ts`) is now device-local (ADR-0078) and reads
+  // the real system clock here — irrelevant to these assertions since
+  // `flexibleMaxActiveStreak`/`maxStreakAllTime` are fully mocked below and
+  // ignore the key argument's value.
+  vi.useFakeTimers();
+  vi.setSystemTime(new Date("2026-07-19T12:00:00.000Z"));
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("useStreakRecordPendingInsight", () => {

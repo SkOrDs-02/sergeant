@@ -304,7 +304,7 @@ describe("useNutritionRemoteActions", () => {
       expect(updater(null)).toEqual(plan);
     });
 
-    it("throws when server returns empty plan", async () => {
+    it("throws with a cause + action when server returns empty plan (prefer/ignore)", async () => {
       apiFetchDayPlan.mockResolvedValueOnce({ plan: null });
       const { result, spies } = makeHarness();
       act(() => {
@@ -312,7 +312,27 @@ describe("useNutritionRemoteActions", () => {
       });
       await waitFor(() =>
         expect(spies.setErr).toHaveBeenCalledWith(
-          "Не вдалося отримати план харчування",
+          "AI повернув порожній план харчування. Спробуй згенерувати ще раз.",
+        ),
+      );
+    });
+
+    // UX-1 (аудит 2026-09-01): режим «тільки з наявного» дає окрему причину
+    // (комора не вистачила на страву), а не той самий текст, що prefer/ignore.
+    it("throws with the pantry-specific cause when mode is 'only'", async () => {
+      apiFetchDayPlan.mockResolvedValueOnce({ plan: { meals: [] } });
+      const { result, spies } = makeHarness({
+        pantry: {
+          effectiveItems: [{ name: "Яйця", qty: 10, unit: "шт", notes: null }],
+        },
+        prefs: { ...BASE_PREFS, recipePantryMode: "only" },
+      });
+      act(() => {
+        result.current.fetchDayPlan();
+      });
+      await waitFor(() =>
+        expect(spies.setErr).toHaveBeenCalledWith(
+          "AI не зміг скласти план тільки з наявних продуктів. Додай ще позицій у комору або зміни режим комори.",
         ),
       );
     });

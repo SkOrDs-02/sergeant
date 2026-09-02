@@ -615,6 +615,11 @@ describe("rateLimitExpress — Redis path", () => {
     // `error`, юзер на /sign-in бачить generic «Помилка входу» замість
     // реального rate-limit повідомлення. Тому тримаємо обидва поля
     // синхронізованими.
+    //
+    // AI-3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+    // копія тепер називає конкретний час очікування (`retryAfterSec` +
+    // `pluralSeconds`), а не голе «пізніше»; для fresh 1-req/60s bucket-а
+    // блокований запит бачить повне вікно — 60 секунд.
     vi.mocked(getRedis).mockReturnValue(null);
     const key = `mw:body_${Math.random().toString(36).slice(2)}`;
     const middleware = rateLimitExpress({ key, limit: 1, windowMs: 60_000 });
@@ -644,8 +649,8 @@ describe("rateLimitExpress — Redis path", () => {
     // fields must be present and equal (M3 contract).
     expect(body).toEqual(
       expect.objectContaining({
-        error: "Забагато запитів. Спробуй пізніше.",
-        message: "Забагато запитів. Спробуй пізніше.",
+        error: "Забагато запитів. Спробуй через 60 секунд.",
+        message: "Забагато запитів. Спробуй через 60 секунд.",
         code: "RATE_LIMIT_IP",
       }),
     );
@@ -1218,6 +1223,113 @@ describe("secondary IP bucket (M9)", () => {
     expect(status).toHaveBeenCalledWith(429);
     const body = json.mock.calls[0]?.[0] as Record<string, unknown>;
     // RATE_LIMIT_USER: per-user bucket exhausted, not IP bucket
+    expect(body).toMatchObject({ code: "RATE_LIMIT_USER" });
+  });
+});
+
+// AI-3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — burst
+// window (`limit`/`windowMs`) plus a stricter same-subject sustained window.
+describe("sustained same-subject bucket (AI-3)", () => {
+  // In-memory path (Redis=null, Postgres rejects) — same setup as the M9
+  // suite above.
+  function makeAuthReq(userId: string, ip: string): Request {
+    return {
+      ip,
+      headers: {},
+      user: { id: userId },
+    } as unknown as Request;
+  }
+
+  function makeRes() {
+    const json = vi.fn();
+    const setHeader = vi.fn();
+    const status = vi.fn().mockReturnThis();
+    const res = { setHeader, status, json } as never;
+    return { res, json, status };
+  }
+
+  beforeEach(() => {
+    vi.mocked(getRedis).mockReturnValue(null);
+    redisEvalMock.mockReset();
+    pgQueryMock.mockReset();
+    pgQueryMock.mockRejectedValue(pgUndefinedTableError());
+    loggerWarnMock.mockReset();
+    __resetRateLimitPgWarnForTests();
+  });
+
+  it("allows a burst under both the burst and sustained caps", async () => {
+    const key = `ai3_pass_${Math.random().toString(36).slice(2)}`;
+    const middleware = rateLimitExpress({
+      key,
+      limit: 60,
+      windowMs: 60_000,
+      cost: () => 10, // mirrors api:chat — 6 accepted calls/min
+      sustained: { limit: 20, windowMs: 300_000 },
+    });
+    const req = makeAuthReq("user-ai3-a", "1.2.3.4");
+
+    for (let i = 0; i < 6; i += 1) {
+      const { res } = makeRes();
+      const next = vi.fn();
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledOnce();
+    }
+  });
+
+  it("blocks on the sustained bucket even though the burst bucket alone would allow more", async () => {
+    // Burst bucket is deliberately generous (100/min, cost 1) so ONLY the
+    // sustained bucket (3 per 5 min) can be the one that blocks.
+    const key = `ai3_sustained_block_${Math.random().toString(36).slice(2)}`;
+    const middleware = rateLimitExpress({
+      key,
+      limit: 100,
+      windowMs: 60_000,
+      sustained: { limit: 3, windowMs: 300_000 },
+    });
+    const req = makeAuthReq("user-ai3-b", "1.2.3.4");
+
+    for (let i = 0; i < 3; i += 1) {
+      const { res } = makeRes();
+      const next = vi.fn();
+      await middleware(req, res, next);
+      expect(next).toHaveBeenCalledOnce();
+    }
+
+    const { res, status, json } = makeRes();
+    const next = vi.fn();
+    await middleware(req, res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(status).toHaveBeenCalledWith(429);
+    const body = json.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(body).toMatchObject({ code: "RATE_LIMIT_SUSTAINED" });
+    // Копія називає конкретний час очікування, не голе «пізніше».
+    expect(body["message"]).toMatch(/через \d+ секунд/);
+  });
+
+  it("burst bucket still blocks first when it is the tighter of the two", async () => {
+    // Burst limit=1 (very tight), sustained generous (100/5min) — the
+    // PRIMARY bucket must be the one that blocks, not sustained.
+    const key = `ai3_burst_first_${Math.random().toString(36).slice(2)}`;
+    const middleware = rateLimitExpress({
+      key,
+      limit: 1,
+      windowMs: 60_000,
+      sustained: { limit: 100, windowMs: 300_000 },
+    });
+    const req = makeAuthReq("user-ai3-c", "1.2.3.4");
+
+    const first = makeRes();
+    await middleware(req, first.res, vi.fn());
+    expect(first.status).not.toHaveBeenCalledWith(429);
+
+    const second = makeRes();
+    const next = vi.fn();
+    await middleware(req, second.res, next);
+
+    expect(next).not.toHaveBeenCalled();
+    expect(second.status).toHaveBeenCalledWith(429);
+    const body = second.json.mock.calls[0]?.[0] as Record<string, unknown>;
     expect(body).toMatchObject({ code: "RATE_LIMIT_USER" });
   });
 });

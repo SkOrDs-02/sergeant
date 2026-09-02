@@ -78,7 +78,7 @@ export const nutritionPageMessages = {
    */
   weekKcal: {
     heading: "Тиждень · ккал",
-    logLink: "Журнал →",
+    logLink: "Журнал",
     chartAriaLabel: "Калорії за тиждень",
     kcalUnit: "ккал",
     goalPrefix: "ціль",
@@ -233,5 +233,21 @@ export const nutritionPageMessages = {
     errorUnavailable: "Сільпо зараз недоступне, спробуй пізніше.",
     errorUnknown: "Щось пішло не так. Спробуй ще раз.",
     retryCta: "Спробувати ще раз",
+  },
+
+  /**
+   * Підказка «шт чи г?» — коли парсер комори бачить голе хвостове число без
+   * одиниці ≥ `PANTRY_AMBIGUOUS_QTY_THRESHOLD` (аудит 2026-09-01, знахідка
+   * UX-4: «Нутелла 350» мовчки ставало «350 шт»). Один тап у тому самому
+   * потоці додавання, не модалка з підтвердженням: `piecesCta`/`gramsCta`
+   * підставляють у підпис кнопки конкретне число («350 шт» / «350 г»),
+   * тому самі лишаються короткими словами одиниці.
+   */
+  pantryAmbiguousQty: {
+    badge: "Уточни",
+    question: "Шт чи г?",
+    piecesCta: "шт",
+    gramsCta: "г",
+    cancelCta: "Не додавати",
   },
 };

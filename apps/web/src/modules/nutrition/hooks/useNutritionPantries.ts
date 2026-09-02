@@ -36,6 +36,11 @@ import {
   applyConsumeToPantryItem,
   type PantryItemSource,
 } from "@sergeant/nutrition-domain";
+import {
+  getRememberedAmbiguousUnit,
+  rememberAmbiguousUnitChoice,
+  type AmbiguousPantryUnit,
+} from "../lib/pantryAmbiguousUnitMemory";
 import type {
   PantryForm,
   PantryFormMode,
@@ -89,6 +94,21 @@ function normalizeIncomingItems(raw: PantryItem | PantryItem[]): PantryItem[] {
       sources: Array.isArray(item?.sources) ? item.sources : null,
     }))
     .filter((item) => item.name);
+}
+
+/**
+ * Якщо цей продукт уже отримував явний вибір «шт чи г?» (UX-4), застосовує
+ * його мовчки і знімає `ambiguousQty` — саме тому вдруге не питаємо про той
+ * самий товар. Продукт, про який ще не питали, повертається без змін: тоді
+ * прапорець доходить до UI і викликає підказку.
+ */
+function resolveAmbiguousItemWithMemory(item: PantryItem): PantryItem {
+  if (!item.ambiguousQty) return item;
+  const remembered = getRememberedAmbiguousUnit(canonicalFoodKey(item.name));
+  if (!remembered) return item;
+  const { ambiguousQty: _drop, ...rest } = item;
+  void _drop;
+  return { ...rest, unit: remembered };
 }
 
 export function useNutritionPantries({
@@ -164,6 +184,14 @@ export function useNutritionPantries({
     null,
   );
 
+  // UX-4 (аудит 2026-09-01) — позиції з `upsertItem`, чиє хвостове число без
+  // одиниці лишилось неоднозначним ПІСЛЯ перевірки памʼяті (нижче). Не
+  // мерджаться в комору, доки людина не тапне «шт» чи «г» — один тап у
+  // тому самому потоці, без модалки (`PantryAmbiguousQtyPrompt`).
+  const [ambiguousPantryItems, setAmbiguousPantryItems] = useState<
+    PantryItem[]
+  >([]);
+
   // DCRUD-007: skip the mount run — it would persist the UNHYDRATED
   // initial state (LS is tombstoned after the first boot, so that state
   // is an empty default) while the SQLite cache may already be warm;
@@ -210,22 +238,22 @@ export function useNutritionPantries({
     return parseLoosePantryText(raw);
   }, [pantryItems, pantryText]);
 
-  const upsertItem = (raw: string | PantryItem | PantryItem[]) => {
-    const parsed =
-      typeof raw === "string"
-        ? parseLoosePantryText(raw)
-        : normalizeIncomingItems(raw);
-    if (!parsed.length) return;
+  // Витягнуто з колишнього тіла `upsertItem`: злиття в комору + одна
+  // 'replenish'-подія на позицію з відомою кількістю. Використовується і
+  // прямим шляхом (немає неоднозначних чисел), і з дозволу підказки
+  // «шт чи г?» нижче — обидва мають записати рівно те саме.
+  const mergeParsedItems = (items: PantryItem[]) => {
+    if (!items.length) return;
     setPantries((cur) =>
       updatePantry(cur, activePantryId, (p) => ({
         ...p,
-        items: mergeItems(Array.isArray(p.items) ? p.items : [], parsed),
+        items: mergeItems(Array.isArray(p.items) ? p.items : [], items),
       })),
     );
     // W1-PANTRY-APPEND стадія 2 — паралельно до запису `qty` вище: одна
     // 'replenish'-подія на кожну позицію з відомою кількістю. Позиції без
     // qty (гола назва — «сіль») дельту не несуть, тож пропускаємо.
-    for (const item of parsed) {
+    for (const item of items) {
       if (item.qty == null || !Number.isFinite(item.qty)) continue;
       appendNutritionPantryEvent({
         id: null,
@@ -240,6 +268,51 @@ export function useNutritionPantries({
         mealId: null,
       });
     }
+  };
+
+  const upsertItem = (raw: string | PantryItem | PantryItem[]) => {
+    const parsed =
+      typeof raw === "string"
+        ? parseLoosePantryText(raw)
+        : normalizeIncomingItems(raw);
+    if (!parsed.length) return;
+
+    // UX-4 — голе хвостове число без одиниці (`ambiguousQty`) не мерджиться
+    // мовчки. Продукт, про який людина вже одного разу відповіла «шт» чи
+    // «г», проходить одразу (`resolveAmbiguousItemWithMemory`); решта чекає
+    // явного тапу в `PantryAmbiguousQtyPrompt`.
+    const resolved = parsed.map(resolveAmbiguousItemWithMemory);
+    const ready = resolved.filter((item) => !item.ambiguousQty);
+    const pending = resolved.filter((item) => item.ambiguousQty);
+
+    if (ready.length > 0) mergeParsedItems(ready);
+    if (pending.length > 0) {
+      setAmbiguousPantryItems((cur) => [...cur, ...pending]);
+    }
+  };
+
+  /**
+   * Тап «шт» чи «г» на підказці: пише позицію з обраною одиницею й
+   * запамʼятовує вибір для цього продукту (канон nutrition §6 — не питати
+   * вдруге про той самий товар). Індекс адресує `ambiguousPantryItems`, не
+   * комору.
+   */
+  const resolveAmbiguousPantryItem = (
+    idx: number,
+    unit: AmbiguousPantryUnit,
+  ) => {
+    const item = ambiguousPantryItems[idx];
+    if (!item) return;
+    rememberAmbiguousUnitChoice(canonicalFoodKey(item.name), unit);
+    const { ambiguousQty: _drop, ...rest } = item;
+    void _drop;
+    mergeParsedItems([{ ...rest, unit }]);
+    setAmbiguousPantryItems((cur) => cur.filter((_, i) => i !== idx));
+  };
+
+  /** Скасовує додавання позиції з підказки — товар нікуди не пишеться. */
+  const dismissAmbiguousPantryItem = (idx: number) => {
+    setAmbiguousPantryItems((cur) => cur.filter((_, i) => i !== idx));
   };
 
   const removeItem = (name: string) => {
@@ -625,6 +698,15 @@ export function useNutritionPantries({
 
   const dismissParsePreview = () => setParsePreview(null);
 
+  /**
+   * `PantryParsePreview` викликає це одразу при тапі на «шт»/«г» для
+   * неоднозначного рядка (не чекаючи «Підтвердити») — вибір запамʼятовується
+   * незалежно від того, підтвердить людина весь список чи скасує його.
+   */
+  const rememberAmbiguousChoice = (name: string, unit: AmbiguousPantryUnit) => {
+    rememberAmbiguousUnitChoice(canonicalFoodKey(name), unit);
+  };
+
   const parsePantry = useCallback(
     () =>
       parsePantryMutation.mutate({
@@ -652,6 +734,10 @@ export function useNutritionPantries({
     itemEdit,
     setItemEdit,
     upsertItem,
+    ambiguousPantryItems,
+    resolveAmbiguousPantryItem,
+    dismissAmbiguousPantryItem,
+    rememberAmbiguousChoice,
     removeItem,
     editItemAt,
     removeItemAt,

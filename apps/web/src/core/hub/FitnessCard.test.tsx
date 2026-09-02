@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 const getCachedFizrukSqliteState = vi.fn();
 vi.mock("@fizruk/lib/sqliteReader", () => ({
@@ -8,6 +8,10 @@ vi.mock("@fizruk/lib/sqliteReader", () => ({
 }));
 
 import FitnessCard from "./FitnessCard";
+import {
+  __resetFizrukSqliteReadGateForTests,
+  notifyFizrukSqliteCacheRefresh,
+} from "@fizruk/lib/sqliteReadGate";
 
 // A completed workout today (ISO timestamps) → count 1 for the current week.
 function cacheWithWorkout(): Record<string, unknown> {
@@ -32,7 +36,10 @@ describe("FitnessCard", () => {
     localStorage.clear();
     getCachedFizrukSqliteState.mockReturnValue(emptyWarmCache);
   });
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    __resetFizrukSqliteReadGateForTests();
+  });
 
   it("renders collapsed by default with a workout-count summary and toggles open", () => {
     getCachedFizrukSqliteState.mockReturnValue(cacheWithWorkout());
@@ -70,5 +77,24 @@ describe("FitnessCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /Фізрук/i }));
     const chart = screen.getByLabelText("Графік");
     expect(chart.querySelectorAll("button").length).toBeGreaterThan(0);
+  });
+
+  it("CALC-4: recomputes once the Fizruk SQLite cache warms after mount (cold deep-link)", () => {
+    // Холодний deep-link: кеш ще порожній на першому рендері, гідрація pull
+    // приходить пізніше і бампає ТІЛЬКИ тік модуля (не hub-bump).
+    getCachedFizrukSqliteState.mockReturnValue({
+      workouts: [],
+      refreshedAt: null,
+    });
+    render(<FitnessCard period="week" offset={0} />);
+    fireEvent.click(screen.getByRole("button", { name: /Фізрук/i }));
+    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+
+    getCachedFizrukSqliteState.mockReturnValue(cacheWithWorkout());
+    act(() => {
+      notifyFizrukSqliteCacheRefresh();
+    });
+    expect(screen.queryByText(/Немає даних/i)).toBeNull();
+    expect(screen.getAllByText(/трен\./i).length).toBeGreaterThan(0);
   });
 });

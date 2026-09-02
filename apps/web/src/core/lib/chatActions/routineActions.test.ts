@@ -1,6 +1,9 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
-import { habitScheduledOnDate } from "@sergeant/routine-domain";
+import {
+  habitScheduledOnDate,
+  flexibleStreakBreakdown,
+} from "@sergeant/routine-domain";
 import {
   loadRoutineState,
   saveRoutineState,
@@ -640,6 +643,45 @@ describe("habit_stats", () => {
     expect(out).toContain("Виконано");
     expect(out).toContain("серія");
   });
+
+  // LOG-1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // `habit_stats` рахує серію тим самим гнучким алгоритмом
+  // (`flexibleStreakBreakdown`), що й UI, а не жорсткою реалізацією, яка
+  // обнуляла серію на першому дні без completion незалежно від skip.
+  // Сценарій: сьогодні (04-22) і позавчора (04-20) виконано, а вчора
+  // (04-21) стоїть «не зміг з причиною» — гнучка модель НЕ обриває серію
+  // на skip-дні (канон §4: skip нейтральний, серія переживає, не росте).
+  it("LOG-1: пропуск із причиною не обриває серію — той самий гнучкий алгоритм, що в UI", () => {
+    seedHabit("h1", "Йога");
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      completions: {
+        ...seeded.completions,
+        h1: ["2026-04-20", "2026-04-22"],
+      },
+      skips: {
+        h1: { "2026-04-21": { reason: "busy", at: "2026-04-21T08:00:00Z" } },
+      },
+    });
+    const habit = loadRoutineState().habits.find((h) => h.id === "h1")!;
+
+    // Незалежна перевірка тим самим доменним алгоритмом, яким рахує UI —
+    // «чат = UI» на звичці зі skip-днем.
+    const expectedStreak = flexibleStreakBreakdown(
+      habit,
+      loadRoutineState().completions["h1"],
+      "2026-04-22",
+      { skipsForHabit: loadRoutineState().skips?.["h1"] },
+    ).days;
+    expect(expectedStreak).toBe(2); // регресійний якір: 04-20 + 04-22, skip не рахується, не обриває
+
+    const out = call({
+      name: "habit_stats",
+      input: { habit_id: "h1", period_days: 7 },
+    });
+    expect(out).toContain(`Поточна серія: ${expectedStreak} днів`);
+  });
 });
 
 // ---------------------------------------------------------------------------
@@ -753,18 +795,21 @@ describe("mark_habit_done · undo", () => {
     seedHabit("h1", "Вода");
     const out = handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2024-06-15" },
+      // LOG-2 fix: дата має бути в межах розкладу звички.
+      // `seedHabit` дефолтить `startDate: "2026-01-01"`, тож дата ДО
+      // старту (як стара «2024-06-15») тепер коректно no-op-ить.
+      input: { habit_id: "h1", date: "2026-06-15" },
     });
     if (typeof out === "string" || out == null) {
       throw new Error(`expected undoable result, got ${typeof out}`);
     }
     const before = loadRoutineState();
-    expect(before.completions["h1"]).toContain("2024-06-15");
+    expect(before.completions["h1"]).toContain("2026-06-15");
 
     out.undo?.();
 
     const after = loadRoutineState();
-    expect(after.completions["h1"] ?? []).not.toContain("2024-06-15");
+    expect(after.completions["h1"] ?? []).not.toContain("2026-06-15");
   });
 
   it("якщо дата вже була виконана — повертає результат БЕЗ undo (no-op)", () => {
@@ -772,14 +817,14 @@ describe("mark_habit_done · undo", () => {
     // Перший виклик — вставляємо completion
     const first = handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2024-06-15" },
+      input: { habit_id: "h1", date: "2026-06-15" },
     });
     expect(typeof first).toBe("object");
 
     // Другий виклик з тією ж датою — completion вже є, undo не потрібен
     const second = handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2024-06-15" },
+      input: { habit_id: "h1", date: "2026-06-15" },
     });
     // Форма змінилась разом із F-12: no-op теж несе `confirm`, але undo
     // лишається відсутнім — реверсити нема чого.
@@ -790,11 +835,11 @@ describe("mark_habit_done · undo", () => {
     seedHabit("h1", "Вода");
     handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2024-06-13" },
+      input: { habit_id: "h1", date: "2026-06-13" },
     });
     const out = handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2024-06-15" },
+      input: { habit_id: "h1", date: "2026-06-15" },
     });
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
@@ -802,8 +847,58 @@ describe("mark_habit_done · undo", () => {
     out.undo?.();
 
     const after = loadRoutineState();
-    expect(after.completions["h1"]).toContain("2024-06-13");
-    expect(after.completions["h1"]).not.toContain("2024-06-15");
+    expect(after.completions["h1"]).toContain("2026-06-13");
+    expect(after.completions["h1"]).not.toContain("2026-06-15");
+  });
+
+  // LOG-2 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // раніше `mark_habit_done` писав completion незалежно від розкладу
+  // звички (жодного `habitScheduledOnDate`-гейту, той самий пропуск, що
+  // `applyToggleHabitCompletion` закриває). Дата ДО `startDate` звички —
+  // незапланований день, тож tool має бути no-op, як чекбокс в UI.
+  it("дата поза розкладом звички (до startDate) — no-op, без запису", () => {
+    seedHabit("h1", "Вода"); // startDate: 2026-01-01
+    const out = handleRoutineAction({
+      name: "mark_habit_done",
+      input: { habit_id: "h1", date: "2025-12-31" },
+    });
+    expect(typeof out).toBe("string");
+    expect(loadRoutineState().completions["h1"] ?? []).not.toContain(
+      "2025-12-31",
+    );
+  });
+
+  // LOG-2 — відмітка «зробив» знімає «не зміг з причиною» на ту саму дату
+  // (канон §5: три стани дня взаємовиключні).
+  it("відмітка виконання знімає раніше поставлений skip на ту саму дату", () => {
+    seedHabit("h1", "Вода");
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      skips: {
+        h1: { "2026-04-15": { reason: "busy", at: "2026-04-15T08:00:00Z" } },
+      },
+    });
+    expect(loadRoutineState().skips?.["h1"]?.["2026-04-15"]).toBeDefined();
+
+    const out = handleRoutineAction({
+      name: "mark_habit_done",
+      input: { habit_id: "h1", date: "2026-04-15" },
+    });
+    if (typeof out === "string" || out == null)
+      throw new Error("expected object");
+
+    const after = loadRoutineState();
+    expect(after.completions["h1"]).toContain("2026-04-15");
+    expect(after.skips?.["h1"]?.["2026-04-15"]).toBeUndefined();
+
+    // undo відновлює і completion, і skip.
+    out.undo?.();
+    const reverted = loadRoutineState();
+    expect(reverted.completions["h1"] ?? []).not.toContain("2026-04-15");
+    expect(reverted.skips?.["h1"]?.["2026-04-15"]).toMatchObject({
+      reason: "busy",
+    });
   });
 });
 
@@ -843,22 +938,57 @@ describe("create_reminder · undo", () => {
 // ---------------------------------------------------------------------------
 describe("complete_habit_for_date · undo", () => {
   it("undo на mark-complete видаляє ту дату; інші дати залишаються", () => {
-    seedHabit("h1", "Йога");
+    seedHabit("h1", "Йога"); // startDate: 2026-01-01
     const seeded = loadRoutineState();
     saveRoutineState({
       ...seeded,
-      completions: { ...seeded.completions, h1: ["2025-01-01"] },
+      completions: { ...seeded.completions, h1: ["2026-01-01"] },
     });
     const out = handleRoutineAction({
       name: "complete_habit_for_date",
-      input: { habit_id: "h1", date: "2025-01-02" },
+      input: { habit_id: "h1", date: "2026-01-02" },
     });
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
     out.undo?.();
     const after = loadRoutineState();
-    expect(after.completions["h1"]).toEqual(["2025-01-01"]);
+    expect(after.completions["h1"]).toEqual(["2026-01-01"]);
+  });
+
+  // LOG-2 — той самий гейт розкладу, що для `mark_habit_done`.
+  it("дата поза розкладом звички — no-op, без запису", () => {
+    seedHabit("h1", "Йога"); // startDate: 2026-01-01
+    const out = handleRoutineAction({
+      name: "complete_habit_for_date",
+      input: { habit_id: "h1", date: "2025-12-31" },
+    });
+    expect(typeof out).toBe("string");
+    expect(loadRoutineState().completions["h1"] ?? []).not.toContain(
+      "2025-12-31",
+    );
+  });
+
+  // LOG-2 — completed:true знімає «не зміг з причиною» на ту саму дату.
+  it("completed:true знімає раніше поставлений skip на ту саму дату", () => {
+    seedHabit("h1", "Йога");
+    const seeded = loadRoutineState();
+    saveRoutineState({
+      ...seeded,
+      skips: {
+        h1: { "2026-04-15": { reason: "sick", at: "2026-04-15T08:00:00Z" } },
+      },
+    });
+    const out = handleRoutineAction({
+      name: "complete_habit_for_date",
+      input: { habit_id: "h1", date: "2026-04-15" },
+    });
+    if (typeof out === "string" || out == null)
+      throw new Error("expected object");
+
+    const after = loadRoutineState();
+    expect(after.completions["h1"]).toContain("2026-04-15");
+    expect(after.skips?.["h1"]?.["2026-04-15"]).toBeUndefined();
   });
 
   it("повторне виставлення дати: вже виконано → результат без undo", () => {
@@ -876,22 +1006,22 @@ describe("complete_habit_for_date · undo", () => {
   });
 
   it("undo на uncheck (completed:false) повертає дату назад", () => {
-    seedHabit("h1", "H");
+    seedHabit("h1", "H"); // startDate: 2026-01-01
     const seeded = loadRoutineState();
     saveRoutineState({
       ...seeded,
-      completions: { ...seeded.completions, h1: ["2025-01-02"] },
+      completions: { ...seeded.completions, h1: ["2026-01-02"] },
     });
     const out = handleRoutineAction({
       name: "complete_habit_for_date",
-      input: { habit_id: "h1", date: "2025-01-02", completed: false },
+      input: { habit_id: "h1", date: "2026-01-02", completed: false },
     });
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
     out.undo?.();
     const after = loadRoutineState();
-    expect(after.completions["h1"]).toContain("2025-01-02");
+    expect(after.completions["h1"]).toContain("2026-01-02");
   });
 });
 

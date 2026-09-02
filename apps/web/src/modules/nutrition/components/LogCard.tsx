@@ -17,6 +17,7 @@ import {
   type NutritionLog,
 } from "@sergeant/nutrition-domain";
 import { isMealTypeId, mealTypeFromLabel } from "../lib/mealTypes";
+import { formatLogDateSubline } from "../lib/formatLogDateSubline";
 import { DayLogSheet } from "./DayLogSheet";
 import { LogCardSearch } from "./LogCardSearch";
 import { LogCardWeeklyTable } from "./LogCardWeeklyTable";
@@ -104,7 +105,7 @@ export function LogCard({
               {formatDate(selectedDate)}
             </span>
             <span className="text-style-caption text-subtle">
-              {selectedDate}
+              {formatLogDateSubline(selectedDate)}
             </span>
           </div>
           <button

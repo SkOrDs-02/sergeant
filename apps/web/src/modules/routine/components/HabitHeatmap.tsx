@@ -9,7 +9,6 @@ import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { chartHeatmap } from "@shared/charts";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { anchoredTodayDate } from "../lib/dayAnchor";
 import type { Habit, RoutineState } from "../lib/types";
 
@@ -139,8 +138,16 @@ export function HabitHeatmap({
     weeks.forEach((week, weekIdx) => {
       const first = week[0];
       if (!first) return;
-      const firstKyiv = getKyivDateParts(first.dt);
-      const monthKey = `${firstKyiv.year}-${firstKyiv.month}`;
+      // `first.dt` was constructed above from the grid cell's own local
+      // year/month/day (device-local per ADR-0078) — read those same local
+      // getters back, not a Kyiv re-derivation of the instant, or the month
+      // grouping could disagree with the cell it labels near month
+      // boundaries on a device outside Kyiv.
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- див. коментар вище
+      const cellYear = first.dt.getFullYear();
+      // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- те саме
+      const cellMonth = first.dt.getMonth();
+      const monthKey = `${cellYear}-${cellMonth + 1}`;
       if (monthKey === previousMonth) return;
       previousMonth = monthKey;
       monthMarkers.push({

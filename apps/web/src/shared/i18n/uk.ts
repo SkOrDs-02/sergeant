@@ -408,10 +408,12 @@ export const messages = {
     // rendered in `HubChatHeader`). Hidden for Pro (unlimited). Numbers are
     // interpolated at the call-site as `${used}/${limit} ${chatUsageUnit}`
     // (no Cyrillic-string placeholders needed for plain digits).
-    // Одиниця — ЗАПИТ до AI, не повідомлення: сервер (`assertAiQuota`)
-    // списує квоту за виклик моделі, а один хід із tool-round-trip коштує
-    // 2+. Копія «5 повідомлень» обіцяла людині більше, ніж дає ліміт
-    // (browser QA 2026-08-23), тож клієнт говорить тією ж мовою, що сервер.
+    // Одиниця — ЗАПИТ до AI, не повідомлення. Копія «5 повідомлень» обіцяла
+    // людині більше, ніж дає ліміт (browser QA 2026-08-23), тож клієнт
+    // говорить тією ж мовою, що сервер. AI-5 рішення 1 (`docs/90-work/
+    // audits/2026-09-01-product-audit/findings.md`, 2026-09-01) зробило хід
+    // з дією (tool-round-trip) рівно одним запитом (раніше — 2), тож тепер
+    // «запитів» буквально дорівнює «діям», без застережень.
     chatUsageUnit: "запитів",
     chatUsageAriaPrefix: "Використано",
     chatUsageAriaSuffix: "запитів до AI на сьогодні",
@@ -657,7 +659,8 @@ export const messages = {
       qtyExampleTrailing: "курка 500 г",
       unitsLabel: "Одиниці:",
       unitsList: "г, кг, мл, л, шт, уп",
-      unitsFallback: "Без одиниці кількість читається як «шт».",
+      unitsFallback:
+        "Без одиниці невелика кількість читається як «шт». Від 100 без одиниці спитаю, шт це чи г.",
       aiNote:
         "Можна писати як завгодно: список розбирає AI, він переживе помилки, скорочення й відмінки («помідорів 3», «0.5л молока»).",
       confirmNote:

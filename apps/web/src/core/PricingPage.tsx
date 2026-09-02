@@ -161,9 +161,9 @@ export function PricingPage() {
   const [portalLoading, setPortalLoading] = useState(false);
   const [portalError, setPortalError] = useState<string | null>(null);
   const { isPro: isPremiumActive } = usePlan();
-  // «Зараз ваш план» — твердження про СЕСІЮ, а не про дефолт тарифу. Без
+  // «Зараз твій план» — твердження про СЕСІЮ, а не про дефолт тарифу. Без
   // цієї перевірки анонімний відвідувач бачив бейдж і disabled-кнопку
-  // «Зараз ваш план» на Free-картці, хоча жодного акаунта не існує
+  // «Зараз твій план» на Free-картці, хоча жодного акаунта не існує
   // (browser QA 2026-08-23). `useAuthOptional`: у застосунку `AuthProvider`
   // стоїть над роутом завжди, контексту немає лише у юніт-тестах, що
   // монтують сторінку голою — там лишаємо попередню поведінку.
@@ -176,6 +176,8 @@ export function PricingPage() {
     queryFn: ({ signal }) => billingApi.providers({ signal }),
     staleTime: 5 * 60_000,
     retry: false,
+    // FUN-1 (аудит 2026-09): без сесії ендпоінт віддає 401 — не питаємо.
+    enabled: !signedOut,
   });
   const enabledProviders = providersQuery.data?.providers ?? [];
   // i18n. Resolved messages frozen per-locale у resolver → memo identity

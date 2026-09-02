@@ -243,7 +243,7 @@ export async function bankProxyFetch(
   if (isBreakerOpen(upstream)) {
     recordExternalHttp(upstream, "circuit_open", 0);
     throw new ExternalServiceError(
-      "Сервіс банку тимчасово недоступний — спробуйте пізніше",
+      "Сервіс банку тимчасово недоступний. Спробуй пізніше",
       {
         status: 503,
         code: `${upstream.toUpperCase()}_CIRCUIT_OPEN`,

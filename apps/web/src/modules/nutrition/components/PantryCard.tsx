@@ -14,12 +14,14 @@ import { cn } from "@shared/lib/ui/cn";
 import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@shared/lib/text/limits";
 import { formatPantryQty } from "../lib/formatPantryQty";
 import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
+import { PantryAmbiguousQtyPrompt } from "./PantryAmbiguousQtyPrompt";
 import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
 import { groupItemsByCategory } from "../lib/foodCategories";
 import type { FoodCategory } from "../lib/foodCategories";
 import type { PantryItem } from "../lib/pantryTextParser";
 import type { PantryItemSource } from "@sergeant/nutrition-domain";
 import { isPantryItemLowStock } from "../lib/pantryLowStock";
+import type { AmbiguousPantryUnit } from "../lib/pantryAmbiguousUnitMemory";
 
 /**
  * Мінімальний "view-shape" елемента комори для `ItemRow`. Runtime-потік
@@ -339,6 +341,19 @@ interface PantryCardProps {
   parsePreview?: PantryParsePreviewData | null;
   confirmParsePreview?: (items: PantryItem[]) => void;
   dismissParsePreview?: () => void;
+  /**
+   * UX-4 (аудит 2026-09-01) — позиції з `upsertItem`, чиє хвостове число без
+   * одиниці лишилось неоднозначним. Необовʼязкові — сторінки, що ще не
+   * прокидають підказку (тести, старі snapshot-и), просто її не бачать.
+   */
+  ambiguousPantryItems?: PantryItem[];
+  resolveAmbiguousPantryItem?: (idx: number, unit: AmbiguousPantryUnit) => void;
+  dismissAmbiguousPantryItem?: (idx: number) => void;
+  /**
+   * Запамʼятовує вибір «шт»/«г» для рядка режиму «Списком» одразу на тапі
+   * (`PantryParsePreview`), незалежно від подальшого підтвердження списку.
+   */
+  rememberAmbiguousChoice?: (name: string, unit: AmbiguousPantryUnit) => void;
 }
 
 export function PantryCard({
@@ -357,6 +372,10 @@ export function PantryCard({
   parsePreview,
   confirmParsePreview,
   dismissParsePreview,
+  ambiguousPantryItems,
+  resolveAmbiguousPantryItem,
+  dismissAmbiguousPantryItem,
+  rememberAmbiguousChoice,
 }: PantryCardProps) {
   const [mode, setMode] = useState("single");
 
@@ -462,12 +481,27 @@ export function PantryCard({
 
         {mode === "list" && <PantryListGuide />}
 
+        {ambiguousPantryItems &&
+          ambiguousPantryItems.length > 0 &&
+          resolveAmbiguousPantryItem &&
+          dismissAmbiguousPantryItem && (
+            <PantryAmbiguousQtyPrompt
+              items={ambiguousPantryItems}
+              onResolve={resolveAmbiguousPantryItem}
+              onDismiss={dismissAmbiguousPantryItem}
+              busy={busy}
+            />
+          )}
+
         {parsePreview && confirmParsePreview && dismissParsePreview && (
           <PantryParsePreview
             preview={parsePreview}
             onConfirm={confirmParsePreview}
             onDismiss={dismissParsePreview}
             busy={busy}
+            onResolveAmbiguousUnit={(item, unit) =>
+              rememberAmbiguousChoice?.(item.name, unit)
+            }
           />
         )}
       </Card>
