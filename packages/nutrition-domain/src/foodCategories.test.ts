@@ -15,8 +15,8 @@ import {
 } from "./foodCategories.js";
 
 describe("FOOD_CATEGORIES catalog", () => {
-  it("має 17 базових категорій", () => {
-    expect(FOOD_CATEGORIES).toHaveLength(17);
+  it("має 16 базових категорій", () => {
+    expect(FOOD_CATEGORIES).toHaveLength(16);
   });
 
   it("всі id унікальні", () => {
@@ -52,7 +52,6 @@ describe("FOOD_CATEGORIES catalog", () => {
       "sauces",
       "nuts_seeds",
       "canned",
-      "frozen",
       "vegetables",
       "legumes",
       "fruits",
@@ -93,7 +92,6 @@ describe("FOOD_CATEGORIES catalog", () => {
     expect(categorizeFood("щось геть невпізнаване").collapseBrand).toBe(false);
     for (const id of [
       "nuts_seeds",
-      "frozen",
       "canned",
       "sauces",
       "ready_meals",
@@ -164,7 +162,7 @@ describe("categorizeFood", () => {
     ["Шоколад молочний", "sweets_snacks"],
     ["Кока-Кола Zero", "drinks"],
     ["Оливки зелені без кісточки", "canned"],
-    ["Овочі заморожені", "frozen"],
+    ["Овочі заморожені", "vegetables"],
   ])("'%s' → %s", (input, expectedId) => {
     expect(categorizeFood(input).id).toBe(expectedId);
   });
@@ -225,13 +223,28 @@ describe("categorizeFood", () => {
 // хибну категорію через короткий корінь у чужому слові («г-риб-и» →
 // риба). Цей гейт робить той самий прогін частиною CI, тож нова позиція
 // корпусу без даху червонить збірку одразу, а не через місяць у UI.
+// Корпусна категорія «Заморожене» навмисно лишилась без відповідника в
+// коморі: заморожене — це МІСЦЕ, а не смак, тож категорії `frozen` більше
+// немає (спека `pantry-storage-places` §6). Її шість записів розходяться
+// по суті, чого мапа категорія→категорія зробити не вміє, тому очікування
+// задане поіменно — і саме цей набір стереже, що вони не осіли в «Іншому».
+const FROZEN_CORPUS_EXPECTED: Readonly<Record<string, string>> = {
+  "Млинці заморожені": "ready_meals",
+  "Пельмені заморожені": "ready_meals",
+  "Вареники заморожені": "ready_meals",
+  "Котлета рибна": "ready_meals",
+  "Ягоди заморожені": "fruits",
+  "Овочева суміш заморожена": "vegetables",
+};
+
 describe("гейт 1 — корпус GENERIC_FOODS покритий цілком", () => {
   it("кожна категорія корпусу має відповідник у каталозі комори", () => {
     const known = new Set(FOOD_CATEGORIES.map((c) => c.id));
     const unmapped = [...new Set(GENERIC_FOODS.map((f) => f.category))].filter(
-      (c) => !CORPUS_CATEGORY_TO_ID[c],
+      (c) => c !== "Заморожене" && !CORPUS_CATEGORY_TO_ID[c],
     );
     expect(unmapped).toEqual([]);
+    expect(CORPUS_CATEGORY_TO_ID["Заморожене"]).toBeUndefined();
 
     const danglingTargets = Object.entries(CORPUS_CATEGORY_TO_ID)
       .filter(([, id]) => !known.has(id))
@@ -244,7 +257,8 @@ describe("гейт 1 — корпус GENERIC_FOODS покритий цілко�
       const expected =
         food.alcohol_g != null
           ? "alcohol"
-          : CORPUS_CATEGORY_TO_ID[food.category];
+          : (FROZEN_CORPUS_EXPECTED[food.name] ??
+            CORPUS_CATEGORY_TO_ID[food.category]);
       const actual = categorizeFood(food.name).id;
       return actual === expected
         ? null
@@ -363,7 +377,7 @@ describe("гейт 2 — брендові назви з реальних чек�
   it.each([
     ["Салат листовий", "vegetables"],
     ["Салат айсберг 200 г", "vegetables"],
-    ["Тісто листкове заморожене", "frozen"],
+    ["Тісто листкове заморожене", "grains"],
     ["Ковбаса краківська с/к", "meat"],
     ["Сосиски молочні", "meat"],
     ["Куряча грудка охолоджена", "meat"],

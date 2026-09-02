@@ -1,4 +1,5 @@
 import { GENERIC_FOODS } from "@sergeant/shared/data/genericFoods";
+import { DEFAULT_PLACE_ID } from "./nutritionPantries.js";
 
 export interface FoodCategory {
   id: string;
@@ -212,18 +213,14 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
     ],
   },
   {
-    id: "frozen",
-    label: "Заморожене",
-    iconName: "snowflake",
-    collapseBrand: true,
-    keywords: ["заморож", "морожен", "с/м"],
-  },
-  {
     id: "vegetables",
     label: "Овочі",
     iconName: "carrot",
     collapseBrand: true,
     keywords: [
+      // Родовий корінь: після зняття категорії «Заморожене» саме він тримає
+      // «Овочі заморожені» й «Овочева суміш» в овочах, як і належить суті.
+      "овоч",
       "огірок",
       "огірк",
       "помідор",
@@ -276,6 +273,9 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
     iconName: "apple",
     collapseBrand: true,
     keywords: [
+      // Те саме, що й `овоч` вище: «Ягоди заморожені» більше не має власної
+      // категорії й має впізнаватись за родовим коренем.
+      "ягод",
       "яблук",
       "груш",
       "банан",
@@ -457,6 +457,10 @@ export const FOOD_CATEGORIES: readonly FoodCategory[] = [
       "манк",
       "макарон",
       "спагет",
+      // Сире тісто — напівфабрикат випічки, а не страва: локатив «у тісті»
+      // (готова випічка) ловиться окремим коренем у `ready_meals` і сюди
+      // не дотягується.
+      "тісто",
       "хліб",
       "батон",
       "багет",
@@ -548,12 +552,21 @@ const OTHER: FoodCategory = {
  * Алкоголь відділяється НЕ мапою, а полем `alcohol_g` — воно вже є в
  * корпусі заради воріт Атвотера, тож окремий список назв був би другим
  * джерелом правди для того самого факту.
+ *
+ * Корпусної категорії «Заморожене» тут НЕМАЄ навмисно. Комора більше не
+ * має категорії за температурою (заморожене — це місце, а не смак), а
+ * шість корпусних записів під нею розходяться по суті: млинці/пельмені/
+ * вареники/котлета — страви, ягоди — фрукти, овочева суміш — овочі. Мапа
+ * ж категорія→категорія одну таку роздачу зробити не вміє. Тому записи
+ * просто не потрапляють в індекс, і їх ловить keyword-шар за коренем
+ * («пельмен», «вареник», «млинц», «котлет», «ягод», «овоч»). Корпусні
+ * дані НЕ чіпаємо: `category` в них живе і в `generic_foods`, і у видачі
+ * пошуку — правка там була б міграцією заради косметики в іншому шарі.
  */
 export const CORPUS_CATEGORY_TO_ID: Readonly<Record<string, string>> = {
   Бобові: "legumes",
   "Горіхи і насіння": "nuts_seeds",
   "Готові страви": "ready_meals",
-  Заморожене: "frozen",
   Консерви: "canned",
   "Крупи і злаки": "grains",
   "Молочні продукти": "dairy_eggs",
@@ -742,6 +755,54 @@ export function categorizeFood(name: unknown): FoodCategory {
     }
   }
   return OTHER;
+}
+
+/**
+ * Морозилка — єдине місце, яке категорія назвати не може: заморожене
+ * розкидане по суті (морозиво — солодощі, пельмені — страва, суміш —
+ * овочі), і саме тому категорії «Заморожене» більше немає. Корені нижче —
+ * це рівно те, що раніше було її keyword-списком, плюс два продукти, які
+ * в цьому домі не бувають незамороженими.
+ */
+const FREEZER_KEYWORDS = [
+  "заморож",
+  "морожен",
+  "морозив",
+  "с/м",
+  "пельмен",
+  "вареник",
+] as const;
+
+/**
+ * Решта місць виводиться з категорії, а не з окремого словника: другий
+ * список слів розійшовся б із першим на першій же правці. Усе, чого тут
+ * немає, лежить у коморі — це і є дефолт.
+ */
+const CATEGORY_TO_PLACE: Readonly<Record<string, string>> = {
+  dairy_eggs: "fridge",
+  meat: "fridge",
+  fish: "fridge",
+  ready_meals: "fridge",
+  vegetables: "fridge",
+  fruits: "fridge",
+};
+
+/**
+ * Місце зберігання, вгадане з назви. Це ПРОПОЗИЦІЯ, а не факт: викликач
+ * зобовʼязаний дати людині змінити її в один дотик і ніколи не
+ * перезаписувати ручний вибір цим значенням.
+ */
+export function placeForFood(name: unknown): string {
+  const raw = String(name || "")
+    .toLowerCase()
+    .trim();
+  if (!raw) return DEFAULT_PLACE_ID;
+  const head = raw.replace(FLAVOUR_TAIL, "").trim() || raw;
+  const tokens = splitTokens(head);
+  for (const kw of FREEZER_KEYWORDS) {
+    if (keywordHit(head, tokens, kw)) return "freezer";
+  }
+  return CATEGORY_TO_PLACE[categorizeFood(head).id] ?? DEFAULT_PLACE_ID;
 }
 
 export function groupItemsByCategory<T extends { name?: unknown }>(
