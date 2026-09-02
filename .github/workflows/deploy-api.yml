@@ -31,12 +31,6 @@ on:
       - "packages/config/**"
       - "packages/db-schema/**"
       - "packages/finyk-domain/**"
-      # `routine-domain` (сервер читає предикат розкладу звички з #592) і
-      # `tabular-import` (спільний шар імпорту виписок, #1001) лежать в
-      # образі — див. Dockerfile.api. Без цих шляхів зміна, замкнена в
-      # одному з них, не тригерить деплой, і в проді лишається стара збірка.
-      - "packages/routine-domain/**"
-      - "packages/tabular-import/**"
       - ".github/workflows/deploy-api.yml"
   workflow_dispatch:
 

@@ -24,8 +24,6 @@ on:
       - "packages/shared/**"
       - "packages/config/**"
       - "packages/finyk-domain/**"
-      - "packages/routine-domain/**"
-      - "packages/tabular-import/**"
       - "patches/**"
       - ".github/workflows/container-scan.yml"
   push:
