@@ -86,8 +86,6 @@ export function NutritionOverlays({
         open={pantry.pantryManagerOpen}
         onClose={() => pantry.setPantryManagerOpen(false)}
         pantries={pantry.pantries}
-        activePantryId={pantry.activePantryId}
-        setActivePantryId={pantry.setActivePantryId}
         pantryForm={pantry.pantryForm}
         setPantryForm={pantry.setPantryForm}
         busy={busy}
@@ -95,31 +93,22 @@ export function NutritionOverlays({
         onBeginCreate={pantry.beginCreatePantry}
         onBeginRename={pantry.beginRenamePantry}
         onBeginDelete={pantry.beginDeletePantry}
+        redistributePlan={pantry.redistributePlan}
+        onRedistribute={pantry.applyRedistribute}
       />
 
+      {/*
+        Видаляються лише ВЛАСНІ місця — три відомі лишаються завжди, бо
+        вони адреси автовизначення. Гейт стоїть у хуку
+        (`beginDeletePantry`), тут — лише підтвердження.
+      */}
       <ConfirmDialog
         open={pantry.confirmDeleteOpen}
-        title="Видалити комору?"
-        description={
-          (Array.isArray(pantry.pantries) ? pantry.pantries.length : 0) <= 1
-            ? "Не можна видалити останню комору."
-            : "Це прибере всі продукти в ньому. Дію не можна відмінити."
-        }
+        title="Видалити місце?"
+        description="Це прибере всі продукти в ньому. Дію не можна відмінити."
         confirmLabel="Видалити"
         danger
-        onConfirm={() => {
-          // Mirror the original `ConfirmDeleteSheet` guard: if only one
-          // pantry remains we swallow the confirm so deletion is a no-op.
-          // The warning description above already communicates that state.
-          const count = Array.isArray(pantry.pantries)
-            ? pantry.pantries.length
-            : 0;
-          if (count <= 1) {
-            pantry.setConfirmDeleteOpen(false);
-            return;
-          }
-          pantry.onConfirmDeletePantry();
-        }}
+        onConfirm={pantry.onConfirmDeletePantry}
         onCancel={() => pantry.setConfirmDeleteOpen(false)}
       />
 
@@ -133,6 +122,7 @@ export function NutritionOverlays({
           }))
         }
         onSave={pantry.onSaveItemEdit}
+        places={pantry.pantries}
       />
 
       <PantryVariantChoiceSheet

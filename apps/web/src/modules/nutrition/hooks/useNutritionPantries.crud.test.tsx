@@ -47,11 +47,11 @@ function renderHarness() {
   const setBusy = vi.fn();
   const setErr = vi.fn();
   const setStatusText = vi.fn();
-  const { result } = renderHook(
+  const { result, unmount } = renderHook(
     () => useNutritionPantries({ setBusy, setErr, setStatusText }),
     { wrapper: makeWrapper() },
   );
-  return { result };
+  return { result, unmount };
 }
 
 beforeEach(() => {
@@ -61,7 +61,18 @@ beforeEach(() => {
 });
 
 describe("useNutritionPantries CRUD", () => {
-  it("creates a new pantry and makes it active", () => {
+  it("seeds the three known storage places", () => {
+    seed([{ id: "home", name: "Дім", items: [], text: "" }], "home");
+    const { result } = renderHarness();
+    expect(result.current.pantries.map((p) => p.id)).toEqual([
+      "fridge",
+      "freezer",
+      "home",
+    ]);
+    expect(result.current.pantries[2]?.name).toBe("Комора");
+  });
+
+  it("creates a custom place", () => {
     seed([{ id: "home", name: "Дім", items: [], text: "" }], "home");
     const { result } = renderHarness();
 
@@ -69,25 +80,26 @@ describe("useNutritionPantries CRUD", () => {
     expect(result.current.pantryForm.mode).toBe("create");
     expect(result.current.pantryManagerOpen).toBe(true);
 
-    act(() => result.current.onSavePantryForm("Дача", "create"));
-    expect(result.current.pantries.some((p) => p.name === "Дача")).toBe(true);
-    // new pantry became active
-    expect(result.current.activePantry.name).toBe("Дача");
+    act(() => result.current.onSavePantryForm("Балкон", "create"));
+    expect(result.current.pantries.some((p) => p.name === "Балкон")).toBe(true);
     expect(result.current.pantryManagerOpen).toBe(false);
   });
 
-  it("renames the active pantry", () => {
+  it("renames the place it was asked to rename", () => {
     seed([{ id: "home", name: "Дім", items: [], text: "" }], "home");
     const { result } = renderHarness();
 
-    act(() => result.current.beginRenamePantry());
+    act(() => result.current.beginRenamePantry("fridge"));
     expect(result.current.pantryForm.mode).toBe("rename");
+    expect(result.current.pantryForm.targetId).toBe("fridge");
 
-    act(() => result.current.onSavePantryForm("Кухня", "rename"));
-    expect(result.current.activePantry.name).toBe("Кухня");
+    act(() => result.current.onSavePantryForm("Кухонний", "rename"));
+    expect(result.current.pantries.find((p) => p.id === "fridge")?.name).toBe(
+      "Кухонний",
+    );
   });
 
-  it("deletes a pantry only when more than one exists", () => {
+  it("deletes a custom place", () => {
     seed(
       [
         { id: "home", name: "Дім", items: [], text: "" },
@@ -97,19 +109,76 @@ describe("useNutritionPantries CRUD", () => {
     );
     const { result } = renderHarness();
 
-    act(() => result.current.beginDeletePantry());
+    act(() => result.current.beginDeletePantry("dacha"));
     expect(result.current.confirmDeleteOpen).toBe(true);
 
     act(() => result.current.onConfirmDeletePantry());
-    expect(result.current.pantries).toHaveLength(1);
-    expect(result.current.pantries[0]?.id).toBe("dacha");
+    expect(result.current.pantries.map((p) => p.id)).toEqual([
+      "fridge",
+      "freezer",
+      "home",
+    ]);
   });
 
-  it("refuses to delete the last pantry", () => {
+  // Три відомі місця — адреси автовизначення: без морозилки пельмені
+  // поїхали б у неіснуючий id, і вгадування мовчки перестало б працювати.
+  it("refuses to delete a known place", () => {
     seed([{ id: "home", name: "Дім", items: [], text: "" }], "home");
     const { result } = renderHarness();
+    act(() => result.current.beginDeletePantry("freezer"));
+    expect(result.current.confirmDeleteOpen).toBe(false);
     act(() => result.current.onConfirmDeletePantry());
-    expect(result.current.pantries).toHaveLength(1);
+    expect(result.current.pantries).toHaveLength(3);
+  });
+
+  // Гейт 1 спеки на рівні хука: нова позиція лягає у вгадане місце.
+  it("routes a new item into its guessed place", () => {
+    seed([{ id: "home", name: "Дім", items: [], text: "" }], "home");
+    const { result } = renderHarness();
+
+    act(() => result.current.upsertItem("Пельмені 1 кг"));
+    expect(result.current.pantryItems[0]?.pantryId).toBe("freezer");
+  });
+
+  // Гейт 2 спеки: ручне розміщення сильніше за автовизначення — і при
+  // повторному доливанні, і після перемонтування (перезавантаження).
+  it("keeps a manually placed item where the human put it", () => {
+    seed([{ id: "home", name: "Дім", items: [], text: "" }], "home");
+    const { result, unmount } = renderHarness();
+
+    act(() => result.current.upsertItem("Молоко 1 л"));
+    expect(result.current.pantryItems[0]?.pantryId).toBe("fridge");
+
+    act(() => result.current.moveItemTo(0, "home"));
+    expect(result.current.pantryItems[0]?.pantryId).toBe("home");
+
+    // Повторне доливання НЕ тягне позицію назад у холодильник.
+    act(() => result.current.upsertItem("Молоко 500 мл"));
+    expect(result.current.pantryItems).toHaveLength(1);
+    expect(result.current.pantryItems[0]?.pantryId).toBe("home");
+
+    const snapshot = result.current.pantries;
+    unmount();
+    seed(snapshot, "home");
+    const reopened = renderHarness();
+    expect(reopened.result.current.pantryItems[0]?.pantryId).toBe("home");
+  });
+
+  // Гейт 5 спеки: план є, але нічого не рухається без дії людини.
+  it("plans a redistribution without performing it", () => {
+    seed([{ id: "home", name: "Дім", items: [], text: "" }], "home");
+    const { result } = renderHarness();
+
+    act(() => result.current.upsertItem("Молоко 1 л"));
+    act(() => result.current.moveItemTo(0, "home"));
+    expect(result.current.redistributePlan).toEqual([
+      { name: "Молоко", fromId: "home", toId: "fridge" },
+    ]);
+    expect(result.current.pantryItems[0]?.pantryId).toBe("home");
+
+    act(() => result.current.applyRedistribute());
+    expect(result.current.pantryItems[0]?.pantryId).toBe("fridge");
+    expect(result.current.redistributePlan).toEqual([]);
   });
 
   it("upserts and removes items by name", () => {

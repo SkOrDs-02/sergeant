@@ -280,17 +280,16 @@ describe("add_to_shopping_list", () => {
 // clear_pantry
 // ---------------------------------------------------------------------------
 describe("clear_pantry", () => {
-  it("happy: прибирає всі позиції активної комори", () => {
+  it("happy: прибирає всі позиції", () => {
     mem.pantries = [
       {
         id: "home",
-        name: "Домашня",
+        name: "Комора",
         items: [{ name: "Молоко" }, { name: "Хліб" }, { name: "Сіль" }],
       },
     ];
     const out = call({ name: "clear_pantry", input: {} });
     expect(typeof out).toBe("string");
-    expect(out).toContain("Домашня");
     expect(out).toContain("3 позиції");
     expect(mem.pantries[0]!.items).toHaveLength(0);
   });
@@ -329,18 +328,18 @@ describe("clear_pantry", () => {
     }
   });
 
-  it("торкається лише активної комори", () => {
-    // Активна — НЕ перша в списку: інакше тест був би зелений і на коді,
-    // який просто чистить `pantries[0]`.
+  // Комора одна, місця це її полиці: лишити холодильник повним після
+  // «очистити комору» означало б збрехати про виконану дію.
+  it("очищає всі місця, а не одну полицю", () => {
     mem.active = "dacha";
     mem.pantries = [
-      { id: "home", name: "Домашня", items: [{ name: "Молоко" }] },
-      { id: "dacha", name: "Дача", items: [{ name: "Картопля" }] },
+      { id: "home", name: "Комора", items: [{ name: "Молоко" }] },
+      { id: "freezer", name: "Морозилка", items: [{ name: "Пельмені" }] },
     ];
     const out = call({ name: "clear_pantry", input: {} });
 
-    expect(out).toContain("Дача");
-    expect(mem.pantries[0]!.items).toHaveLength(1);
+    expect(out).toContain("2 позиції");
+    expect(mem.pantries[0]!.items).toHaveLength(0);
     expect(mem.pantries[1]!.items).toHaveLength(0);
   });
 });
@@ -361,6 +360,23 @@ describe("consume_from_pantry", () => {
     expect(out).toContain("Молоко");
     expect(out).toContain("прибрано");
     expect(mem.pantries[0]!.items).toHaveLength(0);
+  });
+
+  // Активної комори більше немає: пошук в одній полиці означав би «не
+  // знайдено» для всього, що лежить у холодильнику чи морозилці.
+  it("finds the item in any storage place", () => {
+    mem.active = "home";
+    mem.pantries = [
+      { id: "home", name: "Комора", items: [{ name: "Гречка" }] },
+      { id: "freezer", name: "Морозилка", items: [{ name: "Пельмені" }] },
+    ];
+    const out = call({
+      name: "consume_from_pantry",
+      input: { name: "Пельмені" },
+    });
+    expect(out).toContain("прибрано");
+    expect(mem.pantries[1]!.items).toHaveLength(0);
+    expect(mem.pantries[0]!.items).toHaveLength(1);
   });
 
   it("error: item not found in pantry returns error", () => {

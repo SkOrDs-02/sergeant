@@ -10,6 +10,7 @@ import { Sheet } from "@shared/components/ui/Sheet";
 import { normalizeUnit } from "../lib/pantryTextParser";
 import { normalizeAmountInput } from "@shared/lib/format/amount";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+import type { Pantry } from "@sergeant/nutrition-domain";
 
 /** Абсурдна кількість позиції — межа проти зайвого нуля, не дієтологія. */
 const MAX_ITEM_QTY = 100_000;
@@ -21,6 +22,8 @@ export interface ItemEditState {
   qty: string;
   unit: string;
   err: string;
+  /** Місце, у якому позиція лежить зараз. Порожньо — легасі-шлях тексту. */
+  pantryId: string;
 }
 
 interface ItemEditSheetProps {
@@ -32,7 +35,10 @@ interface ItemEditSheetProps {
     name: string | null,
     qty: number | null,
     unit: string | null,
+    pantryId: string | null,
   ) => void;
+  /** Місця зберігання — для перемикача нижче. */
+  places: readonly Pantry[];
 }
 
 export function ItemEditSheet({
@@ -40,6 +46,7 @@ export function ItemEditSheet({
   setItemEdit,
   onClose,
   onSave,
+  places,
 }: ItemEditSheetProps) {
   return (
     <Sheet
@@ -114,6 +121,40 @@ export function ItemEditSheet({
         </div>
       </div>
 
+      {/*
+        Місце живе тут, а не в рядку списку. Перемикач у КОЖНОМУ рядку
+        рябів дужче за самі продукти і сперечався з назвою за ширину
+        (звіт власника 2026-09-02); список має відповідати на «що в мене
+        є», а «де воно лежить» — це вже про одну конкретну позицію, тобто
+        рівно та розмова, яку веде цей аркуш.
+      */}
+      {itemEdit.pantryId && places.length > 1 && (
+        <div className="mt-3">
+          <SectionHeading
+            as="div"
+            size="xs"
+            variant="nutrition"
+            className="mb-1"
+          >
+            Місце
+          </SectionHeading>
+          <select
+            value={itemEdit.pantryId}
+            onChange={(e) =>
+              setItemEdit((st) => ({ ...st, pantryId: e.target.value }))
+            }
+            aria-label="Місце зберігання позиції"
+            className="input-focus-nutrition w-full min-h-[44px] rounded-2xl bg-panel border border-line px-3 text-style-label text-text"
+          >
+            {places.map((p) => (
+              <option key={p.id} value={p.id}>
+                {p.name || "Комора"}
+              </option>
+            ))}
+          </select>
+        </div>
+      )}
+
       {itemEdit.err ? (
         <div className="text-style-caption text-danger-strong dark:text-danger mt-2">
           {itemEdit.err}
@@ -147,11 +188,15 @@ export function ItemEditSheet({
               return;
             }
             const unit = unitStr === "" ? null : normalizeUnit(unitStr);
+            // Місце їде разом зі «Зберегти», а не одразу при виборі: поруч
+            // стоїть «Скасувати», і переїзд, який уже стався, зробив би цю
+            // кнопку брехнею.
             onSave(
               itemEdit.idx,
               nameStr,
               Number.isFinite(qty) ? qty : null,
               unit,
+              itemEdit.pantryId || null,
             );
           }}
         >
