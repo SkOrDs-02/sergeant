@@ -1,6 +1,6 @@
 # SPEC: плашка «залий транзакції» у Фініку
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-11-12.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2027-11-10.
 > **Status:** Active — Фаза 1 у `main` ([`4a50500f1`](https://github.com/SkOrDs-02/sergeant/pull/930), #930): `ImportReminderBanner.tsx` + `useImportReminder.ts` в Огляді Фініка, за прапорцем `finyk_import_reminder` (`featureFlags.ts`, за замовчуванням вимкнений), телеметрія `FINYK_IMPORT_REMINDER_{SHOWN,CLICKED,SNOOZED}`. Відкрите: зняття прапорця і наступні фази.
 
 > **Звідки взялось.** Запит власника 2026-08-29: «є опція завантаження з інших

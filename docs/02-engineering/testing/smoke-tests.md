@@ -1,6 +1,6 @@
 # Post-deploy smoke tests — runbook
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-04-11.
+> **Last touched:** 2026-08-24 by @claude. **Next review:** 2027-04-02.
 > **Status:** Active
 
 > **Статус автоматизації:** [`.github/workflows/post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) закомічений — `deployment_status` + cron 06:30 UTC + `workflow_dispatch`. Локально — CLI [`scripts/post-deploy-smoke.mjs`](../../../scripts/post-deploy-smoke.mjs) + [`scripts/smoke-tests.json`](../../../scripts/smoke-tests.json).

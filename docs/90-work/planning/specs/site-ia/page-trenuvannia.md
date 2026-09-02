@@ -1,6 +1,6 @@
 # Щоденник силових тренувань і карта тіла
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-10-25.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2027-10-23.
 > **Status:** Implemented - сторінка відвантажена (`apps/landing/src/pages/TrenuvanniaPage.tsx`), PR #955/#956.
 > **Маршрут:** /trenuvannia · **Питання людини:** Чи підкаже застосунок, коли мені варто відпочити, і наскільки йому вірити
 

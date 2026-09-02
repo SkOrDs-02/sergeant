@@ -1,6 +1,6 @@
 # Як забрати своє і що буде, якщо продукт закриється
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-11-24.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2027-11-22.
 > **Status:** Scaffolded
 
 ## Мета сторінки

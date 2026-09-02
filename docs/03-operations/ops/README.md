@@ -1,6 +1,6 @@
 # Ops
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-09.
+> **Last touched:** 2026-08-22 by @claude. **Next review:** 2026-11-28.
 > **Status:** Active
 
 Operational maintainer-runbook-и для recurring-чергових процесів (dependency

@@ -1,6 +1,6 @@
 # Sergeant — Launch & Monetization Docs
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-10-08.
+> **Last touched:** 2026-08-24 by @claude. **Next review:** 2027-09-29.
 > **Status:** Active
 
 > **Канон ціни (2026-07-10):** [ADR-0068](../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) — **₴199/міс / ₴1490/рік**, reverse trial 7 днів; Free AI **5 msg/day** ([ADR-0085](../../04-governance/adr/0085-free-ai-quota-five-per-day.md)); анонім AI не отримує зовсім ([ADR-0086](../../04-governance/adr/0086-no-anonymous-ai-sign-in-required.md)). У старих блоках нижче ₴99/₴799 і «15 msg/day» — historical context.

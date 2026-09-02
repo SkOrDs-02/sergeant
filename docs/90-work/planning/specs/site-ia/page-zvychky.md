@@ -1,6 +1,6 @@
 # Звички, де один пропуск не обнуляє серію
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-09-22.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2027-09-20.
 > **Status:** Implemented - сторінка відвантажена (`apps/landing/src/pages/ZvychkyPage.tsx`), PR #955/#956.
 > **Маршрут:** /zvychky · **Питання людини:** Що буде з моєю серією, якщо я пропущу день
 

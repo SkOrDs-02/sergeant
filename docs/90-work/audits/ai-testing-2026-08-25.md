@@ -1,6 +1,6 @@
 # Аудит AI-шару: код, безпека, телеметрія, стенди (2026-08-25)
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-11-24.
+> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2027-11-22.
 > **Status:** Active
 
 Повторний прохід по AI-шару через 20 днів після [ai-pipeline-2026-08-05](./ai-pipeline-2026-08-05.md).
