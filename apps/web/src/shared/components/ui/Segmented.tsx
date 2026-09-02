@@ -9,22 +9,34 @@ import { hapticTap } from "@shared/lib/adapters/haptic";
  * Consolidates the drift between Fizruk Workouts (solid module-fill tabs)
  * and Routine calendar time-mode chips (soft tinted chips).
  *
- * Not intended to replace `<SubTabs>` (full-width bar-style) — that
- * pattern is a separate variant kept in its own component for now.
+ * `layout="bar"` is full-width but still NOT `<SubTabs>`: that one is
+ * page-level navigation between views, this stays a control inside one
+ * screen that filters or switches a mode.
  *
- * Two-axis API (see `docs/design/COMPONENT_API.md`):
+ * Three-axis API (see `docs/design/COMPONENT_API.md`):
  *   - `variant` — accent colour (`brand` for the default chrome; the four
  *                 module tokens scope the active state to a module).
  *   - `style`   — visual treatment of the active chip.
  *                 `solid` — filled accent background (Fizruk Workouts).
  *                 `soft`  (default) — tinted surface + accent border
  *                                       + accent text (Routine chips).
+ *   - `layout`  — geometry of the row.
+ *                 `pill` (default) — chips sized by their label, wrapping.
+ *                 `bar`  — one full-width track of equal segments.
+ *
+ * `bar` exists for a short, fixed set of mutually exclusive options that
+ * a person switches often: equal segments stop the row from reflowing as
+ * labels change length, and the track reads as ONE control instead of
+ * separate buttons that happen to sit together. With a long or open-ended
+ * set the segments squeeze past legibility — those stay `pill`, and a
+ * multi-select filter is not this component at all.
  */
 
 export type SegmentedVariant =
   "brand" | "fizruk" | "routine" | "nutrition" | "finyk";
 export type SegmentedStyle = "solid" | "soft";
 export type SegmentedSize = "sm" | "md";
+export type SegmentedLayout = "pill" | "bar";
 
 export interface SegmentedItem<V extends string = string> {
   value: V;
@@ -45,6 +57,8 @@ export interface SegmentedProps<V extends string = string> {
   size?: SegmentedSize;
   /** Accent colour token. Defaults to `brand`. */
   variant?: SegmentedVariant;
+  /** Row geometry. Defaults to `pill` (label-sized, wrapping chips). */
+  layout?: SegmentedLayout;
   /** Accessible label for the underlying role="tablist". */
   ariaLabel?: string;
   className?: string;
@@ -83,6 +97,19 @@ const VARIANT_SOFT: Record<SegmentedVariant, string> = {
 const INACTIVE =
   "border-line bg-panel text-muted hover:text-text hover:bg-panelHi transition-colors";
 
+// `bar` drops `flex-wrap` on purpose: a wrapped segment breaks the single
+// track the layout promises. Corner radius follows the surrounding form
+// controls (`rounded-2xl`) rather than the pill's capsule.
+const LAYOUT_ROW: Record<SegmentedLayout, string> = {
+  pill: "flex flex-wrap items-center gap-3",
+  bar: "flex w-full items-stretch gap-1.5",
+};
+
+const LAYOUT_ITEM: Record<SegmentedLayout, string> = {
+  pill: "rounded-full",
+  bar: "flex-1 min-w-0 rounded-2xl",
+};
+
 const SIZE: Record<SegmentedSize, string> = {
   sm: "px-3 py-2 text-style-label min-h-[36px]",
   md: "px-3 py-2.5 text-style-label min-h-[44px]",
@@ -94,6 +121,7 @@ export function Segmented<V extends string = string>({
   onChange,
   style = "soft",
   size = "md",
+  layout = "pill",
   variant = "brand",
   ariaLabel,
   className,
@@ -146,7 +174,7 @@ export function Segmented<V extends string = string>({
       ref={tablistRef}
       role="tablist"
       aria-label={ariaLabel}
-      className={cn("flex flex-wrap items-center gap-3", className)}
+      className={cn(LAYOUT_ROW[layout], className)}
     >
       {items.map((item) => {
         const isActive = item.value === value;
@@ -167,7 +195,8 @@ export function Segmented<V extends string = string>({
               }
             }}
             className={cn(
-              "rounded-full border font-semibold transition-[background-color,border-color,color,box-shadow,opacity]",
+              "border font-semibold transition-[background-color,border-color,color,box-shadow,opacity]",
+              LAYOUT_ITEM[layout],
               SIZE[size],
               isActive ? activeClass : INACTIVE,
             )}
