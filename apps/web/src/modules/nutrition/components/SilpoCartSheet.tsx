@@ -493,7 +493,7 @@ export function SilpoCartSheet({ open, onClose, items }: SilpoCartSheetProps) {
               {/* Нагадування приватності перед записом у зовнішній кошик —
                   повний текст обіцянки живе на картці Сільпо в
                   Налаштуваннях (`SilpoPrivacyPromise`). */}
-              <p className="text-style-caption text-subtle">
+              <p className="text-style-body text-subtle">
                 {COPY.privacyReminder}
               </p>
               {applyErrorKind && (

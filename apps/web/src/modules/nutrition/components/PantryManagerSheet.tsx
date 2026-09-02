@@ -277,7 +277,7 @@ export function PantryManagerSheet({
           <SectionHeading as="div" size="xs" variant="nutrition">
             Розкласти по місцях
           </SectionHeading>
-          <p className="text-style-caption text-subtle leading-relaxed mt-1">
+          <p className="text-style-body text-subtle leading-relaxed mt-1">
             {redistributePlan.length} позицій лежать не там, де їх очікує
             автовизначення. Нічого не переїде, поки не натиснеш.
           </p>

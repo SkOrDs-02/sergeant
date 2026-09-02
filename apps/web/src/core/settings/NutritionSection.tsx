@@ -155,7 +155,7 @@ export function NutritionSection() {
       )}
 
       <SettingsSubGroup title="Вода">
-        <p className="text-style-caption text-subtle leading-snug">
+        <p className="text-style-body text-subtle leading-snug">
           Денна норма для трекера води в картці дня Їжі.
         </p>
         <NumberField
@@ -172,7 +172,7 @@ export function NutritionSection() {
       </SettingsSubGroup>
 
       <SettingsSubGroup title="Підстановка з комори">
-        <p className="text-style-caption text-subtle leading-snug">
+        <p className="text-style-body text-subtle leading-snug">
           У діалозі «Додати прийом їжі» поряд з пошуком і штрихкодом показуються
           продукти з активної комори, їх можна вибрати одним тапом.
         </p>

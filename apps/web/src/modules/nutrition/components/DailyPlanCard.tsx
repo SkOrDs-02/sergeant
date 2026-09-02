@@ -343,7 +343,7 @@ export function DailyPlanCard({
         </div>
 
         {pantryItems?.length === 0 && !pantryIgnored && (
-          <div className="text-style-caption text-muted text-center -mt-2">
+          <div className="text-style-body text-muted text-center -mt-2">
             Додай продукти в комору, AI врахує їх у плані
           </div>
         )}

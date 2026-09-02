@@ -256,7 +256,7 @@ export function SilpoPantryReplenishSheet({
             {/* Нагадування приватності перед поповненням комори — повний
                 текст обіцянки живе на картці Сільпо в Налаштуваннях
                 (`SilpoPrivacyPromise`). */}
-            <p className="text-style-caption text-subtle mb-2">
+            <p className="text-style-body text-subtle mb-2">
               {COPY.privacyReminder}
             </p>
             {detailLoading ? (

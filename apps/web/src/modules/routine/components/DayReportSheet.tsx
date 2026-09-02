@@ -186,7 +186,7 @@ export function DayReportSheet({
               </li>
             ))}
           </ul>
-          <p className="text-style-caption text-muted mt-2">
+          <p className="text-style-body text-muted mt-2">
             Заявлений пропуск не рахується провалом і не ламає серію.
           </p>
         </div>

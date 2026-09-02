@@ -256,7 +256,7 @@ export function HabitStreakCanvas({
       </p>
 
       {cells.length === 0 ? (
-        <p className="text-style-caption text-subtle">{T.emptyHistory}</p>
+        <p className="text-style-body text-subtle">{T.emptyHistory}</p>
       ) : (
         <ul
           aria-label={`${T.canvasLabelPrefix} «${habit.name}»`}

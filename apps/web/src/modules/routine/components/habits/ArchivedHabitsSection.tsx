@@ -34,7 +34,7 @@ export function ArchivedHabitsSection({
       <SectionHeading as="h2" size="xs" variant="routine">
         Архів
       </SectionHeading>
-      <p className="text-style-caption text-subtle">
+      <p className="text-style-body text-subtle">
         Не показуються в календарі; відмітки збережені.
       </p>
       <ul className="space-y-2">

@@ -62,7 +62,7 @@ export function PWASection() {
 
   return (
     <SettingsGroup title="PWA та офлайн" icon="smartphone">
-      <p className="text-style-caption text-subtle leading-snug">
+      <p className="text-style-body text-subtle leading-snug">
         Якщо після оновлення щось «застрягло» (стара версія або дивні дані),
         можна скинути кеш Service Worker і перезавантажити застосунок.
       </p>

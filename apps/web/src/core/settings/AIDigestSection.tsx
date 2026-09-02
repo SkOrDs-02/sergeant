@@ -44,7 +44,7 @@ export function AIDigestSection() {
     // тут vs "AI-дайджести" у пошуку) без жодної перевірки.
     <SettingsGroup title={settingsSectionTitle("ai")} icon="clipboard">
       <div className="space-y-3">
-        <p className="text-style-caption text-subtle leading-snug">
+        <p className="text-style-body text-subtle leading-snug">
           Тижневий AI-аналіз прогресу по всіх модулях: фінанси, тренування,
           харчування та звички. Згенерувати звіт можна на сторінці «
           {messages.nav.reports}», у режимі «Тиждень», або на головній у блоці

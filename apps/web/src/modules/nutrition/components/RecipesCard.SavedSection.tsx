@@ -69,7 +69,7 @@ export function SavedSection({
       {savedOpen && (
         <div className="mt-3">
           {saved.length === 0 ? (
-            <div className="text-style-caption text-muted">
+            <div className="text-style-body text-muted">
               Тут зʼявляться збережені рецепти. Згенеруй рецепти нижче й натисни
               &quot;Зберегти&quot;.
             </div>

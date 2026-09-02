@@ -263,7 +263,7 @@ export function HabitHeatmap({
         Активність: сьогодні та історія
       </SectionHeading>
 
-      <div className="mb-2 text-style-caption text-subtle">
+      <div className="mb-2 text-style-body text-subtle">
         {caption ??
           `Відкривається на сьогодні, гортай ліворуч, щоб побачити історію за ${historyLabel}.`}
       </div>

@@ -16,7 +16,7 @@ export function FizrukSection() {
     // розписано у `FinykSection.tsx`.
     <SettingsGroup title="Фізрук" icon="dumbbell" module="fizruk">
       <SettingsSubGroup title="Таймер відпочинку">
-        <p className="text-style-caption text-subtle leading-snug">
+        <p className="text-style-body text-subtle leading-snug">
           Скільки відпочивати між підходами. Обране значення стає таймером за
           замовчуванням для вправ цього типу.
         </p>
