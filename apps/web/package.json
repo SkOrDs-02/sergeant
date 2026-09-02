@@ -11,7 +11,7 @@
     "preview": "vite preview",
     "preview:lhci": "vite preview --port 4173 --strictPort --host 127.0.0.1",
     "lighthouse": "lhci autorun --config=lighthouserc.json",
-    "lint": "eslint .",
+    "lint": "eslint --cache .",
     "typecheck": "tsc -p tsconfig.json --noEmit && tsc -p tsconfig.sw.json --noEmit",
     "test": "vitest run",
     "test:watch": "vitest",

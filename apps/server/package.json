@@ -7,7 +7,7 @@
     "dev": "node --env-file-if-exists=.env --import tsx src/index.js",
     "build": "node build.mjs",
     "start": "node dist-server/index.js",
-    "lint": "eslint .",
+    "lint": "eslint --cache .",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "vitest run",
     "test:integration": "vitest run --config vitest.integration.config.ts",

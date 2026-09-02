@@ -251,6 +251,10 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 `pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test --concurrency=2`, який запускає обидва pipelines паралельно без перепідписування вкладених test worker-ів). When changing UI: attach a screenshot. When shipping a heavy import: `pnpm --filter @sergeant/web size` (blocking). Full CI matrix + non-blocking workflows: [`docs/04-governance/governance/release-policy.md`](./docs/04-governance/governance/release-policy.md), `.github/workflows/`. Markdown link checker (`docs-automation.yml`) runs `--strict-external` against [`docs/04-governance/governance/external-link-allowlist.json`](./docs/04-governance/governance/external-link-allowlist.json).
 
+**Лінт кешується на двох рівнях, і обидва тепер інвалідуються чесно ([ADR-0093](./docs/04-governance/adr/0093-eslint-kept-lint-pipeline-cached.md)).** Turbo кешує таску `lint` пер-воркспейс, ESLint кешує пер-файл у `.eslintcache` (gitignored, їде через `outputs` таски). Кореневі `eslint.*.js`, `.prettierrc.json`, `.prettierignore` і `eslint-plugin-sergeant-design/index.js` перелічені в `globalDependencies` — доти, доки їх там не було, зміна ПРАВИЛА не інвалідувала кеш і `turbo run lint` рапортував `17 cached` зеленим на дереві, яке `--force` валив. **Додаєш кореневий конфіг-файл лінтера — додай його в `globalDependencies`, інакше повертаєш фальшивий зелений.** Резолвлений конфіг закритий снапшот-гейтом `pnpm lint:eslint-config-diff` (крок CI у джобі `check`): зміна правила перевертає фікстури під `scripts/__fixtures__/eslint-print-config/` — це очікувано, оновлюй через `--update` і показуй діф у PR.
+
+Ланцюжок `pnpm lint` викликає скрипти напряму (`node scripts/…`), а не через `pnpm lint:…` — обгортка коштувала ~760 мс на виклик, 22 с на 29 викликів. Іменовані скрипти лишаються для окремого запуску; **додаєш перевірку в ланцюжок — став туди `node …`, не `pnpm …`.**
+
 ## Deployment & test users
 
 - **Frontend:** Vercel (preview deploy on each PR; free tier may rate-limit).

@@ -13,6 +13,7 @@ import { sep } from "node:path";
 import {
   normaliseConfig,
   snapshotPathFor,
+  isFailingResult,
   FIXTURES,
 } from "../eslint-print-config-diff.mjs";
 
@@ -149,5 +150,30 @@ describe("FIXTURES — coverage invariants", () => {
         `${f.surface}: path ${f.path} is not under cwd ${f.cwd}`,
       );
     }
+  });
+});
+
+describe("isFailingResult — що валить гейт", () => {
+  it("`match` не валить", () => {
+    assert.equal(isFailingResult({ status: "match" }), false);
+  });
+
+  it("`updated` і `created` (режим --update) не валять", () => {
+    assert.equal(isFailingResult({ status: "updated" }), false);
+    assert.equal(isFailingResult({ status: "created" }), false);
+  });
+
+  it("`diff`, `missing` і `error` валять", () => {
+    assert.equal(isFailingResult({ status: "diff" }), true);
+    assert.equal(isFailingResult({ status: "missing" }), true);
+    assert.equal(isFailingResult({ status: "error" }), true);
+  });
+
+  // Регресія: зниклий fixture-файл раніше давав `skipped`, який не потрапляв
+  // у список провалів, тож видалення чи перейменування одного з фікстурних
+  // файлів мовчки знімало покриття з поверхні, а гейт лишався зеленим і
+  // друкував «All 7 fixture(s) matched», перевіривши шість.
+  it("`skipped` (зниклий fixture-файл) валить — покриття зникло", () => {
+    assert.equal(isFailingResult({ status: "skipped" }), true);
   });
 });

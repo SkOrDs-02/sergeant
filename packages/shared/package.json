@@ -17,7 +17,7 @@
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",
-    "lint": "eslint \"src/**/*.{ts,tsx}\"",
+    "lint": "eslint --cache \"src/**/*.{ts,tsx}\"",
     "test": "cross-env TZ=Europe/Kyiv vitest run",
     "test:watch": "cross-env TZ=Europe/Kyiv vitest",
     "test:coverage": "cross-env TZ=Europe/Kyiv vitest run --coverage",

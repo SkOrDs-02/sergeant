@@ -7,7 +7,7 @@
     "dev": "vite --port 3100 --host 0.0.0.0",
     "build": "vite build && vite build --ssr src/entry-server.tsx --outDir dist-ssr && node scripts/postbuild-seo.mjs && node scripts/prerender.mjs",
     "preview": "vite preview --port 3100",
-    "lint": "eslint .",
+    "lint": "eslint --cache .",
     "test": "vitest run",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "shots": "node scripts/shot-pages.mjs",

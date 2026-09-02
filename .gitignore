@@ -9,6 +9,9 @@ apps/server/dist-server/
 # Turbo
 .turbo/
 
+# ESLint incremental cache (per-workspace; restored via turbo `lint` outputs)
+.eslintcache
+
 # Vitest coverage
 coverage/
 

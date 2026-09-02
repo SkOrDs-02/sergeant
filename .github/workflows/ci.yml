@@ -176,6 +176,21 @@ jobs:
         # docs/90-work/planning/ai-coding-improvements.md item #3.
         run: pnpm lint:discoverability
 
+      - name: ESLint resolved-config snapshot gate (PR-31 phase 2)
+        # scripts/eslint-print-config-diff.mjs розвʼязує `eslint
+        # --print-config` для 7 фікстур-поверхонь і звіряє зі снапшотами в
+        # scripts/__fixtures__/eslint-print-config/. Будь-яка зміна правила —
+        # навмисна чи випадкова — перевертає рівно ті снапшоти, яких
+        # стосується, і рев'ювер читає діф.
+        #
+        # Скрипт існував з PR-31, але не був підключений НІКУДИ — ні до CI,
+        # ні до `pnpm lint`, — хоча коментарі в eslint.config.js посилались на
+        # нього як на чинний гейт. Стоїть тут, ПЕРЕД «Format, lint, test,
+        # build», бо крок після потенційно червоного кроку гейтом не є
+        # (той самий урок, що й з мовчазним size-limit — див. AGENTS.md
+        # § Performance budgets).
+        run: pnpm lint:eslint-config-diff
+
       - name: Vercel config drift guard
         # Closes hardening card H7. Vercel reads exactly one vercel.json
         # (whichever lives under the project's Root Directory). A second

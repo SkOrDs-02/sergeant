@@ -19,7 +19,8 @@
  *
  * Exit codes:
  *   0 — all snapshots match (or --update wrote them)
- *   1 — at least one snapshot diverges (or eslint failed)
+ *   1 — at least one snapshot diverges, a fixture file is missing,
+ *       or eslint failed
  */
 
 import { execFileSync } from "node:child_process";
@@ -175,6 +176,27 @@ function runEslintPrintConfig(fixture) {
   return JSON.parse(stdout);
 }
 
+/**
+ * Чи валить цей результат гейт.
+ *
+ * `skipped` (fixture-файл зник) рахується провалом нарівні з `diff` / `missing`
+ * / `error`. Інакше видалення чи перейменування одного з фікстур-файлів мовчки
+ * знімало б покриття з поверхні, а гейт лишався б зеленим — рівно той клас
+ * «гейт, чий вхід зник, гейтом не є», проти якого цей скрипт і стоїть. Знята
+ * поверхня має бути правкою списку `FIXTURES`, свідомою і видимою в дифі.
+ *
+ * @param {{ status: string }} result
+ * @returns {boolean}
+ */
+export function isFailingResult(result) {
+  return (
+    result.status === "diff" ||
+    result.status === "missing" ||
+    result.status === "error" ||
+    result.status === "skipped"
+  );
+}
+
 function serialise(config) {
   return JSON.stringify(config, null, 2) + "\n";
 }
@@ -254,10 +276,7 @@ function main() {
     }
   }
 
-  const failed = results.filter(
-    (r) =>
-      r.status === "diff" || r.status === "missing" || r.status === "error",
-  );
+  const failed = results.filter(isFailingResult);
 
   if (jsonMode) {
     process.stdout.write(
@@ -284,15 +303,49 @@ function main() {
       );
     }
     if (failed.length > 0 && !updateMode) {
-      process.stderr.write(
-        `\n${failed.length} fixture(s) diverged. Run \`pnpm lint:eslint-config-diff -- --update\` to refresh snapshots after intentional config changes.\n`,
-      );
+      // Розбивка за статусами, бо ліки різні: `diff`/`missing` лікуються
+      // `--update`, зниклий fixture — правкою списку FIXTURES, а `error` —
+      // це падіння самого eslint, де `--update` не допоможе взагалі. Спільне
+      // формулювання «diverged» радило б неправильну дію на дві причини з
+      // трьох.
+      const byStatus = { diff: [], missing: [], skipped: [], error: [] };
+      for (const r of failed) byStatus[r.status]?.push(r.surface);
+
+      const lines = [`\n${failed.length} fixture(s) failed:`];
+      if (byStatus.diff.length) {
+        lines.push(
+          `  · ${byStatus.diff.length} diverged from snapshot (${byStatus.diff.join(", ")})`,
+        );
+      }
+      if (byStatus.missing.length) {
+        lines.push(
+          `  · ${byStatus.missing.length} without a committed snapshot (${byStatus.missing.join(", ")})`,
+        );
+      }
+      if (byStatus.skipped.length) {
+        lines.push(
+          `  · ${byStatus.skipped.length} fixture file(s) gone (${byStatus.skipped.join(", ")}) — update the FIXTURES list if the surface was removed on purpose`,
+        );
+      }
+      if (byStatus.error.length) {
+        lines.push(
+          `  · ${byStatus.error.length} eslint execution error(s) (${byStatus.error.join(", ")}) — fix the config or the run, --update will not help`,
+        );
+      }
+      if (byStatus.diff.length || byStatus.missing.length) {
+        lines.push(
+          "\nRun `pnpm lint:eslint-config-diff -- --update` to refresh snapshots after intentional config changes.",
+        );
+      }
+      process.stderr.write(lines.join("\n") + "\n");
     } else if (updateMode) {
       process.stdout.write(
         `\nWrote ${results.filter((r) => r.status === "updated" || r.status === "created").length} snapshot(s).\n`,
       );
     } else {
-      process.stdout.write(`\nAll ${results.length} fixture(s) matched.\n`);
+      process.stdout.write(
+        `\nAll ${results.filter((r) => r.status === "match").length} fixture(s) matched.\n`,
+      );
     }
   }
 
