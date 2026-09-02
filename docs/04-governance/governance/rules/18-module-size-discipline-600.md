@@ -58,7 +58,7 @@
 
 **Allowlist (порожній).** Декомпозиція завершена в межах ініціативи [0001](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md) (closed): жодного файла-винятку немає, `max-lines: 600` діє на весь `apps/web/src/**` та `apps/server/src/**` (виключені лише `*.{test,spec}` / `__tests__/**` / `generated/**`).
 
-> **Уточнення звірки 2026-09-02.** До цього дня механізм allowlist ще існував: `eslint.server.js` читав `apps/server/eslint.server-maxlines-allowlist.json` і розкладав його в `ignores`, але файл уже містив `[]`. Порожній файл і loader прибрано разом (PR #1017), тож тепер винятків немає ні фактично, ні механічно: повернути allowlist означає свідомо додати його назад у конфіг з апрувом ревьюерів.
+> **Уточнення звірки 2026-09-02.** До цього дня механізм allowlist ще існував: `eslint.server.js` читав окремий server-allowlist JSON і розкладав його в `ignores`, але файл уже містив `[]`. Порожній файл і loader прибрано разом (PR #1017), тож тепер винятків немає ні фактично, ні механічно: повернути allowlist означає свідомо додати його назад у конфіг з апрувом ревьюерів.
 
 **Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/` (`chat.ts` thin orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/`) довів цінність декомпозиції в продакшні. Без жорсткого ліміту декомпозиція — це постійний «уторгований борг» (зробили — наповзло знову).
 
