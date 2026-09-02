@@ -12,6 +12,7 @@
 import { describe, expect, it } from "vitest";
 
 import { buildHubCalendarEvents } from "./calendarEvents.js";
+import { buildHeatmapGrid, findCellByDateKey } from "./domain/heatmap/grid.js";
 import { weekDoneCountExcludingDate } from "./weeklyTarget.js";
 import type { Habit, RoutineState } from "./types.js";
 
@@ -104,9 +105,52 @@ describe("гнучка звичка в календарі", () => {
     expect(habitDates(s, MON, WED)).toEqual([MON, TUE, WED]);
   });
 
+  it("не роздуває знаменник хітмапи в дні, коли її не треба було", () => {
+    // Це і був справжній дефект: із ціллю «3 рази» знаменник рахував
+    // звичку ЩОДНЯ, тож чотири дні тижня виглядали як пропущені, хоча
+    // людина зробила рівно те, що планувала.
+    const habit = flexHabit(3);
+    const grid = buildHeatmapGrid(
+      [habit],
+      { [habit.id]: [MON, TUE, WED] },
+      new Date(`${THU}T12:00:00.000Z`),
+      1,
+      { denominator: "scheduled" },
+    );
+    // Понеділок-середа: звичка була потрібна і виконана.
+    for (const dk of [MON, TUE, WED]) {
+      const cell = findCellByDateKey(grid, dk);
+      expect([dk, cell?.scheduledTotal, cell?.scheduledCnt]).toEqual([
+        dk,
+        1,
+        1,
+      ]);
+    }
+    // Четвер: тиждень добрано, звичка з знаменника вийшла.
+    const thu = findCellByDateKey(grid, THU);
+    expect(thu?.scheduledTotal).toBe(0);
+    expect(thu?.intensity).toBe("empty");
+  });
+
   it("новий тиждень починається з чистого лічильника", () => {
     const s = stateWith(flexHabit(3), [MON, TUE, WED]);
     expect(habitDates(s, NEXT_MON, NEXT_MON)).toEqual([NEXT_MON]);
+  });
+
+  it("підпис показує прогрес тижня, рахуючи сам день", () => {
+    // Гейт видимості рахує БЕЗ цього дня, підпис — З ним: людина читає
+    // «2 з 3» як «вже двічі». Різниця навмисна, і це її доказ.
+    const s = stateWith(flexHabit(3), [MON, TUE]);
+    const events = buildHubCalendarEvents(
+      s,
+      { startKey: TUE, endKey: WED },
+      { showFizruk: false, showFinykSubs: false },
+      {},
+    ).filter((e) => e.sourceKind === "habit");
+    expect(events.map((e) => e.subtitle)).toEqual([
+      "Зроблено · 2 з 3",
+      "Звичка · 2 з 3",
+    ]);
   });
 
   it("ціль читається на дату, а не остання відома", () => {

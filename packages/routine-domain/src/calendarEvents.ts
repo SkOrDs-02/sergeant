@@ -13,10 +13,41 @@
 
 import { enumerateDateKeys, parseDateKey } from "./dateKeys.js";
 import { habitScheduledOnDate } from "./schedule.js";
-import { isFlexibleHabit, weekDoneCountExcludingDate } from "./weeklyTarget.js";
+import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+  weeklyTargetForDate,
+} from "./weeklyTarget.js";
 import { sortHabitsByOrder } from "./habitOrder.js";
 import { completionNoteKey } from "./completionNoteKey.js";
-import type { CalendarRange, HubCalendarEvent, RoutineState } from "./types.js";
+import type {
+  CalendarRange,
+  Habit,
+  HubCalendarEvent,
+  RoutineState,
+} from "./types.js";
+
+/**
+ * Підпис події звички. Для гнучкої звички несе прогрес тижня: без нього
+ * «Звичка» в списку не відповідає на єдине питання, яке в цьому режимі має
+ * сенс — скільки ще лишилось.
+ *
+ * Показане число ВКЛЮЧАЄ цей день, якщо його відмічено: людина читає «2 з 3»
+ * як «вже двічі». Гейт видимості натомість рахує без нього, і це навмисна
+ * різниця — див. докстрінг `weekDoneCountExcludingDate`.
+ */
+function habitSubtitle(
+  habit: Habit,
+  dateKey: string,
+  completed: boolean,
+  timePart: string,
+  weekDoneCount: number | undefined,
+): string {
+  const base = completed ? `Зроблено${timePart}` : `Звичка${timePart}`;
+  if (weekDoneCount === undefined) return base;
+  const done = weekDoneCount + (completed ? 1 : 0);
+  return `${base} · ${done} з ${weeklyTargetForDate(habit, dateKey)}`;
+}
 
 /**
  * Число з розрядами під uk-UA. Дублює `formatNumberUk` із `@sergeant/shared`
@@ -160,7 +191,7 @@ export function buildHubCalendarEvents(
         // `aria-label` кнопки «Деталі» (аудит 2026-08-04, знахідка 12).
         // Іконку малює UI (`HabitGlyph`), подія несе саму назву.
         title: h.name,
-        subtitle: completed ? `Зроблено${timePart}` : `Звичка${timePart}`,
+        subtitle: habitSubtitle(h, date, completed, timePart, weekDoneCount),
         tagLabels,
         sortKey: `${date} 1 ${h.name}`,
         habitId: h.id,

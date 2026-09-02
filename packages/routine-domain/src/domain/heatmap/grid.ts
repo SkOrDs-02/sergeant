@@ -19,6 +19,10 @@ import {
 } from "../../schedule.js";
 import type { Habit } from "../../types.js";
 import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+} from "../../weeklyTarget.js";
+import {
   HEATMAP_DAYS,
   HEATMAP_WEEKS,
   type HeatmapCell,
@@ -225,7 +229,22 @@ export function buildHeatmapGrid(
       let scheduledTotal = 0;
       let scheduledCnt = 0;
       for (const h of active) {
-        if (!habitScheduledOnDate(h, dateKey, scheduleOpts)) continue;
+        // Гнучка звичка («N разів на тиждень») перестає бути в знаменнику
+        // того дня, коли тиждень уже добрано. Без цього людина з ціллю
+        // «3 рази» отримувала б ЧОТИРИ незафарбовані дні щотижня — сітка
+        // читалась би як «пропустив», хоча вона зробила рівно те, що
+        // планувала. Лічильник виключає сам день, тож день ВИКОНАННЯ
+        // лишається і в знаменнику, і в чисельнику.
+        const weekDone = isFlexibleHabit(h)
+          ? weekDoneCountExcludingDate(completions?.[h.id], dateKey)
+          : undefined;
+        if (
+          !habitScheduledOnDate(h, dateKey, {
+            ...scheduleOpts,
+            weekDoneCount: weekDone,
+          })
+        )
+          continue;
         scheduledTotal += 1;
         if (completionSets.get(h.id)?.has(dateKey)) scheduledCnt += 1;
       }
