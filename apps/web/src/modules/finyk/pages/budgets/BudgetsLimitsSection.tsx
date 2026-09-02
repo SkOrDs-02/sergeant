@@ -91,7 +91,20 @@ export function BudgetsLimitsSection({
             className="mb-0! normal-case tracking-normal"
             variant="finyk"
           >
-            Ліміти · {monthStart.toLocaleDateString("uk-UA", { month: "long" })}
+            {/* `monthStart` — київська північ 1-го числа (`getCurrentMonthContext`
+                → `kyivDayStartMs`), тобто 21:00/22:00 UTC ОСТАННЬОГО дня
+                попереднього місяця. Форматування без `timeZone` бере таймзону
+                хоста, і на будь-якому пристрої західніше Києва (UTC включно)
+                заголовок показував попередній місяць — тимчасом як сусідні
+                «Транзакції» й «Аналітика» показували правильний. Це не глюк на
+                межі доби: для таких пристроїв стан постійний. Фінансові періоди
+                рахуються в Києві (root AGENTS.md § Domain invariants), тож
+                форматувати треба в тій самій зоні, до якої прив'язаний інстант. */}
+            Ліміти ·{" "}
+            {monthStart.toLocaleDateString("uk-UA", {
+              month: "long",
+              timeZone: "Europe/Kyiv",
+            })}
             {limitBudgets.length > 0 && (
               <span className="ml-1 text-subtle font-normal">
                 ({limitBudgets.length})

@@ -143,6 +143,23 @@ describe("BudgetsLimitsSection (branches)", () => {
     expect(btn).toHaveAttribute("aria-expanded", "false");
   });
 
+  // Регресія з browser-QA 2026-09-02: заголовок форматував київський інстант
+  // у таймзоні хоста, тож на пристрої західніше Києва показував ПОПЕРЕДНІЙ
+  // місяць, поки «Транзакції» й «Аналітика» показували правильний. Vitest
+  // пінить `TZ: "UTC"` (vitest.config), тобто саме той випадок.
+  it("labels the month in Europe/Kyiv, not in the host timezone", () => {
+    // Київська північ 1 вересня 2026 — це 21:00 UTC 31 серпня.
+    const kyivSeptemberStart = new Date("2026-08-31T21:00:00Z");
+    render(
+      <BudgetsLimitsSection
+        {...buildProps({ monthStart: kyivSeptemberStart })}
+      />,
+    );
+    const btn = screen.getByRole("button", { name: /Ліміти/i });
+    expect(btn.textContent).toContain("вересень");
+    expect(btn.textContent).not.toContain("серпень");
+  });
+
   it("calls toggleLimits when the header is clicked", () => {
     const props = buildProps();
     render(<BudgetsLimitsSection {...props} />);
