@@ -4,7 +4,7 @@
  * Status: Active
  */
 import { describe, expect, it, vi } from "vitest";
-import { render, screen } from "@testing-library/react";
+import { fireEvent, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
 import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
@@ -67,6 +67,94 @@ describe("PantryParsePreview", () => {
       />,
     );
     expect(screen.getByText(/розібрано на пристрої/i)).toBeTruthy();
+  });
+});
+
+// UX-4 (аудит 2026-09-01): рядок з `ambiguousQty` несе інлайн-вибір
+// «шт»/«г» і не блокує підтвердження решти списку.
+describe("PantryParsePreview — ambiguousQty (UX-4)", () => {
+  const AMBIGUOUS_PREVIEW: PantryParsePreviewData = {
+    source: "local",
+    pantryId: "home",
+    items: [
+      { name: "рис", qty: 2, unit: "кг", notes: null },
+      {
+        name: "Нутелла",
+        qty: 350,
+        unit: "шт",
+        notes: null,
+        ambiguousQty: true,
+      },
+    ],
+  };
+
+  it("shows the уточни badge and шт/г chips only on the ambiguous row", () => {
+    render(
+      <PantryParsePreview
+        preview={AMBIGUOUS_PREVIEW}
+        onConfirm={vi.fn()}
+        onDismiss={vi.fn()}
+        busy={false}
+      />,
+    );
+    expect(screen.getByText("Уточни")).toBeInTheDocument();
+    expect(screen.getByText("350 шт")).toBeInTheDocument();
+    expect(screen.getByText("350 г")).toBeInTheDocument();
+  });
+
+  it("confirming without touching the toggle keeps the parser's шт default", async () => {
+    const onConfirm = vi.fn();
+    render(
+      <PantryParsePreview
+        preview={AMBIGUOUS_PREVIEW}
+        onConfirm={onConfirm}
+        onDismiss={vi.fn()}
+        busy={false}
+      />,
+    );
+    await userEvent.click(screen.getByRole("button", { name: /Додати 2/ }));
+    expect(onConfirm).toHaveBeenCalledWith(AMBIGUOUS_PREVIEW.items);
+  });
+
+  it("tapping «г» resolves the row AND does not block confirming the rest", async () => {
+    const onConfirm = vi.fn();
+    const onResolveAmbiguousUnit = vi.fn();
+    render(
+      <PantryParsePreview
+        preview={AMBIGUOUS_PREVIEW}
+        onConfirm={onConfirm}
+        onDismiss={vi.fn()}
+        busy={false}
+        onResolveAmbiguousUnit={onResolveAmbiguousUnit}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("350 г"));
+    expect(onResolveAmbiguousUnit).toHaveBeenCalledWith(
+      AMBIGUOUS_PREVIEW.items[1],
+      "г",
+    );
+
+    await userEvent.click(screen.getByRole("button", { name: /Додати 2/ }));
+    expect(onConfirm).toHaveBeenCalledWith([
+      AMBIGUOUS_PREVIEW.items[0],
+      { name: "Нутелла", qty: 350, unit: "г", notes: null },
+    ]);
+  });
+
+  it("unchecking the ambiguous row still lets the rest of the list through", async () => {
+    const onConfirm = vi.fn();
+    render(
+      <PantryParsePreview
+        preview={AMBIGUOUS_PREVIEW}
+        onConfirm={onConfirm}
+        onDismiss={vi.fn()}
+        busy={false}
+      />,
+    );
+    await userEvent.click(screen.getAllByRole("checkbox")[1]!);
+    await userEvent.click(screen.getByRole("button", { name: /Додати 1/ }));
+    expect(onConfirm).toHaveBeenCalledWith([AMBIGUOUS_PREVIEW.items[0]]);
   });
 });
 

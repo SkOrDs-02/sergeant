@@ -72,7 +72,7 @@ const MonthPulseCardImpl = function MonthPulseCard({
           рядку прогнозу нижче — третя копія того самого факту саме й робить
           картку однорідною. */}
       <div className="mb-4">
-        <span className="text-style-label font-semibold text-text capitalize">
+        <span className="text-style-label font-semibold text-text">
           {dateLabel}
         </span>
       </div>

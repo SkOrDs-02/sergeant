@@ -68,14 +68,23 @@ vi.mock("./../modules/ai-memory/ingestQueue.js", () => ({
 // before the handler. Mock it as passthrough so a rate-limit Postgres-fallback
 // query does not consume a `queryMock.mockResolvedValueOnce`. The limiter has
 // its own `http/rateLimit.test.ts`.
+// SEC-1 (продуктовий аудит 2026-09, той самий контракт, що B31 у
+// `chat.route.test.ts`): лімітер має бачити `req.user`, інакше бакетить по IP.
+const { rateLimitExpressCalls } = vi.hoisted(() => ({
+  rateLimitExpressCalls: [] as Array<{ hasUser: boolean }>,
+}));
+
 vi.mock("./../http/rateLimit.js", async () => {
   const actual = await vi.importActual<typeof import("./../http/rateLimit.js")>(
     "./../http/rateLimit.js",
   );
   return {
     ...actual,
-    rateLimitExpress: () => (_req: unknown, _res: unknown, next: () => void) =>
-      next(),
+    rateLimitExpress:
+      () => (req: { user?: unknown }, _res: unknown, next: () => void) => {
+        rateLimitExpressCalls.push({ hasUser: !!req.user });
+        next();
+      },
   };
 });
 
@@ -98,6 +107,7 @@ const VALID_BODY = {
 };
 
 beforeEach(() => {
+  rateLimitExpressCalls.length = 0;
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
@@ -131,6 +141,37 @@ describe("weekly-digest route — auth guard", () => {
       .set("X-Requested-With", "XMLHttpRequest")
       .send(VALID_BODY);
     expect(res.status).toBe(401);
+  });
+});
+
+describe("weekly-digest route — middleware order (SEC-1)", () => {
+  // `requireSession()` стоїть ПЕРЕД `rateLimitExpress` (як B31 у `chat.ts`):
+  // лімітер має бачити `req.user`, інакше `rateLimitSubject` бакетить по IP
+  // і «10/год на юзера» перетворюється на «10/год на NAT».
+  it("лімітер бачить req.user, коли сесія є", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    await request(app)
+      .post("/api/weekly-digest")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send(VALID_BODY);
+    expect(rateLimitExpressCalls.length).toBeGreaterThan(0);
+    expect(rateLimitExpressCalls.every((c) => c.hasUser)).toBe(true);
+  });
+
+  it("без сесії 401 віддається до лімітера — бакет по IP не витрачається", async () => {
+    getSessionUserMock.mockResolvedValue(null);
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/weekly-digest")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send(VALID_BODY);
+    expect(res.status).toBe(401);
+    expect(rateLimitExpressCalls).toEqual([]);
   });
 });
 

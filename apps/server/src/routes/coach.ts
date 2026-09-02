@@ -21,15 +21,20 @@ import {
 export function createCoachRouter(): Router {
   const r = Router();
   r.use("/api/coach", setModule("coach"));
+  // Усі coach-роути потребують сесії, тож вона стоїть на рівні роутера і
+  // ПЕРЕД лімітером (B31 у `chat.ts`; тут — SEC-1 продуктового аудиту
+  // 2026-09): `rateLimitSubject` бакетить по `req.user.id`, а без сесії в
+  // момент перевірки — по `ip:<addr>`. З лімітером попереду «20/год на
+  // юзера» насправді було per-IP.
+  r.use("/api/coach", requireSession());
   r.use(
     "/api/coach",
     rateLimitExpress({ key: "api:coach", limit: 20, windowMs: 60 * 60_000 }),
   );
-  r.get("/api/coach/memory", requireSession(), coachMemoryGet);
-  r.post("/api/coach/memory", requireSession(), coachMemoryPost);
+  r.get("/api/coach/memory", coachMemoryGet);
+  r.post("/api/coach/memory", coachMemoryPost);
   r.post(
     "/api/coach/insight",
-    requireSession(),
     // Коуч типово ходить шлюзом (`LLM_COACH_PROVIDER=openrouter`), тож
     // Anthropic-ключ йому потрібен лише як фолбек. Гейт питає про ключ
     // ТОГО провайдера, який реально обере `getLLMProvider()` — інакше

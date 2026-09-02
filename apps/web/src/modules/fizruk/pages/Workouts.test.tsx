@@ -130,6 +130,12 @@ vi.mock("../components/WorkoutTemplatesSection", () => ({
   ),
 }));
 
+// Без моку компонент рендериться справді і кличе `useToast`, а цей сьют
+// монтує сторінку без `ToastProvider` — падав увесь файл, не один тест.
+vi.mock("../components/StrongImportReview", () => ({
+  StrongImportReview: () => <div data-testid="strong-import-review" />,
+}));
+
 vi.mock("../components/workouts/ExerciseDetailSheet", () => ({
   ExerciseDetailSheet: ({
     onClose,

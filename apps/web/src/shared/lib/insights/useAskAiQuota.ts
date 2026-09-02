@@ -6,6 +6,7 @@ import {
 } from "@tanstack/react-query";
 import { chatApi } from "@shared/api";
 import { chatKeys } from "@shared/lib/api/queryKeys";
+import { useAuthOptional } from "../../../core/auth/AuthContext";
 
 /**
  * Порожній клієнт на випадок, коли хук змонтований поза `QueryClientProvider`.
@@ -31,13 +32,17 @@ const detachedClient = new QueryClient({
  */
 export function useAskAiQuotaExhausted(): boolean {
   const client = useContext(QueryClientContext);
+  // FUN-1 (аудит 2026-09): анонім → 401 на `chat/usage` навіть на
+  // сторінках без чату. Без сесії квота невідома → fail-open, як і раніше.
+  const auth = useAuthOptional();
+  const signedOut = auth?.status === "unauthenticated";
   const { data } = useQuery(
     {
       queryKey: chatKeys.usage,
       queryFn: ({ signal }) => chatApi.usage({ signal }),
       staleTime: 30_000,
       retry: false,
-      enabled: client !== undefined,
+      enabled: client !== undefined && !signedOut,
     },
     client ?? detachedClient,
   );

@@ -291,6 +291,93 @@ describe("useChatSend (audit 03 F22 — SSE + tool-calls)", () => {
   });
 });
 
+// AI-6 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — коли
+// синтез (другий тур) падає, картка інструмента вже побудована з результату
+// ВИКОНАННЯ на клієнті. Клас інструмента (`getToolOutcomeClass`) вирішує,
+// як картка про це каже.
+describe("useChatSend — AI-6 картки на провалі синтезу", () => {
+  it("state-mutating (log_water): дія лишається «Виконано», лише дописується примітка", async () => {
+    const captured: ChatMessage[][] = [];
+    const setMessages = vi.fn((updater: unknown) => {
+      if (typeof updater === "function") {
+        const prev = captured.at(-1) ?? [];
+        captured.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+      }
+    });
+    sendMock.mockResolvedValue({
+      tool_calls: [{ id: "tc1", name: "log_water", input: { amount_ml: 250 } }],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      { name: "log_water", result: "Записав 250 мл води" },
+    ]);
+    streamMock.mockRejectedValue(new Error("Денний ліміт AI вичерпано"));
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("випив 250 мл води");
+    });
+
+    const finalMessages = captured.at(-1) ?? [];
+    const assistantMsg = finalMessages.find(
+      (m) => m.role === "assistant" && m.cards && m.cards.length > 0,
+    );
+    expect(assistantMsg).toBeDefined();
+    const card = assistantMsg!.cards!.find((c) => c.toolName === "log_water");
+    expect(card?.status).toBe("completed");
+    expect(card?.summary).toContain("Пояснення не дійшло");
+  });
+
+  it("advice (suggest_meal): картка переходить у failed замість «завершеної» поради", async () => {
+    const captured: ChatMessage[][] = [];
+    const setMessages = vi.fn((updater: unknown) => {
+      if (typeof updater === "function") {
+        const prev = captured.at(-1) ?? [];
+        captured.push((updater as (m: ChatMessage[]) => ChatMessage[])(prev));
+      }
+    });
+    sendMock.mockResolvedValue({
+      tool_calls: [
+        { id: "tc1", name: "suggest_meal", input: { meal_type: "dinner" } },
+      ],
+      tool_calls_raw: [{ id: "tc1" }],
+    });
+    executeActionsMock.mockResolvedValue([
+      {
+        name: "suggest_meal",
+        result: "Зʼїдено сьогодні: 1200 ккал. Залишилось: 800 ккал.",
+      },
+    ]);
+    streamMock.mockRejectedValue(new Error("Денний ліміт AI вичерпано"));
+
+    const { result } = renderHook(
+      () => useChatSend({ messages: [], setMessages }),
+      { wrapper: makeWrapper() },
+    );
+
+    await act(async () => {
+      await result.current.send("порадь вечерю");
+    });
+
+    const finalMessages = captured.at(-1) ?? [];
+    const assistantMsg = finalMessages.find(
+      (m) => m.role === "assistant" && m.cards && m.cards.length > 0,
+    );
+    expect(assistantMsg).toBeDefined();
+    const card = assistantMsg!.cards!.find(
+      (c) => c.toolName === "suggest_meal",
+    );
+    expect(card?.status).toBe("failed");
+    expect(card?.summary).toBe(
+      "Не вдалося отримати відповідь. Спробуй ще раз.",
+    );
+  });
+});
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Гейт підтвердження незворотних дій (канон hub-coach §8).
 //

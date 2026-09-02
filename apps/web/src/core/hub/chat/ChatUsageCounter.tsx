@@ -3,6 +3,7 @@ import { chatApi } from "@shared/api";
 import { chatKeys } from "@shared/lib/api/queryKeys";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
+import { useAuthOptional } from "../../auth/AuthContext";
 
 /**
  * Free-tier daily AI-chat counter pill (PR-42, tracker §15). Reads
@@ -17,11 +18,16 @@ import { cn } from "@shared/lib/ui/cn";
  * pricing page is an acceptable UX for this rare "exhausted" state.
  */
 export function ChatUsageCounter() {
+  // FUN-1 (аудит 2026-09): без сесії `GET /api/chat/usage` = гарантований
+  // 401 у консолі; пігулка і так рендерить `null`.
+  const auth = useAuthOptional();
+  const signedOut = auth?.status === "unauthenticated";
   const { data } = useQuery({
     queryKey: chatKeys.usage,
     queryFn: ({ signal }) => chatApi.usage({ signal }),
     staleTime: 30_000,
     retry: false,
+    enabled: !signedOut,
   });
 
   if (!data || data.limit == null || data.remaining == null) return null;

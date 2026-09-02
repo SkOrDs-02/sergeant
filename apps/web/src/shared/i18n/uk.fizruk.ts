@@ -11,6 +11,9 @@
 
 export const fizrukPageMessages = {
   headerSubtitle: "Рух · сила · відновлення",
+  // < sm: повний підпис не вміщається поруч із двома кнопками шапки на
+  // 390 px (VIS-1, аудит 2026-09).
+  headerSubtitleShort: "Рух і відновлення",
   startWorkoutFab: "Почати тренування",
   resumeWorkoutFab: "Продовжити тренування",
   // Only one unfinished workout may exist, so every start path funnels
@@ -536,6 +539,31 @@ export const fizrukPageMessages = {
     title: "Програми",
     subtitle: "Спліти з розкладом",
     activePrefix: "Активна:",
+  },
+  strongImport: {
+    title: "Імпорт Strong",
+    description:
+      "Завантаж CSV з тренуваннями Strong, звір назви вправ і підтвердь запис.",
+    open: "Імпортувати Strong",
+    rowTitle: "Імпорт Strong",
+    rowSubtitle: "CSV тренувань і ваги тіла",
+    workoutFile: "Файл тренувань",
+    weightFile: "Файл ваги тіла (опційно)",
+    weightUnit: "Одиниця ваги у файлі тренувань",
+    workouts: "Тренування",
+    workoutsShort: "трен.",
+    sets: "Підходи",
+    setsShort: "підх.",
+    restTimers: "Таймери",
+    weightRows: "Вага тіла",
+    unresolvedTitle: "Потребують звіряння",
+    autoMatchedTitle: "Зіставлено автоматично",
+    chooseExerciseAriaPrefix: "Обрати вправу для",
+    skipExercise: "Пропустити цю назву",
+    allMatched: "Усі назви вправ зіставлено автоматично.",
+    confirm: "Записати імпорт",
+    parseFailed: "Не вдалося прочитати CSV. Перевір файл і спробуй ще раз.",
+    savedPrefix: "Імпорт записано:",
   },
 } as const;
 

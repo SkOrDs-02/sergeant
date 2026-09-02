@@ -48,6 +48,11 @@ export * from "./lib/toolRisk";
 // docstring for rationale (audit gap #2, 2026-08).
 export * from "./hubchat/toolNames";
 
+// AI-6 рішення 3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+// — state-mutating vs advice/read-only-з-синтезом класифікація tool-ів,
+// одне джерело істини поруч із реєстром імен вище.
+export * from "./hubchat/toolOutcomeClass";
+
 // Канонічні межі числових полів заміру тіла (Фізрук) — єдине джерело
 // правди для доменного реєстру полів і серверного sync-апплаєра.
 // Див. docstring `./fizruk/measurementBounds.ts` (аудит 2026-08-04).

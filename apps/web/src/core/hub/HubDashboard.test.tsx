@@ -54,7 +54,11 @@ vi.mock("@shared/components/ui/ScreenReaderAnnouncer", () => ({
   useAnnounce: () => ({ announce: mocks.announce }),
 }));
 
-vi.mock("@shared/lib/modules/hubNav", () => ({
+vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => ({
+  // Частковий мок ламався, щойно граф дашборда дотягнувся до `appPaths`
+  // (`HUB_MODULE_IDS`) через AuthContext у `useAskAiQuota` (FUN-1, аудит
+  // 2026-09) — тримаємо реальні експорти, підміняємо лише навігацію.
+  ...(await importOriginal<typeof import("@shared/lib/modules/hubNav")>()),
   openHubModule: (...args: unknown[]) => mocks.openHubModule(...args),
   openHubModuleWithAction: (...args: unknown[]) =>
     mocks.openHubModuleWithAction(...args),

@@ -1,17 +1,17 @@
 import { useMemo } from "react";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { habitScheduledOnDate } from "@sergeant/routine-domain";
 import { anchoredTodayKey } from "../lib/dayAnchor";
 import type { RoutineState } from "../lib/types";
 import type { Insight } from "@shared/lib/insights/types";
 
 /**
- * Fires after 20:00 Europe/Kyiv when 2+ habits are still pending today.
+ * Fires after 20:00 device-local time when 2+ habits are still pending today.
  *
- * Time-of-day check uses `getKyivDateParts()` (not `new Date().getHours()`)
- * so the 20:00 threshold respects Kyiv local time for users abroad or with
- * a mismatched system clock (domain invariant — `Europe/Kyiv` for day
- * boundaries).
+ * Cutover 2026-09-01 (LOG-3, ADR-0078): the 20:00 threshold used to read
+ * `getKyivDateParts().hour`, so a user abroad got the "evening" nudge at
+ * their own local midday (whenever it was 20:00 in Kyiv) — the same class of
+ * bug as the day-key regression. The threshold now reads the device's own
+ * clock, matching `todayKey` (also device-local via `lib/dayAnchor.ts`).
  *
  * The hour value is memoised from a single `new Date()` sample taken during
  * render. Because we memoize on `[pendingCount, isEvening]`, re-renders
@@ -21,8 +21,11 @@ import type { Insight } from "@shared/lib/insights/types";
  */
 export function useTodoEveningInsight(routine: RoutineState): Insight | null {
   const todayKey = anchoredTodayKey();
-  const kyivHour = getKyivDateParts().hour;
-  const isEvening = kyivHour >= 20;
+  // ADR-0078: "evening" is the device's own clock, not Kyiv's — matches
+  // `todayKey` above.
+  // eslint-disable-next-line no-restricted-syntax, sergeant-design/prefer-kyiv-time -- див. коментар вище
+  const deviceHour = new Date().getHours();
+  const isEvening = deviceHour >= 20;
 
   const pendingNames = useMemo(() => {
     if (!isEvening) return [];

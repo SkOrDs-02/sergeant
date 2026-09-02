@@ -50,7 +50,7 @@ function callsOf(eventName: string) {
 
 describe("InsightCard", () => {
   it("renders title, subtitle and the default CTA glyph", () => {
-    const { getByText } = render(
+    const { getByText, queryByText, getByLabelText } = render(
       <InsightCard
         id="finyk-coffee-limit-2026-05"
         title="Витрати на каву ↑ 34%"
@@ -60,7 +60,9 @@ describe("InsightCard", () => {
     );
     expect(getByText("Витрати на каву ↑ 34%")).toBeInTheDocument();
     expect(getByText("Встановити ліміт?")).toBeInTheDocument();
-    expect(getByText("→")).toBeInTheDocument();
+    // SLOP-1 (аудит 2026-09): дефолтний слот — іконка, не текстовий гліф.
+    expect(queryByText("→")).toBeNull();
+    expect(getByLabelText("Закрити пропозицію")).toBeInTheDocument();
   });
 
   it("renders a custom ctaLabel", () => {

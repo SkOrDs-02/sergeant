@@ -310,6 +310,22 @@ const ToolUseBlockSchema = z
     id: z.string().min(1).max(200),
     name: z.string().min(1).max(200),
     input: z.unknown(),
+    /**
+     * AI-1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+     * OpenRouter's `tool_use` blocks carry a `caller` field that Anthropic's
+     * own API doesn't emit (provenance of which upstream hop issued the
+     * call). `.strict()` below rejected the whole block for this one
+     * known-but-unlisted field, so every tool round trip on
+     * `CHAT_VIA_OPENROUTER=true` failed the second turn with 400
+     * `CHAT_TOOL_ROUND_TRIP_INCOMPLETE` — no assistant text ever synthesised
+     * after a tool call. Allowlisted explicitly (not `.passthrough()`) so
+     * the B32 threat model — a genuinely unexpected field smuggled into the
+     * one assistant-role message with no `<user_data>` fencing — still 400s;
+     * `validateToolCallsRawProvenance` (`apps/server/src/modules/chat/
+     * validateToolCallsRaw.ts`) never reads `caller`, so widening the schema
+     * doesn't widen what the server trusts from this field.
+     */
+    caller: z.unknown().optional(),
   })
   .strict();
 
@@ -389,6 +405,17 @@ export const ChatRequestSchema = z.object({
   // рубати легітимний пошуковий трафік нашою ж валідацією.
   tool_calls_raw: z.array(ToolCallsRawBlockSchema).max(60).optional(),
   stream: z.boolean().optional(),
+  /**
+   * AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+   * — echo-иться назад із першого-турового `tool_calls`-відповіді на другому
+   * (tool-result-синтезному) запиті того самого ходу. Сервер видає його лише
+   * своєму ж юзеру (`chatRoundTripTicket.ts`), одноразово й короткоживуче;
+   * невалідний/відсутній квиток просто НЕ звільняє від звичайного списання
+   * квоти (safe default) — це не контракт довіри до клієнта, а суто
+   * best-effort optimization, тож поле опційне й без додаткової семантики
+   * тут, у схемі.
+   */
+  round_trip_ticket: z.string().max(200).optional(),
 });
 
 /**

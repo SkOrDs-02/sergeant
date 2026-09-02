@@ -3,6 +3,7 @@ import {
   pluralDays,
   pluralExercises,
   pluralHabits,
+  pluralSeconds,
   pluralTimes,
   pluralUa,
 } from "./ukrainianPlural";
@@ -76,6 +77,17 @@ describe("pluralDays", () => {
     expect(pluralHabits(0)).toBe("звичок");
     expect(pluralHabits(5)).toBe("звичок");
     expect(pluralHabits(13)).toBe("звичок");
+  });
+
+  it("pluralSeconds: 1 секунду / 2-4 секунди / 5+ секунд (rate-limit retry copy)", () => {
+    expect(pluralSeconds(1)).toBe("секунду");
+    expect(pluralSeconds(21)).toBe("секунду");
+    expect(pluralSeconds(2)).toBe("секунди");
+    expect(pluralSeconds(4)).toBe("секунди");
+    expect(pluralSeconds(0)).toBe("секунд");
+    expect(pluralSeconds(5)).toBe("секунд");
+    expect(pluralSeconds(11)).toBe("секунд");
+    expect(pluralSeconds(60)).toBe("секунд");
   });
 
   it("працює як загальний helper на інших формах", () => {

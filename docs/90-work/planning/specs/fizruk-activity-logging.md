@@ -1,6 +1,6 @@
 # Запис заняття за тривалістю і витрата калорій
 
-> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2027-10-08.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-10-09.
 > **Status:** Active
 
 ## Проблема

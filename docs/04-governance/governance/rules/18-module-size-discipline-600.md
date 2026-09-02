@@ -69,7 +69,7 @@
 
 - Новий `apps/web/src/**/*.tsx` ≥ 600 LOC падає на `pnpm lint` — mandatory у CI (Hard Rule #15).
 - Новий `apps/server/src/**/*.{js,ts}` ≥ 600 LOC падає на `pnpm lint` — mandatory у CI (Hard Rule #15).
-- Декомпонований файл, який «розпух» назад > 600 LOC, теж падає. Allowlist-файлів більше немає (порожній `apps/server/eslint.server-maxlines-allowlist.json` прибрано 2026-09-02 разом із loader-ом в `eslint.server.js`) — виняток означає свідомо повернути allowlist у конфіг + апрув ревьюерів.
+- Декомпонований файл, який «розпух» назад > 600 LOC, теж падає. Allowlist-файлів більше немає (порожній server-allowlist JSON прибрано 2026-09-02 разом із loader-ом в `eslint.server.js`) — виняток означає свідомо повернути allowlist у конфіг + апрув ревьюерів.
 
 **What this rule does NOT block:**
 

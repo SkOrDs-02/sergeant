@@ -12,6 +12,7 @@ function baseHandlers() {
     onOpenTemplates: vi.fn(),
     onOpenJournal: vi.fn(),
     onOpenPrograms: vi.fn(),
+    onOpenStrongImport: vi.fn(),
     onRequestStart: vi.fn(),
     onLogPast: vi.fn(),
   };
@@ -264,6 +265,23 @@ describe("WorkoutsHome", () => {
       />,
     );
     expect(screen.getByText(/Push Pull Legs/)).toBeInTheDocument();
+  });
+
+  it("opens the Strong import review from the references block", () => {
+    const handlers = baseHandlers();
+    render(
+      <WorkoutsHome
+        activeWorkout={null}
+        activeDuration={null}
+        recentWorkouts={[]}
+        {...handlers}
+      />,
+    );
+
+    const importText = screen.getByText("Імпорт Strong");
+    fireEvent.click(importText);
+    expect(handlers.onOpenStrongImport).toHaveBeenCalledTimes(1);
+    expect(importText.closest("button")).toHaveClass("focus-visible:ring-2");
   });
 });
 

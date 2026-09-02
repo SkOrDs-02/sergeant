@@ -50,6 +50,7 @@ pnpm --filter @sergeant/web e2e              # Playwright smoke `@critical`
 pnpm --filter @sergeant/web e2e:mobile       # Playwright mobile-аудит (44px touch targets, overflow) — блокуючий PR-гейт
 pnpm --filter @sergeant/web e2e:ledger       # Playwright ledger-сценарії (`playwright.ledger.config.ts`)
 pnpm --filter @sergeant/web e2e:profiles     # Playwright по браузерних профілях (`playwright.profiles.config.ts`)
+pnpm --filter @sergeant/web e2e:seed-rich    # Playwright-сідер насиченого акаунта аудиту (`@seed`, profiles-конфіг)
 pnpm --filter @sergeant/web size             # size-limit — бюджет JS/CSS (brotli)
 pnpm --filter @sergeant/web mutation:time    # Stryker mutation-тести для time-утиліт
 pnpm --filter @sergeant/web storybook        # Storybook на :6006

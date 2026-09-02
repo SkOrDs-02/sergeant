@@ -8,6 +8,12 @@ import {
   applyCreateHabit,
   applyPauseHabitBetween,
   applyResumeHabitFrom,
+  applySetHabitSkip,
+  applyToggleHabitCompletion,
+  flexibleMaxStreakAllTime,
+  flexibleStreakBreakdown,
+  habitCompletionRate,
+  habitScheduledOnDate,
   resolveHabitGlyph,
   upgradeHabitGlyph,
 } from "@sergeant/routine-domain";
@@ -27,60 +33,13 @@ import type {
   ChatAction,
   ChatActionResult,
 } from "./types";
-
-const DAY_MS = 86_400_000;
-
-// Mon-first 0..6 — matches `@sergeant/routine-domain` `isoWeekdayFromDateKey`
-// and `WEEKDAY_LABELS`. Both English short names and Ukrainian short names
-// are accepted from the LLM tool input.
-const DAY_NAME_TO_INDEX: Readonly<Record<string, number>> = {
-  mon: 0,
-  tue: 1,
-  wed: 2,
-  thu: 3,
-  fri: 4,
-  sat: 5,
-  sun: 6,
-  пн: 0,
-  вт: 1,
-  ср: 2,
-  чт: 3,
-  пт: 4,
-  сб: 5,
-  нд: 6,
-};
-
-const WEEKDAY_LABEL_UK: readonly string[] = [
-  "Пн",
-  "Вт",
-  "Ср",
-  "Чт",
-  "Пт",
-  "Сб",
-  "Нд",
-];
-
-function normalizeDayToken(token: unknown): number | null {
-  if (typeof token !== "string") return null;
-  const key = token.trim().toLowerCase();
-  if (!key) return null;
-  const idx = DAY_NAME_TO_INDEX[key];
-  return typeof idx === "number" ? idx : null;
-}
-
-/**
- * Normalize a habit id from LLM tool input. The model frequently echoes ids
- * with an `id:` prefix because list/query results elsewhere render entities as
- * `Name (id:hab-…)`. Strip that prefix (and whitespace) so the id matches the
- * canonical `habit.id`. Without this, completion writes land under a phantom
- * key and never surface in the module (QA D-005).
- */
-function normalizeHabitId(raw: unknown): string {
-  return String(raw ?? "")
-    .trim()
-    .replace(/^id:\s*/i, "")
-    .trim();
-}
+import {
+  DAY_MS,
+  WEEKDAY_LABEL_UK,
+  normalizeDayToken,
+  normalizeHabitId,
+  isDateKey,
+} from "./routineActions.helpers";
 
 export function handleRoutineAction(
   action: ChatAction,
@@ -99,38 +58,52 @@ export function handleRoutineAction(
       if (!habit) {
         return `Не знайшов звичку "${habitId || String(rawHabitId ?? "")}", перевір список звичок.`;
       }
-      const completions: Record<string, string[]> = {
-        ...routineState.completions,
-      };
       const targetDate = habitDate || getKyivDayKey();
-      const prevArr = Array.isArray(completions[habitId])
-        ? completions[habitId].slice()
+      const habitLabel = habit.name || habitId;
+      const prevArr = Array.isArray(routineState.completions[habitId])
+        ? routineState.completions[habitId]
         : [];
       const alreadyDone = prevArr.includes(targetDate);
-      const arr = alreadyDone ? prevArr : [...prevArr, targetDate];
-      completions[habitId] = arr;
-      const confirm = persistRoutineState({ ...routineState, completions });
-      const result = `Звичку "${habit.name || habitId}" відмічено як виконану (${targetDate})`;
-      // Якщо звичка вже була в completions до виклику — undo нічого не
-      // робить (no-op); інакше прибираємо `targetDate` зі списку.
+      const result = `Звичку "${habitLabel}" відмічено як виконану (${targetDate})`;
+      // Ідемпотентно: якщо вже відмічено — жодного запису, той самий
+      // no-op, що й до фіксу.
       if (alreadyDone) {
-        return { result, confirm };
+        return { result, confirm: persistRoutineState(routineState) };
       }
+      // LOG-2 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+      // домен-редʼюсер, а не ручний запис у `completions`:
+      // `applyToggleHabitCompletion` (1) не пише незаплановий день (той
+      // самий `habitScheduledOnDate`-гейт, що чекбокс в UI) і (2) знімає
+      // «не зміг з причиною» на цю дату (канон §5 — стани взаємовиключні).
+      const previousSkip = routineState.skips?.[habitId]?.[targetDate];
+      const nextState = applyToggleHabitCompletion(
+        routineState,
+        habitId,
+        targetDate,
+      );
+      if (nextState === routineState) {
+        return `Звичку "${habitLabel}" не заплановано на ${targetDate}, тому не відмічаю.`;
+      }
+      const confirm = persistRoutineState(nextState);
       return {
         result,
         confirm,
         undo: () => {
           const cur = loadRoutineState();
-          const curCompletions = { ...cur.completions };
-          const list = Array.isArray(curCompletions[habitId])
-            ? curCompletions[habitId].filter((d) => d !== targetDate)
-            : [];
-          if (list.length > 0) {
-            curCompletions[habitId] = list;
-          } else {
-            delete curCompletions[habitId];
-          }
-          saveRoutineState({ ...cur, completions: curCompletions });
+          // Toggle назад знімає саме цю відмітку (idempotent: якщо стан
+          // тим часом змінили ще раз, `applyToggleHabitCompletion` все одно
+          // діє коректно на актуальному знімку).
+          const reverted = applyToggleHabitCompletion(cur, habitId, targetDate);
+          const restored = previousSkip
+            ? applySetHabitSkip(
+                reverted,
+                habitId,
+                targetDate,
+                previousSkip.reason,
+                previousSkip.note,
+              )
+            : reverted;
+          saveRoutineState(restored);
         },
       };
     }
@@ -263,51 +236,56 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
       if (!habit) return `Звичку ${id} не знайдено.`;
-      const completions: Record<string, string[]> = {
-        ...state.completions,
-      };
-      const prevList = Array.isArray(completions[id])
-        ? completions[id].slice()
+      const habitLabel = habit.name || id;
+      const prevArr = Array.isArray(state.completions[id])
+        ? state.completions[id]
         : [];
-      const cur = prevList.slice();
-      const has = cur.includes(d);
-      let mutated = false;
-      if (doComplete) {
-        if (!has) {
-          cur.push(d);
-          mutated = true;
-        }
-      } else if (has) {
-        const idx = cur.indexOf(d);
-        if (idx >= 0) {
-          cur.splice(idx, 1);
-          mutated = true;
-        }
+      const has = prevArr.includes(d);
+      const result = `Звичку "${habitLabel}" ${doComplete ? "відмічено" : "знято з позначки"} на ${d}`;
+      // Уже в бажаному стані — no-op, та сама ідемпотентність, що й до фіксу.
+      if (has === doComplete) {
+        return { result, confirm: persistRoutineState(state) };
       }
-      completions[id] = cur.sort();
-      const confirm = persistRoutineState({ ...state, completions });
-      const result = `Звичку "${habit.name || id}" ${doComplete ? "відмічено" : "знято з позначки"} на ${d}`;
-      if (!mutated) return { result, confirm };
-      // Undo відновлює лише свою зміну (додав d → видаляє d;
-      // видалив d → возвращає d), а не переписує повний snapshot —
-      // інакше паралельні mark/unmark інших дат втратяться.
+      if (doComplete) {
+        // LOG-2 — той самий домен-редʼюсер, що й `mark_habit_done`: не
+        // пише незаплановий день, знімає «не зміг» на цю дату (канон §5).
+        const previousSkip = state.skips?.[id]?.[d];
+        const nextState = applyToggleHabitCompletion(state, id, d);
+        if (nextState === state) {
+          return `Звичку "${habitLabel}" не заплановано на ${d}, тому не відмічаю.`;
+        }
+        const confirm = persistRoutineState(nextState);
+        return {
+          result,
+          confirm,
+          undo: () => {
+            const cur = loadRoutineState();
+            const reverted = applyToggleHabitCompletion(cur, id, d);
+            const restored = previousSkip
+              ? applySetHabitSkip(
+                  reverted,
+                  id,
+                  d,
+                  previousSkip.reason,
+                  previousSkip.note,
+                )
+              : reverted;
+            saveRoutineState(restored);
+          },
+        };
+      }
+      // completed:false — знімаємо відмітку. Toggle прибирає незалежно від
+      // розкладу (день уже позначено — самим фактом позначки він був
+      // запланований, коли позначку ставили).
+      const confirm = persistRoutineState(
+        applyToggleHabitCompletion(state, id, d),
+      );
       return {
         result,
         confirm,
         undo: () => {
-          const c = loadRoutineState();
-          const cc = { ...c.completions };
-          const list = Array.isArray(cc[id]) ? cc[id].slice() : [];
-          if (doComplete) {
-            const next = list.filter((x) => x !== d);
-            if (next.length === 0) delete cc[id];
-            else cc[id] = next;
-          } else {
-            if (!list.includes(d)) {
-              cc[id] = [...list, d].sort();
-            }
-          }
-          saveRoutineState({ ...c, completions: cc });
+          const cur = loadRoutineState();
+          saveRoutineState(applyToggleHabitCompletion(cur, id, d));
         },
       };
     }
@@ -533,36 +511,48 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
       if (!habit) return `Звичку ${id} не знайдено.`;
-      const completions = state.completions;
-      const habitCompletionsArr = Array.isArray(completions[id])
-        ? completions[id]
-        : [];
-      const habitCompletions = new Set(habitCompletionsArr);
+      // LOG-1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+      // — той самий гнучкий стрік і той самий per-habit rate, що рахує UI
+      // (`flexStreak.ts`/`streaks.ts`), а не третя жорстка реалізація, яка
+      // обнуляла серію на першому пропущеному дні незалежно від паузи,
+      // пропуску з причиною чи розкладу «3/тиждень».
+      const completionsForHabit = state.completions[id];
+      const skipsForHabit = state.skips?.[id];
       const now = Date.now();
-      let doneCount = 0;
-      let streak = 0;
-      let maxStreak = 0;
-      let currentStreak = 0;
+      const todayKey = getKyivDayKey(now);
+      const startKey = getKyivDayKey(now - (days - 1) * DAY_MS);
+      const { completed, scheduled } = habitCompletionRate(
+        habit,
+        completionsForHabit,
+        startKey,
+        todayKey,
+      );
+      const pct = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
+      const currentStreak = flexibleStreakBreakdown(
+        habit,
+        completionsForHabit,
+        todayKey,
+        { skipsForHabit },
+      ).days;
+      const maxStreak = flexibleMaxStreakAllTime(habit, completionsForHabit, {
+        skipsForHabit,
+      });
       const missedDates: string[] = [];
-      for (let i = 0; i < days; i++) {
+      for (let i = 0; i < days && missedDates.length < 5; i++) {
         const dk = getKyivDayKey(now - i * DAY_MS);
-        if (habitCompletions.has(dk)) {
-          doneCount++;
-          currentStreak++;
-          if (i === 0 || i === streak) streak = currentStreak;
-          if (currentStreak > maxStreak) maxStreak = currentStreak;
-        } else {
-          currentStreak = 0;
-          if (missedDates.length < 5) missedDates.push(dk);
-        }
+        if (!habitScheduledOnDate(habit, dk)) continue;
+        const done =
+          Array.isArray(completionsForHabit) &&
+          completionsForHabit.includes(dk);
+        if (done || skipsForHabit?.[dk]) continue;
+        missedDates.push(dk);
       }
-      const pct = days > 0 ? Math.round((doneCount / days) * 100) : 0;
       const parts: string[] = [
         // Без гліфа: у полі лежить icon-slug, і «droplet Пити воду» в
         // тексті чату виглядало б як помилка рендера.
         `Статистика "${habit.name || id}" за ${days} днів:`,
-        `Виконано: ${doneCount}/${days} (${pct}%)`,
-        `Поточна серія: ${streak} днів`,
+        `Виконано: ${completed}/${scheduled} (${pct}%)`,
+        `Поточна серія: ${currentStreak} днів`,
         `Макс. серія: ${maxStreak} днів`,
       ];
       if (missedDates.length > 0) {
@@ -629,9 +619,4 @@ export function handleRoutineAction(
     default:
       return undefined;
   }
-}
-
-/** Вузький гейт на `YYYY-MM-DD` — модель інколи шле «завтра» словами. */
-function isDateKey(v: unknown): v is string {
-  return typeof v === "string" && /^\d{4}-\d{2}-\d{2}$/.test(v);
 }

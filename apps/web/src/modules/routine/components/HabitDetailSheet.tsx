@@ -15,14 +15,13 @@ import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { messages } from "@shared/i18n/uk";
-import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import {
   dateKeyMinusDays,
   habitScheduledOnDate,
   monthGrid,
 } from "@sergeant/routine-domain";
 import { completionNoteKey } from "../lib/completionNoteKey";
-import { anchoredTodayKey } from "../lib/dayAnchor";
+import { anchoredTodayDate, anchoredTodayKey } from "../lib/dayAnchor";
 import {
   flexibleStreakBreakdown,
   habitCompletionRate,
@@ -140,12 +139,17 @@ export function HabitDetailSheet({
   );
   const tk = todayKey();
 
-  // Kyiv "current month" for the calendar cursor so it matches the
-  // user's domain calendar (consolidated page-audit § Theme 1 — 09 F3).
-  const nowKyiv = getKyivDateParts();
+  // Device-local "current month" for the calendar cursor (ADR-0078,
+  // cutover 2026-09-01 — was Kyiv, consolidated page-audit § Theme 1 — 09 F3)
+  // so it matches the user's own calendar, same anchor as `tk` above.
+  const now = anchoredTodayDate();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- див. коментар вище
+  const nowYear = now.getFullYear();
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- те саме
+  const nowMonth = now.getMonth();
   const [calMonth, setCalMonth] = useState<MonthCursor>({
-    y: nowKyiv.year,
-    m: nowKyiv.month - 1,
+    y: nowYear,
+    m: nowMonth,
   });
 
   const tag = useMemo<string[]>(() => {

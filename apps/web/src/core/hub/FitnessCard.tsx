@@ -24,6 +24,7 @@ import {
   type Period,
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
+import { useFizrukSqliteReadTick } from "../../modules/fizruk/lib/sqliteReadGate";
 import { formatNumberUk } from "@sergeant/shared";
 
 // ── Local sub-components (shared pattern, duplicated per card to keep
@@ -151,9 +152,15 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
+  // CALC-4 (аудит 2026-09): на холодному deep-link кеш SQLite модуля
+  // наповнюється ПІСЛЯ першого рендера; hub-bump цього не бачить, тік
+  // модуля — бачить. Без нього картка лишалась із нулями до наступного
+  // запису у сховище (та сама діра, що в ExpensesCard).
+  const sqliteTick = useFizrukSqliteReadTick();
 
   const { cur, prev, dates } = useMemo(() => {
-    void bump; // storage-write tick — forces re-read without calling getCached* inside deps
+    void bump; // storage-write tick
+    void sqliteTick; // module SQLite cache tick (CALC-4) — forces re-read without calling getCached* inside deps
     // Canonical workouts live in the SQLite warm cache — `fizruk_workouts_v1`
     // is tombstoned (drained + deleted on boot). The canonical list carries
     // ISO-string timestamps; `aggregateWorkouts` expects the legacy epoch-ms
@@ -177,7 +184,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
       prev: aggregateWorkouts(rawWorkouts, prevDates),
       dates: curDates,
     };
-  }, [period, offset, bump]);
+  }, [period, offset, bump, sqliteTick]);
 
   const formattedCurrent = formatNumberUk(cur.count);
   const formattedPrev = formatNumberUk(prev.count);
