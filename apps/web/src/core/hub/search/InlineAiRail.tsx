@@ -126,7 +126,7 @@ export function InlineAiRail({
               aria-hidden="true"
             >
               <Icon
-                name={state.status === "error" ? "alert-circle" : "sparkle"}
+                name={state.status === "error" ? "alert-circle" : "sergeant"}
                 size={16}
                 strokeWidth={2.2}
               />
@@ -188,7 +188,7 @@ export function InlineAiRail({
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                 )}
               >
-                <Icon name="sparkle" size={14} strokeWidth={2.2} />
+                <Icon name="sergeant" size={14} strokeWidth={2.2} />
                 Відкрити в чаті
               </button>
               {state.hasToolCalls && (
@@ -255,7 +255,7 @@ export function InlineAiRail({
                   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus",
                 )}
               >
-                <Icon name="sparkle" size={14} strokeWidth={2.2} />
+                <Icon name="sergeant" size={14} strokeWidth={2.2} />
                 Відкрити в чаті
               </button>
             </div>

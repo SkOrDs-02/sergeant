@@ -273,6 +273,16 @@ test("@critical pantry: списання з позиції на два варі�
     .first()
     .click({ timeout: 60_000 });
 
+  // Секція «З комори» на кроці «Джерело» — акордеон, згорнутий за
+  // замовчуванням (What's new 12.08: допоміжні блоки кроку джерела
+  // згорнуті, відкритими лишаються лише «Нещодавні прийоми»). Чипи в DOM
+  // є й до розгортання, але `useInertWhileCollapsed` тримає їх `inert`,
+  // тож клік по згорнутій секції не долітає — розгорни секцію перед тим,
+  // як шукати чіп.
+  await page
+    .getByRole("button", { name: /З комори/ })
+    .click({ timeout: 30_000 });
+
   const pantryChip = page
     .getByTestId("from-pantry-chip")
     .filter({ hasText: "Молоко" })

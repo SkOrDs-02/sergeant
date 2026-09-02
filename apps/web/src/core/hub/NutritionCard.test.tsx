@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 const loadNutritionLog = vi.fn();
 vi.mock("@nutrition/lib/nutritionStorage", () => ({
@@ -8,6 +8,10 @@ vi.mock("@nutrition/lib/nutritionStorage", () => ({
 }));
 
 import NutritionCard from "./NutritionCard";
+import {
+  __resetNutritionSqliteReadGateForTests,
+  notifyNutritionSqliteCacheRefresh,
+} from "@nutrition/lib/sqliteReadGate";
 import { localDateKey } from "./hubReports.aggregation";
 
 // Build a nutrition log keyed by day with meal kcal so the card has data
@@ -25,7 +29,10 @@ describe("NutritionCard", () => {
     localStorage.clear();
     loadNutritionLog.mockReturnValue({});
   });
-  afterEach(() => vi.clearAllMocks());
+  afterEach(() => {
+    vi.clearAllMocks();
+    __resetNutritionSqliteReadGateForTests();
+  });
 
   it("renders collapsed by default with heading and toggles open", () => {
     loadNutritionLog.mockReturnValue(logForToday(2000));
@@ -73,5 +80,19 @@ describe("NutritionCard", () => {
     render(<NutritionCard period="month" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Їжа/i }));
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
+  });
+
+  it("CALC-4: recomputes once the Nutrition SQLite cache warms after mount (cold deep-link)", () => {
+    loadNutritionLog.mockReturnValue({});
+    render(<NutritionCard period="week" offset={0} />);
+    fireEvent.click(screen.getByRole("button", { name: /Їжа/i }));
+    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+
+    loadNutritionLog.mockReturnValue(logForToday(1800));
+    act(() => {
+      notifyNutritionSqliteCacheRefresh();
+    });
+    expect(screen.queryByText(/Немає даних/i)).toBeNull();
+    expect(screen.getAllByText(/ккал/i).length).toBeGreaterThan(0);
   });
 });

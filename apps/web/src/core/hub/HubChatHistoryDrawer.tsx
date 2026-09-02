@@ -103,7 +103,7 @@ export function HubChatHistoryDrawer({
               className="w-8 h-8 rounded-xl bg-brand-500/10 flex items-center justify-center shrink-0"
               aria-hidden
             >
-              <Icon name="sparkle" size={15} className="text-brand-500" />
+              <Icon name="sergeant" size={15} className="text-brand-500" />
             </div>
             <div className="text-style-title font-bold text-text">Бесіди</div>
           </div>
@@ -139,7 +139,7 @@ export function HubChatHistoryDrawer({
                 className="w-12 h-12 rounded-2xl bg-panelHi flex items-center justify-center"
                 aria-hidden
               >
-                <Icon name="sparkle" size={20} className="text-subtle" />
+                <Icon name="sergeant" size={20} className="text-subtle" />
               </div>
               <div>Поки немає інших бесід.</div>
             </div>

@@ -67,7 +67,7 @@ export function HubChatHeader({
               )}
               aria-hidden
             >
-              <Icon name="sparkle" size={16} className="text-brand-500" />
+              <Icon name="sergeant" size={16} className="text-brand-500" />
               <span
                 className={cn(
                   "absolute -bottom-0.5 -right-0.5 w-2.5 h-2.5 rounded-full ring-2 ring-bg",

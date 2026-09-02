@@ -297,6 +297,7 @@ export const messagesEn: Partial<{
     reportNoData: "No data",
     reportChartAria: "Chart",
     reportPrevious: "Previous:",
+    reportDeltaFlat: "no change",
 
     overlayTitle: "AI assistant",
     closeChat: "Close chat",

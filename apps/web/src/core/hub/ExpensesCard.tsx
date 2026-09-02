@@ -8,10 +8,12 @@ import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { Money } from "@shared/components/ui/Money";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { readFinykStatsContext } from "@finyk/utils";
 import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
+import { useFinykSqliteReadTick } from "@finyk/lib/sqliteReadGate";
 import {
   aggregateSpending,
   getPeriodRange,
@@ -141,50 +143,6 @@ function BarChart({
   );
 }
 
-interface DeltaProps {
-  cur: number;
-  prev: number;
-  higherIsBetter?: boolean;
-}
-
-function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
-  if (prev === 0 && cur === 0) return null;
-  if (prev === 0)
-    return <span className="text-style-caption text-muted">—</span>;
-  const diff = cur - prev;
-  const pct = Math.round((diff / prev) * 100);
-  const positive = higherIsBetter ? diff >= 0 : diff <= 0;
-  const sign = diff >= 0 ? "+" : "";
-  const trendingUp = diff >= 0;
-  return (
-    <span
-      className={cn(
-        "text-style-caption inline-flex items-center gap-0.5",
-        positive
-          ? "text-success-strong dark:text-success"
-          : "text-danger-strong dark:text-danger",
-      )}
-    >
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-        className="shrink-0"
-      >
-        {trendingUp ? <path d="M12 5l7 9H5z" /> : <path d="M12 19l-7-9h14z" />}
-      </svg>
-      {sign}
-      {pct}%
-    </span>
-  );
-}
-
 // ── Main card ─────────────────────────────────────────────────────────
 
 interface ExpensesCardProps {
@@ -203,10 +161,23 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
   const mirrorTick = useFinykMonoMirrorTick();
+  // CALC-4 (2026-09-01 product audit): `readFinykStatsContext()` reads
+  // `getCachedFinykSqliteState()` — a synchronous snapshot of the Finyk
+  // SQLite warm cache, refreshed by `refreshCachesAfterPull` once a sync
+  // pull lands. That refresh bumps ONLY this tick
+  // (`notifyFinykSqliteCacheRefresh` — no `hubBus("storageUpdated")`
+  // emit), so on a cold deep-link straight to `/?tab=reports` (nothing
+  // else warmed the Finyk cache yet) this card computed its `useMemo`
+  // once against an empty cache and never re-ran: `bump`/`mirrorTick`
+  // never change for a Finyk-only pull. Reached via SPA nav from
+  // `/finyk/*` it looked fine only because that route had already
+  // warmed the same module-level cache before this card ever mounted.
+  const sqliteCacheTick = useFinykSqliteReadTick();
 
   const { cur, prev, dates } = useMemo(() => {
     void bump; // storage-write tick
     void mirrorTick; // Mono mirror refresh tick
+    void sqliteCacheTick; // Finyk SQLite cache-refresh tick (pull hydration)
     // W1-CANON-AGG стадія 2d: картка більше не збирає всесвіт власноруч із
     // самого лише mono-mirror — вона бере той самий канонічний контекст, що
     // й тижневий дайджест і коуч, тож готівкові витрати входять у Звіти.
@@ -229,7 +200,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       prev: aggregateSpending(inputs, prevDates),
       dates: curDates,
     };
-  }, [period, offset, bump, mirrorTick]);
+  }, [period, offset, bump, mirrorTick, sqliteCacheTick]);
 
   return (
     <ReportSheet collapsed={collapsed}>
@@ -261,7 +232,11 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
               amount={cur.total}
               className="text-style-body font-bold text-text"
             />
-            <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
+            <DeltaChip
+              cur={cur.total}
+              prev={prev.total}
+              higherIsBetter={false}
+            />
           </span>
         )}
         <svg
@@ -289,7 +264,11 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
               amount={cur.total}
               className="text-style-headline text-text"
             />
-            <Delta cur={cur.total} prev={prev.total} higherIsBetter={false} />
+            <DeltaChip
+              cur={cur.total}
+              prev={prev.total}
+              higherIsBetter={false}
+            />
           </div>
           <p className="text-style-caption text-muted">
             {messages.hub.reportPrevious} <Money amount={prev.total} />

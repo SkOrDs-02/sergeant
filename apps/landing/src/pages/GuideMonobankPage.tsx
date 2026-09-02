@@ -98,7 +98,7 @@ export default function GuideMonobankPage() {
             href="/beta"
             className="text-sm font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
           >
-            Стати в чергу →
+            Стати в чергу
           </a>
         </div>
       </article>

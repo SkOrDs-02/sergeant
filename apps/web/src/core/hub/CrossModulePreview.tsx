@@ -24,6 +24,7 @@ import { Button } from "@shared/components/ui/Button";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { trackEvent } from "../observability/analytics";
 import { messages } from "@shared/i18n/uk";
+import { useHubBannerSlot } from "./bannerBudget";
 
 interface CrossModulePreviewProps {
   /** Module that owned the user's first real entry. */
@@ -37,10 +38,13 @@ export function CrossModulePreview({
   onClose,
 }: CrossModulePreviewProps) {
   const copy = getCrossModulePreviewCopy(sourceModule);
+  // Бюджет банерів хабу (F3, 2026-09-01): пріоритет 6, останній у черзі;
+  // подія «побачив» — лише коли є місце.
+  const hasSlot = useHubBannerSlot("crossModulePreview", copy != null);
 
   const hasFiredSeenEvent = useRef(false);
   useEffect(() => {
-    if (!copy || hasFiredSeenEvent.current) return;
+    if (!copy || !hasSlot || hasFiredSeenEvent.current) return;
     hasFiredSeenEvent.current = true;
     trackEvent(ANALYTICS_EVENTS.CROSS_MODULE_PREVIEW_SEEN, {
       source_module: copy.sourceModule,
@@ -50,7 +54,7 @@ export function CrossModulePreview({
     // changes across re-renders. The persisted `markCrossModulePreviewSeen`
     // flag (set on close/click below) guards against repeat surfaces across
     // page reloads.
-  }, [copy]);
+  }, [copy, hasSlot]);
 
   const handleClick = useCallback(() => {
     if (!copy) return;
@@ -72,7 +76,7 @@ export function CrossModulePreview({
     onClose();
   }, [copy, onClose]);
 
-  if (!copy) return null;
+  if (!copy || !hasSlot) return null;
 
   return (
     <Card
@@ -95,7 +99,7 @@ export function CrossModulePreview({
 
       <div className="flex items-start gap-3 pr-6">
         <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/10 text-brand-strong dark:text-brand flex items-center justify-center">
-          <Icon name="sparkles" size={18} />
+          <Icon name="sergeant" size={18} />
         </div>
         <div className="flex-1 min-w-0 space-y-2">
           <div className="space-y-1">

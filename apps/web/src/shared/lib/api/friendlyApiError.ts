@@ -13,7 +13,14 @@ export function friendlyApiError(
   message?: string | null,
 ): string {
   const m = message || "";
-  if (status === 429) return "Забагато запитів. Спробуй через хвилину.";
+  // AI-3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // сервер (`rateLimitExpress`, `apps/server/src/http/rateLimit.ts`) тепер
+  // сам називає конкретний час очікування («Забагато запитів. Спробуй
+  // через 12 секунд.»), а не голе «пізніше»; віддаємо це повідомлення як
+  // є замість фіксованого тексту. Фолбек лишається на випадок, якщо
+  // сервер (або будь-який інший 429-джерело поза `rateLimitExpress`)
+  // з якоїсь причини не передав `message`.
+  if (status === 429) return m || "Забагато запитів. Спробуй через хвилину.";
   if (status === 401 || status === 403) return "Доступ заборонено.";
   return m || `Помилка ${status}`;
 }

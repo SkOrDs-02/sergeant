@@ -6,8 +6,8 @@
  * `streaks` / `hubCalendarAggregate` helpers, so we let those run for
  * real and only stub the destructive `routineStorage` mutators (which
  * touch localStorage) plus the heavy `HabitQuickCreateDialog` editor.
- * "Today" is pinned with fake timers so the Kyiv-anchored calendar /
- * completion-% are deterministic.
+ * "Today" is pinned with fake timers so the device-local (ADR-0078)
+ * calendar / completion-% are deterministic.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import {
@@ -60,7 +60,7 @@ vi.mock("./HabitQuickCreateDialog", () => ({
 
 import { HabitDetailSheet } from "./HabitDetailSheet";
 
-// 2026-06-16T09:00Z = 12:00 Europe/Kyiv (summer, UTC+3) → Kyiv day 2026-06-16.
+// 2026-06-16T09:00Z → device-local day 2026-06-16 (TZ=UTC in vitest.config.js).
 const FIXED_NOW = new Date("2026-06-16T09:00:00Z");
 
 function makeRoutine(over: Partial<RoutineState> = {}): RoutineState {
@@ -219,7 +219,7 @@ describe("HabitDetailSheet", () => {
         onClose={vi.fn()}
       />,
     );
-    // Starts on the current Kyiv month (червень 2026).
+    // Starts on the current device-local month (ADR-0078; червень 2026).
     expect(screen.getByText(/червень 2026/i)).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Наступний місяць" }));
     expect(screen.getByText(/липень 2026/i)).toBeInTheDocument();

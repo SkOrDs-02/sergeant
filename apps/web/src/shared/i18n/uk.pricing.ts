@@ -66,8 +66,8 @@ export const pricingMessages = {
     manageSubscription: "Керувати підпискою",
     openingPortal: "Відкриваю керування…",
     switchToFree: "Перейти на Free",
-    currentPlan: "Зараз ваш план",
-    // Гість: «Зараз ваш план» — неправда, поки акаунта немає. Free-CTA
+    currentPlan: "Зараз твій план",
+    // Гість: «Зараз твій план» — неправда, поки акаунта немає. Free-CTA
     // для нього стає входом (browser QA 2026-08-23).
     signInToStart: "Увійти й почати",
   },

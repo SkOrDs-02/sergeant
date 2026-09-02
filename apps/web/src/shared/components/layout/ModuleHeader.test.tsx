@@ -28,6 +28,21 @@ describe("ModuleHeader", () => {
     vi.clearAllMocks();
   });
 
+  it("renders a short subtitle for narrow screens next to the full one (VIS-1)", () => {
+    render(
+      <ModuleHeader
+        title="ФІЗРУК"
+        subtitle="Рух · сила · відновлення"
+        subtitleShort="Рух і відновлення"
+      />,
+    );
+    expect(screen.getByText("Рух і відновлення")).toHaveClass("sm:hidden");
+    expect(screen.getByText("Рух · сила · відновлення")).toHaveClass(
+      "hidden",
+      "sm:inline",
+    );
+  });
+
   it("renders the default title stack and optional slots", () => {
     render(
       <ModuleHeader

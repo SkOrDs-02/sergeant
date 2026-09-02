@@ -217,7 +217,7 @@ export default function GuideFotoKaloriiPage() {
             безкоштовними назавжди.
           </p>
           <a href="/beta" className={`text-sm ${link}`}>
-            Стати в чергу →
+            Стати в чергу
           </a>
         </div>
       </article>

@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { act, fireEvent, render, screen } from "@testing-library/react";
 
 const getFinykExcludedTxIdsFromStorage = vi.fn(() => [] as string[]);
 const getFinykTxSplitsFromStorage = vi.fn(
@@ -47,6 +47,53 @@ vi.mock("@finyk/lib/monoMirrorReader", () => {
   };
 });
 
+// CALC-4 — the Finyk SQLite warm cache (`manualExpenses`) is a plain
+// module-level snapshot; simulate the pull-hydration race by swapping
+// this mutable box's `.value` and firing the REAL cache-refresh gate
+// (not mocked — the card's fix listens to it via `useFinykSqliteReadTick`).
+import type { SqliteFinykCache } from "@finyk/lib/sqliteReader";
+
+const fakeSqliteCache: { value: SqliteFinykCache } = {
+  value: emptySqliteCache(),
+};
+
+vi.mock("@finyk/lib/sqliteReader", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@finyk/lib/sqliteReader")>();
+  return {
+    ...actual,
+    getCachedFinykSqliteState: () => fakeSqliteCache.value,
+  };
+});
+
+function emptySqliteCache(): SqliteFinykCache {
+  return {
+    hiddenAccounts: [],
+    hiddenTransactions: [],
+    budgets: [],
+    subscriptions: [],
+    manualAssets: [],
+    manualDebts: [],
+    receivables: [],
+    customCategories: [],
+    manualExpenses: [],
+    txCategories: {},
+    txSplits: {},
+    monoDebtLinkedTxIds: {},
+    networthHistory: [],
+    monthlyPlan: null,
+    showBalance: null,
+    excludedStatTxIds: null,
+    dismissedRecurring: null,
+    refreshedAt: null,
+  };
+}
+
+import {
+  __resetFinykSqliteReadGateForTests,
+  notifyFinykSqliteCacheRefresh,
+} from "@finyk/lib/sqliteReadGate";
+
 import ExpensesCard from "./ExpensesCard";
 
 // One spending tx (negative amount) timed at noon today. `time` is unix
@@ -72,6 +119,8 @@ describe("ExpensesCard", () => {
     localStorage.clear();
     getFinykExcludedTxIdsFromStorage.mockReturnValue([]);
     getFinykTxSplitsFromStorage.mockReturnValue({});
+    fakeSqliteCache.value = emptySqliteCache();
+    __resetFinykSqliteReadGateForTests();
   });
   afterEach(() => {
     vi.useRealTimers();
@@ -153,5 +202,61 @@ describe("ExpensesCard", () => {
     expect(
       scroller.querySelectorAll("button[data-compact]").length,
     ).toBeGreaterThan(28);
+  });
+
+  /**
+   * CALC-4 (2026-09-01 product audit, blocker): deep-link `/?tab=reports`
+   * on a cold boot showed «0 ₴» for an account with 60 days of manual
+   * expenses, while the SAME account via SPA nav (which had already
+   * warmed the Finyk SQLite cache by visiting `/finyk/*` first) showed
+   * the correct total. Root cause: `readFinykStatsContext()` reads a
+   * synchronous `getCachedFinykSqliteState()` snapshot, refreshed by
+   * `refreshCachesAfterPull` once the sync pull lands — but that refresh
+   * only bumps the Finyk SQLite read-tick, never `hubBus("storageUpdated")`,
+   * so `ExpensesCard`'s `useMemo` (gated on `bump`/`mirrorTick`) never
+   * re-ran once the pull-hydrated cache actually warmed after mount.
+   */
+  it("CALC-4: recomputes once the Finyk SQLite cache warms after mount (cold deep-link)", () => {
+    // Cold mount: the SQLite cache hasn't warmed yet (refreshedAt: null) —
+    // this is the deep-link `/?tab=reports` state before the sync pull lands.
+    render(<ExpensesCard period="week" offset={0} />);
+    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
+    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+
+    // The pull lands: SQLite cache warms with a manual expense dated
+    // today, refreshCachesAfterPull calls `notifyFinykSqliteCacheRefresh`
+    // (Finyk-specific tick) — NOT `hubBus("storageUpdated")`.
+    const now = new Date();
+    fakeSqliteCache.value = {
+      ...emptySqliteCache(),
+      manualExpenses: [
+        {
+          id: "m1",
+          date: now.toISOString().slice(0, 10),
+          description: "Продукти",
+          amount: 500,
+          category: "groceries",
+          kind: "expense",
+        },
+      ],
+      refreshedAt: now.toISOString(),
+    };
+    act(() => {
+      notifyFinykSqliteCacheRefresh();
+    });
+
+    // The card must re-aggregate WITHOUT any `bump`/`mirrorTick` change —
+    // the empty-state placeholder must be gone and a real amount shown
+    // (the `Money` component splits "500" / "₴" into separate spans, so
+    // assert on the bar-chart tooltip's `aria-label`, which renders the
+    // full "<date>: <amount> ₴" string as one accessible string).
+    expect(screen.queryByText(/Немає даних/i)).not.toBeInTheDocument();
+    const todayKey = now
+      .toISOString()
+      .slice(5, 10)
+      .split("-")
+      .reverse()
+      .join(".");
+    expect(screen.getByLabelText(`${todayKey}: 500 ₴`)).toBeInTheDocument();
   });
 });

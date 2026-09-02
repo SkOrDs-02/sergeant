@@ -432,7 +432,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       );
     });
 
-    // B5 (браузерний аудит 2026-08-05): маркер «Зараз ваш план» жив лише
+    // B5 (браузерний аудит 2026-08-05): маркер «Зараз твій план» жив лише
     // в disabled-кнопці Free-картки, тож підписник не бачив свого статусу
     // ніде — його Premium-кнопка зайнята дією «Керувати підпискою».
     function badgeTierName(badge: HTMLElement): string | null {
@@ -445,7 +445,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       renderPricing();
       const badges = await screen.findAllByTestId("current-plan-badge");
       expect(badges).toHaveLength(1);
-      expect(badges[0]!.textContent).toBe("Зараз ваш план");
+      expect(badges[0]!.textContent).toBe("Зараз твій план");
       expect(badgeTierName(badges[0]!)).toBe("Free");
     });
 
@@ -456,7 +456,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       await screen.findByRole("button", { name: /Керувати підпискою/i });
       const badges = screen.getAllByTestId("current-plan-badge");
       expect(badges).toHaveLength(1);
-      expect(badges[0]!.textContent).toBe("Зараз ваш план");
+      expect(badges[0]!.textContent).toBe("Зараз твій план");
       expect(badgeTierName(badges[0]!)).toBe("Premium");
     });
 
@@ -476,7 +476,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
     });
   });
   // Regression (browser QA 2026-08-23): анонімний відвідувач бачив на Free
-  // бейдж «Зараз ваш план» і однойменну disabled-кнопку, хоча жодного
+  // бейдж «Зараз твій план» і однойменну disabled-кнопку, хоча жодного
   // акаунта немає. «Поточний план» — твердження про сесію, не про дефолт.
   describe("anonymous visitor", () => {
     it("claims no current plan and offers signing in instead", async () => {
@@ -486,7 +486,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       await waitFor(() =>
         expect(screen.queryAllByTestId("current-plan-badge")).toHaveLength(0),
       );
-      expect(screen.queryByText("Зараз ваш план")).toBeNull();
+      expect(screen.queryByText("Зараз твій план")).toBeNull();
 
       const signIn = screen.getByRole("button", { name: "Увійти й почати" });
       expect(signIn).not.toBeDisabled();

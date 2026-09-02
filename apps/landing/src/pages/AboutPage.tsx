@@ -48,10 +48,10 @@ export default function AboutPage() {
             сам і викладаю процес розробки відкрито. Це інструмент, без якого
             мені самому вже незручно жити.
           </p>
-          <p className="font-serif italic text-subtle">– автор Sergeant</p>
+          <p className="text-subtle">– автор Sergeant</p>
         </div>
         <figure className="paper-shadow rotate-[1.2deg] rounded-[var(--radius-card)] bg-note px-7 py-6">
-          <blockquote className="font-serif text-lg italic leading-normal text-foreground sm:text-xl">
+          <blockquote className="text-lg font-medium leading-normal text-foreground sm:text-xl">
             «Трекери зазвичай або тренери-мотиватори, або бухгалтери. Мені був
             потрібен сержант: той, хто щодня поруч, тримає лад і каже як є»
           </blockquote>

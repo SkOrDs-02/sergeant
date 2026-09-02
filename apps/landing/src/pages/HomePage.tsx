@@ -125,7 +125,7 @@ function HeroCollage() {
       </div>
 
       <figure className="paper-shadow-lg flex rotate-[1.5deg] flex-col gap-2.5 rounded-[var(--radius-card)] bg-note px-7 py-6 lg:absolute lg:left-3 lg:top-[268px] lg:min-h-[120px] lg:w-[400px]">
-        <blockquote className="font-serif text-lg italic leading-normal text-foreground sm:text-xl">
+        <blockquote className="text-lg font-medium leading-normal text-foreground sm:text-xl">
           «{scenario.note}»
         </blockquote>
         <figcaption className="text-xs text-subtle">

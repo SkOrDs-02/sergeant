@@ -168,6 +168,9 @@ export function FizrukHeader({
       left={left}
       title={titleFor(page)}
       subtitle={showContextualBack ? undefined : messages.fizruk.headerSubtitle}
+      subtitleShort={
+        showContextualBack ? undefined : messages.fizruk.headerSubtitleShort
+      }
       right={
         <div className="flex items-center gap-2">
           <ModuleHeaderAssistantButton />

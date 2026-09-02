@@ -2,35 +2,19 @@
 /**
  * Unit tests for HabitLeadersBlock.
  *
- * The component uses habitCompletionRate + getKyivDayKey internally; we mock
- * both so tests are deterministic regardless of real wall-clock time.
+ * The component uses habitCompletionRate + the device-local day-key anchor
+ * (`lib/dayAnchor.ts`, ADR-0078) internally; we pin the system clock with
+ * fake timers so both `endKey` and `startKey` are deterministic regardless
+ * of real wall-clock time. Vitest pins `TZ=UTC` (`apps/web/vitest.config.js`),
+ * so "device" here is UTC.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { flatMatch } from "@shared/testing/numberText";
 import { render, screen, cleanup } from "@testing-library/react";
 import type { Habit, RoutineState } from "../lib/types";
 
-// Deterministic "today" anchored to 2026-07-10 (Kyiv = UTC+3, 12:00 local).
-const FIXED_NOW = new Date("2026-07-10T09:00:00Z");
-
-vi.mock("@shared/lib/time/kyivTime", () => ({
-  getKyivDayKey: (ms?: number) => {
-    const d = ms !== undefined ? new Date(ms) : FIXED_NOW;
-    return `${d.getUTCFullYear()}-${String(d.getUTCMonth() + 1).padStart(2, "0")}-${String(d.getUTCDate()).padStart(2, "0")}`;
-  },
-  // `endKey` now comes through `anchoredTodayKey()` (`lib/dayAnchor.ts`),
-  // which reads `getKyivDateParts()` — Kyiv summer = UTC+3, so FIXED_NOW
-  // (09:00 UTC) is 2026-07-10 12:00 local, same calendar day as above.
-  getKyivDateParts: () => ({
-    year: 2026,
-    month: 7,
-    day: 10,
-    hour: 12,
-    minute: 0,
-    second: 0,
-    weekday: 5,
-  }),
-}));
+// Deterministic "today" — 2026-07-10 12:00 UTC (device-local, TZ=UTC).
+const FIXED_NOW = new Date("2026-07-10T12:00:00Z");
 
 // habitCompletionRate: returns rate=1 for habit "h1", rate=0.5 for "h2",
 // rate=0.2 for "h3" — good enough to drive best/worst branches.
