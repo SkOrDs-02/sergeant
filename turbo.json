@@ -1,6 +1,26 @@
 {
   "$schema": "https://turbo.build/schema.json",
   "ui": "stream",
+  // Кореневі ESLint-конфіги живуть ПОЗА воркспейсами (воркспейсні
+  // `eslint.config.js` — лише реекспорт через `packageConfig("../..")`),
+  // тож turbo їх не хешує за замовчуванням: зміна правила не інвалідувала
+  // кеш `lint` і давала фальшивий зелений — локально і через remote cache
+  // у CI. Доведено проб-прогоном: правило `max-lines: 1` для apps/web
+  // лишало `17 cached, 17 total`, а `--force` того ж дерева падав.
+  "globalDependencies": [
+    "eslint.config.js",
+    "eslint.baseline.js",
+    "eslint.cross-surface.js",
+    "eslint.mobile.js",
+    "eslint.packages.js",
+    "eslint.per-package.js",
+    "eslint.server.js",
+    "eslint.shell.js",
+    "eslint.web.js",
+    ".prettierrc.json",
+    ".prettierignore",
+    "packages/eslint-plugin-sergeant-design/index.js"
+  ],
   "tasks": {
     "build": {
       "dependsOn": ["^build"],
@@ -11,6 +31,15 @@
       "outputs": []
     },
     "lint": {
+      "outputs": [".eslintcache"]
+    },
+    // Ці два воркспейси не мають TS-джерел (`lint` = echo), тож
+    // `.eslintcache` не створюють — без override turbo сипле
+    // "no output files found" на кожному прогоні.
+    "@sergeant/config#lint": {
+      "outputs": []
+    },
+    "@sergeant/design-tokens#lint": {
       "outputs": []
     },
     "test": {

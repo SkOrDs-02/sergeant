@@ -10,7 +10,7 @@
     "web": "expo start --web",
     "prebuild": "expo prebuild",
     "check-build-config": "pnpm exec tsx scripts/check-build-config.ts",
-    "lint": "eslint \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\"",
+    "lint": "eslint --cache \"app/**/*.{ts,tsx}\" \"src/**/*.{ts,tsx}\" \"scripts/**/*.{ts,tsx}\"",
     "typecheck": "tsc -p tsconfig.json --noEmit",
     "test": "jest --passWithNoTests",
     "test:coverage": "jest --coverage --passWithNoTests",
