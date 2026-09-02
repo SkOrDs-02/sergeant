@@ -157,6 +157,7 @@ export function WorkoutCatalogSection({
           onChange={changeLocation}
           variant="fizruk"
           size="md"
+          layout="bar"
           ariaLabel="Де тренуюсь"
         />
 
