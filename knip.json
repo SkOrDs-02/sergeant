@@ -29,7 +29,11 @@
         //          tools/tsconfig-guard/__tests__/check.test.mjs (no package.json → root workspace)
         "vitest",
         // semver — used in scripts/check-pnpm-overrides.mjs
-        "semver"
+        "semver",
+        // sharp — one-off ілюстрації вправ (scripts/fizruk/fetch-exercise-images.mjs),
+        // запускається вручну через npx; тягнути нативний білд у dev-deps
+        // монорепо заради разового скрипта не варто.
+        "sharp"
       ],
       // External binary installed by the operator/CI image, not from npm.
       "ignoreBinaries": ["gitleaks"]

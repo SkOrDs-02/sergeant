@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-01 by docs:gen-status. **Next review:** 2026-09-08.
+> **Last touched:** 2026-09-02 by docs:gen-status. **Next review:** 2026-09-09.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -30,12 +30,12 @@
 - [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
 
-## 🔵 В роботі — 69 відкритих
+## 🔵 В роботі — 71 відкритий документ
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
 | Ініціативи                       | 5        |
-| Планування                       | 27       |
+| Планування                       | 29       |
 | Launch / запуск                  | 12       |
 | Аудити й прожарки                | 20       |
 | Security hardening               | 1        |
@@ -64,7 +64,7 @@ Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pend
 
 ## 🧱 Стек
 
-pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 5 застосунків + 12 пакетів. Канонічні джерела:
+pnpm 9 + Turborepo monorepo, Node 22, TypeScript. 5 застосунків + 13 пакетів. Канонічні джерела:
 
 - [`architecture/repo-map.md`](./02-engineering/architecture/repo-map.md) — per-app стек, per-package призначення, build/deploy виходи (auto-derived).
 - [`architecture/service-catalog.md`](./02-engineering/architecture/service-catalog.md) — runtime-поверхні та сервіси.

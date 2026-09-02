@@ -2,8 +2,8 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last validated:** 2026-09-02 by @claude (звірено з `eslint.web.js` / `eslint.server.js`)
-> **Next review:** 2026-12-02
+> **Last validated:** 2026-09-02 by @Skords-01 і @claude (звірено з `eslint.web.js` / `eslint.server.js`)
+> **Next review:** 2026-12-01
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #18. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/04-governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
