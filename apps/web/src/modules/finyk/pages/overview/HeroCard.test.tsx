@@ -32,6 +32,12 @@ describe("HeroCard", () => {
     daysInMonth: 31,
     daysPassed: 2,
     dayBudget: 1691,
+    todayRemaining: 1191,
+    todaySpent: 500,
+    dailySpend: [],
+    todayKey: "",
+    spent: 3200,
+    planExpense: 0,
     hasExpensePlan: false,
     spendPlanRatio: 0,
     showBalance: true,
@@ -69,7 +75,7 @@ describe("HeroCard", () => {
     expect(position & Node.DOCUMENT_POSITION_FOLLOWING).toBeTruthy();
   });
 
-  it("renders networth, breakdown row and big day-budget number", () => {
+  it("renders networth, breakdown row and «Лишилось на сьогодні»", () => {
     render(<HeroCard {...baseProps} />);
     expect(screen.getByText("Капітал")).toBeInTheDocument();
     // The networth is split across nodes: a leading "−" text node sibling to
@@ -89,14 +95,69 @@ describe("HeroCard", () => {
     // тож звіряємось із textContent, а не з єдиним текстовим вузлом.
     expect(money("+255 ₴")).toBeInTheDocument();
     expect(money("−89 413 ₴")).toBeInTheDocument();
-    expect(money("1 691 ₴/день")).toBeInTheDocument();
-    expect(screen.getByText(/Можна сьогодні/)).toBeInTheDocument();
+    // Головне число — `todayRemaining` (1691 − 500), не голий `dayBudget`.
+    expect(money("1 191 ₴")).toBeInTheDocument();
+    expect(screen.getByText(/Лишилось на сьогодні/)).toBeInTheDocument();
+    // Рядок під числом — «витрачено X ₴ із Y ₴» (рішення 2 спеки).
+    const subline = screen.getByTestId("hero-today-subline");
+    expect(subline.textContent).toMatch(/витрачено/);
+    expect(money("500 ₴")).toBeInTheDocument();
+    expect(money("1 691 ₴")).toBeInTheDocument();
   });
 
-  it("shows month progress as 'День N з M'", () => {
-    render(<HeroCard {...baseProps} />);
-    expect(screen.getByText("День 2 з 31")).toBeInTheDocument();
-    expect(screen.getByText("29 дн до кінця")).toBeInTheDocument();
+  it("renders «−N ₴ понад бюджет дня» in the accent tone when todayRemaining < 0", () => {
+    render(<HeroCard {...baseProps} todayRemaining={-120} />);
+    const amount = money("120 ₴ понад бюджет дня");
+    expect(amount).toBeInTheDocument();
+    // Tier-400 фінансовий акцент, не червоний (рішення 1 спеки — hero не карає).
+    expect(amount.className).toContain("text-chart-finyk");
+    expect(amount.className).not.toContain("text-danger");
+  });
+
+  it("footer shows spent-of-plan and percent when a plan is set", () => {
+    render(
+      <HeroCard
+        {...baseProps}
+        hasExpensePlan={true}
+        spendPlanRatio={0.3}
+        planExpense={10000}
+      />,
+    );
+    const footer = screen.getByTestId("hero-strip-footer");
+    expect(footer.textContent).toMatch(/30% плану/);
+    expect(footer.textContent).toMatch(/день 2 із 31/);
+    expect(money("10 000 ₴")).toBeInTheDocument();
+  });
+
+  it("footer shows «за місяць» without a percent when no plan is set", () => {
+    render(<HeroCard {...baseProps} hasExpensePlan={false} />);
+    const footer = screen.getByTestId("hero-strip-footer");
+    expect(footer.textContent).toMatch(/за місяць/);
+    expect(footer.textContent).toMatch(/день 2 із 31/);
+    expect(footer.textContent).not.toMatch(/% плану/);
+  });
+
+  it("renders the MonthStrip when dailySpend is non-empty", () => {
+    render(
+      <HeroCard
+        {...baseProps}
+        todayKey="2026-06-05"
+        dailySpend={[
+          { dayKey: "2026-06-04", spent: 100, ratio: 0.5, over120: false },
+          { dayKey: "2026-06-05", spent: 200, ratio: 1, over120: false },
+        ]}
+      />,
+    );
+    expect(
+      screen.getByRole("group", { name: /Витрати за днями/ }),
+    ).toBeInTheDocument();
+  });
+
+  it("does not render the MonthStrip group when dailySpend is empty", () => {
+    render(<HeroCard {...baseProps} dailySpend={[]} />);
+    expect(
+      screen.queryByRole("group", { name: /Витрати за днями/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("does not duplicate 'Бюджет на день' or 'Фінпульс' labels", () => {
@@ -111,8 +172,7 @@ describe("HeroCard", () => {
   it("masks numbers when showBalance is false", () => {
     render(<HeroCard {...baseProps} showBalance={false} />);
     const dots = screen.getAllByText("••••");
-    // Networth + day budget hero render `••••`, breakdown line shows
-    // `На картках •••• · Борги ••••` as a single string.
+    // Networth + hero-число + рядок «витрачено» + футер — усі маскуються.
     expect(dots.length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/На картках/)).toHaveTextContent(
       "На картках •••• · Борги ••••",
@@ -135,7 +195,7 @@ describe("HeroCard", () => {
     render(<HeroCard {...baseProps} />);
     // Тон живе на контейнері числа; `Money` успадковує його, а приглушені
     // тири беруть hero-ink-палітру (інакше text-muted тоне в градієнті).
-    const amount = money("1 691 ₴/день");
+    const amount = money("1 191 ₴");
     expect(amount.closest("div")?.className).toContain("text-hero-ink");
     // Тир не має власного кольору — гаситься прозорістю поверх currentColor,
     // тож на градієнті лишається того самого чорнила, що й число.
@@ -160,23 +220,28 @@ describe("HeroCard", () => {
     // sanity: the negative networth lives inside the card root
     expect(container.firstChild).toContainElement(networthEl);
   });
+
   // Regression: founder report 2026-07-31 — with no monthly plan the hero
   // showed «124 686 ₴/день · В нормі», a number derived from the very spend
-  // it claimed to budget. `dayBudget` is now `null` in that state.
-  describe("no monthly plan (dayBudget = null)", () => {
+  // it claimed to budget. `dayBudget`/`todayRemaining` are now `null` in that
+  // state.
+  describe("no monthly plan (todayRemaining = null)", () => {
     const noPlanProps = {
       ...baseProps,
       dayBudget: null,
+      todayRemaining: null,
       hasExpensePlan: false,
     };
 
-    it("renders the set-a-plan CTA instead of a fabricated ₴/день number", () => {
+    it("renders the set-a-plan CTA instead of a fabricated number", () => {
       render(<HeroCard {...noPlanProps} onSetPlan={() => {}} />);
       expect(
         screen.getByText("Скільки можна витрачати на день?"),
       ).toBeInTheDocument();
       expect(screen.queryByText("₴/день")).not.toBeInTheDocument();
-      expect(screen.queryByText("Можна сьогодні")).not.toBeInTheDocument();
+      expect(
+        screen.queryByText(/Лишилось на сьогодні/),
+      ).not.toBeInTheDocument();
       expect(screen.queryByText("В нормі")).not.toBeInTheDocument();
     });
 
@@ -196,6 +261,24 @@ describe("HeroCard", () => {
       expect(
         screen.getByText("Скільки можна витрачати на день?"),
       ).toBeInTheDocument();
+    });
+  });
+
+  describe("MonthStrip cell tap", () => {
+    it("forwards the tapped day-key to onOpenDay", () => {
+      const onOpenDay = vi.fn();
+      render(
+        <HeroCard
+          {...baseProps}
+          todayKey="2026-06-05"
+          dailySpend={[
+            { dayKey: "2026-06-04", spent: 100, ratio: 0.5, over120: false },
+          ]}
+          onOpenDay={onOpenDay}
+        />,
+      );
+      fireEvent.click(screen.getByRole("button", { name: /4 червня/ }));
+      expect(onOpenDay).toHaveBeenCalledWith("2026-06-04");
     });
   });
 });

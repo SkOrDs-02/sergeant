@@ -13,8 +13,7 @@ import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
 import { FirstInsightBanner } from "./overview/FirstInsightBanner";
 import { FinykInsightsBlock } from "../components/FinykInsightsBlock";
 import { HeroCard } from "./overview/HeroCard";
-import { TodaySummaryCard } from "./overview/TodaySummaryCard";
-import { MonthPulseCard } from "./overview/MonthPulseCard";
+import { OverviewTextRows } from "./overview/OverviewTextRows";
 import { NetworthSection } from "./overview/NetworthSection";
 import { BudgetAlertsList } from "./overview/BudgetAlertsList";
 import { PlannedFlowsCard } from "./overview/PlannedFlowsCard";
@@ -206,20 +205,36 @@ export function Overview({
                   daysInMonth={d.daysInMonth}
                   daysPassed={d.daysPassed}
                   dayBudget={d.dayBudget}
+                  todayRemaining={d.todayRemaining}
+                  todaySpent={d.todaySpent}
+                  dailySpend={d.dailySpend}
+                  todayKey={d.todayKey}
+                  spent={d.spent}
+                  planExpense={d.planExpense}
                   hasExpensePlan={d.hasExpensePlan}
                   spendPlanRatio={d.spendPlanRatio}
                   showBalance={showBalance}
                   onSetPlan={
                     onNavigate ? () => onNavigate("budgets") : undefined
                   }
+                  onOpenDay={(dayKey) =>
+                    navigate(`/finyk/transactions?date=${dayKey}`)
+                  }
                 />
 
-                <TodaySummaryCard
-                  spent={d.todaySpent}
-                  income={d.todayIncome}
-                  dailyPlan={d.dailyPlan}
+                <OverviewTextRows
+                  todaySpent={d.todaySpent}
+                  todayIncome={d.todayIncome}
+                  income={d.income}
+                  showMonthForecast={d.showMonthForecast && showBalance}
+                  projectedSpend={d.projectedSpend}
+                  projectedSpendCapped={d.projectedSpendCapped}
+                  hasExpensePlan={d.hasExpensePlan}
+                  recurringOutThisMonth={d.recurringOutThisMonth}
+                  recurringInThisMonth={d.recurringInThisMonth}
+                  unknownOutCount={d.unknownOutCount}
                   showBalance={showBalance}
-                  onOpen={() => navigate("/finyk/transactions?date=today")}
+                  onOpenToday={() => navigate("/finyk/transactions?date=today")}
                 />
 
                 <FinykInsightsBlock
@@ -231,23 +246,6 @@ export function Overview({
                   txSplits={d.txSplits}
                   customCategories={d.customCategories}
                   excludedTxIds={storage.excludedTxIds}
-                />
-
-                <MonthPulseCard
-                  dateLabel={d.dateLabel}
-                  daysPassed={d.daysPassed}
-                  spent={d.spent}
-                  income={d.income}
-                  showBalance={showBalance}
-                  showMonthForecast={d.showMonthForecast && showBalance}
-                  projectedSpend={d.projectedSpend}
-                  projectedSpendCapped={d.projectedSpendCapped}
-                  hasExpensePlan={d.hasExpensePlan}
-                  spendPlanRatio={d.spendPlanRatio}
-                  planExpense={d.planExpense}
-                  recurringOutThisMonth={d.recurringOutThisMonth}
-                  recurringInThisMonth={d.recurringInThisMonth}
-                  unknownOutCount={d.unknownOutCount}
                 />
 
                 <NetworthSection networthHistory={d.networthHistory} />

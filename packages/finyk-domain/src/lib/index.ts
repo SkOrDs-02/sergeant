@@ -7,6 +7,7 @@ export * from "./formatting.js";
 export * from "./goals.js";
 export * from "./transactions.js";
 export * from "./spending.js";
+export * from "./dailySpendSeries.js";
 // W1-CANON-AGG стадія 1: канонічний «всесвіт витрат» (excluded-set + merge
 // ручних витрат). Споживачів поки немає за задумом — див. AI-CONTEXT у metrics.ts.
 export * from "./metrics.js";

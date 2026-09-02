@@ -6,6 +6,29 @@ import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
 
 export const DAY_COLLAPSE_KEY = STORAGE_KEYS.FINYK_TX_DAY_COLLAPSE;
 
+/**
+ * `YYYY-MM-DD` shape validator for the `dayFilter` deep-link
+ * (`/finyk/transactions?date=...`). The URL param accepts either the
+ * `"today"` shortcut (Overview's «Операції за сьогодні» row) or a concrete
+ * Kyiv day key tapped from `MonthStrip` — anything else is ignored (falls
+ * back to «показати всі дні» instead of an empty list).
+ */
+export const DAY_FILTER_KEY_RE = /^\d{4}-\d{2}-\d{2}$/;
+
+/**
+ * Localised date for the day-filter chip (`12 вересня`). UTC-anchored
+ * parse — the same trick as `formatStickyDayLabel` below — so the label
+ * doesn't drift a day off on a device west of UTC.
+ */
+export function formatDayFilterDate(dayKey: string): string {
+  const [y = 1970, m = 1, d = 1] = dayKey.split("-").map(Number);
+  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("uk-UA", {
+    day: "numeric",
+    month: "long",
+    timeZone: "UTC",
+  });
+}
+
 export type DayCollapseOverrides = Record<string, boolean>;
 
 /**

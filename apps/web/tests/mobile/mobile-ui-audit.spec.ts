@@ -19,6 +19,7 @@ const ROUTES: ReadonlyArray<{ id: string; path: string }> = [
   { id: "ASSISTANT", path: "/assistant" },
   { id: "HUB", path: "/" },
   { id: "FINYK", path: "/finyk/budgets" },
+  { id: "FINYK_OVERVIEW", path: "/finyk" },
   { id: "FIZRUK", path: "/fizruk" },
   { id: "ROUTINE", path: "/routine" },
   { id: "NUTRITION", path: "/nutrition/menu" },
