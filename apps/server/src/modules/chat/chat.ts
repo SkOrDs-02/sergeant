@@ -314,6 +314,11 @@ export default async function handler(
     }
   };
   const flushFirstTurnPhases = (): void => {
+    // `total` рахуємо тут, а не складаємо з фаз на дашборді: p95 суми НЕ
+    // дорівнює сумі p95, тож без власної серії обіцянка «повна відповідь за
+    // N секунд» лишалась би невимірною — рівно та вада, через яку SLO про
+    // перший токен і протримався так довго.
+    phaseMs.set("total", Date.now() - handlerStartedAt);
     for (const [phase, ms] of phaseMs) {
       chatFirstTurnPhaseMs.observe({ phase }, ms);
     }

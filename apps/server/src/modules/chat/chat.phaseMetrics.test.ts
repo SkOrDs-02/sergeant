@@ -128,6 +128,24 @@ describe("chat_first_turn_phase_ms", () => {
     expect(counts["preferences"]).toBeUndefined();
   });
 
+  it("`total` — власна серія, бо саме вона несе SLO повної відповіді", async () => {
+    anthropicMessages.mockResolvedValueOnce(textReply("Привіт!"));
+
+    await handler(
+      makeReq({ messages: [{ role: "user", content: "Привіт" }] }),
+      makeRes(),
+    );
+
+    const counts = await phaseCounts();
+    expect(counts["total"]).toBe(1);
+
+    // Складати `total` з фаз на дашборді не можна — p95 суми не дорівнює
+    // сумі p95. Тому серія власна, і вона мусить накривати upstream: інакше
+    // обіцянка «повна відповідь за N секунд» знову була б невимірною.
+    const sums = await phaseSums();
+    expect(sums["total"]).toBeGreaterThanOrEqual(sums["upstream"] ?? 0);
+  });
+
   it("`pre_upstream` накриває названі фази, а не йде поруч із ними", async () => {
     anthropicMessages.mockResolvedValueOnce(textReply("Привіт!"));
 
@@ -204,5 +222,8 @@ describe("chat_first_turn_phase_ms", () => {
     const counts = await phaseCounts();
     expect(counts["pre_upstream"]).toBe(2);
     expect(counts["upstream"]).toBe(1);
+    // `total` є на обох ходах, зокрема на тому, що моделі не бачив: SLO
+    // повної відповіді стосується й кешованої відповіді.
+    expect(counts["total"]).toBe(2);
   });
 });
