@@ -119,4 +119,29 @@ describe("Segmented", () => {
     // `text-routine-strong` hex that went sub-AA in HC. See VARIANT_SOFT.
     expect(active!.className!).toContain("text-routine-soft-fg");
   });
+
+  it("defaults to the pill layout: capsule chips on a wrapping row", () => {
+    const { getByRole, getAllByRole } = render(
+      <Segmented items={ITEMS} value="day" onChange={() => {}} />,
+    );
+    expect(getByRole("tablist").className).toContain("flex-wrap");
+    for (const tab of getAllByRole("tab")) {
+      expect(tab.className).toContain("rounded-full");
+      expect(tab.className).not.toContain("flex-1");
+    }
+  });
+
+  it("layout='bar' makes one full-width track of equal segments", () => {
+    const { getByRole, getAllByRole } = render(
+      <Segmented items={ITEMS} value="day" onChange={() => {}} layout="bar" />,
+    );
+    const tablist = getByRole("tablist");
+    expect(tablist.className).toContain("w-full");
+    // A wrapped segment would break the single track the layout promises.
+    expect(tablist.className).not.toContain("flex-wrap");
+    for (const tab of getAllByRole("tab")) {
+      expect(tab.className).toContain("flex-1");
+      expect(tab.className).not.toContain("rounded-full");
+    }
+  });
 });

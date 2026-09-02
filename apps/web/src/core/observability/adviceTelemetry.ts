@@ -55,13 +55,22 @@ import { deviceDayKey } from "@sergeant/shared";
  * поля когорту «до повного розкату» неможливо відрізати — лишиться гадання
  * про знаменник.
  */
-export const ADVICE_INSTRUMENTATION_VERSION = 1;
+export const ADVICE_INSTRUMENTATION_VERSION = 2;
 
 /** Джерело поради — enum контракту `ai_advice_shown`. */
 export type AdviceSource = "coach_insight" | "weekly_digest";
 
-/** Реакція — дискримінатор контракту `ai_advice_reacted`. */
-export type AdviceReaction = "ask_ai" | "refresh" | "collapse" | "expand";
+/**
+ * Реакція — дискримінатор контракту `ai_advice_reacted`.
+ *
+ * `helpful` / `not_helpful` додані 2026-09-01 разом із бампом
+ * `ADVICE_INSTRUMENTATION_VERSION` до 2 (саме той випадок, який версія
+ * описує: «змінюється набір реакцій»). Це єдина оцінка ЯКОСТІ в усьому
+ * реєстрі — решта реакцій кажуть, що людина зробила, і жодна не каже, чи
+ * порада була варта показу.
+ */
+export type AdviceReaction =
+  "ask_ai" | "refresh" | "collapse" | "expand" | "helpful" | "not_helpful";
 
 /**
  * Поверхня показу — property `surface` події `ai_advice_shown`.

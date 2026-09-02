@@ -22,6 +22,13 @@ import {
   useNutritionQuickChips,
   type QuickChip,
 } from "../hooks/useNutritionQuickChips";
+import {
+  markComposeSaved,
+  useComposeTelemetry,
+} from "../../../core/observability/composeTelemetry";
+
+/** Стабільний ключ виміру тертя — той самий на всіх відкриттях шита. */
+const NUTRITION_MEAL_COMPOSE_KEY = "nutrition:add-meal";
 
 type PantryController = ReturnType<typeof useNutritionPantries>;
 type LogController = ReturnType<typeof useNutritionLog>;
@@ -75,6 +82,22 @@ export function NutritionOverlays({
   addMealInitialStep,
   onQuickAddMeal,
 }: NutritionOverlaysProps) {
+  // Тертя запису їжі (`entry_compose_finished`, §6 контракту). Вимір
+  // висить на ЄДИНОМУ прапорці відкриття шита, а не на кнопках, які його
+  // відкривають: тих кнопок чотири (FAB, quick-chip, журнал, PWA-екшен),
+  // і телеметрія в кожній з них розійшлася б із першим же новим входом.
+  //
+  // `entry_kind` розділяє додавання і редагування: у них різний профіль
+  // тертя (в редагуванні поля вже заповнені), і схлопування їх в одне
+  // значення зробило б медіану несумісною сама з собою.
+  useComposeTelemetry({
+    key: NUTRITION_MEAL_COMPOSE_KEY,
+    open: log.addMealSheetOpen,
+    module: "nutrition",
+    entryKind: editingMeal ? "meal_edit" : "meal",
+    surface: addMealInitialStep ?? "source",
+  });
+
   const quickChips = useNutritionQuickChips(
     log.nutritionLog,
     pantry.effectiveItems,
@@ -143,7 +166,14 @@ export function NutritionOverlays({
           log.setAddMealSheetOpen(false);
           setEditingMeal(null);
         }}
-        onSave={wrappedSaveMeal}
+        onSave={(meal, photoFile) => {
+          // Позначка ДО консюмерського шляху: подію емітить закриття шита
+          // (перехід `open` → false), і воно прилітає вже після цього
+          // виклику. Без позначки збережений запис пішов би в статистику
+          // як `abandoned`.
+          markComposeSaved(NUTRITION_MEAL_COMPOSE_KEY);
+          return wrappedSaveMeal(meal, photoFile);
+        }}
         initialStep={addMealInitialStep}
         initialMeal={editingMeal}
         mealTemplates={prefs.mealTemplates || []}

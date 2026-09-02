@@ -17,6 +17,7 @@
 import { parseArgs } from "node:util";
 import process from "node:process";
 
+import { env } from "../env/env.js";
 import type { ToolCase } from "../modules/chat/toolSelectionCases/index.js";
 import type { JudgeVerdict } from "../modules/chat/toolEval/judge.js";
 
@@ -58,7 +59,9 @@ async function main(): Promise<void> {
     },
   });
 
-  if (!process.env["OPENROUTER_API_KEY"]) {
+  // env-single-source (scripts/check-env-single-source.mjs): ключ читаємо
+  // через Zod-валідований `env`, а не сирий `process.env`.
+  if (!env.OPENROUTER_API_KEY) {
     console.error("OPENROUTER_API_KEY не заданий — судити нічим.");
     process.exitCode = 1;
     return;

@@ -2,8 +2,8 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last validated:** 2026-06-05 by @Skords-01
-> **Next review:** 2026-09-01
+> **Last validated:** 2026-09-02 by @Skords-01 і @claude (звірено з `eslint.web.js` / `eslint.server.js`)
+> **Next review:** 2026-12-01
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #18. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/04-governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -15,7 +15,7 @@
 
 ## Enforced by
 
-- **convention** — eslint.config.js → max-lines: [error, { max: 600, skipBlankLines: true, skipComments: true }] (scoped to `apps/web/src/**/*.{ts,tsx}` and `apps/server/src/**/*.{js,ts}`; tests, `__tests__/**` exempt)
+- **convention** — max-lines: [error, { max: 600, skipBlankLines: true, skipComments: true }] (scoped to `apps/web/src/**/*.{ts,tsx}` and `apps/server/src/**/*.{js,ts}`; tests, `__tests__/**` exempt). Блоки живуть у `eslint.web.js` і `eslint.server.js`, які `eslint.config.js` збирає докупи — не в самому `eslint.config.js` (звірка 2026-09-02).
 - **doc** — docs/90-work/initiatives/archive/\_0001-module-decomposition.md (decomposition queue — closed)
 
 ## Why / What is enforced
@@ -56,7 +56,9 @@
 }
 ```
 
-**Allowlist (закрито).** Декомпозиція завершена в межах ініціативи [0001](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md) (closed) — окремого allowlist-блоку файлів-монолітів у `eslint.config.js` більше **немає**: `max-lines: 600` діє на весь `apps/web/src/**` та `apps/server/src/**` без винятків (виключені лише `*.{test,spec}` / `__tests__/**` / `generated/**`). Метрику «Файлів ≥600 LOC: 16 → 11 → ≤ 2» досягнуто, тому правило промовано з `active-initiative` у `lint-enforced-convention`. Якщо колись знадобиться тимчасовий виняток — його додають свідомо + апрув ревьюерів (розпухлий назад файл > 600 LOC падає).
+**Allowlist (порожній).** Декомпозиція завершена в межах ініціативи [0001](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md) (closed): жодного файла-винятку немає, `max-lines: 600` діє на весь `apps/web/src/**` та `apps/server/src/**` (виключені лише `*.{test,spec}` / `__tests__/**` / `generated/**`).
+
+> **Уточнення звірки 2026-09-02.** Раніше тут стояло, що allowlist-блоку «більше немає». Механізм насправді лишився: `eslint.server.js` читає `apps/server/eslint.server-maxlines-allowlist.json` і розкладає його в `ignores`. Файл зараз містить `[]`, тобто винятків нуль і правило діє без дірок — твердження по суті вірне, але формулювання «немає» ввело б в оману того, хто піде шукати механізм. У web-блоці такого файла немає взагалі. Метрику «Файлів ≥600 LOC: 16 → 11 → ≤ 2» досягнуто, тому правило промовано з `active-initiative` у `lint-enforced-convention`. Якщо колись знадобиться тимчасовий виняток — його додають свідомо + апрув ревьюерів (розпухлий назад файл > 600 LOC падає).
 
 **Як декомпонувати.** Розкладаємо за роллю, не за алфавітом: окремо state (custom hook / `useReducer` / state-machine), окремо ефекти (один `useEffect` = один named hook), окремо UI (presentational sub-components без логіки). Прецедент — `apps/server/src/modules/chat/` (`chat.ts` thin orchestrator + `tools.ts` + `coach.ts` + `aiQuota.ts` + `toolMetrics.ts` + `toolDefs/`) довів цінність декомпозиції в продакшні. Без жорсткого ліміту декомпозиція — це постійний «уторгований борг» (зробили — наповзло знову).
 

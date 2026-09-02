@@ -4,7 +4,7 @@
 // написав postbuild-seo.mjs. Разом із тілом у <head> їде jsonLd сторінки.
 // Без цього кроку AI-краулери (GPTBot, ClaudeBot, PerplexityBot), які не
 // виконують JS, бачили лише title/description. Запуск: частина `pnpm build`.
-import { readFileSync, writeFileSync, rmSync } from "node:fs";
+import { copyFileSync, readFileSync, writeFileSync, rmSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
 
@@ -49,5 +49,11 @@ for (const route of Object.keys(routes)) {
   written += 1;
 }
 
+// Vercel віддає dist/404.html зі статусом 404 на будь-який шлях, якого немає
+// у файловій системі білда. Catch-all rewrite прибрано 2026-09-02: він
+// віддавав 200 і пререндер ГОЛОВНОЇ на кожен битий URL (soft-404, знахідка
+// GEO-аудиту 2026-08-27). Тіло те саме, що й у маршруту /404.
+copyFileSync(path.join(DIST, "404", "index.html"), path.join(DIST, "404.html"));
+
 rmSync(SSR_DIR, { recursive: true, force: true });
-console.log(`prerender: ${written} сторінок із повним HTML`);
+console.log(`prerender: ${written} сторінок із повним HTML, 404.html`);

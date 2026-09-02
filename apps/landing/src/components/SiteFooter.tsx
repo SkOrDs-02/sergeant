@@ -1,7 +1,7 @@
 import { telegramStartLink } from "../lib/links";
 import { LogoMark } from "./Wordmark";
 
-const THREADS_URL = "https://www.threads.net/@sergeant.app";
+const THREADS_URL = "https://www.threads.com/@sergeant.app";
 
 export default function SiteFooter() {
   const link =

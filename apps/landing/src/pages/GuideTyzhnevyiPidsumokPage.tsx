@@ -1,6 +1,7 @@
 import SiteLayout from "../components/SiteLayout";
 import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
 
 /**
@@ -22,7 +23,7 @@ export default function GuideTyzhnevyiPidsumokPage() {
       "@type": "HowTo",
       name: "Коли приходить тижневий підсумок і як отримати його вручну",
       inLanguage: "uk",
-      dateModified: "2026-08-31",
+      dateModified: ROUTE_META["/guides/tyzhnevyi-pidsumok"].lastmod,
       author: { "@type": "Person", name: "Автор Sergeant" },
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
@@ -42,7 +43,9 @@ export default function GuideTyzhnevyiPidsumokPage() {
             Коли приходить тижневий підсумок і як отримати його вручну
           </h1>
           <p className="mt-4 text-sm text-subtle">
-            Оновлено 31.08.2026 · автор Sergeant
+            Оновлено{" "}
+            <UpdatedOn iso={ROUTE_META["/guides/tyzhnevyi-pidsumok"].lastmod} />{" "}
+            · автор Sergeant
           </p>
           <GuideHomeModule href="/zvyazky" label="Звʼязки" />
         </div>

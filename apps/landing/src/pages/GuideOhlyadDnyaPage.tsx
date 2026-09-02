@@ -1,6 +1,7 @@
 import SiteLayout from "../components/SiteLayout";
 import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
 
 /**
@@ -34,7 +35,7 @@ export default function GuideOhlyadDnyaPage() {
       "@type": "HowTo",
       name: "Як бачити тренування і планові платежі поруч зі звичками",
       inLanguage: "uk",
-      dateModified: "2026-08-31",
+      dateModified: ROUTE_META["/guides/ohlyad-dnya"].lastmod,
       author: { "@type": "Person", name: "Автор Sergeant" },
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
@@ -54,7 +55,9 @@ export default function GuideOhlyadDnyaPage() {
             Як бачити тренування і планові платежі поруч зі звичками
           </h1>
           <p className="mt-4 text-sm text-subtle">
-            Оновлено 31.08.2026 · автор Sergeant
+            Оновлено{" "}
+            <UpdatedOn iso={ROUTE_META["/guides/ohlyad-dnya"].lastmod} /> ·
+            автор Sergeant
           </p>
           <GuideHomeModule href="/zvychky" label="Звички" />
         </div>

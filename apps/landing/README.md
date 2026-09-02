@@ -1,6 +1,6 @@
 # @sergeant/landing
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-26.
+> **Last touched:** 2026-09-02 by @Skords-01. **Next review:** 2026-12-05.
 > **Status:** Active
 
 Маркетинговий лендінг Sergeant. Одна сторінка, одна дія — перехід у
@@ -55,6 +55,21 @@ pnpm --filter @sergeant/landing build
 
 `VITE_*` вкомпільовуються в бандл під час білду, а не читаються в рантаймі —
 зміна такої змінної в UI не діє, поки не перебілдиш.
+
+### 404 і статичні маршрути
+
+У `vercel.json` немає catch-all rewrite. Кожен маршрут із `routeMeta.json`
+існує як `dist/<path>/index.html` (postbuild-seo + prerender), а для
+невідомого шляху Vercel віддає `dist/404.html` зі статусом 404: її кладе
+`prerender.mjs` з тіла маршруту `/404`. До 2026-09-02 rewrite віддавав 200 і
+пререндер головної на будь-який битий URL, тобто soft-404 (знахідка
+GEO-аудиту 2026-08-27, P1-1), і краулер індексував дубль головної під кожним
+таким URL. Перевірка після деплою:
+
+```bash
+curl -o /dev/null -w "%{http_code}\n" https://sergeant.com.ua/nope     # 404
+curl -o /dev/null -w "%{http_code}\n" https://sergeant.com.ua/hroshi   # 200
+```
 
 ### Якщо тут колись зʼявиться запит до API
 

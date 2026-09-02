@@ -152,8 +152,15 @@ for (const [vw, tag] of [
     .getByRole("link", { name: /Доповідь про стан/ })
     .first();
   await statusLink.click();
-  await page.waitForURL("**/stan");
-  ok("beta лінк «Що вже працює» → /stan", page.url().endsWith("/stan"));
+  // Лінк веде на якір «Відомі проблеми» (/stan#vidomi-problemy), тож
+  // порівнюємо pathname, а не кінець URL.
+  await page.waitForURL((url) => url.pathname === "/stan");
+  ok(
+    "beta лінк «Що зараз зламано» → /stan#vidomi-problemy",
+    new URL(page.url()).pathname === "/stan" &&
+      new URL(page.url()).hash === "#vidomi-problemy",
+    page.url(),
+  );
 
   // TelegramCta: правильний деплінк з payload-ом
   await page.goto(BASE + "/beta", { waitUntil: "networkidle" });

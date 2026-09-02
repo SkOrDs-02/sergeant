@@ -1,6 +1,6 @@
 # Runbook: запуск приймання платежів (Plata / LiqPay)
 
-> **Last touched:** 2026-09-02 by @Skords-01. **Next review:** 2026-12-06.
+> **Last touched:** 2026-09-02 by @Skords-01. **Next review:** 2026-12-26.
 > **Status:** Active
 
 Що має бути правдою, **перш ніж** перемкнути `PLATA_ENABLED` / `LIQPAY_ENABLED` у `true` на продакшні. Код провайдера `plata` готовий і перевірений живим прогоном ([спека](../../90-work/planning/specs/plata-recurring.md)), але сам по собі він приймати гроші не дозволяє.
