@@ -235,8 +235,17 @@ export function computeRecoveryBy(
   for (const w of workouts || []) {
     const t = w.startedAt ? Date.parse(w.startedAt) : NaN;
     if (!Number.isFinite(t)) continue;
-    const in7d = nowMs - t <= WEEK;
-    const in14d = nowMs - t <= FORTNIGHT;
+    // AI-DANGER: нижня межа обовʼязкова. `nowMs - t <= WEEK` саме по собі
+    // істинне і для ВІДʼЄМНОЇ різниці, тож тренування з майбутньою датою
+    // зараховувалось би як уже виконане навантаження. Форма ретро-запису
+    // відсікає майбутні дні в пікері (`LogPastWorkoutSheet`), але дані
+    // приходять ще й через sync з іншого пристрою, годинник якого нам
+    // не підпорядкований. Що кламп тут — початковий намір, видно нижче:
+    // `ageDays` уже загорнутий у `Math.max(0, …)`, тобто `fatigue` майбутнє
+    // тренування трактує як «щойно», а не як від'ємний вік.
+    const age = nowMs - t;
+    const in7d = age >= 0 && age <= WEEK;
+    const in14d = age >= 0 && age <= FORTNIGHT;
     for (const it of w.items || []) {
       const ptsBase = loadPointsForItem(it);
       const ageDays = Math.max(0, (nowMs - t) / DAY);

@@ -166,6 +166,33 @@ describe("fizruk/recoveryCompute", () => {
     expect(by["chest"]!.load14d).toBe(0);
   });
 
+  it("counts no load for a workout dated in the future", () => {
+    const nowMs = Date.parse("2026-01-15T12:00:00Z");
+    // 3 дні ПОПЕРЕДУ. Без нижньої межі `nowMs - t <= WEEK` істинне і для
+    // відʼємної різниці, тож заплановане тренування читалось би як уже
+    // виконане навантаження — і в hero група зʼявилась би як тренована.
+    const workouts = [
+      {
+        startedAt: "2026-01-18T10:00:00Z",
+        items: [
+          {
+            type: "strength",
+            sets: [{ weightKg: 60, reps: 10 }],
+            musclesPrimary: ["chest"],
+          },
+        ],
+      },
+    ];
+    const by = computeRecoveryBy(
+      workouts as never,
+      { chest: "Груди" },
+      nowMs,
+      [],
+    );
+    expect(by["chest"]!.load7d).toBe(0);
+    expect(by["chest"]!.load14d).toBe(0);
+  });
+
   it("loadPointsForItem handles empty and degenerate sets", () => {
     expect(loadPointsForItem(null)).toBe(0);
     expect(loadPointsForItem(undefined)).toBe(0);
