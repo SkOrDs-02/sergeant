@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFTUX } from "../utils/seedFTUX";
+import { waitForServiceWorkerActivated } from "../utils/serviceWorker";
 import { waitForSqliteRefreshAfter } from "../utils/sqliteRefresh";
 import { auditPage, mockApi } from "./audit";
 
@@ -89,6 +90,11 @@ test.describe("комора: місця зберігання", () => {
 
   // Гейт 2 спеки: ручний вибір переживає перезавантаження.
   test("зміна місця переживає перезавантаження", async ({ page }) => {
+    // Єдиний тест смуги, що робить повний рестарт застосунку: два холодні
+    // бути плюс очікування прекешу (400 записів, 6.6 МБ). Дефолтних 30 с
+    // на це не розраховано — решта тестів смуги вкладається у ~3 с і цього
+    // бюджету не потребує.
+    test.setTimeout(90_000);
     await fillPantry(page);
 
     // Місце живе в аркуші позиції, не в рядку списку: список відповідає на
@@ -118,8 +124,13 @@ test.describe("комора: місця зберігання", () => {
     //   • у CI версія БЕЗ барʼєра впала інакше: `page.reload:
     //     net::ERR_ABORTED; maybe frame was detached?` — тобто рестарт
     //     стартував посеред незавершеної роботи сторінки.
-    // Локальні частоти на CI не переносяться; зелений у CI дала саме ця
-    // пара кроків, і вона тут лишається.
+    //
+    // ВИПРАВЛЕННЯ 2026-09-02: тут стояло «зелений у CI дала саме ця пара
+    // кроків». Це виявилось неправдою — на #1037 гейт знову впав, цього
+    // разу зависанням `page.reload`. Обидва кроки нижче лишаються (вони
+    // справді потрібні й справді про запис у SQLite), але зеленого вони не
+    // гарантували: справжня причина була не тут, а в гонці з сервіс-
+    // воркером, і її знімає окремий барʼєр перед самим рестартом.
     await waitForSqliteRefreshAfter(page, "nutrition", async () => {
       await page.getByRole("button", { name: "Зберегти" }).click();
     });
@@ -134,7 +145,17 @@ test.describe("комора: місця зберігання", () => {
     ).toBeVisible();
     await filterBeforeReload.selectOption({ label: "Усі місця" });
 
-    await page.reload({ waitUntil: "domcontentloaded" });
+    // Другий барʼєр — і він про інше, ніж перший. Той чекає на запис у
+    // SQLite, цей — на сервіс-воркера: без нього рестарт стріляє рівно на
+    // межі install → activate прекешу, і три попередні правки цього тесту
+    // лише зсували ту межу на сотні мілісекунд. Розбір і заміри — у
+    // `tests/utils/serviceWorker.ts`.
+    await waitForServiceWorkerActivated(page);
+
+    // Явний timeout, а не бюджет тесту: без нього `reload` тихо зʼїдав усі
+    // 30 с і звіт казав «Test timeout», не називаючи кроку. Тепер падіння
+    // тут читається як падіння саме рестарту.
+    await page.reload({ waitUntil: "domcontentloaded", timeout: 30_000 });
     await page
       .getByRole("button", { name: "Редагувати молоко" })
       .waitFor({ state: "visible", timeout: 15_000 });
