@@ -1,8 +1,9 @@
 # ADR-0088: Виведення Devin і Kilo Code з активних харнесів
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Last validated:** 2026-08-28 by @Skords-01. **Next review:** 2026-11-28.
 - **Date:** 2026-08-28
+- **Accepted:** 2026-08-28 (PR-носій злито; `DEVIN.md` і `.kilo*` прибрані, реєстр у `.agents/harness-versions.json`)
 - **Deciders:** @Skords-01
 - **Supersedes:** -
 - **Related:**

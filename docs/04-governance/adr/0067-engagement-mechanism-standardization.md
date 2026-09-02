@@ -1,8 +1,9 @@
 # ADR-0067: Standardize Hub engagement mechanisms (signals / reminders / dismiss-state)
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Date:** 2026-06-20
+- **Accepted:** 2026-06-20 (PR #3665 злито; кроки 1 і 3 виконані за ним (`7ea3ac57e`, `899820141`), кроки 2 і 4 лишаються відкритими)
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**

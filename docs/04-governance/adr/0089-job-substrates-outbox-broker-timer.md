@@ -1,7 +1,8 @@
 # ADR-0089: Субстрати фонових задач — outbox vs broker vs timer
 
-- **Status:** Proposed
+- **Status:** Accepted
 - **Date:** 2026-08-28
+- **Accepted:** 2026-08-28 (PR-носій злито; обидва борги закриті в ньому, код цитує таблицю субстратів як чинну)
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**

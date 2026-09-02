@@ -1,7 +1,8 @@
 # ADR-0065: sync_op_log retention/архівація + multi-instance fan-out (план PR-050)
 
-- **Status:** Proposed <!-- Proposed | Accepted | Deprecated | Superseded by ADR-NNNN -->
+- **Status:** Accepted
 - **Date:** 2026-06-07
+- **Accepted:** 2026-06-07 (PR-носій злито; план чинний: `syncV2Stream.ts` і `backend.md` посилаються на нього як на рішення, клієнтський TTL у коді)
 - **Deciders:** @Skords-01
 - **Supersedes:** —
 - **Related:**
