@@ -1,6 +1,7 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFTUX } from "../utils/seedFTUX";
+import { waitForSqliteRefreshAfter } from "../utils/sqliteRefresh";
 import { auditPage, mockApi } from "./audit";
 
 /**
@@ -99,7 +100,39 @@ test.describe("комора: місця зберігання", () => {
     // Переїзд застосовується разом зі «Зберегти» — поруч стоїть
     // «Скасувати», і зміна, яка сталася б до нього, зробила б ту кнопку
     // брехнею.
-    await page.getByRole("button", { name: "Зберегти" }).click();
+    //
+    // AI-DANGER: обидва кроки — і цей барʼєр, і перевірка нижче — потрібні.
+    // Прибирання будь-якого з них уже ламало гейт, щоразу по-різному, тож
+    // не спрощуй «бо локально зелено».
+    //
+    // Запис у SQLite асинхронний (`triggerNutritionDualWrite` ставить задачу
+    // в чергу через `setTimeout(0)`), а `click()` повертається одразу після
+    // диспатчу події. Лічильник `__sergeantSqliteRefreshCounts` росте лише
+    // коли черга модуля спорожніла (`notifyCacheRefresh` мовчить, поки
+    // `pendingMutationWindows > 0`), тож барʼєр дає сторінці досидіти
+    // незавершену роботу перед рестартом.
+    //
+    // Що показали заміри, і чому вони суперечливі:
+    //   • локально (повільний контейнер) барʼєр САМ ПО СОБІ давав 1 прохід
+    //     із 5, а перевірка нижче сама по собі — 12 із 12;
+    //   • у CI версія БЕЗ барʼєра впала інакше: `page.reload:
+    //     net::ERR_ABORTED; maybe frame was detached?` — тобто рестарт
+    //     стартував посеред незавершеної роботи сторінки.
+    // Локальні частоти на CI не переносяться; зелений у CI дала саме ця
+    // пара кроків, і вона тут лишається.
+    await waitForSqliteRefreshAfter(page, "nutrition", async () => {
+      await page.getByRole("button", { name: "Зберегти" }).click();
+    });
+
+    // Діагностичний рубіж: переїзд має бути видимий ЩЕ ДО рестарту.
+    // Без нього падіння нижче не розрізняє «не застосувалось» і «не
+    // збереглось» — а це два різні дефекти в різних місцях.
+    const filterBeforeReload = page.getByLabel("Місце зберігання");
+    await filterBeforeReload.selectOption({ label: "Комора" });
+    await expect(
+      page.getByRole("button", { name: "Редагувати молоко" }),
+    ).toBeVisible();
+    await filterBeforeReload.selectOption({ label: "Усі місця" });
 
     await page.reload({ waitUntil: "domcontentloaded" });
     await page
