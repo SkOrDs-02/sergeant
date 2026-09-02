@@ -235,6 +235,42 @@ export const aiFirstTokenMs = new client.Histogram({
   registers: [register],
 });
 
+/**
+ * Фази ПЕРШОГО ходу чату, мс. Одна серія на фазу.
+ *
+ * Чому окрема метрика, хоча `ai_first_token_ms` вище нібито про те саме.
+ * Перший хід `/api/chat` **не стрімиться взагалі**: клієнт не просить
+ * (`useChatSend.ts` шле `send()` без прапорця), а сервер і не підтримав би —
+ * єдиний `if (stream)` у `chat.ts` живе всередині гілки tool-результатів.
+ * Отже `ai_first_token_ms` цього шляху не бачить у принципі, бо живе в
+ * `streamAnthropicToSse`. До того ж її відлік починається з
+ * `streamStartedAtMs` — моменту, коли upstream УЖЕ відповів заголовками, —
+ * тобто вона міряє латентність токенів моделі, а не очікування людини.
+ * Розбір: AI-2 у `docs/90-work/audits/2026-09-01-product-audit/findings.md`.
+ *
+ * Питання, на яке метрика відповідає: із 6,7 с медіани очікування скільки
+ * наше, а скільки провайдера. `pre_upstream` міряє все від входу в handler
+ * до виклику моделі — включно з парсингом і валідацією, не лише з
+ * переліченими кроками. Тому `pre_upstream` мінус сума решти фаз — це
+ * НЕврахована робота, і саме ця різниця ловить кроки, які ми забули
+ * назвати. Без неї «все інше швидко» лишалось би припущенням.
+ *
+ * Фази: `session` · `counterparties` · `correlations` · `rag` ·
+ * `preferences` · `pre_upstream` · `upstream`.
+ *
+ * Бакети навмисно рідкі (9 замість 11–15 у сусідів): 7 фаз × 12 серій уже
+ * дають ~84 семпли на скрейп при поточних ~250 усього, і густіша сітка
+ * коштувала б більше, ніж додала б точності — межі тут вирішують порядки
+ * (десятки мс на point-lookup проти секунд на upstream), не десятки мс.
+ */
+export const chatFirstTurnPhaseMs = new client.Histogram({
+  name: "chat_first_turn_phase_ms",
+  help: "Duration of each serial phase of the non-streaming first chat turn, ms",
+  labelNames: ["phase"],
+  buckets: [5, 25, 100, 250, 500, 1000, 2000, 5000, 15000],
+  registers: [register],
+});
+
 // PR-24: per-LLMProvider invocation counter. Окремо від `ai_requests_total`,
 // бо той вимагає `model`/`endpoint`/`outcome` labels від raw Anthropic-шляху,
 // а тут трекаємо саме provider-abstraction-шар: який provider пішов на call
