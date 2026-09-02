@@ -6,16 +6,21 @@
  * here we pin the rendering contract: one row per habit, an accessible
  * summary per row, a legend, and the empty state.
  */
-import { describe, it, expect, vi, afterEach } from "vitest";
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, within } from "@testing-library/react";
 import type { Habit, RoutineState } from "../lib/types";
 
-// Kyiv "today" = пт 2026-01-10, so a 7-day window spans 2026-01-04..10.
-vi.mock("@shared/lib/time/kyivTime", () => ({
-  getKyivDateParts: () => ({ year: 2026, month: 1, day: 10 }),
-}));
-
 import { HabitRangeGrid } from "./HabitRangeGrid";
+
+// Device-local "today" (ADR-0078) = пт 2026-01-10, so a 7-day window spans
+// 2026-01-04..10. Vitest pins `TZ=UTC` (`apps/web/vitest.config.js`), so a
+// UTC instant on that calendar day pins the same device-local date.
+const FIXED_NOW = new Date("2026-01-10T12:00:00Z");
+
+beforeEach(() => {
+  vi.useFakeTimers();
+  vi.setSystemTime(FIXED_NOW);
+});
 
 function habit(id: string, name: string, over: Partial<Habit> = {}): Habit {
   return {
@@ -47,7 +52,10 @@ function renderGrid(days = 7, extra: Partial<RoutineState> = {}) {
   );
 }
 
-afterEach(cleanup);
+afterEach(() => {
+  vi.useRealTimers();
+  cleanup();
+});
 
 describe("HabitRangeGrid", () => {
   it("renders one row per habit with its name and rate", () => {

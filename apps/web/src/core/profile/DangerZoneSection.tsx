@@ -83,8 +83,8 @@ export function DangerZoneSection({
 
         <div className="p-4 space-y-3">
           <p className="text-style-body text-muted">
-            Видалення акаунту є незворотною дією. Усі ваші дані буде повністю
-            видалено з серверу.
+            Видалення акаунту незворотне. Усі твої дані буде повністю видалено з
+            сервера.
           </p>
           <Button
             variant="destructive"

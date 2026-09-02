@@ -77,31 +77,6 @@ jobs:
       - name: Install
         run: pnpm install --frozen-lockfile
 
-      # Ledger-backed audit gate. Replaces the old blunt `audit-exception`
-      # PR-label (which suppressed *every* high advisory at once) with a
-      # per-advisory allowlist read from
-      # docs/04-governance/security/audit-exceptions.md. Critical advisories
-      # always block — there is no ledger escape for them. High/moderate
-      # advisories pass only with a dated, non-expired ledger entry.
-      # See scripts/ci/audit-exceptions.mjs.
-      # Обидва ledger-гейти мають юніт-тести, але до 2026-08-23 їх не
-      # запускав жоден workflow — політика «critical не waive-иться»,
-      # «прострочений виняток знову блокує» і severity-фільтр OSV трималися
-      # на чесному слові. Тести дешеві (мілісекунди) і стоять ПЕРЕД самими
-      # гейтами: зламаний парсер ledger-а має падати як тест, а не як
-      # загадковий зелений аудит.
-      - name: Unit-test the ledger gates
-        run: |
-          node --test \
-            scripts/ci/__tests__/audit-exceptions.test.mjs \
-            scripts/ci/__tests__/osv-gate.test.mjs
-
-      - name: Audit (production, ledger-gated)
-        run: node scripts/ci/audit-exceptions.mjs --prod
-
-      - name: Audit (full tree, ledger-gated)
-        run: node scripts/ci/audit-exceptions.mjs
-
       - name: pnpm overrides single-major guard (L1)
         # Closes hardening card L1
         # (docs/04-governance/security/hardening/L1-uuid-override.md). Verifies that
@@ -323,6 +298,68 @@ jobs:
                 body,
               });
             }
+
+  security-audit:
+    name: Dependency audit (ledger-gated)
+    # Винесено з `check` в окрему джобу 2026-09-01. `pnpm audit --json` на
+    # цьому монорепо (17 workspaces) виявився здатен зжерти ~4 ГБ heap і
+    # впасти FATAL ERROR OOM усередині власного процесу pnpm — ДО того, як
+    # `check` доходив до кроку "Format, lint, test, build". Джоба, що падає
+    # раніше за реальний гейт у ТІЙ САМІЙ послідовності кроків, ховає
+    # результат гейта замість його виконання (AGENTS.md § Performance
+    # budgets: «гейт, що стоїть у кроках після потенційно червоного кроку,
+    # не є гейтом» — той самий клас пастки, тут між джобами, а не кроками).
+    # Окрема паралельна джоба гарантує, що падіння аудиту більше не блокує
+    # виконання і звітність `check`.
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install
+        run: pnpm install --frozen-lockfile
+
+      # Ledger-backed audit gate. Replaces the old blunt `audit-exception`
+      # PR-label (which suppressed *every* high advisory at once) with a
+      # per-advisory allowlist read from
+      # docs/04-governance/security/audit-exceptions.md. Critical advisories
+      # always block — there is no ledger escape for them. High/moderate
+      # advisories pass only with a dated, non-expired ledger entry.
+      # See scripts/ci/audit-exceptions.mjs.
+      # Обидва ledger-гейти мають юніт-тести, але до 2026-08-23 їх не
+      # запускав жоден workflow — політика «critical не waive-иться»,
+      # «прострочений виняток знову блокує» і severity-фільтр OSV трималися
+      # на чесному слові. Тести дешеві (мілісекунди) і стоять ПЕРЕД самими
+      # гейтами: зламаний парсер ledger-а має падати як тест, а не як
+      # загадковий зелений аудит.
+      - name: Unit-test the ledger gates
+        run: |
+          node --test \
+            scripts/ci/__tests__/audit-exceptions.test.mjs \
+            scripts/ci/__tests__/osv-gate.test.mjs
+
+      - name: Audit (production, ledger-gated)
+        # NODE_OPTIONS підіймає heap-стелю і батьківському процесу, і
+        # дочірньому `pnpm audit` (Node успадковує env), плюс скрипт
+        # звужує сам звіт до --audit-level high (див. audit-exceptions.mjs)
+        # — гейт однаково не враховує moderate/low advisories.
+        env:
+          NODE_OPTIONS: "--max-old-space-size=6144"
+        run: node scripts/ci/audit-exceptions.mjs --prod
+
+      - name: Audit (full tree, ledger-gated)
+        env:
+          NODE_OPTIONS: "--max-old-space-size=6144"
+        run: node scripts/ci/audit-exceptions.mjs
 
   knip-scan:
     name: Dead Code (Knip)

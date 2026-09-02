@@ -117,6 +117,10 @@ export function NutritionPantryPage({
               parsePreview={pantry.parsePreview}
               confirmParsePreview={pantry.confirmParsePreview}
               dismissParsePreview={pantry.dismissParsePreview}
+              ambiguousPantryItems={pantry.ambiguousPantryItems}
+              resolveAmbiguousPantryItem={pantry.resolveAmbiguousPantryItem}
+              dismissAmbiguousPantryItem={pantry.dismissAmbiguousPantryItem}
+              rememberAmbiguousChoice={pantry.rememberAmbiguousChoice}
               onScanBarcode={() => {
                 setPantryScanStatus("");
                 setPantryScannerOpen(true);

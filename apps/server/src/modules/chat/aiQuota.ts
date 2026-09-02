@@ -14,6 +14,7 @@ import {
   resolvePresetBudget,
   type QuotaBudget,
 } from "./aiQuotaBudget.js";
+import { consumeRoundTripTicket } from "./chatRoundTripTicket.js";
 import { aiQuotaCircuitBreaker } from "./aiQuotaCircuitBreaker.js";
 import { getUserPlan } from "../billing/getUserPlan.js";
 import { effectiveLimits as planLimits } from "../billing/effectiveLimits.js";
@@ -277,6 +278,21 @@ function today(): string {
 }
 
 /**
+ * Читає `round_trip_ticket` із сирого `req.body` (цей middleware стоїть ДО
+ * `parseBody(ChatRequestSchema, …)` у `chat.ts`, той самий патерн, що
+ * `resolvePresetBudget` уже використовує для `preset`) і намагається його
+ * спожити для `userId`. `req.body` тут може бути `undefined` узагалі —
+ * `requireAiQuota()` монтується і на роутах без tool-round-trip (`coach.ts`,
+ * `nutrition.ts`), де поля просто нема.
+ */
+function tryConsumeRoundTripTicket(req: Request, userId: string): boolean {
+  const raw = (req.body as { round_trip_ticket?: unknown } | undefined)
+    ?.round_trip_ticket;
+  if (typeof raw !== "string" || raw.length === 0) return false;
+  return consumeRoundTripTicket({ ticket: raw, userId });
+}
+
+/**
  * Default-bucket (plain chat) quota check. Shape збережено (backwards compat):
  * повертає true/false; при вичерпанні сама відправляє 429 у `res`.
  */
@@ -289,6 +305,20 @@ export async function assertAiQuota(
   const sessionUser = await safeSessionUser(req);
   // Founder / internal-team users are never quota-blocked (plan-agnostic).
   if (sessionUser && isFounderUser(sessionUser.id)) return true;
+
+  // AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+  // — «хід з дією коштує ОДИН запит». Якщо цей запит несе валідний
+  // round-trip-квиток для ЦЬОГО юзера (`chatRoundTripTicket.ts`), він —
+  // другий HTTP-запит уже оплаченого першого туру (tool-хід), а не новий
+  // хід: списання пропускаємо цілком (жодного DB-виклику). Без валідного
+  // квитка (немає поля, чужий, прострочений, підроблений) — падаємо назад
+  // на звичайне списання нижче; це safe default, той самий шлях, що діяв
+  // до цього рішення, і саме тому підробити «я — продовження» без
+  // реального першого ходу не працює.
+  if (sessionUser && tryConsumeRoundTripTicket(req, sessionUser.id)) {
+    return true;
+  }
+
   // Анонімного трафіку тут не буває. КОЖЕН роут, що монтує цю квоту, стоїть
   // за `requireSession()`: `routes/chat.ts`, `routes/coach.ts`,
   // `routes/weekly-digest.ts` і `r.use("/api/nutrition", requireSession())` —
@@ -372,10 +402,12 @@ export async function assertAiQuota(
       // `apps/web/src/core/lib/hubChatUtils.ts`), не за текстом.
       //
       // «ЗАПИТІВ», а не «повідомлень». Лічильник інкрементиться раз на
-      // HTTP-запит до AI-роута, а одне повідомлення в чаті може коштувати
-      // кілька: після tool_use клієнт шле наступний POST /api/chat із
-      // tool_results, і той теж проходить сюди. Копія «5 повідомлень» лишала
-      // юзера з 4 відповідями і 429 на пʼятій — обіцяли не те, що метрять.
+      // HTTP-запит до AI-роута. AI-5 рішення 1 (`docs/90-work/audits/
+      // 2026-09-01-product-audit/findings.md`) зробило хід з дією рівно
+      // одним списанням (round-trip-квиток пропускає другий запит того
+      // самого ходу, `chatRoundTripTicket.ts`), тож «запитів» тепер
+      // буквально дорівнює «дій» — копія «5 повідомлень» усе одно не
+      // годиться: ліміт спільний з порадою коуча (§9 канону), не лише чат.
       res.status(429).json(
         isPresetBudget
           ? {
@@ -385,8 +417,7 @@ export async function assertAiQuota(
               limit: result.limit,
             }
           : {
-              error:
-                "Денний ліміт AI-запитів вичерпано (одне повідомлення інколи коштує кілька). Спробуй завтра.",
+              error: "Денний ліміт AI-запитів вичерпано. Спробуй завтра.",
               code: "AI_QUOTA",
               limit: result.limit,
             },

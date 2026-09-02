@@ -34,8 +34,13 @@ import type { CompletionEventAppendOp } from "./diff.js";
  *     метадані заявляли девайсовий анкер — тобто будь-яка майбутня
  *     міграція чи аналітика, що довіриться колонці, класифікує ці рядки
  *     не туди. Сирі `occurred_at` + `tz_offset_min` лишаються поруч, тож
- *     ключ і далі можна перерахувати, коли доктрина ADR-0078 доїде до
- *     всього routine-у (W1-TIME-DOCTRINE).
+ *     ключ і далі можна перерахувати, якщо колись знадобиться.
+ *   - **Cutover 2026-09-01 (LOG-3, ADR-0078):** `ROUTINE_DAY_ANCHOR`
+ *     перемкнуто `kyiv` → `device-local` — `date_key` тепер рахується за
+ *     годинником пристрою. Рядки, записані ДО цієї дати, лишаються з
+ *     `day_anchor = 'kyiv'` (а ще старіші — з `'device-local'`, хоча ключ
+ *     у них був київський, див. коментар вище) — історія не
+ *     переанкорюється (ADR-0078 §4).
  */
 export async function appendCompletionEvent(
   client: SqliteMigrationClient,

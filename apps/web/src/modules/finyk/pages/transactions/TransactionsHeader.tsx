@@ -47,9 +47,7 @@ export function TransactionsHeader({
         >
           <Icon name="chevron-left" size="sm" />
         </button>
-        <span className="text-style-label text-text capitalize px-1">
-          {monthLabel}
-        </span>
+        <span className="text-style-label text-text px-1">{monthLabel}</span>
         <button
           onClick={() => goMonth(1)}
           disabled={isCurrentMonth}

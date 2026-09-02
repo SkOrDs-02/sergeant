@@ -6,7 +6,7 @@ import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
-import { isDemoMode, exitDemoToWizard } from "./seedDemoData";
+import { isDemoMode, exitDemoToWizard } from "./demoMode";
 
 /**
  * Persistent demo-mode marker + exit. Unlike `DemoModeBanner` (a
@@ -96,7 +96,7 @@ export function DemoModeBadge() {
         "motion-safe:animate-fade-in",
       )}
     >
-      <Icon name="sparkles" size="sm" strokeWidth={2} aria-hidden />
+      <Icon name="sergeant" size="sm" strokeWidth={2} aria-hidden />
       <span>{messages.onboarding.demoBadgeText}</span>
       <span aria-hidden className="opacity-70">
         ·

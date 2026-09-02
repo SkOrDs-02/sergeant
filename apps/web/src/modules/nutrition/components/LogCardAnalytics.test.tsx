@@ -50,10 +50,24 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe("LogCardAnalytics", () => {
-  it("renders all empty-states when there is no data", () => {
+  // UX-2 (аудит 2026-09-01): без жодного залогованого дня (`daysLogged: 0`
+  // з дефолтного `beforeEach`) чотири плитки з нулями і плаский графік
+  // замінені на один Tier-2 `<EmptyState>` — див.
+  // `docs/05-design/design/empty-states.md`.
+  it("renders a single empty state with no dead-zero tiles when nothing is logged", () => {
     render(<LogCardAnalytics log={log} selectedDate="2026-06-20" />);
     expect(screen.getByText("Аналітика (тренди)")).toBeInTheDocument();
-    expect(screen.getAllByText("Поки що порожньо").length).toBe(3);
+    expect(screen.getByText("Ще немає трендів")).toBeInTheDocument();
+    // Ні нульових плиток, ні per-секційних "Поки що порожньо" — картка
+    // показує ОДИН empty-state замість трьох "нічого немає" підряд.
+    expect(screen.queryByText("Середні ккал")).not.toBeInTheDocument();
+    expect(screen.queryByText("Поки що порожньо")).not.toBeInTheDocument();
+    // Без дубльованого CTA-ґудзика: "+ Додати прийом їжі" вже видно на
+    // сторінці `LogCard` нижче за цю картку (docs/05-design/design/empty-states.md
+    // § «Не дублюйте action»).
+    expect(
+      screen.queryByRole("button", { name: /Додати/ }),
+    ).not.toBeInTheDocument();
   });
 
   it("defaults to the 30-day range and refetches when switching to 90", () => {
@@ -89,5 +103,32 @@ describe("LogCardAnalytics", () => {
     expect(screen.getByTitle("2200 ккал")).toBeInTheDocument();
     // empty-states are gone
     expect(screen.queryByText("Поки що порожньо")).not.toBeInTheDocument();
+    expect(screen.queryByText("Ще немає трендів")).not.toBeInTheDocument();
+  });
+
+  // TXT-8 (аудит 2026-09-01): "Сер. Б/день" / "на N активн. днів" читались
+  // як недороблені скорочення поруч із людською датою Рутини. Тайли тепер
+  // повторюють повнослівну конвенцію, вже прийняту в модулі
+  // (`NutritionDashboard.tsx`, `MacroRings.stories.tsx`: "Білки"/"Жири"/
+  // "Вуглеводи" завжди пишуться повністю, ніколи як "Б"/"Ж"/"В").
+  it("spells out macro/day labels in full instead of abbreviating them", () => {
+    getRows.mockReturnValue([{ kcal: 1800 }]);
+    avg.mockReturnValue({
+      avgKcal: 1800,
+      avgProtein: 90,
+      avgFat: 55,
+      avgCarbs: 200,
+      daysLogged: 1,
+    });
+
+    render(<LogCardAnalytics log={log} selectedDate="2026-06-20" />);
+
+    expect(screen.getByText("Середні ккал")).toBeInTheDocument();
+    expect(screen.getByText("Середні білки")).toBeInTheDocument();
+    expect(screen.getByText("Середні жири")).toBeInTheDocument();
+    expect(screen.getByText("Середні вуглеводи")).toBeInTheDocument();
+    expect(screen.getAllByText(flatMatch("за 1 активний день")).length).toBe(4);
+    expect(screen.queryByText(/Сер\./)).not.toBeInTheDocument();
+    expect(screen.queryByText(/активн\./)).not.toBeInTheDocument();
   });
 });

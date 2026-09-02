@@ -151,6 +151,7 @@ describe("computeNutritionTargetsFromBiometrics", () => {
       activityLevel: "moderate",
       weightKg: 80,
       weightUpdatedAt: "2026-01-01T00:00:00.000Z",
+      countWorkoutsInGoal: false,
       updatedAt: "2026-01-01T00:00:00.000Z",
       ...patch,
     };
@@ -265,5 +266,36 @@ describe("computeNutritionTargetsFromBiometrics", () => {
       expect(t).not.toBeNull();
       expect(t!.kcal).toBeGreaterThan(0);
     });
+  });
+});
+
+describe("countWorkoutsInGoal", () => {
+  const base = {
+    weightKg: 80,
+    heightCm: 180,
+    ageYears: 30,
+    sex: "male",
+    activityLevel: "moderate",
+  } as const;
+
+  it("вимкнений тумблер лишає рівно старе число", () => {
+    // Регресійний гейт проти подвійного обліку: наявні користувачі після
+    // релізу не мають побачити в нормі жодної зміни.
+    expect(computeTdee({ ...base })).toBe(1780 * ACTIVITY_MULTIPLIERS.moderate);
+    expect(computeTdee({ ...base, workoutKcal: 500 })).toBe(
+      1780 * ACTIVITY_MULTIPLIERS.moderate,
+    );
+  });
+
+  it("увімкнений - це BMR × 1.2 плюс спалене за день", () => {
+    expect(
+      computeTdee({ ...base, countWorkoutsInGoal: true, workoutKcal: 270 }),
+    ).toBe(1780 * 1.2 + 270);
+  });
+
+  it("увімкнений без тренувань дає чистий sedentary, а не колишній множник", () => {
+    expect(computeTdee({ ...base, countWorkoutsInGoal: true })).toBe(
+      1780 * 1.2,
+    );
   });
 });

@@ -92,6 +92,14 @@ export interface TdeeInput {
   ageYears: number;
   sex: Sex;
   activityLevel: ActivityLevel;
+  /**
+   * Динамічний режим: норма рахується від `sedentary` плюс фактично
+   * спалене за день, замість статичного множника рівня активності.
+   * Дефолт `false` - див. `countWorkoutsInGoal` у `biometrics.ts`.
+   */
+  countWorkoutsInGoal?: boolean | undefined;
+  /** Сума `kcalBurned` за день. Має значення лише у динамічному режимі. */
+  workoutKcal?: number | undefined;
 }
 
 /**
@@ -112,7 +120,18 @@ export function mifflinStJeorBmr(
  * the goal-adjusted target can be the single rounding step.
  */
 export function computeTdee(input: TdeeInput): number {
-  return mifflinStJeorBmr(input) * ACTIVITY_MULTIPLIERS[input.activityLevel];
+  const bmr = mifflinStJeorBmr(input);
+  if (!input.countWorkoutsInGoal) {
+    return bmr * ACTIVITY_MULTIPLIERS[input.activityLevel];
+  }
+  // Множник опускається до `sedentary` НЕ як «менше активності», а тому
+  // що тренування переїхали з нього у явне доданком. Лишити тут обраний
+  // рівень означало б порахувати їх двічі.
+  const burned = Number(input.workoutKcal);
+  return (
+    bmr * ACTIVITY_MULTIPLIERS.sedentary +
+    (Number.isFinite(burned) && burned > 0 ? burned : 0)
+  );
 }
 
 export interface NutritionTargets {
@@ -172,6 +191,7 @@ export function computeNutritionTargetsFromBiometrics(
   goal: NutritionGoalId,
   now: Date = new Date(),
   fizrukWeightKg?: number | null,
+  workoutKcal?: number | null,
 ): NutritionTargets | null {
   const ageYears = computeAgeYears(biometrics.birthDate, now);
   const weightKg =
@@ -196,6 +216,8 @@ export function computeNutritionTargetsFromBiometrics(
       ageYears,
       sex: biometrics.sex,
       activityLevel: biometrics.activityLevel,
+      countWorkoutsInGoal: biometrics.countWorkoutsInGoal,
+      workoutKcal: workoutKcal ?? 0,
     },
     goal,
   );

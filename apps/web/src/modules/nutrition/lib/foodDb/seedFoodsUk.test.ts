@@ -2,8 +2,12 @@ import { describe, expect, it } from "vitest";
 import { SEED_FOODS_UK } from "./seedFoodsUk";
 
 describe("SEED_FOODS_UK", () => {
-  it("should contain exactly 390 seed foods", () => {
-    expect(SEED_FOODS_UK).toHaveLength(390);
+  it("should contain exactly 426 seed foods", () => {
+    // Пін 1:1 до GENERIC_FOODS: корпус виріс 390 → 424 разом із категоріями
+    // комори, а потім 424 → 426 на двох позиціях сировини для домашнього
+    // шашлику («Свиняча шия», «Мʼясо мариноване»); оновлюй число лише
+    // разом зі свідомою зміною корпусу.
+    expect(SEED_FOODS_UK).toHaveLength(426);
   });
 
   it("should have the correct structure for every item", () => {

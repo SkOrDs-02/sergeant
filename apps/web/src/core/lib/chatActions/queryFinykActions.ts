@@ -151,11 +151,30 @@ function readQueryTransactions(): FinykSearchTx[] {
  */
 function readStatTransactions(): FinykSearchTx[] {
   const sqlite = getCachedFinykSqliteState();
+  // CALC-1 (2026-09-01 product audit): `transactions` carries the manual
+  // records — only THEY tag a transfer on the record itself
+  // (`category: "internal_transfer"`); bank transactions are tagged via
+  // the `txCategories` map. Without it a manual `internal_transfer` was
+  // counted as a real expense here, diverging from Overview/Operations/
+  // quick-stats (`useStorage.ts`, PR #1000), which already pass this.
+  //
+  // Deliberately NOT `manualExpenseToTransaction` (canonical universe
+  // helper): it prefixes the id (`manual_<id>`), but `readQueryTransactions`
+  // above keeps the record's own raw id so `query_transactions` /
+  // `change_category` can report and edit by that same id. Only `id` +
+  // `categoryId` matter for the transfer check (`isTxLevelTransfer`), so a
+  // minimal same-id-scheme entry is enough — no risk of the two universes'
+  // id schemes silently diverging again.
   const excluded = buildFinykExcludedTxIds({
     hiddenTxIds: sqlite.hiddenTransactions,
     txCategories: sqlite.txCategories,
     receivables: sqlite.receivables,
     excludedStatTxIds: sqlite.excludedStatTxIds,
+    transactions: sqlite.manualExpenses.map((entry) => ({
+      id: String(entry.id ?? ""),
+      amount: 0,
+      categoryId: String(entry.category ?? ""),
+    })),
   });
   return readQueryTransactions().filter((tx) => !excluded.has(tx.id));
 }

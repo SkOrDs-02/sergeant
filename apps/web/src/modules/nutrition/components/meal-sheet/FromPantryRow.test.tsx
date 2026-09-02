@@ -114,6 +114,40 @@ describe("FromPantryRow", () => {
     expect(setFoodQuery).toHaveBeenCalledWith("Молоко");
   });
 
+  // CI-7 (аудит 2026-09-01): секція «З комори» згорнута за замовчуванням
+  // (`defaultOpen={false}` у `FromPantryRow`) і `useInertWhileCollapsed`
+  // ставить `inert`/`aria-hidden` на контейнер чипів, поки вона закрита —
+  // чипи в DOM є, але не клікабельні й недоступні для a11y-дерева. Смоук
+  // (`nutrition-pantry-generic-names.spec.ts`) клікав чіп одразу, без
+  // розгортання — це не регресія компонента, а застарілий тест, писаний
+  // до переробки кроку «Джерело» на акордеон (12.08). Тест нижче пінить
+  // саме цю поведінку, щоб наступна зміна дефолту чи хука впала тут, а не
+  // мовчки в e2e.
+  it("keeps the pantry chips collapsed and inert until the section is expanded", () => {
+    render(
+      <FromPantryRow
+        pantryItems={items}
+        fromPantryItem={null}
+        setFromPantryItem={vi.fn()}
+        setForm={vi.fn()}
+        setFoodQuery={vi.fn()}
+      />,
+    );
+
+    const toggle = screen.getByRole("button", { name: /З комори/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    const chip = screen.getAllByTestId("from-pantry-chip")[0]!;
+    const collapsedGrid = chip.closest("[aria-hidden]");
+    expect(collapsedGrid).not.toBeNull();
+    expect(collapsedGrid).toHaveAttribute("inert", "");
+
+    fireEvent.click(toggle);
+
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    expect(chip.closest("[aria-hidden]")).toBeNull();
+  });
+
   it("deselects the active item on a second tap", () => {
     const setFromPantryItem = vi.fn();
     render(

@@ -46,6 +46,36 @@ export interface PantryItem {
    * немає — позиція введена руками або створена до цієї фічі.
    */
   sources?: readonly PantryItemSource[] | null;
+  /**
+   * `true`, коли `unit` тут — здогадка парсера, не факт: людина написала
+   * голе хвостове число БЕЗ жодної одиниці, і воно ≥
+   * {@link PANTRY_AMBIGUOUS_QTY_THRESHOLD} (аудит 2026-09 UX-4: «Нутелла
+   * 350» мовчки ставало «350 шт», хоча малось на увазі 350 г). Нижче порога
+   * («Яйця 10», «Coca-Cola 2») штучний зміст і так очевидний — прапорець не
+   * ставиться, `unit` лишається тихим «шт», як і раніше.
+   *
+   * UI має перепитати («350 шт чи г?»), а не мовчки прийняти цю здогадку;
+   * саме поле — лише сигнал для UI, доменна логіка (злиття, списання) його
+   * не читає.
+   */
+  ambiguousQty?: boolean;
+}
+
+/**
+ * Поріг, з якого голе хвостове число без одиниці вважається неоднозначним.
+ * Дані аудиту 2026-09 (UX-4): «Coca-Cola 2» і «рис 2» — це справді штуки,
+ * «Нутелла 350» — це грами. Межа між «очевидна кількість predметів» і
+ * «схоже на вагу/обʼєм» лежить десь у районі сотні: пачка яєць чи огірків
+ * рідко переходить за неї, а вага типової упаковки (крупа, солодощі,
+ * снеки) — майже завжди. Founder-рішення 2026-09-01 (канон nutrition §6,
+ * Журнал рішень): не вгадувати, а перепитувати саме тут.
+ */
+export const PANTRY_AMBIGUOUS_QTY_THRESHOLD = 100;
+
+function isAmbiguousBareQty(qty: number | null): boolean {
+  return (
+    qty != null && Number.isFinite(qty) && qty >= PANTRY_AMBIGUOUS_QTY_THRESHOLD
+  );
 }
 
 /**
@@ -297,8 +327,10 @@ function buildLeadingResult(m: RegExpMatchArray, raw: string): PantryItem {
   const unitRaw = displayFoodName(m[2] || "");
   const rest = displayFoodName(m[3] || "");
 
-  // "2 яйця" — одне слово після числа = назва, не одиниця. Але «2 %» —
-  // не назва: відсоток продуктом не буває, і без цієї перевірки в коморі
+  // "2 яйця" — одне слово після числа = назва, не одиниця. Число тут завжди
+  // рахує самі предмети ("2 яйця" = дві штуки), тож неоднозначності немає
+  // навіть за великих значень — прапорець не ставиться. Але «2 %» — не
+  // назва: відсоток продуктом не буває, і без цієї перевірки в коморі
   // зʼявлявся товар на імʼя «%».
   if (!rest && unitRaw) {
     if (unitRaw.includes("%"))
@@ -325,14 +357,24 @@ function buildLeadingResult(m: RegExpMatchArray, raw: string): PantryItem {
  * кількістю не є. А негодяще число («-5», «1e9», «0») забирає з собою й
  * одиницю: позиція «Цукор» без нічого чесніша за «Цукор 0 г», яку потім
  * не знайде ані пошук, ані математика списку покупок.
+ *
+ * Уціліле голе число без одиниці лишається тихим «шт», але позначається
+ * `ambiguousQty`, коли воно ≥ порога: «Нутелла 350» це майже напевно
+ * грами, і UI має перепитати, а не мовчки прийняти здогадку.
  */
 function resolveQtyUnit(
   qty: number | null,
   unitRaw: string,
-): { qty: number | null; unit: string | null } {
+): { qty: number | null; unit: string | null; ambiguousQty?: boolean } {
   if (unitRaw.includes("%")) return { qty: null, unit: null };
   if (qty == null) return { qty: null, unit: null };
-  return { qty, unit: (unitRaw ? normalizeUnit(unitRaw) : null) ?? "шт" };
+  const unit = unitRaw ? normalizeUnit(unitRaw) : null;
+  const isBareQty = unit == null;
+  return {
+    qty,
+    unit: isBareQty ? "шт" : unit,
+    ...(isBareQty && isAmbiguousBareQty(qty) ? { ambiguousQty: true } : {}),
+  };
 }
 
 function buildTrailingResult(tm: RegExpMatchArray): PantryItem | null {

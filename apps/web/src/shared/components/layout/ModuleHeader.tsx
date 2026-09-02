@@ -37,6 +37,13 @@ import { messages } from "@shared/i18n/uk";
 export interface ModuleHeaderProps {
   title?: ReactNode | undefined;
   subtitle?: ReactNode | undefined;
+  /**
+   * Коротша версія `subtitle` для вузьких екранів (< `sm`). На 390 px
+   * підпис Фізрука «Рух · сила · відновлення» не вміщався поруч із двома
+   * кнопками дій і різався до «…віднов…» (VIS-1, аудит 2026-09) — замість
+   * крапок показуємо осмислений короткий рядок.
+   */
+  subtitleShort?: string | undefined;
   eyebrow?: ReactNode | undefined;
   left?: ReactNode | undefined;
   right?: ReactNode | undefined;
@@ -99,6 +106,7 @@ const MODULE_HEADER_TOKENS: Record<
 export function ModuleHeader({
   title,
   subtitle,
+  subtitleShort,
   eyebrow,
   left,
   right,
@@ -175,7 +183,14 @@ export function ModuleHeader({
                     mt ? mt.subtitle : "text-subtle",
                   )}
                 >
-                  {subtitle}
+                  {subtitleShort ? (
+                    <>
+                      <span className="sm:hidden">{subtitleShort}</span>
+                      <span className="hidden sm:inline">{subtitle}</span>
+                    </>
+                  ) : (
+                    subtitle
+                  )}
                 </span>
               ) : null}
             </>

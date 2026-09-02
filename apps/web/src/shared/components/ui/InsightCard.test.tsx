@@ -50,7 +50,7 @@ function callsOf(eventName: string) {
 
 describe("InsightCard", () => {
   it("renders title, subtitle and the default CTA glyph", () => {
-    const { getByText } = render(
+    const { getByText, queryByText, getByLabelText } = render(
       <InsightCard
         id="finyk-coffee-limit-2026-05"
         title="Витрати на каву ↑ 34%"
@@ -60,7 +60,9 @@ describe("InsightCard", () => {
     );
     expect(getByText("Витрати на каву ↑ 34%")).toBeInTheDocument();
     expect(getByText("Встановити ліміт?")).toBeInTheDocument();
-    expect(getByText("→")).toBeInTheDocument();
+    // SLOP-1 (аудит 2026-09): дефолтний слот — іконка, не текстовий гліф.
+    expect(queryByText("→")).toBeNull();
+    expect(getByLabelText("Закрити пропозицію")).toBeInTheDocument();
   });
 
   it("renders a custom ctaLabel", () => {
@@ -391,7 +393,7 @@ describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
         onAskAi={onAskAi}
       />,
     );
-    fireEvent.click(getByLabelText("Спитати AI про це"));
+    fireEvent.click(getByLabelText("Спитати Сержанта про це"));
 
     expect(onAskAi).toHaveBeenCalledTimes(1);
     const askAi = callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI);
@@ -424,7 +426,7 @@ describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
         askAiDisabled
       />,
     );
-    fireEvent.click(getByLabelText("Ліміт AI на сьогодні"));
+    fireEvent.click(getByLabelText("Ліміт запитів до Сержанта на сьогодні"));
 
     expect(onAskAi).not.toHaveBeenCalled();
     expect(callsOf(ANALYTICS_EVENTS.VALUE_SIGNAL_ASK_AI)).toHaveLength(0);
@@ -434,7 +436,7 @@ describe("InsightCard — advice_shown / advice_dismissed telemetry", () => {
     const { queryByLabelText } = render(
       <InsightCard id="x" title="t" subtitle="s" onActivate={() => {}} />,
     );
-    expect(queryByLabelText("Спитати AI про це")).toBeNull();
+    expect(queryByLabelText("Спитати Сержанта про це")).toBeNull();
   });
 
   it("НЕ емітить advice_shown / advice_dismissed без analytics-згоди, але value_signal_* лишається неушкодженим", () => {

@@ -327,37 +327,44 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
     },
   );
 
-  // Plata (monopay) webhook — JSON body, `X-Sign` (ECDSA над сирим тілом).
-  r.post("/api/billing/plata-webhook", async (req: Request, res: Response) => {
-    const raw = rawBody(req).toString("utf8");
-    const header = req.headers["x-sign"];
-    const signature = Array.isArray(header) ? header[0] : header;
-    // Warm pubkey перед verify; на mismatch — рефетч (rotation) і одна повторна спроба.
-    await ensurePlataPubkey();
-    let ok =
-      typeof signature === "string" &&
-      plataProvider.verifyWebhookSignature(raw, signature);
-    if (!ok && typeof signature === "string") {
-      await ensurePlataPubkey(true);
-      ok = plataProvider.verifyWebhookSignature(raw, signature);
-    }
-    if (!ok) {
-      emitSecurityEvent({
-        event: "plata_webhook_bad_sig",
-        severity: "high",
-        details:
-          signature === undefined
-            ? "plata X-Sign missing"
-            : "plata signature mismatch",
-      });
-      billingWebhookTotal.inc({ provider: "plata", status: "bad_sig" });
-      res.status(400).json({ error: "Invalid Plata signature" });
-      return;
-    }
-    billingWebhookTotal.inc({ provider: "plata", status: "verified" });
-    await plataProvider.processWebhook(pool, raw);
-    res.json({ ok: true });
-  });
+  // Plata (monopay) webhooks — JSON body, `X-Sign` (ECDSA над сирим тілом).
+  // Два окремих роути (`chargeUrl`/`statusUrl`) роблять те саме
+  // verify-then-enqueue: жоден не пише у `subscriptions` напряму, обидва
+  // лише тригерять звірку проти `subscription/status` (arbiter стану).
+  const plataWebhookHandler =
+    () =>
+    async (req: Request, res: Response): Promise<void> => {
+      const raw = rawBody(req).toString("utf8");
+      const header = req.headers["x-sign"];
+      const signature = Array.isArray(header) ? header[0] : header;
+      // Warm pubkey перед verify; на mismatch — рефетч (rotation) і одна повторна спроба.
+      await ensurePlataPubkey();
+      let ok =
+        typeof signature === "string" &&
+        plataProvider.verifyWebhookSignature(raw, signature);
+      if (!ok && typeof signature === "string") {
+        await ensurePlataPubkey(true);
+        ok = plataProvider.verifyWebhookSignature(raw, signature);
+      }
+      if (!ok) {
+        emitSecurityEvent({
+          event: "plata_webhook_bad_sig",
+          severity: "high",
+          details:
+            signature === undefined
+              ? "plata X-Sign missing"
+              : "plata signature mismatch",
+        });
+        billingWebhookTotal.inc({ provider: "plata", status: "bad_sig" });
+        res.status(400).json({ error: "Invalid Plata signature" });
+        return;
+      }
+      billingWebhookTotal.inc({ provider: "plata", status: "verified" });
+      await plataProvider.processWebhook(pool, raw);
+      res.json({ ok: true });
+    };
+  r.post("/api/billing/plata-charge", plataWebhookHandler());
+  r.post("/api/billing/plata-status", plataWebhookHandler());
 
   return r;
 }

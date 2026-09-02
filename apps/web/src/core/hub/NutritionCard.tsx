@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
+import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { messages } from "@shared/i18n/uk";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
@@ -23,6 +24,7 @@ import {
   type Period,
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
+import { useNutritionSqliteReadTick } from "../../modules/nutrition/lib/sqliteReadGate";
 import { formatNumberUk } from "@sergeant/shared";
 
 // ── Local sub-components ──────────────────────────────────────────────
@@ -139,50 +141,6 @@ function BarChart({
   );
 }
 
-interface DeltaProps {
-  cur: number;
-  prev: number;
-  higherIsBetter?: boolean;
-}
-
-function Delta({ cur, prev, higherIsBetter = true }: DeltaProps) {
-  if (prev === 0 && cur === 0) return null;
-  if (prev === 0)
-    return <span className="text-style-caption text-muted">—</span>;
-  const diff = cur - prev;
-  const pct = Math.round((diff / prev) * 100);
-  const positive = higherIsBetter ? diff >= 0 : diff <= 0;
-  const sign = diff >= 0 ? "+" : "";
-  const trendingUp = diff >= 0;
-  return (
-    <span
-      className={cn(
-        "text-style-caption inline-flex items-center gap-0.5",
-        positive
-          ? "text-success-strong dark:text-success"
-          : "text-danger-strong dark:text-danger",
-      )}
-    >
-      <svg
-        width="10"
-        height="10"
-        viewBox="0 0 24 24"
-        fill="currentColor"
-        stroke="currentColor"
-        strokeWidth="1.5"
-        strokeLinecap="round"
-        strokeLinejoin="round"
-        aria-hidden
-        className="shrink-0"
-      >
-        {trendingUp ? <path d="M12 5l7 9H5z" /> : <path d="M12 19l-7-9h14z" />}
-      </svg>
-      {sign}
-      {pct}%
-    </span>
-  );
-}
-
 // ── Main card ─────────────────────────────────────────────────────────
 
 interface NutritionCardProps {
@@ -200,9 +158,15 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
   // Re-aggregate when any module emits storageUpdated (same-tab) or when
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
+  // CALC-4 (аудит 2026-09): на холодному deep-link кеш SQLite модуля
+  // наповнюється ПІСЛЯ першого рендера; hub-bump цього не бачить, тік
+  // модуля — бачить. Без нього картка лишалась із нулями до наступного
+  // запису у сховище (та сама діра, що в ExpensesCard).
+  const sqliteTick = useNutritionSqliteReadTick();
 
   const { cur, prev, dates } = useMemo(() => {
-    void bump; // storage-write tick — forces re-read without calling load* inside deps
+    void bump; // storage-write tick
+    void sqliteTick; // module SQLite cache tick (CALC-4) — forces re-read without calling load* inside deps
     // Canonical meal log from the SQLite warm cache — `nutrition_log_v1`
     // is tombstoned (drained + deleted on boot), so a raw LS read is empty.
     // `aggregateKcal` expects the loose legacy shape; the domain `kcal` is
@@ -228,7 +192,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
       prev: aggregateKcal(nutritionLog, prevDates),
       dates: curDates,
     };
-  }, [period, offset, bump]);
+  }, [period, offset, bump, sqliteTick]);
 
   const formattedCurrent = formatNumberUk(cur.avg);
   const formattedPrev = formatNumberUk(prev.avg);
@@ -262,7 +226,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
             <span className="text-style-body font-bold text-text">
               {formattedCurrent} {messages.nutrition.kcalUnit}
             </span>
-            <Delta cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
+            <DeltaChip cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
           </span>
         )}
         <svg
@@ -289,7 +253,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
             <span className="text-style-headline text-text">
               {formattedCurrent} {messages.nutrition.kcalUnit}
             </span>
-            <Delta cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
+            <DeltaChip cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
           </div>
           <p className="text-style-caption text-muted">
             {messages.hub.reportPrevious} {formattedPrev}{" "}

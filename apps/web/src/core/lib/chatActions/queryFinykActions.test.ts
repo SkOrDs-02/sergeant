@@ -395,6 +395,63 @@ describe("канонічний excluded-set і спліти (стадія 2b)", 
 });
 
 // ---------------------------------------------------------------------------
+// CALC-1 (2026-09-01 product audit) — manual `internal_transfer` must not
+// count as an expense in `aggregate_spending` / `compare_periods`. Before
+// the fix, `readStatTransactions()` built the excluded-set WITHOUT the
+// `transactions` field — the only signal that carries a MANUAL transfer's
+// tag (bank transfers are tagged via `txCategories`, manual ones only on
+// the record itself). Same universe as Overview/Operations (`useStorage.ts`,
+// PR #1000) and `useFinykInsights.ts` (CALC-2) must agree.
+// ---------------------------------------------------------------------------
+describe("CALC-1 — manual internal_transfer excluded from chat aggregation", () => {
+  function seedWithManualTransfer(): void {
+    __setFinykSqliteStateCacheForTests({
+      manualExpenses: [
+        {
+          id: "m_groceries",
+          date: "2026-04-10",
+          description: "АТБ",
+          amount: 200,
+          category: "food",
+        },
+        {
+          id: "m_transfer",
+          date: "2026-04-12",
+          description: "Переказ на картку заощаджень",
+          amount: 1000,
+          category: "internal_transfer",
+        },
+      ] as unknown as ManualExpense[],
+    });
+  }
+
+  it("aggregate_spending excludes the manual transfer (only groceries count)", () => {
+    seedWithManualTransfer();
+    const out = call({
+      name: "aggregate_spending",
+      input: { date_from: "2026-04-01", date_to: "2026-04-30" },
+    });
+    // Без фіксу було б 1200 (200 + 1000 переказ, порахований витратою).
+    expect(out).toContain("200 грн усього (1 транзакц.)");
+    expect(out).not.toMatch(/1200/);
+  });
+
+  it("compare_periods excludes the manual transfer from the measured total", () => {
+    seedWithManualTransfer();
+    const out = call({
+      name: "compare_periods",
+      input: {
+        period_a_from: "2026-04-01",
+        period_a_to: "2026-04-30",
+        period_b_from: "2026-03-01",
+        period_b_to: "2026-03-31",
+      },
+    });
+    expect(out).toContain("A (2026-04-01 – 2026-04-30) = 200 грн");
+  });
+});
+
+// ---------------------------------------------------------------------------
 // router
 // ---------------------------------------------------------------------------
 describe("handleQueryFinykAction router", () => {

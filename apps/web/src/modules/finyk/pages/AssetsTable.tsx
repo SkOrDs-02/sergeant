@@ -70,7 +70,7 @@ export function AssetsTable({ state }: { state: State }) {
         <QuickActionButton
           iconName="trending-up"
           label="Актив"
-          tone="success"
+          tone="finyk"
           onClick={openAssetForm}
         />
         <QuickActionButton

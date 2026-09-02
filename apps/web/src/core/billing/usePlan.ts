@@ -1,6 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { billingApi } from "@shared/api";
 import { billingKeys } from "@shared/lib/api/queryKeys";
+import { useAuthOptional } from "../auth/AuthContext";
 import type { BillingStatusResponse } from "@sergeant/shared";
 
 /**
@@ -40,9 +41,16 @@ function selectPlan(data: BillingStatusResponse): Plan {
 }
 
 export function usePlan(): UsePlanResult {
+  // FUN-1 (аудит 2026-09): анонімний бут стріляв у `/api/billing/status`
+  // і збирав 401 у консоль на кожному маршруті. Без сесії план і так
+  // «free» — запит не потрібен. Поза `AuthProvider` (голі юніт-тести)
+  // поведінка попередня.
+  const auth = useAuthOptional();
+  const signedOut = auth?.status === "unauthenticated";
   const query = useQuery({
     queryKey: billingKeys.status,
     queryFn: ({ signal }) => billingApi.status({ signal }),
+    enabled: !signedOut,
     // Plan rarely changes — 60 s staleTime is enough to coalesce focus
     // refetches across tabs; webhook-driven invalidation picks up fresh
     // post-checkout state without polling the server.

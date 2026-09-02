@@ -50,14 +50,15 @@ export type FABVariant =
   | "fizruk"
   | "routine"
   | "nutrition"
-  // Sergeant v2 redesign (2026-05, PR-4) — module-aware FAB gradients.
-  // Each v2 variant uses a bright top-left → darker bottom-right gradient
-  // tuned per module (handoff `02-component-map.md § FAB`):
-  //   v2-finyk     emerald-400 → teal-700  (cross-family green-teal)
-  //   v2-fizruk    cyan-400    → cyan-700
-  //   v2-routine   rose-400   → rose-700
-  //   v2-nutrition lime-400    → lime-600
-  // Paired with `shadow-fab` (teal-tinted glow from theme.css).
+  // Sergeant v2 redesign (2026-05, PR-4) — module-aware FAB variants.
+  // До 2026-09-01 кожен v2-варіант ніс градієнт tier-400 → tier-700 плюс
+  // кольорове свічення `shadow-fab`. Анти-слоп аудит 2026-09-01 (F11 / Q5):
+  // це був єдиний градієнт-на-контролі в продукті, і саме на найпомітнішій
+  // кнопці — рівно те, що `DESIGN.md § Слоп 2023` забороняє. Рішення
+  // власника: плоский `-strong` companion модуля (він і так WCAG-AA під
+  // `text-white`) і звичайна elevation-тінь `shadow-e3`, без свічення.
+  // Імена варіантів лишаються заради call-site-ів; різниця з `finyk` тощо —
+  // лише тінь (`shadow-e3` проти `shadow-*/30`).
   | "v2-finyk"
   | "v2-fizruk"
   | "v2-routine"
@@ -80,16 +81,13 @@ const variantStyles: Record<FABVariant, string> = {
     "bg-routine-strong text-white shadow-routine/30 hover:brightness-110",
   nutrition:
     "bg-nutrition-strong text-white shadow-nutrition/30 hover:brightness-110",
-  // v2 redesign — gradient backgrounds with `shadow-fab` glow (v2 token).
-  // Hover bumps brightness so motion feels alive without changing hue.
-  "v2-finyk":
-    "bg-gradient-to-br from-brand-400 to-teal-700 text-white shadow-fab hover:brightness-110",
-  "v2-fizruk":
-    "bg-gradient-to-br from-cyan-400 to-cyan-700 text-white shadow-fab hover:brightness-110",
-  "v2-routine":
-    "bg-gradient-to-br from-rose-400 to-rose-700 text-white shadow-fab hover:brightness-110",
+  // v2 — плоский -strong + elevation e3 (без градієнта і свічення, див.
+  // коментар у `FABVariant`). Hover підіймає яскравість, hue не змінює.
+  "v2-finyk": "bg-finyk-strong text-white shadow-e3 hover:brightness-110",
+  "v2-fizruk": "bg-fizruk-strong text-white shadow-e3 hover:brightness-110",
+  "v2-routine": "bg-routine-strong text-white shadow-e3 hover:brightness-110",
   "v2-nutrition":
-    "bg-gradient-to-br from-lime-400 to-lime-600 text-white shadow-fab hover:brightness-110",
+    "bg-nutrition-strong text-white shadow-e3 hover:brightness-110",
 };
 
 const sizeStyles: Record<FABSize, { button: string; icon: number }> = {

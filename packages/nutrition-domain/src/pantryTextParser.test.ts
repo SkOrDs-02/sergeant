@@ -6,6 +6,7 @@ import {
   normalizeFoodName,
   normalizeUnit,
   parseLoosePantryText,
+  PANTRY_AMBIGUOUS_QTY_THRESHOLD,
 } from "./pantryTextParser.js";
 
 describe("normalizeFoodName", () => {
@@ -176,6 +177,73 @@ describe("parseLoosePantryText", () => {
       // Жирність числом не є: «сметана 20%» це сметана, а не 20 чогось.
       expect(parseLoosePantryText("сметана 20 %")).toEqual([
         { name: "сметана", qty: null, unit: null, notes: null },
+      ]);
+    });
+  });
+  // UX-4 (аудит 2026-09-01): голе хвостове число без одиниці ≥ порога — це
+  // здогадка, не факт. Founder-рішення: перепитувати, а не мовчки ставити
+  // «шт». Нижче порога поведінка НЕ змінюється (регресія на «Coca-Cola 2» /
+  // «Яйця 10» нижче в тому самому describe).
+  describe("ambiguousQty (UX-4)", () => {
+    it("flags a bare trailing number at/above the threshold as ambiguous", () => {
+      expect(parseLoosePantryText("Нутелла 350")).toEqual([
+        {
+          name: "Нутелла",
+          qty: 350,
+          unit: "шт",
+          notes: null,
+          ambiguousQty: true,
+        },
+      ]);
+      expect(
+        parseLoosePantryText(`Цукор ${PANTRY_AMBIGUOUS_QTY_THRESHOLD}`),
+      ).toEqual([
+        {
+          name: "Цукор",
+          qty: PANTRY_AMBIGUOUS_QTY_THRESHOLD,
+          unit: "шт",
+          notes: null,
+          ambiguousQty: true,
+        },
+      ]);
+    });
+
+    it("does not flag one below the threshold", () => {
+      expect(
+        parseLoosePantryText(`Цукор ${PANTRY_AMBIGUOUS_QTY_THRESHOLD - 1}`),
+      ).toEqual([
+        {
+          name: "Цукор",
+          qty: PANTRY_AMBIGUOUS_QTY_THRESHOLD - 1,
+          unit: "шт",
+          notes: null,
+        },
+      ]);
+    });
+
+    // Регресія: обидва приклади з живого репро (edge/Q4) лишаються тихими.
+    it("regression: small counts and explicit units never get flagged", () => {
+      expect(parseLoosePantryText("Coca-Cola 2")).toEqual([
+        { name: "Coca-Cola", qty: 2, unit: "шт", notes: null },
+      ]);
+      expect(parseLoosePantryText("Яйця 10")).toEqual([
+        { name: "Яйця", qty: 10, unit: "шт", notes: null },
+      ]);
+      expect(parseLoosePantryText("рис 2 кг")).toEqual([
+        { name: "рис", qty: 2, unit: "кг", notes: null },
+      ]);
+    });
+
+    it("an explicit unit is never ambiguous even above the threshold", () => {
+      expect(parseLoosePantryText("Борошно 500 г")).toEqual([
+        { name: "Борошно", qty: 500, unit: "г", notes: null },
+      ]);
+    });
+
+    // "N <назва>" завжди рахує предмети, а не вагу — навіть при великому N.
+    it("leading count-of-items form ('2 яйця') is never ambiguous", () => {
+      expect(parseLoosePantryText("150 огірків")).toEqual([
+        { name: "огірків", qty: 150, unit: "шт", notes: null },
       ]);
     });
   });

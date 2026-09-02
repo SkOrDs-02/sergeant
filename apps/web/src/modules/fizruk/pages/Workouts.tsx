@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
+import { useState } from "react";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
 import { DataState } from "@shared/components/ui/DataState";
@@ -16,8 +17,12 @@ import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 import { LogPastWorkoutSheet } from "../components/workouts/LogPastWorkoutSheet";
 import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
 import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
+import { StrongImportReview } from "../components/StrongImportReview";
 import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
 import { useTrainingProgram } from "../hooks/useTrainingProgram";
+import { useDailyLog } from "../hooks/useDailyLog";
+import { useCustomActivities } from "../hooks/useCustomActivities";
+import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { messages } from "@shared/i18n/uk";
 
@@ -57,6 +62,11 @@ export function Workouts({
       : undefined,
   });
   const cloudPullPending = useCloudPullPending();
+  // Вага потрібна формі «Записати заняття»: без неї витрати рахувати нічим,
+  // і саме тоді форма просить її одним полем.
+  const bodyWeightKg = useLatestBodyWeightKg();
+  const { addEntry: addDailyLogEntry } = useDailyLog();
+  const { activities, addActivity } = useCustomActivities();
   // 04-A — permanent "Програми" row in the home "Довідники" block reads
   // the active program name directly (cheap: `BUILTIN_PROGRAMS.find` over
   // a static in-memory list + one localStorage read on mount, no network).
@@ -65,6 +75,7 @@ export function Workouts({
   // `activateProgram`/`deactivateProgram`, so there is nothing to keep in
   // sync beyond what a fresh mount already re-reads from `localStorage`.
   const { activeProgram } = useTrainingProgram();
+  const [strongImportOpen, setStrongImportOpen] = useState(false);
 
   const workoutsLoadingSkeleton = (
     <div
@@ -118,6 +129,7 @@ export function Workouts({
             // `/fizruk/workouts` path (the dual start-path bug).
             onOpenJournal={() => onNavigate?.("history")}
             onOpenPrograms={() => onNavigate?.("programs")}
+            onOpenStrongImport={() => setStrongImportOpen(true)}
             onRequestStart={o.handleQuickStart}
             onLogPast={() => o.setLogPastOpen(true)}
             onOpenSchedule={onOpenRoutine}
@@ -129,6 +141,13 @@ export function Workouts({
             open={o.logPastOpen}
             onClose={() => o.setLogPastOpen(false)}
             onSubmit={o.submitPastWorkout}
+            weightKg={bodyWeightKg}
+            // Той самий писач, що й у решті зважувань: `addEntry` сам
+            // funnel-ить у `recordBodyWeight`, тож профільний знімок для
+            // КБЖВ оновлюється разом із fizruk-журналом (ADR-0080).
+            onRecordWeight={(weightKg) => addDailyLogEntry({ weightKg })}
+            activities={activities}
+            onCreateActivity={addActivity}
           />
         ) : null}
 
@@ -262,6 +281,11 @@ export function Workouts({
           setFinishFlash={o.setFinishFlash}
           updateWorkout={o.updateWorkout}
           onDone={activeOnly ? () => onNavigate?.("workouts") : undefined}
+        />
+        <StrongImportReview
+          open={strongImportOpen}
+          onClose={() => setStrongImportOpen(false)}
+          exercises={o.exercises}
         />
       </div>
 

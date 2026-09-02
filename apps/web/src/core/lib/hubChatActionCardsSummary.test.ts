@@ -157,16 +157,29 @@ describe("summaryFor", () => {
   });
 
   it("set_budget_limit / update_budget", () => {
+    // AI-6 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+    // `category_id` — канонічний id з `MCC_CATEGORIES`, картка показує
+    // людський label ("Продукти"), не сирий id ("food").
     expect(
       summaryFor("set_budget_limit", { category_id: "food", limit: 5000 }, "r"),
-    ).toBe("food · 5000 ₴");
+    ).toBe("Продукти · 5000 ₴");
     expect(
       summaryFor(
         "update_budget",
         { category_id: "food", target_amount: 3000 },
         "r",
       ),
-    ).toBe("food · 3000 ₴");
+    ).toBe("Продукти · 3000 ₴");
+  });
+
+  it("set_budget_limit — невідомий/custom category_id лишається як є (без резолву)", () => {
+    expect(
+      summaryFor(
+        "set_budget_limit",
+        { category_id: "my_custom_cat", limit: 100 },
+        "r",
+      ),
+    ).toBe("my_custom_cat · 100 ₴");
   });
 
   it("set_monthly_plan", () => {
@@ -310,6 +323,22 @@ describe("summaryFor", () => {
     expect(
       summaryFor("suggest_meal", { meal_type: "обід", focus: "білок" }, "r"),
     ).toBe("обід · білок");
+  });
+
+  it("suggest_meal — AI-6: канонічний enum перекладається, не показує сирий ключ", () => {
+    expect(
+      summaryFor("suggest_meal", { meal_type: "dinner", focus: "лишки" }, "r"),
+    ).toBe("Вечеря · лишки");
+  });
+
+  it("log_meal — AI-6: канонічний enum перекладається", () => {
+    expect(
+      summaryFor(
+        "log_meal",
+        { meal_type: "dinner", name: "Плов", calories: 500 },
+        "r",
+      ),
+    ).toBe("Вечеря · Плов · 500 ккал");
   });
 
   it("copy_meal_from_date / plan_meals_for_day", () => {

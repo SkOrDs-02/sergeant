@@ -221,26 +221,30 @@ const MODULE_PROMINENCE: Record<
     // the light gradient by itself — no separate `dark:bg-none` reset
     // needed (§ 2). Same fix applies to all 4 modules below — see
     // screenshot bug report 2026-05-18.
+    // `soft` до 2026-09-01 ніс `backdrop-blur-sm` поверх непрозорого
+    // `bg-*-soft` — візуальний no-op і зайвий GPU-шар на кожну модульну
+    // картку (анти-слоп аудит 2026-09-01, F8). Blur лишається лише в
+    // `glass` і в overlay-ах, де під ним справді є що розмивати.
     hero: "border shadow-hero-finyk bg-hero-grad-finyk border-white/20 dark:bg-hero-ink-finyk dark:border-brand-400/25 dark:shadow-glow-inset-teal",
-    soft: "border bg-finyk-soft border-finyk-soft-border backdrop-blur-sm",
+    soft: "border bg-finyk-soft border-finyk-soft-border",
     tinted:
       "bg-panel border border-finyk-soft-border shadow-card dark:bg-brand-400/10 dark:border-brand-400/35 dark:shadow-none",
   },
   fizruk: {
     hero: "border shadow-hero-fizruk bg-hero-grad-fizruk border-white/20 dark:bg-hero-ink-fizruk dark:border-cyan-400/25 dark:shadow-glow-inset-cyan",
-    soft: "border bg-fizruk-soft border-fizruk-soft-border backdrop-blur-sm",
+    soft: "border bg-fizruk-soft border-fizruk-soft-border",
     tinted:
       "bg-panel border border-fizruk-soft-border shadow-card dark:bg-cyan-400/10 dark:border-cyan-400/35 dark:shadow-none",
   },
   routine: {
     hero: "border shadow-hero-routine bg-hero-grad-routine border-white/20 dark:bg-hero-ink-routine dark:border-rose-400/25 dark:shadow-glow-inset-rose",
-    soft: "border bg-routine-soft border-routine-soft-border backdrop-blur-sm",
+    soft: "border bg-routine-soft border-routine-soft-border",
     tinted:
       "bg-panel border border-routine-soft-border shadow-card dark:bg-rose-400/10 dark:border-rose-400/35 dark:shadow-none",
   },
   nutrition: {
     hero: "border shadow-hero-nutrition bg-hero-grad-nutrition border-white/20 dark:bg-hero-ink-nutrition dark:border-lime-400/25 dark:shadow-glow-inset-lime",
-    soft: "border bg-nutrition-soft border-nutrition-soft-border backdrop-blur-sm",
+    soft: "border bg-nutrition-soft border-nutrition-soft-border",
     tinted:
       "bg-panel border border-nutrition-soft-border shadow-card dark:bg-lime-400/10 dark:border-lime-400/35 dark:shadow-none",
   },

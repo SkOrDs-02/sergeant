@@ -40,6 +40,25 @@ interface TestRes {
 function makeReq(body: unknown): Request {
   return { anthropicKey: "sk-test", body } as unknown as Request;
 }
+
+/**
+ * AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — same
+ * as `makeReq`, but with a spy-able `aiQuotaRefund` closure attached, the
+ * way `requireAiQuota()`/`assertAiQuota` attach it in production before
+ * `handler` ever runs.
+ */
+function makeReqWithRefundSpy(body: unknown): {
+  req: Request;
+  aiQuotaRefund: Mock;
+} {
+  const aiQuotaRefund = vi.fn().mockResolvedValue(undefined);
+  const req = {
+    anthropicKey: "sk-test",
+    body,
+    aiQuotaRefund,
+  } as unknown as Request;
+  return { req, aiQuotaRefund };
+}
 function makeRes(): TestRes & Response {
   const res: TestRes = {
     statusCode: 200,
@@ -784,6 +803,79 @@ describe("chat handler — B36 tool_results/tool_calls_raw XOR", () => {
     await handler(req, res);
     expect(res.statusCode).toBe(200);
     expect(anthropicMessages).toHaveBeenCalledTimes(1);
+  });
+});
+
+// AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+// `assertAiQuota` consumes a daily-quota ticket in router middleware BEFORE
+// this handler runs. A 4xx/422 that `handler` itself raises before ever
+// calling `anthropicMessages` used to keep that ticket burned — free users
+// lost a turn out of 5/day for a request the model never even saw. Every
+// pre-upstream reject path must call the attached `aiQuotaRefund` closure.
+describe("chat handler — AI-5 quota refund on pre-upstream rejects", () => {
+  it("CHAT_TOOL_ROUND_TRIP_INCOMPLETE (B36 XOR) refunds the ticket", async () => {
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({
+      messages: [{ role: "user", content: "видали m_abc" }],
+      tool_results: [{ tool_use_id: "toolu_1", content: "видалено" }],
+    });
+    const res = makeRes();
+
+    await expect(handler(req, res)).rejects.toMatchObject({
+      status: 400,
+      code: "CHAT_TOOL_ROUND_TRIP_INCOMPLETE",
+    });
+
+    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
+    expect(anthropicMessages).not.toHaveBeenCalled();
+  });
+
+  it("MAX_TOOL_ITERATIONS (client_request boundary) refunds the ticket", async () => {
+    const tooMany = Array.from({ length: 9 }, (_, i) => ({
+      type: "tool_use",
+      id: `toolu_${i}`,
+      name: "delete_transaction",
+      input: {},
+    }));
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({
+      messages: [{ role: "user", content: "Видали все" }],
+      tool_calls_raw: tooMany,
+      tool_results: tooMany.map((b, i) => ({
+        tool_use_id: b.id,
+        content: `result ${i}`,
+      })),
+    });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(422);
+    expect(res.body).toMatchObject({ code: "MAX_TOOL_ITERATIONS" });
+    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
+    expect(anthropicMessages).not.toHaveBeenCalled();
+  });
+
+  it("«Немає повідомлень» (порожній перший тур) refunds the ticket", async () => {
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({ messages: [] });
+    const res = makeRes();
+    await handler(req, res);
+
+    expect(res.statusCode).toBe(400);
+    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
+    expect(anthropicMessages).not.toHaveBeenCalled();
+  });
+
+  it("upstream failure (post-quota-consumption) still refunds exactly once — regression guard", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: false, status: 500 },
+      data: { error: { message: "Anthropic 500" } },
+    });
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({
+      messages: [{ role: "user", content: "привіт" }],
+    });
+    const res = makeRes();
+
+    await expect(handler(req, res)).rejects.toBeTruthy();
+
+    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
   });
 });
 

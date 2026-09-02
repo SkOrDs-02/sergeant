@@ -11,6 +11,9 @@
 
 export const fizrukPageMessages = {
   headerSubtitle: "Рух · сила · відновлення",
+  // < sm: повний підпис не вміщається поруч із двома кнопками шапки на
+  // 390 px (VIS-1, аудит 2026-09).
+  headerSubtitleShort: "Рух і відновлення",
   startWorkoutFab: "Почати тренування",
   resumeWorkoutFab: "Продовжити тренування",
   // Only one unfinished workout may exist, so every start path funnels
@@ -23,10 +26,32 @@ export const fizrukPageMessages = {
    */
   logPast: {
     cta: "Внести проведене заняття",
-    title: "Записати тренування заднім числом",
+    title: "Записати заняття",
     date: "Дата",
     start: "Початок",
     end: "Завершення",
+    /** Короткий шлях: заняття з каталогу плюс тривалість. */
+    activity: "Заняття",
+    activityNone: "Без заняття, додам вправи вручну",
+    activityNew: "+ Своє заняття",
+    newActivityName: "Назва заняття",
+    newActivityNamePlaceholder: "Наприклад, TRX у моєму залі",
+    newActivityCategory: "Категорія",
+    newActivityEffort: "Наскільки важке",
+    newActivityEffortHint:
+      "Від цього залежить оцінка витрат. Спокійне - як швидка ходьба, помірне - як звичайне силове, інтенсивне - як біг.",
+    newActivitySave: "Зберегти заняття",
+    activityNoneHint:
+      "Відкриється детальний журнал, там додаси вправи, підходи й вагу.",
+    duration: "Тривалість",
+    durationUnit: "хв",
+    zone: "Що навантажив",
+    intensity: "Інтенсивність",
+    weight: "Твоя вага, кг",
+    weightHint:
+      "Вага потрібна, щоб порахувати витрати. Запис збережеться і без неї.",
+    kcalPreview: "Приблизно",
+    kcalUnit: "ккал",
     /** Підпис зʼявляється лише коли кінець переповз за північ. */
     crossesMidnight: "Завершення: наступного дня.",
     /**
@@ -42,7 +67,7 @@ export const fizrukPageMessages = {
      */
     implausiblyLong:
       "Завершення раніше за початок. Якщо сесія не тривала через північ, виправ час.",
-    submit: "Внести й додати вправи",
+    submit: "Записати",
   },
   activeWorkoutConflict: {
     title: "Уже є активне тренування",
@@ -514,6 +539,31 @@ export const fizrukPageMessages = {
     title: "Програми",
     subtitle: "Спліти з розкладом",
     activePrefix: "Активна:",
+  },
+  strongImport: {
+    title: "Імпорт Strong",
+    description:
+      "Завантаж CSV з тренуваннями Strong, звір назви вправ і підтвердь запис.",
+    open: "Імпортувати Strong",
+    rowTitle: "Імпорт Strong",
+    rowSubtitle: "CSV тренувань і ваги тіла",
+    workoutFile: "Файл тренувань",
+    weightFile: "Файл ваги тіла (опційно)",
+    weightUnit: "Одиниця ваги у файлі тренувань",
+    workouts: "Тренування",
+    workoutsShort: "трен.",
+    sets: "Підходи",
+    setsShort: "підх.",
+    restTimers: "Таймери",
+    weightRows: "Вага тіла",
+    unresolvedTitle: "Потребують звіряння",
+    autoMatchedTitle: "Зіставлено автоматично",
+    chooseExerciseAriaPrefix: "Обрати вправу для",
+    skipExercise: "Пропустити цю назву",
+    allMatched: "Усі назви вправ зіставлено автоматично.",
+    confirm: "Записати імпорт",
+    parseFailed: "Не вдалося прочитати CSV. Перевір файл і спробуй ще раз.",
+    savedPrefix: "Імпорт записано:",
   },
 } as const;
 

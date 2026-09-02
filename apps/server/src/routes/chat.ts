@@ -40,16 +40,30 @@ export function createChatRouter(): Router {
     // those per minute, which is ~15 minutes of upstream model time and
     // ~1.5MB of egress in 60 seconds. The cost-multiplier (cost: 10) makes
     // each accepted chat-stream consume 10 tokens from a 60-token bucket,
-    // landing the effective cap at 6 streams per minute while leaving
-    // future cheap GETs on the same key free to coexist (none today, but
-    // the `api:chat` key is reserved for the chat surface). See
-    // `RateLimitOptions.cost` for the rationale. This is now genuinely a
-    // per-user bucket (`u:<id>`), not per-IP — see the ordering note above.
+    // landing the effective cap at 6 streams per minute — this stays as the
+    // BURST allowance (unchanged) while leaving future cheap GETs on the
+    // same key free to coexist (none today, but the `api:chat` key is
+    // reserved for the chat surface). See `RateLimitOptions.cost` for the
+    // rationale. This is now genuinely a per-user bucket (`u:<id>`), not
+    // per-IP — see the ordering note above.
+    //
+    // AI-3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+    // the burst bucket ALONE forced a choice between "generous enough for a
+    // quick back-and-forth" and "tight enough over several minutes": at
+    // 6/min flat, a normal conversation (question, follow-up, action, undo)
+    // hit the 7th message inside ~80s of ordinary use. `sustained` adds a
+    // SECOND, same-subject, longer-window cap (raw request count, cost=1 —
+    // not the burst bucket's AI-stream-weighted units) so the burst stays
+    // roomy while the multi-minute horizon stays bounded: ≈20 requests per
+    // 5 minutes is STRICTER than the old flat 6/min-forever rate (30/5min
+    // in the steady state), so the abuse ceiling over that horizon did not
+    // weaken — see `RateLimitOptions.sustained` for the composition model.
     rateLimitExpress({
       key: "api:chat",
       limit: 60,
       windowMs: 60_000,
       cost: () => 10,
+      sustained: { limit: 20, windowMs: 5 * 60_000 },
     }),
     // Ключ ТОГО транспорту, яким піде запит: під шлюзом Anthropic-ключ не
     // потрібен і не використовується (`pickTransport` бере

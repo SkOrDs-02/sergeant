@@ -56,16 +56,16 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
   const macroSource = String(meal?.macroSource || "manual");
   const sourceLabel =
     macroSource === "photoAI"
-      ? "AI"
+      ? "Сержант"
       : macroSource === "recipeAI"
-        ? "AI-рецепт"
+        ? "рецепт Сержанта"
         : macroSource === "productDb"
           ? "DB"
           : "";
   // 6.4: AI-sourced entries (photoAI / recipeAI) get the nutrition-tinted
-  // sparkles badge — same recipe as Finyk tx-rows (#3048 / 6.1). `productDb`
+  // sergeant-glyph badge — same recipe as Finyk tx-rows (#3048 / 6.1). `productDb`
   // is a deterministic lookup, not AI inference, so it keeps the neutral
-  // soft tone without the sparkles icon.
+  // soft tone without the sergeant glyph.
   const isAiSourced = macroSource === "photoAI" || macroSource === "recipeAI";
   return (
     <div className="flex items-center gap-3 bg-panelHi rounded-2xl px-3 py-2.5 group">
@@ -97,7 +97,7 @@ export function MealRow({ meal, onRemove, onEdit }: MealRowProps) {
               className="shrink-0 inline-flex items-center gap-1 rounded-full"
               title="Походження КБЖВ"
             >
-              {isAiSourced && <Icon name="sparkles" size={10} aria-hidden />}
+              {isAiSourced && <Icon name="sergeant" size={10} aria-hidden />}
               <span>{sourceLabel}</span>
             </Badge>
           )}

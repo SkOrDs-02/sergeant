@@ -201,6 +201,20 @@ function assertPantryModeAvailable(
   if (error) throw new Error(error);
 }
 
+/**
+ * UX-1 (аудит 2026-09-01): `dayPlan` повертав голе «Не вдалося отримати
+ * план харчування» без причини й дії — той самий клас, що
+ * `pantryModeAvailabilityError` вище вже лагодить для суміжної гілки
+ * («тільки з наявного»). Причина відома в момент кидання (режим комори),
+ * тож повідомлення несе її прямо, а не узагальнює до одного тексту на всі
+ * випадки — за структурою style guide `[Що сталося.] [Що зроби.]`.
+ */
+function emptyDayPlanErrorMessage(mode: "prefer" | "only" | "ignore"): string {
+  return mode === "only"
+    ? "AI не зміг скласти план тільки з наявних продуктів. Додай ще позицій у комору або зміни режим комори."
+    : "AI повернув порожній план харчування. Спробуй згенерувати ще раз.";
+}
+
 /** Coerce a possibly-numeric pref value to a number with a fallback. */
 function toNumber(value: unknown, fallback: number): number {
   const n = Number(value);
@@ -378,7 +392,7 @@ export function useNutritionRemoteActions({
         .then((data) => {
           const plan = data?.plan;
           if (!plan || !Array.isArray(plan.meals) || plan.meals.length === 0) {
-            throw new Error("Не вдалося отримати план харчування");
+            throw new Error(emptyDayPlanErrorMessage(mode));
           }
           return { plan, regenerateMealType };
         });
