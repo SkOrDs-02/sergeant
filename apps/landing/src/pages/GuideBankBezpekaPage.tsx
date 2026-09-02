@@ -2,6 +2,8 @@ import type { ReactNode } from "react";
 import SiteLayout from "../components/SiteLayout";
 import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import UpdatedOn from "../components/UpdatedOn";
+import { EXPORT_CLAIM } from "../content/exportClaim";
 
 const link =
   "font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink";
@@ -38,7 +40,7 @@ const QA: { q: string; why: string; sergeant: ReactNode }[] = [
   {
     q: "Чи можна забрати свої дані",
     why: "Експорт у стандартні формати – страховка на всі випадки: переїзд, підозра, закриття сервісу. Питай саме про формат, бо «доступ до даних» буває й через скриншот.",
-    sergeant: "Експорт у стандартні формати, один клік.",
+    sergeant: EXPORT_CLAIM,
   },
   {
     q: "Що сервіс бачить, а що ні",
@@ -84,7 +86,7 @@ export default function GuideBankBezpekaPage() {
       headline:
         "Чи безпечно давати застосунку доступ до банку: що перевірити перед підключенням",
       inLanguage: "uk",
-      dateModified: "2026-08-29",
+      dateModified: ROUTE_META["/guides/bank-bezpeka"].lastmod,
       author: { "@type": "Person", name: "Автор Sergeant" },
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
@@ -105,7 +107,9 @@ export default function GuideBankBezpekaPage() {
             підключенням
           </h1>
           <p className="mt-4 text-sm text-subtle">
-            Оновлено 29.08.2026 · автор Sergeant
+            Оновлено{" "}
+            <UpdatedOn iso={ROUTE_META["/guides/bank-bezpeka"].lastmod} /> ·
+            автор Sergeant
           </p>
           <GuideHomeModule href="/data" label="Твої дані" />
         </div>
