@@ -101,12 +101,28 @@ describe("parseStrongWeightCsv", () => {
       "2024-03-04 07:00:00,Body Fat Percentage,15,%,Manual",
     ].join("\n");
 
-    const draft = parseStrongWeightCsv(csv);
+    const draft = parseStrongWeightCsv(csv, "user-a");
 
     expect(draft.measurements).toHaveLength(1);
     expect(draft.measurements[0]).toMatchObject({
       weightKg: expect.closeTo(200 * 0.45359237, 8),
     });
+  });
+
+  // Та сама SEV1-регресія, що й для тренувань: `fizruk_measurements.id` теж
+  // глобальний PK, тож заміри ваги зі Strong колізували між акаунтами.
+  it("scopes measurement ids to the id namespace", () => {
+    const csv = [
+      "Date,Measurement Type,Value,Unit,Source",
+      "2024-03-04 07:00:00,Weight,80,kg,Manual",
+    ].join("\n");
+
+    const a = parseStrongWeightCsv(csv, "user-a");
+    const b = parseStrongWeightCsv(csv, "user-b");
+    const again = parseStrongWeightCsv(csv, "user-a");
+
+    expect(a.measurements[0]!.id).not.toBe(b.measurements[0]!.id);
+    expect(a.measurements[0]!.id).toBe(again.measurements[0]!.id);
   });
 });
 
@@ -167,8 +183,15 @@ describe("buildStrongImportState", () => {
       draft,
       matches,
       {},
+      "user-a",
     );
-    const second = buildStrongImportState(first.next, draft, matches, {});
+    const second = buildStrongImportState(
+      first.next,
+      draft,
+      matches,
+      {},
+      "user-a",
+    );
 
     expect(first.next.workouts).toHaveLength(2);
     expect(second.next.workouts).toHaveLength(first.next.workouts.length);
@@ -177,6 +200,97 @@ describe("buildStrongImportState", () => {
     // Порожній `endedAt` означає "тренування ще триває", і імпорт історії
     // перетворювався б на пачку активних сесій із живим таймером.
     expect(first.next.workouts.every((workout) => workout.endedAt)).toBe(true);
+  });
+
+  // Регресія на SEV1 з browser-QA 2026-09-02: id рядків Strong-імпорту
+  // хешувались лише з дати, а `id` у `fizruk_workouts` / `fizruk_workout_items`
+  // / `fizruk_measurements` — ГЛОБАЛЬНИЙ первинний ключ. Двоє людей з
+  // тренуванням за один день діставали однакові id, сервер відбивав другий
+  // запис як `fk_violation` під `200 OK`, і людина втрачала історію мовчки.
+  it("scopes generated ids to the id namespace so two accounts never collide", () => {
+    const draft = parseStrongWorkoutCsv(fixture, "kg");
+    const matches = matchStrongExercises(draft);
+
+    const userA = buildStrongImportState(
+      EMPTY_FIZRUK_DUAL_WRITE_STATE,
+      draft,
+      matches,
+      {},
+      "user-a",
+    );
+    const userB = buildStrongImportState(
+      EMPTY_FIZRUK_DUAL_WRITE_STATE,
+      draft,
+      matches,
+      {},
+      "user-b",
+    );
+
+    const workoutIdsA = userA.next.workouts.map((workout) => workout.id);
+    const workoutIdsB = userB.next.workouts.map((workout) => workout.id);
+    expect(workoutIdsA).toHaveLength(2);
+    expect(workoutIdsA).toEqual(expect.arrayContaining([expect.any(String)]));
+    for (const id of workoutIdsB) expect(workoutIdsA).not.toContain(id);
+
+    const itemIdsA = userA.next.workouts.flatMap((workout) =>
+      workout.items.map((item) => item.id),
+    );
+    const itemIdsB = userB.next.workouts.flatMap((workout) =>
+      workout.items.map((item) => item.id),
+    );
+    expect(itemIdsA.length).toBeGreaterThan(0);
+    for (const id of itemIdsB) expect(itemIdsA).not.toContain(id);
+  });
+
+  it("keeps ids stable for the same namespace so re-import still de-duplicates", () => {
+    const draft = parseStrongWorkoutCsv(fixture, "kg");
+    const matches = matchStrongExercises(draft);
+
+    const first = buildStrongImportState(
+      EMPTY_FIZRUK_DUAL_WRITE_STATE,
+      draft,
+      matches,
+      {},
+      "user-a",
+    );
+    const again = buildStrongImportState(
+      EMPTY_FIZRUK_DUAL_WRITE_STATE,
+      draft,
+      matches,
+      {},
+      "user-a",
+    );
+
+    expect(again.next.workouts.map((workout) => workout.id)).toEqual(
+      first.next.workouts.map((workout) => workout.id),
+    );
+  });
+
+  // Регресія на SEV2 з того ж прогону: тост рапортував `draft.workouts.length`,
+  // тобто рахував і ті тренування, які цикл пропускав через `continue`, бо в
+  // них не зіставилась ЖОДНА вправа. Людина бачила «успішно» про рядки, яких
+  // у стані немає.
+  it("counts only workouts that actually landed in state", () => {
+    const csv = [
+      "Date,Workout Name,Duration,Exercise Name,Set Order,Weight,Reps,Distance,Seconds,RPE",
+      '2024-03-04 07:00:00,Push,60m,"Bench Press (Barbell)",1,60,5,,,',
+      '2024-03-05 07:00:00,Ghost,60m,"Totally Unknown Machine",1,40,5,,,',
+    ].join("\n");
+    const draft = parseStrongWorkoutCsv(csv, "kg");
+    const matches = matchStrongExercises(draft);
+
+    const result = buildStrongImportState(
+      EMPTY_FIZRUK_DUAL_WRITE_STATE,
+      draft,
+      matches,
+      {},
+      "user-a",
+    );
+
+    expect(draft.workouts).toHaveLength(2);
+    expect(result.next.workouts).toHaveLength(1);
+    expect(result.importedWorkoutCount).toBe(1);
+    expect(result.skippedExerciseNames).toContain("Totally Unknown Machine");
   });
 
   it("writes manually selected names from the same catalogue", () => {
@@ -189,6 +303,7 @@ describe("buildStrongImportState", () => {
       draft,
       matches,
       { Aerobics: aerobicsFallback.id },
+      "user-a",
     );
 
     expect(setCount(result.next)).toBe(5);
