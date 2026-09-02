@@ -219,13 +219,16 @@ export function useHubDashboardState(props: {
   // first non-demo entry — must run alongside detectFirstRealEntry on the render
   // path, else the event never emits and the activation funnel stays at 0%.
   detectFirstActionCompletedPerModule();
-  const celebration = useFirstEntryCelebration(hasRealEntry);
-  const [sessionDays] = useState(() => recordSessionDay() || getSessionDays());
   const entryCount = useMemo(
     () => countRealEntries(),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- storage-write tick
     [storageBump],
   );
+  // LOG-8: `entryCount` doubles as the celebration's "is this genuinely the
+  // FIRST entry, or a returning device whose 60-day-old account just synced
+  // down" guard — see the doc-comment on `useFirstEntryCelebration`.
+  const celebration = useFirstEntryCelebration(hasRealEntry, entryCount);
+  const [sessionDays] = useState(() => recordSessionDay() || getSessionDays());
 
   const [reengagement, setReengagement] = useState(() =>
     shouldShowReengagement(localStorageStore),

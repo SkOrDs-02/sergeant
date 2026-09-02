@@ -2,11 +2,19 @@ import { describe, it, expect } from "vitest";
 import { friendlyApiError } from "./friendlyApiError";
 
 describe("friendlyApiError (shared)", () => {
-  it("повертає фіксований текст для 429", () => {
+  it("для 429 віддає серверне повідомлення (AI-3: конкретний час очікування)", () => {
+    // Сервер (`rateLimitExpress`) тепер сам називає, скільки чекати —
+    // «Забагато запитів. Спробуй через 12 секунд.» — а не голе «пізніше».
+    expect(
+      friendlyApiError(429, "Забагато запитів. Спробуй через 12 секунд."),
+    ).toBe("Забагато запитів. Спробуй через 12 секунд.");
+  });
+
+  it("429 без повідомлення — фолбек на фіксований текст", () => {
     expect(friendlyApiError(429)).toBe(
       "Забагато запитів. Спробуй через хвилину.",
     );
-    expect(friendlyApiError(429, "rate limit")).toBe(
+    expect(friendlyApiError(429, "")).toBe(
       "Забагато запитів. Спробуй через хвилину.",
     );
   });

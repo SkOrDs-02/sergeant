@@ -21,6 +21,8 @@ const slotsValue = {
   dismissedRecurring: [] as string[],
   excludedStatTxIds: [] as string[],
   manualExpenses: [] as unknown[],
+  hiddenTxIds: [] as string[],
+  receivables: [] as unknown[],
 };
 vi.mock("./useFinykStorageSlots", () => ({
   useFinykStorageSlots: () => slotsValue,
@@ -35,6 +37,8 @@ beforeEach(() => {
   slotsValue.excludedStatTxIds = [];
   slotsValue.manualExpenses = [];
   slotsValue.budgets = [];
+  slotsValue.hiddenTxIds = [];
+  slotsValue.receivables = [];
 });
 afterEach(() => {
   vi.useRealTimers();
@@ -96,6 +100,70 @@ describe("useFinykInsights", () => {
     expect(result.current.some((i) => i.id.includes("coffee"))).toBe(false);
 
     slotsValue.txCategories = {};
+  });
+
+  // CALC-2 (2026-09-01 product audit): before the fix this hook filtered
+  // ONLY `excludedStatTxIds` — a `hiddenTxIds` row still counted toward
+  // budget-overrun/coffee-limit, a narrower universe than Overview/
+  // Operations (`buildFinykExcludedTxIds`).
+  it("CALC-2: does not build insights from a hidden transaction", () => {
+    const tx = (id: string, dateMs: number, amount: number) =>
+      ({
+        id,
+        time: Math.floor(dateMs / 1000),
+        date: new Date(dateMs).toISOString().slice(0, 10),
+        amount,
+        description: "café",
+        mcc: 5812,
+      }) as unknown;
+    cachedState.transactions = [
+      tx("hidden", new Date(2026, 5, 5).getTime(), -20000),
+      tx("previous", new Date(2026, 4, 5).getTime(), -10000),
+    ];
+    slotsValue.txCategories = { hidden: "restaurant", previous: "restaurant" };
+    slotsValue.hiddenTxIds = ["hidden"];
+
+    const { result } = renderHook(() => useFinykInsights());
+    expect(result.current.some((i) => i.id.includes("coffee"))).toBe(false);
+
+    slotsValue.txCategories = {};
+    slotsValue.hiddenTxIds = [];
+  });
+
+  // CALC-2: a manual `internal_transfer` must not count toward the food
+  // budget — before the fix, only `excludedStatTxIds` was filtered, so a
+  // manual transfer categorised "food" (unlikely but possible via a stale
+  // override) could trip budget-overrun the same way CALC-1 let it count
+  // as a chat expense.
+  it("CALC-2: a manual internal_transfer does not trigger budget-overrun", () => {
+    slotsValue.budgets = [
+      {
+        id: "b1",
+        type: "limit",
+        period: "month",
+        categoryId: "food",
+        limit: 3000,
+      },
+    ];
+    slotsValue.manualExpenses = [
+      {
+        id: "transfer-1",
+        amount: 4200,
+        kind: "expense",
+        category: "internal_transfer",
+        date: "2026-06-15",
+        description: "Переказ на депозит",
+      },
+    ];
+
+    const { result } = renderHook(() => useFinykInsights());
+    const overrun = result.current.find((i) =>
+      i.id.startsWith("finyk-budget-overrun"),
+    );
+    expect(overrun).toBeUndefined();
+
+    slotsValue.manualExpenses = [];
+    slotsValue.budgets = [];
   });
 
   // Регресія (браузерна перевірка 2026-08-31): дзеркало Mono несе лише банк,

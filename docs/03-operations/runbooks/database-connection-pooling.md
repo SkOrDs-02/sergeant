@@ -1,6 +1,6 @@
 # Database connection pooling — runbook (PR #046)
 
-> **Last touched:** 2026-09-01 by @Skords-01. **Next review:** 2026-12-20.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-30.
 > **Status:** Active
 
 > **⚠️ Рецепт деплою неактуальний:** production переїхав на Hetzner/Coolify ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)). Runtime-контракт `DATABASE_URL_POOL` і pool-safety правила лишаються чинними, але Railway-кроки provisioning/DNS нижче історичні — їх не можна виконувати. У репо зараз немає підтвердженого Coolify pgBouncer resource; топологію треба окремо обрати й задокументувати до rollout.

@@ -36,6 +36,7 @@ import {
   trackEvent,
   ANALYTICS_EVENTS,
 } from "../../../core/observability/analytics";
+import { ucFirst } from "@shared/lib/ui/ucFirst";
 
 interface SectionProps {
   title: string;
@@ -102,10 +103,12 @@ const MonthNav = memo(function MonthNav({
   // Use Kyiv-local year/month so "current month" matches Europe/Kyiv day boundaries.
   const nowKyiv = getKyivDateParts();
   const isCurrentMonth = year === nowKyiv.year && month === nowKyiv.month;
-  const label = new Date(year, month - 1, 1).toLocaleDateString("uk-UA", {
-    month: "long",
-    year: "numeric",
-  });
+  const label = ucFirst(
+    new Date(year, month - 1, 1).toLocaleDateString("uk-UA", {
+      month: "long",
+      year: "numeric",
+    }),
+  );
 
   const go = (delta: number) => {
     let m = month + delta;
@@ -131,7 +134,7 @@ const MonthNav = memo(function MonthNav({
       >
         <Icon name="chevron-left" size="sm" />
       </button>
-      <span className="text-style-label text-text capitalize">{label}</span>
+      <span className="text-style-label text-text">{label}</span>
       <button
         type="button"
         onClick={() => go(1)}

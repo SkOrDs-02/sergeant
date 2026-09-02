@@ -22,6 +22,15 @@ export interface ChatRequestPayload {
    * власне тижневе відро AI-квоти — див. `resolvePresetBudget` в `aiQuota.ts`.
    */
   preset?: ChatPreset;
+  /**
+   * AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+   * — echo назад значення `ChatResponse.round_trip_ticket` з першого-турового
+   * `tool_calls`-виклику. Дозволяє серверу впізнати цей запит як другий
+   * (tool-result-синтезний) HTTP-виклик того самого ходу і не списувати
+   * другий квиток денної AI-квоти. Пропущене поле просто означає звичайне
+   * списання — не контракт, а optimization.
+   */
+  round_trip_ticket?: string;
 }
 
 export interface ChatResponse {
@@ -29,6 +38,12 @@ export interface ChatResponse {
   tool_calls?: Array<{ id: string; [key: string]: unknown }>;
   tool_calls_raw?: unknown;
   error?: string;
+  /**
+   * Присутнє лише коли `tool_calls` непорожній і сесія відома серверу.
+   * Клієнт echo-ить це значення назад у `ChatRequestPayload.round_trip_ticket`
+   * другого запиту (`chatApi.stream`). Див. докстрінг там же.
+   */
+  round_trip_ticket?: string;
 }
 
 export interface ChatCallOpts {

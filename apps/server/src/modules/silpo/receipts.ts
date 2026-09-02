@@ -496,12 +496,9 @@ export function silpoErrorToAppError(
         code: "SILPO_CONFIG_MISSING",
       });
     case "rate_limited":
-      return new RateLimitError(
-        "Забагато запитів до Сільпо, спробуйте пізніше",
-        {
-          code: "SILPO_RATE_LIMITED",
-        },
-      );
+      return new RateLimitError("Забагато запитів до Сільпо. Спробуй пізніше", {
+        code: "SILPO_RATE_LIMITED",
+      });
     case "schema_drift":
       // Єдиний детектор того, що Сільпо мовчки змінили контракт: версіонування
       // в них немає, зламатись може будь-коли (спека § Дрейф схеми tools).

@@ -100,14 +100,23 @@ vi.mock("./../push/send.js", () => ({
 // `memory: null` замість підставленого обʼєкта. Цей файл тестує route-wiring
 // + handler-shape; rate-limiter має власний `http/rateLimit.test.ts`. Mock-аємо
 // як passthrough.
+// SEC-1 (продуктовий аудит 2026-09, той самий контракт, що B31 у
+// `chat.route.test.ts`): лімітер має бачити `req.user`, інакше бакетить по IP.
+const { rateLimitExpressCalls } = vi.hoisted(() => ({
+  rateLimitExpressCalls: [] as Array<{ hasUser: boolean }>,
+}));
+
 vi.mock("./../http/rateLimit.js", async () => {
   const actual = await vi.importActual<typeof import("./../http/rateLimit.js")>(
     "./../http/rateLimit.js",
   );
   return {
     ...actual,
-    rateLimitExpress: () => (_req: unknown, _res: unknown, next: () => void) =>
-      next(),
+    rateLimitExpress:
+      () => (req: { user?: unknown }, _res: unknown, next: () => void) => {
+        rateLimitExpressCalls.push({ hasUser: !!req.user });
+        next();
+      },
   };
 });
 
@@ -126,6 +135,7 @@ async function loadCreateApp(): Promise<
 }
 
 beforeEach(() => {
+  rateLimitExpressCalls.length = 0;
   queryMock.mockReset();
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
@@ -168,6 +178,29 @@ describe("coach routes — auth guard (unauthenticated → 401)", () => {
       .set("X-Requested-With", "XMLHttpRequest")
       .send({ snapshot: {} });
     expect(res.status).toBe(401);
+  });
+});
+
+describe("coach routes — middleware order (SEC-1)", () => {
+  // Сесія на рівні роутера ПЕРЕД лімітером (як B31 у `chat.ts`): без цього
+  // `rateLimitSubject` не бачить `req.user` і бакетить `api:coach` по IP.
+  it("лімітер бачить req.user, коли сесія є", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    queryMock.mockResolvedValueOnce({ rows: [] });
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    await request(app).get("/api/coach/memory");
+    expect(rateLimitExpressCalls.length).toBeGreaterThan(0);
+    expect(rateLimitExpressCalls.every((c) => c.hasUser)).toBe(true);
+  });
+
+  it("без сесії 401 віддається до лімітера", async () => {
+    getSessionUserMock.mockResolvedValue(null);
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app).get("/api/coach/memory");
+    expect(res.status).toBe(401);
+    expect(rateLimitExpressCalls).toEqual([]);
   });
 });
 

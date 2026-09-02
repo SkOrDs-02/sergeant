@@ -4,27 +4,17 @@
  *
  * The component composes several heavy children (HabitHeatmap,
  * HabitRangeGrid, HabitLeadersBlock) and delegates stats computation to
- * routine streak helpers. We stub these children and the Kyiv-time helper so
- * the suite is fast and deterministic.
+ * routine streak helpers. We stub these children and pin the system clock
+ * (device-local "today" per ADR-0078, `lib/dayAnchor.ts`) so the suite is
+ * fast and deterministic.
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import { defaultRoutineState } from "@sergeant/routine-domain";
 import type { RoutineState } from "../lib/types";
 
-// Fixed "today" = 2026-07-10 UTC noon → Kyiv date 2026-07-10.
+// Fixed "today" = 2026-07-10 (device-local, TZ=UTC per vitest.config.js).
 const FIXED_NOW = new Date("2026-07-10T09:00:00Z");
-
-vi.mock("@shared/lib/time/kyivTime", () => ({
-  getKyivDayKey: () => "2026-07-10",
-  getKyivDateParts: () => ({
-    year: 2026,
-    month: 7,
-    day: 10,
-    hour: 12,
-    minute: 0,
-  }),
-}));
 
 // Stub heavy children to lightweight markers. The range-grid stub echoes its
 // window so the tests can assert which slice the panel asked for.

@@ -70,6 +70,22 @@ describe("ToolCallsRawBlockSchema", () => {
     expect(result.success).toBe(false);
   });
 
+  it("accepts a tool_use block routed through OpenRouter with a `caller` field (AI-1)", () => {
+    // AI-1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`):
+    // OpenRouter's `tool_use` blocks carry a `caller` field Anthropic-direct
+    // doesn't emit. Before the fix `.strict()` rejected the whole block for
+    // this one known-but-unlisted field, so every OpenRouter tool round trip
+    // failed 400 `CHAT_TOOL_ROUND_TRIP_INCOMPLETE` on the second turn.
+    const result = ToolCallsRawBlockSchema.safeParse({
+      type: "tool_use",
+      id: "toolu_01AbCdEfGhIjKlMnOpQrStUv",
+      name: "aggregate_spending",
+      input: { period: "week" },
+      caller: { type: "assistant" },
+    });
+    expect(result.success).toBe(true);
+  });
+
   it("rejects a tool_use block missing a required field", () => {
     const result = ToolCallsRawBlockSchema.safeParse({
       type: "tool_use",

@@ -20,6 +20,9 @@ vi.mock("../../../core/db/kvStoreBoot", () => ({
 
 vi.mock("../../../core/auth/AuthContext", () => ({
   useAuth: vi.fn(() => ({ user: null })),
+  // `usePlan` читає `useAuthOptional` (FUN-1, аудит 2026-09): поза провайдером
+  // повертає null — така сама поведінка, як у застосунку без сесії.
+  useAuthOptional: vi.fn(() => null),
 }));
 
 vi.mock("../hooks/useExerciseCatalog", () => ({

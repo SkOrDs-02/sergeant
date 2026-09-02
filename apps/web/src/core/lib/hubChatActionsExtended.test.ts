@@ -685,15 +685,18 @@ describe("complete_habit_for_date + archive_habit", () => {
     executeAction({ name: "create_habit", input: { name: "Тестова" } });
     const state0 = loadRoutineState();
     const id = state0.habits[0]!.id;
+    // LOG-2 (аудит 2026-09): tool іде через applyToggleHabitCompletion, тож
+    // день ПОЗА розкладом звички (до startDate = сьогодні, 2024-06-15) —
+    // no-op. Беремо день у розкладі.
     executeAction({
       name: "complete_habit_for_date",
-      input: { habit_id: id, date: "2024-06-10" },
+      input: { habit_id: id, date: "2024-06-15" },
     });
     let state = loadRoutineState();
-    expect(state.completions[id]).toEqual(["2024-06-10"]);
+    expect(state.completions[id]).toEqual(["2024-06-15"]);
     executeAction({
       name: "complete_habit_for_date",
-      input: { habit_id: id, date: "2024-06-10", completed: false },
+      input: { habit_id: id, date: "2024-06-15", completed: false },
     });
     state = loadRoutineState();
     expect(state.completions[id]).toEqual([]);

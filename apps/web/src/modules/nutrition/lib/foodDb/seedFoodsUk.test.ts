@@ -3,6 +3,8 @@ import { SEED_FOODS_UK } from "./seedFoodsUk";
 
 describe("SEED_FOODS_UK", () => {
   it("should contain exactly 424 seed foods", () => {
+    // Пін 1:1 до GENERIC_FOODS: корпус виріс 390 → 424 разом із категоріями
+    // комори (13 → 17); оновлюй число лише разом зі свідомою зміною корпусу.
     expect(SEED_FOODS_UK).toHaveLength(424);
   });
 

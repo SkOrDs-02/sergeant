@@ -70,6 +70,10 @@ const ALLOWLIST = new Set(
     "apps/server/src/env.ts",
     "apps/server/src/index.ts",
     "apps/server/src/sentry.ts",
+    // CLI-суддя tool-eval: мусить виставити LOG_LEVEL ДО того, як
+    // динамічний import підтягне env/logger, інакше 81 рядок
+    // `anthropic_usage_ledger_failed` топить звіт (CI-6, аудит 2026-09).
+    "apps/server/src/scripts/toolEvalJudge.ts",
   ].map((p) => p.split("/").join(sep)),
 );
 

@@ -12,10 +12,13 @@
  * `@sergeant/routine-domain`'s `calendarGrid.ts` — that copy is also
  * consumed by `apps/mobile`, and the two used to drift byte-for-byte
  * (unification audit 2026-08-31, finding 2.4). `todayDate` stays local and
- * is NOT re-exported from the package: it is the one function the two
- * platforms deliberately disagree on. Web anchors "today" to Kyiv
- * (`lib/dayAnchor.ts`, interim state pending W1-TIME-DOCTRINE); the
- * package's own `todayDate` is device-local and belongs to mobile only.
+ * is NOT re-exported from the package: historically it was the one function
+ * web and mobile deliberately disagreed on (web read Kyiv via
+ * `lib/dayAnchor.ts`, mobile/package read device-local). Since the
+ * 2026-09-01 cutover (LOG-3, ADR-0078) both compute the same device-local
+ * "today" — the split stays only because `lib/dayAnchor.ts` must remain the
+ * single place pairing the key generator with `ROUTINE_DAY_ANCHOR` (див.
+ * застереження в його докстрінгу).
  */
 
 import { anchoredTodayDate } from "./lib/dayAnchor";

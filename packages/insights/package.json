@@ -9,7 +9,9 @@
     ".": "./src/index.ts",
     "./search": "./src/search/index.ts",
     "./recommendations": "./src/recommendations/index.ts",
-    "./recommendations/finance": "./src/recommendations/finance/index.ts"
+    "./recommendations/finance": "./src/recommendations/finance/index.ts",
+    "./activation": "./src/activation.ts",
+    "./adviceId": "./src/adviceId.ts"
   },
   "scripts": {
     "typecheck": "tsc -p tsconfig.json --noEmit",

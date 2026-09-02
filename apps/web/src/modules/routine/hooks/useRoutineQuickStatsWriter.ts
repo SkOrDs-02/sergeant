@@ -16,8 +16,8 @@ import { anchoredTodayKey } from "../lib/dayAnchor";
  *
  * Mounted once at the routine module root, this recomputes the snapshot
  * whenever habits or completions change and writes it back on the
- * Europe/Kyiv day boundary. A `storageUpdated` bump lets any same-tab Hub
- * consumer re-read immediately.
+ * device-local day boundary (ADR-0078). A `storageUpdated` bump lets any
+ * same-tab Hub consumer re-read immediately.
  */
 export function useRoutineQuickStatsWriter({
   habits,

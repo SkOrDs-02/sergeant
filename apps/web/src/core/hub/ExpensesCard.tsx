@@ -13,6 +13,7 @@ import { Money } from "@shared/components/ui/Money";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { readFinykStatsContext } from "@finyk/utils";
 import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
+import { useFinykSqliteReadTick } from "@finyk/lib/sqliteReadGate";
 import {
   aggregateSpending,
   getPeriodRange,
@@ -160,10 +161,23 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
   const mirrorTick = useFinykMonoMirrorTick();
+  // CALC-4 (2026-09-01 product audit): `readFinykStatsContext()` reads
+  // `getCachedFinykSqliteState()` — a synchronous snapshot of the Finyk
+  // SQLite warm cache, refreshed by `refreshCachesAfterPull` once a sync
+  // pull lands. That refresh bumps ONLY this tick
+  // (`notifyFinykSqliteCacheRefresh` — no `hubBus("storageUpdated")`
+  // emit), so on a cold deep-link straight to `/?tab=reports` (nothing
+  // else warmed the Finyk cache yet) this card computed its `useMemo`
+  // once against an empty cache and never re-ran: `bump`/`mirrorTick`
+  // never change for a Finyk-only pull. Reached via SPA nav from
+  // `/finyk/*` it looked fine only because that route had already
+  // warmed the same module-level cache before this card ever mounted.
+  const sqliteCacheTick = useFinykSqliteReadTick();
 
   const { cur, prev, dates } = useMemo(() => {
     void bump; // storage-write tick
     void mirrorTick; // Mono mirror refresh tick
+    void sqliteCacheTick; // Finyk SQLite cache-refresh tick (pull hydration)
     // W1-CANON-AGG стадія 2d: картка більше не збирає всесвіт власноруч із
     // самого лише mono-mirror — вона бере той самий канонічний контекст, що
     // й тижневий дайджест і коуч, тож готівкові витрати входять у Звіти.
@@ -186,7 +200,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       prev: aggregateSpending(inputs, prevDates),
       dates: curDates,
     };
-  }, [period, offset, bump, mirrorTick]);
+  }, [period, offset, bump, mirrorTick, sqliteCacheTick]);
 
   return (
     <ReportSheet collapsed={collapsed}>

@@ -1,5 +1,26 @@
-import { describe, it, expect } from "vitest";
-import { moduleFor, iconFor, titleFor } from "./hubChatActionCardsHelpers";
+// @vitest-environment jsdom
+//
+// AI-4 / AI-6 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+// `habitNameFor` reads `loadRoutineState()`, which touches `localStorage` /
+// the SQLite warm-cache — hence `jsdom`, mirroring
+// `chatActions/routineActions.test.ts`.
+import { describe, it, expect, beforeEach, afterEach } from "vitest";
+import {
+  loadRoutineState,
+  saveRoutineState,
+} from "../../modules/routine/lib/routineStorage";
+import {
+  clearSqliteCompletionsCache,
+  clearSqliteRoutineStateCache,
+} from "../../modules/routine/lib/sqliteReader";
+import {
+  moduleFor,
+  iconFor,
+  titleFor,
+  habitNameFor,
+  categoryLabelFor,
+  mealTypeLabelFor,
+} from "./hubChatActionCardsHelpers";
 
 describe("moduleFor", () => {
   it("maps finyk tools", () => {
@@ -305,5 +326,107 @@ describe("titleFor", () => {
       expect(completed.length).toBeGreaterThan(0);
       expect(failed).toContain(", не вийшло");
     }
+  });
+});
+
+// AI-4 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — card
+// subtitles must show the habit's name, not the raw `hab_<uuid>` id.
+describe("habitNameFor", () => {
+  beforeEach(() => {
+    localStorage.clear();
+    clearSqliteCompletionsCache();
+    clearSqliteRoutineStateCache();
+  });
+  afterEach(() => {
+    localStorage.clear();
+    clearSqliteCompletionsCache();
+    clearSqliteRoutineStateCache();
+  });
+
+  function seedHabit(id: string, name: string) {
+    const state = loadRoutineState();
+    saveRoutineState({
+      ...state,
+      habits: [
+        ...state.habits,
+        {
+          id,
+          name,
+          emoji: "✓",
+          archived: false,
+          paused: false,
+          recurrence: "daily" as const,
+          startDate: "2026-01-01",
+          weekdays: [0, 1, 2, 3, 4, 5, 6],
+          reminderTimes: [],
+          createdAt: "2026-01-01T00:00:00.000Z",
+        },
+      ],
+      habitOrder: [...state.habitOrder, id],
+    });
+  }
+
+  it("resolves a known habit id to its name", () => {
+    seedHabit("hab_413be8ae-1234", "Пити воду");
+    expect(habitNameFor("hab_413be8ae-1234")).toBe("Пити воду");
+  });
+
+  it("strips an `id:`-prefix before lookup, like `normalizeHabitId`", () => {
+    seedHabit("hab_1", "Читати");
+    expect(habitNameFor("id: hab_1")).toBe("Читати");
+  });
+
+  it("returns undefined for an unknown/deleted habit id", () => {
+    expect(habitNameFor("hab_not_seeded")).toBeUndefined();
+  });
+
+  it("returns undefined for empty/undefined input", () => {
+    expect(habitNameFor(undefined)).toBeUndefined();
+    expect(habitNameFor("")).toBeUndefined();
+  });
+});
+
+// AI-6 — картка ліміту/бюджету має показувати людський label категорії
+// Фініка, не сирий `category_id`.
+describe("categoryLabelFor", () => {
+  it("resolves a canonical MCC category id", () => {
+    expect(categoryLabelFor("restaurant")).toBe("Кафе та ресторани");
+    expect(categoryLabelFor("food")).toBe("Продукти");
+  });
+
+  it("falls back to the manual-taxonomy label for a legacy manual slug", () => {
+    expect(categoryLabelFor("cafe")).toBe("Кафе та ресторани");
+  });
+
+  it("returns undefined for an unrecognized/custom category id", () => {
+    expect(categoryLabelFor("my_custom_cat")).toBeUndefined();
+  });
+
+  it("returns undefined for empty/undefined input", () => {
+    expect(categoryLabelFor(undefined)).toBeUndefined();
+    expect(categoryLabelFor("")).toBeUndefined();
+  });
+});
+
+// AI-6 — картка поради щодо їжі має показувати людський підпис прийому
+// їжі, не сирий enum-ключ ("dinner").
+describe("mealTypeLabelFor", () => {
+  it("translates a recognized canonical enum id", () => {
+    expect(mealTypeLabelFor("dinner")).toBe("Вечеря");
+    expect(mealTypeLabelFor("breakfast")).toBe("Сніданок");
+  });
+
+  it("passes through free text the model already sent in Ukrainian", () => {
+    // Tool schema (`toolDefs/nutrition.ts`) describes `meal_type` as a plain
+    // string with a hint, not an enforced enum — the model sometimes sends
+    // already-readable Ukrainian text. Overwriting it with the generic
+    // `labelForMealType` fallback would replace something specific with
+    // something generic.
+    expect(mealTypeLabelFor("обід")).toBe("обід");
+  });
+
+  it("returns undefined for empty/undefined input", () => {
+    expect(mealTypeLabelFor(undefined)).toBeUndefined();
+    expect(mealTypeLabelFor("")).toBeUndefined();
   });
 });

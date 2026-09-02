@@ -4662,7 +4662,8 @@
                       "minLength": 1,
                       "maxLength": 200
                     },
-                    "input": {}
+                    "input": {},
+                    "caller": {}
                   },
                   "required": [
                     "type",
@@ -4726,6 +4727,10 @@
           },
           "stream": {
             "type": "boolean"
+          },
+          "round_trip_ticket": {
+            "type": "string",
+            "maxLength": 200
           }
         },
         "description": "POST /api/chat — Anthropic-чат із tool-results і опційним streaming."
