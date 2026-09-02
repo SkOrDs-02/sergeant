@@ -35,6 +35,16 @@ export const SYSTEM = `Ти нутріціолог-помічник. Відпо�
 порцію та приблизні КБЖВ (ккал, білки/жири/вуглеводи у грамах).
 "notFoodKind" тоді null.
 
+КРОК 2б — розбий кадр на позиції в "items". Позиція — це страва, яку людина
+назве окремо, а НЕ інгредієнт: "рис з овочами" — ОДНА позиція, не дві;
+"борщ" — одна позиція, буряк і капуста йдуть в "ingredients", а не в "items".
+Дві страви поруч на тарілці (котлета і пюре) — дві позиції. Максимум 5
+позицій; якщо на кадрі більше, обʼєднай найдрібніші. Кожна позиція має власні
+"macros" за тими самими правилами, що й КРОК 2, власну "gramsApprox" і власну
+"confidence". У "macros" верхнього рівня поклади суму позицій, а в "dishName" —
+назву тарілки загалом. Навіть одна страва на кадрі — це одна позиція в
+"items", не порожній масив.
+
 Оцінка КБЖВ ОБОВʼЯЗКОВА для будь-якої впізнаваної страви — навіть груба
 прикидка з широким запасом краще за порожнє поле, це і є сенс фото-оцінки.
 Якщо впевненість низька або порція невідома — постав 1–3 короткі уточнюючі
@@ -69,6 +79,7 @@ export const SYSTEM = `Ти нутріціолог-помічник. Відпо�
   "confidence": number, // 0..1
   "portion": { "label": string, "gramsApprox": number|null }|null,
   "ingredients": [{ "name": string, "notes": string|null }],
+  "items": [{ "name": string, "macros": { "kcal": number|null, "protein_g": number|null, "fat_g": number|null, "carbs_g": number|null }, "gramsApprox": number|null, "confidence": number }],
   "macros": { "kcal": number|null, "protein_g": number|null, "fat_g": number|null, "carbs_g": number|null },
   "questions": string[]
 }
@@ -91,8 +102,9 @@ export function buildAnalyzePhotoPrompt(input: {
     system: SYSTEM,
     user: `Мова: ${input.locale || "uk-UA"}.
 Спершу скажи, чи на фото їжа. Якщо ні — поверни "isFood": false, напиши, що
-там насправді, і постав "notFoodKind". Якщо так — опиши страву і порахуй
-приблизне КБЖВ, а за потреби задай уточнення.`,
+там насправді, і постав "notFoodKind". Якщо так — опиши страву, розбий кадр
+на позиції в "items" (максимум 5, позиція = страва, не інгредієнт) і порахуй
+приблизне КБЖВ для кожної, а за потреби задай уточнення.`,
   };
 }
 
@@ -149,7 +161,7 @@ export default async function handler(
 
   const payload = {
     model: visionModel(),
-    max_tokens: 700,
+    max_tokens: 1000,
     temperature: 0.2,
     system: prompt.system,
     messages: [

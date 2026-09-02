@@ -103,3 +103,30 @@ export function macrosHasAnyValue(mac: unknown): boolean {
     m.carbs_g != null
   );
 }
+
+/**
+ * Sum a list of nullable macros field-by-field.
+ *
+ * Null rule: only non-null values are added; a field where every entry is
+ * `null` stays `null`. Zero is never a stand-in for unknown — a `0` in the
+ * food log means "dish without calories", not "not counted", and collapsing
+ * the two is exactly the bug `unknownMacrosAsNull` exists to prevent on the
+ * server side.
+ *
+ * Canon for the photo-analysis item list: the server recomputes the top-level
+ * total from `items[]` with this function, and the web card recomputes it
+ * locally after a row is removed. One implementation, so the two cannot
+ * disagree about a total the person reads off the screen.
+ */
+export function sumMacrosNullable(list: readonly unknown[]): NullableMacros {
+  const keys = ["kcal", "protein_g", "fat_g", "carbs_g"] as const;
+  const normalized = list.map((m) => normalizeMacrosNullable(m));
+  const out = {} as NullableMacros;
+  for (const key of keys) {
+    const present = normalized
+      .map((m) => m[key])
+      .filter((v): v is number => v != null);
+    out[key] = present.length ? present.reduce((a, b) => a + b, 0) : null;
+  }
+  return out;
+}
