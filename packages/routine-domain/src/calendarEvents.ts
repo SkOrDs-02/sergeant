@@ -13,6 +13,7 @@
 
 import { enumerateDateKeys, parseDateKey } from "./dateKeys.js";
 import { habitScheduledOnDate } from "./schedule.js";
+import { isFlexibleHabit, weekDoneCountExcludingDate } from "./weeklyTarget.js";
 import { sortHabitsByOrder } from "./habitOrder.js";
 import { completionNoteKey } from "./completionNoteKey.js";
 import type { CalendarRange, HubCalendarEvent, RoutineState } from "./types.js";
@@ -134,8 +135,14 @@ export function buildHubCalendarEvents(
   );
   for (const date of days) {
     for (const h of activeHabits) {
-      if (!habitScheduledOnDate(h, date)) continue;
       const completions = state.completions[h.id] || [];
+      // Гнучка звичка зникає зі списку, щойно тиждень добрано. Лічильник
+      // виключає сам цей день — інакше закритий тиждень 3/3 стер би з
+      // календаря всі три відмітки (див. докстрінг у `weeklyTarget.ts`).
+      const weekDoneCount = isFlexibleHabit(h)
+        ? weekDoneCountExcludingDate(completions, date)
+        : undefined;
+      if (!habitScheduledOnDate(h, date, { weekDoneCount })) continue;
       const completed = completions.includes(date);
       const tagLabels = tagLabelsForHabit(state, h);
       const t = h.timeOfDay ? String(h.timeOfDay).trim() : "";

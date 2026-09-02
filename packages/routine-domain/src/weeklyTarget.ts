@@ -102,6 +102,34 @@ export function dateKeyWithinHabitBounds(
   return true;
 }
 
+/**
+ * Скільки разів звичку відмічено в тижні дати `dateKey`, **не рахуючи сам
+ * цей день**.
+ *
+ * AI-CONTEXT: виключення себе — не оптимізація, а те, що робить одну функцію
+ * придатною і для «показати сьогодні», і для «показати минулий день».
+ * Гейт `weekDoneCount < target` із простим лічильником тижня сховав би день,
+ * у який звичку ВИКОНАЛИ, щойно тиждень добрано: закритий тиждень 3/3
+ * стер би з календаря всі три відмітки. Виключивши себе, отримуємо 2 < 3 —
+ * і день лишається видимим як запис того, що сталось. Для невідміченого дня
+ * у вже закритому тижні лічильник дорівнює 3, і день ховається, як і треба.
+ */
+export function weekDoneCountExcludingDate(
+  completionsForHabit: readonly string[] | undefined,
+  dateKey: string,
+): number {
+  if (!Array.isArray(completionsForHabit)) return 0;
+  const from = weekStartKeyForDateKey(dateKey);
+  const to = weekEndKeyForDateKey(dateKey);
+  let n = 0;
+  for (const key of completionsForHabit) {
+    if (typeof key !== "string" || !DATE_KEY_RE.test(key)) continue;
+    if (key === dateKey) continue;
+    if (key >= from && key <= to) n += 1;
+  }
+  return n;
+}
+
 export function flexibleHabitAvailableOnDate(
   habit: Habit,
   dateKey: string,
