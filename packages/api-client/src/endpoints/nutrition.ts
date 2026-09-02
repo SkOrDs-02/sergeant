@@ -30,6 +30,19 @@ export interface NutritionPhotoIngredient {
  */
 export type NutritionNotFoodKind = "animal" | "person" | "other";
 
+/**
+ * Одна позиція на кадрі — страва, як її назве людина, а не інгредієнт.
+ * «Рис з овочами» — одна позиція; що саме в ній, описує `ingredients`
+ * верхнього рівня. Сервер віддає не більше 5 і гарантує щонайменше одну
+ * при `isFood: true`, тож споживач завжди має що показати рядком.
+ */
+export interface NutritionPhotoItem {
+  name: string;
+  macros: NutritionMacros;
+  gramsApprox: number | null;
+  confidence: number;
+}
+
 export interface NutritionPhotoResult {
   /**
    * `false` — на фото немає їжі. Сервер у цьому разі гарантує порожні `macros`
@@ -43,6 +56,12 @@ export interface NutritionPhotoResult {
   confidence: number;
   portion: NutritionPhotoPortion | null;
   ingredients: NutritionPhotoIngredient[];
+  /**
+   * Позиції кадру. `macros` верхнього рівня — їхня сума, порахована
+   * сервером через `sumMacrosNullable`; клієнт після видалення рядка
+   * перераховує підсумок тією ж функцією, щоб числа не розійшлися.
+   */
+  items: NutritionPhotoItem[];
   macros: NutritionMacros;
   questions: string[];
 }

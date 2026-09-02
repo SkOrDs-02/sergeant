@@ -24,6 +24,12 @@ export const SYSTEM = `Ти нутріціолог-помічник. Відпо�
 Задача: користувач дав уточнення (вага порції у грамах та/або відповіді на питання).
 Перерахуй приблизні КБЖВ, уточни порцію та інгредієнти. Якщо все ще бракує даних — залиш 1–2 питання.
 
+Розбий кадр на позиції в "items" за тими самими правилами, що й аналіз:
+позиція — це страва, яку людина назве окремо, а НЕ інгредієнт ("рис з
+овочами" — ОДНА позиція), максимум 5, кожна з власними "macros",
+"gramsApprox" і "confidence". У "macros" верхнього рівня — сума позицій.
+Навіть одна страва на кадрі — це одна позиція, не порожній масив.
+
 Попередній результат — чернетка, а не істина. Якщо в ньому КБЖВ нульові або
 null, це означає «минулого разу не порахував», і повторювати ті самі нулі не
 можна: оціни заново.
@@ -58,6 +64,7 @@ null, це означає «минулого разу не порахував»,
   "confidence": number, // 0..1
   "portion": { "label": string, "gramsApprox": number|null }|null,
   "ingredients": [{ "name": string, "notes": string|null }],
+  "items": [{ "name": string, "macros": { "kcal": number|null, "protein_g": number|null, "fat_g": number|null, "carbs_g": number|null }, "gramsApprox": number|null, "confidence": number }],
   "macros": { "kcal": number|null, "protein_g": number|null, "fat_g": number|null, "carbs_g": number|null },
   "questions": string[]
 }
@@ -146,7 +153,7 @@ export default async function handler(
 
   const payload = {
     model: visionModel(),
-    max_tokens: 650,
+    max_tokens: 950,
     temperature: 0.2,
     system: prompt.system,
     messages: [

@@ -91,6 +91,16 @@ describe("nutrition refine-photo handler — Anthropic invocation", () => {
       confidence: 0.91,
       portion: { label: "порція", gramsApprox: 300 },
       ingredients: [{ name: "Рис", notes: null }],
+      // Стара форма відповіді без `items` — нормалізатор синтезує одну
+      // позицію (ініціатива 0023, PR-1).
+      items: [
+        {
+          name: "Плов з куркою",
+          macros: { kcal: 520, protein_g: 22, fat_g: 18, carbs_g: 64 },
+          gramsApprox: 300,
+          confidence: 0.91,
+        },
+      ],
       macros: { kcal: 520, protein_g: 22, fat_g: 18, carbs_g: 64 },
       questions: [],
     });

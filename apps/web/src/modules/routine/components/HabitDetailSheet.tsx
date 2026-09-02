@@ -3,45 +3,27 @@
  * Status: Active
  */
 import { useMemo, useState } from "react";
-import { Measure } from "@shared/components/ui/Measure";
 import type { Dispatch, SetStateAction } from "react";
-import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
-import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { messages } from "@shared/i18n/uk";
-import {
-  dateKeyMinusDays,
-  habitScheduledOnDate,
-  isFlexibleHabit,
-  monthGrid,
-  weeklyGoalStreakBreakdown,
-} from "@sergeant/routine-domain";
 import { completionNoteKey } from "../lib/completionNoteKey";
-import { anchoredTodayDate, anchoredTodayKey } from "../lib/dayAnchor";
-import {
-  flexibleStreakBreakdown,
-  habitCompletionRate,
-  maxStreakAllTime,
-} from "../lib/streaks";
+import { anchoredTodayKey } from "../lib/dayAnchor";
 import {
   deleteHabit,
   restoreHabit,
   setHabitArchived,
   snapshotHabit,
 } from "../lib/routineStorage";
-import {
-  ROUTINE_THEME as C,
-  RECURRENCE_OPTIONS,
-  WEEKDAY_LABELS,
-} from "../lib/routineConstants";
+import { RECURRENCE_OPTIONS, WEEKDAY_LABELS } from "../lib/routineConstants";
 import { HabitQuickCreateDialog } from "./HabitQuickCreateDialog";
+import { HabitMonthCalendar } from "./HabitMonthCalendar";
 import { HabitPauseSection } from "./HabitPauseSection";
+import { HabitStatsSection } from "./HabitStatsSection";
 import { HabitStreakCanvas } from "./HabitStreakCanvas";
 import type { Habit, RoutineState } from "../lib/types";
 import { HabitGlyph } from "./HabitGlyph";
@@ -52,32 +34,6 @@ function todayKey(): string {
   // `ROUTINE_DAY_ANCHOR` (яку журнал відміток пише в `day_anchor`)
   // мусять жити в одному файлі, інакше вони знову розійдуться.
   return anchoredTodayKey();
-}
-
-/**
- * Rolling `days`-window completion percentage, delegated to the canonical
- * `habitCompletionRate` (unification audit 2026-08-31, finding 1.23):
- * without it, this card's own loop skipped the `once`-habit exclusion
- * (`habitCountsTowardMetrics`) that the rest of the module already
- * respects, so a one-off event showed a percentage nowhere else in the
- * product does. `habitCompletionRate` doesn't accept `skips` either, so
- * part of the divergence from the hero (which does) remains until that
- * option lands here too.
- */
-function completionPct(
-  habit: Habit,
-  completions: string[],
-  days: number,
-): number | null {
-  const tk = todayKey();
-  const { scheduled, rate } = habitCompletionRate(
-    habit,
-    completions,
-    dateKeyMinusDays(tk, days - 1),
-    tk,
-  );
-  if (scheduled === 0) return null;
-  return Math.round(rate * 100);
 }
 
 export interface HabitDetailSheetProps {
@@ -93,11 +49,6 @@ export interface HabitDetailSheetProps {
    * renders read-only (callers that only show stats can omit it).
    */
   setRoutine?: Dispatch<SetStateAction<RoutineState>>;
-}
-
-interface MonthCursor {
-  y: number;
-  m: number;
 }
 
 interface NoteEntry {
@@ -141,19 +92,6 @@ export function HabitDetailSheet({
   );
   const tk = todayKey();
 
-  // Device-local "current month" for the calendar cursor (ADR-0078,
-  // cutover 2026-09-01 — was Kyiv, consolidated page-audit § Theme 1 — 09 F3)
-  // so it matches the user's own calendar, same anchor as `tk` above.
-  const now = anchoredTodayDate();
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- див. коментар вище
-  const nowYear = now.getFullYear();
-  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- те саме
-  const nowMonth = now.getMonth();
-  const [calMonth, setCalMonth] = useState<MonthCursor>({
-    y: nowYear,
-    m: nowMonth,
-  });
-
   const tag = useMemo<string[]>(() => {
     if (!habit) return [];
     const ids = habit.tagIds || [];
@@ -178,88 +116,6 @@ export function HabitDetailSheet({
     ? RECURRENCE_OPTIONS.find((o) => o.value === (habit.recurrence || "daily"))
         ?.label || ""
     : "";
-
-  // Гнучкий стрік (канон §4): показуємо не лише число, а й з чого воно
-  // склалось — інакше «серія 12» при двох днях відпустки всередині
-  // виглядає як помилка підрахунку.
-  const streak = useMemo(
-    () =>
-      habit
-        ? flexibleStreakBreakdown(habit, completions, tk, {
-            skipsForHabit: routine.skips?.[habitId],
-          })
-        : null,
-    [habit, completions, tk, routine.skips, habitId],
-  );
-  // Гнучка звичка («N разів на тиждень») міряється тижнями, не днями.
-  // `flexibleStreakBreakdown` вище — це ІНША гнучкість: поденна серія з
-  // бюджетом прощень. Прогнати через неї звичку, яка й не планується щодня,
-  // означає порахувати пропуском кожен день, у який людина нічого й не мала
-  // робити. Назви збігаються, сутності різні.
-  const weeklyStreak = useMemo(
-    () =>
-      habit && isFlexibleHabit(habit)
-        ? weeklyGoalStreakBreakdown(habit, completions, tk)
-        : null,
-    [habit, completions, tk],
-  );
-  const isFlex = weeklyStreak !== null;
-  const currentStreak = isFlex ? weeklyStreak.weeks : (streak?.days ?? 0);
-  // AI-CONTEXT: тут був `streakHint` — рядок «пауза: 2 дн. · не зміг: 1 дн. ·
-  // заморозки: 1» під числом серії. Прибрано 2026-08-05 разом із додаванням
-  // `HabitStreakCanvas` вище: полотно показує ті самі пʼять типів дня формою
-  // клітинки, тобто видно, ЯКІ саме дні були паузою, а не лише скільки їх.
-  // Тримати обидва означало б лишити рівно той патерн, який полотно й
-  // заміняє — одне число плюс текстове виправдання під ним
-  // (`docs/05-design/design/anti-slop-strategy.md` §5 P3).
-  const bestStreak = useMemo(
-    () => (habit ? maxStreakAllTime(habit, completions) : 0),
-    [habit, completions],
-  );
-  const totalDone = completions.length;
-
-  const pct7 = useMemo(
-    () => (habit ? completionPct(habit, completions, 7) : null),
-    [habit, completions],
-  );
-  const pct30 = useMemo(
-    () => (habit ? completionPct(habit, completions, 30) : null),
-    [habit, completions],
-  );
-  const pct90 = useMemo(
-    () => (habit ? completionPct(habit, completions, 90) : null),
-    [habit, completions],
-  );
-
-  const cells = useMemo(
-    () => monthGrid(calMonth.y, calMonth.m).cells,
-    [calMonth.y, calMonth.m],
-  );
-  const completionSet = useMemo(() => new Set(completions), [completions]);
-
-  const calMonthTitle = new Date(calMonth.y, calMonth.m, 1).toLocaleDateString(
-    "uk-UA",
-    {
-      month: "long",
-      year: "numeric",
-    },
-  );
-
-  const goCalMonth = (delta: number) => {
-    setCalMonth((c) => {
-      let m = c.m + delta;
-      let y = c.y;
-      if (m > 11) {
-        m = 0;
-        y++;
-      }
-      if (m < 0) {
-        m = 11;
-        y--;
-      }
-      return { y, m };
-    });
-  };
 
   const notes = useMemo<NoteEntry[]>(() => {
     const notesObj = routine.completionNotes || {};
@@ -433,85 +289,13 @@ export function HabitDetailSheet({
           </section>
         )}
 
-        <section className="mb-5" aria-label="Статистика">
-          <SectionHeading as="h3" size="xs" className="mb-2" variant="routine">
-            Статистика
-          </SectionHeading>
-          <div className="grid grid-cols-2 gap-2 sm:grid-cols-4">
-            {!isOnce && (
-              <div className={C.statCard}>
-                <p className="text-style-headline text-text tabular-nums">
-                  {currentStreak}
-                </p>
-                <p className="text-style-caption text-subtle mt-0.5">
-                  {isFlex ? "Тижнів поспіль" : "Поточна серія"}
-                </p>
-              </div>
-            )}
-            {!isOnce && (
-              <div className={C.statCard}>
-                <p className="text-style-headline text-text tabular-nums">
-                  {bestStreak}
-                </p>
-                <p className="text-style-caption text-subtle mt-0.5">
-                  {isFlex ? "Макс тижнів" : "Макс серія"}
-                </p>
-              </div>
-            )}
-            {isFlex && (
-              <div className={C.statCard}>
-                <p className="text-style-headline text-text tabular-nums">
-                  {weeklyStreak.currentWeekWorkouts} з{" "}
-                  {weeklyStreak.targetPerWeek}
-                </p>
-                <p className="text-style-caption text-subtle mt-0.5">
-                  Цього тижня
-                </p>
-              </div>
-            )}
-            <div className={C.statCard}>
-              <p className="text-style-headline text-text tabular-nums">
-                {totalDone}
-              </p>
-              <p className="text-style-caption text-subtle mt-0.5">
-                Разів виконано
-              </p>
-            </div>
-            {!isOnce && (
-              <div className={C.statCard}>
-                <div className="flex items-baseline justify-center gap-1.5">
-                  {pct7 !== null && (
-                    <Measure
-                      value={pct7}
-                      unit="%"
-                      className="text-style-label text-text"
-                    />
-                  )}
-                  {pct30 !== null && (
-                    <Measure
-                      value={pct30}
-                      unit="%"
-                      className="text-style-caption text-muted"
-                    />
-                  )}
-                  {pct90 !== null && (
-                    <Measure
-                      value={pct90}
-                      unit="%"
-                      className="text-style-caption text-subtle"
-                    />
-                  )}
-                  {pct7 === null && pct30 === null && pct90 === null && (
-                    <span className="text-style-label text-muted">—</span>
-                  )}
-                </div>
-                <p className="text-style-caption text-subtle mt-0.5">
-                  % за 7 / 30 / 90 д
-                </p>
-              </div>
-            )}
-          </div>
-        </section>
+        <HabitStatsSection
+          habit={habit}
+          completions={completions}
+          todayKey={tk}
+          skips={routine.skips?.[habitId]}
+          isOnce={isOnce}
+        />
 
         {setRoutine && (
           <HabitPauseSection
@@ -521,87 +305,11 @@ export function HabitDetailSheet({
           />
         )}
 
-        <section className="mb-5" aria-label="Календар виконань">
-          <div className="flex items-center justify-between mb-2">
-            <SectionHeading as="h3" size="xs" variant="routine">
-              Календар
-            </SectionHeading>
-            <div className="flex items-center gap-2">
-              <IconButton
-                size="xs"
-                variant="ghost"
-                onClick={() => goCalMonth(-1)}
-                className="rounded-xl border border-line text-muted"
-                aria-label="Попередній місяць"
-              >
-                <Icon name="chevron-left" size="xs" />
-              </IconButton>
-              <span className="text-style-caption text-text min-w-28 text-center capitalize">
-                {calMonthTitle}
-              </span>
-              <IconButton
-                size="xs"
-                variant="ghost"
-                onClick={() => goCalMonth(1)}
-                className="rounded-xl border border-line text-muted"
-                aria-label="Наступний місяць"
-              >
-                <Icon name="chevron-right" size="xs" />
-              </IconButton>
-            </div>
-          </div>
-          <div className="grid grid-cols-7 gap-1">
-            {WEEKDAY_LABELS.map((wd) => (
-              <div
-                key={wd}
-                className="text-center text-style-caption text-subtle font-medium pb-1"
-              >
-                {wd}
-              </div>
-            ))}
-            {cells.map((day, i) => {
-              if (day === null) return <div key={`e${i}`} />;
-              const dk = `${calMonth.y}-${String(calMonth.m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-              const scheduled = habitScheduledOnDate(habit, dk);
-              const done = completionSet.has(dk);
-              const isToday = dk === tk;
-              return (
-                <div
-                  key={dk}
-                  className={cn(
-                    "aspect-square flex items-center justify-center rounded-xl text-style-caption transition-colors",
-                    done
-                      ? "bg-routine-surface2 dark:bg-routine-surface-dark/15 text-routine-strong dark:text-routine border border-routine-ring/40 dark:border-routine-border-dark/30 font-bold"
-                      : scheduled
-                        ? "bg-panelHi/60 text-muted border border-line/30"
-                        : "text-subtle/50",
-                    isToday &&
-                      "ring-1 ring-routine-ring/60 dark:ring-routine-border-dark/50",
-                  )}
-                  title={
-                    done
-                      ? `${dk}: виконано`
-                      : scheduled
-                        ? `${dk}: заплановано`
-                        : dk
-                  }
-                >
-                  {day}
-                </div>
-              );
-            })}
-          </div>
-          <div className="flex items-center gap-3 mt-2 text-style-caption text-subtle">
-            <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded bg-routine-surface2 dark:bg-routine-surface-dark/15 border border-routine-ring/40 dark:border-routine-border-dark/30" />
-              Виконано
-            </span>
-            <span className="flex items-center gap-1">
-              <span className="inline-block w-3 h-3 rounded bg-panelHi/60 border border-line/30" />
-              Заплановано
-            </span>
-          </div>
-        </section>
+        <HabitMonthCalendar
+          habit={habit}
+          completions={completions}
+          todayKey={tk}
+        />
 
         {notes.length > 0 && (
           <section className="mb-2" aria-label="Нотатки">

@@ -222,6 +222,158 @@ describe("nutritionResponse normalizers", () => {
     ).toBe(false);
   });
 
+  it("normalizePhotoResult recomputes the total as the sum of items", () => {
+    const out = normalizePhotoResult({
+      isFood: true,
+      dishName: "Обід",
+      confidence: 0.8,
+      // Модель віддала СВІЙ підсумок, і він не сходиться з позиціями.
+      // Джерело правди — позиції: інакше видалення рядка на картці не
+      // змінює суму (ініціатива 0023, рішення №3).
+      macros: { kcal: 999, protein_g: 99, fat_g: 99, carbs_g: 99 },
+      items: [
+        {
+          name: "Котлета",
+          macros: { kcal: 300, protein_g: 21, fat_g: 18, carbs_g: 6 },
+          gramsApprox: 120,
+          confidence: 0.9,
+        },
+        {
+          name: "Пюре",
+          macros: { kcal: 180, protein_g: 4, fat_g: 6, carbs_g: 27 },
+          gramsApprox: 200,
+          confidence: 0.7,
+        },
+      ],
+    });
+    expect(out.items).toHaveLength(2);
+    expect(out.macros).toEqual({
+      kcal: 480,
+      protein_g: 25,
+      fat_g: 24,
+      carbs_g: 33,
+    });
+  });
+
+  it("normalizePhotoResult keeps a macro null when every item is null for it", () => {
+    const out = normalizePhotoResult({
+      isFood: true,
+      dishName: "Салат",
+      confidence: 0.6,
+      items: [
+        {
+          name: "Салат",
+          macros: { kcal: 120, protein_g: null, fat_g: 9, carbs_g: null },
+          confidence: 0.6,
+        },
+        {
+          name: "Соус",
+          macros: { kcal: 60, protein_g: null, fat_g: null, carbs_g: null },
+          confidence: 0.4,
+        },
+      ],
+    });
+    // Нуль замість невідомого не ставимо ніколи: нуль у журналі означає
+    // «страва без калорій», а не «не порахував».
+    expect(out.macros).toEqual({
+      kcal: 180,
+      protein_g: null,
+      fat_g: 9,
+      carbs_g: null,
+    });
+  });
+
+  it("normalizePhotoResult caps items at five", () => {
+    const out = normalizePhotoResult({
+      isFood: true,
+      dishName: "Шведський стіл",
+      confidence: 0.5,
+      items: Array.from({ length: 9 }, (_, i) => ({
+        name: `Страва ${i + 1}`,
+        macros: { kcal: 100, protein_g: 5, fat_g: 5, carbs_g: 5 },
+        confidence: 0.5,
+      })),
+    });
+    expect(out.items).toHaveLength(5);
+    expect(out.macros.kcal).toBe(500);
+  });
+
+  it("normalizePhotoResult synthesizes one item when the model returns none", () => {
+    const out = normalizePhotoResult({
+      isFood: true,
+      dishName: "Борщ",
+      confidence: 0.8,
+      portion: { label: "тарілка", gramsApprox: 350 },
+      macros: { kcal: 280, protein_g: 18, fat_g: 12, carbs_g: 22 },
+    });
+    // Споживач завжди має щонайменше один рядок, і сума лишається тим самим
+    // числом, що й до ініціативи 0023 — стара модель не ламає екран.
+    expect(out.items).toEqual([
+      {
+        name: "Борщ",
+        macros: { kcal: 280, protein_g: 18, fat_g: 12, carbs_g: 22 },
+        gramsApprox: 350,
+        confidence: 0.8,
+      },
+    ]);
+    expect(out.macros).toEqual({
+      kcal: 280,
+      protein_g: 18,
+      fat_g: 12,
+      carbs_g: 22,
+    });
+  });
+
+  it("normalizePhotoResult drops nameless items and clamps their confidence", () => {
+    const out = normalizePhotoResult({
+      isFood: true,
+      dishName: "Сніданок",
+      confidence: 0.7,
+      items: [
+        { name: "  ", macros: { kcal: 100 } },
+        null,
+        "не обʼєкт",
+        {
+          name: "  Яєчня ",
+          macros: { kcal: "210", protein_g: 14, fat_g: -3, carbs_g: "x" },
+          gramsApprox: "150",
+          confidence: 7,
+        },
+      ],
+    });
+    expect(out.items).toEqual([
+      {
+        name: "Яєчня",
+        macros: { kcal: 210, protein_g: 14, fat_g: null, carbs_g: null },
+        gramsApprox: 150,
+        confidence: 1,
+      },
+    ]);
+  });
+
+  it("normalizePhotoResult leaves items empty on a refusal", () => {
+    const out = normalizePhotoResult({
+      isFood: false,
+      dishName: "Кіт",
+      notFoodKind: "animal",
+      confidence: 0.9,
+      items: [
+        {
+          name: "Кіт",
+          macros: { kcal: 100, protein_g: 1, fat_g: 1, carbs_g: 1 },
+          confidence: 0.9,
+        },
+      ],
+    });
+    expect(out.items).toEqual([]);
+    expect(out.macros).toEqual({
+      kcal: null,
+      protein_g: null,
+      fat_g: null,
+      carbs_g: null,
+    });
+  });
+
   it("normalizePantryItems accepts {items} and drops invalid rows", () => {
     const out = normalizePantryItems({
       items: [
