@@ -30,7 +30,7 @@ Hub має цілий клас «engagement-механізмів» — код, �
 
 - `apps/web/src/core/lib/recommendationEngine.ts` — драйвить TodayFocusCard
 - `apps/web/src/core/lib/insightsEngine.ts` — драйвить HubReports + hubChatContext
-- `apps/web/src/core/lib/dailyFinykSummary.ts` — Finyk daily summary (зараз dead-for-UI)
+- `apps/web/src/core/lib/dailyFinykSummary.ts` <!-- removed --> — Finyk daily summary (зараз dead-for-UI); видалений кроком 1 цього ж ADR ([`7ea3ac57e`](https://github.com/SkOrDs-02/sergeant/blob/0e28cc9723614895b329b50072dc173cd2e51e00/apps/web/src/core/lib/dailyFinykSummary.ts) — стан на момент ухвалення)
 - `apps/web/src/core/insights/useCoachInsight.ts` — coach-snapshot
 - `apps/web/src/core/insights/useWeeklyDigest.ts` — weekly digest
 
@@ -53,7 +53,7 @@ Hub має цілий клас «engagement-механізмів» — код, �
 **Пʼять+ незалежних схем** «памʼятай, що я це вже показав / користувач сховав»:
 
 - `hub_recs_dismissed_v1` — `core/insights/TodayFocusCard.tsx:18` (JSON-map)
-- `hub_daily_finyk_dismissed_v1` — `core/lib/dailyFinykSummary.ts:42` (`{date}`-shape, dismiss-на-день)
+- `hub_daily_finyk_dismissed_v1` — `core/lib/dailyFinykSummary.ts:42` <!-- removed --> (`{date}`-shape, dismiss-на-день; ключ зник разом із файлом на кроці 1)
 - `finyk_rec_dismissed` — `modules/finyk/...` (масив ключів, finyk-domain)
 - per-notification dedup keys — `routine_notify_*`, `fizruk_last_reminder_notif_day`, `nutrition_last_reminder_notif_key`
 - **`dismissNudge` / `snoozeNudge`** (`@sergeant/shared`) поверх `webKVStore` — `core/onboarding/DailyNudge.tsx`
