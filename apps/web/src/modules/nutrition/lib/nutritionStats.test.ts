@@ -3,6 +3,7 @@ import {
   summarizeRows,
   topMeals,
   mealTypeBreakdown,
+  mealTypeKcalForDay,
   getRowsForRange,
 } from "./nutritionStats";
 import type { DaySummary, NutritionLog } from "./nutritionStorage";
@@ -217,6 +218,71 @@ describe("nutrition/mealTypeBreakdown", () => {
     const result = mealTypeBreakdown(log, "2026-01-09", 1);
     // 2026-01-10 is outside the 1-day window ending 2026-01-09
     expect(Object.keys(result).length).toBe(0);
+  });
+});
+
+// ─── mealTypeKcalForDay ───────────────────────────────────────────────────────
+
+describe("nutrition/mealTypeKcalForDay", () => {
+  const log = {
+    "2026-01-10": {
+      meals: [
+        { mealType: "breakfast", macros: { kcal: 400 } },
+        { mealType: "lunch", macros: { kcal: 600 } },
+        { mealType: "lunch", macros: { kcal: 150 } },
+      ],
+    },
+    "2026-01-09": {
+      meals: [{ mealType: "dinner", macros: { kcal: 900 } }],
+    },
+  } as unknown as NutritionLog;
+
+  it("sums kcal per meal type for exactly one day", () => {
+    const result = mealTypeKcalForDay(log, "2026-01-10");
+    expect(result).toEqual({
+      breakfast: 400,
+      lunch: 750,
+      dinner: 0,
+      snack: 0,
+    });
+  });
+
+  it("ignores other days", () => {
+    const result = mealTypeKcalForDay(log, "2026-01-10");
+    expect(result.dinner).toBe(0); // dinner kcal lives on 2026-01-09
+  });
+
+  it("falls back to mealTypeFromLabel when mealType is missing/invalid", () => {
+    const logWithLabelOnly = {
+      "2026-01-10": {
+        meals: [
+          { label: "Вечеря", macros: { kcal: 500 } },
+          { label: "Невідомий тип", macros: { kcal: 80 } },
+        ],
+      },
+    } as unknown as NutritionLog;
+    const result = mealTypeKcalForDay(logWithLabelOnly, "2026-01-10");
+    expect(result.dinner).toBe(500);
+    // mealTypeFromLabel defaults unrecognized labels to "snack"
+    expect(result.snack).toBe(80);
+  });
+
+  it("returns all-zero record for a day with no meals", () => {
+    expect(mealTypeKcalForDay(log, "2026-03-01")).toEqual({
+      breakfast: 0,
+      lunch: 0,
+      dinner: 0,
+      snack: 0,
+    });
+  });
+
+  it("returns all-zero record for a null log", () => {
+    expect(mealTypeKcalForDay(null, "2026-01-10")).toEqual({
+      breakfast: 0,
+      lunch: 0,
+      dinner: 0,
+      snack: 0,
+    });
   });
 });
 

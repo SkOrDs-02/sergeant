@@ -10,7 +10,7 @@ import {
   type DaySummary,
   type NutritionLog,
 } from "./nutritionStorage";
-import { mealTypeFromLabel } from "./mealTypes";
+import { isMealTypeId, mealTypeFromLabel, type MealTypeId } from "./mealTypes";
 
 export function getRowsForRange(
   log: NutritionLog,
@@ -110,6 +110,37 @@ export function mealTypeBreakdown(
       out[type].count += 1;
       out[type].kcal += clampNonNegative(m?.macros?.kcal);
     }
+  }
+  return out;
+}
+
+/**
+ * Калорії за типами прийомів для ОДНОГО дня — на відміну від
+ * `mealTypeBreakdown`, який агрегує count+kcal по діапазону днів. Потрібно
+ * для hero-стрічки дня дашборду (`MealStrip`, спека
+ * `docs/90-work/planning/specs/nutrition-hero-day-strip.md`).
+ *
+ * Тип прийому береться з `m.mealType`, той самий фолбек `mealTypeFromLabel`
+ * (за `m.label`), що й у `mealTypeBreakdown` — легасі-записи без валідного
+ * `mealType` розпізнаються за текстом підпису.
+ */
+export function mealTypeKcalForDay(
+  log: NutritionLog | null | undefined,
+  dayIso: string,
+): Record<MealTypeId, number> {
+  const out: Record<MealTypeId, number> = {
+    breakfast: 0,
+    lunch: 0,
+    dinner: 0,
+    snack: 0,
+  };
+  const day = log?.[dayIso];
+  const meals = Array.isArray(day?.meals) ? day.meals : [];
+  for (const m of meals) {
+    const type = isMealTypeId(m?.mealType)
+      ? m.mealType
+      : mealTypeFromLabel(m?.label);
+    out[type] += clampNonNegative(m?.macros?.kcal);
   }
   return out;
 }

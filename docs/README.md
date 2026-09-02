@@ -7,7 +7,7 @@ Main documentation index for Sergeant.
 
 <!-- TRUST-BADGE:START -->
 
-> 🟡 **Docs trust: WARNING** — _оновлено 2026-09-01 via `pnpm docs:gen-trust-badge`_
+> 🟡 **Docs trust: WARNING** — _оновлено 2026-09-02 via `pnpm docs:gen-trust-badge`_
 >
 > 0 stale, 1 WIP soft-violation — варто прибрати найближчим тижнем. Деталі → [`today.md`](./today.md).
 
