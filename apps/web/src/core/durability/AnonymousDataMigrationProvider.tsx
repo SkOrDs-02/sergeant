@@ -319,7 +319,7 @@ function AuthenticatedMigrationGate({
       {showDeferredNotice && (
         <div
           role="status"
-          className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-warning-soft px-4 py-2 text-center text-style-caption text-warning-soft-fg"
+          className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-warning-soft px-4 py-2 text-center text-style-body text-warning-soft-fg"
         >
           <span>{messages.sync.anonymousMigrationDeferredNotice}</span>
           <button

@@ -244,7 +244,7 @@ export function HubReports() {
             <SectionHeading as="h2" size="xs">
               Закономірності
             </SectionHeading>
-            <p className="text-style-caption text-muted leading-relaxed">
+            <p className="text-style-body text-muted leading-relaxed">
               Що повторюється у твоїх даних за весь час спостережень. Перемикач
               періоду нижче на них не впливає.
             </p>

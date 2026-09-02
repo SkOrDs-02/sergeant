@@ -74,7 +74,7 @@ export function DataExportSection() {
 
   return (
     <SettingsGroup title="Експорт/імпорт JSON" icon="download">
-      <p className="text-style-caption text-subtle leading-snug">
+      <p className="text-style-body text-subtle leading-snug">
         Збережи всі свої локальні дані у файл, його потім можна імпортувати
         назад. Для залогінених користувачів нижче є окремий експорт із серверних
         даних акаунта.
@@ -91,7 +91,7 @@ export function DataExportSection() {
           `SettingsSubGroup`. */}
       <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
         <SettingsSubGroup title="Права на дані">
-          <p className="text-style-caption text-subtle leading-relaxed">
+          <p className="text-style-body text-subtle leading-relaxed">
             Серверний експорт не включає сирі секрети й токени. Видалити акаунт
             можна у профілі, там зібрані всі дії керування акаунтом.
           </p>
@@ -137,10 +137,10 @@ export function DataExportSection() {
           мене знаєте і куди воно дівається». */}
       <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
         <SettingsSubGroup title={m.subprocessors.title}>
-          <p className="text-style-caption text-subtle leading-relaxed">
+          <p className="text-style-body text-subtle leading-relaxed">
             {m.subprocessors.body}
           </p>
-          <p className="text-style-caption text-subtle leading-relaxed">
+          <p className="text-style-body text-subtle leading-relaxed">
             {m.subprocessors.photoNote}
           </p>
         </SettingsSubGroup>
@@ -151,10 +151,10 @@ export function DataExportSection() {
           а не лише в умовах використання, куди ніхто не заходить. */}
       <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
         <SettingsSubGroup title={m.sunset.title}>
-          <p className="text-style-caption text-subtle leading-relaxed">
+          <p className="text-style-body text-subtle leading-relaxed">
             {m.sunset.body}
           </p>
-          <p className="text-style-caption text-subtle leading-relaxed">
+          <p className="text-style-body text-subtle leading-relaxed">
             {m.sunset.bankNote}
           </p>
         </SettingsSubGroup>

@@ -66,7 +66,7 @@ export function ActiveHabitsSection({
       <SectionHeading as="h2" size="xs" variant="routine">
         Активні звички
       </SectionHeading>
-      <p className="text-style-caption text-subtle leading-snug">
+      <p className="text-style-body text-subtle leading-snug">
         Порядок у списку = порядок у календарі. На десктопі можна перетягнути;
         на телефоні: кнопки ↑↓. Для клавіатури та скрінрідерів зручніші кнопки
         ↑↓.

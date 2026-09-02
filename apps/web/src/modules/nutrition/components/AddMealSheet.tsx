@@ -697,7 +697,7 @@ export function AddMealSheet({
                 // ці поля означають «за всю порцію», а людина з упаковкою
                 // в руках за замовчуванням читає етикетку — тобто на 100 г.
                 <div className="mb-3 rounded-2xl border border-line bg-panelHi px-3 py-2">
-                  <p className="text-style-caption text-muted">
+                  <p className="text-style-body text-muted">
                     Значення – за всю порцію, як зʼїв, а не на 100 г.
                   </p>
                   <button

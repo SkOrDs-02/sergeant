@@ -263,7 +263,7 @@ export function RoutineCalendarPanel({
         <SectionHeading as="p" size="xs" variant="routine">
           Показувати у стрічці
         </SectionHeading>
-        <p className="text-style-caption text-subtle">
+        <p className="text-style-body text-subtle">
           Фільтр списку нижче. Підсумки – на вкладці «Статистика».
         </p>
 

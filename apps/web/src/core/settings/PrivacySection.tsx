@@ -319,7 +319,7 @@ export function PrivacySection() {
           h3 без розриву — axe забороняє СТРИБОК рівня вниз (напр. h2→h4),
           а не повтор того самого рівня. */}
       <SettingsSubGroup title="Згода та дані">
-        <p className="text-style-caption text-subtle leading-relaxed">
+        <p className="text-style-body text-subtle leading-relaxed">
           Обери, що Sergeant може використовувати для якості продукту та
           персоналізації. Дані для входу, безпеки й оплати залишаються
           потрібними для роботи застосунку. Сповіщення налаштовуються в окремому
@@ -437,10 +437,10 @@ export function PrivacySection() {
                   які тепер дзеркаляться сюди), і лише потім — що з ним
                   можна зробити. Без цього рядка мітка «Профіль» на факті
                   читається як дубль секції «Памʼять» у Профілі. */}
-              <p className="text-style-caption text-subtle leading-relaxed">
+              <p className="text-style-body text-subtle leading-relaxed">
                 {messages.privacy.aiMemory.sectionScope}
               </p>
-              <p className="text-style-caption text-subtle leading-relaxed">
+              <p className="text-style-body text-subtle leading-relaxed">
                 {messages.privacy.aiMemory.sectionHint}
               </p>
               <AiMemoryList />

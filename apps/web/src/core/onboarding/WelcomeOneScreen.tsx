@@ -123,7 +123,7 @@ export function WelcomeOneScreen({
           знімає вибір, а не додає. Без цього рядка взаємодія виглядає як
           «обери свої», а працює як «зніми зайві» — дизайн-аудит 2026-07,
           цикл 3. */}
-      <p className="w-full text-left text-style-caption text-subtle -mb-1">
+      <p className="w-full text-left text-style-body text-subtle -mb-1">
         {messages.onboarding.pickerAllOnHint}
       </p>
 

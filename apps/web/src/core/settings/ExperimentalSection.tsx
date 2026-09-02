@@ -61,9 +61,7 @@ export function ExperimentalSection() {
     // єдине джерело: `settingsSectionsCatalog.ts`, дзеркалиться в
     // `messages.experimentalSection.title` (uk.ts/en.ts) для узгодженості.
     <SettingsGroup title={settingsSectionTitle("experimental")} icon="tool">
-      <p className="text-style-caption text-subtle leading-snug">
-        {copy.intro}
-      </p>
+      <p className="text-style-body text-subtle leading-snug">{copy.intro}</p>
       <div
         role="note"
         // V-5: `warn` не існує у дизайн-системі (реальний токен — `warning`,

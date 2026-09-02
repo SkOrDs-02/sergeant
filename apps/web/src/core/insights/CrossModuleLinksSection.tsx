@@ -122,7 +122,7 @@ export default function CrossModuleLinksSection() {
         <SectionHeading as="h2" size="xs">
           {messages.crossModuleLink.sectionTitle}
         </SectionHeading>
-        <p className="text-style-caption text-muted leading-relaxed">
+        <p className="text-style-body text-muted leading-relaxed">
           {messages.crossModuleLink.sectionHint}
         </p>
       </div>

@@ -3202,6 +3202,9 @@
     "sergeant-design/no-raw-type-size": [
       1
     ],
+    "sergeant-design/no-sentence-in-caption": [
+      1
+    ],
     "sergeant-design/no-strict-bypass": [
       2
     ],

@@ -38,7 +38,7 @@ export class SectionErrorBoundary extends Component<
       return (
         <div className="rounded-2xl border border-danger/40 bg-danger/10 p-4 text-text shadow-card">
           <div className="text-style-label">{title}</div>
-          <div className="text-style-caption text-subtle mt-1">
+          <div className="text-style-body text-subtle mt-1">
             {messages.errors.generic.sectionFailed}
           </div>
           <pre className="mt-2 text-style-caption text-danger-strong dark:text-danger whitespace-pre-wrap wrap-break-word max-h-40 overflow-auto">

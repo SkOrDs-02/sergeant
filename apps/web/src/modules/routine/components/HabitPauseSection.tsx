@@ -93,7 +93,7 @@ export function HabitPauseSection({
         </div>
       ) : (
         <div className="rounded-xl border border-line bg-panel px-3 py-2.5">
-          <p className="text-style-caption text-subtle mb-2">{t.hint}</p>
+          <p className="text-style-body text-subtle mb-2">{t.hint}</p>
           <div
             role="group"
             aria-label={t.heading}

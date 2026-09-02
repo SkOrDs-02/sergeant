@@ -178,7 +178,7 @@ export function CategoriesSection({
         )}
       </div>
       {routine.categories.length === 0 ? (
-        <p className="text-style-caption text-subtle leading-snug">
+        <p className="text-style-body text-subtle leading-snug">
           Категорій ще немає. Категорія групує звички за сферою життя:
           «Здоровʼя», «Робота», «Дім», і зʼявляється у формі звички під «Більше
           опцій».

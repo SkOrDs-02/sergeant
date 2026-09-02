@@ -98,7 +98,7 @@ export function ManualEntryTab({
         <PackageEntryStep onCreated={onCreated} />
       ) : (
         <>
-          <p className="text-style-caption text-muted">
+          <p className="text-style-body text-muted">
             Далі введеш назву й КБЖВ за всю порцію: так, як зʼїв. Вага тут не
             потрібна, а запис у пошук не потрапляє.
           </p>
