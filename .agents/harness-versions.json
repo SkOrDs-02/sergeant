@@ -418,6 +418,22 @@
       "agentsTestedWith": [],
       "passRateBaseline": null
     },
+    "5.0.7": {
+      "releasedAt": "2026-09-02",
+      "changes": [
+        "bump from 5.0.6 -> 5.0.7: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.8": {
+      "releasedAt": "2026-09-02",
+      "changes": [
+        "bump from 5.0.7 -> 5.0.8: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
     "5.1.0": {
       "releasedAt": "2026-09-02",
       "changes": [

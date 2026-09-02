@@ -19,9 +19,9 @@ export const MODULE_COLORS: Record<string, string> = {
   routine: "bg-routine-soft text-routine-soft-fg",
   nutrition: "bg-nutrition-soft text-nutrition-soft-fg",
   settings: "bg-panelHi text-muted",
-  assistant: "bg-brand-500/10 text-brand-strong dark:text-brand",
-  actions: "bg-brand-500/10 text-brand-strong dark:text-brand",
-  ai: "bg-brand-500/10 text-brand-strong dark:text-brand",
+  assistant: "bg-brand-500/10 text-brand-strong",
+  actions: "bg-brand-500/10 text-brand-strong",
+  ai: "bg-brand-500/10 text-brand-strong",
 };
 
 export interface SearchResultItemProps {

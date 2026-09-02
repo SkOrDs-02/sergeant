@@ -286,7 +286,7 @@ export function SessionsSection({ online }: { online: boolean }) {
                           {ua.label}
                         </p>
                         {isCurrent && (
-                          <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-strong dark:text-brand border border-brand-500/30">
+                          <span className="inline-flex items-center text-style-caption font-medium px-2 py-0.5 rounded-full bg-brand-500/10 text-brand-strong border border-brand-500/30">
                             {COPY.thisDevice}
                           </span>
                         )}

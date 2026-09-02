@@ -139,6 +139,11 @@ export function HubChatHeader({
             В контексті: {sessionInfo.historyCount} з останніх 10 повідомлень ·
             ~{Math.round(sessionInfo.chars / 100) / 10}k символів.
           </p>
+          {/* AI-NOTE: розкриття лишається caption, хоча це речення. Воно
+              третє в стеку поповера, де два рядки вище — справжня мета
+              (лічильник повідомлень, обсяг контексту). Підняти саме його
+              означало б розсинхронити кегль усередині однієї компактної
+              поверхні заради одного рядка. */}
           <p className="text-style-caption text-muted leading-snug">
             Контекст (фінанси, тренування, звички, харчування) відправляється до
             AI.
@@ -164,7 +169,7 @@ export function HubChatHeader({
           <button
             type="button"
             onClick={onClearChat}
-            className="h-9 min-h-[44px] min-w-[44px] shrink-0 px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong dark:text-brand border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+            className="h-9 min-h-[44px] min-w-[44px] shrink-0 px-3 flex items-center gap-1.5 rounded-xl bg-brand-soft text-brand-strong border border-brand-soft-border/50 hover:bg-brand-soft-hover transition-colors text-style-label font-semibold outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
             aria-label="Нова бесіда"
           >
             <Icon name="plus" size={14} />

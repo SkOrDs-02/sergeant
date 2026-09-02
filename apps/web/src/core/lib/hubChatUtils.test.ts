@@ -1,5 +1,6 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import { ApiError } from "@sergeant/api-client";
 import {
   getActiveModule,
   friendlyApiError,
@@ -95,6 +96,22 @@ describe("friendlyApiError", () => {
   });
 });
 
+it("шлюзові збої дістають текст із дією, а не голий номер", () => {
+  // Саме 504 і побачив власник на екрані 2026-09-02. У чату немає
+  // caller-fallback-у, тож «Помилка 504» доїжджала просто до людини.
+  expect(friendlyApiError(504)).toBe(
+    "Сервер не встиг відповісти. Спробуй ще раз.",
+  );
+  expect(friendlyApiError(502)).toBe(
+    "Сервер тимчасово недоступний. Спробуй за хвилину.",
+  );
+  expect(friendlyApiError(503)).toBe(
+    "Сервер тимчасово недоступний. Спробуй за хвилину.",
+  );
+  // Серверне повідомлення, якщо воно є, конкретніше за наш загальний текст.
+  expect(friendlyApiError(502, "upstream down")).toBe("upstream down");
+});
+
 describe("friendlyChatError", () => {
   it("maps network errors", () => {
     expect(friendlyChatError(new Error("Failed to fetch"))).toBe(
@@ -116,9 +133,45 @@ describe("friendlyChatError", () => {
       CHAT_AUTH_REQUIRED_TEXT,
     );
   });
+  it("НЕ обгортає вдруге текст, який уже пройшов friendlyApiError", () => {
+    // Рівно той баг, який власник побачив на екрані 2026-09-02:
+    // «Помилка: Помилка 504». `useChatSend` перезаписує `message` готовим
+    // текстом, а ця функція наліплювала префікс поверх.
+    const gateway = new ApiError({
+      kind: "http",
+      message: "Сервер не встиг відповісти. Спробуй ще раз.",
+      status: 504,
+      url: "/api/chat",
+    });
+    expect(friendlyChatError(gateway)).toBe(
+      "Сервер не встиг відповісти. Спробуй ще раз.",
+    );
+    expect(friendlyChatError(gateway)).not.toContain("Помилка: Помилка");
+
+    // Навіть коли текст усе-таки почався з «Помилка N» (статус без власної
+    // гілки), подвоєння немає: рішення береться за ТИПОМ помилки.
+    const bare = new ApiError({
+      kind: "http",
+      message: "Помилка 418",
+      status: 418,
+      url: "/api/chat",
+    });
+    expect(friendlyChatError(bare)).toBe("Помилка 418");
+  });
+
   it("wraps other errors", () => {
+    // Сирі помилки префікс зберігають: без нього «boom» не читається як збій.
     expect(friendlyChatError(new Error("boom"))).toBe("Помилка: boom");
     expect(friendlyChatError("string err")).toBe("Помилка: string err");
+    // Мережева гілка не є HTTP-помилкою, тож лишається як була.
+    const offline = new ApiError({
+      kind: "network",
+      message: "Failed to fetch",
+      url: "/api/chat",
+    });
+    expect(friendlyChatError(offline)).toBe(
+      "Немає зʼєднання з мережею або сервер недоступний.",
+    );
   });
 });
 

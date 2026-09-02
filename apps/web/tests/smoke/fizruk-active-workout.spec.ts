@@ -78,6 +78,16 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   await page.getByRole("button", { name: "Швидкий старт" }).click();
   await expect(page).toHaveURL(/\/fizruk\/workout\/[^/]+$/);
 
+  // Аркуш готовності (спека `fizruk-readiness-check`) зʼявляється один раз на
+  // тренування і перекриває сторінку — це навмисно, він і має спитати ДО
+  // роботи. Тут його свідомо ПРОПУСКАЄМО: цей тест про потік
+  // «старт → підхід → перезавантаження → фініш», а без відповіді підказка
+  // поводиться рівно так, як до появи фічі.
+  const readiness = page.getByRole("dialog", { name: "Як ти сьогодні?" });
+  await expect(readiness).toBeVisible();
+  await readiness.getByRole("button", { name: "Пропустити" }).click();
+  await expect(readiness).toBeHidden();
+
   await page
     .getByPlaceholder("Пошук (жим, підтягування, спина…)")
     .fill("Жим штанги лежачи");
@@ -127,6 +137,11 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
 
   await page.reload({ waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "fizruk");
+  // Пропуск теж пишеться (`sleep: null, soreness: null`), тож після
+  // перезавантаження аркуш НЕ повертається. Це не косметика: без запису
+  // ознаки «вже питали» він вигулькував би на кожному оновленні сторінки
+  // посеред тренування.
+  await expect(readiness).toBeHidden();
   await expect(
     page.getByRole("textbox", { name: "Вага в кілограмах" }),
   ).toHaveValue("42");

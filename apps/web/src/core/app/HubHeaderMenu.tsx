@@ -138,7 +138,7 @@ function PrivacyRow({
       <Icon
         name="shield"
         size="sm"
-        className="shrink-0 mt-0.5 text-brand-strong dark:text-brand"
+        className="shrink-0 mt-0.5 text-brand-strong"
         aria-hidden
       />
       <span className="flex-1 min-w-0">

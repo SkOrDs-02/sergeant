@@ -87,6 +87,7 @@ export const APPLY_REJECT_REASONS = [
   "invalid_sleep_quality",
   // Field validation — workout metrics
   "invalid_distance_m",
+  "invalid_chosen_variant",
   "invalid_duration_sec",
   "invalid_reps",
   "invalid_rpe",

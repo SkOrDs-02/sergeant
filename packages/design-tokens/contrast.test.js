@@ -18,6 +18,8 @@ import {
   inkTheme,
   moduleAccentRgb,
   statusInkHex,
+  accentInkHex,
+  accentStrongHex,
   statusStrongHex,
 } from "./tokens.js";
 
@@ -248,6 +250,50 @@ describe("@sergeant/design-tokens — статуси як ТЕКСТ у «Чор
       expect(contrastRatio("#ffffff", hex)).toBeLessThan(4.5);
       expect(
         contrastRatio("#ffffff", statusStrongHex[status]),
+      ).toBeGreaterThanOrEqual(4.5);
+    });
+  }
+});
+
+describe("@sergeant/design-tokens — бренд і модулі як ТЕКСТ у «Чорнилі»", () => {
+  // AI-CONTEXT (2026-09-02): та сама пара контрактів, що для статусів вище,
+  // але для бренду й модульних акцентів. Акцентний `-strong` — тир -800; на
+  // ink-поверхнях він дає 1.11…2.74:1, тобто `text-{accent}-strong` малював
+  // темне по темному у спільних примітивах (`Tabs`, `Badge`, `Stat`,
+  // `KeyboardAccessory`), на екрані входу й у повідомленнях чату.
+  //
+  // AI-DANGER: модульний світлий тир звіряємо з `moduleAccentRgb` — це
+  // окрема мапа, і саме її розходження зі своєю копією колись лишило
+  // `warning-strong` на 4.21 під підписом «4.83». Бренд у тій мапі запису
+  // не має (він не модульний акцент), тож для нього джерело —
+  // `accentStrongHex`, а нижній цикл доводить, що обидва джерела збігаються.
+  const { bg, surface, surfaceHi } = inkTheme.surface;
+  const surfaces = { bg, surface, surfaceHi };
+
+  for (const [module, triple] of Object.entries(moduleAccentRgb)) {
+    it(`${module}: accentStrongHex збігається з moduleAccentRgb.strong`, () => {
+      expect(accentStrongHex[module]).toBe(rgbTripleToHex(triple.strong));
+    });
+  }
+
+  for (const [module, hex] of Object.entries(accentInkHex)) {
+    for (const [surfaceName, surfaceHex] of Object.entries(surfaces)) {
+      it(`${module}-ink ≥ 4.5:1 на ink ${surfaceName}`, () => {
+        expect(contrastRatio(hex, surfaceHex)).toBeGreaterThanOrEqual(4.5);
+      });
+    }
+    it(`${module}-strong (світлий тир) < 4.5:1 на ink surface — задокументований фейл`, () => {
+      expect(contrastRatio(accentStrongHex[module], surface)).toBeLessThan(4.5);
+    });
+  }
+
+  // Заливка й текст лишаються РІЗНИМИ значеннями: `bg-{accent}-strong`
+  // тримає тир -800 під `text-white`, чорнильний тир для цього не годиться.
+  for (const [module, hex] of Object.entries(accentInkHex)) {
+    it(`${module}: чорнильний тир не годиться під text-white (тому заливка лишається на -strong)`, () => {
+      expect(contrastRatio("#ffffff", hex)).toBeLessThan(4.5);
+      expect(
+        contrastRatio("#ffffff", accentStrongHex[module]),
       ).toBeGreaterThanOrEqual(4.5);
     });
   }

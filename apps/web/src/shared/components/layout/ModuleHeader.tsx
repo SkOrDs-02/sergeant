@@ -142,7 +142,12 @@ export function ModuleHeader({
           {titleSlot ?? (
             <>
               {eyebrow ? (
-                <span className="text-style-overline text-brand-700 dark:text-brand block leading-none mb-0.5">
+                // AI-NOTE: 2026-09-02 було `text-brand-700 dark:text-brand`
+                // — пара-нуль: обидва класи віддають stone-700, тобто в
+                // темній темі надрядок був 1.75:1. `text-brand-strong`
+                // резолвиться через `--c-brand-ink` і перемикається сам
+                // (розбір — `accentInkHex` у @sergeant/design-tokens).
+                <span className="text-style-overline text-brand-strong block leading-none mb-0.5">
                   {eyebrow}
                 </span>
               ) : null}

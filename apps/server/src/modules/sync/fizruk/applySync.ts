@@ -214,6 +214,21 @@ export async function applyFizrukItems(
   if (distanceM === "invalid") {
     return { status: "rejected", reason: "invalid_distance_m" };
   }
+  // Значення поза переліком відкидаємо, а не мовчки нормалізуємо: CHECK у
+  // міграції 134 однаково не пропустить, і краще чесний `rejected`, ніж
+  // 500-ка з бази. `null`/відсутнє = вибору не було, це валідно.
+  const rawChosenVariant = row["chosen_variant"];
+  const chosenVariant =
+    rawChosenVariant === null || rawChosenVariant === undefined
+      ? null
+      : rawChosenVariant === "planned" ||
+          rawChosenVariant === "easier" ||
+          rawChosenVariant === "harder"
+        ? rawChosenVariant
+        : "invalid";
+  if (chosenVariant === "invalid") {
+    return { status: "rejected", reason: "invalid_chosen_variant" };
+  }
   const createdAt = parseOptionalDate(row["created_at"]);
   if (createdAt === "invalid") {
     return { status: "rejected", reason: "invalid_created_at" };
@@ -228,12 +243,12 @@ export async function applyFizrukItems(
       `INSERT INTO fizruk_workout_items
          (id, workout_id, user_id, exercise_id, name_uk, primary_group,
           muscles_primary, muscles_secondary, type,
-          duration_sec, distance_m, sort_order,
+          duration_sec, distance_m, chosen_variant, sort_order,
           created_at, updated_at, deleted_at)
        VALUES ($1, $2, $3, $4, $5, $6,
                COALESCE($7::jsonb, '[]'::jsonb),
                COALESCE($8::jsonb, '[]'::jsonb),
-               $9, $10, $11, $12, $13, $14, $15)`,
+               $9, $10, $11, $12, $13, $14, $15, $16)`,
       [
         id,
         workoutId,
@@ -246,6 +261,7 @@ export async function applyFizrukItems(
         type,
         durationSec ?? null,
         distanceM ?? null,
+        chosenVariant,
         sortOrder,
         createdAt ?? clientTs,
         clientTs,
@@ -264,10 +280,11 @@ export async function applyFizrukItems(
              type              = $7,
              duration_sec      = $8,
              distance_m        = $9,
-             sort_order        = $10,
-             updated_at        = $11,
-             deleted_at        = $12
-       WHERE id = $13 AND user_id = $14`,
+             chosen_variant    = $10,
+             sort_order        = $11,
+             updated_at        = $12,
+             deleted_at        = $13
+       WHERE id = $14 AND user_id = $15`,
       [
         workoutId,
         exerciseId,
@@ -278,6 +295,7 @@ export async function applyFizrukItems(
         type,
         durationSec ?? null,
         distanceM ?? null,
+        chosenVariant,
         sortOrder,
         clientTs,
         deletedAt ?? null,

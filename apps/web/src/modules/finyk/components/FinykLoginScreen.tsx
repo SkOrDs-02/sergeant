@@ -94,7 +94,7 @@ export function FinykLoginScreen({
               strokeWidth="1.5"
               strokeLinecap="round"
               strokeLinejoin="round"
-              className="text-brand-strong dark:text-brand"
+              className="text-brand-strong"
               aria-hidden
             >
               <rect x="3" y="8" width="18" height="12" rx="2" />
@@ -230,6 +230,10 @@ export function FinykLoginScreen({
             </p>
           )}
 
+          {/* AI-NOTE: підказка під полем токена — кегль узгоджений з рядком
+              помилки того самого поля вище, який теж caption. Різні кеглі на
+              двох рядках, що належать одному інпуту, читались би як два різні
+              за важливістю повідомлення. */}
           <p className="text-style-caption text-subtle mt-2">
             Токен відправляється на сервер і не зберігається у браузері.
           </p>
@@ -286,6 +290,10 @@ export function FinykLoginScreen({
           >
             Почати без банку
           </Button>
+          {/* AI-NOTE: пояснення висить на кнопці над ним, а не стоїть саме
+              по собі. Той самий прецедент, що й опис під слайдером щільності
+              та підписи двох кнопок експорту в Налаштуваннях (прохід
+              2026-09-02): рядок, привʼязаний до контрола, лишається дрібним. */}
           <p className="mt-2 text-center text-style-caption text-subtle">
             Ручні витрати, бюджети та аналітика – без API-токена. Monobank можна
             підключити пізніше.

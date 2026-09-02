@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-08-24 by @claude. **Next review:** 2026-12-18.
+> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-27.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -119,6 +119,8 @@ pnpm --filter @sergeant/web exec playwright \    # focus one spec locally
 4. Analytics-події читай з `window.__hubAnalytics` ring-buffer (`apps/web/src/core/observability/analytics.ts`) — PostHog network transport gated на `VITE_POSTHOG_KEY` (unset у smoke), buffer — deterministic.
 5. Trace / screenshot on failure уже сконфігуровано (`trace: "retain-on-failure"`, `screenshot: "only-on-failure"`). HTML report публікується як artifact `playwright-critical-flow-report` (14d retention).
 6. **Smoke-environment gotcha (пом'якшено 2026-08-04):** історично `vite preview` НЕ emit-ив COOP/COEP response-headers → `SharedArrayBuffer` недоступний → `sqlite-wasm` падав на memory-only VFS, і SQLite-backed стан осцилював проти оптимістичного (root cause постійних detach-фейлів routine/nutrition ніг `deep-module-crud`). Тепер `vite.config.js` → `preview.headers` шле ті самі COOP/COEP, що й прод (`vercel.json`), тож smoke-середовище працює на OPFS VFS як продакшн. Порада лишається чинною як defensive-практика: analytics ring-buffer — deterministic signal-of-truth, а UI-assertions навколо SQLite-backed gate документуй inline (див. § 4a у `onboarding-happy-path.spec.ts`).
+
+7. **`page.reload()` в E2E — це гонка з сервіс-воркером, доки її явно не зняти.** `precacheAndRoute` кладе весь прекеш (400 записів, 6.6 МБ) у `event.waitUntil` події `install`, тож воркер стає `activated` лише після його завершення — на цьому репо приблизно через 4 с після завантаження сторінки. Тест, який доходить до рестарту раніше або рівно на тій межі, щоразу потрапляє в один із ТРЬОХ станів: воркер ще `installing` (навігація йде повз нього), уже `activated` (йде через `NavigationRoute`), або перехід стається ПОСЕРЕД навігації — і тоді вона абортиться (`net::ERR_ABORTED; maybe frame was detached?`) чи зависає. Заміри 2026-09-02 на одному й тому самому тесті: без барʼєра стан перед рестартом стрибав між `{installing:true, active:null}` і `{active:"activated"}` без жодної зміни коду — різниця лише в швидкості машини, тому локально це виглядає стабільним, а в CI ні. Саме на цьому `pantry-storage-places` правили тричі поспіль, щоразу підкручуванням таймінгу. Перед `page.reload()` став [`waitForServiceWorkerActivated`](./tests/utils/serviceWorker.ts) — він прибирає третій варіант, а не «чекає трохи». Ціна барʼєра ~2 с, тож тесту з рестартом потрібен власний `test.setTimeout`.
 
 ## Deeper docs
 

@@ -98,7 +98,7 @@ export function CrossModulePreview({
       </button>
 
       <div className="flex items-start gap-3 pr-6">
-        <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/10 text-brand-strong dark:text-brand flex items-center justify-center">
+        <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/10 text-brand-strong flex items-center justify-center">
           <Icon name="sergeant" size={18} />
         </div>
         <div className="flex-1 min-w-0 space-y-2">

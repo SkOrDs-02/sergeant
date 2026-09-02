@@ -130,6 +130,8 @@ describe("sqlite/fizrukWorkoutItems schema snapshot", () => {
       "type",
       "duration_sec",
       "distance_m",
+      // Міграція 134 (pg) / 006 (клієнт): обраний варіант підказки.
+      "chosen_variant",
       "sort_order",
       "created_at",
       "updated_at",
@@ -603,8 +605,8 @@ describe("sqlite/fizrukPushups schema snapshot", () => {
 });
 
 describe("sqlite/fizruk migrations exports", () => {
-  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities migration", () => {
-    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(5);
+  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities + 006 chosen-variant migration", () => {
+    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(6);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workouts/,
@@ -672,6 +674,15 @@ describe("sqlite/fizruk migrations exports", () => {
     );
     expect(FIZRUK_CLIENT_MIGRATIONS[4]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_custom_activities/,
+    );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[5]!.name).toBe(
+      "006_fizruk_item_chosen_variant.sql",
+    );
+    // Дзеркалить серверну 134. Без цієї колонки на клієнті вибір варіанта
+    // не переживає перезавантаження, а лічильник полегшень завжди нуль.
+    expect(FIZRUK_CLIENT_MIGRATIONS[5]!.sql).toMatch(
+      /ALTER TABLE fizruk_workout_items ADD COLUMN chosen_variant TEXT/,
     );
   });
 
