@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "5.0.6",
+  "current": "5.0.7",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -414,6 +414,14 @@
       "releasedAt": "2026-09-01",
       "changes": [
         "AGENTS.md: repo overview рахує 13 packages / 18 workspaces (додано @sergeant/tabular-import); qa-packages рескоуплено на 12 shared workspaces; лічильники в repo-map синхронізовано з pnpm-workspace"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "5.0.7": {
+      "releasedAt": "2026-09-02",
+      "changes": [
+        "bump from 5.0.6 -> 5.0.7: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
