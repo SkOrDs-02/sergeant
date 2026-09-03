@@ -375,6 +375,11 @@ vi.mock("../lib/mealTypes", () => ({
 
 vi.mock("../lib/foodDb/foodDb", () => ({
   ensureSeedFoods: vi.fn(() => Promise.resolve()),
+  // Аркуш редагування піднімає звʼязаний продукт за `foodId`
+  // (`useEditedFoodRehydration`). `null` = продукту в базі немає, тобто
+  // поведінка цих тестів лишається тією, що була до відновлення: картка
+  // продукту не рендериться, збережені макроси ніхто не чіпає.
+  getFoodById: vi.fn(() => Promise.resolve(null)),
 }));
 
 vi.mock("../lib/mealId", () => ({

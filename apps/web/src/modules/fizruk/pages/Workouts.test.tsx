@@ -27,6 +27,13 @@ vi.mock("../../../core/auth/useLocalUserId", () => ({
   useLocalUserId: () => "test-user",
 }));
 
+// Стаб `Skeleton` прибрано разом із додаванням стаба вище — гейт `vi.mock cap`
+// ходить лише вниз, і платити за нього треба реальним зняттям мока, а не
+// підняттям стелі. `Skeleton` для цього найкращий кандидат: жоден тест на
+// нього не спирався (`data-testid="skeleton"` не згадується в жодному
+// очікуванні), а сам компонент чисто презентаційний і тягне лише `cn`, тож
+// сьют тепер рендерить справжній.
+
 vi.mock("@shared/components/ui/PullToRefresh", () => ({
   PullToRefresh: ({
     children,
@@ -268,10 +275,6 @@ vi.mock("@shared/components/ui/DataState", () => ({
     query: unknown;
     skeleton: React.ReactNode;
   }) => <>{children()}</>,
-}));
-
-vi.mock("@shared/components/ui/Skeleton", () => ({
-  Skeleton: () => <div data-testid="skeleton" />,
 }));
 
 // ── Helpers ──────────────────────────────────────────────────────────────────
