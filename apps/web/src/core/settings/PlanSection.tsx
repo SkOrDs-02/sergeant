@@ -5,6 +5,7 @@ import { Badge } from "@shared/components/ui/Badge";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { billingApi } from "@shared/api";
+import { messages } from "@shared/i18n/uk";
 import { billingKeys } from "@shared/lib/api/queryKeys";
 import { usePlan } from "../billing";
 import { SettingsGroup } from "./SettingsPrimitives";
@@ -19,7 +20,7 @@ import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
  *   • Бейдж плану (Free / Pro).
  *   • Trial-дату (`status === "trialing"` → `currentPeriodEnd` = trial-end),
  *     дату наступного списання (`active`), warning при `canceled`/`past_due`.
- *   • CTA: «Перейти на Pro» (→ `/pricing?source=settings`) для Free;
+ *   • CTA: «Перейти на Premium» (→ `/pricing?source=settings`) для Free;
  *     для legacy `provider === "stripe"` — «Керувати підпискою»
  *     (→ `/api/billing/portal` → Stripe Customer Portal);
  *     для LiqPay/Plata — «Скасувати Pro» (власний cancel, порталу нема).
@@ -48,7 +49,11 @@ export function PlanSection() {
 
   const status = subscription?.status ?? null;
   const periodEnd = formatKyivLongDate(subscription?.currentPeriodEnd);
-  const planLabel = isPro ? "Pro" : "Free";
+  // Серверний id тарифу — `pro`, але для людини він зветься «Premium»
+  // (рішення D3, див. `core/PricingPage.tsx`). Беремо канонічну назву з
+  // i18n, а не хардкодимо: на `/pricing` тариф називався «Premium», а тут
+  // і в чаті «Pro», тобто один продукт мав дві назви (browser-QA 2026-09-02).
+  const planLabel = isPro ? messages.pricing.tiers.premiumName : "Free";
 
   async function handleManage() {
     setRedirecting(true);
@@ -222,7 +227,7 @@ export function PlanSection() {
               className="gap-2"
             >
               <Icon name="sergeant" size={16} />
-              Перейти на Pro
+              Перейти на Premium
             </Button>
           )}
         </div>

@@ -225,8 +225,8 @@ function HubChat({
           // одним запитом, тож застереження «може коштувати кілька» більше
           // не правда.
           usageLimit != null
-            ? `Free-тариф має ${usageLimit} запитів до AI на день, кожен хід рахується один раз. Pro відкриває безлімітний чат, авто-Mono sync і CloudSync.`
-            : "Free-тариф має денний ліміт запитів до AI, кожен хід рахується один раз. Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
+            ? `Free-тариф має ${usageLimit} запитів до AI на день, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.`
+            : "Free-тариф має денний ліміт запитів до AI, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync."
         }
       />
       {/* eslint-enable sergeant-design/no-cyrillic-jsx-literal */}
