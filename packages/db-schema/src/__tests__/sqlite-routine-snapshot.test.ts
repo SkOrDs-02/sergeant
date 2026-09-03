@@ -20,8 +20,6 @@ import {
 import {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
 } from "../sqlite/migrations/index.js";
 
 /**
@@ -43,8 +41,8 @@ import {
  *   - partial-index `WHERE` clauses on `routine_entries_user_active_idx_lite`
  *     and `sync_op_outbox_pending_idx_lite`
  *   - the production-named migration constants (`ROUTINE_CLIENT_MIGRATIONS`,
- *     `ROUTINE_MIGRATIONS_TABLE`) and the deprecated `ROUTINE_SPIKE_*` aliases
- *     so consumers can rely on the historical SPIKE names too.
+ *     `ROUTINE_MIGRATIONS_TABLE`); the historical `ROUTINE_SPIKE_*` aliases
+ *     were removed 2026-09-03 after their `@removeBy` date.
  */
 
 describe("sqlite/routineEntries schema snapshot", () => {
@@ -711,14 +709,6 @@ describe("sqlite/migrations exports", () => {
 
   it("uses the standard `__migrations` ledger table", () => {
     expect(ROUTINE_MIGRATIONS_TABLE).toBe("__migrations");
-  });
-
-  it("re-exports the deprecated SPIKE-named aliases as the same references", () => {
-    // SPIKE consumers (apps/{web,mobile}/.../sqliteSpike/) must keep
-    // working unchanged; the aliases must be the exact same array, not
-    // a new array with the same contents.
-    expect(ROUTINE_SPIKE_CLIENT_MIGRATIONS).toBe(ROUTINE_CLIENT_MIGRATIONS);
-    expect(ROUTINE_SPIKE_MIGRATIONS_TABLE).toBe(ROUTINE_MIGRATIONS_TABLE);
   });
 });
 

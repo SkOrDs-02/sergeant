@@ -10,6 +10,17 @@
  */
 
 import { Pressable, Text, View } from "react-native";
+import {
+  CalendarDays,
+  ClipboardList,
+  Dumbbell,
+  HeartPulse,
+  Map,
+  Scale,
+  TrendingUp,
+  type LucideIcon,
+} from "lucide-react-native";
+import { moduleColors } from "@sergeant/design-tokens/tokens";
 
 import { Card } from "@/components/ui/Card";
 
@@ -23,7 +34,12 @@ export interface QuickLinkTile {
   id: FizrukPage;
   title: string;
   subtitle: string;
-  glyph: string;
+  /**
+   * F7 (анти-слоп 2026-09-01): іконка з `lucide-react-native`, не емодзі.
+   * Емодзі малюються системним шрифтом — свій колір і метрика на кожній ОС,
+   * і жодного зв'язку зі stroke-іконографією решти екрана.
+   */
+  icon: LucideIcon;
 }
 
 export const QUICK_LINK_TILES: readonly QuickLinkTile[] = [
@@ -31,43 +47,43 @@ export const QUICK_LINK_TILES: readonly QuickLinkTile[] = [
     id: "workouts",
     title: "Тренування",
     subtitle: "Каталог + активна сесія",
-    glyph: "💪",
+    icon: Dumbbell,
   },
   {
     id: "plan",
     title: "План",
     subtitle: "Календар на місяць",
-    glyph: "📅",
+    icon: CalendarDays,
   },
   {
     id: "programs",
     title: "Програми",
     subtitle: "Готові тренувальні плани",
-    glyph: "📋",
+    icon: ClipboardList,
   },
   {
     id: "progress",
     title: "Прогрес",
     subtitle: "Графіки та бекапи",
-    glyph: "📈",
+    icon: TrendingUp,
   },
   {
     id: "measurements",
     title: "Вимірювання",
     subtitle: "Вага, обхвати, самопочуття",
-    glyph: "⚖️",
+    icon: Scale,
   },
   {
     id: "body",
     title: "Тіло",
     subtitle: "Композиція та тренди",
-    glyph: "🫀",
+    icon: HeartPulse,
   },
   {
     id: "atlas",
     title: "Атлас",
     subtitle: "Карта груп мʼязів",
-    glyph: "🗺️",
+    icon: Map,
   },
 ] as const;
 
@@ -118,7 +134,11 @@ export function QuickLinksRow({
                   padding="md"
                   className={pressed ? "opacity-80" : ""}
                 >
-                  <Text className="text-2xl">{tile.glyph}</Text>
+                  <tile.icon
+                    size={22}
+                    color={moduleColors.fizruk.primary}
+                    strokeWidth={2}
+                  />
                   <Text className="text-sm font-semibold text-fg mt-1.5">
                     {tile.title}
                   </Text>

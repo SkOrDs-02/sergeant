@@ -7,8 +7,8 @@ import {
   type SqliteMigrationClient,
 } from "../migrate/adapters/sqlite.js";
 import {
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
 } from "../sqlite/migrations/index.js";
 
 /**
@@ -46,7 +46,7 @@ function syncClient(db: BetterSqliteDatabase): SqliteMigrationClient {
   };
 }
 
-describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
+describe("ROUTINE_CLIENT_MIGRATIONS", () => {
   let db: BetterSqliteDatabase;
   let client: SqliteMigrationClient;
 
@@ -62,8 +62,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
   it("applies the bundled migrations end-to-end and creates all four tables", async () => {
     const result = await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
     expect(result.applied).toEqual([
       "001_routine_spike.sql",
@@ -217,13 +217,13 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
     const adapter = createSqliteAdapter(client);
     await runMigrations({
       adapter,
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
     const second = await runMigrations({
       adapter,
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
     expect(second.applied).toEqual([]);
     expect(second.skipped).toEqual([
@@ -243,8 +243,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
   it("supports insert + select on routine_entries and sync_op_outbox", async () => {
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     db.prepare(
@@ -309,8 +309,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
   it("PR #040 sync_op_outbox accepts dead_letter status and rejects unknown statuses", async () => {
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     // dead_letter is now a legal terminal status (was rejected pre-PR-040).
@@ -370,8 +370,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
     const adapter = createSqliteAdapter(client);
     await runMigrations({
       adapter,
-      files: [ROUTINE_SPIKE_CLIENT_MIGRATIONS[0]!],
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: [ROUTINE_CLIENT_MIGRATIONS[0]!],
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     db.prepare(
@@ -390,8 +390,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
 
     await runMigrations({
       adapter,
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     const row = db
@@ -423,8 +423,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
   it("PR #042d-prep accepts op='increment' and rejects unknown op kinds", async () => {
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     // op='increment' is now a legal kind — the PR #042c builder
@@ -481,11 +481,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
     const adapter = createSqliteAdapter(client);
     await runMigrations({
       adapter,
-      files: [
-        ROUTINE_SPIKE_CLIENT_MIGRATIONS[0]!,
-        ROUTINE_SPIKE_CLIENT_MIGRATIONS[1]!,
-      ],
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: [ROUTINE_CLIENT_MIGRATIONS[0]!, ROUTINE_CLIENT_MIGRATIONS[1]!],
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     // Pending row with retry state populated.
@@ -539,8 +536,8 @@ describe("ROUTINE_SPIKE_CLIENT_MIGRATIONS", () => {
 
     await runMigrations({
       adapter,
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
 
     const rows = db

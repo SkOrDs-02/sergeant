@@ -28,6 +28,10 @@ vi.mock("@shared/components/ui/Sheet", () => ({
     ) : null,
 }));
 
+vi.mock("./SyncRejectedList", () => ({
+  SyncRejectedList: () => <div data-testid="sync-rejected-list" />,
+}));
+
 import { SyncStatusSheet } from "./SyncStatusSheet";
 
 describe("SyncStatusSheet", () => {
@@ -66,7 +70,8 @@ describe("SyncStatusSheet", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("Онлайн")).toBeInTheDocument();
     expect(screen.getByText("Нічого не чекає")).toBeInTheDocument();
-    expect(screen.getByText("Немає")).toBeInTheDocument();
+    // «Помилки» і «Не прийнято сервером» — обидва порожні.
+    expect(screen.getAllByText("Немає")).toHaveLength(2);
     expect(
       screen.queryByRole("button", { name: "Повторити синхронізацію" }),
     ).not.toBeInTheDocument();
@@ -96,5 +101,25 @@ describe("SyncStatusSheet", () => {
 
     expect(onRetry).toHaveBeenCalledTimes(1);
     expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("sync-rejected-list")).not.toBeInTheDocument();
+  });
+
+  it("surfaces server-rejected rows with their list when there are any", () => {
+    render(
+      <SyncStatusSheet
+        open
+        onClose={vi.fn()}
+        online
+        pending={0}
+        deadLetter={0}
+        rejected={2}
+      />,
+    );
+    expect(screen.getByText("Не прийнято сервером")).toBeInTheDocument();
+    expect(screen.getByText("2")).toBeInTheDocument();
+    expect(screen.getByTestId("sync-rejected-list")).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Повторити синхронізацію" }),
+    ).not.toBeInTheDocument();
   });
 });

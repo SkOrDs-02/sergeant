@@ -76,6 +76,7 @@ const mockRecoverDeadLetter = vi.fn(async (..._a: unknown[]) => ({
   recovered: 0,
 }));
 const mockPurgeStale = vi.fn(async (..._a: unknown[]) => 0);
+const mockCountRejected = vi.fn(async (..._a: unknown[]) => 2);
 vi.mock("@sergeant/db-schema/sqlite", () => ({
   repairPartialOutboxMigration: (...a: unknown[]) => mockRepair(...a),
   ROUTINE_MIGRATIONS_TABLE: "__routine_migrations",
@@ -86,6 +87,7 @@ vi.mock("@sergeant/db-schema/sqlite", () => ({
   markOutboxRejected: vi.fn(async () => {}),
   planRetry: vi.fn(),
   countOutboxByStatus: (...a: unknown[]) => mockCountByStatus(...a),
+  countRejectedOutbox: (...a: unknown[]) => mockCountRejected(...a),
   recoverDeadLetter: (...a: unknown[]) => mockRecoverDeadLetter(...a),
   purgeStaleTerminalOutbox: (...a: unknown[]) => mockPurgeStale(...a),
   SYNC_OP_OUTBOX_STALE_TTL_DAYS: 30,
@@ -143,8 +145,13 @@ describe("createDefaultRuntime (default boot path)", () => {
   it("getStatus on the runtime resolves the live counts via countOutboxByStatus", async () => {
     const runtime = await bootSyncEngineWriter();
     const status = await runtime!.getStatus();
-    expect(status).toEqual({ pending: 0 });
+    // `rejected` перекривається відфільтрованим лічильником (без
+    // `lww_conflict`), щоб пілюля і `SyncRejectedList` рахували одну множину.
+    expect(status).toEqual({ pending: 0, rejected: 2 });
     expect(mockCountByStatus).toHaveBeenCalled();
+    expect(mockCountRejected).toHaveBeenCalledWith(expect.anything(), {
+      excludeReasons: ["lww_conflict"],
+    });
   });
 
   it("tags failure and reports via captureException when migrations throw", async () => {

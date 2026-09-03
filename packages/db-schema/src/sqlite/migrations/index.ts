@@ -18,11 +18,13 @@
  *
  * History: the inline migration shipped first as the Stage 3 routine
  * SQLite SPIKE (PR #022 of `docs/planning/storage-roadmap.md`); the
- * `ROUTINE_SPIKE_*` exports stay in place so the SPIKE library under
- * `apps/{web,mobile}/src/modules/routine/lib/sqliteSpike/` does not
- * have to be touched on the Stage 4 promotion. PR #023 introduces the
- * neutral `ROUTINE_CLIENT_MIGRATIONS` / `ROUTINE_MIGRATIONS_TABLE`
- * aliases that production (non-SPIKE) consumers should import.
+ * PR #023 introduced the neutral `ROUTINE_CLIENT_MIGRATIONS` /
+ * `ROUTINE_MIGRATIONS_TABLE` names; the `ROUTINE_SPIKE_*` aliases that
+ * bridged the Stage 4 promotion were removed 2026-09-03 once their
+ * `@removeBy 2026-09-01` date passed (every consumer had already moved to
+ * the neutral names). The `001_routine_spike.sql` ledger row name is kept
+ * on purpose: renaming it would break already-migrated local SQLite
+ * states for zero functional gain.
  *
  * SQL is kept inline (not loaded via `?raw`) so the same module works
  * unchanged across the three bundlers we target — Vite, Metro, and
@@ -704,23 +706,6 @@ export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
  * `@sergeant/db-schema/migrate/runner` for the default constant.
  */
 export const ROUTINE_MIGRATIONS_TABLE = "__migrations";
-
-/**
- * @deprecated Stage-3 SPIKE alias for {@link ROUTINE_CLIENT_MIGRATIONS}.
- * Kept so the SPIKE library at
- * `apps/{web,mobile}/src/modules/routine/lib/sqliteSpike/` can carry
- * on importing the original symbol; new consumers should import
- * `ROUTINE_CLIENT_MIGRATIONS` directly.
- * @removeBy 2026-09-01
- */
-export const ROUTINE_SPIKE_CLIENT_MIGRATIONS = ROUTINE_CLIENT_MIGRATIONS;
-
-/**
- * @deprecated Stage-3 SPIKE alias for {@link ROUTINE_MIGRATIONS_TABLE}.
- * Kept for the same reason as {@link ROUTINE_SPIKE_CLIENT_MIGRATIONS}.
- * @removeBy 2026-09-01
- */
-export const ROUTINE_SPIKE_MIGRATIONS_TABLE = ROUTINE_MIGRATIONS_TABLE;
 
 // ---------------------------------------------------------------------------
 // Fizruk module — Stage 4 / PR #027

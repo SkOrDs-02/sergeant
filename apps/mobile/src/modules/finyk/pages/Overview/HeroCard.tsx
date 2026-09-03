@@ -9,6 +9,7 @@ import { memo } from "react";
 import { Text, View } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { TrendingUp } from "lucide-react-native";
+import { moduleAccentRgb, moduleColors } from "@sergeant/design-tokens/tokens";
 
 import { cn } from "./cn";
 import { formatNumberUk } from "@sergeant/shared";
@@ -45,7 +46,13 @@ const HeroCardImpl = function HeroCard({
 
   return (
     <LinearGradient
-      colors={["#0f766e", "#115e59"]} // teal-700 → teal-800
+      // F7 (анти-слоп 2026-09-01): кольори з токенів, не сирий hex — інакше
+      // ратчет фініківського акценту (emerald → teal у 2026-07) обійде цей
+      // екран мовчки, як він уже одного разу й зробив.
+      colors={[
+        moduleColors.finyk.primary,
+        `rgb(${moduleAccentRgb.finyk.strong.split(" ").join(", ")})`,
+      ]}
       start={{ x: 0, y: 0 }}
       end={{ x: 1, y: 1 }}
       className="rounded-3xl p-5"

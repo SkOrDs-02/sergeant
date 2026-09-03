@@ -462,7 +462,6 @@ export function GeneralSection() {
           description="Поточні дані модулів будуть замінені даними з файлу. Продовжити?"
           confirmLabel="Імпортувати"
           cancelLabel="Скасувати"
-          danger={false}
           onConfirm={handleImportConfirmed}
           onCancel={() => setConfirmImport(false)}
         />

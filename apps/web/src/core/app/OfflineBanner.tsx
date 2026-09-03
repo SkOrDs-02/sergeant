@@ -29,7 +29,7 @@ import { SyncStatusSheet } from "./SyncStatusSheet";
 const PILL_CLS =
   "min-h-11 min-w-11 shrink-0 inline-flex items-center justify-center gap-1.5 px-2.5 rounded-xl bg-panelHi border border-line text-muted text-style-caption shadow-soft motion-safe:animate-fade-in focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
-type BannerState = "blocked" | "offline" | "syncing";
+type BannerState = "blocked" | "offline" | "syncing" | "rejected";
 
 const queueLabel = (count: number) =>
   `${count} ${pluralUa(count, {
@@ -49,6 +49,7 @@ export function OfflineBanner() {
   const {
     syncV2PendingCount = 0,
     syncV2DeadLetterCount = 0,
+    syncV2RejectedCount = 0,
     retrySyncV2DeadLetters,
   } = useSyncStatus();
   const pending = syncV2PendingCount;
@@ -67,6 +68,11 @@ export function OfflineBanner() {
     return () => observer.disconnect();
   }, [headerSlot]);
 
+  // `rejected` стоїть після живих станів (dead-letter, офлайн, черга): вони
+  // змінюються хвилинами, а відхилений запис лежить, поки його не приберe
+  // TTL-purge. Але й мовчати про нього не можна — до 2026-09-03 людина не
+  // мала жодного сигналу, що запис лишився лише на пристрої
+  // (tech-debt/frontend.md, знахідка 2026-08-25).
   const state: BannerState | null =
     syncV2DeadLetterCount > 0
       ? "blocked"
@@ -74,7 +80,9 @@ export function OfflineBanner() {
         ? "offline"
         : pending > 0
           ? "syncing"
-          : null;
+          : syncV2RejectedCount > 0
+            ? "rejected"
+            : null;
 
   // Online and nothing waiting — the happy path needs no chrome.
   if (state === null) return null;
@@ -96,11 +104,21 @@ export function OfflineBanner() {
             iconClass: undefined,
             label: pending > 0 ? `Офлайн · ${queueLabel(pending)}` : "Офлайн",
           }
-        : {
-            icon: "refresh-cw" as const,
-            iconClass: "motion-safe:animate-spin-slow",
-            label: `Синхронізація · ${queueLabel(pending)}`,
-          };
+        : state === "rejected"
+          ? {
+              icon: "alert-triangle" as const,
+              iconClass: undefined,
+              label: `${syncV2RejectedCount} ${pluralUa(syncV2RejectedCount, {
+                one: "запис не прийнято",
+                few: "записи не прийнято",
+                many: "записів не прийнято",
+              })}`,
+            }
+          : {
+              icon: "refresh-cw" as const,
+              iconClass: "motion-safe:animate-spin-slow",
+              label: `Синхронізація · ${queueLabel(pending)}`,
+            };
 
   const content = (
     <>
@@ -128,6 +146,7 @@ export function OfflineBanner() {
         online={online}
         pending={pending}
         deadLetter={syncV2DeadLetterCount}
+        rejected={syncV2RejectedCount}
         onRetry={retrySyncV2DeadLetters}
       />
     </>
