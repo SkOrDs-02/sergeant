@@ -8,6 +8,7 @@ import {
 import { createPortal } from "react-dom";
 import { cn } from "../../lib/ui/cn";
 import { useBodyScrollLock } from "../../hooks/useBodyScrollLock";
+import { BOTTOM_NAV_INSET_VAR } from "../../hooks/useBottomInsetVar";
 import { useKeyboardAwareOverlay } from "../../hooks/useKeyboardAwareOverlay";
 import { useDialogFocusTrap } from "../../hooks/useDialogFocusTrap";
 import { useHistoryDismiss } from "../../hooks/useHistoryDismiss";
@@ -158,9 +159,14 @@ export function Sheet({
   if (!open) return null;
   if (typeof document === "undefined") return null;
 
-  // Lift the panel above the module bottom nav (set via the
-  // `--bottom-nav-height` CSS variable on ModuleShell) plus the iOS
-  // home-indicator inset. The resolved keyboard inset overrides the offset
+  // Lift the panel above the bottom nav plus the iOS home-indicator inset.
+  // Джерело — `--sgt-bottom-nav-inset` на `<html>` (`useBottomInsetVar`,
+  // виміряна смуга реальної навігації разом із її safe-area). Аркуш
+  // портується в `<body>`, тож `--bottom-nav-height`, що ставиться на
+  // корінь модуля всередині дерева, до нього не доходить і завжди давав
+  // `0px`: футер «Готово» аркуша готовності ховався під навбар (звіт
+  // 2026-09-03). Старий calc лишається fallback-ом для навігацій, які ще
+  // не публікують змінну. The resolved keyboard inset overrides the offset
   // when the soft keyboard is visible — we want the sheet to hug the
   // keyboard, not float above where the nav would be.
   const baseStyle: CSSProperties =
@@ -174,8 +180,7 @@ export function Sheet({
           maxHeight: `calc(100dvh - ${resolvedKbInsetPx}px - max(env(safe-area-inset-top, 0px), 8px))`,
         }
       : {
-          marginBottom:
-            "calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px))",
+          marginBottom: `max(var(${BOTTOM_NAV_INSET_VAR}, 0px), calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px)))`,
         };
   // Запас прокрутки під останніми полями, поки клавіатура відкрита
   // (бета-фідбек №5, 2026-08-18: «внизу екрану не видно»). Скрол уміє

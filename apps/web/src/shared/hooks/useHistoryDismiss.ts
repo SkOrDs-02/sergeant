@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-01
+ * Last validated: 2026-09-03
  * Status: Active
  *
  * Makes the browser Back button close an open dialog instead of leaving
@@ -81,7 +81,14 @@ export function useHistoryDismiss(open: boolean, onClose: () => void): void {
     const hrefAtPush = window.location.href;
     window.history.pushState({ [MARKER]: entryId }, "");
 
-    const handlePopState = () => {
+    const handlePopState = (event: PopStateEvent) => {
+      // Стос діалогів: `popstate` летить УСІМ відкритим. Коли вкладений аркуш
+      // (пікер заняття над формою запису) закривається і відкочує свій
+      // запис, верхнім стає запис зовнішнього — і той не повинен закритись
+      // разом із вкладеним. Свій запис ще зверху = це не наш Back. Читаємо
+      // `event.state`, а не `history.state`: тести диспатчать подію вручну.
+      const state = event.state as Record<string, unknown> | null;
+      if (state && state[MARKER] === entryId) return;
       // The entry is already gone — don't try to pop it on cleanup.
       ownsEntry = false;
       onCloseRef.current();

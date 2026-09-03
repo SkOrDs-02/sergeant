@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-02
+ * Last validated: 2026-09-03
  * Status: Active
  *
  * Аркуш готовності перед стартом тренування.
@@ -14,14 +14,17 @@
  *
  * Пропустити можна завжди, і це не «поганий» шлях: без відповіді картка
  * вправи виглядає рівно як до появи цієї фічі.
+ *
+ * Оболонка — спільний `Sheet`: він сам відступає від нижнього таббара й
+ * safe-area, тож футер із «Готово» не ховається під навбар (звіт 2026-09-03:
+ * власний fixed-оверлей цього не робив, і кнопку не можна було натиснути).
  */
-import { useRef, useState } from "react";
+import { useState } from "react";
 
 import { Button } from "@shared/components/ui/Button";
-import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
-import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { cn } from "@shared/lib/ui/cn";
 
 export interface ReadinessSheetProps {
@@ -85,76 +88,54 @@ export function ReadinessSheet({
 }: ReadinessSheetProps) {
   const [sleep, setSleep] = useState<number | null>(null);
   const [soreness, setSoreness] = useState<number | null>(null);
-  const trapRef = useRef<HTMLDivElement | null>(null);
-  // Escape = пропустити: аркуш не має способу «скасувати в нікуди», бо
-  // тренування вже почалось.
-  useDialogFocusTrap(open, trapRef, { onEscape: onSkip });
   const t = messages.fizruk.readiness;
 
-  if (!open) return null;
-
   return (
-    <div
-      className="fixed inset-0 z-40 flex items-end justify-center bg-black/40 p-3 sm:items-center"
-      aria-label={t.title}
-    >
-      <div
-        ref={trapRef}
-        className="pointer-events-auto max-w-md w-full mx-auto fizruk-sheet"
-      >
-        <Card
-          prominence="elevated"
-          radius="lg"
-          className="space-y-4 max-h-[min(70vh,520px)] overflow-y-auto overscroll-contain"
-          role="dialog"
-          aria-modal="true"
-          aria-labelledby="fizruk-readiness-title"
-        >
-          <div
-            id="fizruk-readiness-title"
-            className="text-style-label text-text"
+    // Закрити (хрестик, скрим, Escape) = пропустити: аркуш не має способу
+    // «скасувати в нікуди», бо тренування вже почалось.
+    <Sheet
+      open={open}
+      onClose={onSkip}
+      title={t.title}
+      description={t.subtitle}
+      panelClassName="fizruk-sheet"
+      footer={
+        <div className="flex gap-2">
+          <Button
+            variant="secondary"
+            className="flex-1 h-12 min-h-[44px]"
+            type="button"
+            onClick={onSkip}
           >
-            {t.title}
-          </div>
-          <p className="text-style-caption text-subtle leading-relaxed">
-            {t.subtitle}
-          </p>
-
-          <ScaleRow
-            idPrefix="sleep"
-            label={t.sleepLabel}
-            value={sleep}
-            onPick={setSleep}
-          />
-          <ScaleRow
-            idPrefix="soreness"
-            label={t.sorenessLabel}
-            value={soreness}
-            onPick={setSoreness}
-          />
-
-          <div className="flex gap-2">
-            <Button
-              variant="secondary"
-              className="flex-1 h-12 min-h-[44px]"
-              type="button"
-              onClick={onSkip}
-            >
-              {t.skip}
-            </Button>
-            <Button
-              variant="primary"
-              className="flex-1 h-12 min-h-[44px]"
-              type="button"
-              // Порожня відповідь дозволена і дорівнює пропуску: домен читає
-              // `null` як «нема даних», а не як «погано».
-              onClick={() => onSubmit({ sleep, soreness })}
-            >
-              {t.submit}
-            </Button>
-          </div>
-        </Card>
+            {t.skip}
+          </Button>
+          <Button
+            variant="primary"
+            className="flex-1 h-12 min-h-[44px]"
+            type="button"
+            // Порожня відповідь дозволена і дорівнює пропуску: домен читає
+            // `null` як «нема даних», а не як «погано».
+            onClick={() => onSubmit({ sleep, soreness })}
+          >
+            {t.submit}
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-4">
+        <ScaleRow
+          idPrefix="sleep"
+          label={t.sleepLabel}
+          value={sleep}
+          onPick={setSleep}
+        />
+        <ScaleRow
+          idPrefix="soreness"
+          label={t.sorenessLabel}
+          value={soreness}
+          onPick={setSoreness}
+        />
       </div>
-    </div>
+    </Sheet>
   );
 }

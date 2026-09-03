@@ -9,6 +9,7 @@ import {
   within,
 } from "@testing-library/react";
 
+import { ACTIVITIES } from "@sergeant/fizruk-domain/data";
 import { LogPastWorkoutSheet } from "./LogPastWorkoutSheet";
 
 /**
@@ -51,7 +52,17 @@ function setup(
 
 /** Обирає заняття з каталогу - короткий шлях запису. */
 function pickActivity(id = "body_pump") {
-  fireEvent.change(screen.getByLabelText("Заняття"), { target: { value: id } });
+  fireEvent.click(screen.getByLabelText("Заняття"));
+  const name =
+    id === "__new__"
+      ? "+ Своє заняття"
+      : (ACTIVITIES.find((a) => a.id === id)?.nameUk ?? id);
+  fireEvent.click(screen.getByRole("option", { name }));
+}
+
+/** Режим «Вправи по підходах»: дата, початок, завершення й живий журнал. */
+function manualMode() {
+  fireEvent.click(screen.getByRole("tab", { name: "Вправи по підходах" }));
 }
 
 function field(name: string): HTMLInputElement {
@@ -91,6 +102,7 @@ describe("LogPastWorkoutSheet", () => {
     // Власне те, чого бракувало: стара форма питала лише початок, а поле
     // кінця в `WorkoutTimeEditor` зʼявляється аж після завершення.
     const { onSubmit } = setup();
+    manualMode();
     fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
     fireEvent.change(field("Початок"), { target: { value: "18:00" } });
     fireEvent.change(field("Завершення"), { target: { value: "19:30" } });
@@ -112,6 +124,7 @@ describe("LogPastWorkoutSheet", () => {
     // вбік. Пін на спільні примітиви (`DateField` / `TimeField`), які цей
     // контракт і несуть; сирий `<input class="w-full">` його НЕ дає.
     setup();
+    manualMode();
     for (const name of ["Дата", "Початок", "Завершення"]) {
       expect(field(name).className).toContain("[min-inline-size:0]");
     }
@@ -127,6 +140,7 @@ describe("LogPastWorkoutSheet", () => {
     // Мовчазне +1 доба — саме той клас поведінки, через який людина потім
     // не розуміє, звідки в журналі взявся інший день.
     setup();
+    manualMode();
     fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
     fireEvent.change(field("Початок"), { target: { value: "23:40" } });
     fireEvent.change(field("Завершення"), { target: { value: "00:20" } });
@@ -135,6 +149,7 @@ describe("LogPastWorkoutSheet", () => {
 
   it("не показує попередження для звичайної денної сесії", () => {
     setup();
+    manualMode();
     fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
     fireEvent.change(field("Початок"), { target: { value: "10:00" } });
     fireEvent.change(field("Завершення"), { target: { value: "11:00" } });
@@ -147,6 +162,7 @@ describe("LogPastWorkoutSheet", () => {
     // тренування «завтра» потрапило б у стрік і статистику за день, якого
     // ще не було.
     const { onSubmit } = setup();
+    manualMode();
     fireEvent.change(field("Дата"), { target: { value: "2026-08-20" } });
     const submit = screen.getByText("Записати");
     expect(screen.getByText(/Завершення ще не настало/)).toBeVisible();
@@ -158,6 +174,7 @@ describe("LogPastWorkoutSheet", () => {
   it("не пускає майбутній ЧАС у межах сьогоднішньої доби", () => {
     // Того `max` не бачить узагалі: доба та сама.
     const { onSubmit } = setup();
+    manualMode();
     fireEvent.change(field("Початок"), { target: { value: "08:00" } });
     fireEvent.change(field("Завершення"), { target: { value: "23:59" } });
     const submit = screen.getByText("Записати");
@@ -170,6 +187,7 @@ describe("LogPastWorkoutSheet", () => {
     // Правдоподібна сесія через північ на сьогоднішній даті — обидва стани
     // разом. Два підписи лишили б людину гадати, який із них блокує кнопку.
     setup();
+    manualMode();
     fireEvent.change(field("Початок"), { target: { value: "23:00" } });
     fireEvent.change(field("Завершення"), { target: { value: "00:30" } });
     expect(screen.getByText(/Завершення ще не настало/)).toBeVisible();
@@ -181,6 +199,7 @@ describe("LogPastWorkoutSheet", () => {
     // «Завершення ще не настало» — повідомлення про наслідок переносу, а не
     // про причину. Причина тут одна: кінець раніше за початок.
     const { onSubmit } = setup();
+    manualMode();
     fireEvent.change(field("Початок"), { target: { value: "18:00" } });
     fireEvent.change(field("Завершення"), { target: { value: "16:00" } });
 
@@ -196,6 +215,7 @@ describe("LogPastWorkoutSheet", () => {
     // Без стелі це просто лягало б у журнал 22-годинною сесією — тихо, бо
     // «наступного дня» звучить як нормальний стан.
     setup();
+    manualMode();
     fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
     fireEvent.change(field("Початок"), { target: { value: "18:00" } });
     fireEvent.change(field("Завершення"), { target: { value: "16:00" } });
@@ -205,6 +225,7 @@ describe("LogPastWorkoutSheet", () => {
 
   it("блокує кнопку, доки ввід неповний", () => {
     const { onSubmit } = setup();
+    manualMode();
     fireEvent.change(field("Завершення"), { target: { value: "" } });
     const submit = screen.getByText("Записати");
     expect(submit).toBeDisabled();
@@ -243,8 +264,20 @@ describe("LogPastWorkoutSheet", () => {
 
   it("без заняття лишає стару поведінку: питає кінець", () => {
     setup();
+    manualMode();
     expect(screen.getByLabelText("Завершення")).toBeVisible();
     expect(screen.queryByLabelText("Тривалість")).toBeNull();
+  });
+
+  it("у режимі заняття без обраного заняття «Записати» заблоковано", () => {
+    // Раніше порожній селект мовчки означав «без заняття» і створював живу
+    // сесію - тобто не те, на що людина натискала.
+    const { onSubmit } = setup();
+    expect(screen.queryByLabelText("Завершення")).toBeNull();
+    const submit = screen.getByText("Записати");
+    expect(submit).toBeDisabled();
+    fireEvent.click(submit);
+    expect(onSubmit).not.toHaveBeenCalled();
   });
 
   it("поле ваги показується лише за її відсутності й іде у зважування", () => {
@@ -286,9 +319,7 @@ describe("LogPastWorkoutSheet", () => {
     const { onCreateActivity, onSubmit } = setup({ weightKg: 60 });
     fireEvent.change(field("Дата"), { target: { value: PAST_DAY } });
     fireEvent.change(field("Початок"), { target: { value: "18:00" } });
-    fireEvent.change(screen.getByLabelText("Заняття"), {
-      target: { value: "__new__" },
-    });
+    pickActivity("__new__");
 
     fireEvent.change(field("Назва заняття"), {
       target: { value: "TRX у моєму залі" },
@@ -317,9 +348,7 @@ describe("LogPastWorkoutSheet", () => {
     // Інакше клік створив би сесію БЕЗ заняття - мовчки не те, що людина
     // щойно почала робити.
     setup();
-    fireEvent.change(screen.getByLabelText("Заняття"), {
-      target: { value: "__new__" },
-    });
+    pickActivity("__new__");
     expect(screen.getByText("Записати")).toBeDisabled();
   });
 

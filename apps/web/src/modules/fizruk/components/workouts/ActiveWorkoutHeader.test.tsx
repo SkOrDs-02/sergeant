@@ -37,7 +37,8 @@ describe("ActiveWorkoutHeader", () => {
     fireEvent.click(screen.getByRole("button", { name: "Завершити" }));
     expect(onFinish).toHaveBeenCalledTimes(1);
     expect(screen.getByText(/42 хв/)).toBeTruthy();
-    expect(screen.getByText("Активне тренування")).toBeTruthy();
+    // Підпис дублював заголовок сторінки над панеллю, тож його немає.
+    expect(screen.queryByText("Активне тренування")).toBeNull();
   });
 
   it("renders Згорнути when the workout is finished and onCollapse is provided", () => {

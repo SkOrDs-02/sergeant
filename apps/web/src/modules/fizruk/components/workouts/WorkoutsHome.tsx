@@ -124,11 +124,14 @@ export function WorkoutsHome({
             Немає активного тренування
           </div>
           <div className="text-style-caption text-subtle mt-1">
-            Почни порожнє тренування, обери шаблон, або внеси те, що вже провів.
+            Почни зараз або запиши те, що вже провів.
           </div>
+          {/* Ієрархія, а не три рівні кнопки: старт основний, шаблон — його
+              варіант, а запис проведеного — окремий, вторинний шлях. Три
+              однакові кнопки читались як три різні речі (звіт 2026-09-03). */}
           <div
             role="group"
-            className="mt-3 grid grid-cols-1 gap-2 sm:grid-cols-2"
+            className="mt-3 flex flex-col gap-2"
             aria-label="Способи почати або внести тренування"
           >
             <Button
@@ -138,18 +141,16 @@ export function WorkoutsHome({
             >
               <Icon name="play" size={16} aria-hidden /> Швидкий старт
             </Button>
+            <button
+              type="button"
+              onClick={onOpenTemplates}
+              className="focus-ring min-h-[44px] w-full rounded-xl text-style-caption font-semibold text-fizruk-strong hover:underline"
+            >
+              або із шаблону →
+            </button>
             <Button
               variant="secondary"
               className="h-12 text-base"
-              onClick={onOpenTemplates}
-            >
-              <Icon name="clipboard" size={16} aria-hidden /> Із шаблону
-            </Button>
-            {/* Третій у сітці, але не третій «старт»: заняття вже відбулось,
-                тут його лише записують. Тому й іконка не play, а edit. */}
-            <Button
-              variant="secondary"
-              className="h-12 text-base sm:col-span-2"
               onClick={onLogPast}
             >
               <Icon name="edit" size={16} aria-hidden />{" "}
@@ -193,7 +194,7 @@ export function WorkoutsHome({
             ))}
           </ul>
         ) : (
-          <div className="rounded-2xl border border-dashed border-line p-4 text-style-caption text-subtle text-center">
+          <div className="rounded-2xl border border-dashed border-line p-4 text-style-body text-subtle text-center">
             Після першого завершеного тренування тут зʼявляться останні сесії.
           </div>
         )}

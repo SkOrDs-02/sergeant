@@ -213,8 +213,10 @@ export function WorkoutCatalogSection({
               <li key={id}>
                 <button
                   type="button"
+                  // Функціональний апдейт: два швидкі тапи поспіль інакше
+                  // рахуються від одного застарілого масиву, і перший губиться.
                   onClick={() =>
-                    setEquipmentFilter(toggleArr(equipmentFilter, id))
+                    setEquipmentFilter((prev) => toggleArr(prev, id))
                   }
                   aria-pressed={active}
                   className="focus-ring flex min-h-[44px] w-full items-center gap-3 py-2 text-left text-sm text-text"
@@ -271,7 +273,7 @@ export function WorkoutCatalogSection({
                 <button
                   type="button"
                   onClick={resetFilters}
-                  className="focus-ring min-h-[44px] rounded-full border border-line px-4 text-style-caption text-text transition-colors hover:bg-panelHi"
+                  className="focus-ring min-h-[44px] rounded-xl border border-line px-4 text-style-caption text-text transition-colors hover:bg-panelHi"
                 >
                   Скинути пошук
                 </button>

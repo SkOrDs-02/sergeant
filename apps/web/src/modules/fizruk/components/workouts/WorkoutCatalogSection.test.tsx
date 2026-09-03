@@ -172,7 +172,11 @@ describe("WorkoutCatalogSection — equipment sheet", () => {
     render(<WorkoutCatalogSection {...baseProps({ setEquipmentFilter })} />);
     fireEvent.click(screen.getByRole("button", { name: /Обладнання/ }));
     fireEvent.click(screen.getByRole("button", { name: /Штанга/ }));
-    expect(setEquipmentFilter).toHaveBeenCalledWith(["barbell"]);
+    // Функціональний апдейт: перевіряємо результат, а не форму аргумента.
+    const updater = setEquipmentFilter.mock.calls[0]?.[0] as (
+      prev: string[],
+    ) => string[];
+    expect(updater([])).toEqual(["barbell"]);
   });
 
   it("shows the selected count instead of the kind count", () => {

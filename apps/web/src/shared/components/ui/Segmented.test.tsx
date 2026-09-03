@@ -120,13 +120,13 @@ describe("Segmented", () => {
     expect(active!.className!).toContain("text-routine-soft-fg");
   });
 
-  it("defaults to the pill layout: capsule chips on a wrapping row", () => {
+  it("defaults to the pill layout: rounded chips on a wrapping row", () => {
     const { getByRole, getAllByRole } = render(
       <Segmented items={ITEMS} value="day" onChange={() => {}} />,
     );
     expect(getByRole("tablist").className).toContain("flex-wrap");
     for (const tab of getAllByRole("tab")) {
-      expect(tab.className).toContain("rounded-full");
+      expect(tab.className).toContain("rounded-xl");
       expect(tab.className).not.toContain("flex-1");
     }
   });
@@ -141,7 +141,7 @@ describe("Segmented", () => {
     expect(tablist.className).not.toContain("flex-wrap");
     for (const tab of getAllByRole("tab")) {
       expect(tab.className).toContain("flex-1");
-      expect(tab.className).not.toContain("rounded-full");
+      expect(tab.className).toContain("rounded-2xl");
     }
   });
 });

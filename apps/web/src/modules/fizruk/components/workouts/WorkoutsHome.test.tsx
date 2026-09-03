@@ -85,7 +85,7 @@ describe("WorkoutsHome", () => {
       />,
     );
 
-    fireEvent.click(screen.getByText(/Внести проведене/));
+    fireEvent.click(screen.getByText(/Записати проведене/));
     expect(handlers.onLogPast).toHaveBeenCalledTimes(1);
     // І воно не підмінило собою вхід у живу сесію.
     expect(screen.getByRole("button", { name: /Відкрити/ })).toBeVisible();
@@ -114,9 +114,9 @@ describe("WorkoutsHome", () => {
     expect(startPaths.querySelectorAll("button")).toHaveLength(3);
     fireEvent.click(screen.getByText("Швидкий старт"));
     expect(handlers.onRequestStart).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByText("Із шаблону"));
+    fireEvent.click(screen.getByText(/із шаблону/));
     expect(handlers.onOpenTemplates).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByText(/Внести проведене/));
+    fireEvent.click(screen.getByText(/Записати проведене/));
     expect(handlers.onLogPast).toHaveBeenCalledTimes(1);
   });
 
