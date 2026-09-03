@@ -14,6 +14,14 @@
  * halves fresh from local storage and sends them together — see
  * `pushBiometricsToServer` / `pushMemoryBankToServer` below.
  *
+ * Той самий трап на рівень нижче (browser-QA 2026-09-03, звіт власника
+ * «біометрія регулярно зникає»): слати обидві половини мало, бо ПОРОЖНЯ
+ * половина стирає серверну так само надійно, як відсутня. Локальна копія
+ * на EPOCH-сентинелі означає «на цьому пристрої сюди ще не писали», а не
+ * «у людини цього немає» — див. AI-DANGER над
+ * {@link resolveHalvesAgainstServer}, який добирає таку половину з
+ * сервера замість неї.
+ *
  * Four integration points, all best-effort (never throw to the caller):
  *
  *   - `pushBiometricsToServer` — fired after every local biometrics save
@@ -54,6 +62,7 @@ import {
   type Biometrics,
 } from "./biometrics";
 import {
+  MEMORY_BANK_META_EPOCH,
   normalizeMemoryEntry,
   readMemoryBankMeta,
   readMemoryEntries,
@@ -162,16 +171,113 @@ function readMemoryBankForWire(): MemoryBankWirePayload {
 }
 
 /**
+ * `true` коли в банк памʼяті на ЦЬОМУ пристрої ще ніколи не писали —
+ * порожній список саме на EPOCH-сентинелі.
+ *
+ * Порожній банк із СПРАВЖНЬОЮ міткою часу — це не те саме: так виглядає
+ * «Забути все» (`PrivacySection` → `writeMemoryEntries([])`), тобто
+ * усвідомлене очищення, яке МАЄ доїхати на сервер. Різницю дає рівно
+ * мітка, тому тут перевіряються обидві умови, а не сама лише довжина.
+ */
+function isMemoryBankUnwritten(mb: MemoryBankWirePayload): boolean {
+  return mb.entries.length === 0 && mb.updatedAt === MEMORY_BANK_META_EPOCH;
+}
+
+/**
+ * AI-DANGER: **половина, у яку локально ще не писали, — це «ми не знаємо»,
+ * а не «у людини цього немає».** Відправити її у wholesale-PUT означає
+ * стерти серверну копію.
+ *
+ * L-8 закрив пастку «пуш однієї половини стирає другу» тим, що
+ * {@link buildProfilePayload} завжди шле обидві. Але «обидві» рятує лише
+ * від відсутньої половини й НЕ рятує від порожньої: між логіном і
+ * завершенням boot-звірки (а також на будь-якому пристрої, де звірка не
+ * пройшла — офлайн, 5xx) локальні копії стоять на EPOCH-сентинелі, і
+ * перший-ліпший пуш у цьому вікні відправляє їх на сервер як факт.
+ *
+ * Дві реальні гілки, обидві досяжні:
+ *   • запис факту в банк памʼяті з чату (`memoryHandlers` →
+ *     `writeMemoryEntries` → `subscribeLocalMemoryEdit`) до гідратації —
+ *     на сервер їде біометрика з `updatedAt: EPOCH` і всіма `null`, тобто
+ *     зріст, стать і дата народження зникають; далі boot-звірка чесно
+ *     гідратує локальну копію цією порожнечею, і для людини це виглядає
+ *     як «біометрія знову зникла»;
+ *   • дзеркально — збереження біометрики стирає банк памʼяті ШІ.
+ *
+ * Тому невідома половина береться з сервера, а не з локального сентинела.
+ * `serverProfile` передають викликачі, які його вже мають (boot-звірка);
+ * решта дочитує його одним GET — цей шлях рідкісний за побудовою, бо
+ * після звірки жодна половина вже не на сентинелі.
+ *
+ * `null` означає «не змогли дізнатись» (GET не пройшов) — тоді пуш
+ * скасовується цілком: втратити ОДНЕ збереження гірше, ніж стерти все
+ * введене раніше, і наступна boot-звірка все одно віднесе локальне
+ * нагору за LWW.
+ */
+async function resolveHalvesAgainstServer(
+  biometrics: Biometrics,
+  memoryBank: MemoryBankWirePayload,
+  serverProfile?: UserProfileResponse,
+): Promise<{
+  biometrics: Biometrics;
+  memoryBank: MemoryBankWirePayload;
+} | null> {
+  const biometricsUnknown = isLocalBiometricsEmpty(biometrics);
+  const memoryUnknown = isMemoryBankUnwritten(memoryBank);
+  if (!biometricsUnknown && !memoryUnknown) return { biometrics, memoryBank };
+
+  let server = serverProfile ?? null;
+  if (!server) {
+    try {
+      server = await meApi.getProfile();
+    } catch (err) {
+      logger.warn(
+        "[profileWriteThrough] GET /api/me/profile failed while filling an unwritten half — push skipped so it cannot erase the server copy",
+        err,
+      );
+      return null;
+    }
+  }
+
+  // Рядка на сервері ще немає — стирати нічого, локальні сентинели їдуть
+  // як є (саме так народжується перший рядок профілю).
+  let nextBiometrics = biometrics;
+  let nextMemoryBank = memoryBank;
+  if (biometricsUnknown) {
+    const parsed = BiometricsSchema.safeParse(server.profile);
+    if (server.updatedAt !== null && parsed.success) {
+      nextBiometrics = parsed.data;
+    }
+  }
+  if (memoryUnknown) {
+    const serverBank = extractServerMemoryBank(server);
+    if (serverBank) nextMemoryBank = serverBank;
+  }
+  return { biometrics: nextBiometrics, memoryBank: nextMemoryBank };
+}
+
+/**
  * Best-effort PUT of a COMBINED profile snapshot to `/api/me/profile`.
  * Network / validation failures are logged, never thrown — a local save
  * must always succeed even when the write-through leg fails (offline, 5xx,
  * session expired mid-edit). Shared tail of `pushBiometricsToServer` and
  * `pushMemoryBankToServer` below.
+ *
+ * Перед відправкою половини проходять через
+ * {@link resolveHalvesAgainstServer} — див. AI-DANGER там.
  */
 async function pushCombinedProfile(
-  biometrics: Biometrics,
-  memoryBank: MemoryBankWirePayload,
+  localBiometrics: Biometrics,
+  localMemoryBank: MemoryBankWirePayload,
+  serverProfile?: UserProfileResponse,
 ): Promise<void> {
+  const resolved = await resolveHalvesAgainstServer(
+    localBiometrics,
+    localMemoryBank,
+    serverProfile,
+  );
+  if (!resolved) return;
+  const { biometrics, memoryBank } = resolved;
   const { payload, trimmedCount } = fitMemoryBankPayload(
     biometrics,
     memoryBank.entries,
@@ -196,8 +302,11 @@ async function pushCombinedProfile(
  * thrown — a local biometrics save must always succeed even when the
  * write-through leg fails (offline, 5xx, session expired mid-edit).
  */
-export async function pushBiometricsToServer(b: Biometrics): Promise<void> {
-  await pushCombinedProfile(b, readMemoryBankForWire());
+export async function pushBiometricsToServer(
+  b: Biometrics,
+  serverProfile?: UserProfileResponse,
+): Promise<void> {
+  await pushCombinedProfile(b, readMemoryBankForWire(), serverProfile);
 }
 
 /**
@@ -209,11 +318,13 @@ export async function pushBiometricsToServer(b: Biometrics): Promise<void> {
  */
 export async function pushMemoryBankToServer(
   entries: MemoryEntry[],
+  serverProfile?: UserProfileResponse,
 ): Promise<void> {
-  await pushCombinedProfile(readBiometrics(), {
-    entries,
-    updatedAt: readMemoryBankMeta().updatedAt,
-  });
+  await pushCombinedProfile(
+    readBiometrics(),
+    { entries, updatedAt: readMemoryBankMeta().updatedAt },
+    serverProfile,
+  );
 }
 
 /**
@@ -254,7 +365,7 @@ export async function reconcileBiometricsWithServerProfile(
       !isLocalBiometricsEmpty(local) &&
       readBiometricsOwnerId() === currentUserId
     ) {
-      await pushBiometricsToServer(local);
+      await pushBiometricsToServer(local, serverProfile);
     }
     return;
   }
@@ -281,7 +392,7 @@ export async function reconcileBiometricsWithServerProfile(
   const localBelongsToCurrentUser = readBiometricsOwnerId() === currentUserId;
 
   if (localIsNewer && localBelongsToCurrentUser) {
-    await pushBiometricsToServer(local);
+    await pushBiometricsToServer(local, serverProfile);
   } else {
     writeBiometrics(serverBiometrics);
   }
@@ -360,7 +471,7 @@ export async function reconcileMemoryBankWithServerProfile(
 
   if (!serverMemoryBank) {
     if (localEntries.length > 0 && localBelongsToCurrentUser) {
-      await pushMemoryBankToServer(localEntries);
+      await pushMemoryBankToServer(localEntries, serverProfile);
     }
     return;
   }
@@ -380,7 +491,7 @@ export async function reconcileMemoryBankWithServerProfile(
     (!Number.isFinite(serverMs) || localMs > serverMs);
 
   if (localIsNewer && localBelongsToCurrentUser) {
-    await pushMemoryBankToServer(localEntries);
+    await pushMemoryBankToServer(localEntries, serverProfile);
   } else {
     writeMemoryEntriesFromServer(
       serverMemoryBank.entries,
