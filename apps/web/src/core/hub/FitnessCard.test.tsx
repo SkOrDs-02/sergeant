@@ -45,7 +45,7 @@ describe("FitnessCard", () => {
     getCachedFizrukSqliteState.mockReturnValue(cacheWithWorkout());
     render(<FitnessCard period="week" offset={0} />);
 
-    const toggle = screen.getByRole("button", { name: /Фізрук/i });
+    const toggle = screen.getByRole("button", { name: /Тренування/i });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.getAllByText(/трен\./i).length).toBeGreaterThan(0);
 
@@ -57,7 +57,7 @@ describe("FitnessCard", () => {
   it("renders the no-data placeholder when the warm cache is empty", () => {
     getCachedFizrukSqliteState.mockReturnValue(emptyWarmCache);
     render(<FitnessCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фізрук/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Тренування/i }));
     expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
   });
 
@@ -67,14 +67,14 @@ describe("FitnessCard", () => {
       refreshedAt: null,
     });
     render(<FitnessCard period="month" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фізрук/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Тренування/i }));
     expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
   });
 
   it("renders the bar chart with workout data", () => {
     getCachedFizrukSqliteState.mockReturnValue(cacheWithWorkout());
     render(<FitnessCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фізрук/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Тренування/i }));
     const chart = screen.getByLabelText("Графік");
     expect(chart.querySelectorAll("button").length).toBeGreaterThan(0);
   });
@@ -87,7 +87,7 @@ describe("FitnessCard", () => {
       refreshedAt: null,
     });
     render(<FitnessCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фізрук/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Тренування/i }));
     expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
 
     getCachedFizrukSqliteState.mockReturnValue(cacheWithWorkout());

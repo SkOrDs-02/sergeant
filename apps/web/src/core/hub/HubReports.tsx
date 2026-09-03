@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-23
+ * Last validated: 2026-09-03
  * Status: Active
  *
  * Sprint 2 (0017): per-domain lazy decomposition. Each domain card is a
@@ -11,7 +11,6 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/ui/cn";
 import { generatePDFReport } from "@shared/lib/ui/export";
 import { messages } from "@shared/i18n/uk";
 import { useLocale } from "@shared/i18n/useLocale";
@@ -30,6 +29,7 @@ import {
   type Period,
 } from "./hubReports.aggregation";
 import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
+import { deviceDayKey } from "@sergeant/shared";
 import ChunkErrorBoundary from "./ChunkErrorBoundary";
 import { PdfPreviewModal } from "./PdfPreviewModal";
 
@@ -61,8 +61,12 @@ function CardSkeleton() {
 function formatPeriodLabel(period: Period, offset: number): string {
   const { start, end } = getPeriodRange(period, offset);
   if (period === "week") {
+    // `todayKey` — щоб рік не дописувався в поточному році: «31 серп – 6 вер»
+    // замість «31 серп 2026 – 6 вер 2026», який на 393 px переносився на два
+    // рядки посеред смуги навігації.
     return formatDayRangeUk(localDateKey(start), localDateKey(end), {
       relative: false,
+      todayKey: deviceDayKey(),
     });
   } else {
     return start.toLocaleDateString("uk-UA", {
@@ -72,31 +76,49 @@ function formatPeriodLabel(period: Period, offset: number): string {
   }
 }
 
-// ── InsightCard (kept local — not a lazy chunk, always needed) ────────
+// ── InsightRow (kept local — not a lazy chunk, always needed) ─────────
 
-interface InsightCardProps {
+interface InsightRowProps {
   iconName: IconName;
   title: string;
   stat: string;
   detail?: string;
 }
 
-function InsightCard({ iconName, title, stat, detail }: InsightCardProps) {
+/**
+ * Рядок закономірності — щільний список без карток (П2, `anti-slop-strategy.md`
+ * §4: «контекст — щільний список без карток, на hairline-роздільниках;
+ * картка лишається тільки там, де вона несе семантику окремого обʼєкта,
+ * який можна взяти»).
+ *
+ * AI-CONTEXT (2026-09-03): до цього кожна закономірність була окремою
+ * `rounded-2xl` карткою — тією ж формою, що й картка звʼязку над нею і
+ * звітні аркуші під нею. Закономірність не тапається, не розгортається і
+ * не є «річчю, яку можна взяти» — це один рядок факту. Чотири однакові
+ * картки поспіль додавали сторінці третій ряд контейнерів між звʼязками
+ * і звітами, і саме на це власник поскаржився як на «шумно, купа всього».
+ * Це НЕ ієрархія густини (`generateInsights` не ранжує) — це зняття
+ * контейнера, якому немає що означати.
+ */
+function InsightRow({ iconName, title, stat, detail }: InsightRowProps) {
   return (
-    <div className="bg-panel border border-line rounded-2xl p-4 flex gap-3 items-start">
-      <Icon name={iconName} size={24} className="shrink-0 text-muted mt-0.5" />
-      <div className="min-w-0 flex-1 space-y-1">
-        <p className="text-style-label text-text leading-snug">{title}</p>
-        <div className="flex items-baseline gap-2 flex-wrap">
-          <span className="text-style-title text-brand-strong">{stat}</span>
-          {detail && (
-            <span className="text-style-caption text-muted truncate">
-              {detail}
-            </span>
-          )}
-        </div>
+    <li className="flex items-start gap-3 py-2.5">
+      <Icon
+        name={iconName}
+        size={16}
+        className="mt-0.5 shrink-0 text-subtle"
+        aria-hidden
+      />
+      <div className="min-w-0 flex-1">
+        <p className="text-style-body leading-snug text-text">{title}</p>
+        {detail && (
+          <p className="mt-0.5 text-style-caption text-muted">{detail}</p>
+        )}
       </div>
-    </div>
+      <span className="shrink-0 text-style-label font-bold tabular-nums text-text">
+        {stat}
+      </span>
+    </li>
   );
 }
 
@@ -203,14 +225,18 @@ export function HubReports() {
   }, [exportGate, insights, label]);
 
   return (
-    <div className="space-y-4">
+    <div className="space-y-6">
       {/*
-        Звʼязки стоять НАД перемикачем періоду навмисно: вони рахуються за
-        фіксоване 60-денне вікно і на «Тиждень / Місяць» не реагують. Під
-        перемикачем секція читалась би так, ніби ігнорує контрол просто над
-        собою; над ним — це окремий блок із власним вікном, яке підпис
-        секції називає прямо. Сторінка названа «Звʼязки», тож головне на ній
-        видно без прокрутки.
+        Три блоки з ТРЬОМА різними вікнами, і кожен названий один раз:
+        звʼязки (60 днів), закономірності (весь час), звіти (тиждень або
+        місяць за перемикачем). До 2026-09-03 сторінка мала лише два кікери
+        на три блоки, а третій — перемикач періоду — плавав над аркушами без
+        імені, тож підписи перших двох мусили пояснювати, що перемикач
+        «на них не впливає». Названий блок робить ці речення зайвими.
+
+        Звʼязки стоять першими навмисно: вони рахуються за фіксоване 60-денне
+        вікно і на «Тиждень / Місяць» не реагують. Сторінка названа «Звʼязки»,
+        тож головне на ній видно без прокрутки.
       */}
       <ChunkErrorBoundary minH={120}>
         <Suspense fallback={<CardSkeleton />}>
@@ -219,60 +245,65 @@ export function HubReports() {
       </ChunkErrorBoundary>
 
       {/*
-        Сусід звʼязків, а не хвіст звітів. Обидва блоки рахуються за власним
-        фіксованим вікном і перемикач періоду ігнорують, тож під ним читались
-        би як зламані.
-
         Назва «Закономірності», а не «Інсайти»: цим словом на головній
         називається зовсім інше — тактичні модульні підказки за сьогодні
         (`HubInsightsBlock`). Один термін на дві сутності з різними вікнами
-        читався як суперечність: «на головній інсайти вже є, а тут кажуть, що
-        даних замало».
+        читався як суперечність.
 
         Порожній стан прибрано свідомо. Сторінка вже має один — картку
         мовчання у «Звʼязках між сферами», з реальною найближчою парою і
         прогресом до порога. Пороги звʼязків НИЖЧІ за тутешні (10 спостережень
         проти ≥20 подій), тож поки мовчать звʼязки, закономірностей
-        гарантовано немає: банер «Ще збираємо твої дані» нічого не додавав,
-        лише казав те саме вдруге і слабшими словами.
+        гарантовано немає.
       */}
       {insights.length > 0 && (
-        <section className="space-y-3">
-          <div className="space-y-1">
-            <SectionHeading as="h2" size="xs">
-              Закономірності
-            </SectionHeading>
-            <p className="text-style-body text-muted leading-relaxed">
-              Що повторюється у твоїх даних за весь час спостережень. Перемикач
-              періоду нижче на них не впливає.
-            </p>
-          </div>
-          <div className="space-y-3">
+        <section className="space-y-1">
+          <SectionHeading as="h2" size="xs">
+            Закономірності
+          </SectionHeading>
+          <p className="text-style-caption text-muted">
+            Що повторюється у твоїх даних за весь час.
+          </p>
+          <ul className="divide-y divide-line">
             {insights.map((ins) => (
-              <InsightCard key={ins.id} {...ins} />
+              <InsightRow key={ins.id} {...ins} />
             ))}
-          </div>
+          </ul>
         </section>
       )}
 
-      <div className="flex items-center justify-between gap-2">
-        <Segmented<Period>
-          size="sm"
-          style="solid"
-          ariaLabel="Період звіту"
-          value={period}
-          onChange={(p) => {
-            setPeriod(p);
-            setOffset(0);
-          }}
-          items={[
-            { value: "week", label: "Тиждень" },
-            { value: "month", label: "Місяць" },
-          ]}
-          className="shrink-0"
-        />
+      {/*
+        Звіти за період. Кікер і перемикач в одному рядку, смуга навігації
+        по періодах — під ними: два ряди різного роду (заголовок + контрол,
+        потім навігація), а не два ряди контролів, які читались би як панель
+        налаштувань (застереження власника 2026-08-05 щодо табу
+        «Звʼязки / Звіти» — те саме міркування).
+      */}
+      <section className="space-y-3">
+        <SectionHeading
+          as="h2"
+          size="xs"
+          action={
+            <Segmented<Period>
+              size="sm"
+              style="solid"
+              ariaLabel="Період звіту"
+              value={period}
+              onChange={(p) => {
+                setPeriod(p);
+                setOffset(0);
+              }}
+              items={[
+                { value: "week", label: "Тиждень" },
+                { value: "month", label: "Місяць" },
+              ]}
+            />
+          }
+        >
+          Звіти
+        </SectionHeading>
 
-        <div className="flex items-center gap-1">
+        <div className="flex items-center justify-between gap-1">
           <Button
             variant="ghost"
             size="sm"
@@ -280,21 +311,9 @@ export function HubReports() {
             onClick={() => setOffset((o) => o - 1)}
             aria-label="Попередній"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M15 18l-6-6 6-6" />
-            </svg>
+            <Icon name="chevron-left" size={16} aria-hidden />
           </Button>
-          <span className="text-style-caption text-muted min-w-[90px] text-center">
+          <span className="text-style-label text-text text-center tabular-nums">
             {label}
           </span>
           <Button
@@ -305,82 +324,69 @@ export function HubReports() {
             disabled={isCurrentPeriod}
             aria-label="Наступний"
           >
-            <svg
-              width="16"
-              height="16"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="2"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-              aria-hidden
-            >
-              <path d="M9 18l6-6-6-6" />
-            </svg>
+            <Icon name="chevron-right" size={16} aria-hidden />
           </Button>
         </div>
-      </div>
 
-      {/* AI-narrative «Звіт тижня» surfaced inside the Reports tab so
-          users who tap «Звіти» looking for the weekly report can find
-          the digest there (UX-feedback 2026-05-13). Only shown when
-          the period selector is on «Тиждень» — the `WeeklyDigestCard`
-          itself is week-shaped and exposes its own history nav, so it
-          stays meaningful when the user navigates between weeks via
-          the digest's internal selector. In «Місяць» view we don't
-          render it because there's no monthly digest yet. */}
-      {period === "week" && <WeeklyDigestCard />}
+        {/* Картка модуля, який людина вимкнула, не рендериться взагалі —
+            не «порожній стан», не «підключити». Вимкнений модуль не має
+            що звітувати, і рядок про це був би шумом, а не інформацією. */}
+        <div className="grid grid-cols-1 gap-3">
+          {shows("fizruk") && (
+            <ChunkErrorBoundary minH={56}>
+              <Suspense fallback={<CardSkeleton />}>
+                <FitnessCard period={period} offset={offset} />
+              </Suspense>
+            </ChunkErrorBoundary>
+          )}
+          {shows("finyk") && (
+            <ChunkErrorBoundary minH={56}>
+              <Suspense fallback={<CardSkeleton />}>
+                <ExpensesCard period={period} offset={offset} />
+              </Suspense>
+            </ChunkErrorBoundary>
+          )}
+          {shows("routine") && (
+            <ChunkErrorBoundary minH={56}>
+              <Suspense fallback={<CardSkeleton />}>
+                <RoutineCard period={period} offset={offset} />
+              </Suspense>
+            </ChunkErrorBoundary>
+          )}
+          {shows("nutrition") && (
+            <ChunkErrorBoundary minH={56}>
+              <Suspense fallback={<CardSkeleton />}>
+                <NutritionCard period={period} offset={offset} />
+              </Suspense>
+            </ChunkErrorBoundary>
+          )}
+        </div>
 
-      {/* Картка модуля, який людина вимкнула, не рендериться взагалі —
-          не «порожній стан», не «підключити». Вимкнений модуль не має
-          що звітувати, і рядок про це був би шумом, а не інформацією. */}
-      <div className="grid grid-cols-1 gap-3">
-        {shows("fizruk") && (
-          <ChunkErrorBoundary minH={56}>
-            <Suspense fallback={<CardSkeleton />}>
-              <FitnessCard period={period} offset={offset} />
-            </Suspense>
-          </ChunkErrorBoundary>
-        )}
-        {shows("finyk") && (
-          <ChunkErrorBoundary minH={56}>
-            <Suspense fallback={<CardSkeleton />}>
-              <ExpensesCard period={period} offset={offset} />
-            </Suspense>
-          </ChunkErrorBoundary>
-        )}
-        {shows("routine") && (
-          <ChunkErrorBoundary minH={56}>
-            <Suspense fallback={<CardSkeleton />}>
-              <RoutineCard period={period} offset={offset} />
-            </Suspense>
-          </ChunkErrorBoundary>
-        )}
-        {shows("nutrition") && (
-          <ChunkErrorBoundary minH={56}>
-            <Suspense fallback={<CardSkeleton />}>
-              <NutritionCard period={period} offset={offset} />
-            </Suspense>
-          </ChunkErrorBoundary>
-        )}
-      </div>
+        {/*
+          AI-narrative «Звіт тижня» живе у вкладці, щоб той, хто шукає
+          тижневий звіт, знайшов його тут (UX-feedback 2026-05-13). Лише в
+          режимі «Тиждень» — місячного дайджесту немає.
 
-      {/* Phase 7 D2 — Premium-gated cross-module PDF export. Sits at the
-          end of the reports view so it does not crowd the period picker;
-          tap opens the paywall for free users (`useFeatureGate`). */}
-      <button
-        type="button"
-        onClick={handleExportPdf}
-        className={cn(
-          "w-full h-11 rounded-2xl border border-line bg-panelHi",
-          "text-style-label text-text hover:bg-panel transition-colors",
-          "flex items-center justify-center gap-2",
-        )}
-      >
-        <Icon name="download" size={16} aria-hidden />
-        Експортувати PDF
-      </button>
+          Стоїть ПІСЛЯ модульних аркушів, а не перед ними (2026-09-03):
+          спершу факти за період — чотири числа з дельтами, — потім
+          розповідь моделі про той самий тиждень. У зворотному порядку
+          найважча поверхня сторінки (градієнтна шапка, CTA, бейджі)
+          стояла між перемикачем і числами, яких він стосується.
+        */}
+        {period === "week" && <WeeklyDigestCard />}
+
+        {/* Phase 7 D2 — Premium-gated cross-module PDF export. Тихий
+            ghost-рядок наприкінці блоку звітів, а не ще одна кнопка на всю
+            ширину: експорт — дія другого плану, і повноширинна рамка
+            робила з нього пʼятий аркуш. Тап відкриває paywall для free
+            (`useFeatureGate`). */}
+        <div className="flex justify-end">
+          <Button variant="ghost" size="sm" onClick={handleExportPdf}>
+            <Icon name="download" size={16} aria-hidden />
+            Експортувати PDF
+          </Button>
+        </div>
+      </section>
 
       <PaywallModal
         open={exportGate.paywallOpen}

@@ -211,7 +211,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
           size="xs"
           className="flex-1 min-w-0 text-muted truncate"
         >
-          Фізрук (тренування)
+          Тренування
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
