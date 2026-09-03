@@ -16,31 +16,6 @@ vi.mock("../components/FinykStatsStrip", () => ({
     </button>
   ),
 }));
-vi.mock("../components/RecurringSuggestions", () => ({
-  RecurringSuggestions: ({
-    onAdd,
-    onDismiss,
-  }: {
-    onAdd: (candidate: { key: string }) => void;
-    onDismiss: (key: string) => void;
-  }) => (
-    <div>
-      <button type="button" onClick={() => onAdd({ key: "candidate-1" })}>
-        add-recurring
-      </button>
-      <button type="button" onClick={() => onDismiss("candidate-1")}>
-        dismiss-recurring
-      </button>
-    </div>
-  ),
-}));
-vi.mock("./AssetsSubscriptionsSection", () => ({
-  AssetsSubscriptionsSection: ({
-    state,
-  }: {
-    state: { subscriptions: unknown[] };
-  }) => <div data-testid="subs-section">subs:{state.subscriptions.length}</div>,
-}));
 vi.mock("./AssetsAssetsSection", () => ({
   AssetsAssetsSection: () => <div data-testid="assets-section">assets</div>,
 }));
@@ -218,30 +193,9 @@ function Harness({
 describe("AssetsTable", () => {
   it("does not render collapsible sections when all sections are closed", () => {
     render(<Harness />);
-    expect(screen.queryByTestId("subs-section")).toBeNull();
+    expect(screen.queryByText("Підписки")).toBeNull();
     expect(screen.queryByTestId("assets-section")).toBeNull();
     expect(screen.queryByTestId("liabilities-section")).toBeNull();
-  });
-
-  it("renders the subscriptions section only when open.subscriptions toggles on", () => {
-    render(
-      <Harness
-        openOverrides={{ subscriptions: true }}
-        subscriptions={[{ id: "s1" }]}
-      />,
-    );
-    expect(screen.getByTestId("subs-section")).toHaveTextContent("subs:1");
-    expect(screen.queryByTestId("assets-section")).toBeNull();
-    expect(screen.queryByTestId("liabilities-section")).toBeNull();
-  });
-
-  it("toggles the subscriptions section open via the SectionBar click", () => {
-    render(<Harness subscriptions={[{ id: "s1" }]} />);
-    expect(screen.queryByTestId("subs-section")).toBeNull();
-    fireEvent.click(
-      screen.getByRole("button", { expanded: false, name: /Підписки/ }),
-    );
-    expect(screen.getByTestId("subs-section")).toHaveTextContent("subs:1");
   });
 
   it("opens liabilities from the stats strip", () => {
@@ -249,23 +203,6 @@ describe("AssetsTable", () => {
     expect(screen.queryByTestId("liabilities-section")).toBeNull();
     fireEvent.click(screen.getByText("stats-liabilities"));
     expect(screen.getByTestId("liabilities-section")).toBeInTheDocument();
-  });
-
-  it("passes recurring suggestion add and dismiss callbacks through", () => {
-    const addSubscriptionFromRecurring = vi.fn();
-    const dismissRecurring = vi.fn();
-    render(
-      <Harness
-        addSubscriptionFromRecurring={addSubscriptionFromRecurring}
-        dismissRecurring={dismissRecurring}
-      />,
-    );
-    fireEvent.click(screen.getByText("add-recurring"));
-    fireEvent.click(screen.getByText("dismiss-recurring"));
-    expect(addSubscriptionFromRecurring).toHaveBeenCalledWith({
-      key: "candidate-1",
-    });
-    expect(dismissRecurring).toHaveBeenCalledWith("candidate-1");
   });
 
   it("toggles the assets section open via the SectionBar click", () => {
@@ -284,18 +221,12 @@ describe("AssetsTable", () => {
     expect(screen.getByTestId("liabilities-section")).toBeInTheDocument();
   });
 
-  it("calls openSubscriptionForm / openDebtForm from the quick-action buttons", () => {
-    const openSubscriptionForm = vi.fn();
+  it("calls openDebtForm from the quick-action button and has no subscription entry", () => {
     const openDebtForm = vi.fn();
-    render(
-      <Harness
-        openSubscriptionForm={openSubscriptionForm}
-        openDebtForm={openDebtForm}
-      />,
-    );
-    fireEvent.click(screen.getByText("+ Підписка"));
+    render(<Harness openDebtForm={openDebtForm} />);
+    // Підписки переїхали в Планування — на «Активах» їх входу немає.
+    expect(screen.queryByText("+ Підписка")).toBeNull();
     fireEvent.click(screen.getByText("+ Пасив"));
-    expect(openSubscriptionForm).toHaveBeenCalledTimes(1);
     expect(openDebtForm).toHaveBeenCalledTimes(1);
   });
 

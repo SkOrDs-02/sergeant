@@ -28,3 +28,12 @@ fcd3c267e1ef00467d1de18d64bbc5b2adb2fba2:docs/03-operations/deploy/monorepo-depl
 # (The literal value is intentionally not repeated here so this ignore comment
 # does not itself trip the generic-api-key heuristic.)
 18a6dcab46540257ecbeb9fa623aca520203b29f:apps/mobile/e2e/auth-flows.e2e.ts:generic-api-key:53
+
+# apps/web/src/modules/finyk/pages/overview/MonthStrip.tsx (commit decc1928)
+# carried `STRIP_HINT_DISMISSED_KEY = "finyk_month_strip_hint_dismissed_v1"`:
+# ALL_CAPS name that ends in `_KEY` + a long snake_case string tripped
+# `generic-api-key`. It is a localStorage slot name (the same family as
+# `finyk_assets_mono_cards_open_v1`), not a credential. Follow-up commit
+# renamed the constant to `STRIP_HINT_DISMISSED_SLOT` so future commits
+# don't carry the pattern.
+decc1928a6b2e2e4f9949835d9b17863318befb5:apps/web/src/modules/finyk/pages/overview/MonthStrip.tsx:generic-api-key:177

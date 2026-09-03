@@ -40,19 +40,18 @@ test("@critical finyk: assets route opens subscription form", async ({
   });
   const errors = await collectPageErrors(page);
 
-  await page.goto("/finyk/assets", { waitUntil: "domcontentloaded" });
+  await page.goto("/finyk/budgets", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "finyk");
 
   const nav = page.getByRole("navigation", { name: "Розділи Фініка" });
-  await expect(nav.getByRole("button", { name: "Активи" })).toHaveAttribute(
+  await expect(nav.getByRole("button", { name: "Планування" })).toHaveAttribute(
     "aria-current",
     "page",
   );
 
-  // Секція «Підписки» згорнута за замовчуванням (`useAssetsState.ts`
-  // → `open.subscriptions === false`), а власної кнопки «+ Додати підписку»
-  // всередині неї більше немає (дубль знято 2026-09-03). Єдиний вхід у форму — quick-action «+ Підписка»,
-  // який розгортає секцію і відкриває форму одним кліком (`openSubscriptionForm`).
+  // Підписки живуть у Плануванні (2026-09-03). Секція згорнута за
+  // замовчуванням; єдиний вхід у форму — quick-action «+ Підписка», який
+  // розгортає секцію і відкриває форму одним кліком (`openSubscriptionForm`).
   await page.getByRole("button", { name: "+ Підписка" }).click();
   await expect(page.getByLabel("Назва підписки")).toBeVisible();
   await expect(page.getByLabel("Пошук транзакції за описом")).toBeVisible();

@@ -205,18 +205,19 @@ describe("HeroCard", () => {
     expect(screen.getByText("В нормі").className).toContain("text-hero-ink");
   });
 
-  it("renders negative networth in danger color", () => {
+  it("renders negative networth in the hero ink tone, not red", () => {
     const { container } = render(<HeroCard {...baseProps} />);
-    // The danger color lives on the <p> wrapper; the "−" sign and the
-    // CounterReveal span ("89 158 ₴") together form the full text.
-    // uk-UA groups thousands with a non-breaking space (U+00A0), so normalise
-    // whitespace before comparing to a plain-space literal.
+    // Червоне на тонованому зеленому hero читалось найгірше на екрані
+    // (звіт власника 2026-09-03): мінус несе сам знак, тон лишається
+    // чорнильним. The "−" sign and the CounterReveal span ("89 158 ₴")
+    // together form the full text; uk-UA groups thousands with U+00A0.
     const networthEl = screen.getByText(
       (_, el) =>
         el?.textContent?.replace(/\s/g, " ") === "−89 158 ₴" &&
         el.tagName === "P",
     );
-    expect(networthEl.className).toMatch(/text-danger/);
+    expect(networthEl.className).not.toMatch(/text-danger/);
+    expect(networthEl.className).toMatch(/text-hero-ink/);
     // sanity: the negative networth lives inside the card root
     expect(container.firstChild).toContainElement(networthEl);
   });

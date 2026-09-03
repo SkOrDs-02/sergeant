@@ -89,12 +89,24 @@ export const finykPageMessages = {
    * Стрічка місяця hero (`MonthStrip`) — `aria-label` групи й кожної
    * клітинки-кнопки (спека finyk-hero-month-strip.md § Верифікація, п.6).
    */
+  planning: {
+    upcomingTitle: "Найближчі платежі",
+    subscriptionsTitle: "Підписки",
+    addSubscription: "Підписка",
+    activeOne: "активна",
+    activeMany: "активних",
+  },
   monthStrip: {
     groupAriaPrefix: "Витрати за днями",
     openDaySuffix: "Відкрити операції",
     hiddenAmount: "сума прихована",
     spentPrefix: "витрачено",
     ofJoiner: "із",
+    hintWithPlan:
+      "Кожен стовпчик: один день місяця. Висота показує, скільки витрачено проти денної норми: порожній означає без витрат, повний означає, що норма вичерпана. Тап відкриває операції дня.",
+    hintNoPlan:
+      "Кожен стовпчик: один день місяця. Висота показує витрати дня відносно найдорожчого дня. Задай план, і шкала стане денною нормою. Тап відкриває операції дня.",
+    hintDismiss: "Зрозуміло, сховати підказку",
   },
   todayFilter: {
     label: "Лише сьогодні",

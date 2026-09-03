@@ -1,11 +1,9 @@
 import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
-import { RecurringSuggestions } from "../components/RecurringSuggestions";
 import { FinykStatsStrip } from "../components/FinykStatsStrip";
 import { QuickActionButton, SectionBar } from "./AssetsBars";
 import { AssetsNetworthCard } from "./AssetsNetworthCard";
-import { AssetsSubscriptionsSection } from "./AssetsSubscriptionsSection";
 import { AssetsAssetsSection } from "./AssetsAssetsSection";
 import { AssetsLiabilitiesSection } from "./AssetsLiabilitiesSection";
 import type { useAssetsState } from "./useAssetsState";
@@ -15,7 +13,6 @@ import type { useAssetsState } from "./useAssetsState";
 // `./AssetsTable`). Keeping the public surface stable while the body lives in
 // per-section files (initiative 0013, Sprint 2 PR — drain >600 LOC allowlist).
 export { AssetsNetworthCard } from "./AssetsNetworthCard";
-export { AssetsSubscriptionsSection } from "./AssetsSubscriptionsSection";
 export { AssetsAssetsSection } from "./AssetsAssetsSection";
 export { AssetsLiabilitiesSection } from "./AssetsLiabilitiesSection";
 
@@ -31,13 +28,6 @@ export function AssetsTable({ state }: { state: State }) {
     todayStart,
     open,
     setOpen,
-    subscriptions,
-    transactions,
-    dismissedRecurring,
-    excludedTxIds,
-    addSubscriptionFromRecurring,
-    dismissRecurring,
-    openSubscriptionForm,
     openAssetForm,
     openReceivableForm,
     openDebtForm,
@@ -63,12 +53,9 @@ export function AssetsTable({ state }: { state: State }) {
         className="mb-3"
       />
 
-      <div className="grid grid-cols-3 gap-2 mb-3">
-        <QuickActionButton
-          label="Підписка"
-          tone="finyk"
-          onClick={openSubscriptionForm}
-        />
+      {/* Підписки й підказки про регулярні витрати переїхали в Планування
+          (2026-09-03): «Активи» — це баланс, майбутнє живе поруч із планом. */}
+      <div className="grid grid-cols-2 gap-2 mb-3">
         {/* «+ Актив» — пікер, а не пряма кнопка: у секції дві різні
             сутності («Інші активи» й «Мені винні»), і після зняття кнопок
             усередині груп це єдине місце, де людина обирає між ними. */}
@@ -96,32 +83,6 @@ export function AssetsTable({ state }: { state: State }) {
           trigger={<QuickActionButton label="Актив" tone="finyk" />}
         />
         <QuickActionButton label="Пасив" tone="danger" onClick={openDebtForm} />
-      </div>
-
-      <RecurringSuggestions
-        transactions={transactions}
-        subscriptions={subscriptions}
-        dismissedRecurring={dismissedRecurring}
-        excludedTxIds={excludedTxIds}
-        onAdd={(candidate) => addSubscriptionFromRecurring?.(candidate)}
-        onDismiss={(key) => dismissRecurring?.(key)}
-      />
-
-      {/* Subscriptions section */}
-      <div id="finyk-subscriptions-section">
-        <SectionBar
-          title="Підписки"
-          iconName="refresh-cw"
-          iconTone="finyk"
-          summary={`${subscriptions.length} активн${
-            subscriptions.length === 1 ? "а" : "их"
-          }`}
-          open={open.subscriptions}
-          onToggle={() =>
-            setOpen((v) => ({ ...v, subscriptions: !v.subscriptions }))
-          }
-        />
-        {open.subscriptions && <AssetsSubscriptionsSection state={state} />}
       </div>
 
       {/* Assets section */}
