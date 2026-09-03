@@ -1,4 +1,5 @@
 import { useRef } from "react";
+import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 
@@ -106,31 +107,23 @@ export function TransactionFilters({
         className="flex gap-1 whitespace-nowrap"
       >
         {filters.map((f) => (
-          <button
+          // Фільтр — це той самий `Button`, що й решта контролів модуля:
+          // обраний — solid у тоні Фініка, решта — outline з hairline
+          // модуля. Власна розмітка пігулки прибрана (анти-слоп, chip-scroller
+          // як дефолтний фільтр); 44px на coarse pointer дає сам Button.
+          <Button
             key={f.id}
             data-pill
-            data-compact
-            type="button"
+            size="xs"
+            variant={filter === f.id ? "solid" : "outline"}
+            tone={filter === f.id ? "finyk" : "neutral"}
             onClick={() => onChangeFilter(f.id)}
             aria-pressed={filter === f.id}
             tabIndex={f.id === activeId ? 0 : -1}
-            className={cn(
-              // Audit 05 F12: keep the compact `h-7` visual on fine
-              // pointers (mouse) but extend the touch-target floor on
-              // coarse pointers (mobile finger-tap) to the WCAG 2.5.5 ≥44
-              // px contract via `pointer-coarse:min-h-[44px]`. The pill
-              // outline stays 28px on desktop; the hit area only grows
-              // where it actually matters.
-              "shrink-0 inline-flex items-center h-7 px-3 text-style-caption font-medium rounded-full border transition-colors",
-              "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px]",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-finyk/50 focus-visible:ring-offset-1",
-              filter === f.id
-                ? "bg-primary border-primary text-bg shadow-sm"
-                : "bg-panelHi border-line text-text hover:border-muted",
-            )}
+            className={cn("shrink-0", filter !== f.id && "border-finyk/40")}
           >
             {f.label}
-          </button>
+          </Button>
         ))}
         {activeCategoryLabel != null && (
           /*
@@ -144,24 +137,19 @@ export function TransactionFilters({
             не має `aria-pressed`, бо це не перемикач стану, а дія
             «прибрати звуження». Звідси `×` і власна Tab-зупинка.
           */
-          <button
-            type="button"
+          <Button
+            size="xs"
+            variant="soft"
+            tone="finyk"
             onClick={() => onChangeFilter("all")}
-            className={cn(
-              "shrink-0 inline-flex items-center gap-1.5 h-7 px-3 rounded-full border transition-colors",
-              "pointer-coarse:min-h-[44px]",
-              "text-style-caption font-medium",
-              "bg-finyk/10 border-finyk/30 text-finyk-strong dark:text-finyk",
-              "hover:border-finyk/60",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-finyk/50 focus-visible:ring-offset-1",
-            )}
+            className="shrink-0"
           >
             {activeCategoryLabel}
             <span aria-hidden>×</span>
             <span className="sr-only">
               {messages.finyk.clearCategoryFilter}
             </span>
-          </button>
+          </Button>
         )}
       </div>
     </div>

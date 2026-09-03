@@ -62,23 +62,12 @@ export function AssetsTable({ state }: { state: State }) {
 
       <div className="grid grid-cols-3 gap-2 mb-3">
         <QuickActionButton
-          iconName="refresh-cw"
           label="Підписка"
           tone="finyk"
           onClick={openSubscriptionForm}
         />
-        <QuickActionButton
-          iconName="trending-up"
-          label="Актив"
-          tone="finyk"
-          onClick={openAssetForm}
-        />
-        <QuickActionButton
-          iconName="trending-down"
-          label="Пасив"
-          tone="danger"
-          onClick={openDebtForm}
-        />
+        <QuickActionButton label="Актив" tone="finyk" onClick={openAssetForm} />
+        <QuickActionButton label="Пасив" tone="danger" onClick={openDebtForm} />
       </div>
 
       <RecurringSuggestions

@@ -39,22 +39,17 @@ describe("AssetsBars (branches)", () => {
     it("invokes onClick when pressed", () => {
       const onClick = vi.fn();
       render(
-        <QuickActionButton
-          iconName="plus"
-          label="Борг"
-          onClick={onClick}
-          tone="danger"
-        />,
+        <QuickActionButton label="Борг" onClick={onClick} tone="danger" />,
       );
       fireEvent.click(screen.getByRole("button", { name: /\+ Борг/ }));
       expect(onClick).toHaveBeenCalledTimes(1);
     });
 
-    it("defaults to finyk tone styling", () => {
-      const { container } = render(
-        <QuickActionButton iconName="wallet" label="Актив" onClick={vi.fn()} />,
+    it("defaults to the finyk soft Button variant", () => {
+      render(<QuickActionButton label="Актив" onClick={vi.fn()} />);
+      expect(screen.getByRole("button", { name: /\+ Актив/ })).toHaveClass(
+        "bg-finyk-soft",
       );
-      expect(container.querySelector(".text-finyk-strong")).not.toBeNull();
     });
   });
 

@@ -1,4 +1,5 @@
 import type { ReactNode } from "react";
+import { Button } from "@shared/components/ui/Button";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { formatNumberUk } from "@sergeant/shared";
@@ -82,49 +83,35 @@ export function AssetsLiabilitiesBar({
 
 export type QuickActionTone = "finyk" | "success" | "danger";
 
-const QUICK_TONE_BORDER: Record<QuickActionTone, string> = {
-  finyk: "hover:border-finyk/40",
-  success: "hover:border-success/40",
-  danger: "hover:border-danger/40",
-};
-
 /**
  * CTA used in the 3-button quick-action row above the sections. Each
  * button collapses the "expand → scroll → tap +" flow into a single tap
  * that opens the relevant section *and* reveals its inline form.
+ *
+ * Це звичайний `Button variant="soft"`, а не картка з іконкою в тонованому
+ * квадраті: тайл за формою збігався з картками вмісту поруч, і око не
+ * розрізняло «натисни» та «прочитай» (анти-слоп, атрактор icon-in-tinted-
+ * square). Іконки немає навмисно: у трьох колонках підпис і є значенням.
  */
 export function QuickActionButton({
-  iconName,
   label,
   onClick,
   tone = "finyk",
 }: {
-  iconName: IconName;
   label: string;
   onClick: () => void;
   tone?: QuickActionTone;
 }) {
   return (
-    <button
-      type="button"
+    <Button
+      variant="soft"
+      tone={tone}
+      size="md"
       onClick={onClick}
-      className={cn(
-        "group flex flex-col items-center justify-center gap-1.5 py-3 px-2 text-style-caption bg-panelHi border border-line rounded-2xl shadow-soft transition-[transform,box-shadow,border-color] hover:shadow-card hover:-translate-y-px active:translate-y-0",
-        QUICK_TONE_BORDER[tone],
-      )}
+      className="w-full min-w-0 px-1"
     >
-      <span
-        className={cn(
-          "inline-flex h-8 w-8 items-center justify-center rounded-xl transition-colors",
-          TONE_BG[tone],
-          TONE_TEXT[tone],
-        )}
-        aria-hidden
-      >
-        <Icon name={iconName} size={16} />
-      </span>
-      <span className="font-medium text-text">+ {label}</span>
-    </button>
+      <span className="truncate">+ {label}</span>
+    </Button>
   );
 }
 
