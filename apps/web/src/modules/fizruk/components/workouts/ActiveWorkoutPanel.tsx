@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-19
+ * Last validated: 2026-09-03
  * Status: Active
  */
 import { useCallback, useId, useState } from "react";
@@ -11,7 +11,7 @@ import type {
   WorkoutSet,
 } from "@sergeant/fizruk-domain";
 import { Card } from "@shared/components/ui/Card";
-import { Label } from "@shared/components/ui/FormField";
+import { Icon } from "@shared/components/ui/Icon";
 import { useRestSettings } from "../../hooks/useRestSettings";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { useToast } from "@shared/hooks/useToast";
@@ -228,14 +228,7 @@ export function ActiveWorkoutPanel({
             items={activeWorkout.warmup}
             onToggle={(id: string) => handleWarmupToggle("warmup", id)}
             onInit={handleInitWarmup}
-            color={{
-              border: "border-warning/40",
-              text: "text-warning-strong dark:text-warning",
-            }}
           />
-        </div>
-
-        <div className="mt-3 space-y-2">
           {showGroupingControls && (
             <WorkoutGroupingControls
               selectedCount={groupSelected.size}
@@ -265,38 +258,45 @@ export function ActiveWorkoutPanel({
             setDefaultForExercise={setDefaultForExercise}
             onDeleteSet={handleDeleteSet}
           />
-        </div>
-
-        <div className="mt-3 space-y-2">
           <WarmupCooldownChecklist
             title="Заминка / розтяжка"
             items={activeWorkout.cooldown}
             onToggle={(id: string) => handleWarmupToggle("cooldown", id)}
             onInit={handleInitCooldown}
-            color={{
-              border: "border-info/40",
-              text: "text-info-strong dark:text-info",
-            }}
           />
+          {!activeWorkout.endedAt && (
+            // Той самий згорнутий рядок, що й час, розминка та заминка:
+            // порожня textarea на весь екран була найгучнішим полем панелі,
+            // хоча нотатка потрібна далеко не щоразу.
+            <details
+              className="group rounded-xl border border-line bg-panelHi/50 px-3 py-2"
+              open={Boolean(activeWorkout.note)}
+            >
+              <summary className="flex items-center justify-between gap-2 min-h-[28px] cursor-pointer select-none list-none [&::-webkit-details-marker]:hidden">
+                <span className="text-style-caption text-subtle">
+                  Нотатки до тренування · необовʼязково
+                </span>
+                <Icon
+                  name="chevron-down"
+                  size={16}
+                  className="shrink-0 text-subtle transition-transform group-open:rotate-180"
+                  aria-hidden
+                />
+              </summary>
+              <textarea
+                id={noteId}
+                aria-label="Нотатки до тренування"
+                className="input-focus-fizruk mt-2 w-full min-h-[72px] rounded-xl border border-line bg-bg px-3 py-2.5 text-sm text-text placeholder:text-subtle resize-none"
+                placeholder="Напр. Важко на присіданнях, болить коліно…"
+                value={activeWorkout.note || ""}
+                maxLength={NOTE_MAX_LEN}
+                onChange={(e) =>
+                  updateWorkout(activeWorkout.id, { note: e.target.value })
+                }
+              />
+            </details>
+          )}
         </div>
-
-        {!activeWorkout.endedAt && (
-          <div className="mt-3">
-            <Label htmlFor={noteId} optional>
-              Нотатки до тренування
-            </Label>
-            <textarea
-              id={noteId}
-              className="input-focus-fizruk w-full min-h-[72px] rounded-2xl border border-line bg-bg px-3 py-2.5 text-sm text-text placeholder:text-subtle resize-none"
-              placeholder="Напр. Важко на присіданнях, болить коліно…"
-              value={activeWorkout.note || ""}
-              maxLength={NOTE_MAX_LEN}
-              onChange={(e) =>
-                updateWorkout(activeWorkout.id, { note: e.target.value })
-              }
-            />
-          </div>
-        )}
       </Card>
     </>
   );

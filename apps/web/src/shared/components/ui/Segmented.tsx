@@ -98,15 +98,16 @@ const INACTIVE =
   "border-line bg-panel text-muted hover:text-text hover:bg-panelHi transition-colors";
 
 // `bar` drops `flex-wrap` on purpose: a wrapped segment breaks the single
-// track the layout promises. Corner radius follows the surrounding form
-// controls (`rounded-2xl`) rather than the pill's capsule.
+// track the layout promises. Обидва layout-и тримають кути форм-контролів
+// (`rounded-xl` / `rounded-2xl`), а не капсулу: овальні чіпи поруч із
+// прямокутними полями й кнопками читались як чужий віджет (звіт 2026-09-03).
 const LAYOUT_ROW: Record<SegmentedLayout, string> = {
   pill: "flex flex-wrap items-center gap-3",
   bar: "flex w-full items-stretch gap-1.5",
 };
 
 const LAYOUT_ITEM: Record<SegmentedLayout, string> = {
-  pill: "rounded-full",
+  pill: "rounded-xl",
   bar: "flex-1 min-w-0 rounded-2xl",
 };
 

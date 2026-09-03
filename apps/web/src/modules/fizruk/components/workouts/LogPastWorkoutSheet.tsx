@@ -58,6 +58,9 @@ import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Select } from "@shared/components/ui/Select";
+import { Icon } from "@shared/components/ui/Icon";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
+import { cn } from "@shared/lib/ui/cn";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { TimeField } from "@shared/components/ui/TimeField";
 import { messages } from "@shared/i18n/uk";
@@ -161,6 +164,108 @@ const INTENSITY_ITEMS = (
   Object.keys(ACTIVITY_INTENSITIES_UK) as ActivityIntensity[]
 ).map((value) => ({ value, label: ACTIVITY_INTENSITIES_UK[value] }));
 
+/** Заняття збігається з запитом по назві без урахування регістру. */
+function matchesActivityQuery(a: ActivityDef, q: string): boolean {
+  return a.nameUk.toLocaleLowerCase("uk").includes(q);
+}
+
+function ActivityPickerSheet({
+  open,
+  onClose,
+  activities,
+  justCreated,
+  value,
+  canCreate,
+  onPick,
+}: {
+  open: boolean;
+  onClose: () => void;
+  activities: ActivityDef[];
+  justCreated: ActivityDef | null;
+  value: string;
+  canCreate: boolean;
+  onPick: (id: string) => void;
+}) {
+  const t = messages.fizruk.logPast;
+  const [q, setQ] = useState("");
+  const query = q.trim().toLocaleLowerCase("uk");
+  const all =
+    justCreated && !activities.some((a) => a.id === justCreated.id)
+      ? [...activities, justCreated]
+      : activities;
+  const groups = CATEGORY_ORDER.map((category) => ({
+    category,
+    items: all.filter(
+      (a) => a.category === category && matchesActivityQuery(a, query),
+    ),
+  })).filter((g) => g.items.length > 0);
+
+  const optionClass = (active: boolean) =>
+    cn(
+      "focus-ring flex min-h-[44px] w-full items-center gap-3 rounded-xl px-2 text-left text-style-body",
+      active ? "bg-fizruk-surface text-fizruk-soft-fg" : "text-text",
+    );
+
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title={t.pickerTitle}
+      zIndex={90}
+      panelClassName="fizruk-sheet"
+    >
+      <div className="sticky top-0 z-10 -mx-1 bg-panel px-1 pb-2">
+        <Input
+          {...searchFieldProps("log-past-activity-search")}
+          placeholder={t.pickerSearch}
+          value={q}
+          onChange={(e) => setQ(e.target.value)}
+        />
+      </div>
+      <div role="listbox" aria-label={t.activity} className="space-y-3">
+        {groups.map(({ category, items }) => (
+          <div key={category}>
+            <div className="mb-1 px-2 text-style-caption font-semibold text-subtle">
+              {ACTIVITY_CATEGORIES_UK[category]}
+            </div>
+            {items.map((a) => (
+              <button
+                key={a.id}
+                type="button"
+                role="option"
+                aria-selected={value === a.id}
+                className={optionClass(value === a.id)}
+                onClick={() => onPick(a.id)}
+              >
+                {a.nameUk}
+              </button>
+            ))}
+          </div>
+        ))}
+        {groups.length === 0 && (
+          <p className="px-2 py-4 text-style-caption text-subtle">
+            {t.pickerEmpty}
+          </p>
+        )}
+        {canCreate && (
+          <button
+            type="button"
+            role="option"
+            aria-selected={value === NEW_ACTIVITY_VALUE}
+            className={cn(
+              optionClass(value === NEW_ACTIVITY_VALUE),
+              "font-semibold",
+            )}
+            onClick={() => onPick(NEW_ACTIVITY_VALUE)}
+          >
+            {t.activityNew}
+          </button>
+        )}
+      </div>
+    </Sheet>
+  );
+}
+
 export function LogPastWorkoutSheet({
   open,
   onClose,
@@ -189,6 +294,8 @@ export function LogPastWorkoutSheet({
   const [start, setStart] = useState(DEFAULT_START);
   const [end, setEnd] = useState(DEFAULT_END);
   const [activity, setActivity] = useState("");
+  const [mode, setMode] = useState<"activity" | "manual">("activity");
+  const [pickerOpen, setPickerOpen] = useState(false);
   const [durationMin, setDurationMin] = useState(DEFAULT_DURATION_MIN);
   const [zone, setZone] = useState<ActivityMuscleZone>("full");
   const [intensity, setIntensity] = useState<ActivityIntensity>("normal");
@@ -224,10 +331,12 @@ export function LogPastWorkoutSheet({
 
   const times = useMemo(
     () =>
-      selectedActivity
-        ? buildActivityWorkoutTimes(date, start, Number(durationMin))
-        : buildPastWorkoutTimes(date, start, end),
-    [selectedActivity, date, start, end, durationMin],
+      mode === "manual"
+        ? buildPastWorkoutTimes(date, start, end)
+        : selectedActivity
+          ? buildActivityWorkoutTimes(date, start, Number(durationMin))
+          : null,
+    [mode, selectedActivity, date, start, end, durationMin],
   );
 
   // Введена тут вага працює одразу: показувати «приблизно 0 ккал» до
@@ -321,42 +430,79 @@ export function LogPastWorkoutSheet({
       }
     >
       <div className="w-full min-w-0 max-w-full space-y-3 pt-1">
-        <div className="min-w-0">
-          <label
-            htmlFor={activityId}
-            className="text-style-label text-text leading-snug"
-          >
-            {t.activity}
-          </label>
-          <Select
-            id={activityId}
-            accent="fizruk"
-            value={activity}
-            onChange={(e) => setActivity(e.target.value)}
-            className="mt-1 min-w-0 max-w-full"
-          >
-            <option value="">{t.activityNone}</option>
-            {CATEGORY_ORDER.map((category) => (
-              <optgroup key={category} label={ACTIVITY_CATEGORIES_UK[category]}>
-                {activities
-                  .filter((a) => a.category === category)
-                  .map((a) => (
-                    <option key={a.id} value={a.id}>
-                      {a.nameUk}
-                    </option>
-                  ))}
-              </optgroup>
-            ))}
-            {onCreateActivity ? (
-              <option value={NEW_ACTIVITY_VALUE}>{t.activityNew}</option>
-            ) : null}
-          </Select>
-          {!selectedActivity && !creatingActivity ? (
-            <p className="text-style-caption text-subtle mt-1">
+        <div className="min-w-0 space-y-2">
+          <span className="text-style-label text-text leading-snug block">
+            {t.modeLabel}
+          </span>
+          <Segmented
+            variant="fizruk"
+            layout="bar"
+            ariaLabel={t.modeLabel}
+            items={[
+              { value: "activity", label: t.modeActivity },
+              { value: "manual", label: t.modeManual },
+            ]}
+            value={mode}
+            onChange={(next) => {
+              setMode(next);
+              if (next === "manual") setActivity("");
+            }}
+          />
+          {mode === "manual" ? (
+            <p className="text-style-caption text-subtle">
               {t.activityNoneHint}
             </p>
           ) : null}
         </div>
+
+        {mode === "activity" ? (
+          <div className="min-w-0">
+            <label
+              htmlFor={activityId}
+              className="text-style-label text-text leading-snug"
+            >
+              {t.activity}
+            </label>
+            {/* Кнопка замість нативного <select>: у каталозі ~55 занять, і
+                колесо iOS змушувало гортати їх усі. Вкладений аркуш дає пошук. */}
+            <button
+              id={activityId}
+              type="button"
+              onClick={() => setPickerOpen(true)}
+              aria-haspopup="dialog"
+              className="input-focus-fizruk mt-1 flex h-11 w-full min-w-0 max-w-full items-center justify-between gap-2 rounded-2xl border border-line bg-panelHi pl-4 pr-3 text-left text-style-body text-text"
+            >
+              <span
+                className={cn(
+                  "min-w-0 truncate",
+                  !selectedActivity && !creatingActivity && "text-subtle",
+                )}
+              >
+                {creatingActivity
+                  ? t.activityNew
+                  : (selectedActivity?.nameUk ?? t.pickerTitle)}
+              </span>
+              <Icon
+                name="chevron-down"
+                size={16}
+                className="shrink-0 text-subtle"
+                aria-hidden
+              />
+            </button>
+            <ActivityPickerSheet
+              open={pickerOpen}
+              onClose={() => setPickerOpen(false)}
+              activities={activities}
+              justCreated={justCreated}
+              value={activity}
+              canCreate={Boolean(onCreateActivity)}
+              onPick={(id) => {
+                setActivity(id);
+                setPickerOpen(false);
+              }}
+            />
+          </div>
+        ) : null}
 
         {creatingActivity ? (
           /* Заводимо просто тут, а не окремим екраном: людина вже посеред
@@ -451,7 +597,7 @@ export function LogPastWorkoutSheet({
               onChange={(e) => setStart(e.target.value)}
             />
           </div>
-          {selectedActivity ? null : (
+          {mode === "manual" ? (
             <div className="min-w-0">
               <TimeField
                 id={endId}
@@ -460,7 +606,7 @@ export function LogPastWorkoutSheet({
                 onChange={(e) => setEnd(e.target.value)}
               />
             </div>
-          )}
+          ) : null}
         </div>
 
         {selectedActivity ? (

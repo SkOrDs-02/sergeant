@@ -57,12 +57,19 @@ export function ActiveWorkoutHeader({
   return (
     <div className="flex items-center justify-between gap-2">
       <div>
-        <div className="text-style-label text-text">
-          {activeWorkout.endedAt
-            ? "Завершене тренування"
-            : "Активне тренування"}
-        </div>
-        <div className="text-style-caption text-subtle mt-0.5">
+        {/* Заголовок «Активне тренування» вже стоїть у шапці сторінки над
+            панеллю; повторювати його тут — шум. Завершене відрізняється від
+            активного лише цим словом, тож для нього підпис лишається. */}
+        {activeWorkout.endedAt ? (
+          <div className="text-style-label text-text">Завершене тренування</div>
+        ) : null}
+        <div
+          className={
+            activeWorkout.endedAt
+              ? "text-style-caption text-subtle mt-0.5"
+              : "text-style-label text-text"
+          }
+        >
           {new Date(activeWorkout.startedAt).toLocaleString("uk-UA", {
             month: "short",
             day: "numeric",

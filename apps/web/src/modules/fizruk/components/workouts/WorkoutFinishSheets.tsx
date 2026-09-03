@@ -55,7 +55,7 @@ function InjuryChip({
       type="button"
       aria-pressed={selected}
       className={cn(
-        "min-h-[44px] rounded-full border px-3 py-2 text-style-caption transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+        "min-h-[44px] rounded-xl border px-3 py-2 text-style-caption transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         selected
           ? "border-warning-strong bg-warning/15 text-warning-strong dark:text-warning"
           : "border-line bg-bg text-muted hover:border-muted hover:text-text",
