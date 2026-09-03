@@ -19,6 +19,8 @@
  * TDZ-крашем (див. коментар на початку `singleton.ts`).
  */
 
+import { emitSyncOutboxChanged } from "./outboxChanged.js";
+
 type NudgeFn = () => void;
 
 let nudge: NudgeFn | null = null;
@@ -39,6 +41,9 @@ export function setOutboxEnqueueNudge(fn: NudgeFn | null): void {
  * права зламати локальний запис.
  */
 export function notifyOutboxEnqueued(): void {
+  // Індикатор черги оновлюємо ДО гарду: рядок уже в аутбоксі, і його
+  // видно в лічильнику незалежно від того, чи піднявся writer-runtime.
+  emitSyncOutboxChanged();
   if (!nudge) return;
   try {
     nudge();
