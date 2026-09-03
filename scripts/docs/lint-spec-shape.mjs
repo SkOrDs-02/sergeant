@@ -137,6 +137,14 @@ export function listSpecFiles(dir = SPECS_DIR) {
     .sort();
 }
 
+/**
+ * Читає мапу успадкованих пропусків із baseline-файла.
+ *
+ * Відсутній або битий файл дає порожню мапу, а не помилку: тоді ЖОДЕН
+ * пропуск не вважається успадкованим і гейт валить усі. Це навмисно
+ * безпечний бік відмови — загублений baseline має проявитись як робота,
+ * а не як тиша, що пропускає регресії.
+ */
 export function readBaseline(path = BASELINE_PATH) {
   try {
     const parsed = JSON.parse(readFileSync(path, "utf8"));
@@ -171,6 +179,12 @@ export function diffAgainstBaseline(actual, baseline) {
   return { added, stale };
 }
 
+/**
+ * Обходить теку спек і розкладає результат на три частини: усі файли,
+ * мапу фактичних пропусків і список тих, хто оголосив себе не-спекою
+ * (разом із причиною — вона друкується у звіті, щоб винятки лишались
+ * видимими).
+ */
 function collect() {
   const files = listSpecFiles();
   const actual = {};
@@ -188,6 +202,13 @@ function collect() {
   return { files, actual, skipped };
 }
 
+/**
+ * Перезаписує baseline поточними пропусками (`--update`).
+ *
+ * Ключі й секції сортуються, щоб діф файла показував зміну змісту, а не
+ * перестановку — інакше ревʼюер не бачить, храповик крутнувся вниз чи
+ * хтось тихо додав новий дозволений пропуск.
+ */
 function writeBaseline(actual) {
   const sorted = Object.fromEntries(
     Object.keys(actual)
@@ -208,6 +229,10 @@ function writeBaseline(actual) {
   );
 }
 
+/**
+ * CLI-точка входу: `--update` перезаписує baseline, `--json` друкує
+ * машинний звіт, дефолт — людський звіт із кодом виходу.
+ */
 function main() {
   const { files, actual, skipped } = collect();
 
