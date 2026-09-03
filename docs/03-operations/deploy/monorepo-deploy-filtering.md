@@ -63,6 +63,16 @@ npx --yes turbo@2 query affected --base=origin/main --packages @sergeant/web --e
 # На docs-only коміті — має бути exit 0 (skip).
 ```
 
+### Заміряно на Vercel (2026-09-03, PR #1057)
+
+Обидві гілки логіки перевірені на реальних деплоях, не лише локально.
+
+**Білд без попереднього деплою.** `dpl_6trLwJ7f`, перший пуш гілки: у
+логах видно, що `$VERCEL_GIT_PREVIOUS_SHA` порожній, turbo падає з
+`ambiguous argument ''`, `|| exit 1` перетворює це на «білдити» — деплой
+READY. Саме той стан, у якому старий `--fallback=HEAD^1` міг мовчки
+пропустити збірку.
+
 ### Verify on Vercel after merge
 
 1. Відкрий список деплоїв у Vercel UI для проєкту `sergeant`.
