@@ -24,7 +24,8 @@ import { useLocale } from "@shared/i18n/useLocale";
 import { PaywallModal, useFeatureGate } from "../../../../core/billing";
 import { usePhotoAnalysis } from "../../hooks/usePhotoAnalysis";
 import { fmtMacro } from "../../lib/nutritionFormat";
-import { PHOTO_PRIVACY_ACK_KEY, PhotoAnalyzeCard } from "../PhotoAnalyzeCard";
+import { PhotoAnalyzeCard } from "../PhotoAnalyzeCard";
+import { PHOTO_PRIVACY_ACK_KEY } from "../PhotoPrivacyNotice";
 
 interface PhotoStepProps {
   /**

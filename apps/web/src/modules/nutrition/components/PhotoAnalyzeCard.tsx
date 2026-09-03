@@ -2,8 +2,7 @@
  * Last validated: 2026-08-13
  * Status: Active
  */
-import { useState, type Dispatch, type Ref, type SetStateAction } from "react";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import type { Dispatch, Ref, SetStateAction } from "react";
 import { Input, Textarea } from "@shared/components/ui/Input";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Spinner } from "@shared/components/ui/Spinner";
@@ -12,6 +11,8 @@ import { cn } from "@shared/lib/ui/cn";
 import type { NutritionNotFoodKind } from "@sergeant/api-client";
 import type { NullableMacros } from "@sergeant/shared";
 import { PHOTO_NOTE_MAX_LENGTH } from "../hooks/usePhotoAnalysis";
+import { NotFoodNotice } from "./NotFoodNotice";
+import { PhotoPrivacyNotice } from "./PhotoPrivacyNotice";
 
 /**
  * Inline "in progress" line — spinner + copy, anchored right where the
@@ -29,72 +30,6 @@ function InlineAnalysisStatus({ text }: { text: string }) {
     >
       <Spinner size="xs" />
       <span>{text}</span>
-    </div>
-  );
-}
-
-/**
- * Ключ підтвердження, що людина прочитала попередження про фото.
- *
- * AI-CONTEXT: рішення founder-а 2026-07-26 — на питання «що робимо з
- * фото» обрано «попередження». Фото єдиний шлях за периметр, який
- * **неможливо** замаскувати: у кадр разом із тарілкою потрапляє чек із
- * адресою, чужа рука, екран телефона. Технічного рішення тут немає, є
- * лише чесність або мовчання.
- *
- * Попередження одноразове навмисно: постійний банер над кожним фото
- * перестають читати за тиждень, і тоді він захищає не людину, а нас.
- *
- * Ack — це ще й гейт автоаналізу (рішення founder-а 2026-08-13):
- * до підтвердження аналіз стартує лише явним тапом, після — сам при
- * виборі/заміні фото. Тому `PhotoStep` читає той самий ключ і слухає
- * `onPrivacyAck`.
- */
-export const PHOTO_PRIVACY_ACK_KEY = "sergeant.nutrition.photoPrivacyAck.v1";
-
-function PhotoPrivacyNotice({
-  onAck,
-  blockingAnalysis,
-}: {
-  onAck?: (() => void) | undefined;
-  /**
-   * Кадр уже обраний, тариф дозволяє аналіз — і єдине, що його стримує,
-   * це непідтверджений нотіс. Тоді нотіс мусить сам сказати, що він і є
-   * та кнопка, якої людина шукає.
-   */
-  blockingAnalysis?: boolean | undefined;
-}) {
-  const [acked, setAcked] = useState(
-    // Пара read/write мусить бути узгоджена: `safeWriteLS` кладе JSON,
-    // тому й читаємо через `safeReadLS`. Рядковий читач повернув би
-    // `"true"` з лапками і банер не зникав би ніколи.
-    () => safeReadLS<boolean>(PHOTO_PRIVACY_ACK_KEY, false) === true,
-  );
-  if (acked) return null;
-  return (
-    <div className="mb-3 rounded-2xl border border-line bg-panelHi p-3">
-      <div className="text-style-label text-text">Куди їде фото</div>
-      <p className="mt-1 text-style-caption text-muted leading-relaxed">
-        Щоб визначити КБЖВ, фото відправляється на розпізнавання до зовнішнього
-        AI-сервісу. На відміну від тексту, фото приховати частково не вийде: їде
-        весь кадр. Перевір, що в нього не потрапило зайве.
-      </p>
-      {blockingAnalysis && (
-        <p className="mt-2 text-style-caption text-text leading-relaxed">
-          Аналіз почнеться, щойно підтвердиш це. Доти кадр нікуди не їде.
-        </p>
-      )}
-      <button
-        type="button"
-        onClick={() => {
-          safeWriteLS(PHOTO_PRIVACY_ACK_KEY, true);
-          setAcked(true);
-          onAck?.();
-        }}
-        className="mt-2 min-h-11 px-3 text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
-      >
-        {blockingAnalysis ? "Зрозуміло, аналізувати" : "Зрозуміло"}
-      </button>
     </div>
   );
 }
@@ -122,60 +57,6 @@ interface PhotoAnalyzeResult {
   confidence?: number | null;
   ingredients?: PhotoIngredient[];
   questions?: string[];
-}
-
-/**
- * Відмова аналізу: на фото немає їжі.
- *
- * AI-CONTEXT: до цієї гілки картка рендерила КБЖВ, «Зберегти в журнал» і блок
- * «Уточнення порції» щойно результат був не-null — тож фото кота давало нулі,
- * «Впевненість: 100%» і питання «Чи є на фото щось інше, окрім кота?», а
- * кнопка збереження писала це в денний журнал як `macroSource: photoAI`.
- * Найдорожчою була саме кнопка, а не назва: вигадані нулі потрапляли в
- * `estimatedKcalShare` і в підсумок дня.
- */
-const NOT_FOOD_COPY: Record<
-  NutritionNotFoodKind,
-  { title: string; unnamed: string; action: string }
-> = {
-  animal: {
-    title: "Це не страва, а тваринка",
-    unnamed: "На фото тваринка, а не їжа.",
-    action:
-      "Краще погладь і пригости смаколиком, а для журналу зроби фото їжі.",
-  },
-  person: {
-    title: "Це людина, а не страва",
-    unnamed: "На фото людина, а не їжа.",
-    action: "Наведи камеру на тарілку, або додай прийом їжі вручну.",
-  },
-  other: {
-    title: "Не бачу тут страви",
-    unnamed: "На фото немає їжі, для якої можна порахувати КБЖВ.",
-    action: "Обери інше фото вище, або додай прийом їжі вручну.",
-  },
-};
-
-function NotFoodNotice({
-  dishName,
-  kind,
-}: {
-  dishName?: string | null | undefined;
-  kind?: NutritionNotFoodKind | null | undefined;
-}) {
-  const what = (dishName || "").trim();
-  const copy = NOT_FOOD_COPY[kind ?? "other"];
-  return (
-    <div className="mt-4 rounded-2xl border border-line bg-panelHi p-3">
-      <div className="text-style-label text-text">{copy.title}</div>
-      <p className="mt-1 text-style-caption text-muted leading-relaxed">
-        {what
-          ? `На фото схоже на «${what}», порахувати КБЖВ немає з чого.`
-          : copy.unnamed}{" "}
-        {copy.action}
-      </p>
-    </div>
-  );
 }
 
 interface PhotoAnalyzeCardProps {
@@ -455,6 +336,8 @@ export function PhotoAnalyzeCard({
                 </svg>
                 Зберегти в журнал
               </button>
+              {/* AI-NOTE: підказка під кнопкою: дрібний кегль тут правильний,
+                  вона пояснює саму дію і не читається окремо від неї. */}
               <p className="text-style-caption text-muted text-center">
                 Сам аналіз у журнал не потрапляє, збережи, щоб він порахувався в
                 дні.
@@ -541,7 +424,9 @@ export function PhotoAnalyzeCard({
             >
               Перерахувати з урахуванням уточнень
             </button>
-            {/* Чесність про ціну кнопки: перерахунок — це новий прогін
+            {/* AI-NOTE: дисклеймер під контролом, кегль навмисно дрібний,
+                щоб не сперечатися вагою з самою кнопкою.
+                Чесність про ціну кнопки: перерахунок — це новий прогін
                 моделі по всьому кадру, а не точкова правка. Те, що вона
                 вгадала правильно, теж може змінитись. */}
             <p className="text-style-caption text-muted">
