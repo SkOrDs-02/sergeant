@@ -1,5 +1,6 @@
 import type { messages as ukMessages, MessageGroupShape } from "./uk";
 import { pricingEn } from "./en.pricing";
+import { nutritionTdeeEn } from "./en.nutritionTdee";
 
 /**
  * Full English catalog. Top-level keys present here REPLACE the same
@@ -518,16 +519,7 @@ export const messagesEn: Partial<{
     ageYearsSuffix: "years",
   },
 
-  nutritionTdee: {
-    triggerLabel: "Calculate from profile",
-    triggerHint:
-      "Fill in your biometrics in your profile (sex, age, height, weight, activity level) and we'll calculate your daily calorie target automatically.",
-    profileLink: "Fill in profile",
-    goalCutting: "Cut weight (−500 kcal)",
-    goalMaintenance: "Maintenance",
-    goalBulking: "Bulk (+300 kcal)",
-    appliedToast: "Targets applied from profile",
-  },
+  nutritionTdee: nutritionTdeeEn,
 
   nutritionGoalRange: {
     kcalTooLow: "Under 800 kcal, not safe without medical supervision.",

@@ -18,9 +18,14 @@ import { useTodayWorkoutKcal } from "../../../core/profile/useTodayWorkoutKcal";
 import {
   NUTRITION_GOALS,
   computeNutritionTargetsFromBiometrics,
+  resolveEffectiveWeightKg,
   type NutritionGoalId,
   type NutritionTargets,
 } from "../lib/tdee";
+import {
+  missingBiometricsFieldsForTdee,
+  type MissingBiometricsField,
+} from "../../../core/profile/biometrics";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
 
 const TDEE_COPY = messages.nutritionTdee;
@@ -29,6 +34,14 @@ const TDEE_GOAL_LABELS: Record<NutritionGoalId, string> = {
   cutting: TDEE_COPY.goalCutting,
   maintenance: TDEE_COPY.goalMaintenance,
   bulking: TDEE_COPY.goalBulking,
+};
+
+const MISSING_FIELD_LABEL: Record<MissingBiometricsField, string> = {
+  heightCm: TDEE_COPY.missingHeight,
+  birthDate: TDEE_COPY.missingBirthDate,
+  sex: TDEE_COPY.missingSex,
+  activityLevel: TDEE_COPY.missingActivity,
+  weightKg: TDEE_COPY.missingWeight,
 };
 
 // Popup menu width + the gap kept from either screen edge (round-2 UI
@@ -140,6 +153,27 @@ export function DailyPlanGoalSelectors({
     return result as Record<NutritionGoalId, NutritionTargets>;
   }, [biometrics, fizrukWeightKg, workoutKcal]);
 
+  // Той самий fizruk-фолбек, що й у computeNutritionTargetsFromBiometrics
+  // вище, — інакше юзер із реальним fizruk-зважуванням, але порожнім
+  // полем ваги в Профілі, побачив би «вага» серед бракуючих, хоча вона
+  // фактично вже враховується.
+  const missingFields = useMemo(
+    () =>
+      tdeeTargets
+        ? []
+        : missingBiometricsFieldsForTdee(
+            biometrics,
+            resolveEffectiveWeightKg(biometrics, fizrukWeightKg),
+          ),
+    [tdeeTargets, biometrics, fizrukWeightKg],
+  );
+  const missingHint =
+    missingFields.length > 0
+      ? `${TDEE_COPY.missingPrefix} ${missingFields
+          .map((field) => MISSING_FIELD_LABEL[field])
+          .join(", ")}.`
+      : TDEE_COPY.triggerHint;
+
   const activeGoal = tdeeTargets
     ? NUTRITION_GOALS.find((goal) => {
         const t = tdeeTargets[goal];
@@ -181,7 +215,7 @@ export function DailyPlanGoalSelectors({
           disabled={busy || dayPlanBusy}
           aria-haspopup="menu"
           aria-expanded={menuOpen}
-          title={tdeeTargets ? undefined : TDEE_COPY.triggerHint}
+          title={tdeeTargets ? undefined : missingHint}
           className={cn(
             "inline-flex items-center gap-1 rounded-xl border px-2.5 py-1 text-style-caption",
             "border-nutrition/50 text-nutrition-strong dark:text-nutrition",
@@ -246,7 +280,7 @@ export function DailyPlanGoalSelectors({
               </>
             ) : (
               <div className="px-3 py-2 text-style-caption text-subtle border-b border-line">
-                <div className="text-text">{TDEE_COPY.triggerHint}</div>
+                <div className="text-text">{missingHint}</div>
                 <Link
                   to={PROFILE_PATH}
                   // Тач-таргет: сам текст має 16px висоти, чого мало для
