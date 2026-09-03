@@ -60,7 +60,7 @@ const SOURCE_LABEL: Record<string, string> = {
   chat: "Чат",
   finyk: "Фінік",
   fizruk: "Фізрук",
-  nutrition: "Харчування",
+  nutrition: "Їжа",
   routine: "Рутина",
   journal: "Щоденник",
   digest: "Підсумок тижня",

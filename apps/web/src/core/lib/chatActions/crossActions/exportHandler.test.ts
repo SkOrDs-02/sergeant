@@ -102,7 +102,7 @@ describe("exportModuleData", () => {
       name: "export_module_data",
       input: { module: "nutrition" },
     });
-    expect(result).toContain("Експорт Харчування");
+    expect(result).toContain("Експорт Їжа");
   });
 
   it("returns JSON format when requested", () => {

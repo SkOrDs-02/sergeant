@@ -57,7 +57,7 @@ const MODULE_LINK: Partial<
   },
   nutrition: {
     to: "/nutrition",
-    label: "Харчування",
+    label: "Їжа",
     chip: "bg-nutrition-soft text-nutrition-soft-fg",
   },
 };

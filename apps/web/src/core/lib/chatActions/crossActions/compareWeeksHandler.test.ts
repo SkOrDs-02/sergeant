@@ -111,7 +111,7 @@ describe("compareWeeks", () => {
     expect(result).toContain("Фінік");
     expect(result).toContain("Фізрук");
     expect(result).toContain("Рутина");
-    expect(result).toContain("Харчування");
+    expect(result).toContain("Їжа");
   });
 
   it("includes only finyk section when modules=[finyk]", () => {
@@ -122,7 +122,7 @@ describe("compareWeeks", () => {
     expect(result).toContain("Фінік");
     expect(result).not.toContain("Фізрук");
     expect(result).not.toContain("Рутина");
-    expect(result).not.toContain("Харчування");
+    expect(result).not.toContain("Їжа");
   });
 
   it("shows 'no workouts' message when fizruk aggregates are both null", () => {

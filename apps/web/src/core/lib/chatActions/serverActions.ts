@@ -52,7 +52,7 @@ const SOURCE_LABEL_UK: Record<string, string> = {
   chat: "чат",
   finyk: "Фінік",
   fizruk: "Фізрук",
-  nutrition: "Харчування",
+  nutrition: "Їжа",
   routine: "Рутина",
   journal: "журнал",
   digest: "дайджест",

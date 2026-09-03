@@ -193,7 +193,7 @@ describe("compare_weeks — параметри", () => {
     expect(out).toContain("Фінік:");
     expect(out).toContain("Фізрук:");
     expect(out).toContain("Рутина:");
-    expect(out).toContain("Харчування:");
+    expect(out).toContain("Їжа:");
   });
 
   it("modules=['finyk'] — інші модулі не показуються", () => {
@@ -205,7 +205,7 @@ describe("compare_weeks — параметри", () => {
     expect(out).toContain("Фінік:");
     expect(out).not.toContain("Фізрук:");
     expect(out).not.toContain("Рутина:");
-    expect(out).not.toContain("Харчування:");
+    expect(out).not.toContain("Їжа:");
   });
 
   it("невалідні значення в modules ігноруються", () => {
@@ -322,7 +322,7 @@ describe("compare_weeks — Рутина diff", () => {
   });
 });
 
-describe("compare_weeks — Харчування diff", () => {
+describe("compare_weeks — Їжа diff", () => {
   it("обчислює середні калорії за два тижні", () => {
     seedNutrition({
       "2026-04-21": { meals: [{ macros: { kcal: 2000 } }] },
@@ -334,7 +334,7 @@ describe("compare_weeks — Харчування diff", () => {
       week_b: "2026-W16",
       modules: ["nutrition"],
     });
-    expect(out).toContain("Харчування:");
+    expect(out).toContain("Їжа:");
     // W17 avg = (2000 + 2200) / 2 = 2100; W16 avg = 1800 → +300
     expect(out).toMatch(/Калорії\/день:.*2100.*1800.*\+300/);
     expect(out).toContain("Днів залоговано: 2 vs 1");
@@ -346,7 +346,7 @@ describe("compare_weeks — Харчування diff", () => {
       week_b: "2026-W16",
       modules: ["nutrition"],
     });
-    expect(out).toContain("Харчування:");
+    expect(out).toContain("Їжа:");
     expect(out).toContain("Немає логів їжі");
   });
 });

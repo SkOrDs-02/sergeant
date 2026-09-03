@@ -100,7 +100,7 @@ export function compareWeeks(action: CompareWeeksAction): string {
     const na = aggregateNutrition(aKey);
     const nb = aggregateNutrition(bKey);
     lines.push("");
-    lines.push("Харчування:");
+    lines.push("Їжа:");
     if (!na && !nb) {
       lines.push("  Немає логів їжі у обидва тижні.");
     } else {

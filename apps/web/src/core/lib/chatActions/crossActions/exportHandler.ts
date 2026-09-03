@@ -64,7 +64,7 @@ export function exportModuleData(action: ExportModuleDataAction): string {
       return parts.join("\n");
     }
     case "nutrition": {
-      const parts: string[] = ["Експорт Харчування:"];
+      const parts: string[] = ["Експорт Їжа:"];
       // `nutrition_log_v1` / `nutrition_prefs_v1` are tombstoned — read canonical.
       parts.push(exportValue(loadNutritionLog(), "Журнал їжі"));
       parts.push(exportValue(loadNutritionPrefs(), "Налаштування"));
