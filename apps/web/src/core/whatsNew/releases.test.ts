@@ -114,4 +114,38 @@ describe("whatsNew/releases — pickRelease", () => {
     const picked = pickRelease(stale);
     expect(picked?.id).toBe(RELEASES[0]?.id);
   });
+
+  // Ядро фікса browser-QA 2026-09-02: ноти написані для того, хто був тут
+  // минулого разу («порція за вашими репортами»), тож акаунту, створеному
+  // ПІСЛЯ релізу, вони брешуть про спільне минуле.
+  it("не показує реліз, старший за сам акаунт", () => {
+    const latest = RELEASES[0];
+    if (!latest) throw new Error("releases.ts must export at least one entry");
+    // Акаунт старший за реліз → ноти справді нові для нього.
+    expect(pickRelease(null, "2020-01-01T10:00:00.000Z")?.id).toBe(latest.id);
+    // Акаунт молодший → мовчимо.
+    expect(pickRelease(null, "2099-01-01T10:00:00.000Z")).toBeNull();
+  });
+
+  it("лишає реліз, випущений у день реєстрації", () => {
+    const latest = RELEASES[0];
+    if (!latest) throw new Error("releases.ts must export at least one entry");
+    // Полудень за Києвом того ж календарного дня — день-ключ збігається.
+    const sameDay = `${latest.date}T09:00:00.000Z`;
+    expect(pickRelease(null, sameDay)?.id).toBe(latest.id);
+  });
+
+  it("не гейтить, коли дата акаунта невідома або зіпсована", () => {
+    expect(pickRelease(null)?.id).toBe(RELEASES[0]?.id);
+    expect(pickRelease(null, null)?.id).toBe(RELEASES[0]?.id);
+    expect(pickRelease(null, "не-дата")?.id).toBe(RELEASES[0]?.id);
+  });
+
+  // Побачив модал раніше → він уже повертається, і вік акаунта більше не
+  // має значення: інакше нові ноти не доїхали б до нього ніколи.
+  it("не гейтить того, хто вже бачив попередній реліз", () => {
+    expect(
+      pickRelease("2026-05-06-cold-start", "2099-01-01T10:00:00.000Z")?.id,
+    ).toBe(RELEASES[0]?.id);
+  });
 });

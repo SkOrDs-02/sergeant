@@ -102,8 +102,14 @@ export function HubHomeView(props: HubHomeViewProps) {
   // вискакував би одразу при вході в demo («Подивитись приклад») —
   // юзеру, що тільки відкрив приклад і ще нічого не робив, changelog
   // недоречний.
+  //
+  // Самих цих умов НЕ досить: новий акаунт перетинає обидві за кілька
+  // хвилин (перший запис і є виходом із FTUX-вікна), тож «returning user»
+  // тут насправді означало «пробув тут кілька хвилин». Другу половину
+  // гейта тримає `pickRelease` — вона глушить ноти, старші за сам акаунт.
   const whatsNew = useWhatsNew({
     enabled: hasFirstRealEntry && !inFtuxSession && !isDemoActive(),
+    accountCreatedAt: user?.createdAt ?? null,
   });
 
   // C · Контроль (home redesign 2026-06): system chrome banners (SW update,
