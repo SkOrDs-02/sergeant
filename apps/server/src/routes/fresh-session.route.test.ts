@@ -17,7 +17,7 @@ import request from "supertest";
  *
  * 403 тут навмисно НЕ перевіряється: єдиний 403-гейт цих поверхонь
  * (`requireVerifiedEmail()` на `/api/mono/connect`) знято бета-винятком
- * (AI-LEGACY у `mono-webhook.ts`, expires 2026-11-07); коли він повернеться,
+ * (легасі-маркер у `mono-webhook.ts` зі строком до 2026-11-07); коли він повернеться,
  * порядок має бути `requireFreshSession() → requireVerifiedEmail()`, тобто
  * stale-сесія і тоді дасть 401, а не 403.
  */
