@@ -8,6 +8,7 @@ import type {
   RawExerciseDef,
 } from "@sergeant/fizruk-domain/data";
 import { matchesExerciseLocation } from "@sergeant/fizruk-domain/data";
+import { deviceDayKey } from "@sergeant/shared";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type { LastExerciseItem } from "./Workouts.types";
 
@@ -146,6 +147,87 @@ export function todayLocalDateString(): string {
   // `new Date().toISOString().slice(0,10)` or `toLocaleDateString` silently
   // shifts the date for late-evening / non-Kyiv hosts and breaks streaks.
   return getKyivDayKey();
+}
+
+/** Дефолтні поля форми «Внести проведене заняття». */
+export interface PastWorkoutDefaults {
+  /** `YYYY-MM-DD`. */
+  date: string;
+  /** `HH:MM`. */
+  start: string;
+  /** `HH:MM`. */
+  end: string;
+}
+
+/** Найчастіший час тренування — вечір; його ж людина найрідше правитиме. */
+const EVENING_START = "18:00";
+const EVENING_END = "19:00";
+const EVENING_END_MIN = 19 * 60;
+/** Мінімальне вікно, щоб «година тому» ще вміщалась у сьогоднішню добу. */
+const MIN_TODAY_WINDOW_MIN = 65;
+
+function hhmm(totalMinutes: number): string {
+  const h = Math.floor(totalMinutes / 60);
+  const m = totalMinutes % 60;
+  return `${String(h).padStart(2, "0")}:${String(m).padStart(2, "0")}`;
+}
+
+/**
+ * Дата й час, з якими форма ретро-запису відкривається.
+ *
+ * AI-DANGER: дефолт мусить бути ВАЛІДНИМ вводом. До 2026-09-03 форма
+ * підставляла «сьогодні, 18:00 → 19:00» незалежно від годинника, тож усім,
+ * хто відкривав її до сьомої вечора, кнопка «Записати» була вимкнена одразу
+ * при відкритті — `times.inFuture` спрацьовував на власних дефолтах форми
+ * (browser-QA 2026-09-02). Людина бачила заповнену форму й мертву кнопку і
+ * не мала підказки, що правити треба ЧАС, а не заняття.
+ *
+ * Три гілки, усі дають мить у минулому:
+ *
+ *   - **вечір уже настав** (≥ 19:00) → лишається 18:00 → 19:00, тобто той
+ *     самий дефолт, що й був, із тією ж мотивацією;
+ *   - **день у розпалі** → година, що щойно скінчилась: кінець — «зараз» із
+ *     округленням униз до пʼяти хвилин, початок на годину раніше;
+ *   - **глибока ніч** (до 01:05, коли годинної діри в сьогодні ще немає) →
+ *     учорашній вечір.
+ *
+ * AI-DANGER: дата й час беруться з ОДНОГО годинника — пристроєвого. Змішати
+ * їх не можна: `buildPastWorkoutTimes` парсить пару як настінний час
+ * пристрою, тож київський день-ключ поруч із пристроєвою годиною дає
+ * майбутнє для будь-якого хоста західніше Києва. Приклад із ревʼю: 18:30 у
+ * Нью-Йорку 3 вересня — у Києві вже 4-те, і форма відкривалась би з
+ * «4 вересня, 17:30 → 18:30», тобто майже на добу вперед, знову з мертвою
+ * кнопкою. Це рівно той дефект, який ця функція й лікує.
+ *
+ * Пристроєвий календар тут доречний і поза цією парою: доба тренування
+ * належить пристрою (ADR-0078), а Київ у Фізруку лишається тільки для
+ * звітів.
+ */
+export function defaultPastWorkoutTimes(
+  // eslint-disable-next-line no-restricted-syntax -- потрібен настінний годинник пристрою, тим самим читанням, що і в `buildPastWorkoutTimes`; параметр існує, щоб тест міг запнути годинник.
+  now: Date = new Date(),
+): PastWorkoutDefaults {
+  const today = deviceDayKey(now);
+  /* eslint-disable-next-line sergeant-design/prefer-kyiv-time -- беремо годину-хвилину з годинника ПРИСТРОЮ: саме з ним потім звіряється `inFuture`. */
+  const nowMin = now.getHours() * 60 + now.getMinutes();
+
+  if (nowMin >= EVENING_END_MIN) {
+    return { date: today, start: EVENING_START, end: EVENING_END };
+  }
+
+  if (nowMin >= MIN_TODAY_WINDOW_MIN) {
+    const endMin = Math.floor(nowMin / 5) * 5;
+    return { date: today, start: hhmm(endMin - 60), end: hhmm(endMin) };
+  }
+
+  const yesterday = new Date(now.getTime());
+  /* eslint-disable-next-line sergeant-design/prefer-kyiv-time -- відлік доби назад від миті, яку показує годинник людини; київська межа тут дала б інший день для не-київського хоста. */
+  yesterday.setDate(yesterday.getDate() - 1);
+  return {
+    date: deviceDayKey(yesterday),
+    start: EVENING_START,
+    end: EVENING_END,
+  };
 }
 
 /** Результат розбору форми «Внести проведене заняття». */

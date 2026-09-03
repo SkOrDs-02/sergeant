@@ -20,6 +20,7 @@
 import { useMemo } from "react";
 import { buildHabitRangeRows, WEEKDAY_LABELS } from "@sergeant/routine-domain";
 import type { HabitRangeCellState } from "@sergeant/routine-domain";
+import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Measure } from "@shared/components/ui/Measure";
@@ -177,7 +178,14 @@ export function HabitRangeGrid({
                       <span
                         key={cell.dateKey}
                         aria-hidden="true"
-                        title={`${cell.dateKey}: ${CELL_LABEL[cell.state]}`}
+                        // Людський підпис, а не сирий день-ключ: у
+                        // нативному тултипі стояло «2026-09-01: виконано»
+                        // (browser-QA 2026-09-02). `relative: false` — тут
+                        // потрібна саме дата: у сітці за 30 днів «сьогодні»
+                        // не каже, ПРО ЯКУ клітинку йдеться.
+                        title={`${formatDayKeyUk(cell.dateKey, {
+                          relative: false,
+                        })}: ${CELL_LABEL[cell.state]}`}
                         className={cn(
                           // `max-w-5` + `mx-auto`: колонки — `1fr`, тож на
                           // тижневому зрізі клітинка інакше роздувалась би до

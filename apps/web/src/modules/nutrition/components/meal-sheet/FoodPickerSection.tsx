@@ -18,7 +18,7 @@ import type { FoodSearchProduct } from "@shared/api";
 import { FoodHitRow } from "./FoodHitRow";
 import type { FoodProduct } from "../../lib/foodDb/foodDb";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
-import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+import { SEARCH_QUERY_MAX_LEN } from "@sergeant/shared";
 
 /**
  * Підписи зовнішніх джерел пошуку (`FoodSearchProduct.source`, енум
@@ -107,7 +107,10 @@ export function FoodPickerSection({
         value={foodQuery}
         onChange={(e) => setFoodQuery(e.target.value)}
         placeholder="Курка, Activia, вівсянка, Lays…"
-        maxLength={NAME_MAX_LEN}
+        // Межа сервера, не загальна межа назви: `FoodSearchQuerySchema`
+        // приймає рівно стільки, і довший запит повертався 400-ю, яку екран
+        // показував як «нічого не знайдено».
+        maxLength={SEARCH_QUERY_MAX_LEN}
         showCharCount={false}
         aria-label="Пошук продукту"
         // Не `type="search"` (поле має власний UX без нативного

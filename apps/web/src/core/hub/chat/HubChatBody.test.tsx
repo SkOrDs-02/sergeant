@@ -63,6 +63,67 @@ function renderBody(overrides: Partial<HubChatBodyProps> = {}) {
 describe("HubChatBody", () => {
   afterEach(() => cleanup());
 
+  // Регресія з browser-QA 2026-09-02: розкриття «це AI» (EU AI Act ст. 50(1))
+  // жило всередині `ChatEmpty`, а `normalizeStoredMessages` підставляє
+  // привітальну репліку в кожну порожню сесію — тож порожній стан недосяжний,
+  // і розкриття не показувалось ЖОДНОГО разу. Перевіряємо саме той стан, який
+  // бачить реальний користувач: у стрічці вже є привітання.
+  it("shows the AI disclosure even when the greeting message is present", () => {
+    renderBody({
+      messages: [
+        msg("greet", "assistant", "Привіт! Я твій особистий асистент."),
+      ],
+    });
+    expect(screen.getByText(/Відповідає AI, а не людина/)).toBeInTheDocument();
+  });
+
+  it("shows the AI disclosure while the assistant is answering", () => {
+    renderBody({ messages: [msg("1", "user", "Питання")], loading: true });
+    expect(screen.getByText(/Відповідає AI, а не людина/)).toBeInTheDocument();
+  });
+
+  // Регресія з browser-QA 2026-09-02: стрічка лежить у статичному
+  // `role="region"`, а єдина жива область казала лише «Асистент відповідає…».
+  // Тобто незрячий користувач чув, що відповідь іде, і не чув, ЯКА вона.
+  it("announces the finished assistant reply to screen readers", () => {
+    renderBody({
+      messages: [
+        msg("1", "user", "Скільки я витратив?"),
+        msg("2", "assistant", "Цього тижня 1 240 гривень."),
+      ],
+      loading: false,
+    });
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Цього тижня 1 240 гривень.");
+  });
+
+  // Фікстура саме з ЧАСТКОВОЮ відповіддю: `useChatSend` дописує повідомлення
+  // асистента, поки `loading` ще `true`, тож без цього випадку тест не
+  // доводив би головного — що недописаний текст у живу область не тече.
+  // Матчер якірний: підрядок пройшов би й тоді, коли поруч лежить обривок
+  // відповіді (ревʼю PR #1053).
+  it("announces progress, not content, while the reply is streaming", () => {
+    renderBody({
+      messages: [
+        msg("1", "user", "Скільки я витратив?"),
+        msg("2", "assistant", "Цього тижня 1 2"),
+      ],
+      loading: true,
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      /^Асистент відповідає…$/,
+    );
+  });
+
+  it("does not announce a failure through the reply region", () => {
+    const failure = {
+      ...msg("1", "assistant", "Асистент зараз недоступний."),
+      error: true,
+    } as unknown as Msg;
+    renderBody({ messages: [failure], loading: false });
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
   it("renders ChatEmpty when there are no messages and not loading", () => {
     renderBody({ messages: [], loading: false });
     expect(screen.getByTestId("chat-empty")).toBeInTheDocument();

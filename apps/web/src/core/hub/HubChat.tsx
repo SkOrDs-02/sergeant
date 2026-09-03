@@ -218,15 +218,15 @@ function HubChat({
         open={paywallOpen}
         onClose={closePaywall}
         surface="ai_chat_limit"
-        title="Безлімітний AI-чат у Pro"
+        title="Безлімітний AI-чат у Premium"
         description={
           // AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
           // — round-trip-квиток зробив кожен хід (навіть із дією) рівно
           // одним запитом, тож застереження «може коштувати кілька» більше
           // не правда.
           usageLimit != null
-            ? `Free-тариф має ${usageLimit} запитів до AI на день, кожен хід рахується один раз. Pro відкриває безлімітний чат, авто-Mono sync і CloudSync.`
-            : "Free-тариф має денний ліміт запитів до AI, кожен хід рахується один раз. Pro відкриває безлімітний чат, авто-Mono sync і CloudSync."
+            ? `Free-тариф має ${usageLimit} запитів до AI на день, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.`
+            : "Free-тариф має денний ліміт запитів до AI, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync."
         }
       />
       {/* eslint-enable sergeant-design/no-cyrillic-jsx-literal */}

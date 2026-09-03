@@ -441,6 +441,12 @@ describe("050_routine_full_state migration", () => {
       // 135_routine_weekly_target_history.sql — те саме: додає
       // `weekly_target_history` до `routine_habits`, тож після
       // перестворення таблиці має бути накочена повторно.
+      //
+      // AI-DANGER: цей список — РУЧНЕ дзеркало міграцій, що доливають
+      // колонки в `routine_habits` після 050, і його вже двічі забували
+      // синхронізувати. Кожна наступна така міграція мусить зʼявитись і
+      // тут, інакше `before` матиме колонку, а `after` — ні. Повний набір:
+      // `grep -l routine_habits apps/server/src/migrations/*.sql`.
       await execSqlFile(pool, "135_routine_weekly_target_history.sql");
 
       const after = {

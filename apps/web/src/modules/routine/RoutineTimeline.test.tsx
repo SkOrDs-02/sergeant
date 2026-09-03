@@ -14,7 +14,12 @@ vi.mock("@shared/hooks/useCloudPullPending", () => ({
 
 vi.mock("./components/RoutineCalendarPanel", () => ({
   RoutineCalendarPanel: ({ hidden }: { hidden?: boolean }) =>
-    hidden ? null : <div data-testid="calendar-panel">Календар</div>,
+    hidden ? null : (
+      <div data-testid="calendar-panel">
+        Календар
+        <button type="button">Відмітити звичку</button>
+      </div>
+    ),
 }));
 
 vi.mock("./components/RoutineStatsPanel", () => ({
@@ -140,5 +145,38 @@ describe("RoutineTimeline", () => {
 
     expect(screen.getByTestId("stats-panel")).toBeInTheDocument();
     expect(screen.queryByTestId("calendar-panel")).not.toBeInTheDocument();
+  });
+
+  // Регресія browser-QA 2026-09-02: `isHabitPending` — це прапорець
+  // `useTransition` навколо локального тогла однієї звички, а не завантаження
+  // даних. Підмінюючи всю панель на скелет, він РОЗМОНТОВУВАВ кнопку, на якій
+  // стоїть фокус, і клавіатурний користувач опинявся на `<body>` після кожної
+  // відмітки.
+  it("не підміняє календар скелетом, поки триває відмітка звички", () => {
+    const props = {
+      storageErrorMsg: null,
+      onDismissStorageError: vi.fn(),
+      calendarData: makeCalendarData(),
+      calendarActions: makeCalendarActions(),
+      mainTab: "calendar" as const,
+      routine: defaultRoutineState(),
+      setRoutine: vi.fn(),
+      onOpenCalendarTab: vi.fn(),
+      streakMax: 3,
+      onPullRefresh: vi.fn(async () => undefined),
+      onPullRefreshError: vi.fn(),
+    };
+    const { rerender } = render(
+      <RoutineTimeline {...props} isHabitPending={false} />,
+    );
+
+    const toggle = screen.getByRole("button", { name: "Відмітити звичку" });
+    toggle.focus();
+    expect(document.activeElement).toBe(toggle);
+
+    rerender(<RoutineTimeline {...props} isHabitPending />);
+
+    expect(screen.getByTestId("calendar-panel")).toBeInTheDocument();
+    expect(document.activeElement).toBe(toggle);
   });
 });

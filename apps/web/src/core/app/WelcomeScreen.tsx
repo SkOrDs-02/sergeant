@@ -10,6 +10,7 @@ import {
   saveVibePicks,
 } from "../onboarding/vibePicks";
 import { seedDemoData } from "../onboarding/seedDemoData";
+import { pushActiveModules } from "../hub/activeModulesSync";
 import {
   isOnboardingCompletedFired,
   markOnboardingCompletedFired,
@@ -268,6 +269,10 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
   const handlePicksComplete = useCallback(
     (picks: DashboardModuleId[]) => {
       saveVibePicks(picks);
+      // Див. `useOnboardingWizardState`: boot-гідрація вже відпрацювала на
+      // порожньому стані, тож без явного пушу вибір не потрапляє на акаунт
+      // до наступного буту.
+      pushActiveModules(picks);
       markOnboardingDone();
       trackEvent(ANALYTICS_EVENTS.ONBOARDING_VIBE_PICKED, {
         picks,

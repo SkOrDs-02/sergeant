@@ -92,7 +92,9 @@ describe("PaywallModal", () => {
     renderModal(true);
     expect(screen.getByText("AI-чат на ліміті")).toBeTruthy();
     expect(screen.getByText("Free план: 5 запитів/день.")).toBeTruthy();
-    expect(screen.getByRole("button", { name: /Перейти до Pro/ })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /Перейти на Premium/ }),
+    ).toBeTruthy();
   });
 
   // B4 (браузерний аудит 2026-08-05): сторінка тарифів каже «без
@@ -109,7 +111,7 @@ describe("PaywallModal", () => {
   it("navigates to /pricing?source=paywall when the primary CTA is pressed", () => {
     renderModal(true);
     navigateSpy.mockClear();
-    fireEvent.click(screen.getByRole("button", { name: /Перейти до Pro/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Перейти на Premium/ }));
     expect(navigateSpy).toHaveBeenLastCalledWith("/pricing?source=paywall");
   });
 

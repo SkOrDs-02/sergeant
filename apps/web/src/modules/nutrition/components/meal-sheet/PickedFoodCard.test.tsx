@@ -231,4 +231,66 @@ describe("PickedFoodCard", () => {
     fireEvent.click(screen.getByLabelText("Обрати інший продукт"));
     expect(onChangeProduct).toHaveBeenCalled();
   });
+
+  // Регресія browser-QA 2026-09-02. Аркуш редагування відновлює продукт із
+  // `foodId`, і без цього гарда ефект картки миттю переписував би збережені
+  // макроси добутком `per100 × вага` — тобто саме лише ВІДКРИТТЯ страви
+  // тихо міняло б її дані. Найболючіше для страв, чиї КБЖВ людина правила
+  // руками або які приїхали з фото.
+  describe("skipInitialRescale", () => {
+    it("не чіпає форму на першому рендері", () => {
+      const setForm = vi.fn();
+      render(
+        <PickedFoodCard
+          {...baseProps({
+            form: form({ kcal: "999", protein_g: "1" }),
+            pickedGrams: "150",
+            setForm,
+            skipInitialRescale: true,
+          })}
+        />,
+      );
+      expect(setForm).not.toHaveBeenCalled();
+    });
+
+    it("вмикає перерахунок, щойно людина міняє вагу", () => {
+      const setForm = vi.fn();
+      const { rerender } = render(
+        <PickedFoodCard
+          {...baseProps({
+            form: form({ kcal: "999" }),
+            pickedGrams: "150",
+            setForm,
+            skipInitialRescale: true,
+          })}
+        />,
+      );
+      expect(setForm).not.toHaveBeenCalled();
+
+      rerender(
+        <PickedFoodCard
+          {...baseProps({
+            form: form({ kcal: "999" }),
+            pickedGrams: "200",
+            setForm,
+            skipInitialRescale: true,
+          })}
+        />,
+      );
+      expect(setForm).toHaveBeenCalledTimes(1);
+      const updater = setForm.mock.calls[0]?.[0] as (
+        state: MealFormState,
+      ) => MealFormState;
+      // 110 ккал/100 г × 200 г = 220.
+      expect(updater(form({ kcal: "999" })).kcal).toBe("220");
+    });
+
+    it("без прапорця перераховує одразу — шлях створення не змінився", () => {
+      const setForm = vi.fn();
+      render(
+        <PickedFoodCard {...baseProps({ pickedGrams: "200", setForm })} />,
+      );
+      expect(setForm).toHaveBeenCalledTimes(1);
+    });
+  });
 });

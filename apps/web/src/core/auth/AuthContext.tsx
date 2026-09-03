@@ -327,7 +327,23 @@ export function AuthProvider({ children }: AuthProviderProps) {
   const [signedOut, setSignedOut] = useState(false);
 
   const user = signedOut ? null : (meQuery.data?.user ?? null);
-  const isLoading = !signedOut && meQuery.isLoading;
+  // AI-DANGER: саме `isPending`, а не `isLoading`. У React Query v5
+  // `isLoading === isPending && isFetching`, тож існує вікно, де запит уже
+  // не «loading» (fetch ще не стартував), але `data` ще немає. У ньому
+  // `user` порожній, `status` стає `unauthenticated`, і застосунок робить
+  // висновок «людина вийшла», хоча сесія жива.
+  //
+  // Видимий симптом: deep-link на `/?tab=profile` зривало на `/` у 4
+  // прогонах із 6 — bounce-ефект у `core/app/useAppEffects.ts` спрацьовував
+  // у цьому вікні й переписував URL (browser-QA 2026-09-02). Це той самий
+  // клас, що й фікс #2935, тільки гейт `authLoading` там закривав лише
+  // частину вікна.
+  //
+  // `isPending` = «даних ще немає» — рівно та умова, за якої не можна
+  // стверджувати «не залогінений». Запит не має `enabled`-гейта, а
+  // `retry: false` дає осідання одразу на 401, тож застрягнути в loading
+  // це не може.
+  const isLoading = !signedOut && meQuery.isPending;
   const status: AuthStatus = isLoading
     ? "loading"
     : user
