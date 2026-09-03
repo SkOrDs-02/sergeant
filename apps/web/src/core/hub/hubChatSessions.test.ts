@@ -43,8 +43,6 @@ describe("hubChatSessions", () => {
       const session = createSession([makeUserMsg("не загубись")]);
       saveSessions([session]);
       // Імітуємо саму гонку: SQLite-бік не встиг, дзеркало встигло.
-      // Legacy-ключ теж прибираємо — інакше історію підняла б міграція
-      // `hub_chat_history`, і тест зеленів би без дзеркала взагалі.
       localStorage.removeItem(SESSIONS_STORAGE_KEY);
       localStorage.removeItem("hub_chat_history");
 
@@ -53,6 +51,25 @@ describe("hubChatSessions", () => {
       expect(loaded[0]!.messages.some((m) => m.text === "не загубись")).toBe(
         true,
       );
+    });
+
+    // Рев'ю CodeRabbit на PR #1053: дірка в самому фіксі гонки. Міграція
+    // legacy стояла ПЕРШОЮ і бачила лише основний ключ, тож старий
+    // `hub_chat_history` перехоплював гілку і затирав свіже дзеркало.
+    it("does not let stale legacy history overwrite a fresh mirror", () => {
+      const fresh = createSession([makeUserMsg("свіже з дзеркала")]);
+      saveSessions([fresh]);
+      // Основний запис не долетів; legacy-ключ лишився з давньої розмови.
+      localStorage.removeItem(SESSIONS_STORAGE_KEY);
+      localStorage.setItem(
+        "hub_chat_history",
+        JSON.stringify([makeUserMsg("давня розмова")]),
+      );
+
+      const loaded = loadSessions();
+      const texts = loaded.flatMap((s) => s.messages.map((m) => m.text));
+      expect(texts).toContain("свіже з дзеркала");
+      expect(texts).not.toContain("давня розмова");
     });
 
     it("prefers whichever side has the newer updatedAt", () => {

@@ -305,7 +305,7 @@ export function useChatSend({
         setMessages((m) => [
           ...m,
           makeUserMsg(msg),
-          makeAssistantMsg(
+          makeErrorMsg(
             "Немає підключення. Асистент працює лише онлайн, спробуй ще раз, коли зʼявиться інтернет.",
           ),
         ]);
@@ -453,8 +453,11 @@ export function useChatSend({
               onClick: () => void sendRef.current?.(msg),
             });
             const fallback = data.text || "Немає відповіді.";
-            setMessages((m) => [...m, makeAssistantMsg(fallback)]);
-            if (shouldSpeak) maybeSpeak(fallback);
+            // Коментар вище прямо каже: «для користувача це збій», інакше
+            // зламаний інструмент виглядав би звичайною текстовою відповіддю.
+            // Досі це відображалось лише в телеметрії, а бульбашка лишалась
+            // невідрізненною — і озвучувалась.
+            setMessages((m) => [...m, makeErrorMsg(fallback)]);
             return;
           }
           const toolCalls = parsed.value;
@@ -599,6 +602,9 @@ export function useChatSend({
           ]);
 
           let followUpText = "";
+          // Синтез (другий тур) міг упасти — тоді в бульбашці лежить текст
+          // помилки, а не відповідь, і озвучувати його не треба.
+          let synthesisFailed = false;
           try {
             const res2 = await chatApi.stream(
               {
@@ -681,6 +687,7 @@ export function useChatSend({
               );
             }
           } catch (e2) {
+            synthesisFailed = true;
             setMessages((m) =>
               m.map((x) => {
                 if (x.id !== assistantId) return x;
@@ -721,13 +728,17 @@ export function useChatSend({
                   // порожній сам; окремі `\n\n` дали б чотири переноси
                   // з карткою і два ведучі — без неї.
                   text: `${prefix}${friendlyChatError(e2)}`,
+                  error: true,
                   ...(patchedCards ? { cards: patchedCards } : {}),
                 };
               }),
             );
           }
 
-          if (shouldSpeak) {
+          // Синтез упав — у бульбашці текст помилки, і озвучувати його
+          // немає сенсу (той самий принцип, що й `error`-гілка в
+          // `components/ChatMessage.tsx`, де кнопка TTS зникає).
+          if (shouldSpeak && !synthesisFailed) {
             // Озвучуємо те, що людина бачить. Раніше фолбеком був сирий
             // результат виконавця — тобто TTS диктував UUID запису памʼяті
             // вголос. Тепер: відповідь моделі → рядок без картки → короткі

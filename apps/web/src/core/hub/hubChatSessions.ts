@@ -137,11 +137,28 @@ function readMirroredSessions(): HubChatSession[] {
 }
 
 export function loadSessions(): HubChatSession[] {
+  // Порядок принциповий: спершу зводимо ОБИДВА поточні джерела, і лише якщо
+  // там порожньо — дивимось на legacy-ключ.
+  //
+  // AI-DANGER: доти `migrateLegacyIfNeeded()` стояв ПЕРШИМ і перевіряв лише
+  // `SESSIONS_STORAGE_KEY`. У сценарії, заради якого дзеркало й існує
+  // (основний асинхронний запис не долетів), свіжі сесії лежали в дзеркалі,
+  // а старий непорожній `hub_chat_history` перехоплював гілку — і
+  // `saveSessions(migrated)` затирав ними дзеркало. Тобто фікс гонки мав
+  // власну дірку рівно тієї ж форми (рев'ю CodeRabbit на PR #1053).
+  const current = reconcileSessions();
+  if (current.length > 0) return current;
+
   const migrated = migrateLegacyIfNeeded();
   if (migrated) {
     saveSessions(migrated);
     return migrated;
   }
+  return [];
+}
+
+/** Зводить основний ключ і синхронне дзеркало, беручи свіжіше за `updatedAt`. */
+function reconcileSessions(): HubChatSession[] {
   // Читаємо ОБИДВА джерела і беремо свіжіше за `updatedAt`.
   //
   // AI-DANGER: тут не можна віддати перевагу одному джерелу назавжди, і саме
