@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-04-17.
+> **Last touched:** 2026-09-03 by @claude. **Next review:** 2027-04-17.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -514,6 +514,10 @@ Base URL бекенд-API (Coolify), який [`apps/web/middleware.ts`](../../.
 ### Server-side (event ingestion)
 
 - `POSTHOG_PROJECT_API_KEY=phc_…` — Project ingestion key (той самий public ключ, що й `VITE_POSTHOG_KEY`). Використовується в `capturePostHogEvent()` для server-side трекінгу подій з webhook-ів / background workers (PR-09 — `subscription_started` зі Stripe). Без ключа capture-helper повертає `outcome: "skipped"` і caller (webhook handler) успішно завершує процесинг — аналітика best-effort.
+
+### Server-side (AI Observability — ініціатива 0025)
+
+- `POSTHOG_AI_OBSERVABILITY_KEY=phc_…` _(optional; тумблер)_ — Project ingestion key для `$ai_generation`-подій з центрального AI-клієнта ([`apps/server/src/lib/posthogAi.ts`](../../../apps/server/src/lib/posthogAi.ts), викликається з `lib/anthropic.ts` і `lib/llm/provider.ts`) через `posthog-node`. Може дорівнювати `POSTHOG_PROJECT_API_KEY`, але змінна окрема навмисно: **задано → AI-івенти шлються, не задано → не шлються взагалі** (dev/test). Host — `POSTHOG_HOST` або EU Cloud за замовчуванням. У події лише метадані: модель, провайдер (`anthropic`/`openrouter`), токени (вкл. cache), кост з `estimateAnthropicCostUsd`, латентність, `$ai_is_error`/`$ai_http_status`, `feature` (= `endpoint`), `SYSTEM_PROMPT_VERSION`; `distinctId` = Better Auth userId або `server`. **Контент промптів/відповідей не відправляється за конструкцією** (allowlist у типі `AiGenerationEvent`; Hard Rule #21). Fail-open: збій SDK → `logger.warn`, AI-виклик не ламається. Реєстр тумблерів: [`feature-flags.md § 3.3`](../architecture/feature-flags.md#33-інфраструктура-і-спостережуваність); спека: [`0025-posthog-ai-observability.md`](../../90-work/initiatives/0025-posthog-ai-observability.md).
 
 ---
 
