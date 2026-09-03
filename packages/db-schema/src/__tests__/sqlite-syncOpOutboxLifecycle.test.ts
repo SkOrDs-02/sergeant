@@ -8,8 +8,8 @@ import {
 } from "../migrate/adapters/sqlite.js";
 import { runMigrations } from "../migrate/runner.js";
 import {
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
+  ROUTINE_CLIENT_MIGRATIONS,
+  ROUTINE_MIGRATIONS_TABLE,
 } from "../sqlite/migrations/index.js";
 import { enqueueOutboxIncrement } from "../sqlite/syncOpOutboxEnqueue.js";
 import {
@@ -108,8 +108,8 @@ describe("syncOpOutboxLifecycle", () => {
     client = syncClient(db);
     await runMigrations({
       adapter: createSqliteAdapter(client),
-      files: ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-      tableName: ROUTINE_SPIKE_MIGRATIONS_TABLE,
+      files: ROUTINE_CLIENT_MIGRATIONS,
+      tableName: ROUTINE_MIGRATIONS_TABLE,
     });
   });
 

@@ -1006,8 +1006,8 @@ eager-графа. Відкочено. Не повторюй цей шлях.
 `from "./bar.jsx"` у `.ts`/`.tsx` файлах — працювало через Vite resolve, але
 плутало IDE auto-imports і нових контриб'юторів.
 
-**Зараз:** виконано codemod
-[`scripts/codemods/strip-js-extensions/script.mjs`](../../../scripts/codemods/strip-js-extensions/script.mjs) —
+**Зараз:** виконано codemod `scripts/codemods/strip-js-extensions/script.mjs`
+(прибраний 2026-09-03 після `@removeBy 2026-09-01`; лишається в Git history) —
 видалив `.js`/`.jsx` з 436 first-party-імпортів у 180 файлах. Зачіпає тільки
 шляхи, що починаються з `.`, `@shared/`, `@finyk/`, `@fizruk/`, `@routine/`,
 `@nutrition/` або `@sergeant/`. Зовнішні пакети (`@zxing/...`) спеціально
@@ -1757,6 +1757,29 @@ Ref: PR-6.F (sergeant-audit-devin.md).
 рядок кредитів у картці для CC-BY-SA. Це окрема спека, не правка поля.
 
 ---
+
+### 14. Прострочені `@removeBy 2026-09-01` — звірено 2026-09-03
+
+Дата настала; кожен маркер переміряно на HEAD і або знято, або перенесено з
+записаною причиною. **Знято (код видалено):** `scripts/codemods/strip-js-extensions/`
+(одноразовий codemod, enforcement — `import/extensions: never`); `ROUTINE_SPIKE_*`
+аліаси в `packages/db-schema` (11 імпортерів переведено на нейтральні імена);
+i18n-ключ `validation.fieldRequired` (`uk.ts`/`en.ts`, нуль читачів);
+legacy-проп `danger` у `apps/mobile` `ConfirmDialog` (2 call-site-и → `variant="destructive"`).
+
+**Перенесено на 2026-12-01 — і це не «ще трохи», а три різні причини:**
+
+| Маркер                                                                            | Чому не знято 2026-09-03                                                                                                                                      | Що розблокує                                                   |
+| --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
+| `CardVariant` / `Card.variant` (`shared/components/ui/Card.tsx`)                  | ~68 call-site-ів `<Card variant="…">` у `apps/web/src` — це окремий механічний codemod-PR, а не хвіст                                                         | codemod `variant` → `module` + `prominence`, один PR           |
+| 5 tombstone-ключів у `packages/shared/src/lib/storageKeys.ts`                     | tombstone тримає residual-import drain у SQLite на boot; зняти — значить вирішити, що застарілі localStorage-дані бета-тестерів вже нікому не треба підбирати | рішення власника про долю legacy LS-даних                      |
+| `MONTHLY_PLAN_STORAGE_KEY` (`packages/fizruk-domain/src/constants.ts`)            | той самий клас tombstone-ів, ~29 живих згадок (drain + backup-ключі + тести)                                                                                  | те саме рішення                                                |
+| `pushApi.subscribe` / `unsubscribe` (`packages/api-client/src/endpoints/push.ts`) | методи ще експортують `react/hooks.ts` і пінить `push.test.ts`; серверний proxy `/api/push/subscribe` живий                                                   | PR під `sergeant-module-push`: клієнт + хуки + серверний proxy |
+
+Урок для наступного разу той самий, що й у `_runner-report.md` (червень): маркер
+із датою без власника перетворюється на «September crunch». Перенесені дати тут
+мають записану умову зняття — при наступному спрацюванні рішення вже не
+треба шукати.
 
 ## Recently completed
 

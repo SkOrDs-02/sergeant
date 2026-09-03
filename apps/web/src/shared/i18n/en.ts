@@ -68,11 +68,6 @@ export const messagesEn: Partial<{
   },
 
   validation: {
-    /**
-     * @deprecated PR-31: use `<entity>Required` keys instead.
-     * @removeBy 2026-09-01
-     */
-    fieldRequired: "This field is required.",
     emailRequired: "Enter your email",
     emailInvalid: "Invalid email format",
     emailInvalidPublic: "Invalid email address",

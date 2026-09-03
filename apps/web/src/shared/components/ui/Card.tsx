@@ -77,7 +77,12 @@ export type CardProminence =
  * @deprecated Prefer the orthogonal `module` + `prominence` props.
  * The string union is kept for back-compat with existing call-sites
  * and is internally mapped to the new API.
- * @removeBy 2026-09-01
+ *
+ * Термін перенесено 2026-09-03 з 2026-09-01: на дату замір дав ~68
+ * call-site-ів `<Card variant="…">` у `apps/web/src` — це окремий
+ * механічний codemod-PR, не хвіст. Реєстр: `docs/90-work/tech-debt/frontend.md`
+ * § «Прострочені `@removeBy` 2026-09-01».
+ * @removeBy 2026-12-01
  */
 export type CardVariant =
   | "default"
@@ -331,8 +336,8 @@ export interface CardProps extends HTMLAttributes<HTMLElement> {
   /**
    * @deprecated Prefer `module` + `prominence`. Kept for back-compat
    * with existing call-sites; module-style variants are mapped to the
-   * new API internally.
-   * @removeBy 2026-09-01
+   * new API internally. Термін перенесено разом із `CardVariant` вище.
+   * @removeBy 2026-12-01
    */
   variant?: CardVariant | undefined;
   module?: CardModule | undefined;

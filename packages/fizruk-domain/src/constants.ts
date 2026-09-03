@@ -17,7 +17,13 @@ export const ACTIVE_PROGRAM_KEY = "fizruk_active_program_id_v1";
 export const PLAN_TEMPLATE_STORAGE_KEY = "fizruk_plan_template_v1";
 /**
  * @deprecated Stage 12 PR #057f-tombstone-mobile-stage12 — use SQLite `fizruk_monthly_plan`.
- * @removeBy 2026-09-01
+ *
+ * Термін перенесено 2026-09-03 з 2026-09-01: на дату ключ мав ~29 живих
+ * згадок (residual-import drain + backup-ключі + тести) — той самий клас
+ * tombstone-ів, що й у `packages/shared/src/lib/storageKeys.ts`; зняття
+ * потребує рішення про долю legacy-даних, не рефакторингу
+ * (`docs/90-work/tech-debt/frontend.md` § «Прострочені `@removeBy` 2026-09-01»).
+ * @removeBy 2026-12-01
  */
 export const MONTHLY_PLAN_STORAGE_KEY = "fizruk_monthly_plan_v1";
 
