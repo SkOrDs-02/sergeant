@@ -17,14 +17,19 @@ import { vi } from "vitest";
  * (#2), payload nesting depth (#3), cross-account guard (#4), legacy
  * `updatedAt` semantics (#5).
  */
-const { mockUpdateProfile } = vi.hoisted(() => ({
+const { mockUpdateProfile, mockGetProfile } = vi.hoisted(() => ({
   mockUpdateProfile: vi.fn().mockResolvedValue({
     profile: {},
     updatedAt: null,
   }),
+  // Пуш, який несе половину «тут локально ще не писали», дочитує її з
+  // сервера, щоб не стерти серверну копію (див. AI-DANGER над
+  // `resolveHalvesAgainstServer`). Дефолт — «рядка немає», тобто стирати
+  // нічого і поведінка збігається з дофіксовою.
+  mockGetProfile: vi.fn().mockResolvedValue({ profile: {}, updatedAt: null }),
 }));
 vi.mock("@shared/api", () => ({
-  meApi: { updateProfile: mockUpdateProfile },
+  meApi: { updateProfile: mockUpdateProfile, getProfile: mockGetProfile },
 }));
 
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
@@ -142,6 +147,8 @@ beforeEach(() => {
   setMemoryBankOwner(null);
   mockUpdateProfile.mockClear();
   mockUpdateProfile.mockResolvedValue(NO_SERVER_ROW);
+  mockGetProfile.mockClear();
+  mockGetProfile.mockResolvedValue(NO_SERVER_ROW);
 });
 
 afterEach(() => {
@@ -200,6 +207,97 @@ describe("pushMemoryBankToServer", () => {
     const [sent] = mockUpdateProfile.mock.calls[0]!;
     expect(sent.heightCm).toBe(FRESH.heightCm);
     expect(sent.weightKg).toBe(FRESH.weightKg);
+    expect(sent.memoryBank.entries).toEqual([FACT_A]);
+  });
+});
+
+/**
+ * Регресія browser-QA 2026-09-03 — звіт власника «біометрія регулярно
+ * зникає». L-8 закрив «пуш ОДНІЄЇ половини стирає другу», але не закрив
+ * «пуш ПОРОЖНЬОЇ половини стирає другу»: до boot-звірки (а на пристрої,
+ * де вона не пройшла, — і після) локальні копії стоять на EPOCH-сентинелі,
+ * і wholesale-PUT відносив цю порожнечу на сервер як факт.
+ *
+ * Головне тут — відрізнити «ще не писали» від «свідомо очистили»: перше
+ * має добиратись із сервера, друге зобовʼязане доїхати.
+ */
+describe("wholesale-PUT × половина, у яку локально ще не писали", () => {
+  it("запис факту з чату НЕ стирає серверну біометрику, поки локальна ще на сентинелі", async () => {
+    // Свіжий логін: `hub_biometrics_v1` уже вичищено purge-ем при виході,
+    // boot-звірка ще не добігла. На сервері біометрика є.
+    mockGetProfile.mockResolvedValue(serverResponse(FRESH));
+    setMemoryBankOwner(CURRENT_USER);
+
+    await pushMemoryBankToServer([FACT_A]);
+
+    const [sent] = mockUpdateProfile.mock.calls[0]!;
+    expect(sent.heightCm).toBe(FRESH.heightCm);
+    expect(sent.birthDate).toBe(FRESH.birthDate);
+    expect(sent.updatedAt).toBe(FRESH.updatedAt);
+    expect(sent.memoryBank.entries).toEqual([FACT_A]);
+  });
+
+  it("збереження біометрики НЕ стирає серверний банк памʼяті, поки локальний ще на сентинелі", async () => {
+    mockGetProfile.mockResolvedValue(
+      serverMemoryBank([FACT_A, FACT_B], "2026-03-01T00:00:00.000Z"),
+    );
+    setBiometricsOwner(CURRENT_USER);
+
+    await pushBiometricsToServer(FRESH);
+
+    const [sent] = mockUpdateProfile.mock.calls[0]!;
+    expect(sent.heightCm).toBe(FRESH.heightCm);
+    expect(sent.memoryBank.entries).toEqual([FACT_A, FACT_B]);
+  });
+
+  it("«Забути все» доїжджає: порожній банк зі СПРАВЖНЬОЮ міткою — це рішення людини, не сентинел", async () => {
+    mockGetProfile.mockResolvedValue(
+      serverMemoryBank([FACT_A], "2026-03-01T00:00:00.000Z"),
+    );
+    setBiometricsOwner(CURRENT_USER);
+    setMemoryBankOwner(CURRENT_USER);
+    writeMemoryEntries([FACT_A]);
+    writeMemoryEntries([]); // ← «Забути все» з PrivacySection
+    mockUpdateProfile.mockClear();
+
+    await pushBiometricsToServer(FRESH);
+
+    const [sent] = mockUpdateProfile.mock.calls[0]!;
+    expect(sent.memoryBank.entries).toEqual([]);
+  });
+
+  it("коли серверного рядка ще немає — сентинели їдуть як є (перший рядок профілю)", async () => {
+    mockGetProfile.mockResolvedValue(NO_SERVER_ROW);
+    setBiometricsOwner(CURRENT_USER);
+
+    await pushBiometricsToServer(FRESH);
+
+    expect(mockUpdateProfile).toHaveBeenCalledWith(combined(FRESH));
+  });
+
+  it("коли дізнатись невідому половину не вдалося — пуш скасовується цілком, а не шле порожнечу", async () => {
+    mockGetProfile.mockRejectedValue(new Error("offline"));
+    setMemoryBankOwner(CURRENT_USER);
+
+    await expect(pushMemoryBankToServer([FACT_A])).resolves.toBeUndefined();
+
+    expect(mockUpdateProfile).not.toHaveBeenCalled();
+  });
+
+  it("boot-звірка не робить зайвого GET — серверна відповідь у неї вже є", async () => {
+    setBiometricsOwner(CURRENT_USER);
+    writeBiometrics(NEWER); // локальне новіше → гілка «пушимо локальне»
+
+    await reconcileBiometricsWithServerProfile(
+      serverMemoryBank([FACT_A], "2026-03-01T00:00:00.000Z"),
+      CURRENT_USER,
+    );
+
+    expect(mockGetProfile).not.toHaveBeenCalled();
+    const [sent] = mockUpdateProfile.mock.calls[0]!;
+    expect(sent.heightCm).toBe(NEWER.heightCm);
+    // Банк памʼяті на цьому пристрої ще порожній — беремо серверний,
+    // інакше звірка біометрики стерла б факти ШІ.
     expect(sent.memoryBank.entries).toEqual([FACT_A]);
   });
 });
