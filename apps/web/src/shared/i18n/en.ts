@@ -451,6 +451,10 @@ export const messagesEn: Partial<{
         "Each fact can be deleted individually. Deleted facts are gone for good.",
       loading: "Loading memory…",
       loadError: "Could not load AI memory.",
+      // Mirrors uk.privacy.ts: 401 on the list is the guest state, not a
+      // failure (audit `web-qa-pre-beta.md` § 9, 2026-09-03).
+      authRequired:
+        "AI memory lives in your account. Sign in and everything the assistant remembers about you will show up here.",
       empty:
         "The AI hasn't recorded anything about you yet. Facts appear when you mention something important in chat: an allergy, a goal, a constraint.",
       loadMore: "Show more",
