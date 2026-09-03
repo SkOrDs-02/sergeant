@@ -195,7 +195,17 @@ vi.mock("./meal-sheet/PhotoStep", () => ({
     onApply,
   }: {
     onApply: (
-      result: { dishName: string; macros: Record<string, number | null> },
+      result: {
+        dishName: string;
+        macros: Record<string, number | null>;
+        items?: Array<{
+          name: string;
+          macros: Record<string, number | null>;
+          gramsApprox: number | null;
+          confidence: number;
+          foodId?: string | null;
+        }>;
+      },
       file: File | null,
     ) => void;
   }) => (
@@ -214,6 +224,39 @@ vi.mock("./meal-sheet/PhotoStep", () => ({
         }
       >
         Зберегти в журнал
+      </button>
+      {/* PR-3 (ініціатива 0023): позиції з `items[]` — окремий сценарій
+          застосування, бо продакшн-`onApply` завжди несе повний
+          `NutritionPhotoResult`, а не звужений `{dishName, macros}` вище. */}
+      <button
+        type="button"
+        data-testid="apply-photo-multi"
+        onClick={() =>
+          onApply(
+            {
+              dishName: "Борщ зі сметаною",
+              macros: { kcal: 280, protein_g: 18, fat_g: 12, carbs_g: 22 },
+              items: [
+                {
+                  name: "Борщ",
+                  macros: { kcal: 220, protein_g: 14, fat_g: 8, carbs_g: 20 },
+                  gramsApprox: 300,
+                  confidence: 0.88,
+                },
+                {
+                  name: "Сметана",
+                  macros: { kcal: 60, protein_g: 4, fat_g: 4, carbs_g: 2 },
+                  gramsApprox: 50,
+                  confidence: 1,
+                  foodId: "food-42",
+                },
+              ],
+            },
+            new File(["img"], "borsch.png", { type: "image/png" }),
+          )
+        }
+      >
+        Зберегти в журнал (позиції)
       </button>
     </div>
   ),
@@ -350,19 +393,28 @@ vi.mock("./meal-sheet/useBarcodeLookup", () => ({
   useBarcodeLookup: vi.fn(() => stableBarcodeLookup),
 }));
 
-vi.mock("./meal-sheet/mealFormUtils", () => ({
-  currentTime: vi.fn(() => "12:00"),
-  emptyForm: vi.fn(() => ({
-    name: "",
-    mealType: "breakfast",
-    time: "12:00",
-    kcal: "",
-    protein_g: "",
-    fat_g: "",
-    carbs_g: "",
-    err: "",
-  })),
-}));
+vi.mock("./meal-sheet/mealFormUtils", async (importOriginal) => {
+  // `buildMealsForSave`/`upsertMealTemplate` (PR-3, ініціатива 0023) лишаються
+  // РЕАЛЬНИМИ — вони чиста логіка без побічних ефектів, і саме її перевіряє
+  // тест «saves N journal rows…» нижче. Тільки `currentTime`/`emptyForm`
+  // підмінені (форма й час — не предмет цих тестів).
+  const actual =
+    await importOriginal<typeof import("./meal-sheet/mealFormUtils")>();
+  return {
+    ...actual,
+    currentTime: vi.fn(() => "12:00"),
+    emptyForm: vi.fn(() => ({
+      name: "",
+      mealType: "breakfast",
+      time: "12:00",
+      kcal: "",
+      protein_g: "",
+      fat_g: "",
+      carbs_g: "",
+      err: "",
+    })),
+  };
+});
 
 vi.mock("../lib/mealTypes", () => ({
   MEAL_TYPES: [
@@ -906,6 +958,57 @@ describe("AddMealSheet — photo step", () => {
     });
     // Оригінал фото їде разом зі стравою — з нього host зробить мініатюру.
     expect(onSave.mock.calls[0]![1]).toBeInstanceOf(File);
+  });
+
+  it("saves N journal rows from a multi-item photo result — one per position (init. 0023 PR-3)", async () => {
+    const { sumMacrosNullable } = await import("@sergeant/shared");
+    const onSave = vi.fn();
+    renderSheet({ onSave, initialStep: "photo" });
+    fireEvent.click(screen.getByTestId("apply-photo-multi"));
+    expect(screen.getByTestId("macros-editor")).toBeInTheDocument();
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
+    // Позиції несуть реальні макроси — на відміну від однопозиційного
+    // сценарію вище, тут нема діалогу «Зберегти без калорійності?»: перевірка
+    // порожніх макросів тепер рахується по рядках, що реально йдуть у
+    // журнал, а не по (мокнутій, завжди порожній) агрегатній формі.
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(2));
+
+    const savedMeals = onSave.mock.calls.map((call) => call[0]);
+    expect(savedMeals).toEqual([
+      expect.objectContaining({
+        name: "Борщ",
+        macros: { kcal: 220, protein_g: 14, fat_g: 8, carbs_g: 20 },
+        amount_g: 300,
+        source: "photo",
+        macroSource: "photoAI",
+        foodId: null,
+      }),
+      expect.objectContaining({
+        name: "Сметана",
+        macros: { kcal: 60, protein_g: 4, fat_g: 4, carbs_g: 2 },
+        amount_g: 50,
+        source: "photo",
+        macroSource: "productDb",
+        foodId: "food-42",
+      }),
+    ]);
+    // Оригінал фото їде з кожним рядком — усі N рядків з одного кадру
+    // показують ту саму мініатюру в журналі.
+    expect(onSave.mock.calls[0]![1]).toBeInstanceOf(File);
+    expect(onSave.mock.calls[1]![1]).toBeInstanceOf(File);
+
+    // Guard: сума збережених рядків == підсумок, який людина бачила на
+    // картці аналізу (§ План змін PR-3, пункт 4). Той самий
+    // `sumMacrosNullable`, яким сервер і `usePhotoAnalysis` рахують
+    // підсумок після кожної правки списку (ініціатива 0023, PR-1/PR-2).
+    expect(sumMacrosNullable(savedMeals.map((m) => m.macros))).toEqual({
+      kcal: 280,
+      protein_g: 18,
+      fat_g: 12,
+      carbs_g: 22,
+    });
   });
 
   it("backtracking from fill after a photo apply drops photoAI semantics", async () => {

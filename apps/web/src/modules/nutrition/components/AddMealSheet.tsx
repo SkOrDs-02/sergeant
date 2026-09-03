@@ -39,15 +39,18 @@ import type {
   NutritionPrefs,
   PantryItem,
 } from "@sergeant/nutrition-domain";
+import type { NutritionPhotoResult } from "@shared/api";
 import { MEAL_TYPES } from "../lib/mealTypes";
 import { newMealId } from "../lib/mealId";
 import { ensureSeedFoods } from "../lib/foodDb/foodDb";
 import { BarcodeScanner } from "./BarcodeScanner";
 import {
+  buildMealsForSave,
   currentTime,
   emptyForm,
-  type MealFormPhotoResult,
+  upsertMealTemplate,
   type MealFormState,
+  type MealSaveTemplate,
 } from "./meal-sheet/mealFormUtils";
 import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
@@ -124,9 +127,16 @@ interface AddMealSheetProps {
   onQuickAddMeal?: ((chip: QuickChip) => void) | undefined;
 }
 
-/** Результат кроку «фото», застосований до форми (photo → fill). */
+/**
+ * Результат кроку «фото», застосований до форми (photo → fill).
+ *
+ * `result` — повний `NutritionPhotoResult`, не звужений `MealFormPhotoResult`
+ * (структурно сумісний із ним, тож `emptyForm(result)` і `MacrosEditor`
+ * лишаються без змін): PR-3 (ініціатива 0023) читає звідси `items[]`, щоб
+ * писати N рядків журналу замість одного злитого.
+ */
 interface AppliedPhoto {
-  result: MealFormPhotoResult;
+  result: NutritionPhotoResult;
   file: File | null;
 }
 
@@ -204,7 +214,16 @@ export function AddMealSheet({
   // fully-built, already-validated payload while the confirm dialog is up;
   // it's cleared on confirm (→ finalizeSave) or cancel (sheet stays open,
   // untouched).
-  const [pendingMeal, setPendingMeal] = useState<Meal | null>(null);
+  //
+  // `meals` — завжди масив: PR-3 (ініціатива 0023) пише N рядків журналу
+  // на одне фото-збереження (по одному на позицію), а не один злитий
+  // рядок — масив довжини 1 покриває звичайний (не-фото) шлях без
+  // гілкування. `template` несе агрегатні назву/тип/КБЖВ для «Запамʼятати
+  // для повтору» — вони стосуються страви цілком, не окремого рядка.
+  const [pendingMeal, setPendingMeal] = useState<{
+    meals: Meal[];
+    template: MealSaveTemplate;
+  } | null>(null);
   const [rememberForRepeat, setRememberForRepeat] = useState(false);
 
   const [prevOpen, setPrevOpen] = useState(false);
@@ -386,66 +405,63 @@ export function AddMealSheet({
           ? "productDb"
           : "manual";
     const macros = { kcal, protein_g, fat_g, carbs_g };
-    const meal: Meal = {
-      id: initialMeal?.id || draftId || newMealId(),
+    // PR-3 (ініціатива 0023): фото-аналіз пише N рядків журналу — по одному
+    // на позицію, не один злитий. Побудова винесена в `buildMealsForSave`
+    // (`mealFormUtils.ts`) — сама логіка й обґрунтування там же.
+    const meals = buildMealsForSave({
+      photoItems: appliedPhoto?.result.items,
       time: form.time || currentTime(),
       mealType: form.mealType,
       label: mealLabel,
-      name,
-      macros,
-      source,
-      macroSource,
-      foodId: effectiveFoodId ? String(effectiveFoodId) : null,
-      amount_g: hasAmount ? gramsOrDefault(pickedGrams) : null,
-    };
+      fallbackName: name,
+      fallback: {
+        id: initialMeal?.id || draftId || newMealId(),
+        macros,
+        source,
+        macroSource,
+        foodId: effectiveFoodId ? String(effectiveFoodId) : null,
+        amount_g: hasAmount ? gramsOrDefault(pickedGrams) : null,
+      },
+    });
     // Founder decision: warn, don't block. A meal with all-empty/zero
     // macros (photo AI couldn't identify the food, or a manual entry with
     // nothing typed in) won't move the daily stats at all — surface a
-    // confirm step instead of silently saving a meaningless entry.
-    if (macrosAreAllEmpty(macros)) {
-      setPendingMeal(meal);
+    // confirm step instead of silently saving a meaningless entry. Checked
+    // per-row against what's actually being saved, not the (possibly
+    // hand-edited) aggregate form fields.
+    const template = { name, mealType: form.mealType, macros };
+    if (meals.every((m) => macrosAreAllEmpty(m.macros))) {
+      setPendingMeal({ meals, template });
       return;
     }
-    finalizeSave(meal);
+    finalizeSave(meals, template);
   }
 
-  function finalizeSave(meal: Meal) {
+  function finalizeSave(meals: Meal[], template: MealSaveTemplate) {
     if (fromPantryItem && onConsumePantryItem) {
       const grams = gramsOrDefault(pickedGrams);
       onConsumePantryItem(fromPantryItem, grams);
     }
     if (rememberForRepeat && !initialMeal?.id && setPrefs) {
-      setPrefs((prefs) => {
-        const existing = Array.isArray(prefs.mealTemplates)
-          ? prefs.mealTemplates
-          : [];
-        const normalizedName = meal.name.trim().toLocaleLowerCase("uk-UA");
-        const previous = existing.find(
-          (template) =>
-            template.mealType === meal.mealType &&
-            template.name.trim().toLocaleLowerCase("uk-UA") === normalizedName,
-        );
-        const remembered: MealTemplate = {
-          id: previous?.id ?? `tpl_${Date.now()}`,
-          name: meal.name,
-          mealType: meal.mealType,
-          macros: { ...meal.macros },
-        };
-        return {
-          ...prefs,
-          mealTemplates: [
-            remembered,
-            ...existing.filter((template) => template.id !== previous?.id),
-          ].slice(0, 40),
-        };
-      });
+      setPrefs((prefs) => ({
+        ...prefs,
+        mealTemplates: upsertMealTemplate(
+          Array.isArray(prefs.mealTemplates) ? prefs.mealTemplates : [],
+          template,
+        ),
+      }));
     }
     hapticSuccess();
-    onSave(meal, appliedPhoto?.file ?? null);
+    // По одному виклику `onSave` на рядок: undo-тост нижче за течією
+    // (`NutritionOverlays`/`wrappedSaveMeal`) знімає РІВНО той рядок, що
+    // додав, тож людина може відмінити одну хибну позицію з N, не чіпаючи
+    // решту. Сигнатура `onSave(meal, file)` лишається незмінною — жоден
+    // консюмер поза цим файлом не знає про розбивку на кілька рядків.
+    meals.forEach((meal) => onSave(meal, appliedPhoto?.file ?? null));
   }
 
   function handleConfirmEmptyMacrosSave() {
-    if (pendingMeal) finalizeSave(pendingMeal);
+    if (pendingMeal) finalizeSave(pendingMeal.meals, pendingMeal.template);
     setPendingMeal(null);
   }
 
@@ -464,7 +480,7 @@ export function AddMealSheet({
   // the old host-held photoResult used at sheet-open) and remember the
   // applied result for macroSource/thumbnail. A picked food/pantry item
   // from an earlier detour must not survive alongside photoAI macros.
-  function handlePhotoApply(result: MealFormPhotoResult, file: File | null) {
+  function handlePhotoApply(result: NutritionPhotoResult, file: File | null) {
     setPickedFood(null);
     setFromPantryItem(null);
     setForm(emptyForm(result));

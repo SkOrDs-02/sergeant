@@ -1,6 +1,6 @@
 # Відкрита робота — єдиний дашборд
 
-> **Last validated:** 2026-09-02 by @codex. **Next review:** 2026-12-01.
+> **Last validated:** 2026-09-03 by @codex. **Next review:** 2026-12-02.
 > **Status:** Active
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-open-work`. -->
@@ -11,15 +11,14 @@
 
 **Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (≥3 цифри, deduped, sorted ascending; перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.
 
-**Усього відкритих документів:** **67** — Ініціативи: **5** · Планування: **25** · Launch / запуск: **12** · Аудити й прожарки: **20** · Security hardening: **1** · Техборг: **4** · Superpowers — плани впровадження: **0**.
+**Усього відкритих документів:** **66** — Ініціативи: **4** · Планування: **25** · Launch / запуск: **12** · Аудити й прожарки: **20** · Security hardening: **1** · Техборг: **4** · Superpowers — плани впровадження: **0**.
 
-## Ініціативи (5)
+## Ініціативи (4)
 
 > Нумеровані multi-PR ініціативи з acceptance criteria. Source: [`docs/90-work/initiatives/`](./90-work/initiatives/README.md).
 
 | Документ                                                                                       | Статус                                                                                                                                                                               | PR-згадки                                                                                                                                                                  | Agent-ready       | Skill                               | Playbook                 |
 | ---------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------------- | ----------------------------------- | ------------------------ |
-| [`0023-photo-analysis-multi-item.md`](./90-work/initiatives/0023-photo-analysis-multi-item.md) | In progress — рішення ухвалені 2026-08-26, скоуп закритий. Фаза 0, **PR-1 (контракт `items[]`)** і **PR-2 (UI списку)** зроблені; лишився PR-3 (N рядків у журнал). Порядок обовʼяз… | —                                                                                                                                                                          | 🟢 yes            | `sergeant-web-ui`                   | —                        |
 | [`0024-ai-memory-source-coverage.md`](./90-work/initiatives/0024-ai-memory-source-coverage.md) | Proposed — рішення ухвалені 2026-08-26, скоуп закритий, виконується без додаткових питань. Три PR-и, порядок обовʼязковий (§ План змін).                                             | [#826](https://github.com/Skords-01/Sergeant/pull/826) [#928](https://github.com/Skords-01/Sergeant/pull/928)                                                              | 🟢 yes            | `sergeant-data-and-migrations`      | —                        |
 | [`0025-posthog-ai-observability.md`](./90-work/initiatives/0025-posthog-ai-observability.md)   | Proposed (2026-08-25) — драфт плану; не почато. Фази 1–2 виконуються без рішень власника; Фаза 3 (LLM-judge evals) чекає рішень — див. § Відкриті рішення.                           | [#857](https://github.com/Skords-01/Sergeant/pull/857)                                                                                                                     | 🟢 yes            | `sergeant-deploy-and-observability` | —                        |
 | [`0010-revenue-first-launch.md`](./90-work/initiatives/0010-revenue-first-launch.md)           | In progress                                                                                                                                                                          | [#1792](https://github.com/Skords-01/Sergeant/pull/1792) [#2080](https://github.com/Skords-01/Sergeant/pull/2080) [#3109](https://github.com/Skords-01/Sergeant/pull/3109) | 🟡 needs-decision | `sergeant-web-ui`                   | `release.md`             |
