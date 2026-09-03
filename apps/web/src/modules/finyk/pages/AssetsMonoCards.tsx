@@ -3,7 +3,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Switch } from "@shared/components/ui/Switch";
 import { Badge } from "@shared/components/ui/Badge";
-import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
+import { AssetsGroupCard, usePersistedGroupOpen } from "./AssetsGroupCard";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
 import { getAccountVisual } from "../lib/accountVisual";
@@ -60,17 +60,21 @@ export function AssetsMonoCards({
   showBalance: boolean;
 }) {
   const [openId, setOpenId] = useState<string | null>(null);
+  const [groupOpen, toggleGroup] = usePersistedGroupOpen(
+    "finyk_assets_mono_cards_open_v1",
+  );
 
   const openAccount = accounts.find((a) => a.id === openId);
   const openVisual = openAccount ? getAccountVisual(openAccount) : null;
   const openIncluded = openId !== null && !hiddenAccounts.includes(openId);
 
   return (
-    <CollapsibleSection
-      storageKey="finyk_assets_mono_cards_open_v1"
+    <AssetsGroupCard
       title={t.sectionTitle}
-      headingSize="xs"
-      collapsedIcon="credit-card"
+      iconName="credit-card"
+      iconClassName="text-muted"
+      open={groupOpen}
+      onToggle={toggleGroup}
     >
       {accounts.map((a, i) => {
         const visual = getAccountVisual(a);
@@ -181,6 +185,6 @@ export function AssetsMonoCards({
           description={t.includeHint}
         />
       </Sheet>
-    </CollapsibleSection>
+    </AssetsGroupCard>
   );
 }

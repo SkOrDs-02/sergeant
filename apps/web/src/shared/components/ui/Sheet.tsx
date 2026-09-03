@@ -180,7 +180,14 @@ export function Sheet({
           maxHeight: `calc(100dvh - ${resolvedKbInsetPx}px - max(env(safe-area-inset-top, 0px), 8px))`,
         }
       : {
-          marginBottom: `max(var(${BOTTOM_NAV_INSET_VAR}, 0px), calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px)))`,
+          // `paddingBottom`, а не `marginBottom`: відступ під навбар іде
+          // ВСЕРЕДИНУ панелі, тож її фон дотягується до нижнього краю
+          // екрана, а вміст і футер лишаються над навбаром. З марджином
+          // панель зависала над навігацією з видимим ребром і смугою
+          // затемненої сторінки під ним — «аркуш обрізаний знизу» (звіт
+          // власника 2026-09-03). Під клавіатурою марджин лишається:
+          // клавіатура непрозора, і панель має саме прилягати до неї.
+          paddingBottom: `max(var(${BOTTOM_NAV_INSET_VAR}, 0px), calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px)))`,
         };
   // Запас прокрутки під останніми полями, поки клавіатура відкрита
   // (бета-фідбек №5, 2026-08-18: «внизу екрану не видно»). Скрол уміє

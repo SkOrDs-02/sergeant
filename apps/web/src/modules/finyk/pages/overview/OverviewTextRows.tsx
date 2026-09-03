@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { Tooltip } from "@shared/components/ui/Tooltip";
@@ -28,8 +29,12 @@ export interface OverviewTextRowsProps {
 /**
  * Два текстові рядки під hero — усе, що лишилось від `TodaySummaryCard` і
  * `MonthPulseCard` після їх видалення (спека `finyk-hero-month-strip.md`
- * § Рішення дизайну, п.3 — F1 анти-слоп-аудиту). Без власного боксу:
- * `text-style-label`/`text-style-caption` + `tabular-nums`, `text-muted`.
+ * § Рішення дизайну, п.3 — F1 анти-слоп-аудиту).
+ *
+ * Обидва рядки лежать в ОДНІЙ нейтральній картці (рішення власника
+ * 2026-09-03: голий текст на тлі сторінки читався як недороблений). Це не
+ * повернення F1: там кожен показник мав власний бокс, тут бокс один на
+ * два рядки, hero-число лишається єдиним display-числом екрана.
  *
  * Витрати місяця й відсоток плану сюди НЕ повертаються — вони живуть у
  * футері стрічки hero (`HeroCard`), щоб те саме число не дублювалось у
@@ -59,7 +64,7 @@ const OverviewTextRowsImpl = function OverviewTextRows({
     (hasExpensePlan && showBalance && showMonthForecast && projectedSpend > 0);
 
   return (
-    <div className="space-y-2 px-1">
+    <Card variant="default" radius="lg" padding="md" className="space-y-3">
       <button
         type="button"
         onClick={onOpenToday}
@@ -138,7 +143,7 @@ const OverviewTextRowsImpl = function OverviewTextRows({
             </p>
           )}
       </div>
-    </div>
+    </Card>
   );
 };
 
