@@ -1,7 +1,7 @@
 # Як забрати своє і що буде, якщо продукт закриється
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2027-11-22.
-> **Status:** Scaffolded
+> **Last touched:** 2026-09-03 by @claude (звірка з `origin/main`: сторінка існує в лендингу, маршрут у карті README позначено done). **Next review:** 2027-11-22.
+> **Status:** Implemented — сторінка [`apps/landing/src/pages/VyhidPage.tsx`](../../../../../apps/landing/src/pages/VyhidPage.tsx), маршрут `/vyhid` зареєстровано в `apps/landing/src/App.tsx`; Етап 4 карти сайту виконано 2026-08-31 ([README § Етап 4](./README.md), PR [#959](https://github.com/SkOrDs-02/sergeant/pull/959)). Цей документ — драфт копії, за яким сторінку зверстано; правки тексту робити в коді сторінки.
 
 ## Мета сторінки
 
