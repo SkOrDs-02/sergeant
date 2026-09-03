@@ -303,8 +303,15 @@ export function ModuleHeaderAssistantButton({
         strokeLinejoin="round"
         aria-hidden
       >
-        <path d="M12 3l1.8 4.6L18 9.4l-4.2 1.8L12 16l-1.8-4.8L6 9.4l4.2-1.8z" />
-        <path d="M19 14l.9 2.3L22 17l-2.1.7L19 20l-.9-2.3L16 17l2.1-.7z" />
+        {/* Шеврони Сержанта — той самий гліф, що `Icon name="sergeant"`
+            (Icon.paths.status.tsx), вписаний руками з тієї ж причини, що й
+            іконки перемикача нижче: не тягнути реєстр Icon у шапку. Іскра
+            тут пережила прохід F2 анти-слоп аудиту 2026-09-01 саме тому,
+            що не проходила через реєстр і не ловилась грепом за назвою. */}
+        <circle cx="12" cy="3.5" r="1.6" fill="currentColor" stroke="none" />
+        <path d="M5 11l7-4 7 4" />
+        <path d="M5 16l7-4 7 4" />
+        <path d="M5 21l7-4 7 4" />
       </svg>
     </button>
   );
