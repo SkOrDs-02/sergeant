@@ -69,6 +69,21 @@ export interface SheetProps {
    * node so the dialog remains labelled.
    */
   hideHeader?: boolean | undefined;
+  /**
+   * Розтягнути панель на весь екран замість плаваючого аркуша над
+   * нижньою навігацією.
+   *
+   * Звичайний Sheet навмисно піднімається над навбаром (`marginBottom` =
+   * `--sgt-bottom-nav-inset`) і обмежений `90dvh`: це форма для коротких
+   * форм модулів. Для поверхонь, які є повноцінним екраном (HubChat), та
+   * сама геометрія давала дві вади одразу (звіт власника 2026-09-03):
+   * панель висіла над низом екрана, крізь скло просвічував навбар, а
+   * зверху лишалась смужка сторінки в кілька пікселів — не аркуш і не
+   * екран. У цьому режимі панель займає `100dvh`, сама несе safe-area
+   * зверху й знизу (композер лягає над home-індикатором), а закруглення
+   * й нижній відступ зникають. Клавіатурна геометрія лишається спільною.
+   */
+  fullScreen?: boolean | undefined;
   /** Optional keyboard inset override. Normally Sheet detects it centrally. */
   kbInsetPx?: number | undefined;
   /** Sheet z-index. Defaults to 50 — raise for nested sheets. */
@@ -101,6 +116,7 @@ export function Sheet({
   headerRight,
   hideHandle = false,
   hideHeader = false,
+  fullScreen = false,
   kbInsetPx,
   zIndex = 50,
   closeLabel = "Закрити",
@@ -177,18 +193,41 @@ export function Sheet({
           // 90dvh sheet without shrinking it pushes its header and focused
           // field above the screen; cap it to the actually visible area so
           // only the sheet body scrolls.
-          maxHeight: `calc(100dvh - ${resolvedKbInsetPx}px - max(env(safe-area-inset-top, 0px), 8px))`,
+          maxHeight: fullScreen
+            ? `calc(100dvh - ${resolvedKbInsetPx}px)`
+            : `calc(100dvh - ${resolvedKbInsetPx}px - max(env(safe-area-inset-top, 0px), 8px))`,
+          // Повноекранна панель має бути повною і над клавіатурою: без
+          // `height` flex-панель лишається за вмістом, і короткий чат не
+          // заповнює видиму зону (ревʼю CodeRabbit, PR #1075).
+          ...(fullScreen
+            ? { height: `calc(100dvh - ${resolvedKbInsetPx}px)` }
+            : {}),
+          // Під клавіатурою home-індикатора не видно, тож нижній
+          // safe-area у fullScreen-режимі стає зайвим порожнім рядком.
+          ...(fullScreen
+            ? { paddingTop: "env(safe-area-inset-top, 0px)", paddingBottom: 0 }
+            : {}),
         }
-      : {
-          // `paddingBottom`, а не `marginBottom`: відступ під навбар іде
-          // ВСЕРЕДИНУ панелі, тож її фон дотягується до нижнього краю
-          // екрана, а вміст і футер лишаються над навбаром. З марджином
-          // панель зависала над навігацією з видимим ребром і смугою
-          // затемненої сторінки під ним — «аркуш обрізаний знизу» (звіт
-          // власника 2026-09-03). Під клавіатурою марджин лишається:
-          // клавіатура непрозора, і панель має саме прилягати до неї.
-          paddingBottom: `max(var(${BOTTOM_NAV_INSET_VAR}, 0px), calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px)))`,
-        };
+      : fullScreen
+        ? {
+            marginBottom: 0,
+            // Inline `maxHeight` перекриває класовий `max-h-[90dvh]`, а
+            // `height` тримає панель повною навіть у порожньому чаті.
+            height: "100dvh",
+            maxHeight: "100dvh",
+            paddingTop: "env(safe-area-inset-top, 0px)",
+            paddingBottom: "env(safe-area-inset-bottom, 0px)",
+          }
+        : {
+            // `paddingBottom`, а не `marginBottom`: відступ під навбар іде
+            // ВСЕРЕДИНУ панелі, тож її фон дотягується до нижнього краю
+            // екрана, а вміст і футер лишаються над навбаром. З марджином
+            // панель зависала над навігацією з видимим ребром і смугою
+            // затемненої сторінки під ним — «аркуш обрізаний знизу» (звіт
+            // власника 2026-09-03). Під клавіатурою марджин лишається:
+            // клавіатура непрозора, і панель має саме прилягати до неї.
+            paddingBottom: `max(var(${BOTTOM_NAV_INSET_VAR}, 0px), calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px)))`,
+          };
   // Запас прокрутки під останніми полями, поки клавіатура відкрита
   // (бета-фідбек №5, 2026-08-18: «внизу екрану не видно»). Скрол уміє
   // рівно стільки, скільки дозволяє `scrollHeight`: для поля в кінці
@@ -260,6 +299,9 @@ export function Sheet({
           variant === "glass"
             ? "bg-surface-glass motion-safe:backdrop-blur-md border-t border-surface-line rounded-t-2xl shadow-nav"
             : "bg-panel border-t border-line rounded-t-3xl shadow-e4",
+          // Повноекранна панель стоїть на краях вʼюпорта: закруглення й
+          // верхня лінія на межі зі статус-баром читаються як артефакт.
+          fullScreen && "rounded-none border-t-0",
           panelClassName,
         )}
       >

@@ -16,7 +16,6 @@ export interface HubChatHeaderProps {
   detailsOpen: boolean;
   onDetailsOpenChange: (open: boolean) => void;
   contextState: { status: string; ts: number };
-  hasData: boolean;
   sessionInfo: { historyCount: number; chars: number };
   sessionsCount: number;
   onOpenHistory: () => void;
@@ -28,14 +27,20 @@ export interface HubChatHeaderProps {
  * Single-row, ChatGPT-style chat header: avatar + "Асистент ▾"
  * trigger (popover with status, "Усі бесіди", privacy line) |
  * "+ Нова" pill | ✕. All secondary affordances (info, history
- * list, module subtitle, Mono warning) collapse into the "Деталі"
- * popover behind the title.
+ * list, module subtitle) collapse into the "Деталі" popover behind
+ * the title.
+ *
+ * Попередження «Mono не підключено» тут більше немає (звіт власника
+ * 2026-09-03). Воно читало не факт підключення, а наявність старого
+ * localStorage-кешу транзакцій (`useFinykHubPreview.hasMonoData`), тож
+ * брехало підключеному Mono після переїзду даних у SQLite. І навіть
+ * правдиве воно не давало дії: асистент і так відповідає з тим
+ * контекстом, який є, а підключати Mono ведуть налаштування Фініка.
  */
 export function HubChatHeader({
   detailsOpen,
   onDetailsOpenChange,
   contextState,
-  hasData,
   sessionInfo,
   sessionsCount,
   onOpenHistory,
@@ -75,9 +80,7 @@ export function HubChatHeader({
                     ? "bg-brand-500"
                     : contextState.status === "building"
                       ? "bg-warning"
-                      : !hasData
-                        ? "bg-warning"
-                        : "bg-line",
+                      : "bg-line",
                 )}
                 aria-hidden
               />
@@ -130,11 +133,6 @@ export function HubChatHeader({
                   : "Очікую"}
             </span>
           </div>
-          {!hasData && (
-            <div className="px-2.5 py-2 bg-warning/10 border border-warning/30 rounded-xl text-style-caption text-warning-strong dark:text-warning leading-snug">
-              Mono не підключено, фінансовий контекст обмежений.
-            </div>
-          )}
           <p className="text-style-caption text-subtle leading-snug">
             В контексті: {sessionInfo.historyCount} з останніх 10 повідомлень ·
             ~{Math.round(sessionInfo.chars / 100) / 10}k символів.

@@ -21,11 +21,11 @@ const HubChat = lazyDefault(() => import("./HubChat"));
  * is purely an additive Hub-UX surface.
  *
  * Snap-points caveat: the canonical `<Sheet>` primitive does not yet
- * support a snap-point API (single `max-h-[90dvh]` panel with swipe-down
- * to dismiss). The product spec called for `["60%", "100%"]` with
- * pull-up expansion; that is captured as a follow-up rather than
- * blocking this surface. The overlay currently opens at the full Sheet
- * height; the existing iOS-style swipe-down dismiss still works.
+ * support a snap-point API. The product spec called for `["60%", "100%"]`
+ * with pull-up expansion; that is captured as a follow-up rather than
+ * blocking this surface. The overlay opens `fullScreen` (100dvh, no
+ * bottom-nav margin); the existing iOS-style swipe-down dismiss still
+ * works via the drag handle.
  */
 export function HubChatOverlay() {
   const { open, initialMessage, autoSendInitial, preset, closeChat } =
@@ -81,6 +81,15 @@ export function HubChatOverlay() {
       // duplicate stack. `title` is still consumed by `aria-labelledby`
       // via the visually-hidden node Sheet renders when hideHeader=true.
       hideHeader
+      // Чат — повноцінний екран, а не форма над навбаром: без цього
+      // панель висіла над низом екрана з навбаром крізь скло і смужкою
+      // сторінки зверху (звіт власника 2026-09-03). Safe-area зверху й
+      // знизу несе сама панель, тож композер лягає над home-індикатором.
+      fullScreen
+      // Ряд із ручкою лежить на панелі, а не в HubChat: зі скляним фоном
+      // панелі він читався як світла смужка над шапкою чату (`bg-bg`).
+      // На повний екран крізь скло однаково нічого не просвічує.
+      panelClassName="bg-bg!"
       title={messages.hub.overlayTitle}
       // HubChat owns the inner scroll (`HubChatBody` is the scrollable
       // surface). Override Sheet's default padded + overflow-y-auto

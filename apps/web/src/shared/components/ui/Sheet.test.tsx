@@ -125,6 +125,37 @@ describe("Sheet", () => {
     );
   });
 
+  // Звіт власника 2026-09-03: чат-аркуш висів над навбаром зі смужкою
+  // сторінки зверху. `fullScreen` — панель на весь вʼюпорт без відступу
+  // під навігацію, safe-area несе сама.
+  it("fullScreen: fills the viewport, drops the bottom-nav margin and rounding", () => {
+    const { getByRole } = render(
+      <Sheet open onClose={() => {}} title="T" fullScreen>
+        body
+      </Sheet>,
+    );
+    const dialog = getByRole("dialog");
+    expect(dialog.style.marginBottom).toBe("0px");
+    expect(dialog.style.height).toBe("100dvh");
+    expect(dialog.style.maxHeight).toBe("100dvh");
+    // `env(safe-area-inset-*)` jsdom відкидає як невалідне значення, тож
+    // safe-area-падінги панелі тут не перевірити — лише геометрію.
+    expect(dialog.className).toContain("rounded-none");
+  });
+
+  it("fullScreen під клавіатурою: тулиться до неї без нижнього safe-area", () => {
+    const { getByRole } = render(
+      <Sheet open onClose={() => {}} title="T" fullScreen kbInsetPx={300}>
+        body
+      </Sheet>,
+    );
+    const dialog = getByRole("dialog");
+    expect(dialog.style.marginBottom).toBe("300px");
+    expect(dialog.style.height).toBe("calc(100dvh - 300px)");
+    expect(dialog.style.maxHeight).toBe("calc(100dvh - 300px)");
+    expect(dialog.style.paddingBottom).toBe("0px");
+  });
+
   it("shrinks to the visible area when the software keyboard is open", () => {
     const { getByRole } = render(
       <Sheet open onClose={() => {}} title="T" kbInsetPx={320}>
