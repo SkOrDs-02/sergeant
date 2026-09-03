@@ -1243,41 +1243,26 @@
     --line-v2: rgba(0, 0, 0, 0.06);
     --line-strong-v2: rgba(0, 0, 0, 0.1);
 
-    /* Mesh background — 3 radial glows composited over --c-bg-base by the
-       shared `.bg-mesh` utility (positions: 1 = top-right, 2 = left,
-       3 = bottom-right). «Чорнило» collapsed the old 4-corner mesh to 3
-       (spec § Рішення — cheaper on mobile). § 4 (PR D): retuned to the
-       §5 tier-500/700 palette — mirrors the dark mesh structure, alpha
-       lowered so the light mesh reads quieter than the dark one.
-
-       Мова «Папір» П5 (2026-07-21): три плями на кремі не читались як
-       глибина — піксельний семпл дав ΔE≈4.6 для emerald (під порогом)
-       і ΔE≈13.2 для cyan, тобто найпомітнішою на брендовому хабі була
-       НЕ брендова пляма. Лишається одна спрямована зона — emerald
-       top-right, піднята до порога сприйняття (ΔE≈9 на кремі); cyan і
-       rose знято, бо три однакові за силою плями = розфарбовування,
-       а не композиція. Темна тема не змінюється (там mesh працює). */
-    --bg-mesh-1: rgba(16, 185, 129, 0.28); /* emerald-500 — top-right */
-    --bg-mesh-2: rgba(0, 0, 0, 0); /* знято — П5, одна зона на екран */
-    --bg-mesh-3: rgba(0, 0, 0, 0); /* знято — П5, одна зона на екран */
+    /* Стіл і зона (рішення власника 2026-09-03; замінили mesh).
+       Радіальних свічень більше нема: одна emerald-пляма в куті (усе, що
+       лишилось від mesh після П5) читалась не як глибина, а як артефакт, а
+       беж під білими картками — як «голий» фон. Тепер фон сторінки — стіл
+       у hue модуля (`--module-desk-rgb`), шапка й таби модуля — зона того ж
+       hue на крок глибша (`--module-zone-rgb`, малює `ModuleHeader`).
+       Хаб нейтральний. Тут — дефолти для хабу і всього поза модулем;
+       модульні значення — у `[data-module-accent=…]` нижче, темна тема —
+       у `.dark`. Джерело правди hex — `moduleSurfaces` у
+       packages/design-tokens/tokens.js; contrast.test.js тримає
+       `--c-subtle` ≥4.5:1 на кожному столі, тому стіл майже не темніший
+       за `--c-bg` і різниться лише hue. */
+    --module-desk-rgb: 231 229 223; /* #e7e5df — hub desk */
+    --module-zone-rgb: 218 214 206; /* #dad6ce — hub zone */
     /* Shared by `.bg-mesh` and the root canvas. iOS standalone can expose
        the canvas below a full-height child while safe-area geometry settles;
-       using the exact same composite prevents that region from becoming a
-       flat-colour strip on `/welcome`. Token references remain live across
-       dark / high-contrast overrides. */
-    --app-mesh-background:
-      radial-gradient(
-        75% 40% at 85% -5%,
-        var(--bg-mesh-1) 0px,
-        transparent 60%
-      ),
-      radial-gradient(65% 35% at 0% 40%, var(--bg-mesh-2) 0px, transparent 60%),
-      radial-gradient(
-        70% 40% at 100% 100%,
-        var(--bg-mesh-3) 0px,
-        transparent 60%
-      ),
-      rgb(var(--c-bg-base));
+       using the exact same colour prevents that region from becoming a
+       different-colour strip on `/welcome`. Token references remain live
+       across dark / high-contrast overrides. */
+    --app-mesh-background: rgb(var(--module-desk-rgb));
 
     /* Shadows — glass-surface recipes (inset highlight + outer drop). */
     --shadow-card-v2:
@@ -1349,12 +1334,12 @@
     --line-v2: rgba(255, 255, 255, 0.06); /* ink hairline (white/6%) */
     --line-strong-v2: rgba(255, 255, 255, 0.12); /* ink divider (white/12%) */
 
-    /* Mesh dark — «Чорнило» fingerprint: 3 radial glows over #14100e
-       (spec § 1). Positions live in `.bg-mesh`: 1 = emerald top-right,
-       2 = cyan left, 3 = rose bottom. No 4th corner (perf on mobile). */
-    --bg-mesh-1: rgba(52, 211, 153, 0.12); /* emerald-400 — top-right */
-    --bg-mesh-2: rgba(34, 211, 238, 0.08); /* cyan-400 — left */
-    --bg-mesh-3: rgba(246, 141, 164, 0.08); /* rose-400 — bottom */
+    /* Стіл і зона, темна: стіл один для всіх — ink base; зона — 7%
+       tier-400 акценту модуля на ньому (модульні значення в
+       `.dark [data-module-accent=…]` нижче). Свічень немає: глибина в
+       «Чорнилі» — tint + accent border, не glow (DESIGN.md § Темна тема). */
+    --module-desk-rgb: 20 16 14; /* #14100e — ink base */
+    --module-zone-rgb: 31 27 25; /* #1f1b19 — hub zone, white/4.5% */
 
     /* Shadows dark — much stronger outer drops + faint bright inset. */
     --shadow-card-v2:
@@ -1380,10 +1365,9 @@
      See docs/design/redesign-v2/governance.md § HC contract.
      ═══════════════════════════════════════════════════════════════════════ */
   html.hc {
-    /* Solid bg-base — no mesh (3 glows off). */
-    --bg-mesh-1: rgba(0, 0, 0, 0);
-    --bg-mesh-2: rgba(0, 0, 0, 0);
-    --bg-mesh-3: rgba(0, 0, 0, 0);
+    /* Стіл і зона → суцільний bg-base: HC не має тонових шарів. */
+    --module-desk-rgb: var(--c-bg-base);
+    --module-zone-rgb: var(--c-bg-base);
 
     /* Glass → opaque. */
     --surface-glass: rgba(255, 255, 255, 1);
@@ -1453,39 +1437,63 @@
 }
 
 /* ═══════════════════════════════════════════════════════════════════════════
-   MESH BACKGROUND UTILITY — `.bg-mesh` class consumed by
-   `MeshBackground.tsx` component (PR-5). «Чорнило» composites THREE radial
-   glows (`--bg-mesh-1..3`) over `--c-bg-base` (spec § 1) — down from the
-   legacy 4-corner mesh (cheaper on mobile, no blur). Positions:
-     1 → top-right   2 → left   3 → bottom-right
-   The per-theme glow colours/alphas live in the `:root` / `.dark` blocks
-   above. Uses `background-attachment: fixed` for an infinite-scroll feel;
-   iOS Safari has a known bug here, so Capacitor preview should verify.
-
-   Disabled automatically by:
-     - `html.hc` (HC mode — all three mesh alphas → 0)
-     - `prefers-reduced-motion: reduce` (Hard Rule #17 AMBIENT motion)
+   СТІЛ І ЗОНА — `.bg-mesh` (клас лишив назву заради `MeshBackground.tsx`
+   і його тестів) малює стіл: суцільний `--module-desk-rgb`. Зону малює
+   `ModuleHeader` через `.bg-zone`; контроли в зоні — `.zone-chip`
+   (прозорі, контур у 30% сильного акценту модуля; поза модулем контур
+   падає на `--c-line`). Модульні значення столу й зони нижче: світла тема
+   через `[data-module-accent=…]`, який ставить `ModuleAccentProvider`,
+   темна — з префіксом `.dark`. HC зводить обидва до `--c-bg-base` (див.
+   `html.hc` вище). Джерело hex — `moduleSurfaces` у design-tokens.
    ═══════════════════════════════════════════════════════════════════════════ */
 .bg-mesh {
   background: var(--app-mesh-background);
-  background-attachment: fixed;
 }
 
-/* iOS WKWebView (Capacitor) ignores `background-attachment: fixed` on
- * scrollable containers, causing the mesh to stutter during scroll.
- * The legacy `@supports (-webkit-overflow-scrolling: touch)` detector
- * regressed to no-op on iOS 13+, so detection now happens at runtime
- * in `apps/web/src/main.tsx` (Capacitor bridge → set
- * `html[data-ios-capacitor="true"]`). This selector consumes that
- * flag and falls back to `fixed` everywhere else (where it works).
- * Sergeant v2 redesign Phase 1 (M1). */
-html[data-ios-capacitor="true"] .bg-mesh {
-  background-attachment: scroll;
+.bg-zone {
+  background-color: rgb(var(--module-zone-rgb));
 }
 
-@media (prefers-reduced-motion: reduce) {
-  .bg-mesh {
-    background: rgb(var(--c-bg-base));
-    background-attachment: initial;
-  }
+.zone-chip {
+  background-color: transparent;
+  border-color: rgb(var(--module-accent-strong-rgb, var(--c-line)) / 0.3);
+}
+
+[data-module-accent="finyk"] {
+  --module-desk-rgb: 228 233 230; /* #e4e9e6 */
+  --module-zone-rgb: 211 227 222; /* #d3e3de */
+}
+[data-module-accent="fizruk"] {
+  --module-desk-rgb: 227 232 234; /* #e3e8ea */
+  --module-zone-rgb: 207 223 228; /* #cfdfe4 */
+}
+[data-module-accent="routine"] {
+  --module-desk-rgb: 234 227 229; /* #eae3e5 */
+  --module-zone-rgb: 239 216 221; /* #efd8dd */
+}
+[data-module-accent="nutrition"] {
+  --module-desk-rgb: 230 233 224; /* #e6e9e0 */
+  --module-zone-rgb: 221 229 201; /* #dde5c9 */
+}
+
+.dark [data-module-accent="finyk"] {
+  --module-desk-rgb: 20 16 14;
+  --module-zone-rgb: 22 30 26; /* #161e1a — teal-400 / 7% */
+}
+.dark [data-module-accent="fizruk"] {
+  --module-desk-rgb: 20 16 14;
+  --module-zone-rgb: 21 30 30; /* #151e1e — cyan-400 / 7% */
+}
+.dark [data-module-accent="routine"] {
+  --module-desk-rgb: 20 16 14;
+  --module-zone-rgb: 36 25 24; /* #241918 — rose-400 / 7% */
+}
+.dark [data-module-accent="nutrition"] {
+  --module-desk-rgb: 20 16 14;
+  --module-zone-rgb: 31 31 17; /* #1f1f11 — lime-400 / 7% */
+}
+
+html.hc [data-module-accent] {
+  --module-desk-rgb: var(--c-bg-base);
+  --module-zone-rgb: var(--c-bg-base);
 }

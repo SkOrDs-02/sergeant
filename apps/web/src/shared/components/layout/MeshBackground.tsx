@@ -4,21 +4,19 @@
  * @lifecycle experimental (introduced 2026-05 у PR-5; promote to active after PR-8)
  * @see docs/design/redesign-v2/governance.md § Mesh background
  *
- * Base layout layer that renders the mesh-gradient surface. «Чорнило»
- * composites THREE radial glows (`--bg-mesh-1..3` defined in
- * `apps/web/src/styles/theme.css`) over `--c-bg-base` — emerald top-right,
- * cyan left, rose bottom (spec § 1), down from the legacy 4-corner mesh.
- * Background uses `background-attachment: fixed` для infinite-scroll-feel
- * (iOS Capacitor WebView has a known regression — fall back is
- * disabled-mesh on `prefers-reduced-motion: reduce`).
+ * Base layout layer that renders the page «стіл»: a solid
+ * `--module-desk-rgb` (theme.css), the page background shifted into the
+ * host module's hue; the hub gets the neutral default. Радіальних свічень
+ * («mesh») більше нема — рішення власника 2026-09-03; ім'я компонента і
+ * клас `.bg-mesh` лишились, щоб не чіпати кожен shell і тест.
  *
  * Module-accent containment (Hard Rule #12): цей компонент НЕ публікує
  * `--module-accent-rgb`. У module shells монтується ВСЕРЕДИНІ
- * `<ModuleAccentProvider>` так, що accent ставиться першим, mesh — поверх.
+ * `<ModuleAccentProvider>` — саме його `data-module-accent` обирає стіл
+ * і зону модуля в theme.css.
  *
- * HC theme override (handoff не покривав, додано в PR-1): `html.hc`
- * виставляє всі `--bg-mesh-{1..3}` у `rgba(0,0,0,0)` → mesh stripped,
- * background → solid `--c-bg-base`. AAA contrast зберігається.
+ * HC theme override: `html.hc` зводить стіл і зону до `--c-bg-base`.
+ * AAA contrast зберігається.
  *
  * Usage:
  * ```tsx
@@ -78,10 +76,8 @@ export function MeshBackground({
         // з `className` детерміноване (auth-екрани саме так вмикають скрол).
         "h-app-dvh flex flex-col overflow-x-hidden overflow-y-hidden",
         // `.bg-mesh` utility class — defined in
-        // `apps/web/src/styles/theme.css` § MESH BACKGROUND UTILITY.
-        // Composites the three ink glows + sets background-attachment:
-        // fixed. Auto-degrades to solid `rgb(var(--c-bg-base))` on
-        // `html.hc` and `prefers-reduced-motion: reduce`.
+        // `apps/web/src/styles/theme.css` § СТІЛ І ЗОНА. Paints the solid
+        // module desk; `html.hc` degrades it to `rgb(var(--c-bg-base))`.
         "bg-mesh",
         className,
       )}

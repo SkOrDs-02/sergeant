@@ -329,17 +329,54 @@ export function computeAgeYears(
   return age >= 0 ? age : null;
 }
 
+/** Order matches the Profile form's own field order top-to-bottom. */
+export const MISSING_BIOMETRICS_FIELDS = [
+  "heightCm",
+  "birthDate",
+  "sex",
+  "activityLevel",
+  "weightKg",
+] as const;
+export type MissingBiometricsField = (typeof MISSING_BIOMETRICS_FIELDS)[number];
+
+/**
+ * Which fields still block the Mifflin-St Jeor formula, in form order.
+ *
+ * `effectiveWeightKg` lets a caller that already resolved the fizruk-vs-
+ * profile weight fallback (`resolveEffectiveWeightKg` in
+ * `modules/nutrition/lib/tdee.ts`) pass THAT number instead of the raw
+ * `b.weightKg` — otherwise a user with a real fizruk weigh-in but an empty
+ * Profile weight field would see "вага" listed as missing even though
+ * `computeNutritionTargetsFromBiometrics` already has a number to work
+ * with. Defaults to `b.weightKg` for callers that only care about the
+ * Profile record itself (the "Готово до розрахунку" status badge).
+ *
+ * Browser-QA 2026-09-03: the Nutrition preset menu's "заповни профіль"
+ * hint was a static sentence that repeated verbatim no matter how many of
+ * the five fields the user had already filled in Profile — a user who
+ * filled four out of five (most plausibly forgetting `weightKg`, having
+ * assumed their fizruk weigh-in already covered it) saw the exact same
+ * wall of text on return and read it as "nothing saved". Listing the
+ * fields that are STILL missing turns that dead-end into a checklist.
+ */
+export function missingBiometricsFieldsForTdee(
+  b: Biometrics,
+  effectiveWeightKg: number | null = b.weightKg,
+): MissingBiometricsField[] {
+  const missing: MissingBiometricsField[] = [];
+  if (b.heightCm == null) missing.push("heightCm");
+  if (computeAgeYears(b.birthDate) == null) missing.push("birthDate");
+  if (b.sex == null) missing.push("sex");
+  if (b.activityLevel == null) missing.push("activityLevel");
+  if (effectiveWeightKg == null) missing.push("weightKg");
+  return missing;
+}
+
 /**
  * `true` when biometrics has every field needed to run the Mifflin-St
  * Jeor formula (used by Nutrition in PR #2 to enable the
  * "Розрахувати з профілю" CTA).
  */
 export function isBiometricsCompleteForTdee(b: Biometrics): boolean {
-  return (
-    b.heightCm != null &&
-    b.weightKg != null &&
-    b.sex != null &&
-    b.activityLevel != null &&
-    computeAgeYears(b.birthDate) != null
-  );
+  return missingBiometricsFieldsForTdee(b).length === 0;
 }

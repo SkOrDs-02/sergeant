@@ -158,7 +158,7 @@ const createBullConnectionMock = _createBullConnection as unknown as ReturnType<
 
 const samplePayload: MemoryIngestPayload = {
   userId: "u1",
-  source: "finyk",
+  source: "cofounder",
   sourceRef: "tx-1",
   content: "Витрата 100 ₴ Сільпо · 2026-01-15",
   metadata: { amount: 100, currencyCode: 980 },
@@ -257,7 +257,7 @@ describe("processMemoryIngestJob — processor contract", () => {
     await processMemoryIngestJob({
       data: samplePayload,
       attemptsMade: 1,
-      name: "finyk",
+      name: "cofounder",
     });
 
     expect(remember).toHaveBeenCalledTimes(1);
@@ -272,10 +272,10 @@ describe("processMemoryIngestJob — processor contract", () => {
     ]);
     expect(processedInc).toHaveBeenCalledWith({
       outcome: "ok",
-      source: "finyk",
+      source: "cofounder",
     });
     expect(durationObserve).toHaveBeenCalledWith(
-      { outcome: "ok", source: "finyk" },
+      { outcome: "ok", source: "cofounder" },
       expect.any(Number),
     );
   });
@@ -288,13 +288,13 @@ describe("processMemoryIngestJob — processor contract", () => {
     await processMemoryIngestJob({
       data: samplePayload,
       attemptsMade: 0,
-      name: "finyk",
+      name: "cofounder",
     });
 
     expect(remember).not.toHaveBeenCalled();
     expect(processedInc).toHaveBeenCalledWith({
       outcome: "consent_disabled",
-      source: "finyk",
+      source: "cofounder",
     });
   });
 
@@ -307,13 +307,13 @@ describe("processMemoryIngestJob — processor contract", () => {
       processMemoryIngestJob({
         data: samplePayload,
         attemptsMade: 1,
-        name: "finyk",
+        name: "cofounder",
       }),
     ).rejects.toThrow("Service Unavailable");
 
     expect(processedInc).toHaveBeenCalledWith({
       outcome: "retry",
-      source: "finyk",
+      source: "cofounder",
     });
   });
 
@@ -326,17 +326,17 @@ describe("processMemoryIngestJob — processor contract", () => {
       processMemoryIngestJob({
         data: samplePayload,
         attemptsMade: 1,
-        name: "finyk",
+        name: "cofounder",
       }),
     ).resolves.toBeUndefined();
 
     expect(processedInc).toHaveBeenCalledWith({
       outcome: "permanent_fail",
-      source: "finyk",
+      source: "cofounder",
     });
     expect(processedInc).toHaveBeenCalledWith({
       outcome: "dlq",
-      source: "finyk",
+      source: "cofounder",
     });
     expect(recordIngestDlqMock).toHaveBeenCalledTimes(1);
     expect(recordIngestDlqMock).toHaveBeenCalledWith({
@@ -355,17 +355,17 @@ describe("processMemoryIngestJob — processor contract", () => {
       processMemoryIngestJob({
         data: samplePayload,
         attemptsMade: 1,
-        name: "finyk",
+        name: "cofounder",
       }),
     ).resolves.toBeUndefined();
 
     expect(processedInc).toHaveBeenCalledWith({
       outcome: "permanent_fail",
-      source: "finyk",
+      source: "cofounder",
     });
     expect(processedInc).toHaveBeenCalledWith({
       outcome: "dlq",
-      source: "finyk",
+      source: "cofounder",
     });
     expect(recordIngestDlqMock).toHaveBeenCalledTimes(1);
   });
@@ -379,14 +379,14 @@ describe("processMemoryIngestJob — processor contract", () => {
       processMemoryIngestJob({
         data: samplePayload,
         attemptsMade: 1,
-        name: "finyk",
+        name: "cofounder",
       }),
     ).rejects.toThrow();
 
     expect(recordIngestDlqMock).not.toHaveBeenCalled();
     expect(processedInc).not.toHaveBeenCalledWith({
       outcome: "dlq",
-      source: "finyk",
+      source: "cofounder",
     });
   });
 
@@ -434,7 +434,7 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
       await import("../../obs/metrics.js");
     expect(
       (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
-    ).toHaveBeenCalledWith({ mode: "fallback", source: "finyk" });
+    ).toHaveBeenCalledWith({ mode: "fallback", source: "cofounder" });
   });
 
   it("AI_MEMORY_ENABLED=false: skip без виклику remember", async () => {
@@ -452,7 +452,7 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
       await import("../../obs/metrics.js");
     expect(
       (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
-    ).toHaveBeenCalledWith({ mode: "disabled", source: "finyk" });
+    ).toHaveBeenCalledWith({ mode: "disabled", source: "cofounder" });
   });
 
   it("does not enqueue or remember when aiMemory consent is disabled", async () => {
@@ -477,7 +477,7 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
       ).inc,
     ).toHaveBeenCalledWith({
       mode: "consent_disabled",
-      source: "finyk",
+      source: "cofounder",
     });
   });
 
@@ -498,7 +498,7 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
     await enqueueMemoryIngest({ ...samplePayload, content: "" });
     expect(enqueuedInc).toHaveBeenCalledWith({
       mode: "enqueue_error",
-      source: "finyk",
+      source: "cofounder",
     });
   });
 
@@ -506,7 +506,7 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
     await enqueueMemoryIngest({ ...samplePayload, userId: "" });
     expect(enqueuedInc).toHaveBeenCalledWith({
       mode: "enqueue_error",
-      source: "finyk",
+      source: "cofounder",
     });
   });
 
@@ -525,145 +525,15 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
   });
 });
 
-// PR-19 — per-source kill-switch `MONO_AI_MEMORY_INGEST_ENABLED`.
-// Default `true` (finyk-ingest активний при master-flag=true), але `false`
-// має селективно глушити саме `finyk`-source без впливу на digest/chat.
-describe("enqueueMemoryIngest — MONO_AI_MEMORY_INGEST_ENABLED (PR-19)", () => {
-  beforeEach(() => {
-    vi.clearAllMocks();
-    __resetMemoryIngestQueueForTesting();
-    process.env["AI_MEMORY_ENABLED"] = "true";
-  });
-
-  afterEach(() => {
-    __resetMemoryIngestQueueForTesting();
-    delete process.env["AI_MEMORY_ENABLED"];
-    delete process.env["MONO_AI_MEMORY_INGEST_ENABLED"];
-  });
-
-  it("happy: MONO_AI_MEMORY_INGEST_ENABLED=true + finyk → remember викликається", async () => {
-    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "true";
-    vi.resetModules();
-    const remember = vi.fn().mockResolvedValue(undefined);
-    const mod = await import("./ingestQueue.js");
-    mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
-
-    await mod.enqueueMemoryIngest(samplePayload);
-    await new Promise((r) => setTimeout(r, 0));
-
-    expect(remember).toHaveBeenCalledTimes(1);
-    const { aiMemoryIngestEnqueuedTotal: inc } =
-      await import("../../obs/metrics.js");
-    expect(
-      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
-    ).toHaveBeenCalledWith({ mode: "fallback", source: "finyk" });
-    expect(
-      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
-    ).not.toHaveBeenCalledWith(
-      expect.objectContaining({ mode: "source_disabled" }),
-    );
-  });
-
-  it("skip: MONO_AI_MEMORY_INGEST_ENABLED=false + finyk → remember НЕ викликається, source_disabled-метрика", async () => {
-    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "false";
-    vi.resetModules();
-    const remember = vi.fn().mockResolvedValue(undefined);
-    const mod = await import("./ingestQueue.js");
-    mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
-
-    await mod.enqueueMemoryIngest(samplePayload);
-    await new Promise((r) => setTimeout(r, 0));
-
-    expect(remember).not.toHaveBeenCalled();
-    const { aiMemoryIngestEnqueuedTotal: inc } =
-      await import("../../obs/metrics.js");
-    expect(
-      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
-    ).toHaveBeenCalledWith({ mode: "source_disabled", source: "finyk" });
-  });
-
-  it("non-finyk source (digest) НЕ gate-ний MONO_AI_MEMORY_INGEST_ENABLED=false", async () => {
-    // Sub-flag — finyk-only. digest/chat/тощо контролюються лише master.
-    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "false";
-    vi.resetModules();
-    const remember = vi.fn().mockResolvedValue(undefined);
-    const mod = await import("./ingestQueue.js");
-    mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
-
-    await mod.enqueueMemoryIngest({
-      ...samplePayload,
-      source: "digest",
-      sourceRef: "u1:2026-W03",
-    });
-    await new Promise((r) => setTimeout(r, 0));
-
-    expect(remember).toHaveBeenCalledTimes(1);
-    const { aiMemoryIngestEnqueuedTotal: inc } =
-      await import("../../obs/metrics.js");
-    expect(
-      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
-    ).toHaveBeenCalledWith({ mode: "fallback", source: "digest" });
-    expect(
-      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
-    ).not.toHaveBeenCalledWith(
-      expect.objectContaining({ mode: "source_disabled" }),
-    );
-  });
-
-  it("runtime kill-switch активний → finyk skipped, source_disabled-метрика", async () => {
-    // RAG eval automation post-PR-20: коли recall@4 < 0.4, endpoint
-    // /api/internal/eval/rag-weekly активує in-memory kill-switch
-    // `mono_ai_memory_ingest`. Цей kill-switch перебиває env-flag-у:
-    // навіть якщо `MONO_AI_MEMORY_INGEST_ENABLED=true`, finyk не enqueue-ить.
-    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "true";
-    vi.resetModules();
-    const { activateKillSwitch, __resetKillSwitchesForTest } =
-      await import("../../lib/featureFlags/runtimeKillSwitch.js");
-    __resetKillSwitchesForTest();
-    activateKillSwitch("mono_ai_memory_ingest", {
-      reason: "test: kill-switch override",
-    });
-    const remember = vi.fn().mockResolvedValue(undefined);
-    const mod = await import("./ingestQueue.js");
-    mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
-
-    await mod.enqueueMemoryIngest(samplePayload);
-    await new Promise((r) => setTimeout(r, 0));
-
-    expect(remember).not.toHaveBeenCalled();
-    const { aiMemoryIngestEnqueuedTotal: inc } =
-      await import("../../obs/metrics.js");
-    expect(
-      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
-    ).toHaveBeenCalledWith({ mode: "source_disabled", source: "finyk" });
-    __resetKillSwitchesForTest();
-  });
-
-  it("master AI_MEMORY_ENABLED=false виграє у MONO_AI_MEMORY_INGEST_ENABLED=true (disabled-mode trumps)", async () => {
-    process.env["AI_MEMORY_ENABLED"] = "false";
-    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "true";
-    vi.resetModules();
-    const remember = vi.fn().mockResolvedValue(undefined);
-    const mod = await import("./ingestQueue.js");
-    mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
-
-    await mod.enqueueMemoryIngest(samplePayload);
-    await new Promise((r) => setTimeout(r, 0));
-
-    expect(remember).not.toHaveBeenCalled();
-    const { aiMemoryIngestEnqueuedTotal: inc } =
-      await import("../../obs/metrics.js");
-    expect(
-      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
-    ).toHaveBeenCalledWith({ mode: "disabled", source: "finyk" });
-    // `source_disabled` має НЕ виставитись — master-gate спрацював раніше.
-    expect(
-      (inc as unknown as { inc: ReturnType<typeof vi.fn> }).inc,
-    ).not.toHaveBeenCalledWith(
-      expect.objectContaining({ mode: "source_disabled" }),
-    );
-  });
-});
+// PR-19 per-source kill-switch `MONO_AI_MEMORY_INGEST_ENABLED` жив тут на
+// `payload.source === "finyk"`. Гілку прибрано ініціативою 0024 (PR-1,
+// 2026-09-03) — `finyk` ніколи не мав продюсера в дереві (mono-webhook не
+// enqueue-ив). Разом з нею прибрано й цей describe-блок: тести перевіряли
+// саме ту гілку, а не generic-поведінку. `master AI_MEMORY_ENABLED=false`
+// gate лишається і покритий вище (`enqueueMemoryIngest — fallback path`,
+// тест «AI_MEMORY_ENABLED=false: skip без виклику remember»). PR-2 тієї ж
+// ініціативи перецілює механізм на `payload.source === "digest"` і
+// повертає еквівалентне покриття під новою назвою.
 
 describe("memory ingest BullMQ lifecycle and stats", () => {
   beforeEach(() => {
@@ -689,12 +559,16 @@ describe("memory ingest BullMQ lifecycle and stats", () => {
     await fresh.mod.enqueueMemoryIngest(samplePayload);
 
     expect(bullmqMocks.queueInstances).toHaveLength(1);
-    expect(bullmqMocks.queueAdd).toHaveBeenCalledWith("finyk", samplePayload, {
-      jobId: "u1__finyk__tx-1",
-    });
+    expect(bullmqMocks.queueAdd).toHaveBeenCalledWith(
+      "cofounder",
+      samplePayload,
+      {
+        jobId: "u1__cofounder__tx-1",
+      },
+    );
     expect(fresh.enqueuedInc).toHaveBeenCalledWith({
       mode: "queued",
-      source: "finyk",
+      source: "cofounder",
     });
   });
 
@@ -709,7 +583,7 @@ describe("memory ingest BullMQ lifecycle and stats", () => {
 
     await fresh.mod.enqueueMemoryIngest(payload);
 
-    expect(bullmqMocks.queueAdd).toHaveBeenCalledWith("finyk", payload, {});
+    expect(bullmqMocks.queueAdd).toHaveBeenCalledWith("cofounder", payload, {});
   });
 
   it("records enqueue_error when BullMQ add fails", async () => {
@@ -726,7 +600,7 @@ describe("memory ingest BullMQ lifecycle and stats", () => {
 
     expect(fresh.enqueuedInc).toHaveBeenCalledWith({
       mode: "enqueue_error",
-      source: "finyk",
+      source: "cofounder",
     });
   });
 

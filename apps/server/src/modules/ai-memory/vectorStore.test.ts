@@ -47,7 +47,7 @@ function write(
 ): MemoryWrite {
   return {
     userId: USER_ID,
-    source: "chat",
+    source: "digest",
     sourceRef: "msg-1",
     content: "remember this",
     embedding,
@@ -71,7 +71,7 @@ describe("createPgVectorStore", () => {
     );
     expect(client.query.mock.calls[1]?.[1]).toEqual([
       USER_ID,
-      "chat",
+      "digest",
       "msg-1",
       "remember this",
       "[0.10000000149011612,0.20000000298023224,0.30000001192092896]",
@@ -106,7 +106,7 @@ describe("createPgVectorStore", () => {
           rows: [
             {
               id: "42",
-              source: "finyk",
+              source: "cofounder",
               source_ref: "tx-1",
               content: "coffee",
               embedding_provider: "voyage",
@@ -127,7 +127,7 @@ describe("createPgVectorStore", () => {
       userId: USER_ID,
       embedding: Float32Array.of(0.1, 0.2),
       topK: 5,
-      sources: ["finyk"],
+      sources: ["cofounder"],
       efSearch: 16.9,
     });
 
@@ -142,13 +142,13 @@ describe("createPgVectorStore", () => {
       USER_ID,
       "[0.10000000149011612,0.20000000298023224]",
       5,
-      ["finyk"],
+      ["cofounder"],
       env.VOYAGE_EMBEDDING_MODEL,
     ]);
     expect(result).toEqual([
       {
         id: 42,
-        source: "finyk",
+        source: "cofounder",
         sourceRef: "tx-1",
         content: "coffee",
         embeddingMeta: {
@@ -190,7 +190,7 @@ describe("createPgVectorStore", () => {
     await expect(
       store.query({ userId: "", embedding: Float32Array.of(0.1), topK: 1 }),
     ).rejects.toThrow("userId is required");
-    await expect(store.deleteBySource("", "chat", "msg-1")).rejects.toThrow(
+    await expect(store.deleteBySource("", "digest", "msg-1")).rejects.toThrow(
       "userId is required",
     );
     await expect(store.deleteAllForUser("")).rejects.toThrow(
@@ -205,8 +205,12 @@ describe("createPgVectorStore", () => {
       .mockResolvedValueOnce({ rows: [], rowCount: 3 });
     const store = createPgVectorStore(pool);
 
-    await store.deleteBySource(USER_ID, "finyk", "tx-1");
-    expect(pool.query.mock.calls[0]?.[1]).toEqual([USER_ID, "finyk", "tx-1"]);
+    await store.deleteBySource(USER_ID, "cofounder", "tx-1");
+    expect(pool.query.mock.calls[0]?.[1]).toEqual([
+      USER_ID,
+      "cofounder",
+      "tx-1",
+    ]);
 
     await expect(store.deleteAllForUser(USER_ID)).resolves.toBe(3);
     expect(pool.query.mock.calls[1]?.[1]).toEqual([USER_ID]);

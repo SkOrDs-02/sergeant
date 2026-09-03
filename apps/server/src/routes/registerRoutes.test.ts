@@ -47,6 +47,7 @@ vi.mock("./../db.js", () => ({
 vi.mock("./../auth.js", () => ({
   auth: { handler: async () => new Response(null, { status: 404 }) },
   getSessionUser: vi.fn().mockResolvedValue(null),
+  getFreshSessionUser: vi.fn().mockResolvedValue(null),
   getSessionUserSoft: vi.fn().mockResolvedValue(null),
 }));
 

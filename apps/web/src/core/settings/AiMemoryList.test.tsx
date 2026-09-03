@@ -22,6 +22,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ApiError } from "@sergeant/api-client";
 import type { ReactNode } from "react";
 
 const { listAiMemory, deleteAiMemory } = vi.hoisted(() => ({
@@ -70,12 +71,16 @@ afterEach(() => cleanup());
 
 describe("AiMemoryList", () => {
   it("показує факти з їх джерелом", async () => {
+    // `nutrition` — джерело без продюсера з ініціативи 0024 (PR-1,
+    // 2026-09-03), CHECK-constraint у БД поки не звужений (PR-3), тож
+    // старі рядки такого source ще можуть бути в базі: UI має fallback
+    // `?? item.source` замість зниклої мітки "Їжа".
     listAiMemory.mockResolvedValue(
       page([{ id: 1, content: "Алергія на горіхи", source: "nutrition" }]),
     );
     renderList();
     expect(await screen.findByText("Алергія на горіхи")).toBeTruthy();
-    expect(screen.getByText(/Їжа/)).toBeTruthy();
+    expect(screen.getByText(/nutrition/)).toBeTruthy();
   });
 
   it("порожня памʼять → пояснення, а не порожнеча", async () => {
@@ -175,7 +180,10 @@ describe("AiMemoryList", () => {
   it("великий список приходить згорнутим у групи за джерелом", async () => {
     // Скарга власника 2026-08-18: список читався як суцільне полотно на
     // кілька екранів. Понад `AUTO_OPEN_MAX_ITEMS` фактів → видно тільки
-    // джерела з лічильниками, самі факти — за кліком.
+    // джерела з лічильниками, самі факти — за кліком. `chat`/`nutrition` —
+    // джерела без продюсера з ініціативи 0024 (PR-1) — використані тут як
+    // приклад legacy-рядків без мітки (fallback `?? item.source`); механіка
+    // групування від наявності мітки не залежить.
     listAiMemory.mockResolvedValue(
       page([
         { id: 1, content: "Факт чату 1", source: "chat" },
@@ -189,7 +197,7 @@ describe("AiMemoryList", () => {
     renderList();
 
     const chatGroup = await screen.findByRole("button", {
-      name: /Показати факти джерела: Чат/,
+      name: /Показати факти джерела: chat/,
     });
     expect(chatGroup.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByText("Факт чату 1")).toBeNull();
@@ -197,7 +205,7 @@ describe("AiMemoryList", () => {
     // Джерела лишаються видимими — це і є згорнутий зміст памʼяті.
     expect(
       screen.getByRole("button", {
-        name: /Показати факти джерела: Їжа/,
+        name: /Показати факти джерела: nutrition/,
       }),
     ).toBeTruthy();
 
@@ -319,6 +327,57 @@ describe("AiMemoryList", () => {
     fireEvent.click(screen.getByRole("button", { name: "Видалити назавжди" }));
     expect(await screen.findByText(/Не вдалося видалити/)).toBeTruthy();
     expect(screen.getByText("Факт")).toBeTruthy();
+  });
+
+  // Аудит `web-qa-pre-beta.md` § 9 (2026-09-03): список за
+  // `requireSession()`, тож анонім отримує 401 — і до фіксу бачив «Не
+  // вдалося завантажити памʼять ШІ.», ніби сервер зламався. Це стан гостя,
+  // не збій: він має малюватись порожнім станом із виходом (увійти), а
+  // справжні 5xx — далі помилкою.
+  describe("анонім (401/403) — стан гостя, не технічний збій", () => {
+    function authError(status: 401 | 403) {
+      return new ApiError({
+        kind: "http",
+        status,
+        message: `Помилка ${status}`,
+        url: "/api/v1/ai-memory/list",
+        body: { error: "Unauthorized" },
+      });
+    }
+
+    it("401 → пояснення про акаунт як порожній стан (role=status), без тексту помилки", async () => {
+      listAiMemory.mockRejectedValue(authError(401));
+      renderList();
+      // Не `findByRole("status")`: під час завантаження той самий role
+      // носить «Завантажую памʼять…», і запит зловив би його першим.
+      const text = await screen.findByText(/Памʼять ШІ живе в акаунті/);
+      expect(text.textContent).toMatch(/Увійди/);
+      expect(text.closest('[role="status"]')).not.toBeNull();
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(screen.queryByText(/Не вдалося завантажити/)).toBeNull();
+    });
+
+    it("403 читається так само — обидва статуси означають «без сесії»", async () => {
+      listAiMemory.mockRejectedValue(authError(403));
+      renderList();
+      expect(await screen.findByText(/Увійди/)).toBeTruthy();
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("5xx лишається помилкою — текст про акаунт тут був би неправдою", async () => {
+      listAiMemory.mockRejectedValue(
+        new ApiError({
+          kind: "http",
+          status: 500,
+          message: "Помилка 500",
+          url: "/api/v1/ai-memory/list",
+        }),
+      );
+      renderList();
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toMatch(/Не вдалося завантажити/);
+      expect(screen.queryByText(/Увійди/)).toBeNull();
+    });
   });
 
   // Спека `memory-bank-consolidation.md`: єдиний редактор фактів профілю -

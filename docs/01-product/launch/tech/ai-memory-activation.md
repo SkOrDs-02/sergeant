@@ -1,6 +1,6 @@
 # AI Memory — activation runbook
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2027-09-09.
+> **Last touched:** 2026-09-03 by @claude. **Next review:** 2027-10-08.
 > **Status:** Active (operational activation runbook; behavior SSOT is architecture doc)
 
 > **Прод-URL** у прикладах — `$PROD_API_URL`; фактичне значення живе в Coolify env / нотатнику власника (репо публічне).
@@ -79,29 +79,31 @@ ADR — [`docs/04-governance/adr/0028-pgvector-ai-memory.md`](../../../04-govern
 ### Step 3. Enable per-source ingestion (за бажанням, поетапно)
 
 Master-flag `AI_MEMORY_ENABLED=true` сам по собі ще не починає писати у
-`ai_memories`. Producer-и керуються окремими прапорцями:
+`ai_memories`. Producer-и керуються окремими прапорцями.
 
-| Producer                                                             | Flag                             | Default | Що робити                                                                                                                  |
-| -------------------------------------------------------------------- | -------------------------------- | ------- | -------------------------------------------------------------------------------------------------------------------------- |
-| `mono/webhook`                                                       | `MONO_AI_MEMORY_INGEST_ENABLED`  | `true`  | Залишити default — після `AI_MEMORY_ENABLED=true` finyk-ingest стартує автоматично. Виставити `false` лише як kill-switch. |
-| `weekly-digest`                                                      | _no flag_ — auto-on після master | —       | Перший digest-cron запише через ~24h                                                                                       |
-| `POST /api/ai-memory/ingest` (chat/fizruk/nutrition/routine/journal) | _no flag_ — клієнт-driven        | —       | Web-/mobile-клієнти будуть викликати, як зараз заплановано                                                                 |
+> **Оновлено 2026-09-03 (ініціатива 0024, PR-1):** `mono/webhook`
+> (`source=finyk`) і клієнт-driven `POST /api/ai-memory/ingest`
+> (`chat`/`fizruk`/`nutrition`/`routine`/`journal`) прибрані — жоден із
+> них ніколи не мав живого продюсера (замір § Перезамір,
+> `docs/90-work/initiatives/0024-ai-memory-source-coverage.md`). Таблиця
+> нижче лишена для історії до PR-2 тієї ж ініціативи, яка перецілить
+> `MONO_AI_MEMORY_INGEST_ENABLED` на `digest`.
+
+| Producer                         | Flag                             | Default | Що робити                                             |
+| -------------------------------- | -------------------------------- | ------- | ----------------------------------------------------- |
+| `weekly-digest`                  | _no flag_ — auto-on після master | —       | Перший digest-cron запише через ~24h                  |
+| `profileMirror` (source=profile) | _no flag_ — auto-on після master | —       | Пише при кожному `PUT /api/me/profile` (банк памʼяті) |
 
 **Рекомендований порядок (дні 1–7 після Step 2):**
 
 - **День 1.** Тільки master-flag. `recall()` працює (через `recall_memory`
   HubChat tool + RAG-injection), але `ai_memories` порожня → жодних
   results. Це **safe rollout** — перевіряємо латенцію Voyage embed без
-  write-навантаження на БД. `MONO_AI_MEMORY_INGEST_ENABLED` залишається на
-  default `true`, але без master-flag-у запит у Mono-webhook все одно
-  no-op-ить (`mode=disabled` метрика, не `source_disabled`).
-- **День 2–3.** finyk-ingest вмикається автоматично після master-flag-у
-  (PR-19, sub-flag default `true`). Спостерігати
-  `ai_memory_ingest_processed_total{source="finyk", outcome=...}` — має
-  ростити `ok` метрику на кожній mono-webhook-транзакції. Selective kill —
-  виставити `MONO_AI_MEMORY_INGEST_ENABLED=false`, тоді
-  `ai_memory_ingest_enqueued_total{mode="source_disabled", source="finyk"}`
-  розкручується замість enqueue.
+  write-навантаження на БД.
+- **День 2–3.** `weekly-digest` і `profileMirror` пишуть автоматично після
+  master-flag-у — окремого sub-flag-а для них немає. Спостерігати
+  `ai_memory_ingest_processed_total{source="digest"|"profile", outcome=...}`
+  — має ростити `ok` метрику.
 - **День 4–7.** Спостерігати `ai_memory_ingest_queue_depth` — має триматися
   низькою (< 100 jobs). Якщо росте → Voyage rate-limit-ить (`429`) →
   знизити `AI_MEMORY_INGEST_CONCURRENCY` з 4 до 2.
@@ -136,9 +138,11 @@ Master-flag `AI_MEMORY_ENABLED=true` сам по собі ще не почина
    Усі гілки (`recall_memory` tool, RAG-injection, ingestion-producer-и)
    no-op-лять негайно. Existing data у `ai_memories` лишається — нема
    destructive truncate.
-2. **Selective ingestion kill:** залишити master-flag, виставити
-   `MONO_AI_MEMORY_INGEST_ENABLED=false` (default `true` — PR-19) — finyk-source перестає писати,
-   решта продовжує. Корисно якщо Mono-webhook генерує 429 на Voyage.
+2. **Selective ingestion kill:** `MONO_AI_MEMORY_INGEST_ENABLED` існує
+   (env.ts), але з прибранням `finyk`-гілки (ініціатива 0024, PR-1,
+   2026-09-03) ні на що не впливає — per-source kill-switch тимчасово
+   без цілі. PR-2 тієї ж ініціативи перецілює його на `digest`
+   (rename → `DIGEST_AI_MEMORY_INGEST_ENABLED`).
 3. **Voyage outage:** circuit-breaker сам розмикається після 3 послідовних
    5xx. Метрика `voyage_external_http_breaker_state` = `open` → ingestion
    park-иться у BullMQ retry-черзі, retrieval повертає 503 (graceful).
@@ -223,9 +227,10 @@ jq .checks.redis` має повертати `connected: true, reconnectAttempts:
 
 **Persistence trade-off:** `--appendonly no --save ""` означає, що Redis
 ephemeral — на restart-і всі in-flight BullMQ jobs губляться. Для нашого
-use case (finyk → ingest, weekly digest, auth-mail) це OK: продюсери
-ретраяться (`mono-webhook` re-fires, `weekly-digest` cron-працює щонеділі).
-Якщо колись захочемо durability — окремий PR з recreate volume + chown.
+use case (`weekly-digest`, `profileMirror` → ingest, auth-mail) це OK:
+продюсери ретраяться (`weekly-digest` cron-працює щонеділі, `profileMirror`
+переспрацює на наступний `PUT /api/me/profile`). Якщо колись захочемо
+durability — окремий PR з recreate volume + chown.
 
 ---
 

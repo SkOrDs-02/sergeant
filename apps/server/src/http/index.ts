@@ -52,7 +52,11 @@ export * as schemas from "./schemas.js";
 // Нові middleware для доменних роутерів (PR 1 додає файли; PR 3 почне
 // використовувати їх замість per-handler boilerplate).
 export { setModule } from "./setModule.js";
-export { requireSession, requireSessionSoft } from "./requireSession.js";
+export {
+  requireFreshSession,
+  requireSession,
+  requireSessionSoft,
+} from "./requireSession.js";
 export { requireVerifiedEmail } from "./requireVerifiedEmail.js";
 export { requireApiSecret } from "./requireApiSecret.js";
 export { requireCsrfHeader } from "./requireCsrfHeader.js";
