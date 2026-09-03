@@ -196,6 +196,12 @@ export function Sheet({
           maxHeight: fullScreen
             ? `calc(100dvh - ${resolvedKbInsetPx}px)`
             : `calc(100dvh - ${resolvedKbInsetPx}px - max(env(safe-area-inset-top, 0px), 8px))`,
+          // Повноекранна панель має бути повною і над клавіатурою: без
+          // `height` flex-панель лишається за вмістом, і короткий чат не
+          // заповнює видиму зону (ревʼю CodeRabbit, PR #1075).
+          ...(fullScreen
+            ? { height: `calc(100dvh - ${resolvedKbInsetPx}px)` }
+            : {}),
           // Під клавіатурою home-індикатора не видно, тож нижній
           // safe-area у fullScreen-режимі стає зайвим порожнім рядком.
           ...(fullScreen

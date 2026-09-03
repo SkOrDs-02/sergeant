@@ -2,7 +2,7 @@
  * Last validated: 2026-09-03
  * Status: Active
  */
-import { useCallback, useEffect, useMemo, useRef, useState } from "react";
+import { useCallback, useMemo, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
@@ -12,6 +12,7 @@ import {
   getKyivDayKey,
   getKyivShortDateStamp,
   isSameKyivDay,
+  parseKyivDate,
 } from "@shared/lib/time/kyivTime";
 import type { HubChatSession } from "./hubChatSessions";
 
@@ -24,8 +25,6 @@ interface HubChatHistoryDrawerProps {
   onCreate: () => void;
   onDelete: (id: string) => void;
 }
-
-const DAY_MS = 24 * 60 * 60 * 1000;
 
 function formatStamp(ts: number): string {
   // "Today" / "older" decision in Kyiv local time so users abroad don't
@@ -68,9 +67,21 @@ const GROUP_LABEL: Record<DayGroup, string> = {
 
 const GROUP_ORDER: DayGroup[] = ["today", "yesterday", "earlier"];
 
+/**
+ * Ключ попередньої київської доби. Не `now - 24h`: у день переходу на
+ * літній час доба має 23 години, і о 00:15 30 березня «мінус доба» дає
+ * 28-ме — учорашні бесіди випадали б у «Раніше» (ревʼю CodeRabbit,
+ * PR #1075). Натомість беремо київську північ сьогоднішньої доби й
+ * відступаємо на мілісекунду — остання мить учора незалежно від DST.
+ */
+function previousKyivDayKey(now: number): string {
+  const midnight = parseKyivDate(getKyivDayKey(now));
+  return getKyivDayKey(midnight ? midnight.getTime() - 1 : now);
+}
+
 function dayGroup(ts: number, now: number): DayGroup {
   if (isSameKyivDay(ts, now)) return "today";
-  if (getKyivDayKey(ts) === getKyivDayKey(now - DAY_MS)) return "yesterday";
+  if (getKyivDayKey(ts) === previousKyivDayKey(now)) return "yesterday";
   return "earlier";
 }
 
@@ -106,6 +117,9 @@ function HistoryPanel({
 }: Omit<HubChatHistoryDrawerProps, "open">) {
   const panelRef = useRef<HTMLDivElement | null>(null);
 
+  // Escape належить лише пастці фокусу: вона слухає `document` і віддає
+  // клавішу верхньому діалогу стосу. Окремий window-слухач, що був тут,
+  // закривав список удруге і навіть з-під іншого діалогу.
   useDialogFocusTrap(true, panelRef, {
     onEscape: onClose,
     inertBackground: true,
@@ -131,14 +145,6 @@ function HistoryPanel({
       items: byGroup.get(g) ?? [],
     })).filter((g) => g.items.length > 0);
   }, [sessions, now]);
-
-  useEffect(() => {
-    const onKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape") onClose();
-    };
-    window.addEventListener("keydown", onKey);
-    return () => window.removeEventListener("keydown", onKey);
-  }, [onClose]);
 
   const handleDelete = useCallback(
     (e: React.MouseEvent, id: string) => {

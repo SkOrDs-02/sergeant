@@ -151,6 +151,7 @@ describe("Sheet", () => {
     );
     const dialog = getByRole("dialog");
     expect(dialog.style.marginBottom).toBe("300px");
+    expect(dialog.style.height).toBe("calc(100dvh - 300px)");
     expect(dialog.style.maxHeight).toBe("calc(100dvh - 300px)");
     expect(dialog.style.paddingBottom).toBe("0px");
   });

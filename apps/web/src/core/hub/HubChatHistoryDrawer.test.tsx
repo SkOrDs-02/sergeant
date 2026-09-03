@@ -152,6 +152,29 @@ describe("HubChatHistoryDrawer", () => {
     expect(screen.getByText(/2 повідомлень/)).toBeInTheDocument();
   });
 
+  it("«Вчора» на межі переходу на літній час: 29 березня має 23 години", () => {
+    vi.useFakeTimers();
+    // 30.03.2026 00:15 за Києвом (UTC+3 після переходу) = 29.03 21:15 UTC.
+    // «now − 24h» дало б 28-ме, а вчора — 29-те.
+    vi.setSystemTime(new Date("2026-03-29T21:15:00Z"));
+    try {
+      const yesterday = session({
+        id: "y",
+        title: "Вчорашня",
+        // 29.03.2026 12:00 за Києвом.
+        updatedAt: Date.UTC(2026, 2, 29, 9, 0, 0),
+      });
+      renderDrawer({ open: true, sessions: [yesterday] });
+      expect(
+        within(screen.getByRole("region", { name: "Вчора" })).getByText(
+          "Вчорашня",
+        ),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
+  });
+
   it("groups sessions by Kyiv day: Сьогодні / Вчора / Раніше", () => {
     vi.useFakeTimers();
     // Полудень за Києвом — далеко від межі доби, тож ±24 год це рівно
@@ -226,8 +249,9 @@ describe("HubChatHistoryDrawer", () => {
 
   it("closes on Escape keydown and via the close button / backdrop", () => {
     const { handlers } = renderDrawer({ open: true, sessions: [] });
-    fireEvent.keyDown(window, { key: "Escape" });
-    expect(handlers.onClose).toHaveBeenCalled();
+    // Escape обробляє пастка фокусу на `document`, окремого слухача немає.
+    fireEvent.keyDown(document, { key: "Escape" });
+    expect(handlers.onClose).toHaveBeenCalledTimes(1);
 
     fireEvent.click(
       screen.getByRole("button", { name: "Закрити список бесід" }),
