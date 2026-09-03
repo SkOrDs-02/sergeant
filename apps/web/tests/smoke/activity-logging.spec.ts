@@ -33,7 +33,7 @@ test("@critical fizruk: заняття з каталогу пишеться од
   });
   await waitForInitialSqliteRefresh(page, "fizruk");
 
-  await page.getByRole("button", { name: /Внести проведене/ }).click();
+  await page.getByRole("button", { name: /Записати проведене/ }).click();
 
   const sheet = page.getByRole("dialog");
   await expect(sheet).toBeVisible();
