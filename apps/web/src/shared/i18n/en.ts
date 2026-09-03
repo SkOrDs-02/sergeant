@@ -522,6 +522,12 @@ export const messagesEn: Partial<{
     triggerLabel: "Calculate from profile",
     triggerHint:
       "Fill in your biometrics in your profile (sex, age, height, weight, activity level) and we'll calculate your daily calorie target automatically.",
+    missingPrefix: "Your profile is missing:",
+    missingHeight: "height",
+    missingBirthDate: "birth date",
+    missingSex: "sex",
+    missingActivity: "activity level",
+    missingWeight: "weight",
     profileLink: "Fill in profile",
     goalCutting: "Cut weight (−500 kcal)",
     goalMaintenance: "Maintenance",

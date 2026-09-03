@@ -7,10 +7,16 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { MemoryRouter } from "react-router-dom";
 import { afterEach, describe, expect, it, vi } from "vitest";
+import { BIOMETRICS_DEFAULT } from "../../../core/profile/biometrics";
 
 const useBiometrics = vi.fn();
 vi.mock("../../../core/profile/useBiometrics", () => ({
   useBiometrics: () => useBiometrics(),
+}));
+
+const useLatestBodyWeightKg = vi.fn(() => null as number | null);
+vi.mock("../../../core/profile/useLatestBodyWeight", () => ({
+  useLatestBodyWeightKg: () => useLatestBodyWeightKg(),
 }));
 
 const toastSuccess = vi.fn();
@@ -46,7 +52,12 @@ afterEach(() => vi.clearAllMocks());
 
 describe("DailyPlanGoalSelectors — biometrics incomplete", () => {
   it("shows the profile hint instead of any preset numbers", () => {
-    useBiometrics.mockReturnValue({ biometrics: null });
+    // `BIOMETRICS_DEFAULT`, не голий `null` — реальний `useBiometrics()`
+    // ніколи не віддає `biometrics: null` (тип негативний), тож мок мав
+    // відтворювати справжню форму «нічого не заповнено», інакше
+    // компонент, що читає поля напряму (список бракуючих), падає на
+    // формі, якої в проді не існує.
+    useBiometrics.mockReturnValue({ biometrics: BIOMETRICS_DEFAULT });
     computeTargets.mockReturnValue(null);
     renderSel();
 
@@ -57,6 +68,54 @@ describe("DailyPlanGoalSelectors — biometrics incomplete", () => {
     // item plus the profile-completion prompt, never a static preset ladder.
     expect(screen.getAllByRole("menuitem")).toHaveLength(1);
     expect(screen.getByText("Заповнити в профілі")).toBeInTheDocument();
+  });
+
+  // Регресія browser-QA 2026-09-03: «заповнив профіль, повернувся, все
+  // одно пише треба заповнити» — старий текст був статичним переліком
+  // усіх пʼяти полів незалежно від того, скільки вже заповнено, тож
+  // прогрес був невидимий. Юзер із fizruk-зважуванням, але без
+  // biometrics.weightKg, теж не має бачити «вага» серед бракуючого — те
+  // саме, чим resolveEffectiveWeightKg рятує сам розрахунок.
+  it("lists only the fields still missing", () => {
+    useBiometrics.mockReturnValue({
+      biometrics: {
+        ...BIOMETRICS_DEFAULT,
+        heightCm: 180,
+        birthDate: "1995-01-15",
+        weightKg: 80,
+      },
+    });
+    computeTargets.mockReturnValue(null);
+    renderSel();
+
+    fireEvent.click(screen.getByText("Підказати з пресету"));
+
+    expect(
+      screen.getByText("У профілі бракує: стать, рівень активності."),
+    ).toBeInTheDocument();
+  });
+
+  // Юзер із реальним fizruk-зважуванням, але порожнім weightKg у
+  // Профілі, не має бачити «вага» серед бракуючого — той самий фолбек,
+  // яким уже рятується сам розрахунок (resolveEffectiveWeightKg).
+  it("does not list weight as missing when a real fizruk weigh-in already covers it", () => {
+    useBiometrics.mockReturnValue({
+      biometrics: {
+        ...BIOMETRICS_DEFAULT,
+        heightCm: 180,
+        birthDate: "1995-01-15",
+        weightKg: null,
+      },
+    });
+    useLatestBodyWeightKg.mockReturnValue(80);
+    computeTargets.mockReturnValue(null);
+    renderSel();
+
+    fireEvent.click(screen.getByText("Підказати з пресету"));
+
+    expect(
+      screen.getByText("У профілі бракує: стать, рівень активності."),
+    ).toBeInTheDocument();
   });
 });
 
