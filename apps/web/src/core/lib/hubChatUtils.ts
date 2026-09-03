@@ -26,6 +26,13 @@ export interface ChatMessage {
   text: string;
   /** Опційний набір action-карт (рендериться у `ChatMessage` UI). */
   cards?: ChatActionCard[];
+  /**
+   * `true` — це повідомлення про ЗБІЙ, а не відповідь моделі. Рендериться
+   * як помилка і не озвучується: до 2026-09-03 збої лягали у звичайну
+   * бульбашку асистента, тож серверний текст 500-ки виглядав як його
+   * репліка, ще й із кнопкою «Озвучити» (browser-QA 2026-09-02).
+   */
+  error?: boolean;
   /** Optional extra fields preserved from persisted history. */
   [key: string]: unknown;
 }
@@ -123,6 +130,15 @@ export function friendlyApiError(
   if (!m && (status === 502 || status === 503)) {
     return "Сервер тимчасово недоступний. Спробуй за хвилину.";
   }
+  // NB (browser-QA 2026-09-02): сюди доходить 5xx З ТІЛОМ, і серверний
+  // `error`-рядок іде на екран дослівно. Це СВІДОМЕ рішення — див. тест
+  // «шлюзові збої дістають текст із дією»: «серверне повідомлення, якщо воно
+  // є, конкретніше за наш загальний текст». QA-прогін відзначив ризик, що так
+  // у чат може потрапити внутрішня деталь збою, але міняти це означає
+  // перевернути задокументоване рішення, тож питання винесено власнику, а не
+  // вирішене тут. Що виправлено — сама ПОДАЧА: збій більше не рендериться як
+  // звичайна репліка асистента (`makeErrorMsg` + гілка `isError` у
+  // `components/ChatMessage.tsx`).
   return baseFriendlyApiError(status, message);
 }
 
@@ -231,6 +247,11 @@ export function newMsgId(): string {
 
 export function makeAssistantMsg(text: string): ChatMessage {
   return { id: newMsgId(), role: "assistant", text };
+}
+
+/** Бульбашка збою: та сама стрічка, але видно, що це не відповідь моделі. */
+export function makeErrorMsg(text: string): ChatMessage {
+  return { id: newMsgId(), role: "assistant", text, error: true };
 }
 
 export function makeUserMsg(text: string): ChatMessage {

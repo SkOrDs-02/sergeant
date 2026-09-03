@@ -210,6 +210,9 @@ function ConfirmCard({ card }: { card: ChatActionCard }) {
 function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
   const { role, text, cards } = message;
   const isAssistant = role === "assistant";
+  // Збій — не відповідь моделі. Своя заливка й `role="alert"`, щоб його не
+  // читали як репліку асистента, і без TTS: озвучувати текст помилки нема сенсу.
+  const isError = message.error === true;
 
   return (
     <div
@@ -240,11 +243,14 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
         </span>
       )}
       <div
+        {...(isError ? { role: "alert" as const } : {})}
         className={cn(
           "max-w-[82%] rounded-2xl px-3.5 py-2.5 text-style-body leading-relaxed",
-          isAssistant
-            ? "bg-panel border border-line text-text rounded-bl-sm whitespace-normal"
-            : "bg-primary text-bg rounded-br-sm whitespace-pre-wrap",
+          isAssistant && isError
+            ? "bg-danger/10 border border-danger/30 text-text rounded-bl-sm whitespace-normal"
+            : isAssistant
+              ? "bg-panel border border-line text-text rounded-bl-sm whitespace-normal"
+              : "bg-primary text-bg rounded-br-sm whitespace-pre-wrap",
         )}
       >
         {isAssistant ? <AssistantMessageBody text={text} /> : text}
@@ -268,7 +274,7 @@ function ChatMessageImpl({ message, onSpeak }: ChatMessageProps) {
               <ModuleLink module={c.module} />
             </div>
           ))}
-        {isAssistant && text && text.length > 3 && (
+        {isAssistant && !isError && text && text.length > 3 && (
           <button
             type="button"
             onClick={() => {
