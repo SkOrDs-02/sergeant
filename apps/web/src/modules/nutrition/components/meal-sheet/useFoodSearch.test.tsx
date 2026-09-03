@@ -114,4 +114,53 @@ describe("useFoodSearch", () => {
     rerender({ q: "ab" });
     expect(result.current.foodErr).toBe("");
   });
+
+  // Регресія browser-QA 2026-09-02: `off.error` не читав ніхто, тож збій
+  // пошуку показувався як «нічого не знайдено» — відповідь про порожню базу
+  // замість відповіді про збій. Найтихіший випадок — завеликий запит: сервер
+  // віддавав 400, а екран стверджував, що такого продукту не існує.
+  it("повідомляє про збій пошуку, а не вдає порожній результат", async () => {
+    searchFoodsMock.mockResolvedValue([]);
+    offSearchMock.mockRejectedValue(new Error("400"));
+
+    const { result } = renderHook(() => useFoodSearch("сир"), {
+      wrapper: makeWrapper(),
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+      await Promise.resolve();
+    });
+
+    await vi.waitFor(
+      () => {
+        expect(result.current.foodErr).toContain("не відповів");
+      },
+      { timeout: 2000, interval: 10 },
+    );
+    expect(result.current.offHits).toEqual([]);
+  });
+
+  it("ручна помилка має пріоритет над збоєм пошуку", async () => {
+    searchFoodsMock.mockResolvedValue([]);
+    offSearchMock.mockRejectedValue(new Error("400"));
+
+    const { result } = renderHook(() => useFoodSearch("сир"), {
+      wrapper: makeWrapper(),
+    });
+
+    await act(async () => {
+      vi.advanceTimersByTime(600);
+      await Promise.resolve();
+    });
+    await vi.waitFor(
+      () => {
+        expect(result.current.foodErr).toContain("не відповів");
+      },
+      { timeout: 2000, interval: 10 },
+    );
+
+    act(() => result.current.setFoodErr("Штрихкод не розпізнано."));
+    expect(result.current.foodErr).toBe("Штрихкод не розпізнано.");
+  });
 });
