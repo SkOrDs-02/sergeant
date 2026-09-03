@@ -93,7 +93,7 @@ grep -rn "enqueueMemoryIngest" apps/server/src/modules/mono/*.ts | grep -v "\.te
 
 ### 3. Прибирання client-driven джерел вбиває сам ендпоінт ingest-у
 
-`CLIENT_DRIVEN_MEMORY_SOURCES` у [`ingestRoute.ts`](../../../apps/server/src/modules/ai-memory/ingestRoute.ts) = `['chat', 'fizruk', 'nutrition', 'routine', 'journal']` — **рівно пʼять мертвих джерел, і жодного живого**. Після прибирання список порожній, `z.enum([])` не компілюється, а `POST /api/ai-memory/ingest` лишається ендпоінтом без жодного допустимого входу.
+`CLIENT_DRIVEN_MEMORY_SOURCES` у `ingestRoute.ts` (файл видалено цим PR-1; історична версія — у Git до a07e6c6d9) = `['chat', 'fizruk', 'nutrition', 'routine', 'journal']` — **рівно пʼять мертвих джерел, і жодного живого**. Після прибирання список порожній, `z.enum([])` не компілюється, а `POST /api/ai-memory/ingest` лишається ендпоінтом без жодного допустимого входу.
 
 Тому ендпоінт іде разом із ними: [`routes/ai-memory.ts`](../../../apps/server/src/routes/ai-memory.ts) (маунт), `ingestRoute.ts`, `ingestRoute.test.ts`, `ingestRoute.integration.test.ts`. Внутрішній `enqueueMemoryIngest` лишається — ним ходять усі чотири живі продюсери.
 
