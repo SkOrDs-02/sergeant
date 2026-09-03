@@ -13,7 +13,10 @@ import {
 } from "../sqlite/migrations/index.js";
 import { enqueueOutboxIncrement } from "../sqlite/syncOpOutboxEnqueue.js";
 import { markOutboxRejected } from "../sqlite/syncOpOutboxLifecycle.js";
-import { listRejectedOutbox } from "../sqlite/syncOpOutboxRejected.js";
+import {
+  countRejectedOutbox,
+  listRejectedOutbox,
+} from "../sqlite/syncOpOutboxRejected.js";
 
 function syncClient(db: BetterSqliteDatabase): SqliteMigrationClient {
   return {
@@ -116,6 +119,38 @@ describe("listRejectedOutbox", () => {
     });
     expect(rows.map((r) => r.id)).toEqual([id]);
     expect(rows[0]!.rejectReason).toBeNull();
+  });
+
+  it("throws on an unsafe bigint id instead of returning a rounded number", async () => {
+    // `Number(9007199254740993n)` === 9007199254740992 — ціле, але не те.
+    const lying: SqliteMigrationClient = {
+      ...client,
+      all: (async () => [
+        {
+          id: 9007199254740993n,
+          table_name: "routine_streaks",
+          op: "increment",
+          reject_reason: "user_id_mismatch",
+          created_at: "2026-09-03 10:00:00",
+        },
+      ]) as SqliteMigrationClient["all"],
+    };
+    await expect(listRejectedOutbox(lying)).rejects.toThrow(/unsafe id/);
+  });
+
+  it("counts rejected rows with the same reason filter as the list", async () => {
+    for (let i = 0; i < 3; i++) {
+      const id = await enqueue(client, `k-lww-${i}`);
+      await markOutboxRejected(client, id, "lww_conflict");
+    }
+    const real = await enqueue(client, "k-real");
+    await markOutboxRejected(client, real, "user_id_mismatch");
+    await enqueue(client, "k-pending");
+
+    expect(await countRejectedOutbox(client)).toBe(4);
+    expect(
+      await countRejectedOutbox(client, { excludeReasons: ["lww_conflict"] }),
+    ).toBe(1);
   });
 
   it("rejects a non-positive limit loudly", async () => {

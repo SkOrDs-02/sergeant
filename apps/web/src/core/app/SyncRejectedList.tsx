@@ -21,6 +21,7 @@ const COPY = {
   explain:
     "Ці записи лишились лише на цьому пристрої: сервер їх відхилив і повторно не візьме. Перевір значення й додай запис ще раз.",
   loading: "Читаю список…",
+  error: "Не вдалося прочитати список. Закрий і відкрий цей аркуш ще раз.",
   empty: "Список порожній",
   unknownReason: "невідома причина",
 } as const;
@@ -65,20 +66,23 @@ export function describeRejectedRow(row: RejectedOutboxRow): {
 
 async function fetchRejected(): Promise<readonly RejectedOutboxRow[]> {
   const runtime = getSyncEngineWriter();
+  // Рантайм ще не піднято — це чесний «нічого немає», не збій.
   if (!runtime) return [];
-  try {
-    return await runtime.listRejected();
-  } catch {
-    return [];
-  }
+  // Помилку читання НЕ ковтаємо в `[]`: над списком стоїть лічильник
+  // `rejected > 0`, і «Список порожній» під ним брехав би. Хай запит
+  // лишається в стані помилки, а компонент скаже про це прямо.
+  return runtime.listRejected();
 }
 
 export function SyncRejectedList() {
-  const { data, isPending } = useQuery({
+  const { data, isPending, isError } = useQuery({
     queryKey: syncKeys.rejected(),
     queryFn: fetchRejected,
     networkMode: "always",
     staleTime: 0,
+    // Локальний SQLite: повторна спроба за мілісекунди дасть той самий
+    // результат, а людина тим часом дивилась би на «Читаю список…».
+    retry: false,
   });
 
   return (
@@ -93,6 +97,13 @@ export function SyncRejectedList() {
       <p className="mt-1 text-style-caption text-muted">{COPY.explain}</p>
       {isPending ? (
         <p className="mt-2 text-style-caption text-subtle">{COPY.loading}</p>
+      ) : isError ? (
+        <p
+          role="alert"
+          className="mt-2 text-style-caption text-danger-strong dark:text-danger"
+        >
+          {COPY.error}
+        </p>
       ) : !data || data.length === 0 ? (
         <p className="mt-2 text-style-caption text-subtle">{COPY.empty}</p>
       ) : (

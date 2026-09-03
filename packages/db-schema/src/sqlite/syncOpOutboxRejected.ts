@@ -54,6 +54,39 @@ interface RejectedRowFromDb extends Record<string, unknown> {
 
 const DEFAULT_LIMIT = 50;
 
+function buildExcludeClause(excluded: readonly string[]): string {
+  return excluded.length > 0
+    ? ` AND (reject_reason IS NULL OR reject_reason NOT IN (${excluded.map(() => "?").join(", ")}))`
+    : "";
+}
+
+/**
+ * Кількість термінально відхилених рядків із тим самим фільтром причин, що
+ * й {@link listRejectedOutbox}. Потрібен, щоб лічильник у пілюлі/аркуші і
+ * список під ним рахувались по ОДНІЙ множині: `countOutboxByStatus` рахує
+ * всі `rejected`, включно з `lww_conflict`, і без цього хелпера людина
+ * бачила б «2 записи не прийнято» над порожнім списком.
+ */
+export async function countRejectedOutbox(
+  client: SqliteMigrationClient,
+  options: Pick<ListRejectedOutboxOptions, "excludeReasons"> = {},
+): Promise<number> {
+  const excluded = options.excludeReasons ?? [];
+  const rows = await client.all<{ count: number | bigint }>(
+    `SELECT COUNT(*) AS count
+       FROM sync_op_outbox
+      WHERE status = 'rejected'${buildExcludeClause(excluded)}`,
+    [...excluded],
+  );
+  const count = Number(rows[0]?.count ?? 0);
+  if (!Number.isSafeInteger(count) || count < 0) {
+    throw new Error(
+      `countRejectedOutbox: non-integer count ${JSON.stringify(String(rows[0]?.count))}`,
+    );
+  }
+  return count;
+}
+
 export async function listRejectedOutbox(
   client: SqliteMigrationClient,
   options: ListRejectedOutboxOptions = {},
@@ -65,10 +98,7 @@ export async function listRejectedOutbox(
     );
   }
   const excluded = options.excludeReasons ?? [];
-  const excludeClause =
-    excluded.length > 0
-      ? ` AND (reject_reason IS NULL OR reject_reason NOT IN (${excluded.map(() => "?").join(", ")}))`
-      : "";
+  const excludeClause = buildExcludeClause(excluded);
 
   const rows = await client.all<RejectedRowFromDb>(
     `SELECT id, table_name, op, reject_reason, created_at
@@ -81,9 +111,12 @@ export async function listRejectedOutbox(
 
   return rows.map((row) => {
     const id = Number(row.id);
-    if (!Number.isFinite(id) || !Number.isInteger(id)) {
+    // `isSafeInteger`, не `isInteger`: `Number(9007199254740993n)` дає
+    // 9007199254740992 — ціле, скінченне і ХИБНЕ. Такий id не можна
+    // віддавати в UI як ідентифікатор рядка.
+    if (!Number.isSafeInteger(id)) {
       throw new Error(
-        `listRejectedOutbox: non-integer id ${JSON.stringify(row.id)} in sync_op_outbox`,
+        `listRejectedOutbox: unsafe id ${JSON.stringify(String(row.id))} in sync_op_outbox`,
       );
     }
     return {

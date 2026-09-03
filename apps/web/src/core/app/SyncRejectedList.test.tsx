@@ -69,6 +69,16 @@ describe("SyncRejectedList", () => {
     );
   });
 
+  it("shows an error line instead of a false «empty» when reading fails", async () => {
+    listRejected.mockRejectedValue(new Error("sqlite locked"));
+    renderList();
+    await waitFor(() => expect(screen.getByRole("alert")).toBeInTheDocument());
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Не вдалося прочитати список",
+    );
+    expect(screen.queryByText("Список порожній")).not.toBeInTheDocument();
+  });
+
   it("falls back to empty when the sync runtime is not booted", async () => {
     runtimeRef.value = null;
     renderList();
