@@ -3,6 +3,7 @@ import { describe, it, expect, beforeEach } from "vitest";
 import {
   ACTIVE_SESSION_KEY,
   CHAT_OWNER_KEY,
+  SESSIONS_MIRROR_KEY,
   SESSIONS_STORAGE_KEY,
   createSession,
   deleteSession,
@@ -23,6 +24,68 @@ beforeEach(() => {
 });
 
 describe("hubChatSessions", () => {
+  // Регресія на SEV1 з browser-QA 2026-09-02: історія чату зникала після
+  // релоаду, бо `safeWriteLS` пише в SQLite fire-and-forget, і сплеск
+  // повідомлень із релоадом за ним втрачав запис. Синхронне дзеркало в
+  // localStorage закриває гонку; арбітраж — за `updatedAt`, щоб жодне
+  // джерело не стало «правдою» назавжди.
+  describe("durable mirror", () => {
+    it("mirrors sessions synchronously on save", () => {
+      const session = createSession([makeUserMsg("привіт")]);
+      saveSessions([session]);
+
+      const mirrored = localStorage.getItem(SESSIONS_MIRROR_KEY);
+      expect(mirrored).toBeTruthy();
+      expect(JSON.parse(mirrored!)).toHaveLength(1);
+    });
+
+    it("recovers history when the primary key lost the async write", () => {
+      const session = createSession([makeUserMsg("не загубись")]);
+      saveSessions([session]);
+      // Імітуємо саму гонку: SQLite-бік не встиг, дзеркало встигло.
+      // Legacy-ключ теж прибираємо — інакше історію підняла б міграція
+      // `hub_chat_history`, і тест зеленів би без дзеркала взагалі.
+      localStorage.removeItem(SESSIONS_STORAGE_KEY);
+      localStorage.removeItem("hub_chat_history");
+
+      const loaded = loadSessions();
+      expect(loaded).toHaveLength(1);
+      expect(loaded[0]!.messages.some((m) => m.text === "не загубись")).toBe(
+        true,
+      );
+    });
+
+    it("prefers whichever side has the newer updatedAt", () => {
+      const stale = {
+        ...createSession([makeUserMsg("старе")]),
+        updatedAt: 100,
+      };
+      const fresh = { ...createSession([makeUserMsg("нове")]), updatedAt: 900 };
+
+      // Стале дзеркало (напр. запис у localStorage не пройшов через квоту)
+      // не має перебивати свіжий основний ключ.
+      localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify([fresh]));
+      localStorage.setItem(SESSIONS_MIRROR_KEY, JSON.stringify([stale]));
+      expect(loadSessions()[0]!.updatedAt).toBe(900);
+
+      // І симетрично — свіже дзеркало перебиває старий основний ключ.
+      localStorage.setItem(SESSIONS_STORAGE_KEY, JSON.stringify([stale]));
+      localStorage.setItem(SESSIONS_MIRROR_KEY, JSON.stringify([fresh]));
+      expect(loadSessions()[0]!.updatedAt).toBe(900);
+    });
+
+    it("wipes the mirror when the account changes (F12 privacy)", () => {
+      reconcileChatOwnerOnAuthChange("user-a");
+      saveSessions([createSession([makeUserMsg("таємниця акаунта A")])]);
+      expect(localStorage.getItem(SESSIONS_MIRROR_KEY)).toBeTruthy();
+
+      reconcileChatOwnerOnAuthChange("user-b");
+
+      expect(localStorage.getItem(SESSIONS_MIRROR_KEY)).toBeNull();
+      expect(loadSessions()).toEqual([]);
+    });
+  });
+
   describe("loadSessions migration", () => {
     it("migrates legacy `hub_chat_history` into a single fresh session", () => {
       const legacy = [

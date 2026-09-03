@@ -1,8 +1,11 @@
 import {
+  resolveLsStore,
   safeReadLS,
   safeReadStringLS,
   safeRemoveLS,
+  safeRemoveLSDurable,
   safeWriteLS,
+  safeWriteStringLSDurable,
 } from "@shared/lib/storage/storage";
 import { getKyivShortDateStamp } from "@shared/lib/time/kyivTime";
 import { normalizeStoredMessages, type ChatMessage } from "../lib/hubChatUtils";
@@ -16,6 +19,11 @@ const LEGACY_KEY = "hub_chat_history";
  * здоровʼя) читалась наступним залогіненим юзером на тому ж пристрої.
  */
 export const CHAT_OWNER_KEY = "hub_chat_owner_v1";
+/**
+ * Синхронне localStorage-дзеркало сесій. Існує лише щоб пережити релоад,
+ * який випередив асинхронний запис у SQLite — розбір у `loadSessions`.
+ */
+export const SESSIONS_MIRROR_KEY = "hub_chat_sessions_mirror_v1";
 const ANON_OWNER = "__anon__";
 const SESSION_LIMIT = 20;
 const MESSAGES_PER_SESSION = 60;
@@ -91,16 +99,20 @@ function migrateLegacyIfNeeded(): HubChatSession[] | null {
   return [session];
 }
 
-export function loadSessions(): HubChatSession[] {
-  const migrated = migrateLegacyIfNeeded();
-  if (migrated) {
-    saveSessions(migrated);
-    return migrated;
+/** Найсвіжіший `updatedAt` у наборі; `-1` для порожнього чи битого. */
+function newestUpdatedAt(sessions: readonly HubChatSession[]): number {
+  let newest = -1;
+  for (const s of sessions) {
+    const at = typeof s.updatedAt === "number" ? s.updatedAt : -1;
+    if (at > newest) newest = at;
   }
-  const parsed = safeReadLS<unknown>(SESSIONS_STORAGE_KEY);
-  if (!Array.isArray(parsed)) return [];
+  return newest;
+}
+
+function parseSessionsBlob(raw: unknown): HubChatSession[] {
+  if (!Array.isArray(raw)) return [];
   try {
-    return parsed
+    return raw
       .filter(
         (x): x is HubChatSession =>
           typeof x === "object" && x != null && typeof x.id === "string",
@@ -112,6 +124,50 @@ export function loadSessions(): HubChatSession[] {
   } catch {
     return [];
   }
+}
+
+function readMirroredSessions(): HubChatSession[] {
+  const raw = resolveLsStore()?.getString(SESSIONS_MIRROR_KEY);
+  if (!raw) return [];
+  try {
+    return parseSessionsBlob(JSON.parse(raw));
+  } catch {
+    return [];
+  }
+}
+
+export function loadSessions(): HubChatSession[] {
+  const migrated = migrateLegacyIfNeeded();
+  if (migrated) {
+    saveSessions(migrated);
+    return migrated;
+  }
+  // Читаємо ОБИДВА джерела і беремо свіжіше за `updatedAt`.
+  //
+  // AI-DANGER: тут не можна віддати перевагу одному джерелу назавжди, і саме
+  // на цьому баг і тримався. `safeWriteLS` пише в SQLite fire-and-forget
+  // (`createSqliteKVStore` — warm-cache + асинхронний upsert), тож сплеск
+  // повідомлень і релоад за ним втрачали запис: warm-cache гине разом зі
+  // сторінкою, а до OPFS воно доїхати не встигало. Браузерний QA 2026-09-02
+  // ловив зникнення всієї історії з 20+ повідомлень навіть через 3 с після
+  // останнього запису — уп'ятеро довше за debounce.
+  //
+  // Дзеркало в localStorage синхронне і цю гонку закриває, але зробити його
+  // безумовно головним не можна: якщо запис у localStorage не пройшов
+  // (квота — адаптер ковтає помилку мовчки), головним стало б СТАРЕ дзеркало,
+  // і ми обміняли б одну втрату на іншу. Автоматичне відновлення в
+  // `bootstrapKvStore()` теж не рятує — воно діє лише для ключів, ВІДСУТНІХ
+  // у SQLite, а не для застарілих.
+  //
+  // Тому джерело істини визначає дані, а не походження: перемагає той бік, у
+  // якого свіжіший `updatedAt`. Це самовиправно в обидва боки.
+  const primary = parseSessionsBlob(safeReadLS<unknown>(SESSIONS_STORAGE_KEY));
+  const mirrored = readMirroredSessions();
+  if (mirrored.length === 0) return primary;
+  if (primary.length === 0) return mirrored;
+  return newestUpdatedAt(mirrored) > newestUpdatedAt(primary)
+    ? mirrored
+    : primary;
 }
 
 export function saveSessions(sessions: HubChatSession[]): void {
@@ -126,6 +182,11 @@ export function saveSessions(sessions: HubChatSession[]): void {
       messages: s.messages.slice(-MESSAGES_PER_SESSION),
     }));
   safeWriteLS(SESSIONS_STORAGE_KEY, trimmed);
+  // Синхронне дзеркало проти гонки «запис → релоад» (див. `loadSessions`).
+  // Пишемо під ОКРЕМИМ ключем, а не durable-хелпером по основному: інакше
+  // `bootstrapKvStore()` підняв би дзеркало у warm-cache як основне значення,
+  // і порівняння за `updatedAt` втратило б другий бік.
+  safeWriteStringLSDurable(SESSIONS_MIRROR_KEY, JSON.stringify(trimmed));
 
   // Mirror the most recent session's tail back into the legacy
   // `hub_chat_history` key so `hubBackup.buildHubBackupPayload`
@@ -178,6 +239,10 @@ export function reconcileChatOwnerOnAuthChange(
     safeRemoveLS(SESSIONS_STORAGE_KEY);
     safeRemoveLS(ACTIVE_SESSION_KEY);
     safeRemoveLS(LEGACY_KEY);
+    // Дзеркало мусить гинути РАЗОМ з основним ключем: інакше приватність F12
+    // (нижче в докстрінгу) обходиться через нього — наступний залогінений
+    // юзер на тому ж пристрої прочитав би історію попереднього.
+    safeRemoveLSDurable(SESSIONS_MIRROR_KEY);
   }
   safeWriteLS(CHAT_OWNER_KEY, nextOwner);
   return {
