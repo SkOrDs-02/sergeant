@@ -80,7 +80,8 @@ export const CHAT_AUTH_REQUIRED_TEXT =
  * HubChat-специфічний `friendlyApiError`. Додає три кейси поверх
  * загального мапера в `@shared/lib/friendlyApiError`:
  *  - 401/403 → чесний текст «потрібен вхід» (див. `CHAT_AUTH_REQUIRED_TEXT`);
- *  - 500 без ключа AI → окремий текст про чат;
+ *  - 503 `ANTHROPIC_KEY_MISSING` (немає ключа upstream-у) → окремий текст
+ *    для розробника, а не користувацьке «тимчасово недоступний»;
  *  - 429 `AI_QUOTA_PRESET` → серверна копія проходить БЕЗ перезапису;
  *  - 429 з маркером AI_QUOTA / «ліміт AI» → явне повідомлення про
  *    денний ліміт (замість загального «Забагато запитів»).
@@ -100,7 +101,16 @@ export function friendlyApiError(
 ): string {
   const m = message || "";
   if (status === 401 || status === 403) return CHAT_AUTH_REQUIRED_TEXT;
-  if (status === 500 && /ANTHROPIC|not set|key/i.test(m)) {
+  // Ключ upstream-у відсутній. Гейти `requireChatUpstreamKey` /
+  // `requireLlmUpstream` (`apps/server/src/http/requireAnthropicKey.ts`)
+  // віддають **503** з маркером у `body.code`, а `body.error` — навмисно
+  // нейтральне «AI-помічник тимчасово недоступний» без назви env-змінної.
+  // До 2026-09-03 тут стояло `status === 500 && /ANTHROPIC|key/.test(m)` —
+  // обидві умови хибні для реальної відповіді, тож гілка була недосяжна, і
+  // розробник із незаповненим ключем бачив користувацький текст і шукав
+  // проблему не там (аудит `web-qa-pre-beta.md` § 11). Звіряємо по `code`
+  // й не по статусу: код — контракт, статус і текст можуть змінитись.
+  if (code === "ANTHROPIC_KEY_MISSING") {
     return "Чат на сервері не налаштовано (немає ключа AI).";
   }
   // Сценарний preset має власне ТИЖНЕВЕ відро, тож «спробуй завтра» нижче
