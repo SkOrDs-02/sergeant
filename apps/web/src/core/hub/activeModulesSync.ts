@@ -30,17 +30,33 @@ import { logger } from "@shared/lib";
 import { webKVStore } from "@shared/lib/storage/storage";
 
 /**
+ * Лічильник локальних виборів. Читає `hydrateActiveModules`, щоб не затерти
+ * щойно зроблений вибір відповіддю, яку сервер сформував ДО нього — див.
+ * гонку, описану там. Лічильник, а не мітка часу: `Date.now()` має
+ * роздільність у мілісекунду, і два сусідні виклики цілком можуть дати одне
+ * число, тобто порівняння стало б неоднозначним рівно там, де гонка й
+ * живе.
+ */
+let pickGeneration = 0;
+
+/**
  * Записати локальний вибір на акаунт. Fire-and-forget: локальний KV уже
  * оновлено викликачем, тож мережева помилка не має ні падати в UI, ні
  * відкочувати вибір — наступний boot усе одно доллє (`hydrate` нижче
  * піднімає локальний вибір, коли на сервері ще `null`).
  */
 export function pushActiveModules(ids: readonly DashboardModuleId[]): void {
+  pickGeneration += 1;
   void meApi
     .updatePreferences({ activeModules: [...ids] })
     .catch((err: unknown) => {
       logger.warn("[activeModules] push failed", err);
     });
+}
+
+/** Скидання module-scoped стану між тестами. */
+export function __resetActiveModulesSyncForTests(): void {
+  pickGeneration = 0;
 }
 
 /**
@@ -55,9 +71,21 @@ export function pushActiveModules(ids: readonly DashboardModuleId[]): void {
  *    свій вибір на акаунті без жодної дії з їхнього боку.
  *  - обидва порожні → нічого не робимо: писати `[]` означало б «людина
  *    свідомо вимкнула все», а вона просто ще не обирала.
+ *
+ * AI-DANGER: серверна гілка НЕ виконується, якщо людина зробила вибір, поки
+ * цей запит був у польоті. `pushActiveModules` — fire-and-forget PATCH, а
+ * гідратація — окремий GET на буті; порядок між ними не гарантований
+ * нічим. Без цієї перевірки послідовність «бут почався → людина обрала
+ * модулі → приїхала відповідь бута зі СТАРИМ вибором» закінчувалась тим, що
+ * `saveVibePicks` затирав свіжий вибір старим, і хаб на очах відкочувався
+ * (browser-QA 2026-09-02). Свіжий вибір при цьому вже їхав на сервер своїм
+ * PATCH-ом, тобто скіп нічого не втрачає — це LWW за наміром, як і
+ * заявлено вище.
  */
 export async function hydrateActiveModules(): Promise<void> {
+  const generationAtStart = pickGeneration;
   const prefs = await meApi.getPreferences();
+  if (pickGeneration !== generationAtStart) return;
   const local = getVibePicks(webKVStore);
 
   if (prefs.activeModules !== null) {
