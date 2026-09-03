@@ -41,6 +41,14 @@ export interface NutritionPhotoItem {
   macros: NutritionMacros;
   gramsApprox: number | null;
   confidence: number;
+  /**
+   * Client-set only — сервер це поле НІКОЛИ не повертає (модель не знає
+   * про каталог продуктів). Заповнюється, коли позицію замінено через
+   * пошук у `PhotoAddItemPicker` (ініціатива 0023, PR-3): відрізняє
+   * рядок журналу `macroSource: "productDb"` від вгаданого моделлю
+   * `"photoAI"` без окремого поля для того самого факту.
+   */
+  foodId?: string | null;
 }
 
 export interface NutritionPhotoResult {

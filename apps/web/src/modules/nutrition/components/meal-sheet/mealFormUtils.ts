@@ -1,6 +1,15 @@
 import { mealTypeByNow, type MealTypeId } from "../../lib/mealTypes";
 import type { NullableMacros } from "@sergeant/shared";
+import type {
+  Meal,
+  MealMacroSource,
+  MealSource,
+  MealTemplate,
+} from "@sergeant/nutrition-domain";
 import { deviceTimeOfDay } from "@sergeant/nutrition-domain";
+import type { NutritionPhotoItem } from "@shared/api";
+import { clampText } from "@shared/lib/text/limits";
+import { newMealId } from "../../lib/mealId";
 
 /**
  * 10 кг однієї порції — межа проти зайвого нуля, не дієтологія.
@@ -64,4 +73,102 @@ export function emptyForm(
     carbs_g: macros.carbs_g != null ? String(Math.round(macros.carbs_g)) : "",
     err: "",
   };
+}
+
+/** Дані для рядка, який пишеться коли фото-аналіз не дав `items[]`. */
+export interface MealSaveFallback {
+  id: string;
+  macros: NullableMacros;
+  source: MealSource;
+  macroSource: MealMacroSource;
+  foodId: string | null;
+  amount_g: number | null;
+}
+
+/**
+ * N рядків `Meal` на одне збереження — ініціатива 0023 PR-3.
+ *
+ * Джерело рядків — `photoItems`, застосовані на кроці «фото» (після
+ * видалень/додавань там же), НЕ summed-поля кроку «fill»: ті людина може
+ * відредагувати вручну, і якби рядки рахувались із них, ручна правка
+ * підсумку розійшлася б із сумою того, що реально йде в журнал — той
+ * самий баг, від якого тікає ініціатива. Без `items[]` (не-фото шлях,
+ * редагування) — один рядок з `fallback`.
+ *
+ * `fallback.id` дублюється в перший рядок мультипозиційного шляху: обидва
+ * викликають `newMealId()`/`draftId` рівно один раз у виклику (не тут), тож
+ * ідемпотентність повторного тапу «Зберегти» не ламається.
+ */
+export function buildMealsForSave(params: {
+  photoItems: NutritionPhotoItem[] | undefined;
+  time: string;
+  mealType: MealTypeId;
+  label: string;
+  fallbackName: string;
+  fallback: MealSaveFallback;
+}): Meal[] {
+  const { photoItems, time, mealType, label, fallbackName, fallback } = params;
+  if (!photoItems || photoItems.length === 0) {
+    return [
+      {
+        id: fallback.id,
+        time,
+        mealType,
+        label,
+        name: fallbackName,
+        macros: fallback.macros,
+        source: fallback.source,
+        macroSource: fallback.macroSource,
+        foodId: fallback.foodId,
+        amount_g: fallback.amount_g,
+      },
+    ];
+  }
+  return photoItems.map((item, index): Meal => ({
+    id: index === 0 ? fallback.id : newMealId(),
+    time,
+    mealType,
+    label,
+    name: clampText(item.name.trim() || fallbackName),
+    macros: item.macros,
+    source: "photo",
+    // Заміна через каталог (`PhotoAddItemPicker`) кладе `item.foodId` —
+    // рядок стає `productDb`, а не «вгаданим» у `estimatedKcalShare`.
+    macroSource: item.foodId ? "productDb" : "photoAI",
+    foodId: item.foodId ?? null,
+    amount_g: item.gramsApprox,
+  }));
+}
+
+/**
+ * Агрегатні назва/тип/КБЖВ страви для «Запамʼятати для повтору» — це
+ * страва цілком, не окремий рядок журналу з `buildMealsForSave`.
+ */
+export interface MealSaveTemplate {
+  name: string;
+  mealType: MealTypeId;
+  macros: NullableMacros;
+}
+
+/** Додає/оновлює шаблон повтору за назвою+типом (кейс-нечутливо), max 40. */
+export function upsertMealTemplate(
+  templates: MealTemplate[],
+  template: MealSaveTemplate,
+): MealTemplate[] {
+  const normalizedName = template.name.trim().toLocaleLowerCase("uk-UA");
+  const previous = templates.find(
+    (t) =>
+      t.mealType === template.mealType &&
+      t.name.trim().toLocaleLowerCase("uk-UA") === normalizedName,
+  );
+  const remembered: MealTemplate = {
+    id: previous?.id ?? `tpl_${Date.now()}`,
+    name: template.name,
+    mealType: template.mealType,
+    macros: { ...template.macros },
+  };
+  return [remembered, ...templates.filter((t) => t.id !== previous?.id)].slice(
+    0,
+    40,
+  );
 }
