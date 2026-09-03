@@ -52,6 +52,11 @@ export {
   type SyncOpOutboxStatusCounts,
 } from "./syncOpOutboxStatus.js";
 export {
+  listRejectedOutbox,
+  type ListRejectedOutboxOptions,
+  type RejectedOutboxRow,
+} from "./syncOpOutboxRejected.js";
+export {
   recoverDeadLetter,
   type RecoverDeadLetterResult,
   type RecoverDeadLetterSelector,

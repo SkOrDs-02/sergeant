@@ -535,6 +535,12 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     eventTarget: window,
     getStatus: async () =>
       shared.dbSchema.countOutboxByStatus(await shared.resolveClient()),
+    // Той самий фільтр, що й у `reportTerminalRejection`: `lww_conflict` —
+    // не втрата даних, людині його показувати нема за що.
+    listRejected: async () =>
+      shared.dbSchema.listRejectedOutbox(await shared.resolveClient(), {
+        excludeReasons: [...BENIGN_REJECT_REASONS],
+      }),
     recoverDeadLetter: async (selector: RecoverDeadLetterSelector) =>
       shared.dbSchema.recoverDeadLetter(await shared.resolveClient(), selector),
     addBreadcrumb: shared.addBreadcrumb,

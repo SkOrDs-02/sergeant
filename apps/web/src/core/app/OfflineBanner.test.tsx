@@ -10,10 +10,12 @@ const retrySyncV2DeadLetters = vi.fn();
 const syncStatusRef: {
   syncV2PendingCount: number;
   syncV2DeadLetterCount: number;
+  syncV2RejectedCount: number;
   retrySyncV2DeadLetters: () => Promise<void>;
 } = {
   syncV2PendingCount: 0,
   syncV2DeadLetterCount: 0,
+  syncV2RejectedCount: 0,
   retrySyncV2DeadLetters,
 };
 
@@ -31,6 +33,7 @@ beforeEach(() => {
   onlineRef.value = true;
   syncStatusRef.syncV2PendingCount = 0;
   syncStatusRef.syncV2DeadLetterCount = 0;
+  syncStatusRef.syncV2RejectedCount = 0;
   retrySyncV2DeadLetters.mockReset();
 });
 afterEach(cleanup);
@@ -126,5 +129,26 @@ describe("OfflineBanner", () => {
     });
 
     expect(retrySyncV2DeadLetters).toHaveBeenCalledTimes(1);
+  });
+
+  // tech-debt/frontend.md, знахідка 2026-08-25: відхилений сервером оп був
+  // невидимим — локально запис є, тож виглядає збереженим. Тепер він дає
+  // власний стан пілюлі, коли інших живих станів немає.
+  it("renders a 'rejected' pill when the only anomaly is server-rejected rows", () => {
+    onlineRef.value = true;
+    syncStatusRef.syncV2RejectedCount = 2;
+    const { getByTestId } = render(<OfflineBanner />);
+    const pill = getByTestId("offline-banner");
+    expect(pill.getAttribute("data-state")).toBe("rejected");
+    expect(pill.textContent).toContain("2 записи не прийнято");
+  });
+
+  it("lets live states (dead-letter, offline, queue) win over rejected rows", () => {
+    syncStatusRef.syncV2RejectedCount = 2;
+    syncStatusRef.syncV2PendingCount = 1;
+    const { getByTestId } = render(<OfflineBanner />);
+    expect(getByTestId("offline-banner").getAttribute("data-state")).toBe(
+      "syncing",
+    );
   });
 });

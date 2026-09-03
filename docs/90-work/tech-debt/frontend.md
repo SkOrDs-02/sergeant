@@ -3,6 +3,14 @@
 > **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-09-23.
 > **Status:** Active
 
+> **Закрито 2026-09-03.** `SyncStatusSheet` отримав рядок «Не прийнято сервером» і
+> список `SyncRejectedList` (модуль + людська причина, технічний код у `title`);
+> `OfflineBanner` показує стан `rejected`, коли інших живих станів немає.
+> Дані — новий read-only хелпер `listRejectedOutbox` у `db-schema` через
+> `SyncEngineWriterRuntime.listRejected()`; `lww_conflict` відфільтровано тим
+> самим списком, що й у Sentry-репорті. Повторити відхилений оп не можна за
+> визначенням — банер каже перевірити значення й додати запис знову.
+>
 > **Оновлено 2026-08-25 (нова знахідка: відхилений sync-оп невидимий користувачу).**
 > Push-оп, який сервер відхилив, у клієнта **термінальний** — движок його не
 > ретраїть (`syncOpOutboxLifecycle` ставить `status='rejected'` + `reject_reason`
