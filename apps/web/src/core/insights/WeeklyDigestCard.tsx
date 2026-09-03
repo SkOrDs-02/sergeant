@@ -416,21 +416,22 @@ interface WeeklyDigestCardProps {
    */
   onCollapse?: () => void;
   /**
-   * Поверхня показу — property `surface` події `ai_advice_shown`. Дефолт
-   * відповідає standalone-використанню у «Звітах»; хаб-дашборд передає
-   * `"hub_dashboard"` явно.
+   * Поверхня показу — property `surface` події `ai_advice_shown`. Єдина
+   * жива поверхня з 2026-09-03 — низ головної (`HubInsightsBlock`);
+   * вкладка «Звʼязки» дайджест більше не рендерить, тож дефолт збігається
+   * з нею. `"hub_reports"` лишається в типі як історичне значення подій.
    */
   surface?: AdviceSurface;
   /**
-   * Чи розгорнута зовнішня `CollapsibleSection`. Дефолт `true` — у «Звітах»
-   * картка не загорнута в секцію.
+   * Чи розгорнута зовнішня `CollapsibleSection`. Дефолт `true` — для
+   * standalone-рендера (тести, сторіз) без обгортки.
    */
   sectionOpen?: boolean;
 }
 
 export function WeeklyDigestCard({
   onCollapse,
-  surface = "hub_reports",
+  surface = "hub_dashboard",
   sectionOpen = true,
 }: WeeklyDigestCardProps = {}) {
   const currentWeekKey = getWeekKey();
