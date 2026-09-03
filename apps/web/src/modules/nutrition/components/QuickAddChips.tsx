@@ -9,9 +9,9 @@
  *
  * @last-validated 2026-05-21
  */
+import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { messages } from "@shared/i18n/uk";
-import { cn } from "@shared/lib/ui/cn";
 import type { QuickChip } from "../hooks/useNutritionQuickChips";
 
 interface QuickAddChipsProps {
@@ -57,25 +57,24 @@ export function QuickAddChips({ chips, onTap }: QuickAddChipsProps) {
       aria-label={LABELS.group}
     >
       {chips.map((chip) => (
-        <button
+        // Той самий `Button`, що й решта контролів модуля: outline з hairline
+        // Їжі. Це дія, не фільтр, тож обраного стану немає; 44px на coarse
+        // pointer дає сам Button.
+        <Button
           key={chip.id}
-          type="button"
+          size="xs"
+          variant="outline"
+          tone="neutral"
           onClick={() => onTap(chip)}
           aria-label={LABELS.chip(chip.label, chip.grams)}
-          className={cn(
-            "shrink-0 inline-flex items-center gap-1.5 rounded-full px-3 py-1.5",
-            "min-h-touch-target text-style-label",
-            "border border-line bg-panelHi text-text",
-            "hover:bg-nutrition/15 active:scale-[0.97] transition-[background-color,transform]",
-            "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/40",
-          )}
+          className="shrink-0 border-nutrition/40"
         >
           <Icon name="plus" size={12} aria-hidden />
           <span className="whitespace-nowrap">{chip.label}</span>
           <span className="text-style-caption text-muted whitespace-nowrap">
             · {chip.macros.kcal} {messages.nutrition.kcalUnit}
           </span>
-        </button>
+        </Button>
       ))}
     </div>
   );
