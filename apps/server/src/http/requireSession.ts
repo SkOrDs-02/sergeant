@@ -1,5 +1,5 @@
 import type { Request, RequestHandler, Response } from "express";
-import { getSessionUser } from "../auth.js";
+import { getFreshSessionUser, getSessionUser } from "../auth.js";
 import { touchLastSeen } from "../lib/lastSeen.js";
 import { logger } from "../obs/logger.js";
 import { authSessionLookupFailureTotal } from "../obs/metrics.js";
@@ -68,10 +68,47 @@ export const __testingResetSoftFailureCounter = (): void => {
  * `docs/security/hardening/H8-corp-per-route.md`).
  */
 export function requireSession(): RequestHandler {
+  return buildRequireSession((req) => getSessionUser(req), "require");
+}
+
+/**
+ * Як `requireSession()`, але сесія резолвиться через `getFreshSessionUser`
+ * — в обхід 5-хвилинного `session.cookieCache`, одним SELECT-ом на запит.
+ * Відкликана (logout з іншого пристрою, revoke після зміни пароля) або
+ * вкрадена сесія перестає проходити **негайно**, а не після кеш-вікна.
+ *
+ * Ціна — DB-lookup на кожен виклик, тому це не заміна `requireSession()`,
+ * а гейт для поверхонь, де вартість 5-хвилинного вікна вища за latency:
+ * повний експорт даних, видалення акаунта, підʼєднання/відʼєднання банку
+ * (аудит `docs/90-work/audits/2026-08-05-orphaned-code-audit.md` § 7а).
+ *
+ * Семантика відповідей тотожна `requireSession()`: без валідної сесії у
+ * БД — `401 UNAUTHORIZED` (навіть якщо cookie-кеш ще «живий»); lookup
+ * впав — `next(err)` → 500. CORP=same-origin ставиться так само (H8).
+ */
+export function requireFreshSession(): RequestHandler {
+  return buildRequireSession(
+    (req) => getFreshSessionUser(req),
+    "require_fresh",
+  );
+}
+
+/**
+ * Резолвер передається як стрілка, а не як сам імпорт (`getSessionUser`):
+ * так binding з `../auth.js` читається лише на запиті, а не в момент
+ * побудови роутера. Це важливо для тестів, які мокають `../auth.js`
+ * частково (`vi.mock` без `getFreshSessionUser`) і викликають `createApp()`,
+ * не торкаючись fresh-роутів — інакше сам `createApp()` падав би на
+ * «No export is defined on the mock».
+ */
+function buildRequireSession(
+  resolve: (req: Request) => Promise<SessionUser>,
+  variant: "require" | "require_fresh",
+): RequestHandler {
   return async (req, res, next) => {
     setSameOriginCorp(res);
     try {
-      const user = await getSessionUser(req);
+      const user = await resolve(req);
       if (!user) {
         res.status(401).json({
           error: "Потрібна автентифікація",
@@ -90,10 +127,10 @@ export function requireSession(): RequestHandler {
       // already returned 401) from "session lookup blew up". The latter
       // propagates to the error-handler as a 500, but we count it here
       // so dashboards see the same signal regardless of variant.
-      authSessionLookupFailureTotal.labels("require", "loud_503").inc();
+      authSessionLookupFailureTotal.labels(variant, "loud_503").inc();
       logger.warn({
         msg: "auth_session_lookup_failed",
-        variant: "require",
+        variant,
         err: err instanceof Error ? err.message : String(err),
       });
       next(err);

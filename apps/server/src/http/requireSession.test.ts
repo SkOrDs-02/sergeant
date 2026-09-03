@@ -20,15 +20,18 @@ import request from "supertest";
  * `requireSession*` від нього і залежить.
  */
 
-const { getSessionUserMock } = vi.hoisted(() => ({
+const { getSessionUserMock, getFreshSessionUserMock } = vi.hoisted(() => ({
   getSessionUserMock: vi.fn(),
+  getFreshSessionUserMock: vi.fn(),
 }));
 
 vi.mock("../auth.js", () => ({
   getSessionUser: getSessionUserMock,
+  getFreshSessionUser: getFreshSessionUserMock,
 }));
 
 import {
+  requireFreshSession,
   requireSession,
   requireSessionSoft,
   __testingResetSoftFailureCounter,
@@ -59,7 +62,54 @@ function makeApp(handler: express.RequestHandler) {
 
 beforeEach(() => {
   getSessionUserMock.mockReset();
+  getFreshSessionUserMock.mockReset();
   __testingResetSoftFailureCounter();
+});
+
+// Аудит 2026-08-05 § 7а — `requireFreshSession()` резолвить сесію через
+// `getFreshSessionUser` (обхід 5-хвилинного cookie-кешу), а НЕ через
+// `getSessionUser`. Ключовий кейс — «stale»: кеш ще вважає сесію живою, а
+// в БД її вже відкликано → має бути 401, і кешований резолвер узагалі не
+// питається.
+describe("requireFreshSession(): свіжа сесія з БД, не з cookie-кешу", () => {
+  it("свіжа сесія є → 200, `req.user` виставлений, CORP=same-origin", async () => {
+    getFreshSessionUserMock.mockResolvedValueOnce({
+      id: "u-1",
+      email: "x@y.z",
+    });
+    const app = makeApp(requireFreshSession());
+
+    const res = await request(app).get("/protected");
+
+    expect(res.status).toBe(200);
+    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+    expect(getFreshSessionUserMock).toHaveBeenCalledTimes(1);
+    expect(getSessionUserMock).not.toHaveBeenCalled();
+  });
+
+  it("stale: кеш ще «живий», у БД сесії нема → 401 UNAUTHORIZED", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u-1", email: "x@y.z" });
+    getFreshSessionUserMock.mockResolvedValueOnce(null);
+    const app = makeApp(requireFreshSession());
+
+    const res = await request(app).get("/protected");
+
+    expect(res.status).toBe(401);
+    expect(res.body.code).toBe("UNAUTHORIZED");
+    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+    // Кешований варіант не є fallback-ом — інакше вікно відкрилось би знов.
+    expect(getSessionUserMock).not.toHaveBeenCalled();
+  });
+
+  it("getFreshSessionUser кидає → 500 (не 401), CORP=same-origin", async () => {
+    getFreshSessionUserMock.mockRejectedValueOnce(new Error("db unavailable"));
+    const app = makeApp(requireFreshSession());
+
+    const res = await request(app).get("/protected");
+
+    expect(res.status).toBe(500);
+    expect(res.headers["cross-origin-resource-policy"]).toBe("same-origin");
+  });
 });
 
 describe("H8: requireSession() сетить Cross-Origin-Resource-Policy: same-origin", () => {
