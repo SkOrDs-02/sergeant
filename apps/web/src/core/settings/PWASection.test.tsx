@@ -105,6 +105,20 @@ describe("PWASection", () => {
     expect(screen.getByText("Скинути та перезавантажити")).toBeInTheDocument();
   });
 
+  // Регресія browser-QA 2026-09-03: діалог лякав утратою офлайн-черги,
+  // якої `clearAppCaches` не торкається взагалі (воно ходить лише по
+  // CacheStorage). Пін тримає текст чесним в обидва боки: без хибної
+  // загрози і з реальною ціною дії.
+  it("не обіцяє втрати офлайн-черги, бо очистка кешу її не чіпає", () => {
+    render(<PWASection />);
+    fireEvent.click(screen.getByText("Скинути кеш PWA"));
+    expect(screen.queryByText(/офлайн-черзі можуть бути втрачені/)).toBeNull();
+    expect(
+      screen.getByText(/офлайн-черга лишаються на місці/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/дотягне заново/)).toBeInTheDocument();
+  });
+
   it("clears caches and schedules a reload on confirm", async () => {
     vi.useFakeTimers();
     swMocks.swClearCaches.mockResolvedValue({ cleared: 3 });
