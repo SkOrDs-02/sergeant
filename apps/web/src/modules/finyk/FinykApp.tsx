@@ -32,6 +32,7 @@ import {
   Analytics,
   Assets,
   Budgets,
+  PlanningSubscriptions,
   Transactions,
   preloadFinykPage,
   useWarmFinykPages,
@@ -267,6 +268,14 @@ export default function App({
             storage={storage}
             showBalance={showBalance}
             focusLimitCategoryId={focusLimitCategoryId}
+            planningSlot={
+              <PlanningSubscriptions
+                mono={mergedMono}
+                storage={storage}
+                showBalance={showBalance}
+                initialOpen={focusAssetSection === "subscriptions"}
+              />
+            }
             monthlyPlanFirstRunHint={firstRunFinykActive}
             onDismissMonthlyPlanFirstRunHint={() => {
               markFinykSeen();
@@ -306,7 +315,6 @@ export default function App({
             mono={mergedMono}
             storage={storage}
             showBalance={showBalance}
-            initialOpenSubscriptions={focusAssetSection === "subscriptions"}
           />
         </SectionErrorBoundary>
       );

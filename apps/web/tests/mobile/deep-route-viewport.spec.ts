@@ -8,14 +8,11 @@ const ROUTES: ReadonlyArray<{
   visibleText: string | RegExp;
 }> = [
   {
-    // Власної кнопки «+ Додати підписку» в `AssetsSubscriptionsSection` більше немає
-    // (дубль quick-action зняли 2026-09-03), а сама секція рендериться лише
-    // розгорнутою (`open.subscriptions`), за замовчуванням — згорнута. Тож
-    // асерт ловить те, що є на холодному завантаженні завжди —
-    // quick-action «+ Підписка» з `AssetsTable`.
+    // Підписки переїхали в Планування (2026-09-03); на холодних «Активах»
+    // завжди видимий quick-action «+ Актив» з `AssetsTable`.
     id: "FINYK_ASSETS",
     path: "/finyk/assets",
-    visibleText: "+ Підписка",
+    visibleText: "+ Актив",
   },
   {
     id: "FIZRUK_WORKOUTS",

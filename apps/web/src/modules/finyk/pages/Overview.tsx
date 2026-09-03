@@ -16,7 +16,6 @@ import { HeroCard } from "./overview/HeroCard";
 import { OverviewTextRows } from "./overview/OverviewTextRows";
 import { NetworthSection } from "./overview/NetworthSection";
 import { BudgetAlertsList } from "./overview/BudgetAlertsList";
-import { PlannedFlowsCard } from "./overview/PlannedFlowsCard";
 import { useOverviewData } from "./overview/useOverviewData";
 import { pluralize } from "../../../core/hub/useHubDashboardState";
 import { messages } from "@shared/i18n/uk";
@@ -275,12 +274,6 @@ export function Overview({
                       `/finyk/budgets?cat=${encodeURIComponent(categoryId)}`,
                     )
                   }
-                />
-
-                <PlannedFlowsCard
-                  plannedFlows={d.plannedFlows}
-                  onNavigate={onNavigate ?? (() => {})}
-                  showBalance={showBalance}
                 />
               </>
             )}

@@ -8,15 +8,11 @@ import {
   trackEvent,
   ANALYTICS_EVENTS,
 } from "../../../../core/observability/analytics";
-import {
-  calcDebtRemaining,
-  calcReceivableRemaining,
-  calcFinykSpendingTotal,
-} from "../../utils";
+import { calcFinykSpendingTotal } from "../../utils";
+import { useFlowSchedule } from "./useFlowSchedule";
 import type { useStorage } from "../../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../../hooks/useUnifiedFinanceData";
 
-import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
 import {
   getLimitBudgets,
@@ -30,13 +26,8 @@ import {
   filterStatTransactions,
   withManualExpenses,
 } from "@sergeant/finyk-domain/domain/transactions";
-import { kyivCalendarDaysBetween } from "@sergeant/shared";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
-import {
-  getKyivDateParts,
-  getDaysInMonth,
-  getKyivDayKey,
-} from "@shared/lib/time/kyivTime";
+import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { logger } from "@shared/lib";
 import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { filterToKyivMonth, txEpochMs } from "../../lib/monthWindow";
@@ -45,32 +36,6 @@ type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
 
 // ── Pure helpers ────────────────────────────────────────────────────
-
-const parseLocalDate = (isoDate: string | null | undefined): Date => {
-  const [y, m, d] = (isoDate || "").split("-").map(Number);
-  return new Date(y ?? 0, (m || 1) - 1, d || 1);
-};
-
-const formatDaysLeft = (days: number): string => {
-  if (days === 0) return "сьогодні";
-  if (days === 1) return "завтра";
-  if (days <= 3) return `через ${days} дн`;
-  return `через ${days} дн`;
-};
-
-// `today` carries the Kyiv-anchored calendar parts of "now" (year, 0-based
-// month, day) so the billing rollover math stays on the Europe/Kyiv day
-// boundary regardless of the device timezone.
-const getNextBillingDate = (
-  billingDay: number,
-  today: { year: number; month: number; day: number },
-): Date => {
-  const { year: y, month: m, day } = today;
-  let d = new Date(y, m, Math.min(billingDay, getDaysInMonth(y, m)));
-  if (d < new Date(y, m, day))
-    d = new Date(y, m + 1, Math.min(billingDay, getDaysInMonth(y, m + 1)));
-  return d;
-};
 
 // ── Hook ────────────────────────────────────────────────────────────
 
@@ -312,112 +277,19 @@ export function useOverviewData({
     [limitBudgets, statTx, txCategories, txSplits, customCategories],
   );
 
-  // Memoize the Kyiv day-start epoch so it is a stable primitive: it only
-  // changes when the calendar day rolls over. Deriving it inline from a `new
-  // Date(...)` each render makes React Compiler treat the Date-derived value as
-  // potentially-mutable and skip memoization of every flow that depends on it;
-  // the wrapped primitive keeps the dependency arrays below simple expressions
-  // and lets the debt/subscription flow memos below preserve cleanly.
-
-  const todayStartMs = useMemo(
-    () => new Date(kyivYear, kyivMonth, kyivDay).getTime(),
-    [kyivYear, kyivMonth, kyivDay],
-  );
-
-  const subscriptionFlows = useMemo(
-    () =>
-      subscriptions.map((sub) => {
-        const { amount, currency } = getSubscriptionAmountMeta(
-          sub,
-          transactions,
-        );
-        const dueDate = getNextBillingDate(Number(sub.billingDay) || 1, {
-          year: kyivYear,
-          month: kyivMonth,
-          day: kyivDay,
-        });
-        const daysLeft = kyivCalendarDaysBetween(
-          dueDate.getTime(),
-          todayStartMs,
-        );
-        return {
-          id: `sub-${sub.id}`,
-          // AI-CONTEXT (2026-08-21): тут клеївся `sub.emoji`. Поле
-          // ЖОДНОГО разу не редагується користувачем — форма підписки
-          // не має для нього поля, тож у ньому завжди лежав засіяний
-          // дефолт «📱». Тобто це був не вибір людини, а хардкод
-          // емодзі, який малювався системним шрифтом. Рядок потоку
-          // показує назву; гліф йому не потрібен.
-          title: sub.name,
-          amount,
-          sign: "-",
-          daysLeft,
-          hint: formatDaysLeft(daysLeft),
-          currency,
-          dueDate,
-        };
-      }),
-    [subscriptions, transactions, todayStartMs, kyivYear, kyivMonth, kyivDay],
-  );
-
-  const debtOutFlows = useMemo(
-    () =>
-      manualDebts
-        .map((d) => ({ ...d, remaining: calcDebtRemaining(d, transactions) }))
-        .filter((d) => d.dueDate && d.remaining > 0)
-        .map((d) => {
-          const daysLeft = kyivCalendarDaysBetween(
-            parseLocalDate(d.dueDate).getTime(),
-            todayStartMs,
-          );
-          return {
-            id: `debt-${d.id}`,
-            title: d.name || "Борг",
-            amount: d.remaining,
-            sign: "-",
-            daysLeft,
-            hint: formatDaysLeft(daysLeft),
-            currency: "₴",
-            dueDate: parseLocalDate(d.dueDate),
-          };
-        }),
-    [manualDebts, transactions, todayStartMs],
-  );
-
-  const debtInFlows = useMemo(
-    () =>
-      receivables
-        .map((r) => ({
-          ...r,
-          remaining: calcReceivableRemaining(r, transactions),
-        }))
-        .filter((r) => r.dueDate && r.remaining > 0)
-        .map((r) => {
-          const daysLeft = kyivCalendarDaysBetween(
-            parseLocalDate(r.dueDate).getTime(),
-            todayStartMs,
-          );
-          return {
-            id: `recv-${r.id}`,
-            title: r.name || "Дебіторка",
-            amount: r.remaining,
-            sign: "+",
-            daysLeft,
-            hint: formatDaysLeft(daysLeft),
-            currency: "₴",
-            dueDate: parseLocalDate(r.dueDate),
-          };
-        }),
-    [receivables, transactions, todayStartMs],
-  );
-
-  const plannedFlows = useMemo(
-    () =>
-      [...subscriptionFlows, ...debtOutFlows, ...debtInFlows]
-        .filter((x) => x.daysLeft >= 0 && x.daysLeft <= 10)
-        .sort((a, b) => a.daysLeft - b.daysLeft),
-    [subscriptionFlows, debtOutFlows, debtInFlows],
-  );
+  // Підписки / борги / «мені винні» як один розклад — спільний хук із
+  // Плануванням («Найближчі платежі» живуть там із 2026-09-03), тут він
+  // живить рядок «регулярні» в «Місяць» і прогноз.
+  const { subscriptionFlows, debtOutFlows, debtInFlows, plannedFlows } =
+    useFlowSchedule({
+      subscriptions,
+      manualDebts,
+      receivables,
+      transactions,
+      kyivYear,
+      kyivMonth,
+      kyivDay,
+    });
 
   const planExpense = Number(monthlyPlan?.expense || 0);
   // "Has a plan" must reflect a real user-set monthly plan. It gates both the
