@@ -4,19 +4,15 @@ import type { Mock } from "vitest";
 const harness = vi.hoisted(() => ({
   pool: { connect: vi.fn(), query: vi.fn() },
   logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn(), debug: vi.fn() },
-  enqueueMemoryIngest: vi.fn(),
   categorizeMcc: vi.fn(() => null),
   decryptAndLazyReencrypt: vi.fn(),
 }));
 
-// historyFetch.ts pulls the pg pool + queue + logger at module load; stub them
-// so the pure helpers can be imported without a database or env.
+// historyFetch.ts pulls the pg pool + logger at module load; stub them so
+// the pure helpers can be imported without a database or env.
 vi.mock("../../db.js", () => ({ pool: harness.pool }));
 vi.mock("../../obs/logger.js", () => ({
   logger: harness.logger,
-}));
-vi.mock("../ai-memory/ingestQueue.js", () => ({
-  enqueueMemoryIngest: harness.enqueueMemoryIngest,
 }));
 vi.mock("./mccCategories.js", () => ({
   categorizeMcc: harness.categorizeMcc,
@@ -243,7 +239,6 @@ describe("runMonoHistoryBackfill", () => {
     expect(client.query).toHaveBeenCalledWith("BEGIN");
     expect(client.query).toHaveBeenCalledWith("COMMIT");
     expect(client.release).toHaveBeenCalledTimes(1);
-    expect(harness.enqueueMemoryIngest).not.toHaveBeenCalled();
     expect(harness.pool.query).toHaveBeenCalledWith(
       expect.stringContaining("UPDATE mono_connection"),
       ["user_1"],

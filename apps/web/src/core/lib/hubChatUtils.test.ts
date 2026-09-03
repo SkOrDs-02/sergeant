@@ -45,10 +45,28 @@ describe("getActiveModule", () => {
 });
 
 describe("friendlyApiError", () => {
-  it("special-cases missing AI key on 500", () => {
-    expect(friendlyApiError(500, "ANTHROPIC key not set")).toBe(
-      "Чат на сервері не налаштовано (немає ключа AI).",
-    );
+  // Regression (аудит `web-qa-pre-beta.md` § 11, 2026-09-03): гілка чекала
+  // `status === 500` і маркер у ТЕКСТІ, а `requireChatUpstreamKey` віддає
+  // 503 з нейтральним `error` і маркером у `body.code` — тобто рівно ту
+  // форму, що нижче. До фіксу цей кейс мапився в серверний текст.
+  it("special-cases the missing upstream key by `code`, on the real 503 shape", () => {
+    expect(
+      friendlyApiError(
+        503,
+        "AI-помічник тимчасово недоступний. Спробуй пізніше.",
+        "ANTHROPIC_KEY_MISSING",
+      ),
+    ).toBe("Чат на сервері не налаштовано (немає ключа AI).");
+  });
+  it("without the code a 503 with a body stays the server's own text", () => {
+    // Той самий статус без маркера — це звичайний збій upstream-у, і
+    // серверне пояснення конкретніше за текст про відсутній ключ.
+    expect(
+      friendlyApiError(
+        503,
+        "AI-помічник тимчасово недоступний. Спробуй пізніше.",
+      ),
+    ).toBe("AI-помічник тимчасово недоступний. Спробуй пізніше.");
   });
   it("special-cases AI quota on 429", () => {
     expect(friendlyApiError(429, "AI_QUOTA exceeded")).toBe(

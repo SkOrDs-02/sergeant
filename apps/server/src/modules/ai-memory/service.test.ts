@@ -128,7 +128,7 @@ describe("AiMemoryService — disabled flag", () => {
     await svc.remember([
       {
         userId: "u1",
-        source: "chat",
+        source: "digest",
         sourceRef: null,
         content: "foo",
       },
@@ -162,8 +162,8 @@ describe("AiMemoryService — enabled", () => {
       enabled: true,
     });
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "a" },
-      { userId: "u1", source: "finyk", sourceRef: "tx-1", content: "b" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "a" },
+      { userId: "u1", source: "cofounder", sourceRef: "tx-1", content: "b" },
     ]);
     expect(embeddings.calls).toBe(1);
     expect(store.upsertCalls).toBe(1);
@@ -184,14 +184,14 @@ describe("AiMemoryService — enabled", () => {
     });
     // Перший факт — пишеться (store порожній, query → []).
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "алергія" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "алергія" },
     ]);
     expect(store.rows).toHaveLength(1);
     // Повторний майже-ідентичний факт — query знаходить score 0.9 ≥ 0.85 → skip.
     await svc.remember([
       {
         userId: "u1",
-        source: "chat",
+        source: "digest",
         sourceRef: null,
         content: "алергія знову",
       },
@@ -209,11 +209,11 @@ describe("AiMemoryService — enabled", () => {
       enabled: true,
     });
     await svc.remember([
-      { userId: "u1", source: "finyk", sourceRef: "tx-1", content: "x" },
+      { userId: "u1", source: "cofounder", sourceRef: "tx-1", content: "x" },
     ]);
     // Навіть якщо є схожий row, sourceRef!=null пишеться завжди (без dedup-query).
     await svc.remember([
-      { userId: "u1", source: "finyk", sourceRef: "tx-2", content: "x" },
+      { userId: "u1", source: "cofounder", sourceRef: "tx-2", content: "x" },
     ]);
     expect(store.rows).toHaveLength(2);
   });
@@ -228,10 +228,10 @@ describe("AiMemoryService — enabled", () => {
       enabled: true,
     });
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "a" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "a" },
     ]);
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "a" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "a" },
     ]);
     expect(store.rows).toHaveLength(2);
   });
@@ -267,8 +267,8 @@ describe("AiMemoryService — enabled", () => {
     });
     await expect(
       svc.remember([
-        { userId: "u1", source: "chat", sourceRef: null, content: "a" },
-        { userId: "u1", source: "chat", sourceRef: null, content: "b" }, // 2 inputs ≠ 1 vec
+        { userId: "u1", source: "digest", sourceRef: null, content: "a" },
+        { userId: "u1", source: "digest", sourceRef: null, content: "b" }, // 2 inputs ≠ 1 vec
       ]),
     ).rejects.toThrow(/2 inputs/);
     expect(store.upsertCalls).toBe(0);
@@ -280,7 +280,7 @@ describe("AiMemoryService — enabled", () => {
     await store.upsert([
       {
         userId: "u1",
-        source: "chat",
+        source: "digest",
         sourceRef: null,
         content: "old chat",
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
@@ -324,7 +324,7 @@ describe("AiMemoryService — enabled", () => {
     await store.upsert([
       {
         userId: "u1",
-        source: "chat",
+        source: "digest",
         sourceRef: null,
         content: "a",
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
@@ -351,7 +351,7 @@ describe("AiMemoryService — enabled", () => {
     await store.upsert([
       {
         userId: "u1",
-        source: "finyk",
+        source: "cofounder",
         sourceRef: "tx-1",
         content: "a",
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
@@ -364,7 +364,7 @@ describe("AiMemoryService — enabled", () => {
       },
       {
         userId: "u1",
-        source: "finyk",
+        source: "cofounder",
         sourceRef: "tx-2",
         content: "b",
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4),
@@ -381,7 +381,7 @@ describe("AiMemoryService — enabled", () => {
       vectorStore: store,
       enabled: true,
     });
-    await svc.forgetSource("u1", "finyk", "tx-1");
+    await svc.forgetSource("u1", "cofounder", "tx-1");
     expect(store.rows).toHaveLength(1);
     expect(store!.rows[0]!.sourceRef).toBe("tx-2");
   });
@@ -408,7 +408,7 @@ describe("AiMemoryService — enabled", () => {
       enabled: true,
     });
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "a" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "a" },
     ]);
     expect(embeddings.calls).toBe(0);
     expect(store.upsertCalls).toBe(0);
@@ -453,7 +453,7 @@ describe("AiMemoryService — per-user consent", () => {
     });
 
     await svc.remember([
-      { userId: "u1", source: "chat", sourceRef: null, content: "private" },
+      { userId: "u1", source: "digest", sourceRef: null, content: "private" },
     ]);
 
     expect(embeddings.calls).toBe(0);

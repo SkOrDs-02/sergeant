@@ -160,25 +160,27 @@ vi.mock("../http/index.js", async () => {
     await vi.importActual<typeof import("../http/index.js")>(
       "../http/index.js",
     );
+  const testSessionMiddleware = (
+    req: express.Request,
+    res: express.Response,
+    next: express.NextFunction,
+  ) => {
+    const userId = req.get("x-test-user-id");
+    if (!userId) {
+      res.status(401).json({ ok: false, code: "UNAUTHENTICATED" });
+      return;
+    }
+    res.locals["sessionUser"] = { id: userId };
+    next();
+  };
   return {
     ...actual,
     rateLimitExpress: () => (_req: unknown, _res: unknown, next: () => void) =>
       next(),
-    requireSession:
-      () =>
-      (
-        req: express.Request,
-        res: express.Response,
-        next: express.NextFunction,
-      ) => {
-        const userId = req.get("x-test-user-id");
-        if (!userId) {
-          res.status(401).json({ ok: false, code: "UNAUTHENTICATED" });
-          return;
-        }
-        res.locals["sessionUser"] = { id: userId };
-        next();
-      },
+    requireSession: () => testSessionMiddleware,
+    // `connect` / `disconnect` стоять під fresh-варіантом (аудит 2026-08-05
+    // § 7а); для wiring-тесту семантика та сама — сесія з хедера.
+    requireFreshSession: () => testSessionMiddleware,
     requireVerifiedEmail:
       () =>
       (

@@ -38,7 +38,15 @@ const { getSessionUserMock } = vi.hoisted(() => ({
 
 vi.mock("../../auth.js", async (importOriginal) => {
   const actual = await importOriginal<typeof import("../../auth.js")>();
-  return { ...actual, getSessionUser: getSessionUserMock };
+  // `/api/me/export` і `DELETE /api/me` стоять під `requireFreshSession()`
+  // → `getFreshSessionUser`. Реальний `getFreshSessionUser` викликає
+  // ВНУТРІШНІЙ `getSessionUser` (не мок), тож без цього override сесія
+  // резолвилась би через Better Auth у 401.
+  return {
+    ...actual,
+    getSessionUser: getSessionUserMock,
+    getFreshSessionUser: getSessionUserMock,
+  };
 });
 
 const TEST_USER_ID = "user_datarights_int";

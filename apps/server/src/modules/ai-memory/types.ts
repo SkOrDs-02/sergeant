@@ -18,14 +18,24 @@
  * мають співпадати. Додавання нового source-у — двофазне:
  *  1. PR що бампить ALLOWED_SOURCES + relax-ить CHECK-constraint.
  *  2. PR що додає ingestion-hook для нового source-у.
+ *
+ * Звужено ініціативою 0024 (PR-1, 2026-09-03): `chat`, `finyk`, `fizruk`,
+ * `nutrition`, `routine`, `journal` прибрані — жоден із них ніколи не мав
+ * продюсера в дереві (замір: `docs/90-work/initiatives/0024-ai-memory-
+ * source-coverage.md` § Перезамір 2026-09-03). CHECK-constraint у БД поки
+ * що дозволяє старі значення — це фаза 1 двофазного звуження; фаза 2
+ * (DROP + двофазний CHECK) — PR-3 тієї ж ініціативи. Зворотний шлях (якщо
+ * колись знадобиться `chat` як окреме джерело) — той самий двофазний
+ * процес у зворотному напрямку: спершу розширити ALLOWED_MEMORY_SOURCES +
+ * CHECK, потім додати продюсер.
+ *
+ * `cofounder` і `product` лишаються в списку, хоч їхні продюсери
+ * (`backfill.ts`, `eventSync.ts`) видалені PR #928 (2026-08-29) — вони не
+ * входять у цю чистку, бо в БД можуть лишатись legacy-рядки, які мають
+ * читатись/видалятись через UI (список у `RESERVED_SOURCES` нижче,
+ * `sources.test.ts` це охороняє).
  */
 export const ALLOWED_MEMORY_SOURCES = [
-  "chat",
-  "finyk",
-  "fizruk",
-  "nutrition",
-  "routine",
-  "journal",
   "digest",
   // LEGACY-source: писався OpenClaw-архівом (`tg_topic_archive` backfill,
   // ADR-0031). OpenClaw retired (ADR-0075), backfill-механіку знято
@@ -49,6 +59,22 @@ export const ALLOWED_MEMORY_SOURCES = [
   // наповнене, не порожнє.
   "profile",
 ] as const;
+
+/**
+ * Джерела без активного продюсера в дереві, залишені в
+ * `ALLOWED_MEMORY_SOURCES` навмисно (не за недоглядом). `sources.test.ts`
+ * вимагає, щоб кожне значення `ALLOWED_MEMORY_SOURCES` мало або продюсера
+ * (`enqueueMemoryIngest({ source: "..." })` десь у дереві), або запис тут
+ * із посиланням на рішення.
+ *
+ * `cofounder` і `product` — тимчасово порожні продюсери (PR #928 видалив
+ * `backfill.ts` / `eventSync.ts`, 2026-08-29), лишені для legacy-рядків;
+ * ADR/рішення — `docs/90-work/initiatives/0024-ai-memory-source-coverage.md`.
+ */
+export const RESERVED_SOURCES: readonly MemorySource[] = [
+  "cofounder",
+  "product",
+];
 
 export type MemorySource = (typeof ALLOWED_MEMORY_SOURCES)[number];
 

@@ -284,6 +284,57 @@ export const auth = betterAuth({
   user: {
     deleteUser: {
       enabled: true,
+      /**
+       * Живий шлях видалення акаунта — `POST /api/auth/delete-user` з
+       * `DangerZoneSection.tsx`. До цього хука Better Auth робив лише
+       * `DELETE FROM "user"` (каскад прибирав доменні дані), а все, що
+       * живе в `modules/me/dataRights.ts::deleteUserData`, — best-effort
+       * скасування підписки у Stripe / LiqPay / Plata, `subscriptions →
+       * canceled`, purge `ai_usage_daily` (без FK, каскад не дістає),
+       * enqueue у `gdpr_cleanup_queue` — на живому шляху **не виконувалось
+       * ніколи**: воно висіло тільки на `DELETE /api/me`, який ніхто не
+       * викликає. Наслідок — видалений акаунт продовжував оплачуватись
+       * (аудит `docs/90-work/audits/2026-08-05-orphaned-code-audit.md`
+       * § 3, п. 1).
+       *
+       * Тому хук виконує САМ `deleteUserData` — один шлях для обох входів,
+       * і контракт-тест на `DELETE /api/me` знов покриває реальність.
+       * `deleteUserData` завершується `DELETE FROM "user"` у транзакції,
+       * після чого власний `internalAdapter.deleteUser` Better Auth стає
+       * no-op (0 рядків — Drizzle не кидає). Провайдер-помилка всередині —
+       * warn-лог `delete_user_provider_cancel_failed` і продовження (ADR-0016
+       * best-effort; Stripe-ретрай іде через `gdpr_cleanup_queue`).
+       *
+       * Fail-safe: якщо `deleteUserData` кинув (БД недоступна), транзакція
+       * відкочена, акаунт лишається **цілим**, а не напіввидаленим — ми
+       * логуємо error і пробросуємо `APIError`, щоб Better Auth не дійшов до
+       * власного DELETE і клієнт побачив помилку замість «Акаунт видалено».
+       *
+       * Динамічний import — щоб `auth.ts` (його тягне кожен роутер через
+       * `requireSession`) не тягнув billing-реєстр у свій статичний граф.
+       */
+      beforeDelete: async (user) => {
+        const [{ deleteUserData }, { pool }] = await Promise.all([
+          import("./modules/me/dataRights.js"),
+          import("./db.js"),
+        ]);
+        try {
+          await deleteUserData(pool, user.id);
+        } catch (err) {
+          logger.error(
+            {
+              event: "auth.user.delete.before_hook_failed",
+              user_id_hash: hashUserId(user.id),
+              err: err instanceof Error ? err.message : String(err),
+            },
+            "deleteUserData threw in user.deleteUser.beforeDelete — account left intact",
+          );
+          throw new APIError("INTERNAL_SERVER_ERROR", {
+            code: "ACCOUNT_DELETE_FAILED",
+            message: "Не вдалося видалити акаунт. Спробуй ще раз.",
+          });
+        }
+      },
     },
     /**
      * Зміна email із профілю. До цього блоку `POST /api/auth/change-email`

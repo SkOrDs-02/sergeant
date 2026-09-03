@@ -35,7 +35,7 @@ import { meApi } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { aiMemoryKeys } from "@shared/lib/api/queryKeys";
 import { cn } from "@shared/lib/ui/cn";
-import type { AiMemoryListItem } from "@sergeant/api-client";
+import { isApiError, type AiMemoryListItem } from "@sergeant/api-client";
 
 // V-8 (аудит 2026-08-08): переїзд із локального `ConfirmModal` на канонічний
 // портальний `ConfirmDialog` — причина в `FinykWebhookServiceSection.tsx`.
@@ -55,14 +55,16 @@ const AUTO_OPEN_MAX_ITEMS = 5;
 /** Довші за це факти обрізаються до трьох рядків із кнопкою розгортання. */
 const CLAMP_CHARS = 160;
 
-/** Людські назви джерел. Ключі — `ALLOWED_MEMORY_SOURCES` на сервері. */
+/**
+ * Людські назви джерел. Ключі — `ALLOWED_MEMORY_SOURCES` на сервері.
+ *
+ * Ініціатива 0024 (PR-1, 2026-09-03) звузила серверний enum до чотирьох
+ * живих джерел — `chat`/`finyk`/`fizruk`/`nutrition`/`routine`/`journal`
+ * ніколи не мали продюсера в дереві. Мітки для них прибрані; fallback
+ * `?? item.source` нижче лишається на випадок старих рядків у БД (CHECK-
+ * constraint звужується двофазно, PR-3 тієї ж ініціативи).
+ */
 const SOURCE_LABEL: Record<string, string> = {
-  chat: "Чат",
-  finyk: "Фінік",
-  fizruk: "Фізрук",
-  nutrition: "Їжа",
-  routine: "Рутина",
-  journal: "Щоденник",
   digest: "Підсумок тижня",
   cofounder: "Співзасновник",
   // Рішення власника 2026-08-18: «Продукт» нічого не пояснювало. Ці рядки —
@@ -379,6 +381,17 @@ export function AiMemoryList() {
   }
 
   if (query.isError) {
+    // 401/403 — гість, не збій: список за `requireSession()`. Той самий
+    // патерн, що й у `PrivacySection.loadPreferences` («Увійди в акаунт,
+    // щоб…»), і той самий примітив, що й у порожнього стану нижче — це
+    // саме порожній стан з іншою причиною, а не помилка.
+    if (
+      isApiError(query.error) &&
+      query.error.kind === "http" &&
+      query.error.isAuth
+    ) {
+      return <EmptyState size="sm" description={m.authRequired} />;
+    }
     return (
       <p className="text-style-caption text-danger-strong" role="alert">
         {m.loadError}

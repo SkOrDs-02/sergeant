@@ -122,6 +122,23 @@ export declare const moduleAccentRgb: Readonly<
 >;
 
 /**
+ * Стіл і зона — фон сторінки (`desk`) і смуга під шапкою модуля (`zone`),
+ * hex per theme. Mirrors `moduleSurfaces` in `tokens.js`; the CSS side is
+ * `--module-desk-rgb` / `--module-zone-rgb` in `theme.css`.
+ */
+export interface ModuleSurfacePair {
+  readonly desk: string;
+  readonly zone: string;
+}
+
+export declare const moduleSurfaces: Readonly<
+  Record<
+    ModuleAccent | "hub",
+    Readonly<{ light: ModuleSurfacePair; dark: ModuleSurfacePair }>
+  >
+>;
+
+/**
  * «Чорнило» (Ink) — dark-first surface + text scale. Mirrors `inkTheme` in
  * `tokens.js`; the runtime export existed since the Чорнило direction landed,
  * but was missing here, so TypeScript consumers could not reach it.

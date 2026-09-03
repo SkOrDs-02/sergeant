@@ -79,8 +79,9 @@ describe("ModuleHeader", () => {
 
     expect(screen.getByTestId("title-slot")).toHaveTextContent("Custom title");
     expect(screen.queryByRole("tablist")).toBeNull();
+    // Шапка модуля стоїть на зоні (`--module-zone-rgb`), а не на градієнті.
     expect((container.firstElementChild as HTMLElement).className).toContain(
-      "from-finyk/5",
+      "bg-zone",
     );
   });
 
