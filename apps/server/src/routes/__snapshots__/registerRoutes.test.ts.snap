@@ -57,7 +57,6 @@ exports[`registerRoutes > mounts the stable set of /api/* endpoints (snapshot) 1
   "GET /readyz",
   "GET /startupz",
   "PATCH /api/me/preferences",
-  "POST /api/ai-memory/ingest",
   "POST /api/ai-memory/recall",
   "POST /api/billing/cancel",
   "POST /api/billing/checkout",
