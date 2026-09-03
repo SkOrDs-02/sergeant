@@ -1,7 +1,7 @@
 # 0025 — PostHog AI Observability для AI-шару (traces + evals)
 
-> **Last touched:** 2026-08-25 by @claude (спека за результатами розвідки екосистеми — сесія research-plugins-news). **Next review:** 2027-03-14.
-> **Status:** Proposed (2026-08-25) — драфт плану; не почато. Фази 1–2 виконуються без рішень власника; Фаза 3 (LLM-judge evals) чекає рішень — див. § Відкриті рішення.
+> **Last touched:** 2026-09-03 by @claude (Фаза 1 реалізована — `posthogAi.ts`, тумблер `POSTHOG_AI_OBSERVABILITY_KEY`). **Next review:** 2027-03-14.
+> **Status:** In progress (2026-09-03) — Фаза 1 у коді (див. § Прогрес), Фаза 2 не почата. Фази 1–2 виконуються без рішень власника; Фаза 3 (LLM-judge evals) чекає рішень — див. § Відкриті рішення.
 > **Agent-ready:** yes
 > **Priority:** P2 (не блокер launch-у [0010](./0010-revenue-first-launch.md); без цього AI-шар лишається чорною скринькою на рівні розмов — дебаг скарг і контроль якості коуча зараз неможливі)
 > **Owner:** `@SkOrDs-02`
@@ -63,6 +63,16 @@ AI-шар (HubChat, weekly digest, vision-аналіз чеків і їжі) с�
 - **Без контенту**: `$ai_input`/`$ai_output_choices` не заповнюються ніколи (privacy-first за конструкцією, узгоджено з Hard Rule #21 і `llmRedaction.ts`).
 - **Fail-open** як у ledger: помилка PostHog глушиться `logger.warn`, виклик Anthropic не ламається.
 - Graceful shutdown сервера → `posthog.shutdown()`; для одноразових процесів (migrate-style джоби, якщо колись слатимуть) — `flush()`.
+
+#### Прогрес Фази 1 (2026-09-03)
+
+- [x] `posthog-node@5.51.6` (exact) у `apps/server`; singleton у [`apps/server/src/lib/posthogAi.ts`](../../../apps/server/src/lib/posthogAi.ts): EU host (`POSTHOG_HOST` або `https://eu.i.posthog.com`), `disableGeoip`, `privacyMode`, без autocapture; слухач `error` SDK → `logger.warn`.
+- [x] Тумблер — серверний env `POSTHOG_AI_OBSERVABILITY_KEY` (ingestion key; задано → увімкнено). Зафіксовано в `env/env.ts`, [`feature-flags.md § 3.3`](../../02-engineering/architecture/feature-flags.md#33-інфраструктура-і-спостережуваність), [`env-vars.md § 14`](../../02-engineering/integrations/env-vars.md#14-posthog-product-analytics), [`observability/env-vars.md`](../../03-operations/observability/env-vars.md).
+- [x] `$ai_generation` з `recordUsage` (non-stream, з латентністю і `$ai_http_status`), з `recordAnthropicUsage(..., meta)` для стріму (chat передає `provider`/`elapsedMs` з `AnthropicStreamResult`), на всі помилки клієнта (`$ai_is_error`, статус для HTTP-помилок; timeout/мережа — без статусу), і з `recordOpenRouterUsage` у `lib/llm/provider.ts` (`$ai_provider=openrouter`, без латентності — цей шар її не міряє).
+- [x] Enforcement § «Контракт даних»: `captureAiGeneration` приймає типізований `AiGenerationEvent`, `buildAiGenerationProperties` збирає властивості явним перелічуванням; unit-тест фіксує, що `$ai_input`/`$ai_output_choices`/бізнес-поля відкидаються.
+- [x] Fail-open на всіх шляхах (`posthogAi.test.ts`, `anthropic.test.ts`); graceful shutdown → `shutdownPostHogAi(2000)` після Sentry-flush в `index.ts`; `flushPostHogAi()` для одноразових процесів.
+- [ ] Перевірка на живих подіях у PostHog після деплою з ключем (критерій DONE #3) — операторська дія.
+- Відхилення від плану: `$ai_trace_id` у Фазі 1 — випадковий UUID per-call (PostHog вимагає поле для групування); стабільний id розмови/прогону приходить у Фазі 2 через `AnthropicCallOptions.traceId`.
 
 ### Фаза 2 — Trace-дерево: tool-loop, digest, vision
 
