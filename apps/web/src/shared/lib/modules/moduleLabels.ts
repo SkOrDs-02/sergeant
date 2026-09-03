@@ -9,13 +9,15 @@
 // Тримаємо константу у `shared/lib`, щоб імпорт не тягнув за собою
 // увесь onboarding-модуль.
 
+import { DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
 import type { HubModuleId } from "./hubNav";
 
 export type { HubModuleId };
 
-export const MODULE_LABELS: Record<HubModuleId, string> = {
-  finyk: "Фінік",
-  fizruk: "Фізрук",
-  routine: "Рутина",
-  nutrition: "Їжа",
-};
+// Реекспорт, а не власний літерал. Дублікат тут уже стояв і розійшовся з
+// `DASHBOARD_MODULE_LABELS` на `nutrition` («Їжа» проти «Харчування»), тобто
+// файл, створений щоб прибрати два імені одного модуля, сам став другим
+// іменем. `HubModuleId` і `DashboardModuleId` — той самий набір із чотирьох
+// id, тож типи сходяться без приведення.
+export const MODULE_LABELS: Record<HubModuleId, string> =
+  DASHBOARD_MODULE_LABELS;

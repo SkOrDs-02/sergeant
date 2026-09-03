@@ -5,6 +5,8 @@ import { Modal } from "@shared/components/ui/Modal";
 import { Select } from "@shared/components/ui/Select";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
+import { useLocalUserId } from "../../../core/auth/useLocalUserId";
+import { resolveStrongIdNamespace } from "../lib/strongIdNamespace";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 import {
   commitStrongImport,
@@ -29,6 +31,13 @@ export function StrongImportReview({
 }: StrongImportReviewProps) {
   const copy = messages.fizruk.strongImport;
   const toast = useToast();
+  // Неймспейс детермінованих id імпорту. Для справжнього акаунта — його id
+  // (він же поїде в `user_id`), для анонімної/демо-сесії — id пристрою,
+  // бо `LOCAL_ANON_USER_ID` спільний для всіх таких сесій. Повний розбір —
+  // `lib/strongIdNamespace.ts`. `null` = сесія ще резолвиться; імпортувати
+  // в цей момент не можна.
+  const localUserId = useLocalUserId();
+  const idNamespace = resolveStrongIdNamespace(localUserId);
   const [workoutText, setWorkoutText] = useState("");
   const [weightText, setWeightText] = useState("");
   const [weightUnit, setWeightUnit] = useState<StrongWeightUnit>("kg");
@@ -39,9 +48,10 @@ export function StrongImportReview({
     try {
       const draft = parseStrongWorkoutCsv(workoutText, weightUnit);
       const matches = matchStrongExercises(draft, exercises);
-      const weightDraft = weightText.trim()
-        ? parseStrongWeightCsv(weightText)
-        : undefined;
+      const weightDraft =
+        weightText.trim() && idNamespace
+          ? parseStrongWeightCsv(weightText, idNamespace)
+          : undefined;
       return { draft, matches, weightDraft, error: null };
     } catch (error) {
       return {
@@ -51,13 +61,20 @@ export function StrongImportReview({
         error: error instanceof Error ? error.message : copy.parseFailed,
       };
     }
-  }, [copy.parseFailed, exercises, weightText, weightUnit, workoutText]);
+  }, [
+    copy.parseFailed,
+    exercises,
+    idNamespace,
+    weightText,
+    weightUnit,
+    workoutText,
+  ]);
 
   const unresolved =
     parsed?.matches.filter((match) => match.status !== "auto") ?? [];
   const autoMatched =
     parsed?.matches.filter((match) => match.status === "auto") ?? [];
-  const canSubmit = Boolean(parsed?.draft && !parsed.error);
+  const canSubmit = Boolean(parsed?.draft && !parsed.error && idNamespace);
 
   // Лічильники рахуються з резолвленого вибору, а не з файлу: пропущені
   // назви забирають зі собою всі свої підходи, а тренування без жодної
@@ -94,11 +111,12 @@ export function StrongImportReview({
     selection[match.strongName] ?? match.autoExerciseId ?? "";
 
   const submit = () => {
-    if (!parsed?.draft || parsed.error) return;
+    if (!parsed?.draft || parsed.error || !idNamespace) return;
     const result = commitStrongImport(
       parsed.draft,
       parsed.matches,
       selection,
+      idNamespace,
       parsed.weightDraft,
       exercises,
     );

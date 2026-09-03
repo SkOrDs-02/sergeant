@@ -111,7 +111,7 @@ export const CAPABILITY_MODULE_META: Record<
   finyk: { title: "Фінік", icon: "wallet" },
   fizruk: { title: "Фізрук", icon: "dumbbell" },
   routine: { title: "Рутина", icon: "check" },
-  nutrition: { title: "Харчування", icon: "utensils" },
+  nutrition: { title: "Їжа", icon: "utensils" },
   cross: { title: "Кросмодульні", icon: "sparkles" },
   analytics: { title: "Аналітика", icon: "bar-chart" },
   utility: { title: "Утиліти", icon: "tool" },

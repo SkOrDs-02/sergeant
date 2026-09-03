@@ -230,7 +230,7 @@ describe("ChatMessage — посилання на модуль під картк
     ["finyk", "/finyk", "Фінік"],
     ["fizruk", "/fizruk", "Фізрук"],
     ["routine", "/routine", "Рутина"],
-    ["nutrition", "/nutrition", "Харчування"],
+    ["nutrition", "/nutrition", "Їжа"],
   ])("%s веде на %s", (module, href, label) => {
     renderInRouter(
       <ChatMessage

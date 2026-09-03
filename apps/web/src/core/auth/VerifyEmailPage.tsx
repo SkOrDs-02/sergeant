@@ -37,6 +37,32 @@ const FALLBACK_ERROR_COPY =
   "Не вдалося підтвердити email. Запроси новий лист у профілі.";
 
 /**
+ * Заголовок і текст на кожну гілку результату. `failed` тут лише для повноти
+ * мапи — його текст приходить із `ERROR_COPY` за кодом помилки.
+ */
+const HEADING_COPY: Readonly<Record<string, string>> = {
+  failed: "Не вийшло підтвердити",
+  syncing: "Перевіряю підтвердження",
+  verified: "Email підтверджено",
+  notVerified: "Email ще не підтверджено",
+  unknown: "Перевір статус у профілі",
+};
+
+const BODY_COPY: Readonly<Record<string, string>> = {
+  failed: "",
+  syncing: "Оновлюю профіль…",
+  verified: "Готово. Зараз поверну тебе в застосунок.",
+  // Людина дійшла сюди без справжнього підтвердження — найчастіше це
+  // закладка чи лист, якому поштовий клієнт обрізав посилання.
+  notVerified:
+    "Схоже, ти відкрив цю сторінку без посилання з листа. Відкрий лист повністю або запроси новий у профілі.",
+  // Лист відкрито в іншому браузері, де сесії немає, тож звідси стану не
+  // видно. Не стверджуємо ні успіху, ні провалу.
+  unknown:
+    "Тут не видно статусу без входу. Увійди, і актуальний стан буде в профілі.",
+};
+
+/**
  * Лендинг підтвердження email.
  *
  * Сам факт верифікації вже стався на сервері до цього редиректу — сторінка
@@ -51,7 +77,7 @@ const FALLBACK_ERROR_COPY =
 export function VerifyEmailPage() {
   const [searchParams] = useSearchParams();
   const navigate = useNavigate();
-  const { refresh, status } = useAuth();
+  const { refresh, status, user } = useAuth();
   const errorCode = searchParams.get("error");
 
   // `failed` — похідне від URL, а не стан: сторінка змонтована рівно один раз
@@ -60,6 +86,32 @@ export function VerifyEmailPage() {
   // «синхронізацію клієнта завершено».
   const failed = Boolean(errorCode);
   const [synced, setSynced] = useState(false);
+
+  // AI-DANGER: до 2026-09-03 ця сторінка вважала УСПІХОМ будь-який візит без
+  // `?error=` — тобто казала «Email підтверджено» і закладці, і вручну
+  // набраному URL, і листу, якому поштовий клієнт обрізав query-параметри.
+  // Токен вона не перевіряє взагалі (справжня верифікація стається на сервері
+  // до редиректу), тож «немає помилки» ≠ «підтверджено».
+  //
+  // Реального стану псувати це не могло — сервер без валідного токена нічого
+  // не позначає, і профіль далі чесно показував «Не підтверджено». Але
+  // застосунок брехав людині у безпековому контексті: не побачивши листа, вона
+  // йшла далі впевнена, що акаунт підтверджено.
+  //
+  // Тепер джерелом істини є сесія: після `refresh()` ми знаємо фактичний
+  // `emailVerified`. Гілок три, і «не знаю» більше не видається за «готово».
+  const verifiedNow = user?.emailVerified === true;
+  const outcome: "failed" | "syncing" | "verified" | "notVerified" | "unknown" =
+    failed
+      ? "failed"
+      : !synced
+        ? "syncing"
+        : status === "unauthenticated"
+          ? "unknown"
+          : verifiedNow
+            ? "verified"
+            : "notVerified";
+  const isProblem = outcome === "failed" || outcome === "notVerified";
 
   useEffect(() => {
     if (failed) return;
@@ -80,13 +132,16 @@ export function VerifyEmailPage() {
   // зрозумів би, чи спрацювало підтвердження.
   useEffect(() => {
     if (!synced) return;
+    // Не відносимо зі сторінки, коли підтвердження НЕ відбулось: людина має
+    // встигнути прочитати, що робити далі.
+    if (outcome === "notVerified") return;
     const target = status === "unauthenticated" ? SIGN_IN_PATH : "/";
     const timer = window.setTimeout(
       () => navigate(target, { replace: true }),
       POST_SUCCESS_REDIRECT_MS,
     );
     return () => window.clearTimeout(timer);
-  }, [synced, status, navigate]);
+  }, [synced, status, navigate, outcome]);
 
   // Heading-focus pattern — той самий, що у `ResetPasswordPage`: SR-юзер
   // отримує контекст сторінки до того, як дійде до кнопки.
@@ -117,13 +172,13 @@ export function VerifyEmailPage() {
             <span
               aria-hidden="true"
               className={
-                failed
+                isProblem
                   ? "inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-danger/10 text-danger-strong dark:text-danger"
                   : "inline-flex items-center justify-center w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-strong"
               }
             >
               <Icon
-                name={failed ? "alert" : "check"}
+                name={isProblem ? "alert" : "check"}
                 size={22}
                 strokeWidth={2.5}
               />
@@ -133,28 +188,26 @@ export function VerifyEmailPage() {
               tabIndex={-1}
               className="text-style-display text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
             >
-              {failed ? "Не вийшло підтвердити" : "Email підтверджено"}
+              {HEADING_COPY[outcome]}
             </h2>
           </div>
 
           <p
-            role={failed ? "alert" : "status"}
+            role={isProblem ? "alert" : "status"}
             className={
-              failed
+              isProblem
                 ? "text-style-label text-text bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 leading-relaxed"
                 : "text-style-label text-subtle text-center leading-relaxed"
             }
           >
-            {failed
+            {outcome === "failed"
               ? (errorCode && ERROR_COPY[errorCode]) || FALLBACK_ERROR_COPY
-              : synced
-                ? "Готово. Зараз поверну тебе в застосунок."
-                : "Оновлюю профіль…"}
+              : BODY_COPY[outcome]}
           </p>
 
           <Button
             type="button"
-            variant={failed ? "secondary" : "primary"}
+            variant={isProblem ? "secondary" : "primary"}
             size="lg"
             className="w-full"
             onClick={() =>

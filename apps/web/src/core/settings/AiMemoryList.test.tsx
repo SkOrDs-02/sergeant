@@ -75,7 +75,7 @@ describe("AiMemoryList", () => {
     );
     renderList();
     expect(await screen.findByText("Алергія на горіхи")).toBeTruthy();
-    expect(screen.getByText(/Харчування/)).toBeTruthy();
+    expect(screen.getByText(/Їжа/)).toBeTruthy();
   });
 
   it("порожня памʼять → пояснення, а не порожнеча", async () => {
@@ -197,7 +197,7 @@ describe("AiMemoryList", () => {
     // Джерела лишаються видимими — це і є згорнутий зміст памʼяті.
     expect(
       screen.getByRole("button", {
-        name: /Показати факти джерела: Харчування/,
+        name: /Показати факти джерела: Їжа/,
       }),
     ).toBeTruthy();
 

@@ -15,6 +15,7 @@ import { webKVStore } from "@shared/lib/storage/storage";
 import { getSession } from "../auth/authClient";
 
 import { classifyOutboxBootOutcome } from "./outboxBoot";
+import { emitSyncOutboxChanged } from "./outboxChanged";
 import { setOutboxEnqueueNudge } from "./outboxNudge";
 import {
   createSyncEngineWriterRuntime,
@@ -542,6 +543,9 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     limit: 100,
     originDeviceId: shared.originDeviceId,
     onTickComplete: (result) => {
+      // Тік міг спорожнити чергу — без цього плашка «Синхронізація · N»
+      // висіла до наступного 30-секундного опитування.
+      emitSyncOutboxChanged();
       if (result.pushed > 0) {
         void bootSyncEngineReader().then((reader) => {
           void reader?.pullOnce();

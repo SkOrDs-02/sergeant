@@ -151,7 +151,9 @@ describe("TrialBanner (audit P1-9)", () => {
     expect(banner.getAttribute("aria-live")).toBe("polite");
     expect(banner.getAttribute("data-trial-banner-variant")).toBe("inline");
     expect(banner.textContent).toContain("3 дні");
-    expect(screen.getByRole("button", { name: /Перейти на Pro/ })).toBeTruthy();
+    expect(
+      screen.getByRole("button", { name: /Перейти на Premium/ }),
+    ).toBeTruthy();
   });
 
   it("switches to the sticky variant when only 1 day remains", async () => {
@@ -186,7 +188,9 @@ describe("TrialBanner (audit P1-9)", () => {
         <TrialBanner now={fixedNow} />
       </Wrapper>,
     );
-    const cta = await screen.findByRole("button", { name: /Перейти на Pro/ });
+    const cta = await screen.findByRole("button", {
+      name: /Перейти на Premium/,
+    });
     fireEvent.click(cta);
     expect(locations.at(-1)).toBe("/pricing?source=trial_banner");
   });

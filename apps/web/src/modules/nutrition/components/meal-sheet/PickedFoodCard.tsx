@@ -15,7 +15,7 @@
  * Status: Active
  * Last validated: 2026-08-22
  */
-import { useCallback, useEffect, useMemo } from "react";
+import { useCallback, useEffect, useMemo, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
@@ -28,6 +28,11 @@ import { macrosForGrams } from "../../lib/foodDb/foodDb";
 import { MAX_PORTION_GRAMS, type MealFormState } from "./mealFormUtils";
 import type { PickedFood } from "./FoodPickerSection";
 
+/** Ідентичність «цей продукт під цією вагою» для гарда перерахунку. */
+function rescaleKey(food: PickedFood, grams: string): string {
+  return `${String(food.id ?? food.name ?? "")}|${grams}`;
+}
+
 interface PickedFoodCardProps {
   form: MealFormState;
   setForm: Dispatch<SetStateAction<MealFormState>>;
@@ -36,6 +41,19 @@ interface PickedFoodCardProps {
   setPickedGrams: Dispatch<SetStateAction<string>>;
   /** Повернутись на крок «source», щоб обрати інший продукт. */
   onChangeProduct: () => void;
+  /**
+   * Не перераховувати макроси на першому рендері.
+   *
+   * Потрібно рівно при РЕДАГУВАННІ прийому: продукт відновлюється з
+   * `foodId`, і без цього прапорця ефект нижче миттю затер би збережені
+   * макроси добутком `per100 × вага`. Для страви, чиї КБЖВ людина
+   * правила руками (або які приїхали з фото), це була б тиха підміна
+   * даних при самому лише відкритті аркуша.
+   *
+   * Далі картка працює як завжди: щойно людина міняє вагу чи продукт,
+   * перерахунок вмикається.
+   */
+  skipInitialRescale?: boolean | undefined;
 }
 
 export function PickedFoodCard({
@@ -45,6 +63,7 @@ export function PickedFoodCard({
   pickedGrams,
   setPickedGrams,
   onChangeProduct,
+  skipInitialRescale = false,
 }: PickedFoodCardProps) {
   // R2-UI-18 · On touch devices the numeric grams field pops the OS numpad
   // over half the sheet; a scroll-snap wheel keeps the value inline. Desktop
@@ -104,6 +123,13 @@ export function PickedFoodCard({
     [setForm],
   );
 
+  // Пара «продукт + вага», під яку макроси вже пораховані. При
+  // редагуванні сідаємо нею одразу на монтуванні, тож перший прогін ефекту
+  // нічого не пише — див. `skipInitialRescale`.
+  const appliedKeyRef = useRef<string | null>(
+    skipInitialRescale ? rescaleKey(pickedFood, pickedGrams) : null,
+  );
+
   // Live-перерахунок при зміні кількості грамів.
   useEffect(() => {
     // Перераховуємо ЛИШЕ під додатну вагу. Порожнє поле — це «людина
@@ -113,6 +139,9 @@ export function PickedFoodCard({
     // Останні пораховані значення чесніші за таку підстановку.
     const grams = Number(String(pickedGrams).trim().replace(",", "."));
     if (!Number.isFinite(grams) || grams <= 0) return;
+    const key = rescaleKey(pickedFood, pickedGrams);
+    if (appliedKeyRef.current === key) return;
+    appliedKeyRef.current = key;
     applyPickedFood(pickedFood, pickedGrams);
   }, [pickedGrams, pickedFood, applyPickedFood]);
 

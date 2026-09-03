@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { DASHBOARD_MODULE_IDS } from "../lib/dashboard";
+import { SEARCH_QUERY_MAX_LEN } from "./bounds";
 
 /**
  * Централізовані zod-схеми для AI/публічних endpoint-ів.
@@ -1218,7 +1219,7 @@ export const PaginationSchema = z.object({
 
 // ────────────────────── Food-search / barcode ──────────────────────
 export const FoodSearchQuerySchema = z.object({
-  q: z.string().trim().min(2).max(120),
+  q: z.string().trim().min(2).max(SEARCH_QUERY_MAX_LEN),
   // `limit` — скільки результатів повернути (1–20, default 8). Query-param
   // приходить рядком — coerce конвертує автоматично.
   limit: z.coerce.number().int().min(1).max(20).default(8),

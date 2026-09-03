@@ -33,6 +33,7 @@ import { hapticTap, hapticSuccess } from "@shared/lib/adapters/haptic";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import { useRoutineRoute } from "./hooks/useRoutineRoute";
+import { ROUTINE_TAB_IDS } from "./components/RoutineBottomNav";
 import { useFinykHubPreview } from "../../core/hub/useFinykHubPreview";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import {
@@ -177,7 +178,15 @@ export function useRoutineAppState({
     "calendar",
     {
       raw: true,
-      validate: (v): v is RoutineMainTab => v === "calendar" || v === "stats",
+      // Звіряємось із КАНОНІЧНИМ списком вкладок, а не з переліком двох.
+      // Тип `RoutineMainTab` — це `"calendar" | "habits" | "stats"`, і поки
+      // тут стояло `v === "calendar" || v === "stats"`, вкладка «Звички»
+      // мовчки не проходила валідацію: після релоаду модуля памʼять
+      // відкидала її і повертала на «Огляд» (browser-QA 2026-09-02).
+      // `ROUTINE_TAB_IDS` походить із того ж `NAV`, що малює нижню
+      // навігацію, тож нова вкладка автоматично стає валідною.
+      validate: (v): v is RoutineMainTab =>
+        (ROUTINE_TAB_IDS as readonly string[]).includes(v as string),
     },
   );
   const mainTab: RoutineMainTab = route.page;

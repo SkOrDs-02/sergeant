@@ -26,6 +26,7 @@ import { usePhotoAnalysis } from "../../hooks/usePhotoAnalysis";
 import { fmtMacro } from "../../lib/nutritionFormat";
 import { PhotoAnalyzeCard } from "../PhotoAnalyzeCard";
 import { PHOTO_PRIVACY_ACK_KEY } from "../PhotoPrivacyNotice";
+import { PhotoAddItemPicker } from "./PhotoAddItemPicker";
 
 interface PhotoStepProps {
   /**
@@ -184,6 +185,19 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
         }
         analyzing={photo.isAnalyzing}
         refining={photo.isRefining}
+        onRemoveItem={photo.removePhotoItem}
+        // Пікер живе тут, а не в картці: пошук по каталогу — сусідній крок
+        // цієї ж шторки, тож `useFoodSearch` лишається в meal-sheet.
+        renderAddItem={(close) => (
+          <PhotoAddItemPicker
+            onAdd={(item) => {
+              photo.addPhotoItem(item);
+              close();
+            }}
+            onCancel={close}
+            busy={photoBusy}
+          />
+        )}
         // «Зрозуміло» на першому фото = і згода, і намір: якщо кадр уже
         // обраний — аналіз стартує одразу (ефект вище зловить зміну гейта).
         onPrivacyAck={() => setPrivacyAcked(true)}

@@ -164,7 +164,7 @@ export const MODULE_CHECKLISTS: Record<DashboardModuleId, ChecklistDefinition> =
     },
     nutrition: {
       moduleId: "nutrition",
-      title: "Харчування: Перші кроки",
+      title: "Їжа: Перші кроки",
       steps: [
         { id: "log_meal", label: "Залогати прийом їжі", action: "log_meal" },
         {

@@ -28,6 +28,8 @@
  * See `docs/whats-new/README.md` для шаблону + how-to.
  */
 
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+
 export type WhatsNewItemKind = "feature" | "fix" | "improvement";
 
 export interface WhatsNewItem {
@@ -231,15 +233,57 @@ export const RELEASES: readonly WhatsNewRelease[] = [
 
 /**
  * Повертає найсвіжіший реліз, якого юзер ще не бачив, або `null` якщо все
- * проглянуто (АБО список пустий). `lastSeenId === null` (новий девайс) —
- * показуємо `RELEASES[0]`. Це навмисно: для свіжо-зареєстрованого юзера
- * "що нового" — фактично "ось що ми нещодавно зробили", і спрощений CTA
- * на доку є валідним FTUX-сурфейсом.
+ * проглянуто (АБО список пустий, АБО реліз старший за сам акаунт).
+ *
+ * AI-DANGER: `lastSeenId === null` (новий девайс) НЕ означає «покажи
+ * RELEASES[0]». До 2026-09-03 означало, і це давало те, що видно у самій
+ * копії релізів: людині, яка зареєструвалась сьогодні, застосунок показував
+ * «Четверта порція за вашими репортами» від 12.08 — тобто дякував за
+ * репорти, яких вона не писала, і звітував про виправлення багів, яких вона
+ * ніколи не бачила (browser-QA 2026-09-02). Ці ноти написані для того, хто
+ * був тут минулого разу; для новачка вони не «ось що ми нещодавно зробили»,
+ * а розмова про спільне минуле, якого не було.
+ *
+ * `HubHomeView` уже намагався це гейтити (`hasFirstRealEntry &&
+ * !inFtuxSession`) і в коментарі називає модал «returning-user-only», але
+ * новий акаунт перетинає обидві умови за кілька хвилин — перший запис і є
+ * виходом із FTUX-вікна. Тобто гейт відсіював перші хвилини, а не перший
+ * візит.
+ *
+ * Тому дата релізу звіряється з датою створення акаунта: реліз, випущений
+ * ДО реєстрації, для цієї людини не «новий». Порівняння по київському
+ * день-ключу — це календарна дата публікації, не персональна доба
+ * (ADR-0078 сюди не застосовується).
+ *
+ * `accountCreatedAt` невідомий (анонімна сесія, legacy-акаунт без поля) →
+ * гейт не діє й поведінка лишається попередньою: краще показати зайве, ніж
+ * мовчки з'їсти ноти справжньому старожилу.
  */
-export function pickRelease(lastSeenId: string | null): WhatsNewRelease | null {
+export function pickRelease(
+  lastSeenId: string | null,
+  accountCreatedAt?: string | null,
+): WhatsNewRelease | null {
   if (RELEASES.length === 0) return null;
   const latest = RELEASES[0];
   if (!latest) return null;
   if (lastSeenId === latest.id) return null;
+  if (lastSeenId === null && isOlderThanAccount(latest, accountCreatedAt)) {
+    return null;
+  }
   return latest;
+}
+
+/**
+ * `true`, якщо реліз опубліковано СТРОГО раніше за день реєстрації.
+ * Реліз того самого дня лишається — людина зареєструвалась у день випуску і
+ * цілком могла застати «до».
+ */
+function isOlderThanAccount(
+  release: WhatsNewRelease,
+  accountCreatedAt: string | null | undefined,
+): boolean {
+  if (!accountCreatedAt) return false;
+  const createdMs = new Date(accountCreatedAt).getTime();
+  if (Number.isNaN(createdMs)) return false;
+  return release.date < getKyivDayKey(createdMs);
 }

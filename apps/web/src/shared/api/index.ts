@@ -112,6 +112,7 @@ export type {
   NutritionPhotoIngredient,
   NutritionPhotoPortion,
   NutritionPhotoResponse,
+  NutritionPhotoItem,
   NutritionPhotoResult,
   NutritionRecipe,
   NutritionRecipesResponse,

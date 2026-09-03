@@ -204,7 +204,10 @@ export function parseStrongWorkoutCsv(
   };
 }
 
-export function parseStrongWeightCsv(text: string): StrongWeightImportDraft {
+export function parseStrongWeightCsv(
+  text: string,
+  idNamespace: string,
+): StrongWeightImportDraft {
   const rows = parseCsvRows(text);
   assertHeader(rows[0], WEIGHT_HEADER, "Strong weight CSV header is unknown");
 
@@ -219,7 +222,7 @@ export function parseStrongWeightCsv(text: string): StrongWeightImportDraft {
     const unit = normalizeWeightUnit(String(row[3] ?? ""));
     const weightKg = weightToKg(parseNumber(String(row[2] ?? "")), unit);
     measurements.push({
-      id: `strong_m_${stableHash(String(row[0] ?? ""))}`,
+      id: measurementId(idNamespace, String(row[0] ?? "")),
       at,
       weightKg,
     });
@@ -242,6 +245,7 @@ export function buildStrongImportState(
   draft: StrongWorkoutImportDraft,
   matches: readonly StrongExerciseMatch[],
   selection: StrongImportSelection,
+  idNamespace: string,
   weightDraft: StrongWeightImportDraft = { measurements: [] },
   pool: readonly FizrukData.RawExerciseDef[] = FizrukData.EXERCISES,
 ): StrongImportBuildResult {
@@ -252,6 +256,12 @@ export function buildStrongImportState(
   const workouts = [...prev.workouts];
   const skippedExerciseNames = new Set<string>();
   let importedSetCount = 0;
+  // Рахуємо тренування, які РЕАЛЬНО лягли в стан, а не всі розпарсені:
+  // цикл нижче пропускає (`continue`) тренування, у якому жодна вправа не
+  // зіставилась із каталогом. До 2026-09-02 тут повертався
+  // `draft.workouts.length`, тож тост рапортував «успішно» про рядки, що
+  // мовчки зникли.
+  let importedWorkoutCount = 0;
 
   for (const workout of draft.workouts) {
     const importedItems: FizrukItemSnapshot[] = [];
@@ -265,13 +275,15 @@ export function buildStrongImportState(
         skippedExerciseNames.add(item.strongName);
         continue;
       }
-      importedItems.push(toSnapshotItem(workout.strongDate, item, exercise));
+      importedItems.push(
+        toSnapshotItem(idNamespace, workout.strongDate, item, exercise),
+      );
       importedSetCount += item.sets.length;
     }
     if (importedItems.length === 0) continue;
 
     const snapshot: FizrukWorkoutSnapshot = {
-      id: workoutId(workout.strongDate),
+      id: workoutId(idNamespace, workout.strongDate),
       startedAt: workout.startedAt,
       endedAt: workout.endedAt,
       items: importedItems,
@@ -286,6 +298,7 @@ export function buildStrongImportState(
     );
     if (existingIndex >= 0) workouts[existingIndex] = snapshot;
     else workouts.push(snapshot);
+    importedWorkoutCount += 1;
   }
 
   const measurements = mergeMeasurements(
@@ -296,7 +309,7 @@ export function buildStrongImportState(
 
   return {
     next: { ...prev, workouts, measurements },
-    importedWorkoutCount: draft.workouts.length,
+    importedWorkoutCount,
     importedSetCount,
     skippedExerciseNames: [...skippedExerciseNames].sort((a, b) =>
       a.localeCompare(b),
@@ -308,6 +321,7 @@ export function commitStrongImport(
   draft: StrongWorkoutImportDraft,
   matches: readonly StrongExerciseMatch[],
   selection: StrongImportSelection,
+  idNamespace: string,
   weightDraft?: StrongWeightImportDraft,
   pool?: readonly FizrukData.RawExerciseDef[],
 ): StrongImportBuildResult {
@@ -317,6 +331,7 @@ export function commitStrongImport(
     draft,
     matches,
     selection,
+    idNamespace,
     weightDraft,
     pool,
   );
@@ -449,6 +464,7 @@ function sum(values: readonly number[]): number {
 }
 
 function toSnapshotItem(
+  idNamespace: string,
   strongDate: string,
   item: StrongImportItem,
   exercise: FizrukData.RawExerciseDef,
@@ -459,7 +475,7 @@ function toSnapshotItem(
     ...(set.rpe != null ? { rpe: set.rpe } : {}),
   }));
   const snapshot: FizrukItemSnapshot = {
-    id: itemId(strongDate, item.strongName),
+    id: itemId(idNamespace, strongDate, item.strongName),
     exerciseId: exercise.id,
     nameUk: exercise.name?.uk || exercise.name?.en || exercise.id,
     primaryGroup: exercise.primaryGroup,
@@ -482,12 +498,42 @@ function mergeMeasurements(
   return [...byId.values()].sort((a, b) => b.at.localeCompare(a.at));
 }
 
-function workoutId(strongDate: string): string {
-  return `strong_w_${stableHash(strongDate)}`;
+/**
+ * AI-DANGER: рядки Strong-імпорту дістають ДЕТЕРМІНОВАНИЙ id — саме так
+ * повторний імпорт того самого CSV оновлює наявні рядки замість того, щоб
+ * плодити дублі. Ціна детермінізму — простір id мусить бути ПРИВ'ЯЗАНИЙ ДО
+ * КОРИСТУВАЧА, і до 2026-09-02 він таким не був: хеш брався лише з дати
+ * (`strong_w_<hash(дата)>`), тож двоє людей, які імпортували тренування за
+ * один і той самий день, отримували ОДИН id.
+ *
+ * Наслідок був мовчазний і тому найгірший з можливих. `id` у
+ * `fizruk_workouts`, `fizruk_workout_items` і `fizruk_measurements` —
+ * ГЛОБАЛЬНИЙ первинний ключ (`029_fizruk_tables.sql`, TEXT після `096`), а
+ * не складений із `user_id`. Тому сервер (`modules/sync/fizruk/applySync.ts`)
+ * бачив чужий рядок і коректно відбивав запис як `fk_violation` — але
+ * відповідав при цьому `200 OK` з `{"accepted":0}`. Локальний SQLite запис
+ * уже прийняв, UI показував дані як збережені, і людина дізнавалась про
+ * втрату лише відкривши інший пристрій із порожньою історією.
+ *
+ * `idNamespace` — це `useLocalUserId()`, тобто той самий id, під яким рядок
+ * лягає в локальну партицію і поїде в `user_id` на сервер. Тримай їх одним
+ * значенням: id, порахований під одним неймспейсом, а записаний під іншим,
+ * повертає рівно той баг, який цей коментар описує.
+ */
+function workoutId(idNamespace: string, strongDate: string): string {
+  return `strong_w_${stableHash(`${idNamespace}|${strongDate}`)}`;
 }
 
-function itemId(strongDate: string, strongName: string): string {
-  return `strong_i_${stableHash(`${strongDate}|${strongName}`)}`;
+function itemId(
+  idNamespace: string,
+  strongDate: string,
+  strongName: string,
+): string {
+  return `strong_i_${stableHash(`${idNamespace}|${strongDate}|${strongName}`)}`;
+}
+
+function measurementId(idNamespace: string, strongDate: string): string {
+  return `strong_m_${stableHash(`${idNamespace}|${strongDate}`)}`;
 }
 
 function stableHash(value: string): string {

@@ -78,6 +78,127 @@ describe("usePhotoAnalysis", () => {
     vi.clearAllMocks();
   });
 
+  describe("редагування позицій (ініціатива 0023)", () => {
+    const twoItems = {
+      isFood: true,
+      dishName: "Обід",
+      items: [
+        {
+          name: "Котлета",
+          macros: { kcal: 300, protein_g: 21, fat_g: 18, carbs_g: 6 },
+          gramsApprox: 120,
+          confidence: 0.9,
+        },
+        {
+          name: "Пюре",
+          macros: { kcal: 180, protein_g: 4, fat_g: 6, carbs_g: 27 },
+          gramsApprox: 200,
+          confidence: 0.7,
+        },
+      ],
+      macros: { kcal: 480, protein_g: 25, fat_g: 24, carbs_g: 33 },
+    };
+
+    async function seedResult(payload: unknown) {
+      apiAnalyzePhoto.mockResolvedValueOnce({ result: payload });
+      const rendered = renderUsePhotoAnalysis();
+      attachFile(rendered.result, fakeImageFile());
+      act(() => {
+        rendered.result.current.analyzePhoto();
+      });
+      await waitFor(() => {
+        expect(rendered.result.current.photoResult).not.toBeNull();
+      });
+      return rendered.result;
+    }
+
+    it("прибирає позицію і перераховує підсумок із того, що лишилось", async () => {
+      const result = await seedResult(twoItems);
+
+      act(() => {
+        result.current.removePhotoItem(1);
+      });
+
+      expect(result.current.photoResult?.items).toHaveLength(1);
+      expect(result.current.photoResult?.items[0]?.name).toBe("Котлета");
+      // Підсумок зменшився рівно на КБЖВ прибраної позиції — інакше екран
+      // показував би число, якого в рядках немає.
+      expect(result.current.photoResult?.macros).toEqual({
+        kcal: 300,
+        protein_g: 21,
+        fat_g: 18,
+        carbs_g: 6,
+      });
+    });
+
+    it("не дає прибрати останню позицію", async () => {
+      const result = await seedResult({
+        ...twoItems,
+        items: [twoItems.items[0]],
+        macros: twoItems.items[0]?.macros,
+      });
+
+      act(() => {
+        result.current.removePhotoItem(0);
+      });
+
+      // Порожній список означав би прочерки замість КБЖВ і кнопку
+      // збереження порожнього прийому.
+      expect(result.current.photoResult?.items).toHaveLength(1);
+    });
+
+    it("додає позицію з каталогу і збільшує підсумок", async () => {
+      const result = await seedResult(twoItems);
+
+      act(() => {
+        result.current.addPhotoItem({
+          name: "Сирник",
+          macros: { kcal: 220, protein_g: 12, fat_g: 9, carbs_g: 22 },
+          gramsApprox: 100,
+          confidence: 1,
+        });
+      });
+
+      expect(result.current.photoResult?.items).toHaveLength(3);
+      expect(result.current.photoResult?.macros.kcal).toBe(700);
+    });
+
+    it("лишає макрос null, коли жодна позиція його не має", async () => {
+      const result = await seedResult({
+        isFood: true,
+        dishName: "Салат",
+        items: [
+          {
+            name: "Салат",
+            macros: { kcal: 120, protein_g: null, fat_g: 9, carbs_g: null },
+            gramsApprox: null,
+            confidence: 0.6,
+          },
+          {
+            name: "Соус",
+            macros: { kcal: 60, protein_g: null, fat_g: null, carbs_g: null },
+            gramsApprox: null,
+            confidence: 0.4,
+          },
+        ],
+        macros: { kcal: 180, protein_g: null, fat_g: 9, carbs_g: null },
+      });
+
+      act(() => {
+        result.current.removePhotoItem(1);
+      });
+
+      // Нуль замість невідомого не ставимо ніколи — те саме правило, що на
+      // сервері (`sumMacrosNullable`).
+      expect(result.current.photoResult?.macros).toEqual({
+        kcal: 120,
+        protein_g: null,
+        fat_g: 9,
+        carbs_g: null,
+      });
+    });
+  });
+
   describe("analyzePhoto", () => {
     it("posts image payload and stores photoResult on success", async () => {
       apiAnalyzePhoto.mockResolvedValueOnce({

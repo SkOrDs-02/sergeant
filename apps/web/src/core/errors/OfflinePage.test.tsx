@@ -37,14 +37,34 @@ afterEach(() => {
 });
 
 describe("OfflinePage", () => {
-  it("renders the 'Офлайн' eyebrow text", () => {
+  // Регресія browser-QA 2026-09-02. Ці два тести раніше закріплювали
+  // статичні «Офлайн» / «Немає зʼєднання» і рендерились під дефолтним
+  // моком `online: true` — тобто фіксували стан, у якому сторінка сама
+  // собі суперечила: жива область казала «Зʼєднання відновлено», а
+  // заголовок поруч заперечував наявність мережі.
+  it("під час офлайну заголовки говорять про відсутність мережі", () => {
+    mockUseOnlineStatus.mockReturnValue(false);
     render(<OfflinePage />);
     expect(screen.getByText("Офлайн")).toBeInTheDocument();
+    expect(screen.getByText("Немає зʼєднання")).toBeInTheDocument();
+    expect(screen.getByText(/Зараз немає інтернету/)).toBeInTheDocument();
   });
 
-  it("renders the main title 'Немає зʼєднання'", () => {
+  it("після повернення мережі жоден підпис не заперечує решти", () => {
+    mockUseOnlineStatus.mockReturnValue(true);
     render(<OfflinePage />);
-    expect(screen.getByText("Немає зʼєднання")).toBeInTheDocument();
+    expect(screen.getByText("Онлайн")).toBeInTheDocument();
+    expect(screen.getByText("Зʼєднання відновлено")).toBeInTheDocument();
+    expect(screen.getByText(/Мережа знову є/)).toBeInTheDocument();
+    expect(screen.queryByText("Немає зʼєднання")).toBeNull();
+    expect(screen.queryByText(/Зараз немає інтернету/)).toBeNull();
+    // Жива область для читача екрана — те саме твердження, що й видиме.
+    // `getAllByRole`, бо `EmptyState` під variant="success" має власний
+    // `role="status"`; нас цікавить саме sr-only-абзац сторінки.
+    const live = screen
+      .getAllByRole("status")
+      .find((el) => el.classList.contains("sr-only"));
+    expect(live).toHaveTextContent(/Зʼєднання відновлено/);
   });
 
   it("renders the reload button when online=true with 'Спробувати ще' label", () => {

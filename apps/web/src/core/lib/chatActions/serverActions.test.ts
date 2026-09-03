@@ -112,7 +112,7 @@ describe("handleAsyncChatAction — recall_memory happy path", () => {
     const out = await handleAsyncChatAction(action);
     expect(typeof out).toBe("string");
     expect(out).toContain('Знайшов 2 схожих записів для "що я їв сьогодні"');
-    expect(out).toContain("Харчування");
+    expect(out).toContain("Їжа");
     expect(out).toContain("2026-04-30");
     expect(out).toContain("92%");
     expect(out).toContain("Сніданок: omelette + кава");

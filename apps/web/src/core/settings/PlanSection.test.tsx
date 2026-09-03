@@ -129,7 +129,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     vi.restoreAllMocks();
   });
 
-  it("shows the Free badge + «Перейти на Pro» CTA when no active subscription is on file", async () => {
+  it("shows the Free badge + «Перейти на Premium» CTA when no active subscription is on file", async () => {
     statusMock.mockResolvedValue(FREE_RESPONSE);
     renderSection();
     await openSection();
@@ -145,13 +145,13 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     expect(screen.queryByTestId("plan-canceled-info")).not.toBeInTheDocument();
   });
 
-  it("shows the Pro badge + Manage button + next-charge date when subscription is active", async () => {
+  it("shows the Premium badge + Manage button + next-charge date when subscription is active", async () => {
     statusMock.mockResolvedValue(PRO_ACTIVE_RESPONSE);
     renderSection();
     await openSection();
 
     const badge = await screen.findByTestId("plan-badge");
-    await waitFor(() => expect(badge).toHaveTextContent("Pro"));
+    await waitFor(() => expect(badge).toHaveTextContent("Premium"));
 
     const manage = screen.getByTestId("plan-manage-button");
     expect(manage).toHaveTextContent(/Керувати підпискою/i);
@@ -170,13 +170,13 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     );
   });
 
-  it("shows the Pro badge + canceled warning with end date + Manage button when subscription is canceled but still in grace period", async () => {
+  it("shows the Premium badge + canceled warning with end date + Manage button when subscription is canceled but still in grace period", async () => {
     statusMock.mockResolvedValue(PRO_CANCELED_RESPONSE);
     renderSection();
     await openSection();
 
     const badge = await screen.findByTestId("plan-badge");
-    await waitFor(() => expect(badge).toHaveTextContent("Pro"));
+    await waitFor(() => expect(badge).toHaveTextContent("Premium"));
 
     const canceledInfo = screen.getByTestId("plan-canceled-info");
     expect(canceledInfo).toHaveTextContent(/скасовано/i);

@@ -7,6 +7,8 @@ import {
   markFirstActionStartedAt,
   saveVibePicks,
 } from "./vibePicks";
+import { sanitizePicks } from "@sergeant/shared";
+import { pushActiveModules } from "../hub/activeModulesSync";
 import {
   isOnboardingCompletedFired,
   markOnboardingCompletedFired,
@@ -217,6 +219,16 @@ export function useOnboardingWizardState({
     // the hub instead of producing a useless dashboard.
     const chosen = hadEmptyPicks ? [...ALL_MODULES] : picks;
     saveVibePicks(chosen as never[]);
+    // Вибір треба ВІДПРАВИТИ одразу, а не покладатись на наступний бут.
+    // `useActiveModulesSync` гідратує рівно раз на `userId` за сесію, і для
+    // свіжого акаунта та гідрація вже відпрацювала ДО онбордингу, коли обидві
+    // сторони були порожні. Без цього рядка вибір лишався тільки локально, і
+    // вхід із другого пристрою до наступного буту показував дефолтні 4 з 4
+    // (browser-QA 2026-09-02). Fire-and-forget, як у `DashboardSection`.
+    //
+    // `sanitizePicks` замість касту: локальний `chosen` типизований як
+    // `string[]`, і відправляти на сервер нерозпізнаний id не варто.
+    pushActiveModules(sanitizePicks(chosen));
 
     trackEvent(ANALYTICS_EVENTS.ONBOARDING_VIBE_PICKED, {
       picks: chosen,
@@ -278,6 +290,9 @@ export function useOnboardingWizardState({
 
       const chosen: DashboardModuleId[] = [outcome.module];
       saveVibePicks(chosen as never[]);
+      // Той самий пуш, що й у гілці вище: інакше вибір goal-first-шляху
+      // теж не доїжджає на акаунт до наступного буту.
+      pushActiveModules(chosen);
 
       trackEvent(ANALYTICS_EVENTS.ONBOARDING_VIBE_PICKED, {
         picks: chosen,

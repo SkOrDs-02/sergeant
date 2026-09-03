@@ -39,7 +39,13 @@ function formatDateShort(iso: string | null): string {
 
 function formatDuration(sec: number): string {
   if (!Number.isFinite(sec) || sec <= 0) return "—";
-  const mins = Math.round(sec / 60);
+  // Підлога в одну хвилину. Без неї тренування коротше за 30 с підписувалось
+  // «0 хв» — запис існує, а тривалість у нього нульова (browser-QA
+  // 2026-09-02). Той самий гард уже стоїть у `WorkoutsHome`, і тримати їх
+  // різними не можна: обидві поверхні підписують ОДНЕ тренування, тож
+  // чесніше «< 1 хв» тут дало б розбіжність у двох місцях замість нуля в
+  // одному.
+  const mins = Math.max(1, Math.round(sec / 60));
   if (mins < 60) return `${mins} хв`;
   const h = Math.floor(mins / 60);
   const m = mins % 60;
