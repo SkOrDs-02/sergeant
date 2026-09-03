@@ -52,18 +52,10 @@ vi.mock("../../obs/logger.js", () => ({
 vi.mock("../../obs/metrics.js", () => ({
   monoWebhookReceivedTotal: { inc: vi.fn() },
   monoWebhookDurationMs: { observe: vi.fn() },
-  aiMemoryIngestEnqueuedTotal: { inc: vi.fn() },
-  aiMemoryIngestProcessedTotal: { inc: vi.fn() },
-  aiMemoryIngestDurationMs: { observe: vi.fn() },
-  aiMemoryIngestQueueDepth: { set: vi.fn() },
 }));
 
 vi.mock("../../push/send.js", () => ({
   sendToUserQuietly: vi.fn().mockResolvedValue(undefined),
-}));
-
-vi.mock("../ai-memory/ingestQueue.js", () => ({
-  enqueueMemoryIngest: vi.fn().mockResolvedValue(undefined),
 }));
 
 vi.mock("../../obs/securityEvents.js", () => ({

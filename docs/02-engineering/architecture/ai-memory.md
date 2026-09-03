@@ -7,23 +7,29 @@
 
 ## Modules
 
-| Surface      | File / table                                                                                                                  | Roles                                                                                                                                                                                                               |
-| ------------ | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Storage      | [`apps/server/src/migrations/025_ai_memories_pgvector.sql`](../../../apps/server/src/migrations/025_ai_memories_pgvector.sql) | pgvector HALFVEC(1024) partitioned by user_id; CHECK source IN (`chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal`, `digest`, `cofounder`, `product`). `cofounder` додано у 028, `product` у 068 (PR-24). |
-| Embeddings   | [`apps/server/src/modules/ai-memory/embeddings.ts`](../../../apps/server/src/modules/ai-memory/embeddings.ts)                 | Voyage `voyage-3.5-lite` (1024d). Voyage budget guard у [`apps/server/src/modules/ai-memory/voyageBudget.ts`](../../../apps/server/src/modules/ai-memory/voyageBudget.ts).                                          |
-| Service      | [`apps/server/src/modules/ai-memory/service.ts`](../../../apps/server/src/modules/ai-memory/service.ts)                       | `remember()` + `recall()` орchestrator. Викликається BullMQ-worker-ом + recall-route.                                                                                                                               |
-| Ingest queue | [`apps/server/src/modules/ai-memory/ingestQueue.ts`](../../../apps/server/src/modules/ai-memory/ingestQueue.ts)               | BullMQ `ai-memory-ingest`. `enqueueMemoryIngest()` — public producer. Per-source gating через `AI_MEMORY_ENABLED` (master) + `MONO_AI_MEMORY_INGEST_ENABLED` (finyk).                                               |
-| Recall route | [`apps/server/src/modules/ai-memory/recallRoute.ts`](../../../apps/server/src/modules/ai-memory/recallRoute.ts)               | Public `POST /api/ai-memory/recall` (session-auth). HubChat tool: [`apps/web/src/core/lib/chatActions/serverActions.ts`](../../../apps/web/src/core/lib/chatActions/serverActions.ts).                              |
-| Backfill     | знято 2026-08-29 (OpenClaw retired, ADR-0075)                                                                                 | Модулі `backfill.ts` / internal-роут / CLI `ai-memory:backfill` видалено. Таблиця `ai_memory_backfill_state` (міграція 065) чекає двофазного DROP.                                                                  |
+| Surface      | File / table                                                                                                                  | Roles                                                                                                                                                                                                                                                         |
+| ------------ | ----------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Storage      | [`apps/server/src/migrations/025_ai_memories_pgvector.sql`](../../../apps/server/src/migrations/025_ai_memories_pgvector.sql) | pgvector HALFVEC(1024) partitioned by user_id; CHECK у БД поки що дозволяє всі 10 історичних значень (двофазне звуження — PR-3 ініціативи 0024). TS-рівень (`ALLOWED_MEMORY_SOURCES`) звужений PR-1 (2026-09-03) до `digest`/`cofounder`/`product`/`profile`. |
+| Embeddings   | [`apps/server/src/modules/ai-memory/embeddings.ts`](../../../apps/server/src/modules/ai-memory/embeddings.ts)                 | Voyage `voyage-3.5-lite` (1024d). Voyage budget guard у [`apps/server/src/modules/ai-memory/voyageBudget.ts`](../../../apps/server/src/modules/ai-memory/voyageBudget.ts).                                                                                    |
+| Service      | [`apps/server/src/modules/ai-memory/service.ts`](../../../apps/server/src/modules/ai-memory/service.ts)                       | `remember()` + `recall()` орchestrator. Викликається BullMQ-worker-ом + recall-route.                                                                                                                                                                         |
+| Ingest queue | [`apps/server/src/modules/ai-memory/ingestQueue.ts`](../../../apps/server/src/modules/ai-memory/ingestQueue.ts)               | BullMQ `ai-memory-ingest`. `enqueueMemoryIngest()` — public producer, живі callers: `weekly-digest.ts` (`digest`), `profileMirror.ts` (`profile`). Per-source finyk-гілка прибрана PR-1 (ініціатива 0024).                                                    |
+| Recall route | [`apps/server/src/modules/ai-memory/recallRoute.ts`](../../../apps/server/src/modules/ai-memory/recallRoute.ts)               | Public `POST /api/ai-memory/recall` (session-auth). HubChat tool: [`apps/web/src/core/lib/chatActions/serverActions.ts`](../../../apps/web/src/core/lib/chatActions/serverActions.ts).                                                                        |
+| Backfill     | знято 2026-08-29 (OpenClaw retired, ADR-0075)                                                                                 | Модулі `backfill.ts` / internal-роут / CLI `ai-memory:backfill` видалено. Таблиця `ai_memory_backfill_state` (міграція 065) чекає двофазного DROP.                                                                                                            |
 
 ## Ingest flow (current state)
+
+Ініціатива 0024 (PR-1, 2026-09-03) прибрала клієнт-driven `POST
+/api/ai-memory/ingest` і `finyk`-гілку в `ingestQueue.ts` — жодне з шести
+джерел без продюсера (`chat`, `finyk`, `fizruk`, `nutrition`, `routine`,
+`journal`) ніколи не писало в `ai_memories` (замір § Перезамір 2026-09-03
+у `docs/90-work/initiatives/0024-ai-memory-source-coverage.md`).
 
 ```
 producer-callsite                            BullMQ queue                worker
 ─────────────────                            ─────────────                ──────
- mono webhook  (source=finyk)         ┐                                  ┌─ Voyage embed
- weekly digest (source=digest)        ├─→  ai-memory-ingest    ───→     ├─ INSERT ai_memories
- hub/chat user posts (chat)           ┘                                  └─ metrics + breadcrumb
+ weekly digest (source=digest)         ┐                                 ┌─ Voyage embed
+ profileMirror (source=profile)        ├─→  ai-memory-ingest    ───→     ├─ INSERT ai_memories
+                                        ┘                                 └─ metrics + breadcrumb
 ```
 
 `event-sync` (PR-24) знято 2026-08-29: телеметрія в ролі «фактів про людину» лише шуміла в RAG. Наявні рядки `source='product'` читаються в list/recall як legacy.
@@ -31,8 +37,12 @@ producer-callsite                            BullMQ queue                worker
 `enqueueMemoryIngest` gating:
 
 - `AI_MEMORY_ENABLED=false` → skip ALL sources (metric `mode="disabled"`).
-- `MONO_AI_MEMORY_INGEST_ENABLED=false` AND source=`finyk` → skip just finyk (PR-19).
-- All other sources flow when master flag on.
+- `MONO_AI_MEMORY_INGEST_ENABLED` — прапорець існує (env.ts), але з
+  прибранням `finyk`-гілки (PR-1) ні на що не впливає; PR-2 тієї ж
+  ініціативи перецілює його на `digest` (rename до
+  `DIGEST_AI_MEMORY_INGEST_ENABLED`, § План змін ініціативи).
+- Усі живі сьогодні джерела (`digest`, `profile`) течуть, коли master-flag
+  увімкнено.
 
 Worker idempotency: BullMQ jobId = `${userId}:${source}:${sourceRef}`. На повторний enqueue (webhook retry, backfill resume) одна job у Redis-і — duplicate в `ai_memories` запобігається UNIQUE-індексом `(user_id, source, source_ref) WHERE source_ref IS NOT NULL`.
 
@@ -94,19 +104,16 @@ SELECT source, COUNT(*) AS active_failures
 
 ## Sources matrix
 
-`source` differentiates origin + read-policy. CHECK constraint у `025_ai_memories_pgvector.sql` (extended у 028 + 068).
+`source` differentiates origin + read-policy. CHECK constraint у `025_ai_memories_pgvector.sql` (extended у 028 + 068) поки що дозволяє всі 10 історичних значень — двофазне звуження до чотирьох рядків нижче заплановане PR-3 ініціативи 0024. TS-рівень (`ALLOWED_MEMORY_SOURCES`) уже звужений PR-1 (2026-09-03): `chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal` прибрані — жоден ніколи не мав продюсера в дереві (замір § Перезамір, `docs/90-work/initiatives/0024-ai-memory-source-coverage.md`).
 
 | Source      | Producer                                                                                          | Reader                                | Isolation                                                                                                                    |
 | ----------- | ------------------------------------------------------------------------------------------------- | ------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| `chat`      | Hub chat user posts                                                                               | `/recall` API + RAG context-injection | Per-user; default tier.                                                                                                      |
-| `finyk`     | Mono webhook (server-side)                                                                        | `/recall` + RAG                       | Per-user; behind `MONO_AI_MEMORY_INGEST_ENABLED` (PR-19).                                                                    |
-| `fizruk`    | Client-driven ingest (SQLite-WASM/MMKV local-first)                                               | `/recall` + RAG                       | Per-user.                                                                                                                    |
-| `nutrition` | Client-driven ingest (SQLite-WASM/MMKV local-first)                                               | `/recall` + RAG                       | Per-user.                                                                                                                    |
-| `routine`   | Client-driven ingest (SQLite-WASM/MMKV local-first)                                               | `/recall` + RAG                       | Per-user.                                                                                                                    |
-| `journal`   | Client-driven ingest (SQLite-WASM/MMKV local-first)                                               | `/recall` + RAG                       | Per-user.                                                                                                                    |
-| `digest`    | Weekly digest cron (server-side)                                                                  | `/recall` + RAG                       | Per-user.                                                                                                                    |
+| `digest`    | Weekly digest cron (server-side, `weekly-digest.ts`)                                              | `/recall` + RAG                       | Per-user.                                                                                                                    |
+| `profile`   | `profileMirror.ts` — дзеркало серверного `user_profile` (банк памʼяті, PUT `/api/me/profile`)     | `/recall` API + RAG context-injection | Per-user; єдиний редактор — Профіль → «Банк памʼяті» (не `/api/ai-memory/*`).                                                |
 | `cofounder` | LEGACY: писався backfill-ом з `tg_topic_archive` (OpenClaw); механіку знято 2026-08-29 (ADR-0075) | list/recall (legacy-рядки)            | Нових рядків не буде; наявні читаються й видаляються через UI. Зняття з CHECK-constraint — двофазне, разом із чисткою даних. |
 | `product`   | LEGACY: PostHog-дзеркало (`event-sync`, PR-24); знято 2026-08-29                                  | list/recall (legacy-рядки)            | Телеметрія в ролі «фактів про людину» шуміла в RAG. Нових рядків не буде; наявні читаються й видаляються через UI.           |
+
+`chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal` — шість джерел без жодного продюсера в дереві, прибрані з `ALLOWED_MEMORY_SOURCES` PR-1 (2026-09-03). Легасі-рядки цих значень (якщо є на проді) читаються/видаляються через UI до міграції PR-3.
 
 ## Backfill з `tg_topic_archive` — знято 2026-08-29
 

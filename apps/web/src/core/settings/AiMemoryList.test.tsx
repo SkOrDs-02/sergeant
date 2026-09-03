@@ -70,12 +70,16 @@ afterEach(() => cleanup());
 
 describe("AiMemoryList", () => {
   it("показує факти з їх джерелом", async () => {
+    // `nutrition` — джерело без продюсера з ініціативи 0024 (PR-1,
+    // 2026-09-03), CHECK-constraint у БД поки не звужений (PR-3), тож
+    // старі рядки такого source ще можуть бути в базі: UI має fallback
+    // `?? item.source` замість зниклої мітки "Їжа".
     listAiMemory.mockResolvedValue(
       page([{ id: 1, content: "Алергія на горіхи", source: "nutrition" }]),
     );
     renderList();
     expect(await screen.findByText("Алергія на горіхи")).toBeTruthy();
-    expect(screen.getByText(/Їжа/)).toBeTruthy();
+    expect(screen.getByText(/nutrition/)).toBeTruthy();
   });
 
   it("порожня памʼять → пояснення, а не порожнеча", async () => {
@@ -175,7 +179,10 @@ describe("AiMemoryList", () => {
   it("великий список приходить згорнутим у групи за джерелом", async () => {
     // Скарга власника 2026-08-18: список читався як суцільне полотно на
     // кілька екранів. Понад `AUTO_OPEN_MAX_ITEMS` фактів → видно тільки
-    // джерела з лічильниками, самі факти — за кліком.
+    // джерела з лічильниками, самі факти — за кліком. `chat`/`nutrition` —
+    // джерела без продюсера з ініціативи 0024 (PR-1) — використані тут як
+    // приклад legacy-рядків без мітки (fallback `?? item.source`); механіка
+    // групування від наявності мітки не залежить.
     listAiMemory.mockResolvedValue(
       page([
         { id: 1, content: "Факт чату 1", source: "chat" },
@@ -189,7 +196,7 @@ describe("AiMemoryList", () => {
     renderList();
 
     const chatGroup = await screen.findByRole("button", {
-      name: /Показати факти джерела: Чат/,
+      name: /Показати факти джерела: chat/,
     });
     expect(chatGroup.getAttribute("aria-expanded")).toBe("false");
     expect(screen.queryByText("Факт чату 1")).toBeNull();
@@ -197,7 +204,7 @@ describe("AiMemoryList", () => {
     // Джерела лишаються видимими — це і є згорнутий зміст памʼяті.
     expect(
       screen.getByRole("button", {
-        name: /Показати факти джерела: Їжа/,
+        name: /Показати факти джерела: nutrition/,
       }),
     ).toBeTruthy();
 

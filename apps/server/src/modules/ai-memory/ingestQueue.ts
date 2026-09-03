@@ -1,8 +1,14 @@
 /**
- * Async-черга AI memory ingestion (PR2 з ADR-0028). Producer-и (mono-webhook,
- * weekly-digest, `POST /api/ai-memory/ingest`) ставлять `MemoryIngestPayload`
- * у BullMQ; worker викликає `aiMemory.remember()`, що робить Voyage embed +
- * pgvector upsert.
+ * Async-черга AI memory ingestion (PR2 з ADR-0028). Живі producer-и сьогодні
+ * (ініціатива 0024, замір § Перезамір 2026-09-03) — `weekly-digest.ts`
+ * (`source=digest`) і `profileMirror.ts` (`source=profile`); обидва ставлять
+ * `MemoryIngestPayload` у BullMQ. Клієнт-driven `POST /api/ai-memory/ingest`
+ * і mono-webhook (`source=finyk`) прибрані тією ж ініціативою (PR-1) — точки
+ * нижче про Mono-webhook лишаються як історичний rationale черги, не опис
+ * поточних producer-ів.
+ *
+ * Worker викликає `aiMemory.remember()`, що робить Voyage embed + pgvector
+ * upsert.
  *
  * Чому окрема BullMQ-черга, а не дзвінок `aiMemory.remember()` синхронно з
  * хендлера:
@@ -30,7 +36,6 @@ import type { Redis as IORedisClient } from "ioredis";
 
 import pool from "../../db.js";
 import { env } from "../../env.js";
-import { isKillSwitchActive } from "../../lib/featureFlags/runtimeKillSwitch.js";
 import {
   AI_MEMORY_INGEST_QUEUE_NAME,
   BULLMQ_QUEUE_PREFIX,
@@ -303,34 +308,13 @@ async function enqueueMemoryIngestImpl(
     return;
   }
 
-  // Per-source kill-switch (PR-19). Поки що тільки `finyk` (Mono
-  // webhook) gate-нутий — інші source-и контролюються виключно
-  // master-flag-ом `AI_MEMORY_ENABLED`. Перевірка живе тут (а не у
-  // `webhook.ts`), щоб майбутні per-source flags для digest/chat
-  // додавались в одному місці, з тим самим metric shape
-  // (`mode="source_disabled"`).
-  //
-  // Runtime kill-switch (RAG eval automation post-PR-20): якщо weekly
-  // recall@4 < 0.4 → `POST /api/internal/eval/rag-weekly` активує
-  // in-memory kill-switch `mono_ai_memory_ingest`, який перебиває env
-  // до process-restart. Реальний permanent flip env-у на Railway —
-  // operator-task per runbook § «RagQualityGateKillSwitch».
-  if (
-    payload.source === "finyk" &&
-    (!env.MONO_AI_MEMORY_INGEST_ENABLED ||
-      isKillSwitchActive("mono_ai_memory_ingest"))
-  ) {
-    aiMemoryIngestEnqueuedTotal.inc({
-      mode: "source_disabled",
-      source: sourceLabel,
-    });
-    logger.debug({
-      msg: "ai_memory_ingest_skipped_source_disabled",
-      source: sourceLabel,
-      killSwitch: isKillSwitchActive("mono_ai_memory_ingest"),
-    });
-    return;
-  }
+  // Per-source kill-switch (PR-19) жив тут на `payload.source === "finyk"`.
+  // `finyk` прибраний з `ALLOWED_MEMORY_SOURCES` ініціативою 0024 (PR-1,
+  // 2026-09-03) — mono-webhook уже не мав продюсера до цієї зміни (замір
+  // у `docs/90-work/initiatives/0024-ai-memory-source-coverage.md` §
+  // Перезамір). Гілку знято; PR-2 тієї ж ініціативи перецілює той самий
+  // механізм на `payload.source === "digest"` (kill-switch, який гейтить
+  // джерело, що реально забиває слоти RAG полотнами тижневих звітів).
 
   const queue = getOrCreateMemoryIngestQueue();
 

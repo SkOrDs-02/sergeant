@@ -1,7 +1,7 @@
 # 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться
 
-> **Last touched:** 2026-08-26 by @Skords-01 (spec-інтервʼю з founder-ом — усі чотири відкриті рішення ратифіковані). **Next review:** 2027-03-12.
-> **Status:** Proposed — рішення ухвалені 2026-08-26, скоуп закритий, виконується без додаткових питань. Три PR-и, порядок обовʼязковий (§ План змін).
+> **Last touched:** 2026-09-03 by @claude (PR-1 landed — перезамір + звуження `ALLOWED_MEMORY_SOURCES`). **Next review:** 2027-03-12.
+> **Status:** In progress — PR-1 змержено 2026-09-03 (§ Перезамір нижче). PR-2 (kill-switch rename) і PR-3 (міграція 128) лишаються, порядок обовʼязковий (§ План змін).
 > **Agent-ready:** yes
 > **Priority:** P2 (не блокер launch-у [0010](./0010-revenue-first-launch.md); псує якість AI-шару і вводить в оману ops-документи)
 > **Owner:** `@SkOrDs-02`
@@ -18,7 +18,31 @@
 
 Рішення founder-а 2026-08-26: **прибрати всі шість**, повністю — включно зі звуженням CHECK-констрейнта двофазно. `ALLOWED_MEMORY_SOURCES` стає `['digest', 'cofounder', 'product', 'profile']`.
 
-> ⚠️ **Заміри нижче застаріли після PR [#928](https://github.com/SkOrDs-02/sergeant/pull/928)** (2026-08-29, зняття атавізмів AI-шару). Той PR видалив `eventSync.ts`, `backfill.ts`, `forgetCleanup.ts` і `scripts/ai-memory-backfill.mjs`, тож рядки `product` і `cofounder` у таблиці нижче більше не мають продюсерів, а посилання на ці файли зняті (лишились назвами, щоб історію було видно). Скільки джерел лишилось насправді і що з цього випливає для плану змін — перезаміряти має власник ініціативи; цей коміт лише прибрав биті посилання, статусів у таблиці не чіпав.
+> ⚠️ **Заміри нижче застаріли після PR [#928](https://github.com/SkOrDs-02/sergeant/pull/928)** (2026-08-29, зняття атавізмів AI-шару). Той PR видалив `eventSync.ts`, `backfill.ts`, `forgetCleanup.ts` і `scripts/ai-memory-backfill.mjs`, тож рядки `product` і `cofounder` у таблиці нижче більше не мають продюсерів, а посилання на ці файли зняті (лишились назвами, щоб історію було видно). Скільки джерел лишилось насправді і що з цього випливає для плану змін — перезаміряно нижче (§ Перезамір 2026-09-03) перед стартом PR-1.
+
+## Перезамір 2026-09-03 (перед PR-1)
+
+Команда відтворення з § нижче, запущена заново на HEAD після PR #928:
+
+```bash
+grep -rn "enqueueMemoryIngest" apps/server/src --include=*.ts | grep -v "\.test\." | grep -v "ai-memory/"
+```
+
+Результат — **лише два хіти**, не один, як очікувалось із заголовка:
+
+- `apps/server/src/modules/digest/weekly-digest.ts:499` — `source: "digest"`.
+- `apps/server/src/routes/internal/ai-memory-dlq.ts` — `enqueueMemoryIngestStrict` у DLQ-replay (не власний продюсер, форвардить `payload.source` з архівованого джоба; не рахується як джерело саме по собі).
+
+Усередині `modules/ai-memory/` (де живуть решта продюсерів, за дизайном):
+
+- `profileMirror.ts:459` — `enqueueMemoryIngest(input)`, `source: PROFILE_SOURCE` (`= "profile"`, `profileMirror.ts:86`). Продюсер живий.
+- `ingestRoute.ts` — клієнт-driven ендпоінт, приймав `chat`/`fizruk`/`nutrition`/`routine`/`journal`. Жодне з цих джерел ніколи не мало серверного продюсера (підтверджує стару таблицю нижче) — сам ендпоінт видаляється PR-1.
+
+Прямий grep на `"product"` / `"cofounder"` поза `types.ts` (декларація enum) і тестами — **порожньо**. Тобто заголовок мав рацію: обидва джерела втратили продюсерів разом із PR #928.
+
+**Висновок, що міняє план:** початковий `ALLOWED_MEMORY_SOURCES = ['digest', 'cofounder', 'product', 'profile']` (§ Ратифіковані рішення #4) лишається чинним по СКЛАДУ значень — `cofounder`/`product` не видаляються цим PR-ом, бо в БД можуть бути legacy-рядки, які мають лишатись читабельними/видаляними через UI (те саме рішення, що вже було задокументовано в `types.ts` до цього PR-а). Але тепер `sources.test.ts` (гейт від рецидиву, крок 6 нижче) не може вважати їх "живими продюсерами" — вони йдуть у нову константу `RESERVED_SOURCES = ['cofounder', 'product']` з посиланням на цей запис. Живих продюсерів у ALLOWED-списку рівно два: `digest`, `profile`.
+
+Це не суперечить ратифікованому рішенню #6 (kill-switch → `digest`) — воно й так стосувалось лише `finyk`, який в обох замірах (до і після PR #928) не мав продюсера.
 
 ## Виміряний стан (перевірено на HEAD 2026-08-26)
 
@@ -102,18 +126,27 @@ grep -rn "enqueueMemoryIngest" apps/server/src/modules/mono/*.ts | grep -v "\.te
 
 ## План змін
 
-### PR-1 — Перестати приймати мертві джерела (`feat(server)`)
+### PR-1 — Перестати приймати мертві джерела (`feat(server)`) — ЗМЕРЖЕНО 2026-09-03
 
 Сервер більше не приймає жодного з шести значень. БД поки що дозволяє — це фаза 1 двофазного DROP.
 
-1. [`modules/ai-memory/types.ts`](../../../apps/server/src/modules/ai-memory/types.ts) — `ALLOWED_MEMORY_SOURCES` = `['digest', 'cofounder', 'product', 'profile']`. Оновити docstring: двофазність лишається для **додавання**, тут описати і зворотний шлях.
-2. Видалити ендпоінт клієнт-driven ingest-у цілком: `modules/ai-memory/ingestRoute.ts`, `ingestRoute.test.ts`, `ingestRoute.integration.test.ts`, маунт у [`routes/ai-memory.ts`](../../../apps/server/src/routes/ai-memory.ts). Перед видаленням — `grep -rn "ai-memory/ingest" apps packages` і зняти згадки з коментарів `index.ts`, `lib/jobs/connection.ts`, `ingestQueue.ts`.
-3. [`ingestQueue.ts`](../../../apps/server/src/modules/ai-memory/ingestQueue.ts) — прибрати гілку `payload.source === "finyk"`. Перецілення — у PR-2; тут лише зняти мертву умову.
-4. [`AiMemoryList.tsx`](../../../apps/web/src/core/settings/AiMemoryList.tsx) — `SOURCE_LABEL` лишає чотири живі мітки. `TECHNICAL_SOURCES` (`product`, `digest`) не чіпати.
-5. `modules/mono/webhook.test.ts`, `historyFetch.test.ts`, `webhook.integration.test.ts` — прибрати мок `enqueueMemoryIngest` і асерти `not.toHaveBeenCalled()`. Такий тест зелений і коли хук свідомо прибрано, і коли його випадково загубили; після PR-3 він охороняє неіснуючу можливість.
-6. **Гейт від рецидиву** — новий `modules/ai-memory/sources.test.ts`: для кожного значення `ALLOWED_MEMORY_SOURCES` у дереві має існувати виклик `enqueueMemoryIngest` із цим source **або** запис у явній константі `RESERVED_SOURCES` (нині порожній) із посиланням на цю ініціативу. Тест читає дерево `apps/server/src` через `node:fs`, без нового CI-скрипта — іде в `pnpm check` сам собою.
-7. **Замір дірки `remember`** — у [`scripts/tool-selection-eval.ts`](../../../apps/server/scripts/tool-selection-eval.ts) додати `IMPLICIT_FACT_CASES` (3–5 кейсів на кшталт «Я взагалі не їм глютен, тому обід був без хліба», «У мене травма коліна, присідання пропускаю») з `accept: ["remember"]`. Рахувати окремим рядком звіту `implicit remember: N/M` і **не** додавати в загальний бал — інакше історичні звіти стають непорівнянними. Наявний кейс «факт про себе» (явне «Запамʼятай:») лишається в основному наборі.
-8. Доки: [`ai-memory.md`](../../02-engineering/architecture/ai-memory.md) (діаграма ingest-потоку — прибрати `mono webhook (source=finyk)` і клієнт-driven гілку), [`ai-memory-activation.md`](../../01-product/launch/tech/ai-memory-activation.md) (прибрати обіцянку «finyk-ingest стартує автоматично»).
+> **Відхилення від початкового плану після § Перезамір 2026-09-03:** `cofounder`
+> і `product` теж втратили продюсерів (PR #928), але зі складу
+> `ALLOWED_MEMORY_SOURCES` НЕ прибрані — рішення #4/#5 (DELETE легасі-рядків
+> у PR-3) лишається чинним, тобто ці значення мають лишатись валідними для
+> існуючих рядків до самої міграції. Різниця — у гейті кроку 6: `sources.test.ts`
+> вимагав би для них продюсера, якого вже немає, тож вони йдуть у нову
+> константу `RESERVED_SOURCES = ['cofounder', 'product']` з посиланням на цей
+> файл, а не в порожній список, як планувалось спершу.
+
+1. ✅ [`modules/ai-memory/types.ts`](../../../apps/server/src/modules/ai-memory/types.ts) — `ALLOWED_MEMORY_SOURCES` = `['digest', 'cofounder', 'product', 'profile']`; додано `RESERVED_SOURCES = ['cofounder', 'product']` (див. відхилення вище). Docstring описує і зворотний шлях додавання джерела.
+2. ✅ Ендпоінт клієнт-driven ingest-у видалено цілком: `modules/ai-memory/ingestRoute.ts`, `ingestRoute.test.ts`, `ingestRoute.integration.test.ts`, маунт у [`routes/ai-memory.ts`](../../../apps/server/src/routes/ai-memory.ts). Заразом прибрано ingest-специфічні тести з `routes/ai-memory.route.test.ts` (не був у початковому списку файлів — виявлений під час `grep -rn "ai-memory/ingest"`), і зняті згадки з коментарів `index.ts`, `lib/jobs/connection.ts`, `ingestQueue.ts`, `modules/ai-memory/index.ts`.
+3. ✅ [`ingestQueue.ts`](../../../apps/server/src/modules/ai-memory/ingestQueue.ts) — гілка `payload.source === "finyk"` прибрана. Перецілення на `digest` — PR-2.
+4. ✅ [`AiMemoryList.tsx`](../../../apps/web/src/core/settings/AiMemoryList.tsx) — `SOURCE_LABEL` лишає чотири живі мітки. `TECHNICAL_SOURCES` (`product`, `digest`) не чіпали. `AiMemoryList.test.tsx` теж підрихтований — фікстури, що використовували мертві джерела (`chat`, `nutrition`) для перевірки механіки групування, тепер асертять fallback `?? item.source` замість зниклих міток, замість заміни на живі джерела (щоб не втратити перевірку "два незалежні collapsible-групи").
+5. ✅ `modules/mono/webhook.test.ts`, `historyFetch.test.ts`, `webhook.integration.test.ts` — мок `enqueueMemoryIngest` і асерти `not.toHaveBeenCalled()` прибрані.
+6. ✅ **Гейт від рецидиву** — `modules/ai-memory/sources.test.ts`: для кожного значення `ALLOWED_MEMORY_SOURCES` у дереві має існувати виклик `enqueueMemoryIngest` із цим source (прямим рядковим літералом або через локальну `MemorySource`-константу в тому самому файлі) **або** запис у `RESERVED_SOURCES` (нині `['cofounder', 'product']`, не порожній — див. відхилення вище). Тест читає дерево `apps/server/src` через `node:fs`, без нового CI-скрипта.
+7. ✅ **Замір дірки `remember`** — `IMPLICIT_FACT_CASES` у [`scripts/tool-selection-eval.ts`](../../../apps/server/scripts/tool-selection-eval.ts) вже існував на момент старту PR-1 (замір § «Замір 2026-08-27» вище зафіксував базову лінію — 18/18 на прод-моделі, промптова правка визнана непотрібною). Крок закритий до цього PR-а.
+8. ✅ Доки: [`ai-memory.md`](../../02-engineering/architecture/ai-memory.md) (діаграма ingest-потоку — `mono webhook (source=finyk)` і клієнт-driven гілка прибрані, sources matrix звужена до живих + legacy-рядків), [`ai-memory-activation.md`](../../01-product/launch/tech/ai-memory-activation.md) (обіцянка «finyk-ingest стартує автоматично» прибрана).
 
 ### PR-2 — Перецілити kill-switch на `digest` (`feat(server)` + ops)
 
@@ -235,14 +268,14 @@ psql "$DATABASE_URL" -c "INSERT INTO ai_memories (user_id, source, content) VALU
 
 ## Критерії DONE
 
-- [ ] `ALLOWED_MEMORY_SOURCES` містить рівно чотири значення, і кожне має продюсера в дереві.
-- [ ] `sources.test.ts` падає, якщо додати значення без продюсера і без запису в `RESERVED_SOURCES`.
-- [ ] `POST /api/ai-memory/ingest` не існує; жодного посилання на нього в коді й доках.
-- [ ] Kill-switch націлений на `digest`, авто-фліп у `eval-rag.ts` працює, runbook описує актуальну назву.
-- [ ] CHECK-констрейнт на проді звужений; замір `GROUP BY source` до міграції зафіксований у PR-3.
-- [ ] Жоден UI-підпис, архітектурний опис чи ops-runbook не описує поведінки, якої немає в коді.
-- [ ] Число `implicit remember: N/M` зафіксоване, і на його основі заведено окремий таск.
-- [ ] `pnpm check` зелений.
+- [x] `ALLOWED_MEMORY_SOURCES` містить рівно чотири значення, і кожне має продюсера в дереві **або** явний запис у `RESERVED_SOURCES` (`cofounder`, `product` — продюсери зникли разом із PR #928, § Перезамір 2026-09-03).
+- [x] `sources.test.ts` падає, якщо додати значення без продюсера і без запису в `RESERVED_SOURCES` (синтетичне дерево-тест у самому файлі).
+- [x] `POST /api/ai-memory/ingest` не існує; жодного посилання на нього в коді й доках (PR-1).
+- [ ] Kill-switch націлений на `digest`, авто-фліп у `eval-rag.ts` працює, runbook описує актуальну назву. — PR-2.
+- [ ] CHECK-констрейнт на проді звужений; замір `GROUP BY source` до міграції зафіксований у PR-3. — PR-3.
+- [x] Жоден UI-підпис, архітектурний опис чи ops-runbook не описує поведінки, якої немає в коді (PR-1: `ai-memory.md`, `ai-memory-activation.md`, `AiMemoryList.tsx`).
+- [x] Число `implicit remember: N/M` зафіксоване (§ «Замір 2026-08-27» вище — 18/18 на прод-моделі), і на його основі заведено окремий таск (промптова правка визнана непотрібною; таск на решту дірки — окремий, поза цією ініціативою).
+- [x] `pnpm check` зелений (PR-1 — verification нижче).
 
 ## Ризики
 
