@@ -16,7 +16,6 @@
  * останнім і обрізається першим.
  */
 import { INTERNAL_TRANSFER_ID } from "../constants";
-import { Badge } from "@shared/components/ui/Badge";
 import { Icon } from "@shared/components/ui/Icon";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import { catChipVars } from "../lib/categoryChip";
@@ -74,7 +73,13 @@ export function TxRowMetaChips({
   if (existingSplitsCount > 0) statuses.push("спліт");
 
   const showAccountName = showAccount && account && accountName;
-  const hasMeta = Boolean(showAccountName) || statuses.length > 0;
+  const showAiMark =
+    !tx._manual &&
+    !overrideCatId &&
+    !isIncome &&
+    !isTransfer &&
+    catId !== "other";
+  const hasMeta = showAiMark || Boolean(showAccountName) || statuses.length > 0;
 
   return (
     <div className="flex items-center gap-1.5 mt-0.5 overflow-hidden">
@@ -87,40 +92,34 @@ export function TxRowMetaChips({
       >
         {catName}
       </span>
-      {/* 6.4: AI-source tag — surfaces auto-categorized expense rows
-          so users can tell which categorizations are inferred (MCC +
-          description match) vs explicit (user override, manual entry,
-          splits, transfers, fallback "other"). Skipped on:
-            – manual expenses (`_manual`): user typed the category
-            – overridden rows: explicit user choice, shows "змін." instead
-            – internal transfers: special routing, not categorization
-            – income rows: handled by separate income flow above
-            – "other" fallback: no real inference happened
-      */}
-      {!tx._manual &&
-        !overrideCatId &&
-        !isIncome &&
-        !isTransfer &&
-        catId !== "other" && (
-          <Badge
-            variant="finyk"
-            tone="soft"
-            size="xs"
-            className="shrink-0 inline-flex items-center rounded-full"
-            title="Категорію визначив Сержант за описом і MCC"
-          >
-            <Icon name="sergeant" size={10} aria-hidden />
-            {/* Badge — generic <span>, тож aria-label імені йому не дає;
-                ім'я для скрінрідера — прихований текст. */}
-            <span className="sr-only">
-              Категорію визначив Сержант за описом і MCC
-            </span>
-          </Badge>
-        )}
       {hasMeta && (
         <span className="shrink-0 inline-flex items-center gap-1 text-style-caption text-muted">
+          {/* 6.4: AI-source mark — surfaces auto-categorized expense rows
+              so users can tell which categorizations are inferred (MCC +
+              description match) vs explicit. Голий гліф у тому ж
+              приглушеному тоні, що й решта рядка, а не Badge: пігулка в
+              рядку одна — категорія (рішення власника 2026-09-03).
+              Skipped on:
+                – manual expenses (`_manual`): user typed the category
+                – overridden rows: explicit user choice, shows "змін." instead
+                – internal transfers: special routing, not categorization
+                – income rows: handled by separate income flow above
+                – "other" fallback: no real inference happened
+          */}
+          {showAiMark && (
+            <span
+              className="inline-flex items-center"
+              title="Категорію визначив Сержант за описом і MCC"
+            >
+              <Icon name="sergeant" size={12} aria-hidden />
+              <span className="sr-only">
+                Категорію визначив Сержант за описом і MCC
+              </span>
+            </span>
+          )}
           {showAccountName && (
             <span className="inline-flex items-center gap-1" data-tx-account>
+              {showAiMark && <span aria-hidden>·</span>}
               {/* §2: рахунок завжди нейтральний — «кредитна» позначає
                   іконка, не колір. Червоне лишається боргам/активам. */}
               {isCreditCard && (
@@ -131,7 +130,9 @@ export function TxRowMetaChips({
           )}
           {statuses.map((label, i) => (
             <span key={label} className="inline-flex items-center gap-1">
-              {(i > 0 || showAccountName) && <span aria-hidden>·</span>}
+              {(i > 0 || showAccountName || showAiMark) && (
+                <span aria-hidden>·</span>
+              )}
               <span>{label}</span>
             </span>
           ))}
