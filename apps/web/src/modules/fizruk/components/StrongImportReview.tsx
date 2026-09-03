@@ -6,6 +6,7 @@ import { Select } from "@shared/components/ui/Select";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { useLocalUserId } from "../../../core/auth/useLocalUserId";
+import { resolveStrongIdNamespace } from "../lib/strongIdNamespace";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 import {
   commitStrongImport,
@@ -30,12 +31,13 @@ export function StrongImportReview({
 }: StrongImportReviewProps) {
   const copy = messages.fizruk.strongImport;
   const toast = useToast();
-  // Той самий id, під яким рядки лягають у локальну партицію і поїдуть у
-  // `user_id` на сервер — він же неймспейс детермінованих id імпорту
-  // (див. AI-DANGER у `lib/strongImport.ts`). `null` означає, що сесія ще
-  // резолвиться; імпортувати в цей момент не можна, бо рядки дістануть id
-  // з чужого неймспейсу.
-  const idNamespace = useLocalUserId();
+  // Неймспейс детермінованих id імпорту. Для справжнього акаунта — його id
+  // (він же поїде в `user_id`), для анонімної/демо-сесії — id пристрою,
+  // бо `LOCAL_ANON_USER_ID` спільний для всіх таких сесій. Повний розбір —
+  // `lib/strongIdNamespace.ts`. `null` = сесія ще резолвиться; імпортувати
+  // в цей момент не можна.
+  const localUserId = useLocalUserId();
+  const idNamespace = resolveStrongIdNamespace(localUserId);
   const [workoutText, setWorkoutText] = useState("");
   const [weightText, setWeightText] = useState("");
   const [weightUnit, setWeightUnit] = useState<StrongWeightUnit>("kg");
