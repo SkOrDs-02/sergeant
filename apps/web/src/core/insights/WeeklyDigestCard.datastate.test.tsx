@@ -64,7 +64,9 @@ describe("WeeklyDigestCard — DataState routing", () => {
     ).toBeNull();
   });
 
-  it("renders the empty slot with a generate button on the current week when there is no digest", () => {
+  // Рішення власника 2026-09-03: звіт створює лише понеділкова
+  // автогенерація, кнопки «Згенерувати звіт» у порожньому стані немає.
+  it("renders the empty slot WITHOUT a generate button on the current week when there is no digest", () => {
     useWeeklyDigestMock.mockReturnValue({
       digest: null,
       loading: false,
@@ -78,8 +80,9 @@ describe("WeeklyDigestCard — DataState routing", () => {
     render(<WeeklyDigestCard />);
 
     expect(
-      screen.getByRole("button", { name: /згенерувати звіт/i }),
-    ).toBeInTheDocument();
+      screen.queryByRole("button", { name: /згенерувати звіт/i }),
+    ).toBeNull();
+    expect(screen.getByText(/зʼявиться сам у понеділок/i)).toBeInTheDocument();
     expect(screen.queryByLabelText(/генерую звіт тижня/i)).toBeNull();
   });
 

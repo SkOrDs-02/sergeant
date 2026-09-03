@@ -1,7 +1,7 @@
 /** @status Active */
 
 export const finykPageMessages = {
-  reportHeading: "Фінік (витрати)",
+  reportHeading: "Витрати",
   addLimitOrGoal: "+ Додати ліміт або ціль",
   budgetOverLimit: "перевищено",
   budgetOverSixtyPercent: "· понад 60% ліміту",

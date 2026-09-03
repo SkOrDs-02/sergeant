@@ -29,7 +29,7 @@ describe("RoutineCard", () => {
     loadRoutineState.mockReturnValue(stateWithCompletion());
     render(<RoutineCard period="week" offset={0} />);
 
-    const toggle = screen.getByRole("button", { name: /Рутина/i });
+    const toggle = screen.getByRole("button", { name: /Звички/i });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.getAllByText(/%/).length).toBeGreaterThan(0);
 
@@ -41,14 +41,14 @@ describe("RoutineCard", () => {
   it("renders the no-data placeholder with no completions", () => {
     loadRoutineState.mockReturnValue({ habits: [], completions: {} });
     render(<RoutineCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Рутина/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Звички/i }));
     expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
   });
 
   it("renders the consistency heatmap with completion data", () => {
     loadRoutineState.mockReturnValue(stateWithCompletion());
     render(<RoutineCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Рутина/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Звички/i }));
     // Heatmap замінив стовпчиковий графік: контейнер лишається під тим
     // самим aria-label, а дні тепер — клітинки-`div` з per-cell aria-label
     // «DD.MM: N%» (тиждень → 7 клітинок).
@@ -63,7 +63,7 @@ describe("RoutineCard", () => {
       completions: { h1: [localDateKey()] },
     });
     render(<RoutineCard period="month" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Рутина/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Звички/i }));
     expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
   });
 });

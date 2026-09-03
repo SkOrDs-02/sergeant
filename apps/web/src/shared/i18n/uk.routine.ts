@@ -14,7 +14,7 @@ export const routinePageMessages = {
   weekdays: "Дні тижня",
   archive: "Архів",
   // HubReports RoutineCard
-  reportHeading: "Рутина (виконання звичок)",
+  reportHeading: "Звички",
   firstRun: {
     title: "Перша звичка: попередня",
     description:

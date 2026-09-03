@@ -131,7 +131,7 @@ describe("ExpensesCard", () => {
     localStorage.setItem("finyk_tx_cache", JSON.stringify(txCacheToday()));
     render(<ExpensesCard period="week" offset={0} />);
 
-    const toggle = screen.getByRole("button", { name: /Фінік/i });
+    const toggle = screen.getByRole("button", { name: /Витрати/i });
     expect(toggle).toHaveAttribute("aria-expanded", "false");
     expect(screen.getAllByText(/₴/).length).toBeGreaterThan(0);
 
@@ -162,7 +162,7 @@ describe("ExpensesCard", () => {
 
     // Розгорнутий стан — ще два `Money`: головне число і підпис із
     // попереднім періодом. PR міняв усі три сайти, тож перевіряємо всі три.
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
     const expanded = screen.getAllByText(
       (_, el) =>
         el?.tagName === "SPAN" && el.className.includes("tabular-nums"),
@@ -173,7 +173,7 @@ describe("ExpensesCard", () => {
 
   it("renders the no-data placeholder when the tx cache is empty", () => {
     render(<ExpensesCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
     expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
   });
 
@@ -186,7 +186,7 @@ describe("ExpensesCard", () => {
       JSON.stringify([{ id: "t2", amount: -30000, time: timeSec }]),
     );
     render(<ExpensesCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
     const chart = screen.getByLabelText("Графік");
     expect(chart.querySelectorAll("button").length).toBeGreaterThan(0);
   });
@@ -194,7 +194,7 @@ describe("ExpensesCard", () => {
   it("renders month period without crashing", () => {
     localStorage.setItem("finyk_tx_cache", JSON.stringify(txCacheToday()));
     render(<ExpensesCard period="month" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
 
     const scroller = screen.getByTestId("report-chart-scroller");
@@ -220,7 +220,7 @@ describe("ExpensesCard", () => {
     // Cold mount: the SQLite cache hasn't warmed yet (refreshedAt: null) —
     // this is the deep-link `/?tab=reports` state before the sync pull lands.
     render(<ExpensesCard period="week" offset={0} />);
-    fireEvent.click(screen.getByRole("button", { name: /Фінік/i }));
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
     expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
 
     // The pull lands: SQLite cache warms with a manual expense dated

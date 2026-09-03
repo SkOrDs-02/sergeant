@@ -247,26 +247,19 @@ function DigestContent({
     </div>
   );
 
+  // Порожній стан БЕЗ кнопки «Згенерувати звіт» (рішення власника
+  // 2026-09-03): звіт створює лише понеділкова автогенерація
+  // (`useMondayAutoDigest`), людина його не замовляє. «Оновити звіт» під
+  // тілом наявного звіту лишається — це перегенерація того, що вже є, а не
+  // створення. `canGenerate` тут далі розрізняє поточний/щойно завершений
+  // тиждень (звіт ще прийде) від давнішого (не збережено — і вже не буде).
   const emptySlot = (
     <div className="px-4 pb-4">
-      {canGenerate ? (
-        <>
-          <p className="text-style-body text-muted mb-3 leading-relaxed">
-            Підсумую тиждень по всіх модулях і скажу, що зробити наступного.
-          </p>
-          <button
-            type="button"
-            onClick={onGenerate}
-            className="w-full h-10 min-h-[44px] rounded-xl bg-primary text-bg text-style-label hover:brightness-110 transition-[filter,opacity,transform] active:scale-[0.98]"
-          >
-            Згенерувати звіт
-          </button>
-        </>
-      ) : (
-        <p className="text-style-body text-muted text-center py-2">
-          Звіт за цей тиждень не збережено
-        </p>
-      )}
+      <p className="text-style-body text-muted text-center py-2 leading-relaxed">
+        {canGenerate
+          ? "Звіт зʼявиться сам у понеділок, коли тиждень завершиться."
+          : "Звіт за цей тиждень не збережено"}
+      </p>
     </div>
   );
 
@@ -416,21 +409,22 @@ interface WeeklyDigestCardProps {
    */
   onCollapse?: () => void;
   /**
-   * Поверхня показу — property `surface` події `ai_advice_shown`. Дефолт
-   * відповідає standalone-використанню у «Звітах»; хаб-дашборд передає
-   * `"hub_dashboard"` явно.
+   * Поверхня показу — property `surface` події `ai_advice_shown`. Єдина
+   * жива поверхня з 2026-09-03 — низ головної (`HubInsightsBlock`);
+   * вкладка «Звʼязки» дайджест більше не рендерить, тож дефолт збігається
+   * з нею. `"hub_reports"` лишається в типі як історичне значення подій.
    */
   surface?: AdviceSurface;
   /**
-   * Чи розгорнута зовнішня `CollapsibleSection`. Дефолт `true` — у «Звітах»
-   * картка не загорнута в секцію.
+   * Чи розгорнута зовнішня `CollapsibleSection`. Дефолт `true` — для
+   * standalone-рендера (тести, сторіз) без обгортки.
    */
   sectionOpen?: boolean;
 }
 
 export function WeeklyDigestCard({
   onCollapse,
-  surface = "hub_reports",
+  surface = "hub_dashboard",
   sectionOpen = true,
 }: WeeklyDigestCardProps = {}) {
   const currentWeekKey = getWeekKey();

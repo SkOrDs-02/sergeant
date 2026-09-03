@@ -27,12 +27,6 @@ vi.mock("./NutritionCard", () => ({
   default: () => <div data-testid="hub-reports-nutrition-card" />,
 }));
 
-// `WeeklyDigestCard` reads its own localStorage state and renders an
-// async-narrative surface — out of scope for this smoke test.
-vi.mock("../insights/WeeklyDigestCard", () => ({
-  WeeklyDigestCard: () => <div data-testid="hub-reports-weekly-digest" />,
-}));
-
 // PaywallModal + useFeatureGate side-effects (event listeners, plan probe)
 // are not under test here — stub to keep the surface minimal.
 vi.mock("../billing", () => ({
@@ -142,25 +136,15 @@ describe("HubReports — render smoke (F23)", () => {
     });
   });
 
-  it("renders the WeeklyDigestCard stub in week mode", () => {
+  /**
+   * Тижневого дайджесту на вкладці немає (рішення власника 2026-09-03):
+   * він живе лише внизу головної і приходить понеділковою автогенерацією.
+   * Тест пінить відсутність, щоб копія не повернулась «для зручності».
+   */
+  it("не рендерить тижневий дайджест — він живе на головній", () => {
     render(<HubReports />);
 
-    // WeeklyDigestCard is shown in 'week' mode (initial period)
-    expect(screen.getByTestId("hub-reports-weekly-digest")).toBeInTheDocument();
-  });
-
-  it("hides WeeklyDigestCard when switching to month period", async () => {
-    render(<HubReports />);
-
-    // Switch to 'Місяць' — the period selector is a `Segmented` control
-    // (role="tablist" with role="tab" segments), not plain buttons.
-    await act(async () => {
-      screen.getByRole("tab", { name: "Місяць" }).click();
-    });
-
-    expect(
-      screen.queryByTestId("hub-reports-weekly-digest"),
-    ).not.toBeInTheDocument();
+    expect(screen.queryByText("Звіт тижня")).not.toBeInTheDocument();
   });
 
   it("period navigation buttons are present and navigable", async () => {

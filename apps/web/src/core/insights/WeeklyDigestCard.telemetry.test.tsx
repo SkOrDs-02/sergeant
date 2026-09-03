@@ -123,10 +123,10 @@ describe("WeeklyDigestCard — телеметрія AI-поради", () => {
     expect(serialized).not.toContain("Витрати під контролем");
   });
 
-  it("дефолтна поверхня — hub_reports (standalone-використання у «Звітах»)", () => {
+  it("дефолтна поверхня — hub_dashboard (єдина жива з 2026-09-03)", () => {
     render(<WeeklyDigestCard />);
     fireEvent.click(screen.getByRole("button", { name: /переглянути звіт/i }));
-    expect(shown()[0]).toMatchObject({ surface: "hub_reports" });
+    expect(shown()[0]).toMatchObject({ surface: "hub_dashboard" });
   });
 
   it("розгортання / згортання / «Оновити звіт» їдуть як expand / collapse / refresh", () => {

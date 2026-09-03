@@ -646,7 +646,7 @@ export const messages = {
     mealType: "Прийом їжі",
     templates: "Швидкі прийоми",
     deleteTemplateTitle: "Видалити швидкий прийом?",
-    reportHeading: "Їжа (ккал/день)", // HubReports NutritionCard
+    reportHeading: "Калорії", // HubReports NutritionCard
     kcalUnit: "ккал",
     macrosToday: "Макроси за сьогодні", // MacroRings group label (V-10)
     // Порожній стан сканера штрихкодів (аудит nutrition E-6).
