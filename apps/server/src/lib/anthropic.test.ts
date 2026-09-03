@@ -52,6 +52,17 @@ vi.mock("./timing.js", () => ({
   sleep: anthropicMocks.sleep,
 }));
 
+// Ініціатива 0025: PostHog AI Observability — третій sink поряд із
+// Prometheus і ledger. Мокаємо helper цілком: тут перевіряємо, ЩО клієнт у
+// нього передає (provider, латентність, статус), а allowlist самих
+// властивостей закриває `posthogAi.test.ts`.
+const captureAiGenerationMock = vi.hoisted(() =>
+  vi.fn((_input: unknown) => true),
+);
+vi.mock("./posthogAi.js", () => ({
+  captureAiGeneration: captureAiGenerationMock,
+}));
+
 import {
   anthropicMessages,
   anthropicMessagesStream,
@@ -76,6 +87,7 @@ function resetAnthropicMocks(): void {
   anthropicMocks.externalHttpRequestsTotal.inc.mockClear();
   anthropicMocks.recordUsageToDb.mockClear();
   anthropicMocks.sleep.mockClear();
+  captureAiGenerationMock.mockClear();
 }
 
 describe("computeRetryDelayMs (T2 audit #9)", () => {
@@ -606,5 +618,208 @@ describe("recordAnthropicUsage / extractAnthropicText", () => {
     });
 
     expect(anthropicMocks.aiCostEstimateUsd.inc).not.toHaveBeenCalled();
+  });
+});
+
+// Ініціатива 0025 (PostHog AI Observability, Фаза 1): центральний клієнт шле
+// `$ai_generation` на КОЖЕН виклик — успішний з токенами й латентністю,
+// неуспішний з `isError` і HTTP-статусом. Контент сюди не потрапляє за
+// конструкцією helper-а (див. `posthogAi.test.ts`); тут — що саме передаємо.
+describe("PostHog $ai_generation (initiative 0025)", () => {
+  beforeEach(() => {
+    resetAnthropicMocks();
+    vi.useRealTimers();
+  });
+
+  afterEach(() => {
+    vi.unstubAllGlobals();
+  });
+
+  it("успішний non-stream виклик → подія з провайдером, токенами, статусом і латентністю", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            usage: {
+              input_tokens: 100,
+              output_tokens: 20,
+              cache_read_input_tokens: 7,
+              cache_creation_input_tokens: 5,
+            },
+            content: [{ type: "text", text: "hello" }],
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    await anthropicMessages(
+      "sk-test",
+      { model: "claude-3-5-sonnet-20241022", messages: [] },
+      { endpoint: "chat", promptVersion: "v1", userId: "user_1" },
+    );
+
+    expect(captureAiGenerationMock).toHaveBeenCalledTimes(1);
+    expect(captureAiGenerationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user_1",
+        model: "claude-3-5-sonnet-20241022",
+        provider: "anthropic",
+        feature: "chat",
+        inputTokens: 100,
+        outputTokens: 20,
+        cacheReadInputTokens: 7,
+        cacheCreationInputTokens: 5,
+        httpStatus: 200,
+        promptVersion: "v1",
+        latencyMs: expect.any(Number),
+      }),
+    );
+    const arg = captureAiGenerationMock.mock.calls[0]?.[0] as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(arg["isError"]).toBeUndefined();
+    // Промпт/відповідь не передаються навіть у helper.
+    expect(arg).not.toHaveProperty("$ai_input");
+    expect(arg).not.toHaveProperty("messages");
+    expect(arg).not.toHaveProperty("content");
+  });
+
+  it("не-ретраєна HTTP-помилка → подія з isError і статусом, без токенів", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(JSON.stringify({ error: { message: "bad" } }), {
+          status: 400,
+        }),
+      ),
+    );
+
+    await anthropicMessages(
+      "sk-test",
+      { model: "claude-3-5-sonnet-20241022", messages: [] },
+      { endpoint: "digest" },
+    );
+
+    expect(captureAiGenerationMock).toHaveBeenCalledTimes(1);
+    expect(captureAiGenerationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        provider: "anthropic",
+        feature: "digest",
+        isError: true,
+        httpStatus: 400,
+      }),
+    );
+    const arg = captureAiGenerationMock.mock.calls[0]?.[0] as unknown as Record<
+      string,
+      unknown
+    >;
+    expect(arg["inputTokens"]).toBeUndefined();
+    expect(anthropicMocks.recordUsageToDb).not.toHaveBeenCalled();
+  });
+
+  it("stream: не-ok відповідь → isError-подія; результат несе provider і elapsedMs", async () => {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("nope", { status: 529 })),
+    );
+
+    const result = await anthropicMessagesStream(
+      "sk-test",
+      { model: "claude-3-5-sonnet-20241022" },
+      { endpoint: "chat-stream", userId: "user_2" },
+    );
+
+    expect(result.provider).toBe("anthropic");
+    expect(typeof result.elapsedMs).toBe("function");
+    expect(captureAiGenerationMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        userId: "user_2",
+        feature: "chat-stream",
+        isError: true,
+        httpStatus: 529,
+        latencyMs: 12,
+      }),
+    );
+  });
+
+  it("stream через OpenRouter → provider=openrouter у результаті, без події до usage", async () => {
+    envMock.OPENROUTER_API_KEY = "sk-or-test";
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(new Response("data: {}\n\n", { status: 200 })),
+    );
+
+    const result = await anthropicMessagesStream(
+      "sk-test",
+      { model: "z-ai/glm-5.2" },
+      { endpoint: "chat", allowOpenRouter: true },
+    );
+
+    expect(result.provider).toBe("openrouter");
+    // Usage стріму знає лише chat-модуль (SSE `message_start`) — подія
+    // успіху народжується там через `recordAnthropicUsage(..., meta)`.
+    expect(captureAiGenerationMock).not.toHaveBeenCalled();
+    result.recordStreamEnd("ok");
+    expect(captureAiGenerationMock).not.toHaveBeenCalled();
+  });
+
+  it("recordAnthropicUsage прокидає meta (provider/latency) у подію; без meta — anthropic", () => {
+    recordAnthropicUsage(
+      "z-ai/glm-5.2",
+      "chat",
+      { input_tokens: 10, output_tokens: 5, cost: 0.01 },
+      "v9",
+      "user_3",
+      { provider: "openrouter", latencyMs: 777 },
+    );
+    expect(captureAiGenerationMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({
+        userId: "user_3",
+        provider: "openrouter",
+        feature: "chat",
+        latencyMs: 777,
+        costUsd: 0.01,
+        promptVersion: "v9",
+      }),
+    );
+
+    recordAnthropicUsage("claude-3-5-sonnet-20241022", "digest", {
+      input_tokens: 10,
+      output_tokens: 5,
+    });
+    expect(captureAiGenerationMock).toHaveBeenLastCalledWith(
+      expect.objectContaining({ provider: "anthropic", feature: "digest" }),
+    );
+  });
+
+  it("fail-open: збій helper-а не ламає виклик і не чіпає ledger", async () => {
+    captureAiGenerationMock.mockImplementationOnce(() => {
+      throw new Error("posthog down");
+    });
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            usage: { input_tokens: 1, output_tokens: 1 },
+            content: [{ type: "text", text: "ok" }],
+          }),
+          { status: 200 },
+        ),
+      ),
+    );
+
+    const result = await anthropicMessages(
+      "sk-test",
+      { model: "claude-3-5-sonnet-20241022", messages: [] },
+      { endpoint: "chat" },
+    );
+
+    expect(result.response?.ok).toBe(true);
+    expect(extractAnthropicText(result.data)).toBe("ok");
+    expect(anthropicMocks.recordUsageToDb).toHaveBeenCalledOnce();
   });
 });

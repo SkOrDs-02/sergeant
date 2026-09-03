@@ -43,6 +43,7 @@ import {
   type StartedReminderScheduler,
 } from "./lib/reminders/scheduler.js";
 import { endPoolWithAbortTimeout } from "./lib/poolShutdown.js";
+import { shutdownPostHogAi } from "./lib/posthogAi.js";
 import { connectRedis, disconnectRedis } from "./lib/redis.js";
 import {
   startMemoryIngestWorker,
@@ -502,6 +503,11 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     } catch {
       /* sentry flush не має блокувати shutdown */
     }
+
+    // Ініціатива 0025: дофлашити чергу `$ai_generation` (posthog-node батчує
+    // по 20 подій / 10 с). Helper fail-open і сам bounded 2 с — no-op, коли
+    // `POSTHOG_AI_OBSERVABILITY_KEY` не задано.
+    await shutdownPostHogAi(2000);
   } finally {
     clearTimeout(hardTimer);
     logger.info({ msg: "shutdown_complete", exitCode });

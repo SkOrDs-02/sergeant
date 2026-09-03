@@ -305,6 +305,15 @@ const envSchema = z.object({
 
   POSTHOG_PROJECT_API_KEY: z.string().optional(),
 
+  // Ініціатива 0025 (PostHog AI Observability). Project ingestion key
+  // (`phc_…`) для `$ai_generation` з `lib/anthropic.ts` через `posthog-node`.
+  // Задано → увімкнено; не задано → AI-івенти не шлються взагалі (dev/test).
+  // Окремий від `POSTHOG_PROJECT_API_KEY` навмисно — це незалежний тумблер
+  // AI-шару (реєстр: docs/02-engineering/architecture/feature-flags.md § 3.3).
+  // Умова зняття: Фаза 2 закрита і дашборд/алерти живі — тоді ключ стає
+  // обовʼязковим у проді.
+  POSTHOG_AI_OBSERVABILITY_KEY: z.string().optional(),
+
   CSP_REPORT_ONLY: z.string().optional(),
 
   SECURITY_EVENTS_MUTED: boolFromEnv(false),

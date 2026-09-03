@@ -198,6 +198,10 @@ describe("streamAnthropicToSse — basic SSE framing", () => {
         { type: "message_delta", delta: { stop_reason: "end_turn" } },
       ]),
       recordStreamEnd: vi.fn(),
+      // Ініціатива 0025: транспорт і таймер стріму їдуть у `$ai_generation`
+      // через meta шостим аргументом.
+      provider: "openrouter",
+      elapsedMs: () => 321,
     });
 
     await streamAnthropicToSse(
@@ -218,6 +222,7 @@ describe("streamAnthropicToSse — basic SSE framing", () => {
       expect.objectContaining({ input_tokens: 10 }),
       "prompt-v13",
       "user-abc",
+      { provider: "openrouter", latencyMs: 321 },
     );
   });
 });
