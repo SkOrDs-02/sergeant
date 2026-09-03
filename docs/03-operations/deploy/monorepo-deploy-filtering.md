@@ -1,13 +1,13 @@
 # Monorepo deploy filtering — Vercel ignoreCommand + GitHub Actions path filters
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-26.
+> **Last touched:** 2026-09-03 by @Skords-01. **Next review:** 2026-12-20.
 > **Status:** Active
 >
 > **⚠️ Бекенд-тригер переписано ([ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md)):** `apps/server` більше **не** деплоїться через Railway `watchPatterns`/GraphQL — тепер це GitHub Actions [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) з `on.push.paths`, що білдить образ → `ghcr.io` → Coolify webhook. Файли `railway*.toml` видалено з репо 2026-07-19. OpenClaw Gateway ніде не задеплоєний (див. [`service-catalog.md`](../../02-engineering/architecture/service-catalog.md)). Vercel-секція нижче чинна без змін.
 
 Sergeant ships production surfaces from one `main` branch:
 
-- `apps/web` → Vercel (`ignoreCommand` + `turbo-ignore`)
+- `apps/web` → Vercel (`ignoreCommand` + `turbo query affected`)
 - `apps/server` → образ на `ghcr.io` → Coolify на Hetzner VPS (GitHub Actions `on.push.paths`)
 
 Without filtering, **every push to `main` triggers both deploys**, even
@@ -18,51 +18,79 @@ noise in the Coolify deploy history and burn CI minutes for nothing.
 This page is the canonical recipe for the **per-surface deploy filters**
 that keep the trunk-based workflow cheap.
 
-## Vercel — `ignoreCommand` in `apps/web/vercel.json`
+## Vercel — `ignoreCommand` в `apps/web/vercel.json`
 
 ```json
-"ignoreCommand": "npx --yes turbo-ignore @sergeant/web --fallback=HEAD^1"
+"ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"beta\" ]; then exit 1; fi; npx --yes turbo@2 query affected --base=\"$VERCEL_GIT_PREVIOUS_SHA\" --packages @sergeant/web --exit-code || exit 1"
 ```
 
-`turbo-ignore` reads `turbo.json` + workspace deps and exits with:
+`turbo query affected` читає `turbo.json` + воркспейсні залежності і виходить з:
 
-- **`1`** if `@sergeant/web` (or any of its workspace deps — `@sergeant/{config,db-schema,design-tokens,shared}` etc.) changed since the last successful deploy → Vercel **builds**.
-- **`0`** if nothing in that subtree changed → Vercel **skips** (you'll see "Build skipped" in the deployment list).
+- **`1`** якщо `@sergeant/web` (або будь-яка його воркспейсна залежність — `@sergeant/{config,db-schema,design-tokens,shared}` тощо) зачеплений діфом `$VERCEL_GIT_PREVIOUS_SHA...HEAD` → Vercel **білдить**.
+- **`0`** якщо в цьому піддереві нічого не змінилось → Vercel **пропускає** ("Build skipped" у списку деплоїв).
 
-`--fallback=HEAD^1` is the safety net for first deploys and clean clones
-where Vercel has no `VERCEL_GIT_PREVIOUS_SHA` cache to compare against. In
-that case it compares against the immediately previous commit instead of
-falling back to "always build".
+Гілка `beta` збирається **завжди** — `exit 1` до будь-якого порівняння.
 
-> **Note on deprecation.** As of Turbo 2.9, `turbo-ignore` prints a
-> deprecation warning and recommends `turbo query affected` instead. The
-> tool still works correctly and is what Vercel's official monorepo docs
-> recommend today. Migrate when Vercel's recipe catches up. Tracked in the
-> Turbo upgrade card.
+### Чому не `turbo-ignore --fallback=HEAD^1`
+
+Дві причини, і друга важливіша за депрекейт.
+
+`turbo-ignore` задепрекейчений з Turbo 2.9 на користь `turbo query affected`;
+[монорепо-доки Vercel](https://vercel.com/docs/monorepos/turborepo) тепер
+рекомендують саме цю команду для Ignored Build Step.
+
+Але міняти було треба через `--fallback=HEAD^1`. Фолбек спрацьовує щоразу, коли
+попередній **успішний** деплой гілки недосяжний (`Previous deployment for
+@sergeant/web on branch main is unreachable` у логах — досить, щоб попередній
+деплой було скасовано), і тоді порівняння звужується до діфу ОДНОГО останнього
+коміту. Сценарій хибного пропуску: у PR раніше чіпали `apps/web/**`, зверху ліг
+`docs/`- або `ci/`-коміт → `HEAD^1..HEAD` порожній для веба → превʼю
+пропускається цілком, хоча гілка веб змінює. На `main` цього не видно, бо там
+merge-коміт і `HEAD^1` це попередня вершина `main`, тобто повний діф PR-а —
+баг проявлявся саме на превʼю гілок.
+
+Тепер фолбека немає взагалі. Порожній або недосяжний `$VERCEL_GIT_PREVIOUS_SHA`
+дає в `turbo` помилку (`GitRefNotFound` → «assuming all files have changed»,
+або exit 2), а `|| exit 1` нормалізує будь-який ненульовий код у «білдити».
+Тобто невідомість завжди коштує зайву збірку, ніколи не пропуск.
 
 ### Verify locally
 
 ```bash
 cd apps/web
-# On a branch that touches apps/web/** — must exit 1 (build):
-npx --yes turbo-ignore @sergeant/web --fallback=HEAD^1; echo "exit=$?"
-# On a docs-only commit — must exit 0 (skip).
+# На гілці, що чіпає apps/web/** — має бути exit 1 (build):
+npx --yes turbo@2 query affected --base=origin/main --packages @sergeant/web --exit-code; echo "exit=$?"
+# На docs-only коміті — має бути exit 0 (skip).
 ```
+
+### Заміряно на Vercel (2026-09-03, PR #1057)
+
+Обидві гілки логіки перевірені на реальних деплоях, не лише локально.
+
+**Білд без попереднього деплою.** `dpl_6trLwJ7f`, перший пуш гілки: у
+логах видно, що `$VERCEL_GIT_PREVIOUS_SHA` порожній, turbo падає з
+`ambiguous argument ''`, `|| exit 1` перетворює це на «білдити» — деплой
+READY. Саме той стан, у якому старий `--fallback=HEAD^1` міг мовчки
+пропустити збірку.
+
+**Пропуск за наявності попереднього деплою.** `dpl_6YFkkL42`, наступний
+коміт тієї ж гілки, docs-only: `affectedPackages` порожній, exit 0 →
+`The deployment was canceled because the Ignored Build Step command
+returned exit code 0`. Тобто фільтр живий — `$VERCEL_GIT_PREVIOUS_SHA`
+резолвиться і досяжний у клоні, пропуск відбувається там, де має.
 
 ### Verify on Vercel after merge
 
-1. Open the deployment list in the Vercel UI for project `sergeant-web`.
-2. After landing a `docs/**`-only PR, the corresponding deployment row
-   should show **"Build skipped"** with the reason "Build skipped due to
-   ignored build step".
-3. After landing a PR that touches `apps/web/**` or any workspace dep, the
-   deployment must show **"Ready"** (built and promoted to Production for
-   the production branch).
+1. Відкрий список деплоїв у Vercel UI для проєкту `sergeant`.
+2. Після мержу `docs/**`-only PR-а відповідний рядок має показати
+   **"Build skipped"** з причиною "Build skipped due to ignored build step".
+3. Після мержу PR-а, що чіпає `apps/web/**` або будь-яку воркспейсну
+   залежність, деплой має бути **"Ready"**.
 
-If a docs-only deploy still builds, double-check that `ignoreCommand` is
-exactly the value above in `apps/web/vercel.json`. Vercel UI must NOT
-override it (the "Ignored Build Step" field in **Settings → Git** stays
-empty — config-as-code wins).
+Якщо docs-only деплой усе одно білдиться, звір `ignoreCommand` з
+`apps/web/vercel.json`. Vercel UI НЕ має його перекривати (поле
+"Ignored Build Step" у **Settings → Git** лишається порожнім — config-as-code
+виграє).
 
 ## Backend — GitHub Actions `on.push.paths` in `deploy-api.yml`
 
@@ -120,7 +148,7 @@ When you add a new deployable service (e.g. a worker) or a second Vercel
 project (e.g. a marketing site):
 
 1. **Vercel**: in the new project's `vercel.json`, set
-   `"ignoreCommand": "npx --yes turbo-ignore @sergeant/<workspace-name> --fallback=HEAD^1"`.
+   `"ignoreCommand": "npx --yes turbo@2 query affected --base=\"$VERCEL_GIT_PREVIOUS_SHA\" --packages @sergeant/<workspace-name> --exit-code || exit 1"`.
 2. **GitHub Actions**: give the service its own deploy workflow, figure out the
    transitive closure of its `@sergeant/*` deps (`pnpm list --filter @sergeant/<name>`
    or read its `package.json`), and put that path list under `on.push.paths`.
@@ -136,7 +164,7 @@ deploy because its pattern didn't match the change set (e.g. the fix was
 a follow-up tweak in a path nobody added to `on.push.paths`):
 
 - **Manual redeploy**: for the API, re-run [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) via **Actions → Deploy API image → Run workflow** (`workflow_dispatch`), or dernути Coolify deploy-webhook напряму. In Vercel, **Deployments → Redeploy** without the cache.
-- **Append the missing path** to `deploy-api.yml` `on.push.paths` (API) or check whether the path is reachable from `@sergeant/web` (Vercel `turbo-ignore`).
+- **Append the missing path** to `deploy-api.yml` `on.push.paths` (API) or check whether the path is reachable from `@sergeant/web` (Vercel `turbo query affected`).
 - **Update this doc** with the added path and the rationale (one-line PR comment is enough).
 
 The point of the filter is to stop **needless** deploys, not to gatekeep

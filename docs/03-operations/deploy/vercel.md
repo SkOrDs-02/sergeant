@@ -1,6 +1,6 @@
 # Deploy — Vercel (apps/web SPA)
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-11.
+> **Last touched:** 2026-09-03 by @Skords-01. **Next review:** 2026-12-13.
 > **Status:** Active
 
 Vercel hosts the React PWA from `apps/web`. The API surface runs on \*\*Hetzner CX23
@@ -45,15 +45,15 @@ pnpm --filter @sergeant/web build"` in the active file. Without that
 These match the assumptions baked into `apps/web/vercel.json`. Out-of-repo
 settings live in the Vercel UI under **Project → Settings → General**:
 
-| Setting           | Required value       | Why                                                                                                                                                                                                                          |
-| ----------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Root Directory    | `apps/web`           | The project deploys the PWA in `apps/web`; Vercel reads `apps/web/vercel.json` from this setting.                                                                                                                            |
-| Framework Preset  | Other                | We override with `installCommand` + `buildCommand` in `vercel.json`.                                                                                                                                                         |
-| Output Directory  | `dist`               | Set in `vercel.json` (`outputDirectory`, relative to Root Directory); Vercel UI must match.                                                                                                                                  |
-| Install Command   | `(from vercel.json)` | Vercel honours `installCommand` from `vercel.json`; UI override is empty.                                                                                                                                                    |
-| Build Command     | `(from vercel.json)` | Same — leave blank in UI to defer to the file.                                                                                                                                                                               |
-| Ignored Build Cmd | `(from vercel.json)` | `ignoreCommand` in `vercel.json` runs `turbo-ignore @sergeant/web` so commits that don't touch `@sergeant/web` or its workspace deps skip the build. See [`./monorepo-deploy-filtering.md`](./monorepo-deploy-filtering.md). |
-| Node.js Version   | `22.x`               | Matches `package.json:engines.node` (`22.x`) and `.nvmrc` (`22.19.0`).                                                                                                                                                       |
+| Setting           | Required value       | Why                                                                                                                                                                                                                                                                          |
+| ----------------- | -------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Root Directory    | `apps/web`           | The project deploys the PWA in `apps/web`; Vercel reads `apps/web/vercel.json` from this setting.                                                                                                                                                                            |
+| Framework Preset  | Other                | We override with `installCommand` + `buildCommand` in `vercel.json`.                                                                                                                                                                                                         |
+| Output Directory  | `dist`               | Set in `vercel.json` (`outputDirectory`, relative to Root Directory); Vercel UI must match.                                                                                                                                                                                  |
+| Install Command   | `(from vercel.json)` | Vercel honours `installCommand` from `vercel.json`; UI override is empty.                                                                                                                                                                                                    |
+| Build Command     | `(from vercel.json)` | Same — leave blank in UI to defer to the file.                                                                                                                                                                                                                               |
+| Ignored Build Cmd | `(from vercel.json)` | `ignoreCommand` in `vercel.json` runs `turbo query affected --packages @sergeant/web` so commits that don't touch `@sergeant/web` or its workspace deps skip the build; branch `beta` always builds. See [`./monorepo-deploy-filtering.md`](./monorepo-deploy-filtering.md). |
+| Node.js Version   | `22.x`               | Matches `package.json:engines.node` (`22.x`) and `.nvmrc` (`22.19.0`).                                                                                                                                                                                                       |
 
 Verify after every Vercel UI change:
 

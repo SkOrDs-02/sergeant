@@ -2,7 +2,7 @@
   "$schema": "https://openapi.vercel.sh/vercel.json",
   "installCommand": "corepack enable && corepack prepare pnpm@9.15.1 --activate && pnpm install --frozen-lockfile",
   "buildCommand": "pnpm --filter @sergeant/db-schema build && pnpm --filter @sergeant/web build",
-  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"beta\" ]; then exit 1; else npx --yes turbo-ignore @sergeant/web --fallback=HEAD^1; fi",
+  "ignoreCommand": "if [ \"$VERCEL_GIT_COMMIT_REF\" = \"beta\" ]; then exit 1; fi; npx --yes turbo@2 query affected --base=\"$VERCEL_GIT_PREVIOUS_SHA\" --packages @sergeant/web --exit-code || exit 1",
   "outputDirectory": "dist",
   "headers": [
     {
