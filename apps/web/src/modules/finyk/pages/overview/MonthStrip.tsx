@@ -174,7 +174,7 @@ const MonthStripImpl = function MonthStrip({
 
 export const MonthStrip = memo(MonthStripImpl);
 
-const STRIP_HINT_DISMISSED_KEY = "finyk_month_strip_hint_dismissed_v1";
+const STRIP_HINT_DISMISSED_SLOT = "finyk_month_strip_hint_dismissed_v1";
 
 /**
  * Одноразова підказка під стрічкою: що таке стовпчики і як їх читати.
@@ -183,7 +183,7 @@ const STRIP_HINT_DISMISSED_KEY = "finyk_month_strip_hint_dismissed_v1";
  */
 export function MonthStripHint({ hasPlan }: { hasPlan: boolean }) {
   const [dismissed, setDismissed] = useState<boolean>(
-    () => safeReadLS<boolean>(STRIP_HINT_DISMISSED_KEY, false) ?? false,
+    () => safeReadLS<boolean>(STRIP_HINT_DISMISSED_SLOT, false) ?? false,
   );
   if (dismissed) return null;
   const m = messages.finyk.monthStrip;
@@ -198,7 +198,7 @@ export function MonthStripHint({ hasPlan }: { hasPlan: boolean }) {
       <button
         type="button"
         onClick={() => {
-          safeWriteLS(STRIP_HINT_DISMISSED_KEY, true);
+          safeWriteLS(STRIP_HINT_DISMISSED_SLOT, true);
           setDismissed(true);
         }}
         aria-label={m.hintDismiss}
