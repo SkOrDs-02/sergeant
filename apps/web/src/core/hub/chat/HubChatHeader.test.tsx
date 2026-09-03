@@ -55,7 +55,6 @@ function makeProps(overrides: Partial<HubChatHeaderProps> = {}) {
     detailsOpen: false,
     onDetailsOpenChange: vi.fn(),
     contextState: { status: "ready", ts: 1 },
-    hasData: true,
     sessionInfo: { historyCount: 4, chars: 1234 },
     sessionsCount: 3,
     onOpenHistory: vi.fn(),
@@ -103,16 +102,17 @@ describe("HubChatHeader", () => {
     expect(props.onOpenHistory).toHaveBeenCalledTimes(1);
   });
 
-  it("surfaces building/no-data states and secondary header actions", () => {
+  it("surfaces the building state and secondary header actions", () => {
     const props = makeProps({
       detailsOpen: true,
       contextState: { status: "building", ts: 2 },
-      hasData: false,
     });
     renderHeader(props);
 
     expect(screen.getByRole("status")).toHaveTextContent("Готую контекст…");
-    expect(screen.getByText(/Mono не підключено/)).toBeInTheDocument();
+    // Звіт власника 2026-09-03: попередження про Mono читало LS-кеш, а не
+    // підключення, і брехало. Його прибрано разом із пропом `hasData`.
+    expect(screen.queryByText(/Mono/)).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Нова бесіда" }));
     fireEvent.click(screen.getByRole("button", { name: "Закрити асистента" }));

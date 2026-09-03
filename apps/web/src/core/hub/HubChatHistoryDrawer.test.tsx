@@ -1,5 +1,11 @@
 /** @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import { HubChatHistoryDrawer } from "./HubChatHistoryDrawer";
 import type { HubChatSession } from "./hubChatSessions";
@@ -95,22 +101,95 @@ describe("HubChatHistoryDrawer", () => {
     expect(titles).toEqual(["Новіша", "Старіша"]);
   });
 
-  it("pluralizes user message count (1 vs many) and counts only user messages", () => {
+  it("previews the last meaningful reply, prefixing the user's own", () => {
+    const endsWithUser = session({
+      id: "u",
+      title: "Моя остання",
+      updatedAt: 2000,
+      messages: [
+        userMsg("скільки я витратив"),
+        assistantMsg("1 200 ₴"),
+        userMsg("а вчора?"),
+      ],
+    });
+    const endsWithError = session({
+      id: "e",
+      title: "Зі збоєм",
+      updatedAt: 1000,
+      messages: [
+        userMsg("привіт"),
+        assistantMsg("вітаю"),
+        {
+          id: "err",
+          role: "assistant",
+          text: "Асистент недоступний",
+          error: true,
+        },
+      ],
+    });
+    renderDrawer({ open: true, sessions: [endsWithUser, endsWithError] });
+    expect(screen.getByText("Ти: а вчора?")).toBeInTheDocument();
+    // Збій — не репліка бесіди, прев'ю бере попередню відповідь.
+    expect(screen.getByText("вітаю")).toBeInTheDocument();
+    expect(screen.queryByText(/недоступний/)).not.toBeInTheDocument();
+  });
+
+  it("falls back to the user message count when there is nothing to preview", () => {
     const one = session({
       id: "one",
       title: "Один",
       updatedAt: 2000,
-      messages: [userMsg("a"), assistantMsg("b"), assistantMsg("c")],
+      messages: [userMsg("   "), assistantMsg(""), assistantMsg(" ")],
     });
     const many = session({
       id: "many",
       title: "Багато",
       updatedAt: 1000,
-      messages: [userMsg("a"), userMsg("b"), assistantMsg("c")],
+      messages: [userMsg(""), userMsg(" "), assistantMsg("")],
     });
     renderDrawer({ open: true, sessions: [one, many] });
     expect(screen.getByText(/1 повідомлення/)).toBeInTheDocument();
     expect(screen.getByText(/2 повідомлень/)).toBeInTheDocument();
+  });
+
+  it("groups sessions by Kyiv day: Сьогодні / Вчора / Раніше", () => {
+    vi.useFakeTimers();
+    // Полудень за Києвом — далеко від межі доби, тож ±24 год це рівно
+    // сусідні календарні дні.
+    vi.setSystemTime(new Date("2026-09-03T09:00:00Z"));
+    try {
+      const now = Date.now();
+      const day = 24 * 60 * 60 * 1000;
+      const today = session({ id: "t", title: "Сьогоднішня", updatedAt: now });
+      const yesterday = session({
+        id: "y",
+        title: "Вчорашня",
+        updatedAt: now - day,
+      });
+      const old = session({
+        id: "o",
+        title: "Давня",
+        updatedAt: now - 5 * day,
+      });
+      renderDrawer({ open: true, sessions: [old, today, yesterday] });
+
+      const todayGroup = screen.getByRole("region", { name: "Сьогодні" });
+      const yesterdayGroup = screen.getByRole("region", { name: "Вчора" });
+      const earlierGroup = screen.getByRole("region", { name: "Раніше" });
+      expect(within(todayGroup).getByText("Сьогоднішня")).toBeInTheDocument();
+      expect(within(yesterdayGroup).getByText("Вчорашня")).toBeInTheDocument();
+      expect(within(earlierGroup).getByText("Давня")).toBeInTheDocument();
+
+      const headings = screen
+        .getAllByRole("heading", { level: 3 })
+        .map((h) => h.textContent);
+      expect(headings).toEqual(["Сьогодні", "Вчора", "Раніше"]);
+      expect(
+        screen.getByText("3 бесіди на цьому пристрої"),
+      ).toBeInTheDocument();
+    } finally {
+      vi.useRealTimers();
+    }
   });
 
   it("marks the active session with aria-current", () => {
