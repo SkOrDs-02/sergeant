@@ -28,6 +28,7 @@ import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
 import { dataExportMessages } from "./uk.dataExport";
 import { nutritionPageMessages } from "./uk.nutrition";
+import { nutritionTdeeMessages } from "./uk.nutritionTdee";
 import { pricingMessages } from "./uk.pricing";
 import { privacyMessages } from "./uk.privacy";
 import { crossModuleLinkMessages } from "./uk.crossModuleLink";
@@ -828,32 +829,10 @@ export const messages = {
     ageYearsSuffix: "років",
   },
 
-  // Nutrition → DailyPlanCard «Розрахувати з профілю» CTA. Computes
-  // kcal/Б/Ж/В from `hub_biometrics_v1` via Mifflin-St Jeor + activity
-  // ladder + goal adjustment. Lives next to the static preset menu;
-  // copy here covers the trigger button, the goal-picker dropdown, and
-  // the inline hint that fires when biometrics is incomplete and steers
-  // the user back to Profile → Біометрія.
-  nutritionTdee: {
-    triggerLabel: "Розрахувати з профілю",
-    triggerHint:
-      "Заповни біометрію в профілі (стать, вік, зріст, вагу, рівень активності), і я порахую твою денну норму ккал автоматично.",
-    // Динамічний варіант triggerHint — рахує, чого САМЕ бракує зараз,
-    // замість того самого речення про всі пʼять полів незалежно від
-    // прогресу (браузер-QA 2026-09-03: людина заповнювала частину,
-    // поверталась і бачила той самий текст, що й на порожньому профілі).
-    missingPrefix: "У профілі бракує:",
-    missingHeight: "зріст",
-    missingBirthDate: "дата народження",
-    missingSex: "стать",
-    missingActivity: "рівень активності",
-    missingWeight: "вага",
-    profileLink: "Заповнити в профілі",
-    goalCutting: "Схуднення (-500 ккал)",
-    goalMaintenance: "Підтримка",
-    goalBulking: "Набір (+300 ккал)",
-    appliedToast: "Цілі підставлено з профілю",
-  },
+  // Nutrition → DailyPlanCard «Розрахувати з профілю» CTA — copy винесено
+  // в `uk.nutritionTdee.ts` (Hard Rule #18, той самий патерн, що й
+  // `finyk`/`privacy`/`pricing`).
+  nutritionTdee: nutritionTdeeMessages,
 
   nutritionGoalRange: {
     // Scientifically-grounded soft bounds for daily nutrition targets.
