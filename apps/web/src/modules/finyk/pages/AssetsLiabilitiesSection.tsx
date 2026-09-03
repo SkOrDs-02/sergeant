@@ -58,7 +58,9 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
           </div>
         </div>
       )}
-      {showDebtForm ? (
+      {/* Вхід у форму — quick-action «+ Пасив» угорі сторінки; власна
+          кнопка секції дублювала його (звіт власника 2026-09-03). */}
+      {showDebtForm && (
         <DebtForm
           newDebt={newDebt}
           setNewDebt={setNewDebt}
@@ -86,23 +88,6 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
             setEditingDebtId(null);
           }}
         />
-      ) : (
-        <button
-          type="button"
-          onClick={() => {
-            setEditingDebtId(null);
-            setNewDebt({
-              name: "",
-              emoji: "",
-              totalAmount: "",
-              dueDate: "",
-            });
-            setShowDebtForm(true);
-          }}
-          className="w-full py-2.5 text-style-label rounded-xl bg-danger/10 text-danger-strong dark:bg-danger/15 dark:text-danger border border-danger/30 hover:bg-danger/15 dark:hover:bg-danger/25 active:scale-[0.99] transition-colors shadow-soft mb-2"
-        >
-          + Додати пасив
-        </button>
       )}
       {monoDebtAccounts.map((a, i) => {
         const linkedIds = (a.id ? monoDebtLinkedTxIds[a.id] : []) || [];

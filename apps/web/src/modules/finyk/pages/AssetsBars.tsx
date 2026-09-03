@@ -1,4 +1,4 @@
-import type { ReactNode } from "react";
+import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
@@ -83,6 +83,14 @@ export function AssetsLiabilitiesBar({
 
 export type QuickActionTone = "finyk" | "success" | "danger";
 
+export interface QuickActionButtonProps extends Omit<
+  ButtonHTMLAttributes<HTMLButtonElement>,
+  "children"
+> {
+  label: string;
+  tone?: QuickActionTone;
+}
+
 /**
  * CTA used in the 3-button quick-action row above the sections. Each
  * button collapses the "expand → scroll → tap +" flow into a single tap
@@ -92,28 +100,31 @@ export type QuickActionTone = "finyk" | "success" | "danger";
  * квадраті: тайл за формою збігався з картками вмісту поруч, і око не
  * розрізняло «натисни» та «прочитай» (анти-слоп, атрактор icon-in-tinted-
  * square). Іконки немає навмисно: у трьох колонках підпис і є значенням.
+ *
+ * `forwardRef` + spread решти пропів — щоб кнопка могла бути тригером
+ * `DropdownMenu` («+ Актив» відкриває вибір «актив / мені винні»): меню
+ * клонує тригер і вішає на нього ref, `aria-haspopup` і власний onClick.
  */
-export function QuickActionButton({
-  label,
-  onClick,
-  tone = "finyk",
-}: {
-  label: string;
-  onClick: () => void;
-  tone?: QuickActionTone;
-}) {
+export const QuickActionButton = forwardRef<
+  HTMLButtonElement,
+  QuickActionButtonProps
+>(function QuickActionButton(
+  { label, tone = "finyk", className, ...rest },
+  ref,
+) {
   return (
     <Button
+      ref={ref}
       variant="soft"
       tone={tone}
       size="md"
-      onClick={onClick}
-      className="w-full min-w-0 px-1"
+      className={cn("w-full min-w-0 px-1", className)}
+      {...rest}
     >
       <span className="truncate">+ {label}</span>
     </Button>
   );
-}
+});
 
 export type SectionBarProps = {
   title: string;
@@ -146,7 +157,11 @@ export function SectionBar({
     <button
       onClick={onToggle}
       aria-expanded={open}
-      className="group w-full flex items-center justify-between gap-3 px-4 py-3 bg-panelHi border border-line rounded-2xl mb-2 text-left shadow-soft transition-[transform,box-shadow,border-color] hover:border-muted/40 hover:shadow-card hover:-translate-y-px active:translate-y-0"
+      // `bg-panel`, а не `bg-panelHi`: бар секції — та сама біла поверхня,
+      // що й рядки карток Monobank під ним. Сірий бар читався як
+      // «підкладка», а не як заголовок рівня з картками (звіт власника
+      // 2026-09-03).
+      className="group w-full flex items-center justify-between gap-3 px-4 py-3 bg-panel border border-line rounded-2xl mb-2 text-left shadow-soft transition-[transform,box-shadow,border-color] hover:border-muted/40 hover:shadow-card hover:-translate-y-px active:translate-y-0"
     >
       <div className="flex items-center gap-3 min-w-0">
         <span

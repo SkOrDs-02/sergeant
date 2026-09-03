@@ -170,6 +170,7 @@ function Harness({
   showBalance = true,
   openSubscriptionForm = vi.fn(),
   openAssetForm = vi.fn(),
+  openReceivableForm = vi.fn(),
   openDebtForm = vi.fn(),
   addSubscriptionFromRecurring = vi.fn(),
   dismissRecurring = vi.fn(),
@@ -179,6 +180,7 @@ function Harness({
   showBalance?: boolean;
   openSubscriptionForm?: () => void;
   openAssetForm?: () => void;
+  openReceivableForm?: () => void;
   openDebtForm?: () => void;
   addSubscriptionFromRecurring?: (candidate: unknown) => void;
   dismissRecurring?: (key: string) => void;
@@ -207,6 +209,7 @@ function Harness({
     dismissRecurring,
     openSubscriptionForm,
     openAssetForm,
+    openReceivableForm,
     openDebtForm,
   } as unknown as TableState;
   return <AssetsTable state={state} />;
@@ -281,23 +284,43 @@ describe("AssetsTable", () => {
     expect(screen.getByTestId("liabilities-section")).toBeInTheDocument();
   });
 
-  it("calls openSubscriptionForm / openAssetForm / openDebtForm from the quick-action buttons", () => {
+  it("calls openSubscriptionForm / openDebtForm from the quick-action buttons", () => {
     const openSubscriptionForm = vi.fn();
-    const openAssetForm = vi.fn();
     const openDebtForm = vi.fn();
     render(
       <Harness
         openSubscriptionForm={openSubscriptionForm}
-        openAssetForm={openAssetForm}
         openDebtForm={openDebtForm}
       />,
     );
     fireEvent.click(screen.getByText("+ Підписка"));
-    fireEvent.click(screen.getByText("+ Актив"));
     fireEvent.click(screen.getByText("+ Пасив"));
     expect(openSubscriptionForm).toHaveBeenCalledTimes(1);
-    expect(openAssetForm).toHaveBeenCalledTimes(1);
     expect(openDebtForm).toHaveBeenCalledTimes(1);
+  });
+
+  it("'+ Актив' opens a picker between a plain asset and a receivable", () => {
+    const openAssetForm = vi.fn();
+    const openReceivableForm = vi.fn();
+    render(
+      <Harness
+        openAssetForm={openAssetForm}
+        openReceivableForm={openReceivableForm}
+      />,
+    );
+    const trigger = screen.getByRole("button", { name: /\+ Актив/ });
+    expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+    // Сам тап по «+ Актив» форми не відкриває — лише меню.
+    fireEvent.click(trigger);
+    expect(openAssetForm).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /Мені винні/ }));
+    expect(openReceivableForm).toHaveBeenCalledTimes(1);
+    expect(openAssetForm).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /\+ Актив/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Актив/ }));
+    expect(openAssetForm).toHaveBeenCalledTimes(1);
   });
 
   it("shows masked totals in section summaries when showBalance is false", () => {

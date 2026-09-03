@@ -1,3 +1,5 @@
+import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
+import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { RecurringSuggestions } from "../components/RecurringSuggestions";
 import { FinykStatsStrip } from "../components/FinykStatsStrip";
@@ -37,6 +39,7 @@ export function AssetsTable({ state }: { state: State }) {
     dismissRecurring,
     openSubscriptionForm,
     openAssetForm,
+    openReceivableForm,
     openDebtForm,
   } = state;
 
@@ -66,7 +69,32 @@ export function AssetsTable({ state }: { state: State }) {
           tone="finyk"
           onClick={openSubscriptionForm}
         />
-        <QuickActionButton label="Актив" tone="finyk" onClick={openAssetForm} />
+        {/* «+ Актив» — пікер, а не пряма кнопка: у секції дві різні
+            сутності («Інші активи» й «Мені винні»), і після зняття кнопок
+            усередині груп це єдине місце, де людина обирає між ними. */}
+        <DropdownMenu
+          ariaLabel="Що додати в активи"
+          placement="bottom-start"
+          items={[
+            {
+              type: "item",
+              id: "asset",
+              label: "Актив",
+              description: "Готівка, депозит, інвестиції, авто",
+              icon: <Icon name="wallet" size={16} aria-hidden />,
+              onSelect: openAssetForm,
+            },
+            {
+              type: "item",
+              id: "receivable",
+              label: "Мені винні",
+              description: "Борг, який мають повернути тобі",
+              icon: <Icon name="hand-coins" size={16} aria-hidden />,
+              onSelect: openReceivableForm,
+            },
+          ]}
+          trigger={<QuickActionButton label="Актив" tone="finyk" />}
+        />
         <QuickActionButton label="Пасив" tone="danger" onClick={openDebtForm} />
       </div>
 

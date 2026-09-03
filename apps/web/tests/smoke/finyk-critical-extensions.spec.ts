@@ -49,9 +49,9 @@ test("@critical finyk: assets route opens subscription form", async ({
     "page",
   );
 
-  // Секція «Підписки» тепер згорнута за замовчуванням (`useAssetsState.ts`
-  // → `open.subscriptions === false`), тож кнопка «+ Додати підписку» всередині
-  // неї не змонтована. Канонічний вхід у форму — quick-action «+ Підписка»,
+  // Секція «Підписки» згорнута за замовчуванням (`useAssetsState.ts`
+  // → `open.subscriptions === false`), а власної кнопки «+ Додати підписку»
+  // всередині неї більше немає (дубль знято 2026-09-03). Єдиний вхід у форму — quick-action «+ Підписка»,
   // який розгортає секцію і відкриває форму одним кліком (`openSubscriptionForm`).
   await page.getByRole("button", { name: "+ Підписка" }).click();
   await expect(page.getByLabel("Назва підписки")).toBeVisible();

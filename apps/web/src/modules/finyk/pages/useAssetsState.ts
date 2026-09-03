@@ -236,16 +236,31 @@ export function useAssetsState({
     [subscriptions, manualDebts, receivables, transactions, todayStart],
   );
 
+  // Єдиний вхід у кожну форму — quick-action-ряд угорі сторінки. Раніше
+  // ті самі кнопки дублювались усередині розгорнутих секцій і кожна з них
+  // скидала стан редагування сама; після зняття дублів (звіт власника
+  // 2026-09-03) скидання живе тут, інакше «+ Актив» після редагування
+  // відкривав би форму з чужими значеннями.
   const openSubscriptionForm = () => {
     setOpen((v) => ({ ...v, subscriptions: true }));
     setShowSubForm(true);
   };
   const openAssetForm = () => {
     setOpen((v) => ({ ...v, assets: true }));
+    setEditingAssetId(null);
+    setNewAsset({ name: "", amount: "", currency: "UAH", emoji: "" });
     setShowAssetForm(true);
+  };
+  const openReceivableForm = () => {
+    setOpen((v) => ({ ...v, assets: true }));
+    setEditingRecvId(null);
+    setNewRecv({ name: "", emoji: "", amount: "", note: "", dueDate: "" });
+    setShowRecvForm(true);
   };
   const openDebtForm = () => {
     setOpen((v) => ({ ...v, liabilities: true }));
+    setEditingDebtId(null);
+    setNewDebt({ name: "", emoji: "", totalAmount: "", dueDate: "" });
     setShowDebtForm(true);
   };
 
@@ -369,6 +384,7 @@ export function useAssetsState({
     // Quick-action openers
     openSubscriptionForm,
     openAssetForm,
+    openReceivableForm,
     openDebtForm,
   };
 }

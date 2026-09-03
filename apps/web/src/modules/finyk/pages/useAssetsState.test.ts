@@ -149,6 +149,22 @@ describe("useAssetsState", () => {
     expect(result.current.showAssetForm).toBe(true);
   });
 
+  it("openReceivableForm opens assets section, shows the receivable form and resets edit state", () => {
+    const { result } = renderHook(() =>
+      useAssetsState({
+        mono: makeMono(),
+        storage: makeStorage(),
+      }),
+    );
+    act(() => result.current.setEditingRecvId("recv-1"));
+    act(() => result.current.openReceivableForm());
+
+    expect(result.current.open.assets).toBe(true);
+    expect(result.current.showRecvForm).toBe(true);
+    expect(result.current.editingRecvId).toBeNull();
+    expect(result.current.newRecv.name).toBe("");
+  });
+
   it("openDebtForm opens liabilities section and shows form", () => {
     const { result } = renderHook(() =>
       useAssetsState({
