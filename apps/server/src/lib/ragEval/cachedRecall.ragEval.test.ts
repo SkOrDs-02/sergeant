@@ -25,6 +25,7 @@ import { fileURLToPath } from "node:url";
 
 import { createPgVectorStore } from "../../modules/ai-memory/vectorStore.js";
 import type {
+  MemorySource,
   MemoryWrite,
   VectorStore,
 } from "../../modules/ai-memory/types.js";
@@ -103,7 +104,10 @@ beforeAll(async () => {
     if (!embedding) throw new Error(`Немає вектора для ${doc.id}`);
     return {
       userId: USER_ID,
-      source: doc.source,
+      // Корпус несе й RETIRED-джерела (legacy-рядки, що CHECK ще дозволяє);
+      // тут ми пишемо просто у стор, минаючи API-валідацію, тому звуження
+      // типу безпечне — див. `STORED_MEMORY_SOURCES` у types.ts.
+      source: doc.source as MemorySource,
       sourceRef: doc.sourceRef,
       content: doc.content,
       embedding,

@@ -11,7 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { loadDefaultCorpusSet, parseCorpusSet } from "./corpus.js";
 import { loadDefaultGoldenSet } from "./golden.js";
-import { ALLOWED_MEMORY_SOURCES } from "../../modules/ai-memory/types.js";
+import { STORED_MEMORY_SOURCES } from "../../modules/ai-memory/types.js";
 
 const NEAR_MISS_PER_GOLDEN = 3;
 
@@ -35,9 +35,9 @@ describe("rag-eval corpus", () => {
     }
   });
 
-  it("кожен source входить у ALLOWED_MEMORY_SOURCES", () => {
+  it("кожен source входить у STORED_MEMORY_SOURCES (= CHECK у БД)", () => {
     for (const doc of corpus.docs) {
-      expect(ALLOWED_MEMORY_SOURCES).toContain(doc.source);
+      expect(STORED_MEMORY_SOURCES).toContain(doc.source);
     }
   });
 

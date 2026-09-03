@@ -31,7 +31,7 @@ import { writeFileSync } from "node:fs";
 import { env } from "../env.js";
 import { createVoyageEmbeddings } from "../modules/ai-memory/embeddings.js";
 import { createPgVectorStore } from "../modules/ai-memory/vectorStore.js";
-import type { MemoryWrite } from "../modules/ai-memory/types.js";
+import type { MemorySource, MemoryWrite } from "../modules/ai-memory/types.js";
 import { loadDefaultCorpusSet } from "../lib/ragEval/corpus.js";
 import { loadDefaultGoldenSet } from "../lib/ragEval/golden.js";
 import {
@@ -92,7 +92,9 @@ async function main(): Promise<void> {
 
     const writes: MemoryWrite[] = corpus.docs.map((doc, i) => ({
       userId: USER_ID,
-      source: doc.source,
+      // Корпус несе й RETIRED-джерела (legacy-рядки, CHECK їх ще дозволяє);
+      // пишемо просто у стор, минаючи API-валідацію — див. STORED_MEMORY_SOURCES.
+      source: doc.source as MemorySource,
       sourceRef: doc.sourceRef,
       content: doc.content,
       embedding: vectors[i]!,

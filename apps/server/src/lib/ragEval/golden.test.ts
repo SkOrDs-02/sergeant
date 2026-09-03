@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ALLOWED_MEMORY_SOURCES } from "../../modules/ai-memory/types.js";
+import { STORED_MEMORY_SOURCES } from "../../modules/ai-memory/types.js";
 import { loadDefaultGoldenSet, parseGoldenSet } from "./golden.js";
 
 describe("loadDefaultGoldenSet (canonical fixture)", () => {
@@ -25,9 +25,9 @@ describe("loadDefaultGoldenSet (canonical fixture)", () => {
     }
   });
 
-  it("кожна query має валідний domain з ALLOWED_MEMORY_SOURCES", () => {
+  it("кожна query має валідний domain з STORED_MEMORY_SOURCES", () => {
     for (const q of set.queries) {
-      expect(ALLOWED_MEMORY_SOURCES).toContain(q.domain);
+      expect(STORED_MEMORY_SOURCES).toContain(q.domain);
     }
   });
 
