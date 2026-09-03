@@ -96,37 +96,37 @@ export function AssetsMonoCards({
             onClick={() => setOpenId(id)}
             aria-label={`${visual.name}: ${t.settingsAriaSuffix}`}
             className={cn(
-              "touch-target flex w-full items-center justify-between gap-3 rounded-xl border border-line bg-panel/60 p-3 text-left transition-colors",
+              "touch-target flex w-full flex-col gap-1 rounded-xl border border-line bg-panel/60 p-3 text-left transition-colors",
               "hover:bg-panelHi focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               !included && "opacity-50",
             )}
           >
-            <div className="flex items-center gap-3 min-w-0">
-              <span
-                className={cn(
-                  "inline-flex h-10 w-10 items-center justify-center rounded-xl shrink-0",
-                  visual.tone,
-                )}
-                aria-hidden
-              >
-                <Icon name={visual.iconName} size={18} />
-              </span>
-              <div className="min-w-0">
-                <div className="text-style-label truncate">{visual.name}</div>
-                <div className="flex items-center gap-1.5 mt-0.5">
-                  <span className="text-style-caption text-subtle">
-                    {included ? t.bankLabel : t.excluded}
-                  </span>
-                  {isCredit && (
-                    <Badge variant="warning" size="xs">
-                      {t.creditLabel}
-                    </Badge>
+            <div className="flex w-full items-center justify-between gap-3">
+              <div className="flex items-center gap-3 min-w-0">
+                <span
+                  className={cn(
+                    "inline-flex h-10 w-10 items-center justify-center rounded-xl shrink-0",
+                    visual.tone,
                   )}
+                  aria-hidden
+                >
+                  <Icon name={visual.iconName} size={18} />
+                </span>
+                <div className="min-w-0">
+                  <div className="text-style-label truncate">{visual.name}</div>
+                  <div className="flex items-center gap-1.5 mt-0.5">
+                    <span className="text-style-caption text-subtle">
+                      {included ? t.bankLabel : t.excluded}
+                    </span>
+                    {isCredit && (
+                      <Badge variant="warning" size="xs">
+                        {t.creditLabel}
+                      </Badge>
+                    )}
+                  </div>
                 </div>
               </div>
-            </div>
-            <div className="text-right shrink-0">
-              <div className="text-style-label tabular-nums text-text">
+              <div className="text-style-label tabular-nums text-text text-right shrink-0">
                 {showBalance ? (
                   // `kopecks` увімкнено навмисно: це залишок на рахунку
                   // банку, де копійка — частина факту, а не шум. На
@@ -140,30 +140,34 @@ export function AssetsMonoCards({
                   "••••"
                 )}
               </div>
-              {/*
-                Кредитка з боргом інакше читається як порожня картка:
-                зверху чесний 0 (власних коштів понад ліміт справді
-                немає), а сам борг лежить у «Пасивах» без жодного
-                натяку тут. Припис — місток між двома числами, а не
-                друга сума: `getMonoDebt` тут ЛИШЕ показується, у
-                капітал він входить рівно один раз, через
-                `getMonoTotals().debt`.
-
-                Ховається разом із балансом: під `showBalance = false`
-                борг — така сама приватна цифра, як і залишок.
-              */}
-              {showBalance && creditDebt > 0 && (
-                <div className="text-style-caption text-warning-strong dark:text-warning mt-0.5">
-                  {t.debtHintPrefix}{" "}
-                  <Money
-                    amount={creditDebt}
-                    tone="inherit"
-                    symbol={currencySymbol(a.currencyCode)}
-                  />{" "}
-                  {t.debtHintSuffix}
-                </div>
-              )}
             </div>
+            {/*
+              Кредитка з боргом інакше читається як порожня картка:
+              зверху чесний 0 (власних коштів понад ліміт справді
+              немає), а сам борг лежить у «Пасивах» без жодного
+              натяку тут. Припис — місток між двома числами, а не
+              друга сума: `getMonoDebt` тут ЛИШЕ показується, у
+              капітал він входить рівно один раз, через
+              `getMonoTotals().debt`.
+
+              Припис іде ОКРЕМИМ рядком на всю ширину, а не в правій
+              колонці: там він налазив на бейдж «кредитна» на вузькому
+              екрані (звіт власника 2026-09-03).
+
+              Ховається разом із балансом: під `showBalance = false`
+              борг — така сама приватна цифра, як і залишок.
+            */}
+            {showBalance && creditDebt > 0 && (
+              <div className="pl-13 text-style-caption text-warning-strong dark:text-warning">
+                {t.debtHintPrefix}{" "}
+                <Money
+                  amount={creditDebt}
+                  tone="inherit"
+                  symbol={currencySymbol(a.currencyCode)}
+                />{" "}
+                {t.debtHintSuffix}
+              </div>
+            )}
           </button>
         );
       })}

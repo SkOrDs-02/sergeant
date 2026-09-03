@@ -133,6 +133,7 @@ function TxRowImpl({
           isCreditCard={isCreditCard}
           account={account}
           accountName={accountName}
+          showAccount={(accounts?.length ?? 0) > 1}
           hasReceipt={hasReceipt}
           note={note}
         />
