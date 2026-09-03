@@ -6,7 +6,7 @@
    All actual rules live in `./styles/*.css`:
 
      - theme.css           — light/dark CSS-vars, DM Sans fallback metrics,
-                             `.bg-mesh` (ink-mesh background utility)
+                             `.bg-mesh` (стіл: фон сторінки в hue модуля)
      - base.css            — html/body resets, ::selection, reduced-motion,
                              iOS input-zoom fix
      - animations.css      — `@keyframes`, page/module entry transitions

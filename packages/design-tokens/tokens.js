@@ -422,6 +422,43 @@ export const moduleAccentRgb = {
 };
 
 /**
+ * Стіл і зона — фонова система web (рішення власника 2026-09-03).
+ *
+ * `desk` — фон сторінки, зсунутий у hue модуля; хрома ≤5%, світлота майже
+ * як у `--c-bg`, бо `--c-subtle` (#6b645d) сидить рівно на порозі AA проти
+ * бежу і темніший стіл одразу валить третинний текст під 4.5:1 (гейт —
+ * contrast.test.js). `zone` — той самий hue на крок глибше, лише під шапкою
+ * і табами модуля, де текст завжди `-strong` або чорнило. Хаб нейтральний:
+ * без hue, щоб не читатись як п'ятий модуль. Темна тема: стіл один для всіх
+ * (ink base), зона — 7% tier-400 акценту на ньому.
+ *
+ * Дзеркало — `--module-desk-rgb` / `--module-zone-rgb` у
+ * apps/web/src/styles/theme.css; міняй парою.
+ */
+export const moduleSurfaces = {
+  hub: {
+    light: { desk: "#e7e5df", zone: "#dad6ce" },
+    dark: { desk: "#14100e", zone: "#1f1b19" },
+  },
+  finyk: {
+    light: { desk: "#e4e9e6", zone: "#d3e3de" },
+    dark: { desk: "#14100e", zone: "#161e1a" },
+  },
+  fizruk: {
+    light: { desk: "#e3e8ea", zone: "#cfdfe4" },
+    dark: { desk: "#14100e", zone: "#151e1e" },
+  },
+  routine: {
+    light: { desk: "#eae3e5", zone: "#efd8dd" },
+    dark: { desk: "#14100e", zone: "#241918" },
+  },
+  nutrition: {
+    light: { desk: "#e6e9e0", zone: "#dde5c9" },
+    dark: { desk: "#14100e", zone: "#1f1f11" },
+  },
+};
+
+/**
  * «Чорнило» (Ink) — dark-first surface + text scale.
  *
  * Canonical values for the `.theme-dark` "Ink" visual direction (spec:

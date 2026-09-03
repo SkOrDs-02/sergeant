@@ -64,7 +64,6 @@ export interface ModuleHeaderProps {
 const MODULE_HEADER_TOKENS: Record<
   ModuleAccent,
   {
-    gradient: string;
     border: string;
     subtitle: string;
     /** Title accent — applied as a left accent dot for module identity. */
@@ -74,28 +73,24 @@ const MODULE_HEADER_TOKENS: Record<
   }
 > = {
   finyk: {
-    gradient: "from-finyk/5",
     border: "border-finyk/15",
     subtitle: "text-finyk-strong dark:text-finyk-300/70",
     accentDot: "bg-finyk",
     accentStrip: "bg-finyk/45",
   },
   fizruk: {
-    gradient: "from-fizruk/5",
     border: "border-fizruk/15",
     subtitle: "text-fizruk-strong dark:text-fizruk-300/70",
     accentDot: "bg-fizruk",
     accentStrip: "bg-fizruk/45",
   },
   routine: {
-    gradient: "from-routine/5",
     border: "border-routine/15",
     subtitle: "text-routine-strong dark:text-routine-300/70",
     accentDot: "bg-routine",
     accentStrip: "bg-routine/45",
   },
   nutrition: {
-    gradient: "from-nutrition/5",
     border: "border-nutrition/15",
     subtitle: "text-nutrition-strong dark:text-nutrition/70",
     accentDot: "bg-nutrition",
@@ -122,8 +117,11 @@ export function ModuleHeader({
     <div
       className={cn(
         "shrink-0 backdrop-blur-md z-40 relative safe-area-pt",
+        // Зона: шапка і таби модуля стоять на тоні модуля на крок глибшому
+        // за стіл (`--module-zone-rgb`), не на градієнті до панелі. Текст
+        // тут завжди чорнило або `-strong`, тож глибший тон не зачіпає AA.
         mt
-          ? cn("bg-linear-to-b to-panel/95", mt.gradient, mt.border, "border-b")
+          ? cn("bg-zone", mt.border, "border-b")
           : "bg-panel/95 border-b border-line",
         className,
       )}
@@ -244,7 +242,7 @@ export function ModuleHeaderIconButton({
       type="button"
       onClick={onClick}
       className={cn(
-        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border border-line bg-panel/80",
+        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
         className,
       )}
       aria-label={ariaLabel}
@@ -287,7 +285,7 @@ export function ModuleHeaderAssistantButton({
         emitHubBus("openChat", { message: null, autoSend: false });
       }}
       className={cn(
-        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border border-line bg-panel/80",
+        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
         className,
       )}
@@ -344,7 +342,7 @@ export function ModuleHeaderBackButton({
         // (back + hub) meet the 44px touch-target floor explicitly, even
         // though other module-header icon buttons in this file stayed at
         // 40px (pre-existing, out of scope here).
-        "shrink-0 h-11 min-h-[44px] -ml-1 pl-2 pr-3 gap-1.5 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border border-line bg-panel/80",
+        "shrink-0 h-11 min-h-[44px] -ml-1 pl-2 pr-3 gap-1.5 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
         className,
       )}
       aria-label={ariaLabel}
@@ -521,25 +519,25 @@ const MODULE_SWITCHER_TOKENS: Record<
   finyk: {
     active: "bg-finyk-strong text-white",
     inactive:
-      "bg-surface-soft-glass border-surface-line text-finyk-strong dark:text-finyk hover:bg-finyk-soft hover:border-finyk-soft-border",
+      "zone-chip text-finyk-strong dark:text-finyk hover:bg-finyk-soft hover:border-finyk-soft-border",
     ring: "focus-visible:ring-finyk",
   },
   fizruk: {
     active: "bg-fizruk-strong text-white",
     inactive:
-      "bg-surface-soft-glass border-surface-line text-fizruk-strong dark:text-fizruk-300 hover:bg-fizruk-soft hover:border-fizruk-soft-border",
+      "zone-chip text-fizruk-strong dark:text-fizruk-300 hover:bg-fizruk-soft hover:border-fizruk-soft-border",
     ring: "focus-visible:ring-fizruk",
   },
   routine: {
     active: "bg-routine-strong text-white",
     inactive:
-      "bg-surface-soft-glass border-surface-line text-routine-strong dark:text-routine hover:bg-routine-soft hover:border-routine-soft-border",
+      "zone-chip text-routine-strong dark:text-routine hover:bg-routine-soft hover:border-routine-soft-border",
     ring: "focus-visible:ring-routine",
   },
   nutrition: {
     active: "bg-nutrition-strong text-white",
     inactive:
-      "bg-surface-soft-glass border-surface-line text-nutrition-strong dark:text-nutrition hover:bg-nutrition-soft hover:border-nutrition-soft-border",
+      "zone-chip text-nutrition-strong dark:text-nutrition hover:bg-nutrition-soft hover:border-nutrition-soft-border",
     ring: "focus-visible:ring-nutrition",
   },
 };
