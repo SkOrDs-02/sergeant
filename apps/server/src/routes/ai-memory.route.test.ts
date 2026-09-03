@@ -4,56 +4,45 @@ import request from "supertest";
 /**
  * Route-level contract tests для `/api/ai-memory/*`.
  *
- * Покриваємо:
- *   1. Auth guard: 401 без сесії.
- *   2. AI_MEMORY_ENABLED guard: 503 коли вмикач вимкнено.
- *   3. Schema validation: 400 при порожньому content / source поза allow-list /
- *      content > AI_MEMORY_INGEST_MAX_CONTENT_LEN.
- *   4. `finyk` / `digest` source-и заборонено через POST (server-side hooks
- *      обробляють — клієнт не повинен ребрендити).
- *   5. Happy path: 202 + enqueueMemoryIngest викликаний з payload.
- *   6. Metadata oversize → 413.
+ * `POST /api/ai-memory/ingest` (клієнт-driven ingestion) видалений
+ * ініціативою 0024 (PR-1, 2026-09-03) — жодне з клієнт-driven джерел
+ * (`chat`/`fizruk`/`nutrition`/`routine`/`journal`) не мало продюсера в
+ * дереві. Тести на нього — теж; recall/list/delete лишаються.
  */
 
 // Встановлюємо env ПЕРЕД імпортом створьки/env.ts. Hoisted-блок виконується
 // до import-statements, тож `env.AI_MEMORY_ENABLED` буде true коли module
 // завантажиться. Інакше парсер `parseBoolEnv` зчитає false і всі тести
 // отримають 503 від guard-у.
-const {
-  mockPool,
-  queryMock,
-  getSessionUserMock,
-  enqueueMemoryIngestMock,
-  recallMock,
-  forgetUserMock,
-} = vi.hoisted(() => {
-  process.env["AI_MEMORY_ENABLED"] = "true";
-  const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
-  const mockPool = {
-    query: queryMock,
-    // L-8 Фаза 2 (2026-08-09): `buildMemoryDeleteHandler` тепер відкриває
-    // транзакцію (`pool.connect()` + BEGIN/COMMIT/ROLLBACK) для узгодженого
-    // видалення з `user_profile`. Клієнт делегує в той самий `queryMock`,
-    // тож `stubAiMemorySql`-диспетчер нижче ловить і транзакційні виклики.
-    connect: vi.fn().mockResolvedValue({ query: queryMock, release: vi.fn() }),
-    on: vi.fn(),
-    totalCount: 0,
-    idleCount: 0,
-    waitingCount: 0,
-  };
-  const getSessionUserMock = vi.fn().mockResolvedValue(null);
-  const enqueueMemoryIngestMock = vi.fn().mockResolvedValue(undefined);
-  const recallMock = vi.fn().mockResolvedValue([]);
-  const forgetUserMock = vi.fn().mockResolvedValue(3);
-  return {
-    mockPool,
-    queryMock,
-    getSessionUserMock,
-    enqueueMemoryIngestMock,
-    recallMock,
-    forgetUserMock,
-  };
-});
+const { mockPool, queryMock, getSessionUserMock, recallMock, forgetUserMock } =
+  vi.hoisted(() => {
+    process.env["AI_MEMORY_ENABLED"] = "true";
+    const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
+    const mockPool = {
+      query: queryMock,
+      // L-8 Фаза 2 (2026-08-09): `buildMemoryDeleteHandler` тепер відкриває
+      // транзакцію (`pool.connect()` + BEGIN/COMMIT/ROLLBACK) для узгодженого
+      // видалення з `user_profile`. Клієнт делегує в той самий `queryMock`,
+      // тож `stubAiMemorySql`-диспетчер нижче ловить і транзакційні виклики.
+      connect: vi
+        .fn()
+        .mockResolvedValue({ query: queryMock, release: vi.fn() }),
+      on: vi.fn(),
+      totalCount: 0,
+      idleCount: 0,
+      waitingCount: 0,
+    };
+    const getSessionUserMock = vi.fn().mockResolvedValue(null);
+    const recallMock = vi.fn().mockResolvedValue([]);
+    const forgetUserMock = vi.fn().mockResolvedValue(3);
+    return {
+      mockPool,
+      queryMock,
+      getSessionUserMock,
+      recallMock,
+      forgetUserMock,
+    };
+  });
 
 vi.mock("./../db.js", () => ({
   default: mockPool,
@@ -69,7 +58,7 @@ vi.mock("./../auth.js", () => ({
 }));
 
 vi.mock("./../modules/ai-memory/ingestQueue.js", () => ({
-  enqueueMemoryIngest: enqueueMemoryIngestMock,
+  enqueueMemoryIngest: vi.fn().mockResolvedValue(undefined),
   startMemoryIngestWorker: vi.fn(() => null),
   __resetMemoryIngestQueueForTesting: vi.fn(),
 }));
@@ -94,8 +83,6 @@ beforeEach(() => {
   queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
   getSessionUserMock.mockReset();
   getSessionUserMock.mockResolvedValue(null);
-  enqueueMemoryIngestMock.mockReset();
-  enqueueMemoryIngestMock.mockResolvedValue(undefined);
   recallMock.mockReset();
   recallMock.mockResolvedValue([]);
   forgetUserMock.mockReset();
@@ -106,171 +93,6 @@ beforeEach(() => {
 afterAll(() => {
   if (SAVED_ENABLED === undefined) delete process.env["AI_MEMORY_ENABLED"];
   else process.env["AI_MEMORY_ENABLED"] = SAVED_ENABLED;
-});
-
-describe("POST /api/ai-memory/ingest — auth guard", () => {
-  it("→ 401 без сесії", async () => {
-    const app = createApp();
-    const res = await request(app)
-      .post("/api/ai-memory/ingest")
-      .set("X-Requested-With", "XMLHttpRequest")
-      .send({ source: "nutrition", content: "Сніданок: omelette + кава" });
-    expect(res.status).toBe(401);
-    expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
-  });
-});
-
-// Note: AI_MEMORY_ENABLED guard покрито у `ingestQueue.test.ts`
-// (enqueueMemoryIngest skip-ить + інкрементує mode=disabled). У route-тесті
-// re-evaluate-нути `env.AI_MEMORY_ENABLED` неможливо без vi.resetModules-loop-у,
-// бо `parseBoolEnv` фрізиться під час module-load-у (env.ts:194). Hard-вимикач
-// додатково перевіряється manual-smoke-test-ом (підняти server з
-// AI_MEMORY_ENABLED=false → POST → очікувати 503).
-
-describe("POST /api/ai-memory/ingest — schema validation", () => {
-  beforeEach(() => {
-    getSessionUserMock.mockResolvedValue({ id: "u1" });
-  });
-
-  it("→ 400 коли content порожній", async () => {
-    const app = createApp();
-    const res = await request(app)
-      .post("/api/ai-memory/ingest")
-      .set("X-Requested-With", "XMLHttpRequest")
-      .send({ source: "nutrition", content: "" });
-    expect(res.status).toBe(400);
-    expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
-  });
-
-  it("→ 400 коли source поза allow-list", async () => {
-    const app = createApp();
-    const res = await request(app)
-      .post("/api/ai-memory/ingest")
-      .set("X-Requested-With", "XMLHttpRequest")
-      .send({ source: "evil", content: "abc" });
-    expect(res.status).toBe(400);
-    expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
-  });
-
-  it("→ 400 коли source=finyk (заборонено через клієнт)", async () => {
-    const app = createApp();
-    const res = await request(app)
-      .post("/api/ai-memory/ingest")
-      .set("X-Requested-With", "XMLHttpRequest")
-      .send({ source: "finyk", content: "abc" });
-    expect(res.status).toBe(400);
-    expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
-  });
-
-  it("→ 400 коли source=digest (заборонено через клієнт)", async () => {
-    const app = createApp();
-    const res = await request(app)
-      .post("/api/ai-memory/ingest")
-      .set("X-Requested-With", "XMLHttpRequest")
-      .send({ source: "digest", content: "abc" });
-    expect(res.status).toBe(400);
-    expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
-  });
-
-  it("→ 400 коли content > AI_MEMORY_INGEST_MAX_CONTENT_LEN", async () => {
-    const app = createApp();
-    const oversized = "x".repeat(5000);
-    const res = await request(app)
-      .post("/api/ai-memory/ingest")
-      .set("X-Requested-With", "XMLHttpRequest")
-      .send({ source: "nutrition", content: oversized });
-    expect(res.status).toBe(400);
-    expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
-  });
-
-  it("→ 400 при unknown ключі (strict schema)", async () => {
-    const app = createApp();
-    const res = await request(app)
-      .post("/api/ai-memory/ingest")
-      .set("X-Requested-With", "XMLHttpRequest")
-      .send({
-        source: "nutrition",
-        content: "abc",
-        // навмисно невалідне поле
-        evil: "xss",
-      });
-    expect(res.status).toBe(400);
-    expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
-  });
-});
-
-describe("POST /api/ai-memory/ingest — happy path", () => {
-  beforeEach(() => {
-    getSessionUserMock.mockResolvedValue({ id: "u1" });
-  });
-
-  it("→ 202 + enqueueMemoryIngest викликаний з нормалізованим payload", async () => {
-    const app = createApp();
-    const res = await request(app)
-      .post("/api/ai-memory/ingest")
-      .set("X-Requested-With", "XMLHttpRequest")
-      .send({
-        source: "nutrition",
-        sourceRef: "meal-2026-05-01-08:30",
-        content: "Сніданок: omelette + кава",
-        metadata: { kcal: 420, protein: 28 },
-      });
-    expect(res.status).toBe(202);
-    expect(res.body).toMatchObject({
-      ok: true,
-      source: "nutrition",
-      sourceRef: "meal-2026-05-01-08:30",
-    });
-    expect(enqueueMemoryIngestMock).toHaveBeenCalledTimes(1);
-    expect(enqueueMemoryIngestMock).toHaveBeenCalledWith({
-      userId: "u1",
-      source: "nutrition",
-      sourceRef: "meal-2026-05-01-08:30",
-      content: "Сніданок: omelette + кава",
-      metadata: { kcal: 420, protein: 28 },
-    });
-  });
-
-  it("→ 202 з sourceRef=null коли клієнт його не передав (chat without stable id)", async () => {
-    const app = createApp();
-    const res = await request(app)
-      .post("/api/ai-memory/ingest")
-      .set("X-Requested-With", "XMLHttpRequest")
-      .send({
-        source: "chat",
-        content: "Я хочу запамʼятати: книга — 'Atomic habits'",
-      });
-    expect(res.status).toBe(202);
-    expect(enqueueMemoryIngestMock).toHaveBeenCalledWith(
-      expect.objectContaining({
-        userId: "u1",
-        source: "chat",
-        sourceRef: null,
-      }),
-    );
-  });
-});
-
-describe("POST /api/ai-memory/ingest — metadata size guard", () => {
-  beforeEach(() => {
-    getSessionUserMock.mockResolvedValue({ id: "u1" });
-  });
-
-  it("→ 413 коли metadata blob > 8KB", async () => {
-    const app = createApp();
-    const huge = { blob: "x".repeat(10_000) };
-    const res = await request(app)
-      .post("/api/ai-memory/ingest")
-      .set("X-Requested-With", "XMLHttpRequest")
-      .send({
-        source: "fizruk",
-        content: "Тренування",
-        metadata: huge,
-      });
-    expect(res.status).toBe(413);
-    expect(res.body).toMatchObject({ code: "METADATA_TOO_LARGE" });
-    expect(enqueueMemoryIngestMock).not.toHaveBeenCalled();
-  });
 });
 
 describe("POST /api/ai-memory/recall — auth guard", () => {
