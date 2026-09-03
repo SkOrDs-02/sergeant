@@ -88,6 +88,8 @@ import { AuthProvider, useAuth, translateAuthError } from "./AuthContext";
 import { apiQueryKeys } from "@sergeant/api-client/react";
 
 interface UseUserState {
+  /** `useQuery.isPending` — «даних ще немає». Дефолт іде за `isLoading`. */
+  isPending?: boolean;
   data?:
     | {
         user: {
@@ -108,6 +110,10 @@ function setUser(state: UseUserState) {
   useUserMock.mockReturnValue({
     data: state.data,
     isLoading: state.isLoading ?? false,
+    // Справжній `useQuery` завжди віддає `isPending` («даних ще немає»), і
+    // саме на нього спирається `AuthContext`. Фікстура його не мала, через
+    // що вікно «pending, але ще не fetching» тут не моделювалось узагалі.
+    isPending: state.isPending ?? state.isLoading ?? false,
     error: state.error ?? null,
   });
 }
@@ -172,6 +178,20 @@ describe("AuthContext", () => {
     expect(result.current.isLoading).toBe(true);
     expect(result.current.status).toBe("loading");
     expect(result.current.user).toBeNull();
+  });
+
+  // Регресія з browser-QA 2026-09-02. У React Query v5
+  // `isLoading === isPending && isFetching`, тож між монтуванням і стартом
+  // fetch-у існує вікно `isLoading === false` при `data === undefined`.
+  // Доти `AuthContext` читав саме `isLoading` і в цьому вікні оголошував
+  // сесію відсутньою: deep-link на `/?tab=profile` зривало на `/` у 4
+  // прогонах із 6, бо bounce-ефект у `useAppEffects` бачив `!user`.
+  it("НЕ оголошує сесію відсутньою, поки запит ще pending без fetch-у", () => {
+    setUser({ data: undefined, isLoading: false, isPending: true });
+    const { Wrapper } = makeWrapper();
+    const { result } = renderHook(() => useAuth(), { wrapper: Wrapper });
+    expect(result.current.status).toBe("loading");
+    expect(result.current.status).not.toBe("unauthenticated");
   });
 
   it("reports `unauthenticated` when useUser() has no user", () => {
