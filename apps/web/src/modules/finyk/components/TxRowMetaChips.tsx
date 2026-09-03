@@ -1,15 +1,21 @@
 /**
- * Last validated: 2026-07-26
+ * Last validated: 2026-09-03
  * Status: Active
  *
- * Single fixed-order meta row under the TxRow description: card · category ·
- * status badges (AI / transfer / override / source) · split · note. The
- * note (§3, ex-#466) is always the last element so it truncates first when
- * the row runs out of width — nothing else in the row shifts or wraps.
- * Extracted for Hard Rule #18 max-lines.
+ * Meta row under the TxRow description, in fixed order: category pill ·
+ * AI glyph · plain text «рахунок · статуси» · receipt glyph · note.
+ *
+ * AI-CONTEXT: до 2026-09-03 рахунок і кожен статус («не в статистиці»,
+ * «змін.», «П24», «спліт») були ОКРЕМИМИ пігулками різної ширини й ваги
+ * шрифту, тож рядок із трьома-чотирма плашками читався як хаос — навіть
+ * при спокійних кольорах (звіт власника зі скриншотом Операцій). Тепер
+ * пігулка в рядку рівно одна — категорія, бо лише вона несе колір. Решта
+ * стає одним приглушеним текстом через « · »: довжина слів більше не
+ * ламає ритм, а категорія завжди стоїть першою, тож кольорова колонка
+ * вирівняна по лівому краю на всіх рядках. Note (§3, ex-#466) лишається
+ * останнім і обрізається першим.
  */
 import { INTERNAL_TRANSFER_ID } from "../constants";
-import { Badge } from "@shared/components/ui/Badge";
 import { Icon } from "@shared/components/ui/Icon";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import { catChipVars } from "../lib/categoryChip";
@@ -25,6 +31,13 @@ interface TxRowMetaChipsProps {
   isCreditCard: boolean;
   account: MonoAccount | undefined;
   accountName: string | null;
+  /**
+   * Чи показувати рахунок. `TxRow` ставить `true` лише коли рахунків
+   * більше одного: з єдиною карткою підпис «Біла» на кожному рядку —
+   * шум без інформації, а з кількома його поява «то є, то нема»
+   * зсувала категорію між першою і другою позицією.
+   */
+  showAccount?: boolean | undefined;
   /** Власні категорії — джерело стабільного відтінку для кастомних чипів. */
   customCategories?: readonly { id: string }[] | undefined;
   /** Чи знає ЦЕЙ пристрій про чек, привʼязаний до цієї транзакції
@@ -46,80 +59,83 @@ export function TxRowMetaChips({
   isCreditCard,
   account,
   accountName,
+  showAccount = true,
   hasReceipt = false,
   note,
   customCategories = [],
 }: TxRowMetaChipsProps) {
+  const isTransfer = catId === INTERNAL_TRANSFER_ID;
+  // Порядок фіксований: рахунок → переказ → «змін.» → П24 → спліт.
+  const statuses: string[] = [];
+  if (isTransfer) statuses.push("не в статистиці");
+  if (overrideCatId && !isTransfer) statuses.push("змін.");
+  if (tx._source === "privatbank") statuses.push("П24");
+  if (existingSplitsCount > 0) statuses.push("спліт");
+
+  const showAccountName = showAccount && account && accountName;
+  const showAiMark =
+    !tx._manual &&
+    !overrideCatId &&
+    !isIncome &&
+    !isTransfer &&
+    catId !== "other";
+  const hasMeta = showAiMark || Boolean(showAccountName) || statuses.length > 0;
+
   return (
     <div className="flex items-center gap-1.5 mt-0.5 overflow-hidden">
-      {/* §2: card chip is always neutral — a small icon (not colour) marks
-          "credit". Red stays reserved for debt/asset surfaces elsewhere. */}
-      {account && (
-        <span className="shrink-0 inline-flex items-center gap-1 text-style-caption bg-panelHi text-muted border border-line px-1.5 py-0.5 rounded-full font-medium">
-          {isCreditCard && <Icon name="credit-card" size={12} aria-hidden />}
-          {accountName}
-        </span>
-      )}
       {/* Назва категорії — єдиний елемент рядка, що несе колір самої
-          категорії (`.cat-chip` бере його з CSS-змінних). Решта чипів
-          лишається нейтральною: якби кольору набралось двоє-троє, рядок
-          перестав би читатись за один погляд — а це і був запит. */}
+          категорії (`.cat-chip` бере його з CSS-змінних), і єдина
+          пігулка. Решта — приглушений текст. */}
       <span
         style={catChipVars(catId, customCategories)}
         className="cat-chip shrink-0 text-style-caption border px-1.5 py-0.5 rounded-full font-medium"
       >
         {catName}
       </span>
-      {/* 6.4: AI-source tag — surfaces auto-categorized expense rows
-          so users can tell which categorizations are inferred (MCC +
-          description match) vs explicit (user override, manual entry,
-          splits, transfers, fallback "other"). Sergeant-glyph icon-only
-          keeps the row uncluttered — category label is right next to it.
-          Skipped on:
-            – manual expenses (`_manual`): user typed the category
-            – overridden rows: explicit user choice, shows "змін." instead
-            – internal transfers: special routing, not categorization
-            – income rows: handled by separate income flow above
-            – "other" fallback: no real inference happened
-      */}
-      {!tx._manual &&
-        !overrideCatId &&
-        !isIncome &&
-        catId !== INTERNAL_TRANSFER_ID &&
-        catId !== "other" && (
-          <Badge
-            variant="finyk"
-            tone="soft"
-            size="xs"
-            className="shrink-0 inline-flex items-center rounded-full"
-            title="Категорію визначив Сержант за описом і MCC"
-          >
-            <Icon name="sergeant" size={10} aria-hidden />
-            {/* Badge — generic <span>, тож aria-label імені йому не дає;
-                ім'я для скрінрідера — прихований текст. */}
-            <span className="sr-only">
-              Категорію визначив Сержант за описом і MCC
+      {hasMeta && (
+        <span className="shrink-0 inline-flex items-center gap-1 text-style-caption text-muted">
+          {/* 6.4: AI-source mark — surfaces auto-categorized expense rows
+              so users can tell which categorizations are inferred (MCC +
+              description match) vs explicit. Голий гліф у тому ж
+              приглушеному тоні, що й решта рядка, а не Badge: пігулка в
+              рядку одна — категорія (рішення власника 2026-09-03).
+              Skipped on:
+                – manual expenses (`_manual`): user typed the category
+                – overridden rows: explicit user choice, shows "змін." instead
+                – internal transfers: special routing, not categorization
+                – income rows: handled by separate income flow above
+                – "other" fallback: no real inference happened
+          */}
+          {showAiMark && (
+            <span
+              className="inline-flex items-center"
+              title="Категорію визначив Сержант за описом і MCC"
+            >
+              <Icon name="sergeant" size={12} aria-hidden />
+              <span className="sr-only">
+                Категорію визначив Сержант за описом і MCC
+              </span>
             </span>
-          </Badge>
-        )}
-      {catId === INTERNAL_TRANSFER_ID && (
-        <span className="shrink-0 text-style-caption bg-muted/15 text-muted px-1.5 py-0.5 rounded-full font-semibold">
-          не в статистиці
-        </span>
-      )}
-      {overrideCatId && catId !== INTERNAL_TRANSFER_ID && (
-        <span className="shrink-0 text-style-caption bg-text/8 text-muted px-1.5 py-0.5 rounded-full font-semibold">
-          змін.
-        </span>
-      )}
-      {tx._source === "privatbank" && (
-        <span className="shrink-0 text-style-caption bg-success/10 text-success-strong dark:text-success px-1.5 py-0.5 rounded-full font-semibold">
-          П24
-        </span>
-      )}
-      {existingSplitsCount > 0 && (
-        <span className="shrink-0 text-style-caption bg-primary/10 text-primary px-1.5 py-0.5 rounded-full font-semibold">
-          ⅔ спліт
+          )}
+          {showAccountName && (
+            <span className="inline-flex items-center gap-1" data-tx-account>
+              {showAiMark && <span aria-hidden>·</span>}
+              {/* §2: рахунок завжди нейтральний — «кредитна» позначає
+                  іконка, не колір. Червоне лишається боргам/активам. */}
+              {isCreditCard && (
+                <Icon name="credit-card" size={12} aria-hidden />
+              )}
+              {accountName}
+            </span>
+          )}
+          {statuses.map((label, i) => (
+            <span key={label} className="inline-flex items-center gap-1">
+              {(i > 0 || showAccountName || showAiMark) && (
+                <span aria-hidden>·</span>
+              )}
+              <span>{label}</span>
+            </span>
+          ))}
         </span>
       )}
       {hasReceipt && (

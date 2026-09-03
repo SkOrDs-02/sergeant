@@ -28,9 +28,9 @@ describe("SubCard", () => {
     expect(screen.queryByText("🎬")).not.toBeInTheDocument();
   });
 
-  it("shows 'ще не списувалось' when there is no matching transaction", () => {
+  it("shows 'Ще не списувалось' when there is no matching transaction", () => {
     render(<SubCard sub={baseSub} transactions={[]} onDelete={vi.fn()} />);
-    expect(screen.getByText("ще не списувалось")).toBeInTheDocument();
+    expect(screen.getByText("Ще не списувалось")).toBeInTheDocument();
   });
 
   it("masks the amount when showBalance is false", () => {

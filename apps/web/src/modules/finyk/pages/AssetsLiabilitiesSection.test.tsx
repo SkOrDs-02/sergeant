@@ -120,9 +120,10 @@ function makeState(overrides: Partial<State> = {}): State {
 }
 
 describe("AssetsLiabilitiesSection", () => {
-  it("renders the '+ Додати пасив' button when showDebtForm is false", () => {
+  it("does not render its own add button — the quick-action row owns it", () => {
     render(wrap(<AssetsLiabilitiesSection state={makeState()} />));
-    expect(screen.getByText("+ Додати пасив")).toBeInTheDocument();
+    expect(screen.queryByText("+ Додати пасив")).toBeNull();
+    expect(screen.queryByTestId("debt-form")).toBeNull();
   });
 
   it("shows the empty-state placeholder when liabilities section is empty", () => {
@@ -137,20 +138,6 @@ describe("AssetsLiabilitiesSection", () => {
     expect(screen.getAllByText(/Кредит/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Розстрочка/).length).toBeGreaterThan(0);
     expect(screen.getAllByText(/Позика/).length).toBeGreaterThan(0);
-  });
-
-  it("calls setShowDebtForm(true) when '+ Додати пасив' is clicked", () => {
-    const state = makeState();
-    render(wrap(<AssetsLiabilitiesSection state={state} />));
-    fireEvent.click(screen.getByText("+ Додати пасив"));
-    expect(state.setEditingDebtId).toHaveBeenCalledWith(null);
-    expect(state.setNewDebt).toHaveBeenCalledWith({
-      name: "",
-      emoji: "",
-      totalAmount: "",
-      dueDate: "",
-    });
-    expect(state.setShowDebtForm).toHaveBeenCalledWith(true);
   });
 
   it("renders DebtForm when showDebtForm is true", () => {
