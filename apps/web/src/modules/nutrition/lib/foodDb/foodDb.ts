@@ -217,6 +217,40 @@ export async function listFoods(limit = 500): Promise<FoodProduct[]> {
   }
 }
 
+/**
+ * Один продукт за його id, або `null`, якщо його вже немає.
+ *
+ * Існує заради редагування прийому: страва зберігає `foodId` і
+ * `amount_g`, але не `per100`, тож без цього читання аркуш редагування не
+ * може ні показати вагу порції, ні перерахувати макроси під іншу вагу
+ * (browser-QA 2026-09-02). `listFoods()` для цього не годиться: він тягне
+ * весь стор і ріже за лімітом, тобто для великого каталогу міг би просто
+ * не знайти потрібний рядок.
+ */
+export async function getFoodById(
+  id: string | number,
+): Promise<FoodProduct | null> {
+  const key = String(id ?? "").trim();
+  if (!key) return null;
+  try {
+    await ensureMigrated();
+    const db = await openSergeantDb();
+    if (!db) return null;
+    const tx = db.transaction(STORE_PRODUCTS, "readonly");
+    const store = tx.objectStore(STORE_PRODUCTS);
+    const found = await new Promise<FoodProduct | null>((resolve, reject) => {
+      const r = store.get(key);
+      r.onsuccess = () =>
+        resolve((r.result as FoodProduct | undefined) ?? null);
+      r.onerror = () => reject(r.error);
+    });
+    await txDone(tx);
+    return found;
+  } catch {
+    return null;
+  }
+}
+
 export async function searchFoods(
   query: string,
   limit = 20,

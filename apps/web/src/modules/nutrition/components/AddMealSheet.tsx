@@ -55,6 +55,7 @@ import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
 import { useReceiptAutoPick } from "./meal-sheet/useReceiptAutoPick";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
+import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
 import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
 import { ManualEntryTab } from "./meal-sheet/ManualEntryTab";
 import { SearchTabPanel } from "./meal-sheet/SearchTabPanel";
@@ -63,6 +64,7 @@ import { BarcodeSection } from "./meal-sheet/BarcodeSection";
 import { AddMealSheetTitle } from "./meal-sheet/AddMealSheetTitle";
 import { MacrosEditor } from "./meal-sheet/MacrosEditor";
 import { SaveAsTemplate } from "./meal-sheet/SaveAsTemplate";
+import { useEditedFoodRehydration } from "./meal-sheet/useEditedFoodRehydration";
 import { useFoodSearch } from "./meal-sheet/useFoodSearch";
 import { useBarcodeLookup } from "./meal-sheet/useBarcodeLookup";
 import type { QuickChip } from "../hooks/useNutritionQuickChips";
@@ -265,6 +267,14 @@ export function AddMealSheet({
   } else if (!open && prevOpen) {
     setPrevOpen(false);
   }
+
+  // Продукт для аркуша редагування — чому без нього порцію змінити було
+  // неможливо, у `useEditedFoodRehydration`.
+  const editedFood = useEditedFoodRehydration({
+    open,
+    meal: initialMeal,
+    setPickedFood,
+  });
 
   function field(key: keyof MealFormState) {
     return (v: string) =>
@@ -477,6 +487,7 @@ export function AddMealSheet({
   // «Обрати інший продукт» з картки на кроці «fill». Скидаємо звʼязок
   // ПЕРЕД поверненням, інакше авто-перехід нижче миттєво штовхне назад.
   function handleChangeProduct() {
+    editedFood.clear();
     dropSeededMacros();
     setPickedGrams("100");
     setFoodQuery("");
@@ -685,6 +696,7 @@ export function AddMealSheet({
                 pickedGrams={pickedGrams}
                 setPickedGrams={setPickedGrams}
                 onChangeProduct={handleChangeProduct}
+                skipInitialRescale={editedFood.rehydrated}
               />
             ) : (
               // Редагування наявного прийому джерела не обирає, тож
@@ -693,21 +705,7 @@ export function AddMealSheet({
               // редагуванні), тобто в глухий кут.
               !appliedPhoto &&
               !initialMeal?.id && (
-                // Одиниця мусить бути підписана. Без продукту й без фото
-                // ці поля означають «за всю порцію», а людина з упаковкою
-                // в руках за замовчуванням читає етикетку — тобто на 100 г.
-                <div className="mb-3 rounded-2xl border border-line bg-panelHi px-3 py-2">
-                  <p className="text-style-body text-muted">
-                    Значення – за всю порцію, як зʼїв, а не на 100 г.
-                  </p>
-                  <button
-                    type="button"
-                    onClick={handleSwitchToPackage}
-                    className="min-h-11 text-style-caption text-nutrition-strong dark:text-nutrition underline underline-offset-2"
-                  >
-                    Маю етикетку на 100 г
-                  </button>
-                </div>
+                <PortionUnitHint onSwitchToPackage={handleSwitchToPackage} />
               )
             )}
 
@@ -753,6 +751,10 @@ export function AddMealSheet({
                     <span className="block text-style-label text-text">
                       Запамʼятати для повтору
                     </span>
+                    {/* AI-NOTE: кегль тут навмисний — це підказка під
+                        контролом («Запамʼятати для повтору»), а не текст,
+                        який читають окремо; `text-style-body` зрівняв би
+                        її з підписом самого чекбокса. */}
                     <span className="mt-0.5 block text-style-caption text-muted">
                       Назва, тип прийому та КБЖВ зʼявляться серед швидких
                       прийомів.
