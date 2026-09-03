@@ -5,7 +5,6 @@
 import { useState } from "react";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { messages } from "@shared/i18n/uk";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useWeeklyDigest } from "../insights/useWeeklyDigest";
 import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
@@ -38,6 +37,8 @@ export function AIDigestSection() {
   // вона дублювала аналогічну дію на дашборді (`WeeklyDigestCard` /
   // `WeeklyDigestFooter`), тож «Згенерувати/Оновити» було двічі. У
   // налаштуваннях лишився тільки тумблер автогенерації по понеділках.
+  // 2026-09-03: ручного «Згенерувати» більше немає ніде — звіт створює
+  // лише автогенерація, тож тумблер нижче — єдиний спосіб його отримати.
   return (
     // V-7 (2026-08-08): title читається з каталогу — раніше цей рядок і
     // ⌘K-індекс (settingsSectionsCatalog.ts) розходились ("AI Звіт тижня"
@@ -46,9 +47,8 @@ export function AIDigestSection() {
       <div className="space-y-3">
         <p className="text-style-body text-subtle leading-snug">
           Тижневий AI-аналіз прогресу по всіх модулях: фінанси, тренування,
-          харчування та звички. Згенерувати звіт можна на сторінці «
-          {messages.nav.reports}», у режимі «Тиждень», або на головній у блоці
-          інсайтів («Звіт тижня»).
+          харчування та звички. Звіт збирається сам щопонеділка і чекає на
+          головній у блоці «Звіт тижня»; там же його можна оновити.
         </p>
         <div className="p-3 rounded-xl bg-bg border border-line">
           <p className="text-style-label text-text">Поточний тиждень</p>
