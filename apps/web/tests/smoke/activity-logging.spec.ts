@@ -38,7 +38,16 @@ test("@critical fizruk: заняття з каталогу пишеться од
   const sheet = page.getByRole("dialog");
   await expect(sheet).toBeVisible();
 
-  await sheet.getByLabel("Заняття").selectOption("body_pump");
+  // Після #1060 «Заняття» — не <select>, а кнопка з вкладеним аркушем
+  // пошуку (у каталозі ~55 позицій, колесо iOS змушувало гортати всі).
+  // Поки аркуш відкритий, на сторінці два діалоги, тож пікер адресуємо за
+  // заголовком, а не за роллю.
+  await sheet.getByLabel("Заняття").click();
+  const picker = page.getByRole("dialog", { name: "Обери заняття" });
+  await expect(picker).toBeVisible();
+  await picker.getByRole("option", { name: "Body Pump" }).click();
+  await expect(picker).toHaveCount(0);
+  await expect(sheet.getByLabel("Заняття")).toHaveText(/Body Pump/);
   // Учорашня дата, а не дефолтне «сьогодні»: форма блокує «Записати», якщо
   // початок + тривалість ще в майбутньому (`times.inFuture`). Із «сьогодні
   // 10:00» тест був зелений лише після 10:45 за годинником раннера і
