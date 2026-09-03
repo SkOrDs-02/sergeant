@@ -18,6 +18,15 @@ vi.mock("@shared/hooks/useCloudPullPending", () => ({
   useCloudPullPending: vi.fn(() => false),
 }));
 
+// `StrongImportReview` (модалка Strong-імпорту) читає ідентичність сесії,
+// щоб порахувати неймспейс детермінованих id — див. `lib/strongIdNamespace.ts`.
+// Ця сторінка рендериться тут без `AuthProvider`, а `useLocalUserId` під ним
+// кидає. Мокаємо саме хук, а не провайдера: тести цього файлу про
+// перемикання виглядів, а не про сесію.
+vi.mock("../../../core/auth/useLocalUserId", () => ({
+  useLocalUserId: () => "test-user",
+}));
+
 vi.mock("@shared/components/ui/PullToRefresh", () => ({
   PullToRefresh: ({
     children,

@@ -76,6 +76,7 @@ import {
 import {
   buildActivityWorkoutTimes,
   buildPastWorkoutTimes,
+  defaultPastWorkoutTimes,
   todayLocalDateString,
 } from "../../pages/Workouts.helpers";
 
@@ -113,10 +114,15 @@ export interface LogPastWorkoutSheetProps {
   onCreateActivity?: ((activity: ActivityDef) => void) | undefined;
 }
 
-/** Дефолт початку - вечір: найчастіший час тренування, який доводиться правити. */
-const DEFAULT_START = "18:00";
-const DEFAULT_END = "19:00";
 const DEFAULT_DURATION_MIN = "45";
+
+/**
+ * Значення до першого відкриття. Реальні дефолти рахує
+ * `defaultPastWorkoutTimes()` від годинника — ці константи існують лише щоб
+ * поля не були порожніми в мить монтування (шіт живе в дереві закритим).
+ */
+const EVENING_START_FALLBACK = "18:00";
+const EVENING_END_FALLBACK = "19:00";
 
 const DURATION_PRESETS: string[] = ["15", "30", "45", "60"];
 
@@ -185,9 +191,16 @@ export function LogPastWorkoutSheet({
   // «сьогодні» переживає північ: застосунок, відкритий звечора, о 00:02
   // пропонував учорашню дату й ліміт `max` теж учорашній.
   const today = useMemo(() => (open ? todayLocalDateString() : ""), [open]);
+  // Дефолти рахуються від годинника, а не константами: інакше форма
+  // відкривалась із власним невалідним вводом — див. JSDoc
+  // `defaultPastWorkoutTimes`.
+  const defaults = useMemo(
+    () => (open ? defaultPastWorkoutTimes() : null),
+    [open],
+  );
   const [date, setDate] = useState(today);
-  const [start, setStart] = useState(DEFAULT_START);
-  const [end, setEnd] = useState(DEFAULT_END);
+  const [start, setStart] = useState(EVENING_START_FALLBACK);
+  const [end, setEnd] = useState(EVENING_END_FALLBACK);
   const [activity, setActivity] = useState("");
   const [durationMin, setDurationMin] = useState(DEFAULT_DURATION_MIN);
   const [zone, setZone] = useState<ActivityMuscleZone>("full");
@@ -208,9 +221,13 @@ export function LogPastWorkoutSheet({
   // лишилось від минулого разу.
   const lastOpenRef = useRef(false);
   useEffect(() => {
-    if (open && !lastOpenRef.current) setDate(today);
+    if (open && !lastOpenRef.current && defaults) {
+      setDate(defaults.date);
+      setStart(defaults.start);
+      setEnd(defaults.end);
+    }
     lastOpenRef.current = open;
-  }, [open, today]);
+  }, [open, defaults]);
 
   const t = messages.fizruk.logPast;
 
