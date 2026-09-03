@@ -35,7 +35,7 @@ import { meApi } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
 import { aiMemoryKeys } from "@shared/lib/api/queryKeys";
 import { cn } from "@shared/lib/ui/cn";
-import type { AiMemoryListItem } from "@sergeant/api-client";
+import { isApiError, type AiMemoryListItem } from "@sergeant/api-client";
 
 // V-8 (аудит 2026-08-08): переїзд із локального `ConfirmModal` на канонічний
 // портальний `ConfirmDialog` — причина в `FinykWebhookServiceSection.tsx`.
@@ -379,6 +379,17 @@ export function AiMemoryList() {
   }
 
   if (query.isError) {
+    // 401/403 — гість, не збій: список за `requireSession()`. Той самий
+    // патерн, що й у `PrivacySection.loadPreferences` («Увійди в акаунт,
+    // щоб…»), і той самий примітив, що й у порожнього стану нижче — це
+    // саме порожній стан з іншою причиною, а не помилка.
+    if (
+      isApiError(query.error) &&
+      query.error.kind === "http" &&
+      query.error.isAuth
+    ) {
+      return <EmptyState size="sm" description={m.authRequired} />;
+    }
     return (
       <p className="text-style-caption text-danger-strong" role="alert">
         {m.loadError}

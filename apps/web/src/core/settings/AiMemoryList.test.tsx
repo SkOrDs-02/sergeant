@@ -22,6 +22,7 @@ import {
   waitFor,
 } from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { ApiError } from "@sergeant/api-client";
 import type { ReactNode } from "react";
 
 const { listAiMemory, deleteAiMemory } = vi.hoisted(() => ({
@@ -319,6 +320,57 @@ describe("AiMemoryList", () => {
     fireEvent.click(screen.getByRole("button", { name: "Видалити назавжди" }));
     expect(await screen.findByText(/Не вдалося видалити/)).toBeTruthy();
     expect(screen.getByText("Факт")).toBeTruthy();
+  });
+
+  // Аудит `web-qa-pre-beta.md` § 9 (2026-09-03): список за
+  // `requireSession()`, тож анонім отримує 401 — і до фіксу бачив «Не
+  // вдалося завантажити памʼять ШІ.», ніби сервер зламався. Це стан гостя,
+  // не збій: він має малюватись порожнім станом із виходом (увійти), а
+  // справжні 5xx — далі помилкою.
+  describe("анонім (401/403) — стан гостя, не технічний збій", () => {
+    function authError(status: 401 | 403) {
+      return new ApiError({
+        kind: "http",
+        status,
+        message: `Помилка ${status}`,
+        url: "/api/v1/ai-memory/list",
+        body: { error: "Unauthorized" },
+      });
+    }
+
+    it("401 → пояснення про акаунт як порожній стан (role=status), без тексту помилки", async () => {
+      listAiMemory.mockRejectedValue(authError(401));
+      renderList();
+      // Не `findByRole("status")`: під час завантаження той самий role
+      // носить «Завантажую памʼять…», і запит зловив би його першим.
+      const text = await screen.findByText(/Памʼять ШІ живе в акаунті/);
+      expect(text.textContent).toMatch(/Увійди/);
+      expect(text.closest('[role="status"]')).not.toBeNull();
+      expect(screen.queryByRole("alert")).toBeNull();
+      expect(screen.queryByText(/Не вдалося завантажити/)).toBeNull();
+    });
+
+    it("403 читається так само — обидва статуси означають «без сесії»", async () => {
+      listAiMemory.mockRejectedValue(authError(403));
+      renderList();
+      expect(await screen.findByText(/Увійди/)).toBeTruthy();
+      expect(screen.queryByRole("alert")).toBeNull();
+    });
+
+    it("5xx лишається помилкою — текст про акаунт тут був би неправдою", async () => {
+      listAiMemory.mockRejectedValue(
+        new ApiError({
+          kind: "http",
+          status: 500,
+          message: "Помилка 500",
+          url: "/api/v1/ai-memory/list",
+        }),
+      );
+      renderList();
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toMatch(/Не вдалося завантажити/);
+      expect(screen.queryByText(/Увійди/)).toBeNull();
+    });
   });
 
   // Спека `memory-bank-consolidation.md`: єдиний редактор фактів профілю -
