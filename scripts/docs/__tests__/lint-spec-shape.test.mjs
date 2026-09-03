@@ -10,6 +10,7 @@ import {
   diffAgainstBaseline,
   missingSections,
   normalizeHeading,
+  planBaselineUpdate,
   skipReason,
 } from "../lint-spec-shape.mjs";
 
@@ -63,6 +64,20 @@ describe("missingSections", () => {
     assert.deepEqual(missingSections(source), []);
   });
 
+  // Знахідка ревʼю: голий `startsWith` пускав сусідню секцію з довшою
+  // назвою замість обовʼязкової, і спека проходила гейт без неї.
+  it("не зараховує близьку назву замість обовʼязкової секції", () => {
+    const source =
+      "## Проблематика\n## Метадані\n## Поза скоупом\n## Верифікація\n";
+    assert.deepEqual(missingSections(source), ["Проблема", "Мета"]);
+  });
+
+  it("але приймає назву з уточненням через межу", () => {
+    const source =
+      "## Проблема: чому зараз\n## Мета — вимірювана\n## Поза скоупом\n## Верифікація\n";
+    assert.deepEqual(missingSections(source), []);
+  });
+
   // Заголовок третього рівня не рахується за секцію: інакше «### Мета»
   // всередині чужого розділу закривала б вимогу, не даючи структури.
   it("не зараховує заголовки нижчого рівня", () => {
@@ -84,6 +99,28 @@ describe("skipReason", () => {
 
   it("документ без оголошення перевіряється як спека", () => {
     assert.equal(skipReason(FULL_SPEC), null);
+  });
+
+  // Знахідка ревʼю: рядок потрібної форми будь-де в тілі глушив перевірку
+  // всього документа. Шапка говорить про документ, тіло — про предмет.
+  it("оголошення в ТІЛІ не рахується, лише в шапці", () => {
+    const source = [
+      "# Спека",
+      "",
+      "> **Status:** Active",
+      "",
+      "## Проблема",
+      "",
+      "Приклад того, як документ оголошує себе не-спекою:",
+      "",
+      "> **Spec-lint:** skip — це лише цитата в тілі",
+    ].join("\n");
+    assert.equal(skipReason(source), null);
+  });
+
+  it("документ без жодної секції має шапкою весь текст", () => {
+    const source = "# Тексти\n\n> **Spec-lint:** skip — контент-план\n";
+    assert.equal(skipReason(source), "контент-план");
   });
 });
 
@@ -116,5 +153,35 @@ describe("diffAgainstBaseline", () => {
     const { added, stale } = diffAgainstBaseline({}, { "legacy.md": ["Мета"] });
     assert.deepEqual(added, []);
     assert.deepEqual(stale, [{ file: "legacy.md", section: "Мета" }]);
+  });
+});
+
+// Знахідка ревʼю: `--update` писав поточний стан, тож ним можна було
+// узаконити щойно прибрану секцію замість полагодити спеку.
+describe("planBaselineUpdate", () => {
+  it("відхиляє оновлення, що додає новий виняток", () => {
+    const plan = planBaselineUpdate({ "a.md": ["Мета"] }, {});
+    assert.equal(plan.ok, false);
+    assert.deepEqual(plan.added, [{ file: "a.md", section: "Мета" }]);
+  });
+
+  it("відхиляє і тоді, коли файл уже в baseline, але пропусків побільшало", () => {
+    const plan = planBaselineUpdate(
+      { "a.md": ["Мета", "Верифікація"] },
+      { "a.md": ["Мета"] },
+    );
+    assert.equal(plan.ok, false);
+  });
+
+  it("дозволяє зняття винятку і називає, що саме знято", () => {
+    const plan = planBaselineUpdate({}, { "a.md": ["Мета"] });
+    assert.equal(plan.ok, true);
+    assert.deepEqual(plan.removed, [{ file: "a.md", section: "Мета" }]);
+  });
+
+  it("дозволяє оновлення без змін", () => {
+    const plan = planBaselineUpdate({ "a.md": ["Мета"] }, { "a.md": ["Мета"] });
+    assert.equal(plan.ok, true);
+    assert.deepEqual(plan.removed, []);
   });
 });

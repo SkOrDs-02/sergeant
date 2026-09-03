@@ -99,10 +99,26 @@ export function normalizeHeading(raw) {
 }
 
 /**
- * Секції, яких бракує у тексті спеки. Порівняння по префіксу, бо автори
- * дописують уточнення після назви («Поза скоупом v1», «Верифікація
- * (обовʼязково)» вже зняті нормалізацією, але трапляється й
- * «Поза скоупом — чому саме так»).
+ * Чи є `heading` тією самою секцією, що `accepted`.
+ *
+ * Точний збіг або назва плюс МЕЖА — пробіл чи пунктуація, бо автори
+ * дописують уточнення після назви («Поза скоупом — чому саме так»;
+ * «v1» і хвіст у дужках уже зняті нормалізацією).
+ *
+ * Голий `startsWith` тут був дірою (знахідка ревʼю): «метадані»
+ * починається з «мета», «проблематика» — з «проблема», тож спека могла
+ * пропустити обовʼязкову секцію і пройти гейт за рахунок сусідньої з
+ * довшою назвою. Межа це закриває, не ламаючи уточнень.
+ */
+function headingMatches(heading, accepted) {
+  if (heading === accepted) return true;
+  if (!heading.startsWith(accepted)) return false;
+  const next = heading.charAt(accepted.length);
+  return !/[\p{L}\p{N}]/u.test(next);
+}
+
+/**
+ * Секції, яких бракує у тексті спеки.
  */
 export function missingSections(source) {
   const headings = [...source.matchAll(RE_H2)].map((m) =>
@@ -111,14 +127,23 @@ export function missingSections(source) {
   return REQUIRED_SECTIONS.filter(
     (section) =>
       !headings.some((heading) =>
-        section.accepts.some((accepted) => heading.startsWith(accepted)),
+        section.accepts.some((accepted) => headingMatches(heading, accepted)),
       ),
   ).map((section) => section.key);
 }
 
-/** Причина, з якої документ оголосив себе не-спекою, або `null`. */
+/**
+ * Причина, з якої документ оголосив себе не-спекою, або `null`.
+ *
+ * Шукається ЛИШЕ в шапці — до першого заголовка другого рівня. Інакше
+ * (знахідка ревʼю) рядок потрібної форми будь-де в тілі — у цитаті, у
+ * прикладі, у fenced-блоці — глушив би перевірку всього документа. Шапка
+ * це місце, де документ говорить про себе; тіло говорить про предмет.
+ */
 export function skipReason(source) {
-  const match = RE_SKIP_DECLARATION.exec(source);
+  const firstSection = source.search(/^##\s/mu);
+  const header = firstSection === -1 ? source : source.slice(0, firstSection);
+  const match = RE_SKIP_DECLARATION.exec(header);
   return match ? match[1].trim() : null;
 }
 
@@ -185,6 +210,20 @@ export function diffAgainstBaseline(actual, baseline) {
  * (разом із причиною — вона друкується у звіті, щоб винятки лишались
  * видимими).
  */
+/**
+ * Чи можна записати `actual` у baseline.
+ *
+ * Храповик крутиться лише вниз, і `--update` був місцем, де це можна було
+ * обійти (знахідка ревʼю): режим писав ПОТОЧНИЙ стан, тож автор, який
+ * щойно прибрав обовʼязкову секцію, міг прогнати оновлення замість
+ * полагодити спеку. Тепер приймається лише ЗНЯТТЯ винятків: `ok: false`,
+ * щойно зʼявляється бодай один новий пропуск.
+ */
+export function planBaselineUpdate(actual, baseline) {
+  const { added, stale } = diffAgainstBaseline(actual, baseline);
+  return { ok: added.length === 0, added, removed: stale };
+}
+
 function collect() {
   const files = listSpecFiles();
   const actual = {};
@@ -237,9 +276,31 @@ function main() {
   const { files, actual, skipped } = collect();
 
   if (UPDATE_MODE) {
+    // Храповик крутиться лише вниз, і саме `--update` був місцем, де це
+    // можна було обійти (знахідка ревʼю): він писав у baseline ПОТОЧНИЙ
+    // стан, тож автор, який щойно прибрав обовʼязкову секцію, міг просто
+    // прогнати оновлення замість полагодити спеку. Тепер режим приймає
+    // лише ЗНЯТТЯ винятків.
+    const before = readBaseline();
+    const { ok, added, removed } = planBaselineUpdate(actual, before);
+    if (!ok) {
+      const lines = [
+        `🔴 --update відхилено: ${added.length} нов${added.length === 1 ? "ий пропуск" : "их пропуск(ів)"} секції.`,
+        "   Baseline фіксує УСПАДКОВАНІ пропуски; додавати до нього нові він не вміє навмисно.",
+      ];
+      for (const row of added) {
+        lines.push(`   • ${SPECS_REL}/${row.file} — бракує «${row.section}»`);
+      }
+      lines.push(
+        "   Або допиши секцію у спеку, або оголоси документ не-спекою рядком у його шапці:",
+      );
+      lines.push("   > **Spec-lint:** skip — <причина>");
+      process.stderr.write(lines.join("\n") + "\n");
+      process.exit(1);
+    }
     writeBaseline(actual);
     process.stdout.write(
-      `Baseline оновлено: ${Object.keys(actual).length} файл(ів) із пропусками.\n`,
+      `Baseline оновлено: ${Object.keys(actual).length} файл(ів) із пропусками, знято ${removed.length} запис(ів).\n`,
     );
     process.exit(0);
   }
