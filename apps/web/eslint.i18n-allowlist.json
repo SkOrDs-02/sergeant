@@ -245,6 +245,7 @@
   "apps/web/src/modules/nutrition/components/PantryCard.tsx",
   "apps/web/src/modules/nutrition/components/PantryManagerSheet.tsx",
   "apps/web/src/modules/nutrition/components/PhotoAnalyzeCard.tsx",
+  "apps/web/src/modules/nutrition/components/PhotoPrivacyNotice.tsx",
   "apps/web/src/modules/nutrition/components/RecipesCard.Generator.tsx",
   "apps/web/src/modules/nutrition/components/RecipesCard.SavedSection.tsx",
   "apps/web/src/modules/nutrition/components/RecipesCard.tsx",
