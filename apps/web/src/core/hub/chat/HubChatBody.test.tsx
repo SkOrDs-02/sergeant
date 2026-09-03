@@ -82,6 +82,40 @@ describe("HubChatBody", () => {
     expect(screen.getByText(/Відповідає AI, а не людина/)).toBeInTheDocument();
   });
 
+  // Регресія з browser-QA 2026-09-02: стрічка лежить у статичному
+  // `role="region"`, а єдина жива область казала лише «Асистент відповідає…».
+  // Тобто незрячий користувач чув, що відповідь іде, і не чув, ЯКА вона.
+  it("announces the finished assistant reply to screen readers", () => {
+    renderBody({
+      messages: [
+        msg("1", "user", "Скільки я витратив?"),
+        msg("2", "assistant", "Цього тижня 1 240 гривень."),
+      ],
+      loading: false,
+    });
+    const status = screen.getByRole("status");
+    expect(status).toHaveTextContent("Цього тижня 1 240 гривень.");
+  });
+
+  it("announces progress, not content, while the reply is streaming", () => {
+    renderBody({
+      messages: [msg("1", "user", "Питання")],
+      loading: true,
+    });
+    expect(screen.getByRole("status")).toHaveTextContent(
+      "Асистент відповідає…",
+    );
+  });
+
+  it("does not announce a failure through the reply region", () => {
+    const failure = {
+      ...msg("1", "assistant", "Асистент зараз недоступний."),
+      error: true,
+    } as unknown as Msg;
+    renderBody({ messages: [failure], loading: false });
+    expect(screen.getByRole("status")).toHaveTextContent("");
+  });
+
   it("renders ChatEmpty when there are no messages and not loading", () => {
     renderBody({ messages: [], loading: false });
     expect(screen.getByTestId("chat-empty")).toBeInTheDocument();
