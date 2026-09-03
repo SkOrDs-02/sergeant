@@ -73,6 +73,12 @@ npx --yes turbo@2 query affected --base=origin/main --packages @sergeant/web --e
 READY. Саме той стан, у якому старий `--fallback=HEAD^1` міг мовчки
 пропустити збірку.
 
+**Пропуск за наявності попереднього деплою.** `dpl_6YFkkL42`, наступний
+коміт тієї ж гілки, docs-only: `affectedPackages` порожній, exit 0 →
+`The deployment was canceled because the Ignored Build Step command
+returned exit code 0`. Тобто фільтр живий — `$VERCEL_GIT_PREVIOUS_SHA`
+резолвиться і досяжний у клоні, пропуск відбувається там, де має.
+
 ### Verify on Vercel after merge
 
 1. Відкрий список деплоїв у Vercel UI для проєкту `sergeant`.
