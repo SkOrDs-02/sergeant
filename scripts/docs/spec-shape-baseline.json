@@ -1,0 +1,11 @@
+{
+  "$comment": "Успадковані пропуски секцій у специфікаціях. Храповик: записи можна лише прибирати. Регенерація — node scripts/docs/lint-spec-shape.mjs --update (лише коли пропуск ЗАКРИТО, не щоб додати новий).",
+  "entries": {
+    "anonymous-local-first-persistence.md": [
+      "Верифікація",
+      "Мета",
+      "Поза скоупом"
+    ],
+    "routine-flexible-weekly-frequency.md": ["Мета", "Проблема"]
+  }
+}
