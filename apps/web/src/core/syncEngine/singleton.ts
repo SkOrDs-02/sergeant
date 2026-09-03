@@ -533,8 +533,22 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
     setInterval: (handler, ms) => window.setInterval(handler, ms),
     clearInterval: (handle) => window.clearInterval(handle as number),
     eventTarget: window,
-    getStatus: async () =>
-      shared.dbSchema.countOutboxByStatus(await shared.resolveClient()),
+    // `rejected` у лічильнику і в списку — ОДНА множина: `lww_conflict`
+    // виключено з обох тим самим списком, що й у `reportTerminalRejection`
+    // (це не втрата даних, людині його показувати нема за що). Інакше пілюля
+    // казала б «2 записи не прийнято» над порожнім `SyncRejectedList`.
+    getStatus: async () => {
+      const client = await shared.resolveClient();
+      const counts = await shared.dbSchema.countOutboxByStatus(client);
+      const rejected = await shared.dbSchema.countRejectedOutbox(client, {
+        excludeReasons: [...BENIGN_REJECT_REASONS],
+      });
+      return { ...counts, rejected };
+    },
+    listRejected: async () =>
+      shared.dbSchema.listRejectedOutbox(await shared.resolveClient(), {
+        excludeReasons: [...BENIGN_REJECT_REASONS],
+      }),
     recoverDeadLetter: async (selector: RecoverDeadLetterSelector) =>
       shared.dbSchema.recoverDeadLetter(await shared.resolveClient(), selector),
     addBreadcrumb: shared.addBreadcrumb,

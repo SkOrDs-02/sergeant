@@ -2,9 +2,11 @@ import type { Request, Response } from "express";
 import { env } from "../../env.js";
 import { chatViaOpenRouter } from "../../env/chatModels.js";
 import {
+  type AnthropicStreamResult,
   anthropicMessagesStream,
   recordAnthropicUsage,
 } from "../../lib/anthropic.js";
+import type { AiProvider } from "../../lib/posthogAi.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { logger } from "../../obs/logger.js";
 import { aiFirstTokenMs } from "../../obs/metrics.js";
@@ -272,20 +274,21 @@ export async function streamAnthropicToSse(
   promptVersion?: string,
   userId?: string,
 ): Promise<void> {
-  let firstResponse: FetchResponse;
-  let firstRecordEnd: (outcome?: string) => void;
+  let firstStream: AnthropicStreamResult;
   try {
-    ({ response: firstResponse, recordStreamEnd: firstRecordEnd } =
-      await anthropicMessagesStream(apiKey, payload, {
-        endpoint,
-        timeoutMs: 60000,
-        signal: abortSignal,
-        allowOpenRouter: chatViaOpenRouter(),
-      }));
+    firstStream = await anthropicMessagesStream(apiKey, payload, {
+      endpoint,
+      timeoutMs: 60000,
+      signal: abortSignal,
+      allowOpenRouter: chatViaOpenRouter(),
+      userId,
+    });
   } catch (e) {
     await refundQuotaOnUpstreamFailure(req);
     throw e;
   }
+  const firstResponse: FetchResponse = firstStream.response;
+  const firstRecordEnd = firstStream.recordStreamEnd;
 
   if (!firstResponse.ok) {
     // Селтл першого стріму ДО ретрів/кидання: без цього телеметрійний
@@ -343,6 +346,11 @@ export async function streamAnthropicToSse(
   let accumulatedAllText = "";
   let currentResponse: FetchResponse = firstResponse;
   let currentRecordEnd = firstRecordEnd;
+  // Транспорт і таймер поточного стріму — для `$ai_generation` (0025).
+  // Optional-читання навмисно: тестові стаби `anthropicMessagesStream`
+  // повертають лише `{ response, recordStreamEnd }`.
+  let currentProvider = firstStream.provider as AiProvider | undefined;
+  let currentElapsedMs = firstStream.elapsedMs as (() => number) | undefined;
   let continuationsLeft = MAX_TEXT_CONTINUATIONS;
 
   try {
@@ -402,6 +410,13 @@ export async function streamAnthropicToSse(
           iter.usage,
           promptVersion,
           userId,
+          {
+            provider: currentProvider,
+            latencyMs:
+              typeof currentElapsedMs === "function"
+                ? currentElapsedMs()
+                : undefined,
+          },
         );
       }
 
@@ -424,17 +439,19 @@ export async function streamAnthropicToSse(
         { role: "assistant", content: accumulatedAllText },
       ];
       try {
-        const { response: nextResponse, recordStreamEnd: nextRecordEnd } =
-          await anthropicMessagesStream(
-            apiKey,
-            { ...payload, messages: nextMessages },
-            {
-              endpoint: `${endpoint}-cont`,
-              timeoutMs: 60000,
-              signal: abortSignal,
-              allowOpenRouter: chatViaOpenRouter(),
-            },
-          );
+        const nextStream: AnthropicStreamResult = await anthropicMessagesStream(
+          apiKey,
+          { ...payload, messages: nextMessages },
+          {
+            endpoint: `${endpoint}-cont`,
+            timeoutMs: 60000,
+            signal: abortSignal,
+            allowOpenRouter: chatViaOpenRouter(),
+            userId,
+          },
+        );
+        const nextResponse = nextStream.response;
+        const nextRecordEnd = nextStream.recordStreamEnd;
         if (!nextResponse.ok) {
           // Upstream-помилка на continuation: лишаємо вже стрімнутий текст,
           // юзер бачить partial відповідь + помилку.
@@ -448,6 +465,8 @@ export async function streamAnthropicToSse(
         }
         currentResponse = nextResponse;
         currentRecordEnd = nextRecordEnd;
+        currentProvider = nextStream.provider as AiProvider | undefined;
+        currentElapsedMs = nextStream.elapsedMs as (() => number) | undefined;
         continuationsLeft -= 1;
       } catch {
         // Той самий принцип, що й у pre-SSE гілці: сирий провайдерний/мережевий

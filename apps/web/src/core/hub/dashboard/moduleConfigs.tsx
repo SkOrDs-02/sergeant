@@ -13,7 +13,6 @@ export interface ModuleConfig {
   label: string;
   emoji: string;
   module: string;
-  iconClass: string;
   accentClass: string;
   /**
    * Колір великого показника картки. Мова «Папір» П4: у світлій темі
@@ -162,7 +161,6 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     label: "Фінік",
     emoji: "\uD83D\uDCB0",
     module: "finyk",
-    iconClass: "bg-finyk-soft text-finyk dark:bg-finyk-surface-dark/15",
     accentClass: "bg-finyk",
     inkClass: "text-finyk",
     cardBg:
@@ -204,7 +202,6 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     label: "Фізрук",
     emoji: "\uD83D\uDCAA",
     module: "fizruk",
-    iconClass: "bg-fizruk-soft text-fizruk dark:bg-fizruk-surface-dark/15",
     accentClass: "bg-fizruk",
     inkClass: "text-fizruk",
     cardBg:
@@ -246,8 +243,6 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     label: "Рутина",
     emoji: "\u2705",
     module: "routine",
-    iconClass:
-      "bg-routine-surface text-routine dark:bg-routine-surface-dark/15",
     accentClass: "bg-routine",
     inkClass: "text-routine",
     cardBg:
@@ -289,8 +284,6 @@ export const MODULE_CONFIGS: Record<ModuleId, ModuleConfig> = {
     label: "Їжа",
     emoji: "\uD83E\uDD57",
     module: "nutrition",
-    iconClass:
-      "bg-nutrition-soft text-nutrition dark:bg-nutrition-surface-dark/15",
     accentClass: "bg-nutrition",
     inkClass: "text-nutrition",
     cardBg:

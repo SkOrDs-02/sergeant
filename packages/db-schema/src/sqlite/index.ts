@@ -52,6 +52,12 @@ export {
   type SyncOpOutboxStatusCounts,
 } from "./syncOpOutboxStatus.js";
 export {
+  countRejectedOutbox,
+  listRejectedOutbox,
+  type ListRejectedOutboxOptions,
+  type RejectedOutboxRow,
+} from "./syncOpOutboxRejected.js";
+export {
   recoverDeadLetter,
   type RecoverDeadLetterResult,
   type RecoverDeadLetterSelector,
@@ -73,8 +79,6 @@ export {
 export {
   ROUTINE_CLIENT_MIGRATIONS,
   ROUTINE_MIGRATIONS_TABLE,
-  ROUTINE_SPIKE_CLIENT_MIGRATIONS,
-  ROUTINE_SPIKE_MIGRATIONS_TABLE,
   FIZRUK_CLIENT_MIGRATIONS,
   FIZRUK_MIGRATIONS_TABLE,
   NUTRITION_CLIENT_MIGRATIONS,

@@ -30,11 +30,11 @@
 - [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
 
-## 🔵 В роботі — 64 відкриті документи
+## 🔵 В роботі — 63 відкриті документи
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
-| Ініціативи                       | 5        |
+| Ініціативи                       | 4        |
 | Планування                       | 22       |
 | Launch / запуск                  | 12       |
 | Аудити й прожарки                | 20       |
@@ -57,7 +57,6 @@
 
 Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pending` маркером — `blocked` першими.
 
-- [`90-work/initiatives/0023-photo-analysis-multi-item.md`](./90-work/initiatives/0023-photo-analysis-multi-item.md) — 0023 — Розбивка фото-аналізу на позиції (correction UX) → **agent-ready** _(Ініціативи)_
 - [`90-work/initiatives/0024-ai-memory-source-coverage.md`](./90-work/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться → **agent-ready** _(Ініціативи)_
 - [`90-work/initiatives/0025-posthog-ai-observability.md`](./90-work/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Ініціативи)_
 - [`90-work/planning/specs/anonymous-local-first-persistence.md`](./90-work/planning/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Планування)_

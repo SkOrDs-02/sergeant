@@ -7,6 +7,7 @@ import { useMemo, useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Measure } from "@shared/components/ui/Measure";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { Stat } from "@shared/components/ui/Stat";
 import { cn } from "@shared/lib/ui/cn";
 import {
   getRowsForRange,
@@ -104,35 +105,48 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
         />
       ) : (
         <>
-          <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
+          {/* F1 (анти-слоп аудит 2026-09-01): 2×2 плитки «підпис → число →
+              підпис» повторювали граматику тайлів хабу й зведення Рутини —
+              чотири однакові контейнери для чотирьох чисел однієї ваги.
+              П4 стратегії застосовано до кількості контейнерів: hero тут
+              лише калорії (єдине число, яке людина звіряє з ціллю дня),
+              макро — один рядок тексту під ним, без боксів. Графік і два
+              списки нижче так само без власних плит: їх розділяє лінійка,
+              не заливка. */}
+          <Stat
+            label="Середні ккал"
+            value={
+              <Measure value={Math.round(statsAvg.avgKcal) || 0} unit="ккал" />
+            }
+            sublabel={`за ${statsAvg.daysLogged} ${pluralUa(statsAvg.daysLogged, ACTIVE_DAYS_FORMS)}`}
+            size="md"
+          />
+          <p className="flex flex-wrap items-baseline gap-x-1.5 text-style-label text-muted">
             {[
-              { key: "kcal", label: "Середні ккал", v: statsAvg.avgKcal },
-              {
-                key: "protein_g",
-                label: "Середні білки",
-                v: statsAvg.avgProtein,
-              },
-              { key: "fat_g", label: "Середні жири", v: statsAvg.avgFat },
-              {
-                key: "carbs_g",
-                label: "Середні вуглеводи",
-                v: statsAvg.avgCarbs,
-              },
-            ].map((x) => (
-              <div key={x.key} className="bg-panelHi rounded-2xl px-2 py-3">
-                <div className="text-style-caption text-muted">{x.label}</div>
-                <div className="text-base font-extrabold text-text tabular-nums">
-                  {Math.round(Number(x.v) || 0)}
-                </div>
-                <div className="text-style-caption text-muted">
-                  за {statsAvg.daysLogged}{" "}
-                  {pluralUa(statsAvg.daysLogged, ACTIVE_DAYS_FORMS)}
-                </div>
-              </div>
+              { key: "protein_g", label: "Білки", v: statsAvg.avgProtein },
+              { key: "fat_g", label: "Жири", v: statsAvg.avgFat },
+              { key: "carbs_g", label: "Вуглеводи", v: statsAvg.avgCarbs },
+            ].map((x, i) => (
+              <span
+                key={x.key}
+                className="inline-flex items-baseline gap-x-1.5"
+              >
+                {i > 0 && (
+                  <span aria-hidden className="text-subtle">
+                    ·
+                  </span>
+                )}
+                <span>{x.label}</span>
+                <Measure
+                  value={Math.round(Number(x.v) || 0)}
+                  unit="г"
+                  className="font-semibold text-text"
+                />
+              </span>
             ))}
-          </div>
+          </p>
 
-          <div className="bg-panelHi rounded-2xl px-3 py-3">
+          <div className="border-t border-line pt-3">
             <SectionHeading
               as="div"
               size="xs"
@@ -161,8 +175,8 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
             })()}
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-            <div className="bg-panelHi rounded-2xl px-3 py-3">
+          <div className="grid grid-cols-1 sm:grid-cols-2 gap-x-4 gap-y-3 border-t border-line pt-3">
+            <div>
               <SectionHeading
                 as="div"
                 size="xs"
@@ -194,7 +208,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
                 </ol>
               )}
             </div>
-            <div className="bg-panelHi rounded-2xl px-3 py-3">
+            <div>
               <SectionHeading
                 as="div"
                 size="xs"

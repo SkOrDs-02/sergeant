@@ -593,11 +593,12 @@ two-phase DROP цього класу змін не покриває.
   вимикає idempotency-backstop проти конкурентного дубль-інсерту. Деталі —
   addendum у [ADR-0065](../../04-governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md)
   (2026-08-04).
-- 🚫 **SPIKE-легасі в sqlite migrations — НЕ прибрано (свідомо).**
-  `ROUTINE_SPIKE_CLIENT_MIGRATIONS`/`ROUTINE_SPIKE_MIGRATIONS_TABLE`
-  активно імпортуються web+mobile `clientMigrate.ts` і 9 test-файлами;
-  `@removeBy 2026-09-01` ще не настав. `001_routine_spike.sql` ledger-ім'я
-  лишено — рескейл ризикує зламати вже змігровані локальні SQLite-стани
+- ✅ **SPIKE-легасі в sqlite migrations — прибрано 2026-09-03** після
+  настання `@removeBy 2026-09-01`: `ROUTINE_SPIKE_CLIENT_MIGRATIONS`/
+  `ROUTINE_SPIKE_MIGRATIONS_TABLE` видалені, web+mobile `clientMigrate.ts`
+  і 9 test-файлів переведені на `ROUTINE_CLIENT_MIGRATIONS`/
+  `ROUTINE_MIGRATIONS_TABLE`. `001_routine_spike.sql` ledger-ім'я лишено
+  свідомо — рескейл ризикує зламати вже змігровані локальні SQLite-стани
   розробників/бета-тестерів за нульову функціональну вигоду.
 
 ---

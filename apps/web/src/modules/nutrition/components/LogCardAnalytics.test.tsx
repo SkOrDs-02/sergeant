@@ -93,7 +93,7 @@ describe("LogCardAnalytics", () => {
 
     render(<LogCardAnalytics log={log} selectedDate="2026-06-20" />);
 
-    expect(screen.getByText("2000")).toBeInTheDocument(); // avg kcal
+    expect(screen.getByText(flatMatch("2 000 ккал"))).toBeInTheDocument(); // avg kcal
     expect(screen.getByText("Курка")).toBeInTheDocument();
     expect(screen.getByText(flatMatch("4× · 500 ккал"))).toBeInTheDocument();
     // meal-type split row for lunch
@@ -107,8 +107,8 @@ describe("LogCardAnalytics", () => {
   });
 
   // TXT-8 (аудит 2026-09-01): "Сер. Б/день" / "на N активн. днів" читались
-  // як недороблені скорочення поруч із людською датою Рутини. Тайли тепер
-  // повторюють повнослівну конвенцію, вже прийняту в модулі
+  // як недороблені скорочення поруч із людською датою Рутини. Рядок макро
+  // повторює повнослівну конвенцію, вже прийняту в модулі
   // (`NutritionDashboard.tsx`, `MacroRings.stories.tsx`: "Білки"/"Жири"/
   // "Вуглеводи" завжди пишуться повністю, ніколи як "Б"/"Ж"/"В").
   it("spells out macro/day labels in full instead of abbreviating them", () => {
@@ -124,10 +124,13 @@ describe("LogCardAnalytics", () => {
     render(<LogCardAnalytics log={log} selectedDate="2026-06-20" />);
 
     expect(screen.getByText("Середні ккал")).toBeInTheDocument();
-    expect(screen.getByText("Середні білки")).toBeInTheDocument();
-    expect(screen.getByText("Середні жири")).toBeInTheDocument();
-    expect(screen.getByText("Середні вуглеводи")).toBeInTheDocument();
-    expect(screen.getAllByText(flatMatch("за 1 активний день")).length).toBe(4);
+    // F1 (анти-слоп 2026-09-01): макро — один текстовий рядок під hero,
+    // а не три плитки, тож підпис активних днів стоїть один раз.
+    expect(screen.getByText("Білки")).toBeInTheDocument();
+    expect(screen.getByText("Жири")).toBeInTheDocument();
+    expect(screen.getByText("Вуглеводи")).toBeInTheDocument();
+    expect(screen.getByText(flatMatch("90 г"))).toBeInTheDocument();
+    expect(screen.getAllByText(flatMatch("за 1 активний день")).length).toBe(1);
     expect(screen.queryByText(/Сер\./)).not.toBeInTheDocument();
     expect(screen.queryByText(/активн\./)).not.toBeInTheDocument();
   });

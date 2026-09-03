@@ -63,6 +63,10 @@ export function PhotoAddItemPicker({
       // Каталог — не здогадка моделі, тож позиція приходить упевненою і не
       // тягне за собою застереження «ШІ невпевнений».
       confidence: 1,
+      // Позначка для PR-3: рядок журналу з цієї позиції отримує
+      // `macroSource: "productDb"` і звʼязок із продуктом замість
+      // `"photoAI"` без нього.
+      foodId: pickedFood.id != null ? String(pickedFood.id) : null,
     });
   };
 

@@ -27,7 +27,6 @@ function makeConfig(
     label: "Рутина",
     emoji: "✓",
     module: "routine",
-    iconClass: "bg-routine-soft text-routine",
     accentClass: "bg-routine",
     inkClass: "text-routine",
     cardBg: "bg-panel border-routine/30",

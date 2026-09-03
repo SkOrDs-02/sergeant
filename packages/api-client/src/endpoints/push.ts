@@ -80,14 +80,21 @@ export interface PushEndpoints {
    * @deprecated Використовуй `register({ platform: "web", token, keys })`.
    * Серверний `/api/push/subscribe` залишено proxy-адаптером (див.
    * `apps/server/src/modules/push/push.ts`) на період rollout.
-   * @removeBy 2026-09-01
+   *
+   * Термін перенесено 2026-09-03 з 2026-09-01: метод ще експортують
+   * `react/hooks.ts` (`usePushSubscribe`/`usePushUnsubscribe`) і пінить
+   * `push.test.ts`; зняття — один PR під `sergeant-module-push` разом із
+   * серверним proxy-роутом (реєстр: `docs/90-work/tech-debt/frontend.md`
+   * § «Прострочені `@removeBy` 2026-09-01»).
+   * @removeBy 2026-12-01
    */
   subscribe: (subscription: PushSubscriptionJSON) => Promise<unknown>;
   /**
    * Legacy web-push: видалити підписку за `endpoint`.
    *
    * @deprecated Використовуй `unregister({ platform: "web", endpoint })`.
-   * @removeBy 2026-09-01
+   * Термін перенесено разом із `subscribe` вище.
+   * @removeBy 2026-12-01
    */
   unsubscribe: (endpoint: string) => Promise<unknown>;
   /**

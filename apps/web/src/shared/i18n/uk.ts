@@ -103,16 +103,6 @@ export const messages = {
     // Іменування — за призначенням, не за рядком. Якщо в майбутньому буде
     // змінено формулювання чи довжину пароля, зміна торкнеться лише
     // value-у тут.
-    // PR-31 / §C6 — `fieldRequired` deprecated. Безособове «Поле
-    // обовʼязкове» виграло від уніфікації під 1-у особу («Введи X»
-    // / «Обери X»). Лишаємо до follow-up міграції design-showcase
-    // demo (`core/DesignShowcase/sections/Forms.tsx`); прохід через
-    // production-форми вже не звертається до цього key-а.
-    /**
-     * @deprecated PR-31: use `<entity>Required` ключі замість безособового.
-     * @removeBy 2026-09-01
-     */
-    fieldRequired: "Поле обовʼязкове.",
     emailRequired: "Введи email",
     emailInvalid: "Некоректний формат email",
     // Альтернативне формулювання для public-facing waitlist-форми (не

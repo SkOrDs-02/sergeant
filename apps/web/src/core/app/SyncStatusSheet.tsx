@@ -9,6 +9,7 @@
  */
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
+import { SyncRejectedList } from "./SyncRejectedList";
 
 type RowTone = "ok" | "warn" | "err";
 
@@ -28,6 +29,8 @@ const COPY = {
   queueEmpty: "Нічого не чекає",
   errors: "Помилки",
   errorsEmpty: "Немає",
+  rejected: "Не прийнято сервером",
+  rejectedEmpty: "Немає",
   retry: "Повторити синхронізацію",
 } as const;
 
@@ -37,6 +40,11 @@ export interface SyncStatusSheetProps {
   online: boolean;
   pending: number;
   deadLetter: number;
+  /**
+   * Термінально відхилені сервером записи. На відміну від `deadLetter`
+   * їх не можна повторити — лише побачити, що саме не доїхало.
+   */
+  rejected?: number | undefined;
   onRetry?: (() => Promise<void>) | undefined;
 }
 
@@ -46,6 +54,7 @@ export function SyncStatusSheet({
   online,
   pending,
   deadLetter,
+  rejected = 0,
   onRetry,
 }: SyncStatusSheetProps) {
   const rows: { label: string; value: string; tone: RowTone }[] = [
@@ -63,6 +72,11 @@ export function SyncStatusSheet({
       label: COPY.errors,
       value: deadLetter > 0 ? String(deadLetter) : COPY.errorsEmpty,
       tone: deadLetter > 0 ? "err" : "ok",
+    },
+    {
+      label: COPY.rejected,
+      value: rejected > 0 ? String(rejected) : COPY.rejectedEmpty,
+      tone: rejected > 0 ? "err" : "ok",
     },
   ];
 
@@ -91,6 +105,7 @@ export function SyncStatusSheet({
           </div>
         ))}
       </div>
+      {rejected > 0 && <SyncRejectedList />}
       {deadLetter > 0 && onRetry && (
         <button
           type="button"

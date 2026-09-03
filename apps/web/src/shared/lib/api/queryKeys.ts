@@ -203,6 +203,8 @@ export const strategicKeys = {
 export const syncKeys = {
   all: ["sync"] as const,
   status: () => ["sync", "status"] as const,
+  /** Список термінально відхилених sync-опів (`SyncRejectedList`). */
+  rejected: () => ["sync", "rejected"] as const,
 };
 
 // ─── Billing (Stripe checkout / subscription status) ──────────────────────

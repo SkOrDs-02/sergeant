@@ -101,7 +101,7 @@ export function FinykSection() {
             : "Категорію буде видалено з списку."
         }
         confirmLabel="Видалити"
-        danger
+        variant="destructive"
         onConfirm={confirmRemove}
         onCancel={() => setPendingDeleteId(null)}
       />
