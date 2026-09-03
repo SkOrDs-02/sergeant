@@ -59,7 +59,7 @@
     "sergeant-feature-delivery": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "0fda9c098603d7dac967e6637cfd8ba2db32977df744b6f35c9fd07c215e035e"
+      "computedHash": "eb413d483ffb43256c59232e9d09bc08fc23c2d8ce9974fff923b893c32152db"
     },
     "sergeant-feature-flags": {
       "source": "local",
@@ -156,10 +156,15 @@
       "sourceType": "local",
       "computedHash": "f3d7c496f6a72db0f35b4a1f4c59cde92afc657d950d82cd63110cc5140f74ce"
     },
+    "sergeant-spec": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "a56e6b9394d4eb2c3e0ec1858f1e4788d3bdd5e63181f9bdabafc2e80cb21b05"
+    },
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "b14d3e7d032dba409d0db5683de79a6f31bbe01008a8e762cb7c789d7e8485ca"
+      "computedHash": "936adee419f06b76215d24554e15176db851da1283b53cc14ad958e3750a5fa5"
     },
     "sergeant-tech-debt": {
       "source": "local",

@@ -12,7 +12,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 ## Flow
 
 1. Перечитай `AGENTS.md`, відповідний specialist skill і будь-який relevant playbook у `docs/00-start/playbooks/`.
-2. Запиши або онови спеку в `docs/90-work/planning/specs/` (шаблон — `TEMPLATE.md`), коли зміна нетривіальна або product-facing. Готову спеку виконує агент `spec-executor`.
+2. Потрібна спека (зміна нетривіальна або product-facing)? Писати її самому не можна — заходь у [`sergeant-spec`](../sergeant-spec/SKILL.md): інтервʼю з власником передує документу, і за відсутності каналу до нього деліверабл це список питань, а не спека. Форму гейтить `pnpm lint:specs`. Готову спеку БЕЗ відкритих блокерів виконує агент `spec-executor` — його контракт читає її як settled, тож він не місце для здогадок.
 3. Визнач, де живе код, через `sergeant-monorepo-boundaries` ще до додавання файлів.
 4. Спершу додай тести там, де змінюється поведінка: unit, контракт, UI або migration verification — за релевантністю.
 5. Імплементуй мінімальний end-to-end slice.

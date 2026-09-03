@@ -1225,6 +1225,37 @@
       "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
       "forbiddenSkills": [],
       "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-spec-trigger-new-feature-spec",
+      "skill": "sergeant-spec",
+      "kind": "trigger",
+      "prompt": "Write a spec for a new shared-goals feature in docs/90-work/planning/specs/ before anyone starts building it.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-spec"]
+    },
+    {
+      "id": "sergeant-spec-trigger-widen-existing-spec",
+      "skill": "sergeant-spec",
+      "kind": "trigger",
+      "prompt": "The receipt-scan spec needs its scope widened to cover bank statements — update the spec document first.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-spec"]
+    },
+    {
+      "id": "sergeant-spec-anti-implement-settled-spec",
+      "skill": "sergeant-spec",
+      "kind": "anti-trigger",
+      "prompt": "Implement the already-approved pantry-storage-places spec exactly as written, with no open blockers left in it.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": ["sergeant-spec"]
+    },
+    {
+      "id": "sergeant-spec-workflow-interview-before-document",
+      "skill": "sergeant-spec",
+      "kind": "workflow",
+      "prompt": "Before writing the shared-goals spec, load repo rules and only the spec skill, interview the owner first, then write the document.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-spec"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
     }
   ]
 }

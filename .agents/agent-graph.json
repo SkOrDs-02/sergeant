@@ -118,6 +118,12 @@
       "path": ".agents/skills/sergeant-feature-delivery/SKILL.md"
     },
     {
+      "id": "sergeant-spec",
+      "kind": "skill",
+      "role": "specialist",
+      "path": ".agents/skills/sergeant-spec/SKILL.md"
+    },
+    {
       "id": "sergeant-hubchat",
       "kind": "skill",
       "role": "specialist",
@@ -597,6 +603,16 @@
     {
       "from": "sergeant-module-ai",
       "to": "ai-owner",
+      "rel": "dispatches"
+    },
+    {
+      "from": "sergeant-feature-delivery",
+      "to": "sergeant-spec",
+      "rel": "escalates"
+    },
+    {
+      "from": "sergeant-spec",
+      "to": "spec-executor",
       "rel": "dispatches"
     },
     {
