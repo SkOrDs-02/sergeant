@@ -438,15 +438,15 @@ describe("050_routine_full_state migration", () => {
       // повторного накату 098 `after` лишився б без колонки, яку `before`
       // уже має. Та сама причина, що й для 094 вище.
       await execSqlFile(pool, "098_routine_habit_skips.sql");
-      // 135 — третя міграція, що надбудовується над `routine_habits` (додає
-      // `weekly_target_history`), і її пропуск валив саме цей тест: сусідній
-      // тест форми колонок оновили під нову колонку, а список повтору тут ні,
-      // тож `before` мав колонку, а `after` — ні.
+      // 135_routine_weekly_target_history.sql — те саме: додає
+      // `weekly_target_history` до `routine_habits`, тож після
+      // перестворення таблиці має бути накочена повторно.
       //
-      // AI-DANGER: цей список — РУЧНЕ дзеркало міграцій, що доливають колонки
-      // в `routine_habits` після 050. Кожна наступна така міграція мусить
-      // зʼявитись і тут, інакше тест впаде рівно так само. Перевірити повний
-      // набір: `grep -l routine_habits apps/server/src/migrations/*.sql`.
+      // AI-DANGER: цей список — РУЧНЕ дзеркало міграцій, що доливають
+      // колонки в `routine_habits` після 050, і його вже двічі забували
+      // синхронізувати. Кожна наступна така міграція мусить зʼявитись і
+      // тут, інакше `before` матиме колонку, а `after` — ні. Повний набір:
+      // `grep -l routine_habits apps/server/src/migrations/*.sql`.
       await execSqlFile(pool, "135_routine_weekly_target_history.sql");
 
       const after = {

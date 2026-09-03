@@ -6,80 +6,97 @@ import {
   weeklyGoalStreakWeeks,
 } from "./weeklyGoalStreak.js";
 
-/**
- * Тижнева серія для гнучкої звички: тиждень зараховано, коли відміток у ньому
- * не менше за ціль, чинну на КІНЕЦЬ того тижня. До 2026-09-03 модуль не мав
- * жодного тесту (11% рядків), хоча несе всю арифметику стрічки «N тижнів».
- */
-function flexHabit(
-  history: readonly { from: string; target: number }[],
-): Habit {
+// 2026-01-05 — понеділок, тож поточний тиждень 05..11, попередній 12-29..01-04.
+function habit(patch: Partial<Habit> = {}): Habit {
   return {
     id: "h1",
-    name: "Спорт",
-    emoji: "check",
-    archived: false,
+    name: "Зарядка",
     recurrence: "flexible",
-    startDate: "2026-01-01",
-    endDate: null,
-    weekdays: [0, 1, 2, 3, 4, 5, 6],
-    weeklyTargetHistory: history,
-  } as Habit;
+    startDate: "2025-12-01",
+    ...patch,
+  };
 }
 
-// Понеділки: 05.01, 12.01, 19.01 (ISO-тиждень починається з понеділка).
-describe("routine-domain/weeklyGoalStreak", () => {
-  it("рахує нуль без жодної відмітки", () => {
-    const habit = flexHabit([{ from: "2026-01-01", target: 2 }]);
-    expect(weeklyGoalStreakWeeks(habit, undefined, "2026-01-21")).toBe(0);
-    expect(weeklyGoalStreakWeeks(habit, [], "2026-01-21")).toBe(0);
-  });
-
-  it("зараховує тиждень, у якому ціль виконана", () => {
-    const habit = flexHabit([{ from: "2026-01-01", target: 2 }]);
-    const done = ["2026-01-12", "2026-01-14"];
-    const out = weeklyGoalStreakBreakdown(habit, done, "2026-01-21");
-    expect(out.weeks).toBeGreaterThanOrEqual(1);
-  });
-
-  it("не зараховує тиждень, де відміток менше за ціль", () => {
-    const habit = flexHabit([{ from: "2026-01-01", target: 3 }]);
-    const done = ["2026-01-12", "2026-01-14"];
-    const out = weeklyGoalStreakBreakdown(habit, done, "2026-01-21");
-    expect(out.weeks).toBe(0);
-  });
-
-  // Ціль може змінитись усередині історії, і тиждень звіряється з тією, що
-  // діяла на його КІНЕЦЬ — інакше підняття цілі заднім числом переписало б
-  // уже зароблені тижні.
-  it("бере ціль, чинну на кінець тижня, а не сьогоднішню", () => {
-    const habit = flexHabit([
-      { from: "2026-01-01", target: 2 },
-      { from: "2026-01-19", target: 5 },
-    ]);
-    const done = ["2026-01-12", "2026-01-14"];
-    const out = weeklyGoalStreakBreakdown(habit, done, "2026-01-21");
-    expect(out.weeks).toBeGreaterThanOrEqual(1);
-  });
-
-  it("ігнорує сміття у списку відміток", () => {
-    const habit = flexHabit([{ from: "2026-01-01", target: 1 }]);
-    const dirty = [
-      "2026-01-12",
-      "не-дата",
-      "",
-      "2026-1-12",
-    ] as unknown as string[];
-    expect(() =>
-      weeklyGoalStreakBreakdown(habit, dirty, "2026-01-14"),
-    ).not.toThrow();
-  });
-
-  it("`weeks` — це те саме число, що й у розбивці", () => {
-    const habit = flexHabit([{ from: "2026-01-01", target: 1 }]);
-    const done = ["2026-01-12"];
-    expect(weeklyGoalStreakWeeks(habit, done, "2026-01-14")).toBe(
-      weeklyGoalStreakBreakdown(habit, done, "2026-01-14").weeks,
+describe("weeklyGoalStreakBreakdown", () => {
+  it("порожні відмітки — нульовий стрік із поточною ціллю", () => {
+    const b = weeklyGoalStreakBreakdown(
+      habit({ weeklyTargetHistory: [{ from: "2025-12-01", target: 2 }] }),
+      undefined,
+      "2026-01-07",
     );
+    expect(b).toEqual({
+      weeks: 0,
+      targetPerWeek: 2,
+      currentWeekWorkouts: 0,
+      currentWeekPending: false,
+      brokenOnWeekStart: null,
+    });
+  });
+
+  it("два добрані тижні поспіль дають стрік 2", () => {
+    const b = weeklyGoalStreakBreakdown(
+      habit({ weeklyTargetHistory: [{ from: "2025-12-01", target: 2 }] }),
+      ["2025-12-29", "2025-12-30", "2026-01-05", "2026-01-06", "сміття"],
+      "2026-01-07",
+    );
+    expect(b.weeks).toBe(2);
+    expect(b.currentWeekWorkouts).toBe(2);
+    expect(b.currentWeekPending).toBe(false);
+  });
+
+  it("недобраний поточний тиждень не рве стрік, а лишається pending", () => {
+    const b = weeklyGoalStreakBreakdown(
+      habit({ weeklyTargetHistory: [{ from: "2025-12-01", target: 2 }] }),
+      ["2025-12-29", "2025-12-30", "2026-01-05"],
+      "2026-01-07",
+    );
+    expect(b.weeks).toBe(1);
+    expect(b.currentWeekPending).toBe(true);
+    expect(b.brokenOnWeekStart).toBe(null);
+  });
+
+  it("кожен тиждень міряється своєю ціллю з історії", () => {
+    // Ціль піднято до 3 з 2026-01-05: попередній тиждень лишається під ціллю 1.
+    const h = habit({
+      weeklyTargetHistory: [
+        { from: "2025-12-01", target: 1 },
+        { from: "2026-01-05", target: 3 },
+      ],
+    });
+    const done = ["2025-12-29", "2026-01-05", "2026-01-06"];
+    const b = weeklyGoalStreakBreakdown(h, done, "2026-01-07");
+    expect(b.targetPerWeek).toBe(3);
+    expect(b.currentWeekPending).toBe(true);
+    expect(b.weeks).toBe(1);
+
+    const met = weeklyGoalStreakBreakdown(
+      h,
+      [...done, "2026-01-07"],
+      "2026-01-07",
+    );
+    expect(met.currentWeekPending).toBe(false);
+    expect(met.weeks).toBe(2);
+  });
+
+  it("порожній тиждень усередині рве стрік", () => {
+    const b = weeklyGoalStreakBreakdown(
+      habit({ weeklyTargetHistory: [{ from: "2025-12-01", target: 1 }] }),
+      ["2025-12-22", "2026-01-05"],
+      "2026-01-07",
+    );
+    expect(b.weeks).toBe(1);
+    expect(b.brokenOnWeekStart).toBe("2025-12-29");
+  });
+});
+
+describe("weeklyGoalStreakWeeks", () => {
+  it("повертає тільки кількість тижнів", () => {
+    expect(
+      weeklyGoalStreakWeeks(
+        habit({ weeklyTargetHistory: [{ from: "2025-12-01", target: 1 }] }),
+        ["2025-12-29", "2026-01-05"],
+        "2026-01-07",
+      ),
+    ).toBe(2);
   });
 });
