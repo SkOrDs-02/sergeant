@@ -10,6 +10,7 @@ import {
 import { env } from "../env.js";
 import { estimateAnthropicCostUsd } from "./aiPricing.js";
 import { recordAnthropicUsageToDb } from "./anthropicUsageStore.js";
+import { captureAiGeneration, type AiProvider } from "./posthogAi.js";
 import { elapsedMs, sleep } from "./timing.js";
 
 const ANTHROPIC_URL = "https://api.anthropic.com/v1/messages";
@@ -72,10 +73,11 @@ export interface AnthropicCallOptions {
 function pickTransport(
   apiKey: string,
   allowOpenRouter: boolean | undefined,
-): { url: string; headers: Record<string, string> } {
+): { url: string; headers: Record<string, string>; provider: AiProvider } {
   if (allowOpenRouter && env.OPENROUTER_API_KEY) {
     return {
       url: OPENROUTER_URL,
+      provider: "openrouter",
       headers: {
         "Content-Type": "application/json",
         Authorization: `Bearer ${env.OPENROUTER_API_KEY}`,
@@ -85,6 +87,7 @@ function pickTransport(
   }
   return {
     url: ANTHROPIC_URL,
+    provider: "anthropic",
     headers: {
       "Content-Type": "application/json",
       "x-api-key": apiKey,
@@ -131,12 +134,54 @@ export interface AnthropicMessagesResult {
 export interface AnthropicStreamResult {
   response: Response;
   recordStreamEnd: (outcome?: string) => void;
+  /**
+   * Фактичний транспорт цього стріму і час від старту запиту. Потрібні
+   * caller-у, щоб передати `provider`/`latencyMs` у `recordAnthropicUsage`
+   * разом із `usage` з SSE `message_start` — рішення про транспорт живе тут,
+   * а usage стріму видно лише у chat-модулі (ініціатива 0025).
+   */
+  provider: AiProvider;
+  elapsedMs: () => number;
+}
+
+/**
+ * Телеметрійні метадані виклику для `$ai_generation` (ініціатива 0025):
+ * усе, чого немає в `usage`, але що знає лише транспортний шар.
+ */
+export interface AnthropicUsageMeta {
+  provider?: AiProvider | undefined;
+  latencyMs?: number | null | undefined;
+  httpStatus?: number | undefined;
 }
 
 interface RecordOutcomeMeta {
   model: string;
   endpoint: string;
   ms: number | null;
+}
+
+/**
+ * `$ai_generation` для НЕуспішного виклику: без токенів, з `$ai_is_error`
+ * і HTTP-статусом (для timeout/мережевої помилки — без статусу). Fail-open
+ * усередині `captureAiGeneration`; тут лише збираємо allowlist-поля.
+ */
+function recordAiError(
+  model: string,
+  endpoint: string,
+  ms: number | null,
+  provider: AiProvider,
+  userId: string | undefined,
+  httpStatus?: number,
+): void {
+  captureAiGeneration({
+    userId,
+    model,
+    provider,
+    feature: endpoint || "unknown",
+    latencyMs: ms,
+    isError: true,
+    httpStatus,
+  });
 }
 
 function recordOutcome(outcome: string, meta: RecordOutcomeMeta): void {
@@ -211,9 +256,10 @@ export function recordAnthropicUsage(
   usage: AnthropicUsage | null | undefined,
   promptVersion?: string,
   userId?: string,
+  meta?: AnthropicUsageMeta,
 ): void {
   if (!usage) return;
-  recordUsage(model, endpoint, { usage }, promptVersion, userId);
+  recordUsage(model, endpoint, { usage }, promptVersion, userId, meta);
 }
 
 function recordUsage(
@@ -222,6 +268,7 @@ function recordUsage(
   data: AnthropicResponseData | null,
   promptVersion?: string,
   userId?: string,
+  meta?: AnthropicUsageMeta,
 ): void {
   try {
     const usage = data?.usage;
@@ -305,6 +352,26 @@ function recordUsage(
       ep,
       typeof usage.cost === "number" ? usage.cost : undefined,
     );
+    // Ініціатива 0025: третій sink — PostHog AI Observability. Той самий
+    // кост, що й у Prometheus/ledger (`estimateAnthropicCostUsd`), лише
+    // метадані виклику — контент промпту/відповіді сюди не потрапляє за
+    // конструкцією `captureAiGeneration`. Fail-open усередині helper-а.
+    // `provider` без явного meta — `anthropic`: так лейблиться і Prometheus
+    // (пул витрат, не вендор), і саме так поводяться callers до 0025.
+    captureAiGeneration({
+      userId,
+      model,
+      provider: meta?.provider ?? "anthropic",
+      feature: ep,
+      inputTokens: usage.input_tokens,
+      outputTokens: usage.output_tokens,
+      cacheReadInputTokens: usage.cache_read_input_tokens,
+      cacheCreationInputTokens: usage.cache_creation_input_tokens,
+      costUsd: usd > 0 ? usd : undefined,
+      latencyMs: meta?.latencyMs,
+      httpStatus: meta?.httpStatus,
+      promptVersion,
+    });
   } catch {
     /* ignore */
   }
@@ -371,6 +438,7 @@ async function anthropicMessagesInner(
     if (externalSignal?.aborted) {
       const ms = Number(process.hrtime.bigint() - overallStart) / 1e6;
       recordOutcome("timeout", { model, endpoint, ms });
+      recordAiError(model, endpoint, ms, transport.provider, userId);
       throw new DOMException("client disconnected", "AbortError");
     }
     // Сон ПЕРЕД тим, як озброїти таймер спроби. Доти таймер стартував
@@ -425,13 +493,25 @@ async function anthropicMessagesInner(
       const ms = Number(process.hrtime.bigint() - overallStart) / 1e6;
       if (response.ok) {
         recordOutcome("ok", { model, endpoint, ms });
-        recordUsage(model, endpoint, data, promptVersion, userId);
+        recordUsage(model, endpoint, data, promptVersion, userId, {
+          provider: transport.provider,
+          latencyMs: ms,
+          httpStatus: response.status,
+        });
       } else {
         recordOutcome(response.status === 429 ? "rate_limited" : "error", {
           model,
           endpoint,
           ms,
         });
+        recordAiError(
+          model,
+          endpoint,
+          ms,
+          transport.provider,
+          userId,
+          response.status,
+        );
       }
       return { response, data };
     } catch (e: unknown) {
@@ -443,6 +523,7 @@ async function anthropicMessagesInner(
           endpoint,
           ms,
         });
+        recordAiError(model, endpoint, ms, transport.provider, userId);
         throw e;
       }
       continue;
@@ -482,6 +563,7 @@ async function anthropicMessagesStreamInner(
     timeoutMs = 60000,
     signal: externalSignal,
     allowOpenRouter,
+    userId,
   }: AnthropicCallOptions,
   model: string,
 ): Promise<AnthropicStreamResult> {
@@ -490,6 +572,7 @@ async function anthropicMessagesStreamInner(
   const controller = new AbortController();
   const t = setTimeout(() => controller.abort(), timeoutMs);
   const signal = composeSignal(controller, externalSignal);
+  const sinceStart = (): number => elapsedMs(start);
 
   let response: Response;
   try {
@@ -501,24 +584,38 @@ async function anthropicMessagesStreamInner(
     });
   } catch (e: unknown) {
     clearTimeout(t);
-    const ms = elapsedMs(start);
+    const ms = sinceStart();
     recordOutcome(isAbortError(e) ? "timeout" : "error", {
       model,
       endpoint,
       ms,
     });
+    recordAiError(model, endpoint, ms, transport.provider, userId);
     throw e;
   }
 
   if (!response.ok) {
     clearTimeout(t);
-    const ms = elapsedMs(start);
+    const ms = sinceStart();
     recordOutcome(response.status === 429 ? "rate_limited" : "error", {
       model,
       endpoint,
       ms,
     });
-    return { response, recordStreamEnd: () => {} };
+    recordAiError(
+      model,
+      endpoint,
+      ms,
+      transport.provider,
+      userId,
+      response.status,
+    );
+    return {
+      response,
+      recordStreamEnd: () => {},
+      provider: transport.provider,
+      elapsedMs: sinceStart,
+    };
   }
 
   let settled = false;
@@ -526,11 +623,16 @@ async function anthropicMessagesStreamInner(
     if (settled) return;
     settled = true;
     clearTimeout(t);
-    const ms = elapsedMs(start);
+    const ms = sinceStart();
     recordOutcome(outcome, { model, endpoint, ms });
   };
 
-  return { response, recordStreamEnd };
+  return {
+    response,
+    recordStreamEnd,
+    provider: transport.provider,
+    elapsedMs: sinceStart,
+  };
 }
 
 export function extractAnthropicText(

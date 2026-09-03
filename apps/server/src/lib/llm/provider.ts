@@ -26,6 +26,7 @@ import {
 import { logger } from "../../obs/logger.js";
 import { estimateAnthropicCostUsd } from "../aiPricing.js";
 import { recordAnthropicUsageToDb } from "../anthropicUsageStore.js";
+import { captureAiGeneration } from "../posthogAi.js";
 import { Sentry } from "../../sentry.js";
 import { anthropicMessages, extractAnthropicText } from "../anthropic.js";
 import { getCounterpartyNames } from "../counterpartyNames.js";
@@ -361,6 +362,25 @@ function recordOpenRouterUsage(
     endpoint,
     typeof usage.cost === "number" ? usage.cost : undefined,
   );
+
+  // Ініціатива 0025: той самий виклик — у PostHog AI Observability. Провайдер
+  // тут `openrouter` (це chat-completions шлях шлюзу, не Anthropic-сумісний
+  // Messages API з `lib/anthropic.ts`). Без latency — цей шар його не міряє.
+  // Fail-open усередині helper-а; контент відповіді не передається.
+  const usdForEvent = estimateAnthropicCostUsd(model, {
+    input_tokens: usage.prompt_tokens ?? 0,
+    output_tokens: usage.completion_tokens ?? 0,
+    cost: usage.cost ?? null,
+  });
+  captureAiGeneration({
+    userId,
+    model,
+    provider: "openrouter",
+    feature: endpoint ?? "unknown",
+    inputTokens: usage.prompt_tokens,
+    outputTokens: usage.completion_tokens,
+    costUsd: usdForEvent !== null && usdForEvent > 0 ? usdForEvent : undefined,
+  });
 }
 
 export class OpenRouterProvider implements LLMProvider {
