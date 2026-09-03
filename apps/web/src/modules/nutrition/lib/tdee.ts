@@ -168,12 +168,6 @@ export function computeNutritionTargets(
 }
 
 /**
- * Convenience adapter that takes the raw biometrics record and returns
- * `null` when any required field is missing (height/weight/sex/activity
- * or a usable birth-date). The "Розрахувати з профілю" CTA on
- * `DailyPlanCard` uses the `null` to disable the button and steer the
- * user back to Profile → Біометрія.
- *
  * W1-WEIGHT-SOT стадія 1: канон fizruk §10 каже «fizruk володіє тілом,
  * nutrition читає». Тому вага береться з fizruk-селектора
  * (`selectLatestBodyWeight`, union `fizruk_daily_log` + `fizruk_measurements`),
@@ -182,6 +176,32 @@ export function computeNutritionTargets(
  * не має втратити КБЖВ-розрахунок (стара поведінка живе далі). Яка
  * таблиця канонічна і що стається з `hub_biometrics.weightKg` — питання
  * окремого ADR (стадії 3-4).
+ *
+ * Винесено окремо від {@link computeNutritionTargetsFromBiometrics}, щоб
+ * той самий фолбек міг звірити `missingBiometricsFieldsForTdee` (там
+ * інакше «вага» рахувалась би відсутньою для юзера, чиє єдине джерело —
+ * fizruk-журнал, а не поле в Профілі).
+ *
+ * @param fizrukWeightKg Найсвіжіша вага з fizruk, або `null`/`undefined`,
+ *                       коли fizruk-історії немає.
+ */
+export function resolveEffectiveWeightKg(
+  biometrics: Biometrics,
+  fizrukWeightKg?: number | null,
+): number | null {
+  return fizrukWeightKg != null &&
+    Number.isFinite(fizrukWeightKg) &&
+    fizrukWeightKg > 0
+    ? fizrukWeightKg
+    : biometrics.weightKg;
+}
+
+/**
+ * Convenience adapter that takes the raw biometrics record and returns
+ * `null` when any required field is missing (height/weight/sex/activity
+ * or a usable birth-date). The "Розрахувати з профілю" CTA on
+ * `DailyPlanCard` uses the `null` to disable the button and steer the
+ * user back to Profile → Біометрія.
  *
  * @param fizrukWeightKg Найсвіжіша вага з fizruk, або `null`/`undefined`,
  *                       коли fizruk-історії немає.
@@ -194,12 +214,7 @@ export function computeNutritionTargetsFromBiometrics(
   workoutKcal?: number | null,
 ): NutritionTargets | null {
   const ageYears = computeAgeYears(biometrics.birthDate, now);
-  const weightKg =
-    fizrukWeightKg != null &&
-    Number.isFinite(fizrukWeightKg) &&
-    fizrukWeightKg > 0
-      ? fizrukWeightKg
-      : biometrics.weightKg;
+  const weightKg = resolveEffectiveWeightKg(biometrics, fizrukWeightKg);
   if (
     weightKg == null ||
     biometrics.heightCm == null ||

@@ -197,8 +197,11 @@ const reminderScheduler: StartedReminderScheduler | null =
 
 // AI memory ingestion BullMQ worker. Так само як `authMailWorker`, повертає
 // null коли `REDIS_URL` не задано (CI / local dev) — у такому разі
-// producer-и (`mono/webhook`, `weekly-digest`, `POST /api/ai-memory/ingest`)
-// падають у in-process fallback. Стартує тільки при `AI_MEMORY_ENABLED=true`,
+// producer-и (`weekly-digest`, `profileMirror`) падають у in-process
+// fallback. `POST /api/ai-memory/ingest` (клієнт-driven) і `mono/webhook`
+// (source=finyk) видалені ініціативою 0024 (PR-1, 2026-09-03) — жодне з
+// клієнт-driven джерел не мало продюсера в дереві. Стартує тільки при
+// `AI_MEMORY_ENABLED=true`,
 // щоб не тримати Redis-connection відкритим у environment-ах, де AI memory
 // pipeline не використовується.
 const memoryIngestWorker: StartedMemoryIngestWorker | null =

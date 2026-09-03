@@ -12,7 +12,7 @@
  * Покриває:
  *  1. upsert + query roundtrip (semantic search)
  *  2. user-isolation (один user не бачить memories іншого user-а)
- *  3. source pre-filter (sources=['finyk'] не повертає 'chat')
+ *  3. source pre-filter (sources=['cofounder'] не повертає 'digest')
  *  4. score нормалізації (cosine distance → similarity у [0, 1])
  *  5. deleteAllForUser → 0 row-ів після виклику
  *  6. health() → ok=true коли extension присутня
@@ -167,8 +167,8 @@ describe("pgVectorStore integration", () => {
       await ensureUser("u1");
 
       await store.upsert([
-        makeWrite("u1", "chat", null, "the cat sat on the mat", 100),
-        makeWrite("u1", "chat", null, "totally unrelated content", 9000),
+        makeWrite("u1", "digest", null, "the cat sat on the mat", 100),
+        makeWrite("u1", "digest", null, "totally unrelated content", 9000),
       ]);
 
       const result = await store.query({
@@ -195,8 +195,12 @@ describe("pgVectorStore integration", () => {
       await ensureUser("uA");
       await ensureUser("uB");
 
-      await store.upsert([makeWrite("uA", "chat", null, "userA secret", 200)]);
-      await store.upsert([makeWrite("uB", "chat", null, "userB secret", 200)]);
+      await store.upsert([
+        makeWrite("uA", "digest", null, "userA secret", 200),
+      ]);
+      await store.upsert([
+        makeWrite("uB", "digest", null, "userB secret", 200),
+      ]);
 
       const resA = await store.query({
         userId: "uA",
@@ -210,25 +214,25 @@ describe("pgVectorStore integration", () => {
   );
 
   it(
-    "source pre-filter: sources=['finyk'] не повертає 'chat'",
+    "source pre-filter: sources=['cofounder'] не повертає 'digest'",
     async (ctx) => {
       if (!dockerAvailable || !store || !pool) return ctx.skip();
       await pool.query("TRUNCATE ai_memories");
       await ensureUser("uF");
 
       await store.upsert([
-        makeWrite("uF", "chat", null, "chat msg", 300),
-        makeWrite("uF", "finyk", "tx-1", "transaction summary", 300),
+        makeWrite("uF", "digest", null, "digest msg", 300),
+        makeWrite("uF", "cofounder", "tx-1", "transaction summary", 300),
       ]);
 
-      const finykOnly = await store.query({
+      const cofounderOnly = await store.query({
         userId: "uF",
         embedding: fakeVector(300),
         topK: 10,
-        sources: ["finyk"],
+        sources: ["cofounder"],
       });
-      expect(finykOnly).toHaveLength(1);
-      expect(finykOnly[0]!.source).toBe("finyk");
+      expect(cofounderOnly).toHaveLength(1);
+      expect(cofounderOnly[0]!.source).toBe("cofounder");
 
       const all = await store.query({
         userId: "uF",
@@ -247,7 +251,7 @@ describe("pgVectorStore integration", () => {
       await pool.query("TRUNCATE ai_memories");
       await ensureUser("uS");
 
-      await store.upsert([makeWrite("uS", "chat", null, "exact", 400)]);
+      await store.upsert([makeWrite("uS", "digest", null, "exact", 400)]);
       const r = await store.query({
         userId: "uS",
         embedding: fakeVector(400),
@@ -268,9 +272,9 @@ describe("pgVectorStore integration", () => {
       await ensureUser("uD");
 
       await store.upsert([
-        makeWrite("uD", "chat", null, "a", 500),
-        makeWrite("uD", "chat", null, "b", 501),
-        makeWrite("uD", "finyk", "tx-d", "c", 502),
+        makeWrite("uD", "digest", null, "a", 500),
+        makeWrite("uD", "digest", null, "b", 501),
+        makeWrite("uD", "cofounder", "tx-d", "c", 502),
       ]);
       const count = await store.deleteAllForUser("uD");
       expect(count).toBe(3);
@@ -293,10 +297,10 @@ describe("pgVectorStore integration", () => {
       await ensureUser("uX");
 
       await store.upsert([
-        makeWrite("uX", "finyk", "tx-1", "a", 600),
-        makeWrite("uX", "finyk", "tx-2", "b", 601),
+        makeWrite("uX", "cofounder", "tx-1", "a", 600),
+        makeWrite("uX", "cofounder", "tx-2", "b", 601),
       ]);
-      await store.deleteBySource("uX", "finyk", "tx-1");
+      await store.deleteBySource("uX", "cofounder", "tx-1");
 
       const r = await store.query({
         userId: "uX",
@@ -315,7 +319,7 @@ describe("pgVectorStore integration", () => {
       if (!dockerAvailable || !store || !pool) return ctx.skip();
       await pool.query("TRUNCATE ai_memories");
       await ensureUser("uI");
-      await store.deleteBySource("uI", "finyk", "missing-tx");
+      await store.deleteBySource("uI", "cofounder", "missing-tx");
       // не throw → ок
     },
     TIMEOUT_MS,
@@ -340,8 +344,8 @@ describe("pgVectorStore integration", () => {
       await ensureUser("uG");
 
       await store.upsert([
-        makeWrite("uG", "chat", null, "secret memory", 700),
-        makeWrite("uG", "finyk", "tx-g", "another", 701),
+        makeWrite("uG", "digest", null, "secret memory", 700),
+        makeWrite("uG", "cofounder", "tx-g", "another", 701),
       ]);
 
       // Видаляємо юзера через "user" таблицю — CASCADE має почистити ai_memories.
@@ -363,9 +367,9 @@ describe("pgVectorStore integration", () => {
       await pool.query("TRUNCATE ai_memories");
       await ensureUser("uA1");
 
-      const ok = makeWrite("uA1", "chat", null, "ok", 800);
+      const ok = makeWrite("uA1", "digest", null, "ok", 800);
       const bad: MemoryWrite = {
-        ...makeWrite("uA1", "chat", null, "bad", 801),
+        ...makeWrite("uA1", "digest", null, "bad", 801),
         // 5-вимірний vector замість 1024 → pgvector кине помилку.
         embedding: Float32Array.of(0.1, 0.2, 0.3, 0.4, 0.5),
       };
@@ -395,7 +399,7 @@ describe("pgVectorStore integration", () => {
         nested: { mcc: 5411 },
       };
       await store.upsert([
-        makeWrite("uM", "finyk", "tx-m", "purchased coffee", 900, meta),
+        makeWrite("uM", "cofounder", "tx-m", "purchased coffee", 900, meta),
       ]);
 
       const r = await store.query({
@@ -414,7 +418,7 @@ describe("pgVectorStore integration", () => {
       if (!dockerAvailable || !store || !pool) return ctx.skip();
       await pool.query("TRUNCATE ai_memories");
       await ensureUser("uK");
-      await store.upsert([makeWrite("uK", "chat", null, "x", 1000)]);
+      await store.upsert([makeWrite("uK", "digest", null, "x", 1000)]);
       const r = await store.query({
         userId: "uK",
         embedding: fakeVector(1000),

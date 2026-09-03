@@ -1,5 +1,9 @@
 import { Router } from "express";
-import { requireSession, setModule } from "../http/index.js";
+import {
+  requireFreshSession,
+  requireSession,
+  setModule,
+} from "../http/index.js";
 import {
   connectHandler,
   disconnectHandler,
@@ -31,7 +35,10 @@ import { webhookHandler } from "../modules/mono/webhook.js";
  * вибирає секрет з header-а (якщо є) або з path-param-у. Header виграє при
  * колізії, тож edge-rewrite зміг би перехопити транспорт без server-change.
  *
- * Решта endpoints — під `requireSession()`.
+ * Решта endpoints — під `requireSession()`; `connect` / `disconnect` — під
+ * `requireFreshSession()` (сесія перевіряється в БД, в обхід 5-хвилинного
+ * cookie-кешу): підʼєднати чужий банк або відʼєднати свій зі вкраденої
+ * сесії має перестати працювати в момент її відкликання, а не за 5 хв.
  */
 export function createMonoWebhookRouter(): Router {
   const r = Router();
@@ -72,12 +79,12 @@ export function createMonoWebhookRouter(): Router {
   //
   // ЩО ЗРОБИТИ: спершу перевірити на проді, що лист про верифікацію реально
   // доходить, і аж тоді повернути `requireVerifiedEmail()` між
-  // `requireSession()` і `connectHandler` (плюс import із `../http`).
+  // `requireFreshSession()` і `connectHandler` (плюс import із `../http`).
   // Порядок обовʼязковий: гейт без робочих листів не закриває діру, а
   // блокує підключення банку всім новим. Регрес-тест чекає в `apiV1.test.ts`
   // під тим самим маркером.
-  r.post("/api/mono/connect", requireSession(), connectHandler);
-  r.post("/api/mono/disconnect", requireSession(), disconnectHandler);
+  r.post("/api/mono/connect", requireFreshSession(), connectHandler);
+  r.post("/api/mono/disconnect", requireFreshSession(), disconnectHandler);
   r.get("/api/mono/sync-state", requireSession(), syncStateHandler);
   r.get("/api/mono/accounts", requireSession(), accountsHandler);
   r.get("/api/mono/jars", requireSession(), jarsHandler);
