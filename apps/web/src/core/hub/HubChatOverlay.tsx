@@ -86,6 +86,10 @@ export function HubChatOverlay() {
       // сторінки зверху (звіт власника 2026-09-03). Safe-area зверху й
       // знизу несе сама панель, тож композер лягає над home-індикатором.
       fullScreen
+      // Ряд із ручкою лежить на панелі, а не в HubChat: зі скляним фоном
+      // панелі він читався як світла смужка над шапкою чату (`bg-bg`).
+      // На повний екран крізь скло однаково нічого не просвічує.
+      panelClassName="bg-bg!"
       title={messages.hub.overlayTitle}
       // HubChat owns the inner scroll (`HubChatBody` is the scrollable
       // surface). Override Sheet's default padded + overflow-y-auto
