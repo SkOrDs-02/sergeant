@@ -218,7 +218,7 @@ function HubChat({
         open={paywallOpen}
         onClose={closePaywall}
         surface="ai_chat_limit"
-        title="Безлімітний AI-чат у Pro"
+        title="Безлімітний AI-чат у Premium"
         description={
           // AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
           // — round-trip-квиток зробив кожен хід (навіть із дією) рівно

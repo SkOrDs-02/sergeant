@@ -17,13 +17,13 @@ import { formatKyivLongDate } from "@shared/lib/time/kyivTime";
  *
  * Читає план з `usePlan()` (через `billingKeys.status` — Hard Rule #2)
  * і показує:
- *   • Бейдж плану (Free / Pro).
+ *   • Бейдж плану (Free / Premium).
  *   • Trial-дату (`status === "trialing"` → `currentPeriodEnd` = trial-end),
  *     дату наступного списання (`active`), warning при `canceled`/`past_due`.
  *   • CTA: «Перейти на Premium» (→ `/pricing?source=settings`) для Free;
  *     для legacy `provider === "stripe"` — «Керувати підпискою»
  *     (→ `/api/billing/portal` → Stripe Customer Portal);
- *     для LiqPay/Plata — «Скасувати Pro» (власний cancel, порталу нема).
+ *     для LiqPay/Plata — «Скасувати Premium» (власний cancel, порталу нема).
  *
  * Portal redirect робимо тільки після успішного POST `/api/billing/portal`:
  * endpoint не має GET-форми, тож прямий `location.assign("/api/...")` ламає
@@ -53,7 +53,8 @@ export function PlanSection() {
   // (рішення D3, див. `core/PricingPage.tsx`). Беремо канонічну назву з
   // i18n, а не хардкодимо: на `/pricing` тариф називався «Premium», а тут
   // і в чаті «Pro», тобто один продукт мав дві назви (browser-QA 2026-09-02).
-  const planLabel = isPro ? messages.pricing.tiers.premiumName : "Free";
+  const premiumName = messages.pricing.tiers.premiumName;
+  const planLabel = isPro ? premiumName : "Free";
 
   async function handleManage() {
     setRedirecting(true);
@@ -136,7 +137,9 @@ export function PlanSection() {
             className="text-style-body text-warning-strong leading-snug"
           >
             Підписку скасовано.
-            {periodEnd ? ` Доступ до Pro завершиться ${periodEnd}.` : ""}
+            {periodEnd
+              ? ` Доступ до ${premiumName} завершиться ${periodEnd}.`
+              : ""}
           </p>
         )}
 
@@ -153,8 +156,8 @@ export function PlanSection() {
 
         {!isPro && status !== "canceled" && (
           <p className="text-style-body text-subtle leading-snug">
-            Ти на безкоштовному тарифі. Pro відкриває безлімітний AI-чат,
-            CloudSync між пристроями, авто-Mono sync і експорт CSV/PDF.
+            Ти на безкоштовному тарифі. {premiumName} відкриває безлімітний
+            AI-чат, CloudSync між пристроями, авто-Mono sync і експорт CSV/PDF.
           </p>
         )}
 
@@ -163,8 +166,9 @@ export function PlanSection() {
             data-testid="plan-ended-info"
             className="text-style-body text-warning-strong leading-snug"
           >
-            Підписка Pro завершилася{periodEnd ? ` ${periodEnd}` : ""}. Можеш
-            поновити її в будь-який момент.
+            Підписка {premiumName} завершилася
+            {periodEnd ? ` ${periodEnd}` : ""}. Можеш поновити її в будь-який
+            момент.
           </p>
         )}
 
@@ -172,7 +176,7 @@ export function PlanSection() {
           {isPro ? (
             <>
               {/* Customer Portal є лише у Stripe. Для liqpay/plata/manual
-                  керування = кнопка «Скасувати Pro» нижче (порталу нема). */}
+                  керування = кнопка «Скасувати Premium» нижче (порталу нема). */}
               {subscription?.provider === "stripe" && (
                 <Button
                   variant="primary"
@@ -214,7 +218,7 @@ export function PlanSection() {
                     onClick={() => setConfirmingCancel(true)}
                     data-testid="plan-cancel-button"
                   >
-                    Скасувати Pro
+                    Скасувати {premiumName}
                   </Button>
                 ))}
             </>

@@ -31,7 +31,7 @@ test("@critical paywall: free-user PDF export opens paywall and leads to pricing
     ),
   ).toBeVisible();
 
-  await paywall.getByRole("button", { name: "Перейти до Pro" }).click();
+  await paywall.getByRole("button", { name: "Перейти на Premium" }).click();
   await expect(page).toHaveURL(/\/pricing\?source=paywall$/);
   await expect(page.getByRole("heading", { name: "Тарифи" })).toBeVisible();
 });

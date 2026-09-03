@@ -287,7 +287,7 @@ export function PricingPage() {
       cta: "free",
     });
     // Downgrade Premium → Free: Stripe legacy — через Customer Portal у
-    // Settings; LiqPay/Plata — через «Скасувати Pro» у Settings. Тут Free
+    // Settings; LiqPay/Plata — через «Скасувати Premium» у Settings. Тут Free
     // CTA лишається disabled для Premium-юзерів.
     if (isPremiumActive) return;
     // Free-тір вже доступний за замовчуванням — нікуди не ведемо.

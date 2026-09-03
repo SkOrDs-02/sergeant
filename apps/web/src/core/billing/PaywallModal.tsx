@@ -5,9 +5,9 @@ import { Modal } from "@shared/components/ui/Modal";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 
 /**
- * Pro-gate modal (initiative 0010 Phase 4.1).
+ * Premium-gate modal (initiative 0010 Phase 4.1).
  *
- * Generic, copy-driven modal used by Pro-only features when the caller's
+ * Generic, copy-driven modal used by Premium-only features when the caller's
  * `usePlan()` returns `isPro === false`. Fires `paywall_viewed` exactly
  * once per open transition (PostHog dashboard
  * `paywall_viewed → checkout_opened → subscription_started` funnel).
@@ -40,7 +40,7 @@ export interface PaywallModalProps {
   description: string;
   /** Visible features list (3–5 bullets). */
   features?: ReadonlyArray<string>;
-  /** Override the primary CTA label. Defaults to "Перейти до Pro". */
+  /** Override the primary CTA label. Defaults to "Перейти на Premium". */
   ctaLabel?: string;
   /** Override the secondary CTA label. Defaults to "Не зараз". */
   dismissLabel?: string;
@@ -63,7 +63,7 @@ export function PaywallModal({
   title,
   description,
   features = DEFAULT_FEATURES,
-  ctaLabel = "Перейти до Pro",
+  ctaLabel = "Перейти на Premium",
   dismissLabel = "Не зараз",
 }: PaywallModalProps) {
   const navigate = useNavigate();
