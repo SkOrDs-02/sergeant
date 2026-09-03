@@ -61,6 +61,42 @@ export const ALLOWED_MEMORY_SOURCES = [
 ] as const;
 
 /**
+ * Джерела, зняті з `ALLOWED_MEMORY_SOURCES` ініціативою 0024 (PR-1), але
+ * ще дозволені CHECK-констрейнтом `ai_memories_source_check` (міграція
+ * 118). Це фаза 1 двофазного звуження: запис із таким `source` API вже не
+ * приймає, а рядок у БД ще може існувати. Фаза 2 (PR-3 тієї ж ініціативи)
+ * прибирає їх із CHECK разом із чисткою даних — тоді цей список стає
+ * порожнім і зникає.
+ *
+ * Споживачі: parity-тест SQL CHECK ↔ TS
+ * (`migrations/__tests__/ai-memories-source-check-parity.test.ts`) і
+ * схема корпусу RAG-евалу (`lib/ragEval/corpus.ts`, `golden.ts`) — корпус
+ * імітує рядки, які ВЖЕ лежать у БД, тому валідується проти
+ * `STORED_MEMORY_SOURCES`, не проти `ALLOWED_MEMORY_SOURCES`.
+ */
+export const RETIRED_MEMORY_SOURCES = [
+  "chat",
+  "finyk",
+  "fizruk",
+  "nutrition",
+  "routine",
+  "journal",
+] as const;
+
+/**
+ * Усі значення `source`, які може мати рядок `ai_memories` у поточній
+ * схемі: те, що приймається (`ALLOWED_MEMORY_SOURCES`) плюс те, що ще
+ * лежить legacy-рядками (`RETIRED_MEMORY_SOURCES`). Має збігатись зі
+ * списком у CHECK-констрейнті — parity-тест це охороняє.
+ */
+export const STORED_MEMORY_SOURCES = [
+  ...ALLOWED_MEMORY_SOURCES,
+  ...RETIRED_MEMORY_SOURCES,
+] as const;
+
+export type StoredMemorySource = (typeof STORED_MEMORY_SOURCES)[number];
+
+/**
  * Джерела без активного продюсера в дереві, залишені в
  * `ALLOWED_MEMORY_SOURCES` навмисно (не за недоглядом). `sources.test.ts`
  * вимагає, щоб кожне значення `ALLOWED_MEMORY_SOURCES` мало або продюсера
