@@ -42,6 +42,9 @@ vi.mock("./../db.js", () => ({
 vi.mock("./../auth.js", () => ({
   auth: { handler: async () => new Response(null, { status: 404 }) },
   getSessionUser: getSessionUserMock,
+  // `requireFreshSession()` (export / DELETE me / bank link) резолвить через
+  // fresh-варіант; у цих тестах він поводиться як кешований.
+  getFreshSessionUser: getSessionUserMock,
   getSessionUserSoft: vi.fn().mockResolvedValue(null),
 }));
 

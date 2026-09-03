@@ -13,6 +13,7 @@ import {
 import {
   parseBody,
   rateLimitExpress,
+  requireFreshSession,
   requireSession,
   setModule,
 } from "../http/index.js";
@@ -68,9 +69,14 @@ export function createMeRouter(): Router {
   const r = Router();
   r.use("/api/me", setModule("me"));
 
+  // `/export` і `DELETE /api/me` — дві з трьох поверхонь, заради яких існує
+  // `getFreshSessionUser` (третя — банк, див. `mono-webhook.ts` /
+  // `banks.ts`). Решта роутів файлу лишається на кешованому
+  // `requireSession()`: 5-хвилинне вікно для читання профілю прийнятне,
+  // для вивантаження всіх даних чи знищення акаунта — ні.
   r.get(
     "/api/me/export",
-    requireSession(),
+    requireFreshSession(),
     async (req: Request, res: Response) => {
       const user = serializeMeUser(
         (req as Request & { user: AuthedUser }).user,
@@ -186,13 +192,21 @@ export function createMeRouter(): Router {
     },
   );
 
-  r.delete("/api/me", requireSession(), async (req: Request, res: Response) => {
-    const user = (req as Request & { user: AuthedUser }).user;
-    const payload = MeDeleteResponseSchema.parse(
-      await deleteUserData(pool, user.id),
-    );
-    res.json(payload);
-  });
+  // Живий веб-шлях видалення — `POST /api/auth/delete-user` (Better Auth,
+  // `DangerZoneSection.tsx`), який через `user.deleteUser.beforeDelete` у
+  // `auth.ts` кличе той самий `deleteUserData`. Цей роут — API-контракт
+  // для клієнтів без Better Auth SDK; обидва шляхи виконують одну функцію.
+  r.delete(
+    "/api/me",
+    requireFreshSession(),
+    async (req: Request, res: Response) => {
+      const user = (req as Request & { user: AuthedUser }).user;
+      const payload = MeDeleteResponseSchema.parse(
+        await deleteUserData(pool, user.id),
+      );
+      res.json(payload);
+    },
+  );
 
   r.get("/api/me", requireSession(), async (req: Request, res: Response) => {
     const user = (req as Request & { user: AuthedUser }).user;
