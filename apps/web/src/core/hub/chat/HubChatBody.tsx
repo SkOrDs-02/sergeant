@@ -8,6 +8,8 @@ import { Tooltip } from "@shared/components/ui/Tooltip";
 import { ChatMessage, TypingIndicator } from "../../components/ChatMessage";
 import type { HubChatSession } from "../hubChatSessions";
 import { ChatEmpty } from "./ChatEmpty";
+// Аліас: проп цього компонента теж зветься `messages` (стрічка повідомлень).
+import { messages as uiCopy } from "@shared/i18n/uk";
 
 type ChatMessageEntry = HubChatSession["messages"][number];
 
@@ -92,6 +94,24 @@ export function HubChatBody({
       >
         {loading ? "Асистент відповідає…" : ""}
       </span>
+      {/*
+        AI-DANGER: розкриття «це AI» (EU AI Act ст. 50(1), чинна з 2026-08-02)
+        мусить стояти ТУТ, а не всередині `ChatEmpty`.
+
+        Доти воно жило в порожньому стані, і припущення було, що порожній стан
+        видно до першої репліки. Насправді `normalizeStoredMessages`
+        (`core/lib/hubChatUtils.ts`) ПІДСТАВЛЯЄ привітальну репліку щоразу, коли
+        збережений масив порожній, тож `messages.length === 0` недосяжне за
+        побудовою, `ChatEmpty` не рендериться ніколи, і обовʼязкове розкриття не
+        показувалось жодного разу (browser-QA 2026-09-02).
+
+        Тому воно більше не залежить від наявності повідомлень: рядок стоїть над
+        стрічкою і видно його з першого кадру. Прибираєш звідси або знову
+        вішаєш на умову — повертаєш порушення.
+      */}
+      <p className="text-style-caption text-subtle leading-snug text-pretty text-center px-2">
+        {uiCopy.hub.chatEmptyAiDisclosure}
+      </p>
       {isEmpty && <ChatEmpty onPickSuggestion={onPickSuggestion} />}
       {messages.map((m) => (
         <ChatMessage key={m.id} message={m} onSpeak={onSpeak} />

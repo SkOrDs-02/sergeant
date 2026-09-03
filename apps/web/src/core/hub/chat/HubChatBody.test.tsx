@@ -63,6 +63,25 @@ function renderBody(overrides: Partial<HubChatBodyProps> = {}) {
 describe("HubChatBody", () => {
   afterEach(() => cleanup());
 
+  // Регресія з browser-QA 2026-09-02: розкриття «це AI» (EU AI Act ст. 50(1))
+  // жило всередині `ChatEmpty`, а `normalizeStoredMessages` підставляє
+  // привітальну репліку в кожну порожню сесію — тож порожній стан недосяжний,
+  // і розкриття не показувалось ЖОДНОГО разу. Перевіряємо саме той стан, який
+  // бачить реальний користувач: у стрічці вже є привітання.
+  it("shows the AI disclosure even when the greeting message is present", () => {
+    renderBody({
+      messages: [
+        msg("greet", "assistant", "Привіт! Я твій особистий асистент."),
+      ],
+    });
+    expect(screen.getByText(/Відповідає AI, а не людина/)).toBeInTheDocument();
+  });
+
+  it("shows the AI disclosure while the assistant is answering", () => {
+    renderBody({ messages: [msg("1", "user", "Питання")], loading: true });
+    expect(screen.getByText(/Відповідає AI, а не людина/)).toBeInTheDocument();
+  });
+
   it("renders ChatEmpty when there are no messages and not loading", () => {
     renderBody({ messages: [], loading: false });
     expect(screen.getByTestId("chat-empty")).toBeInTheDocument();

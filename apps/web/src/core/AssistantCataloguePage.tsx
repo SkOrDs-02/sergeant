@@ -179,8 +179,9 @@ export function AssistantCataloguePage({
                 {messages.sergeant.capabilitiesSectionTitle}
               </h1>
               <p className="text-style-body text-subtle mt-1 leading-relaxed">
-                Усе, що вміє робити Сержант ({totalCount} сценаріїв). Натисни
-                картку щоб запустити або побачити приклади.
+                Усе, що вміє робити Сержант ({totalCount}{" "}
+                {pluralizeUk(totalCount, ["сценарій", "сценарії", "сценаріїв"])}
+                ). Натисни картку щоб запустити або побачити приклади.
               </p>
             </div>
           </div>
