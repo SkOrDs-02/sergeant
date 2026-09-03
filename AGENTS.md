@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-19.
+> **Last touched:** 2026-09-03 by @claude. **Next review:** 2026-12-20.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -37,6 +37,7 @@ Sergeant is **tool-agnostic**: any AI agent harness drives this repo through the
 | Coolify / Vercel / Sentry / alerting/SLO / CI workflow change        | `sergeant-deploy-and-observability`   |
 | Writing or running E2E (Playwright/Vitest browser)                   | `sergeant-e2e-testing`                |
 | Security review, vuln triage, secret scan, dependency CVE            | `sergeant-security-audit`             |
+| Написання спеки на фічу або розширення скоупу наявної спеки          | `sergeant-spec`                       |
 | New feature, new screen, endpoint, workflow, behavior change         | `sergeant-feature-delivery`           |
 | Unsure where code belongs, shared extraction, package boundary       | `sergeant-monorepo-boundaries`        |
 | Backend architecture, CQRS, Temporal, Saga, service boundary design  | `sergeant-backend-architecture`       |

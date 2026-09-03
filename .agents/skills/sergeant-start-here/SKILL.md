@@ -64,6 +64,7 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Написання або оновлення ADR, індекс рішень, supersede            | `sergeant-adr`                     |
 | Фіче-прапорці: додати/змінити/зняти тумблер                      | `sergeant-feature-flags`           |
 | PostHog-івенти, аналітика, дашборд-манифести                     | `sergeant-analytics`               |
+| Спека на нову фічу: написати або розширити скоуп наявної          | `sergeant-spec`                    |
 | Нова фіча, новий екран, behavior-зміна                           | `sergeant-feature-delivery`        |
 | Баг, регресія, флакі-поведінка, hotfix                           | `sergeant-bugfix-and-regression`   |
 | Ревʼю PR, готовність до merge, pre-merge-перевірки               | `sergeant-review-and-merge`        |

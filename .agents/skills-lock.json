@@ -156,10 +156,15 @@
       "sourceType": "local",
       "computedHash": "f3d7c496f6a72db0f35b4a1f4c59cde92afc657d950d82cd63110cc5140f74ce"
     },
+    "sergeant-spec": {
+      "source": "local",
+      "sourceType": "local",
+      "computedHash": "2d39f6afecb00937ff6235c0b60457678e86c6934b33f6e560cc9d5583c4a13f"
+    },
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "b14d3e7d032dba409d0db5683de79a6f31bbe01008a8e762cb7c789d7e8485ca"
+      "computedHash": "936adee419f06b76215d24554e15176db851da1283b53cc14ad958e3750a5fa5"
     },
     "sergeant-tech-debt": {
       "source": "local",

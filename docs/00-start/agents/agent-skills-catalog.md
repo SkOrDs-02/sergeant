@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-24.
+> **Last touched:** 2026-09-03 by @claude. **Next review:** 2026-12-25.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -26,6 +26,7 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |
 | [`sergeant-start-here`](../../../.agents/skills/sergeant-start-here/SKILL.md)                             | Будь-який старт роботи в Sergeant                                | Routing, repo map, non-negotiable hard rules                                                                                        |
 | [`sergeant-feature-delivery`](../../../.agents/skills/sergeant-feature-delivery/SKILL.md)                 | Нові фічі, behavior changes                                      | Spec-first delivery, minimal coherent slices, verification                                                                          |
+| [`sergeant-spec`](../../../.agents/skills/sergeant-spec/SKILL.md)                                         | Написання/оновлення спеки до початку робіт                       | Інтервʼю перед документом, походження кожного рішення, питання замість вигаданих                                                    |
 | [`sergeant-bugfix-and-regression`](../../../.agents/skills/sergeant-bugfix-and-regression/SKILL.md)       | Баги, регресії, flaky behavior                                   | Reproduce-first, failing check first, minimal fix                                                                                   |
 | [`sergeant-review-and-merge`](../../../.agents/skills/sergeant-review-and-merge/SKILL.md)                 | PR review, merge readiness                                       | Safety review, contract checks, docs freshness, commit scope                                                                        |
 | [`sergeant-verify-before-done`](../../../.agents/skills/sergeant-verify-before-done/SKILL.md)             | Before claiming done/green/fixed                                 | Run proving command fresh, full scope not scoped, quote exit code                                                                   |
