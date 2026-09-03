@@ -1,6 +1,6 @@
 # DESIGN.md — Sergeant
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-11.
+> **Last touched:** 2026-09-03 by @Skords-01. **Next review:** 2026-12-12.
 > **Status:** Active. **Призначення:** портативний конфіг візуальної системи для AI-агентів (Hallmark, frontend-design, Superdesign, будь-який SKILL.md-сумісний тул). Агент читає цей файл ПЕРЕД стилізацією і НЕ вигадує власну систему.
 > **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` — лише runtime-, security-, storage-, API- і domain-інваріанти. Естетичні AST-правила retired [ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md); візуальні конвенції тримають design tokens, Storybook і design-review.
 
@@ -82,6 +82,7 @@ Display+body: **Manrope Variable** (fallback DM Sans → системний ст
 - **Opacity:** тільки зареєстровані кроки 0, 5, 8, 10, 15…100 (дизайн-конвенція) — інші Tailwind мовчки дропає.
 - **Elevation e0–e5** парою з **z-tier**: e1 card / e2 hover / e3 popover=z-50 / e4 modal=z-200 / e5 toast=z-300. Правило: найменший рівень, що передає роль; підняв elevation — підняв z-tier. Ніколи `z-[9999]`.
 - **Touch targets:** ≥44×44px на coarse pointer — `Button` це робить сам; utility `touch-target`.
+- **Стіл і зона (2026-09-03):** фон сторінки — «стіл» `--module-desk-rgb` у hue модуля (хрома ≤5%, світлота майже як `--c-bg`, бо `--c-subtle` тримає ≥4.5:1 на кожному столі — гейт `contrast.test.js`); шапка й таби модуля — «зона» `--module-zone-rgb`, той самий hue на крок глибше, там текст лише чорнило або `-strong`. Контроли в зоні прозорі з контуром (`.zone-chip`). Хаб нейтральний, без hue. Радіальних свічень (mesh) немає в жодній темі. Джерело: `moduleSurfaces` у `tokens.js`.
 
 ## Взаємодія
 

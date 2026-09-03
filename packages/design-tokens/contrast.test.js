@@ -17,6 +17,7 @@ import {
   moduleColors,
   inkTheme,
   moduleAccentRgb,
+  moduleSurfaces,
   statusInkHex,
   accentInkHex,
   accentStrongHex,
@@ -55,7 +56,32 @@ function rgbTripleToHex(triple) {
 // `shouldPassAA === false` means the pair is documented as failing AA;
 // the test asserts the failure so we don't accidentally start treating
 // it as a viable text colour.
+// `--c-subtle` (theme.css, light) — третинний текст, підібраний рівно на
+// поріг AA проти `--c-bg`. Стіл модуля темніший за беж лише настільки,
+// щоб ця пара трималась: провал тут означає, що стіл треба освітлити, не
+// текст затемнити.
+const SUBTLE_LIGHT = "#6b645d";
+
+const DESK_PAIRS = Object.entries(moduleSurfaces).map(([name, s]) => [
+  `subtle on ${name} desk (light)`,
+  SUBTLE_LIGHT,
+  s.light.desk,
+  true,
+]);
+
+// Зона лежить лише під шапкою і табами, де текст — `-strong` модуля
+// (`moduleAccentRgb[m].strong`, те, що рендерить `text-{m}-strong`) або
+// чорнило; глибший тон зони на цих парах має лишатись AA.
+const ZONE_PAIRS = ["finyk", "fizruk", "routine", "nutrition"].map((m) => [
+  `${m}-strong on ${m} zone (light)`,
+  rgbTripleToHex(moduleAccentRgb[m].strong),
+  moduleSurfaces[m].light.zone,
+  true,
+]);
+
 const PAIRS = [
+  ...DESK_PAIRS,
+  ...ZONE_PAIRS,
   ["nutrition text on white", moduleColors.nutrition.primary, "#ffffff", false],
   ["nutrition-strong on white", brandColors.lime[800], "#ffffff", true],
   [
