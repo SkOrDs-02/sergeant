@@ -96,4 +96,36 @@ describe("useEditedFoodRehydration", () => {
     expect(getFoodById).not.toHaveBeenCalled();
     expect(result.current.rehydrated).toBe(false);
   });
+
+  // Ревʼю PR #1053. `cancelled` живе в замиканні ефекту, а `clear()` ефект не
+  // перезапускає — тож без лічильника поколінь відповідь, яка приїхала ПІСЛЯ
+  // того, як людина пішла по інший продукт, ставила старий продукт поверх її
+  // нового вибору, і прийом зберігався з чужими макросами.
+  it("відповідь, що прийшла після `clear()`, уже нічого не ставить", async () => {
+    let release: (food: unknown) => void = () => {};
+    getFoodById.mockReturnValue(
+      new Promise((resolve) => {
+        release = resolve;
+      }),
+    );
+    const setPickedFood = vi.fn();
+    const { result } = renderHook(() =>
+      useEditedFoodRehydration({
+        open: true,
+        meal: { id: "m1", foodId: "f1" },
+        setPickedFood,
+      }),
+    );
+
+    await waitFor(() => expect(getFoodById).toHaveBeenCalled());
+    act(() => result.current.clear());
+
+    await act(async () => {
+      release(FOOD);
+      await Promise.resolve();
+    });
+
+    expect(setPickedFood).not.toHaveBeenCalled();
+    expect(result.current.rehydrated).toBe(false);
+  });
 });

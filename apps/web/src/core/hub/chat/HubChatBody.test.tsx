@@ -97,13 +97,21 @@ describe("HubChatBody", () => {
     expect(status).toHaveTextContent("Цього тижня 1 240 гривень.");
   });
 
+  // Фікстура саме з ЧАСТКОВОЮ відповіддю: `useChatSend` дописує повідомлення
+  // асистента, поки `loading` ще `true`, тож без цього випадку тест не
+  // доводив би головного — що недописаний текст у живу область не тече.
+  // Матчер якірний: підрядок пройшов би й тоді, коли поруч лежить обривок
+  // відповіді (ревʼю PR #1053).
   it("announces progress, not content, while the reply is streaming", () => {
     renderBody({
-      messages: [msg("1", "user", "Питання")],
+      messages: [
+        msg("1", "user", "Скільки я витратив?"),
+        msg("2", "assistant", "Цього тижня 1 2"),
+      ],
       loading: true,
     });
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Асистент відповідає…",
+      /^Асистент відповідає…$/,
     );
   });
 

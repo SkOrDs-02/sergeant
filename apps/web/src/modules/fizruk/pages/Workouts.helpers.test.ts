@@ -3,7 +3,9 @@ import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
 import type { Workout } from "@sergeant/fizruk-domain";
 import {
   buildGroupedExercises,
+  buildPastWorkoutTimes,
   collectLastByExerciseId,
+  defaultPastWorkoutTimes,
   formatActiveDuration,
   MUSCLE_GROUP_ORDER,
 } from "./Workouts.helpers";
@@ -222,5 +224,57 @@ describe("formatActiveDuration", () => {
   it("returns '00:00' for equal start and end", () => {
     const ts = new Date("2026-01-01T10:00:00Z").toISOString();
     expect(formatActiveDuration(ts, ts, Date.now())).toBe("00:00");
+  });
+});
+
+/**
+ * Дефолт форми «Внести проведене заняття» мусить бути ВАЛІДНИМ вводом:
+ * форма відкривалась із «сьогодні 18:00 → 19:00» незалежно від годинника, тож
+ * до сьомої вечора кнопка «Записати» була вимкнена одразу при відкритті
+ * (browser-QA 2026-09-02).
+ */
+describe("defaultPastWorkoutTimes", () => {
+  function at(iso: string): Date {
+    return new Date(iso);
+  }
+
+  it("після 19:00 лишає вечірній дефолт", () => {
+    const d = at("2026-09-03T21:30:00");
+    expect(defaultPastWorkoutTimes(d)).toEqual({
+      date: "2026-09-03",
+      start: "18:00",
+      end: "19:00",
+    });
+  });
+
+  it("серед дня пропонує годину, що щойно скінчилась", () => {
+    const out = defaultPastWorkoutTimes(at("2026-09-03T10:07:00"));
+    expect(out).toEqual({ date: "2026-09-03", start: "09:05", end: "10:05" });
+  });
+
+  it("глибокої ночі відкочується на вчорашній вечір", () => {
+    const out = defaultPastWorkoutTimes(at("2026-09-03T00:20:00"));
+    expect(out).toEqual({ date: "2026-09-02", start: "18:00", end: "19:00" });
+  });
+
+  // Ревʼю PR #1053: дата й час мусять бути з ОДНОГО годинника. Київський
+  // день-ключ поруч із пристроєвою годиною дає майбутнє для будь-якого хоста
+  // західніше Києва — тобто рівно той дефект, який ця функція й лікує.
+  it("ніколи не віддає пару в майбутньому", () => {
+    for (const iso of [
+      "2026-09-03T00:05:00",
+      "2026-09-03T01:10:00",
+      "2026-09-03T10:07:00",
+      "2026-09-03T18:59:00",
+      "2026-09-03T19:00:00",
+      "2026-09-03T23:59:00",
+    ]) {
+      const now = at(iso);
+      const d = defaultPastWorkoutTimes(now);
+      const times = buildPastWorkoutTimes(d.date, d.start, d.end, now);
+      expect(times, iso).not.toBeNull();
+      expect(times?.inFuture, iso).toBe(false);
+      expect(times?.implausiblyLong, iso).toBe(false);
+    }
   });
 });

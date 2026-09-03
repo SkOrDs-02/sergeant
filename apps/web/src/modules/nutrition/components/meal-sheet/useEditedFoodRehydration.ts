@@ -21,7 +21,7 @@
  * Тому `setPickedFood` і прапорець ідуть одним батчем: картка монтується
  * вже з піднятим гардом.
  */
-import { useCallback, useEffect, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 
 import { getFoodById } from "../../lib/foodDb/foodDb";
@@ -54,13 +54,21 @@ export function useEditedFoodRehydration({
   // синхронним `setState` всередині ефекту (каскадні рендери, і лінт це
   // ловить). Похідне порівняння дає той самий результат без стану-двійника.
   const [rehydratedId, setRehydratedId] = useState<string | null>(null);
+  // AI-DANGER: `clear()` мусить ГАСИТИ читання, що вже в польоті, а не лише
+  // скидати позначку. Інакше людина, яка встигла піти по інший продукт
+  // швидше, ніж відповіла база, отримувала `setPickedFood` зі СТАРИМ
+  // продуктом поверх свого нового вибору — і зберігала прийом із чужими
+  // макросами (ревʼю PR #1053). `cancelled` цього не ловить: він живе в
+  // замиканні ефекту, а ефект від `clear()` не перезапускається.
+  const lookupGeneration = useRef(0);
   const editedFoodId = meal?.id ? (meal.foodId ?? null) : null;
 
   useEffect(() => {
     if (!open || !editedFoodId) return;
+    const generation = ++lookupGeneration.current;
     let cancelled = false;
     void getFoodById(editedFoodId).then((food) => {
-      if (cancelled || !food) return;
+      if (cancelled || generation !== lookupGeneration.current || !food) return;
       setPickedFood({
         id: food.id,
         name: food.name,
@@ -75,7 +83,10 @@ export function useEditedFoodRehydration({
     };
   }, [open, editedFoodId, setPickedFood]);
 
-  const clear = useCallback(() => setRehydratedId(null), []);
+  const clear = useCallback(() => {
+    lookupGeneration.current += 1;
+    setRehydratedId(null);
+  }, []);
 
   return {
     rehydrated: open && editedFoodId !== null && rehydratedId === editedFoodId,

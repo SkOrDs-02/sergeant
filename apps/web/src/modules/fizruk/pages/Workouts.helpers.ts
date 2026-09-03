@@ -8,6 +8,7 @@ import type {
   RawExerciseDef,
 } from "@sergeant/fizruk-domain/data";
 import { matchesExerciseLocation } from "@sergeant/fizruk-domain/data";
+import { deviceDayKey } from "@sergeant/shared";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type { LastExerciseItem } from "./Workouts.types";
 
@@ -190,15 +191,23 @@ function hhmm(totalMinutes: number): string {
  *   - **глибока ніч** (до 01:05, коли годинної діри в сьогодні ще немає) →
  *     учорашній вечір.
  *
- * Час читається настінним годинником ПРИСТРОЮ — так само, як його потім
- * читає `buildPastWorkoutTimes`. Дата лишається київською (`todayLocalDateString`),
- * бо це межа доби, а не мить.
+ * AI-DANGER: дата й час беруться з ОДНОГО годинника — пристроєвого. Змішати
+ * їх не можна: `buildPastWorkoutTimes` парсить пару як настінний час
+ * пристрою, тож київський день-ключ поруч із пристроєвою годиною дає
+ * майбутнє для будь-якого хоста західніше Києва. Приклад із ревʼю: 18:30 у
+ * Нью-Йорку 3 вересня — у Києві вже 4-те, і форма відкривалась би з
+ * «4 вересня, 17:30 → 18:30», тобто майже на добу вперед, знову з мертвою
+ * кнопкою. Це рівно той дефект, який ця функція й лікує.
+ *
+ * Пристроєвий календар тут доречний і поза цією парою: доба тренування
+ * належить пристрою (ADR-0078), а Київ у Фізруку лишається тільки для
+ * звітів.
  */
 export function defaultPastWorkoutTimes(
   // eslint-disable-next-line no-restricted-syntax -- потрібен настінний годинник пристрою, тим самим читанням, що і в `buildPastWorkoutTimes`; параметр існує, щоб тест міг запнути годинник.
   now: Date = new Date(),
 ): PastWorkoutDefaults {
-  const today = getKyivDayKey(now);
+  const today = deviceDayKey(now);
   /* eslint-disable-next-line sergeant-design/prefer-kyiv-time -- беремо годину-хвилину з годинника ПРИСТРОЮ: саме з ним потім звіряється `inFuture`. */
   const nowMin = now.getHours() * 60 + now.getMinutes();
 
@@ -215,7 +224,7 @@ export function defaultPastWorkoutTimes(
   /* eslint-disable-next-line sergeant-design/prefer-kyiv-time -- відлік доби назад від миті, яку показує годинник людини; київська межа тут дала б інший день для не-київського хоста. */
   yesterday.setDate(yesterday.getDate() - 1);
   return {
-    date: getKyivDayKey(yesterday),
+    date: deviceDayKey(yesterday),
     start: EVENING_START,
     end: EVENING_END,
   };

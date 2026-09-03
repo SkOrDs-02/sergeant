@@ -107,8 +107,15 @@ export function HubHomeView(props: HubHomeViewProps) {
   // хвилин (перший запис і є виходом із FTUX-вікна), тож «returning user»
   // тут насправді означало «пробув тут кілька хвилин». Другу половину
   // гейта тримає `pickRelease` — вона глушить ноти, старші за сам акаунт.
+  //
+  // `!authLoading` — не косметика, а частина того самого гейта: поки сесія
+  // резолвиться, `user` ще `null`, тобто й `accountCreatedAt`, і
+  // 2.5-секундний таймер устиг би відкрити реліз БЕЗ перевірки віку акаунта.
+  // `shownRef` усередині хука одноразовий, тож приїзд `createdAt` після
+  // відкриття вже нічого не змінив би (ревʼю PR #1053).
   const whatsNew = useWhatsNew({
-    enabled: hasFirstRealEntry && !inFtuxSession && !isDemoActive(),
+    enabled:
+      !authLoading && hasFirstRealEntry && !inFtuxSession && !isDemoActive(),
     accountCreatedAt: user?.createdAt ?? null,
   });
 
