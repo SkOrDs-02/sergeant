@@ -1,6 +1,5 @@
 import { useMemo, useState } from "react";
 import { Measure } from "@shared/components/ui/Measure";
-import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Card } from "@shared/components/ui/Card";
 import { Segmented } from "@shared/components/ui/Segmented";
@@ -14,7 +13,6 @@ import {
 } from "../lib/streaks";
 import { dateKeyMinusDays } from "@sergeant/routine-domain";
 import { anchoredTodayKey } from "../lib/dayAnchor";
-import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import {
   ROUTINE_STATS_DEFAULT_RANGE,
   ROUTINE_STATS_RANGES,
@@ -110,28 +108,36 @@ export function RoutineStatsPanel({
         <SectionHeading as="p" size="xs" className="mb-3" variant="routine">
           Зведення · {range.hint}
         </SectionHeading>
-        <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
-          {/* Той самий `statCard`, що й у сусідів: `statCardHighlight` дає
-              світлу заливку, яка в «Чорнилі» читалась як витік світлої теми
-              (браузерна перевірка 2026-08-17). Акцент несе заголовок картки,
-              а не блок. */}
-          <div className={cn(C.statCard, "col-span-2 sm:col-span-1")}>
-            <Stat
-              label="Виконано"
-              value={
-                <Measure value={Math.round(summary.rate.rate * 100)} unit="%" />
-              }
-              sublabel={`${summary.rate.completed}/${summary.rate.scheduled}`}
-              size="md"
-            />
-          </div>
-          <div className={C.statCard}>
-            <Stat label="Серія сьогодні" value={currentStreak} size="md" />
-          </div>
-          <div className={C.statCard}>
-            <Stat label="Макс. серія" value={summary.maxAllTime} size="md" />
-          </div>
-        </div>
+        {/* F1 (анти-слоп аудит 2026-09-01): три однакові плитки «число +
+            підпис» — це та сама stat-граматика, що й тайли хабу й
+            «Аналітика» Їжі, і на одному екрані вона дає ієрархію густини
+            рівно нуль. П4 стратегії застосовано до КІЛЬКОСТІ контейнерів:
+            один показник — hero (`Виконано`, єдине число зі станом за
+            зріз), решта — рядок тексту без власного бокса. Раніше плитки
+            несли ще й `statCardHighlight` зі світлою заливкою, яка в
+            «Чорнилі» читалась як витік світлої теми (браузерна перевірка
+            2026-08-17) — боксів нема, нема й проблеми. */}
+        <Stat
+          label="Виконано"
+          value={
+            <Measure value={Math.round(summary.rate.rate * 100)} unit="%" />
+          }
+          sublabel={`${summary.rate.completed}/${summary.rate.scheduled}`}
+          size="md"
+        />
+        <p className="mt-3 flex flex-wrap items-baseline gap-x-1.5 text-style-label text-muted">
+          <span>Серія сьогодні</span>
+          <span className="font-semibold text-text tabular-nums">
+            {currentStreak}
+          </span>
+          <span aria-hidden className="text-subtle">
+            ·
+          </span>
+          <span>Макс. серія</span>
+          <span className="font-semibold text-text tabular-nums">
+            {summary.maxAllTime}
+          </span>
+        </p>
       </Card>
 
       {range.view === "rows" ? (

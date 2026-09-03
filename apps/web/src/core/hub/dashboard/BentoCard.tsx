@@ -240,36 +240,41 @@ export const BentoCard = memo(function BentoCard({
           />
         )}
 
-        <div className="flex items-center justify-between mb-2">
-          <div
-            aria-hidden
+        {/* F1 (анти-слоп аудит 2026-09-01): іконка в тонованому квадраті
+            над назвою — перша ланка stat-граматики «icon-in-tinted-square →
+            назва → підпис → число → чип», однакової на тайлах хабу, стрічці
+            Фізрука й «Аналітиці» Їжі (T5 зовнішньої матриці). Бокс знято:
+            іконка стоїть у рядку з назвою як ink-гліф модуля, і єдиним
+            контейнером тайла лишається сам тайл, а єдиним hero — число. */}
+        <div className="flex items-center justify-between gap-2 mb-1">
+          <span
             className={cn(
-              "w-9 h-9 rounded-xl flex items-center justify-center shrink-0",
-              inactive ? "bg-line/40 text-muted" : config.iconClass,
+              "inline-flex items-center gap-1.5 min-w-0 font-semibold",
+              // Empty cards have no preview number, so the module name is the
+              // focal point and is sized up; once data lands the big
+              // `preview.main` number takes over as the hero and the name
+              // recedes to a caption above it.
+              hasData ? "text-style-caption" : "text-style-label",
+              inactive ? "text-muted" : "text-text",
             )}
           >
-            {config.icon}
-          </div>
+            <span
+              aria-hidden
+              className={cn(
+                "inline-flex shrink-0 items-center",
+                inactive ? "text-muted" : config.inkClass,
+              )}
+            >
+              {config.icon}
+            </span>
+            <span className="truncate">{config.label}</span>
+          </span>
 
           {/* Layout placeholder for the absolutely-positioned edit-handle
-              sibling — keeps the label centred consistently regardless of
-              whether the handle is currently rendered. */}
+              sibling — keeps the label row stable regardless of whether the
+              handle is currently rendered. */}
           {showHandle && <span aria-hidden className="w-6 h-6 shrink-0" />}
         </div>
-
-        <span
-          className={cn(
-            "font-semibold",
-            // Empty cards have no preview number, so the module name is the
-            // focal point and is sized up; once data lands the big
-            // `preview.main` number takes over as the hero and the name
-            // recedes to a caption above it.
-            hasData ? "text-style-caption" : "text-style-label",
-            inactive ? "text-muted" : "text-text",
-          )}
-        >
-          {config.label}
-        </span>
 
         {!inactive && (
           <span className="text-style-caption text-muted mt-0.5 leading-snug">
@@ -327,28 +332,29 @@ export const BentoCard = memo(function BentoCard({
                 {preview.sub}
               </span>
             )}
-            {/* #8 — trend-delta chip vs previous period. Only shown
-                when `trendDelta` is a non-null finite number. Positive =
+            {/* #8 — trend delta vs previous period. Only shown when
+                `trendDelta` is a non-null finite number. Positive =
                 success-ink (up arrow, green), negative = danger-ink (down
                 arrow, red), zero is omitted (no meaningful change to
                 communicate). The direction glyph is a design-system `Icon`,
                 not a typographic ▲/▼: those come from the system font, so
                 their weight and baseline drift per OS and they ignore the
-                `strokeWidth` the rest of the card's iconography uses. The chip
-                sits below the sub-text and does not push the progress bar:
-                it is absolutely positioned in the bottom-left corner so it
-                never causes layout shift in the 120–132 px card height. */}
+                `strokeWidth` the rest of the card's iconography uses.
+                F1 (анти-слоп 2026-09-01): раніше це був чип із заливкою
+                (rounded-full плюс 10%-заливка) — ще один контейнер під числом, яке
+                й так стоїть під hero-числом. Тепер це рядок тексту в
+                caption-ролі: колір несе стан, бокса немає. */}
             {config.trendDelta != null &&
               Number.isFinite(config.trendDelta) &&
               config.trendDelta !== 0 && (
                 <span
                   className={cn(
                     "mt-1 inline-flex items-center gap-0.5 self-start",
-                    "rounded-full px-1.5 py-0.5 text-xs font-bold tabular-nums leading-none",
+                    "text-style-caption font-semibold tabular-nums leading-none",
                     "motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slow",
                     config.trendDelta > 0
-                      ? "bg-success/10 text-success-strong dark:text-success"
-                      : "bg-danger/10 text-danger-strong dark:text-danger",
+                      ? "text-success-strong dark:text-success"
+                      : "text-danger-strong dark:text-danger",
                   )}
                   aria-label={`Зміна: ${config.trendDelta > 0 ? "+" : ""}${Math.round(config.trendDelta * 100)} %`}
                 >
@@ -534,10 +540,12 @@ function BentoCardPeek({
               onDismiss();
             }}
           >
+            {/* F1/F5: гліф без тонованого квадрата — той самий ink, що й
+                число тайла; контейнером лишається сам рядок дії. */}
             <span
               className={cn(
-                "w-8 h-8 rounded-xl flex items-center justify-center shrink-0",
-                config.iconClass,
+                "inline-flex w-5 items-center justify-center shrink-0",
+                config.inkClass,
               )}
               aria-hidden
             >
