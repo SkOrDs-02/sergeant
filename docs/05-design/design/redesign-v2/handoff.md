@@ -1,19 +1,19 @@
 # Redesign v2 — handoff cross-links
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-03.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-22.
 > **Status:** Reference — вказівник на переміщені мокапи; редизайн закрито 2026-05-21.
 
 Mockups were moved from `handoff-package/` to the unified `mockups/product/` tree (git history preserved via `git mv`).
 
 ## Mockup locations
 
-| Screen                | New path                                                                                               |
-| --------------------- | ------------------------------------------------------------------------------------------------------ |
-| Finyk Overview Mobile | [`mockups/product/finyk/overview-mobile.html`](../../../../mockups/product/finyk/overview-mobile.html) |
-| Fizruk Dashboard      | [`mockups/product/fizruk/dashboard.html`](../../../../mockups/product/fizruk/dashboard.html)           |
-| Routine Today         | [`mockups/product/routine/today.html`](../../../../mockups/product/routine/today.html)                 |
-| Nutrition Today       | [`mockups/product/nutrition/today.html`](../../../../mockups/product/nutrition/today.html)             |
-| Product index         | [`mockups/product/index.html`](../../../../mockups/product/index.html)                                 |
+| Screen                | New path                                                                                                                                                                       |
+| --------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| Finyk Overview Mobile | [`mockups/product/finyk/overview-mobile.html`](https://github.com/SkOrDs-02/sergeant/blob/92535df3d7582d91daf35fee1bdc8604d2e73bfc/mockups/product/finyk/overview-mobile.html) |
+| Fizruk Dashboard      | [`mockups/product/fizruk/dashboard.html`](https://github.com/SkOrDs-02/sergeant/blob/92535df3d7582d91daf35fee1bdc8604d2e73bfc/mockups/product/fizruk/dashboard.html)           |
+| Routine Today         | [`mockups/product/routine/today.html`](https://github.com/SkOrDs-02/sergeant/blob/92535df3d7582d91daf35fee1bdc8604d2e73bfc/mockups/product/routine/today.html)                 |
+| Nutrition Today       | [`mockups/product/nutrition/today.html`](https://github.com/SkOrDs-02/sergeant/blob/92535df3d7582d91daf35fee1bdc8604d2e73bfc/mockups/product/nutrition/today.html)             |
+| Product index         | [`mockups/product/index.html`](https://github.com/SkOrDs-02/sergeant/blob/92535df3d7582d91daf35fee1bdc8604d2e73bfc/mockups/product/index.html)                                 |
 
 ## Rationale docs (stay in `handoff-package/`)
 
@@ -22,4 +22,4 @@ Mockups were moved from `handoff-package/` to the unified `mockups/product/` tre
 
 ## Shared CSS
 
-Product mockups use [`mockups/_shared/product.css`](../../../../mockups/_shared/product.css) (dark `#1a1614` + glass v2) and [`mockups/_shared/tokens.css`](../../../../mockups/_shared/tokens.css).
+Product mockups use [`mockups/_shared/product.css`](https://github.com/SkOrDs-02/sergeant/blob/92535df3d7582d91daf35fee1bdc8604d2e73bfc/mockups/_shared/product.css) (dark `#1a1614` + glass v2) and [`mockups/_shared/tokens.css`](https://github.com/SkOrDs-02/sergeant/blob/92535df3d7582d91daf35fee1bdc8604d2e73bfc/mockups/_shared/tokens.css).

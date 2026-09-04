@@ -3,7 +3,7 @@
 > **Last touched:** 2026-09-03 by @claude (PR-3 — N рядків у журнал). **Next review:** 2027-03-13.
 > **Status:** Done — рішення ухвалені 2026-08-26, скоуп закритий. Фаза 0, **PR-1 (контракт `items[]`)**, **PR-2 (UI списку)** і **PR-3 (N рядків у журнал)** зроблені. Тестова група (сценарій «видалити булочку, додати сирник») і посегментний замір `eval:vision` лишаються ручним приймальним кроком поза цим PR.
 > **Agent-ready:** yes
-> **Priority:** P2 (retention-важіль для nutrition; не блокер launch-у [0010](./0010-revenue-first-launch.md))
+> **Priority:** P2 (retention-важіль для nutrition; не блокер launch-у [0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md))
 > **Owner:** `@SkOrDs-02`
 > **ETA:** PR-1 ≈ 1 спринт, PR-2 ≈ 1 спринт, PR-3 ≈ 0.5
 > **Sources:**

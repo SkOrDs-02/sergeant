@@ -1,6 +1,6 @@
 # Прийомний браузерний прогін бети
 
-> **Last touched:** 2026-09-03 by @claude. **Next review:** 2026-10-31.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-16.
 > **Status:** Scaffolded — тимчасовий док на час закритої бети, термін 2026-10-31.
 > Прибрати разом з усією текою: [`README.md`](./README.md) § Що прибрати.
 
@@ -183,5 +183,5 @@ PW_BETA_SEED=1 [PW_BETA_BASE_URL=…] pnpm --filter @sergeant/web exec playwrigh
 - [`../audits/2026-08-07-beta-rehearsal-run.md`](../audits/2026-08-07-beta-rehearsal-run.md) — **виконана репетиція** цього дизайну: 20/20 auto-кроків BT1–BT4 зелені, знахідки F1–F6 (відкрите — викрадення deep-link-а `/pricing`)
 - [`run-beta-wave.md`](./run-beta-wave.md) — хвиля бети, куди цей прогін вбудований
 - [`../audits/2026-08-05-browser-profile-testing.md`](../audits/2026-08-05-browser-profile-testing.md) — методологія і попередні знахідки
-- [`../audits/web-qa-pre-beta.md`](../audits/web-qa-pre-beta.md) — попередній pre-beta QA-аудит
+- [`../audits/web-qa-pre-beta.md`](https://github.com/SkOrDs-02/sergeant/blob/d8a478b6e61ed57669aa86129433bd5cf69166f1/docs/90-work/audits/web-qa-pre-beta.md) — попередній pre-beta QA-аудит
 - Skill: `sergeant-e2e-testing`

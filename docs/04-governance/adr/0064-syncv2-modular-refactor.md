@@ -1,73 +1,34 @@
-﻿# ADR-0064: syncV2.ts модульний рефакторинг
+# ADR-0064: Per-module sync v2 apply architecture
 
 - **Status:** Accepted
 - **Date:** 2026-06-05
+- **Last validated:** 2026-09-04 by @codex
+- **Next review:** 2027-03-04
+- **Deciders:** @Skords-01
 - **Supersedes:** —
+- **Related:** [ADR-0065](./0065-sync-op-log-retention-and-multi-instance-fanout.md), [`apps/server/src/modules/sync/`](../../../apps/server/src/modules/sync/), [`packages/dualwrite-core/`](../../../packages/dualwrite-core/)
 
 ## Context
 
-syncV2.ts важить 2 912 рядки (4.9× межа Hard Rule #18 за 600 рядків). Це критичний файл:
-
-- містить apply-логіку для 22 таблиць (routine, fizruk, nutrition, finyk)
-- має ~0% покриття тестами
-- 8 ESLint suppressions (`eslint-disable no-restricted-syntax`) для SQL-вставок
-
-Технічний борг нарастає: кожен новий модуль додає apply-функцію в цей файл.
+The original record was an implementation plan to split a large `syncV2.ts`.
+The split is complete: sync v2 keeps routing/registry concerns centralized and
+places domain-specific apply behavior beside the owning module. The old staged
+file-size plan is not a current architecture decision.
 
 ## Decision
 
-Розділити syncV2.ts на модулярну структуру:
+Server sync v2 is organized around a central route/operation registry and
+per-module apply handlers. Shared parsing, validation, idempotency, operation
+metadata, and stream behavior stay in the sync layer; routine, fizruk,
+nutrition, and finyk data semantics stay in their owning apply modules.
 
-```
-apps/server/src/modules/sync/
-├── syncV2.ts (handlers: syncV2Push, syncV2Pull, ~300 рядків)
-├── syncV2-types.ts (типи + константи + реєстр таблиць, ~300 рядків)
-├── syncV2-core.ts (shared helpers: parseOptionalDate, toJsonbParam, ~150 рядків)
-├── routine/
-│   └── applySync.ts (applyRoutineEntries, applyRoutineStreaks)
-├── fizruk/
-│   └── applySync.ts (5 функцій)
-├── nutrition/
-│   └── applySync.ts (5 функцій)
-└── finyk/
-    └── applySync.ts (14 функцій)
-```
-
-**Ключові правила:**
-
-1. OP_LOG_TABLE_REGISTRY залишається в syncV2-types.ts, але посилається на apply-функції з модулів
-2. Shared helpers винесені в syncV2-core.ts
-3. Кожен модуль відповідає за свою apply-логіку
-4. Тести обов'язкові для кожної apply-функції
+New sync tables must declare their operation shape and owner, implement
+user-scoped/idempotent apply behavior, and include cross-user and replay tests.
+Extracting code merely to reach a line-count threshold is not sufficient; the
+module boundary must correspond to the domain that owns the data semantics.
 
 ## Consequences
 
-### Позитивні
-
-- Жоден файл не перевищує 600 рядків
-- Легший доступ до модуля-специфічної логіки
-- Можливість тестувати окремі модуля
-- Легше розширювати новими таблицями
-
-### Від'їднені
-
-- Наразі треба 3-5 днів на рефакторинг
-- Тимчасова регресія під час міграції
-- Потрібні нові тести (0% → 80%+ для syncV2)
-
-## Implementation Plan
-
-1. **Stage 1:** syncV2-types.ts (типи + константи) — **DONE** (файл створений)
-2. **Stage 2:** syncV2-core.ts (shared helpers)
-3. **Stage 3:** routine/applySync.ts (виділити applyRoutine\*)
-4. **Stage 4:** fizruk/applySync.ts (виділити 5 applyFizruk\*)
-5. **Stage 5:** nutrition/applySync.ts (виділити 5 applyNutrition\*)
-6. **Stage 6:** finyk/applySync.ts (виділити 14 applyFinyk\*)
-7. **Stage 7:** syncV2.ts (handlers + registry)
-8. **Stage 8:** syncV2.test.ts (написати тести)
-
-## References
-
-- Hard Rule #18: Module-size discipline
-- Security-audit відмінності: SQL-інтерполяція в syncV2.ts
-- Test Coverage ризик: 11 серверних файлів >600 рядків
+The old monolithic-file structure and staged refactor estimates are historical.
+Cross-module client persistence is handled separately by the dual-write core
+(ADR-0073), not by copying server apply code into clients.

@@ -2,6 +2,8 @@
 
 - **Status:** Proposed <!-- Proposed | Accepted | Deprecated | Superseded by ADR-NNNN -->
 - **Date:** YYYY-MM-DD
+- **Last validated:** YYYY-MM-DD
+- **Next review:** YYYY-MM-DD
 - **Deciders:** @Skords-01 <!-- GitHub handles of people who approved the decision -->
 - **Supersedes:** — <!-- ADR-MMMM if this replaces an older record, otherwise — -->
 - **Related:**

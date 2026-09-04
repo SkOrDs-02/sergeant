@@ -1,12 +1,12 @@
 # Paywall UX placement — sketch + decision doc
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2027-08-21.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-22.
 > **Status:** Active draft (sketch). Закриває tracker `PR-19` per [ftux-master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr).
 >
 > **Update 2026-07-10:** trial-механіка в коді — ADR-0068 **reverse trial 7 днів** (авто Pro → downgrade), не 14d opt-in trial без картки з §1 нижче. Placement sketch (post-first-real-entry sheet) лишається валідним; trial copy оновити під ADR-0068.
 > **Owner:** @Skords-01 + Devin (sketch session 2026-05-06).
 
-> Тільки UX-placement sketch для FTUX-релевантного paywall touch-point-у. Технічний skeleton (Stripe, webhooks, gating-middleware, ADR list) — у [Архітектура монетизації v2](../business/06-monetization-architecture.md) та [Initiative 0010](../../../90-work/initiatives/0010-revenue-first-launch.md). Цей документ — **тільки про те, ДЕ і КОЛИ** показуємо paywall новому юзеру, а не **ЯК** його технічно реалізуємо. Імплементація — `PR-20`.
+> Тільки UX-placement sketch для FTUX-релевантного paywall touch-point-у. Технічний skeleton (Stripe, webhooks, gating-middleware, ADR list) — у [Архітектура монетизації v2](../business/06-monetization-architecture.md) та [Initiative 0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md). Цей документ — **тільки про те, ДЕ і КОЛИ** показуємо paywall новому юзеру, а не **ЯК** його технічно реалізуємо. Імплементація — `PR-20`.
 >
 > **Канон 2026-05-19:** endpoint/key names в implementation checklist оновлено до shipped billing contract: `/api/billing/checkout`, `/api/billing/status`, `/api/billing/portal`, `billingKeys.status`, `STRIPE_ENABLED`. Історичні згадки `/checkout-session` або `billingKeys.plan()` не є поточними owners.
 
@@ -40,7 +40,7 @@ Per `ftux-master-tracker.md` §3.4:
 - ❌ Не вирішує **plan-cache TTL / RQ keys / webhook idempotency** (це ADR-1.3, ADR-1.8 там само).
 - ❌ Не пише **код** (це PR-20).
 - ❌ Не вибирає **provider** (Stripe-primary, ADR-1.1, прийнято).
-- ❌ Не draft-ить **pricing page** (це окремий PR за межами FTUX-tracker — див. [Initiative 0010 фаза 4 PR 4.2](../../../90-work/initiatives/0010-revenue-first-launch.md)).
+- ❌ Не draft-ить **pricing page** (це окремий PR за межами FTUX-tracker — див. [Initiative 0010 фаза 4 PR 4.2](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)).
 
 ### 2.3. Які рішення цей PR закриває
 
@@ -272,7 +272,7 @@ PR-20 НЕ merge-ається без:
 
 ## 11. Cross-refs
 
-- [Initiative 0010 — revenue-first-launch](../../../90-work/initiatives/0010-revenue-first-launch.md) — phases 1-4 для billing-stack.
+- [Initiative 0010 — revenue-first-launch](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) — phases 1-4 для billing-stack.
 - [06 Архітектура монетизації v2](../business/06-monetization-architecture.md) — ADR list (1.1–1.10), risk register, rollout-plan з FF.
 - [01 Монетизація і ціноутворення](../business/01-monetization-and-pricing.md) — pricing strategy, що годує copy-варіанти §6.
 - [FTUX master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr) — PR-19/PR-20 положення у sprint-плані.

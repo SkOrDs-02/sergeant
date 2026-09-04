@@ -1,6 +1,6 @@
 # Sergeant — дизайн-аудит apps/web · 2026-07
 
-> **Last touched:** 2026-07-21 by @Skords-01. **Next review:** 2027-10-03.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-26.
 > **Status:** Reference — цикл закрито; таблиця скорингу §1 лишається baseline
 > для наступного дизайн-аудиту (порівнюваність між ітераціями). Відкриті борги — §5.
 
@@ -9,7 +9,7 @@
 - **Нормативи:** `packages/design-tokens` + Hard Rules #8–#17, [`style-guide.uk.md`](../../01-product/copy/style-guide.uk.md)
 - **Методологія:** кодовий аудит (докази — `файл:рядок`) + візуальний прохід Playwright/Chromium (demo-режим, light/dark/hc × 1280×800 / 375×812, 105 кадрів, axe-core, піксельні виміри контрасту)
 - **Артефакти поза репо:** кадри «до/після», повний журнал вимірів і листування — у Claude Design проекті «Sergeant Design Audit 2026-07» (`shots/`, `shots-after/`, `implementation-report-2026-07-21.md`, `reaudit-response-2026-07-21.md`). Кадри навмисно не комітяться: десятки МБ, протухають з першим редизайном.
-- **Промпт для наступного прогону:** [`design-audit-sergeant-web.md`](../planning/prompts/design-audit-sergeant-web.md) — уроки §6 вкладені туди, бо цей документ архівується, а промпт запускається.
+- **Промпт для наступного прогону:** [`design-audit-sergeant-web.md`](https://github.com/SkOrDs-02/sergeant/blob/fcb8e9a94a89833905350ba33f8d9ab7b90b03ba/docs/90-work/planning/prompts/design-audit-sergeant-web.md) — уроки §6 вкладені туди, бо цей документ архівується, а промпт запускається.
 
 ---
 
@@ -79,7 +79,7 @@
 
 ## 6 · Уроки процесу
 
-Методологічні, не продуктові — вкладені також у [промпт аудиту](../planning/prompts/design-audit-sergeant-web.md), бо цей документ архівується, а промпт запускається наступного разу.
+Методологічні, не продуктові — вкладені також у [промпт аудиту](https://github.com/SkOrDs-02/sergeant/blob/fcb8e9a94a89833905350ba33f8d9ab7b90b03ba/docs/90-work/planning/prompts/design-audit-sergeant-web.md), бо цей документ архівується, а промпт запускається наступного разу.
 
 - Рахувати анімації як `CSSAnimation`, не `getAnimations().length` — scrollbar-color transitions дають хибні сотні.
 - Dev-скріншоти містять devtools-артефакти (TanStack floating button) — знімати prod-збірку або фільтрувати.

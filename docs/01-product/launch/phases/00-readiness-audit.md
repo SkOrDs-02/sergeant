@@ -1,6 +1,6 @@
 # 00 — Launch readiness audit: 5 застосунків Sergeant
 
-> **Last touched:** 2026-07-29 by @Skords-01. **Next review:** 2027-08-27.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-11.
 > **Status:** Active
 
 > **Канон 2026-07-29:** billing scaffold, in-app landing і standalone `apps/landing` shipped у коді. Для marketing surface не підтверджені з репо лише зовнішні Vercel production deployment і `sergeant.com.ua` DNS. Public launch блокується legal publish, live payment env/cookie consent/store readiness — не створенням ще одного лендінгу.
@@ -14,7 +14,7 @@
 > [`docs/02-engineering/architecture/platforms.md`](../../../02-engineering/architecture/platforms.md) ·
 > [`docs/02-engineering/architecture/service-catalog.md`](../../../02-engineering/architecture/service-catalog.md) ·
 > [`docs/00-start/playbooks/release.md`](../../../00-start/playbooks/release.md) ·
-> [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) ·
+> [`docs/90-work/initiatives/0010-revenue-first-launch.md`](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) ·
 > [`docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md)
 
 ---
@@ -46,7 +46,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 ### 3.1 Web (`apps/web`)
 
 - **Стан:** `active` за [`apps-status-matrix.md`](../../../02-engineering/architecture/apps-status-matrix.md). React 18 + Vite 8 PWA, Tailwind 4, TanStack Query, Better Auth cookie-сесії, Service Worker (`src/sw.ts`). Деплой — Vercel (статика + Edge Middleware-проксі на Coolify API), per-PR preview-середовища.
-- **Auth:** реалізовано email/password через Better Auth (`AuthContext` у [`apps/web/src/core/auth/AuthContext.tsx`](../../../../apps/web/src/core/auth/AuthContext.tsx)), UA-помилки мапляться за стабільним Better Auth `error.code`. **Apple + Google SSO — UI + server wiring shipped** (`GoogleSignInButton`, `AppleSignInButton` у `AuthPage.tsx`); production rollout залежить від OAuth env secrets (initiative [`0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md) §4.3).
+- **Auth:** реалізовано email/password через Better Auth (`AuthContext` у [`apps/web/src/core/auth/AuthContext.tsx`](../../../../apps/web/src/core/auth/AuthContext.tsx)), UA-помилки мапляться за стабільним Better Auth `error.code`. **Apple + Google SSO — UI + server wiring shipped** (`GoogleSignInButton`, `AppleSignInButton` у `AuthPage.tsx`); production rollout залежить від OAuth env secrets (initiative [`0010-revenue-first-launch.md`](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) §4.3).
 - **FTUX:** `WelcomeScreen` + `OnboardingWizard` на `/welcome`, lazy-loaded chunk; demo-режим `?demo=1` через `seedDemoData/*`. За [`ftux-master-tracker.md`](../product-os/ftux-master-tracker.md): **27 з 35 sprint-items закрито** в `main`, 8-step PostHog activation funnel живе на web, D1/D7 dashboard зеленіє. Real-world conversion поки **TBD** (когорта стартувала ~2026-04-28).
 - **Observability:** Sentry ([`apps/web/src/core/observability/sentry.ts`](../../../../apps/web/src/core/observability/sentry.ts)) + PostHog (8 FTUX events + identify), Web Vitals, Lighthouse CI workflow заплановано (T5 у тех-боргу), `size-limit` уже у CI.
 - **Security:** CSP report-only активний (CSP/COOP/COEP у [`apps/web/vercel.json`](../../../../apps/web/vercel.json)), Permissions-Policy жорстка.
@@ -140,7 +140,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 **Додаткові blockers, що зʼявляться між closed beta → public web launch** (не входять у top-10, але треба тримати в голові):
 
-- Stripe billing (Phase 2–4 з [`0010`](../../../90-work/initiatives/0010-revenue-first-launch.md)).
+- Stripe billing (Phase 2–4 з [`0010`](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)).
 - Apple/Google SSO (Phase 4.3 з 0010).
 - Cookie consent banner для EU.
 - Окремий лендінг на `sergeant.com.ua` (див. § 4).

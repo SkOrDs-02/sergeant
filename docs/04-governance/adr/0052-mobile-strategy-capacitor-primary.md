@@ -7,7 +7,7 @@
 - **Supersedes:** ADR-0010
 - **Superseded sections (non-ADR):** sunset-direction sections in [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) (sunset schedule T₀/T₁/T₂ reference as "active outcome")
 - **Related:**
-  - [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../90-work/initiatives/0010-revenue-first-launch.md)
+  - [`docs/90-work/initiatives/0010-revenue-first-launch.md`](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)
   - [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md)
   - [ADR-0010 Mobile dual-track](./0010-mobile-dual-track-capacitor-expo.md)
 
@@ -82,4 +82,4 @@
 - [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) — ініціатива, яку це рішення supersedes у частині sunset-direction
 - [ADR-0010](./0010-mobile-dual-track-capacitor-expo.md) — dual-track original decision
 - [`docs/02-engineering/architecture/platforms.md`](../../02-engineering/architecture/platforms.md) — feature-parity матриця (Exit dashboard)
-- [`docs/90-work/initiatives/0010-revenue-first-launch.md` § Phase 1.2](../../90-work/initiatives/0010-revenue-first-launch.md)
+- [`docs/90-work/initiatives/0010-revenue-first-launch.md` § Phase 1.2](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)

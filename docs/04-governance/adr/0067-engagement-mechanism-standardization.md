@@ -10,7 +10,7 @@
   описує стан ДО виконання і навмисно не резолвиться.
 - **Supersedes:** —
 - **Related:**
-  - [`docs/02-engineering/architecture/domain-invariants.md`](../../02-engineering/architecture/domain-invariants.md) — Kyiv-time day-boundary інваріант, який частина reminder-хуків порушує
+  - [ADR-0078](./0078-day-boundary-device-local.md) — день-ключ особистої події належить пристрою; це не є політикою годинника для нагадування
   - [`docs/04-governance/governance/rules/02-rq-keys-via-centralized-factories.md`](../governance/rules/02-rq-keys-via-centralized-factories.md) — прецедент «один централізований фабричний шар замість inline-копій» (RQ keys)
   - [`docs/04-governance/adr/0011-local-first-storage.md`](./0011-local-first-storage.md) — клієнт як primary-стор; warm-cache канонічні читачі
   - [`docs/04-governance/adr/0021-memory-bank.md`](./0021-memory-bank.md) — local-first engagement-state прецедент
@@ -20,7 +20,7 @@
 
 ## Context and Problem Statement
 
-Hub має цілий клас «engagement-механізмів» — код, що **читає дані модулів → виводить сигнал → показує/нагадує/ховає**. Сьогодні цей клас реалізований **N разів вроздріб**, без спільного контракту. Це не косметична DRY-проблема: фрагментація вже спричинила живі продакшн-баги і порушення доменних інваріантів.
+Hub має цілий клас «engagement-механізмів» — код, що **читає дані модулів → виводить сигнал → показує/нагадує/ховає**. Сьогодні цей клас реалізований **N разів вроздріб**, без спільного контракту. Це не косметична DRY-проблема: фрагментація вже спричинила живі продакшн-баги. Водночас scheduler нагадувань не має права непомітно ставати власником day-key особистої події: це окремий контракт ADR-0078.
 
 Розкладається на **три шари**, кожен зі своєю фрагментацією:
 
@@ -86,7 +86,7 @@ Hub має цілий клас «engagement-механізмів» — код, �
 **Шар 2 — `useModuleReminder(config)`.**
 
 - Один хук, параметризований per-module config: `{ enabled, schedule, dedupKeyspace, content, swMessageType }`.
-- Узагальнює **еталонний** `useRoutineReminders`: Kyiv-time day-boundary (закриває TZ-баг fizruk/nutrition), повний permission-tracking (Permissions API + visibility/focus), self-rescheduling tick (замість двох різних `setInterval`).
+- Узагальнює механіку планування, permission-tracking (Permissions API + visibility/focus) і self-rescheduling tick (замість двох різних `setInterval`). Поточний shared scheduler працює з Kyiv-anchored tick для сумісності, але цей tick не можна використовувати як day-key логу, відмітки чи іншої особистої події.
 - `useRoutineReminders` / `useFizrukWorkoutReminder` / `useNutritionReminders` стають тонкими обгортками `useModuleReminder(<config>)`.
 
 **Шар 3 — єдиний dismiss/snooze-стор.**
@@ -98,7 +98,7 @@ Hub має цілий клас «engagement-механізмів» — код, �
 
 1. **Видалити dead `dailyFinykSummary.ts` + тест** — мертвий для UI (жоден прод-консюмер не імпортує `computeDailyFinykSummary`). Прибирає одну копію compute + одну dismiss-схему «безкоштовно». **Передумова — підтвердити, що фіча не запланована.**
 2. **Уніфікувати dismiss/snooze** на `dismissNudge`/`snoozeNudge` (найменший ризик, ізольований стор).
-3. **Уніфікувати reminders** у `useModuleReminder` — попутно **фіксує Kyiv-time баг** fizruk/nutrition (доменний інваріант).
+3. **Уніфікувати reminders** у `useModuleReminder` — прибирає розбіжні scheduler-и, permission-tracking і дедуплікацію; семантику годинника нагадування цей крок не вирішує.
 4. **Консолідувати compute** у `EngagementSignal`-aggregator — найбільший, **останній**, після того як tombstone-міграція повністю осіла (всі 5 файлів на canonical readers).
 
 ### Що НЕ чіпаємо (явні non-goals)
@@ -111,7 +111,7 @@ Hub має цілий клас «engagement-механізмів» — код, �
 
 ## Rationale
 
-- **Чому стандартизувати, а не латати (vs Option 2):** Option 2 лишає причину живою — наступний tombstone, TZ-зміна чи новий модуль знову розбіжаться. Уніфікований compute-шар робить tombstone-клас регресій _структурно_ неможливим (один читач — нема чого забути мігрувати), а уніфікований reminder-хук робить Kyiv-time баг неможливим за побудовою.
+- **Чому стандартизувати, а не латати (vs Option 2):** Option 2 лишає причину живою — наступний tombstone чи новий модуль знову розбіжаться. Уніфікований compute-шар робить tombstone-клас регресій _структурно_ неможливим (один читач — нема чого забути мігрувати), а уніфікований reminder-хук централізує scheduler, permission і дедуплікацію. Він не визначає межу особистої доби.
 - **Чому наявні примітиви, а не переписування (vs Option 3):** усі три цілі вже мають еталон у репо — `useRoutineReminders` (пройшов F21/F8), `dismissNudge`/`snoozeNudge` (TTL-snooze), canonical readers. Сходження-до-еталону має мінімальну площу й нульовий ризик «net-new движка», який треба наново тестувати й супроводжувати. Це той самий принцип, що ADR-0006 (RQ keys: один фабричний шар замість inline-копій).
 - **Чому поетапно, а не одним PR:** шари незалежні; dead-code-видалення і dismiss-уніфікація дають ранню цінність з мінімальним ризиком, а найважчий compute-шар свідомо останній — щоб не конфліктувати з паралельною tombstone-міграцією (memory: [[project_tombstone_readside_regression]] фіксує split між сесіями).
 - **Чому це ADR:** встановлює контракт для **майбутніх** модулів («новий модуль додає reminder через `useModuleReminder`, сигнал через aggregator, dismiss через nudge-store») — рішення про межі відповідальності, яке має пережити окремі PR-и.
@@ -121,7 +121,7 @@ Hub має цілий клас «engagement-механізмів» — код, �
 ### Positive
 
 - Tombstone-клас регресій стає структурно неможливим: один canonical-читач замість пʼяти.
-- Kyiv-time доменний інваріант виконується за побудовою для **всіх** reminders (фіксує наявний fizruk/nutrition баг).
+- Нагадування мають один механізм scheduler-а, permission-tracking і дедуплікації; особисті day-key лишаються поза ним і регулюються ADR-0078.
 - −4 копії `parseFizrukWorkouts`, −2 reminder-копії, −3 ad-hoc dismiss-схеми → менше площі для лінт-burndown і module-size (Rule #18) тиску.
 - Новий модуль вмикається в engagement за конфігом, а не копіпастою.
 
@@ -133,18 +133,22 @@ Hub має цілий клас «engagement-механізмів» — код, �
 
 ### Neutral
 
-- Не змінює user-visible поведінку (окрім фіксу TZ-багу — що є виправленням, не регресією).
+- Не визначає user-visible часову семантику нагадування; це не побічний ефект технічної стандартизації.
 - Не вводить нових залежностей; усе на наявних `@sergeant/shared` / canonical readers / `webKVStore`.
 - Кількість PR-ів (4) і їх порядок можуть уточнитись при реалізації; ADR фіксує **напрям і межі**, не точний diff.
 
 ## Compliance
 
 - **Hard Rule #2 (RQ keys)** — aggregator не вводить inline query-keys; будь-які RQ-споживачі сигналів — через фабрики.
-- **Domain invariant (Kyiv-time)** — `useModuleReminder` зобовʼязаний рахувати day-key/час через `@shared/lib/time/kyivTime`; host-local `new Date().getHours()` для day-boundary заборонено (`sergeant-design/prefer-kyiv-time`).
+- **Межа відповідальності часу** — `useModuleReminder` може мати свій scheduler tick і dedup-key, але не встановлює day-key особистої сутності. Для логу їжі, відмітки звички й денного запису застосовується ADR-0078.
 - **Hard Rule #18 (module-size 600)** — консолідація має тримати aggregator/хук під лімітом; split за потреби.
 - **Hard Rule #15 (docs у Ukrainian, sync з кодом)** — кожен крок оновлює відповідні surface-docs; цей ADR — Ukrainian-body.
 - **Storage allowlist** (`pnpm lint:localstorage-allowlist`) — будь-які нові ключі реєструються; міграція ad-hoc ключів проходить через no-raw-storage-key політику.
 - **Testing pyramid (ADR-0020)** — повний `pnpm --filter @sergeant/web test` перед кожним PR, не scoped-підпапка.
+
+## Невирішене рішення founder-а
+
+Роль, монетизація й часовий anchor нагадувань (поточний Kyiv-anchored scheduler, локальний годинник пристрою чи майбутня profile-політика) не вирішені цим ADR. Поточна реалізація — факт сумісності, а не підстава перетворити її на продуктове правило. Зміна цієї семантики потребує окремого рішення founder-а; агент не обирає її з ADR-0078.
 
 ## Links
 

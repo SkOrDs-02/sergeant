@@ -765,7 +765,7 @@ from the foreground request path`), а повний дизайн планува�
 > перевів `routine_habits`/`routine_tags`/`routine_categories`/`routine_entries`
 > з `uuid` на `text`. До фіксу КОЖЕН push цих чотирьох таблиць падав `22P02` і
 > повертався `apply_failed` — тобто Рутина не мала серверного бекапу в жодного
-> користувача. Деталі й live-перевірка — [`web-qa-pre-beta.md`](../audits/web-qa-pre-beta.md).
+> користувача. Деталі й live-перевірка — [`web-qa-pre-beta.md`](https://github.com/SkOrDs-02/sergeant/blob/d8a478b6e61ed57669aa86129433bd5cf69166f1/docs/90-work/audits/web-qa-pre-beta.md).
 > Це знімає причину, через яку «backfill стадії 2 — майже напевно no-op» вище;
 > лишається сам факт, що подій ще ніхто не читає (стадії 2-5), і фактичний гейт —
 > прод-соак стадії 1 на обох клієнтах.
@@ -1069,7 +1069,7 @@ from the foreground request path`), а повний дизайн планува�
 > Галочку не ставимо: попередження робить ризик видимим, а не усуває його.
 >
 > ⚠️ **Уточнення 2026-08-01: діагноз вище був неповний для Рутини.**
-> Живий QA ([`web-qa-pre-beta.md`](../audits/web-qa-pre-beta.md)) знайшов, що
+> Живий QA ([`web-qa-pre-beta.md`](https://github.com/SkOrDs-02/sergeant/blob/d8a478b6e61ed57669aa86129433bd5cf69166f1/docs/90-work/audits/web-qa-pre-beta.md)) знайшов, що
 > `routine_habits`/`tags`/`categories`/`entries` мали PK `uuid`, а клієнт шле
 > префіксовані id — тож push цих чотирьох таблиць падав `22P02` для **будь-
 > кого**, залогіненого чи ні. «Серверна реплікація вже працює для

@@ -1,6 +1,6 @@
 # Sergeant — Launch phases plan-guide
 
-> **Last touched:** 2026-08-02 by @Skords-01. **Next review:** 2027-08-17.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-08.
 > **Status:** Active — draft master plan-guide for sequencing launch with real users.
 >
 > **Update 2026-07-29:** in-app landing і standalone `apps/landing` shipped у коді; marketing landing має Telegram-конверсію, OG, cookieless PostHog і окремий Vercel config. Зовнішні `sergeant.com.ua` DNS/production-deploy треба підтвердити в Vercel. Public launch далі блокується legal/live payment env/cookie consent/store readiness.
@@ -101,7 +101,7 @@ keys + ФОП, Apple Developer Program не куплений. Код окрем�
 
 - [ADR-0052](../../../04-governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor PRIMARY до Expo parity (Accepted 2026-05-06)
 - [ADR-0068](../../../04-governance/adr/0068-pricing-v4-uah-reverse-trial.md) — Free + Pro ₴199/міс / ₴1490/рік, reverse trial 7 днів (Supersedes ADR-0051)
-- [Initiative 0010](../../../90-work/initiatives/0010-revenue-first-launch.md) — revenue-first sprint (Stripe billing у Phase 2-4)
+- [Initiative 0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) — revenue-first sprint (Stripe billing у Phase 2-4)
 - [Initiative 0002](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) — оригінальна mobile dual-track decision
 
 ---
@@ -216,18 +216,18 @@ Vite/React лендінгом. До public launch лишається підтв�
 Консолідовано з 4 паралельних аналізів. Owner — `@Skords-01` за замовчуванням,
 де явно не вказано інакше.
 
-| #   | Блокер                                                                                                                                                                                                  | Owner / Surface           | Estimate   | Phase                        |
-| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------- | ---------------------------- |
-| 1   | **Privacy Policy + ToS публічні URLs** ([04 § 1.1](../business/04-launch-readiness.md#11-обовязкові-документи))                                                                                         | Founder + (юрист consult) | 1-2 тижні  | Web public + Capacitor       |
-| 2   | **Stripe billing pipeline** (scaffold shipped; prod env + ФОП pending) — [Initiative 0010](../../../90-work/initiatives/0010-revenue-first-launch.md)                                                   | Devin + founder           | 1–2 тижні  | Web public (paywall live)    |
-| 3   | **Apple Developer Program enrollment** ($99 + D-U-N-S Number; ~2 тижні delay)                                                                                                                           | Founder                   | 2-3 тижні  | Capacitor iOS                |
-| 4   | **Google Play Developer Console enrollment** ($25 one-time)                                                                                                                                             | Founder                   | 1-2 дні    | Capacitor Android            |
-| 5   | **ФОП реєстрація + банк-рахунок для UA-Stripe** (UAH support)                                                                                                                                           | Founder                   | 2-4 тижні  | Web paywall live             |
-| 6   | **Apple + Google Sign-in** (UI shipped; prod OAuth env pending) — [0010 phase 4.3](../../../90-work/initiatives/0010-revenue-first-launch.md)                                                           | Devin                     | 1–2 тижні  | Web public (signup friction) |
-| 7   | **Standalone landing production check** (`apps/landing` shipped; підтвердити Vercel project, `sergeant.com.ua`, CTA/OG)                                                                                 | Founder + Devin           | 0.5–1 день | Web public SEO               |
-| 8   | **Store-listing assets** (іконки, screenshots, demo-video, App Privacy / Data Safety форми)                                                                                                             | Founder + designer        | 1 тиждень  | Capacitor                    |
-| 9   | **Cookie consent banner для EU** (ePrivacy compliance)                                                                                                                                                  | Devin                     | 1-2 дні    | Web public                   |
-| 10  | **DB backups end-to-end verified** ([04 § 7 item 20](../business/04-launch-readiness.md#7-pre-launch-чеклист) + [playbooks/test-backup-restore.md](../../../00-start/playbooks/test-backup-restore.md)) | Devin                     | 1 день     | Web closed beta              |
+| #   | Блокер                                                                                                                                                                                                                                | Owner / Surface           | Estimate   | Phase                        |
+| --- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------- | ---------- | ---------------------------- |
+| 1   | **Privacy Policy + ToS публічні URLs** ([04 § 1.1](../business/04-launch-readiness.md#11-обовязкові-документи))                                                                                                                       | Founder + (юрист consult) | 1-2 тижні  | Web public + Capacitor       |
+| 2   | **Stripe billing pipeline** (scaffold shipped; prod env + ФОП pending) — [Initiative 0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) | Devin + founder           | 1–2 тижні  | Web public (paywall live)    |
+| 3   | **Apple Developer Program enrollment** ($99 + D-U-N-S Number; ~2 тижні delay)                                                                                                                                                         | Founder                   | 2-3 тижні  | Capacitor iOS                |
+| 4   | **Google Play Developer Console enrollment** ($25 one-time)                                                                                                                                                                           | Founder                   | 1-2 дні    | Capacitor Android            |
+| 5   | **ФОП реєстрація + банк-рахунок для UA-Stripe** (UAH support)                                                                                                                                                                         | Founder                   | 2-4 тижні  | Web paywall live             |
+| 6   | **Apple + Google Sign-in** (UI shipped; prod OAuth env pending) — [0010 phase 4.3](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)         | Devin                     | 1–2 тижні  | Web public (signup friction) |
+| 7   | **Standalone landing production check** (`apps/landing` shipped; підтвердити Vercel project, `sergeant.com.ua`, CTA/OG)                                                                                                               | Founder + Devin           | 0.5–1 день | Web public SEO               |
+| 8   | **Store-listing assets** (іконки, screenshots, demo-video, App Privacy / Data Safety форми)                                                                                                                                           | Founder + designer        | 1 тиждень  | Capacitor                    |
+| 9   | **Cookie consent banner для EU** (ePrivacy compliance)                                                                                                                                                                                | Devin                     | 1-2 дні    | Web public                   |
+| 10  | **DB backups end-to-end verified** ([04 § 7 item 20](../business/04-launch-readiness.md#7-pre-launch-чеклист) + [playbooks/test-backup-restore.md](../../../00-start/playbooks/test-backup-restore.md))                               | Devin                     | 1 день     | Web closed beta              |
 
 **Сумарний critical path:** W-4 .. W+8 для всіх Web блокерів; W+2 .. W+11 для Capacitor блокерів.
 
@@ -330,7 +330,7 @@ Vite/React лендінгом. До public launch лишається підтв�
 ### Initiatives
 
 - [`docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md)
-- [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../../90-work/initiatives/0010-revenue-first-launch.md)
+- [`docs/90-work/initiatives/0010-revenue-first-launch.md`](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)
 
 ### Release playbooks
 

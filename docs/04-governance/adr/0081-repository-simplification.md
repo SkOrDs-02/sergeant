@@ -1,39 +1,33 @@
-# ADR-0081: Спрощення repository automation та історії
+# ADR-0081: Repository simplification and durable discovery
 
 - **Status:** Accepted
-- **Last validated:** 2026-07-29 by @Skords-01. **Next review:** 2026-10-27.
 - **Date:** 2026-07-29
-- **Reviewers:** @SkOrDs-02
+- **Last validated:** 2026-09-04 by @codex
+- **Next review:** 2027-03-04
+- **Deciders:** @Skords-01
 - **Supersedes:** ADR-0058, ADR-0059, ADR-0060, ADR-0066, ADR-0070
-- **Related:**
-  - [`AGENTS.md`](../../../AGENTS.md) — актуальна routing та governance-політика.
-  - [`docs/00-start/agents/onboarding.md`](../../00-start/agents/onboarding.md) — короткий маршрут discovery.
-  - [`scripts/dualwrite-residue.ts`](../../../scripts/dualwrite-residue.ts) — єдиний спеціалізований entropy-check, який лишається.
+- **Related:** [`AGENTS.md`](../../../AGENTS.md), [ADR-0071](./0071-dynamic-agent-snapshot.md), [ADR-0084](./0084-agent-graph-topology.md), [`scripts/dualwrite-residue.ts`](../../../scripts/dualwrite-residue.ts)
 
-## Контекст
+## Decision
 
-Репозиторій паралельно підтримував committed codebase graph, symbol catalog, retrieval index, compressed graph database, C3 workspace diagram та власний MCP/CLI retrieval. Після підключення зовнішнього codebase-memory MCP ці артефакти дублювали discovery-шар, вимагали каскадної регенерації й додавали великі бінарні зміни до Git.
+The repository does not commit generated code-symbol graphs, retrieval indexes,
+or local archive trees that duplicate Git history. Code discovery uses the
+external codebase-memory MCP first, then TypeScript/LSP or `rg` as fallback.
+The MCP graph is an external, current discovery service; it is not a committed
+repository artifact.
 
-Окремо `tools/entropy-janitors` обгортав уже наявні Knip, docs link checker та ESLint у власний scheduler, а ESLint-плагін кодував десятки суб’єктивних візуальних рішень. Локальні `docs/90-work/*/archive` дублювали незмінну історію Git і створювали постійний борг посилань.
+Completed audits, initiatives, and plans are preserved through Git history or
+stable permalinks. Direct checks replace broad wrappers: Knip for dead code,
+the documentation checkers for link/freshness drift, ESLint for dependency
+cycles and invariants, and the dual-write-residue check for its specific risk.
 
-## Рішення
+The ESLint plugin protects runtime, security, storage, API, and domain
+invariants. Visual taste belongs in design tokens, Storybook, accessibility
+checks, and review rather than heuristic AST rules.
 
-1. Для code discovery пріоритет має codebase-memory MCP. Якщо він недоступний або не проіндексований, fallback — TypeScript/LSP, Knip та `rg`; committed graph/symbol/retrieval artifacts не зберігаємо.
-2. Завершені audits, initiatives і planning-документи не тримаємо у локальних archive-деревах. Історичні посилання фіксуємо permalink-ами на Git commit.
-3. Загальний entropy-wrapper і його weekly workflow прибираємо. Використовуємо прямі перевірки: Knip для dead code, docs checker для links/drift, `import/no-cycle` для dependency cycles. Специфічний dual-write residue checker лишається standalone-скриптом.
-4. `eslint-plugin-sergeant-design` перевіряє runtime-, security-, storage-, API- та domain-інваріанти. Візуальний смак лишається у design tokens, Storybook, accessibility tooling і review, а не в локальних AST-евристиках.
-5. Малий landing не використовує client router для двох pathname-гілок. Нові локальні ID використовують `crypto.randomUUID()` замість комбінацій timestamp + `Math.random()`.
+## Consequences
 
-## Наслідки
-
-- Clone і звичайні PR більше не тягнуть graph DB та каскад generated-index diffs.
-- Discovery залежить від можливостей активного harness; fallback явно задокументований і не потребує repo-specific індексу.
-- Історія завершеної роботи лишається доступною через GitHub permalink та Git history, але не бере участі у freshness/link gates.
-- Візуальні регресії ловляться ближче до результату — Storybook, browser/a11y checks і людське review; ESLint лишається сфокусованим на інваріантах із чітким false-positive budget.
-- Retired Hard Rules зберігають номери в історії, але вилучаються з активного registry; номери не перевикористовуються.
-
-## Відхилені альтернативи
-
-- **Лишити всі committed індекси як fallback.** Відхилено: саме їхня регенерація й drift становили основну вартість.
-- **Лишити archive-дерева, але виключити з lint.** Відхилено: дублювання Git history та навігаційний шум залишилися б.
-- **Перенести всі visual rules у warning.** Відхилено: warning-и продовжили б підтримувати складний AST-код без надійного сигналу якості.
+New tooling must not restore a second committed knowledge graph or a local
+archive hierarchy. A document that is removed from the working tree needs its
+inbound links changed to a verified permalink or a current canonical document;
+otherwise the link checker will correctly surface debt.

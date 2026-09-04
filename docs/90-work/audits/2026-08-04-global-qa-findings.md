@@ -1,10 +1,10 @@
 # Глобальна браузерна QA: знахідки
 
-> **Last touched:** 2026-08-08 by @claude. **Next review:** 2027-09-17.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-07.
 > **Status:** Active
 
 Журнал знахідок прогону за
-[`2026-08-04-global-qa-plan.md`](./2026-08-04-global-qa-plan.md).
+[`2026-08-04-global-qa-plan.md`](https://github.com/SkOrDs-02/sergeant/blob/77c540d0167180e8a27ca98444be7ed4f576b370/docs/90-work/audits/2026-08-04-global-qa-plan.md).
 Середовище: локальний стек (PG16+pgvector 0.8.0, dev:server, dev:web), headless
 Chromium. Акаунти A1–A5 створені через UI signup.
 

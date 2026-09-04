@@ -185,7 +185,7 @@ grep -rn "kopiyk\|валют\|expense\|transaction" apps/server/src/modules/impo
 
 - Фінансова гілка (виписки, скріни банкінгу, чеки пачкою): [`specs/receipt-scan.md`](../planning/specs/receipt-scan.md) § «Фаза 2 — Масове ведення» — власник поверхні, тут відвантажено.
 - Кардіо через Strava: [`specs/strava-integration.md`](../planning/specs/strava-integration.md) — API-шлях, не файловий імпорт.
-- Доповнює: [0010-revenue-first-launch](./0010-revenue-first-launch.md) (activation після онбордингу).
+- Доповнює: [0010-revenue-first-launch](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) (activation після онбордингу).
 - Патерн-донор: Monobank-модуль ([`apps/server/src/modules/mono/`](../../../apps/server/src/modules/mono)) — ідемпотентний UPSERT, токен-шифрування, resilient HTTP.
 - Плейбук: [`docs/00-start/playbooks/onboard-external-api.md`](../../00-start/playbooks/onboard-external-api.md) — для майбутніх API-інтеграцій.
 - Skill: `sergeant-monorepo-boundaries` (рефактор меж модулів), далі `sergeant-server-api`.
