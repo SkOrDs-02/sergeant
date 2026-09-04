@@ -3,7 +3,7 @@
 > **Last touched:** 2026-09-03 by @claude (Фаза 1 реалізована — `posthogAi.ts`, тумблер `POSTHOG_AI_OBSERVABILITY_KEY`). **Next review:** 2027-03-14.
 > **Status:** In progress (2026-09-03) — Фаза 1 у коді (див. § Прогрес), Фаза 2 не почата. Фази 1–2 виконуються без рішень власника; Фаза 3 (LLM-judge evals) чекає рішень — див. § Відкриті рішення.
 > **Agent-ready:** yes
-> **Priority:** P2 (не блокер launch-у [0010](./0010-revenue-first-launch.md); без цього AI-шар лишається чорною скринькою на рівні розмов — дебаг скарг і контроль якості коуча зараз неможливі)
+> **Priority:** P2 (не блокер launch-у [0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md); без цього AI-шар лишається чорною скринькою на рівні розмов — дебаг скарг і контроль якості коуча зараз неможливі)
 > **Owner:** `@SkOrDs-02`
 > **ETA:** Фаза 1 ≈ 0.5 спринту; Фаза 2 ≈ 0.5 спринту; Фаза 3 — після рішень власника
 > **Sources:**

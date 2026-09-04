@@ -432,7 +432,7 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
 
 ### Залишки Спринту 10: `/app`-роутинг і контракт i18n
 
-**Перенесено 2026-08-27** із [`planning/sprint-9-10-plan-2026.md`](../planning/sprint-9-10-plan-2026.md) при закритті того трекера: вікно спринту (2026-07-07 – 2026-08-01) завершилось, а два пункти лишились відкритими. Обидва звірені з HEAD у момент переносу — це не переписані з плану твердження, а заміряний стан.
+**Перенесено 2026-08-27** із [`planning/sprint-9-10-plan-2026.md`](https://github.com/SkOrDs-02/sergeant/blob/ef890478b6167ce3965e5ce8035ec3fa9fc412cd/docs/90-work/planning/sprint-9-10-plan-2026.md) при закритті того трекера: вікно спринту (2026-07-07 – 2026-08-01) завершилось, а два пункти лишились відкритими. Обидва звірені з HEAD у момент переносу — це не переписані з плану твердження, а заміряний стан.
 
 1. **S10-R1 — Hub не перенесено на `/app/`.** У [`core/app/router.tsx`](../../../apps/web/src/core/app/router.tsx) верхній маршрут лишається `/`, під ним `finyk/*`, `fizruk/*`, `nutrition/*`, `routine/*`, `insights/*`, `settings/*`, `onboarding/*`. Auth-гейт тримається на conditional render у корені, а не на межі роуту. Решта S10-R1 (LandingPage, `LANDING_VIEWED`/`LANDING_EMAIL_CAPTURED`, WaitlistForm, OpenGraph/Twitter-мета в PR #505) відвантажена — лишився рівно цей шматок.
 
@@ -606,7 +606,7 @@ dark:text-brand` — пара-нуль, обидва класи віддають
 **Заведено 2026-08-05** після PR «типографіка тексту» (Фінік → Огляд). Правила
 й обґрунтування — `docs/05-design/design/anti-slop-strategy.md` §4, підрозділ
 «Суміжне: типографіка тексту»; мокап —
-[`mockups/product/text-typography.html`](../../../mockups/product/text-typography.html).
+[`mockups/product/text-typography.html`](https://github.com/SkOrDs-02/sergeant/blob/92535df3d7582d91daf35fee1bdc8604d2e73bfc/mockups/product/text-typography.html).
 
 **Чому це борг.** Шкала з восьми ролей існує, але застосунок нею майже не
 користується: **84% усього тексту в `apps/web` набрано двома найдрібнішими
@@ -624,7 +624,7 @@ dark:text-brand` — пара-нуль, обидва класи віддають
 природа:
 
 1. **Кікери — колір і риска замість `uppercase`.** ✅ **Зроблено 2026-08-06**
-   (рішення власника на [`mockups/product/kickers.html`](../../../mockups/product/kickers.html),
+   (рішення власника на [`mockups/product/kickers.html`](https://github.com/SkOrDs-02/sergeant/blob/92535df3d7582d91daf35fee1bdc8604d2e73bfc/mockups/product/kickers.html),
    варіант A: речення + колір + 2px смужка).
 
    Оцінка «92 незалежні вживання» була завищена так само, як колись оцінка
@@ -725,7 +725,7 @@ dark:text-brand` — пара-нуль, обидва класи віддають
 
 **Закрито окремо:** трекінг `text-style-display` −0.03em → −0.012em
 (калібрування під кирилицю) — рішення власника 2026-08-05 на матеріалі
-[`mockups/product/display-tracking.html`](../../../mockups/product/display-tracking.html),
+[`mockups/product/display-tracking.html`](https://github.com/SkOrDs-02/sergeant/blob/92535df3d7582d91daf35fee1bdc8604d2e73bfc/mockups/product/display-tracking.html),
 застосовано в тому ж PR. З 19 місць із роллю `display` лише 4 містять слова,
 решта — числа, тож глобальність зміни менша, ніж здавалась із формулювання.
 
@@ -1673,7 +1673,7 @@ N / 13 packages` у markdown-output (видно у `$GITHUB_STEP_SUMMARY`).
    `modules/nutrition/`, `shared/components/` (≥6 PR per module).
 
 Спліт `apps/server` + `apps/web` бажано розводити в часі від великих
-[`0010-revenue-first-launch`](../initiatives/0010-revenue-first-launch.md)
+[`0010-revenue-first-launch`](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)
 Stripe/auth/paywall PR-ів — конфлікти merge будуть болючі. Phase 6a
 закінчується одночасно з або після 0010 Phase 4 (auth migration).
 

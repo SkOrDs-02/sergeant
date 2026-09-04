@@ -3,7 +3,7 @@
 > **Last touched:** 2026-06-02 by Devin. **Next review:** 2026-09-27.
 > **Status:** Active
 
-> Single source of truth для серверного episodic-memory store (`ai_memories` table з migration 025) — ingestion, recall, backfill. Не плутати з local-first Memory Bank (ADR-0021) — той зберігає user-fact strings.
+> Single source of truth для серверного episodic-memory **індексу** (`ai_memories` table з migration 025) — ingestion, recall, backfill. Не плутати з фактами профілю: локальний Memory Bank — кеш/редактор, `user_profile` JSONB — їхня істина, а `source='profile'` у `ai_memories` — похідний RAG-індекс (ADR-0021).
 
 ## Modules
 

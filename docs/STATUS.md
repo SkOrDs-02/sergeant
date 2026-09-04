@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-03 by docs:gen-status. **Next review:** 2026-09-10.
+> **Last touched:** 2026-09-04 by docs:gen-status. **Next review:** 2026-09-11.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -30,14 +30,14 @@
 - [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
 
-## 🔵 В роботі — 63 відкриті документи
+## 🔵 В роботі — 57 відкритих документів
 
 | Трекер                           | Відкрито |
 | -------------------------------- | -------- |
-| Ініціативи                       | 4        |
-| Планування                       | 22       |
+| Ініціативи                       | 3        |
+| Планування                       | 20       |
 | Launch / запуск                  | 12       |
-| Аудити й прожарки                | 20       |
+| Аудити й прожарки                | 17       |
 | Security hardening               | 1        |
 | Техборг                          | 4        |
 | Superpowers — плани впровадження | 0        |
@@ -48,10 +48,10 @@
 - [`90-work/tech-debt/frontend.md`](./90-work/tech-debt/frontend.md) — Frontend Tech Debt — Sergeant Web — Active _(Техборг)_
 - [`90-work/tech-debt/backend.md`](./90-work/tech-debt/backend.md) — Backend Tech Debt Inventory — Active _(Техборг)_
 - [`90-work/tech-debt/mobile.md`](./90-work/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Техборг)_
-- [`90-work/initiatives/0010-revenue-first-launch.md`](./90-work/initiatives/0010-revenue-first-launch.md) — 0010 — Revenue-first launch: ship paid, focus wedge — In progress _(Ініціативи)_
 - [`01-product/launch/product-os/ftux-master-tracker.md`](./01-product/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Launch / запуск)_
 - [`01-product/launch/phases/02-capacitor-launch.md`](./01-product/launch/phases/02-capacitor-launch.md) — Phase 2 — Capacitor launch roadmap with users — Active — research deliverable for the parent launch program. _(Launch / запуск)_
 - [`90-work/audits/2026-08-05-orphaned-code-audit.md`](./90-work/audits/2026-08-05-orphaned-code-audit.md) — Аудит сиротілого коду, елементів і таблиць — 2026-08-05 — Active _(Аудити й прожарки)_
+- [`90-work/planning/specs/routine-flexible-weekly-frequency.md`](./90-work/planning/specs/routine-flexible-weekly-frequency.md) — Звичка «N разів на тиждень» без фіксованих днів — In progress — лишилось 2 хвости: нагадування для гнучкої звички не замовкають після добраної норми (клас А — `reminders/ _(Планування)_
 
 ## ⏭️ Наступний крок / заблоковано
 

@@ -1,124 +1,28 @@
-# ADR-0062: OpenAPI spec source-of-truth — code-first (Zod → OpenAPI)
+# ADR-0062: API contract source of truth — code-first Zod/OpenAPI
 
 - **Status:** Accepted
 - **Date:** 2026-06-05
-- **Last validated:** 2026-06-05 by Skords-01. **Next review:** 2026-09-05.
+- **Last validated:** 2026-09-04 by @codex
+- **Next review:** 2027-03-04
 - **Deciders:** @Skords-01
 - **Supersedes:** —
-- **Related:** [ADR-0053](./0053-api-versioning-policy.md) (API versioning), [ADR-0025](./0025-openapi-generation.md) (zod→OpenAPI generator — цей ADR підтверджує code-first як канонічне SoT, не суперечить 0025), PR-23 у [`docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-23-openapi-contract-tests.md)
-
----
-
-> **Часткове відкликання 2026-08-06.** Рішення про code-first source-of-truth
-> лишається чинним. Відкликано лише другу половину — **шар згенерованих
-> TypeScript-типів** (`generated/openapi.d.ts` + `api:*-openapi-types`): за
-> весь час існування він не набув жодного споживача, `OpenApiPaths` /
-> `OpenApiComponents` / `OpenApiOperations` ніде не імпортувались, тож його
-> прибрано. Єдина public surface контракту — рукописні типи в
-> `packages/api-client/src/endpoints/*` (Hard Rule #3). Причина й шлях назад
-> — [`docs/02-engineering/api/README.md`](../../02-engineering/api/README.md).
-> Згадки видаленого файла нижче лишені навмисно: ADR — запис рішення на
-> свою дату, а не опис поточного дерева.
-
-## Context and Problem Statement
-
-Sergeant API має один задокументований контракт (`docs/02-engineering/api/openapi.json`) і згенеровані
-TypeScript-типи (`packages/api-client/src/generated/openapi.d.ts`) <!-- removed -->, на які спираються web- і
-mobile-клієнти. Питання: **що є source-of-truth** для цього контракту — рукописний OpenAPI-spec
-чи runtime Zod-схеми сервера?
-
-Основний ризик за рукописного spec-у: він тихо **drift-ить** проти реальної runtime-поведінки
-(поле перейменоване в коді, але spec / api-client лишаються старими) → silent client/server
-mismatch.
-
-Pipeline за цим рішенням **уже реалізований** (stack-pulse PR-23 Phase 1), але формального ADR не
-було: на момент написання плану слот `0056` зарезервувала «Note on next ADR»-шапка, а наступний
-merged ADR назвав себе одразу `0057`, тож `0056` лишився **sealed gap** (whitelisted у
-`KNOWN_NUMBERING_GAPS`, `scripts/docs/check-adr-graph.mjs`). ADR-и не нумеруються заднім числом —
-тому це рішення фіксується під **наступним вільним номером `0062`**, а не `0056`.
-
-## Considered Options
-
-1. **A. Code-first** — Zod-схеми у `@sergeant/shared/schemas/api` як джерело істини →
-   генерувати OpenAPI-spec + клієнтські типи з них.
-2. **B. Spec-first** — рукописний `openapi.yml` як джерело істини → генерувати Zod-схеми з нього
-   (`openapi-typescript` у зворотному напрямку).
-3. **C. Manual dual-maintenance** — тримати spec і Zod окремо, синхронізувати руками (статус-кво
-   до PR-23 — джерело drift-у).
+- **Related:** [ADR-0025](./0025-openapi-generation.md), [ADR-0053](./0053-api-versioning-policy.md), [`packages/api-client/src/endpoints/`](../../../packages/api-client/src/endpoints/), [`docs/02-engineering/api/`](../../02-engineering/api/)
 
 ## Decision
 
-Обрано **варіант A (code-first)**.
+Runtime Zod schemas and the server code that uses them are the semantic source
+of truth. The repository generates/validates the OpenAPI JSON representation
+from that code-first contract. `packages/api-client/src/endpoints/*` contains
+the maintained client-facing types and must agree with server responses and
+contract tests under Hard Rule #3.
 
-`buildOpenApiDocument()` (визначена у [`packages/shared/src/openapi/index.ts`](../../../packages/shared/src/openapi/index.ts))
-читає Zod-схеми зі `@sergeant/shared/schemas/api` і будує OpenAPI-документ. Pipeline:
-
-- **Generation:** `pnpm api:generate-openapi` (`scripts/api/generate-openapi.mjs`) → пише
-  `docs/02-engineering/api/openapi.json` (`openapi: 3.1.0`, `title: "Sergeant API"`, `version: v1`).
-  `scripts/api/generate-openapi-types.mjs` → `packages/api-client/src/generated/openapi.d.ts` <!-- removed -->
-  через `openapi-typescript`.
-- **Committed artifacts:** обидва файли в репо — single source-of-truth для documented spec і
-  згенерований diff у code review.
-- **Freshness gates:** `pnpm api:check-openapi` (`check-openapi-fresh.mjs`) і
-  `pnpm api:check-openapi-types` (`check-openapi-types-fresh.mjs`) регенерують у пам'яті й
-  порівнюють з committed-файлами; обидва в root `pnpm lint` → CI (`pnpm check`). Drift = fail PR.
-
-## Rationale
-
-- Runtime-валідація вже живе в Zod; spec-first дублював би джерело істини й повертав би drift,
-  який саме й намагаємось усунути.
-- Generated артефакти committed → зміна контракту видима у diff, рев'юер бачить її явно.
-- Freshness-gate робить «забув regen-ути» неможливим тихо проскочити.
+The previously proposed generated `openapi.d.ts` path is not a current public
+API surface and must not be described as one. Generated artifacts are outputs,
+not an excuse to edit a parallel hand-written specification first.
 
 ## Consequences
 
-### Positive
-
-- **Spec drift проти runtime — impossible:** spec генерується з тих самих Zod-схем.
-- Типобезпечні web/mobile клієнти через generated `openapi.d.ts`.
-- CI-enforced freshness (`api:check-openapi*`).
-
-### Negative
-
-- `zod-to-openapi` мапінг має межі — складні `.refine()` / `.superRefine()` не завжди повністю
-  відображаються в spec; такі випадки документуються point-wise.
-- Артефакти треба regen-ити після зміни схем (gate ловить пропуск, але це додатковий крок).
-
-### Neutral
-
-- Runtime-поведінка сервера не змінюється — це чисто build/CI-рівень.
-
-## Compliance
-
-`pnpm api:check-openapi` + `pnpm api:check-openapi-types` зелені в CI; `docs/02-engineering/api/openapi.json` і
-`packages/api-client/src/generated/openapi.d.ts` <!-- removed --> committed і свіжі.
-
-## Scope
-
-Цей ADR фіксує **source-of-truth decision** (Rollout PR-1 у pr-23). Поза скоупом — і лишаються
-deferred, trigger-gated на перший production contract-bug:
-
-- Contract roundtrip tests (`tests/contract/openapi-roundtrip.test.ts`).
-- Schemathesis property-based testing (`.github/workflows/contract-tests.yml`).
-
-## Related ADRs
-
-- **[ADR-0025](./0025-openapi-generation.md)** — Introduced the `zod-to-openapi` infrastructure, generator script (`generate-openapi.mjs`), and CI freshness check that this ADR formalises as the canonical source-of-truth decision. ADR-0062 confirms and extends ADR-0025; it does not supersede it.
-- **[ADR-0053](./0053-api-versioning-policy.md)** — API versioning policy (`/api/v1/*` canonical URL scheme) that the OpenAPI spec documents.
-
-## Links
-
-- PR-23 spec: [`docs/90-work/initiatives/stack-pulse-2026-05/pr-23-openapi-contract-tests.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-23-openapi-contract-tests.md)
-- [zod-to-openapi](https://github.com/asteasolutions/zod-to-openapi)
-- [openapi-typescript](https://github.com/openapi-ts/openapi-typescript)
-
-<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
-
-## Recent PRs
-
-| PR                                                     | Title                                                                   | Merged     |
-| ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
-| [#689](https://github.com/Skords-01/Sergeant/pull/689) | fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого | 2026-08-07 |
-
-_Auto-derived from `docs/04-governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
-<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
+An endpoint change requires the server schema/handler, OpenAPI output, client
+types, and contract tests to move together. If a generated artifact is removed
+or regenerated, this ADR should describe the current pipeline rather than
+preserve dead file names in the decision text.

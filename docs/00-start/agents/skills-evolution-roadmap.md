@@ -5,7 +5,7 @@
 
 > **Що це.** Курований план, як еволюціонувати repo-owned skill-систему Sergeant (`.agents/skills/**`) запозичивши перевірені патерни з широкого agent-skills ecosystem-у — без розмиття існуючих 12 specialist-skill-ів і без імпорту generic-обгорток. Документ працює як roadmap для будь-якого AI-агента (Claude Code, Codex, Cursor, Gemini CLI), що візьметься за конкретний пункт.
 
-> **Не ініціатива в `docs/90-work/initiatives/`** через [audit-freeze 2026-05-05 → 2026-06-02](../../04-governance/governance/audit-freeze-2026-05-05.md). Якщо post-freeze команда вирішить підняти це в формальну initiative-у з owner-ом і ETA — створити `docs/90-work/initiatives/00NN-skills-evolution.md` і перенести скоуп туди; цей файл тоді стає секцією `## Sources` в новій initiative-і. До того часу — це **discovery roadmap**, не зобов'язання.
+> **Не ініціатива в `docs/90-work/initiatives/`** через [audit-freeze 2026-05-05 → 2026-06-02](https://github.com/SkOrDs-02/sergeant/blob/4da4557c5cadb298f889fbea3d7457f71bd223ee/docs/04-governance/governance/audit-freeze-2026-05-05.md). Якщо post-freeze команда вирішить підняти це в формальну initiative-у з owner-ом і ETA — створити `docs/90-work/initiatives/00NN-skills-evolution.md` і перенести скоуп туди; цей файл тоді стає секцією `## Sources` в новій initiative-і. До того часу — це **discovery roadmap**, не зобов'язання.
 
 > **Що ми НЕ робимо.** Не запускаємо `npx @agentskill.sh/cli@latest setup`. Не ставимо generic-скіли у `.claude/skills/`. Не дублюємо `agentskills.io` open standard 1:1 — наш `lang`/`lang-reason` frontmatter і UA/EN bilingual routing-формат лишаються (PR [#1848](https://github.com/Skords-01/Sergeant/pull/1848)). Це строго **import-of-patterns**, не **import-of-content**.
 
@@ -448,4 +448,4 @@ PR проходить у roadmap, якщо він задовольняє всі 
 - [`docs/00-start/agents/README.md`](./README.md) — індекс agent-OS docs.
 - [`docs/00-start/agents/agent-skills-catalog.md`](./agent-skills-catalog.md) — поточна skill-routing таблиця.
 - [`docs/90-work/initiatives/archive/_0009-agent-os-hardening.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md) — попередня agent-OS initiative-а (closed 2026-05-05).
-- [`docs/04-governance/governance/audit-freeze-2026-05-05.md`](../../04-governance/governance/audit-freeze-2026-05-05.md) — чому це не initiative.
+- [Audit freeze 2026-05-05](https://github.com/SkOrDs-02/sergeant/blob/4da4557c5cadb298f889fbea3d7457f71bd223ee/docs/04-governance/governance/audit-freeze-2026-05-05.md) — чому це не initiative.

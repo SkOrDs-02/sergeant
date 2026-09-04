@@ -1,6 +1,6 @@
 # Lighthouse CI — perf-budget gate
 
-> **Last touched:** 2026-08-05 by @claude. **Next review:** 2026-11-15.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-22.
 > **Status:** Active
 
 ## Призначення
@@ -52,4 +52,4 @@ Reports падають у `apps/web/.lighthouseci/` (gitignored).
 ## Джерела
 
 - [`apps/web/AGENTS.md § Lighthouse CI`](../../../apps/web/AGENTS.md#lighthouse-ci-perf-budget-gate) — повний surface-specific опис (routes, gotchas, E2E-заміна для `/routine`).
-- [`docs/90-work/planning/sprint-9-10-plan-2026.md`](../../90-work/planning/sprint-9-10-plan-2026.md) § S10-T3.
+- [`docs/90-work/planning/sprint-9-10-plan-2026.md`](https://github.com/SkOrDs-02/sergeant/blob/ef890478b6167ce3965e5ce8035ec3fa9fc412cd/docs/90-work/planning/sprint-9-10-plan-2026.md) § S10-T3.

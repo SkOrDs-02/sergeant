@@ -3,7 +3,7 @@
 > **Last touched:** 2026-09-03 by @claude (PR-1 landed — перезамір + звуження `ALLOWED_MEMORY_SOURCES`). **Next review:** 2027-03-12.
 > **Status:** In progress — PR-1 змержено 2026-09-03 (§ Перезамір нижче). PR-2 (kill-switch rename) і PR-3 (міграція 128) лишаються, порядок обовʼязковий (§ План змін).
 > **Agent-ready:** yes
-> **Priority:** P2 (не блокер launch-у [0010](./0010-revenue-first-launch.md); псує якість AI-шару і вводить в оману ops-документи)
+> **Priority:** P2 (не блокер launch-у [0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md); псує якість AI-шару і вводить в оману ops-документи)
 > **Owner:** `@SkOrDs-02`
 > **ETA:** PR-1 ≈ 0.5 спринту, PR-2 ≈ 0.2, PR-3 ≈ 0.2 + операторський замір між PR-2 і PR-3
 > **Sources:**

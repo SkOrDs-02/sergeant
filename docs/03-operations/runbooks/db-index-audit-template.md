@@ -1,6 +1,6 @@
 # DB index audit — template
 
-> **Last touched:** 2026-05-13 by Devin. **Next review:** 2026-09-03.
+> **Last touched:** 2026-09-04 by Codex (cadence renewal). **Next review:** 2026-12-03.
 > **Status:** Active (template only)
 
 Цей файл — **template** для one-time index-audit snapshot-ів проти

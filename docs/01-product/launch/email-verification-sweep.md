@@ -1,6 +1,6 @@
 # Email-verification soft-gate sweep plan — legacy unverified users
 
-> **Last touched:** 2026-08-08 by @claude. **Next review:** 2027-09-25.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-15.
 > **Status:** Active
 
 | Field          | Value                                                                                                                                                                                             |
@@ -144,7 +144,7 @@ Cons:
 
 ## Implementation plan (післяласунчевий, мікро-ініціатива)
 
-> Цей doc — не implementation plan, це decision-doc. Implementation відкриється окремою мікро-ініціативою (`0011a-email-verification-sweep.md` або incorporated у [`0010-revenue-first-launch`](../../90-work/initiatives/0010-revenue-first-launch.md) Phase 4 post-launch hardening, рішення — за `@Skords-01`).
+> Цей doc — не implementation plan, це decision-doc. Implementation відкриється окремою мікро-ініціативою (`0011a-email-verification-sweep.md` або incorporated у [`0010-revenue-first-launch`](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) Phase 4 post-launch hardening, рішення — за `@Skords-01`).
 
 | Фаза | Скоуп                                                        | Surface(s)                                        | Effort | Gate                                                              |
 | ---- | ------------------------------------------------------------ | ------------------------------------------------- | ------ | ----------------------------------------------------------------- |
@@ -192,6 +192,6 @@ ETA повного циклу: ~6 робочих днів implementation + 14+ �
 - Pen-test playbook: [`docs/00-start/playbooks/security-pen-test-checklist.md`](../../00-start/playbooks/security-pen-test-checklist.md)
 - Better Auth wiring: [`apps/server/src/auth.ts`](../../../apps/server/src/auth.ts)
 - Initiative 0011: [`docs/90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md)
-- Initiative 0010 (revenue-first launch, sets the launch-window): [`docs/90-work/initiatives/0010-revenue-first-launch.md`](../../90-work/initiatives/0010-revenue-first-launch.md)
+- Initiative 0010 (revenue-first launch, sets the launch-window): [`docs/90-work/initiatives/0010-revenue-first-launch.md`](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)
 - Deploy-config-change playbook (для Phase E env flip): [`docs/00-start/playbooks/deploy-config-change.md`](../../00-start/playbooks/deploy-config-change.md)
 - Launch readiness checklist (sweep — evidence для readiness gate): [`docs/01-product/launch/business/04-launch-readiness.md`](./business/04-launch-readiness.md)

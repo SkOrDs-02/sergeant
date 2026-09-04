@@ -1,103 +1,28 @@
-# ADR-0084: Топологія агентного шару як перевірюваний граф
+# ADR-0084: Verifiable agent-topology graph
 
 - **Status:** Accepted
-- **Last validated:** 2026-08-05 by @Skords-01. **Next review:** 2026-11-03.
 - **Date:** 2026-08-05
+- **Last validated:** 2026-09-04 by @codex
+- **Next review:** 2027-03-04
 - **Deciders:** @Skords-01
 - **Supersedes:** —
-- **Related:**
-  - [`.agents/agent-graph.json`](../../../.agents/agent-graph.json) — сам граф.
-  - [`scripts/check-agent-graph.mjs`](../../../scripts/check-agent-graph.mjs) — валідатор, `pnpm lint:agent-graph`.
-  - [`docs/00-start/agents/agent-skills-catalog.md`](../../00-start/agents/agent-skills-catalog.md) § Agent graph.
-  - [ADR-0075](./0075-openclaw-gateway-decommissioned.md) — decommission, чиї недочищені хвости мотивували цей ADR.
-  - [ADR-0081](./0081-repository-simplification.md) — retire правил, чиї номери лишились у тілах агентів.
+- **Related:** [`.agents/agent-graph.json`](../../../.agents/agent-graph.json), [`scripts/check-agent-graph.mjs`](../../../scripts/check-agent-graph.mjs), [ADR-0081](./0081-repository-simplification.md)
 
----
+## Decision
 
-## 0. TL;DR
+`.agents/agent-graph.json` is the machine-checked declaration of the intended
+agent layer: skills, agents, workspaces, and allowed transitions. The
+`pnpm lint:agent-graph` gate validates that declared intent against the files
+on disk and catches dangling references, missing terminal paths, and orphaned
+surfaces.
 
-Склад і зв'язки агентного шару (які скіли, які агенти, хто кого викликає, хто що
-верифікує) описані **явно** у `.agents/agent-graph.json` і звіряються з диском
-гейтом `pnpm lint:agent-graph`. Проза-роутинг лишається для людей; машинна правда —
-у графі.
+This topology graph is deliberately different from the codebase-memory graph:
+the former expresses governance intent for the agent system; the latter is a
+tool-provided map of code symbols and relationships. Neither replaces the
+other, and only the topology graph is committed to this repository.
 
-## 1. Контекст
+## Consequences
 
-Аудит агентного шару (2026-08-05) пройшов 23 скіли і 17 агент-визначень при
-повністю зеленому `pnpm lint:skills`. Формальні гейти — frontmatter, SHA-256 lock,
-security-scan, 92 trigger-eval — не побачили жодної з таких знахідок:
-
-| Знахідка                                                                                     | Тип дефекту в термінах графа |
-| -------------------------------------------------------------------------------------------- | ---------------------------- |
-| `sergeant-qa-squad` і workflow §9 кликали `qa-openclaw` — агента, видаленого ADR-0075        | висяче ребро                 |
-| `skill-mapping.json` роутив `docs/**` на скіл `"docs"`, якого не існує                       | висяче ребро                 |
-| `apps/landing` — 0 згадок у всіх 20 файлах агентного шару                                    | вузол-сирота                 |
-| 11 `packages/*` з тестами (включно з contract-тестами Hard Rule #3) не запускав жоден runner | вузол-сирота                 |
-| `sergeant-deliver-squad` завершувався stage 4 без переходу у верифікацію                     | відсутнє термінальне ребро   |
-| `CLAUDE.md` роутив на неіснуючий `sergeant-openclaw`                                         | висяче ребро                 |
-
-Спільна риса: **жоден із дефектів не є помилкою всередині файлу**. Кожен файл
-окремо валідний; ламаються саме _зв'язки між_ ними. Лінтер, що перевіряє файли
-поодинці, такий клас дефектів побачити не може в принципі.
-
-Це збігається з тим, що в індустрії 2026-го називають **graph engineering** —
-шар, який координує prompt/context/harness/loop engineering: вузли (агенти,
-детерміновані функції, роутери, людські чекпойнти) і дозволені переходи між ними.
-
-## 2. Розглянуті варіанти
-
-1. **Статус-кво: проза + рев'ю.** Роутинг-таблиці в `AGENTS.md`, spawn-рецепти
-   всередині squad-скілів, ростери, переказані в доках. Саме ця схема породила всі
-   6 дефектів вище і не помітила їх ~3 місяці.
-2. **Генерувати граф із диска повністю.** Нуль дрейфу, але й нуль інтенції:
-   згенерований граф не може сказати, що `apps/landing` **мусить** мати runner —
-   він лише зафіксує, що runner-а нема.
-3. **Явний граф + валідатор проти диска (обрано).** Файл декларує **намір**
-   (топологію та інваріанти покриття), скрипт звіряє його з **реальністю**
-   (`.agents/skills/`, `.claude/agents/`, workspace-и, `skill-mapping.json`).
-   Розбіжність — помилка лінта, а не тиха гниль.
-
-## 3. Рішення
-
-`.agents/agent-graph.json` — hand-maintained джерело топології:
-
-- **Вузли:** `workspace` (6 поверхонь із тестами), `skill` (23), `agent` (19).
-  Кожен agent-вузол несе `role`: `implementer` / `reviewer` / `runner` / `advisor`.
-- **Ребра:** `governs` (скіл володіє поверхнею), `verifies` (runner доводить
-  поверхню), `dispatches` (squad → агент), `handoff` (агент → агент, з `stage`
-  і **типізованим `payload`**), `terminates` (ланцюг → верифікація), `escalates`
-  (скіл → скіл).
-
-`pnpm lint:agent-graph` (вмонтовано в `pnpm lint:skills`) падає на:
-
-1. висячому ребрі — `from`/`to` без вузла;
-2. розбіжності граф ↔ диск в обидва боки (вузол без файлу і файл без вузла);
-3. `workspace` із тестами без жодного `verifies`-ребра;
-4. `workspace` без власника (`governs`);
-5. порушенні least-privilege — `reviewer`/`runner`/`advisor` із `Write`/`Edit`/`NotebookEdit`;
-6. `name` у frontmatter ≠ ім'я файлу ≠ id вузла;
-7. `handoff` без `stage` або без `payload`, або поза ростером свого squad-у;
-8. `deliver-squad` без термінального ребра у верифікацію;
-9. `skill-mapping.json`, що вказує на неіснуючий скіл;
-10. згадці видаленої поверхні (`tools/openclaw`, `qa-openclaw`, …) без позначки «retired» — це **warning**, не блокер.
-
-Валідатор перевірено RED-first: кожен із п'яти головних інваріантів був штучно
-зламаний і дав очікувану помилку до того, як граф став зеленим.
-
-## 4. Наслідки
-
-**Позитивні.** Клас дефектів «валідні файли, зламані зв'язки» стає механічно
-неможливим до мержу. Додавання агента без вузла — червоний CI, тож граф не може
-відстати від реальності непоміченим. Least-privilege перестає бути домовленістю і
-стає гейтом. Типізовані `payload` на `handoff`-ребрах фіксують контракт передачі
-між стадіями deliver-ланцюга.
-
-**Ціна.** Ще один файл, який треба оновлювати разом зі скілами й агентами — це
-свідомий обмін: вартість оновлення платиться в момент зміни, а не через три
-місяці у вигляді агента, що кличе неіснуючий вузол.
-
-**Межі.** Граф описує **топологію**, не поведінку: він не перевіряє, що тіло
-агента написане правильно (це `check-skill-shape`, `check-skill-body-security`,
-рев'ю). Codex-шар (`.codex/agents/*.toml`) поки не покритий вузлами — його склад
-відрізняється (немає `qa-packages`), і зведення двох харнесів в один граф лишається
-відкритим питанням.
+When a skill, agent, workspace, or allowed transition changes, update the graph
+and its validator-backed tests in the same change. Do not add a code-symbol
+index to the repository to solve agent-routing questions.

@@ -1,6 +1,6 @@
 # Secret Ownership Register
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-11-08.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-15.
 > **Status:** Active
 
 Operational metadata registry for secrets and privileged system credentials in Sergeant. This register documents ownership and blast radius, never secret values.
@@ -41,7 +41,7 @@ Operational metadata registry for secrets and privileged system credentials in S
 - Fail-режим: provider-cancel уже best-effort. Purge мусить писати `purge_failed` у audit-журнал і алертити, а не тихо ковтати помилку.
 
 **Owner:** Founder (заведення ключів) + Dev (реалізація purge-шляху).
-**Трекер:** § 1.4 у [`04-launch-readiness.md`](../../01-product/launch/business/04-launch-readiness.md); блок «Privacy and data-rights operations» у [`ai-coding-improvements.md`](../../90-work/planning/ai-coding-improvements.md).
+**Трекер:** § 1.4 у [`04-launch-readiness.md`](../../01-product/launch/business/04-launch-readiness.md); блок «Privacy and data-rights operations» у [`ai-coding-improvements.md`](https://github.com/SkOrDs-02/sergeant/blob/17bdf33c4ee6e1d6fd25e9d3b3267c53029a8e38/docs/90-work/planning/ai-coding-improvements.md).
 
 ## Retired secrets
 

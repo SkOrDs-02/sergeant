@@ -1,6 +1,6 @@
 # Governance
 
-> **Last touched:** 2026-08-31 by @Skords-01. **Next review:** 2026-12-24.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-15.
 > **Status:** Active
 
 Governance in Sergeant is intentionally split between human-readable policy and machine-readable enforcement.
@@ -16,7 +16,7 @@ Governance in Sergeant is intentionally split between human-readable policy and 
 - [security-incident-policy.md](./security-incident-policy.md) - access compromise classification and first-response policy.
 - [policy-review.md](./policy-review.md) and [doc-freshness.md](./doc-freshness.md) - cadence and review process.
 - [freshness-dashboard.html](./freshness-dashboard.html) - generated dashboard for tracked `Last validated` / `Next review` headers.
-- [audit-freeze-2026-05-05.md](./audit-freeze-2026-05-05.md) - completed 4-week freeze on new audit/initiative/playbook/ADR files (2026-05-05 → 2026-06-02, `Status: Closed`). The enforcing `audit-freeze.yml` workflow and the PR-template section were retired 2026-06-03.
+- [Audit freeze 2026-05-05](https://github.com/SkOrDs-02/sergeant/blob/4da4557c5cadb298f889fbea3d7457f71bd223ee/docs/04-governance/governance/audit-freeze-2026-05-05.md) - completed 4-week freeze on new audit/initiative/playbook/ADR files (2026-05-05 → 2026-06-02, `Status: Closed`). The enforcing `audit-freeze.yml` workflow and the PR-template section were retired 2026-06-03.
 - [feature-flags.md](./feature-flags.md) - operational registry of release toggles, experiments, kill switches (human-readable; code in `apps/{web,mobile}/src/core/lib/featureFlags.ts` is executable source of truth).
 - [pnpm-overrides-policy.md](./pnpm-overrides-policy.md) - правила для `pnpm.overrides`; гейт `pnpm lint:overrides`. Самі записи — у [`pnpm-overrides.md`](../../../pnpm-overrides.md).
 - [harness-versioning.md](./harness-versioning.md) - bump-правила для `.agents/harness-versions.json`.

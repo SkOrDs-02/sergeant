@@ -1,13 +1,13 @@
 # Продуктовий аудит 2026-09: тестові акаунти і наповнення
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-10-16.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-27.
 > **Status:** Active
 
 Матриця тимчасових акаунтів для прогону за [`README.md`](./README.md). Кожен
 акаунт відповідає на **своє** питання, яке інші не покривають; різниця в
 поведінці між акаунтами на одній і тій самій дії і є знахідкою.
 
-Попередники, з яких взято осі: `A1–A5` ([2026-08-04](../2026-08-04-global-qa-plan.md)),
+Попередники, з яких взято осі: `A1–A5` ([2026-08-04](https://github.com/SkOrDs-02/sergeant/blob/77c540d0167180e8a27ca98444be7ed4f576b370/docs/90-work/audits/2026-08-04-global-qa-plan.md)),
 `P1–P4` ([`profileMatrix.ts`](../../../../apps/web/tests/profiles/profileMatrix.ts)),
 `BT1–BT5` ([`beta-browser-run.md`](../../beta-launch/beta-browser-run.md)).
 Тут вони зведені в одну матрицю з чотирма осями: **стан акаунта × наповнення ×

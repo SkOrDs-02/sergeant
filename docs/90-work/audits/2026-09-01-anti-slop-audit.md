@@ -1,12 +1,12 @@
 # Анти-слоп аудит · 2026-09-01
 
-> **Last touched:** 2026-09-03 by @claude. **Next review:** 2027-10-29.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-09.
 > **Status:** Active — рішення власника ухвалено 2026-09-01 (§4а); Q3/F6 закрито для всіх трьох модулів: Їжа — PR #1014, Фізрук — PR #1021 (F1 частково — стрічка тайлів `StatusStrip`), Фінік — **PR #1025** (F1 частково — `TodaySummaryCard`/`MonthPulseCard`). Усі три рішення Q3 закриті; F1 закрито повністю 2026-09-03 (`BentoCard`, `LogCardAnalytics`, `RoutineStatsPanel` — hero-число плюс текстові рядки без боксів); відкритим лишається F7 (mobile) як окремий PR.
 
 - **Дата:** 01.09.2026, один цикл: зовнішнє дослідження → код-аудит → живий прохід → звіт.
 - **База:** `claude/canvas-claude-design-tmmuma` від `b16956d` (main після [#1000](https://github.com/SkOrDs-02/sergeant/pull/1000)).
 - **Скоуп:** `apps/web` (демо-режим, 393×852, light + dark, 14 маршрутів, 36 кадрів), `apps/landing` (7 сторінок × 393 / 1280), `apps/mobile` (лише код). Server і mobile-shell поза скоупом.
-- **Нормативи:** [`anti-slop-strategy.md`](../../05-design/design/anti-slop-strategy.md) §2–§6, [`DESIGN.md § Заборонено`](../../../DESIGN.md), [`style-guide.uk.md`](../../01-product/copy/style-guide.uk.md), уроки [`design-audit-sergeant-web.md`](../planning/prompts/design-audit-sergeant-web.md) § Уроки.
+- **Нормативи:** [`anti-slop-strategy.md`](../../05-design/design/anti-slop-strategy.md) §2–§6, [`DESIGN.md § Заборонено`](../../../DESIGN.md), [`style-guide.uk.md`](../../01-product/copy/style-guide.uk.md), уроки [`design-audit-sergeant-web.md`](https://github.com/SkOrDs-02/sergeant/blob/fcb8e9a94a89833905350ba33f8d9ab7b90b03ba/docs/90-work/planning/prompts/design-audit-sergeant-web.md) § Уроки.
 - **Метод:** (1) зібрано зовнішній консенсус про «tells» вайбкод-застосунків станом на серпень 2026 (§1); (2) кожен tell перетворено на греп або питання і прогнано по коду (§2); (3) те, що греп не бачить, перевірено живим проходом (§3); (4) відсіяно все, що вже закрито або вирішено власником у §3.2 стратегії, щоб не піднімати втретє.
 - **Кадри не комітяться** (той самий аргумент, що в аудиті 2026-07-21): десятки МБ, протухають з першим редизайном. Кожна візуальна знахідка нижче має `файл:рядок`, за яким її відтворить наступний прогін.
 
@@ -245,4 +245,4 @@ Demo-режим (`/?demo=1`), 393×852, light і dark. Артефакт dev-зб
 - [avoid-ai-design — Claude Code skill](https://github.com/funboy322/avoid-ai-design) — P0/P1/P2 класифікація, `Sparkles`/`ArrowRight`/«Get started».
 - «AI Design Slop: Why Every AI-Built Interface Looks the Same» — Mohit Phogat, Medium, 2026-08 — «2026 tell: warm cream + serif + sage green». Без лінка навмисно: Medium віддає 403 чекеру (той самий клас, що `medium.muz.li` в allowlist), а повний текст за пейволом — тезу взято з превʼю пошуку.
 
-Внутрішні: [`anti-slop-strategy.md`](../../05-design/design/anti-slop-strategy.md) · [`DESIGN.md`](../../../DESIGN.md) · [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md) · [`design-audit-sergeant-web.md`](../planning/prompts/design-audit-sergeant-web.md) · [`style-guide.uk.md`](../../01-product/copy/style-guide.uk.md) · [`product-overview.md`](../../01-product/model/product-overview.md) · [`hub-coach.md`](../../01-product/model/hub-coach.md).
+Внутрішні: [`anti-slop-strategy.md`](../../05-design/design/anti-slop-strategy.md) · [`DESIGN.md`](../../../DESIGN.md) · [`2026-07-21-design-audit.md`](./2026-07-21-design-audit.md) · [`design-audit-sergeant-web.md`](https://github.com/SkOrDs-02/sergeant/blob/fcb8e9a94a89833905350ba33f8d9ab7b90b03ba/docs/90-work/planning/prompts/design-audit-sergeant-web.md) · [`style-guide.uk.md`](../../01-product/copy/style-guide.uk.md) · [`product-overview.md`](../../01-product/model/product-overview.md) · [`hub-coach.md`](../../01-product/model/hub-coach.md).
