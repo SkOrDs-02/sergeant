@@ -1,6 +1,6 @@
 # Sergeant — Content Style Guide (UA)
 
-> **Last validated:** 2026-05-31 by audits-runner workflow. **Next review:** 2027-01-06.
+> **Last validated:** 2026-05-31 by audits-runner workflow. **Next review:** 2026-09-15.
 > **Status:** Active
 
 Канонічні правила tone-of-voice для всієї UA-копії в продукті — UI strings, toast-и, error messages, empty states, onboarding, FTUX, settings. Витяг із i18n-каталогу `apps/web/src/shared/i18n/uk.ts` (PR-30 / PR-31 — uxroast 2026-Q2) + урок-кейси з аудит-проходів.
