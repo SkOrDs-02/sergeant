@@ -186,8 +186,8 @@ describe("ProfilePage", () => {
     it("shows email verification banner when emailVerified is false", () => {
       mockUser.emailVerified = false;
       renderPage();
-      // Banner copy was extended in #1067 to include the suffix
-      // "— перевірте вашу поштову скриньку"; the action button was renamed
+      // Banner copy uses the canonical informal second-person suffix
+      // "перевір свою поштову скриньку"; the action button was renamed
       // from "Надіслати лист" to "Надіслати". Match the prefix via regex.
       expect(screen.getByText(/Email не підтверджено/)).toBeInTheDocument();
       expect(

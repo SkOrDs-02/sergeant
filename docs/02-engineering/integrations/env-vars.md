@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-09-03 by @claude. **Next review:** 2027-04-17.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-03.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -51,9 +51,9 @@
 - **`exp://` НЕ bound до конкретної аппки** — будь-який Expo Go застосунок на пристрої може її claim-ити, тому у production воно заборонене (закриває [hardening-карту H5](../../04-governance/security/hardening/archive/H5-trusted-origins-exp-scheme.md)).
 - Якщо змінну задати — вона **повністю** замінює дефолти (немає merge-режиму). Приклад: `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES=sergeant-staging://`.
 
-### `RESEND_API_KEY`, `RESEND_FROM` _(optional, recommended for prod)_
+### `RESEND_API_KEY`, `RESEND_FROM` _(key required in production)_
 
-Resend — транзакційні листи Better Auth (скидання пароля, верифікація email, підтвердження зміни email). Без ключа листи не відправляються; у production сервер логне попередження на старті.
+Resend — транзакційні листи Better Auth (скидання пароля, верифікація email, підтвердження зміни email). Без ключа листи не відправляються; у production сервер відмовиться стартувати, щоб UI не показував хибний успіх надсилання.
 
 - `RESEND_API_KEY=re_...`
 - `RESEND_FROM=Sergeant <noreply@yourdomain.com>` — від кого; має бути з верифікованого домену в Resend (для тесту: `onboarding@resend.dev`).
