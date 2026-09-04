@@ -1,6 +1,6 @@
 # Хостинг: Hetzner + Coolify (бекенд) + Vercel (фронт)
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2027-04-22.
+> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-18.
 > **Status:** Active — але лише Vercel-частина; Railway-секції (§1–2, §8) історичні (див. банер нижче)
 >
 > **⚠️ Hosting-частина superseded [ADR-0074](../../04-governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Railway-секції нижче (§1–2, §8) — історичний контекст доміграційного стеку; Railway config видалено, а OpenClaw повністю декомісовано [ADR-0075](../../04-governance/adr/0075-openclaw-gateway-decommissioned.md). **Актуальними залишаються** Vercel-налаштування та same-origin cookie/proxy контракт (`/api/*` через Vercel edge) з `BACKEND_URL` на Coolify API.
@@ -23,19 +23,19 @@
 
 3. У **Variables** додай:
 
-| Змінна                           | Значення                                                                                                                                                                                                   |
-| -------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                   | **Reference** до змінної Postgres-сервісу: ` ${{ Postgres.DATABASE_URL }}` або встав вручну скопійований рядок                                                                                             |
-| `BETTER_AUTH_SECRET`             | Випадковий рядок ≥32 символів                                                                                                                                                                              |
-| `BETTER_AUTH_URL`                | Публічний HTTPS URL **цього API** після деплою, напр. `https://hub-api-production.up.railway.app` (без слеша в кінці)                                                                                      |
-| `ANTHROPIC_API_KEY`              | Ключ Claude                                                                                                                                                                                                |
-| `PORT`                           | Зазвичай Railway підставляє сам; якщо треба — `3000`                                                                                                                                                       |
-| `ALLOWED_ORIGINS`                | URL фронту на Vercel, напр. `https://твій-проєкт.vercel.app` (через кому, якщо кілька)                                                                                                                     |
-| `RESEND_API_KEY`                 | Опційно, але для листів скидання пароля / верифікації email — ключ [Resend](https://resend.com). Без нього бекенд стартує з warn у логах. Опційно `RESEND_FROM` (відправник з верифікованого домену).      |
-| `BETTER_AUTH_CROSS_SITE_COOKIES` | Опційно: `0` — не форсити `SameSite=None` (рідко: один домен через reverse proxy). Якщо не задано, при `BETTER_AUTH_URL` на **https://** кукі налаштовуються для крос-сайтового фронта (Vercel → Railway). |
-| `SENTRY_DSN`                     | DSN бекенд-проєкту в Sentry (платформа Node.js). Без цієї змінної `apps/server/src/sentry.ts` стає no-op і помилки не їдуть у Sentry — alert routing у n8n не зрабує. Див. §7.                             |
-| `SENTRY_ENVIRONMENT`             | Опційно: `production` / `staging`. Дефолт — `NODE_ENV`.                                                                                                                                                    |
-| `SENTRY_TRACES_SAMPLE_RATE`      | Опційно: `0..1`. Дефолт `0.1`. `0` явно вимикає трейсинг.                                                                                                                                                  |
+| Змінна                           | Значення                                                                                                                                                                                                                                               |
+| -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `DATABASE_URL`                   | **Reference** до змінної Postgres-сервісу: ` ${{ Postgres.DATABASE_URL }}` або встав вручну скопійований рядок                                                                                                                                         |
+| `BETTER_AUTH_SECRET`             | Випадковий рядок ≥32 символів                                                                                                                                                                                                                          |
+| `BETTER_AUTH_URL`                | Публічний HTTPS URL **цього API** після деплою, напр. `https://hub-api-production.up.railway.app` (без слеша в кінці)                                                                                                                                  |
+| `ANTHROPIC_API_KEY`              | Ключ Claude                                                                                                                                                                                                                                            |
+| `PORT`                           | Зазвичай Railway підставляє сам; якщо треба — `3000`                                                                                                                                                                                                   |
+| `ALLOWED_ORIGINS`                | URL фронту на Vercel, напр. `https://твій-проєкт.vercel.app` (через кому, якщо кілька)                                                                                                                                                                 |
+| `RESEND_API_KEY`                 | Обовʼязково в production: ключ [Resend](https://resend.com) для листів скидання пароля / верифікації email. Без нього бекенд не стартує, щоб endpoint не підтверджував недоставлений лист. Опційно `RESEND_FROM` (відправник з верифікованого домену). |
+| `BETTER_AUTH_CROSS_SITE_COOKIES` | Опційно: `0` — не форсити `SameSite=None` (рідко: один домен через reverse proxy). Якщо не задано, при `BETTER_AUTH_URL` на **https://** кукі налаштовуються для крос-сайтового фронта (Vercel → Railway).                                             |
+| `SENTRY_DSN`                     | DSN бекенд-проєкту в Sentry (платформа Node.js). Без цієї змінної `apps/server/src/sentry.ts` стає no-op і помилки не їдуть у Sentry — alert routing у n8n не зрабує. Див. §7.                                                                         |
+| `SENTRY_ENVIRONMENT`             | Опційно: `production` / `staging`. Дефолт — `NODE_ENV`.                                                                                                                                                                                                |
+| `SENTRY_TRACES_SAMPLE_RATE`      | Опційно: `0..1`. Дефолт `0.1`. `0` явно вимикає трейсинг.                                                                                                                                                                                              |
 
 4. У **Networking** увімкни **Public networking**, скопіюй домен — це і є база для `BETTER_AUTH_URL`.
 5. Задеплой. У логах після старту має бути `[db] Schema verified` і (якщо є `SENTRY_DSN`) `{"msg":"sentry_initialized",...}`.
