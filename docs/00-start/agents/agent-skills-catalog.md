@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last touched:** 2026-09-03 by @claude. **Next review:** 2026-12-25.
+> **Last touched:** 2026-09-05 by @Skords-01. **Next review:** 2026-12-28.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.
@@ -21,6 +21,8 @@ Skill-trigger eval-и живуть у [`skill-trigger-evals.json`](./skill-trigg
 Гейти введено initiative-ою [`0009-agent-os-hardening`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md) PR 1.1 ([#1659](https://github.com/Skords-01/Sergeant/pull/1659)). `skill-freshness.yml` тепер запускає той самий `pnpm lint:skills` як required-чек на PR. Без оновленого lock-у CI падає з посиланням на `pnpm skills:lock`.
 
 ## Active Skills
+
+Повторні продуктові перевірки використовують [комплекти верифікації](../../02-engineering/testing/verification/README.md): каталог сценаріїв, профілі акаунтів і журнал прогонів. Це спільні артефакти для owner-, E2E-, QA- та review-агентів. Перед новим прогоном прочитай попередній handoff; статуси знахідок оновлюй у [реєстрі](../../90-work/audits/verification/README.md), не у паралельному списку старого аудиту.
 
 | Skill                                                                                                     | Use for                                                          | Enforces                                                                                                                            |
 | --------------------------------------------------------------------------------------------------------- | ---------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------- |

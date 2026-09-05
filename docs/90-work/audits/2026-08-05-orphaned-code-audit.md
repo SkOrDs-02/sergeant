@@ -1,6 +1,8 @@
 # Аудит сиротілого коду, елементів і таблиць — 2026-08-05
 
-> **Last touched:** 2026-09-04 by @Skords-01. **Next review:** 2026-12-26.
+> **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
+
+> **Last touched:** 2026-09-05 by @Skords-01. **Next review:** 2026-12-27.
 > **Status:** Active
 
 > **Governing skill:** `sergeant-tech-debt` · **Playbook:** [`cleanup-dead-code.md`](../../00-start/playbooks/cleanup-dead-code.md).

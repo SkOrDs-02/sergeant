@@ -9,12 +9,13 @@ Meta-документація на тестову стратегію Sergeant �
 
 ## Документи
 
-| Документ                                                       | Про що                                                             |
-| -------------------------------------------------------------- | ------------------------------------------------------------------ |
-| [`smoke-tests.md`](./smoke-tests.md)                           | Critical-flow smoke-сюїта: що покрито, як запускати, як розширяти. |
-| [`pact-drift-runbook.md`](./pact-drift-runbook.md)             | Реакція на розходження contract-тестів (Pact drift).               |
-| [`2026-05-05-tests-pr-plan.md`](./2026-05-05-tests-pr-plan.md) | Історичний план PR-серії з тестів (травень 2026).                  |
-| [`2026-05-05-tests-review.md`](./2026-05-05-tests-review.md)   | Ревʼю тестового покриття на ту саму дату.                          |
+| Документ                                                       | Про що                                                                             |
+| -------------------------------------------------------------- | ---------------------------------------------------------------------------------- |
+| [`smoke-tests.md`](./smoke-tests.md)                           | Critical-flow smoke-сюїта: що покрито, як запускати, як розширяти.                 |
+| [`pact-drift-runbook.md`](./pact-drift-runbook.md)             | Реакція на розходження contract-тестів (Pact drift).                               |
+| [`2026-05-05-tests-pr-plan.md`](./2026-05-05-tests-pr-plan.md) | Історичний план PR-серії з тестів (травень 2026).                                  |
+| [`2026-05-05-tests-review.md`](./2026-05-05-tests-review.md)   | Ревʼю тестового покриття на ту саму дату.                                          |
+| [`verification/`](./verification/README.md)                    | Повторювані комплекти, профілі, сценарії та шлях передачі результатів між сесіями. |
 
 > Stryker mutation testing meta-doc (`mutation.md`) було видалено разом з cloudSync v1 engine у PR #052b (commit `a97b8cc8` — `chore(web): retire cloudSync Stryker mutation infra`). CloudSync-v1 mutation scope більше не релевантний, але mutation testing повернуто поетапно: tier-1 — `packages/shared/stryker.utils.conf.json` (`src/utils/{macros,date}.ts`) і `apps/server/stryker.normalizers.conf.json` (нормалізатори food-провайдерів); tier-2 (2026-08) — `packages/finyk-domain/stryker.core.conf.json` (грошова доменна логіка: budget, debtEngine, balanceReconciliation, transferMatching, monoCardDebt) і `apps/web/stryker.time.conf.json` (Kyiv/DST time-утиліти). Weekly workflow `.github/workflows/mutation-testing.yml` (Пн 06:00 UTC + `workflow_dispatch`) публікує HTML + JSON artifact на кожну ціль; червоний cron-прогін створює/оновлює idempotent issue з label `mutation-testing` (той самий патерн, що `pact-drift.yml`).
 

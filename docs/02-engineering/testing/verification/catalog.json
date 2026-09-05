@@ -1,0 +1,515 @@
+{
+  "schemaVersion": 1,
+  "suites": [
+    { "id": "journeys", "title": "Маршрути та користувацькі шляхи" },
+    { "id": "logic", "title": "Логіка й розрахунки" },
+    { "id": "ai", "title": "AI-шар" },
+    { "id": "experience", "title": "Візуал, a11y, текст і антислоп" },
+    { "id": "data", "title": "API, sync і інтеграції" },
+    { "id": "technical", "title": "Технічна якість" }
+  ],
+  "scenarios": [
+    {
+      "id": "JRN-expense-create",
+      "revision": 1,
+      "title": "Створення витрати та reload",
+      "suite": "journeys",
+      "modules": ["finyk", "web"],
+      "modes": ["smoke", "full", "pilot"],
+      "profiles": ["rich-free"],
+      "source": "docs/01-product/model/finyk.md",
+      "preconditions": "Локальний або test стенд; аккаунт має стабільний seed.",
+      "steps": [
+        "Зафіксувати поточний підсумок витрат.",
+        "Створити витрату 12345 копійок.",
+        "Перезавантажити маршрут транзакцій."
+      ],
+      "expected": [
+        "Новий запис рівно один.",
+        "Підсумок збільшився на 12345 копійок."
+      ],
+      "evidence": ["скриншот до/після або trace", "значення підсумку"],
+      "cleanup": "Видалити витрату або використати disposable профіль.",
+      "pitfalls": "Не використовувати browser state, у якому вже створювались дані, для sync-сценарію."
+    },
+    {
+      "id": "CALC-expense-independent",
+      "revision": 1,
+      "title": "Незалежна перевірка суми витрат",
+      "suite": "logic",
+      "modules": ["finyk"],
+      "modes": ["full", "pilot"],
+      "profiles": ["rich-free"],
+      "source": "docs/90-work/audits/2026-09-01-product-audit/checklists.md#calc--правильність-розрахунків",
+      "preconditions": "Є контрольний підсумок до створення витрати.",
+      "steps": [
+        "Скласти очікуване значення поза UI.",
+        "Зіставити з Оглядом і Аналітикою."
+      ],
+      "expected": ["Кожна поверхня має те саме значення в копійках."],
+      "evidence": ["таблиця еталон/факт"],
+      "cleanup": "Немає.",
+      "pitfalls": "Не округляти проміжні значення; гроші — number у minor units."
+    },
+    {
+      "id": "SYNC-fresh-device-pull",
+      "revision": 1,
+      "title": "Pull на новому пристрої",
+      "suite": "data",
+      "modules": ["sync", "finyk"],
+      "modes": ["full", "pilot"],
+      "profiles": ["sync-same-user-device-a", "sync-same-user-device-b"],
+      "source": "docs/90-work/audits/2026-09-01-product-audit/accounts.md#6-пастка-storagestate--новий-пристрій",
+      "preconditions": "Той самий одноразовий користувач; витрата створена у чистому context A; підтверджено успішний push до входу у context B.",
+      "steps": [
+        "Відкрити новий browser context без storageState.",
+        "Увійти тим самим логіном у чистому context B без storageState.",
+        "Дочекатися pull та відкрити транзакції."
+      ],
+      "expected": ["Витрата відображається один раз; outbox не зростає."],
+      "evidence": ["screenshot другого контексту", "мережевий trace sync"],
+      "cleanup": "Видалити disposable акаунти.",
+      "pitfalls": "storageState не моделює інший пристрій."
+    },
+    {
+      "id": "JRN-route-contract",
+      "revision": 1,
+      "title": "Повна матриця маршрутів, deep links і сумісність",
+      "suite": "journeys",
+      "modules": ["web", "finyk", "nutrition", "routine", "fizruk"],
+      "modes": ["full"],
+      "profiles": ["anonymous", "empty-free", "rich-free"],
+      "source": "docs/02-engineering/testing/verification/routes.md",
+      "preconditions": "Матрицю routes.md звірено з роутерами на зафіксованому commit.",
+      "steps": [
+        "Відкрити кожну адресу прямим deep link у відповідному auth-стані.",
+        "Для кожної виконати reload, back/forward і перевірити title/heading/query.",
+        "Прогнати aliases, legacy hash, невідомий root і невідомий module subpath."
+      ],
+      "expected": [
+        "Канонічні адреси відтворюють той самий стан після reload.",
+        "Redirect зберігає підтримувані query/hash і не створює зайвого history entry.",
+        "404/fallback контрольований; немає білого екрана чи циклу."
+      ],
+      "evidence": [
+        "route×profile таблиця статусів",
+        "trace неуспішної навігації",
+        "скриншоти винятків"
+      ],
+      "cleanup": "Очистити лише disposable browser contexts.",
+      "pitfalls": "Не рахувати внутрішню вкладку окремим URL; /routine/today є compatibility probe."
+    },
+    {
+      "id": "JRN-domain-crud-lifecycle",
+      "revision": 1,
+      "title": "CRUD і життєвий цикл сутностей чотирьох модулів",
+      "suite": "journeys",
+      "modules": ["finyk", "nutrition", "routine", "fizruk"],
+      "modes": ["full"],
+      "profiles": ["rich-free", "edge", "delete-once"],
+      "source": "docs/90-work/audits/2026-09-01-product-audit/checklists.md",
+      "preconditions": "Окремий disposable seed; відомі очікувані початкові counts.",
+      "steps": [
+        "Створити, змінити й видалити кожну доступну сутність через UI.",
+        "Перевірити validation, double-submit, confirm/undo й cancel.",
+        "Повторити читання після reload і на синхронізованій поверхні."
+      ],
+      "expected": [
+        "Рівно одна мутація, коректний toast і доступний наступний крок.",
+        "Cancel не змінює дані; delete/undo відповідають контракту.",
+        "UI, API й локальний стан не розходяться."
+      ],
+      "evidence": [
+        "матриця entity×create/edit/delete",
+        "network/trace для дефектів",
+        "before/after counts"
+      ],
+      "cleanup": "Видалити створене або знищити disposable акаунт.",
+      "pitfalls": "Не перевикористовувати забруднений seed; receipt/photo/import мають окремі зовнішні залежності."
+    },
+    {
+      "id": "JRN-ftux-paywall-state",
+      "revision": 1,
+      "title": "FTUX, порожні стани, entitlement і recovery",
+      "suite": "journeys",
+      "modules": ["hub", "billing", "web"],
+      "modes": ["smoke", "full"],
+      "profiles": ["anonymous", "empty-free", "rich-free", "rich-pro"],
+      "source": "docs/90-work/audits/2026-09-01-product-audit/checklists.md",
+      "preconditions": "Entitlement кожного alias перевірено через API; Q5/light seed не вважати Pro.",
+      "steps": [
+        "Пройти welcome→signup/signin→перший реальний запис.",
+        "Перевірити empty/loading/error/offline та retry дії.",
+        "Зіставити free/trial/active/exhausted paywall і quota стани."
+      ],
+      "expected": [
+        "FTUX не маскує дані й завершується один раз.",
+        "Кожен стан пояснює причину та дає чинну дію.",
+        "Доступ відповідає серверному entitlement."
+      ],
+      "evidence": [
+        "state×profile screenshots",
+        "entitlement response без секретів",
+        "event/count нотатка"
+      ],
+      "cleanup": "Скинути лише disposable профіль.",
+      "pitfalls": "Наявність seeded даних не доводить Pro; demo-приклади мають бути явно підписані."
+    },
+    {
+      "id": "CALC-cross-module-oracles",
+      "revision": 1,
+      "title": "Незалежні оракули розрахунків усіх модулів",
+      "suite": "logic",
+      "modules": ["finyk", "nutrition", "routine", "fizruk"],
+      "modes": ["full"],
+      "profiles": ["edge"],
+      "source": "docs/02-engineering/architecture/domain-invariants.md",
+      "preconditions": "Контрольний seed містить відомі minor units, порції, set reps/weight, schedules і day keys.",
+      "steps": [
+        "Порахувати очікувані суми поза UI з сирих seed-значень.",
+        "Зіставити деталь, overview, analytics/report та AI-read поверхні.",
+        "Повторити на межі дня/DST і з transfer/archived/empty records."
+      ],
+      "expected": [
+        "Finyk: minor units без проміжного округлення, transfers виключені де вимагає метрика.",
+        "Nutrition/Fizruk: порції, pantry ledger, tonnage й формули збігаються з каноном.",
+        "Routine і personal day keys беруть device-local; server reports/finance periods — Europe/Kyiv."
+      ],
+      "evidence": [
+        "таблиця raw→formula→expected→actual",
+        "seed revision",
+        "timezone/date matrix"
+      ],
+      "cleanup": "Знищити edge seed.",
+      "pitfalls": "Не переносити Europe/Kyiv на особисту добу; не брати UI як власний оракул."
+    },
+    {
+      "id": "AI-tool-safety-and-errors",
+      "revision": 1,
+      "title": "AI tools: реальні читання, мутації, підтвердження й помилки",
+      "suite": "ai",
+      "modules": ["ai", "finyk", "nutrition", "routine", "fizruk"],
+      "modes": ["full"],
+      "profiles": ["rich-pro", "edge"],
+      "source": "docs/01-product/model/hub-coach.md",
+      "preconditions": "Live model/config записані; бюджет ≤5 USD; disposable дані для мутацій.",
+      "steps": [
+        "Запросити читання й безпечну мутацію в кожному домені та звірити executor result.",
+        "Для ризикової дії перевірити confirm, cancel і повтор без дубля.",
+        "Подати unknown/foreign ID, tool error, interruption і вичерпання квоти."
+      ],
+      "expected": [
+        "Відповідь ґрунтується на actual tool result, а не вигаданому успіху.",
+        "Ризикова дія не виконується до confirm; cancel нічого не змінює.",
+        "Помилки людяні, quota/refund не створює empty success."
+      ],
+      "evidence": [
+        "redacted prompt/response",
+        "tool trace і HTTP status",
+        "before/after entity state та usage"
+      ],
+      "cleanup": "Відкотити disposable мутації через UI/API контракт.",
+      "pitfalls": "Не комітити prompts із PII або ключі; mock не є live-доказом."
+    },
+    {
+      "id": "AI-memory-coach-digest-vision",
+      "revision": 1,
+      "title": "AI memory, coach, digest, receipt/photo й provenance",
+      "suite": "ai",
+      "modules": ["ai", "nutrition", "finyk"],
+      "modes": ["full"],
+      "profiles": ["rich-pro"],
+      "source": "docs/01-product/model/hub-coach.md",
+      "preconditions": "Достатній seed або явно недостатні дані; flags/model/provider зафіксовані.",
+      "steps": [
+        "Створити/застосувати/видалити memory fact і перевірити unavailable/flag-off.",
+        "Зіставити coach/digest числа та причинність із сирими даними.",
+        "Прогнати receipt/photo через manual review, виправлення й save."
+      ],
+      "expected": [
+        "Memory lifecycle не переживає delete й не протікає між users.",
+        "Coach/digest чесно кажуть про брак даних і не вигадують кореляції.",
+        "Vision output не зберігається до review; суми після правки точні."
+      ],
+      "evidence": [
+        "redacted traces",
+        "raw-data oracle",
+        "model/config/cost/latency",
+        "review screenshots"
+      ],
+      "cleanup": "Видалити тестові facts, uploads і записи.",
+      "pitfalls": "Не порівнювати моделі без однакового seed/config; медична порада потребує safe boundary."
+    },
+    {
+      "id": "EXP-visual-matrix",
+      "revision": 1,
+      "title": "Візуальна матриця, responsive, dark mode й overflow",
+      "suite": "experience",
+      "modules": ["web", "landing"],
+      "modes": ["full"],
+      "profiles": ["anonymous", "empty-free", "rich-free"],
+      "source": "DESIGN.md",
+      "preconditions": "Route matrix і стабільний seed; motion/clock заморожені де підтримується.",
+      "steps": [
+        "Зняти кожен steady/error/empty стан у 390×844 і 1280×800, light/dark.",
+        "Заміряти document overflow і кожен overflow-x:hidden box через scrollWidth/clientWidth.",
+        "Перевірити overlap/hit-test, fixed bars, long UA text, keyboard і reduced motion."
+      ],
+      "expected": [
+        "Немає недосяжного обрізаного контенту, перекритої основної дії чи dark-mode hole.",
+        "Модульні акценти, typography, contrast і SVG alignment відповідають DESIGN.md.",
+        "Вміст доступний до завершення анімації."
+      ],
+      "evidence": [
+        "іменовані screenshots",
+        "overflow/contrast measurements",
+        "diff із сумісним baseline"
+      ],
+      "cleanup": "Закрити contexts; не оновлювати baseline без review.",
+      "pitfalls": "document scrollWidth не ловить clipped hidden boxes; screenshot pass не доводить hit target."
+    },
+    {
+      "id": "EXP-a11y-interaction-copy",
+      "revision": 1,
+      "title": "A11y, keyboard, touch targets і український текст",
+      "suite": "experience",
+      "modules": ["web", "landing"],
+      "modes": ["smoke", "full"],
+      "profiles": ["anonymous", "rich-free"],
+      "source": "docs/01-product/copy/style-guide.uk.md",
+      "preconditions": "Desktop keyboard і coarse pointer viewport; axe доступний.",
+      "steps": [
+        "Пройти всі дії Tab/Shift+Tab/Enter/Space та menu arrows; перевірити focus trap/Esc/return.",
+        "Запустити axe і 44×44 coarse audit, перевірити names/headings/live regions.",
+        "Вичитати UA copy, plural, decimal comma, ellipsis, raw i18n keys, NaN/English leakage."
+      ],
+      "expected": [
+        "Фокус видимий і порядок логічний; modal/menu повертають фокус.",
+        "Touch targets і accessible names однозначні; live region не спамить.",
+        "Текст дотримується тону й не містить технічних деталей без користі."
+      ],
+      "evidence": [
+        "axe output",
+        "keyboard/focus запис",
+        "touch-target report",
+        "copy findings"
+      ],
+      "cleanup": "Немає.",
+      "pitfalls": "Автоматичний axe не доводить зрозумілість label або keyboard journey."
+    },
+    {
+      "id": "EXP-anti-slop-review",
+      "revision": 1,
+      "title": "Три anti-slop тести й completeness/honesty",
+      "suite": "experience",
+      "modules": ["web", "landing"],
+      "modes": ["full"],
+      "profiles": ["rich-free"],
+      "source": "docs/05-design/design/anti-slop-strategy.md",
+      "preconditions": "Є screenshots реального наповненого стану й контекст задачі екрана.",
+      "steps": [
+        "Письмово відповісти на тест підміни лого/акценту.",
+        "Відповісти, чи міг генератор видати екран з однорядкового prompt.",
+        "Відповісти, чи форма й композиція походять із конкретних даних; перевірити дії, anchors, non-happy paths і claims."
+      ],
+      "expected": [
+        "Кожна відповідь має посилання на конкретний елемент screenshot.",
+        "Один провал відкриває finding, а не усереднюється оцінкою.",
+        "Вигадані числа/відгуки/можливості відсутні або мають джерело."
+      ],
+      "evidence": [
+        "три текстові висновки",
+        "annotated screenshot",
+        "finding IDs для провалів"
+      ],
+      "cleanup": "Немає.",
+      "pitfalls": "Не перетворювати смак на числовий поріг; оцінювати steady-state з реальними даними."
+    },
+    {
+      "id": "SYNC-offline-conflict-isolation",
+      "revision": 1,
+      "title": "Offline queue, LWW conflict, logout purge й user isolation",
+      "suite": "data",
+      "modules": ["sync", "web", "server"],
+      "modes": ["full"],
+      "profiles": [
+        "sync-same-user-device-a",
+        "sync-same-user-device-b",
+        "isolation-user-a",
+        "isolation-user-b"
+      ],
+      "source": "docs/02-engineering/architecture/domain-invariants.md",
+      "preconditions": "Два contexts одного user для conflict; два окремих users для isolation; контроль мережі.",
+      "steps": [
+        "Offline створити три доменні записи, повернути online й дочекатися drain.",
+        "Змінити ту саму сутність з двох devices з контрольними timestamps.",
+        "Перевірити cross-user IDOR, logout purge, stale session 401 і fresh login."
+      ],
+      "expected": [
+        "Outbox переходить pending→0 без дубля; server і обидва devices сходяться.",
+        "LWW результат відповідає контракту й не губить сторонні поля.",
+        "User B не читає дані A; logout очищає локальні дані/keys."
+      ],
+      "evidence": [
+        "sync push/pull traces",
+        "op/timestamp table",
+        "local storage/OPFS inventory без секретів",
+        "401/404 statuses"
+      ],
+      "cleanup": "Видалити disposable users/contexts після збереження redacted evidence.",
+      "pitfalls": "Cross-device — один user; isolation — два users. Не стартувати B до підтвердженого push A."
+    },
+    {
+      "id": "DATA-api-security-integrations",
+      "revision": 1,
+      "title": "API contracts, auth/security і зовнішні інтеграції",
+      "suite": "data",
+      "modules": ["server", "api-client", "integrations", "billing", "push"],
+      "modes": ["full"],
+      "profiles": ["edge", "isolation-user-a", "isolation-user-b"],
+      "source": "docs/02-engineering/architecture/domain-invariants.md",
+      "preconditions": "Локальний/test стенд; destructive probes заборонені production; зовнішні secrets або explicit blocked.",
+      "steps": [
+        "Звірити serializer↔api-client↔contract test, bigint coercion і invalid payloads.",
+        "Перевірити auth lifecycle, revoked session, cross-user IDs, stored/reflected text і sensitive log redaction.",
+        "Для Mono/Silpo/push/email/webhooks перевірити success, disabled, timeout, rate-limit, retry й idempotency."
+      ],
+      "expected": [
+        "Response shape стабільний, помилки структуровані, bigint не витікає.",
+        "Немає IDOR/XSS/secret logs; revoked session не працює.",
+        "Інтеграція деградує чесно, не дублює side effects і не показує фальшивий success."
+      ],
+      "evidence": [
+        "contract test log",
+        "redacted request/response",
+        "security probe table",
+        "provider correlation IDs"
+      ],
+      "cleanup": "Відкликати тестові sessions/webhooks і видалити disposable дані.",
+      "pitfalls": "Не підставляти production PAT; disabled integration записувати blocked/not-applicable з причиною."
+    },
+    {
+      "id": "TECH-performance-budgets",
+      "revision": 1,
+      "title": "Бандл, Lighthouse і runtime SLO",
+      "suite": "technical",
+      "modules": ["web", "server", "ai"],
+      "modes": ["full"],
+      "profiles": ["anonymous", "rich-free"],
+      "source": "AGENTS.md",
+      "preconditions": "Production build, стабільний host і незмінний Lighthouse config; warmup відокремлений.",
+      "steps": [
+        "Запустити size-limit та eager bundle guard.",
+        "Запустити Lighthouse на конфігурованих routes й зберегти median.",
+        "Заміряти /health p95, chat first-turn total та synthesis first-token окремо."
+      ],
+      "expected": [
+        "JS≤1.42 MB brotli, CSS≤40 kB, eager JS≤280 kB.",
+        "LCP median≤3000 ms; FCP/TBT записані з чинною severity конфігу.",
+        "/health p95<100 ms; chat total<15 s і synthesis TTFT<1.5 s не змішані."
+      ],
+      "evidence": [
+        "size-limit output",
+        "LHCI artifacts",
+        "raw samples/percentiles",
+        "commit і host profile"
+      ],
+      "cleanup": "Зупинити лише процеси цього стенду.",
+      "pitfalls": "Один sample не є p95; skipped size step після раннього падіння не є pass."
+    },
+    {
+      "id": "TECH-test-matrix-and-flakes",
+      "revision": 1,
+      "title": "Повна тестова матриця, flakes і артефакти",
+      "suite": "technical",
+      "modules": ["web", "server", "mobile", "packages", "docs"],
+      "modes": ["full"],
+      "profiles": [],
+      "source": "docs/02-engineering/testing/README.md",
+      "preconditions": "Dependencies frozen; commit/dirty state, Node/pnpm/OS записані.",
+      "steps": [
+        "Запустити pnpm check і surface-specific E2E/eval lanes, які відповідають зміні.",
+        "Для кожного non-zero зберегти першу причинну помилку й artifact.",
+        "Повторювати тільки підозрюваний flake ≥3 разів в однаковому середовищі."
+      ],
+      "expected": [
+        "Кожен lane має exit code, duration, pass/fail/skip counts.",
+        "Падіння має finding або відомий baseline; skip пояснений.",
+        "Flaky названо лише з частотою й умовами відтворення."
+      ],
+      "evidence": [
+        "command logs",
+        "traces/screenshots",
+        "test count table",
+        "flake repetitions"
+      ],
+      "cleanup": "Зупинити створені процеси й не видаляти чужі контейнери/томи.",
+      "pitfalls": "Scoped green не доводить package green; старий лог не є доказом поточного commit."
+    },
+    {
+      "id": "AI-expense-grounding",
+      "revision": 1,
+      "title": "ШІ посилається на фактичну витрату",
+      "suite": "ai",
+      "modules": ["ai", "finyk"],
+      "modes": ["full", "pilot"],
+      "profiles": ["rich-pro"],
+      "source": "docs/01-product/model/hub-coach.md",
+      "preconditions": "Live ключ і бюджет фази не перевищує $5; контрольна витрата є в даних.",
+      "steps": [
+        "Попросити чат назвати останню витрату.",
+        "Перевірити tool trace та відповідь."
+      ],
+      "expected": [
+        "Відповідь відповідає фактичному запису.",
+        "Tool trace не має деструктивної дії без confirm."
+      ],
+      "evidence": ["збережений trace", "скриншот відповіді", "витрата/модель"],
+      "cleanup": "Немає.",
+      "pitfalls": "Mock не є доказом live; не записувати ключ або повний чутливий prompt."
+    },
+    {
+      "id": "EXP-expense-accessible",
+      "revision": 1,
+      "title": "Витрата без обрізання і з доступним фокусом",
+      "suite": "experience",
+      "modules": ["web", "finyk"],
+      "modes": ["smoke", "full", "pilot"],
+      "profiles": ["rich-free"],
+      "source": "docs/05-design/design/anti-slop-strategy.md#6-slop-тест--три-перевірки-на-design-review",
+      "preconditions": "Є створена контрольна витрата.",
+      "steps": [
+        "Перевірити desktop та 390×844 coarse viewport.",
+        "Пройти до дії клавіатурою.",
+        "Відповісти на три перевірки anti-slop для екрана."
+      ],
+      "expected": [
+        "Немає горизонтального overflow або hidden clipped content.",
+        "Фокус видимий і дія доступна.",
+        "Є аргументований anti-slop висновок."
+      ],
+      "evidence": ["два скриншоти", "запис фокусу", "нотатка anti-slop"],
+      "cleanup": "Немає.",
+      "pitfalls": "Перевіряти і document overflow, і scrollWidth кліперів."
+    },
+    {
+      "id": "TECH-regression-baseline",
+      "revision": 1,
+      "title": "Базис наявних регресійних лейнів",
+      "suite": "technical",
+      "modules": ["web", "server"],
+      "modes": ["smoke", "full"],
+      "profiles": [],
+      "source": "docs/02-engineering/testing/README.md",
+      "preconditions": "Зафіксований commit і доступні залежності.",
+      "steps": [
+        "Запустити обраний існуючий lane без зміни його конфігурації.",
+        "Записати команду, код завершення, тривалість і артефакти."
+      ],
+      "expected": ["Кожне падіння має finding або позначку відомого baseline."],
+      "evidence": ["лог команди", "trace якщо є"],
+      "cleanup": "Немає.",
+      "pitfalls": "Не називати flaky без частоти й умов відтворення."
+    }
+  ]
+}
