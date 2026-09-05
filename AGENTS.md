@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-03 by @claude. **Next review:** 2026-12-20.
+> **Last touched:** 2026-09-05 by @Skords-01. **Next review:** 2026-12-22.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/00-start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/00-start/agents/agent-skills-catalog.md`.
@@ -261,6 +261,10 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 - **Frontend:** Vercel (preview deploy on each PR; free tier may rate-limit).
 - **Backend:** Hetzner CX23 VPS під Coolify (self-hosted PaaS) via `Dockerfile.api` — образ білдить GitHub Actions (`deploy-api.yml`) → `ghcr.io`, Coolify тягне й деплоїть. Pre-deploy: `node dist-server/migrate.js` (Coolify `pre_deployment_command`). Health endpoint: `/health`. Міграції потребують `MIGRATE_DATABASE_URL`. Топологія та rationale — [ADR-0074](./docs/04-governance/adr/0074-hosting-hetzner-coolify.md) (superseded ADR-0009 у частині бекенду). Railway виведено з експлуатації.
 - **Test users:** primary test-user ID живе поза репо (Coolify env vars / локальний `.env`-нотатник власника) — репо публічне, не комітьте реальні user ID чи фінансову топологію.
+
+## Повторювані верифікації
+
+Для тестового прогону, повторної перевірки фіксу або передачі QA між сесіями спершу читай [`docs/02-engineering/testing/verification/README.md`](docs/02-engineering/testing/verification/README.md). Обери сценарії через `pnpm verification list`, створи JSON-прогін, записуй докази кожної спроби та порівнюй повтор із baseline. Реєстр відкритих знахідок і handoff — [`docs/90-work/audits/verification/`](docs/90-work/audits/verification/README.md). Не коміть секрети акаунтів; «новий пристрій» sync = свіжий логін, не Playwright `storageState`.
 
 ## See also
 

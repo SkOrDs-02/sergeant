@@ -1,0 +1,3810 @@
+{
+  "schemaVersion": 1,
+  "findings": [
+    {
+      "id": "PILOT-20260905-SYNC-1",
+      "legacyId": "fresh-device-pull",
+      "title": "Чистий другий context не отримує щойно синхронізовану витрату",
+      "severity": "major",
+      "source": "docs/90-work/audits/verification/runs/pilot-2026-09-05-a/handoff.md",
+      "sourceAnchor": "SYNC-fresh-device-pull",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "observed",
+          "note": "Двічі відтворено на окремих disposable users після підтвердженого v2 push; pull у context B повернув empty."
+        }
+      ]
+    },
+    {
+      "id": "PILOT-20260905-AI-1",
+      "legacyId": "ai-expense-grounding",
+      "title": "AI відкидає копійки у відповіді про останню витрату",
+      "severity": "major",
+      "source": "docs/90-work/audits/verification/runs/pilot-2026-09-05-b/handoff.md",
+      "sourceAnchor": "AI-expense-grounding",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "observed",
+          "note": "Live OpenRouter-відповідь правильно назвала опис, але повернула 123 грн для запису 123,45 грн."
+        }
+      ]
+    },
+    {
+      "id": "PILOT-20260905-SLOP-1",
+      "legacyId": "expense-screen-anti-slop",
+      "title": "Екран операцій Finyk не проходить підміну й generator anti-slop тести",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/verification/runs/pilot-2026-09-05-b/handoff.md",
+      "sourceAnchor": "EXP-expense-accessible",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "observed",
+          "note": "На desktop/mobile пройдено data test, провалено substitution і generator; keyboard частина лишилась неповною."
+        }
+      ]
+    },
+    {
+      "id": "BETA-20260807-F8",
+      "legacyId": "F8",
+      "title": "Гідрація routine-стану на чистому пристрої нестабільна",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-07-beta-rehearsal-run.md",
+      "sourceAnchor": "F8",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-08-07",
+          "event": "imported",
+          "note": "Відкрито як needs-repro; не є свіжим відтворенням."
+        }
+      ]
+    },
+    {
+      "id": "BETA-20260809-B3",
+      "legacyId": "B3",
+      "title": "run-beta-wave: git merge main неможливий через незвʼязані історії",
+      "severity": "major",
+      "source": "docs/90-work/audits/2026-08-09-beta-acceptance-run.md",
+      "sourceAnchor": "B3 — задокументована процедура оновлення бети не працює `[major]`",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Статус у джерелі: відкрито."
+        }
+      ]
+    },
+    {
+      "id": "BETA-20260809-B4",
+      "legacyId": "B4",
+      "title": "Фазовий deploy-гейт не поставлений",
+      "severity": "major",
+      "source": "docs/90-work/audits/2026-08-09-beta-acceptance-run.md",
+      "sourceAnchor": "B4 — гейт ручного деплою не поставлений `[major]`",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Статус у джерелі: відкрито."
+        }
+      ]
+    },
+    {
+      "id": "BETA-20260809-B5",
+      "legacyId": "B5",
+      "title": "run-beta-wave радить vercel promote без Preview-env застереження",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-09-beta-acceptance-run.md",
+      "sourceAnchor": "B5 — промоут білда може поїхати з Preview-env `[minor]`",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Статус у джерелі: відкрито."
+        }
+      ]
+    },
+    {
+      "id": "BETA-20260809-B6",
+      "legacyId": "B6",
+      "title": "Сідер і BT5-журні залежать від часу доби",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-09-beta-acceptance-run.md",
+      "sourceAnchor": "B6 — прогін залежить від часу доби `[minor, test-design]`",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Статус у джерелі: відкрито."
+        }
+      ]
+    },
+    {
+      "id": "BETA-20260809-B7",
+      "legacyId": "B7",
+      "title": "Запис під годинником попереду тихо не доїхав на сервер",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-09-beta-acceptance-run.md",
+      "sourceAnchor": "B7 — запис під годинником уперед тихо зник `[minor, needs-repro]`",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Статус у джерелі: needs-repro."
+        }
+      ]
+    },
+    {
+      "id": "BETA-20260809-B10",
+      "legacyId": "B10",
+      "title": "Інтермітентний білий екран на /insights",
+      "severity": "major",
+      "source": "docs/90-work/audits/2026-08-09-beta-acceptance-run.md",
+      "sourceAnchor": "B10 — білий екран на `/insights` `[major, needs-repro]`",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "39 пізніших спроб без репро у джерелі; потрібен тріаж, не закриття."
+        }
+      ]
+    },
+    {
+      "id": "AIP-20260805-B21",
+      "legacyId": "B21",
+      "title": "текст платежу від сторонньої людини → запис даних без підтвердження",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B21 — текст платежу від сторонньої людини → запис даних без підтвердження"
+    },
+    {
+      "id": "AIP-20260805-B22",
+      "legacyId": "B22",
+      "title": "«сувора» валідація tool-input перевіряє поля, яких не існує",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B22 — «сувора» валідація tool-input перевіряє поля, яких не існує"
+    },
+    {
+      "id": "AIP-20260805-B23",
+      "legacyId": "B23",
+      "title": "авто-експорт + модельні посилання = ексфільтрація в один клік",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B23 — авто-експорт + модельні посилання = ексфільтрація в один клік"
+    },
+    {
+      "id": "AIP-20260805-B24",
+      "legacyId": "B24",
+      "title": "вся AI-історія лежить у localStorage відкритим текстом",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B24 — вся AI-історія лежить у localStorage відкритим текстом"
+    },
+    {
+      "id": "AIP-20260805-B25",
+      "legacyId": "B25",
+      "title": "`prior_result` у refine-photo необмежений",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B25 — `prior_result` у refine-photo необмежений"
+    },
+    {
+      "id": "AIP-20260805-B26",
+      "legacyId": "B26",
+      "title": "стеля витрат на транскрипцію має TOCTOU-гонку",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B26 — стеля витрат на транскрипцію має TOCTOU-гонку"
+    },
+    {
+      "id": "AIP-20260805-B27",
+      "legacyId": "B27",
+      "title": "`/api/internal/*` тримається на одному статичному секреті",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B27 — `/api/internal/*` тримається на одному статичному секреті"
+    },
+    {
+      "id": "AIP-20260805-B28",
+      "legacyId": "B28",
+      "title": "10 МБ тіла парситься до автентифікації, зі стисненням",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B28 — 10 МБ тіла парситься до автентифікації, зі стисненням"
+    },
+    {
+      "id": "AIP-20260805-B29",
+      "legacyId": "B29",
+      "title": "weekly-digest кладе рядки користувача в system-промпт сирими",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B29 — weekly-digest кладе рядки користувача в **system**-промпт сирими"
+    },
+    {
+      "id": "AIP-20260805-B14",
+      "legacyId": "B14",
+      "title": "runbook велить смикати важіль, якого немає",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B14 — runbook велить смикати важіль, якого немає"
+    },
+    {
+      "id": "AIP-20260805-B15",
+      "legacyId": "B15",
+      "title": "битий JSON у `AI_QUOTA_TOOL_LIMITS` знімає ліміти з найдорожчого шляху",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B15 — битий JSON у `AI_QUOTA_TOOL_LIMITS` знімає ліміти з найдорожчого шляху"
+    },
+    {
+      "id": "AIP-20260805-B16",
+      "legacyId": "B16",
+      "title": "env-прапорці мовчки дефолтяться, включно з аварійною стелею",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B16 — env-прапорці мовчки дефолтяться, включно з аварійною стелею"
+    },
+    {
+      "id": "AIP-20260805-B17",
+      "legacyId": "B17",
+      "title": "`AI_QUOTA_FOUNDER_IDS` — необмежений байпас без жодної перевірки",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B17 — `AI_QUOTA_FOUNDER_IDS` — необмежений байпас без жодної перевірки"
+    },
+    {
+      "id": "AIP-20260805-B18",
+      "legacyId": "B18",
+      "title": "редакція пропускає `api_key`, `openrouterKey` і самі формати ключів",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B18 — редакція пропускає `api_key`, `openrouterKey` і самі формати ключів"
+    },
+    {
+      "id": "AIP-20260805-B19",
+      "legacyId": "B19",
+      "title": "пароль до Postgres у командному рядку MCP",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B19 — пароль до Postgres у командному рядку MCP"
+    },
+    {
+      "id": "AIP-20260805-B20",
+      "legacyId": "B20",
+      "title": "брак AI-ключа тихо підмінюється заглушкою",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B20 — брак AI-ключа тихо підмінюється заглушкою"
+    },
+    {
+      "id": "AIP-20260805-B10",
+      "legacyId": "B10",
+      "title": "стеля Voyage не діє на recall (блокер перед активацією AI-пам'яті)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B10 — стеля Voyage не діє на recall (блокер перед активацією AI-пам'яті)"
+    },
+    {
+      "id": "AIP-20260805-B3",
+      "legacyId": "B3",
+      "title": "`/api/coach/insight` без огорожі, яку отримав `/api/chat`",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B3 — `/api/coach/insight` без огорожі, яку отримав `/api/chat`"
+    },
+    {
+      "id": "AIP-20260805-B4",
+      "legacyId": "B4",
+      "title": "деградацію моделі coach обходить fallback-ланцюг",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B4 — деградацію моделі coach обходить fallback-ланцюг"
+    },
+    {
+      "id": "AIP-20260805-B5",
+      "legacyId": "B5",
+      "title": "mobile показує ✅ для дій, яких не сталося",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B5 — mobile показує ✅ для дій, яких не сталося"
+    },
+    {
+      "id": "AIP-20260805-B6",
+      "legacyId": "B6",
+      "title": "mobile шле порожній `context`",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B6 — mobile шле порожній `context`"
+    },
+    {
+      "id": "AIP-20260805-B8",
+      "legacyId": "B8",
+      "title": "асиметрія екранування огорож",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B8 — асиметрія екранування огорож"
+    },
+    {
+      "id": "AIP-20260805-B11",
+      "legacyId": "B11",
+      "title": "DLQ AI-пам'яті переживає видалення акаунта",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B11 — DLQ AI-пам'яті переживає видалення акаунта"
+    },
+    {
+      "id": "AIP-20260805-B12",
+      "legacyId": "B12",
+      "title": "очищення пам'яті без tombstone: in-flight ingest повертає стерте",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B12 — очищення пам'яті без tombstone: in-flight ingest повертає стерте"
+    },
+    {
+      "id": "AIP-20260805-B13",
+      "legacyId": "B13",
+      "title": "`forget.ts` і `forgetCleanup.ts` — мертвий код",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B13 — `forget.ts` і `forgetCleanup.ts` — мертвий код"
+    },
+    {
+      "id": "AIP-20260805-B9",
+      "legacyId": "B9",
+      "title": "надлишкові резолви сесії на кожен чат-запит",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B9 — надлишкові резолви сесії на кожен чат-запит"
+    },
+    {
+      "id": "AIP-20260805-B30",
+      "legacyId": "B30",
+      "title": "`ai_usage_daily` не переживає rollback: у 091 немає `.down.sql`",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-pipeline-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B30 — `ai_usage_daily` не переживає rollback: у 091 немає `.down.sql`"
+    },
+    {
+      "id": "AIA-20260805-A3",
+      "legacyId": "A3",
+      "title": "підроблена історія діалогу (assistant-prefill)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-abuse-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "A3 — підроблена історія діалогу (assistant-prefill)"
+    },
+    {
+      "id": "AIA-20260805-A5",
+      "legacyId": "A5",
+      "title": "автоматичної стелі витрат немає",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-abuse-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "A5 — автоматичної стелі витрат немає"
+    },
+    {
+      "id": "AIA-20260805-A7",
+      "legacyId": "A7",
+      "title": "`PROMPT_INJECTION_PATTERNS` — вісім регекспів, усі англійські. Продукт україномовний; «ігноруй попередні інструкції», «нові системні інструкції:» не матчаться. Це лише лічильник (envelope тримає незалежно), тож дашборд показуватиме нуль там, де атака була",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-abuse-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "AIA-20260805-A8",
+      "legacyId": "A8",
+      "title": "Коментар `/ Модерація: чат-повідомлення. */` над `ChatMessage` — жодної модерації в схемі немає (лише `min(1).max(8000)`). Коментар обіцяє контроль, якого нема: наступний читач вважатиме, що поверхня закрита",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-abuse-2026-08-05.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "AIT-20260825-B33",
+      "legacyId": "B33",
+      "title": "сирий текст внутрішньої помилки тече в SSE-стрім",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-testing-2026-08-25.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B33 — сирий текст внутрішньої помилки тече в SSE-стрім"
+    },
+    {
+      "id": "AIT-20260825-B34",
+      "legacyId": "B34",
+      "title": "компресія стискає SSE: guard мертвий, heartbeat буферизується",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-testing-2026-08-25.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B34 — компресія стискає SSE: guard мертвий, heartbeat буферизується"
+    },
+    {
+      "id": "AIT-20260825-B35",
+      "legacyId": "B35",
+      "title": "`sanitizeMessages` лишає найстаріше з сусідніх user-повідомлень",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-testing-2026-08-25.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B35 — `sanitizeMessages` лишає найстаріше з сусідніх user-повідомлень"
+    },
+    {
+      "id": "AIT-20260825-B38",
+      "legacyId": "B38",
+      "title": "прайс-таблиця не знає дефолтних chat-моделей",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-testing-2026-08-25.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B38 — прайс-таблиця не знає дефолтних chat-моделей"
+    },
+    {
+      "id": "AIT-20260825-B44",
+      "legacyId": "B44",
+      "title": "стенд друкує назви моделей для викликів, яких не було",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-testing-2026-08-25.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B44 — стенд друкує назви моделей для викликів, яких не було"
+    },
+    {
+      "id": "AIT-20260825-B45",
+      "legacyId": "B45",
+      "title": "прод-модель першого ходу точна, але повільна на порядок",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-testing-2026-08-25.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B45 — прод-модель першого ходу точна, але повільна на порядок"
+    },
+    {
+      "id": "AIT-20260825-B47",
+      "legacyId": "B47",
+      "title": "транспортна помилка в зоровому стенді рахується як провал моделі",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-testing-2026-08-25.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "B47 — транспортна помилка в зоровому стенді рахується як провал моделі"
+    },
+    {
+      "id": "AIT-20260825-B40",
+      "legacyId": "B40",
+      "title": "інʼєкція-детектор лише англійський",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-testing-2026-08-25.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "AIT-20260825-B41",
+      "legacyId": "B41",
+      "title": "глобальний 120-с таймаут без SSE-винятку",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-testing-2026-08-25.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "AIT-20260825-B42",
+      "legacyId": "B42",
+      "title": "немає сумарного дедлайну через retry",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-testing-2026-08-25.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "AIT-20260825-B43",
+      "legacyId": "B43",
+      "title": "редакція структурно не покриває chat-контент",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/ai-testing-2026-08-25.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "EXT-20260805-1-1",
+      "legacyId": "1.1",
+      "title": "«Local-first. Приватно. Дані — на твоєму пристрої» — оманлива заява",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.1 «Local-first. Приватно. Дані — на твоєму пристрої» — оманлива заява"
+    },
+    {
+      "id": "EXT-20260805-1-2",
+      "legacyId": "1.2",
+      "title": "Публічна оферта з плейсхолдерами замість реквізитів",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.2 Публічна оферта з плейсхолдерами замість реквізитів"
+    },
+    {
+      "id": "EXT-20260805-1-3",
+      "legacyId": "1.3",
+      "title": "Аналітика: згода є в даних, але не в тракті подій",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.3 Аналітика: згода є в даних, але не в тракті подій"
+    },
+    {
+      "id": "EXT-20260805-1-4",
+      "legacyId": "1.4",
+      "title": "Health-дані (Art. 9): згоду збирають, але ніде не перевіряють",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.4 Health-дані (Art. 9): згоду збирають, але ніде не перевіряють"
+    },
+    {
+      "id": "EXT-20260805-1-5",
+      "legacyId": "1.5",
+      "title": "Гейт покриття LLM-периметра сліпий до двох провайдерів із чотирьох",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.5 Гейт покриття LLM-периметра сліпий до двох провайдерів із чотирьох"
+    },
+    {
+      "id": "EXT-20260805-1-6",
+      "legacyId": "1.6",
+      "title": "European Accessibility Act — дедлайн уже минув",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.6 European Accessibility Act — дедлайн уже минув"
+    },
+    {
+      "id": "EXT-20260805-1-7",
+      "legacyId": "1.7",
+      "title": "EU AI Act — прозорість AI-взаємодії",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.7 EU AI Act — прозорість AI-взаємодії"
+    },
+    {
+      "id": "EXT-20260805-2-1",
+      "legacyId": "2.1",
+      "title": "MIT-ліцензія на комерційний продукт із публічним репо",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "2.1 MIT-ліцензія на комерційний продукт із публічним репо"
+    },
+    {
+      "id": "EXT-20260805-2-2",
+      "legacyId": "2.2",
+      "title": "Розбіжність в ідентичності правовласника",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "2.2 Розбіжність в ідентичності правовласника"
+    },
+    {
+      "id": "EXT-20260805-2-3",
+      "legacyId": "2.3",
+      "title": "Open Food Facts: ODbL і відсутня атрибуція",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "2.3 Open Food Facts: ODbL і відсутня атрибуція"
+    },
+    {
+      "id": "EXT-20260805-2-4",
+      "legacyId": "2.4",
+      "title": "UPCitemdb і USDA — ліміти та умови безкоштовних тарифів",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "2.4 UPCitemdb і USDA — ліміти та умови безкоштовних тарифів"
+    },
+    {
+      "id": "EXT-20260805-2-5",
+      "legacyId": "2.5",
+      "title": "Monobank personal API у комерційному продукті",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "2.5 Monobank personal API у комерційному продукті"
+    },
+    {
+      "id": "EXT-20260805-2-6",
+      "legacyId": "2.6",
+      "title": "Шрифти",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "2.6 Шрифти"
+    },
+    {
+      "id": "EXT-20260805-3-1",
+      "legacyId": "3.1",
+      "title": "Оплата цифрового контенту повз IAP",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "3.1 Оплата цифрового контенту повз IAP"
+    },
+    {
+      "id": "EXT-20260805-3-2",
+      "legacyId": "3.2",
+      "title": "Privacy Nutrition Labels vs фактичний збір даних",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "3.2 Privacy Nutrition Labels vs фактичний збір даних"
+    },
+    {
+      "id": "EXT-20260805-3-3",
+      "legacyId": "3.3",
+      "title": "Видалення акаунта",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "3.3 Видалення акаунта"
+    },
+    {
+      "id": "EXT-20260805-4-1",
+      "legacyId": "4.1",
+      "title": "Диспропорція «документація vs код»",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "4.1 Диспропорція «документація vs код»"
+    },
+    {
+      "id": "EXT-20260805-4-1-1",
+      "legacyId": "4.1.1",
+      "title": "`main` червоний, і це нікого не зупиняє",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "4.1.1 `main` червоний, і це нікого не зупиняє"
+    },
+    {
+      "id": "EXT-20260805-4-2",
+      "legacyId": "4.2",
+      "title": "Ukrainian-only — і в продукті, і в доках",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "4.2 Ukrainian-only — і в продукті, і в доках"
+    },
+    {
+      "id": "EXT-20260805-4-3",
+      "legacyId": "4.3",
+      "title": "Пригнічені перевірки",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "4.3 Пригнічені перевірки"
+    },
+    {
+      "id": "EXT-20260805-4-4",
+      "legacyId": "4.4",
+      "title": "`mockups/` у репо — 2.4 MB",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "4.4 `mockups/` у репо — 2.4 MB"
+    },
+    {
+      "id": "EXT-20260805-4-5",
+      "legacyId": "4.5",
+      "title": "Provenance AI-згенерованого коду",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "4.5 Provenance AI-згенерованого коду"
+    },
+    {
+      "id": "EXT-20260805-4-6",
+      "legacyId": "4.6",
+      "title": "Supply-chain: auto-merge у main із секретами CI",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "4.6 Supply-chain: auto-merge у main із секретами CI"
+    },
+    {
+      "id": "EXT-20260805-5-1",
+      "legacyId": "5.1",
+      "title": "«П'ять додатків в одному» — це і є претензія",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.1 «П'ять додатків в одному» — це і є претензія"
+    },
+    {
+      "id": "EXT-20260805-5-2",
+      "legacyId": "5.2",
+      "title": "Ціна AI за користувача",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.2 Ціна AI за користувача"
+    },
+    {
+      "id": "EXT-20260805-5-3",
+      "legacyId": "5.3",
+      "title": "Демо-режим і hero-скріншот",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-external-critique-surface.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.3 Демо-режим і hero-скріншот"
+    },
+    {
+      "id": "LEGAL-20260731-5-1",
+      "legacyId": "5.1",
+      "title": "Explicit consent на health-дані (GDPR Art. 9) — блокер",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-07-31-legal-docs-beta-readiness.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.1 Explicit consent на health-дані (GDPR Art. 9) — блокер"
+    },
+    {
+      "id": "LEGAL-20260731-5-2",
+      "legacyId": "5.2",
+      "title": "Реквізити контролера",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-07-31-legal-docs-beta-readiness.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.2 Реквізити контролера"
+    },
+    {
+      "id": "LEGAL-20260731-5-3",
+      "legacyId": "5.3",
+      "title": "Представник за GDPR Art. 27",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-07-31-legal-docs-beta-readiness.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.3 Представник за GDPR Art. 27"
+    },
+    {
+      "id": "LEGAL-20260731-5-4",
+      "legacyId": "5.4",
+      "title": "Обмеження відповідальності до нуля",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-07-31-legal-docs-beta-readiness.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.4 Обмеження відповідальності до нуля"
+    },
+    {
+      "id": "LEGAL-20260731-5-5",
+      "legacyId": "5.5",
+      "title": "Публічна оферта під час безкоштовної бети",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-07-31-legal-docs-beta-readiness.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.5 Публічна оферта під час безкоштовної бети"
+    },
+    {
+      "id": "LEGAL-20260731-5-6",
+      "legacyId": "5.6",
+      "title": "Фото страв і дані третіх осіб",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-07-31-legal-docs-beta-readiness.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.6 Фото страв і дані третіх осіб"
+    },
+    {
+      "id": "LEGAL-20260731-5-7",
+      "legacyId": "5.7",
+      "title": "Право на видалення (Art. 17) не завершене",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-07-31-legal-docs-beta-readiness.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.7 Право на видалення (Art. 17) не завершене"
+    },
+    {
+      "id": "LEGAL-20260731-2-2",
+      "legacyId": "2.2",
+      "title": "Наслідок для `llm-subprocessors.md`",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-07-31-legal-docs-beta-readiness.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "2.2 Наслідок для `llm-subprocessors.md`"
+    },
+    {
+      "id": "LEGAL-20260731-2-3",
+      "legacyId": "2.3",
+      "title": "Що ще треба підтвердити перед публікацією",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-07-31-legal-docs-beta-readiness.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "2.3 Що ще треба підтвердити перед публікацією"
+    },
+    {
+      "id": "LEGAL-20260731-4-1",
+      "legacyId": "4.1",
+      "title": "Розбіжність «згода на аналітику» — суть проблеми",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-07-31-legal-docs-beta-readiness.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "4.1 Розбіжність «згода на аналітику» — суть проблеми"
+    },
+    {
+      "id": "ICONS-20260821-5-1",
+      "legacyId": "5.1",
+      "title": "Мобільні емодзі-пікери Фініка — головний залишок",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-21-icons-and-emoji.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.1 Мобільні емодзі-пікери Фініка — головний залишок"
+    },
+    {
+      "id": "ICONS-20260821-5-2",
+      "legacyId": "5.2",
+      "title": "Мобільні емодзі поза Фініком",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-21-icons-and-emoji.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.2 Мобільні емодзі поза Фініком"
+    },
+    {
+      "id": "ICONS-20260821-5-3",
+      "legacyId": "5.3",
+      "title": "Стрілки в рядкових літералах",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-21-icons-and-emoji.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.3 Стрілки в рядкових літералах"
+    },
+    {
+      "id": "ICONS-20260821-5-4",
+      "legacyId": "5.4",
+      "title": "Мертві поля `emoji`",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-21-icons-and-emoji.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.4 Мертві поля `emoji`"
+    },
+    {
+      "id": "ICONS-20260821-5-5",
+      "legacyId": "5.5",
+      "title": "Дубль таблиці підписів рахунку",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-21-icons-and-emoji.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "5.5 Дубль таблиці підписів рахунку"
+    },
+    {
+      "id": "UNIFY-1-1",
+      "legacyId": "1.1",
+      "title": "insights рахує витрати повз спліти, борги і виключення",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.1. insights рахує витрати повз спліти, борги і виключення"
+    },
+    {
+      "id": "UNIFY-1-2",
+      "legacyId": "1.2",
+      "title": "Початок тижня: вісім реалізацій на двох годинниках",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.2. Початок тижня: вісім реалізацій на двох годинниках"
+    },
+    {
+      "id": "UNIFY-1-3",
+      "legacyId": "1.3",
+      "title": "Баланс ПриватБанку підсумовується повз getMonoTotals",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.3. Баланс ПриватБанку підсумовується повз getMonoTotals"
+    },
+    {
+      "id": "UNIFY-1-4",
+      "legacyId": "1.4",
+      "title": "Обʼєм тренування: шість реалізацій, три без фільтра типу вправи",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.4. Обʼєм тренування: шість реалізацій, три без фільтра типу вправи"
+    },
+    {
+      "id": "UNIFY-1-5-1-7",
+      "legacyId": "1.5-1.7",
+      "title": "Skip-и і grace-бюджет звичок не доїжджають за межі модуля",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.5-1.7. Skip-и і grace-бюджет звичок не доїжджають за межі модуля"
+    },
+    {
+      "id": "UNIFY-1-8",
+      "legacyId": "1.8",
+      "title": "Межі календарного місяця: пʼять способів, три хардкодять +03:00",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.8. Межі календарного місяця: пʼять способів, три хардкодять +03:00"
+    },
+    {
+      "id": "UNIFY-1-9",
+      "legacyId": "1.9",
+      "title": "Ключ поточного місяця YYYY-MM: два з чотирьох способів host-local",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.9. Ключ поточного місяця YYYY-MM: два з чотирьох способів host-local"
+    },
+    {
+      "id": "UNIFY-1-10",
+      "legacyId": "1.10",
+      "title": "Прогноз витрат бере місяць з host-local годинника, Огляд з київського",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.10. Прогноз витрат бере місяць з host-local годинника, Огляд з київського"
+    },
+    {
+      "id": "UNIFY-1-11",
+      "legacyId": "1.11",
+      "title": "Витрати за категорією: одна функція зводить ручну таксономію до канонічного id, друга порівнює буквально",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.11. Витрати за категорією: одна функція зводить ручну таксономію до канонічного id, друга порівнює буквально"
+    },
+    {
+      "id": "UNIFY-1-12",
+      "legacyId": "1.12",
+      "title": "Два знаменники для «середнє за день» у Харчуванні",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.12. Два знаменники для «середнє за день» у Харчуванні"
+    },
+    {
+      "id": "UNIFY-1-13",
+      "legacyId": "1.13",
+      "title": "Денний free-ліміт AI: клієнт рахує повідомлення, сервер одиниці квоти",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.13. Денний free-ліміт AI: клієнт рахує повідомлення, сервер одиниці квоти"
+    },
+    {
+      "id": "UNIFY-1-14",
+      "legacyId": "1.14",
+      "title": "Одна mono-транзакція може отримати два чеки з двох таблиць лінків",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.14. Одна mono-транзакція може отримати два чеки з двох таблиць лінків"
+    },
+    {
+      "id": "UNIFY-1-15",
+      "legacyId": "1.15",
+      "title": "День тренування: три сусідні функції на двох годинниках",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.15. День тренування: три сусідні функції на двох годинниках"
+    },
+    {
+      "id": "UNIFY-1-16",
+      "legacyId": "1.16",
+      "title": "todayDate() існує двічі під одним іменем: web київський, мобайл за пристроєм",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.16. todayDate() існує двічі під одним іменем: web київський, мобайл за пристроєм"
+    },
+    {
+      "id": "UNIFY-1-17",
+      "legacyId": "1.17",
+      "title": "Зсув дня-ключа в Харчуванні форматує по-київському",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.17. Зсув дня-ключа в Харчуванні форматує по-київському"
+    },
+    {
+      "id": "UNIFY-1-18",
+      "legacyId": "1.18",
+      "title": "На одній картці Харчування «сьогодні» за пристроєм, а тиждень за Києвом",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.18. На одній картці Харчування «сьогодні» за пристроєм, а тиждень за Києвом"
+    },
+    {
+      "id": "UNIFY-1-19",
+      "legacyId": "1.19",
+      "title": "dayProgress на мобайлі прибитий до сьогодні і не рахує once",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.19. dayProgress на мобайлі прибитий до сьогодні і не рахує once"
+    },
+    {
+      "id": "UNIFY-1-20",
+      "legacyId": "1.20",
+      "title": "Чат рахує 1RM іншою формулою і без обмеження повторень",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.20. Чат рахує 1RM іншою формулою і без обмеження повторень"
+    },
+    {
+      "id": "UNIFY-1-21",
+      "legacyId": "1.21",
+      "title": "Калькулятор навантаження: три копії драбини і різний вхід у веба та мобайла",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.21. Калькулятор навантаження: три копії драбини і різний вхід у веба та мобайла"
+    },
+    {
+      "id": "UNIFY-1-22",
+      "legacyId": "1.22",
+      "title": "Поточна серія більша за максимальну в одній картці",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.22. Поточна серія більша за максимальну в одній картці"
+    },
+    {
+      "id": "UNIFY-1-23",
+      "legacyId": "1.23",
+      "title": "HabitDetailSheet рахує відсоток власним циклом",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.23. HabitDetailSheet рахує відсоток власним циклом"
+    },
+    {
+      "id": "UNIFY-1-24",
+      "legacyId": "1.24",
+      "title": "«Сьогодні / Вчора» рахуються від двох різних півночей",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.24. «Сьогодні / Вчора» рахуються від двох різних півночей"
+    },
+    {
+      "id": "UNIFY-1-25",
+      "legacyId": "1.25",
+      "title": "Страва з рецепта втрачає час доби поза Києвом",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.25. Страва з рецепта втрачає час доби поза Києвом"
+    },
+    {
+      "id": "UNIFY-1-26",
+      "legacyId": "1.26",
+      "title": "Сторіс форматують числа й гроші повз канон",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.26. Сторіс форматують числа й гроші повз канон"
+    },
+    {
+      "id": "UNIFY-1-27",
+      "legacyId": "1.27",
+      "title": "insights несе власну таблицю підписів категорій",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.27. insights несе власну таблицю підписів категорій"
+    },
+    {
+      "id": "UNIFY-1-28",
+      "legacyId": "1.28",
+      "title": "Дрібні розбіжності низького ризику",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1.28. Дрібні розбіжності низького ризику"
+    },
+    {
+      "id": "UNIFY-2-1",
+      "legacyId": "2.1",
+      "title": "Device-local `YYYY-MM-DD` форматер, 8 копій.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-2",
+      "legacyId": "2.2",
+      "title": "Київський day-key, 4 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-3",
+      "legacyId": "2.3",
+      "title": "Модуль Рутини обходить власний анкер доби у восьми місцях.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-4",
+      "legacyId": "2.4",
+      "title": "RoutineApp.helpers.ts це копія calendarGrid.ts, monthGrid існує тричі.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-5",
+      "legacyId": "2.5",
+      "title": "`dateKeyMinusDays`, 2 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-6",
+      "legacyId": "2.6",
+      "title": "Підпис «день + скорочений місяць», 9 копій.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-7",
+      "legacyId": "2.7",
+      "title": "Підпис діапазону тижня, 3 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-8",
+      "legacyId": "2.8",
+      "title": "Штамп «ДД.ММ ГГ:ХХ», 2 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-9",
+      "legacyId": "2.9",
+      "title": "Привітання і дата шапки, 2 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-10",
+      "legacyId": "2.10",
+      "title": "Коерція «секунди чи мілісекунди» (`> 1e10`), 9 сайтів.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-11",
+      "legacyId": "2.11",
+      "title": "Точність показу «кг/л до сотих», 2 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-12",
+      "legacyId": "2.12",
+      "title": "Блок міні-стовпчиків звіту, 3 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-13",
+      "legacyId": "2.13",
+      "title": "`clamp0`, 4 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-14",
+      "legacyId": "2.14",
+      "title": "`toFiniteNumber`, 5 копій плюс розбіжний сусід.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-15",
+      "legacyId": "2.15",
+      "title": "`clamp(value, min, max)`, 2 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-16",
+      "legacyId": "2.16",
+      "title": "`prefersReducedMotion`, 2 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-17",
+      "legacyId": "2.17",
+      "title": "Коефіцієнти Атвотера 4/9/4, 5 сайтів.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-18",
+      "legacyId": "2.18",
+      "title": "Смуга «ціль виконано» 0.95…1.05, 3 сайти.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-19",
+      "legacyId": "2.19",
+      "title": "Пороги відновлення 20/44 години, 2 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-20",
+      "legacyId": "2.20",
+      "title": "Тривалість тренування, 2 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-21",
+      "legacyId": "2.21",
+      "title": "Цикл «останні N днів, найстаріший першим», 2 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-22",
+      "legacyId": "2.22",
+      "title": "Фільтр видимих рахунків, 2 копії в одному пакеті.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-23",
+      "legacyId": "2.23",
+      "title": "Поріг «скільки модулів дали сигнал», дзеркало клієнт↔сервер.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-24",
+      "legacyId": "2.24",
+      "title": "`calculateRemainingBudget` це мертвий двійник `calculateLimitUsage`.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-25",
+      "legacyId": "2.25",
+      "title": "Енум типу прийому їжі, 3 оголошення.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-26",
+      "legacyId": "2.26",
+      "title": "Вгадування типу прийому їжі за годиною, 2 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-27",
+      "legacyId": "2.27",
+      "title": "Форма макросів описана тричі.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-28",
+      "legacyId": "2.28",
+      "title": "Резолв `categoryIds` з фолбеком на legacy `categoryId`, 2 копії.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "UNIFY-2-29",
+      "legacyId": "2.29",
+      "title": "Два паралельні RQ-реєстри для тих самих ендпоінтів.",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/unification-modules.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "BROWSER-20260804-F-002",
+      "legacyId": "F-002",
+      "title": "P3 · /fizruk · Подвійне CTA «Почати тренування»",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/browser-qa-2026-08-04/findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "F-002 · P3 · /fizruk · Подвійне CTA «Почати тренування»"
+    },
+    {
+      "id": "BROWSER-20260804-F-005",
+      "legacyId": "F-005",
+      "title": "P2 (на 5ed8f5497 НЕ відтворюється — лишити на радарі) · boot · kvStoreBoot: sqlite upsert failed",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/browser-qa-2026-08-04/findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "F-005 · P2 (на 5ed8f5497 НЕ відтворюється — лишити на радарі) · boot · kvStoreBoot: sqlite upsert failed"
+    },
+    {
+      "id": "BROWSER-20260804-F-006",
+      "legacyId": "F-006",
+      "title": "P3 · холодний старт · Лише «Завантаження…» без прогресу",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/browser-qa-2026-08-04/findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "F-006 · P3 · холодний старт · Лише «Завантаження…» без прогресу"
+    },
+    {
+      "id": "COVERAGE-20260804-2",
+      "legacyId": "2",
+      "title": "Підключити непідключені Playwright-лейни",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-04-test-coverage-depth-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело позначає частково; visual/Argos прибрано ADR-0082. Тріаж має вирішити, чи залишок ще застосовний."
+        }
+      ],
+      "sourceAnchor": "Поправка до рекомендації №6 (2026-08-25)"
+    },
+    {
+      "id": "PROFILE-20260805-B6",
+      "legacyId": "B6",
+      "title": "Бек-дейтова транзакція: чи перемикати селектор місяця",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-05-browser-profile-testing.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Основний B6 виправлений; імпортується лише відкрите питання після таблиці «Ухвалені рішення»."
+        }
+      ],
+      "sourceAnchor": "B6 — перший запис ховається одразу після створення `[minor]`"
+    },
+    {
+      "id": "PROFILE-20260805-B7",
+      "legacyId": "B7",
+      "title": "Повторне додавання продукту: чи оновлювати регістр збереженої назви",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-05-browser-profile-testing.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Основний B7 виправлений; імпортується лише відкрите питання після таблиці «Ухвалені рішення»."
+        }
+      ],
+      "sourceAnchor": "B7 — комора перетворює назву на нижній регістр `[minor]`"
+    },
+    {
+      "id": "FIZRUK-20260807-4-4",
+      "legacyId": "4.4",
+      "title": "Двоколонка активного тренування на десктопі",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-07-fizruk-deep-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "§7 «Лишилось після хвилі 5»: мінімальний max-w уже стоїть; повний варіант відкритий."
+        }
+      ],
+      "sourceAnchor": "4.4 Desktop (1280px)"
+    },
+    {
+      "id": "FIZRUK-20260807-L-10-3",
+      "legacyId": "L-10.3",
+      "title": "Wellbeing: одне джерело замість містка",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-07-fizruk-deep-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "§7 «Лишилось після хвилі 5»: сутності фінішу і Body лишаються дві; решта старого плану перекрита хвилями."
+        }
+      ]
+    },
+    {
+      "id": "GLOBAL-20260804-1",
+      "legacyId": "1",
+      "title": "Інтермітентний фриз рендерера при hard-навігації залогіненого користувача",
+      "severity": "blocker",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "1. Інтермітентний фриз рендерера при hard-навігації (blocker)"
+    },
+    {
+      "id": "GLOBAL-20260804-8",
+      "legacyId": "8",
+      "title": "Deep-link `/finyk/cards` мовчки фолбечиться на «Огляд»",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "Фікс-хвиля 2026-08-04 (знахідки 2, 3, 6, 7)"
+    },
+    {
+      "id": "GLOBAL-20260804-9",
+      "legacyId": "9",
+      "title": "Після «Завершити» тренування — «Активне тренування не знайдено» замість підсумку",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "GLOBAL-20260804-10",
+      "legacyId": "10",
+      "title": "Понадлімітна сума витрати: `aria-invalid` без видимого тексту, submit no-op",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "GLOBAL-20260804-11",
+      "legacyId": "11",
+      "title": "«Не вдалося отримати план харчування» — без причини і дії",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-09-05",
+          "event": "cross-reference",
+          "note": "Пізніший product-audit 2026-09-01 повʼязує з UX-1 і заявляє виправлення; старий описано суперечить новішому джерелу. Нова live-верифікація відсутня."
+        }
+      ]
+    },
+    {
+      "id": "GLOBAL-20260804-12",
+      "legacyId": "12",
+      "title": "Англомовні артефакти: Month/Day/Year, Hours/Minutes/AM/PM, Quick Start, «check»",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "GLOBAL-20260804-13",
+      "legacyId": "13",
+      "title": "«перевірте вашу поштову скриньку» — ви-форма всупереч style guide",
+      "severity": "polish",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "GLOBAL-20260804-14",
+      "legacyId": "14",
+      "title": "«80 сценаріїв» (`/assistant`) vs «~60 сценаріїв» (`/capabilities`)",
+      "severity": "polish",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "fixed-pending-verification",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        },
+        {
+          "at": "2026-09-05",
+          "event": "cross-reference",
+          "note": "Пізніший product-audit 2026-09-01 повʼязує з TXT-6 і заявляє виправлення; старий описано суперечить новішому джерелу. Нова live-верифікація відсутня."
+        }
+      ]
+    },
+    {
+      "id": "GLOBAL-20260804-15",
+      "legacyId": "15",
+      "title": "Подвоєний accessible text у нав-кнопках («ОпераціїОперації»)",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "GLOBAL-20260804-16",
+      "legacyId": "16",
+      "title": "`ai-memory/event-sync` спамить 503 при вимкненому AI_MEMORY",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "GLOBAL-20260804-17",
+      "legacyId": "17",
+      "title": "`send-verification-email` віддає 200 без відправки (RESEND незконфігурований)",
+      "severity": "minor",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "GLOBAL-20260804-18",
+      "legacyId": "18",
+      "title": "Біометрія: date-спінбатони з дефолтними значеннями `0`",
+      "severity": "polish",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "8–18. Minor / polish"
+    },
+    {
+      "id": "GLOBAL-20260804-W-16",
+      "legacyId": "W-16",
+      "title": "Medium код-рівневі знахідки (16 у вихідному зведенні)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Імпорт кластеру, а не вигаданих індивідуальних ID; повний JSON wf_d5f23f12-dbf недоступний у репозиторії. Частина підпису навігації вже виправлена; потрібен тріаж решти."
+        }
+      ]
+    },
+    {
+      "id": "GLOBAL-20260804-W-31",
+      "legacyId": "W-31",
+      "title": "Low код-рівневі знахідки (31 у вихідному зведенні)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-04-global-qa-findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Імпорт кластеру, а не вигаданих індивідуальних ID; повний JSON wf_d5f23f12-dbf недоступний у репозиторії. Частина підпису навігації вже виправлена; потрібен тріаж решти."
+        }
+      ]
+    },
+    {
+      "id": "PRODUCT-20260901-SLOP-3",
+      "legacyId": "SLOP-3",
+      "title": "Ієрархія густини погіршилась: `caption`+`label` = 84,2 % усіх `text-style-*` (було 80,9 %); `headline` 35, `display` 14 на весь продукт",
+      "severity": "polish",
+      "source": "docs/90-work/audits/2026-09-01-product-audit/findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Стан у зведеній таблиці: специфіковано — [`density-hierarchy-spec.md`](../../../05-design/design/density-hierarchy-spec.md). Історичний імпорт; не свіжий прогін."
+        }
+      ]
+    },
+    {
+      "id": "PRODUCT-20260901-SLOP-4",
+      "legacyId": "SLOP-4",
+      "title": "Розкатка «край і зріз» заморожена: 8 справжніх `edge=` на 134 `<Card>` (08-08: 14 сирих / 159); `HeroCard` finyk 5 ролей / fizruk 2 ролі — байт у байт як 08-08",
+      "severity": "polish",
+      "source": "docs/90-work/audits/2026-09-01-product-audit/findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Стан у зведеній таблиці: підтверджено. Історичний імпорт; не свіжий прогін."
+        }
+      ]
+    },
+    {
+      "id": "PRODUCT-20260901-AI-2",
+      "legacyId": "AI-2",
+      "title": "Перший хід чату не стрімиться взагалі: клієнт не просить, сервер не підтримує, метрика `ai_first_token_ms` цього шляху не бачить. «TTFT 5–14 с» — це повна генерація плюс серійна робота до виклику; SLO «first token < 1,5 с» до шляху не застосовний",
+      "severity": "major",
+      "source": "docs/90-work/audits/2026-09-01-product-audit/findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Стан у зведеній таблиці: частково закрито 2026-09-02: замір фаз (`chat_first_turn_phase_ms`) у коді, SLO розділено на два за рішенням founder-а (варіант «б»). Відкритим лишається стрім першого ходу — тільки він прибирає порожній екран. Історичний імпорт; не свіжий прогін."
+        }
+      ],
+      "sourceAnchor": "AI-2 — перший хід чату не стрімиться взагалі [major]"
+    },
+    {
+      "id": "PRODUCT-20260901-VIS-2",
+      "legacyId": "VIS-2",
+      "title": "Чипи з `truncate` ріжуть короткий текст на 390 px: «0/5 запи…» у шапці чату (лічильник квоти, 3 px), «Читати 20 хвил…» у списку звичок (7 px) — обидва без tooltip",
+      "severity": "polish",
+      "source": "docs/90-work/audits/2026-09-01-product-audit/findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Стан у зведеній таблиці: 🆕. Історичний імпорт; не свіжий прогін."
+        }
+      ],
+      "sourceAnchor": "VIS-2 — чипи `truncate` ріжуть короткий текст на 390 px [polish]"
+    },
+    {
+      "id": "PRODUCT-20260901-CI-8",
+      "legacyId": "CI-8",
+      "title": "Lighthouse (локально, desktop preset, медіана 3 прогонів): LCP 3 282 / 3 712 / 3 665 мс на `/`→`/welcome`, `/finyk`, `/nutrition/menu` проти `error`-порогу 3 000; FCP 1 600–1 980 мс проти warn 1 500 на всіх 4; TBT у нормі. `/fizruk` 2 900 мс проходить",
+      "severity": "major",
+      "source": "docs/90-work/audits/2026-09-01-product-audit/findings.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Стан у зведеній таблиці: 🆕 повторний замір після CI-5 — без змін (LCP 3,25 / 3,75 / 2,77 / 3,58 с): корінь не в байтах критичного шляху, а в буті (SQLite/дані) — окрема робота. Історичний імпорт; не свіжий прогін."
+        }
+      ],
+      "sourceAnchor": "CI-8 — LCP понад 3 000 мс на трьох із чотирьох LHCI-маршрутів [major]"
+    },
+    {
+      "id": "SLOP-20260901-F7",
+      "legacyId": "F7",
+      "title": "Mobile: емодзі-як-дані та залишок декоративних емодзі",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-09-01-anti-slop-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "§4а та header: єдиний відкритий F7; частина закрита 2026-09-03. Перетинається з ICONS-20260821-5-1/5-2; джерела мають різний периметр, не зливаються автоматично."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-1-0",
+      "legacyId": "1.0",
+      "title": "Компрометований devDependency → auto-merge → секрети CI → `main` → прод",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ],
+      "sourceAnchor": "1.0 Компрометований devDependency → auto-merge → секрети CI → `main` → прод"
+    },
+    {
+      "id": "SECURITY-20260804-1-1",
+      "legacyId": "1.1",
+      "title": "Увесь per-IP rate-limit веб-трафіку схлопнутий в один бакет",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ],
+      "sourceAnchor": "1.1 Увесь per-IP rate-limit веб-трафіку схлопнутий в один бакет"
+    },
+    {
+      "id": "SECURITY-20260804-1-2",
+      "legacyId": "1.2",
+      "title": "CORS прода безумовно довіряє localhost із `Allow-Credentials: true`",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ],
+      "sourceAnchor": "1.2 CORS прода безумовно довіряє localhost із `Allow-Credentials: true`"
+    },
+    {
+      "id": "SECURITY-20260804-1-3",
+      "legacyId": "1.3",
+      "title": "Неавтентифіковані платні ендпоінти",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ],
+      "sourceAnchor": "1.3 Неавтентифіковані платні ендпоінти"
+    },
+    {
+      "id": "SECURITY-20260804-1-4",
+      "legacyId": "1.4",
+      "title": "Підписка ніколи не спливає",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ],
+      "sourceAnchor": "1.4 Підписка ніколи не спливає"
+    },
+    {
+      "id": "SECURITY-20260804-1-5",
+      "legacyId": "1.5",
+      "title": "Серверного paywall у проді немає",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ],
+      "sourceAnchor": "1.5 Серверного paywall у проді немає"
+    },
+    {
+      "id": "SECURITY-20260804-1-6",
+      "legacyId": "1.6",
+      "title": "Відновлювальний контур не відновлює",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ],
+      "sourceAnchor": "1.6 Відновлювальний контур не відновлює"
+    },
+    {
+      "id": "SECURITY-20260804-1-7",
+      "legacyId": "1.7",
+      "title": "Coolify та ops-стек",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ],
+      "sourceAnchor": "1.7 Coolify та ops-стек"
+    },
+    {
+      "id": "SECURITY-20260804-F19",
+      "legacyId": "F19",
+      "title": "Прод-деплой через `workflow_dispatch` з довільної гілки, без environment protection; `container-scan.yml` — окремий workflow без `needs:`, тож Trivy біжить паралельно й не гейтить деплой; `:latest` мутабельний, `provenance:`/`sbom:` відсутні",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-F28",
+      "legacyId": "F28",
+      "title": "`redactKeysRecursively` повертає нередаговане піддерево при повторному посиланні на той самий обʼєкт — обхід єдиного глибокого редактора Pino",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-F6",
+      "legacyId": "F6",
+      "title": "Telegram bot token у path вихідного URL не редагується нічим; `beforeSendTransaction` у Sentry відсутній, тож span/transaction-події взагалі не скрабляться",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-F30",
+      "legacyId": "F30",
+      "title": "CSRF-гейт блокує вебхуки LiqPay і Plata до перевірки підпису — код верифікації недосяжний",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-F5",
+      "legacyId": "F5",
+      "title": "Prometheus label-cardinality DoS: сире `op.table` з тіла запиту потрапляє в лейбл на duplicate-гілці, до наявного cardinality-guard",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-F4",
+      "legacyId": "F4",
+      "title": "Автентифікований SSRF: push-endpoint приймає довільний URL, `/api/push/test` повертає сиру мережеву помилку як оракул",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-F34",
+      "legacyId": "F34",
+      "title": "Renovate автомержить dev-залежності без cooldown — нульове вікно на виявлення компрометованого релізу",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-F44",
+      "legacyId": "F44",
+      "title": "Відсутній `BETTER_AUTH_URL` у проді тихо знімає `Secure` з session-cookie; startup-гейт цього не ловить",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-GDPR",
+      "legacyId": "GDPR",
+      "title": "Видалення й експорт не охоплюють модульні дані",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-N8N-SQL",
+      "legacyId": "N8N-SQL",
+      "title": "n8n: інтерполяція вебхуків у SQL",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-N8N-AUTH",
+      "legacyId": "N8N-AUTH",
+      "title": "n8n: неавтентифіковані вебхуки й auto-approve",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-HARNESS",
+      "legacyId": "HARNESS",
+      "title": "Агентський тулінг: широкі allow та непіновані MCP",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-DEPENDENCIES",
+      "legacyId": "DEPENDENCIES",
+      "title": "Аудит залежностей і невідповідність overrides",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Джерело заявляє 26/50 виправлених без поіменної відповідності; стан цього кандидата невизначений. Open означає потребу тріажу, не підтверджену актуальну вразливість."
+        }
+      ]
+    },
+    {
+      "id": "LOST-20260805-3-1",
+      "legacyId": "3.1",
+      "title": "Коміт 106b43d3 поверх мерджу: навігаційні підписи й low-vision тест",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-lost-commits-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "3.1 Коміти поверх мерджу"
+    },
+    {
+      "id": "LOST-20260805-3-3",
+      "legacyId": "3.3",
+      "title": "PR #324 закритий без мерджу: whats-new 2026-07-20",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-lost-commits-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ],
+      "sourceAnchor": "3.3 Закритий PR"
+    },
+    {
+      "id": "LOST-20260805-branch-CMP-74",
+      "legacyId": "branch-CMP-74",
+      "title": "`CMP-74`: `feat(web): trial_day7 paywall surface + A/B feature flag + i18n` — 11 файлів, +754. У `main` немає ні `TrialDay7Paywall.tsx`, ні `billing/featureFlags.ts`, ні growth-experiment-доку `01-paywall-day7-benefit-socialproof.md`",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-lost-commits-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "LOST-20260805-branch-cursor-web-coverage-wave18-core-hub-ab0a",
+      "legacyId": "branch-cursor/web-coverage-wave18-core-hub-ab0a",
+      "title": "`cursor/web-coverage-wave18-core-hub-ab0a`: 19 тест-файлів `*.branches.test.tsx` (core hub + settings)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-lost-commits-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "LOST-20260805-branch-cursor-web-coverage-wave20-nutrition-ab0a",
+      "legacyId": "branch-cursor/web-coverage-wave20-nutrition-ab0a",
+      "title": "`cursor/web-coverage-wave20-nutrition-ab0a`: 13 тест-файлів (nutrition components + hooks)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-lost-commits-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "LOST-20260805-branch-cursor-web-coverage-wave19-finyk-ab0a",
+      "legacyId": "branch-cursor/web-coverage-wave19-finyk-ab0a",
+      "title": "`cursor/web-coverage-wave19-finyk-ab0a`: 8 тест-файлів (finyk lazy pages + hooks)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-lost-commits-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "LOST-20260805-branch-cursor-web-coverage-wave21-fizruk-routine-ab0a",
+      "legacyId": "branch-cursor/web-coverage-wave21-fizruk-routine-ab0a",
+      "title": "`cursor/web-coverage-wave21-fizruk-routine-ab0a`: 3 тест-файли (routine/fizruk shell)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-lost-commits-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "LOST-20260805-branch-spike-pro-monthly-cap",
+      "legacyId": "branch-spike/pro-monthly-cap",
+      "title": "`spike/pro-monthly-cap`: `feat(server): add monthly AI usage bucket` — міграція `077_ai_usage_daily_monthly_bucket`. Номер 077 у `main` вже зайнятий `077_ai_usage_daily_pro_tier_buckets`, тож гілка конфліктує з Hard Rule #4 і в поточному вигляді не застосовна",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-lost-commits-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "LOST-20260805-branch-claude-spec-fab-manual-income",
+      "legacyId": "branch-claude/spec-fab-manual-income",
+      "title": "`claude/spec-fab-manual-income`: спека `docs/90-work/planning/specs/fab-and-manual-income.md` — у `main` відсутня",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-lost-commits-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Актуальність потребує тріажу; імпорт історичного спостереження, без нового відтворення."
+        }
+      ]
+    },
+    {
+      "id": "ORPHAN-20260805-2u430",
+      "legacyId": "2а",
+      "title": "Нуль runtime-згадок (єдина згадка — allowlist `check-schema-drift.mjs`)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "2а. Нуль runtime-згадок (єдина згадка — allowlist `check-schema-drift.mjs`)"
+    },
+    {
+      "id": "ORPHAN-20260805-2u431",
+      "legacyId": "2б",
+      "title": "Never-wired: таблиця + internal-ендпоінт існують, але викликати їх нікому",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "2б. Never-wired: таблиця + internal-ендпоінт існують, але викликати їх нікому"
+    },
+    {
+      "id": "ORPHAN-20260805-2u432",
+      "legacyId": "2в",
+      "title": "Односторонній трафік",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "2в. Односторонній трафік"
+    },
+    {
+      "id": "ORPHAN-20260805-3u430",
+      "legacyId": "3а",
+      "title": "Never-wired: ендпоінт під n8n-воркфлоу, який не приїхав (20)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "3а. Never-wired: ендпоінт під n8n-воркфлоу, який не приїхав (20)"
+    },
+    {
+      "id": "ORPHAN-20260805-3u431",
+      "legacyId": "3б",
+      "title": "Dead-consumer-removed: споживача знесла хвиля ADR-0075 (OpenClaw), роут лишився (15)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "3б. Dead-consumer-removed: споживача знесла хвиля ADR-0075 (OpenClaw), роут лишився (15)"
+    },
+    {
+      "id": "ORPHAN-20260805-3u432",
+      "legacyId": "3в",
+      "title": "api-client: 6 методів + 10 хуків без споживачів",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "3в. api-client: 6 методів + 10 хуків без споживачів"
+    },
+    {
+      "id": "ORPHAN-20260805-3u433",
+      "legacyId": "3г",
+      "title": "Контрактний шар (Hard Rule #3) і OpenAPI",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "3г. Контрактний шар (Hard Rule #3) і OpenAPI"
+    },
+    {
+      "id": "ORPHAN-20260805-4u430",
+      "legacyId": "4а",
+      "title": "Незмонтована вертикаль strategic mode",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "4а. Незмонтована вертикаль strategic mode"
+    },
+    {
+      "id": "ORPHAN-20260805-4u432",
+      "legacyId": "4в",
+      "title": "RQ key-фабрики: 8 ghost-методів у `queryKeys.ts`",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "4в. RQ key-фабрики: 8 ghost-методів у `queryKeys.ts`"
+    },
+    {
+      "id": "ORPHAN-20260805-4u433",
+      "legacyId": "4г",
+      "title": "Scaffolded-барелі з `knip.json` ignore — 8/8 досі без споживачів + дрейф маркерів",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "4г. Scaffolded-барелі з `knip.json` ignore — 8/8 досі без споживачів + дрейф маркерів"
+    },
+    {
+      "id": "ORPHAN-20260805-4u434",
+      "legacyId": "4д",
+      "title": "Never-wired компоненти (v0-батчі 2026-04-28)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "4д. Never-wired компоненти (v0-батчі 2026-04-28)"
+    },
+    {
+      "id": "ORPHAN-20260805-4u435",
+      "legacyId": "4е",
+      "title": "Активи",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "4е. Активи"
+    },
+    {
+      "id": "ORPHAN-20260805-5u430",
+      "legacyId": "5а",
+      "title": "apps/mobile: ~35 сирітських файлів, ~6 270 LOC",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "5а. apps/mobile: ~35 сирітських файлів, ~6 270 LOC"
+    },
+    {
+      "id": "ORPHAN-20260805-5u433",
+      "legacyId": "5г",
+      "title": "Спільні пакети очима mobile",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "5г. Спільні пакети очима mobile"
+    },
+    {
+      "id": "ORPHAN-20260805-6u431",
+      "legacyId": "6б",
+      "title": "Скрипти: три сироти з одного коміту",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "6б. Скрипти: три сироти з одного коміту"
+    },
+    {
+      "id": "ORPHAN-20260805-6u434",
+      "legacyId": "6д",
+      "title": "Конфіги",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "6д. Конфіги"
+    },
+    {
+      "id": "ORPHAN-20260805-6u435",
+      "legacyId": "6е",
+      "title": "Осиротілий deploy-таргет: четвертий Vercel-проєкт",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "6е. Осиротілий deploy-таргет: четвертий Vercel-проєкт"
+    },
+    {
+      "id": "ORPHAN-20260805-7u430",
+      "legacyId": "7а",
+      "title": "`getFreshSessionUser` — security-хелпер, написаний і не підключений",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "7а. `getFreshSessionUser` — security-хелпер, написаний і не підключений"
+    },
+    {
+      "id": "ORPHAN-20260805-7u431",
+      "legacyId": "7б",
+      "title": "`syncConflictsTotal` — метрика, яку ніхто не інкрементує",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "7б. `syncConflictsTotal` — метрика, яку ніхто не інкрементує"
+    },
+    {
+      "id": "ORPHAN-20260805-7u432",
+      "legacyId": "7в",
+      "title": "Тест-хелпери, яких не використовують навіть тести (5)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "7в. Тест-хелпери, яких не використовують навіть тести (5)"
+    },
+    {
+      "id": "ORPHAN-20260805-7u433",
+      "legacyId": "7г",
+      "title": "Другого порядку — експорти всередині вже мертвих компонентів (5)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "7г. Другого порядку — експорти всередині вже мертвих компонентів (5)"
+    },
+    {
+      "id": "ORPHAN-20260805-7u434",
+      "legacyId": "7д",
+      "title": "Решта: дизайн-система й дрібний осад (16)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "7д. Решта: дизайн-система й дрібний осад (16)"
+    },
+    {
+      "id": "ORPHAN-20260805-9u430",
+      "legacyId": "9а",
+      "title": "Placeholder-и без call sites, вік 3+ місяці (10) — справжні never-wired",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "9а. Placeholder-и без call sites, вік 3+ місяці (10) — справжні never-wired"
+    },
+    {
+      "id": "ORPHAN-20260805-9u431",
+      "legacyId": "9б",
+      "title": "Consumer-removed: подія стріляла, споживача видалили, константа лишилась (5)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "9б. Consumer-removed: подія стріляла, споживача видалили, константа лишилась (5)"
+    },
+    {
+      "id": "ORPHAN-20260805-9u432",
+      "legacyId": "9в",
+      "title": "Call sites живі, у прод не досяжні (~20)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "9в. Call sites живі, у прод не досяжні (~20)"
+    },
+    {
+      "id": "ORPHAN-20260805-9u433",
+      "legacyId": "9г",
+      "title": "Dormant-кластери: стріляли, мовчать 1.5+ місяця",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "9г. Dormant-кластери: стріляли, мовчать 1.5+ місяця"
+    },
+    {
+      "id": "ORPHAN-20260805-1",
+      "legacyId": "1",
+      "title": "Governance-sync трактує історичні знахідки як поточні твердження",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "1. Стан механічних гейтів і їхні сліпі зони"
+    },
+    {
+      "id": "ORPHAN-20260805-MONO-ROTATION",
+      "legacyId": "MONO-ROTATION",
+      "title": "Monobank: перевірити cron ротації webhook-секрету в Coolify",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ]
+    },
+    {
+      "id": "ORPHAN-20260805-8",
+      "legacyId": "8",
+      "title": "Невикористані типи (16)",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "Аудит сиротілого коду, елементів і таблиць — 2026-08-05"
+    },
+    {
+      "id": "ORPHAN-20260805-9-SIDEBAR",
+      "legacyId": "9-SIDEBAR",
+      "title": "HubChat: 6 HTTP-помилок із 6 відправлень у історичній телеметрії",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ]
+    },
+    {
+      "id": "ORPHAN-20260805-10",
+      "legacyId": "10",
+      "title": "Телеметрія й аналітичний state",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/2026-08-05-orphaned-code-audit.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тематичний кластер із джерела; актуальність і членство потребують тріажу на поточному commit. Це не нове відтворення."
+        }
+      ],
+      "sourceAnchor": "3в. api-client: 6 методів + 10 хуків без споживачів"
+    },
+    {
+      "id": "SECURITY-20260804-RUNTIME",
+      "legacyId": "SECURITY-20260804-RUNTIME",
+      "title": "Дрейф Node, Docker runtime без digest",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тріаж історичного security-кандидата; 26/50 закритих у header не зіставлено з ID, поточна вразливість не підтверджувалась."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-EXPO",
+      "legacyId": "SECURITY-20260804-EXPO",
+      "title": "Застарілий Expo SDK",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тріаж історичного security-кандидата; 26/50 закритих у header не зіставлено з ID, поточна вразливість не підтверджувалась."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-AUDIT-GATE",
+      "legacyId": "SECURITY-20260804-AUDIT-GATE",
+      "title": "audit-exceptions: fail-open при невалідному JSON",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тріаж історичного security-кандидата; 26/50 закритих у header не зіставлено з ID, поточна вразливість не підтверджувалась."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-OSV-GATE",
+      "legacyId": "SECURITY-20260804-OSV-GATE",
+      "title": "OSV nightly не зберігає справжній exit code",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тріаж історичного security-кандидата; 26/50 закритих у header не зіставлено з ID, поточна вразливість не підтверджувалась."
+        }
+      ]
+    },
+    {
+      "id": "SECURITY-20260804-SQLITE",
+      "legacyId": "SECURITY-20260804-SQLITE",
+      "title": "Мобільна SQLite без шифрування",
+      "severity": "unrated",
+      "source": "docs/90-work/audits/security-comprehensive-2026-08-04.md",
+      "status": "open",
+      "history": [
+        {
+          "at": "2026-09-05",
+          "event": "imported",
+          "note": "Тріаж історичного security-кандидата; 26/50 закритих у header не зіставлено з ID, поточна вразливість не підтверджувалась."
+        }
+      ]
+    }
+  ]
+}

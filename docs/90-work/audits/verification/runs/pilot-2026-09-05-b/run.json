@@ -1,0 +1,267 @@
+{
+  "schemaVersion": 1,
+  "id": "pilot-2026-09-05-b",
+  "status": "closed",
+  "createdAt": "2026-09-05T17:02:24.239Z",
+  "kind": "live",
+  "metadata": {
+    "executor": "Codex",
+    "commit": "1c0d99a1b1adae91e44d39712585fe1d32208214",
+    "dirty": true,
+    "deployment": "local Vite preview + local API + Docker PostgreSQL",
+    "environment": "Windows 11; Docker Desktop 4.78.0; Node 22.19.0",
+    "baseUrl": "http://127.0.0.1:4173",
+    "browser": "Google Chrome 130 headless via Playwright",
+    "viewport": "1280x800 plus 390x844 coarse",
+    "timezone": "Europe/Kyiv",
+    "flags": {
+      "openRouterFromRootEnv": true,
+      "externalIntegrations": false
+    },
+    "seedRevision": "pilot-expense-12345-v1",
+    "accounts": ["pilot-disposable-b"],
+    "ai": {
+      "mode": "live",
+      "model": "server-default/OpenRouter",
+      "configuration": "local default registry; no override",
+      "budgetUsd": 5
+    },
+    "baseline": "pilot-2026-09-05-a"
+  },
+  "scenarios": [
+    {
+      "id": "JRN-expense-create",
+      "revision": 1,
+      "title": "Створення витрати та reload",
+      "suite": "journeys",
+      "modules": ["finyk", "web"],
+      "modes": ["smoke", "full", "pilot"],
+      "profiles": ["rich-free"],
+      "source": "docs/01-product/model/finyk.md",
+      "preconditions": "Локальний або test стенд; аккаунт має стабільний seed.",
+      "steps": [
+        "Зафіксувати поточний підсумок витрат.",
+        "Створити витрату 12345 копійок.",
+        "Перезавантажити маршрут транзакцій."
+      ],
+      "expected": [
+        "Новий запис рівно один.",
+        "Підсумок збільшився на 12345 копійок."
+      ],
+      "evidence": ["скриншот до/після або trace", "значення підсумку"],
+      "cleanup": "Видалити витрату або використати disposable профіль.",
+      "pitfalls": "Не використовувати browser state, у якому вже створювались дані, для sync-сценарію."
+    },
+    {
+      "id": "CALC-expense-independent",
+      "revision": 1,
+      "title": "Незалежна перевірка суми витрат",
+      "suite": "logic",
+      "modules": ["finyk"],
+      "modes": ["full", "pilot"],
+      "profiles": ["rich-free"],
+      "source": "docs/90-work/audits/2026-09-01-product-audit/checklists.md#calc--правильність-розрахунків",
+      "preconditions": "Є контрольний підсумок до створення витрати.",
+      "steps": [
+        "Скласти очікуване значення поза UI.",
+        "Зіставити з Оглядом і Аналітикою."
+      ],
+      "expected": ["Кожна поверхня має те саме значення в копійках."],
+      "evidence": ["таблиця еталон/факт"],
+      "cleanup": "Немає.",
+      "pitfalls": "Не округляти проміжні значення; гроші — number у minor units."
+    },
+    {
+      "id": "SYNC-fresh-device-pull",
+      "revision": 1,
+      "title": "Pull на новому пристрої",
+      "suite": "data",
+      "modules": ["sync", "finyk"],
+      "modes": ["full", "pilot"],
+      "profiles": ["sync-same-user-device-a", "sync-same-user-device-b"],
+      "source": "docs/90-work/audits/2026-09-01-product-audit/accounts.md#6-пастка-storagestate--новий-пристрій",
+      "preconditions": "Той самий одноразовий користувач; витрата створена у чистому context A; підтверджено успішний push до входу у context B.",
+      "steps": [
+        "Відкрити новий browser context без storageState.",
+        "Увійти тим самим логіном у чистому context B без storageState.",
+        "Дочекатися pull та відкрити транзакції."
+      ],
+      "expected": ["Витрата відображається один раз; outbox не зростає."],
+      "evidence": ["screenshot другого контексту", "мережевий trace sync"],
+      "cleanup": "Видалити disposable акаунти.",
+      "pitfalls": "storageState не моделює інший пристрій."
+    },
+    {
+      "id": "AI-expense-grounding",
+      "revision": 1,
+      "title": "ШІ посилається на фактичну витрату",
+      "suite": "ai",
+      "modules": ["ai", "finyk"],
+      "modes": ["full", "pilot"],
+      "profiles": ["rich-pro"],
+      "source": "docs/01-product/model/hub-coach.md",
+      "preconditions": "Live ключ і бюджет фази не перевищує $5; контрольна витрата є в даних.",
+      "steps": [
+        "Попросити чат назвати останню витрату.",
+        "Перевірити tool trace та відповідь."
+      ],
+      "expected": [
+        "Відповідь відповідає фактичному запису.",
+        "Tool trace не має деструктивної дії без confirm."
+      ],
+      "evidence": ["збережений trace", "скриншот відповіді", "витрата/модель"],
+      "cleanup": "Немає.",
+      "pitfalls": "Mock не є доказом live; не записувати ключ або повний чутливий prompt."
+    },
+    {
+      "id": "EXP-expense-accessible",
+      "revision": 1,
+      "title": "Витрата без обрізання і з доступним фокусом",
+      "suite": "experience",
+      "modules": ["web", "finyk"],
+      "modes": ["smoke", "full", "pilot"],
+      "profiles": ["rich-free"],
+      "source": "docs/05-design/design/anti-slop-strategy.md#6-slop-тест--три-перевірки-на-design-review",
+      "preconditions": "Є створена контрольна витрата.",
+      "steps": [
+        "Перевірити desktop та 390×844 coarse viewport.",
+        "Пройти до дії клавіатурою.",
+        "Відповісти на три перевірки anti-slop для екрана."
+      ],
+      "expected": [
+        "Немає горизонтального overflow або hidden clipped content.",
+        "Фокус видимий і дія доступна.",
+        "Є аргументований anti-slop висновок."
+      ],
+      "evidence": ["два скриншоти", "запис фокусу", "нотатка anti-slop"],
+      "cleanup": "Немає.",
+      "pitfalls": "Перевіряти і document overflow, і scrollWidth кліперів."
+    }
+  ],
+  "attempts": [
+    {
+      "id": "b-jrn",
+      "scenarioId": "JRN-expense-create",
+      "status": "pass",
+      "actual": "На іншому disposable user витрату 123,45 ₴ створено рівно один раз і підтверджено після reload.",
+      "evidence": [
+        {
+          "path": "E:/Temp/sergeant-verification-20260905/fourth/result.json",
+          "type": "structured-result",
+          "sha256": "6e09aee8f554f5f9e4743add5ca5f4cfa71a27f670f0437ee8633dcc9d53e192"
+        },
+        {
+          "path": "E:/Temp/sergeant-verification-20260905/fourth/desktop.png",
+          "type": "screenshot",
+          "sha256": "ab906103fa4c1e43538791ef33f2505c6d18c8e81ecc54d09123713876ed1cf2"
+        }
+      ],
+      "metrics": {
+        "minorUnits": 12345
+      },
+      "findingIds": [],
+      "at": "2026-09-05T17:04:24.255Z",
+      "reason": ""
+    },
+    {
+      "id": "b-calc",
+      "scenarioId": "CALC-expense-independent",
+      "status": "blocked",
+      "actual": "UI список показує −123,45 ₴, але незалежний DB/API oracle та Analytics не зняті.",
+      "reason": "Не можна використовувати ту саму UI-проєкцію як еталон для її розрахунку.",
+      "evidence": [],
+      "metrics": {},
+      "findingIds": [],
+      "at": "2026-09-05T17:04:27.844Z"
+    },
+    {
+      "id": "b-sync",
+      "scenarioId": "SYNC-fresh-device-pull",
+      "status": "fail",
+      "actual": "Повтор: підтверджений v2 push застосував 1 op, а чистий context B того самого user отримав empty pull і 0 записів.",
+      "evidence": [
+        {
+          "path": "E:/Temp/sergeant-verification-20260905/fourth/result.json",
+          "type": "structured-result",
+          "sha256": "6e09aee8f554f5f9e4743add5ca5f4cfa71a27f670f0437ee8633dcc9d53e192"
+        },
+        {
+          "path": "E:/Temp/sergeant-verification-20260905/fourth/trace.zip",
+          "type": "playwright-trace",
+          "sha256": "928b44b51a81cfe143eef93fca3c0b719939c2f8be341439810823c2846f276d"
+        },
+        {
+          "path": "E:/Temp/sergeant-verification-20260905/fourth/mobile.png",
+          "type": "screenshot",
+          "sha256": "ad7bd07f2610cfc54e5b0a5a19a62d47615d504954d59e17451f0040acc35e6d"
+        }
+      ],
+      "metrics": {
+        "waitMs": 30000,
+        "expectedRecords": 1,
+        "actualRecords": 0
+      },
+      "findingIds": ["PILOT-20260905-SYNC-1"],
+      "at": "2026-09-05T17:04:31.420Z",
+      "reason": ""
+    },
+    {
+      "id": "b-ai",
+      "scenarioId": "AI-expense-grounding",
+      "status": "fail",
+      "actual": "Live AI правильно назвав опис «Контрольна кава верифікації», але повідомив 123 грн замість 123,45 грн.",
+      "evidence": [
+        {
+          "path": "E:/Temp/sergeant-verification-20260905/fourth/chat-after.png",
+          "type": "screenshot",
+          "sha256": "cc64653d584a87eba85ec36e029421d4da7347d4a7f5b334f528f4d8ab1858df"
+        },
+        {
+          "path": "E:/Temp/sergeant-verification-20260905/fourth/result.json",
+          "type": "structured-result",
+          "sha256": "6e09aee8f554f5f9e4743add5ca5f4cfa71a27f670f0437ee8633dcc9d53e192"
+        }
+      ],
+      "metrics": {
+        "expectedMinorUnits": 12345,
+        "reportedMajorUnits": 123
+      },
+      "findingIds": ["PILOT-20260905-AI-1"],
+      "at": "2026-09-05T17:04:35.325Z",
+      "reason": ""
+    },
+    {
+      "id": "b-exp",
+      "scenarioId": "EXP-expense-accessible",
+      "status": "fail",
+      "actual": "Видимого overflow немає, але anti-slop: пройдено лише data test; substitution і generator тести провалені. Keyboard traversal не виконано.",
+      "evidence": [
+        {
+          "path": "E:/Temp/sergeant-verification-20260905/fourth/visual-review.md",
+          "type": "review-note",
+          "sha256": "1e4b58ac30791be18a2149c45b0e26c19bee4179524a3555900f71f07583874c"
+        },
+        {
+          "path": "E:/Temp/sergeant-verification-20260905/fourth/desktop.png",
+          "type": "screenshot",
+          "sha256": "ab906103fa4c1e43538791ef33f2505c6d18c8e81ecc54d09123713876ed1cf2"
+        },
+        {
+          "path": "E:/Temp/sergeant-verification-20260905/fourth/mobile.png",
+          "type": "screenshot",
+          "sha256": "ad7bd07f2610cfc54e5b0a5a19a62d47615d504954d59e17451f0040acc35e6d"
+        }
+      ],
+      "metrics": {
+        "documentOverflowPx": 0,
+        "antiSlopPassed": 1,
+        "antiSlopTotal": 3
+      },
+      "findingIds": ["PILOT-20260905-SLOP-1"],
+      "at": "2026-09-05T17:04:38.838Z",
+      "reason": ""
+    }
+  ],
+  "closedAt": "2026-09-05T17:05:22.954Z",
+  "outcome": "incomplete"
+}
