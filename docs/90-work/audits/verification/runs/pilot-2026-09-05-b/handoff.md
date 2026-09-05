@@ -1,5 +1,6 @@
 # Передача прогону
 
+> **Last touched:** 2026-09-05 by Codex. **Next review:** 2026-12-04.
 > **Status:** Archived
 
 - Виконано: повтор на іншому disposable user із тим самим seed; expense/reload pass, sync fail повторено, live AI та desktop/mobile/anti-slop виконано.

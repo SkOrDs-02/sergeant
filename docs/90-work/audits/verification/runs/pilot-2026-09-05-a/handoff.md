@@ -1,5 +1,6 @@
 # Передача прогону
 
+> **Last touched:** 2026-09-05 by Codex. **Next review:** 2026-12-04.
 > **Status:** Archived
 
 - Виконано: live signup, витрата 12345 minor units, reload; clean-device pull відтворив дефект.
