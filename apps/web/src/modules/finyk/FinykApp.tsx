@@ -59,6 +59,8 @@ interface FinykAppProps {
   onBackToHub?: () => void;
   onGoToHub?: () => void;
   onOpenSettings?: () => void;
+  /** Opens the account sign-in flow from the local-data durability banner. */
+  onOpenAuth?: () => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
 }
@@ -67,6 +69,7 @@ export default function App({
   onBackToHub,
   onGoToHub,
   onOpenSettings,
+  onOpenAuth,
   pwaAction,
   onPwaActionConsumed,
 }: FinykAppProps = {}) {
@@ -228,6 +231,7 @@ export default function App({
             mono={mergedMono}
             storage={storage}
             onNavigate={navigate}
+            {...(onOpenAuth ? { onOpenAuth } : {})}
             showBalance={showBalance}
             onOpenBulkImport={() => setShowBulkImport(true)}
           />
@@ -439,6 +443,7 @@ export default function App({
             customCategories={storage.customCategories}
             bulkImportOpen={showBulkImport}
             onBulkImportOpenChange={setShowBulkImport}
+            {...(onOpenAuth ? { onOpenAuth } : {})}
           />
         )}
 

@@ -155,16 +155,25 @@ export function computeNutritionTargets(
     Math.round((tdee + GOAL_KCAL_DELTA[goal]) / 10) * 10,
   );
 
+  return computeMacrosForKcal(kcal, input.weightKg, goal);
+}
+
+export function computeMacrosForKcal(
+  kcal: number,
+  weightKg: number,
+  goal: NutritionGoalId,
+): NutritionTargets {
+  const safeKcal = Math.max(1000, Math.round(kcal / 10) * 10);
   const split = GOAL_MACRO_SPLIT[goal];
-  const protein_g = Math.round(input.weightKg * split.proteinPerKg);
-  const fat_g = Math.round(input.weightKg * split.fatPerKg);
+  const protein_g = Math.round(weightKg * split.proteinPerKg);
+  const fat_g = Math.round(weightKg * split.fatPerKg);
 
   const proteinKcal = protein_g * ATWATER_KCAL_PER_G.protein;
   const fatKcal = fat_g * ATWATER_KCAL_PER_G.fat;
-  const remainingKcal = Math.max(0, kcal - proteinKcal - fatKcal);
+  const remainingKcal = Math.max(0, safeKcal - proteinKcal - fatKcal);
   const carbs_g = Math.round(remainingKcal / ATWATER_KCAL_PER_G.carbs);
 
-  return { kcal, protein_g, fat_g, carbs_g };
+  return { kcal: safeKcal, protein_g, fat_g, carbs_g };
 }
 
 /**

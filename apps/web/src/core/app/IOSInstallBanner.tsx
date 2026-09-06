@@ -35,7 +35,7 @@ export function IOSInstallBanner({ onDismiss }: IOSInstallBannerProps) {
         </div>
         <div className="flex-1 min-w-0">
           <p className="text-style-label text-text">Додай на головний екран</p>
-          <p className="text-style-caption text-muted mt-0.5 leading-snug">
+          <p className="text-style-body text-muted mt-0.5 leading-snug">
             Щоб отримувати push-сповіщення на iOS, відкрий меню{" "}
             <span className="font-semibold">Поділитися</span>{" "}
             <Icon
@@ -46,6 +46,13 @@ export function IOSInstallBanner({ onDismiss }: IOSInstallBannerProps) {
             />{" "}
             і обери <span className="font-semibold">На початковий екран</span>.
           </p>
+          <button
+            type="button"
+            onClick={onDismiss}
+            className="mt-2 min-h-[44px] text-style-caption text-brand-strong underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+          >
+            Уже встановлено або не нагадувати
+          </button>
         </div>
         <Button
           variant="ghost"

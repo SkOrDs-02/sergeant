@@ -44,8 +44,8 @@
  * SQL з `ORDER BY`, і зберігати його порядок чесніше, ніж вигадувати
  * власний.
  *
- * Канон: docs/01-product/model/nutrition.md §4 / §12
- * Аудит: docs/90-work/audits/product-knowledge-nutrition.md § E-1 / H2
+ * Канон: docs/product/modules/nutrition.md §4 / §12
+ * Аудит: docs/work/specs/audits/product-knowledge-nutrition.md § E-1 / H2
  */
 
 /**
@@ -234,6 +234,49 @@ export function resolveEffectiveGoalsForRange(
     out.set(dateKey, current === null ? UNKNOWN_GOAL : toEffective(current));
   }
   return out;
+}
+
+/**
+ * Resolve the kcal target aligned with an ordered list of day keys.
+ *
+ * Consumers keep their own window order while this helper performs one
+ * range resolution. Unknown history stays `null`; it is never replaced with
+ * today's mutable preference.
+ */
+export function resolveKcalGoalsForDays(
+  periods: readonly GoalPeriod[],
+  dayKeys: readonly string[],
+): Array<number | null> {
+  if (dayKeys.length === 0) return [];
+  const valid = dayKeys
+    .filter((key) => DAY_KEY_RE.test(key))
+    .slice()
+    .sort();
+  if (valid.length === 0) return dayKeys.map(() => null);
+  const goals = resolveEffectiveGoalsForRange(
+    periods,
+    valid[0]!,
+    valid[valid.length - 1]!,
+  );
+  return dayKeys.map((key) => goals.get(key)?.kcal ?? null);
+}
+
+/** Mean known kcal target for a window, or `null` when any day is unknown. */
+export function averageKcalGoalForDays(
+  periods: readonly GoalPeriod[],
+  dayKeys: readonly string[],
+): number | null {
+  const targets = resolveKcalGoalsForDays(periods, dayKeys);
+  if (
+    targets.length === 0 ||
+    targets.some((value) => value == null || value <= 0)
+  ) {
+    return null;
+  }
+  return Math.round(
+    targets.reduce<number>((sum, value) => sum + (value ?? 0), 0) /
+      targets.length,
+  );
 }
 
 /**

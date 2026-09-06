@@ -235,15 +235,20 @@ ${exercises}`);
   }
 
   if (nutrition) {
-    const deficit = (nutrition.targetKcal ?? 0) - (nutrition.avgKcal ?? 0);
+    const targetKcal = nutrition.targetKcal ?? 0;
+    const deficit = targetKcal - (nutrition.avgKcal ?? 0);
     const balance =
-      deficit > 50
-        ? `дефіцит ${Math.round(deficit)} ккал`
-        : deficit < -50
-          ? `профіцит ${Math.round(Math.abs(deficit))} ккал`
-          : "баланс";
+      targetKcal <= 0
+        ? "без вердикту: історична ціль невідома"
+        : deficit > 50
+          ? `дефіцит ${Math.round(deficit)} ккал`
+          : deficit < -50
+            ? `профіцит ${Math.round(Math.abs(deficit))} ккал`
+            : "баланс";
+    const targetLabel =
+      targetKcal > 0 ? `ціль ${targetKcal} ккал` : "ціль невідома";
     sections.push(`[ХАРЧУВАННЯ (${weekRange || "тиждень"})]
-Середньодобово: ${nutrition.avgKcal ?? 0} ккал (ціль ${nutrition.targetKcal ?? 2000} ккал, ${balance})
+Середньодобово: ${nutrition.avgKcal ?? 0} ккал (${targetLabel}, ${balance})
 Середній БЖВ: Б ${nutrition.avgProtein ?? 0}г / Ж ${nutrition.avgFat ?? 0}г / В ${nutrition.avgCarbs ?? 0}г
 Днів із записами: ${nutrition.daysLogged ?? 0} з 7`);
   }

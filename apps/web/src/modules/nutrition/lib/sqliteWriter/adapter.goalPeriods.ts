@@ -35,7 +35,7 @@ import type { GoalPeriodInsertOp, NutritionGoalSnapshot } from "./diff.js";
  *     шлях; дублювати означало б два UPDATE на одну дію.
  *
  * `effective_from` = СЬОГОДНІ в Kyiv, а не день пристрою: доменний
- * інваріант (`docs/02-engineering/architecture/domain-invariants.md`).
+ * інваріант (`docs/engineering/architecture/domain-invariants.md`).
  * Юзер, що змінює ціль о 23:30 у Лісабоні, має отримати київський день —
  * інакше сходинка ляже на добу раніше, ніж її побачить решта системи.
  *
@@ -63,7 +63,7 @@ export async function insertGoalPeriod(
     fatG,
     carbsG,
     waterMl,
-    "manual",
+    op.origin,
     tzOffsetMin,
     clientTs,
     clientTs,
@@ -83,10 +83,7 @@ export async function insertGoalPeriod(
       fat_g: fatG,
       carbs_g: carbsG,
       water_ml: waterMl,
-      // 'manual' — усе, що приходить із дуал-райту, є прямою дією юзера.
-      // 'preset' / 'tdee' зʼявляться, коли ціль почне рахувати калькулятор;
-      // 'backfill' ставить ЛИШЕ серверна міграція 087 і ніхто інший.
-      origin: "manual",
+      origin: op.origin,
       tz_offset_min: tzOffsetMin,
       created_at: clientTs,
     },

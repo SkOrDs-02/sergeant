@@ -18,7 +18,7 @@ describe("nutrition sqliteReader (mobile)", () => {
     jest.useRealTimers();
   });
 
-  it("assembles meals, pantries, prefs, recipes, water and shopping rows", async () => {
+  it("assembles meals, pantries, prefs, recipes, water, shopping and goal rows", async () => {
     const client = {
       all: jest
         .fn()
@@ -90,6 +90,20 @@ describe("nutrition sqliteReader (mobile)", () => {
               ],
             }),
           },
+        ])
+        .mockResolvedValueOnce([
+          {
+            id: "goal-1",
+            effective_from: "2026-05-01",
+            kcal: 2100,
+            protein_g: 130,
+            fat_g: 70,
+            carbs_g: 240,
+            water_ml: 2300,
+            origin: "manual",
+            created_at: "2026-05-01T09:00:00.000Z",
+            deleted_at: null,
+          },
         ]),
       exec: jest.fn(),
       run: jest.fn(),
@@ -97,7 +111,7 @@ describe("nutrition sqliteReader (mobile)", () => {
 
     const cache = await refreshNutritionSqliteState(client, "user-1");
 
-    expect(client.all).toHaveBeenCalledTimes(7);
+    expect(client.all).toHaveBeenCalledTimes(8);
     expect(cache.log["2026-05-04"]?.meals[0]).toMatchObject({
       id: "meal-1",
       name: "",
@@ -146,6 +160,14 @@ describe("nutrition sqliteReader (mobile)", () => {
         ],
       }),
     );
+    expect(cache.goalPeriods).toEqual([
+      expect.objectContaining({
+        id: "goal-1",
+        effectiveFrom: "2026-05-01",
+        kcal: 2100,
+        origin: "manual",
+      }),
+    ]);
     expect(cache.refreshedAt).toBe("2026-05-04T10:11:12.000Z");
   });
 
@@ -168,6 +190,7 @@ describe("nutrition sqliteReader (mobile)", () => {
       recipes: [],
       waterLog: {},
       shoppingList: null,
+      goalPeriods: [],
       refreshedAt: null,
     });
   });

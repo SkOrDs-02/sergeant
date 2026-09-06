@@ -510,7 +510,7 @@ describe("AuthPage — прапорець соцвходу", () => {
     vi.unstubAllEnvs();
   });
 
-  it("за замовчуванням показує Google і Apple", () => {
+  it("за замовчуванням показує Google, але не пропонує неналаштований Apple", () => {
     render(
       <MemoryRouter>
         <AuthPage />
@@ -520,6 +520,18 @@ describe("AuthPage — прапорець соцвходу", () => {
     expect(
       screen.queryByRole("button", { name: /Увійти через Google/ }),
     ).toBeTruthy();
+    expect(screen.queryByRole("button", { name: /Apple/ })).toBeNull();
+  });
+
+  it("показує Apple лише за явного production-прапорця", () => {
+    vi.stubEnv("VITE_APPLE_LOGIN_ENABLED", "true");
+
+    render(
+      <MemoryRouter>
+        <AuthPage />
+      </MemoryRouter>,
+    );
+
     expect(screen.queryByRole("button", { name: /Apple/ })).toBeTruthy();
   });
 

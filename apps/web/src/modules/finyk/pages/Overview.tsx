@@ -42,6 +42,8 @@ interface OverviewProps {
   mono: MergedMonoLike;
   storage: StorageLike;
   onNavigate?: (page: string) => void;
+  /** Opens account sign-in; distinct from the Finyk bank-connection overlay. */
+  onOpenAuth?: () => void;
   showBalance?: boolean;
   /** Відкриває аркуш масового імпорту — той самий, що дія FAB. */
   onOpenBulkImport?: (() => void) | undefined;
@@ -62,6 +64,7 @@ export function Overview({
   mono,
   storage,
   onNavigate,
+  onOpenAuth,
   showBalance = true,
   onOpenBulkImport,
 }: OverviewProps) {
@@ -148,7 +151,9 @@ export function Overview({
                 що вимикає запис у outbox). Ставимо ВИЩЕ staleness-банера:
                 «твої дані можуть зникнути назавжди» важливіше за «дані
                 банку не оновлювались N днів». */}
-            <LocalOnlyDataBanner onSignIn={() => onNavigate?.("settings")} />
+            <LocalOnlyDataBanner
+              onSignIn={onOpenAuth ?? (() => navigate("/auth"))}
+            />
 
             {showStalenessBanner && monoStaleness.days !== null && (
               <MonoStalenessBanner

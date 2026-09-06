@@ -120,7 +120,7 @@ describe("TransactionList — DataState routing", () => {
 
     // Title comes from the curated finyk config inside
     // `ModuleEmptyState` (MODULE_EMPTY_CONFIG.finyk.title).
-    expect(screen.getByText("Куди йдуть твої гроші?")).toBeInTheDocument();
+    expect(screen.getByText("Транзакцій ще немає")).toBeInTheDocument();
     // The filter-empty copy must NOT also render at the same time.
     expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
@@ -186,7 +186,7 @@ describe("TransactionList — DataState routing", () => {
         />,
       );
 
-      expect(screen.getByText("Куди йдуть твої гроші?")).toBeInTheDocument();
+      expect(screen.getByText("Транзакцій ще немає")).toBeInTheDocument();
     });
   });
 

@@ -187,7 +187,9 @@ export function AssistantCataloguePage({
           </div>
         </Card>
 
-        <CapabilityLegend />
+        <CapabilityLegend
+          showNew={ASSISTANT_CAPABILITIES.some((item) => item.isNew)}
+        />
 
         <div className="relative">
           <span
@@ -428,7 +430,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
   );
 }
 
-function CapabilityLegend() {
+function CapabilityLegend({ showNew }: { showNew: boolean }) {
   return (
     <div
       data-testid="catalogue-legend"
@@ -449,10 +451,12 @@ function CapabilityLegend() {
         <BadgeChip tone="warning" icon="alert-triangle" label="Ризик" />
         критична дія
       </span>
-      <span className="inline-flex items-center gap-1.5 text-style-caption text-subtle">
-        <BadgeChip tone="brand" icon="sparkles" label="Новинка" />
-        нещодавно додано
-      </span>
+      {showNew && (
+        <span className="inline-flex items-center gap-1.5 text-style-caption text-subtle">
+          <BadgeChip tone="brand" icon="sparkles" label="Новинка" />
+          нещодавно додано
+        </span>
+      )}
     </div>
   );
 }
