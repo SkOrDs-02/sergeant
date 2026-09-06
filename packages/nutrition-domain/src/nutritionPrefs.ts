@@ -29,6 +29,9 @@ export function defaultNutritionPrefs(): NutritionPrefs {
     reminderEnabled: false,
     reminderHour: 12,
     waterGoalMl: 2000,
+    adaptiveGoalEnabled: true,
+    adaptiveGoalIntent: "maintenance",
+    adaptiveGoalLastUpdatedAt: null,
   };
 }
 
@@ -82,6 +85,19 @@ export function normalizeNutritionPrefs(p: unknown): NutritionPrefs {
           ? Math.min(23, Math.max(0, Math.floor(Number(raw["reminderHour"]))))
           : 12,
       waterGoalMl: waterGoalMl != null ? waterGoalMl : defaults.waterGoalMl,
+      adaptiveGoalEnabled:
+        raw["adaptiveGoalEnabled"] == null
+          ? optionalPositiveNumber(raw["dailyTargetKcal"]) == null
+          : Boolean(raw["adaptiveGoalEnabled"]),
+      adaptiveGoalIntent:
+        raw["adaptiveGoalIntent"] === "cutting" ||
+        raw["adaptiveGoalIntent"] === "bulking"
+          ? raw["adaptiveGoalIntent"]
+          : "maintenance",
+      adaptiveGoalLastUpdatedAt:
+        typeof raw["adaptiveGoalLastUpdatedAt"] === "string"
+          ? raw["adaptiveGoalLastUpdatedAt"]
+          : null,
     };
   } catch {
     return defaultNutritionPrefs();

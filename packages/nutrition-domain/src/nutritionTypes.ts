@@ -46,6 +46,11 @@ export interface NutritionPrefs {
   reminderEnabled: boolean;
   reminderHour: number;
   waterGoalMl: number;
+  /** Щотижневе калібрування цілі за фактичним енергобалансом. */
+  adaptiveGoalEnabled: boolean;
+  adaptiveGoalIntent: "cutting" | "maintenance" | "bulking";
+  /** ISO timestamp останнього успішного автоматичного перерахунку. */
+  adaptiveGoalLastUpdatedAt: string | null;
 }
 
 export interface Pantry {

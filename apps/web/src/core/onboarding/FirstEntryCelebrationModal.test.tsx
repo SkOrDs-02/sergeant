@@ -10,14 +10,13 @@ import {
 import { getFirstEntryCelebrationCopy } from "@sergeant/shared";
 import { FirstEntryCelebrationModal } from "./FirstEntryCelebrationModal";
 
-const { hapticTapMock, hapticPatternMock } = vi.hoisted(() => ({
+const { hapticTapMock } = vi.hoisted(() => ({
   hapticTapMock: vi.fn(),
-  hapticPatternMock: vi.fn(),
 }));
 
 vi.mock("@shared/lib/adapters/haptic", () => ({
   hapticTap: hapticTapMock,
-  hapticPattern: hapticPatternMock,
+  hapticPattern: vi.fn(),
 }));
 
 // Stub the analytics sink so the assertion is deterministic — the real
@@ -70,7 +69,6 @@ describe("FirstEntryCelebrationModal: celebration_shown payload (PR-A)", () => {
   beforeEach(() => {
     vi.mocked(trackEvent).mockClear();
     hapticTapMock.mockClear();
-    hapticPatternMock.mockClear();
     vi.useFakeTimers();
     Object.defineProperty(navigator, "vibrate", {
       configurable: true,
@@ -139,7 +137,6 @@ describe("FirstEntryCelebrationModal: interaction branches", () => {
 
   beforeEach(() => {
     hapticTapMock.mockClear();
-    hapticPatternMock.mockClear();
     vi.useFakeTimers();
     Object.defineProperty(navigator, "vibrate", {
       configurable: true,
@@ -148,7 +145,7 @@ describe("FirstEntryCelebrationModal: interaction branches", () => {
     });
   });
 
-  it("returns null while closed and mounts the dialog when open flips true", () => {
+  it("returns null while closed and mounts a polite status when open flips true", () => {
     const { rerender } = render(
       <FirstEntryCelebrationModal
         open={false}
@@ -157,7 +154,7 @@ describe("FirstEntryCelebrationModal: interaction branches", () => {
         moduleId={null}
       />,
     );
-    expect(screen.queryByRole("dialog")).toBeNull();
+    expect(screen.queryByRole("status")).toBeNull();
 
     rerender(
       <FirstEntryCelebrationModal
@@ -168,51 +165,31 @@ describe("FirstEntryCelebrationModal: interaction branches", () => {
       />,
     );
     const { headline } = getFirstEntryCelebrationCopy("finyk");
-    expect(screen.getByRole("dialog")).toBeInTheDocument();
+    expect(screen.getByRole("status")).toBeInTheDocument();
     expect(screen.getByText(headline)).toBeInTheDocument();
   });
 
-  it("closes via the primary CTA after the fade-out delay", () => {
+  it("closes immediately from the unobtrusive close control", () => {
     const onClose = vi.fn();
-    const { primaryCtaLabel } = getFirstEntryCelebrationCopy("finyk");
     renderOpenModal({ onClose, ttvMs: 1000, moduleId: "finyk" });
 
-    fireEvent.click(screen.getByRole("button", { name: primaryCtaLabel }));
-    expect(hapticTapMock).toHaveBeenCalledTimes(1);
-    act(() => {
-      vi.advanceTimersByTime(200);
-    });
+    fireEvent.click(screen.getByRole("button", { name: "Закрити" }));
     expect(onClose).toHaveBeenCalledTimes(1);
+    expect(screen.queryByRole("status")).toBeNull();
   });
 
-  it("closes when Escape is pressed", () => {
-    const onClose = vi.fn();
-    renderOpenModal({ onClose, ttvMs: 1000, moduleId: "routine" });
-
-    fireEvent.keyDown(window, { key: "Escape" });
-    act(() => {
-      vi.advanceTimersByTime(200);
-    });
-    expect(onClose).toHaveBeenCalledTimes(1);
-  });
-
-  it("auto-dismisses after ten seconds", () => {
+  it("auto-dismisses after four seconds", () => {
     const onClose = vi.fn();
     renderOpenModal({ onClose, ttvMs: 1000, moduleId: "nutrition" });
 
     act(() => {
-      vi.advanceTimersByTime(10_000);
-    });
-    act(() => {
-      vi.advanceTimersByTime(200);
+      vi.advanceTimersByTime(4_000);
     });
     expect(onClose).toHaveBeenCalledTimes(1);
   });
 
-  it("triggers haptic feedback on open via the shared haptic layer", () => {
-    // C6 web-audit: routed through `hapticPattern` (respects
-    // prefers-reduced-motion) instead of a raw `navigator.vibrate` call.
+  it("uses one short haptic tap when shown", () => {
     renderOpenModal({ ttvMs: 500, moduleId: "fizruk" });
-    expect(hapticPatternMock).toHaveBeenCalledWith([50, 30, 50]);
+    expect(hapticTapMock).toHaveBeenCalledTimes(1);
   });
 });

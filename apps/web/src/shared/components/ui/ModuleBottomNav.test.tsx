@@ -91,7 +91,7 @@ describe("ModuleBottomNav", () => {
     const inactiveVisualLabel = screen.getByText("Stats", {
       selector: "span:not(.sr-only)",
     });
-    expect(activeVisualLabel.className).toContain("max-w-[88px]");
+    expect(activeVisualLabel.className).toContain("max-w-full");
     expect(inactiveVisualLabel.className).toContain("max-w-0");
   });
 

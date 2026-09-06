@@ -27,6 +27,7 @@ import {
   normalizeShoppingList,
   normalizeWaterLog,
   type NutritionLog,
+  type GoalPeriod,
   type NutritionPrefs,
   type Pantry,
   type ShoppingList,
@@ -52,6 +53,11 @@ export function loadNutritionLog(): NutritionLog {
   // overlay re-renders once the cache warms via `useNutritionSqliteReadTick`.
   const cache = getCachedNutritionSqliteState();
   return normalizeNutritionLog(cache.log);
+}
+
+/** Append-only history used by retrospective goal comparisons. */
+export function loadNutritionGoalPeriods(): readonly GoalPeriod[] {
+  return getCachedNutritionSqliteState().goalPeriods;
 }
 
 export function saveNutritionLog(

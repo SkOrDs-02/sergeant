@@ -222,6 +222,7 @@ export interface ShoppingListSetOp {
 export interface GoalPeriodInsertOp {
   readonly kind: "goal-period-insert";
   readonly goal: NutritionGoalSnapshot;
+  readonly origin: "manual" | "preset" | "tdee";
 }
 
 export type NutritionDualWriteOp =
@@ -262,6 +263,8 @@ export interface NutritionDualWriteState {
    * стани, зібрані вручну в тестах, не несуть цього поля — трактується як
    * `[]` (`diffPantryEventOps` уже робить `?? []`). */
   readonly pantryEvents?: readonly NutritionPantryEventSnapshot[];
+  /** Походження зміни цілі лише для поточного переходу. */
+  readonly goalOrigin?: "manual" | "preset" | "tdee";
 }
 
 /**
@@ -422,7 +425,11 @@ function diffGoalPeriodOps(
   if (prevGoal !== null && !goalChanged(prevGoal, nextGoal)) return;
   if (prevGoal === null && isEmptyGoal(nextGoal)) return;
 
-  ops.push({ kind: "goal-period-insert", goal: nextGoal });
+  ops.push({
+    kind: "goal-period-insert",
+    goal: nextGoal,
+    origin: next.goalOrigin ?? "manual",
+  });
 }
 
 /** `null` тільки коли `prefsJson` взагалі не парситься. */

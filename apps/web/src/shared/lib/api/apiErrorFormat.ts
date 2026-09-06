@@ -51,20 +51,20 @@ export function formatApiError(
     if (err.kind === "network") {
       if (err.isOffline) {
         const base = "Немає підключення до інтернету. Спробуй пізніше.";
-        return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+        return base;
       }
       const base = err.message || "Не вдалося зʼєднатися із сервером.";
-      return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+      return base;
     }
     if (err.kind === "parse") {
       // Типовий кейс на Vercel: rewrite перехоплює `/api/*` і повертає index.html.
       if (/<!doctype html/i.test(err.bodyText || "")) {
         const base =
           "API повернув HTML замість JSON (ймовірно, rewrite перехоплює /api/*).";
-        return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+        return base;
       }
       const base = err.message || err.bodyText || fallback;
-      return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+      return base;
     }
     // kind === "http"
     const httpMsg = mapHttp(err.status, err.serverMessage);
@@ -79,10 +79,10 @@ export function formatApiError(
       /^Помилка \d+$/.test(httpMsg)
     ) {
       const base = options.fallback;
-      return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+      return base;
     }
     const base = httpMsg || fallback;
-    return err.requestId ? `${base} (requestId: ${err.requestId})` : base;
+    return base;
   }
 
   if (err instanceof Error && err.message) return err.message;

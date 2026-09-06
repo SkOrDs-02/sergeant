@@ -187,12 +187,18 @@ export function DailyPlanGoalSelectors({
     : undefined;
 
   const applyTdeeTargets = (targets: NutritionTargets) => {
+    const intent = NUTRITION_GOALS.find(
+      (goal) => tdeeTargets?.[goal] === targets,
+    );
     setPrefs((p) => ({
       ...p,
       dailyTargetKcal: targets.kcal,
       dailyTargetProtein_g: targets.protein_g,
       dailyTargetFat_g: targets.fat_g,
       dailyTargetCarbs_g: targets.carbs_g,
+      adaptiveGoalEnabled: true,
+      adaptiveGoalIntent: intent ?? "maintenance",
+      adaptiveGoalLastUpdatedAt: new Date().toISOString(),
     }));
     setMenuOpen(false);
     toast.success(TDEE_COPY.appliedToast);
@@ -304,6 +310,8 @@ export function DailyPlanGoalSelectors({
                   dailyTargetProtein_g: null,
                   dailyTargetFat_g: null,
                   dailyTargetCarbs_g: null,
+                  adaptiveGoalEnabled: false,
+                  adaptiveGoalLastUpdatedAt: null,
                 }));
                 setMenuOpen(false);
               }}

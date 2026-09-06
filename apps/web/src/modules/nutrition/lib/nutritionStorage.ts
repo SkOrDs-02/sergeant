@@ -31,6 +31,7 @@ import {
   normalizePantries,
   normalizeShoppingList,
   type NutritionLog,
+  type GoalPeriod,
   type NutritionPrefs,
   type Pantry,
   type ShoppingList,
@@ -118,18 +119,58 @@ export function loadNutritionPrefs(
 export function persistNutritionPrefs(
   prefs: NutritionPrefs | null | undefined,
   _key: string = NUTRITION_PREFS_KEY,
+  goalOrigin?: "manual" | "preset" | "tdee",
 ): boolean {
   const prev = peekNutritionDualWriteState();
   if (prev === null) return true;
+  const previousPrefs = prev.prefs
+    ? normalizeNutritionPrefs(JSON.parse(prev.prefs.prefsJson) as unknown)
+    : defaultNutritionPrefs();
+  const requestedPrefs = prefs || defaultNutritionPrefs();
+  const effectiveOrigin =
+    goalOrigin ??
+    (requestedPrefs.adaptiveGoalEnabled &&
+    requestedPrefs.adaptiveGoalLastUpdatedAt != null &&
+    requestedPrefs.adaptiveGoalLastUpdatedAt !==
+      previousPrefs.adaptiveGoalLastUpdatedAt
+      ? "preset"
+      : "manual");
+  const goalChanged =
+    previousPrefs.dailyTargetKcal !== requestedPrefs.dailyTargetKcal ||
+    previousPrefs.dailyTargetProtein_g !==
+      requestedPrefs.dailyTargetProtein_g ||
+    previousPrefs.dailyTargetFat_g !== requestedPrefs.dailyTargetFat_g ||
+    previousPrefs.dailyTargetCarbs_g !== requestedPrefs.dailyTargetCarbs_g;
+  const nextPrefs =
+    goalChanged && effectiveOrigin === "manual"
+      ? { ...requestedPrefs, adaptiveGoalEnabled: false }
+      : requestedPrefs;
   const next: NutritionDualWriteState = {
     ...prev,
     prefs: {
-      prefsJson: JSON.stringify(prefs || defaultNutritionPrefs()),
+      prefsJson: JSON.stringify(nextPrefs),
       activePantryId: prev.prefs?.activePantryId ?? null,
     },
+    goalOrigin: effectiveOrigin,
   };
   triggerNutritionDualWrite(prev, next);
   return true;
+}
+
+export function persistAdaptiveNutritionPrefs(prefs: NutritionPrefs): boolean {
+  return persistNutritionPrefs(
+    { ...prefs, adaptiveGoalEnabled: true },
+    NUTRITION_PREFS_KEY,
+    "tdee",
+  );
+}
+
+export function persistProfileNutritionPrefs(prefs: NutritionPrefs): boolean {
+  return persistNutritionPrefs(
+    { ...prefs, adaptiveGoalEnabled: true },
+    NUTRITION_PREFS_KEY,
+    "preset",
+  );
 }
 
 export function loadActivePantryId(
@@ -181,6 +222,11 @@ export function loadNutritionLog(
 ): NutritionLog {
   const cache = getCachedNutritionSqliteState();
   return normalizeNutritionLog(cache.log);
+}
+
+/** Append-only history used by retrospective goal comparisons. */
+export function loadNutritionGoalPeriods(): readonly GoalPeriod[] {
+  return getCachedNutritionSqliteState().goalPeriods;
 }
 
 export function persistNutritionLog(

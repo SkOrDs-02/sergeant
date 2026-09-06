@@ -449,8 +449,10 @@ export function buildCoachInsightPrompt(input: {
     );
   }
   if (snapshot?.nutrition) {
+    const target = snapshot.nutrition.targetKcal ?? 0;
+    const targetLabel = target > 0 ? String(target) : "невідома";
     snapshotLines.push(
-      `[ХАРЧУВАННЯ ЦЬОГО ТИЖНЯ] Середньо: ${snapshot.nutrition.avgKcal ?? 0} ккал/день (ціль ${snapshot.nutrition.targetKcal ?? 2000}), Білок: ${snapshot.nutrition.avgProtein ?? 0}г/день, Днів: ${snapshot.nutrition.daysLogged ?? 0}/7`,
+      `[ХАРЧУВАННЯ ЦЬОГО ТИЖНЯ] Середньо: ${snapshot.nutrition.avgKcal ?? 0} ккал/день (історична ціль ${targetLabel}; не роби висновок про дефіцит або профіцит, якщо вона невідома), Білок: ${snapshot.nutrition.avgProtein ?? 0}г/день, Днів: ${snapshot.nutrition.daysLogged ?? 0}/7`,
     );
   }
   if (snapshot?.routine) {

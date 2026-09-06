@@ -8,7 +8,7 @@ import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
-import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import {
@@ -19,8 +19,6 @@ import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { cn } from "@shared/lib/ui/cn";
 import { TransactionDayHeader } from "./TransactionDayHeader";
 import type { computeDaySummary } from "./transactionsLib";
-import { getOnboardingGoals } from "@sergeant/shared";
-import { webKVStore } from "@shared/lib/storage/storage";
 import type {
   Transaction,
   TxCategoriesMap,
@@ -244,7 +242,6 @@ export function TransactionList({
   const [scrollParent, setScrollParent] = useState<HTMLDivElement | null>(null);
   const cloudPullPending = useCloudPullPending();
   // Read onboarding goals once per render — stable across the session.
-  const onboardingGoals = useMemo(() => getOnboardingGoals(webKVStore), []);
 
   // Build a flat render list of alternating headers + item rows.
   // groupCounts[i] is 0 when the day is collapsed (set by the parent), so
@@ -359,7 +356,14 @@ export function TransactionList({
         />
       </div>
     ) : activeTx.length === 0 ? (
-      <ModuleEmptyState module="finyk" goalContext={onboardingGoals} />
+      <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
+        <EmptyState
+          illustration={<FinykEmptyIllustration size={80} />}
+          title="Транзакцій ще немає"
+          description="Перший запис зʼявиться тут після ручного додавання, імпорту банку або сканування чека."
+          module="finyk"
+        />
+      </div>
     ) : (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
         <EmptyState

@@ -36,17 +36,18 @@ export function useNutritionInsights(): Insight[] {
   // Before the cache warms, log is `{}` and prefs fall back to defaults —
   // both detection hooks return null for empty/zero input, so no false
   // positives during the boot window.
-  const { log, prefs } = useMemo(() => {
+  const { log, prefs, goalPeriods } = useMemo(() => {
     void sqliteCacheTick; // SQLite cache refresh tick
     const cached = getCachedNutritionSqliteState();
     return {
       log: cached.log,
       prefs: cached.prefs ?? defaultNutritionPrefs(),
+      goalPeriods: cached.goalPeriods,
     };
   }, [sqliteCacheTick]);
 
   const proteinInsight = useProteinLowInsight(log, prefs);
-  const streakInsight = useStreakSevenDaysInsight(log, prefs);
+  const streakInsight = useStreakSevenDaysInsight(log, goalPeriods);
 
   return useMemo((): Insight[] => {
     const candidates: Array<Insight | null> = [proteinInsight, streakInsight];

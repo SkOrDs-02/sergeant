@@ -12,8 +12,8 @@ import {
 } from "@sergeant/finyk-domain/constants";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
+  loadNutritionGoalPeriods,
   loadNutritionLog,
-  loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { dateKeyFromDate } from "@sergeant/routine-domain";
@@ -23,6 +23,7 @@ import {
   MIN_SIGNAL_MODULES,
 } from "@sergeant/shared";
 import { workoutTonnageKg } from "@sergeant/fizruk-domain";
+import { averageKcalGoalForDays } from "@sergeant/nutrition-domain";
 import { newAdviceId } from "../observability/adviceTelemetry";
 
 /* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
@@ -238,17 +239,18 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
 
   let nutrition: NutritionSnapshot | null = null;
   try {
-    // Канонічні лог + prefs — SQLite warm cache (`nutrition_log_v1` /
-    // `nutrition_prefs_v1` tombstoned).
+    // Канонічні лог + append-only журнал цілей із SQLite warm cache.
     const log = loadNutritionLog();
-    const prefs = loadNutritionPrefs();
+    const goalPeriods = loadNutritionGoalPeriods();
     let totalKcal = 0,
       totalProtein = 0,
       daysLogged = 0;
+    const weekDays: string[] = [];
     for (let i = 0; i < 7; i++) {
       const d = new Date(weekStart);
       d.setDate(weekStart.getDate() + i);
       const dk = localDateKey(d);
+      weekDays.push(dk);
       const meals = Array.isArray(log[dk]?.meals) ? log[dk].meals : [];
       if (meals.length > 0) {
         daysLogged++;
@@ -262,7 +264,7 @@ function aggregateCurrentSnapshot(): CoachSnapshot {
       nutrition = {
         avgKcal: Math.round(totalKcal / daysLogged),
         avgProtein: Math.round(totalProtein / daysLogged),
-        targetKcal: prefs.dailyTargetKcal ?? 2000,
+        targetKcal: averageKcalGoalForDays(goalPeriods, weekDays) ?? 0,
         daysLogged,
       };
     }

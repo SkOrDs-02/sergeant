@@ -2,7 +2,7 @@
 // user-facing capabilities. Drives the catalogue UI, in-chat quick-action
 // chips, and (post follow-up PR) the system prompt's tool list.
 //
-// Spec: docs/05-design/design/specs/2026-04-25-assistant-capability-catalogue-design.md
+// Spec: docs/design/design/specs/2026-04-25-assistant-capability-catalogue-design.md
 //
 // Invariants (enforced by assistantCatalogue.test.ts):
 //   - all `id` values are unique;
@@ -700,7 +700,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Постав розклад звички: ",
     requiresInput: true,
     requiresOnline: true,
-    isNew: true,
     aiHint: "примусово weekly",
     keywords: ["weekday", "schedule", "weekly", "розклад", "дні"],
   },
@@ -720,7 +719,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Постав звичку на паузу: ",
     requiresInput: true,
     requiresOnline: true,
-    isNew: true,
     aiHint: "ідемпотентно",
     keywords: ["pause", "resume", "unpause", "пауза", "відновити"],
   },
@@ -1046,7 +1044,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresInput: false,
     isQuickAction: true,
     quickActionPriority: 40,
-    isNew: true,
     requiresOnline: true,
     keywords: ["тиждень", "порівняння", "аналіз"],
     aiHint: "YYYY-Www; default цей+минулий",
@@ -1140,7 +1137,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Проаналізуй звʼязок між: ",
     requiresInput: true,
     requiresOnline: true,
-    isNew: true,
     aiHint: "1-6 метрик, кореляція кодом",
   },
 
@@ -1256,7 +1252,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     prompt: "Знайди в памʼяті: ",
     requiresInput: true,
     requiresOnline: true,
-    isNew: true,
     keywords: ["recall", "search", "memory", "семантичний"],
   },
 ];

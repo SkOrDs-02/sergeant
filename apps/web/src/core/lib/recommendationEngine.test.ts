@@ -46,7 +46,11 @@ vi.mock("../../modules/finyk/lib/monoMirrorReader", () => {
 // Route those seeds into the warm caches so the existing fixtures keep working
 // unchanged; every other key (finyk_*) stays real localStorage. Nutrition log +
 // prefs accumulate because the seeder replaces the whole cache on each call.
-let nutritionSeed: { log?: unknown; prefs?: unknown } = {};
+let nutritionSeed: {
+  log?: unknown;
+  prefs?: unknown;
+  goalPeriods?: unknown;
+} = {};
 
 function setLS(key: string, value: unknown) {
   switch (key) {
@@ -94,6 +98,27 @@ function setLS(key: string, value: unknown) {
       return;
     case "nutrition_prefs_v1":
       nutritionSeed.prefs = value;
+      nutritionSeed.goalPeriods = (() => {
+        const prefs = value as {
+          dailyTargetKcal?: number | null;
+          dailyTargetProtein_g?: number | null;
+        };
+        if (!(prefs.dailyTargetKcal || prefs.dailyTargetProtein_g)) return [];
+        return [
+          {
+            id: "test-goal",
+            effectiveFrom: "2000-01-01",
+            kcal: prefs.dailyTargetKcal ?? null,
+            proteinG: prefs.dailyTargetProtein_g ?? null,
+            fatG: null,
+            carbsG: null,
+            waterMl: null,
+            origin: "manual",
+            createdAt: "2000-01-01T00:00:00.000Z",
+            deletedAt: null,
+          },
+        ];
+      })();
       __setNutritionSqliteCacheForTests(
         nutritionSeed as unknown as Parameters<
           typeof __setNutritionSqliteCacheForTests
@@ -121,7 +146,7 @@ function clearAll() {
 // Y/M/D), so every time-gated rule — 21:00 streak-at-risk, 13:00
 // no-meals-today, the Monday 07:00–12:00 weekly digest — depends on the
 // host timezone. CI runs in `Europe/Kyiv` (the repo's domain timezone, see
-// docs/02-engineering/architecture/domain-invariants.md), where a UTC `…Z`
+// docs/engineering/architecture/domain-invariants.md), where a UTC `…Z`
 // literal lands +2/+3 h off and trips these gate boundaries (e.g. 22:00Z →
 // 01:00 Kyiv, 09:00Z → 12:00 Kyiv). Anchoring from local components keeps
 // the engine's local-time math identical in any host TZ — a UTC dev box and
