@@ -109,6 +109,16 @@ describe("computeNutritionTargets", () => {
     expect(bulking.fat_g).toBe(80);
   });
 
+  it("accepts the legacy persisted `maintain` goal as maintenance", () => {
+    const legacyGoal = "maintain" as unknown as Parameters<
+      typeof computeNutritionTargets
+    >[1];
+
+    expect(computeNutritionTargets(baseInput, legacyGoal)).toEqual(
+      computeNutritionTargets(baseInput, "maintenance"),
+    );
+  });
+
   it("keeps macro kcal close to the kcal target (within a 1 g rounding error)", () => {
     for (const goal of ["cutting", "maintenance", "bulking"] as const) {
       const t = computeNutritionTargets(baseInput, goal);
