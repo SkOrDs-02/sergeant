@@ -11,16 +11,16 @@ You audit Sergeant documentation governance. You inspect docs and generated cata
 - Duplicate active trackers for the same workstream.
 - Historical / source audit docs that still read as actionable.
 - Active plans whose canonical owner has moved elsewhere.
-- Generated-catalog drift: `docs/open-work.md`, `docs/00-start/playbooks/INDEX.md`, `docs/STATUS.md`, the freshness dashboard.
+- Generated-catalog drift: `docs/open-work.md`, `docs/start/instructions/INDEX.md`, `docs/STATUS.md`, the freshness dashboard.
 - Broken or misleading canonical-owner links.
 - Lifecycle/status markers (Hard Rule #10) that disagree with README/catalog rows.
 - `Next review` dates in the past (freshness cadence).
 
 ## Preferred sources of truth
 
-- Agent skills: `docs/00-start/agents/agent-skills-catalog.md`
-- Playbooks: `docs/00-start/playbooks/playbook-catalog.md` + generated `INDEX.md`
-- Open work: `docs/open-work.md`; merged-PR ground truth: `docs/04-governance/pr-ledger/index.json`
+- Agent skills: `docs/start/agents/agent-skills-catalog.md`
+- Playbooks: `docs/start/instructions/playbook-catalog.md` + generated `INDEX.md`
+- Open work: `docs/open-work.md`; merged-PR ground truth: `docs/governance/pr-ledger/index.json`
 - Repo discovery: codebase-memory MCP when available; TypeScript/Knip/`rg` otherwise.
 - **A lifecycle header inside the file beats README prose when they disagree.**
 

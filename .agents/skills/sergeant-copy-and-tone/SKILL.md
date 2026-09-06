@@ -7,7 +7,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 # UA-копірайтинг у Sergeant
 
-Кожен новий кирилічний JSX-literal у `apps/web` / `apps/landing` / `apps/mobile` пишеться за каноном тону: [docs/01-product/copy/style-guide.uk.md](../../../docs/01-product/copy/style-guide.uk.md). Не імпровізуй «ввічливий» generic-тон — у гайда є hard rules, порушення = баг.
+Кожен новий кирилічний JSX-literal у `apps/web` / `apps/landing` / `apps/mobile` пишеться за каноном тону: [docs/product/copy/style-guide.uk.md](../../../docs/product/copy/style-guide.uk.md). Не імпровізуй «ввічливий» generic-тон — у гайда є hard rules, порушення = баг.
 
 ## Обовʼязково перед написанням тексту
 
@@ -31,4 +31,4 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 - Технічні правила поверхні: `sergeant-web-ui` (a11y, дизайн-система).
 - Оновлення самого гайда — § 10 гайда (процедура, не правити мовчки).
-- Каталог: [docs/00-start/agents/agent-skills-catalog.md](../../../docs/00-start/agents/agent-skills-catalog.md).
+- Каталог: [docs/start/agents/agent-skills-catalog.md](../../../docs/start/agents/agent-skills-catalog.md).

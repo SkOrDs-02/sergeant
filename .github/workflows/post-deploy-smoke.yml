@@ -3,7 +3,7 @@ name: Post-deploy smoke
 # Owner: @SkOrDs-02 (solo maintainer).
 # Triage: if this job fails, an issue tagged `smoke-test-fail` is auto-opened
 #         (idempotent — same pattern as pact-drift / db-backup-verify). Runbook:
-#         `docs/02-engineering/testing/smoke-tests.md`.
+#         `docs/engineering/testing/smoke-tests.md`.
 # Why this workflow exists: complements `pact-drift.yml` (schema regression)
 #         with **liveness** regression. Pact-drift catches "wire shape
 #         changed"; this catches "endpoint stopped responding / SLO
@@ -91,7 +91,7 @@ jobs:
           set -euo pipefail
 
           if [ -z "${TARGET_BASE_URL:-}" ]; then
-            echo "::error::TARGET_BASE_URL is not set. Configure STAGING_BASE_URL secret or pass base_url input. See docs/02-engineering/testing/smoke-tests.md § Setup."
+            echo "::error::TARGET_BASE_URL is not set. Configure STAGING_BASE_URL secret or pass base_url input. See docs/engineering/testing/smoke-tests.md § Setup."
             exit 2
           fi
 
@@ -177,7 +177,7 @@ jobs:
               'This is a **liveness regression** signal — the deployed copy is',
               'not serving the expected contract.',
               '',
-              'Follow [`docs/02-engineering/testing/smoke-tests.md`](../../blob/main/docs/02-engineering/testing/smoke-tests.md)',
+              'Follow [`docs/engineering/testing/smoke-tests.md`](../../blob/main/docs/engineering/testing/smoke-tests.md)',
               'for triage. TL;DR:',
               '',
               '1. Open the run above → `smoke-report` artifact for the full table.',
@@ -283,6 +283,6 @@ jobs:
           if [ "${{ steps.smoke.outputs.smoke_exit }}" = "1" ]; then
             echo "::error::Post-deploy smoke detected ≥1 failure. See dist/smoke-report.md."
           else
-            echo "::error::post-deploy-smoke checker could not run (exit '${{ steps.smoke.outputs.smoke_exit }}'). Це помилка конфігурації, не liveness-регресія — див. docs/02-engineering/testing/smoke-tests.md § Setup."
+            echo "::error::post-deploy-smoke checker could not run (exit '${{ steps.smoke.outputs.smoke_exit }}'). Це помилка конфігурації, не liveness-регресія — див. docs/engineering/testing/smoke-tests.md § Setup."
           fi
           exit 1

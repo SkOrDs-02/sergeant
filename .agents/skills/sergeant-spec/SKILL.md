@@ -1,6 +1,6 @@
 ---
 name: sergeant-spec
-description: "Use when writing or updating a spec in docs/90-work/planning/specs/ before a feature is built — interview the founder first, never invent product decisions; UA: пишеш або оновлюєш спеку на нову фічу."
+description: "Use when writing or updating a spec in docs/work/specs/ before a feature is built — interview the founder first, never invent product decisions; UA: пишеш або оновлюєш спеку на нову фічу."
 lang: uk
 lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
 ---
@@ -39,8 +39,8 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 Питання коштують уваги власника, тому не питай того, що видно в репо. Перед інтервʼю зʼясуй:
 
 - чи сутність уже існує і в якому вигляді (`rg`, codebase-memory MCP);
-- що каже продуктовий канон — `docs/01-product/model/<module>.md`, разом із § Журнал рішень;
-- які інваріанти вже закривають частину дизайну (Hard Rules #1–#3, `docs/02-engineering/architecture/domain-invariants.md`);
+- що каже продуктовий канон — `docs/product/modules/<module>.md`, разом із § Журнал рішень;
+- які інваріанти вже закривають частину дизайну (Hard Rules #1–#3, `docs/engineering/architecture/domain-invariants.md`);
 - чи фіча не суперечить канону прямо.
 
 Розвідка перетворює питання «як зробити?» на питання «А чи Б?», на яке власник відповідає за секунди.
@@ -80,7 +80,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ### 6. Пиши документ і познач походження
 
-Заповни `docs/90-work/planning/specs/TEMPLATE.md`. У § «Рішення дизайну» кожен пункт несе джерело: відповідь власника, канон (з посиланням на §) або замір. Поки лишились невідповіді — `Status: Scaffolded` і секція блокерів угорі.
+Заповни `docs/work/specs/TEMPLATE.md`. У § «Рішення дизайну» кожен пункт несе джерело: відповідь власника, канон (з посиланням на §) або замір. Поки лишились невідповіді — `Status: Scaffolded` і секція блокерів угорі.
 
 Гейт форми:
 
@@ -106,6 +106,6 @@ pnpm lint:specs        # чотири несучі секції; храпови�
 
 ## Playbooks
 
-- Каталог скілів і роутинг: [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md).
+- Каталог скілів і роутинг: [`docs/start/agents/agent-skills-catalog.md`](../../../docs/start/agents/agent-skills-catalog.md).
 - Доставка після спеки: [`sergeant-feature-delivery`](../sergeant-feature-delivery/SKILL.md).
 - Рішення архітектурного рівня, які переживуть фічу, — окремо в ADR: [`sergeant-adr`](../sergeant-adr/SKILL.md).

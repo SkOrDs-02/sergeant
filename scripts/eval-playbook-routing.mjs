@@ -14,11 +14,11 @@ const __dirname = dirname(__filename);
 export const DEFAULT_ROOT = resolve(__dirname, "..");
 export const DEFAULT_GOLDEN_PATH = resolve(
   DEFAULT_ROOT,
-  "docs/00-start/agents/playbook-routing-evals.json",
+  "docs/start/agents/playbook-routing-evals.json",
 );
 export const DEFAULT_PLAYBOOKS_DIR = resolve(
   DEFAULT_ROOT,
-  "docs/00-start/playbooks",
+  "docs/start/instructions",
 );
 
 const MIN_CASES = 8;

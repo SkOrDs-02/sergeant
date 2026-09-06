@@ -140,7 +140,7 @@ export const baseline = [
       // Initiative 0021 closed (2026-07-10, PR #177): all react-hooks v7
       // rules cleared monorepo-wide — web/mobile in eslint.web.js /
       // eslint.mobile.js; baseline holds `error` for server, mobile-shell,
-      // openclaw. See docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md.
+      // openclaw. See docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md.
       "react-hooks/set-state-in-effect": "error",
       "react-hooks/preserve-manual-memoization": "error",
       "react-hooks/purity": "error",

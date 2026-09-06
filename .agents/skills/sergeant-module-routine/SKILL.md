@@ -11,8 +11,8 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Канон і журнал (читати перед роботою)
 
-- Канон: [docs/01-product/model/routine.md](../../../docs/01-product/model/routine.md), включно з **§ Журнал рішень** — рішення там уже ухвалені, не перепитуй maintainer-а. Особливо § Стрік-філософія і § Модель пропуску — найчастіші місця самодіяльності.
-- Розбіжності канон↔код: [docs/90-work/audits/product-knowledge-routine.md](../../../docs/90-work/audits/product-knowledge-routine.md).
+- Канон: [docs/product/modules/routine.md](../../../docs/product/modules/routine.md), включно з **§ Журнал рішень** — рішення там уже ухвалені, не перепитуй maintainer-а. Особливо § Стрік-філософія і § Модель пропуску — найчастіші місця самодіяльності.
+- Розбіжності канон↔код: [docs/work/specs/audits/product-knowledge-routine.md](../../../docs/work/specs/audits/product-knowledge-routine.md).
 - PR, що змінює продуктову поведінку routine, оновлює канон (і журнал) **у тому ж PR** — правило `AGENTS.md § See also`.
 
 ## Мапа файлів
@@ -23,12 +23,12 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Інваріанти модуля
 
-- День-ключ відмітки звички — за годинником **пристрою**, формат `YYYY-MM-DD`; тиждень з понеділка ([ADR-0078](../../../docs/04-governance/adr/0078-day-boundary-device-local.md)).
+- День-ключ відмітки звички — за годинником **пристрою**, формат `YYYY-MM-DD`; тиждень з понеділка ([ADR-0078](../../../docs/governance/adr/0078-day-boundary-device-local.md)).
 - Модель пропуску і стрік-філософія — за каноном (§ 4–5), не за generic-уявленням про habit-трекери.
-- Нагадування — через стандартизовані Hub-механізми engagement (signals / reminders / dismiss-state, [ADR-0067](../../../docs/04-governance/adr/0067-engagement-mechanism-standardization.md)), не ad-hoc.
+- Нагадування — через стандартизовані Hub-механізми engagement (signals / reminders / dismiss-state, [ADR-0067](../../../docs/governance/adr/0067-engagement-mechanism-standardization.md)), не ad-hoc.
 
 ## Роутинг далі
 
 - Технічні правила поверхні: `sergeant-web-ui`; зміни sync-шляху — `sergeant-module-sync` (з PR-B цієї ініціативи) або `sergeant-server-api`.
 - Делегування виконання: агент `routine-owner` (`.claude/agents/routine-owner.md`). Межа: owner працює **всередині одного модуля**; крос-поверхневу фічу по стадіях веде `sergeant-deliver-squad`.
-- Каталог: [docs/00-start/agents/agent-skills-catalog.md](../../../docs/00-start/agents/agent-skills-catalog.md).
+- Каталог: [docs/start/agents/agent-skills-catalog.md](../../../docs/start/agents/agent-skills-catalog.md).

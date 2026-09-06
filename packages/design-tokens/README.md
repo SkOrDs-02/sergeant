@@ -32,7 +32,7 @@ export default { presets: [preset] /* … */ };
 
 ## Дизайн-конвенції
 
-Обидві конвенції тримаються tokens + design-review (ex-Hard Rules #8/#9, retired [ADR-0081](../../docs/04-governance/adr/0081-repository-simplification.md)) — ESLint їх більше не перевіряє.
+Обидві конвенції тримаються tokens + design-review (ex-Hard Rules #8/#9, retired [ADR-0081](../../docs/governance/adr/0081-repository-simplification.md)) — ESLint їх більше не перевіряє.
 
 - **Opacity scale:** тільки зареєстровані кроки (0, 5, 8, 10, 15, …, 100). Увага: Tailwind v4 компілює й arbitrary alpha (`/12`, `/37`) — білд не відкине off-scale крок, тож порушення ловиться лише на review.
 - **`-strong` companion:** насичені brand fills під `text-white` мають використовувати `-strong` варіант.
@@ -49,5 +49,5 @@ pnpm --filter @sergeant/design-tokens test       # Vitest (snapshot-тести �
 
 ## Глибше
 
-- [`docs/05-design/design/brandbook.md`](../../docs/05-design/design/brandbook.md)
-- [`docs/05-design/design/design-system.md`](../../docs/05-design/design/design-system.md)
+- [`docs/design/design/brandbook.md`](../../docs/design/design/brandbook.md)
+- [`docs/design/design/design-system.md`](../../docs/design/design/design-system.md)

@@ -1,0 +1,1261 @@
+{
+  "schemaVersion": 1,
+  "description": "Golden prompts for static Sergeant skill-trigger evaluation. Each repo-owned skill has two trigger prompts, one anti-trigger prompt, and one workflow-compliance prompt.",
+  "cases": [
+    {
+      "id": "better-auth-best-practices-trigger-cookie-session",
+      "skill": "better-auth-best-practices",
+      "kind": "trigger",
+      "prompt": "Fix a login session bug where Better Auth cookies work locally but fail after the Railway and Vercel split-origin deploy.",
+      "expectedSkills": ["sergeant-start-here", "better-auth-best-practices"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "better-auth-best-practices-trigger-account-lifecycle",
+      "skill": "better-auth-best-practices",
+      "kind": "trigger",
+      "prompt": "Review the account lifecycle flow for password reset, session expiry, and Better Auth rate-limit wiring.",
+      "expectedSkills": ["sergeant-start-here", "better-auth-best-practices"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "better-auth-best-practices-anti-web-layout",
+      "skill": "better-auth-best-practices",
+      "kind": "anti-trigger",
+      "prompt": "Polish the nutrition dashboard mobile layout and Tailwind spacing without touching login, cookies, or sessions.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "forbiddenSkills": ["better-auth-best-practices"]
+    },
+    {
+      "id": "better-auth-best-practices-workflow-start-here",
+      "skill": "better-auth-best-practices",
+      "kind": "workflow",
+      "prompt": "Before changing Better Auth cookie settings, load Sergeant startup rules and then exactly this auth specialist.",
+      "expectedSkills": ["sergeant-start-here", "better-auth-best-practices"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-bugfix-and-regression-trigger-regression",
+      "skill": "sergeant-bugfix-and-regression",
+      "kind": "trigger",
+      "prompt": "A previously working sync endpoint now returns stale data after the latest PR; reproduce and fix the regression.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-bugfix-and-regression"
+      ],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-bugfix-and-regression-trigger-flaky",
+      "skill": "sergeant-bugfix-and-regression",
+      "kind": "trigger",
+      "prompt": "Investigate a flaky Vitest that fails only in CI and create the smallest safe fix with a failing check first.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-bugfix-and-regression"
+      ],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-bugfix-and-regression-anti-new-feature",
+      "skill": "sergeant-bugfix-and-regression",
+      "kind": "anti-trigger",
+      "prompt": "Add a brand new dashboard screen and route for a planned feature that has no existing broken behavior.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": ["sergeant-bugfix-and-regression"]
+    },
+    {
+      "id": "sergeant-bugfix-and-regression-workflow-reproduce-first",
+      "skill": "sergeant-bugfix-and-regression",
+      "kind": "workflow",
+      "prompt": "For this production regression, start with repo rules, load only the bugfix skill, reproduce first, then patch.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-bugfix-and-regression"
+      ],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-council-trigger-ambiguous-decision",
+      "skill": "sergeant-council",
+      "kind": "trigger",
+      "prompt": "I am torn between two valid product architecture paths; convene the Sergeant council and synthesize the tradeoffs.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-council"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-council-trigger-go-no-go",
+      "skill": "sergeant-council",
+      "kind": "trigger",
+      "prompt": "Run a structured go/no-go discussion for a risky OpenClaw rollout where product, UX, growth, and tech disagree.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-council"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-council-anti-simple-bug",
+      "skill": "sergeant-council",
+      "kind": "anti-trigger",
+      "prompt": "Fix a single null check bug in the server serializer with no strategic tradeoff or multi-view decision needed.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-bugfix-and-regression"
+      ],
+      "forbiddenSkills": ["sergeant-council"]
+    },
+    {
+      "id": "sergeant-council-workflow-one-specialist",
+      "skill": "sergeant-council",
+      "kind": "workflow",
+      "prompt": "Use the repo startup skill first, then only the council specialist before deciding which advisors to consult.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-council"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-data-and-migrations-trigger-new-column",
+      "skill": "sergeant-data-and-migrations",
+      "kind": "trigger",
+      "prompt": "Add a Postgres column with a sequential SQL migration and verify rollout safety for existing production rows.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-data-and-migrations"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-data-and-migrations-trigger-drop-column",
+      "skill": "sergeant-data-and-migrations",
+      "kind": "trigger",
+      "prompt": "Plan a two-phase DROP for an obsolete table and make sure the migration numbering has no gaps.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-data-and-migrations"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-data-and-migrations-anti-css",
+      "skill": "sergeant-data-and-migrations",
+      "kind": "anti-trigger",
+      "prompt": "Fix Tailwind focus-visible styling on an icon button without changing schema, SQL, or database rollout.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "forbiddenSkills": ["sergeant-data-and-migrations"]
+    },
+    {
+      "id": "sergeant-data-and-migrations-workflow-sequential",
+      "skill": "sergeant-data-and-migrations",
+      "kind": "workflow",
+      "prompt": "Before editing migrations, load start-here and then only the data-and-migrations specialist for numbering checks.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-data-and-migrations"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-deliver-squad-trigger-cross-surface",
+      "skill": "sergeant-deliver-squad",
+      "kind": "trigger",
+      "prompt": "Ship a feature that needs DB migration, server serializer, api-client contract, web UI, and mobile updates.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-deliver-squad"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-deliver-squad-trigger-contract-chain",
+      "skill": "sergeant-deliver-squad",
+      "kind": "trigger",
+      "prompt": "Coordinate parallel implementation for a contract change that spans migrations, server, api-client, web, and mobile.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-deliver-squad"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-deliver-squad-anti-single-web",
+      "skill": "sergeant-deliver-squad",
+      "kind": "anti-trigger",
+      "prompt": "Change one isolated web component with no server contract, migration, mobile, or api-client dependency.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "forbiddenSkills": ["sergeant-deliver-squad"]
+    },
+    {
+      "id": "sergeant-deliver-squad-workflow-handoff",
+      "skill": "sergeant-deliver-squad",
+      "kind": "workflow",
+      "prompt": "Start with Sergeant rules, load only the deliver-squad coordinator, then sequence migration before server and clients.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-deliver-squad"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-deploy-and-observability-trigger-env",
+      "skill": "sergeant-deploy-and-observability",
+      "kind": "trigger",
+      "prompt": "Add a Railway environment variable, update operator docs, and verify health checks after deploy.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-deploy-and-observability"
+      ],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-deploy-and-observability-trigger-sentry",
+      "skill": "sergeant-deploy-and-observability",
+      "kind": "trigger",
+      "prompt": "Wire Sentry and Prometheus alerts for a background worker and document the rollout and rollback procedure.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-deploy-and-observability"
+      ],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-deploy-and-observability-anti-local-test",
+      "skill": "sergeant-deploy-and-observability",
+      "kind": "anti-trigger",
+      "prompt": "Add a local Vitest unit for a pure utility with no deploy, runtime env, observability, or health-check change.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": ["sergeant-deploy-and-observability"]
+    },
+    {
+      "id": "sergeant-deploy-and-observability-workflow-runtime",
+      "skill": "sergeant-deploy-and-observability",
+      "kind": "workflow",
+      "prompt": "For a deploy config change, load start-here and then only deploy-and-observability before touching env docs.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-deploy-and-observability"
+      ],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-e2e-testing-trigger-playwright",
+      "skill": "sergeant-e2e-testing",
+      "kind": "trigger",
+      "prompt": "Write a Playwright smoke test for onboarding, using role selectors and no waitForTimeout calls.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-e2e-testing"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-e2e-testing-trigger-accessibility",
+      "skill": "sergeant-e2e-testing",
+      "kind": "trigger",
+      "prompt": "Debug a failing E2E accessibility check for the web app and update the golden test path.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-e2e-testing"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-e2e-testing-anti-unit-pure",
+      "skill": "sergeant-e2e-testing",
+      "kind": "anti-trigger",
+      "prompt": "Add a small unit test for a pure TypeScript money-formatting helper with no browser flow.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": ["sergeant-e2e-testing"]
+    },
+    {
+      "id": "sergeant-e2e-testing-workflow-golden-rules",
+      "skill": "sergeant-e2e-testing",
+      "kind": "workflow",
+      "prompt": "Before editing Playwright tests, load start-here and then only the E2E specialist so the golden rules apply.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-e2e-testing"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-feature-delivery-trigger-new-screen",
+      "skill": "sergeant-feature-delivery",
+      "kind": "trigger",
+      "prompt": "Build a new user-facing screen with behavior changes and focused verification for the coherent feature slice.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-feature-delivery-trigger-new-api-action",
+      "skill": "sergeant-feature-delivery",
+      "kind": "trigger",
+      "prompt": "Add a new saved action flow from UI to API, using a small spec-first implementation plan.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-feature-delivery-anti-regression",
+      "skill": "sergeant-feature-delivery",
+      "kind": "anti-trigger",
+      "prompt": "A shipped route broke yesterday and needs reproduce-first debugging rather than a new feature slice.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-bugfix-and-regression"
+      ],
+      "forbiddenSkills": ["sergeant-feature-delivery"]
+    },
+    {
+      "id": "sergeant-feature-delivery-workflow-spec-first",
+      "skill": "sergeant-feature-delivery",
+      "kind": "workflow",
+      "prompt": "For this new feature, load the Sergeant entrypoint and then only feature-delivery before implementing.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-hubchat-trigger-tool-def",
+      "skill": "sergeant-hubchat",
+      "kind": "trigger",
+      "prompt": "Add a HubChat tool definition and executor for a new read action, including prompt-cache considerations.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-hubchat"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-hubchat-trigger-action-card",
+      "skill": "sergeant-hubchat",
+      "kind": "trigger",
+      "prompt": "Fix a HubChat action card so risky mutations require confirmation and executor output remains typed.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-hubchat"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-hubchat-anti-mobile-layout",
+      "skill": "sergeant-hubchat",
+      "kind": "anti-trigger",
+      "prompt": "Adjust Expo tab navigation and NativeWind spacing without touching chat tools, executors, or action cards.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-mobile-expo"],
+      "forbiddenSkills": ["sergeant-hubchat"]
+    },
+    {
+      "id": "sergeant-hubchat-workflow-tool-executor",
+      "skill": "sergeant-hubchat",
+      "kind": "workflow",
+      "prompt": "Before editing HubChat executors, load start-here and then only the HubChat specialist.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-hubchat"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-mobile-expo-trigger-expo-router",
+      "skill": "sergeant-mobile-expo",
+      "kind": "trigger",
+      "prompt": "Implement an Expo Router screen with NativeWind styling and no DOM-only APIs leaking into mobile.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-mobile-expo"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-mobile-expo-trigger-mmkv",
+      "skill": "sergeant-mobile-expo",
+      "kind": "trigger",
+      "prompt": "Fix a mobile-shell MMKV persistence bug and verify deep-link behavior in the Expo app.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-mobile-expo"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-mobile-expo-anti-web-only",
+      "skill": "sergeant-mobile-expo",
+      "kind": "anti-trigger",
+      "prompt": "Change only a Vite web route and Tailwind class in apps/web, with no Expo or React Native surface.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "forbiddenSkills": ["sergeant-mobile-expo"]
+    },
+    {
+      "id": "sergeant-mobile-expo-workflow-native-boundaries",
+      "skill": "sergeant-mobile-expo",
+      "kind": "workflow",
+      "prompt": "For mobile work, load the Sergeant entrypoint first and then only the Expo specialist before editing apps/mobile.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-mobile-expo"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-monorepo-boundaries-trigger-placement",
+      "skill": "sergeant-monorepo-boundaries",
+      "kind": "trigger",
+      "prompt": "Decide whether shared validation logic belongs in apps/server, apps/web, or a package boundary.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-monorepo-boundaries"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-monorepo-boundaries-trigger-shared-package",
+      "skill": "sergeant-monorepo-boundaries",
+      "kind": "trigger",
+      "prompt": "Review where to place cross-surface domain code before moving it into packages/shared.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-monorepo-boundaries"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-monorepo-boundaries-anti-known-web",
+      "skill": "sergeant-monorepo-boundaries",
+      "kind": "anti-trigger",
+      "prompt": "Update a clearly local web component inside an existing feature folder with no shared-code question.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "forbiddenSkills": ["sergeant-monorepo-boundaries"]
+    },
+    {
+      "id": "sergeant-monorepo-boundaries-workflow-placement-first",
+      "skill": "sergeant-monorepo-boundaries",
+      "kind": "workflow",
+      "prompt": "When code placement is unclear, load start-here and then only monorepo-boundaries before implementation.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-monorepo-boundaries"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-qa-squad-trigger-full-qa",
+      "skill": "sergeant-qa-squad",
+      "kind": "trigger",
+      "prompt": "Run full QA across web, server, mobile, and OpenClaw surfaces in parallel and synthesize the results.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-qa-squad"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-qa-squad-trigger-all-surfaces",
+      "skill": "sergeant-qa-squad",
+      "kind": "trigger",
+      "prompt": "Before merge, verify tests and typechecks for every Sergeant app surface with coordinated QA agents.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-qa-squad"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-qa-squad-anti-single-test",
+      "skill": "sergeant-qa-squad",
+      "kind": "anti-trigger",
+      "prompt": "Run one focused server unit test for a local bugfix, not a full multi-surface QA sweep.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-bugfix-and-regression"
+      ],
+      "forbiddenSkills": ["sergeant-qa-squad"]
+    },
+    {
+      "id": "sergeant-qa-squad-workflow-coordinator",
+      "skill": "sergeant-qa-squad",
+      "kind": "workflow",
+      "prompt": "Load start-here first, then only qa-squad before coordinating parallel verification across surfaces.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-qa-squad"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-review-and-merge-trigger-pr-review",
+      "skill": "sergeant-review-and-merge",
+      "kind": "trigger",
+      "prompt": "Review an open PR for merge readiness, focusing on regressions, tests, hard rules, and PR body quality.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-review-and-merge"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-review-and-merge-trigger-premerge",
+      "skill": "sergeant-review-and-merge",
+      "kind": "trigger",
+      "prompt": "Do a pre-merge safety pass on a branch, checking contracts, docs freshness, and verification evidence.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-review-and-merge"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-review-and-merge-anti-implement-feature",
+      "skill": "sergeant-review-and-merge",
+      "kind": "anti-trigger",
+      "prompt": "Implement a new feature from scratch rather than reviewing an existing PR or merge candidate.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": ["sergeant-review-and-merge"]
+    },
+    {
+      "id": "sergeant-review-and-merge-workflow-findings-first",
+      "skill": "sergeant-review-and-merge",
+      "kind": "workflow",
+      "prompt": "For PR review, load start-here and then only review-and-merge so findings lead the response.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-review-and-merge"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-review-squad-trigger-multi-surface-review",
+      "skill": "sergeant-review-squad",
+      "kind": "trigger",
+      "prompt": "Review a PR touching server contracts, web design, security, and docs using parallel specialist lenses.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-review-squad"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-review-squad-trigger-three-surfaces",
+      "skill": "sergeant-review-squad",
+      "kind": "trigger",
+      "prompt": "Coordinate a review for changes across three governed surfaces and synthesize contract, design, security, and docs risks.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-review-squad"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-review-squad-anti-single-file",
+      "skill": "sergeant-review-squad",
+      "kind": "anti-trigger",
+      "prompt": "Review a one-file typo fix in docs where a normal focused review is enough.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-review-and-merge"],
+      "forbiddenSkills": ["sergeant-review-squad"]
+    },
+    {
+      "id": "sergeant-review-squad-workflow-parallel-lenses",
+      "skill": "sergeant-review-squad",
+      "kind": "workflow",
+      "prompt": "Load start-here first, then only review-squad before deciding which reviewer lenses should run.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-review-squad"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-security-audit-trigger-pat",
+      "skill": "sergeant-security-audit",
+      "kind": "trigger",
+      "prompt": "Audit the repo for OpenClaw PAT exposure, sensitive logging, and SKILL.md injection patterns.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-security-audit"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-security-audit-trigger-pnpm-audit",
+      "skill": "sergeant-security-audit",
+      "kind": "trigger",
+      "prompt": "Run a security review of dependency risk, Pino redaction, and secret handling before release.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-security-audit"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-security-audit-anti-visual-polish",
+      "skill": "sergeant-security-audit",
+      "kind": "anti-trigger",
+      "prompt": "Adjust button sizes and typography in a web component with no secrets, auth, logging, or dependency risk.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "forbiddenSkills": ["sergeant-security-audit"]
+    },
+    {
+      "id": "sergeant-security-audit-workflow-hard-rules",
+      "skill": "sergeant-security-audit",
+      "kind": "workflow",
+      "prompt": "Before a security audit, load start-here and then only security-audit so Hard Rules 20 through 22 apply.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-security-audit"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-server-api-trigger-serializer",
+      "skill": "sergeant-server-api",
+      "kind": "trigger",
+      "prompt": "Change a server route serializer that returns Postgres bigint values and update the API client contract test.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-server-api"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-server-api-trigger-route",
+      "skill": "sergeant-server-api",
+      "kind": "trigger",
+      "prompt": "Add a backend API route with business logic, typed response shape, and contract coverage.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-server-api"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-server-api-anti-mobile-only",
+      "skill": "sergeant-server-api",
+      "kind": "anti-trigger",
+      "prompt": "Fix an Expo screen render bug that does not touch server routes, serializers, or api-client types.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-mobile-expo"],
+      "forbiddenSkills": ["sergeant-server-api"]
+    },
+    {
+      "id": "sergeant-server-api-workflow-contract-triplet",
+      "skill": "sergeant-server-api",
+      "kind": "workflow",
+      "prompt": "For server API work, load start-here and then only server-api before changing serializers or api-client types.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-server-api"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-start-here-trigger-any-repo-task",
+      "skill": "sergeant-start-here",
+      "kind": "trigger",
+      "prompt": "Start any new coding task inside the Sergeant repo and orient on hard rules before touching files.",
+      "expectedSkills": ["sergeant-start-here"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-start-here-trigger-review-request",
+      "skill": "sergeant-start-here",
+      "kind": "trigger",
+      "prompt": "A user asks for a review of this Sergeant branch, so first load the mandatory repo entrypoint.",
+      "expectedSkills": ["sergeant-start-here"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-start-here-anti-non-repo-question",
+      "skill": "sergeant-start-here",
+      "kind": "anti-trigger",
+      "prompt": "Answer a general conceptual question about OAuth outside the Sergeant workspace without repo-specific action.",
+      "expectedSkills": [],
+      "forbiddenSkills": ["sergeant-start-here"]
+    },
+    {
+      "id": "sergeant-start-here-workflow-before-specialist",
+      "skill": "sergeant-start-here",
+      "kind": "workflow",
+      "prompt": "When a Sergeant task begins, run the entrypoint before selecting exactly one surface specialist.",
+      "expectedSkills": ["sergeant-start-here"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-tech-debt-trigger-eslint-baseline",
+      "skill": "sergeant-tech-debt",
+      "kind": "trigger",
+      "prompt": "Reduce ESLint baseline debt by fixing the underlying violation and removing the matching baseline entry.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-tech-debt"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-tech-debt-trigger-dead-code",
+      "skill": "sergeant-tech-debt",
+      "kind": "trigger",
+      "prompt": "Clean a Knip dead-code finding with lifecycle marker checks and monorepo grep before deletion.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-tech-debt"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-tech-debt-anti-product-feature",
+      "skill": "sergeant-tech-debt",
+      "kind": "anti-trigger",
+      "prompt": "Build a new paid feature flow rather than reducing debt, dead code, lint baseline, or module size.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": ["sergeant-tech-debt"]
+    },
+    {
+      "id": "sergeant-tech-debt-workflow-separate-prs",
+      "skill": "sergeant-tech-debt",
+      "kind": "workflow",
+      "prompt": "For a technical debt cleanup, load start-here and then only tech-debt before choosing one debt class.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-tech-debt"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-web-ui-trigger-tailwind",
+      "skill": "sergeant-web-ui",
+      "kind": "trigger",
+      "prompt": "Update an apps/web component with Tailwind classes, accessible focus-visible states, and touch targets.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-web-ui-trigger-query-keys",
+      "skill": "sergeant-web-ui",
+      "kind": "trigger",
+      "prompt": "Fix a React Query hook in the web app so it uses centralized query key factories.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-web-ui-anti-sql-migration",
+      "skill": "sergeant-web-ui",
+      "kind": "anti-trigger",
+      "prompt": "Create a sequential SQL migration for a new Postgres index without any web UI changes.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-data-and-migrations"],
+      "forbiddenSkills": ["sergeant-web-ui"]
+    },
+    {
+      "id": "sergeant-web-ui-workflow-design-rules",
+      "skill": "sergeant-web-ui",
+      "kind": "workflow",
+      "prompt": "Before editing apps/web UI, load start-here and then only web-ui so design conventions apply.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-writing-skills-trigger-new-skill",
+      "skill": "sergeant-writing-skills",
+      "kind": "trigger",
+      "prompt": "Create a new repo-owned Sergeant skill with frontmatter shape, security scan, and skills-lock update.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-writing-skills"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-writing-skills-trigger-edit-skill",
+      "skill": "sergeant-writing-skills",
+      "kind": "trigger",
+      "prompt": "Edit an existing .agents/skills SKILL.md and regenerate the skill lock hash safely.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-writing-skills"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-writing-skills-anti-normal-docs",
+      "skill": "sergeant-writing-skills",
+      "kind": "anti-trigger",
+      "prompt": "Update a planning roadmap without creating or editing any .agents/skills/SKILL.md file.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-tech-debt"],
+      "forbiddenSkills": ["sergeant-writing-skills"]
+    },
+    {
+      "id": "sergeant-writing-skills-workflow-lock",
+      "skill": "sergeant-writing-skills",
+      "kind": "workflow",
+      "prompt": "Before editing SKILL.md files, load start-here and then only writing-skills so lock and scan rules apply.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-writing-skills"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-planning-batch-trigger-batch-n",
+      "skill": "sergeant-planning-batch",
+      "kind": "trigger",
+      "prompt": "Execute a batch of the next N open PR-cards pulled from docs/work/specs/planning/* and update the trackers for the work done.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-planning-batch"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-planning-batch-trigger-parallel-fanout",
+      "skill": "sergeant-planning-batch",
+      "kind": "trigger",
+      "prompt": "Run a dynamic parallel-agent batch over the planning folder, then archive any planning doc that work drove to fully complete.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-planning-batch"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-planning-batch-anti-single-card",
+      "skill": "sergeant-planning-batch",
+      "kind": "anti-trigger",
+      "prompt": "Implement one isolated web component from a single planning card that maps cleanly to one web specialist skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-web-ui"],
+      "forbiddenSkills": ["sergeant-planning-batch"]
+    },
+    {
+      "id": "sergeant-planning-batch-workflow-fanout-archive",
+      "skill": "sergeant-planning-batch",
+      "kind": "workflow",
+      "prompt": "Start with Sergeant rules, load only the planning-batch coordinator, fan out read-only analysis agents, then apply tracker edits and fast-forward archive.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-planning-batch"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-backend-architecture-trigger-module",
+      "skill": "sergeant-backend-architecture",
+      "kind": "trigger",
+      "prompt": "Review the apps/server module structure for the new routine domain — directory layout, barrel exports, and dependency direction.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-backend-architecture"
+      ],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-backend-architecture-trigger-layer",
+      "skill": "sergeant-backend-architecture",
+      "kind": "trigger",
+      "prompt": "Enforce Clean Architecture layering in the finyk domain: domain entities must not import from infrastructure adapters.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-backend-architecture"
+      ],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-backend-architecture-anti-e2e",
+      "skill": "sergeant-backend-architecture",
+      "kind": "anti-trigger",
+      "prompt": "Write a Playwright @critical test covering the finyk add-transaction happy path.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-e2e-testing"],
+      "forbiddenSkills": ["sergeant-backend-architecture"]
+    },
+    {
+      "id": "sergeant-backend-architecture-workflow-start-here",
+      "skill": "sergeant-backend-architecture",
+      "kind": "workflow",
+      "prompt": "Before refactoring the server-side module structure, load startup rules then the sergeant-backend-architecture specialist.",
+      "expectedSkills": [
+        "sergeant-start-here",
+        "sergeant-backend-architecture"
+      ],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-verify-before-done-trigger-scoped-green",
+      "skill": "sergeant-verify-before-done",
+      "kind": "trigger",
+      "prompt": "I finished the storage-key migration and the scoped single-spec test is green, so it is ready to push to main.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-verify-before-done"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-verify-before-done-trigger-subagent-report",
+      "skill": "sergeant-verify-before-done",
+      "kind": "trigger",
+      "prompt": "A subagent reported that eslint shows zero errors, so mark the lint cleanup task as done and complete.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-verify-before-done"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-verify-before-done-anti-new-feature",
+      "skill": "sergeant-verify-before-done",
+      "kind": "anti-trigger",
+      "prompt": "Design and build a brand new dashboard screen with routing for a planned feature that has no completion claim yet.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": ["sergeant-verify-before-done"]
+    },
+    {
+      "id": "sergeant-verify-before-done-workflow-start-here",
+      "skill": "sergeant-verify-before-done",
+      "kind": "workflow",
+      "prompt": "Before claiming the PR is green and ready, load Sergeant startup rules and then exactly this verification specialist.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-verify-before-done"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-finyk-trigger-budget-carryover",
+      "skill": "sergeant-module-finyk",
+      "kind": "trigger",
+      "prompt": "Change the unspent budget carryover rule in the finyk module and update the monthly analytics accordingly.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-finyk-trigger-cash-on-hand",
+      "skill": "sergeant-module-finyk",
+      "kind": "trigger",
+      "prompt": "Add a cash-on-hand adjustment flow to finyk transactions with receipt attachments and correct kopiyka totals.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-finyk-anti-nutrition-dashboard",
+      "skill": "sergeant-module-finyk",
+      "kind": "anti-trigger",
+      "prompt": "Improve the nutrition dashboard meal cards and pantry list without touching budgets, transactions, or money.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": ["sergeant-module-finyk"]
+    },
+    {
+      "id": "sergeant-module-finyk-workflow-start-here",
+      "skill": "sergeant-module-finyk",
+      "kind": "workflow",
+      "prompt": "Before changing finyk budget behavior, load Sergeant startup rules and then exactly the finyk module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-nutrition-trigger-pantry-derivation",
+      "skill": "sergeant-module-nutrition",
+      "kind": "trigger",
+      "prompt": "Update how the pantry stock balance is derived when a meal is logged in the nutrition module.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-nutrition-trigger-food-log",
+      "skill": "sergeant-module-nutrition",
+      "kind": "trigger",
+      "prompt": "Add a recipe import flow to the nutrition food log with per-day calorie totals keyed by device-local day.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-nutrition-anti-finyk-budget",
+      "skill": "sergeant-module-nutrition",
+      "kind": "anti-trigger",
+      "prompt": "Fix the finyk monthly budget percent denominator for frozen past months without touching food or meals.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-finyk"],
+      "forbiddenSkills": ["sergeant-module-nutrition"]
+    },
+    {
+      "id": "sergeant-module-nutrition-workflow-start-here",
+      "skill": "sergeant-module-nutrition",
+      "kind": "workflow",
+      "prompt": "For this pantry ledger change, start with repo rules and then load only the nutrition module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-nutrition"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-fizruk-trigger-injury-recovery",
+      "skill": "sergeant-module-fizruk",
+      "kind": "trigger",
+      "prompt": "Adjust the fizruk recovery recommendation after an injury is logged for a muscle zone.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-fizruk-trigger-body-weight",
+      "skill": "sergeant-module-fizruk",
+      "kind": "trigger",
+      "prompt": "Change how fizruk records body weight entries and shows the workout streak trend on the web surface.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-fizruk-anti-routine-habits",
+      "skill": "sergeant-module-fizruk",
+      "kind": "anti-trigger",
+      "prompt": "Rework the routine habits skip model and daily check-in streak logic without touching workouts or recovery.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": ["sergeant-module-fizruk"]
+    },
+    {
+      "id": "sergeant-module-fizruk-workflow-start-here",
+      "skill": "sergeant-module-fizruk",
+      "kind": "workflow",
+      "prompt": "Before editing fizruk injury zones, load Sergeant startup rules and then exactly the fizruk module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-routine-trigger-skip-model",
+      "skill": "sergeant-module-routine",
+      "kind": "trigger",
+      "prompt": "Change the routine module skip model so a planned pause day does not break the habit streak.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-routine-trigger-reminders",
+      "skill": "sergeant-module-routine",
+      "kind": "trigger",
+      "prompt": "Add a reminder schedule editor for daily habit check-ins in the routine module.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-routine-anti-fizruk-program",
+      "skill": "sergeant-module-routine",
+      "kind": "anti-trigger",
+      "prompt": "Tune the fizruk workout program progression and recovery advice without touching habits or check-ins.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-fizruk"],
+      "forbiddenSkills": ["sergeant-module-routine"]
+    },
+    {
+      "id": "sergeant-module-routine-workflow-start-here",
+      "skill": "sergeant-module-routine",
+      "kind": "workflow",
+      "prompt": "For this habit streak change, start with repo rules and then load only the routine module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-routine"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-ai-trigger-hubchat-tool",
+      "skill": "sergeant-module-ai",
+      "kind": "trigger",
+      "prompt": "Add a new HubChat tool definition together with its client executor and action card rendering.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-ai-trigger-digest-coach",
+      "skill": "sergeant-module-ai",
+      "kind": "trigger",
+      "prompt": "Change the weekly digest generation and the coach advice prompt assembly in the AI layer.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-ai-anti-sql-migration",
+      "skill": "sergeant-module-ai",
+      "kind": "anti-trigger",
+      "prompt": "Add a Postgres column with a sequential SQL migration for the finyk transactions table.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-data-and-migrations"],
+      "forbiddenSkills": ["sergeant-module-ai"]
+    },
+    {
+      "id": "sergeant-module-ai-workflow-start-here",
+      "skill": "sergeant-module-ai",
+      "kind": "workflow",
+      "prompt": "Before changing HubChat prompt cache breakpoints, load startup rules and then exactly the AI module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-ai"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-sync-trigger-oplog",
+      "skill": "sergeant-module-sync",
+      "kind": "trigger",
+      "prompt": "Change how the sync op-log applies per-row LWW conflict resolution for habit check-ins.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-sync-trigger-dualwrite",
+      "skill": "sergeant-module-sync",
+      "kind": "trigger",
+      "prompt": "Extend the dualwrite-core pipeline so a new entity type syncs across devices with cursor pulls.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-sync-anti-billing-quota",
+      "skill": "sergeant-module-sync",
+      "kind": "anti-trigger",
+      "prompt": "Change the daily AI quota limits for the Pro plan in the billing module without touching sync.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": ["sergeant-module-sync"]
+    },
+    {
+      "id": "sergeant-module-sync-workflow-start-here",
+      "skill": "sergeant-module-sync",
+      "kind": "workflow",
+      "prompt": "Before editing the sync conflict rules, load Sergeant startup rules and then exactly the sync module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-billing-trigger-plan-limits",
+      "skill": "sergeant-module-billing",
+      "kind": "trigger",
+      "prompt": "Update the effective limits computation for the Pro plan and its reverse-trial expiry behavior.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-billing-trigger-liqpay",
+      "skill": "sergeant-module-billing",
+      "kind": "trigger",
+      "prompt": "Handle a failed LiqPay payment callback so the user plan downgrades cleanly at period end.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-billing-anti-push-fanout",
+      "skill": "sergeant-module-billing",
+      "kind": "anti-trigger",
+      "prompt": "Fix the push notification fan-out so expired APNs subscriptions get deactivated without errors.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": ["sergeant-module-billing"]
+    },
+    {
+      "id": "sergeant-module-billing-workflow-start-here",
+      "skill": "sergeant-module-billing",
+      "kind": "workflow",
+      "prompt": "Before changing quota enforcement, load Sergeant startup rules and then exactly the billing module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-billing"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-integrations-trigger-silpo",
+      "skill": "sergeant-module-integrations",
+      "kind": "trigger",
+      "prompt": "Fix the Silpo receipts import so a failed branch context lookup falls back without blocking the cart.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-integrations-trigger-webhook-replay",
+      "skill": "sergeant-module-integrations",
+      "kind": "trigger",
+      "prompt": "Add replay support for a new inbound webhook event type with idempotent record handling.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-integrations-anti-sync-lww",
+      "skill": "sergeant-module-integrations",
+      "kind": "anti-trigger",
+      "prompt": "Rework the per-row LWW conflict resolution in the sync module for multi-device habit data.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-sync"],
+      "forbiddenSkills": ["sergeant-module-integrations"]
+    },
+    {
+      "id": "sergeant-module-integrations-workflow-start-here",
+      "skill": "sergeant-module-integrations",
+      "kind": "workflow",
+      "prompt": "Before touching the Telegram waitlist bot, load Sergeant startup rules and then exactly the integrations module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-module-push-trigger-fanout",
+      "skill": "sergeant-module-push",
+      "kind": "trigger",
+      "prompt": "Change the push notification fan-out so web, APNs and FCM channels retry independently.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-push-trigger-subscription",
+      "skill": "sergeant-module-push",
+      "kind": "trigger",
+      "prompt": "Deactivate expired push subscriptions during delivery audit instead of raising errors.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-module-push-anti-integrations-transcribe",
+      "skill": "sergeant-module-push",
+      "kind": "anti-trigger",
+      "prompt": "Raise the USD spending cap for the audio transcription integration after reviewing costs.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-integrations"],
+      "forbiddenSkills": ["sergeant-module-push"]
+    },
+    {
+      "id": "sergeant-module-push-workflow-start-here",
+      "skill": "sergeant-module-push",
+      "kind": "workflow",
+      "prompt": "Before editing notification delivery, load Sergeant startup rules and then exactly the push module owner skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-module-push"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-copy-and-tone-trigger-error-message",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "trigger",
+      "prompt": "Write the Ukrainian error message and empty state copy for the new receipts import screen.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-copy-and-tone-trigger-review-tone",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "trigger",
+      "prompt": "Review the onboarding toasts and button labels for tone-of-voice consistency with the UA style guide.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-copy-and-tone-anti-adr",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "anti-trigger",
+      "prompt": "Write a new architecture decision record about the sync retention policy with a consequences section.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": ["sergeant-copy-and-tone"]
+    },
+    {
+      "id": "sergeant-copy-and-tone-workflow-start-here",
+      "skill": "sergeant-copy-and-tone",
+      "kind": "workflow",
+      "prompt": "Before writing the Ukrainian interface texts, load Sergeant startup rules and then exactly the copy-and-tone skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-adr-trigger-new-decision",
+      "skill": "sergeant-adr",
+      "kind": "trigger",
+      "prompt": "Document the decision to switch the embeddings provider as a new numbered ADR with consequences.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-adr-trigger-supersede",
+      "skill": "sergeant-adr",
+      "kind": "trigger",
+      "prompt": "Mark the old hosting ADR as superseded and add the replacement record to the ADR index table.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-adr-anti-feature-flag",
+      "skill": "sergeant-adr",
+      "kind": "anti-trigger",
+      "prompt": "Add a build-time feature flag for the new pantry screen and register it with a removal condition.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": ["sergeant-adr"]
+    },
+    {
+      "id": "sergeant-adr-workflow-start-here",
+      "skill": "sergeant-adr",
+      "kind": "workflow",
+      "prompt": "Before writing the new decision record, load Sergeant startup rules and then exactly the ADR skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-adr"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-feature-flags-trigger-add-flag",
+      "skill": "sergeant-feature-flags",
+      "kind": "trigger",
+      "prompt": "Add a server-side flag to gate the new coach advice model and register its default and removal condition.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-feature-flags-trigger-remove-flag",
+      "skill": "sergeant-feature-flags",
+      "kind": "trigger",
+      "prompt": "Remove the expired reverse-trial flag, its registry row, and the dead code branch behind it.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-feature-flags-anti-analytics",
+      "skill": "sergeant-feature-flags",
+      "kind": "anti-trigger",
+      "prompt": "Add a PostHog event for pantry item deletion with a small payload and dashboard manifest update.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": ["sergeant-feature-flags"]
+    },
+    {
+      "id": "sergeant-feature-flags-workflow-start-here",
+      "skill": "sergeant-feature-flags",
+      "kind": "workflow",
+      "prompt": "Before touching any toggle, load Sergeant startup rules and then exactly the feature-flags skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-flags"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-analytics-trigger-new-event",
+      "skill": "sergeant-analytics",
+      "kind": "trigger",
+      "prompt": "Add a product analytics event for habit archive actions with correct naming and a scrubbed payload.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-analytics-trigger-dashboard-manifest",
+      "skill": "sergeant-analytics",
+      "kind": "trigger",
+      "prompt": "Update the PostHog dashboard manifest so the retention panel includes the new activation event.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": []
+    },
+    {
+      "id": "sergeant-analytics-anti-copy",
+      "skill": "sergeant-analytics",
+      "kind": "anti-trigger",
+      "prompt": "Rewrite the Ukrainian toast texts and button labels for the budgets screen per the style guide.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-copy-and-tone"],
+      "forbiddenSkills": ["sergeant-analytics"]
+    },
+    {
+      "id": "sergeant-analytics-workflow-start-here",
+      "skill": "sergeant-analytics",
+      "kind": "workflow",
+      "prompt": "Before adding tracking calls, load Sergeant startup rules and then exactly the analytics skill.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-analytics"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    },
+    {
+      "id": "sergeant-spec-trigger-new-feature-spec",
+      "skill": "sergeant-spec",
+      "kind": "trigger",
+      "prompt": "Write a spec for a new shared-goals feature in docs/work/specs/ before anyone starts building it.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-spec"]
+    },
+    {
+      "id": "sergeant-spec-trigger-widen-existing-spec",
+      "skill": "sergeant-spec",
+      "kind": "trigger",
+      "prompt": "The receipt-scan spec needs its scope widened to cover bank statements — update the spec document first.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-spec"]
+    },
+    {
+      "id": "sergeant-spec-anti-implement-settled-spec",
+      "skill": "sergeant-spec",
+      "kind": "anti-trigger",
+      "prompt": "Implement the already-approved pantry-storage-places spec exactly as written, with no open blockers left in it.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-feature-delivery"],
+      "forbiddenSkills": ["sergeant-spec"]
+    },
+    {
+      "id": "sergeant-spec-workflow-interview-before-document",
+      "skill": "sergeant-spec",
+      "kind": "workflow",
+      "prompt": "Before writing the shared-goals spec, load repo rules and only the spec skill, interview the owner first, then write the document.",
+      "expectedSkills": ["sergeant-start-here", "sergeant-spec"],
+      "forbiddenSkills": [],
+      "complianceChecks": ["start-here-first", "exactly-one-specialist"]
+    }
+  ]
+}

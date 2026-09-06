@@ -1,0 +1,123 @@
+# Playbook: Виконання батчу planning-тасків (parallel fan-out)
+
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-27.
+> **Status:** Active
+> **Runtime-specific:** no
+
+**Trigger:** «Прожени N тасків з планінгу» / «виконай батч PR-карток з `docs/work/specs/planning/*`» / «закрий пачку planning-тасків і онови трекери» — коли робота охоплює кілька PR-карток одночасно й потребує паралельних агентів.
+
+## Owner surface
+
+- Primary surface: `docs/work/specs/planning/`
+- Coupled surface: `docs/open-work.md`, `docs/today.md` (генеровані трекери) + будь-яка code-surface, яку зачіпає конкретна картка
+- Governing skill: `sergeant-planning-batch`
+
+---
+
+## Decision Tree
+
+> Йди деревом згори вниз. Кожен листок (→ **ACTION**) веде на детальні кроки нижче.
+
+**Q1: Скільки PR-карток у скоупі?**
+
+- Одна ізольована картка, що мапиться на один specialist skill → **STOP** → не вантаж цей playbook; іди прямо в той skill.
+- Дві+ картки або динамічний батч N → [§1 Інвентаризація](#1-інвентаризація-serial-once).
+
+**Q2: Який клас у картки (після інвентаризації)?**
+
+- Docs / трекери / статуси only → [§4 Виконання docs-карток](#4-виконання-docs-карток) (рецепт `reconcile-doc-drift.md`).
+- Одна code-surface → специфічний specialist skill через [§3 Виконання code-карток](#3-виконання-code-карток).
+- DB → server → api-client → web/mobile (cross-surface) → [§3](#3-виконання-code-карток) як sequential `sergeant-deliver-squad` chain.
+- Незрозуміло, чи картка вже зашиплена → [§2 Fan-out](#2-fan-out-parallel) спочатку, потім повернись у Q2.
+
+**Q3: Чи довела робота якийсь planning-док до повністю виконано?**
+
+- Так (follow-up-и закриті, немає відкритих `- [ ]`) → [§6 Fast-forward архівація](#6-fast-forward-архівація-skip-90-day-gate).
+- Ні → архівація — свідомий no-op; одразу [§7 Верифікація](#7-верифікація--один-pr).
+
+```mermaid
+flowchart TD
+    Q1{"Q1: Скільки PR-карток?"}
+    Q1 -- "Одна, мапиться на specialist" --> STOP["STOP\n→ specialist skill напряму"]
+    Q1 -- "Дві+ / батч N" --> INV["§1 Інвентаризація"]
+
+    INV --> Q2{"Q2: Клас картки?"}
+    Q2 -- "Docs / трекери" --> DOCS["§4 docs-картки"]
+    Q2 -- "Одна code-surface" --> CODE["§3 code-картки"]
+    Q2 -- "Cross-surface" --> CODE
+    Q2 -- "Незрозуміло чи зашиплено" --> FAN["§2 Fan-out (read-only)"] --> Q2
+
+    DOCS --> APPLY["§5 Apply + regenerate"]
+    CODE --> APPLY
+    APPLY --> Q3{"Q3: Док доведено до повністю виконано?"}
+    Q3 -- "Так" --> ARCH["§6 Fast-forward архівація"]
+    Q3 -- "Ні" --> VERIFY["§7 Верифікація + один PR"]
+    ARCH --> VERIFY
+```
+
+---
+
+## Background (детальні кроки)
+
+### 1. Інвентаризація (serial, once)
+
+Спершу перерахуй дашборди, щоб дрейф рахувався проти живого стану, а не кешу:
+
+- `pnpm docs:gen-daily` (open-work + today + trust-badge), `pnpm docs:gen-initiative-followups`.
+- Прочитай [`docs/open-work.md`](../../open-work.md) як ground truth «що відкрито» і [`docs/governance/pr-ledger/index.json`](../../governance/pr-ledger/index.json) як ground truth «чи `#NNNN` змерджено».
+
+**Динамічний відбір батчу.** Пропусти кожну картку зі статусом `✅ Виконано` / `Closed`. Поважай `Dependencies` (не починай картку раніше її блокерів) і `Freeze-compatible` проти будь-якого активного freeze у `docs/governance/governance/`. Бери спершу найнижчий `P-рівень` і найменший `Size`. Розмір N — динамічний: бери стільки, скільки просить запит, обмежене тим, що реально розблоковано залежностями.
+
+### 2. Fan-out (parallel)
+
+Розбий інвентар на **disjoint surfaces**, щоб паралельні агенти ніколи не редагували один файл. Один власник на planning-групу (наприклад: `pr-plan-*` perf/backend, `pr-plan-*` docs/security, roadmap-и, research-доки). **Ніколи** не давай агенту `AUTO-GENERATED` файл (`open-work.md`, `today.md`, `follow-ups.md`, `*.auto.json`).
+
+Запусти один read-only analysis-агент на surface. Кожен агент: для кожної `Active`/`Draft` картки (a) перевіряє, чи всі `#NNNN` PR-mention-и змерджені (pr-ledger); (b) грепає `main` на докази, що `- [ ]` пункти реально зашиплені; (c) повертає **тільки точні, evidence-backed рекомендації** — які чекбокси перевести в `- [x]`, які `Status` закрити, які доки дійшли до повністю виконано. Консервативний bias: неоднозначні докази → лишай без змін, репортуй як "needs human".
+
+### 3. Виконання code-карток
+
+- **Cross-surface картка** (DB → server → api-client → web/mobile) — sequential `sergeant-deliver-squad` chain; кожен наступний агент отримує звіт попереднього. Не запускай наступний до звіту попереднього (крім паралельного web+mobile кроку).
+- **Одна code-surface** — відповідний specialist skill.
+- **Незалежні картки** між собою можна гнати як паралельні Agent Team teammates. Залежні — строго послідовно за `Dependencies`-графом.
+- Після кожної surface — `pnpm typecheck`. Якщо migration додав `bigint` колонки — переконайся, що server їх coerce-ить через `Number()`.
+
+### 4. Виконання docs-карток
+
+Йди рецептом [`reconcile-doc-drift.md`](./reconcile-doc-drift.md): застосовуй тільки high-confidence, evidence-backed правки статусів/чекбоксів. Жодних feature-змін у docs-картці.
+
+### 5. Apply + regenerate (serial)
+
+Застосуй високовпевнені правки: переведи `- **Status:**` завершених карток у `✅ Виконано` з посиланням на PR/commit + однорядкова нотатка-доказ; перенеси відповідні `Last validated:` маркери (рівно один маркер на док). Потім перегенеруй дашборди (`pnpm docs:gen-daily`, `pnpm docs:gen-initiative-followups`), щоб закриті доки випали з `open-work.md`.
+
+### 6. Cleanup завершених planning-доків
+
+Planning-док готовий до cleanup лише коли follow-up-и закриті, немає відкритих `- [ ]`, Outcome і PR/commit evidence зафіксовані та merged. Після цього окремим cleanup-комітом видали frozen snapshot і переведи inbound references на immutable commit permalink. Якщо жоден док не дотягнув до повністю виконаного стану — cleanup є свідомим no-op.
+
+### 7. Верифікація + один PR
+
+Прожени гейти (нижче) і здавай весь батч **одним PR** на гілці батчу — і workflow-артефакт, і виконані картки разом.
+
+---
+
+## Verification
+
+- [ ] `pnpm docs:check-open-work` і `pnpm docs:check-today` зелені (трекери збігаються з джерелами).
+- [ ] `pnpm docs:check-freshness-single-marker` + `pnpm docs:check-freshness-cadence` зелені.
+- [ ] `pnpm docs:check-links` зелений після видалення завершених snapshot-ів.
+- [ ] `pnpm lint:archive-move-depth` підтверджує відсутність локальних archive-дерев.
+- [ ] Для code-карток — `pnpm typecheck` після кожної surface.
+- [ ] Кожна закрита картка має `✅ Виконано` + PR/commit reference.
+- [ ] Весь батч — один PR на гілці батчу.
+
+## Notes
+
+- Це planning-сиблінг до agent-workflows §11 (docs-sync sweep). Відмінність: §11 не несе код; цей playbook може виконувати кодові картки й прибирати завершені snapshot-и після merge evidence.
+- Консервативний bias на доказах сильніший за бажання «закрити побільше»: неоднозначна картка лишається відкритою.
+- Історію зберігає Git: завершений snapshot видаляємо з checkout, а потрібні inbound-лінки переводимо на immutable permalink.
+
+## See also
+
+- [AGENTS.md](../../../AGENTS.md) — hard rules.
+- [`reconcile-doc-drift.md`](./reconcile-doc-drift.md) — коли картка суто docs/трекери.
+- [`run-squad-deliver.md`](./run-squad-deliver.md) — коли картка cross-surface code.
+- [`docs/start/agents/agent-workflows.md`](../agents/agent-workflows.md) §12 — parallel fan-out layer.

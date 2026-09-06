@@ -99,6 +99,12 @@
     "docs:check-initiative-index": "pnpm lint:initiative-status-sync",
     "docs:gen-open-work": "node scripts/docs/generate-open-work.mjs",
     "docs:check-open-work": "node scripts/docs/generate-open-work.mjs --check",
+    "docs:gen-inventory": "node scripts/docs/generate-documentation-inventory.mjs",
+    "docs:check-inventory": "node scripts/docs/generate-documentation-inventory.mjs --check",
+    "docs:rewrite-paths": "node scripts/docs/rewrite-documentation-paths.mjs",
+    "docs:check-paths": "node scripts/docs/rewrite-documentation-paths.mjs --check",
+    "docs:repair-links": "node scripts/docs/repair-documentation-links.mjs",
+    "docs:check-repair-links": "node scripts/docs/repair-documentation-links.mjs --check",
     "docs:gen-today": "node scripts/docs/generate-today.mjs",
     "docs:check-today": "node scripts/docs/generate-today.mjs --check",
     "docs:gen-status": "node scripts/docs/generate-status.mjs",
@@ -196,7 +202,7 @@
     "packages/shared/src/{openapi,schemas}/**/*.ts": [
       "node scripts/pre-commit-derived-artifacts.mjs --openapi"
     ],
-    "docs/04-governance/pr-ledger/index.json": [
+    "docs/governance/pr-ledger/index.json": [
       "node scripts/pre-commit-derived-artifacts.mjs --ledger"
     ],
     "*.{json,css,html,yml,yaml}": [

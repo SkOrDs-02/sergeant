@@ -36,7 +36,7 @@ describe("bumpFiles (integration)", () => {
   beforeEach(() => {
     dir = mkdtempSync(join(tmpdir(), "bump-last-validated-"));
     mkdirSync(join(dir, "docs"), { recursive: true });
-    mkdirSync(join(dir, "docs/04-governance/adr"), { recursive: true });
+    mkdirSync(join(dir, "docs/governance/adr"), { recursive: true });
   });
 
   afterEach(() => {
@@ -87,7 +87,7 @@ describe("bumpFiles (integration)", () => {
   });
 
   it("skips excludeGlobs even when the path arrives absolute", () => {
-    const rel = "docs/04-governance/adr/0001-foo.md";
+    const rel = "docs/governance/adr/0001-foo.md";
     const original = HEADER("2026-01-01", "old", "2026-04-01");
     writeFileSync(join(dir, rel), original);
     const modified = bumpFiles({
@@ -119,7 +119,7 @@ describe("bumpFiles (integration)", () => {
   });
 
   it("skips excluded paths (ADR)", () => {
-    const rel = "docs/04-governance/adr/0001-foo.md";
+    const rel = "docs/governance/adr/0001-foo.md";
     const original = HEADER("2026-01-01", "old", "2026-04-01");
     writeFileSync(join(dir, rel), original);
     const modified = bumpFiles({

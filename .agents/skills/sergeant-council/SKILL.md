@@ -94,5 +94,5 @@ Ask each specialist to send their perspective to the lead when done.
 
 ## Playbooks
 
-- [`docs/00-start/playbooks/run-council.md`](../../../docs/00-start/playbooks/run-council.md) — step-by-step рецепт
-- [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — каталог всіх skills
+- [`docs/start/instructions/run-council.md`](../../../docs/start/instructions/run-council.md) — step-by-step рецепт
+- [`docs/start/agents/agent-skills-catalog.md`](../../../docs/start/agents/agent-skills-catalog.md) — каталог всіх skills

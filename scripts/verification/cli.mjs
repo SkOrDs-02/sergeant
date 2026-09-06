@@ -98,17 +98,17 @@ function main(argv) {
     root = resolve(o.root ?? process.cwd());
   const catalog = schema.catalog(
     schema.json(
-      resolve(root, "docs/02-engineering/testing/verification/catalog.json"),
+      resolve(root, "docs/engineering/testing/verification/catalog.json"),
     ),
     root,
   );
   const registry = schema.findings(
     schema.json(
-      resolve(root, "docs/90-work/audits/verification/findings.json"),
+      resolve(root, "docs/work/specs/audits/verification/findings.json"),
     ),
     root,
   );
-  const runs = resolve(root, "docs/90-work/audits/verification/runs");
+  const runs = resolve(root, "docs/work/specs/audits/verification/runs");
   const pathFor = (id) => {
     schema.id(id, "run ID");
     const path = resolve(runs, id, "run.json");

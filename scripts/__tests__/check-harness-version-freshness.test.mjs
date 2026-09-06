@@ -41,12 +41,12 @@ function makeRoot(overrides = {}) {
     "# AGENTS.md\n\n## Harness version\n\n- **Current:** see `current` field in `.agents/harness-versions.json`.\n";
   writeFileSync(join(root, "AGENTS.md"), agentsMd);
 
-  mkdirSync(join(root, "docs", "90-work", "planning"), { recursive: true });
+  mkdirSync(join(root, "docs", "work", "planning"), { recursive: true });
   const v1Doc =
     overrides.v1Doc ??
     "# Harness Engineering v1\n\n(schemaVersion 1, поточна `1.0.0` — promoted 2026-07-20)\n";
   writeFileSync(
-    join(root, "docs", "90-work", "planning", "harness-engineering-v1.md"),
+    join(root, "docs", "work", "planning", "harness-engineering-v1.md"),
     v1Doc,
   );
 

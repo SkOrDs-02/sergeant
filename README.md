@@ -6,7 +6,7 @@
 ![TypeScript 6](https://img.shields.io/badge/TypeScript-6-blue)
 [![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](./LICENSE)
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-23.
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-27.
 > **Status:** Active
 
 > **Гроші, тіло, звички, їжа — в одному додатку. Local-first. Приватно.**
@@ -36,9 +36,9 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 
 - **Локальний запуск:** [§ Quickstart](#quickstart) нижче — ~5 хвилин від клонування до live UI на `http://localhost:5173`.
 - **Демо-режим без реєстрації:** після bootstrap відкрий `http://localhost:5173/welcome?demo=1` — побачиш приклад інтерфейсу з seed-даними, без створення акаунта.
-  _(Public production URL ще не лінкується — додасться, коли launch-readiness допиляється; див. [`docs/01-product/launch/business/04-launch-readiness.md`](./docs/01-product/launch/business/04-launch-readiness.md))._
-- **Огляд продукту:** [`docs/01-product/launch/business/01-monetization-and-pricing.md`](./docs/01-product/launch/business/01-monetization-and-pricing.md) — бізнес-модель + позиціонування.
-- **Поточний стан FTUX:** [`docs/01-product/launch/product-os/ftux-master-tracker.md`](./docs/01-product/launch/product-os/ftux-master-tracker.md) — sprint registry + відкриті проблеми.
+  _(Public production URL ще не лінкується — додасться, коли launch-readiness допиляється; див. [`docs/work/specs/launch/business/04-launch-readiness.md`](./docs/work/specs/launch/business/04-launch-readiness.md))._
+- **Огляд продукту:** [`docs/work/specs/launch/business/01-monetization-and-pricing.md`](./docs/work/specs/launch/business/01-monetization-and-pricing.md) — бізнес-модель + позиціонування.
+- **Поточний стан FTUX:** [`docs/work/specs/launch/product-os/ftux-master-tracker.md`](./docs/work/specs/launch/product-os/ftux-master-tracker.md) — sprint registry + відкриті проблеми.
 
 > Хочеш контриб'ютити, а не просто юзати? → [§ For Contributors and Agents](#for-contributors-and-agents) у кінці.
 
@@ -54,7 +54,7 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 - **Testing:** Vitest, Testing Library, MSW (API mocking), Testcontainers (real Postgres in tests), Playwright (E2E)
 - **Linting:** ESLint 9, Prettier, commitlint, Husky (pre-commit hooks)
 - **CI/CD:** GitHub Actions
-- **Deploy:** Vercel (frontend), Hetzner CX23 + Coolify (backend: API + PostgreSQL + Redis; see [ADR-0074](docs/04-governance/adr/0074-hosting-hetzner-coolify.md))
+- **Deploy:** Vercel (frontend), Hetzner CX23 + Coolify (backend: API + PostgreSQL + Redis; see [ADR-0074](docs/governance/adr/0074-hosting-hetzner-coolify.md))
 - **Monitoring:** Sentry (errors), PostHog (analytics), Grafana (metrics), Web Vitals
 
 ## What is in the repo
@@ -68,7 +68,7 @@ Web (PWA), iOS, Android. Працює офлайн. Дані — на твоєм
 | `apps/mobile`       | Mobile app (native)      | Expo + React Native     | App Store / Google Play |
 | `apps/mobile-shell` | Mobile app (web wrapper) | Capacitor               | App Store / Google Play |
 
-> The legacy `tools/openclaw` grammy bot and its successor, the OpenClaw Gateway (`@sergeant/openclaw-plugin` + `apps/server/src/modules/openclaw`), are both **fully removed from the repo** — decommissioned along with Railway per [ADR-0075](./docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md). There is no OpenClaw surface to run or deploy.
+> The legacy `tools/openclaw` grammy bot and its successor, the OpenClaw Gateway (`@sergeant/openclaw-plugin` + `apps/server/src/modules/openclaw`), are both **fully removed from the repo** — decommissioned along with Railway per [ADR-0075](./docs/governance/adr/0075-openclaw-gateway-decommissioned.md). There is no OpenClaw surface to run or deploy.
 
 ### Tooling (`tools/`)
 
@@ -96,7 +96,7 @@ Packages are shared code reused across apps. Instead of copy-pasting between web
 | `@sergeant/db-schema`           | Drizzle schemas, migrations, and sync helpers                |
 | `eslint-plugin-sergeant-design` | Custom ESLint rules for the design system                    |
 
-Architecture overview lives in [docs/02-engineering/architecture/README.md](./docs/02-engineering/architecture/README.md); the full doc index lives in [docs/README.md](./docs/README.md).
+Architecture overview lives in [docs/engineering/architecture/README.md](./docs/engineering/architecture/README.md); the full doc index lives in [docs/README.md](./docs/README.md).
 
 ## Architecture
 
@@ -179,14 +179,14 @@ cp .env.example .env
 
 Open `.env` in your editor. Most values are pre-filled for local development. Key variables:
 
-| Variable                                    | Required? | What it does                                                                                                                                                                                                  |
-| ------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `DATABASE_URL`                              | Yes       | Database URL (Docker default: `postgresql://hub:hub@localhost:5432/hub`)                                                                                                                                      |
-| `BETTER_AUTH_SECRET`                        | Yes       | Session cookie signing secret (min 32 characters)                                                                                                                                                             |
-| `ANTHROPIC_API_KEY`                         | For AI    | Claude API key — HubChat won't work without it                                                                                                                                                                |
-| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | No        | Google OAuth — without these the "Sign in with Google" button won't appear                                                                                                                                    |
-| `VITE_API_PROXY_TARGET`                     | No        | Dev proxy target (default `http://127.0.0.1:3000`)                                                                                                                                                            |
-| Others                                      | No        | See [`docs/02-engineering/integrations/env-vars.md`](./docs/02-engineering/integrations/env-vars.md) — full reference for all 100+ optional variables (Sentry, PostHog, Voyage, Mono, OpenClaw, AI quotas, …) |
+| Variable                                    | Required? | What it does                                                                                                                                                                                            |
+| ------------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`                              | Yes       | Database URL (Docker default: `postgresql://hub:hub@localhost:5432/hub`)                                                                                                                                |
+| `BETTER_AUTH_SECRET`                        | Yes       | Session cookie signing secret (min 32 characters)                                                                                                                                                       |
+| `ANTHROPIC_API_KEY`                         | For AI    | Claude API key — HubChat won't work without it                                                                                                                                                          |
+| `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET` | No        | Google OAuth — without these the "Sign in with Google" button won't appear                                                                                                                              |
+| `VITE_API_PROXY_TARGET`                     | No        | Dev proxy target (default `http://127.0.0.1:3000`)                                                                                                                                                      |
+| Others                                      | No        | See [`docs/engineering/integrations/env-vars.md`](./docs/engineering/integrations/env-vars.md) — full reference for all 100+ optional variables (Sentry, PostHog, Voyage, Mono, OpenClaw, AI quotas, …) |
 
 #### 3. Start the database
 
@@ -228,7 +228,7 @@ pnpm --filter @sergeant/mobile start
 Both the standalone `@sergeant/openclaw` grammy bot (`tools/openclaw`) and its
 successor, the OpenClaw Gateway (`packages/openclaw-plugin` +
 `apps/server/src/modules/openclaw`), have been fully removed from the repo —
-decommissioned per [ADR-0075](./docs/04-governance/adr/0075-openclaw-gateway-decommissioned.md).
+decommissioned per [ADR-0075](./docs/governance/adr/0075-openclaw-gateway-decommissioned.md).
 There is no OpenClaw dev-server to start.
 
 ## Core commands
@@ -305,58 +305,58 @@ Test stacks by surface:
 
 ## Troubleshooting
 
-| Symptom                                  | Cause                                       | Fix                                                                                                                                                                                                     |
-| ---------------------------------------- | ------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `pnpm install` fails with lockfile error | Wrong pnpm version                          | `npm i -g pnpm@9.15.1`                                                                                                                                                                                  |
-| `pnpm dev:db` doesn't work               | Docker not running                          | Start Docker Desktop, then retry                                                                                                                                                                        |
-| Port 5432 busy                           | Another Postgres or container               | `docker ps` → stop conflicting container                                                                                                                                                                |
-| API returns "401 Unauthorized"           | No session or `BETTER_AUTH_SECRET` mismatch | Restart server after changing `.env`, re-register                                                                                                                                                       |
-| HubChat says "Unknown action"            | `max_tokens` cut off JSON tool-call         | Don't reduce `max_tokens` without testing                                                                                                                                                               |
-| lint-staged fails on commit              | Code didn't pass ESLint / Prettier          | Fix errors, `pnpm lint --fix`                                                                                                                                                                           |
-| Streaks reset unexpectedly               | Used UTC instead of Kyiv timezone           | Порахуй «сьогодні» за годинником пристрою (device-local day-key + `tz_offset_minutes`, [ADR-0078](docs/04-governance/adr/0078-day-boundary-device-local.md)) — Kyiv лишається лише для серверних звітів |
-| Numbers from API come as strings         | bigint → string (PostgreSQL pg driver)      | `Number(r.id)` in serializer                                                                                                                                                                            |
+| Symptom                                  | Cause                                       | Fix                                                                                                                                                                                                  |
+| ---------------------------------------- | ------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `pnpm install` fails with lockfile error | Wrong pnpm version                          | `npm i -g pnpm@9.15.1`                                                                                                                                                                               |
+| `pnpm dev:db` doesn't work               | Docker not running                          | Start Docker Desktop, then retry                                                                                                                                                                     |
+| Port 5432 busy                           | Another Postgres or container               | `docker ps` → stop conflicting container                                                                                                                                                             |
+| API returns "401 Unauthorized"           | No session or `BETTER_AUTH_SECRET` mismatch | Restart server after changing `.env`, re-register                                                                                                                                                    |
+| HubChat says "Unknown action"            | `max_tokens` cut off JSON tool-call         | Don't reduce `max_tokens` without testing                                                                                                                                                            |
+| lint-staged fails on commit              | Code didn't pass ESLint / Prettier          | Fix errors, `pnpm lint --fix`                                                                                                                                                                        |
+| Streaks reset unexpectedly               | Used UTC instead of Kyiv timezone           | Порахуй «сьогодні» за годинником пристрою (device-local day-key + `tz_offset_minutes`, [ADR-0078](docs/governance/adr/0078-day-boundary-device-local.md)) — Kyiv лишається лише для серверних звітів |
+| Numbers from API come as strings         | bigint → string (PostgreSQL pg driver)      | `Number(r.id)` in serializer                                                                                                                                                                         |
 
 ## Feature flags
 
-Feature flags are managed via `docs/04-governance/governance/feature-flags.md`. Each flag controls the visibility of a specific feature.
+Feature flags are managed via `docs/governance/governance/feature-flags.md`. Each flag controls the visibility of a specific feature.
 
 ## Observability
 
-Monitoring is described in `docs/03-operations/observability/README.md`. Key components: Sentry (errors), PostHog (analytics), Prometheus/Grafana (metrics), Web Vitals (frontend performance).
+Monitoring is described in `docs/operations/observability/README.md`. Key components: Sentry (errors), PostHog (analytics), Prometheus/Grafana (metrics), Web Vitals (frontend performance).
 
 ## Documentation map
 
-| Directory                           | Contents                                                   |
-| ----------------------------------- | ---------------------------------------------------------- |
-| `docs/04-governance/adr/`           | Architecture Decision Records — why we chose what we chose |
-| `docs/02-engineering/api/`          | OpenAPI contracts, API documentation                       |
-| `docs/02-engineering/architecture/` | Repository map, platforms, service catalog                 |
-| `docs/90-work/audits/`              | UX/UI audits, typography, design reviews                   |
-| `docs/03-operations/deploy/`        | Deployment instructions                                    |
-| `docs/05-design/design/`            | Design system: brandbook, colors, module accents           |
-| `docs/04-governance/governance/`    | Hard rules, review checklist, release policy               |
-| `docs/02-engineering/integrations/` | Monobank, Railway, Vercel, Renovate, Voyage                |
-| `docs/01-product/launch/`           | Monetization, GTM, launch readiness                        |
-| `docs/02-engineering/mobile/`       | Capacitor, deep links, React Native migration              |
-| `docs/03-operations/observability/` | SLO, dashboards, metrics, runbook                          |
-| `docs/90-work/planning/`            | Roadmaps, AI improvements, dev stack roadmap               |
-| `docs/00-start/playbooks/`          | Step-by-step recipes (add an endpoint, do a hotfix)        |
-| `docs/03-operations/postmortems/`   | Incident post-mortems                                      |
-| `docs/04-governance/security/`      | Access policy, disaster recovery, security audit           |
-| `docs/00-start/agents/`             | AI agent system: skill catalog, workflows                  |
-| `docs/90-work/tech-debt/`           | Tech debt registries (frontend, backend, mobile)           |
+| Directory                        | Contents                                                   |
+| -------------------------------- | ---------------------------------------------------------- |
+| `docs/governance/adr/`           | Architecture Decision Records — why we chose what we chose |
+| `docs/engineering/api/`          | OpenAPI contracts, API documentation                       |
+| `docs/engineering/architecture/` | Repository map, platforms, service catalog                 |
+| `docs/work/specs/audits/`        | UX/UI audits, typography, design reviews                   |
+| `docs/operations/deploy/`        | Deployment instructions                                    |
+| `docs/design/design/`            | Design system: brandbook, colors, module accents           |
+| `docs/governance/governance/`    | Hard rules, review checklist, release policy               |
+| `docs/engineering/integrations/` | Monobank, Railway, Vercel, Renovate, Voyage                |
+| `docs/work/specs/launch/`        | Monetization, GTM, launch readiness                        |
+| `docs/engineering/mobile/`       | Capacitor, deep links, React Native migration              |
+| `docs/operations/observability/` | SLO, dashboards, metrics, runbook                          |
+| `docs/work/specs/planning/`      | Roadmaps, AI improvements, dev stack roadmap               |
+| `docs/start/instructions/`       | Step-by-step recipes (add an endpoint, do a hotfix)        |
+| `docs/operations/postmortems/`   | Incident post-mortems                                      |
+| `docs/governance/security/`      | Access policy, disaster recovery, security audit           |
+| `docs/start/agents/`             | AI agent system: skill catalog, workflows                  |
+| `docs/work/specs/tech-debt/`     | Tech debt registries (frontend, backend, mobile)           |
 
-Roadmap: `docs/90-work/planning/README.md`. Tech debt: `docs/90-work/tech-debt/README.md`.
+Roadmap: `docs/work/specs/planning/README.md`. Tech debt: `docs/work/specs/tech-debt/README.md`.
 
 ## For Contributors and Agents
 
 - Humans: start with [CONTRIBUTING.md](./CONTRIBUTING.md).
-- Agents: start with [AGENTS.md](./AGENTS.md) and [docs/00-start/agents/agent-skills-catalog.md](./docs/00-start/agents/agent-skills-catalog.md).
+- Agents: start with [AGENTS.md](./AGENTS.md) and [docs/start/agents/agent-skills-catalog.md](./docs/start/agents/agent-skills-catalog.md).
 - Full docs index (genre-grouped — informational / trackers / archive): [docs/README.md](./docs/README.md).
 - **What is currently in flight across all 7 trackers** (auto-rollup, CI drift gate): [docs/open-work.md](./docs/open-work.md).
-- Repeatable execution recipes: [docs/00-start/playbooks/README.md](./docs/00-start/playbooks/README.md).
-- Governance and hard rules matrix: [docs/04-governance/governance/README.md](./docs/04-governance/governance/README.md).
-- Runtime inventory, release, incident, and recovery surfaces: [docs/02-engineering/architecture/service-catalog.md](./docs/02-engineering/architecture/service-catalog.md), [docs/04-governance/security/disaster-recovery.md](./docs/04-governance/security/disaster-recovery.md).
+- Repeatable execution recipes: [docs/start/instructions/README.md](./docs/start/instructions/README.md).
+- Governance and hard rules matrix: [docs/governance/governance/README.md](./docs/governance/governance/README.md).
+- Runtime inventory, release, incident, and recovery surfaces: [docs/engineering/architecture/service-catalog.md](./docs/engineering/architecture/service-catalog.md), [docs/governance/security/disaster-recovery.md](./docs/governance/security/disaster-recovery.md).
 
 ## License
 

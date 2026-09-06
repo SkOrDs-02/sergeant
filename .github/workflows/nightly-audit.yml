@@ -72,7 +72,7 @@ jobs:
       - name: Fail on unwaived critical/high
         # Keep nightly aligned with the PR-time audit gate: critical
         # advisories always fail; high advisories fail unless a dated,
-        # non-expired entry exists in docs/04-governance/security/audit-exceptions.md.
+        # non-expired entry exists in docs/governance/security/audit-exceptions.md.
         run: node scripts/ci/audit-exceptions.mjs
 
   osv-scanner:
@@ -282,9 +282,9 @@ jobs:
               ...Object.entries(results).map(([name, r]) => `| ${name} | \`${r}\` |`),
               '',
               'Хоча б один лейн знайшов вразливість, якої немає в',
-              '[`audit-exceptions.md`](../docs/04-governance/security/audit-exceptions.md)',
+              '[`audit-exceptions.md`](../docs/governance/security/audit-exceptions.md)',
               '(або чий `Due date` минув). Тріаж — за',
-              '[docs/04-governance/security/nightly-audit.md](../docs/04-governance/security/nightly-audit.md).',
+              '[docs/governance/security/nightly-audit.md](../docs/governance/security/nightly-audit.md).',
               '',
               'Цей issue закривається **автоматично**, щойно всі три лейни стануть зеленими.',
               '',

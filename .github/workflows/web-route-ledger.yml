@@ -12,7 +12,7 @@ name: Web route ledger
 #        Typecheck і юніти цього не бачать (задокументований прецедент
 #        `AuthContext × @sergeant/shared` — apps/web/AGENTS.md § Surface-
 #        specific gotchas). Підключення в nightly — рекомендація #2 з
-#        `docs/90-work/audits/2026-08-04-test-coverage-depth-audit.md`
+#        `docs/work/specs/audits/2026-08-04-test-coverage-depth-audit.md`
 #        («або в nightly, або видалити»); власник обрав підключити.
 # Visibility: червоний CRON-прогін створює/оновлює ІДЕМПОТЕНТНУ issue
 #        (джоба `report-red-run` нижче) — той самий патерн, що в
