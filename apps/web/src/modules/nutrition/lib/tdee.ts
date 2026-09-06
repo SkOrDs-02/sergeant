@@ -51,6 +51,19 @@ export const NUTRITION_GOALS = ["cutting", "maintenance", "bulking"] as const;
 export type NutritionGoalId = (typeof NUTRITION_GOALS)[number];
 
 /**
+ * `NutritionPrefs.goal` existed before the TDEE presets and persisted
+ * `maintain`. Keep the compatibility boundary here: calculations must never
+ * dereference an absent macro split because an old device has not rewritten
+ * its local preferences yet.
+ */
+function normalizeNutritionGoal(goal: string): NutritionGoalId {
+  if (goal === "maintain") return "maintenance";
+  return NUTRITION_GOALS.includes(goal as NutritionGoalId)
+    ? (goal as NutritionGoalId)
+    : "maintenance";
+}
+
+/**
  * Mifflin-St Jeor activity multipliers — re-export so consumers don't
  * have to duplicate the table. Keys match the `ActivityLevel` ladder
  * stored in biometrics.
@@ -147,24 +160,25 @@ export interface NutritionTargets {
  */
 export function computeNutritionTargets(
   input: TdeeInput,
-  goal: NutritionGoalId,
+  goal: NutritionGoalId | string,
 ): NutritionTargets {
+  const normalizedGoal = normalizeNutritionGoal(goal);
   const tdee = computeTdee(input);
   const kcal = Math.max(
     1000,
-    Math.round((tdee + GOAL_KCAL_DELTA[goal]) / 10) * 10,
+    Math.round((tdee + GOAL_KCAL_DELTA[normalizedGoal]) / 10) * 10,
   );
 
-  return computeMacrosForKcal(kcal, input.weightKg, goal);
+  return computeMacrosForKcal(kcal, input.weightKg, normalizedGoal);
 }
 
 export function computeMacrosForKcal(
   kcal: number,
   weightKg: number,
-  goal: NutritionGoalId,
+  goal: NutritionGoalId | string,
 ): NutritionTargets {
   const safeKcal = Math.max(1000, Math.round(kcal / 10) * 10);
-  const split = GOAL_MACRO_SPLIT[goal];
+  const split = GOAL_MACRO_SPLIT[normalizeNutritionGoal(goal)];
   const protein_g = Math.round(weightKg * split.proteinPerKg);
   const fat_g = Math.round(weightKg * split.fatPerKg);
 
