@@ -10,7 +10,7 @@ import {
   parseAgentsTableRules,
 } from "../check-governance-sync.mjs";
 
-const ADR = "docs/04-governance/adr/0099-fixture.md";
+const ADR = "docs/governance/adr/0099-fixture.md";
 
 test("isAdrExemptFromDanglingRefCheck: non-ADR paths are not exempt", () => {
   assert.equal(

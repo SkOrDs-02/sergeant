@@ -44,7 +44,7 @@ Web-робота в Sergeant — це React 18 + Vite PWA + Tailwind з репо
 
 ## Playbooks
 
-- `docs/00-start/playbooks/add-onboarding-step.md` — коли зміна торкається onboarding-у.
-- `docs/00-start/playbooks/add-feature-flag.md` — коли rollout gated.
-- `docs/00-start/playbooks/release.md` — canonical release-playbook (секція web + API).
-- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.
+- `docs/start/instructions/add-onboarding-step.md` — коли зміна торкається onboarding-у.
+- `docs/start/instructions/add-feature-flag.md` — коли rollout gated.
+- `docs/start/instructions/release.md` — canonical release-playbook (секція web + API).
+- Каталог: `docs/start/agents/agent-skills-catalog.md`.

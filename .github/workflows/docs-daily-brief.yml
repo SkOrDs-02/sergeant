@@ -96,14 +96,14 @@ jobs:
           # the daily refresh PR.
           REFRESH_PATHS=(
             docs/open-work.md
-            docs/90-work/initiatives/follow-ups.md
+            docs/work/specs/initiatives/follow-ups.md
             docs/today.md
             docs/STATUS.md
             docs/README.md
-            docs/04-governance/governance/hard-rules-matrix.md
-            docs/04-governance/governance/freshness-dashboard.html
-            docs/04-governance/governance/repo-map.auto.json
-            docs/04-governance/governance/service-catalog.auto.json
+            docs/governance/governance/hard-rules-matrix.md
+            docs/governance/governance/freshness-dashboard.html
+            docs/governance/governance/repo-map.auto.json
+            docs/governance/governance/service-catalog.auto.json
           )
           if git diff --quiet -- "${REFRESH_PATHS[@]}"; then
             echo "no drift — nothing to commit"

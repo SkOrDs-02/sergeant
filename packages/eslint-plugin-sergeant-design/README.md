@@ -1,9 +1,9 @@
 # eslint-plugin-sergeant-design
 
-> **Last touched:** 2026-08-06 by @claude. **Next review:** 2026-11-04.
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-01.
 > **Status:** Active
 
-Локальний ESLint-плагін для runtime-, security-, storage-, API- та domain-інваріантів Sergeant. Попри історичну назву, він більше не кодує в AST суб’єктивні візуальні рішення: колір, радіус, типографіка, motion і композиція перевіряються design tokens, Storybook та review згідно з [ADR-0081](../../docs/04-governance/adr/0081-repository-simplification.md).
+Локальний ESLint-плагін для runtime-, security-, storage-, API- та domain-інваріантів Sergeant. Попри історичну назву, він більше не кодує в AST суб’єктивні візуальні рішення: колір, радіус, типографіка, motion і композиція перевіряються design tokens, Storybook та review згідно з [ADR-0081](../../docs/governance/adr/0081-repository-simplification.md).
 
 ## Правила
 
@@ -25,7 +25,7 @@
 - `no-inline-body-size-limit` — вимагає централізовані body-size limits.
 - `prefer-parse-body-over-validate-body` — вимагає типізований parse contract.
 - `no-raw-storage-key` — вимагає централізовані storage keys.
-- `no-adhoc-metric-aggregation` — не дозволяє рахувати витрати інлайном (акумульований `Math.abs(tx.amount / 100)`) поза `packages/*-domain/**`; метрика має йти через канонічну функцію з [реєстру метрик](../../docs/02-engineering/architecture/metric-registry.md).
+- `no-adhoc-metric-aggregation` — не дозволяє рахувати витрати інлайном (акумульований `Math.abs(tx.amount / 100)`) поза `packages/*-domain/**`; метрика має йти через канонічну функцію з [реєстру метрик](../../docs/engineering/architecture/metric-registry.md).
 
 ## Перевірка
 

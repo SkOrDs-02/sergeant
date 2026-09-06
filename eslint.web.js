@@ -14,7 +14,7 @@ import { readFileSync } from "node:fs";
 // relative path to a file that still has inline cyrillic JSX literals.
 // Migrate strings → `apps/web/src/shared/i18n/uk.ts` and remove the
 // path from the JSON. When the array is empty, promote the rule from
-// "warn" to "error". See `docs/05-design/i18n/readiness.md` § Burndown.
+// "warn" to "error". See `docs/design/i18n/readiness.md` § Burndown.
 //
 // Розмір: 283 файли (2026-08-08). Тут стояло «~30 файлів» — заниження на
 // порядок, і саме воно робило дедлайн правдоподібним. При темпі burndown-а
@@ -28,7 +28,7 @@ import { readFileSync } from "node:fs";
 // назад, а й перейменуваннями — аудит Профілю/Налаштувань (2026-08-08, §6)
 // знайшов у ньому 9 шляхів до файлів, яких у репо вже немає. Вони прибрані;
 // мертвий запис нічого не ламає, але роздуває число, за яким міряють борг.
-// Відповідальний: @Skords-01. Прогрес: docs/05-design/i18n/readiness.md § Burndown.
+// Відповідальний: @Skords-01. Прогрес: docs/design/i18n/readiness.md § Burndown.
 const i18nAllowlist = JSON.parse(
   readFileSync(
     new URL("./apps/web/eslint.i18n-allowlist.json", import.meta.url),
@@ -130,7 +130,7 @@ export const webBlocks = [
         "warn",
         { allowlist: i18nAllowlist },
       ],
-      // Tone-of-voice канону `docs/01-product/copy/style-guide.uk.md`:
+      // Tone-of-voice канону `docs/product/copy/style-guide.uk.md`:
       // без довгого тире (§1.9), звертання на «ти» (§1.1), без 1-ї особи
       // множини (§2). Апостроф правило НЕ гейтить: §1.10 фіксує символ,
       // але міграцію відкладено, бо ті самі слова подекуди є ключами
@@ -185,7 +185,7 @@ export const webBlocks = [
       "sergeant-design/no-raw-type-size": "warn",
       // Речення в найдрібнішій ролі шкали (SLOP-3, замір
       // `pnpm design:scan-captions`). Розбір по типах тексту й межі
-      // застосовності — `docs/05-design/design/density-hierarchy-spec.md`.
+      // застосовності — `docs/design/design/density-hierarchy-spec.md`.
       //
       // `warn`, а не `error`, з тієї самої причини, що й `no-raw-type-size`
       // вище, і це не обережність, а вимірювання: на дату підключення
@@ -322,7 +322,7 @@ export const webBlocks = [
   // Same block also bans the `@sergeant/db-schema/migrate` umbrella entry —
   // that re-exports `loadMigrationFiles` from `./files.js`, which top-level
   // imports `node:fs` / `node:path` and breaks Vite's browser bundle (white
-  // screen on boot — see audit `docs/90-work/audits/2026-05-07-app-audit.md` §1).
+  // screen on boot — see audit `docs/work/specs/audits/2026-05-07-app-audit.md` §1).
   // Browser-side callers must use one of the saner sub-segments:
   // `@sergeant/db-schema/migrate/runner` (dialect-free runner),
   // `@sergeant/db-schema/migrate/sqlite` (sqlite adapter),
@@ -344,7 +344,7 @@ export const webBlocks = [
             {
               name: "@sergeant/db-schema/migrate",
               message:
-                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle. See `docs/90-work/audits/2026-05-07-app-audit.md` §1.",
+                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle. See `docs/work/specs/audits/2026-05-07-app-audit.md` §1.",
             },
           ],
         },
@@ -377,7 +377,7 @@ export const webBlocks = [
   // `getTxStatAmount` / `calcCategorySpent` у тому ж PR, усі zero-delta).
   // Тести звільнені: фікстури навмисно рахують очікування вручну, щоб
   // parity-тест мав із чим порівнювати канон.
-  // Реєстр: docs/02-engineering/architecture/metric-registry.md.
+  // Реєстр: docs/engineering/architecture/metric-registry.md.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     ignores: [
@@ -400,7 +400,7 @@ export const webBlocks = [
   // лише ФАКТ відсутності дії, а «тут дії справді бути не може» — це
   // явний запис нижче з причиною. Мовчазний глухий кут стає підписаним.
   //
-  // Політика тону і формa `action` — docs/05-design/ui/toast-policy.md.
+  // Політика тону і формa `action` — docs/design/ui/toast-policy.md.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     ignores: [
@@ -478,7 +478,7 @@ export const webBlocks = [
   // ExerciseProgressChart.tsx:57, WeeklyVolumeChart.tsx:79, WorkoutTemplatesSection.tsx:491).
   // Severity `warn` because ~96 existing production assertions remain; the
   // ones in fizruk are fixed below. Promoted to `error` when count reaches zero.
-  // Burn-down: 2026-Q3. See docs/90-work/audits/2026-05-13-consolidated-page-audit.md § Theme 6.
+  // Burn-down: 2026-Q3. See docs/work/specs/audits/2026-05-13-consolidated-page-audit.md § Theme 6.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     ignores: [
@@ -497,7 +497,7 @@ export const webBlocks = [
   // to web-scoped `error` so the next regression fails lint loudly. Stays
   // `off` in the shared baseline because apps/mobile still carries
   // legacy violations (separate future bite). See
-  // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  // `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     rules: {
@@ -521,7 +521,7 @@ export const webBlocks = [
   // `off` to web-scoped `error` so the next regression fails lint loudly. Stays
   // `off` in the shared baseline because apps/mobile still carries legacy
   // violations (separate future bite). See
-  // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  // `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     rules: {
@@ -556,7 +556,7 @@ export const webBlocks = [
   // modules, and shared UI (Toast/Tooltip/PageTransition/voice). Promoted from
   // baseline `off` to web-scoped `error` so the next regression fails lint
   // loudly. Mobile cleared in the same initiative (2026-07-10). See
-  // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  // `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
   {
     files: ["apps/web/src/**/*.{ts,tsx}"],
     rules: {

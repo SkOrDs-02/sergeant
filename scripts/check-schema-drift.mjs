@@ -197,7 +197,7 @@ const WHITELIST = [
     table: "user",
     column: "force_verify_at",
     reason:
-      "server-only email-verification Phase D gate (docs/01-product/launch/email-verification-sweep.md); read only by the future Better Auth sign-in hook, never by the client",
+      "server-only email-verification Phase D gate (docs/work/specs/launch/email-verification-sweep.md); read only by the future Better Auth sign-in hook, never by the client",
   },
   // push_subscriptions: soft-delete column not in Drizzle model
   {
@@ -759,7 +759,7 @@ const SQL_ONLY_TABLES = [
   // контур, що й `mono_connection`: секрет читає лише серверний банк-проксі,
   // у Drizzle його свідомо немає.
   "privat_connection",
-  // Чек-скан v1 + Фаза 2 масового ведення (docs/90-work/planning/specs/
+  // Чек-скан v1 + Фаза 2 масового ведення (docs/work/specs/
   // receipt-scan.md, міграції 121/122). Читає й пише лише серверний
   // finyk/receipts + finyk/import модуль (raw pg, той самий контур, що
   // mono_*/apple_iap_receipts) — matcher, lookup/analyze/save,
@@ -853,7 +853,7 @@ const SQL_ONLY_TABLES = [
   "user_preferences",
   // Продуктовий фідбек (міграція 093). Пишеться одним сирим
   // `INSERT INTO feedback_entries` у `feedbackService.ts`; читається руками
-  // через psql (див. docs/03-operations/observability/feedback-loop.md).
+  // через psql (див. docs/operations/observability/feedback-loop.md).
   // Клієнт отримує з API лише `id` вставленого рядка, тож Drizzle-модель
   // не потрібна.
   "feedback_entries",
@@ -1034,7 +1034,7 @@ if (JSON_MODE) {
     }
     console.error(
       "\nFix: after adding a SQL migration, update packages/db-schema/src/pg/*.ts\n" +
-        "     to mirror the same tables/columns. See docs/00-start/playbooks/add-sql-migration.md\n" +
+        "     to mirror the same tables/columns. See docs/start/instructions/add-sql-migration.md\n" +
         "Whitelist: add an entry to WHITELIST in scripts/check-schema-drift.mjs " +
         "for intentional divergences.",
     );

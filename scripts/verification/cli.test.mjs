@@ -14,9 +14,10 @@ import { join } from "node:path";
 import test from "node:test";
 import { fileURLToPath } from "node:url";
 const cli = fileURLToPath(new URL("./cli.mjs", import.meta.url));
-const catalogPath = "docs/02-engineering/testing/verification/catalog.json";
-const registryPath = "docs/90-work/audits/verification/findings.json";
-const runPath = (id) => `docs/90-work/audits/verification/runs/${id}/run.json`;
+const catalogPath = "docs/engineering/testing/verification/catalog.json";
+const registryPath = "docs/work/specs/audits/verification/findings.json";
+const runPath = (id) =>
+  `docs/work/specs/audits/verification/runs/${id}/run.json`;
 function fixture(t) {
   const root = mkdtempSync(join(tmpdir(), "verification-"));
   t.after(() => rmSync(root, { recursive: true, force: true }));
@@ -116,7 +117,7 @@ test("round trip commands, full mode, snapshot, append-only repeats and closed i
   f.init();
   assert.match(
     readFileSync(
-      join(f.root, "docs/90-work/audits/verification/runs/a/handoff.md"),
+      join(f.root, "docs/work/specs/audits/verification/runs/a/handoff.md"),
       "utf8",
     ),
     /^# Передача/,
@@ -355,7 +356,7 @@ test("run symlink cannot redirect writes out of storage", (t) => {
   mkdirSync(dir);
   symlinkSync(
     dir,
-    join(f.root, "docs/90-work/audits/verification/runs/escape"),
+    join(f.root, "docs/work/specs/audits/verification/runs/escape"),
     "junction",
   );
   f.bad(/Symlink/, "init", "--id", "escape", "--metadata", "metadata.json");

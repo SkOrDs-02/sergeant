@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-27.
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-09.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -31,7 +31,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 ## Surface-specific gotchas
 
 - **RQ keys (Hard Rule #2):** only via `apps/web/src/shared/lib/api/queryKeys.ts` factories (`finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `chatKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`, `aiMemoryKeys`). No inline `queryKey: [...]`.
-- **Tailwind colour-opacity (дизайн-конвенція — tokens + review, ex-Hard Rules #8/#9, retired [ADR-0081](../../docs/04-governance/adr/0081-repository-simplification.md)):** opacity steps must be on the registered scale; saturated brand fills behind `text-white` need the `-strong` companion. Конвенція чинна, але без ESLint-enforcement — тримається design tokens + design-review.
+- **Tailwind colour-opacity (дизайн-конвенція — tokens + review, ex-Hard Rules #8/#9, retired [ADR-0081](../../docs/governance/adr/0081-repository-simplification.md)):** opacity steps must be on the registered scale; saturated brand fills behind `text-white` need the `-strong` companion. Конвенція чинна, але без ESLint-enforcement — тримається design tokens + design-review.
 - **No arbitrary hex / focus-visible (дизайн-конвенція — tokens + review, ex-Rules #11/#14, retired ADR-0081):** no arbitrary hex in `className`; use `focus-visible:` not `focus:`.
 - **Module accents (дизайн-конвенція — tokens + review, ex-Rule #12, retired ADR-0081):** module-accent containment — no foreign accents inside a module subtree.
 - **Кольори категорій Фініка ≠ бренд-палітра.** 16 категорій витрат мають власну родину `categoryColors` (`@sergeant/design-tokens`), свідомо розведену з модульними акцентами — не фарбуй категорію бренд-тиром. Hue гейтить `packages/design-tokens/categoryColors.contract.test.js`, правки — через `categoryColors.gen.js`. У JSX — `catChipVars()` + класи `.cat-chip` / `.cat-dot`; інлайн-hex не потрібен.
@@ -59,7 +59,7 @@ CI gate via `size-limit`. Canonical numbers: root [`AGENTS.md § Performance bud
 
 ## Lighthouse CI (perf-budget gate)
 
-T5 gate from [`docs/90-work/planning/sprint-roadmap-q2q3-2026.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг — shipped: workflow [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) рунається на `pull_request` до `main` та `workflow_dispatch`. Локальний прогон: `pnpm --filter @sergeant/web lighthouse` (`lhci autorun`). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).
+T5 gate from [`docs/work/specs/planning/sprint-roadmap-q2q3-2026.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/sprint-roadmap-q2q3-2026.md) § 1.1 Тех-борг — shipped: workflow [`.github/workflows/lighthouse-ci.yml`](../../.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) рунається на `pull_request` до `main` та `workflow_dispatch`. Локальний прогон: `pnpm --filter @sergeant/web lighthouse` (`lhci autorun`). Config: [`apps/web/lighthouserc.json`](./lighthouserc.json).
 
 **Routes audited (3 runs each, median):** `/`, `/finyk`, `/fizruk`, `/nutrition/menu`. `/nutrition` redirects to `/nutrition/menu`, so LHCI audits the canonical path directly. `/routine` is temporarily excluded from LHCI after repeated CI-only `NO_FCP` runtime failures; keep Playwright smoke coverage for the route until the Lighthouse/Chrome trace failure is fixed. `/` is the Hub root — there is no separate `/hub` path (see [`apps/web/src/core/app/router.tsx`](./src/core/app/router.tsx)).
 
@@ -125,6 +125,6 @@ pnpm --filter @sergeant/web exec playwright \    # focus one spec locally
 ## Deeper docs
 
 - App README: [`apps/web/README.md`](./README.md)
-- Routing catalog: [`docs/00-start/agents/agent-skills-catalog.md`](../../docs/00-start/agents/agent-skills-catalog.md)
-- Module ownership: [`docs/02-engineering/architecture/module-ownership.md`](../../docs/02-engineering/architecture/module-ownership.md)
-- Domain invariants (Kyiv time, kopiykas as `number`): [`docs/02-engineering/architecture/domain-invariants.md`](../../docs/02-engineering/architecture/domain-invariants.md)
+- Routing catalog: [`docs/start/agents/agent-skills-catalog.md`](../../docs/start/agents/agent-skills-catalog.md)
+- Module ownership: [`docs/engineering/architecture/module-ownership.md`](../../docs/engineering/architecture/module-ownership.md)
+- Domain invariants (Kyiv time, kopiykas as `number`): [`docs/engineering/architecture/domain-invariants.md`](../../docs/engineering/architecture/domain-invariants.md)

@@ -7,12 +7,12 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 # Push — власник інфра-модуля
 
-Інфра-модуль без продуктового канону: контекст і журнал рішень живуть прямо тут (рішення 6 спеки `docs/90-work/planning/specs/archive/agent-module-owners.md`). Роутинг двовимірний: технічні правила поверхні бере surface-скіл.
+Інфра-модуль без продуктового канону: контекст і журнал рішень живуть прямо тут (рішення 6 спеки `docs/work/specs/archive/agent-module-owners.md`). Роутинг двовимірний: технічні правила поверхні бере surface-скіл.
 
 ## Контекст
 
-- Server-driven fan-out на три канали: web push + APNs + FCM ([ADR-0019](../../../docs/04-governance/adr/0019-push-notifications.md)).
-- APNs — окрема provider-бібліотека ([ADR-0048](../../../docs/04-governance/adr/0048-apns-provider-library.md)).
+- Server-driven fan-out на три канали: web push + APNs + FCM ([ADR-0019](../../../docs/governance/adr/0019-push-notifications.md)).
+- APNs — окрема provider-бібліотека ([ADR-0048](../../../docs/governance/adr/0048-apns-provider-library.md)).
 - Аудит доставки — `audit.ts` поруч із `push.ts` (integration-тести в тій самій теці).
 
 ## Мапа файлів
@@ -24,17 +24,17 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 - Fan-out ініціює сервер; клієнт лише реєструє підписку — не додавай client-side розсилок.
 - Невалідна/протухла підписка — очікуваний кейс: деактивація, не exception у основному потоці.
-- Тексти сповіщень — українською, за tone-of-voice `docs/01-product/copy/style-guide.uk.md`.
-- Нагадування модулів ідуть через стандартизовані Hub-механізми ([ADR-0067](../../../docs/04-governance/adr/0067-engagement-mechanism-standardization.md)), push — транспорт, не власник розкладу.
+- Тексти сповіщень — українською, за tone-of-voice `docs/product/copy/style-guide.uk.md`.
+- Нагадування модулів ідуть через стандартизовані Hub-механізми ([ADR-0067](../../../docs/governance/adr/0067-engagement-mechanism-standardization.md)), push — транспорт, не власник розкладу.
 
 ## Журнал рішень
 
 | Дата       | Рішення                                              | Джерело/ADR                                                            |
 | ---------- | ----------------------------------------------------- | ---------------------------------------------------------------------- |
-| 2026-05-06 | APNs — через окрему provider-бібліотеку (Proposed)   | [ADR-0048](../../../docs/04-governance/adr/0048-apns-provider-library.md) |
-| 2026-04-27 | Push — server-driven fan-out на web + APNs + FCM     | [ADR-0019](../../../docs/04-governance/adr/0019-push-notifications.md) |
+| 2026-05-06 | APNs — через окрему provider-бібліотеку (Proposed)   | [ADR-0048](../../../docs/governance/adr/0048-apns-provider-library.md) |
+| 2026-04-27 | Push — server-driven fan-out на web + APNs + FCM     | [ADR-0019](../../../docs/governance/adr/0019-push-notifications.md) |
 
 ## Роутинг далі
 
 - Технічні правила поверхні: `sergeant-server-api`; мобільні канали — `sergeant-mobile-expo`.
-- Каталог: [docs/00-start/agents/agent-skills-catalog.md](../../../docs/00-start/agents/agent-skills-catalog.md).
+- Каталог: [docs/start/agents/agent-skills-catalog.md](../../../docs/start/agents/agent-skills-catalog.md).

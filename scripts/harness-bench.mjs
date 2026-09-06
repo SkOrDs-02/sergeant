@@ -18,7 +18,7 @@ const __dirname = dirname(__filename);
 export const DEFAULT_ROOT = resolve(__dirname, "..");
 export const DEFAULT_GOLDEN_PATH = resolve(
   DEFAULT_ROOT,
-  "docs/00-start/agents/harness-golden-tasks.json",
+  "docs/start/agents/harness-golden-tasks.json",
 );
 
 const MIN_TASKS = 10;

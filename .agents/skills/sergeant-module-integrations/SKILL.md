@@ -7,14 +7,14 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 # Integrations — власник інфра-модуля
 
-Покриває чотири зовнішні поверхні: Silpo (імпорт чеків), Telegram (боти/репортинг), transcribe (аудіо → текст), webhooks (вхідні події). Інфра-модуль без канону: контекст і журнал — тут (рішення 6 спеки `docs/90-work/planning/specs/archive/agent-module-owners.md`).
+Покриває чотири зовнішні поверхні: Silpo (імпорт чеків), Telegram (боти/репортинг), transcribe (аудіо → текст), webhooks (вхідні події). Інфра-модуль без канону: контекст і журнал — тут (рішення 6 спеки `docs/work/specs/archive/agent-module-owners.md`).
 
 ## Контекст
 
 - Silpo: імпорт чеків у finyk/nutrition — `apps/server/src/modules/silpo/` (branchContext, cart, фікстури зі снапшотами).
-- Telegram: `apps/server/src/modules/telegram/` (waitlist-бот, beta-тексти); структура каналів репортингу — [ADR-0030](../../../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md).
+- Telegram: `apps/server/src/modules/telegram/` (waitlist-бот, beta-тексти); структура каналів репортингу — [ADR-0030](../../../docs/governance/adr/0030-telegram-reporting-channel-structure.md).
 - Transcribe: `apps/server/src/modules/transcribe/` з USD-капом витрат (`usdCap.ts`).
-- Webhooks: `apps/server/src/modules/webhooks/` — запис, replay, retention-полер вхідних подій; n8n-шар виведено з репо ([ADR-0090](../../../docs/04-governance/adr/0090-n8n-decommissioned.md)); періодичні задачі — серверні таймери ([ADR-0089](../../../docs/04-governance/adr/0089-job-substrates-outbox-broker-timer.md)).
+- Webhooks: `apps/server/src/modules/webhooks/` — запис, replay, retention-полер вхідних подій; n8n-шар виведено з репо ([ADR-0090](../../../docs/governance/adr/0090-n8n-decommissioned.md)); періодичні задачі — серверні таймери ([ADR-0089](../../../docs/governance/adr/0089-job-substrates-outbox-broker-timer.md)).
 
 ## Інваріанти модуля
 
@@ -28,9 +28,9 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 | Дата       | Рішення                                                          | Джерело/ADR                                                                                   |
 | ---------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
 | 2026-08-19 | Silpo-інтеграція чеків приїхала в main (розчинена в finyk/nutrition-чанках) | [PR #819](https://github.com/Skords-01/Sergeant/pull/819)                                     |
-| 2026-05-02 | Telegram-репортинг — фіксована структура каналів для n8n         | [ADR-0030](../../../docs/04-governance/adr/0030-telegram-reporting-channel-structure.md)      |
+| 2026-05-02 | Telegram-репортинг — фіксована структура каналів для n8n         | [ADR-0030](../../../docs/governance/adr/0030-telegram-reporting-channel-structure.md)      |
 
 ## Роутинг далі
 
 - Технічні правила поверхні: `sergeant-server-api`; деплой/env — `sergeant-deploy-and-observability`.
-- Каталог: [docs/00-start/agents/agent-skills-catalog.md](../../../docs/00-start/agents/agent-skills-catalog.md).
+- Каталог: [docs/start/agents/agent-skills-catalog.md](../../../docs/start/agents/agent-skills-catalog.md).

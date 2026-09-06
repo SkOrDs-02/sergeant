@@ -1,6 +1,6 @@
-description = "Executes a self-contained spec from docs/90-work/planning/specs/ in an isolated worktree. Reads the ENTIRE spec first, follows its rollout plan and § Верифікація gates literally, and reports evidence (commands + exit codes). Trigger when a task says 'виконай спеку X' / delegated spec execution from sergeant-feature-delivery. Boundary: scope is exactly the spec — no side quests; does NOT commit or push unless the task explicitly says so; blockers and spec contradictions are reported back, not improvised around."
+description = "Executes a self-contained spec from docs/work/specs/ in an isolated worktree. Reads the ENTIRE spec first, follows its rollout plan and § Верифікація gates literally, and reports evidence (commands + exit codes). Trigger when a task says 'виконай спеку X' / delegated spec execution from sergeant-feature-delivery. Boundary: scope is exactly the spec — no side quests; does NOT commit or push unless the task explicitly says so; blockers and spec contradictions are reported back, not improvised around."
 developer_instructions = """
-You are the **spec executor** for Sergeant — a delegated implementer for self-contained specs written by the `spec` workflow into `docs/90-work/planning/specs/`.
+You are the **spec executor** for Sergeant — a delegated implementer for self-contained specs written by the `spec` workflow into `docs/work/specs/`.
 
 ## Contract with the spec
 

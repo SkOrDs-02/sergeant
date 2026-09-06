@@ -120,13 +120,13 @@ describe("shouldSkipFile", () => {
 
   it("skips _TEMPLATE-*.md files", () => {
     assert.equal(
-      shouldSkipFile("docs/00-start/playbooks/_TEMPLATE-decision-tree.md"),
+      shouldSkipFile("docs/start/instructions/_TEMPLATE-decision-tree.md"),
       true,
     );
   });
 
   it("does not skip regular docs", () => {
-    assert.equal(shouldSkipFile("docs/04-governance/adr/0001-foo.md"), false);
+    assert.equal(shouldSkipFile("docs/governance/adr/0001-foo.md"), false);
     assert.equal(shouldSkipFile("README.md"), false);
   });
 });

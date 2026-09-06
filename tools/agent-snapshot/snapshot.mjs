@@ -7,7 +7,7 @@
 // the start of a session so they can react to the current state of the
 // repo, not just its static policy.
 //
-// Spec: docs/04-governance/adr/0071-dynamic-agent-snapshot.md
+// Spec: docs/governance/adr/0071-dynamic-agent-snapshot.md
 //
 // Output: writes to .agents/snapshot.md by default (override via argv[2]).
 // Cache:  .agents/snapshot.cache.json, 15 min TTL, invalidated on `git pull`.
@@ -270,14 +270,11 @@ function formatKb(b) {
 }
 
 function sectionPrLedger() {
-  const ledgerPath = resolve(
-    REPO_ROOT,
-    "docs/04-governance/pr-ledger/index.json",
-  );
+  const ledgerPath = resolve(REPO_ROOT, "docs/governance/pr-ledger/index.json");
   if (!existsSync(ledgerPath)) {
     return [
       "## Recent PR-ledger entries (last 5)",
-      "- `docs/04-governance/pr-ledger/index.json` not found",
+      "- `docs/governance/pr-ledger/index.json` not found",
     ].join("\n");
   }
   let ledger;
@@ -304,9 +301,9 @@ function sectionPrLedger() {
 function sectionHardRuleDrift() {
   const regPath = resolve(
     REPO_ROOT,
-    "docs/04-governance/governance/hard-rules.json",
+    "docs/governance/governance/hard-rules.json",
   );
-  const rulesDir = resolve(REPO_ROOT, "docs/04-governance/governance/rules");
+  const rulesDir = resolve(REPO_ROOT, "docs/governance/governance/rules");
   const lines = ["## Hard-rule drift warnings"];
   if (!existsSync(regPath)) {
     lines.push("- `hard-rules.json` not found");
@@ -354,9 +351,9 @@ function sectionInitiativeDeadlines() {
       "-lE",
       "TODO\\([0-9]{4}-[a-z0-9-]+\\):\\s*20[0-9]{2}-[0-9]{2}-[0-9]{2}",
       "--",
-      "docs/90-work/initiatives",
-      "docs/04-governance/adr",
-      "docs/00-start/playbooks",
+      "docs/work/specs/initiatives",
+      "docs/governance/adr",
+      "docs/start/instructions",
     ],
     { timeoutMs: 6_000 },
   );

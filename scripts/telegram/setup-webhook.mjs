@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 /**
  * Реєстрація вебхука бота вейтліста в Telegram.
- * Спека: docs/90-work/planning/specs/telegram-waitlist.md
+ * Спека: docs/work/specs/telegram-waitlist.md
  *
  * Запускати ПІСЛЯ того, як код із роутом `/api/v1/telegram/webhook` уже
  * задеплоєний. До того Telegram почне слати апдейти в 404 і піде в

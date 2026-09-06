@@ -4,7 +4,7 @@
 // Ledger-backed `pnpm audit` gate. Replaces the blunt `audit-exception`
 // PR-label (which suppressed *every* high-severity advisory at once) with
 // a per-advisory allowlist read from
-// `docs/04-governance/security/audit-exceptions.md`:
+// `docs/governance/security/audit-exceptions.md`:
 //
 //   - A `high`/`moderate` advisory passes only if the ledger names its
 //     GHSA/CVE id AND the exception's due date has not passed.
@@ -27,7 +27,7 @@ import path from "node:path";
 const __dirname = path.dirname(fileURLToPath(import.meta.url));
 const LEDGER_PATH = path.resolve(
   __dirname,
-  "../../docs/04-governance/security/audit-exceptions.md",
+  "../../docs/governance/security/audit-exceptions.md",
 );
 
 // Severities that the gate treats as blocking unless waived. `critical`
@@ -274,7 +274,7 @@ function main() {
   }
   console.error(
     "\nFix the dependency, or add a dated exception to " +
-      "docs/04-governance/security/audit-exceptions.md (high/moderate only).",
+      "docs/governance/security/audit-exceptions.md (high/moderate only).",
   );
   process.exit(1);
 }

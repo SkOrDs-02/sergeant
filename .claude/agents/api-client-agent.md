@@ -48,7 +48,7 @@ expect(typeof acct.balance).toBe("number"); // NOT "string" — proves Hard Rule
 ## Failure modes to avoid
 
 - **Bigint-as-string leak slips through:** contract test only checks presence, not `typeof` → a `"123"` balance ships. Always assert `typeof === "number"`.
-- **Test doesn't match real server schema:** hand-written Pact mock returns a shape the server never emits → green locally, breaks in prod. Cross-check against the server serializer + `docs/02-engineering/api/openapi.json` (`pnpm api:check-openapi`).
+- **Test doesn't match real server schema:** hand-written Pact mock returns a shape the server never emits → green locally, breaks in prod. Cross-check against the server serializer + `docs/engineering/api/openapi.json` (`pnpm api:check-openapi`).
 - **Orphaned type on delete:** removing a server endpoint but leaving its type → imports break in N places. Grep the repo for the endpoint + type name before deleting.
 
 ## Report to web-agent & mobile-agent
