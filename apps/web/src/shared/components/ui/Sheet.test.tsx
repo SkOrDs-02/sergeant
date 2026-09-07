@@ -168,6 +168,18 @@ describe("Sheet", () => {
     expect(dialog.style.maxHeight).toContain("100dvh - 320px");
   });
 
+  it("keeps the bottom-nav inset outside the scrollable panel body", () => {
+    const { getByRole } = render(
+      <Sheet open onClose={() => {}} title="T">
+        body
+      </Sheet>,
+    );
+
+    const dialog = getByRole("dialog");
+    expect(dialog.style.marginBottom).toContain("--sgt-bottom-nav-inset");
+    expect(dialog.style.paddingBottom).toBe("");
+  });
+
   it("резервує у скрол-контейнері запас на висоту клавіатури", () => {
     // Бета-фідбек №5 (2026-08-18): без запасу поле в кінці списку нікуди
     // підняти — під ним просто нема контенту, і скрол упирається в межу

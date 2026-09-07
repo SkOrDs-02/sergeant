@@ -31,7 +31,7 @@ export function FromPantryRow({
     <CollapsibleSection
       storageKey={ADD_MEAL_SECTION_KEYS.pantry}
       title={messages.nutrition.fromPantry}
-      defaultOpen={false}
+      defaultOpen
       // Обране з комори мусить бути видно і згорнутим: інакше людина не
       // побачить, що прийом уже прив'язаний до позиції, і списання
       // виглядатиме як таке, що взялось нізвідки.

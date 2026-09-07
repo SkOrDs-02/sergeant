@@ -1274,6 +1274,7 @@ describe("AddMealSheet — pantry consume on save", () => {
       onSave,
     });
     fireEvent.click(screen.getByTestId("pick-pantry"));
+    await screen.findByLabelText("Вага порції, г");
     fireEvent.change(screen.getByTestId("kcal-input"), {
       target: { value: "120" },
     });
@@ -1283,6 +1284,31 @@ describe("AddMealSheet — pantry consume on save", () => {
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
     expect(onConsumePantryItem).toHaveBeenCalledWith("Молоко", 100);
     expect(onSave.mock.calls[0]![0].name).toBe("Молоко");
+  });
+
+  it("lets a pantry-sourced meal choose consumed grams before saving", async () => {
+    const onConsumePantryItem = vi.fn();
+    const onSave = vi.fn();
+    renderSheet({
+      pantryItems: [{ name: "Молоко", qty: 1, unit: "л", notes: null }],
+      onConsumePantryItem,
+      onSave,
+    });
+
+    fireEvent.click(screen.getByTestId("pick-pantry"));
+    fireEvent.change(await screen.findByLabelText("Вага порції, г"), {
+      target: { value: "150" },
+    });
+    fireEvent.change(screen.getByTestId("kcal-input"), {
+      target: { value: "120" },
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
+    );
+
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect(onConsumePantryItem).toHaveBeenCalledWith("Молоко", 150);
+    expect(onSave.mock.calls[0]![0].amount_g).toBe(150);
   });
 
   it("defers pantry consumption until the empty-macro confirm is accepted", async () => {
@@ -1308,6 +1334,7 @@ describe("AddMealSheet — pantry consume on save", () => {
       onSave,
     });
     fireEvent.click(screen.getByTestId("pick-pantry"));
+    await screen.findByLabelText("Вага порції, г");
     fireEvent.click(
       screen.getByRole("button", { name: /Додати прийом|Зберегти зміни/ }),
     );

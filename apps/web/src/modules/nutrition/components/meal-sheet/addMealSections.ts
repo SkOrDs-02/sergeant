@@ -5,7 +5,10 @@
  * заради якого її й відкривають — опинявся під ними (звіт власника
  * 2026-08-31). Тепер допоміжні блоки згорнуті за замовчуванням, а стан
  * кожного памʼятається окремо: людина розгортає те, чим справді
- * користується, і наступного разу воно вже відкрите.
+ * користується, і наступного разу воно вже відкрите. Комора — виняток:
+ * це не допоміжний блок, а один з основних шляхів логування їжі, тому її
+ * ключ v2 відсікає старі збережені `false` після regression-звіту
+ * 2026-09-07 («пікер комори зник»).
  *
  * Ключі лежать тут, а не в компонентах, бо їхня унікальність — це
  * інваріант між файлами: два блоки з одним ключем ділили б стан
@@ -16,6 +19,6 @@
 export const ADD_MEAL_SECTION_KEYS = {
   templates: "sergeant.nutrition.addMeal.templates.open.v1",
   recent: "sergeant.nutrition.addMeal.recent.open.v1",
-  pantry: "sergeant.nutrition.addMeal.pantry.open.v1",
+  pantry: "sergeant.nutrition.addMeal.pantry.open.v2",
   receipt: "sergeant.nutrition.addMeal.receipt.open.v1",
 } as const;
