@@ -7,15 +7,13 @@
 import { useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
-import { cn } from "@shared/lib/ui/cn";
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "../constants";
 import {
   ANALYTICS_EVENTS,
   trackEvent,
 } from "../../../core/observability/analytics";
 import { readSignalContext } from "../../../core/observability/valueSignalAttribution";
-import { catChipVars } from "../lib/categoryChip";
-import { stripLeadingEmoji } from "./txRowHelpers";
+import { CategoryPickerField } from "./CategoryPickerField";
 
 interface CategoryOption {
   id: string;
@@ -88,60 +86,32 @@ export function TxRowCategoryPicker({
 
   return (
     <div className="pb-3 px-2 space-y-2">
-      <div className="flex flex-wrap gap-1.5">
-        {categories.map((c) => (
-          <button
-            key={c.id}
-            style={catChipVars(c.id, categories)}
-            onClick={() => {
-              const nextCatId =
-                c.id === currentCatId && overrideCatId ? null : c.id;
-              // Повторний тап по ВЖЕ ЗАСТОСОВАНОМУ override — це NO-OP, і подію
-              // слати не можна: `finyk_tx_categorized` — чисельник петлі
-              // цінності, тож зайвий емiт занижує конверсію назавжди (переписати
-              // історію подій не можна). Той самий guard, що `outcome.changed`
-              // у `useRoutineAppState`.
-              //
-              // Умова навмисно вужча за `nextCatId === (overrideCatId ??
-              // currentCatId)`: коли override-у ще НЕМА, тап по авто-категорії
-              // закріплює її явно — це реальна дія користувача, і вона мусить
-              // лишитись у знаменнику.
-              if (overrideCatId && nextCatId === overrideCatId) {
-                onClose();
-                return;
-              }
-              onCatChange?.(txId, nextCatId);
-              trackTxCategorized(nextCatId);
+      <div className="space-y-2">
+        <CategoryPickerField
+          categories={categories}
+          selectedId={currentCatId}
+          onSelect={(categoryId) => {
+            const nextCatId =
+              categoryId === currentCatId && overrideCatId ? null : categoryId;
+            // Повторний тап по ВЖЕ ЗАСТОСОВАНОМУ override — це NO-OP, і подію
+            // слати не можна: `finyk_tx_categorized` — чисельник петлі
+            // цінності, тож зайвий емiт занижує конверсію назавжди (переписати
+            // історію подій не можна). Той самий guard, що `outcome.changed`
+            // у `useRoutineAppState`.
+            //
+            // Умова навмисно вужча за `nextCatId === (overrideCatId ??
+            // currentCatId)`: коли override-у ще НЕМА, тап по авто-категорії
+            // закріплює її явно — це реальна дія користувача, і вона мусить
+            // лишитись у знаменнику.
+            if (overrideCatId && nextCatId === overrideCatId) {
               onClose();
-            }}
-            className={cn(
-              "text-style-caption px-3 py-2 rounded-xl border transition-colors min-h-[34px]",
-              "inline-flex items-center gap-1.5",
-              // Обрана категорія — заливка ВЛАСНИМ кольором категорії.
-              // Спершу тут стояла інверсія чорнила (`bg-text text-bg`) —
-              // чорна плашка, яка нічого не каже про те, ЩО обрано; потім
-              // акцент модуля — уже краще, але однаковий для всіх 16
-              // категорій, тобто підказував лише «обрано», не «що саме».
-              // Тепер обрана категорія тримає свій відтінок, і той самий
-              // відтінок людина потім бачить у строці транзакції.
-              c.id === currentCatId
-                ? "cat-chip shadow-sm"
-                : "border-line text-subtle hover:border-muted hover:text-text",
-            )}
-          >
-            {/* Необраний чип отримує лише 6px крапку: колір читається,
-                але 16 залитих плашок поспіль перетворили б пікер на
-                вітраж. Крапка декоративна — назва поруч несе сенс. */}
-            <span
-              aria-hidden="true"
-              className={cn(
-                "cat-dot shrink-0 rounded-full w-1.5 h-1.5",
-                c.id === currentCatId && "hidden",
-              )}
-            />
-            {stripLeadingEmoji(c.label)}
-          </button>
-        ))}
+              return;
+            }
+            onCatChange?.(txId, nextCatId);
+            trackTxCategorized(nextCatId);
+            onClose();
+          }}
+        />
         {overrideCatId && (
           <button
             onClick={() => {

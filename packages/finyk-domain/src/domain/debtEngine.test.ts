@@ -8,6 +8,7 @@ import {
   getDebtEffectiveTotal,
   getDebtOriginated,
   getDebtPaid,
+  getDebtSourced,
   getDebtTxRole,
   getLinkedTxRole,
   getReceivableEffectiveTotal,
@@ -38,6 +39,21 @@ describe("debtEngine — борг (я винен)", () => {
     } as never;
     expect(getDebtOriginated(debt, [])).toBe(0);
     expect(calcDebtRemaining(debt, [])).toBe(1000);
+  });
+
+  it("бере більшу підтверджену source-суму за базу без подвійного обліку", () => {
+    const debt = {
+      totalAmount: 721.14,
+      linkedTxIds: ["source", "increase"],
+      txLinks: {
+        source: { role: "source", amount: 1000 },
+        increase: { role: "increase", amount: 721.14 },
+      },
+    } as never;
+
+    expect(getDebtEffectiveTotal(debt, [])).toBe(1721.14);
+    expect(calcDebtRemaining(debt, [])).toBe(1721.14);
+    expect(getDebtSourced(debt, [])).toBe(1000);
   });
 
   it("legacy-привʼязка з origin-знаком трактується як source (не роздуває пасив)", () => {
