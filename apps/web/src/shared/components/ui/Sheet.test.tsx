@@ -168,7 +168,7 @@ describe("Sheet", () => {
     expect(dialog.style.maxHeight).toContain("100dvh - 320px");
   });
 
-  it("keeps the bottom-nav inset outside the scrollable panel body", () => {
+  it("keeps the bottom-nav inset inside the panel, so the sheet reaches the viewport edge", () => {
     const { getByRole } = render(
       <Sheet open onClose={() => {}} title="T">
         body
@@ -176,8 +176,8 @@ describe("Sheet", () => {
     );
 
     const dialog = getByRole("dialog");
-    expect(dialog.style.marginBottom).toContain("--sgt-bottom-nav-inset");
-    expect(dialog.style.paddingBottom).toBe("");
+    expect(dialog.style.marginBottom).toBe("");
+    expect(dialog.style.paddingBottom).toContain("--sgt-bottom-nav-inset");
   });
 
   it("резервує у скрол-контейнері запас на висоту клавіатури", () => {
