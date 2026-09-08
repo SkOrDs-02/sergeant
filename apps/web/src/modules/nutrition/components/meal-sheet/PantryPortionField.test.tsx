@@ -1,14 +1,23 @@
 /** @vitest-environment jsdom */
 /**
- * Last validated: 2026-09-06
+ * Last validated: 2026-09-08
  * Status: Active
  */
 import { fireEvent, render, screen } from "@testing-library/react";
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const coarse = vi.hoisted(() => ({ value: false }));
+vi.mock("@shared/hooks/useCoarsePointer", () => ({
+  useCoarsePointer: () => coarse.value,
+}));
 
 import { PantryPortionField } from "./PantryPortionField";
 
 describe("PantryPortionField", () => {
+  beforeEach(() => {
+    coarse.value = false;
+  });
+
   it("lets a pantry meal choose the consumed grams", () => {
     const onChange = vi.fn();
     render(<PantryPortionField value="100" onChange={onChange} />);
@@ -29,5 +38,19 @@ describe("PantryPortionField", () => {
     });
 
     expect(onChange).not.toHaveBeenCalled();
+  });
+
+  it("uses the iOS-style wheel for pantry weight on touch devices", () => {
+    coarse.value = true;
+    const onChange = vi.fn();
+    render(<PantryPortionField value="100" onChange={onChange} />);
+
+    const wheel = screen.getByRole("spinbutton", {
+      name: "Вага порції, г",
+    });
+    expect(wheel).toHaveAttribute("aria-valuenow", "100");
+
+    fireEvent.keyDown(wheel, { key: "ArrowUp" });
+    expect(onChange).toHaveBeenCalledWith("105");
   });
 });

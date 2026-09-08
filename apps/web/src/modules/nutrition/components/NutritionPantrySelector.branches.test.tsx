@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-09-02
+ * Last validated: 2026-09-08
  * Status: Active
  *
  * Гейт 3 спеки: видно все. Фільтр звужує список і знімається; активної
