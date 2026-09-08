@@ -39,7 +39,7 @@ test("@critical finyk: empty transactions → add-expense CTA opens sheet", asyn
   await page.goto("/finyk/transactions", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "finyk");
 
-  await expect(page.getByText("Куди йдуть твої гроші?")).toBeVisible({
+  await expect(page.getByText("Транзакцій ще немає")).toBeVisible({
     timeout: 10_000,
   });
 
