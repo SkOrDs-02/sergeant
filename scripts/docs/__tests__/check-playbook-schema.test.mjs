@@ -28,6 +28,7 @@ const validPlaybook = `# Playbook: Example
 
 > **Last validated:** 2026-04-30 by @devin-ai. **Next review:** 2026-07-29.
 > **Status:** Active
+> **Runtime-specific:** no
 
 **Trigger:** "do the example thing" / triggers when something interesting happens.
 
@@ -416,7 +417,7 @@ test("CLI exits 1 with --json output when a playbook is malformed", () => {
   const dir = mkdtempSync(join(tmpdir(), "playbook-schema-"));
   try {
     const root = join(dir, "repo");
-    mkdirSync(join(root, "docs", "start", "playbooks"), { recursive: true });
+    mkdirSync(join(root, "docs", "start", "instructions"), { recursive: true });
     mkdirSync(join(root, "scripts", "docs"), { recursive: true });
     cpSync(
       SCRIPT_PATH,
@@ -424,20 +425,20 @@ test("CLI exits 1 with --json output when a playbook is malformed", () => {
     );
     // One good, one bad
     writeFileSync(
-      join(root, "docs", "start", "playbooks", "good.md"),
+      join(root, "docs", "start", "instructions", "good.md"),
       validPlaybook,
     );
     writeFileSync(
-      join(root, "docs", "start", "playbooks", "bad.md"),
-      "# Playbook: Bad\n\nNo metadata at all.\n",
+      join(root, "docs", "start", "instructions", "bad.md"),
+      "# Playbook: Bad\n\n> **Runtime-specific:** no\n\nNo metadata at all.\n",
     );
     // Skipped files (must not contribute violations)
     writeFileSync(
-      join(root, "docs", "start", "playbooks", "INDEX.md"),
+      join(root, "docs", "start", "instructions", "INDEX.md"),
       "# anything\n",
     );
     writeFileSync(
-      join(root, "docs", "start", "playbooks", "_TEMPLATE-decision-tree.md"),
+      join(root, "docs", "start", "instructions", "_TEMPLATE-decision-tree.md"),
       "# template\n",
     );
     const r = spawnSync(
@@ -468,14 +469,14 @@ test("CLI exits 0 with happy fixture", () => {
   const dir = mkdtempSync(join(tmpdir(), "playbook-schema-"));
   try {
     const root = join(dir, "repo");
-    mkdirSync(join(root, "docs", "start", "playbooks"), { recursive: true });
+    mkdirSync(join(root, "docs", "start", "instructions"), { recursive: true });
     mkdirSync(join(root, "scripts", "docs"), { recursive: true });
     cpSync(
       SCRIPT_PATH,
       join(root, "scripts", "docs", "check-playbook-schema.mjs"),
     );
     writeFileSync(
-      join(root, "docs", "start", "playbooks", "good.md"),
+      join(root, "docs", "start", "instructions", "good.md"),
       validPlaybook,
     );
     const r = spawnSync(

@@ -459,7 +459,7 @@ describe("rewriteRelativeLinks", () => {
     );
     assert.match(
       out,
-      /\[tracker\]\(\.\/product\/launch\/product-os\/ftux-master-tracker\.md#3-4\)/,
+      /\[tracker\]\(\.\/work\/specs\/launch\/product-os\/ftux-master-tracker\.md#3-4\)/,
     );
   });
 
@@ -494,7 +494,7 @@ describe("rewriteRelativeLinks", () => {
       "docs/work/specs/initiatives/stack-pulse-2026-05/pr-05.md",
       "docs/open-work.md",
     );
-    assert.match(out, /\[config\]\(\.\/work\/adr\/0050\.md\)/);
+    assert.match(out, /\[config\]\(\.\/work\/specs\/adr\/0050\.md\)/);
   });
 
   it("returns input unchanged when no links are present", () => {
