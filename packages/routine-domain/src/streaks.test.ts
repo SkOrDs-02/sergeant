@@ -190,4 +190,67 @@ describe("routine-domain/streaks", () => {
       rate: 0,
     });
   });
+
+  it("completionRateForRange excludes once habits unless explicitly requested", () => {
+    const once: Habit = {
+      ...dailyHabit("once"),
+      recurrence: "once",
+      startDate: "2026-01-01",
+    };
+    expect(
+      completionRateForRange(
+        [once],
+        { once: ["2026-01-01"] },
+        "2026-01-01",
+        "2026-01-01",
+      ),
+    ).toEqual({ completed: 0, scheduled: 0, rate: 0 });
+    expect(
+      completionRateForRange(
+        [once],
+        { once: ["2026-01-01"] },
+        "2026-01-01",
+        "2026-01-01",
+        { includeOnce: true },
+      ),
+    ).toEqual({ completed: 1, scheduled: 1, rate: 1 });
+  });
+
+  it("removes skipped days from the denominator and respects pausedFrom", () => {
+    const h = dailyHabit("h");
+    expect(
+      completionRateForRange(
+        [h],
+        { h: ["2026-01-01"] },
+        "2026-01-01",
+        "2026-01-03",
+        { skips: { h: { "2026-01-02": { reason: "sick", at: "" } } } },
+      ),
+    ).toEqual({ completed: 1, scheduled: 2, rate: 0.5 });
+    expect(
+      completionRateForRange(
+        [h],
+        { h: ["2026-01-01"] },
+        "2025-12-31",
+        "2026-01-02",
+        { pausedFrom: "2026-01-01" },
+      ).scheduled,
+    ).toBe(2);
+  });
+
+  it("counts flexible habits against their weekly target", () => {
+    const h: Habit = {
+      ...dailyHabit("flex"),
+      recurrence: "flexible",
+      weeklyTargetHistory: [{ from: "2026-01-01", target: 2 }],
+    };
+    expect(
+      completionRateForRange(
+        [h],
+        { flex: ["2026-01-05", "2026-01-07"] },
+        "2026-01-05",
+        "2026-01-11",
+      ),
+    ).toEqual({ completed: 2, scheduled: 2, rate: 1 });
+  });
 });

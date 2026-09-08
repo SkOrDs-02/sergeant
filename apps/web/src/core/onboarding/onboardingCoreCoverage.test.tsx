@@ -1,14 +1,16 @@
 /** @vitest-environment jsdom */
-import {
-  act,
-  cleanup,
-  fireEvent,
-  render,
-  screen,
-} from "@testing-library/react";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@shared/hooks/useToast";
 import type { OnboardingOutcomeCopy } from "@sergeant/shared";
+
+const checklistSignalsMock = vi.hoisted(() => ({
+  value: {} as Record<string, boolean>,
+}));
+
+vi.mock("./useChecklistSignals", () => ({
+  useChecklistSignals: () => checklistSignalsMock.value,
+}));
 
 const firstActionMocks = vi.hoisted(() => ({
   picks: [] as string[],
@@ -202,6 +204,7 @@ function renderChecklist(ui: ReactNode) {
 describe("ModuleChecklist extended coverage", () => {
   beforeEach(() => {
     localStorage.clear();
+    checklistSignalsMock.value = {};
     vi.useFakeTimers();
   });
 
@@ -216,33 +219,29 @@ describe("ModuleChecklist extended coverage", () => {
     renderChecklist(<ModuleChecklist moduleId="finyk" onAction={onAction} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
-    expect(screen.queryByRole("checkbox")).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Додати першу витрату" }),
+    ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
-    const addExpense = screen.getByRole("checkbox", {
+    const addExpense = screen.getByRole("button", {
       name: "Додати першу витрату",
     });
     fireEvent.click(addExpense);
 
     expect(onAction).toHaveBeenCalledWith("add_expense");
-    expect(addExpense).toHaveAttribute("aria-checked", "true");
 
     fireEvent.click(screen.getByRole("button", { name: "Сховати чекліст" }));
     expect(screen.queryByText("Фінік: перші кроки")).not.toBeInTheDocument();
   });
 
-  it("auto-hides shortly after the final step is completed", () => {
+  it("hides when every step is proven by real signals", () => {
+    checklistSignalsMock.value = {
+      create_habit: true,
+      complete_habit: true,
+      three_day_streak: true,
+    };
     renderChecklist(<ModuleChecklist moduleId="routine" />);
-
-    const steps = screen.getAllByRole("checkbox");
-    for (const step of steps) {
-      fireEvent.click(step);
-    }
-
-    expect(screen.getByText("Рутина: Перші кроки")).toBeInTheDocument();
-    act(() => {
-      vi.advanceTimersByTime(1000);
-    });
 
     expect(screen.queryByText("Рутина: Перші кроки")).not.toBeInTheDocument();
   });

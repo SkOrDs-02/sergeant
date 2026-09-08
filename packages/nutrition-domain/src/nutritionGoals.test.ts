@@ -332,6 +332,23 @@ describe("resolveEffectiveGoalsForRange", () => {
     ).toBe(0);
   });
 
+  it("не ламає діапазон через невалідні createdAt", () => {
+    const sameDay = [
+      period({ id: "first", effectiveFrom: "2026-05-05", createdAt: "bad" }),
+      period({
+        id: "second",
+        effectiveFrom: "2026-05-05",
+        createdAt: "also-bad",
+        kcal: 1800,
+      }),
+    ];
+    expect(
+      resolveEffectiveGoalsForRange(sameDay, "2026-05-05", "2026-05-05").get(
+        "2026-05-05",
+      )?.kcal,
+    ).toBe(1800);
+  });
+
   it("один день — мапа з одного запису", () => {
     const map = resolveEffectiveGoalsForRange(
       periods,
@@ -360,6 +377,17 @@ describe("goal rows for retrospective consumers", () => {
     ).toEqual([null, 2400, 2400, 1800]);
   });
 
+  it("preserves caller order and returns null for invalid day keys", () => {
+    expect(
+      resolveKcalGoalsForDays(periods, ["2026-05-03", "nope", "2026-05-01"]),
+    ).toEqual([1800, null, 2400]);
+    expect(resolveKcalGoalsForDays(periods, [])).toEqual([]);
+    expect(resolveKcalGoalsForDays(periods, ["nope", "still-nope"])).toEqual([
+      null,
+      null,
+    ]);
+  });
+
   it("freezes the past when a later goal is appended", () => {
     const days = ["2026-05-01", "2026-05-02"];
     const before = resolveKcalGoalsForDays(periods, days);
@@ -380,5 +408,6 @@ describe("goal rows for retrospective consumers", () => {
     expect(averageKcalGoalForDays(periods, ["2026-05-01", "2026-05-02"])).toBe(
       2400,
     );
+    expect(averageKcalGoalForDays(periods, [])).toBeNull();
   });
 });

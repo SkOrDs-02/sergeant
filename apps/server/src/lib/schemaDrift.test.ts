@@ -1,4 +1,5 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { fileURLToPath } from "node:url";
 
 /**
  * Регресія на три серпневі інциденти 2026 (`is_jar`, `last_token_check_at`,
@@ -27,7 +28,9 @@ vi.mock("../db.js", () => ({
 }));
 vi.mock("../obs/logger.js", () => ({ logger: loggerMock }));
 
-const REAL_MIGRATIONS_DIR = new URL("../migrations", import.meta.url).pathname;
+const REAL_MIGRATIONS_DIR = fileURLToPath(
+  new URL("../migrations", import.meta.url),
+);
 
 import {
   checkSchemaDrift,

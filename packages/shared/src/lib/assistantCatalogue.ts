@@ -1042,6 +1042,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Порівняй цей тиждень з минулим по всіх модулях.",
     requiresInput: false,
+    isNew: true,
     isQuickAction: true,
     quickActionPriority: 40,
     requiresOnline: true,
