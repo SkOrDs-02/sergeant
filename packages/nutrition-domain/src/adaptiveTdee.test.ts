@@ -44,6 +44,46 @@ describe("measuredTdee", () => {
   it("does not update with fewer than four weigh-ins", () => {
     expect(measuredTdee(intake(14), weights([80, 79.9, 79.8]))).toBeNull();
   });
+
+  it("ignores incomplete, invalid, and non-positive source rows", () => {
+    const result = measuredTdee(
+      [
+        ...intake(10),
+        { dateKey: "2026-05-15", kcal: 0, complete: true },
+        { dateKey: "not-a-day", kcal: 2500, complete: true },
+        { dateKey: "2026-05-16", kcal: 2500, complete: false },
+      ],
+      [
+        ...weights([80, 79.9, 79.8, 79.7]),
+        { dateKey: "not-a-day", weightKg: 70 },
+        { dateKey: "2026-05-20", weightKg: 0 },
+      ],
+    );
+    expect(result).not.toBeNull();
+    expect(result!.completeDays).toBe(10);
+    expect(result!.weightPoints).toBe(4);
+  });
+
+  it("rejects invalid energy-balance inputs and non-positive results", () => {
+    expect(measuredTdeeFromBalance(0, 0, 14)).toBeNull();
+    expect(measuredTdeeFromBalance(Number.NaN, 0, 14)).toBeNull();
+    expect(
+      measuredTdeeFromBalance(2000, Number.POSITIVE_INFINITY, 14),
+    ).toBeNull();
+    expect(measuredTdeeFromBalance(2000, 0, 0)).toBeNull();
+    expect(measuredTdeeFromBalance(100, 1, 1)).toBeNull();
+  });
+
+  it("does not produce a result when weight points have no time span", () => {
+    expect(
+      measuredTdee(intake(10), [
+        { dateKey: "2026-05-01", weightKg: 80 },
+        { dateKey: "2026-05-01", weightKg: 79.9 },
+        { dateKey: "2026-05-01", weightKg: 79.8 },
+        { dateKey: "2026-05-01", weightKg: 79.7 },
+      ]),
+    ).toBeNull();
+  });
 });
 
 describe("weightTrendEma", () => {
@@ -55,6 +95,20 @@ describe("weightTrendEma", () => {
       { dateKey: "2026-05-14", weightKg: 80 },
     ]);
     expect(Math.abs(stable!.deltaKg)).toBeLessThan(0.3);
+  });
+
+  it("returns null for fewer than two usable points or zero span", () => {
+    expect(
+      weightTrendEma([{ dateKey: "2026-05-01", weightKg: 80 }]),
+    ).toBeNull();
+    expect(
+      weightTrendEma([
+        { dateKey: "2026-05-01", weightKg: 80 },
+        { dateKey: "2026-05-01", weightKg: 79 },
+        { dateKey: "not-a-day", weightKg: 78 },
+        { dateKey: "2026-05-02", weightKg: 0 },
+      ]),
+    ).toBeNull();
   });
 });
 

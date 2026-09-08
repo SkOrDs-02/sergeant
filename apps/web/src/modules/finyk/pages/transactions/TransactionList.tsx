@@ -8,7 +8,7 @@ import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
-import { EmptyState } from "@shared/components/ui/EmptyState";
+import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
 import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import {
@@ -357,12 +357,7 @@ export function TransactionList({
       </div>
     ) : activeTx.length === 0 ? (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
-        <EmptyState
-          illustration={<FinykEmptyIllustration size={80} />}
-          title="Транзакцій ще немає"
-          description="Перший запис зʼявиться тут після ручного додавання, імпорту банку або сканування чека."
-          module="finyk"
-        />
+        <ModuleEmptyState module="finyk" />
       </div>
     ) : (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">

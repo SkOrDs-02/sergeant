@@ -1,7 +1,7 @@
 /**
  * Device-local day-key helpers (ADR-0078).
  *
- * `docs/04-governance/adr/0078-day-boundary-device-local.md`: день-ключ
+ * `docs/governance/adr/0078-day-boundary-device-local.md`: день-ключ
  * логу їжі, логу води й денного підсумку визначає годинник ПРИСТРОЮ, а не
  * Europe/Kyiv — інакше відмітка ввечері за місцевим часом «переїжджає» на
  * сусідній день для будь-кого поза Києвом.
