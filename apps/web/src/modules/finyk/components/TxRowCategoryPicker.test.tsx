@@ -11,7 +11,13 @@
  * і potential PII (Hard Rule #21).
  */
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  within,
+} from "@testing-library/react";
 
 const mocks = vi.hoisted(() => ({ trackEvent: vi.fn() }));
 
@@ -42,6 +48,12 @@ function categorizedPayload(index = 0): Record<string, unknown> {
   const call = categorizedCalls()[index];
   if (!call) throw new Error(`finyk_tx_categorized #${index} не полетів`);
   return call[1] as Record<string, unknown>;
+}
+
+function chooseCategory(label: string) {
+  fireEvent.click(screen.getByRole("button", { name: /Продукти/ }));
+  const dialog = screen.getByRole("dialog", { name: "Категорія" });
+  fireEvent.click(within(dialog).getByRole("button", { name: label }));
 }
 
 function renderPicker(
@@ -80,7 +92,7 @@ describe("TxRowCategoryPicker — телеметрія категоризаці�
   it("вбудована категорія їде як category_kind=builtin", () => {
     const { onCatChange } = renderPicker();
 
-    fireEvent.click(screen.getByText("Продукти"));
+    chooseCategory("Продукти");
 
     expect(onCatChange).toHaveBeenCalledWith("tx-1", "food");
     expect(categorizedCalls()).toHaveLength(1);
@@ -96,7 +108,7 @@ describe("TxRowCategoryPicker — телеметрія категоризаці�
   it("кастомна категорія їде як category_kind=custom, без id і без назви", () => {
     renderPicker();
 
-    fireEvent.click(screen.getByText("Мій репетитор"));
+    chooseCategory("Мій репетитор");
 
     expect(categorizedPayload()).toMatchObject({
       action: "set",
@@ -122,7 +134,7 @@ describe("TxRowCategoryPicker — телеметрія категоризаці�
   it("тап по вже активній категорії з override теж скидає її", () => {
     const { onCatChange } = renderPicker({ overrideCatId: "food" });
 
-    fireEvent.click(screen.getByText("Продукти"));
+    chooseCategory("Продукти");
 
     expect(onCatChange).toHaveBeenCalledWith("tx-1", null);
     expect(categorizedPayload()).toMatchObject({ action: "cleared" });
@@ -136,7 +148,7 @@ describe("TxRowCategoryPicker — телеметрія категоризаці�
       overrideCatId: "custom_1755000000",
     });
 
-    fireEvent.click(screen.getByText("Мій репетитор"));
+    chooseCategory("Мій репетитор");
 
     expect(categorizedCalls()).toHaveLength(0);
     expect(onCatChange).not.toHaveBeenCalled();
@@ -148,7 +160,7 @@ describe("TxRowCategoryPicker — телеметрія категоризаці�
     markSignalShown({ signal: "finyk-recurring-detected", module: "finyk" });
     renderPicker();
 
-    fireEvent.click(screen.getByText("Продукти"));
+    chooseCategory("Продукти");
 
     expect(categorizedPayload()).toMatchObject({
       after_signal: true,

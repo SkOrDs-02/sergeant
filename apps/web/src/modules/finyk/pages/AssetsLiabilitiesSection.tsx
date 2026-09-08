@@ -72,6 +72,8 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
           debtFormRef={debtFormRef}
           debtNameInputRef={debtNameInputRef}
           editingId={editingDebtId}
+          editingDebt={manualDebts.find((debt) => debt.id === editingDebtId)}
+          transactions={transactions}
           onUpdate={(id, value) => {
             setManualDebts((ds) =>
               ds.map((item) =>
