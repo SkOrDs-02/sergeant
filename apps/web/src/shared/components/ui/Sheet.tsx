@@ -219,11 +219,11 @@ export function Sheet({
             paddingBottom: "env(safe-area-inset-bottom, 0px)",
           }
         : {
-            // Відступ під нижню навігацію є геометрією аркуша, не
-            // внутрішнім padding-ом панелі. Коли він жив у `paddingBottom`,
-            // світла тема малювала під формою білий хвіст, і контент
-            // прокручувався під нього (звіт власника 2026-09-07).
-            marginBottom: `max(var(${BOTTOM_NAV_INSET_VAR}, 0px), calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px)))`,
+            // Відступ під нижню навігацію лишається всередині аркуша, щоб
+            // його фон доходив до краю viewport. `marginBottom` відривав
+            // панель від низу: під нею було видно світлу сторінку, а форма
+            // візуально скролилась у цей чужий простір (регресія 2026-09-08).
+            paddingBottom: `max(var(${BOTTOM_NAV_INSET_VAR}, 0px), calc(var(--bottom-nav-height, 0px) + env(safe-area-inset-bottom, 0px)))`,
           };
   // Запас прокрутки під останніми полями, поки клавіатура відкрита
   // (бета-фідбек №5, 2026-08-18: «внизу екрану не видно»). Скрол уміє
