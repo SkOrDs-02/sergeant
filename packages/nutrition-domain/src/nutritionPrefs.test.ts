@@ -24,6 +24,9 @@ describe("defaultNutritionPrefs", () => {
       reminderEnabled: false,
       reminderHour: 12,
       waterGoalMl: 2000,
+      adaptiveGoalEnabled: true,
+      adaptiveGoalIntent: "maintenance",
+      adaptiveGoalLastUpdatedAt: null,
     });
   });
 
