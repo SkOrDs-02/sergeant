@@ -122,7 +122,12 @@ describe("TxRowCategoryPicker — телеметрія категоризаці�
   it("скидання override їде як action=cleared", () => {
     const { onCatChange } = renderPicker({ overrideCatId: "food" });
 
-    fireEvent.click(screen.getByText("Скинути"));
+    fireEvent.click(screen.getByRole("button", { name: /Продукти/ }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Повернути автоматичну категорію",
+      }),
+    );
 
     expect(onCatChange).toHaveBeenCalledWith("tx-1", null);
     expect(categorizedPayload()).toMatchObject({
@@ -131,13 +136,14 @@ describe("TxRowCategoryPicker — телеметрія категоризаці�
     });
   });
 
-  it("тап по вже активній категорії з override теж скидає її", () => {
-    const { onCatChange } = renderPicker({ overrideCatId: "food" });
+  it("тап по вже активній категорії з override є no-op", () => {
+    const { onCatChange, onClose } = renderPicker({ overrideCatId: "food" });
 
     chooseCategory("Продукти");
 
-    expect(onCatChange).toHaveBeenCalledWith("tx-1", null);
-    expect(categorizedPayload()).toMatchObject({ action: "cleared" });
+    expect(onCatChange).not.toHaveBeenCalled();
+    expect(categorizedCalls()).toHaveLength(0);
+    expect(onClose).toHaveBeenCalled();
   });
 
   it("повторний тап по вже застосованому override НЕ емітить події", () => {

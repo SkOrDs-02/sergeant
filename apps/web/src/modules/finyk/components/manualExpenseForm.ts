@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-07-29
+ * Last validated: 2026-09-09
  * Status: Active
  *
  * Pure form helpers for ManualExpenseSheet — schema, amount chips,
@@ -88,6 +88,30 @@ export const expenseAmountHryvnia = amountStringToHryvnia;
 
 export type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 
+function frequentCategorySlug(cat: FrequentCategory): CategorySlug | null {
+  const rawLabel = cat.manualLabel
+    ? upgradeCategory(cat.manualLabel)
+    : cat.id
+      ? upgradeCategory(CANONICAL_TO_MANUAL_LABEL[cat.id] ?? null)
+      : null;
+  return rawLabel && isCategorySlug(rawLabel) ? rawLabel : null;
+}
+
+/** Лише категорії, для яких справді є персональна статистика. */
+export function getFrequentCategorySlugs(
+  frequentCategories: FrequentCategory[] = [],
+): CategorySlug[] {
+  const seen = new Set<CategorySlug>();
+  const result: CategorySlug[] = [];
+  for (const category of frequentCategories) {
+    const slug = frequentCategorySlug(category);
+    if (!slug || !CATEGORY_SLUGS.includes(slug) || seen.has(slug)) continue;
+    seen.add(slug);
+    result.push(slug);
+  }
+  return result;
+}
+
 /**
  * Сортує доступні підписи категорій за персональною частотою, зберігаючи
  * стабільний порядок для категорій без статистики.
@@ -96,22 +120,12 @@ export function sortCategoriesByFrequency(
   frequentCategories: FrequentCategory[] = [],
 ): CategorySlug[] {
   if (!frequentCategories.length) return CATEGORY_SLUGS;
-  // Перетворюємо частотну статистику на індекс slug → rank.
-  // manualLabel може зберігати будь-яку з 3 ер — upgradeCategory нормалізує.
-  // CANONICAL_TO_MANUAL_LABEL повертає slug (F5b), тож подвійне upgradeCategory
-  // — no-op для Era 3; безпечно для Era 2/1.
-  const rank = new Map<CategorySlug, number>();
-  frequentCategories.forEach((cat, idx) => {
-    const rawLabel = cat.manualLabel
-      ? upgradeCategory(cat.manualLabel)
-      : cat.id
-        ? upgradeCategory(CANONICAL_TO_MANUAL_LABEL[cat.id] ?? null)
-        : null;
-    const slug = rawLabel && isCategorySlug(rawLabel) ? rawLabel : null;
-    if (slug && CATEGORY_SLUGS.includes(slug) && !rank.has(slug)) {
-      rank.set(slug, idx);
-    }
-  });
+  const rank = new Map(
+    getFrequentCategorySlugs(frequentCategories).map((slug, idx) => [
+      slug,
+      idx,
+    ]),
+  );
   const withRank = CATEGORY_SLUGS.map((slug, originalIdx) => ({
     slug,
     rank: rank.has(slug) ? (rank.get(slug) ?? Infinity) : Infinity,

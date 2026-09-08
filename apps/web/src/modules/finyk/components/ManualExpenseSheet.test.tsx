@@ -6,6 +6,7 @@ import {
   screen,
   fireEvent,
   waitFor,
+  within,
   cleanup,
 } from "@testing-library/react";
 import { ManualExpenseSheet, upgradeCategory } from "./ManualExpenseSheet";
@@ -30,6 +31,15 @@ beforeAll(() => {
 afterEach(() => {
   cleanup();
 });
+
+function categoryDialog() {
+  fireEvent.click(screen.getByLabelText("Категорія"));
+  return within(screen.getByRole("dialog", { name: "Категорія" }));
+}
+
+function chooseCategory(label: string) {
+  fireEvent.click(categoryDialog().getByRole("button", { name: label }));
+}
 
 // ─── upgradeCategory unit tests — all 3 storage eras ─────────────────────────
 describe("upgradeCategory — era detection", () => {
@@ -206,14 +216,13 @@ describe("ManualExpenseSheet — kind segment switch", () => {
       "aria-selected",
       "true",
     );
-    const categorySelect = screen.getByLabelText(
-      "Категорія",
-    ) as HTMLSelectElement;
-    const optionLabels = Array.from(categorySelect.options).map(
-      (o) => o.textContent,
-    );
+    const dialog = categoryDialog();
+    const allSection = dialog.getByText("Усі категорії").closest("section");
+    expect(allSection).not.toBeNull();
+    const optionLabels = within(allSection!)
+      .getAllByRole("button")
+      .map((button) => button.textContent?.trim());
     expect(optionLabels).toEqual([
-      "Обери категорію",
       "Зарплата",
       "Фріланс",
       "Подарунок",
@@ -236,9 +245,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     fireEvent.change(screen.getByLabelText("Сума ₴"), {
       target: { value: "5000" },
     });
-    fireEvent.change(screen.getByLabelText("Категорія"), {
-      target: { value: "salary" },
-    });
+    chooseCategory("Зарплата");
     fireEvent.click(screen.getByRole("button", { name: "Додати надходження" }));
 
     await waitFor(() => {
@@ -309,9 +316,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     });
     expect(onSave).not.toHaveBeenCalled();
 
-    fireEvent.change(screen.getByLabelText("Категорія"), {
-      target: { value: "transport" },
-    });
+    chooseCategory("Транспорт");
     fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
 
     await waitFor(() => {
@@ -367,7 +372,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
   // надходження при виборі категорії не зникає варнінг про необхідність
   // вибору категорії». Switching to Надходження blanks the category with
   // `shouldValidate: true`, but `useApiForm` runs RHF in `mode: "onSubmit"`,
-  // so a plain <select> change never re-ran the resolver and the alert stuck.
+  // so a plain picker change never re-ran the resolver and the alert stuck.
   it("clears the category warning as soon as a category is picked", async () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={vi.fn()} />);
     await act(async () => {});
@@ -379,9 +384,7 @@ describe("ManualExpenseSheet — kind segment switch", () => {
     });
 
     // Picking one must retire it without needing another submit.
-    fireEvent.change(screen.getByLabelText("Категорія"), {
-      target: { value: "salary" },
-    });
+    chooseCategory("Зарплата");
     await waitFor(() => {
       expect(screen.queryByRole("alert")).not.toBeInTheDocument();
     });
@@ -521,14 +524,15 @@ describe("ManualExpenseSheet — власні категорії", () => {
       <ManualExpenseSheet open onClose={vi.fn()} customCategories={CUSTOM} />,
     );
 
+    const dialog = categoryDialog();
     expect(
-      screen.getByRole("option", { name: "Кава з друзями" }),
+      dialog.getByRole("button", { name: "Кава з друзями" }),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("option", { name: "Тваринки" }),
+      dialog.getByRole("button", { name: "Тваринки" }),
     ).toBeInTheDocument();
     // Вбудовані нікуди не зникли.
-    expect(screen.getByRole("option", { name: "Інше" })).toBeInTheDocument();
+    expect(dialog.getByRole("button", { name: "Інше" })).toBeInTheDocument();
   });
 
   it("зберігає обраний власний id, а не підміняє його на «other»", async () => {
@@ -545,9 +549,7 @@ describe("ManualExpenseSheet — власні категорії", () => {
     fireEvent.change(screen.getByLabelText("Сума ₴"), {
       target: { value: "75" },
     });
-    fireEvent.change(screen.getByLabelText(/Категорія/), {
-      target: { value: "custom_coffee_friends" },
-    });
+    chooseCategory("Кава з друзями");
     fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
 
     await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
@@ -583,7 +585,7 @@ describe("ManualExpenseSheet — власні категорії", () => {
     fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
 
     expect(
-      screen.queryByRole("option", { name: "Кава з друзями" }),
+      categoryDialog().queryByRole("button", { name: "Кава з друзями" }),
     ).not.toBeInTheDocument();
   });
 
@@ -624,9 +626,9 @@ describe("ManualExpenseSheet — власні категорії", () => {
     );
 
     await waitFor(() => {
-      expect(
-        (screen.getByLabelText(/Категорія/) as HTMLSelectElement).value,
-      ).toBe("custom_coffee_friends");
+      expect(screen.getByLabelText(/Категорія/)).toHaveTextContent(
+        "Кава з друзями",
+      );
     });
 
     fireEvent.click(screen.getByRole("button", { name: /Зберегти|Додати/ }));
@@ -667,12 +669,11 @@ describe("ManualExpenseSheet — власні категорії", () => {
       />,
     );
 
-    const select = () =>
-      screen.getByLabelText(/Категорія/) as HTMLSelectElement;
-    await waitFor(() => expect(select().value).toBe("custom_coffee_friends"));
+    const picker = () => screen.getByLabelText(/Категорія/);
+    await waitFor(() => expect(picker()).toHaveTextContent("Кава з друзями"));
 
     // Тепер людина свідомо обирає «Інше» — і воно лишається.
-    fireEvent.change(select(), { target: { value: "other" } });
+    chooseCategory("Інше");
     rerender(
       <ManualExpenseSheet
         open
@@ -681,6 +682,6 @@ describe("ManualExpenseSheet — власні категорії", () => {
         customCategories={CUSTOM}
       />,
     );
-    await waitFor(() => expect(select().value).toBe("other"));
+    await waitFor(() => expect(picker()).toHaveTextContent("Інше"));
   });
 });
