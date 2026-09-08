@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-07-29
+ * Last validated: 2026-09-09
  * Status: Active
  *
  * Manual expense add/edit sheet. Orchestrates form state and delegates
@@ -52,6 +52,7 @@ import {
   buildAmountSuggestions,
   expenseAmountHryvnia,
   expenseFormSchema,
+  getFrequentCategorySlugs,
   sortCategoriesByFrequency,
   toExpenseInstant,
   type ExpenseFormValues,
@@ -427,6 +428,10 @@ export function ManualExpenseSheet({
     () => sortCategoriesByFrequency(frequentCategories),
     [frequentCategories],
   );
+  const frequentCategoryIds = useMemo(
+    () => getFrequentCategorySlugs(frequentCategories).slice(0, 5),
+    [frequentCategories],
+  );
 
   // Довантаження власних категорій ПІСЛЯ відкриття аркуша.
   //
@@ -495,8 +500,7 @@ export function ManualExpenseSheet({
       : upgradeCategoryAllowingCustom(category, customIds)
     : "";
 
-  // Dropdown shows every category at once (D3 decision) — no collapsed
-  // top-N row, so frequency ordering just becomes the <option> order.
+  // Спільна пошукова шторка показує весь активний набір категорій.
   // Власні йдуть у хвіст: частотне сортування рахується лише по вбудованих
   // (`sortCategoriesByFrequency` — перестановка `CATEGORY_SLUGS`), тож
   // вмішувати їх у той порядок означало б вигадати їм ранг.
@@ -782,6 +786,7 @@ export function ManualExpenseSheet({
           categoryError={categoryError}
           categorySlug={categorySlug}
           categorySlugs={categorySlugs}
+          frequentCategoryIds={isIncome ? [] : frequentCategoryIds}
           register={register}
           setValue={setValue}
           setAiAppliedCategory={setAiAppliedCategory}

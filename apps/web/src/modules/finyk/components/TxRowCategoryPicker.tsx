@@ -1,11 +1,10 @@
 /**
- * Last validated: 2026-07-20
+ * Last validated: 2026-09-09
  * Status: Active
  *
  * Inline category override picker for TxRow. Extracted for Hard Rule #18.
  */
 import { useState } from "react";
-import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { MCC_CATEGORIES, INCOME_CATEGORIES } from "../constants";
 import {
@@ -91,39 +90,35 @@ export function TxRowCategoryPicker({
           categories={categories}
           selectedId={currentCatId}
           onSelect={(categoryId) => {
-            const nextCatId =
-              categoryId === currentCatId && overrideCatId ? null : categoryId;
             // Повторний тап по ВЖЕ ЗАСТОСОВАНОМУ override — це NO-OP, і подію
             // слати не можна: `finyk_tx_categorized` — чисельник петлі
             // цінності, тож зайвий емiт занижує конверсію назавжди (переписати
             // історію подій не можна). Той самий guard, що `outcome.changed`
             // у `useRoutineAppState`.
             //
-            // Умова навмисно вужча за `nextCatId === (overrideCatId ??
-            // currentCatId)`: коли override-у ще НЕМА, тап по авто-категорії
+            // Умова навмисно вужча за `categoryId === currentCatId`: коли
+            // override-у ще НЕМА, тап по авто-категорії
             // закріплює її явно — це реальна дія користувача, і вона мусить
             // лишитись у знаменнику.
-            if (overrideCatId && nextCatId === overrideCatId) {
+            if (overrideCatId && categoryId === overrideCatId) {
               onClose();
               return;
             }
-            onCatChange?.(txId, nextCatId);
-            trackTxCategorized(nextCatId);
+            onCatChange?.(txId, categoryId);
+            trackTxCategorized(categoryId);
             onClose();
           }}
+          onReset={
+            overrideCatId
+              ? () => {
+                  onCatChange?.(txId, null);
+                  trackTxCategorized(null);
+                  onClose();
+                }
+              : undefined
+          }
+          resetLabel="Повернути автоматичну категорію"
         />
-        {overrideCatId && (
-          <button
-            onClick={() => {
-              onCatChange?.(txId, null);
-              trackTxCategorized(null);
-              onClose();
-            }}
-            className="text-style-caption px-3 py-2 rounded-xl border border-dashed border-danger/40 text-danger-strong dark:text-danger hover:text-danger transition-colors"
-          >
-            <Icon name="close" size={13} aria-hidden /> Скинути
-          </button>
-        )}
       </div>
       {onNoteChange && (
         <Input

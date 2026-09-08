@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-08
+ * Last validated: 2026-09-09
  * Status: Active
  *
  * Компактний пошуковий вибір категорії для ручних і банківських операцій.
@@ -27,7 +27,13 @@ interface CategoryPickerFieldProps {
   error?: boolean;
   describedBy?: string;
   placeholder?: string;
+  /** Реальні персональні частоти; порядок масиву є порядком показу. */
+  frequentIds?: readonly string[];
+  onReset?: (() => void) | undefined;
+  resetLabel?: string | undefined;
 }
+
+const SEARCH_THRESHOLD = 8;
 
 const copy = {
   all: "Усі категорії",
@@ -47,6 +53,9 @@ export function CategoryPickerField({
   error = false,
   describedBy,
   placeholder = copy.placeholder,
+  frequentIds = [],
+  onReset,
+  resetLabel,
 }: CategoryPickerFieldProps) {
   const [open, setOpen] = useState(false);
   const [query, setQuery] = useState("");
@@ -60,11 +69,32 @@ export function CategoryPickerField({
         .includes(needle),
     );
   }, [categories, query]);
-  const frequent = query ? [] : filtered.slice(0, 5);
-  const remaining = query ? filtered : filtered.slice(5);
+  const frequent = useMemo(() => {
+    if (query || frequentIds.length === 0) return [];
+    const byId = new Map(categories.map((category) => [category.id, category]));
+    return frequentIds
+      .map((id) => byId.get(id))
+      .filter((category): category is CategoryPickerOption =>
+        Boolean(category),
+      );
+  }, [categories, frequentIds, query]);
+  const frequentSet = useMemo(
+    () => new Set(frequent.map((category) => category.id)),
+    [frequent],
+  );
+  const remaining = query
+    ? filtered
+    : filtered.filter((category) => !frequentSet.has(category.id));
+  const showSearch = categories.length > SEARCH_THRESHOLD;
 
   const choose = (nextId: string) => {
     onSelect(nextId);
+    setOpen(false);
+    setQuery("");
+  };
+
+  const reset = () => {
+    onReset?.();
     setOpen(false);
     setQuery("");
   };
@@ -126,13 +156,15 @@ export function CategoryPickerField({
         zIndex={70}
         bodyClassName="space-y-4"
       >
-        <Input
-          value={query}
-          onChange={(event) => setQuery(event.target.value)}
-          placeholder={copy.search}
-          aria-label={copy.search}
-          icon={<Icon name="search" size={16} aria-hidden />}
-        />
+        {showSearch && (
+          <Input
+            value={query}
+            onChange={(event) => setQuery(event.target.value)}
+            placeholder={copy.search}
+            aria-label={copy.search}
+            icon={<Icon name="search" size={16} aria-hidden />}
+          />
+        )}
         {filtered.length === 0 ? (
           <p className="py-6 text-center text-style-body text-subtle">
             {copy.noResults}
@@ -154,6 +186,18 @@ export function CategoryPickerField({
                 )}
                 {remaining.map(renderOption)}
               </section>
+            )}
+            {onReset && resetLabel && (
+              <button
+                type="button"
+                onClick={reset}
+                className="touch-target w-full rounded-xl border border-dashed border-line px-3 py-2.5 text-left text-style-body text-subtle transition-colors hover:border-muted hover:text-text"
+              >
+                <span className="inline-flex items-center gap-2">
+                  <Icon name="refresh-cw" size={16} aria-hidden />
+                  {resetLabel}
+                </span>
+              </button>
             )}
           </div>
         )}
