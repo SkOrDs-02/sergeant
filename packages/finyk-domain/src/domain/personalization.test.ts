@@ -53,7 +53,13 @@ describe("manualCategoryToCanonicalId", () => {
   it("зводить слаги Ери 3 до канонічної категорії", () => {
     expect(manualCategoryToCanonicalId("groceries")).toBe("food");
     expect(manualCategoryToCanonicalId("cafe")).toBe("restaurant");
-    expect(manualCategoryToCanonicalId("tech")).toBe("shopping");
+    expect(manualCategoryToCanonicalId("tech")).toBe("tech");
+    expect(manualCategoryToCanonicalId("tech", "2026-08-31T12:00:00Z")).toBe(
+      "shopping",
+    );
+    expect(manualCategoryToCanonicalId("tech", "2026-09-01T12:00:00Z")).toBe(
+      "tech",
+    );
   });
 
   it("слаги, що збігаються з канонічним id, не змінюються", () => {

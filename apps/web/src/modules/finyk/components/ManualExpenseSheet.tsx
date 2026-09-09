@@ -44,8 +44,10 @@ import {
   type CategoryDisplay,
 } from "./manualExpenseCategories";
 import {
-  INCOME_CATEGORY_DISPLAY,
   INCOME_CATEGORY_SLUGS,
+  incomeCustomCategories,
+  incomeCategoryDisplay,
+  expenseCustomCategories,
   upgradeIncomeCategory,
 } from "./manualIncomeCategories";
 import {
@@ -171,16 +173,20 @@ export function ManualExpenseSheet({
   // Власні категорії — лише витратні (див. проп). Тримаємо їх окремим
   // мемо, щоб `customIds` був стабільним для нормалізації нижче.
   const customExpenseCategories = useMemo(
-    () =>
-      customCategories.filter(
-        (c): c is CustomCategoryInput =>
-          typeof c?.id === "string" && c.id.trim() !== "",
-      ),
+    () => expenseCustomCategories(customCategories),
     [customCategories],
   );
   const customIds = useMemo(
     () => new Set(customExpenseCategories.map((c) => c.id)),
     [customExpenseCategories],
+  );
+  const customIncomeCategories = useMemo(
+    () => incomeCustomCategories(customCategories),
+    [customCategories],
+  );
+  const customIncomeIds = useMemo(
+    () => new Set(customIncomeCategories.map((c) => c.id)),
+    [customIncomeCategories],
   );
 
   // UX-15 batch entry. `keepOpenRef` is read inside `onSubmit` to decide
@@ -206,7 +212,9 @@ export function ManualExpenseSheet({
         const slug: string =
           kind === "income"
             ? (() => {
-                const s = upgradeIncomeCategory(values.category);
+                const s = customIncomeIds.has(values.category)
+                  ? values.category
+                  : upgradeIncomeCategory(values.category);
                 return s;
               })()
             : (() => {
@@ -362,7 +370,9 @@ export function ManualExpenseSheet({
             initialExpense.amount != null ? String(initialExpense.amount) : "",
           category:
             initialKind === "income"
-              ? upgradeIncomeCategory(initialExpense.category)
+              ? customIncomeIds.has(String(initialExpense.category ?? ""))
+                ? String(initialExpense.category)
+                : upgradeIncomeCategory(initialExpense.category)
               : upgradeCategoryAllowingCustom(
                   initialExpense.category,
                   customIds,
@@ -421,6 +431,7 @@ export function ManualExpenseSheet({
     // безкоштовною: зміна набору власних категорій перезапустить ефект,
     // він побачить незмінений ключ і вийде, не чіпаючи чернетку форми.
     customIds,
+    customIncomeIds,
     reset,
   ]);
 
@@ -488,7 +499,7 @@ export function ManualExpenseSheet({
   // гілці з достроковими return-ами (`react-hooks/preserve-manual-memoization`),
   // а сам він це кешує краще. Обчислення — спред двох невеликих обʼєктів.
   const categoryDisplay: Readonly<Record<string, CategoryDisplay>> = isIncome
-    ? INCOME_CATEGORY_DISPLAY
+    ? incomeCategoryDisplay(customIncomeCategories)
     : { ...CATEGORY_DISPLAY, ...customCategoryDisplay };
 
   // Normalise the watched category value so comparison against slug list is
@@ -496,7 +507,9 @@ export function ManualExpenseSheet({
   // taxonomy (§3, fab-and-manual-income spec) — no frequency sort.
   const categorySlug = category
     ? isIncome
-      ? upgradeIncomeCategory(category)
+      ? customIncomeIds.has(category)
+        ? category
+        : upgradeIncomeCategory(category)
       : upgradeCategoryAllowingCustom(category, customIds)
     : "";
 
@@ -505,7 +518,7 @@ export function ManualExpenseSheet({
   // (`sortCategoriesByFrequency` — перестановка `CATEGORY_SLUGS`), тож
   // вмішувати їх у той порядок означало б вигадати їм ранг.
   const categorySlugs: string[] = isIncome
-    ? [...INCOME_CATEGORY_SLUGS]
+    ? [...INCOME_CATEGORY_SLUGS, ...customIncomeCategories.map((c) => c.id)]
     : [...sortedCategories, ...customExpenseCategories.map((c) => c.id)];
 
   // Merchant-driven quick amounts / description hints are expense-only —

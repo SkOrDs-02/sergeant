@@ -69,6 +69,7 @@ describe("manualTaxonomy — цілісність таблиці", () => {
     const paletteOnly = new Set(["utilities", "other"]);
     for (const d of MANUAL_EXPENSE_TAXONOMY) {
       if (mccIds.has(d.id) || paletteOnly.has(d.id)) {
+        if (d.aggregateId === d.id) continue;
         expect(d.canonicalId, `"${d.id}"`).toBe(d.id);
       } else {
         expect(
@@ -91,7 +92,7 @@ describe("canonicalManualCategoryId", () => {
   it("зводить детальні слаги ручної форми до канонічної категорії", () => {
     expect(canonicalManualCategoryId("groceries")).toBe("food");
     expect(canonicalManualCategoryId("cafe")).toBe("restaurant");
-    expect(canonicalManualCategoryId("tech")).toBe("shopping");
+    expect(canonicalManualCategoryId("tech")).toBe("tech");
   });
 
   // Ключова відмінність від `manualCategoryToCanonicalId`: жодної

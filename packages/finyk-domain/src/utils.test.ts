@@ -32,17 +32,24 @@ afterEach(() => {
 
 describe("getIncomeCategory", () => {
   it("повертає категорію за overrideId", () => {
-    expect(getIncomeCategory("", "in_salary").id).toBe("in_salary");
-    expect(getIncomeCategory("", "in_cashback").id).toBe("in_cashback");
+    expect(getIncomeCategory("", "in_salary").id).toBe("salary");
+    expect(getIncomeCategory("", "in_cashback").id).toBe("cashback");
   });
   it("падає назад на in_other коли опису нема та override нема", () => {
-    expect(getIncomeCategory("", null).id).toBe("in_other");
+    expect(getIncomeCategory("", null).id).toBe("other-income");
   });
   it("знаходить категорію по keywords у описі", () => {
-    expect(getIncomeCategory("Зарплата від роботодавця").id).toBe("in_salary");
+    expect(getIncomeCategory("Зарплата від роботодавця").id).toBe("salary");
   });
   it("ігнорує невалідний overrideId і падає на опис/дефолт", () => {
-    expect(getIncomeCategory("", "no_such_id").id).toBe("in_other");
+    expect(getIncomeCategory("", "no_such_id").id).toBe("other-income");
+  });
+  it("резолвить власну категорію надходження", () => {
+    expect(
+      getIncomeCategory("", "custom-rent", [
+        { id: "custom-rent", label: "Оренда", kind: "income" },
+      ]),
+    ).toMatchObject({ id: "custom-rent", label: "Оренда" });
   });
 });
 
@@ -77,6 +84,24 @@ describe("getCategory (expense)", () => {
     };
     expect(getExpenseCategoryForTransaction(tx).id).toBe("entertainment");
     expect(getExpenseCategoryForTransaction(tx, "tech").id).toBe("tech");
+  });
+
+  it("відокремлює Tech лише від початку поточного місяця", () => {
+    const category = (time: string) =>
+      getExpenseCategoryForTransaction({
+        description: "Ноутбук",
+        categoryId: "tech",
+        source: "manual",
+        time,
+      }).id;
+    expect(category("2026-08-31T20:59:59.999Z")).toBe("shopping");
+    expect(category("2026-08-31T21:00:00.000Z")).toBe("tech");
+    expect(
+      getExpenseCategoryForTransaction({
+        categoryId: "tech",
+        time: Date.parse("2026-08-31T21:00:00.000Z") / 1000,
+      }).id,
+    ).toBe("tech");
   });
 
   // Підпис ручного `food` зведено з MCC-каталогом (2026-08-13): обидва —
@@ -161,6 +186,26 @@ describe("getCategory (expense)", () => {
         categoryId: "gift",
       }).id,
     ).toBe("gift");
+  });
+
+  it("бере власну категорію ручного надходження", () => {
+    expect(
+      getIncomeCategoryForTransaction(
+        { description: "", categoryId: "custom-rent" },
+        null,
+        [{ id: "custom-rent", label: "Оренда", kind: "income" }],
+      ).id,
+    ).toBe("custom-rent");
+  });
+
+  it("не приймає legacy expense custom category як income", () => {
+    expect(
+      getIncomeCategoryForTransaction(
+        { description: "", categoryId: "custom-old" },
+        null,
+        [{ id: "custom-old", label: "Стара витрата" }],
+      ).id,
+    ).toBe("other-income");
   });
 });
 

@@ -75,6 +75,8 @@ export interface LimitBudget {
    * як `[categoryId]` на read-time, без міграції даних.
    */
   categoryIds?: string[];
+  /** Каталог, у якому створено ліміт. Відсутнє = legacy до розділення tech. */
+  categoryTaxonomyVersion?: 2;
   limit: number;
   /** Calendar window used to reset/aggregate the limit. Legacy records omit it. */
   period?: "month" | "week" | "one_time";

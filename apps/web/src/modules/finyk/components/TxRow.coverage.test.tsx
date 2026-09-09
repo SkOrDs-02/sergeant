@@ -117,6 +117,22 @@ describe("TxRow", () => {
     }
   });
 
+  it("renders a custom income category consistently in the transaction row", () => {
+    render(
+      <TxRow
+        tx={mkTx({
+          amount: 42000,
+          description: "Оренда квартири",
+          categoryId: "custom-rent",
+        })}
+        customCategories={[
+          { id: "custom-rent", label: "Оренда", kind: "income" },
+        ]}
+      />,
+    );
+    expect(screen.getByText("Оренда")).toBeInTheDocument();
+  });
+
   // Пікер обіцяє коментарем «той самий відтінок людина потім бачить у
   // строці транзакції». До 2026-08-13 обіцянка не виконувалась для
   // кастомних категорій: рядок не передавав індекс палітри взагалі.

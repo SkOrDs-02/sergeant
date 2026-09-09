@@ -25,7 +25,7 @@ interface CategoryPickerFieldProps {
   selectedId: string;
   onSelect: (id: string) => void;
   error?: boolean;
-  describedBy?: string;
+  describedBy?: string | undefined;
   placeholder?: string;
   /** Реальні персональні частоти; порядок масиву є порядком показу. */
   frequentIds?: readonly string[];

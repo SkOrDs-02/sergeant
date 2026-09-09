@@ -64,7 +64,11 @@ function makeStorage(): ManualExpenseWriteThroughStorage & {
   };
 }
 
-function renderSheet() {
+function renderSheet(
+  customCategories: Parameters<
+    typeof BulkImportSheet
+  >[0]["customCategories"] = [],
+) {
   const storage = makeStorage();
   const onClose = vi.fn();
   const client = new QueryClient({
@@ -72,7 +76,12 @@ function renderSheet() {
   });
   render(
     <QueryClientProvider client={client}>
-      <BulkImportSheet open onClose={onClose} storage={storage} />
+      <BulkImportSheet
+        open
+        onClose={onClose}
+        storage={storage}
+        customCategories={customCategories}
+      />
     </QueryClientProvider>,
   );
   return { storage, onClose };
@@ -146,6 +155,48 @@ describe("BulkImportSheet — screenshot path", () => {
     expect(
       screen.getByRole("button", { name: "Імпортувати" }),
     ).toBeInTheDocument();
+  });
+
+  it("preserves a known custom income category in bulk-review", async () => {
+    analyzeImportScreenshotMock.mockResolvedValue({
+      draft: {
+        docType: "bank_screenshot",
+        bank: "mono",
+        rows: [
+          {
+            date: "2026-09-01",
+            amountKopiykas: 300000,
+            direction: "income",
+            description: "Оренда",
+            categoryHint: "custom-rent",
+            confidence: 0.9,
+          },
+        ],
+      },
+    });
+    renderSheet([
+      { id: "custom-rent", label: "Оренда", kind: "income" },
+      { id: "custom-hobby", label: "Хобі" },
+    ]);
+
+    await act(async () => {
+      fireEvent.change(fileInputFor(/скрін банкінгу/i), {
+        target: {
+          files: [
+            new File([new Uint8Array(10)], "s.png", { type: "image/png" }),
+          ],
+        },
+      });
+    });
+
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: "Імпортувати" }),
+      ).toBeInTheDocument(),
+    );
+    const categoryPicker = screen.getByLabelText("Категорія");
+    expect(categoryPicker).toHaveValue("custom-rent");
+    expect(categoryPicker).not.toHaveValue("custom-hobby");
   });
 
   it("показує живий статус розпізнавання, поки vision у польоті", async () => {
