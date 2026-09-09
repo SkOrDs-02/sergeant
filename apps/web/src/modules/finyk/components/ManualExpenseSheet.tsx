@@ -64,6 +64,7 @@ import { ManualExpenseAmountSection } from "./ManualExpenseAmountSection";
 import { ManualExpenseDescriptionSection } from "./ManualExpenseDescriptionSection";
 import { ManualExpenseCategorySection } from "./ManualExpenseCategorySection";
 import { ReceiptItemsSection } from "./ReceiptItemsSection";
+import { useManualCategoryHydration } from "./useManualCategoryHydration";
 
 // Re-exported for backward-compat with existing importers / tests.
 export {
@@ -121,10 +122,9 @@ interface ManualExpenseSheetProps {
    * створена категорія просто не зʼявлялась у пікері — спіймано
    * бета-тестером 2026-08-10.
    *
-   * Лише для витрат: надходження мають фіксовану таксономію з пʼяти
-   * слагів (`INCOME_CATEGORY_SLUGS`, спека fab-and-manual-income §3), і
-   * `mergeExpenseCategoryDefinitions` у домені так само зшиває власні
-   * категорії тільки з витратними.
+   * Витрати й надходження мають окремі каталоги: `kind: "income"`
+   * потрапляє лише до надходжень, а відсутній `kind` лишається legacy-
+   * сумісною витратною категорією.
    */
   customCategories?: readonly CustomCategoryInput[];
   /** Device-local чек, привʼязаний до цієї ручної витрати (спека §
@@ -448,8 +448,8 @@ export function ManualExpenseSheet({
   //
   // Слоти сховища віддають синхронний LS як фолбек першого пейнту, а
   // значення з SQLite приходить, «once it warms» (`useStorage.ts`). Аркуш,
-  // відкритий у цьому вікні, бачить порожній `customIds`, і категорія
-  // редагованої витрати вже нормалізувалась у `DEFAULT_CATEGORY`. Гвардія
+  // відкритий у цьому вікні, бачить порожні custom-id набори, і категорія
+  // редагованого запису вже нормалізувалась у дефолт свого типу. Гвардія
   // `openInitKey` ефекту ініціалізації правильно не дає йому
   // перезапуститись — він скинув би чернетку, — тож без окремої звірки
   // збереження записало б «Інше» замість власної категорії. Рівно та
@@ -467,19 +467,20 @@ export function ManualExpenseSheet({
   // категорію. Це видима зміна, яку видно й можна повторити, — на відміну
   // від альтернативи, де ми тихо перезаписуємо реальні дані на «Інше».
   const rawInitialCategory = initialExpense?.category ?? initialCategory;
-  const reconciledKeyRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!open) {
-      reconciledKeyRef.current = null;
-      return;
-    }
-    const trimmed = rawInitialCategory?.trim();
-    if (!trimmed || !customIds.has(trimmed)) return;
-    if (reconciledKeyRef.current === openInitKey) return;
-    reconciledKeyRef.current = openInitKey;
-    if (category !== DEFAULT_CATEGORY) return;
-    setValue("category", trimmed, { shouldDirty: false });
-  }, [open, openInitKey, rawInitialCategory, customIds, category, setValue]);
+  const initialRecordIsIncome = initialExpense
+    ? resolveManualExpenseKind(initialExpense) === "income"
+    : false;
+  useManualCategoryHydration({
+    open,
+    openInitKey,
+    rawInitialCategory,
+    initialRecordIsIncome,
+    customExpenseIds: customIds,
+    customIncomeIds,
+    category,
+    restoreCategory: (categoryId) =>
+      setValue("category", categoryId, { shouldDirty: false }),
+  });
 
   const isIncome = kind === "income";
 
