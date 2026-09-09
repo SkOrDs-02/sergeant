@@ -116,4 +116,37 @@ describe("CategoryPickerField", () => {
     expect(onReset).toHaveBeenCalledOnce();
     expect(screen.queryByRole("dialog", { name: "Категорія" })).toBeNull();
   });
+
+  it("не ховає дію скидання, коли пошук не знайшов категорій", () => {
+    const onReset = vi.fn();
+    const categories = Array.from({ length: 9 }, (_, index) => ({
+      id: `category-${index}`,
+      label: `Категорія ${index + 1}`,
+    }));
+
+    render(
+      <CategoryPickerField
+        categories={categories}
+        selectedId="category-0"
+        onSelect={() => {}}
+        onReset={onReset}
+        resetLabel="Повернути автоматичну категорію"
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Категорія 1/ }));
+    const dialog = screen.getByRole("dialog", { name: "Категорія" });
+    fireEvent.change(within(dialog).getByLabelText("Знайти категорію"), {
+      target: { value: "такої категорії немає" },
+    });
+
+    expect(within(dialog).getByText("Нічого не знайдено")).toBeInTheDocument();
+    fireEvent.click(
+      within(dialog).getByRole("button", {
+        name: "Повернути автоматичну категорію",
+      }),
+    );
+    expect(onReset).toHaveBeenCalledOnce();
+    expect(screen.queryByRole("dialog", { name: "Категорія" })).toBeNull();
+  });
 });

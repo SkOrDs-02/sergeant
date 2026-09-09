@@ -23,8 +23,7 @@ import {
 } from "@sergeant/finyk-domain/domain/personalization";
 import {
   CATEGORY_SLUGS,
-  isCategorySlug,
-  upgradeCategory,
+  resolveKnownCategory,
   type CategorySlug,
 } from "./manualExpenseCategories";
 
@@ -89,12 +88,11 @@ export const expenseAmountHryvnia = amountStringToHryvnia;
 export type ExpenseFormValues = z.infer<typeof expenseFormSchema>;
 
 function frequentCategorySlug(cat: FrequentCategory): CategorySlug | null {
-  const rawLabel = cat.manualLabel
-    ? upgradeCategory(cat.manualLabel)
+  return cat.manualLabel
+    ? resolveKnownCategory(cat.manualLabel)
     : cat.id
-      ? upgradeCategory(CANONICAL_TO_MANUAL_LABEL[cat.id] ?? null)
+      ? resolveKnownCategory(CANONICAL_TO_MANUAL_LABEL[cat.id] ?? null)
       : null;
-  return rawLabel && isCategorySlug(rawLabel) ? rawLabel : null;
 }
 
 /** Лише категорії, для яких справді є персональна статистика. */
