@@ -37,6 +37,8 @@ import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import { DEFAULT_CATEGORY, isCategorySlug } from "../manualExpenseCategories";
 import {
   DEFAULT_INCOME_CATEGORY,
+  expenseCustomCategories,
+  incomeCustomCategories,
   isIncomeCategorySlug,
 } from "../manualIncomeCategories";
 import { formatReceiptError } from "../../lib/receiptErrors";
@@ -129,11 +131,14 @@ function defaultCategoryFor(direction: "expense" | "income"): string {
  * категорії користувача живуть лише тут, а вбудовані набори витрат і
  * надходжень різні — витратний слаг у рядку доходу дав би порожній чип.
  */
-function makeIsKnownCategory(customIds: ReadonlySet<string>) {
+function makeIsKnownCategory(
+  expenseCustomIds: ReadonlySet<string>,
+  incomeCustomIds: ReadonlySet<string>,
+) {
   return (slug: string, direction: "expense" | "income"): boolean =>
     direction === "income"
-      ? isIncomeCategorySlug(slug)
-      : isCategorySlug(slug) || customIds.has(slug);
+      ? isIncomeCategorySlug(slug) || incomeCustomIds.has(slug)
+      : isCategorySlug(slug) || expenseCustomIds.has(slug);
 }
 
 function summarizeSkipped(skipped: ImportSkippedRow[]): string | null {
@@ -180,7 +185,12 @@ export function BulkImportSheet({
     () => ({
       defaultCategoryFor,
       isKnownCategory: makeIsKnownCategory(
-        new Set((customCategories ?? []).map((c) => c.id)),
+        new Set(
+          expenseCustomCategories(customCategories ?? []).map((c) => c.id),
+        ),
+        new Set(
+          incomeCustomCategories(customCategories ?? []).map((c) => c.id),
+        ),
       ),
     }),
     [customCategories],

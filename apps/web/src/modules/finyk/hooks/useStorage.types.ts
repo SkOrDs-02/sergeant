@@ -54,6 +54,8 @@ export type CustomCategory = {
   color?: string | undefined;
   icon?: string | undefined;
   parentId?: string | undefined;
+  /** Відсутнє у старих записах означає категорію витрати. */
+  kind?: "expense" | "income" | undefined;
 };
 
 export type TxCategoriesMap = Record<string, string | undefined>;

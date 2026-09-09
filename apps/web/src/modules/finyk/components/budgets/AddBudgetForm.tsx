@@ -43,6 +43,8 @@ export type NewBudgetDraft =
       categoryId: string;
       /** Повний набір категорій ліміту (1+). */
       categoryIds: string[];
+      /** Нові ліміти використовують розділені Shopping і Tech. */
+      categoryTaxonomyVersion: 2;
       /** Власна назва комбо-ліміту; порожньо — авто з категорій. */
       label?: string;
       limit: number;
@@ -235,6 +237,7 @@ function AddBudgetFormComponent({
         type: "limit",
         categoryId: values.categoryIds[0] ?? "",
         categoryIds: values.categoryIds,
+        categoryTaxonomyVersion: 2,
         ...(label ? { label } : {}),
         limit: amountStringToHryvnia(values.limit),
         period: values.period,

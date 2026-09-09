@@ -28,6 +28,7 @@ import {
   upgradeCategoryAllowingCustom,
   type CategoryDisplay,
 } from "../manualExpenseCategories";
+import { expenseCustomCategories } from "../manualIncomeCategories";
 import {
   addBlankDraftItem,
   draftDateKey,
@@ -71,16 +72,11 @@ export function ReceiptReviewForm({
   const totalId = `${formId}-total`;
   const categoryId = `${formId}-category`;
 
-  const customIds = new Set(
-    customCategories
-      .filter(
-        (c): c is CustomCategoryInput => typeof c?.id === "string" && !!c.id,
-      )
-      .map((c) => c.id),
-  );
+  const expenseCategories = expenseCustomCategories(customCategories);
+  const customIds = new Set(expenseCategories.map((c) => c.id));
   const customDisplay: Readonly<Record<string, CategoryDisplay>> =
     Object.fromEntries(
-      customCategories
+      expenseCategories
         .filter((c) => c?.id && c.label)
         .map((c) => [c.id, { iconName: "tag" as const, label: c.label ?? "" }]),
     );
@@ -91,7 +87,7 @@ export function ReceiptReviewForm({
   const categorySlug = upgradeCategoryAllowingCustom(category, customIds);
   const categorySlugs: string[] = [
     ...CATEGORY_SLUGS,
-    ...customCategories.map((c) => c.id).filter((id) => !!id),
+    ...expenseCategories.map((c) => c.id),
   ];
 
   const handleEditItem = (index: number, patch: EditableItemPatch) =>

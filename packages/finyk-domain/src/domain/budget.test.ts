@@ -31,6 +31,18 @@ import {
 } from "./budget";
 
 describe("budget: split helpers", () => {
+  it("preserves legacy Shopping coverage and keeps new limits precise", () => {
+    expect(limitBudgetCategoryIds({ categoryId: "shopping" })).toEqual([
+      "shopping",
+      "tech",
+    ]);
+    expect(
+      limitBudgetCategoryIds({
+        categoryId: "shopping",
+        categoryTaxonomyVersion: 2,
+      }),
+    ).toEqual(["shopping"]);
+  });
   it("getLimitBudgets / getGoalBudgets filter by type", () => {
     const list = [
       { id: "a", type: "limit" },

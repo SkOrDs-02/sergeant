@@ -35,6 +35,7 @@ export type CategorySlug =
   | "food"
   | "groceries"
   | "cafe"
+  | "restaurant"
   | "transport"
   | "entertainment"
   | "health"
@@ -44,6 +45,10 @@ export type CategorySlug =
   | "subscriptions"
   | "education"
   | "travel"
+  | "sport"
+  | "beauty"
+  | "debt"
+  | "charity"
   | "other";
 
 export interface CategoryDisplay {

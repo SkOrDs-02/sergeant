@@ -53,7 +53,7 @@ describe("upgradeCategory — era detection", () => {
     expect(upgradeCategory("🍴 їжа")).toBe("food");
     expect(upgradeCategory("🚗 транспорт")).toBe("transport");
     expect(upgradeCategory("🏷 інше")).toBe("other");
-    expect(upgradeCategory("🍔 кафе та ресторани")).toBe("cafe");
+    expect(upgradeCategory("🍔 кафе та ресторани")).toBe("restaurant");
     expect(upgradeCategory("💊 здоровʼя")).toBe("health");
   });
 
@@ -227,6 +227,9 @@ describe("ManualExpenseSheet — kind segment switch", () => {
       "Фріланс",
       "Подарунок",
       "Повернення",
+      "Кешбек",
+      "Пенсія/соц.",
+      "Борг",
       "Інше",
     ]);
     // Expense-only categories must not leak into income mode.

@@ -36,6 +36,7 @@ function rows(): BulkReviewRow[] {
 
 const CUSTOM_CATEGORIES: CustomCategoryInput[] = [
   { id: "custom-hobby", label: "Хобі" },
+  { id: "custom-rent", label: "Оренда", kind: "income" },
 ];
 
 describe("BulkReviewTable", () => {
@@ -307,6 +308,25 @@ describe("BulkReviewTable", () => {
     ).not.toContain("Хобі");
   });
 
+  it("offers only income custom categories on an income row", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+        customCategories={CUSTOM_CATEGORIES}
+      />,
+    );
+    const incomeRowPicker = screen.getAllByLabelText("Категорія")[1]!;
+    const labels = Array.from(incomeRowPicker.querySelectorAll("option")).map(
+      (option) => option.textContent,
+    );
+    expect(labels).toContain("Оренда");
+    expect(labels).not.toContain("Хобі");
+  });
+
   it("merges customCategories into the bulk-category picker", () => {
     render(
       <BulkReviewTable
@@ -324,6 +344,11 @@ describe("BulkReviewTable", () => {
         (o) => o.textContent,
       ),
     ).toContain("Хобі");
+    expect(
+      Array.from(bulkPicker.querySelectorAll("option")).map(
+        (o) => o.textContent,
+      ),
+    ).not.toContain("Оренда");
   });
 
   it("toggling select-all calls onToggleAll with the opposite of the current all-selected state", () => {
