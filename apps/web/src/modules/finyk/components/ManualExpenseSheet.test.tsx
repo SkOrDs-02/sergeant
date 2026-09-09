@@ -641,6 +641,59 @@ describe("ManualExpenseSheet — власні категорії", () => {
     );
   });
 
+  it("відновлює власну категорію надходження після відкладеної гідратації", async () => {
+    const onSave = vi.fn();
+    const income = {
+      id: "i1",
+      description: "Підробіток",
+      amount: 1200,
+      category: "custom_side_hustle",
+      date: "2026-08-10T12:00:00.000Z",
+      kind: "income",
+    };
+    const customIncomeCategories = [
+      {
+        id: "custom_side_hustle",
+        label: "Підробіток",
+        kind: "income" as const,
+      },
+    ];
+
+    const { rerender } = render(
+      <ManualExpenseSheet
+        open
+        onClose={vi.fn()}
+        onSave={onSave}
+        initialExpense={income}
+        customCategories={[]}
+      />,
+    );
+    await act(async () => {});
+    expect(screen.getByLabelText(/Категорія/)).toHaveTextContent("Зарплата");
+
+    rerender(
+      <ManualExpenseSheet
+        open
+        onClose={vi.fn()}
+        onSave={onSave}
+        initialExpense={income}
+        customCategories={customIncomeCategories}
+      />,
+    );
+
+    await waitFor(() => {
+      expect(screen.getByLabelText(/Категорія/)).toHaveTextContent(
+        "Підробіток",
+      );
+    });
+
+    fireEvent.click(screen.getByRole("button", { name: "Зберегти" }));
+    await waitFor(() => expect(onSave).toHaveBeenCalledTimes(1));
+    expect((onSave.mock.calls[0]![0] as { category: string }).category).toBe(
+      "custom_side_hustle",
+    );
+  });
+
   it("після звірки вибір користувача більше не перекидає", async () => {
     // `dirtyFields` тут не працює: RHF рахує dirty відносно
     // `defaultValues`, а там уже «other» — тож «людина обрала Інше» і
