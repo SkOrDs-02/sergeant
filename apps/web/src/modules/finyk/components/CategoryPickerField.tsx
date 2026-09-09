@@ -187,19 +187,19 @@ export function CategoryPickerField({
                 {remaining.map(renderOption)}
               </section>
             )}
-            {onReset && resetLabel && (
-              <button
-                type="button"
-                onClick={reset}
-                className="touch-target w-full rounded-xl border border-dashed border-line px-3 py-2.5 text-left text-style-body text-subtle transition-colors hover:border-muted hover:text-text"
-              >
-                <span className="inline-flex items-center gap-2">
-                  <Icon name="refresh-cw" size={16} aria-hidden />
-                  {resetLabel}
-                </span>
-              </button>
-            )}
           </div>
+        )}
+        {onReset && resetLabel && (
+          <button
+            type="button"
+            onClick={reset}
+            className="touch-target w-full rounded-xl border border-dashed border-line px-3 py-2.5 text-left text-style-body text-subtle transition-colors hover:border-muted hover:text-text"
+          >
+            <span className="inline-flex items-center gap-2">
+              <Icon name="refresh-cw" size={16} aria-hidden />
+              {resetLabel}
+            </span>
+          </button>
         )}
       </Sheet>
     </div>
