@@ -58,6 +58,11 @@ export interface SessionProgress {
   setsDone: number;
 }
 
+/**
+ * Підсумок сесії для рядка прогресу: скільки вправ закрито з усіх і скільки
+ * підходів зроблено загалом. Підходи рахуються по всіх вправах, а не лише по
+ * закритих, — рядок має рухатись із кожним ✓, а не стрибати наприкінці вправи.
+ */
 export function sessionProgress(w: Workout): SessionProgress {
   const items = w.items || [];
   return {
