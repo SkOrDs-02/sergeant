@@ -6,8 +6,8 @@
  * звʼязано (Silpo integration трек G, спека
  * `docs/90-work/planning/specs/silpo-mcp-integration.md` §
  * «Cart (MCP write path)»). Гейт-стан реюзає `useSilpoSyncState`
- * (`@finyk/hooks`, read-only) — той самий хук, що вже гейтить
- * `SilpoPantryReplenishEntry` (трек C). `"disabled"`/`"unknown"`/
+ * (`@finyk/hooks`, read-only) — той самий хук, що вже гейтить сегмент
+ * «З чека» у `PantrySourceTabs` (трек C). `"disabled"`/`"unknown"`/
  * `"disconnected"`/`"reauth_required"` — кнопка не рендериться, тихий
  * degrade: список покупок цілком працює без Сільпо.
  */
