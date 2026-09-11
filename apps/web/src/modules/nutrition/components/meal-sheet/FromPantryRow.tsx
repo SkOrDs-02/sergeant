@@ -17,6 +17,13 @@ interface FromPantryRowProps {
   setFromPantryItem: Dispatch<SetStateAction<string | null>>;
   setForm: Dispatch<SetStateAction<MealFormState>>;
   setFoodQuery: Dispatch<SetStateAction<string>>;
+  /**
+   * «Позицію комори обрано» — запускає автопідбір продукту за назвою
+   * (`useSourceAutoPick`). Без нього прийом із комори зберігався без КБЖУ:
+   * `pickedFood` лишався `null`, картка продукту не монтувалась, а
+   * редактор макросів відкривався порожнім (N1).
+   */
+  onPicked: (query: string) => void;
 }
 
 export function FromPantryRow({
@@ -25,6 +32,7 @@ export function FromPantryRow({
   setFromPantryItem,
   setForm,
   setFoodQuery,
+  onPicked,
 }: FromPantryRowProps) {
   if (!pantryItems || pantryItems.length === 0) return null;
   return (
@@ -66,6 +74,7 @@ export function FromPantryRow({
                     setFromPantryItem(item.name);
                     setForm((s) => ({ ...s, name: item.name, err: "" }));
                     setFoodQuery(item.name);
+                    onPicked(item.name);
                   }
                 }}
                 className={cn(

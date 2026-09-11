@@ -78,7 +78,9 @@ import {
   useAdaptiveNutritionGoal,
 } from "./useAdaptiveNutritionGoal";
 
-const EMPTY_LOG: NutritionLog = { days: {} } as NutritionLog;
+// `NutritionLog` — це `Record<dayKey, NutritionDay>`, тож порожній журнал
+// це порожній обʼєкт, а не обгортка з полем `days`.
+const EMPTY_LOG: NutritionLog = {};
 
 function basePrefs(): NutritionPrefs {
   return {

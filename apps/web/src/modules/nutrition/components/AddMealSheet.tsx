@@ -25,7 +25,7 @@
  *
  * @last-validated 2026-08-13
  */
-import { useEffect, useRef, useState } from "react";
+import { useCallback, useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -56,7 +56,7 @@ import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
 import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
-import { useReceiptAutoPick } from "./meal-sheet/useReceiptAutoPick";
+import { useSourceAutoPick } from "./meal-sheet/useSourceAutoPick";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
 import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
 import { PantryPortionField } from "./meal-sheet/PantryPortionField";
@@ -173,12 +173,25 @@ export function AddMealSheet({
 
   const search = useFoodSearch(foodQuery);
   const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } = search;
-  const onReceiptItemPicked = useReceiptAutoPick<PickedFood>({
+  const onSourceItemPicked = useSourceAutoPick<PickedFood>({
     foodQuery,
     search,
     setFoodQuery,
     setPickedFood,
   });
+  // Чек уже знає фактичне фасування — вагу не чіпаємо.
+  const onReceiptItemPicked = onSourceItemPicked;
+  // Комора ваги порції не знає: `qty`/`unit` позиції — це ЗАЛИШОК на
+  // полиці, а не скільки людина щойно зʼїла. Тому береться типова порція
+  // каталогу, рівно як при ручному виборі в пошуку
+  // (`FoodPickerSection.tsx:133,155`).
+  const onPantryItemPicked = useCallback(
+    (query: string) =>
+      onSourceItemPicked(query, (hit) => {
+        setPickedGrams(String(Math.round(Number(hit.defaultGrams) || 100)));
+      }),
+    [onSourceItemPicked],
+  );
 
   const {
     barcode,
@@ -633,6 +646,7 @@ export function AddMealSheet({
                   // мають будити мережу заради рядка, який там не потрібен.
                   receiptRowEnabled={step === "source"}
                   onReceiptItemPicked={onReceiptItemPicked}
+                  onPantryItemPicked={onPantryItemPicked}
                   fromPantryItem={fromPantryItem}
                   setFromPantryItem={setFromPantryItem}
                   picker={{

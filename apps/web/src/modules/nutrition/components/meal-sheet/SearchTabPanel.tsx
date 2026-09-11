@@ -50,6 +50,7 @@ interface SearchTabPanelProps {
    * і сам розгортає перший знайдений продукт карткою з КБЖУ.
    */
   onReceiptItemPicked: (query: string) => void;
+  onPantryItemPicked: (query: string) => void;
   fromPantryItem: string | null;
   setFromPantryItem: Dispatch<SetStateAction<string | null>>;
   /** Props пошуку йдуть групою — вони належать одному компоненту. */
@@ -68,6 +69,7 @@ export function SearchTabPanel({
   pantryItems,
   receiptRowEnabled,
   onReceiptItemPicked,
+  onPantryItemPicked,
   fromPantryItem,
   setFromPantryItem,
   picker,
@@ -112,6 +114,7 @@ export function SearchTabPanel({
           setFromPantryItem={setFromPantryItem}
           setForm={setForm}
           setFoodQuery={picker.setFoodQuery}
+          onPicked={onPantryItemPicked}
         />
       )}
 
