@@ -8,7 +8,6 @@ import { useShortcutGlyph } from "@shared/hooks";
 import { Icon } from "@shared/components/ui/Icon";
 import { Tooltip } from "@shared/components/ui/Tooltip";
 import { BrandLogo } from "./BrandLogo";
-import { HubHeaderMenu } from "./HubHeaderMenu";
 import { messages } from "@shared/i18n/uk";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { hapticTap } from "@shared/lib/adapters/haptic";
@@ -34,7 +33,6 @@ const ICON_BUTTON_CLS =
 
 interface HubHeaderProps {
   onOpenSearch: () => void;
-  onOpenPrivacy?: () => void;
   user: User | null;
   authLoading?: boolean;
   onShowAuth?: () => void;
@@ -45,7 +43,6 @@ interface HubHeaderProps {
 
 export function HubHeader({
   onOpenSearch,
-  onOpenPrivacy,
   user,
   authLoading,
   onShowAuth,
@@ -127,21 +124,11 @@ export function HubHeader({
 
           <NotificationBell notifications={notifications ?? []} />
 
-          {/* Secondary controls fold into a single "⋯" overflow menu so the
-              top-bar stays to ≤5 affordances on 375px phones (mobile-audit
-              A3): theme and the privacy status row. Calm mode moved to
-              Settings → Дашборд → Вигляд. */}
-          <HubHeaderMenu
-            triggerClassName={ICON_BUTTON_CLS}
-            onOpenPrivacy={onOpenPrivacy}
-            labels={{
-              trigger: "Більше",
-              menu: "Швидкі налаштування",
-              theme: "Тема",
-              privacy: messages.privacy.chip,
-              privacyDetail: messages.privacy.chipTooltip,
-            }}
-          />
+          {/* Меню «⋯» (тема + рядок приватності) знято оглядом 2026-09-04:
+              тема живе в Налаштуваннях → «Головна» → «Вигляд» разом із
+              рештою вигляду, рядок приватності лише відкривав секцію
+              «Дані та приватність». Шапка: Сержант · Пошук · Дзвоник
+              (+ «Увійти» для гостя) — у межах A3 (≤5 контролів). */}
 
           {/* Sign-in entry-point for guests only. Signed-in users reach
               their account via the `Профіль` bottom-nav tab. */}

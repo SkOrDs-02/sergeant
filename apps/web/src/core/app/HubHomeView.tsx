@@ -18,7 +18,6 @@ import { useWhatsNew } from "../whatsNew";
 import { lazyImport } from "../lib/lazyImport";
 import type { HubNavigation } from "../hooks/useHubNavigation";
 import type { HubUIState } from "../hooks/useHubUIState";
-import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 
 // The shortcuts modal body is heavy (portal + focus-trap + key grid) and
 // only renders on the `?` hotkey, so it ships as its own chunk and loads
@@ -169,7 +168,6 @@ export function HubHomeView(props: HubHomeViewProps) {
 
       <HubHeader
         onOpenSearch={() => ui.setSearchOpen(true)}
-        onOpenPrivacy={() => openHubSettingsSection("privacy")}
         user={user}
         authLoading={authLoading}
         onShowAuth={onOpenAuth}

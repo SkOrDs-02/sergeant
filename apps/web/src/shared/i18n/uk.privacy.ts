@@ -105,5 +105,12 @@ export const privacyMessages = {
     confirmBody: "зникне з памʼяті ШІ назавжди, відновити не вийде.",
     confirmButton: "Видалити назавжди",
     deleteError: "Не вдалося видалити факт. Спробуй ще раз.",
+    // Повне очищення (Профіль → Памʼять, `profile/AiMemorySection.tsx`).
+    clearButton: "Очистити памʼять ШІ",
+    clearing: "Очищаю…",
+    clearConfirmTitle: "Очистити памʼять ШІ?",
+    clearConfirmBody:
+      "Зникнуть усі факти, і локальні, і на сервері. Відновити не вийде.",
+    clearConfirmButton: "Очистити назавжди",
   },
 };

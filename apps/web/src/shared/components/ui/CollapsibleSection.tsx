@@ -203,16 +203,17 @@ export function CollapsibleSection({
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
           )}
         >
+          {/* Гліф без тонованого квадрата (огляд 2026-09-04) — той самий
+              хід, що `BentoCard` і `SettingsGroup`: icon-in-tinted-square
+              робив кожну згорнуту секцію однаковою плиткою. */}
           {collapsedIcon && (
-            <span
-              className={cn(
-                "shrink-0 w-9 h-9 rounded-xl flex items-center justify-center",
-                "bg-brand-500/10 text-brand-strong",
-              )}
+            <Icon
+              name={collapsedIcon}
+              size={18}
+              strokeWidth={2}
+              className="shrink-0 text-muted"
               aria-hidden
-            >
-              <Icon name={collapsedIcon} size={18} strokeWidth={2} />
-            </span>
+            />
           )}
           <span className="flex-1 min-w-0">
             <span className="text-style-label block text-text leading-tight">
