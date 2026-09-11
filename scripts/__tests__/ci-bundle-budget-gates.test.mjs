@@ -55,6 +55,14 @@ function extractJobBlock(workflow, jobName) {
   return lines.slice(start, end).join("\n");
 }
 
+/**
+ * Ріже блок джоби на окремі кроки. Крок починається з `- name:` або
+ * `- uses:` на 6-space відступі всередині `steps:`; решта рядків до
+ * наступного такого маркера належить поточному кроку. Повертає масив сирих
+ * текстів — саме текст, а не розпарсений обʼєкт, бо перевірки нижче питають
+ * про наявність `if:`/`continue-on-error:` у кроці, і рядок відповідає на це
+ * прямо.
+ */
 function extractSteps(jobBlock) {
   const steps = [];
   let current = null;
