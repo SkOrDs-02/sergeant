@@ -176,8 +176,37 @@ describe("useAdaptiveNutritionGoal · seed цілі", () => {
     render(<Probe prefs={basePrefs()} />);
     const withWorkouts = seededKcal();
 
-    expect(withWorkouts).not.toBeNull();
-    expect(withWorkouts!).toBeGreaterThan(noWorkouts!);
+    // Точне число, а не «більше»: 4 × 700 / 14 = 200 ккал/добу. Слабша
+    // перевірка пройшла б і з хибним вікном усереднення.
+    expect(withWorkouts).toBe(noWorkouts! + 200);
+  });
+
+  it("бере вагу з профілю, коли у вікні немає вимірювань", () => {
+    // `computeWorkoutKcalBurned` рахує MET-формулою, якщо `kcalBurned` не
+    // записаний явно, і без ваги повертає `null` — тобто витрати тихо
+    // стали б нулем саме там, де людина ввімкнула «рахувати тренування».
+    biometricsMock.value = {
+      ...biometricsMock.value,
+      countWorkoutsInGoal: true,
+    };
+    fizrukMock.measurements = [];
+    fizrukMock.workouts = [2, 4].map((d) => ({
+      id: `w-${d}`,
+      startedAt: `${dayKeyDaysAgo(d)}T09:00:00.000Z`,
+      endedAt: `${dayKeyDaysAgo(d)}T10:00:00.000Z`,
+      kcalBurned: 700,
+      items: [],
+    }));
+    render(<Probe prefs={basePrefs()} />);
+    const withWorkouts = seededKcal();
+
+    persisted.profile = [];
+    __resetAdaptiveGoalScheduleForTests();
+    fizrukMock.workouts = [];
+    render(<Probe prefs={basePrefs()} />);
+    const noWorkouts = seededKcal();
+
+    expect(withWorkouts).toBe(noWorkouts! + 100);
   });
 
   it("бере найсвіжішу вагу вікна, а не останній елемент масиву", () => {

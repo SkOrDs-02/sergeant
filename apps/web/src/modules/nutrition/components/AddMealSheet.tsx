@@ -173,25 +173,30 @@ export function AddMealSheet({
 
   const search = useFoodSearch(foodQuery);
   const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } = search;
-  const onSourceItemPicked = useSourceAutoPick<PickedFood>({
-    foodQuery,
-    search,
-    setFoodQuery,
-    setPickedFood,
-  });
+  const { schedule: scheduleAutoPick, cancel: cancelAutoPick } =
+    useSourceAutoPick<PickedFood>({
+      foodQuery,
+      search,
+      setFoodQuery,
+      setPickedFood,
+    });
   // Чек уже знає фактичне фасування — вагу не чіпаємо.
-  const onReceiptItemPicked = onSourceItemPicked;
+  const onReceiptItemPicked = scheduleAutoPick;
   // Комора ваги порції не знає: `qty`/`unit` позиції — це ЗАЛИШОК на
   // полиці, а не скільки людина щойно зʼїла. Тому береться типова порція
   // каталогу, рівно як при ручному виборі в пошуку
   // (`FoodPickerSection.tsx:133,155`).
   const onPantryItemPicked = useCallback(
     (query: string) =>
-      onSourceItemPicked(query, (hit) => {
+      scheduleAutoPick(query, (hit) => {
         setPickedGrams(String(Math.round(Number(hit.defaultGrams) || 100)));
       }),
-    [onSourceItemPicked],
+    [scheduleAutoPick],
   );
+  const onPantryItemCleared = useCallback(() => {
+    cancelAutoPick();
+    setFoodQuery("");
+  }, [cancelAutoPick]);
 
   const {
     barcode,
@@ -587,6 +592,11 @@ export function AddMealSheet({
     // походження даних (канон: «скільки логів через AI» має лишатись
     // чесним питанням).
     dropSeededMacros();
+    // Відкладений автопідбір мусить згаснути разом із джерелом: інакше
+    // пошук, що відповість уже після виходу, поверне аркуш на
+    // «Заповнення» з продуктом, від якого людина щойно відмовилась.
+    cancelAutoPick();
+    setFoodQuery("");
     setStep("source");
   }
 
@@ -647,6 +657,7 @@ export function AddMealSheet({
                   receiptRowEnabled={step === "source"}
                   onReceiptItemPicked={onReceiptItemPicked}
                   onPantryItemPicked={onPantryItemPicked}
+                  onPantryItemCleared={onPantryItemCleared}
                   fromPantryItem={fromPantryItem}
                   setFromPantryItem={setFromPantryItem}
                   picker={{

@@ -24,6 +24,12 @@ interface FromPantryRowProps {
    * редактор макросів відкривався порожнім (N1).
    */
   onPicked: (query: string) => void;
+  /**
+   * Позицію зняли — відкладений автопідбір більше не потрібен. Без цього
+   * пошук, запущений тапом, відповів би вже після відмови й повернув би
+   * продукт, від якого людина відмовилась.
+   */
+  onCleared: () => void;
 }
 
 export function FromPantryRow({
@@ -33,6 +39,7 @@ export function FromPantryRow({
   setForm,
   setFoodQuery,
   onPicked,
+  onCleared,
 }: FromPantryRowProps) {
   if (!pantryItems || pantryItems.length === 0) return null;
   return (
@@ -70,6 +77,7 @@ export function FromPantryRow({
                       ...s,
                       name: s.name === item.name ? "" : s.name,
                     }));
+                    onCleared();
                   } else {
                     setFromPantryItem(item.name);
                     setForm((s) => ({ ...s, name: item.name, err: "" }));

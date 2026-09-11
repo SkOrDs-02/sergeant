@@ -24,6 +24,7 @@ describe("FromPantryRow", () => {
         setForm={vi.fn()}
         setFoodQuery={vi.fn()}
         onPicked={vi.fn()}
+        onCleared={vi.fn()}
       />,
     );
     expect(container.firstChild).toBeNull();
@@ -42,6 +43,7 @@ describe("FromPantryRow", () => {
         setForm={setForm}
         setFoodQuery={setFoodQuery}
         onPicked={onPicked}
+        onCleared={vi.fn()}
       />,
     );
     fireEvent.click(screen.getByText("Молоко"));
@@ -54,8 +56,9 @@ describe("FromPantryRow", () => {
     expect(onPicked).toHaveBeenCalledWith("Молоко");
   });
 
-  it("не запускає автопідбір, коли позицію знімають", () => {
+  it("не запускає автопідбір, коли позицію знімають — і гасить відкладений", () => {
     const onPicked = vi.fn();
+    const onCleared = vi.fn();
     render(
       <FromPantryRow
         pantryItems={items}
@@ -64,10 +67,14 @@ describe("FromPantryRow", () => {
         setForm={vi.fn()}
         setFoodQuery={vi.fn()}
         onPicked={onPicked}
+        onCleared={onCleared}
       />,
     );
     fireEvent.click(screen.getByText("Молоко"));
     expect(onPicked).not.toHaveBeenCalled();
+    // Пошук, запущений попереднім тапом, міг ще не відповісти: без цього
+    // він повернув би продукт, від якого людина щойно відмовилась.
+    expect(onCleared).toHaveBeenCalled();
   });
 
   // Реальні позиції з чека Сільпо: `unit` там — фасування, не одиниця
@@ -87,6 +94,7 @@ describe("FromPantryRow", () => {
         setForm={vi.fn()}
         setFoodQuery={vi.fn()}
         onPicked={vi.fn()}
+        onCleared={vi.fn()}
       />,
     );
     expect(screen.getByText("2 × 0,25 л")).toBeTruthy();
@@ -131,6 +139,7 @@ describe("FromPantryRow", () => {
         setForm={vi.fn()}
         setFoodQuery={setFoodQuery}
         onPicked={vi.fn()}
+        onCleared={vi.fn()}
       />,
     );
     // Чіп показує родову назву; назви покупок у ряд «З комори» не течуть.
@@ -151,6 +160,7 @@ describe("FromPantryRow", () => {
         setForm={vi.fn()}
         setFoodQuery={vi.fn()}
         onPicked={vi.fn()}
+        onCleared={vi.fn()}
       />,
     );
 
@@ -171,6 +181,7 @@ describe("FromPantryRow", () => {
         setForm={vi.fn()}
         setFoodQuery={vi.fn()}
         onPicked={vi.fn()}
+        onCleared={vi.fn()}
       />,
     );
     // Не `getByText`: активна позиція тепер видно ДВІЧІ — у чіпі й у

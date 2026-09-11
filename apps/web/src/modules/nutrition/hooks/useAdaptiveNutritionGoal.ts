@@ -13,6 +13,7 @@ import { computeWorkoutKcalBurned } from "@sergeant/fizruk-domain";
 import { computeAgeYears } from "../../../core/profile/biometrics";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
 import { getCachedFizrukSqliteState } from "../../fizruk/lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../../fizruk/lib/sqliteReadGate";
 import { getDaySummary } from "../lib/nutritionStorage";
 import {
   persistAdaptiveNutritionPrefs,
@@ -137,6 +138,12 @@ export function useAdaptiveNutritionGoal(
   prefs: NutritionPrefs,
 ): AdaptiveGoalState {
   const { biometrics } = useBiometrics();
+  // Кеш fizruk читається нижче (`collectWeights`, `collectWorkoutKcalPerDay`),
+  // а memo без цього тіку залежав би лише від `log` — новий вимір ваги чи
+  // щойно завершене тренування лишали б ціль порахованою на старих даних.
+  // Тік — канонічний спосіб підписки на цей кеш: так роблять усі
+  // fizruk-хуки (`useWorkouts`, `useMeasurements`, …).
+  const fizrukCacheTick = useFizrukSqliteReadTick();
   const analysis = useMemo(() => {
     const end = addDeviceDays(deviceDayKey(), -1);
     const start = addDeviceDays(end, -13);
@@ -156,10 +163,18 @@ export function useAdaptiveNutritionGoal(
       intakeDays,
       weights,
       latestWeightKg: latestKg,
-      workoutKcalPerDay: collectWorkoutKcalPerDay(start, end, latestKg),
+      // Вага з профілю як фолбек: без неї `computeWorkoutKcalBurned`
+      // повертає `null` для сесій, порахованих за MET (тобто для всіх, де
+      // `kcalBurned` не записаний явно), і витрати тихо стають нулем — рівно
+      // для того, хто ввімкнув «рахувати тренування».
+      workoutKcalPerDay: collectWorkoutKcalPerDay(
+        start,
+        end,
+        latestKg ?? biometrics.weightKg,
+      ),
       measured: measuredTdee(intakeDays, weights),
     };
-  }, [log]);
+  }, [log, fizrukCacheTick, biometrics.weightKg]);
 
   const profileTargets = useMemo(
     () =>
@@ -180,10 +195,15 @@ export function useAdaptiveNutritionGoal(
 
   useEffect(() => {
     if (!prefs.adaptiveGoalEnabled || !profileTargets) return;
+    // Усі входи розрахунку, а не лише виміряний TDEE: інакше зміна ваги
+    // чи витрат на тренуваннях лишала б підпис тим самим, і планувальник
+    // пропускав би запис уже нової цілі.
     const signature = [
       prefs.adaptiveGoalLastUpdatedAt ?? "new",
       prefs.dailyTargetKcal ?? "unset",
       analysis.measured?.tdeeKcal ?? "calibrating",
+      analysis.latestWeightKg ?? "no-weight",
+      Math.round(analysis.workoutKcalPerDay),
       prefs.adaptiveGoalIntent,
     ].join(":");
     if (lastScheduledSignature === signature) return;

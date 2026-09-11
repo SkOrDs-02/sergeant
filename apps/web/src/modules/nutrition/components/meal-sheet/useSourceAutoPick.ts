@@ -56,19 +56,27 @@ interface PendingPick<TPicked> {
   onPick?: ((hit: TPicked) => void) | undefined;
 }
 
-/**
- * @returns колбек «позицію обрано»: приймає очищений запит і, за потреби,
- * дію над знайденим продуктом.
- */
+export interface SourceAutoPick<TPicked> {
+  /** «Позицію обрано»: запит і, за потреби, дія над знайденим продуктом. */
+  schedule: (query: string, onPick?: (hit: TPicked) => void) => void;
+  /**
+   * Знімає намір, який ще чекає на пошук.
+   *
+   * Потрібен, бо тап по коморі переводить аркуш на «Заповнення» ДО того,
+   * як пошук устигне відповісти. Якщо людина за цей час вийшла назад,
+   * відкладений результат інакше поставив би `pickedFood` і сам смикнув
+   * її назад на «Заповнення» — з продуктом, від якого вона щойно
+   * відмовилась.
+   */
+  cancel: () => void;
+}
+
 export function useSourceAutoPick<TPicked>({
   foodQuery,
   search,
   setFoodQuery,
   setPickedFood,
-}: SourceAutoPickArgs<TPicked>): (
-  query: string,
-  onPick?: (hit: TPicked) => void,
-) => void {
+}: SourceAutoPickArgs<TPicked>): SourceAutoPick<TPicked> {
   const [pending, setPending] = useState<PendingPick<TPicked> | null>(null);
 
   if (pending && foodQuery === pending.query && search.searchSettled) {
@@ -84,9 +92,12 @@ export function useSourceAutoPick<TPicked>({
     }
   }
 
-  return useCallback(
+  const schedule = useCallback(
     (query: string, onPick?: (hit: TPicked) => void) =>
       setPending({ query, onPick }),
     [],
   );
+  const cancel = useCallback(() => setPending(null), []);
+
+  return { schedule, cancel };
 }

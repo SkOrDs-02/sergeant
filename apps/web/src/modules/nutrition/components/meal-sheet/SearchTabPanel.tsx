@@ -51,6 +51,7 @@ interface SearchTabPanelProps {
    */
   onReceiptItemPicked: (query: string) => void;
   onPantryItemPicked: (query: string) => void;
+  onPantryItemCleared: () => void;
   fromPantryItem: string | null;
   setFromPantryItem: Dispatch<SetStateAction<string | null>>;
   /** Props пошуку йдуть групою — вони належать одному компоненту. */
@@ -70,6 +71,7 @@ export function SearchTabPanel({
   receiptRowEnabled,
   onReceiptItemPicked,
   onPantryItemPicked,
+  onPantryItemCleared,
   fromPantryItem,
   setFromPantryItem,
   picker,
@@ -115,6 +117,7 @@ export function SearchTabPanel({
           setForm={setForm}
           setFoodQuery={picker.setFoodQuery}
           onPicked={onPantryItemPicked}
+          onCleared={onPantryItemCleared}
         />
       )}
 
