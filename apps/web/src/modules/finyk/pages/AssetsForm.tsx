@@ -22,6 +22,7 @@ import {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualAsset, Subscription } from "../hooks/useStorage";
 import { getLastTxForSubscription } from "@sergeant/finyk-domain/domain/subscriptionUtils";
+import { DebtAutoLinkField } from "./DebtAutoLinkField";
 import type { TxRowTx } from "../components/TxRow";
 import { parseAmountToMinor } from "@shared/lib/format/amount";
 import { amountStringToHryvnia } from "@shared/lib/format/amountSchema";
@@ -456,6 +457,7 @@ export function DebtForm({
     emoji: string;
     totalAmount: string;
     dueDate: string;
+    autoLinkKeyword: string;
   };
   setNewDebt: React.Dispatch<React.SetStateAction<typeof newDebt>>;
   setManualDebts: React.Dispatch<React.SetStateAction<Debt[]>>;
@@ -577,6 +579,13 @@ export function DebtForm({
           }
         />
       </div>
+      <DebtAutoLinkField
+        keyword={newDebt.autoLinkKeyword}
+        onKeywordChange={(v) =>
+          setNewDebt((a) => ({ ...a, autoLinkKeyword: v }))
+        }
+        transactions={transactions}
+      />
       {(!newDebt.name.trim() || !isPositiveFinite(newDebt.totalAmount)) && (
         <p className="text-style-caption text-subtle" role="status">
           Заповни назву та вкажи позитивну суму пасиву.
@@ -608,6 +617,7 @@ export function DebtForm({
                 emoji: "\u{1F4B8}",
                 totalAmount: "",
                 dueDate: "",
+                autoLinkKeyword: "",
               });
               setShowDebtForm(false);
             }

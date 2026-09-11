@@ -450,7 +450,13 @@ describe("DebtForm", () => {
   it("renders the debt form title and inputs", () => {
     render(
       <DebtForm
-        newDebt={{ name: "", emoji: "", totalAmount: "", dueDate: "" }}
+        newDebt={{
+          name: "",
+          emoji: "",
+          totalAmount: "",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
         setNewDebt={vi.fn()}
         setManualDebts={vi.fn()}
         setShowDebtForm={vi.fn()}
@@ -472,7 +478,13 @@ describe("DebtForm", () => {
     const onCancel = vi.fn();
     const { container } = render(
       <DebtForm
-        newDebt={{ name: "", emoji: "", totalAmount: "", dueDate: "" }}
+        newDebt={{
+          name: "",
+          emoji: "",
+          totalAmount: "",
+          dueDate: "",
+          autoLinkKeyword: "",
+        }}
         setNewDebt={vi.fn()}
         setManualDebts={vi.fn()}
         setShowDebtForm={onCancel}
@@ -496,6 +508,7 @@ describe("DebtForm", () => {
           emoji: "",
           totalAmount: "1000",
           dueDate: "",
+          autoLinkKeyword: "",
         }}
         setNewDebt={setNewDebt}
         setManualDebts={vi.fn()}
@@ -554,6 +567,7 @@ describe("DebtForm", () => {
           emoji: "\u{1F4B8}",
           totalAmount: "50000",
           dueDate: "",
+          autoLinkKeyword: "",
         }}
         setNewDebt={vi.fn()}
         setManualDebts={setManualDebts}
@@ -581,6 +595,7 @@ describe("DebtForm", () => {
           emoji: "\u{1F4B8}",
           totalAmount: "50000",
           dueDate: "2026-10-01",
+          autoLinkKeyword: "",
         }}
         setNewDebt={vi.fn()}
         setManualDebts={setManualDebts}
@@ -617,6 +632,7 @@ describe("DebtForm", () => {
           emoji: "",
           totalAmount: "721.14",
           dueDate: "",
+          autoLinkKeyword: "",
         }}
         setNewDebt={vi.fn()}
         setManualDebts={vi.fn()}
@@ -652,6 +668,7 @@ describe("DebtForm", () => {
           emoji: "\u{1F4B8}",
           totalAmount: "50000",
           dueDate: "",
+          autoLinkKeyword: "",
         }}
         setNewDebt={vi.fn()}
         setManualDebts={setManualDebts}
