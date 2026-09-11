@@ -124,7 +124,7 @@ vi.mock("../settings/RoutineSection", () => ({
 }));
 // The real `PrivacySection` needs `AppLockProvider` (`useAppLockContext`
 // throws without one) plus a live `meApi.getPreferences()` response — both
-// out of scope for this file's first-visible-section-open tests. Same
+// out of scope for this file's accordion default-open tests. Same
 // pattern as the `PlanSection` mock above: re-create just the
 // `SettingsGroup anchorId=…>` wiring the real component renders, so tests
 // can assert on the SAME accordion primitive without pulling in the rest
@@ -222,17 +222,19 @@ describe("HubSettingsPage", () => {
 
   // Дефект №1 (адверсарне ревʼю 2026-08-08): раніше цей тест таргетив
   // `#settings-dashboard` — але «Дашборд» ТАКОЖ перша секція вкладки
-  // «Загальні», тож Варіант A (`index === 0`-контекст) відкриває її
-  // незалежно від хеша. Гейт лишався б зеленим, навіть якби `anchorId`/
-  // `matchesHash` прибрали з `SettingsGroup` цілком. Ціль тепер —
+  // «Загальні», тож Варіант A (`index === 0`-контекст) відкривав її
+  // незалежно від хеша, і гейт лишався б зеленим, навіть якби `anchorId`/
+  // `matchesHash` прибрали з `SettingsGroup` цілком. Ціль лишається
   // «Підписка та план» (`anchorId="settings-plan"`, ДРУГА секція
   // «Загальних», мок вище) — жоден інший механізм її не форсить.
   //
-  // Дефект №2: ОДНОЧАСНО перевіряємо, що «Дашборд» (перша секція
-  // вкладки) НЕ розгортається разом із ціллю хеша — до фіксу
-  // `value={!q && index === 0}` не знав про `hashSectionId`, тож
-  // розгорталися ОБИДВІ секції.
-  it("auto-expands only the Підписка та план section when navigated via #settings-plan, not the tab's first section", () => {
+  // Дефект №2, історія: до фіксу форсоване "перша секція вкладки
+  // відкрита" (Варіант A) розгорталось ОДНОЧАСНО з ціллю хеша, бо
+  // `value={!q && index === 0}` не знав про `hashSectionId`. Forced-first
+  // прибрано зовсім рішенням власника 2026-09-11, тож ця перевірка тепер
+  // ще й пряме регресійне покриття для #settings-plan: хеш відкриває
+  // РІВНО одну секцію.
+  it("#settings-plan opens only the Підписка та план section, not the tab's first section (Дашборд)", () => {
     // Tap on an inactive Bento card on the Hub dashboard dispatches
     // `HUB_OPEN_SETTINGS_EVENT` which navigates to
     // `/?tab=settings#settings-<id>`. Без auto-open секція просто ховалась
@@ -264,36 +266,33 @@ describe("HubSettingsPage", () => {
     expect(plan?.scrollIntoView).not.toHaveBeenCalled();
   });
 
-  // Варіант A (profile/settings deep audit 2026-08-08, рішення власника
-  // №4 — `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md`
-  // §0.1): другого рівня акордеона більше немає, і замість нього перша
-  // секція активної вкладки відкривається за замовчуванням — це прибирає
-  // порожнечу внизу стартового екрана «Загальні» (шість згорнутих рядків,
-  // ~224px порожнечі до фіксу).
-  it("opens the first section of the default tab (Дашборд) on a cold load, without a hash", () => {
+  // Рішення власника 2026-09-11: forced-first-of-tab (Варіант A, profile/
+  // settings deep audit 2026-08-08 рішення власника №4 —
+  // `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md` §0.1)
+  // СКАСОВАНО. На холодному завантаженні — без хеша, без `?billing=…`/
+  // `?silpo=…`-return — жодна секція не відкривається автоматично, у тому
+  // числі перша секція активної вкладки.
+  it("opens no section by default on a cold load, without a hash", () => {
     renderWithBrowserToast(<HubSettingsPage />);
 
     const dashboardToggle = screen.getByRole("button", { name: /Дашборд/ });
-    expect(dashboardToggle).toHaveAttribute("aria-expanded", "true");
+    expect(dashboardToggle).toHaveAttribute("aria-expanded", "false");
 
-    // «Підписка та план» is the SECOND section of the same «Загальні»
-    // tab (`PlanSection` mock wraps the real `SettingsGroup anchorId=
-    // "settings-plan"`, see the mock above) — it must stay collapsed.
-    // Without this assertion, a bug that force-opens EVERY section
-    // (instead of just the first) would slip through undetected.
+    // «Підписка та план» — друга секція тієї ж вкладки «Загальні»
+    // (`PlanSection` mock wraps the real `SettingsGroup anchorId=
+    // "settings-plan"`, see the mock above) — теж лишається згорнутою.
     const planToggle = screen.getByRole("button", {
       name: /Підписка та план/,
     });
     expect(planToggle).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("opens the first section of a newly selected tab, not the previous tab's first section", () => {
+  it("opens no section of a newly selected tab either", () => {
     renderWithBrowserToast(<HubSettingsPage />);
 
-    // Дашборд (first of «Загальні») starts open per the test above.
     expect(screen.getByRole("button", { name: /Дашборд/ })).toHaveAttribute(
       "aria-expanded",
-      "true",
+      "false",
     );
 
     fireEvent.click(screen.getByRole("tab", { name: /Додатково/ }));
@@ -301,31 +300,32 @@ describe("HubSettingsPage", () => {
     // «Конфіденційність» (`PrivacySection` mock above wraps the real
     // `SettingsGroup anchorId="settings-privacy">`) is the first section
     // of «Додатково» (`privacy, pwa, dataExport, experimental`) and has no
-    // `anchorId` match for the current (hash-less) URL — the ONLY thing
-    // that can open it is the first-visible-section default.
+    // `anchorId` match for the current (hash-less) URL — forced-first no
+    // longer exists, so it stays collapsed too.
     const privacyToggle = screen.getByRole("button", {
       name: /Конфіденційність/,
     });
-    expect(privacyToggle).toHaveAttribute("aria-expanded", "true");
+    expect(privacyToggle).toHaveAttribute("aria-expanded", "false");
   });
 
-  // Дефект №3 (адверсарне ревʼю 2026-08-08): `SettingsGroupDefaultOpenContext`
-  // раніше читався лише в `useState`-ініціалізаторі — перемикання вкладки
-  // РЕМАУНТИТЬ секцію (вона зникає з `visible`, коли вкладка неактивна), і
-  // без памʼяті на рівні сторінки форсоване "перша секція вкладки відкрита"
-  // (Варіант A) щоразу перевідкривало секцію, яку юзер щойно сам згорнув.
-  it("remembers an explicit collapse of the first-of-tab section across a tab switch (дефект №3)", () => {
+  // Дефект №3 (адверсарне ревʼю 2026-08-08), лишається чинним і після
+  // зняття forced-first (рішення власника 2026-09-11):
+  // `SettingsGroupDefaultOpenContext` читається лише в `useState`-
+  // ініціалізаторі — перемикання вкладки РЕМАУНТИТЬ секцію (вона зникає з
+  // `visible`, коли вкладка неактивна), і без памʼяті на рівні сторінки
+  // явний вибір юзера («розгорнути») губився б при поверненні на вкладку.
+  it("remembers an explicit expand of a section across a tab switch (дефект №3)", () => {
     renderWithBrowserToast(<HubSettingsPage />);
 
-    // «Дашборд» стартує розгорнутим — форсовано, як перша секція «Загальних».
+    // «Дашборд» стартує згорнутим — forced-first скасовано 2026-09-11.
     const dashboardToggle = screen.getByRole("button", { name: /Дашборд/ });
-    expect(dashboardToggle).toHaveAttribute("aria-expanded", "true");
+    expect(dashboardToggle).toHaveAttribute("aria-expanded", "false");
 
-    // Юзер явно згортає її.
+    // Юзер явно розгортає її.
     fireEvent.click(dashboardToggle);
     expect(screen.getByRole("button", { name: /Дашборд/ })).toHaveAttribute(
       "aria-expanded",
-      "false",
+      "true",
     );
 
     // Перемикання на іншу вкладку розмонтовує «Дашборд» узагалі — вона не
@@ -333,32 +333,30 @@ describe("HubSettingsPage", () => {
     fireEvent.click(screen.getByRole("tab", { name: /Розділи/ }));
     expect(screen.queryByRole("button", { name: /Дашборд/ })).toBeNull();
 
-    // Повернення на «Загальні»: до фіксу «Дашборд» ремаунтився з ЧИСТИМ
-    // `useState`-ініціалізатором і форсовано розгортався знову, ігноруючи
-    // явний вибір юзера.
+    // Повернення на «Загальні»: явний вибір юзера («розгорнуто») має
+    // пережити ремаунт, а не скинутись до дефолтного «згорнуто».
     fireEvent.click(screen.getByRole("tab", { name: /Загальні/ }));
     expect(screen.getByRole("button", { name: /Дашборд/ })).toHaveAttribute(
       "aria-expanded",
-      "false",
+      "true",
     );
   });
 
-  // Дефект №3, другий сценарій: до фіксу пошук ВИПАДКОВО зберігав явний
-  // вибір юзера (та сама React-інстанція не розмонтовується, доки секція
-  // лишається серед результатів запиту), тоді як перемикання вкладки його
-  // втрачало — одна дія юзера, дві різні поведінки. Тут пошук ("nps",
-  // збігається лише з «Фідбек») ХОВАЄ «Дашборд» із результатів (той самий
-  // ремаунт, що й при перемиканні вкладки), щоб довести — тепер обидва
-  // шляхи консистентні.
-  it("remembers an explicit collapse across a search that hides then re-shows the section (дефект №3 — та сама консистентність, що й tab-switch)", () => {
+  // Дефект №3, другий сценарій: пошук (де та сама React-інстанція не
+  // розмонтовується, доки секція лишається серед результатів) і
+  // перемикання вкладки (де вона розмонтовується) мусять зберігати явний
+  // вибір юзера однаково. Тут пошук ("nps", збігається лише з «Фідбек»)
+  // ХОВАЄ «Дашборд» із результатів (той самий ремаунт, що й при
+  // перемиканні вкладки), щоб довести — обидва шляхи консистентні.
+  it("remembers an explicit expand across a search that hides then re-shows the section (дефект №3 — та сама консистентність, що й tab-switch)", () => {
     renderWithBrowserToast(<HubSettingsPage />);
 
     const dashboardToggle = screen.getByRole("button", { name: /Дашборд/ });
-    expect(dashboardToggle).toHaveAttribute("aria-expanded", "true");
+    expect(dashboardToggle).toHaveAttribute("aria-expanded", "false");
     fireEvent.click(dashboardToggle);
     expect(screen.getByRole("button", { name: /Дашборд/ })).toHaveAttribute(
       "aria-expanded",
-      "false",
+      "true",
     );
 
     const input = screen.getByPlaceholderText("Пошук налаштувань…");
@@ -368,7 +366,7 @@ describe("HubSettingsPage", () => {
     fireEvent.change(input, { target: { value: "" } });
     expect(screen.getByRole("button", { name: /Дашборд/ })).toHaveAttribute(
       "aria-expanded",
-      "false",
+      "true",
     );
   });
 
@@ -379,9 +377,10 @@ describe("HubSettingsPage", () => {
     // Matches only `privacy` (title «Конфіденційність») — a section from
     // the (currently inactive) «Додатково» tab, so this is a fresh mount
     // triggered purely by the search match, not a component that was
-    // already on screen. If the `!q` guard on the first-section-open
-    // context were dropped, this — the sole search result — would render
-    // pre-expanded exactly like an unguarded "first visible" match would.
+    // already on screen. Since forced-first-of-tab was retired (owner
+    // decision 2026-09-11), being the sole search result is not itself a
+    // reason to auto-expand — only a hash target or a remembered user
+    // override is.
     fireEvent.change(input, { target: { value: "конфіденційність" } });
 
     const privacyToggle = screen.getByRole("button", {

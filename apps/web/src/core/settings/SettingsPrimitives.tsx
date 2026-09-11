@@ -79,28 +79,32 @@ function matchesHash(anchorId: string | undefined): boolean {
 /**
  * Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
  * `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
- * прибрали другий рівень акордеона, і замість нього перша секція активної
- * вкладки Налаштувань відкривається за замовчуванням — це закриває
- * порожнечу внизу стартового екрана без вкладеного акордеона.
+ * прибрали другий рівень акордеона. Рішенням власника 2026-09-11
+ * forced-first-of-tab (перша секція активної вкладки, що відкривалась за
+ * замовчуванням) СКАСОВАНО — на холодному завантаженні жодна секція не
+ * відкривається автоматично лише через свою позицію в списку.
  *
  * `HubSettingsPage` не рендерить `<SettingsGroup>` напряму (кожна секція
- * рендерить його всередині себе), і лише 3 з 14 секцій мають `anchorId`,
- * тож привʼязатись до хеша не можна. Контекст — єдиний спосіб сторінці
- * сказати "ти перша видима секція" секції, не знаючи наперед, яка секція
- * що рендерить. Дефолт `{ defaultOpen: false }`: без провайдера (наприклад,
- * юніт-тест, що монтує секцію окремо від `HubSettingsPage`) поведінка не
- * міняється.
+ * рендерить його всередині себе). Контекст — єдиний спосіб сторінці
+ * сказати секції, чи відкрити її за замовчуванням, не знаючи наперед, яка
+ * секція що рендерить: `HubSettingsPage` обчислює `defaultOpen` для
+ * кожної секції з двох сигналів — ціль хеш-діп-лінка/query-return
+ * (`hashSectionId`) або явний вибір юзера (`sectionOpenOverrides`), see
+ * `HubSettingsPage.tsx`. Дефолт `{ defaultOpen: false }`: без провайдера
+ * (наприклад, юніт-тест, що монтує секцію окремо від `HubSettingsPage`)
+ * поведінка не міняється.
  *
- * Адверсарне ревʼю 2026-08-08 (дефект №3): голий `boolean` памʼятав лише
- * "чи форсити відкриття", але не давав секції способу сказати сторінці
- * "юзер сам мене згорнув — не форси мене знову". Без цього перемикання
- * вкладки (яке РЕМАУНТИТЬ секцію — вона зникає з `visible`, коли вкладка
- * неактивна) скидало явний вибір юзера й перевідкривало форсовано-відкриту
- * секцію, тоді як пошук (де та сама React-інстанція лишається змонтованою,
- * доки збігається запит) той самий вибір випадково зберігав — одна дія
- * юзера, дві різні поведінки. `onUserToggle` — зворотний виклик, яким
- * секція повідомляє власника контексту про явний (не hash-, не дефолт-,
- * не mount-) клік по заголовку.
+ * Адверсарне ревʼю 2026-08-08 (дефект №3, лишається чинним і після зняття
+ * forced-first): голий `boolean` памʼятав лише "чи форсити відкриття", але
+ * не давав секції способу сказати сторінці "юзер сам мене згорнув — не
+ * форси мене знову". Без цього перемикання вкладки (яке РЕМАУНТИТЬ
+ * секцію — вона зникає з `visible`, коли вкладка неактивна) скидало явний
+ * вибір юзера й перевідкривало секцію в дефолтний стан, тоді як пошук (де
+ * та сама React-інстанція лишається змонтованою, доки збігається запит)
+ * той самий вибір випадково зберігав — одна дія юзера, дві різні
+ * поведінки. `onUserToggle` — зворотний виклик, яким секція повідомляє
+ * власника контексту про явний (не hash-, не дефолт-, не mount-) клік по
+ * заголовку.
  */
 export interface SettingsGroupDefaultOpenState {
   /** Чи секція відкривається за замовчуванням при монтуванні. */
@@ -390,14 +394,16 @@ export interface SectionSkeletonProps {
   /**
    * Minimum height in pixels. Matches the real section's footprint AS IT
    * FIRST PAINTS — the closed-header height for a section that mounts
-   * collapsed, or the full expanded-content height for a section that
-   * Варіант A force-opens by default because it's the first section of
-   * the active Налаштування tab (see `SettingsGroupDefaultOpenContext`
-   * above). This is no longer "header + collapsed SubGroups" (adversarial
-   * review 2026-08-08, дефект №4): Варіант A removed `SettingsSubGroup`'s
-   * own collapse state entirely — its content is always visible now — so
-   * there's no in-between middle-height state left to match; it's either
-   * the closed header or the section's true rendered height.
+   * collapsed (the common case since forced-first-of-tab was retired by
+   * owner decision 2026-09-11), or the full expanded-content height for a
+   * section whose `defaultOpen` resolves `true` from a hash-deep-link
+   * target or a remembered user override (see
+   * `SettingsGroupDefaultOpenContext` above). This is no longer "header +
+   * collapsed SubGroups" (adversarial review 2026-08-08, дефект №4):
+   * Варіант A removed `SettingsSubGroup`'s own collapse state entirely —
+   * its content is always visible now — so there's no in-between
+   * middle-height state left to match; it's either the closed header or
+   * the section's true rendered height.
    *
    * Per-section values are owned by the caller — each `<Suspense>`
    * boundary in `HubSettingsPage` passes the height it knows for its
