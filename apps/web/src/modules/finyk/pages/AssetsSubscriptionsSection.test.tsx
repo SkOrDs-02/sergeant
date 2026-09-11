@@ -139,9 +139,10 @@ describe("AssetsSubscriptionsSection", () => {
       .forEach((el) => el.remove());
   });
 
-  it("shows the 'Додати підписку' button when showSubForm is false", () => {
+  it("does not render its own add button — the quick-action row owns it", () => {
     render(<AssetsSubscriptionsSection state={makeState()} />);
-    expect(screen.getByText("+ Додати підписку")).toBeInTheDocument();
+    expect(screen.queryByText("+ Додати підписку")).toBeNull();
+    expect(screen.queryByTestId("subscription-form")).toBeNull();
   });
 
   it("shows the canonical monthly subscription total", () => {
@@ -189,13 +190,6 @@ describe("AssetsSubscriptionsSection", () => {
       <AssetsSubscriptionsSection state={makeState({ showSubForm: true })} />,
     );
     expect(screen.getByTestId("subscription-form")).toBeInTheDocument();
-  });
-
-  it("clicking '+ Додати підписку' calls setShowSubForm(true)", () => {
-    const state = makeState();
-    render(<AssetsSubscriptionsSection state={state} />);
-    fireEvent.click(screen.getByText("+ Додати підписку"));
-    expect(state.setShowSubForm).toHaveBeenCalledWith(true);
   });
 
   it("renders a SubCard per subscription", () => {

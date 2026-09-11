@@ -1,5 +1,5 @@
 import { useMemo, useState, useCallback, useEffect, useRef } from "react";
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { Skeleton, SkeletonBudgetBar } from "@shared/components/ui/Skeleton";
 import { HIGHLIGHT_CLEAR_MS } from "@shared/lib/ui/timeouts";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
@@ -114,6 +114,14 @@ export interface BudgetsProps {
   monthlyPlanFirstRunHint?: boolean;
   /** Dismiss callback for the first-run hint banner. */
   onDismissMonthlyPlanFirstRunHint?: () => void;
+  /**
+   * Блок «майбутнього» між планом і лімітами: найближчі платежі, підказки
+   * про регулярні витрати, підписки (`PlanningSubscriptions`). Слот, а не
+   * прямий імпорт: він живе на стані `useAssetsState`, який потребує
+   * повних `mono`/`storage` — Планування читає лише свої зрізи, і
+   * розширювати його типи заради сусіднього блоку не варто.
+   */
+  planningSlot?: ReactNode;
 }
 
 /**
@@ -135,6 +143,7 @@ export function Budgets({
   focusLimitCategoryId = null,
   monthlyPlanFirstRunHint = false,
   onDismissMonthlyPlanFirstRunHint,
+  planningSlot,
 }: BudgetsProps) {
   const toast = useToast();
   const { realTx, loadingTx, jars = [] } = mono;
@@ -463,6 +472,8 @@ export function Budgets({
               firstRunHint={monthlyPlanFirstRunHint}
               onDismissFirstRunHint={onDismissMonthlyPlanFirstRunHint}
             />
+
+            {planningSlot}
 
             <BudgetsLimitsSection
               limitsOpen={limitsOpen}

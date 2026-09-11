@@ -24,6 +24,7 @@ const PRIVAT_ENABLED = import.meta.env["VITE_PRIVAT_ENABLED"] === "true";
 interface CustomCategory {
   id: string;
   label: string;
+  kind?: "expense" | "income";
 }
 
 interface ManualExpenseDraft {
@@ -37,7 +38,10 @@ interface ManualExpenseDraft {
 
 interface FinykStorageShape {
   customCategories: CustomCategory[];
-  addCustomCategory: (label: string) => void;
+  addCustomCategory: (
+    label: string,
+    options?: { kind?: "expense" | "income" },
+  ) => void;
   removeCustomCategory: (id: string) => void;
   addManualExpense: (expense: ManualExpenseDraft) => void;
 }
@@ -53,9 +57,16 @@ export function FinykSection() {
     addManualExpense,
   } = useFinykStorage({}) as FinykStorageShape;
   const [newCategoryLabel, setNewCategoryLabel] = useState("");
+  const [newCategoryKind, setNewCategoryKind] = useState<"expense" | "income">(
+    "expense",
+  );
 
   const addCategory = () => {
-    addCustomCategory(newCategoryLabel);
+    if (newCategoryKind === "income") {
+      addCustomCategory(newCategoryLabel, { kind: "income" });
+    } else {
+      addCustomCategory(newCategoryLabel);
+    }
     setNewCategoryLabel("");
   };
 
@@ -74,17 +85,36 @@ export function FinykSection() {
         module="finyk"
         anchorId="settings-finyk"
       >
-        <SettingsSubGroup title="Власні категорії витрат">
+        <SettingsSubGroup title="Власні категорії">
           <p className="text-style-body text-subtle leading-snug">
-            Додаються до списку категорій у транзакціях, сплітах і лімітах.
-            Іконка підбирається автоматично, емодзі в назві не потрібне.
+            Витрати й надходження мають окремі списки. Іконка підбирається
+            автоматично, емодзі в назві не потрібне.
           </p>
+          <div
+            className="grid grid-cols-2 gap-2"
+            role="group"
+            aria-label="Тип категорії"
+          >
+            {(["expense", "income"] as const).map((kind) => (
+              <Button
+                key={kind}
+                type="button"
+                variant={newCategoryKind === kind ? "primary" : "secondary"}
+                module="finyk"
+                onClick={() => setNewCategoryKind(kind)}
+              >
+                {kind === "expense" ? "Витрата" : "Надходження"}
+              </Button>
+            ))}
+          </div>
           <div className="flex gap-2">
             <input
               type="text"
               value={newCategoryLabel}
               onChange={(event) => setNewCategoryLabel(event.target.value)}
-              placeholder="Напр. Хобі"
+              placeholder={
+                newCategoryKind === "income" ? "Напр. Підробіток" : "Напр. Хобі"
+              }
               maxLength={80}
               className={catInputClass}
               onKeyDown={(event) => {
@@ -108,8 +138,13 @@ export function FinykSection() {
                   key={category.id}
                   className="flex items-center justify-between gap-2 px-4 py-3 border-b border-line last:border-0"
                 >
-                  <span className="text-style-label truncate">
-                    {category.label}
+                  <span className="min-w-0">
+                    <span className="block text-style-label truncate">
+                      {category.label}
+                    </span>
+                    <span className="block text-style-caption text-subtle">
+                      {category.kind === "income" ? "Надходження" : "Витрата"}
+                    </span>
                   </span>
                   <button
                     type="button"

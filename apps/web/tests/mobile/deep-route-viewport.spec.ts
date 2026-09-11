@@ -8,14 +8,11 @@ const ROUTES: ReadonlyArray<{
   visibleText: string | RegExp;
 }> = [
   {
-    // «+ Додати підписку» живе всередині `AssetsSubscriptionsSection`, яка
-    // рендериться лише коли секція «Підписки» розгорнута (`open.subscriptions`),
-    // а за замовчуванням вона згорнута — тож асерт ловив текст, якого на
-    // холодному завантаженні сторінки не існує. Завжди видимий еквівалент —
-    // quick-action «+ Підписка» з `AssetsTable`.
+    // Підписки переїхали в Планування (2026-09-03); на холодних «Активах»
+    // завжди видимий quick-action «+ Актив» з `AssetsTable`.
     id: "FINYK_ASSETS",
     path: "/finyk/assets",
-    visibleText: "+ Підписка",
+    visibleText: "+ Актив",
   },
   {
     id: "FIZRUK_WORKOUTS",

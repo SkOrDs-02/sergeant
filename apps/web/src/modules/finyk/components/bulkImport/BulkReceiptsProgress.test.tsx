@@ -156,4 +156,27 @@ describe("BulkReceiptsProgress", () => {
     );
     expect(screen.getByText("Розпізнаю чеки…")).toBeInTheDocument();
   });
+
+  it("offers only expense custom categories for receipt drafts", () => {
+    render(
+      <BulkReceiptsProgress
+        items={[item()]}
+        isProcessing={false}
+        isSaving={false}
+        onSetCategory={vi.fn()}
+        onToggleIncluded={vi.fn()}
+        onSaveAll={vi.fn()}
+        customCategories={[
+          { id: "custom-hobby", label: "Хобі" },
+          { id: "custom-rent", label: "Оренда", kind: "income" },
+        ]}
+      />,
+    );
+    const picker = screen.getByLabelText(/Категорія:/);
+    const labels = Array.from(picker.querySelectorAll("option")).map(
+      (option) => option.textContent,
+    );
+    expect(labels).toContain("Хобі");
+    expect(labels).not.toContain("Оренда");
+  });
 });

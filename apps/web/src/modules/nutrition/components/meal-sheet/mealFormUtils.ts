@@ -22,6 +22,33 @@ import { newMealId } from "../../lib/mealId";
  */
 export const MAX_PORTION_GRAMS = 10_000;
 
+/**
+ * Значення для touch-колеса ваги. До кілограма лишаємо точний крок 5 г,
+ * вище — 50 г, щоб колесо не розросталось до двох тисяч рядків. Поточне
+ * довільне значення додається без округлення, тому вага зі штрихкоду чи
+ * старого запису не змінюється сама лише від відкриття форми.
+ */
+export function portionGramValues(current: string): number[] {
+  const values: number[] = [];
+  for (let grams = 5; grams <= 1000; grams += 5) values.push(grams);
+  for (let grams = 1050; grams <= MAX_PORTION_GRAMS; grams += 50) {
+    values.push(grams);
+  }
+
+  const currentGrams = Number(current.replace(",", "."));
+  if (
+    Number.isFinite(currentGrams) &&
+    currentGrams > 0 &&
+    currentGrams <= MAX_PORTION_GRAMS &&
+    !values.includes(currentGrams)
+  ) {
+    values.push(currentGrams);
+    values.sort((left, right) => left - right);
+  }
+
+  return values;
+}
+
 export function currentTime(): string {
   // ADR-0078: день-ключ запису — за годинником ПРИСТРОЮ, тож і час доби
   // поруч із ним мусить бути девайсовий. Київський час тут давав пару

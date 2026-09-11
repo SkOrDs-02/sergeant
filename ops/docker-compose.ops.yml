@@ -52,7 +52,7 @@ services:
       - ./grafana/dashboards/dashboards.yml:/etc/grafana/provisioning/dashboards/dashboards.yml:ro
       # Server-side dashboards (HTTP RED, DB USE, SLO burn-rate, sync, auth, AI cost, hubchat, frontend CWV)
       # — JSON sources of truth live next to the docs.
-      - ../docs/03-operations/observability/dashboards:/etc/grafana/provisioning/dashboards/sergeant:ro
+      - ../docs/operations/observability/dashboards:/etc/grafana/provisioning/dashboards/sergeant:ro
     depends_on:
       - prometheus
     healthcheck:

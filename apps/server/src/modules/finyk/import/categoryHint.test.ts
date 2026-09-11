@@ -40,7 +40,7 @@ describe("mapBankCategory — назви з живого Privat24-XLSX", () => {
 
   it("мапить надходження у власну таксономію", () => {
     expect(mapBankCategory("Зарплата", "income")).toBe("salary");
-    expect(mapBankCategory("Кешбек", "income")).toBe("refund");
+    expect(mapBankCategory("Кешбек", "income")).toBe("cashback");
     // …і не тягне їх у витрати.
     expect(mapBankCategory("Зарплата", "expense")).toBeNull();
   });
@@ -75,6 +75,13 @@ describe("mapDescription — ключові слова мерчанта", () => 
     expect(mapDescription("FLAMPIC, ID платежу: 2914267501", "expense")).toBe(
       null,
     );
+  });
+
+  it("розрізняє канонічні категорії надходжень", () => {
+    expect(mapDescription("Зарплата за серпень", "income")).toBe("salary");
+    expect(mapDescription("Повернення за квиток", "income")).toBe("refund");
+    expect(mapDescription("Кешбек monobank", "income")).toBe("cashback");
+    expect(mapDescription("Пенсія", "income")).toBe("pension");
   });
 });
 

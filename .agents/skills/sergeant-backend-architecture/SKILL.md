@@ -53,7 +53,7 @@ Hard Rule #18 — `max-lines: 600` для server TS/JS. Ріж по use-case-а�
 
 ## Hard Rules, які тут найчастіше ламають
 
-- **#1** — `bigint` → `number` у серіалізаторі ([Rule #1](../../../docs/04-governance/governance/rules/01-db-types-coerce-bigint-to-number.md)).
+- **#1** — `bigint` → `number` у серіалізаторі ([Rule #1](../../../docs/governance/governance/rules/01-db-types-coerce-bigint-to-number.md)).
 - **#3** — форма відповіді, `packages/api-client` і contract-тест рухаються одним PR.
 - **#18** — 600 рядків на модуль-файл.
 - **#21** — pino redaction на кожній новій поверхні логування.
@@ -76,7 +76,7 @@ Hard Rule #18 — `max-lines: 600` для server TS/JS. Ріж по use-case-а�
 
 ## Playbooks
 
-- [`docs/00-start/playbooks/add-api-endpoint.md`](../../../docs/00-start/playbooks/add-api-endpoint.md) — handler + route + api-client + тести синхронно.
-- [`docs/00-start/playbooks/add-sql-migration.md`](../../../docs/00-start/playbooks/add-sql-migration.md) — коли модулю потрібна схема.
-- [`docs/00-start/playbooks/onboard-external-api.md`](../../../docs/00-start/playbooks/onboard-external-api.md) — інтеграція стороннього API (кандидат на чергу).
-- Каталог: [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md).
+- [`docs/start/instructions/add-api-endpoint.md`](../../../docs/start/instructions/add-api-endpoint.md) — handler + route + api-client + тести синхронно.
+- [`docs/start/instructions/add-sql-migration.md`](../../../docs/start/instructions/add-sql-migration.md) — коли модулю потрібна схема.
+- [`docs/start/instructions/onboard-external-api.md`](../../../docs/start/instructions/onboard-external-api.md) — інтеграція стороннього API (кандидат на чергу).
+- Каталог: [`docs/start/agents/agent-skills-catalog.md`](../../../docs/start/agents/agent-skills-catalog.md).

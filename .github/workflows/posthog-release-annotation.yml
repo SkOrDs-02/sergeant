@@ -10,7 +10,7 @@ name: PostHog release annotation
 # вертикальною лінією поверх усіх дашбордів — щоб «просів DAU о 14:30»
 # одразу звʼязувалося з конкретним релізом.
 #
-# Док: docs/03-operations/observability/frontend.md § Release annotations.
+# Док: docs/operations/observability/frontend.md § Release annotations.
 # Логіка й контракт env — scripts/ci/posthog-release-annotation.mjs.
 
 on:

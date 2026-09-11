@@ -26,7 +26,7 @@
 //
 // AST-рівневі конвенції (opacity scale, `-strong` companions,
 // module-accent containment) цим скриптом СВІДОМО не покриті —
-// вони лишаються tokens + review (див. docs/05-design/design/README.md).
+// вони лишаються tokens + review (див. docs/design/design/README.md).
 //
 // Usage:
 //   pnpm lint:design-conventions
@@ -346,7 +346,7 @@ if (isMain) {
     console.error(
       "\nВиправ через design tokens / .text-style-* / focus-visible:, або — якщо це " +
         "усвідомлений виняток — додай файл в ALLOWLIST у scripts/check-design-conventions.mjs " +
-        "з коментарем ЧОМУ. Довідка: docs/05-design/design/design-system.md.",
+        "з коментарем ЧОМУ. Довідка: docs/design/design/design-system.md.",
     );
     process.exit(1);
   }

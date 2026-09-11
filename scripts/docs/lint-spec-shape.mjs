@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/docs/lint-spec-shape.mjs
 //
-// CI gate: кожна спека в `docs/90-work/planning/specs/` мусить нести
+// CI gate: кожна спека в `docs/work/specs/` мусить нести
 // чотири несучі секції шаблону (`TEMPLATE.md`), бо саме на них стоїть
 // контракт виконавця — агента `spec-executor`:
 //
@@ -53,9 +53,9 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const SPECS_DIR = resolve(REPO_ROOT, "docs/90-work/planning/specs");
+const SPECS_DIR = resolve(REPO_ROOT, "docs/work/specs");
 const BASELINE_PATH = resolve(__dirname, "spec-shape-baseline.json");
-const SPECS_REL = "docs/90-work/planning/specs";
+const SPECS_REL = "docs/work/specs";
 
 const args = new Set(process.argv.slice(2));
 const JSON_MODE = args.has("--json");

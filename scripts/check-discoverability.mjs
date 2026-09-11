@@ -25,7 +25,7 @@
 //   node scripts/check-discoverability.mjs --json     # machine-readable
 //   node scripts/check-discoverability.mjs --root <dir>   # alt repo root (tests)
 //
-// Linked initiative: docs/90-work/planning/ai-coding-improvements.md § Next blocks
+// Linked initiative: docs/work/specs/planning/ai-coding-improvements.md § Next blocks
 // (Discoverability tests).
 
 import { readFileSync, existsSync, statSync, readdirSync } from "node:fs";
@@ -63,43 +63,43 @@ export const ROUTES = [
     role: "new-agent",
     reason: "skill routing catalog",
     entrypoints: ["AGENTS.md"],
-    target: "docs/00-start/agents/agent-skills-catalog.md",
+    target: "docs/start/agents/agent-skills-catalog.md",
   },
   {
     role: "new-agent",
     reason: "workflow decision trees",
     entrypoints: ["AGENTS.md"],
-    target: "docs/00-start/agents/agent-workflows.md",
+    target: "docs/start/agents/agent-workflows.md",
   },
   {
     role: "new-agent",
     reason: "30-minute onboarding",
     entrypoints: ["AGENTS.md"],
-    target: "docs/00-start/agents/onboarding.md",
+    target: "docs/start/agents/onboarding.md",
   },
   {
     role: "new-agent",
     reason: "playbook routing catalog",
     entrypoints: ["AGENTS.md"],
-    target: "docs/00-start/playbooks/playbook-catalog.md",
+    target: "docs/start/instructions/playbook-catalog.md",
   },
   {
     role: "new-agent",
     reason: "execution recipes overview",
     entrypoints: ["AGENTS.md"],
-    target: "docs/00-start/playbooks/README.md",
+    target: "docs/start/instructions/README.md",
   },
   {
     role: "new-agent",
     reason: "machine-readable hard rules registry",
     entrypoints: ["AGENTS.md"],
-    target: "docs/04-governance/governance/hard-rules.json",
+    target: "docs/governance/governance/hard-rules.json",
   },
   {
     role: "new-agent",
     reason: "generated hard rules matrix",
     entrypoints: ["AGENTS.md"],
-    target: "docs/04-governance/governance/hard-rules-matrix.md",
+    target: "docs/governance/governance/hard-rules-matrix.md",
   },
   {
     role: "new-agent",
@@ -107,98 +107,98 @@ export const ROUTES = [
     entrypoints: [
       "AGENTS.md",
       "docs/README.md",
-      "docs/04-governance/governance/README.md",
+      "docs/governance/governance/README.md",
     ],
-    target: "docs/04-governance/governance/freshness-dashboard.html",
+    target: "docs/governance/governance/freshness-dashboard.html",
   },
   {
     role: "new-agent",
     reason: "feature-delivery skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-feature-delivery/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "bugfix-and-regression skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-bugfix-and-regression/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "web UI specialist skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-web-ui/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "server API specialist skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-server-api/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "data and migrations specialist skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-data-and-migrations/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "mobile Expo specialist skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-mobile-expo/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "AI-layer module owner skill (ex-HubChat)",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-module-ai/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "finyk module owner skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-module-finyk/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "nutrition module owner skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-module-nutrition/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "fizruk module owner skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-module-fizruk/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "routine module owner skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-module-routine/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "monorepo boundaries specialist skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-monorepo-boundaries/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "deploy and observability specialist skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-deploy-and-observability/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "Better Auth specialist skill",
-    entrypoints: ["docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/better-auth-best-practices/SKILL.md",
   },
   {
     role: "new-agent",
     reason: "skill-writing specialist skill",
-    entrypoints: ["AGENTS.md", "docs/00-start/agents/agent-skills-catalog.md"],
+    entrypoints: ["AGENTS.md", "docs/start/agents/agent-skills-catalog.md"],
     target: ".agents/skills/sergeant-writing-skills/SKILL.md",
   },
 
@@ -219,7 +219,7 @@ export const ROUTES = [
     role: "new-contributor",
     reason: "execution recipes overview",
     entrypoints: ["README.md"],
-    target: "docs/00-start/playbooks/README.md",
+    target: "docs/start/instructions/README.md",
   },
   {
     role: "new-contributor",
@@ -231,7 +231,7 @@ export const ROUTES = [
     role: "new-contributor",
     reason: "active initiatives index",
     entrypoints: ["README.md", "docs/README.md"],
-    target: "docs/90-work/initiatives/README.md",
+    target: "docs/work/specs/initiatives/README.md",
   },
 
   // ── On-call: hot-path playbooks reachable from any landing page ──────────
@@ -241,9 +241,9 @@ export const ROUTES = [
     entrypoints: [
       "README.md",
       "AGENTS.md",
-      "docs/00-start/playbooks/README.md",
+      "docs/start/instructions/README.md",
     ],
-    target: "docs/00-start/playbooks/declare-incident.md",
+    target: "docs/start/instructions/declare-incident.md",
   },
   {
     role: "on-call",
@@ -251,9 +251,9 @@ export const ROUTES = [
     entrypoints: [
       "README.md",
       "AGENTS.md",
-      "docs/00-start/playbooks/README.md",
+      "docs/start/instructions/README.md",
     ],
-    target: "docs/00-start/playbooks/hotfix-prod-regression.md",
+    target: "docs/start/instructions/hotfix-prod-regression.md",
   },
   {
     role: "on-call",
@@ -261,9 +261,9 @@ export const ROUTES = [
     entrypoints: [
       "README.md",
       "AGENTS.md",
-      "docs/00-start/playbooks/README.md",
+      "docs/start/instructions/README.md",
     ],
-    target: "docs/00-start/playbooks/investigate-alert.md",
+    target: "docs/start/instructions/investigate-alert.md",
   },
   {
     role: "on-call",
@@ -271,9 +271,9 @@ export const ROUTES = [
     entrypoints: [
       "README.md",
       "AGENTS.md",
-      "docs/00-start/playbooks/README.md",
+      "docs/start/instructions/README.md",
     ],
-    target: "docs/00-start/playbooks/restore-from-backup.md",
+    target: "docs/start/instructions/restore-from-backup.md",
   },
   {
     role: "on-call",
@@ -281,9 +281,9 @@ export const ROUTES = [
     entrypoints: [
       "README.md",
       "AGENTS.md",
-      "docs/00-start/playbooks/README.md",
+      "docs/start/instructions/README.md",
     ],
-    target: "docs/00-start/playbooks/write-postmortem.md",
+    target: "docs/start/instructions/write-postmortem.md",
   },
 
   // ── Reviewer: pre-merge governance ───────────────────────────────────────
@@ -291,7 +291,7 @@ export const ROUTES = [
     role: "reviewer",
     reason: "review checklist",
     entrypoints: ["AGENTS.md", "README.md", "CONTRIBUTING.md"],
-    target: "docs/04-governance/governance/review-checklist.md",
+    target: "docs/governance/governance/review-checklist.md",
   },
   {
     role: "reviewer",
@@ -303,11 +303,11 @@ export const ROUTES = [
     role: "reviewer",
     reason: "governance policy review process",
     entrypoints: [
-      "docs/04-governance/governance/README.md",
+      "docs/governance/governance/README.md",
       "AGENTS.md",
       "CONTRIBUTING.md",
     ],
-    target: "docs/04-governance/governance/policy-review.md",
+    target: "docs/governance/governance/policy-review.md",
   },
 ];
 

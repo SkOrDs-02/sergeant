@@ -1,12 +1,12 @@
 #!/usr/bin/env node
 // AI-LEGACY: expires 2026-10-31 — тимчасова інфраструктура закритої бети;
-// видалити разом із docs/90-work/beta-launch/ (перелік — у README тієї теки).
+// видалити разом із docs/work/specs/beta-launch/ (перелік — у README тієї теки).
 /**
  * Видача та відкликання Pro-доступу для тестерів бети.
  *
  * ⚠️ ТИМЧАСОВИЙ ОПЕРАТОРСЬКИЙ СКРИПТ на час закритої бети.
- * Інструкція й порядок запуску: docs/90-work/beta-launch/run-beta-wave.md
- * Спека: docs/90-work/planning/specs/telegram-waitlist.md
+ * Інструкція й порядок запуску: docs/work/specs/beta-launch/run-beta-wave.md
+ * Спека: docs/work/specs/telegram-waitlist.md
  *
  *   node scripts/billing/grant-beta-pro.mjs --list
  *   node scripts/billing/grant-beta-pro.mjs --emails a@b.com,c@d.com --dry-run

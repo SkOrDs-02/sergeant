@@ -17,6 +17,7 @@ export interface CategoryLike {
   keywords?: string[];
   color?: string;
   emoji?: string;
+  kind?: "expense" | "income" | undefined;
 }
 
 /**
@@ -31,6 +32,27 @@ export interface CategorizedTransactionLike {
   manual?: boolean | undefined;
   _manual?: boolean | undefined;
   source?: string | undefined;
+  time?: string | number | undefined;
+  date?: string | number | undefined;
+}
+
+const DETAILED_CATEGORY_CUTOVER_MS = Date.parse("2026-08-31T21:00:00.000Z");
+
+function preservePreCutoverTechCategory(
+  category: CategoryLike,
+  transaction: CategorizedTransactionLike,
+): CategoryLike {
+  const rawDate = transaction.time ?? transaction.date;
+  if (category.id !== "tech" || rawDate == null) return category;
+  const timestamp =
+    typeof rawDate === "number"
+      ? rawDate > 1e10
+        ? rawDate
+        : rawDate * 1000
+      : new Date(rawDate).getTime();
+  if (!Number.isFinite(timestamp) || timestamp >= DETAILED_CATEGORY_CUTOVER_MS)
+    return category;
+  return resolveExpenseOverride("shopping") ?? category;
 }
 
 /**
@@ -93,19 +115,39 @@ export function resolveExpenseCategoryMeta(
 export function getIncomeCategory(
   desc = "",
   overrideId: string | null = null,
+  customCategories: CategoryLikeInput = [],
 ): CategoryLike {
   if (overrideId) {
     const found =
       MANUAL_INCOME_CATEGORIES.find((c: CategoryLike) => c.id === overrideId) ||
       INCOME_CATEGORIES.find((c: CategoryLike) => c.id === overrideId) ||
       MCC_CATEGORIES.find((c: CategoryLike) => c.id === overrideId);
-    if (found) return found;
+    if (found) {
+      const canonicalIncomeIds: Record<string, string> = {
+        in_salary: "salary",
+        in_freelance: "freelance",
+        in_cashback: "cashback",
+        in_pension: "pension",
+        in_debt: "debt-income",
+        in_other: "other-income",
+      };
+      const canonicalId = canonicalIncomeIds[found.id];
+      return canonicalId
+        ? (MANUAL_INCOME_CATEGORIES.find((c) => c.id === canonicalId) ?? found)
+        : found;
+    }
+    const custom = customCategories
+      .filter(isCategoryLike)
+      .find((c) => c.kind === "income" && c.id === overrideId);
+    if (custom)
+      return { id: custom.id, label: custom.label ?? "", keywords: [] };
   }
   const d = desc.toLowerCase();
   for (const cat of INCOME_CATEGORIES as readonly CategoryLike[]) {
-    if ((cat.keywords ?? []).some((k: string) => d.includes(k))) return cat;
+    if ((cat.keywords ?? []).some((k: string) => d.includes(k)))
+      return getIncomeCategory("", cat.id, customCategories);
   }
-  return INCOME_CATEGORIES[INCOME_CATEGORIES.length - 1] as CategoryLike; // in_other
+  return getIncomeCategory("", "in_other", customCategories);
 }
 
 export function getCategory(
@@ -144,7 +186,8 @@ export function getExpenseCategoryForTransaction(
     const manualCategory = MANUAL_EXPENSE_CATEGORIES.find(
       (category) => category.id === explicitId,
     );
-    if (manualCategory) return manualCategory;
+    if (manualCategory)
+      return preservePreCutoverTechCategory(manualCategory, transaction);
     // Ери 1–2: у сховищі лежить український підпис (`"їжа"`, `"🍴 їжа"`),
     // а не слаг. Без цієї гілки такий запис не матчив ані ручну
     // таксономію, ані MCC-каталог, ані ключові слова — і рядок малювався
@@ -166,17 +209,21 @@ export function getExpenseCategoryForTransaction(
       if (upgraded) return upgraded;
     }
   }
-  return getCategory(
-    transaction.description ?? "",
-    transaction.mcc ?? 0,
-    explicitId,
-    customCategories,
+  return preservePreCutoverTechCategory(
+    getCategory(
+      transaction.description ?? "",
+      transaction.mcc ?? 0,
+      explicitId,
+      customCategories,
+    ),
+    transaction,
   );
 }
 
 export function getIncomeCategoryForTransaction(
   transaction: CategorizedTransactionLike,
   overrideId: string | null | undefined = null,
+  customCategories: CategoryLikeInput = [],
 ): CategoryLike {
   const explicitId = overrideId || transaction.categoryId || null;
   const isManual =
@@ -189,5 +236,9 @@ export function getIncomeCategoryForTransaction(
     );
     if (manualCategory) return manualCategory;
   }
-  return getIncomeCategory(transaction.description ?? "", explicitId);
+  return getIncomeCategory(
+    transaction.description ?? "",
+    explicitId,
+    customCategories,
+  );
 }

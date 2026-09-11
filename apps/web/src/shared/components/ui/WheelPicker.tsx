@@ -83,6 +83,7 @@ export function WheelPicker({
   const reduced = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  const syncTargetTop = useRef<number | null>(null);
   const selectedIndex = nearestIndex(values, value);
   const [activeIndex, setActiveIndex] = useState(selectedIndex);
 
@@ -109,12 +110,17 @@ export function WheelPicker({
     setActiveIndex(selectedIndex);
     const top = selectedIndex * itemHeight;
     if (Math.abs(el.scrollTop - top) > 1) {
+      // `scrollTo({ behavior: "smooth" })` fires the same scroll events as
+      // a finger flick. Keep the target until it is reached so those events
+      // cannot commit an intermediate row back to the controlled parent.
+      syncTargetTop.current = top;
       // `scrollTo` is absent in jsdom and very old engines — fall back to
       // assigning scrollTop so the sync still lands on the right row.
       if (typeof el.scrollTo === "function") {
         el.scrollTo({ top, behavior: reduced ? "auto" : "smooth" });
       } else {
         el.scrollTop = top;
+        syncTargetTop.current = null;
       }
     }
   }, [selectedIndex, itemHeight, reduced]);
@@ -129,6 +135,12 @@ export function WheelPicker({
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el || disabled) return;
+    if (syncTargetTop.current !== null) {
+      if (Math.abs(el.scrollTop - syncTargetTop.current) <= 1) {
+        syncTargetTop.current = null;
+      }
+      return;
+    }
     const i = clampToDomain(
       Math.round(el.scrollTop / itemHeight),
       0,

@@ -14,6 +14,10 @@ const VALID_FINYK_PAGES: readonly FinykPage[] = [
 ];
 
 const LEGACY_REDIRECTS: Record<string, FinykPage> = {
+  // The former cards tab now lives in the Assets surface. Keep shared and
+  // bookmarked `/finyk/cards` links meaningful instead of silently showing
+  // the unrelated overview (global QA 2026-08-04, finding 8).
+  cards: "assets",
   payments: "budgets",
 };
 

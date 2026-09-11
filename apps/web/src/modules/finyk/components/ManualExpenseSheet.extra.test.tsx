@@ -36,6 +36,15 @@ afterEach(() => {
   cleanup();
 });
 
+function categoryDialog() {
+  fireEvent.click(screen.getByLabelText("Категорія"));
+  return within(screen.getByRole("dialog", { name: "Категорія" }));
+}
+
+function chooseCategory(label: string) {
+  fireEvent.click(categoryDialog().getByRole("button", { name: label }));
+}
+
 const merchants: FrequentMerchant[] = [
   {
     key: "silpo",
@@ -129,21 +138,21 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     expect(screen.queryByText(/AI ·/)).not.toBeInTheDocument();
   });
 
-  it("selects a category from the dropdown", () => {
+  it("selects a category from the shared picker", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
-    fireEvent.change(select, { target: { value: "transport" } });
-    expect(select).toHaveValue("transport");
+    chooseCategory("Транспорт");
+    expect(screen.getByLabelText("Категорія")).toHaveTextContent("Транспорт");
   });
 
-  it("lists every expense category in the dropdown (no collapsed row)", () => {
+  it("lists every expense category in the shared picker", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
-    const optionLabels = Array.from(select.options).map((o) => o.textContent);
+    const dialog = categoryDialog();
+    const allSection = dialog.getByText("Усі категорії").closest("section");
+    expect(allSection).not.toBeNull();
+    const optionLabels = within(allSection!)
+      .getAllByRole("button")
+      .map((button) => button.textContent?.trim());
     expect(optionLabels).toEqual([
-      // Disabled placeholder — required so switching Витрата ↔ Надходження can
-      // blank the field and force an explicit pick from the new taxonomy.
-      "Обери категорію",
       // 2026-08-13: «Їжа» (`food`) і «Продукти» (`groceries`) були двома
       // чипами на ОДИН канонічний кошик `food`, який MCC-каталог зве
       // «Продукти». Лишився один — `food` під канонічним підписом;
@@ -164,6 +173,10 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       "Підписки",
       "Навчання",
       "Подорожі",
+      "Спорт",
+      "Краса",
+      "Борги та кредити",
+      "Благодійність",
       "Інше",
     ]);
   });
@@ -190,11 +203,11 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
         frequentCategories={frequentCategories}
       />,
     );
-    // Транспорт has the highest frequency rank → first real <option> in the
-    // dropdown, right after the disabled "Обери категорію" placeholder.
-    const select = screen.getByLabelText("Категорія") as HTMLSelectElement;
-    expect(select.options[0]?.textContent).toBe("Обери категорію");
-    expect(select.options[1]?.textContent).toBe("Транспорт");
+    const dialog = categoryDialog();
+    const frequentSection = dialog.getByText("Часті").closest("section");
+    expect(frequentSection).not.toBeNull();
+    expect(within(frequentSection!).getAllByRole("button")).toHaveLength(1);
+    expect(within(frequentSection!).getByText("Транспорт")).toBeInTheDocument();
   });
 
   describe("edit mode", () => {

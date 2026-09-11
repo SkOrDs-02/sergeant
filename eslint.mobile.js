@@ -44,7 +44,7 @@ export const mobileBlocks = [
       "sergeant-design/no-raw-local-storage": "error",
     },
   },
-  // Tone-of-voice канону `docs/01-product/copy/style-guide.uk.md` — той самий
+  // Tone-of-voice канону `docs/product/copy/style-guide.uk.md` — той самий
   // гейт, що у web. Mobile тримаємо під ним із першого дня: аудит копії
   // 2026-08-26 знайшов саме тут більшість формального «Ви» (19 рядків проти
   // 15 у web), бо поверхня молодша й ніколи не проходила ToV-ревʼю.
@@ -70,7 +70,7 @@ export const mobileBlocks = [
             {
               name: "@sergeant/db-schema/migrate",
               message:
-                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path`. See `docs/90-work/audits/2026-05-07-app-audit.md` §1.",
+                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path`. See `docs/work/specs/audits/2026-05-07-app-audit.md` §1.",
             },
           ],
         },
@@ -83,7 +83,7 @@ export const mobileBlocks = [
   //
   // Allowlist below names every existing `as unknown as X` call-site
   // on mobile as of rule extension (2026-05-01). Migrate a file → drop
-  // it from the list. See `docs/90-work/tech-debt/mobile.md` §no-strict-bypass
+  // it from the list. See `docs/work/specs/tech-debt/mobile.md` §no-strict-bypass
   // (registry tracked separately in PR 3).
   {
     files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
@@ -128,7 +128,7 @@ export const mobileBlocks = [
   //     (legacy LS shape parser; eslint-disable-next-line present).
   // New `any` in mobile production code surfaces immediately in CI lint
   // output. Promote to "error" once the burn-down reaches zero. See
-  // `docs/90-work/tech-debt/mobile.md` §no-explicit-any.
+  // `docs/work/specs/tech-debt/mobile.md` §no-explicit-any.
   {
     files: ["apps/mobile/src/**/*.{ts,tsx}"],
     ignores: [
@@ -142,7 +142,7 @@ export const mobileBlocks = [
   // react-hooks v7 burndown (initiative 0021) — `immutability` cleared
   // apps/mobile: Sheet.tsx shared-value deps + CategoryDonut render accumulator.
   // Promoted from baseline `off` to mobile-scoped `error`. See
-  // `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  // `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
   {
     files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
     ignores: [
@@ -178,7 +178,7 @@ export const mobileBlocks = [
   // `activePantryItems` dependency (mirrors web hook). Promoted from the
   // baseline `off` to mobile-scoped `error` so the next regression fails lint
   // loudly. Stays `off` in the shared baseline until other surfaces clear.
-  // See `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  // See `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
   {
     files: ["apps/mobile/src/**/*.{ts,tsx}"],
     rules: {
@@ -189,7 +189,7 @@ export const mobileBlocks = [
   // across waves 1–3: Animated.Value lazy useState, onboarding intro state,
   // hook callback-ref sync via useEffect, draggable reduceMotion shared values,
   // HubSearch destructure. Promoted from baseline `off` to mobile-scoped
-  // `error`. See `docs/90-work/initiatives/0021-react-hooks-v7-cleanup.md`.
+  // `error`. See `docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md`.
   {
     files: ["apps/mobile/src/**/*.{ts,tsx}", "apps/mobile/app/**/*.{ts,tsx}"],
     ignores: [

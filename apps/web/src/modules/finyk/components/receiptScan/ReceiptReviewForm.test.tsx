@@ -131,4 +131,25 @@ describe("ReceiptReviewForm", () => {
     expect(screen.getByLabelText("Магазин")).toBeDisabled();
     expect(screen.getByLabelText("Категорія")).toBeDisabled();
   });
+
+  it("keeps income custom categories out of the receipt expense picker", () => {
+    const draft = baseDraft();
+    render(
+      <ReceiptReviewForm
+        draft={draft}
+        setDraft={vi.fn()}
+        category="other"
+        setCategory={vi.fn()}
+        customCategories={[
+          { id: "custom-hobby", label: "Хобі" },
+          { id: "custom-rent", label: "Оренда", kind: "income" },
+        ]}
+      />,
+    );
+    const labels = Array.from(
+      screen.getByLabelText("Категорія").querySelectorAll("option"),
+    ).map((option) => option.textContent);
+    expect(labels).toContain("Хобі");
+    expect(labels).not.toContain("Оренда");
+  });
 });

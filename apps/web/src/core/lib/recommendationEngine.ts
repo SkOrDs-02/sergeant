@@ -11,9 +11,10 @@ import { Recommendations } from "@sergeant/insights";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
+  loadNutritionGoalPeriods,
   loadNutritionLog,
-  loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
+import { resolveEffectiveGoal } from "@sergeant/nutrition-domain";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
 import { formatNumberUk, pluralDays, pluralUa } from "@sergeant/shared";
@@ -374,8 +375,9 @@ function buildNutritionRecs(): Rec[] {
   // `nutrition_log_v1` / `nutrition_prefs_v1` are tombstoned — read the
   // canonical SQLite warm caches.
   const log = loadNutritionLog();
-  const prefs = loadNutritionPrefs();
+  const goalPeriods = loadNutritionGoalPeriods();
   const today = localDateKey();
+  const todayGoal = resolveEffectiveGoal(goalPeriods, today);
   const dayData = log[today];
   const meals = Array.isArray(dayData?.meals) ? dayData.meals : [];
 
@@ -391,8 +393,8 @@ function buildNutritionRecs(): Rec[] {
   // людині, якій сам модуль «Їжа» на сусідньому екрані пропонував ту ціль
   // спершу встановити (browser QA 2026-08-05, F-010). Сигнали, що міряють
   // прогрес відносно цілі, без цілі просто мовчать.
-  const targetKcal = positiveTarget(prefs.dailyTargetKcal);
-  const targetProtein = positiveTarget(prefs.dailyTargetProtein_g);
+  const targetKcal = positiveTarget(todayGoal.kcal);
+  const targetProtein = positiveTarget(todayGoal.proteinG);
 
   const hour = new Date().getHours();
 

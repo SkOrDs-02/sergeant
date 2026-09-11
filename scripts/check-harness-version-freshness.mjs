@@ -123,7 +123,7 @@ export function checkFreshness(repoRoot = DEFAULT_ROOT) {
   // 6. harness-engineering-v1.md: check for stale `поточна` version
   const v1DocPath = resolve(
     repoRoot,
-    "docs/90-work/planning/harness-engineering-v1.md",
+    "docs/work/specs/planning/harness-engineering-v1.md",
   );
   if (existsSync(v1DocPath)) {
     const v1Content = readFileSync(v1DocPath, "utf8");

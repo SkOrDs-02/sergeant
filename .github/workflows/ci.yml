@@ -97,7 +97,7 @@ jobs:
 
       - name: pnpm overrides single-major guard (L1)
         # Closes hardening card L1
-        # (docs/04-governance/security/hardening/L1-uuid-override.md). Verifies that
+        # (docs/work/specs/security-hardening/L1-uuid-override.md). Verifies that
         # every range in `package.json -> pnpm.overrides` still resolves
         # to exactly one major across the workspace. Loose ranges like
         # `>=14` silently fail when a future major lands; tight ranges
@@ -106,7 +106,7 @@ jobs:
 
       - name: pnpm dedupe drift guard (P2-1)
         # Closes audit item P2-1 in
-        # docs/90-work/audits/archive/2026-05-13-testing-devx-roast.md. `pnpm install`
+        # docs/work/specs/audits/archive/2026-05-13-testing-devx-roast.md. `pnpm install`
         # without `--frozen-lockfile` can silently introduce duplicate
         # copies of a transitive dep when the lockfile drifts (e.g. a
         # local `pnpm add` resolves a newer compatible version that the
@@ -128,7 +128,7 @@ jobs:
         run: pnpm lint:governance-sync
 
       - name: Hard Rules registry (JSON ↔ AGENTS.md ↔ CONTRIBUTING.md)
-        # Validates docs/04-governance/governance/hard-rules.json against its schema and
+        # Validates docs/governance/governance/hard-rules.json against its schema and
         # cross-checks every rule's id+title vs. AGENTS.md `### N. ...` and
         # CONTRIBUTING.md `N. **...**`. Hard Rule #15 — these three move
         # together, so we fail the PR the moment they drift.
@@ -144,7 +144,7 @@ jobs:
 
       - name: HTML SRI gate for apps/web/index.html (audit § S3)
         # Closes audit-item S3 from
-        # docs/90-work/audits/2026-05-13-security-observability-roast.md.
+        # docs/work/specs/audits/2026-05-13-security-observability-roast.md.
         # Fails CI if `apps/web/index.html` adds a
         # `<script src="https://...">` without `integrity="sha384-..."`
         # + `crossorigin="anonymous"`. Supply-chain hardening: any
@@ -169,11 +169,11 @@ jobs:
 
       - name: Discoverability (every role reaches its target in ≤2 hops)
         # Walks the markdown link graph from documented entrypoints
-        # (README.md, AGENTS.md, docs/00-start/agents/onboarding.md,
-        # docs/00-start/playbooks/README.md, CONTRIBUTING.md) and asserts that
+        # (README.md, AGENTS.md, docs/start/agents/onboarding.md,
+        # docs/start/instructions/README.md, CONTRIBUTING.md) and asserts that
         # each role/target pair in scripts/check-discoverability.mjs is
         # reachable within the configured hop budget. Closes
-        # docs/90-work/planning/ai-coding-improvements.md item #3.
+        # docs/work/specs/planning/ai-coding-improvements.md item #3.
         run: pnpm lint:discoverability
 
       - name: ESLint resolved-config snapshot gate (PR-31 phase 2)
@@ -196,8 +196,8 @@ jobs:
         # (whichever lives under the project's Root Directory). A second
         # copy under apps/web/ silently drifts and lets a Vercel UI change
         # swap which security headers protect production. See
-        # docs/04-governance/security/hardening/H7-vercel-config-drift.md and
-        # docs/03-operations/deploy/vercel.md.
+        # docs/work/specs/security-hardening/H7-vercel-config-drift.md and
+        # docs/operations/deploy/vercel.md.
         run: bash scripts/check-vercel-config.sh
 
       - name: security.txt expiry guard
@@ -213,8 +213,8 @@ jobs:
         # files carry a lifecycle marker (/** @status Active */ or equivalent).
         # Non-blocking during burn-down (exits 0 even with violations); promoted
         # to --fail-on-violations once coverage reaches 100%.
-        # See docs/90-work/audits/archive/2026-05-13-consolidated-page-audit.md § Theme 4 and
-        # docs/04-governance/governance/rules/10-lifecycle-markers.md.
+        # See docs/work/specs/audits/archive/2026-05-13-consolidated-page-audit.md § Theme 4 and
+        # docs/governance/governance/rules/10-lifecycle-markers.md.
         run: node scripts/docs/check-lifecycle-markers.mjs
         continue-on-error: true
 
@@ -361,7 +361,7 @@ jobs:
       # Ledger-backed audit gate. Replaces the old blunt `audit-exception`
       # PR-label (which suppressed *every* high advisory at once) with a
       # per-advisory allowlist read from
-      # docs/04-governance/security/audit-exceptions.md. Critical advisories
+      # docs/governance/security/audit-exceptions.md. Critical advisories
       # always block — there is no ledger escape for them. High/moderate
       # advisories pass only with a dated, non-expired ledger entry.
       # See scripts/ci/audit-exceptions.mjs.
@@ -413,7 +413,7 @@ jobs:
       - name: Run Knip (dead code detection)
         # Fails CI if unused exports, files, or dependencies are detected.
         # Configuration lives in knip.json at the repo root.
-        # See docs/00-start/playbooks/cleanup-dead-code.md for lifecycle marker
+        # See docs/start/instructions/cleanup-dead-code.md for lifecycle marker
         # guards that must be applied before deleting any Knip finding.
         run: pnpm knip
 
@@ -946,7 +946,7 @@ jobs:
 
   migration-down-drill:
     name: Migration down drill (AGENTS rule #4)
-    # PR-32 (`docs/90-work/planning/archive/pr-plan-2026-05.md`). Static lint above guarantees
+    # PR-32 (`docs/work/specs/planning/archive/pr-plan-2026-05.md`). Static lint above guarantees
     # sequential numbering + two-phase DROP, but down-migrations themselves
     # are not validated by the linter — they could `DROP COLUMN` a column
     # that no longer exists or forget a sequence created in the up, and the

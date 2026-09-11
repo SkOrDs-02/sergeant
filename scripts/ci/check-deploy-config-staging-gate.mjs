@@ -7,7 +7,7 @@
 // (`railway.toml` was tracked until Railway was decommissioned — ADR-0074.
 // `fly.toml` / `Caddyfile` were removed from this matcher 2026-08-08:
 // Fly.io was never actually part of this stack and those files never
-// existed in the repo — see docs/00-start/playbooks/deploy-config-change.md.
+// existed in the repo — see docs/start/instructions/deploy-config-change.md.
 // Coolify app-config (env vars, pre-deploy command, health-check, image
 // tag) lives in the Coolify UI, not in git, so it is structurally
 // invisible to a git-diff-based gate like this one — that surface is
@@ -53,7 +53,7 @@ import { basename } from "node:path";
  * existed in this repo (dead patterns that could never match). Coolify
  * app-config is UI-managed, not tracked in git, so there is no file for
  * this diff-based gate to match — that surface stays a human check
- * against the live deploy (docs/00-start/playbooks/deploy-config-change.md §3).
+ * against the live deploy (docs/start/instructions/deploy-config-change.md §3).
  */
 export function deployConfigDialect(path) {
   const base = basename(path);
@@ -206,8 +206,8 @@ export function evaluate({ changedFiles, getDiff, labelsJson }) {
       `  existed for it. CI cannot replace human verification of edge-cached or`,
       `  edge-served config — humans must.`,
       ``,
-      `See: docs/00-start/playbooks/deploy-config-change.md`,
-      `See: docs/90-work/initiatives/0011-foundation-adoption-and-process-discipline.md`,
+      `See: docs/start/instructions/deploy-config-change.md`,
+      `See: docs/work/specs/initiatives/0011-foundation-adoption-and-process-discipline.md`,
       `       §Фаза 1 → PR 1.3 (Phase 1 PR 1.3)`,
     ].join("\n"),
   );

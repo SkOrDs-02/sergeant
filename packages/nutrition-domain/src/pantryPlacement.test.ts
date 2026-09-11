@@ -17,7 +17,9 @@ import {
   planRedistribution,
   redistributePantries,
   resolvePlaceForItem,
+  stripPlacement,
 } from "./pantryPlacement.js";
+import type { PlacedPantryItem } from "./pantryPlacement.js";
 import type { Pantry } from "./nutritionTypes.js";
 
 function pantry(id: string, names: string[]): Pantry {
@@ -129,6 +131,32 @@ describe("buildPlacedItems", () => {
       ["Молоко", "fridge", 0],
       ["Гречка", "home", 0],
       ["Рис", "home", 1],
+    ]);
+  });
+
+  it("treats missing and malformed pantry arrays as empty", () => {
+    expect(buildPlacedItems(null)).toEqual([]);
+    expect(buildPlacedItems(undefined)).toEqual([]);
+    expect(
+      buildPlacedItems([
+        { id: "fridge", name: "Холодильник", text: "", items: null as never },
+        { id: "shelf", name: "Полиця", text: "", items: "broken" as never },
+      ]),
+    ).toEqual([]);
+  });
+
+  it("strips UI placement metadata from payload items", () => {
+    const placedItem: PlacedPantryItem = {
+      name: "Молоко",
+      qty: 1,
+      unit: "л",
+      notes: null,
+      sources: null,
+      pantryId: "fridge",
+      localIdx: 0,
+    };
+    expect(stripPlacement([placedItem])).toEqual([
+      { name: "Молоко", qty: 1, unit: "л", notes: null, sources: null },
     ]);
   });
 });

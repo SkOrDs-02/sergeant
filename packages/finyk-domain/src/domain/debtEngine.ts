@@ -22,8 +22,9 @@
  * тієї самої транзакції, якою борг виник, роздувала пасив удвічі. Тепер
  * роль зберігається явно на кожній привʼязці:
  *
- *  - `source`   — транзакція, якою борг **виник**; вона лише пояснює вже
- *                 введену суму й НЕ змінює її. Дефолт для нових привʼязок
+ *  - `source`   — транзакція, якою борг **виник**; підтверджує ручну базу
+ *                 без додавання поверх неї, але є її нижньою межею. Дефолт
+ *                 для нових привʼязок
  *                 з origin-знаком і для всіх legacy-привʼязок.
  *  - `increase` — борг **виріс** на цю суму; додається до `totalAmount`.
  *  - `payment`  — погашення; віднімається від ефективної суми.
@@ -125,6 +126,10 @@ function sumByRole(
     .reduce((sum, link) => sum + link.amount, 0);
 }
 
+function roundHryvnia(value: number): number {
+  return Math.round((value + Number.EPSILON) * 100) / 100;
+}
+
 export function getDebtTxRole(tx: Pick<Tx, "amount">): TxRole {
   return tx.amount > 0
     ? { kind: "origin", label: "Виникнення боргу" }
@@ -191,6 +196,25 @@ export function getDebtOriginated(
   return sumByRole(links, "increase");
 }
 
+/**
+ * Сума операцій, якими борг виник. Вона не додається поверх ручної бази:
+ * якщо користувач уже ввів повну суму, це був би подвійний облік. Водночас
+ * підтверджені джерела не можуть бути більшими за базу, яку показує картка —
+ * у такому разі саме їхня сума стає нижньою межею базового боргу.
+ */
+export function getDebtSourced(
+  debt: Debt,
+  transactions: readonly Tx[] = [],
+): number {
+  const links = resolveLinks(
+    debt?.linkedTxIds || [],
+    debt?.txLinks,
+    transactions,
+    defaultDebtTxRole,
+  );
+  return sumByRole(links, "source");
+}
+
 export function getReceivablePaid(
   receivable: Receivable,
   transactions: readonly Tx[] = [],
@@ -239,7 +263,11 @@ export function getDebtEffectiveTotal(
   debt: Debt,
   transactions: readonly Tx[] = [],
 ): number {
-  return Number(debt?.totalAmount || 0) + getDebtOriginated(debt, transactions);
+  const base = Math.max(
+    Number(debt?.totalAmount || 0),
+    getDebtSourced(debt, transactions),
+  );
+  return roundHryvnia(base + getDebtOriginated(debt, transactions));
 }
 
 export function getReceivableEffectiveTotal(
@@ -258,7 +286,10 @@ export function calcDebtRemaining(
 ): number {
   return Math.max(
     0,
-    getDebtEffectiveTotal(debt, transactions) - getDebtPaid(debt, transactions),
+    roundHryvnia(
+      getDebtEffectiveTotal(debt, transactions) -
+        getDebtPaid(debt, transactions),
+    ),
   );
 }
 

@@ -13,6 +13,7 @@ import type {
   NutritionDay,
   NutritionLog,
   NutritionPrefs,
+  GoalPeriod,
   Pantry,
   PantryItemSource,
   ShoppingList,
@@ -44,6 +45,8 @@ export interface SqliteNutritionCache {
    * Stage 11 / PR #070n-mobile-dualwrite.
    */
   shoppingList: ShoppingList | null;
+  /** Append-only goal history; consumers resolve the effective day goal. */
+  goalPeriods: GoalPeriod[];
   /** ISO timestamp of the last successful refresh, or null. */
   refreshedAt: string | null;
 }
@@ -56,6 +59,7 @@ const EMPTY_CACHE: SqliteNutritionCache = {
   recipes: [],
   waterLog: {},
   shoppingList: null,
+  goalPeriods: [],
   refreshedAt: null,
 };
 
@@ -131,6 +135,20 @@ interface WaterLogRow {
 interface ShoppingListRow {
   user_id: string;
   data_json: string | null;
+  [key: string]: unknown;
+}
+
+interface GoalPeriodRow {
+  id: string;
+  effective_from: string;
+  kcal: number | null;
+  protein_g: number | null;
+  fat_g: number | null;
+  carbs_g: number | null;
+  water_ml: number | null;
+  origin: GoalPeriod["origin"];
+  created_at: string;
+  deleted_at: string | null;
   [key: string]: unknown;
 }
 
@@ -251,6 +269,7 @@ export async function refreshNutritionSqliteState(
     recipeRows,
     waterRows,
     shoppingRows,
+    goalPeriodRows,
   ] = await Promise.all([
     client.all<MealRow>(
       `SELECT id, eaten_at, meal_type, name, label,
@@ -298,6 +317,14 @@ export async function refreshNutritionSqliteState(
       `SELECT user_id, data_json
          FROM nutrition_shopping_list
         WHERE user_id = ?`,
+      [userId],
+    ),
+    client.all<GoalPeriodRow>(
+      `SELECT id, effective_from, kcal, protein_g, fat_g, carbs_g, water_ml,
+              origin, created_at, deleted_at
+         FROM nutrition_goal_periods
+        WHERE user_id = ?
+        ORDER BY effective_from ASC, created_at ASC`,
       [userId],
     ),
   ]);
@@ -355,6 +382,19 @@ export async function refreshNutritionSqliteState(
     ? normalizeShoppingList(safeParseJson<unknown>(shoppingRow.data_json, null))
     : null;
 
+  const goalPeriods: GoalPeriod[] = goalPeriodRows.map((row) => ({
+    id: row.id,
+    effectiveFrom: row.effective_from,
+    kcal: row.kcal,
+    proteinG: row.protein_g,
+    fatG: row.fat_g,
+    carbsG: row.carbs_g,
+    waterMl: row.water_ml,
+    origin: row.origin,
+    createdAt: row.created_at,
+    deletedAt: row.deleted_at,
+  }));
+
   cache = {
     log,
     pantries,
@@ -363,6 +403,7 @@ export async function refreshNutritionSqliteState(
     recipes,
     waterLog,
     shoppingList,
+    goalPeriods,
     refreshedAt: new Date().toISOString(),
   };
   return cache;

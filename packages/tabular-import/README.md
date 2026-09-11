@@ -1,6 +1,6 @@
 # @sergeant/tabular-import
 
-> **Last touched:** 2026-09-01 by @claude. **Next review:** 2026-12-01.
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-17.
 > **Status:** Active
 
 Спільний шар читання табличних файлів — pure TypeScript, без React і без DOM. Виріс із дублікатів у імпортерах finyk (виписки банків) та fizruk (експорти трекерів) і винесений окремим пакетом у [#1001](https://github.com/SkOrDs-02/sergeant/pull/1001).
@@ -20,7 +20,7 @@
 import { gridFromTabularFile, tokenizeCsv } from "@sergeant/tabular-import";
 ```
 
-Консумери: `apps/server/src/modules/finyk/import/*` (виписки), імпорт зовнішніх трекерів fizruk ([спека](../../docs/90-work/planning/specs/import-external-trackers.md)).
+Консумери: `apps/server/src/modules/finyk/import/*` (виписки), імпорт зовнішніх трекерів fizruk ([спека](../../docs/work/specs/import-external-trackers.md)).
 
 ## Команди
 

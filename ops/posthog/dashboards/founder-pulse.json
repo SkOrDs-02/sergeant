@@ -3,7 +3,7 @@
   "version": 1,
   "key": "founder-pulse",
   "name": "Founder Pulse",
-  "description": "WF-60 growth-funnel overview for founder/on-call. Aggregates DAU/WAU/MAU, signup→onboarding→first_action activation funnel (overall + per module), MRR / new-subscriptions, D1/D7/D30 retention and activation rate from the canonical events declared in packages/shared/src/lib/analyticsEvents.ts. Runbook: docs/03-operations/observability/posthog-founder-pulse.md.",
+  "description": "WF-60 growth-funnel overview for founder/on-call. Aggregates DAU/WAU/MAU, signup→onboarding→first_action activation funnel (overall + per module), MRR / new-subscriptions, D1/D7/D30 retention and activation rate from the canonical events declared in packages/shared/src/lib/analyticsEvents.ts. Runbook: docs/operations/observability/posthog-founder-pulse.md.",
   "description_uk": "Зведений growth-пульс продукту для засновника: активні користувачі, воронка активації (загальна + по модулях), рівень активації, нові підписки/MRR, утримання D1/D7/D30 і канарка нулів. На ранній стадії дані рідкі — панелі оживуть із трафіком. У кожної панелі є опис (наведи курсор на ℹ️), що вона означає, як читати й до якого числа прагнемо.",
   "timezone": "Europe/Kyiv",
   "events_contract": {
@@ -150,7 +150,7 @@
       "description": "Daily count of `subscription_started` events plus the new-MRR contribution (monthly-equivalent revenue) split by cadence. PostHog `$revenue` super-property is set in `apps/server/src/modules/billing/stripe.ts` and stores the major-unit amount.",
       "rationale": "Until a renewals/cancellations feed is wired into PostHog (TBD), the new-MRR contribution per day is the cleanest revenue-pulse signal. Yearly subs are normalised by /12 so monthly + yearly stack on the same axis. Active-MRR (cumulative) is computed downstream by the growth snapshot timer (ADR-0089) — this panel is the per-day delta.",
       "targets": {
-        "new-MRR run-rate": "≥$50/month aggregated over trailing 7 days (P2 below; baseline tracked in docs/01-product/launch/business/01-monetization-and-pricing.md)",
+        "new-MRR run-rate": "≥$50/month aggregated over trailing 7 days (P2 below; baseline tracked in docs/work/specs/launch/business/01-monetization-and-pricing.md)",
         "subscription_started ZEROES": "If new subs = 0 over 7 days while ≥10 signups/day → Stripe webhook regression. P1."
       },
       "query": {
@@ -207,7 +207,7 @@
       "type": "hogql",
       "size": "wide",
       "description": "Daily unique users and canonical funnel-event counts, grouped by the `environment` super-property (`apps/web/src/core/observability/posthog.ts` registers it from `VITE_APP_ENV`, default `production`). Time range: last 14 days.",
-      "rationale": "Closed-beta runbook (`docs/90-work/beta-launch/run-beta-wave.md`) sets `VITE_SENTRY_ENVIRONMENT=beta` explicitly on the beta Vercel project but historically omitted `VITE_APP_ENV`, which is the value PostHog actually reads. Without it, beta traffic reports as `environment: production` and is indistinguishable from real users in every other panel on this dashboard. This panel is the cheapest way to catch that: a beta wave with zero `beta` rows means the env tag is missing, not that testers are idle.",
+      "rationale": "Closed-beta runbook (`docs/work/specs/beta-launch/run-beta-wave.md`) sets `VITE_SENTRY_ENVIRONMENT=beta` explicitly on the beta Vercel project but historically omitted `VITE_APP_ENV`, which is the value PostHog actually reads. Without it, beta traffic reports as `environment: production` and is indistinguishable from real users in every other panel on this dashboard. This panel is the cheapest way to catch that: a beta wave with zero `beta` rows means the env tag is missing, not that testers are idle.",
       "targets": {
         "beta rows present": "during an active beta wave, `environment = 'beta'` rows appear daily — 0 rows while testers are known to be active means `VITE_APP_ENV` is unset on the beta Vercel project (see run-beta-wave.md § Змінні для бета-проєкту)",
         "no beta leakage into prod baselines": "`environment = 'beta'` volume should stay a small, bounded fraction (~30 testers) of `environment = 'production'` volume — a spike suggests the beta domain is being crawled or shared beyond the invite list"

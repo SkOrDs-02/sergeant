@@ -55,6 +55,8 @@ export interface ManualCategoryDef {
    * більшості; відрізняється саме для «зайвих» ручних слагів.
    */
   readonly canonicalId: string;
+  /** Кошик обліку, якщо він відрізняється від палітрового alias. */
+  readonly aggregateId?: string;
   /**
    * Слаг, який більше НЕ пропонується в пікері, але лишається в
    * резолві: його вже записано в persisted-блоби, тож підпис, колір та
@@ -85,6 +87,13 @@ export const MANUAL_EXPENSE_TAXONOMY: readonly ManualCategoryDef[] = [
   },
   {
     id: "cafe",
+    label: "Кафе та ресторани",
+    iconName: "coffee",
+    canonicalId: "restaurant",
+    legacy: true,
+  },
+  {
+    id: "restaurant",
     label: "Кафе та ресторани",
     iconName: "coffee",
     canonicalId: "restaurant",
@@ -140,6 +149,7 @@ export const MANUAL_EXPENSE_TAXONOMY: readonly ManualCategoryDef[] = [
     label: "Техніка",
     iconName: "monitor",
     canonicalId: "shopping",
+    aggregateId: "tech",
   },
   {
     id: "subscriptions",
@@ -158,6 +168,20 @@ export const MANUAL_EXPENSE_TAXONOMY: readonly ManualCategoryDef[] = [
     label: "Подорожі",
     iconName: "compass",
     canonicalId: "travel",
+  },
+  { id: "sport", label: "Спорт", iconName: "dumbbell", canonicalId: "sport" },
+  { id: "beauty", label: "Краса", iconName: "sparkles", canonicalId: "beauty" },
+  {
+    id: "debt",
+    label: "Борги та кредити",
+    iconName: "credit-card",
+    canonicalId: "debt",
+  },
+  {
+    id: "charity",
+    label: "Благодійність",
+    iconName: "heart",
+    canonicalId: "charity",
   },
   {
     id: "other",
@@ -204,6 +228,24 @@ export const MANUAL_INCOME_TAXONOMY: readonly ManualCategoryDef[] = [
     canonicalId: "income",
   },
   {
+    id: "cashback",
+    label: "Кешбек",
+    iconName: "refresh-cw",
+    canonicalId: "income",
+  },
+  {
+    id: "pension",
+    label: "Пенсія/соц.",
+    iconName: "briefcase",
+    canonicalId: "income",
+  },
+  {
+    id: "debt-income",
+    label: "Борг",
+    iconName: "credit-card",
+    canonicalId: "income",
+  },
+  {
     id: "other-income",
     label: "Інше",
     iconName: "tag",
@@ -222,6 +264,7 @@ export const LEGACY_INCOME_IDS: readonly string[] = [
   "in_cashback",
   "in_pension",
   "in_other",
+  "in_debt",
   "income",
   "internal_transfer",
 ];
@@ -302,7 +345,8 @@ export function legacyManualCategoryId(
  * 1–2 і тому зводить рядок до нижнього регістру.
  */
 export function canonicalManualCategoryId(categoryId: string): string {
-  return MANUAL_TAXONOMY_BY_ID.get(categoryId)?.canonicalId ?? categoryId;
+  const def = MANUAL_TAXONOMY_BY_ID.get(categoryId);
+  return def?.aggregateId ?? def?.canonicalId ?? categoryId;
 }
 
 /** `id → def` для обох таксономій разом. */

@@ -14,7 +14,6 @@ import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import type { NutritionDayPlan } from "./hooks/useNutritionUiState";
 import { NutritionHeader } from "./components/NutritionHeader";
 import { NutritionBottomNav } from "./components/NutritionBottomNav";
-import { NutritionPantrySelector } from "./components/NutritionPantrySelector";
 import { NutritionOverlays } from "./components/NutritionOverlays";
 import { NutritionStartPage } from "./pages/NutritionStartPage";
 import { NutritionPantryPage } from "./pages/NutritionPantryPage";
@@ -56,7 +55,6 @@ import { useNutritionPrefsState } from "./hooks/useNutritionPrefsState";
 import { useNutritionQuickStatsWriter } from "./hooks/useNutritionQuickStatsWriter";
 import { buildRecipeCacheKey, readRecipeCache } from "./lib/recipeCache";
 import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
-import { todayISODate } from "./lib/nutritionFormat";
 import { useToast } from "@shared/hooks/useToast";
 import { useNutritionFirstRun } from "./hooks/useNutritionFirstRun";
 
@@ -70,7 +68,6 @@ interface NutritionAppProps {
 
 // One-shot imperative follow-ups that must run *after* a page/state change has
 // committed. Resolved by effects keyed on the relevant page/state, not timers.
-type PendingNutritionAction = { kind: "open-add-meal" } | null;
 
 export default function NutritionApp({
   onBackToHub,
@@ -144,8 +141,6 @@ export default function NutritionApp({
   // clears the action — no race on cold-load / low-end devices
   // (page-audit-08 F13). The photo-picker variant is gone: photo analysis
   // is an AddMealSheet step now, so «дати фото» ніде не чекає навігації.
-  const [pendingAction, setPendingAction] =
-    useState<PendingNutritionAction>(null);
 
   // Крок, з якого відкриється AddMealSheet: "photo" для шорткатів
   // `add_meal_photo`, інакше — звичайний "source".
@@ -252,30 +247,6 @@ export default function NutritionApp({
     onOpenMealPhoto: handleOpenMealPhoto,
     onPwaActionConsumed,
   });
-
-  // "Додати прийом їжі" from the Start dashboard: jump to today + Log page,
-  // then open the add-meal sheet once that page has mounted. We request the
-  // follow-up here and let the effect below fire it when `activePage` becomes
-  // "log" — no timing guess (page-audit-08 F13).
-  const handleRequestAddMeal = useCallback(() => {
-    log.setSelectedDate(todayISODate());
-    setActivePageAndHash("log");
-    setPendingAction({ kind: "open-add-meal" });
-  }, [log, setActivePageAndHash]);
-
-  // Resolve "open-add-meal" deterministically once the Log page is committed.
-  const [prevPendingAddMeal, setPrevPendingAddMeal] =
-    useState<PendingNutritionAction>(null);
-  if (
-    pendingAction?.kind === "open-add-meal" &&
-    activePage === "log" &&
-    pendingAction !== prevPendingAddMeal
-  ) {
-    setPrevPendingAddMeal(pendingAction);
-    setAddMealInitialStep("source");
-    log.setAddMealSheetOpen(true);
-    setPendingAction(null);
-  }
 
   const {
     scan: handlePantryBarcodeDetected,
@@ -457,8 +428,6 @@ export default function NutritionApp({
             enabled={!cloudPullPending}
           >
             <div className="max-w-2xl mx-auto px-4 pt-4 pb-6 w-full min-w-0 overflow-x-hidden">
-              <NutritionPantrySelector pantry={pantry} busy={busy} />
-
               {/* Photo analyze/refine status renders inline inside the
                 AddMealSheet photo step (`PhotoStep` owns its own busy/err
                 state), so this banner only carries the flows without an
@@ -502,7 +471,6 @@ export default function NutritionApp({
                     log={log}
                     prefs={prefs}
                     setActivePageAndHash={setActivePageAndHash}
-                    onRequestAddMeal={handleRequestAddMeal}
                   />
                 )}
 

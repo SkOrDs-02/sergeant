@@ -32,6 +32,13 @@ describe("parseFinykSegments", () => {
     });
   });
 
+  it("applies the legacy `cards` → `assets` redirect", () => {
+    expect(parseFinykSegments(["cards"])).toEqual({
+      page: "assets",
+      redirectFrom: "cards",
+    });
+  });
+
   it("falls back to overview for unknown pages", () => {
     expect(parseFinykSegments(["nope"])).toEqual({ page: "overview" });
   });
@@ -94,6 +101,14 @@ describe("parseLegacyFinykHash", () => {
     expect(parseLegacyFinykHash()).toEqual({
       page: "budgets",
       redirectFrom: "payments",
+    });
+  });
+
+  it("parses the legacy `cards` alias", () => {
+    setHash("#cards");
+    expect(parseLegacyFinykHash()).toEqual({
+      page: "assets",
+      redirectFrom: "cards",
     });
   });
 

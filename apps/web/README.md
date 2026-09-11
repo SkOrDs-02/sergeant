@@ -60,12 +60,12 @@ pnpm --filter @sergeant/web size:eager       # бюджет eager-бандла (
 
 ## Деплой
 
-Vercel автодеплоїть при push у `main`. Edge Middleware проксіює `/api/*` на `BACKEND_URL` (Coolify-бекенд, [ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md)).
+Vercel автодеплоїть при push у `main`. Edge Middleware проксіює `/api/*` на `BACKEND_URL` (Coolify-бекенд, [ADR-0074](../../docs/governance/adr/0074-hosting-hetzner-coolify.md)).
 
-Деталі: [`docs/02-engineering/integrations/railway-vercel.md`](../../docs/02-engineering/integrations/railway-vercel.md).
+Деталі: [`docs/engineering/integrations/railway-vercel.md`](../../docs/engineering/integrations/railway-vercel.md).
 
 ## Глибше
 
-- [`docs/02-engineering/architecture/frontend-overview.md`](../../docs/02-engineering/architecture/frontend-overview.md)
-- [`docs/02-engineering/architecture/platforms.md`](../../docs/02-engineering/architecture/platforms.md)
-- [`docs/90-work/tech-debt/frontend.md`](../../docs/90-work/tech-debt/frontend.md)
+- [`docs/engineering/architecture/frontend-overview.md`](../../docs/engineering/architecture/frontend-overview.md)
+- [`docs/engineering/architecture/platforms.md`](../../docs/engineering/architecture/platforms.md)
+- [`docs/work/specs/tech-debt/frontend.md`](../../docs/work/specs/tech-debt/frontend.md)

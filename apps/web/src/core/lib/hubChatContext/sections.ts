@@ -12,9 +12,11 @@ import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
 import { fmt } from "../hubChatUtils";
 import { loadRoutineState } from "../../../modules/routine/lib/routineStorage";
 import {
+  loadNutritionGoalPeriods,
   loadNutritionLog,
   loadNutritionPrefs,
 } from "../../../modules/nutrition/lib/nutritionStorage";
+import { resolveKcalGoalsForDays } from "@sergeant/nutrition-domain";
 import { generateRecommendations } from "../recommendationEngine";
 import { generateInsights } from "../insightsEngine";
 import { CATEGORY_META, readMemoryEntries } from "../../profile/memoryBank";
@@ -28,7 +30,7 @@ import type { NutritionMeal } from "./types";
  * Раніше секція рахувала київський день, тож поза Києвом контекст асистента
  * шукав відмітки за ЧУЖИМ ключем: людина у Варшаві о 23:30 бачила «виконано
  * 0 з 5», хоча відмітила все — її запис ліг під завтрашню київську дату.
- * Межа особистої доби належить пристрою ([ADR-0078](../../../../../../docs/04-governance/adr/0078-day-boundary-device-local.md)).
+ * Межа особистої доби належить пристрою ([ADR-0078](../../../../../../docs/governance/adr/0078-day-boundary-device-local.md)).
  *
  * Київ лишається правильним для ФІНАНСОВОГО періоду — див. `finance.ts`, там
  * межа доби навмисно київська (ADR-0078 §3). Не зводь ці два місця до одного.
@@ -159,6 +161,7 @@ export function appendNutritionLines(lines: string[], now: Date): void {
     // today's meals + targets, not an empty LS shim.
     const nutritionLog = loadNutritionLog();
     const nutritionPrefs = loadNutritionPrefs();
+    const goalPeriods = loadNutritionGoalPeriods();
     const todayKey = dateKeyFromDate(now);
     const todayData = nutritionLog[todayKey];
 
@@ -196,9 +199,11 @@ export function appendNutritionLines(lines: string[], now: Date): void {
       }
     }
 
+    const weekDays: string[] = [];
     const weekKcalArr: number[] = [];
     for (let i = 6; i >= 0; i--) {
       const dk = deviceDayKeyOffset(now, -i);
+      weekDays.push(dk);
       const dayMeals: NutritionMeal[] = Array.isArray(nutritionLog[dk]?.meals)
         ? (nutritionLog[dk].meals as NutritionMeal[])
         : [];
@@ -212,6 +217,11 @@ export function appendNutritionLines(lines: string[], now: Date): void {
       lines.push(
         `[Харчування тиждень] середньо ${avg} ккал/день (за ${weekKcalArr.length} днів)`,
       );
+      const targets = resolveKcalGoalsForDays(goalPeriods, weekDays);
+      const comparable = weekDays
+        .map((day, index) => `${day}: ${targets[index] ?? "ціль невідома"}`)
+        .join(", ");
+      lines.push(`[Харчування поденні цілі] ${comparable}`);
     }
   } catch {}
 }

@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Точка входу в чек-скан v1 і масове ведення (Фаза 2) — спека
- * `docs/90-work/planning/specs/receipt-scan.md` § Флоу v1 / § Фаза 2.
+ * `docs/work/specs/receipt-scan.md` § Флоу v1 / § Фаза 2.
  *
  * UX-РІШЕННЯ (задокументовано в звіті web-agent-а PR #818, розходиться з
  * буквальним текстом спеки "кнопка ... поруч із «+ Витрата» на сторінці
@@ -38,6 +38,7 @@ import { useToast } from "@shared/hooks/useToast";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import type { ManualExpenseWriteThroughStorage } from "../hooks/manualExpenseWriteThrough";
 import { BulkImportSheet, ReceiptScanSheet } from "./lazyReceiptSheets";
+import { useAuthOptional } from "../../../core/auth/AuthContext";
 
 /** Shared between both lazy sheets below — matches `Sheet`'s own backdrop
  * treatment (`bg-black/40 backdrop-blur-sm`, `Sheet.tsx`) so the fallback
@@ -69,6 +70,7 @@ export interface FinykScanEntryPointsProps {
    */
   bulkImportOpen: boolean;
   onBulkImportOpenChange: (open: boolean) => void;
+  onOpenAuth?: (() => void) | undefined;
 }
 
 export function FinykScanEntryPoints({
@@ -78,9 +80,21 @@ export function FinykScanEntryPoints({
   customCategories,
   bulkImportOpen,
   onBulkImportOpenChange,
+  onOpenAuth,
 }: FinykScanEntryPointsProps) {
   const toast = useToast();
+  const auth = useAuthOptional();
   const [showReceiptScan, setShowReceiptScan] = useState(false);
+  const requireAccount = (open: () => void) => {
+    // `null` is possible only in isolated component tests; the production
+    // tree always mounts AuthProvider, where a missing user means anonymous.
+    if (auth === null || auth.user) {
+      open();
+      return;
+    }
+    toast.info("Для сканування чеків і документів увійди в акаунт.");
+    onOpenAuth?.();
+  };
 
   return (
     <>
@@ -99,13 +113,13 @@ export function FinykScanEntryPoints({
             id: "scan-receipt",
             icon: "scanner",
             label: "Сканувати чек",
-            onClick: () => setShowReceiptScan(true),
+            onClick: () => requireAccount(() => setShowReceiptScan(true)),
           },
           {
             id: "bulk-import",
             icon: "upload",
             label: "Додати документи",
-            onClick: () => onBulkImportOpenChange(true),
+            onClick: () => requireAccount(() => onBulkImportOpenChange(true)),
           },
         ]}
       />

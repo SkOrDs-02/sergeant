@@ -25,10 +25,10 @@ import { Sheet } from "@shared/components/ui/Sheet";
 import { Switch } from "@shared/components/ui/Switch";
 import { messages } from "@shared/i18n/uk";
 import {
-  INCOME_CATEGORIES,
   INTERNAL_TRANSFER_ID,
   MCC_CATEGORIES,
   mergeExpenseCategoryDefinitions,
+  mergeIncomeCategoryDefinitions,
 } from "../constants";
 import {
   getExpenseCategoryForTransaction,
@@ -142,14 +142,18 @@ export function BankTransactionDetailsSheet({
   const copy = messages.finyk.transactionDetails;
   const isIncome = transaction.amount > 0;
   const category = isIncome
-    ? getIncomeCategoryForTransaction(transaction, overrideCatId)
+    ? getIncomeCategoryForTransaction(
+        transaction,
+        overrideCatId,
+        customCategories,
+      )
     : getExpenseCategoryForTransaction(
         transaction,
         overrideCatId,
         customCategories as readonly unknown[],
       );
   const categoryOptions = useMemo(() => {
-    if (isIncome) return INCOME_CATEGORIES;
+    if (isIncome) return mergeIncomeCategoryDefinitions(customCategories);
     const merged = mergeExpenseCategoryDefinitions(
       customCategories as readonly unknown[],
     );
@@ -282,7 +286,7 @@ export function BankTransactionDetailsSheet({
           />
         </section>
 
-        {isIncome && category.id === "in_debt" && (
+        {isIncome && category.id === "debt-income" && (
           <DebtIncomeLinkSection
             transaction={transaction}
             manualDebts={manualDebts}

@@ -16,31 +16,6 @@ vi.mock("../components/FinykStatsStrip", () => ({
     </button>
   ),
 }));
-vi.mock("../components/RecurringSuggestions", () => ({
-  RecurringSuggestions: ({
-    onAdd,
-    onDismiss,
-  }: {
-    onAdd: (candidate: { key: string }) => void;
-    onDismiss: (key: string) => void;
-  }) => (
-    <div>
-      <button type="button" onClick={() => onAdd({ key: "candidate-1" })}>
-        add-recurring
-      </button>
-      <button type="button" onClick={() => onDismiss("candidate-1")}>
-        dismiss-recurring
-      </button>
-    </div>
-  ),
-}));
-vi.mock("./AssetsSubscriptionsSection", () => ({
-  AssetsSubscriptionsSection: ({
-    state,
-  }: {
-    state: { subscriptions: unknown[] };
-  }) => <div data-testid="subs-section">subs:{state.subscriptions.length}</div>,
-}));
 vi.mock("./AssetsAssetsSection", () => ({
   AssetsAssetsSection: () => <div data-testid="assets-section">assets</div>,
 }));
@@ -170,6 +145,7 @@ function Harness({
   showBalance = true,
   openSubscriptionForm = vi.fn(),
   openAssetForm = vi.fn(),
+  openReceivableForm = vi.fn(),
   openDebtForm = vi.fn(),
   addSubscriptionFromRecurring = vi.fn(),
   dismissRecurring = vi.fn(),
@@ -179,6 +155,7 @@ function Harness({
   showBalance?: boolean;
   openSubscriptionForm?: () => void;
   openAssetForm?: () => void;
+  openReceivableForm?: () => void;
   openDebtForm?: () => void;
   addSubscriptionFromRecurring?: (candidate: unknown) => void;
   dismissRecurring?: (key: string) => void;
@@ -207,6 +184,7 @@ function Harness({
     dismissRecurring,
     openSubscriptionForm,
     openAssetForm,
+    openReceivableForm,
     openDebtForm,
   } as unknown as TableState;
   return <AssetsTable state={state} />;
@@ -215,30 +193,9 @@ function Harness({
 describe("AssetsTable", () => {
   it("does not render collapsible sections when all sections are closed", () => {
     render(<Harness />);
-    expect(screen.queryByTestId("subs-section")).toBeNull();
+    expect(screen.queryByText("Підписки")).toBeNull();
     expect(screen.queryByTestId("assets-section")).toBeNull();
     expect(screen.queryByTestId("liabilities-section")).toBeNull();
-  });
-
-  it("renders the subscriptions section only when open.subscriptions toggles on", () => {
-    render(
-      <Harness
-        openOverrides={{ subscriptions: true }}
-        subscriptions={[{ id: "s1" }]}
-      />,
-    );
-    expect(screen.getByTestId("subs-section")).toHaveTextContent("subs:1");
-    expect(screen.queryByTestId("assets-section")).toBeNull();
-    expect(screen.queryByTestId("liabilities-section")).toBeNull();
-  });
-
-  it("toggles the subscriptions section open via the SectionBar click", () => {
-    render(<Harness subscriptions={[{ id: "s1" }]} />);
-    expect(screen.queryByTestId("subs-section")).toBeNull();
-    fireEvent.click(
-      screen.getByRole("button", { expanded: false, name: /Підписки/ }),
-    );
-    expect(screen.getByTestId("subs-section")).toHaveTextContent("subs:1");
   });
 
   it("opens liabilities from the stats strip", () => {
@@ -246,23 +203,6 @@ describe("AssetsTable", () => {
     expect(screen.queryByTestId("liabilities-section")).toBeNull();
     fireEvent.click(screen.getByText("stats-liabilities"));
     expect(screen.getByTestId("liabilities-section")).toBeInTheDocument();
-  });
-
-  it("passes recurring suggestion add and dismiss callbacks through", () => {
-    const addSubscriptionFromRecurring = vi.fn();
-    const dismissRecurring = vi.fn();
-    render(
-      <Harness
-        addSubscriptionFromRecurring={addSubscriptionFromRecurring}
-        dismissRecurring={dismissRecurring}
-      />,
-    );
-    fireEvent.click(screen.getByText("add-recurring"));
-    fireEvent.click(screen.getByText("dismiss-recurring"));
-    expect(addSubscriptionFromRecurring).toHaveBeenCalledWith({
-      key: "candidate-1",
-    });
-    expect(dismissRecurring).toHaveBeenCalledWith("candidate-1");
   });
 
   it("toggles the assets section open via the SectionBar click", () => {
@@ -281,23 +221,37 @@ describe("AssetsTable", () => {
     expect(screen.getByTestId("liabilities-section")).toBeInTheDocument();
   });
 
-  it("calls openSubscriptionForm / openAssetForm / openDebtForm from the quick-action buttons", () => {
-    const openSubscriptionForm = vi.fn();
-    const openAssetForm = vi.fn();
+  it("calls openDebtForm from the quick-action button and has no subscription entry", () => {
     const openDebtForm = vi.fn();
+    render(<Harness openDebtForm={openDebtForm} />);
+    // Підписки переїхали в Планування — на «Активах» їх входу немає.
+    expect(screen.queryByText("+ Підписка")).toBeNull();
+    fireEvent.click(screen.getByText("+ Пасив"));
+    expect(openDebtForm).toHaveBeenCalledTimes(1);
+  });
+
+  it("'+ Актив' opens a picker between a plain asset and a receivable", () => {
+    const openAssetForm = vi.fn();
+    const openReceivableForm = vi.fn();
     render(
       <Harness
-        openSubscriptionForm={openSubscriptionForm}
         openAssetForm={openAssetForm}
-        openDebtForm={openDebtForm}
+        openReceivableForm={openReceivableForm}
       />,
     );
-    fireEvent.click(screen.getByText("+ Підписка"));
-    fireEvent.click(screen.getByText("+ Актив"));
-    fireEvent.click(screen.getByText("+ Пасив"));
-    expect(openSubscriptionForm).toHaveBeenCalledTimes(1);
+    const trigger = screen.getByRole("button", { name: /\+ Актив/ });
+    expect(trigger).toHaveAttribute("aria-haspopup", "menu");
+    // Сам тап по «+ Актив» форми не відкриває — лише меню.
+    fireEvent.click(trigger);
+    expect(openAssetForm).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("menuitem", { name: /Мені винні/ }));
+    expect(openReceivableForm).toHaveBeenCalledTimes(1);
+    expect(openAssetForm).not.toHaveBeenCalled();
+
+    fireEvent.click(screen.getByRole("button", { name: /\+ Актив/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: /^Актив/ }));
     expect(openAssetForm).toHaveBeenCalledTimes(1);
-    expect(openDebtForm).toHaveBeenCalledTimes(1);
   });
 
   it("shows masked totals in section summaries when showBalance is false", () => {

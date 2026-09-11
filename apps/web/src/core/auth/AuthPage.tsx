@@ -37,6 +37,10 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
    */
   const socialLoginEnabled =
     import.meta.env["VITE_SOCIAL_LOGIN_ENABLED"] !== "false";
+  // Apple requires a configured Apple Developer Program. Keep it opt-in so a
+  // missing production credential can never appear as a working sign-in path.
+  const appleLoginEnabled =
+    import.meta.env["VITE_APPLE_LOGIN_ENABLED"] === "true";
   const [mode, setMode] = useState<"login" | "register">("login");
   const [googleLoading, setGoogleLoading] = useState(false);
   const [appleLoading, setAppleLoading] = useState(false);
@@ -119,7 +123,9 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               </h2>
               <p className="text-style-label text-subtle mt-2">
                 {mode === "login"
-                  ? "Email і пароль, Google або Apple"
+                  ? appleLoginEnabled
+                    ? "Email і пароль, Google або Apple"
+                    : "Email і пароль або Google"
                   : "Email і пароль: мінімум 10 символів"}
               </p>
             </div>
@@ -164,10 +170,12 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
                     loading={googleLoading}
                     onClick={handleGoogleSignIn}
                   />
-                  <AppleSignInButton
-                    loading={appleLoading}
-                    onClick={handleAppleSignIn}
-                  />
+                  {appleLoginEnabled && (
+                    <AppleSignInButton
+                      loading={appleLoading}
+                      onClick={handleAppleSignIn}
+                    />
+                  )}
                 </div>
               </>
             )}
@@ -196,7 +204,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
               >
                 Поки що пропустити
               </Button>
-              <p className="text-center text-style-caption text-subtle leading-relaxed px-2">
+              <p className="text-center text-style-body text-subtle leading-relaxed px-2">
                 Все працює локально. Акаунт потрібен лише для синхронізації між
                 пристроями.
               </p>

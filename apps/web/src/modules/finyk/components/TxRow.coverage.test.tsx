@@ -117,6 +117,22 @@ describe("TxRow", () => {
     }
   });
 
+  it("renders a custom income category consistently in the transaction row", () => {
+    render(
+      <TxRow
+        tx={mkTx({
+          amount: 42000,
+          description: "Оренда квартири",
+          categoryId: "custom-rent",
+        })}
+        customCategories={[
+          { id: "custom-rent", label: "Оренда", kind: "income" },
+        ]}
+      />,
+    );
+    expect(screen.getByText("Оренда")).toBeInTheDocument();
+  });
+
   // Пікер обіцяє коментарем «той самий відтінок людина потім бачить у
   // строці транзакції». До 2026-08-13 обіцянка не виконувалась для
   // кастомних категорій: рядок не передавав індекс палітри взагалі.
@@ -183,13 +199,19 @@ describe("TxRow", () => {
     expect(screen.getByText("П24")).toBeInTheDocument();
   });
 
-  it("renders the credit-card pill when the account has a credit limit", () => {
+  it("renders the account name when the user has more than one account", () => {
     const accounts: MonoAccount[] = [
       {
         id: "acc-credit",
         type: "black",
         balance: -10000,
         creditLimit: 100000,
+      } as MonoAccount,
+      {
+        id: "acc-other",
+        type: "white",
+        balance: 1000,
+        creditLimit: 0,
       } as MonoAccount,
     ];
     render(
@@ -198,7 +220,7 @@ describe("TxRow", () => {
     expect(screen.getByText(/Чорна/)).toBeInTheDocument();
   });
 
-  it("renders the credit-card pill neutrally, without the red debt colour (§2)", () => {
+  it("renders the account as plain neutral text, not a pill and not red (§2)", () => {
     const accounts: MonoAccount[] = [
       {
         id: "acc-credit",
@@ -206,13 +228,65 @@ describe("TxRow", () => {
         balance: -10000,
         creditLimit: 100000,
       } as MonoAccount,
+      {
+        id: "acc-other",
+        type: "white",
+        balance: 1000,
+        creditLimit: 0,
+      } as MonoAccount,
     ];
     render(
       <TxRow tx={mkTx({ _accountId: "acc-credit" })} accounts={accounts} />,
     );
-    const pill = screen.getByText(/Чорна/).closest("span");
-    expect(pill?.className).toContain("bg-panelHi");
-    expect(pill?.className).not.toContain("danger");
+    const label = screen.getByText(/Чорна/).closest("span");
+    expect(label?.className).not.toContain("rounded-full");
+    expect(label?.className).not.toContain("danger");
+    // Кредитність позначає іконка, а не колір.
+    expect(label?.querySelector("svg")).not.toBeNull();
+  });
+
+  it("hides the account name when there is a single account (no signal in it)", () => {
+    const accounts: MonoAccount[] = [
+      {
+        id: "acc-white",
+        type: "white",
+        balance: 50000,
+        creditLimit: 0,
+      } as MonoAccount,
+    ];
+    render(
+      <TxRow tx={mkTx({ _accountId: "acc-white" })} accounts={accounts} />,
+    );
+    expect(screen.queryByText("Біла")).not.toBeInTheDocument();
+  });
+
+  it("keeps the category pill first and statuses as one dotted text line", () => {
+    const accounts: MonoAccount[] = [
+      {
+        id: "acc-white",
+        type: "white",
+        balance: 1,
+        creditLimit: 0,
+      } as MonoAccount,
+      {
+        id: "acc-other",
+        type: "white",
+        balance: 1000,
+        creditLimit: 0,
+      } as MonoAccount,
+    ];
+    render(
+      <TxRow
+        tx={mkTx({ _accountId: "acc-white" })}
+        accounts={accounts}
+        overrideCatId="cat_food"
+      />,
+    );
+    const row = screen.getByText("Продукти").parentElement!;
+    expect(row.firstElementChild).toBe(screen.getByText("Продукти"));
+    // Рівно одна пігулка — категорія.
+    expect(row.querySelectorAll(".rounded-full")).toHaveLength(1);
+    expect(row.textContent?.replace(/\s+/g, "")).toContain("Біла·змін.");
   });
 
   it("renders the note as the last element of the meta row (§3)", () => {
@@ -222,12 +296,18 @@ describe("TxRow", () => {
     expect(note.parentElement).toBe(screen.getByText("Продукти").parentElement);
   });
 
-  it("renders a plain account pill for non-credit accounts", () => {
+  it("renders a plain account label for non-credit accounts", () => {
     const accounts: MonoAccount[] = [
       {
         id: "acc-white",
         type: "white",
         balance: 50000,
+        creditLimit: 0,
+      } as MonoAccount,
+      {
+        id: "acc-other",
+        type: "white",
+        balance: 1000,
         creditLimit: 0,
       } as MonoAccount,
     ];

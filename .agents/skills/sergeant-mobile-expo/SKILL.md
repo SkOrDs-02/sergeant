@@ -20,7 +20,7 @@ Sergeant mobile — не тонка копія web-app-у. Він викорис
 **Capacitor = primary production path. Expo = parallel path без дати sunset.**
 
 - PR не повинен ламати жоден із шляхів.
-- Sunset Expo → Capacitor відбудеться лише коли Expo досягне feature parity ≥18 з поточної кількості рядків у matrix (поріг з ADR-0052). **Не бери число з пам'яті і не з цього рядка** — актуальна матриця живе в [`docs/02-engineering/architecture/platforms.md`](../../../docs/02-engineering/architecture/platforms.md) (§ «Feature-parity матриця», рахуй рядки звідти); поріг уже досягнуто, тож питання «чи планувати sunset» — рішення founder-а, а не автоматичний наслідок. Агент його не ухвалює самостійно.
+- Sunset Expo → Capacitor відбудеться лише коли Expo досягне feature parity ≥18 з поточної кількості рядків у matrix (поріг з ADR-0052). **Не бери число з пам'яті і не з цього рядка** — актуальна матриця живе в [`docs/engineering/architecture/platforms.md`](../../../docs/engineering/architecture/platforms.md) (§ «Feature-parity матриця», рахуй рядки звідти); поріг уже досягнуто, тож питання «чи планувати sunset» — рішення founder-а, а не автоматичний наслідок. Агент його не ухвалює самостійно.
 - `forbid-shell-only-feature` lint rule активний: legitimate shell-glue PRs дозволені; feature-only в shell без відповідного Expo PR — ні.
 
 ## Жорсткі правила
@@ -39,11 +39,11 @@ Sergeant mobile — не тонка копія web-app-у. Він викорис
 ## Верифікація
 
 - Прогон найближчого Jest-покриття для зачепленої mobile-поверхні.
-- Якщо змінилися навігація чи deep-link-и — перевір відповідні доки у `docs/02-engineering/mobile/`.
+- Якщо змінилися навігація чи deep-link-и — перевір відповідні доки у `docs/engineering/mobile/`.
 - Якщо зміна — це порт web-фічі, підтверди, які частини лишаються спільними, а які — platform-specific.
 - Перевір, що зміна не ламає Capacitor-шлях (якщо relevant).
 
 ## Playbooks
 
-- `docs/00-start/playbooks/release.md` — canonical release-playbook (секції Expo і Capacitor shell).
-- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.
+- `docs/start/instructions/release.md` — canonical release-playbook (секції Expo і Capacitor shell).
+- Каталог: `docs/start/agents/agent-skills-catalog.md`.

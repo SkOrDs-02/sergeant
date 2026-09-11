@@ -14,9 +14,8 @@
  * користувача просто ніде не зʼявлялись у bulk-review, хоча
  * `ReceiptReviewForm`/`ManualExpenseSheet` їх уже показують. Мержимо їх у
  * ОБИДВА пікери (per-row і масовий), той самий патерн, що
- * `ManualExpenseSheet.tsx` (`customExpenseCategories`/`customCategoryDisplay`):
- * лише для витрат — надходження мають фіксовану 5-слагову таксономію
- * (`INCOME_CATEGORY_SLUGS`) і не знають про власні категорії.
+ * `ManualExpenseSheet.tsx`: витрати й надходження мають окремі каталоги,
+ * але обидва включають відповідні власні категорії користувача.
  */
 import { useState } from "react";
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
@@ -27,8 +26,10 @@ import { Select } from "@shared/components/ui/Select";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
 import { CATEGORY_DISPLAY, CATEGORY_SLUGS } from "../manualExpenseCategories";
 import {
-  INCOME_CATEGORY_DISPLAY,
   INCOME_CATEGORY_SLUGS,
+  expenseCustomCategories,
+  incomeCategoryDisplay,
+  incomeCustomCategories,
 } from "../manualIncomeCategories";
 import { ReceiptMoneyInput } from "../receiptScan/receiptMoneyInput";
 import { selectedRowCount, type BulkReviewRow } from "./bulkImportRows";
@@ -58,10 +59,9 @@ type CategoryOptions = {
 function categoryOptionsFor(
   direction: "expense" | "income",
   expenseOptions: CategoryOptions,
+  incomeOptions: CategoryOptions,
 ): CategoryOptions {
-  return direction === "income"
-    ? { slugs: INCOME_CATEGORY_SLUGS, display: INCOME_CATEGORY_DISPLAY }
-    : expenseOptions;
+  return direction === "income" ? incomeOptions : expenseOptions;
 }
 
 export function BulkReviewTable({
@@ -89,10 +89,8 @@ export function BulkReviewTable({
   const hasTransferLikelyRows = rows.some((r) => r.transferLikely);
   const hasDuplicateLikelyRows = rows.some((r) => r.duplicateLikely);
 
-  const customExpenseCategories = customCategories.filter(
-    (c): c is CustomCategoryInput =>
-      typeof c?.id === "string" && c.id.trim() !== "",
-  );
+  const customExpenseCategories = expenseCustomCategories(customCategories);
+  const customIncomeCategories = incomeCustomCategories(customCategories);
   const expenseCategoryDisplay: Readonly<Record<string, { label: string }>> = {
     ...CATEGORY_DISPLAY,
     ...Object.fromEntries(
@@ -108,6 +106,13 @@ export function BulkReviewTable({
   const expenseOptions: CategoryOptions = {
     slugs: expenseCategorySlugs,
     display: expenseCategoryDisplay,
+  };
+  const incomeOptions: CategoryOptions = {
+    slugs: [
+      ...INCOME_CATEGORY_SLUGS,
+      ...customIncomeCategories.map((category) => category.id),
+    ],
+    display: incomeCategoryDisplay(customIncomeCategories),
   };
 
   return (
@@ -174,7 +179,11 @@ export function BulkReviewTable({
 
       <ul className="divide-y divide-line rounded-2xl border border-line">
         {rows.map((row) => {
-          const options = categoryOptionsFor(row.direction, expenseOptions);
+          const options = categoryOptionsFor(
+            row.direction,
+            expenseOptions,
+            incomeOptions,
+          );
           const lowConfidence =
             row.confidence != null &&
             row.confidence < CONFIDENCE_WARN_THRESHOLD;

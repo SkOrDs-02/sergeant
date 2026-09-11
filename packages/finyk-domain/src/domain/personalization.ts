@@ -156,14 +156,26 @@ function normalizeManualLabel(label: string | undefined | null): string {
  * тепер так само робить і агрегація. Джерело обох — `manualTaxonomy.ts`.
  */
 const SLUG_TO_CANONICAL_ID: Record<string, string> = Object.fromEntries(
-  MANUAL_EXPENSE_TAXONOMY.map((d) => [d.id, d.canonicalId]),
+  MANUAL_EXPENSE_TAXONOMY.map((d) => [d.id, d.aggregateId ?? d.canonicalId]),
 );
 
 /** Підпис manual-категорії → canonical id або сам підпис (для custom). */
-export function manualCategoryToCanonicalId(label: string | undefined): string {
+export function manualCategoryToCanonicalId(
+  label: string | undefined,
+  date?: string | Date,
+): string {
   const norm = normalizeManualLabel(label);
   if (!norm) return "other";
-  return SLUG_TO_CANONICAL_ID[norm] || MANUAL_CATEGORY_ID_MAP[norm] || norm;
+  const id = SLUG_TO_CANONICAL_ID[norm] || MANUAL_CATEGORY_ID_MAP[norm] || norm;
+  if (id === "tech" && date) {
+    const timestamp = new Date(date).getTime();
+    if (
+      Number.isFinite(timestamp) &&
+      timestamp < Date.parse("2026-08-31T21:00:00.000Z")
+    )
+      return "shopping";
+  }
+  return id;
 }
 
 function toTimestampMs(tx: Transaction): number {
@@ -278,7 +290,7 @@ export function getFrequentCategories(
     if (!me) continue;
     const ts = toManualTs(me);
     if (!inWindow(ts)) continue;
-    const canonicalId = manualCategoryToCanonicalId(me.category);
+    const canonicalId = manualCategoryToCanonicalId(me.category, me.date);
     if (canonicalId === INTERNAL_TRANSFER_ID) continue;
     const label = resolveCategoryLabel(
       canonicalId,
@@ -390,7 +402,7 @@ export function getFrequentMerchants(
     if (!me) continue;
     const ts = toManualTs(me);
     if (!inWindow(ts)) continue;
-    const canonicalId = manualCategoryToCanonicalId(me.category);
+    const canonicalId = manualCategoryToCanonicalId(me.category, me.date);
     if (canonicalId === INTERNAL_TRANSFER_ID) continue;
     addHit(
       me.description || "",

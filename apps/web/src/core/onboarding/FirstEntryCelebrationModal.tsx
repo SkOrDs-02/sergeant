@@ -1,58 +1,23 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-09-06
  * Status: Active
+ * Коротке неблокувальне підтвердження першої реальної дії.
  */
-/**
- * FirstEntryCelebrationModal — First entry success celebration
- *
- * Full-screen modal celebrating the user's first real entry.
- * Shows confetti particles and module-aware copy from
- * `FIRST_ENTRY_CELEBRATIONS` so the headline acknowledges what the
- * user actually just did. TTV-numbers stay in the analytics payload
- * (`celebration_shown { ttvMs }`) — they are not used as copy input,
- * because bragging about engineering speed reframes the moment to
- * the app instead of the user.
- */
-
-import { useEffect, useState, useCallback, useRef } from "react";
+import { useCallback, useEffect } from "react";
 import {
   type DashboardModuleId,
   getFirstEntryCelebrationCopy,
 } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
-import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { hapticPattern, hapticTap } from "@shared/lib/adapters/haptic";
+import { hapticTap } from "@shared/lib/adapters/haptic";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
-
-interface ConfettiParticle {
-  id: number;
-  x: number;
-  y: number;
-  rotation: number;
-  color: string;
-  size: number;
-  delay: number;
-}
-
-const CONFETTI_COLORS = [
-  "#10B981", // emerald
-  "#14B8A6", // teal
-  "#EB7691", // rose
-  "#84CC16", // lime
-  "#FBBF24", // amber
-];
+import { messages } from "@shared/i18n/uk";
 
 interface FirstEntryCelebrationModalProps {
   open: boolean;
   onClose: () => void;
-  /** Time-to-value in milliseconds (null if not measured) */
   ttvMs: number | null;
-  /**
-   * Module that owns the entry which flipped the first-real-entry
-   * flag. Picks the copy variant from `FIRST_ENTRY_CELEBRATIONS`;
-   * `null` falls back to the default copy.
-   */
   moduleId: DashboardModuleId | null;
 }
 
@@ -62,222 +27,56 @@ export function FirstEntryCelebrationModal({
   ttvMs,
   moduleId,
 }: FirstEntryCelebrationModalProps) {
-  const [visible, setVisible] = useState(false);
-  const [animateOut, setAnimateOut] = useState(false);
-  const backdropRef = useRef<HTMLDivElement>(null);
-
-  // Generate confetti particles. `Math.random()` is used here only to
-  // jitter visual positions / colours / sizes — visual diversity is
-  // the goal, not derived state. `useMemo` snapshots the values on
-  // mount so subsequent renders are stable; the impurity is contained.
-
-  const particles = useState<ConfettiParticle[]>(() =>
-    Array.from({ length: 30 }, (_, i) => ({
-      id: i,
-      x: 50 + (Math.random() - 0.5) * 80,
-      y: 30 + (Math.random() - 0.5) * 40,
-      rotation: Math.random() * 360,
-      color:
-        CONFETTI_COLORS[Math.floor(Math.random() * CONFETTI_COLORS.length)] ??
-        (CONFETTI_COLORS[0] as string),
-      size: 6 + Math.random() * 8,
-      delay: Math.random() * 0.3,
-    })),
-  )[0];
-
-  const handleClose = useCallback(() => {
-    hapticTap();
-    setAnimateOut(true);
-    setTimeout(() => {
-      setVisible(false);
-      onClose();
-    }, 200);
+  const copy = getFirstEntryCelebrationCopy(moduleId);
+  const close = useCallback(() => {
+    onClose();
   }, [onClose]);
-
-  const [prevOpen, setPrevOpen] = useState(open);
-  if (open && !prevOpen) {
-    setPrevOpen(true);
-    setVisible(true);
-    setAnimateOut(false);
-  } else if (!open && prevOpen) {
-    setPrevOpen(false);
-  }
 
   useEffect(() => {
     if (!open) return;
-    // `hapticPattern` (not raw `navigator.vibrate`) — respects
-    // `prefers-reduced-motion` internally (C6 web-audit).
-    hapticPattern([50, 30, 50]);
-    const { nextStepTip, primaryCtaLabel } =
-      getFirstEntryCelebrationCopy(moduleId);
+    hapticTap();
     trackEvent(ANALYTICS_EVENTS.CELEBRATION_SHOWN, {
       ttvMs,
       source: "first_entry",
       moduleId,
-      tipVariant: nextStepTip,
-      ctaLabel: primaryCtaLabel,
+      tipVariant: copy.nextStepTip,
+      ctaLabel: copy.primaryCtaLabel,
     });
-  }, [open, ttvMs, moduleId]);
+  }, [copy.nextStepTip, copy.primaryCtaLabel, moduleId, open, ttvMs]);
 
-  // Auto-dismiss after 10 seconds
   useEffect(() => {
-    if (!visible) return;
-    const timer = setTimeout(() => {
-      handleClose();
-    }, 10000);
-    return () => clearTimeout(timer);
-  }, [visible, handleClose]);
+    if (!open) return;
+    const timer = window.setTimeout(close, 4_000);
+    return () => window.clearTimeout(timer);
+  }, [close, open]);
 
-  // Handle keyboard
-  useEffect(() => {
-    if (!visible) return;
-    const handleKey = (e: KeyboardEvent) => {
-      if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-        e.preventDefault();
-        handleClose();
-      }
-    };
-    window.addEventListener("keydown", handleKey);
-    return () => window.removeEventListener("keydown", handleKey);
-  }, [visible, handleClose]);
-
-  // Focus the backdrop for keyboard accessibility
-  useEffect(() => {
-    if (visible && backdropRef.current) {
-      backdropRef.current.focus();
-    }
-  }, [visible]);
-
-  if (!visible) return null;
-
-  // Module-aware copy lives in `FIRST_ENTRY_CELEBRATIONS`. The
-  // headline acknowledges what the user actually did (записав
-  // витрату / зафіксував тренування / запустив звичку / залогував
-  // їжу), and the subtext promises the next step. Engineering-speed
-  // bragging is intentionally absent — TTV stays in analytics
-  // (see `celebration_shown` event payload above).
-  //
-  // 2026-05-13 — `nextStepTip` + `primaryCtaLabel` close two carryover
-  // items from the 2026-05-03 roast §2.9 (`docs/audits/archive/`):
-  // generic «Продовжуй додавати записи. Після кількох днів отримаєш
-  // інсайти…» tip (B-11) read as another TODO at the celebration
-  // moment, and generic «Продовжити» CTA (P2-15) did not promise the
-  // next action. Both are now module-specific. The CTA still closes
-  // the modal — the promise lives in the copy, not in routing.
-  const { headline, subtext, nextStepTip, primaryCtaLabel } =
-    getFirstEntryCelebrationCopy(moduleId);
+  if (!open) return null;
 
   return (
     <div
-      ref={backdropRef}
-      role="dialog"
-      aria-modal="true"
-      // eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- aria-label, pre-existing copy; i18n extraction tracked separately
-      aria-label="Вітаю!"
+      role="status"
+      aria-live="polite"
       className={cn(
-        "fixed inset-0 z-9999 flex items-center justify-center",
-        "bg-bg/85 backdrop-blur-md",
-        animateOut
-          ? "motion-safe:animate-fade-out"
-          : "motion-safe:animate-fade-in",
+        "fixed inset-x-4 z-100 mx-auto flex max-w-md items-center gap-3",
+        "bottom-[calc(var(--bottom-nav-inset,5rem)+1rem)] rounded-xl border border-line bg-panel p-3 shadow-e2",
+        "motion-safe:animate-in motion-safe:slide-in-from-bottom-2 motion-safe:fade-in",
       )}
     >
-      {/* Transparent click-to-close backdrop — separate from dialog role */}
+      <span className="flex h-9 w-9 shrink-0 items-center justify-center rounded-lg bg-success-soft text-success-soft-fg">
+        <Icon name="check" size="sm" aria-hidden />
+      </span>
+      <div className="min-w-0 flex-1">
+        <p className="text-style-label text-text">{copy.headline}</p>
+        <p className="text-style-caption text-muted">{copy.subtext}</p>
+      </div>
       <button
         type="button"
-        className="absolute inset-0 w-full h-full cursor-default"
-        // eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- aria-label, pre-existing copy; i18n extraction tracked separately
-        aria-label="Закрити святкування"
-        onClick={handleClose}
-        onKeyDown={(e) => {
-          if (e.key === "Escape" || e.key === "Enter" || e.key === " ") {
-            e.preventDefault();
-            handleClose();
-          }
-        }}
-      />
-      {/* Confetti particles */}
-      <div className="absolute inset-0 overflow-hidden pointer-events-none">
-        {particles.map((p) => (
-          <div
-            key={p.id}
-            className="absolute animate-confetti"
-            style={{
-              left: `${p.x}%`,
-              top: `${p.y}%`,
-              width: p.size,
-              height: p.size,
-              backgroundColor: p.color,
-              borderRadius: p.id % 3 === 0 ? "50%" : "2px",
-              transform: `rotate(${p.rotation}deg)`,
-              animationDelay: `${p.delay}s`,
-            }}
-          />
-        ))}
-      </div>
-
-      <div
-        className={cn(
-          "relative flex flex-col items-center gap-5 p-8 max-w-sm mx-4 text-center",
-          "bg-panel/95 backdrop-blur-xl rounded-3xl shadow-float border border-line",
-          animateOut
-            ? "motion-safe:animate-scale-out"
-            : "motion-safe:animate-streak-milestone",
-        )}
-        role="presentation"
-        onClick={(e) => e.stopPropagation()}
-        onKeyDown={(e) => e.stopPropagation()}
+        onClick={close}
+        aria-label={messages.actions.close}
+        className="touch-target shrink-0 rounded-lg text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
       >
-        {/* Success icon with ring animation */}
-        <div
-          className={cn(
-            "w-20 h-20 rounded-full flex items-center justify-center",
-            "bg-brand-500/15 ring-4 ring-brand-500/20",
-            "motion-safe:animate-success-ring",
-          )}
-        >
-          <div className="w-14 h-14 rounded-full bg-brand-500/20 flex items-center justify-center">
-            <Icon
-              name="check"
-              size={32}
-              strokeWidth={3}
-              className="text-brand-500 motion-safe:animate-check-draw"
-            />
-          </div>
-        </div>
-
-        {/* Headline */}
-        <div className="space-y-1">
-          <h2 className="text-style-headline text-text">{headline}</h2>
-          <p className="text-style-body text-muted">{subtext}</p>
-        </div>
-
-        {/* Tips for next steps */}
-        <div className="w-full p-3 rounded-xl bg-panelHi/50 border border-line/50 text-left space-y-2">
-          {/* eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- intentional overlay typography + pre-existing copy (i18n extraction tracked separately) */}
-          <p className="text-style-caption text-subtle font-medium">Що далі</p>
-          <div className="flex items-start gap-2.5">
-            <div className="w-6 h-6 rounded-xl bg-brand-500/10 flex items-center justify-center shrink-0 mt-0.5">
-              <Icon name="sparkles" size={12} className="text-brand-500" />
-            </div>
-            <p className="text-style-body text-muted leading-relaxed">
-              {nextStepTip}
-            </p>
-          </div>
-        </div>
-
-        {/* Dismiss button — promises the next action per module
-            (P2-15). Closing the modal still puts the user on the hub,
-            where the relevant CTA is the natural next step. */}
-        <Button
-          variant="primary"
-          size="lg"
-          onClick={handleClose}
-          className="w-full mt-1"
-        >
-          {primaryCtaLabel}
-        </Button>
-      </div>
+        <Icon name="x" size="sm" aria-hidden />
+      </button>
     </div>
   );
 }
