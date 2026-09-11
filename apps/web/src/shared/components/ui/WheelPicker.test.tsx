@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-import { describe, it, expect, vi, beforeEach } from "vitest";
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
 import { render, screen, fireEvent } from "@testing-library/react";
 import { WheelPicker } from "./WheelPicker";
 
@@ -7,6 +7,9 @@ const VALUES = [0, 25, 50, 75, 100, 125, 150];
 
 // jsdom lacks matchMedia; WheelPicker reads it via useReducedMotion.
 beforeEach(() => {
+  // Колесо комітить через `setTimeout` (settle 120 мс) і звільняє гард
+  // через страхувальний таймер — обидва треба проганяти вручну.
+  vi.useFakeTimers();
   vi.stubGlobal(
     "matchMedia",
     vi.fn(() => ({
@@ -20,6 +23,10 @@ beforeEach(() => {
       dispatchEvent: vi.fn(),
     })),
   );
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("WheelPicker", () => {
@@ -125,8 +132,12 @@ describe("WheelPicker", () => {
     expect(onChange).toHaveBeenLastCalledWith(0);
   });
 
-  it("does not commit a value from its own controlled scroll sync", () => {
-    const onChange = vi.fn();
+  /**
+   * `scrollTo` у jsdom немає, і саме він нам потрібен як заглушка: тоді
+   * `scrollTop` не рухається сам, і тест керує позицією вручну — рівно як
+   * це робить браузер зі snap-фізикою.
+   */
+  function withStubbedScrollTo(body: () => void) {
     const descriptor = Object.getOwnPropertyDescriptor(
       HTMLElement.prototype,
       "scrollTo",
@@ -135,22 +146,8 @@ describe("WheelPicker", () => {
       configurable: true,
       value: vi.fn(),
     });
-
     try {
-      render(
-        <WheelPicker
-          values={VALUES}
-          value={50}
-          onChange={onChange}
-          aria-label="v"
-        />,
-      );
-
-      const spin = screen.getByRole("spinbutton");
-      spin.scrollTop = 80;
-      fireEvent.scroll(spin);
-
-      expect(onChange).not.toHaveBeenCalled();
+      body();
     } finally {
       if (descriptor) {
         Object.defineProperty(HTMLElement.prototype, "scrollTo", descriptor);
@@ -158,6 +155,111 @@ describe("WheelPicker", () => {
         Reflect.deleteProperty(HTMLElement.prototype, "scrollTo");
       }
     }
+  }
+
+  it("does not commit intermediate rows while its own smooth sync is running", () => {
+    withStubbedScrollTo(() => {
+      const onChange = vi.fn();
+      const { rerender } = render(
+        <WheelPicker
+          values={VALUES}
+          value={50}
+          onChange={onChange}
+          aria-label="v"
+        />,
+      );
+      // Друге позиціювання вже анімоване (перше, на монтуванні, миттєве),
+      // тож саме тут гард має роботу: `scrollTo({behavior:"smooth"})`
+      // сипле тими самими подіями, що й флік пальцем.
+      rerender(
+        <WheelPicker
+          values={VALUES}
+          value={125}
+          onChange={onChange}
+          aria-label="v"
+        />,
+      );
+
+      const spin = screen.getByRole("spinbutton");
+      spin.scrollTop = 120; // проміжний рядок по дорозі до цілі
+      fireEvent.scroll(spin);
+
+      expect(onChange).not.toHaveBeenCalled();
+    });
+  });
+
+  it("releases its sync guard when snap settles off the exact pixel", () => {
+    // Регресія: гард звільнявся лише при збігу в ±1 px. Контейнер має
+    // `snap-y snap-mandatory`, тобто фінальну позицію обирає браузер, і
+    // при дробовій висоті рядка (зум, DPR) вона законно розходиться з
+    // ціллю більше ніж на піксель. Тоді гард не звільнявся НІКОЛИ:
+    // `onScroll` вічно виходив раннім `return`, колесо переставало
+    // комітити, а наступний ререндер тягнув його на старий індекс —
+    // симптом власника «колесо кілька разів стрибає туди-сюди».
+    withStubbedScrollTo(() => {
+      const onChange = vi.fn();
+      const { rerender } = render(
+        <WheelPicker
+          values={VALUES}
+          value={50}
+          onChange={onChange}
+          aria-label="v"
+        />,
+      );
+      rerender(
+        <WheelPicker
+          values={VALUES}
+          value={125}
+          onChange={onChange}
+          aria-label="v"
+        />,
+      );
+
+      const spin = screen.getByRole("spinbutton");
+      // Ціль — 5 × 40 = 200 px. Snap став на 203: індекс той самий,
+      // піксель інший.
+      spin.scrollTop = 203;
+      fireEvent.scroll(spin);
+
+      // Колесо знову живе: звичайний скрол людини комітить.
+      spin.scrollTop = 80;
+      fireEvent.scroll(spin);
+      vi.advanceTimersByTime(200);
+      expect(onChange).toHaveBeenCalledWith(50);
+    });
+  });
+
+  it("releases its sync guard on a timer when the target row is never reached", () => {
+    // Друга половина тієї ж страховки: якщо подія «доїхали» не настане
+    // взагалі (перерваний скрол, прихована вкладка), колесо однаково має
+    // ожити, а не лишитись мертвим до перемонтування.
+    withStubbedScrollTo(() => {
+      const onChange = vi.fn();
+      const { rerender } = render(
+        <WheelPicker
+          values={VALUES}
+          value={50}
+          onChange={onChange}
+          aria-label="v"
+        />,
+      );
+      rerender(
+        <WheelPicker
+          values={VALUES}
+          value={125}
+          onChange={onChange}
+          aria-label="v"
+        />,
+      );
+
+      vi.advanceTimersByTime(700);
+
+      const spin = screen.getByRole("spinbutton");
+      spin.scrollTop = 80;
+      fireEvent.scroll(spin);
+      vi.advanceTimersByTime(200);
+      expect(onChange).toHaveBeenCalledWith(50);
+    });
   });
 
   it("highlights the nearest value when value is not an exact member", () => {

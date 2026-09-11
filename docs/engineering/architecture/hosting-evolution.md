@@ -236,7 +236,7 @@ Self-host технічно дешевший, але setup/maintenance з'їст�
 ## Посилання
 
 - Повний каталог сервісів + ціни: [`docs/work/specs/launch/business/03-services-and-toolstack.md`](../../work/specs/launch/business/03-services-and-toolstack.md).
-- Monthly cost projection по фазах: [`03 §9`](../../work/specs/launch/business/03-services-and-toolstack.md#9-повна-monthly-cost-projection).
-- Pre-launch чеклист (де observability — requirement): [`docs/work/specs/launch/business/04-launch-readiness.md#3-моніторинг-та-алерти`](../../work/specs/launch/business/04-launch-readiness.md#3-моніторинг-та-алерти).
+- Monthly cost projection по фазах: [`03 §9`](../../work/specs/launch/business/03-services-and-toolstack.md#6-прогноз-місячних-витрат).
+- Pre-launch чеклист (де observability — requirement): [`docs/work/specs/launch/business/04-launch-readiness.md#3-моніторинг-та-алерти`](../../work/specs/launch/business/04-launch-readiness.md#32-monitoring-та-alerting-для-платного-продукту).
 - Як налаштований поточний Railway + Vercel: [`docs/engineering/integrations/railway-vercel.md`](../integrations/railway-vercel.md).
 - Observability reference: [`docs/operations/observability/`](../../operations/observability) (SLO, metrics, runbook, logging).

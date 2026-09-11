@@ -105,22 +105,37 @@ describe("Budgets page", () => {
     expect(container.querySelector('[aria-busy="true"]')).toBeInTheDocument();
   });
 
-  it("renders the loaded page with the add-limit/goal CTA", () => {
+  it("renders the loaded page with the combined «Запланувати» picker", () => {
     renderBudgets();
-    // CTA button to open the add-budget form
-    expect(
-      screen.getByRole("button", { name: /Додати ліміт або ціль/ }),
-    ).toBeInTheDocument();
+    // Founder-UX audit round 2 (F2): one combined trigger replaces the old
+    // standalone "Додати ліміт або ціль" CTA.
+    const trigger = screen.getByRole("button", { name: /Запланувати/ });
+    expect(trigger).toBeInTheDocument();
+    expect(trigger).toHaveAttribute("aria-haspopup", "menu");
   });
 
-  it("opens the add-budget form on CTA click", () => {
+  it("opens the add-budget form on «Ліміт» pick", () => {
     renderBudgets();
-    const cta = screen.getByRole("button", { name: /Додати ліміт або ціль/ });
+    fireEvent.click(screen.getByRole("button", { name: /Запланувати/ }));
     act(() => {
-      fireEvent.click(cta);
+      fireEvent.click(screen.getByRole("menuitem", { name: /^Ліміт/ }));
     });
     // form select for category appears
     expect(screen.getByDisplayValue("Обери категорію")).toBeInTheDocument();
+  });
+
+  it("delegates the «Підписка» pick to onAddSubscription", () => {
+    const onAddSubscription = vi.fn();
+    renderBudgets({ onAddSubscription });
+    fireEvent.click(screen.getByRole("button", { name: /Запланувати/ }));
+    act(() => {
+      fireEvent.click(screen.getByRole("menuitem", { name: /Підписка/ }));
+    });
+    expect(onAddSubscription).toHaveBeenCalledTimes(1);
+    // Picking «Підписка» must NOT also open the limit/goal form.
+    expect(
+      screen.queryByDisplayValue("Обери категорію"),
+    ).not.toBeInTheDocument();
   });
 
   it("renders existing limit budgets in the section", () => {
@@ -140,10 +155,9 @@ describe("Budgets page", () => {
   it("adds a limit budget via the form submit", async () => {
     const setBudgets = vi.fn();
     renderBudgets({ storage: buildStorage({ setBudgets }) });
+    fireEvent.click(screen.getByRole("button", { name: /Запланувати/ }));
     act(() => {
-      fireEvent.click(
-        screen.getByRole("button", { name: /Додати ліміт або ціль/ }),
-      );
+      fireEvent.click(screen.getByRole("menuitem", { name: /^Ліміт/ }));
     });
     // pick category
     fireEvent.change(screen.getByDisplayValue("Обери категорію"), {

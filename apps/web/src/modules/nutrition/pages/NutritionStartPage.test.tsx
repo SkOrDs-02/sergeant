@@ -106,6 +106,7 @@ function renderStartPage(
     <NutritionStartPage
       log={log}
       prefs={EMPTY_PREFS}
+      onPickMeal={vi.fn()}
       setActivePageAndHash={
         setActivePageAndHash as (
           page: import("../lib/nutritionRouter").NutritionPage,

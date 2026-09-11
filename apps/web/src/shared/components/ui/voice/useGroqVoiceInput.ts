@@ -1,5 +1,8 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { transcribeApi } from "@shared/api";
+import type { AccessDenial } from "@shared/lib/api/accessDenial";
+import { accessDenialCopy } from "../../../../core/access/accessDenialCopy";
+import { useCanUse } from "../../../../core/access/useCanUse";
 
 /* -------------------------------------------------------------------------- *
  *  Groq Whisper — server-side STT через `/api/transcribe`.
@@ -51,6 +54,13 @@ export interface UseGroqVoiceInputOptions {
    * Викликача треба переключитися на Web Speech API для решти сесії.
    */
   onProviderUnavailable?: (() => void) | undefined;
+  /**
+   * Причина, з якої запис НЕ почали (A3, поставка 2). Хто її передає —
+   * показує картку `AccessDenialNotice`; хто ні — отримує ту саму
+   * причину одним рядком через `onError`, тож жоден наявний виклик не
+   * лишається без пояснення.
+   */
+  onDenied?: ((denial: AccessDenial) => void) | undefined;
 }
 
 export interface UseGroqVoiceInputReturn {
@@ -68,7 +78,9 @@ export function useGroqVoiceInput({
   onResult,
   onError,
   onProviderUnavailable,
+  onDenied,
 }: UseGroqVoiceInputOptions = {}): UseGroqVoiceInputReturn {
+  const canUse = useCanUse();
   const [listening, setListening] = useState(false);
   const [uploading, setUploading] = useState(false);
   const [supported] = useState(() => isGroqSupported());
@@ -171,6 +183,19 @@ export function useGroqVoiceInput({
 
   const start = useCallback(async () => {
     if (recorderRef.current || uploading) return;
+
+    // AI-DANGER: гейт стоїть ПЕРЕД `getUserMedia`. Інакше браузер питає
+    // дозвіл на мікрофон, людина його дає, запис іде — і аж тоді сервер
+    // віддає 401. Саме цю послідовність власник описав як «дізнаюсь про
+    // заборону надто пізно»; переставити цей блок нижче означає
+    // повернути її.
+    const denial = canUse("voice-input");
+    if (denial) {
+      if (onDenied) onDenied(denial);
+      else onError?.(accessDenialCopy(denial).short);
+      return;
+    }
+
     const mimeType = pickRecorderMimeType();
     if (mimeType === null) {
       onError?.("Браузер не підтримує запис аудіо.");
@@ -236,7 +261,7 @@ export function useGroqVoiceInput({
       cleanup();
       setListening(false);
     }
-  }, [uploading, onError, cleanup, upload, stop]);
+  }, [uploading, canUse, onDenied, onError, cleanup, upload, stop]);
 
   const toggle = useCallback(() => {
     if (listening) stop();

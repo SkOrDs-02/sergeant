@@ -1,6 +1,7 @@
 import { describe, it, expect } from "vitest";
 import {
   ASSISTANT_CAPABILITIES,
+  ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS,
   CAPABILITY_MODULE_ORDER,
   CAPABILITY_MODULE_META,
   getCapabilityServerTool,
@@ -8,6 +9,7 @@ import {
   groupCapabilitiesByModule,
   isActiveQuickActionModule,
   isIncompletePrompt,
+  isRecentCapability,
   pickTopQuickActions,
   searchCapabilities,
   sortQuickActionsForModule,
@@ -328,5 +330,56 @@ describe("searchCapabilities", () => {
     for (const c of moduleEntries) {
       expect(r.some((x) => x.id === c.id)).toBe(true);
     }
+  });
+});
+
+// Founder-ux-review round 2 (O3): `isNew: boolean` → `since: "YYYY-MM-DD"`
+// so the "Новинка" badge expires on its own instead of hanging forever
+// (compare_weeks: ~4.5 months from the 2026-04-25 spec to 2026-09-11).
+describe("isRecentCapability", () => {
+  const NOW = Date.parse("2026-09-11T12:00:00.000Z");
+
+  it("undefined `since` is never recent", () => {
+    expect(isRecentCapability(undefined, NOW)).toBe(false);
+  });
+
+  it("unparsable `since` is never recent (fails safe, not open)", () => {
+    expect(isRecentCapability("not-a-date", NOW)).toBe(false);
+  });
+
+  it("today is recent", () => {
+    expect(isRecentCapability("2026-09-11", NOW)).toBe(true);
+  });
+
+  it("1 day inside the window is recent", () => {
+    expect(
+      isRecentCapability("2026-09-10", NOW), // 1 day ago
+    ).toBe(true);
+  });
+
+  it(`the day exactly at the ${ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS}-day boundary is NOT recent`, () => {
+    // 2026-08-12 is exactly 30 Kyiv-calendar days before 2026-09-11.
+    expect(isRecentCapability("2026-08-12", NOW)).toBe(false);
+  });
+
+  it("29 days ago (1 day inside the boundary) is still recent", () => {
+    expect(isRecentCapability("2026-08-13", NOW)).toBe(true);
+  });
+
+  it("a release from ~4.5 months ago (the compare_weeks regression) is NOT recent", () => {
+    expect(isRecentCapability("2026-04-25", NOW)).toBe(false);
+  });
+
+  it("a `since` in the future is not recent (defensive — should never happen in practice)", () => {
+    expect(isRecentCapability("2026-09-12", NOW)).toBe(false);
+  });
+
+  it("no capability in the live catalogue currently renders as new", () => {
+    // Documents current state so a future `since` addition is a deliberate,
+    // visible diff — not a silent side effect of adding an unrelated field.
+    const recent = ASSISTANT_CAPABILITIES.filter((c) =>
+      isRecentCapability(c.since, NOW),
+    );
+    expect(recent).toEqual([]);
   });
 });

@@ -240,13 +240,13 @@ durability — окремий PR з recreate volume + chown.
 
 - **ESLint guard** — заблокувати direct-import з `vectorStore.ts` /
   `embeddings.ts` через `@typescript-eslint/no-restricted-imports` у
-  `eslint-plugin-sergeant-design`. TODO зафіксований в [ADR-0028 § Compliance](../../../../governance/adr/0028-pgvector-ai-memory.md#compliance).
+  `eslint-plugin-sergeant-design`. TODO зафіксований в [ADR-0028 § Compliance](../../../../governance/adr/0028-pgvector-ai-memory.md).
 - **Re-embed worker (PR2.1)** — batch-job для re-embed-у при зміні
   `voyage-3.5-lite` / `embedding_version`.
 - **Prometheus dashboard** — рознести `ai_memory_*` і `voyage_external_http_*`
   у окрему Grafana-панель.
 - **PR4: hybrid hot/cold storage** — `user_memory_summaries` + pgvector
-  тільки для hot 90 днів. Threshold-и в [ADR-0028 § Scaling thresholds](../../../../governance/adr/0028-pgvector-ai-memory.md#scaling-thresholds).
+  тільки для hot 90 днів. Threshold-и в [ADR-0028 § Scaling thresholds](../../../../governance/adr/0028-pgvector-ai-memory.md).
   Не зараз — потрібно для >100k активних юзерів.
 
 ---

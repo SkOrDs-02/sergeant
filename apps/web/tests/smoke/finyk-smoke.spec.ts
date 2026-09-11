@@ -39,7 +39,14 @@ test("@critical finyk: empty transactions → add-expense CTA opens sheet", asyn
   await page.goto("/finyk/transactions", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "finyk");
 
-  await expect(page.getByText("Транзакцій ще немає")).toBeVisible({
+  // Порожній перший вхід (жодної транзакції в жодному місяці) віддає
+  // tier-1 герой `ModuleEmptyState module="finyk"`, тобто
+  // `MODULE_EMPTY_CONFIG.finyk.title`. Копію «Транзакцій ще немає» зняли
+  // поставкою 2f0c49a (2026-09-06), а сюїта відстала — той самий клас
+  // «код змінили, тест ні», що й решта відсталих тестів цього PR.
+  // Місяць-порожній і фільтр-порожній стани в цьому кейсі не при ділі:
+  // перший вимагає історії в інших місяцях, другий — рядків під фільтром.
+  await expect(page.getByText("Куди йдуть твої гроші?")).toBeVisible({
     timeout: 10_000,
   });
 

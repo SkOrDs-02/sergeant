@@ -6,7 +6,8 @@
 // `open` / `closed` / `reference`, and generate
 // `docs/open-work.md` — a single-pane index of all *open* work across
 // every tracker, grouped by tracker. Auto-extracts PR mentions
-// (`#NNNN` — 3+ digit numbers in the doc body) into a `PR-згадки` column.
+// (`#NNNN` — 3-5 digit numbers in the doc body, excluding hex colours,
+// anchor fragments and zero-padded labels) into a `PR-згадки` column.
 //
 // Single source of truth for «що в цьому репо зараз НЕ доробленого?»
 // — answers the question without touring 6+ tracker READMEs.
@@ -71,10 +72,29 @@ const RE_AGENT_READY =
 const RE_PATH_TOKEN =
   /`([A-Za-z0-9_.@/-]+\/[A-Za-z0-9_.@/*-]+|[A-Za-z0-9_.@/-]+\.(?:tsx?|sql|mjs|json|yml|yaml))`/g;
 // PR mention: `#NNNN` with 3-5 digits, optionally wrapped in `[]()`
-// markdown link or preceded by `PR` / `pull/`. The 3-digit minimum filters
-// out enumerations like `#1`–`#5 у списку`; the 5-digit ceiling avoids
-// treating hex colors like `#171412` as GitHub PR links.
-const RE_PR_NUMBER = /#(\d{3,5})(?!\d)|\/pull\/(\d{3,5})(?!\d)/g;
+// markdown link or preceded by `PR` / `pull/`.
+//
+// Three guards keep non-PR `#`-tokens out of the dashboard. Each exists
+// because a real document tripped over it:
+//
+//   1. `(?<![0-9A-Za-z&#])` — the `#` must not be glued to a preceding word
+//      character. Kills anchor fragments (`…/05-motion-offline-error.md#141-motion-tokens`
+//      used to surface as «PR 141»), HTML entities (`&#8212;`) and
+//      identifiers like `QaProfile#2026`.
+//   2. `[1-9]` first digit — GitHub numbers pull requests from 1 without
+//      zero-padding, so `#0…` is never a GitHub reference. Kills CSS
+//      shorthands (`#000`) and this repo's zero-padded storage-roadmap stage
+//      labels (`PR #012`, `#038`, `#016`), which used to be mislinked to
+//      unrelated real PRs 12 / 38 / 16.
+//   3. `(?![0-9A-Za-z])` — the digits must not be glued to a trailing word
+//      character. This is the hex-colour guard: `#14100e` used to surface as
+//      «PR 14100», `#155e75` as «PR 155», `#92400e` as «PR 92400». It also
+//      drops lettered stage labels (`PR #052b`, `#057r`, `#070f`).
+//
+// The 3-digit minimum still filters enumerations like `#1`–`#5 у списку`;
+// the 5-digit ceiling still rejects all-numeric 6-digit hex (`#171412`).
+const RE_PR_NUMBER =
+  /(?<![0-9A-Za-z&#])#([1-9]\d{2,4})(?![0-9A-Za-z])|\/pull\/([1-9]\d{2,4})(?![0-9A-Za-z])/g;
 
 // ── Tracker configuration ───────────────────────────────────────────────────
 
@@ -166,8 +186,10 @@ export function classifyStatus(rawStatus) {
 
 /**
  * Extract a deduped, ascending-sorted list of PR numbers mentioned in
- * `content`. Only `#NNNN` with 3-5 digits is recognised — see
- * `RE_PR_NUMBER` comment for rationale.
+ * `content`. Only a free-standing `#NNNN` with 3-5 digits and no leading
+ * zero is recognised, so hex colours (`#14100e`), anchor fragments
+ * (`file.md#141-motion-tokens`) and zero-padded stage labels (`PR #052b`)
+ * stay out — see the `RE_PR_NUMBER` comment for the per-guard rationale.
  */
 export function extractPRNumbers(content) {
   if (!content) return [];
@@ -652,7 +674,7 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
   );
   lines.push("");
   lines.push(
-    "**Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (≥3 цифри, deduped, sorted ascending; перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.",
+    "**Колонки.** `Документ` — шлях відносно директорії трекера. `Статус` — повний текст `Status:` хедера (truncated до 180 символів; `❓` = `unknown` бакет, треба полагодити header). `PR-згадки` — auto-extracted `#NNNN` згадки (3–5 цифр, без провідного нуля, не приклеєні до сусідніх літер/цифр — тож hex-кольори `#14100e`, якорі `file.md#141-…` і zero-padded мітки `PR #052b` сюди не потрапляють; deduped, sorted ascending, перші 10 показано). Це навігаційні згадки з документа, не live-стан GitHub PR. Ініціативи й Plans мають додатково: `Agent-ready` (🟢 yes / 🟡 needs-decision / 🔴 blocked — рядки сортуються `yes` → `needs-decision` → `blocked`), `Skill` (canonical Sergeant specialist skill) і `Playbook` (best-fit playbook). Останні дві — heuristic suggestions з [`scripts/docs/skill-mapping.json`](../scripts/docs/skill-mapping.json), editable вручну.",
   );
   lines.push("");
 

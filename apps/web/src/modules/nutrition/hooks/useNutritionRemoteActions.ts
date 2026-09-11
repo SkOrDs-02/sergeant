@@ -2,6 +2,8 @@ import { useCallback, type Dispatch, type SetStateAction } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { nutritionApi } from "@shared/api";
+import type { AccessDenial } from "@shared/lib/api/accessDenial";
+import { useAccessGuard } from "../../../core/access/useCanUse";
 import {
   generatePrefixedId,
   pantryModeAvailabilityError,
@@ -143,6 +145,12 @@ export interface UseNutritionRemoteActionsParams {
   setBusy: AnySetter<boolean>;
   setErr: AnySetter<string>;
   setStatusText: AnySetter<string>;
+  /**
+   * Куди покласти причину, з якої дію НЕ запустили (A3, поставка 2).
+   * Окремо від `setErr` навмисно: `setErr` несе текст помилки, що вже
+   * сталась, а це — причина, з якої запиту не було взагалі.
+   */
+  setDenial: (denial: AccessDenial) => void;
   pantry: RemoteActionsPantry;
   prefs: RemoteActionsPrefs;
   recipes: UiNutritionRecipe[];
@@ -246,6 +254,7 @@ export function useNutritionRemoteActions({
   setBusy,
   setErr,
   setStatusText,
+  setDenial,
   // pantry + prefs
   pantry,
   prefs,
@@ -269,6 +278,11 @@ export function useNutritionRemoteActions({
   shopping,
   setShoppingBusy,
 }: UseNutritionRemoteActionsParams) {
+  // Один pre-gate на всі чотири AI-дії нижче. До цієї поставки жодна з
+  // них гейта не мала: анонім доходив до запиту й отримував 401 уже
+  // після того, як вклав у дію роботу.
+  const guard = useAccessGuard(setDenial);
+
   // ─── Recipes ────────────────────────────────────────────────────────────
   const recipesMutation = useMutation({
     mutationFn: () => {
@@ -319,8 +333,8 @@ export function useNutritionRemoteActions({
   });
 
   const recommendRecipes = useCallback(
-    () => recipesMutation.mutate(),
-    [recipesMutation],
+    () => guard("recipes", () => recipesMutation.mutate()),
+    [guard, recipesMutation],
   );
 
   // ─── Week plan ──────────────────────────────────────────────────────────
@@ -367,8 +381,8 @@ export function useNutritionRemoteActions({
   });
 
   const fetchWeekPlan = useCallback(
-    () => weekPlanMutation.mutate(),
-    [weekPlanMutation],
+    () => guard("week-plan", () => weekPlanMutation.mutate()),
+    [guard, weekPlanMutation],
   );
 
   // ─── Day plan ───────────────────────────────────────────────────────────
@@ -471,8 +485,8 @@ export function useNutritionRemoteActions({
 
   const fetchDayPlan = useCallback(
     (regenerateMealType?: string | null) =>
-      dayPlanMutation.mutate(regenerateMealType),
-    [dayPlanMutation],
+      guard("day-plan", () => dayPlanMutation.mutate(regenerateMealType)),
+    [guard, dayPlanMutation],
   );
 
   // ─── Add meal from plan (local-only; no network) ────────────────────────
@@ -576,8 +590,9 @@ export function useNutritionRemoteActions({
   });
 
   const generateShoppingList = useCallback(
-    (source: string) => shoppingMutation.mutate(source),
-    [shoppingMutation],
+    (source: string) =>
+      guard("shopping-list", () => shoppingMutation.mutate(source)),
+    [guard, shoppingMutation],
   );
 
   return {

@@ -48,6 +48,7 @@ function renderHarness() {
         setBusy: vi.fn(),
         setErr: vi.fn(),
         setStatusText: vi.fn(),
+        setDenial: vi.fn(),
       }),
     { wrapper: makeWrapper() },
   );

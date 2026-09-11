@@ -36,6 +36,7 @@ import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import type {
   Meal,
   MealTemplate,
+  MealTypeId,
   NutritionPrefs,
   PantryItem,
 } from "@sergeant/nutrition-domain";
@@ -48,6 +49,7 @@ import {
   buildMealsForSave,
   currentTime,
   emptyForm,
+  gramsOrDefault,
   upsertMealTemplate,
   type MealFormState,
   type MealSaveTemplate,
@@ -56,6 +58,7 @@ import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
 import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
+import { useMealSourcePick } from "./meal-sheet/useMealSourcePick";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
 import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
 import { PantryPortionField } from "./meal-sheet/PantryPortionField";
@@ -106,11 +109,6 @@ function macrosAreAllEmpty(macros: {
  * потрапляла НЕ та вага без жодного натяку користувачу. Тиха підміна даних
  * гірша за помилку, тому парсинг тут спільний із КБЖВ.
  */
-function gramsOrDefault(raw: string): number {
-  const parsed = parseDecimalInput(raw);
-  return parsed.ok && parsed.value > 0 ? parsed.value : 100;
-}
-
 interface AddMealSheetProps {
   open: boolean;
   onClose: () => void;
@@ -118,6 +116,13 @@ interface AddMealSheetProps {
   onSave: (meal: Meal, photoFile?: File | null) => void;
   /** `"photo"` — відкритись одразу на кроці аналізу фото (шорткати/CTA). */
   initialStep?: "source" | "photo" | undefined;
+  /**
+   * Тип прийому для НОВОГО запису. Порожньо — тип вгадує годинник
+   * (`mealTypeByNow`), як для FAB. Заповнено рівно тоді, коли людина
+   * тапнула конкретний сегмент hero-стрічки. На редагування не впливає:
+   * там тип уже є в самому записі.
+   */
+  initialMealType?: MealTypeId | null | undefined;
   initialMeal?: Partial<Meal> | null | undefined;
   mealTemplates?: MealTemplate[] | undefined;
   setPrefs?: Dispatch<SetStateAction<NutritionPrefs>> | undefined;
@@ -145,6 +150,7 @@ export function AddMealSheet({
   onClose,
   onSave,
   initialStep,
+  initialMealType,
   initialMeal,
   mealTemplates = [],
   setPrefs,
@@ -172,6 +178,13 @@ export function AddMealSheet({
 
   const search = useFoodSearch(foodQuery);
   const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } = search;
+  const sourcePick = useMealSourcePick({
+    foodQuery,
+    search,
+    setFoodQuery,
+    setPickedFood,
+    setPickedGrams,
+  });
 
   const {
     barcode,
@@ -243,7 +256,7 @@ export function AddMealSheet({
         err: "",
       });
     } else {
-      setForm(emptyForm(null));
+      setForm(emptyForm(null, initialMealType));
     }
     setFoodQuery("");
     setPickedFood(null);
@@ -567,6 +580,10 @@ export function AddMealSheet({
     // походження даних (канон: «скільки логів через AI» має лишатись
     // чесним питанням).
     dropSeededMacros();
+    // Відкладений автопідбір мусить згаснути разом із джерелом: інакше
+    // пошук, що відповість уже після виходу, поверне аркуш на
+    // «Заповнення» з продуктом, від якого людина щойно відмовилась.
+    sourcePick.cancelAutoPick();
     setStep("source");
   }
 
@@ -621,6 +638,7 @@ export function AddMealSheet({
                   onQuickAddMeal={onQuickAddMeal}
                   onQuickAdded={onClose}
                   pantryItems={pantryItems}
+                  sourcePick={sourcePick}
                   fromPantryItem={fromPantryItem}
                   setFromPantryItem={setFromPantryItem}
                   picker={{

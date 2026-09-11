@@ -422,11 +422,13 @@ describe("Transactions page shell", () => {
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
-  it("routes the list to the first-run empty hero when activeTx is empty and not loading", () => {
+  it("routes the list to the list-scoped no-data state when activeTx is empty and not loading", () => {
     renderTransactions({
       mono: buildMono({ loadingTx: false, realTx: [] }),
     });
-    expect(screen.getByText("Куди йдуть твої гроші?")).toBeInTheDocument();
+    // F1: Транзакції більше НЕ повторюють герой Огляду. Порожній перший
+    // вхід віддає власну list-scoped заглушку — див. `TransactionList.tsx`.
+    expect(screen.getByText("Записів ще немає")).toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 

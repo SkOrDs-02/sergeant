@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-06 by docs:gen-status. **Next review:** 2026-09-13.
+> **Last touched:** 2026-09-11 by docs:gen-status. **Next review:** 2026-09-18.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -30,11 +30,11 @@
 - [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
 - [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
 
-## 🔵 В роботі — 72 відкриті документи
+## 🔵 В роботі — 73 відкриті документи
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 72       |
+| Активні спеки | 73       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -44,7 +44,7 @@
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
 - [`work/specs/launch/phases/02-capacitor-launch.md`](./work/specs/launch/phases/02-capacitor-launch.md) — Phase 2 — Capacitor launch roadmap with users — Active — research deliverable for the parent launch program. _(Активні спеки)_
-- [`work/specs/audits/2026-09-01-product-audit/accounts.md`](./work/specs/audits/2026-09-01-product-audit/accounts.md) — Продуктовий аудит 2026-09: тестові акаунти і наповнення — Active _(Активні спеки)_
+- [`work/specs/audits/2026-09-11-founder-ux-review-round2.md`](./work/specs/audits/2026-09-11-founder-ux-review-round2.md) — Розбір зауважень власника, хвиля 2 (після Codex) — Active _(Активні спеки)_
 - [`work/specs/audits/2026-08-05-orphaned-code-audit.md`](./work/specs/audits/2026-08-05-orphaned-code-audit.md) — Аудит сиротілого коду, елементів і таблиць — 2026-08-05 — Active _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано

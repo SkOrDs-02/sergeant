@@ -103,12 +103,11 @@ describe("TransactionList — DataState routing", () => {
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
-  it("renders the tier-1 ModuleEmptyState when not loading and activeTx itself is empty (first-run)", () => {
-    // When the user lands on Transactions with no rows for the entire
-    // month, surface the module-tuned hero from `ModuleEmptyState` so
-    // FTUX gets a proper hint about what Finyk does — not the filter-
-    // tuned "Немає транзакцій" copy which only makes sense once the
-    // user has data and has narrowed it down.
+  it("renders the list-scoped no-data-at-all state when not loading and activeTx itself is empty (first-run)", () => {
+    // When the user lands on Transactions with no rows anywhere, this must
+    // NOT repeat Overview's tier-1 `ModuleEmptyState` hero verbatim
+    // (founder-UX audit round 2, F1) — Transactions gets its own,
+    // list-scoped copy instead.
     render(
       <TransactionList
         {...baseProps}
@@ -118,9 +117,11 @@ describe("TransactionList — DataState routing", () => {
       />,
     );
 
-    // Title comes from the curated finyk config inside
-    // `ModuleEmptyState` (MODULE_EMPTY_CONFIG.finyk.title).
-    expect(screen.getByText("Куди йдуть твої гроші?")).toBeInTheDocument();
+    expect(screen.getByText("Записів ще немає")).toBeInTheDocument();
+    // Must NOT repeat Overview's hero title verbatim.
+    expect(
+      screen.queryByText("Куди йдуть твої гроші?"),
+    ).not.toBeInTheDocument();
     // The filter-empty copy must NOT also render at the same time.
     expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
@@ -174,7 +175,7 @@ describe("TransactionList — DataState routing", () => {
       expect(onGoPreviousMonth).toHaveBeenCalledTimes(1);
     });
 
-    it("still shows the first-run hero when there is no data anywhere", () => {
+    it("still shows the list-scoped no-data state when there is no data anywhere", () => {
       render(
         <TransactionList
           {...baseProps}
@@ -186,7 +187,7 @@ describe("TransactionList — DataState routing", () => {
         />,
       );
 
-      expect(screen.getByText("Куди йдуть твої гроші?")).toBeInTheDocument();
+      expect(screen.getByText("Записів ще немає")).toBeInTheDocument();
     });
   });
 
