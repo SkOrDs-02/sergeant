@@ -129,6 +129,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
               emoji: d.emoji ?? "",
               totalAmount: String(d.totalAmount ?? d.amount ?? ""),
               dueDate: d.dueDate ?? "",
+              autoLinkKeyword: d.autoLinkKeyword ?? "",
             });
             setShowDebtForm(true);
           }}

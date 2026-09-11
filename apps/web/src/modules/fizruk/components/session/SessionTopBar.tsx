@@ -51,7 +51,12 @@ export function SessionTopBar({
   ];
 
   return (
-    <div className="sticky top-0 z-30 border-b border-line bg-panel">
+    // `safe-area-pt` обовʼязковий: сесія знімає хром модуля, а разом із ним
+    // і `ModuleHeader`, який ніс цей відступ. Body-level safe-area в репо
+    // навмисно прибрано (theme.css § v2) — інсет застосовує КОЖЕН споживач
+    // сам, тож без цього рядка смуга залазить під системний статус-бар
+    // (звіт власника 2026-09-11, скріншот з LTE/годинником поверх кнопок).
+    <div className="safe-area-pt sticky top-0 z-30 border-b border-line bg-panel">
       <div className="mx-auto flex h-14 max-w-xl items-center gap-1 px-1">
         <button
           type="button"

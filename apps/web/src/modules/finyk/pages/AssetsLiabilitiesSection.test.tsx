@@ -278,6 +278,7 @@ describe("AssetsLiabilitiesSection", () => {
       emoji: "💳",
       totalAmount: "10000",
       dueDate: "2026-09-01",
+      autoLinkKeyword: "",
     });
     expect(state.setShowDebtForm).toHaveBeenCalledWith(true);
 

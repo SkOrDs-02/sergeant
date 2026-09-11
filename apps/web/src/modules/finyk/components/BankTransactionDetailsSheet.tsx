@@ -34,7 +34,7 @@ import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
 } from "../utils";
-import { DebtIncomeLinkSection } from "./DebtIncomeLinkSection";
+import { DebtTxLinkSection } from "./DebtTxLinkSection";
 import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
@@ -60,7 +60,9 @@ export interface BankTransactionDetailsSheetProps {
   receiptId?: number | null | undefined;
   hideAmount?: boolean | undefined;
   /** Пасиви + мутатори для мостика «Борг → пасив» (спека finyk-observations,
-   * PR-3) — потрібні лише коли категорія операції `in_debt`. */
+   * PR-3; узагальнено 2026-09-11 на обидва напрямки) — потрібні для
+   * надходження з категорією `debt-income` (роль `source`) і для витрати
+   * з категорією `debt` (роль `payment`). */
   manualDebts: readonly Debt[];
   setManualDebts: (updater: (debts: Debt[]) => Debt[]) => void;
   setLinkedTxRole: (
@@ -164,6 +166,22 @@ export function BankTransactionDetailsSheet({
   }, [customCategories, isIncome]);
   const existingSplits = txSplits[transaction.id] ?? [];
   const totalAmount = Math.abs(transaction.amount / 100);
+  // CodeRabbit finding #1 (PR #1103): a split transaction can carry only a
+  // PART of its total under category `debt` (e.g. 1000 ₴ tx split into
+  // 300 ₴ debt + 700 ₴ other). `DebtTxLinkSection` payment link must use
+  // that portion, not the full `totalAmount` — else linking overstates the
+  // payment and the liability's remaining balance drops too far. `null`
+  // (no splits) tells the section to fall back to the full amount.
+  // Рівно `0` — окремий випадок, НЕ «взяти повну суму»: транзакція
+  // розділена, і людина не віднесла до боргу нічого. Тоді секції
+  // привʼязки взагалі немає (гейт нижче) — привʼязка на 0 ₴ була б
+  // мовчазним хибним числом, тим самим класом бага, що й завищення.
+  const debtPaymentSplitAmountUAH =
+    existingSplits.length > 0
+      ? existingSplits
+          .filter((split) => split.categoryId === "debt")
+          .reduce((sum, split) => sum + (Number(split.amount) || 0), 0)
+      : null;
   const [showSplitEditor, setShowSplitEditor] = useState(false);
   const [splitCategoryPicker, setSplitCategoryPicker] = useState<number | null>(
     null,
@@ -287,13 +305,27 @@ export function BankTransactionDetailsSheet({
         </section>
 
         {isIncome && category.id === "debt-income" && (
-          <DebtIncomeLinkSection
+          <DebtTxLinkSection
             transaction={transaction}
             manualDebts={manualDebts}
             setManualDebts={setManualDebts}
             setLinkedTxRole={setLinkedTxRole}
+            txRole="source"
           />
         )}
+
+        {!isIncome &&
+          category.id === "debt" &&
+          debtPaymentSplitAmountUAH !== 0 && (
+            <DebtTxLinkSection
+              transaction={transaction}
+              manualDebts={manualDebts}
+              setManualDebts={setManualDebts}
+              setLinkedTxRole={setLinkedTxRole}
+              txRole="payment"
+              splitAmountUAH={debtPaymentSplitAmountUAH}
+            />
+          )}
 
         {!isIncome && (
           <section className="rounded-2xl border border-line bg-panel p-3">

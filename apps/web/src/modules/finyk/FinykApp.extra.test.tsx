@@ -164,17 +164,15 @@ vi.mock("@shared/lib/modules/crossModulePrompt", () => ({
   tryShowCrossModulePrompt: vi.fn(),
 }));
 
-// Мок лише підміняє перехід між модулями. Решта експортів іде з
-// оригіналу: `hubNav` віддає ще й `HUB_MODULE_IDS`, який читає граф
-// навігації, і плоский обʼєкт-заглушка валив увесь файл на етапі імпорту
-// («No "HUB_MODULE_IDS" export is defined on the mock»), не добігши до
-// жодного тесту.
-vi.mock("@shared/lib/modules/hubNav", async () => {
-  const actual = await vi.importActual<
-    typeof import("@shared/lib/modules/hubNav")
-  >("@shared/lib/modules/hubNav");
-  return { ...actual, openHubModuleWithAction: vi.fn() };
-});
+// ЧАСТКОВИЙ мок: підміняємо лише `openHubModuleWithAction`, решту лишаємо
+// справжньою. Повна підміна ламала збір файлу, щойно `appPaths.ts` почав
+// імпортувати звідси `HUB_MODULE_IDS` — мок його не віддавав, і падав увесь
+// suite на рівні імпорту, а не асерції. `importOriginal` знімає цей клас
+// поломок назавжди: нові експорти доїжджають самі.
+vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@shared/lib/modules/hubNav")>()),
+  openHubModuleWithAction: vi.fn(),
+}));
 
 vi.mock("../../core/lib/lazyImport", () => ({
   lazyImport: (_factory: unknown, name: string) => {
