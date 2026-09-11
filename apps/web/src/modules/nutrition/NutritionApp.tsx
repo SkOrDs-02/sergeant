@@ -61,6 +61,8 @@ import { useNutritionQuickStatsWriter } from "./hooks/useNutritionQuickStatsWrit
 import { buildRecipeCacheKey, readRecipeCache } from "./lib/recipeCache";
 import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
 import { useToast } from "@shared/hooks/useToast";
+import type { AccessDenial } from "@shared/lib/api/accessDenial";
+import { AccessDenialNotice } from "../../core/access/AccessDenialNotice";
 import { useNutritionFirstRun } from "./hooks/useNutritionFirstRun";
 
 interface NutritionAppProps {
@@ -85,6 +87,10 @@ export default function NutritionApp({
   const [busy, setBusy] = useState(false);
   const [err, setErr] = useState("");
   const [statusText, setStatusText] = useState("");
+  // A3, поставка 2: причина, з якої серверну дію не СТАРТУВАЛИ. Окремо
+  // від `err` навмисно — той несе текст помилки, що вже сталась, а тут
+  // запиту не було взагалі, і подача в людини інша: пояснення і дія.
+  const [denial, setDenial] = useState<AccessDenial | null>(null);
 
   // Stage 4 PR #032 / #033: install the dual-write context and warm
   // the SQLite read cache once auth is known; both are no-ops when
@@ -188,6 +194,7 @@ export default function NutritionApp({
     setBusy,
     setErr,
     setStatusText,
+    setDenial,
     onItemsAdded: onPantryItemsAdded,
   });
   useEffect(() => {
@@ -353,6 +360,7 @@ export default function NutritionApp({
     setBusy,
     setErr,
     setStatusText,
+    setDenial,
     pantry,
     prefs,
     recipes,
@@ -386,6 +394,7 @@ export default function NutritionApp({
     useNutritionCloudBackup({
       toast,
       setErr,
+      setDenial,
       cloudBackupBusy,
       setCloudBackupBusy,
       backupPasswordDialog,
@@ -521,6 +530,13 @@ export default function NutritionApp({
                 in-place anchor: pantry list parsing, recipe/day-plan
                 fetches, … */}
               {statusText && <Banner className="mb-4">{statusText}</Banner>}
+              {denial && (
+                <AccessDenialNotice
+                  denial={denial}
+                  onDismiss={() => setDenial(null)}
+                  className="mb-4"
+                />
+              )}
               {err && (
                 <Banner
                   variant="danger"

@@ -15,6 +15,21 @@ vi.mock("@shared/api", async () => {
     },
   };
 });
+
+// A3, поставка 2: ці сюїти перевіряють ПОТІК ДАНИХ, а не доступ. У них
+// немає `AuthProvider`, тож справжній pre-gate чесно відповів би «немає
+// акаунта» і жодна дія не стартувала б. Сам гейт покрито окремо —
+// `core/access/featureAccess.test.ts` і `AccessDenialNotice.test.tsx`.
+vi.mock("../../../core/access/useCanUse", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../core/access/useCanUse")
+  >("../../../core/access/useCanUse");
+  return {
+    ...actual,
+    useCanUse: () => () => null,
+    useAccessGuard: () => (_feature: unknown, run: () => void) => run(),
+  };
+});
 vi.mock("../domain/nutritionBackup.js", () => ({
   buildNutritionBackupPayload: vi.fn(() => ({
     version: 1,
@@ -60,6 +75,7 @@ interface HarnessInitial {
 function renderHarness(initial: HarnessInitial = {}) {
   const toast = { success: vi.fn(), error: vi.fn() };
   const setErr = vi.fn();
+  const setDenial = vi.fn();
   const setCloudBackupBusy = vi.fn();
   const setBackupPasswordDialog = vi.fn();
   const setRestoreConfirm = vi.fn();
@@ -68,6 +84,7 @@ function renderHarness(initial: HarnessInitial = {}) {
       useNutritionCloudBackup({
         toast,
         setErr,
+        setDenial,
         cloudBackupBusy: initial.cloudBackupBusy ?? false,
         setCloudBackupBusy,
         backupPasswordDialog: initial.backupPasswordDialog ?? null,

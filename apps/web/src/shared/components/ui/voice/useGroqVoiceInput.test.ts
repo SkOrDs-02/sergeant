@@ -16,6 +16,17 @@ vi.mock("@shared/api", () => ({
   transcribeApi: { send: (...args: unknown[]) => send(...args) },
 }));
 
+// A3, поставка 2: ця сюїта про конвеєр запис → вивантаження → розбір
+// відповіді, і живе без `AuthProvider`. Справжній pre-gate чесно
+// відповів би «немає акаунта» і запис не почався б узагалі. Сам гейт
+// покрито окремо — `useGroqVoiceInput.accessGate.test.ts`.
+vi.mock("../../../../core/access/useCanUse", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../../core/access/useCanUse")
+  >("../../../../core/access/useCanUse");
+  return { ...actual, useCanUse: () => () => null };
+});
+
 import { useGroqVoiceInput } from "./useGroqVoiceInput";
 
 let clock = 1_000_000;
