@@ -113,10 +113,7 @@ export function SubscriptionForm({
         max="31"
         value={newSub.billingDay}
         onChange={(e) =>
-          setNewSub((a) => ({
-            ...a,
-            billingDay: Number(e.target.value),
-          }))
+          setNewSub((a) => ({ ...a, billingDay: Number(e.target.value) }))
         }
       />
       {(!newSub.name.trim() || !isValidBillingDay(newSub.billingDay)) && (
@@ -585,6 +582,7 @@ export function DebtForm({
           setNewDebt((a) => ({ ...a, autoLinkKeyword: v }))
         }
         transactions={transactions}
+        editingDebt={editingDebt}
       />
       {(!newDebt.name.trim() || !isPositiveFinite(newDebt.totalAmount)) && (
         <p className="text-style-caption text-subtle" role="status">

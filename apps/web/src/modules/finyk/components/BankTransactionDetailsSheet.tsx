@@ -166,6 +166,22 @@ export function BankTransactionDetailsSheet({
   }, [customCategories, isIncome]);
   const existingSplits = txSplits[transaction.id] ?? [];
   const totalAmount = Math.abs(transaction.amount / 100);
+  // CodeRabbit finding #1 (PR #1103): a split transaction can carry only a
+  // PART of its total under category `debt` (e.g. 1000 ₴ tx split into
+  // 300 ₴ debt + 700 ₴ other). `DebtTxLinkSection` payment link must use
+  // that portion, not the full `totalAmount` — else linking overstates the
+  // payment and the liability's remaining balance drops too far. `null`
+  // (no splits) tells the section to fall back to the full amount.
+  // Рівно `0` — окремий випадок, НЕ «взяти повну суму»: транзакція
+  // розділена, і людина не віднесла до боргу нічого. Тоді секції
+  // привʼязки взагалі немає (гейт нижче) — привʼязка на 0 ₴ була б
+  // мовчазним хибним числом, тим самим класом бага, що й завищення.
+  const debtPaymentSplitAmountUAH =
+    existingSplits.length > 0
+      ? existingSplits
+          .filter((split) => split.categoryId === "debt")
+          .reduce((sum, split) => sum + (Number(split.amount) || 0), 0)
+      : null;
   const [showSplitEditor, setShowSplitEditor] = useState(false);
   const [splitCategoryPicker, setSplitCategoryPicker] = useState<number | null>(
     null,
@@ -298,15 +314,18 @@ export function BankTransactionDetailsSheet({
           />
         )}
 
-        {!isIncome && category.id === "debt" && (
-          <DebtTxLinkSection
-            transaction={transaction}
-            manualDebts={manualDebts}
-            setManualDebts={setManualDebts}
-            setLinkedTxRole={setLinkedTxRole}
-            txRole="payment"
-          />
-        )}
+        {!isIncome &&
+          category.id === "debt" &&
+          debtPaymentSplitAmountUAH !== 0 && (
+            <DebtTxLinkSection
+              transaction={transaction}
+              manualDebts={manualDebts}
+              setManualDebts={setManualDebts}
+              setLinkedTxRole={setLinkedTxRole}
+              txRole="payment"
+              splitAmountUAH={debtPaymentSplitAmountUAH}
+            />
+          )}
 
         {!isIncome && (
           <section className="rounded-2xl border border-line bg-panel p-3">

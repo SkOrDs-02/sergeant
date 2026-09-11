@@ -307,6 +307,75 @@ describe("BankTransactionDetailsSheet", () => {
       );
     });
 
+    it("розділена транзакція привʼязує лише debt-частку спліту, не повну суму (CodeRabbit finding #1)", () => {
+      const setLinkedTxRole = vi.fn();
+      renderSheet({
+        overrideCatId: "debt",
+        setLinkedTxRole,
+        // TRANSACTION.amount = -25000 (250 ₴) розбита на 100 ₴ «Борг» +
+        // 150 ₴ інша категорія — лише 100 ₴ мають привʼязатись як платіж.
+        txSplits: {
+          [TRANSACTION.id]: [
+            { categoryId: "debt", amount: 100 },
+            { categoryId: "food", amount: 150 },
+          ],
+        },
+        manualDebts: [
+          {
+            id: "debt-1",
+            name: "Кредитка ПриватБанк",
+            amount: 5000,
+            totalAmount: 5000,
+            linkedTxIds: [],
+            txLinks: {},
+          },
+        ],
+      });
+
+      fireEvent.click(screen.getByRole("button", { name: "Обрати пасив" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Кредитка ПриватБанк/ }),
+      );
+
+      expect(setLinkedTxRole).toHaveBeenCalledWith(
+        "debt-1",
+        TRANSACTION.id,
+        "debt",
+        "payment",
+        100,
+      );
+    });
+
+    it("розділена транзакція БЕЗ debt-частки не пропонує привʼязку взагалі", () => {
+      // Категорія верхнього рівня лишається «Борг» (override/MCC не знають
+      // про спліти), але людина розписала всю суму на інші категорії —
+      // до боргу не пішло нічого. Привʼязка на 0 ₴ була б хибним числом,
+      // тож секції немає зовсім.
+      renderSheet({
+        overrideCatId: "debt",
+        txSplits: {
+          [TRANSACTION.id]: [
+            { categoryId: "food", amount: 150 },
+            { categoryId: "transport", amount: 100 },
+          ],
+        },
+        manualDebts: [
+          {
+            id: "debt-1",
+            name: "Кредитка ПриватБанк",
+            amount: 5000,
+            totalAmount: 5000,
+            linkedTxIds: [],
+            txLinks: {},
+          },
+        ],
+      });
+
+      expect(
+        screen.queryByRole("button", { name: "Обрати пасив" }),
+      ).not.toBeInTheDocument();
+    });
+
     it("без жодного наявного пасиву показує підказку замість мертвої кнопки", () => {
       renderSheet({ overrideCatId: "debt", manualDebts: [] });
 

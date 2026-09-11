@@ -152,6 +152,56 @@ describe("useDebtAutoLink — Level 2 авто-привʼязка (2026-09-11)",
     expect(debt.linkedTxIds).toEqual([]);
   });
 
+  it("транзакція, що збігається з ключовими словами ДВОХ пасивів, не привʼязується до жодного (CodeRabbit finding #2)", () => {
+    const setLinkedTxRole = vi.fn();
+    const debtA: Debt = {
+      id: "d1",
+      amount: 5000,
+      autoLinkKeyword: "приват",
+      linkedTxIds: [],
+    };
+    const debtB: Debt = {
+      id: "d2",
+      amount: 3000,
+      autoLinkKeyword: "кредит",
+      linkedTxIds: [],
+    };
+    // Опис містить обидва ключові слова — збігається з обома пасивами.
+    const transactions = [TX("tx1", -50000, "Кредит Приватбанк")];
+
+    renderHook(() =>
+      useDebtAutoLink([debtA, debtB], transactions, setLinkedTxRole),
+    );
+
+    expect(setLinkedTxRole).not.toHaveBeenCalled();
+  });
+
+  it("транзакція, уже привʼязана до ІНШОГО пасиву, не привʼязується вдруге", () => {
+    const setLinkedTxRole = vi.fn();
+    // Борг А тримає tx1 (напр. людина привʼязала руками), і ключового
+    // слова не має взагалі. Борг Б збігається з описом tx1 — але одна
+    // транзакція гасить максимум один борг.
+    const debtA: Debt = {
+      id: "d1",
+      amount: 5000,
+      linkedTxIds: ["tx1"],
+      txLinks: { tx1: { role: "payment", amount: 500 } },
+    };
+    const debtB: Debt = {
+      id: "d2",
+      amount: 3000,
+      autoLinkKeyword: "кредит",
+      linkedTxIds: [],
+    };
+    const transactions = [TX("tx1", -50000, "Кредит Приват")];
+
+    renderHook(() =>
+      useDebtAutoLink([debtA, debtB], transactions, setLinkedTxRole),
+    );
+
+    expect(setLinkedTxRole).not.toHaveBeenCalled();
+  });
+
   it("пропускає пасиви без autoLinkKeyword", () => {
     const setLinkedTxRole = vi.fn();
     const debt: Debt = { id: "d1", amount: 5000, linkedTxIds: [] };

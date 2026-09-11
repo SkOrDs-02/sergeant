@@ -20,6 +20,24 @@
  * Обидві гілки пишуть через той самий `setLinkedTxRole`
  * (`@sergeant/finyk-domain/domain/debtEngine`) — це той самий контракт,
  * що тримає `AssetsDebtTxPicker`.
+ *
+ * **Сума й спліти (CodeRabbit finding #1, PR #1103).** Категорія
+ * транзакції (яка гейтить рендер цієї секції) не знає про спліти —
+ * `getExpenseCategoryForTransaction` читає лише override/MCC. Тож
+ * транзакція може лишатись «Борг» навіть коли лише ЧАСТИНА її суми
+ * розписана на категорію `debt` спліту. `splitAmountUAH` (рахує
+ * `BankTransactionDetailsSheet` з `txSplits`) — сума саме цієї частини;
+ * коли вона задана, `payment`-привʼязка бере її замість повної суми
+ * транзакції, інакше погашення завищується і залишок пасиву падає
+ * нижче, ніж людина реально сплатила.
+ *
+ * **Відомий ліміт: знімок не оновлюється заднім числом.** Сума пишеться
+ * в `txLinks` у момент привʼязки (див. докблок `LinkedTxMeta` у
+ * `debtEngine.ts`). Якщо людина привʼязує ПЛАТІЖ, а потім змінює спліт
+ * (`setSplitTx` у `useFinykStorageMutations.ts`), знімок лишається
+ * старим — той самий мутатор не має доступу до суми транзакції, щоб
+ * коректно відкотити суму й у сценарії «спліт прибрали повністю»
+ * (unsplit), тож живий перерахунок відкладено, а не зроблено частково.
  */
 import { useState } from "react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
@@ -57,6 +75,12 @@ export interface DebtTxLinkSectionProps {
    * ARIA-ролі.
    */
   txRole: LinkedTxRole;
+  /**
+   * Сума частини транзакції, розписаної на категорію `debt` у спліті
+   * (§ докблок вище). `null`/`undefined` — транзакція не розділена
+   * (або спліт не має `debt`-частки) → бере повну суму транзакції.
+   */
+  splitAmountUAH?: number | null | undefined;
 }
 
 export function DebtTxLinkSection({
@@ -65,6 +89,7 @@ export function DebtTxLinkSection({
   setManualDebts,
   setLinkedTxRole,
   txRole,
+  splitAmountUAH,
 }: DebtTxLinkSectionProps) {
   const [showPicker, setShowPicker] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
@@ -73,7 +98,10 @@ export function DebtTxLinkSection({
   const isPayment = txRole === "payment";
   const copy = isPayment ? shared.payment : shared.source;
 
-  const amountUAH = Math.abs(transaction.amount / 100);
+  const amountUAH =
+    splitAmountUAH != null
+      ? Math.abs(splitAmountUAH)
+      : Math.abs(transaction.amount / 100);
   const linkedDebt = manualDebts.find((d) =>
     (d.linkedTxIds || []).includes(transaction.id),
   );
