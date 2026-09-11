@@ -108,8 +108,8 @@ const SKIP_FILES = new Set([
 // the syntax with deliberately-stale example dates that should never trigger
 // the scanner.
 const SKIP_FILE_PREFIXES = [
-  "docs/00-start/playbooks/",
-  "docs/90-work/planning/",
+  "docs/start/instructions/",
+  "docs/work/specs/planning/",
 ];
 
 // Marker regex — anchored to the canonical syntax enforced by the ESLint rule.

@@ -8,7 +8,7 @@
  * поглядом на графік, не ходячи звіряти час деплою в GitHub.
  *
  * AI-CONTEXT: цей файл був ОПИСАНИЙ у
- * `docs/03-operations/observability/frontend.md` § Release annotations як
+ * `docs/operations/observability/frontend.md` § Release annotations як
  * наявний, але ніколи не існував — ні в робочому дереві, ні в історії git
  * (перевірено `git log --all --diff-filter=D`). Тому в проєкті 167740 на
  * 2026-08-10 було рівно 0 анотацій. Док описував намір як факт; цей скрипт

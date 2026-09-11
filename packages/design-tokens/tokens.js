@@ -462,14 +462,14 @@ export const moduleSurfaces = {
  * «Чорнило» (Ink) — dark-first surface + text scale.
  *
  * Canonical values for the `.theme-dark` "Ink" visual direction (spec:
- * docs/90-work/planning/specs/chornylo-visual-direction.md § 1). A single
+ * docs/work/specs/chornylo-visual-direction.md § 1). A single
  * deep warm-charcoal surface with luminescent per-module accents; depth comes
  * from surface tint + accent border + glow, not a downward shadow.
  *
  * AI-CONTEXT: база була зелено-чорною (#0d1512 / #121c17 / #17231d) до
  * 2026-08-05. Зелений фон під зеленими tier-400 акцентами давав фон і акцент
  * одного hue — головний «tell» генерованого дизайну, через який наш скрін не
- * відрізнявся від чужих продуктів (docs/05-design/design/anti-slop-strategy.md
+ * відрізнявся від чужих продуктів (docs/design/design/anti-slop-strategy.md
  * § 2, § 5/P1). Тепле вугілля розводить hue фону й акценту і водночас робить
  * теплу базу наскрізною ідеєю обох тем, а не збігом у світлій.
  * Контраст не постраждав — нова база трохи темніша, тож усі пари виросли:
@@ -486,10 +486,10 @@ export const moduleSurfaces = {
 export const inkTheme = {
   surface: {
     bg: "#14100e", // page background — тепле вугілля
-    surface: "#1b1613", // cards, rows, nav, fields
-    surfaceHi: "#221c18", // hover / input bg
-    line: "rgba(255, 255, 255, 0.06)", // hairline
-    lineStrong: "rgba(255, 255, 255, 0.12)", // prominent divider
+    surface: "#1f1a17", // cards and nav — a readable step above the page
+    surfaceHi: "#2a231f", // fields / hover — a third, reserved depth level
+    line: "rgba(255, 255, 255, 0.14)", // calm but traceable boundary
+    lineStrong: "rgba(255, 255, 255, 0.22)", // major section divider
   },
   text: {
     strong: "#f2f6f2", // display / headings — 17.33:1 on bg
@@ -500,7 +500,7 @@ export const inkTheme = {
     // 18.66px bold / 24px regular, а 12px — звичайний текст із порогом
     // 4.5:1. Тому старий `#5f6b64` давав 3.22 на картці й axe ловив
     // `[serious] color-contrast` на підписах `/settings [dark]` (розбір —
-    // docs/90-work/tech-debt/frontend.md § «`text-subtle` у темній темі»).
+    // docs/work/specs/tech-debt/frontend.md § «`text-subtle` у темній темі»).
     // Там же зафіксовано розвилку «підняти значення vs звузити роль»;
     // власник обрав перше (репорт тестера 2026-08-21: «сірі літери погано
     // видно»). `muted` пішов слідом, щоб драбина лишилась із трьома

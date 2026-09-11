@@ -59,6 +59,7 @@ import type { PickedFood } from "./meal-sheet/FoodPickerSection";
 import { useReceiptAutoPick } from "./meal-sheet/useReceiptAutoPick";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
 import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
+import { PantryPortionField } from "./meal-sheet/PantryPortionField";
 import { PackageEntryStep } from "./meal-sheet/PackageEntryStep";
 import { ManualEntryTab } from "./meal-sheet/ManualEntryTab";
 import { SearchTabPanel } from "./meal-sheet/SearchTabPanel";
@@ -382,7 +383,8 @@ export function AddMealSheet({
     // Раніше при простому редагуванні страви з продуктом звʼязок з foodDb втрачався, бо pickedFood
     // скидається в null при відкритті схита.
     const effectiveFoodId = pickedFood?.id ?? initialMeal?.foodId ?? null;
-    const hasAmount = pickedFood || initialMeal?.amount_g != null;
+    const hasAmount =
+      pickedFood || fromPantryItem || initialMeal?.amount_g != null;
     // Нульова (чи стерта) вага при обраному продукті — не «не вказано», а
     // мовчазна розсинхронізація: `gramsOrDefault` підставив би 100, тоді як
     // у полях КБЖВ лишились числа, пораховані під попередню вагу. Ефект у
@@ -713,6 +715,11 @@ export function AddMealSheet({
                 setPickedGrams={setPickedGrams}
                 onChangeProduct={handleChangeProduct}
                 skipInitialRescale={editedFood.rehydrated}
+              />
+            ) : fromPantryItem ? (
+              <PantryPortionField
+                value={pickedGrams}
+                onChange={setPickedGrams}
               />
             ) : (
               // Редагування наявного прийому джерела не обирає, тож

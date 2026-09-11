@@ -134,6 +134,7 @@ describe("BankTransactionDetailsSheet", () => {
   it("wires category, note and visibility edits to transaction overlays", () => {
     const handlers = renderSheet();
 
+    fireEvent.click(screen.getByRole("button", { name: "Продукти" }));
     fireEvent.click(screen.getByRole("button", { name: "Транспорт" }));
     expect(handlers.onCategoryChange).toHaveBeenCalledWith(
       "bank-1",
@@ -185,6 +186,24 @@ describe("BankTransactionDetailsSheet", () => {
     fireEvent.click(screen.getByRole("button", { name: "Готово" }));
     expect(handlers.onClose).toHaveBeenCalledTimes(1);
   });
+
+  it("offers only income custom categories for an income transaction", () => {
+    const handlers = renderSheet({
+      transaction: INCOME_TRANSACTION,
+      customCategories: [
+        { id: "custom-rent", label: "Оренда", kind: "income" },
+        { id: "custom-hobby", label: "Хобі" },
+      ],
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Зарплата" }));
+    expect(screen.queryByRole("button", { name: "Хобі" })).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Оренда" }));
+    expect(handlers.onCategoryChange).toHaveBeenCalledWith(
+      INCOME_TRANSACTION.id,
+      "custom-rent",
+    );
+  });
+
   describe("категорія «Борг» у надходженнях (PR-3)", () => {
     it("створює пасив без перенабору суми, привʼязаний роллю source", () => {
       const setManualDebts = vi.fn();

@@ -3,7 +3,7 @@ name: Pact contract drift (daily cron)
 # Owner: @SkOrDs-02 (solo maintainer).
 # Triage: false-positive runs → close the auto-created `contract-drift` issue
 #         з коментарем; reopen якщо повторюється > 2x за тиждень. Full runbook:
-#         `docs/02-engineering/testing/pact-drift-runbook.md`.
+#         `docs/engineering/testing/pact-drift-runbook.md`.
 # Schedule rationale: PR-42 (#2675) + persona-extend (#2703) ship Pact
 #         contract coverage that is verified at PR-time against the in-process
 #         `createApp()` mock. This workflow runs the same contracts against
@@ -71,7 +71,7 @@ jobs:
           set -euo pipefail
 
           if [ -z "$STAGING_BASE_URL" ]; then
-            echo "::error::STAGING_BASE_URL secret is not configured. See docs/02-engineering/testing/pact-drift-runbook.md § Setup."
+            echo "::error::STAGING_BASE_URL secret is not configured. See docs/engineering/testing/pact-drift-runbook.md § Setup."
             exit 2
           fi
 
@@ -163,7 +163,7 @@ jobs:
               'and the live staging server. Drift means a deployed Web/Mobile',
               'client will likely break on the next prod release.',
               '',
-              'Follow [`docs/02-engineering/testing/pact-drift-runbook.md`](../../blob/main/docs/02-engineering/testing/pact-drift-runbook.md)',
+              'Follow [`docs/engineering/testing/pact-drift-runbook.md`](../../blob/main/docs/engineering/testing/pact-drift-runbook.md)',
               'for triage. TL;DR:',
               '',
               '1. Open the run above → `pact-drift-report` artifact for the full diff.',
@@ -271,6 +271,6 @@ jobs:
           if [ "${{ steps.drift.outputs.drift_exit }}" = "1" ]; then
             echo "::error::Pact drift detected. See dist/pact-drift-report.md."
           else
-            echo "::error::pact-drift checker could not run (exit '${{ steps.drift.outputs.drift_exit }}'). Це помилка конфігурації, не drift — див. docs/02-engineering/testing/pact-drift-runbook.md § Setup."
+            echo "::error::pact-drift checker could not run (exit '${{ steps.drift.outputs.drift_exit }}'). Це помилка конфігурації, не drift — див. docs/engineering/testing/pact-drift-runbook.md § Setup."
           fi
           exit 1

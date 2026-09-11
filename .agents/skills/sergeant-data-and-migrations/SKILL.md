@@ -20,9 +20,9 @@ Sergeant використовує **два шляхи до БД поверх о�
 
 ## Жорсткі правила
 
-- Створюй міграції через `pnpm gen migration --name <description>` (plop-генератор проставляє номер і створює `.down.sql`-компаньйон). Якщо генератор недоступний — ручний порядок із [`add-sql-migration.md`](../../../docs/00-start/playbooks/add-sql-migration.md): знайди поточний максимум, +1, zero-pad. Обидва шляхи дають той самий результат; playbook — канон нумерації.
+- Створюй міграції через `pnpm gen migration --name <description>` (plop-генератор проставляє номер і створює `.down.sql`-компаньйон). Якщо генератор недоступний — ручний порядок із [`add-sql-migration.md`](../../../docs/start/instructions/add-sql-migration.md): знайди поточний максимум, +1, zero-pad. Обидва шляхи дають той самий результат; playbook — канон нумерації.
 - Тримай нумерацію послідовною, без пропусків.
-- **Ніколи не перейменовуй міграцію, яка вже є на `main`.** Раннер трекає застосовані міграції за іменем файлу, тож під новим іменем той самий SQL виконається в проді вдруге, а старий запис лишиться сиротою в `schema_migrations` (це вже сталося тричі). Колізію номерів на ребейзі розв'язують перенумеруванням свого, ще не змердженого файлу; дубль, що вже на `main`, лишають як є і вносять до `APPLIED_DUPLICATE_FILENAMES` у `scripts/lint-migrations.mjs`. Розбір: [Rule #4 § Перейменування вже застосованої міграції](../../../docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md).
+- **Ніколи не перейменовуй міграцію, яка вже є на `main`.** Раннер трекає застосовані міграції за іменем файлу, тож під новим іменем той самий SQL виконається в проді вдруге, а старий запис лишиться сиротою в `schema_migrations` (це вже сталося тричі). Колізію номерів на ребейзі розв'язують перенумеруванням свого, ще не змердженого файлу; дубль, що вже на `main`, лишають як є і вносять до `APPLIED_DUPLICATE_FILENAMES` у `scripts/lint-migrations.mjs`. Розбір: [Rule #4 § Перейменування вже застосованої міграції](../../../docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md).
 - Додавай колонки як `NULL`-able або з `DEFAULT`, якщо не запланований жорсткіший rollout.
 - Для DROP або rename — двофазно: спершу додай/backfill/пиши в обидві колонки, видаляй пізніше окремим деплоєм.
 - Прод НІКОЛИ не покладається на `down.sql`.
@@ -49,6 +49,6 @@ Sergeant використовує **два шляхи до БД поверх о�
 
 ## Корисні доки
 
-- [docs/00-start/playbooks/add-sql-migration.md](../../../docs/00-start/playbooks/add-sql-migration.md)
-- [docs/00-start/playbooks/pre-merge-migration-checklist.md](../../../docs/00-start/playbooks/pre-merge-migration-checklist.md)
-- [docs/04-governance/adr/0074-hosting-hetzner-coolify.md](../../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md) — актуальний backend-хостинг (Hetzner + Coolify), pre-deploy міграції
+- [docs/start/instructions/add-sql-migration.md](../../../docs/start/instructions/add-sql-migration.md)
+- [docs/start/instructions/pre-merge-migration-checklist.md](../../../docs/start/instructions/pre-merge-migration-checklist.md)
+- [docs/governance/adr/0074-hosting-hetzner-coolify.md](../../../docs/governance/adr/0074-hosting-hetzner-coolify.md) — актуальний backend-хостинг (Hetzner + Coolify), pre-deploy міграції

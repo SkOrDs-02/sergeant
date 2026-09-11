@@ -198,6 +198,18 @@ describe("FinykSection interactions", () => {
     expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Подорожі");
   });
 
+  it("adds an income category to the separate income catalog", async () => {
+    mockedSyncState.mockResolvedValue(DISCONNECTED);
+    renderSection();
+    fireEvent.click(await screen.findByRole("button", { name: "Надходження" }));
+    const input = screen.getByPlaceholderText("Напр. Підробіток");
+    fireEvent.change(input, { target: { value: "Оренда" } });
+    fireEvent.click(screen.getByText("Додати"));
+    expect(storageMock.addCustomCategory).toHaveBeenCalledWith("Оренда", {
+      kind: "income",
+    });
+  });
+
   it("lists and removes existing custom categories", async () => {
     storageMock.customCategories = [{ id: "c1", label: "🎨 Хобі" }];
     mockedSyncState.mockResolvedValue(DISCONNECTED);

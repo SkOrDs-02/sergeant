@@ -1,8 +1,8 @@
 #!/usr/bin/env node
 // scripts/docs/generate-playbook-index.mjs
 //
-// Scan `docs/00-start/playbooks/*.md`, extract each playbook's `**Trigger:**` line,
-// and generate `docs/00-start/playbooks/INDEX.md` — a lookup table «phrase → playbook».
+// Scan `docs/start/instructions/*.md`, extract each playbook's `**Trigger:**` line,
+// and generate `docs/start/instructions/INDEX.md` — a lookup table «phrase → playbook».
 //
 // Right now agents and humans have to grep or read `README.md` to figure out
 // which playbook matches a request. An auto-generated index gives O(1) lookup
@@ -22,7 +22,7 @@ import { fileURLToPath } from "node:url";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const PLAYBOOKS_DIR = resolve(REPO_ROOT, "docs/00-start/playbooks");
+const PLAYBOOKS_DIR = resolve(REPO_ROOT, "docs/start/instructions");
 const INDEX_PATH = join(PLAYBOOKS_DIR, "INDEX.md");
 
 // Files that are NOT playbooks and should be skipped from the index.
@@ -163,7 +163,7 @@ export function collectEntries(dir = PLAYBOOKS_DIR) {
     const meta = extractPlaybookMeta(content);
     if (!meta) {
       console.warn(
-        `[WARN] No **Trigger:** line in docs/00-start/playbooks/${file} — skipped`,
+        `[WARN] No **Trigger:** line in docs/start/instructions/${file} — skipped`,
       );
       continue;
     }
@@ -182,26 +182,26 @@ function main() {
   if (checkMode) {
     if (!existsSync(INDEX_PATH)) {
       console.error(
-        `❌ docs/00-start/playbooks/INDEX.md does not exist. Run: pnpm docs:gen-playbook-index`,
+        `❌ docs/start/instructions/INDEX.md does not exist. Run: pnpm docs:gen-playbook-index`,
       );
       process.exit(1);
     }
     const existing = readFileSync(INDEX_PATH, "utf8");
     if (normaliseForCompare(existing) !== normaliseForCompare(body)) {
       console.error(
-        `❌ docs/00-start/playbooks/INDEX.md is out of date. Run: pnpm docs:gen-playbook-index`,
+        `❌ docs/start/instructions/INDEX.md is out of date. Run: pnpm docs:gen-playbook-index`,
       );
       process.exit(1);
     }
     console.log(
-      `✅ docs/00-start/playbooks/INDEX.md is up to date (${entries.length} playbooks).`,
+      `✅ docs/start/instructions/INDEX.md is up to date (${entries.length} playbooks).`,
     );
     return;
   }
 
   writeFileSync(INDEX_PATH, body);
   console.log(
-    `✅Wrote docs/00-start/playbooks/INDEX.md (${entries.length} playbooks).`,
+    `✅Wrote docs/start/instructions/INDEX.md (${entries.length} playbooks).`,
   );
 }
 

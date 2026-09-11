@@ -13,10 +13,10 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 - Не знаєш, де щось живе? Спершу використай codebase-memory MCP (`search_graph`, `trace_path`, `get_code_snippet`); якщо MCP недоступний — TypeScript/LSP, Knip або `rg`. Repo-specific committed indexes retired за ADR-0081.
 - Не знаєш, з чого почати зміну? `pnpm agent:route` — за git-diff/гілкою підкаже потрібний specialist-skill + активні hard-rules.
-- Не знаєш, хто кого може викликати? [`.agents/agent-graph.json`](../../agent-graph.json) — явна топологія агентного шару (skill / agent / workspace + дозволені переходи). Гейт `pnpm lint:agent-graph`; rationale — [ADR-0084](../../../docs/04-governance/adr/0084-agent-graph-topology.md).
-- Прочитай [`docs/00-start/agents/decisions.md`](../../../docs/00-start/agents/decisions.md) — усталені рішення/вподобання maintainer-а; якщо щось уже вирішено там, дій за ним, не перепитуй.
+- Не знаєш, хто кого може викликати? [`.agents/agent-graph.json`](../../agent-graph.json) — явна топологія агентного шару (skill / agent / workspace + дозволені переходи). Гейт `pnpm lint:agent-graph`; rationale — [ADR-0084](../../../docs/governance/adr/0084-agent-graph-topology.md).
+- Прочитай [`docs/start/agents/decisions.md`](../../../docs/start/agents/decisions.md) — усталені рішення/вподобання maintainer-а; якщо щось уже вирішено там, дій за ним, не перепитуй.
 - Прочитай `AGENTS.md` для жорстких правил і власників шляхів.
-- Прочитай `docs/README.md` для repo-доків і `docs/00-start/agents/agent-skills-catalog.md` для skill-роутингу.
+- Прочитай `docs/README.md` для repo-доків і `docs/start/agents/agent-skills-catalog.md` для skill-роутингу.
 - Sergeant — це `pnpm` + Turborepo monorepo з `apps/web`, `apps/server`, `apps/mobile`, `apps/mobile-shell` і спільними packages.
 
 ## 0.1 Dynamic context (always)
@@ -34,7 +34,7 @@ Read `.agents/snapshot.md` and react:
 - Entropy-сигнали по зачепленій поверхні (dead code, docs drift, cycles — прямі перевірки, див. `sergeant-tech-debt` § «Прямі entropy checks») → load `sergeant-tech-debt`.
 - Hard-rule drift warnings or upcoming TODO deadlines (≤30d) → re-read the named rule / initiative file before acting.
 
-The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections that need GitHub). Cache TTL is 15 min; force-refresh via `pnpm snapshot --refresh`. See ADR-0071 for layout and rationale, and [docs/04-governance/governance/snapshot.md](../../../docs/04-governance/governance/snapshot.md) for the full §0.1 contract (incl. interaction with `codebase-memory-mcp` for code-structure questions).
+The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections that need GitHub). Cache TTL is 15 min; force-refresh via `pnpm snapshot --refresh`. See ADR-0071 for layout and rationale, and [docs/governance/governance/snapshot.md](../../../docs/governance/governance/snapshot.md) for the full §0.1 contract (incl. interaction with `codebase-memory-mcp` for code-structure questions).
 
 ## Не-узгоджувані правила
 
@@ -86,7 +86,7 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Фіча через 2+ surfaces з contract dependencies (DB→server→web)  | `sergeant-deliver-squad`           |
 | Повний QA по всіх surfaces паралельно                            | `sergeant-qa-squad`                |
 | Валідація ідеї / рішення з кількох точок зору, «гублюсь»        | `sergeant-council`                 |
-| Батч N тасків з `docs/90-work/planning/*` через паралельні агенти       | `sergeant-planning-batch`          |
+| Батч N тасків з `docs/work/specs/planning/*` через паралельні агенти       | `sergeant-planning-batch`          |
 
 ## Політика generic-skill-ів
 

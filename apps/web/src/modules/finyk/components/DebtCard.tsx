@@ -62,6 +62,9 @@ function DebtCardComponent({
   showBalance = true,
 }: DebtCardProps) {
   const pct = total > 0 ? Math.min(100, Math.round((paid / total) * 100)) : 0;
+  const showKopecks = [remaining, paid, total].some(
+    (amount) => !Number.isInteger(amount),
+  );
   const dueText = formatDueDate(dueDate);
   const isOverdue = dueText?.includes("Прострочено");
 
@@ -85,6 +88,7 @@ function DebtCardComponent({
               <Money
                 amount={isReceivable ? remaining : -remaining}
                 signed
+                kopecks={showKopecks}
                 tone="inherit"
               />
             ) : (
@@ -126,7 +130,8 @@ function DebtCardComponent({
         {isReceivable ? "Отримано" : "Сплачено"}{" "}
         {showBalance ? (
           <>
-            <Money amount={paid} symbol="" /> з <Money amount={total} />
+            <Money amount={paid} symbol="" kopecks={showKopecks} /> з{" "}
+            <Money amount={total} kopecks={showKopecks} />
           </>
         ) : (
           "••••"

@@ -161,12 +161,28 @@ describe("appendNutritionLines", () => {
           dailyTargetProtein_g: 150,
         }),
       } as never,
+      goalPeriods: [
+        {
+          id: "goal",
+          effectiveFrom: "2026-06-01",
+          kcal: 2000,
+          proteinG: 150,
+          fatG: null,
+          carbsG: null,
+          waterMl: null,
+          origin: "manual",
+          createdAt: "2026-06-01T00:00:00.000Z",
+          deletedAt: null,
+        },
+      ],
     });
     const lines: string[] = [];
     appendNutritionLines(lines, NOW);
     const out = lines.join("\n");
     expect(out).toContain("[Харчування сьогодні]");
     expect(out).toContain("[Харчування прийоми]");
+    expect(out).toContain("[Харчування поденні цілі]");
+    expect(out).toContain(`${todayKey}: 2000`);
   });
 });
 

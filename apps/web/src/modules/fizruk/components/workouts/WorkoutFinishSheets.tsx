@@ -55,14 +55,17 @@ function InjuryChip({
       type="button"
       aria-pressed={selected}
       className={cn(
-        "min-h-[44px] rounded-xl border px-3 py-2 text-style-caption transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+        "flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-style-caption transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         selected
           ? "border-warning-strong bg-warning/15 text-warning-strong dark:text-warning"
           : "border-line bg-bg text-muted hover:border-muted hover:text-text",
       )}
       onClick={() => onToggle(site)}
     >
-      {INJURY_SITE_LABELS_UK[site as keyof typeof INJURY_SITE_LABELS_UK]}
+      <span>
+        {INJURY_SITE_LABELS_UK[site as keyof typeof INJURY_SITE_LABELS_UK]}
+      </span>
+      {selected && <Icon name="check" size="sm" aria-hidden />}
     </button>
   );
 }
@@ -155,7 +158,7 @@ export function WorkoutFinishSheets({
               >
                 Енергія
               </SectionHeading>
-              <div className="flex flex-wrap gap-2">
+              <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
                 {[1, 2, 3, 4, 5].map((n) => (
                   <button
                     key={`e${n}`}
@@ -355,7 +358,7 @@ export function WorkoutFinishSheets({
                 </span>
               </button>
               {musclesOpen && (
-                <div className="flex flex-wrap gap-2 mt-2">
+                <div className="mt-2 grid grid-cols-2 gap-2 sm:grid-cols-3">
                   {BODY_ATLAS_MUSCLE_IDS.map((site) => (
                     <InjuryChip
                       key={site}

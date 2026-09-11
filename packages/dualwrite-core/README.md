@@ -1,9 +1,9 @@
 # @sergeant/dualwrite-core
 
-> **Last touched:** 2026-07-20 by @Skords-01. **Next review:** 2026-10-18.
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-15.
 > **Status:** Active
 
-Платформо-нейтральне ядро dual-write фреймворку ([ADR-0073](../../docs/04-governance/adr/0073-dualwrite-generic-framework.md)) для 4 модульних пайплайнів LS/MMKV→SQLite (finyk, fizruk, nutrition, routine; web + mobile). Pure TypeScript, без DOM / React Native / Sentry — усе платформне (логер, телеметрія, uuid) ін'єктується споживачем.
+Платформо-нейтральне ядро dual-write фреймворку ([ADR-0073](../../docs/governance/adr/0073-dualwrite-generic-framework.md)) для 4 модульних пайплайнів LS/MMKV→SQLite (finyk, fizruk, nutrition, routine; web + mobile). Pure TypeScript, без DOM / React Native / Sentry — усе платформне (логер, телеметрія, uuid) ін'єктується споживачем.
 
 ## Що всередині
 

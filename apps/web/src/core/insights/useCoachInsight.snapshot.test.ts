@@ -110,7 +110,20 @@ vi.mock("@nutrition/lib/nutritionStorage", () => ({
   loadNutritionLog: () => ({
     [todayKey]: { meals: [{ macros: { kcal: 600, protein_g: 40 } }] },
   }),
-  loadNutritionPrefs: () => ({ dailyTargetKcal: 2200 }),
+  loadNutritionGoalPeriods: () => [
+    {
+      id: "goal",
+      effectiveFrom: "2000-01-01",
+      kcal: 2200,
+      proteinG: null,
+      fatG: null,
+      carbsG: null,
+      waterMl: null,
+      origin: "manual",
+      createdAt: "2000-01-01T00:00:00.000Z",
+      deletedAt: null,
+    },
+  ],
 }));
 
 // ── Routine: one active habit completed today ────────────────────────────────

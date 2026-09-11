@@ -31,4 +31,4 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 ## Роутинг далі
 
 - Клієнтська поверхня: `sergeant-web-ui`; серверні метрики/алерти — `sergeant-deploy-and-observability`.
-- Каталог: [docs/00-start/agents/agent-skills-catalog.md](../../../docs/00-start/agents/agent-skills-catalog.md).
+- Каталог: [docs/start/agents/agent-skills-catalog.md](../../../docs/start/agents/agent-skills-catalog.md).

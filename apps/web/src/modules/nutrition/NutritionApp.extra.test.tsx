@@ -358,23 +358,9 @@ vi.mock("./components/NutritionOverlays", () => ({
   ),
 }));
 
-// NutritionStartPage exposes the dashboard actions.
+// NutritionStartPage owns navigation from the dashboard.
 vi.mock("./pages/NutritionStartPage", () => ({
-  NutritionStartPage: ({
-    onRequestAddMeal,
-  }: {
-    onRequestAddMeal: () => void;
-  }) => (
-    <div data-testid="nutrition-start-page">
-      <button
-        type="button"
-        data-testid="request-add-meal"
-        onClick={onRequestAddMeal}
-      >
-        Add Meal
-      </button>
-    </div>
-  ),
+  NutritionStartPage: () => <div data-testid="nutrition-start-page" />,
 }));
 
 vi.mock("./pages/NutritionPantryPage", () => ({
@@ -517,33 +503,6 @@ describe("NutritionApp — handleOpenMealPhoto", () => {
       "data-initial-step",
       "source",
     );
-  });
-});
-
-describe("NutritionApp — handleRequestAddMeal", () => {
-  it("opens the add-meal sheet once the log page commits", () => {
-    let activePage: NutritionPage = "start";
-    vi.mocked(useNutritionRoute).mockImplementation(() => ({
-      activePage,
-      setActivePage: vi.fn(),
-      setActivePageAndHash: vi.fn((page: NutritionPage) => {
-        activePage = page;
-      }),
-      pantrySubTab: "items",
-      menuSubTab: "plan",
-      setPantrySubTab: vi.fn(),
-      setMenuSubTab: vi.fn(),
-    }));
-
-    const { rerender } = render(<NutritionApp />);
-    fireEvent.click(screen.getByTestId("request-add-meal"));
-    expect(vi.mocked(useNutritionLog)().setSelectedDate).toHaveBeenCalled();
-    expect(activePage).toBe("log");
-
-    rerender(<NutritionApp />);
-    expect(
-      vi.mocked(useNutritionLog)().setAddMealSheetOpen,
-    ).toHaveBeenCalledWith(true);
   });
 });
 

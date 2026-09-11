@@ -41,5 +41,5 @@ pnpm --filter @sergeant/shared mutation:utils  # Stryker mutation-тести у�
 
 ## Глибше
 
-- [`docs/02-engineering/api/README.md`](../../docs/02-engineering/api/README.md) — OpenAPI spec (генерується зі схем цього пакета)
+- [`docs/engineering/api/README.md`](../../docs/engineering/api/README.md) — OpenAPI spec (генерується зі схем цього пакета)
 - [`AGENTS.md` rule #3](../../AGENTS.md) — API contract: server ↔ api-client ↔ test

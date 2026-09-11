@@ -119,6 +119,12 @@ function normalizePrefs(x: unknown): NutritionPrefs {
     dailyTargetProtein_g: optionalPositiveNumber(p.dailyTargetProtein_g),
     dailyTargetFat_g: optionalPositiveNumber(p.dailyTargetFat_g),
     dailyTargetCarbs_g: optionalPositiveNumber(p.dailyTargetCarbs_g),
+    adaptiveGoalEnabled: Boolean(p.adaptiveGoalEnabled),
+    adaptiveGoalIntent: p.adaptiveGoalIntent,
+    adaptiveGoalLastUpdatedAt:
+      typeof p.adaptiveGoalLastUpdatedAt === "string"
+        ? p.adaptiveGoalLastUpdatedAt
+        : null,
     mealTemplates: Array.isArray(p.mealTemplates)
       ? p.mealTemplates.slice(0, 40)
       : [],

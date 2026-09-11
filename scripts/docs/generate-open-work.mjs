@@ -1,7 +1,7 @@
 #!/usr/bin/env node
 // scripts/docs/generate-open-work.mjs
 //
-// Scan every tracker directory under `docs/` for markdown files with a
+// Scan the canonical specs catalog for markdown files with a
 // canonical `> **Status:** …` header, classify each Status as
 // `open` / `closed` / `reference`, and generate
 // `docs/open-work.md` — a single-pane index of all *open* work across
@@ -11,14 +11,9 @@
 // Single source of truth for «що в цьому репо зараз НЕ доробленого?»
 // — answers the question without touring 6+ tracker READMEs.
 //
-// Trackers (in display order; configured via `TRACKERS` below):
-//   1. Initiatives                — docs/90-work/initiatives/ (+ stack-pulse-2026-05/)
-//   2. Planning                   — docs/90-work/planning/
-//   3. Launch                     — docs/01-product/launch/business/ + tech/ + product-os/
-//   4. Audits                     — docs/90-work/audits/
-//   5. Security hardening         — docs/04-governance/security/hardening/
-//   6. Tech debt                  — docs/90-work/tech-debt/
-//   7. Superpowers / plans        — docs/90-work/superpowers/plans/
+// The physical source of truth is `docs/work/specs/`. Former tracker genres
+// remain as subdirectories so navigation stays useful without creating
+// parallel lifecycle roots.
 //
 // For each tracker the script emits a markdown table with three columns:
 //   | Документ | Статус | PR-згадки |
@@ -98,72 +93,17 @@ const RE_PR_NUMBER = /#(\d{3,5})(?!\d)|\/pull\/(\d{3,5})(?!\d)/g;
  *   - README.md, follow-ups.md, open-work.md
  *   - any path containing `/archive/`
  *   - filenames starting with `_` (completed-prefix convention used in
- *     `docs/90-work/initiatives/`, see initiatives README.md § Completed-prefix)
+ *     `docs/work/specs/initiatives/`, see initiatives README.md § Completed-prefix)
  */
 export const TRACKERS = [
   {
-    id: "initiatives",
-    title: "Ініціативи",
+    id: "specs",
+    title: "Активні спеки",
     blurb:
-      "Нумеровані multi-PR ініціативи з acceptance criteria. Source: [`docs/90-work/initiatives/`](./90-work/initiatives/README.md).",
-    rootDir: "docs/90-work/initiatives",
+      "Єдиний каталог активної роботи; підкаталоги зберігають жанр і предметну область.",
+    rootDir: "docs/work/specs",
     recursive: true,
-    // Phase 2 (Initiative 0015): surface agent-dispatch hints —
-    // `Agent-ready` status + suggested specialist `Skill` + best-fit
-    // `Playbook` columns, and sort rows so `agent-ready: yes` lands first.
-    enrich: true,
-  },
-  {
-    id: "planning",
-    title: "Планування",
-    blurb:
-      "Активні roadmap-и, research, decision-rationale. Source: [`docs/90-work/planning/`](./90-work/planning/README.md).",
-    rootDir: "docs/90-work/planning",
-    recursive: true,
-    exclude: ["prompts/", "specs/TEMPLATE.md"],
-  },
-  {
-    id: "launch",
-    title: "Launch / запуск",
-    blurb:
-      "GTM, монетизація, FTUX delivery і product-surface roadmap-и. Source: [`docs/01-product/launch/`](./01-product/launch/README.md).",
-    rootDir: "docs/01-product/launch",
-    recursive: true,
-  },
-  {
-    id: "audits",
-    title: "Аудити й прожарки",
-    blurb:
-      "Прожарки, аудити та implementation roadmap-и. Source: [`docs/90-work/audits/`](./90-work/audits/README.md).",
-    rootDir: "docs/90-work/audits",
-    recursive: false,
-  },
-  {
-    id: "security-hardening",
-    title: "Security hardening",
-    blurb:
-      "Картки по окремих findings (C/H/M/L/I severity) + sprint plans. Source: [`docs/04-governance/security/hardening/`](./04-governance/security/hardening/README.md).",
-    rootDir: "docs/04-governance/security/hardening",
-    recursive: false,
-  },
-  {
-    id: "tech-debt",
-    title: "Техборг",
-    blurb:
-      "Реєстри боргу по платформах (backend / frontend / mobile). Source: [`docs/90-work/tech-debt/`](./90-work/tech-debt/README.md).",
-    rootDir: "docs/90-work/tech-debt",
-    recursive: false,
-  },
-  {
-    id: "superpowers-plans",
-    title: "Superpowers — плани впровадження",
-    blurb:
-      "Плани впровадження cross-cutting capabilities. Source: [`docs/90-work/superpowers/plans/`](./90-work/superpowers/README.md).",
-    rootDir: "docs/90-work/superpowers/plans",
-    recursive: true,
-    // Plans tables also carry suggested `Skill` + `Playbook` columns
-    // (no `Agent-ready` — that field lives only on numbered initiatives).
-    enrich: true,
+    exclude: ["data/", "TEMPLATE.md", "prompts/"],
   },
 ];
 
@@ -579,7 +519,7 @@ export function truncateStatus(status, maxLen = 180) {
  *
  * This avoids broken-link CI errors in `docs/open-work.md` for status
  * fields that contain relative links like `[ftux-master-tracker §3.4](./ftux-master-tracker.md#…)`
- * — the source doc lived under `docs/01-product/launch/product-os/` but the
+ * — the source doc lived under `docs/work/specs/launch/product-os/` but the
  * dashboard lives at `docs/`, so `./ftux-master-tracker.md` no longer
  * resolves.
  */
@@ -704,7 +644,7 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
   );
   lines.push("");
   lines.push(
-    "Зведений single-pane view усього, що зараз НЕ доробленого у репо — згрупований по 7 трекерах. Source = `> **Status:**` header у кожному документі (Rule #10 lifecycle marker). У дашборд потрапляють документи зі статусами `Active` / `Draft` / `In progress` / `Scaffolded` / `Open` / `Planned` / `Proposed` / `Phase *`. Документи зі статусом `Closed` / `Done` / `Archived` / `Implemented` / `Reference` / `Frozen` / `Deprecated` / `Withdrawn` — виключені.",
+    "Зведений single-pane view усього, що зараз НЕ доробленого у репо. Джерело — єдиний каталог `docs/work/specs/`; жанрові підкаталоги не є окремими tracker-ами. У дашборд потрапляють документи зі статусами `Active` / `Draft` / `In progress` / `Scaffolded` / `Open` / `Planned` / `Proposed` / `Phase *`. Документи зі статусом `Closed` / `Done` / `Archived` / `Implemented` / `Reference` / `Frozen` / `Deprecated` / `Withdrawn` — виключені.",
   );
   lines.push("");
   lines.push(
@@ -755,7 +695,7 @@ export function renderOpenWork(sections, { today = todayISO() } = {}) {
   lines.push("## Як додати документ у дашборд");
   lines.push("");
   lines.push(
-    "Документ автоматично з'являється тут, якщо: (1) лежить під одним із трекерів зі списку вище, (2) має `> **Status:**` header з відкритим статусом (Active / Draft / In progress / Scaffolded / Open / Planned / Proposed / Phase *), (3) не є README.md / follow-ups.md / open-work.md і не лежить під `archive/` (і не починається з `_`).",
+    "Документ автоматично з'являється тут, якщо: (1) лежить під одним із трекерів зі списку вище, (2) має `> **Status:**` header з відкритим статусом (Active / Draft / In progress / Scaffolded / Open / Planned / Proposed / Phase *), (3) не є README.md / follow-ups.md / open-work.md і не починається з `_`. Локальні `archive/` заборонені Hard Rule #23; legacy-фільтр лишився для безпечної обробки старих fixture-ів.",
   );
   lines.push("");
   lines.push("Після зміни статусу:");

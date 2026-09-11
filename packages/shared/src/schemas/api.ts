@@ -446,10 +446,10 @@ const RECALL_MEMORY_SOURCES = [
   "journal",
   "digest",
   "cofounder",
-  // Migration 068 — PostHog → AI memory sync (PR-24). `product` source —
-  // behavioral events дзеркаляться з web `trackEvent` через
-  // `POST /api/ai-memory/event-sync`. Дозволяємо у recall-filter, щоб
-  // founder міг запитати combined `sources=['cofounder','product']` view.
+  // Migration 068 historically used `product` for PostHog → AI-memory sync.
+  // The event-sync endpoint was removed on 2026-08-29 because telemetry added
+  // noise to RAG; keep the value here only so existing rows remain readable in
+  // list/recall filters.
   "product",
   // Migration 118 — L-8 (аудит Профілю/Налаштувань 2026-08-08). `profile` —
   // явно заявлені людиною факти про себе (банк памʼяті: інтервʼю з

@@ -459,7 +459,7 @@ describe("DebtForm", () => {
       />,
     );
     expect(screen.getByText("Новий пасив")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Загальна сума ₴")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Початкова сума ₴")).toBeInTheDocument();
     const dueDate = screen.getByLabelText("Дата погашення");
     expect(dueDate).toHaveClass("w-full");
     expect(screen.getByRole("button", { name: "Додати" })).toBeDisabled();
@@ -508,7 +508,7 @@ describe("DebtForm", () => {
     fireEvent.change(screen.getByLabelText("Назва пасиву (кредит, борг…)"), {
       target: { value: "Розстрочка" },
     });
-    fireEvent.change(screen.getByLabelText("Загальна сума у гривнях"), {
+    fireEvent.change(screen.getByLabelText("Початкова сума боргу у гривнях"), {
       target: { value: "25000" },
     });
     fireEvent.change(screen.getByLabelText("Дата погашення"), {
@@ -607,6 +607,40 @@ describe("DebtForm", () => {
       }),
     );
     expect(setManualDebts).not.toHaveBeenCalled();
+  });
+
+  it("пояснює суму пасиву з source та increase без подвійного обліку", () => {
+    const { container } = render(
+      <DebtForm
+        newDebt={{
+          name: "Сашка",
+          emoji: "",
+          totalAmount: "721.14",
+          dueDate: "",
+        }}
+        setNewDebt={vi.fn()}
+        setManualDebts={vi.fn()}
+        setShowDebtForm={vi.fn()}
+        debtFormRef={createRef()}
+        debtNameInputRef={createRef()}
+        editingId="debt-1"
+        editingDebt={{
+          id: "debt-1",
+          amount: 721.14,
+          totalAmount: 721.14,
+          linkedTxIds: ["source", "increase"],
+          txLinks: {
+            source: { role: "source", amount: 1000 },
+            increase: { role: "increase", amount: 721.14 },
+          },
+        }}
+      />,
+    );
+
+    expect(container).toHaveTextContent("Виникнення за транзакціями");
+    expect(container).toHaveTextContent("Збільшення боргу");
+    expect(container).toHaveTextContent(/1[\s\u202f]?721,14/);
+    expect(container).toHaveTextContent(/транзакції виникнення більші/);
   });
 
   it("does not commit a debt when name is empty", () => {

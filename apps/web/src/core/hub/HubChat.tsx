@@ -117,7 +117,6 @@ function HubChat({
     speaking,
     setSpeaking,
     online,
-    hasData,
     contextState,
     activeModule,
     send,
@@ -153,7 +152,6 @@ function HubChat({
         detailsOpen={detailsOpen}
         onDetailsOpenChange={setDetailsOpen}
         contextState={contextState}
-        hasData={hasData}
         sessionInfo={sessionInfo}
         sessionsCount={sessions.length}
         onOpenHistory={() => setHistoryOpen(true)}

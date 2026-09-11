@@ -7,7 +7,7 @@ lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stabi
 
 # Technical Debt у Sergeant
 
-Technical debt in Sergeant has a taxonomy: the **17 active hard rules** (numbered up to #26 — nine were retired by [ADR-0081](../../../docs/04-governance/adr/0081-repository-simplification.md), so the count and the highest number deliberately disagree) define what "correct" looks like, and `eslint.baseline.js` + Knip + module-size metrics track how far current code deviates from that standard. Use these tools — not intuition — to prioritize debt work.
+Technical debt in Sergeant has a taxonomy: the **17 active hard rules** (numbered up to #26 — nine were retired by [ADR-0081](../../../docs/governance/adr/0081-repository-simplification.md), so the count and the highest number deliberately disagree) define what "correct" looks like, and `eslint.baseline.js` + Knip + module-size metrics track how far current code deviates from that standard. Use these tools — not intuition — to prioritize debt work.
 
 ## Debt inventory tools
 
@@ -33,7 +33,7 @@ pnpm knip          # find unused exports, files, and deps across all workspaces
 
 Knip covers all 5 apps (`web`, `landing`, `server`, `mobile`, `mobile-shell`) and `packages/`. Setting `ignoreExportsUsedInFile: true` suppresses same-file re-exports as false positives.
 
-Before deleting a Knip finding, apply lifecycle marker guards per `docs/00-start/playbooks/cleanup-dead-code.md`:
+Before deleting a Knip finding, apply lifecycle marker guards per `docs/start/instructions/cleanup-dead-code.md`:
 
 | Marker | Action |
 |---|---|
@@ -105,5 +105,5 @@ Do not mix dead-code deletion, lint-rule cleanup, and module decomposition in on
 
 ## Playbooks
 
-- `docs/00-start/playbooks/cleanup-dead-code.md` — step-by-step dead code removal with lifecycle marker guards.
-- Skill catalog: `docs/00-start/agents/agent-skills-catalog.md`.
+- `docs/start/instructions/cleanup-dead-code.md` — step-by-step dead code removal with lifecycle marker guards.
+- Skill catalog: `docs/start/agents/agent-skills-catalog.md`.

@@ -3,6 +3,7 @@ import {
   getCategory,
   getIncomeCategory,
 } from "@sergeant/finyk-domain/lib/categories";
+import { MANUAL_INCOME_TAXONOMY } from "@sergeant/finyk-domain/lib/manualTaxonomy";
 import type { ImportDirection } from "@sergeant/shared";
 
 /**
@@ -60,16 +61,6 @@ const MCC_CATEGORY_TO_PICKER_SLUG: Readonly<Record<string, string>> = {
   alcohol: "alcohol",
   education: "education",
   travel: "travel",
-};
-
-/** Те саме для доходів: `INCOME_CATEGORIES` (легасі `in_*`) → чипи
- * `MANUAL_INCOME_TAXONOMY`. `in_other` і внутрішній переказ навмисно
- * відсутні — це «доказів немає». */
-const INCOME_CATEGORY_TO_PICKER_SLUG: Readonly<Record<string, string>> = {
-  in_salary: "salary",
-  in_freelance: "freelance",
-  in_cashback: "refund",
-  in_pension: "other-income",
 };
 
 interface BankCategoryRule {
@@ -140,22 +131,16 @@ const BANK_CATEGORY_RULES: readonly BankCategoryRule[] = [
   // ── Надходження ────────────────────────────────────────────────────
   { fragments: ["зарплат", "заробітн", "аванс"], slug: "salary" },
   { fragments: ["фріланс", "гонорар"], slug: "freelance" },
-  {
-    fragments: ["кешбек", "кешбък", "повернення", "відшкодув"],
-    slug: "refund",
-  },
+  { fragments: ["кешбек", "кешбък"], slug: "cashback" },
+  { fragments: ["повернення", "відшкодув"], slug: "refund" },
   { fragments: ["подарунок"], slug: "gift" },
 ];
 
 /** Чипи витрат і доходів — окремі набори, і підказка не має права
  * підсунути витратний слаг у рядок доходу (чип просто не намалюється). */
-const INCOME_SLUGS: ReadonlySet<string> = new Set([
-  "salary",
-  "freelance",
-  "gift",
-  "refund",
-  "other-income",
-]);
+const INCOME_SLUGS: ReadonlySet<string> = new Set(
+  MANUAL_INCOME_TAXONOMY.map((category) => category.id),
+);
 
 function normalize(raw: string): string {
   return raw.trim().toLowerCase().replace(/\s+/g, " ");
@@ -194,8 +179,11 @@ export function mapDescription(
   const desc = description.trim();
   if (!desc) return null;
   if (direction === "income") {
+    const normalized = normalize(desc);
+    if (["повернення", "відшкодув"].some((word) => normalized.includes(word)))
+      return "refund";
     const id = getIncomeCategory(desc).id;
-    return INCOME_CATEGORY_TO_PICKER_SLUG[id] ?? null;
+    return id !== "other-income" && INCOME_SLUGS.has(id) ? id : null;
   }
   const id = getCategory(desc, 0).id;
   return MCC_CATEGORY_TO_PICKER_SLUG[id] ?? null;

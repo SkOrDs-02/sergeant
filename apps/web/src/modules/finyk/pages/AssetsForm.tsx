@@ -2,6 +2,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { MoneyInput } from "@shared/components/ui/MoneyInput";
+import { Money } from "@shared/components/ui/Money";
 import { DateField } from "@shared/components/ui/DateField";
 import { Label } from "@shared/components/ui/FormField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
@@ -13,6 +14,11 @@ import { notifyFinykRoutineCalendarSync } from "../hubRoutineSync";
 import type {
   Debt,
   Receivable,
+} from "@sergeant/finyk-domain/domain/debtEngine";
+import {
+  getDebtOriginated,
+  getDebtPaid,
+  getDebtSourced,
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualAsset, Subscription } from "../hooks/useStorage";
 import { getLastTxForSubscription } from "@sergeant/finyk-domain/domain/subscriptionUtils";
@@ -87,7 +93,7 @@ export function SubscriptionForm({
           }
         />
       </div>
-      <p className="text-style-caption text-subtle">
+      <p className="text-style-body text-subtle">
         Якщо не вибрати транзакцію вручну, знайдемо найновішу витрату, опис якої
         містить цей текст. Пошук не залежить від регістру.
       </p>
@@ -364,7 +370,7 @@ export function AssetForm({
         </div>
         {isLegacyNonUah && (
           <p
-            className="text-style-caption text-warning-strong dark:text-warning"
+            className="text-style-body text-warning-strong dark:text-warning"
             role="status"
           >
             Це старий запис у {newAsset.currency}. Валюту не змінюю без
@@ -441,6 +447,8 @@ export function DebtForm({
   debtFormRef,
   debtNameInputRef,
   editingId,
+  editingDebt,
+  transactions = [],
   onUpdate,
 }: {
   newDebt: {
@@ -455,8 +463,20 @@ export function DebtForm({
   debtFormRef: React.RefObject<HTMLElement | null>;
   debtNameInputRef: React.RefObject<HTMLInputElement | null>;
   editingId?: string | null;
+  editingDebt?: Debt | undefined;
+  transactions?: readonly TxRowTx[];
   onUpdate?: (id: string, value: Debt) => void;
 }) {
+  const enteredBase = Number(newDebt.totalAmount.replace(",", ".")) || 0;
+  const sourced = editingDebt ? getDebtSourced(editingDebt, transactions) : 0;
+  const increases = editingDebt
+    ? getDebtOriginated(editingDebt, transactions)
+    : 0;
+  const paid = editingDebt ? getDebtPaid(editingDebt, transactions) : 0;
+  const effectiveBase = Math.max(enteredBase, sourced);
+  const effectiveTotal = effectiveBase + increases;
+  const remaining = Math.max(0, effectiveTotal - paid);
+
   return (
     <Card
       ref={debtFormRef as React.Ref<HTMLElement>}
@@ -501,17 +521,47 @@ export function DebtForm({
           }}
         />
       </div>
-      <MoneyInput
-        aria-label="Загальна сума у гривнях"
-        placeholder="Загальна сума ₴"
-        value={newDebt.totalAmount}
-        onValueChange={(next) =>
-          setNewDebt((a) => ({
-            ...a,
-            totalAmount: next == null ? "" : String(next),
-          }))
-        }
-      />
+      <div className="space-y-1.5">
+        <Label htmlFor="debt-initial-amount">Початкова сума боргу</Label>
+        <MoneyInput
+          id="debt-initial-amount"
+          aria-label="Початкова сума боргу у гривнях"
+          placeholder="Початкова сума ₴"
+          value={newDebt.totalAmount}
+          onValueChange={(next) =>
+            setNewDebt((a) => ({
+              ...a,
+              totalAmount: next == null ? "" : String(next),
+            }))
+          }
+        />
+      </div>
+      {editingDebt && (
+        <div className="rounded-xl border border-line bg-panel px-3 py-2.5 space-y-1.5">
+          <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
+            <span>Виникнення за транзакціями</span>
+            <Money amount={sourced} kopecks />
+          </div>
+          <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
+            <span>Збільшення боргу</span>
+            <Money amount={increases} kopecks />
+          </div>
+          <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
+            <span>Сплачено</span>
+            <Money amount={paid} kopecks />
+          </div>
+          <div className="flex items-center justify-between gap-3 border-t border-line pt-1.5 text-style-label text-text">
+            <span>Залишилось повернути</span>
+            <Money amount={remaining} kopecks />
+          </div>
+          {sourced > enteredBase && (
+            <p className="text-style-body text-subtle">
+              Підтверджені транзакції виникнення більші за введену початкову
+              суму, тому розрахунок бере їхню суму за базу.
+            </p>
+          )}
+        </div>
+      )}
       <div className="space-y-1.5">
         <Label htmlFor="debt-due-date" optional>
           Дата погашення

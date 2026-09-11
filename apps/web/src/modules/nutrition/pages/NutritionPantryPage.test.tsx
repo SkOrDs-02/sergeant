@@ -1,4 +1,6 @@
 // @vitest-environment jsdom
+// Last validated: 2026-09-08
+// Status: Active
 //
 // audit-08 F12 — NutritionPantryPage page-level test coverage.
 //
@@ -72,6 +74,8 @@ function makePantry(
     setNewItemName: vi.fn(),
     pantryManagerOpen: false,
     setPantryManagerOpen: vi.fn(),
+    placeFilter: null,
+    setPlaceFilter: vi.fn(),
     pantryForm: { mode: "idle", name: "", err: "" },
     setPantryForm: vi.fn(),
     confirmDeleteOpen: false,
@@ -205,6 +209,7 @@ describe("NutritionPantryPage", () => {
 
   it("shows PantryCard when pantrySubTab is 'items'", () => {
     renderPantryPage({ pantrySubTab: "items" });
+    expect(screen.getByLabelText("Місце зберігання")).toBeTruthy();
     expect(screen.getByTestId("pantry-card")).toBeTruthy();
     expect(screen.queryByTestId("shopping-list-card")).toBeNull();
   });

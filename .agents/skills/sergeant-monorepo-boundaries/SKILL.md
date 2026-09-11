@@ -39,5 +39,5 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Playbooks
 
-- `docs/00-start/playbooks/cleanup-dead-code.md` — коли витягуєш чи виводиш з обігу спільні модулі.
-- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.
+- `docs/start/instructions/cleanup-dead-code.md` — коли витягуєш чи виводиш з обігу спільні модулі.
+- Каталог: `docs/start/agents/agent-skills-catalog.md`.

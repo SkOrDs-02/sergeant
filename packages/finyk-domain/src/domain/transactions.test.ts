@@ -5,6 +5,7 @@ import {
   normalizeTransactions,
   manualExpenseToTransaction,
   resolveManualExpenseKind,
+  filterStatTransactions,
   dedupeAndSortTransactions,
   withManualExpenses,
 } from "./transactions.js";
@@ -166,6 +167,19 @@ describe("normalizeTransaction — back-compat поля", () => {
     expect(tx.description).toBe("АТБ");
     expect(tx.mcc).toBe(5411);
   });
+
+  it("нормалізує биті date/mcc і бере category з raw", () => {
+    const tx = normalizeTransaction({
+      id: "x",
+      amount: 1,
+      date: "not-a-date",
+      mcc: "not-a-number",
+      raw: { category: "food" },
+    });
+    expect(tx.mcc).toBe(0);
+    expect(tx.categoryId).toBe("food");
+    expect(Number.isFinite(tx.time)).toBe(true);
+  });
 });
 
 describe("normalizeTransactions / dedupeAndSortTransactions", () => {
@@ -203,6 +217,18 @@ describe("normalizeTransactions / dedupeAndSortTransactions", () => {
     expect(dedupeAndSortTransactions(null)).toEqual([]);
     expect(dedupeAndSortTransactions(undefined)).toEqual([]);
     expect(dedupeAndSortTransactions({} as never)).toEqual([]);
+  });
+
+  it("фільтрує статистичні виключення через Set або iterable", () => {
+    const tx = normalizeTransactions([
+      { id: "a", time: 1, amount: 1 },
+      { id: "b", time: 2, amount: 2 },
+    ]);
+    expect(filterStatTransactions(tx, new Set(["a"])).map((x) => x.id)).toEqual(
+      ["b"],
+    );
+    expect(filterStatTransactions(tx, ["b"])).toEqual([tx[0]]);
+    expect(filterStatTransactions(null, null)).toEqual([]);
   });
 });
 

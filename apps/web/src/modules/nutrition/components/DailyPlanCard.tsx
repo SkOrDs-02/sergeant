@@ -210,7 +210,11 @@ export function DailyPlanCard({
                     const v =
                       raw === "" ? null : Number(raw) > 0 ? Number(raw) : null;
                     setPrefs((p) => {
-                      const next = { ...p, [key]: v };
+                      const next = {
+                        ...p,
+                        [key]: v,
+                        adaptiveGoalEnabled: false,
+                      };
                       // Авто-перерахунок Ккал лише коли користувач явно не
                       // задав ціль (kcal === null) або коли вона дорівнює
                       // попередньому авто-значенню. Інакше тиха перезапис
@@ -263,6 +267,32 @@ export function DailyPlanCard({
           <MacroKcalWarning prefs={prefs} setPrefs={setPrefs} busy={busy} />
 
           <GoalRangeWarning prefs={prefs} />
+
+          <div className="mt-3 flex items-start justify-between gap-3 rounded-xl border border-line bg-panel/60 p-3">
+            <div className="min-w-0">
+              <div className="text-style-label text-text">Автокалібрування</div>
+              <p className="mt-0.5 text-style-body text-muted">
+                Щотижня уточнює ціль за журналом їжі та зміною ваги. Ручна
+                правка полів призупиняє його.
+              </p>
+            </div>
+            <button
+              type="button"
+              role="switch"
+              aria-checked={prefs.adaptiveGoalEnabled}
+              onClick={() =>
+                setPrefs((p) => ({
+                  ...p,
+                  adaptiveGoalEnabled: !p.adaptiveGoalEnabled,
+                  adaptiveGoalLastUpdatedAt: null,
+                }))
+              }
+              disabled={busy || dayPlanBusy}
+              className="touch-target shrink-0 rounded-xl border border-line px-3 text-style-caption text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 disabled:opacity-50"
+            >
+              {prefs.adaptiveGoalEnabled ? "Увімкнено" : "Вимкнено"}
+            </button>
+          </div>
 
           {hasTargets && (
             <div className="mt-2 flex flex-wrap gap-1 items-center">

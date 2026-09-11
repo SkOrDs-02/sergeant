@@ -531,7 +531,7 @@ export function run({
           [
             `❌ ${filePath}: TWO-PHASE-DROP header validation failed.`,
             `   ${reason}.`,
-            `   Hard Rule #4: see docs/03-operations/runbooks/operations-runbook.md § 8.2.`,
+            `   Hard Rule #4: see docs/start/instructions/operations-runbook.md § 8.2.`,
           ].join("\n"),
         );
       }
@@ -544,7 +544,7 @@ export function run({
           `   ${parsedTwoPhase.reason}.`,
           `   Expected (single line, single comment):`,
           `     -- TWO-PHASE-DROP: introduced YYYY-MM-DD as deprecation; safe to drop after YYYY-MM-DD`,
-          `   Hard Rule #4: see docs/03-operations/runbooks/operations-runbook.md § 8.2.`,
+          `   Hard Rule #4: see docs/start/instructions/operations-runbook.md § 8.2.`,
         ].join("\n"),
       );
       continue;
@@ -560,7 +560,7 @@ export function run({
     errors.push(
       [
         `❌ Migration ${name} contains destructive DROP without two-phase header.`,
-        `   Hard Rule #4: see docs/03-operations/runbooks/operations-runbook.md § 8.2.`,
+        `   Hard Rule #4: see docs/start/instructions/operations-runbook.md § 8.2.`,
         ``,
         `   First non-comment DROP line: ${filePath}:${dropLines[0].lineNumber}:`,
         `     ${dropLines[0].text.trim()}`,
@@ -575,7 +575,7 @@ export function run({
   }
 
   // 2b. Empty-rollback check for new/changed `.down.sql` files.
-  //     Closes PR-T38 from `docs/02-engineering/testing/2026-05-05-tests-pr-plan.md`
+  //     Closes PR-T38 from `docs/engineering/testing/2026-05-05-tests-pr-plan.md`
   //     ("migration rollback за замовчуванням") — the plop generator
   //     emits a `-- TODO: write your DOWN` placeholder which contributors
   //     historically leave in place, defeating the two-phase DROP
@@ -643,7 +643,7 @@ export function run({
           `   є на \`${baseRef}\`, не чіпають: раннер трекає міграції за іменем,`,
           `   тож перейменування виконає його SQL у проді вдруге (див. 2c).`,
           ``,
-          `   Ref: docs/90-work/initiatives/0011-foundation-adoption-and-process-discipline.md`,
+          `   Ref: docs/work/specs/initiatives/0011-foundation-adoption-and-process-discipline.md`,
           `        (Phase 1 PR 1.2 — closes PR #1652 type-incident)`,
         ].join("\n"),
       );
@@ -684,7 +684,7 @@ export function run({
         `   Якщо міграція точно ніколи не деплоїлась (рідко — \`main\``,
         `   деплоїться автоматично): ALLOW_MIGRATION_RENAME=1.`,
         ``,
-        `   Ref: docs/04-governance/governance/rules/04-sql-migrations-sequential-two-phase.md`,
+        `   Ref: docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md`,
       ].join("\n"),
     );
   }

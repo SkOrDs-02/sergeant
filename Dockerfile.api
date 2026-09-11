@@ -275,10 +275,10 @@ COPY --from=builder --chown=nonroot:nonroot /app/apps/server/dist-server /app/ap
 
 # ЗАЛИШОК OpenClaw (ADR-0075) — див. примітку біля `OPENCLAW_REPO_ROOT` вище:
 # ці COPY ніщо не читає, зняти окремим deploy-config PR.
-COPY --chown=nonroot:nonroot docs/04-governance/adr /app/docs/04-governance/adr
-COPY --chown=nonroot:nonroot docs/01-product/launch /app/docs/01-product/launch
-COPY --chown=nonroot:nonroot docs/02-engineering/integrations /app/docs/02-engineering/integrations
-COPY --chown=nonroot:nonroot docs/04-governance/governance /app/docs/04-governance/governance
+COPY --chown=nonroot:nonroot docs/governance/adr /app/docs/governance/adr
+COPY --chown=nonroot:nonroot docs/work/specs/launch /app/docs/work/specs/launch
+COPY --chown=nonroot:nonroot docs/engineering/integrations /app/docs/engineering/integrations
+COPY --chown=nonroot:nonroot docs/governance/governance /app/docs/governance/governance
 
 WORKDIR /app/apps/server
 

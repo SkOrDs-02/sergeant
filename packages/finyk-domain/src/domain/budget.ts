@@ -48,7 +48,10 @@ export type LimitPeriod = "month" | "week" | "one_time";
  * напряму, а не тримає власну копію (§2.28 audit finding).
  */
 export function limitBudgetCategoryIds(
-  budget: Pick<LimitBudget, "categoryId" | "categoryIds">,
+  budget: Pick<
+    LimitBudget,
+    "categoryId" | "categoryIds" | "categoryTaxonomyVersion"
+  >,
 ): string[] {
   const raw =
     Array.isArray(budget.categoryIds) && budget.categoryIds.length > 0
@@ -57,6 +60,15 @@ export function limitBudgetCategoryIds(
   const out: string[] = [];
   for (const id of raw) {
     if (typeof id === "string" && id && !out.includes(id)) out.push(id);
+  }
+  // Чинний ліміт «Покупки» історично включав ручну «Техніку».
+  // На read-time зберігаємо його охоплення; нові ліміти мають version=2.
+  if (
+    budget.categoryTaxonomyVersion !== 2 &&
+    out.includes("shopping") &&
+    !out.includes("tech")
+  ) {
+    out.push("tech");
   }
   return out;
 }

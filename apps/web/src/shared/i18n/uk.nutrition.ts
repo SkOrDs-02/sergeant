@@ -25,7 +25,7 @@ export const nutritionPageMessages = {
    * AI-CONTEXT: тон навмисно констатувальний, без оцінки. «73% сьогодні —
    * оцінка з фото» — це факт про якість даних, а не докір за те, що
    * людина фотографувала замість зважувати. Стиль — `ти`-звертання й
-   * дієслово без наказу (`docs/01-product/copy/style-guide.uk.md`).
+   * дієслово без наказу (`docs/product/copy/style-guide.uk.md`).
    */
   dayStrip: {
     heading: "Доба",
@@ -44,7 +44,7 @@ export const nutritionPageMessages = {
   },
   /**
    * Hero-стрічка дня (`MealStrip.tsx`, спека
-   * `docs/90-work/planning/specs/nutrition-hero-day-strip.md`) — заміна
+   * `docs/work/specs/nutrition-hero-day-strip.md`) — заміна
    * `ProgressRing`/`MacroRings` у hero (анти-слоп Q3/F6). Не плутати з
    * `dayStrip` вище — та секція описує ІНШУ signature-view (годинний
    * розподіл калорій у `DayStrip.tsx`/`DayLogSheet`).
@@ -124,7 +124,7 @@ export const nutritionPageMessages = {
 
   /**
    * Картка продукту в коморі — родова назва зверху, фактичні покупки
-   * всередині (спека `docs/90-work/planning/specs/pantry-generic-names.md`).
+   * всередині (спека `docs/work/specs/pantry-generic-names.md`).
    * Контрол розгортання зʼявляється лише від ДВОХ варіантів: на одному
    * розкривати нічого.
    */
@@ -142,7 +142,7 @@ export const nutritionPageMessages = {
   /**
    * «Поповнити комору з покупок Сільпо» — екран підтвердження перед
    * записом `replenish`-подій (Silpo integration трек C, спека
-   * `docs/90-work/planning/specs/silpo-mcp-integration.md`
+   * `docs/work/specs/silpo-mcp-integration.md`
    * § «Комора — через готовий ledger»). Позиції чека НІКОЛИ не пишуться
    * мовчки — людина явно підтверджує кожну позицію чекбоксом.
    */
@@ -195,7 +195,7 @@ export const nutritionPageMessages = {
 
   /**
    * «У кошик Сільпо» зі списку покупок (Silpo integration трек G, спека
-   * `docs/90-work/planning/specs/silpo-mcp-integration.md` §
+   * `docs/work/specs/silpo-mcp-integration.md` §
    * «Cart (MCP write path)»). Позиції пишуться в зовнішній кошик ЛИШЕ
    * після явного тапу «Додати в кошик Сільпо» — до того будь-яка кількість
    * тапів по чекбоксах/степеру нікуди не записується.
@@ -301,5 +301,23 @@ export const nutritionPageMessages = {
   portionUnitHint: {
     body: "Значення – за всю порцію, як зʼїв, а не на 100 г.",
     packageCta: "Маю етикетку на 100 г",
+  },
+
+  pantryPortion: {
+    label: "Вага порції, г",
+    description: "Стільки буде списано з комори після збереження.",
+    a11yPrefix: "Введи вагу порції від 1 до",
+    a11ySuffix: "грамів.",
+  },
+
+  adaptiveGoal: {
+    heading: "Адаптивна ціль",
+    edit: "Змінити",
+  },
+
+  photoAuth: {
+    heading: "Потрібен обліковий запис",
+    body: "Фото надсилається на сервер для розпізнавання, тому цей сценарій доступний після входу. Ручне додавання їжі працює локально.",
+    signIn: "Увійти",
   },
 };

@@ -1,9 +1,9 @@
 #!/usr/bin/env node
 // scripts/docs/generate-initiative-followups.mjs
 //
-// Scan `docs/90-work/initiatives/[0-9]*.md`, extract each initiative's
+// Scan `docs/work/specs/initiatives/[0-9]*.md`, extract each initiative's
 // `### Carry-over → successor` block, and generate
-// `docs/90-work/initiatives/follow-ups.md` — a consolidated index of all open
+// `docs/work/specs/initiatives/follow-ups.md` — a consolidated index of all open
 // follow-up items across initiatives, split into:
 //
 //   1. One-shot — date-driven items (sorted by due date), trigger-based
@@ -45,13 +45,13 @@ import { isStaleIgnoringDateStamp } from "./freshness-stamp.mjs";
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
 const REPO_ROOT = resolve(__dirname, "../..");
-const INITIATIVES_DIR = resolve(REPO_ROOT, "docs/90-work/initiatives");
+const INITIATIVES_DIR = resolve(REPO_ROOT, "docs/work/specs/initiatives");
 const OUTPUT_PATH = join(INITIATIVES_DIR, "follow-ups.md");
 
 // Matches both active (`NNNN-...md`) and completed-prefix (`_NNNN-...md`)
 // initiative files. The leading `_` is added when an initiative goes
-// `Done` / `Closed` so `ls docs/90-work/initiatives/` separates active from done
-// — see `docs/90-work/initiatives/README.md` § Гайдлайн → completed-prefix.
+// `Done` / `Closed` so `ls docs/work/specs/initiatives/` separates active from done
+// — see `docs/work/specs/initiatives/README.md` § Гайдлайн → completed-prefix.
 const RE_INITIATIVE_FILE = /^_?\d{4}-.+\.md$/;
 const RE_H1 = /^#\s+(.+?)\s*$/m;
 // Carry-over heading we recognise. Both `###` and `##` levels supported so
@@ -238,7 +238,7 @@ export function compareCadence(a, b) {
 }
 
 /**
- * Read every `*-*.md` file in `dir` (defaults to docs/90-work/initiatives/), parse
+ * Read every `*-*.md` file in `dir` (defaults to docs/work/specs/initiatives/), parse
  * each Carry-over block, and emit a flat list of items annotated with the
  * source initiative's filename and short title.
  */
@@ -314,7 +314,7 @@ export function renderFollowUps(items, { today = todayISO() } = {}) {
   );
   lines.push("");
   lines.push(
-    "Зведений календар відкритих follow-up-ів з усіх ініціатив у [`docs/90-work/initiatives/`](./README.md). Source = `### Carry-over → successor` блок у кожному файлі (тільки `- [ ]`-пункти; checked-off — історія, в індекс не йдуть).",
+    "Зведений календар відкритих follow-up-ів з усіх ініціатив у [`docs/work/specs/initiatives/`](./README.md). Source = `### Carry-over → successor` блок у кожному файлі (тільки `- [ ]`-пункти; checked-off — історія, в індекс не йдуть).",
   );
   lines.push("");
   lines.push(

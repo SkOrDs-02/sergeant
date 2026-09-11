@@ -258,6 +258,7 @@ describe("adapter — запис сходинки і outbox", () => {
 
   const OP: NutritionDualWriteOp = {
     kind: "goal-period-insert",
+    origin: "manual",
     goal: {
       kcal: 1800,
       proteinG: 140,
@@ -266,6 +267,21 @@ describe("adapter — запис сходинки і outbox", () => {
       waterMl: 2500,
     },
   };
+
+  it("зберігає origin='tdee' для автоматичного перерахунку", async () => {
+    const { client, calls } = makeRecordingClient();
+    await applyNutritionDualWriteOps(client, [{ ...OP, origin: "tdee" }], {
+      userId: "user_1",
+      clientTs: "2026-07-25T10:00:00.000Z",
+    });
+    const insert = calls.find((c) => c.sql.includes("nutrition_goal_periods"))!;
+    expect(insert.params[8]).toBe("tdee");
+    expect(
+      vi.mocked(fireSyncOutboxUpsert).mock.calls.at(-1)?.[1].row,
+    ).toMatchObject({
+      origin: "tdee",
+    });
+  });
 
   beforeEach(() => {
     vi.restoreAllMocks();

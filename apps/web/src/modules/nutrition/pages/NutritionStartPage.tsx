@@ -26,14 +26,12 @@ interface NutritionStartPageProps {
   log: LogController;
   prefs: NutritionPrefs;
   setActivePageAndHash: (page: NutritionPage) => void;
-  onRequestAddMeal: () => void;
 }
 
 export function NutritionStartPage({
   log,
   prefs,
   setActivePageAndHash,
-  onRequestAddMeal,
 }: NutritionStartPageProps) {
   const { messages } = useLocale();
   return (
@@ -47,7 +45,6 @@ export function NutritionStartPage({
           onGoToDailyPlan={() => {
             setActivePageAndHash("menu");
           }}
-          onAddMeal={onRequestAddMeal}
         />
       </>
     </SectionErrorBoundary>

@@ -29,13 +29,16 @@ import { getCachedFinykSqliteState } from "@finyk/lib/sqliteReader";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
 import {
+  loadNutritionGoalPeriods,
   loadNutritionLog,
-  loadNutritionPrefs,
 } from "@nutrition/lib/nutritionStorage";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain";
 import { calcRoutinePeriodCompletion } from "@sergeant/routine-domain/period-completion";
 import { addDays, dateKeyFromDate } from "@sergeant/routine-domain";
-import { calcNutritionPeriodAverages } from "@sergeant/nutrition-domain";
+import {
+  averageKcalGoalForDays,
+  calcNutritionPeriodAverages,
+} from "@sergeant/nutrition-domain";
 import { workoutTonnageKg } from "@sergeant/fizruk-domain";
 import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
 import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
@@ -321,11 +324,9 @@ export interface NutritionAggregate {
 }
 
 export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
-  // Canonical log + prefs — SQLite warm cache (`nutrition_log_v1` /
-  // `nutrition_prefs_v1` tombstoned).
+  // Canonical log + append-only goal history from the SQLite warm cache.
   const log = loadNutritionLog();
-  const prefs = loadNutritionPrefs();
-  const targetKcal = prefs.dailyTargetKcal ?? 2000;
+  const goalPeriods = loadNutritionGoalPeriods();
 
   const monday = new Date(`${weekKey}T00:00:00`);
   const weekDays: string[] = [];
@@ -335,6 +336,7 @@ export function aggregateNutrition(weekKey: string): NutritionAggregate | null {
     d.setDate(monday.getDate() + i);
     weekDays.push(localDateKey(d));
   }
+  const targetKcal = averageKcalGoalForDays(goalPeriods, weekDays) ?? 0;
 
   // AI-CONTEXT: W1-CANON-AGG стадія 4 — числа не рухаються (дайджест уже
   // рахував за канонічною семантикою «дні з ≥1 прийомом»), рухається лише

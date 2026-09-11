@@ -149,13 +149,13 @@ const variants: Record<ButtonVariantLegacy, string> = {
   // elevation. Text over the accent is ink, never white (Rule #9 needs no
   // `-strong` companion here).
   finyk:
-    "bg-finyk-strong text-white shadow-sm hover:bg-teal-900 hover:shadow-glow-teal active:bg-teal-900 active:scale-[0.98] dark:bg-finyk dark:text-bg dark:shadow-glow-accent-teal",
+    "bg-finyk-strong text-white shadow-sm hover:bg-teal-900 hover:shadow-glow-teal active:bg-teal-900 active:scale-[0.98] dark:bg-finyk dark:text-bg dark:shadow-sm",
   fizruk:
-    "bg-fizruk-strong text-white shadow-sm hover:bg-cyan-900 hover:shadow-glow-cyan active:bg-cyan-900 active:scale-[0.98] dark:bg-fizruk dark:text-bg dark:shadow-glow-accent-cyan",
+    "bg-fizruk-strong text-white shadow-sm hover:bg-cyan-900 hover:shadow-glow-cyan active:bg-cyan-900 active:scale-[0.98] dark:bg-fizruk dark:text-bg dark:shadow-sm",
   routine:
-    "bg-routine-strong text-white shadow-sm hover:bg-rose-800 hover:shadow-glow-rose active:bg-rose-900 active:scale-[0.98] dark:bg-routine dark:text-bg dark:shadow-glow-accent-rose",
+    "bg-routine-strong text-white shadow-sm hover:bg-rose-800 hover:shadow-glow-rose active:bg-rose-900 active:scale-[0.98] dark:bg-routine dark:text-bg dark:shadow-sm",
   nutrition:
-    "bg-nutrition-strong text-white shadow-sm hover:bg-lime-900 hover:shadow-glow-lime active:scale-[0.98] dark:bg-nutrition dark:text-bg dark:shadow-glow-accent-lime",
+    "bg-nutrition-strong text-white shadow-sm hover:bg-lime-900 hover:shadow-glow-lime active:scale-[0.98] dark:bg-nutrition dark:text-bg dark:shadow-sm",
 
   // Soft module variants (for secondary actions within modules).
   // Dark mode keeps the saturated accent at low opacity for the FILL so the

@@ -6,7 +6,7 @@ name: Weekly DB backup verify
 # restore + smoke-test schema integrity. Backend moved Railway → Hetzner +
 # Coolify (ADR-0074); this job now dumps directly from the public Coolify
 # Postgres URL instead of going through the (now-removed) Railway CLI.
-# Ref: docs/03-operations/runbooks/database-backup-restore.md § 4 + § 6.
+# Ref: docs/start/instructions/database-backup-restore.md § 4 + § 6.
 
 on:
   schedule:
@@ -120,7 +120,7 @@ jobs:
           pnpm --filter @sergeant/server db:migrate:dev
 
       # ── Step 4: Smoke-test schema integrity ───────────────────────
-      # Mirrors docs/03-operations/runbooks/database-backup-restore.md § 4.
+      # Mirrors docs/start/instructions/database-backup-restore.md § 4.
       - name: Smoke-test schema integrity
         run: |
           set -euo pipefail
@@ -249,7 +249,7 @@ jobs:
               '6. Sync op-log has future-dated entries (clock skew)',
               '7. Foreign-key orphans detected',
               '',
-              'See [database-backup-restore.md](docs/03-operations/runbooks/database-backup-restore.md) for investigation steps.',
+              'See [database-backup-restore.md](docs/start/instructions/database-backup-restore.md) for investigation steps.',
               '',
               'cc @SkOrDs-02',
             ].join('\n');

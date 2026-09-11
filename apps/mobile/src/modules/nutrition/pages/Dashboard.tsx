@@ -23,6 +23,7 @@ import {
   getDayMacros,
   getDaySummary,
   getMacrosForDateRange,
+  resolveKcalGoalsForDays,
   stripPlacement,
   type MealTypeId,
   type NutritionPrefs,
@@ -38,6 +39,7 @@ import { MacroRing } from "../components/MacroRing";
 import { WaterTrackerCard } from "../components/WaterTrackerCard";
 import { WeekKcalChart } from "../components/WeekKcalChart";
 import { useNutritionLog } from "../hooks/useNutritionLog";
+import { useNutritionGoalPeriods } from "../hooks/useNutritionGoalPeriods";
 import { useNutritionPantries } from "../hooks/useNutritionPantries";
 import { useNutritionPrefs } from "../hooks/useNutritionPrefs";
 
@@ -161,6 +163,7 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
   const api = useApiClient();
   const { nutritionLog, addMeal } = useNutritionLog();
   const { prefs, updatePrefs } = useNutritionPrefs();
+  const goalPeriods = useNutritionGoalPeriods();
   const { pantryItems } = useNutritionPantries();
   const [sheetOpen, setSheetOpen] = useState(false);
 
@@ -307,6 +310,14 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
     () => getMacrosForDateRange(nutritionLog, today, 7),
     [nutritionLog, today],
   );
+  const weekGoals = useMemo(
+    () =>
+      resolveKcalGoalsForDays(
+        goalPeriods,
+        weekRows.map((row) => row.date),
+      ),
+    [goalPeriods, weekRows],
+  );
 
   const hasTargets =
     (prefs.dailyTargetKcal || 0) > 0 ||
@@ -403,10 +414,7 @@ export function Dashboard({ testID, onMealAdded }: DashboardProps) {
         </Text>
         <WeekKcalChart
           rows={weekRows}
-          // Однакове значення на всі дні: джерело поки `prefs`. Сходинка
-          // зʼявиться, коли мобілка отримає стадію 3 (окрема поставка,
-          // EAS-лаг — ADR-0091 § Consequences).
-          goalsByDay={weekRows.map(() => prefs.dailyTargetKcal || null)}
+          goalsByDay={weekGoals}
           todayIso={today}
         />
       </Card>

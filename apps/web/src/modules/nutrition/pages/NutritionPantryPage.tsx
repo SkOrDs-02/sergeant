@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-06-15
+ * Last validated: 2026-09-08
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
@@ -11,6 +11,7 @@ import { ShoppingListCard } from "../components/ShoppingListCard";
 import { SubTabs } from "../components/SubTabs";
 import { BarcodeLookupNotice } from "../components/BarcodeLookupNotice";
 import { SilpoPantryReplenishEntry } from "../components/SilpoPantryReplenishEntry";
+import { NutritionPantrySelector } from "../components/NutritionPantrySelector";
 import type {
   NutritionRecipe,
   NutritionWeekPlan,
@@ -81,6 +82,7 @@ export function NutritionPantryPage({
         />
         {pantrySubTab === "items" ? (
           <>
+            <NutritionPantrySelector pantry={pantry} busy={busy} />
             <div className="flex justify-end">
               <SilpoPantryReplenishEntry
                 pantryItems={pantry.pantryItems}

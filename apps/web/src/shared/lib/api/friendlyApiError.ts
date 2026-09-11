@@ -13,7 +13,7 @@ export function friendlyApiError(
   message?: string | null,
 ): string {
   const m = message || "";
-  // AI-3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // AI-3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
   // сервер (`rateLimitExpress`, `apps/server/src/http/rateLimit.ts`) тепер
   // сам називає конкретний час очікування («Забагато запитів. Спробуй
   // через 12 секунд.»), а не голе «пізніше»; віддаємо це повідомлення як
@@ -21,7 +21,8 @@ export function friendlyApiError(
   // сервер (або будь-який інший 429-джерело поза `rateLimitExpress`)
   // з якоїсь причини не передав `message`.
   if (status === 429) return m || "Забагато запитів. Спробуй через хвилину.";
-  if (status === 401 || status === 403) return "Доступ заборонено.";
+  if (status === 401) return "Увійди в акаунт, щоб продовжити.";
+  if (status === 403) return "Ця дія недоступна для поточного акаунта.";
   // AI-DANGER: шлюзові збої (502/503/504) НЕ отримують тут власного тексту
   // навмисно, хоч спокуса є — «Помилка 504» справді нічого не каже людині.
   // Але `formatApiError` розпізнає саме форму `^Помилка \d+$` як сигнал

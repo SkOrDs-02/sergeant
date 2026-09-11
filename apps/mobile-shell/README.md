@@ -1,7 +1,7 @@
 # `@sergeant/mobile-shell` — Capacitor shell
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-18.
-> **Mobile strategy:** Capacitor shell — primary до Expo feature parity; sunset-дати T₀/T₁/T₂ не є active commitments — [ADR-0052](../../docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md).
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-16.
+> **Mobile strategy:** Capacitor shell — primary до Expo feature parity; sunset-дати T₀/T₁/T₂ не є active commitments — [ADR-0052](../../docs/governance/adr/0052-mobile-strategy-capacitor-primary.md).
 
 Тонкий native-shell навколо `@sergeant/web`. Спочатку задумувався як PoC
 («чи запуститься поточний веб-код у WebView»), але зараз доріс до MVP:
@@ -12,21 +12,21 @@ keyboard, deep links) вже закомічені і перевірені у б�
 React Native). Співіснують навмисно: `applicationId` у shell —
 `com.sergeant.shell`, у RN-апці — `com.sergeant.app`.
 
-Короткий статус-репорт по всіх трьох поверхнях — `docs/02-engineering/architecture/platforms.md`.
+Короткий статус-репорт по всіх трьох поверхнях — `docs/engineering/architecture/platforms.md`.
 
 ## Що готово
 
-| Функція                                       | Плагін / PR                                                                                                                                                                                                                                                                                                                               |
-| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| Bearer-auth (Keychain / EncryptedSharedPrefs) | `@capacitor/preferences` — [#505](https://github.com/Skords-01/Sergeant/pull/505)                                                                                                                                                                                                                                                         |
-| Native barcode scanner                        | `@capacitor-mlkit/barcode-scanning` — [#504](https://github.com/Skords-01/Sergeant/pull/504)                                                                                                                                                                                                                                              |
-| Status bar + splash + keyboard + deep links   | `@capacitor/{status-bar,splash-screen,keyboard,app}` — [#506](https://github.com/Skords-01/Sergeant/pull/506)                                                                                                                                                                                                                             |
-| Android hardware Back → web-history traversal | `@capacitor/app#backButton` — `canGoBack` → `window.history.back()`, інакше `App.exitApp()`                                                                                                                                                                                                                                               |
-| Android native проєкт (закомічено)            | `android/` (з `cap add android`)                                                                                                                                                                                                                                                                                                          |
-| Push у shell — лише нативний (FCM/APNs)       | `@capacitor/push-notifications` через `@shared/lib/adapters/pushNative`. Web Push (VAPID + `PushManager.subscribe`) повністю виключений з shell-бандла через `VITE_TARGET=capacitor` + dynamic `import()` → [#524](https://github.com/Skords-01/Sergeant/pull/524)                                                                        |
-| Android debug-APK у CI                        | [`.github/workflows/mobile-shell-android.yml`](../../.github/workflows/mobile-shell-android.yml) → артефакт `sergeant-shell-debug-apk`                                                                                                                                                                                                    |
-| Android release-signing + ProGuard/R8         | `signingConfigs.release` у `android/app/build.gradle` читає `SERGEANT_RELEASE_*` з env/`gradle.properties`; `minifyEnabled true` + `shrinkResources true` + Capacitor keep-rules у `android/app/proguard-rules.pro`                                                                                                                       |
-| Android release pipeline (AAB + APK у CI)     | [`.github/workflows/mobile-shell-android-release.yml`](../../.github/workflows/mobile-shell-android-release.yml) → `sergeant-shell-release-aab` (Play) + `sergeant-shell-release-apk` (sideload); setup-інструкція — [`docs/02-engineering/mobile/shell.md#release--android`](../../docs/02-engineering/mobile/shell.md#release--android) |
+| Функція                                       | Плагін / PR                                                                                                                                                                                                                                                                                                                         |
+| --------------------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Bearer-auth (Keychain / EncryptedSharedPrefs) | `@capacitor/preferences` — [#505](https://github.com/Skords-01/Sergeant/pull/505)                                                                                                                                                                                                                                                   |
+| Native barcode scanner                        | `@capacitor-mlkit/barcode-scanning` — [#504](https://github.com/Skords-01/Sergeant/pull/504)                                                                                                                                                                                                                                        |
+| Status bar + splash + keyboard + deep links   | `@capacitor/{status-bar,splash-screen,keyboard,app}` — [#506](https://github.com/Skords-01/Sergeant/pull/506)                                                                                                                                                                                                                       |
+| Android hardware Back → web-history traversal | `@capacitor/app#backButton` — `canGoBack` → `window.history.back()`, інакше `App.exitApp()`                                                                                                                                                                                                                                         |
+| Android native проєкт (закомічено)            | `android/` (з `cap add android`)                                                                                                                                                                                                                                                                                                    |
+| Push у shell — лише нативний (FCM/APNs)       | `@capacitor/push-notifications` через `@shared/lib/adapters/pushNative`. Web Push (VAPID + `PushManager.subscribe`) повністю виключений з shell-бандла через `VITE_TARGET=capacitor` + dynamic `import()` → [#524](https://github.com/Skords-01/Sergeant/pull/524)                                                                  |
+| Android debug-APK у CI                        | [`.github/workflows/mobile-shell-android.yml`](../../.github/workflows/mobile-shell-android.yml) → артефакт `sergeant-shell-debug-apk`                                                                                                                                                                                              |
+| Android release-signing + ProGuard/R8         | `signingConfigs.release` у `android/app/build.gradle` читає `SERGEANT_RELEASE_*` з env/`gradle.properties`; `minifyEnabled true` + `shrinkResources true` + Capacitor keep-rules у `android/app/proguard-rules.pro`                                                                                                                 |
+| Android release pipeline (AAB + APK у CI)     | [`.github/workflows/mobile-shell-android-release.yml`](../../.github/workflows/mobile-shell-android-release.yml) → `sergeant-shell-release-aab` (Play) + `sergeant-shell-release-apk` (sideload); setup-інструкція — [`docs/engineering/mobile/shell.md#release--android`](../../docs/engineering/mobile/shell.md#release--android) |
 
 Точка входу native-side — `src/index.ts → initNativeShell()`. Вона
 ідемпотентна (повторні виклики безпечні під HMR / LiveReload) і
@@ -56,7 +56,7 @@ PR, що чіпає `apps/mobile-shell/**`, `apps/web/**`, `apps/server/**`
 `sergeant-shell-debug-apk` (14 днів retention). iOS-сторона живе в
 сибілінгу `mobile-shell-ios.yml` (macOS runner, build-only без
 підпису). Огляд кроків і локальних команд — у
-[`docs/02-engineering/mobile/shell.md`](../../docs/02-engineering/mobile/shell.md).
+[`docs/engineering/mobile/shell.md`](../../docs/engineering/mobile/shell.md).
 
 ### Варіант Б — локальна збірка
 
@@ -101,7 +101,7 @@ pnpm --filter @sergeant/mobile-shell open:android
 `.github/workflows/mobile-shell-ios-release.yml` (триггери `push tag
 'v*'` + `workflow_dispatch`): сам робить `cap add ios` на `macos-latest`,
 архівує, експортує `.ipa` і заливає у TestFlight. Контракт секретів і
-інструкції для першого запуску — у [`docs/02-engineering/mobile/shell.md` → Release — iOS](../../docs/02-engineering/mobile/shell.md#release--ios).
+інструкції для першого запуску — у [`docs/engineering/mobile/shell.md` → Release — iOS](../../docs/engineering/mobile/shell.md#release--ios).
 
 ### ATS-audit (`NSAppTransportSecurity`)
 
@@ -115,8 +115,8 @@ WebView мовчки би пропустив http-трафік незалежн�
 Скрипт читається парсером XML-plist на Node — працює і на macOS-runner-і,
 і на Linux-боксах розробників (`node --test apps/mobile-shell/scripts/__tests__/check-info-plist.test.mjs`).
 Per-domain винятки (`NSExceptionDomains`) дозволені — додавай їх разом
-із записом у [`docs/04-governance/security/audit-exceptions.md`](../../docs/04-governance/security/audit-exceptions.md).
-Деталі — у [`docs/04-governance/security/hardening/L12-ios-app-transport-security.md`](../../docs/04-governance/security/hardening/archive/L12-ios-app-transport-security.md).
+із записом у [`docs/governance/security/audit-exceptions.md`](../../docs/governance/security/audit-exceptions.md).
+Деталі — у [`L12-ios-app-transport-security.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/L12-ios-app-transport-security.md).
 
 ## Команди
 
@@ -160,7 +160,7 @@ pnpm --filter @sergeant/mobile-shell test:coverage  # Vitest з покриття
 - ~~**Release pipeline на iOS не налаштований**~~ — зроблено
   сканфолдом у `.github/workflows/mobile-shell-ios-release.yml`. Для
   першого запуску потрібні всі Apple-секрети з контракту у
-  [`docs/02-engineering/mobile/shell.md` → Release — iOS](../../docs/02-engineering/mobile/shell.md#release--ios);
+  [`docs/engineering/mobile/shell.md` → Release — iOS](../../docs/engineering/mobile/shell.md#release--ios);
   без них job логить `::warning::iOS release secrets not configured`
   і падає у unsigned-Simulator-фолбек.
 - ~~**Native push notifications.** `usePushNotifications` у web тримає
@@ -178,7 +178,7 @@ pnpm --filter @sergeant/mobile-shell test:coverage  # Vitest з покриття
   на `platform: "web" | "ios" | "android"`, серверний handler
   (`apps/server/src/modules/push/push.ts → register`) маршрутизує у
   `push_devices` для native-токенів. Залишається лише реальний
-  APNs/FCM **send**-pipeline — див. `docs/02-engineering/mobile/overview.md#push-notifications`.
+  APNs/FCM **send**-pipeline — див. `docs/engineering/mobile/overview.md#push-notifications`.
 - ~~**Deep-link навігація у React Router.** `parseDeepLink()` у
   `src/index.ts` готовий і `App.addListener('appUrlOpen', ...)`
   викликає callback, але коннект з `useNavigate()` з

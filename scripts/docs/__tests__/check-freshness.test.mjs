@@ -195,8 +195,8 @@ describe("daysBetween", () => {
 describe("freshnessMarker", () => {
   it("produces the correct HTML comment", () => {
     assert.equal(
-      freshnessMarker("docs/03-operations/observability/runbook.md"),
-      "<!-- doc-freshness:docs/03-operations/observability/runbook.md -->",
+      freshnessMarker("docs/operations/observability/runbook.md"),
+      "<!-- doc-freshness:docs/operations/observability/runbook.md -->",
     );
   });
 });
@@ -205,10 +205,10 @@ describe("freshnessMarker", () => {
 
 describe("issueTitle", () => {
   it("includes the file path", () => {
-    const title = issueTitle("docs/05-design/design/brandbook.md");
+    const title = issueTitle("docs/design/design/brandbook.md");
     assert.equal(
       title,
-      "docs: freshness overdue — docs/05-design/design/brandbook.md",
+      "docs: freshness overdue — docs/design/design/brandbook.md",
     );
   });
 });
