@@ -116,6 +116,25 @@ function workoutAt(dateKey: string, kcalBurned: number) {
   };
 }
 
+/**
+ * Сесія БЕЗ збереженого `kcalBurned` — рівно та, де формула MET мусить
+ * дістати вагу. `computeWorkoutKcalBurned` віддає збережене число одразу
+ * (`kcalBurned.ts:154`), тож фікстура зі збереженим полем перевіряє
+ * будь-що, окрім ваги.
+ *
+ * 8.75 MET × 80 кг × 3600 с / 3600 = 700 ккал — те саме число, що в
+ * решті фікстур, але тепер воно залежить від ваги: прибери фолбек на
+ * профіль — і формула поверне `null`, тобто нуль витрат.
+ */
+function metWorkoutAt(dateKey: string) {
+  return {
+    id: `w-met-${dateKey}`,
+    startedAt: `${dateKey}T09:00:00.000Z`,
+    endedAt: `${dateKey}T10:00:00.000Z`,
+    items: [{ id: `i-${dateKey}`, type: "time", met: 8.75, durationSec: 3600 }],
+  };
+}
+
 function dayKeyDaysAgo(days: number): string {
   const d = new Date();
   d.setDate(d.getDate() - days);
@@ -190,13 +209,8 @@ describe("useAdaptiveNutritionGoal · seed цілі", () => {
       countWorkoutsInGoal: true,
     };
     fizrukMock.measurements = [];
-    fizrukMock.workouts = [2, 4].map((d) => ({
-      id: `w-${d}`,
-      startedAt: `${dayKeyDaysAgo(d)}T09:00:00.000Z`,
-      endedAt: `${dayKeyDaysAgo(d)}T10:00:00.000Z`,
-      kcalBurned: 700,
-      items: [],
-    }));
+    // 2 × 700 / 14 = +100 ккал/добу.
+    fizrukMock.workouts = [2, 4].map((d) => metWorkoutAt(dayKeyDaysAgo(d)));
     render(<Probe prefs={basePrefs()} />);
     const withWorkouts = seededKcal();
 
