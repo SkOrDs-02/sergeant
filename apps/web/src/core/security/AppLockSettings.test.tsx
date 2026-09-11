@@ -10,7 +10,6 @@ import {
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 
-import type { UserPreferences } from "@shared/api";
 import type { UseAppLockReturn } from "./useAppLock";
 
 // --- Моки -------------------------------------------------------------------
@@ -45,55 +44,6 @@ vi.mock("../lib/featureFlags", () => ({
   setFlag: mockSetFlag,
 }));
 
-// Дефект #5 (CodeRabbit post-merge review PR #756): за замовчуванням
-// поводиться як реальний `writeMemoryEntries` у щасливому шляху (нічого не
-// кидає) — окремі тести можуть змусити його впасти через
-// `mockImplementationOnce`, щоб перевірити розбіжність "сервер очистив,
-// локальний запис впав".
-const { mockWriteMemoryEntries } = vi.hoisted(() => ({
-  mockWriteMemoryEntries: vi.fn(),
-}));
-vi.mock("../profile/memoryBank", () => ({
-  writeMemoryEntries: (entries: unknown) => mockWriteMemoryEntries(entries),
-}));
-
-vi.mock("@shared/api", () => {
-  // Інлайновано прямо у фабриці — `vi.mock` хойститься вище
-  // module-level-констант, тож звернення тут до `DEFAULT_PREFS` впало б у
-  // TDZ-помилку.
-  const prefs: UserPreferences = {
-    analytics: true,
-    aiMemory: true,
-    pushNotifications: false,
-    sergeantNudges: false,
-    healthDataConsent: false,
-    activeModules: null,
-    updatedAt: null,
-  };
-  return {
-    meApi: {
-      getPreferences: vi.fn().mockResolvedValue(prefs),
-      updatePreferences: vi.fn().mockResolvedValue(prefs),
-      clearAiMemory: vi.fn().mockResolvedValue({ ok: true, deleted: 2 }),
-    },
-  };
-});
-
-// LegalLinks тягне router-aware навігацію, яку тут не тестуємо.
-vi.mock("../legal/LegalLinks", () => ({
-  LegalLinks: () => null,
-}));
-
-// AiMemoryList ганяє власний React Query трафік (`/api/ai-memory/list`).
-// Цей набір — про per-user PIN scoping — монтування реального списку
-// змусило б додавати QueryClientProvider у КОЖЕН `render()` тут і
-// привʼязало б auth-audit regression-тест до неповʼязаної мережевої
-// поверхні. Власна поведінка списку покрита в `AiMemoryList.test.tsx`.
-vi.mock("../settings/AiMemoryList", () => ({
-  AiMemoryList: () => null,
-}));
-
-import { __resetAnalyticsConsentForTests } from "../observability/analyticsConsent";
 import { AppLockSettings } from "./AppLockSettings";
 
 async function openSection() {
