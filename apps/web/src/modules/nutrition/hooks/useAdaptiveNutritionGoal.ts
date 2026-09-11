@@ -9,6 +9,7 @@ import {
   type NutritionPrefs,
   type WeightPoint,
 } from "@sergeant/nutrition-domain";
+import { computeWorkoutKcalBurned } from "@sergeant/fizruk-domain";
 import { computeAgeYears } from "../../../core/profile/biometrics";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
 import { getCachedFizrukSqliteState } from "../../fizruk/lib/sqliteReader";
@@ -31,7 +32,23 @@ export interface AdaptiveGoalState {
   lastUpdatedAt: string | null;
 }
 
+/** Вікно аналізу: 14 завершених днів до сьогодні. */
+const WINDOW_DAYS = 14;
+
 let lastScheduledSignature = "";
+
+/**
+ * Скидає модульний дедуп планувальника.
+ *
+ * `lastScheduledSignature` навмисно живе поза компонентом: він гасить
+ * повторний запис тієї самої цілі при кожному ре-рендері. Але між
+ * тест-кейсами він же робить другий `render()` беззвучним no-op-ом, тож
+ * тестам потрібен явний ресет — як `__setFizrukSqliteCacheForTests` у
+ * `modules/fizruk/lib/sqliteReader.ts`.
+ */
+export function __resetAdaptiveGoalScheduleForTests(): void {
+  lastScheduledSignature = "";
+}
 
 function pointDay(at: string): string | null {
   const parsed = new Date(at);
@@ -57,6 +74,54 @@ function collectWeights(start: string, end: string): WeightPoint[] {
     }
   }
   return [...byDay].map(([dateKey, weightKg]) => ({ dateKey, weightKg }));
+}
+
+/**
+ * Найсвіжіша вага з вікна.
+ *
+ * Не `weights.at(-1)`: `collectWeights` наповнює `Map` у порядку кешу
+ * fizruk (newest-first, спершу `measurements`, потім `dailyLog`), тож
+ * останній елемент масиву — найСТАРІШИЙ день, ще й залежний від того,
+ * який із двох джерельних масивів непорожній. Доменні функції
+ * (`weightTrendEma`) сортують самі й цього не помічають, а ось
+ * розрахунок цілі брав не ту вагу.
+ */
+function latestWeightKg(weights: readonly WeightPoint[]): number | null {
+  let latest: WeightPoint | null = null;
+  for (const point of weights) {
+    if (!latest || point.dateKey > latest.dateKey) latest = point;
+  }
+  return latest?.weightKg ?? null;
+}
+
+/**
+ * Середньодобові витрати на тренуваннях за те саме вікно, що й решта
+ * аналізу.
+ *
+ * Навіщо середнє, а не «сьогодні» (`useTodayWorkoutKcal`): тут рахується
+ * БАЗОВА денна норма, і вона не має стрибати залежно від того, чи саме
+ * сьогодні був тренувальний день. `useTodayWorkoutKcal` лишається для
+ * пресетів у `DailyPlanGoalSelectors`, де людина свідомо тисне
+ * «розрахувати з профілю» і бачить корекцію на сьогодні.
+ *
+ * Має значення лише при `countWorkoutsInGoal` — у статичному режимі
+ * `computeTdee` це число ігнорує, бо тренування вже сидять у множнику
+ * рівня активності (`lib/tdee.ts:135-148`).
+ */
+function collectWorkoutKcalPerDay(
+  start: string,
+  end: string,
+  weightKg: number | null,
+): number {
+  const cache = getCachedFizrukSqliteState();
+  let total = 0;
+  for (const workout of cache.workouts) {
+    if (!workout.endedAt) continue;
+    const dateKey = pointDay(workout.startedAt);
+    if (!dateKey || dateKey < start || dateKey > end) continue;
+    total += computeWorkoutKcalBurned(workout, weightKg) ?? 0;
+  }
+  return total / WINDOW_DAYS;
 }
 
 function isDue(lastUpdatedAt: string | null): boolean {
@@ -86,7 +151,14 @@ export function useAdaptiveNutritionGoal(
       });
     }
     const weights = collectWeights(start, end);
-    return { intakeDays, weights, measured: measuredTdee(intakeDays, weights) };
+    const latestKg = latestWeightKg(weights);
+    return {
+      intakeDays,
+      weights,
+      latestWeightKg: latestKg,
+      workoutKcalPerDay: collectWorkoutKcalPerDay(start, end, latestKg),
+      measured: measuredTdee(intakeDays, weights),
+    };
   }, [log]);
 
   const profileTargets = useMemo(
@@ -95,9 +167,15 @@ export function useAdaptiveNutritionGoal(
         biometrics,
         prefs.adaptiveGoalIntent,
         undefined,
-        analysis.weights.at(-1)?.weightKg,
+        analysis.latestWeightKg,
+        analysis.workoutKcalPerDay,
       ),
-    [analysis.weights, biometrics, prefs.adaptiveGoalIntent],
+    [
+      analysis.latestWeightKg,
+      analysis.workoutKcalPerDay,
+      biometrics,
+      prefs.adaptiveGoalIntent,
+    ],
   );
 
   useEffect(() => {
@@ -124,7 +202,7 @@ export function useAdaptiveNutritionGoal(
     if (!analysis.measured || !isDue(prefs.adaptiveGoalLastUpdatedAt)) return;
 
     const ageYears = computeAgeYears(biometrics.birthDate);
-    const weightKg = analysis.weights.at(-1)?.weightKg ?? biometrics.weightKg;
+    const weightKg = analysis.latestWeightKg ?? biometrics.weightKg;
     if (
       ageYears == null ||
       weightKg == null ||
