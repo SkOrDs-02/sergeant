@@ -304,6 +304,15 @@ jobs:
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          # Ця джоба має `pull-requests: write` і при цьому виконує код із
+          # PR-а: `pnpm install` (postinstall-скрипти залежностей) і прод-білд.
+          # `actions/checkout` за замовчуванням лишає токен у git-оточенні
+          # кроку, тож скомпрометована залежність або білд-скрипт дістали б
+          # креденшел із правом писати в PR. Тут git після чекауту не
+          # потрібен, а кроку «Bundle size PR comment» токен приходить окремо
+          # через `github-token:`, тож персистити нема чого.
+          persist-credentials: false
 
       # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
       - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093

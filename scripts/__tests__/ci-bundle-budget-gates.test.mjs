@@ -136,17 +136,51 @@ test("регрес, від якого цей тест і стоїть: гейт�
   );
 });
 
+/**
+ * Значення ключа `if:` кроку, зі знятим `>-` та склеєними продовженнями.
+ * Повертає `null`, якщо ключа немає. Потрібне тому, що перевірки нижче
+ * питають про ВИРАЗ, а не про наявність підрядка: `always() && false` містить
+ * `always()`, але вимикає крок назавжди.
+ */
+function ifExpression(step) {
+  const lines = step.split("\n");
+  const start = lines.findIndex((l) => /^\s*if:/.test(l));
+  if (start === -1) return null;
+  const startLine = lines[start];
+  const indent = startLine.match(/^(\s*)/)[1].length;
+  let value = startLine.replace(/^\s*if:\s*/, "").replace(/^[>|][-+]?\s*$/, "");
+  for (let i = start + 1; i < lines.length; i++) {
+    const line = lines[i];
+    if (line.trim() === "") continue;
+    const lineIndent = line.match(/^(\s*)/)[1].length;
+    // Продовження блокового скаляра — глибший відступ і не новий YAML-ключ.
+    if (lineIndent <= indent || /^\s*[a-zA-Z_-]+:/.test(line)) break;
+    value += " " + line.trim();
+  }
+  return value.trim();
+}
+
 test("edge case: eager не залежить від зеленого size-limit", () => {
   assert.ok(BUDGET_JOB, "очікується джоба `bundle-budgets:` (див. вище)");
 
   const eagerStep = extractSteps(BUDGET_JOB).find((s) => EAGER_RE.test(s));
   assert.ok(eagerStep, "очікується крок eager-гейта (див. вище)");
 
+  const expr = ifExpression(eagerStep);
+  assert.ok(expr, "eager мусить мати ключ `if:`");
   assert.match(
-    eagerStep,
-    /if:\s*always\(\)/,
+    expr,
+    /\balways\(\)/,
     "eager мусить мати `always()`: без нього червоний `size-limit` робить його " +
       "`skipped`, і критичний шлях лишається неміряним саме тоді, коли це найважливіше",
+  );
+  // `always() && false` містить `always()` і при цьому вимикає крок назавжди —
+  // перевіряти наявність підрядка тут недостатньо.
+  assert.doesNotMatch(
+    expr,
+    /\bfalse\b/,
+    "у виразі `if:` eager-гейта не може бути літерального `false`: " +
+      "`always() && false` проходить перевірку на `always()`, але крок не виконається ніколи",
   );
 });
 
@@ -160,20 +194,33 @@ test("edge case: жоден із гейтів не fail-open", () => {
   ]) {
     const step = steps.find((s) => re.test(s));
     assert.ok(step, `очікується крок ${label}`);
-    assert.doesNotMatch(
-      step,
-      /continue-on-error:\s*true/,
-      `${label} не може бути \`continue-on-error: true\` — це і є «червоний завжди = вимкнений»`,
-    );
+
+    // Не «немає `continue-on-error: true`», а «якщо ключ є — його значення
+    // рівно `false`». Інакше повз проходить виразна форма
+    // `continue-on-error: ${{ true }}`, яку GitHub розуміє так само.
+    const coe = step.match(/continue-on-error:\s*(.+)$/m);
+    if (coe) {
+      assert.equal(
+        coe[1].trim(),
+        "false",
+        `${label}: \`continue-on-error\` допускається лише зі значенням \`false\` — ` +
+          `будь-яке інше (зокрема виразне \`\${{ true }}\`) і є «червоний завжди = вимкнений»`,
+      );
+    }
+
     assert.doesNotMatch(
       step,
       /\|\|\s*(true|exit\s+0|:)\s*$/m,
       `${label} не може мати \`|| true\` / \`|| exit 0\` втечу`,
     );
-    assert.doesNotMatch(
-      step,
-      /if:\s*false/,
-      `${label} не може бути вимкнений через \`if: false\``,
-    );
+
+    const expr = ifExpression(step);
+    if (expr !== null) {
+      assert.doesNotMatch(
+        expr,
+        /^\s*false\s*$/,
+        `${label} не може бути вимкнений через \`if: false\``,
+      );
+    }
   }
 });
