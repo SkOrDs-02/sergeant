@@ -1,6 +1,7 @@
-import { useState } from "react";
+import { useState, type ReactNode } from "react";
 import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
+import { Card } from "@shared/components/ui/Card";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
@@ -9,6 +10,8 @@ import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { SIGN_IN_PATH } from "../app/appPaths";
 import { useAuth } from "../auth/AuthContext";
+import { AppLockSettings } from "../security/AppLockSettings";
+import { AiMemorySection } from "./AiMemorySection";
 import { BiometricsSection } from "./BiometricsSection";
 import { ChangePasswordSection } from "./ChangePasswordSection";
 import { DangerZoneSection } from "./DangerZoneSection";
@@ -21,6 +24,34 @@ import { SessionsSection } from "./SessionsSection";
 // so this component just renders the section stack. The standalone
 // `/profile` route was retired; deep-links to `/profile` redirect to the
 // hub with the `profile` tab pre-activated (`/?tab=profile`).
+//
+// Огляд 2026-09-04 — правило «Профіль про людину, Налаштування про
+// застосунок». Сторінка більше не стос із шести рівних пілюль: хіро
+// ідентичності завжди відкрите, під ним одразу «Вийти» (доти вихід лежав
+// ПІСЛЯ «Видалення акаунта»), далі три названі групи — «Безпека» (пароль,
+// сесії, PIN-блокування, яке переїхало з Налаштувань → Конфіденційність),
+// «Про тебе» (банк фактів РАЗОМ із серверною памʼяттю Сержанта, які доти
+// були двома входами в одне, і біометрія) та «Акаунт» (видалення).
+
+/**
+ * Група секцій Профілю з кікером. `<h2>` тримає дерево заголовків
+ * h1 (sr-only «Профіль») → h2 (група) → заголовки секцій усередині.
+ */
+function ProfileGroup({
+  title,
+  children,
+}: {
+  title: string;
+  children: ReactNode;
+}) {
+  return (
+    <section className="flex flex-col gap-3">
+      <h2 className="text-style-overline text-muted px-1">{title}</h2>
+      {children}
+    </section>
+  );
+}
+
 export function ProfilePage() {
   const { user, logout, refresh } = useAuth();
   const online = useOnlineStatus();
@@ -41,9 +72,9 @@ export function ProfilePage() {
   }
 
   // Logout — primary identity-action, owned by Profile (UX roast §10.1 / C10).
-  // Settings → General більше не дублює цю кнопку: Profile — єдина точка
-  // виходу з акаунта одним тапом. Variant=secondary, бо logout — нейтральне
-  // дія, не destructive (на відміну від видалення акаунта в DangerZone).
+  // Settings більше не дублює цю кнопку: Profile — єдина точка виходу з
+  // акаунта одним тапом. Ghost, бо вихід — нейтральна дія поруч з
+  // ідентичністю, не destructive (на відміну від видалення акаунта нижче).
   const handleLogout = async () => {
     if (loggingOut) return;
     setLoggingOut(true);
@@ -65,15 +96,14 @@ export function ProfilePage() {
       // Людина обрала «Залишитись» — сесія жива, нічого не стерто, тож ні
       // тосту про вихід, ні редіректу на екран входу бути не має.
       if (cancelled) return;
-      toast.success("Вихід виконано");
+      toast.success("Ти вийшов з акаунта");
       // Send the signed-out user to the auth surface, not the hub root —
       // `logout()` has already cleared the query cache so `user` is `null`,
       // and `/sign-in` renders `AuthPage` instead of a momentary guest hub.
       navigate(SIGN_IN_PATH, { replace: true });
     } catch {
       // Вихід ідемпотентний: якщо сесія вже впала на сервері, повтор просто
-      // догортає локальний teardown. Без кнопки користувач лишався на
-      // екрані профілю з враженням «я вийшов», хоча сесія жива.
+      // догортає локальний teardown.
       toast.error("Не вдалося вийти", undefined, {
         label: "Повторити",
         onClick: () => void handleLogout(),
@@ -83,30 +113,15 @@ export function ProfilePage() {
     }
   };
 
-  // Each section is wrapped in a `CollapsibleSection` so the page reads as
-  // a stack of single-line entry-points by default and the user opens only
-  // what they need. `Особиста інформація` defaults to open because it is
-  // the identity preview (avatar + name + email + verification banner) —
-  // the section a user opening Profile most often wants to glance at. The
-  // remaining four sections — Memory, Password, Sessions, Danger zone —
-  // default to collapsed; their open/closed state is persisted per
-  // `storageKey` so the user's preference survives reload. Multiple
-  // sections can be open simultaneously (non-mutually-exclusive).
-  //
-  // V-10 (deep-module-audit 2026-08-08, § «Профіль і Налаштування»,
-  // рішення власника: Профіль рухається до сітки Налаштувань): контейнер
-  // раніше дублював `max-w-lg`/`px-5` ОБОЛОНКИ хаба (`HubMainContent.tsx`
-  // dає `max-w-lg md:max-w-2xl lg:max-w-3xl` + `contentClassName="px-5
-  // pb-28"` обом вкладкам), тож `px-5` рахувався двічі (=40px), власний
-  // `max-w-lg` перебивав ширші брейкпоінти оболонки на планшеті/десктопі,
-  // а `space-y-2` (8px) удвічі щільніший за `gap-4` (16px) сусідньої
-  // вкладки Налаштувань. Форма нижче — точна копія кореневого контейнера
+  // V-10 (аудит 2026-08-08): контейнер повторює форму кореня
   // `HubSettingsPage.tsx` (`flex flex-col gap-4 pt-3 pb-6`, без власних
-  // `max-w`/`px`), тож обидві вкладки одного хаба тепер мають однакову
-  // ширину й ритм. `pb-6` (не `pb-10`, як було) — оболонка вже резервує
-  // `pb-28` під нижню навігацію в `contentClassName`, тож власний нижній
-  // відступ і там, і там лишається лише «повітрям» між останнім елементом
-  // і межею скролу, без подвоєння.
+  // `max-w`/`px`), тож обидві вкладки хаба мають однакову ширину й ритм.
+  //
+  // Секції з формами (пароль, сесії, памʼять, біометрія) лишаються
+  // дисклоужерами `CollapsibleSection`: розгорнуті всі разом вони дали б
+  // сторінку на пʼять екранів. Стан відкритого персиститься per
+  // `storageKey`. `headingSize="md"` — V-4: зовнішній заголовок не може
+  // бути дрібнішим за будь-який текст усередині.
   return (
     <div className="flex flex-col gap-4 pt-3 pb-6">
       <h1 className="sr-only">{messages.nav.profile}</h1>
@@ -114,114 +129,109 @@ export function ProfilePage() {
         <div className="flex items-center gap-2 rounded-xl bg-warning/10 border border-warning/30 px-4 py-3">
           <Icon name="wifi-off" size={16} className="text-warning shrink-0" />
           <p className="text-style-label text-warning-strong dark:text-warning">
-            Офлайн, редагування профілю тимчасово недоступне
+            Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.
           </p>
         </div>
       )}
 
-      <CollapsibleSection
-        storageKey="sergeant.profile.personalInfo.open"
-        title="Особиста інформація"
-        defaultOpen
-        collapsedIcon="user"
-        collapsedSubtitle={user.email ?? user.name ?? undefined}
-      >
-        <PersonalInfoSection user={user} online={online} onRefresh={refresh} />
-      </CollapsibleSection>
+      <PersonalInfoSection user={user} online={online} onRefresh={refresh} />
 
-      {/* V-4 (аудит 2026-08-08): решта пʼяти секцій малюють власну шапку
-          картки (іконка + заголовок/мета) — `headingSize="md"` піднімає
-          зовнішній заголовок до того самого `text-style-label`, яким
-          намальована внутрішня шапка, щоб зовнішній рівень ієрархії
-          більше не був ДРІБНІШИМ за вкладений. Деталі й що саме прибрано
-          з кожної внутрішньої шапки — канонічний коментар у
-          `MemoryBankSection.tsx` над її `<div>`-шапкою; решта файлів лише
-          посилаються на нього. `PersonalInfoSection` тут навмисно БЕЗ
-          `headingSize` — її шапка (аватар-хіро) не малює текстового
-          заголовка, дублю немає, інверсії немає. */}
-      <CollapsibleSection
-        storageKey="sergeant.profile.memory.open"
-        title="Памʼять"
-        defaultOpen={false}
-        headingSize="md"
-        collapsedIcon="brain"
-        // V-11 (аудит Профілю/Налаштувань, фаза 2 L-8 — 2026-08-09). Тут
-        // стояло «Що асистент знає про тебе» — майже дослівний ЗАГОЛОВОК
-        // сусідньої секції в Конфіденційності («Що ШІ про тебе памʼятає»),
-        // тобто підзаголовок одного входу дорівнював назві іншого, і
-        // розрізнити їх було неможливо. Після дзеркалення фактів у
-        // `ai_memories` це вже не два списки одного, а джерело і обсяг:
-        // ТУТ — те, що людина розповіла сама і може редагувати; ТАМ —
-        // усе, що асистент запамʼятав, із чату й модулів теж. Підзаголовок
-        // тепер називає саме джерело.
-        collapsedSubtitle="Твої факти: інтервʼю, вручну, імпорт"
-      >
-        <MemoryBankSection />
-      </CollapsibleSection>
+      <div className="flex justify-end -mt-2">
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          className="gap-2 text-muted"
+          disabled={loggingOut}
+          loading={loggingOut}
+          onClick={handleLogout}
+        >
+          <Icon name="log-out" size={16} />
+          {loggingOut ? messages.loadingActions.exiting : "Вийти"}
+        </Button>
+      </div>
 
-      <CollapsibleSection
-        storageKey="sergeant.profile.biometrics.open"
-        title="Біометрія"
-        defaultOpen={false}
-        headingSize="md"
-        collapsedIcon="activity"
-        collapsedSubtitle="Зріст, вага, активність – для розрахунку калорій"
-      >
-        <BiometricsSection online={online} />
-      </CollapsibleSection>
+      <ProfileGroup title="Безпека">
+        <CollapsibleSection
+          storageKey="sergeant.profile.password.open"
+          title="Пароль"
+          defaultOpen={false}
+          headingSize="md"
+          collapsedIcon="lock"
+          collapsedSubtitle="Зміна пароля"
+        >
+          <ChangePasswordSection online={online} />
+        </CollapsibleSection>
 
-      <CollapsibleSection
-        storageKey="sergeant.profile.password.open"
-        title="Пароль"
-        defaultOpen={false}
-        headingSize="md"
-        collapsedIcon="lock"
-        collapsedSubtitle="Зміна пароля"
-      >
-        <ChangePasswordSection online={online} />
-      </CollapsibleSection>
+        <CollapsibleSection
+          storageKey="sergeant.profile.sessions.open"
+          title="Активні сесії"
+          defaultOpen={false}
+          headingSize="md"
+          collapsedIcon="monitor"
+          collapsedSubtitle="Пристрої з доступом до акаунта"
+        >
+          <SessionsSection online={online} />
+        </CollapsibleSection>
 
-      <CollapsibleSection
-        storageKey="sergeant.profile.sessions.open"
-        title="Активні сесії"
-        defaultOpen={false}
-        headingSize="md"
-        collapsedIcon="monitor"
-        collapsedSubtitle="Пристрої з доступом до акаунта"
-      >
-        <SessionsSection online={online} />
-      </CollapsibleSection>
+        <CollapsibleSection
+          storageKey="sergeant.profile.applock.open"
+          title="Блокування застосунку"
+          defaultOpen={false}
+          headingSize="md"
+          collapsedIcon="shield"
+          collapsedSubtitle="PIN при відкритті на цьому пристрої"
+        >
+          <Card radius="lg" padding="md">
+            <AppLockSettings />
+          </Card>
+        </CollapsibleSection>
+      </ProfileGroup>
 
-      {/* DangerZoneSection малює власну шапку «Небезпечна зона» — на
-          відміну від решти чотирьох, це НЕ дублікат зовнішнього заголовка
-          («Видалення акаунта»), а окрема інформація (застереження про
-          розділ), тож текст лишається. Але вона все одно намальована
-          `text-style-label`, тож без `headingSize="md"` зовнішній xs-кікер
-          був би дрібнішим за неї — та сама інверсія, лише без дублю
-          тексту. */}
-      <CollapsibleSection
-        storageKey="sergeant.profile.danger.open"
-        title="Видалення акаунта"
-        defaultOpen={false}
-        headingSize="md"
-        collapsedIcon="alert-triangle"
-        collapsedSubtitle="Незворотні дії"
-      >
-        <DangerZoneSection online={online} onLogout={logout} />
-      </CollapsibleSection>
+      <ProfileGroup title="Про тебе">
+        <CollapsibleSection
+          storageKey="sergeant.profile.memory.open"
+          title="Памʼять"
+          defaultOpen={false}
+          headingSize="md"
+          collapsedIcon="brain"
+          // V-11 (2026-08-09): підпис називає ДЖЕРЕЛО фактів; серверний
+          // список тепер стоїть у цій же секції нижче, тож двох входів
+          // більше немає.
+          collapsedSubtitle="Твої факти й усе, що запамʼятав Сержант"
+        >
+          <MemoryBankSection />
+          <Card radius="lg" padding="md">
+            <AiMemorySection />
+          </Card>
+        </CollapsibleSection>
 
-      <Button
-        type="button"
-        variant="secondary"
-        size="md"
-        className="w-full justify-center gap-2"
-        disabled={loggingOut}
-        loading={loggingOut}
-        onClick={handleLogout}
-      >
-        <Icon name="log-out" size={16} />
-        {loggingOut ? messages.loadingActions.exiting : "Вийти"}
-      </Button>
+        <CollapsibleSection
+          storageKey="sergeant.profile.biometrics.open"
+          title="Біометрія"
+          defaultOpen={false}
+          headingSize="md"
+          collapsedIcon="activity"
+          collapsedSubtitle="Зріст, вага, активність для розрахунку калорій"
+        >
+          <BiometricsSection online={online} />
+        </CollapsibleSection>
+      </ProfileGroup>
+
+      <ProfileGroup title="Акаунт">
+        {/* DangerZoneSection малює власну шапку «Небезпечна зона» — це не
+            дублікат зовнішнього заголовка, а застереження про розділ. */}
+        <CollapsibleSection
+          storageKey="sergeant.profile.danger.open"
+          title="Видалення акаунта"
+          defaultOpen={false}
+          headingSize="md"
+          collapsedIcon="alert-triangle"
+          collapsedSubtitle="Незворотні дії"
+        >
+          <DangerZoneSection online={online} onLogout={logout} />
+        </CollapsibleSection>
+      </ProfileGroup>
 
       {/* Вихід стирає локальну базу разом із чергою синхронізації, а поки
           запис не доїхав на сервер — локальна копія єдина. Показуємо це

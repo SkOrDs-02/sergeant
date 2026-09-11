@@ -98,6 +98,16 @@ vi.mock("../auth/AuthContext.jsx", () => ({
   useAuthOptional: () => mockAuthValue,
 }));
 
+// Огляд 2026-09-04: серверна памʼять і PIN-блокування рендеряться в
+// Профілі, але тягнуть React Query і AppLockProvider — власні тести в
+// `AiMemorySection.test.tsx` / `security/AppLockSettings.test.tsx`.
+vi.mock("./AiMemorySection", () => ({
+  AiMemorySection: () => <div data-testid="ai-memory-section" />,
+}));
+vi.mock("../security/AppLockSettings", () => ({
+  AppLockSettings: () => <div data-testid="app-lock-settings" />,
+}));
+
 import { ProfilePage } from "./ProfilePage";
 
 function renderPage() {
@@ -225,7 +235,9 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(false);
       renderPage();
       expect(
-        screen.getByText("Офлайн, редагування профілю тимчасово недоступне"),
+        screen.getByText(
+          "Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.",
+        ),
       ).toBeInTheDocument();
     });
 
@@ -233,7 +245,9 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(true);
       renderPage();
       expect(
-        screen.queryByText("Офлайн, редагування профілю тимчасово недоступне"),
+        screen.queryByText(
+          "Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.",
+        ),
       ).not.toBeInTheDocument();
     });
 
@@ -366,7 +380,7 @@ describe("ProfilePage", () => {
       fireEvent.click(logoutBtn);
       await waitFor(() => expect(logoutMock).toHaveBeenCalled());
       await waitFor(() =>
-        expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано"),
+        expect(toastSuccessMock).toHaveBeenCalledWith("Ти вийшов з акаунта"),
       );
       // Redirect to the auth surface, not the hub root (browser-QA (a)).
       expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
@@ -423,7 +437,7 @@ describe("ProfilePage", () => {
       );
 
       await waitFor(() =>
-        expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано"),
+        expect(toastSuccessMock).toHaveBeenCalledWith("Ти вийшов з акаунта"),
       );
       expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
@@ -456,7 +470,7 @@ describe("ProfilePage", () => {
       // Сесія лишається живою — жодного сигналу «ви вийшли», жодного
       // редиректу на екран входу. Це саме те, що мало б зламатись, якби
       // `cancelled` ігнорувався після `await logout(...)`.
-      expect(toastSuccessMock).not.toHaveBeenCalledWith("Вихід виконано");
+      expect(toastSuccessMock).not.toHaveBeenCalledWith("Ти вийшов з акаунта");
       expect(navigateMock).not.toHaveBeenCalledWith("/sign-in", {
         replace: true,
       });
