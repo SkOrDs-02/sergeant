@@ -95,6 +95,7 @@ export const finykPageMessages = {
     addSubscription: "Підписка",
     activeOne: "активна",
     activeMany: "активних",
+    amountUnknown: "сума невідома",
   },
   monthStrip: {
     groupAriaPrefix: "Витрати за днями",
