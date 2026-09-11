@@ -62,6 +62,10 @@ describe("mapMccCell — колонка МСС виписки mono", () => {
     expect(mapMccCell("—")).toBeNull();
     expect(mapMccCell("0")).toBeNull();
   });
+
+  it("6012 (погашення кредиту) → Борги та кредити (фікс 2026-09-11)", () => {
+    expect(mapMccCell("6012")).toBe("debt");
+  });
 });
 
 describe("mapDescription — ключові слова мерчанта", () => {
@@ -75,6 +79,10 @@ describe("mapDescription — ключові слова мерчанта", () => 
     expect(mapDescription("FLAMPIC, ID платежу: 2914267501", "expense")).toBe(
       null,
     );
+  });
+
+  it("«Погашення кредиту» → Борги та кредити (фікс 2026-09-11)", () => {
+    expect(mapDescription("Погашення кредиту", "expense")).toBe("debt");
   });
 
   it("розрізняє канонічні категорії надходжень", () => {
