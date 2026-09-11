@@ -1,6 +1,6 @@
 # Тексти бети — пости й повідомлення за днями
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-28.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-28.
 > **Status:** Active
 > **Spec-lint:** skip — контент-план постів бети за днями, не фічева спека
 

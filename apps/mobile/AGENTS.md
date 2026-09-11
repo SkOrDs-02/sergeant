@@ -1,6 +1,6 @@
 # Agents in apps/mobile
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-17.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-22.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Sub-tree quick reference для агентів, що працюють в `apps/mobile/` (Expo + React Native). Сусідній `apps/mobile-shell/` (Capacitor wrapper) ділить ту саму specialist skill, але має окрему build pipeline (web bundle через `apps/web`).

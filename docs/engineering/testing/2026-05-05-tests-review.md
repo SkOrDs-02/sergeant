@@ -1,6 +1,6 @@
 # Sergeant — стан тестів і що покращити
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-06.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-21.
 > **Status:** Deprecated — point-in-time audit; do not use its counts or OpenClaw findings as current state.
 >
 > **Replacement:** current testing contracts live in [`README.md`](./README.md), CI workflows, workspace test configs, and `coverage-ratchet.json`. OpenClaw findings are historical after [ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md).

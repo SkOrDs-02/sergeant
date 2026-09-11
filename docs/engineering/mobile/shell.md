@@ -1,6 +1,6 @@
 # Mobile-білди — команди для локальної розробки
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-19.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-25.
 > **Status:** Active. Capacitor shell is the primary mobile product per [ADR-0052](../../governance/adr/0052-mobile-strategy-capacitor-primary.md); the old ADR-0010 sunset schedule below is historical reference only.
 
 > Короткий operator-oriented довідник по Capacitor-shell-у (`@sergeant/mobile-shell`). Дизайн-обґрунтування, список плагінів і історію shell-а — див. [`apps/mobile-shell/README.md`](../../../apps/mobile-shell/README.md). Для Expo / React Native застосунку (`@sergeant/mobile`) — див. [`apps/mobile/README.md`](../../../apps/mobile/README.md) і [`overview.md`](./overview.md).

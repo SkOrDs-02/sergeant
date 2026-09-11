@@ -1,6 +1,6 @@
 # Sergeant v2 — Retrospective
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-08.
 > **Author:** @Skords-01 (with Claude Code agent assistance)
 > **Date:** 2026-05-21
 > **Scope:** Phases 0–6 of redesign-v2 (2026-05-15 → 2026-05-21, ~7 days wall-clock)

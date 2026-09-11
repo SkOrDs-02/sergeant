@@ -16,8 +16,8 @@ vi.mock("../../../../core/observability/analytics", () => ({
   trackEvent: mocks.trackEvent,
   ANALYTICS_EVENTS: { FIZRUK_WORKOUT_FINISHED: "fizruk_workout_finished" },
 }));
-vi.mock("../workouts/ActiveWorkoutPanel", () => ({
-  ActiveWorkoutPanel: ({ onFinishClick }: { onFinishClick: () => void }) => (
+vi.mock("../session/SessionView", () => ({
+  SessionView: ({ onFinishClick }: { onFinishClick: () => void }) => (
     <button type="button" data-testid="finish-btn" onClick={onFinishClick}>
       Завершити
     </button>
@@ -87,7 +87,8 @@ function baseProps(overrides: Record<string, unknown> = {}) {
   return {
     activeWorkout: active,
     activeDuration: "00:42",
-    musclesUk: {},
+    onOpenItem: vi.fn(),
+    onAddExercise: vi.fn(),
     recBy: {},
     lastByExerciseId: {},
     setRestTimer: vi.fn(),

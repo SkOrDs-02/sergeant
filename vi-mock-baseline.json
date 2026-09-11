@@ -50,7 +50,6 @@
     "apps/web/src/modules/finyk/pages/transactions/Transactions.test.tsx": 6,
     "apps/web/src/modules/fizruk/FizrukApp.extra.test.tsx": 15,
     "apps/web/src/modules/fizruk/FizrukApp.test.tsx": 15,
-    "apps/web/src/modules/fizruk/components/workouts/ActiveWorkoutPanel.coordination.test.tsx": 9,
     "apps/web/src/modules/fizruk/hooks/useWorkoutsOrchestrator.test.ts": 12,
     "apps/web/src/modules/fizruk/lib/sqliteReadBoot.test.ts": 7,
     "apps/web/src/modules/fizruk/pages/Body.extra.test.tsx": 9,

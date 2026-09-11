@@ -1,6 +1,6 @@
 # CSP monitoring
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-14.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-24.
 > **Status:** Active
 
 Операційний playbook для моніторингу Content-Security-Policy

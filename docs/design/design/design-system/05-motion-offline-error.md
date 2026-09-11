@@ -1,6 +1,6 @@
 # Design System — Motion, Animation та Offline/Error стани
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-17.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-14.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює motion tokens, choreography rules, reduced-motion стратегію та патерни для offline/empty/error станів.

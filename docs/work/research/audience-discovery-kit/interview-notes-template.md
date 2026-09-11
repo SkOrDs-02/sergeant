@@ -1,6 +1,6 @@
 # Interview notes — [Респондент NN]
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2028-01-07.
 > **Status:** Active
 
 > Копіюй цей файл під кожне інтервʼю: `interview-01-imya.md`, `interview-02-…`.

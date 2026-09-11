@@ -1,6 +1,6 @@
 # Активні спеки
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-10-06.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-10.
 > **Status:** Active
 > **Spec-lint:** skip — каталог-індекс, а не фічева спека.
 

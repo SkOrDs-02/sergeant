@@ -1,7 +1,7 @@
 # Playbook: Sync client wiring — виконання фаз 0–4
 
 > **Status:** Active
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-12-13.
 > **Trigger:** Потрібно wire-ити client pull + outbox enqueue після SQLite cut-over ([`sync-client-wiring.md`](./sync-client-wiring.md)). Цей playbook — **операційна інструкція** для кожної фази: дизайн роботи, правила, метрики, підтвердження, перепровірки, розподіл між агентами.
 
 **Governing skills:** [`sergeant-feature-delivery`](../../../../.agents/skills/sergeant-feature-delivery/SKILL.md) (координація) + [`sergeant-deliver-squad`](../../../../.agents/skills/sergeant-deliver-squad/SKILL.md) (коли PR торкається ≥2 surfaces з contract deps).

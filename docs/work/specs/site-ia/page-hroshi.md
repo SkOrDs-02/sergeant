@@ -1,6 +1,6 @@
 # Облік витрат без ручного вводу кожної покупки
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-06.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-30.
 > **Status:** Implemented - сторінка відвантажена (`apps/landing/src/pages/HroshiPage.tsx`), PR #955/#956.
 > **Маршрут:** /hroshi · **Питання людини:** Як вести витрати, щоб не забивати кожну покупку руками
 

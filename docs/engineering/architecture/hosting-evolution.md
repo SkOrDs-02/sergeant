@@ -1,6 +1,6 @@
 # Еволюція хостингу — що де хоститься і коли мігрувати
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-03.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-20.
 > **Status:** Deprecated — рішення «коли мігрувати з Railway» вже прийняте й виконане.
 >
 > **⚠️ Superseded by [ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md) (2026-07-11):** бекенд (API + Postgres + Redis) переїхав Railway → Hetzner CX23 + Coolify. Документ зберігається як історичний контекст рішення; секції «поточний стан» нижче описують доміграційний Railway-стек і НЕ актуальні. Актуальна топологія — ADR-0074 + [`platforms.md`](./platforms.md).

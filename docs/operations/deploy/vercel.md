@@ -1,6 +1,6 @@
 # Deploy — Vercel (apps/web SPA)
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-06.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-10.
 > **Status:** Active
 
 Vercel hosts the React PWA from `apps/web`. The API surface runs on \*\*Hetzner CX23

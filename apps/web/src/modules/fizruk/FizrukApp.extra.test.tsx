@@ -457,3 +457,25 @@ describe("FizrukApp (extra) — header callbacks", () => {
     expect(screen.queryByText("Активна: Сила 5×5")).not.toBeInTheDocument();
   });
 });
+
+// ── Session mode (спека fizruk-active-session.md, рішення 1) ─────────────────
+
+describe("FizrukApp (extra) — session mode on the workout page", () => {
+  // Активне тренування — сесія, не сторінка: шапка модуля й нижня навігація
+  // тут не рендеряться (свідомо відмінно від V-7 для Атласу/Вправи —
+  // ті рівноправні екрани, ця — модальний крок). Вихід — «Згорнути» у
+  // верхній смузі самої сесії.
+  it("hides the module header and bottom nav on /fizruk/workout/<id>", () => {
+    vi.mocked(useFizrukRoute).mockReturnValueOnce({
+      page: "workout",
+      segments: ["w-1"],
+      navigate: navigateMock,
+    });
+    render(<FizrukApp />);
+    expect(screen.queryByTestId("fizruk-nav")).toBeNull();
+    expect(screen.queryByText("Фізрук")).toBeNull();
+    expect(screen.getByTestId("fizruk-router").getAttribute("data-page")).toBe(
+      "workout",
+    );
+  });
+});

@@ -2,7 +2,7 @@
 
 > ⚠️ **OpenClaw повністю decommissioned ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** OpenClaw GitHub-інтеграції, Gateway і Telegram-бота більше не існує в коді — жодного живого кроку з цього файлу виконувати нема чим. Файл стиснуто до redirect-стаба; повний історичний runbook — у git history цього файлу.
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-13.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-17.
 > **Status:** Deprecated (OpenClaw decommissioned — ADR-0075)
 > **Runtime-specific:** no
 

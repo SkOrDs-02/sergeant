@@ -1,6 +1,6 @@
 # 2026-08-12 — Додавати їжу стало коротше й зрозуміліше
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-13.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-12-15.
 > **Status:** Active
 >
 > **Modal id:** `2026-08-12-easier-meal-entry` —

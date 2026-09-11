@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-03.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-10-29.
 > **Status:** Active
 
 > **Governing skill:** `sergeant-tech-debt` · **Playbook:** [`cleanup-dead-code.md`](../../../start/instructions/cleanup-dead-code.md).

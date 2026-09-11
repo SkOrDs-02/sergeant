@@ -1,6 +1,6 @@
 # Security
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-14.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-12-05.
 > **Status:** Active
 
 Security policy, vulnerability response, audits, and recovery discipline.

@@ -1,6 +1,6 @@
 # Walkthrough: `nutrition` module
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-27.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-12.
 > **Status:** Draft
 > **Purpose:** Bus-factor knowledge-transfer (stack-pulse PR-04). One-hour guide for an engineer new to this module.
 

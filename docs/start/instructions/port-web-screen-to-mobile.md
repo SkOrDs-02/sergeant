@@ -1,6 +1,6 @@
 # Playbook: Порт web-екрану в mobile
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-19.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-23.
 > **Status:** Active
 > **Runtime-specific:** no
 

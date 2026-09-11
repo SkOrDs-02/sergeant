@@ -1,6 +1,6 @@
 # 02 · Engineering — архітектура й платформи
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-15.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-27.
 > **Status:** Active
 
 Інженерна довідка: як влаштований моноре́по, API-контракти, платформні

@@ -1,6 +1,6 @@
 # Sergeant v2 — Migration guide для розробників
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-18.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-24.
 > **Status:** Active
 
 Цей doc — практичний reference для **engineers** які пишуть новий код або торкаються існуючого у post-v2-rollout world. Містить **BEFORE/AFTER** для типових патернів.

@@ -6,8 +6,9 @@
  * `pages/ActiveWorkout.tsx` → `pages/Workouts.tsx` in `activeOnly` mode).
  * Branches on the workout this route resolved to:
  *  - not found (deleted / bad id)      → dead-end card, no catalog tail;
- *  - found, still in flight            → editable `ActiveWorkoutPanel`
- *    (unchanged — this is the historical "journal" behaviour);
+ *  - found, still in flight            → session mode `SessionView`
+ *    (list of exercises → one exercise on its own screen, спека
+ *    `fizruk-active-session.md`);
  *  - found, `endedAt` set              → read-only `WorkoutSummaryView`
  *    (02-A — replaces the old "Активне тренування не знайдено" dead-end
  *    that used to render after «Завершити»).
@@ -20,7 +21,7 @@
 import { useRef } from "react";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
-import { ActiveWorkoutPanel } from "../workouts/ActiveWorkoutPanel";
+import { SessionView } from "../session/SessionView";
 import { WorkoutSummaryView } from "../workouts/WorkoutSummaryView";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useToast } from "@shared/hooks/useToast";
@@ -64,10 +65,17 @@ interface WorkoutJournalSectionProps {
   /** The workout this route resolved to — `null` means "not found". */
   activeWorkout: Workout | null;
   activeDuration: string | null;
+  /** `workout/<id>/<itemId>` — вправа, відкрита на весь екран. */
+  focusItemId?: string | undefined;
+  /** `null` — список, id — екран вправи (веде роут). */
+  onOpenItem: (itemId: string | null) => void;
+  /** «+ Вправа» — аркуш каталогу. */
+  onAddExercise: () => void;
+  onOpenExerciseInfo?: ((exerciseId: string) => void) | undefined;
+  onOpenExerciseStats?: ((exerciseId: string) => void) | undefined;
   /** Введений у ретро-формі, але ще не записаний кінець — див. `pendingRetroEnd`. */
   pendingRetroEnd?: string | null | undefined;
   onPendingRetroEndChange?: ((iso: string) => void) | undefined;
-  musclesUk: Record<string, string>;
   recBy: Record<string, unknown>;
   lastByExerciseId: Record<string, unknown>;
   setRestTimer: (s: RestTimerState | null) => void;
@@ -99,9 +107,13 @@ interface WorkoutJournalSectionProps {
 export function WorkoutJournalSection({
   activeWorkout,
   activeDuration,
+  focusItemId,
+  onOpenItem,
+  onAddExercise,
+  onOpenExerciseInfo,
+  onOpenExerciseStats,
   pendingRetroEnd,
   onPendingRetroEndChange,
-  musclesUk,
   recBy,
   lastByExerciseId,
   setRestTimer,
@@ -164,18 +176,21 @@ export function WorkoutJournalSection({
           // тренуванні, просто перемонтовуємо панель.
         }}
       >
-        <ActiveWorkoutPanel
+        <SessionView
           activeWorkout={activeWorkout}
           activeDuration={activeDuration}
+          focusItemId={focusItemId}
           pendingRetroEnd={pendingRetroEnd}
           onPendingRetroEndChange={onPendingRetroEndChange}
           lastByExerciseId={lastByExerciseId}
-          musclesUk={musclesUk}
           recBy={recBy}
           removeItem={removeItem}
           updateItem={updateItem}
           updateWorkout={updateWorkout}
-          setRestTimer={setRestTimer}
+          onOpenItem={onOpenItem}
+          onAddExercise={onAddExercise}
+          onOpenExerciseInfo={onOpenExerciseInfo}
+          onOpenExerciseStats={onOpenExerciseStats}
           onFinishClick={() => {
             // Ignore re-entry from rapid double-clicks and from any stray
             // invocation on an already-ended workout — structurally

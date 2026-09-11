@@ -46,6 +46,32 @@ describe("parseFizrukSegments", () => {
     });
   });
 
+  // Спека `fizruk-active-session.md` рішення 2: `workout/<id>/<itemId>` —
+  // вправа, відкрита на весь екран усередині сесії. Третій сегмент
+  // приймає ЛИШЕ `workout`; для решти сторінок він ігнорується.
+  it("parses workout/<id>/<itemId> into segment + subSegment", () => {
+    expect(parseFizrukSegments(["workout", "w-123", "it-9"])).toEqual({
+      page: "workout",
+      segment: "w-123",
+      subSegment: "it-9",
+    });
+    expect(parseFizrukSegments(["exercise", "bench", "extra"])).toEqual({
+      page: "exercise",
+      segment: "bench",
+    });
+  });
+
+  it("builds the three-segment workout path back", () => {
+    expect(buildFizrukPath("workout", "w-123", "it-9")).toBe(
+      "workout/w-123/it-9",
+    );
+    expect(fizrukRoutePath("workout", "w-123", "it-9")).toBe(
+      "/fizruk/workout/w-123/it-9",
+    );
+    // Sub-segment without a segment is meaningless — dropped.
+    expect(buildFizrukPath("workout", undefined, "it-9")).toBe("workout");
+  });
+
   // Спека `fizruk-hero-recovery-bars.md` рішення 4: hero-row тап відкриває
   // атлас, сфокусований на конкретній групі — `atlas/<id>` incoming route.
   it("parses atlas with a tail muscle/zone id (fizruk-hero-recovery-bars.md рішення 4)", () => {

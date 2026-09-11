@@ -18,6 +18,7 @@ import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
 import { LogPastWorkoutSheet } from "../components/workouts/LogPastWorkoutSheet";
 import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
 import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
+import { Sheet } from "@shared/components/ui/Sheet";
 import { StrongImportReview } from "../components/StrongImportReview";
 import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
 import { useTrainingProgram } from "../hooks/useTrainingProgram";
@@ -36,6 +37,8 @@ const FIZRUK_PAST_WORKOUT_COMPOSE_KEY = "fizruk:log-past-workout";
 
 interface WorkoutsProps {
   workoutId?: string | undefined;
+  /** `workout/<id>/<itemId>` — вправа, відкрита на весь екран у сесії. */
+  focusItemId?: string | undefined;
   activeOnly?: boolean;
   /**
    * Розділ із власним маршрутом (`/fizruk/catalog`, `/fizruk/templates`).
@@ -57,6 +60,7 @@ interface WorkoutsProps {
 
 export function Workouts({
   workoutId,
+  focusItemId,
   activeOnly = false,
   section,
   onNavigate,
@@ -96,6 +100,10 @@ export function Workouts({
   // sync beyond what a fresh mount already re-reads from `localStorage`.
   const { activeProgram } = useTrainingProgram();
   const [strongImportOpen, setStrongImportOpen] = useState(false);
+  // Каталог у сесії — аркуш із «+ Вправа», а не хвіст сторінки (спека
+  // `fizruk-active-session.md`, рішення 4).
+  const [catalogSheetOpen, setCatalogSheetOpen] = useState(false);
+  const sessionCopy = messages.fizruk.session;
 
   const workoutsLoadingSkeleton = (
     <div
@@ -116,16 +124,22 @@ export function Workouts({
       variant="fizruk"
       enabled={!cloudPullPending}
     >
-      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad">
-        <WorkoutsHeader
-          view={o.view}
-          activeWorkout={o.activeWorkout}
-          finishedCount={o.finishedCount}
-          onBack={() =>
-            activeOnly || section ? onNavigate?.("workouts") : o.setView("home")
-          }
-          onAddCatalog={() => o.setAddOpen(true)}
-        />
+      <div
+        className={
+          activeOnly ? "" : "max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad"
+        }
+      >
+        {!activeOnly && (
+          <WorkoutsHeader
+            view={o.view}
+            activeWorkout={o.activeWorkout}
+            finishedCount={o.finishedCount}
+            onBack={() =>
+              section ? onNavigate?.("workouts") : o.setView("home")
+            }
+            onAddCatalog={() => o.setAddOpen(true)}
+          />
+        )}
 
         {o.view === "home" ? (
           <WorkoutsHome
@@ -186,7 +200,7 @@ export function Workouts({
           // stays at the outer `max-w-4xl` — it is a browsable list, not a
           // form. Minimal fix per audit §4.4: narrow just this panel, no
           // two-column layout.
-          <div className="max-w-xl mx-auto">
+          <div>
             <DataState
               query={o.journalQuery}
               skeleton={workoutsLoadingSkeleton}
@@ -207,9 +221,25 @@ export function Workouts({
                 <WorkoutJournalSection
                   activeWorkout={o.activeWorkout}
                   activeDuration={o.activeDuration}
+                  focusItemId={focusItemId}
+                  onOpenItem={(itemId) => {
+                    if (!o.activeWorkout) return;
+                    onNavigate?.(
+                      itemId
+                        ? `workout/${o.activeWorkout.id}/${itemId}`
+                        : `workout/${o.activeWorkout.id}`,
+                    );
+                  }}
+                  onAddExercise={() => setCatalogSheetOpen(true)}
+                  onOpenExerciseInfo={(exerciseId) => {
+                    const ex = o.exercises.find((e) => e.id === exerciseId);
+                    if (ex) o.setSelected(ex);
+                  }}
+                  onOpenExerciseStats={(exerciseId) =>
+                    onNavigate?.(`exercise/${exerciseId}`)
+                  }
                   pendingRetroEnd={o.pendingRetroEnd}
                   onPendingRetroEndChange={o.updatePendingRetroEnd}
-                  musclesUk={o.musclesUk}
                   recBy={o.rec.by}
                   lastByExerciseId={o.lastByExerciseId}
                   setRestTimer={o.setRestTimer}
@@ -242,15 +272,7 @@ export function Workouts({
           />
         )}
 
-        {(o.view === "catalog" ||
-          // 02-A item 3 — the catalog used to hang around under the "log"
-          // view even when the routed workout was finished or missing
-          // (the error-state-plus-full-catalog dead end from the audit).
-          // Only show it in "log" while there is a real, in-flight
-          // workout to add exercises to.
-          (o.view === "log" &&
-            Boolean(o.activeWorkout) &&
-            !o.activeWorkout?.endedAt)) && (
+        {o.view === "catalog" && (
           <WorkoutCatalogSection
             mode={o.mode}
             q={o.q}
@@ -270,6 +292,53 @@ export function Workouts({
             rec={o.rec}
             musclesUk={o.musclesUk}
           />
+        )}
+
+        {/* Каталог у сесії: той самий `WorkoutCatalogSection` (пошук,
+            локація, обладнання, групи), лише в аркуші. Раніше він жив
+            хвостом сторінки на ~6 екранів під активним тренуванням, а
+            щоб додати вправу, треба було прогорнути всі картки (аудит
+            09-03, A1). Аркуш не закривається після додавання — за один
+            захід зазвичай беруть кілька вправ. */}
+        {o.view === "log" && (
+          <Sheet
+            open={
+              catalogSheetOpen &&
+              Boolean(o.activeWorkout) &&
+              !o.activeWorkout?.endedAt
+            }
+            onClose={() => setCatalogSheetOpen(false)}
+            title={sessionCopy.addExerciseSheetTitle}
+            footer={
+              <Button
+                module="fizruk"
+                className="w-full h-11"
+                onClick={() => setCatalogSheetOpen(false)}
+              >
+                {sessionCopy.addExerciseDone}
+              </Button>
+            }
+          >
+            <WorkoutCatalogSection
+              mode="log"
+              q={o.q}
+              setQ={o.setQ}
+              equipmentFilter={o.equipmentFilter}
+              setEquipmentFilter={o.setEquipmentFilter}
+              locationFilter={o.locationFilter}
+              setLocationFilter={o.setLocationFilter}
+              equipmentUk={o.equipmentUk}
+              equipmentCounts={o.equipmentCounts}
+              grouped={o.grouped}
+              open={o.open}
+              setOpen={o.setOpen}
+              handleExerciseInListClick={o.handleExerciseInListClick}
+              setSelected={o.setSelected}
+              recoveryConflictsForExercise={o.recoveryConflictsForExercise}
+              rec={o.rec}
+              musclesUk={o.musclesUk}
+            />
+          </Sheet>
         )}
 
         <ExerciseDetailSheet

@@ -1,6 +1,6 @@
 # 05. Operations і автоматизація: як контролювати, відстежувати, організовувати
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-28.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-12-03.
 > **Status:** Deprecated — pre-MVP operating model centered on the removed OpenClaw/Railway stack.
 >
 > **Replacement:** current runtime ownership, deploy and incident procedures live in [`service-catalog.md`](../../../../engineering/architecture/service-catalog.md) and [`operations-runbook.md`](../../../../start/instructions/operations-runbook.md). OpenClaw is fully decommissioned ([ADR-0075](../../../../governance/adr/0075-openclaw-gateway-decommissioned.md)); Railway backend hosting is superseded by Hetzner/Coolify ([ADR-0074](../../../../governance/adr/0074-hosting-hetzner-coolify.md)). The body below is retained only as historical automation design context.

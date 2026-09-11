@@ -2,7 +2,7 @@
 
 > ⚠️ **n8n-шар виведено з репозиторію ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md), 2026-09-02).** Інстанс не працював з 2026-06-28; каталог `ops/n8n-workflows/` <!-- removed -->, валідатор, Plop-генератор і CI-крок прибрано — жодного живого кроку з цього файлу виконувати нема чим. Файл стиснуто до redirect-стаба; повний історичний runbook — у git history цього файлу, workflow-JSON — у [permalink-снапшоті](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/).
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-26.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-18.
 > **Status:** Deprecated (n8n decommissioned — ADR-0090)
 > **Runtime-specific:** no
 

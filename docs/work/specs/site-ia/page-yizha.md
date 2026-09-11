@@ -1,6 +1,6 @@
 # Харчування: що рахує код, а що вгадує модель
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-20.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-20.
 > **Status:** Implemented - сторінка відвантажена (`apps/landing/src/pages/YizhaPage.tsx`), PR #955/#956.
 > **Маршрут:** /yizha · **Питання людини:** Як рахувати їжу, коли половини мого холодильника немає в жодній базі
 

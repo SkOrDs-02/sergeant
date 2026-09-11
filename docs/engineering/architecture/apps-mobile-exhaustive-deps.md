@@ -1,6 +1,6 @@
 # Mobile: навмисні винятки `react-hooks/exhaustive-deps`
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-21.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-11.
 > **Status:** Active
 
 Документ фіксує **живі** `eslint-disable` для `react-hooks/exhaustive-deps` у виробничому `apps/mobile/src`. Мета — не «вимкнути правило», а зафіксувати контракт для рев'ю та рефакторингу.

@@ -1,6 +1,6 @@
 # Hidden tech-debt audit — поза backlog'ом
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-14.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-01.
 > **Status:** Reference
 
 > **Створено:** 2026-05-17 з канви + grep по `apps/web/src/`.

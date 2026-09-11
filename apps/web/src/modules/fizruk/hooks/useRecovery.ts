@@ -23,9 +23,30 @@ import { injurySiteLabelUk } from "@sergeant/fizruk-domain/data";
  * zone must never appear in it, no matter how rested the muscle looks — that
  * is the entire point of the model.
  */
-export function useRecovery() {
+export interface UseRecoveryOptions {
+  /**
+   * Тренування, яке ЗАРАЗ триває. Його виключаємо з історії відновлення:
+   * інакше вправа попереджає про мʼязи, які людина навантажує саме цією
+   * сесією — `computeRecoveryBy` бачить `daysSince = 0` і ставить `red`,
+   * і чип каже «Ще рано» просто тому, що ти вже почав (браузерний прохід
+   * 2026-09-11 на свіжому акаунті: кожен рядок списку червонів одразу
+   * після додавання). Відновлення — це готовність МІЖ сесіями (канон §4),
+   * тож поточна сесія не може бути доказом проти себе.
+   */
+  excludeWorkoutId?: string | null | undefined;
+}
+
+export function useRecovery(options: UseRecoveryOptions = {}) {
   const { musclesUk } = useExerciseCatalog();
-  const { workouts } = useWorkouts();
+  const { workouts: allWorkouts } = useWorkouts();
+  const excludeWorkoutId = options.excludeWorkoutId ?? null;
+  const workouts = useMemo(
+    () =>
+      excludeWorkoutId
+        ? allWorkouts.filter((w) => w.id !== excludeWorkoutId)
+        : allWorkouts,
+    [allWorkouts, excludeWorkoutId],
+  );
   const { entries: dailyLogEntries } = useDailyLog();
   const { activeSites: injurySites } = useInjuries();
 

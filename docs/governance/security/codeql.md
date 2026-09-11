@@ -1,6 +1,6 @@
 # CodeQL — SAST taint-flow analysis для TypeScript
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-12.
 > **Status:** Active
 
 ## Огляд

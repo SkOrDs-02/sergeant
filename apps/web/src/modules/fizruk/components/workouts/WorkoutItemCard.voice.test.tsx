@@ -72,14 +72,9 @@ function renderCard(
         it={overrides.it ?? makeItem()}
         activeWorkout={overrides.activeWorkout ?? makeWorkout()}
         group={overrides.group ?? null}
-        groupSelectMode={false}
-        isSelected={false}
         isReadOnly={overrides.isReadOnly ?? false}
         lastByExerciseId={{}}
-        musclesUk={{ pec: "Грудні" }}
         recBy={{}}
-        onToggleGroupSelect={vi.fn()}
-        removeItem={vi.fn()}
         updateItem={updateItem}
         setRestTimer={setRestTimer}
         getDefaultForGroup={() => 90}
@@ -125,14 +120,22 @@ describe("WorkoutItemCard voice set entry", () => {
     expect(setRestTimer).not.toHaveBeenCalled();
   });
 
-  it("does not start rest timer for grouped voice entries", () => {
+  // Сесійний режим 2026-09: у суперсеті відпочинок іде після ОСТАННЬОГО
+  // учасника кола (`restSecAfterCheck`), тож не-останній member таймер
+  // не стартує.
+  it("does not start rest timer for a non-last superset member", () => {
     parseWorkoutSetSpeech.mockReturnValue({
       weight: null,
       reps: 12,
       sets: null,
     });
     renderCard({
-      group: { id: "g1", type: "superset", itemIds: ["it-1"], restSec: 60 },
+      group: {
+        id: "g1",
+        type: "superset",
+        itemIds: ["it-1", "it-2"],
+        restSec: 60,
+      },
     });
 
     fireEvent.click(screen.getByText("voice-valid"));

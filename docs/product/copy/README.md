@@ -1,6 +1,6 @@
 # Copy
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-28.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-23.
 > **Status:** Active
 
 Канонічні правила UA-копії для всього продукту — tone-of-voice, address-форма, патерни

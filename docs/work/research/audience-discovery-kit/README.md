@@ -1,6 +1,6 @@
 # Audience Discovery Kit — готові інструменти дослідження ЦА
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-26.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-15.
 > **Status:** Active
 
 > Робочий набір під дизайн із [`../2026-06-28-audience-discovery-trackers.md`](../2026-06-28-audience-discovery-trackers.md).

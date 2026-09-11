@@ -1,6 +1,6 @@
 # Service Level Objectives й Burn-rate-алерти
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-05.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-08.
 > **Status:** Active
 
 > Автор: obs-team. Огляд щокварталу, або коли міняється архітектура.

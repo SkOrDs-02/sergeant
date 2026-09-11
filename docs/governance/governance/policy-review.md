@@ -1,6 +1,6 @@
 # Monthly policy review
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-13.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-19.
 > **Status:** Active
 
 > **Шаблон щомісячного огляду «hard rules» AGENTS.md.**

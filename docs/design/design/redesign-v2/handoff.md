@@ -1,6 +1,6 @@
 # Redesign v2 — handoff cross-links
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-10.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-05-08.
 > **Status:** Reference — вказівник на переміщені мокапи; редизайн закрито 2026-05-21.
 
 Mockups were moved from `handoff-package/` to the unified `mockups/product/` tree (git history preserved via `git mv`).
