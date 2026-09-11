@@ -171,10 +171,28 @@ describe("FirstEntryCelebrationModal: interaction branches", () => {
 
   it("closes immediately from the unobtrusive close control", () => {
     const onClose = vi.fn();
-    renderOpenModal({ onClose, ttvMs: 1000, moduleId: "finyk" });
+    const { rerender } = renderOpenModal({
+      onClose,
+      ttvMs: 1000,
+      moduleId: "finyk",
+    });
 
     fireEvent.click(screen.getByRole("button", { name: "Закрити" }));
     expect(onClose).toHaveBeenCalledTimes(1);
+
+    // Модалка КЕРОВАНА (`if (!open) return null`) — сама вона не ховається,
+    // видимістю володіє батько. Тож перевіряти зникнення одразу після тапу
+    // означало б вимагати від компонента поведінки, якої його контракт не
+    // передбачає. Осмислена перевірка — що на `open={false}` він таки зникає.
+    expect(screen.getByRole("status")).toBeInTheDocument();
+    rerender(
+      <FirstEntryCelebrationModal
+        open={false}
+        onClose={onClose}
+        ttvMs={1000}
+        moduleId="finyk"
+      />,
+    );
     expect(screen.queryByRole("status")).toBeNull();
   });
 
