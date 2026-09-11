@@ -10,9 +10,24 @@
  * Це НЕ каталог інструментів чату — той живе на `/assistant` і відповідає на
  * інше питання: «що вміє Сержант», а не «що вміє додаток».
  *
+ * Founder-ux-review round 2 (O4): до цієї правки обидві сторінки читались
+ * як один і той самий довідник, викладений двічі різними словами. Рішення
+ * власника 2026-09-11 розводить ролі явно:
+ *   - `/capabilities` (тут) — для новачка: що можна зробити ПРЯМО ЗАРАЗ,
+ *     за ~30 секунд. Звідси `quickAction` — конкретна дія, а не властивість
+ *     розділу, і рендериться ПЕРШОЮ (`CapabilitiesPage.tsx`), `description`
+ *     лишається деталями під нею.
+ *   - `/assistant` — каталог для постійного користувача з пошуком
+ *     (`AssistantCataloguePage.tsx`, 80+ сценаріїв). Не дублюємо його вміст
+ *     тут: єдиний місток між сторінками — один запис `assistant-catalogue`
+ *     нижче, більше перехресних посилань не додавати.
+ *
  * Правила для нових записів:
  *   - `href` веде на реальний, досяжний екран (перевіряється тестом);
- *   - `description` — 1-2 речення про користь, без назв компонентів;
+ *   - `quickAction` — одна дія в наказовому способі, яку новачок зробить
+ *     найближчі 30 секунд («Додай…», «Постав…», «Скануй…»), не властивість;
+ *   - `description` — 1-2 речення подробиць під `quickAction`, без назв
+ *     компонентів;
  *   - `module` заповнюємо лише для модульних записів: він фарбує іконку
  *     акцентом модуля (ex-Hard Rule #12, retired ADR-0081 — акцент не виходить
  *     за свій сабтрі; дизайн-конвенція тримається tokens + review).
@@ -23,6 +38,8 @@ import type { HubModuleId } from "@shared/lib/modules/hubNav";
 export interface Capability {
   id: string;
   title: string;
+  /** Одна дія в наказовому способі — «що зробити за 30 секунд» (O4). */
+  quickAction: string;
   description: string;
   /** Design-system icon name. */
   icon: string;
@@ -46,6 +63,8 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
       {
         id: "finyk",
         title: "Фінік: гроші",
+        quickAction:
+          "Сфотографуй чек або додай витрату вручну, категорія підбереться сама.",
         description:
           "Витрати й доходи з банку, чека або вручну; бюджети, підписки, цілі та ліміти по категоріях. Показує картину місяця без вигаданих даних.",
         icon: "wallet",
@@ -55,6 +74,7 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
       {
         id: "fizruk",
         title: "Фізрук: тренування",
+        quickAction: "Запиши перший підхід просто під час тренування.",
         description:
           "Журнал тренувань, підходів і ваг, план на місяць, відновлення та позначки болю. Памʼятає попередні результати й історію ваги.",
         icon: "dumbbell",
@@ -64,6 +84,8 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
       {
         id: "nutrition",
         title: "Їжа: харчування",
+        quickAction:
+          "Скануй штрихкод або сфотографуй страву, КБЖВ порахується сам.",
         description:
           "Прийоми їжі, КБЖВ, вода, комора, рецепти й плани. Ціль стартує з біометрії та щотижня уточнюється за журналом їжі й зміною ваги; її можна змінити вручну.",
         icon: "utensils",
@@ -73,6 +95,8 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
       {
         id: "routine",
         title: "Рутина: звички",
+        quickAction:
+          "Заведи першу звичку й познач сьогоднішній день одним тапом.",
         description:
           "Щоденні й тижневі звички, паузи, нагадування та чесні серії. Видно виконання за календарем і те, що почало зриватися.",
         icon: "repeat",
@@ -88,6 +112,8 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
       {
         id: "chat",
         title: "Чат із Сержантом",
+        quickAction:
+          "Напиши звичайною фразою, що сталось, Сержант сам знайде або додасть запис.",
         description:
           "Питай про свої дані звичайною мовою: Сержант сам підніме потрібні записи й може одразу щось додати чи порахувати.",
         icon: "sergeant",
@@ -96,6 +122,8 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
       {
         id: "assistant-catalogue",
         title: "Що вміє Сержант",
+        quickAction:
+          "Відкрий каталог, коли знадобиться конкретна команда чи приклад.",
         description:
           // Без числа навмисно: сама сторінка каталогу рахує сценарії
           // динамічно (`totalCount` у `AssistantCataloguePage`), а зашите тут
@@ -109,6 +137,8 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
       {
         id: "insights",
         title: "Звʼязки між сферами",
+        quickAction:
+          "Подивись, що збіглося між грошима, тренуваннями й звичками за тиждень.",
         description:
           "Що з чим збігається у твоїх даних, закономірності за весь час і звіти модулів за тиждень чи місяць.",
         icon: "bar-chart",
@@ -127,6 +157,8 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
       {
         id: "offline",
         title: "Працює офлайн",
+        quickAction:
+          "Вимкни інтернет і продовжуй вносити записи, вони почекають синку.",
         description:
           "Записи зберігаються на пристрої, тож застосунок відкривається й без мережі. Синхронізація доганяє, коли звʼязок повернеться.",
         icon: "cloud-off",
@@ -138,6 +170,7 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
       {
         id: "privacy",
         title: "PIN і контроль над даними",
+        quickAction: "Постав PIN-код у Налаштуваннях за хвилину.",
         description:
           "Вхід за PIN-кодом, керування згодами на аналітику й AI-памʼять, повне видалення акаунта.",
         icon: "lock",
@@ -146,6 +179,7 @@ export const CAPABILITY_GROUPS: readonly CapabilityGroup[] = [
       {
         id: "export",
         title: "Експорт та імпорт",
+        quickAction: "Забери всі свої дані одним файлом просто зараз.",
         description:
           "Забрати всі свої дані одним JSON-файлом або перенести їх на інший пристрій.",
         icon: "download",

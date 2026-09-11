@@ -72,9 +72,26 @@ export const STORAGE_KEYS = {
 
   // PWA / install prompts
   PWA_SESSION_COUNT: "pwa_session_count",
+  /**
+   * @deprecated Founder-ux-review round 2 (O2) — the plain "×" close now
+   * writes `PWA_INSTALL_SNOOZE` (30-day TTL, max 3 shows) instead of this
+   * permanent flag. Kept as a **read-only** legacy check so users who
+   * already dismissed forever under the old scheme stay dismissed — see
+   * `usePwaInstall.ts`. Do not write to it from new code.
+   */
   PWA_INSTALL_DISMISSED: "pwa_install_dismissed",
+  /** Snooze record (`{ until, count }`) for the Chromium install banner's "×" close. */
+  PWA_INSTALL_SNOOZE: "pwa_install_snooze_v1",
   PWA_PENDING_ACTION: "pwa_pending_action",
+  /**
+   * Permanent opt-out — the explicit "Уже встановлено або не нагадувати"
+   * link in `IOSInstallBanner`. Stays a forever-flag by design (founder
+   * decision, O2); the icon-only "×" close instead writes
+   * `IOS_BANNER_SNOOZE`.
+   */
   IOS_BANNER_DISMISSED: "ios_install_banner_dismissed",
+  /** Snooze record (`{ until, count }`) for the iOS install banner's "×" close. */
+  IOS_BANNER_SNOOZE: "ios_install_banner_snooze_v1",
 
   // Cloud sync metadata — 5 web keys dropped in Stage 13 PR #077.
   // Historically: SYNC_VERSIONS ("hub_sync_versions"),

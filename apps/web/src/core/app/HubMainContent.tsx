@@ -96,7 +96,8 @@ export interface HubMainContentProps {
     opts?: OpenModuleOptions,
   ) => void;
   iosVisible: boolean;
-  onDismissIos: () => void;
+  onDismissIosForever: () => void;
+  onSnoozeIos: () => void;
   hubView: HubView;
   user: User | null;
   onShowAuth: () => void;
@@ -106,7 +107,8 @@ export interface HubMainContentProps {
 export const HubMainContent = memo(function HubMainContent({
   onOpenModule,
   iosVisible,
-  onDismissIos,
+  onDismissIosForever,
+  onSnoozeIos,
   hubView,
   user,
   onShowAuth,
@@ -240,7 +242,12 @@ export const HubMainContent = memo(function HubMainContent({
     <>
       {!inFtuxSession && <TrialBanner />}
 
-      {showIos && <IOSInstallBanner onDismiss={onDismissIos} />}
+      {showIos && (
+        <IOSInstallBanner
+          onDismissForever={onDismissIosForever}
+          onSnooze={onSnoozeIos}
+        />
+      )}
 
       <PullToRefresh
         as="main"

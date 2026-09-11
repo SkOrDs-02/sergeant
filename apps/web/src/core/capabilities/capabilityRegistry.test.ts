@@ -61,4 +61,25 @@ describe("capabilityRegistry", () => {
       ).toBeGreaterThan(5);
     }
   });
+
+  /**
+   * Founder-ux-review round 2 (O4): `/capabilities` мусить читатись як
+   * «що я зроблю за 30 секунд», а не як другий каталог `/assistant`. Гейт
+   * не перевіряє формулювання (тон — робота copy-review), лише що поле
+   * заповнене й не є буквальним дублем `description` — інакше "сценарій
+   * зверху, подробиці далі" мовчки виродиться назад у "той самий текст
+   * двічі".
+   */
+  it("кожен запис має окремий quickAction — «дію за 30 секунд», не дубль опису", () => {
+    for (const item of ALL_CAPABILITIES) {
+      expect(
+        item.quickAction.trim().split(/\s+/).length,
+        `quickAction «${item.title}» надто короткий`,
+      ).toBeGreaterThan(2);
+      expect(
+        item.quickAction.trim(),
+        `quickAction «${item.title}» дублює description`,
+      ).not.toBe(item.description.trim());
+    }
+  });
 });

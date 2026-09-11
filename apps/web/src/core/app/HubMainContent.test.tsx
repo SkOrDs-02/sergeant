@@ -130,7 +130,8 @@ function props(
   return {
     onOpenModule: vi.fn(),
     iosVisible: false,
-    onDismissIos: vi.fn(),
+    onDismissIosForever: vi.fn(),
+    onSnoozeIos: vi.fn(),
     hubView: "dashboard",
     user: null,
     onShowAuth: vi.fn(),
