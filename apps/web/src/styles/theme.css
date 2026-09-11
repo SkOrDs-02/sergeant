@@ -92,12 +92,25 @@
     --c-line: 226 224 218; /* #e2e0da — warm border (Б1) */
 
     /* Text hierarchy — «Чорнило» light pair (spec § 5): green-ink tiers,
-       the tonal inverse of the dark ink text. `--c-subtle` stays at the
-       AA-safe #6b645d — spec's #98a09a is a ≥12px-labels-only tone (~3:1)
-       and would drop normal tertiary text below AA if used here. */
+       the tonal inverse of the dark ink text. Spec's #98a09a — це тон
+       для ≥12px-лейблів (~3:1); для звичайного третинного тексту він
+       нижчий за AA, тому тут його немає.
+
+       AI-DANGER: **третинні тони не ставимо «рівно на поріг».** До
+       2026-09-11 `--c-muted` (#5c665f) і `--c-subtle` (#6b645d) були
+       підібрані рівно під 4.5:1 проти білої картки й бежу — і рівно тому
+       «стіл і зона» (#1063) поклали 11 маршрутів: щойно текст сів не на
+       біле, а на тонований стіл, зону чи напівпрозору картку, весь
+       драбинковий ряд поїхав під поріг одразу (заміри axe: 4.21-4.49 на
+       14 вузлах). Тон із нульовим запасом не переживає ЖОДНОГО
+       перефарбування фону. Нові значення тримають ≥4.69:1 проти
+       найтемнішої реальної поверхні (зона хаба #dad6ce), тобто ~4%
+       запасу на ще один крок тонування. Гейт — `contrast.test.js`,
+       і він тепер перевіряє обидва тони проти СТОЛУ І ЗОНИ, а не лише
+       проти білого. */
     --c-text: 15 23 19; /* #0f1713 — green near-black (spec § 5 fg-strong) */
-    --c-muted: 92 102 95; /* #5c665f — green medium gray (spec § 5 muted), AA on white */
-    --c-subtle: 107 100 93; /* #6b645d — tertiary, WCAG AA ≥4.5:1 on panel/panel-hi/bg */
+    --c-muted: 83 92 86; /* #535c56 — green medium gray (spec § 5 muted), ≥4.78:1 на столі й зоні */
+    --c-subtle: 96 90 84; /* #605a54 — tertiary, ≥4.69:1 на столі, зоні, panel/panel-hi/bg */
     --c-primary: 15 23 19; /* #0f1713 — ink (same as text) */
 
     /* ═══════════════════════════════════════════════════════════════════
@@ -1215,7 +1228,7 @@
        #98a09a would only lower its contrast. */
     --c-ink: 23 32 27; /* #17201b — body text (spec § 5 fg) */
     --c-ink-strong: 15 23 19; /* #0f1713 — display / headings (spec § 5 fg-strong) */
-    --c-muted-v2: 92 102 95; /* #5c665f — meta, captions (spec § 5 muted), AA on white */
+    --c-muted-v2: 83 92 86; /* #535c56 — meta, captions (spec § 5 muted); дзеркало --c-muted вище */
     --c-subtle-v2: 138 138 130; /* #8a8a82 — hints */
 
     /* Glass surfaces — alpha BAKED IN by design intent. Do not use
