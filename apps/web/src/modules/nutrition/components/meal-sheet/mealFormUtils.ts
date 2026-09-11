@@ -24,30 +24,50 @@ import { newMealId } from "../../lib/mealId";
 export const MAX_PORTION_GRAMS = 10_000;
 
 /**
- * Значення для touch-колеса ваги. До кілограма лишаємо точний крок 5 г,
- * вище — 50 г, щоб колесо не розросталось до двох тисяч рядків. Поточне
- * довільне значення додається без округлення, тому вага зі штрихкоду чи
- * старого запису не змінюється сама лише від відкриття форми.
+ * Значення для touch-колеса ваги. До кілограма точний крок 5 г, вище —
+ * 50 г, щоб колесо не розросталось до двох тисяч рядків.
+ *
+ * `extras` — довільні числа поза сіткою (33 г з OFF, 150.5 з чека,
+ * вага старого запису). Вони додаються без округлення, тому вага зі
+ * штрихкоду чи старого запису не змінюється сама лише від відкриття
+ * форми.
+ *
+ * AI-DANGER: список мусить лишатись СТАЛИМ, поки аркуш відкритий.
+ * Раніше сюди йшла поточна вага рядком, і довільне число зникало зі
+ * списку, щойно людина крутила колесо далі, — довжина масиву мінялась
+ * на 1, усі індекси після нього зсувались, і колесо стрибало на рядок
+ * після КОЖНОГО коміту. Тому накопичення `extras` тримає
+ * `useWheelGrams`, а не цей чистий хелпер.
  */
-export function portionGramValues(current: string): number[] {
+const PORTION_GRAM_BASE: readonly number[] = (() => {
   const values: number[] = [];
   for (let grams = 5; grams <= 1000; grams += 5) values.push(grams);
   for (let grams = 1050; grams <= MAX_PORTION_GRAMS; grams += 50) {
     values.push(grams);
   }
+  return Object.freeze(values);
+})();
 
-  const currentGrams = Number(current.replace(",", "."));
-  if (
-    Number.isFinite(currentGrams) &&
-    currentGrams > 0 &&
-    currentGrams <= MAX_PORTION_GRAMS &&
-    !values.includes(currentGrams)
-  ) {
-    values.push(currentGrams);
-    values.sort((left, right) => left - right);
-  }
+const PORTION_GRAM_BASE_SET: ReadonlySet<number> = new Set(PORTION_GRAM_BASE);
 
-  return values;
+/** Чи лежить вага на регулярній сітці колеса. */
+export function isPortionGramOnGrid(grams: number): boolean {
+  return PORTION_GRAM_BASE_SET.has(grams);
+}
+
+export function portionGramValues(extras: readonly number[] = []): number[] {
+  const extra = extras.filter(
+    (grams) =>
+      Number.isFinite(grams) &&
+      grams > 0 &&
+      grams <= MAX_PORTION_GRAMS &&
+      !PORTION_GRAM_BASE_SET.has(grams),
+  );
+  if (extra.length === 0) return [...PORTION_GRAM_BASE];
+
+  return [...new Set([...PORTION_GRAM_BASE, ...extra])].sort(
+    (left, right) => left - right,
+  );
 }
 
 export function currentTime(): string {

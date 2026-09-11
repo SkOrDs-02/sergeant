@@ -10,9 +10,9 @@ import { Input } from "@shared/components/ui/Input";
 import { WheelPicker } from "@shared/components/ui/WheelPicker";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { useLocale } from "@shared/i18n/useLocale";
-import { useMemo } from "react";
 
-import { MAX_PORTION_GRAMS, portionGramValues } from "./mealFormUtils";
+import { MAX_PORTION_GRAMS } from "./mealFormUtils";
+import { useWheelGrams } from "./useWheelGrams";
 
 interface PantryPortionFieldProps {
   value: string;
@@ -25,7 +25,7 @@ export function PantryPortionField({
 }: PantryPortionFieldProps) {
   const { messages } = useLocale();
   const coarsePointer = useCoarsePointer();
-  const gramValues = useMemo(() => portionGramValues(value), [value]);
+  const wheel = useWheelGrams(value);
   return (
     <div className="mb-4 rounded-2xl border border-line bg-panelHi p-3">
       <label
@@ -40,8 +40,8 @@ export function PantryPortionField({
       </p>
       {coarsePointer ? (
         <WheelPicker
-          values={gramValues}
-          value={Number(value.replace(",", ".")) || 100}
+          values={wheel.values}
+          value={wheel.value}
           onChange={(grams) => onChange(String(grams))}
           aria-labelledby="pantry-portion-label"
           formatValue={(grams) => `${grams} г`}
