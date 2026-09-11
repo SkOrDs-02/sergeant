@@ -34,7 +34,7 @@ import {
   getExpenseCategoryForTransaction,
   getIncomeCategoryForTransaction,
 } from "../utils";
-import { DebtIncomeLinkSection } from "./DebtIncomeLinkSection";
+import { DebtTxLinkSection } from "./DebtTxLinkSection";
 import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
@@ -60,7 +60,9 @@ export interface BankTransactionDetailsSheetProps {
   receiptId?: number | null | undefined;
   hideAmount?: boolean | undefined;
   /** Пасиви + мутатори для мостика «Борг → пасив» (спека finyk-observations,
-   * PR-3) — потрібні лише коли категорія операції `in_debt`. */
+   * PR-3; узагальнено 2026-09-11 на обидва напрямки) — потрібні для
+   * надходження з категорією `debt-income` (роль `source`) і для витрати
+   * з категорією `debt` (роль `payment`). */
   manualDebts: readonly Debt[];
   setManualDebts: (updater: (debts: Debt[]) => Debt[]) => void;
   setLinkedTxRole: (
@@ -287,11 +289,22 @@ export function BankTransactionDetailsSheet({
         </section>
 
         {isIncome && category.id === "debt-income" && (
-          <DebtIncomeLinkSection
+          <DebtTxLinkSection
             transaction={transaction}
             manualDebts={manualDebts}
             setManualDebts={setManualDebts}
             setLinkedTxRole={setLinkedTxRole}
+            txRole="source"
+          />
+        )}
+
+        {!isIncome && category.id === "debt" && (
+          <DebtTxLinkSection
+            transaction={transaction}
+            manualDebts={manualDebts}
+            setManualDebts={setManualDebts}
+            setLinkedTxRole={setLinkedTxRole}
+            txRole="payment"
           />
         )}
 

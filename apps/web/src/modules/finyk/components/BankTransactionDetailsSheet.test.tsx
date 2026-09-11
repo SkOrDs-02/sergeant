@@ -268,4 +268,77 @@ describe("BankTransactionDetailsSheet", () => {
       ).not.toBeInTheDocument();
     });
   });
+
+  describe("категорія «Борг» у витраті (рішення власника 2026-09-11)", () => {
+    it("привʼязує платіж роллю payment до наявного пасиву", () => {
+      const setLinkedTxRole = vi.fn();
+      renderSheet({
+        overrideCatId: "debt",
+        setLinkedTxRole,
+        manualDebts: [
+          {
+            id: "debt-1",
+            name: "Кредитка ПриватБанк",
+            amount: 5000,
+            totalAmount: 5000,
+            linkedTxIds: [],
+            txLinks: {},
+          },
+        ],
+      });
+
+      // Кнопка «Створити новий пасив» для платежу НЕ пропонується — борг,
+      // що народжується вже сплаченим, нонсенс (§ докблок DebtTxLinkSection).
+      expect(
+        screen.queryByRole("button", { name: "Створити новий пасив" }),
+      ).not.toBeInTheDocument();
+
+      fireEvent.click(screen.getByRole("button", { name: "Обрати пасив" }));
+      fireEvent.click(
+        screen.getByRole("button", { name: /Кредитка ПриватБанк/ }),
+      );
+
+      expect(setLinkedTxRole).toHaveBeenCalledWith(
+        "debt-1",
+        TRANSACTION.id,
+        "debt",
+        "payment",
+        250,
+      );
+    });
+
+    it("без жодного наявного пасиву показує підказку замість мертвої кнопки", () => {
+      renderSheet({ overrideCatId: "debt", manualDebts: [] });
+
+      expect(
+        screen.getByText("Спершу створи пасив в Активах."),
+      ).toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Обрати пасив" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Створити новий пасив" }),
+      ).not.toBeInTheDocument();
+    });
+
+    it("уже привʼязаний платіж показує «Зараховано як сплату по»", () => {
+      renderSheet({
+        overrideCatId: "debt",
+        manualDebts: [
+          {
+            id: "debt-1",
+            name: "Кредитка ПриватБанк",
+            amount: 5000,
+            totalAmount: 5000,
+            linkedTxIds: [TRANSACTION.id],
+            txLinks: { [TRANSACTION.id]: { role: "payment", amount: 250 } },
+          },
+        ],
+      });
+
+      expect(
+        screen.getByText(/Зараховано як сплату по «Кредитка ПриватБанк»/),
+      ).toBeInTheDocument();
+    });
+  });
 });
