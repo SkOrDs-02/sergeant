@@ -35,21 +35,34 @@ import {
   ensureStoragePlaces,
   mergeItemsIntoPlaces,
   movePantryItem,
-  resolvePlaceForItem,
   DEFAULT_PLACE_ID,
   type PantryItemSource,
 } from "@sergeant/nutrition-domain";
 import { usePantryPlaces } from "./usePantryPlaces";
+import { resolvePlaceOfWithFilter } from "../lib/resolvePlaceOfWithFilter";
 import {
   getRememberedAmbiguousUnit,
   rememberAmbiguousUnitChoice,
   type AmbiguousPantryUnit,
 } from "../lib/pantryAmbiguousUnitMemory";
 
+export interface PantryItemsAddedEntry {
+  name: string;
+  pantryId: string;
+}
+
 export interface UseNutritionPantriesParams {
   setBusy: Dispatch<SetStateAction<boolean>>;
   setErr: Dispatch<SetStateAction<string>>;
   setStatusText: Dispatch<SetStateAction<string>>;
+  /**
+   * Рішення власника 2026-09-11 — «куди лягло». Хук нічого не знає про
+   * toast (той живе у `NutritionApp.tsx`, разом із `useToast()`), тому
+   * кожне успішне злиття нових/оновлених позицій у комору лише повідомляє
+   * назву й фінальне місце через цей колбек; сам toast-текст і дію
+   * «Змінити» складає викликач.
+   */
+  onItemsAdded?: (items: PantryItemsAddedEntry[]) => void;
 }
 
 interface ParsePantryVariables {
@@ -115,6 +128,7 @@ export function useNutritionPantries({
   setBusy,
   setErr,
   setStatusText,
+  onItemsAdded,
 }: UseNutritionPantriesParams) {
   // `ensureStoragePlaces` стоїть на КОЖНОМУ вході даних у стан, а не лише
   // на першому: інакше після теплого SQLite-кешу холодильник і морозилка
@@ -232,12 +246,11 @@ export function useNutritionPantries({
     return parseLoosePantryText(raw);
   }, [pantryItems, pantryText]);
 
-  /**
-   * Куди лягає позиція. Порядок тут і є гейтом «ручне сильніше за
-   * автовизначення»: місце вже наявної позиції виграє вгадування завжди,
-   * тож доливання молока не тягне його назад у холодильник із балкона.
-   */
-  const placeOf = (name: unknown) => resolvePlaceForItem(pantryItems, name);
+  // Куди лягає позиція — включно з рішенням власника 2026-09-11 про
+  // пріоритет `placeFilter` над евристикою для НОВИХ позицій; повний
+  // розбір у `resolvePlaceOfWithFilter.ts`.
+  const placeOf = (name: unknown): string =>
+    resolvePlaceOfWithFilter(pantryItems, name, placeFilter);
 
   // Витягнуто з колишнього тіла `upsertItem`: злиття по місцях + одна
   // 'replenish'-подія на позицію з відомою кількістю. Використовується і
@@ -245,15 +258,22 @@ export function useNutritionPantries({
   // «шт чи г?» нижче — обидва мають записати рівно те саме.
   const mergeParsedItems = (items: PantryItem[]) => {
     if (!items.length) return;
+    // Місце фіксується ДО `setPantries`: і подія, і колбек нижче мають
+    // читати те саме місце, яке щойно вирішило злиття, а не перерахунок
+    // над уже зміненим станом.
+    const placements = items.map((item) => ({
+      name: item.name,
+      pantryId: placeOf(item.name),
+    }));
     setPantries((cur) => mergeItemsIntoPlaces(cur, items, placeOf));
     // W1-PANTRY-APPEND стадія 2 — паралельно до запису `qty` вище: одна
     // 'replenish'-подія на кожну позицію з відомою кількістю. Позиції без
     // qty (гола назва — «сіль») дельту не несуть, тож пропускаємо.
-    for (const item of items) {
-      if (item.qty == null || !Number.isFinite(item.qty)) continue;
+    items.forEach((item, i) => {
+      if (item.qty == null || !Number.isFinite(item.qty)) return;
       appendNutritionPantryEvent({
         id: null,
-        pantryId: placeOf(item.name),
+        pantryId: placements[i]?.pantryId ?? placeOf(item.name),
         itemId: null,
         itemKey: canonicalFoodKey(item.name),
         kind: "replenish",
@@ -263,7 +283,8 @@ export function useNutritionPantries({
         source: "manual",
         mealId: null,
       });
-    }
+    });
+    onItemsAdded?.(placements);
   };
 
   const upsertItem = (raw: string | PantryItem | PantryItem[]) => {
@@ -661,6 +682,10 @@ export function useNutritionPantries({
   const confirmParsePreview = (items: PantryItem[]) => {
     if (!items.length || !parsePreview) return;
     const draftId = parsePreview.pantryId;
+    const placements = items.map((item) => ({
+      name: item.name,
+      pantryId: placeOf(item.name),
+    }));
     setPantries((cur) =>
       mergeItemsIntoPlaces(
         cur.map((p) => (p.id === draftId ? { ...p, text: "" } : p)),
@@ -669,6 +694,7 @@ export function useNutritionPantries({
       ),
     );
     setParsePreview(null);
+    onItemsAdded?.(placements);
   };
 
   const dismissParsePreview = () => setParsePreview(null);

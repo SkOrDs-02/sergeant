@@ -2,8 +2,9 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Meal } from "@sergeant/nutrition-domain";
+import { matchFoodName } from "@sergeant/nutrition-domain";
 import { useQuickAddMealFromChip } from "./hooks/useQuickAddMealFromChip";
 import {
   SkeletonMealCard,
@@ -31,7 +32,11 @@ import { requestCloudPull } from "@shared/lib/modules/cloudPullRequest";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { useQueryClient } from "@tanstack/react-query";
 import { nutritionKeys } from "@shared/lib/api/queryKeys";
-import { useNutritionPantries } from "./hooks/useNutritionPantries";
+import {
+  useNutritionPantries,
+  type PantryItemsAddedEntry,
+} from "./hooks/useNutritionPantries";
+import { buildPantryAddedToastMessage } from "./lib/pantryAddedToast";
 import { useNutritionLog } from "./hooks/useNutritionLog";
 import { useNutritionDualWriteBoot } from "./hooks/useNutritionDualWriteBoot";
 import { useNutritionSqliteReadBoot } from "./hooks/useNutritionSqliteReadBoot";
@@ -129,7 +134,65 @@ export default function NutritionApp({
     setMenuSubTab,
   });
 
-  const pantry = useNutritionPantries({ setBusy, setErr, setStatusText });
+  // Рішення власника 2026-09-11 — «куди лягло» тост живе тут (page-рівень,
+  // де вже є `useToast()`), не всередині `useNutritionPantries`. Колбек
+  // мусить читати найсвіжіші `pantry.pantries`/`pantry.pantryItems`, але
+  // сам хук ще не повернув значення в момент, коли колбек передається йому
+  // ПАРАМЕТРОМ — класична курка-яйце. `pantryRef` розриває цикл: колбек
+  // читає його в МОМЕНТ виклику (після кліку користувача), а не в момент
+  // визначення, тож посилання на ще неіснуючий `pantry` тут не потрібне.
+  const pantryRef = useRef<ReturnType<typeof useNutritionPantries> | null>(
+    null,
+  );
+  const onPantryItemsAdded = useCallback(
+    (items: PantryItemsAddedEntry[]) => {
+      const p = pantryRef.current;
+      if (!p) return;
+      const msg = buildPantryAddedToastMessage(items, p.pantries);
+      if (!msg) return;
+
+      // Дія «Змінити» — лише для одиночного додавання: список одразу
+      // втратив би сенс «однієї» адреси для редагування.
+      const single = items.length === 1 ? items[0] : undefined;
+      toast.success(
+        msg,
+        undefined,
+        single
+          ? {
+              label: "Змінити",
+              onClick: () => {
+                // Адресу рахуємо ЛІНИВО, на кліку — не в момент показу
+                // toast. `setPantries` усередині хука асинхронний, тож
+                // одразу після виклику `pantryRef.current` ще вказує на
+                // стан ДО злиття, і щойно доданої позиції в ньому просто
+                // немає. До моменту фактичного кліку користувача re-render
+                // уже закомітився.
+                const cur = pantryRef.current;
+                if (!cur) return;
+                const key = matchFoodName(single.name);
+                const idx = cur.pantryItems.findIndex(
+                  (x) =>
+                    x.pantryId === single.pantryId &&
+                    matchFoodName(x.name) === key,
+                );
+                if (idx >= 0) cur.editItemAt(idx);
+              },
+            }
+          : undefined,
+      );
+    },
+    [toast],
+  );
+
+  const pantry = useNutritionPantries({
+    setBusy,
+    setErr,
+    setStatusText,
+    onItemsAdded: onPantryItemsAdded,
+  });
+  useEffect(() => {
+    pantryRef.current = pantry;
+  }, [pantry]);
   const log = useNutritionLog();
   const ui = useNutritionUiState();
   const shopping = useShoppingList();
@@ -289,9 +352,12 @@ export default function NutritionApp({
   });
 
   const addCheckedItemsToPantry = useCallback(() => {
-    for (const item of shopping.checkedItems) {
-      pantry.upsertItem(item.name);
-    }
+    // Одним викликом, а не циклом по позиції: `upsertItem` тепер повідомляє
+    // «куди лягло» тостом (2026-09-11), і N окремих викликів дали б N
+    // тостів на одне натискання «У комору». Текст рядка парситься так само,
+    // як і в режимі «Списком».
+    const text = shopping.checkedItems.map((item) => item.name).join(", ");
+    if (text.trim()) pantry.upsertItem(text);
     shopping.clearChecked();
   }, [shopping, pantry]);
 
