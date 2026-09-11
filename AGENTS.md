@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-23.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-28.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -178,7 +178,7 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 
 | Metric                                           | Budget                              | Where enforced                                                                                                                                                                                                          |
 | ------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web` JS total (brotli)                     | **≤ 1.42 MB**                       | `pnpm --filter @sergeant/web exec size-limit` in CI                                                                                                                                                                     |
+| `apps/web` JS total (brotli)                     | **≤ 1.44 MB**                       | `pnpm --filter @sergeant/web exec size-limit` in CI                                                                                                                                                                     |
 | `apps/web` CSS (brotli)                          | **≤ 40 kB**                         | same                                                                                                                                                                                                                    |
 | `apps/web` **eager** JS (критичний шлях, brotli) | **≤ 280 kB**                        | `node scripts/ci/check-eager-bundle.mjs` (CI job `check`); локально `pnpm --filter @sergeant/web size:eager`                                                                                                            |
 | `apps/web` LCP (median, 4 LHCI routes)           | **≤ 3000 ms** (`error` — fail-stop) | `apps/web/lighthouserc.json` + `.github/workflows/lighthouse-ci.yml` (status `Lighthouse CI`); local: `pnpm --filter @sergeant/web lighthouse`                                                                          |
@@ -187,6 +187,14 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 | Backend `/health` p95                            | < 100 ms                            | Formalized in [`docs/operations/observability/SLO.md §2.1`](./docs/operations/observability/SLO.md#21-health-endpoint-p95); alert-правило `BackendHealthP95High` — design-only, не wired (див. SLO.md § Статус wiring). |
 | `/api/chat` **перший хід** p95 повної відповіді  | **< 15 s** (стеля-детектор)         | `chat_first_turn_phase_ms{phase="total"}` (Prometheus → Grafana Cloud). Факт 2026-09-01: медіана ≈6,7 с, max 13,7 с. Перший хід не стрімиться, тож SLO про перший токен тут не має предмета — знахідка AI-2.            |
 | `/api/chat` **тур синтезу** p95 first token      | < 1.5 s                             | `ai_first_token_ms` (той самий скрейп). Моделезалежно: flash-lite 365 мс, haiku-4.5 954 мс, sonnet-5 5 586 мс.                                                                                                          |
+
+**Ратчет 2026-09-11 (JS 1.42 → 1.44 MB) — і той самий мовчазний гейт, тільки гірше.**
+
+Цього разу гейт не «стояв після червоного кроку» — він **не виконувався взагалі** від поставок 2026-09-06. `size-limit` — крок джоби `check` ПІСЛЯ «Format, lint, test, build»; поки той крок був червоний на `main` (відсталі тести, розбір у [`2026-09-11-founder-ux-review-round2.md`](./docs/work/specs/audits/2026-09-11-founder-ux-review-round2.md)), Actions пропускав усі наступні. Разом із ним мовчав і `coverage-ratchet` — це вже ДВА ратчетні гейти, тобто рівно ті, чия робота — ловити повільне сповзання.
+
+**Заміряно на обох головах, локально, тим самим `size-limit`:** `origin/main` — перевищення **5.98 kB**, гілка правок — **6.71 kB**. Тобто стеля була пробита на базі, а внесок гілки — 0.73 kB. Перед ратчетом перевірено те, чого вимагає урок 2026-09-01 нижче: перевищення НЕ є сміттям, яке код вважає виключеним — чанка `DesignShowcase` у прод-бандлі немає (383 чанки, у найбільшій дюжині її нема). Дешевого важеля не лишилось.
+
+Нове число дає ~1% запасу над фактом 1.43 MB — навмисно тісно, бо це не новий важкий vendor, а накопичення без нагляду. **Головне ж не число.** Двічі підряд той самий механізм ховав борг рівно доти, доки його не стало видно аж на 7 kB: гейт, який пропускають, не повідомляє «я не спрацював», він мовчить так само, як зелений. Напрошується винести `size-limit` і `coverage-ratchet` в окремі джоби без спільного кроку-попередника — тоді червоний лінт більше не глушитиме бюджети.
 
 **Ратчет 2026-08-18 (JS 1.35 → 1.38 MB) — і урок про мовчазний гейт.** Заміряно локально на `origin/main` (`59b8e164`): **1 351.4 kB**, тобто ліміт пробито на 1.4 kB ще ДО правки, яка це виявила (її власний внесок — 296 B). Виріс бандл на Фазі 2 чек-скану: нові аркуші імпорту, bulk-review, дедуп-превʼю. Нове число дає ~2% запасу над фактом — навмисно тісніше за 5% попереднього ратчету, бо тут не новий важкий vendor, а накопичення.
 
