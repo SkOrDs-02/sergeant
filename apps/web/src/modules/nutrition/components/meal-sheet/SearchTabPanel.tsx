@@ -27,6 +27,7 @@ import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { ADD_MEAL_SECTION_KEYS } from "./addMealSections";
 import { FoodPickerSection } from "./FoodPickerSection";
 import { FromPantryRow } from "./FromPantryRow";
+import type { MealSourcePick } from "./useMealSourcePick";
 import { FromReceiptRow } from "./FromReceiptRow";
 import { MealTemplatesRow } from "./MealTemplatesRow";
 import { QuickAddChips } from "../QuickAddChips";
@@ -49,9 +50,8 @@ interface SearchTabPanelProps {
    * Тап по позиції чека: аркуш дізнається, що запит поставлено НЕ руками,
    * і сам розгортає перший знайдений продукт карткою з КБЖУ.
    */
-  onReceiptItemPicked: (query: string) => void;
-  onPantryItemPicked: (query: string) => void;
-  onPantryItemCleared: () => void;
+  /** Автопідбір продукту для «готових» джерел — чек і комора. */
+  sourcePick: MealSourcePick;
   fromPantryItem: string | null;
   setFromPantryItem: Dispatch<SetStateAction<string | null>>;
   /** Props пошуку йдуть групою — вони належать одному компоненту. */
@@ -69,9 +69,7 @@ export function SearchTabPanel({
   onQuickAdded,
   pantryItems,
   receiptRowEnabled,
-  onReceiptItemPicked,
-  onPantryItemPicked,
-  onPantryItemCleared,
+  sourcePick,
   fromPantryItem,
   setFromPantryItem,
   picker,
@@ -116,8 +114,8 @@ export function SearchTabPanel({
           setFromPantryItem={setFromPantryItem}
           setForm={setForm}
           setFoodQuery={picker.setFoodQuery}
-          onPicked={onPantryItemPicked}
-          onCleared={onPantryItemCleared}
+          onPicked={sourcePick.onPantryItemPicked}
+          onCleared={sourcePick.cancelAutoPick}
         />
       )}
 
@@ -126,7 +124,7 @@ export function SearchTabPanel({
         setForm={setForm}
         setFoodQuery={picker.setFoodQuery}
         setPickedGrams={picker.setPickedGrams}
-        onPicked={onReceiptItemPicked}
+        onPicked={sourcePick.onReceiptItemPicked}
       />
 
       <FoodPickerSection {...picker} />

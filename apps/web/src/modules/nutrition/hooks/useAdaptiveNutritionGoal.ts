@@ -145,6 +145,11 @@ export function useAdaptiveNutritionGoal(
   // fizruk-хуки (`useWorkouts`, `useMeasurements`, …).
   const fizrukCacheTick = useFizrukSqliteReadTick();
   const analysis = useMemo(() => {
+    // Тік — вхід інвалідації, а не значення: сам кеш читається нижче
+    // функціями, які React не бачить. Без цього рядка `exhaustive-deps`
+    // вважає залежність зайвою і пропонує її прибрати — тобто повернути
+    // memo до стану «ціль порахована на старих даних fizruk».
+    void fizrukCacheTick;
     const end = addDeviceDays(deviceDayKey(), -1);
     const start = addDeviceDays(end, -13);
     const intakeDays: IntakeDay[] = [];

@@ -25,7 +25,7 @@
  *
  * @last-validated 2026-08-13
  */
-import { useCallback, useEffect, useRef, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
@@ -56,7 +56,7 @@ import { PhotoStep } from "./meal-sheet/PhotoStep";
 import { MealTypePicker } from "./meal-sheet/MealTypePicker";
 import { NameTimeRow } from "./meal-sheet/NameTimeRow";
 import type { PickedFood } from "./meal-sheet/FoodPickerSection";
-import { useSourceAutoPick } from "./meal-sheet/useSourceAutoPick";
+import { useMealSourcePick } from "./meal-sheet/useMealSourcePick";
 import { PickedFoodCard } from "./meal-sheet/PickedFoodCard";
 import { PortionUnitHint } from "./meal-sheet/PortionUnitHint";
 import { PantryPortionField } from "./meal-sheet/PantryPortionField";
@@ -173,30 +173,13 @@ export function AddMealSheet({
 
   const search = useFoodSearch(foodQuery);
   const { foodHits, offHits, foodBusy, offBusy, foodErr, setFoodErr } = search;
-  const { schedule: scheduleAutoPick, cancel: cancelAutoPick } =
-    useSourceAutoPick<PickedFood>({
-      foodQuery,
-      search,
-      setFoodQuery,
-      setPickedFood,
-    });
-  // Чек уже знає фактичне фасування — вагу не чіпаємо.
-  const onReceiptItemPicked = scheduleAutoPick;
-  // Комора ваги порції не знає: `qty`/`unit` позиції — це ЗАЛИШОК на
-  // полиці, а не скільки людина щойно зʼїла. Тому береться типова порція
-  // каталогу, рівно як при ручному виборі в пошуку
-  // (`FoodPickerSection.tsx:133,155`).
-  const onPantryItemPicked = useCallback(
-    (query: string) =>
-      scheduleAutoPick(query, (hit) => {
-        setPickedGrams(String(Math.round(Number(hit.defaultGrams) || 100)));
-      }),
-    [scheduleAutoPick],
-  );
-  const onPantryItemCleared = useCallback(() => {
-    cancelAutoPick();
-    setFoodQuery("");
-  }, [cancelAutoPick]);
+  const sourcePick = useMealSourcePick({
+    foodQuery,
+    search,
+    setFoodQuery,
+    setPickedFood,
+    setPickedGrams,
+  });
 
   const {
     barcode,
@@ -595,8 +578,7 @@ export function AddMealSheet({
     // Відкладений автопідбір мусить згаснути разом із джерелом: інакше
     // пошук, що відповість уже після виходу, поверне аркуш на
     // «Заповнення» з продуктом, від якого людина щойно відмовилась.
-    cancelAutoPick();
-    setFoodQuery("");
+    sourcePick.cancelAutoPick();
     setStep("source");
   }
 
@@ -655,9 +637,7 @@ export function AddMealSheet({
                   // «fill» (PWA-шорткат, фото) чека не потребують — і не
                   // мають будити мережу заради рядка, який там не потрібен.
                   receiptRowEnabled={step === "source"}
-                  onReceiptItemPicked={onReceiptItemPicked}
-                  onPantryItemPicked={onPantryItemPicked}
-                  onPantryItemCleared={onPantryItemCleared}
+                  sourcePick={sourcePick}
                   fromPantryItem={fromPantryItem}
                   setFromPantryItem={setFromPantryItem}
                   picker={{
