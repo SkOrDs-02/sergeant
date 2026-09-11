@@ -17,8 +17,8 @@ import { render, screen, fireEvent, cleanup } from "@testing-library/react";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
 import { ToastProvider } from "@shared/hooks/useToast";
 
-vi.mock("../workouts/ActiveWorkoutPanel", () => ({
-  ActiveWorkoutPanel: ({
+vi.mock("../session/SessionView", () => ({
+  SessionView: ({
     onFinishClick,
     onDeleteWorkout,
   }: {
@@ -77,7 +77,8 @@ function baseProps(overrides: Record<string, unknown> = {}) {
   return {
     activeWorkout: null,
     activeDuration: null,
-    musclesUk: {},
+    onOpenItem: vi.fn(),
+    onAddExercise: vi.fn(),
     recBy: {},
     lastByExerciseId: {},
     setRestTimer: vi.fn(),
@@ -155,7 +156,7 @@ describe("WorkoutJournalSection – ended workout renders the read-only summary"
 });
 
 describe("WorkoutJournalSection – in-flight workout renders the editable panel", () => {
-  it("renders ActiveWorkoutPanel for a non-ended workout", () => {
+  it("renders SessionView for a non-ended workout", () => {
     const active = makeWorkout({ id: "w-active" });
     renderWithToast(
       <WorkoutJournalSection {...baseProps({ activeWorkout: active })} />,

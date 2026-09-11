@@ -55,15 +55,17 @@ export function WorkoutItemRestPresets({
   }));
 
   return (
-    <div className="flex items-center gap-1.5 mt-2 pt-2 border-t border-line">
+    // Сесійний режим 2026-09: пресет живе в одному ряду дій з «+ Підхід» і
+    // мікрофоном, а не окремим рядком під розділювачем (аудит 09-03, B9).
+    <div className="flex items-center gap-1.5">
       <Button
         type="button"
         variant="soft"
         // SLOP-2 (аудит 2026-09): «рекомендований» пресет — це вибір, не
         // успіх; зелений тут конфліктував із модульним акцентом Фізрука.
         tone="fizruk"
-        size="sm"
-        className="flex-1 justify-start"
+        size="md"
+        className="h-11 min-h-[44px]"
         onClick={() => setRestTimer({ remaining: defSec, total: defSec })}
         title={`${rt.presetsRecommendedTitle} ${catLabel.toLowerCase()}`}
       >
@@ -79,7 +81,7 @@ export function WorkoutItemRestPresets({
               type="button"
               variant="outline"
               tone="neutral"
-              size="sm"
+              size="md"
               iconOnly
               aria-label={rt.presetsMenuTriggerAriaLabel}
               title={rt.presetsSaveDefaultTitle}

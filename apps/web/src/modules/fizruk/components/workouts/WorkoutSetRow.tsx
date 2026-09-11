@@ -1,7 +1,8 @@
 /**
- * Last validated: 2026-08-08
+ * Last validated: 2026-09-11
  * Status: Active
  */
+import { useRef } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import { clampNumericInput } from "@shared/lib/format/numberInput";
@@ -20,14 +21,23 @@ export interface WorkoutSetRowProps {
    * there is nothing to suggest at this row. */
   ghost: WorkoutSet | null;
   isReadOnly: boolean;
+  /**
+   * Перший незроблений рядок картки — «поточний підхід». Один похідний
+   * прапорець замість нового стану в домені: підсвітка й жирний номер.
+   */
+  isCurrent: boolean;
+  /**
+   * Останній рядок картки — єдиний, що несе кошик. Видалення підходу —
+   * рідкісна дія, і майже завжди це «зайвий + Підхід» у кінці; кошик у
+   * кожному рядку коштував 38 px ширини полів (аудит 09-03, B4).
+   */
+  isLast: boolean;
   onChangeWeight: (weightKg: number) => void;
   onChangeReps: (reps: number) => void;
   /** Fill both fields from `ghost` — no-op if `ghost` is null. */
   onApplyGhost: () => void;
-  /** Tap on the ✓ control. Only reachable while the row is "done"
-   * (see {@link isSetDone}); the caller decides whether this also
-   * starts the rest timer (grouped / ended-workout guards live in
-   * `WorkoutItemCard`, not here). */
+  /** Tap on the ✓ control once the row is "done" (see {@link isSetDone});
+   * the caller decides whether this also starts the rest timer. */
   onCheckTap: () => void;
   onDelete: () => void;
 }
@@ -49,22 +59,29 @@ export function isSetDone(s: WorkoutSet | null | undefined): boolean {
   return (s.reps ?? 0) > 0;
 }
 
+const INPUT_CLASS =
+  "input-focus-fizruk h-11 min-w-0 flex-1 rounded-xl border border-line px-3 text-base font-semibold text-text tabular-nums placeholder:font-normal placeholder:text-subtle read-only:opacity-70 read-only:cursor-not-allowed";
+
 /**
- * One editable set row inside the active-workout card:
- * `№ · було(ghost) · кг · повт · ✓ · 🗑`.
+ * One editable set row inside the exercise card: `№ · кг · повт · ✓`
+ * (+ кошик лише на останньому рядку).
  *
- * Replaces the old `grid-cols-3` (кг | повт | "Видалити") row — the set
- * row is now the dominant element of the card (redesign 2026-08,
- * variant A): every set carries its own ordinal, a tap-to-fill hint
- * from the previous session, and an explicit "done" control that
- * starts the rest timer instead of the old `onChange`-driven
- * auto-start heuristic.
+ * Редизайн 2026-09 (спека `fizruk-active-session.md`, рішення 5) — чотири
+ * колонки замість шести. «Було» з минулого разу більше не окрема колонка
+ * на 48 px, а плейсхолдер у самих полях: сіре «80» у полі ваги і «8» у
+ * полі повторень. Тап по ✓ на такому порожньому рядку = «повторив, як
+ * минулого разу»: підставляє обидва значення й одразу стартує відпочинок.
+ * ✓ ніколи не виглядає вимкненим — до заповнення це контур в акценті
+ * модуля, а тап без повторень і без підказки ставить фокус у поле, щоб
+ * людина бачила, чого бракує.
  */
 export function WorkoutSetRow({
   index,
   set,
   ghost,
   isReadOnly,
+  isCurrent,
+  isLast,
   onChangeWeight,
   onChangeReps,
   onApplyGhost,
@@ -72,9 +89,11 @@ export function WorkoutSetRow({
   onDelete,
 }: WorkoutSetRowProps) {
   const sr = messages.fizruk.setRow;
+  const ss = messages.fizruk.session;
   const done = isSetDone(set);
   const setNumber = index + 1;
   const ghostSet = ghost && !done && !isReadOnly ? ghost : null;
+  const repsRef = useRef<HTMLInputElement>(null);
   // Вага — єдине десяткове поле рядка (повторення цілі), тож кома потрібна
   // саме тут: «82,5» під `type="number"` доїжджало сюди порожнім рядком і
   // клемп мовчки писав 0. Порожнє поле лишається нулем — 0 кг це валідна
@@ -85,31 +104,55 @@ export function WorkoutSetRow({
     (value) => onChangeWeight(value ?? 0),
   );
 
+  const ghostLabel = ghostSet
+    ? `${fmtLoose(ghostSet.weightKg ?? 0)}×${ghostSet.reps ?? 0}`
+    : null;
+  const checkAria = done
+    ? `${sr.numberAriaPrefix} ${setNumber}: ${sr.doneAriaLabel}`
+    : ghostLabel
+      ? `${sr.numberAriaPrefix} ${setNumber}: ${ss.repeatGhostAria} ${ghostLabel} ${ss.repeatGhostAriaSuffix}`
+      : `${sr.numberAriaPrefix} ${setNumber}: ${sr.notDoneAriaLabel}, ${ss.fillRepsAria}`;
+
+  const handleCheck = () => {
+    if (isReadOnly) return;
+    if (done) {
+      onCheckTap();
+      return;
+    }
+    if (ghostSet) {
+      onApplyGhost();
+      onCheckTap();
+      return;
+    }
+    repsRef.current?.focus();
+  };
+
   return (
-    <div className="flex items-center gap-1.5">
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-xl px-1 py-1 -mx-1 transition-colors",
+        isCurrent && !isReadOnly && "bg-fizruk-surface",
+      )}
+      data-current={isCurrent && !isReadOnly ? "true" : undefined}
+    >
       <span
-        className="w-5 shrink-0 text-center text-style-caption text-subtle tabular-nums"
+        className={cn(
+          "w-6 shrink-0 text-center text-style-label tabular-nums",
+          isCurrent && !isReadOnly
+            ? "font-bold text-fizruk-strong dark:text-fizruk"
+            : "text-subtle",
+        )}
         aria-hidden
       >
         {setNumber}
       </span>
-      {ghostSet ? (
-        <button
-          type="button"
-          className="h-10 w-12 shrink-0 rounded-lg border border-dashed border-line/70 pointer-coarse:min-h-[44px] text-style-caption text-subtle tabular-nums hover:border-fizruk/50 hover:text-fizruk-strong dark:hover:text-fizruk transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-          onClick={onApplyGhost}
-          aria-label={`${sr.ghostAriaPrefix} ${fmtLoose(ghostSet.weightKg ?? 0)}×${ghostSet.reps ?? 0} ${sr.ghostAriaSuffix}`}
-        >
-          {fmtLoose(ghostSet.weightKg ?? 0)}×{ghostSet.reps ?? 0}
-        </button>
-      ) : (
-        <span className="w-12 shrink-0" aria-hidden />
-      )}
       <input
-        className="input-focus-fizruk h-10 min-w-0 flex-1 rounded-xl border border-line bg-panelHi px-2 text-sm text-text read-only:opacity-70 read-only:cursor-not-allowed"
+        className={cn(INPUT_CLASS, isCurrent ? "bg-panel" : "bg-panelHi")}
         type="text"
         inputMode="decimal"
-        placeholder={sr.weightPlaceholder}
+        placeholder={
+          ghostSet ? fmtLoose(ghostSet.weightKg ?? 0) : sr.weightPlaceholder
+        }
         aria-label={sr.weightAriaLabel}
         value={weightDraft.value}
         readOnly={isReadOnly}
@@ -117,10 +160,11 @@ export function WorkoutSetRow({
         onChange={weightDraft.onChange}
       />
       <input
-        className="input-focus-fizruk h-10 min-w-0 flex-1 rounded-xl border border-line bg-panelHi px-2 text-sm text-text read-only:opacity-70 read-only:cursor-not-allowed"
+        ref={repsRef}
+        className={cn(INPUT_CLASS, isCurrent ? "bg-panel" : "bg-panelHi")}
         type="number"
         inputMode="numeric"
-        placeholder={sr.repsPlaceholder}
+        placeholder={ghostSet ? String(ghostSet.reps ?? 0) : sr.repsPlaceholder}
         min={0}
         max={MAX_REPS}
         aria-label={sr.repsAriaLabel}
@@ -133,29 +177,52 @@ export function WorkoutSetRow({
       />
       <button
         type="button"
-        disabled={isReadOnly || !done}
-        aria-label={`${sr.numberAriaPrefix} ${setNumber}: ${done ? sr.doneAriaLabel : sr.notDoneAriaLabel}`}
+        disabled={isReadOnly}
+        aria-label={checkAria}
         className={cn(
-          "flex h-10 w-10 shrink-0 items-center justify-center rounded-xl border pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] transition-colors",
+          "flex h-11 w-11 shrink-0 items-center justify-center rounded-xl border transition-colors",
           "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
           "disabled:cursor-not-allowed",
           done
             ? "border-success bg-success/15 text-success-strong dark:text-success hover:bg-success/25"
-            : "border-line bg-panel text-subtle/40",
+            : ghostSet
+              ? "border-fizruk-strong bg-panel text-fizruk-strong dark:border-fizruk dark:text-fizruk hover:bg-fizruk-surface"
+              : "border-fizruk-ring bg-panel text-fizruk-strong dark:text-fizruk opacity-70 hover:opacity-100",
         )}
-        onClick={onCheckTap}
+        onClick={handleCheck}
       >
-        <Icon name="check" size={16} aria-hidden />
+        <Icon name="check" size={18} aria-hidden />
       </button>
-      <button
-        type="button"
-        disabled={isReadOnly}
-        className="flex h-8 w-8 shrink-0 items-center justify-center rounded-lg pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] text-subtle/70 hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:text-subtle/70"
-        onClick={onDelete}
-        aria-label={`${sr.deleteAriaPrefix} ${setNumber}`}
-      >
-        <Icon name="trash" size={13} aria-hidden />
-      </button>
+      {isLast && !isReadOnly ? (
+        <button
+          type="button"
+          className="flex h-11 w-9 shrink-0 items-center justify-center rounded-xl pointer-coarse:min-h-[44px] text-subtle hover:text-danger transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+          onClick={onDelete}
+          aria-label={`${sr.deleteAriaPrefix} ${setNumber}`}
+        >
+          <Icon name="trash" size={15} aria-hidden />
+        </button>
+      ) : (
+        <span className="w-9 shrink-0" aria-hidden />
+      )}
+    </div>
+  );
+}
+
+/** Column captions rendered once above the first row of a strength card. */
+export function WorkoutSetColumnHeader() {
+  const ss = messages.fizruk.session;
+  return (
+    <div className="flex items-center gap-2 px-1 -mx-1" aria-hidden>
+      <span className="w-6 shrink-0" />
+      <span className="flex-1 px-3 text-style-caption text-subtle">
+        {ss.columnKg}
+      </span>
+      <span className="flex-1 px-3 text-style-caption text-subtle">
+        {ss.columnReps}
+      </span>
+      <span className="w-11 shrink-0" />
+      <span className="w-9 shrink-0" />
     </div>
   );
 }
