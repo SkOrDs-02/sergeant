@@ -61,7 +61,11 @@ function TxRowImpl({
 }: TxRowProps) {
   const isIncome = tx.amount > 0;
   const cat = isIncome
-    ? getIncomeCategoryForTransaction(tx, overrideCatId)
+    ? getIncomeCategoryForTransaction(
+        tx,
+        overrideCatId,
+        customCategories as readonly unknown[],
+      )
     : getExpenseCategoryForTransaction(
         tx,
         overrideCatId,
@@ -133,6 +137,7 @@ function TxRowImpl({
           isCreditCard={isCreditCard}
           account={account}
           accountName={accountName}
+          showAccount={(accounts?.length ?? 0) > 1}
           hasReceipt={hasReceipt}
           note={note}
         />

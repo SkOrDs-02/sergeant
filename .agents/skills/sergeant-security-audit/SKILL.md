@@ -56,9 +56,9 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 ```
 
 - Cross-reference CVEs with `renovate.json` — if Renovate already has a pending update PR, do not create a duplicate; comment on the existing one instead.
-- For license/compliance risk (e.g. a copyleft transitive dep), inspect the resolved tree directly — `pnpm licenses list --json` — and record anything actionable in [`docs/04-governance/security/audit-exceptions.md`](../../../docs/04-governance/security/audit-exceptions.md). The repo has **no** `THIRD_PARTY_LICENSES.md`; do not look for one.
+- For license/compliance risk (e.g. a copyleft transitive dep), inspect the resolved tree directly — `pnpm licenses list --json` — and record anything actionable in [`docs/governance/security/audit-exceptions.md`](../../../docs/governance/security/audit-exceptions.md). The repo has **no** `THIRD_PARTY_LICENSES.md`; do not look for one.
 - Run `pnpm outdated` to surface packages outside Renovate range constraints.
-- For safe dep bumps, follow `docs/00-start/playbooks/bump-dep-safely.md`.
+- For safe dep bumps, follow `docs/start/instructions/bump-dep-safely.md`.
 
 ## Frontend security (`apps/web`)
 
@@ -75,7 +75,7 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 
 | Level | Action |
 |---|---|
-| Critical — CVE / hardcoded secret / auth bypass | Block PR; escalate via `docs/00-start/playbooks/access-governance.md` § Suspected account compromise |
+| Critical — CVE / hardcoded secret / auth bypass | Block PR; escalate via `docs/start/instructions/access-governance.md` § Suspected account compromise |
 | High — injection vector / missing auth check | Must-fix before merge |
 | Medium — logging exposure / outdated dep with known exploit | Fix in this PR or create tracked issue |
 | Low — best-practice gap / minor config drift | PR comment; not a blocker |
@@ -89,8 +89,8 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 
 ## Playbooks
 
-- `docs/00-start/playbooks/security-pen-test-checklist.md` — full pentest workflow before launch.
-- `docs/00-start/playbooks/access-governance.md` § Suspected account compromise — escalation when credential found in code or logs.
-- `docs/00-start/playbooks/rotate-secrets.md` — rotate when a credential is exposed.
-- `docs/00-start/playbooks/bump-dep-safely.md` — safe dependency updates after audit findings.
-- Skill catalog: `docs/00-start/agents/agent-skills-catalog.md`.
+- `docs/start/instructions/security-pen-test-checklist.md` — full pentest workflow before launch.
+- `docs/start/instructions/access-governance.md` § Suspected account compromise — escalation when credential found in code or logs.
+- `docs/start/instructions/rotate-secrets.md` — rotate when a credential is exposed.
+- `docs/start/instructions/bump-dep-safely.md` — safe dependency updates after audit findings.
+- Skill catalog: `docs/start/agents/agent-skills-catalog.md`.

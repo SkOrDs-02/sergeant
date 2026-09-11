@@ -24,6 +24,9 @@ describe("defaultNutritionPrefs", () => {
       reminderEnabled: false,
       reminderHour: 12,
       waterGoalMl: 2000,
+      adaptiveGoalEnabled: true,
+      adaptiveGoalIntent: "maintenance",
+      adaptiveGoalLastUpdatedAt: null,
     });
   });
 
@@ -38,6 +41,32 @@ describe("defaultNutritionPrefs", () => {
       macros: { kcal: null, protein_g: null, fat_g: null, carbs_g: null },
     });
     expect(b.mealTemplates).toEqual([]);
+  });
+
+  it("нормалізує адаптивну ціль і не пропускає невідомі значення", () => {
+    expect(
+      normalizeNutritionPrefs({
+        adaptiveGoalEnabled: false,
+        adaptiveGoalIntent: "cutting",
+        adaptiveGoalLastUpdatedAt: "2026-09-08T10:00:00.000Z",
+      }),
+    ).toMatchObject({
+      adaptiveGoalEnabled: false,
+      adaptiveGoalIntent: "cutting",
+      adaptiveGoalLastUpdatedAt: "2026-09-08T10:00:00.000Z",
+    });
+
+    expect(
+      normalizeNutritionPrefs({
+        dailyTargetKcal: 2100,
+        adaptiveGoalIntent: "unknown",
+        adaptiveGoalLastUpdatedAt: 123,
+      }),
+    ).toMatchObject({
+      adaptiveGoalEnabled: false,
+      adaptiveGoalIntent: "maintenance",
+      adaptiveGoalLastUpdatedAt: null,
+    });
   });
 });
 

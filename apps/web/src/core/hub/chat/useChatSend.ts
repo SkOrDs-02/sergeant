@@ -112,7 +112,6 @@ export interface UseChatSendResult {
   speaking: boolean;
   setSpeaking: React.Dispatch<React.SetStateAction<boolean>>;
   online: boolean;
-  hasData: boolean;
   contextState: { status: string; ts: number };
   activeModule: ActiveModule | null;
   /** Send `text` (or the current `input`). `fromVoice` flag triggers TTS reply. */
@@ -162,7 +161,6 @@ export function useChatSend({
   const queryClient = useQueryClient();
   const finykPreview = useFinykHubPreview();
   const { isPro } = usePlan();
-  const hasData = finykPreview.data?.hasMonoData ?? false;
   const online = useOnlineStatus();
 
   // Джерело істини для пре-гейту пейволу — той самий `GET /api/chat/usage`,
@@ -875,7 +873,6 @@ export function useChatSend({
     speaking,
     setSpeaking,
     online,
-    hasData,
     contextState,
     activeModule,
     send,

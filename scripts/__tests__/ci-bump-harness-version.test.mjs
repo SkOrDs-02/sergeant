@@ -102,7 +102,7 @@ describe("ci-bump-harness-version", () => {
 
   it("bumps major on Hard Rule change (0.1.0 -> 1.0.0)", () => {
     const { updated, out } = runBumper({
-      files: ["docs/04-governance/governance/rules/01-foo.md"],
+      files: ["docs/governance/governance/rules/01-foo.md"],
       registry: baseRegistry,
     });
     assert.match(out, /0\.1\.0 -> 1\.0\.0/);
@@ -119,7 +119,7 @@ describe("ci-bump-harness-version", () => {
 
   it("bumps patch on unrelated doc edit (0.1.0 -> 0.1.1)", () => {
     const { updated, out } = runBumper({
-      files: ["docs/04-governance/governance/some-other.md"],
+      files: ["docs/governance/governance/some-other.md"],
       registry: baseRegistry,
     });
     assert.match(out, /0\.1\.0 -> 0\.1\.1/);

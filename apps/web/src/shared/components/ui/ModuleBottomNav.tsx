@@ -45,7 +45,7 @@ import {
  *   of the nav's stacking context and keeps its own rose gradient
  *   per Routine identity.
  *
- * On-screen keyboard (spec `docs/90-work/planning/specs/keyboard-and-scroll.md`
+ * On-screen keyboard (spec `docs/work/specs/keyboard-and-scroll.md`
  * § design decision 2): while the visual-keyboard inset is active the
  * nav slides down out of view (nothing sits below it during text
  * entry, and it was the fixed element that turned iOS's keyboard
@@ -233,7 +233,10 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
     >
       <div
         ref={tablistRef}
-        className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
+        className="relative grid h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
+        style={{
+          gridTemplateColumns: `repeat(${items.length}, minmax(0, 1fr))`,
+        }}
         role={isTablist ? "tablist" : undefined}
         onKeyDown={isTablist ? handleTablistKeyDown : undefined}
       >
@@ -258,15 +261,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
               onPointerDown={onPrefetch ? () => onPrefetch(item.id) : undefined}
               onClick={() => handleSelect(item.id)}
               className={cn(
-                // AI-DANGER: активна вкладка НЕ `flex-1`. Рівні частки на 320px
-                // дають кожній ~60px, тоді як активна «пігулка» (іконка + підпис
-                // до 88px + px-3) потребує ~140px: вона вивалювалась за комірку,
-                // а остання вкладка — за правий край екрана («Активи» зрізано,
-                // браузерний аудит 2026-08-26), і підпис активної різало
-                // («Головна» 49→42px). `flex-initial` = розмір за вмістом із
-                // правом стиснутись; неактивні ділять залишок.
                 "relative flex items-center justify-center min-h-touch-target min-w-0",
-                active ? "flex-initial" : "flex-1",
                 "my-1.5 rounded-xl border border-transparent",
                 "transition-[color,transform,border-color] duration-base",
                 "active:scale-95",
@@ -276,10 +271,14 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
             >
               <span
                 className={cn(
-                  "relative flex items-center justify-center gap-1.5 rounded-2xl py-1.5",
+                  "relative flex min-w-0 items-center justify-center rounded-xl py-1",
                   "transition-[background-color,padding,color] duration-base",
                   active
-                    ? cn("px-3 text-bg", tokens.fillLight, tokens.fillDark)
+                    ? cn(
+                        "h-full w-full flex-col gap-0.5 px-1 text-bg",
+                        tokens.fillLight,
+                        tokens.fillDark,
+                      )
                     : "px-2 text-text",
                 )}
                 aria-hidden
@@ -321,7 +320,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                     "text-style-caption font-semibold leading-none overflow-hidden text-ellipsis whitespace-nowrap",
                     "transition-[max-width,opacity] duration-base motion-reduce:transition-none",
                     active
-                      ? "max-w-[88px] opacity-100"
+                      ? "max-w-full opacity-100"
                       : "max-w-0 opacity-0 pointer-events-none",
                   )}
                 >

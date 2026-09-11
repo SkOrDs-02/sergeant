@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-07-29
+ * Last validated: 2026-09-09
  * Status: Active
  *
  * Manual expense add/edit sheet. Orchestrates form state and delegates
@@ -44,14 +44,17 @@ import {
   type CategoryDisplay,
 } from "./manualExpenseCategories";
 import {
-  INCOME_CATEGORY_DISPLAY,
   INCOME_CATEGORY_SLUGS,
+  incomeCustomCategories,
+  incomeCategoryDisplay,
+  expenseCustomCategories,
   upgradeIncomeCategory,
 } from "./manualIncomeCategories";
 import {
   buildAmountSuggestions,
   expenseAmountHryvnia,
   expenseFormSchema,
+  getFrequentCategorySlugs,
   sortCategoriesByFrequency,
   toExpenseInstant,
   type ExpenseFormValues,
@@ -61,6 +64,7 @@ import { ManualExpenseAmountSection } from "./ManualExpenseAmountSection";
 import { ManualExpenseDescriptionSection } from "./ManualExpenseDescriptionSection";
 import { ManualExpenseCategorySection } from "./ManualExpenseCategorySection";
 import { ReceiptItemsSection } from "./ReceiptItemsSection";
+import { useManualCategoryHydration } from "./useManualCategoryHydration";
 
 // Re-exported for backward-compat with existing importers / tests.
 export {
@@ -118,10 +122,9 @@ interface ManualExpenseSheetProps {
    * створена категорія просто не зʼявлялась у пікері — спіймано
    * бета-тестером 2026-08-10.
    *
-   * Лише для витрат: надходження мають фіксовану таксономію з пʼяти
-   * слагів (`INCOME_CATEGORY_SLUGS`, спека fab-and-manual-income §3), і
-   * `mergeExpenseCategoryDefinitions` у домені так само зшиває власні
-   * категорії тільки з витратними.
+   * Витрати й надходження мають окремі каталоги: `kind: "income"`
+   * потрапляє лише до надходжень, а відсутній `kind` лишається legacy-
+   * сумісною витратною категорією.
    */
   customCategories?: readonly CustomCategoryInput[];
   /** Device-local чек, привʼязаний до цієї ручної витрати (спека §
@@ -170,16 +173,20 @@ export function ManualExpenseSheet({
   // Власні категорії — лише витратні (див. проп). Тримаємо їх окремим
   // мемо, щоб `customIds` був стабільним для нормалізації нижче.
   const customExpenseCategories = useMemo(
-    () =>
-      customCategories.filter(
-        (c): c is CustomCategoryInput =>
-          typeof c?.id === "string" && c.id.trim() !== "",
-      ),
+    () => expenseCustomCategories(customCategories),
     [customCategories],
   );
   const customIds = useMemo(
     () => new Set(customExpenseCategories.map((c) => c.id)),
     [customExpenseCategories],
+  );
+  const customIncomeCategories = useMemo(
+    () => incomeCustomCategories(customCategories),
+    [customCategories],
+  );
+  const customIncomeIds = useMemo(
+    () => new Set(customIncomeCategories.map((c) => c.id)),
+    [customIncomeCategories],
   );
 
   // UX-15 batch entry. `keepOpenRef` is read inside `onSubmit` to decide
@@ -205,7 +212,9 @@ export function ManualExpenseSheet({
         const slug: string =
           kind === "income"
             ? (() => {
-                const s = upgradeIncomeCategory(values.category);
+                const s = customIncomeIds.has(values.category)
+                  ? values.category
+                  : upgradeIncomeCategory(values.category);
                 return s;
               })()
             : (() => {
@@ -361,7 +370,9 @@ export function ManualExpenseSheet({
             initialExpense.amount != null ? String(initialExpense.amount) : "",
           category:
             initialKind === "income"
-              ? upgradeIncomeCategory(initialExpense.category)
+              ? customIncomeIds.has(String(initialExpense.category ?? ""))
+                ? String(initialExpense.category)
+                : upgradeIncomeCategory(initialExpense.category)
               : upgradeCategoryAllowingCustom(
                   initialExpense.category,
                   customIds,
@@ -420,6 +431,7 @@ export function ManualExpenseSheet({
     // безкоштовною: зміна набору власних категорій перезапустить ефект,
     // він побачить незмінений ключ і вийде, не чіпаючи чернетку форми.
     customIds,
+    customIncomeIds,
     reset,
   ]);
 
@@ -427,13 +439,17 @@ export function ManualExpenseSheet({
     () => sortCategoriesByFrequency(frequentCategories),
     [frequentCategories],
   );
+  const frequentCategoryIds = useMemo(
+    () => getFrequentCategorySlugs(frequentCategories).slice(0, 5),
+    [frequentCategories],
+  );
 
   // Довантаження власних категорій ПІСЛЯ відкриття аркуша.
   //
   // Слоти сховища віддають синхронний LS як фолбек першого пейнту, а
   // значення з SQLite приходить, «once it warms» (`useStorage.ts`). Аркуш,
-  // відкритий у цьому вікні, бачить порожній `customIds`, і категорія
-  // редагованої витрати вже нормалізувалась у `DEFAULT_CATEGORY`. Гвардія
+  // відкритий у цьому вікні, бачить порожні custom-id набори, і категорія
+  // редагованого запису вже нормалізувалась у дефолт свого типу. Гвардія
   // `openInitKey` ефекту ініціалізації правильно не дає йому
   // перезапуститись — він скинув би чернетку, — тож без окремої звірки
   // збереження записало б «Інше» замість власної категорії. Рівно та
@@ -451,19 +467,20 @@ export function ManualExpenseSheet({
   // категорію. Це видима зміна, яку видно й можна повторити, — на відміну
   // від альтернативи, де ми тихо перезаписуємо реальні дані на «Інше».
   const rawInitialCategory = initialExpense?.category ?? initialCategory;
-  const reconciledKeyRef = useRef<string | null>(null);
-  useEffect(() => {
-    if (!open) {
-      reconciledKeyRef.current = null;
-      return;
-    }
-    const trimmed = rawInitialCategory?.trim();
-    if (!trimmed || !customIds.has(trimmed)) return;
-    if (reconciledKeyRef.current === openInitKey) return;
-    reconciledKeyRef.current = openInitKey;
-    if (category !== DEFAULT_CATEGORY) return;
-    setValue("category", trimmed, { shouldDirty: false });
-  }, [open, openInitKey, rawInitialCategory, customIds, category, setValue]);
+  const initialRecordIsIncome = initialExpense
+    ? resolveManualExpenseKind(initialExpense) === "income"
+    : false;
+  useManualCategoryHydration({
+    open,
+    openInitKey,
+    rawInitialCategory,
+    initialRecordIsIncome,
+    customExpenseIds: customIds,
+    customIncomeIds,
+    category,
+    restoreCategory: (categoryId) =>
+      setValue("category", categoryId, { shouldDirty: false }),
+  });
 
   const isIncome = kind === "income";
 
@@ -483,7 +500,7 @@ export function ManualExpenseSheet({
   // гілці з достроковими return-ами (`react-hooks/preserve-manual-memoization`),
   // а сам він це кешує краще. Обчислення — спред двох невеликих обʼєктів.
   const categoryDisplay: Readonly<Record<string, CategoryDisplay>> = isIncome
-    ? INCOME_CATEGORY_DISPLAY
+    ? incomeCategoryDisplay(customIncomeCategories)
     : { ...CATEGORY_DISPLAY, ...customCategoryDisplay };
 
   // Normalise the watched category value so comparison against slug list is
@@ -491,17 +508,18 @@ export function ManualExpenseSheet({
   // taxonomy (§3, fab-and-manual-income spec) — no frequency sort.
   const categorySlug = category
     ? isIncome
-      ? upgradeIncomeCategory(category)
+      ? customIncomeIds.has(category)
+        ? category
+        : upgradeIncomeCategory(category)
       : upgradeCategoryAllowingCustom(category, customIds)
     : "";
 
-  // Dropdown shows every category at once (D3 decision) — no collapsed
-  // top-N row, so frequency ordering just becomes the <option> order.
+  // Спільна пошукова шторка показує весь активний набір категорій.
   // Власні йдуть у хвіст: частотне сортування рахується лише по вбудованих
   // (`sortCategoriesByFrequency` — перестановка `CATEGORY_SLUGS`), тож
   // вмішувати їх у той порядок означало б вигадати їм ранг.
   const categorySlugs: string[] = isIncome
-    ? [...INCOME_CATEGORY_SLUGS]
+    ? [...INCOME_CATEGORY_SLUGS, ...customIncomeCategories.map((c) => c.id)]
     : [...sortedCategories, ...customExpenseCategories.map((c) => c.id)];
 
   // Merchant-driven quick amounts / description hints are expense-only —
@@ -782,6 +800,7 @@ export function ManualExpenseSheet({
           categoryError={categoryError}
           categorySlug={categorySlug}
           categorySlugs={categorySlugs}
+          frequentCategoryIds={isIncome ? [] : frequentCategoryIds}
           register={register}
           setValue={setValue}
           setAiAppliedCategory={setAiAppliedCategory}

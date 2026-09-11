@@ -481,6 +481,21 @@ describe("custom categories", () => {
     expect(state["customCategories"]).toHaveLength(1);
   });
 
+  it("keeps expense and income categories separate while preserving legacy expense shape", () => {
+    const { slots, state } = makeSlots();
+    const { result } = renderMutations(slots);
+    result.current.addCustomCategory("Оренда");
+    result.current.addCustomCategory("Оренда", { kind: "income" });
+    result.current.addCustomCategory("оренда", { kind: "income" });
+    const categories = state["customCategories"] as Array<
+      Record<string, unknown>
+    >;
+    expect(categories).toHaveLength(2);
+    expect(categories[0]).toMatchObject({ label: "Оренда" });
+    expect(categories[0]?.["kind"]).toBeUndefined();
+    expect(categories[1]).toMatchObject({ label: "Оренда", kind: "income" });
+  });
+
   it("edits an existing custom category", () => {
     const { slots, state } = makeSlots({
       customCategories: [{ id: "c1", label: "Old", color: "#000" }],

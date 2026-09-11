@@ -1,6 +1,6 @@
 #!/usr/bin/env node
 /**
- * Generates `docs/02-engineering/api/openapi.json` from zod-схем у `@sergeant/shared`.
+ * Generates `docs/engineering/api/openapi.json` from zod-схем у `@sergeant/shared`.
  *
  * Запуск:    `pnpm api:generate-openapi` (root) або
  *            `node scripts/api/generate-openapi.mjs`.
@@ -12,6 +12,7 @@
 import { writeFileSync, mkdirSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath, pathToFileURL } from "node:url";
+import { format } from "prettier";
 
 import { register } from "tsx/esm/api";
 
@@ -28,11 +29,15 @@ const { buildOpenApiDocument } = await import(
 
 const document = buildOpenApiDocument();
 
-const outDir = path.join(repoRoot, "docs", "02-engineering", "api");
+const outDir = path.join(repoRoot, "docs", "engineering", "api");
 mkdirSync(outDir, { recursive: true });
 
 const outFile = path.join(outDir, "openapi.json");
-writeFileSync(outFile, JSON.stringify(document, null, 2) + "\n", "utf8");
+writeFileSync(
+  outFile,
+  await format(JSON.stringify(document, null, 2), { parser: "json" }),
+  "utf8",
+);
 
 const pathCount = Object.keys(document.paths ?? {}).length;
 const componentCount = Object.keys(document.components?.schemas ?? {}).length;

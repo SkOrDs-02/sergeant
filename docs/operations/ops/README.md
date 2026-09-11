@@ -1,0 +1,30 @@
+# Ops
+
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-18.
+> **Status:** Active
+
+Operational maintainer-runbook-и для recurring-чергових процесів (dependency
+hygiene, scheduled scans, weekly housekeeping). Доповнюють incident-flow runbooks
+у [`docs/start/instructions/`](../../start/instructions/README.md): тут — рутина, там — incident-handling.
+
+## Документи
+
+| Документ                                             | Призначення                                                                                         |
+| ---------------------------------------------------- | --------------------------------------------------------------------------------------------------- |
+| [`renovate.md`](./renovate.md)                       | Понеділкова рутина review-у Renovate-PR-ів, monthly hygiene, Mend downtime escalation. ADR-0044.    |
+| [`docker-image-policy.md`](./docker-image-policy.md) | Політика runtime-образу Hub API (`Dockerfile.api`): distroless-база, CVE-бюджет Trivy, healthcheck. |
+
+## Ops vs runbooks vs playbooks
+
+| Папка                                    | Призначення                                                                              |
+| ---------------------------------------- | ---------------------------------------------------------------------------------------- |
+| `docs/start/instructions/`               | Канонічні кроки під конкретний trigger (release, incident, fix-failing-CI).              |
+| `docs/start/instructions/`               | Як виконати infra-операцію на нашому стеку (restore-from-backup, key-rotation, replica). |
+| `docs/operations/ops/` (**цей каталог**) | Recurring-чергова рутина — щотижнева, щомісячна, scheduled-scan triage.                  |
+
+## Cross-links
+
+- ADR-0044 — [Renovate vs Dependabot](../../governance/adr/0044-renovate-vs-dependabot.md).
+- Contributor view of Renovate: [`docs/engineering/integrations/renovate-usage.md`](../../engineering/integrations/renovate-usage.md).
+- Renovate config: [`renovate.json`](../../../renovate.json).
+- Dependabot config: [`.github/dependabot.yml`](../../../.github/dependabot.yml).

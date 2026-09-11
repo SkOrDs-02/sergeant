@@ -57,6 +57,6 @@ pnpm --filter @sergeant/web exec playwright test --trace on  # force-enable trac
 
 ## Playbooks
 
-- `docs/00-start/playbooks/write-e2e-test.md` — execution order for writing or debugging an E2E/a11y test (seedFTUX, web-first assertions, preview run, trace debug).
-- `docs/00-start/playbooks/stabilize-flaky-test.md` — when a test becomes flaky in CI.
-- Skill catalog: `docs/00-start/agents/agent-skills-catalog.md`.
+- `docs/start/instructions/write-e2e-test.md` — execution order for writing or debugging an E2E/a11y test (seedFTUX, web-first assertions, preview run, trace debug).
+- `docs/start/instructions/stabilize-flaky-test.md` — when a test becomes flaky in CI.
+- Skill catalog: `docs/start/agents/agent-skills-catalog.md`.

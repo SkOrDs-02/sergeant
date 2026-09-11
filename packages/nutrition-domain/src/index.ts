@@ -31,6 +31,7 @@ export * from "./pantryLedger.js";
 // дня. Споживачів поки немає за задумом (cutover — стадія 3, гейт
 // founder-а) — див. AI-CONTEXT у nutritionGoals.ts.
 export * from "./nutritionGoals.js";
+export * from "./adaptiveTdee.js";
 export * from "./mergeItems.js";
 export * from "./recipeIds.js";
 export * from "./foodCategories.js";

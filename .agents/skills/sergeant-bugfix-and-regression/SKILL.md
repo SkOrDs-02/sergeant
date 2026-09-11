@@ -75,7 +75,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Playbooks
 
-- `docs/00-start/playbooks/hotfix-prod-regression.md` — triage і фікс production-регресій.
-- `docs/00-start/playbooks/declare-incident.md` — коли баг доростає до рівня інциденту.
-- `docs/00-start/playbooks/write-postmortem.md` — postmortem постфактум.
-- Каталог: `docs/00-start/agents/agent-skills-catalog.md`.
+- `docs/start/instructions/hotfix-prod-regression.md` — triage і фікс production-регресій.
+- `docs/start/instructions/declare-incident.md` — коли баг доростає до рівня інциденту.
+- `docs/start/instructions/write-postmortem.md` — postmortem постфактум.
+- Каталог: `docs/start/agents/agent-skills-catalog.md`.

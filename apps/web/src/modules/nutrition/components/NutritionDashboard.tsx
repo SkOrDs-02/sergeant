@@ -11,13 +11,13 @@ import { useStreakSevenDaysInsight } from "../hooks/useStreakSevenDaysInsight";
 import { Card } from "@shared/components/ui/Card";
 import { MealStrip, type MealStripSegment } from "./MealStrip";
 import { messages } from "@shared/i18n/uk";
-import { cn } from "@shared/lib/ui/cn";
 import { pluralUa } from "@sergeant/shared";
 import {
   MEAL_META,
   MEAL_ORDER,
   WEEK_KCAL_OVER_TOLERANCE,
   deviceWeekStartKey,
+  resolveKcalGoalsForDays,
   todayISODate,
   type NutritionLog,
   type NutritionPrefs,
@@ -35,6 +35,9 @@ import { WaterTrackerCard } from "./WaterTrackerCard";
 import { WeekKcalCard } from "./WeekKcalCard";
 import { useToast } from "@shared/hooks/useToast";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { useNutritionGoalPeriods } from "../hooks/useNutritionGoalPeriods";
+import { useAdaptiveNutritionGoal } from "../hooks/useAdaptiveNutritionGoal";
+import { AdaptiveGoalCard } from "./AdaptiveGoalCard";
 
 // ADR-0078: "сьогодні" на дашборді (кільце макросів, isToday-підсвітка в
 // тижневому графіку) і межі тижневого графіка — обидва день ПРИСТРОЮ, не
@@ -49,7 +52,6 @@ interface NutritionDashboardProps {
   prefs: NutritionPrefs;
   onGoToLog?: (() => void) | undefined;
   onGoToDailyPlan?: (() => void) | undefined;
-  onAddMeal?: (() => void) | undefined;
 }
 
 export function NutritionDashboard({
@@ -57,9 +59,10 @@ export function NutritionDashboard({
   prefs,
   onGoToLog,
   onGoToDailyPlan,
-  onAddMeal,
 }: NutritionDashboardProps) {
   const today = todayISO();
+  const goalPeriods = useNutritionGoalPeriods();
+  const adaptiveGoal = useAdaptiveNutritionGoal(log, prefs);
 
   const macros = useMemo(() => getDayMacros(log, today), [log, today]);
   const summary = useMemo(() => getDaySummary(log, today), [log, today]);
@@ -74,14 +77,15 @@ export function NutritionDashboard({
     return getMacrosForDateRange(log, weekEnd, 7);
   }, [log]);
 
-  // Ціль на кожен день тижня. Поки джерело — `prefs`, тож значення однакові
-  // й графік виглядає рівно як раніше; сходинка зʼявиться на стадії 3, коли
-  // сюди приїде `resolveEffectiveGoalForRange` (спека
-  // `nutrition-goal-journal-cutover.md`, PR-3). Форма вже правильна, тому
-  // той PR міняє лише цей `useMemo`, а не компонент.
+  // Поденна ціль із append-only журналу: зміна норми сьогодні не
+  // перефарбовує попередні стовпчики, а лінія стає східчастою.
   const weekGoals = useMemo(
-    () => weekRows.map(() => prefs.dailyTargetKcal || null),
-    [weekRows, prefs.dailyTargetKcal],
+    () =>
+      resolveKcalGoalsForDays(
+        goalPeriods,
+        weekRows.map((row) => row.date),
+      ),
+    [goalPeriods, weekRows],
   );
 
   const hasGoal = (prefs.dailyTargetKcal || 0) > 0;
@@ -164,7 +168,7 @@ export function NutritionDashboard({
   // Both hooks return null when their condition is not met; InsightCard
   // additionally checks the dismissal LS key so dismissed cards stay gone.
   const proteinLowInsight = useProteinLowInsight(log, prefs);
-  const streakInsight = useStreakSevenDaysInsight(log, prefs);
+  const streakInsight = useStreakSevenDaysInsight(log, goalPeriods);
 
   // Cap at 2 simultaneous insights. Priority: streak > protein-low so the
   // positive signal surfaces first when both conditions fire together.
@@ -174,7 +178,13 @@ export function NutritionDashboard({
   const askAiDisabled = useAskAiQuotaExhausted();
 
   return (
-    <div className="grid min-w-0 gap-3" data-testid="nutrition-dashboard">
+    <div
+      className="grid min-w-0 gap-3 pb-[calc(10rem+env(safe-area-inset-bottom,0px))]"
+      data-testid="nutrition-dashboard"
+    >
+      {/* The start screen has a fixed add-meal FAB 96px above the bottom nav.
+          Keep the last card scrollable past its 56px hit area instead of
+          leaving water controls under the button on a phone viewport. */}
       {/* ── Hero card ── */}
       {/* `min-w-0`: grid-item за дефолтом має `min-width:auto`, тобто його
           мінімальна ширина = min-content вмісту. Досить одного широкого
@@ -201,17 +211,6 @@ export function NutritionDashboard({
                 їжі
               </div>
             </div>
-            <button
-              type="button"
-              onClick={onAddMeal}
-              aria-label="Додати прийом їжі"
-              className={cn(
-                "text-style-label shrink-0 px-4 h-11 min-w-[44px] rounded-xl",
-                "bg-nutrition-strong text-white hover:bg-nutrition-hover transition-colors",
-              )}
-            >
-              + Додати
-            </button>
           </div>
 
           <div className="flex flex-col gap-2">
@@ -257,6 +256,8 @@ export function NutritionDashboard({
           </div>
         </div>
       </Card>
+
+      <AdaptiveGoalCard state={adaptiveGoal} onOpenSettings={onGoToDailyPlan} />
 
       {/* ── Insight cards (Phase 5d) — below hero, above weekly mini-bar ── */}
       {activeInsights.map((insight) => (

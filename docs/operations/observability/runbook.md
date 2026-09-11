@@ -1,0 +1,777 @@
+# Observability-runbook
+
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-11-25.
+> **Status:** Active
+
+> **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)).
+
+Інструкції "що робити, коли спрацював алерт" для правил з
+[`prometheus/alert_rules.yml`](./prometheus/alert_rules.yml). Тримай коротко:
+перший крок завжди `/metrics` + логи Pino за той же інтервал.
+
+> **Статус wiring:** алерти з `alert_rules.yml` **залиті в Grafana Cloud Mimir
+> і оцінюються в реальному часі** (24 alert + 29 recording rules; див.
+> [`SLO.md § Статус wiring`](./SLO.md#статус-wiring-чесний-зріз-2026-06-26)).
+> Сигнал приходить автоматично (Grafana managed alerting → Telegram), а також
+> через Sentry-issue, скаргу користувача чи ручну перевірку `/metrics`;
+> сценарії нижче — валідні інструкції розслідування незалежно від джерела сигналу.
+
+Загальне:
+
+- Прод entry point — `apps/server/src/index.ts` (компілюється у `apps/server/dist-server/` build-артефакти; режим вибирається `SERVER_MODE`, який образ під Coolify бейкає у build-стадії). Хостинг — Hetzner CX23 + Coolify (образ `ghcr.io/.../sergeant-api`, ADR-0074).
+- Метрики за bearer-токен: `GET /metrics` з `Authorization: Bearer $METRICS_TOKEN`.
+- Логи — Pino JSON у stdout, з ALS-контекстом `{requestId, userId, module}`.
+- Sentry ловить fatal/error (включно з `err.cause` чейном).
+
+---
+
+## SergeantMetricsPipelineDown
+
+**Що горить**: `sum(up{job="sergeant-server"}) < 1`, або алерт у стані `NoData`
+(правило навмисно має `noDataState: Alerting` — зникнення серії і є симптом).
+
+**Що це означає**: Grafana Cloud **не отримує метрик взагалі**. Це не «сервіс
+лежить» — застосунок може бути повністю здоровий; лежить **колектор**.
+Перевіряй у цьому порядку, від найдешевшого:
+
+1. **Чи живий сам застосунок** (щоб не гнатись не за тим):
+
+   ```bash
+   curl -s -o /dev/null -w "%{http_code}\n" https://api.167-233-98-92.sslip.io/health
+   ```
+
+   `200` → проблема в колекторі, не в API. Крос-чек: PostHog і Sentry
+   продовжують приймати події, поки метрики мовчать.
+
+2. **Чи віддає сервер `/metrics`**:
+
+   ```bash
+   curl -s -H "Authorization: Bearer $METRICS_TOKEN" \
+     https://api.167-233-98-92.sslip.io/metrics | head -5
+   ```
+
+   Порожньо / 401 → проблема в самому сервері або в `METRICS_TOKEN`.
+
+3. **Чи живий Alloy.** Coolify → застосунок `grafana-alloy` → Logs. Здоровий
+   старт містить `{^_^} Alloy is running`. Немає застосунку взагалі — його
+   знесли або не перестворили після міграції хостингу (саме це сталось
+   2026-07-14, див. нижче). Розгортання — [`ops/grafana-alloy/README.md`](../../../ops/grafana-alloy/README.md).
+
+4. **Чи не вимкнувся Mimir-ruler услід.** Grafana Cloud глушить rule evaluation
+   тенанту без інжесту, тому довгий простій метрик тихо вбиває і алертинг:
+
+   ```bash
+   curl -s -H "Authorization: Bearer $GRAFANA_TOKEN" \
+     "https://skords01.grafana.net/api/datasources/proxy/uid/grafanacloud-prom/api/v1/rules" \
+     | head -c 200
+   ```
+
+   `"error":"rule evaluation is disabled for tenant …"` → після відновлення
+   скрейпу evaluation вмикається сам, ручного втручання не треба. Дай ~2 хв і
+   перевір ще раз.
+
+**Чому це правило Grafana-managed, а не в Mimir**: воно мусить пережити саме ту
+відмову, яку детектить. Mimir-правила замовкають разом з інжестом — тобто в
+момент інциденту їх немає. `sergeant-meta` оцінюється в Grafana й лишається
+живим.
+
+**Історія**: 2026-07-14 06:07 UTC → 2026-07-26 (12 днів наосліп). Коміт
+`1d20c958c` прибрав `ops/grafana-alloy/railway.toml` при виводі Railway, а
+Coolify-еквівалент не створили. Ніхто не помітив, бо єдиний сигнал ішов тим
+самим мертвим пайплайном. Зовнішній blackbox (UptimeRobot / synthetic) досі не
+підключений — це лишається діркою.
+
+---
+
+## HttpErrorBudgetBurn
+
+**Що горить**: `http_requests_total{status=~"5.."}` рахунок стрибнув.
+
+1. Перевір розподіл 5xx по path+module:
+   ```promql
+   sum by (path, module) (rate(http_requests_total{status=~"5.."}[5m]))
+   ```
+2. Подивись `app_errors_total{kind,status,code,module}` за той же інтервал —
+   видно чи це operational (AppError) чи programmer.
+3. Знайди логи Pino `level>=error` за period, особливо ті що несуть
+   `err.cause.message` і `err.cause.stack`.
+4. Частий суспект №1 — DB saturated: перевір `db_pool_waiting` і
+   `db_query_duration_ms` одночасно.
+5. Якщо це AI endpoint (chat/coach/nutrition) — `ai_requests_total{outcome}`
+   підкаже, чи це Anthropic-outage замаскований під 500.
+6. Якщо root cause = вичерпана пам'ять / OOM на VPS — resize інстанс
+   (CX23 → CX33) у Hetzner або знайди leak у `process_resident_memory_bytes`.
+
+## HttpLatencyP95High
+
+1. `sum by (path) (histogram_quantile(0.95, sum by (le, path) (rate(http_request_duration_ms_bucket[5m]))))` — знайти гарячі path-и.
+2. Частий суспект — `auth_session_lookup_duration_ms` через кожен запит
+   (див. `AuthSessionLookupSlow` алерт нижче).
+3. Перевір `db_query_duration_ms` + `db_pool_waiting > 0` як симптом saturate-у.
+4. Якщо гарячий path — `/api/sync` чи AI endpoint — застосуй специфічний runbook.
+
+## BackendHealthP95High
+
+`job:health_p95_5m > 100` 5m → ticket. Health endpoint ще відповідає, але probe
+latency вже достатньо висока, щоб rolling deploy / cold start міг почати
+флапати.
+
+1. Перевір `max(db_pool_waiting)` і `db_pool_acquire_duration_seconds`: якщо
+   waiting > 0, дій за `DbPoolWaitingSustained`.
+2. Перевір `nodejs_eventloop_lag_seconds` і CPU/RSS default-метрики: health
+   може сповільнюватись без DB, якщо процес забитий GC або sync work.
+3. Звір останній deploy/release через `app_build_info`; якщо сигнал з'явився
+   тільки на новому release, відкрий regression-ticket і прив'яжи до PR.
+4. Якщо p95 росте тільки на `/health/workers`, дивись queue/worker секцію
+   detailed health output; це не обов'язково backend-global incident.
+
+## SyncErrorBudgetBurn
+
+**Ризик**: клієнти втрачають дані або бачать застарілий стан.
+
+1. Розкрий outcome-breakdown:
+   ```promql
+   sum by (op, module, outcome) (rate(sync_operations_total[5m]))
+   ```
+2. `too_large` → хтось б'ється у `MAX_BLOB_SIZE`. Знайди user у логах
+   (`path=/api/sync, module=sync`) і проінформуй / обріж.
+3. `unauthorized` підскочив → перевір `auth_attempts_total` — можливо
+   глобальна auth-проблема відбивається на sync.
+4. `error` підскочив → Pino-логи + Sentry issues. Найчастіше це DB
+   timeout на `sync_push`.
+5. Перевір `sync_payload_bytes` — великі payload-и можуть зʼїдати pool.
+6. При повному пробої — тимчасово пропиши `rate_limit` жорсткіше, щоб
+   клієнти не добивали бекенд ретраями.
+
+## SyncLatencyP95High
+
+1. `histogram_quantile(0.95, sum by (le, op, module) (rate(sync_duration_ms_bucket[5m])))` — який саме op+module тягне p95.
+2. Перевір `db_query_duration_ms` і `db_pool_waiting` — sync IO-важкий.
+3. Якщо `sync_payload_bytes` p95 стрибнув — хтось шле великі сторінки.
+
+## SyncConflictSpike
+
+Не SLO-порушення, але варто дивитись.
+
+1. `sum by (module) (rate(sync_conflicts_total[1h]))` — хто конфліктить.
+2. Типово: два девайси одного user-а пишуть незалежно, `lastPulledAt`
+   старий. Якщо вибух на одному module — регресія в логіці merge-у.
+3. Подивись чи не було недавнього деплою `apps/server/src/modules/sync/syncV2.ts`.
+
+## AuthErrorBudgetBurn
+
+1. Breakdown:
+   ```promql
+   sum by (op, outcome) (rate(auth_attempts_total[5m]))
+   ```
+2. `outcome=error` означає internal error (5xx) а не bad-credentials.
+3. Перший підозрюваний — better-auth адаптер / DB. Глянь
+   `app_errors_total{module="auth"}` і Pino logs.
+4. Якщо тільки `sign_in/sign_up` падає, а `session_check` здоровий —
+   проблема у верифікації пароля/email (bcrypt / SMTP).
+
+## AuthSessionLookupSlow
+
+Критично — session lookup на кожному authenticated API.
+
+1. `histogram_quantile(0.95, sum by (le) (rate(auth_session_lookup_duration_ms_bucket[5m])))` підтверджує.
+2. Перевір `db_pool_waiting > 0` — pool saturate є найчастіший root cause.
+3. Перевір розмір `sessions` таблиці й індекси (`EXPLAIN ANALYZE` на query).
+4. Як тимчасовий фікс — більший pool (`DATABASE_POOL_MAX`).
+
+## AuthRateLimitSpike
+
+> 30% auth-атак попадає на limiter → або brute-force, або баг у клієнті.
+
+1. `rate(rate_limit_hits_total{key="api:auth:sensitive",outcome="blocked"}[5m])` — обсяг.
+2. Подивись Pino logs з `module=auth` — корелюй `req.ip`. Якщо
+   однакова IP — бан через Cloudflare або `RATE_LIMIT_BAN_IPS`.
+3. Якщо це клієнт-реагує на 401 ретраями без backoff — зафіксуй issue.
+
+## AiErrorBudgetBurn
+
+1. Breakdown:
+   ```promql
+   sum by (endpoint, outcome) (rate(ai_requests_total[5m]))
+   ```
+2. `outcome=rate_limited` від Anthropic → включи тимчасово m'якший `assertAiQuota` або проси кредит.
+3. `outcome=timeout` → див. `ai_request_duration_ms` p95 + Anthropic status page.
+4. `outcome=bad_response` (якщо є) → regression у парсингу. Відкат.
+5. `ai_quota_blocks_total{reason="limit"}` стрибнув → ми самі блокуємо користувачів (не помилка бекенду).
+
+## AiLatencyP95High
+
+1. `histogram_quantile(0.95, sum by (le, endpoint) (rate(ai_request_duration_ms_bucket[5m])))` — який endpoint тормозить.
+2. Глянь status.anthropic.com. Якщо там incident — deduplicate.
+3. Якщо лише weekly-digest тормозить, інші здорові — ймовірно зростає
+   розмір prompt-у (надто багато контексту). Підріж.
+
+## ExternalHttpErrorBudgetBurn
+
+Стороння залежність деградує — ми не контролюємо.
+
+1. `sum by (upstream, outcome) (rate(external_http_requests_total[5m]))`.
+2. Для Monobank/Privat → перевір їхні статус-сторінки.
+3. Якщо barcode upstream (off/usda/upcitemdb) недоступний — client-side
+   fallback має вже грати, просто трекай.
+4. Якщо це не одноразовий сплеск — деградуй UI-фічу (hide CTA, no retries).
+
+## UnhandledRejection / UncaughtException
+
+Завжди баг. Stack-trace — у Pino `level=fatal` з повним `err.cause` chain.
+
+1. Відкрий Sentry issue (має бути автоматично створений).
+2. Correlate за `requestId` у лозі з HTTP-access логом.
+3. Patch гіпотетично в наступному релізі; temporary — тримай за алерт.
+4. `unhandledRejectionsTotal` не має бути >0 у нормі, навіть не короткочасно.
+
+## DbPoolWaitingSustained
+
+Leading indicator. `db_pool_waiting > 0` 5m → ticket. Пейдж
+`DbPoolSaturated` ще не впав, але p95 уже просідає, бо кожен
+session-check чекає слот.
+
+1. `sum by (op) (rate(db_query_duration_ms_count[5m]))` — хто раптом
+   почав робити багато запитів? Новий endpoint? N+1?
+2. `histogram_quantile(0.95, sum by (le, op) (rate(db_query_duration_ms_bucket[5m])))`
+   — який op п'є pool.
+3. Сверь із git-log: недавній deploy (< 1h) з новою heavy query —
+   найчастіший винуватець. Якщо так — розкати або патчі запит.
+4. Якщо `db_pool_waiting` падає до 0 за кілька хвилин — резолв.
+   Якщо росте далі — чекай `DbPoolSaturated` і дій за ним.
+
+## DbPoolSaturated
+
+`db_pool_waiting > 0` 10m → connection contention.
+
+1. Миттєво: збільш `DATABASE_POOL_MAX` (Coolify env → redeploy).
+2. Дослідь: `db_slow_queries_total{op}` — які operations довше `DB_SLOW_MS`.
+3. Знайди потенційні long-running transactions у логах
+   (`level=info` з `module=db, msg="slow query"`).
+4. Перевір, чи не відбувся нещодавно deploy, що додав новий heavy read-path.
+
+## DbPoolWaitingDeep
+
+`db_pool_waiting > 5` 5m → queue-depth saturation. Ticket-rank,
+проміжний між `DbPoolWaitingSustained` (будь-який waiting, тікет
+через 5m) і `DbPoolSaturated` (будь-який waiting, page через 10m).
+Сигнал, що проблема не в одиничному slow query, а у sustained backlog.
+
+1. Перевір `db_pool_acquire_duration_seconds` гістограму
+   (`histogram_quantile(0.99, ...)` у db-use дашборді — панель «Pool
+   acquire latency»). p99 має скочити одночасно з waiting > 5.
+2. `db_pool_size_current{state="idle"}` зазвичай впав до 0 — pool
+   повністю checked-out. Підтверджує, що це capacity, а не leak.
+3. Capacity-planning рішення: bump `PG_POOL_SIZE` (default 20 → 30/40).
+   Sizing guide — [`pg-pool-sizing.md`](./pg-pool-sizing.md).
+4. Якщо `PG_POOL_SIZE` уже високий — пошук leaky transactions через
+   `db_slow_queries_total{op}` як у `DbPoolSaturated` runbook.
+
+## AiQuotaStoreDown
+
+`ai_quota_fail_open_total` зростає → `assertAiQuota` не може
+записати в `ai_usage_daily` і **пропускає запити без ліку**. Юзери
+можуть вийти за денний ліміт → непередбачуваний Anthropic-білл.
+
+1. `sum by (reason) (increase(ai_quota_fail_open_total[30m]))` — зрозумій
+   категорію:
+   - `database_url_missing` → env зник/не переексопортнувся. Перевір
+     Coolify app env і deploy-логи.
+   - `db_error` → Postgres down/unreachable/table missing. Глянь
+     `db_errors_total{code}` і Pino `msg=ai_quota_store_unavailable`
+     (там є `err.code`).
+2. Поки fix не виїхав — **тимчасово заборони AI-фічі**: `AI_QUOTA_DISABLED=0`
+   (кілсвіч має лишатись вимкненим, інакше квота — no-op) плюс зріз ліміту
+   тіру. `AI_DAILY_ANON_LIMIT` для цього більше не існує — анонімного трафіку
+   в AI-роутах немає, вони всі за `requireSession()`
+   ([ADR-0086](../../governance/adr/0086-no-anonymous-ai-sign-in-required.md)).
+   ⚠️ **Перевір перед інцидентом, а не під час:** `AI_DAILY_USER_LIMIT` лежить
+   у схемі env, але `userDailyLimit()` його не читає — ліміт іде з
+   `billing/effectiveLimits.ts` за планом. Тобто цей крок сьогодні працює лише
+   через правку `FREE_LIMITS`/`PRO_LIMITS` і деплой, не через env.
+3. Перевір міграцію `ai_usage_daily`: `SELECT to_regclass('ai_usage_daily')`.
+   Якщо null — запусти міграції.
+4. Після відновлення — дивись Anthropic-dashboard, чи не було сплеску
+   витрат за вікно fail-open.
+
+## ProgrammerErrors
+
+`kind=programmer` → виняток без `AppError`-обгортки, код не очікував.
+
+1. Перший suspect — недавній deploy. Перевір Sentry issues за останню годину.
+2. Correlate `module` з кодовою базою. `module="unknown"` → десь
+   `setRequestModule()` не викликався (або код поза request context).
+3. Fix: огорни у `AppError({ kind: "operational" })` де доречно,
+   або виправ root cause.
+
+---
+
+# Platform hardening — operational FAQ
+
+> Ці секції додані разом з [Initiative 0008](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0008-platform-hardening.md). Це не алерт-runbook-и (вони вище), а оперативні how-to для повторюваних situations які виникли разом з новою інфраструктурою (probes, rate-limit headers, Renovate, SBOM).
+
+## Як інтерпретувати 429-алерт у Grafana
+
+Алерт `AuthRateLimitSpike` (вище) показує загальний rate. Для **глибшого** аналізу:
+
+1. **Подивись `RateLimit-*` headers** на response-zі. З [Initiative 0008 Phase 2](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0008-platform-hardening.md) сервер emit-ить:
+   - `RateLimit-Limit` — конфігурований ліміт (з `apps/server/src/config/rateLimit.ts`).
+   - `RateLimit-Remaining` — скільки запитів лишилось у поточному вікні.
+   - `RateLimit-Reset` — секунд до скидання вікна.
+   - `Retry-After` — у 429-відповідях, секунд до retry.
+2. **PromQL для розподілу 429 по policy-ключах:**
+   ```promql
+   sum by (key, outcome) (rate(rate_limit_hits_total{outcome="blocked"}[5m]))
+   ```
+   `key` лейбл — це `policy.key` з реєстру (наприклад, `api:auth:sensitive`). Якщо blocked-spike тільки на одному `key` — швидше за все targeted attack або bug у клієнті.
+3. **Перевір failMode для затиснутого роуту** в `apps/server/src/config/rateLimit.ts`:
+   - `failMode: "closed"` (як у `api:auth:sensitive`) → при degraded Redis+PG limiter повертає 503 + `Retry-After: 5`. Алерт горить, але кредитстаффінг **не** прискорюється.
+   - `failMode: "open"` → при degraded limiter пропускає трафік. Очікується підвищений rate; перевір `rate_limit_degraded_total{mode=inmem}` — якщо росте, deps degraded, не атака.
+4. **Відрізнити атаку від retry-storm:**
+   - Атака → широкий range `req.ip`, рівномірний rate-pattern. Бан через Cloudflare або `RATE_LIMIT_BAN_IPS` env-var.
+   - Retry-storm → `req.ip` концентрується на 1-3 джерелах (web/mobile/console). Це bug у клієнті, що ігнорує `Retry-After`. Відкривай issue на surface, патч у наступному релізі.
+
+## Що робити, якщо `/health/readiness` FAIL у production
+
+З [Initiative 0008 Phase 1](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0008-platform-hardening.md) Sergeant exposед три probes:
+
+- `/health/liveness` — process alive (event-loop responsive). Должен бути 200 завжди, поки Node-процес не повис.
+- `/health/readiness` — `pg.ping()` + `redis.ping()` обидва ОК. 200/503.
+- `/startupz` (also `/health/startup`) — initial migrations + warmup завершені. 200/503; k8s/Render `failureThreshold: 30, periodSeconds: 1`.
+
+**Algorithm коли readiness=503:**
+
+1. **Перший крок — перевір liveness.** `curl https://api.sergeant/health/liveness`. Якщо теж 503 → процес повис, готуйся до restart-у. Якщо 200 → process живий, але dep degraded.
+2. **Перевір тіло readiness:**
+   ```bash
+   curl https://api.sergeant/health/readiness | jq
+   ```
+   Response має `checks: [{ name: "pg", status: "fulfilled" | "rejected" }, { name: "redis", ... }]`. Точно покаже, що саме не так.
+3. **Якщо PG degraded:**
+   - Coolify → Postgres-контейнер stats + connection-pool. Якщо `db_pool_waiting > 0` 5m — корелюй з `DbPoolWaitingSustained` runbook вище.
+   - Швидкий патч: збільш `DATABASE_POOL_MAX` (Coolify env → redeploy).
+4. **Якщо Redis degraded:**
+   - Перевір `rate_limit_degraded_total{mode=closed}` — якщо росте, всі auth-роути серверу будуть 503. Залежить від `failMode: "closed"` policy.
+   - Швидкий патч (не для prod): `RATE_LIMIT_FAIL_CLOSED_AUTH=false` env-var → revert до open-mode без redeploy. **УВАГА:** це послабляє credential-stuffing захист, тримай не довше за hour.
+5. **Не перезавантажуй pod-и просто щоб «спробувати»** — startup probe з `failureThreshold: 30` сам перезапустить, якщо warmup застряг.
+
+## `/health/workers` — worker fleet snapshot
+
+`GET /health/workers` (PR-31) повертає JSON з per-queue/worker breakdown. **Не** є platform-probe-ом — Coolify його не використовує. Призначення: дашборди, runbook-investigation, alert-channel debug.
+
+```bash
+curl https://api.sergeant/health/workers | jq
+```
+
+Контракт відповіді:
+
+```json
+{
+  "status": "healthy" | "unhealthy",
+  "timestamp": "2026-05-06T08:30:00.000Z",
+  "workers": {
+    "aiMemoryIngest": {
+      "enabled": true,           // env: AI_MEMORY_ENABLED
+      "started": true,           // BullMQ Worker.start() succeeded
+      "fallbackMode": false,     // true коли enabled+!started → in-process direct dispatch
+      "concurrency": 4,
+      "attempts": 5,
+      "jobCounts": { "waiting": 0, "active": 0, "delayed": 0, "failed": 0 }
+    },
+    "monoEnrichment": {
+      "enabled": true,           // env: MONO_ENRICHMENT_WORKER_ENABLED && ANTHROPIC_API_KEY
+      "intervalMs": 5000,
+      "queueDepth": {
+        "pending": 5, "processing": 1, "done": 4242,
+        "failed": 0, "dead_letter": 0, "total": 4248
+      }
+    }
+  }
+}
+```
+
+> Source of truth для складу `workers` — `createWorkersHealthHandler` у
+> `apps/server/src/http/health.ts`: станом на 2026-08-28 це `aiMemoryIngest`
+> і `monoEnrichment` (паралельна гілка gdpr-поллера додає `gdprCleanup`).
+> Блока `backgroundQueue` в payload-і немає і ніколи не було — попередня
+> версія цього прикладу документувала неіснуючий контракт.
+
+Status-code mapping:
+
+- **200** — обидві worker-sample-функції повернулися без `error`. Worker-disabled / fallback / порожня черга — все ще healthy.
+- **503** — хоч одна повернула `error` (Redis/DB unreachable). На worker-у, що зафейлив, `jobCounts`/`queueDepth` буде `null` і додасться поле `error` зі stripped message (без stack-trace — L7 invariant).
+
+**Коли користуватись:**
+
+1. **Alert "ai-memory-ingest queue depth growing":** перевір `aiMemoryIngest.jobCounts.failed` + `delayed`. Якщо `failed > 0` за 5min — Anthropic/Voyage incident, runbook → `docs/work/specs/launch/tech/ai-memory-activation.md §Outage`.
+2. **Alert "mono enrichment lag":** перевір `monoEnrichment.queueDepth.pending` + `processing`. Якщо pending росте, але processing=0 — worker не стартував у одній з replic-ів. Перевір `MONO_ENRICHMENT_WORKER_ENABLED` env у Coolify.
+3. **Reproduce CI flakiness:** `aiMemoryIngest.fallbackMode=true` означає Redis недоступний — у CI це норма, у production sign of disaster.
+
+## AI memory activation & Day-30 decision-point
+
+> **Owner:** `@Skords-01`. **Scope:** server. **Last validated:** 2026-05-13 by Devin (PR-19). **Related:** [`docs/work/specs/launch/tech/ai-memory-activation.md`](../../work/specs/launch/tech/ai-memory-activation.md), [`docs/governance/governance/feature-flags.md`](../../governance/governance/feature-flags.md), [ADR-0028](../../governance/adr/0028-pgvector-ai-memory.md).
+> **Canonical split:** current AI memory behavior lives in [`docs/engineering/architecture/ai-memory.md`](../../engineering/architecture/ai-memory.md); this section is operational response/activation only.
+
+### Контекст
+
+AI memory (pgvector + Voyage embeddings) — Phase 2 feature з kill-switch-ом за бюджетом. PR-plan-2026-05 §Decision points фіксує: якщо за **30 днів** після активації `ai_memories` накопичила < 100 rows за останні 7 днів — модуль не виправдовує operational cost (Voyage квота + pgvector storage + maintenance) і **kill-имо**.
+
+### Стейн прапорців (production)
+
+| Flag                            | Default (code) | Activation                      | Назначення                                                                              |
+| ------------------------------- | -------------- | ------------------------------- | --------------------------------------------------------------------------------------- |
+| `AI_MEMORY_ENABLED`             | `false`        | Coolify env → `true`            | Master kill-switch для всього модуля (remember/recall/RAG/ingestion).                   |
+| `MONO_AI_MEMORY_INGEST_ENABLED` | `true`         | Без дії — стартує з master-flag | Per-source гейт для `finyk` source. Виставити `false` тільки як selective kill (PR-19). |
+
+Subordinate-логіка: `MONO_AI_MEMORY_INGEST_ENABLED` має значення лише при `AI_MEMORY_ENABLED=true`. Master `false` → всі source-и no-op (`mode="disabled"` метрика), per-source-flag ігнорується.
+
+### Activation procedure
+
+Канонічний runbook — [`docs/work/specs/launch/tech/ai-memory-activation.md`](../../work/specs/launch/tech/ai-memory-activation.md). TL;DR:
+
+1. **Pre-flight (Coolify):** `VOYAGE_API_KEY` provisioned, БД-міграція 025 застосована, `pgvector` extension доступний.
+2. **Step 2** — `AI_MEMORY_ENABLED=true` у Coolify → redeploy.
+3. **Step 3** — finyk-ingest вмикається автоматично (sub-flag default `true`). Перші writes у `ai_memories` мають зʼявитись протягом ~5–30s після першого mono-webhook.
+4. **Step 4** — end-to-end smoke test через HubChat (див. activation runbook).
+
+### Що моніторити (T+0 ... T+30 днів)
+
+| Сигнал                                                                           | Норма                | Action при відхиленні                                                                                                                         |
+| -------------------------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
+| `ai_memory_ingest_enqueued_total{mode="queued"}` rate                            | > 0 при mono-traffic | Якщо =0 при non-zero mono-traffic → master або per-source flag вимкнений; перевір Coolify env.                                                |
+| `ai_memory_ingest_enqueued_total{mode="source_disabled"}` rate                   | 0                    | > 0 означає `MONO_AI_MEMORY_INGEST_ENABLED=false` у Coolify env; підтвердь, що це навмисний kill, інакше реверт.                              |
+| `ai_memory_ingest_processed_total{outcome="ok"}` rate                            | ≈ enqueue rate       | `outcome="retry"`/`permanent_fail` spike → Voyage/pgvector incident, дивись [`docs/work/specs/launch/tech/ai-memory-activation.md` § Outage]. |
+| `ai_memory_ingest_queue_depth`                                                   | < 100 jobs steady    | Росте → Voyage rate-limit; знизити `AI_MEMORY_INGEST_CONCURRENCY` 4 → 2.                                                                      |
+| `SELECT count(*) FROM ai_memories WHERE inserted_at > now() - interval '7 days'` | ≥ 100 на T+30        | **< 100 на Day 30 → kill module** (див. нижче).                                                                                               |
+
+### Day-30 decision-point query
+
+Запускай раз на тиждень починаючи з Day 14 (forecast trend) і офіційно на Day 30:
+
+```sql
+-- Total rows за останні 7 днів — за source breakdown
+SELECT
+  source,
+  count(*) AS rows_7d
+FROM ai_memories
+WHERE inserted_at >= now() - interval '7 days'
+GROUP BY source
+ORDER BY rows_7d DESC;
+
+-- Глобальне число для decision-rule
+SELECT count(*) AS rows_7d_total
+FROM ai_memories
+WHERE inserted_at >= now() - interval '7 days';
+```
+
+**Decision rule (PR-plan §Decision points):**
+
+- `rows_7d_total >= 100` → **continue** — модуль виправдовує бюджет, переходимо у Phase 3 (recall optimisation, eval suite).
+- `rows_7d_total < 100` → **kill** — виконати kill-procedure нижче.
+
+### Kill procedure
+
+Якщо Day-30 рішення — kill:
+
+1. **Швидкий kill (≤30s):** `AI_MEMORY_ENABLED=false` у Coolify → redeploy. `recall_memory` tool, RAG-injection і ingest все no-op-ять; existing data у `ai_memories` залишається.
+2. **Видалення коду:** окремий PR `revert(server): rollback AI memory module (PR-19 Day-30 decision)`. Drop migrations НЕ робити одразу — лишити schema на місці ≥30 днів на випадок реверсу рішення.
+3. **Документація:** позначити `AI_MEMORY_ENABLED` і `MONO_AI_MEMORY_INGEST_ENABLED` як `Killed YYYY-MM-DD` у [`docs/governance/governance/feature-flags.md`](../../governance/governance/feature-flags.md); додати Outcome і merge evidence до activation runbook, потім прибрати його з checkout та перевести потрібні inbound references на immutable Git permalink.
+4. **Постмортем:** короткий `docs/learnings/ai-memory-kill-postmortem.md` із сигналами (`rows_7d` timeline, Voyage USD spend, top reasons for low adoption).
+
+### Edge cases
+
+- **Master `false`, sub-flag `true`:** найчастіший стан до активації; ingest no-op-ить, метрика `mode="disabled"`. **Не паніч** — це expected.
+- **Master `true`, sub-flag `false`:** intentional selective kill. Метрика `mode="source_disabled"` росте, `mode="queued"`=0. Підтверди у Coolify, що sub-flag навмисно вимкнено.
+- **Spike у `mode="enqueue_error"`:** Redis incident або invalid source enum. Подивись pino-лог `ai_memory_ingest_enqueue_failed` / `ai_memory_ingest_invalid_source`.
+
+## WF-30 AI memory daily digest (PR-21)
+
+> ⚠️ **Історична секція.** n8n виведено з репо ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)); workflow-JSON — у permalink-снапшоті, кроки activation/kill нижче виконувати нема чим. Digest-функція як така не має заміни у сервері (відкритий follow-up).
+
+> **Owner:** `@Skords-01` (manifest owner `ops`). **Scope:** n8n workflow (server-side flag-canonical у `env.ts`). **Last validated:** 2026-05-13 by Devin (PR-21). **Related:** [`ops/n8n-workflows/30-ai-memory-daily-digest.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/30-ai-memory-daily-digest.json), [`docs/engineering/integrations/env-vars.md § MONO_AI_MEMORY_DIGEST_ENABLED`](../../engineering/integrations/env-vars.md#mono_ai_memory_digest_enabled-optional-default-false--prod-required), [PR-19 AI memory ingest](#ai-memory-activation--day-30-decision-point).
+
+### Контекст
+
+WF-30 — щоденний 09:05 Kyiv n8n workflow, що SELECT-ить агрегати з `ai_memories` (24h totals + per-source breakdown + lifetime + rough Voyage cost) і шле короткий summary у Telegram `#digest`. Aggregated-only payload (без `user_id` у тексті). Призначення — founder-DM-style daily-pulse поверх AI memory ingestion: бачити чи ingest працює (PR-19) без читання Grafana.
+
+### Activation procedure
+
+1. **Pre-flight:** `AI_MEMORY_ENABLED=true` (master) і `MONO_AI_MEMORY_INGEST_ENABLED=true` (PR-19) уже виставлені у Coolify. Без цього `ai_memories` порожня → digest буде слати «За добу нічого не записано».
+2. **n8n Railway env:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=true` у self-hosted n8n service (Settings → Environment Variables). Це canonical-toggle (parsed у `apps/server/src/env/env.ts` для парності з ingest-flag-ом).
+3. **n8n UI:** flip toggle workflow `30 — AI Memory Daily Digest` в active. Hard-rule [`validate-n8n-workflows.mjs`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/scripts/n8n/validate-n8n-workflows.mjs) тримає JSON `active=false` у git, тож активація — manual у UI.
+4. **Verification (T+24h):** наступний ранок о 09:05 Kyiv → перевір канал Telegram `#digest`, має зʼявитись повідомлення `🧠 AI Memory — <дата>`.
+
+### Що моніторити
+
+| Сигнал                                     | Норма                         | Action при відхиленні                                                                                                                                                                    |
+| ------------------------------------------ | ----------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Telegram `#digest` daily post              | щоранку 09:05 Kyiv            | Якщо пропущений день — перевір `n8n.executions` для `30-ai-memory-daily-digest` (success/error). Sentry breadcrumb `n8n.workflow.failed` тригерить #incidents через WF-98 error-handler. |
+| n8n exec count `30-ai-memory-daily-digest` | 1/day                         | > 1/day → cron-schedule drift або manual re-trigger; = 0/day → workflow toggle off у n8n UI.                                                                                             |
+| `ai_memories` 24h count у digest body      | > 0 після activation pre-reqs | 0 декілька днів поспіль → ingest (PR-19) зламаний; перевір [`§ AI memory activation`](#ai-memory-activation--day-30-decision-point) монiтори.                                            |
+| Voyage cost у digest body (`💸`)           | < $0.50/добу при ~100 mem-ів  | > $1/добу sustained → перевір `AI_MEMORY_INGEST_MAX_CONTENT_LEN` cap; great content-length у Mono enrichment або chat sources.                                                           |
+
+### Failure modes
+
+- **Postgres node fails** (`onError=continueRegularOutput` → empty row): Format Code node graceful degrades до `0` агрегатів, Telegram пост все одно йде з нулями. Sentry breadcrumb у WF-98 error-handler.
+- **Telegram API fails** (rate-limit / token revoked): n8n exec marked `error`; WF-98 шле в `#meta` Telegram alert.
+- **`MONO_AI_MEMORY_DIGEST_ENABLED` missing на n8n Railway env**: workflow toggle у n8n UI просто не активується операторами per activation runbook. Если ж випадково активований без env — workflow все одно бігає (n8n не валідує env), але operator-intent документований як must-have у `docs/engineering/integrations/env-vars.md`.
+
+### Kill procedure
+
+1. **Швидкий kill (≤30s):** flip workflow toggle у n8n UI в inactive. Cron перестає тригерити node-chain негайно.
+2. **Permanent disable:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=false` у n8n Railway env (для документації operator-intent-у) + manifest status `prod-ready → experimental` у новому PR (signals deprecation).
+3. **Code-side:** видалити `MONO_AI_MEMORY_DIGEST_ENABLED` з `env.ts` тільки після успішних 30 днів без digest-у і прийнятого decision-point на kill всього AI memory модуля ([`§ AI memory activation & Day-30 decision-point`](#ai-memory-activation--day-30-decision-point)).
+
+## Як обробити Renovate PR із breaking change
+
+Per [ADR-0044](../../governance/adr/0044-renovate-vs-dependabot.md), Renovate — primary tool для regular weekly bumps. Більшість PR-ів — devDep patches з auto-merge. Для **нон-trivial** PR-ів:
+
+| Тип PR                                                       | Дія                                                                                                                                              |
+| ------------------------------------------------------------ | ------------------------------------------------------------------------------------------------------------------------------------------------ |
+| `chore(deps): update <dev-dep> to v<patch>`                  | **Auto-merge** після зеленої CI. Не торкатися.                                                                                                   |
+| `chore(deps): update <dev-dep> to v<minor>`                  | Прочитай PR title, swipe through diff, merge якщо CI ✅.                                                                                         |
+| `chore(deps): update <prod-dep> to v<minor>`                 | Read changelog у PR body. Run `pnpm --filter @sergeant/server test` локально якщо це `apps/server` dep. Merge при ✅.                            |
+| `chore(deps): update <prod-dep> to v<major>`                 | **Hands-on review.** Read changelog. Локальний run + manual smoke. Merge тільки після підтвердження що breaking-change уважно перевірений.       |
+| `chore(deps): update group "anthropic/sentry/opentelemetry"` | Завжди manual review — ці групи pinned (initiative 0008 spec). Часто requires API-changes у consumers (`apps/server/src/lib/anthropic.ts` тощо). |
+| **Duplicate PR** від `dependabot[bot]`                       | Закрий Dependabot-PR з коментарем `duplicate of Renovate group: <name>` (per ADR-0044).                                                          |
+| **Security-PR від `dependabot[bot]`**                        | **High priority** — daily schedule навмисно. Auto-merge label `automerge-eligible` чи review за SLA.                                             |
+
+Якщо breaking change ламає CI:
+
+1. **Не push-ай force з patch-ем у Renovate-branch.** Renovate перепише, твої commit-и зникнуть.
+2. Замість того, **закрий PR не merge-ивши**, склонуй branch локально, патчі в окремий branch на твою feature, відкриваєш свій PR. Renovate створить новий PR через тиждень — на той момент твій fix вже у main.
+
+## Що таке SBOM і де його шукати на release
+
+SBOM (Software Bill of Materials) — це machine-readable список **всіх** runtime-залежностей релізу, з версіями і integrity-хешами. З [Initiative 0008 Phase 4](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0008-platform-hardening.md) на кожен release ми генеруємо два формати:
+
+- **SPDX-JSON** (`sergeant-<tag>.spdx.json`) — NTIA-compliant, стандарт індустрії, читається `trivy sbom`, `grype`, `syft`.
+- **CycloneDX-JSON** (`sergeant-<tag>.cdx.json`) — OWASP-стандарт, читається OWASP-Dependency-Track, JFrog Xray.
+
+**Де знайти SBOM:**
+
+1. **На GitHub Release page**: <https://github.com/Skords-01/Sergeant/releases/tag/v*>. Файли `*.spdx.json` і `*.cdx.json` прикріплені як assets.
+2. **В Actions storage** (90 днів retention): Actions tab → workflow «Release SBOM» → run for the tag → Artifacts section.
+3. **Регенерація для попереднього тегу**: Actions → Release SBOM → "Run workflow" → input `ref=v0.5.0` → Run. SBOM з'явиться як artifact (не attach-иться до Release якщо тригер manual).
+
+**Як використовувати при CVE-disclosure:**
+
+1. Завантаж SBOM з релізу що зараз у проді.
+2. Запусти `trivy sbom sergeant-v<tag>.spdx.json` — отримуєш список CVE проти цього SBOM-snapshot-а.
+3. Це **швидше** за full re-scan і відповідає на питання "is prod affected by this CVE" без redeploy.
+
+**Compliance use-case:** аудитор просить SBOM → надсилаєш SPDX-файл з GitHub Release. Sigstore-signing буде Phase 3 ([I3-sbom-generation.md](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/I3-sbom-generation.md) Phase 3 Open).
+
+## RagQualityGateDegraded
+
+**Що горить**: прогін `pnpm eval:rag` зафіксував
+mean `recall@4` < `warn_threshold` (default `0.5`), але ≥ `kill_threshold`
+(default `0.4`). Крон `.github/workflows/rag-quality-gate.yml` прибрано рішенням
+[ADR-0082](../../governance/adr/0082-private-storage-repo-posture.md) §4 (він ганявся
+в mock-режимі), тож цей стан наразі виявляється лише за ручного прогону — автоматичного
+issue чи Sentry-алерту немає. Eval-harness — 50-query golden-set
+[`apps/server/src/__fixtures__/rag-eval/golden.json`](../../../apps/server/src/__fixtures__/rag-eval/golden.json)
+(8 domains, `expected_memory_ids` рефи). PR-21 ввімкне `--mode=live`
+(real Voyage + pgvector retrieval); contract — `apps/server/src/lib/ragEval/
+golden.ts`. Повна документація харнесу +
+metric формули (recall@K / P@1 / MRR) + baseline-comparison: [`docs/
+architecture/rag-eval.md`](../../engineering/architecture/rag-eval.md).
+
+**Рівень**: warn — RAG залишається ON, але є early-warning regression.
+
+**Реакція**:
+
+1. Відкрий artifact `rag-eval-summary` із workflow run-у. JSON містить
+   `perDomain` breakdown і per-query recall. Знайди, де `mean` найнижчий
+   (наприклад, `finyk: 0.32` vs `chat: 0.85` → проблема саме у finyk-
+   ingestion).
+2. Звір з `git log apps/server/src/modules/ai-memory/` за останні 7 днів:
+   чи були changes у embeddings.ts / vectorStore.ts / `voyageEmbedProvider`?
+   Bump `VOYAGE_EMBEDDING_MODEL` без re-embed-у — найчастіша причина drop-у
+   (vector-spaces несумісні).
+3. Перевір upstream Voyage status: https://status.voyageai.com.
+4. Якщо ingestion-pipeline здоровий (логи Pino `level=info src.module=ai-memory`
+   без spike-ів `level=error`) → це поступова деградація. Відкрий follow-up
+   PR з тегом `ai-memory` для root-cause investigation.
+5. Якщо metric не повертається у `pass` за 2 weekly run-и поспіль —
+   ескалуй до `RagQualityGateKillSwitch` (нижче) до планового
+   decision-point Day 60 (`pr-plan-2026-05.md`).
+6. Якщо це **false-positive** через regression-у самого harness (наприклад,
+   PR-20 змінив golden-set і expected-refs тепер невалідні) — close issue
+   з labels `false-positive` + посилання на root-cause PR.
+
+## RagQualityGateKillSwitch
+
+**Що горить**: weekly eval зафіксував `recall@4` < `kill_threshold`
+(default `0.4`). Це **decision-point Day 60** з
+[`pr-plan-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-2026-05.md) — RAG потрібно
+вимкнути до того, як це впливає на користувачів.
+
+**Рівень**: critical — RAG injection у chat може повертати irrelevant
+context-и, що деградує AI-відповіді.
+
+**Реакція (immediate, <30 хв)**:
+
+1. **Зараз же** — `AI_MEMORY_ENABLED=false` у Coolify app env →
+   redeploy. Це master kill-switch (`apps/server/src/env/env.ts:586`);
+   після redeploy:
+   - retrieval повертає `[]` без виклику Voyage/pgvector
+     ([`apps/server/src/modules/ai-memory/service.ts`](../../../apps/server/src/modules/ai-memory/service.ts));
+   - ingestion-worker no-op-ує (BullMQ-jobs минають processing);
+   - `/api/chat` працює без RAG-injection (`AI_MEMORY_RAG_TOP_K`
+     ефективно стає `0`).
+2. Перевір що kill-switch застосувався: `curl
+https://<server>/health/workers` — `ai-memory-ingest` має бути `stopped`.
+3. Створи incident-thread у `#alerts` (Telegram) з посиланням на issue
+   - workflow run.
+4. Артефакт `rag-eval-summary` → glance: чи це global regression (mean
+   ↓ у всіх domain-ах) чи localized (один domain провалився)?
+5. **Root-cause investigation** (<24h):
+   - Чи був embedding-model bump (`VOYAGE_EMBEDDING_MODEL`) без
+     re-embed-batch-у? → revert env + re-embed.
+   - Чи був schema-зміна у `ai_memories` (CHECK-constraint, нова
+     source)? → rollback міграції.
+   - Чи був ingestion-change, що писав malformed content (e.g.,
+     prompt-templates з placeholder-ами замість real text)? →
+     revert ingestion PR.
+6. Після root-cause fix → запусти eval локально (GH-Action
+   `rag-quality-gate.yml` прибрано [ADR-0082](../../governance/adr/0082-private-storage-repo-posture.md) §4):
+   ```bash
+   pnpm eval:rag --mode=mock   # або --mode=live
+   ```
+   Якщо `status=pass` → revert kill-switch (`AI_MEMORY_ENABLED=true`)
+   - close issue.
+7. Якщо протягом 7 днів root-cause не знайдено / fix не закриває
+   issue → формальне Day 60 рішення `kill module` (видалити PR-19/22
+   pipeline, відкотити schema-changes; див. `pr-plan-2026-05.md`
+   § Day 60 milestone).
+
+**False-positive triage**: weekly eval у mock-mode завжди має mean=1.0.
+Якщо в `mock`-mode прийшов `kill` — це bug у harness або у CLI math,
+**не** у RAG-pipeline. Виправити harness першочергово, kill-switch не
+вмикати.
+
+## RagEvalAutomationAlert (auto-kill-switch via /api/internal/eval/rag-weekly)
+
+> **Retired-контур (2026-08-06):** n8n cron WF-29 і weekly-обгортку
+> `rag-eval-weekly.mjs` прибрано (після ADR-0082 §4 тригер бив у видалений
+> workflow). Endpoint лишається, але автоматичних POST-ів більше немає —
+> сценарій нижче спрацює лише за ручного POST на endpoint.
+
+**Що горить**: eval-summary запостили на `POST /api/internal/eval/rag-weekly`,
+і endpoint **авто-активував in-memory kill-switch `mono_ai_memory_ingest`**
+(recall@4 < `kill_threshold`, default `0.4`). Це доповнює `RagQualityGateKillSwitch` (manual env-flip
+у Coolify) автоматичним runtime-захистом, що блокує finyk-ingestion
+негайно до моменту permanent fix.
+
+**Рівень**: critical — RAG-injection у chat вже може повертати stale
+context, але новий Mono-webhook payload вже **НЕ** йде в ingestion-queue
+(in-memory гард у `apps/server/src/modules/ai-memory/ingestQueue.ts`).
+
+**Як перевірити kill-switch state**:
+
+```bash
+# Поточний стан (gauge=1 → активний)
+curl https://<server>/metrics | grep runtime_kill_switch_active
+# Hit-counter (cumulative transitions)
+curl https://<server>/metrics | grep runtime_kill_switch_activations_total
+
+# Last eval values (Prom)
+curl https://<server>/metrics | grep -E 'rag_eval_(recall|precision|mrr|last_run)'
+```
+
+**Реакція**:
+
+1. Глянь Sentry — endpoint capture-ить `RAG quality gate kill — recall@4=...`
+   з тегами `module=rag-eval`, `auto_disable_recommended=true`. У
+   `extra.baselineComparison` (якщо передано) — delta vs прошлого тижня.
+2. Сам Postgres-rec — `SELECT raw FROM n8n_failure_events
+WHERE workflow_id='rag-eval-weekly' ORDER BY created_at DESC LIMIT 1`
+   містить повний JSON-summary (з `metrics`, `perDomain`).
+3. **Промисловий kill-switch (Coolify env)** — runtime-гард переживає лише
+   до process-restart. Якщо incident триває >1h:
+   - Set `MONO_AI_MEMORY_INGEST_ENABLED=false` у Coolify app env;
+   - Redeploy → kill-switch стає permanent до зворотного flip-у;
+   - In-memory kill-switch після redeploy auto-clear-иться (Map reset),
+     і це **очікувано** — env-flag тепер є source-of-truth.
+4. Root-cause investigation: див. `RagQualityGateKillSwitch` § 5 вище
+   (embedding-model bump, schema-change, malformed ingestion).
+5. Після fix:
+   - Локально `pnpm eval:rag --mode=mock` → перевір status=`pass`;
+   - Kill-switch **не deactivate-ситься автоматично** навіть після
+     зеленого eval. Це навмисно — deactivation — operator decision.
+6. Deactivation: рестарт серверу (Coolify redeploy після env-flip
+   `MONO_AI_MEMORY_INGEST_ENABLED=true`) очищає in-memory kill-switch.
+   Альтернативно майбутній `POST /api/internal/feature-flags/clear?switch=mono_ai_memory_ingest`
+   (не реалізовано — backlog).
+
+**Multi-instance ВИКРАСТУП**: kill-switch — in-memory у single Node-process.
+Coolify-деплой зараз single-instance. Якщо ми scale-up до multi-replica —
+treat kill-switch як advisory (env-flag залишається authoritative).
+
+**Дзеркало метрик**:
+
+- `rag_eval_recall_at_4{mode}` — gauge, value останнього eval-run-у.
+- `rag_eval_precision_at_1{mode}`, `rag_eval_mrr{mode}` — peer-metrics.
+- `rag_eval_last_run_timestamp_seconds` — staleness alert (>10d без run-у → cron-failure).
+- `rag_eval_last_run_status{mode}` — 0=pass, 1=warn, 2=kill, 3=error.
+- `rag_eval_records_total{status}` — counter.
+- `runtime_kill_switch_active{switch}` — 0/1 поточний стан.
+- `runtime_kill_switch_activations_total{switch,outcome}` — counter
+  (outcome ∈ {activate, reactivate, deactivate}).
+
+## OpenTelemetry traces — ВИДАЛЕНО (2026-06-26)
+
+OTel-стек (server NodeSDK, `obs/tracing.ts`, `obs/sampler.ts`, OTLP-export,
+`OTEL_*` env, `@opentelemetry/*` пакети) **видалено** — див.
+[ADR-0035 § Reversal](../../governance/adr/0035-distributed-tracing-opentelemetry.md).
+Він лишався dormant (без `OTEL_EXPORTER_OTLP_ENDPOINT` у проді), але платив
+require-ціну на cold-start без користі.
+
+Поточне покриття: **Sentry** (errors + performance traces), **Prometheus →
+Grafana Cloud** (метрики), **Loki** (логи). `obs/spans.ts::aiSpan` лишився як
+passthrough-обгортка — token/latency-атрибуція живе у Prometheus
+(`ai_request_duration_ms`, `ai_tokens_total`, `ai_cost_estimate_usd_total`).
+Web `traceparent` (api-client) лишається для cross-boundary correlation у
+Sentry. Якщо distributed tracing знадобиться — відновити OTel з git history
+ADR-0035.
+
+## Alert-bot escalation ladder (T1 → T2 → T3)
+
+> ⚠️ **n8n-крони T1–T3 (WF-104/105/106) виведено з репо ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)).** SQL-предикати й схема `tg_alert_acks` чинні; тригери ladder-а треба перенести на серверний таймер (ADR-0089) — follow-up. Kill-switch-кроки «n8n UI → toggle» нижче історичні.
+
+**Що це.** Trois-tier ladder для unACKed alerts на `tg_alert_acks`, кожен рівень — окремий n8n cron + idempotency-stamp у DB. ADR-0038 §3.2 ladder, перші колонки — `escalated_at` (T1, PR-O9), решта — `repeated_at` / `sentry_warned_at` / `snoozed_until_at` (Sprint 6 alert-escalation; migration `063_tg_alert_acks_escalation_tiers.sql`).
+
+| Tier   | Trigger                                                                                           | Action                                                                                                                                                                                                         | Marker column      | n8n workflow                                                                                                                                                                            |
+| ------ | ------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **T1** | `posted_at < NOW() - 15 min` AND `ack_at IS NULL` AND `escalated_at IS NULL`                      | DM founder via `SERGEANT_ALERT_BOT_TOKEN` bot (raw HTTP)                                                                                                                                                       | `escalated_at`     | [`103-alert-escalation-cron.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/103-alert-escalation-cron.json) (`*/5 min`)    |
+| **T2** | `posted_at < NOW() - 60 min` AND `ack_at IS NULL` AND `repeated_at IS NULL` AND not-snoozed       | Re-post original alert у same topic з prefix `⚠ REPEAT (Nхв без ack)` + inline keyboard (✅ Прочитав / 🕐 Snooze 1h / 🕓 Snooze 4h)                                                                            | `repeated_at`      | [`105-alert-repeat-ping-cron.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/105-alert-repeat-ping-cron.json) (`*/15 min`) |
+| **T3** | `posted_at < NOW() - 120 min` AND `ack_at IS NULL` AND `sentry_warned_at IS NULL` AND not-snoozed | Server-side `Sentry.captureMessage("unacked-alert-escalation:<id>", level=warning, tags.kind=unacked-alert-escalation)` — Sentry dashboard + email є off-channel fallback коли founder offline / Telegram down | `sentry_warned_at` | [`106-alert-sentry-warn-cron.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/106-alert-sentry-warn-cron.json) (`*/15 min`) |
+
+**Snooze (operator-driven cancel).** Кнопка `🕐 Snooze 1h` / `🕓 Snooze 4h` у T2 keyboard викликає `POST /api/internal/alerts/snooze` → `snoozed_until_at = NOW() + N min`. Latest-write-wins (натискання іншої кнопки просто overwrite). WF-105 і WF-106 фільтрують `snoozed_until_at IS NULL OR snoozed_until_at < NOW()` — тимчасово пригнічує обидва (T1 НЕ фільтрується по snooze, бо T1 вже пройшов до того як юзер бачить T2-keyboard). Manual `UPDATE tg_alert_acks SET snoozed_until_at = NOW() + INTERVAL '12 hours' WHERE alert_id = '<id>'` — emergency operator tool.
+
+**Idempotency invariant.** Усі три mark-функції (`markAlertEscalated`, `markAlertRepeated`, `markAlertSentryWarned`) використовують патерн `UPDATE … SET <col> = NOW() WHERE alert_id = $1 AND <col> IS NULL` + `RETURNING id` → `rowCount=1` означає "перша cron-ітерація для цього alert"; cron може safely retry без double-fire. Partial indexes `tg_alert_acks_repeat_due_idx` / `tg_alert_acks_sentry_due_idx` `WHERE ack_at IS NULL AND <col> IS NULL` забезпечують швидкий cron-query.
+
+**Як monitorити.**
+
+- **Healthy:** `SELECT severity, COUNT(*) FROM tg_alert_acks WHERE ack_at IS NULL AND posted_at > NOW() - INTERVAL '4 hours' GROUP BY 1` — більшість unACKed має `escalated_at IS NOT NULL` (T1 спрацював), деякі мають `repeated_at IS NOT NULL` (60min пройшло), `sentry_warned_at` — рідко (120min — це аномалія).
+- **T2 backlog:** `SELECT alert_id, posted_at, repeated_at FROM tg_alert_acks WHERE ack_at IS NULL AND posted_at < NOW() - INTERVAL '60 minutes' AND repeated_at IS NULL ORDER BY posted_at LIMIT 20` — рядки тут довше ~20хв = WF-105 cron не біжить (n8n Railway down або workflow inactive).
+- **T3 fire-rate:** Sentry → filter `tags.kind=unacked-alert-escalation` — < 1 event/day = healthy. > 5/day = founder offline весь день АБО Telegram-bot broken (T1 DMs не доставлено).
+
+**Як disable / зменшити noise.**
+
+- **Snooze "all noisy ones" одним SQL:** `UPDATE tg_alert_acks SET snoozed_until_at = NOW() + INTERVAL '8 hours' WHERE ack_at IS NULL AND posted_at > NOW() - INTERVAL '24 hours'`. T1 вже зробив DM-и, T2/T3 заглухнуть на 8h.
+- **Disable T2 (repeat-ping):** n8n UI → `105 — Alert Repeat Ping Cron` → toggle Active → OFF. T1 (DM) і T3 (Sentry) продовжать працювати.
+- **Disable T3 (Sentry-warn):** n8n UI → `106 — Alert Sentry Warn Cron` → Active → OFF. T1 + T2 продовжать працювати. АБО на n8n Railway встанови `PUBLIC_API_BASE_URL=""` → cron виконається але HTTP-нода зафейлиться (errorWorkflow ловить).
+- **Hot-mute one workflow з n8n side:** `UPDATE tg_alert_acks SET snoozed_until_at = NOW() + INTERVAL '24 hours' WHERE alert_id LIKE 'wf-15:%' AND ack_at IS NULL` — заглушити всі ноізнуті unACKed від WF-15 на 24h.
+- **Reduce Sentry noise:** на Sentry side → `Settings → Inbound Filters` додати rule "ignore events з tag `kind=unacked-alert-escalation` де `level=warning`" якщо T3 спам надто гучний (НЕ рекомендовано — це повний-stop off-channel-fallback).
+
+**Env-vars на n8n Railway** (доповнення до `OPENCLAW_*` з WF-103):
+
+| Var                        | Workflow      | Призначення                                                                        |
+| -------------------------- | ------------- | ---------------------------------------------------------------------------------- |
+| `SERGEANT_ALERT_BOT_TOKEN` | WF-104/WF-105 | Raw token `@Sergeant_alert_bot` для `editMessageText` + repeat-ping `sendMessage`. |
+| `PUBLIC_API_BASE_URL`      | WF-105/WF-106 | `POST /api/internal/alerts/repeat` + `/alerts/sentry-warn`.                        |
+| `INTERNAL_API_KEY`         | WF-105/WF-106 | Bearer для `/api/internal/*`.                                                      |
+
+API-side: Sentry capture для T3 — той самий `Sentry` SDK що server-side `apps/server/src/sentry.ts`. SENTRY_DSN мусить бути виставлений (інакше capture тихо noop-ує). Якщо `SENTRY_DSN` empty → T3 marker `sentry_warned_at` все одно stamped (idempotency-paper-trail зберігається), але off-channel-signal не доставиться.

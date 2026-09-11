@@ -91,6 +91,14 @@ beforeEach(() => {
 afterEach(() => vi.clearAllMocks());
 
 describe("NutritionDashboard", () => {
+  it("keeps the final card scrollable above the fixed add-meal button", () => {
+    render(<NutritionDashboard log={logWith(0)} prefs={GOAL_PREFS} />);
+
+    expect(screen.getByTestId("nutrition-dashboard")).toHaveClass(
+      "pb-[calc(10rem+env(safe-area-inset-bottom,0px))]",
+    );
+  });
+
   it("renders the hero meal strip and macro bars when a goal is set", () => {
     render(
       <NutritionDashboard
@@ -130,19 +138,15 @@ describe("NutritionDashboard", () => {
     expect(onGoToDailyPlan).toHaveBeenCalledTimes(1);
   });
 
-  it("invokes onAddMeal and onGoToLog callbacks", () => {
-    const onAddMeal = vi.fn();
+  it("invokes the journal callback", () => {
     const onGoToLog = vi.fn();
     render(
       <NutritionDashboard
         log={logWith(500)}
         prefs={GOAL_PREFS}
-        onAddMeal={onAddMeal}
         onGoToLog={onGoToLog}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Додати прийом їжі" }));
-    expect(onAddMeal).toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Журнал" }));
     expect(onGoToLog).toHaveBeenCalled();
   });

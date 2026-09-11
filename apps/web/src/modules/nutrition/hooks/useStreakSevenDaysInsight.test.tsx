@@ -11,6 +11,10 @@ const todayISODate = vi.fn();
 vi.mock("@sergeant/nutrition-domain", () => ({
   todayISODate: () => todayISODate(),
   WEEK_KCAL_OVER_TOLERANCE: 1.05,
+  resolveKcalGoalsForDays: (
+    periods: Array<{ kcal: number | null }>,
+    days: string[],
+  ) => days.map(() => periods[0]?.kcal ?? null),
 }));
 
 const getDayMacros = vi.fn();
@@ -23,6 +27,7 @@ vi.mock("../lib/nutritionStorage", () => ({
 import { useStreakSevenDaysInsight } from "./useStreakSevenDaysInsight";
 
 const log = {} as never;
+const goals = (kcal: number | null) => [{ kcal }] as never;
 
 beforeEach(() => {
   todayISODate.mockReturnValue("2026-06-23");
@@ -34,7 +39,7 @@ afterEach(() => vi.clearAllMocks());
 describe("useStreakSevenDaysInsight", () => {
   it("returns null when the kcal goal is unset", () => {
     const { result } = renderHook(() =>
-      useStreakSevenDaysInsight(log, { dailyTargetKcal: 0 } as never),
+      useStreakSevenDaysInsight(log, goals(null)),
     );
     expect(result.current).toBeNull();
   });
@@ -47,7 +52,7 @@ describe("useStreakSevenDaysInsight", () => {
       return { kcal: call === 2 ? 500 : 2000 };
     });
     const { result } = renderHook(() =>
-      useStreakSevenDaysInsight(log, { dailyTargetKcal: 2000 } as never),
+      useStreakSevenDaysInsight(log, goals(2000)),
     );
     expect(result.current).toBeNull();
   });
@@ -55,7 +60,7 @@ describe("useStreakSevenDaysInsight", () => {
   it("surfaces a week-keyed insight when all 7 days are in-band", () => {
     getDayMacros.mockReturnValue({ kcal: 2000 }); // exactly on goal
     const { result } = renderHook(() =>
-      useStreakSevenDaysInsight(log, { dailyTargetKcal: 2000 } as never),
+      useStreakSevenDaysInsight(log, goals(2000)),
     );
     expect(result.current).toMatchObject({
       module: "nutrition",
@@ -77,7 +82,7 @@ describe("useStreakSevenDaysInsight", () => {
     todayISODate.mockReturnValue(day);
     getDayMacros.mockReturnValue({ kcal: 2000 });
     const { result } = renderHook(() =>
-      useStreakSevenDaysInsight(log, { dailyTargetKcal: 2000 } as never),
+      useStreakSevenDaysInsight(log, goals(2000)),
     );
     return result.current?.id;
   }

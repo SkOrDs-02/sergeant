@@ -13,7 +13,7 @@ test.use({ serviceWorkers: "block" });
 
 /**
  * Комора: родові назви, картка продукту з варіантами, нові категорії.
- * Клік-через зі спеки `docs/90-work/planning/specs/pantry-generic-names.md`
+ * Клік-через зі спеки `docs/work/specs/pantry-generic-names.md`
  * § Верифікація.
  *
  * Демо-режим замість реального входу: сценарій нічого не питає в сервера,
@@ -284,15 +284,14 @@ test("@critical pantry: списання з позиції на два варі�
     .first()
     .click({ timeout: 60_000 });
 
-  // Секція «З комори» на кроці «Джерело» — акордеон, згорнутий за
-  // замовчуванням (What's new 12.08: допоміжні блоки кроку джерела
-  // згорнуті, відкритими лишаються лише «Нещодавні прийоми»). Чипи в DOM
-  // є й до розгортання, але `useInertWhileCollapsed` тримає їх `inert`,
-  // тож клік по згорнутій секції не долітає — розгорни секцію перед тим,
-  // як шукати чіп.
-  await page
-    .getByRole("button", { name: /З комори/ })
-    .click({ timeout: 30_000 });
+  // Regression 2026-09-07: «пікер комори зник». Комора в add-meal flow
+  // має бути видима одразу; додатковий клік по заголовку тут згорнув би її
+  // назад і сховав чіпи за `inert`.
+  await expect(page.getByRole("button", { name: /З комори/ })).toHaveAttribute(
+    "aria-expanded",
+    "true",
+    { timeout: 30_000 },
+  );
 
   const pantryChip = page
     .getByTestId("from-pantry-chip")
@@ -308,6 +307,10 @@ test("@critical pantry: списання з позиції на два варі�
     timeout: 15_000,
   });
 
+  await expect(page.getByLabel("Вага порції, г")).toBeVisible({
+    timeout: 15_000,
+  });
+  await page.getByLabel("Вага порції, г").fill("150");
   await page.getByLabel("Ккал").fill("120");
   await page.getByRole("button", { name: "Додати прийом" }).click();
 

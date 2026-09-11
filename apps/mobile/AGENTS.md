@@ -1,6 +1,6 @@
 # Agents in apps/mobile
 
-> **Last touched:** 2026-07-20 by @cursoragent. **Next review:** 2026-10-30.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-22.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Sub-tree quick reference для агентів, що працюють в `apps/mobile/` (Expo + React Native). Сусідній `apps/mobile-shell/` (Capacitor wrapper) ділить ту саму specialist skill, але має окрему build pipeline (web bundle через `apps/web`).
@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-Expo 52 + React Native 0.76 + Expo Router (file-based) + NativeWind. Storage: MMKV (не localStorage). Тести: Jest. E2E: Detox (iOS sim). Статус — **internal dev-client**: готово до `eas build --profile development`, ще не для store. Mobile strategy ADR — [`0052-mobile-strategy-capacitor-primary`](../../docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md).
+Expo 52 + React Native 0.76 + Expo Router (file-based) + NativeWind. Storage: MMKV (не localStorage). Тести: Jest. E2E: Detox (iOS sim). Статус — **internal dev-client**: готово до `eas build --profile development`, ще не для store. Mobile strategy ADR — [`0052-mobile-strategy-capacitor-primary`](../../docs/governance/adr/0052-mobile-strategy-capacitor-primary.md).
 
 ## Quick commands
 
@@ -40,7 +40,7 @@ pnpm --filter @sergeant/mobile check-build-config  # before EAS build
 ## Deeper docs
 
 - App README: [`apps/mobile/README.md`](./README.md)
-- Mobile strategy ADR: [`docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../docs/04-governance/adr/0052-mobile-strategy-capacitor-primary.md)
-- Capacitor / deep links / RN migration: [`docs/02-engineering/mobile/`](../../docs/02-engineering/mobile/)
-- Routing catalog: [`docs/00-start/agents/agent-skills-catalog.md`](../../docs/00-start/agents/agent-skills-catalog.md)
-- Domain invariants: [`docs/02-engineering/architecture/domain-invariants.md`](../../docs/02-engineering/architecture/domain-invariants.md)
+- Mobile strategy ADR: [`docs/governance/adr/0052-mobile-strategy-capacitor-primary.md`](../../docs/governance/adr/0052-mobile-strategy-capacitor-primary.md)
+- Capacitor / deep links / RN migration: [`docs/engineering/mobile/`](../../docs/engineering/mobile/)
+- Routing catalog: [`docs/start/agents/agent-skills-catalog.md`](../../docs/start/agents/agent-skills-catalog.md)
+- Domain invariants: [`docs/engineering/architecture/domain-invariants.md`](../../docs/engineering/architecture/domain-invariants.md)

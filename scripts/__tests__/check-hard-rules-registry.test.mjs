@@ -25,10 +25,9 @@ const __dirname = dirname(fileURLToPath(import.meta.url));
 const SCRIPT_PATH = resolve(__dirname, "..", "check-hard-rules-registry.mjs");
 const SCRIPT_SRC = readFileSync(SCRIPT_PATH, "utf-8");
 // Layout must track check-hard-rules-registry.mjs — the script resolves the
-// registry under `docs/04-governance/governance/`. The docs reorg moved it
-// there; this test kept the old `docs/governance/` path and had been dying at
-// import time (and is wired into no CI lane, so nothing reported it).
-const GOVERNANCE_DIR = ["docs", "04-governance", "governance"];
+// registry under `docs/governance/governance/`. The docs reorg moved it
+// there; keep the fixture path aligned with that canonical location.
+const GOVERNANCE_DIR = ["docs", "governance", "governance"];
 const SCHEMA_PATH = resolve(
   __dirname,
   "..",

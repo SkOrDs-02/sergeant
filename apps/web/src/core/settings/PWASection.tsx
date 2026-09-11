@@ -8,6 +8,7 @@ import {
   swGetDebugSnapshot,
   swSetDebug,
 } from "../app/swControl";
+import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { SettingsGroup } from "./SettingsPrimitives";
 
 export function PWASection() {
@@ -61,7 +62,9 @@ export function PWASection() {
   };
 
   return (
-    <SettingsGroup title="PWA та офлайн" icon="smartphone">
+    // `smartphone` не існує в реєстрі `Icon` — секція малювала порожнє коло
+    // заглушки (огляд 2026-09-04). `refresh-cw` — про те, що тут роблять.
+    <SettingsGroup title={settingsSectionTitle("pwa")} icon="refresh-cw">
       <p className="text-style-body text-subtle leading-snug">
         Якщо після оновлення щось «застрягло» (стара версія або дивні дані),
         можна скинути кеш Service Worker і перезавантажити застосунок.

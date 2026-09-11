@@ -1,8 +1,8 @@
 # DESIGN.md — Sergeant
 
-> **Last touched:** 2026-09-03 by @claude. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-20.
 > **Status:** Active. **Призначення:** портативний конфіг візуальної системи для AI-агентів (Hallmark, frontend-design, Superdesign, будь-який SKILL.md-сумісний тул). Агент читає цей файл ПЕРЕД стилізацією і НЕ вигадує власну систему.
-> **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` — лише runtime-, security-, storage-, API- і domain-інваріанти. Естетичні AST-правила retired [ADR-0081](./docs/04-governance/adr/0081-repository-simplification.md); візуальні конвенції тримають design tokens, Storybook і design-review.
+> **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` — лише runtime-, security-, storage-, API- і domain-інваріанти. Естетичні AST-правила retired [ADR-0081](./docs/governance/adr/0081-repository-simplification.md); візуальні конвенції тримають design tokens, Storybook і design-review.
 
 ## Філософія
 
@@ -71,7 +71,7 @@ bg `#14100e` · surface `#1b1613` · surfaceHi `#221c18` · hairline `rgba(255,2
 
 Ніколи `dark:shadow-*` і raw light/dark пари в className (дизайн-конвенція) — тема через CSS-змінні.
 
-> База була зелено-чорною (`#0d1512`) до 2026-08-05. Зелений фон під зеленими акцентами = фон і акцент одного hue — головний «tell» генерованого дизайну. Тепле вугілля розводить їх і робить теплу базу наскрізною для обох тем. Контраст не постраждав (усі пари зросли). Деталі — [anti-slop-strategy.md § 5/P1](./docs/05-design/design/anti-slop-strategy.md).
+> База була зелено-чорною (`#0d1512`) до 2026-08-05. Зелений фон під зеленими акцентами = фон і акцент одного hue — головний «tell» генерованого дизайну. Тепле вугілля розводить їх і робить теплу базу наскрізною для обох тем. Контраст не постраждав (усі пари зросли). Деталі — [anti-slop-strategy.md § 5/P1](./docs/design/design/anti-slop-strategy.md).
 
 ## Типографіка
 
@@ -98,7 +98,7 @@ Display+body: **Manrope Variable** (fallback DM Sans → системний ст
 - Чистий `#fff`/`#000`; Inter/Roboto як display; емодзі як іконки фіч.
 - Однаковий padding у всіх секцій; `100vw`; card-in-card без семантики.
 
-**Слоп 2026** (охайний, доступний, і все одно генерований — див. [anti-slop-strategy.md](./docs/05-design/design/anti-slop-strategy.md)):
+**Слоп 2026** (охайний, доступний, і все одно генерований — див. [anti-slop-strategy.md](./docs/design/design/anti-slop-strategy.md)):
 
 - Фон і акцент одного hue (темно-зелений фон + зелений акцент) — головний «tell» сучасного слопу.
 - Bento-сітка як дефолтний лейаут екрана; сітка однакових карток без ієрархії густини.
@@ -106,7 +106,7 @@ Display+body: **Manrope Variable** (fallback DM Sans → системний ст
 - Однорідний радіус на всіх поверхнях — радіус має розрізняти контейнер / контроль / медіа.
 - Модуль, що відрізняється від іншого **тільки** hue акценту: accent-swap ≠ ідентичність.
 - Форма елемента, обрана бо компонент існує в `@shared/components/ui`, а не бо цього вимагають дані.
-- Іскра ✨ (`sparkle`) або чип `AI` як гліф «це зробила модель» — індустріальний дефолт Gemini / Notion / Copilot. AI-шар Sergeant позначає **шеврон Сержанта** — `Icon name="sergeant"` (рішення власника 2026-09-01, [аудит Q1](./docs/90-work/audits/2026-09-01-anti-slop-audit.md)). `sparkle`/`sparkles` лишаються лише для святкових станів (`CelebrationModal`, `FirstEntryCelebrationModal`, бейдж «Новинка»).
+- Іскра ✨ (`sparkle`) або чип `AI` як гліф «це зробила модель» — індустріальний дефолт Gemini / Notion / Copilot. AI-шар Sergeant позначає **шеврон Сержанта** — `Icon name="sergeant"` (рішення власника 2026-09-01, [аудит Q1](./docs/work/specs/audits/2026-09-01-anti-slop-audit.md)). `sparkle`/`sparkles` лишаються лише для святкових станів (`CelebrationModal`, `FirstEntryCelebrationModal`, бейдж «Новинка»).
 - Градієнт і кольорове свічення на контролах, включно з FAB: `-strong` companion + elevation-тінь (рішення власника 2026-09-01, Q5).
 - Тренд-чип ▲▼ зелений/червоний як дефолт біля числа; нульова дельта зі стрілкою — заборонена без винятків.
 - Ряд із трьох і більше рівних stat-тайлів; стек банерів-підказок однієї анатомії (іконка в тонованому квадраті → label → caption → кнопка → `×`). Один показник на екран — hero, решта — текст.
@@ -121,14 +121,14 @@ Display+body: **Manrope Variable** (fallback DM Sans → системний ст
 
 Підсумкове питання: **що на цьому екрані не міг би зробити ніхто інший?**
 
-**Значення vs система.** Диференціатор — це те, що **не можна записати як значення токена**. Палітра, радіус, шрифт, spacing — конфіг: копіюється за п'ять хвилин і саме це видає генератор. Тепла база, teal/rose/lime і Manrope — гігієна, не відмінність: крем + іржавий акцент — це підпис AI-індустрії 2025–2026 (Anthropic, Cohere, xAI, Mistral), і рівно від цієї пари база пішла на `#ecebe7`, а Рутина — з коралу на трояндовий. Відмінність тримають системи: module-accent containment, спосіб вираження глибини, типографічна дисципліна, UA-голос і — найсильніше — **форма, що виражає крос-модульні зв'язки** (причина існування продукту за [`product-overview.md §1`](./docs/01-product/model/product-overview.md); її неможливо ні згенерувати, ні скопіювати). Ніколи не відповідай на слоп перефарбуванням.
+**Значення vs система.** Диференціатор — це те, що **не можна записати як значення токена**. Палітра, радіус, шрифт, spacing — конфіг: копіюється за п'ять хвилин і саме це видає генератор. Тепла база, teal/rose/lime і Manrope — гігієна, не відмінність: крем + іржавий акцент — це підпис AI-індустрії 2025–2026 (Anthropic, Cohere, xAI, Mistral), і рівно від цієї пари база пішла на `#ecebe7`, а Рутина — з коралу на трояндовий. Відмінність тримають системи: module-accent containment, спосіб вираження глибини, типографічна дисципліна, UA-голос і — найсильніше — **форма, що виражає крос-модульні зв'язки** (причина існування продукту за [`product-overview.md §1`](./docs/product/model/product-overview.md); її неможливо ні згенерувати, ні скопіювати). Ніколи не відповідай на слоп перефарбуванням.
 
-**Проси форму від даних, а не від компонента.** «Зроби дашборд звичок» → сітка карток. «Покажи серію, де планована пауза, пропуск із причиною і grace-день виглядають по-різному» → форма, якої в медіані немає. Повний контракт: [`anti-slop-strategy.md`](./docs/05-design/design/anti-slop-strategy.md).
+**Проси форму від даних, а не від компонента.** «Зроби дашборд звичок» → сітка карток. «Покажи серію, де планована пауза, пропуск із причиною і grace-день виглядають по-різному» → форма, якої в медіані немає. Повний контракт: [`anti-slop-strategy.md`](./docs/design/design/anti-slop-strategy.md).
 
 ## Копірайт (UA)
 
-1-ша особа однини для action-busy, `ти`-звертання, помилки закриті action-prompt'ом. Канон: `docs/01-product/copy/style-guide.uk.md`.
+1-ша особа однини для action-busy, `ти`-звертання, помилки закриті action-prompt'ом. Канон: `docs/product/copy/style-guide.uk.md`.
 
 ## Глибше
 
-`docs/05-design/design/brandbook.md` · `docs/05-design/design/design-system.md` · `packages/design-tokens/README.md`
+`docs/design/design/brandbook.md` · `docs/design/design/design-system.md` · `packages/design-tokens/README.md`

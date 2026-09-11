@@ -5,6 +5,7 @@ import { meApi, type MeExportResponse } from "@shared/api";
 import { downloadString } from "@shared/lib/ui/export";
 import { messages } from "@shared/i18n/uk";
 import { HubBackupPanel } from "../hub/HubBackupPanel";
+import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
 
 const m = messages.dataExport;
@@ -73,7 +74,7 @@ export function DataExportSection() {
   };
 
   return (
-    <SettingsGroup title="Експорт/імпорт JSON" icon="download">
+    <SettingsGroup title={settingsSectionTitle("dataExport")} icon="download">
       <p className="text-style-body text-subtle leading-snug">
         Збережи всі свої локальні дані у файл, його потім можна імпортувати
         назад. Для залогінених користувачів нижче є окремий експорт із серверних

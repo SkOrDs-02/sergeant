@@ -9,7 +9,7 @@ import { Money } from "@shared/components/ui/Money";
 import { cn } from "@shared/lib/ui/cn";
 
 import { computePulseStyle } from "./pulseStyle";
-import { MonthStrip, type MonthStripDay } from "./MonthStrip";
+import { MonthStrip, MonthStripHint, type MonthStripDay } from "./MonthStrip";
 
 interface HeroCardProps {
   networth: number;
@@ -122,11 +122,12 @@ const HeroCardImpl = function HeroCard({
               заради якого екран відкрили. */}
           <div className="min-w-0">
             <p
+              // Завжди чорнильний тон hero, і за мінуса теж: червоне число
+              // на тонованому зеленому тлі читалось найгірше з усього
+              // екрана (звіт власника 2026-09-03). Знак мінус несе Money,
+              // а «Борги −N ₴» рядком нижче й так каже, звідки мінус.
               className={cn(
-                "text-style-title tabular-nums leading-tight",
-                networth < 0
-                  ? "text-danger-strong dark:text-danger"
-                  : "text-hero-ink",
+                "text-style-title tabular-nums leading-tight text-hero-ink",
                 !showBalance && "tracking-widest",
               )}
             >
@@ -253,6 +254,7 @@ const HeroCardImpl = function HeroCard({
               showBalance={showBalance}
               onOpenDay={(dayKey) => onOpenDay?.(dayKey)}
             />
+            <MonthStripHint hasPlan={dayBudget !== null} />
           </div>
         )}
 

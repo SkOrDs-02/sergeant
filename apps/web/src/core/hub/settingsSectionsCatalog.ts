@@ -29,10 +29,13 @@ export interface SettingsSectionMeta {
 
 export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
   {
+    // Огляд 2026-09-04: секція керує вкладкою, яка внизу називається
+    // «Головна», тож і зветься так само; сюди ж переїхала тема з «⋯»,
+    // і ключові слова теми тут — інакше пошук «тема» давав порожнечу.
     id: "dashboard",
-    title: "Дашборд",
+    title: "Головна",
     keywords:
-      "дашборд dashboard підказки щільність density вигляд активні модулі порядок упорядкувати reorder hide inactive приховати",
+      "головна дашборд dashboard тема темна світла контраст theme dark light appearance підказки щільність density вигляд активні модулі порядок упорядкувати reorder hide inactive приховати",
   },
   {
     id: "plan",
@@ -56,10 +59,12 @@ export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
     // wins. The old title's "дайджести" (plural) substring isn't covered
     // by the singular "дайджест" keyword below, so it moves into keywords
     // explicitly instead of silently stopping to match.
+    // Огляд 2026-09-04: слово «AI» з чипів знято рішенням Q1 (аудит
+    // 2026-09-01) — секцію теж називає Сержант, а не абревіатура.
     id: "ai",
-    title: "AI Звіт тижня",
+    title: "Сержант",
     keywords:
-      "ai штучний інтелект дайджест дайджести digest тижневий тренер coach insights",
+      "сержант sergeant ai штучний інтелект звіт тижня дайджест дайджести digest тижневий тренер coach insights асистент",
   },
   {
     id: "capabilities",
@@ -108,22 +113,24 @@ export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
       "харчування їжа nutrition meals food кбжу kbzhu калорії kcal білки жири вуглеводи вода комора pantry скан штрихкод barcode",
   },
   {
+    // Огляд 2026-09-04: PIN-блокування переїхало в Профіль → «Безпека»,
+    // тут лишились згоди й правові документи — назва каже саме це.
     id: "privacy",
-    title: "Конфіденційність",
+    title: "Дані та приватність",
     keywords:
-      "конфіденційність блокування pin пін lock security безпека захист",
+      "конфіденційність приватність privacy згода consent аналітика здоровʼя дані data правові документи умови",
   },
   {
     id: "pwa",
-    title: "PWA та офлайн",
+    title: "Оновлення та кеш",
     keywords:
-      "pwa офлайн offline service worker sw кеш cache діагностика скинути reset",
+      "pwa офлайн offline service worker sw кеш cache діагностика скинути reset застрягло стара версія оновлення",
   },
   {
     id: "dataExport",
-    title: "Експорт/імпорт JSON",
+    title: "Резервна копія",
     keywords:
-      "експорт імпорт export import json резервна копія backup hub дані data перенос",
+      "експорт імпорт export import json резервна копія backup hub дані data перенос права на дані",
   },
   {
     // V-7 audit finding (2026-08-08): title used to be "Експериментальні" —

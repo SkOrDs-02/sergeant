@@ -1,0 +1,379 @@
+{
+  "$schema": "../governance/schemas/pr-ledger.schema.json",
+  "version": 1,
+  "generated_at": "2026-08-28",
+  "prs": [
+    {
+      "number": 895,
+      "title": "fix(agents): полірування агентного шару після розкатки module-owners",
+      "merged_at": "2026-08-28T00:58:58Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/start/instructions/add-hubchat-tool.md",
+        "docs/start/instructions/debug-chat-tool.md",
+        "docs/start/instructions/enable-prompt-caching.md",
+        "docs/start/instructions/modify-n8n-workflow.md",
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/tune-system-prompt.md"
+      ]
+    },
+    {
+      "number": 892,
+      "title": "feat(agents): module-owner і службові Claude-агенти",
+      "merged_at": "2026-08-27T23:22:09Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/start/instructions/add-hubchat-tool.md",
+        "docs/start/instructions/debug-chat-tool.md",
+        "docs/start/instructions/enable-prompt-caching.md",
+        "docs/start/instructions/modify-n8n-workflow.md",
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/tune-system-prompt.md"
+      ]
+    },
+    {
+      "number": 891,
+      "title": "feat(agents): скіли-дисципліни",
+      "merged_at": "2026-08-27T22:47:13Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/start/instructions/add-hubchat-tool.md",
+        "docs/start/instructions/debug-chat-tool.md",
+        "docs/start/instructions/enable-prompt-caching.md",
+        "docs/start/instructions/modify-n8n-workflow.md",
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/tune-system-prompt.md"
+      ]
+    },
+    {
+      "number": 890,
+      "title": "feat(agents): інфра module-скіли і nested-роутинг",
+      "merged_at": "2026-08-27T22:21:50Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/start/instructions/add-hubchat-tool.md",
+        "docs/start/instructions/debug-chat-tool.md",
+        "docs/start/instructions/enable-prompt-caching.md",
+        "docs/start/instructions/modify-n8n-workflow.md",
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/tune-system-prompt.md"
+      ]
+    },
+    {
+      "number": 889,
+      "title": "feat(agents): продуктові module-owner скіли",
+      "merged_at": "2026-08-27T21:54:48Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/start/instructions/add-hubchat-tool.md",
+        "docs/start/instructions/debug-chat-tool.md",
+        "docs/start/instructions/enable-prompt-caching.md",
+        "docs/start/instructions/modify-n8n-workflow.md",
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/tune-system-prompt.md"
+      ]
+    },
+    {
+      "number": 689,
+      "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
+      "merged_at": "2026-08-07T00:15:07Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": ["docs/governance/adr/0062-openapi-source-of-truth.md"]
+    },
+    {
+      "number": 508,
+      "title": "fix(docs): reconcile canonical docs with current repo",
+      "merged_at": "2026-07-29T18:25:31Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "AGENTS.md",
+        "docs/start/instructions/modify-n8n-workflow.md",
+        "docs/start/instructions/onboard-external-api.md",
+        "docs/start/instructions/rotate-openclaw-credentials.md",
+        "docs/work/specs/launch/business/02-go-to-market.md",
+        "docs/work/specs/launch/business/03-services-and-toolstack.md",
+        "docs/work/specs/launch/business/04-launch-readiness.md",
+        "docs/work/specs/launch/business/05-operations-and-automation.md",
+        "docs/work/specs/launch/email-verification-sweep.md",
+        "docs/work/specs/launch/phases/00-readiness-audit.md",
+        "docs/work/specs/launch/phases/01-web-launch-with-users.md",
+        "docs/work/specs/launch/phases/README.md",
+        "docs/engineering/architecture/api-contracts.md",
+        "docs/engineering/architecture/apps-status-matrix.md",
+        "docs/engineering/architecture/diagrams/README.md",
+        "docs/engineering/architecture/diagrams/c3-workspaces.md",
+        "docs/engineering/architecture/frontend-overview.md",
+        "docs/engineering/architecture/module-ownership.md",
+        "docs/engineering/architecture/rag-eval.md",
+        "docs/engineering/architecture/repo-map.md",
+        "docs/engineering/architecture/service-catalog.md",
+        "docs/engineering/integrations/railway-vercel.md",
+        "docs/engineering/testing/2026-05-05-tests-pr-plan.md",
+        "docs/engineering/testing/2026-05-05-tests-review.md",
+        "docs/engineering/testing/smoke-tests.md",
+        "docs/operations/deploy/openclaw.md",
+        "docs/operations/observability/telegram-control-plane.md",
+        "docs/start/instructions/database-connection-pooling.md",
+        "docs/start/instructions/encryption-key-rotation.md",
+        "docs/start/instructions/postgres-read-replica.md",
+        "docs/governance/adr/0003-refund-and-dispute-handling.md",
+        "docs/governance/adr/0043-cloudsync-v1-sunset.md",
+        "docs/governance/adr/0047-cloudsync-v1-410-gone.md",
+        "docs/governance/adr/0058-knowledge-graph-schema.md",
+        "docs/governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md",
+        "docs/governance/adr/0060-architecture-diagrams-automation-scope.md",
+        "docs/governance/adr/0061-pr-backlink-storage.md",
+        "docs/governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md",
+        "docs/governance/adr/0067-engagement-mechanism-standardization.md",
+        "docs/governance/adr/0073-dualwrite-generic-framework.md",
+        "docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md",
+        "docs/governance/governance/rules/16-typography-scale-12px-floor.md",
+        "docs/governance/governance/rules/17-animation-budget.md",
+        "docs/governance/governance/rules/24-catalog-check-generator.md",
+        "docs/governance/governance/rules/25-auto-generated-marker.md",
+        "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
+        "docs/governance/security/README.md",
+        "docs/governance/security/access-matrix.md",
+        "docs/governance/security/access-policy.md",
+        "docs/governance/security/codeql.md",
+        "docs/governance/security/disaster-recovery.md",
+        "docs/governance/security/distroless-upgrade-plan.md",
+        "docs/governance/security/internal-api-keys.md",
+        "docs/governance/security/pii-handling.md",
+        "docs/governance/security/secret-ownership-register.md",
+        "docs/governance/security/secret-rotation.md",
+        "docs/governance/security/threat-model.md",
+        "docs/work/specs/initiatives/0015-docs-automation-daily-ops.md",
+        "docs/work/specs/initiatives/hardening-matrix.md",
+        "docs/STATUS.md"
+      ]
+    },
+    {
+      "number": 334,
+      "title": "docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants)",
+      "merged_at": "2026-07-21T00:32:09Z",
+      "author": "@claude",
+      "touchedDocs": [
+        "AGENTS.md",
+        "CLAUDE.md",
+        "README.md",
+        "apps/server/AGENTS.md",
+        "apps/web/AGENTS.md",
+        "docs/start/instructions/cutover-openclaw-gateway.md",
+        "docs/start/instructions/modify-n8n-workflow.md",
+        "docs/start/instructions/onboard-external-api.md",
+        "docs/start/instructions/rotate-openclaw-credentials.md",
+        "docs/engineering/architecture/api-v1.md",
+        "docs/engineering/architecture/diagrams/c1-system-context.md",
+        "docs/engineering/architecture/diagrams/c2-containers.md",
+        "docs/engineering/architecture/domain-invariants.md",
+        "docs/engineering/integrations/env-vars.md",
+        "docs/operations/deploy/monorepo-deploy-filtering.md",
+        "docs/operations/deploy/vercel.md",
+        "docs/start/instructions/database-backup-restore.md",
+        "docs/governance/adr/0043-cloudsync-v1-sunset.md",
+        "docs/governance/adr/0047-cloudsync-v1-410-gone.md",
+        "docs/governance/adr/0073-dualwrite-generic-framework.md",
+        "docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md",
+        "docs/work/specs/initiatives/0003-sync-v2-rollout-and-v1-sunset.md",
+        "packages/api-client/README.md",
+        "packages/dualwrite-core/README.md"
+      ]
+    },
+    {
+      "number": 74,
+      "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
+      "merged_at": "2026-06-30T13:28:53Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/governance/adr/0066-entropy-janitors.md",
+        "docs/governance/governance/entropy-janitors/README.md",
+        ".agents/skills/sergeant-tech-debt/SKILL.md"
+      ]
+    },
+    {
+      "number": 3665,
+      "title": "docs(web): add ADR-0067 engagement mechanism standardization",
+      "merged_at": "2026-06-20T19:11:34Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/governance/adr/0067-engagement-mechanism-standardization.md"
+      ]
+    },
+    {
+      "number": 3638,
+      "title": "Audit triage digest (auto, twice-weekly)",
+      "merged_at": "2026-06-19T06:52:35Z",
+      "author": "@Skords-01",
+      "touchedDocs": ["docs/start/instructions/cutover-openclaw-gateway.md"]
+    },
+    {
+      "number": 3649,
+      "title": "chore(root): fizruk a11y/UX tidy + reconcile stale tracked-task docs",
+      "merged_at": "2026-06-19T06:51:04Z",
+      "author": "@Skords-01",
+      "touchedDocs": ["docs/work/specs/initiatives/hardening-matrix.md"]
+    },
+    {
+      "number": 3640,
+      "title": "fix(docs): accept \"Last touched\" label + bot handles in playbook schema check",
+      "merged_at": "2026-06-18T17:59:09Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/work/specs/initiatives/0006-frontend-routing-and-code-split.md"
+      ]
+    },
+    {
+      "number": 3610,
+      "title": "chore(config): per-package eslint configs — PR-31 Phase 2b",
+      "merged_at": "2026-06-16T19:04:25Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/start/instructions/cutover-openclaw-gateway.md",
+        "docs/work/specs/initiatives/0006-frontend-routing-and-code-split.md"
+      ]
+    },
+    {
+      "number": 3611,
+      "title": "fix(web): clear a11y gate",
+      "merged_at": "2026-06-16T07:25:39Z",
+      "author": "@Skords-01",
+      "touchedDocs": ["docs/start/instructions/cutover-openclaw-gateway.md"]
+    },
+    {
+      "number": 3577,
+      "title": "fix(docs): heal CI-on-main drift — pr-ledger JSON, archived links, regen generated docs",
+      "merged_at": "2026-06-14T21:05:10Z",
+      "author": "@Skords-01",
+      "touchedDocs": ["docs/work/specs/initiatives/0020-agent-decisions-log.md"]
+    },
+    {
+      "number": 3573,
+      "title": "docs(agents): archive initiative 0018 (agent:find, code-complete)",
+      "merged_at": "2026-06-14T20:27:13Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/governance/adr/0066-agent-semantic-retrieval-over-knowledge-graph.md",
+        "docs/work/specs/initiatives/0020-agent-decisions-log.md",
+        "docs/work/specs/initiatives/session-log-0018-agent-find-measurement-2026-06-08.md",
+        "docs/work/specs/initiatives/session-log-0018-semantic-measurement-2026-06-14.md"
+      ]
+    },
+    {
+      "number": 3567,
+      "title": "docs(agents): record 0018 semantic measurement + drop orphan 0019 README row",
+      "merged_at": "2026-06-14T15:50:24Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/work/specs/initiatives/0018-agent-semantic-retrieval.md",
+        "docs/work/specs/initiatives/session-log-0018-semantic-measurement-2026-06-14.md"
+      ]
+    },
+    {
+      "number": 3560,
+      "title": "fix: heal governance/format drift + dualWrite logger lint debt",
+      "merged_at": "2026-06-14T09:08:03Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/work/specs/initiatives/0021-react-hooks-v7-cleanup.md"
+      ]
+    },
+    {
+      "number": 3555,
+      "title": "fix(web): correct recommendation icon rendering and design checkbox a11y",
+      "merged_at": "2026-06-13T18:41:22Z",
+      "author": "@Skords-01",
+      "touchedDocs": ["docs/governance/adr/0003-refund-and-dispute-handling.md"]
+    },
+    {
+      "number": 3551,
+      "title": "fix(ci): finish CI-on-main heal — regenerate SBOM + refresh overdue freshness stamp",
+      "merged_at": "2026-06-13T16:22:36Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/work/specs/initiatives/0015-docs-automation-daily-ops.md"
+      ]
+    },
+    {
+      "number": 3536,
+      "title": "docs(docs): doc-layer wave 2 — genre contract, monolith splits, hardening matrix",
+      "merged_at": "2026-06-12T11:11:37Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/governance/governance/rules/16-typography-scale-12px-floor.md",
+        "docs/governance/governance/rules/17-animation-budget.md",
+        "docs/work/specs/initiatives/hardening-matrix.md"
+      ]
+    },
+    {
+      "number": 3486,
+      "title": "chore(server,config): hard rule #18 server max-lines, OTel align, distroless docs",
+      "merged_at": "2026-06-09T21:06:05Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/governance/adr/0003-refund-and-dispute-handling.md",
+        "docs/governance/security/distroless-upgrade-plan.md",
+        "docs/work/specs/tech-debt/technical-assessment-2026-06-05.md"
+      ]
+    },
+    {
+      "number": 2900,
+      "title": "docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up)",
+      "merged_at": "2026-05-15T09:46:37Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/governance/governance/rules/24-catalog-check-generator.md",
+        "docs/governance/governance/rules/25-auto-generated-marker.md",
+        "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md"
+      ]
+    },
+    {
+      "number": 2899,
+      "title": "feat(ci): bidirectional PR ↔ doc backlinks (Initiative 0014 Phase 5)",
+      "merged_at": "2026-05-15T09:23:46Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/governance/adr/0061-pr-backlink-storage.md",
+        "docs/work/specs/initiatives/0014-knowledge-graph-and-catalogs.md"
+      ]
+    },
+    {
+      "number": 2898,
+      "title": "feat(docs): auto-gen workspace dependency diagram (Initiative 0014 Phase 4)",
+      "merged_at": "2026-05-15T09:07:30Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/governance/adr/0060-architecture-diagrams-automation-scope.md",
+        "docs/work/specs/initiatives/0014-knowledge-graph-and-catalogs.md"
+      ]
+    },
+    {
+      "number": 2896,
+      "title": "feat(docs): auto-derived repo-map + service-catalog (Initiative 0014 Phase 3)",
+      "merged_at": "2026-05-15T08:22:56Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/work/specs/initiatives/0014-knowledge-graph-and-catalogs.md"
+      ]
+    },
+    {
+      "number": 2889,
+      "title": "feat(docs): per-package symbol catalog (Initiative 0014 Phase 2)",
+      "merged_at": "2026-05-15T07:53:45Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/governance/adr/0059-symbol-extraction-via-typescript-compiler-api.md"
+      ]
+    },
+    {
+      "number": 2876,
+      "title": "feat(docs): knowledge graph generator (Initiative 0014 Phase 1)",
+      "merged_at": "2026-05-15T00:43:58Z",
+      "author": "@Skords-01",
+      "touchedDocs": [
+        "docs/governance/adr/0058-knowledge-graph-schema.md",
+        "docs/work/specs/initiatives/0014-knowledge-graph-and-catalogs.md"
+      ]
+    }
+  ]
+}

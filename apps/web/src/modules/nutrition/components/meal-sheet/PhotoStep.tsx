@@ -27,6 +27,7 @@ import { fmtMacro } from "../../lib/nutritionFormat";
 import { PhotoAnalyzeCard } from "../PhotoAnalyzeCard";
 import { PHOTO_PRIVACY_ACK_KEY } from "../PhotoPrivacyNotice";
 import { PhotoAddItemPicker } from "./PhotoAddItemPicker";
+import { useAuthOptional } from "../../../../core/auth/AuthContext";
 
 interface PhotoStepProps {
   /**
@@ -38,6 +39,10 @@ interface PhotoStepProps {
 }
 
 export function PhotoStep({ onApply }: PhotoStepProps) {
+  const auth = useAuthOptional();
+  // `null` only occurs in isolated component tests. In the app the provider is
+  // always present, so a missing user is an actual anonymous session.
+  const authenticated = auth === null || Boolean(auth.user);
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoErr, setPhotoErr] = useState("");
   // statusText — legacy-канал топ-банера NutritionApp; у кроці sheet-а
@@ -100,6 +105,7 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   // заблокує синтетичний клік — лишається drop-zone.
   const pickerRafRef = useRef<number | null>(null);
   useEffect(() => {
+    if (!authenticated) return;
     pickerRafRef.current = requestAnimationFrame(() => {
       pickerRafRef.current = null;
       try {
@@ -116,7 +122,7 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
     };
     // Mount-only: автовідкриття піккера — одноразовий жест входу в крок.
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
+  }, [authenticated]);
 
   // Кнопка «Аналізувати» — запасний вихід, не основний шлях. Авто-ефект
   // вище вже запускає аналіз сам, тож показувати її на щасливому шляху
@@ -159,6 +165,25 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
     if (!result || result.isFood === false) return;
     onApply(result, photo.fileRef.current?.files?.[0] ?? null);
   };
+
+  if (!authenticated) {
+    return (
+      <div className="rounded-xl border border-line bg-panel p-4 text-center">
+        <div className="text-style-label text-text">
+          {messages.nutrition.photoAuth.heading}
+        </div>
+        <p className="mt-1 text-style-body text-muted">
+          {messages.nutrition.photoAuth.body}
+        </p>
+        <a
+          href="/auth"
+          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-nutrition px-4 text-style-label text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+        >
+          {messages.nutrition.photoAuth.signIn}
+        </a>
+      </div>
+    );
+  }
 
   return (
     <>

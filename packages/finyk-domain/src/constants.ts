@@ -1,3 +1,5 @@
+import { MANUAL_INCOME_TAXONOMY } from "./lib/manualTaxonomy.js";
+
 // Спеціальний ID для внутрішніх переказів між своїми рахунками.
 // Транзакції з цією категорією НЕ рахуються у витратах і доходах.
 export const INTERNAL_TRANSFER_ID = "internal_transfer";
@@ -86,6 +88,12 @@ export const MCC_CATEGORIES = [
     label: "Покупки",
     mccs: [5311, 5331, 5651, 5661, 5699, 5732, 5734, 5945],
     keywords: ["rozetka", "amazon", "zara", "h&m", "reserved", "allo"],
+  },
+  {
+    id: "tech",
+    label: "Техніка",
+    mccs: [],
+    keywords: ["техніка", "electronics", "comfy", "foxtrot", "цитрус"],
   },
   {
     id: "entertainment",
@@ -246,6 +254,8 @@ export const MCC_CATEGORIES = [
 export interface CustomCategoryInput {
   id: string;
   label?: string;
+  /** Records created before the split are expense categories. */
+  kind?: "expense" | "income" | undefined;
 }
 
 function isCustomCategoryInput(v: unknown): v is CustomCategoryInput {
@@ -261,13 +271,39 @@ export function mergeExpenseCategoryDefinitions(
   customCategories: readonly unknown[] = [],
 ) {
   const base = MCC_CATEGORIES.filter((c) => c.id !== INTERNAL_TRANSFER_ID);
-  const extra = customCategories.filter(isCustomCategoryInput).map((c) => ({
+  const extra = customCategories
+    .filter(isCustomCategoryInput)
+    .filter((c) => c.kind !== "income")
+    .map((c) => ({
+      id: c.id,
+      label: c.label ?? "",
+      mccs: [] as number[],
+      keywords: [] as string[],
+    }));
+  return [...base, ...extra];
+}
+
+export function mergeIncomeCategoryDefinitions(
+  customCategories: readonly unknown[] = [],
+) {
+  const extra = customCategories
+    .filter(isCustomCategoryInput)
+    .filter((c) => c.kind === "income")
+    .map((c) => ({ id: c.id, label: c.label ?? "", keywords: [] as string[] }));
+  const builtins = MANUAL_INCOME_TAXONOMY.map((c) => ({
     id: c.id,
-    label: c.label ?? "",
-    mccs: [] as number[],
+    label: c.label,
     keywords: [] as string[],
   }));
-  return [...base, ...extra];
+  return [
+    ...builtins,
+    {
+      id: INTERNAL_TRANSFER_ID,
+      label: "Внутрішній переказ",
+      keywords: [] as string[],
+    },
+    ...extra,
+  ];
 }
 
 export const INCOME_CATEGORIES = [

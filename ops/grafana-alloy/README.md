@@ -1,13 +1,13 @@
 # Grafana Alloy — Phase 2 metrics scraper
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-02.
+> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-29.
 > **Status:** Active
 
 Лёгкий scrape-only агент, який ходить по `/metrics` apps/server і пушить
 все у Grafana Cloud Prometheus. Без локального TSDB — це робота Grafana Cloud.
 
-Контекст рішення — [`docs/02-engineering/architecture/hosting-evolution.md`](../../docs/02-engineering/architecture/hosting-evolution.md)
-§Фаза 2 та [`docs/04-governance/adr/0015-observability-stack.md`](../../docs/04-governance/adr/0015-observability-stack.md)
+Контекст рішення — [`docs/engineering/architecture/hosting-evolution.md`](../../docs/engineering/architecture/hosting-evolution.md)
+§Фаза 2 та [`docs/governance/adr/0015-observability-stack.md`](../../docs/governance/adr/0015-observability-stack.md)
 §ADR-15.2 (exit criterion: scrape-інфра).
 
 ## Що скрейпиться
@@ -58,7 +58,7 @@ Coolify не дає стабільного internal-DNS-імені між окр
 `METRICS_TOKEN`-ом (bearer), тож публічність шляху не означає публічність даних.
 
 **`N8N_METRICS_TARGET` більше не існує** — n8n виведено з експлуатації
-([ADR-0090](../../docs/04-governance/adr/0090-n8n-decommissioned.md)); scrape-джоб `n8n`
+([ADR-0090](../../docs/governance/adr/0090-n8n-decommissioned.md)); scrape-джоб `n8n`
 прибрано і з [`config.alloy`](./config.alloy), і з production-конфіга. Єдиний target — `sergeant-server`.
 
 **Перевірка після деплою:** у логах має бути `{^_^} Alloy is running`, а в
@@ -68,19 +68,19 @@ Grafana Cloud → Explore → Prometheus запит `up{job="sergeant-server"}` 
 ## Імпорт дашбордів у Grafana Cloud
 
 Після того як `up{job="sergeant-server"} == 1` — імпортуй
-дашборди з `docs/03-operations/observability/dashboards/` через **Dashboards → Import →
+дашборди з `docs/operations/observability/dashboards/` через **Dashboards → Import →
 Upload JSON**. Datasource — той самий `grafanacloud-<instance>-prom`.
 
 `slo-burn-rate.json` залежить від recording rules з
-[`docs/03-operations/observability/prometheus/recording_rules.yml`](../../docs/03-operations/observability/prometheus/recording_rules.yml)
+[`docs/operations/observability/prometheus/recording_rules.yml`](../../docs/operations/observability/prometheus/recording_rules.yml)
 — завантаж їх у Grafana Cloud → Alerts & IRM → Alert rules → Recording rules
 (або `mimirtool rules sync`).
 
 ## Алерти
 
-Alert rules у [`docs/03-operations/observability/prometheus/alert_rules.yml`](../../docs/03-operations/observability/prometheus/alert_rules.yml)
+Alert rules у [`docs/operations/observability/prometheus/alert_rules.yml`](../../docs/operations/observability/prometheus/alert_rules.yml)
 вантажаться так само (`mimirtool rules sync`). Contact point — Telegram
-через webhook — маршрутизація у [`alert-bot-routing.md`](../../docs/03-operations/observability/alert-bot-routing.md).
+через webhook — маршрутизація у [`alert-bot-routing.md`](../../docs/operations/observability/alert-bot-routing.md).
 
 ## Чому Alloy, а не повний Prometheus
 
@@ -103,8 +103,8 @@ Alert rules у [`docs/03-operations/observability/prometheus/alert_rules.yml`](.
 ## Міграція: перенести у проєкт `Sergeant` (план) — історичний
 
 > **Історично.** План нижче написано під Railway і під двохтаргетний scrape
-> (API + n8n). Railway виведено з експлуатації ([ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md)),
-> n8n — теж ([ADR-0090](../../docs/04-governance/adr/0090-n8n-decommissioned.md)). Не виконуй; лишено як контекст
+> (API + n8n). Railway виведено з експлуатації ([ADR-0074](../../docs/governance/adr/0074-hosting-hetzner-coolify.md)),
+> n8n — теж ([ADR-0090](../../docs/governance/adr/0090-n8n-decommissioned.md)). Не виконуй; лишено як контекст
 > інциденту 2026-07-14.
 
 > **Чому.** Зараз сервіс живе у Railway-проєкті `SERGEANT_N8N`, тому скрейпить

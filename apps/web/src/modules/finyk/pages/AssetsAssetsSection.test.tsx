@@ -204,43 +204,29 @@ describe("AssetsAssetsSection", () => {
     expect(screen.getAllByText(/Інвестиції/).length).toBeGreaterThan(0);
   });
 
-  it("renders '+ Додати актив «мені винні»' add button", () => {
+  it("does not render its own add buttons — the quick-action picker owns them", () => {
     render(wrap(<AssetsAssetsSection state={makeState()} />));
-    expect(screen.getByText("+ Додати актив «мені винні»")).toBeInTheDocument();
+    expect(screen.queryByText("+ Додати актив «мені винні»")).toBeNull();
+    expect(screen.queryByText("+ Додати актив")).toBeNull();
   });
 
-  it("renders '+ Додати актив' add button", () => {
-    render(wrap(<AssetsAssetsSection state={makeState()} />));
-    expect(screen.getByText("+ Додати актив")).toBeInTheDocument();
-  });
+  it("re-expands a collapsed group when its form is shown", () => {
+    const { rerender } = render(
+      wrap(<AssetsAssetsSection state={makeState()} />),
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Мені винні/ }));
+    expect(screen.queryByText(/Зберігайте облік боргів/)).not.toBeVisible();
 
-  it("calls setShowRecvForm(true) when the receivables add button is clicked", () => {
-    const state = makeState();
-    render(wrap(<AssetsAssetsSection state={state} />));
-    fireEvent.click(screen.getByText("+ Додати актив «мені винні»"));
-    expect(state.setEditingRecvId).toHaveBeenCalledWith(null);
-    expect(state.setNewRecv).toHaveBeenCalledWith({
-      name: "",
-      emoji: "",
-      amount: "",
-      note: "",
-      dueDate: "",
-    });
-    expect(state.setShowRecvForm).toHaveBeenCalledWith(true);
-  });
-
-  it("calls setShowAssetForm(true) when the assets add button is clicked", () => {
-    const state = makeState();
-    render(wrap(<AssetsAssetsSection state={state} />));
-    fireEvent.click(screen.getByText("+ Додати актив"));
-    expect(state.setEditingAssetId).toHaveBeenCalledWith(null);
-    expect(state.setNewAsset).toHaveBeenCalledWith({
-      name: "",
-      amount: "",
-      currency: "UAH",
-      emoji: "",
-    });
-    expect(state.setShowAssetForm).toHaveBeenCalledWith(true);
+    // Quick-action «+ Актив → Мені винні» ставить showRecvForm — група має
+    // розгорнутись сама, інакше форма лишиться невидимою.
+    rerender(
+      wrap(<AssetsAssetsSection state={makeState({ showRecvForm: true })} />),
+    );
+    expect(screen.getByTestId("receivable-form")).toBeVisible();
+    expect(screen.getByRole("button", { name: /Мені винні/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
   });
 
   it("renders ReceivableForm when showRecvForm is true", () => {

@@ -62,7 +62,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Червоні прапорці
 
-- «Фіча в одній теці модуля, хай і на 2-3 його поверхнях» → не squad-кейс: віддай module-owner агенту (`finyk-owner` тощо) через відповідний `sergeant-module-*` скіл. Squad — коли зʼявляється **нова контрактна залежність** server↔client через `packages/api-client` (межа — `docs/00-start/agents/agent-workflows.md` § 0)
+- «Фіча в одній теці модуля, хай і на 2-3 його поверхнях» → не squad-кейс: віддай module-owner агенту (`finyk-owner` тощо) через відповідний `sergeant-module-*` скіл. Squad — коли зʼявляється **нова контрактна залежність** server↔client через `packages/api-client` (межа — `docs/start/agents/agent-workflows.md` § 0)
 - «Запущу web-agent до завершення api-client-agent» → типи ще не готові, web-agent напише проти stale interface
 - «Пропущу migration-agent, зроблю ALTER TABLE в коді» → порушення Hard Rule #4, немає sequential migration файлу
 - «api-client-agent не потрібен, web-agent прочитає типи з server прямо» → заборонено, cross-app imports порушують monorepo boundaries
@@ -72,7 +72,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Playbooks
 
-- [`docs/00-start/playbooks/run-squad-deliver.md`](../../../docs/00-start/playbooks/run-squad-deliver.md) — step-by-step рецепт
-- [`docs/00-start/playbooks/add-api-endpoint.md`](../../../docs/00-start/playbooks/add-api-endpoint.md) — reference для single-surface server endpoint
-- [`docs/00-start/playbooks/add-sql-migration.md`](../../../docs/00-start/playbooks/add-sql-migration.md) — reference для migration rules
-- [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — каталог всіх skills
+- [`docs/start/instructions/run-squad-deliver.md`](../../../docs/start/instructions/run-squad-deliver.md) — step-by-step рецепт
+- [`docs/start/instructions/add-api-endpoint.md`](../../../docs/start/instructions/add-api-endpoint.md) — reference для single-surface server endpoint
+- [`docs/start/instructions/add-sql-migration.md`](../../../docs/start/instructions/add-sql-migration.md) — reference для migration rules
+- [`docs/start/agents/agent-skills-catalog.md`](../../../docs/start/agents/agent-skills-catalog.md) — каталог всіх skills

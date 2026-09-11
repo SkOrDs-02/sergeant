@@ -155,21 +155,15 @@ function assertValidStatus(
 
 /**
  * `week_start` columns у Postgres повертаються як `Date` (pg type 1082).
- * Конверт-имо у `YYYY-MM-DD`-string для serialize-у назовні.
+ * Конверт-имо у `YYYY-MM-DD`-string у Kyiv-local, щоб не зсунути DATE на
+ * попередній день через різницю між часовою зоною процесу й доменом.
  */
 function rowToGoal(row: StrategicGoalRow): StrategicGoal {
   assertValidPersona(row.persona);
   assertValidStatus(row.status);
   const weekStart =
     row.week_start instanceof Date
-      ? new Intl.DateTimeFormat("en-CA", {
-          // pg returns DATE as UTC-midnight Date; Kyiv-local-day is same calendar
-          // day як ISO-date string бо value уже без TZ-offset-у.
-          timeZone: "UTC",
-          year: "numeric",
-          month: "2-digit",
-          day: "2-digit",
-        }).format(row.week_start)
+      ? toKyivDateString(row.week_start)
       : row.week_start;
   return {
     id: Number(row.id),

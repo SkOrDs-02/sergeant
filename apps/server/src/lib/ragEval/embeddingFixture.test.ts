@@ -20,7 +20,7 @@ import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { createHash } from "node:crypto";
 import { mkdtempSync, rmSync, writeFileSync } from "node:fs";
 import { tmpdir } from "node:os";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 
 /** Розмірність фікстури в тестах. */
 const DIM = 4;
@@ -114,16 +114,20 @@ afterEach(() => {
 describe("fixturePaths", () => {
   it("складає всі чотири шляхи від переданої теки", () => {
     const paths = mod.fixturePaths("/десь/тут");
-    expect(paths.bin).toBe("/десь/тут/embeddings-v1.bin");
-    expect(paths.manifest).toBe("/десь/тут/embeddings-v1.manifest.json");
-    expect(paths.corpus).toBe("/десь/тут/corpus.json");
-    expect(paths.golden).toBe("/десь/тут/golden.json");
+    expect(paths.bin).toBe(resolve("/десь/тут", "embeddings-v1.bin"));
+    expect(paths.manifest).toBe(
+      resolve("/десь/тут", "embeddings-v1.manifest.json"),
+    );
+    expect(paths.corpus).toBe(resolve("/десь/тут", "corpus.json"));
+    expect(paths.golden).toBe(resolve("/десь/тут", "golden.json"));
   });
 
   it("без аргументу веде у __fixtures__/rag-eval репозиторію", () => {
     // Генератор і лоадер мусять дивитись в одне місце — розʼїзд тут дав би
     // «фікстури немає» на рівному місці.
-    expect(mod.fixturePaths().bin).toContain("__fixtures__/rag-eval");
+    expect(mod.fixturePaths().bin).toContain(
+      `${sep}__fixtures__${sep}rag-eval${sep}`,
+    );
   });
 
   it("імʼя .bin несе версію формату", () => {

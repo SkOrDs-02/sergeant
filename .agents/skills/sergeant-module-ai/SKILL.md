@@ -11,8 +11,8 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Канон і журнал (читати перед роботою)
 
-- Канон: [docs/01-product/model/hub-coach.md](../../../docs/01-product/model/hub-coach.md), включно з **§ Журнал рішень** — рішення там уже ухвалені, не перепитуй maintainer-а.
-- Розбіжності канон↔код: [docs/90-work/audits/product-knowledge-hub-coach.md](../../../docs/90-work/audits/product-knowledge-hub-coach.md).
+- Канон: [docs/product/modules/hub-coach.md](../../../docs/product/modules/hub-coach.md), включно з **§ Журнал рішень** — рішення там уже ухвалені, не перепитуй maintainer-а.
+- Розбіжності канон↔код: [docs/work/specs/audits/product-knowledge-hub-coach.md](../../../docs/work/specs/audits/product-knowledge-hub-coach.md).
 - PR, що змінює продуктову поведінку AI-шару, оновлює канон (і журнал) **у тому ж PR** — правило `AGENTS.md § See also`.
 
 ## Мапа файлів
@@ -34,7 +34,7 @@ Tool-и визначаються на сервері, а виконуються 
 
 - Сервер НЕ виконує chat-tool side-effect-и у `chat.ts`; клієнтські executor-и використовують наявні storage-врапери або типовані API-клієнти.
 - Результати tool-ів, що повертаються моделі, — лаконічні й детерміновані.
-- **Prompt cache ([ADR-0039](../../../docs/04-governance/adr/0039-anthropic-prompt-cache-policy.md) — активна політика):** breakpoint-и і TTL — `apps/server/src/modules/chat/promptCache.ts`, розкладка tools — `toolSearch.ts` (`apps/server/src/lib/anthropic.ts` — лише HTTP-врапер). У контекст їде гарячий набір (`HOT_TOOL_NAMES`), решта — `defer_loading: true`: зміна опису deferred tool-а кеш НЕ інвалідовує, гарячого — інвалідовує. Не став `cache_control` на deferred tool — Anthropic віддає 400. Бюджет префікса тримає `promptPrefixBudget.test.ts`. (ADR-0057 — Historical, не цитуй як чинну політику.)
+- **Prompt cache ([ADR-0039](../../../docs/governance/adr/0039-anthropic-prompt-cache-policy.md) — активна політика):** breakpoint-и і TTL — `apps/server/src/modules/chat/promptCache.ts`, розкладка tools — `toolSearch.ts` (`apps/server/src/lib/anthropic.ts` — лише HTTP-врапер). У контекст їде гарячий набір (`HOT_TOOL_NAMES`), решта — `defer_loading: true`: зміна опису deferred tool-а кеш НЕ інвалідовує, гарячого — інвалідовує. Не став `cache_control` на deferred tool — Anthropic віддає 400. Бюджет префікса тримає `promptPrefixBudget.test.ts`. (ADR-0057 — Historical, не цитуй як чинну політику.)
 - **Hard Rule #20:** ніяких OpenClaw PAT-ів у production (`assertStartupEnv()` захищає runtime; не обходь).
 
 ## Верифікація
@@ -47,5 +47,5 @@ Tool-и визначаються на сервері, а виконуються 
 
 - Технічні правила поверхні: `sergeant-server-api` / `sergeant-web-ui`.
 - Делегування виконання: агент `ai-owner` (`.claude/agents/ai-owner.md`). Межа: owner працює **всередині AI-шару**; крос-поверхневу фічу по стадіях веде `sergeant-deliver-squad`.
-- Playbooks: [add-hubchat-tool.md](../../../docs/00-start/playbooks/add-hubchat-tool.md), [debug-chat-tool.md](../../../docs/00-start/playbooks/debug-chat-tool.md), [enable-prompt-caching.md](../../../docs/00-start/playbooks/enable-prompt-caching.md), [tune-system-prompt.md](../../../docs/00-start/playbooks/tune-system-prompt.md).
-- Каталог: [docs/00-start/agents/agent-skills-catalog.md](../../../docs/00-start/agents/agent-skills-catalog.md).
+- Playbooks: [add-hubchat-tool.md](../../../docs/start/instructions/add-hubchat-tool.md), [debug-chat-tool.md](../../../docs/start/instructions/debug-chat-tool.md), [enable-prompt-caching.md](../../../docs/start/instructions/enable-prompt-caching.md), [tune-system-prompt.md](../../../docs/start/instructions/tune-system-prompt.md).
+- Каталог: [docs/start/agents/agent-skills-catalog.md](../../../docs/start/agents/agent-skills-catalog.md).

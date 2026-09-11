@@ -7,7 +7,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
-import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
 import { messages } from "@shared/i18n/uk";
 import { mapApiErrorToUserCopy } from "@shared/lib/api/mapApiErrorToUserCopy";
@@ -223,24 +222,11 @@ export function SessionsSection({ online }: { online: boolean }) {
 
   return (
     <Card radius="lg" padding="none" className="overflow-hidden">
-      {/* V-4 (2026-08-08) — той самий фікс, що й `MemoryBankSection.tsx`
-          (канонічний коментар там): `COPY.sectionTitle` тут дослівно
-          збігався з зовнішнім заголовком «Активні сесії» в
-          `ProfilePage.tsx` і малювався `text-style-label`, більшим за
-          `xs`-кікер `CollapsibleSection`. Прибрано; іконка й кнопка
-          «Оновити» (дія, не заголовок) лишились без змін. */}
-      <div className="px-4 py-3.5 flex items-center justify-between border-b border-line">
-        <Icon name="monitor" size={16} className="text-muted" />
-        <Button
-          variant="ghost"
-          size="xs"
-          onClick={load}
-          disabled={loading || !online}
-        >
-          {COPY.refresh}
-        </Button>
-      </div>
-
+      {/* V-4 (2026-08-08) прибрав звідси текстовий заголовок, і шапка
+          картки лишилась із самотньою іконкою та кнопкою «Оновити» —
+          залишок, а не дизайн (огляд 2026-09-04). Шапки більше немає:
+          «Оновити» стоїть під списком, там, де на нього дивляться після
+          прочитання. */}
       <div className="p-4">
         {loading && sessions.length === 0 ? (
           <p className="text-style-body text-muted text-center py-4">
@@ -317,6 +303,16 @@ export function SessionsSection({ online }: { online: boolean }) {
             </ul>
           </>
         )}
+        <div className="mt-3 flex justify-end">
+          <Button
+            variant="ghost"
+            size="xs"
+            onClick={load}
+            disabled={loading || !online}
+          >
+            {COPY.refresh}
+          </Button>
+        </div>
       </div>
 
       {/* F1/L-18: той самий діалог, що й «Вийти» на ProfilePage — зʼявляється

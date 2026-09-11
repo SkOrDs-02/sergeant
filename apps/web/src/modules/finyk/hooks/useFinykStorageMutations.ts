@@ -349,7 +349,13 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       color,
       icon,
       parentId,
-    }: { color?: string; icon?: string; parentId?: string } = {},
+      kind = "expense",
+    }: {
+      color?: string;
+      icon?: string;
+      parentId?: string;
+      kind?: "expense" | "income";
+    } = {},
   ) => {
     // AI-CONTEXT (2026-08-21): підпис нормалізується на ЗАПИСІ, а не на
     // кожному рендері. Вбудовані категорії втратили емодзі-префікси того
@@ -362,7 +368,13 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     if (!trimmed || trimmed.length > 80) return;
     setCustomCategories((prev) => {
       if (prev.length >= 80) return prev;
-      if (prev.some((c) => c.label.toLowerCase() === trimmed.toLowerCase()))
+      if (
+        prev.some(
+          (c) =>
+            (c.kind ?? "expense") === kind &&
+            c.label.toLowerCase() === trimmed.toLowerCase(),
+        )
+      )
         return prev;
       const id = `cus_${Date.now().toString(36)}_${crypto.randomUUID()}`;
       const entry: {
@@ -371,7 +383,9 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
         color?: string;
         icon?: string;
         parentId?: string;
+        kind?: "expense" | "income";
       } = { id, label: trimmed };
+      if (kind === "income") entry.kind = kind;
       if (color) entry.color = color;
       if (icon) entry.icon = icon;
       if (parentId) entry.parentId = parentId;

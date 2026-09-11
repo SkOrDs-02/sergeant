@@ -16,8 +16,8 @@
 // harness hook (AGENTS.md § "Harness config lives outside the repo").
 //
 // Reuses scripts/docs/skill-mapping.json (path→skill, canonical per Initiative
-// 0015) and docs/04-governance/governance/hard-rules.json (scope globs) — no
-// duplicated routing logic. See docs/04-governance/adr/0066-…md (sibling
+// 0015) and docs/governance/governance/hard-rules.json (scope globs) — no
+// duplicated routing logic. See docs/governance/adr/0066-…md (sibling
 // retrieval primitive).
 //
 // Usage:
@@ -36,7 +36,7 @@ const REPO_ROOT = resolve(__dirname, "../..");
 const MAPPING_PATH = resolve(REPO_ROOT, "scripts/docs/skill-mapping.json");
 const HARD_RULES_PATH = resolve(
   REPO_ROOT,
-  "docs/04-governance/governance/hard-rules.json",
+  "docs/governance/governance/hard-rules.json",
 );
 
 function readJson(abs) {

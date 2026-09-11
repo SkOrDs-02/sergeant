@@ -3,7 +3,7 @@
 > **Last validated:** 2026-05-13 by @Skords-01 / Devin. **Next review:** 2026-08-11.
 > **Status:** Active
 
-PostHog assets, що версіонуються разом із кодом — на відміну від manually-pinned дашбордів усередині PostHog UI. Сюди йдуть **portable manifests** для дашбордів, які можна імпортувати через PostHog REST API (`POST /api/projects/:id/insights/` + `POST /api/projects/:id/dashboards/`). Runbook-и (HogQL, цілі, алерти) лежать поруч у [`docs/03-operations/observability/`](../../docs/03-operations/observability/).
+PostHog assets, що версіонуються разом із кодом — на відміну від manually-pinned дашбордів усередині PostHog UI. Сюди йдуть **portable manifests** для дашбордів, які можна імпортувати через PostHog REST API (`POST /api/projects/:id/insights/` + `POST /api/projects/:id/dashboards/`). Runbook-и (HogQL, цілі, алерти) лежать поруч у [`docs/operations/observability/`](../../docs/operations/observability/).
 
 ## Структура
 
@@ -16,11 +16,11 @@ ops/posthog/
     └── dashboard.schema.json   # JSON Schema контракту манифесту (draft-07).
 ```
 
-| Файл                                                               | Скоуп                                                                                                                                                                 | Runbook                                                                                                                        |
-| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| [`dashboards/founder-pulse.json`](./dashboards/founder-pulse.json) | DAU/WAU/MAU, WF-60 funnel (signup → onboarding → first_action → subscription), per-module funnel, D1/D7/D30 retention, activation rate, new-MRR, funnel-ZEROES canary | [`docs/03-operations/observability/posthog-founder-pulse.md`](../../docs/03-operations/observability/posthog-founder-pulse.md) |
-| [`dashboards/hub-tab-perf.json`](./dashboards/hub-tab-perf.json)   | P50/P95 `ttiMs` по табах Hub, long-task burden, cache-hit ratio, гістограма TTI, денний тренд — з подій `hub_tab_switch_perf`                                         | [`docs/03-operations/observability/hub-perf-baseline.md`](../../docs/03-operations/observability/hub-perf-baseline.md)         |
-| [`schema/dashboard.schema.json`](./schema/dashboard.schema.json)   | JSON Schema (draft-07) для всіх манифестів вище — на неї вказує поле `$schema` кожного файлу                                                                          | —                                                                                                                              |
+| Файл                                                               | Скоуп                                                                                                                                                                 | Runbook                                                                                                                  |
+| ------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
+| [`dashboards/founder-pulse.json`](./dashboards/founder-pulse.json) | DAU/WAU/MAU, WF-60 funnel (signup → onboarding → first_action → subscription), per-module funnel, D1/D7/D30 retention, activation rate, new-MRR, funnel-ZEROES canary | [`docs/operations/observability/posthog-founder-pulse.md`](../../docs/operations/observability/posthog-founder-pulse.md) |
+| [`dashboards/hub-tab-perf.json`](./dashboards/hub-tab-perf.json)   | P50/P95 `ttiMs` по табах Hub, long-task burden, cache-hit ratio, гістограма TTI, денний тренд — з подій `hub_tab_switch_perf`                                         | [`docs/operations/observability/hub-perf-baseline.md`](../../docs/operations/observability/hub-perf-baseline.md)         |
+| [`schema/dashboard.schema.json`](./schema/dashboard.schema.json)   | JSON Schema (draft-07) для всіх манифестів вище — на неї вказує поле `$schema` кожного файлу                                                                          | —                                                                                                                        |
 
 ## Live-стан у PostHog (prod `167740`)
 
@@ -144,19 +144,19 @@ Funnel-панелі → native `FunnelsQuery`, retention → `RetentionQuery`, �
 2. Вставити `panel.query.query` (HogQL). Перевірити `LIMIT 100` для контракту.
 3. **Save as Insight.** Назва = `panel.name`. Опис = `panel.description` + `panel.rationale`.
 4. Pin to **Dashboards → Founder Pulse** (створити, якщо немає).
-5. Cross-check у runbook (`docs/03-operations/observability/posthog-founder-pulse.md`) — додати live insight `short_id` після збереження.
+5. Cross-check у runbook (`docs/operations/observability/posthog-founder-pulse.md`) — додати live insight `short_id` після збереження.
 
 ✅ Auto-import реалізовано (2026-06-26): [`scripts/posthog/import-founder-pulse.mjs`](../../scripts/posthog/import-founder-pulse.mjs) — закриває PR-11. Опційний наступний крок — cron-обгортка (WF-16) для періодичного re-sync drift-detection.
 
 ## Контракт із canonical events
 
-JSON `events_contract` — це snapshot пейлоадів на момент додавання панелі. Якщо подія в [`packages/shared/src/lib/analyticsEvents.ts`](../../packages/shared/src/lib/analyticsEvents.ts) змінює пейлоад, manifest **повинен** оновитись у тому самому PR-і. Інакше HogQL silently zero-out tiles ≥7 днів до того, як хтось помітить (див. `docs/03-operations/observability/posthog-ftux-dashboards.md` §3 — той самий контракт).
+JSON `events_contract` — це snapshot пейлоадів на момент додавання панелі. Якщо подія в [`packages/shared/src/lib/analyticsEvents.ts`](../../packages/shared/src/lib/analyticsEvents.ts) змінює пейлоад, manifest **повинен** оновитись у тому самому PR-і. Інакше HogQL silently zero-out tiles ≥7 днів до того, як хтось помітить (див. `docs/operations/observability/posthog-ftux-dashboards.md` §3 — той самий контракт).
 
 ## Пов'язано
 
 - [`schema/dashboard.schema.json`](./schema/dashboard.schema.json) — контракт манифесту; [`scripts/posthog/lint-manifests.mjs`](../../scripts/posthog/lint-manifests.mjs) — гейт (`pnpm lint:posthog-manifests`).
-- [`docs/03-operations/observability/posthog-founder-pulse.md`](../../docs/03-operations/observability/posthog-founder-pulse.md) — runbook + цілі + алерти для цього дашборду.
-- [`docs/03-operations/observability/hub-perf-baseline.md`](../../docs/03-operations/observability/hub-perf-baseline.md) — runbook для `hub-tab-perf.json`.
-- [`docs/03-operations/observability/posthog-ftux-dashboards.md`](../../docs/03-operations/observability/posthog-ftux-dashboards.md) — runbook для FTUX-overview дашборду (manually-pinned у PostHog).
+- [`docs/operations/observability/posthog-founder-pulse.md`](../../docs/operations/observability/posthog-founder-pulse.md) — runbook + цілі + алерти для цього дашборду.
+- [`docs/operations/observability/hub-perf-baseline.md`](../../docs/operations/observability/hub-perf-baseline.md) — runbook для `hub-tab-perf.json`.
+- [`docs/operations/observability/posthog-ftux-dashboards.md`](../../docs/operations/observability/posthog-ftux-dashboards.md) — runbook для FTUX-overview дашборду (manually-pinned у PostHog).
 - [`packages/shared/src/lib/analyticsEvents.ts`](../../packages/shared/src/lib/analyticsEvents.ts) — canonical event-name registry.
-- Growth-funnel snapshot (колишній n8n WF-60, [permalink](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/60-growth-funnel-snapshot.json)) читав ті самі 4 funnel-події; n8n виведено з експлуатації ([ADR-0090](../../docs/04-governance/adr/0090-n8n-decommissioned.md)), snapshot-крон живе у серверних таймерах ([ADR-0089](../../docs/04-governance/adr/0089-job-substrates-outbox-broker-timer.md)).
+- Growth-funnel snapshot (колишній n8n WF-60, [permalink](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/60-growth-funnel-snapshot.json)) читав ті самі 4 funnel-події; n8n виведено з експлуатації ([ADR-0090](../../docs/governance/adr/0090-n8n-decommissioned.md)), snapshot-крон живе у серверних таймерах ([ADR-0089](../../docs/governance/adr/0089-job-substrates-outbox-broker-timer.md)).

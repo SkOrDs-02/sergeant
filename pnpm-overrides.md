@@ -1,10 +1,10 @@
 # pnpm Overrides Rationale
 
-> **Last touched:** 2026-09-02 by @claude. **Next review:** 2026-12-06.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-15.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
-Правила: [`docs/04-governance/governance/pnpm-overrides-policy.md`](docs/04-governance/governance/pnpm-overrides-policy.md).
+Правила: [`docs/governance/governance/pnpm-overrides-policy.md`](docs/governance/governance/pnpm-overrides-policy.md).
 
 ---
 
@@ -75,7 +75,7 @@ Vite / postcss-loader тягнуть різні patch-рівні; override га�
 
 **Why:** Деякі transitive залежники підтягували `uuid@v1`–`v8` (CJS-only, без `crypto`
 failsafe). UUID v14 — мажор з ESM-first, покращеним RNG та видаленням deprecated v1/v6 API.
-Пов'язано з hardening card L1 (`docs/04-governance/security/hardening/L1-uuid-override.md`).
+Пов'язано з hardening card L1 (`docs/work/specs/security-hardening/L1-uuid-override.md`).
 
 **Drop when:** Всі workspaces явно залежать від `uuid@^14` або мігрують на `crypto.randomUUID()`
 (native, без пакету).
@@ -216,7 +216,7 @@ pin на `tmp >=0.2.6`, або advisory буде відкликано.
 | `browserslist@<4.28.7`           | `>=4.28.7`        | ✅ так                |
 
 Всього: **33** override-ів. Борг на дописування обґрунтувань трекається політикою
-[`pnpm-overrides-policy.md`](docs/04-governance/governance/pnpm-overrides-policy.md) § Правила п.1.
+[`pnpm-overrides-policy.md`](docs/governance/governance/pnpm-overrides-policy.md) § Правила п.1.
 
 ---
 
@@ -254,7 +254,7 @@ pin на `tmp >=0.2.6`, або advisory буде відкликано.
 **Висновок ширший за цей пакет:** точний пін без записаного «чому» — це не фіксація, а
 міна сповільненої дії. Селектор із діапазоном (`^3.1.6`) лагодить те, заради чого пін
 ставили, і не блокує патчі. Політика вже цього вимагає — див.
-[`pnpm-overrides-policy.md`](docs/04-governance/governance/pnpm-overrides-policy.md)
+[`pnpm-overrides-policy.md`](docs/governance/governance/pnpm-overrides-policy.md)
 § Правила п.1; цей випадок показує, у що обходиться борг на обґрунтуваннях.
 
 **Drop when:** усі споживачі (`ajv`, `fast-json-stringify` і решта fastify-стека)

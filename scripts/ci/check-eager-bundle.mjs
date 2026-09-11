@@ -87,7 +87,7 @@ import { brotliCompressSync, constants } from "node:zlib";
  * — 264.6 проти 170. Наступні кандидати вже не в drizzle, а в тому, що
  * лишилось у списку: `vendor-react`, `vendor-router`, спільний `vendor`.
  *
- * Актуальний розбір і напрямки — `docs/90-work/tech-debt/frontend.md`.
+ * Актуальний розбір і напрямки — `docs/work/specs/tech-debt/frontend.md`.
  */
 const DEFAULT_LIMIT_BYTES = 280_000;
 

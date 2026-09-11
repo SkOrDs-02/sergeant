@@ -3,13 +3,13 @@
 //
 // Aggregates `pnpm outdated` and `pnpm audit` into one
 // Markdown digest, triages every outdated package into safe / risky, and marks
-// CVEs already covered by docs/04-governance/security/audit-exceptions.md so the
+// CVEs already covered by docs/governance/security/audit-exceptions.md so the
 // report never re-nags about a waived advisory.
 //
 // AI-CONTEXT: This script MUST stay side-effect-free. It only reads the tree and
 // prints Markdown to stdout — it never installs, writes lockfiles, commits, or
 // mutates package.json. The phased rollout (L1 report-only → L2 auto-patch) in
-// docs/00-start/playbooks/dependency-sweeper.md depends on this invariant: L1 is
+// docs/start/instructions/dependency-sweeper.md depends on this invariant: L1 is
 // safe to schedule unattended precisely because this engine cannot change state.
 //
 // Exit code is ALWAYS 0 on a successful scan (pnpm outdated/audit exit non-zero
@@ -58,7 +58,7 @@ function waivedAdvisoryIds() {
   const ids = new Set();
   try {
     const ledger = readFileSync(
-      join(repoRoot, "docs/04-governance/security/audit-exceptions.md"),
+      join(repoRoot, "docs/governance/security/audit-exceptions.md"),
       "utf8",
     );
     for (const m of ledger.matchAll(/(GHSA-[0-9a-z-]+|CVE-\d{4}-\d+)/gi))
@@ -244,7 +244,7 @@ if (actionableAdvisories.length) {
   }
   out.push("");
   out.push(
-    "> high/critical → ескалювати. Якщо патчу нема — запис у [`audit-exceptions.md`](../../04-governance/security/audit-exceptions.md), не тут.",
+    "> high/critical → ескалювати. Якщо патчу нема — запис у [`audit-exceptions.md`](../../governance/security/audit-exceptions.md), не тут.",
   );
 } else {
   out.push("_немає активних вразливостей поза ledger-ом._");
@@ -254,7 +254,7 @@ out.push("");
 out.push("---");
 out.push("");
 out.push(
-  "_Згенеровано `scripts/dependency-sweeper-report.mjs` — read-only движок L1. Мапінг фаз і L1→L2→L3: [`dependency-sweeper.md`](../../00-start/playbooks/dependency-sweeper.md)._",
+  "_Згенеровано `scripts/dependency-sweeper-report.mjs` — read-only движок L1. Мапінг фаз і L1→L2→L3: [`dependency-sweeper.md`](../../start/playbooks/dependency-sweeper.md)._",
 );
 
 process.stdout.write(out.join(nl) + nl);

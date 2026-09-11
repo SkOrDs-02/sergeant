@@ -13,7 +13,7 @@ on:
       - "scripts/__tests__/post-deploy-smoke.test.mjs"
       - ".github/workflows/pact-drift.yml"
       - ".github/workflows/post-deploy-smoke.yml"
-      - "docs/02-engineering/api/openapi.json"
+      - "docs/engineering/api/openapi.json"
       - "packages/api-client/src/generated/openapi.d.ts"
       - "apps/server/src/__tests__/contracts/**"
       - ".github/workflows/contract-tests.yml"

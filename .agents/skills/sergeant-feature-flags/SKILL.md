@@ -7,7 +7,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 # Feature flags у Sergeant
 
-Єдиний реєстр усіх тумблерів — [docs/02-engineering/architecture/feature-flags.md](../../../docs/02-engineering/architecture/feature-flags.md): чотири системи, дефолти, що ламається при протилежному значенні і **умова зняття**. Читай його ПЕРЕД додаванням прапорця — там же критерій вибору системи.
+Єдиний реєстр усіх тумблерів — [docs/engineering/architecture/feature-flags.md](../../../docs/engineering/architecture/feature-flags.md): чотири системи, дефолти, що ламається при протилежному значенні і **умова зняття**. Читай його ПЕРЕД додаванням прапорця — там же критерій вибору системи.
 
 ## Чотири системи (вибір — § 1 реєстру)
 
@@ -18,7 +18,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 ## Обовʼязковий процес
 
-- Новий прапорець → рядок у реєстрі **у тому ж PR**: система, дефолт, що ламається, умова зняття (§ 6 «Як додати новий прапорець»). Playbook: [add-feature-flag.md](../../../docs/00-start/playbooks/add-feature-flag.md).
+- Новий прапорець → рядок у реєстрі **у тому ж PR**: система, дефолт, що ламається, умова зняття (§ 6 «Як додати новий прапорець»). Playbook: [add-feature-flag.md](../../../docs/start/instructions/add-feature-flag.md).
 - Прапорець без умови зняття — це не тумблер, а вічний борг: § 7 реєстру трекає відомий борг.
 - Знімаєш прапорець → прибери і рядок реєстру, і мертву гілку коду (не лишай `if (true)`).
 
@@ -31,4 +31,4 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 ## Роутинг далі
 
 - Деплой/env-механіка: `sergeant-deploy-and-observability`; клієнтський код: `sergeant-web-ui`.
-- Каталог: [docs/00-start/agents/agent-skills-catalog.md](../../../docs/00-start/agents/agent-skills-catalog.md).
+- Каталог: [docs/start/agents/agent-skills-catalog.md](../../../docs/start/agents/agent-skills-catalog.md).

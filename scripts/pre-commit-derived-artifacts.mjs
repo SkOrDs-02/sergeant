@@ -7,7 +7,7 @@
 // Проблема, яку це закриває. У ніч 2026-08-29/30 `main` ламався шість
 // разів поспіль трьома різними PR — і щоразу одним і тим самим
 // механізмом: джерело змінилось, похідний артефакт не перегенеровано.
-// #935 лишив несвіжим `docs/02-engineering/api/openapi.json`, #930 і #941 —
+// #935 лишив несвіжим `docs/engineering/api/openapi.json`, #930 і #941 —
 // чотири похідні доки та `freshness-dashboard.html`. Гейти в CI на все це
 // вже були; чого не було — нічого, що заважає створити розсинхрон ЛОКАЛЬНО.
 // Автор дізнавався про нього лише коли червонів чужий відкритий PR.
@@ -111,16 +111,16 @@ const GROUPS = {
       fix: "docs:gen-trust-badge",
     },
     {
-      artifact: "docs/04-governance/governance/freshness-dashboard.html",
-      path: "docs/04-governance/governance/freshness-dashboard.html",
+      artifact: "docs/governance/governance/freshness-dashboard.html",
+      path: "docs/governance/governance/freshness-dashboard.html",
       check: "docs:check-freshness-dashboard",
       fix: "docs:freshness-dashboard",
     },
   ],
   openapi: [
     {
-      artifact: "docs/02-engineering/api/openapi.json",
-      path: "docs/02-engineering/api/openapi.json",
+      artifact: "docs/engineering/api/openapi.json",
+      path: "docs/engineering/api/openapi.json",
       check: "api:check-openapi",
       fix: "api:generate-openapi",
     },

@@ -1,0 +1,722 @@
+# Environment variables — повний reference
+
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-15.
+> **Status:** Active
+
+Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
+
+**Хто де (target hosting):**
+
+- **Coolify (бекенд `apps/server`, Hetzner)**: `DATABASE_URL`, `BETTER_AUTH_SECRET`, `ANTHROPIC_API_KEY`, `USDA_FDC_API_KEY`, `VAPID_*`, `API_SECRET`, `ALLOWED_ORIGINS`, `PORT`, `AI_*`, server-side інтеграції.
+- **Vercel (фронт `apps/web`)**: лише `VITE_*` (потрапляють у клієнтський бандл) + `BACKEND_URL` для Vercel Edge Middleware. **Ніколи** не використовуйте префікс `VITE_` для секретів (сесії, БД, приватні ключі API).
+- **Mobile (Expo, `apps/mobile`)**: `EXPO_PUBLIC_*` — інлайнються у бандл на build-time.
+
+Деталі топології і проксі: [`docs/engineering/integrations/railway-vercel.md`](./railway-vercel.md).
+
+---
+
+## 1. Required for `pnpm dev` (мінімальний набір)
+
+| Змінна                  | Дефолт                                      | Що ламає, якщо не задано                                                                                                                                                                                                                                                                                                                                        |
+| ----------------------- | ------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `DATABASE_URL`          | `postgresql://hub:hub@localhost:5432/hub`   | Сервер не стартує. Локально — `pnpm db:up` піднімає Postgres у Docker. Coolify — internal URL Postgres-сервісу на тому ж VPS.                                                                                                                                                                                                                                   |
+| `BETTER_AUTH_URL`       | `http://localhost:3000`                     | Better Auth callback URL. Дефолт — `http://localhost:$PORT`; у проді встав публічний HTTPS API URL.                                                                                                                                                                                                                                                             |
+| `BETTER_AUTH_SECRET`    | `change_me_to_a_long_random_string_32chars` | Сесійні кукі неможливо підписати → 500 на /api/auth/\*. Мінімум 32 символи; згенерувати: `openssl rand -base64 32`.                                                                                                                                                                                                                                             |
+| `ANTHROPIC_API_KEY`     | _empty_ (opt.)                              | З 2026-08-29 опційний: дефолтна конфігурація gateway-only (усі `LLM_*_PROVIDER=openrouter`, `CHAT/VISION_VIA_OPENROUTER=true`), AI працює на `OPENROUTER_API_KEY`. Цей ключ вмикає лише `FallbackProvider` (OpenRouter впав → прямий Anthropic) і прямий транспорт при вимкненому шлюзі. 503 на AI-роутах дає відсутність ключа АКТИВНОГО транспорту, не цього. |
+| `USDA_FDC_API_KEY`      | _empty_                                     | Fallback на DEMO_KEY (40 req/hr shared). У production обов'язковий — інакше штрихкод-сканер падає на 429. Безкоштовно: api.data.gov.                                                                                                                                                                                                                            |
+| `UPCITEMDB_BASE_URL`    | `https://api.upcitemdb.com/prod/trial`      | Третє джерело каскаду штрихкодів. Дефолт — **тріал: 100 req/добу на весь продукт**, не на користувача. До 2026-07-25 був захардкоджений і не задокументований. Заміна — крок 2 у [дослідженні джерел](../../work/research/2026-07-25-barcode-sources-and-moderation.md).                                                                                        |
+| `UPCITEMDB_API_KEY`     | _empty_                                     | Ключ платного плану UPCitemdb (заголовок `user_key`). Порожній — тріальний endpoint без ключа.                                                                                                                                                                                                                                                                  |
+| `VAPID_PUBLIC_KEY`      | _empty_                                     | Web Push не реєструється (фронт ловить помилку у `Notifications.tsx`). Згенерувати: `node -e "console.log(require('web-push').generateVAPIDKeys())"`.                                                                                                                                                                                                           |
+| `VAPID_PRIVATE_KEY`     | _empty_                                     | Те саме — потрібно у парі з `VAPID_PUBLIC_KEY`.                                                                                                                                                                                                                                                                                                                 |
+| `VAPID_EMAIL`           | `mailto:you@example.com`                    | Браузери вимагають `mailto:` URI у VAPID claims, інакше push не доставляється.                                                                                                                                                                                                                                                                                  |
+| `API_SECRET`            | `change_me_to_a_random_string`              | `/api/push/send` приймає довільні запити (security hole). Bearer-токен для server-to-server викликів push-ендпоінта.                                                                                                                                                                                                                                            |
+| `ALLOWED_ORIGINS`       | `http://localhost:5173`                     | CORS-preflight ріже фронт (Vite dev server). Через кому: `https://sergeant.vercel.app,https://app.sergeant.app`.                                                                                                                                                                                                                                                |
+| `PORT`                  | `3000`                                      | Express слухає 3000.                                                                                                                                                                                                                                                                                                                                            |
+| `VITE_API_PROXY_TARGET` | `http://127.0.0.1:3000`                     | У dev режимі Vite проксує `/api/*` на бекенд. Має співпадати з `PORT`.                                                                                                                                                                                                                                                                                          |
+
+---
+
+## 2. Better Auth — крос-доменна авторизація, OAuth, email
+
+### `BETTER_AUTH_CROSS_SITE_COOKIES` _(optional)_
+
+`0` = не форсити `SameSite=None` на сесійних кукі. Виставляйте, якщо фронт і API на одному домені через proxy (Vercel Edge Middleware → Coolify), щоб не ламати Safari ITP / Chrome Tracking Protection. **Default**: forsено `None` (для крос-доменних сценаріїв).
+
+### `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES` _(optional)_
+
+Список нативних deep-link схем, яким Better Auth довіряє для OAuth callback / cross-origin sign-in. Доповнює `localhost:*` у `getTrustedOrigins()`.
+
+- **Без змінної у production**: тільки `sergeant://` (схема опублікованої RN-аппки, [`apps/mobile/app.config.ts`](../../../apps/mobile/app.config.ts)).
+- **Без змінної у dev**: ще додається `exp://` (Expo Go).
+- **`exp://` НЕ bound до конкретної аппки** — будь-який Expo Go застосунок на пристрої може її claim-ити, тому у production воно заборонене (закриває [hardening-карту H5](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/H5-trusted-origins-exp-scheme.md)).
+- Якщо змінну задати — вона **повністю** замінює дефолти (немає merge-режиму). Приклад: `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES=sergeant-staging://`.
+
+### `RESEND_API_KEY`, `RESEND_FROM` _(key required in production)_
+
+Resend — транзакційні листи Better Auth (скидання пароля, верифікація email, підтвердження зміни email). Без ключа листи не відправляються; у production сервер відмовиться стартувати, щоб UI не показував хибний успіх надсилання.
+
+- `RESEND_API_KEY=re_...`
+- `RESEND_FROM=Sergeant <noreply@yourdomain.com>` — від кого; має бути з верифікованого домену в Resend (для тесту: `onboarding@resend.dev`).
+
+### `GOOGLE_CLIENT_ID`, `GOOGLE_CLIENT_SECRET` _(optional)_
+
+Google OAuth (Better Auth `socialProviders.google`). Активує кнопку «Увійти через Google» на AuthPage. Без обох змінних `socialProviders.google` не вмикається і клік повертає `Provider not configured` у `authError`.
+
+- Створення клієнта: [console.cloud.google.com/auth/clients/create](https://console.cloud.google.com/auth/clients/create).
+- Authorized redirect URIs мають містити `<BETTER_AUTH_URL>/api/auth/callback/google`.
+- У production redirect URI має бути на домені фронта (Vercel Edge Middleware проксує `/api/*`): `https://sergeant.vercel.app/api/auth/callback/google`. Інакше state-cookie ставиться на API-домен як 3rd-party, Safari ITP / Chrome Tracking Protection її ріже → callback повертається з `error=state_mismatch`.
+- Локально: `http://localhost:5000/api/auth/callback/google`.
+
+### `WEB_APP_URL` _(optional)_
+
+Origin веб-застосунку — куди повертається користувач після кліку «Підтвердити email» у листі. Better Auth будує посилання виду `{BETTER_AUTH_URL}/api/auth/verify-email?token=…&callbackURL=…` і за замовчуванням ставить `callbackURL=/`, тобто **корінь API-домену**. API не роздає SPA (`config.servesFrontend === false`), тож такий редирект віддавав 404 JSON. `getWebAppOrigin()` ([`apps/server/src/auth/verificationMail.ts`](../../../apps/server/src/auth/verificationMail.ts)) перезаписує параметр на `{WEB_APP_URL}/verify-email`.
+
+Порядок резолву:
+
+1. `WEB_APP_URL` — явний override.
+2. Перший `http(s)`-запис із `ALLOWED_ORIGINS` (кастомні схеми `sergeant://` / `exp://` пропускаються) — **zero-config для проду**, бо там уже стоїть домен Vercel.
+3. `BETTER_AUTH_URL`.
+4. `http://localhost:5173` — **тільки поза production**.
+
+Задавай явно лише тоді, коли перший `ALLOWED_ORIGINS` не є основним доменом застосунку. Значення автоматично додається у `trustedOrigins`: Better Auth ганяє `callbackURL` через `originCheck` і 403-ить усе, чого немає у списку. У production `http://`-значення відхиляється на старті (`assertStartupEnv`) — ми не шлемо користувачам посилання на незахищений origin.
+
+### `REQUIRE_EMAIL_VERIFICATION` _(optional, default `false`)_
+
+Коли `true` — sign-in блокується для неверифікованих email-ів. Default `false`, щоб не лочити legacy-акаунти, створені до того як `sendOnSignUp` був увімкнений. Ops фліпає `true` після soft-gate sweep-у legacy users.
+
+Незалежно від цього flag-а:
+
+- Кожен новий sign-up отримує верифікаційний лист (`auth.ts → sendOnSignUp`).
+- `/api/mono/connect` гейтиться на `email_verified=true` через `requireVerifiedEmail()` middleware.
+
+Дивись [`docs/work/specs/security-hardening/H6-email-verification.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/H6-email-verification.md).
+
+### `MIN_PASSWORD_LENGTH`, `MAX_PASSWORD_LENGTH` _(optional)_
+
+- `MIN_PASSWORD_LENGTH=10` (default).
+- `MAX_PASSWORD_LENGTH=256` — **hard-capped at 256** як DoS-захист (bound per-request scrypt work). Better Auth хешить паролі через **scrypt** (`@better-auth/utils`, `N=16384, r=16, p=1, dkLen=64`), у якого нема 72-byte input-ліміту, тому cap — операційний, не криптографічний. Setting >256 is rejected at startup (fail-fast). Дивись [ADR-0042](../../governance/adr/0042-password-hashing-strategy.md).
+
+### `BETTER_AUTH_TOKEN_ENC_KEY` _(optional, recommended for prod)_
+
+32-байтний hex-ключ для шифрування OAuth-токенів (access/refresh) у БД. Без ключа токени зберігаються **відкритим текстом** — дозволено тільки в dev/test, у production `assertStartupEnv()` логне env_warning. Згенерувати: `openssl rand -hex 32`.
+
+- Нова multi-key ротація: `BETTER_AUTH_TOKEN_ENC_KEYS` (CSV `<ver>:<hex>`) + `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION` (активна версія). Legacy single-key варіант (`BETTER_AUTH_TOKEN_ENC_KEY`) залишається підтримуватися для зворотньої сумісності.
+- У production рекомендується використовувати `BETTER_AUTH_TOKEN_ENC_KEYS` + `BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION` для безшовної ротації ключів без downtime.
+
+---
+
+## 3. Anthropic AI — квоти, circuit breaker, tool-budget
+
+### `AI_DAILY_USER_LIMIT` _(optional)_
+
+Денний ліміт викликів AI (таблиця `ai_usage_daily` у Postgres).
+
+- `AI_DAILY_USER_LIMIT=120` (default) — для залогінених користувачів. **Обережно: сьогодні змінна лише лежить у схемі й нічого не рухає.** Денний ліміт автентифікованого резолвиться за планом у `userDailyLimit()` → `billing/effectiveLimits.ts` (Free — 5 на добу, ADR-0085; Pro — `null`), і `AI_DAILY_USER_LIMIT` там не читається. Це передував ADR-0086 і ним не створене — але виставляти її в Coolify, очікуючи ефекту, марно.
+
+> **`AI_DAILY_ANON_LIMIT` прибрано 2026-08-24** ([ADR-0086](../../governance/adr/0086-no-anonymous-ai-sign-in-required.md)). Поля більше немає у схемі `env.ts` — виставляти його в Coolify не має ефекту. Причина: усі AI-роути (`/api/chat`, `/api/coach/insight`, `/api/weekly-digest`, `/api/nutrition/**`) стоять за `requireSession()` (аудит A1), тож без сесії приходить **401 раніше** за квоту — анонімна гілка `assertAiQuota` була недосяжним кодом і прибрана разом зі змінною.
+
+### `AI_QUOTA_DISABLED` _(optional, dev/test only)_
+
+`AI_QUOTA_DISABLED=1` повністю вимикає квоту (no-op для `assertAiQuota`). **!!! ТІЛЬКИ для CI/test/dev.** У production `assertStartupEnv()` хард-блокує server-startup, якщо `AI_QUOTA_DISABLED=true` і `NODE_ENV=production` (або `RAILWAY_ENVIRONMENT`/`RAILWAY_SERVICE_NAME` виставлені). Без цього хард-блока випадковий copy-paste flag-а зі staging до prod дав би unlimited Anthropic budget burn. Дивись [`docs/governance/security/ai-quota-kill-switch.md`](../../governance/security/ai-quota-kill-switch.md).
+
+### `AI_QUOTA_TOOL_COST`, `AI_QUOTA_TOOL_DEFAULT_LIMIT`, `AI_QUOTA_TOOL_LIMITS` _(optional)_
+
+Tool-use квота (окремий bucket у `ai_usage_daily`). Кожен виклик tool-а (наприклад `change_category`, `create_debt`) коштує `AI_QUOTA_TOOL_COST` одиниць у власному лічильнику `tool:<name>`.
+
+- `AI_QUOTA_TOOL_COST=3` (default).
+- `AI_QUOTA_TOOL_DEFAULT_LIMIT=60` (default).
+- `AI_QUOTA_TOOL_LIMITS={"change_category":30,"create_debt":10,"create_receivable":10,"hide_transaction":30,"set_budget_limit":10,"set_monthly_plan":5,"mark_habit_done":30,"plan_workout":10,"create_habit":10}` — JSON з лімітами на кожен tool. Tool-и, не вказані у JSON, беруть `AI_QUOTA_TOOL_DEFAULT_LIMIT` (або unlimited якщо пусто).
+
+### `AI_QUOTA_PRESET_LIMITS`, `AI_QUOTA_PRESET_WEEKLY_LIMIT` _(optional)_
+
+Тижневе відро для сценарних режимів чату (`preset:<name>` у `ai_usage_daily` — сьогодні `profile_interview` і `profile_add_info`, кнопки секції «Пам'ять ШІ»). Заповнення профілю не витрачає денні 5 запитів Free-тіру: інтерв'ю на 4 обміни коштує ≈8 запитів (кожен тур із tool-call-ом = два), тобто без окремого відра онбординг упирався в paywall на середині.
+
+Вікно — **тиждень** (понеділок київського тижня), cost=1 за запит. Precedence ліміту:
+
+- `AI_QUOTA_PRESET_LIMITS={"profile_interview":10,"profile_add_info":4}` — per-preset override (JSON-мапа, за зразком `AI_QUOTA_TOOL_LIMITS`). Битий JSON → fail-open на наступний рівень + warn-лог.
+- `AI_QUOTA_PRESET_WEEKLY_LIMIT=10` — одне число на **всі** режими; `0` вимикає сценарні режими цілком (429 з `code: "AI_QUOTA_PRESET"`).
+- Вбудовані дефолти, якщо жодного env немає: `profile_interview` = `10`, `profile_add_info` = `4`.
+
+Pro-юзери відра не торкаються взагалі (unlimited виходить раніше). Резолв — [`aiQuotaBudget.ts`](../../../apps/server/src/modules/chat/aiQuotaBudget.ts); стеля зловживання, що моніторити й коли крутити ці числа — [`ai-quota-kill-switch.md § preset-відро`](../../governance/security/ai-quota-kill-switch.md).
+
+### `CHAT_MODEL_FIRST_TURN`, `CHAT_MODEL_SYNTHESIS` _(optional)_
+
+Tiered-моделі для `/api/chat` ([`apps/server/src/modules/chat/chat.ts`](../../../apps/server/src/modules/chat/chat.ts)). Chat-шлях прибитий до Anthropic (streaming + tool-use + prompt-caching), тож значення мають лишатись Anthropic-model-id. Винесено в env, щоб ops міг ре-тирити без редеплою (env читається на startup-і → достатньо рестарту сервісу).
+
+- `CHAT_MODEL_FIRST_TURN=claude-haiku-4-5-20251001` (default) — перший тур (швидкий роутер: direct-text або tool_use-пропозиції). Haiku ~4× дешевший за Sonnet ($1 vs $3 /1M input, $5 vs $15 /1M output); якості вистачає, бо тут немає важких звітів.
+- `CHAT_MODEL_SYNTHESIS=claude-sonnet-4-6` (default) — тур синтезу tool-result (фінальні брифінги/підсумки бюджету, stream + non-stream). Sonnet за замовчуванням — тут важлива якість складних markdown-звітів. Найбільший cost-важіль: щоб ще здешевшати, push сюди Haiku.
+
+### `LLM_PROVIDER` _(optional, default `anthropic`)_
+
+**PR-23** — pluggable LLM-провайдер за [`apps/server/src/lib/llm/provider.ts`](../../../apps/server/src/lib/llm/provider.ts). Дозволяє переключити сервер у fail-soft режим без зміни call-sites:
+
+- `anthropic` (default) — `AnthropicProvider`, тонкий wrapper навколо `anthropicMessages()` із PR-12 logic (retry, timeout, prompt-caching, USD-ledger). Якщо `ANTHROPIC_API_KEY` пустий → factory деградує у `stub` (warn-log на startup-і).
+- `stub` — `StubProvider`, no-op повертає `{"ok":true,"stub":true}` JSON. Призначення: e2e-тести без real-Anthropic-калькування, локальний dev без ключа, інцидент-recovery під час Anthropic-outage.
+- `openrouter` — зарезервовано під майбутню імплементацію (OpenRouter fallback). Поки що деградує у `stub`, щоб неочікуваний env не валив app.
+
+PR-25 wire-up: `weekly-digest` (через окремий `LLM_DIGEST_PROVIDER` toggle — див. нижче). Інші Anthropic-call-sites (chat, coach, nutrition) поки що працюють напряму через `anthropicMessages()`, як і раніше.
+
+### `LLM_READONLY_PROVIDER` _(optional, default `anthropic`)_
+
+Окремий provider для read-only flows. Дозволяє перемкнути fallback-режим, **не зачіпаючи** основний `LLM_PROVIDER`, який обслуговує chat/coach/nutrition.
+
+Значення такі самі, як у `LLM_PROVIDER`:
+
+- `anthropic` (default) — повний шлях через `anthropicMessages()`.
+- `stub` — повертає plausible default `{"class":"chat"}` без HTTP-callu. Idey для:
+  - **Anthropic-outage:** classifier деградує у `chat`-default, чат-flow продовжує працювати окремо (Layer 2 повний agent).
+  - **Local-dev без `ANTHROPIC_API_KEY`:** не падає на classify-розі.
+  - **E2E-тести:** детермінований, безкоштовний шлях без витрат токенів.
+- `openrouter` — зарезервовано, поки що деградує у stub (PR-26+).
+
+**Спостережуваність (PR-24).** Кожен виклик `LLMProvider.generate()` через обгортку [`invokeLLM()`](../../../apps/server/src/lib/llm/provider.ts) інкрементує Prom-counter `llm_provider_invocations_total{provider,endpoint,outcome}` (outcome: `ok|error|missing_api_key|rate_limited|timeout`) + кладе Sentry breadcrumb `category=llm.provider, level=info|warning` з provider/endpoint/outcome/model. Дашборд `ai-cost` (PR-13) використовує цей counter для розщеплення runtime-distribution між Anthropic vs stub-режимами.
+
+### `LLM_DIGEST_PROVIDER` _(optional, default `anthropic`)_
+
+**PR-25** — окремий provider для WF-08 weekly-digest endpoint-у (`POST /api/weekly-digest` у [`apps/server/src/modules/digest/weekly-digest.ts`](../../../apps/server/src/modules/digest/weekly-digest.ts)). Дозволяє перемкнути саме digest у fallback-режим, **не зачіпаючи** ні головний `LLM_PROVIDER` (chat/coach/nutrition), ні `LLM_READONLY_PROVIDER` (OpenClaw classify).
+
+Значення такі самі, як у `LLM_PROVIDER`:
+
+- `anthropic` (default) — повний AI-аналіз через `AnthropicProvider`: модель `claude-sonnet-4-6`, `max_tokens=2500`, JSON-відповідь зі структурованими `summary`/`comment`/`recommendations` на кожну секцію (finyk/fizruk/nutrition/routine) + `overallRecommendations`.
+- `stub` — повертає **template-based digest** із raw тижневих метрик (числа тижня прямо у `summary` секції) і **порожніми `recommendations`/`overallRecommendations`** — `StubProvider` обслуговує запит без HTTP-call-у до Anthropic. Use-cases:
+  - **Anthropic-incident:** founder бачить тижневі числа без AI-коментарів. Краще, ніж 502 на digest-роуті.
+  - **Local-dev без `ANTHROPIC_API_KEY`:** endpoint не падає, digest-UI може dev-тестуватися з числами.
+  - **E2E-тести:** детермінований template-вихід без витрат токенів.
+- `openrouter` — зарезервовано, поки що деградує у stub (PR-26+).
+
+### `LLM_DIGEST_FALLBACK_ON_ERROR` _(optional, default `true`)_
+
+**PR-25** — fail-soft toggle для weekly-digest. Коли `true` (default) і `LLM_DIGEST_PROVIDER=anthropic`, Anthropic-помилки (`5xx` / `rate_limited` / `timeout` / shape-mismatch / parse-error) ловляться у handler-і і digest повертається з template-репорту замість `502 ExternalServiceError`. Sentry breadcrumb `level=warning` + Prom-counter `llm_provider_invocations_total{outcome!=ok}` дають видимість для алертингу.
+
+Коли `false` — strict-mode, як у PR-12: handler кидає `ANTHROPIC_ERROR` / `ANTHROPIC_PARSE_ERROR` / `ANTHROPIC_SHAPE_MISMATCH` і клієнт отримує 502. Корисно для e2e-тестів які явно перевіряють Anthropic-error semantics, або для проектів, де founder воліє бачити порожній звіт через failed UI замість шаблонних чисел.
+
+Прийнятні значення: `1`/`true`/`yes` → on, інакше → off.
+
+**Важливо — env-дефолт `true` не діє в production.** Бойовий роут
+(`apps/server/src/routes/weekly-digest.ts`) використовує `export default
+defaultHandler` з `apps/server/src/modules/digest/weekly-digest.ts:453`, де
+`createWeeklyDigestHandler({ fallbackOnError: false })` жорстко фіксує
+`false` — незалежно від значення цього env-var. Це навмисно (докстрінг
+`weekly-digest.ts:441-450`): збій Anthropic має піднімати `5xx`, а не
+повертати тихий `200` з template-звітом (regression-тест
+`weekly-digest.test.ts:1032-1043`). Env-дефолт `true` реально застосовується
+лише в тестах і кастомних instance-handler-ах, які самі не передають
+`fallbackOnError`. Щоб отримати fail-soft-поведінку в production, самого
+env-var **недостатньо** — треба змінювати сам default-export.
+
+### `AI_TIMEOUT_MS`, `AI_MAX_RETRIES`, `AI_CIRCUIT_BREAKER_THRESHOLD`, `AI_CIRCUIT_BREAKER_RESET_MS` _(optional)_
+
+Тюнінг Anthropic-клієнта.
+
+- `AI_TIMEOUT_MS=180000` (default) — таймаут одного AI-запиту.
+- `AI_MAX_RETRIES=2` (default) — повторні спроби при transient помилках.
+- `AI_CIRCUIT_BREAKER_THRESHOLD=5` (default) — скільки помилок відкривають breaker.
+- `AI_CIRCUIT_BREAKER_RESET_MS=30000` (default) — інтервал half-open тесту.
+
+### `ANTHROPIC_PROMPT_CACHE` _(dead — OpenClaw gateway decommissioned)_
+
+> ⚠️ **OpenClaw gateway повністю decommissioned ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md), 2026-07-20).** Ця змінна конфігурувала prompt caching у gateway agent-loop, якого більше не існує ні в цьому репо, ні деінде (`git grep ANTHROPIC_PROMPT_CACHE -- apps/server` → 0 hits). Env var може лишатися в Coolify, але **runtime consumer відсутній**. Для HubChat/server prompt caching див. [ADR-0039](../../governance/adr/0039-anthropic-prompt-cache-policy.md). Секція лишена як історичний запис (PR-39, ADR-0057).
+
+---
+
+## 4. Groq Whisper — голосова транскрипція
+
+### `GROQ_API_KEY` _(optional на web/desktop; умовно обов'язковий для iOS PWA — див. нижче)_
+
+Використовується ендпоінтом `/api/transcribe` ([VoiceMicButton](../../../apps/web/src/shared/components/ui/VoiceMicButton.tsx) на фронті). Без ключа endpoint повертає 503, фронт автоматично відкочується на Web Speech API (працює у Safari-вкладці та desktop-браузерах). Зареєструватися: [console.groq.com/keys](https://console.groq.com/keys).
+
+> **iOS standalone-PWA:** Web Speech API (`webkitSpeechRecognition`) **не працює** у застосунку, доданому на домашній екран (WebKit bug [185448](https://bugs.webkit.org/show_bug.cgi?id=185448) / [215884](https://bugs.webkit.org/show_bug.cgi?id=215884)) — об'єкт присутній, але розпізнавання мовчки не стартує. Тому `useVoiceInput` чесно репортує `supported=false` у цьому режимі, і `VoiceMicButton` ховає кнопку замість показу мертвого контролу. **Наслідок:** на iPhone у режимі PWA голосовий ввід працює лише через Groq Whisper — `GROQ_API_KEY` тут де-факто обов'язковий, а не optional. У Safari-вкладці Web Speech-fallback лишається робочим.
+
+### `GROQ_TRANSCRIBE_MODEL` _(optional)_
+
+Whisper-модель Groq. **Default**: `whisper-large-v3-turbo` — найдешевший варіант з адекватною якістю українською. Альтернатива: `whisper-large-v3` (точніше, але дорожче).
+
+### `TRANSCRIBE_USD_CAP_DAILY_MICROS` _(optional)_
+
+[Hardening карта H9](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/H9-transcribe-usd-cap.md) — per-user-per-day USD cap на `/api/transcribe`, у _micros_ (1 USD = 1_000_000 micros).
+
+- **Default**: `1_000_000` = $1.00 / day / user.
+- `0` ефективно вимикає cap (e2e/синтетичні тести).
+- Vercel preview зазвичай $5–$10 на день для QA. Прод-default лишай $1.
+
+---
+
+## 5. Voyage AI + pgvector — AI memory (ADR-0028)
+
+Серверна episodic-memory (відмінна від Memory Bank — [ADR-0021](../../governance/adr/0021-memory-bank.md), local-first). Storage — `ai_memories` table з pgvector `HALFVEC(1024)` + HNSW + hash-partitioning по `user_id`.
+
+### `AI_MEMORY_ENABLED` _(optional, default `false`)_
+
+Майстер-вимикач. False (default) — `remember()` / `recall()` no-op.
+
+### `VOYAGE_API_KEY` _(optional, required if `AI_MEMORY_ENABLED=true`)_
+
+Voyage AI embedding-провайдер. Без ключа клієнт кидає помилку при першому виклику; PR2 поставить memory-write як `failed` (без retry). Безкоштовний trial: [voyageai.com](https://www.voyageai.com/).
+
+### `VOYAGE_EMBEDDING_MODEL`, `VOYAGE_EMBEDDING_DIM` _(optional)_
+
+- `VOYAGE_EMBEDDING_MODEL=voyage-3.5-lite` (default; multilingual, 1024d).
+- **УВАГА**: НЕ використовувати `voyage-3-lite` — він видає 512d, що несумісно з `HALFVEC(1024)` у міграції 025. 1024d-сумісні: `voyage-3.5-lite` (default), `voyage-3`, `voyage-3.5`, `voyage-3-large`.
+- `VOYAGE_EMBEDDING_DIM=1024` (default).
+
+### `AI_MEMORY_EMBEDDING_VERSION` _(optional)_
+
+Internal semver embedding-схеми. Bumping triggers re-embed. Default: `1`.
+
+### `VOYAGE_TIMEOUT_MS`, `VOYAGE_MAX_RETRIES`, `VOYAGE_BATCH_SIZE` _(optional)_
+
+- `VOYAGE_TIMEOUT_MS=15000` (default; короткий, бо embedding fast).
+- `VOYAGE_MAX_RETRIES=2` (default; на transient 5xx/timeout).
+- `VOYAGE_BATCH_SIZE=32` (default; Voyage приймає до 128).
+
+### `AI_MEMORY_HNSW_EF_SEARCH`, `AI_MEMORY_TOP_K` _(optional)_
+
+- `AI_MEMORY_HNSW_EF_SEARCH=40` (default) — search-time ef. Більше → краще recall, повільніше.
+- `AI_MEMORY_TOP_K=8` (default) — top-K для retrieval (PR3).
+
+### `AI_MEMORY_INGEST_CONCURRENCY`, `AI_MEMORY_INGEST_ATTEMPTS`, `AI_MEMORY_INGEST_MAX_CONTENT_LEN` _(optional)_
+
+Async-черга `ai-memory-ingest` (BullMQ; Redis-keys під префіксом `sergeant:`). Producer-и: mono webhook (finyk), weekly-digest (digest), `POST /api/ai-memory/ingest` (chat/fizruk/nutrition/routine/journal).
+
+- `AI_MEMORY_INGEST_CONCURRENCY=4` (default) — Voyage rate-limit ~3 RPS на free tier; тримай ≤ 4 на одну реплику.
+- `AI_MEMORY_INGEST_ATTEMPTS=5` (default) — спроб (BullMQ attempts) на retryable failure (5xx, 429, network). Backoff: 30s → 2min → 8min → 32min → 2h.
+- `AI_MEMORY_INGEST_MAX_CONTENT_LEN=8000` (default) — жорсткий ліміт на content-розмір (чарів). Захист від випадкового embed-у гігабайт-payload-у з мобайл-клієнта.
+
+### `MONO_AI_MEMORY_INGEST_ENABLED` _(optional, default `true`)_
+
+Per-source kill-switch для finyk-ingest з Mono webhook-у (PR-19). Subordinate до master `AI_MEMORY_ENABLED` — якщо master `false`, цей прапор ігнорується (всі source-и no-op). Default `true` означає: після активації master-flag-у у Coolify finyk-ingest стартує без додаткового toggle-у.
+
+- `true` (default) — Mono webhook викликає `enqueueMemoryIngest(...)`, що формує BullMQ-job у `ai-memory-ingest`.
+- `false` — Mono-webhook-source повністю обходиться; метрика `ai_memory_ingest_enqueued_total{mode="source_disabled", source="finyk"}` росте замість `mode="queued"`. Інші source-и (`digest`, `chat`, `fizruk`, `nutrition`, `routine`, `journal`) не зачіпаються.
+
+Decision-point Day 30 — [`docs/operations/observability/runbook.md § AI memory activation & Day-30 decision-point`](../../operations/observability/runbook.md#ai-memory-activation--day-30-decision-point).
+
+### `MONO_AI_MEMORY_DIGEST_ENABLED` _(optional, default `false`, ⚠ prod required)_
+
+> ⚠️ n8n виведено з репо ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)) — toggle лишився без споживача; секція історична, кроки нижче не виконувати.
+
+Operator-toggle для n8n WF-30 [`30-ai-memory-daily-digest.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/30-ai-memory-daily-digest.json) (PR-21). Cron 09:05 Europe/Kyiv → SELECT агрегати з `ai_memories` за rolling 24h → Telegram #digest. Aggregated-only payload (без `user_id` у тексті); Voyage cost estimate включений у текст digest-а.
+
+- Суто n8n-side toggle: server-side digest-hook не існує (PR-21 — n8n-only activation). Дублювальний server-env парсинг «для парності» прибрано 2026-08-06 (0 production-читань) — `apps/server/src/env/env.ts` цю змінну більше не знає.
+- **Activation step:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=true` на n8n Railway env (Settings → Environment Variables), потім flip workflow toggle у self-hosted n8n UI. Без цього кроку workflow JSON залишається `active=false` у git per hard-rule [`validate-n8n-workflows.mjs`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/scripts/n8n/validate-n8n-workflows.mjs) («workflows in git must be inactive by default»).
+- **Pre-requisites:** `AI_MEMORY_ENABLED=true` (master) + `MONO_AI_MEMORY_INGEST_ENABLED=true` (PR-19 ingest) — щоб `ai_memories` наповнювалась. Без цього digest буде слати graceful «За добу нічого не записано» kожен ранок.
+- **Monitoring:** [`docs/operations/observability/runbook.md § WF-30 AI memory daily digest (PR-21)`](../../operations/observability/runbook.md#wf-30-ai-memory-daily-digest-pr-21).
+
+---
+
+## 6. Postgres pool tuning
+
+| Змінна                     | Default | Опис                                                                                                                                                       |
+| -------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `PG_POOL_SIZE`             | `20`    | Максимум клієнтів у пулі pg. Sizing rule + tuning — [`docs/operations/observability/pg-pool-sizing.md`](../../operations/observability/pg-pool-sizing.md). |
+| `PG_CONNECTION_TIMEOUT_MS` | `5000`  | Таймаут очікування вільного клієнта з пулу.                                                                                                                |
+| `PG_SLOW_CONNECT_MS`       | `500`   | Поріг "повільного" `pool.connect()` — Pino warn + Sentry breadcrumb + `db_slow_pool_connects_total`.                                                       |
+| `PG_IDLE_TIMEOUT_MS`       | `30000` | Таймаут idle-з'єднання перед закриттям.                                                                                                                    |
+| `PG_STATEMENT_TIMEOUT_MS`  | `30000` | Максимальний час виконання одного SQL-запиту.                                                                                                              |
+| `DB_MAX_RETRIES`           | `3`     | Кількість повторних спроб при transient помилках БД (40001, deadlock).                                                                                     |
+| `LOG_SLOW_QUERIES`         | `true`  | Логування повільних запитів у warn-лог + метрика `db_slow_queries_total`.                                                                                  |
+| `SLOW_QUERY_THRESHOLD_MS`  | `100`   | Поріг для slow-query попереджень.                                                                                                                          |
+
+### `MIGRATION_DRIFT_BLOCKS_READINESS` _(optional, default `false`)_
+
+Чи має розбіжність «міграції в образі ↔ міграції в базі» валити `/readyz`.
+
+Перевірка виконується один раз на старті процесу (`apps/server/src/lib/schemaDrift.ts`) і **завжди** пише `logger.error` + `Sentry.captureMessage` з переліком незастосованих міграцій, незалежно від цієї змінної. Змінна керує лише тим, чи знімати контейнер з трафіку.
+
+- `false` (default) — гучний алерт, `/healthz` віддає `schema: unhealthy`, але `/readyz` лишається зеленим. Хибне спрацювання не спричиняє простою.
+- `true` — `/readyz` віддає 503 при дрейфі **і поки звірка ще не завершилась**. Друге принципове: перевірка стартує синхронно до `app.listen`, інакше між прив'язкою до порту й відповіддю `schema_migrations` лишалось би вікно, у якому проба зелена, а схема не звірена — тобто гейт пропускав би саме той деплой, який має відсіяти. Вмикати свідомо: ціна хибного спрацювання — повний простій (пор. інцидент 2026-08-06, коли health-check без `/bin/wget` відкочував КОЖЕН деплой).
+
+Окремий випадок — сама звірка не вдалася (БД не відповіла в момент старту). Тоді `/readyz` **не** блокується навіть під увімкненим гейтом: перевірка виконується один раз на буті, тож разовий мережевий збій інакше лишив би контейнер не-ready назавжди. Реально недоступну БД у тому ж хендлері ловить `SELECT 1`.
+
+Детектор також окремо позначає відсутній у образі каталог міграцій (`migrationsDirMissing`). Без цього зламана збірка давала б `shipped: 0` на свіжій базі, тобто виглядала б як ідеально синхронна схема — і гарантія тихо зникла б.
+
+Навіщо взагалі: за серпень 2026 прод тричі віддавав 500 на колонках, яких не було в базі (`is_jar`, `last_token_check_at`, `active_modules`) — міграції 119/120/116 лежали в тому ж релізі, але pre-deploy їх не застосував, і єдиним сигналом ставав потік помилок від живих користувачів (найдовший епізод — 106 хвилин).
+
+---
+
+## 7. Observability — логування, metrics
+
+### `LOG_LEVEL`, `LOG_PRETTY` _(optional)_
+
+- `LOG_LEVEL` — рівень pino-логів. Default: `debug` у dev, `info` у production.
+- `LOG_PRETTY=1` → human-readable вивід у dev (pino-pretty). **Не вмикати у prod.**
+
+### `METRICS_TOKEN` _(optional)_
+
+Bearer-токен для захисту `/metrics` (Prometheus scrape endpoint). Якщо не заданий — `/metrics` вимкнений. Для Grafana Agent / Prometheus scraper: `Authorization: Bearer <METRICS_TOKEN>`.
+
+### `GRAFANA_CLOUD_LOKI_URL`, `GRAFANA_CLOUD_LOKI_USERNAME`, `GRAFANA_CLOUD_LOKI_TOKEN` _(optional)_
+
+Grafana Cloud Loki log sink. Коли всі три задані — pino-логи надсилаються **паралельно** у Coolify container stdout (існуюча поведінка) і у Loki через `pino-loki` worker-transport. Якщо будь-яка з трьох відсутня — Loki-транспорт не ініціалізується (clean no-op, prod не крашиться).
+
+| Змінна                        | Формат                              | Опис                                                                                                                   |
+| ----------------------------- | ----------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
+| `GRAFANA_CLOUD_LOKI_URL`      | `https://logs-prod-025.grafana.net` | Базовий host Loki-інстансу (без `/loki/api/v1/push` — додається автоматично).                                          |
+| `GRAFANA_CLOUD_LOKI_USERNAME` | числовий рядок, напр. `123456`      | Loki instance id (basic auth username). З Grafana Cloud → Connections → Data sources → Loki → Details.                 |
+| `GRAFANA_CLOUD_LOKI_TOKEN`    | `glc_…`                             | Grafana Cloud API token (basic auth password). Генерувати: Grafana UI → Administration → Service accounts → Add token. |
+
+**Labels:** `job=sergeant-api`, `env=<NODE_ENV>`, `service=sergeant-api`.
+
+**Безпека:** credentials передаються виключно через `basicAuth` і ніколи не вбудовуються у URL. Pino `formatters.log` (`redactKeysRecursively`) та `redact.paths` виконуються у main thread до передачі рекорду у transport-worker — Loki отримує вже редаговані JSON-рядки (PII та секрети відсутні).
+
+---
+
+## 8. HTTP / runtime tuning
+
+### `REQUEST_TIMEOUT_MS` _(optional)_
+
+Глобальний timeout HTTP-запиту. **Default**: `120000` (2 хв). `0` = вимкнено.
+
+### `COMPRESSION_ENABLED` _(optional)_
+
+`true` (default) — увімкнути gzip/br стиснення відповідей.
+
+### `SHUTDOWN_GRACE_MS`, `SHUTDOWN_HARD_TIMEOUT_MS` _(optional)_
+
+Graceful shutdown.
+
+- `SHUTDOWN_GRACE_MS=15000` (default) — скільки чекати in-flight запитів після SIGTERM, перш ніж force-close.
+- `SHUTDOWN_HARD_TIMEOUT_MS=25000` (default) — hard-cut, після якого `process.exit(1)` — захист від зависання.
+
+### `SSE_HEARTBEAT_MS` _(optional)_
+
+Інтервал comment-frame у `/api/chat` SSE-стрімі. **Default**: `15000` ms — щоб проксі/браузер не різав з'єднання за idle timeout.
+
+### `ALLOWED_ORIGIN_REGEX` _(optional)_
+
+Одинокий regex (без прапорців), який повинен матчити допустимі origin-и. Використовується **на доповнення** до `ALLOWED_ORIGINS` (не замість). Приклад: `^https://pr-\d+\.preview\.example\.com$`.
+
+### `TRUST_PROXY` _(optional)_
+
+Скільки upstream-проксі hops довіряти при парсингу `X-Forwarded-For`. **Дефолт = 1** (Coolify Traefik edge proxy — той самий 1 hop, що й у Railway раніше). Якщо додаєте Cloudflare — підніміть кількість hops або задайте explicit CIDR allowlist. Невалідне значення (наприклад `true`) падає при boot-у.
+
+Формати:
+
+```
+TRUST_PROXY=1                     ← single hop (Coolify Traefik default)
+TRUST_PROXY=2                     ← Cloudflare + Coolify
+TRUST_PROXY=10.0.0.0/8,192.168.0.0/16
+TRUST_PROXY=loopback,uniquelocal  ← express keyword shortcuts
+TRUST_PROXY=false                 ← повністю вимкнути XFF-парсинг
+```
+
+`true` **НЕ** підтримується — це робить кожен `req.ip` client-controlled.
+
+---
+
+## 9. Redis tuning
+
+| Змінна                         | Default | Опис                                            |
+| ------------------------------ | ------- | ----------------------------------------------- |
+| `REDIS_MAX_RETRIES`            | `10`    | Макс. спроб реконекту Redis.                    |
+| `REDIS_RECONNECT_DELAY_MS`     | `100`   | Початкова затримка реконекту.                   |
+| `REDIS_MAX_RECONNECT_DELAY_MS` | `3000`  | Макс. затримка реконекту з exponential backoff. |
+
+---
+
+## 10. CSP — Content Security Policy
+
+### `CSP_REPORT_ONLY` _(optional)_
+
+`CSP_REPORT_ONLY=1` → `Content-Security-Policy-Report-Only` (тільки логування). Поступове розгортання.
+
+`CSP_DISABLE` видалено в M1 — дивись [`docs/work/specs/security-hardening/M1-csp-disable-runtime-flag.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/M1-csp-disable-runtime-flag.md). Для швидкого вимкнення CSP без блокувань — `CSP_REPORT_ONLY=1`.
+
+---
+
+## 11. Vercel Edge Middleware (фронт-only)
+
+### `BACKEND_URL` _(required for Vercel production)_
+
+Base URL бекенд-API (Coolify), який [`apps/web/middleware.ts`](../../../apps/web/middleware.ts) проксує під `/api/*` на домен фронта.
+
+- Має бути виставлений у Vercel Production env, інакше middleware no-op і фронт б'є на пусто (відносні `/api/...` без бекенду).
+- Без проксі OAuth ламається на 3rd-party cookie.
+- Приклад: `BACKEND_URL=https://<sergeant-api-host>` (Coolify / sslip.io домен бекенду).
+
+---
+
+## 12. Vite / фронтенд (`VITE_*`)
+
+> Усі `VITE_*` потрапляють у клієнтський бандл — не використовуйте для секретів.
+
+### `VITE_API_BASE_URL` _(optional)_
+
+Базова URL API. ⚠ У production на Vercel — **залишити порожнім** або не виставляти: фронт ходить через відносні `/api/...`, які Vercel Edge Middleware проксує на Coolify-бекенд. Це робить auth-cookie 1st-party до домену фронта і лагодить OAuth-флов (Better Auth state cookie + cross-site cookie restrictions).
+
+Заповнюйте лише якщо фронт хоститься поза Vercel. Приклад: `https://<your-api-host>`.
+
+### `VITE_WEB_VITALS_ENDPOINT` _(optional)_
+
+Збір Core Web Vitals (LCP/INP/CLS/FCP/TTFB) на бекенд у Prometheus (`POST /api/metrics/web-vitals`). **Default**: увімкнено. `0` вимикає збір без re-deploy.
+
+### `VITE_CANONICAL_HOSTS` _(optional)_
+
+Кома-розділений список хостів, які вважаються «справжніми» деплоями. Default: `sergeant.vercel.app,beta-tau-gilt.vercel.app,sergeant-landing.vercel.app`.
+
+Читає `apps/web/src/core/observability/deployEnvironment.ts` — спільний резолвер `environment` для Sentry і PostHog. Усе, чого немає в списку і що не є localhost, отримує `environment: "preview"`.
+
+Навіщо hostname, а не лише `VITE_APP_ENV`: Vercel віддає preview-збіркам env-vars основного деплою, тож гілкові URL успадковують `VITE_APP_ENV=beta` і осідають у прод-проєкті PostHog під виглядом бети. За 30 днів до аудиту 2026-08-16 туди натекли події з шести preview-хостів. Змінну успадкувати можна, канонічний домен — ні, тому вирішує він.
+
+---
+
+## 13. Sentry (error tracking)
+
+### Бекенд (Coolify / Hetzner)
+
+| Змінна                      | Default | Опис                                                          |
+| --------------------------- | ------- | ------------------------------------------------------------- |
+| `SENTRY_DSN`                | _empty_ | DSN із Sentry-проєкту (тип: Node.js). Без DSN — Sentry no-op. |
+| `SENTRY_ENVIRONMENT`        | _empty_ | `production` / `staging` / `dev`.                             |
+| `SENTRY_RELEASE`            | _empty_ | Версія релізу (commit SHA).                                   |
+| `SENTRY_TRACES_SAMPLE_RATE` | `0.1`   | Sample rate для performance traces.                           |
+
+### Фронтенд (Vercel)
+
+| Змінна                           | Default | Опис                                                                                                                                                       |
+| -------------------------------- | ------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `VITE_SENTRY_DSN`                | _empty_ | DSN із Sentry-проєкту (тип: React). Префікс `VITE_` → клієнтський бандл. **Кожен фронт-деплой має вказувати на `sergeant-web`** — див. попередження нижче. |
+| `VITE_SENTRY_ENVIRONMENT`        | _empty_ | Вужчий override над `VITE_APP_ENV`; якщо не задано — резолвиться з хоста (`VITE_CANONICAL_HOSTS`).                                                         |
+| `VITE_SENTRY_RELEASE`            | _empty_ | Версія релізу.                                                                                                                                             |
+| `VITE_SENTRY_TRACES_SAMPLE_RATE` | `0.1`   | Sample rate для performance traces.                                                                                                                        |
+| `VITE_SENTRY_REPLAY_SAMPLE_RATE` | `0`     | Session Replay sample rate. `0` = вимкнено; `0.1` = 10% сесій.                                                                                             |
+
+> **⚠ DSN задавай окремо на КОЖНОМУ фронт-деплої.** На 2026-08-16 beta-деплой (`beta-tau-gilt.vercel.app`) слав браузерні помилки в проєкт **`sergeant-api`**, а не `sergeant-web`. Симптом легко впізнати: в API-проєкті лежать issue з культпритами на кшталт `/nutrition`, `/fizruk`, `/pricing` і стектрейсами у `assets/vendor-*.js`, а поле `release` змішує два формати — `sergeant@<short-sha>` (сервер) і голі 40-символьні SHA (фронт). Наслідок: одна й та сама помилка живе двома окремими issue в двох проєктах (`SERGEANT-API-M` і `SERGEANT-WEB-R` — той самий wasm-краш), і жодне число «скільки в нас фронт-помилок» не є правдою.
+
+---
+
+## 13.5. OpenTelemetry traces — ВИДАЛЕНО (2026-06-26)
+
+> OTel-стек видалено (`OTEL_*` env, `obs/tracing.ts`, `obs/sampler.ts`, 8
+> `@opentelemetry/*` пакетів). Причина й деталі — [ADR-0035 § Reversal](../../governance/adr/0035-distributed-tracing-opentelemetry.md).
+> Server tracing більше немає; error + performance tracing покриває **Sentry**,
+> метрики — **Prometheus → Grafana Cloud**, логи — **Loki**. Web `traceparent`
+> (`packages/api-client`) лишається для cross-boundary correlation у Sentry.
+> Відновити OTel — з git history ADR-0035.
+
+---
+
+## 14. PostHog product analytics
+
+### Web (`VITE_*`)
+
+- `VITE_POSTHOG_KEY=phc_…` — Project API Key з PostHog. Public — можна тримати у клієнтському бандлі. Без ключа PostHog SDK не підтягується, трекінг залишається тільки у локальному ring-buffer (`hub_analytics_log_v1`).
+- `VITE_POSTHOG_HOST=https://eu.i.posthog.com` (default — EU Cloud, GDPR-friendly). Для US-регіону: `https://us.i.posthog.com`.
+
+### Server-side (GDPR cleanup)
+
+[ADR-0016 §6.3](../../governance/adr/0016-user-deletion-and-pii-handling.md). Історично цей же триплет читали n8n PostHog-workflow-и (виведено — ADR-0090) (`ops/n8n-workflows/16-posthog-daily-metrics.json`, `60-growth-funnel-snapshot.json`, `63-growth-acquisition-snapshot.json`) — вони мають бути виставлені на n8n Railway (Settings → Environment Variables), а не лише на API-service.
+
+- `POSTHOG_API_KEY=phx_…` — Personal API key із project-scope доступом (scopes: `project:read`, `query:read` для n8n HogQL, `persons:write` для GDPR cleanup). Використовується в `deletePostHogPerson(userId)` із cleanup-черги при hard-delete акаунта та у WF-16 HogQL daily query. Без ключа cleanup-job + n8n повертають `outcome: "skipped"` / graceful Telegram alert — рекомендовано виставити у production.
+- `POSTHOG_PROJECT_ID=12345` — числовий ID проєкту (Settings → Project → ID).
+- `POSTHOG_HOST=https://eu.i.posthog.com` (default — EU Cloud, парний до `VITE_POSTHOG_HOST`).
+
+### Server-side (event ingestion)
+
+- `POSTHOG_PROJECT_API_KEY=phc_…` — Project ingestion key (той самий public ключ, що й `VITE_POSTHOG_KEY`). Використовується в `capturePostHogEvent()` для server-side трекінгу подій з webhook-ів / background workers (PR-09 — `subscription_started` зі Stripe). Без ключа capture-helper повертає `outcome: "skipped"` і caller (webhook handler) успішно завершує процесинг — аналітика best-effort.
+
+### Server-side (AI Observability — ініціатива 0025)
+
+- `POSTHOG_AI_OBSERVABILITY_KEY=phc_…` _(optional; тумблер)_ — Project ingestion key для `$ai_generation`-подій з центрального AI-клієнта ([`apps/server/src/lib/posthogAi.ts`](../../../apps/server/src/lib/posthogAi.ts), викликається з `lib/anthropic.ts` і `lib/llm/provider.ts`) через `posthog-node`. Може дорівнювати `POSTHOG_PROJECT_API_KEY`, але змінна окрема навмисно: **задано → AI-івенти шлються, не задано → не шлються взагалі** (dev/test). Host — `POSTHOG_HOST` або EU Cloud за замовчуванням. У події лише метадані: модель, провайдер (`anthropic`/`openrouter`), токени (вкл. cache), кост з `estimateAnthropicCostUsd`, латентність, `$ai_is_error`/`$ai_http_status`, `feature` (= `endpoint`), `SYSTEM_PROMPT_VERSION`; `distinctId` = Better Auth userId або `server`. **Контент промптів/відповідей не відправляється за конструкцією** (allowlist у типі `AiGenerationEvent`; Hard Rule #21). Fail-open: збій SDK → `logger.warn`, AI-виклик не ламається. Реєстр тумблерів: [`feature-flags.md § 3.3`](../architecture/feature-flags.md#33-інфраструктура-і-спостережуваність); спека: [`0025-posthog-ai-observability.md`](../../work/specs/initiatives/0025-posthog-ai-observability.md).
+
+---
+
+## 16. Monobank webhook integration
+
+### `MONO_WEBHOOK_ENABLED` _(optional, default `false`)_
+
+Feature flag: увімкнути webhook-based інтеграцію. Коли `true` — `MONO_TOKEN_ENC_KEY` і `PUBLIC_API_BASE_URL` обов'язкові.
+
+### `MONO_TOKEN_ENC_KEY` _(required if webhook enabled)_
+
+32-byte hex ключ для AES-256-GCM шифрування Monobank токенів. Згенерувати: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+
+### `PUBLIC_API_BASE_URL` _(required if webhook enabled)_
+
+Публічна базова URL API (Coolify) для реєстрації webhook у Monobank.
+
+- Webhook URL: `${PUBLIC_API_BASE_URL}/api/mono/webhook/${secret}`.
+- Production: `https://<sergeant-api-host>`.
+- Dev: `https://xxx.trycloudflare.com` (через `cloudflared tunnel --url http://localhost:3000`).
+
+---
+
+## 17. Monobank / PrivatBank legacy polling proxy
+
+> ⚠ Токени банків **НЕ** читаються з env — вони надходять від клієнта через заголовок `X-Token` і форвардяться до upstream. Сервер їх зберігає лише у memory кешу (хешовано); тривалість і таймаути керуються нижче.
+
+### `BANK_FETCH_TIMEOUT_MS` _(optional)_
+
+Per-attempt таймаут запиту до Monobank/PrivatBank API. **Default**: `15000` (15 с).
+
+- Upstream'и зазвичай відповідають за <2 с, але `/personal/statement` із великим періодом може тягнутись довше.
+- Floor 1 с, ceiling 60 с; значення поза смугою ігнорується (fallback на 15_000).
+- Скоротити в продакшні корисно якщо upstream нестабільний — швидший fail-over на breaker.
+
+### `BANK_CACHE_TTL_MS` _(optional)_
+
+TTL in-memory дедуп-кешу для ідентичних GET-ів (key = upstream + path + query + sha256(token)). **Default**: `60000` (60 с).
+
+- Балансує свіжість балансу та 429-rate limit на `/personal/statement` (1 req/60s/token).
+- `0` вимикає кеш (кожен запит йде в upstream).
+- Floor 0, ceiling `600_000` ms (10 хв).
+
+---
+
+## 18. Nutrition backups
+
+### `NUTRITION_BACKUP_KEY_SECRET` _(required for prod)_
+
+Серверний секрет для HMAC-SHA256, що формує ім'я файлу nutrition-backup на диску. Без нього `/api/nutrition/backup-{upload,download}` відповідає 503.
+
+У production обов'язковий — інакше шлях до бекапу можна перебрати (історично було 32-bit FNV-1a, IDOR). Згенерувати: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+
+---
+
+## 19. USDA FDC альтернативний ключ
+
+### `USDA_API_KEY` _(optional, alias)_
+
+Деякі внутрішні скрипти використовують `USDA_API_KEY` замість `USDA_FDC_API_KEY`. Значення можна задати однакове — не плутати з `FDC_API_KEY`, який є помилковим історичним ім'ям.
+
+---
+
+## 20. Mobile (Expo, `apps/mobile`)
+
+### `EXPO_PUBLIC_SENTRY_DSN` _(optional)_
+
+Публічний Sentry DSN для RN-клієнта. Інлайниться у бандл на build-time (префікс `EXPO_PUBLIC_` → доступно в `process.env`). Optional — без нього `initObservability()` виконує no-op і жодних подій у Sentry не відправляється. Парний до `VITE_SENTRY_DSN` (web) і `SENTRY_DSN` (server). Дивись [`apps/mobile/src/lib/observability.ts`](../../../apps/mobile/src/lib/observability.ts).
+
+> **Звідки брати (з 2026-07-26).** До цієї дати Sentry-проєкту під mobile просто **не існувало** — org `dima-dk` мала лише `sergeant-api` і `sergeant-web`, тому `Sentry.init` на mobile викликався, але native-краші в проді нікуди не долітали. Проєкт `sergeant-mobile` (platform `react-native`) створено; DSN — Sentry → Settings → Projects → `sergeant-mobile` → **Client Keys (DSN)**. Клади його в EAS secrets (`eas secret:create --name EXPO_PUBLIC_SENTRY_DSN`), не в git.
+
+### `EXPO_PUBLIC_SENTRY_RELEASE` _(optional)_
+
+Ідентифікатор білду / релізу для прив'язки краш-репортів до конкретної версії у Sentry UI. Зазвичай встановлюється EAS-білд-пайплайном (наприклад `1.0.0+42` або Git SHA). Якщо не задано — Sentry-плагін `@sentry/react-native/expo` інжектує власний хеш нативного білду. Парний до `VITE_SENTRY_RELEASE` (web).
+
+### `EXPO_PUBLIC_SENTRY_ENVIRONMENT` _(optional)_
+
+Sentry environment-тег для сегментації подій між `development`, `staging` і `production`. Default: `"production"`. Парний до `VITE_SENTRY_ENVIRONMENT` (web) та `SENTRY_ENVIRONMENT` (server).
+
+### `EXPO_PUBLIC_POSTHOG_KEY`, `EXPO_PUBLIC_POSTHOG_HOST` _(optional)_
+
+PostHog для mobile FTUX activation funnel (парний до web — той самий project key, що й `VITE_POSTHOG_KEY`).
+
+- Без ключа `initPostHog()` виконує повний no-op: жодних HTTP-викликів, MMKV-записів чи буферизованої черги.
+- `source: "mobile-expo"` super-property розділяє mobile-Expo трафік від web / Capacitor-shell у funnel-ах.
+- `EXPO_PUBLIC_POSTHOG_HOST=https://eu.i.posthog.com` (default — EU Cloud).
+
+Дивись [`apps/mobile/src/lib/observability/posthog.ts`](../../../apps/mobile/src/lib/observability/posthog.ts) і [`docs/work/specs/launch/product-os/ftux-sprint-plan.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/01-product/launch/archive/product-os/ftux-sprint-plan.md) §S0.3.
+
+---
+
+## 21. Cost monitoring (PR-33)
+
+> Server-side env, читається у `apps/server/src/env.ts` і пушиться у Prometheus Gauge `infra_monthly_cost_usd` через `applyInfraMonthlyCosts()` під час bootstrap-у. Споживач — Grafana-дашборд [`docs/operations/observability/dashboards/cost-monitoring.json`](../../operations/observability/dashboards/cost-monitoring.json) (PR-33).
+
+Усі змінні **opt-in** (default `0`); невиставлене / нульове значення → серія НЕ зʼявляється у `/metrics` (gauge не пре-allocate-имо нулі, щоб PromQL-фільтр був тривіальний). `*_PLAN`-лейбли служать виключно для group-by у Grafana — конкретний рядок задається free-form, але conventionally використовуй стандартні tier-нейми (`free|hobby|pro|team|business|enterprise|usage|budget`).
+
+### Static infra subscriptions
+
+- `HETZNER_MONTHLY_COST_USD=7` (default `0`) — Hetzner VPS hosting subscription monthly USD. `HETZNER_PLAN=cx23` (default) — instance type label (`cx23|cx33|cpx31|…`).
+- `VERCEL_MONTHLY_COST_USD=20` (default `0`) — Vercel hosting subscription monthly USD. `VERCEL_PLAN=hobby` (default) — `hobby|pro|enterprise`.
+- `POSTHOG_MONTHLY_COST_USD=0` (default `0`) — PostHog analytics monthly USD. `POSTHOG_PLAN=free` (default) — `free|pay-as-you-go|scale|enterprise`.
+- `SENTRY_MONTHLY_COST_USD=26` (default `0`) — Sentry error monitoring monthly USD. `SENTRY_PLAN=developer` (default) — `developer|team|business|enterprise`.
+
+### AI budget envelopes
+
+Не реальний bill, а **target** для алертів. У Grafana накладається лінією поверх `ai_cost_estimate_usd_total`-run-rate-у; коли фактичний run-rate перетинає лінію — операторне сповіщення.
+
+- `ANTHROPIC_MONTHLY_BUDGET_USD=200` (default `0`) — місячний AI-бюджет на Anthropic. `ANTHROPIC_PLAN=usage` (default) — `usage` для pay-as-you-go. Окрім Grafana-лінії, тепер enforced серверним guard-ом як **projection-alert**: budget-tick проєктує місячний spend (`today-spend × днів-у-місяці`) і при `projection ≥ envelope` шле idempotent Sentry warning (1× на місяць, `error_signature='anthropic-monthly-budget-projection'`, key `YYYY-MM` переживає day-rollover) — дзеркалить Voyage monthly projection. `0` → projection вимкнено. Run-rate-прив'язаний поріг (на відміну від фіксованого денного) не false-fire-ить на масштабі.
+- `VOYAGE_MONTHLY_BUDGET_USD=20` (default `0`) — місячний AI-бюджет на Voyage embeddings. `VOYAGE_PLAN=usage` (default).
+- `VOYAGE_DAILY_BUDGET_USD=0.75` (default `0`) — **soft** daily-burn threshold для Voyage (USD/day). Виставляє `voyage_daily_budget_usd` gauge → Prometheus rule [`voyage-cost.yml`](../../../ops/prometheus/rules/voyage-cost.yml) пейджить `VoyageDailyBudgetSoftBreach` (warn @ 80%, after 10m) і `VoyageDailyBudgetHardBreach` (page @ 100%, after 5m). Default `0` → правило не активне (guard `voyage_daily_budget_usd > 0`). Рекомендоване значення: `VOYAGE_MONTHLY_BUDGET_USD / 30` як baseline; підняти при відомому daily-spike (наприклад, batch-reindex ingestion-у).
+- `ANTHROPIC_BUDGET_SOFT_USD=3` / `ANTHROPIC_BUDGET_HARD_USD=5` (default `3` / `5`) — **PR-14** Anthropic daily soft/hard budget alert порогів (USD). Background-tick (`ANTHROPIC_BUDGET_CHECK_INTERVAL_MS`, default `300000` = 5 хв) рахує `ai_cost_estimate_usd_total{provider="anthropic"}` delta за поточну UTC-добу. Soft → `Sentry.captureMessage(level="warning")` → n8n WF-22 alert-shipping → Telegram (опційно). Hard → `level="error"` + взводимо in-process throttle-flag `isAnthropicBudgetHardExceeded()` для не-критичних шляхів (batch worker-и можуть самозатягнути горло; AI-роути НЕ зупиняються — це alert, не circuit-breaker). Idempotency: один alert на `(YYYY-MM-DD, threshold)` через Redis `SET NX EX 36h` з in-memory fallback. `0` для будь-якого порога вимикає alert (kill-switch).
+- `ANTHROPIC_BUDGET_ALERT_ENABLED=true` (default `true`) — kill-switch для PR-14 budget loop. `false` → scheduler не стартує (counter все одно інкрементується, але алертів не буде).
+- `ANTHROPIC_BUDGET_HARD_DEGRADE_ALL=false` (default `false`) — **catastrophic-cost circuit-breaker** (opt-in). Коли `true` І денний глобальний Anthropic-spend перевищив hard-поріг (`isAnthropicBudgetHardExceeded()`), [`resolveProTier`](../../../apps/server/src/modules/chat/aiQuota.ts) деградує **усіх** не-founder юзерів (Free + Pro) на floor-модель — не лише тих, хто вичерпав власну квоту. Це справжня стеля вартості, якої per-user tiering сам не дає (Free отримує premium-модель, cap-иться лише КІЛЬКІСТЮ, тож на масштабі домінує в AI-COGS). Default `false` → нормальна alert-only поведінка (hard alert сигналить, AI-роути відкриті). Founder (`AI_QUOTA_FOUNDER_IDS`) ніколи не деградує. Sync-флаг, без DB-залежності.
+- `VOYAGE_DAILY_BUDGET_USD_SOFT=1` (default `1`) — **in-process** soft daily cap (USD/day) для Voyage embeddings. На відміну від `VOYAGE_DAILY_BUDGET_USD` (Prometheus side), enforced серверним кодом ([`apps/server/src/modules/ai-memory/voyageBudget.ts`](../../../apps/server/src/modules/ai-memory/voyageBudget.ts), PR-38): при перевищенні — idempotent Sentry warning (1× на (day, threshold), `error_signature='voyage-daily-budget-soft'`) і **skip non-critical embeddings** (background ingestion — digest, mono webhook, RAG-prep). User-facing recall лишається critical (alert fire-иться, але виклик пропускається — UX > soft cap). Set `0` щоб вимкнути soft-gate (тоді тільки Prometheus-side `VoyageDailyBudgetSoftBreach`). Лічильник resets at UTC midnight.
+- `VOYAGE_DAILY_BUDGET_USD_HARD=5` (default `5`) — **in-process** hard daily cap (USD/day) для Voyage embeddings. Analogous до `ANTHROPIC_BUDGET_HARD_USD` (same `$1/$5` ratio). При перевищенні — Sentry `level="error"` (`error_signature='voyage-daily-budget-hard'`) + взводимо in-process `isVoyageBudgetHardExceeded()` прапор, який `service.ts::remember` читає для **auto-pause ingestion** (skip embed-call ще до `embedBatch`). User-facing recall не паузиться — лише фонова інжестія. Перевірка робиться post-record у [`recordVoyageUsage`](../../../apps/server/src/modules/ai-memory/embeddings.ts) (`runVoyageBudgetTick`); idempotent: `≤1` alert на (day, tier) через `alertedTiers`-set. Flag скидається на UTC day-rollover. Set `0` щоб вимкнути hard-gate (тоді лишається тільки soft).
+- `VOYAGE_MONTHLY_BUDGET_USD=20` (default `0`) — також використовується **monthly projection alert**: коли `today-spend × днів-у-місяці ≥ monthly-cap`, шлемо Sentry warning (`error_signature='voyage-monthly-budget-projection'`) один раз на (`YYYY-MM`, monthly). Це m-rate-of-burn детектор: якщо одного дня згоріло достатньо, щоб закінчити monthly envelope до кінця місяця — операторне сповіщення раніше ніж hard daily-cap. Set `0` щоб вимкнути projection alert (target/dashboard сторона `VOYAGE_PLAN=usage` лишається активною). Поточна логіка живе у [`voyageBudget.ts::maybeFireMonthlyProjectionAlert`](../../../apps/server/src/modules/ai-memory/voyageBudget.ts).
+
+Дивись [`docs/operations/observability/metrics.md` §16 Cost monitoring](../../operations/observability/metrics.md#16-cost-monitoring-pr-33--pr-38) для PromQL-запитів і [`docs/operations/observability/dashboards/cost-monitoring.json`](../../operations/observability/dashboards/cost-monitoring.json) для імпорту в Grafana.
+
+---
+
+## 22. Telegram alert shipper (O4 / B.1)
+
+> Server-side env, читається у `apps/server/src/routes/internal/alerts.ts` лениво всередині `/api/internal/alerts/send` endpoint-у. Якщо не задано — endpoint повертає `503 telegram_not_configured`; решта `/alerts/*` ендпоінтів продовжує працювати (n8n flow OK).
+
+### `SERGEANT_ALERT_BOT_TOKEN` _(optional, required for `/alerts/send`)_
+
+Telegram bot-token для alert-бота (`Sergeant_alert_bot`). OpenClaw gateway і broadcast-write surface **повністю decommissioned** ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md); Hard Rule #20 — no OpenClaw PATs in production). Цей token обслуговує лише операторні алерти через [`telegramShipper.ts`](../../../apps/server/src/modules/alerts/telegramShipper.ts). Format: `123456:ABC-DEF…`.
+
+Без цього env-var-а:
+
+- `/alerts/post` / `/alerts/ack` / `/alerts/escalate` / `/alerts/pending` — продовжують працювати (DB-only).
+- `/alerts/send` (O4 / B.1 dedup-шипер) — повертає `503 { error: "telegram_not_configured" }`.
+
+Виставляти у Coolify prod-environment-і. У dev НЕ обовʼязково. n8n-шар виведено (ADR-0090): усі alert-и йдуть через `/api/internal/alerts/send`.
+
+### Dedup behaviour (server-side)
+
+Endpoint `/api/internal/alerts/send` приймає `dedupSignature` (stable hash, e.g. `wf-15:railway-deploy-failed:api`). Якщо в межах вікна (`windowMs`, default `600_000` ms = 10 хв) уже існує row з тим самим `(topic, dedup_signature)` — викликається `editMessageText` із counter-prefix `🔁 N× за 10 хв:\n<original>`. Інакше — фрешевий `sendMessage` + INSERT into `tg_alert_acks`. Fail-open: будь-яка DB/Telegram-помилка логуються `level=warn` через Pino + сесія fallback-ить на `sendMessage` (нове повідомлення замість edit-у). Edit-failure (e.g. `message_not_found`) → response action=`sent_after_edit_failure`.
+
+Реалізація: [`apps/server/src/modules/alerts/telegramShipper.ts`](../../../apps/server/src/modules/alerts/telegramShipper.ts) + міграція [`060_tg_alert_acks_dedup_signature.sql`](../../../apps/server/src/migrations/060_tg_alert_acks_dedup_signature.sql). Roadmap-контекст: [`docs/work/specs/launch/tech/telegram-improvements-roadmap.md` §4.2](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/01-product/launch/archive/tech/telegram-improvements-roadmap.md), [`docs/work/specs/planning/sprint-roadmap-q2q3-2026.md` §1.2 B.1](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/sprint-roadmap-q2q3-2026.md).
+
+---
+
+## 23. `/api/internal/*` HMAC webhook signing (PR-48 follow-up)
+
+> Defence-in-depth поверх `INTERNAL_API_KEY`. Trio змінних читається в [`apps/server/src/http/verifyWebhookSignature.ts`](../../../apps/server/src/http/verifyWebhookSignature.ts) і застосовується middleware-ом на `/api/internal/*` ПІСЛЯ bearer-token guard. Same trio має бути виставлений на n8n Railway env — workflow Function-node читає `$env.WEBHOOK_HMAC_SECRET` (template: [`ops/n8n-workflows/_lib/sign-internal-request.js`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/_lib/sign-internal-request.js)).
+
+### `WEBHOOK_HMAC_SECRET` _(optional, recommended for prod)_
+
+32+ байтовий shared-secret. Згенерувати: `openssl rand -hex 32`. Пустий рядок (default) — middleware no-op, тільки bearer guard. Виставлений → перевіряється `X-Signature` = `hex(HMAC-SHA256(secret, "<X-Timestamp>.<rawBody>"))`. Той самий байтовий вміст має бути виставлений на n8n Railway, інакше Function-node-template падає з `WEBHOOK_HMAC_SECRET is not set`. Ротація — атомарно в обох місцях через [`rotate-secrets.md`](../../start/instructions/rotate-secrets.md) (replay-window 5min робить тимчасовий розфаз нешкідливим).
+
+### `WEBHOOK_HMAC_REQUIRED` _(optional, default `false`)_
+
+Двофазний rollout. `false` (grace, default) — server warn-логує `webhook_hmac_mismatch` + Sentry breadcrumb на mismatch, але пропускає запит. Дозволяє per-workflow міграцію без cross-cutting cut-over-у. `true` — flip після того, як усі 25 `INTERNAL_API_KEY`-using workflows у `manifest.json` показують `hmacSigned: true`; з цього моменту missing/invalid signature → `401 WEBHOOK_HMAC_INVALID`.
+
+### `WEBHOOK_HMAC_TS_TOLERANCE_SEC` _(optional, default `300`)_
+
+Replay-вікно для `X-Timestamp` (UNIX seconds, симетрично навколо `now`). 5min default матчить Stripe/GitHub/Slack webhook signatures. Збільшувати лише за наявністю clock-skew у конкретного n8n воркера (видно у Grafana `reason="timestamp_out_of_window"`); зменшувати — лише з твердим NTP-sync на n8n Railway side.
+
+Full rollout playbook: [`docs/governance/security/api-internal-hmac.md`](../../governance/security/api-internal-hmac.md). Audit context: [`docs/governance/security/better-auth-audit-2026-05.md#f5b`](../../governance/security/better-auth-audit-2026-05.md).
+
+---
+
+## 24. Інтеграція Silpo MCP (walking-skeleton експеримент, 2026-08-17)
+
+Спека: [`docs/work/specs/silpo-mcp-integration.md`](../../work/specs/silpo-mcp-integration.md) § Експеримент. Точна парність із трійкою `MONO_TOKEN_ENC_KEY*` / `MONO_WEBHOOK_ENABLED` у § 16 — той самий `KeyRing`-хелпер, та сама форма валідації. **Обидва продуктові гейти знято 2026-08-18** (оферта — прийнята як операційний ризик; текст приватності — затверджено). Перед `SILPO_ENABLED=true` у проді лишається один ops-крок: **DCR з продовим `redirect_uri`** — `client_id` зі спайку зареєстрований на `localhost` і в проді не спрацює (спека § Ризики).
+
+### `SILPO_ENABLED` _(опційна, дефолт `false`)_
+
+Feature flag / kill switch для всієї поверхні `/api/silpo/*`. `false` → кожен роут відповідає `503 SILPO_DISABLED` (перевірка всередині кожного хендлера, після session guard). `true` вимагає `SILPO_TOKEN_ENC_KEY`(S), `SILPO_OAUTH_CLIENT_ID` і `PUBLIC_API_BASE_URL` — інакше старт падає (`assertStartupEnv`).
+
+### `SILPO_MCP_URL` _(опційна, дефолт `https://mcp.silpo.ua/mcp`)_
+
+Streamable-HTTP JSON-RPC endpoint MCP-сервера Сільпо (`apps/server/src/modules/silpo/mcpClient.ts`). Discovery OAuth-метаданих (`/.well-known/oauth-authorization-server`) фетчиться відносно origin-а цього URL.
+
+### `SILPO_OAUTH_CLIENT_ID` _(обовʼязкова якщо `SILPO_ENABLED=true`)_
+
+Публічний OAuth 2.1 client id з Dynamic Client Registration (RFC 7591) проти `registration_endpoint` авторизаційного сервера Сільпо. **DCR — одноразовий ops/runbook-крок, ніколи не виконується в рантаймі запиту** — `modules/silpo/oauth.ts::registerDynamicClient()` існує як entry point для скрипта, не як route-логіка. Ре-реєстрація після тротлінгу/бану спільного client_id — той самий runbook-крок (спека § Ризики — «Спільний DCR client_id — SPOF на всю базу»), не автоматичний fallback.
+
+### `SILPO_TOKEN_ENC_KEY` / `SILPO_TOKEN_ENC_KEYS` / `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION` _(обовʼязкові якщо `SILPO_ENABLED=true`)_
+
+AES-256-GCM `KeyRing` для шифрування ОБОХ токен-трійок (access + refresh) у `silpo_connection` — формат і механіка ротації ті самі, що в `MONO_TOKEN_ENC_KEY*` (§ 16). `SILPO_ENABLED=true` вимагає **принаймні однієї** з двох альтернативних конфігурацій (інакше старт падає):
+
+1. **Versioned ring (канонічна):** `SILPO_TOKEN_ENC_KEYS=v1:<64-hex>,v2:<64-hex>`. `SILPO_TOKEN_ENC_KEY_CURRENT_VERSION` — **опційна** (без неї current = найвища версія у ring; вказана версія, якої немає в `..._KEYS`, — помилка старту). Підтримує ротацію (lazy re-encrypt при refresh).
+2. **Legacy-фолбек:** один ключ `SILPO_TOKEN_ENC_KEY=<64-hex>` (читається як v1). Без ротації — для дев/першого запуску.
+
+Коли задано обидві, `..._KEYS` має пріоритет, а legacy-ключ ігнорується (`parseKeyRing`, `apps/server/src/lib/keyRing.ts`) — тож ефективна конфігурація завжди рівно одна. Згенерувати ключ: `node -e "console.log(require('crypto').randomBytes(32).toString('hex'))"`.
+
+---
+
+## See also
+
+- [`docs/engineering/architecture/feature-flags.md`](../architecture/feature-flags.md) — **реєстр тумблерів**: лише булеві прапорці, але з дефолтами, наслідками перемикання і умовою зняття. Покриває також те, чого тут немає за визначенням — клієнтський `FLAG_REGISTRY` і in-memory kill-switch (це не змінні оточення).
+- [`/.env.example`](../../../.env.example) — мінімальний `.env` для `pnpm dev`.
+- [`docs/engineering/integrations/railway-vercel.md`](./railway-vercel.md) — топологія хостингу + проксі.
+- [`docs/start/agents/onboarding.md`](../../start/agents/onboarding.md) — quickstart для AI-агентів.
+- [ADR-0028](../../governance/adr/0028-pgvector-ai-memory.md) — pgvector + Voyage AI memory.
+- [ADR-0031](../../governance/adr/0031-openclaw-v0-telegram-cofounder.md) — OpenClaw v0.
+- [ADR-0042](../../governance/adr/0042-password-hashing-strategy.md) — password hashing (scrypt у Better Auth, без 72-byte ліміту).
+- [`docs/work/specs/security-hardening/`](../../work/specs/security-hardening) — карти H5, H6, H9, M1.

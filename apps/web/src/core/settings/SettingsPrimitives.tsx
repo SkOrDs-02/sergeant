@@ -35,9 +35,8 @@ function ChevronIcon({ expanded }: ChevronIconProps) {
 /** Module names accepted by SettingsGroup (mirrors CardModule but decoupled). */
 type SettingsModule = "finyk" | "fizruk" | "routine" | "nutrition";
 
-/** Scoped bg-class for the icon badge — avoids global accent-rgb emission.
- *  Each module has a registered `-soft` / `-soft-border` pair in the design
- *  token contract.
+/** Module accent for the header glyph (text colour only — the tinted
+ *  badge is gone, see the comment at the render site).
  *
  *  Раніше тут стояло «Hard Rule #12» — правило retired
  *  [ADR-0081](../../../../../docs/04-governance/adr/0081-repository-simplification.md):
@@ -46,10 +45,10 @@ type SettingsModule = "finyk" | "fizruk" | "routine" | "nutrition";
  *  правила прибрано (§6 боргу, аудит Профілю/Налаштувань 2026-08-08) — саме
  *  той клас коментаря, що пережив свій механізм. */
 const MODULE_ICON_BG: Record<SettingsModule, string> = {
-  finyk: "bg-finyk-soft border-finyk-soft-border text-finyk",
-  fizruk: "bg-fizruk-soft border-fizruk-soft-border text-fizruk",
-  routine: "bg-routine-soft border-routine-soft-border text-routine",
-  nutrition: "bg-nutrition-soft border-nutrition-soft-border text-nutrition",
+  finyk: "text-finyk",
+  fizruk: "text-fizruk",
+  routine: "text-routine",
+  nutrition: "text-nutrition",
 };
 
 export interface SettingsGroupProps {
@@ -238,16 +237,18 @@ export function SettingsGroup({
           )}
         >
           <div className="flex items-center gap-3 min-w-0">
+            {/* Гліф у рядку назви, без тонованого квадрата (огляд 2026-09-04,
+                той самий хід, що `BentoCard` 2026-09-03): icon-in-tinted-
+                square — T5 з анти-слоп аудиту, і 14 таких квадратів поспіль
+                робили сторінку стосом однакових плиток. Модульний акцент
+                лишається на самому гліфі. */}
             {icon && (
-              <span
-                className={cn(
-                  "rounded-xl p-1.5 border flex items-center justify-center shrink-0",
-                  moduleBg ||
-                    "bg-surface-soft-glass border-surface-line text-muted-v2",
-                )}
-              >
-                <Icon name={icon} size={18} />
-              </span>
+              <Icon
+                name={icon}
+                size={20}
+                className={cn("shrink-0", moduleBg || "text-muted")}
+                aria-hidden
+              />
             )}
             <span className="text-style-title text-text">{title}</span>
           </div>
@@ -292,7 +293,12 @@ export function SettingsSubGroup({ title, children }: SettingsSubGroupProps) {
   return (
     <div className="space-y-3">
       <h3 className="text-style-overline text-text">{title}</h3>
-      <div className="space-y-3">{children}</div>
+      {/* Сусідні рядки (`data-row`, див. `ToggleRow`) стоять впритул на
+          спільній hairline — проміжок лишається лише між рядком і
+          абзацом/кнопкою. */}
+      <div className="flex flex-col gap-3 [&>[data-row]+[data-row]]:-mt-3">
+        {children}
+      </div>
     </div>
   );
 }
@@ -335,11 +341,14 @@ export function ToggleRow({
   const labelId = useId();
   return (
     <label
+      data-row
       className={cn(
         "flex items-center justify-between gap-4 cursor-pointer group min-h-[44px]",
-        "p-3 rounded-2xl border border-line/60 bg-surface-soft-glass shadow-soft",
-        "hover:border-brand/40 hover:bg-surface-strong-glass active:bg-surface-soft-glass",
-        "transition-[background-color,border-color]",
+        // Рядок списку на hairline, а не картка в картці (огляд 2026-09-04,
+        // П2 анти-слоп стратегії: контекст під заголовком — щільний список
+        // без карток). Тап лишається на всю ширину рядка.
+        "py-3 -mx-2 px-2 rounded-lg border-b border-line/60 last:border-b-0",
+        "hover:bg-panelHi active:bg-panelHi transition-[background-color]",
       )}
     >
       <div className="flex-1 min-w-0">

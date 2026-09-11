@@ -6,7 +6,6 @@ import { MonthOutflowComb } from "../components/MonthOutflowComb";
 import type { CombEntry } from "../lib/monthOutflowComb";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { Icon } from "@shared/components/ui/Icon";
-import { Button } from "@shared/components/ui/Button";
 import { Money } from "@shared/components/ui/Money";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { useToast } from "@shared/hooks/useToast";
@@ -129,7 +128,9 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           onLinkTransactions={() => setTxPicker({ type: "sub", subId: sub.id })}
         />
       ))}
-      {showSubForm ? (
+      {/* Вхід у форму — quick-action «+ Підписка» угорі сторінки; власна
+          кнопка секції дублювала його (звіт власника 2026-09-03). */}
+      {showSubForm && (
         <SubscriptionForm
           newSub={newSub}
           setNewSub={setNewSub}
@@ -137,15 +138,6 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           setShowSubForm={setShowSubForm}
           transactions={transactions}
         />
-      ) : (
-        <Button
-          type="button"
-          variant="finyk-soft"
-          onClick={() => setShowSubForm(true)}
-          className="w-full rounded-xl shadow-soft mt-2"
-        >
-          + Додати підписку
-        </Button>
       )}
     </div>
   );

@@ -31,7 +31,7 @@ export const serverBlocks = [
   // redact-paths, не заміна. Test-файли свідомо лишаємо у scope:
   // тести теж не мають логувати raw req/res. Скоупимо виключно у
   // `apps/server/**` — лише там живе Pino-stack. Hard rule #21,
-  // докладніше у `docs/04-governance/security/logging-redaction-policy.md`.
+  // докладніше у `docs/governance/security/logging-redaction-policy.md`.
   {
     files: ["apps/server/**/*.{ts,js,mjs}"],
     rules: {
@@ -85,8 +85,8 @@ export const serverBlocks = [
   // (`apps/server/eslint.server-maxlines-allowlist.json`) reached zero and
   // was removed — there are no grandfathered monoliths; a new violation
   // is fixed, not allowlisted.
-  // See docs/04-governance/governance/rules/18-module-size-discipline-600.md
-  // and docs/90-work/tech-debt/archive/technical-assessment-2026-06-05.md Theme 2.
+  // See docs/governance/governance/rules/18-module-size-discipline-600.md
+  // and docs/work/specs/tech-debt/archive/technical-assessment-2026-06-05.md Theme 2.
   {
     files: ["apps/server/src/**/*.{js,ts}"],
     ignores: [

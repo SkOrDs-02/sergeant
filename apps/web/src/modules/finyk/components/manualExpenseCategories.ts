@@ -35,6 +35,7 @@ export type CategorySlug =
   | "food"
   | "groceries"
   | "cafe"
+  | "restaurant"
   | "transport"
   | "entertainment"
   | "health"
@@ -44,6 +45,10 @@ export type CategorySlug =
   | "subscriptions"
   | "education"
   | "travel"
+  | "sport"
+  | "beauty"
+  | "debt"
+  | "charity"
   | "other";
 
 export interface CategoryDisplay {
@@ -96,6 +101,19 @@ export function isCategorySlug(value: string): value is CategorySlug {
   return Object.prototype.hasOwnProperty.call(CATEGORY_DISPLAY, value);
 }
 
+/** Резолвить лише відому вбудовану категорію, без fallback у «Інше». */
+export function resolveKnownCategory(
+  raw: string | null | undefined,
+): CategorySlug | null {
+  if (!raw) return null;
+
+  const trimmed = raw.trim();
+  if (isCategorySlug(trimmed)) return trimmed;
+
+  const fromLabel = legacyManualCategoryId(trimmed);
+  return fromLabel && isCategorySlug(fromLabel) ? fromLabel : null;
+}
+
 /**
  * Normalises any stored category value to a CategorySlug.
  *
@@ -111,19 +129,7 @@ export function isCategorySlug(value: string): value is CategorySlug {
  * upgradeCategory(null)         // → "other"
  */
 export function upgradeCategory(raw: string | null | undefined): CategorySlug {
-  if (!raw) return DEFAULT_CATEGORY;
-
-  const trimmed = raw.trim();
-
-  // Era 3: known slug — use directly.
-  if (isCategorySlug(trimmed)) return trimmed;
-
-  // Ери 1–2 — спільний резолвер домену (емодзі зрізається всередині).
-  const fromLabel = legacyManualCategoryId(trimmed);
-  if (fromLabel && isCategorySlug(fromLabel)) return fromLabel;
-
-  // Unknown legacy value — graceful fallback.
-  return DEFAULT_CATEGORY;
+  return resolveKnownCategory(raw) ?? DEFAULT_CATEGORY;
 }
 
 /**

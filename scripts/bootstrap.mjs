@@ -175,7 +175,7 @@ function checkDocker() {
     }
     fail(
       "Docker не знайдено",
-      "Встанови Docker Desktop / Docker Engine. Або запусти `pnpm bootstrap --skip-db` і підніми Postgres вручну (див. docs/02-engineering/integrations/env-vars.md).",
+      "Встанови Docker Desktop / Docker Engine. Або запусти `pnpm bootstrap --skip-db` і підніми Postgres вручну (див. docs/engineering/integrations/env-vars.md).",
     );
     return false;
   }

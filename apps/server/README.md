@@ -59,9 +59,9 @@ pnpm --filter @sergeant/server rag-eval:live         # RAG-eval проти жи�
 
 ## Деплой
 
-Hetzner + Coolify ([ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-coolify.md)): образ збирає `deploy-api.yml` → GHCR із `Dockerfile.api`, Coolify тягне й деплоїть. Pre-deploy: `pre_deployment_command = node dist-server/migrate.js` (потребує `MIGRATE_DATABASE_URL`).
+Hetzner + Coolify ([ADR-0074](../../docs/governance/adr/0074-hosting-hetzner-coolify.md)): образ збирає `deploy-api.yml` → GHCR із `Dockerfile.api`, Coolify тягне й деплоїть. Pre-deploy: `pre_deployment_command = node dist-server/migrate.js` (потребує `MIGRATE_DATABASE_URL`).
 
-Деталі: [`docs/02-engineering/integrations/railway-vercel.md`](../../docs/02-engineering/integrations/railway-vercel.md).
+Деталі: [`docs/engineering/integrations/railway-vercel.md`](../../docs/engineering/integrations/railway-vercel.md).
 
 ### Trust proxy (`TRUST_PROXY`)
 
@@ -77,7 +77,7 @@ Hetzner + Coolify ([ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-
 | Internal-only (no edge proxy) | `TRUST_PROXY=false`                     |
 | Multi-edge з відомими IP      | `TRUST_PROXY=10.0.0.0/8,192.168.0.0/16` |
 
-`TRUST_PROXY=true` **навмисно заборонено** — це робить кожен `req.ip` client-controlled і знеосмислює rate-limit / audit-логи. `parseTrustProxy` падає з помилкою при boot-у. Деталі: [`docs/04-governance/security/hardening/M2-trust-proxy-parameterize.md`](../../docs/04-governance/security/hardening/archive/M2-trust-proxy-parameterize.md).
+`TRUST_PROXY=true` **навмисно заборонено** — це робить кожен `req.ip` client-controlled і знеосмислює rate-limit / audit-логи. `parseTrustProxy` падає з помилкою при boot-у. Деталі: [`M2-trust-proxy-parameterize.md`](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/M2-trust-proxy-parameterize.md).
 
 ## Hard rules
 
@@ -87,6 +87,6 @@ Hetzner + Coolify ([ADR-0074](../../docs/04-governance/adr/0074-hosting-hetzner-
 
 ## Глибше
 
-- [`docs/02-engineering/architecture/api-v1.md`](../../docs/02-engineering/architecture/api-v1.md)
-- [`docs/90-work/tech-debt/backend.md`](../../docs/90-work/tech-debt/backend.md)
-- [`docs/02-engineering/api/README.md`](../../docs/02-engineering/api/README.md) — OpenAPI spec
+- [`docs/engineering/architecture/api-v1.md`](../../docs/engineering/architecture/api-v1.md)
+- [`docs/work/specs/tech-debt/backend.md`](../../docs/work/specs/tech-debt/backend.md)
+- [`docs/engineering/api/README.md`](../../docs/engineering/api/README.md) — OpenAPI spec

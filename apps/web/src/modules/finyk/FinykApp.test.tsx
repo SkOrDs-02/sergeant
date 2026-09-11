@@ -108,7 +108,7 @@ beforeAll(async () => {
 // why the same test passed with `-t` and failed in the file. Same reasoning as
 // the raised `testTimeout` in `vitest.config.js`: give slow-runner timing
 // enough room that only a real hang goes red.
-configure({ asyncUtilTimeout: 5000 });
+configure({ asyncUtilTimeout: 10000 });
 
 /** Default handlers every test needs — `useMonobank` always fires the
  * sync-state query and `AuthProvider` always fires `/me`, regardless of

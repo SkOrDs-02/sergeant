@@ -470,6 +470,12 @@ export const messagesEn: Partial<{
       profileGroupHint:
         "This is what you told us about yourself. Edit and delete it in your profile.",
       profileGroupAction: "Open profile",
+      clearButton: "Clear AI memory",
+      clearing: "Clearing…",
+      clearConfirmTitle: "Clear AI memory?",
+      clearConfirmBody:
+        "Every fact disappears, both local and on the server. This cannot be undone.",
+      clearConfirmButton: "Clear forever",
       /** `{count}` — how many facts from this group are loaded so far. */
       profileGroupCount: "Facts: {count}",
       collapseFact: "Collapse",

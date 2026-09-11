@@ -86,6 +86,6 @@ QA squad — це **tests + typecheck**. Він НЕ покриває: web e2e/P
 
 ## Playbooks
 
-- [`docs/00-start/playbooks/run-squad-qa.md`](../../../docs/00-start/playbooks/run-squad-qa.md) — step-by-step рецепт
-- [`docs/00-start/playbooks/fix-failing-ci.md`](../../../docs/00-start/playbooks/fix-failing-ci.md) — якщо QA squad виявив failures
-- [`docs/00-start/agents/agent-skills-catalog.md`](../../../docs/00-start/agents/agent-skills-catalog.md) — каталог всіх skills
+- [`docs/start/instructions/run-squad-qa.md`](../../../docs/start/instructions/run-squad-qa.md) — step-by-step рецепт
+- [`docs/start/instructions/fix-failing-ci.md`](../../../docs/start/instructions/fix-failing-ci.md) — якщо QA squad виявив failures
+- [`docs/start/agents/agent-skills-catalog.md`](../../../docs/start/agents/agent-skills-catalog.md) — каталог всіх skills

@@ -125,6 +125,41 @@ describe("WheelPicker", () => {
     expect(onChange).toHaveBeenLastCalledWith(0);
   });
 
+  it("does not commit a value from its own controlled scroll sync", () => {
+    const onChange = vi.fn();
+    const descriptor = Object.getOwnPropertyDescriptor(
+      HTMLElement.prototype,
+      "scrollTo",
+    );
+    Object.defineProperty(HTMLElement.prototype, "scrollTo", {
+      configurable: true,
+      value: vi.fn(),
+    });
+
+    try {
+      render(
+        <WheelPicker
+          values={VALUES}
+          value={50}
+          onChange={onChange}
+          aria-label="v"
+        />,
+      );
+
+      const spin = screen.getByRole("spinbutton");
+      spin.scrollTop = 80;
+      fireEvent.scroll(spin);
+
+      expect(onChange).not.toHaveBeenCalled();
+    } finally {
+      if (descriptor) {
+        Object.defineProperty(HTMLElement.prototype, "scrollTo", descriptor);
+      } else {
+        Reflect.deleteProperty(HTMLElement.prototype, "scrollTo");
+      }
+    }
+  });
+
   it("highlights the nearest value when value is not an exact member", () => {
     render(
       <WheelPicker

@@ -565,12 +565,12 @@
   }
 
   /* ═══════════════════════════════════════════════════════════════════════
-     DARK THEME — «Чорнило» (Ink): deep, luminescent, premium
+     DARK THEME — «Чорнило» (Ink): calm, layered, legible
      Dark-first visual direction (spec:
-     docs/90-work/planning/specs/chornylo-visual-direction.md § 1). A single
-     deep green-black surface; depth comes from surface tint + accent border +
-     glow, not neutral dividers. Neutral hairlines are intentionally subtle
-     (white/6–12%) — the accessible high-contrast dividers live in
+     docs/work/specs/chornylo-visual-direction.md § 1). A single
+     warm-charcoal surfaces; depth comes from three clear tonal levels and
+     restrained borders. Accent colour marks actions and data rather than
+     lighting every container. High-contrast dividers live in
      `html.hc.dark` below (≥4.5:1, untouched by this direction). Text tiers
      keep WCAG AA: muted ≥ 4.5:1, subtle ≥ 3:1 on the ink surface.
      ═══════════════════════════════════════════════════════════════════════ */
@@ -582,12 +582,12 @@
 
     /* Cards/panels — solid ink surface. `panel-hi` lifts one tint step so
        hover and input backgrounds separate from the base surface. */
-    --c-panel: 27 22 19; /* #1b1613 — cards, rows, nav, fields */
-    --c-panel-hi: 34 28 24; /* #221c18 — hover / input bg */
+    --c-panel: 31 26 23; /* #1f1a17 — cards and nav */
+    --c-panel-hi: 42 35 31; /* #2a231f — fields and hover */
 
     /* Border — ink hairline ≈ white/6% over the surface. Depth is carried by
        accent borders + glow, so the neutral edge stays quiet. */
-    --c-line: 31 42 37; /* #1f2a25 — ink hairline (≈ white/6%) */
+    --c-line: 59 51 46; /* traceable neutral boundary */
 
     /* Text hierarchy — ink tiers (spec § 1). */
     --c-text: 242 246 242; /* #f2f6f2 — display / headings, 17.33:1 on bg */
@@ -616,10 +616,10 @@
        (700/800) rgba; without an override the active-nav glow stayed at
        the light tint on the ink surface. Derived straight from the
        tier-400 accent vars above (2026-08 design-audit T5). */
-    --shadow-finyk-nav: 0 0 8px rgb(var(--c-finyk-accent) / 0.4);
-    --shadow-fizruk-nav: 0 0 8px rgb(var(--c-fizruk-accent) / 0.4);
-    --shadow-routine-nav: 0 0 8px rgb(var(--c-routine-accent) / 0.4);
-    --shadow-nutrition-nav: 0 0 8px rgb(var(--c-nutrition-accent) / 0.4);
+    --shadow-finyk-nav: none;
+    --shadow-fizruk-nav: none;
+    --shadow-routine-nav: none;
+    --shadow-nutrition-nav: none;
 
     /* Драбина «жару» серії — темна тема. Тут працює світло, а не тінь,
        тож щаблі йдуть від блідого до насиченого й усі шість видимі. */
@@ -671,14 +671,14 @@
     /* Prominent divider — ink `line-strong` ≈ white/12% (spec § 1). Reads a
        step above `--c-line` for major section splits; the AAA divider for
        low-vision users lives in `html.hc.dark`. */
-    --c-border-strong: 74 84 78; /* #4a544e — prominent ink divider (≈ white/12%) */
+    --c-border-strong: 82 72 65; /* major neutral divider */
 
     /* Dark-theme A11y / states overrides. Focus ring shifts to teal-400
        so it clears ≥3:1 against the warm-charcoal panel (`--c-panel` = #201c19).
        Selection flips to a deep teal wash with a bright foreground. */
     --c-ring: 45 212 191; /* teal-400 — brighter for dark panels (2026-07: was emerald-400) */
     --c-ring-strong: 94 234 212; /* teal-300 — solid, punchy */
-    --c-ring-offset: 27 22 19; /* panel — matches `--c-panel` */
+    --c-ring-offset: 31 26 23; /* panel — matches `--c-panel` */
     /* `--c-accent` mirrors `--c-ring` — same reason: the light-tier teal-700
        (`:root` value) reads ~3.4:1 on the ink surface, sub-AA for
        `text-accent`/`bg-accent` (107 call sites). Dark flips to the
@@ -691,12 +691,12 @@
     --c-selection-bg: 17 94 89; /* teal-800 */
     --c-selection-fg: 204 251 241; /* teal-100 */
     --c-caret: 45 212 191; /* teal-400 — visible in dark inputs */
-    --c-scrollbar-track: 27 22 19; /* panel */
-    --c-scrollbar-thumb: 31 42 37; /* matches --c-line */
+    --c-scrollbar-track: 31 26 23; /* panel */
+    --c-scrollbar-thumb: 59 51 46; /* matches --c-line */
     --c-scrollbar-thumb-hover: 95 107 100; /* matches --c-subtle */
     --c-divider-weak: 23 31 27; /* between panel and line */
-    --c-divider: 31 42 37; /* matches --c-line */
-    --c-divider-strong: 74 84 78; /* matches --c-border-strong */
+    --c-divider: 59 51 46; /* matches --c-line */
+    --c-divider-strong: 82 72 65; /* matches --c-border-strong */
     --c-success-soft: 6 95 70; /* slightly brighter emerald-900 */
     --c-warning-soft: 146 64 14; /* slightly brighter amber-900 */
     --c-danger-soft: 153 27 27; /* red-800 — brighter than red-900 */
