@@ -61,7 +61,8 @@ test.describe("mobile coarse-pointer UI audit", () => {
   }) => {
     await mockApi(page);
     // Registered after `mockApi` so it wins: a connected Silpo account is what
-    // puts the "З покупок Сільпо" entry on the same grid as the pantry rows.
+    // adds the fourth "З чека" segment to the source strip in `PantryCard`
+    // (accessible name still "З покупок Сільпо" — see `PantrySourceTabs`).
     await page.route("**/silpo/sync-state", async (route) => {
       await route.fulfill({
         status: 200,

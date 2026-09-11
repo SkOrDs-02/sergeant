@@ -44,8 +44,13 @@ import type { ImportDirection } from "@sergeant/shared";
  *
  * `sport` і `beauty` у ручному пікері власних чипів не мають, тож
  * зводяться до найближчих: спорт — до «Здоровʼя», краса — до «Покупок».
- * `debt`/`charity`/`internal_transfer` осмисленого чипа не мають узагалі
- * — краще лишити дефолт, ніж вгадувати.
+ * `internal_transfer` осмисленого чипа не має узагалі — краще лишити
+ * дефолт, ніж вгадувати. `debt` чип МАЄ («Борги та кредити», id `debt` —
+ * `packages/finyk-domain/src/lib/manualTaxonomy.ts:174-179`) і тепер
+ * замаплений — виправлено 2026-09-11 разом із фіксом категоризації
+ * щомісячного погашення кредитки (звіт власника: платіж по кредитці
+ * летів в «Інше»). `charity` чип теж має, але лишається немапленим тут
+ * свідомо не через цю правку — окремий випадок, не зачеплений фіксом.
  */
 const MCC_CATEGORY_TO_PICKER_SLUG: Readonly<Record<string, string>> = {
   food: "food",
@@ -61,6 +66,7 @@ const MCC_CATEGORY_TO_PICKER_SLUG: Readonly<Record<string, string>> = {
   alcohol: "alcohol",
   education: "education",
   travel: "travel",
+  debt: "debt",
 };
 
 interface BankCategoryRule {

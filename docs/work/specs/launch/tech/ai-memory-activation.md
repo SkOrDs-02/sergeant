@@ -1,6 +1,6 @@
 # AI Memory — activation runbook
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-31.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-11.
 > **Status:** Active (operational activation runbook; behavior SSOT is architecture doc)
 
 > **Прод-URL** у прикладах — `$PROD_API_URL`; фактичне значення живе в Coolify env / нотатнику власника (репо публічне).

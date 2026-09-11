@@ -42,6 +42,12 @@ export interface ParsedFizrukRoute {
    * the id a hero-row tap wants the atlas to focus).
    */
   segment?: string;
+  /**
+   * Другий хвостовий сегмент — лише для `workout/<id>/<itemId>`: вправа,
+   * відкрита на весь екран усередині сесії (спека
+   * `fizruk-active-session.md`). Для решти сторінок завжди `undefined`.
+   */
+  subSegment?: string;
   redirectFrom?: string;
 }
 
@@ -65,8 +71,14 @@ export function parseFizrukSegments(
     return { page: "dashboard" };
   }
   const tail = segments[1];
-  if ((page === "exercise" || page === "workout" || page === "atlas") && tail) {
-    return { page: page as "exercise" | "workout" | "atlas", segment: tail };
+  if (page === "workout" && tail) {
+    const sub = segments[2];
+    return sub
+      ? { page: "workout", segment: tail, subSegment: sub }
+      : { page: "workout", segment: tail };
+  }
+  if ((page === "exercise" || page === "atlas") && tail) {
+    return { page: page as "exercise" | "atlas", segment: tail };
   }
   return { page: page as FizrukPage };
 }
@@ -83,9 +95,11 @@ export function parseFizrukSegments(
 export function buildFizrukPath(
   next: FizrukPage | null | undefined,
   segment?: string,
+  subSegment?: string,
 ): string {
   const page = next || "dashboard";
   if (page === "dashboard") return "";
+  if (segment && subSegment) return `${page}/${segment}/${subSegment}`;
   if (segment) return `${page}/${segment}`;
   return page;
 }
@@ -94,8 +108,9 @@ export function buildFizrukPath(
 export function fizrukRoutePath(
   next: FizrukPage | null | undefined,
   segment?: string,
+  subSegment?: string,
 ): string {
-  const suffix = buildFizrukPath(next, segment);
+  const suffix = buildFizrukPath(next, segment, subSegment);
   return suffix ? `/fizruk/${suffix}` : "/fizruk";
 }
 

@@ -1,6 +1,6 @@
 # Кістяки форм і опитувань для beta
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-29.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-16.
 > **Status:** Active
 > **Spec-lint:** skip — документ-джерело текстів форм бети, не фічева спека (форми живуть у Tally)
 

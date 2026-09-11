@@ -20,6 +20,38 @@ vi.mock("../lib/foodCategories", () => ({
         ],
 }));
 
+// `PantrySourceTabs` pulls `useSilpoSyncState` (React Query) — out of scope
+// for PantryCard's own tests (no QueryClientProvider here); its own
+// coverage lives in PantrySourceTabs.test.tsx. Stub keeps the mode-switch
+// and scan-affordance wiring this file already covers.
+vi.mock("./PantrySourceTabs", () => ({
+  PantrySourceTabs: ({
+    onModeChange,
+    onScanBarcode,
+  }: {
+    onModeChange: (mode: "single" | "list") => void;
+    onScanBarcode?: () => void;
+  }) => (
+    <div data-testid="pantry-source-tabs">
+      <button type="button" onClick={() => onModeChange("single")}>
+        По одному
+      </button>
+      <button type="button" onClick={() => onModeChange("list")}>
+        Списком
+      </button>
+      {typeof onScanBarcode === "function" && (
+        <button
+          type="button"
+          aria-label="Сканувати штрих-код"
+          onClick={onScanBarcode}
+        >
+          Скан
+        </button>
+      )}
+    </div>
+  ),
+}));
+
 import { PantryCard } from "./PantryCard";
 
 const Card = PantryCard as unknown as (

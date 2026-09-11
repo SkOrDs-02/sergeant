@@ -29,8 +29,14 @@ function noonSec(day: string): number {
   return Math.floor(Date.parse(`${day}T12:00:00.000Z`) / 1000);
 }
 
-/** MCC 4829 — «переказ коштів»; у каталозі категорій його навмисно немає. */
+/**
+ * MCC 4829 — «переказ коштів». Від 2026-09-11 він У каталозі («Борги та
+ * кредити», фікс класифікації погашення кредитки), тож для кейсу
+ * «невідомий MCC» береться код, якого в каталозі справді немає.
+ */
 const MCC_MONEY_TRANSFER = 4829;
+/** Код поза каталогом `MCC_CATEGORIES` — саме «невідомий», без здогадок. */
+const MCC_UNKNOWN = 9999;
 
 const BANK_TXS = [
   // Звичайна витрата: 300 грн, MCC продуктового.
@@ -57,7 +63,7 @@ const BANK_TXS = [
     id: "t-unknown-mcc",
     amount: -10_000,
     time: noonSec("2026-05-07"),
-    mcc: MCC_MONEY_TRANSFER,
+    mcc: MCC_UNKNOWN,
     description: "Невідомий продавець",
   },
   // Прихована транзакція — джерело теж SQLite, не LS.
@@ -95,10 +101,12 @@ describe("aggregateFinyk читає канонічний SQLite-стан, а н�
     expect(out.totalIncome).toBe(0);
   });
 
-  it("не показує сирий `MCC 4829` — невідомий MCC зводиться до «Інше»", () => {
+  it("не показує сирий `MCC …` — невідомий MCC зводиться до «Інше»", () => {
     const out = aggregateFinyk(WEEK_KEY);
 
-    expect(out.topCategories.map((c) => c.name)).not.toContain("MCC 4829");
+    const names = out.topCategories.map((c) => c.name);
+    expect(names).not.toContain(`MCC ${MCC_UNKNOWN}`);
+    expect(names).not.toContain(`MCC ${MCC_MONEY_TRANSFER}`);
     expect(out.topCategories).toContainEqual({ name: "Інше", amount: 100 });
   });
 

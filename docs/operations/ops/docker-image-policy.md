@@ -1,6 +1,6 @@
 # Docker image policy
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-07.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-06.
 > **Status:** Active
 
 > **Update 2026-07-21:** Backend на Coolify ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). `Dockerfile.openclaw` видалено з репо ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)). Trivy gate лишається лише для `Dockerfile.api`.

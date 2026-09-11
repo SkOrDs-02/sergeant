@@ -1,6 +1,6 @@
 # Email-verification soft-gate sweep plan — legacy unverified users
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-29.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-20.
 > **Status:** Active
 
 | Field          | Value                                                                                                                                                                                                                                                                                                                                                              |

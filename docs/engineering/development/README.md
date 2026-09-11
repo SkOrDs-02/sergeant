@@ -1,6 +1,6 @@
 # Development
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-06.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-13.
 > **Status:** Active
 
 Інженерні how-to для локального dev-loop-у: налаштування оточення, lint-config, тулінг

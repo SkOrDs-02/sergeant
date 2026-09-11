@@ -1,6 +1,6 @@
 # SPEC: покриття евалом — реальний RAG-вимір, повний реєстр тулів, багатоходовість, ін'єкції
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-29.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-15.
 > **Status:** Implemented — усі чотири фази в `main`. Фаза 1: корпус, фікстура,
 > гейт і живий шар ([#973](https://github.com/SkOrDs-02/sergeant/pull/973)).
 > Фаза 2: гейт покриття реєстру

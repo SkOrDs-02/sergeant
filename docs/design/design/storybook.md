@@ -1,6 +1,6 @@
 # Storybook (apps/web)
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-13.
 > **Status:** Active
 
 Sergeant ships a Storybook 10 (`@storybook/react-vite`) playground for the web design-system. It serves as:

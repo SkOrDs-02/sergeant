@@ -2,7 +2,7 @@
 
 > ⚠️ **n8n виведено з репо ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md), 2026-09-02).** Server-side частина (`tg_alert_acks`, `/api/internal/alerts/*`, escalation ladder) чинна; n8n-специфічні кроки (workflow-ID, manifest `requiredEnv`, validator) — історичні, workflow-JSON — у permalink-снапшоті.
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-14.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-24.
 > **Status:** Active. **Owner:** ops.
 > **Spec:** [`docs/governance/adr/0038-tg-alert-acks-and-escalation.md`](../../governance/adr/0038-tg-alert-acks-and-escalation.md)
 > §3.2; reporting matrix footnote 5 in

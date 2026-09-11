@@ -1,6 +1,6 @@
 # Продуктовий аудит 2026-09: підсумок і хвилі фіксів (Ф6)
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-23.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-10-05.
 > **Status:** Active — живий синтез; оновлюється разом із [`findings.md`](./findings.md) і [`progress.md`](./progress.md).
 
 Це не ще один список багів — це відповідь на три питання founder-а: **що

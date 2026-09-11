@@ -1,6 +1,6 @@
 # `/api/internal/*` HMAC signing — rollout playbook
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-18.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-24.
 > **Status:** Active (grace mode).
 
 > ⚠️ **n8n виведено з репо ([ADR-0090](../adr/0090-n8n-decommissioned.md), 2026-09-02).** Server-side middleware і env-тріо чинні; n8n-side кроки (Function-node template, manifest `hmacSigned`, validator) — історичні, файли — у permalink-снапшоті.

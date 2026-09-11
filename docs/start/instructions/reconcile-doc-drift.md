@@ -1,6 +1,6 @@
 # Playbook: Звірка дрифту документації та cleanup завершених snapshot-ів
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-03-06.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-10.
 > **Status:** Active
 > **Runtime-specific:** no
 

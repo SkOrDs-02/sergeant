@@ -1,6 +1,6 @@
 # Access Matrix
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-01.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-06.
 > **Status:** Active
 
 Canonical inventory of privileged surfaces and access expectations for Sergeant.

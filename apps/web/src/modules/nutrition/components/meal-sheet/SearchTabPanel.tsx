@@ -1,19 +1,23 @@
 /**
  * SearchTabPanel — вміст вкладки «Пошук» на кроці джерела.
  *
- * AI-CONTEXT: шаблони, нещодавні прийоми, комора, чек Сільпо й пошук
- * продуктів — це пʼять різних механізмів, але одна й та сама дія людини:
- * «знайти те, що вже відоме». Тому вони живуть на одній вкладці, а не
- * розкидані по кроку. Порядок — від найдешевшого руху до найдорожчого:
- * шаблон і повтор це один тап, комора й чек — вибір зі списку, пошук —
- * набір тексту.
+ * AI-CONTEXT: шаблони, нещодавні прийоми, комора й пошук продуктів — це
+ * чотири різні механізми, але одна й та сама дія людини: «знайти те, що
+ * вже відоме». Тому вони живуть на одній вкладці, а не розкидані по
+ * кроку. Порядок — від найдешевшого руху до найдорожчого: шаблон і повтор
+ * це один тап, комора — вибір зі списку, пошук — набір тексту.
  *
  * Порожні секції не рендеряться взагалі: у новачка ще немає ні шаблонів,
  * ні комори, і стос заглушок робив би крок довшим саме тоді, коли він і
  * так найменш зрозумілий.
  *
+ * 2026-09-11: окремий рядок «З чека Сільпо» видалено — його єдина
+ * цінність (вага фасування) переїхала на `FromPantryRow`, яка тепер
+ * підставляє грами з `packGrams` найсвіжішого чекового джерела позиції
+ * (`latestPackGrams`, `@sergeant/nutrition-domain`).
+ *
  * Status: Active
- * Last validated: 2026-08-22
+ * Last validated: 2026-09-11
  */
 import type { ComponentProps, Dispatch, SetStateAction } from "react";
 import type {
@@ -28,7 +32,6 @@ import { ADD_MEAL_SECTION_KEYS } from "./addMealSections";
 import { FoodPickerSection } from "./FoodPickerSection";
 import { FromPantryRow } from "./FromPantryRow";
 import type { MealSourcePick } from "./useMealSourcePick";
-import { FromReceiptRow } from "./FromReceiptRow";
 import { MealTemplatesRow } from "./MealTemplatesRow";
 import { QuickAddChips } from "../QuickAddChips";
 
@@ -44,13 +47,7 @@ interface SearchTabPanelProps {
   /** Повтор зберігається одразу, тож аркуш після нього закривається. */
   onQuickAdded: () => void;
   pantryItems: PantryItem[];
-  /** `false` — рядок чека Сільпо мовчить і не ходить у мережу. */
-  receiptRowEnabled: boolean;
-  /**
-   * Тап по позиції чека: аркуш дізнається, що запит поставлено НЕ руками,
-   * і сам розгортає перший знайдений продукт карткою з КБЖУ.
-   */
-  /** Автопідбір продукту для «готових» джерел — чек і комора. */
+  /** Автопідбір продукту за назвою позиції комори — щоб прийом ніс КБЖУ. */
   sourcePick: MealSourcePick;
   fromPantryItem: string | null;
   setFromPantryItem: Dispatch<SetStateAction<string | null>>;
@@ -68,7 +65,6 @@ export function SearchTabPanel({
   onQuickAddMeal,
   onQuickAdded,
   pantryItems,
-  receiptRowEnabled,
   sourcePick,
   fromPantryItem,
   setFromPantryItem,
@@ -114,18 +110,11 @@ export function SearchTabPanel({
           setFromPantryItem={setFromPantryItem}
           setForm={setForm}
           setFoodQuery={picker.setFoodQuery}
+          setPickedGrams={picker.setPickedGrams}
           onPicked={sourcePick.onPantryItemPicked}
           onCleared={sourcePick.cancelAutoPick}
         />
       )}
-
-      <FromReceiptRow
-        enabled={receiptRowEnabled}
-        setForm={setForm}
-        setFoodQuery={picker.setFoodQuery}
-        setPickedGrams={picker.setPickedGrams}
-        onPicked={sourcePick.onReceiptItemPicked}
-      />
 
       <FoodPickerSection {...picker} />
     </>

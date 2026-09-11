@@ -1,6 +1,6 @@
 # STRIDE threat model
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-18.
 > **Status:** Active
 
 Закриває [I6 — Document the STRIDE threat model per module](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/I6-threat-model.md).

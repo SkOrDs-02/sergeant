@@ -1,6 +1,6 @@
 # Тексти бети — піни й відповіді бота
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-19.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-05-04.
 > **Status:** Active
 > **Spec-lint:** skip — статичні тексти пінів і відповідей бота, не фічева спека
 

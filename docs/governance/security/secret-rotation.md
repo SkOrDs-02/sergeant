@@ -3,7 +3,7 @@
 <!-- Last validated: 2026-06-03 -->
 <!-- Next review: 2026-09-03 -->
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-21.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-13.
 > **Status:** Active
 
 # Ротація Production Secrets

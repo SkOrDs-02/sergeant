@@ -1,6 +1,6 @@
 # Status-матриця apps і packages
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-15.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-27.
 > **Status:** Active
 
 Одна сторінка — хто живий, хто стабілізується, хто в міграції, хто legacy.

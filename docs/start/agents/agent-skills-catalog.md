@@ -1,6 +1,6 @@
 # Sergeant Agent Skills Catalog
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-01.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-30.
 > **Status:** Active
 
 Канонічна карта repo-owned skills. Якщо ти агент у цьому репо, починай із `sergeant-start-here`, а потім переходь до одного specialist skill на основну поверхню змін.

@@ -53,7 +53,9 @@ describe("FromPantryRow", () => {
     // N1: без цього виклику пошук за назвою стартував, але його результат
     // нікуди не йшов — `pickedFood` лишався `null`, і прийом із комори
     // зберігався БЕЗ КБЖУ.
-    expect(onPicked).toHaveBeenCalledWith("Молоко");
+    // Другим аргументом іде вага фасування: у цієї позиції її немає, тож
+    // автопідбір вільний підставити типову порцію каталогу.
+    expect(onPicked).toHaveBeenCalledWith("Молоко", null);
   });
 
   it("не запускає автопідбір, коли позицію знімають — і гасить відкладений", () => {
@@ -169,6 +171,51 @@ describe("FromPantryRow", () => {
 
     const chip = screen.getAllByTestId("from-pantry-chip")[0]!;
     expect(chip.closest("[aria-hidden]")).toBeNull();
+  });
+
+  // 2026-09-11: замінило окремий рядок «З чека» — вага фасування з чека
+  // Сільпо (`packGrams`) тепер підставляється прямо з чіпа комори.
+  it("prefills the picked portion weight from the freshest source's packGrams", () => {
+    const setPickedGrams = vi.fn();
+    render(
+      <FromPantryRow
+        onPicked={vi.fn()}
+        onCleared={vi.fn()}
+        pantryItems={
+          [
+            {
+              name: "Йогурт",
+              qty: 660,
+              unit: "г",
+              sources: [
+                {
+                  name: "Йогурт Активіа полуниця",
+                  qty: 330,
+                  unit: "г",
+                  addedAt: "2026-08-21",
+                  packGrams: 330,
+                },
+                {
+                  name: "Йогурт Активіа полуниця",
+                  qty: 330,
+                  unit: "г",
+                  addedAt: "2026-09-05",
+                  packGrams: 330,
+                },
+              ],
+            },
+          ] as never[]
+        }
+        fromPantryItem={null}
+        setFromPantryItem={vi.fn()}
+        setForm={vi.fn()}
+        setFoodQuery={vi.fn()}
+        setPickedGrams={setPickedGrams}
+      />,
+    );
+    expect(screen.getByText("330 г")).toBeTruthy();
+    fireEvent.click(screen.getByText("Йогурт"));
+    expect(setPickedGrams).toHaveBeenCalledWith("330");
   });
 
   it("deselects the active item on a second tap", () => {

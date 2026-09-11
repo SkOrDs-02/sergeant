@@ -1,6 +1,6 @@
 # Telegram як control plane для Sergeant Ops
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-02.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-17.
 > **Status:** Active
 
 > ⚠️ **n8n виведено з репо ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md), 2026-09-02).** Висновки про Telegram як control plane і структуру каналів (ADR-0030) чинні; згадки n8n-механізмів (WF-98, `n8n_errors`, reporting-матриця) — історичні, файли — у permalink-снапшоті.

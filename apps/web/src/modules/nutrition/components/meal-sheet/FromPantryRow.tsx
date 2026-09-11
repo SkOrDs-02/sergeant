@@ -1,12 +1,12 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-09-11
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { formatPantryQty } from "../../lib/formatPantryQty";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
-import type { PantryItem } from "@sergeant/nutrition-domain";
+import { latestPackGrams, type PantryItem } from "@sergeant/nutrition-domain";
 import type { MealFormState } from "./mealFormUtils";
 import { ADD_MEAL_SECTION_KEYS } from "./addMealSections";
 import { messages } from "@shared/i18n/uk";
@@ -18,12 +18,24 @@ interface FromPantryRowProps {
   setForm: Dispatch<SetStateAction<MealFormState>>;
   setFoodQuery: Dispatch<SetStateAction<string>>;
   /**
+   * Прификсовує вагу порції фасуванням з найсвіжішого чека Сільпо
+   * (`latestPackGrams`), коли позицію обрано. 2026-09-11: замінило окремий
+   * рядок «З чека» — вага фасування переїхала на джерело комори
+   * (`PantryItemSource.packGrams`, `useSilpoPantryReplenish.ts`).
+   */
+  setPickedGrams?: Dispatch<SetStateAction<string>> | undefined;
+  /**
    * «Позицію комори обрано» — запускає автопідбір продукту за назвою
    * (`useSourceAutoPick`). Без нього прийом із комори зберігався без КБЖУ:
    * `pickedFood` лишався `null`, картка продукту не монтувалась, а
    * редактор макросів відкривався порожнім (N1).
+   *
+   * `packGrams` іде другим аргументом навмисно: коли фасування відоме,
+   * автопідбір НЕ має підставляти типову порцію каталогу. Вага з чека
+   * точніша за довідникову здогадку, а автопідбір відповідає асинхронно
+   * і затер би її.
    */
-  onPicked: (query: string) => void;
+  onPicked: (query: string, packGrams: number | null) => void;
   /**
    * Позицію зняли — відкладений автопідбір більше не потрібен. Без цього
    * пошук, запущений тапом, відповів би вже після відмови й повернув би
@@ -38,6 +50,7 @@ export function FromPantryRow({
   setFromPantryItem,
   setForm,
   setFoodQuery,
+  setPickedGrams,
   onPicked,
   onCleared,
 }: FromPantryRowProps) {
@@ -61,6 +74,12 @@ export function FromPantryRow({
             // чека: одиницю виміру («кг») або фасування («0,25л»). Голе
             // `{qty}{unit}` давало «20,25л» замість «2 × 0,25 л».
             const qtyLabel = formatPantryQty(item.qty, item.unit || "г");
+            // Найсвіжіше джерело з відомою вагою фасування (чек Сільпо) —
+            // показуємо і підставляємо саме її, вона точніша здогадки за
+            // замовчуванням (100 г).
+            const packGrams = latestPackGrams(item.sources);
+            const secondaryLabel =
+              packGrams != null ? `${packGrams} г` : qtyLabel;
             return (
               <button
                 key={item.name}
@@ -82,7 +101,10 @@ export function FromPantryRow({
                     setFromPantryItem(item.name);
                     setForm((s) => ({ ...s, name: item.name, err: "" }));
                     setFoodQuery(item.name);
-                    onPicked(item.name);
+                    if (packGrams != null) {
+                      setPickedGrams?.(String(packGrams));
+                    }
+                    onPicked(item.name, packGrams);
                   }
                 }}
                 className={cn(
@@ -93,9 +115,9 @@ export function FromPantryRow({
                 )}
               >
                 {item.name}
-                {qtyLabel && (
+                {secondaryLabel && (
                   <span className="ml-1 text-style-caption opacity-70">
-                    {qtyLabel}
+                    {secondaryLabel}
                   </span>
                 )}
               </button>

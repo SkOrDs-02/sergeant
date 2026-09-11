@@ -1,6 +1,6 @@
 # Insights scoreboard — табло гіпотез і метрик
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-24.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-13.
 > **Status:** Active
 
 > Заповнюєш по ходу дослідження. Фінал — 1 сторінка рішень. Кожну гіпотезу познач:

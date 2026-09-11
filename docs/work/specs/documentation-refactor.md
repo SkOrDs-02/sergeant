@@ -1,6 +1,6 @@
 # SPEC: Рефакторинг системи документації
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-10-06.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-10.
 > **Status:** Closed
 
 ## Проблема

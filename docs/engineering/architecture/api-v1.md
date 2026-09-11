@@ -1,6 +1,6 @@
 # API v1 + v2 — версіонування і контракт
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-06.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-12.
 > **Status:** Active
 
 Коротка довідка, як влаштоване версіонування Sergeant-API, гарантії контракту і міграційна стратегія.

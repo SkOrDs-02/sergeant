@@ -1,6 +1,6 @@
 # Release Policy
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-22.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-24.
 > **Status:** Active
 
 Canonical release policy for Sergeant. This document defines when a normal merge is enough and when a change must be treated as an explicit release event with extra coordination.

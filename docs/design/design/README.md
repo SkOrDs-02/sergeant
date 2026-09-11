@@ -1,6 +1,6 @@
 # Дизайн
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-28.
 > **Status:** Active
 
 Брендбук, дизайн-система, спеціалізовані патерни й активний v2-rollout. Історію закритих аудитів зберігає Git.

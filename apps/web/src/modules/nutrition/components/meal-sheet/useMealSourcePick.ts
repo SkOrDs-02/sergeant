@@ -1,9 +1,12 @@
 /**
- * Автопідбір продукту для «готових» джерел аркуша: чек і комора.
+ * Автопідбір продукту для позиції комори.
  *
  * Живе окремо від `AddMealSheet`, бо той уперся в `max-lines: 600`
- * (Hard Rule #18), а ця трійця колбеків — самостійне ціле: один намір
- * («людина вже назвала цей продукт деінде»), різний лише хвіст.
+ * (Hard Rule #18).
+ *
+ * Раніше сюди ходив і рядок «З чека» власним входом. Поставкою
+ * 2026-09-11 його прибрано: вага фасування переїхала на джерело комори
+ * (`PantryItemSource.packGrams`), тож джерело лишилось одне.
  *
  * Last validated: 2026-09-11
  * Status: Active
@@ -23,10 +26,11 @@ interface MealSourcePickArgs {
 }
 
 export interface MealSourcePick {
-  /** Позицію чека обрано. Вагу не чіпаємо — чек знає фасування. */
-  onReceiptItemPicked: (query: string) => void;
-  /** Позицію комори обрано — підставляємо типову порцію каталогу. */
-  onPantryItemPicked: (query: string) => void;
+  /**
+   * Позицію комори обрано. `packGrams` — вага фасування з найсвіжішого
+   * чека, якщо вона відома; тоді типову порцію каталогу НЕ підставляємо.
+   */
+  onPantryItemPicked: (query: string, packGrams: number | null) => void;
   /**
    * Гасить намір, що ще чекає на пошук, і прибирає запит. Потрібен і при
    * знятті позиції комори, і при виході з кроку «Заповнення» назад.
@@ -48,13 +52,20 @@ export function useMealSourcePick({
     setPickedFood,
   });
 
-  // Комора ваги порції не знає: `qty`/`unit` позиції — це ЗАЛИШОК на
-  // полиці, а не скільки людина щойно зʼїла. Тому береться типова порція
-  // каталогу, рівно як при ручному виборі в пошуку
+  // `qty`/`unit` позиції комори — це ЗАЛИШОК на полиці, а не скільки
+  // людина щойно зʼїла, тож вага береться з двох інших джерел у порядку
+  // точності: фасування з чека (його вже підставив сам чіп), інакше —
+  // типова порція каталогу, рівно як при ручному виборі в пошуку
   // (`FoodPickerSection.tsx:133,155`).
+  //
+  // AI-DANGER: перевірка `packGrams` тут обовʼязкова. Автопідбір
+  // відповідає АСИНХРОННО, вже після синхронного `setPickedGrams` у
+  // чіпі, — без неї довідникова здогадка тихо затирала б точну вагу
+  // фасування з чека людини.
   const onPantryItemPicked = useCallback(
-    (query: string) =>
+    (query: string, packGrams: number | null) =>
       schedule(query, (hit) => {
+        if (packGrams != null) return;
         setPickedGrams(String(Math.round(Number(hit.defaultGrams) || 100)));
       }),
     [schedule, setPickedGrams],
@@ -65,9 +76,5 @@ export function useMealSourcePick({
     setFoodQuery("");
   }, [cancel, setFoodQuery]);
 
-  return {
-    onReceiptItemPicked: schedule,
-    onPantryItemPicked,
-    cancelAutoPick,
-  };
+  return { onPantryItemPicked, cancelAutoPick };
 }

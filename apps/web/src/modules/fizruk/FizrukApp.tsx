@@ -61,6 +61,19 @@ export default function FizrukApp({
   const exerciseId =
     page === "exercise" && segments[0] ? segments[0] : undefined;
   const workoutId = page === "workout" && segments[0] ? segments[0] : undefined;
+  // `workout/<id>/<itemId>` — вправа, відкрита на весь екран усередині сесії
+  // (спека `fizruk-active-session.md`, рішення 2).
+  const workoutItemId =
+    page === "workout" && segments[1] ? segments[1] : undefined;
+  // Сесійний режим (спека `fizruk-active-session.md`, рішення 1): активне
+  // тренування — єдиний екран модуля, що є СЕСІЄЮ, а не сторінкою. Шапка
+  // модуля, таби й нижня навігація тут не потрібні й шкідливі: випадковий
+  // тап по табу викидає із сесії посеред підходу, а разом вони зʼїдають
+  // ~212 px із 844. Свідомо ВІДМІННО від V-7 (аудит 08-07), яка повернула
+  // нав на Атлас і Вправу: ті — рівноправні сторінки, ця — модальний крок.
+  // Вихід із сесії — «Згорнути» у власній верхній смузі; FAB «Продовжити»
+  // на решті сторінок уже є, тож сесія не губиться.
+  const sessionMode = page === "workout";
   // Спека `fizruk-hero-recovery-bars.md` рішення 4: `atlas/<id>` — атласна
   // зона (або зона травми) hero-рядок просить підсвітити.
   const atlasMuscleId =
@@ -190,19 +203,21 @@ export default function FizrukApp({
       {/* Module-level rest-timer overlay — rendered above the router so it
           survives navigation between Огляд / Атлас / Тренування while a
           rest countdown is active (audit-06 F3). */}
-      <RestTimerOverlayConnected />
+      <RestTimerOverlayConnected hidden={sessionMode} />
 
       <ModuleShell
         module="fizruk"
         header={
-          <FizrukHeader
-            page={page}
-            activeProgram={activeProgram}
-            onBackToHub={onBackToHub}
-            onGoToHub={onGoToHub}
-            onContextualBack={() => navigate(contextualBackTarget)}
-            onOpenSettings={onOpenSettings}
-          />
+          sessionMode ? undefined : (
+            <FizrukHeader
+              page={page}
+              activeProgram={activeProgram}
+              onBackToHub={onBackToHub}
+              onGoToHub={onGoToHub}
+              onContextualBack={() => navigate(contextualBackTarget)}
+              onOpenSettings={onOpenSettings}
+            />
+          )
         }
         banner={
           <StorageErrorBanner
@@ -213,13 +228,15 @@ export default function FizrukApp({
           />
         }
         nav={
-          <ModuleBottomNav
-            items={FIZRUK_NAV}
-            activeId={fizrukNavActiveId(page)}
-            onChange={(id) => navigate(id)}
-            module="fizruk"
-            ariaLabel={messages.nav.fizrukSections}
-          />
+          sessionMode ? undefined : (
+            <ModuleBottomNav
+              items={FIZRUK_NAV}
+              activeId={fizrukNavActiveId(page)}
+              onChange={(id) => navigate(id)}
+              module="fizruk"
+              ariaLabel={messages.nav.fizrukSections}
+            />
+          )
         }
       >
         {/* Свайп між чотирма вкладками нижньої навігації. `activeId={page}`
@@ -236,6 +253,7 @@ export default function FizrukApp({
             page={page}
             exerciseId={exerciseId}
             workoutId={workoutId}
+            workoutItemId={workoutItemId}
             atlasMuscleId={atlasMuscleId}
             activeProgramId={activeProgramId}
             activeProgram={activeProgram}

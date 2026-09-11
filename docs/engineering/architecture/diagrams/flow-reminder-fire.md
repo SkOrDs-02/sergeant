@@ -2,7 +2,7 @@
 
 > ⚠️ **Історична діаграма.** n8n виведено з репо ([ADR-0090](../../../governance/adr/0090-n8n-decommissioned.md)); ранковий брифінг і reminder-fire тепер виконує серверний sweep-таймер (`apps/server/src/lib/reminders/sweep.ts`, [ADR-0089](../../../governance/adr/0089-job-substrates-outbox-broker-timer.md)). Крок `POST /api/push/send` і далі — чинний, тригер — ні.
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2027-01-03.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-29.
 > **Status:** Deprecated (n8n decommissioned — ADR-0090)
 
 n8n cron спрацьовує о 07:30 за Києвом, читає підписників з Postgres, дзвонить у server `/api/push/send`. Server відправляє push через APNs / FCM / Web Push на пристрій.

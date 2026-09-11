@@ -79,7 +79,6 @@ export function useWorkoutsOrchestrator(
     addExercise,
     removeExercise,
   } = useExerciseCatalog();
-  const rec = useRecovery();
   const {
     workouts,
     loaded: workoutsLoaded,
@@ -140,6 +139,9 @@ export function useWorkoutsOrchestrator(
   const [activeWorkoutId, setActiveWorkoutId] = useState(
     () => options.requestedWorkoutId ?? safeReadStringLS(ACTIVE_WORKOUT_KEY),
   );
+  // Виклик стоїть ПІСЛЯ `activeWorkoutId` навмисно: поточна сесія
+  // виключається з історії відновлення (див. `UseRecoveryOptions`).
+  const rec = useRecovery({ excludeWorkoutId: activeWorkoutId });
   const [finishFlash, setFinishFlash] = useState<FinishFlashState | null>(null);
   const [deleteExerciseConfirm, setDeleteExerciseConfirm] = useState(false);
   const [riskyTemplateConfirm, setRiskyTemplateConfirm] =

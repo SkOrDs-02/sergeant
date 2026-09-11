@@ -289,6 +289,8 @@ describe("useSilpoPantryReplenish", () => {
             // Одна штука: множення фасування не відбувалось, показувати
             // «× N» у розкладі позиції нема чого.
             packCount: null,
+            // «шт» — не масштабована одиниця, `receiptQtyToGrams` мовчить.
+            packGrams: null,
           },
         ],
       },
@@ -330,6 +332,72 @@ describe("useSilpoPantryReplenish", () => {
     expect(written[0]!.qty).toBe(500);
     expect(written[0]!.sources![0]!.qty).toBe(500);
     expect(written[0]!.sources![0]!.packCount).toBe(2);
+  });
+
+  // 2026-09-11: рядок «З чека» в аркуші прийому їжі видалено, вага
+  // фасування переїхала на джерело комори — «З комори» підставляє її як
+  // порцію, коли позицію обирають (FromPantryRow → latestPackGrams).
+  it("пише packGrams на джерелі, коли чек знає вагу фасування", () => {
+    mockReceipts([RECEIPT_SUMMARY]);
+    mockDetail(
+      detailWithItems([
+        {
+          id: 1,
+          name: "Йогурт Активіа полуниця",
+          qty: 1,
+          unit: "330г",
+          priceKop: 4500,
+          categorySlug: null,
+          barcode: null,
+        },
+      ]),
+    );
+    const upsertItem = vi.fn();
+    const { result } = renderHook(() =>
+      useSilpoPantryReplenish({ enabled: true, pantryItems: [], upsertItem }),
+    );
+
+    act(() => {
+      result.current.confirm();
+    });
+
+    const written = upsertItem.mock.calls[0]![0] as Array<{
+      sources?: Array<{ packGrams?: number | null }>;
+    }>;
+    expect(written[0]!.sources![0]!.packGrams).toBe(330);
+  });
+
+  // Закупівля («1 кг яблук») — не разова порція: `receiptQtyToGrams`
+  // навмисно мовчить вище `MAX_PORTION_GRAMS_FROM_RECEIPT` (500 г), краще
+  // порожнє поле, ніж вгадана вага.
+  it("не пише packGrams, коли вага перевищує стелю разової порції", () => {
+    mockReceipts([RECEIPT_SUMMARY]);
+    mockDetail(
+      detailWithItems([
+        {
+          id: 1,
+          name: "Молоко Яготинське 2.6% 900г",
+          qty: 1,
+          unit: "900г",
+          priceKop: 3000,
+          categorySlug: null,
+          barcode: null,
+        },
+      ]),
+    );
+    const upsertItem = vi.fn();
+    const { result } = renderHook(() =>
+      useSilpoPantryReplenish({ enabled: true, pantryItems: [], upsertItem }),
+    );
+
+    act(() => {
+      result.current.confirm();
+    });
+
+    const written = upsertItem.mock.calls[0]![0] as Array<{
+      sources?: Array<{ packGrams?: number | null }>;
+    }>;
+    expect(written[0]!.sources![0]!.packGrams).toBeNull();
   });
 
   it("згортає назву з чека до родової і показує це в рядку", () => {

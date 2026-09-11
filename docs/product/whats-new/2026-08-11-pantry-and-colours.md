@@ -1,6 +1,6 @@
 # 2026-08-11 — Комора слухається, категорії стали кольоровими
 
-> **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-20.
+> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-23.
 > **Status:** Active
 >
 > **Modal id:** `2026-08-11-pantry-and-colours` —

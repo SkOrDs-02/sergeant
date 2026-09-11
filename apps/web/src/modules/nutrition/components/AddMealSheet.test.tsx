@@ -453,10 +453,9 @@ vi.mock("@shared/lib/adapters/haptic", () => ({
 
 // ─── Default props helpers ─────────────────────────────────────────────────
 
-// `FromReceiptRow` — єдина дитина аркуша, що ходить у React Query (чеки
-// Сільпо), і вона НЕ мокається: так тест лишається чесним щодо контракту
-// props, які `SearchTabPanel` їй передає. Без звʼязаної інтеграції рядок
-// рендерить null, тож провайдера з `retry: false` достатньо.
+// `PackageEntryStep` (ручний ввід «з упаковки») читає `useQueryClient` —
+// аркуш через це потребує `QueryClientProvider` у дереві навіть без
+// мережевих запитів; `retry: false` тримає тест швидким.
 function QueryWrapper({ children }: { children: React.ReactNode }) {
   const client = new QueryClient({
     defaultOptions: { queries: { retry: false } },
