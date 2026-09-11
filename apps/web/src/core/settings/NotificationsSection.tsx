@@ -151,9 +151,12 @@ export function NotificationsSection() {
     // раніше цей рядок і ⌘K-індекс (settingsSectionsCatalog.ts) розходились
     // ("Сповіщення" тут vs "Нагадування" у пошуку) без жодної перевірки.
     <SettingsGroup title={settingsSectionTitle("notifications")} icon="bell">
-      <div className="flex items-center justify-between gap-3 p-3 rounded-xl bg-bg border border-line">
+      {/* Два рядки поспіль мали один підпис «Push-сповіщення» (браузерний
+          дозвіл і власне підписка) і читались як дубль (огляд 2026-09-04).
+          Перший рядок — про дозвіл браузера, і називається так. */}
+      <div className="flex items-center justify-between gap-3 py-2 border-b border-line/60">
         <div>
-          <p className="text-style-label text-text">Push-сповіщення</p>
+          <p className="text-style-label text-text">Дозвіл браузера</p>
           <p className={cn("text-style-caption mt-0.5", permColor)}>
             {permLabel}
           </p>
@@ -173,6 +176,8 @@ export function NotificationsSection() {
           </Button>
         )}
         {permStatus === "denied" && (
+          // AI-NOTE: caption навмисно — це підказка в рядку контролу, поруч із
+          // статусом «Заблоковано», а не абзац, який читають окремо.
           <p className="text-style-caption text-subtle max-w-[14rem] text-right">
             Відкрий налаштування сайту в браузері (значок біля адреси) і дозволь
             сповіщення
@@ -180,7 +185,7 @@ export function NotificationsSection() {
         )}
       </div>
 
-      <PushNotificationToggle className="p-3 rounded-xl bg-bg border border-line" />
+      <PushNotificationToggle className="py-2 border-b border-line/60" />
 
       <SettingsSubGroup title={sergeantCopy.name}>
         <ToggleRow
@@ -196,8 +201,18 @@ export function NotificationsSection() {
             void sergeantNudges.set(checked);
           }}
         />
+        {/* Огляд 2026-09-04: до першого завантаження «помилка» — це гість
+            («увійди, щоб…»), не збій. Червоним лишається лише збій
+            збереження після успішного завантаження. */}
         {sergeantNudges.error && (
-          <p className="text-style-caption text-danger-strong dark:text-danger">
+          <p
+            className={
+              sergeantNudges.loaded
+                ? "text-style-caption text-danger-strong dark:text-danger"
+                : "text-style-caption text-muted"
+            }
+            role={sergeantNudges.loaded ? "alert" : "status"}
+          >
             {sergeantNudges.error}
           </p>
         )}

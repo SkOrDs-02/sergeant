@@ -41,22 +41,18 @@ const captured = vi.hoisted(
     ({
       notifications: undefined,
       onOpenSearch: undefined,
-      onOpenPrivacy: undefined,
     }) as {
       notifications: { id: string }[] | undefined;
       onOpenSearch: (() => void) | undefined;
-      onOpenPrivacy: (() => void) | undefined;
     },
 );
 vi.mock("./HubHeader", () => ({
   HubHeader: (props: {
     notifications?: { id: string }[];
     onOpenSearch: () => void;
-    onOpenPrivacy: () => void;
   }) => {
     captured.notifications = props.notifications;
     captured.onOpenSearch = props.onOpenSearch;
-    captured.onOpenPrivacy = props.onOpenPrivacy;
     return <div data-testid="hub-header" />;
   },
 }));
@@ -145,7 +141,6 @@ describe("HubHomeView", () => {
     gates.shouldShowOnboarding.mockReturnValue(false);
     captured.notifications = undefined;
     captured.onOpenSearch = undefined;
-    captured.onOpenPrivacy = undefined;
     whatsNewOpts.enabled = undefined;
   });
 
@@ -173,15 +168,13 @@ describe("HubHomeView", () => {
     expect(captured.notifications?.map((n) => n.id)).toContain("pwa-install");
   });
 
-  it("wires header search and privacy callbacks", () => {
+  it("wires the header search callback", () => {
     const ui = makeUi();
     render(<HubHomeView {...props({ ui })} />);
 
     captured.onOpenSearch?.();
-    captured.onOpenPrivacy?.();
 
     expect(ui.setSearchOpen).toHaveBeenCalledWith(true);
-    expect(hubNav.openHubSettingsSection).toHaveBeenCalledWith("privacy");
   });
 
   it("suppresses notifications during the FTUX session", () => {

@@ -22,6 +22,8 @@ import {
   type DashboardModuleId,
 } from "@sergeant/shared";
 import { pushActiveModules } from "../hub/activeModulesSync";
+import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
+import { ThemeSwitcher } from "@shared/components/ui/ThemeSwitcher";
 import {
   SettingsGroup,
   SettingsSubGroup,
@@ -93,8 +95,19 @@ export function DashboardSection() {
   );
 
   return (
-    <SettingsGroup title="Дашборд" icon="compass" anchorId="settings-dashboard">
+    <SettingsGroup
+      title={settingsSectionTitle("dashboard")}
+      icon="grid"
+      anchorId="settings-dashboard"
+    >
       <SettingsSubGroup title="Вигляд">
+        {/* Тема переїхала сюди з меню «⋯» у шапці (огляд 2026-09-04): це
+            єдина підгрупа про вигляд, і саме тут її шукали — пошук
+            «тема» доти давав порожнечу. */}
+        <div className="flex flex-col gap-2" data-row>
+          <span className="text-style-label text-text">Тема</span>
+          <ThemeSwitcher className="w-full" />
+        </div>
         <ToggleRow
           label="Чистий режим"
           description="Ховає підказки, інсайти й мотиваційні блоки, лишає на головній лише модулі."
@@ -178,32 +191,23 @@ export function DashboardSection() {
          * settings-side reorder UI was a confusing duplicate. Active /
          * inactive checkboxes stay here because that toggle has no
          * dashboard-side equivalent. */}
-        <p className="text-style-caption text-subtle leading-snug">
+        <p className="text-style-body text-subtle leading-snug">
           Які розділи показувати на головній. Неактивні розділи виглядають
           приглушено, без кнопки швидкого додавання. Принаймні один має
           залишатися активним. Порядок змінюється на головній через кнопку
           «Налаштувати» поруч із заголовком «Розділи».
         </p>
-        <ul className="rounded-xl border border-line divide-y divide-line/60 overflow-hidden">
-          {ALL_MODULES.map((id) => {
-            const checked = activeModules.includes(id);
-            return (
-              <li key={id} className="px-3 py-2 bg-panel">
-                <label className="flex items-center gap-3 cursor-pointer touch-target">
-                  <input
-                    type="checkbox"
-                    checked={checked}
-                    onChange={() => toggleActive(id)}
-                    className="h-4 w-4 accent-primary"
-                  />
-                  <span className="flex-1 text-style-label text-text">
-                    {SHARED_DASHBOARD_MODULE_LABELS[id]}
-                  </span>
-                </label>
-              </li>
-            );
-          })}
-        </ul>
+        {/* Огляд 2026-09-04: тут стояв нативний чекбокс 16px, тоді як
+            решта «увімкнути/вимкнути» на сторінці — `Switch`. Один
+            словник для однієї дії. */}
+        {ALL_MODULES.map((id) => (
+          <ToggleRow
+            key={id}
+            label={SHARED_DASHBOARD_MODULE_LABELS[id]}
+            checked={activeModules.includes(id)}
+            onChange={() => toggleActive(id)}
+          />
+        ))}
       </SettingsSubGroup>
     </SettingsGroup>
   );

@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
-import { MINUS_SIGN, NARROW_NBSP } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 
 export interface FlowItem {
   title: string;
@@ -67,9 +67,12 @@ export const FlowRow = memo(function FlowRow({
         {!showAmount ? (
           "••••"
         ) : flow.amount === null ? (
-          // Невідома сума — не число, тож і тирів у неї немає. Знак і
-          // валюта лишаються, бо вони відомі: невідомо СКІЛЬКИ, а не що.
-          `${negative ? MINUS_SIGN : "+"}?${NARROW_NBSP}${flow.currency}`
+          // Невідома сума — не число, тож і не в колонці сум: словами і
+          // приглушено. «−? ₴» читалось як помилка, а не як стан (звіт
+          // власника 2026-09-03 після переїзду блоку в Планування).
+          <span className="text-style-caption text-muted font-normal">
+            {messages.finyk.planning.amountUnknown}
+          </span>
         ) : (
           <Money
             amount={negative ? -flow.amount : flow.amount}
