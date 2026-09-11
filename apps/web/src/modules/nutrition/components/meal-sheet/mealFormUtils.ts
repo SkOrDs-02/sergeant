@@ -9,6 +9,7 @@ import type {
 import { deviceTimeOfDay } from "@sergeant/nutrition-domain";
 import type { NutritionPhotoItem } from "@shared/api";
 import { clampText } from "@shared/lib/text/limits";
+import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import { newMealId } from "../../lib/mealId";
 
 /**
@@ -83,15 +84,17 @@ const PHOTO_FALLBACK_DISH_NAME = "Результат";
 
 export function emptyForm(
   photoResult?: MealFormPhotoResult | null,
+  mealType?: MealTypeId | null,
 ): MealFormState {
   const macros = photoResult?.macros || {};
   const dishName = (photoResult?.dishName || "").trim();
   return {
     name: dishName === PHOTO_FALLBACK_DISH_NAME ? "" : dishName,
-    // Default to the meal that matches the current hour. Hard-coding
-    // "breakfast" at 21:00 forced every late-dinner user to tap the picker
-    // and flip the type to "Вечеря" before they could save.
-    mealType: mealTypeByNow(),
+    // Тип прийому: явний вибір людини (тап по сегменту hero) виграє
+    // годинник. Без явного — той, що збігається з поточною годиною:
+    // жорсткий "breakfast" о 21:00 змушував кожного, хто вечеряє пізно,
+    // лізти в пікер і перемикати тип перед збереженням.
+    mealType: mealType ?? mealTypeByNow(),
     time: currentTime(),
     kcal: macros.kcal != null ? String(Math.round(macros.kcal)) : "",
     protein_g:
@@ -100,6 +103,19 @@ export function emptyForm(
     carbs_g: macros.carbs_g != null ? String(Math.round(macros.carbs_g)) : "",
     err: "",
   };
+}
+
+/**
+ * Вага порції з поля вводу. `100` — коли поле порожнє або негодяще:
+ * запис без ваги неможливий, а нуль чи порожнеча в цьому місці дали б
+ * прийом із нульовими макросами.
+ *
+ * Живе тут, а не в `AddMealSheet`: той уперся в `max-lines: 600`
+ * (Hard Rule #18), а функція чиста й доменна.
+ */
+export function gramsOrDefault(raw: string): number {
+  const parsed = parseDecimalInput(raw);
+  return parsed.ok && parsed.value > 0 ? parsed.value : 100;
 }
 
 /** Дані для рядка, який пишеться коли фото-аналіз не дав `items[]`. */

@@ -36,6 +36,7 @@ import { parseDecimalInput } from "@shared/lib/format/numberInput";
 import type {
   Meal,
   MealTemplate,
+  MealTypeId,
   NutritionPrefs,
   PantryItem,
 } from "@sergeant/nutrition-domain";
@@ -48,6 +49,7 @@ import {
   buildMealsForSave,
   currentTime,
   emptyForm,
+  gramsOrDefault,
   upsertMealTemplate,
   type MealFormState,
   type MealSaveTemplate,
@@ -107,11 +109,6 @@ function macrosAreAllEmpty(macros: {
  * потрапляла НЕ та вага без жодного натяку користувачу. Тиха підміна даних
  * гірша за помилку, тому парсинг тут спільний із КБЖВ.
  */
-function gramsOrDefault(raw: string): number {
-  const parsed = parseDecimalInput(raw);
-  return parsed.ok && parsed.value > 0 ? parsed.value : 100;
-}
-
 interface AddMealSheetProps {
   open: boolean;
   onClose: () => void;
@@ -119,6 +116,13 @@ interface AddMealSheetProps {
   onSave: (meal: Meal, photoFile?: File | null) => void;
   /** `"photo"` — відкритись одразу на кроці аналізу фото (шорткати/CTA). */
   initialStep?: "source" | "photo" | undefined;
+  /**
+   * Тип прийому для НОВОГО запису. Порожньо — тип вгадує годинник
+   * (`mealTypeByNow`), як для FAB. Заповнено рівно тоді, коли людина
+   * тапнула конкретний сегмент hero-стрічки. На редагування не впливає:
+   * там тип уже є в самому записі.
+   */
+  initialMealType?: MealTypeId | null | undefined;
   initialMeal?: Partial<Meal> | null | undefined;
   mealTemplates?: MealTemplate[] | undefined;
   setPrefs?: Dispatch<SetStateAction<NutritionPrefs>> | undefined;
@@ -146,6 +150,7 @@ export function AddMealSheet({
   onClose,
   onSave,
   initialStep,
+  initialMealType,
   initialMeal,
   mealTemplates = [],
   setPrefs,
@@ -251,7 +256,7 @@ export function AddMealSheet({
         err: "",
       });
     } else {
-      setForm(emptyForm(null));
+      setForm(emptyForm(null, initialMealType));
     }
     setFoodQuery("");
     setPickedFood(null);
