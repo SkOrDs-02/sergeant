@@ -448,6 +448,11 @@ describe("Transactions page shell", () => {
     expect(
       screen.queryByRole("button", { name: "Змінити категорію" }),
     ).not.toBeInTheDocument();
+    // Категорія більше не список чіпів у самому аркуші: `CategoryPickerField`
+    // віддає кнопку-тригер, підписану ПОТОЧНОЮ категорією, а варіанти живуть
+    // у вкладеному `Sheet`. Той самий порядок кліків, що й у канонічному
+    // `BankTransactionDetailsSheet.test.tsx:137-138`.
+    fireEvent.click(screen.getByRole("button", { name: "Інше" }));
     fireEvent.click(screen.getByRole("button", { name: "Транспорт" }));
     expect(overrideCategory).toHaveBeenCalledWith("tx-1", "transport");
   });

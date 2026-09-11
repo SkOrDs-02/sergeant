@@ -164,9 +164,17 @@ vi.mock("@shared/lib/modules/crossModulePrompt", () => ({
   tryShowCrossModulePrompt: vi.fn(),
 }));
 
-vi.mock("@shared/lib/modules/hubNav", () => ({
-  openHubModuleWithAction: vi.fn(),
-}));
+// Мок лише підміняє перехід між модулями. Решта експортів іде з
+// оригіналу: `hubNav` віддає ще й `HUB_MODULE_IDS`, який читає граф
+// навігації, і плоский обʼєкт-заглушка валив увесь файл на етапі імпорту
+// («No "HUB_MODULE_IDS" export is defined on the mock»), не добігши до
+// жодного тесту.
+vi.mock("@shared/lib/modules/hubNav", async () => {
+  const actual = await vi.importActual<
+    typeof import("@shared/lib/modules/hubNav")
+  >("@shared/lib/modules/hubNav");
+  return { ...actual, openHubModuleWithAction: vi.fn() };
+});
 
 vi.mock("../../core/lib/lazyImport", () => ({
   lazyImport: (_factory: unknown, name: string) => {
