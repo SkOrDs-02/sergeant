@@ -15,7 +15,6 @@ import {
   type DropdownMenuItem,
 } from "@shared/components/ui/DropdownMenu";
 import { Icon } from "@shared/components/ui/Icon";
-import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { WorkoutItemCard } from "../workouts/WorkoutItemCard";
@@ -23,6 +22,7 @@ import {
   countDoneSets,
   groupMemberPosition,
   neighbourItems,
+  setsProgressLabel,
 } from "./sessionLib";
 
 export interface SessionExerciseFocusProps {
@@ -93,7 +93,7 @@ export function SessionExerciseFocus({
 
   const subline =
     it.type === "strength"
-      ? `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length} · ${countDoneSets(it)} ${ss.of} ${sets.length} ${ss.setsDone}`
+      ? `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length} · ${setsProgressLabel(countDoneSets(it), sets.length)}`
       : `${ss.exerciseOf} ${idx + 1} ${ss.of} ${items.length}`;
 
   const menuItems: DropdownMenuItem[] = [
@@ -224,38 +224,35 @@ export function SessionExerciseFocus({
         aria-label={ss.neighboursAria}
         className="flex items-center justify-between gap-2"
       >
-        <button
-          type="button"
-          disabled={!prev}
-          onClick={() => prev && onOpenItem(prev.id)}
-          aria-label={
-            prev ? `${ss.prevExercise}: ${prev.nameUk}` : ss.prevExercise
-          }
-          className={cn(
-            "focus-ring flex min-h-[44px] min-w-0 items-center gap-1 rounded-xl px-2 text-style-label",
-            prev ? "text-muted hover:text-text" : "text-subtle opacity-40",
-          )}
-        >
-          <Icon name="chevron-left" size={16} aria-hidden />
-          <span className="truncate">{prev?.nameUk ?? "—"}</span>
-        </button>
-        <button
-          type="button"
-          disabled={!next}
-          onClick={() => next && onOpenItem(next.id)}
-          aria-label={
-            next ? `${ss.nextExercise}: ${next.nameUk}` : ss.nextExercise
-          }
-          className={cn(
-            "focus-ring flex min-h-[44px] min-w-0 items-center justify-end gap-1 rounded-xl px-2 text-style-label font-semibold",
-            next
-              ? "text-fizruk-strong dark:text-fizruk hover:bg-fizruk-surface"
-              : "text-subtle opacity-40",
-          )}
-        >
-          <span className="truncate">{next?.nameUk ?? "—"}</span>
-          <Icon name="chevron-right" size={16} aria-hidden />
-        </button>
+        {/* Кнопки без сусіда не рендеримо взагалі: вимкнений контрол із
+            прочерком читався як зламаний елемент (браузерний прохід
+            2026-09-11). Порожній `span` тримає другу кнопку праворуч. */}
+        {prev ? (
+          <button
+            type="button"
+            onClick={() => onOpenItem(prev.id)}
+            aria-label={`${ss.prevExercise}: ${prev.nameUk}`}
+            className="focus-ring flex min-h-[44px] min-w-0 items-center gap-1 rounded-xl px-2 text-style-label text-muted hover:text-text"
+          >
+            <Icon name="chevron-left" size={16} aria-hidden />
+            <span className="truncate">{prev.nameUk}</span>
+          </button>
+        ) : (
+          <span />
+        )}
+        {next ? (
+          <button
+            type="button"
+            onClick={() => onOpenItem(next.id)}
+            aria-label={`${ss.nextExercise}: ${next.nameUk}`}
+            className="focus-ring flex min-h-[44px] min-w-0 items-center justify-end gap-1 rounded-xl px-2 text-style-label font-semibold text-fizruk-strong dark:text-fizruk hover:bg-fizruk-surface"
+          >
+            <span className="truncate">{next.nameUk}</span>
+            <Icon name="chevron-right" size={16} aria-hidden />
+          </button>
+        ) : (
+          <span />
+        )}
       </nav>
     </div>
   );

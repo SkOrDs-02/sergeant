@@ -138,14 +138,15 @@ describe("SessionView — list", () => {
     expect(onCollapse).toHaveBeenCalledTimes(1);
   });
 
-  it("«+ Вправа» in the list and in the dock both open the catalog", () => {
+  // Рівно ОДИН «+ Вправа» на екран: у списку дію несе док, у порожньому
+  // стані — hero-кнопка картки, і док тоді її не дублює (браузерний
+  // прохід 2026-09-11).
+  it("has exactly one «+ Вправа» — in the dock — while the list has items", () => {
     renderView();
-    for (const btn of screen.getAllByRole("button", {
-      name: "Додати вправу",
-    })) {
-      fireEvent.click(btn);
-    }
-    expect(onAddExercise).toHaveBeenCalledTimes(2);
+    const btns = screen.getAllByRole("button", { name: "Додати вправу" });
+    expect(btns).toHaveLength(1);
+    fireEvent.click(btns[0] as HTMLElement);
+    expect(onAddExercise).toHaveBeenCalledTimes(1);
   });
 
   it("renders the empty state with an add button when there are no items", () => {
@@ -156,13 +157,14 @@ describe("SessionView — list", () => {
     ).toBeGreaterThan(0);
   });
 
-  it("finishes from the top bar and from the bottom button", () => {
+  // Верхня смуга липка, тож дубля «Завершити» внизу списку немає.
+  it("finishes from the sticky top bar and shows no duplicate bottom button", () => {
     renderView();
+    expect(
+      screen.queryByRole("button", { name: "Завершити тренування" }),
+    ).toBeNull();
     fireEvent.click(screen.getByRole("button", { name: "Завершити" }));
-    fireEvent.click(
-      screen.getByRole("button", { name: "Завершити тренування" }),
-    );
-    expect(onFinishClick).toHaveBeenCalledTimes(2);
+    expect(onFinishClick).toHaveBeenCalledTimes(1);
   });
 
   it("groups two selected items into a superset from the ⋯ menu", () => {
@@ -231,13 +233,13 @@ describe("SessionView — exercise screen", () => {
     expect(onOpenItem).toHaveBeenCalledWith(null);
   });
 
-  it("starts a rest from the dock button", () => {
-    const { setRestTimer } = renderView({ focusItemId: "a" });
-    fireEvent.click(screen.getByRole("button", { name: "Почати відпочинок" }));
-    expect(setRestTimer).toHaveBeenCalledWith({
-      remaining: expect.any(Number),
-      total: expect.any(Number),
-    });
+  // Старт відпочинку живе в ряду дій картки («⏱ 90 с» + меню пресетів),
+  // тож окремої кнопки в доці немає — вона дублювала той самий намір.
+  it("does not duplicate the rest preset in the dock", () => {
+    renderView({ focusItemId: "a" });
+    expect(
+      screen.queryByRole("button", { name: "Почати відпочинок" }),
+    ).toBeNull();
   });
 
   it("shows an undo toast after deleting a set and restores the snapshot", () => {

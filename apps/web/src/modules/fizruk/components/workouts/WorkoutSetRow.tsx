@@ -150,9 +150,10 @@ export function WorkoutSetRow({
         className={cn(INPUT_CLASS, isCurrent ? "bg-panel" : "bg-panelHi")}
         type="text"
         inputMode="decimal"
-        placeholder={
-          ghostSet ? fmtLoose(ghostSet.weightKg ?? 0) : sr.weightPlaceholder
-        }
+        // Плейсхолдер несе ТІЛЬКИ значення з минулого разу. Підпис колонки
+        // вже стоїть рядком вище (`WorkoutSetColumnHeader`), тож «кг» у
+        // порожньому полі дублював його (браузерний прохід 2026-09-11).
+        placeholder={ghostSet ? fmtLoose(ghostSet.weightKg ?? 0) : ""}
         aria-label={sr.weightAriaLabel}
         value={weightDraft.value}
         readOnly={isReadOnly}
@@ -164,7 +165,7 @@ export function WorkoutSetRow({
         className={cn(INPUT_CLASS, isCurrent ? "bg-panel" : "bg-panelHi")}
         type="number"
         inputMode="numeric"
-        placeholder={ghostSet ? String(ghostSet.reps ?? 0) : sr.repsPlaceholder}
+        placeholder={ghostSet ? String(ghostSet.reps ?? 0) : ""}
         min={0}
         max={MAX_REPS}
         aria-label={sr.repsAriaLabel}

@@ -30,7 +30,7 @@ import { SessionDock } from "./SessionDock";
 import { SessionExtrasRow } from "./SessionExtrasRow";
 import { SessionExerciseList } from "./SessionExerciseList";
 import { SessionExerciseFocus } from "./SessionExerciseFocus";
-import { groupByItemId, sessionProgress } from "./sessionLib";
+import { groupByItemId, sessionProgress, setsCountLabel } from "./sessionLib";
 
 type WorkoutGroupType = "circuit" | "superset";
 type WarmupField = "warmup" | "cooldown";
@@ -220,7 +220,9 @@ export function SessionView({
       if (nextIdx !== -1) return `${ss.restNextSet} ${nextIdx + 1}`;
       const idx = items.findIndex((x) => x.id === focused.id);
       const next = items[idx + 1];
-      return next ? `${ss.restNextExercise}: ${next.nameUk}` : null;
+      // Без префікса «далі:» — у вузькій колонці дока він зрізав саму
+      // назву вправи (браузерний прохід 2026-09-11).
+      return next ? next.nameUk : null;
     }
     return null;
   })();
@@ -302,9 +304,8 @@ export function SessionView({
               </span>{" "}
               {ss.exercisesWord} ·{" "}
               <span className="font-semibold text-text">
-                {progress.setsDone}
-              </span>{" "}
-              {ss.setsDone}
+                {setsCountLabel(progress.setsDone)}
+              </span>
             </div>
             <SessionExtrasRow
               activeWorkout={activeWorkout}
@@ -332,16 +333,9 @@ export function SessionView({
               selected={groupSelected}
               onToggleSelect={handleToggleGroupSelect}
             />
-            {!isReadOnly && items.length > 0 && !groupSelectMode && (
-              <Button
-                module="fizruk"
-                className="h-11 w-full"
-                type="button"
-                onClick={onFinishClick}
-              >
-                {ss.finishLong}
-              </Button>
-            )}
+            {/* Дубля «Завершити тренування» внизу немає: верхня смуга
+                липка, тож «Завершити» видно з будь-якої позиції списку
+                (браузерний прохід 2026-09-11). */}
           </>
         )}
       </div>
@@ -385,7 +379,11 @@ export function SessionView({
             {ss.collapse}
           </Button>
         ) : (
-          <>
+          // На порожньому списку «+ Вправа» несе hero-кнопка картки, тож
+          // у доці її не дублюємо. Кнопки «Відпочинок» тут теж немає:
+          // пресет із рекомендованим часом уже стоїть у ряду дій картки
+          // вправи (обидва дублі — браузерний прохід 2026-09-11).
+          items.length > 0 && (
             <Button
               variant="soft"
               tone="fizruk"
@@ -396,27 +394,7 @@ export function SessionView({
               <Icon name="plus" size={16} aria-hidden />
               {ss.addExercise}
             </Button>
-            {focused ? (
-              <Button
-                variant="outline"
-                tone="neutral"
-                className="h-11"
-                onClick={() => {
-                  const sec = focused.exerciseId
-                    ? (getDefaultForExercise?.(
-                        focused.exerciseId,
-                        focused.primaryGroup,
-                      ) ?? getDefaultForGroup(focused.primaryGroup))
-                    : getDefaultForGroup(focused.primaryGroup);
-                  setRestTimer({ remaining: sec, total: sec });
-                }}
-                aria-label={ss.restStartAria}
-              >
-                <Icon name="clock" size={16} aria-hidden />
-                {ss.restNow}
-              </Button>
-            ) : null}
-          </>
+          )
         )}
       </SessionDock>
     </div>

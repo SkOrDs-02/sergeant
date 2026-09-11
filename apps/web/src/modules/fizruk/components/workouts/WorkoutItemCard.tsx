@@ -361,14 +361,20 @@ export function WorkoutItemCard({
                   startRest();
                 }}
               />
-              {!activeWorkout.endedAt && !group && (
+              {!activeWorkout.endedAt && (
+                // У групі кнопка несе СПІЛЬНИЙ час кола і без меню
+                // пресетів: там пресет міняв би типовий час однієї
+                // вправи, а відпочинок належить групі. Раніше для
+                // згрупованих вправ кнопки не було взагалі — спільна
+                // жила в контейнері групи, якого в сесійному режимі
+                // немає (браузерний прохід 2026-09-11).
                 <WorkoutItemRestPresets
                   catLabel={catLabel}
-                  defSec={defSec}
-                  quickOptions={quickOptions}
+                  defSec={group ? group.restSec || 60 : defSec}
+                  quickOptions={group ? [] : quickOptions}
                   exerciseId={it.exerciseId}
                   setRestTimer={setRestTimer}
-                  setDefaultForExercise={setDefaultForExercise}
+                  {...(group ? {} : { setDefaultForExercise })}
                 />
               )}
             </div>

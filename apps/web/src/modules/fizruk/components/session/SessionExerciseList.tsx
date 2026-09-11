@@ -13,9 +13,9 @@ import { filterNonEmptyStrengthSets } from "../workouts/WorkoutItemLastTimeHint"
 import { isSetDone } from "../workouts/WorkoutSetRow";
 import { summarizeRecoveryChip } from "../workouts/WorkoutItemRecoveryChip";
 import {
-  countDoneSets,
   groupMemberPosition,
   itemStates,
+  setsProgressLabel,
   type SessionItemState,
 } from "./sessionLib";
 
@@ -49,14 +49,14 @@ function rowSubline(
   if (rec?.tone === "red") return { text: rec.label, danger: true };
   if (it.type === "strength") {
     const sets = it.sets || [];
-    const done = countDoneSets(it);
+    const done = sets.filter(isSetDone).length;
     if (done > 0 || state === "done") {
       const lastDone = [...sets].reverse().find(isSetDone);
       const tail = lastDone
         ? ` · ${fmtLoose(lastDone.weightKg ?? 0)} кг × ${lastDone.reps}`
         : "";
       return {
-        text: `${done} ${ss.of} ${sets.length} ${ss.setsDone}${tail}`,
+        text: `${setsProgressLabel(done, sets.length)}${tail}`,
         danger: false,
       };
     }
@@ -70,7 +70,7 @@ function rowSubline(
         danger: false,
       };
     }
-    return { text: `${sets.length} ${ss.setsDone}`, danger: false };
+    return { text: setsProgressLabel(done, sets.length), danger: false };
   }
   if (it.type === "time") {
     return {
@@ -160,7 +160,15 @@ export function SessionExerciseList({
                   selectMode ? onToggleSelect(it.id) : onOpenItem(it.id)
                 }
                 className={cn(
-                  "focus-ring flex min-h-[72px] w-full items-center gap-3 px-3 py-2.5 text-left transition-colors",
+                  "focus-ring flex min-h-[72px] w-full items-center gap-3 py-2.5 pr-3 text-left transition-colors",
+                  // Ліва акцентна рейка звʼязує сусідні рядки однієї групи:
+                  // самих міток A1/A2 було замало, щоб побачити суперсет як
+                  // одне ціле (браузерний прохід 2026-09-11). Контейнера тут
+                  // свідомо немає — у списку немає підходів, які він мав би
+                  // окреслювати.
+                  pos != null
+                    ? "border-l-[3px] border-fizruk pl-[9px]"
+                    : "border-l-[3px] border-transparent pl-[9px]",
                   isCurrent ? "bg-fizruk-surface" : "hover:bg-panelHi",
                   selectMode && checked && "bg-fizruk-surface",
                 )}
@@ -242,17 +250,9 @@ export function SessionExerciseList({
           );
         })}
       </ul>
-      {!isReadOnly && !selectMode && (
-        <button
-          type="button"
-          onClick={onAddExercise}
-          aria-label={ss.addExerciseAria}
-          className="focus-ring flex min-h-[56px] w-full items-center justify-center gap-1.5 border-t border-line text-style-label font-semibold text-fizruk-strong dark:text-fizruk hover:bg-panelHi"
-        >
-          <Icon name="plus" size={16} aria-hidden />
-          {ss.addExercise}
-        </button>
-      )}
+      {/* «+ Вправа» тут НЕМАЄ навмисно: дію несе докована панель, яка
+          видима завжди. Два однакові CTA на одному короткому екрані —
+          те, що показав браузерний прохід 2026-09-11. */}
     </div>
   );
 }

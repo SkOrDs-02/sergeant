@@ -10,6 +10,8 @@ import type {
   WorkoutGroup,
   WorkoutItem,
 } from "@sergeant/fizruk-domain";
+import { pluralUa } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 import { isSetDone } from "../workouts/WorkoutSetRow";
 
 export type SessionItemState = "done" | "current" | "todo";
@@ -97,4 +99,21 @@ export function neighbourItems(
     prev: idx > 0 ? (items[idx - 1] ?? null) : null,
     next: idx < items.length - 1 ? (items[idx + 1] ?? null) : null,
   };
+}
+
+/**
+ * «0 з 1 підходу» / «3 з 3 підходів». Тут РОДОВИЙ відмінок, не називний:
+ * після «X з Y» українська вимагає «підходу/підходів», тож звичайна
+ * плюралізація (`pluralUa` → «підходи») дала б «3 з 3 підходи».
+ */
+export function setsProgressLabel(done: number, total: number): string {
+  const ss = messages.fizruk.session;
+  const word = total === 1 ? ss.setsGenitiveOne : ss.setsGenitiveMany;
+  return `${done} ${ss.of} ${total} ${word}`;
+}
+
+/** «3 підходи» — для рядка прогресу сесії. */
+export function setsCountLabel(n: number): string {
+  const ss = messages.fizruk.session;
+  return `${n} ${pluralUa(n, { one: ss.setsOne, few: ss.setsFew, many: ss.setsMany })}`;
 }
