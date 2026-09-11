@@ -49,6 +49,25 @@ interface ImportMetaEnv {
   readonly VITE_SOCIAL_LOGIN_ENABLED?: string;
 
   /**
+   * Показує кнопку входу через Apple на `AuthPage` (`:42-43`). Вмикає
+   * рівно рядок `"true"`; незадана змінна ховає — полярність протилежна
+   * до `VITE_SOCIAL_LOGIN_ENABLED` вище, і це навмисно: відсутній
+   * production-креденшл ніколи не має виглядати робочим входом.
+   *
+   * **Гейт подвійний і ніде не звірений.** Серверний бік вмикає
+   * провайдера лише коли всі чотири env непорожні (`APPLE_CLIENT_ID`,
+   * `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` —
+   * `apps/server/src/auth.ts:164-169`). Виставити цей прапорець без
+   * серверних ключів означає живу кнопку, що впаде в
+   * `providerNotFound`. Стан провайдерів видно в boot-лозі
+   * `auth_social_providers_status`.
+   *
+   * Оголошено тут 2026-09-11: доти одруківка в назві мовчки вимикала
+   * кнопку назавжди, і типи цього не ловили.
+   */
+  readonly VITE_APPLE_LOGIN_ENABLED?: string;
+
+  /**
    * Показує кнопку голосового вводу (`VoiceMicButton` — 5 call-сайтів у
    * Finyk / Fizruk / Nutrition / Routine). Вмикає рівно рядок `"1"`;
    * незадана змінна ховає, тобто полярність протилежна до
