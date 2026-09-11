@@ -1,4 +1,3 @@
-import { Card } from "@shared/components/ui/Card";
 import { useLocale } from "@shared/i18n/useLocale";
 import type { AdaptiveGoalState } from "../hooks/useAdaptiveNutritionGoal";
 
@@ -7,29 +6,41 @@ interface AdaptiveGoalCardProps {
   onOpenSettings?: (() => void) | undefined;
 }
 
+/**
+ * Дашборд показує рядок лише тоді, коли є що робити: `active` і
+ * `disabled` рендерять `null` — 2026-09-11, вмикач переїхав у
+ * Налаштування → Їжа, а «увімкнено й рахує» не потребує окремої картки
+ * на кожен день. `calibrating` і `profile-needed` лишаються компактним
+ * інформаційним рядком (не повною Card), бо це стани, де людині
+ * справді може знадобитись дія.
+ */
 export function AdaptiveGoalCard({
   state,
   onOpenSettings,
 }: AdaptiveGoalCardProps) {
   const { messages } = useLocale();
+
+  if (state.mode === "active" || state.mode === "disabled") {
+    return null;
+  }
+
   const text =
-    state.mode === "disabled"
-      ? "Встановлено вручну. Автокалібрування можна знову ввімкнути в денному плані."
-      : state.mode === "profile-needed"
-        ? "Додай вагу, зріст, дату народження, стать і рівень активності у профілі."
-        : state.mode === "calibrating"
-          ? `Калібрую за журналом: ${state.completeDays}/10 повних днів і ${state.weightPoints}/4 зважувань.`
-          : "Ціль щотижня звіряється з вагою та фактичним харчуванням. Тренування й щоденна активність уже проявляються у зміні ваги.";
+    state.mode === "profile-needed"
+      ? "Додай вагу, зріст, дату народження, стать і рівень активності у профілі."
+      : `Калібрую за журналом: ${state.completeDays}/10 повних днів і ${state.weightPoints}/4 зважувань.`;
 
   return (
-    <Card className="flex items-start justify-between gap-3 p-4">
+    <div className="flex items-start justify-between gap-3 rounded-xl border border-line bg-panel/60 px-3 py-2">
       <div className="min-w-0">
         <div className="text-style-label text-text">
           {messages.nutrition.adaptiveGoal.heading}
         </div>
         <p className="mt-1 text-style-caption text-muted">{text}</p>
       </div>
-      {onOpenSettings && (
+      {/* Немає окремого коллбека навігації в профіль (`onGoToProfile`) —
+          лишаємо наявний `onOpenSettings`, як і до переносу вмикача в
+          Налаштування → Їжа. */}
+      {state.mode === "profile-needed" && onOpenSettings && (
         <button
           type="button"
           onClick={onOpenSettings}
@@ -38,6 +49,6 @@ export function AdaptiveGoalCard({
           {messages.nutrition.adaptiveGoal.edit}
         </button>
       )}
-    </Card>
+    </div>
   );
 }
