@@ -51,8 +51,8 @@ export function SessionTopBar({
   ];
 
   return (
-    <div className="sticky top-0 z-30 -mx-3 border-b border-line bg-panel px-1">
-      <div className="flex h-14 items-center gap-1">
+    <div className="sticky top-0 z-30 border-b border-line bg-panel">
+      <div className="mx-auto flex h-14 max-w-xl items-center gap-1 px-1">
         <button
           type="button"
           onClick={onLeft}

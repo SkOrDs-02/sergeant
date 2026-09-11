@@ -254,7 +254,7 @@ export function SessionView({
         onDeleteWorkout={onDeleteWorkout}
       />
 
-      <div className="mt-3 space-y-3">
+      <div className="mx-auto mt-3 max-w-xl space-y-3 px-3">
         {focused ? (
           <SessionExerciseFocus
             activeWorkout={activeWorkout}

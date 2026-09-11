@@ -126,9 +126,7 @@ export function Workouts({
     >
       <div
         className={
-          activeOnly
-            ? "max-w-xl mx-auto px-3"
-            : "max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad"
+          activeOnly ? "" : "max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad"
         }
       >
         {!activeOnly && (
