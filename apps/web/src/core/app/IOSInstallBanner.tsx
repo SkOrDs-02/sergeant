@@ -3,10 +3,16 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 
 interface IOSInstallBannerProps {
-  onDismiss: () => void;
+  /** Explicit permanent opt-out — the "Уже встановлено або не нагадувати" text link. */
+  onDismissForever: () => void;
+  /** Plain "×" close — defers the banner instead of hiding it forever (founder-ux-review round 2, O2). */
+  onSnooze: () => void;
 }
 
-export function IOSInstallBanner({ onDismiss }: IOSInstallBannerProps) {
+export function IOSInstallBanner({
+  onDismissForever,
+  onSnooze,
+}: IOSInstallBannerProps) {
   return (
     <div className="px-5 max-w-lg mx-auto w-full mb-2">
       <Card
@@ -48,7 +54,7 @@ export function IOSInstallBanner({ onDismiss }: IOSInstallBannerProps) {
           </p>
           <button
             type="button"
-            onClick={onDismiss}
+            onClick={onDismissForever}
             className="mt-2 min-h-[44px] text-style-caption text-brand-strong underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
           >
             Уже встановлено або не нагадувати
@@ -58,8 +64,8 @@ export function IOSInstallBanner({ onDismiss }: IOSInstallBannerProps) {
           variant="ghost"
           size="xs"
           iconOnly
-          onClick={onDismiss}
-          aria-label="Закрити"
+          onClick={onSnooze}
+          aria-label="Закрити, нагадати пізніше"
           className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
         >
           <Icon name="close" size={16} />

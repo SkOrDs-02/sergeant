@@ -1,9 +1,10 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-06-24
+ * Last validated: 2026-09-11
  * Status: Active
- * Unit tests for the meal-sheet MacrosEditor — kcal-free edits vs. the
- * guarded unlink-confirm flow for protein/fat/carbs when a food is linked.
+ * Unit tests for the meal-sheet MacrosEditor — один гард на всі чотири
+ * поля, коли продукт привʼязаний, вільна правка коли ні, і позначка
+ * ручних значень як підсумку порції.
  */
 import { fireEvent, render, screen } from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
@@ -77,7 +78,11 @@ describe("MacrosEditor", () => {
     expect(setProtein).toHaveBeenCalledWith("20");
   });
 
-  it("lets kcal edits bypass the unlink guard without adding a redundant heading", () => {
+  it("guards kcal edits on a linked food exactly like the other three", () => {
+    // Раніше ккал гард обходили. Правка при цьому не доживала до запису:
+    // `PickedFoodCard` перераховує всі чотири поля з картки продукту на
+    // кожну зміну ваги, тож набране число затиралось наступним рухом
+    // колеса. Асиметрія втрачала дані, а не просто виглядала дивно.
     const setKcal = vi.fn();
     const field = vi.fn((key: keyof MealFormState) =>
       key === "kcal" ? setKcal : vi.fn(),
@@ -93,14 +98,33 @@ describe("MacrosEditor", () => {
         hasPhotoMacros={false}
       />,
     );
-    expect(
-      screen.queryByText("КБЖВ (редагувати вручну)"),
-    ).not.toBeInTheDocument();
+    fireEvent.change(screen.getByLabelText("Ккал"), {
+      target: { value: "400" },
+    });
+    expect(setKcal).not.toHaveBeenCalled();
+    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+  });
+
+  it("passes kcal edits straight through when nothing is linked", () => {
+    const setKcal = vi.fn();
+    const field = vi.fn((key: keyof MealFormState) =>
+      key === "kcal" ? setKcal : vi.fn(),
+    );
+    render(
+      <MacrosEditor
+        form={makeForm()}
+        field={field}
+        setForm={vi.fn()}
+        pickedFood={null}
+        setPickedFood={vi.fn()}
+        pickedGrams=""
+        hasPhotoMacros={false}
+      />,
+    );
     fireEvent.change(screen.getByLabelText("Ккал"), {
       target: { value: "400" },
     });
     expect(setKcal).toHaveBeenCalledWith("400");
-    // No confirmation dialog for kcal.
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
@@ -183,7 +207,11 @@ describe("MacrosEditor", () => {
     expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
   });
 
-  it("offers an explicit manual-edit action that opens the confirm panel", () => {
+  it("keeps a single affordance — no second entry into the same confirm panel", () => {
+    // Кнопка «Редагувати КБЖВ вручну» вела в ТОЙ САМИЙ `pendingUnlink`, що
+    // й правка будь-якого поля, і була видима рівно там, де поля вже це
+    // роблять. Знахідка власника: «редагування вже є на екрані, а внизу ще
+    // кнопка».
     render(
       <MacrosEditor
         form={makeForm()}
@@ -195,10 +223,45 @@ describe("MacrosEditor", () => {
         hasPhotoMacros={false}
       />,
     );
-    fireEvent.click(
-      screen.getByRole("button", { name: "Редагувати КБЖВ вручну" }),
+    expect(
+      screen.queryByRole("button", { name: "Редагувати КБЖВ вручну" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByText(/Рахується з картки продукту на 100 г/),
+    ).toBeInTheDocument();
+  });
+
+  it("marks hand-entered macros as a fixed portion total", () => {
+    render(
+      <MacrosEditor
+        form={makeForm({ kcal: "420" })}
+        field={() => vi.fn()}
+        setForm={vi.fn()}
+        pickedFood={null}
+        setPickedFood={vi.fn()}
+        pickedGrams=""
+        hasPhotoMacros={false}
+      />,
     );
-    expect(screen.getByRole("alertdialog")).toBeInTheDocument();
+    expect(screen.getByText("Вручну")).toBeInTheDocument();
+    expect(screen.getByText(/підсумок\s+порції/)).toBeInTheDocument();
+  });
+
+  it("shows no manual marker while every macro field is still empty", () => {
+    // Порожня форма ручного прийому — це ще не «ручні значення», і
+    // позначка там була б шумом на кожному відкритті аркуша.
+    render(
+      <MacrosEditor
+        form={makeForm()}
+        field={() => vi.fn()}
+        setForm={vi.fn()}
+        pickedFood={null}
+        setPickedFood={vi.fn()}
+        pickedGrams=""
+        hasPhotoMacros={false}
+      />,
+    );
+    expect(screen.queryByText("Вручну")).not.toBeInTheDocument();
   });
 
   it("restores macros from the photo result when the back-link is clicked", () => {

@@ -92,7 +92,13 @@ afterEach(() => vi.clearAllMocks());
 
 describe("NutritionDashboard", () => {
   it("keeps the final card scrollable above the fixed add-meal button", () => {
-    render(<NutritionDashboard log={logWith(0)} prefs={GOAL_PREFS} />);
+    render(
+      <NutritionDashboard
+        onPickMeal={vi.fn()}
+        log={logWith(0)}
+        prefs={GOAL_PREFS}
+      />,
+    );
 
     expect(screen.getByTestId("nutrition-dashboard")).toHaveClass(
       "pb-[calc(10rem+env(safe-area-inset-bottom,0px))]",
@@ -102,20 +108,30 @@ describe("NutritionDashboard", () => {
   it("renders the hero meal strip and macro bars when a goal is set", () => {
     render(
       <NutritionDashboard
+        onPickMeal={vi.fn()}
         log={logWith(1000, 50, 20, 100)}
         prefs={GOAL_PREFS}
       />,
     );
     expect(screen.getByText("Сьогодні")).toBeInTheDocument();
+    // Прийом тепер оголошує власна кнопка сегмента, не спільна мітка
+    // картинки: сегменти стали клікабельними, а кнопка не може жити під
+    // `aria-hidden`.
     expect(
-      screen.getByRole("img", { name: /обід 1000 ккал/ }),
+      screen.getByRole("button", { name: /^Обід, 1000 ккал/ }),
     ).toBeInTheDocument();
     expect(screen.getByText("Білки")).toBeInTheDocument();
     expect(screen.getByTestId("water-card")).toBeInTheDocument();
   });
 
   it("hero has no ProgressRing/MacroRings — the meal strip replaces both (anti-slop Q3/F6)", () => {
-    render(<NutritionDashboard log={logWith(500)} prefs={GOAL_PREFS} />);
+    render(
+      <NutritionDashboard
+        onPickMeal={vi.fn()}
+        log={logWith(500)}
+        prefs={GOAL_PREFS}
+      />,
+    );
     // ProgressRing renders `role="progressbar"`; MacroRings rendered three
     // of them. Neither exists in the hero anymore.
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
@@ -127,6 +143,7 @@ describe("NutritionDashboard", () => {
     const onGoToDailyPlan = vi.fn();
     render(
       <NutritionDashboard
+        onPickMeal={vi.fn()}
         log={logWith(0)}
         prefs={{ waterGoalMl: 2000 } as never}
         onGoToDailyPlan={onGoToDailyPlan}
@@ -142,6 +159,7 @@ describe("NutritionDashboard", () => {
     const onGoToLog = vi.fn();
     render(
       <NutritionDashboard
+        onPickMeal={vi.fn()}
         log={logWith(500)}
         prefs={GOAL_PREFS}
         onGoToLog={onGoToLog}
@@ -154,6 +172,7 @@ describe("NutritionDashboard", () => {
   it("fires the daily-norm toast when kcal enters the 95-105% band", () => {
     render(
       <NutritionDashboard
+        onPickMeal={vi.fn()}
         log={logWith(2000, 120, 60, 200)}
         prefs={GOAL_PREFS}
       />,
@@ -162,18 +181,31 @@ describe("NutritionDashboard", () => {
   });
 
   it("shows an honest 'записано N із 4' note on an incomplete day (canon §5.2)", () => {
-    render(<NutritionDashboard log={logWithMealCount(1)} prefs={GOAL_PREFS} />);
+    render(
+      <NutritionDashboard
+        onPickMeal={vi.fn()}
+        log={logWithMealCount(1)}
+        prefs={GOAL_PREFS}
+      />,
+    );
     expect(screen.getByText("Записано 1 із 4")).toBeInTheDocument();
   });
 
   it("hides the incomplete-day note once 3+ meals are logged", () => {
-    render(<NutritionDashboard log={logWithMealCount(3)} prefs={GOAL_PREFS} />);
+    render(
+      <NutritionDashboard
+        onPickMeal={vi.fn()}
+        log={logWithMealCount(3)}
+        prefs={GOAL_PREFS}
+      />,
+    );
     expect(screen.queryByText(/Записано \d+ із 4/)).not.toBeInTheDocument();
   });
 
   it("shows the ≈ badge and caption when photoAI kcal share is above 50% (nutrition audit E-5)", () => {
     render(
       <NutritionDashboard
+        onPickMeal={vi.fn()}
         log={logWithSources([
           { kcal: 490, macroSource: "manual" },
           { kcal: 510, macroSource: "photoAI" },
@@ -188,6 +220,7 @@ describe("NutritionDashboard", () => {
   it("hides the ≈ badge when photoAI kcal share is exactly 50% (threshold is strictly >50%)", () => {
     render(
       <NutritionDashboard
+        onPickMeal={vi.fn()}
         log={logWithSources([
           { kcal: 500, macroSource: "manual" },
           { kcal: 500, macroSource: "photoAI" },

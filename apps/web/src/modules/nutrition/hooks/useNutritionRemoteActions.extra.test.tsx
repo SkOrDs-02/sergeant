@@ -23,6 +23,21 @@ vi.mock("@shared/api", async () => {
     },
   };
 });
+
+// A3, поставка 2: ці сюїти перевіряють ПОТІК ДАНИХ, а не доступ. У них
+// немає `AuthProvider`, тож справжній pre-gate чесно відповів би «немає
+// акаунта» і жодна дія не стартувала б. Сам гейт покрито окремо —
+// `core/access/featureAccess.test.ts` і `AccessDenialNotice.test.tsx`.
+vi.mock("../../../core/access/useCanUse", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../core/access/useCanUse")
+  >("../../../core/access/useCanUse");
+  return {
+    ...actual,
+    useCanUse: () => () => null,
+    useAccessGuard: () => (_feature: unknown, run: () => void) => run(),
+  };
+});
 vi.mock("../lib/recipeCache.js", () => ({
   writeRecipeCache: vi.fn(),
 }));
@@ -55,6 +70,7 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
   const setBusy = vi.fn();
   const setErr = vi.fn();
   const setStatusText = vi.fn();
+  const setDenial = vi.fn();
   const setRecipes = vi.fn();
   const setRecipesRaw = vi.fn();
   const setRecipesTried = vi.fn();
@@ -71,6 +87,7 @@ function makeHarness(overrides: Partial<UseNutritionRemoteActionsParams> = {}) {
     setBusy,
     setErr,
     setStatusText,
+    setDenial,
     pantry: {
       effectiveItems: [{ name: "яйця", qty: 10, unit: "шт", notes: null }],
     },

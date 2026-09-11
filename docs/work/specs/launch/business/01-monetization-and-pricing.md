@@ -165,7 +165,7 @@ Freemium — найкращий вибір для Sergeant, бо:
 
 > **TL;DR:** старт з LiqPay → додати Stripe для масштабу → Paddle за потреби. Нативні сторінки — IAP обов'язково, але штовхати до PWA-оплати.
 
-Технічна імплементація Stripe webhook + env vars → [03 §2: Що додати](./03-services-and-toolstack.md#2-що-додати-нові-сервіси). Week-by-week план → [03 §7](./03-services-and-toolstack.md#7-порядок-дій-week-by-week).
+Технічна імплементація Stripe webhook + env vars → [03 §2: Що додати](./03-services-and-toolstack.md#3-що-додати-action-items). Week-by-week план → [03 §7](./03-services-and-toolstack.md#7-роадмеп-по-тижнях).
 
 ---
 
@@ -448,7 +448,7 @@ Paid (Pro)
 
 ## 9. Unit Economics: формули з цифрами
 
-> Числа побудовані на таргетах з [04 §4: Метрики успіху](./04-launch-readiness.md#4-метрики-успіху). Актуалізувати після перших 3 місяців реальних даних.
+> Числа побудовані на таргетах з [04 §4: Метрики успіху](./04-launch-readiness.md#4-метрики-готовності). Актуалізувати після перших 3 місяців реальних даних.
 
 ### 9.1 LTV (Lifetime Value)
 
@@ -515,7 +515,7 @@ Breakeven subscribers    = ₴3 168 / ₴191 ≈ 17 Pro subscribers
 > **Висновок:** з ~17 Pro-підписниками покриваємо фіксовані витрати — **за
 > умови, що рядок «AI API marginal cost ≈ ₴5/міс» правдивий. Він не
 > правдивий**: див. § 9.5 нижче. Детальна cost projection →
-> [03 §9: Monthly Cost Projection](./03-services-and-toolstack.md#9-повна-monthly-cost-projection).
+> [03 §9: Monthly Cost Projection](./03-services-and-toolstack.md#6-прогноз-місячних-витрат).
 
 ### 9.5 AI-COGS: оцінка з коду (2026-07-25)
 
@@ -714,9 +714,9 @@ Write дорожчає 1.25× → 2×, read лишається 0.1×. Для N �
 
 - Маркетинг, контент, фази запуску, growth engine → [02-go-to-market.md](./02-go-to-market.md).
 - Stripe / Better Auth інтеграція, env vars, week-by-week tech roadmap → [03-services-and-toolstack.md](./03-services-and-toolstack.md).
-  - Payment provider імплементація → [03 §2](./03-services-and-toolstack.md#2-що-додати-нові-сервіси).
-  - Week-by-week план → [03 §7](./03-services-and-toolstack.md#7-порядок-дій-week-by-week).
-  - Monthly cost projection → [03 §9](./03-services-and-toolstack.md#9-повна-monthly-cost-projection).
+  - Payment provider імплементація → [03 §2](./03-services-and-toolstack.md#3-що-додати-action-items).
+  - Week-by-week план → [03 §7](./03-services-and-toolstack.md#7-роадмеп-по-тижнях).
+  - Monthly cost projection → [03 §9](./03-services-and-toolstack.md#6-прогноз-місячних-витрат).
 - Legal/GDPR, billing edge cases, метрики, ризики, повний пре-launch чеклист → [04-launch-readiness.md](./04-launch-readiness.md).
   - North Star Metrics → [04 §4.1](./04-launch-readiness.md#41-north-star-metrics).
   - Funnel метрики → [04 §4.2](./04-launch-readiness.md#42-funnel-метрики).

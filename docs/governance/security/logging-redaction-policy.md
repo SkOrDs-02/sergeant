@@ -2,7 +2,7 @@
 
 > **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-15.
 > **Status:** Active.
-> **Hard rule:** [#21 — Pino redaction policy enforced](../../../AGENTS.md#21-pino-redaction-policy-enforced).
+> **Hard rule:** [#21 — Pino redaction policy enforced](../../../AGENTS.md#hard-rules-do-not-break).
 > **Stack-pulse initiative:** [PR-16](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-16-pino-redaction-policy.md).
 > **Related:** [`docs/governance/security/pii-handling.md`](./pii-handling.md) — single source of truth для класифікації полів.
 

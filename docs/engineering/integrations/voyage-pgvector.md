@@ -266,7 +266,7 @@ Storage:
 - - ~1.5× для HNSW index у buffer cache
 - 50M-вектор-датасет ≈ ~150 GB on-disk (RAM-bound при ~16 GB shared_buffers)
 
-Threshold-и міграції на dedicated vector DB — у [ADR-0028 § scaling thresholds](../../governance/adr/0028-pgvector-ai-memory.md#scaling-thresholds).
+Threshold-и міграції на dedicated vector DB — у [ADR-0028 § scaling thresholds](../../governance/adr/0028-pgvector-ai-memory.md).
 
 ## Тестування
 

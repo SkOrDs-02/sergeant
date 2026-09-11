@@ -56,28 +56,42 @@ function rgbTripleToHex(triple) {
 // `shouldPassAA === false` means the pair is documented as failing AA;
 // the test asserts the failure so we don't accidentally start treating
 // it as a viable text colour.
-// `--c-subtle` (theme.css, light) — третинний текст, підібраний рівно на
-// поріг AA проти `--c-bg`. Стіл модуля темніший за беж лише настільки,
-// щоб ця пара трималась: провал тут означає, що стіл треба освітлити, не
-// текст затемнити.
-const SUBTLE_LIGHT = "#6b645d";
+// Третинні тони світлої теми (`--c-muted` / `--c-subtle` у theme.css).
+//
+// AI-DANGER: **обидва мусять критись проти СТОЛУ І ЗОНИ, не лише проти
+// білого.** До 2026-09-11 цей гейт перевіряв `subtle` тільки на столі, а
+// зону — лише під `-strong` акцентом, бо вважалося, що в зоні буває лише
+// акцентний текст або чорнило. У коді це було не так: `ModuleHeader`
+// рендерить свою кнопку «Назад» у `text-muted` саме в зоні. Гейт був
+// зелений, а axe знайшов 14 вузлів на 11 маршрутах у діапазоні
+// 4.21-4.49:1 — усі під порогом AA і всі через те, що «стіл і зона»
+// (#1063) прибрали з-під третинного тексту білу картку. Не звужуй ці
+// матриці назад до однієї поверхні.
+const MUTED_LIGHT = "#535c56";
+const SUBTLE_LIGHT = "#605a54";
 
-const DESK_PAIRS = Object.entries(moduleSurfaces).map(([name, s]) => [
-  `subtle on ${name} desk (light)`,
-  SUBTLE_LIGHT,
-  s.light.desk,
-  true,
+// Стіл — фон сторінки; на ньому живе будь-який текстовий тір.
+const DESK_PAIRS = Object.entries(moduleSurfaces).flatMap(([name, s]) => [
+  [`muted on ${name} desk (light)`, MUTED_LIGHT, s.light.desk, true],
+  [`subtle on ${name} desk (light)`, SUBTLE_LIGHT, s.light.desk, true],
 ]);
 
-// Зона лежить лише під шапкою і табами, де текст — `-strong` модуля
-// (`moduleAccentRgb[m].strong`, те, що рендерить `text-{m}-strong`) або
-// чорнило; глибший тон зони на цих парах має лишатись AA.
-const ZONE_PAIRS = ["finyk", "fizruk", "routine", "nutrition"].map((m) => [
-  `${m}-strong on ${m} zone (light)`,
-  rgbTripleToHex(moduleAccentRgb[m].strong),
-  moduleSurfaces[m].light.zone,
-  true,
-]);
+// Зона — смуга під шапкою і табами модуля. Крім `-strong` акценту й
+// чорнила, туди сідає третинний текст контролів шапки, тож перевіряємо
+// всі три тіри. Зона хаба (#dad6ce) — найтемніша з реальних поверхонь,
+// саме вона тут визначає поріг.
+const ZONE_PAIRS = [
+  ...Object.entries(moduleSurfaces).flatMap(([name, s]) => [
+    [`muted on ${name} zone (light)`, MUTED_LIGHT, s.light.zone, true],
+    [`subtle on ${name} zone (light)`, SUBTLE_LIGHT, s.light.zone, true],
+  ]),
+  ...["finyk", "fizruk", "routine", "nutrition"].map((m) => [
+    `${m}-strong on ${m} zone (light)`,
+    rgbTripleToHex(moduleAccentRgb[m].strong),
+    moduleSurfaces[m].light.zone,
+    true,
+  ]),
+];
 
 const PAIRS = [
   ...DESK_PAIRS,
@@ -335,7 +349,7 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
   const surface = "#ffffff"; // cards
   const fgStrong = "#0f1713"; // display / headings
   const fg = "#17201b"; // body
-  const muted = "#5c665f"; // meta / captions
+  const muted = "#535c56"; // meta / captions (2026-09-11: було #5c665f)
   const onAccent = "#fdf9f3"; // text over an accent fill
   // Strong-tier module accents (AA on white / cream).
   //

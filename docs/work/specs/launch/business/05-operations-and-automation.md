@@ -406,7 +406,7 @@ help - Список всіх команд
 1. **n8n + OpenClaw — основа.** Self-host обидва на Railway за ~$8/міс. Безкоштовний open-source. Privacy. Гнучкість.
 2. **Make.com — fallback** якщо self-host лякає (1K ops/міс free на старті вистачить).
 3. **Zapier — пропустити.** Все що Zapier робить — n8n робить дешевше.
-4. **Klaviyo — пропустити.** Email marketing вже покривається Loops (в [03 §6.4](./03-services-and-toolstack.md#64-email)). Klaviyo — для e-commerce з товарними каталогами.
+4. **Klaviyo — пропустити.** Email marketing вже покривається Loops (в [03 §6.4](./03-services-and-toolstack.md#27-email)). Klaviyo — для e-commerce з товарними каталогами.
 
 **Коли мігрувати (switch triggers):**
 
@@ -1177,4 +1177,4 @@ OpenClaw weekly report → GitHub Issue (label: weekly-action-items)
 - Каталог сервісів і фази впровадження → [03-services-and-toolstack.md](./03-services-and-toolstack.md).
 - Метрики, алерти, incident response → [04-launch-readiness.md §3](./04-launch-readiness.md#3-operations-support-monitoring-incidents).
 - Контент-плани і канали (що автоматизувати в content pipeline) → [02-go-to-market.md](./02-go-to-market.md).
-- Billing edge cases (що n8n обробляє) → [04-launch-readiness.md §2.1](./04-launch-readiness.md#21-billing-edge-cases).
+- Billing edge cases (що n8n обробляє) → [04-launch-readiness.md §2.1](./04-launch-readiness.md#21-offline--billing-деталі).

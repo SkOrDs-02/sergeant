@@ -24,6 +24,24 @@ interface FromPantryRowProps {
    * (`PantryItemSource.packGrams`, `useSilpoPantryReplenish.ts`).
    */
   setPickedGrams?: Dispatch<SetStateAction<string>> | undefined;
+  /**
+   * «Позицію комори обрано» — запускає автопідбір продукту за назвою
+   * (`useSourceAutoPick`). Без нього прийом із комори зберігався без КБЖУ:
+   * `pickedFood` лишався `null`, картка продукту не монтувалась, а
+   * редактор макросів відкривався порожнім (N1).
+   *
+   * `packGrams` іде другим аргументом навмисно: коли фасування відоме,
+   * автопідбір НЕ має підставляти типову порцію каталогу. Вага з чека
+   * точніша за довідникову здогадку, а автопідбір відповідає асинхронно
+   * і затер би її.
+   */
+  onPicked: (query: string, packGrams: number | null) => void;
+  /**
+   * Позицію зняли — відкладений автопідбір більше не потрібен. Без цього
+   * пошук, запущений тапом, відповів би вже після відмови й повернув би
+   * продукт, від якого людина відмовилась.
+   */
+  onCleared: () => void;
 }
 
 export function FromPantryRow({
@@ -33,6 +51,8 @@ export function FromPantryRow({
   setForm,
   setFoodQuery,
   setPickedGrams,
+  onPicked,
+  onCleared,
 }: FromPantryRowProps) {
   if (!pantryItems || pantryItems.length === 0) return null;
   return (
@@ -76,6 +96,7 @@ export function FromPantryRow({
                       ...s,
                       name: s.name === item.name ? "" : s.name,
                     }));
+                    onCleared();
                   } else {
                     setFromPantryItem(item.name);
                     setForm((s) => ({ ...s, name: item.name, err: "" }));
@@ -83,6 +104,7 @@ export function FromPantryRow({
                     if (packGrams != null) {
                       setPickedGrams?.(String(packGrams));
                     }
+                    onPicked(item.name, packGrams);
                   }
                 }}
                 className={cn(

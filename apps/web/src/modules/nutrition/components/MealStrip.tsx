@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-01
+ * Last validated: 2026-09-11
  * Status: Active
  *
  * Hero-стрічка дня Їжі (спека
@@ -15,20 +15,25 @@
  * тієї самої частки»). Той компонент лишається недоторканим у
  * `DayLogSheet`; `MealStrip` — окрема форма для hero.
  *
- * A11y: увесь візуал (сегменти + головне число) — один `role="img"` з
- * одним `aria-label`, внутрішній DOM `aria-hidden` (сегменти самі не
- * фокусуються). CTA «Задати норму» і нотатка про неповний день/оцінку
- * фото лишаються ЗА межами цього блоку — кнопка не може бути
- * `aria-hidden`, а текстові нотатки не дублюють inline-приклад aria-label
- * зі спеки.
+ * **Сегменти клікабельні (рішення власника 2026-09-11).** Тап по «Обід»
+ * відкриває аркуш прийому з уже обраним `mealType`. До того hero був
+ * індикатором, з якого не зробиш нічого: єдиною дією лишався FAB, а він
+ * відкриває аркуш БЕЗ типу — тип угадував годинник (`mealTypeByNow`).
+ * Тепер FAB — вхід «щось нове», сегмент — вхід «у цей прийом».
  *
- * Ширина сегмента: `flexGrow` = ккал прийому (мінімум 0.0001, щоб
- * порожній тип не забирав пропорційну частку), `min-width: 12px` —
- * підлога читабельності (спека, ризик 1). Підписи прийомів НЕ лежать
- * усередині вузького бару (ризик 2 — вони б обрізались при 4
- * заповнених сегментах): окремий рядок з чотирма РІВНИМИ колонками
- * знизу несе і назву, і ккал, і завжди має однакову ширину незалежно
- * від пропорції бару над ним.
+ * **Один рядок замість двох.** Було: пропорційні бари зверху й колонки з
+ * назвою та ккал знизу — два ряди, що кодують те саме число. Стало: чотири
+ * РІВНІ колонки-кнопки, а пропорція живе заливкою всередині колонки
+ * (`width` = частка прийому в зʼїденому). Порівняння прийомів лишилось
+ * видимим, підпис не обрізається на вузькому екрані (ризик 2 спеки), а
+ * ризик 1 — вузький сегмент — зник разом із пропорційною шириною колонки.
+ *
+ * A11y: спільний `role="img"` лишився ТІЛЬКИ за блоком залишку — за тим,
+ * що справді є картинкою з числом. Сегменти більше не `aria-hidden`: вони
+ * кнопки, а кнопка під `aria-hidden` недосяжна. Факт кожного прийому несе
+ * доступна назва його кнопки («Обід, 520 ккал. Додати в обід»), тож
+ * перелік прийомів прибрано зі спільної мітки — інакше AT диктував би ті
+ * самі слова двічі.
  */
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
@@ -65,6 +70,13 @@ export interface MealStripProps {
    */
   onSetGoal?: (() => void) | undefined;
   /**
+   * Тап по сегменту. Обовʼязковий навмисно: без нього сегменти лишались
+   * би `aria-hidden`-картинкою, і hero знову став би індикатором, з якого
+   * нічого не зробиш — саме тим, на що скаржився власник. FAB лишається
+   * для «щось нове», сегмент — для «в цей прийом».
+   */
+  onPickMeal: (type: MealTypeId) => void;
+  /**
    * «Записано N із 4» — канон §5.2, неповний день лишається чесним, не
    * дефіцитом. Рендериться ПОЗА `role="img"`-блоком як окремий
    * текстовий вузол (спека не включає цю фразу у власний aria-label
@@ -82,30 +94,43 @@ const ARIA_NOT_RECORDED: Record<MealTypeId, string> = {
 
 const REMAINING_ON_PREFIX = "лишилось на ";
 
-function buildAriaLabel(
-  segments: readonly MealStripSegment[],
-  goalKcal: number | null,
-  remaining: number | null,
+/** Дія кнопки сегмента — другим реченням доступної назви. */
+const ADD_TO_MEAL: Record<MealTypeId, string> = {
+  breakfast: "Додати в сніданок",
+  lunch: "Додати в обід",
+  dinner: "Додати у вечерю",
+  snack: "Додати в перекус",
+};
+
+/** Факт прийому — першим реченням доступної назви кнопки. */
+function segmentAriaFact(seg: MealStripSegment): string {
+  if (seg.kcal <= 0) {
+    const notRecorded = ARIA_NOT_RECORDED[seg.type];
+    return notRecorded.charAt(0).toUpperCase() + notRecorded.slice(1);
+  }
+  return `${seg.label}, ${Math.round(seg.kcal)} ккал`;
+}
+
+/**
+ * Доступна назва блока залишку. Перелік прийомів звідси прибрано: тепер
+ * кожен сегмент — кнопка з власною доступною назвою, і повторювати ті
+ * самі факти в спільному `aria-label` означало б диктувати їх двічі.
+ * Лишається рівно те, що є картинкою з числом, — залишок до норми.
+ */
+function buildRemainingAriaLabel(
+  remaining: number,
   remainingLabel: string,
 ): string {
-  const parts = segments.map((s) =>
-    s.kcal > 0
-      ? `${s.label.toLowerCase()} ${Math.round(s.kcal)} ккал`
-      : ARIA_NOT_RECORDED[s.type],
-  );
-  if (goalKcal != null && remaining != null) {
-    if (remaining < 0) {
-      parts.push(`${Math.round(Math.abs(remaining))} ккал понад норму`);
-    } else if (remainingLabel === REMAINING_TODAY_LABEL) {
-      parts.push(`лишилось ${Math.round(remaining)} ккал сьогодні`);
-    } else if (remainingLabel.startsWith(REMAINING_ON_PREFIX)) {
-      const suffix = remainingLabel.slice(REMAINING_ON_PREFIX.length);
-      parts.push(`лишилось ${Math.round(remaining)} ккал на ${suffix}`);
-    } else {
-      parts.push(remainingLabel);
-    }
-  }
-  const sentence = parts.join(", ");
+  const sentence =
+    remaining < 0
+      ? `${Math.round(Math.abs(remaining))} ккал понад норму`
+      : remainingLabel === REMAINING_TODAY_LABEL
+        ? `лишилось ${Math.round(remaining)} ккал сьогодні`
+        : remainingLabel.startsWith(REMAINING_ON_PREFIX)
+          ? `лишилось ${Math.round(remaining)} ккал на ${remainingLabel.slice(
+              REMAINING_ON_PREFIX.length,
+            )}`
+          : remainingLabel;
   return sentence.charAt(0).toUpperCase() + sentence.slice(1);
 }
 
@@ -133,71 +158,82 @@ export function MealStrip({
   remainingLabel,
   macros,
   onSetGoal,
+  onPickMeal,
   incompleteNote,
 }: MealStripProps) {
   const total = segments.reduce((sum, s) => sum + s.kcal, 0);
   const remaining = goalKcal != null ? goalKcal - total : null;
   const accentIndex = findAccentIndex(segments, goalKcal);
-  const ariaLabel = buildAriaLabel(
-    segments,
-    goalKcal,
-    remaining,
-    remainingLabel,
-  );
 
   return (
     <div className="flex flex-col gap-3">
-      <div role="img" aria-label={ariaLabel} className="flex flex-col gap-1.5">
-        {/* Row 1 — proportional bars. Purely decorative colour/width signal;
-            no text inside so a very narrow segment (risk: перекус 50 ккал на
-            2200) never clips a label. */}
-        <div
-          aria-hidden="true"
-          data-testid="meal-strip-bars"
-          className="flex items-stretch gap-1 h-7"
-        >
-          {segments.map((seg, i) => {
-            const isEmpty = seg.kcal <= 0;
-            const isAccent = accentIndex === i;
-            return (
-              <div
-                key={seg.type}
-                style={{
-                  flexGrow: total > 0 ? Math.max(seg.kcal, 0.0001) : 1,
-                  flexBasis: 0,
-                }}
+      {/*
+        ОДИН рядок сегментів, і кожен — кнопка. Було два ряди, що кодували
+        те саме число двічі: пропорційні бари зверху й колонки з назвою та
+        ккал знизу. Пропорція нікуди не поділась — вона тепер заливка
+        всередині колонки фіксованої ширини, тож і порівняння прийомів
+        видно, і підпис не обрізається на вузькому екрані (ризик 2 спеки).
+
+        A11y: рядок більше НЕ живе всередині `role="img"`. Кнопка не може
+        бути `aria-hidden`, а саме такими були обидва старі ряди. Тепер
+        факт кожного прийому несе доступна назва його кнопки, а спільний
+        `aria-label` лишається тільки за блоком залишку — тобто за тим,
+        що справді є картинкою з числом.
+      */}
+      <ul data-testid="meal-strip-bars" className="grid grid-cols-4 gap-1">
+        {segments.map((seg, i) => {
+          const isEmpty = seg.kcal <= 0;
+          const isAccent = accentIndex === i;
+          const share = total > 0 ? (seg.kcal / total) * 100 : 0;
+          const body = (
+            <>
+              <span
+                aria-hidden="true"
+                data-testid="meal-strip-fill"
+                style={{ width: `${share}%` }}
                 className={cn(
-                  "min-w-[12px] rounded-lg border",
-                  isEmpty
-                    ? "bg-hero-ink/10 border-hero-ink/20"
-                    : isAccent
-                      ? "bg-nutrition border-hero-ink/20"
-                      : "bg-hero-ink/30 border-hero-ink/20",
+                  "absolute inset-y-0 left-0 rounded-lg",
+                  isAccent ? "bg-nutrition" : "bg-hero-ink/30",
                 )}
               />
-            );
-          })}
-        </div>
-
-        {/* Row 2 — always-equal-width captions, decoupled from the bar's
-            proportional width above (risk 2: 4 filled labels at 393px). */}
-        <div aria-hidden="true" className="grid grid-cols-4 gap-1">
-          {segments.map((seg) => (
-            <div
-              key={seg.type}
-              className="flex flex-col items-center text-center"
-            >
-              <span className="text-style-caption text-hero-ink/90 truncate w-full">
+              <span className="relative text-style-caption text-hero-ink/90 truncate w-full">
                 {seg.label}
               </span>
-              <span className="text-style-caption text-hero-ink tabular-nums truncate w-full">
+              <span className="relative text-style-caption text-hero-ink tabular-nums truncate w-full">
                 {seg.kcal > 0 ? Math.round(seg.kcal) : "—"}
               </span>
-            </div>
-          ))}
-        </div>
+            </>
+          );
+          return (
+            <li key={seg.type} className="flex">
+              <button
+                type="button"
+                onClick={() => onPickMeal(seg.type)}
+                aria-label={`${segmentAriaFact(seg)}. ${ADD_TO_MEAL[seg.type]}`}
+                className={cn(
+                  "relative isolate flex w-full flex-col items-center justify-center",
+                  "overflow-hidden rounded-lg border border-hero-ink/20 px-1 py-1.5",
+                  isEmpty ? "bg-hero-ink/10" : "bg-hero-ink/5",
+                  // 44×44 під coarse pointer — сегмент тепер найдрібніший
+                  // тапабельний контрол hero-картки.
+                  "pointer-coarse:min-h-[44px] motion-safe:transition-colors",
+                  "hover:bg-hero-ink/15 active:bg-hero-ink/20",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-hero",
+                )}
+              >
+                {body}
+              </button>
+            </li>
+          );
+        })}
+      </ul>
 
-        {goalKcal != null && remaining != null && (
+      {goalKcal != null && remaining != null && (
+        <div
+          role="img"
+          aria-label={buildRemainingAriaLabel(remaining, remainingLabel)}
+          className="flex flex-col gap-1.5"
+        >
           <div className="mt-1 flex flex-col items-center gap-0.5 text-center">
             {remaining < 0 ? (
               <>
@@ -222,8 +258,8 @@ export function MealStrip({
               </>
             )}
           </div>
-        )}
-      </div>
+        </div>
+      )}
 
       {incompleteNote && (
         <p className="text-style-caption text-hero-ink/80 text-center">

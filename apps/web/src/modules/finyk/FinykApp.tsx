@@ -121,6 +121,13 @@ export default function App({
   const [manualOnly, setManualOnly] = useState(
     () => readRaw(FINYK_MANUAL_ONLY_KEY, "") === "1",
   );
+  // Комбінований пікер «Запланувати» на Плануванні (founder-UX audit
+  // round 2, F2): `Budgets` і `PlanningSubscriptions` мають КОЖЕН свій
+  // `useAssetsState`-інстанс, тож пункт «Підписка» з пікера в `Budgets` не
+  // може викликати `openSubscriptionForm` з ІНШОГО інстансу напряму.
+  // Лічильник-сигнал — найдешевший міст: інкремент у `Budgets`, ефект у
+  // `PlanningSubscriptions` відкриває форму на кожній зміні значення.
+  const [subscriptionFormSignal, setSubscriptionFormSignal] = useState(0);
 
   const syncHandledRef = useRef(false);
   useEffect(() => {
@@ -278,8 +285,10 @@ export default function App({
                 storage={storage}
                 showBalance={showBalance}
                 initialOpen={focusAssetSection === "subscriptions"}
+                openSubscriptionSignal={subscriptionFormSignal}
               />
             }
+            onAddSubscription={() => setSubscriptionFormSignal((n) => n + 1)}
             monthlyPlanFirstRunHint={firstRunFinykActive}
             onDismissMonthlyPlanFirstRunHint={() => {
               markFinykSeen();

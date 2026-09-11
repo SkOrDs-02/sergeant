@@ -18,6 +18,18 @@ import {
 
 type MacroFieldKey = "kcal" | "protein_g" | "fat_g" | "carbs_g";
 
+/** Один список для розмітки полів і для перевірки «чи є хоч одне число». */
+const MACRO_FIELDS = [
+  { key: "kcal", label: "Ккал", placeholder: "350" },
+  { key: "protein_g", label: "Білки г", placeholder: "12" },
+  { key: "fat_g", label: "Жири г", placeholder: "6" },
+  { key: "carbs_g", label: "Вуглев. г", placeholder: "60" },
+] as const satisfies readonly {
+  key: MacroFieldKey;
+  label: string;
+  placeholder: string;
+}[];
+
 interface PendingUnlink {
   key: MacroFieldKey | null;
   value: string | null;
@@ -54,11 +66,15 @@ export function MacrosEditor({
   const handleMacroChange =
     (key: MacroFieldKey) => (e: ChangeEvent<HTMLInputElement>) => {
       const v = e.target.value;
-      // Kcal is routinely overridden manually — bypass unlink confirm.
-      // Protein/fat/carbs edits would silently invalidate the food link, so
-      // those still require explicit confirmation before unlinking.
+      // Гард однаковий для всіх чотирьох полів. Раніше ккал його обходили
+      // («routinely overridden manually»), і це виглядало зручністю, поки
+      // правка лишалась на екрані. Насправді вона не доживала до запису:
+      // `PickedFoodCard` перераховує ВСІ чотири поля з картки продукту на
+      // кожну зміну ваги (`PickedFoodCard.tsx:96-107`), тож набране вручну
+      // число тихо затиралось наступним рухом колеса. Асиметрія була не
+      // косметичною — вона втрачала дані.
       const isLinked = Boolean(pickedFood) && Number(pickedGrams) > 0;
-      if (isLinked && key !== "kcal") {
+      if (isLinked) {
         setPendingUnlink({ key, value: v });
         return;
       }
@@ -78,6 +94,9 @@ export function MacrosEditor({
   // role="alertdialog" inline panel: move focus into the warning when it
   // opens, let Escape cancel, and restore focus on close. Non-modal
   // (no backdrop), so no inertBackground / aria-modal.
+  const isLinked = Boolean(pickedFood) && Number(pickedGrams) > 0;
+  const hasAnyMacro = MACRO_FIELDS.some(({ key }) => form[key] !== "");
+
   const unlinkPanelRef = useRef<HTMLDivElement | null>(null);
   useDialogFocusTrap(Boolean(pendingUnlink), unlinkPanelRef, {
     onEscape: cancelUnlink,
@@ -106,14 +125,7 @@ export function MacrosEditor({
         </div>
       )}
       <div className="grid grid-cols-2 sm:grid-cols-4 gap-2">
-        {(
-          [
-            { key: "kcal", label: "Ккал", placeholder: "350" },
-            { key: "protein_g", label: "Білки г", placeholder: "12" },
-            { key: "fat_g", label: "Жири г", placeholder: "6" },
-            { key: "carbs_g", label: "Вуглев. г", placeholder: "60" },
-          ] as const
-        ).map(({ key, label, placeholder }) => (
+        {MACRO_FIELDS.map(({ key, label, placeholder }) => (
           <div key={key}>
             <SectionHeading
               as="div"
@@ -135,22 +147,38 @@ export function MacrosEditor({
           </div>
         ))}
       </div>
-      {pickedFood && Number(pickedGrams) > 0 && !pendingUnlink && (
-        <div className="mt-2 rounded-xl border border-line bg-panelHi p-3">
-          <p className="text-style-body text-subtle leading-relaxed">
-            Значення розраховані з картки продукту на 100 г і автоматично
-            масштабуються під вагу. Якщо зробити їх незалежними, поточні КБЖВ
-            збережуться лише для цього запису й більше не змінюватимуться разом
-            із вагою або карткою продукту.
-          </p>
-          <button
-            type="button"
-            onClick={() => setPendingUnlink({ key: null, value: null })}
-            className="mt-2 min-h-11 text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
-          >
-            Редагувати КБЖВ вручну
-          </button>
-        </div>
+      {/*
+        Афорданс тут один — самі поля. Кнопка «Редагувати КБЖВ вручну» вела
+        в ТОЙ САМИЙ `pendingUnlink`, що й правка будь-якого поля, і була
+        видима рівно в тому стані, де поля вже відкривають ту саму панель
+        підтвердження. Лишилась вона з часів, коли гард мала тільки вона;
+        поля гард отримали, а старий вхід не прибрали.
+      */}
+      {/* AI-NOTE: `text-style-caption` тут навмисний — це підказка під
+          контролом, документований виняток правила `no-sentence-in-caption`
+          (`docs/design/design/density-hierarchy-spec.md` §4). Підняти до
+          `text-style-body` означало б зробити пояснення важчим за самі
+          поля, які воно пояснює. */}
+      {isLinked && !pendingUnlink && (
+        <p className="mt-2 text-style-caption text-subtle leading-relaxed">
+          Рахується з картки продукту на 100 г і масштабується під вагу. Зміни
+          будь-яке поле, і значення зафіксуються для цього запису.
+        </p>
+      )}
+      {/*
+        Позначка ручних значень. Без неї два різні стани виглядають
+        однаково: числа з картки продукту (живі, їдуть за вагою) і числа,
+        набрані руками (мертві). Друге — підсумок ПОРЦІЇ, не етикетка на
+        100 г; режим етикетки лишається окремим входом («маю етикетку»).
+      */}
+      {/* AI-NOTE: той самий виняток, що й у підказці вище — позначка стану
+          під полями, не текст для читання. */}
+      {!pickedFood && hasAnyMacro && (
+        <p className="mt-2 text-style-caption text-subtle leading-relaxed">
+          <span className="text-text font-medium">Вручну</span>: підсумок
+          порції. Значення зафіксовані для цього запису й не масштабуються під
+          вагу.
+        </p>
       )}
       {pendingUnlink && (
         <div
@@ -163,8 +191,8 @@ export function MacrosEditor({
             Редагувати КБЖВ для «{pickedFood?.name || "продукт"}» вручну?
           </p>
           <p className="text-muted">
-            Макроси перестануть оновлюватись з бази продуктів, значення
-            зафіксуються у цьому прийомі.
+            Значення стануть підсумком порції: зафіксуються для цього запису й
+            більше не масштабуватимуться під вагу чи картку продукту.
           </p>
           <div className="flex gap-2 pt-1">
             <Button

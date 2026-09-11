@@ -92,9 +92,13 @@ export interface QuickActionButtonProps extends Omit<
 }
 
 /**
- * CTA used in the 3-button quick-action row above the sections. Each
- * button collapses the "expand → scroll → tap +" flow into a single tap
- * that opens the relevant section *and* reveals its inline form.
+ * CTA used in the quick-action rows above the Assets/Liabilities and
+ * Planning sections (row shape varies per page — Assets uses two buttons,
+ * Planning uses one combined "Запланувати" trigger; the "3-button row"
+ * this comment used to describe was removed 2026-09-03, § founder-UX
+ * audit round 2, F2). Each button collapses the "expand → scroll → tap +"
+ * flow into a single tap that opens the relevant section *and* reveals
+ * its inline form.
  *
  * Це звичайний `Button variant="soft"`, а не картка з іконкою в тонованому
  * квадраті: тайл за формою збігався з картками вмісту поруч, і око не

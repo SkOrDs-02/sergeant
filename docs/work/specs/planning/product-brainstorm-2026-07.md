@@ -82,7 +82,7 @@
 
 **Далі:**
 
-1. **Парасольковий product-overview** (`docs/product/modules/product-overview.md`)
+1. **Парасольковий product-overview** (`docs/product/model/product-overview.md`)
    — спека в цій сесії, виконання окремою сесією; founder-колонка =
    5 транскриптів + цей документ.
 2. **Беклог** — зведення ~40 фіксів diff-звітів + рішень цього документа

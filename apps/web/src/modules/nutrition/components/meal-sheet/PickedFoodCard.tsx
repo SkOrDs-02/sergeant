@@ -15,7 +15,7 @@
  * Status: Active
  * Last validated: 2026-08-22
  */
-import { useCallback, useEffect, useMemo, useRef } from "react";
+import { useCallback, useEffect, useRef } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
@@ -25,11 +25,8 @@ import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { cn } from "@shared/lib/ui/cn";
 import { MacroChip } from "./MacroChip";
 import { macrosForGrams } from "../../lib/foodDb/foodDb";
-import {
-  MAX_PORTION_GRAMS,
-  portionGramValues,
-  type MealFormState,
-} from "./mealFormUtils";
+import { MAX_PORTION_GRAMS, type MealFormState } from "./mealFormUtils";
+import { useWheelGrams } from "./useWheelGrams";
 import type { PickedFood } from "./FoodPickerSection";
 
 /** Ідентичність «цей продукт під цією вагою» для гарда перерахунку. */
@@ -79,10 +76,10 @@ export function PickedFoodCard({
   const gramsDraft = useDecimalDraft(pickedGrams, MAX_PORTION_GRAMS, (value) =>
     setPickedGrams(value == null ? "" : String(value)),
   );
-  const gramValues = useMemo(
-    () => portionGramValues(pickedGrams),
-    [pickedGrams],
-  );
+  // Сталий список значень колеса + число, на якому воно стоїть. Обидва —
+  // у `useWheelGrams`; там же розбір, чому виведення списку з самого
+  // значення змушувало колесо стрибати після кожного коміту.
+  const wheel = useWheelGrams(pickedGrams);
 
   const applyPickedFood = useCallback(
     (p: PickedFood, gramsRaw: string | number) => {
@@ -188,8 +185,8 @@ export function PickedFoodCard({
         </div>
         {coarsePointer ? (
           <WheelPicker
-            values={gramValues}
-            value={Number(pickedGrams) || 100}
+            values={wheel.values}
+            value={wheel.value}
             onChange={(g) => setPickedGrams(String(g))}
             aria-label="Грами"
             formatValue={(g) => `${g} г`}

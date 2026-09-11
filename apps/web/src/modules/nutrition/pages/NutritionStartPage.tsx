@@ -13,7 +13,7 @@
  * будь-який новий вхід має йти через `handleOpenMealPhoto`, а не рендерити
  * власний аналіз.
  */
-import type { NutritionPrefs } from "@sergeant/nutrition-domain";
+import type { MealTypeId, NutritionPrefs } from "@sergeant/nutrition-domain";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useLocale } from "@shared/i18n/useLocale";
 import { NutritionDashboard } from "../components/NutritionDashboard";
@@ -26,12 +26,15 @@ interface NutritionStartPageProps {
   log: LogController;
   prefs: NutritionPrefs;
   setActivePageAndHash: (page: NutritionPage) => void;
+  /** Тап по сегменту hero — аркуш прийому з уже обраним типом. */
+  onPickMeal: (type: MealTypeId) => void;
 }
 
 export function NutritionStartPage({
   log,
   prefs,
   setActivePageAndHash,
+  onPickMeal,
 }: NutritionStartPageProps) {
   const { messages } = useLocale();
   return (
@@ -41,6 +44,7 @@ export function NutritionStartPage({
         <NutritionDashboard
           log={log.nutritionLog}
           prefs={prefs}
+          onPickMeal={onPickMeal}
           onGoToLog={() => setActivePageAndHash("log")}
           onGoToDailyPlan={() => {
             setActivePageAndHash("menu");

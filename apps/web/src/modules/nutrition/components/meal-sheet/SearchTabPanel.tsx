@@ -31,6 +31,7 @@ import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { ADD_MEAL_SECTION_KEYS } from "./addMealSections";
 import { FoodPickerSection } from "./FoodPickerSection";
 import { FromPantryRow } from "./FromPantryRow";
+import type { MealSourcePick } from "./useMealSourcePick";
 import { MealTemplatesRow } from "./MealTemplatesRow";
 import { QuickAddChips } from "../QuickAddChips";
 
@@ -46,6 +47,8 @@ interface SearchTabPanelProps {
   /** Повтор зберігається одразу, тож аркуш після нього закривається. */
   onQuickAdded: () => void;
   pantryItems: PantryItem[];
+  /** Автопідбір продукту за назвою позиції комори — щоб прийом ніс КБЖУ. */
+  sourcePick: MealSourcePick;
   fromPantryItem: string | null;
   setFromPantryItem: Dispatch<SetStateAction<string | null>>;
   /** Props пошуку йдуть групою — вони належать одному компоненту. */
@@ -62,6 +65,7 @@ export function SearchTabPanel({
   onQuickAddMeal,
   onQuickAdded,
   pantryItems,
+  sourcePick,
   fromPantryItem,
   setFromPantryItem,
   picker,
@@ -107,6 +111,8 @@ export function SearchTabPanel({
           setForm={setForm}
           setFoodQuery={picker.setFoodQuery}
           setPickedGrams={picker.setPickedGrams}
+          onPicked={sourcePick.onPantryItemPicked}
+          onCleared={sourcePick.cancelAutoPick}
         />
       )}
 

@@ -240,7 +240,7 @@ Demo-режим (`/?demo=1`), 393×852, light і dark. Артефакт dev-зб
 
 - [AI Design Slop: 16 Patterns That Out Your App as Vibe-Coded — Developers Digest](https://www.developersdigest.tech/blog/ai-design-slop-and-how-to-spot-it) — 16 tell-ів; «colored left border = em-dash дизайну».
 - [The "Built with AI" Tell: 12 Signals That Drop Trust — Utsubo](https://www.utsubo.com/blog/built-with-ai-trust-signals-2026) — сигнали довіри, копія й метадані.
-- [AI Slop Design: Why AI-Generated UI Looks Generic — VibeCodeKit](https://vibecodekit.dev/ai-slop-design) — чек-лист із 6 правил, APCA, «dark mode as reflex».
+- «AI Slop Design: Why AI-Generated UI Looks Generic» — VibeCodeKit, `vibecodekit.dev/ai-slop-design` — чек-лист із 6 правил, APCA, «dark mode as reflex». Без лінка: станом на 2026-09-11 хост мертвий (спершу 503, далі `fetch failed` із CI-раннера). На відміну від Medium нижче, це **не** 403-для-бота, тож allowlist тут означав би не «не перевіряти», а «замовчати мертве посилання» — теза лишається в тексті аудиту, джерело історичне.
 - [7 Signs a UI Has Been Vibe Coded — The Fountain Institute](https://www.thefountaininstitute.com/blog/signs-vibe-coded-ui) — card-in-card, meaningless status dots, multicolored side tabs.
 - [Why Your Vibe-Coded App Looks Like Every Other AI App — The Crit](https://thecrit.co/resources/vibe-coding-design-guide) — Lucide/Heroicons як уніформа, spacing-ієрархія.
 - [AI Slop Fonts and Gradients — 925 Studios](https://www.925studios.co/blog/ai-slop-design-tells) — «AI fingerprint» як кластер, а не окремі ознаки.

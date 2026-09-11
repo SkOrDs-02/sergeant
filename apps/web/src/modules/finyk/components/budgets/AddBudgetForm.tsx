@@ -72,6 +72,15 @@ interface AddBudgetFormProps {
   jars?: readonly MonoJarDto[];
   onSubmit: (draft: NewBudgetDraft) => void;
   onCancel: () => void;
+  /**
+   * Предвстановлена вкладка при відкритті форми. Founder-UX audit round 2
+   * (F2): комбінований пікер «Запланувати» (`Budgets.tsx`) відкриває цю
+   * форму одразу на потрібному типі, замість того щоб змушувати перемкнути
+   * вкладку вручну. Форма розмонтовується разом із `showForm=false` на
+   * call-site, тож `useState(initialType ?? "limit")` підхоплює нове
+   * значення на кожне відкриття без додаткового `useEffect`.
+   */
+  initialType?: BudgetFormType;
 }
 
 // Іконка цілі. Поле в даних історично зветься `emoji` (і так само зветься
@@ -179,8 +188,11 @@ function AddBudgetFormComponent({
   jars = [],
   onSubmit,
   onCancel,
+  initialType,
 }: AddBudgetFormProps) {
-  const [formType, setFormType] = useState<BudgetFormType>("limit");
+  const [formType, setFormType] = useState<BudgetFormType>(
+    initialType ?? "limit",
+  );
   const fieldId = useId();
   const limitAmountId = `${fieldId}-limit-amount`;
   const limitNameId = `${fieldId}-limit-name`;

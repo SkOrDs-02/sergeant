@@ -8,7 +8,7 @@ import { TxListItem } from "../../components/TxListItem";
 import type { TxRowTx } from "../../components/TxRow";
 import { SkeletonTransactionRow } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
-import { EmptyState, ModuleEmptyState } from "@shared/components/ui/EmptyState";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { FinykEmptyIllustration } from "@shared/components/ui/EmptyStateIllustrations";
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
 import {
@@ -317,11 +317,16 @@ export function TransactionList({
 
   // Three empty surfaces share the same DataState slot:
   //   • no-data-at-all (`activeTx` empty AND nothing in any other month) →
-  //     tier-1 hero with the module-tuned copy/illustration via
-  //     `ModuleEmptyState`. No inline action — the global "+ Додати витрату"
-  //     FAB on `FinykApp` is the primary CTA and duplicating it inside the
-  //     empty-state would be the anti-pattern called out in
-  //     `docs/design/empty-states.md`.
+  //     a list-scoped state, NOT the Overview tier-1 hero. Founder-UX audit
+  //     round 2 (F1) flagged that Overview and Transactions rendered the
+  //     exact same `ModuleEmptyState module="finyk"` hero back to back when
+  //     a brand-new user tapped both tabs — same title, same illustration,
+  //     same "Куди йдуть твої гроші?" pitch twice in a row. Overview answers
+  //     "what does finyk do" (goal-aware hero, kept there); Transactions
+  //     answers "why is this list empty" — short, list-appropriate copy, no
+  //     inline action (the global "+ Додати витрату" FAB on `FinykApp` is
+  //     the primary CTA; duplicating it here is the anti-pattern called out
+  //     in `docs/design/empty-states.md`).
   //   • month-empty (`activeTx` empty but the user HAS transactions in other
   //     months) → month-scoped state. The first-run hero here read as data
   //     loss: on 1 серпня, with Monobank connected and a full July history,
@@ -357,7 +362,12 @@ export function TransactionList({
       </div>
     ) : activeTx.length === 0 ? (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
-        <ModuleEmptyState module="finyk" />
+        <EmptyState
+          illustration={<FinykEmptyIllustration size={80} />}
+          title="Записів ще немає"
+          description="Додай перший запис вручну, підключи Monobank або імпортуй виписку: вони покажуться тут."
+          module="finyk"
+        />
       </div>
     ) : (
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">

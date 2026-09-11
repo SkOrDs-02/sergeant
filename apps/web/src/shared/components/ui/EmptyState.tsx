@@ -438,7 +438,15 @@ interface ModuleConfig {
   title: string;
   description: string;
   hint: string;
-  actionLabel: string;
+  /**
+   * Optional — only meaningful when a call-site actually passes `onAction`.
+   * Founder-UX audit round 2 (F1) flagged `finyk`'s `actionLabel` as dead:
+   * both `Overview.tsx` and `TransactionList.tsx` render `ModuleEmptyState
+   * module="finyk"` without `onAction` on purpose (the global "+ Додати
+   * витрату" FAB already owns that CTA), so the label sat in the config
+   * with nothing ever reading it.
+   */
+  actionLabel?: string;
   accent: string;
   exampleLine1: string;
   exampleLine2: string;
@@ -453,7 +461,7 @@ const MODULE_EMPTY_CONFIG: Record<
     title: "Куди йдуть твої гроші?",
     description: "Додай першу витрату і побач реальну картину бюджету.",
     hint: "Порада: Підключи Monobank для автоматичного імпорту",
-    actionLabel: "Додати витрату",
+    // `actionLabel` навмисно відсутній — див. коментар над `ModuleConfig`.
     accent: "text-finyk bg-finyk-soft dark:bg-finyk/10",
     exampleLine1: "Кава",
     exampleLine2: "-85 ₴ · Сьогодні",
@@ -623,7 +631,11 @@ export function ModuleEmptyState({
               size={compact ? "sm" : "md"}
               onClick={onAction}
             >
-              {actionLabel || config.actionLabel}
+              {/* Fallback for modules (currently only `finyk`) whose config
+                  has no `actionLabel` — the button only renders when the
+                  caller passes `onAction`, so a caller that does so without
+                  an explicit `actionLabel` still gets a labelled button. */}
+              {actionLabel ?? config.actionLabel ?? "Додати"}
             </Button>
           )
         }

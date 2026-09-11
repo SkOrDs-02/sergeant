@@ -77,6 +77,31 @@ describe("AddBudgetForm — useApiForm + zod (Item #8 round-13)", () => {
     expect(submit).toBeEnabled();
   });
 
+  // Founder-UX audit round 2 (F2): the combined «Запланувати» picker on
+  // `Budgets.tsx` opens this form pre-set to the picked type, instead of
+  // always landing on "Ліміт" and forcing a manual tab switch.
+  it("opens on the limit tab by default when initialType is omitted", () => {
+    setup();
+    expect(screen.getByDisplayValue("Обери категорію")).toBeInTheDocument();
+    expect(screen.queryByLabelText("Назва цілі")).not.toBeInTheDocument();
+  });
+
+  it("opens on the goal tab when initialType='goal' is passed", () => {
+    render(
+      <AddBudgetForm
+        existingBudgets={[]}
+        expenseCategoryList={categories}
+        onSubmit={vi.fn()}
+        onCancel={vi.fn()}
+        initialType="goal"
+      />,
+    );
+    expect(screen.getByLabelText("Назва цілі")).toBeInTheDocument();
+    expect(
+      screen.queryByDisplayValue("Обери категорію"),
+    ).not.toBeInTheDocument();
+  });
+
   it("submits a valid limit budget with normalized number value", async () => {
     const { onSubmit } = setup();
     fireEvent.change(screen.getByDisplayValue("Обери категорію"), {

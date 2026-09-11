@@ -65,6 +65,16 @@ function CapabilityCard({ item }: { item: Capability }) {
       </span>
       <span className="flex-1 min-w-0">
         <span className="block text-style-label text-text">{item.title}</span>
+        {/* Founder-ux-review round 2 (O4): "scenario first, details after" —
+            `quickAction` (30-second action) renders ABOVE `description`
+            (supporting detail), so the newcomer-facing role of this page
+            reads distinctly from `/assistant`'s exhaustive tool catalogue. */}
+        <span
+          data-testid={`capability-quick-action-${item.id}`}
+          className="block text-style-body text-text mt-1 leading-relaxed"
+        >
+          {item.quickAction}
+        </span>
         <span className="block text-style-caption text-subtle mt-1 leading-relaxed">
           {item.description}
         </span>

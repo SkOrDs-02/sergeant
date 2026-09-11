@@ -1,12 +1,12 @@
 /**
- * Last validated: 2026-09-03
+ * Last validated: 2026-09-11
  * Status: Active
  */
-import { useState } from "react";
+import { useEffect, useRef, useState } from "react";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { messages } from "@shared/i18n/uk";
 import { RecurringSuggestions } from "../../components/RecurringSuggestions";
-import { QuickActionButton, SectionBar } from "../AssetsBars";
+import { SectionBar } from "../AssetsBars";
 import { AssetsSubscriptionsSection } from "../AssetsSubscriptionsSection";
 import { AssetsTxPickerView } from "../AssetsTxPickerView";
 import { useAssetsState, type AssetsProps } from "../useAssetsState";
@@ -34,12 +34,23 @@ export function PlanningSubscriptions({
   storage,
   showBalance = true,
   initialOpen = false,
+  openSubscriptionSignal,
 }: {
   mono: AssetsProps["mono"];
   storage: AssetsProps["storage"];
   showBalance?: boolean;
   /** `?section=subscriptions` — розгорнути список одразу. */
   initialOpen?: boolean;
+  /**
+   * Founder-UX audit round 2 (F2): триггер відкриття форми підписки з
+   * комбінованого пікера «Запланувати», який тепер живе в `Budgets.tsx` —
+   * фізично іншому React-піддереві з власним `useAssetsState`-інстансом, а
+   * не тим, який тримає ЦЕЙ компонент. Пряме посилання на
+   * `openSubscriptionForm` іншого інстансу неможливе, тож `FinykApp`
+   * інкрементує лічильник при виборі пункту «Підписка» — кожна зміна
+   * значення (не саме монтування) відкриває форму тут.
+   */
+  openSubscriptionSignal?: number;
 }) {
   const state = useAssetsState({
     mono,
@@ -60,6 +71,18 @@ export function PlanningSubscriptions({
     manualDebts,
     receivables,
   } = state;
+
+  const prevSubscriptionSignal = useRef(openSubscriptionSignal);
+  useEffect(() => {
+    if (
+      openSubscriptionSignal !== undefined &&
+      openSubscriptionSignal !== prevSubscriptionSignal.current
+    ) {
+      openSubscriptionForm();
+    }
+    prevSubscriptionSignal.current = openSubscriptionSignal;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `openSubscriptionForm` closes over stable setters from useAssetsState; re-running on its identity change would refire the signal spuriously.
+  }, [openSubscriptionSignal]);
 
   // Київські частини «сьогодні» — раз на монтування, як в `useOverviewData`.
   const [kyivToday] = useState(() => getKyivDateParts(Date.now()));
@@ -124,12 +147,6 @@ export function PlanningSubscriptions({
         />
         {open.subscriptions && <AssetsSubscriptionsSection state={state} />}
       </div>
-
-      <QuickActionButton
-        label={t.addSubscription}
-        tone="finyk"
-        onClick={openSubscriptionForm}
-      />
     </div>
   );
 }

@@ -1,10 +1,13 @@
 // @vitest-environment jsdom
 /**
  * PlanningSubscriptions — блок «майбутнього» на Плануванні (2026-09-03):
- * найближчі платежі, підказки про регулярні витрати, підписки, quick-action.
+ * найближчі платежі, підказки про регулярні витрати, підписки. Власний
+ * quick-action прибрано founder-UX audit round 2 (F2) — форма підписки
+ * тепер відкривається через `openSubscriptionSignal`, переданий із
+ * комбінованого пікера «Запланувати» в `Budgets.tsx` (див. `FinykApp.tsx`).
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import { render, screen, cleanup } from "@testing-library/react";
 import { ToastProvider } from "@shared/hooks/useToast";
 import type { ReactNode } from "react";
 
@@ -67,20 +70,53 @@ function makeStorage(
 const mono: AssetsProps["mono"] = { accounts: [], transactions: [] };
 
 describe("PlanningSubscriptions", () => {
-  it("renders the subscriptions bar collapsed with the quick-action entry", () => {
+  it("renders the subscriptions bar collapsed, with no local quick-action button", () => {
     render(wrap(<PlanningSubscriptions mono={mono} storage={makeStorage()} />));
     expect(
       screen.getByRole("button", { expanded: false, name: /Підписки/ }),
     ).toBeInTheDocument();
     expect(screen.queryByTestId("subs-section")).toBeNull();
     expect(screen.getByTestId("recurring")).toBeInTheDocument();
-    expect(screen.getByRole("button", { name: "+ Підписка" })).toBeVisible();
+    // Own "+ Підписка" trigger removed (F2) — it now lives inside the
+    // combined «Запланувати» picker on `Budgets.tsx`.
+    expect(screen.queryByRole("button", { name: "+ Підписка" })).toBeNull();
   });
 
-  it("'+ Підписка' opens the section and its form in one tap", () => {
-    render(wrap(<PlanningSubscriptions mono={mono} storage={makeStorage()} />));
-    fireEvent.click(screen.getByRole("button", { name: "+ Підписка" }));
+  it("opens the section and its form when openSubscriptionSignal changes", () => {
+    const { rerender } = render(
+      wrap(
+        <PlanningSubscriptions
+          mono={mono}
+          storage={makeStorage()}
+          openSubscriptionSignal={0}
+        />,
+      ),
+    );
+    expect(screen.queryByTestId("subs-section")).toBeNull();
+
+    rerender(
+      wrap(
+        <PlanningSubscriptions
+          mono={mono}
+          storage={makeStorage()}
+          openSubscriptionSignal={1}
+        />,
+      ),
+    );
     expect(screen.getByTestId("subs-section")).toHaveTextContent("form:true");
+  });
+
+  it("does not reopen the form on mount just because a signal prop is present", () => {
+    render(
+      wrap(
+        <PlanningSubscriptions
+          mono={mono}
+          storage={makeStorage()}
+          openSubscriptionSignal={0}
+        />,
+      ),
+    );
+    expect(screen.queryByTestId("subs-section")).toBeNull();
   });
 
   it("opens the section immediately for ?section=subscriptions", () => {

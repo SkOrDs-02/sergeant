@@ -83,7 +83,11 @@ export function WheelPicker({
   const reduced = useReducedMotion();
   const scrollRef = useRef<HTMLDivElement | null>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
-  const syncTargetTop = useRef<number | null>(null);
+  // Гард «це скролить код, не палець» — в ІНДЕКСАХ, не в пікселях.
+  const syncTargetIndex = useRef<number | null>(null);
+  const syncReleaseTimer = useRef<ReturnType<typeof setTimeout> | null>(null);
+  // Перше позиціювання після монтування робиться без анімації.
+  const positionedRef = useRef(false);
   const selectedIndex = nearestIndex(values, value);
   const [activeIndex, setActiveIndex] = useState(selectedIndex);
 
@@ -103,31 +107,57 @@ export function WheelPicker({
     [onChange, value, values],
   );
 
+  const releaseSync = useCallback(() => {
+    syncTargetIndex.current = null;
+    if (syncReleaseTimer.current) {
+      clearTimeout(syncReleaseTimer.current);
+      syncReleaseTimer.current = null;
+    }
+  }, []);
+
   // Sync scroll position to the controlled value (also positions on mount).
   useEffect(() => {
     const el = scrollRef.current;
     if (!el) return;
     setActiveIndex(selectedIndex);
     const top = selectedIndex * itemHeight;
-    if (Math.abs(el.scrollTop - top) > 1) {
-      // `scrollTo({ behavior: "smooth" })` fires the same scroll events as
-      // a finger flick. Keep the target until it is reached so those events
-      // cannot commit an intermediate row back to the controlled parent.
-      syncTargetTop.current = top;
-      // `scrollTo` is absent in jsdom and very old engines — fall back to
-      // assigning scrollTop so the sync still lands on the right row.
-      if (typeof el.scrollTo === "function") {
-        el.scrollTo({ top, behavior: reduced ? "auto" : "smooth" });
-      } else {
-        el.scrollTop = top;
-        syncTargetTop.current = null;
-      }
+    // Порівняння теж в індексах. Піксельне «> 1» не має тут сенсу:
+    // контейнер має `snap-y snap-mandatory`, тобто фінальну позицію
+    // обирає браузер, і при дробовому `itemHeight` (зум, DPR) вона
+    // законно розходиться з `top` більше ніж на піксель.
+    const currentIndex = Math.round(el.scrollTop / itemHeight);
+    if (currentIndex === selectedIndex) return;
+
+    // `scrollTo({ behavior: "smooth" })` fires the same scroll events as
+    // a finger flick. Keep the target until it is reached so those events
+    // cannot commit an intermediate row back to the controlled parent.
+    syncTargetIndex.current = selectedIndex;
+    // Страховка: якщо snap стане на сусідній піксель і подія «доїхали»
+    // не настане, гард однаково звільняється. Без неї колесо залипало
+    // назавжди — `onScroll` вічно виходив раннім `return`, коміти
+    // припинялись, а наступний ререндер знову тягнув на старий індекс.
+    if (syncReleaseTimer.current) clearTimeout(syncReleaseTimer.current);
+    syncReleaseTimer.current = setTimeout(releaseSync, 600);
+
+    // Перше позиціювання — без анімації: людина щойно обрала продукт, і
+    // колесо має ВЖЕ стояти на його вазі, а не їхати туди на очах.
+    const instant = reduced || !positionedRef.current;
+    positionedRef.current = true;
+
+    // `scrollTo` is absent in jsdom and very old engines — fall back to
+    // assigning scrollTop so the sync still lands on the right row.
+    if (typeof el.scrollTo === "function") {
+      el.scrollTo({ top, behavior: instant ? "auto" : "smooth" });
+    } else {
+      el.scrollTop = top;
     }
-  }, [selectedIndex, itemHeight, reduced]);
+    if (instant) releaseSync();
+  }, [selectedIndex, itemHeight, reduced, releaseSync]);
 
   useEffect(
     () => () => {
       if (settleTimer.current) clearTimeout(settleTimer.current);
+      if (syncReleaseTimer.current) clearTimeout(syncReleaseTimer.current);
     },
     [],
   );
@@ -135,9 +165,9 @@ export function WheelPicker({
   const onScroll = () => {
     const el = scrollRef.current;
     if (!el || disabled) return;
-    if (syncTargetTop.current !== null) {
-      if (Math.abs(el.scrollTop - syncTargetTop.current) <= 1) {
-        syncTargetTop.current = null;
+    if (syncTargetIndex.current !== null) {
+      if (Math.round(el.scrollTop / itemHeight) === syncTargetIndex.current) {
+        releaseSync();
       }
       return;
     }

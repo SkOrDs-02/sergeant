@@ -174,7 +174,7 @@ describe("Budgets page (branches)", () => {
       container.querySelector('[aria-busy="true"]'),
     ).not.toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: /Додати ліміт або ціль/ }),
+      screen.getByRole("button", { name: /Запланувати/ }),
     ).toBeInTheDocument();
   });
 });
