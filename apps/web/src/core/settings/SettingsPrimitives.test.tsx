@@ -17,8 +17,21 @@ import {
 
 // Icon is a thin wrapper; stub it so tests don't need an SVG sprite.
 vi.mock("@shared/components/ui/Icon", () => ({
-  Icon: ({ name, size }: { name: string; size?: number }) => (
-    <span data-testid="icon" data-name={name} data-size={size} />
+  Icon: ({
+    name,
+    size,
+    className,
+  }: {
+    name: string;
+    size?: number;
+    className?: string;
+  }) => (
+    <span
+      data-testid="icon"
+      data-name={name}
+      data-size={size}
+      className={className}
+    />
   ),
 }));
 
@@ -39,30 +52,32 @@ describe("SettingsGroup — icon prop", () => {
     // First icon belongs to the icon badge; second is the ChevronIcon.
     const badgeIcon = icons.find((el) => el.dataset["name"] === "user");
     expect(badgeIcon).toBeTruthy();
-    expect(badgeIcon?.dataset["size"]).toBe("18");
+    expect(badgeIcon?.dataset["size"]).toBe("20");
   });
 
-  it("applies module soft-surface class on the icon badge span", () => {
+  it("colours the header glyph with the module accent, without a tinted badge (огляд 2026-09-04)", () => {
     render(
       <SettingsGroup title="Фінанси" icon="wallet" module="finyk">
         <div>child</div>
       </SettingsGroup>,
     );
 
-    // The badge span wrapping the Icon should carry the finyk soft bg class.
-    const badge = document.querySelector("span.bg-finyk-soft");
-    expect(badge).toBeTruthy();
+    const glyph = document.querySelector('[data-name="wallet"]');
+    expect(glyph).toBeTruthy();
+    expect(glyph?.className).toContain("text-finyk");
+    expect(document.querySelector("span.bg-finyk-soft")).toBeNull();
   });
 
-  it("uses neutral surface class when no module is given", () => {
+  it("uses the muted glyph colour when no module is given", () => {
     render(
       <SettingsGroup title="Загальне" icon="settings">
         <div>child</div>
       </SettingsGroup>,
     );
 
-    const badge = document.querySelector("span.bg-surface-soft-glass");
-    expect(badge).toBeTruthy();
+    const glyph = document.querySelector('[data-name="settings"]');
+    expect(glyph?.className).toContain("text-muted");
+    expect(document.querySelector("span.bg-surface-soft-glass")).toBeNull();
   });
 
   it("expands children on button click", () => {

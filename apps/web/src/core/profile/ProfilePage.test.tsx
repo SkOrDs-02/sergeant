@@ -8,20 +8,12 @@ import {
   waitFor,
   within,
 } from "@testing-library/react";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation, useNavigationType } from "react-router-dom";
+import { ToastProvider, useToast } from "@shared/hooks/useToast";
 import { expandAllCollapsedSections } from "../../test/helpers/collapsibleSection";
 import { messages } from "@shared/i18n/uk";
 
 // ── Mocks ────────────────────────────────────────────────────
-
-const navigateMock = vi.fn();
-vi.mock("react-router-dom", async () => {
-  const actual =
-    await vi.importActual<typeof import("react-router-dom")>(
-      "react-router-dom",
-    );
-  return { ...actual, useNavigate: () => navigateMock };
-});
 
 const updateUserMock =
   vi.fn<
@@ -61,17 +53,6 @@ vi.mock("@shared/hooks/useOnlineStatus", () => ({
   useOnlineStatus: () => useOnlineStatusMock(),
 }));
 
-const toastSuccessMock = vi.fn();
-const toastErrorMock = vi.fn();
-const toastShowMock = vi.fn();
-vi.mock("@shared/hooks/useToast", () => ({
-  useToast: () => ({
-    success: toastSuccessMock,
-    error: toastErrorMock,
-    show: toastShowMock,
-  }),
-}));
-
 const mockUser = {
   id: "u-1",
   email: "test@example.com",
@@ -98,14 +79,57 @@ vi.mock("../auth/AuthContext.jsx", () => ({
   useAuthOptional: () => mockAuthValue,
 }));
 
+// Огляд 2026-09-04: серверна памʼять і PIN-блокування рендеряться в
+// Профілі, але тягнуть React Query і AppLockProvider — власні тести в
+// `AiMemorySection.test.tsx` / `security/AppLockSettings.test.tsx`.
+vi.mock("./AiMemorySection", () => ({
+  AiMemorySection: () => <div data-testid="ai-memory-section" />,
+}));
+vi.mock("../security/AppLockSettings", () => ({
+  AppLockSettings: () => <div data-testid="app-lock-settings" />,
+}));
+
 import { ProfilePage } from "./ProfilePage";
+
+// Замість моків `useNavigate` і `useToast` (vi.mock-кап 5 на файл) —
+// справжні `MemoryRouter` + `ToastProvider` і зонд, що виводить у DOM
+// поточний шлях, тип навігації (REPLACE для `navigate(..., { replace })`)
+// та живі тости з їхніми action-кнопками.
+function Probe() {
+  const location = useLocation();
+  const navigationType = useNavigationType();
+  const { toasts } = useToast();
+  return (
+    <div
+      data-testid="probe"
+      data-path={location.pathname}
+      data-nav={navigationType}
+    >
+      {toasts.map((t) => (
+        <div key={t.id} data-testid={`toast-${t.type}`}>
+          {t.msg}
+          {t.action ? <span>{t.action.label}</span> : null}
+        </div>
+      ))}
+    </div>
+  );
+}
 
 function renderPage() {
   return render(
     <MemoryRouter>
-      <ProfilePage />
+      <ToastProvider>
+        <ProfilePage />
+        <Probe />
+      </ToastProvider>
     </MemoryRouter>,
   );
+}
+
+function expectRedirectedToSignIn() {
+  const probe = screen.getByTestId("probe");
+  expect(probe).toHaveAttribute("data-path", "/sign-in");
+  expect(probe).toHaveAttribute("data-nav", "REPLACE");
 }
 
 // ── Tests ────────────────────────────────────────────────────
@@ -225,7 +249,9 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(false);
       renderPage();
       expect(
-        screen.getByText("Офлайн, редагування профілю тимчасово недоступне"),
+        screen.getByText(
+          "Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.",
+        ),
       ).toBeInTheDocument();
     });
 
@@ -233,7 +259,9 @@ describe("ProfilePage", () => {
       useOnlineStatusMock.mockReturnValue(true);
       renderPage();
       expect(
-        screen.queryByText("Офлайн, редагування профілю тимчасово недоступне"),
+        screen.queryByText(
+          "Офлайн. Редагувати профіль можна буде, щойно зʼявиться мережа.",
+        ),
       ).not.toBeInTheDocument();
     });
 
@@ -329,7 +357,7 @@ describe("ProfilePage", () => {
       await waitFor(() =>
         expect(screen.getByText("Не вдалося оновити імʼя")).toBeInTheDocument(),
       );
-      expect(toastErrorMock).not.toHaveBeenCalled();
+      expect(screen.queryByTestId("toast-error")).not.toBeInTheDocument();
       expect(saveBtn).not.toBeDisabled();
     });
   });
@@ -365,24 +393,18 @@ describe("ProfilePage", () => {
       const logoutBtn = screen.getByRole("button", { name: "Вийти" });
       fireEvent.click(logoutBtn);
       await waitFor(() => expect(logoutMock).toHaveBeenCalled());
-      await waitFor(() =>
-        expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано"),
-      );
+      await screen.findByText("Ти вийшов з акаунта");
       // Redirect to the auth surface, not the hub root (browser-QA (a)).
-      expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
+      expectRedirectedToSignIn();
     });
 
     it("shows error toast when logout throws", async () => {
       logoutMock.mockRejectedValueOnce(new Error("network"));
       renderPage();
       fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
-      await waitFor(() =>
-        expect(toastErrorMock).toHaveBeenCalledWith(
-          "Не вдалося вийти",
-          undefined,
-          expect.objectContaining({ label: "Повторити" }),
-        ),
-      );
+      const errorToast = await screen.findByTestId("toast-error");
+      expect(errorToast).toHaveTextContent("Не вдалося вийти");
+      expect(within(errorToast).getByText("Повторити")).toBeInTheDocument();
     });
   });
 
@@ -422,10 +444,8 @@ describe("ProfilePage", () => {
         within(dialog).getByRole("button", { name: "Все одно вийти" }),
       );
 
-      await waitFor(() =>
-        expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано"),
-      );
-      expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true });
+      await screen.findByText("Ти вийшов з акаунта");
+      expectRedirectedToSignIn();
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     });
 
@@ -456,10 +476,8 @@ describe("ProfilePage", () => {
       // Сесія лишається живою — жодного сигналу «ви вийшли», жодного
       // редиректу на екран входу. Це саме те, що мало б зламатись, якби
       // `cancelled` ігнорувався після `await logout(...)`.
-      expect(toastSuccessMock).not.toHaveBeenCalledWith("Вихід виконано");
-      expect(navigateMock).not.toHaveBeenCalledWith("/sign-in", {
-        replace: true,
-      });
+      expect(screen.queryByText("Ти вийшов з акаунта")).not.toBeInTheDocument();
+      expect(screen.getByTestId("probe")).toHaveAttribute("data-path", "/");
       // Кнопка "Вийти" повертається в звичайний стан — не залипає у
       // loading, ніби вихід досі триває.
       expect(screen.getByRole("button", { name: "Вийти" })).not.toBeDisabled();

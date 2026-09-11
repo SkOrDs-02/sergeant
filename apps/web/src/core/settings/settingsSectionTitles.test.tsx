@@ -163,7 +163,6 @@ interface StaticCase {
 }
 
 const STATIC_CASES: readonly StaticCase[] = [
-  { id: "dashboard", file: join(HERE, "DashboardSection.tsx") },
   { id: "plan", file: join(HERE, "PlanSection.tsx") },
   {
     id: "capabilities",
@@ -179,13 +178,9 @@ const STATIC_CASES: readonly StaticCase[] = [
   { id: "fizruk", file: join(HERE, "FizrukSection.tsx") },
   { id: "finyk", file: join(HERE, "FinykSection.tsx") },
   { id: "nutrition", file: join(HERE, "NutritionSection.tsx") },
-  {
-    id: "privacy",
-    file: join(HERE, "PrivacySection.tsx"),
-    expressionValue: messages.privacy.lock.sectionTitle,
-  },
-  { id: "pwa", file: join(HERE, "PWASection.tsx") },
-  { id: "dataExport", file: join(HERE, "DataExportSection.tsx") },
+  // Огляд 2026-09-04: `dashboard`, `privacy`, `pwa`, `dataExport` тепер
+  // читають заголовок із каталогу через `settingsSectionTitle(id)` — парність
+  // у них за побудовою, як у Notifications/AI/Experimental вище.
 ];
 
 describe("V-7: full catalog — static source parity (14 sections, no render)", () => {
@@ -198,8 +193,19 @@ describe("V-7: full catalog — static source parity (14 sections, no render)", 
     },
   );
 
-  it("covers every catalog id except the three render-tested above", () => {
-    const renderTested = new Set(["notifications", "ai", "experimental"]);
+  it("covers every catalog id except the ones that read the catalog directly", () => {
+    // Секції, що беруть заголовок через `settingsSectionTitle(id)`, мають
+    // парність за побудовою (три перевірені рендером вище + чотири з огляду
+    // 2026-09-04).
+    const renderTested = new Set([
+      "notifications",
+      "ai",
+      "experimental",
+      "dashboard",
+      "privacy",
+      "pwa",
+      "dataExport",
+    ]);
     const catalogIds = SETTINGS_SECTIONS_CATALOG.map((s) => s.id).filter(
       (id) => !renderTested.has(id),
     );

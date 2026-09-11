@@ -237,7 +237,7 @@ describe("FinykSection", () => {
   // V-13 (profile/settings deep audit 2026-08-08, §«Вкладка Розділи») —
   // без `module="finyk"` іконка секції рендериться нейтрально-сірою.
   // Перевіряємо, що бейдж іконки несе саме finyk-акцент.
-  it("renders the section icon badge with the finyk module accent", async () => {
+  it("renders the section glyph with the finyk module accent (без тонованого квадрата, огляд 2026-09-04)", async () => {
     mockedSyncState.mockResolvedValue({
       status: "disconnected",
       webhookActive: false,
@@ -249,10 +249,7 @@ describe("FinykSection", () => {
     await waitFor(() => {
       expect(screen.getByText(/Токен відправляється на сервер/)).toBeTruthy();
     });
-    const badge = container.querySelector("svg")?.closest("span");
+    const badge = container.querySelector(`.text-${"finyk"}`);
     expect(badge).not.toBeNull();
-    expect(badge?.className).toContain("bg-finyk-soft");
-    expect(badge?.className).toContain("border-finyk-soft-border");
-    expect(badge?.className).toContain("text-finyk");
   });
 });

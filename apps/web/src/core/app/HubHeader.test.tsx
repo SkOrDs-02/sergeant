@@ -125,19 +125,11 @@ describe("HubHeader", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("shows the privacy status row in the overflow menu only when onOpenPrivacy is provided", () => {
-    const privacyName = /Тільки ти/i;
-
-    const { unmount } = render(<HubHeader {...baseProps()} />);
-    fireEvent.click(screen.getByRole("button", { name: "Більше" }));
-    expect(screen.queryByText(privacyName)).not.toBeInTheDocument();
-    unmount();
-
-    const onOpenPrivacy = vi.fn();
-    render(<HubHeader {...baseProps()} onOpenPrivacy={onOpenPrivacy} />);
-    fireEvent.click(screen.getByRole("button", { name: "Більше" }));
-    fireEvent.click(screen.getByRole("button", { name: privacyName }));
-    expect(onOpenPrivacy).toHaveBeenCalledTimes(1);
+  it("не рендерить меню «⋯»: тема й приватність живуть у Налаштуваннях (огляд 2026-09-04)", () => {
+    render(<HubHeader {...baseProps()} />);
+    expect(
+      screen.queryByRole("button", { name: "Більше" }),
+    ).not.toBeInTheDocument();
   });
 
   it("forwards notifications to the bell", () => {

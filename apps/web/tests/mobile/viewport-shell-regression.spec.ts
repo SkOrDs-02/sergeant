@@ -46,7 +46,9 @@ test("settings privacy hash scroll keeps the Hub shell pinned", async ({
   await seedFTUX(page, "post-ftux");
   await page.goto("/?tab=settings#settings-privacy");
 
-  await expect(page.getByPlaceholder("Пошук налаштувань…")).toBeVisible();
+  await expect(
+    page.getByRole("tablist", { name: "Групи налаштувань" }),
+  ).toBeVisible();
   await expect.poll(() => documentScrollTop(page)).toBe(0);
 
   const nav = page.getByRole("navigation", { name: "Розділи хабу" });

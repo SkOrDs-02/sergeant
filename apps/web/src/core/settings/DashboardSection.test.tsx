@@ -59,7 +59,7 @@ function renderSection(): ReturnType<typeof render> {
  * тому вони й проходять без розкриття.
  */
 function openSection() {
-  fireEvent.click(screen.getByRole("button", { name: "Дашборд" }));
+  fireEvent.click(screen.getByRole("button", { name: "Головна" }));
 }
 
 beforeEach(() => {
@@ -74,7 +74,7 @@ afterEach(() => {
 describe("DashboardSection", () => {
   it("renders the section header and both subgroups", () => {
     renderSection();
-    expect(screen.getByText("Дашборд")).toBeInTheDocument();
+    expect(screen.getByText("Головна")).toBeInTheDocument();
     expect(screen.getByText("Вигляд")).toBeInTheDocument();
     expect(screen.getByText("Розділи на головній")).toBeInTheDocument();
   });
@@ -120,42 +120,34 @@ describe("DashboardSection", () => {
     expect(stored.calmMode).toBe(true);
   });
 
-  it("toggles a dashboard module checkbox and blocks removing the last active one", () => {
+  it("toggles a dashboard module switch and blocks removing the last active one", () => {
     renderSection();
-    // `SettingsGroup` «Дашборд» стартує згорнутою — колапсований вміст
+    // `SettingsGroup` «Головна» стартує згорнутою — колапсований вміст
     // отримує `inert`, і `getByRole`/`getAllByRole` ігнорують inert-
-    // піддерево (на відміну від `getByText`, яке його бачить). Розгортаємо,
-    // як реальний користувач. «Розділи на головній» більше не другий
-    // рівень акордеона (Варіант A, §0.1) — її вміст видимий одразу.
-    fireEvent.click(screen.getByText("Дашборд"));
+    // піддерево. Розгортаємо, як реальний користувач.
+    fireEvent.click(screen.getByText("Головна"));
 
-    // `role="checkbox"` тут матчить лише plain-чекбокси зі списку модулів —
-    // тумблери «Вигляд» мають явний `role="switch"` і в цей запит не
-    // потрапляють.
-    const checkboxes = screen.getAllByRole("checkbox");
-    expect(checkboxes.length).toBeGreaterThan(1);
+    // Огляд 2026-09-04: модулі — ті самі `Switch`, що й решта тумблерів
+    // (доти тут був нативний чекбокс — другий словник для тієї ж дії).
+    const switches = ["Фінік", "Фізрук", "Рутина", "Їжа"].map((label) =>
+      screen.getByRole("switch", { name: label }),
+    );
 
     // Вимикаємо всі модулі, крім одного — останній лишається заблокованим
-    // (SettingsSubGroup «Розділи на головній»: «принаймні один активний»).
-    for (let i = 0; i < checkboxes.length - 1; i += 1) {
-      fireEvent.click(checkboxes[i]!);
+    // («принаймні один активний»).
+    for (let i = 0; i < switches.length - 1; i += 1) {
+      fireEvent.click(switches[i]!);
     }
-    // Ревʼю знахідка #5 (2026-08-08): назва тесту обіцяла "toggles a
-    // checkbox", але жодне поле фактично не перевіряло, що клік справді
-    // зняв прапорець і що вибір ліг у `webKVStore`. Ловимо обидва.
-    expect(checkboxes[0]).not.toBeChecked();
+    expect(switches[0]).not.toBeChecked();
     expect(getActiveModules(webKVStore)).toHaveLength(1);
 
-    const lastChecked = checkboxes[checkboxes.length - 1]!;
+    const lastChecked = switches[switches.length - 1]!;
     expect(lastChecked).toBeChecked();
     fireEvent.click(lastChecked);
     // Стан не міняється: warning-тост блокує зняття останнього активного.
     expect(lastChecked).toBeChecked();
     expect(getActiveModules(webKVStore)).toHaveLength(1);
 
-    // Той самий user-visible сигнал, без якого клік виглядає як зламана
-    // кнопка (класична знахідка №1 цього репо, per review) — гард без
-    // видимого warning-тоста непомітний для користувача.
     const toastMsg = screen.getByText(
       "Щонайменше один модуль має бути активним",
     );
@@ -206,9 +198,11 @@ describe("DashboardSection", () => {
   // мала покриття взагалі.
   it("re-enables a previously disabled module and restores it to the active set", () => {
     renderSection();
-    fireEvent.click(screen.getByText("Дашборд"));
+    fireEvent.click(screen.getByText("Головна"));
 
-    const checkboxes = screen.getAllByRole("checkbox");
+    const checkboxes = ["Фінік", "Фізрук", "Рутина", "Їжа"].map((label) =>
+      screen.getByRole("switch", { name: label }),
+    );
     const target = checkboxes[0]!;
     expect(target).toBeChecked();
 
