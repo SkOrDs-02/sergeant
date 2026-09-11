@@ -2,7 +2,6 @@
 
 export const finykPageMessages = {
   reportHeading: "Витрати",
-  addLimitOrGoal: "+ Додати ліміт або ціль",
   budgetOverLimit: "перевищено",
   budgetOverSixtyPercent: "· понад 60% ліміту",
   transactionsFilterLabel: "Фільтр транзакцій",
@@ -96,6 +95,19 @@ export const finykPageMessages = {
     activeOne: "активна",
     activeMany: "активних",
     amountUnknown: "сума невідома",
+    /**
+     * Комбінований пікер «Запланувати» (founder-UX audit round 2, F2):
+     * замінює три різні кнопки (підписка / ліміт-або-ціль / дубль
+     * підписки) на один тригер + `DropdownMenu` за зразком
+     * `AssetsTable.tsx` («+ Актив» → «Актив» / «Мені винні»).
+     */
+    schedule: "Запланувати",
+    scheduleAria: "Що запланувати",
+    addLimitLabel: "Ліміт",
+    addLimitDescription: "Місячна або тижнева межа витрат за категоріями",
+    addGoalLabel: "Ціль",
+    addGoalDescription: "Накопичення на конкретну суму",
+    addSubscriptionDescription: "Регулярний платіж, що повторюється щомісяця",
   },
   monthStrip: {
     groupAriaPrefix: "Витрати за днями",

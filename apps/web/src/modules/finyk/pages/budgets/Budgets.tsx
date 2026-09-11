@@ -33,7 +33,10 @@ import {
 import { getMonthlySummary } from "@sergeant/finyk-domain/domain/selectors";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import { MonthlyPlanCard } from "../../components/budgets/MonthlyPlanCard";
-import { AddBudgetForm } from "../../components/budgets/AddBudgetForm";
+import {
+  AddBudgetForm,
+  type BudgetFormType,
+} from "../../components/budgets/AddBudgetForm";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { useToast } from "@shared/hooks/useToast";
 import {
@@ -55,7 +58,9 @@ import type {
 } from "@sergeant/finyk-domain/domain/types";
 import type { MonoJarDto } from "@shared/api";
 import { messages } from "@shared/i18n/uk";
-import { Button } from "@shared/components/ui/Button";
+import { QuickActionButton } from "../AssetsBars";
+import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
+import { Icon } from "@shared/components/ui/Icon";
 
 // Mirrors `useStorage`'s MonthlyPlan shape (required income/expense/
 // savings, each a raw input value). Replicated inline here to avoid
@@ -122,6 +127,15 @@ export interface BudgetsProps {
    * розширювати його типи заради сусіднього блоку не варто.
    */
   planningSlot?: ReactNode;
+  /**
+   * Пункт «Підписка» комбінованого пікера «Запланувати» (founder-UX audit
+   * round 2, F2) делегує сюди — сама форма підписки живе всередині
+   * `planningSlot` (`PlanningSubscriptions`), у ІНШОМУ `useAssetsState`-
+   * інстансі, тож `Budgets` не може відкрити її напряму. `FinykApp` реалізує
+   * цей колбек через `openSubscriptionSignal`-лічильник, переданий у
+   * `PlanningSubscriptions`.
+   */
+  onAddSubscription?: () => void;
 }
 
 /**
@@ -144,6 +158,7 @@ export function Budgets({
   monthlyPlanFirstRunHint = false,
   onDismissMonthlyPlanFirstRunHint,
   planningSlot,
+  onAddSubscription,
 }: BudgetsProps) {
   const toast = useToast();
   const { realTx, loadingTx, jars = [] } = mono;
@@ -219,6 +234,9 @@ export function Budgets({
   const factIncome = monthlySummary.income;
   const [editIdx, setEditIdx] = useState<number | null>(null);
   const [showForm, setShowForm] = useState(false);
+  // Тип, з яким відкриється `AddBudgetForm` — обирається пунктом
+  // «Ліміт» / «Ціль» комбінованого пікера «Запланувати» (F2).
+  const [formType, setFormType] = useState<BudgetFormType>("limit");
   const expenseCategoryList = useMemo(
     () => buildExpenseCategoryList(customCategories, { excludeIncome: false }),
     [customCategories],
@@ -404,6 +422,15 @@ export function Budgets({
     setShowForm(false);
   }, []);
 
+  // Пункти комбінованого пікера «Запланувати» (F2): «Ліміт»/«Ціль»
+  // відкривають ЦЮ форму на потрібній вкладці, «Підписка» делегує в
+  // `onAddSubscription` (форма підписки живе в іншому React-піддереві —
+  // `PlanningSubscriptions`, див. коментар на `BudgetsProps.onAddSubscription`).
+  const openBudgetForm = useCallback((type: BudgetFormType) => {
+    setFormType(type);
+    setShowForm(true);
+  }, []);
+
   // DataState contract: `data === undefined` triggers the skeleton slot.
   // First-paint of the Budgets page treats "loading and no realTx yet" as
   // initial-load; once data lands we keep rendering even on background
@@ -515,18 +542,56 @@ export function Budgets({
                 existingBudgets={budgets}
                 expenseCategoryList={expenseCategoryList}
                 jars={jars}
+                initialType={formType}
                 onSubmit={handleAddBudget}
                 onCancel={handleCancelForm}
               />
             ) : (
-              <Button
-                type="button"
-                variant="finyk-soft"
-                onClick={() => setShowForm(true)}
-                className="group w-full rounded-2xl shadow-soft"
-              >
-                {messages.finyk.addLimitOrGoal}
-              </Button>
+              // Комбінований пікер «Запланувати» (founder-UX audit round 2,
+              // F2) — замінює три розкидані афоданси («+ Підписка» вище
+              // секцій, ця кнопка внизу, дубль у RecurringSuggestions) на
+              // один тригер + `DropdownMenu`, за зразком `AssetsTable.tsx`
+              // («+ Актив» → «Актив» / «Мені винні»). Дубль у
+              // `RecurringSuggestions` лишається навмисно — це data-driven
+              // підказка на конкретний виявлений кандидат, не CTA-бар.
+              <DropdownMenu
+                ariaLabel={messages.finyk.planning.scheduleAria}
+                placement="bottom-start"
+                items={[
+                  {
+                    type: "item",
+                    id: "subscription",
+                    label: messages.finyk.planning.addSubscription,
+                    description:
+                      messages.finyk.planning.addSubscriptionDescription,
+                    icon: <Icon name="refresh-cw" size={16} aria-hidden />,
+                    onSelect: () => onAddSubscription?.(),
+                  },
+                  {
+                    type: "item",
+                    id: "limit",
+                    label: messages.finyk.planning.addLimitLabel,
+                    description: messages.finyk.planning.addLimitDescription,
+                    icon: <Icon name="flag" size={16} aria-hidden />,
+                    onSelect: () => openBudgetForm("limit"),
+                  },
+                  {
+                    type: "item",
+                    id: "goal",
+                    label: messages.finyk.planning.addGoalLabel,
+                    description: messages.finyk.planning.addGoalDescription,
+                    icon: <Icon name="target" size={16} aria-hidden />,
+                    onSelect: () => openBudgetForm("goal"),
+                  },
+                ]}
+                trigger={
+                  <QuickActionButton
+                    label={messages.finyk.planning.schedule}
+                    tone="finyk"
+                    className="rounded-2xl shadow-soft"
+                  />
+                }
+              />
             )}
           </div>
         </div>
