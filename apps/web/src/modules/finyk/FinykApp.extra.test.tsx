@@ -164,7 +164,13 @@ vi.mock("@shared/lib/modules/crossModulePrompt", () => ({
   tryShowCrossModulePrompt: vi.fn(),
 }));
 
-vi.mock("@shared/lib/modules/hubNav", () => ({
+// ЧАСТКОВИЙ мок: підміняємо лише `openHubModuleWithAction`, решту лишаємо
+// справжньою. Повна підміна ламала збір файлу, щойно `appPaths.ts` почав
+// імпортувати звідси `HUB_MODULE_IDS` — мок його не віддавав, і падав увесь
+// suite на рівні імпорту, а не асерції. `importOriginal` знімає цей клас
+// поломок назавжди: нові експорти доїжджають самі.
+vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("@shared/lib/modules/hubNav")>()),
   openHubModuleWithAction: vi.fn(),
 }));
 

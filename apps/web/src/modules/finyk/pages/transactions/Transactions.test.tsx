@@ -1,7 +1,13 @@
 // @vitest-environment jsdom
 import React from "react";
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
-import { render, screen, fireEvent, cleanup } from "@testing-library/react";
+import {
+  render,
+  screen,
+  fireEvent,
+  cleanup,
+  within,
+} from "@testing-library/react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { MemoryRouter } from "react-router-dom";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
@@ -448,6 +454,18 @@ describe("Transactions page shell", () => {
     expect(
       screen.queryByRole("button", { name: "Змінити категорію" }),
     ).not.toBeInTheDocument();
+    // Категорії живуть у згорнутому `CategoryPickerField`, а не пласким
+    // списком кнопок: спершу тап по тригеру, і лише потім по опції. Тригер
+    // шукаємо за `aria-expanded` всередині секції «Категорія та нотатка», а
+    // не за назвою авто-категорії — інакше тест ламатиметься щоразу, коли
+    // зміниться правило авто-категоризації «Сільпо».
+    const categorySection = screen.getByRole("region", {
+      name: "Категорія та нотатка",
+    });
+    expect(screen.queryByRole("button", { name: "Транспорт" })).toBeNull();
+    fireEvent.click(
+      within(categorySection).getByRole("button", { expanded: false }),
+    );
     fireEvent.click(screen.getByRole("button", { name: "Транспорт" }));
     expect(overrideCategory).toHaveBeenCalledWith("tx-1", "transport");
   });
