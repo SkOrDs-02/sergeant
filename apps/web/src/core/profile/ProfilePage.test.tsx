@@ -126,10 +126,16 @@ function renderPage() {
   );
 }
 
-function expectRedirectedToSignIn() {
-  const probe = screen.getByTestId("probe");
-  expect(probe).toHaveAttribute("data-path", "/sign-in");
-  expect(probe).toHaveAttribute("data-nav", "REPLACE");
+async function expectRedirectedToSignIn() {
+  // `waitFor`, а не синхронна перевірка: тост і `navigate()` стоять поруч
+  // у `handleLogout`, але React 18 батчить оновлення — поява тосту НЕ
+  // означає, що зонд уже перемалювався з новим шляхом. Синхронний варіант
+  // читав старий `/` і падав рівно тому, що встигав першим.
+  await waitFor(() => {
+    const probe = screen.getByTestId("probe");
+    expect(probe).toHaveAttribute("data-path", "/sign-in");
+    expect(probe).toHaveAttribute("data-nav", "REPLACE");
+  });
 }
 
 // ── Tests ────────────────────────────────────────────────────
@@ -395,7 +401,7 @@ describe("ProfilePage", () => {
       await waitFor(() => expect(logoutMock).toHaveBeenCalled());
       await screen.findByText("Ти вийшов з акаунта");
       // Redirect to the auth surface, not the hub root (browser-QA (a)).
-      expectRedirectedToSignIn();
+      await expectRedirectedToSignIn();
     });
 
     it("shows error toast when logout throws", async () => {
@@ -445,7 +451,7 @@ describe("ProfilePage", () => {
       );
 
       await screen.findByText("Ти вийшов з акаунта");
-      expectRedirectedToSignIn();
+      await expectRedirectedToSignIn();
       expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument();
     });
 

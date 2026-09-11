@@ -101,10 +101,11 @@ vi.mock("../observability/analytics", async () => {
   };
 });
 
-vi.mock("@shared/lib/adapters/haptic", () => ({
-  hapticTap: vi.fn(),
-  hapticSuccess: vi.fn(),
-}));
+// Haptic НЕ мокається навмисно: у jsdom адаптер і так no-op —
+// `canVibrate()` перевіряє `navigator.vibrate` (його тут немає), а
+// `prefersReducedMotion()` гардить відсутній `matchMedia`. Мок лише
+// з'їдав слот у cap-і `vi.mock` (5 на файл), не даючи жодного сигналу:
+// жоден тест тут не перевіряє виклики haptic.
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
@@ -220,11 +221,15 @@ describe("ModuleChecklist extended coverage", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
     expect(
-      screen.queryByRole("button", { name: "Додати першу витрату" }),
+      screen.queryByRole("checkbox", { name: "Додати першу витрату" }),
     ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
-    const addExpense = screen.getByRole("button", {
+    // Рядок кроку — `<button role="checkbox" aria-checked>`
+    // (`ModuleChecklist.tsx:308-318`), тож шукати його треба саме як
+    // checkbox: явний `role` перекриває implicit-роль тега, і
+    // `getByRole("button")` його не бачить.
+    const addExpense = screen.getByRole("checkbox", {
       name: "Додати першу витрату",
     });
     fireEvent.click(addExpense);
