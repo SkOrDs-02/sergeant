@@ -5,6 +5,7 @@ import {
   filterVisibleAccounts,
 } from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { computeFinykSchedule, startOfToday } from "../lib/upcomingSchedule";
+import { useDebtAutoLink } from "../hooks/useDebtAutoLink";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
 import type { MonoAccount } from "@sergeant/finyk-domain/lib/accounts";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
@@ -129,6 +130,12 @@ export function useAssetsState({
     [manualExpenses, transactions],
   );
 
+  // Level 2 (2026-09-11): застосовує `Debt.autoLinkKeyword` до щойно
+  // завантаженого стану. Тут, а не в `AssetsLiabilitiesSection`, бо саме
+  // тут обидва входи (`manualDebts`, `linkableTransactions`) уже в
+  // пам'яті — нового fetch-у ефект не потребує.
+  useDebtAutoLink(manualDebts, linkableTransactions, setLinkedTxRole);
+
   const [showAssetForm, setShowAssetForm] = useState(false);
   const [showDebtForm, setShowDebtForm] = useState(initialOpenDebt);
   const [showRecvForm, setShowRecvForm] = useState(false);
@@ -147,6 +154,7 @@ export function useAssetsState({
     emoji: "\u{1F4B8}",
     totalAmount: "",
     dueDate: "",
+    autoLinkKeyword: "",
   });
   const [newRecv, setNewRecv] = useState({
     name: "",
@@ -260,7 +268,13 @@ export function useAssetsState({
   const openDebtForm = () => {
     setOpen((v) => ({ ...v, liabilities: true }));
     setEditingDebtId(null);
-    setNewDebt({ name: "", emoji: "", totalAmount: "", dueDate: "" });
+    setNewDebt({
+      name: "",
+      emoji: "",
+      totalAmount: "",
+      dueDate: "",
+      autoLinkKeyword: "",
+    });
     setShowDebtForm(true);
   };
 

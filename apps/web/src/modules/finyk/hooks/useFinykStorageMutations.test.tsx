@@ -323,6 +323,77 @@ describe("toggle helpers", () => {
       txLinks: { tx1: { role: "payment", amount: 100 } },
     });
   });
+
+  it("setLinkedTxRole з meta.auto ставить auto:true на привʼязці (Level 2)", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [{ id: "d1", linkedTxIds: [] }],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", "payment", 500, {
+      auto: true,
+    });
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: ["tx1"],
+      txLinks: { tx1: { role: "payment", amount: 500, auto: true } },
+    });
+  });
+
+  it("відвʼязування auto-привʼязки дописує id у autoLinkDismissedTxIds (anti-resurrection)", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "payment", amount: 500, auto: true } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", null);
+    expect((state["manualDebts"] as never[])[0]).toMatchObject({
+      linkedTxIds: [],
+      txLinks: {},
+      autoLinkDismissedTxIds: ["tx1"],
+    });
+  });
+
+  it("відвʼязування РУЧНОЇ привʼязки не чіпає autoLinkDismissedTxIds", () => {
+    const { slots, state } = makeSlots({
+      manualDebts: [
+        {
+          id: "d1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "payment", amount: 500 } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("d1", "tx1", "debt", null);
+    expect((state["manualDebts"] as never[])[0]).not.toHaveProperty(
+      "autoLinkDismissedTxIds",
+    );
+  });
+
+  it("відвʼязування auto-привʼязки receivable НЕ пише autoLinkDismissedTxIds (лише debt)", () => {
+    const { slots, state } = makeSlots({
+      receivables: [
+        {
+          id: "r1",
+          linkedTxIds: ["tx1"],
+          txLinks: { tx1: { role: "payment", amount: 500, auto: true } },
+        },
+      ],
+    });
+    const { result } = renderMutations(slots);
+
+    result.current.setLinkedTxRole("r1", "tx1", "receivable", null);
+    expect((state["receivables"] as never[])[0]).not.toHaveProperty(
+      "autoLinkDismissedTxIds",
+    );
+  });
 });
 
 describe("setSplitTx", () => {

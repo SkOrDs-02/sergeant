@@ -401,6 +401,41 @@ describe("AssetsTxPickerView", () => {
       );
     });
 
+    it("marks an auto-linked row as «· авто» (Level 2, 2026-09-11) but not a manual one", () => {
+      const manualDebts = [
+        {
+          id: "d1",
+          name: "Кредитка ПриватБанк",
+          emoji: "💸",
+          amount: 10000,
+          linkedTxIds: ["tx-auto", "tx-manual"],
+          txLinks: {
+            "tx-auto": { role: "payment", amount: 20, auto: true },
+            "tx-manual": { role: "payment", amount: 20 },
+          },
+        },
+      ];
+      render(
+        <AssetsTxPickerView
+          {...baseProps()}
+          manualDebts={manualDebts as never}
+          transactions={[
+            mkTx({ id: "tx-auto", amount: -2000, description: "Кредит" }),
+            mkTx({ id: "tx-manual", amount: -2000, description: "Магазин" }),
+          ]}
+          txPicker={{ type: "debt", id: "d1" }}
+        />,
+      );
+      // Обидва рядки мають той самий підпис ролі («Сплата боргу») — мітка
+      // «· авто» відрізняє лише той, чия привʼязка прийшла від правила.
+      const roleLabels = screen.getAllByText(/Сплата боргу/);
+      expect(roleLabels).toHaveLength(2);
+      const withAuto = roleLabels.filter((el) =>
+        el.textContent?.includes("авто"),
+      );
+      expect(withAuto).toHaveLength(1);
+    });
+
     it("renders a receivable header with the active-asset wording", () => {
       const receivables = [
         {

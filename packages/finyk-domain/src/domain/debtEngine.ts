@@ -40,7 +40,28 @@ export type LinkedTxRole = "source" | "increase" | "payment";
 export interface LinkedTxMeta {
   role: LinkedTxRole;
   amount: number;
+  /** Привʼязка створена авто-правилом (§ Level 2, `debtAutoLink.ts`), а не
+   * рукою користувача — позначка для UI, не бере участі в математиці. */
+  auto?: boolean;
 }
+
+/**
+ * Спільна сигнатура мутатора привʼязки — той самий контракт, яким володіє
+ * `useFinykStorageMutations.setLinkedTxRole` і який приймають усі UI, що
+ * привʼязують/відвʼязують транзакцію до боргу чи дебіторки
+ * (`DebtTxLinkSection`, `AssetsDebtTxPicker`, `ManualExpenseSheet`…).
+ * Винесено в один тип, щоб сигнатура не розповзалась inline-копіями по
+ * кожному файлу (Hard Rule #18 — кожна копія важить у ліміт 600 рядків).
+ */
+export type SetLinkedTxRole = (
+  id: string,
+  txId: string,
+  type: "debt" | "receivable",
+  role: LinkedTxRole | null,
+  amountUAH?: number,
+  /** `auto: true` — привʼязку пише авто-правило (§ Level 2), не людина. */
+  meta?: { auto?: boolean },
+) => void;
 
 export interface Debt {
   id: string;
@@ -52,6 +73,22 @@ export interface Debt {
   emoji?: string;
   dueDate?: string | null;
   currency?: string;
+  /**
+   * Ключове слово авто-привʼязки (§ Level 2, `debtAutoLink.ts`, канон
+   * `docs/product/modules/finyk.md` § Журнал рішень 2026-09-11) —
+   * той самий контракт, що `Subscription.keyword`
+   * (`subscriptionUtils.getLastTxForSubscription`): регістронезалежний
+   * підрядок `description`. Optional — старі записи без поля просто не
+   * матчать нічого (backward compatible, персистується як JSON).
+   */
+  autoLinkKeyword?: string;
+  /**
+   * Id транзакцій, які людина ВІДВʼЯЗАЛА від авто-створеної привʼязки.
+   * Без цього списку матчер того самого правила прив'язав би їх назад
+   * на наступному проході — той самий клас бага, що tombstone-
+   * resurrection у звичках routine.
+   */
+  autoLinkDismissedTxIds?: string[];
   [extra: string]: unknown;
 }
 
