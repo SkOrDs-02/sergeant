@@ -215,26 +215,29 @@ describe("ModuleChecklist extended coverage", () => {
     vi.useRealTimers();
   });
 
-  it("collapses, expands, fires step actions, and dismisses", () => {
+  it("collapses, expands, fires step actions (as navigation, not completion), and dismisses", () => {
     const onAction = vi.fn();
     renderChecklist(<ModuleChecklist moduleId="finyk" onAction={onAction} />);
 
     fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
     expect(
-      screen.queryByRole("checkbox", { name: "Додати першу витрату" }),
+      screen.queryByRole("button", { name: "Додати першу витрату" }),
     ).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: /Фінік/ }));
-    // Рядок кроку — `<button role="checkbox" aria-checked>`
-    // (`ModuleChecklist.tsx:308-318`), тож шукати його треба саме як
-    // checkbox: явний `role` перекриває implicit-роль тега, і
-    // `getByRole("button")` його не бачить.
-    const addExpense = screen.getByRole("checkbox", {
+    // F3 (2026-09-11): a step row is a plain navigation `<button>` now —
+    // never `role="checkbox"` — so a tap forwards the action but does
+    // NOT check the step off (no signal proved it here).
+    const addExpense = screen.getByRole("button", {
       name: "Додати першу витрату",
     });
     fireEvent.click(addExpense);
 
     expect(onAction).toHaveBeenCalledWith("add_expense");
+    expect(addExpense).not.toHaveAttribute("aria-checked");
+    expect(
+      JSON.parse(localStorage.getItem("finyk_checklist_v1") ?? "{}"),
+    ).toMatchObject({ completedSteps: [] });
 
     fireEvent.click(screen.getByRole("button", { name: "Сховати чекліст" }));
     expect(screen.queryByText("Фінік: перші кроки")).not.toBeInTheDocument();

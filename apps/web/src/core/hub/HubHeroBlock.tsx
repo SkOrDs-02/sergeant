@@ -13,6 +13,7 @@ import { FirstActionHeroCard } from "../onboarding/FirstActionSheet";
 import { CrossModulePreview } from "./CrossModulePreview";
 import { ReEngagementCard } from "../onboarding/ReEngagementCard";
 import { ModuleChecklist } from "../onboarding/ModuleChecklist";
+import { markFinykAnalyticsViewed } from "../onboarding/useChecklistSignals";
 import { OnboardingProgress } from "../onboarding/OnboardingProgress";
 import { useFlag } from "../lib/featureFlags";
 import { OutcomeCard } from "./OutcomeCard";
@@ -113,6 +114,15 @@ export function HubHeroBlock({
           moduleId={primaryModule}
           accountCreatedAt={user?.createdAt ?? null}
           onAction={(action) => {
+            // F3 audit (2026-09-11): "Переглянути аналітику" has no other
+            // data trace to prove it — the fact of this successful
+            // navigation dispatch IS the honest signal (see
+            // `useChecklistSignals.ts`). Marked BEFORE the dispatch call
+            // below so it can never desync from "did the module actually
+            // open" — both run unconditionally together.
+            if (primaryModule === "finyk" && action === "view_analytics") {
+              markFinykAnalyticsViewed();
+            }
             openHubModuleWithAction(
               primaryModule as Parameters<typeof openHubModuleWithAction>[0],
               action as Parameters<typeof openHubModuleWithAction>[1],

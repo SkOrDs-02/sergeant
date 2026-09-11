@@ -4,14 +4,20 @@ import { fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { HubHeroBlock } from "./HubHeroBlock";
 
-const { flagMock, openActionMock } = vi.hoisted(() => ({
-  flagMock: vi.fn(),
-  openActionMock: vi.fn(),
-}));
+const { flagMock, openActionMock, markAnalyticsViewedMock } = vi.hoisted(
+  () => ({
+    flagMock: vi.fn(),
+    openActionMock: vi.fn(),
+    markAnalyticsViewedMock: vi.fn(),
+  }),
+);
 
 vi.mock("../lib/featureFlags", () => ({ useFlag: flagMock }));
 vi.mock("@shared/lib/modules/hubNav", () => ({
   openHubModuleWithAction: openActionMock,
+}));
+vi.mock("../onboarding/useChecklistSignals", () => ({
+  markFinykAnalyticsViewed: markAnalyticsViewedMock,
 }));
 vi.mock("../insights/TodayFocusCard", () => ({
   TodayFocusCard: ({ onAction }: { onAction: (module: string) => void }) => (
@@ -43,9 +49,14 @@ vi.mock("../onboarding/ReEngagementCard", () => ({
 }));
 vi.mock("../onboarding/ModuleChecklist", () => ({
   ModuleChecklist: ({ onAction }: { onAction: (action: string) => void }) => (
-    <button type="button" onClick={() => onAction("log")}>
-      checklist
-    </button>
+    <>
+      <button type="button" onClick={() => onAction("log")}>
+        checklist
+      </button>
+      <button type="button" onClick={() => onAction("view_analytics")}>
+        checklist-view-analytics
+      </button>
+    </>
   ),
 }));
 vi.mock("../onboarding/OnboardingProgress", () => ({
@@ -183,7 +194,27 @@ describe("HubHeroBlock", () => {
     });
     fireEvent.click(screen.getByText("checklist"));
     expect(openActionMock).toHaveBeenCalledWith("routine", "log");
+    expect(markAnalyticsViewedMock).not.toHaveBeenCalled();
     fireEvent.click(screen.getByText("cross preview"));
     expect(props.dismissCrossModulePreview).toHaveBeenCalled();
+  });
+
+  // F3 audit (2026-09-11), defect (г): "Переглянути аналітику" has no
+  // other data trace — the honest signal is the fact of a successful
+  // navigation dispatch, marked right alongside it.
+  it("marks Фінік analytics viewed when the checklist fires view_analytics for finyk", () => {
+    markAnalyticsViewedMock.mockClear();
+    renderHero({ showChecklist: true, primaryModule: "finyk" });
+    fireEvent.click(screen.getByText("checklist-view-analytics"));
+    expect(markAnalyticsViewedMock).toHaveBeenCalledTimes(1);
+    expect(openActionMock).toHaveBeenCalledWith("finyk", "view_analytics");
+  });
+
+  it("does not mark analytics viewed for view_analytics on a non-finyk module", () => {
+    markAnalyticsViewedMock.mockClear();
+    renderHero({ showChecklist: true, primaryModule: "routine" });
+    fireEvent.click(screen.getByText("checklist-view-analytics"));
+    expect(markAnalyticsViewedMock).not.toHaveBeenCalled();
+    expect(openActionMock).toHaveBeenCalledWith("routine", "view_analytics");
   });
 });

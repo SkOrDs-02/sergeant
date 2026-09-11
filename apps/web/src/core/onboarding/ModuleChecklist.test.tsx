@@ -1,11 +1,18 @@
 /** @vitest-environment jsdom */
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import type { ReactNode } from "react";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { ModuleChecklist } from "./ModuleChecklist";
+import { markFinykAnalyticsViewed } from "./useChecklistSignals";
 
 vi.mock("@shared/lib/adapters/haptic", () => ({
   hapticTap: vi.fn(),
@@ -41,30 +48,58 @@ describe("ModuleChecklist", () => {
     vi.restoreAllMocks();
   });
 
-  it("keeps earlier checklist steps checked when another checkbox is selected", () => {
+  // F3 audit (2026-09-11), defect (a): a row tap used to write
+  // `completedSteps` directly and unconditionally — tapping ANY step
+  // checked it off regardless of whether the underlying data backed it.
+  it("does not complete a step from a tap — a row is pure navigation now", () => {
     renderChecklist(<ModuleChecklist moduleId="finyk" />);
 
-    const addExpense = screen.getByRole("checkbox", {
-      name: "Додати першу витрату",
-    });
-    const setBudget = screen.getByRole("checkbox", {
+    const setBudget = screen.getByRole("button", {
       name: "Встановити бюджет",
     });
-
-    fireEvent.click(addExpense);
     fireEvent.click(setBudget);
 
-    expect(addExpense).toHaveAttribute("aria-checked", "true");
-    expect(setBudget).toHaveAttribute("aria-checked", "true");
-    expect(screen.getByText("2/4 виконано")).toBeInTheDocument();
+    // Still shows as not-done — no signal proved it, and the tap must not
+    // have marked it done on its own.
+    expect(setBudget).not.toHaveAttribute("aria-checked");
+    expect(screen.getByText("0/4 виконано")).toBeInTheDocument();
     expect(
       JSON.parse(localStorage.getItem("finyk_checklist_v1") ?? "{}"),
-    ).toMatchObject({
-      completedSteps: ["add_expense", "set_budget"],
-    });
+    ).toMatchObject({ completedSteps: [] });
   });
 
-  it("ticks steps proven by real data without any tap", () => {
+  // F3 audit (2026-09-11), defect (a): regression test for the exact
+  // reported symptom — "тапнув «Встановити бюджет» → пункт закреслився
+  // → нікуди не перейшло". The row must still forward the action for
+  // navigation; it just must not ALSO check itself off.
+  it("still forwards the action for navigation on tap, without completing the step", () => {
+    const onAction = vi.fn();
+    renderChecklist(<ModuleChecklist moduleId="finyk" onAction={onAction} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "Встановити бюджет" }));
+
+    expect(onAction).toHaveBeenCalledWith("set_budget");
+    expect(
+      JSON.parse(localStorage.getItem("finyk_checklist_v1") ?? "{}"),
+    ).toMatchObject({ completedSteps: [] });
+  });
+
+  // F3 audit (2026-09-11), defect (b): the whole row used to be
+  // `role="checkbox"`, so one tap did two things at once (checked the
+  // box AND tried to navigate). A step's role must match what it does —
+  // it navigates, so it's a plain button, never a checkbox.
+  it("renders an actionable step as a plain navigation button, not a checkbox", () => {
+    renderChecklist(<ModuleChecklist moduleId="finyk" />);
+
+    expect(
+      screen.queryByRole("checkbox", { name: "Встановити бюджет" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Встановити бюджет" }),
+    ).toBeInTheDocument();
+  });
+
+  it("ticks steps proven by real data without any tap, and latches them permanently", async () => {
     // A user with a monthly plan and today's spending recorded: both the
     // first two steps are facts, not something to ask them to click.
     localStorage.setItem(
@@ -74,18 +109,43 @@ describe("ModuleChecklist", () => {
 
     renderChecklist(<ModuleChecklist moduleId="finyk" />);
 
-    expect(
-      screen.getByRole("checkbox", { name: "Додати першу витрату" }),
-    ).toHaveAttribute("aria-checked", "true");
-    expect(
-      screen.getByRole("checkbox", { name: "Встановити бюджет" }),
-    ).toHaveAttribute("aria-checked", "true");
+    expect(screen.getByText("Додати першу витрату")).toBeInTheDocument();
     expect(screen.getByText("2/4 виконано")).toBeInTheDocument();
-    // Nothing was tapped, so nothing is recorded as a tap — the ticks come
-    // purely from the data. (`firstSeenAt` is still stamped on mount.)
+    // A done step has nothing left to tap, so it renders as a static row
+    // (no `checkbox` OR `button` role) — reachable by its visible text.
     expect(
-      JSON.parse(localStorage.getItem("finyk_checklist_v1") ?? "{}"),
-    ).toMatchObject({ completedSteps: [] });
+      screen.queryByRole("button", { name: "Додати першу витрату" }),
+    ).not.toBeInTheDocument();
+    expect(
+      screen.queryByRole("checkbox", { name: "Додати першу витрату" }),
+    ).not.toBeInTheDocument();
+    // Owner decision (F3, 2026-09-11): a step latches the moment data
+    // proves it — permanently, so it survives the proving record being
+    // deleted later. Unlike the pre-fix behaviour ("nothing was tapped,
+    // so nothing is recorded"), the auto-latch effect DOES persist it.
+    // The write happens a microtask after mount (`ModuleChecklist.tsx`'s
+    // `react-hooks/set-state-in-effect` workaround), hence `waitFor`.
+    await waitFor(() => {
+      expect(
+        JSON.parse(localStorage.getItem("finyk_checklist_v1") ?? "{}")
+          .completedSteps,
+      ).toEqual(expect.arrayContaining(["add_expense", "set_budget"]));
+    });
+  });
+
+  // F3 audit (2026-09-11), defect (г): "Переглянути аналітику" has no
+  // quick-stats trace of its own — `markFinykAnalyticsViewed` (called by
+  // `HubHeroBlock` right before the navigation dispatch) is the signal.
+  it("shows 'Переглянути аналітику' as done once the navigation-dispatch signal is recorded", () => {
+    markFinykAnalyticsViewed();
+
+    renderChecklist(<ModuleChecklist moduleId="finyk" />);
+
+    expect(
+      screen.queryByRole("button", { name: "Переглянути аналітику" }),
+    ).not.toBeInTheDocument();
+    expect(screen.getByText("Переглянути аналітику")).toBeInTheDocument();
+    expect(screen.getByText("1/4 виконано")).toBeInTheDocument();
   });
 
   it("does not render at all for an account older than the FTUX window", () => {

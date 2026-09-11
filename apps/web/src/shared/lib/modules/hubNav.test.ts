@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Mock } from "vitest";
+import { CHECKLIST_ACTIONS } from "@sergeant/shared";
 import { SETTINGS_SECTIONS_CATALOG } from "../../../core/hub/settingsSectionsCatalog";
 import {
   openHubModule,
@@ -9,6 +10,21 @@ import {
   HUB_OPEN_MODULE_EVENT,
   HUB_OPEN_SETTINGS_EVENT,
 } from "./hubNav";
+
+// `openHubModuleWithAction`'s production path routes through `logger.error`
+// (Sentry breadcrumb), not a bare `console.error` — same contract as
+// `shared/lib/log/logger.test.ts`. `vi.hoisted` is required (not a plain
+// top-level `const`) because `./hubNav` is a STATIC import here — the
+// hoisted `vi.mock` factory would otherwise run before the `const`
+// initializer, unlike `logger.test.ts`'s dynamic `await import("./logger")`.
+const { addSentryBreadcrumb, captureException } = vi.hoisted(() => ({
+  addSentryBreadcrumb: vi.fn(),
+  captureException: vi.fn(),
+}));
+vi.mock("../../../core/observability/sentry", () => ({
+  addSentryBreadcrumb,
+  captureException,
+}));
 
 // Vitest 4 widened the default `Mock` to `Mock<Procedure | Constructable>`,
 // which is no longer assignable to `EventListenerOrEventListenerObject`.
@@ -65,10 +81,41 @@ describe("openHubModuleWithAction", () => {
     expect(detail.module).toBe("finyk");
   });
 
-  it("не диспатчить для невалідної дії", () => {
-    // @ts-expect-error тестуємо runtime guard
-    openHubModuleWithAction("finyk", "invalid_action");
+  it("голосно кидає помилку для невалідної дії замість мовчазного return (F3, 2026-09-11)", () => {
+    expect(() => {
+      // @ts-expect-error тестуємо runtime guard навмисно з невалідною дією
+      openHubModuleWithAction("finyk", "invalid_action");
+    }).toThrow(/unknown action/i);
     expect(listener).not.toHaveBeenCalled();
+  });
+
+  it("в production логує через logger.error (Sentry breadcrumb), не кидає, і все одно не диспатчить", () => {
+    vi.stubEnv("DEV", false);
+    addSentryBreadcrumb.mockClear();
+    expect(() => {
+      // @ts-expect-error тестуємо runtime guard навмисно з невалідною дією
+      openHubModuleWithAction("finyk", "invalid_action");
+    }).not.toThrow();
+    expect(addSentryBreadcrumb).toHaveBeenCalledTimes(1);
+    expect(addSentryBreadcrumb).toHaveBeenCalledWith(
+      expect.objectContaining({ category: "web.logger", level: "error" }),
+    );
+    expect(listener).not.toHaveBeenCalled();
+    vi.unstubAllEnvs();
+  });
+
+  // F3 audit (2026-09-11): `VALID_HUB_ACTIONS` used to be a hand-maintained
+  // list of only the 5 original PWA shortcuts — `set_budget`,
+  // `connect_bank`, `view_analytics` (and every other checklist-declared
+  // action) silently failed this gate. It now derives from
+  // `CHECKLIST_ACTIONS`, so every action a checklist step can name must
+  // dispatch successfully.
+  it("dispatches for every canonical checklist action, not just the 5 original PWA shortcuts", () => {
+    for (const action of CHECKLIST_ACTIONS) {
+      listener.mockClear();
+      openHubModuleWithAction("finyk", action);
+      expect(listener).toHaveBeenCalledTimes(1);
+    }
   });
 });
 

@@ -5,19 +5,37 @@
  * entry to "aha-moment". The checklist is visible for the first 7 days
  * of the **account** (or until all steps are done / dismissed).
  *
- * AI-CONTEXT: a step is "done" when EITHER real data proves it
- * (`ChecklistSignals`, derived in `moduleChecklistSignals.ts`) OR the
- * user tapped the row (`ChecklistState.completedSteps`, persisted per
- * module via KVStore). Tap-only was the original design and it made the
- * card unable to ever satisfy itself: nothing in the product marked a
- * step done when the user actually added an expense or connected a
- * bank, so a veteran user was permanently stuck at "0/4 виконано".
+ * AI-CONTEXT: a step is "done" exactly when `provenByData` is true (see
+ * {@link resolveChecklistStepsFromState}). `provenByData` merges two
+ * sources before resolution runs: (1) a *live* signal from
+ * `ChecklistSignals` (derived in `moduleChecklistSignals.ts`), which can
+ * legitimately flip back to `false` if the proving record disappears
+ * (e.g. a seeded demo expense gets deleted), and (2) a *latched* id in
+ * `ChecklistState.completedSteps`, written once and never cleared.
  *
- * AI-DANGER: signals are **positive-only evidence**. Several of them are
- * "today"-scoped (routine `todayDone`, nutrition `todayCal`, fizruk
- * `weekWorkouts`), so `false` means "no proof", never "not done" — a
- * user who simply skipped today must not have a step un-ticked. Keep the
- * resolution an OR and never let a falsy signal clear `completedSteps`.
+ * The latch is what makes achievement permanent — F3 audit (2026-09-11)
+ * decision: "a step stays achieved once proven; it's a learning event,
+ * not a live data state." `markChecklistStepDone` is the only writer of
+ * the latch; callers decide WHEN to call it, and that decision is the
+ * whole fix:
+ *   - web (`apps/web/src/core/onboarding/ModuleChecklist.tsx`) never
+ *     calls it from a row tap — a tap there is pure navigation. It calls
+ *     it from an effect that watches the live signal and latches the
+ *     moment it first turns true, so a tap can never credit a step the
+ *     underlying data doesn't back (the original defect: tap-only
+ *     resolution let ANY row click complete ANY step, proven or not).
+ *   - mobile (`apps/mobile/src/core/onboarding/ModuleChecklist.tsx`)
+ *     still calls it directly from a row tap for the handful of
+ *     action-only steps that have no automatic signal at all
+ *     (`check_progress`, `photo_analysis`) — untouched by this fix.
+ *
+ * AI-DANGER: live signals are **positive-only evidence**. Several of
+ * them are "today"-scoped (routine `todayDone`, nutrition `todayCal`,
+ * fizruk `weekWorkouts`), so `false` means "no proof", never "not done" —
+ * a user who simply skipped today must not have a step un-ticked. That's
+ * exactly what the latch protects against: once a step id has ever
+ * entered `completedSteps`, it stays there permanently, regardless of
+ * what the live signal says on any later render.
  */
 
 import type { DashboardModuleId } from "./dashboard";
@@ -27,11 +45,47 @@ import { readJSON, writeJSON, type KVStore } from "../storage/kv";
 // Types
 // ---------------------------------------------------------------------------
 
+/**
+ * Canonical action ids a {@link ChecklistStep} may declare. This is the
+ * ONE place a new checklist action gets introduced — the Hub's runtime
+ * gate (`apps/web/src/shared/lib/modules/hubNav.ts` — `HubModuleAction` /
+ * `VALID_HUB_ACTIONS`) derives its checklist-facing vocabulary from this
+ * very array, so a step can never reference an action id the gate
+ * doesn't already recognize.
+ *
+ * F3 audit (2026-09-11): before this existed, `VALID_HUB_ACTIONS` was a
+ * hand-maintained, *narrower*, independently-declared list — three of
+ * Фінік's four checklist actions (`set_budget`, `connect_bank`,
+ * `view_analytics`) silently failed the gate and were dropped without a
+ * trace. Adding a step with an action missing here is now a compile
+ * error at the `MODULE_CHECKLISTS` definition site, not a `CustomEvent`
+ * that quietly goes nowhere.
+ */
+export const CHECKLIST_ACTIONS = [
+  "add_expense",
+  "set_budget",
+  "connect_bank",
+  "view_analytics",
+  "start_workout",
+  "set_program",
+  "check_progress",
+  "create_habit",
+  "log_meal",
+  "photo_analysis",
+  "daily_plan",
+] as const satisfies readonly string[];
+
+export type ChecklistAction = (typeof CHECKLIST_ACTIONS)[number];
+
 export interface ChecklistStep {
   id: string;
   label: string;
-  /** Optional deep-link action hint (e.g. "add_expense", "open_analytics"). */
-  action?: string;
+  /**
+   * Deep-link action hint dispatched via the Hub's
+   * `openHubModuleWithAction`. Typed against {@link ChecklistAction} —
+   * see its doc for why that matters.
+   */
+  action?: ChecklistAction;
   /**
    * Step ids whose completion logically entails this one — a user who
    * holds a 3-day streak has obviously already created and ticked a
@@ -43,14 +97,20 @@ export interface ChecklistStep {
 /**
  * Externally-derived, positive-only evidence that a step is done, keyed
  * by step id. `true` completes the step; `false` / absent leaves it to
- * the tap-recorded state. Built by `deriveChecklistSignals`.
+ * whatever is already latched in `ChecklistState.completedSteps`. Built
+ * by `deriveChecklistSignals` (+ web-only overlays in
+ * `useChecklistSignals.ts`).
  */
 export type ChecklistSignals = Readonly<Record<string, boolean | undefined>>;
 
 /** A checklist step with its resolved completion state. */
 export interface ResolvedChecklistStep extends ChecklistStep {
   done: boolean;
-  /** `true` when real data (not a tap) is what completed the step. */
+  /**
+   * As of F3 (2026-09-11) this is always equal to `done` — there is no
+   * other source of completion left. Kept as a distinct field for API
+   * stability (existing call sites destructure it explicitly).
+   */
   provenByData: boolean;
 }
 
@@ -216,6 +276,15 @@ export function saveChecklistState(
 // Mutations
 // ---------------------------------------------------------------------------
 
+/**
+ * Permanently latch `stepId` as done. This is the ONE writer of
+ * `ChecklistState.completedSteps` — see the file header for who calls it
+ * and when. It is intentionally unconditional (it does not check
+ * `signals`): callers are trusted to invoke it only once they already
+ * have real evidence, whether that's a live `ChecklistSignals` entry
+ * (web's auto-latch effect) or an action-only step with no automatic
+ * signal at all (mobile's row tap).
+ */
 export function markChecklistStepDone(
   store: KVStore,
   moduleId: DashboardModuleId,
@@ -302,10 +371,11 @@ export function isWithinChecklistWindow(
 }
 
 /**
- * Resolve every step of a module's checklist against both sources of
- * truth: real-data signals and tap-recorded state. Implications
- * (`impliedBy`) are applied to a fixpoint so a chain like
- * `three_day_streak → complete_habit → create_habit` resolves fully.
+ * Resolve every step of a module's checklist against its one source of
+ * truth: `provenByData` (live signals, folded together with whatever is
+ * already latched in storage). Implications (`impliedBy`) are applied to
+ * a fixpoint so a chain like `three_day_streak → complete_habit →
+ * create_habit` resolves fully.
  */
 export function resolveChecklistSteps(
   store: KVStore,
@@ -323,15 +393,22 @@ export function resolveChecklistSteps(
  * Storage-free core of {@link resolveChecklistSteps}. UI layers that
  * already hold the state in React state use this so rendering stays a
  * pure function of props/state instead of re-reading KV on every pass.
+ *
+ * F3 (2026-09-11): `done` has exactly one definition — `provenByData` —
+ * built by folding `state.completedSteps` (the permanent latch; see the
+ * file header) together with the *live* `signals` for this render. There
+ * is no separate "tapped" OR-branch anymore: a step's storage entry is
+ * itself evidence of proof, not an independent, unconditional override.
+ * A latched id therefore behaves exactly like a live signal that never
+ * turns back off — which is precisely the "stays achieved" contract the
+ * owner asked for.
  */
 export function resolveChecklistStepsFromState(
   def: ChecklistDefinition,
   state: ChecklistState,
   signals: ChecklistSignals = {},
 ): ResolvedChecklistStep[] {
-  const tapped = new Set(state.completedSteps);
-
-  const byData = new Set<string>();
+  const byData = new Set<string>(state.completedSteps);
   for (const step of def.steps) {
     if (signals[step.id] === true) byData.add(step.id);
   }
@@ -342,9 +419,7 @@ export function resolveChecklistStepsFromState(
     let grew = false;
     for (const step of def.steps) {
       if (byData.has(step.id)) continue;
-      const implied = step.impliedBy?.some(
-        (id) => byData.has(id) || tapped.has(id),
-      );
+      const implied = step.impliedBy?.some((id) => byData.has(id));
       if (implied) {
         byData.add(step.id);
         grew = true;
@@ -355,7 +430,7 @@ export function resolveChecklistStepsFromState(
 
   return def.steps.map((step) => {
     const provenByData = byData.has(step.id);
-    return { ...step, provenByData, done: provenByData || tapped.has(step.id) };
+    return { ...step, provenByData, done: provenByData };
   });
 }
 

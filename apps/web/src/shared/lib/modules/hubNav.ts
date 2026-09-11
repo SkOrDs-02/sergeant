@@ -11,7 +11,9 @@
  */
 
 import type { ModuleAccent } from "@sergeant/design-tokens";
+import { CHECKLIST_ACTIONS, type ChecklistAction } from "@sergeant/shared";
 import { VISIBLE_SETTINGS_SECTIONS } from "../../../core/hub/settingsSectionsCatalog";
+import { logger } from "../log/logger";
 
 export const HUB_OPEN_MODULE_EVENT = "hub:open-module";
 
@@ -19,8 +21,29 @@ export const HUB_OPEN_MODULE_EVENT = "hub:open-module";
 // `core/hooks/useHubNavigation.ts` реекспортують його звідси, щоб уникнути
 // дубльованих декларацій (aislop `ai-slop/duplicate-type-declaration`).
 export type HubModuleId = ModuleAccent;
+
+// PWA app-shortcut / preset-sheet intents that are NOT checklist steps —
+// they open a module's Add sheet directly with no matching "Перші кроки"
+// row. Kept separate from `CHECKLIST_ACTIONS` (packages/shared) so that
+// canonical list stays scoped to "what a checklist step may ask for".
+const HUB_ONLY_ACTIONS = [
+  "add_meal",
+  "add_meal_photo",
+  "add_habit",
+] as const satisfies readonly string[];
+
+// F3 audit (2026-09-11): `HubModuleAction` used to be a FOURTH
+// hand-maintained list (independent of `MODULE_CHECKLISTS`'s own step
+// actions) — it carried only the 5 PWA-shortcut ids and silently
+// rejected 3 of Фінік's 4 checklist actions (`set_budget`,
+// `connect_bank`, `view_analytics`). It now derives from
+// `CHECKLIST_ACTIONS` (the shared package's single source of truth for
+// "actions a checklist step may declare") plus the Hub-only shortcut
+// ids, so a checklist step can never reference an action this gate
+// doesn't already recognize — same fix pattern as `VALID_SETTINGS_
+// SECTIONS` below (audit finding #5, 2026-08-08).
 export type HubModuleAction =
-  "add_expense" | "start_workout" | "add_meal" | "add_meal_photo" | "add_habit";
+  ChecklistAction | (typeof HUB_ONLY_ACTIONS)[number];
 
 export interface HubOpenModuleDetail {
   module: HubModuleId;
@@ -57,12 +80,9 @@ export function openHubModule(moduleId: HubModuleId, hash?: string): void {
   }
 }
 
-const VALID_HUB_ACTIONS = new Set<HubModuleAction>([
-  "add_expense",
-  "start_workout",
-  "add_meal",
-  "add_meal_photo",
-  "add_habit",
+const VALID_HUB_ACTIONS: ReadonlySet<HubModuleAction> = new Set([
+  ...CHECKLIST_ACTIONS,
+  ...HUB_ONLY_ACTIONS,
 ]);
 
 /**
@@ -74,7 +94,26 @@ export function openHubModuleWithAction(
   action: HubModuleAction,
 ): void {
   if (!VALID_HUB_MODULES.has(moduleId)) return;
-  if (!VALID_HUB_ACTIONS.has(action)) return;
+  if (!VALID_HUB_ACTIONS.has(action)) {
+    // F3 audit (2026-09-11) — root cause of "3 з 4 пунктів чекліста не
+    // працюють": this used to be a silent `return`. Every checklist
+    // step's `action` is now typed against `CHECKLIST_ACTIONS`
+    // (`packages/shared/src/lib/moduleChecklist.ts`), so a checklist row
+    // literally cannot reach this branch — getting here means a caller
+    // bypassed the type system (an unsafe cast, `any`, or a value read
+    // from outside TS, e.g. a deep-link query param). Loud in dev so the
+    // bypass gets caught before merge; `logger.error` (not thrown) in
+    // production so a bad deploy degrades to "nothing happens" instead of
+    // crashing the click handler that called this — and still surfaces in
+    // Sentry, unlike a bare `console.error` (`no-console` also forbids
+    // that call-site anyway).
+    const message = `openHubModuleWithAction: unknown action "${String(action)}" for module "${moduleId}" (dropped)`;
+    if (import.meta.env.DEV) {
+      throw new Error(message);
+    }
+    logger.error(message);
+    return;
+  }
   try {
     window.dispatchEvent(
       new CustomEvent<HubOpenModuleDetail>(HUB_OPEN_MODULE_EVENT, {
