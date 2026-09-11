@@ -105,17 +105,35 @@ describe("SessionExerciseList", () => {
     expect(screen.getByText("A2")).toBeInTheDocument();
   });
 
-  it("turns rows into checkboxes in select mode and hides «+ Вправа»", () => {
+  it("turns rows into checkboxes in select mode", () => {
     renderList({ selectMode: true, selected: new Set(["a"]) });
     const a = screen.getByRole("checkbox", { name: /Жим лежачи/ });
     expect(a).toHaveAttribute("aria-checked", "true");
     fireEvent.click(screen.getByRole("checkbox", { name: /Присідання/ }));
     expect(onToggleSelect).toHaveBeenCalledWith("b");
+  });
+
+  // «+ Вправа» живе ЛИШЕ в порожньому стані, тож перевіряти її видимість
+  // на списку з вправами безглуздо: кнопки там немає незалежно від
+  // прапорців, і такий тест пройде навіть зі зламаним гейтом.
+  it("shows «+ Вправа» in an empty editable session and hides it read-only", () => {
+    renderList({ items: [] });
+    expect(
+      screen.getByRole("button", { name: "Додати вправу" }),
+    ).toBeInTheDocument();
+    cleanup();
+    renderList({ items: [], isReadOnly: true });
     expect(screen.queryByRole("button", { name: "Додати вправу" })).toBeNull();
   });
 
-  it("hides «+ Вправа» in read-only mode", () => {
-    renderList({ isReadOnly: true });
-    expect(screen.queryByRole("button", { name: "Додати вправу" })).toBeNull();
+  it("shows a neutral prompt for cardio with nothing recorded yet", () => {
+    const cardio = {
+      ...item("c", "Біг", []),
+      type: "time",
+      sets: [],
+    } as unknown as WorkoutItem;
+    renderList({ items: [cardio] });
+    expect(screen.getByText("час не записано")).toBeInTheDocument();
+    expect(screen.queryByText("поточна")).toBeNull();
   });
 });

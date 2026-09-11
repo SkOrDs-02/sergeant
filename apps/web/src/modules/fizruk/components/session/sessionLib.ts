@@ -122,3 +122,13 @@ export function setsCountLabel(n: number): string {
   const ss = messages.fizruk.session;
   return `${n} ${pluralUa(n, { one: ss.setsOne, few: ss.setsFew, many: ss.setsMany })}`;
 }
+
+/**
+ * Слово «вправи/вправ» для рядка «X з Y вправ». Окремо від
+ * `setsProgressLabel`, бо число тут виділене жирним у розмітці, тож
+ * склеювати весь рядок не можна — потрібне саме слово.
+ */
+export function exercisesGenitiveWord(total: number): string {
+  const ss = messages.fizruk.session;
+  return total === 1 ? ss.exercisesGenitiveOne : ss.exercisesGenitiveMany;
+}

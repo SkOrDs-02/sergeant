@@ -87,7 +87,7 @@ function renderView(
     SetStateAction<RestTimerState | null>
   >;
   const w = props.activeWorkout ?? workout();
-  render(
+  const view = render(
     <ToastProvider>
       <RestTimerContext.Provider value={{ restTimer, setRestTimer }}>
         <SessionView
@@ -108,7 +108,7 @@ function renderView(
       </RestTimerContext.Provider>
     </ToastProvider>,
   );
-  return { setRestTimer };
+  return { setRestTimer, rerender: view.rerender };
 }
 
 afterEach(() => {
@@ -187,6 +187,51 @@ describe("SessionView — list", () => {
         }),
       ],
     });
+  });
+
+  it("drops the selection strip when the view switches to a focused exercise", () => {
+    // Навігація «вперед» у браузері міняє лише `focusItemId` і не проходить
+    // через жоден обробник — тому режим вибору тут ПОХІДНИЙ, а не окремий
+    // прапорець, який нема де погасити (знахідка рев'ю 2026-09-11).
+    const { rerender } = renderView();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ще дії з тренуванням" }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Обʼєднати в суперсет" }),
+    );
+    expect(
+      screen.getByRole("button", { name: /Суперсет \(0\/3\)/ }),
+    ).toBeTruthy();
+    rerender(
+      <ToastProvider>
+        <RestTimerContext.Provider
+          value={{
+            restTimer: null,
+            setRestTimer: vi.fn() as unknown as Dispatch<
+              SetStateAction<RestTimerState | null>
+            >,
+          }}
+        >
+          <SessionView
+            activeWorkout={workout()}
+            activeDuration="12:34"
+            lastByExerciseId={{}}
+            recBy={{}}
+            removeItem={removeItem}
+            updateItem={updateItem}
+            updateWorkout={updateWorkout}
+            onFinishClick={onFinishClick}
+            onDeleteWorkout={onDeleteWorkout}
+            onCollapse={onCollapse}
+            onOpenItem={onOpenItem}
+            onAddExercise={onAddExercise}
+            focusItemId="a"
+          />
+        </RestTimerContext.Provider>
+      </ToastProvider>,
+    );
+    expect(screen.queryByRole("button", { name: /Суперсет \(/ })).toBeNull();
   });
 
   it("expands the warmup chip and seeds the default checklist", () => {

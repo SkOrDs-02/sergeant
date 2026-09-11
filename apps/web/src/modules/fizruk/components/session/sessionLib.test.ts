@@ -6,6 +6,7 @@ import {
   groupMemberPosition,
   isItemDone,
   itemStates,
+  exercisesGenitiveWord,
   neighbourItems,
   sessionProgress,
 } from "./sessionLib";
@@ -108,6 +109,13 @@ describe("sessionLib", () => {
     expect(groupMemberPosition(strength("b", []), g)).toBe(2);
     expect(groupMemberPosition(strength("c", []), g)).toBeNull();
     expect(groupMemberPosition(strength("c", []), null)).toBeNull();
+  });
+
+  it("picks the genitive form of «вправа» by total", () => {
+    // «0 з 1 вправи», не «0 з 1 вправ».
+    expect(exercisesGenitiveWord(1)).toBe("вправи");
+    expect(exercisesGenitiveWord(0)).toBe("вправ");
+    expect(exercisesGenitiveWord(3)).toBe("вправ");
   });
 
   it("finds neighbours for prev/next navigation", () => {

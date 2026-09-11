@@ -123,6 +123,12 @@ export const fizrukPageMessages = {
     // «0 з 1 підходу», «3 з 3 підходів» (не «3 з 3 підходи»).
     setsGenitiveOne: "підходу",
     setsGenitiveMany: "підходів",
+    // Порожнє кардіо: у рядку списку має стояти ФАКТ, а не стан рядка.
+    // Раніше тут падав `stateCurrent` («поточна»), і вправа, позначена
+    // бейджем як «далі», одночасно підписувалась «поточна» — знахідка
+    // рев'ю 2026-09-11.
+    cardioNoTime: "час не записано",
+    cardioNoDistance: "дистанцію не записано",
     nextTarget: "Наступний:",
     stateDone: "зроблено",
     stateCurrent: "поточна",
@@ -145,7 +151,10 @@ export const fizrukPageMessages = {
     notePlaceholder: "Напр. Важко на присіданнях, болить коліно…",
     noteHint: "необовʼязково",
     warmupAdd: "Додати",
-    exercisesWord: "вправ",
+    // Той самий родовий відмінок, що й `setsGenitive*`: «0 з 1 вправи»,
+    // «1 з 3 вправ».
+    exercisesGenitiveOne: "вправи",
+    exercisesGenitiveMany: "вправ",
     startedAt: "з",
     repeatGhostAria: "повторити",
     repeatGhostAriaSuffix: "і почати відпочинок",

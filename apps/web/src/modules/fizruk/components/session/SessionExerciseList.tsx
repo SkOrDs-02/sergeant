@@ -74,12 +74,12 @@ function rowSubline(
   }
   if (it.type === "time") {
     return {
-      text: it.durationSec ? `${it.durationSec} с` : ss.stateCurrent,
+      text: it.durationSec ? `${it.durationSec} с` : ss.cardioNoTime,
       danger: false,
     };
   }
   return {
-    text: it.distanceM ? `${it.distanceM} м` : ss.stateCurrent,
+    text: it.distanceM ? `${it.distanceM} м` : ss.cardioNoDistance,
     danger: false,
   };
 }

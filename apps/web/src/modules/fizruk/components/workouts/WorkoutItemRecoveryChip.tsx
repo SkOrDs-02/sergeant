@@ -82,7 +82,10 @@ export function WorkoutItemRecoveryChip({
       wrapperClassName="inline-flex max-w-full"
       trigger={
         <span
-          aria-label={rc.triggerAriaLabel}
+          // `aria-label` ЗАМІНЮЄ внутрішній текст для скрінрідера, тож без
+          // причини в ньому озвучувалось лише загальне «попередження» —
+          // тобто рівно те, що ця зміна й мала прибрати.
+          aria-label={`${rc.triggerAriaLabel}: ${summary.label}`}
           className={cn(
             "inline-flex max-w-full items-center gap-1.5 rounded-full border px-2.5 min-h-[28px] cursor-pointer select-none text-style-caption font-semibold",
             isRed

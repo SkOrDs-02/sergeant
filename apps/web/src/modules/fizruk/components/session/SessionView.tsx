@@ -30,7 +30,12 @@ import { SessionDock } from "./SessionDock";
 import { SessionExtrasRow } from "./SessionExtrasRow";
 import { SessionExerciseList } from "./SessionExerciseList";
 import { SessionExerciseFocus } from "./SessionExerciseFocus";
-import { groupByItemId, sessionProgress, setsCountLabel } from "./sessionLib";
+import {
+  exercisesGenitiveWord,
+  groupByItemId,
+  sessionProgress,
+  setsCountLabel,
+} from "./sessionLib";
 
 type WorkoutGroupType = "circuit" | "superset";
 type WarmupField = "warmup" | "cooldown";
@@ -108,6 +113,12 @@ export function SessionView({
     ? (items.find((x) => x.id === focusItemId) ?? null)
     : null;
   const progress = sessionProgress(activeWorkout);
+  // Режим вибору живе лише у СПИСКУ: на екрані вправи рядків-чекбоксів
+  // немає, тож смуга вибору в доці діяла б на невидиму добірку. Саме
+  // ПОХІДНИЙ стан, а не скидання в ефекті: навігація «вперед» у браузері
+  // не проходить через жоден обробник, тож гасити прапорець нема де
+  // (знахідка рев'ю 2026-09-11).
+  const selectMode = groupSelectMode && !focusItemId;
 
   const handleToggleGroupSelect = useCallback((itemId: string) => {
     setGroupSelected((prev) => {
@@ -302,7 +313,7 @@ export function SessionView({
               <span className="font-semibold text-text">
                 {progress.exercisesDone} {ss.of} {progress.exercisesTotal}
               </span>{" "}
-              {ss.exercisesWord} ·{" "}
+              {exercisesGenitiveWord(progress.exercisesTotal)} ·{" "}
               <span className="font-semibold text-text">
                 {setsCountLabel(progress.setsDone)}
               </span>
@@ -316,7 +327,7 @@ export function SessionView({
               onInitWarmup={handleInitWarmup}
               onInitCooldown={handleInitCooldown}
             />
-            {groupSelectMode && (
+            {selectMode && (
               <div className="text-style-caption text-subtle">
                 {ss.selectHint}
               </div>
@@ -329,7 +340,7 @@ export function SessionView({
               recBy={recBy}
               onOpenItem={(id) => onOpenItem(id)}
               onAddExercise={onAddExercise}
-              selectMode={groupSelectMode}
+              selectMode={selectMode}
               selected={groupSelected}
               onToggleSelect={handleToggleGroupSelect}
             />
@@ -346,7 +357,7 @@ export function SessionView({
         onAdjustRest={adjustRest}
         restHint={restHint}
       >
-        {groupSelectMode ? (
+        {selectMode ? (
           <>
             <Button
               variant="soft"
