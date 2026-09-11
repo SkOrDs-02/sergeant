@@ -12,6 +12,7 @@ import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcu
 import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
 import { SkipLink } from "@shared/components/ui/SkipLink";
 import { useAuth } from "../auth/AuthContext";
+import { useOpenSignIn } from "../auth/useOpenSignIn";
 import { useActivationV2Boot } from "../activation";
 import { NpsSurveyGate } from "../feedback/useNpsSurveyTrigger";
 import { AppLock } from "../security/AppLock";
@@ -25,7 +26,7 @@ import {
   useHubChatOverlay,
   useHubChatOverlayState,
 } from "../hub/useHubChatOverlay";
-import { SIGN_IN_PATH, titleForPath } from "./appPaths";
+import { titleForPath } from "./appPaths";
 import { useHubKeyboardShortcuts } from "../hooks/useHubKeyboardShortcuts";
 import { useBrowserLocation } from "../hooks/useBrowserLocation";
 import { useHubNavigation } from "../hooks/useHubNavigation";
@@ -290,8 +291,10 @@ function RootLayoutInner() {
     validActions,
   });
 
-  // Auth callback
-  const openAuth = useCallback(() => navigate(SIGN_IN_PATH), [navigate]);
+  // Auth callback — `useOpenSignIn()` — єдина точка входу (A1, аудит
+  // 2026-09-11 хвиля 2): решта поверхонь (Overview, PhotoStep,
+  // FinykScanEntryPoints через `onOpenAuth`) ходять через той самий хук.
+  const openAuth = useOpenSignIn();
 
   // Keyboard shortcuts (work on all routes — hub + modules)
   const openSearchFromShortcut = useCallback(() => {

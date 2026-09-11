@@ -2,8 +2,20 @@
 import { fireEvent, render, screen, waitFor } from "@testing-library/react";
 import { useState } from "react";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { describe, expect, it, vi } from "vitest";
+import { afterEach, describe, expect, it, vi } from "vitest";
 import { ToastProvider } from "@shared/hooks/useToast";
+
+// `auth === null` (за замовчуванням) — той самий стан, у якому опиняється
+// цей ізольований тест без `AuthProvider`: компонент читає його як
+// "не в проді, вважай авторизованим" (див. коментар у `requireAccount`).
+// Один тест нижче підміняє це на справжню анонімну сесію
+// (`{ user: null }`), щоб перевірити гейт `onOpenAuth`.
+const { useAuthOptionalMock } = vi.hoisted(() => ({
+  useAuthOptionalMock: vi.fn((): { user: unknown } | null => null),
+}));
+vi.mock("../../../core/auth/AuthContext", () => ({
+  useAuthOptional: useAuthOptionalMock,
+}));
 
 vi.mock("./lazyReceiptSheets", () => ({
   ReceiptScanSheet: ({
@@ -48,9 +60,11 @@ import type { ManualExpenseWriteThroughStorage } from "../hooks/manualExpenseWri
 function ControlledEntryPoints({
   onAddExpense,
   storage,
+  onOpenAuth,
 }: {
   onAddExpense: () => void;
   storage: ManualExpenseWriteThroughStorage;
+  onOpenAuth: () => void;
 }) {
   const [bulkImportOpen, setBulkImportOpen] = useState(false);
   return (
@@ -60,11 +74,12 @@ function ControlledEntryPoints({
       onReceiptLinked={vi.fn()}
       bulkImportOpen={bulkImportOpen}
       onBulkImportOpenChange={setBulkImportOpen}
+      onOpenAuth={onOpenAuth}
     />
   );
 }
 
-function renderEntryPoints(onAddExpense = vi.fn()) {
+function renderEntryPoints(onAddExpense = vi.fn(), onOpenAuth = vi.fn()) {
   const storage: ManualExpenseWriteThroughStorage = {
     manualExpenses: [],
     addManualExpense: vi.fn(),
@@ -76,16 +91,24 @@ function renderEntryPoints(onAddExpense = vi.fn()) {
   render(
     <QueryClientProvider client={client}>
       <ToastProvider>
-        <ControlledEntryPoints onAddExpense={onAddExpense} storage={storage} />
+        <ControlledEntryPoints
+          onAddExpense={onAddExpense}
+          storage={storage}
+          onOpenAuth={onOpenAuth}
+        />
       </ToastProvider>
     </QueryClientProvider>,
   );
-  return { onAddExpense };
+  return { onAddExpense, onOpenAuth };
 }
 
 function openFabMenu() {
   fireEvent.click(screen.getByRole("button", { name: "Додати" }));
 }
+
+afterEach(() => {
+  useAuthOptionalMock.mockReturnValue(null);
+});
 
 describe("FinykScanEntryPoints", () => {
   it("renders the FAB trigger with neither sheet mounted; the fan-menu is closed by default", () => {
@@ -138,5 +161,28 @@ describe("FinykScanEntryPoints", () => {
     await waitFor(() =>
       expect(screen.queryByTestId("bulk-import-sheet")).not.toBeInTheDocument(),
     );
+  });
+
+  // Регресія A1 (аудит 2026-09-11, хвиля 2): `onOpenAuth` був опційним, і
+  // `onOpenAuth?.()` тихо не робив нічого, коли shell забував його
+  // передати — анонім тапав дію, яка виглядала робочою. `onOpenAuth`
+  // тепер обовʼязковий пропс (TS не дає зібрати виклик без обробника);
+  // цей тест підтверджує, що анонімний гейт справді його викликає.
+  it("анонім, який тапає «Сканувати чек», отримує onOpenAuth — без мовчазного no-op", () => {
+    useAuthOptionalMock.mockReturnValue({ user: null });
+    const { onOpenAuth } = renderEntryPoints();
+    openFabMenu();
+    fireEvent.click(screen.getByText("Сканувати чек"));
+    expect(onOpenAuth).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("receipt-scan-sheet")).not.toBeInTheDocument();
+  });
+
+  it("анонім, який тапає «Додати документи», теж отримує onOpenAuth", () => {
+    useAuthOptionalMock.mockReturnValue({ user: null });
+    const { onOpenAuth } = renderEntryPoints();
+    openFabMenu();
+    fireEvent.click(screen.getByText("Додати документи"));
+    expect(onOpenAuth).toHaveBeenCalledTimes(1);
+    expect(screen.queryByTestId("bulk-import-sheet")).not.toBeInTheDocument();
   });
 });

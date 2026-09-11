@@ -17,16 +17,21 @@ import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { Overview } from "./Overview";
 import type { useStorage } from "../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
+import { useOpenSignIn } from "../../../core/auth/useOpenSignIn";
 
 vi.mock("../../../core/auth/useLocalUserId", () => ({
   useLocalUserId: () => "local-anon",
 }));
 
+// `vi.fn()`-обгортка (не голий `() => null`), щоб один тест міг
+// підмінити реалізацію через `mockImplementationOnce` і перевірити, куди
+// саме `Overview` веде `onSignIn` — решта тестів файлу banner не бачать.
 vi.mock("../../../core/durability/LocalOnlyDataBanner", () => ({
-  LocalOnlyDataBanner: () => null,
+  LocalOnlyDataBanner: vi.fn(() => null),
 }));
 
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { LocalOnlyDataBanner } from "../../../core/durability/LocalOnlyDataBanner";
 
 const KYIV = new Date("2026-06-15T09:00:00Z");
 
@@ -111,12 +116,16 @@ function renderOverview(
     storage: StorageLike;
     showBalance: boolean;
     onNavigate: (page: string) => void;
+    onOpenAuth: () => void;
   }> = {},
 ) {
   const overviewProps = {
     mono: buildMono(props.mono),
     storage: buildStorage(props.storage),
     showBalance: props.showBalance ?? true,
+    // `onOpenAuth` обовʼязковий (A1) — тести, яким байдуже до входу,
+    // дістають безпечний no-op, а не `undefined`.
+    onOpenAuth: props.onOpenAuth ?? vi.fn(),
     ...(props.onNavigate ? { onNavigate: props.onNavigate } : {}),
   };
   return render(
@@ -124,6 +133,21 @@ function renderOverview(
       <Overview {...overviewProps} />
     </Providers>,
   );
+}
+
+/**
+ * Той самий спосіб підключення `onOpenAuth`, яким `FinykApp.tsx` реально
+ * зʼєднує `Overview` з shell-ом (`route.tsx` → `useHubShell().onOpenAuth`
+ * → `RootLayout.tsx` → `useOpenSignIn()`). На відміну від `renderOverview`
+ * вище (яка дає безпечний `vi.fn()` для тестів, яким вхід байдужий), тут
+ * підключений СПРАВЖНІЙ хук — потрібно для мутаційної перевірки нижче.
+ */
+function OverviewWithRealSignIn(props: {
+  mono: MergedMonoLike;
+  storage: StorageLike;
+}) {
+  const onOpenAuth = useOpenSignIn();
+  return <Overview {...props} onOpenAuth={onOpenAuth} />;
 }
 
 beforeEach(() => {
@@ -234,5 +258,41 @@ describe("Overview page (branches)", () => {
       }),
     });
     expect(screen.getByText("Оновлення…")).toBeInTheDocument();
+  });
+
+  // Регресія A1 (аудит 2026-09-11, хвиля 2): `onSignIn` банера раніше
+  // мав фолбек `onOpenAuth ?? (() => navigate("/auth"))` — зайвий
+  // редірект-хоп замість прямого SPA-переходу на `/sign-in`. `onOpenAuth`
+  // тепер обовʼязковий пропс, а Overview передає його в банер БЕЗ
+  // жодної обгортки. Тест підключає той самий `useOpenSignIn()`, яким
+  // реально користується продакшн-shell (`RootLayout.tsx`).
+  it("onOpenAuth веде на /sign-in прямим SPA-переходом, без /auth-хопу", () => {
+    vi.mocked(LocalOnlyDataBanner).mockImplementationOnce(
+      ({ onSignIn }: { onSignIn: () => void }) => (
+        <button type="button" onClick={onSignIn}>
+          відкрити вхід (banner)
+        </button>
+      ),
+    );
+    render(
+      <Providers>
+        <OverviewWithRealSignIn
+          mono={buildMono({ realTx: [mkTx("t1", -1000)] })}
+          storage={buildStorage()}
+        />
+      </Providers>,
+    );
+
+    expect(screen.getByTestId("router-location")).toHaveTextContent("/");
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "відкрити вхід (banner)" }),
+    );
+
+    // Жодного проміжного маршруту `/auth` у цьому дереві немає — якби
+    // код і далі ходив через аліас, локація лишилась би на ньому: цей
+    // ізольований тест не монтує `StandaloneRoutes`, що робить редірект
+    // `/auth` → `/sign-in` у справжньому застосунку.
+    expect(screen.getByTestId("router-location")).toHaveTextContent("/sign-in");
   });
 });

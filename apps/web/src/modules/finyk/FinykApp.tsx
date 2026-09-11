@@ -59,8 +59,18 @@ interface FinykAppProps {
   onBackToHub?: () => void;
   onGoToHub?: () => void;
   onOpenSettings?: () => void;
-  /** Opens the account sign-in flow from the local-data durability banner. */
-  onOpenAuth?: () => void;
+  /**
+   * Opens the account sign-in flow from the local-data durability banner
+   * (`Overview`) and the anonymous receipt-scan / bulk-import gate
+   * (`FinykScanEntryPoints`). Required (A1, аудит 2026-09-11 хвиля 2):
+   * раніше опційний пропс давав два call-site-и мовчазний фолбек
+   * (`onOpenAuth ?? (() => navigate("/auth"))` в `Overview`,
+   * `onOpenAuth?.()` no-op в `FinykScanEntryPoints`) — обидва зникають,
+   * коли shell зобов'язаний передати справжній обробник. Канонічне
+   * джерело — `useOpenSignIn()`, підключене через `route.tsx` →
+   * `useHubShell().onOpenAuth`.
+   */
+  onOpenAuth: () => void;
   pwaAction?: string | null;
   onPwaActionConsumed?: () => void;
 }
@@ -72,7 +82,7 @@ export default function App({
   onOpenAuth,
   pwaAction,
   onPwaActionConsumed,
-}: FinykAppProps = {}) {
+}: FinykAppProps) {
   const mono = useMonobank();
   const privat = usePrivatbank(PRIVAT_ENABLED);
   useMonoTokenMigration(true);
@@ -238,7 +248,7 @@ export default function App({
             mono={mergedMono}
             storage={storage}
             onNavigate={navigate}
-            {...(onOpenAuth ? { onOpenAuth } : {})}
+            onOpenAuth={onOpenAuth}
             showBalance={showBalance}
             onOpenBulkImport={() => setShowBulkImport(true)}
           />
@@ -452,7 +462,7 @@ export default function App({
             customCategories={storage.customCategories}
             bulkImportOpen={showBulkImport}
             onBulkImportOpenChange={setShowBulkImport}
-            {...(onOpenAuth ? { onOpenAuth } : {})}
+            onOpenAuth={onOpenAuth}
           />
         )}
 
