@@ -73,13 +73,13 @@ describe("mapApiErrorToUserCopy", () => {
     ).toBe("Не вдалося виконати запит");
   });
 
-  it("без code → status fallback (401 → 'Доступ заборонено.')", () => {
+  it("без code → status fallback (401 → текст `friendlyApiError`)", () => {
     expect(
       mapApiErrorToUserCopy({
         message: "Unauthorized",
         status: 401,
       }),
-    ).toBe("Доступ заборонено.");
+    ).toBe("Увійди в акаунт, щоб продовжити.");
   });
 
   it("без code → status fallback (429 → rate-limit копія)", () => {
