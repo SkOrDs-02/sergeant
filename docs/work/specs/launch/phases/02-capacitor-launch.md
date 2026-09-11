@@ -23,7 +23,7 @@ Phase 2 стартує лише коли Phase 1 (Web) виконала ці ч�
 - [ ] **`pnpm --filter @sergeant/mobile-shell build:web` працює без warning-ів.** Це делегує до `@sergeant/web build:capacitor` (`VITE_TARGET=capacitor`), який вимикає `vite-plugin-pwa` — у shell-бандлі НЕ повинно бути `sw.js`, `manifest.webmanifest`, `virtual:pwa-register`.
 - [ ] **Bearer-auth контракт зелений.** Login flow з web → shell-WebView повертає bearer-токен у `auth-storage.ts` (Keychain / EncryptedSharedPreferences) — інтеграція з PR [#505](https://github.com/Skords-01/Sergeant/pull/505).
 - [ ] **API доступний з `com.sergeant.shell://` origin.** `apps/server/src/middleware/cors.ts` має дозволяти shell-host-и; web-варіант CORS вже live.
-- [ ] **Privacy Policy + Terms of Service опубліковані на public URL.** Без цього Apple/Google reject-нуть store-listing — див. [`docs/work/specs/launch/business/04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#11-обовʼязкові-документи).
+- [ ] **Privacy Policy + Terms of Service опубліковані на public URL.** Без цього Apple/Google reject-нуть store-listing — див. [`docs/work/specs/launch/business/04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#11-обовязкові-документи).
 - [ ] **Sentry web-проєкт live + `applyWebBeforeSend` працює.** WebView consume-ить той самий `apps/web/src/core/observability/sentry.ts` — shell автоматично отримує crash-reporting без окремої інтеграції.
 - [ ] **Зафіксована baseline-версія `versionCode = 1`, `versionName = 1.0`** у [`apps/mobile-shell/android/app/build.gradle`](../../../../../apps/mobile-shell/android/app/build.gradle).
 
@@ -46,7 +46,7 @@ Phase 2 завершена, коли:
 ### 2.1 Стратегія
 
 - [ADR-0052 — Capacitor primary, Expo parallel](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md), status `Accepted`, дата 2026-05-06.
-- Sunset-дати T₀ (2026-09-01) / T₁ (2026-11-30) / T₂ (2026-12-30), згадані у [`docs/engineering/mobile/shell.md` § Sunset](../../../../engineering/mobile/shell.md#sunset) та [ADR-0010](../../../../governance/adr/0010-mobile-dual-track-capacitor-expo.md) — **не є active commitments** на період 0010 launch, але reference лишається.
+- Sunset-дати T₀ (2026-09-01) / T₁ (2026-11-30) / T₂ (2026-12-30), згадані у [`docs/engineering/mobile/shell.md` § Sunset](../../../../engineering/mobile/shell.md#historical-sunset-note) та [ADR-0010](../../../../governance/adr/0010-mobile-dual-track-capacitor-expo.md) — **не є active commitments** на період 0010 launch, але reference лишається.
 - Тригер для наступного ADR («Expo becomes primary»): Expo `apps/mobile/` досягає feature parity (≥ 18/22 рядків ✅ у матриці [`platforms.md` § 0](../../../../engineering/architecture/platforms.md#-0-feature-parity-матриця-web--shell--rn)).
 - Lint-правило `sergeant-design/forbid-shell-only-feature` активне — нові shell-only модулі без RN-mirror блокуються, але **shell-glue PR-и дозволяються через `SHELL_GLUE_ALLOWLIST`** у [`packages/eslint-plugin-sergeant-design/`](../../../../../packages/eslint-plugin-sergeant-design).
 
@@ -84,7 +84,7 @@ Phase 2 завершена, коли:
 - **iOS safe-area + splash race.** CSS `env(safe-area-inset-*)` покриває 99 % кейсів, але якщо splash триматиметься довше 3с (failsafe `launchShowDuration: 3000` у [`capacitor.config.ts`](../../../../../apps/mobile-shell/capacitor.config.ts)), користувач може побачити блимання статус-бару. Кандидат на тюнінг до бети.
 - **Native APNs/FCM send-pipeline.** `src/pushNative.ts` реєструє токен і шле його у `push_devices`, але серверний `dispatch`-step через APNs/FCM ще не написаний — див. [`docs/engineering/mobile/overview.md` § Push notifications](../../../../engineering/mobile/overview.md#push-notifications). На beta достатньо токен-registration smoke; на GA потрібен повний send.
 - **App Store / Play Store метадані.** Іконки (1024×1024 iOS, всі density-bucket-и Android), screenshots (6.7" + 5.5" iPhone, 7" + 10" Android tablet), short/long description, keywords, category, age rating — все ще TODO. RN-апка теж не має цього (див. [`platforms.md` § 2](../../../../engineering/architecture/platforms.md#-2-native-rn--appsmobile)), тож матеріали робляться раз і re-use-ються.
-- **Privacy manifest (iOS PrivacyInfo.xcprivacy)** і **Data safety form (Play Console)** — обов'язкові для нових listing-ів з 2024-05 (iOS) і 2024-04 (Android). Заповнюються на основі sub-processor списку з [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#11-обовʼязкові-документи).
+- **Privacy manifest (iOS PrivacyInfo.xcprivacy)** і **Data safety form (Play Console)** — обов'язкові для нових listing-ів з 2024-05 (iOS) і 2024-04 (Android). Заповнюються на основі sub-processor списку з [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#11-обовязкові-документи).
 
 ### 2.4 Версії і tooling
 
@@ -176,7 +176,7 @@ git push origin v0.1.0-shell.1
 - **App Preview video** — 15–30 с, опційно (підвищує conversion ~25 %).
 - **Description** — до 4000 символів. Локалізації: en, uk (мінімум; пізніше — pl, de, ru за пріоритетом).
 - **Keywords** — 100 символів total, comma-separated. Приклади: `finance,fitness,habits,nutrition,ai coach,life tracker,journal,wellness`.
-- **Privacy Policy URL** — обов'язково. Лінк на public Privacy Policy сторінку Sergeant (див. [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#11-обовʼязкові-документи)).
+- **Privacy Policy URL** — обов'язково. Лінк на public Privacy Policy сторінку Sergeant (див. [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#11-обовязкові-документи)).
 - **App Privacy Details (Nutrition labels)** — заповнюється в ASC. Категорії, які треба позначити для Sergeant: Contact Info (email), Identifiers (User ID), Usage Data (analytics), Diagnostics (Sentry), Financial Info (якщо Monobank integration зачіпається на iOS), Health & Fitness (workouts, body metrics, nutrition).
 - **Age rating** — пройти questionnaire. Очікувано: 4+ (no objectionable content); якщо є alcohol/tobacco у nutrition — 12+.
 - **Category** — Primary: **Health & Fitness**; Secondary: **Productivity** або **Finance**. Primary визначає review-team у Apple — Health отримує stricter review (~3 дні vs 1–2).
@@ -260,7 +260,7 @@ MVP-стратегія: тиждень 3–4 у Internal, тиждень 5–7 �
 
 ### 4.6 Data safety form (Play Console)
 
-З 2022-07 Google Play вимагає Data Safety секцію для всіх app. Sergeant декларує (на основі sub-processor списку з [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#11-обовʼязкові-документи)):
+З 2022-07 Google Play вимагає Data Safety секцію для всіх app. Sergeant декларує (на основі sub-processor списку з [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#11-обовязкові-документи)):
 
 | Категорія                                 | Збирається?               | Shared?                          | Required? | Purpose                         |
 | ----------------------------------------- | ------------------------- | -------------------------------- | --------- | ------------------------------- |
@@ -323,7 +323,7 @@ MVP-стратегія: тиждень 3–4 у Internal, тиждень 5–7 �
 - [ ] **App icon design** — 1024×1024 master → derived assets (Android 512×512, all density buckets, iOS Asset Catalog).
 - [ ] **Screenshots production** — записати UI-flows на iPhone Simulator (6.7" + 5.5") і Android Emulator (Pixel 8 Pro, Pixel 5 Tablet). 4 screenshots per platform: Dashboard, Habit tracker, AI chat, Nutrition log.
 - [ ] **Short + Long description** — UA + EN. Reuse positioning з [`README.md`](../../../../README.md) і [`docs/work/specs/launch/business/02-go-to-market.md` § Headline формули](../business/02-go-to-market.md#41-product-hunt-playbook).
-- [ ] **Privacy Policy + Terms of Service публічні URL** — якщо ще не зроблено у Phase 1, це блокер. Використати Termly / Iubenda generator (див. [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#11-обовʼязкові-документи)).
+- [ ] **Privacy Policy + Terms of Service публічні URL** — якщо ще не зроблено у Phase 1, це блокер. Використати Termly / Iubenda generator (див. [`04-launch-readiness.md` §1.1](../business/04-launch-readiness.md#11-обовязкові-документи)).
 - [ ] **App Store Connect — App Privacy form** (iOS Nutrition labels).
 - [ ] **Play Console — Data safety form** (§4.6).
 - [ ] **In-App Purchase decision** (§3.5) — варіант A (StoreKit) чи варіант B (free-only iOS). Зафіксувати ADR.
@@ -551,7 +551,7 @@ Acceptance checklist — пройти ПОВНІСТЮ перед першим P
 
 ### 9.1 Поточне рішення у репо
 
-Джерело: [`docs/work/specs/launch/business/01-monetization-and-pricing.md`](../business/01-monetization-and-pricing.md#5-payment-providers).
+Джерело: [`docs/work/specs/launch/business/01-monetization-and-pricing.md`](../business/01-monetization-and-pricing.md#4-платіжні-провайдери).
 
 - **MVP plan:** LiqPay (UA) + Stripe (international) через web checkout.
 - **PWA — без 30 % комісії Apple/Google** — це маркетингова перевага.

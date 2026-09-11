@@ -595,7 +595,7 @@ flowchart LR
 #### 4.7.2 Recruitment-пост для публічних каналів
 
 Публікувати в UA Telegram-каналах зі списку
-[`business/02-go-to-market.md` §4.2](../business/02-go-to-market.md#українські-канали)
+[`business/02-go-to-market.md` §4.2](../business/02-go-to-market.md#42-українські-канали)
 (наприклад `@startupukraine`, `@productivity_ua`, `@digitalnomad_ua`, `@zozh_ukraine`)
 і в коментарях під DOU/AIN-статтями (§3.1 W-3 custdev-крок готує ці статті заздалегідь):
 
@@ -696,7 +696,7 @@ Sergeant: фінанси + тренування + звички + харчува�
 
 ## 6. Метрики успіху
 
-Цей розділ доповнює [`04-launch-readiness.md` §4`](../business/04-launch-readiness.md#4-метрики-готовності) і [`01-monetization-and-pricing.md` §7`](../business/01-monetization-and-pricing.md#7-activation-метрики). Тут — **Phase 1-specific** виміри.
+Цей розділ доповнює [`04-launch-readiness.md` §4`](../business/04-launch-readiness.md#4-метрики-готовності) і [`01-monetization-and-pricing.md` §7`](../business/01-monetization-and-pricing.md#7-activation-і-конверсія-у-платників). Тут — **Phase 1-specific** виміри.
 
 ### 6.1 North Star Metric для Phase 1
 

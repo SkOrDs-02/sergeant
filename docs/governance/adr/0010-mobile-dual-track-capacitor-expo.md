@@ -9,10 +9,10 @@
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
-  - [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md) — зведений статус web / native / capacitor-shell, включно з [feature-parity матрицею](../../engineering/architecture/platforms.md#0-feature-parity-матриця-web-shell-rn).
+  - [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md) — зведений статус web / native / capacitor-shell, включно з [feature-parity матрицею](../../engineering/architecture/platforms.md#-0-feature-parity-матриця-web--shell--rn).
   - [`docs/work/specs/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) — ініціатива, що формалізує дедлайн і guardrails.
   - [`docs/engineering/mobile/overview.md`](../../engineering/mobile/overview.md) — API-контракт для мобільного клієнта (auth, deep links, push).
-  - [`docs/engineering/mobile/shell.md`](../../engineering/mobile/shell.md) — operator-референс для shell, секція [Sunset](../../engineering/mobile/shell.md#sunset).
+  - [`docs/engineering/mobile/shell.md`](../../engineering/mobile/shell.md) — operator-референс для shell, секція [Sunset](../../engineering/mobile/shell.md#historical-sunset-note).
   - [`docs/engineering/mobile/react-native-migration.md`](../../engineering/mobile/react-native-migration.md) — детальний roadmap порту web → RN.
   - [`apps/mobile/app.config.ts`](../../../apps/mobile/app.config.ts) — Expo SDK 52, RN 0.76, bundle `com.sergeant.app`.
   - [`apps/mobile-shell/capacitor.config.ts`](../../../apps/mobile-shell/capacitor.config.ts) — Capacitor 7, `com.sergeant.shell`.
@@ -47,7 +47,7 @@ long-term нативний клієнт. Обидва коекзистують �
 > означає, що dual-track — тимчасовий стан, не steady state. Дати нижче — **operational
 > commitments**: про їх зсув мейнтейнер коментує тут і у [`docs/work/specs/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) Outcome,
 > з обґрунтуванням на основі feature-parity матриці у
-> [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md#0-feature-parity-матриця-web-shell-rn).
+> [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md#-0-feature-parity-матриця-web--shell--rn).
 
 | Маркер | Дата           | Що відбувається                                                                                                                                                                                                                                                                                         |
 | ------ | -------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -55,7 +55,7 @@ long-term нативний клієнт. Обидва коекзистують �
 | **T₁** | **2026-11-30** | Remove-from-store. Shell `com.sergeant.shell` видаляється з Play Store і App Store (T₀ + 90 днів). Бета-канал shell-білду перед T₁ показує in-app banner з deep-link на RN-store-listing і отримує 2× push-нагадування у грейс-період T₀ … T₁.                                                          |
 | **T₂** | **2026-12-30** | `apps/mobile-shell/` (TS + Android + iOS) видаляється з репо разом з ProGuard rules, GH Actions workflow-ами і Sentry-проєктом shell-у (T₁ + 30 днів). Архів `data-export/shell-events.parquet` (без PII) кладеться у `ops/data-archive/`. Lint-правило `forbid-shell-only-feature` лишається як guard. |
 
-### Exit dashboard (читається з [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md#0-feature-parity-матриця-web-shell-rn))
+### Exit dashboard (читається з [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md#-0-feature-parity-матриця-web--shell--rn))
 
 Три бінарні маяки. **Якщо хоча б один червоний на дату T₀ — T₀ зсувається на 30 днів** (новий T₁ і T₂ перераховуються відповідно), і у Outcome ініціативи 0002 публікується one-liner з причиною. Без публічного коментаря дата не зсувається.
 
@@ -421,7 +421,7 @@ n/a.
    банер з deep-link у store-listing RN-апки. Питання UX — коли саме запускати
    банер (login? кожен open? первинне відкриття після update?).
 4. **iOS TestFlight release automation.** Pipeline scaffolded, потребує
-   Apple-секретів (див. [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md#3-capacitor-shell--appsmobile-shell)).
+   Apple-секретів (див. [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md#-3-capacitor-shell--appsmobile-shell)).
 
 ---
 

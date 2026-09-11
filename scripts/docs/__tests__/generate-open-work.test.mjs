@@ -113,6 +113,55 @@ describe("extractPRNumbers", () => {
     assert.deepEqual(extractPRNumbers(content), [2816]);
   });
 
+  // Regression: the 5-digit ceiling alone only rejected *all-numeric* hex.
+  // `#14100e` is 5 digits + a letter, so it used to leak into the dashboard
+  // as «PR 14100» — which is why the founder-UX audit had to write its hex
+  // values without a leading `#`. Same class: `#155e75` → 155,
+  // `#92400e` → 92400, `#44403c` → 44403.
+  it("ignores hex colors whose leading characters are digits", () => {
+    const content = [
+      "ink-база переведена на тепле вугілля `#14100e` / `#1b1613` / `#221c18`;",
+      "акценти `#155e75`, `#92400e`, `#44403c`, `#115e59`, `#065f46`;",
+      "справжня згадка PR #1081 має лишитись.",
+    ].join(" ");
+    assert.deepEqual(extractPRNumbers(content), [1081]);
+  });
+
+  it("ignores CSS shorthand hex and other zero-padded tokens", () => {
+    // `#000` used to surface as «PR 0»; `#012` / `#038` are this repo's
+    // zero-padded storage-roadmap stage labels, not GitHub PR numbers —
+    // linking them to /pull/12 and /pull/38 pointed at unrelated PRs.
+    const content =
+      "інверсія `#000` / `#fff`; Soft-delete — реалізовано (PR #012), дзеркалить PR #038; жива згадка #607.";
+    assert.deepEqual(extractPRNumbers(content), [607]);
+  });
+
+  it("ignores lettered stage labels like `PR #052b`", () => {
+    const content =
+      "cloudSync v1 видалено у PR #052b/#052c, web phase PR #053a, Stage 8 PR #057r.";
+    assert.deepEqual(extractPRNumbers(content), []);
+  });
+
+  it("ignores anchor fragments glued to a file name", () => {
+    // `…/05-motion-offline-error.md#141-motion-tokens-css-custom-properties`
+    // used to surface as «PR 141».
+    const content =
+      "[§14.1](./design-system/05-motion-offline-error.md#141-motion-tokens-css-custom-properties) та [§14.2](./design-system/05-motion-offline-error.md#142-choreography-rules)";
+    assert.deepEqual(extractPRNumbers(content), []);
+  });
+
+  it("ignores HTML numeric entities and identifier-glued hashes", () => {
+    const content = "тире &#8212; тут, профіль `QaProfile#2026`, і PR #925.";
+    assert.deepEqual(extractPRNumbers(content), [925]);
+  });
+
+  it("still accepts a PR number followed by a hyphenated word", () => {
+    // `#788-style баги` is a genuine PR reference — the trailing guard must
+    // reject letters/digits but keep punctuation.
+    const content = "RLS policies (виявляє #788-style баги).";
+    assert.deepEqual(extractPRNumbers(content), [788]);
+  });
+
   it("returns empty array for empty input", () => {
     assert.deepEqual(extractPRNumbers(""), []);
     assert.deepEqual(extractPRNumbers(null), []);

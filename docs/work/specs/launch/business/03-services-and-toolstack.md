@@ -149,7 +149,7 @@
 - OpenAPI є: `packages/shared/src/openapi/routes.ts` + generated `packages/api-client/src/generated/openapi.d.ts`.
 - Production setup лишається: Stripe Account + Product + Price (`$7/$49` за ADR-0051; UAH equivalent на UA-старті).
 - Env: `STRIPE_SECRET_KEY`, `STRIPE_WEBHOOK_SECRET`, `STRIPE_PRICE_ID_PRO_MONTHLY`, `STRIPE_PRICE_ID_PRO_YEARLY`
-- Деталі edge cases (chargeback, webhook miss) — див. [04-launch-readiness.md](./04-launch-readiness.md#21-billing-edge-cases)
+- Деталі edge cases (chargeback, webhook miss) — див. [04-launch-readiness.md](./04-launch-readiness.md#21-offline--billing-деталі)
 
 ### 2.5 AI
 
