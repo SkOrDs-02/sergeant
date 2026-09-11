@@ -13,7 +13,11 @@ import {
   type NutritionPrefs,
   type Pantry,
 } from "../../modules/nutrition/lib/nutritionStorage";
-import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
+import {
+  SettingsGroup,
+  SettingsSubGroup,
+  ToggleRow,
+} from "./SettingsPrimitives";
 
 function numberOrNullToInput(v: number | null): string {
   return v == null ? "" : String(Math.round(v));
@@ -171,6 +175,20 @@ export function NutritionSection() {
         />
       </SettingsSubGroup>
 
+      <SettingsSubGroup title="Автокалібрування цілі">
+        <ToggleRow
+          label="Автокалібрування"
+          description="Щотижня уточнює ціль за журналом їжі та зміною ваги. Ручна правка полів денного плану призупиняє його."
+          checked={prefs.adaptiveGoalEnabled}
+          onChange={(checked) =>
+            patchPrefs({
+              adaptiveGoalEnabled: checked,
+              adaptiveGoalLastUpdatedAt: null,
+            })
+          }
+        />
+      </SettingsSubGroup>
+
       <SettingsSubGroup title="Підстановка з комори">
         <p className="text-style-body text-subtle leading-snug">
           У діалозі «Додати прийом їжі» поряд з пошуком і штрихкодом показуються
@@ -202,7 +220,7 @@ export function NutritionSection() {
             ))}
           </Select>
         </label>
-        <p className="text-style-caption text-subtle">
+        <p className="text-style-body text-subtle">
           Деталі продуктів і перейменування комор – у менеджері комори всередині
           модуля Їжі.
         </p>

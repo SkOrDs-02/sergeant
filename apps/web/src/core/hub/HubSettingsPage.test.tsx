@@ -226,10 +226,10 @@ describe("HubSettingsPage", () => {
   // «Підписка та план» (`anchorId="settings-plan"`, ДРУГА секція
   // «Загальних», мок вище) — жоден інший механізм її не форсить.
   //
-  // Дефект №2: ОДНОЧАСНО перевіряємо, що «Головна» (перша секція
-  // вкладки) НЕ розгортається разом із ціллю хеша — до фіксу
-  // `value={!q && index === 0}` не знав про `hashSectionId`, тож
-  // розгорталися ОБИДВІ секції.
+  // Дефект №2, історія: до фіксу форсоване "перша секція вкладки
+  // відкрита" розгорталось ОДНОЧАСНО з ціллю хеша. Forced-first прибрано
+  // зовсім рішенням власника 2026-09-11, тож ця перевірка тепер ще й
+  // пряме регресійне покриття: хеш відкриває РІВНО одну секцію.
   it("auto-expands only the Підписка та план section when navigated via #settings-plan, not the tab's first section", () => {
     // Tap on an inactive Bento card on the Hub dashboard dispatches
     // `HUB_OPEN_SETTINGS_EVENT` which navigates to
@@ -262,68 +262,65 @@ describe("HubSettingsPage", () => {
     expect(plan?.scrollIntoView).not.toHaveBeenCalled();
   });
 
-  // Варіант A (profile/settings deep audit 2026-08-08, рішення власника
-  // №4 — `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md`
-  // §0.1): другого рівня акордеона більше немає, і замість нього перша
-  // секція активної вкладки відкривається за замовчуванням — це прибирає
-  // порожнечу внизу стартового екрана «Загальні» (шість згорнутих рядків,
-  // ~224px порожнечі до фіксу).
-  it("opens the first section of the default tab (Головна) on a cold load, without a hash", () => {
+  // Рішення власника 2026-09-11: forced-first-of-tab (Варіант A, profile/
+  // settings deep audit 2026-08-08, рішення власника №4) СКАСОВАНО. На
+  // холодному завантаженні — без хеша, без `?billing=…`/`?silpo=…`-return
+  // — жодна секція не відкривається автоматично, у тому числі перша
+  // секція активної вкладки.
+  it("opens no section by default on a cold load, without a hash", () => {
     renderWithBrowserToast(<HubSettingsPage />);
 
-    const dashboardToggle = screen.getByRole("button", { name: /Головна/ });
-    expect(dashboardToggle).toHaveAttribute("aria-expanded", "true");
+    const homeToggle = screen.getByRole("button", { name: /Головна/ });
+    expect(homeToggle).toHaveAttribute("aria-expanded", "false");
 
-    // «Підписка та план» is the SECOND section of the same «Загальні»
-    // tab (`PlanSection` mock wraps the real `SettingsGroup anchorId=
-    // "settings-plan"`, see the mock above) — it must stay collapsed.
-    // Without this assertion, a bug that force-opens EVERY section
-    // (instead of just the first) would slip through undetected.
+    // «Підписка та план» — друга секція тієї ж вкладки «Загальні»
+    // (`PlanSection` mock wraps the real `SettingsGroup anchorId=
+    // "settings-plan"`, see the mock above) — теж лишається згорнутою.
     const planToggle = screen.getByRole("button", {
       name: /Підписка та план/,
     });
     expect(planToggle).toHaveAttribute("aria-expanded", "false");
   });
 
-  it("opens the first section of a newly selected tab, not the previous tab's first section", () => {
+  it("opens no section of a newly selected tab either", () => {
     renderWithBrowserToast(<HubSettingsPage />);
 
-    // Головна (first of «Загальні») starts open per the test above.
     expect(screen.getByRole("button", { name: /Головна/ })).toHaveAttribute(
       "aria-expanded",
-      "true",
+      "false",
     );
 
     fireEvent.click(screen.getByRole("tab", { name: /Додатково/ }));
 
-    // «Конфіденційність» (`PrivacySection` mock above wraps the real
+    // «Дані та приватність» (`PrivacySection` mock above wraps the real
     // `SettingsGroup anchorId="settings-privacy">`) is the first section
-    // of «Додатково» (`privacy, pwa, dataExport, experimental`) and has no
-    // `anchorId` match for the current (hash-less) URL — the ONLY thing
-    // that can open it is the first-visible-section default.
+    // of «Додатково» and has no `anchorId` match for the current
+    // (hash-less) URL — forced-first no longer exists, so it stays
+    // collapsed too.
     const privacyToggle = screen.getByRole("button", {
       name: /Дані та приватність/,
     });
-    expect(privacyToggle).toHaveAttribute("aria-expanded", "true");
+    expect(privacyToggle).toHaveAttribute("aria-expanded", "false");
   });
 
-  // Дефект №3 (адверсарне ревʼю 2026-08-08): `SettingsGroupDefaultOpenContext`
-  // раніше читався лише в `useState`-ініціалізаторі — перемикання вкладки
-  // РЕМАУНТИТЬ секцію (вона зникає з `visible`, коли вкладка неактивна), і
-  // без памʼяті на рівні сторінки форсоване "перша секція вкладки відкрита"
-  // (Варіант A) щоразу перевідкривало секцію, яку юзер щойно сам згорнув.
-  it("remembers an explicit collapse of the first-of-tab section across a tab switch (дефект №3)", () => {
+  // Дефект №3 (адверсарне ревʼю 2026-08-08), лишається чинним і після
+  // зняття forced-first (рішення власника 2026-09-11):
+  // `SettingsGroupDefaultOpenContext` читається лише в `useState`-
+  // ініціалізаторі — перемикання вкладки РЕМАУНТИТЬ секцію (вона зникає з
+  // `visible`, коли вкладка неактивна), і без памʼяті на рівні сторінки
+  // явний вибір юзера («розгорнути») губився б при поверненні на вкладку.
+  it("remembers an explicit expand of a section across a tab switch (дефект №3)", () => {
     renderWithBrowserToast(<HubSettingsPage />);
 
-    // «Головна» стартує розгорнутим — форсовано, як перша секція «Загальних».
-    const dashboardToggle = screen.getByRole("button", { name: /Головна/ });
-    expect(dashboardToggle).toHaveAttribute("aria-expanded", "true");
+    // «Головна» стартує згорнутим — forced-first скасовано 2026-09-11.
+    const homeToggle = screen.getByRole("button", { name: /Головна/ });
+    expect(homeToggle).toHaveAttribute("aria-expanded", "false");
 
-    // Юзер явно згортає її.
-    fireEvent.click(dashboardToggle);
+    // Юзер явно розгортає її.
+    fireEvent.click(homeToggle);
     expect(screen.getByRole("button", { name: /Головна/ })).toHaveAttribute(
       "aria-expanded",
-      "false",
+      "true",
     );
 
     // Перемикання на іншу вкладку розмонтовує «Головна» узагалі — вона не
@@ -331,13 +328,12 @@ describe("HubSettingsPage", () => {
     fireEvent.click(screen.getByRole("tab", { name: /Розділи/ }));
     expect(screen.queryByRole("button", { name: /Головна/ })).toBeNull();
 
-    // Повернення на «Загальні»: до фіксу «Головна» ремаунтився з ЧИСТИМ
-    // `useState`-ініціалізатором і форсовано розгортався знову, ігноруючи
-    // явний вибір юзера.
+    // Повернення на «Загальні»: явний вибір юзера («розгорнуто») має
+    // пережити ремаунт, а не скинутись до дефолтного «згорнуто».
     fireEvent.click(screen.getByRole("tab", { name: /Загальні/ }));
     expect(screen.getByRole("button", { name: /Головна/ })).toHaveAttribute(
       "aria-expanded",
-      "false",
+      "true",
     );
   });
 

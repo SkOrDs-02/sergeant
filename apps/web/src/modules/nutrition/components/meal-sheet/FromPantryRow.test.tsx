@@ -135,6 +135,49 @@ describe("FromPantryRow", () => {
     expect(chip.closest("[aria-hidden]")).toBeNull();
   });
 
+  // 2026-09-11: замінило окремий рядок «З чека» — вага фасування з чека
+  // Сільпо (`packGrams`) тепер підставляється прямо з чіпа комори.
+  it("prefills the picked portion weight from the freshest source's packGrams", () => {
+    const setPickedGrams = vi.fn();
+    render(
+      <FromPantryRow
+        pantryItems={
+          [
+            {
+              name: "Йогурт",
+              qty: 660,
+              unit: "г",
+              sources: [
+                {
+                  name: "Йогурт Активіа полуниця",
+                  qty: 330,
+                  unit: "г",
+                  addedAt: "2026-08-21",
+                  packGrams: 330,
+                },
+                {
+                  name: "Йогурт Активіа полуниця",
+                  qty: 330,
+                  unit: "г",
+                  addedAt: "2026-09-05",
+                  packGrams: 330,
+                },
+              ],
+            },
+          ] as never[]
+        }
+        fromPantryItem={null}
+        setFromPantryItem={vi.fn()}
+        setForm={vi.fn()}
+        setFoodQuery={vi.fn()}
+        setPickedGrams={setPickedGrams}
+      />,
+    );
+    expect(screen.getByText("330 г")).toBeTruthy();
+    fireEvent.click(screen.getByText("Йогурт"));
+    expect(setPickedGrams).toHaveBeenCalledWith("330");
+  });
+
   it("deselects the active item on a second tap", () => {
     const setFromPantryItem = vi.fn();
     render(

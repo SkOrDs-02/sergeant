@@ -8,13 +8,13 @@ import { Input } from "@shared/components/ui/Input";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { Tooltip } from "@shared/components/ui/Tooltip";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@shared/lib/text/limits";
 import { formatPantryQty } from "../lib/formatPantryQty";
 import { PantryListGuide, PantryParsePreview } from "./PantryParsePanel";
 import { PantryAmbiguousQtyPrompt } from "./PantryAmbiguousQtyPrompt";
+import { PantrySourceTabs, type PantryInputMode } from "./PantrySourceTabs";
 import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
 import { groupItemsByCategory } from "../lib/foodCategories";
 import type { FoodCategory } from "../lib/foodCategories";
@@ -36,13 +36,6 @@ type PantryItemView = Partial<PantryItem> & {
   /** Місце зберігання позиції. Відсутнє лише на легасі-шляху сирого тексту. */
   pantryId?: string;
 };
-
-// Назви описують спосіб вводу, а не те, що вводиться: «Продукт»/«Список»
-// читалось як два різні типи запису, ще й плуталось із вкладкою «Покупки».
-const INPUT_MODES = [
-  { id: "single", label: "По одному" },
-  { id: "list", label: "Списком" },
-];
 
 function ChevronIcon({ open }: { open: boolean }) {
   return (
@@ -383,6 +376,13 @@ interface PantryCardProps {
   dismissParsePreview?: () => void;
   placeFilter: string | null;
   /**
+   * Позиції комори — прокидається в `PantrySourceTabs` лише для дедупу
+   * превʼю сегмента «З чека» (`SilpoPantryReplenishSheet`). Дефолт `[]`:
+   * старі виклики без Сільпо-контексту (тести, снапшоти) сегмент і так не
+   * побачать — гейт стоїть на `useSilpoSyncState` усередині.
+   */
+  pantryItems?: readonly Pick<PantryItem, "name">[];
+  /**
    * UX-4 (аудит 2026-09-01) — позиції з `upsertItem`, чиє хвостове число без
    * одиниці лишилось неоднозначним. Необовʼязкові — сторінки, що ще не
    * прокидають підказку (тести, старі snapshot-и), просто її не бачать.
@@ -418,48 +418,23 @@ export function PantryCard({
   resolveAmbiguousPantryItem,
   dismissAmbiguousPantryItem,
   rememberAmbiguousChoice,
+  pantryItems = [],
 }: PantryCardProps) {
-  const [mode, setMode] = useState("single");
+  const [mode, setMode] = useState<PantryInputMode>("single");
 
   return (
     <>
       <Card className="p-4">
-        <div className="flex items-center justify-between gap-3 mb-3">
-          <div className="min-w-0">
-            <div className="text-style-label text-text">Додати продукти</div>
-          </div>
-          <div className="flex items-center gap-2 shrink-0">
-            {typeof onScanBarcode === "function" && (
-              <Tooltip content="Сканувати штрих-код" placement="bottom-center">
-                <button
-                  type="button"
-                  onClick={onScanBarcode}
-                  disabled={busy}
-                  className="w-8 h-8 min-h-[44px] min-w-[44px] rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition border border-nutrition/30 hover:bg-nutrition/20 transition-colors disabled:opacity-50 flex items-center justify-center"
-                  aria-label="Сканувати штрих-код"
-                >
-                  <Icon name="scanner" size={18} aria-hidden />
-                </button>
-              </Tooltip>
-            )}
-            <div className="flex rounded-xl bg-panelHi border border-line p-0.5">
-              {INPUT_MODES.map((m) => (
-                <button
-                  key={m.id}
-                  type="button"
-                  onClick={() => setMode(m.id)}
-                  className={cn(
-                    "px-3 py-1.5 min-h-[44px] rounded-xl text-style-caption transition-colors",
-                    mode === m.id
-                      ? "bg-nutrition-strong text-white shadow-sm"
-                      : "text-subtle hover:text-text",
-                  )}
-                >
-                  {m.label}
-                </button>
-              ))}
-            </div>
-          </div>
+        <div className="mb-3">
+          <div className="text-style-label text-text mb-3">Додати продукти</div>
+          <PantrySourceTabs
+            mode={mode}
+            onModeChange={setMode}
+            onScanBarcode={onScanBarcode}
+            pantryItems={pantryItems}
+            upsertItem={upsertItem}
+            busy={busy}
+          />
         </div>
 
         {mode === "single" ? (

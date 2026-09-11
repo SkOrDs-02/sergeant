@@ -22,6 +22,8 @@ const DEFAULT_PREFS = {
   dailyTargetFat_g: 70,
   dailyTargetCarbs_g: 230,
   waterGoalMl: 2000,
+  adaptiveGoalEnabled: false,
+  adaptiveGoalLastUpdatedAt: null,
 };
 
 vi.mock("../../modules/nutrition/lib/nutritionStorage", () => ({
@@ -97,6 +99,19 @@ describe("NutritionSection", () => {
     expect(
       screen.queryByRole("button", { name: /цілі в модулі Їжі/i }),
     ).not.toBeInTheDocument();
+  });
+
+  it("toggles adaptiveGoalEnabled and persists the change", () => {
+    renderSection();
+    const toggle = screen.getByRole("switch", { name: "Автокалібрування" });
+    expect(toggle).toHaveAttribute("aria-checked", "false");
+    fireEvent.click(toggle);
+    const lastCall = persistNutritionPrefs.mock.calls.at(-1)?.[0] as {
+      adaptiveGoalEnabled: boolean;
+      adaptiveGoalLastUpdatedAt: string | null;
+    };
+    expect(lastCall.adaptiveGoalEnabled).toBe(true);
+    expect(lastCall.adaptiveGoalLastUpdatedAt).toBeNull();
   });
 
   it("renders the pantry picker with options and switches active pantry", () => {

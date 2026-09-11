@@ -46,7 +46,7 @@ describe("CategoryPickerField", () => {
     expect(onSelect).toHaveBeenCalledWith("custom-72");
   });
 
-  it("не називає статичні категорії частими й не показує зайвий пошук для короткого списку", () => {
+  it("не називає статичні категорії частими й показує пошук навіть для короткого списку", () => {
     render(
       <CategoryPickerField
         categories={[
@@ -61,8 +61,30 @@ describe("CategoryPickerField", () => {
     fireEvent.click(screen.getByRole("button", { name: /Зарплата/ }));
     const dialog = screen.getByRole("dialog", { name: "Категорія" });
     expect(within(dialog).queryByText("Часті")).toBeNull();
-    expect(within(dialog).queryByLabelText("Знайти категорію")).toBeNull();
+    expect(
+      within(dialog).getByLabelText("Знайти категорію"),
+    ).toBeInTheDocument();
     expect(within(dialog).getByText("Усі категорії")).toBeInTheDocument();
+  });
+
+  it("розкладає опції у сітку на дві колонки", () => {
+    render(
+      <CategoryPickerField
+        categories={[
+          { id: "salary", label: "Зарплата" },
+          { id: "gift", label: "Подарунок" },
+        ]}
+        selectedId="salary"
+        onSelect={() => {}}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: /Зарплата/ }));
+    const dialog = screen.getByRole("dialog", { name: "Категорія" });
+    const [optionsContainer] = within(dialog).getAllByTestId(
+      "category-picker-options",
+    );
+    expect(optionsContainer).toHaveClass("grid", "grid-cols-2");
   });
 
   it("показує у «Частих» лише явно передані категорії", () => {

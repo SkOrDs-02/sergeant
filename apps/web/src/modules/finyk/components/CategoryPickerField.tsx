@@ -1,8 +1,15 @@
 /**
- * Last validated: 2026-09-09
+ * Last validated: 2026-09-11
  * Status: Active
  *
  * Компактний пошуковий вибір категорії для ручних і банківських операцій.
+ *
+ * Дві колонки замість одного стовпця (рішення власника 2026-09-11, за
+ * підтвердженим мокапом): повнорядкові чипи з довгими підписами кастомних
+ * категорій розтягували аркуш удвічі довше, ніж потрібно, — прокрутка до
+ * потрібного пункту ставала окремою проблемою. Пошук показується завжди
+ * (без порогу за довжиною списку): і на короткому, і на довгому списку
+ * дешевше набрати кілька літер, ніж гортати сітку.
  */
 import { useMemo, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
@@ -32,8 +39,6 @@ interface CategoryPickerFieldProps {
   onReset?: (() => void) | undefined;
   resetLabel?: string | undefined;
 }
-
-const SEARCH_THRESHOLD = 8;
 
 const copy = {
   all: "Усі категорії",
@@ -85,7 +90,6 @@ export function CategoryPickerField({
   const remaining = query
     ? filtered
     : filtered.filter((category) => !frequentSet.has(category.id));
-  const showSearch = categories.length > SEARCH_THRESHOLD;
 
   const choose = (nextId: string) => {
     onSelect(nextId);
@@ -107,8 +111,8 @@ export function CategoryPickerField({
       onClick={() => choose(category.id)}
       style={catChipVars(category.id, categories)}
       className={cn(
-        "w-full touch-target rounded-xl border px-3 py-2.5 text-left",
-        "flex items-center justify-between gap-3 transition-colors",
+        "w-full touch-target rounded-xl border px-2.5 py-2.5 text-left",
+        "flex items-center justify-between gap-2 transition-colors",
         category.id === selectedId
           ? "cat-chip border-transparent"
           : "border-line hover:bg-panelHi",
@@ -156,15 +160,13 @@ export function CategoryPickerField({
         zIndex={70}
         bodyClassName="space-y-4"
       >
-        {showSearch && (
-          <Input
-            value={query}
-            onChange={(event) => setQuery(event.target.value)}
-            placeholder={copy.search}
-            aria-label={copy.search}
-            icon={<Icon name="search" size={16} aria-hidden />}
-          />
-        )}
+        <Input
+          value={query}
+          onChange={(event) => setQuery(event.target.value)}
+          placeholder={copy.search}
+          aria-label={copy.search}
+          icon={<Icon name="search" size={16} aria-hidden />}
+        />
         {filtered.length === 0 ? (
           <p className="py-6 text-center text-style-body text-subtle">
             {copy.noResults}
@@ -176,7 +178,12 @@ export function CategoryPickerField({
                 <p className="text-style-caption text-subtle">
                   {copy.frequent}
                 </p>
-                {frequent.map(renderOption)}
+                <div
+                  data-testid="category-picker-options"
+                  className="grid grid-cols-2 gap-2"
+                >
+                  {frequent.map(renderOption)}
+                </div>
               </section>
             )}
             {remaining.length > 0 && (
@@ -184,7 +191,12 @@ export function CategoryPickerField({
                 {!query && (
                   <p className="text-style-caption text-subtle">{copy.all}</p>
                 )}
-                {remaining.map(renderOption)}
+                <div
+                  data-testid="category-picker-options"
+                  className="grid grid-cols-2 gap-2"
+                >
+                  {remaining.map(renderOption)}
+                </div>
               </section>
             )}
           </div>

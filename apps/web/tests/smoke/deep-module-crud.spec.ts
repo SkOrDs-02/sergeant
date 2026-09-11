@@ -227,7 +227,14 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await waitForSqliteRefreshAfter(page, "nutrition", async () => {
       await page.getByRole("button", { name: "Додати", exact: true }).click();
     });
-    await expect(page.getByText("dcrud йогурт")).toBeVisible();
+    // Роль-локатор, не голий getByText: після додавання зʼявляється тост
+    // «Додано «dcrud йогурт» у Холодильник» (рішення власника 2026-09-11,
+    // тост «куди лягло»), і plain getByText матчить і рядок, і тост —
+    // strict mode violation. Те саме виправлення, що вже стоїть нижче
+    // для undo-тосту «Прибрано …».
+    await expect(
+      page.getByRole("button", { name: "Редагувати dcrud йогурт" }),
+    ).toBeVisible();
 
     await page.getByRole("button", { name: "Редагувати dcrud йогурт" }).click();
     await expect(
@@ -256,7 +263,9 @@ test.describe("@critical deep module CRUD browser loop", () => {
 
     await page.goto("/nutrition/pantry", { waitUntil: "domcontentloaded" });
     await waitForInitialSqliteRefresh(page, "nutrition");
-    await expect(page.getByText("dcrud йогурт")).toBeVisible();
+    await expect(
+      page.getByRole("button", { name: "Редагувати dcrud йогурт" }),
+    ).toBeVisible();
     // Post-reload quantity may revert when SQLite overlay wins the smoke
     // WASM/memory-VFS race — edit proof is the pre-reload assert above.
 

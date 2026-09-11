@@ -37,6 +37,7 @@ import {
 } from "@finyk/hooks/useSilpoReceipts";
 import type { SilpoReceiptItemDto } from "@shared/api";
 import type { PantryItem } from "../lib/pantryTextParser";
+import { receiptQtyToGrams } from "@shared/lib/format/receiptQty";
 
 /** Скільки останніх чеків пропонуємо на вибір — «останні чеки», не архів. */
 const RECEIPTS_LIMIT = 10;
@@ -221,6 +222,10 @@ export function useSilpoPantryReplenish({
         unit: based.unit,
         addedAt,
         packCount: receiptPackCount(r.item.qty, r.item.unit),
+        // Вага фасування — для прификсовування порції в стрічці «З
+        // комори» в аркуші прийому їжі (FromPantryRow, 2026-09-11: замінив
+        // окремий рядок «З чека», що читав це саме поле напряму з чека).
+        packGrams: receiptQtyToGrams(r.item.qty, r.item.unit),
       };
       return {
         name,

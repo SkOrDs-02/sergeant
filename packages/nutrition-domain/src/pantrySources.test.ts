@@ -7,6 +7,7 @@ import { mergeItems } from "./mergeItems.js";
 import {
   capSources,
   consumeFromSources,
+  latestPackGrams,
   pantrySourcesInvariantHolds,
   sourcesTotal,
   syntheticSource,
@@ -415,5 +416,40 @@ describe("ручне доливання до позиції з варіанта�
     expect(item.sources).toHaveLength(2);
     expect(item.sources![1]!.addedAt).toBeNull();
     expect(pantrySourcesInvariantHolds(item)).toBe(true);
+  });
+});
+
+describe("latestPackGrams", () => {
+  it("null для порожніх/відсутніх джерел", () => {
+    expect(latestPackGrams(null)).toBeNull();
+    expect(latestPackGrams([])).toBeNull();
+  });
+
+  it("null, коли жодне джерело не несе packGrams", () => {
+    expect(
+      latestPackGrams([source("Молоко", 900, "мл", "2026-08-21")]),
+    ).toBeNull();
+  });
+
+  it("бере packGrams найсвіжішого за addedAt джерела", () => {
+    const older = {
+      ...source("Молоко", 900, "мл", "2026-08-21"),
+      packGrams: 900,
+    };
+    const newer = {
+      ...source("Молоко", 330, "мл", "2026-08-28"),
+      packGrams: 330,
+    };
+    expect(latestPackGrams([older, newer])).toBe(330);
+    expect(latestPackGrams([newer, older])).toBe(330);
+  });
+
+  it("пропускає джерела без packGrams навіть якщо вони свіжіші", () => {
+    const withGrams = {
+      ...source("Молоко", 900, "мл", "2026-08-21"),
+      packGrams: 900,
+    };
+    const withoutGrams = source("Молоко", 200, "мл", "2026-08-28");
+    expect(latestPackGrams([withGrams, withoutGrams])).toBe(900);
   });
 });

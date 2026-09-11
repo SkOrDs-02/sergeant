@@ -59,8 +59,13 @@ export interface AssistantCapability {
   risky?: boolean;
   /**
    * Recently added — shown with a "Новинка" badge in the catalogue.
-   * Set to `true` for capabilities introduced in the last few releases;
-   * flip back to `undefined` once the feature is no longer notable.
+   *
+   * Ставиться руками і руками ж знімається — терміну життя в поля немає,
+   * і саме тому чіп на `compare_weeks` провисів ≈4,5 місяця від
+   * специфікації каталогу (2026-04-25) до 2026-09-11, поки його не
+   * спіймав тест легенди. Погоджена заміна — `since: "YYYY-MM-DD"` із
+   * вікном 30 днів, щоб бейдж знімався сам; до неї тримай поле порожнім,
+   * а не «поки що новинка».
    */
   isNew?: boolean;
   /** Surfaced as a chip below the chat input. */
@@ -1042,7 +1047,6 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     ],
     prompt: "Порівняй цей тиждень з минулим по всіх модулях.",
     requiresInput: false,
-    isNew: true,
     isQuickAction: true,
     quickActionPriority: 40,
     requiresOnline: true,

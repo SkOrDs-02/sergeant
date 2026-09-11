@@ -8,7 +8,9 @@ import { seedFTUX } from "../utils/seedFTUX";
 // відкрита за замовчуванням) сама по собі давала той самий результат, тож
 // гейт лишався б зеленим навіть без `anchorId`-логіки в SettingsGroup.
 // `#settings-plan` — остання секція вкладки «Загальні» («Головна» — перша):
-// розгорнути її може ЛИШЕ хеш.
+// розгорнути її може ЛИШЕ хеш. Forced-first-of-tab скасовано рішенням
+// власника 2026-09-11 — «Головна» тепер не відкривається автоматично
+// взагалі, тож нижче це заразом і пряме регресійне покриття.
 test("@critical settings: plan hash deep-link opens the subscription section, not the tab's first section", async ({
   page,
 }) => {

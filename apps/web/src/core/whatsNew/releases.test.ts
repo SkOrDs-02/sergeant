@@ -75,16 +75,18 @@ describe("whatsNew/releases — schema gates", () => {
     // process.cwd() === apps/web during vitest run; resolve repo root upward.
     const repoRoot = resolve(process.cwd(), "..", "..");
     for (const r of RELEASES) {
+      // Доки переїхали `docs/01-product/` → `docs/product/`
+      // (PR #1081), а цей шлях лишився на старому місці.
       const expected = resolve(
         repoRoot,
         "docs",
-        "01-product",
+        "product",
         "whats-new",
         `${r.id}.md`,
       );
       expect(
         existsSync(expected),
-        `markdown source missing: docs/01-product/whats-new/${r.id}.md`,
+        `markdown source missing: docs/product/whats-new/${r.id}.md`,
       ).toBe(true);
       // Sanity: markdown file mentions the same id (caught typo guard).
       const md = readFileSync(expected, "utf8");

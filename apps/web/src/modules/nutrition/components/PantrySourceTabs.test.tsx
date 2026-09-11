@@ -1,12 +1,10 @@
 // @vitest-environment jsdom
 /**
- * `SilpoPantryReplenishEntry` — entry point gating + end-to-end confirm
- * flow through the real `SilpoPantryReplenishSheet`. Data hooks
- * (`useSilpoSyncState`, `useSilpoReceipts`, `useSilpoReceiptDetail`) are
- * mocked at the `@finyk/hooks/*` boundary — this test is about the
- * nutrition-side wiring (visibility gate, default checkboxes, "нічого не
- * пишеться мовчки"), not about the finyk hooks themselves (covered by
- * their own suites).
+ * `PantrySourceTabs` — one source strip for «Додати продукти» (owner
+ * decision 2026-09-11). Covers: mode toggle wiring, scan segment gating,
+ * and the «З чека» segment (Silpo gate + sheet flow), which absorbs the
+ * coverage that used to live in the now-deleted
+ * `SilpoPantryReplenishEntry.test.tsx`.
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
@@ -25,7 +23,7 @@ vi.mock("@finyk/hooks/useSilpoReceipts", () => ({
   useSilpoReceiptDetail: (...args: unknown[]) => receiptDetailMock(...args),
 }));
 
-import { SilpoPantryReplenishEntry } from "./SilpoPantryReplenishEntry";
+import { PantrySourceTabs } from "./PantrySourceTabs";
 
 const RECEIPT_SUMMARY = {
   receiptId: "rcpt-1",
@@ -41,9 +39,71 @@ function detail(items: SilpoReceiptDetailDto["items"]): SilpoReceiptDetailDto {
   return { ...RECEIPT_SUMMARY, items };
 }
 
+function baseProps(overrides: Record<string, unknown> = {}) {
+  return {
+    mode: "single" as const,
+    onModeChange: vi.fn(),
+    onScanBarcode: vi.fn(),
+    pantryItems: [],
+    upsertItem: vi.fn(),
+    busy: false,
+    ...overrides,
+  };
+}
+
 afterEach(() => cleanup());
 
-describe("SilpoPantryReplenishEntry", () => {
+describe("PantrySourceTabs — mode + scan segments", () => {
+  beforeEach(() => {
+    syncStateMock.mockReset();
+    syncStateMock.mockReturnValue({ status: "disconnected" });
+  });
+
+  it("renders exactly single/list/scan (3 columns) when Silpo isn't connected", () => {
+    render(<PantrySourceTabs {...baseProps()} />);
+    expect(screen.getByText("По одному")).toBeInTheDocument();
+    expect(screen.getByText("Списком")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Сканувати штрих-код" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByText("З чека")).not.toBeInTheDocument();
+  });
+
+  it("calls onModeChange('single'/'list') on tap, without touching onScanBarcode", async () => {
+    const onModeChange = vi.fn();
+    const user = userEvent.setup();
+    render(<PantrySourceTabs {...baseProps({ onModeChange })} />);
+
+    await user.click(screen.getByText("Списком"));
+    expect(onModeChange).toHaveBeenCalledWith("list");
+    await user.click(screen.getByText("По одному"));
+    expect(onModeChange).toHaveBeenCalledWith("single");
+  });
+
+  it("scan segment calls onScanBarcode and does not call onModeChange", async () => {
+    const onScanBarcode = vi.fn();
+    const onModeChange = vi.fn();
+    const user = userEvent.setup();
+    render(
+      <PantrySourceTabs {...baseProps({ onScanBarcode, onModeChange })} />,
+    );
+
+    await user.click(
+      screen.getByRole("button", { name: "Сканувати штрих-код" }),
+    );
+    expect(onScanBarcode).toHaveBeenCalledTimes(1);
+    expect(onModeChange).not.toHaveBeenCalled();
+  });
+
+  it("omits the scan segment entirely (2 columns) when onScanBarcode isn't provided", () => {
+    render(<PantrySourceTabs {...baseProps({ onScanBarcode: undefined })} />);
+    expect(
+      screen.queryByRole("button", { name: "Сканувати штрих-код" }),
+    ).not.toBeInTheDocument();
+  });
+});
+
+describe("PantrySourceTabs — «З чека» segment (Silpo gate)", () => {
   beforeEach(() => {
     syncStateMock.mockReset();
     receiptsMock.mockReset();
@@ -77,46 +137,37 @@ describe("SilpoPantryReplenishEntry", () => {
     });
   });
 
-  it("renders nothing when Silpo isn't connected", () => {
+  it("hides the segment when Silpo isn't connected", () => {
     syncStateMock.mockReturnValue({ status: "disconnected" });
-    render(
-      <SilpoPantryReplenishEntry
-        pantryItems={[]}
-        upsertItem={vi.fn()}
-        busy={false}
-      />,
-    );
+    render(<PantrySourceTabs {...baseProps()} />);
     expect(
       screen.queryByRole("button", { name: /З покупок Сільпо/i }),
     ).toBeNull();
   });
 
-  it("renders nothing when the integration is disabled/unknown", () => {
+  it("hides the segment when the integration is disabled/unknown", () => {
     syncStateMock.mockReturnValue({ status: "disabled" });
-    render(
-      <SilpoPantryReplenishEntry
-        pantryItems={[]}
-        upsertItem={vi.fn()}
-        busy={false}
-      />,
-    );
+    render(<PantrySourceTabs {...baseProps()} />);
     expect(
       screen.queryByRole("button", { name: /З покупок Сільпо/i }),
     ).toBeNull();
   });
 
-  it("shows the entry CTA when connected, opens the sheet with default checkboxes, and confirm() writes only checked items", async () => {
+  it("shows the segment (4 columns) when connected; visible label is short, accessible name is the full CTA", () => {
+    syncStateMock.mockReturnValue({ status: "connected" });
+    render(<PantrySourceTabs {...baseProps()} />);
+    expect(screen.getByText("З чека")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "З покупок Сільпо" }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the sheet, confirm() writes only checked items", async () => {
     syncStateMock.mockReturnValue({ status: "connected" });
     const upsertItem = vi.fn();
     const user = userEvent.setup();
 
-    render(
-      <SilpoPantryReplenishEntry
-        pantryItems={[]}
-        upsertItem={upsertItem}
-        busy={false}
-      />,
-    );
+    render(<PantrySourceTabs {...baseProps({ upsertItem })} />);
 
     await user.click(screen.getByRole("button", { name: /З покупок Сільпо/i }));
 
@@ -149,66 +200,12 @@ describe("SilpoPantryReplenishEntry", () => {
             qty: 1,
             unit: "шт",
             addedAt: expect.any(String) as unknown as string,
-            // Одна штука — множення фасування не відбувалось, тож «× N»
-            // у розкладі позиції показувати нема чого.
             packCount: null,
+            packGrams: null,
           },
         ],
       },
     ]);
-  });
-
-  it("shows the privacy reminder next to receipt items (gate #2)", async () => {
-    syncStateMock.mockReturnValue({ status: "connected" });
-    const user = userEvent.setup();
-
-    render(
-      <SilpoPantryReplenishEntry
-        pantryItems={[]}
-        upsertItem={vi.fn()}
-        busy={false}
-      />,
-    );
-    await user.click(screen.getByRole("button", { name: /З покупок Сільпо/i }));
-
-    expect(
-      await screen.findByText(
-        "Позиції з чека лишаються у твоїй базі, в аналітику вони не йдуть.",
-      ),
-    ).toBeInTheDocument();
-  });
-
-  it("disables the confirm CTA when nothing is checked", async () => {
-    syncStateMock.mockReturnValue({ status: "connected" });
-    receiptDetailMock.mockReturnValue({
-      data: detail([
-        {
-          id: 2,
-          name: "Пральний порошок Persil",
-          qty: 1,
-          unit: "шт",
-          priceKop: 30000,
-          categorySlug: null,
-          barcode: null,
-        },
-      ]),
-      isLoading: false,
-    });
-    const user = userEvent.setup();
-
-    render(
-      <SilpoPantryReplenishEntry
-        pantryItems={[]}
-        upsertItem={vi.fn()}
-        busy={false}
-      />,
-    );
-    await user.click(screen.getByRole("button", { name: /З покупок Сільпо/i }));
-
-    const confirmButton = screen.getByRole("button", {
-      name: /Додати в комору/i,
-    });
-    expect(confirmButton).toBeDisabled();
   });
 
   it("shows an existing pantry match label instead of 'нова позиція' when norm-key matches", async () => {
@@ -230,10 +227,8 @@ describe("SilpoPantryReplenishEntry", () => {
     const user = userEvent.setup();
 
     render(
-      <SilpoPantryReplenishEntry
-        pantryItems={[{ name: "Молоко" }]}
-        upsertItem={vi.fn()}
-        busy={false}
+      <PantrySourceTabs
+        {...baseProps({ pantryItems: [{ name: "Молоко" }] })}
       />,
     );
     await user.click(screen.getByRole("button", { name: /З покупок Сільпо/i }));

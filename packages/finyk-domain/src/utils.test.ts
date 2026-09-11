@@ -75,6 +75,12 @@ describe("getCategory (expense)", () => {
     expect(getCategory("щось випадкове", 9999).id).toBe("other");
   });
 
+  it("маппить MCC переказу/готівки картки на 'debt' (щомісячне погашення кредитки, 2026-09-11)", () => {
+    expect(getCategory("", 4829).id).toBe("debt");
+    // 6010/6011 — готівка, не борг (ADR-0076): лишаються поза «debt».
+    expect(getCategory("", 6011).id).not.toBe("debt");
+  });
+
   it("бере канонічний categoryId транзакції раніше за MCC/опис", () => {
     const tx = {
       description: "Розваги",

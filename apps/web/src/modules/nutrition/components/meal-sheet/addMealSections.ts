@@ -14,11 +14,13 @@
  * інваріант між файлами: два блоки з одним ключем ділили б стан
  * згорнутості й перемикались би разом.
  *
+ * `receipt` (окремий рядок «З чека Сільпо») прибрано 2026-09-11 —
+ * `FromReceiptRow` видалено, вага фасування переїхала на `FromPantryRow`.
+ *
  * Status: Active
  */
 export const ADD_MEAL_SECTION_KEYS = {
   templates: "sergeant.nutrition.addMeal.templates.open.v1",
   recent: "sergeant.nutrition.addMeal.recent.open.v1",
   pantry: "sergeant.nutrition.addMeal.pantry.open.v2",
-  receipt: "sergeant.nutrition.addMeal.receipt.open.v1",
 } as const;

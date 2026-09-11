@@ -154,8 +154,9 @@ export function lazySectionMinH(
 //
 // Розгорнутою lazy-секція буває у двох випадках, і обидва відомі в тому ж
 // `map`, де рендериться `<Suspense>` (`defaultOpenForSection`): це або
-// перша секція активної вкладки (Варіант A), або ціль хеш-діп-лінка
-// `#settings-<id>`. Для `routine` перший випадок — типовий: він index 0
+// ціль хеш-діп-лінка `#settings-<id>`, або явний вибір юзера
+// (`sectionOpenOverrides`); forced-first-of-tab (Варіант A) знято
+// рішенням власника 2026-09-11. Для `routine` перший випадок — типовий: він index 0
 // вкладки «Розділи», тому 600 (консервативна оцінка двох `SettingsSubGroup`
 // — календарні перемикачі, далі редактори тегів/категорій; не піксельний
 // вимір, див. RoutineSection.tsx). Для `fizruk` / `finyk` / `nutrition`
@@ -678,32 +679,27 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
           activeGroupLabel ? `Налаштування · ${activeGroupLabel}` : undefined
         }
       >
-        {visible.map((s, index) => {
-          // Дефект №2 (адверсарне ревʼю 2026-08-08): forced-first-of-tab
-          // не повинен спрацьовувати, коли хеш (чи billing-return, див.
-          // `readBillingReturnSectionId` вище) уже націлений на ІНШУ
-          // секцію ТІЄЇ Ж вкладки — інакше розгортаються ОБИДВІ: ціль
-          // хеша і перша секція вкладки, і сторінка приземляє юзера між
-          // двома розгорнутими картками замість однієї цільової.
-          // `hashSectionId` перевіряється саме проти `visibleSectionIds`
-          // (не голим `!!hashSectionId`): якщо юзер уже ПОКИНУВ
-          // хеш-вкладку і перемкнувся на іншу вручну, залишок
-          // `hashSectionId` із попередньої навігації не мусить назавжди
-          // глушити forced-first у ВСІХ інших вкладках.
-          const hashTargetsThisTab =
-            hashSectionId != null && visibleSectionIds.includes(hashSectionId);
-          const isFirstOfTab =
-            index === 0 && (!hashTargetsThisTab || hashSectionId === s.id);
-          // Дефект №3: явний вибір юзера (запамʼятаний per-section-id у
-          // `sectionOpenOverrides`) переважає дефолт "перша секція
-          // відкрита" — якщо юзер сам згорнув форсовано-відкриту секцію,
-          // ремаунт (перемикання вкладки чи search, що ховає й показує
-          // секцію заново) більше не повертає її в розгорнутий стан.
-          // Пошук УЖЕ зберігав це випадково (та сама React-інстанція не
-          // розмонтовується, доки секція лишається серед результатів) —
-          // тепер це справжня, а не випадкова консистентність.
+        {visible.map((s) => {
+          // Рішення власника 2026-09-11: forced-first-of-tab (Варіант A,
+          // адверсарне ревʼю 2026-08-08, дефекти №2/№3) знято. Жодна
+          // секція більше НЕ відкривається автоматично лише тому, що вона
+          // перша у видимій вкладці — на холодному завантаженні і після
+          // перемикання вкладки всі секції стартують ЗГОРНУТИМИ, доки їх
+          // не відкриє один з двох явних сигналів нижче.
+          //
+          // Сигнал №1 — ціль хеш-діп-лінка чи query-return (`#settings-
+          // <id>`, `?billing=portal-return|manage`, `?silpo=connected|
+          // error`): їх усі зводить до одного `hashSectionId`-стейту
+          // ефекти вище в файлі, і секція, на яку він вказує, відкриється
+          // незалежно від позиції в списку чи активної вкладки.
+          //
+          // Сигнал №2 (дефект №3, лишається чинним і після зняття
+          // Варіанта A): памʼять явного вибору юзера
+          // (`sectionOpenOverrides`, per-section-id) переважає дефолт —
+          // якщо юзер сам розгорнув чи згорнув секцію, ремаунт при
+          // перемиканні вкладки відтворює саме той стан.
           const userOverride = sectionOpenOverrides[s.id];
-          const defaultOpenForSection = userOverride ?? isFirstOfTab;
+          const defaultOpenForSection = userOverride ?? hashSectionId === s.id;
 
           return (
             <SettingsGroupDefaultOpenContext.Provider
