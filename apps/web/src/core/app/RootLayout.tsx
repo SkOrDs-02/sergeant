@@ -271,7 +271,11 @@ function RootLayoutInner() {
   useKeyboardShortcutsModal();
   const { openChat: openAssistantChat } = useHubChatOverlay();
   const { canInstall, install, dismiss } = usePwaInstall();
-  const { visible: iosVisible, dismiss: iosDismiss } = useIosInstallBanner();
+  const {
+    visible: iosVisible,
+    dismissForever: iosDismissForever,
+    snooze: iosSnooze,
+  } = useIosInstallBanner();
   const { updateAvailable, applyUpdate } = useSWUpdate();
   const { user, isLoading: authLoading } = useAuth();
 
@@ -341,7 +345,8 @@ function RootLayoutInner() {
     onInstall: install,
     onDismissInstall: dismiss,
     iosVisible,
-    onDismissIos: iosDismiss,
+    onDismissIosForever: iosDismissForever,
+    onSnoozeIos: iosSnooze,
     updateAvailable,
     onApplyUpdate: applyUpdate,
     openAssistantChat,

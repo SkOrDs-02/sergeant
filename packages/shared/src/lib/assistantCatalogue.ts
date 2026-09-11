@@ -16,6 +16,7 @@
 // Without an entry the capability is invisible to the user and absent
 // from /help, even though the model can still call it.
 
+import { kyivCalendarDaysBetween } from "../utils/date";
 import { foldApostrophes } from "../utils/ukApostrophe";
 
 export type CapabilityModule =
@@ -58,16 +59,18 @@ export interface AssistantCapability {
   /** Destructive — shown with a warning badge. */
   risky?: boolean;
   /**
-   * Recently added — shown with a "Новинка" badge in the catalogue.
+   * Дата (`YYYY-MM-DD`, календарна — той самий Kyiv-режим, що й
+   * `WhatsNewRelease.date` у `core/whatsNew/releases.ts`), відколи
+   * можливість додана. `isRecentCapability()` рахує «Новинка» як
+   * «`since` молодше {@link ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS} днів» —
+   * бейдж знімається сам, руками нічого прибирати не треба.
    *
-   * Ставиться руками і руками ж знімається — терміну життя в поля немає,
-   * і саме тому чіп на `compare_weeks` провисів ≈4,5 місяця від
-   * специфікації каталогу (2026-04-25) до 2026-09-11, поки його не
-   * спіймав тест легенди. Погоджена заміна — `since: "YYYY-MM-DD"` із
-   * вікном 30 днів, щоб бейдж знімався сам; до неї тримай поле порожнім,
-   * а не «поки що новинка».
+   * Замінює колишній `isNew: boolean` (founder-ux-review round 2, O3):
+   * той знімався тільки руками, і чіп на `compare_weeks` провисів ≈4,5
+   * місяця від специфікації каталогу (2026-04-25) до 2026-09-11, поки
+   * його не спіймав тест легенди.
    */
-  isNew?: boolean;
+  since?: string;
   /** Surfaced as a chip below the chat input. */
   isQuickAction?: boolean;
   /** Lower number sorts higher among quick-action chips. */
@@ -830,7 +833,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
 
-  // ───── Харчування (11) ────────────────────────────────────────────────
+  // ───── Харчування (12) ────────────────────────────────────────────────
   {
     id: "log_meal",
     module: "nutrition",
@@ -1068,7 +1071,7 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     requiresOnline: true,
   },
 
-  // ───── Аналітика (5) — окрема UI-група, фізично у crossModule.ts ──────
+  // ───── Аналітика (6) — окрема UI-група, фізично у crossModule.ts ──────
   {
     id: "spending_trend",
     module: "analytics",
@@ -1260,6 +1263,36 @@ export const ASSISTANT_CAPABILITIES: readonly AssistantCapability[] = [
     keywords: ["recall", "search", "memory", "семантичний"],
   },
 ];
+
+/**
+ * «Новинка»-вікно (у днях) для {@link isRecentCapability}. Той самий
+ * порядок величини, що й `WhatsNewModal`, з тим самим обґрунтуванням —
+ * достатньо, щоб рядок помітили, замало, щоб бейдж набриднув.
+ */
+export const ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS = 30;
+
+/**
+ * `true`, якщо `since` (календарна `YYYY-MM-DD`, Kyiv-режим — це дата
+ * релізу можливості, спільна для всіх користувачів, а не персональна доба
+ * за ADR-0078) молодша за {@link ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS} днів
+ * від `now`.
+ *
+ * Замінює колишній ручний `isNew: boolean`: той не мав TTL і знімався
+ * тільки руками (founder-ux-review round 2, O3). Порожній/некоректний
+ * `since` = "ніколи не новинка", а не "завжди новинка" — щоб забутий
+ * запис мовчки не висів вічно.
+ */
+export function isRecentCapability(
+  since: string | undefined,
+  now: Date | number = Date.now(),
+): boolean {
+  if (!since) return false;
+  const sinceMs = Date.parse(since);
+  if (Number.isNaN(sinceMs)) return false;
+  const nowMs = typeof now === "number" ? now : now.getTime();
+  const daysSince = kyivCalendarDaysBetween(nowMs, sinceMs);
+  return daysSince >= 0 && daysSince < ASSISTANT_CAPABILITY_NEW_WINDOW_DAYS;
+}
 
 /**
  * Resolve the server tool name for a capability.

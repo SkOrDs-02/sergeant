@@ -22,6 +22,7 @@ import {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualAsset, Subscription } from "../hooks/useStorage";
 import { getLastTxForSubscription } from "@sergeant/finyk-domain/domain/subscriptionUtils";
+import { DebtAutoLinkField } from "./DebtAutoLinkField";
 import type { TxRowTx } from "../components/TxRow";
 import { parseAmountToMinor } from "@shared/lib/format/amount";
 import { amountStringToHryvnia } from "@shared/lib/format/amountSchema";
@@ -112,10 +113,7 @@ export function SubscriptionForm({
         max="31"
         value={newSub.billingDay}
         onChange={(e) =>
-          setNewSub((a) => ({
-            ...a,
-            billingDay: Number(e.target.value),
-          }))
+          setNewSub((a) => ({ ...a, billingDay: Number(e.target.value) }))
         }
       />
       {(!newSub.name.trim() || !isValidBillingDay(newSub.billingDay)) && (
@@ -456,6 +454,7 @@ export function DebtForm({
     emoji: string;
     totalAmount: string;
     dueDate: string;
+    autoLinkKeyword: string;
   };
   setNewDebt: React.Dispatch<React.SetStateAction<typeof newDebt>>;
   setManualDebts: React.Dispatch<React.SetStateAction<Debt[]>>;
@@ -577,6 +576,14 @@ export function DebtForm({
           }
         />
       </div>
+      <DebtAutoLinkField
+        keyword={newDebt.autoLinkKeyword}
+        onKeywordChange={(v) =>
+          setNewDebt((a) => ({ ...a, autoLinkKeyword: v }))
+        }
+        transactions={transactions}
+        editingDebt={editingDebt}
+      />
       {(!newDebt.name.trim() || !isPositiveFinite(newDebt.totalAmount)) && (
         <p className="text-style-caption text-subtle" role="status">
           Заповни назву та вкажи позитивну суму пасиву.
@@ -608,6 +615,7 @@ export function DebtForm({
                 emoji: "\u{1F4B8}",
                 totalAmount: "",
                 dueDate: "",
+                autoLinkKeyword: "",
               });
               setShowDebtForm(false);
             }

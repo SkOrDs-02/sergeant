@@ -16,6 +16,7 @@ import {
   CAPABILITY_MODULE_META,
   CAPABILITY_MODULE_ORDER,
   groupCapabilitiesByModule,
+  isRecentCapability,
   searchCapabilities,
   type AssistantCapability,
   type CapabilityModule,
@@ -188,7 +189,9 @@ export function AssistantCataloguePage({
         </Card>
 
         <CapabilityLegend
-          showNew={ASSISTANT_CAPABILITIES.some((item) => item.isNew)}
+          showNew={ASSISTANT_CAPABILITIES.some((item) =>
+            isRecentCapability(item.since),
+          )}
         />
 
         <div className="relative">
@@ -391,7 +394,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-2 flex-wrap">
           <span className="text-style-label text-text">{capability.label}</span>
-          {capability.isNew && (
+          {isRecentCapability(capability.since) && (
             <BadgeChip
               tone="brand"
               icon="sergeant"

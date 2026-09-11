@@ -67,17 +67,17 @@ keys + ФОП, Apple Developer Program не куплений. Код окрем�
 
 ## 2. Як читати цей файл
 
-| Питання                                                             | Документ                                                                                               |
-| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------ |
-| Що готово, а що блокує запуск (з фактичних cross-refs у код)?       | [00 — Readiness audit](./00-readiness-audit.md)                                                        |
-| Як саме запустити web з реальними юзерами (W-4 .. W+12)?            | [01 — Web launch with users](./01-web-launch-with-users.md)                                            |
-| Як підключати реальних бета-тестерів через TestFlight / Play?       | [02 — Capacitor launch](./02-capacitor-launch.md)                                                      |
-| Чи варто взагалі запускати окремо `apps/mobile` (Native Expo)?      | [§ Phase 3 нижче](#phase-3--native-expo--conditional) (decision gate W+16, per ADR-0052)               |
-| Чи треба окремий лендінг (sergeant.com.ua) чи можна без нього?      | [§ 5 нижче](#5-рішення-про-лендінг) + [01 — Web § 2](./01-web-launch-with-users.md#2-лендінг-decision) |
-| Які фази launch-у і що робити на кожній (high-level GTM, без коду)? | [02 — GTM](../business/02-go-to-market.md)                                                             |
-| Що треба юридично / по readiness checklist?                         | [04 — Launch readiness](../business/04-launch-readiness.md)                                            |
-| Який стан FTUX-онбордингу (PR registry, відкриті проблеми)?         | [FTUX master tracker](../product-os/ftux-master-tracker.md)                                            |
-| Архітектурний контекст: web ↔ shell ↔ RN feature parity?            | [architecture/platforms.md](../../../../engineering/architecture/platforms.md)                         |
+| Питання                                                             | Документ                                                                                                          |
+| ------------------------------------------------------------------- | ----------------------------------------------------------------------------------------------------------------- |
+| Що готово, а що блокує запуск (з фактичних cross-refs у код)?       | [00 — Readiness audit](./00-readiness-audit.md)                                                                   |
+| Як саме запустити web з реальними юзерами (W-4 .. W+12)?            | [01 — Web launch with users](./01-web-launch-with-users.md)                                                       |
+| Як підключати реальних бета-тестерів через TestFlight / Play?       | [02 — Capacitor launch](./02-capacitor-launch.md)                                                                 |
+| Чи варто взагалі запускати окремо `apps/mobile` (Native Expo)?      | [§ Phase 3 нижче](#phase-3--native-expo--conditional) (decision gate W+16, per ADR-0052)                          |
+| Чи треба окремий лендінг (sergeant.com.ua) чи можна без нього?      | [§ 5 нижче](#5-рішення-про-лендінг) + [01 — Web § 2](./01-web-launch-with-users.md#2-лендінг--стан-і-що-лишилось) |
+| Які фази launch-у і що робити на кожній (high-level GTM, без коду)? | [02 — GTM](../business/02-go-to-market.md)                                                                        |
+| Що треба юридично / по readiness checklist?                         | [04 — Launch readiness](../business/04-launch-readiness.md)                                                       |
+| Який стан FTUX-онбордингу (PR registry, відкриті проблеми)?         | [FTUX master tracker](../product-os/ftux-master-tracker.md)                                                       |
+| Архітектурний контекст: web ↔ shell ↔ RN feature parity?            | [architecture/platforms.md](../../../../engineering/architecture/platforms.md)                                    |
 
 > **Конвенція цього піддерева:** `00-..03-` — це **fixed sequence** (audit → web → Capacitor → native).
 > Інакше ніж у `business/01-..06-`, де milestones, тут — **execution phases** з вхідними/вихідними
@@ -141,7 +141,7 @@ W-4 ─────── W0 ─────── W+4 ─────── W+8
 Vite/React лендінгом. До public launch лишається підтвердити Vercel production deployment,
 прив'язати домен і пройти CTA/OG smoke-check; `/welcome` у `apps/web` лишається product entry.
 
-**Три опції (детально у [Phase 1 § 2](./01-web-launch-with-users.md#2-лендінг-decision)):**
+**Три опції (детально у [Phase 1 § 2](./01-web-launch-with-users.md#2-лендінг--стан-і-що-лишилось)):**
 
 | Опція                           | Що це                                                                                  | Час до live      | Ризик                   | Маркетинг-flex              |
 | ------------------------------- | -------------------------------------------------------------------------------------- | ---------------- | ----------------------- | --------------------------- |
@@ -250,7 +250,7 @@ Vite/React лендінгом. До public launch лишається підтв�
 
 7. **Чи готовий founder вкладати ~5-10 годин/тиждень у custdev-інтервʼю** протягом closed beta (W-3 .. W+3)?
 8. **Legal pages — founder сам, юрист-консультант, чи Devin draft + owner review?**
-9. **Чи приймається рекомендація Path C** ([01 — Web § 2](./01-web-launch-with-users.md#2-лендінг-decision)): defer paywall до post-Phase 2?
+9. **Чи приймається рекомендація Path C** ([01 — Web § 2](./01-web-launch-with-users.md#2-лендінг--стан-і-що-лишилось)): defer paywall до post-Phase 2?
 10. **Чи `sergeant.com.ua` вже зареєстрований** і вказує на Vercel — чи ще треба купити домен у W-4?
 
 ### Native-specific (W+16 decision gate)

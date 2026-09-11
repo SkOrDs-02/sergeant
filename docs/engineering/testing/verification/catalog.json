@@ -404,7 +404,7 @@
         "Заміряти /health p95, chat first-turn total та synthesis first-token окремо."
       ],
       "expected": [
-        "JS≤1.45 MB brotli, CSS≤40 kB, eager JS≤280 kB.",
+        "JS≤1.44 MB brotli, CSS≤40 kB, eager JS≤280 kB.",
         "LCP median≤3000 ms; FCP/TBT записані з чинною severity конфігу.",
         "/health p95<100 ms; chat total<15 s і synthesis TTFT<1.5 s не змішані."
       ],

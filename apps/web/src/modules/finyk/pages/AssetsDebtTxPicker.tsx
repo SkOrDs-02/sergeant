@@ -278,6 +278,7 @@ export function AssetsDebtTxPicker({
           {transactions.map((t, i) => {
             const isLinked = linked.includes(t.id);
             const role = isLinked ? roleOf(t) : null;
+            const isAuto = isLinked && item.txLinks?.[t.id]?.auto === true;
             return (
               <div key={t.id || i}>
                 {isLinked && role && (
@@ -288,6 +289,9 @@ export function AssetsDebtTxPicker({
                     )}
                   >
                     {describeLinkedTxRole(role, kind).label}
+                    {isAuto && (
+                      <span className="text-subtle"> · {copy.autoLabel}</span>
+                    )}
                   </div>
                 )}
                 <TxRow

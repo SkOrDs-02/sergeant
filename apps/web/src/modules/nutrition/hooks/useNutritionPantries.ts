@@ -9,6 +9,8 @@ import {
 } from "react";
 import { useMutation } from "@tanstack/react-query";
 import { nutritionApi } from "@shared/api";
+import type { AccessDenial } from "@shared/lib/api/accessDenial";
+import { useAccessGuard } from "../../../core/access/useCanUse";
 import { formatNutritionError } from "../lib/nutritionErrors";
 import {
   appendNutritionPantryEvent,
@@ -55,6 +57,8 @@ export interface UseNutritionPantriesParams {
   setBusy: Dispatch<SetStateAction<boolean>>;
   setErr: Dispatch<SetStateAction<string>>;
   setStatusText: Dispatch<SetStateAction<string>>;
+  /** Причина, з якої розбір списку НЕ запустили (A3, поставка 2). */
+  setDenial: (denial: AccessDenial) => void;
   /**
    * Рішення власника 2026-09-11 — «куди лягло». Хук нічого не знає про
    * toast (той живе у `NutritionApp.tsx`, разом із `useToast()`), тому
@@ -128,8 +132,10 @@ export function useNutritionPantries({
   setBusy,
   setErr,
   setStatusText,
+  setDenial,
   onItemsAdded,
 }: UseNutritionPantriesParams) {
+  const guard = useAccessGuard(setDenial);
   // `ensureStoragePlaces` стоїть на КОЖНОМУ вході даних у стан, а не лише
   // на першому: інакше після теплого SQLite-кешу холодильник і морозилка
   // зникали б з екрана до наступного перезавантаження.
@@ -712,11 +718,13 @@ export function useNutritionPantries({
 
   const parsePantry = useCallback(
     () =>
-      parsePantryMutation.mutate({
-        pantryId: draftPantryId,
-        text: pantryText.trim(),
-      }),
-    [parsePantryMutation, draftPantryId, pantryText],
+      guard("pantry-parse", () =>
+        parsePantryMutation.mutate({
+          pantryId: draftPantryId,
+          text: pantryText.trim(),
+        }),
+      ),
+    [guard, parsePantryMutation, draftPantryId, pantryText],
   );
 
   /**

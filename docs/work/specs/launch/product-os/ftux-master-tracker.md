@@ -14,7 +14,7 @@
 > - Зовнішня прожарка 2026-05-05 (`reports/sergeant-onboarding-ux-roast-2026-05-05.md`) — новий зріз, **інкорпорований** сюди.
 >
 > **Cross-refs:**
-> [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-метрики) — activation baseline ·
+> [`01-monetization-and-pricing.md` §7](../business/01-monetization-and-pricing.md#7-activation-і-конверсія-у-платників) — activation baseline ·
 > [`04-launch-readiness.md` §4.2](../business/04-launch-readiness.md) — funnel definitions ·
 > [`docs/operations/observability/posthog-ftux-dashboards.md`](../../../../operations/observability/posthog-ftux-dashboards.md) — PostHog dashboards runbook ·
 > [`docs/governance/governance/feature-flags.md`](../../../../governance/governance/feature-flags.md) — flag conventions ·

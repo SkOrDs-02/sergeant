@@ -128,8 +128,11 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           onLinkTransactions={() => setTxPicker({ type: "sub", subId: sub.id })}
         />
       ))}
-      {/* Вхід у форму — quick-action «+ Підписка» угорі сторінки; власна
-          кнопка секції дублювала його (звіт власника 2026-09-03). */}
+      {/* Вхід у форму — пункт «Підписка» комбінованого пікера
+          «Запланувати» внизу сторінки Планування (`Budgets.tsx`, founder-UX
+          audit round 2, F2; до цього — окремий quick-action «+ Підписка»
+          угорі, звіт власника 2026-09-03). Власна кнопка секції дублювала
+          його й тому прибрана. */}
       {showSubForm && (
         <SubscriptionForm
           newSub={newSub}

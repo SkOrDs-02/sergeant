@@ -1,6 +1,6 @@
 #!/usr/bin/env bash
 # security.txt expiry guard — closes hardening card I4
-# (docs/04-governance/security/hardening/I4-security-txt.md).
+# (картка архівована, локального файлу немає — https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/I4-security-txt.md).
 #
 # RFC 9116 вимагає, щоб поле `Expires:` у `/.well-known/security.txt` було
 # валідним ISO 8601 timestamp у майбутньому. Якщо `Expires` минув, дослідники
@@ -21,7 +21,7 @@ file="$repo_root/apps/web/public/.well-known/security.txt"
 if [[ ! -f "$file" ]]; then
   echo "::error::security.txt missing at apps/web/public/.well-known/security.txt"
   echo "RFC 9116 expects /.well-known/security.txt to be served on production."
-  echo "See docs/04-governance/security/hardening/I4-security-txt.md."
+  echo "Rationale — archived hardening card I4: https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/I4-security-txt.md"
   exit 1
 fi
 
@@ -57,7 +57,7 @@ fi
 if (( days_until_expiry < 30 )); then
   echo "::error::security.txt expires in ${days_until_expiry} day(s) (<30)."
   echo "Refresh apps/web/public/.well-known/security.txt before it goes stale."
-  echo "RFC 9116 §2.5.5; see docs/04-governance/security/hardening/I4-security-txt.md."
+  echo "RFC 9116 §2.5.5; archived hardening card I4: https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/I4-security-txt.md"
   exit 1
 fi
 

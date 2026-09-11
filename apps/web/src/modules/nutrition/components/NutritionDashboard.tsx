@@ -19,6 +19,7 @@ import {
   deviceWeekStartKey,
   resolveKcalGoalsForDays,
   todayISODate,
+  type MealTypeId,
   type NutritionLog,
   type NutritionPrefs,
 } from "@sergeant/nutrition-domain";
@@ -52,6 +53,8 @@ interface NutritionDashboardProps {
   prefs: NutritionPrefs;
   onGoToLog?: (() => void) | undefined;
   onGoToDailyPlan?: (() => void) | undefined;
+  /** Тап по сегменту hero — аркуш прийому з уже обраним типом. */
+  onPickMeal: (type: MealTypeId) => void;
 }
 
 export function NutritionDashboard({
@@ -59,6 +62,7 @@ export function NutritionDashboard({
   prefs,
   onGoToLog,
   onGoToDailyPlan,
+  onPickMeal,
 }: NutritionDashboardProps) {
   const today = todayISO();
   const goalPeriods = useNutritionGoalPeriods();
@@ -223,6 +227,7 @@ export function NutritionDashboard({
               </p>
             )}
             <MealStrip
+              onPickMeal={onPickMeal}
               segments={segments}
               goalKcal={hasGoal ? kcalGoal : null}
               remainingLabel={remainingLabel}

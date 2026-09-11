@@ -50,7 +50,8 @@ export interface HubShellValue {
   onInstall: () => Promise<void>;
   onDismissInstall: () => void;
   iosVisible: boolean;
-  onDismissIos: () => void;
+  onDismissIosForever: () => void;
+  onSnoozeIos: () => void;
 
   // SW update (from useSWUpdate)
   updateAvailable: boolean;

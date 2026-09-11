@@ -470,9 +470,17 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //   PWA_INSTALL_PROMPTED   { surface: "android" | "ios" }
   //   PWA_INSTALL_ACCEPTED   {}  // native chooser → outcome === "accepted"
   //   PWA_INSTALL_DISMISSED  { surface: "android" | "ios",
-  //                            via: "banner" | "chooser" }
+  //                            via: "banner" | "banner_snooze" | "chooser" }
   //   PWA_INSTALLED          { surface: "android" | "ios",
   //                            via: "appinstalled" | "standalone_detected" }
+  //
+  // Founder-ux-review round 2 (O2): на iOS `via: "banner"` — це явна
+  // постійна відмова (текстове посилання «не нагадувати»), а
+  // `via: "banner_snooze"` — тимчасове відкладення на 30 днів (іконка "×").
+  // На Android однієї affordance («×» у рядку сповіщень) досить, тож тег
+  // лишився старим (`via: "banner"`) заради стабільності дашбордів, але
+  // персистентність під капотом змінилась: тепер це завжди TTL-снуз
+  // (`installBannerSnooze.ts`), не forever-флаг.
   PWA_INSTALL_PROMPTED: "pwa_install_prompted",
   PWA_INSTALL_ACCEPTED: "pwa_install_accepted",
   PWA_INSTALL_DISMISSED: "pwa_install_dismissed",

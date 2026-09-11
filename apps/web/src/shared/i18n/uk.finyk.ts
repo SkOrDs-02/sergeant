@@ -2,7 +2,6 @@
 
 export const finykPageMessages = {
   reportHeading: "Витрати",
-  addLimitOrGoal: "+ Додати ліміт або ціль",
   budgetOverLimit: "перевищено",
   budgetOverSixtyPercent: "· понад 60% ліміту",
   transactionsFilterLabel: "Фільтр транзакцій",
@@ -28,6 +27,9 @@ export const finykPageMessages = {
     noDescription: "Без опису",
     suggestedHint: "· схоже на це",
     unlink: "Зняти привʼязку",
+    /** Мітка авто-привʼязки (Level 2, `useDebtAutoLink`) на рядку
+     * транзакції — «нічого не пишеться мовчки», рішення власника 2026-09-11. */
+    autoLabel: "авто",
     // Без гліфа «←» у рядку: стрілку малює `Icon name="chevron-left"` на
     // call-site (`AssetsDebtTxPicker`). Типографічна стрілка бралася з
     // системного шрифта, тож мала свою вагу й базову лінію на кожній ОС.
@@ -96,6 +98,19 @@ export const finykPageMessages = {
     activeOne: "активна",
     activeMany: "активних",
     amountUnknown: "сума невідома",
+    /**
+     * Комбінований пікер «Запланувати» (founder-UX audit round 2, F2):
+     * замінює три різні кнопки (підписка / ліміт-або-ціль / дубль
+     * підписки) на один тригер + `DropdownMenu` за зразком
+     * `AssetsTable.tsx` («+ Актив» → «Актив» / «Мені винні»).
+     */
+    schedule: "Запланувати",
+    scheduleAria: "Що запланувати",
+    addLimitLabel: "Ліміт",
+    addLimitDescription: "Місячна або тижнева межа витрат за категоріями",
+    addGoalLabel: "Ціль",
+    addGoalDescription: "Накопичення на конкретну суму",
+    addSubscriptionDescription: "Регулярний платіж, що повторюється щомісяця",
   },
   monthStrip: {
     groupAriaPrefix: "Витрати за днями",
@@ -145,21 +160,41 @@ export const finykPageMessages = {
     hideDescription: "Її можна повернути через показ прихованих операцій",
   },
   /**
-   * Місток «надходження з категорією Борг → пасив» (спека
-   * finyk-observations, PR-3). Привʼязка одразу отримує роль `source` —
-   * транзакція лише пояснює, звідки борг узявся, і не додається до суми.
+   * Місток «транзакція з категорією Борг → пасив» (спека
+   * finyk-observations, PR-3; узагальнено 2026-09-11 на обидва напрямки —
+   * канон `docs/product/modules/finyk.md` § Журнал рішень). `source` —
+   * надходження, яким борг виник, `payment` — витрата-погашення.
    */
-  debtIncomeLink: {
-    prompt: "Це борг? Привʼяжи до пасиву, і сума зʼявиться в Активах.",
-    linkExisting: "Обрати наявний пасив",
+  debtLinkPrompt: {
+    source: {
+      prompt: "Це борг? Привʼяжи до пасиву, і сума зʼявиться в Активах.",
+      linkExisting: "Обрати наявний пасив",
+      linkedPrefix: "Привʼязано до пасиву",
+    },
+    payment: {
+      prompt: "Це сплата по боргу? Привʼяжи до пасиву, і залишок зменшиться.",
+      linkExisting: "Обрати пасив",
+      linkedPrefix: "Зараховано як сплату по",
+    },
+    noDebtsHint: "Спершу створи пасив в Активах.",
     createNew: "Створити новий пасив",
     createTitle: "Новий пасив із цієї операції",
     namePlaceholder: "Назва пасиву (кредит, борг…)",
     create: "Створити",
     cancel: "Скасувати",
     pickTitle: "Який це пасив?",
-    linkedPrefix: "Привʼязано до пасиву",
     unlink: "Відвʼязати",
+  },
+  /**
+   * Поле «автопривʼязка платежів» форми пасиву (Level 2, `DebtAutoLinkField`,
+   * рішення власника 2026-09-11). Той самий контракт, що `keyword` підписки.
+   */
+  debtAutoLink: {
+    fieldLabel: "Автопривʼязка платежів за словом в описі",
+    placeholder: "Наприклад, приватбанк",
+    hint: "Кожну майбутню витрату з таким словом в описі привʼяжемо як сплату автоматично.",
+    matchesFoundPrefix: "Знайдено збігів:",
+    noMatches: "Збігів не знайдено",
   },
   // "Чек" — секція деталей транзакції для Silpo MCP інтеграції, трек B
   // (докс `docs/90-work/planning/specs/silpo-mcp-integration.md`).

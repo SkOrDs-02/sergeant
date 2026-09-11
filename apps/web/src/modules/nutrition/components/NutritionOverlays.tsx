@@ -3,7 +3,11 @@
  * Status: Active
  */
 import type { Dispatch, SetStateAction } from "react";
-import type { Meal, NutritionPrefs } from "@sergeant/nutrition-domain";
+import type {
+  Meal,
+  MealTypeId,
+  NutritionPrefs,
+} from "@sergeant/nutrition-domain";
 import { PantryManagerSheet } from "./PantryManagerSheet";
 import { ItemEditSheet } from "./ItemEditSheet";
 import { PantryVariantChoiceSheet } from "./PantryVariantChoiceSheet";
@@ -58,6 +62,8 @@ interface NutritionOverlaysProps {
   applyRestorePayload: (payload: unknown) => void | Promise<void>;
   /** `"photo"` — AddMealSheet відкривається одразу на кроці аналізу фото. */
   addMealInitialStep?: "source" | "photo" | undefined;
+  /** Тип прийому, обраний тапом по сегменту hero; `null` — вгадує годинник. */
+  addMealInitialMealType?: MealTypeId | null | undefined;
   onQuickAddMeal?: (chip: QuickChip) => void;
 }
 
@@ -80,6 +86,7 @@ export function NutritionOverlays({
   setRestoreConfirm,
   applyRestorePayload,
   addMealInitialStep,
+  addMealInitialMealType,
   onQuickAddMeal,
 }: NutritionOverlaysProps) {
   // Тертя запису їжі (`entry_compose_finished`, §6 контракту). Вимір
@@ -175,6 +182,7 @@ export function NutritionOverlays({
           return wrappedSaveMeal(meal, photoFile);
         }}
         initialStep={addMealInitialStep}
+        initialMealType={addMealInitialMealType}
         initialMeal={editingMeal}
         mealTemplates={prefs.mealTemplates || []}
         setPrefs={setPrefs}

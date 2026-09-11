@@ -207,10 +207,9 @@ describe("FinykApp — real page routing via the bottom nav", () => {
   it("navigates to the real Transactions page (real empty-state copy) on tab click", async () => {
     renderApp();
     await userEvent.click(navButton("Операції"));
-    // No mono/manual data at all → real `ModuleEmptyState` for finyk.
-    expect(
-      await screen.findByText("Куди йдуть твої гроші?"),
-    ).toBeInTheDocument();
+    // No mono/manual data at all → the list-scoped no-data state, not
+    // Overview's `ModuleEmptyState` hero (founder-UX audit round 2, F1).
+    expect(await screen.findByText("Записів ще немає")).toBeInTheDocument();
   });
 
   it("navigates to the real Analytics page on tab click", async () => {

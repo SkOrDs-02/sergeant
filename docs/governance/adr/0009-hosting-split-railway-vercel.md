@@ -101,7 +101,7 @@ Edge middleware на Vercel ([`apps/web/middleware.ts`](../../../apps/web/middle
 
 - `outputDirectory: "../server/dist"` — нестандартний шлях, задокументований у
   [`apps/web/vercel.json`](../../../apps/web/vercel.json) і
-  [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md#1-web--pwa--appsweb). Vite бандл
+  [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md#-1-web--pwa--appsweb). Vite бандл
   навмисно кладеться у server-пакет, щоб Capacitor-shell і Railway-бекенд
   читали з одного місця.
 

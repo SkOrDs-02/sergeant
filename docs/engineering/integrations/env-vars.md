@@ -67,6 +67,21 @@ Google OAuth (Better Auth `socialProviders.google`). Активує кнопку
 - У production redirect URI має бути на домені фронта (Vercel Edge Middleware проксує `/api/*`): `https://sergeant.vercel.app/api/auth/callback/google`. Інакше state-cookie ставиться на API-домен як 3rd-party, Safari ITP / Chrome Tracking Protection її ріже → callback повертається з `error=state_mismatch`.
 - Локально: `http://localhost:5000/api/auth/callback/google`.
 
+### `APPLE_CLIENT_ID`, `APPLE_TEAM_ID`, `APPLE_KEY_ID`, `APPLE_PRIVATE_KEY` _(optional, усі чотири разом)_
+
+Apple Sign In (Better Auth `socialProviders.apple`). **Провайдер вмикається лише коли непорожні ВСІ чотири** ([`apps/server/src/auth.ts:164-169`](../../../apps/server/src/auth.ts)). Часткова конфігурація вимикає його мовчки — трьох із чотирьох достатньо, щоб кнопка не працювала, і жодної помилки при старті не буде. Єдине місце, де стан видно, — boot-лог `auth_social_providers_status` (`auth.ts:236-247`); `assertStartupEnv` цю четвірку не перевіряє.
+
+Потрібна платна **Apple Developer Program** ($99/рік), не звичайний Apple ID: для web-потоку треба Services ID, звʼязаний із primary App ID, підтверджений домен і Return URL. Xcode на сервері не потрібен.
+
+- `APPLE_CLIENT_ID` — Services ID (не bundle ID застосунку).
+- `APPLE_TEAM_ID` — Team ID з Apple Developer.
+- `APPLE_KEY_ID` — ідентифікатор ключа Sign In with Apple (`.p8`).
+- `APPLE_PRIVATE_KEY` — вміст `.p8` (PEM). Секрет; у логах має бути редагований.
+
+**Статичного `client_secret` в Apple немає** — його роль грає ES256-JWT на 180 днів, який сервер підписує сам (`generateAppleClientSecret`, `auth.ts:170-175`) і оновлює in-place через `startAppleSecretRefresher` (`:186-200`). Тобто прострочення секрету не є ручною роботою, але воно стає нею, якщо процес довго не перезапускався і рефрешер зупинився.
+
+**Фронт гейтиться окремо** — `VITE_APPLE_LOGIN_ENABLED === "true"` ([реєстр прапорців](../architecture/feature-flags.md)). Половини ніде не звірені: прапорець без ключів дає живу кнопку, що падає в `providerNotFound`. Рішення власника 2026-09-11: членство не купуємо, кнопка лишається прихованою; ці змінні задокументовано, щоб «увімкнули прапорець, вхід не працює» не був відкриттям.
+
 ### `WEB_APP_URL` _(optional)_
 
 Origin веб-застосунку — куди повертається користувач після кліку «Підтвердити email» у листі. Better Auth будує посилання виду `{BETTER_AUTH_URL}/api/auth/verify-email?token=…&callbackURL=…` і за замовчуванням ставить `callbackURL=/`, тобто **корінь API-домену**. API не роздає SPA (`config.servesFrontend === false`), тож такий редирект віддавав 404 JSON. `getWebAppOrigin()` ([`apps/server/src/auth/verificationMail.ts`](../../../apps/server/src/auth/verificationMail.ts)) перезаписує параметр на `{WEB_APP_URL}/verify-email`.

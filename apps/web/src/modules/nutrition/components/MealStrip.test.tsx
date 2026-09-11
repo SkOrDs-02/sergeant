@@ -24,6 +24,7 @@ describe("MealStrip", () => {
   it("always renders four segment positions, even on an empty day", () => {
     render(
       <MealStrip
+        onPickMeal={vi.fn()}
         segments={FOUR_SEGMENTS}
         goalKcal={null}
         remainingLabel="лишилось на сніданок"
@@ -46,20 +47,21 @@ describe("MealStrip", () => {
     ];
     const { container } = render(
       <MealStrip
+        onPickMeal={vi.fn()}
         segments={segments}
         goalKcal={2000}
         remainingLabel="лишилось на вечерю"
         macros={MACROS}
       />,
     );
-    const bars = container.querySelectorAll(
-      '[data-testid="meal-strip-bars"] > div',
-    );
-    expect(bars).toHaveLength(4);
-    expect((bars[0] as HTMLElement).style.flexGrow).toBe("500");
-    expect((bars[1] as HTMLElement).style.flexGrow).toBe("500");
-    // empty segments keep a near-zero grow (min-width floor does the rest)
-    expect(Number((bars[2] as HTMLElement).style.flexGrow)).toBeLessThan(1);
+    const fills = container.querySelectorAll('[data-testid="meal-strip-fill"]');
+    // Пропорція тепер живе всередині колонки фіксованої ширини: заливка
+    // на `share` = частка прийому в зʼїденому за день. Колонки рівні, тож
+    // підпис не обрізається, а порівняння прийомів лишається видимим.
+    expect(fills).toHaveLength(4);
+    expect((fills[0] as HTMLElement).style.width).toBe("50%");
+    expect((fills[1] as HTMLElement).style.width).toBe("50%");
+    expect((fills[2] as HTMLElement).style.width).toBe("0%");
   });
 
   it("proportions the strip to 100% of eaten kcal when there is no goal", () => {
@@ -71,23 +73,23 @@ describe("MealStrip", () => {
     ];
     const { container } = render(
       <MealStrip
+        onPickMeal={vi.fn()}
         segments={segments}
         goalKcal={null}
         remainingLabel="лишилось на вечерю"
         macros={MACROS}
       />,
     );
-    const bars = container.querySelectorAll(
-      '[data-testid="meal-strip-bars"] > div',
-    );
+    const fills = container.querySelectorAll('[data-testid="meal-strip-fill"]');
     // proportional to consumed share (300 / 100 / 0 / 0), not equal 25% each
-    expect((bars[0] as HTMLElement).style.flexGrow).toBe("300");
-    expect((bars[1] as HTMLElement).style.flexGrow).toBe("100");
+    expect((fills[0] as HTMLElement).style.width).toBe("75%");
+    expect((fills[1] as HTMLElement).style.width).toBe("25%");
   });
 
-  it("gives every segment equal width on a fully empty day (no goal)", () => {
+  it("draws no fill at all on a fully empty day (no goal)", () => {
     const { container } = render(
       <MealStrip
+        onPickMeal={vi.fn()}
         segments={FOUR_SEGMENTS}
         goalKcal={null}
         remainingLabel="лишилось на сніданок"
@@ -95,11 +97,14 @@ describe("MealStrip", () => {
         onSetGoal={vi.fn()}
       />,
     );
-    const bars = container.querySelectorAll(
-      '[data-testid="meal-strip-bars"] > div',
-    );
-    for (const bar of bars) {
-      expect((bar as HTMLElement).style.flexGrow).toBe("1");
+    const fills = container.querySelectorAll('[data-testid="meal-strip-fill"]');
+    // Порожній день — жодної заливки; фон колонки сам показує «нічого
+    // немає». Попередня версія цієї перевірки була беззмістовною: селектор
+    // після переходу на `<li>` не знаходив нічого, і цикл не виконувався
+    // жодного разу — тест «проходив», не перевіривши нічого.
+    expect(fills).toHaveLength(4);
+    for (const fill of fills) {
+      expect((fill as HTMLElement).style.width).toBe("0%");
     }
   });
 
@@ -112,26 +117,26 @@ describe("MealStrip", () => {
     ];
     const { container } = render(
       <MealStrip
+        onPickMeal={vi.fn()}
         segments={segments}
         goalKcal={2000}
         remainingLabel="лишилось сьогодні"
         macros={MACROS}
       />,
     );
-    const bars = container.querySelectorAll(
-      '[data-testid="meal-strip-bars"] > div',
-    );
+    const fills = container.querySelectorAll('[data-testid="meal-strip-fill"]');
     // cumulative: 500, 1200, 2100 (> 2000 here — dinner crosses), 2300
-    expect((bars[2] as HTMLElement).className).toContain("bg-nutrition");
-    expect((bars[0] as HTMLElement).className).not.toContain("bg-nutrition");
-    expect((bars[1] as HTMLElement).className).not.toContain("bg-nutrition");
-    expect((bars[3] as HTMLElement).className).not.toContain("bg-nutrition");
+    expect((fills[2] as HTMLElement).className).toContain("bg-nutrition");
+    expect((fills[0] as HTMLElement).className).not.toContain("bg-nutrition");
+    expect((fills[1] as HTMLElement).className).not.toContain("bg-nutrition");
+    expect((fills[3] as HTMLElement).className).not.toContain("bg-nutrition");
   });
 
   it("shows the set-goal CTA and calls onSetGoal when there is no norm", () => {
     const onSetGoal = vi.fn();
     render(
       <MealStrip
+        onPickMeal={vi.fn()}
         segments={FOUR_SEGMENTS}
         goalKcal={null}
         remainingLabel="лишилось на сніданок"
@@ -148,6 +153,7 @@ describe("MealStrip", () => {
     // клікабельною і нічого не робить. Порожній стан лишається чесним.
     render(
       <MealStrip
+        onPickMeal={vi.fn()}
         segments={FOUR_SEGMENTS}
         goalKcal={null}
         remainingLabel="лишилось на сніданок"
@@ -168,6 +174,7 @@ describe("MealStrip", () => {
     ];
     render(
       <MealStrip
+        onPickMeal={vi.fn()}
         segments={segments}
         goalKcal={2000}
         remainingLabel="лишилось на обід"
@@ -179,7 +186,11 @@ describe("MealStrip", () => {
     ).not.toBeInTheDocument();
   });
 
-  it("builds the documented aria-label sentence for the mockup demo state", () => {
+  it("announces each meal on its own button and the remainder as the image", () => {
+    // Спільний `aria-label` більше не перелічує прийоми. Сегменти стали
+    // кнопками, а кнопка не може бути `aria-hidden`; факт кожного прийому
+    // тепер несе доступна назва його кнопки, і дублювати ті самі слова в
+    // мітці картинки означало б диктувати їх двічі.
     const segments: MealStripSegment[] = [
       { type: "breakfast", label: "Сніданок", kcal: 520 },
       { type: "lunch", label: "Обід", kcal: 720 },
@@ -188,6 +199,7 @@ describe("MealStrip", () => {
     ];
     render(
       <MealStrip
+        onPickMeal={vi.fn()}
         segments={segments}
         goalKcal={2200}
         remainingLabel="лишилось на вечерю"
@@ -195,10 +207,36 @@ describe("MealStrip", () => {
       />,
     );
     expect(
-      screen.getByRole("img", {
-        name: "Сніданок 520 ккал, обід 720 ккал, вечеря не записана, перекус не записаний, лишилось 960 ккал на вечерю",
+      screen.getByRole("button", {
+        name: "Сніданок, 520 ккал. Додати в сніданок",
       }),
     ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", {
+        name: "Вечеря не записана. Додати у вечерю",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("img", { name: "Лишилось 960 ккал на вечерю" }),
+    ).toBeInTheDocument();
+  });
+
+  it("opens the meal type the tapped segment stands for", () => {
+    // Корінь знахідки власника: hero був індикатором, з якого нічого не
+    // зробиш. Єдиною дією лишався FAB, а він відкриває аркуш БЕЗ типу —
+    // тип угадував годинник (`mealTypeByNow`).
+    const onPickMeal = vi.fn();
+    render(
+      <MealStrip
+        onPickMeal={onPickMeal}
+        segments={FOUR_SEGMENTS}
+        goalKcal={2000}
+        remainingLabel="лишилось сьогодні"
+        macros={MACROS}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /^Обід не записаний/ }));
+    expect(onPickMeal).toHaveBeenCalledWith("lunch");
   });
 
   it("shows the overshoot headline honestly when consumption exceeds the goal", () => {
@@ -210,6 +248,7 @@ describe("MealStrip", () => {
     ];
     render(
       <MealStrip
+        onPickMeal={vi.fn()}
         segments={segments}
         goalKcal={2000}
         remainingLabel="лишилось на перекус"
@@ -231,6 +270,7 @@ describe("MealStrip", () => {
     ];
     render(
       <MealStrip
+        onPickMeal={vi.fn()}
         segments={segments}
         goalKcal={2000}
         remainingLabel="лишилось на обід"
