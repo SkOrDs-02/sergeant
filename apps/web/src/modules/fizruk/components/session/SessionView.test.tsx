@@ -128,6 +128,20 @@ describe("SessionView — list", () => {
     expect(rows[1]).toHaveAttribute("aria-current", "step");
   });
 
+  it("keeps the safe-area inset on the sticky session bar", () => {
+    // Сесія знімає хром модуля разом із `ModuleHeader`, який ніс цей
+    // відступ, а body-level safe-area в репо навмисно прибрано. Без
+    // `safe-area-pt` смуга залазить під системний статус-бар: годинник і
+    // LTE малюються поверх «Згорнути»/«Завершити» (звіт власника
+    // 2026-09-11).
+    renderView();
+    const bar = screen
+      .getByRole("button", { name: "Згорнути" })
+      .closest("div.sticky");
+    expect(bar).not.toBeNull();
+    expect(bar).toHaveClass("safe-area-pt");
+  });
+
   it("opens an exercise on row tap and collapses via the top bar", () => {
     renderView();
     fireEvent.click(
