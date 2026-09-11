@@ -107,13 +107,24 @@ export function neighbourItems(
 }
 
 /**
+ * Однина родового відмінка після «X з Y» — не лише для 1, а для всіх чисел,
+ * що закінчуються на 1 («21 вправи», «31 підходу»), КРІМ 11 («11 вправ»).
+ * Звідси `% 100 !== 11`, а не просте `=== 1`.
+ */
+function isGenitiveSingular(total: number): boolean {
+  return total % 10 === 1 && total % 100 !== 11;
+}
+
+/**
  * «0 з 1 підходу» / «3 з 3 підходів». Тут РОДОВИЙ відмінок, не називний:
  * після «X з Y» українська вимагає «підходу/підходів», тож звичайна
  * плюралізація (`pluralUa` → «підходи») дала б «3 з 3 підходи».
  */
 export function setsProgressLabel(done: number, total: number): string {
   const ss = messages.fizruk.session;
-  const word = total === 1 ? ss.setsGenitiveOne : ss.setsGenitiveMany;
+  const word = isGenitiveSingular(total)
+    ? ss.setsGenitiveOne
+    : ss.setsGenitiveMany;
   return `${done} ${ss.of} ${total} ${word}`;
 }
 
@@ -130,5 +141,7 @@ export function setsCountLabel(n: number): string {
  */
 export function exercisesGenitiveWord(total: number): string {
   const ss = messages.fizruk.session;
-  return total === 1 ? ss.exercisesGenitiveOne : ss.exercisesGenitiveMany;
+  return isGenitiveSingular(total)
+    ? ss.exercisesGenitiveOne
+    : ss.exercisesGenitiveMany;
 }

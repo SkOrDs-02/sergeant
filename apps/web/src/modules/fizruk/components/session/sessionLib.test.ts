@@ -9,6 +9,7 @@ import {
   exercisesGenitiveWord,
   neighbourItems,
   sessionProgress,
+  setsProgressLabel,
 } from "./sessionLib";
 
 function strength(id: string, sets: Array<[number, number]>): WorkoutItem {
@@ -111,11 +112,22 @@ describe("sessionLib", () => {
     expect(groupMemberPosition(strength("c", []), null)).toBeNull();
   });
 
-  it("picks the genitive form of «вправа» by total", () => {
-    // «0 з 1 вправи», не «0 з 1 вправ».
+  it("picks the genitive form of «вправа» by total, incl. 21 and 11", () => {
+    // «0 з 1 вправи», не «0 з 1 вправ». Так само 21 і 31 — однина родового,
+    // а 11 — ні: це виняток, який ловить `% 100 !== 11`.
     expect(exercisesGenitiveWord(1)).toBe("вправи");
+    expect(exercisesGenitiveWord(21)).toBe("вправи");
+    expect(exercisesGenitiveWord(31)).toBe("вправи");
+    expect(exercisesGenitiveWord(11)).toBe("вправ");
     expect(exercisesGenitiveWord(0)).toBe("вправ");
     expect(exercisesGenitiveWord(3)).toBe("вправ");
+  });
+
+  it("applies the same rule to the sets progress label", () => {
+    expect(setsProgressLabel(0, 1)).toBe("0 з 1 підходу");
+    expect(setsProgressLabel(3, 21)).toBe("3 з 21 підходу");
+    expect(setsProgressLabel(3, 11)).toBe("3 з 11 підходів");
+    expect(setsProgressLabel(3, 3)).toBe("3 з 3 підходів");
   });
 
   it("finds neighbours for prev/next navigation", () => {
