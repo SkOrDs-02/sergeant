@@ -197,13 +197,43 @@ describe("AssistantCataloguePage — group collapsing", () => {
     expect(getByText("нещодавно додано")).toBeTruthy();
   });
 
-  it("renders the Новинка badge on rows flagged isNew (compare_weeks)", () => {
-    const { getByTestId, queryByTestId } = render(<AssistantCataloguePage />);
-    expect(getByTestId("catalogue-capability-compare_weeks-new")).toBeTruthy();
-    // create_transaction is not flagged isNew → no badge rendered for it.
-    expect(
-      queryByTestId("catalogue-capability-create_transaction-new"),
-    ).toBeNull();
+  // Бейдж «Новинка» більше не є прапорцем у даних: `isNew: boolean` замінено
+  // на `since` + `isRecentCapability()` з 30-денним вікном (докблок
+  // `assistantCatalogue.ts`, founder-ux-review round 2, O3). Жодна
+  // можливість у каталозі `since` зараз не має, тож бейдж не рендериться
+  // ніде — старий тест чекав його на `compare_weeks` і перевіряв уже
+  // неіснуючий контракт.
+  //
+  // Обовʼязок компонента тут один: показати бейдж РІВНО тоді, коли helper
+  // каже «нещодавня». Саму 30-денну арифметику (межі вікна, порожня й
+  // невалідна дата) покриває `assistantCatalogue.test.ts` у `shared` — тут
+  // її дублювати нема сенсу, тому дата ставиться на запис штучно.
+  it("рендерить бейдж «Новинка» лише для нещодавньої можливості", () => {
+    const target = ASSISTANT_CAPABILITIES.find((c) => c.id === "compare_weeks");
+    if (!target) throw new Error("compare_weeks зник із каталогу");
+    const mutable = target as { since?: string };
+    mutable.since = new Date().toISOString().slice(0, 10);
+    try {
+      const { getByTestId, queryByTestId } = render(<AssistantCataloguePage />);
+      expect(
+        getByTestId("catalogue-capability-compare_weeks-new"),
+      ).toBeTruthy();
+      // `create_transaction` лишається без `since` → бейджа немає.
+      expect(
+        queryByTestId("catalogue-capability-create_transaction-new"),
+      ).toBeNull();
+    } finally {
+      delete mutable.since;
+    }
+  });
+
+  it("без `since` бейджа немає в жодного рядка", () => {
+    const { queryByTestId } = render(<AssistantCataloguePage />);
+    for (const capability of ASSISTANT_CAPABILITIES) {
+      expect(
+        queryByTestId(`catalogue-capability-${capability.id}-new`),
+      ).toBeNull();
+    }
   });
 
   it("auto-expands persisted-collapsed groups while searching, restores them after", () => {

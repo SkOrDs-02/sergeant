@@ -6,7 +6,7 @@ exports[`mobile nutrition dual-write SQL snapshot (ADR-0073 Крок 0) emits a 
     "params": [
       "m1",
       "u1",
-      "2026-06-22T08:30:00.000+03:00",
+      "2026-06-22T08:30:00.000Z",
       "breakfast",
       "Вівсянка",
       "",

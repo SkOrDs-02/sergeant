@@ -1,4 +1,15 @@
 /* eslint-env node, jest */
+// TZ пінимо навмисно — дзеркало `apps/web/vitest.config.js`, той самий
+// рядок і та сама причина. День ПРИСТРОЮ (ADR-0078) резолвиться через
+// локальні геттери `Date`, тож адаптер, який збирає інстант із
+// `dateKey` + `time`, віддає різний ISO-рядок на різних машинах.
+// SQL-снапшот `nutrition/lib/sqliteWriter/adapter.snapshot.test.ts` цей
+// рядок фіксує байт-точно, тому без піна він зелений лише там, де його
+// записали (у Києві), і червоний на UTC-раннері. CI і так рахує UTC,
+// тож для нього це но-оп; фіксація лікує локальні прогони й робить
+// намір явним.
+process.env.TZ = "UTC";
+
 // Jest global setup for the mobile app. Registers mocks for native
 // modules that can't run in the jest-expo JSDOM-like environment:
 //

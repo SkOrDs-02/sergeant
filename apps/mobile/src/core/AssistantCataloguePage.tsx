@@ -35,6 +35,7 @@ import {
   CAPABILITY_MODULE_META,
   CAPABILITY_MODULE_ORDER,
   groupCapabilitiesByModule,
+  isRecentCapability,
   searchCapabilities,
   type AssistantCapability,
   type CapabilityModule,
@@ -332,7 +333,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
           <Text className="text-sm font-semibold text-fg flex-shrink">
             {capability.label}
           </Text>
-          {capability.isNew ? (
+          {isRecentCapability(capability.since) ? (
             <View
               testID={`catalogue-capability-${capability.id}-new`}
               className="border border-teal-500 bg-teal-50 rounded-full px-2 py-0.5"
