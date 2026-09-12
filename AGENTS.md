@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-28.
+> **Last touched:** 2026-09-12 by @claude. **Next review:** 2026-12-29.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -187,6 +187,14 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 | Backend `/health` p95                            | < 100 ms                            | Formalized in [`docs/operations/observability/SLO.md §2.1`](./docs/operations/observability/SLO.md#21-health-endpoint-p95); alert-правило `BackendHealthP95High` — design-only, не wired (див. SLO.md § Статус wiring). |
 | `/api/chat` **перший хід** p95 повної відповіді  | **< 15 s** (стеля-детектор)         | `chat_first_turn_phase_ms{phase="total"}` (Prometheus → Grafana Cloud). Факт 2026-09-01: медіана ≈6,7 с, max 13,7 с. Перший хід не стрімиться, тож SLO про перший токен тут не має предмета — знахідка AI-2.            |
 | `/api/chat` **тур синтезу** p95 first token      | < 1.5 s                             | `ai_first_token_ms` (той самий скрейп). Моделезалежно: flash-lite 365 мс, haiku-4.5 954 мс, sonnet-5 5 586 мс.                                                                                                          |
+
+**Eager повернувся під стелю 2026-09-12: 286.8 → 266.9 kB, ліміт не рухали.**
+
+Діагноз із запису нижче підтвердився заміром і виявився повністю виліковним. Чотири модульні UA-каталоги (`uk.fizruk`, `uk.finyk`, `uk.nutrition`, `uk.routine`) більше не спредяться в `messages` з `uk.ts`, а імпортуються прямо тими файлами, що їх вживають — 131 файл, ~380 місць виклику. Чанк `cn` упав **25.1 → 12.0 kB**, критичний шлях — **286.8 → 266.9 kB**, тобто запас 13.1 kB під лімітом 280.
+
+**Виграш удвічі більший за оцінку — і це третій раз, коли оцінка «по вазі модуля» розійшлася з фактом.** Прогноз давав ~10.6 kB (сума ваги самих каталогів), замір — 19.9: разом із каталогами з eager-графа вийшло й те, що вони тягли за собою. У `posthog-js` і `vendor-sqlite` нижче та сама помилка мала протилежний знак — очікували виграш, отримували нуль або мінус. Висновок один: **складання чанків не рахується в голові ні вгору, ні вниз, має значення тільки замір після.**
+
+Важливо, чого тут НЕ сталося: ліміт не піднімали. Це було б перше підняття вниз ратчетнутої метрики, яку відчуває користувач, і воно віддало б назад роботу 2026-08-07. Дешевий важіль знайшовся там само, де й двічі до того — у сорсмапі.
 
 **Ратчет 2026-09-11 (JS 1.42 → 1.44 MB) — і той самий мовчазний гейт, тільки гірше.**
 
