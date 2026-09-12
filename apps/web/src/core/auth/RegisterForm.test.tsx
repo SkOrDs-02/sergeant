@@ -18,22 +18,12 @@ vi.mock("./AuthContext", () => ({
   }),
 }));
 
-const achievementMock = vi.fn();
-vi.mock("@shared/components/ui/CelebrationModal", () => ({
-  useCelebration: () => ({
-    achievement: achievementMock,
-    CelebrationComponent: null,
-  }),
-  CelebrationModal: () => null,
-}));
-
 import { RegisterForm } from "./RegisterForm";
 
 afterEach(() => cleanup());
 
 beforeEach(() => {
   registerMock.mockReset();
-  achievementMock.mockReset();
   authErrorState = null;
 });
 
@@ -73,9 +63,6 @@ describe("RegisterForm", () => {
         "longenoughpw",
         "bob",
       );
-    });
-    await waitFor(() => {
-      expect(achievementMock).toHaveBeenCalled();
     });
   });
 
@@ -123,7 +110,6 @@ describe("RegisterForm", () => {
     await waitFor(() => {
       expect(onAlreadyRegistered).toHaveBeenCalled();
     });
-    expect(achievementMock).not.toHaveBeenCalled();
   });
 
   it("shows authError alert on server failure", async () => {

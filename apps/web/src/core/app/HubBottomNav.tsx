@@ -46,6 +46,11 @@ import { messages } from "@shared/i18n/uk";
  * - Rendered at the bottom of the hub `<div h-dvh flex-col>` shell, so
  *   `ActiveWorkoutBanner` and other floating chrome must offset
  *   their `bottom:` by 60 px + safe-area-inset-bottom to sit above it.
+ * - Tab strip is a CSS grid with `repeat(N, minmax(0, 1fr))` columns and a
+ *   fixed-width pill (`h-full w-full`) per tab, identical to
+ *   `ModuleBottomNav` — до фіксу R1 (founder-аудит 2026-09-11) тут стояв
+ *   `flex` із `flex-initial`/`flex-1`, тобто інший алгоритм при однаковій
+ *   візуальній оболонці; тепер обидва наві рахують ширину табу однаково.
  *
  * The reports-tab reveal behavior (a single bounce-in animation when
  * the tab first appears) is preserved from the old `HubTabs` — see
@@ -73,7 +78,7 @@ interface HubBottomNavTabProps {
    * Слот рендериться у DOM, але приховується від користувача й AT.
    * Використовується для збереження геометрії tab-strip-у в момент,
    * коли «Звіти» ще не розблоковані (FTUX без жодного запису). Без цього
-   * перехід `showReports: false → true` спричиняє reflow усього `flex`-grid-а
+   * перехід `showReports: false → true` спричиняє reflow усього grid-а
    * і CLS під час першого реального запису (UX-roast 2026-Q2 §7.2 / PR-23).
    */
   hiddenSlot?: boolean | undefined;
@@ -154,16 +159,14 @@ function HubBottomNavTab({
       {...prefetchProps}
       style={hiddenSlot ? { visibility: "hidden" } : undefined}
       className={cn(
-        // AI-DANGER: активний таб — НЕ `flex-1`. Рівні слоти дають на 320-390px
-        // ~65-89px, тоді як активний піл (іконка + підпис до 96px + px-3)
-        // потребує ~146px. Раніше це лікували `max-w-full` на пілі — піл
-        // переставав вилазити, але ПІДПИС починав різатись («Налаштування»
-        // 87→42px, «Головна» 49→42px; браузерний аудит 2026-08-26).
-        // `flex-initial` = розмір за вмістом із правом стиснутись: активний
-        // бере скільки треба, неактивні ділять залишок. Той самий фікс, що в
-        // `ModuleBottomNav`.
+        // Контейнер розкладає таби через CSS grid із рівними колонками
+        // (`repeat(N, minmax(0,1fr))` — той самий алгоритм, що в
+        // `ModuleBottomNav`), тож таб більше не рахує собі ширину сам —
+        // ні `flex-initial`, ні `flex-1` тут більше не потрібні (founder-
+        // аудит R1, 2026-09-11: два нижні наві виглядали однаково, але
+        // розкладались різними алгоритмами, і саме звідси бралась
+        // нерівність між центрами іконок).
         "relative flex items-center justify-center min-w-0",
-        active ? "flex-initial" : "flex-1",
         "min-h-[48px] pointer-coarse:min-h-[52px]",
         "active:scale-[0.96]",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
@@ -172,20 +175,37 @@ function HubBottomNavTab({
         className,
       )}
     >
-      {/* Inner pill — carries the brand fill and grows to fit icon + label */}
+      {/*
+        Inner pill — ОДНАКОВИЙ горизонтальний бокс (`h-full w-full`) в
+        активному й неактивному стані, по центру grid-колонки. Раніше
+        активний піл ріс за вмістом (`flex-initial`) і потребував власного
+        `max-w-full`-запобіжника, щоб не вилізти за межі слота — а підпис
+        при цьому різало до нечитабельних 42px («Налаштування» 87→42px,
+        браузерний аудит 2026-08-26). Тепер підпис лежить ПІД іконкою
+        (`flex-col`), а не поруч із нею: колонка вже рівна для всіх табів,
+        і підпису дістається вся її ширина, а не залишок після іконки —
+        той самий прийом, що в `ModuleBottomNav`.
+      */}
       <span
         aria-hidden
         className={cn(
-          // `max-w-full` тримає піл усередині свого `flex-1`-слота. Без нього
-          // піл росте під `icon + gap + max-w-[96px] label + px-3` ≈ 146px,
-          // а слот на 375px-екрані — ≈89px: активний піл вилазив за межі
-          // кнопки, у крайнього таба — за край екрана (user report).
-          "flex items-center justify-center gap-1.5 rounded-2xl max-w-full",
+          // AI-DANGER: підпис активного табу мусить лишатись ПІД іконкою
+          // (`flex-col`). Не повертай його в один рядок з іконкою — ні
+          // `flex-row`, ні `gap` між ними по горизонталі. Рівні grid-колонки
+          // вище тримаються саме на цьому: у рядку іконка й підпис ділять
+          // ширину колонки, і підпису лишається залишок (~42px на 4-табовому
+          // наві при 390px — «Налаштування» різало 87→42px, браузерний аудит
+          // 2026-08-26, через що рівні колонки тоді й відкотили). У стовпчику
+          // підпис отримує ВСЮ ширину колонки (~84.5px), і саме тому рівні
+          // колонки тут знову припустимі. Тобто це не дві незалежні правки, а
+          // одна: `grid` рівних колонок діє лише в парі з `flex-col`. Зміниш
+          // одне — перевір ширини 320-390px, інакше повернеш дефект 2026-08-26.
+          "flex h-full w-full min-w-0 items-center justify-center rounded-2xl px-1 py-1",
           "duration-base ease-standard",
           active
-            ? "bg-brand-strong dark:bg-brand-400 text-bg px-3 py-1.5"
-            : "bg-transparent text-text px-2 py-1.5",
-          !reduceMotion && "transition-[background-color,padding,color]",
+            ? "flex-col gap-0.5 bg-brand-strong dark:bg-brand-400 text-bg"
+            : "bg-transparent text-text",
+          !reduceMotion && "transition-[background-color,color]",
         )}
       >
         <Icon
@@ -201,7 +221,7 @@ function HubBottomNavTab({
             transition,
             "duration-base ease-standard",
             active
-              ? "max-w-[96px] opacity-100"
+              ? "max-w-full opacity-100"
               : "max-w-0 opacity-0 pointer-events-none",
           )}
         >
@@ -394,6 +414,12 @@ export function HubBottomNav({
     label: "Налаштування",
   });
 
+  // Grid-колонки, не flex: усі таби (включно з action-табом «Увійти», який
+  // рендериться поза `tabs`-масивом) мають бути РІВНОЇ ширини (тим самим
+  // алгоритмом, що в `ModuleBottomNav`), інакше центр іконки в кожному
+  // табі сидить у своїй унікальній точці замість центру колонки.
+  const columnCount = tabs.length + (authAction ? 1 : 0);
+
   return (
     <nav
       ref={navRef}
@@ -406,7 +432,12 @@ export function HubBottomNav({
         kbHidden && "translate-y-full pointer-events-none",
       )}
     >
-      <div className="relative flex h-[60px] pointer-coarse:h-[64px] gap-1 px-1">
+      <div
+        className="relative grid h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
+        style={{
+          gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+        }}
+      >
         <div role="tablist" ref={tablistRef} className="contents">
           {tabs.map((tab) => (
             <HubBottomNavTab

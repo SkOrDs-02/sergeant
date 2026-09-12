@@ -1,7 +1,6 @@
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
-import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { BrandLogo } from "../app/BrandLogo";
 import { useAuth } from "./AuthContext";
@@ -21,7 +20,6 @@ interface AuthPageProps {
 export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
   const { loginWithGoogle, loginWithApple, authError, setAuthError } =
     useAuth();
-  const { CelebrationComponent } = useCelebration();
   /**
    * Соцвхід вимикається на деплої, який живе НЕ на домені з `BETTER_AUTH_URL`.
    *
@@ -87,7 +85,6 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
 
   return (
     <>
-      {CelebrationComponent}
       {/*
         Phase 7 D1 — visual refresh. MeshBackground wraps the whole auth
         shell (auth is pre-module, so no `<ModuleAccentProvider>` here);

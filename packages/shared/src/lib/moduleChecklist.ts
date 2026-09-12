@@ -149,12 +149,39 @@ export interface ChecklistState {
   dismissed: boolean;
   /** ISO timestamp of first checklist view. */
   firstSeenAt: string | null;
+  /**
+   * Версія семантики засувки `completedSteps`.
+   *
+   * AI-DANGER: відсутнє поле означає запис ЕПОХИ ТАПУ, і довіряти його
+   * `completedSteps` не можна. До F3 (2026-09-11) будь-який тап по рядку
+   * чекліста писав `stepId` сюди без жодного доказу даними — це і був
+   * дефект, який F3 закривав. Ключ сховища (`<module>_checklist_v1`) при
+   * цьому не змінювався, тож після фіксу ті самі неперевірені id почали
+   * читатись уже як постійний доказ (`provenByData`) — дефект пережив
+   * власний фікс для всіх, хто встиг тапнути (знахідка рев'ю до PR #1106).
+   *
+   * Тому засувці без цього поля не віримо. Ключ НЕ бампаємо: у тому ж
+   * записі лежать `dismissed` і `firstSeenAt`, а їх скидати підстав немає —
+   * людина, яка сховала чекліст, не має побачити його знову через чужий
+   * баг. Втрата невелика: крок, доведений даними, засувається назад на
+   * першому ж рендері з живого сигналу. Реально скидаються лише кроки
+   * без автоматичного сигналу (мобільні `check_progress`, `photo_analysis`) —
+   * а вони й були зараховані тапом, тобто тим самим, чому ми не віримо.
+   */
+  latchVersion?: number;
 }
+
+/**
+ * Поточна версія семантики засувки. Піднімай, коли міняється те, ЩО
+ * означає запис у `completedSteps`, — не коли міняється форма стану.
+ */
+const LATCH_VERSION = 2;
 
 const EMPTY_STATE: ChecklistState = {
   completedSteps: [],
   dismissed: false,
   firstSeenAt: null,
+  latchVersion: LATCH_VERSION,
 };
 
 // ---------------------------------------------------------------------------
@@ -255,12 +282,18 @@ export function getChecklistState(
 ): ChecklistState {
   const data = readJSON<ChecklistState>(store, storageKey(moduleId));
   if (!data || typeof data !== "object") return { ...EMPTY_STATE };
+  // Міграція читанням, не записом: запис без `latchVersion` — епохи тапу,
+  // тож його `completedSteps` відкидаємо (чому саме — у полі типу вище).
+  // Читання лишається чистим; нову версію проставить перший же запис.
+  const trusted = data.latchVersion === LATCH_VERSION;
   return {
-    completedSteps: Array.isArray(data.completedSteps)
-      ? data.completedSteps.filter((s): s is string => typeof s === "string")
-      : [],
+    completedSteps:
+      trusted && Array.isArray(data.completedSteps)
+        ? data.completedSteps.filter((s): s is string => typeof s === "string")
+        : [],
     dismissed: typeof data.dismissed === "boolean" ? data.dismissed : false,
     firstSeenAt: typeof data.firstSeenAt === "string" ? data.firstSeenAt : null,
+    latchVersion: LATCH_VERSION,
   };
 }
 
@@ -269,7 +302,15 @@ export function saveChecklistState(
   moduleId: DashboardModuleId,
   state: ChecklistState,
 ): void {
-  writeJSON(store, storageKey(moduleId), state);
+  // Версію ставить ПИСАР, а не викликач. Інакше будь-який виклик із
+  // рукописним обʼєктом (наприклад `seedDemoData/seedChecklists.ts`, який
+  // засіває всі кроки демо-акаунта) писав би запис без поля — а читання
+  // такий запис навмисно не бере на віру, тож засівання мовчки не діяло б.
+  // Так інваріант «немає поля = дані епохи тапу» тримається в одному місці.
+  writeJSON(store, storageKey(moduleId), {
+    ...state,
+    latchVersion: LATCH_VERSION,
+  });
 }
 
 // ---------------------------------------------------------------------------

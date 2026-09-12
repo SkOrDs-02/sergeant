@@ -36,6 +36,7 @@ import {
   trackEvent,
   ANALYTICS_EVENTS,
 } from "../../../core/observability/analytics";
+import { markFinykAnalyticsViewed } from "../../../core/onboarding/useChecklistSignals";
 import { ucFirst } from "@shared/lib/ui/ucFirst";
 
 interface SectionProps {
@@ -190,8 +191,22 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
 
   // Fire-and-forget: record that the analytics view was opened. Intentionally
   // runs once on mount (no month dep) so re-selecting months doesn't spam.
+  //
+  // AI-DANGER: `markFinykAnalyticsViewed` latches the «Переглянути
+  // аналітику» крок чекліста НАЗАВЖДИ, тож ставити його можна рівно
+  // там, де екран справді відкрився — тобто тут. Спершу він стояв у
+  // `HubHeroBlock` перед диспатчем навігації, і це було хибно: подія
+  // веде в `useAppEffects`, який передає далі лише `module`, а не
+  // `action`, тож Фінік відкривався на ДЕФОЛТНІЙ сторінці (огляд), і
+  // `FinykApp` споживає з усіх дій саму `add_expense`. Відмітка
+  // ставилась, аналітика не відкривалась — чекліст брехав знову, тільки
+  // іншими дверима (знахідка рев'ю до PR #1106). Звідси ж випливає
+  // побічна користь: сигнал тепер чесний для БУДЬ-ЯКОГО шляху сюди —
+  // нижній нав, пряме посилання, чекліст, — а не лише для одного
+  // викликача.
   useEffect(() => {
     trackEvent(ANALYTICS_EVENTS.ANALYTICS_OPENED, { module: "finyk" });
+    markFinykAnalyticsViewed();
   }, []);
 
   const isCurrentMonth = year === nowKyiv.year && month === nowKyiv.month;

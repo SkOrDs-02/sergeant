@@ -44,14 +44,24 @@ const STALE_TIME_MS = 30_000;
  * there is no SQLite/quick-stats column proving "the user looked at their
  * spending chart" (`moduleChecklistSignals.ts` only reads facts that
  * already live in a KV/SQLite snapshot). The honest substitute the audit
- * settled on is the fact of a successful Hub-level navigation dispatch:
- * `HubHeroBlock` calls {@link markFinykAnalyticsViewed} right before
- * `openHubModuleWithAction("finyk", "view_analytics")` actually fires —
- * i.e. the flag can only be set alongside a real navigation dispatch
- * (module + action both valid), never a bare tap the Hub gate might have
- * dropped. It is written from ANY caller of that action (checklist,
- * search hit, quick action), not only the checklist row, so it stays an
- * honest "did this happen" fact rather than a checklist self-report.
+ * settled on is the fact that the analytics screen actually rendered:
+ * `modules/finyk/pages/Analytics.tsx` calls
+ * {@link markFinykAnalyticsViewed} from its mount effect, next to the
+ * `ANALYTICS_OPENED` event it already emits there. Written from ANY path
+ * into that screen — нижній нав, пряме посилання, рядок чекліста, — тож
+ * це лишається чесним фактом «це сталося», а не самозвітом чекліста.
+ *
+ * AI-DANGER: спершу відмітка стояла в `HubHeroBlock` перед диспатчем
+ * `openHubModuleWithAction("finyk", "view_analytics")`, і міркування було
+ * «диспатч = навігація сталась». Воно хибне: `useAppEffects` передає далі
+ * лише `module`, а не `action`, тож Фінік відкривався на дефолтній
+ * сторінці (огляд), а `FinykApp` споживає з усіх дій саму `add_expense`.
+ * Відмітка ставилась постійно, аналітика не відкривалась — чекліст знову
+ * зараховував крок, якого не було (знахідка рев'ю до PR #1106). Валідність
+ * ДИСПАТЧУ не є доказом того, що цільовий екран відкрився; доказом є сам
+ * екран. Поки четвертий ручний список дій (`usePwaActions.ts`) не навчиться
+ * доносити `action` до сторінки — а це окрема робота з deep-link, див.
+ * аудит — жодне місце ПЕРЕД навігацією не має права ставити цю відмітку.
  *
  * Not registered in `packages/shared/src/lib/storageKeys.ts` — that file
  * is outside this change's file boundary (Stage-4 F3 fix); follow-up:

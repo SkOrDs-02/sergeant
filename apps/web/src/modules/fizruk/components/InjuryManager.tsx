@@ -8,6 +8,7 @@ import {
 } from "@sergeant/fizruk-domain/data";
 import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useToast } from "@shared/hooks/useToast";
 import { cn } from "@shared/lib/ui/cn";
@@ -25,6 +26,15 @@ import { useInjuries } from "../hooks/useInjuries";
  * with 18 muscles up front buried exactly the sites people actually injure
  * (audit E-4, ADR-0083). Запит власника 2026-08-08: «Моє тіло» має
  * поводитись як фініш-фло — мʼязи у згорнутому вигляді.
+ *
+ * Items render as a rectangular grid (`InjuryChip`-style row: label + check
+ * glyph), not `rounded-full` pills in `flex-wrap` — that divergence made the
+ * "same layout" claim above false (founder audit round2 2026-09-11, D2):
+ * 27 pills of uneven width gave a ragged rhythm the finish flow never had.
+ * `grid-cols-2 sm:grid-cols-3` mirrors the wellbeing rating grid in
+ * `WorkoutFinishSheets` — 2 columns keep the longest labels (e.g. «Задня
+ * поверхня стегна») on a legible wrap instead of a cramped 3rd column on a
+ * phone-width viewport; 3 columns only kick in once there is room.
  */
 export function InjuryManager() {
   const t = messages.fizruk.injuries;
@@ -88,25 +98,29 @@ export function InjuryManager() {
   ) => (
     <div className="space-y-2">
       {label && <div className="text-style-caption text-subtle">{label}</div>}
-      <div className="flex flex-wrap gap-2">
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">
         {sites.map((site) => {
           const already = activeSites.has(site);
           const checked = selected.includes(site);
+          const active = checked || already;
           return (
             <button
               key={site}
               type="button"
               disabled={already || busy}
-              aria-pressed={checked || already}
+              aria-pressed={active}
               className={cn(
-                "min-h-[44px] rounded-full border px-3 py-2 text-style-caption transition-colors disabled:opacity-50",
-                checked || already
+                "flex min-h-[44px] w-full items-center justify-between gap-2 rounded-lg border px-3 py-2 text-left text-style-caption transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 disabled:opacity-50",
+                active
                   ? "border-warning-strong bg-warning/15 text-warning-strong dark:text-warning"
                   : "border-line bg-bg text-muted hover:border-muted hover:text-text",
               )}
               onClick={() => toggle(site)}
             >
-              {INJURY_SITE_LABELS_UK[site]}
+              <span className="min-w-0">{INJURY_SITE_LABELS_UK[site]}</span>
+              {active && (
+                <Icon name="check" size="sm" aria-hidden className="shrink-0" />
+              )}
             </button>
           );
         })}

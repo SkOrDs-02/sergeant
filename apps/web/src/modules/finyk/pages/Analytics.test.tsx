@@ -22,6 +22,7 @@ import {
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { Analytics } from "./Analytics";
 import type { AnalyticsProps } from "./Analytics";
+import { hasViewedFinykAnalytics } from "../../../core/onboarding/useChecklistSignals";
 
 // Mock the lazy chart so Suspense resolves immediately and we don't pull recharts.
 vi.mock("../components/charts/lazy", () => ({
@@ -75,6 +76,23 @@ describe("Analytics page", () => {
   afterEach(() => {
     vi.useRealTimers();
     vi.clearAllMocks();
+    // Відмітка живе в localStorage, тож без прибирання наступний тест
+    // побачив би її від попереднього і залежав би від порядку.
+    localStorage.clear();
+  });
+
+  // Знахідка рев'ю до PR #1106. Відмітка «аналітику переглянуто» спершу
+  // стояла на тапі в хабі, ПЕРЕД навігацією, — і брехала: диспатч не
+  // доносить `action` до сторінки, тож Фінік відкривався на огляді, а
+  // крок чекліста засувався назавжди. Доказом є сам екран, і саме це
+  // тут перевіряється — не виклик стаба, а наслідок, тим самим
+  // предикатом, яким чекліст потім читає стан.
+  it("latches the checklist signal when the analytics screen actually mounts", async () => {
+    expect(hasViewedFinykAnalytics()).toBe(false);
+    await act(async () => {
+      render(<Analytics mono={buildMono()} storage={buildStorage()} />);
+    });
+    expect(hasViewedFinykAnalytics()).toBe(true);
   });
 
   it("renders the section headings and current month", async () => {

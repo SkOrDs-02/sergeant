@@ -552,7 +552,6 @@
     --motion-duration-loop: 1500ms; /* shimmer */
     --motion-duration-loop-glow: 2000ms; /* glow / pulse / streak */
     --motion-duration-loop-float: 8000ms; /* ambient backdrops */
-    --motion-duration-confetti-fall: 2500ms; /* CELEBRATE confetti drift */
 
     /* Easing scale.
        Tier guidance:

@@ -72,6 +72,12 @@ describe("openHubModuleWithAction", () => {
   });
   afterEach(() => {
     window.removeEventListener(HUB_OPEN_MODULE_EVENT, listener);
+    // Безумовно, а не в кінці тіла тесту: `vi.stubEnv("DEV", …)` нижче
+    // перевіряє dev-гілку гварда, і якщо `expect` упаде раніше за
+    // прибирання, `DEV=false` протече в наступні тести цього файлу —
+    // вони перевірятимуть прод-гілку, думаючи, що перевіряють dev
+    // (знахідка рев'ю до PR #1106).
+    vi.unstubAllEnvs();
   });
 
   it("диспатчить з action", () => {
@@ -101,7 +107,6 @@ describe("openHubModuleWithAction", () => {
       expect.objectContaining({ category: "web.logger", level: "error" }),
     );
     expect(listener).not.toHaveBeenCalled();
-    vi.unstubAllEnvs();
   });
 
   // F3 audit (2026-09-11): `VALID_HUB_ACTIONS` used to be a hand-maintained
