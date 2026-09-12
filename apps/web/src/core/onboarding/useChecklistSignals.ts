@@ -64,7 +64,14 @@ export function markFinykAnalyticsViewed(): void {
   emitHubBus("storageUpdated", undefined);
 }
 
-function hasViewedFinykAnalytics(): boolean {
+/**
+ * Читач тієї самої відмітки, що її ставить `markFinykAnalyticsViewed`.
+ * Експортований симетрично до писаря: питання «чи людина вже відкривала
+ * аналітику» — частина публічного контракту сигналу, а не деталь
+ * реалізації. Дає змогу перевіряти НАСЛІДОК дії замість того, щоб
+ * підміняти писаря моком і перевіряти власну підміну.
+ */
+export function hasViewedFinykAnalytics(): boolean {
   return webKVStore.getString(FINYK_ANALYTICS_VIEWED_KEY) === "1";
 }
 
