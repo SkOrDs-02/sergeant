@@ -12,6 +12,10 @@ import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { RestTimerContext } from "../../context/RestTimerContext";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
+import {
+  makeDefaultWarmup,
+  makeDefaultCooldown,
+} from "../../hooks/useWorkouts";
 import { SessionView } from "./SessionView";
 
 const undoMocks = vi.hoisted(() => ({
@@ -325,5 +329,205 @@ describe("SessionView — dock during rest", () => {
     expect(setRestTimer).toHaveBeenCalled();
     fireEvent.click(screen.getByRole("button", { name: "Пропустити" }));
     expect(setRestTimer).toHaveBeenCalledWith(null);
+  });
+});
+
+describe("SessionView — периферія сесії (розминка, заминка, нотатка)", () => {
+  it("сіє дефолтну розминку й перемикає пункт чеклиста", () => {
+    renderView();
+    fireEvent.click(screen.getByRole("button", { name: /Розминка/ }));
+    // Поки списку немає, чекліст показує промпт «Додати» замість пунктів.
+    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    // Не `expect.any(Array)`: порожній масив теж масив, тож така перевірка
+    // пропустила б «засіяли нічим» (знахідка рев'ю 2026-09-11).
+    expect(updateWorkout).toHaveBeenCalledWith("w1", {
+      warmup: makeDefaultWarmup().map((x) => ({
+        ...x,
+        id: expect.any(String) as unknown as string,
+      })),
+    });
+
+    cleanup();
+    vi.clearAllMocks();
+    renderView({
+      activeWorkout: workout({
+        warmup: [
+          { id: "wm1", label: "Суглобова гімнастика", done: false },
+          { id: "wm2", label: "Кардіо 5 хв", done: false },
+        ],
+      }),
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Розминка/ }));
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Кардіо 5 хв: позначити як завершене",
+      }),
+    );
+    expect(updateWorkout).toHaveBeenCalledWith("w1", {
+      warmup: [
+        { id: "wm1", label: "Суглобова гімнастика", done: false },
+        { id: "wm2", label: "Кардіо 5 хв", done: true },
+      ],
+    });
+  });
+
+  it("сіє дефолтну заминку окремо від розминки", () => {
+    renderView();
+    fireEvent.click(screen.getByRole("button", { name: /Заминка/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Додати" }));
+    expect(updateWorkout).toHaveBeenCalledWith("w1", {
+      cooldown: makeDefaultCooldown().map((x) => ({
+        ...x,
+        id: expect.any(String) as unknown as string,
+      })),
+    });
+  });
+
+  it("показує лічильник виконаних пунктів у чипі розминки", () => {
+    renderView({
+      activeWorkout: workout({
+        warmup: [
+          { id: "wm1", label: "Раз", done: true },
+          { id: "wm2", label: "Два", done: false },
+        ],
+      }),
+    });
+    expect(screen.getByRole("button", { name: /Розминка/ })).toHaveTextContent(
+      "1/2",
+    );
+  });
+
+  it("пише нотатку тренування", () => {
+    renderView();
+    fireEvent.click(screen.getByRole("button", { name: /^Нотатка/ }));
+    fireEvent.change(screen.getByRole("textbox"), {
+      target: { value: "Легко пішло" },
+    });
+    expect(updateWorkout).toHaveBeenCalledWith("w1", { note: "Легко пішло" });
+  });
+});
+
+describe("SessionView — групи вправ", () => {
+  it("скасовує режим вибору без створення групи", () => {
+    renderView();
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ще дії з тренуванням" }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Обʼєднати в суперсет" }),
+    );
+    fireEvent.click(screen.getByRole("checkbox", { name: /Жим лежачи/ }));
+    fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
+    expect(screen.queryByRole("button", { name: /Суперсет \(/ })).toBeNull();
+    expect(updateWorkout).not.toHaveBeenCalled();
+  });
+
+  it("створює коло і викидає стару групу, що ділила ті самі вправи", () => {
+    // Гілка `groups.filter(...)` спрацьовує лише коли група вже існує —
+    // інакше фільтр не викликається жодного разу.
+    renderView({
+      activeWorkout: workout({
+        groups: [
+          { id: "g-old", type: "superset", itemIds: ["a", "c"], restSec: 60 },
+        ],
+      }),
+    });
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ще дії з тренуванням" }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Обʼєднати в суперсет" }),
+    );
+    fireEvent.click(screen.getByRole("checkbox", { name: /Жим лежачи/ }));
+    fireEvent.click(screen.getByRole("checkbox", { name: /Присідання/ }));
+    fireEvent.click(screen.getByRole("button", { name: /Коло \(2\/3\)/ }));
+    expect(updateWorkout).toHaveBeenCalledWith("w1", {
+      groups: [
+        expect.objectContaining({ type: "circuit", itemIds: ["a", "b"] }),
+      ],
+    });
+    const [, patch] = updateWorkout.mock.calls[0] as [string, { groups: [] }];
+    expect(patch.groups).toHaveLength(1);
+  });
+
+  it("розгруповує вправу з картки у фокусі", () => {
+    renderView({
+      focusItemId: "a",
+      activeWorkout: workout({
+        groups: [
+          { id: "g-old", type: "superset", itemIds: ["a", "b"], restSec: 60 },
+        ],
+      }),
+    });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Ще дії з тренуванням: Жим лежачи",
+      }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Розгрупувати" }));
+    expect(updateWorkout).toHaveBeenCalledWith("w1", { groups: [] });
+  });
+});
+
+describe("SessionView — меню вправи у фокусі", () => {
+  it("прокидає «про вправу» і «статистику» лише коли обробники передані", () => {
+    const onOpenExerciseInfo = vi.fn();
+    const onOpenExerciseStats = vi.fn();
+    renderView({ focusItemId: "a", onOpenExerciseInfo, onOpenExerciseStats });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Ще дії з тренуванням: Жим лежачи",
+      }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Про вправу" }));
+    expect(onOpenExerciseInfo).toHaveBeenCalledWith("a");
+
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Ще дії з тренуванням: Жим лежачи",
+      }),
+    );
+    fireEvent.click(
+      screen.getByRole("menuitem", { name: "Статистика вправи" }),
+    );
+    expect(onOpenExerciseStats).toHaveBeenCalledWith("a");
+  });
+});
+
+describe("SessionView — арифметика відпочинку", () => {
+  it("додає секунди й тягне загальну тривалість за собою, не опускаючись нижче 1 с", () => {
+    // `setRestTimer` тут — мок, тож сам апдейтер не виконується. Дістаємо
+    // його з виклику і проганяємо вручну: саме він тримає інваріанти
+    // «не менше 1 с» і «total не меншає».
+    const { setRestTimer } = renderView(
+      { focusItemId: "b" },
+      { remaining: 83, total: 90 },
+    );
+    const mock = setRestTimer as unknown as ReturnType<typeof vi.fn>;
+    const updaterOf = (label: string) => {
+      mock.mockClear();
+      fireEvent.click(screen.getByRole("button", { name: label }));
+      return mock.mock.calls[0]?.[0] as (
+        s: RestTimerState | null,
+      ) => RestTimerState | null;
+    };
+
+    // Кожна кнопка дає СВІЙ апдейтер із власним `seconds` — брати «+15» і
+    // перевіряти ним підлогу «−15» означає перевіряти не те (знахідка
+    // рев'ю 2026-09-11).
+    const plus = updaterOf("Додати 15 секунд");
+    expect(plus({ remaining: 83, total: 90 })).toEqual({
+      remaining: 98,
+      total: 98,
+    });
+
+    const minus = updaterOf("Відняти 15 секунд");
+    // Віднімаємо більше, ніж лишилось: підлога 1 с, а `total` не меншає.
+    expect(minus({ remaining: 5, total: 90 })).toEqual({
+      remaining: 1,
+      total: 90,
+    });
+    // Таймера немає — апдейтер не вигадує стан.
+    expect(minus(null)).toBeNull();
   });
 });
