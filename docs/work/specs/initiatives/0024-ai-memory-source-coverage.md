@@ -296,3 +296,15 @@ psql "$DATABASE_URL" -c "INSERT INTO ai_memories (user_id, source, content) VALU
 - [`docs/work/specs/launch/tech/ai-memory-activation.md`](../launch/tech/ai-memory-activation.md) — runbook увімкнення на проді.
 - [`docs/product/modules/hub-coach.md`](../../../product/modules/hub-coach.md) — продуктовий канон AI-шару (D5/G3: памʼять, якої не видно, юзер не контролює).
 - [`docs/work/specs/audits/product-knowledge-hub-coach.md`](../audits/product-knowledge-hub-coach.md) — напруга 4 (замикання AI-шару на власний вихід).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                         | Merged     |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| [#1071](https://github.com/Skords-01/Sergeant/pull/1071) | fix(server): звіряти RAG-евал і parity-тест зі STORED, а не ALLOWED джерелами | 2026-09-03 |
+| [#1068](https://github.com/Skords-01/Sergeant/pull/1068) | feat(server): перестати приймати мертві джерела ai_memories (0024, PR-1)      | 2026-09-03 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

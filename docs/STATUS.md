@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-11 by docs:gen-status. **Next review:** 2026-09-18.
+> **Last touched:** 2026-09-12 by docs:gen-status. **Next review:** 2026-09-19.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -19,16 +19,16 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
+- [#1098](https://github.com/Skords-01/Sergeant/pull/1098) — fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника _(2026-09-11)_
+- [#1071](https://github.com/Skords-01/Sergeant/pull/1071) — fix(server): звіряти RAG-евал і parity-тест зі STORED, а не ALLOWED джерелами _(2026-09-03)_
+- [#1064](https://github.com/Skords-01/Sergeant/pull/1064) — feat(root): закрити F1 анти-слоп аудиту, першу хвилю F7 і хвости техборгу _(2026-09-03)_
+- [#1070](https://github.com/Skords-01/Sergeant/pull/1070) — feat(web): писати N рядків журналу з фото-аналізу замість одного злитого (0023, PR-3) _(2026-09-03)_
+- [#1067](https://github.com/Skords-01/Sergeant/pull/1067) — feat(server): емітити PostHog $ai_generation з центрального AI-клієнта (0025, Фаза 1) _(2026-09-03)_
+- [#1068](https://github.com/Skords-01/Sergeant/pull/1068) — feat(server): перестати приймати мертві джерела ai_memories (0024, PR-1) _(2026-09-03)_
+- [#1046](https://github.com/Skords-01/Sergeant/pull/1046) — docs(docs): полагодити dangling ref у ADR-0067 (червоний check на main) _(2026-09-02)_
+- [#1043](https://github.com/Skords-01/Sergeant/pull/1043) — docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення _(2026-09-02)_
 - [#895](https://github.com/Skords-01/Sergeant/pull/895) — fix(agents): полірування агентного шару після розкатки module-owners _(2026-08-28)_
 - [#892](https://github.com/Skords-01/Sergeant/pull/892) — feat(agents): module-owner і службові Claude-агенти _(2026-08-27)_
-- [#891](https://github.com/Skords-01/Sergeant/pull/891) — feat(agents): скіли-дисципліни _(2026-08-27)_
-- [#890](https://github.com/Skords-01/Sergeant/pull/890) — feat(agents): інфра module-скіли і nested-роутинг _(2026-08-27)_
-- [#889](https://github.com/Skords-01/Sergeant/pull/889) — feat(agents): продуктові module-owner скіли _(2026-08-27)_
-- [#689](https://github.com/Skords-01/Sergeant/pull/689) — fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого _(2026-08-07)_
-- [#508](https://github.com/Skords-01/Sergeant/pull/508) — fix(docs): reconcile canonical docs with current repo _(2026-07-29)_
-- [#334](https://github.com/Skords-01/Sergeant/pull/334) — docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) _(2026-07-21)_
-- [#74](https://github.com/Skords-01/Sergeant/pull/74) — feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles) _(2026-06-30)_
-- [#3665](https://github.com/Skords-01/Sergeant/pull/3665) — docs(web): add ADR-0067 engagement mechanism standardization _(2026-06-20)_
 
 ## 🔵 В роботі — 73 відкриті документи
 
@@ -45,7 +45,7 @@
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
 - [`work/specs/launch/phases/02-capacitor-launch.md`](./work/specs/launch/phases/02-capacitor-launch.md) — Phase 2 — Capacitor launch roadmap with users — Active — research deliverable for the parent launch program. _(Активні спеки)_
 - [`work/specs/audits/2026-09-11-founder-ux-review-round2.md`](./work/specs/audits/2026-09-11-founder-ux-review-round2.md) — Розбір зауважень власника, хвиля 2 (після Codex) — Active _(Активні спеки)_
-- [`work/specs/audits/2026-08-05-orphaned-code-audit.md`](./work/specs/audits/2026-08-05-orphaned-code-audit.md) — Аудит сиротілого коду, елементів і таблиць — 2026-08-05 — Active _(Активні спеки)_
+- [`work/specs/initiatives/0024-ai-memory-source-coverage.md`](./work/specs/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться — In progress — PR-1 змержено 2026-09-03 (§ Перезамір нижче). PR-2 (kill-switch rename) і PR-3 (міграція 128) лишаються, п _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 

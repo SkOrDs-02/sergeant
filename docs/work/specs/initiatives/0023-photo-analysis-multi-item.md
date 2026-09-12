@@ -272,3 +272,14 @@ pnpm --filter @sergeant/web test -- useNutritionLog AddMealSheet
 - Схема запиту: `RefinePhotoSchema` у [`packages/shared/src/schemas/api.ts`](../../../../packages/shared/src/schemas/api.ts)
 - Типи журналу: [`packages/nutrition-domain/src/nutritionTypes.ts`](../../../../packages/nutrition-domain/src/nutritionTypes.ts)
 - Продуктовий канон модуля: [`docs/product/modules/`](../../../product/model/)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                                 | Merged     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------- |
+| [#1070](https://github.com/Skords-01/Sergeant/pull/1070) | feat(web): писати N рядків журналу з фото-аналізу замість одного злитого (0023, PR-3) | 2026-09-03 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

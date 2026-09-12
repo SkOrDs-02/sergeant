@@ -122,3 +122,14 @@ AI-шар (HubChat, weekly digest, vision-аналіз чеків і їжі) с�
 - Ініціатива 0019 (AI cost tracking) — ledger `ai_usage_daily`, який лишається source of truth для витрат: [`anthropicUsageStore.ts`](../../../../apps/server/src/lib/anthropicUsageStore.ts).
 - [PostHog AI Observability docs](https://posthog.com/docs/ai-observability) · [AI Evals](https://posthog.com/docs/ai-evals) · [privacy mode](https://posthog.com/docs/ai-observability/privacy-mode) · [pricing](https://posthog.com/ai-observability).
 - [`docs/product/modules/hub-coach.md`](../../../product/modules/hub-coach.md) — продуктовий канон AI-шару.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                                 | Merged     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------- |
+| [#1067](https://github.com/Skords-01/Sergeant/pull/1067) | feat(server): емітити PostHog $ai_generation з центрального AI-клієнта (0025, Фаза 1) | 2026-09-03 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

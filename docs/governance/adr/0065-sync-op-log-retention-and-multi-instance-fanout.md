@@ -28,3 +28,14 @@ ADR. They are explicit follow-up work with separate correctness requirements:
 Do not describe client TTL as server retention, or in-process SSE as a
 multi-replica guarantee. Scaling the API horizontally or deleting old log rows
 is a trigger to revisit this ADR before changing deployment/data policy.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                         | Merged     |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| [#1043](https://github.com/Skords-01/Sergeant/pull/1043) | docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення | 2026-09-02 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
