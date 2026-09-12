@@ -165,6 +165,10 @@ export function BankTransactionDetailsSheet({
     return internal ? [...merged, internal] : merged;
   }, [customCategories, isIncome]);
   const existingSplits = txSplits[transaction.id] ?? [];
+  // `DebtTxLinkSection` бере дату одним рядком — зводимо обидві форми
+  // (ISO-поле і unix-секунди) тут, де вони обидві видні.
+  const txDateIso =
+    transaction.date || new Date(Number(transaction.time) * 1000).toISOString();
   const totalAmount = Math.abs(transaction.amount / 100);
   // CodeRabbit finding #1 (PR #1103): a split transaction can carry only a
   // PART of its total under category `debt` (e.g. 1000 ₴ tx split into
@@ -306,7 +310,9 @@ export function BankTransactionDetailsSheet({
 
         {isIncome && category.id === "debt-income" && (
           <DebtTxLinkSection
-            transaction={transaction}
+            txId={transaction.id}
+            txAmountKop={transaction.amount}
+            txDateIso={txDateIso}
             manualDebts={manualDebts}
             setManualDebts={setManualDebts}
             setLinkedTxRole={setLinkedTxRole}
@@ -318,7 +324,9 @@ export function BankTransactionDetailsSheet({
           category.id === "debt" &&
           debtPaymentSplitAmountUAH !== 0 && (
             <DebtTxLinkSection
-              transaction={transaction}
+              txId={transaction.id}
+              txAmountKop={transaction.amount}
+              txDateIso={txDateIso}
               manualDebts={manualDebts}
               setManualDebts={setManualDebts}
               setLinkedTxRole={setLinkedTxRole}
