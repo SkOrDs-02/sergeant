@@ -514,4 +514,46 @@ describe("HubBottomNav", () => {
       );
     });
   });
+
+  describe("видимий підпис «Налаштування» (R1)", () => {
+    /**
+     * Видимий текст таба = весь його текст МІНУС `sr-only`-дубль.
+     *
+     * AI-NOTE: `getByText("Головна")` тут не працює — підпис лежить у
+     * ДВОХ вузлах (видимий span + `sr-only` з доступною назвою), тож
+     * запит падає на «found multiple elements». Саме через цю двоїстість і
+     * потрібен окремий хелпер: без нього легко написати тест, що читає
+     * `sr-only` і мовчки проходить, хоч видимий підпис зламано.
+     */
+    const visibleTextOf = (tab: HTMLElement): string => {
+      const srOnly = tab.querySelector(".sr-only")?.textContent ?? "";
+      return (tab.textContent ?? "").replace(srOnly, "").trim();
+    };
+
+    // AI-DANGER: ці два очікування — пара, і саме пара є суттю правки.
+    // Видимий підпис скорочено до «Опції», бо «Налаштування» не влазило в
+    // свою колонку на ≤375px; доступна назва мусить лишитись повною. Тест,
+    // що перевіряє лише одне з двох, пропустить рівно ту помилку, якої тут
+    // бояться: зведення `label` і `visibleLabel` в одне поле.
+    it("рендерить «Опції», а доступна назва лишається повною", () => {
+      renderNav({ hubView: "settings" });
+
+      const settings = screen.getByRole("tab", { name: /Налаштування/ });
+      expect(settings.querySelector(".sr-only")?.textContent).toBe(
+        "Налаштування",
+      );
+      expect(visibleTextOf(settings)).toBe("Опції");
+    });
+
+    it("сусідні таби підписів не міняли", () => {
+      renderNav({ hubView: "dashboard" });
+
+      // Скорочення торкається ОДНОГО таба. Якби хтось скоротив і решту,
+      // цей рядок це зловить — а `getByRole` по доступній назві ні, бо
+      // вона й далі повна в усіх.
+      expect(visibleTextOf(screen.getByRole("tab", { name: /Головна/ }))).toBe(
+        "Головна",
+      );
+    });
+  });
 });
