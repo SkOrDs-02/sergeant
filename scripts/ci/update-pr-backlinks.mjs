@@ -331,6 +331,39 @@ function ghJSON(args) {
   return JSON.parse(out);
 }
 
+function ghLines(args) {
+  const out = execFileSync("gh", args, { encoding: "utf8", maxBuffer: 64e6 });
+  return out
+    .split("\n")
+    .map((line) => line.trim())
+    .filter(Boolean);
+}
+
+/**
+ * Звірка «скільки файлів у PR» проти «скільки ми прочитали».
+ *
+ * Винесено окремою чистою функцією, бо саме тут була дірка: `gh pr view
+ * --json files` віддає максимум 100 файлів, і для більшого PR скрипт
+ * чесно не бачив жодного канонічного документа, друкував «did not touch
+ * any canonical doc» і виходив нулем. Джоба ставала зеленою, крок
+ * створення follow-up PR — `skipped`, і в логах це не відрізнити від
+ * «справді нічого не чіпав». Так у леджер не потрапив #1081 (956 файлів,
+ * десятки ADR), а за ним і решта — Hard Rule #26 замовкло вдруге.
+ *
+ * Тому неповний список — це помилка, а не привід тихо продовжити:
+ * гейт, який не може виконати свою роботу, мусить сказати про це вголос.
+ */
+export function assertCompleteFileList(fetched, expected, prNumber) {
+  if (!Number.isInteger(expected)) return;
+  if (fetched === expected) return;
+  throw new Error(
+    `PR #${prNumber}: fetched ${fetched} changed file(s) but GitHub reports ` +
+      `${expected}. Refusing to guess which docs were touched — a partial ` +
+      `list silently under-reports the ledger. Note the GitHub API caps the ` +
+      `pull-request files endpoint at 3000 files.`,
+  );
+}
+
 function fetchPRMetadata(prNumber) {
   // `gh pr view --json` fields documented at
   // https://cli.github.com/manual/gh_pr_view
@@ -339,15 +372,32 @@ function fetchPRMetadata(prNumber) {
     "view",
     String(prNumber),
     "--json",
-    "number,title,mergedAt,author,files",
+    "number,title,mergedAt,author,changedFiles",
   ]);
   if (!data.mergedAt) {
     throw new Error(`PR #${prNumber} is not merged (mergedAt is null).`);
   }
-  const touchedDocs = (data.files || [])
-    .map((f) => f.path)
-    .filter((p) => isCanonicalDocPath(p))
-    .sort();
+  // Список файлів беремо окремим посторінковим запитом, а не полем
+  // `files` у `gh pr view` — див. `assertCompleteFileList` вище.
+  const repo = ghJSON([
+    "repo",
+    "view",
+    "--json",
+    "nameWithOwner",
+  ]).nameWithOwner;
+  const paths = ghLines([
+    "api",
+    `repos/${repo}/pulls/${prNumber}/files`,
+    "--paginate",
+    "-q",
+    ".[].filename",
+  ]);
+  assertCompleteFileList(paths.length, data.changedFiles, prNumber);
+  const touchedDocs = paths.filter((p) => isCanonicalDocPath(p)).sort();
+  console.log(
+    `PR #${prNumber}: ${paths.length} changed file(s), ` +
+      `${touchedDocs.length} canonical doc(s).`,
+  );
   return {
     number: data.number,
     title: data.title,

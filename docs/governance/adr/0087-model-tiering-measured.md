@@ -199,3 +199,14 @@ MISS, але це радше «правильна помилка», яку ме�
 - PR #863 — цей ADR і супутні фікси телеметрії/гейтів.
 - PR #861 — переведення floor-слота чату на `gemini-3.7-flash`.
 - PR #858 — звіт аудиту з повними таблицями прогону.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                         | Merged     |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| [#1043](https://github.com/Skords-01/Sergeant/pull/1043) | docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення | 2026-09-02 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

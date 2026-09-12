@@ -50,3 +50,14 @@ Free cap і не є anonymous feature.
 Chat route і його тести мають зберігати session middleware перед rate та quota
 middleware. Клієнтські тести мають лишати видимий, практичний sign-in recovery
 для 401, а не зводити його до generic access-denied error.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                     | Merged     |
+| -------------------------------------------------------- | ------------------------------------------------------------------------- | ---------- |
+| [#1064](https://github.com/Skords-01/Sergeant/pull/1064) | feat(root): закрити F1 анти-слоп аудиту, першу хвилю F7 і хвости техборгу | 2026-09-03 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

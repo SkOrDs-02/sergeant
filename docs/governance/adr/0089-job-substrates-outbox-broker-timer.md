@@ -35,3 +35,14 @@ available.
 New background work must document its substrate, retry/idempotency boundary,
 shutdown behavior, and data-loss behavior. Do not reintroduce n8n as an
 implicit scheduler or claim that all jobs share one queue implementation.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                         | Merged     |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| [#1043](https://github.com/Skords-01/Sergeant/pull/1043) | docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення | 2026-09-02 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
