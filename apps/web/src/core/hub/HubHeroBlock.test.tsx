@@ -201,10 +201,15 @@ describe("HubHeroBlock", () => {
     expect(props.dismissCrossModulePreview).toHaveBeenCalled();
   });
 
-  // F3 audit (2026-09-11), defect (г): "Переглянути аналітику" has no
-  // other data trace — the honest signal is the fact of a successful
-  // navigation dispatch, marked right alongside it.
-  it("marks Фінік analytics viewed when the checklist fires view_analytics for finyk", () => {
+  // Цей тест раніше стверджував ПРОТИЛЕЖНЕ — що тап ставить відмітку, —
+  // і був неправильний разом із кодом. Диспатч `view_analytics` не
+  // відкриває аналітику: `useAppEffects` передає далі лише `module`, тож
+  // Фінік стає на дефолтній сторінці (огляд). Відмітка ж засувалась
+  // НАЗАВЖДИ, тобто чекліст зараховував крок, якого не було, — рівно той
+  // дефект, що його F3 закривав (знахідка рев'ю до PR #1106). Тепер
+  // відмітку ставить сам екран аналітики на маунті; тут перевіряємо, що
+  // тап цього НЕ робить.
+  it("does not mark analytics viewed on tap — navigation alone is not proof", () => {
     // Модуль `useChecklistSignals` НЕ мокаємо навмисно: перевіряти, що
     // викликали стаб, означало б перевіряти власну підміну. Тут читається
     // справжній наслідок — той самий предикат, яким чекліст потім
@@ -212,7 +217,8 @@ describe("HubHeroBlock", () => {
     expect(hasViewedFinykAnalytics()).toBe(false);
     renderHero({ showChecklist: true, primaryModule: "finyk" });
     fireEvent.click(screen.getByText("checklist-view-analytics"));
-    expect(hasViewedFinykAnalytics()).toBe(true);
+    expect(hasViewedFinykAnalytics()).toBe(false);
+    // Навігація при цьому таки диспатчиться — тап лишається навігацією.
     expect(openActionMock).toHaveBeenCalledWith("finyk", "view_analytics");
   });
 

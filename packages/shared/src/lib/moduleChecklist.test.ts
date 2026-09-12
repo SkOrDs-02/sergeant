@@ -74,7 +74,46 @@ describe("moduleChecklist — storage", () => {
     };
     saveChecklistState(store, "finyk", original);
     const loaded = getChecklistState(store, "finyk");
-    expect(loaded).toEqual(original);
+    // Писар доклав `latchVersion` — без нього читання не взяло б засувку
+    // на віру (див. нижче про епоху тапу).
+    expect(loaded).toEqual({ ...original, latchVersion: 2 });
+  });
+
+  // Знахідка рев'ю до PR #1106. До F3 тап по рядку чекліста писав `stepId`
+  // у `completedSteps` без жодного доказу даними — це і був дефект. Ключ
+  // сховища не змінювався, тож після фіксу ті самі неперевірені id почали
+  // читатись як постійний доказ, і дефект пережив власний фікс для всіх,
+  // хто встиг тапнути. Запис без `latchVersion` — саме така епоха.
+  it("distrusts completedSteps written before the latch had a version", () => {
+    store.setString(
+      "finyk_checklist_v1",
+      JSON.stringify({
+        completedSteps: ["add_expense", "set_budget"],
+        dismissed: true,
+        firstSeenAt: "2026-01-01T00:00:00.000Z",
+      }),
+    );
+    const loaded = getChecklistState(store, "finyk");
+    expect(loaded.completedSteps).toEqual([]);
+    // А решту запису чіпати підстав немає: людина, яка сховала чекліст,
+    // не має побачити його знову через чужий баг.
+    expect(loaded.dismissed).toBe(true);
+    expect(loaded.firstSeenAt).toBe("2026-01-01T00:00:00.000Z");
+  });
+
+  it("keeps completedSteps written with the current latch version", () => {
+    store.setString(
+      "finyk_checklist_v1",
+      JSON.stringify({
+        completedSteps: ["add_expense"],
+        dismissed: false,
+        firstSeenAt: null,
+        latchVersion: 2,
+      }),
+    );
+    expect(getChecklistState(store, "finyk").completedSteps).toEqual([
+      "add_expense",
+    ]);
   });
 
   it("handles malformed JSON gracefully", () => {
