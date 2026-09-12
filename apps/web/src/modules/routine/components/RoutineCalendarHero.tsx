@@ -140,9 +140,13 @@ export function RoutineCalendarHero({
           <p className="text-style-caption font-semibold text-hero-ink/95">
             {SLICE_LABEL[timeMode]}
           </p>
-          <p className="mt-1 text-style-headline text-hero-ink">
-            {headlineDate}
-          </p>
+          {/* Дата — ДРУГИЙ рівень: рішення власника 2026-09-12 (D1 крок 3).
+              Перший віддано числу прогресу в кільці (`DayProgressRing`), бо
+              предмет екрана — виконання дня, а календар — навігатор до нього.
+              На <640px кільце стоїть НАД датою, тож тримати обидва на
+              `headline` означало б два перші рівні один над одним — те, проти
+              чого правило 1 `density-hierarchy-spec.md`. */}
+          <p className="mt-1 text-style-title text-hero-ink">{headlineDate}</p>
           <p className="mt-2 text-style-label text-hero-ink">
             {progressText}
             {currentStreak > 0

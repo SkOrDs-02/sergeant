@@ -65,7 +65,17 @@ export function DayProgressRing({
           />
         </svg>
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
-          <span className="text-style-title text-hero-ink tabular-nums">
+          {/* Рішення власника 2026-09-12 (D1 крок 3): предмет цього екрана —
+              ПРОГРЕС по дню, не сама дата, тож число читається першим, а дата
+              в `RoutineCalendarHero` опущена до `title`.
+
+              AI-DANGER: роль тут `headline-fixed`, а не плинний `headline`, і
+              це не недогляд. Кільце — 96px фіксовано, просвіт 82px; плинна
+              роль переповнює його на планшеті й десктопі («10/12» дає 84.4px
+              на 768 і 97.2px на 1280, заміряно справжнім Manrope). Фіксовані
+              26px дають 73.1px на будь-якому вʼюпорті. Повна таблиця заміру —
+              у коментарі до ролі в `tailwind-preset.js`. */}
+          <span className="text-style-headline-fixed text-hero-ink tabular-nums">
             {completed}/{scheduled}
           </span>
         </div>
