@@ -14,6 +14,22 @@
  *    detail sheet with the capability's example commands;
  *  - clearing the query restores all entries.
  */
+// AI-DANGER: мок лишає РЕАЛЬНУ реалізацію за дефолтом і існує рівно для
+// одного випадку — щоб довести позитивну гілку бейджа «НОВИНКА». У реєстрі
+// жодна можливість `since` не оголошує, тож без цього тест перевіряв би
+// тільки гілку «бейджа немає» і лишався зеленим, якби рядок перестав
+// рендерити бейдж узагалі (знахідка рев'ю на PR #1113).
+//
+// Чому мок, а не вписаний `since` у реєстр: дата в реєстрі — це продуктове
+// рішення (який саме чіп світиться користувачу), і фіксувати її тут означає
+// повернути ту саму бомбу з годинником, тільки з новим таймером.
+jest.mock("@sergeant/shared", () => {
+  const actual = jest.requireActual("@sergeant/shared");
+  return {
+    ...actual,
+    isRecentCapability: jest.fn(actual.isRecentCapability),
+  };
+});
 
 import { fireEvent, render } from "@testing-library/react-native";
 import { AccessibilityInfo } from "react-native";
@@ -21,6 +37,7 @@ import {
   ASSISTANT_CAPABILITIES,
   CAPABILITY_MODULE_META,
   CAPABILITY_MODULE_ORDER,
+  isRecentCapability,
 } from "@sergeant/shared";
 
 import { _getMMKVInstance } from "@/lib/storage";
@@ -186,8 +203,15 @@ describe("AssistantCataloguePage — group collapsing", () => {
     );
     expect(getByTestId("catalogue-legend")).toBeTruthy();
     expect(getByText("Позначки:")).toBeTruthy();
-    // Badge labels also appear on real rows (e.g. compare_weeks is a chip
-    // and isNew), so allow ≥1 match for each badge text.
+    // Підписи бейджів зустрічаються й на справжніх рядках, тож допускаємо
+    // ≥1 збіг для кожного тексту.
+    //
+    // AI-DANGER: «НОВИНКА» тут зараз тримається САМОЮ легендою — жодна
+    // можливість у реєстрі не оголошує `since`, тож на рядках бейджа немає
+    // ні одного. Тобто зелений цей рядок НЕ доводить, що бейдж на рядку
+    // взагалі рендериться; рівно тому наступний тест звіряє правило, а не
+    // факт. Історія: до O3 тут стояв коментар «compare_weeks is a chip and
+    // isNew», який саме це й приховував.
     expect(getAllByText("⚡ ЧІП").length).toBeGreaterThanOrEqual(1);
     expect(getAllByText("⚠ РИЗИК").length).toBeGreaterThanOrEqual(1);
     expect(getAllByText("НОВИНКА").length).toBeGreaterThanOrEqual(1);
@@ -197,45 +221,55 @@ describe("AssistantCataloguePage — group collapsing", () => {
     expect(getByText("нещодавно додано")).toBeTruthy();
   });
 
-  // Бейдж «Новинка» більше не є прапорцем у даних: `isNew: boolean` замінено
-  // на `since` + `isRecentCapability()` з 30-денним вікном (докблок
-  // `assistantCatalogue.ts`, founder-ux-review round 2, O3). Жодна
-  // можливість у каталозі `since` зараз не має, тож бейдж не рендериться
-  // ніде — старий тест чекав його на `compare_weeks` і перевіряв уже
-  // неіснуючий контракт.
-  //
-  // Обовʼязок компонента тут один: показати бейдж РІВНО тоді, коли helper
-  // каже «нещодавня». Саму 30-денну арифметику (межі вікна, порожня й
-  // невалідна дата) покриває `assistantCatalogue.test.ts` у `shared` — тут
-  // її дублювати нема сенсу, тому дата ставиться на запис штучно.
-  it("рендерить бейдж «Новинка» лише для нещодавньої можливості", () => {
-    const target = ASSISTANT_CAPABILITIES.find((c) => c.id === "compare_weeks");
-    if (!target) throw new Error("compare_weeks зник із каталогу");
-    const mutable = target as { since?: string };
-    mutable.since = new Date().toISOString().slice(0, 10);
-    try {
-      const { getByTestId, queryByTestId } = render(<AssistantCataloguePage />);
+  it("бейдж «НОВИНКА» на рядку йде рівно за `isRecentCapability(since)`", () => {
+    // AI-DANGER: попередня версія цього тесту вимагала бейдж саме на
+    // `compare_weeks`. Правка O3 (founder-ux-review round 2) замінила ручний
+    // `isNew: boolean` на `since` + TTL 30 днів — і бейдж став залежати від
+    // календаря, а не від реєстру. Веб тоді перевели на
+    // `isRecentCapability(item.since)`, мобайл лишили читати `capability.isNew`
+    // на типі, де цього поля вже немає: `tsc` давав TS2339, а бейдж не
+    // рендерився для НІЧОГО. Обидва провали були червоні на `main` і ховались
+    // один за одним — turbo обриває прогін на першому, тож падіння тестів
+    // приховувало падіння typecheck-у.
+    //
+    // Тому тут звіряється ПРАВИЛО, а не конкретна можливість чи конкретна
+    // дата: інакше тест знову стане зеленим до першого прострочення вікна.
+    // Такий вигляд він тримає і коли хтось додасть `since`, і коли вікно
+    // спливе.
+    const { queryByTestId } = render(<AssistantCataloguePage />);
+    let checked = 0;
+    for (const capability of ASSISTANT_CAPABILITIES) {
+      // Рядки згорнутих груп не рендеряться взагалі — звіряємо лише видимі.
+      if (!queryByTestId(`catalogue-capability-${capability.id}`)) continue;
+      checked += 1;
       expect(
-        getByTestId("catalogue-capability-compare_weeks-new"),
-      ).toBeTruthy();
-      // `create_transaction` лишається без `since` → бейджа немає.
-      expect(
-        queryByTestId("catalogue-capability-create_transaction-new"),
-      ).toBeNull();
-    } finally {
-      delete mutable.since;
+        Boolean(queryByTestId(`catalogue-capability-${capability.id}-new`)),
+      ).toBe(isRecentCapability(capability.since));
     }
+    // Без цього цикл мовчки проходив би на нулі видимих рядків.
+    expect(checked).toBeGreaterThan(0);
   });
 
-  it("без `since` бейджа немає в жодного рядка", () => {
+  // Позитивна гілка. Без неї тест вище доводить лише «бейджа немає» —
+  // і був би зеленим, якби `CapabilityRow` перестав рендерити бейдж
+  // узагалі. Предикат тут підмінений навмисно: його власну логіку
+  // (вікно 30 днів, порожній `since` = не новинка) гейтить
+  // `assistantCatalogue.test.ts` у `@sergeant/shared`, а тут
+  // перевіряється рівно те, що СТОРІНКА його слухає.
+  it("рендерить бейдж на кожному видимому рядку, коли предикат каже «нещодавно»", () => {
+    (isRecentCapability as jest.Mock).mockReturnValue(true);
     const { queryByTestId } = render(<AssistantCataloguePage />);
+
+    let checked = 0;
     for (const capability of ASSISTANT_CAPABILITIES) {
+      if (!queryByTestId(`catalogue-capability-${capability.id}`)) continue;
+      checked += 1;
       expect(
         queryByTestId(`catalogue-capability-${capability.id}-new`),
-      ).toBeNull();
+      ).toBeTruthy();
     }
+    expect(checked).toBeGreaterThan(0);
   });
-
   it("auto-expands persisted-collapsed groups while searching, restores them after", () => {
     const { getByTestId, queryByTestId } = render(<AssistantCataloguePage />);
 

@@ -9,6 +9,7 @@ import assert from "node:assert/strict";
 import {
   classify,
   escapeHtml,
+  formatHtml,
   normaliseForCompare,
   renderHtml,
 } from "../generate-freshness-dashboard.mjs";
@@ -149,5 +150,43 @@ describe("normaliseForCompare", () => {
     const b = a.replace("docs/a.md", "docs/b.md");
 
     assert.notEqual(normaliseForCompare(a), normaliseForCompare(b));
+  });
+});
+
+describe("formatHtml", () => {
+  const sample = [
+    {
+      path: "docs/a.md",
+      cadence: 90,
+      status: "present",
+      lastValidated: "2026-02-01",
+      nextReview: "2026-07-28",
+      owner: "@alice",
+      daysUntilOverdue: 90,
+    },
+  ];
+
+  it("віддає prettier-форматований HTML, коли prettier є", async () => {
+    // Генератор пише СИРИЙ HTML, і доти артефакт комітився сирим або
+    // форматованим залежно від того, ХТО його застейджив: людина
+    // потрапляла в prettier-групу lint-staged, хук — ні. `format:check`
+    // від цього червонів на файлі, якого автор не торкався.
+    const raw = renderHtml(sample, { today });
+    const formatted = await formatHtml(raw, "dashboard.html");
+
+    assert.notEqual(formatted, raw, "prettier мусить щось змінити");
+    assert.match(formatted, /<!doctype html>/);
+  });
+
+  it("форматування НЕ впливає на `--check`: нормалізація зрізає пробіли", async () => {
+    // Це та властивість, на яку спирається фолбек у `formatHtml`, коли
+    // prettier недоступний (dep-free CI-джоби запускають цей скрипт
+    // прямим `node scripts/…`). Без цього тесту фолбек був би такою ж
+    // обіцянкою, як коментар: він МОЖЕ зробити гейт брехливим, і саме
+    // тут перевіряється, що не робить.
+    const raw = renderHtml(sample, { today });
+    const formatted = await formatHtml(raw, "dashboard.html");
+
+    assert.equal(normaliseForCompare(formatted), normaliseForCompare(raw));
   });
 });

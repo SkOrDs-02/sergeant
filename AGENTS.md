@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-28.
+> **Last touched:** 2026-09-12 by @claude. **Next review:** 2026-12-29.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -180,7 +180,7 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 | ------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | `apps/web` JS total (brotli)                     | **≤ 1.44 MB**                       | `pnpm --filter @sergeant/web exec size-limit` (CI job `bundle-budgets`)                                                                                                                                                 |
 | `apps/web` CSS (brotli)                          | **≤ 40 kB**                         | same                                                                                                                                                                                                                    |
-| `apps/web` **eager** JS (критичний шлях, brotli) | **≤ 280 kB**                        | `node scripts/ci/check-eager-bundle.mjs` (CI job `bundle-budgets`); локально `pnpm --filter @sergeant/web size:eager`                                                                                                   |
+| `apps/web` **eager** JS (критичний шлях, brotli) | **≤ 268 kB**                        | `node scripts/ci/check-eager-bundle.mjs` (CI job `bundle-budgets`); локально `pnpm --filter @sergeant/web size:eager`                                                                                                   |
 | `apps/web` LCP (median, 4 LHCI routes)           | **≤ 3000 ms** (`error` — fail-stop) | `apps/web/lighthouserc.json` + `.github/workflows/lighthouse-ci.yml` (status `Lighthouse CI`); local: `pnpm --filter @sergeant/web lighthouse`                                                                          |
 | `apps/web` FCP (median, 4 LHCI routes)           | **≤ 1500 ms** (warn)                | same                                                                                                                                                                                                                    |
 | `apps/web` TBT (median, 4 LHCI routes)           | **≤ 200 ms** (warn)                 | same                                                                                                                                                                                                                    |
@@ -223,6 +223,18 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 **Ратчет 2026-08-18 (JS 1.35 → 1.38 MB) — і урок про мовчазний гейт.** Заміряно локально на `origin/main` (`59b8e164`): **1 351.4 kB**, тобто ліміт пробито на 1.4 kB ще ДО правки, яка це виявила (її власний внесок — 296 B). Виріс бандл на Фазі 2 чек-скану: нові аркуші імпорту, bulk-review, дедуп-превʼю. Нове число дає ~2% запасу над фактом — навмисно тісніше за 5% попереднього ратчету, бо тут не новий важкий vendor, а накопичення.
 
 Головне не число, а чому його не побачили вчасно. `size-limit` — це КРОК усередині джоби `check`, і він стоїть ПІСЛЯ кроку «Format, lint, test, build». Коли той крок падає, GitHub Actions пропускає всі наступні, тож бандл-гейт просто не виконується — і в логах це виглядає не як «бюджет перевищено», а як тиша. Кілька мержів поспіль (#823, #825, #827) пішли в `main` до завершення CI, `format:check` там був червоний, і гейт мовчав, поки борг ріс. **Висновок на майбутнє: гейт, що стоїть у кроках після потенційно червоного кроку, не є гейтом.** Або виносити в окрему джобу, або лікувати причину — не мерджити до завершення `check`.
+
+**Ратчет 2026-09-12 (eager 280 → 268 kB) — третій униз, і цього разу гейт був червоний на `main`.** UA-каталог інтерфейсу пішов із критичного шляху: **286.7 → 260.8 kB**.
+
+Спокуса була підняти стелю — замір показав, що підіймати нічого. Розбір сорсмапи чанку `cn` (25.0 kB brotli): 15 модулів, 147.1 kB сирих джерел, і **128.4 kB з них — UA-каталог**; сам хелпер `cn.ts`, за яким названо чанк, важить 1.3 kB. Причина не в тому, що каталог великий, а в тому, що він **один об'єкт**: `uk.ts` статично зшиває десять модульних файлів (`uk.fizruk` 29.1 kB, `uk.finyk` 14.8, `uk.nutrition` 12.6, …), тож будь-який eager-споживач `messages` тягнув усі. Таких споживачів було дев'ять, і кожному потрібно одна-дві групи: `settingsSectionsCatalog.ts` брав **рівно один рядок**.
+
+Лікування — вузький `apps/web/src/shared/i18n/uk.core.ts` (вісім груп + `auth`), у який ті дев'ять поверхонь і переведені; `messages` розкладає ядро назад через спред, тож жоден із решти call-site-ів не змінився.
+
+**Той самий урок про ОСТАННЄ ребро, що й з `vendor-sqlite`, тільки дорожчий на один прогін.** Після переводу восьми поверхонь замір дав 280.6 kB — гейт лишався червоним, а чанк `uk` (21.6 kB) лишався в preload. Дев'ятим виявився `AuthContext.tsx`, і знайшовся він не відразу: шлях там **відносний** (`../../shared/i18n/uk`), тож перший скан по `@shared/i18n` його не побачив. **Грепаєш eager-ребра — грепай обидві форми шляху.** Знявши його, число впало 280.6 → 260.8, і з preload-графа пішли `uk.ts`, `en.ts` та `index.ts` разом: en-копія (20.3 kB сирих) доти їхала до першого екрана українським користувачам, які мову не перемикають.
+
+Нове число має ~2.7% запасу над фактом, тобто 7.2 kB — навмисно тісно, бо лишити стелю на 280 означало б 19.2 kB слаку, а це запрошення до «комфортної зони». Запас саме такий, бо різниця CI↔локально для ЦЬОГО заміру мала: на `main` CI дав 286.9, локально 286.7 (для `size-limit` розбіжність інша — див. запис 2026-09-11 вище).
+
+**Ранній сигнал замість очікування бандл-гейта:** [`uk.core.eagerImports.test.ts`](./apps/web/src/shared/i18n/uk.core.eagerImports.test.ts) падає на етапі юнітів і називає точний файл. Він бачить лише перелічений набір eager-поверхонь, тож повноти сам собою не дає — справжній гейт і далі `check-eager-bundle.mjs`, бо лише він міряє факт.
 
 **Ратчет 2026-08-07 (eager 430 → 280 kB) — другий за день.** `vendor-sqlite` пішов з критичного шляху: **411.7 → 264.6 kB**, preload-чанків 111 → 73. Разом із виносом `posthog-js` того ж дня це **−207.7 kB** від 472.3.
 

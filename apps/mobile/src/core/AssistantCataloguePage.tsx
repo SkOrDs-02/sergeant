@@ -35,8 +35,8 @@ import {
   CAPABILITY_MODULE_META,
   CAPABILITY_MODULE_ORDER,
   groupCapabilitiesByModule,
-  isRecentCapability,
   searchCapabilities,
+  isRecentCapability,
   type AssistantCapability,
   type CapabilityModule,
 } from "@sergeant/shared";

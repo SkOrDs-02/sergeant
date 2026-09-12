@@ -20,10 +20,13 @@ import {
 } from "@shared/hooks/useBottomInsetVar";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon, type IconName } from "./Icon";
-import { messages } from "@shared/i18n/uk";
+// AI-DANGER: саме `uk.core`, а не `uk` — це eager-поверхня, і повний
+// каталог тягне з собою десять модульних файлів плюс en-копію
+// (розбір у шапці `uk.core.ts`). Гейт — `uk.core.eagerImports.test.ts`.
+import { coreMessages as messages } from "@shared/i18n/uk.core";
 
 // «Чорнило» v3.1 § 5 — hybrid toast, not a full saturated fill. Base is the
-// same `surface-hi` (#221c18 dark / #f6f5f2 light) + `text-ink` for every
+// same `surface-hi` (#2a231f dark / #f6f5f2 light) + `text-ink` for every
 // type; only the left stripe, icon, and Undo-action carry the semantic
 // colour. Error additionally gets a full-perimeter `danger/35` border
 // instead of the neutral `line/8` hairline. Colour-coding reads from the
