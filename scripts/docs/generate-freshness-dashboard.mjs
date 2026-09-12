@@ -259,15 +259,40 @@ export function normaliseForCompare(html) {
     .replace(/<([^>]+?)\s+>/g, "<$1>")
     .trim();
 }
+/**
+ * Прогоняє згенерований HTML через Prettier тим самим конфігом, що й
+ * `pnpm format:check`.
+ *
+ * AI-DANGER: 2026-09-12 — без цього артефакт виходив СИРИЙ, і його
+ * форматування залежало від того, ХТО його застейджив. Коли людина
+ * регенерує руками й робить `git add`, файл потрапляє в групу
+ * `*.{json,css,html,…}` у lint-staged і його форматує prettier. Коли ж його
+ * стейджить сам хук (`bump-last-validated.mjs` після зсуву `Last
+ * validated`), список файлів тієї групи вже зафіксовано — і в коміт іде
+ * сирий HTML. Тобто `pnpm format:check` червонів рівно на тих комітах, де
+ * автор дашборда не торкався.
+ *
+ * `--check` цього не ловив і не ловить: `normaliseForCompare` нормалізує
+ * пробіли, тож сире й форматоване для нього однакові. Два гейти на один
+ * файл, і жоден не бачив того, що бачив третій.
+ *
+ * Форматуємо ОДИН раз, до розгалуження на `--check`, щоб обидві гілки
+ * працювали з тими самими байтами.
+ */
+async function formatHtml(html, filepath) {
+  const prettier = await import("prettier");
+  const config = await prettier.resolveConfig(filepath);
+  return prettier.format(html, { ...config, filepath });
+}
 
 // ── Main ─────────────────────────────────────────────────────────────────────
 
-function main() {
+async function main() {
   const checkMode = process.argv.includes("--check");
   const outPath = process.env.OUTPUT || DEFAULT_OUTPUT;
   const { tracked } = loadConfig({ rootDir: REPO_ROOT });
   const entries = gatherEntries(tracked);
-  const html = renderHtml(entries);
+  const html = await formatHtml(renderHtml(entries), outPath);
 
   if (checkMode) {
     if (!existsSync(outPath)) {
@@ -298,4 +323,4 @@ function main() {
 const isMain =
   process.argv[1] &&
   resolve(process.argv[1]) === resolve(fileURLToPath(import.meta.url));
-if (isMain) main();
+if (isMain) await main();
