@@ -4,6 +4,7 @@ export * from "./transactions.js";
 export * from "./budget.js";
 export * from "./debtEngine.js";
 export * from "./debtAutoLink.js";
+export * from "./debtSplitSync.js";
 export * from "./personalization.js";
 export * from "./selectors.js";
 export * from "./subscriptionUtils.js";

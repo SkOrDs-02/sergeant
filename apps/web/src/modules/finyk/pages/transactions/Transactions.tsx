@@ -13,8 +13,10 @@ import { useTransactionFilters } from "./useTransactionFilters";
 import { formatDayFilterDate, isDayFilterKey } from "./transactionsLib";
 import { useTransactionSelection } from "./useTransactionSelection";
 import { BankTransactionDetailsSheet } from "../../components/BankTransactionDetailsSheet";
+import { useDebtPaymentSplitSync } from "../../hooks/useDebtPaymentSplitSync";
 import type { UseFinykReceiptLinksResult } from "../../hooks/useFinykReceiptLinks";
 import { Button } from "@shared/components/ui/Button";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { TransferSuggestionCard } from "./TransferSuggestionCard";
 import {
   filterTransferSuggestions,
@@ -26,6 +28,7 @@ import {
   FINYK_TRANSFER_SUGGESTION_SNOOZED_KEY,
 } from "@sergeant/finyk-domain/storage-keys";
 import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
+import { formatMoney } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import type {
   Transaction,
@@ -352,6 +355,27 @@ export function Transactions({
     toast,
   });
 
+  // Рівень 3: розподіл операції може змінитись УЖЕ ПІСЛЯ привʼязки платежу,
+  // і тоді сума привʼязки застаріває. Обгортка стоїть саме тут, бо це
+  // єдина точка, крізь яку проходять усі три шляхи зміни розподілу
+  // (редактор спліту, «прибрати розподіл», розбивка за чеком Сільпо) —
+  // аркуш роздає той самий `onSplitChange` усім трьом.
+  const splitSync = useDebtPaymentSplitSync(
+    manualDebts,
+    setLinkedTxRole,
+    toast.success,
+  );
+  const handleSplitChange = useCallback(
+    (id: string, splits: TxSplit[] | null) => {
+      selection.stableSetSplitTx(id, splits);
+      const amountKop = Math.abs(Number(editingBankTransaction?.amount) || 0);
+      if (editingBankTransaction?.id === id && amountKop > 0) {
+        splitSync.reconcile(id, splits, amountKop / 100);
+      }
+    },
+    [selection, splitSync, editingBankTransaction],
+  );
+
   return (
     <>
       <TransactionList
@@ -508,10 +532,31 @@ export function Transactions({
           setLinkedTxRole={setLinkedTxRole}
           onCategoryChange={selection.stableOverrideCategory}
           onNoteChange={selection.stableSetTxNote}
-          onSplitChange={selection.stableSetSplitTx}
+          onSplitChange={handleSplitChange}
           onToggleHidden={selection.stableHideTx}
           onToggleExcludedFromStats={toggleExcludeFromStats}
           onClose={() => setEditingBankTransaction(null)}
+        />
+      )}
+
+      {/* Рівень 3: частки боргу в розподілі не лишилось. Питаємо, а не
+          відвʼязуємо самі — людина може бути посеред редагування. */}
+      {splitSync.pendingUnlink && (
+        <ConfirmDialog
+          open
+          title={messages.finyk.debtSplitSync.unlinkTitle}
+          description={messages.finyk.debtSplitSync.unlinkQuestion
+            .replace("{debt}", splitSync.pendingUnlink.debtName)
+            .replace(
+              "{amount}",
+              formatMoney(splitSync.pendingUnlink.previousAmountUAH, {
+                maxFractionDigits: 2,
+              }),
+            )}
+          confirmLabel={messages.finyk.debtSplitSync.unlinkConfirm}
+          cancelLabel={messages.finyk.debtSplitSync.unlinkKeep}
+          onConfirm={splitSync.confirmUnlink}
+          onCancel={splitSync.dismissUnlink}
         />
       )}
     </>
