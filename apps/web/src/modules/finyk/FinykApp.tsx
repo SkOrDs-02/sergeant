@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef, Suspense } from "react";
+import { useState, useEffect, useRef, useCallback, Suspense } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
@@ -22,6 +22,9 @@ import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpens
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { Icon } from "@shared/components/ui/Icon";
 import { useToast } from "@shared/hooks/useToast";
+import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
+import { formatMoney } from "@sergeant/shared";
+import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { tryShowCrossModulePrompt } from "@shared/lib/modules/crossModulePrompt";
 import { openHubModuleWithAction } from "@shared/lib/modules/hubNav";
@@ -48,6 +51,7 @@ import { useFinykQuickStatsWriter } from "./hooks/useFinykQuickStatsWriter";
 import { useFinykPersonalization } from "./hooks/useFinykPersonalization";
 import { useFinykReceiptLinks } from "./hooks/useFinykReceiptLinks";
 import { useMonoTokenMigration } from "./hooks/useMonoTokenMigration";
+import { useDebtPaymentSplitSync } from "./hooks/useDebtPaymentSplitSync";
 import { consumePresetPrefill } from "../../core/onboarding/presetPrefill";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import { getSyncTone } from "./components/SyncIndicator";
@@ -383,6 +387,42 @@ export default function App({
     });
   };
 
+  // Запис, який зараз редагується. Піднято з JSX, бо його потребує і
+  // аркуш, і звірка суми привʼязки нижче — а шукати двічі означало б
+  // ризикнути тим, що дві гілки бачать різні записи.
+  const editingManualExpense = editingManualExpenseId
+    ? (storage.manualExpenses || []).find(
+        (e) => String(e.id) === String(editingManualExpenseId),
+      ) || null
+    : null;
+
+  // Рівень 3 для РУЧНОГО запису. Розподіл може змінитись уже ПІСЛЯ
+  // привʼязки платежу — в аркуші ручної витрати такий шлях один
+  // (розбивка за чеком Сільпо), але наслідок той самий, що й на
+  // банківській операції: сума привʼязки лишається знімком і залишок
+  // пасиву розходиться з фактом. Обгортка стоїть тут, бо мутатор сховища
+  // сирої суми запису не бачить.
+  //
+  // **Гривні, не копійки.** `Transactions.tsx` ділить суму на 100, бо
+  // банківська транзакція зберігає копійки; ручний запис зберігає
+  // гривні (`domain-invariants.md` § Money — локальний блоб Фініка).
+  // Поділити тут удруге означало б занизити погашення в сто разів.
+  const splitSync = useDebtPaymentSplitSync(
+    storage.manualDebts,
+    storage.setLinkedTxRole,
+    toast.success,
+  );
+  const handleManualSplitChange = useCallback(
+    (id: string, splits: TxSplit[] | null) => {
+      storage.setSplitTx(id, splits);
+      const amountUAH = Math.abs(Number(editingManualExpense?.amount) || 0);
+      if (String(editingManualExpense?.id ?? "") === id && amountUAH > 0) {
+        splitSync.reconcile(id, splits, amountUAH);
+      }
+    },
+    [storage, splitSync, editingManualExpense],
+  );
+
   // Render
   return (
     <ModuleAccentProvider module="finyk" className="contents">
@@ -482,13 +522,7 @@ export default function App({
             setQuickAddCategory(null);
             setQuickAddDescription(null);
           }}
-          initialExpense={
-            editingManualExpenseId
-              ? (storage.manualExpenses || []).find(
-                  (e) => String(e.id) === String(editingManualExpenseId),
-                ) || null
-              : null
-          }
+          initialExpense={editingManualExpense}
           initialCategory={quickAddCategory}
           initialDescription={quickAddDescription}
           receiptId={
@@ -497,7 +531,10 @@ export default function App({
               : null
           }
           txSplits={storage.txSplits}
-          onSplitChange={storage.setSplitTx}
+          onSplitChange={handleManualSplitChange}
+          manualDebts={storage.manualDebts}
+          setManualDebts={storage.setManualDebts}
+          setLinkedTxRole={storage.setLinkedTxRole}
           frequentCategories={frequentCategories}
           frequentMerchants={frequentMerchants}
           customCategories={storage.customCategories}
@@ -562,6 +599,26 @@ export default function App({
               backLabel="Назад"
             />
           </div>
+        )}
+        {/* Рівень 3: частки боргу в розподілі не лишилось. Питаємо, а не
+            відвʼязуємо самі — людина може бути посеред редагування. */}
+        {splitSync.pendingUnlink && (
+          <ConfirmDialog
+            open
+            title={messages.finyk.debtSplitSync.unlinkTitle}
+            description={messages.finyk.debtSplitSync.unlinkQuestion
+              .replace("{debt}", splitSync.pendingUnlink.debtName)
+              .replace(
+                "{amount}",
+                formatMoney(splitSync.pendingUnlink.previousAmountUAH, {
+                  maxFractionDigits: 2,
+                }),
+              )}
+            confirmLabel={messages.finyk.debtSplitSync.unlinkConfirm}
+            cancelLabel={messages.finyk.debtSplitSync.unlinkKeep}
+            onConfirm={splitSync.confirmUnlink}
+            onCancel={splitSync.dismissUnlink}
+          />
         )}
       </MeshBackground>
     </ModuleAccentProvider>

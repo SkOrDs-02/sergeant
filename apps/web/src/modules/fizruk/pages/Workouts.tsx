@@ -3,7 +3,7 @@
  * Status: Active
  */
 import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { Button } from "@shared/components/ui/Button";
 import { DataState } from "@shared/components/ui/DataState";
@@ -27,6 +27,10 @@ import { useCustomActivities } from "../hooks/useCustomActivities";
 import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
 import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
 import { messages } from "@shared/i18n/uk";
+import {
+  countItemsByExerciseId,
+  formatAddExerciseDoneLabel,
+} from "./Workouts.helpers";
 import {
   markComposeSaved,
   useComposeTelemetry,
@@ -104,6 +108,21 @@ export function Workouts({
   // `fizruk-active-session.md`, рішення 4).
   const [catalogSheetOpen, setCatalogSheetOpen] = useState(false);
   const sessionCopy = messages.fizruk.session;
+
+  /**
+   * Скільки разів кожна вправа вже в активному тренуванні. Каталог у
+   * сесії живе в аркуші, який навмисно НЕ закривається після
+   * додавання, тож саме ця мапа робить успішний тап видимим — рядок
+   * дістає позначку «Додано», а повторний тап показує «×2» (дублі
+   * дозволені). Звіт власника 2026-09-12: додавання «нічого не
+   * робило», бо єдиним сигналом була `active:`-підсвітка, яка на
+   * телефоні зникає разом із пальцем.
+   */
+  const addedCountByExerciseId = useMemo(
+    () => countItemsByExerciseId(o.activeWorkout?.items),
+    [o.activeWorkout?.items],
+  );
+  const addedTotal = o.activeWorkout?.items?.length ?? 0;
 
   const workoutsLoadingSkeleton = (
     <div
@@ -315,7 +334,7 @@ export function Workouts({
                 className="w-full h-11"
                 onClick={() => setCatalogSheetOpen(false)}
               >
-                {sessionCopy.addExerciseDone}
+                {formatAddExerciseDoneLabel(addedTotal, sessionCopy)}
               </Button>
             }
           >
@@ -337,6 +356,7 @@ export function Workouts({
               recoveryConflictsForExercise={o.recoveryConflictsForExercise}
               rec={o.rec}
               musclesUk={o.musclesUk}
+              addedCountByExerciseId={addedCountByExerciseId}
             />
           </Sheet>
         )}

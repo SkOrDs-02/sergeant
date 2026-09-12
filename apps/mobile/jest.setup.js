@@ -1,4 +1,27 @@
 /* eslint-env node, jest */
+// AI-DANGER: часова зона мусить бути запінена в ENV ПРОЦЕСУ — див. скрипт
+// `test` у `apps/mobile/package.json` (`TZ=Europe/Kyiv jest …`). Ставити
+// `process.env.TZ` тут НЕ працює: `setupFiles` виконується вже після того,
+// як V8 закешував зону, і снапшот однаково читає зону машини (перевірено
+// 2026-09-12 — правка в цьому файлі тест не полагодила, правка в скрипті
+// полагодила).
+//
+// Чому взагалі пін: `adapter.snapshot.test.ts` тримає рядок
+// `2026-06-22T08:30:00.000+03:00` — київський літній offset. У Києві він
+// зелений, на UTC-раннері GitHub Actions дає `...Z` і падає, тобто був
+// червоний на `main`. Зона саме Київ, а не UTC: `dateKey` + `time` — це
+// ПРИСТРОЇВ час особистої сутності (ADR-0078), тож снапшот фіксує зону
+// пристрою, а не зону раннера.
+//
+// Гейт нижче навмисно кидає, а не варнить: мовчазний прохід із чужою зоною —
+// це рівно той стан, у якому цей снапшот прожив червоним на `main`.
+if (process.env.TZ !== "Europe/Kyiv") {
+  throw new Error(
+    `[jest.setup] TZ=${process.env.TZ ?? "(не задано)"}, а снапшоти мобайла ` +
+      `розраховані на Europe/Kyiv. Запускай через \`pnpm --filter ` +
+      `@sergeant/mobile test\` або став TZ=Europe/Kyiv вручну.`,
+  );
+}
 // Jest global setup for the mobile app. Registers mocks for native
 // modules that can't run in the jest-expo JSDOM-like environment:
 //

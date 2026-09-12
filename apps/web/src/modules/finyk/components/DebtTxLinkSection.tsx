@@ -1,13 +1,21 @@
 /**
- * Last validated: 2026-09-11
+ * Last validated: 2026-09-12
  * Status: Active
  *
  * Місток «транзакція з категорією Борг → пасив» (спека finyk-observations,
  * PR-3; узагальнено 2026-09-11 з income-only на обидва напрямки — рішення
  * власника, канон `docs/product/modules/finyk.md` § Журнал рішень).
- * Рендериться в {@link BankTransactionDetailsSheet} для НАДХОДЖЕННЯ з
- * категорією `debt-income` (роль `source`) і для ВИТРАТИ з категорією
- * `debt` (роль `payment`).
+ * Рендериться для НАДХОДЖЕННЯ з категорією `debt-income` (роль `source`)
+ * і для ВИТРАТИ з категорією `debt` (роль `payment`) — у
+ * {@link BankTransactionDetailsSheet} для банківської операції і в
+ * {@link ManualExpenseSheet} для ручного запису.
+ *
+ * **Чому примітиви, а не `Transaction`.** Ручна витрата не є
+ * транзакцією: вона живе в `finyk_manual_expenses` і має власну форму
+ * (сума в гривнях, категорія-слаг). Секція ж використовує рівно три
+ * поля — id, суму й дату, — тож бере їх окремими пропами. Той самий
+ * прецедент, що й у `SilpoReceiptSection`, і рівно те, що дозволило
+ * підключити її до другої поверхні без адаптера-перевертня.
  *
  * Роль визначає межу поведінки, не лише підпис:
  *  - `source`  — привʼязка підтверджує базу пасиву; дозволено створити
@@ -31,16 +39,17 @@
  * транзакції, інакше погашення завищується і залишок пасиву падає
  * нижче, ніж людина реально сплатила.
  *
- * **Відомий ліміт: знімок не оновлюється заднім числом.** Сума пишеться
- * в `txLinks` у момент привʼязки (див. докблок `LinkedTxMeta` у
- * `debtEngine.ts`). Якщо людина привʼязує ПЛАТІЖ, а потім змінює спліт
- * (`setSplitTx` у `useFinykStorageMutations.ts`), знімок лишається
- * старим — той самий мутатор не має доступу до суми транзакції, щоб
- * коректно відкотити суму й у сценарії «спліт прибрали повністю»
- * (unsplit), тож живий перерахунок відкладено, а не зроблено частково.
+ * **Знімок звіряється заднім числом — рівень 3 (PR #1104).** Сума
+ * пишеться в `txLinks` у момент привʼязки (див. докблок `LinkedTxMeta` у
+ * `debtEngine.ts`), тож зміна спліту вже ПІСЛЯ привʼязки робила б її
+ * застарілою. Це закриває `useDebtPaymentSplitSync`: обгортка над
+ * `onSplitChange` перераховує суму й показує тост «було → стало», а коли
+ * частки боргу не лишилось — питає, а не відвʼязує мовчки. Обгортка
+ * стоїть на кожній поверхні, що роздає `onSplitChange` (`Transactions`
+ * для банківських операцій, `FinykApp` для ручних записів), бо сам
+ * мутатор сховища сирої суми транзакції не бачить.
  */
 import { useState } from "react";
-import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import type {
   Debt,
   LinkedTxRole,
@@ -60,7 +69,16 @@ const shared = messages.finyk.debtLinkPrompt;
 const autoLabel = messages.finyk.debtTxLink.autoLabel;
 
 export interface DebtTxLinkSectionProps {
-  transaction: Transaction;
+  /** Id операції або ручного запису — ключ у `linkedTxIds` / `txLinks`. */
+  txId: string;
+  /** Повна сума в КОПІЙКАХ; знак ігнорується. */
+  txAmountKop: number;
+  /**
+   * Дата для картки створення нового пасиву (лише роль `source`).
+   * Будь-який рядок, який приймає `new Date()`; викликач сам зводить
+   * свою форму дати до одного значення.
+   */
+  txDateIso: string;
   manualDebts: readonly Debt[];
   setManualDebts: (updater: (debts: Debt[]) => Debt[]) => void;
   setLinkedTxRole: SetLinkedTxRole;
@@ -84,7 +102,9 @@ export interface DebtTxLinkSectionProps {
 }
 
 export function DebtTxLinkSection({
-  transaction,
+  txId,
+  txAmountKop,
+  txDateIso,
   manualDebts,
   setManualDebts,
   setLinkedTxRole,
@@ -101,13 +121,23 @@ export function DebtTxLinkSection({
   const amountUAH =
     splitAmountUAH != null
       ? Math.abs(splitAmountUAH)
-      : Math.abs(transaction.amount / 100);
+      : Math.abs(txAmountKop / 100);
+  // Дата лише прикрашає картку створення пасиву, тож непарсабельне
+  // значення має її прибрати, а не завалити секцію: `Intl.DateTimeFormat`
+  // кидає `RangeError` на Invalid Date, і це поклало б увесь аркуш через
+  // косметичний рядок.
+  const parsedDate = new Date(txDateIso);
+  const dateLabel = Number.isNaN(parsedDate.getTime())
+    ? null
+    : new Intl.DateTimeFormat("uk-UA", { dateStyle: "medium" }).format(
+        parsedDate,
+      );
   const linkedDebt = manualDebts.find((d) =>
-    (d.linkedTxIds || []).includes(transaction.id),
+    (d.linkedTxIds || []).includes(txId),
   );
 
   const linkExisting = (debtId: string) => {
-    setLinkedTxRole(debtId, transaction.id, "debt", txRole, amountUAH);
+    setLinkedTxRole(debtId, txId, "debt", txRole, amountUAH);
     setShowPicker(false);
   };
 
@@ -123,8 +153,8 @@ export function DebtTxLinkSection({
         emoji: "\u{1F4B8}",
         amount: amountUAH,
         totalAmount: amountUAH,
-        linkedTxIds: [transaction.id],
-        txLinks: { [transaction.id]: { role: txRole, amount: amountUAH } },
+        linkedTxIds: [txId],
+        txLinks: { [txId]: { role: txRole, amount: amountUAH } },
       },
     ]);
     setNewDebtName("");
@@ -132,7 +162,7 @@ export function DebtTxLinkSection({
   };
 
   if (linkedDebt) {
-    const isAuto = linkedDebt.txLinks?.[transaction.id]?.auto === true;
+    const isAuto = linkedDebt.txLinks?.[txId]?.auto === true;
     return (
       <div className="rounded-2xl border border-line bg-panel p-3 flex items-center justify-between gap-3">
         <p className="text-style-caption text-subtle">
@@ -143,9 +173,7 @@ export function DebtTxLinkSection({
           variant="ghost"
           module="finyk"
           size="xs"
-          onClick={() =>
-            setLinkedTxRole(linkedDebt.id, transaction.id, "debt", null)
-          }
+          onClick={() => setLinkedTxRole(linkedDebt.id, txId, "debt", null)}
         >
           {shared.unlink}
         </Button>
@@ -227,12 +255,8 @@ export function DebtTxLinkSection({
           <div className="space-y-3">
             <p className="text-style-caption text-subtle inline-flex items-center gap-1.5">
               <Icon name="calendar" size={13} aria-hidden />
-              <Money amount={amountUAH} /> ·{" "}
-              {new Intl.DateTimeFormat("uk-UA", {
-                dateStyle: "medium",
-              }).format(
-                new Date(transaction.date || Number(transaction.time) * 1000),
-              )}
+              <Money amount={amountUAH} />
+              {dateLabel ? ` · ${dateLabel}` : null}
             </p>
             <Input
               aria-label={shared.namePlaceholder}

@@ -301,7 +301,7 @@ export function ExerciseDetailSheet({
             }
             if (cf.injury.blocked) {
               toast?.warning?.(
-                "Ти позначив біль у цій групі. Навантажувати її не раджу.",
+                "Ти позначив біль у цій групі. Вправу додав, але навантажувати не раджу.",
               );
             }
             addExerciseToActive(selected);
