@@ -56,7 +56,6 @@ import { consumePresetPrefill } from "../../core/onboarding/presetPrefill";
 import { useModuleFirstRun } from "../../core/onboarding/useModuleFirstRun";
 import { getSyncTone } from "./components/SyncIndicator";
 import { AuthErrorBanner, FinykHeaderIcon, SyncPill } from "./FinykAppChrome";
-import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 const PRIVAT_ENABLED = false;
 
@@ -606,8 +605,8 @@ export default function App({
         {splitSync.pendingUnlink && (
           <ConfirmDialog
             open
-            title={finykCopy.debtSplitSync.unlinkTitle}
-            description={finykCopy.debtSplitSync.unlinkQuestion
+            title={messages.finyk.debtSplitSync.unlinkTitle}
+            description={messages.finyk.debtSplitSync.unlinkQuestion
               .replace("{debt}", splitSync.pendingUnlink.debtName)
               .replace(
                 "{amount}",
@@ -615,8 +614,8 @@ export default function App({
                   maxFractionDigits: 2,
                 }),
               )}
-            confirmLabel={finykCopy.debtSplitSync.unlinkConfirm}
-            cancelLabel={finykCopy.debtSplitSync.unlinkKeep}
+            confirmLabel={messages.finyk.debtSplitSync.unlinkConfirm}
+            cancelLabel={messages.finyk.debtSplitSync.unlinkKeep}
             onConfirm={splitSync.confirmUnlink}
             onCancel={splitSync.dismissUnlink}
           />

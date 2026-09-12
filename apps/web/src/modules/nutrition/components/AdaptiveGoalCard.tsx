@@ -1,5 +1,5 @@
+import { useLocale } from "@shared/i18n/useLocale";
 import type { AdaptiveGoalState } from "../hooks/useAdaptiveNutritionGoal";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 interface AdaptiveGoalCardProps {
   state: AdaptiveGoalState;
@@ -18,6 +18,8 @@ export function AdaptiveGoalCard({
   state,
   onOpenSettings,
 }: AdaptiveGoalCardProps) {
+  const { messages } = useLocale();
+
   if (state.mode === "active" || state.mode === "disabled") {
     return null;
   }
@@ -31,7 +33,7 @@ export function AdaptiveGoalCard({
     <div className="flex items-start justify-between gap-3 rounded-xl border border-line bg-panel/60 px-3 py-2">
       <div className="min-w-0">
         <div className="text-style-label text-text">
-          {nutritionCopy.adaptiveGoal.heading}
+          {messages.nutrition.adaptiveGoal.heading}
         </div>
         <p className="mt-1 text-style-caption text-muted">{text}</p>
       </div>
@@ -44,7 +46,7 @@ export function AdaptiveGoalCard({
           onClick={onOpenSettings}
           className="touch-target shrink-0 text-style-caption text-nutrition-strong dark:text-nutrition focus:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60"
         >
-          {nutritionCopy.adaptiveGoal.edit}
+          {messages.nutrition.adaptiveGoal.edit}
         </button>
       )}
     </div>

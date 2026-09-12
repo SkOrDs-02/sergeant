@@ -15,6 +15,7 @@ import {
   type DropdownMenuItem,
 } from "@shared/components/ui/DropdownMenu";
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { WorkoutItemCard } from "../workouts/WorkoutItemCard";
 import {
@@ -23,7 +24,6 @@ import {
   neighbourItems,
   setsProgressLabel,
 } from "./sessionLib";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface SessionExerciseFocusProps {
   activeWorkout: Workout;
@@ -82,7 +82,7 @@ export function SessionExerciseFocus({
   onOpenInfo,
   onOpenStats,
 }: SessionExerciseFocusProps) {
-  const ss = fizrukCopy.session;
+  const ss = messages.fizruk.session;
   const idx = items.findIndex((x) => x.id === it.id);
   const { prev, next } = neighbourItems(items, it.id);
   const pos = groupMemberPosition(it, group);

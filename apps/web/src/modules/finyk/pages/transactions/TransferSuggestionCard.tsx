@@ -3,7 +3,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Card } from "@shared/components/ui/Card";
 import type { TxAccount } from "./Transactions";
 import { Money } from "@shared/components/ui/Money";
-import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
+import { messages } from "@shared/i18n/uk";
 
 interface TransferSuggestionCardProps {
   suggestion: InternalTransferSuggestion;
@@ -89,8 +89,8 @@ export function TransferSuggestionCard({
         <div className="min-w-0">
           <p className="text-style-label text-text">
             {isCreditCardRepayment
-              ? finykCopy.transferSuggestion.creditRepaymentTitle
-              : finykCopy.transferSuggestion.title}
+              ? messages.finyk.transferSuggestion.creditRepaymentTitle
+              : messages.finyk.transferSuggestion.title}
           </p>
           <p className="text-style-caption text-muted mt-0.5 truncate">
             {accountLabel(fromId, accounts)} → {accountLabel(toId, accounts)}
@@ -108,8 +108,8 @@ export function TransferSuggestionCard({
       </div>
       <p className="text-style-caption text-muted leading-snug">
         {isCreditCardRepayment
-          ? finykCopy.transferSuggestion.creditRepaymentHint
-          : finykCopy.transferSuggestion.hint}
+          ? messages.finyk.transferSuggestion.creditRepaymentHint
+          : messages.finyk.transferSuggestion.hint}
       </p>
       <div className="flex flex-wrap gap-2">
         <Button
@@ -119,7 +119,7 @@ export function TransferSuggestionCard({
           tone="finyk"
           onClick={onConfirm}
         >
-          {finykCopy.transferSuggestion.confirm}
+          {messages.finyk.transferSuggestion.confirm}
         </Button>
         <Button
           type="button"
@@ -128,7 +128,7 @@ export function TransferSuggestionCard({
           tone="neutral"
           onClick={onReject}
         >
-          {finykCopy.transferSuggestion.reject}
+          {messages.finyk.transferSuggestion.reject}
         </Button>
         <Button
           type="button"
@@ -137,7 +137,7 @@ export function TransferSuggestionCard({
           tone="neutral"
           onClick={onSnooze}
         >
-          {finykCopy.transferSuggestion.dismiss}
+          {messages.finyk.transferSuggestion.dismiss}
         </Button>
       </div>
     </Card>

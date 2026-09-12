@@ -10,7 +10,6 @@ import {
 import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
-import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 export interface TransactionDayHeaderProps {
   dayKey: string;
@@ -104,7 +103,7 @@ export function TransactionDayHeader({
           <MaskedAmount
             masked={masked}
             interactive={false}
-            label={finykCopy.daySummaryLabel}
+            label={messages.finyk.daySummaryLabel}
           >
             <Money
               amount={summary.total / 100}

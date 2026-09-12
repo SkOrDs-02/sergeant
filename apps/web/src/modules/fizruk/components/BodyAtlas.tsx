@@ -23,14 +23,14 @@ import {
 } from "@sergeant/fizruk-domain/data";
 import type { RecoveryStatus } from "@sergeant/fizruk-domain";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import type { AtlasData, AtlasMuscleDatum } from "../lib/atlasData";
 import { BodyAtlasSegGroup } from "./BodyAtlasSegGroup";
 import { atlasHitStroke, fatiguePercent, heatColor } from "../lib/atlasHeat";
 import { formatNumberUk } from "@sergeant/shared";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
-const t = fizrukCopy.atlas;
+const t = messages.fizruk.atlas;
 
 export type { AtlasMuscleDatum, AtlasData } from "../lib/atlasData";
 

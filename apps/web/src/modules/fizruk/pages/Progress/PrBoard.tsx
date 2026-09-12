@@ -6,12 +6,12 @@ import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { messages } from "@shared/i18n/uk";
 import { Icon } from "@shared/components/ui/Icon";
 import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { deviceDayKey } from "@sergeant/shared";
 import { ReturnScale } from "./ReturnScale";
 import { fmtLoose } from "../../lib/numberFmt";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface PrEntry {
   id: string;
@@ -88,11 +88,11 @@ export function PrBoard({
     <Card radius="lg" padding="lg">
       <div className="flex items-center justify-between gap-2 mb-3">
         <SectionHeading size="xs" variant="fizruk">
-          {fizrukCopy.prBoard.heading} · {prs.length}
+          {messages.fizruk.prBoard.heading} · {prs.length}
         </SectionHeading>
         {filtered.length !== prs.length && (
           <div className="text-style-caption text-muted">
-            {filtered.length} {fizrukCopy.prBoard.shownSuffix}
+            {filtered.length} {messages.fizruk.prBoard.shownSuffix}
           </div>
         )}
       </div>
@@ -111,7 +111,7 @@ export function PrBoard({
                 : "bg-panel border-line text-subtle hover:text-text",
             )}
           >
-            {fizrukCopy.prBoard.filterAll}
+            {messages.fizruk.prBoard.filterAll}
           </button>
           {muscleGroups.map((g) => (
             <button
@@ -137,13 +137,13 @@ export function PrBoard({
           compact
           title={
             prs.length === 0
-              ? fizrukCopy.prBoard.emptyTitle
-              : fizrukCopy.prBoard.emptyFilteredTitle
+              ? messages.fizruk.prBoard.emptyTitle
+              : messages.fizruk.prBoard.emptyFilteredTitle
           }
           description={
             prs.length === 0
-              ? fizrukCopy.prBoard.emptyDescription
-              : fizrukCopy.prBoard.emptyFilteredDescription
+              ? messages.fizruk.prBoard.emptyDescription
+              : messages.fizruk.prBoard.emptyFilteredDescription
           }
         />
       ) : (
@@ -173,7 +173,7 @@ export function PrBoard({
                   </div>
                   <div className="shrink-0 text-style-label text-text tabular-nums">
                     {(p.reference1rm ?? p.best1rm).toFixed(0)}{" "}
-                    {fizrukCopy.kgUnit}
+                    {messages.fizruk.kgUnit}
                   </div>
                 </div>
                 {/*
@@ -184,7 +184,7 @@ export function PrBoard({
                 */}
                 <div className="flex flex-wrap items-center gap-x-2 gap-y-1 mt-0.5 min-w-0">
                   <span className="text-style-caption text-muted tabular-nums">
-                    {fmtLoose(p.weightKg ?? 0)} {fizrukCopy.kgUnit} ×{" "}
+                    {fmtLoose(p.weightKg ?? 0)} {messages.fizruk.kgUnit} ×{" "}
                     {p.reps ?? 0}
                   </span>
                   {p.at && (
@@ -204,12 +204,13 @@ export function PrBoard({
                   */}
                   {p.isStale && (
                     <span className="text-style-caption text-muted">
-                      · {fizrukCopy.prBoard.staleBadge}
+                      · {messages.fizruk.prBoard.staleBadge}
                     </span>
                   )}
                   {p.isRegression && (
                     <span className="text-style-caption text-muted tabular-nums">
-                      · {fizrukCopy.prBoard.belowPeakPrefix} {p.deltaVsPeakPct}%
+                      · {messages.fizruk.prBoard.belowPeakPrefix}{" "}
+                      {p.deltaVsPeakPct}%
                     </span>
                   )}
                   {p.muscleGroupLabel && (

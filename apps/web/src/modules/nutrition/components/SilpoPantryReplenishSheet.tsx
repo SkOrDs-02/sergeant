@@ -20,6 +20,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { formatReceiptQty } from "@shared/lib/format/receiptQty";
 import {
@@ -27,7 +28,6 @@ import {
   type SilpoReplenishRow,
 } from "../hooks/useSilpoPantryReplenish";
 import type { PantryItem } from "../lib/pantryTextParser";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 export interface SilpoPantryReplenishSheetProps {
   open: boolean;
@@ -37,7 +37,7 @@ export interface SilpoPantryReplenishSheetProps {
   busy: boolean;
 }
 
-const COPY = nutritionCopy.pantryReplenish;
+const COPY = messages.nutrition.pantryReplenish;
 
 /**
  * Рядок згортання: під якою назвою позиція ляже в комору і як це скасувати.

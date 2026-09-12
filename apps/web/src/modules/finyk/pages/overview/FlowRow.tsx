@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Money } from "@shared/components/ui/Money";
-import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
+import { messages } from "@shared/i18n/uk";
 
 export interface FlowItem {
   title: string;
@@ -71,7 +71,7 @@ export const FlowRow = memo(function FlowRow({
           // приглушено. «−? ₴» читалось як помилка, а не як стан (звіт
           // власника 2026-09-03 після переїзду блоку в Планування).
           <span className="text-style-caption text-muted font-normal">
-            {finykCopy.planning.amountUnknown}
+            {messages.finyk.planning.amountUnknown}
           </span>
         ) : (
           <Money

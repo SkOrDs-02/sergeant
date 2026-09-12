@@ -6,6 +6,7 @@ import type { WorkoutGroup, WorkoutItem } from "@sergeant/fizruk-domain";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { fmtLoose } from "../../lib/numberFmt";
 import type { LastByExerciseEntry } from "../workouts/WorkoutItemLastTimeHint";
 import { filterNonEmptyStrengthSets } from "../workouts/WorkoutItemLastTimeHint";
@@ -17,7 +18,6 @@ import {
   setsProgressLabel,
   type SessionItemState,
 } from "./sessionLib";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface SessionExerciseListProps {
   items: WorkoutItem[];
@@ -44,7 +44,7 @@ function rowSubline(
   last: LastByExerciseEntry | undefined,
   recBy: Record<string, unknown>,
 ): { text: string; danger: boolean } {
-  const ss = fizrukCopy.session;
+  const ss = messages.fizruk.session;
   const rec = summarizeRecoveryChip(it, recBy);
   if (rec?.tone === "red") return { text: rec.label, danger: true };
   if (it.type === "strength") {
@@ -103,7 +103,7 @@ export function SessionExerciseList({
   selected,
   onToggleSelect,
 }: SessionExerciseListProps) {
-  const ss = fizrukCopy.session;
+  const ss = messages.fizruk.session;
   const states = itemStates(items);
 
   if (items.length === 0) {

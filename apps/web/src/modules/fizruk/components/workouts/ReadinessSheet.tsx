@@ -24,8 +24,8 @@ import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface ReadinessSheetProps {
   open: boolean;
@@ -48,7 +48,7 @@ function ScaleRow({
   value: number | null;
   onPick: (n: number) => void;
 }) {
-  const t = fizrukCopy.readiness;
+  const t = messages.fizruk.readiness;
   return (
     <div>
       <SectionHeading as="div" size="xs" variant="fizruk" className="mb-2">
@@ -88,7 +88,7 @@ export function ReadinessSheet({
 }: ReadinessSheetProps) {
   const [sleep, setSleep] = useState<number | null>(null);
   const [soreness, setSoreness] = useState<number | null>(null);
-  const t = fizrukCopy.readiness;
+  const t = messages.fizruk.readiness;
 
   return (
     // Закрити (хрестик, скрим, Escape) = пропустити: аркуш не має способу

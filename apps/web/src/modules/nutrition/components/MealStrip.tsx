@@ -37,9 +37,9 @@
  */
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { messages } from "@shared/i18n/uk";
 import type { MealTypeId } from "@sergeant/nutrition-domain";
 import { REMAINING_TODAY_LABEL } from "../lib/nextMealLabel";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 export interface MealStripSegment {
   type: MealTypeId;
@@ -241,7 +241,7 @@ export function MealStrip({
                   −{Math.round(Math.abs(remaining))}
                 </p>
                 <p className="text-style-caption text-hero-ink">
-                  {nutritionCopy.heroStrip.overshootSuffix}
+                  {messages.nutrition.heroStrip.overshootSuffix}
                 </p>
               </>
             ) : (
@@ -249,7 +249,7 @@ export function MealStrip({
                 <p className="text-style-display text-hero-ink tabular-nums">
                   {Math.round(remaining)}{" "}
                   <span className="text-style-caption text-hero-ink">
-                    {nutritionCopy.heroStrip.kcalUnit}
+                    {messages.nutrition.heroStrip.kcalUnit}
                   </span>
                 </p>
                 <p className="text-style-caption text-hero-ink">
@@ -270,13 +270,13 @@ export function MealStrip({
       {goalKcal == null && onSetGoal && (
         <div className="flex justify-center">
           <Button variant="nutrition" size="md" onClick={onSetGoal}>
-            {nutritionCopy.heroStrip.ctaSetGoal}
+            {messages.nutrition.heroStrip.ctaSetGoal}
           </Button>
         </div>
       )}
 
       <ul
-        aria-label={nutritionCopy.macrosToday}
+        aria-label={messages.nutrition.macrosToday}
         className="grid grid-cols-3 gap-3"
       >
         {macros.map((m) => {

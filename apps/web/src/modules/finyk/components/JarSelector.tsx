@@ -1,6 +1,6 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
+import { messages } from "@shared/i18n/uk";
 
 export interface JarOption {
   id: string;
@@ -29,11 +29,11 @@ function JarSelectorComponent({
         "input-focus-finyk w-full h-10 rounded-xl border border-line bg-bg px-3 text-sm text-text",
         className,
       )}
-      aria-label={finykCopy.jarSelector.ariaLabel}
+      aria-label={messages.finyk.jarSelector.ariaLabel}
       value={value || ""}
       onChange={(e) => onChange(e.target.value)}
     >
-      <option value="">{finykCopy.jarSelector.noJar}</option>
+      <option value="">{messages.finyk.jarSelector.noJar}</option>
       {jars.map((j) => (
         <option key={j.id} value={j.id}>
           {j.label}

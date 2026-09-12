@@ -14,9 +14,9 @@
  */
 import type { Dispatch, SetStateAction } from "react";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
+import { messages } from "@shared/i18n/uk";
 
-const copy = nutritionCopy.pantryMode;
+const copy = messages.nutrition.pantryMode;
 
 interface PantryModeSelectProps {
   prefs: NutritionPrefs;

@@ -27,7 +27,6 @@ import { HabitForm, type HabitFormErrors } from "./settings/HabitForm";
 import type { Habit, HabitDraft, RoutineState } from "../lib/types";
 import type { Dispatch, SetStateAction } from "react";
 import { messages } from "@shared/i18n/uk";
-import { routinePageMessages as routineCopy } from "@shared/i18n/uk.routine";
 
 export interface HabitQuickCreateDialogProps {
   open: boolean;
@@ -238,8 +237,8 @@ export function HabitQuickCreateDialog({
       {firstRunHint && !editingId && (
         <FirstRunHintBanner
           variant="routine"
-          title={routineCopy.firstRun.title}
-          description={routineCopy.firstRun.description}
+          title={messages.routine.firstRun.title}
+          description={messages.routine.firstRun.description}
           onDismiss={onDismissFirstRunHint ?? (() => {})}
           className="mb-3"
         />

@@ -14,7 +14,6 @@ import { useWorkoutTemplates } from "../../hooks/useWorkoutTemplates";
 import { useExerciseCatalog } from "../../hooks/useExerciseCatalog";
 import { parseDateKey } from "../../../routine/lib/hubCalendarAggregate";
 import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 interface CatalogExercise {
   id: string;
@@ -87,7 +86,7 @@ export function FizrukDayPlanSheet({
               <div className="flex items-center justify-between gap-2">
                 <div className="min-w-0 flex-1">
                   <SectionHeading as="p" size="xs" variant="subtle">
-                    {fizrukCopy.dayPlan.assignedTemplate}
+                    {messages.fizruk.dayPlan.assignedTemplate}
                   </SectionHeading>
                   <p className="text-style-title text-text mt-0.5">
                     {currentTemplate.name}
@@ -100,7 +99,7 @@ export function FizrukDayPlanSheet({
                   className="text-xs! border border-line shrink-0"
                   onClick={() => handleAssign(null)}
                 >
-                  {fizrukCopy.dayPlan.removeTemplate}
+                  {messages.fizruk.dayPlan.removeTemplate}
                 </Button>
               </div>
 
@@ -112,7 +111,7 @@ export function FizrukDayPlanSheet({
                     variant="subtle"
                     className="mb-1.5"
                   >
-                    {fizrukCopy.dayPlan.exercises} ({exerciseList.length})
+                    {messages.fizruk.dayPlan.exercises} ({exerciseList.length})
                   </SectionHeading>
                   <ul className="space-y-1.5">
                     {exerciseList.map((ex) => (
@@ -138,20 +137,20 @@ export function FizrukDayPlanSheet({
           ) : (
             <EmptyState
               compact
-              title={fizrukCopy.dayPlan.emptyTitle}
-              description={fizrukCopy.dayPlan.emptyDescription}
+              title={messages.fizruk.dayPlan.emptyTitle}
+              description={messages.fizruk.dayPlan.emptyDescription}
             />
           )}
 
           <div>
             <SectionHeading as="p" size="xs" variant="subtle" className="mb-2">
               {currentTemplate
-                ? fizrukCopy.dayPlan.changeTemplate
-                : fizrukCopy.dayPlan.chooseTemplate}
+                ? messages.fizruk.dayPlan.changeTemplate
+                : messages.fizruk.dayPlan.chooseTemplate}
             </SectionHeading>
             {templates.length === 0 ? (
               <p className="text-style-body text-subtle">
-                {fizrukCopy.dayPlan.noTemplates}
+                {messages.fizruk.dayPlan.noTemplates}
               </p>
             ) : (
               <div className="space-y-1.5 max-h-64 overflow-y-auto">

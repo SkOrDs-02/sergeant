@@ -1,4 +1,5 @@
 import { useCallback, useMemo } from "react";
+import { messages } from "@shared/i18n/uk";
 import { InjuryManager } from "../components/InjuryManager";
 import {
   buildBodyWeightSeries,
@@ -19,7 +20,6 @@ import { RecoveryFocusCard } from "../components/RecoveryFocusCard";
 import { safeRemoveLS } from "@shared/lib/storage/storage";
 import { JOURNAL_ENTRY_OPEN_PREFIX } from "./Body/storage";
 import { chartStatusSeries, chartSeries, chartPalette } from "@shared/charts";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 // Модуль фізичного щоденника: форма запису + графіки динаміки + журнал.
 interface BodyProps {
@@ -147,10 +147,10 @@ export function Body({ onOpenAtlas }: BodyProps) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-style-title text-text">
-              {fizrukCopy.body.title}
+              {messages.fizruk.body.title}
             </h1>
             <p className="text-style-caption text-subtle mt-0.5">
-              {fizrukCopy.body.subtitle}
+              {messages.fizruk.body.subtitle}
             </p>
           </div>
           <div className="flex items-center gap-3">
@@ -161,14 +161,14 @@ export function Body({ onOpenAtlas }: BodyProps) {
                   смузі з трьох центрованих колонок вона читалась би як
                   зайва графіка. Розмір не змінюється (12px → 12px). */}
               <div className="text-style-caption text-subtle">
-                {fizrukCopy.body.weight}
+                {messages.fizruk.body.weight}
               </div>
               {}
               <div className="text-base font-extrabold text-text tabular-nums">
                 {stats.latestWeight != null ? (
                   <Measure
                     value={stats.latestWeight}
-                    unit={fizrukCopy.body.kgUnit}
+                    unit={messages.fizruk.body.kgUnit}
                     fractionDigits={1}
                   />
                 ) : (
@@ -178,7 +178,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
             </div>
             <div className="text-center">
               <div className="text-style-caption text-subtle">
-                {fizrukCopy.body.sleep}
+                {messages.fizruk.body.sleep}
               </div>
               {}
               <div className="text-base font-extrabold text-text tabular-nums">
@@ -188,7 +188,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
                 {stats.avgSleep != null ? (
                   <Measure
                     value={stats.avgSleep}
-                    unit={fizrukCopy.body.hoursUnit}
+                    unit={messages.fizruk.body.hoursUnit}
                     fractionDigits={1}
                   />
                 ) : (
@@ -198,7 +198,7 @@ export function Body({ onOpenAtlas }: BodyProps) {
             </div>
             <div className="text-center">
               <div className="text-style-caption text-subtle">
-                {fizrukCopy.body.energyShort}
+                {messages.fizruk.body.energyShort}
               </div>
               {}
               <div className="text-base font-extrabold text-text tabular-nums">
@@ -319,10 +319,10 @@ export function Body({ onOpenAtlas }: BodyProps) {
                 The label text is already the visible first paragraph below —
                 removing it loses nothing, screen readers read the text. */}
             <p className="text-style-label text-text">
-              {fizrukCopy.body.trendsCollecting}
+              {messages.fizruk.body.trendsCollecting}
             </p>
             <p className="text-style-caption text-subtle mt-1">
-              {fizrukCopy.body.trendsCollectingDescription}
+              {messages.fizruk.body.trendsCollectingDescription}
             </p>
           </Card>
         )}

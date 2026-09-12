@@ -5,9 +5,9 @@
 import type { ReactNode } from "react";
 import { formatRestClock } from "@sergeant/fizruk-domain";
 import { useVisualKeyboardInset } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface SessionDockProps {
   restTimer: RestTimerState | null;
@@ -37,7 +37,7 @@ export function SessionDock({
   restHint,
   children,
 }: SessionDockProps) {
-  const rt = fizrukCopy.restTimer;
+  const rt = messages.fizruk.restTimer;
   const kbInset = useVisualKeyboardInset(true);
   const resting = restTimer != null;
   const urgent =

@@ -29,6 +29,7 @@ import {
 } from "@sergeant/finyk-domain/storage-keys";
 import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 import { formatMoney } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 import type {
   Transaction,
   TxCategoriesMap,
@@ -41,7 +42,6 @@ import type {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type { Category } from "@sergeant/finyk-domain/domain/types";
-import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 /**
  * Merged-account shape produced by `useUnifiedFinanceData` (Mono + Privat).
@@ -245,7 +245,7 @@ export function Transactions({
     dayFilter === "today" || (dayFilter != null && isDayFilterKey(dayFilter));
   const dayFilterLabel =
     dayFilter === "today"
-      ? finykCopy.todayFilter.label
+      ? messages.finyk.todayFilter.label
       : dayFilter && isDayFilterValid
         ? formatDayFilterDate(dayFilter)
         : "";
@@ -454,9 +454,9 @@ export function Transactions({
                     variant="ghost"
                     tone="finyk"
                     onClick={onClearDayFilter}
-                    aria-label={finykCopy.todayFilter.showAllAria}
+                    aria-label={messages.finyk.todayFilter.showAllAria}
                   >
-                    {finykCopy.todayFilter.showAll}
+                    {messages.finyk.todayFilter.showAll}
                   </Button>
                 )}
               </div>
@@ -475,7 +475,7 @@ export function Transactions({
                     visibleTransferSuggestion.incoming.id,
                     INTERNAL_TRANSFER_ID,
                   );
-                  toast.success(finykCopy.transferSuggestion.confirmed);
+                  toast.success(messages.finyk.transferSuggestion.confirmed);
                 }}
                 onReject={() => rejectTransferSuggestion(visibleTransferKey)}
                 onSnooze={() => snoozeTransferSuggestion(visibleTransferKey)}
@@ -544,8 +544,8 @@ export function Transactions({
       {splitSync.pendingUnlink && (
         <ConfirmDialog
           open
-          title={finykCopy.debtSplitSync.unlinkTitle}
-          description={finykCopy.debtSplitSync.unlinkQuestion
+          title={messages.finyk.debtSplitSync.unlinkTitle}
+          description={messages.finyk.debtSplitSync.unlinkQuestion
             .replace("{debt}", splitSync.pendingUnlink.debtName)
             .replace(
               "{amount}",
@@ -553,8 +553,8 @@ export function Transactions({
                 maxFractionDigits: 2,
               }),
             )}
-          confirmLabel={finykCopy.debtSplitSync.unlinkConfirm}
-          cancelLabel={finykCopy.debtSplitSync.unlinkKeep}
+          confirmLabel={messages.finyk.debtSplitSync.unlinkConfirm}
+          cancelLabel={messages.finyk.debtSplitSync.unlinkKeep}
           onConfirm={splitSync.confirmUnlink}
           onCancel={splitSync.dismissUnlink}
         />

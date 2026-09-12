@@ -9,10 +9,10 @@
 import { Input } from "@shared/components/ui/Input";
 import { WheelPicker } from "@shared/components/ui/WheelPicker";
 import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
+import { useLocale } from "@shared/i18n/useLocale";
 
 import { MAX_PORTION_GRAMS } from "./mealFormUtils";
 import { useWheelGrams } from "./useWheelGrams";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 interface PantryPortionFieldProps {
   value: string;
@@ -23,6 +23,7 @@ export function PantryPortionField({
   value,
   onChange,
 }: PantryPortionFieldProps) {
+  const { messages } = useLocale();
   const coarsePointer = useCoarsePointer();
   const wheel = useWheelGrams(value);
   return (
@@ -32,10 +33,10 @@ export function PantryPortionField({
         className="block text-style-label text-text"
         htmlFor="pantry-portion"
       >
-        {nutritionCopy.pantryPortion.label}
+        {messages.nutrition.pantryPortion.label}
       </label>
       <p className="mt-1 text-style-caption text-subtle">
-        {nutritionCopy.pantryPortion.description}
+        {messages.nutrition.pantryPortion.description}
       </p>
       {coarsePointer ? (
         <WheelPicker
@@ -76,8 +77,8 @@ export function PantryPortionField({
         />
       )}
       <p id="pantry-portion-help" className="sr-only">
-        {nutritionCopy.pantryPortion.a11yPrefix} {MAX_PORTION_GRAMS}{" "}
-        {nutritionCopy.pantryPortion.a11ySuffix}
+        {messages.nutrition.pantryPortion.a11yPrefix} {MAX_PORTION_GRAMS}{" "}
+        {messages.nutrition.pantryPortion.a11ySuffix}
       </p>
     </div>
   );

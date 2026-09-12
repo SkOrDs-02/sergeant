@@ -4,6 +4,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { JournalEntryCard } from "./JournalEntryCard";
 import {
   JOURNAL_OPEN_STORAGE_KEY,
@@ -11,7 +12,6 @@ import {
   writePersistedOpen,
 } from "./storage";
 import type { JournalEntry } from "./storage";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 /**
  * Entries rendered before the «Показати ще» affordance kicks in
@@ -65,7 +65,7 @@ export function JournalSection({
       as="section"
       radius="lg"
       padding="none"
-      aria-label={fizrukCopy.journal.sectionAriaLabel}
+      aria-label={messages.fizruk.journal.sectionAriaLabel}
     >
       {/* AI-CONTEXT: `<h2>` wraps the WHOLE toggle button (WAI-ARIA
           disclosure/accordion pattern), not the other way around — a
@@ -90,7 +90,7 @@ export function JournalSection({
               className="mb-0!"
               variant="fizruk"
             >
-              {fizrukCopy.journal.title}
+              {messages.fizruk.journal.title}
             </SectionHeading>
             <span className="text-style-caption text-muted tabular-nums">
               {totalCount}
@@ -121,8 +121,8 @@ export function JournalSection({
           {totalCount > visibleCount && (
             <div className="flex flex-col items-center gap-2 pt-3">
               <p className="text-style-caption text-subtle">
-                {fizrukCopy.journal.shownPrefix} {visibleCount}{" "}
-                {fizrukCopy.journal.shownOfWord} {totalCount}
+                {messages.fizruk.journal.shownPrefix} {visibleCount}{" "}
+                {messages.fizruk.journal.shownOfWord} {totalCount}
               </p>
               <Button
                 variant="fizruk-soft"
@@ -131,7 +131,7 @@ export function JournalSection({
                   setVisibleCount((c) => Math.min(c + PAGE_SIZE, totalCount))
                 }
               >
-                {fizrukCopy.journal.showMore}
+                {messages.fizruk.journal.showMore}
               </Button>
             </div>
           )}

@@ -39,7 +39,6 @@ import { buildMuscleWeekMatrix } from "../lib/muscleWeekMatrix";
 // Одна локаль на модуль: «Тіло» друкувало «82,5 кг», а «Прогрес» —
 // «82.5 кг» для того самого зважування (браузерне QA 2026-08-23).
 import { fmt, fmtLoose } from "../lib/numberFmt";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 interface ProgressProps {
   onNavigate: (target: FizrukPage | string) => void;
@@ -272,7 +271,7 @@ export function Progress({ onNavigate }: ProgressProps) {
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-style-title text-text">
-              {fizrukCopy.progress.title}
+              {messages.fizruk.progress.title}
             </h1>
             <p className="text-style-caption text-subtle mt-0.5">
               {quickStats.latestWorkoutAt !== "—"
@@ -330,15 +329,16 @@ export function Progress({ onNavigate }: ProgressProps) {
               </div>
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">
-                  {fizrukCopy.progress.measurementsTitle}
+                  {messages.fizruk.progress.measurementsTitle}
                 </div>
                 <div className="text-style-caption text-subtle truncate">
-                  {fizrukCopy.progress.measurementsSubtitle} · {entries.length}{" "}
+                  {messages.fizruk.progress.measurementsSubtitle} ·{" "}
+                  {entries.length}{" "}
                   {pluralize(
                     entries.length,
-                    fizrukCopy.progress.measurementOne,
-                    fizrukCopy.progress.measurementFew,
-                    fizrukCopy.progress.measurementMany,
+                    messages.fizruk.progress.measurementOne,
+                    messages.fizruk.progress.measurementFew,
+                    messages.fizruk.progress.measurementMany,
                   )}
                 </div>
               </div>
@@ -361,15 +361,15 @@ export function Progress({ onNavigate }: ProgressProps) {
               <EmptyState
                 compact
                 icon={<Icon name="trending-up" size={22} aria-hidden />}
-                title={fizrukCopy.progress.emptyTitle}
-                description={fizrukCopy.progress.emptyDescription}
+                title={messages.fizruk.progress.emptyTitle}
+                description={messages.fizruk.progress.emptyDescription}
                 primaryAction={
                   <Button
                     variant="fizruk"
                     size="sm"
                     onClick={() => onNavigate("workouts")}
                   >
-                    {fizrukCopy.startWorkoutFab}
+                    {messages.fizruk.startWorkoutFab}
                   </Button>
                 }
               />
@@ -382,7 +382,7 @@ export function Progress({ onNavigate }: ProgressProps) {
             {loaded && (
               <Card radius="lg">
                 <SectionHeading size="xs" className="mb-3" variant="fizruk">
-                  {fizrukCopy.progress.lightActivityHeading}
+                  {messages.fizruk.progress.lightActivityHeading}
                 </SectionHeading>
                 <div className="flex items-center gap-3 mb-3">
                   <div className="w-9 h-9 rounded-xl bg-fizruk/10 text-fizruk-strong dark:text-fizruk flex items-center justify-center shrink-0">
@@ -390,10 +390,10 @@ export function Progress({ onNavigate }: ProgressProps) {
                   </div>
                   <div className="min-w-0 flex-1">
                     <div className="text-style-label text-text">
-                      {fizrukCopy.progress.pushups}
+                      {messages.fizruk.progress.pushups}
                     </div>
                     <div className="text-style-caption text-subtle">
-                      {fizrukCopy.progress.pushupsSource}
+                      {messages.fizruk.progress.pushupsSource}
                     </div>
                   </div>
                 </div>
@@ -426,7 +426,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                 <div
                   className="mt-3 flex gap-2"
                   role="group"
-                  aria-label={fizrukCopy.progress.pushupsQuickAddLabel}
+                  aria-label={messages.fizruk.progress.pushupsQuickAddLabel}
                 >
                   {[10, 20, 30].map((n) => (
                     <Button
@@ -464,15 +464,15 @@ export function Progress({ onNavigate }: ProgressProps) {
                     <div className="grid grid-cols-2 gap-3">
                       <Card radius="lg">
                         <Stat
-                          label={fizrukCopy.progress.weight}
+                          label={messages.fizruk.progress.weight}
                           value={
                             weightStat.latest != null
-                              ? `${fmtLoose(weightStat.latest)} ${fizrukCopy.kgUnit}`
+                              ? `${fmtLoose(weightStat.latest)} ${messages.fizruk.kgUnit}`
                               : "—"
                           }
                           sublabel={
                             weightDelta == null ? (
-                              fizrukCopy.progress.noComparison
+                              messages.fizruk.progress.noComparison
                             ) : (
                               <span
                                 className={cn(
@@ -483,7 +483,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                                 )}
                               >
                                 {weightDelta > 0 ? "+" : ""}
-                                {fmt(weightDelta, 1)} {fizrukCopy.kgUnit}
+                                {fmt(weightDelta, 1)} {messages.fizruk.kgUnit}
                               </span>
                             )
                           }
@@ -491,7 +491,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                       </Card>
                       <Card radius="lg">
                         <Stat
-                          label={fizrukCopy.progress.bodyFat}
+                          label={messages.fizruk.progress.bodyFat}
                           value={
                             meas.latest?.["bodyFatPct"] != null
                               ? `${fmtLoose(Number(meas.latest["bodyFatPct"]))}%`
@@ -524,13 +524,13 @@ export function Progress({ onNavigate }: ProgressProps) {
                 {weightTrend.filter((d) => d.value != null).length >= 2 && (
                   <Card radius="lg">
                     <SectionHeading size="xs" className="mb-3" variant="fizruk">
-                      {fizrukCopy.progress.weightTrend}
+                      {messages.fizruk.progress.weightTrend}
                     </SectionHeading>
                     <MiniLineChart
                       data={weightTrend}
-                      unit={fizrukCopy.kgUnit}
+                      unit={messages.fizruk.kgUnit}
                       color={chartStatusSeries.success}
-                      metricLabel={fizrukCopy.progress.weightMetricLabel}
+                      metricLabel={messages.fizruk.progress.weightMetricLabel}
                     />
                   </Card>
                 )}
@@ -539,13 +539,13 @@ export function Progress({ onNavigate }: ProgressProps) {
                 {fatTrend.filter((d) => d.value != null).length >= 2 && (
                   <Card radius="lg">
                     <SectionHeading size="xs" className="mb-3" variant="fizruk">
-                      {fizrukCopy.progress.bodyFatTrend}
+                      {messages.fizruk.progress.bodyFatTrend}
                     </SectionHeading>
                     <MiniLineChart
                       data={fatTrend}
                       unit="%"
                       color={chartStatusSeries.warning}
-                      metricLabel={fizrukCopy.progress.bodyFatMetricLabel}
+                      metricLabel={messages.fizruk.progress.bodyFatMetricLabel}
                     />
                   </Card>
                 )}
@@ -554,7 +554,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                 {wellbeingData.length >= 2 && (
                   <Card radius="lg">
                     <SectionHeading size="xs" className="mb-3" variant="fizruk">
-                      {fizrukCopy.progress.wellbeing}
+                      {messages.fizruk.progress.wellbeing}
                     </SectionHeading>
                     <WellbeingChart data={wellbeingData} />
                   </Card>
@@ -563,7 +563,7 @@ export function Progress({ onNavigate }: ProgressProps) {
                 {/* Muscle volume bars */}
                 <Card radius="lg" padding="lg">
                   <SectionHeading size="xs" className="mb-1" variant="fizruk">
-                    {fizrukCopy.progress.muscleVolume}
+                    {messages.fizruk.progress.muscleVolume}
                   </SectionHeading>
                   {/*
                     П3 — the bars below plot `loadPoints`, an internal score
@@ -576,14 +576,14 @@ export function Progress({ onNavigate }: ProgressProps) {
                     follow-up.
                   */}
                   <p className="text-style-body text-subtle mb-3">
-                    {fizrukCopy.progress.muscleVolumeUnitsHint}
+                    {messages.fizruk.progress.muscleVolumeUnitsHint}
                   </p>
                   {muscleMatrix.rows.length === 0 ? (
                     <EmptyState
                       compact
                       title={messages.empty.nothingYet}
                       description={
-                        fizrukCopy.progress.muscleVolumeEmptyDescription
+                        messages.fizruk.progress.muscleVolumeEmptyDescription
                       }
                     />
                   ) : (

@@ -11,8 +11,8 @@ import {
   ModuleHeaderSettingsButton,
 } from "@shared/components/layout";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import type { FizrukPage } from "./fizrukRoute";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 interface ActiveProgramHeaderView {
   name: string;
@@ -167,9 +167,9 @@ export function FizrukHeader({
       module={showContextualBack ? undefined : "fizruk"}
       left={left}
       title={titleFor(page)}
-      subtitle={showContextualBack ? undefined : fizrukCopy.headerSubtitle}
+      subtitle={showContextualBack ? undefined : messages.fizruk.headerSubtitle}
       subtitleShort={
-        showContextualBack ? undefined : fizrukCopy.headerSubtitleShort
+        showContextualBack ? undefined : messages.fizruk.headerSubtitleShort
       }
       right={
         <div className="flex items-center gap-2">

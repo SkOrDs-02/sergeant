@@ -19,6 +19,7 @@
  */
 import { useState } from "react";
 import { z } from "zod";
+import { messages } from "@shared/i18n/uk";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import {
   MEASURE_FIELDS,
@@ -26,7 +27,6 @@ import {
   type MeasurementFieldId,
 } from "../../hooks/useMeasurements";
 import { Card } from "@shared/components/ui/Card";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 // F3: runtime range gate — mirrors <input min max> attributes so a
 // browser-bypass or programmatic submit cannot persist out-of-range PII.
@@ -170,7 +170,8 @@ export function AddMeasurementForm({ addEntry }: AddMeasurementFormProps) {
       for (const issue of validation.error.issues) {
         const key = issue.path[0];
         if (typeof key !== "string") continue;
-        next[key] ??= issue.message || fizrukCopy.measurements.invalidValue;
+        next[key] ??=
+          issue.message || messages.fizruk.measurements.invalidValue;
       }
       setFieldErrors(next);
       return;
@@ -184,7 +185,7 @@ export function AddMeasurementForm({ addEntry }: AddMeasurementFormProps) {
   return (
     <Card radius="lg">
       <SectionHeading as="div" size="xs" className="mb-3" variant="fizruk">
-        {fizrukCopy.measurements.addHeading}
+        {messages.fizruk.measurements.addHeading}
       </SectionHeading>
       <div className="grid grid-cols-2 gap-2">
         {PRIMARY_FIELDS.map(renderField)}
@@ -206,8 +207,8 @@ export function AddMeasurementForm({ addEntry }: AddMeasurementFormProps) {
           onClick={() => setSecondaryOpen((o) => !o)}
         >
           {secondaryVisible
-            ? fizrukCopy.measurements.addFormFewerFields
-            : fizrukCopy.measurements.addFormMoreFields}
+            ? messages.fizruk.measurements.addFormFewerFields
+            : messages.fizruk.measurements.addFormMoreFields}
         </button>
       )}
 
@@ -226,7 +227,7 @@ export function AddMeasurementForm({ addEntry }: AddMeasurementFormProps) {
           className="focus-ring w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
           onClick={handleSubmit}
         >
-          {fizrukCopy.measurements.submit}
+          {messages.fizruk.measurements.submit}
         </button>
       </div>
     </Card>

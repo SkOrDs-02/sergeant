@@ -13,10 +13,10 @@ import type {
   WorkoutVariantChoice,
 } from "@sergeant/fizruk-domain";
 import { findExerciseById } from "@sergeant/fizruk-domain/data";
+import { messages } from "@shared/i18n/uk";
 import { fmt } from "../../lib/numberFmt";
 import { filterNonEmptyStrengthSets } from "./WorkoutItemLastTimeHint";
 import type { LastByExerciseEntry } from "./WorkoutItemLastTimeHint";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface WorkoutItemNextSetHintProps {
   /** Останнє тренування з цією вправою (`lastByExerciseId`). */
@@ -57,8 +57,8 @@ function bestSetOf(sets: WorkoutSet[]): WorkoutSet | null {
  * набути значення, якого `computeOneRmAging` не вміє видавати.
  */
 const RETURN_REASON_TEXT: Record<string, string> = {
-  layoff: fizrukCopy.nextSetHint.softLayoff,
-  injury: fizrukCopy.nextSetHint.softInjury,
+  layoff: messages.fizruk.nextSetHint.softLayoff,
+  injury: messages.fizruk.nextSetHint.softInjury,
 };
 
 /**
@@ -96,7 +96,7 @@ export function WorkoutItemNextSetHint({
   });
   if (!suggestion) return null;
 
-  const t = fizrukCopy.nextSetHint;
+  const t = messages.fizruk.nextSetHint;
   const reason = suggestion.returnReason
     ? RETURN_REASON_TEXT[suggestion.returnReason]
     : null;

@@ -9,11 +9,11 @@
 
 import type { Dispatch, SetStateAction } from "react";
 import { FloatingActionButton } from "@shared/components/ui/FloatingActionButton";
+import { messages } from "@shared/i18n/uk";
 import { HabitQuickCreateDialog } from "./components/HabitQuickCreateDialog";
 import { RoutineBottomNav } from "./components/RoutineBottomNav";
 import type { RoutineMainTab } from "./context/RoutineCalendarContext";
 import type { RoutineState } from "./lib/types";
-import { routinePageMessages as routineCopy } from "@shared/i18n/uk.routine";
 
 export interface RoutineActionsProps {
   mainTab: RoutineMainTab;
@@ -51,7 +51,7 @@ export function RoutineActions({
         variant="v2-routine"
         icon="plus"
         onClick={onOpenQuickAddHabit}
-        aria-label={routineCopy.addHabitFab}
+        aria-label={messages.routine.addHabitFab}
       />
       <RoutineBottomNav mainTab={mainTab} onSelectTab={setMainTab} />
       <HabitQuickCreateDialog

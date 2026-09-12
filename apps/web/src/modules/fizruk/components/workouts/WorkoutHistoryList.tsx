@@ -26,7 +26,6 @@ import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { formatDayKeyUk } from "@shared/lib/time/dayKeyLabel";
 import { messages } from "@shared/i18n/uk";
 import type { Workout } from "@sergeant/fizruk-domain";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface WorkoutHistoryListProps {
   workouts: readonly Workout[];
@@ -57,7 +56,7 @@ function estimateJournalRowHeight(w: Workout | undefined): number {
 }
 
 function WorkoutRow({ w, onOpen }: WorkoutRowProps) {
-  const copy = fizrukCopy.workoutHistory;
+  const copy = messages.fizruk.workoutHistory;
   // At most one unfinished workout can exist at a time (the "one active
   // workout" invariant enforced by `requestWorkoutStart`'s conflict
   // dialog), so any non-ended row here unambiguously *is* the active
@@ -107,7 +106,7 @@ export function WorkoutHistoryList({
   onOpenWorkout,
 }: WorkoutHistoryListProps) {
   const toast = useToast();
-  const copy = fizrukCopy.workoutHistory;
+  const copy = messages.fizruk.workoutHistory;
   const workoutList = workouts || [];
 
   const handleSwipeDelete = useCallback(

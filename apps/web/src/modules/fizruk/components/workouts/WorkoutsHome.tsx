@@ -7,8 +7,8 @@ import { pluralExercises, pluralSets } from "@sergeant/shared";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
+import { messages } from "@shared/i18n/uk";
 import { computeWorkoutSummary } from "@sergeant/fizruk-domain/domain";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 type WorkoutItem = ReadonlyArray<unknown>;
 
@@ -114,7 +114,8 @@ export function WorkoutsHome({
             className="mt-3 w-full h-11"
             onClick={onLogPast}
           >
-            <Icon name="edit" size={16} aria-hidden /> {fizrukCopy.logPast.cta}
+            <Icon name="edit" size={16} aria-hidden />{" "}
+            {messages.fizruk.logPast.cta}
           </Button>
         </div>
       ) : (
@@ -153,7 +154,7 @@ export function WorkoutsHome({
               onClick={onLogPast}
             >
               <Icon name="edit" size={16} aria-hidden />{" "}
-              {fizrukCopy.logPast.cta}
+              {messages.fizruk.logPast.cta}
             </Button>
           </div>
         </div>
@@ -232,12 +233,12 @@ export function WorkoutsHome({
               <Icon name="list-checks" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">
-                  {fizrukCopy.programsRow.title}
+                  {messages.fizruk.programsRow.title}
                 </div>
                 <div className="text-style-caption text-subtle mt-0.5 truncate">
                   {activeProgramName
-                    ? `${fizrukCopy.programsRow.activePrefix} ${activeProgramName}`
-                    : fizrukCopy.programsRow.subtitle}
+                    ? `${messages.fizruk.programsRow.activePrefix} ${activeProgramName}`
+                    : messages.fizruk.programsRow.subtitle}
                 </div>
               </div>
               <Icon
@@ -280,10 +281,10 @@ export function WorkoutsHome({
               <Icon name="upload" size={22} className="text-muted" />
               <div className="flex-1 min-w-0">
                 <div className="text-style-label text-text">
-                  {fizrukCopy.strongImport.rowTitle}
+                  {messages.fizruk.strongImport.rowTitle}
                 </div>
                 <div className="text-style-caption text-subtle mt-0.5">
-                  {fizrukCopy.strongImport.rowSubtitle}
+                  {messages.fizruk.strongImport.rowSubtitle}
                 </div>
               </div>
               <Icon

@@ -17,12 +17,12 @@
 import { useState } from "react";
 import type { NutritionPhotoItem } from "@shared/api";
 import { Input } from "@shared/components/ui/Input";
+import { useLocale } from "@shared/i18n/useLocale";
 import { cn } from "@shared/lib/ui/cn";
 import { macrosForGrams } from "../../lib/foodDb/foodDb";
 import { FoodPickerSection, type PickedFood } from "./FoodPickerSection";
 import { useFoodSearch } from "./useFoodSearch";
 import { MAX_PORTION_GRAMS } from "./mealFormUtils";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 const DEFAULT_GRAMS = 100;
 
@@ -37,8 +37,9 @@ export function PhotoAddItemPicker({
   onCancel,
   busy,
 }: PhotoAddItemPickerProps) {
-  const copy = nutritionCopy.photoAddItem;
-  const itemsCopy = nutritionCopy.photoItems;
+  const { messages } = useLocale();
+  const copy = messages.nutrition.photoAddItem;
+  const itemsCopy = messages.nutrition.photoItems;
   const [foodQuery, setFoodQuery] = useState("");
   const [pickedFood, setPickedFood] = useState<PickedFood | null>(null);
   const [pickedGrams, setPickedGrams] = useState("");

@@ -12,7 +12,7 @@
  */
 import type { ManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
 import { cn } from "@shared/lib/ui/cn";
-import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
+import { messages } from "@shared/i18n/uk";
 
 export interface ManualExpenseKindTabsProps {
   isIncome: boolean;
@@ -20,7 +20,7 @@ export interface ManualExpenseKindTabsProps {
   onKindChange: (kind: ManualExpenseKind) => void;
 }
 
-const copy = finykCopy.manualExpenseSheet;
+const copy = messages.finyk.manualExpenseSheet;
 
 const tabClass = (active: boolean) =>
   cn(

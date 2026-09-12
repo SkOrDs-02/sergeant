@@ -28,7 +28,6 @@ import {
   formatChartTooltip,
   labelStep,
 } from "./reportChartLabels";
-import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 // ── Local sub-components ──────────────────────────────────────────────
 
@@ -225,7 +224,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
           size="xs"
           className="flex-1 min-w-0 text-muted truncate"
         >
-          {finykCopy.reportHeading}
+          {messages.finyk.reportHeading}
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">

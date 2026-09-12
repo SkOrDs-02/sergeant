@@ -17,7 +17,6 @@ import {
   type StrongImportSelection,
   type StrongWeightUnit,
 } from "../lib/strongImport";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 interface StrongImportReviewProps {
   readonly open: boolean;
@@ -30,7 +29,7 @@ export function StrongImportReview({
   onClose,
   exercises,
 }: StrongImportReviewProps) {
-  const copy = fizrukCopy.strongImport;
+  const copy = messages.fizruk.strongImport;
   const toast = useToast();
   // Неймспейс детермінованих id імпорту. Для справжнього акаунта — його id
   // (він же поїде в `user_id`), для анонімної/демо-сесії — id пристрою,
@@ -257,7 +256,7 @@ function MatchList({
   readonly selectedExerciseId: (match: StrongExerciseMatch) => string;
   readonly onSelect: (strongName: string, exerciseId: string | null) => void;
 }) {
-  const copy = fizrukCopy.strongImport;
+  const copy = messages.fizruk.strongImport;
   return (
     <div className="space-y-2">
       <h3 className="text-style-label text-text">{title}</h3>

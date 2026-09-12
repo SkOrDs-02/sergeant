@@ -3,8 +3,8 @@
  * Status: Active
  */
 import type { WorkoutItem, WorkoutSet } from "@sergeant/fizruk-domain";
+import { messages } from "@shared/i18n/uk";
 import { calcCardioMetrics } from "./activeWorkoutLib";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export type LastByExerciseEntry = WorkoutItem & { _startedAt?: string };
 
@@ -56,7 +56,7 @@ export function WorkoutItemLastTimeHint({
   if (!text) return null;
   return (
     <div className="text-style-caption text-subtle mb-1">
-      {fizrukCopy.lastTimeHint.label}{" "}
+      {messages.fizruk.lastTimeHint.label}{" "}
       {last._startedAt
         ? `(${new Date(last._startedAt).toLocaleDateString("uk-UA", { month: "short", day: "numeric" })})`
         : ""}

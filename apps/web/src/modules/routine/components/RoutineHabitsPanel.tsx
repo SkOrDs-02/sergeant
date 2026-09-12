@@ -31,9 +31,8 @@ import { ActiveHabitsSection } from "./habits/ActiveHabitsSection";
 import { ArchivedHabitsSection } from "./habits/ArchivedHabitsSection";
 import { HabitDetailSheet } from "./HabitDetailSheet";
 import { HabitQuickCreateDialog } from "./HabitQuickCreateDialog";
-import { routinePageMessages as routineCopy } from "@shared/i18n/uk.routine";
 
-const COPY = routineCopy.habitsTab;
+const COPY = messages.routine.habitsTab;
 
 export interface RoutineHabitsPanelProps {
   routine: RoutineState;

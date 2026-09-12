@@ -4,9 +4,7 @@
  *
  * Routine message-каталог, винесений з `uk.ts` заради module-size
  * discipline (Hard Rule #18, `max-lines: 600`). Referenced as
- * `messages.routine` всередині `uk.ts`. Від 2026-09-12 каталог більше НЕ
- * спредиться в `uk.ts` — модульні файли імпортують його прямо, щоб він не
- * їхав eager-чанком (той самий патерн, що й
+ * `messages.routine` всередині `uk.ts` (той самий патерн, що й
  * `finyk: finykPageMessages`).
  */
 

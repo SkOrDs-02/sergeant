@@ -18,7 +18,6 @@ import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { AddMeasurementForm } from "./Measurements/AddMeasurementForm";
 import { formatNumberUk } from "@sergeant/shared";
 import { fmt } from "../lib/numberFmt";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 // Programmatic-focus target for the guide view's `<h2>` — see the
 // scroll/focus-management effect below.
@@ -131,7 +130,7 @@ export function Measurements() {
             className="focus-ring rounded-lg inline-flex items-center gap-1 min-h-11 text-style-label text-fizruk-strong hover:underline"
           >
             <Icon name="chevron-left" size="sm" />
-            {fizrukCopy.measurements.guideBack}
+            {messages.fizruk.measurements.guideBack}
           </button>
           <Card radius="lg" className="space-y-4">
             <div>
@@ -146,17 +145,17 @@ export function Measurements() {
                 id={GUIDE_HEADING_ID}
                 tabIndex={-1}
               >
-                {fizrukCopy.measurements.guideTitle}
+                {messages.fizruk.measurements.guideTitle}
               </SectionHeading>
               <p className="mt-2 text-style-body text-subtle leading-relaxed">
-                {fizrukCopy.measurements.guideIntro}
+                {messages.fizruk.measurements.guideIntro}
               </p>
             </div>
             <ol className="list-decimal pl-5 space-y-3 text-style-body text-text leading-relaxed">
-              <li>{fizrukCopy.measurements.guideStep1}</li>
-              <li>{fizrukCopy.measurements.guideStep2}</li>
-              <li>{fizrukCopy.measurements.guideStep3}</li>
-              <li>{fizrukCopy.measurements.guideStep4}</li>
+              <li>{messages.fizruk.measurements.guideStep1}</li>
+              <li>{messages.fizruk.measurements.guideStep2}</li>
+              <li>{messages.fizruk.measurements.guideStep3}</li>
+              <li>{messages.fizruk.measurements.guideStep4}</li>
             </ol>
             <div
               data-testid="measurement-guide-table-scroll"
@@ -165,23 +164,23 @@ export function Measurements() {
               <DataTable
                 module="fizruk"
                 className="min-w-[560px]"
-                caption={fizrukCopy.measurements.guideTitle}
+                caption={messages.fizruk.measurements.guideTitle}
                 getRowKey={(row) => row.metric}
                 columns={[
                   {
                     id: "metric",
-                    header: fizrukCopy.measurements.guideMetricHeader,
+                    header: messages.fizruk.measurements.guideMetricHeader,
                     rowHeader: true,
                     cell: (row) => row.metric,
                   },
                   {
                     id: "place",
-                    header: fizrukCopy.measurements.guidePlaceHeader,
+                    header: messages.fizruk.measurements.guidePlaceHeader,
                     cell: (row) => row.place,
                   },
                   {
                     id: "technique",
-                    header: fizrukCopy.measurements.guideTechniqueHeader,
+                    header: messages.fizruk.measurements.guideTechniqueHeader,
                     cell: (row) => row.technique,
                   },
                 ]}
@@ -189,7 +188,7 @@ export function Measurements() {
               />
             </div>
             <p className="text-style-caption text-subtle leading-relaxed">
-              {fizrukCopy.measurements.guideDisclaimer}
+              {messages.fizruk.measurements.guideDisclaimer}
             </p>
             <div className="flex flex-wrap gap-3 text-style-caption">
               <a
@@ -198,10 +197,10 @@ export function Measurements() {
                 rel="noreferrer"
                 className="focus-ring rounded-lg min-h-11 inline-flex items-center text-fizruk-strong hover:underline"
               >
-                {fizrukCopy.measurements.guideWhoLink}
+                {messages.fizruk.measurements.guideWhoLink}
                 <span className="sr-only">
                   {" "}
-                  {fizrukCopy.measurements.manualLinkNewTab}
+                  {messages.fizruk.measurements.manualLinkNewTab}
                 </span>
               </a>
               <a
@@ -210,10 +209,10 @@ export function Measurements() {
                 rel="noreferrer"
                 className="focus-ring rounded-lg min-h-11 inline-flex items-center text-fizruk-strong hover:underline"
               >
-                {fizrukCopy.measurements.guideCdcLink}
+                {messages.fizruk.measurements.guideCdcLink}
                 <span className="sr-only">
                   {" "}
-                  {fizrukCopy.measurements.manualLinkNewTab}
+                  {messages.fizruk.measurements.manualLinkNewTab}
                 </span>
               </a>
             </div>
@@ -250,10 +249,10 @@ export function Measurements() {
           </div>
           <div className="min-w-0">
             <SectionHeading as="div" size="xs" variant="fizruk">
-              {fizrukCopy.measurements.manual}
+              {messages.fizruk.measurements.manual}
             </SectionHeading>
             <div className="text-style-label text-success-strong dark:text-success mt-0.5 inline-flex items-center gap-0.5">
-              {fizrukCopy.measurements.manualLink}
+              {messages.fizruk.measurements.manualLink}
               <Icon name="chevron-right" size="sm" />
             </div>
           </div>
@@ -262,7 +261,7 @@ export function Measurements() {
         <div className="grid grid-cols-3 gap-2">
           <Card radius="lg" padding="sm">
             <Stat
-              label={fizrukCopy.measurements.records}
+              label={messages.fizruk.measurements.records}
               value={stats.total}
               size="sm"
               align="center"
@@ -270,7 +269,7 @@ export function Measurements() {
           </Card>
           <Card radius="lg" padding="sm">
             <Stat
-              label={fizrukCopy.measurements.last}
+              label={messages.fizruk.measurements.last}
               value={<span className="text-style-label">{stats.latestAt}</span>}
               size="sm"
               align="center"
@@ -278,7 +277,7 @@ export function Measurements() {
           </Card>
           <Card radius="lg" padding="sm">
             <Stat
-              label={fizrukCopy.measurements.fields}
+              label={messages.fizruk.measurements.fields}
               value={stats.filledLatest}
               size="sm"
               align="center"
@@ -302,7 +301,7 @@ export function Measurements() {
               <div className="flex items-center justify-between">
                 <div>
                   <SectionHeading as="div" size="xs" variant="fizruk">
-                    {fizrukCopy.measurements.lastEntry}{" "}
+                    {messages.fizruk.measurements.lastEntry}{" "}
                     <span className="ml-1 normal-case tracking-normal font-medium text-subtle">
                       · {stats.latestAt}
                     </span>
@@ -360,7 +359,7 @@ export function Measurements() {
         <Card edge="stub" padding="none">
           <div className="px-4 py-3 bg-panelHi/60 border-b border-line">
             <SectionHeading as="div" size="xs" variant="fizruk">
-              {fizrukCopy.measurements.history}
+              {messages.fizruk.measurements.history}
             </SectionHeading>
           </div>
           {(entries || []).map((e) => {
@@ -389,7 +388,7 @@ export function Measurements() {
                   <div className="text-style-label text-text">{dateLabel}</div>
                   <button
                     type="button"
-                    aria-label={fizrukCopy.measurements.deleteAria}
+                    aria-label={messages.fizruk.measurements.deleteAria}
                     className="focus-ring touch-target -mr-2 px-2 inline-flex items-center justify-center rounded-full text-style-caption text-danger-strong hover:text-danger transition-colors"
                     onClick={() => handleDelete(e.id)}
                   >
@@ -410,14 +409,14 @@ export function Measurements() {
                       aria-expanded={isRowExpanded}
                       aria-label={
                         isRowExpanded
-                          ? `${fizrukCopy.measurements.collapseFieldsLabel}: ${fizrukCopy.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
-                          : `+${hiddenCount} ${fizrukCopy.measurements.moreFieldsSuffix}: ${fizrukCopy.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                          ? `${messages.fizruk.measurements.collapseFieldsLabel}: ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
+                          : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix}: ${messages.fizruk.measurements.showAllFieldsAriaSuffix} ${dateLabel}`
                       }
                       onClick={() => toggleHistoryRow(e.id)}
                     >
                       {isRowExpanded
-                        ? fizrukCopy.measurements.collapseFieldsLabel
-                        : `+${hiddenCount} ${fizrukCopy.measurements.moreFieldsSuffix}`}
+                        ? messages.fizruk.measurements.collapseFieldsLabel
+                        : `+${hiddenCount} ${messages.fizruk.measurements.moreFieldsSuffix}`}
                     </button>
                   )}
                 </div>
@@ -427,8 +426,8 @@ export function Measurements() {
           {(entries || []).length === 0 && (
             <EmptyState
               compact
-              title={fizrukCopy.measurements.emptyTitle}
-              description={fizrukCopy.measurements.emptyDescription}
+              title={messages.fizruk.measurements.emptyTitle}
+              description={messages.fizruk.measurements.emptyDescription}
             />
           )}
         </Card>

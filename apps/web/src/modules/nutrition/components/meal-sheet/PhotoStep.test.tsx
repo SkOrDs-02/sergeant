@@ -26,7 +26,6 @@ import { messages } from "@shared/i18n/uk";
 
 import { PhotoStep } from "./PhotoStep";
 import { usePhotoAnalysis } from "../../hooks/usePhotoAnalysis";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 // ─── Storage chain (уникаємо db-schema imports + контролюємо ack) ──────────
 const { storageState } = vi.hoisted(() => ({
@@ -436,7 +435,7 @@ describe("PhotoStep — вхід для незалогінованого від�
     );
 
     fireEvent.click(
-      screen.getByRole("button", { name: nutritionCopy.photoAuth.signIn }),
+      screen.getByRole("button", { name: messages.nutrition.photoAuth.signIn }),
     );
 
     // Немає жодного маршруту `/auth` у цьому дереві — якби код і далі

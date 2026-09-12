@@ -13,11 +13,11 @@
  */
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
+import { messages } from "@shared/i18n/uk";
 import { formatPantryQty } from "../lib/formatPantryQty";
 import type { PantryItemSource } from "@sergeant/nutrition-domain";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
-const COPY = nutritionCopy.pantrySources;
+const COPY = messages.nutrition.pantrySources;
 
 export interface PantryVariantChoiceSheetProps {
   choice: {

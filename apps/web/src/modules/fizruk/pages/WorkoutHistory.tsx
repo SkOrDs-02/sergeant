@@ -16,7 +16,6 @@ import { Skeleton } from "@shared/components/ui/Skeleton";
 import { messages } from "@shared/i18n/uk";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { WorkoutHistoryList } from "../components/workouts/WorkoutHistoryList";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface WorkoutHistoryProps {
   onNavigate: (target: string) => void;
@@ -24,7 +23,7 @@ export interface WorkoutHistoryProps {
 
 export function WorkoutHistory({ onNavigate }: WorkoutHistoryProps) {
   const { workouts, loaded, deleteWorkout, restoreWorkout } = useWorkouts();
-  const copy = fizrukCopy.workoutHistory;
+  const copy = messages.fizruk.workoutHistory;
   const finishedCount = workouts.filter((w) => w.endedAt).length;
 
   return (

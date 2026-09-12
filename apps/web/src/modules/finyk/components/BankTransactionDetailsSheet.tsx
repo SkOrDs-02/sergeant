@@ -23,6 +23,7 @@ import { MaskedAmount } from "@shared/components/ui/MaskedAmount";
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Switch } from "@shared/components/ui/Switch";
+import { messages } from "@shared/i18n/uk";
 import {
   INTERNAL_TRANSFER_ID,
   MCC_CATEGORIES,
@@ -38,7 +39,6 @@ import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
 import { ReceiptItemsSection } from "./ReceiptItemsSection";
-import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 interface BankTransactionAccount {
   id?: string | undefined;
@@ -141,7 +141,7 @@ export function BankTransactionDetailsSheet({
   onToggleExcludedFromStats,
   onClose,
 }: BankTransactionDetailsSheetProps) {
-  const copy = finykCopy.transactionDetails;
+  const copy = messages.finyk.transactionDetails;
   const isIncome = transaction.amount > 0;
   const category = isIncome
     ? getIncomeCategoryForTransaction(

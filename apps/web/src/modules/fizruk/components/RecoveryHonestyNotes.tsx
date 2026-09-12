@@ -30,9 +30,9 @@
  * юридичну формальність.
  */
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 import type { WellbeingSignal } from "@sergeant/fizruk-domain";
 import type { ReplicaFreshness } from "../../../core/syncEngine/replicaFreshness";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface RecoveryHonestyNotesProps {
   freshness: ReplicaFreshness;
@@ -43,7 +43,7 @@ export function RecoveryHonestyNotes({
   freshness,
   wellbeing,
 }: RecoveryHonestyNotesProps) {
-  const t = fizrukCopy.recoveryHonesty;
+  const t = messages.fizruk.recoveryHonesty;
   const neverSynced = freshness.lastPullAt === null;
 
   return (

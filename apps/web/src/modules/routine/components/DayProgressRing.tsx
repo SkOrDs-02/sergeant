@@ -2,7 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { routinePageMessages as routineCopy } from "@shared/i18n/uk.routine";
+import { messages } from "@shared/i18n/uk";
 const SIZE = 96;
 const STROKE = 7;
 const RADIUS = (SIZE - STROKE) / 2;
@@ -71,7 +71,7 @@ export function DayProgressRing({
         </div>
       </div>
       <span className="text-style-caption text-hero-ink/95 font-medium group-hover:text-hero-ink transition-colors">
-        {routineCopy.dayReport}
+        {messages.routine.dayReport}
       </span>
     </button>
   );

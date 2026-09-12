@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from "react";
 import { Modal } from "@shared/components/ui/Modal";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
+import { messages } from "@shared/i18n/uk";
 
 /**
  * Повноекранний перегляд двох кадрів вправи.
@@ -18,7 +18,7 @@ import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
  * те саме для двох значень.
  */
 
-const t = fizrukCopy.photoViewer;
+const t = messages.fizruk.photoViewer;
 
 // Автоперемикання стартує лише явним натисканням і тією ж кнопкою
 // зупиняється, тож окремої гілки під `prefers-reduced-motion` тут немає:

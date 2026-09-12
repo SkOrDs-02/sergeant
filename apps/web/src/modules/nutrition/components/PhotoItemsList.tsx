@@ -17,7 +17,7 @@ import { useState } from "react";
 import type { NutritionPhotoItem } from "@shared/api";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
+import { useLocale } from "@shared/i18n/useLocale";
 
 /**
  * Нижче цього порогу позиція показує застереження.
@@ -50,7 +50,8 @@ export function PhotoItemsList({
   busy,
 }: PhotoItemsListProps) {
   const [addOpen, setAddOpen] = useState(false);
-  const copy = nutritionCopy.photoItems;
+  const { messages } = useLocale();
+  const copy = messages.nutrition.photoItems;
   if (!items.length && !renderAddItem) return null;
 
   return (

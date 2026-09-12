@@ -1,6 +1,7 @@
 import { useCallback, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import {
   JOURNAL_ENTRY_OPEN_PREFIX,
   readPersistedOpen,
@@ -8,7 +9,6 @@ import {
 } from "./storage";
 import type { JournalEntry } from "./storage";
 import { fmtLoose } from "../../lib/numberFmt";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export function JournalEntryCard({
   entry,
@@ -99,7 +99,7 @@ export function JournalEntryCard({
           type="button"
           onClick={() => onDelete(entry.id)}
           className="focus-ring touch-target shrink-0 m-1 flex items-center justify-center rounded-xl text-muted hover:text-danger hover:bg-danger/10 transition-colors"
-          aria-label={fizrukCopy.journal.deleteEntryAriaLabel}
+          aria-label={messages.fizruk.journal.deleteEntryAriaLabel}
         >
           <svg
             width="14"
@@ -120,27 +120,27 @@ export function JournalEntryCard({
             {entry.weightKg != null && (
               <span className="text-style-caption text-text">
                 <span className="text-muted">
-                  {fizrukCopy.journal.weightLabel}
+                  {messages.fizruk.journal.weightLabel}
                 </span>{" "}
                 <span className="font-semibold">
-                  {fmtLoose(entry.weightKg)} {fizrukCopy.kgUnit}
+                  {fmtLoose(entry.weightKg)} {messages.fizruk.kgUnit}
                 </span>
               </span>
             )}
             {entry.sleepHours != null && (
               <span className="text-style-caption text-text">
                 <span className="text-muted">
-                  {fizrukCopy.journal.sleepLabel}
+                  {messages.fizruk.journal.sleepLabel}
                 </span>{" "}
                 <span className="font-semibold">
-                  {fmtLoose(entry.sleepHours)} {fizrukCopy.hoursUnit}
+                  {fmtLoose(entry.sleepHours)} {messages.fizruk.hoursUnit}
                 </span>
               </span>
             )}
             {entry.energyLevel != null && (
               <span className="text-style-caption text-text">
                 <span className="text-muted">
-                  {fizrukCopy.journal.energyLabel}
+                  {messages.fizruk.journal.energyLabel}
                 </span>{" "}
                 <span className="font-semibold">{entry.energyLevel}/5</span>
               </span>
@@ -148,7 +148,7 @@ export function JournalEntryCard({
             {entry.moodScore != null && (
               <span className="text-style-caption text-text">
                 <span className="text-muted">
-                  {fizrukCopy.journal.moodLabel}
+                  {messages.fizruk.journal.moodLabel}
                 </span>{" "}
                 <span className="font-semibold">{entry.moodScore}/5</span>
               </span>

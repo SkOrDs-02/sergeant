@@ -34,7 +34,6 @@ import {
   ANALYTICS_EVENTS,
   trackEvent,
 } from "../../../core/observability/analytics";
-import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -266,9 +265,9 @@ export function Overview({
                       {d.nonUahManualAssetCount}{" "}
                       {pluralize(
                         d.nonUahManualAssetCount,
-                        finykCopy.nonUahAssetsExcluded.one,
-                        finykCopy.nonUahAssetsExcluded.few,
-                        finykCopy.nonUahAssetsExcluded.many,
+                        messages.finyk.nonUahAssetsExcluded.one,
+                        messages.finyk.nonUahAssetsExcluded.few,
+                        messages.finyk.nonUahAssetsExcluded.many,
                       )}
                     </span>
                   </div>

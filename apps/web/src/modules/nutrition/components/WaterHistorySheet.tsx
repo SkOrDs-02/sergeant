@@ -19,15 +19,15 @@ import { Sheet } from "@shared/components/ui/Sheet";
 import { Stat } from "@shared/components/ui/Stat";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
 import { fmt } from "./WaterTrackerCard";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 const WEEKDAYS_UK = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
 
 /**
  * Заголовок секції зі старішими записами.
  *
- * AI-NOTE: літерал тут, а не в `nutritionCopy.waterHistory`, свідомо —
+ * AI-NOTE: літерал тут, а не в `messages.nutrition.waterHistory`, свідомо —
  * правка тримається в межах модуля Харчування, спільний i18n-файл не
  * чіпається. Переїде в `messages`, коли поруч зʼявиться друга причина його
  * редагувати.
@@ -57,7 +57,7 @@ export interface WaterHistorySheetProps {
   goalMl?: number;
 }
 
-const t = nutritionCopy.waterHistory;
+const t = messages.nutrition.waterHistory;
 
 export function WaterHistorySheet({
   open,

@@ -15,6 +15,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import type { DropdownMenuItem } from "@shared/components/ui/DropdownMenu";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
+import { messages } from "@shared/i18n/uk";
 import { useRestSettings } from "../../hooks/useRestSettings";
 import { useRestTimer } from "../../context/RestTimerContext";
 import {
@@ -35,7 +36,6 @@ import {
   sessionProgress,
   setsCountLabel,
 } from "./sessionLib";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 type WorkoutGroupType = "circuit" | "superset";
 type WarmupField = "warmup" | "cooldown";
@@ -92,7 +92,7 @@ export function SessionView({
   onOpenExerciseInfo,
   onOpenExerciseStats,
 }: SessionViewProps) {
-  const ss = fizrukCopy.session;
+  const ss = messages.fizruk.session;
   const toast = useToast();
   const { restTimer, setRestTimer } = useRestTimer();
   const { getDefaultForGroup, getDefaultForExercise, setDefaultForExercise } =

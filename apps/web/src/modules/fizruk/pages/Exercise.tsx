@@ -24,6 +24,7 @@ import {
   computeOneRmAgingForSummary,
 } from "@sergeant/fizruk-domain/domain";
 import { Card } from "@shared/components/ui/Card";
+import { messages } from "@shared/i18n/uk";
 import { LoadCalculator } from "../components/LoadCalculator";
 import { fmt, fmtLoose } from "../lib/numberFmt";
 import { ReturnProtocolNotice } from "../components/exercise/ReturnProtocolNotice";
@@ -34,7 +35,6 @@ import {
 import { buildStrengthProgressData } from "../lib/exerciseProgress";
 import { formatShortDate } from "../lib/dateFmt";
 import { chartSeries, chartStatusSeries } from "@shared/charts";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 interface ExerciseProps {
   exerciseId: string;
@@ -266,10 +266,10 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
         {best.isRegression && !aging.returnMode && (
           <div className="rounded-2xl border border-line bg-panel px-4 py-3">
             <p className="text-style-label text-text">
-              {`${fizrukCopy.oneRmAging.regressionTitle} · ${best.deltaVsPeakPct}%`}
+              {`${messages.fizruk.oneRmAging.regressionTitle} · ${best.deltaVsPeakPct}%`}
             </p>
             <p className="text-style-caption text-subtle">
-              {fizrukCopy.oneRmAging.regressionNote}
+              {messages.fizruk.oneRmAging.regressionNote}
             </p>
           </div>
         )}
@@ -299,7 +299,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
             )}
             {aging.isStale && (
               <div className="text-style-caption text-subtle mt-1">
-                {fizrukCopy.prBoard.staleBadge}
+                {messages.fizruk.prBoard.staleBadge}
               </div>
             )}
           </Card>
@@ -490,9 +490,10 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
               {history.length > visibleHistoryCount && (
                 <div className="flex flex-col items-center gap-2 pt-1">
                   <p className="text-style-caption text-subtle">
-                    {fizrukCopy.exercise.historyShownPrefix}{" "}
+                    {messages.fizruk.exercise.historyShownPrefix}{" "}
                     {visibleHistoryCount}{" "}
-                    {fizrukCopy.exercise.historyShownOfWord} {history.length}
+                    {messages.fizruk.exercise.historyShownOfWord}{" "}
+                    {history.length}
                   </p>
                   <Button
                     variant="fizruk-soft"
@@ -503,7 +504,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                       )
                     }
                   >
-                    {fizrukCopy.exercise.showMoreHistory}
+                    {messages.fizruk.exercise.showMoreHistory}
                   </Button>
                 </div>
               )}

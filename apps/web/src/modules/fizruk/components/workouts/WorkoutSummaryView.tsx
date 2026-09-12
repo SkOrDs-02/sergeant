@@ -28,9 +28,9 @@ import {
   type Workout,
   type WorkoutItem,
 } from "@sergeant/fizruk-domain/domain";
+import { messages } from "@shared/i18n/uk";
 import { WorkoutStatTile } from "./WorkoutStatTile";
 import { fmtLoose } from "../../lib/numberFmt";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface WorkoutSummaryViewProps {
   workout: Workout;
@@ -59,7 +59,7 @@ export function WorkoutSummaryView({
   workout,
   onRepeat,
 }: WorkoutSummaryViewProps) {
-  const copy = fizrukCopy.workoutSummary;
+  const copy = messages.fizruk.workoutSummary;
   const summary = summarizeWorkoutForFinish(workout);
   const setCount = computeWorkoutSetCount(workout);
   const tonnageKg = computeWorkoutTonnageKg(workout);

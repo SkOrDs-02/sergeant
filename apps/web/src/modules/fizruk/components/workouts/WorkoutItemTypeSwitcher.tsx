@@ -5,8 +5,8 @@
 import { useEffect, useRef } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Segmented } from "@shared/components/ui/Segmented";
+import { messages } from "@shared/i18n/uk";
 import type { WorkoutItem } from "@sergeant/fizruk-domain";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export type SwitchableWorkoutItem = Pick<
   WorkoutItem,
@@ -74,7 +74,7 @@ export function WorkoutItemTypeSwitcher({
   isReadOnly,
   onChange,
 }: WorkoutItemTypeSwitcherProps) {
-  const ts = fizrukCopy.typeSwitcher;
+  const ts = messages.fizruk.typeSwitcher;
   const segmentedTypeRef = useRef<HTMLDivElement>(null);
   useEffect(() => {
     if (!isReadOnly) return;

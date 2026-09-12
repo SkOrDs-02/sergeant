@@ -12,6 +12,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
 import { openHubModule } from "@shared/lib/modules/hubNav";
+import { messages } from "@shared/i18n/uk";
 import { getTotalCount } from "../lib/shoppingListStorage";
 import { useShoppingListPantryMath } from "../hooks/useShoppingListPantryMath";
 import { SilpoCartEntry } from "./SilpoCartEntry";
@@ -23,7 +24,6 @@ import type {
 import type { NutritionWeekPlan } from "../hooks/useNutritionUiState";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { foldApostrophes } from "@sergeant/shared";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 // Іконка групи в списку покупок. До 2026-08-03 тут лежали emoji, які
 // малювалися системним шрифтом: «🫒» на Windows деградувало в порожній
@@ -56,7 +56,7 @@ function getCategoryIcon(name: string): IconName {
   return (key && CATEGORY_ICONS[key]) || "shopping-cart";
 }
 
-const pm = nutritionCopy.shoppingListPantryMath;
+const pm = messages.nutrition.shoppingListPantryMath;
 
 interface ShoppingItemRowProps {
   item: ShoppingItemWithCalc;

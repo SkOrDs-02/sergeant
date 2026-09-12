@@ -17,11 +17,11 @@
  */
 import { useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { PantryItem } from "../lib/pantryTextParser";
 import type { PantryParsePreview as PantryParsePreviewData } from "../hooks/useNutritionPantries";
 import type { AmbiguousPantryUnit } from "../lib/pantryAmbiguousUnitMemory";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 function formatQty(item: PantryItem): string {
   if (item.qty != null && item.unit) return `${item.qty} ${item.unit}`;
@@ -29,9 +29,9 @@ function formatQty(item: PantryItem): string {
   return item.unit || "";
 }
 
-const GUIDE = nutritionCopy.pantryGuide;
-const PREVIEW = nutritionCopy.pantryPreview;
-const AMBIGUOUS = nutritionCopy.pantryAmbiguousQty;
+const GUIDE = messages.nutrition.pantryGuide;
+const PREVIEW = messages.nutrition.pantryPreview;
+const AMBIGUOUS = messages.nutrition.pantryAmbiguousQty;
 
 export function PantryListGuide() {
   return (

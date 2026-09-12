@@ -8,6 +8,7 @@ import { Input } from "@shared/components/ui/Input";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
 import { EmptyState } from "@shared/components/ui/EmptyState";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { NAME_MAX_LEN, NOTE_MAX_LEN } from "@shared/lib/text/limits";
 import { formatPantryQty } from "../lib/formatPantryQty";
@@ -21,7 +22,6 @@ import type { PantryItem } from "../lib/pantryTextParser";
 import type { PantryItemSource } from "@sergeant/nutrition-domain";
 import { isPantryItemLowStock } from "../lib/pantryLowStock";
 import type { AmbiguousPantryUnit } from "../lib/pantryAmbiguousUnitMemory";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 /**
  * Мінімальний "view-shape" елемента комори для `ItemRow`. Runtime-потік
@@ -113,8 +113,8 @@ function ItemRow({
             aria-expanded={open}
             aria-label={
               open
-                ? nutritionCopy.pantrySources.collapseLabel
-                : nutritionCopy.pantrySources.expandLabel
+                ? messages.nutrition.pantrySources.collapseLabel
+                : messages.nutrition.pantrySources.expandLabel
             }
             className="shrink-0 text-subtle touch-target flex items-center justify-center rounded-xl hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60 transition-colors"
           >
@@ -155,7 +155,7 @@ function ItemRow({
           {isPantryItemLowStock(item) && (
             <span className="inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning shrink-0">
               <Icon name="trending-down" size={12} aria-hidden />
-              {nutritionCopy.pantryLowStock.badge}
+              {messages.nutrition.pantryLowStock.badge}
             </span>
           )}
         </button>
@@ -288,8 +288,8 @@ function InventoryCard({
           size="sm"
           module="nutrition"
           icon={<Icon name="package" size={20} />}
-          title={nutritionCopy.pantryEmpty.title}
-          description={nutritionCopy.pantryEmpty.description}
+          title={messages.nutrition.pantryEmpty.title}
+          description={messages.nutrition.pantryEmpty.description}
           examplePreview={
             <div className="grid gap-1 text-style-caption text-subtle">
               <span>курка 500 г</span>
@@ -297,7 +297,7 @@ function InventoryCard({
               <span>огірок 4 шт</span>
             </div>
           }
-          hint={nutritionCopy.pantryEmpty.hint}
+          hint={messages.nutrition.pantryEmpty.hint}
         />
       </Card>
     );

@@ -10,6 +10,7 @@ import { useProteinLowInsight } from "../hooks/useProteinLowInsight";
 import { useStreakSevenDaysInsight } from "../hooks/useStreakSevenDaysInsight";
 import { Card } from "@shared/components/ui/Card";
 import { MealStrip, type MealStripSegment } from "./MealStrip";
+import { messages } from "@shared/i18n/uk";
 import { pluralUa } from "@sergeant/shared";
 import {
   MEAL_META,
@@ -38,7 +39,6 @@ import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { useNutritionGoalPeriods } from "../hooks/useNutritionGoalPeriods";
 import { useAdaptiveNutritionGoal } from "../hooks/useAdaptiveNutritionGoal";
 import { AdaptiveGoalCard } from "./AdaptiveGoalCard";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 // ADR-0078: "сьогодні" на дашборді (кільце макросів, isToday-підсвітка в
 // тижневому графіку) і межі тижневого графіка — обидва день ПРИСТРОЮ, не
@@ -221,9 +221,9 @@ export function NutritionDashboard({
             {hasGoal && isMostlyEstimated && (
               <p className="text-style-caption text-hero-ink text-center text-pretty">
                 <span aria-hidden="true">
-                  {nutritionCopy.estimatedBadge.label}{" "}
+                  {messages.nutrition.estimatedBadge.label}{" "}
                 </span>
-                {nutritionCopy.estimatedBadge.caption}
+                {messages.nutrition.estimatedBadge.caption}
               </p>
             )}
             <MealStrip

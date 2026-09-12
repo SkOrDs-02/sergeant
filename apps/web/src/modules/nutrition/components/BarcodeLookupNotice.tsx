@@ -10,7 +10,7 @@
  */
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
+import { messages } from "@shared/i18n/uk";
 
 export type BarcodeLookupNoticeKind = "not-found" | "unavailable";
 
@@ -79,7 +79,7 @@ export function BarcodeLookupNotice({
       <div className="flex flex-wrap gap-2">
         {kind === "unavailable" && onRetry && (
           <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
-            {nutritionCopy.barcodeNoticeRetry}
+            {messages.nutrition.barcodeNoticeRetry}
           </Button>
         )}
         {kind === "not-found" && onUsePhoto && (
@@ -90,7 +90,7 @@ export function BarcodeLookupNotice({
             onClick={onUsePhoto}
           >
             <Icon name="camera" size="sm" aria-hidden />
-            <span>{nutritionCopy.barcodeNoticeUsePhoto}</span>
+            <span>{messages.nutrition.barcodeNoticeUsePhoto}</span>
           </Button>
         )}
         <Button
@@ -99,7 +99,7 @@ export function BarcodeLookupNotice({
           size="sm"
           onClick={onManualEntry ?? onDismiss}
         >
-          {nutritionCopy.barcodeNoticeManual}
+          {messages.nutrition.barcodeNoticeManual}
         </Button>
       </div>
     </div>

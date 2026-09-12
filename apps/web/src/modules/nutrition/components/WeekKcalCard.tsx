@@ -23,6 +23,7 @@ import { useMemo, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 
 import { Card } from "@shared/components/ui/Card";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { getKyivMondayIndex, parseKyivDate } from "@shared/lib/time/kyivTime";
 import {
@@ -30,9 +31,8 @@ import {
   type MacrosRow,
 } from "@sergeant/nutrition-domain";
 import { formatNumberUk } from "@sergeant/shared";
-import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
-const t = nutritionCopy.weekKcal;
+const t = messages.nutrition.weekKcal;
 
 const DAY_LABELS = ["Пн", "Вт", "Ср", "Чт", "Пт", "Сб", "Нд"] as const;
 const PLOT_HEIGHT = 48;

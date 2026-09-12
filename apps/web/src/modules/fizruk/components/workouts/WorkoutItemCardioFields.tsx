@@ -4,9 +4,9 @@
  */
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
 import { clampNumericInput } from "@shared/lib/format/numberInput";
+import { messages } from "@shared/i18n/uk";
 import { MAX_DISTANCE_M, MAX_DURATION_SEC } from "../../lib/numericBounds";
 import { calcCardioMetrics } from "./activeWorkoutLib";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface WorkoutItemCardioFieldsProps {
   it: WorkoutItem;
@@ -33,7 +33,7 @@ export function WorkoutItemCardioFields({
   isReadOnly,
   updateItem,
 }: WorkoutItemCardioFieldsProps) {
-  const ss = fizrukCopy.session;
+  const ss = messages.fizruk.session;
   const cardioMetrics =
     it.type === "distance"
       ? calcCardioMetrics(it.distanceM, it.durationSec)

@@ -21,7 +21,6 @@ import {
 } from "./hubReports.aggregation";
 import { useHubStorageBump } from "./useHubStorageBump";
 import { formatNumberUk } from "@sergeant/shared";
-import { routinePageMessages as routineCopy } from "@shared/i18n/uk.routine";
 
 // ── Habit consistency heatmap ─────────────────────────────────────────
 //
@@ -180,7 +179,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
           size="xs"
           className="flex-1 min-w-0 text-muted truncate"
         >
-          {routineCopy.reportHeading}
+          {messages.routine.reportHeading}
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">

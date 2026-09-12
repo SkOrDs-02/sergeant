@@ -82,7 +82,6 @@ import {
   defaultPastWorkoutTimes,
   todayLocalDateString,
 } from "../../pages/Workouts.helpers";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 /** Короткий запис: усе, що потрібно, аби зібрати завершену сесію з одним item-ом. */
 export interface LogPastWorkoutActivity {
@@ -193,7 +192,7 @@ function ActivityPickerSheet({
   canCreate: boolean;
   onPick: (id: string) => void;
 }) {
-  const t = fizrukCopy.logPast;
+  const t = messages.fizruk.logPast;
   const [q, setQ] = useState("");
   const query = q.trim().toLocaleLowerCase("uk");
   const all =
@@ -337,7 +336,7 @@ export function LogPastWorkoutSheet({
     lastOpenRef.current = open;
   }, [open, defaults]);
 
-  const t = fizrukCopy.logPast;
+  const t = messages.fizruk.logPast;
 
   const creatingActivity = activity === NEW_ACTIVITY_VALUE;
   const selectedActivity =

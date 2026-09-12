@@ -1,7 +1,7 @@
 import { useEffect, useRef } from "react";
 import { formatRestClock } from "@sergeant/fizruk-domain";
+import { messages } from "@shared/i18n/uk";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
-import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 interface RestTimerState {
   remaining: number;
@@ -36,7 +36,7 @@ export function RestTimerOverlay({
   onAdjust,
   hidden,
 }: RestTimerOverlayProps) {
-  const rt = fizrukCopy.restTimer;
+  const rt = messages.fizruk.restTimer;
   const { announce } = useAnnounce();
   const isActive = restTimer != null;
   const endingSoonAnnouncedRef = useRef(false);

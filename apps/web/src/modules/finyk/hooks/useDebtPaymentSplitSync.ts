@@ -43,7 +43,7 @@ import type {
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { TxSplit } from "@sergeant/finyk-domain/domain/types";
 import { formatMoney } from "@sergeant/shared";
-import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
+import { messages } from "@shared/i18n/uk";
 
 type SetLinkedTxRole = (
   id: string,
@@ -126,7 +126,7 @@ export function useDebtPaymentSplitSync(
         decision.nextAmountUAH,
       );
       toastSuccess(
-        finykCopy.debtSplitSync.amountUpdated
+        messages.finyk.debtSplitSync.amountUpdated
           .replace("{debt}", decision.debtName)
           .replace("{from}", money(decision.previousAmountUAH))
           .replace("{to}", money(decision.nextAmountUAH)),
