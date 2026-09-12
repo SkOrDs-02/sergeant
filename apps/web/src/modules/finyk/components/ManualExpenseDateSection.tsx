@@ -24,10 +24,10 @@ import {
   HARD_MAX_DAY_KEY,
   HARD_MIN_DAY_KEY,
 } from "@shared/lib/time/dateBounds";
-import { messages } from "@shared/i18n/uk";
 import type { ExpenseFormValues } from "./manualExpenseForm";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
-const copy = messages.finyk.manualExpenseSheet;
+const copy = finykCopy.manualExpenseSheet;
 
 export interface ManualExpenseDateSectionProps {
   dateId: string;

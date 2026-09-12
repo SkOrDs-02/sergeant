@@ -25,7 +25,7 @@ import {
 } from "../lib/nutritionStorage";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import type { Insight } from "@shared/lib/insights/types";
-import { messages } from "@shared/i18n/uk";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 export function useProteinLowInsight(
   log: NutritionLog,
@@ -59,7 +59,7 @@ export function useProteinLowInsight(
       module: "nutrition",
       title: `Білку: ${consumed} з ${goal}г`,
       subtitle: isMostlyEstimated
-        ? messages.nutrition.proteinLowEstimated.subtitle
+        ? nutritionCopy.proteinLowEstimated.subtitle
         : `Час додати джерело білка?`,
       askAiPrompt: `Сьогодні білка ${consumed} г із цілі ${goal} г, уже вечір. Що реально додати з простого, щоб добрати хоча б до ${Math.round(goal * 0.8)} г?`,
       action: { type: "navigate", path: "/nutrition/log" },

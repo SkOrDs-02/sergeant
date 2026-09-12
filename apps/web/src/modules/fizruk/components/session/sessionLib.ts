@@ -11,8 +11,8 @@ import type {
   WorkoutItem,
 } from "@sergeant/fizruk-domain";
 import { pluralUa } from "@sergeant/shared";
-import { messages } from "@shared/i18n/uk";
 import { isSetDone } from "../workouts/WorkoutSetRow";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export type SessionItemState = "done" | "current" | "todo";
 
@@ -121,7 +121,7 @@ function isGenitiveSingular(total: number): boolean {
  * плюралізація (`pluralUa` → «підходи») дала б «3 з 3 підходи».
  */
 export function setsProgressLabel(done: number, total: number): string {
-  const ss = messages.fizruk.session;
+  const ss = fizrukCopy.session;
   const word = isGenitiveSingular(total)
     ? ss.setsGenitiveOne
     : ss.setsGenitiveMany;
@@ -130,7 +130,7 @@ export function setsProgressLabel(done: number, total: number): string {
 
 /** «3 підходи» — для рядка прогресу сесії. */
 export function setsCountLabel(n: number): string {
-  const ss = messages.fizruk.session;
+  const ss = fizrukCopy.session;
   return `${n} ${pluralUa(n, { one: ss.setsOne, few: ss.setsFew, many: ss.setsMany })}`;
 }
 
@@ -140,7 +140,7 @@ export function setsCountLabel(n: number): string {
  * склеювати весь рядок не можна — потрібне саме слово.
  */
 export function exercisesGenitiveWord(total: number): string {
-  const ss = messages.fizruk.session;
+  const ss = fizrukCopy.session;
   return isGenitiveSingular(total)
     ? ss.exercisesGenitiveOne
     : ss.exercisesGenitiveMany;

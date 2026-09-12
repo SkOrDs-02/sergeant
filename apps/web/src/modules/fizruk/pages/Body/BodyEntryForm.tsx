@@ -26,6 +26,7 @@ import {
   ScoreButton,
   SelectedLevelLabel,
 } from "./ScoreButton";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 /**
  * Form schema — повторює UX-обмеження інпутів (`min`/`max`/`step`),
@@ -87,7 +88,7 @@ export function hasAnyBodyEntryValue(
 }
 
 const bodyFormSchema = bodyFormObjectSchema.refine(hasAnyBodyEntryValue, {
-  message: messages.fizruk.body.entryEmpty,
+  message: fizrukCopy.body.entryEmpty,
   path: ["note"],
 });
 
@@ -257,20 +258,14 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
   );
 
   return (
-    <Card
-      as="section"
-      radius="lg"
-      aria-label={messages.fizruk.body.formAriaLabel}
-    >
+    <Card as="section" radius="lg" aria-label={fizrukCopy.body.formAriaLabel}>
       <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
-        {messages.fizruk.body.formHeading}
+        {fizrukCopy.body.formHeading}
       </SectionHeading>
       <form onSubmit={submit} noValidate className="space-y-4">
         <div className="grid grid-cols-2 gap-3">
           <div>
-            <Label htmlFor="body-weight">
-              {messages.fizruk.body.weightLabel}
-            </Label>
+            <Label htmlFor="body-weight">{fizrukCopy.body.weightLabel}</Label>
             <input
               id="body-weight"
               // `type="text"`, а не `number`: під `number` браузер віддає
@@ -297,9 +292,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             )}
           </div>
           <div>
-            <Label htmlFor="body-sleep">
-              {messages.fizruk.body.sleepLabel}
-            </Label>
+            <Label htmlFor="body-sleep">{fizrukCopy.body.sleepLabel}</Label>
             <input
               id="body-sleep"
               // Той самий привід, що й у полі ваги вище.
@@ -326,14 +319,14 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
 
         <div>
           <SectionHeading as="p" size="xs" variant="fizruk" className="mb-2">
-            {messages.fizruk.body.energyLevel}
+            {fizrukCopy.body.energyLevel}
           </SectionHeading>
           <div
             ref={energyGroupRef}
             className="flex gap-1.5"
             role="radiogroup"
             tabIndex={-1}
-            aria-label={messages.fizruk.body.energyLevel}
+            aria-label={fizrukCopy.body.energyLevel}
             onKeyDown={onEnergyKeyDown}
           >
             {[1, 2, 3, 4, 5].map((v) => (
@@ -352,7 +345,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             ))}
           </div>
           <SelectedLevelLabel
-            shortLabel={messages.fizruk.body.energyShort}
+            shortLabel={fizrukCopy.body.energyShort}
             value={energyLevel}
             labels={ENERGY_LABELS}
           />
@@ -360,14 +353,14 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
 
         <div>
           <SectionHeading as="p" size="xs" variant="fizruk" className="mb-2">
-            {messages.fizruk.body.mood}
+            {fizrukCopy.body.mood}
           </SectionHeading>
           <div
             ref={moodGroupRef}
             className="flex gap-1.5"
             role="radiogroup"
             tabIndex={-1}
-            aria-label={messages.fizruk.body.mood}
+            aria-label={fizrukCopy.body.mood}
             onKeyDown={onMoodKeyDown}
           >
             {[1, 2, 3, 4, 5].map((v) => (
@@ -386,7 +379,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             ))}
           </div>
           <SelectedLevelLabel
-            shortLabel={messages.fizruk.body.mood}
+            shortLabel={fizrukCopy.body.mood}
             value={moodScore}
             labels={MOOD_LABELS}
           />
@@ -394,13 +387,13 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
 
         <div>
           <Label htmlFor="body-note" optional>
-            {messages.fizruk.body.note}
+            {fizrukCopy.body.note}
           </Label>
           <input
             id="body-note"
             type="text"
             className="input-focus-fizruk w-full h-11 rounded-xl border border-line bg-panelHi px-3 text-sm text-text"
-            placeholder={messages.fizruk.body.notePlaceholder}
+            placeholder={fizrukCopy.body.notePlaceholder}
             maxLength={200}
             disabled={isSubmitting}
             aria-invalid={noteError ? true : undefined}
@@ -444,7 +437,7 @@ export function BodyEntryForm({ onSubmitEntry }: BodyEntryFormProps) {
             id="body-entry-empty"
             className="text-style-caption text-subtle -mt-2"
           >
-            {messages.fizruk.body.entryEmpty}
+            {fizrukCopy.body.entryEmpty}
           </p>
         )}
       </form>

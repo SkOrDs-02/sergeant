@@ -1,7 +1,6 @@
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
-import { messages } from "@shared/i18n/uk";
 import { CategoryIconChip } from "../../components/CategoryIconChip";
 import { stripLeadingEmoji } from "../../components/txRowHelpers";
 import { resolveExpenseCategoryMeta } from "../../utils";
@@ -16,6 +15,7 @@ import type {
   TxSplitsMap,
   Transaction,
 } from "@sergeant/finyk-domain/domain/types";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 interface BudgetAlertsListProps {
   budgetAlerts: readonly LimitBudget[];
@@ -95,10 +95,10 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
               {pct >= 100 ? (
                 <>
                   <Icon name="alert-triangle" size={13} aria-hidden />
-                  {messages.finyk.budgetOverLimit}
+                  {finykCopy.budgetOverLimit}
                 </>
               ) : (
-                messages.finyk.budgetOverSixtyPercent
+                finykCopy.budgetOverSixtyPercent
               )}
             </span>
           </button>

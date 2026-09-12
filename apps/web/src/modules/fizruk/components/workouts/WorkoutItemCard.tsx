@@ -33,7 +33,7 @@ import {
 } from "./WorkoutSetRow";
 import { buildTypeSwitchPatch } from "./WorkoutItemTypeSwitcher";
 import { Segmented } from "@shared/components/ui/Segmented";
-import { messages } from "@shared/i18n/uk";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export type WorkoutItemCardProps = {
   it: WorkoutItem;
@@ -175,27 +175,27 @@ export function WorkoutItemCard({
           <Segmented
             variant="fizruk"
             size="sm"
-            ariaLabel={`${messages.fizruk.typeSwitcher.ariaLabel}: ${it.nameUk}`}
+            ariaLabel={`${fizrukCopy.typeSwitcher.ariaLabel}: ${it.nameUk}`}
             className="gap-1.5"
             value={it.type || "strength"}
             items={[
               {
                 value: "strength",
-                label: messages.fizruk.typeSwitcher.strengthLabel,
-                title: messages.fizruk.typeSwitcher.strengthTitle,
-                ariaLabel: messages.fizruk.typeSwitcher.strengthAriaLabel,
+                label: fizrukCopy.typeSwitcher.strengthLabel,
+                title: fizrukCopy.typeSwitcher.strengthTitle,
+                ariaLabel: fizrukCopy.typeSwitcher.strengthAriaLabel,
               },
               {
                 value: "time",
-                label: messages.fizruk.typeSwitcher.timeLabel,
-                title: messages.fizruk.typeSwitcher.timeTitle,
-                ariaLabel: messages.fizruk.typeSwitcher.timeAriaLabel,
+                label: fizrukCopy.typeSwitcher.timeLabel,
+                title: fizrukCopy.typeSwitcher.timeTitle,
+                ariaLabel: fizrukCopy.typeSwitcher.timeAriaLabel,
               },
               {
                 value: "distance",
-                label: messages.fizruk.typeSwitcher.distanceLabel,
-                title: messages.fizruk.typeSwitcher.distanceTitle,
-                ariaLabel: messages.fizruk.typeSwitcher.distanceAriaLabel,
+                label: fizrukCopy.typeSwitcher.distanceLabel,
+                title: fizrukCopy.typeSwitcher.distanceTitle,
+                ariaLabel: fizrukCopy.typeSwitcher.distanceAriaLabel,
               },
             ]}
             onChange={(t) => {

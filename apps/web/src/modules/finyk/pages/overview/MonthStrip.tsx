@@ -1,9 +1,9 @@
 import { memo, useState } from "react";
 import { formatMoney } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import { Icon } from "@shared/components/ui/Icon";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 export interface MonthStripDay {
   /** Київський день-ключ, `YYYY-MM-DD`. */
@@ -58,7 +58,7 @@ function cellAriaLabel(
   dayBudget: number | null,
   showBalance: boolean,
 ): string {
-  const m = messages.finyk.monthStrip;
+  const m = finykCopy.monthStrip;
   const date = dayLabel(day.dayKey);
   if (!showBalance) return `${date}, ${m.hiddenAmount}. ${m.openDaySuffix}`;
   if (dayBudget !== null && dayBudget > 0) {
@@ -106,7 +106,7 @@ const MonthStripImpl = function MonthStrip({
     <div>
       <div
         role="group"
-        aria-label={`${messages.finyk.monthStrip.groupAriaPrefix} ${monthLabel}`}
+        aria-label={`${finykCopy.monthStrip.groupAriaPrefix} ${monthLabel}`}
         className="flex items-end gap-px h-11"
       >
         {days.map((day) => {
@@ -186,7 +186,7 @@ export function MonthStripHint({ hasPlan }: { hasPlan: boolean }) {
     () => safeReadLS<boolean>(STRIP_HINT_DISMISSED_SLOT, false) ?? false,
   );
   if (dismissed) return null;
-  const m = messages.finyk.monthStrip;
+  const m = finykCopy.monthStrip;
   return (
     <div
       role="note"

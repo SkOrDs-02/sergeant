@@ -60,13 +60,13 @@ import { Icon } from "@shared/components/ui/Icon";
 import { Input } from "@shared/components/ui/Input";
 import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
-import { messages } from "@shared/i18n/uk";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
-const shared = messages.finyk.debtLinkPrompt;
+const shared = finykCopy.debtLinkPrompt;
 // Той самий підпис «авто», що й у пікері `AssetsDebtTxPicker` — одна мітка
 // на дві поверхні (§ Level 2, вимога «нічого не пишеться мовчки»).
-const autoLabel = messages.finyk.debtTxLink.autoLabel;
+const autoLabel = finykCopy.debtTxLink.autoLabel;
 
 export interface DebtTxLinkSectionProps {
   /** Id операції або ручного запису — ключ у `linkedTxIds` / `txLinks`. */

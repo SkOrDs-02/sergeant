@@ -8,7 +8,7 @@ import {
   type DropdownMenuItem,
 } from "@shared/components/ui/DropdownMenu";
 import { Icon } from "@shared/components/ui/Icon";
-import { messages } from "@shared/i18n/uk";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface SessionTopBarProps {
   /** Pre-formatted live duration (`mm:ss`) — the single hero number. */
@@ -37,13 +37,13 @@ export function SessionTopBar({
   menuItems,
   onDeleteWorkout,
 }: SessionTopBarProps) {
-  const ss = messages.fizruk.session;
+  const ss = fizrukCopy.session;
   const items: DropdownMenuItem[] = [
     ...(menuItems ?? []),
     {
       type: "item",
       id: "delete-workout",
-      label: messages.fizruk.sessionHeader.deleteWorkout,
+      label: fizrukCopy.sessionHeader.deleteWorkout,
       icon: <Icon name="trash" size={16} aria-hidden />,
       destructive: true,
       onSelect: onDeleteWorkout,

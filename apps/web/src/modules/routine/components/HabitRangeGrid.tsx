@@ -26,13 +26,13 @@ import { Card } from "@shared/components/ui/Card";
 import { Measure } from "@shared/components/ui/Measure";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { chartHeatmap } from "@shared/charts";
-import { messages } from "@shared/i18n/uk";
 import { anchoredTodayDate } from "../lib/dayAnchor";
 import { HabitGlyph } from "./HabitGlyph";
 import type { Habit, RoutineState } from "../lib/types";
+import { routinePageMessages as routineCopy } from "@shared/i18n/uk.routine";
 
 const HEATMAP = chartHeatmap.routine;
-const M = messages.routine.statsRange;
+const M = routineCopy.statsRange;
 
 /**
  * Заливка клітинки за станом: один рожевий (виконано) + впорядкований

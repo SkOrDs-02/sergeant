@@ -15,8 +15,8 @@
 import { memo } from "react";
 
 import { Button } from "@shared/components/ui/Button";
-import { messages } from "@shared/i18n/uk";
 import { pluralize } from "../../../../core/hub/useHubDashboardState";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 interface MonoStalenessBannerProps {
   /** Скільки повних днів немає оновлень. */
@@ -29,7 +29,7 @@ function MonoStalenessBannerComponent({
   days,
   onReconnect,
 }: MonoStalenessBannerProps) {
-  const copy = messages.finyk.monoStaleness;
+  const copy = finykCopy.monoStaleness;
   const dayWord = pluralize(days, copy.days.one, copy.days.few, copy.days.many);
 
   return (

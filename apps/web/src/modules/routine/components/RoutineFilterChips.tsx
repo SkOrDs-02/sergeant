@@ -12,12 +12,12 @@
  * тега. Через це заголовок «Теги» брехав — тепер це «Фільтр».
  */
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { FIZRUK_GROUP_LABEL } from "../lib/hubCalendarAggregate";
+import { routinePageMessages as routineCopy } from "@shared/i18n/uk.routine";
 
-const COPY = messages.routine.filterChips;
+const COPY = routineCopy.filterChips;
 
 // Чип — це той самий `Button`, що й решта контролів модуля: обраний —
 // solid у тоні Рутини, решта — outline з hairline модуля. Власна розмітка

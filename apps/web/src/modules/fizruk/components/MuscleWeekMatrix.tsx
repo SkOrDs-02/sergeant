@@ -11,7 +11,6 @@
  * Тому вісь часу — і та сама граматика, що в гребені Фініка (стовпчики на
  * осі часу), а не нова форма на кожен модуль.
  */
-import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import {
   MATRIX_WEEKS,
@@ -19,6 +18,7 @@ import {
   type MuscleWeekMatrix,
 } from "../lib/muscleWeekMatrix";
 import { fmt } from "../lib/numberFmt";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 /**
  * Мінімальна видима висота НЕНУЛЬОВОГО стовпчика.
@@ -82,7 +82,7 @@ function LatestWeekBars({ matrix }: MuscleVolumeBlockProps) {
 }
 
 function WeekMatrix({ matrix }: MuscleVolumeBlockProps) {
-  const copy = messages.fizruk.progress;
+  const copy = fizrukCopy.progress;
   const lastIndex = MATRIX_WEEKS - 1;
 
   return (

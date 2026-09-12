@@ -23,11 +23,7 @@
  * Roadmap: див. `docs/i18n/readiness.md` § «Покрокова міграція».
  */
 
-import { fizrukPageMessages } from "./uk.fizruk";
-import { finykPageMessages } from "./uk.finyk";
-import { routinePageMessages } from "./uk.routine";
 import { dataExportMessages } from "./uk.dataExport";
-import { nutritionPageMessages } from "./uk.nutrition";
 import { nutritionTdeeMessages } from "./uk.nutritionTdee";
 import { pricingMessages } from "./uk.pricing";
 import { privacyMessages } from "./uk.privacy";
@@ -568,130 +564,6 @@ export const messages = {
     plannedPrefix: "Заплановано:",
     fromShort: "з",
   },
-
-  fizruk: {
-    returnToActiveWorkout: "Повернутись до активного тренування",
-    workoutRest: "Відпочинок",
-    // PrBadge weight-unit suffix on the Fizruk hero PR pill.
-    kgUnit: "кг",
-    // Strength PR leaderboard on the Progress page (`Progress/PrBoard.tsx`).
-    prBoard: {
-      heading: "Рекорди (PR)",
-      shownSuffix: "показано",
-      filterAll: "Всі",
-      emptyTitle: "Поки немає силових PR",
-      emptyFilteredTitle: "Немає PR для цієї групи мʼязів",
-      emptyDescription:
-        "Заверши сети з вагою, рекорди зʼявляться тут автоматично.",
-      emptyFilteredDescription: "Спробуй іншу групу або скинь фільтр.",
-      /** Канон §6: борд бачить не лише рух угору. */
-      staleBadge: "давно не робив",
-      belowPeakPrefix: "зараз",
-    },
-    /**
-     * Шкала повернення — signature-view Фізрука (анти-слоп П1).
-     *
-     * AI-CONTEXT: тон констатувальний, без докору — канон `fizruk.md` §6
-     * вимагає саме цього. Тому в середині шкали стоїть факт про паузу
-     * («34 дні без роботи»), а не оцінка людини, і слово «спад»
-     * зʼявляється лише коли він справді дійшов до підлоги.
-     */
-    returnScale: {
-      referenceLabel: "орієнтир",
-      kgUnit: "кг",
-      peakPrefix: "пік",
-      fresh: "свіже",
-      daysAgo: "дн. тому",
-      daysWithoutWork: "дн. без роботи",
-      atFloor: "нижче не опускаю",
-      noHistory: "історії ще немає",
-    },
-    // Shared Fizruk unit suffixes (composed at call-site as `${n} ${unit}`).
-    hoursUnit: "год",
-    secondsUnit: "с",
-
-    // Exercise detail page (`pages/Exercise.tsx`) — set-history pagination
-    // (defect #4: `history.slice(0, 20)` used to cut silently, no counter,
-    // no way to see the rest). Rendered as `${historyShownPrefix} ${shown}
-    // ${historyShownOfWord} ${total}` so the catalog stays plain-string
-    // (см. `MessageCatalog` constraint, той самий патерн, що
-    // `biometrics.ageLabel`).
-    exercise: {
-      historyShownPrefix: "Показано",
-      historyShownOfWord: "з",
-      showMoreHistory: "Показати ще",
-    },
-
-    // Per-page Fizruk strings live in `uk.fizruk.ts` (split out for the
-    // 600-line module-size guardrail, Hard Rule #18) and are spread here so
-    // call-sites keep referencing `messages.fizruk.<page>.<key>`.
-    ...fizrukPageMessages,
-  },
-
-  nutrition: {
-    fromPantry: "З комори",
-    mealType: "Прийом їжі",
-    templates: "Швидкі прийоми",
-    deleteTemplateTitle: "Видалити швидкий прийом?",
-    reportHeading: "Калорії", // HubReports NutritionCard
-    kcalUnit: "ккал",
-    macrosToday: "Макроси за сьогодні", // MacroRings group label (V-10)
-    // Порожній стан сканера штрихкодів (аудит nutrition E-6).
-    barcodeNoticeRetry: "Спробувати ще раз",
-    barcodeNoticeUsePhoto: "Сфотографувати страву",
-    barcodeNoticeManual: "Ввести вручну",
-    waterHistory: {
-      openLabel: "Історія води",
-      title: "Історія води",
-      weekChartTitle: "Останні 7 днів",
-      avg7Label: "Середнє за 7 днів",
-      avg30Label: "Середнє за 30 днів",
-      streakLabel: "Серія з ціллю",
-      streakUnit: "дн.",
-      dayListTitle: "Останні 14 днів",
-      goalPctSuffix: "% від цілі",
-      emptyTitle: "Поки немає історії",
-      emptyDescription: "Додай воду за сьогодні, і тут зʼявиться графік.",
-    },
-    // Комора: згортка-гайд режиму «Списком» + превʼю розібраних позицій.
-    pantryGuide: {
-      summary: "Як писати список?",
-      separators: "Розділяй продукти комою або новим рядком:",
-      separatorsExample: "курка, рис, огірки",
-      qtyPlacement: "Кількість можна ставити спереду або ззаду:",
-      qtyExampleLeading: "2 яйця",
-      qtyExampleTrailing: "курка 500 г",
-      unitsLabel: "Одиниці:",
-      unitsList: "г, кг, мл, л, шт, уп",
-      unitsFallback:
-        "Без одиниці невелика кількість читається як «шт». Від 100 без одиниці спитаю, шт це чи г.",
-      aiNote:
-        "Можна писати як завгодно: список розбирає AI, він переживе помилки, скорочення й відмінки («помідорів 3», «0.5л молока»).",
-      confirmNote:
-        "Розібране буде показано списком. Додасться лише те, що ти підтвердиш.",
-    },
-    pantryPreview: {
-      parsedCount: "Розібрано",
-      localFallback: "AI недоступний, розібрано на пристрої",
-      confirm: "Додати",
-      dismiss: "Скасувати",
-    },
-    pantryEmpty: {
-      // Не «Комора порожня» — цей рядок уже показує NutritionPantrySelector
-      // над карткою, і дослівний повтор читався як збій рендеру.
-      title: "Тут поки порожньо",
-      description:
-        "Тут зʼявляться продукти, які є вдома, і Sergeant рахуватиме страви та список покупок з того, що вже маєш.",
-      hint: "Додай перший продукт полем вище або надиктуй одразу весь список.",
-    },
-    // Частка photoAI-оцінок у денному агрегаті (аудит nutrition E-5) —
-    // винесено в `uk.nutrition.ts`, каталог поруч за 600-рядковим лімітом.
-    ...nutritionPageMessages,
-  },
-
-  routine: routinePageMessages,
-
-  finyk: finykPageMessages,
 
   // Profile sessions list (PR-10 ux-roast 2026-Q2 / §10.3 «Цей пристрій +
   // last-seen у людському форматі»). Section copy + accessibility-labels

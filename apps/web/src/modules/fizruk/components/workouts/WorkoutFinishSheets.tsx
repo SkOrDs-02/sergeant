@@ -19,7 +19,6 @@ import {
   isInjurySiteId,
 } from "@sergeant/fizruk-domain/data";
 import { pluralUa } from "@sergeant/shared";
-import { messages } from "@shared/i18n/uk";
 import { useInjuries } from "../../hooks/useInjuries";
 import { useDailyLog } from "../../hooks/useDailyLog";
 import { planWellbeingHandoff } from "../../lib/wellbeingBridge";
@@ -28,6 +27,7 @@ import { WorkoutStatTile } from "./WorkoutStatTile";
 // setter, що ходить між обома sheet-ами). Імпортуємо звідти, щоб не дублювати
 // оголошення (aislop `ai-slop/duplicate-type-declaration`).
 import type { FinishFlashState } from "../../pages/Workouts.types";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 // Реекспорт для споживачів цього компонента (тест + orchestrator), що вже
 // імпортують `FinishFlashState` звідси.
@@ -89,7 +89,7 @@ export function WorkoutFinishSheets({
   const { mark } = useInjuries();
   const { entries: dailyLogEntries, addEntry: addDailyLogEntry } =
     useDailyLog();
-  const injuryCopy = messages.fizruk.injuries;
+  const injuryCopy = fizrukCopy.injuries;
   const [savingInjuries, setSavingInjuries] = useState(false);
   const [musclesOpen, setMusclesOpen] = useState(false);
   const trapRef = useRef<HTMLDivElement | null>(null);

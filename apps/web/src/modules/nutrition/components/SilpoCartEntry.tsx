@@ -14,11 +14,11 @@
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { messages } from "@shared/i18n/uk";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { SilpoCartSheet } from "./SilpoCartSheet";
 import { collectUncheckedShoppingItems } from "../lib/silpoCartItems";
 import type { ShoppingList } from "@sergeant/nutrition-domain";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 export interface SilpoCartEntryProps {
   shoppingList: ShoppingList | null;
@@ -43,7 +43,7 @@ export function SilpoCartEntry({ shoppingList }: SilpoCartEntryProps) {
         onClick={() => setOpen(true)}
       >
         <Icon name="shopping-cart" size={15} aria-hidden />
-        {messages.nutrition.silpoCart.entryCta}
+        {nutritionCopy.silpoCart.entryCta}
       </Button>
       <SilpoCartSheet
         open={open}

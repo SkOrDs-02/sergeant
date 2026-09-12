@@ -28,7 +28,6 @@ import { useToast } from "@shared/hooks/useToast";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
-import { messages } from "@shared/i18n/uk";
 import {
   ANALYTICS_EVENTS,
   trackEvent,
@@ -42,6 +41,7 @@ import {
 import type { WorkoutFinishSummary } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { trackFizrukWorkoutDiscarded } from "../../lib/workoutTelemetry";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 /**
  * Local view state used to drive the post-finish flash card. The shape merges
@@ -129,7 +129,7 @@ export function WorkoutJournalSection({
 }: WorkoutJournalSectionProps) {
   const toast = useToast();
   const { announce } = useAnnounce();
-  const copy = messages.fizruk.workoutSummary;
+  const copy = fizrukCopy.workoutSummary;
   // Guard the finish flow against double-click re-entry — the state updates
   // inside onFinishClick are async, so React may still render the "Завершити"
   // button for one more frame while a second click is already queued.
@@ -304,7 +304,7 @@ export function WorkoutJournalSection({
             trackFizrukWorkoutDiscarded();
             onClose();
             showUndoToast(toast, {
-              msg: messages.fizruk.workoutHistory.deletedToast,
+              msg: fizrukCopy.workoutHistory.deletedToast,
               onUndo: () => restoreWorkout(snapshot),
             });
           }}

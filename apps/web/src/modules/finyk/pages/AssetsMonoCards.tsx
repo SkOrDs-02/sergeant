@@ -11,9 +11,9 @@ import {
   getMonoDebt,
   getMonoOwnFunds,
 } from "@sergeant/finyk-domain/lib/accounts";
-import { messages } from "@shared/i18n/uk";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
-const t = messages.finyk.monoCards;
+const t = finykCopy.monoCards;
 
 /**
  * Список карток Monobank у Активах + аркуш «Враховувати картку».

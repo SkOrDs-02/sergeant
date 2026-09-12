@@ -39,6 +39,7 @@ import { FizrukRouter } from "./shell/FizrukRouter";
 import { type FizrukPage } from "./shell/fizrukRoute";
 import { RestTimerProvider } from "./context/RestTimerProvider";
 import { RestTimerOverlayConnected } from "./components/workouts/RestTimerOverlayConnected";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 interface FizrukAppProps {
   onBackToHub?: () => void;
@@ -111,7 +112,7 @@ export default function FizrukApp({
     reminderMinute: monthlyPlan.reminderMinute,
   });
 
-  const conflictCopy = messages.fizruk.activeWorkoutConflict;
+  const conflictCopy = fizrukCopy.activeWorkoutConflict;
   const [pendingProgramStart, setPendingProgramStart] = useState<
     (() => void) | null
   >(null);
@@ -304,7 +305,7 @@ export default function FizrukApp({
             variant="v2-fizruk"
             icon="play"
             onClick={handleFabClick}
-            aria-label={messages.fizruk.resumeWorkoutFab}
+            aria-label={fizrukCopy.resumeWorkoutFab}
           />
         )}
       </ModuleShell>

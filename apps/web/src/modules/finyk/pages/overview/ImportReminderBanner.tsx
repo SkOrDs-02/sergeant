@@ -19,8 +19,8 @@ import { Banner } from "@shared/components/ui/Banner";
 import { Button } from "@shared/components/ui/Button";
 import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
 import { Icon } from "@shared/components/ui/Icon";
-import { messages } from "@shared/i18n/uk";
 import { pluralize } from "../../../../core/hub/useHubDashboardState";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 interface ImportReminderBannerProps {
   /** Тип документа: `bank_statement` | `bank_screenshot`. */
@@ -34,10 +34,10 @@ interface ImportReminderBannerProps {
   readonly onMute: () => void;
 }
 
-type SourceKey = keyof typeof messages.finyk.importReminder.title;
+type SourceKey = keyof typeof finykCopy.importReminder.title;
 
 function isKnownSource(source: string): source is SourceKey {
-  return source in messages.finyk.importReminder.title;
+  return source in finykCopy.importReminder.title;
 }
 
 function ImportReminderBannerComponent({
@@ -48,7 +48,7 @@ function ImportReminderBannerComponent({
   onSnooze,
   onMute,
 }: ImportReminderBannerProps) {
-  const copy = messages.finyk.importReminder;
+  const copy = finykCopy.importReminder;
 
   // Невідомий тип документа — не рендеримо нічого замість того, щоб
   // показати плашку без назви. Порожній заголовок гірший за відсутність

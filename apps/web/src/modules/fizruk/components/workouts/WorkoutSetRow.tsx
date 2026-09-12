@@ -8,9 +8,9 @@ import { cn } from "@shared/lib/ui/cn";
 import { clampNumericInput } from "@shared/lib/format/numberInput";
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import type { WorkoutSet } from "@sergeant/fizruk-domain";
-import { messages } from "@shared/i18n/uk";
 import { MAX_REPS, MAX_WEIGHT_KG } from "../../lib/numericBounds";
 import { fmtLoose } from "../../lib/numberFmt";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface WorkoutSetRowProps {
   /** 0-based position inside `it.sets`. */
@@ -88,8 +88,8 @@ export function WorkoutSetRow({
   onCheckTap,
   onDelete,
 }: WorkoutSetRowProps) {
-  const sr = messages.fizruk.setRow;
-  const ss = messages.fizruk.session;
+  const sr = fizrukCopy.setRow;
+  const ss = fizrukCopy.session;
   const done = isSetDone(set);
   const setNumber = index + 1;
   const ghostSet = ghost && !done && !isReadOnly ? ghost : null;
@@ -212,7 +212,7 @@ export function WorkoutSetRow({
 
 /** Column captions rendered once above the first row of a strength card. */
 export function WorkoutSetColumnHeader() {
-  const ss = messages.fizruk.session;
+  const ss = fizrukCopy.session;
   return (
     <div className="flex items-center gap-2 px-1 -mx-1" aria-hidden>
       <span className="w-6 shrink-0" />

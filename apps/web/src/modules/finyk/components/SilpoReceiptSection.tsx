@@ -29,7 +29,6 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
-import { messages } from "@shared/i18n/uk";
 import { formatReceiptQty } from "@shared/lib/format/receiptQty";
 import { suggestSplitsFromReceiptItems } from "@sergeant/finyk-domain/domain/receiptSplitSuggestion";
 import { canonicalManualCategoryId } from "@sergeant/finyk-domain/lib/manualTaxonomy";
@@ -44,6 +43,7 @@ import {
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { CATEGORY_ICON_MAP, stripLeadingEmoji } from "./txRowHelpers";
 import { SilpoReceiptPickerSheet } from "./SilpoReceiptPickerSheet";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 // Discoverability CTA (§ audit finding): a not-yet-connected user opening a
 // Silpo-looking transaction saw nothing — the section only ever rendered
@@ -160,7 +160,7 @@ export function SilpoReceiptSection({
   customCategories = [],
   existingSplitsCount = 0,
 }: SilpoReceiptSectionProps) {
-  const copy = messages.finyk.silpoReceipt;
+  const copy = finykCopy.silpoReceipt;
   const navigate = useNavigate();
   // Свідомо БЕЗ `useToast`: ця секція рендериться в деталях кожної
   // витратної транзакції, а `ToastProvider` є не в кожному з тих дерев —
@@ -305,7 +305,7 @@ export function SilpoReceiptSection({
             onClick={() => setPickerOpen(true)}
             className="touch-target rounded-xl px-3 text-style-caption text-subtle transition-colors hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk"
           >
-            {messages.finyk.silpoReceiptPicker.cta}
+            {finykCopy.silpoReceiptPicker.cta}
           </button>
         </div>
         <SilpoReceiptPickerSheet

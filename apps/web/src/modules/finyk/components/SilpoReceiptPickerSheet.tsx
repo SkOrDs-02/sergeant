@@ -27,12 +27,12 @@ import { Sheet } from "@shared/components/ui/Sheet";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { useSilpoReceipts } from "@finyk/hooks/useSilpoReceipts";
 import { useSilpoRelinkReceipt } from "@finyk/hooks/useSilpoMutations";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
-const COPY = messages.finyk.silpoReceiptPicker;
+const COPY = finykCopy.silpoReceiptPicker;
 
 /** Скільки чеків тягнемо на вибір. Той самий ліміт, що й картка
  * «Чеки без транзакції» в налаштуваннях, тож запит спільний і кеш RQ

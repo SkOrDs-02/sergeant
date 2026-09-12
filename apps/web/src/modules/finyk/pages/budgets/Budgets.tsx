@@ -57,10 +57,10 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { MonoJarDto } from "@shared/api";
-import { messages } from "@shared/i18n/uk";
 import { QuickActionButton } from "../AssetsBars";
 import { DropdownMenu } from "@shared/components/ui/DropdownMenu";
 import { Icon } from "@shared/components/ui/Icon";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 // Mirrors `useStorage`'s MonthlyPlan shape (required income/expense/
 // savings, each a raw input value). Replicated inline here to avoid
@@ -555,38 +555,37 @@ export function Budgets({
               // `RecurringSuggestions` лишається навмисно — це data-driven
               // підказка на конкретний виявлений кандидат, не CTA-бар.
               <DropdownMenu
-                ariaLabel={messages.finyk.planning.scheduleAria}
+                ariaLabel={finykCopy.planning.scheduleAria}
                 placement="bottom-start"
                 items={[
                   {
                     type: "item",
                     id: "subscription",
-                    label: messages.finyk.planning.addSubscription,
-                    description:
-                      messages.finyk.planning.addSubscriptionDescription,
+                    label: finykCopy.planning.addSubscription,
+                    description: finykCopy.planning.addSubscriptionDescription,
                     icon: <Icon name="refresh-cw" size={16} aria-hidden />,
                     onSelect: () => onAddSubscription?.(),
                   },
                   {
                     type: "item",
                     id: "limit",
-                    label: messages.finyk.planning.addLimitLabel,
-                    description: messages.finyk.planning.addLimitDescription,
+                    label: finykCopy.planning.addLimitLabel,
+                    description: finykCopy.planning.addLimitDescription,
                     icon: <Icon name="flag" size={16} aria-hidden />,
                     onSelect: () => openBudgetForm("limit"),
                   },
                   {
                     type: "item",
                     id: "goal",
-                    label: messages.finyk.planning.addGoalLabel,
-                    description: messages.finyk.planning.addGoalDescription,
+                    label: finykCopy.planning.addGoalLabel,
+                    description: finykCopy.planning.addGoalDescription,
                     icon: <Icon name="target" size={16} aria-hidden />,
                     onSelect: () => openBudgetForm("goal"),
                   },
                 ]}
                 trigger={
                   <QuickActionButton
-                    label={messages.finyk.planning.schedule}
+                    label={finykCopy.planning.schedule}
                     tone="finyk"
                     className="rounded-2xl shadow-soft"
                   />

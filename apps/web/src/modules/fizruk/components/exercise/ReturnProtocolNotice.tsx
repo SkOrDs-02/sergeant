@@ -15,8 +15,8 @@
  */
 import { Icon } from "@shared/components/ui/Icon";
 import { Measure } from "@shared/components/ui/Measure";
-import { messages } from "@shared/i18n/uk";
 import type { OneRmAging } from "@sergeant/fizruk-domain/domain";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface ReturnProtocolNoticeProps {
   aging: OneRmAging;
@@ -24,7 +24,7 @@ export interface ReturnProtocolNoticeProps {
 
 export function ReturnProtocolNotice({ aging }: ReturnProtocolNoticeProps) {
   if (!aging.returnMode) return null;
-  const t = messages.fizruk.oneRmAging;
+  const t = fizrukCopy.oneRmAging;
   const injury = aging.returnReason === "injury";
 
   return (

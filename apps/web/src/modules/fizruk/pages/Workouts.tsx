@@ -35,6 +35,7 @@ import {
   markComposeSaved,
   useComposeTelemetry,
 } from "../../../core/observability/composeTelemetry";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 /** Стабільний ключ виміру тертя — той самий на всіх відкриттях форми. */
 const FIZRUK_PAST_WORKOUT_COMPOSE_KEY = "fizruk:log-past-workout";
@@ -107,7 +108,7 @@ export function Workouts({
   // Каталог у сесії — аркуш із «+ Вправа», а не хвіст сторінки (спека
   // `fizruk-active-session.md`, рішення 4).
   const [catalogSheetOpen, setCatalogSheetOpen] = useState(false);
-  const sessionCopy = messages.fizruk.session;
+  const sessionCopy = fizrukCopy.session;
 
   /**
    * Скільки разів кожна вправа вже в активному тренуванні. Каталог у

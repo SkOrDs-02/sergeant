@@ -1,7 +1,7 @@
 import { memo, useId } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { ROUTINE_THEME as C, WEEKDAY_LABELS } from "../../lib/routineConstants";
-import { messages } from "@shared/i18n/uk";
+import { routinePageMessages as routineCopy } from "@shared/i18n/uk.routine";
 
 export interface WeekdayPickerProps {
   weekdays: number[] | null | undefined;
@@ -17,7 +17,7 @@ export const WeekdayPicker = memo(function WeekdayPicker({
   return (
     <div>
       <p id={labelId} className="text-style-caption text-subtle mb-2">
-        {messages.routine.weekdays}
+        {routineCopy.weekdays}
       </p>
       <div
         className="flex flex-wrap gap-2"

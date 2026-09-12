@@ -29,8 +29,8 @@ vi.mock("../../../core/observability/analytics", () => ({
 }));
 
 import { ApiError, monoWebhookApi } from "@shared/api";
-import { messages } from "@shared/i18n/uk";
 import { useMonobankWebhook } from "./useMonobankWebhook";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 const mockedSyncState = monoWebhookApi.syncState as unknown as ReturnType<
   typeof vi.fn
@@ -221,7 +221,7 @@ describe("useMonobankWebhook", () => {
     });
 
     expect(result.current.authError).toBe(
-      messages.finyk.monoConnectErrors.tokenRejected,
+      finykCopy.monoConnectErrors.tokenRejected,
     );
     expect(result.current.error).toBe("");
   });
@@ -256,7 +256,7 @@ describe("useMonobankWebhook", () => {
     });
 
     expect(result.current.authError).toBe(
-      messages.finyk.monoConnectErrors.accountRequired,
+      finykCopy.monoConnectErrors.accountRequired,
     );
     expect(result.current.error).toBe("");
   });
@@ -289,7 +289,7 @@ describe("useMonobankWebhook", () => {
     });
 
     expect(result.current.error).toBe(
-      messages.finyk.monoConnectErrors.networkUnavailable,
+      finykCopy.monoConnectErrors.networkUnavailable,
     );
     expect(result.current.authError).toBe("");
 
@@ -309,7 +309,7 @@ describe("useMonobankWebhook", () => {
 
     expect(result.current.authError).toBe("");
     expect(result.current.error).toBe(
-      messages.finyk.monoConnectErrors.networkUnavailable,
+      finykCopy.monoConnectErrors.networkUnavailable,
     );
   });
 

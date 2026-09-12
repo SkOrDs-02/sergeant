@@ -3,7 +3,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { Tooltip } from "@shared/components/ui/Tooltip";
-import { messages } from "@shared/i18n/uk";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 export interface OverviewTextRowsProps {
   todaySpent: number;
@@ -69,11 +69,11 @@ const OverviewTextRowsImpl = function OverviewTextRows({
         type="button"
         onClick={onOpenToday}
         className="focus-ring flex w-full items-center justify-between gap-3 rounded-lg text-left"
-        aria-label={messages.finyk.todaySummary.openAria}
+        aria-label={finykCopy.todaySummary.openAria}
       >
         <div className="min-w-0">
           <p className="text-style-caption text-muted">
-            {messages.finyk.todaySummary.title}
+            {finykCopy.todaySummary.title}
           </p>
           <p className="text-style-label text-text tabular-nums">
             {showBalance ? (
@@ -88,7 +88,7 @@ const OverviewTextRowsImpl = function OverviewTextRows({
           </p>
         </div>
         <span className="text-style-caption text-finyk-strong dark:text-finyk inline-flex shrink-0 items-center gap-0.5">
-          {messages.finyk.todaySummary.operations}
+          {finykCopy.todaySummary.operations}
           <Icon name="chevron-right" size="xs" />
         </span>
       </button>
@@ -96,15 +96,15 @@ const OverviewTextRowsImpl = function OverviewTextRows({
       <div>
         <div className="flex items-center gap-1">
           <p className="text-style-caption text-muted">
-            {messages.finyk.monthRow.label}
+            {finykCopy.monthRow.label}
           </p>
           <Tooltip
-            content={messages.finyk.monthRow.currencyTooltip}
+            content={finykCopy.monthRow.currencyTooltip}
             placement="bottom-center"
           >
             <button
               type="button"
-              aria-label={messages.finyk.monthRow.currencyInfoAria}
+              aria-label={finykCopy.monthRow.currencyInfoAria}
               className="inline-flex items-center justify-center text-muted hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk/60 rounded-full"
             >
               <Icon name="info" size={14} />
@@ -114,11 +114,11 @@ const OverviewTextRowsImpl = function OverviewTextRows({
         <p className="text-style-label text-text tabular-nums">
           {showBalance ? (
             <>
-              <span>{messages.finyk.monthRow.incomePrefix} </span>
+              <span>{finykCopy.monthRow.incomePrefix} </span>
               <Money amount={income} signed />
               {showForecastNumber && (
                 <>
-                  <span> · {messages.finyk.monthRow.forecastPrefix}</span>
+                  <span> · {finykCopy.monthRow.forecastPrefix}</span>
                   <Money amount={projectedSpend} />
                 </>
               )}
@@ -129,17 +129,17 @@ const OverviewTextRowsImpl = function OverviewTextRows({
         </p>
         {showForecastNumber && projectedSpendCapped && showBalance && (
           <p className="text-style-caption text-muted mt-0.5 leading-snug">
-            {messages.finyk.monthRow.forecastCapped}
+            {finykCopy.monthRow.forecastCapped}
           </p>
         )}
         {(recurringOutThisMonth > 0 || recurringInThisMonth > 0) &&
           showBalance && (
             <p className="text-style-caption text-muted mt-0.5 leading-relaxed">
-              {messages.finyk.monthRow.recurringPrefix}{" "}
+              {finykCopy.monthRow.recurringPrefix}{" "}
               <Money amount={-recurringOutThisMonth} /> /{" "}
               <Money amount={recurringInThisMonth} signed />
               {unknownOutCount > 0 &&
-                ` + ${unknownOutCount} ${messages.finyk.monthRow.recurringSuffixNoSum}`}
+                ` + ${unknownOutCount} ${finykCopy.monthRow.recurringSuffixNoSum}`}
             </p>
           )}
       </div>

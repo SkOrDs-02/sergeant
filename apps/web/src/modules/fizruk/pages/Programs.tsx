@@ -5,7 +5,6 @@
 import { useState } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
-import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { captureException } from "../../../core/observability/sentry";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
@@ -17,6 +16,7 @@ import {
   type ProgramSessionDef,
   type TrainingProgramDef,
 } from "@sergeant/fizruk-domain";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 type RawExerciseDef = FizrukData.RawExerciseDef;
 
@@ -58,12 +58,12 @@ export function Programs({
         <div className="flex items-center justify-between gap-3">
           <div>
             <h1 className="text-style-title text-text">
-              {messages.fizruk.programs.title}
+              {fizrukCopy.programs.title}
             </h1>
             <p className="text-style-caption text-subtle mt-0.5">
               {activeProgram
-                ? `${messages.fizruk.programs.activeProgramPrefix} ${activeProgram.name}`
-                : messages.fizruk.programs.subtitleDefault}
+                ? `${fizrukCopy.programs.activeProgramPrefix} ${activeProgram.name}`
+                : fizrukCopy.programs.subtitleDefault}
             </p>
           </div>
           {activeProgram && (
@@ -73,7 +73,7 @@ export function Programs({
               onClick={deactivateProgram}
               className="text-style-caption text-subtle hover:text-text"
             >
-              {messages.fizruk.programs.stop}
+              {fizrukCopy.programs.stop}
             </Button>
           )}
         </div>
@@ -107,12 +107,11 @@ export function Programs({
                         </h2>
                         {isActive && (
                           <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-success/15 text-success-strong dark:text-success border border-success/25">
-                            {messages.fizruk.programs.active}
+                            {fizrukCopy.programs.active}
                           </span>
                         )}
                         <span className="text-style-caption text-subtle border border-line rounded-full px-2 py-0.5">
-                          {prog.days}{" "}
-                          {messages.fizruk.programs.daysPerWeekSuffix}
+                          {prog.days} {fizrukCopy.programs.daysPerWeekSuffix}
                         </span>
                       </div>
                       <p className="text-style-caption text-subtle mt-1.5 leading-relaxed">
@@ -124,12 +123,10 @@ export function Programs({
                   <div
                     className="flex items-center gap-1.5 mt-3"
                     role="img"
-                    aria-label={`${messages.fizruk.programs.scheduleAriaPrefix} ${prog.name}: ${prog.schedule
+                    aria-label={`${fizrukCopy.programs.scheduleAriaPrefix} ${prog.name}: ${prog.schedule
                       .map((s: ProgramScheduleEntry) => DAY_LABELS[s.day - 1])
                       .filter(Boolean)
-                      .join(
-                        ", ",
-                      )} ${messages.fizruk.programs.scheduleAriaSuffix}`}
+                      .join(", ")} ${fizrukCopy.programs.scheduleAriaSuffix}`}
                   >
                     {Array.from({ length: 7 }, (_, i) => {
                       const hasSession = prog.schedule.some(
@@ -164,7 +161,7 @@ export function Programs({
                         className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
                         onClick={() => activateProgram(prog.id)}
                       >
-                        {messages.fizruk.programs.activate}
+                        {fizrukCopy.programs.activate}
                       </button>
                     ) : (
                       <>
@@ -190,12 +187,12 @@ export function Programs({
                               onStartWorkout(session, prog);
                             }}
                           >
-                            {messages.fizruk.programs.startToday}
+                            {fizrukCopy.programs.startToday}
                           </button>
                         )}
                         {!todaySession && (
                           <div className="flex-1 py-2.5 rounded-xl bg-panelHi text-subtle text-style-label text-center">
-                            {messages.fizruk.programs.restToday}
+                            {fizrukCopy.programs.restToday}
                           </div>
                         )}
                         <button
@@ -211,7 +208,7 @@ export function Programs({
                           className="focus-ring py-2.5 px-4 rounded-xl border border-line text-subtle text-style-label hover:text-text hover:bg-panelHi transition-colors"
                           onClick={deactivateProgram}
                         >
-                          {messages.fizruk.programs.stop}
+                          {fizrukCopy.programs.stop}
                         </button>
                       </>
                     )}
@@ -225,8 +222,8 @@ export function Programs({
                       aria-controls={detailsId}
                     >
                       {isExpanded
-                        ? messages.fizruk.programs.collapseDetails
-                        : messages.fizruk.programs.details}
+                        ? fizrukCopy.programs.collapseDetails
+                        : fizrukCopy.programs.details}
                     </button>
                   </div>
                 </div>
@@ -260,7 +257,7 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
       className="border-t border-line px-4 pb-4 pt-3 space-y-3 bg-bg/50"
     >
       <SectionHeading as="div" size="xs" variant="fizruk">
-        {messages.fizruk.programs.scheduleHeading}
+        {fizrukCopy.programs.scheduleHeading}
       </SectionHeading>
       {prog.schedule.map((schedEntry: ProgramScheduleEntry) => {
         const session = prog.sessions[schedEntry.sessionKey];
@@ -279,7 +276,7 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
               {/* Fizruk module accent throughout — was mixing the cyan
                   fill with the emerald `success` text/border pair. */}
               <span className="text-style-caption font-bold px-2 py-0.5 rounded-full bg-fizruk/15 text-fizruk-strong dark:text-fizruk border border-fizruk/30">
-                {messages.fizruk.programs.daysPrefix} {schedEntry.day}
+                {fizrukCopy.programs.daysPrefix} {schedEntry.day}
               </span>
               <span className="text-style-label text-text">
                 {schedEntry.name}
@@ -287,19 +284,19 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
             </div>
             <div className="flex items-center gap-3 mb-2 text-style-caption text-subtle">
               <span>
-                {messages.fizruk.programs.restLabel}{" "}
+                {fizrukCopy.programs.restLabel}{" "}
                 <span className="font-semibold text-text">
                   {session.defaultRestSec}
-                  {messages.fizruk.secondsUnit}
+                  {fizrukCopy.secondsUnit}
                 </span>
               </span>
               {/* Програма з власною вагою не має чого «додавати» — «+0 кг»
                   було б підписом ні про що. */}
               {session.progressionKg > 0 && (
                 <span>
-                  {messages.fizruk.programs.progressionLabel}{" "}
+                  {fizrukCopy.programs.progressionLabel}{" "}
                   <span className="font-semibold text-text">
-                    +{session.progressionKg} {messages.fizruk.kgUnit}
+                    +{session.progressionKg} {fizrukCopy.kgUnit}
                   </span>
                 </span>
               )}
@@ -317,7 +314,7 @@ function ProgramDetails({ id, prog, exercises }: ProgramDetailsProps) {
               </div>
             ) : (
               <div className="text-style-caption text-muted italic">
-                {messages.fizruk.programs.missingExercises}
+                {fizrukCopy.programs.missingExercises}
               </div>
             )}
           </div>

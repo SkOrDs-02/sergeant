@@ -1,10 +1,10 @@
 import { Icon } from "@shared/components/ui/Icon";
 import { AssetsGroupCard, usePersistedGroupOpen } from "./AssetsGroupCard";
 import { Money } from "@shared/components/ui/Money";
-import { messages } from "@shared/i18n/uk";
 import type { JarLike } from "./useAssetsState";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
-const t = messages.finyk.monoJars;
+const t = finykCopy.monoJars;
 
 /**
  * Підсекція «Активів» — банки Monobank («банка»). На відміну від карток

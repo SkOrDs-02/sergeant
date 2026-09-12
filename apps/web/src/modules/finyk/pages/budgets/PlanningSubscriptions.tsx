@@ -4,7 +4,6 @@
  */
 import { useEffect, useRef, useState } from "react";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
-import { messages } from "@shared/i18n/uk";
 import { RecurringSuggestions } from "../../components/RecurringSuggestions";
 import { SectionBar } from "../AssetsBars";
 import { AssetsSubscriptionsSection } from "../AssetsSubscriptionsSection";
@@ -12,6 +11,7 @@ import { AssetsTxPickerView } from "../AssetsTxPickerView";
 import { useAssetsState, type AssetsProps } from "../useAssetsState";
 import { useFlowSchedule } from "../overview/useFlowSchedule";
 import { PlannedFlowsCard } from "./PlannedFlowsCard";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 /**
  * Блок «майбутнього» на сторінці Планування: найближчі платежі, підказки
@@ -27,7 +27,7 @@ import { PlannedFlowsCard } from "./PlannedFlowsCard";
  * місячну суму, і дублювати цю логіку заради іншої сторінки не варто.
  * Зайві для цієї сторінки поля хука (активи/пасиви) просто не читаються.
  */
-const t = messages.finyk.planning;
+const t = finykCopy.planning;
 
 export function PlanningSubscriptions({
   mono,

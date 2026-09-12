@@ -20,8 +20,8 @@ import { Card } from "@shared/components/ui/Card";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
-import { messages } from "@shared/i18n/uk";
 import { fmt } from "../../lib/numberFmt";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
 type RecoveryByMap = Parameters<RecExerciseFn>[1];
@@ -76,7 +76,7 @@ type WorkoutCatalogSectionProps = {
   addedCountByExerciseId?: Record<string, number>;
 };
 
-const catalogCopy = messages.fizruk.session;
+const catalogCopy = fizrukCopy.session;
 
 function toggleArr(arr: string[] | null | undefined, value: string): string[] {
   const a = Array.isArray(arr) ? arr : [];

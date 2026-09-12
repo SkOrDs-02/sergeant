@@ -23,7 +23,6 @@ import { memo, useMemo, type CSSProperties } from "react";
 import { pluralDays } from "@sergeant/shared";
 
 import { Money } from "@shared/components/ui/Money";
-import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 
 import {
@@ -31,6 +30,7 @@ import {
   MIN_ENTRIES,
   type CombEntry,
 } from "../lib/monthOutflowComb";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 export interface MonthOutflowCombProps {
   entries: readonly CombEntry[];
@@ -59,7 +59,7 @@ export interface MonthOutflowCombProps {
   className?: string;
 }
 
-const copy = messages.finyk.outflowComb;
+const copy = finykCopy.outflowComb;
 
 /**
  * Підстановка `{ключ}` у шаблон із каталогу — та сама конвенція, що

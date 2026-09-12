@@ -19,10 +19,10 @@
  * the additional 14-day display gate keeps the surface motivating.
  */
 
-import { messages } from "@shared/i18n/uk";
 import { Badge } from "@shared/components/ui/Badge";
 import type { PrLatest } from "../../hooks/usePrLatest";
 import { fmtLoose } from "../../lib/numberFmt";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 /**
  * Past which the badge is hidden — see file-level note. 14 days is a
@@ -95,7 +95,7 @@ export function PrBadge({ pr }: PrBadgeProps) {
           <path d="M15.477 12.89 17 22l-5-3-5 3 1.523-9.11" />
         </svg>
         <span>
-          PR · {exerciseShort} · {weightLabel} {messages.fizruk.kgUnit}
+          PR · {exerciseShort} · {weightLabel} {fizrukCopy.kgUnit}
         </span>
       </Badge>
     </div>

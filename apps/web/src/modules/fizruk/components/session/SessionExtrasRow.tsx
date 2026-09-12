@@ -5,10 +5,10 @@
 import { useId, useState } from "react";
 import type { ChecklistItem, Workout } from "@sergeant/fizruk-domain";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import { NOTE_MAX_LEN } from "@shared/lib/text/limits";
 import { WarmupCooldownChecklist } from "../workouts/WarmupCooldownChecklist";
 import { WorkoutTimeEditor } from "../workouts/WorkoutTimeEditor";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 type ExtraKey = "warmup" | "cooldown" | "note" | "time";
 
@@ -43,7 +43,7 @@ export function SessionExtrasRow({
   onInitWarmup,
   onInitCooldown,
 }: SessionExtrasRowProps) {
-  const ss = messages.fizruk.session;
+  const ss = fizrukCopy.session;
   const [open, setOpen] = useState<ExtraKey | null>(null);
   const noteId = useId();
   const toggle = (key: ExtraKey) => setOpen((k) => (k === key ? null : key));

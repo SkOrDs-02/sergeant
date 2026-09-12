@@ -9,8 +9,8 @@ import { useWaterTracker } from "../hooks/useWaterTracker";
 import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { WaterHistorySheet } from "./WaterHistorySheet";
-import { messages } from "@shared/i18n/uk";
 import { formatNumberUk } from "@sergeant/shared";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 const QUICK_ML = [200, 300, 500, 750];
 
@@ -111,7 +111,7 @@ export function WaterTrackerCard({ goalMl = 2000 }: WaterTrackerCardProps) {
             "text-subtle hover:text-text border border-line transition-colors",
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
-          aria-label={`${messages.nutrition.waterHistory.openLabel}: ${fmt(todayMl)}${goalMl > 0 ? ` / ${fmt(goalMl)}` : ""}`}
+          aria-label={`${nutritionCopy.waterHistory.openLabel}: ${fmt(todayMl)}${goalMl > 0 ? ` / ${fmt(goalMl)}` : ""}`}
         >
           Історія
         </button>

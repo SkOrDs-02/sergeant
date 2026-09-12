@@ -8,6 +8,7 @@ import { messages } from "@shared/i18n/uk";
 // routine view-state типів). Імпортуємо звідти, щоб не дублювати оголошення
 // (aislop `ai-slop/duplicate-type-declaration`).
 import type { RoutineMainTab } from "../context/RoutineCalendarContext";
+import { routinePageMessages as routineCopy } from "@shared/i18n/uk.routine";
 
 interface RoutineNavItem extends ModuleBottomNavItem {
   id: RoutineMainTab;
@@ -44,7 +45,7 @@ const NAV: readonly RoutineNavItem[] = [
     // «Огляд → Звички → Статистика»: спершу що робити сьогодні, потім
     // із чого цей список складається, і аж тоді підсумки.
     id: "habits",
-    label: messages.routine.habitsTab.label,
+    label: routineCopy.habitsTab.label,
     panelId: "routine-panel-habits",
     icon: (
       <svg

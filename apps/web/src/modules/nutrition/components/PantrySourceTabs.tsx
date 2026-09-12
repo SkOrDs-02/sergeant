@@ -37,11 +37,11 @@
  */
 import { useState } from "react";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
-import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { useSilpoSyncState } from "@finyk/hooks/useSilpoSyncState";
 import { SilpoPantryReplenishSheet } from "./SilpoPantryReplenishSheet";
 import type { PantryItem } from "../lib/pantryTextParser";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 export type PantryInputMode = "single" | "list";
 
@@ -142,7 +142,7 @@ export function PantrySourceTabs({
       // Короткий видимий підпис («З чека») влазить у сітку на 393px;
       // повна фраза лишається доступним іменем — той самий текст, який
       // уже шукають смоук-тести і мобільний аудит (`entryCta`).
-      ariaLabel: messages.nutrition.pantryReplenish.entryCta,
+      ariaLabel: nutritionCopy.pantryReplenish.entryCta,
       disabled: busy,
       onClick: () => setReceiptSheetOpen(true),
     });
@@ -159,7 +159,7 @@ export function PantrySourceTabs({
     <>
       <div
         role="group"
-        aria-label={messages.nutrition.pantryCard.sourceStripLabel}
+        aria-label={nutritionCopy.pantryCard.sourceStripLabel}
         className={cn(
           "grid gap-1 rounded-2xl bg-panelHi border border-line p-1 mb-3",
           columnsClass,

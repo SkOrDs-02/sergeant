@@ -1,7 +1,7 @@
 import { useRef } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 export interface TransactionFiltersProps {
   filter: string;
@@ -101,7 +101,7 @@ export function TransactionFilters({
       <div
         ref={toolbarRef}
         role="toolbar"
-        aria-label={messages.finyk.transactionsFilterLabel}
+        aria-label={finykCopy.transactionsFilterLabel}
         aria-orientation="horizontal"
         onKeyDown={onKeyDown}
         className="flex gap-1 whitespace-nowrap"
@@ -146,9 +146,7 @@ export function TransactionFilters({
           >
             {activeCategoryLabel}
             <span aria-hidden>×</span>
-            <span className="sr-only">
-              {messages.finyk.clearCategoryFilter}
-            </span>
+            <span className="sr-only">{finykCopy.clearCategoryFilter}</span>
           </Button>
         )}
       </div>

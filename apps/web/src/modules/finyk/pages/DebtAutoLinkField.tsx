@@ -25,11 +25,11 @@ import { Label } from "@shared/components/ui/FormField";
 import { matchDebtAutoLinkTxIds } from "@sergeant/finyk-domain/domain/debtAutoLink";
 import type { Debt } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { TxRowTx } from "../components/TxRow";
-import { messages } from "@shared/i18n/uk";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
-const copy = messages.finyk.debtAutoLink;
+const copy = finykCopy.debtAutoLink;
 
 export function DebtAutoLinkField({
   keyword,

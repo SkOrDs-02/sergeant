@@ -11,7 +11,6 @@ import {
   type MonoJarDto,
   type MonoTransactionDto,
 } from "@shared/api";
-import { messages } from "@shared/i18n/uk";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { authAwareRetry } from "@shared/lib/api/queryClient";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
@@ -41,6 +40,7 @@ import {
   notifyFinykMonoMirrorRefresh,
   useFinykMonoMirrorTick,
 } from "../lib/monoMirrorGate";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 const SYNC_STATE_STALE = 30_000;
 const ACCOUNTS_STALE = 5 * 60_000;
@@ -440,11 +440,11 @@ export function useMonobankWebhook({
               : undefined;
           setAuthError(
             code === "MONO_TOKEN_INVALID"
-              ? messages.finyk.monoConnectErrors.tokenRejected
-              : messages.finyk.monoConnectErrors.accountRequired,
+              ? finykCopy.monoConnectErrors.tokenRejected
+              : finykCopy.monoConnectErrors.accountRequired,
           );
         } else {
-          setError(messages.finyk.monoConnectErrors.networkUnavailable);
+          setError(finykCopy.monoConnectErrors.networkUnavailable);
         }
       } finally {
         setConnecting(false);

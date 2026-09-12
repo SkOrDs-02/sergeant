@@ -14,16 +14,16 @@
  * незалежно від інших.
  */
 import { Button } from "@shared/components/ui/Button";
-import { messages } from "@shared/i18n/uk";
 import type { PantryItem } from "../lib/pantryTextParser";
 import type { AmbiguousPantryUnit } from "../lib/pantryAmbiguousUnitMemory";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 // Доменні значення одиниць (`AmbiguousPantryUnit`), не копія інтерфейсу:
 // тримаємо їх поза JSX, щоб i18n-правило не плутало їх із текстом.
 const UNIT_PIECES = "шт" as const;
 const UNIT_GRAMS = "г" as const;
 
-const COPY = messages.nutrition.pantryAmbiguousQty;
+const COPY = nutritionCopy.pantryAmbiguousQty;
 
 export interface PantryAmbiguousQtyPromptProps {
   items: readonly PantryItem[];

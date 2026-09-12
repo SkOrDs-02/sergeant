@@ -24,7 +24,7 @@
  */
 import { ONE_RM_DECAY_FLOOR } from "@sergeant/fizruk-domain/domain";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 /**
  * Максимальне зниження у відсотках — довжина всієї шкали.
@@ -66,7 +66,7 @@ export function ReturnScale({
   isStale,
   className,
 }: ReturnScaleProps) {
-  const copy = messages.fizruk.returnScale;
+  const copy = fizrukCopy.returnScale;
   if (peak1rm <= 0) return null;
 
   const pos = referencePosition(reductionPct);

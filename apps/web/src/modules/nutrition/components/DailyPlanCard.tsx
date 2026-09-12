@@ -7,7 +7,6 @@ import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
 import { Measure } from "@shared/components/ui/Measure";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import { FirstRunHintBanner } from "../../../core/onboarding/FirstRunHintBanner";
 import {
   kcalFromMacros,
@@ -40,6 +39,7 @@ export {
   calcMacroKcalMismatch,
 } from "../lib/dailyPlanValidation";
 import { describePlanFreshness } from "../lib/planFreshness";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 interface WeekPlanDay {
   label?: string;
@@ -120,8 +120,8 @@ export function DailyPlanCard({
       <div className="text-style-label text-text">Денний план</div>
       <div className="text-style-caption text-muted mt-0.5">
         {pantryIgnored
-          ? messages.nutrition.dayPlanIntro.pantryIgnored
-          : messages.nutrition.dayPlanIntro.withPantry}
+          ? nutritionCopy.dayPlanIntro.pantryIgnored
+          : nutritionCopy.dayPlanIntro.withPantry}
       </div>
 
       <div className="mt-4 space-y-4">

@@ -8,8 +8,8 @@ import {
   type DropdownMenuItem,
 } from "@shared/components/ui/DropdownMenu";
 import { Icon } from "@shared/components/ui/Icon";
-import { messages } from "@shared/i18n/uk";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface WorkoutItemRestPresetsProps {
   catLabel: string;
@@ -42,7 +42,7 @@ export function WorkoutItemRestPresets({
   setRestTimer,
   setDefaultForExercise,
 }: WorkoutItemRestPresetsProps) {
-  const rt = messages.fizruk.restTimer;
+  const rt = fizrukCopy.restTimer;
 
   const menuItems: DropdownMenuItem[] = quickOptions.map((sec) => ({
     type: "item",

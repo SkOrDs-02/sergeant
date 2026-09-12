@@ -9,7 +9,7 @@ import {
 import { Icon } from "@shared/components/ui/Icon";
 import { Popover } from "@shared/components/ui/Popover";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface WorkoutItemRecoveryChipProps {
   it: WorkoutItem;
@@ -38,7 +38,7 @@ export function summarizeRecoveryChip(
     recBy as Parameters<typeof recoveryConflictsForWorkoutItem>[1],
   );
   if (!cf.hasWarning) return null;
-  const ss = messages.fizruk.session;
+  const ss = fizrukCopy.session;
   if (cf.injury.blocked) return { tone: "red", label: ss.injuryPrefix };
   if (cf.red.length > 0) {
     return {
@@ -69,7 +69,7 @@ export function WorkoutItemRecoveryChip({
   const summary = summarizeRecoveryChip(it, recBy);
   if (!cf.hasWarning || !summary) return null;
 
-  const rc = messages.fizruk.recoveryChip;
+  const rc = fizrukCopy.recoveryChip;
   const isRed = summary.tone === "red";
   const redLabel = cf.red.map((x) => x.label).join(", ");
   const yellowLabel = cf.yellow.map((x) => x.label).join(", ");

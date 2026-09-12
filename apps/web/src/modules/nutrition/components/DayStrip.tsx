@@ -16,9 +16,9 @@
  */
 import { useMemo, type CSSProperties } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import type { Meal } from "@sergeant/nutrition-domain";
 import { buildDayStrip, HOURS_IN_DAY } from "../lib/dayStrip";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 /**
  * Штрих для вгаданих калорій. `currentColor` навмисно: смужка бере колір
@@ -44,7 +44,7 @@ export interface DayStripProps {
 
 export function DayStrip({ meals, className }: DayStripProps) {
   const strip = useMemo(() => buildDayStrip(meals), [meals]);
-  const copy = messages.nutrition.dayStrip;
+  const copy = nutritionCopy.dayStrip;
 
   // Нижче порога смуга гірша за список: одна риска не показує ні
   // розподілу, ні перекосу — тобто нічого з того, заради чого вид існує.

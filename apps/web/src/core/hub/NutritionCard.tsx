@@ -26,6 +26,7 @@ import {
 import { useHubStorageBump } from "./useHubStorageBump";
 import { useNutritionSqliteReadTick } from "../../modules/nutrition/lib/sqliteReadGate";
 import { formatNumberUk } from "@sergeant/shared";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 // ── Local sub-components ──────────────────────────────────────────────
 
@@ -219,12 +220,12 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
           size="xs"
           className="flex-1 min-w-0 text-muted truncate"
         >
-          {messages.nutrition.reportHeading}
+          {nutritionCopy.reportHeading}
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
             <span className="text-style-body font-bold text-text">
-              {formattedCurrent} {messages.nutrition.kcalUnit}
+              {formattedCurrent} {nutritionCopy.kcalUnit}
             </span>
             <DeltaChip cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
           </span>
@@ -251,20 +252,20 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
         <>
           <div className="flex items-baseline gap-2">
             <span className="text-style-headline text-text">
-              {formattedCurrent} {messages.nutrition.kcalUnit}
+              {formattedCurrent} {nutritionCopy.kcalUnit}
             </span>
             <DeltaChip cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
           </div>
           <p className="text-style-caption text-muted">
             {messages.hub.reportPrevious} {formattedPrev}{" "}
-            {messages.nutrition.kcalUnit}
+            {nutritionCopy.kcalUnit}
           </p>
           <BarChart
             key={`${period}-${offset}`}
             data={cur.daily}
             dates={dates}
             colorClass="bg-chart-nutrition"
-            unit={` ${messages.nutrition.kcalUnit}`}
+            unit={` ${nutritionCopy.kcalUnit}`}
           />
         </>
       )}

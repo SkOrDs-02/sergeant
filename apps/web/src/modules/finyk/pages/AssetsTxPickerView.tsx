@@ -30,8 +30,8 @@ import { Input } from "@shared/components/ui/Input";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { Button } from "@shared/components/ui/Button";
 import { Skeleton } from "@shared/components/ui/Skeleton";
-import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 type Subscription = {
   id: string;
@@ -267,7 +267,7 @@ export function AssetsTxPickerView({
 
     const monoLinkKind = (t: TxRowTx) => classifyMonoCardLink(t, txPicker.id);
     const monoLinkLabel = (t: TxRowTx) => {
-      const copy = messages.finyk.monoCardLink;
+      const copy = finykCopy.monoCardLink;
       const kind = monoLinkKind(t);
       if (kind === "repayment") return copy.repayment;
       return kind === "card-purchase" ? copy.cardPurchase : copy.otherIncome;

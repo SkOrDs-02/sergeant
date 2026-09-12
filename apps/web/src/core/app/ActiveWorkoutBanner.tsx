@@ -6,7 +6,7 @@ import {
   WORKOUT_BANNER_INSET_VAR,
   useBottomInsetVar,
 } from "@shared/hooks/useBottomInsetVar";
-import { messages } from "@shared/i18n/uk";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 function ActiveWorkoutBannerTimer({ activeId }: { activeId: string }) {
   const [startMs] = useState(() => Date.now());
@@ -41,7 +41,7 @@ function ActiveWorkoutBannerTimer({ activeId }: { activeId: string }) {
         type="button"
         onClick={() => openHubModule("fizruk", `#workout/${activeId}`)}
         className="pointer-events-auto flex items-center gap-2.5 h-12 pl-3 pr-4 rounded-full bg-fizruk-strong text-white shadow-float hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-        aria-label={messages.fizruk.returnToActiveWorkout}
+        aria-label={fizrukCopy.returnToActiveWorkout}
       >
         <span
           className="relative flex w-8 h-8 items-center justify-center rounded-full bg-white/15"

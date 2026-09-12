@@ -3,6 +3,7 @@ import { Modal } from "@shared/components/ui/Modal";
 import { Button } from "@shared/components/ui/Button";
 import { messages } from "@shared/i18n/uk";
 import type { WorkoutTemplate } from "../../hooks/useWorkoutTemplates";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 export interface WorkoutsConfirmDialogsProps {
   /** Open flag for the "delete catalog exercise" confirm. */
@@ -46,7 +47,7 @@ export function WorkoutsConfirmDialogs({
   onDiscardActiveAndContinue,
   onCancelActiveConflict,
 }: WorkoutsConfirmDialogsProps) {
-  const conflictCopy = messages.fizruk.activeWorkoutConflict;
+  const conflictCopy = fizrukCopy.activeWorkoutConflict;
   return (
     <>
       <ConfirmDialog

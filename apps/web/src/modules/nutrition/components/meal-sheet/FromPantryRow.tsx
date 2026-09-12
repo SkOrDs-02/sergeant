@@ -9,7 +9,7 @@ import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { latestPackGrams, type PantryItem } from "@sergeant/nutrition-domain";
 import type { MealFormState } from "./mealFormUtils";
 import { ADD_MEAL_SECTION_KEYS } from "./addMealSections";
-import { messages } from "@shared/i18n/uk";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 interface FromPantryRowProps {
   pantryItems: PantryItem[];
@@ -58,7 +58,7 @@ export function FromPantryRow({
   return (
     <CollapsibleSection
       storageKey={ADD_MEAL_SECTION_KEYS.pantry}
-      title={messages.nutrition.fromPantry}
+      title={nutritionCopy.fromPantry}
       defaultOpen
       // Обране з комори мусить бути видно і згорнутим: інакше людина не
       // побачить, що прийом уже прив'язаний до позиції, і списання

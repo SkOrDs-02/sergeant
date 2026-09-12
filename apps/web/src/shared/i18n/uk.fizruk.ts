@@ -4,12 +4,70 @@
  *
  * Fizruk per-page UA message-каталог, винесений з `uk.ts` заради
  * module-size discipline (Hard Rule #18, `max-lines: 600`). Spread у
- * `messages.fizruk` всередині `uk.ts`, тож call-site-и й далі звертаються
- * через `messages.fizruk.<page>.<key>`. Конвенції додавання ключів —
+ * `messages.fizruk` всередині `uk.ts`. Від 2026-09-12 каталог НЕ спредиться
+ * в `uk.ts` — модульні файли імпортують його прямо
+ * (`import { fizrukPageMessages as fizrukCopy }`), щоб він не їхав
+ * eager-чанком. Конвенції додавання ключів —
  * див. шапку `uk.ts` та `docs/05-design/i18n/readiness.md`.
  */
 
 export const fizrukPageMessages = {
+  // Ключі, що раніше лежали інлайном у `uk.ts` під `messages.fizruk`.
+  // Переїхали сюди, щоб каталог модуля не їхав першим екраном:
+  // `uk.ts` тягнеться eager-чанком, і разом із ним тягнувся весь
+  // UA-каталог усіх модулів (замір 2026-09-12: 23 з 25 kB чанка
+  // `cn`). Тепер каталог іде в лінивий чанк свого модуля.
+  returnToActiveWorkout: "Повернутись до активного тренування",
+  workoutRest: "Відпочинок",
+  // PrBadge weight-unit suffix on the Fizruk hero PR pill.
+  kgUnit: "кг",
+  // Strength PR leaderboard on the Progress page (`Progress/PrBoard.tsx`).
+  prBoard: {
+    heading: "Рекорди (PR)",
+    shownSuffix: "показано",
+    filterAll: "Всі",
+    emptyTitle: "Поки немає силових PR",
+    emptyFilteredTitle: "Немає PR для цієї групи мʼязів",
+    emptyDescription:
+      "Заверши сети з вагою, рекорди зʼявляться тут автоматично.",
+    emptyFilteredDescription: "Спробуй іншу групу або скинь фільтр.",
+    /** Канон §6: борд бачить не лише рух угору. */
+    staleBadge: "давно не робив",
+    belowPeakPrefix: "зараз",
+  },
+  /**
+   * Шкала повернення — signature-view Фізрука (анти-слоп П1).
+   *
+   * AI-CONTEXT: тон констатувальний, без докору — канон `fizruk.md` §6
+   * вимагає саме цього. Тому в середині шкали стоїть факт про паузу
+   * («34 дні без роботи»), а не оцінка людини, і слово «спад»
+   * зʼявляється лише коли він справді дійшов до підлоги.
+   */
+  returnScale: {
+    referenceLabel: "орієнтир",
+    kgUnit: "кг",
+    peakPrefix: "пік",
+    fresh: "свіже",
+    daysAgo: "дн. тому",
+    daysWithoutWork: "дн. без роботи",
+    atFloor: "нижче не опускаю",
+    noHistory: "історії ще немає",
+  },
+  // Shared Fizruk unit suffixes (composed at call-site as `${n} ${unit}`).
+  hoursUnit: "год",
+  secondsUnit: "с",
+
+  // Exercise detail page (`pages/Exercise.tsx`) — set-history pagination
+  // (defect #4: `history.slice(0, 20)` used to cut silently, no counter,
+  // no way to see the rest). Rendered as `${historyShownPrefix} ${shown}
+  // ${historyShownOfWord} ${total}` so the catalog stays plain-string
+  // (см. `MessageCatalog` constraint, той самий патерн, що
+  // `biometrics.ageLabel`).
+  exercise: {
+    historyShownPrefix: "Показано",
+    historyShownOfWord: "з",
+    showMoreHistory: "Показати ще",
+  },
   headerSubtitle: "Рух · сила · відновлення",
   // < sm: повний підпис не вміщається поруч із двома кнопками шапки на
   // 390 px (VIS-1, аудит 2026-09).

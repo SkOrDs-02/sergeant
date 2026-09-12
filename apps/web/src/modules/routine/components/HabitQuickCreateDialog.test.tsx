@@ -231,7 +231,7 @@ describe("HabitQuickCreateDialog", () => {
 
   it("renders the first-run hint banner when firstRunHint is set (create mode)", () => {
     render(<Harness firstRunHint />);
-    // The banner heading comes from messages.routine.firstRun.title; assert
+    // The banner heading comes from routineCopy.firstRun.title; assert
     // the dialog still renders the create CTA so the banner branch is covered.
     expect(
       screen.getByRole("button", { name: "Додати звичку" }),

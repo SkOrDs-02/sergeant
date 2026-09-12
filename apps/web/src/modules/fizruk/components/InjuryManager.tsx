@@ -13,8 +13,8 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useToast } from "@shared/hooks/useToast";
 import { cn } from "@shared/lib/ui/cn";
 import { pluralUa } from "@sergeant/shared";
-import { messages } from "@shared/i18n/uk";
 import { useInjuries } from "../hooks/useInjuries";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
 /**
  * Marking surface for the "не можна" model (ADR-0083).
@@ -37,7 +37,7 @@ import { useInjuries } from "../hooks/useInjuries";
  * phone-width viewport; 3 columns only kick in once there is room.
  */
 export function InjuryManager() {
-  const t = messages.fizruk.injuries;
+  const t = fizrukCopy.injuries;
   const { active, activeSites, mark, clear } = useInjuries();
   const toast = useToast();
   const [selected, setSelected] = useState<InjurySiteId[]>([]);

@@ -30,12 +30,12 @@ import { pluralDays, pluralUa } from "@sergeant/shared";
 import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import { flexibleStreakBreakdown } from "../lib/streaks";
 import { SKIP_REASON_LABELS } from "../lib/skipReasons";
 import type { Habit } from "../lib/types";
+import { routinePageMessages as routineCopy } from "@shared/i18n/uk.routine";
 
-const T = messages.routine.streakCanvas;
+const T = routineCopy.streakCanvas;
 
 export interface HabitStreakCanvasProps {
   habit: Habit;

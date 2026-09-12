@@ -18,9 +18,9 @@ import type { ManualExpenseKind } from "@sergeant/finyk-domain/domain/transactio
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
-import { messages } from "@shared/i18n/uk";
 import { useSilpoReceipts } from "@finyk/hooks/useSilpoReceipts";
 import { ManualExpenseSheet } from "@finyk/components/ManualExpenseSheet";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 export interface ManualExpenseDraft {
   id?: string;
@@ -50,7 +50,7 @@ export function SilpoUnmatchedReceipts({
   enabled,
   addManualExpense,
 }: SilpoUnmatchedReceiptsProps) {
-  const copy = messages.finyk.silpoUnmatchedReceipts;
+  const copy = finykCopy.silpoUnmatchedReceipts;
   const { receipts } = useSilpoReceipts({ limit: 100 }, { enabled });
   const unmatched = receipts.filter(
     (receipt) => receipt.transactionId === null,

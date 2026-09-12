@@ -1,7 +1,7 @@
 import { memo } from "react";
 import { FlowRow, type FlowItem } from "../overview/FlowRow";
 import { Card } from "@shared/components/ui/Card";
-import { messages } from "@shared/i18n/uk";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
 interface PlannedFlowsCardProps {
   plannedFlows: (FlowItem & { id: string })[];
@@ -26,7 +26,7 @@ const PlannedFlowsCardImpl = function PlannedFlowsCard({
     <Card radius="lg" padding="none" className="overflow-hidden">
       <div className="px-5 pt-4 pb-2">
         <span className="text-style-caption text-subtle">
-          {messages.finyk.planning.upcomingTitle}
+          {finykCopy.planning.upcomingTitle}
         </span>
       </div>
       <div className="px-5 pb-3">

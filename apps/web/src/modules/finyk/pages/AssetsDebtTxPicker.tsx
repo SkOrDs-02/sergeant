@@ -26,10 +26,10 @@ import {
   type Receivable,
 } from "@sergeant/finyk-domain/domain/debtEngine";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain/constants";
-import { messages } from "@shared/i18n/uk";
 import { formatNumberUk } from "@sergeant/shared";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
-const copy = messages.finyk.debtTxLink;
+const copy = finykCopy.debtTxLink;
 
 /**
  * Пояснення ролей у пікері. Ключова відмінність, заради якої вибір узагалі

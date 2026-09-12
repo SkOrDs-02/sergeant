@@ -12,7 +12,7 @@ import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { MealTemplate, NutritionPrefs } from "@sergeant/nutrition-domain";
 import type { MealFormState } from "./mealFormUtils";
-import { messages } from "@shared/i18n/uk";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 interface MealTemplatesRowProps {
   mealTemplates: MealTemplate[];
@@ -86,7 +86,7 @@ export function MealTemplatesRow({
     <>
       <CollapsibleSection
         storageKey={ADD_MEAL_SECTION_KEYS.templates}
-        title={messages.nutrition.templates}
+        title={nutritionCopy.templates}
         defaultOpen={false}
         collapsedSubtitle={`${mealTemplates.length} шаблонів`}
         className="mb-4"
@@ -143,7 +143,7 @@ export function MealTemplatesRow({
       */}
       <ConfirmDialog
         open={confirmDeleteId != null}
-        title={messages.nutrition.deleteTemplateTitle}
+        title={nutritionCopy.deleteTemplateTitle}
         description={
           confirmTarget
             ? `«${confirmTarget.name}». Натисни «Повернути» у тості, якщо це випадково.`

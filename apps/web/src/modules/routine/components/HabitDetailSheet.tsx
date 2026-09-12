@@ -28,6 +28,7 @@ import { HabitStreakCanvas } from "./HabitStreakCanvas";
 import type { Habit, RoutineState } from "../lib/types";
 import { HabitGlyph } from "./HabitGlyph";
 import { fillName } from "../lib/fillName";
+import { routinePageMessages as routineCopy } from "@shared/i18n/uk.routine";
 
 function todayKey(): string {
   // Делегат на `lib/dayAnchor` — анкер доби routine і його мітка
@@ -164,8 +165,8 @@ export function HabitDetailSheet({
     showUndoToast(toast, {
       msg: fillName(
         nextArchived
-          ? messages.routine.habitsTab.archived
-          : messages.routine.habitsTab.restored,
+          ? routineCopy.habitsTab.archived
+          : routineCopy.habitsTab.restored,
         habitName,
       ),
       onUndo: () =>
@@ -191,8 +192,8 @@ export function HabitDetailSheet({
         onClick={handleToggleArchived}
       >
         {habit.archived
-          ? messages.routine.habitsTab.restoreAction
-          : messages.routine.habitsTab.archiveAction}
+          ? routineCopy.habitsTab.restoreAction
+          : routineCopy.habitsTab.archiveAction}
       </Button>
       <Button
         type="button"
@@ -278,7 +279,7 @@ export function HabitDetailSheet({
         {isOnce ? null : (
           <section
             className="mb-5"
-            aria-label={messages.routine.streakCanvas.heading}
+            aria-label={routineCopy.streakCanvas.heading}
           >
             <HabitStreakCanvas
               habit={habit}

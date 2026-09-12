@@ -24,11 +24,10 @@ import { Button } from "@shared/components/ui/Button";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { injurySiteLabelUk } from "@sergeant/fizruk-domain/data";
 
-import { messages } from "@shared/i18n/uk";
-
 import { useInjuries } from "../hooks/useInjuries";
+import { fizrukPageMessages as fizrukCopy } from "@shared/i18n/uk.fizruk";
 
-const t = messages.fizruk.injuries;
+const t = fizrukCopy.injuries;
 
 function formatSince(startedAt: string): string {
   const ts = Date.parse(startedAt);

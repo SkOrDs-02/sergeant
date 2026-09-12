@@ -20,7 +20,6 @@ import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
-import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { SilpoCartDto, SilpoCartMatchDto } from "@shared/api";
 import {
@@ -29,6 +28,7 @@ import {
   type SilpoCartRow as SilpoCartRowData,
 } from "../hooks/useSilpoCart";
 import type { SilpoCartSourceItem } from "../lib/silpoCartItems";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 export interface SilpoCartSheetProps {
   open: boolean;
@@ -37,7 +37,7 @@ export interface SilpoCartSheetProps {
   items: SilpoCartSourceItem[];
 }
 
-const COPY = messages.nutrition.silpoCart;
+const COPY = nutritionCopy.silpoCart;
 
 function errorCopy(kind: SilpoCartErrorKind): string | null {
   switch (kind) {

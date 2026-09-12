@@ -15,9 +15,9 @@
  * дав обробника.
  */
 import { Button } from "@shared/components/ui/Button";
-import { messages } from "@shared/i18n/uk";
+import { finykPageMessages as finykCopy } from "@shared/i18n/uk.finyk";
 
-const copy = messages.finyk.manualExpenseSheet;
+const copy = finykCopy.manualExpenseSheet;
 
 export interface ManualExpenseFooterProps {
   isEditing: boolean;

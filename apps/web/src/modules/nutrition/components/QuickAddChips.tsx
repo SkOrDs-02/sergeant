@@ -11,8 +11,8 @@
  */
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { messages } from "@shared/i18n/uk";
 import type { QuickChip } from "../hooks/useNutritionQuickChips";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 interface QuickAddChipsProps {
   chips: readonly QuickChip[];
@@ -72,7 +72,7 @@ export function QuickAddChips({ chips, onTap }: QuickAddChipsProps) {
           <Icon name="plus" size={12} aria-hidden />
           <span className="whitespace-nowrap">{chip.label}</span>
           <span className="text-style-caption text-muted whitespace-nowrap">
-            · {chip.macros.kcal} {messages.nutrition.kcalUnit}
+            · {chip.macros.kcal} {nutritionCopy.kcalUnit}
           </span>
         </Button>
       ))}

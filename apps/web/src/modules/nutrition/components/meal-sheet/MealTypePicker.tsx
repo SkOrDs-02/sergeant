@@ -8,7 +8,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { MEAL_TYPES, type MealTypeId } from "../../lib/mealTypes";
 import type { MealFormState } from "./mealFormUtils";
-import { messages } from "@shared/i18n/uk";
+import { nutritionPageMessages as nutritionCopy } from "@shared/i18n/uk.nutrition";
 
 interface MealTypePickerProps {
   mealType: MealTypeId;
@@ -19,7 +19,7 @@ export function MealTypePicker({ mealType, setForm }: MealTypePickerProps) {
   return (
     <div className="mb-4">
       <SectionHeading as="div" size="xs" variant="nutrition" className="mb-2">
-        {messages.nutrition.mealType}
+        {nutritionCopy.mealType}
       </SectionHeading>
       <div className="flex gap-2 flex-wrap">
         {MEAL_TYPES.map((mt) => (
