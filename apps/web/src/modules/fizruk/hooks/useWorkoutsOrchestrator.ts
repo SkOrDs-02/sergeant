@@ -303,7 +303,7 @@ export function useWorkoutsOrchestrator(
       const conflicts = recoveryConflictsForExercise(ex, rec.by);
       if (conflicts.injury.blocked) {
         toast.warning(
-          "Ти позначив біль у цій групі. Навантажувати її не раджу.",
+          "Ти позначив біль у цій групі. Вправу додав, але навантажувати не раджу.",
         );
       }
       addExerciseToActive(ex);

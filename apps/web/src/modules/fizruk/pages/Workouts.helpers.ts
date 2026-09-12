@@ -8,7 +8,7 @@ import type {
   RawExerciseDef,
 } from "@sergeant/fizruk-domain/data";
 import { matchesExerciseLocation } from "@sergeant/fizruk-domain/data";
-import { deviceDayKey } from "@sergeant/shared";
+import { deviceDayKey, pluralUa } from "@sergeant/shared";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import type { LastExerciseItem } from "./Workouts.types";
 
@@ -359,4 +359,50 @@ export function buildActivityWorkoutTimes(
     implausiblyLong: endMs - startMs > MAX_ROLLOVER_SESSION_MS,
     inFuture: endMs > now.getTime(),
   };
+}
+
+/**
+ * Скільки разів кожна вправа вже лежить в активному тренуванні.
+ *
+ * Каталог у сесії відкривається аркушем, який навмисно НЕ закривається
+ * після додавання (за один захід беруть кілька вправ). Через це успішний
+ * тап був єдиною гілкою без зворотного звʼязку: помилки тостяться, а
+ * успіх мовчав, і рядок мав лише `hover`/`active` підсвітку, яка на
+ * тачі зникає разом із пальцем — власник вирішив, що екран зламано
+ * (звіт 2026-09-12). Лічильник, а не булеве «додано», бо `addItem`
+ * дублі не блокує: повторний тап мусить бути видимим як «×2».
+ */
+export function countItemsByExerciseId(
+  items: ReadonlyArray<{ exerciseId?: string | undefined }> | null | undefined,
+): Record<string, number> {
+  const acc: Record<string, number> = {};
+  for (const item of items ?? []) {
+    const id = item?.exerciseId;
+    if (!id) continue;
+    acc[id] = (acc[id] ?? 0) + 1;
+  }
+  return acc;
+}
+
+/**
+ * Підпис кнопки «Готово» в аркуші каталогу. Поки нічого не додано —
+ * просто «Готово»; далі кнопка несе біжучий підсумок, щоб додавання
+ * було видимим навіть коли щойно доданий рядок поїхав за екран.
+ */
+export function formatAddExerciseDoneLabel(
+  total: number,
+  copy: {
+    addExerciseDone: string;
+    exercisesOne: string;
+    exercisesFew: string;
+    exercisesMany: string;
+  },
+): string {
+  if (total <= 0) return copy.addExerciseDone;
+  const word = pluralUa(total, {
+    one: copy.exercisesOne,
+    few: copy.exercisesFew,
+    many: copy.exercisesMany,
+  });
+  return `${copy.addExerciseDone} · ${total} ${word}`;
 }
