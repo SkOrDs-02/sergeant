@@ -103,4 +103,30 @@ describe("InjuryManager", () => {
       .find((el) => el.hasAttribute("disabled"));
     expect(chestChip).toBeDefined();
   });
+
+  // Founder audit round2 2026-09-11 (D2): the Atlas picker had diverged into
+  // `rounded-full` pills in a `flex-wrap` list, while the workout finish
+  // flow (`WorkoutFinishSheets`) and this component's own doc comment both
+  // claim a shared rectangular-grid layout. Pin the shape so it can't drift
+  // back silently — mutated to `rounded-full`/`flex flex-wrap` locally to
+  // confirm this fails on the old shape (see PR report).
+  it("renders sites as rectangular grid chips, not rounded-full pills in flex-wrap (D2 audit)", () => {
+    render(<InjuryManager />);
+    const chip = screen.getByRole("button", { name: "Коліно" });
+    expect(chip.className).toContain("rounded-lg");
+    expect(chip.className).not.toContain("rounded-full");
+    expect(chip.className).toContain("w-full");
+    const grid = chip.parentElement;
+    expect(grid?.className).toContain("grid");
+    expect(grid?.className).not.toContain("flex-wrap");
+  });
+
+  it("shows a visible check glyph on an already-marked site, not just a border tint", () => {
+    render(<InjuryManager />);
+    fireEvent.click(screen.getByRole("button", { name: /Мʼязи/ }));
+    const chestChip = screen
+      .getAllByRole("button", { name: "Груди" })
+      .find((el) => el.hasAttribute("disabled"));
+    expect(chestChip?.querySelector("svg")).not.toBeNull();
+  });
 });

@@ -5,7 +5,6 @@
 import { useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
-import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { useApiForm } from "@shared/forms";
 import { messages } from "@shared/i18n/uk";
 import { useAuth } from "./AuthContext";
@@ -15,7 +14,6 @@ import {
   PasswordStrengthBar,
   PasswordVisibilityToggle,
 } from "./authFormPrimitives";
-import { Icon } from "@shared/components/ui/Icon";
 
 interface RegisterFormProps {
   onAlreadyRegistered: () => void;
@@ -23,7 +21,6 @@ interface RegisterFormProps {
 
 export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
   const { register: signup, authError } = useAuth();
-  const { achievement } = useCelebration();
   const [showPassword, setShowPassword] = useState(false);
 
   const {
@@ -52,23 +49,6 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
         throw new Error("");
       }
       return true;
-    },
-    onSuccess: (_ok, values) => {
-      const name = values.name?.trim() || values.email.split("@")[0] || "";
-      achievement(
-        `Готово, ${name}!`,
-        "Твої дані тепер з тобою на всіх пристроях.",
-        [
-          {
-            icon: <Icon name="lock" size="md" aria-hidden />,
-            label: "Захищений акаунт",
-          },
-          {
-            icon: <Icon name="refresh-cw" size="md" aria-hidden />,
-            label: "Синхронізація",
-          },
-        ],
-      );
     },
   });
 

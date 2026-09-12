@@ -210,4 +210,25 @@ describe("FirstEntryCelebrationModal: interaction branches", () => {
     renderOpenModal({ ttvMs: 500, moduleId: "fizruk" });
     expect(hapticTapMock).toHaveBeenCalledTimes(1);
   });
+
+  // O1 (2026-09-11 founder audit): `nextStepTip` + `primaryCtaLabel`
+  // shipped to analytics only — the audit called that half-dead, worse
+  // than either shipping or deleting. Now both render on screen.
+  it("renders nextStepTip and primaryCtaLabel from the copy table", () => {
+    renderOpenModal({ ttvMs: 1000, moduleId: "finyk" });
+    const copy = getFirstEntryCelebrationCopy("finyk");
+    expect(screen.getByText(copy.nextStepTip)).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: copy.primaryCtaLabel }),
+    ).toBeInTheDocument();
+  });
+
+  it("the primaryCtaLabel button dismisses the plaque like the close control (documented contract — no routing)", () => {
+    const onClose = vi.fn();
+    renderOpenModal({ onClose, ttvMs: 1000, moduleId: "finyk" });
+    const copy = getFirstEntryCelebrationCopy("finyk");
+
+    fireEvent.click(screen.getByRole("button", { name: copy.primaryCtaLabel }));
+    expect(onClose).toHaveBeenCalledTimes(1);
+  });
 });

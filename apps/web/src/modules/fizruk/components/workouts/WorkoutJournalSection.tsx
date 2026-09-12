@@ -25,7 +25,6 @@ import { SessionView } from "../session/SessionView";
 import { WorkoutSummaryView } from "../workouts/WorkoutSummaryView";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { useToast } from "@shared/hooks/useToast";
-import { useCelebration } from "@shared/components/ui/CelebrationModal";
 import { hapticSuccess } from "@shared/lib/adapters/haptic";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
@@ -130,7 +129,6 @@ export function WorkoutJournalSection({
 }: WorkoutJournalSectionProps) {
   const toast = useToast();
   const { announce } = useAnnounce();
-  const celebration = useCelebration();
   const copy = messages.fizruk.workoutSummary;
   // Guard the finish flow against double-click re-entry — the state updates
   // inside onFinishClick are async, so React may still render the "Завершити"
@@ -155,19 +153,15 @@ export function WorkoutJournalSection({
 
   if (activeWorkout.endedAt) {
     return (
-      <>
-        {celebration.CelebrationComponent}
-        <WorkoutSummaryView
-          workout={activeWorkout}
-          onRepeat={() => onRepeatWorkout(activeWorkout)}
-        />
-      </>
+      <WorkoutSummaryView
+        workout={activeWorkout}
+        onRepeat={() => onRepeatWorkout(activeWorkout)}
+      />
     );
   }
 
   return (
     <>
-      {celebration.CelebrationComponent}
       <SectionErrorBoundary
         title="Помилка в активному тренуванні"
         resetLabel="Спробувати знову"
@@ -243,14 +237,14 @@ export function WorkoutJournalSection({
               // часу / вправ / обʼєму і кнопкою «Готово». Це і є
               // святкування — окремий трофей поверх нього зайвий.
               //
-              // AI-DANGER: НЕ піднімай тут `celebration.achievement`.
-              // `CelebrationModal` — це `fixed inset-0 z-9999` із
-              // backdrop-ом, а аркуш живе на `z-100`, тож трофей накривав
-              // крок «Самопочуття»: кнопка «Пропустити» лишалась видимою,
-              // але кліки зʼїдав backdrop. І сам собою він не зникав —
-              // focus-trap модала переводить фокус усередину, `focusin`
-              // ставить `autoCloseMs` на паузу, і той уже не стартує.
-              // Ловилось `fizruk-active-workout.spec.ts`.
+              // AI-DANGER: НЕ піднімай тут повноекранну celebration-модалку
+              // (`CelebrationModal`/`useCelebration`). Вона — `fixed
+              // inset-0 z-9999` із backdrop-ом, а аркуш живе на `z-100`,
+              // тож трофей накривав крок «Самопочуття»: кнопка
+              // «Пропустити» лишалась видимою, але кліки зʼїдав backdrop.
+              // І сам собою він не зникав — focus-trap модала переводить
+              // фокус усередину, `focusin` ставить `autoCloseMs` на паузу,
+              // і той уже не стартує. Ловилось `fizruk-active-workout.spec.ts`.
               setFinishFlash({
                 step: "wellbeing",
                 collapsed: false,
@@ -265,14 +259,18 @@ export function WorkoutJournalSection({
               announce("Тренування завершено та збережено.");
             } else if (isWorkoutWin) {
               // Підсумку немає (порожня чи шаблонна сесія), але робота
-              // була — тоді трофей нікого не перекриває й лишається
-              // єдиним визнанням. W2: краще за мовчазний тост.
-              celebration.achievement(
-                "Тренування завершено!",
-                "Відмінна робота, сесія збережена.",
+              // була. Рішення власника 2026-09-11 (аудит O1): завершене
+              // тренування — часта подія, тож повноекранна
+              // celebration-модалка з конфеті знижена до тихого тосту —
+              // той самий канонічний механізм, що й у гілці нижче.
+              //
+              // Окремого `announce()` тут НЕМА свідомо: тост несе
+              // `role="status" aria-live="polite"` зі своїм текстом, і
+              // дубль означав би, що незряча людина чує про одне
+              // збереження двічі, різними словами.
+              toast.success(
+                "Тренування завершено! Відмінна робота, сесія збережена.",
               );
-              // Модалка не має live-region — озвучуємо окремо.
-              announce("Тренування завершено та збережено.");
             } else {
               // Empty or template-only workout: fall back to a plain toast
               // so the save is still acknowledged without a jarring modal.

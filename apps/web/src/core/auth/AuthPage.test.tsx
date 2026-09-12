@@ -14,7 +14,10 @@ import { MemoryRouter } from "react-router-dom";
  *
  * - client-side zod валідація (порожні / невалідні поля → inline помилки)
  * - happy path login → toast "Вхід виконано"
- * - happy path register → celebration achievement
+ * - happy path register → `register()` викликається з правильними значеннями
+ *   (мертвий `useCelebration` тут прибрано аудитом O1 2026-09-11 — тригер
+ *   у `RegisterForm` рендерився в іншому інстансі хука в `AuthPage`, тож
+ *   святкування не показувалось НІКОЛИ)
  * - server-помилка через `authError` (не дублюється form.serverError)
  * - перемикач режиму (login ↔ register) скидає поля
  *
@@ -56,15 +59,6 @@ vi.mock("@shared/hooks/useToast", () => ({
   }),
 }));
 
-const achievementMock = vi.fn();
-vi.mock("@shared/components/ui/CelebrationModal", () => ({
-  useCelebration: () => ({
-    achievement: achievementMock,
-    CelebrationComponent: null,
-  }),
-  CelebrationModal: () => null,
-}));
-
 import { AuthPage } from "./AuthPage";
 
 beforeEach(() => {
@@ -75,7 +69,6 @@ beforeEach(() => {
   requestPasswordResetMock.mockReset();
   setAuthErrorMock.mockReset();
   toastSuccessMock.mockReset();
-  achievementMock.mockReset();
   authErrorState = null;
 });
 
@@ -230,9 +223,6 @@ describe("AuthPage — register mode", () => {
         "longenoughpw",
         "bob",
       );
-    });
-    await waitFor(() => {
-      expect(achievementMock).toHaveBeenCalled();
     });
   });
 
