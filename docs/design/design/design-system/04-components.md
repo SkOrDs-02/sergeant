@@ -1,6 +1,6 @@
 # Design System — Примітиви UI, Focus, A11y та Gestures
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-24.
+> **Last touched:** 2026-09-12 by @claude. **Next review:** 2027-03-25.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює UI-примітиви, focus/disabled/loading контракт, правила кодування, міграційні патерни, нові компоненти та хуки, gestures/a11y, та keyboard-first overlays (DropdownMenu, CommandPalette).
@@ -180,7 +180,7 @@ Home/End, `role="tablist"`.
 | `routine`   | `text-routine-strong dark:text-routine-300/70` | brand-tint у модулі Рутина            |
 | `nutrition` | `text-nutrition-strong dark:text-nutrition/70` | brand-tint у модулі Харчування        |
 
-> **Dark-mode AA (Hard Rule a11y):** де-емфазований `/70` підпис має тримати ≥4.5:1 на `--c-panel` (#201c19). `finyk`/`routine`/`fizruk` беруть світліший `-300`-тир (teal/rose/cyan-300 @ /70 ≈ 5.5–6.3:1); `nutrition` лишається на lime-500 (/70 ≈ 4.9:1, вже AA). DEFAULT-500 у finyk/routine чистий AA лише на повній непрозорості — `-300` застосовуємо **тільки** в `dark:` `/70`-слоті підпису.
+> **Dark-mode AA (Hard Rule a11y):** де-емфазований `/70` підпис має тримати ≥4.5:1 на `--c-panel` (#1f1a17, «Чорнило» — до 2026-08-05 тут стояв #201c19). `finyk`/`routine`/`fizruk` беруть світліший `-300`-тир (teal/rose/cyan-300 @ /70 ≈ 5.5–6.3:1); `nutrition` лишається на lime-500 (/70 ≈ 4.9:1, вже AA). DEFAULT-500 у finyk/routine чистий AA лише на повній непрозорості — `-300` застосовуємо **тільки** в `dark:` `/70`-слоті підпису.
 
 Зірочкою (\*) — це значення за замовчуванням; їх можна не передавати.
 
@@ -641,10 +641,10 @@ Tabs/SubTabs з module variant (`finyk`, `fizruk`, `routine`, `nutrition`)
 
 #### Contrast / WCAG notes
 
-- `--c-ring` (#10b981 light / #34d399 dark) на `--c-panel` (#ffffff /
-  #201c19) резольвиться ≥ 3:1 в обох темах — WCAG 1.4.11
+- `--c-ring` (#0f766e teal-700 light / #2dd4bf teal-400 dark) на `--c-panel` (#ffffff /
+  #1f1a17) резольвиться ≥ 3:1 в обох темах (5.47:1 і 9.26:1) — WCAG 1.4.11
   «non-text contrast» для focus-indicator passed.
-- `--c-ring-strong` (#047857 light / #6ee7b7 dark) для кольорових hero
+- `--c-ring-strong` (#115e59 teal-800 light / #5eead4 teal-300 dark) для кольорових hero
   surfaces де базовий ring втрачає видимість (градієнтні
   картки) — ratio ≥ 4.5:1.
 - `--c-selection-bg` / `--c-selection-fg` (#a7f3d0 / #064e3b light;

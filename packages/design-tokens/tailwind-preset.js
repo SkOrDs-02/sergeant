@@ -548,7 +548,7 @@ const preset = {
       // темі погано видно»): `-strong` несе ДВІ ролі — заливку під
       // `text-white` і текст на поверхні сторінки. У світлій темі одне
       // значення (тир -800) обслуговує обидві. У «Чорнилі» — ні: та сама
-      // red-800 на картці #1b1613 дає 1.9:1, тобто текст помилки форми
+      // red-800 на картці #1f1a17 дає 2.07:1, тобто текст помилки форми
       // практично невидимий.
       //
       // Tailwind дозволяє розвести ролі без жодної правки в call-site-ах:
@@ -687,32 +687,23 @@ const preset = {
         "glow-cyan": "0 0 0 3px rgba(14, 116, 144, 0.15)",
         "glow-rose": "0 0 0 3px rgba(235, 118, 145, 0.15)",
         "glow-lime": "0 0 0 3px rgba(146, 204, 23, 0.15)",
-        // «Чорнило» accent glow — a luminescent tier-400 halo for solid
-        // accent controls (module Buttons, spec § 4: glow 24px/35%),
-        // replacing the drop shadow under the dark ink direction. Applied
-        // `dark:`-only so the light default keeps its shadow.
-        // `glow-accent-emerald` (the pre-teal-migration orphan) removed
-        // 2026-08 design-audit T10 — zero consumers.
-        "glow-accent-teal": "0 0 24px rgba(45, 212, 191, 0.35)", // teal-400 — finyk accent glow (2026-07)
-        "glow-accent-cyan": "0 0 24px rgba(34, 211, 238, 0.35)",
-        "glow-accent-rose": "0 0 24px rgba(246, 141, 164, 0.35)",
-        "glow-accent-lime": "0 0 24px rgba(176, 230, 54, 0.35)",
-        // «Чорнило» hero inset-glow — a luminescent tier-400 halo inside
-        // the card edge (spec § 3: depth = glow, not down-shadow). 40px
-        // blur / 8% alpha; theme-invariant (the halo colour is the module
-        // accent, it does not flip with the surface). Applied `dark:`-only
-        // by Card hero surfaces so the light default is untouched.
-        // `glow-inset-emerald` (the pre-teal-migration orphan) removed
-        // 2026-08 design-audit T10 — zero consumers.
-        "glow-inset-teal": "inset 0 0 40px rgba(45, 212, 191, 0.08)", // teal-400 — finyk hero (2026-07)
-        "glow-inset-cyan": "inset 0 0 40px rgba(34, 211, 238, 0.08)",
-        "glow-inset-rose": "inset 0 0 40px rgba(246, 141, 164, 0.08)",
-        "glow-inset-lime": "inset 0 0 40px rgba(176, 230, 54, 0.08)",
+        // «Чорнило» accent glow (`glow-accent-{teal,cyan,rose,lime}`) і hero
+        // inset-glow (`glow-inset-{teal,cyan,rose,lime}`) прибрані
+        // 2026-09-12 — zero consumers. У темній темі hero-картка несе
+        // акцентний бордер + `shadow-e1` (див. коментар у `Card.test.tsx`),
+        // модульні кнопки — `shadow-glow-*` / `shadow-fab`.
+        //
+        // AI-NOTE: обидва набори пережили аудит T10, який зняв їхніх
+        // emerald-сиблінгів РІВНО за це. Причина проста: тоді сироту шукали
+        // по одному імені (`glow-accent-emerald`), а не по всій родині, тож
+        // чотири решти лишились непоміченими. Шукаєш мертвий токен — грепай
+        // префікс, не конкретне ім'я. Єдині згадки, що лишились у репо, —
+        // `not.toContain` у `Button.test.tsx` і `Card.test.tsx`.
         // «Чорнило» hero light glow (spec § 3 point 2) — a soft downward
         // colour shadow, not a halo. Colour = the light-tier
         // `--c-{module}-accent` hex baked in (box-shadow colour can't take
         // a CSS-var opacity modifier). Replaces the generic `shadow-card`
-        // on the hero surface; dark keeps its own `glow-inset-*` override.
+        // on the hero surface; dark keeps the accent border + `shadow-e1`.
         "hero-finyk": "0 8px 20px rgba(17, 94, 89, 0.22)", // teal-800 — matches --c-finyk-accent (2026-07: was emerald-700)
         "hero-fizruk": "0 8px 20px rgba(14, 116, 144, 0.22)",
         "hero-routine": "0 8px 20px rgba(194, 58, 58, 0.22)",

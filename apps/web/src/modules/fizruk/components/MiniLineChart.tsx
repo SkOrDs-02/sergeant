@@ -293,7 +293,7 @@ export function MiniLineChart({
               fill={color}
               /* #4 — "cut-out" halo uses the surface token, not a static
                * white, so it stays invisible against the dark-theme panel
-               * (`--c-panel` = #1b1613) instead of ringing each dot. */
+               * (`--c-panel` = #1f1a17) instead of ringing each dot. */
               stroke="rgb(var(--c-panel))"
               strokeWidth="2"
             />
