@@ -14,6 +14,22 @@
  *    detail sheet with the capability's example commands;
  *  - clearing the query restores all entries.
  */
+// AI-DANGER: мок лишає РЕАЛЬНУ реалізацію за дефолтом і існує рівно для
+// одного випадку — щоб довести позитивну гілку бейджа «НОВИНКА». У реєстрі
+// жодна можливість `since` не оголошує, тож без цього тест перевіряв би
+// тільки гілку «бейджа немає» і лишався зеленим, якби рядок перестав
+// рендерити бейдж узагалі (знахідка рев'ю на PR #1113).
+//
+// Чому мок, а не вписаний `since` у реєстр: дата в реєстрі — це продуктове
+// рішення (який саме чіп світиться користувачу), і фіксувати її тут означає
+// повернути ту саму бомбу з годинником, тільки з новим таймером.
+jest.mock("@sergeant/shared", () => {
+  const actual = jest.requireActual("@sergeant/shared");
+  return {
+    ...actual,
+    isRecentCapability: jest.fn(actual.isRecentCapability),
+  };
+});
 
 import { fireEvent, render } from "@testing-library/react-native";
 import { AccessibilityInfo } from "react-native";
@@ -234,6 +250,26 @@ describe("AssistantCataloguePage — group collapsing", () => {
     expect(checked).toBeGreaterThan(0);
   });
 
+  // Позитивна гілка. Без неї тест вище доводить лише «бейджа немає» —
+  // і був би зеленим, якби `CapabilityRow` перестав рендерити бейдж
+  // узагалі. Предикат тут підмінений навмисно: його власну логіку
+  // (вікно 30 днів, порожній `since` = не новинка) гейтить
+  // `assistantCatalogue.test.ts` у `@sergeant/shared`, а тут
+  // перевіряється рівно те, що СТОРІНКА його слухає.
+  it("рендерить бейдж на кожному видимому рядку, коли предикат каже «нещодавно»", () => {
+    (isRecentCapability as jest.Mock).mockReturnValue(true);
+    const { queryByTestId } = render(<AssistantCataloguePage />);
+
+    let checked = 0;
+    for (const capability of ASSISTANT_CAPABILITIES) {
+      if (!queryByTestId(`catalogue-capability-${capability.id}`)) continue;
+      checked += 1;
+      expect(
+        queryByTestId(`catalogue-capability-${capability.id}-new`),
+      ).toBeTruthy();
+    }
+    expect(checked).toBeGreaterThan(0);
+  });
   it("auto-expands persisted-collapsed groups while searching, restores them after", () => {
     const { getByTestId, queryByTestId } = render(<AssistantCataloguePage />);
 
