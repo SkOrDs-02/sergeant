@@ -156,7 +156,7 @@ exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList
   "carbs": "#567c0f",
   "fat": "#ac4c64",
   "limit": "#ef4444",
-  "neutral": "#8a968e",
+  "neutral": "#98a49c",
   "protein": "#0e7490",
 }
 `;

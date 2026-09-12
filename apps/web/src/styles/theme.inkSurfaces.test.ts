@@ -99,12 +99,71 @@ describe("theme.css — ink-поверхні не розходяться з inkT
 });
 
 describe("theme.css — прев'ю-блок у 1:1 із `.dark`", () => {
-  it.each(["--c-bg", "--c-panel", "--c-panel-hi", "--c-text"])(
-    "%s однаковий у `.dark` і `[data-theme-preview=dark]`",
+  // AI-DANGER: список тут — це і є обсяг гейта, і рівно на цьому він уже
+  // раз підвів. До 2026-09-12 у ньому не було меж, і прев'ю-блок тихо
+  // тримав ЗЕЛЕНІ `--c-line` (#1f2a25) та `--c-border-strong` (#4a544e) з
+  // доби до «Чорнила» — попри власну шапку блока «Keep these blocks in 1:1
+  // lockstep». Крок 1 D1 звів панелі й не побачив меж саме тому, що
+  // перелік був коротший за блок. **Додаєш змінну в прев'ю-блок — додай її
+  // сюди, інакше вона синхронною не є.**
+  it.each([
+    "--c-bg",
+    "--c-panel",
+    "--c-panel-hi",
+    "--c-text",
+    "--c-muted",
+    "--c-subtle",
+    "--c-line",
+    "--c-border-strong",
+  ])("%s однаковий у `.dark` і `[data-theme-preview=dark]`", (variable) => {
+    expect(preview[variable]).toEqual(dark[variable]);
+  });
+});
+
+describe("theme.css — межі `.dark` перебазовані на панель", () => {
+  // `tokens.js` оголошує межі як АЛЬФУ над поверхнею (`line`
+  // rgba(255,255,255,.14), `lineStrong` .22), а `.dark` шипить суцільні
+  // триплети — тобто зійтися «значення до значення» вони не можуть, і
+  // тому їх ніщо не звіряло. Наслідок: коли крок 2 підняв панель, межа
+  // лишилась на старому `#3b332e` і ПОСЛАБШАЛА (1.394 → 1.250 до картки),
+  // хоча мета кроку — зробити бордер підсиленням, а не єдиним сепаратором.
+  //
+  // Гейт звіряє те, що звірити МОЖНА: суцільна межа мусить дорівнювати
+  // композиту заявленої альфи над панеллю. Тоді на картці — де межі й
+  // стоять — шипиться рівно те, що оголошено.
+  //
+  // `--c-panel` тут не `!`-стверджуємо: `noUncheckedIndexedAccess` (Hard
+  // Rule #19) правильно каже, що ключ може бути відсутній, і зникла панель
+  // мусить читатись як назване падіння гейта, а не як `TypeError` у
+  // хелпері за два кадри від причини.
+  const composite = (alpha: number) => {
+    const panel = dark["--c-panel"];
+    if (!panel) return "(немає --c-panel у `.dark`)";
+    return panel.rgb
+      .split(" ")
+      .map(Number)
+      .map((v) => String(Math.round(v + (255 - v) * alpha)))
+      .join(" ");
+  };
+
+  it("`--c-line` = біле 14% над панеллю", () => {
+    expect(dark["--c-line"]?.rgb).toEqual(composite(0.14));
+  });
+
+  it("`--c-border-strong` = біле 22% над панеллю", () => {
+    expect(dark["--c-border-strong"]?.rgb).toEqual(composite(0.22));
+  });
+
+  it.each(["--c-divider", "--c-scrollbar-thumb"])(
+    "%s дзеркалить `--c-line` (коментар так і каже — тепер це перевіряється)",
     (variable) => {
-      expect(preview[variable]).toEqual(dark[variable]);
+      expect(dark[variable]).toEqual(dark["--c-line"]);
     },
   );
+
+  it("`--c-divider-strong` дзеркалить `--c-border-strong`", () => {
+    expect(dark["--c-divider-strong"]).toEqual(dark["--c-border-strong"]);
+  });
 });
 
 describe("theme.css — back-compat glass-аліаси сидять на тій самій поверхні", () => {

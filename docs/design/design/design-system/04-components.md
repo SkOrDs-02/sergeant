@@ -180,7 +180,7 @@ Home/End, `role="tablist"`.
 | `routine`   | `text-routine-strong dark:text-routine-300/70` | brand-tint у модулі Рутина            |
 | `nutrition` | `text-nutrition-strong dark:text-nutrition/70` | brand-tint у модулі Харчування        |
 
-> **Dark-mode AA (Hard Rule a11y):** де-емфазований `/70` підпис має тримати ≥4.5:1 на `--c-panel` (#1f1a17, «Чорнило» — до 2026-08-05 тут стояв #201c19). `finyk`/`routine`/`fizruk` беруть світліший `-300`-тир (teal/rose/cyan-300 @ /70 ≈ 5.5–6.3:1); `nutrition` лишається на lime-500 (/70 ≈ 4.9:1, вже AA). DEFAULT-500 у finyk/routine чистий AA лише на повній непрозорості — `-300` застосовуємо **тільки** в `dark:` `/70`-слоті підпису.
+> **Dark-mode AA (Hard Rule a11y):** де-емфазований `/70` підпис має тримати ≥4.5:1 на `--c-panel` (#2a231f після кроку 2 D1 2026-09-12; до нього #1f1a17, а до 2026-08-05 — #201c19). `finyk`/`routine`/`fizruk` беруть світліший `-300`-тир (teal/rose/cyan-300 @ /70 ≈ 5.2–5.9:1); `nutrition` лишається на lime-500 (/70 ≈ 4.64:1 — усе ще AA, але це найтісніша пара цього слота, тож підйом поверхні її зʼїсть першою). DEFAULT-500 у finyk/routine чистий AA лише на повній непрозорості — `-300` застосовуємо **тільки** в `dark:` `/70`-слоті підпису.
 
 Зірочкою (\*) — це значення за замовчуванням; їх можна не передавати.
 
@@ -642,7 +642,7 @@ Tabs/SubTabs з module variant (`finyk`, `fizruk`, `routine`, `nutrition`)
 #### Contrast / WCAG notes
 
 - `--c-ring` (#0f766e teal-700 light / #2dd4bf teal-400 dark) на `--c-panel` (#ffffff /
-  #1f1a17) резольвиться ≥ 3:1 в обох темах (5.47:1 і 9.26:1) — WCAG 1.4.11
+  #2a231f) резольвиться ≥ 3:1 в обох темах (5.47:1 і 8.30:1) — WCAG 1.4.11
   «non-text contrast» для focus-indicator passed.
 - `--c-ring-strong` (#115e59 teal-800 light / #5eead4 teal-300 dark) для кольорових hero
   surfaces де базовий ring втрачає видимість (градієнтні
