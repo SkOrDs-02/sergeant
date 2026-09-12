@@ -150,6 +150,77 @@ describe("useDebtPaymentSplitSync — рівень 3 (2026-09-11)", () => {
     expect(result.current.pendingUnlink).toBeNull();
   });
 
+  it("повернена частка боргу знімає застарілий запит на відвʼязування", () => {
+    // Послідовність: частку прибрали (діалог), потім повернули (сума
+    // оновилась), потім натиснули «Відвʼязати» на вже мертвому діалозі.
+    // Відвʼязування статись НЕ має — інакше підтвердження знищило б
+    // привʼязку, яку щойно відновили.
+    const { result, setLinkedTxRole } = setup();
+
+    act(() => {
+      result.current.reconcile(
+        TX_ID,
+        [{ categoryId: "food", amount: 1000 }],
+        1000,
+      );
+    });
+    expect(result.current.pendingUnlink).not.toBeNull();
+
+    act(() => {
+      result.current.reconcile(
+        TX_ID,
+        [
+          { categoryId: "debt", amount: 150 },
+          { categoryId: "food", amount: 850 },
+        ],
+        1000,
+      );
+    });
+    expect(result.current.pendingUnlink).toBeNull();
+
+    act(() => {
+      result.current.confirmUnlink();
+    });
+
+    expect(setLinkedTxRole).toHaveBeenCalledTimes(1);
+    expect(setLinkedTxRole).toHaveBeenCalledWith(
+      "d1",
+      TX_ID,
+      "debt",
+      "payment",
+      150,
+    );
+    expect(setLinkedTxRole).not.toHaveBeenCalledWith("d1", TX_ID, "debt", null);
+  });
+
+  it("повернення до незмінної суми теж знімає запит", () => {
+    // Гілка `none` виходить раніше за запис, тож без явного скидання вона
+    // лишала б діалог живим.
+    const { result } = setup();
+
+    act(() => {
+      result.current.reconcile(
+        TX_ID,
+        [{ categoryId: "food", amount: 1000 }],
+        1000,
+      );
+    });
+    expect(result.current.pendingUnlink).not.toBeNull();
+
+    act(() => {
+      result.current.reconcile(
+        TX_ID,
+        [
+          { categoryId: "debt", amount: 300 },
+          { categoryId: "food", amount: 700 },
+        ],
+        1000,
+      );
+    });
+
+    expect(result.current.pendingUnlink).toBeNull();
+  });
+
   it("транзакція без привʼязки нічого не запускає", () => {
     const { result, setLinkedTxRole, toastSuccess } = setup([
       { id: "d1", amount: 5000, linkedTxIds: [] },
