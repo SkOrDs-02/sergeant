@@ -29,7 +29,17 @@ import { reconcileChatOwnerOnAuthChange } from "../hub/hubChatSessions";
 import { clearPersistedQueryCache } from "@shared/lib/api/queryClientPersister";
 import { flushPendingSyncOpsBeforeLogout } from "../syncEngine/flushBeforeLogout";
 import { SIGN_IN_PATH } from "../app/appPaths";
-import { messages } from "../../shared/i18n/uk";
+// AI-DANGER: саме `uk.core`. Цей файл — eager-поверхня, і повний каталог
+// тягне з собою десять модульних файлів плюс en-копію: до цієї правки
+// саме ВІН лишався останнім eager-ребром до `uk.ts`, уже після того, як
+// решту вісім поверхонь перевели (шлях тут ВІДНОСНИЙ, тож перший скан по
+// `@shared/i18n` його не побачив — грепай і те, і те).
+//
+// Окремо: `apps/web/AGENTS.md` документує, що правка імпортів саме в цьому
+// файлі перекроює eager-чанки й здатна дати БІЛИЙ ЕКРАН на буті, якого не
+// бачать ні typecheck, ні юніти. Змінюєш тут імпорт — перевіряй буту на
+// prod-білді, а не лише сьютом.
+import { coreMessages as messages } from "@shared/i18n/uk.core";
 import {
   safeReadStringSS,
   safeWriteSS,

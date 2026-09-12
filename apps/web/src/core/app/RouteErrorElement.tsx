@@ -1,7 +1,10 @@
 import { Suspense, useEffect } from "react";
 import { useRouteError } from "react-router-dom";
 
-import { messages } from "@shared/i18n/uk";
+// AI-DANGER: саме `uk.core`, а не `uk` — це eager-поверхня, і повний
+// каталог тягне з собою десять модульних файлів плюс en-копію
+// (розбір у шапці `uk.core.ts`). Гейт — `uk.core.eagerImports.test.ts`.
+import { coreMessages as messages } from "@shared/i18n/uk.core";
 
 import { isChunkLoadError, reloadOnceForChunkError } from "../lib/chunkReload";
 import { lazyImport } from "../lib/lazyImport";

@@ -686,7 +686,7 @@
     --c-border-strong: 82 72 65; /* major neutral divider */
 
     /* Dark-theme A11y / states overrides. Focus ring shifts to teal-400
-       so it clears ≥3:1 against the warm-charcoal panel (`--c-panel` = #201c19).
+       so it clears ≥3:1 against the warm-charcoal panel (`--c-panel` = #1f1a17).
        Selection flips to a deep teal wash with a bright foreground. */
     --c-ring: 45 212 191; /* teal-400 — brighter for dark panels (2026-07: was emerald-400) */
     --c-ring-strong: 94 234 212; /* teal-300 — solid, punchy */
@@ -721,24 +721,24 @@
 
        AI-CONTEXT (2026-08-21): до цього дня `.dark` не мав ЖОДНОГО
        статусного override-у, а `text-danger` віддавав світлий red-500
-       (4.77:1 на картці) — тобто «темний» варіант ніколи не існував.
+       (4.58:1 на картці) — тобто «темний» варіант ніколи не існував.
        Гірший бік — `text-{status}-strong` без ручної `dark:`-пари: red-800
-       на #1b1613 = 1.9:1. Обидва боки тепер ідуть звідси. */
-    --c-success: 52 211 153; /* emerald-400 — 9.33:1 на картці */
-    --c-warning: 251 191 36; /* amber-400   — 10.74:1 на картці */
-    --c-danger: 248 113 113; /* red-400     — 6.48:1 на картці */
-    --c-info: 56 189 248; /* sky-400      — 8.37:1 на картці */
+       на #1f1a17 = 2.07:1. Обидва боки тепер ідуть звідси. */
+    --c-success: 52 211 153; /* emerald-400 — 8.97:1 на картці */
+    --c-warning: 251 191 36; /* amber-400   — 10.32:1 на картці */
+    --c-danger: 248 113 113; /* red-400     — 6.23:1 на картці */
+    --c-info: 56 189 248; /* sky-400      — 8.05:1 на картці */
     /* Акцентний чорнильний тир — щабель -400 для модулів (той самий, що
        вже несуть `--c-{module}-accent` і `--c-chart-{module}` у цьому ж
        блоці) і stone-300 для нейтрального бренду (той самий, що
        `--c-brand-soft-fg` нижче). До 2026-09-02 `text-{accent}-strong`
-       віддавав тут світлий тир -800 і давав 1.18…2.60:1 на картці.
+       віддавав тут світлий тир -800 і давав 1.14…2.50:1 на картці.
        = `accentInkHex` у tokens.js. */
-    --c-brand-ink: 214 211 209; /* stone-300 — 12.04:1 на #1b1613 (= `--c-brand-soft-fg` цього ж блоку) */
-    --c-finyk-ink: 45 212 191; /* teal-400 — 9.64:1 на #1b1613 */
-    --c-fizruk-ink: 34 211 238; /* cyan-400 — 9.93:1 на #1b1613 */
-    --c-routine-ink: 246 141 164; /* rose-400 — 7.91:1 на #1b1613 */
-    --c-nutrition-ink: 176 230 54; /* lime-400 — 12.14:1 на #1b1613 */
+    --c-brand-ink: 214 211 209; /* stone-300 — 11.57:1 на #1f1a17 (= `--c-brand-soft-fg` цього ж блоку) */
+    --c-finyk-ink: 45 212 191; /* teal-400 — 9.26:1 на #1f1a17 */
+    --c-fizruk-ink: 34 211 238; /* cyan-400 — 9.54:1 на #1f1a17 */
+    --c-routine-ink: 246 141 164; /* rose-400 — 7.60:1 на #1f1a17 */
+    --c-nutrition-ink: 176 230 54; /* lime-400 — 11.67:1 на #1f1a17 */
 
     --c-success-ink: 52 211 153; /* = statusInkHex.success */
     --c-warning-ink: 251 191 36; /* = statusInkHex.warning */
@@ -895,8 +895,8 @@
   [data-theme-preview="dark"] {
     color-scheme: dark;
     --c-bg: 20 16 14; /* #14100e — ink base */
-    --c-panel: 27 22 19; /* #1b1613 */
-    --c-panel-hi: 34 28 24; /* #221c18 */
+    --c-panel: 31 26 23; /* #1f1a17 — = `.dark` */
+    --c-panel-hi: 42 35 31; /* #2a231f — = `.dark` */
     --c-line: 31 42 37; /* #1f2a25 */
     --c-text: 242 246 242; /* #f2f6f2 */
     --c-muted: 163 174 166; /* #a3aea6 */
@@ -1338,9 +1338,9 @@
        accent border + glow, not translucency. These stay as back-compat
        aliases so existing `bg-surface-glass*` call sites resolve to the solid
        ink surface without a per-component rewrite. */
-    --surface-glass: rgba(27, 22, 19, 1); /* #1b1613 — solid surface */
-    --surface-strong-glass: rgba(27, 22, 19, 1); /* #1b1613 — navs, pills */
-    --surface-soft-glass: rgba(27, 22, 19, 1); /* #1b1613 — tinted bg */
+    --surface-glass: rgba(31, 26, 23, 1); /* #1f1a17 = `--c-panel` */
+    --surface-strong-glass: rgba(31, 26, 23, 1); /* #1f1a17 — navs, pills */
+    --surface-soft-glass: rgba(31, 26, 23, 1); /* #1f1a17 — tinted bg */
     --surface-line: rgba(255, 255, 255, 0.06); /* ink hairline */
 
     --line-v2: rgba(255, 255, 255, 0.06); /* ink hairline (white/6%) */
@@ -1412,14 +1412,9 @@
 
   html.hc.dark {
     /* Dark HC — same mesh OFF + opaque glass strategy, ink colours. */
-    --surface-glass: rgba(27, 22, 19, 1); /* matches --c-panel (#1b1613) */
-    --surface-strong-glass: rgba(
-      34,
-      28,
-      24,
-      1
-    ); /* matches --c-panel-hi (#221c18) */
-    --surface-soft-glass: rgba(27, 22, 19, 0.95);
+    --surface-glass: rgba(31, 26, 23, 1); /* matches --c-panel (#1f1a17) */
+    --surface-strong-glass: rgba(42, 35, 31, 1); /* = --c-panel-hi (#2a231f) */
+    --surface-soft-glass: rgba(31, 26, 23, 0.95);
     --surface-line: rgba(255, 255, 255, 0.7);
 
     --c-ink-strong: 255 255 255;
