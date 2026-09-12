@@ -20,6 +20,7 @@ import { Card } from "@shared/components/ui/Card";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
+import { messages } from "@shared/i18n/uk";
 import { fmt } from "../../lib/numberFmt";
 
 type RecExerciseFn = typeof recoveryConflictsForExerciseFn;
@@ -64,7 +65,18 @@ type WorkoutCatalogSectionProps = {
   recoveryConflictsForExercise: RecExerciseFn;
   rec: { by: RecoveryByMap };
   musclesUk: Record<string, string>;
+  /**
+   * Скільки разів кожна вправа вже лежить в активному тренуванні.
+   * Аркуш каталогу навмисно не закривається після додавання, тож без
+   * цієї позначки успішний тап не давав жодного сигналу — рядок мав
+   * лише `hover`/`active` підсвітку, а на тачі вона зникає разом із
+   * пальцем (звіт власника 2026-09-12). Дублі дозволені, тому
+   * показуємо саме лічильник, а не булеве «додано».
+   */
+  addedCountByExerciseId?: Record<string, number>;
 };
+
+const catalogCopy = messages.fizruk.session;
 
 function toggleArr(arr: string[] | null | undefined, value: string): string[] {
   const a = Array.isArray(arr) ? arr : [];
@@ -89,6 +101,7 @@ export function WorkoutCatalogSection({
   recoveryConflictsForExercise,
   rec,
   musclesUk,
+  addedCountByExerciseId,
 }: WorkoutCatalogSectionProps) {
   const [equipmentOpen, setEquipmentOpen] = useState(false);
 
@@ -311,6 +324,10 @@ export function WorkoutCatalogSection({
                   <div id={panelId}>
                     {g.items.map((ex) => {
                       const catCf = recoveryConflictsForExercise(ex, rec.by);
+                      const addedCount =
+                        mode === "log"
+                          ? (addedCountByExerciseId?.[ex.id] ?? 0)
+                          : 0;
                       return (
                         <div key={ex.id} className="flex border-t border-line">
                           <button
@@ -321,6 +338,7 @@ export function WorkoutCatalogSection({
                               mode === "log"
                                 ? "hover:bg-success/10 active:bg-success/15"
                                 : "hover:bg-panelHi",
+                              addedCount > 0 && "bg-success/10",
                             )}
                           >
                             <div className="flex items-start justify-between gap-3">
@@ -340,6 +358,17 @@ export function WorkoutCatalogSection({
                                     />
                                   ) : null}
                                 </div>
+                                {addedCount > 0 && (
+                                  <div className="mt-1">
+                                    <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-style-caption font-semibold text-success">
+                                      <Icon name="check" size={12} />
+                                      {catalogCopy.addedBadge}
+                                      {addedCount > 1
+                                        ? ` ${catalogCopy.addedBadgeTimes}${addedCount}`
+                                        : ""}
+                                    </span>
+                                  </div>
+                                )}
                                 <div className="text-style-caption text-muted mt-0.5">
                                   Мʼязи:{" "}
                                   <span className="font-semibold text-muted">

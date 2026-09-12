@@ -5,7 +5,9 @@ import {
   buildGroupedExercises,
   buildPastWorkoutTimes,
   collectLastByExerciseId,
+  countItemsByExerciseId,
   defaultPastWorkoutTimes,
+  formatAddExerciseDoneLabel,
   formatActiveDuration,
   MUSCLE_GROUP_ORDER,
 } from "./Workouts.helpers";
@@ -276,5 +278,55 @@ describe("defaultPastWorkoutTimes", () => {
       expect(times?.inFuture, iso).toBe(false);
       expect(times?.implausiblyLong, iso).toBe(false);
     }
+  });
+});
+
+describe("countItemsByExerciseId", () => {
+  it("порожній список дає порожню мапу", () => {
+    expect(countItemsByExerciseId([])).toEqual({});
+    expect(countItemsByExerciseId(null)).toEqual({});
+    expect(countItemsByExerciseId(undefined)).toEqual({});
+  });
+
+  it("рахує дублі, бо повторне додавання дозволене", () => {
+    expect(
+      countItemsByExerciseId([
+        { exerciseId: "bench" },
+        { exerciseId: "squat" },
+        { exerciseId: "bench" },
+      ]),
+    ).toEqual({ bench: 2, squat: 1 });
+  });
+
+  it("ігнорує позиції без exerciseId (кастомна вправа з сесії)", () => {
+    expect(
+      countItemsByExerciseId([
+        { exerciseId: "bench" },
+        {},
+        { exerciseId: undefined },
+      ]),
+    ).toEqual({ bench: 1 });
+  });
+});
+
+describe("formatAddExerciseDoneLabel", () => {
+  const copy = {
+    addExerciseDone: "Готово",
+    exercisesOne: "вправа",
+    exercisesFew: "вправи",
+    exercisesMany: "вправ",
+  };
+
+  it("без доданих вправ — просто «Готово»", () => {
+    expect(formatAddExerciseDoneLabel(0, copy)).toBe("Готово");
+    expect(formatAddExerciseDoneLabel(-1, copy)).toBe("Готово");
+  });
+
+  it("несе біжучий підсумок з правильною формою слова", () => {
+    expect(formatAddExerciseDoneLabel(1, copy)).toBe("Готово · 1 вправа");
+    expect(formatAddExerciseDoneLabel(3, copy)).toBe("Готово · 3 вправи");
+    expect(formatAddExerciseDoneLabel(5, copy)).toBe("Готово · 5 вправ");
+    expect(formatAddExerciseDoneLabel(11, copy)).toBe("Готово · 11 вправ");
+    expect(formatAddExerciseDoneLabel(22, copy)).toBe("Готово · 22 вправи");
   });
 });
