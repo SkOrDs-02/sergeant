@@ -271,15 +271,25 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
             >
               <span
                 className={cn(
-                  "relative flex min-w-0 items-center justify-center rounded-xl py-1",
-                  "transition-[background-color,padding,color] duration-base",
+                  // Пілюля має ОДНАКОВИЙ горизонтальний бокс в активному й
+                  // неактивному стані (`h-full w-full`, по центру grid-
+                  // колонки) — інакше зазор між сусідніми пілюлями стрибає
+                  // залежно від того, який таб активний (founder-аудит R1,
+                  // 2026-09-11). Раніше активна пілюля розпирала бокс до
+                  // `w-full`, а неактивна лишалась вузькою (`px-2`, ≈38px):
+                  // grid-колонки вже рівні, а видимі краї пілюль — ні.
+                  // Підпис активного лишається у власному рядку під
+                  // іконкою (`flex-col`) — він стискається/обривається
+                  // всередині вже наявного боксу, а не розпирає його.
+                  "relative flex h-full w-full min-w-0 items-center justify-center rounded-xl px-1 py-1",
+                  "transition-[background-color,color] duration-base",
                   active
                     ? cn(
-                        "h-full w-full flex-col gap-0.5 px-1 text-bg",
+                        "flex-col gap-0.5 text-bg",
                         tokens.fillLight,
                         tokens.fillDark,
                       )
-                    : "px-2 text-text",
+                    : "text-text",
                 )}
                 aria-hidden
               >

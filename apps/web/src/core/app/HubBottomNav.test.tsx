@@ -106,6 +106,53 @@ describe("HubBottomNav", () => {
     expect(homePill.className).not.toContain("dark:bg-brand-400");
   });
 
+  // Founder-аудит R1 (2026-09-11): контейнер раніше розкладав таби через
+  // `flex` із `flex-initial` (активний) / `flex-1` (неактивні) — інший
+  // алгоритм, ніж grid у `ModuleBottomNav` — і піл під активним табом
+  // ріс за вмістом замість фіксованого боксу. Обидва наві виглядали
+  // однаково (та сама оболонка), але розкладались по-різному, і зазор
+  // між пілюлями стрибав так само, як описано в R1 для модульних навів.
+  describe("однакова геометрія табів (R1 fix, 2026-09-11)", () => {
+    it("контейнер розкладає таби через CSS grid із рівними колонками, як ModuleBottomNav", () => {
+      const { container } = renderNav({});
+      const grid = container.querySelector("nav > div") as HTMLElement;
+
+      expect(grid).not.toBeNull();
+      expect(grid.className).toContain("grid");
+      expect(grid.className).not.toMatch(/(?:^|\s)flex(?:\s|$)/);
+      // Базовий стан (гість, showProfile=false, onShowAuth не надано) —
+      // рівно 3 таби: Головна, «Звʼязки» (слот завжди в DOM-і, навіть
+      // прихований), Налаштування.
+      expect(grid.style.gridTemplateColumns).toBe("repeat(3, minmax(0, 1fr))");
+    });
+
+    it("рахує колонку і для action-табу «Увійти», який рендериться поза масивом tabs", () => {
+      const { container } = renderNav({ onShowAuth: vi.fn() });
+      const grid = container.querySelector("nav > div") as HTMLElement;
+
+      expect(grid.style.gridTemplateColumns).toBe("repeat(4, minmax(0, 1fr))");
+    });
+
+    // Regression guard: до фіксу активний піл ріс за вмістом
+    // (`flex-initial` на кнопці + сам піл без фіксованої ширини), а
+    // неактивний ділив залишок (`flex-1`) — жоден із двох не мав
+    // однакового `w-full`/`h-full` боксу. Той самий дефект, що і в
+    // `ModuleBottomNav` (лише інша механіка розпирання).
+    it("дає активній і неактивній пілюлі однаковий бокс, інакше зазор між ними стрибає", () => {
+      renderNav({ hubView: "settings" });
+
+      const settingsPill = screen.getByRole("tab", { name: /Налаштування/ })
+        .firstElementChild as HTMLElement;
+      const homePill = screen.getByRole("tab", { name: /Головна/ })
+        .firstElementChild as HTMLElement;
+
+      expect(settingsPill.className).toContain("w-full");
+      expect(settingsPill.className).toContain("h-full");
+      expect(homePill.className).toContain("w-full");
+      expect(homePill.className).toContain("h-full");
+    });
+  });
+
   it("виклик onChange при кліку на таб", () => {
     const { onChange } = renderNav({});
     fireEvent.click(screen.getByRole("tab", { name: /Налаштування/ }));
@@ -125,7 +172,7 @@ describe("HubBottomNav", () => {
     expect(nav.className).toContain("bg-panel");
     expect(nav.className).toContain("border");
     expect(settingsTab.className).toContain("justify-center");
-    expect(settingsTab.firstElementChild).toHaveClass("rounded-2xl", "py-1.5");
+    expect(settingsTab.firstElementChild).toHaveClass("rounded-2xl", "py-1");
   });
 
   it("tablist semantics: кожен таб має aria-controls", () => {

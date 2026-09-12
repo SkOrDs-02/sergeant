@@ -95,6 +95,41 @@ describe("ModuleBottomNav", () => {
     expect(inactiveVisualLabel.className).toContain("max-w-0");
   });
 
+  // Founder-аудит R1 (2026-09-11): grid-колонки вже рівні
+  // (`repeat(N, minmax(0,1fr))`), але видима "пілюля" — внутрішній
+  // `<span>` — мала різну ширину для активного (`w-full`) і неактивного
+  // (`px-2`, ≈38px) стану. Через це зазор МІЖ ПІЛЮЛЯМИ стрибав залежно
+  // від того, який таб активний (≈90.7px між двома неактивними проти
+  // ≈47.3px між активною і сусідньою на 390px/3-табовому наві — Рутина).
+  // Єдиний спосіб тримати зазор постійним — дати пілюлі ОДНАКОВИЙ бокс
+  // в обох станах, тож і в тесті ми звіряємо саме бокс, а не колір.
+  it("gives the active and inactive pill the identical box, so the gap between pills can't shift with the active tab (R1 fix, 2026-09-11)", () => {
+    render(
+      <ModuleBottomNav
+        items={items}
+        activeId="overview"
+        onChange={vi.fn()}
+        module="finyk"
+        ariaLabel="Module sections"
+      />,
+    );
+
+    const activePill = screen.getByRole("button", { name: "Overview" })
+      .firstElementChild as HTMLElement;
+    const inactivePill = screen.getByRole("button", { name: "Stats" })
+      .firstElementChild as HTMLElement;
+
+    // Regression guard: both pills must claim the FULL column box —
+    // `w-full`/`h-full` — regardless of active state. Before the fix the
+    // inactive pill was `px-2` sized to content instead, which is exactly
+    // the class this assertion would catch (verified by reverting the
+    // inactive branch back to `px-2` locally: this assertion goes red).
+    expect(activePill.className).toContain("w-full");
+    expect(activePill.className).toContain("h-full");
+    expect(inactivePill.className).toContain("w-full");
+    expect(inactivePill.className).toContain("h-full");
+  });
+
   // Стеля вище — реальна межа, тож підпис, який у неї не вліз, мусить
   // обриватись трьома крапками, а не посеред слова: саме так виглядав
   // «Прогрес і замір» у Фізруку (QA-аудит 2026-08-04 «кліп лейбла без
