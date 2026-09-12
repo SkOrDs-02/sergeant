@@ -76,12 +76,44 @@ describe("UA-каталог не повертається на критични�
 });
 
 describe("ядро лишається ядром", () => {
+  /**
+   * Будь-який імпорт сусіднього каталогу з ядра — named або side-effect.
+   *
+   * AI-DANGER: перша версія цієї перевірки вимагала `from`, тож
+   * `import "./uk.finyk";` її обходив (знахідка рев'ю на PR #1116). Це вже
+   * третій випадок того самого класу в цьому проході: гейт, що виглядає як
+   * перевірка інваріанту, а тримає його частину. Форма `import "…"` для
+   * каталогу безглузда як код, але саме безглузді форми й пролізають —
+   * гейт не має покладатись на те, що автор писатиме розумно.
+   */
+  const CORE_MUST_NOT_IMPORT =
+    /import\s+(?:[^"';]*?\s+from\s+)?["']\.\/(?:uk|en|index)(?:\.[a-z]+)?["']/i;
+
   it("`uk.core.ts` не тягне модульних каталогів", () => {
     // Ядро мусить бути листком. Один імпорт `./uk.fizruk` звідси повернув
     // би 29 kB на критичний шлях, і жоден тест вище цього не побачив би.
-    const core = read("./uk.core.ts");
-    expect(core).not.toMatch(/from\s+["']\.\/uk\.[a-z]/i);
-    expect(core).not.toMatch(/from\s+["']\.\/(uk|en|index)["']/);
+    expect(read("./uk.core.ts")).not.toMatch(CORE_MUST_NOT_IMPORT);
+  });
+
+  it("перевірка ловить обидві форми імпорту — інакше гейт мовчатиме", () => {
+    // Свідок для регексу: без нього помилка в самому патерні зробила б
+    // тест вище зеленим незалежно від вмісту ядра.
+    for (const line of [
+      'import { fizrukPageMessages } from "./uk.fizruk";',
+      'import "./uk.finyk";',
+      'import { messages } from "./uk";',
+      'import { messagesEn } from "./en";',
+      'import "./index";',
+    ]) {
+      expect(line).toMatch(CORE_MUST_NOT_IMPORT);
+    }
+    // А сусідні невинні шляхи — не ловить.
+    for (const line of [
+      'import { readFileSync } from "node:fs";',
+      'import { cn } from "./cn";',
+    ]) {
+      expect(line).not.toMatch(CORE_MUST_NOT_IMPORT);
+    }
   });
 
   it("`uk.ts` розкладає ядро назад, а не дублює його", () => {
