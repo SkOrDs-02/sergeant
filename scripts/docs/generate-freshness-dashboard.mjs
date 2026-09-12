@@ -279,10 +279,37 @@ export function normaliseForCompare(html) {
  * Форматуємо ОДИН раз, до розгалуження на `--check`, щоб обидві гілки
  * працювали з тими самими байтами.
  */
-async function formatHtml(html, filepath) {
-  const prettier = await import("prettier");
-  const config = await prettier.resolveConfig(filepath);
-  return prettier.format(html, { ...config, filepath });
+export async function formatHtml(html, filepath) {
+  try {
+    const prettier = await import("prettier");
+    const config = await prettier.resolveConfig(filepath);
+    return prettier.format(html, { ...config, filepath });
+  } catch (error) {
+    if (error?.code !== "ERR_MODULE_NOT_FOUND") throw error;
+    // AI-DANGER: фолбек, а не тиха поблажливість. Перша версія цієї
+    // правки імпортувала prettier беззастережно — і зламала ДВІ
+    // dep-free CI-джоби (`markdown-links` і `check-freshness`), які
+    // запускають цей скрипт прямим `node scripts/…` без
+    // `pnpm install --frozen-lockfile`. Локально цього не видно ніколи:
+    // node_modules там є завжди.
+    //
+    // Чому фолбек безпечний для ГЕЙТА: `--check` порівнює через
+    // `normaliseForCompare`, який зрізає пробіли, тож сире й форматоване
+    // для нього тождні. Це властивість, а не збіг — вона закріплена
+    // тестом `formatHtml` у `__tests__/generate-freshness-dashboard`.
+    //
+    // Де фолбек НЕ був би безпечний: у контексті, який ПИШЕ артефакт і
+    // потім його комітить. Такий контекст один — pre-commit (lint-staged
+    // і `bump-last-validated.mjs`), і там node_modules є завжди. Якщо
+    // колись з'явиться дep-free шлях, що комітить, — цей warn стане
+    // єдиним попередженням, тож не роби його тихішим.
+    console.warn(
+      "[gen-freshness] prettier недоступний (dep-free середовище) — пишу сирий HTML. " +
+        "Для `--check` це не має значення (порівняння нормалізує пробіли), " +
+        "але закомічений артефакт мусить бути форматованим.",
+    );
+    return html;
+  }
 }
 
 // ── Main ─────────────────────────────────────────────────────────────────────
