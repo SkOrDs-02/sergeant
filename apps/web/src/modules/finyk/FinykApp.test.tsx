@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-08-04
+ * Last validated: 2026-09-11
  * Status: Active
  *
  * Integration tests for FinykApp — over-mocking refactor.
@@ -29,6 +29,7 @@
 import { describe, it, expect, vi, beforeAll, beforeEach } from "vitest";
 import {
   configure,
+  fireEvent,
   render,
   screen,
   within,
@@ -36,12 +37,13 @@ import {
 } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
-import { MemoryRouter } from "react-router-dom";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { http, HttpResponse } from "msw";
 import { ApiClientProvider } from "@sergeant/api-client/react";
 import { apiClient } from "@shared/api";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { AuthProvider } from "../../core/auth/AuthContext";
+import { useOpenSignIn } from "../../core/auth/useOpenSignIn";
 import { server } from "../../test/msw/server";
 
 // ── Heavy browser API (sqlite-wasm worker) — see file docstring ────────────
@@ -120,8 +122,12 @@ beforeEach(() => {
   server.use(meUnauthenticatedHandler(), disconnectedSyncStateHandler());
 });
 
+// `onOpenAuth` обовʼязковий (A1, аудит 2026-09-11 хвиля 2) — тестам, яким
+// вхід байдужий, дістається безпечний no-op замість `undefined`.
+const NOOP_AUTH = () => {};
+
 function renderApp(
-  props: React.ComponentProps<typeof FinykApp> = {},
+  props: React.ComponentProps<typeof FinykApp> = { onOpenAuth: NOOP_AUTH },
   initialEntries: string[] = ["/finyk"],
 ) {
   const queryClient = new QueryClient({
@@ -188,10 +194,60 @@ describe("FinykApp — shell + default page (real component tree)", () => {
     renderApp({
       onBackToHub: vi.fn(),
       onOpenSettings: vi.fn(),
+      onOpenAuth: NOOP_AUTH,
       pwaAction: null,
       onPwaActionConsumed: vi.fn(),
     });
     expect(bottomNav()).toBeInTheDocument();
+  });
+});
+
+// Регресія A1 (аудит 2026-09-11, хвиля 2): наскрізна перевірка через
+// СПРАВЖНЄ дерево (FinykApp → Overview → LocalOnlyDataBanner), не через
+// ізольований юніт хука. Раніше `onOpenAuth` у Фініку мав фолбек
+// `?? (() => navigate("/auth"))` — зайвий редірект-хоп; тепер пропс
+// обовʼязковий і `Overview` передає його в банер без обгортки.
+describe("FinykApp — sign-in wiring (A1)", () => {
+  function RealSignInFinykApp() {
+    const onOpenAuth = useOpenSignIn();
+    return <FinykApp onOpenAuth={onOpenAuth} />;
+  }
+
+  function LocationProbe() {
+    const location = useLocation();
+    return <span data-testid="probe-location">{location.pathname}</span>;
+  }
+
+  it("тап «Увійти» в durability-банері веде на /sign-in прямим SPA-переходом", async () => {
+    const queryClient = new QueryClient({
+      defaultOptions: { queries: { retry: false } },
+    });
+    render(
+      <QueryClientProvider client={queryClient}>
+        <ApiClientProvider client={apiClient}>
+          <MemoryRouter initialEntries={["/finyk"]}>
+            <AuthProvider>
+              <ToastProvider>
+                <RealSignInFinykApp />
+                <LocationProbe />
+              </ToastProvider>
+            </AuthProvider>
+          </MemoryRouter>
+        </ApiClientProvider>
+      </QueryClientProvider>,
+    );
+
+    expect(screen.getByTestId("probe-location")).toHaveTextContent("/finyk");
+
+    const signInButton = await screen.findByRole("button", {
+      name: "Увійти",
+    });
+    fireEvent.click(signInButton);
+
+    // Жодного `/auth`-хопу: `MemoryRouter` тут не монтує
+    // `StandaloneRoutes`, тож якби код і далі ходив через аліас,
+    // локація лишилась би на ньому, а не перескочила на `/sign-in`.
+    expect(screen.getByTestId("probe-location")).toHaveTextContent("/sign-in");
   });
 });
 
@@ -342,7 +398,7 @@ describe("FinykApp — regression: malformed /api/v1/mono/accounts payload (deep
       ),
     );
 
-    renderApp({}, ["/finyk/assets"]);
+    renderApp({ onOpenAuth: NOOP_AUTH }, ["/finyk/assets"]);
 
     // Real Assets page rendered (not the SectionErrorBoundary fallback).
     expect(

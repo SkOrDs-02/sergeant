@@ -42,8 +42,15 @@ interface OverviewProps {
   mono: MergedMonoLike;
   storage: StorageLike;
   onNavigate?: (page: string) => void;
-  /** Opens account sign-in; distinct from the Finyk bank-connection overlay. */
-  onOpenAuth?: () => void;
+  /**
+   * Opens account sign-in; distinct from the Finyk bank-connection
+   * overlay. Required (A1, аудит 2026-09-11 хвиля 2): раніше опційність
+   * тут ховала мовчазний фолбек на `/auth` — зайвий редірект-хоп замість
+   * прямого SPA-переходу на `/sign-in`. Кожен рендерер `Overview`
+   * (`FinykApp.tsx`) тепер зобов'язаний передати справжній обробник —
+   * канонічно `useOpenSignIn()`.
+   */
+  onOpenAuth: () => void;
   showBalance?: boolean;
   /** Відкриває аркуш масового імпорту — той самий, що дія FAB. */
   onOpenBulkImport?: (() => void) | undefined;
@@ -151,9 +158,7 @@ export function Overview({
                 що вимикає запис у outbox). Ставимо ВИЩЕ staleness-банера:
                 «твої дані можуть зникнути назавжди» важливіше за «дані
                 банку не оновлювались N днів». */}
-            <LocalOnlyDataBanner
-              onSignIn={onOpenAuth ?? (() => navigate("/auth"))}
-            />
+            <LocalOnlyDataBanner onSignIn={onOpenAuth} />
 
             {showStalenessBanner && monoStaleness.days !== null && (
               <MonoStalenessBanner

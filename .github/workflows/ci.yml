@@ -631,7 +631,16 @@ jobs:
   a11y:
     name: Accessibility (axe-core)
     runs-on: ubuntu-latest
-    needs: check
+    # No `needs:` — та сама причина, що в `critical-flow`, `mobile-ui-audit`
+    # і `server-integration`, просто знайдена пізніше: ця джоба лишалась
+    # останньою з `needs: check`, і через це її вердикту не було пʼять
+    # прогонів поспіль. Розбір лежить в аудиті власника за 2026-09-11
+    # (`docs/work/specs/audits/`). `needs:` глушить джобу ДВІЧІ:
+    # `check` червоний — залежна не стартує; `check` скасовано новим пушем —
+    # теж не стартує. У звіті тривалостей обидва випадки виглядають як `0s`,
+    # тобто так само невинно, як пропущений крок. А платити за це нічим:
+    # лейн збирає застосунок сам (`webServer` у `apps/web/playwright.config.ts`
+    # робить `npm run build && npm run preview`) і з `check` не бере нічого.
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd

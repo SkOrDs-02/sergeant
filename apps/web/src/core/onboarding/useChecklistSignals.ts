@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-07
+ * Last validated: 2026-09-11
  * Status: Active
  */
 /**
@@ -28,12 +28,52 @@ import {
 } from "@sergeant/shared";
 import { monoWebhookApi, type MonoSyncState } from "@shared/api";
 import { webKVStore } from "@shared/lib/storage/storage";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { finykKeys } from "@shared/lib/api/queryKeys";
 import { useHubStorageBump } from "../hub/useHubStorageBump";
 import { webRealEntryProbe } from "./realEntryProbe";
 
 /** Matches `useModuleRouteLoader`'s prefetch so the two calls dedupe. */
 const STALE_TIME_MS = 30_000;
+
+/**
+ * Web-only latch for Фінік's "Переглянути аналітику" checklist step
+ * (F3 audit, 2026-09-11 — "дай чесний сигнал: факт відкриття екрана").
+ *
+ * `view_analytics` is pure navigation — unlike `add_expense`/`set_budget`,
+ * there is no SQLite/quick-stats column proving "the user looked at their
+ * spending chart" (`moduleChecklistSignals.ts` only reads facts that
+ * already live in a KV/SQLite snapshot). The honest substitute the audit
+ * settled on is the fact of a successful Hub-level navigation dispatch:
+ * `HubHeroBlock` calls {@link markFinykAnalyticsViewed} right before
+ * `openHubModuleWithAction("finyk", "view_analytics")` actually fires —
+ * i.e. the flag can only be set alongside a real navigation dispatch
+ * (module + action both valid), never a bare tap the Hub gate might have
+ * dropped. It is written from ANY caller of that action (checklist,
+ * search hit, quick action), not only the checklist row, so it stays an
+ * honest "did this happen" fact rather than a checklist self-report.
+ *
+ * Not registered in `packages/shared/src/lib/storageKeys.ts` — that file
+ * is outside this change's file boundary (Stage-4 F3 fix); follow-up:
+ * promote to a `STORAGE_KEYS` entry once that file is in scope.
+ */
+const FINYK_ANALYTICS_VIEWED_KEY = "finyk_checklist_analytics_viewed_v1";
+
+export function markFinykAnalyticsViewed(): void {
+  webKVStore.setString(FINYK_ANALYTICS_VIEWED_KEY, "1");
+  emitHubBus("storageUpdated", undefined);
+}
+
+/**
+ * Читач тієї самої відмітки, що її ставить `markFinykAnalyticsViewed`.
+ * Експортований симетрично до писаря: питання «чи людина вже відкривала
+ * аналітику» — частина публічного контракту сигналу, а не деталь
+ * реалізації. Дає змогу перевіряти НАСЛІДОК дії замість того, щоб
+ * підміняти писаря моком і перевіряти власну підміну.
+ */
+export function hasViewedFinykAnalytics(): boolean {
+  return webKVStore.getString(FINYK_ANALYTICS_VIEWED_KEY) === "1";
+}
 
 /**
  * Positive-only evidence per step id for `moduleId`.
@@ -58,7 +98,8 @@ export function useChecklistSignals(
     staleTime: STALE_TIME_MS,
     enabled: moduleId === "finyk",
     // A failed probe must not read as "not connected": it leaves the step
-    // to its tap-recorded state rather than asserting a false negative.
+    // to whatever is already latched in storage rather than asserting a
+    // false negative.
     retry: false,
   });
 
@@ -75,8 +116,13 @@ export function useChecklistSignals(
     const signals: Record<string, boolean | undefined> = {
       ...deriveChecklistSignals(webKVStore, moduleId, webRealEntryProbe),
     };
-    if (moduleId === "finyk" && monoConnected) {
-      signals["connect_bank"] = true;
+    if (moduleId === "finyk") {
+      if (monoConnected) {
+        signals["connect_bank"] = true;
+      }
+      if (hasViewedFinykAnalytics()) {
+        signals["view_analytics"] = true;
+      }
     }
     return signals;
   }, [moduleId, monoConnected, bump]);

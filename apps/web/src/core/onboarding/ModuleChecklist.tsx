@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-07
+ * Last validated: 2026-09-11
  * Status: Active
  */
 /**
@@ -9,14 +9,21 @@
  * to "aha-moment". The checklist auto-hides after 7 account-days or
  * once every step is done.
  *
- * AI-CONTEXT: a step is done when real data proves it OR the user
- * tapped the row. The data half (`deriveChecklistSignals` +
- * `useChecklistSignals`) is what makes the card able to close itself —
- * before it existed, `completedSteps` was tap-only and a user who had
- * genuinely added expenses and connected a bank still saw "0/4".
+ * AI-CONTEXT: a step is done exactly when real data proves it
+ * (`deriveChecklistSignals` + `useChecklistSignals`) — see
+ * `resolveChecklistStepsFromState` in `@sergeant/shared` for the exact
+ * contract. F3 audit (2026-09-11): a row tap used to write
+ * `completedSteps` directly and unconditionally, so tapping ANY step
+ * (including ones whose downstream action the Hub silently dropped)
+ * checked it off regardless of whether anything actually happened. A tap
+ * here is now pure navigation (`handleStepNavigate`); the ONLY writer of
+ * persisted completion is the auto-latch effect below, which fires the
+ * moment a step's live signal turns true and permanently records it —
+ * that's what lets an already-proven step stay checked even after the
+ * proving record (e.g. a seeded test expense) is later deleted.
  */
 
-import { useCallback, useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { AnimatedCheckbox } from "@shared/components/ui/AnimatedCheckbox";
@@ -26,14 +33,15 @@ import { useToast } from "@shared/hooks/useToast";
 import {
   MODULE_CHECKLISTS,
   getChecklistState,
+  markChecklistStepDone,
   markChecklistSeen,
   dismissChecklist,
   isChecklistVisible,
   isWithinChecklistWindow,
-  resolveChecklistSteps,
   resolveChecklistStepsFromState,
-  saveChecklistState,
+  type ChecklistAction,
   type DashboardModuleId,
+  type ResolvedChecklistStep,
 } from "@sergeant/shared";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 import { messages } from "@shared/i18n/uk";
@@ -71,8 +79,11 @@ const MODULE_STYLES: Record<
 
 export interface ModuleChecklistProps {
   moduleId: DashboardModuleId;
-  /** Called when user taps a step with an action hint */
-  onAction?: (action: string) => void;
+  /**
+   * Called when the user taps an actionable, not-yet-done step — a pure
+   * navigation request, never a completion signal (F3, 2026-09-11).
+   */
+  onAction?: (action: ChecklistAction) => void;
   /** Optional class name */
   className?: string;
   /** Compact variant for tighter spaces */
@@ -135,62 +146,74 @@ export function ModuleChecklist({
     trackEvent(ANALYTICS_EVENTS.MODULE_CHECKLIST_SHOWN, { module: moduleId });
   }, [shown, moduleId]);
 
-  const handleStepDone = useCallback(
-    (stepId: string, action?: string) => {
+  // Auto-latch: the moment a step's LIVE signal proves it, permanently
+  // record the achievement (F3, 2026-09-11 — "a step stays achieved
+  // once proven; it's a learning event, not a live data state"). This is
+  // the ONLY writer of persisted completion on web — a row tap never
+  // reaches this path; see `handleStepNavigate` below. Self-terminating:
+  // once a step id is latched, `state.completedSteps` includes it, so the
+  // next run of this effect finds nothing new to write.
+  useEffect(() => {
+    const newlyProven = def.steps.filter(
+      (step) =>
+        signals[step.id] === true && !state.completedSteps.includes(step.id),
+    );
+    if (newlyProven.length === 0) return;
+
+    // The write (and the `setState` that reflects it) has to run
+    // together, but a direct `setState` in the immediate effect body
+    // trips `react-hooks/set-state-in-effect` — same idiom as
+    // `SessionsSection.tsx` / `useAppLock.ts`: the rule only inspects an
+    // effect's immediate instruction block, not nested function bodies,
+    // so wrapping in a resolved-promise `.then` keeps this synchronous
+    // in practice (same microtask turn) while staying outside that block.
+    Promise.resolve().then(() => {
+      let next = state;
+      for (const step of newlyProven) {
+        next = markChecklistStepDone(localStorageStore, moduleId, step.id);
+      }
+      setState(next);
+
+      for (const step of newlyProven) {
+        trackEvent(ANALYTICS_EVENTS.MODULE_CHECKLIST_STEP_DONE, {
+          module: moduleId,
+          stepId: step.id,
+          completed,
+          total,
+        });
+      }
+    });
+  }, [signals, state, def, moduleId, completed, total]);
+
+  // Pure navigation (F3, 2026-09-11): a tap never marks anything done —
+  // it only forwards the step's action hint so the caller can route the
+  // user to where the data-proving action actually happens. A step with
+  // no `action` (a pure milestone like "Завершити тренування") has
+  // nothing to navigate to and isn't rendered as a button at all (see the
+  // render below), so this only ever runs for actionable, not-done rows.
+  const handleStepNavigate = useCallback(
+    (step: ResolvedChecklistStep) => {
+      if (step.done || !step.action) return;
       hapticTap();
-      // Completion is counted over the *resolved* steps, so a tap that
-      // fills the last gap next to data-proven rows still celebrates —
-      // and a card already complete by data never re-celebrates.
-      const doneBefore = resolveChecklistSteps(
-        localStorageStore,
-        moduleId,
-        signals,
-      ).every((step) => step.done);
-
-      setState((previousState) => {
-        const persistedState = getChecklistState(localStorageStore, moduleId);
-        const completedSteps = Array.from(
-          new Set([
-            ...persistedState.completedSteps,
-            ...previousState.completedSteps,
-            stepId,
-          ]),
-        );
-        const next = {
-          completedSteps,
-          dismissed: persistedState.dismissed || previousState.dismissed,
-          firstSeenAt: previousState.firstSeenAt ?? persistedState.firstSeenAt,
-        };
-        saveChecklistState(localStorageStore, moduleId, next);
-        return next;
-      });
-
-      if (action) {
-        onAction?.(action);
-      }
-
-      const resolvedAfter = resolveChecklistSteps(
-        localStorageStore,
-        moduleId,
-        signals,
-      );
-      const total = resolvedAfter.length;
-      const completed = resolvedAfter.filter((step) => step.done).length;
-      trackEvent(ANALYTICS_EVENTS.MODULE_CHECKLIST_STEP_DONE, {
-        module: moduleId,
-        stepId,
-        completed,
-        total,
-      });
-
-      // Celebrate only on the transition to "all done"; auto-hide is handled
-      // by the useEffect below so we don't double-fire setTimeout here.
-      if (!doneBefore && completed >= total) {
-        toast.success(`${def.title}: перші кроки виконано!`, 4000);
-      }
+      onAction?.(step.action);
     },
-    [moduleId, onAction, signals, def.title, toast],
+    [onAction],
   );
+
+  // Celebrate exactly once, on the transition into "fully done" —
+  // regardless of whether the closing step latched via data (the common
+  // case now that a tap can't complete anything) or the card was already
+  // complete on mount (demo seed, veteran account). The ref captures the
+  // FIRST render's status as the baseline so an already-done mount never
+  // fires a false celebration.
+  const wasCompleteRef = useRef(total > 0 && completed >= total);
+  useEffect(() => {
+    const isComplete = total > 0 && completed >= total;
+    if (isComplete && !wasCompleteRef.current) {
+      toast.success(`${def.title}: перші кроки виконано!`, 4000);
+    }
+    wasCompleteRef.current = isComplete;
+  }, [completed, total, def.title, toast]);
 
   useEffect(() => {
     if (shown && completed >= total) {
@@ -304,29 +327,26 @@ export function ModuleChecklist({
         <div className="px-4 pb-4 space-y-1.5">
           {steps.map((step, idx) => {
             const done = step.done;
-            return (
-              <button
-                key={step.id}
-                type="button"
-                role="checkbox"
-                aria-checked={done}
-                aria-label={step.label}
-                disabled={done}
-                onClick={() => {
-                  if (done) return;
-                  handleStepDone(step.id, step.action);
-                }}
-                className={cn(
-                  "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left",
-                  "transition-all duration-base",
-                  done
-                    ? "bg-transparent cursor-default"
-                    : "bg-panel/60 hover:bg-panel border border-line/50 hover:border-line cursor-pointer",
-                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
-                  "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1",
-                )}
-                style={{ animationDelay: `${idx * 50}ms` }}
-              >
+            // A step is a NAVIGATION control only while it's both
+            // unfinished and has somewhere to send the user (F3,
+            // 2026-09-11 — role must match what the element does). A
+            // done step, or a pure milestone with no `action` at all
+            // (e.g. "Завершити тренування"), has nothing left to click
+            // and renders as static content instead of an inert button.
+            const interactive = !done && Boolean(step.action);
+            const rowClassName = cn(
+              "w-full flex items-center gap-3 px-3 py-2.5 rounded-xl text-left",
+              "transition-all duration-base",
+              interactive
+                ? "bg-panel/60 hover:bg-panel border border-line/50 hover:border-line cursor-pointer"
+                : "bg-transparent cursor-default",
+              interactive &&
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+              "motion-safe:animate-in motion-safe:fade-in motion-safe:slide-in-from-bottom-1",
+            );
+            const rowStyle = { animationDelay: `${idx * 50}ms` };
+            const rowBody = (
+              <>
                 <AnimatedCheckbox
                   decorative
                   checked={done}
@@ -341,7 +361,14 @@ export function ModuleChecklist({
                 >
                   {step.label}
                 </span>
-                {!done && step.action && (
+                {/* AnimatedCheckbox's fill is `aria-hidden` (decorative);
+                    a done row must still announce its state to AT. */}
+                {done && (
+                  <span className="sr-only">
+                    , {messages.status.doneLowercase}
+                  </span>
+                )}
+                {interactive && (
                   <Icon
                     name="chevron-right"
                     size={14}
@@ -349,6 +376,27 @@ export function ModuleChecklist({
                     aria-hidden
                   />
                 )}
+              </>
+            );
+
+            if (!interactive) {
+              return (
+                <div key={step.id} className={rowClassName} style={rowStyle}>
+                  {rowBody}
+                </div>
+              );
+            }
+
+            return (
+              <button
+                key={step.id}
+                type="button"
+                aria-label={step.label}
+                onClick={() => handleStepNavigate(step)}
+                className={rowClassName}
+                style={rowStyle}
+              >
+                {rowBody}
               </button>
             );
           })}

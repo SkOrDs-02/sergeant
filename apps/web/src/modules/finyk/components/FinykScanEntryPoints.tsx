@@ -70,7 +70,14 @@ export interface FinykScanEntryPointsProps {
    */
   bulkImportOpen: boolean;
   onBulkImportOpenChange: (open: boolean) => void;
-  onOpenAuth?: (() => void) | undefined;
+  /**
+   * Opens account sign-in for the receipt-scan / bulk-import gate below.
+   * Required (A1, аудит 2026-09-11 хвиля 2): опційність тут ховала
+   * мовчазний no-op — `onOpenAuth?.()` нічого не робив, коли shell
+   * забував передати обробник, і анонім тапав дію, яка виглядала
+   * робочою, але нічого не відкривала.
+   */
+  onOpenAuth: () => void;
 }
 
 export function FinykScanEntryPoints({
@@ -93,7 +100,7 @@ export function FinykScanEntryPoints({
       return;
     }
     toast.info("Для сканування чеків і документів увійди в акаунт.");
-    onOpenAuth?.();
+    onOpenAuth();
   };
 
   return (

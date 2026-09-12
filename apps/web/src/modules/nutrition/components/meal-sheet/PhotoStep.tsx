@@ -1,8 +1,15 @@
 /**
- * Last validated: 2026-08-13
+ * Last validated: 2026-09-11
  * Status: Active
  *
  * Крок «фото» всередині AddMealSheet (флоу "source" → "photo" → "fill").
+ *
+ * AI-CONTEXT (A1, 2026-09-11 хвиля 2): вхід для незалогінованого
+ * відвідувача раніше вів на `<a href="/auth">` — аліас, який редіректить
+ * на `/sign-in` через `StandaloneRoutes.tsx`, тобто зайвий хоп плюс
+ * повне перезавантаження сторінки замість SPA-переходу. Тепер це кнопка
+ * на `useOpenSignIn()` — той самий хук, яким хаб (`RootLayout.tsx`) і
+ * Огляд Фініка (`Overview.tsx`) відкривають `/sign-in`.
  *
  * AI-CONTEXT: раніше аналіз фото жив окремою карткою у згорнутому
  * `<details>` на сторінці «Огляд», а кнопка «Фото» в цьому sheet-і
@@ -28,6 +35,7 @@ import { PhotoAnalyzeCard } from "../PhotoAnalyzeCard";
 import { PHOTO_PRIVACY_ACK_KEY } from "../PhotoPrivacyNotice";
 import { PhotoAddItemPicker } from "./PhotoAddItemPicker";
 import { useAuthOptional } from "../../../../core/auth/AuthContext";
+import { useOpenSignIn } from "../../../../core/auth/useOpenSignIn";
 
 interface PhotoStepProps {
   /**
@@ -43,6 +51,13 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   // `null` only occurs in isolated component tests. In the app the provider is
   // always present, so a missing user is an actual anonymous session.
   const authenticated = auth === null || Boolean(auth.user);
+  // Викликається безумовно (Rules of Hooks) — потрібен лише у гілці
+  // `!authenticated` нижче, коли `PhotoStep` рендерить свій власний вхід
+  // замість делегувати fallback на алiас `/auth` (A1, аудит 2026-09-11
+  // хвиля 2). `PhotoStep` завжди монтується всередині `<Router>` у
+  // проді (частина дерева `/nutrition/*`); ізольований юніт-тест цього
+  // файлу обгортає рендер `<MemoryRouter>`.
+  const openSignIn = useOpenSignIn();
   const [photoBusy, setPhotoBusy] = useState(false);
   const [photoErr, setPhotoErr] = useState("");
   // statusText — legacy-канал топ-банера NutritionApp; у кроці sheet-а
@@ -175,12 +190,13 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
         <p className="mt-1 text-style-body text-muted">
           {messages.nutrition.photoAuth.body}
         </p>
-        <a
-          href="/auth"
-          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-nutrition px-4 text-style-label text-white focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+        <button
+          type="button"
+          onClick={openSignIn}
+          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-nutrition-strong px-4 text-style-label text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
         >
           {messages.nutrition.photoAuth.signIn}
-        </a>
+        </button>
       </div>
     );
   }

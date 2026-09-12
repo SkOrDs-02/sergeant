@@ -1,8 +1,9 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
+import { beforeEach, describe, expect, it, vi } from "vitest";
 import { fireEvent, render, screen } from "@testing-library/react";
 import type { ComponentProps } from "react";
 import { HubHeroBlock } from "./HubHeroBlock";
+import { hasViewedFinykAnalytics } from "../onboarding/useChecklistSignals";
 
 const { flagMock, openActionMock } = vi.hoisted(() => ({
   flagMock: vi.fn(),
@@ -43,9 +44,14 @@ vi.mock("../onboarding/ReEngagementCard", () => ({
 }));
 vi.mock("../onboarding/ModuleChecklist", () => ({
   ModuleChecklist: ({ onAction }: { onAction: (action: string) => void }) => (
-    <button type="button" onClick={() => onAction("log")}>
-      checklist
-    </button>
+    <>
+      <button type="button" onClick={() => onAction("log")}>
+        checklist
+      </button>
+      <button type="button" onClick={() => onAction("view_analytics")}>
+        checklist-view-analytics
+      </button>
+    </>
   ),
 }));
 vi.mock("../onboarding/OnboardingProgress", () => ({
@@ -121,6 +127,13 @@ function renderHero(overrides: Partial<HubHeroProps> = {}) {
 }
 
 describe("HubHeroBlock", () => {
+  // `markFinykAnalyticsViewed` пише в localStorage, а не в мок, тож без
+  // очистки прапорець протікав би між тестами й робив перевірки
+  // залежними від порядку виконання.
+  beforeEach(() => {
+    localStorage.clear();
+  });
+
   it("gives re-engagement priority over every other hero", () => {
     flagMock.mockReturnValue(true);
     const { props } = renderHero({
@@ -183,7 +196,30 @@ describe("HubHeroBlock", () => {
     });
     fireEvent.click(screen.getByText("checklist"));
     expect(openActionMock).toHaveBeenCalledWith("routine", "log");
+    expect(hasViewedFinykAnalytics()).toBe(false);
     fireEvent.click(screen.getByText("cross preview"));
     expect(props.dismissCrossModulePreview).toHaveBeenCalled();
+  });
+
+  // F3 audit (2026-09-11), defect (г): "Переглянути аналітику" has no
+  // other data trace — the honest signal is the fact of a successful
+  // navigation dispatch, marked right alongside it.
+  it("marks Фінік analytics viewed when the checklist fires view_analytics for finyk", () => {
+    // Модуль `useChecklistSignals` НЕ мокаємо навмисно: перевіряти, що
+    // викликали стаб, означало б перевіряти власну підміну. Тут читається
+    // справжній наслідок — той самий предикат, яким чекліст потім
+    // визначає, чи крок виконано.
+    expect(hasViewedFinykAnalytics()).toBe(false);
+    renderHero({ showChecklist: true, primaryModule: "finyk" });
+    fireEvent.click(screen.getByText("checklist-view-analytics"));
+    expect(hasViewedFinykAnalytics()).toBe(true);
+    expect(openActionMock).toHaveBeenCalledWith("finyk", "view_analytics");
+  });
+
+  it("does not mark analytics viewed for view_analytics on a non-finyk module", () => {
+    renderHero({ showChecklist: true, primaryModule: "routine" });
+    fireEvent.click(screen.getByText("checklist-view-analytics"));
+    expect(hasViewedFinykAnalytics()).toBe(false);
+    expect(openActionMock).toHaveBeenCalledWith("routine", "view_analytics");
   });
 });

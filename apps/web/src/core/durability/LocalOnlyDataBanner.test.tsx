@@ -1,6 +1,6 @@
 /** @vitest-environment jsdom */
 /**
- * Last validated: 2026-07-25
+ * Last validated: 2026-09-11
  * Status: Active
  *
  * AI-CONTEXT: асерти цілять у два симетричні провали, і другий не менш
@@ -78,6 +78,26 @@ describe("LocalOnlyDataBanner", () => {
     render(<LocalOnlyDataBanner onSignIn={onSignIn} />);
     fireEvent.click(screen.getByRole("button", { name: "Увійти" }));
     expect(onSignIn).toHaveBeenCalledTimes(1);
+  });
+
+  // Регресія A1 (аудит 2026-09-11, хвиля 2): `body` закінчувався фразою
+  // «Вхід в акаунт вмикає копію на сервері» — plain-текст без жодної дії,
+  // що виглядав як другий заклик поруч зі справжньою кнопкою нижче. Око
+  // бачило два однакових шматки тексту, палець тиснув у мертвий верхній.
+  it("тіло попередження не обіцяє дію текстом — заклик живе лише в кнопці", () => {
+    useLocalUserIdMock.mockReturnValue("local-anon");
+    render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
+    const body = screen.getByText(/Витрати готівкою/);
+    expect(body.textContent).not.toMatch(/Вхід в акаунт/);
+  });
+
+  it("кнопка входу — не найтихіший ghost-варіант: вона єдина дія в попередженні", () => {
+    useLocalUserIdMock.mockReturnValue("local-anon");
+    render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
+    const button = screen.getByRole("button", { name: "Увійти" });
+    // `ghost` = `bg-transparent` (Button.tsx) — найтихіший варіант, без
+    // заливки й рамки.
+    expect(button.className).not.toMatch(/bg-transparent/);
   });
 
   it("кнопка бекапу зʼявляється лише коли є куди її повісити", () => {

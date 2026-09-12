@@ -1,11 +1,17 @@
 // @vitest-environment jsdom
 /**
- * Last validated: 2026-08-13
+ * Last validated: 2026-09-11
  * Status: Active
  *
  * PhotoStep — гейти автоаналізу (рішення founder-а 2026-08-13):
  * аналіз стартує сам після вибору/заміни фото, але ТІЛЬКИ коли
  * privacy-нотіс підтверджено і користувач Pro; один запуск на кадр.
+ *
+ * AI-CONTEXT (A1, 2026-09-11 хвиля 2): `PhotoStep` тепер безумовно
+ * викликає `useOpenSignIn()` (Rules of Hooks — потрібен лише в гілці
+ * `!authenticated`, але виклик хука не може бути умовним), тому кожен
+ * рендер файлу обгортається в `<MemoryRouter>`, навіть тести, яким сам
+ * вхід байдужий.
  */
 import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import {
@@ -15,6 +21,7 @@ import {
   render,
   screen,
 } from "@testing-library/react";
+import { MemoryRouter, useLocation } from "react-router-dom";
 import { messages } from "@shared/i18n/uk";
 
 import { PhotoStep } from "./PhotoStep";
@@ -59,6 +66,17 @@ vi.mock("@shared/i18n/useLocale", () => ({
   useLocale: () => ({ locale: "uk" as const, messages, setLocale: vi.fn() }),
 }));
 
+// `auth === null` (за замовчуванням) — той самий стан, який компонент
+// трактує як "поза провайдером = вважай авторизованим" (див. коментар у
+// `PhotoStep`). Один тест нижче підміняє це на справжню анонімну сесію
+// (`{ user: null }`), щоб перевірити гілку `!authenticated`.
+const { useAuthOptionalMock } = vi.hoisted(() => ({
+  useAuthOptionalMock: vi.fn((): { user: unknown } | null => null),
+}));
+vi.mock("../../../../core/auth/AuthContext", () => ({
+  useAuthOptional: useAuthOptionalMock,
+}));
+
 // ─── usePhotoAnalysis — контрольований контролер ───────────────────────────
 const { photoState } = vi.hoisted(() => ({
   photoState: {
@@ -98,27 +116,46 @@ beforeEach(() => {
   photoState.setErr = null;
 });
 
-afterEach(() => cleanup());
+afterEach(() => {
+  cleanup();
+  useAuthOptionalMock.mockReturnValue(null);
+});
 
 describe("PhotoStep — auto-analyze gating", () => {
   it("auto-runs analysis once when a photo appears for an acked Pro user", () => {
     storageState.privacyAcked = true;
     photoState.photoPreviewUrl = "blob:photo-1";
-    const { rerender } = render(<PhotoStep onApply={vi.fn()} />);
+    const { rerender } = render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(1);
     // Ре-рендер без нового кадру не дублює запуск (і не палить квоту).
-    rerender(<PhotoStep onApply={vi.fn()} />);
+    rerender(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(1);
   });
 
   it("re-runs analysis when the photo is replaced (new preview URL)", () => {
     storageState.privacyAcked = true;
     photoState.photoPreviewUrl = "blob:photo-1";
-    const { rerender } = render(<PhotoStep onApply={vi.fn()} />);
+    const { rerender } = render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(1);
     // «Замінити фото» → новий blob-URL → автоперезапуск (founder 2026-08-13).
     photoState.photoPreviewUrl = "blob:photo-2";
-    rerender(<PhotoStep onApply={vi.fn()} />);
+    rerender(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(2);
   });
 
@@ -126,13 +163,21 @@ describe("PhotoStep — auto-analyze gating", () => {
     // Нотіс просить перевірити кадр ДО відправлення — автозапуск до
     // «Зрозуміло» зробив би цю перевірку фікцією.
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(photoState.analyzePhoto).not.toHaveBeenCalled();
   });
 
   it("acking the notice with a photo already picked starts the analysis", () => {
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(photoState.analyzePhoto).not.toHaveBeenCalled();
     fireEvent.click(
       screen.getByRole("button", { name: "Зрозуміло, аналізувати" }),
@@ -147,7 +192,11 @@ describe("PhotoStep — auto-analyze gating", () => {
    */
   it("Pro без ack: нотіс сам називає себе наступним кроком", () => {
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
 
     expect(photoState.analyzePhoto).not.toHaveBeenCalled();
     // Обхідної кнопки як не було, так і немає — гейт не послаблено.
@@ -161,7 +210,11 @@ describe("PhotoStep — auto-analyze gating", () => {
   });
 
   it("без кадру нотіс лишається звичайним — нічого не блокується", () => {
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(
       screen.getByRole("button", { name: "Зрозуміло" }),
     ).toBeInTheDocument();
@@ -171,7 +224,11 @@ describe("PhotoStep — auto-analyze gating", () => {
   it("Free без ack: підказка не потрібна — у них є явна кнопка", () => {
     gateState.canAccess = false;
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(
       screen.getByRole("button", { name: "Аналізувати" }),
     ).toBeInTheDocument();
@@ -180,7 +237,11 @@ describe("PhotoStep — auto-analyze gating", () => {
 
   it("копія нотіса не називає вендора — маршрут залежить від деплою", () => {
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     // `VISION_VIA_OPENROUTER` за замовчуванням true, тож кадр іде через
     // OpenRouter, а не напряму до Anthropic — назва вендора в копії була
     // просто неправдою для дефолтного деплою.
@@ -192,7 +253,11 @@ describe("PhotoStep — auto-analyze gating", () => {
     storageState.privacyAcked = true;
     gateState.canAccess = false;
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(photoState.analyzePhoto).not.toHaveBeenCalled();
     // Явний тап «Аналізувати» іде через requireAccess → paywall.
     requireAccessMock.mockReturnValueOnce(false);
@@ -203,7 +268,11 @@ describe("PhotoStep — auto-analyze gating", () => {
 
   it("does NOT auto-run without a photo", () => {
     storageState.privacyAcked = true;
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(photoState.analyzePhoto).not.toHaveBeenCalled();
   });
 });
@@ -214,14 +283,22 @@ describe("PhotoStep — коли кнопка «Аналізувати» вза�
   // дію, яку система щойно зробила.
   it("ховає кнопку, поки фото ще не обрано", () => {
     storageState.privacyAcked = true;
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(screen.queryByRole("button", { name: "Аналізувати" })).toBeNull();
   });
 
   it("ховає кнопку на щасливому шляху Pro — аналіз іде сам", () => {
     storageState.privacyAcked = true;
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(photoState.analyzePhoto).toHaveBeenCalledTimes(1);
     expect(screen.queryByRole("button", { name: "Аналізувати" })).toBeNull();
   });
@@ -229,7 +306,11 @@ describe("PhotoStep — коли кнопка «Аналізувати» вза�
   it("після помилки показує кнопку саме як повтор", () => {
     storageState.privacyAcked = true;
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(
       screen.queryByRole("button", { name: "Спробувати ще раз" }),
     ).toBeNull();
@@ -245,7 +326,11 @@ describe("PhotoStep — коли кнопка «Аналізувати» вза�
     storageState.privacyAcked = true;
     gateState.canAccess = false;
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(
       screen.getByRole("button", { name: "Аналізувати" }),
     ).toBeInTheDocument();
@@ -255,7 +340,11 @@ describe("PhotoStep — коли кнопка «Аналізувати» вза�
     // Гейт тримають ДВОЄ: тут кнопки просто нема, а `gatedAnalyzePhoto`
     // усе одно відсік би клік — див. наступний тест.
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     expect(screen.queryByRole("button", { name: "Аналізувати" })).toBeNull();
     // Підпис нотіса в цьому стані — «Зрозуміло, аналізувати»: гейт той
     // самий, просто перестав бути невидимим (див. тест про глухий кут).
@@ -273,7 +362,11 @@ describe("PhotoStep — коли кнопка «Аналізувати» вза�
     // `gatedAnalyzePhoto`, який перевіряв самий лише тариф — тобто
     // відправляла кадр Pro-користувача, який згоди ще не дав.
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
     act(() => photoState.setErr?.("Не вдалось прочитати файл"));
 
     expect(
@@ -297,7 +390,11 @@ describe("PhotoStep — коли кнопка «Аналізувати» вза�
     // що нас цікавить (тариф пропустив, ack не питали).
     gateState.canAccess = false;
     photoState.photoPreviewUrl = "blob:photo-1";
-    render(<PhotoStep onApply={vi.fn()} />);
+    render(
+      <MemoryRouter>
+        <PhotoStep onApply={vi.fn()} />
+      </MemoryRouter>,
+    );
 
     fireEvent.click(screen.getByRole("button", { name: "Аналізувати" }));
     expect(photoState.analyzePhoto).not.toHaveBeenCalled();
@@ -306,6 +403,45 @@ describe("PhotoStep — коли кнопка «Аналізувати» вза�
 
 // Санітарна перевірка, що мок контролера справді підмінив хук.
 it("uses the mocked usePhotoAnalysis controller", () => {
-  render(<PhotoStep onApply={vi.fn()} />);
+  render(
+    <MemoryRouter>
+      <PhotoStep onApply={vi.fn()} />
+    </MemoryRouter>,
+  );
   expect(vi.mocked(usePhotoAnalysis)).toHaveBeenCalled();
+});
+
+function LocationProbe() {
+  const location = useLocation();
+  return <span data-testid="probe-location">{location.pathname}</span>;
+}
+
+// Регресія A1 (аудит 2026-09-11, хвиля 2): вхід для незалогінованого
+// відвідувача раніше вів на `<a href="/auth">` — аліас-редірект замість
+// прямого SPA-переходу на `/sign-in`, і повне перезавантаження сторінки
+// замість client-side навігації.
+describe("PhotoStep — вхід для незалогінованого відвідувача (A1)", () => {
+  it("кнопка веде на /sign-in прямим SPA-переходом, без /auth-хопу й без reload", () => {
+    useAuthOptionalMock.mockReturnValue({ user: null });
+    render(
+      <MemoryRouter initialEntries={["/nutrition/menu"]}>
+        <PhotoStep onApply={vi.fn()} />
+        <LocationProbe />
+      </MemoryRouter>,
+    );
+
+    expect(screen.getByTestId("probe-location")).toHaveTextContent(
+      "/nutrition/menu",
+    );
+
+    fireEvent.click(
+      screen.getByRole("button", { name: messages.nutrition.photoAuth.signIn }),
+    );
+
+    // Немає жодного маршруту `/auth` у цьому дереві — якби код і далі
+    // ходив через аліас, локація лишилась би на ньому (тут не змонтовано
+    // `StandaloneRoutes`, який у проді робить редірект `/auth` →
+    // `/sign-in`).
+    expect(screen.getByTestId("probe-location")).toHaveTextContent("/sign-in");
+  });
 });
