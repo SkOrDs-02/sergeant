@@ -266,6 +266,8 @@ export function ShoppingListCard({
   return (
     <Card className="p-4">
       <div className="text-style-label text-text">Список покупок</div>
+      {/* AI-NOTE: caption тут навмисно — це підзаголовок у парі з
+          заголовком картки, а не текст, який читають окремо. */}
       <div className="text-style-caption text-muted mt-0.5">
         AI складає список з рецептів або тижневого плану, автоматично виключаючи
         продукти з комори.

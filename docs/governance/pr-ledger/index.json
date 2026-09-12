@@ -1,8 +1,88 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-08-28",
+  "generated_at": "2026-09-12",
   "prs": [
+    {
+      "number": 1098,
+      "title": "fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника",
+      "merged_at": "2026-09-11T23:03:34Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/governance/adr/0009-hosting-split-railway-vercel.md",
+        "docs/governance/adr/0010-mobile-dual-track-capacitor-expo.md",
+        "docs/start/instructions/operations-runbook.md"
+      ]
+    },
+    {
+      "number": 1071,
+      "title": "fix(server): звіряти RAG-евал і parity-тест зі STORED, а не ALLOWED джерелами",
+      "merged_at": "2026-09-03T20:54:59Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md"
+      ]
+    },
+    {
+      "number": 1064,
+      "title": "feat(root): закрити F1 анти-слоп аудиту, першу хвилю F7 і хвости техборгу",
+      "merged_at": "2026-09-03T19:01:22Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/governance/adr/0086-no-anonymous-ai-sign-in-required.md"
+      ]
+    },
+    {
+      "number": 1070,
+      "title": "feat(web): писати N рядків журналу з фото-аналізу замість одного злитого (0023, PR-3)",
+      "merged_at": "2026-09-03T19:01:05Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/work/specs/initiatives/0023-photo-analysis-multi-item.md"
+      ]
+    },
+    {
+      "number": 1067,
+      "title": "feat(server): емітити PostHog $ai_generation з центрального AI-клієнта (0025, Фаза 1)",
+      "merged_at": "2026-09-03T18:57:01Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/work/specs/initiatives/0025-posthog-ai-observability.md"
+      ]
+    },
+    {
+      "number": 1068,
+      "title": "feat(server): перестати приймати мертві джерела ai_memories (0024, PR-1)",
+      "merged_at": "2026-09-03T18:33:14Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md"
+      ]
+    },
+    {
+      "number": 1046,
+      "title": "docs(docs): полагодити dangling ref у ADR-0067 (червоний check на main)",
+      "merged_at": "2026-09-02T20:55:57Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/governance/adr/0067-engagement-mechanism-standardization.md"
+      ]
+    },
+    {
+      "number": 1043,
+      "title": "docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення",
+      "merged_at": "2026-09-02T17:30:00Z",
+      "author": "@SkOrDs-02",
+      "touchedDocs": [
+        "docs/governance/adr/0048-apns-provider-library.md",
+        "docs/governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md",
+        "docs/governance/adr/0067-engagement-mechanism-standardization.md",
+        "docs/governance/adr/0087-model-tiering-measured.md",
+        "docs/governance/adr/0088-devin-kilo-harness-retirement.md",
+        "docs/governance/adr/0089-job-substrates-outbox-broker-timer.md",
+        "docs/governance/adr/0090-n8n-decommissioned.md"
+      ]
+    },
     {
       "number": 895,
       "title": "fix(agents): полірування агентного шару після розкатки module-owners",

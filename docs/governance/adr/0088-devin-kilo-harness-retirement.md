@@ -38,3 +38,14 @@
 - `pnpm lint:harness-version-freshness` і тести бампера (`scripts/__tests__/ci-bump-harness-version.test.mjs`, `check-harness-version-freshness.test.mjs`) читають новий шлях реєстру.
 - `pnpm lint:agents-family-sync` перевіряє лише наявні wrappers.
 - Окремого механічного гейта «без devin/kilo» не вводимо: чистка разова, нові згадки зловить review.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                         | Merged     |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| [#1043](https://github.com/Skords-01/Sergeant/pull/1043) | docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення | 2026-09-02 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

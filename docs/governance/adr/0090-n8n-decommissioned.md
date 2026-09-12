@@ -33,3 +33,14 @@ Do not restore n8n workflows to solve a new scheduling need. Update stale docs
 and compatibility residues in place as they are found, preserving historical
 links only where they provide audit value. The decommission does not weaken
 Hard Rule #20: legacy OpenClaw/PAT material remains forbidden in production.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                         | Merged     |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| [#1043](https://github.com/Skords-01/Sergeant/pull/1043) | docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення | 2026-09-02 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

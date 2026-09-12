@@ -161,10 +161,12 @@ Hub має цілий клас «engagement-механізмів» — код, �
 
 ## Recent PRs
 
-| PR                                                       | Title                                                        | Merged     |
-| -------------------------------------------------------- | ------------------------------------------------------------ | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo        | 2026-07-29 |
-| [#3665](https://github.com/Skords-01/Sergeant/pull/3665) | docs(web): add ADR-0067 engagement mechanism standardization | 2026-06-20 |
+| PR                                                       | Title                                                                         | Merged     |
+| -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| [#1046](https://github.com/Skords-01/Sergeant/pull/1046) | docs(docs): полагодити dangling ref у ADR-0067 (червоний check на main)       | 2026-09-02 |
+| [#1043](https://github.com/Skords-01/Sergeant/pull/1043) | docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення | 2026-09-02 |
+| [#508](https://github.com/Skords-01/Sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                         | 2026-07-29 |
+| [#3665](https://github.com/Skords-01/Sergeant/pull/3665) | docs(web): add ADR-0067 engagement mechanism standardization                  | 2026-06-20 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

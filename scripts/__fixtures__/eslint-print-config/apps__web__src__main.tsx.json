@@ -3033,7 +3033,6 @@
           "apps/web/src/modules/finyk/components/ManualExpenseAmountSection.tsx",
           "apps/web/src/modules/finyk/components/ManualExpenseCategorySection.tsx",
           "apps/web/src/modules/finyk/components/ManualExpenseDescriptionSection.tsx",
-          "apps/web/src/modules/finyk/components/ManualExpenseSheet.tsx",
           "apps/web/src/modules/finyk/components/NoBankBanner.tsx",
           "apps/web/src/modules/finyk/components/ReceiptItemsSection.tsx",
           "apps/web/src/modules/finyk/components/RecurringSuggestions.tsx",
