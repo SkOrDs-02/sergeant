@@ -12,6 +12,10 @@ import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { RestTimerContext } from "../../context/RestTimerContext";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
+import {
+  makeDefaultWarmup,
+  makeDefaultCooldown,
+} from "../../hooks/useWorkouts";
 import { SessionView } from "./SessionView";
 
 const undoMocks = vi.hoisted(() => ({
@@ -334,10 +338,14 @@ describe("SessionView — периферія сесії (розминка, за�
     fireEvent.click(screen.getByRole("button", { name: /Розминка/ }));
     // Поки списку немає, чекліст показує промпт «Додати» замість пунктів.
     fireEvent.click(screen.getByRole("button", { name: "Додати" }));
-    expect(updateWorkout).toHaveBeenCalledWith(
-      "w1",
-      expect.objectContaining({ warmup: expect.any(Array) }),
-    );
+    // Не `expect.any(Array)`: порожній масив теж масив, тож така перевірка
+    // пропустила б «засіяли нічим» (знахідка рев'ю 2026-09-11).
+    expect(updateWorkout).toHaveBeenCalledWith("w1", {
+      warmup: makeDefaultWarmup().map((x) => ({
+        ...x,
+        id: expect.any(String) as unknown as string,
+      })),
+    });
 
     cleanup();
     vi.clearAllMocks();
@@ -367,10 +375,12 @@ describe("SessionView — периферія сесії (розминка, за�
     renderView();
     fireEvent.click(screen.getByRole("button", { name: /Заминка/ }));
     fireEvent.click(screen.getByRole("button", { name: "Додати" }));
-    expect(updateWorkout).toHaveBeenCalledWith(
-      "w1",
-      expect.objectContaining({ cooldown: expect.any(Array) }),
-    );
+    expect(updateWorkout).toHaveBeenCalledWith("w1", {
+      cooldown: makeDefaultCooldown().map((x) => ({
+        ...x,
+        id: expect.any(String) as unknown as string,
+      })),
+    });
   });
 
   it("показує лічильник виконаних пунктів у чипі розминки", () => {
@@ -493,20 +503,31 @@ describe("SessionView — арифметика відпочинку", () => {
       { focusItemId: "b" },
       { remaining: 83, total: 90 },
     );
-    fireEvent.click(screen.getByRole("button", { name: "Додати 15 секунд" }));
-    const updater = (setRestTimer as unknown as ReturnType<typeof vi.fn>).mock
-      .calls[0]?.[0] as (s: RestTimerState | null) => RestTimerState | null;
+    const mock = setRestTimer as unknown as ReturnType<typeof vi.fn>;
+    const updaterOf = (label: string) => {
+      mock.mockClear();
+      fireEvent.click(screen.getByRole("button", { name: label }));
+      return mock.mock.calls[0]?.[0] as (
+        s: RestTimerState | null,
+      ) => RestTimerState | null;
+    };
 
-    expect(updater({ remaining: 83, total: 90 })).toEqual({
+    // Кожна кнопка дає СВІЙ апдейтер із власним `seconds` — брати «+15» і
+    // перевіряти ним підлогу «−15» означає перевіряти не те (знахідка
+    // рев'ю 2026-09-11).
+    const plus = updaterOf("Додати 15 секунд");
+    expect(plus({ remaining: 83, total: 90 })).toEqual({
       remaining: 98,
       total: 98,
     });
-    // Мінус більше, ніж лишилось: підлога 1 с, а total лишається старим.
-    expect(updater({ remaining: 5, total: 90 })).toEqual({
-      remaining: 20,
+
+    const minus = updaterOf("Відняти 15 секунд");
+    // Віднімаємо більше, ніж лишилось: підлога 1 с, а `total` не меншає.
+    expect(minus({ remaining: 5, total: 90 })).toEqual({
+      remaining: 1,
       total: 90,
     });
     // Таймера немає — апдейтер не вигадує стан.
-    expect(updater(null)).toBeNull();
+    expect(minus(null)).toBeNull();
   });
 });
