@@ -15,7 +15,9 @@ import { useLocation } from "react-router-dom";
 
 import { Button } from "@shared/components/ui/Button";
 import { useToast } from "@shared/hooks/useToast";
-import { messages } from "@shared/i18n";
+// AI-DANGER: `@shared/i18n` (index) тягне uk-каталог І en-копію — а це
+// eager-поверхня. Беремо вузьке ядро; гейт — `uk.core.eagerImports.test.ts`.
+import { coreMessages as messages } from "@shared/i18n/uk.core";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 
 import {

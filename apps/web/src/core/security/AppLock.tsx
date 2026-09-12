@@ -2,10 +2,15 @@ import { useEffect, useRef, useState } from "react";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
-import { messages } from "@shared/i18n/uk";
+// AI-DANGER: прямо з `uk.privacy`, а не з `uk` — `AppLock` це eager-поверхня
+// (замок мусить бути на екрані до будь-якого роуту), і через один
+// `messages.privacy.lock` вона тягнула весь каталог. Гейт —
+// `uk.core.eagerImports.test.ts`.
+import { coreMessages as messages } from "@shared/i18n/uk.core";
+import { privacyMessages } from "@shared/i18n/uk.privacy";
 import { type LockState } from "./useAppLock";
 
-const m = messages.privacy.lock;
+const m = privacyMessages.lock;
 
 // PIN length constraints
 const PIN_MIN = 4;

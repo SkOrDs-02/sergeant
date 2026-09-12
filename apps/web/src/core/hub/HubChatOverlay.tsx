@@ -2,7 +2,10 @@ import { useCallback, useEffect, useLayoutEffect, useRef } from "react";
 import { useLocation, useNavigate } from "react-router-dom";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { SuspenseWithMinDelay } from "@shared/components/ui/SuspenseWithMinDelay";
-import { messages } from "@shared/i18n/uk";
+// AI-DANGER: саме `uk.core`, а не `uk` — це eager-поверхня, і повний
+// каталог тягне з собою десять модульних файлів плюс en-копію
+// (розбір у шапці `uk.core.ts`). Гейт — `uk.core.eagerImports.test.ts`.
+import { coreMessages as messages } from "@shared/i18n/uk.core";
 import { PageLoader } from "../app/PageLoader";
 import { lazyDefault } from "../lib/lazyImport";
 import { useHubChatOverlay } from "./useHubChatOverlay";
