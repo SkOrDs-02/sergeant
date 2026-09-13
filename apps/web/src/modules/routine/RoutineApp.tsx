@@ -28,6 +28,8 @@ import { RoutineHeader } from "./RoutineHeader";
 import { RoutineTimeline } from "./RoutineTimeline";
 import { useRoutineAppState } from "./useRoutineAppState";
 import { useRoutineQuickStatsWriter } from "./hooks/useRoutineQuickStatsWriter";
+import { useStreakMilestoneCelebration } from "@shared/hooks/useStreakMilestoneCelebration";
+import { messages } from "@shared/i18n/uk";
 
 export interface RoutineAppProps {
   onBackToHub?: () => void;
@@ -66,6 +68,16 @@ export default function RoutineApp({
     handlePullRefresh,
     handlePullRefreshError,
   } = useRoutineAppState({ pwaAction, onPwaActionConsumed, onOpenModule });
+
+  // Віха серії — тиха плашка (O1). Сидить на `streakMax`, а не в
+  // `onToggleHabit`, і це навмисно: стрік перетинає поріг і з «відмітити
+  // всі» (`onBulkMarkDay`), і після sync із сусіднього пристрою. Хук на
+  // похідному значенні ловить усі шляхи разом; обробник ловив би один.
+  useStreakMilestoneCelebration(
+    "routine",
+    streakMax,
+    messages.routine.streakMilestone.toast,
+  );
 
   // Keep the Hub routine bento card's quick-stats snapshot in sync with real
   // habits/completions, not just the onboarding demo seed.
