@@ -141,17 +141,40 @@ export function VoiceMicButton({
     [confirmBeforeCommit],
   );
 
+  // `webspeech` оголошений ПЕРШИМ навмисно: рішення про фолбек нижче
+  // мусить знати, чи той фолбек узагалі існує на цьому пристрої.
+  const webspeech = useVoiceInput({
+    lang,
+    onResult: handleTranscript,
+    onError,
+  });
   const groq = useGroqVoiceInput({
     lang,
     promptHint,
     onResult: handleTranscript,
     onError,
-    onProviderUnavailable: () => setForceFallback(true),
-  });
-  const webspeech = useVoiceInput({
-    lang,
-    onResult: handleTranscript,
-    onError,
+    onProviderUnavailable: () => {
+      // AI-DANGER: перемикаємось ЛИШЕ коли є на що. Сліпий
+      // `setForceFallback(true)` прибирав кнопку з екрана посеред сесії:
+      // на iOS standalone-PWA `webspeech.supported === false`, тож
+      // `active` ставав непідтримуваним і рендер падав у `return null`
+      // нижче. Саме через це «підтримка голосу» залежала одночасно від
+      // платформи І від наявності серверного ключа — умова зняття
+      // прапорця №1 у `resolveVoiceProvider.ts`.
+      if (webspeech.supported) {
+        setForceFallback(true);
+        onError?.(
+          "Голосовий сервер тимчасово недоступний, перемикаюсь на браузерне розпізнавання.",
+        );
+        return;
+      }
+      // Фолбеку немає — лишаємось на Groq. Кнопка на місці, наступний
+      // тап спробує ще раз; 503 віддається до звернення до upstream,
+      // тож повтор нічого не коштує.
+      onError?.(
+        "Голосовий сервер недоступний, а цей пристрій не розпізнає мову сам. Спробуй пізніше.",
+      );
+    },
   });
 
   const configured = resolveConfiguredProvider();
