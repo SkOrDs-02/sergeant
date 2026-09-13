@@ -233,8 +233,15 @@ jobs:
         # Tee full output so the node-import gate below can grep Vite
         # browser-externalization warnings from the @sergeant/web build
         # phase without a duplicate `web-build-smoke` job (audit §11.1).
-        # `check:ci` skips @sergeant/mobile jest — web-focus phase; mobile
-        # tests still run locally via `pnpm check`.
+        # `check:ci` покриває ВСІ воркспейси, `@sergeant/mobile` включно
+        # (PR-M1, аудит 2026-09-13). Раніше він фільтрував мобайл як
+        # «web-focus phase», покладаючись на те, що «тести все одно бігають
+        # локально через `pnpm check`» — і саме це не спрацювало: 2026-08-07
+        # `main` був червоний через три mobile-тести, яких ніхто не бачив.
+        # Гейт, який покладається на дисципліну замість прогону, не є гейтом.
+        # Ціна повернення нульова: на дату зняття фільтра mobile typecheck
+        # чистий, а jest дає 185 сюїт / 1294 тести за ~103 с.
+        # Форму цієї умови стереже `scripts/__tests__/ci-mobile-gate.test.mjs`.
         run: |
           set -o pipefail
           pnpm check:ci 2>&1 | tee /tmp/check-build.log
@@ -523,7 +530,16 @@ jobs:
         # their vitest.config files (~2pp below baseline). A drop below the
         # floor fails this job. Domain packages are already near 100%, so
         # they don't carry explicit floors yet.
-        # `test:coverage:ci` skips @sergeant/mobile jest — web-focus phase.
+        # MOBILE_COVERAGE_BASELINE_MISSING — `test:coverage:ci` досі
+        # пропускає @sergeant/mobile, свідомо і окремо від PR-M1. Мобайл
+        # повернено у `check:ci` (typecheck + jest), але покриття потребує
+        # власного baseline-числа у `coverage-thresholds.json` і рядка в
+        # `coverage-ratchet.mjs` (`FLOOR_SKIPPED_WORKSPACES`); підняти поріг
+        # наосліп означало б або червоний ратчет, або фіктивну підлогу.
+        # Окреме рішення власника. Токен вище — те, що стереже
+        # `scripts/__tests__/ci-mobile-gate.test.mjs`: він унікальний для
+        # цього пояснення, тож видалити пояснення й лишити тест зеленим
+        # не вийде.
         # `--concurrency=2` у скрипті: без ліміту turbo фанаутить до 10
         # coverage-pipeline-ів на 4-vCPU ранері (import-фаза vitest сягала
         # 193s), server-тести ловили 30s testTimeout посеред хендлера, а
@@ -542,8 +558,10 @@ jobs:
         # НАЯВНІ summary-файли і `continue`-ив відсутні — workspace, що
         # переставав емітити coverage, тихо випадав з гейта. Тепер гейт живе у
         # scripts/ci/coverage-ratchet.mjs (--floors): кожен workspace зі списку
-        # coverage-thresholds.json (крім apps/mobile — web-focus skip) МУСИТЬ
-        # мати summary, інакше job червоний (fail-closed). Незалистовані
+        # coverage-thresholds.json МУСИТЬ мати summary, інакше job червоний
+        # (fail-closed). Виняток один — apps/mobile, і причина в нього не
+        # «web-focus», а MOBILE_COVERAGE_BASELINE_MISSING (див. коментар
+        # кроку «Run vitest with coverage» вище). Незалистовані
         # workspace-и з summary досі гейтяться за `default`.
         run: node scripts/ci/coverage-ratchet.mjs --floors
 
