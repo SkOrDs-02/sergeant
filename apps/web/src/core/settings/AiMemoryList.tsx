@@ -209,7 +209,7 @@ function MemoryFact({
         size="sm"
         aria-label={`${m.deleteAria}: ${item.content}`}
         disabled={deleteDisabled}
-        className="text-danger-strong"
+        className="text-danger-strong hover:text-danger"
         onClick={() => onDelete(item)}
       >
         <Icon name="close" size={14} aria-hidden />

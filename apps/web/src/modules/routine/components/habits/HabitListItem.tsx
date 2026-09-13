@@ -129,9 +129,9 @@ export const HabitListItem = memo(function HabitListItem({
           </Button>
           <Button
             type="button"
-            variant="secondary"
+            variant="danger"
             size="sm"
-            className="h-9! px-3! text-xs! text-danger-strong dark:text-danger"
+            className="h-9! px-3! text-xs!"
             onClick={onRequestDelete}
           >
             Видалити

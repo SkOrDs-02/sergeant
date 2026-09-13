@@ -118,9 +118,8 @@ export function SavedSection({
                         </Button>
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="danger"
                           size="sm"
-                          className="text-danger-strong dark:text-danger"
                           onClick={() => onDeleteClick(r)}
                         >
                           Видалити
