@@ -892,6 +892,11 @@
           робила нічого, а канон при цьому стверджував, що примітиви
           отримують «ширший» індикатор. Розбіжність тримає
           `theme.focusRingHc.test.ts`; підіймаєш базу — підіймай і це.
+
+          Сам по собі токен доходить лише до утиліти `.focus-ring` (60 місць
+          із 302) — рукописні `focus-visible:ring-2` його не бачать, бо
+          Tailwind запікає туди літерал. Це доводить окреме правило в кінці
+          файлу; там же розбір і заміри.
        4. No low-opacity surfaces — "soft" status tints fall back to a
           full-strength bordered surface so banners/badges stay legible.
 
@@ -1522,4 +1527,55 @@
 html.hc [data-module-accent] {
   --module-desk-rgb: var(--c-bg-base);
   --module-zone-rgb: var(--c-bg-base);
+}
+
+/* ═════════════════════════════════════════════════════════════════════════
+   HC FOCUS RING — доводить токен ширини до РУКОПИСНИХ кілець.
+
+   Контракт HC (§3 у коментарі вище) обіцяє «ширший фокус-індикатор» усьому
+   застосунку, але до цього правила його отримували лише 60 місць із 302 —
+   ті, що беруть утиліту `.focus-ring`. Решта 242 пишуть ширину руками
+   (`focus-visible:ring-2`), а Tailwind 4 запікає туди ЛІТЕРАЛ:
+
+     .ring-2 { --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0
+                 calc(2px + var(--tw-ring-offset-width)) var(--tw-ring-color) }
+
+   Тобто `--focus-ring-width` до них не дотягується взагалі — і в HC чотири
+   з пʼяти фокусованих елементів мовчки лишались на базових 2px. Це той
+   самий клас, що й баг, полагоджений 2026-09-13 (`--ring-width-hc: 3px`
+   при базових 3px): індирекція є, канон її обіцяє, ефекту нуль.
+
+   Лікуємо механізм, а не 242 місця. Правило переоголошує лише ШИРИНУ,
+   лишаючи call-site-у його власні колір (`--tw-ring-color`), відступ
+   (`--tw-ring-offset-width`) та `inset`. Заміряно в Chromium:
+
+     | елемент                              | база      | HC          |
+     | ------------------------------------ | --------- | ----------- |
+     | `focus-visible:ring-2 ring-offset-2` | 4px       | **7px**     |
+     | `.focus-ring` (утиліта)              | 5px       | 7px         |
+     | `ring-2 ring-inset`                  | 2px inset | 5px inset   |
+     | `focus-visible:ring-0`               | 0px       | 0px         |
+     | без кільця взагалі                   | none      | none        |
+
+   AI-DANGER: правило МУСИТЬ лишатись поза `@layer base`. Усередині шару
+   воно програє `.ring-2` з шару `utilities` НЕЗАЛЕЖНО від специфічності —
+   і мовчки не робить нічого (перевірено break-тестом: рукописне кільце
+   лишалось 4px у HC). Решта файлу вище — у `@layer base`; ці рядки
+   навмисно після його закриття, поруч із `html.hc [data-module-accent]`.
+
+   Два винятки:
+     - `.focus-ring` — має власний `:focus-visible` з КОЛЬОРОМ
+       `--focus-ring-color`; перебивати його означало б підмінити колір на
+       `--tw-ring-color`, якого ті місця не задають;
+     - `focus-visible:ring-0` — навмисне придушення в `DateField`/`TimeField`,
+       де кільце малює обгортка; без винятку HC дав би подвійне кільце.
+   ═════════════════════════════════════════════════════════════════════════ */
+html.hc *:focus-visible:not(.focus-ring):not(.focus-visible\:ring-0),
+[data-theme-preview="hc-light"]
+  *:focus-visible:not(.focus-ring):not(.focus-visible\:ring-0),
+[data-theme-preview="hc-dark"]
+  *:focus-visible:not(.focus-ring):not(.focus-visible\:ring-0) {
+  --tw-ring-shadow: var(--tw-ring-inset,) 0 0 0
+    calc(var(--focus-ring-width) + var(--tw-ring-offset-width))
+    var(--tw-ring-color, currentcolor);
 }

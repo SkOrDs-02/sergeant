@@ -21,6 +21,19 @@
  * різних блоках одного файлу, за 400 рядків одне від одного. Наступний, хто
  * підійме базову ширину до 5px «для кращої видимості», мовчки поверне рівно
  * той самий стан. Коментар цього не спинить, порівняння спинить.
+ *
+ * **Друга частина (2026-09-13, PR-C4 по суті).** Полагоджений вище токен
+ * доходив лише до 60 місць із 302 — тих, що беруть утиліту `.focus-ring`.
+ * Решта 242 пишуть ширину руками (`focus-visible:ring-2`), а Tailwind 4
+ * запікає туди літерал `2px`, до якого `--focus-ring-width` не дотягується
+ * взагалі. Механізм доводить правило в кінці `theme.css`; його форму й
+ * ЛОКАЦІЮ пінить друга група тестів нижче.
+ *
+ * Локація критична, і це не педантизм: копія того самого правила всередині
+ * `@layer base` програє `.ring-2` з шару `utilities` незалежно від
+ * специфічності. Перевірено break-тестом у Chromium — рукописне кільце
+ * лишалось 4px у HC, тобто правило мовчки не робило нічого. Рівно той клас
+ * відмови, заради якого існує перша група тестів.
  */
 import { readFileSync } from "node:fs";
 import { describe, expect, it } from "vitest";
@@ -73,5 +86,85 @@ describe("focus-ring: high contrast ширший за базу", () => {
     );
     expect(all).toHaveLength(3);
     expect(new Set(all).size).toBe(1);
+  });
+});
+
+/**
+ * `theme.css` без коментарів.
+ *
+ * Шукати правило в сирому тексті не можна: пояснювальний коментар перед ним
+ * ЦИТУЄ і Tailwind-овий `--tw-ring-shadow: var(--tw-ring-inset,)`, і приклад
+ * із зашитим `2px`. Перша версія цього тесту на цьому й спіймалась —
+ * `search()` знаходив цитату, і перевірка локації проходила з правильним
+ * результатом із неправильної причини. Тому всі пошуки нижче — по `code`.
+ */
+const code = css.replace(/\/\*[\s\S]*?\*\//g, "");
+
+/**
+ * Глибина вкладеності `@layer` для позиції в `code`. 0 = поза шарами.
+ */
+function layerDepthAt(index: number): number {
+  const head = code.slice(0, index).replace(/"[^"]*"/g, '""');
+  const openLayers: boolean[] = [];
+  for (const m of head.matchAll(/@layer[^{;]*\{|\{|\}/g)) {
+    const tok = m[0];
+    if (tok.startsWith("@layer")) openLayers.push(true);
+    else if (tok === "{") openLayers.push(false);
+    else openLayers.pop();
+  }
+  return openLayers.filter(Boolean).length;
+}
+
+describe("focus-ring: HC-ширина доходить і до рукописних кілець", () => {
+  const RULE = /--tw-ring-shadow:\s*var\(--tw-ring-inset,\s*\)/;
+
+  it("правило існує", () => {
+    // Без нього HC-токен лишається чинним лише для `.focus-ring` (60 місць
+    // із 302), а контракт HC §3 у theme.css обіцяє ширший індикатор усьому
+    // застосунку.
+    expect(code).toMatch(RULE);
+  });
+
+  it("правило рівно одне", () => {
+    // Друга копія означала б, що хтось продублював механізм замість
+    // розширити селектор — і тоді порядок у файлі вирішує, яка з них діє.
+    expect([...code.matchAll(new RegExp(RULE, "g"))]).toHaveLength(1);
+  });
+
+  it("правило стоїть ПОЗА `@layer` — інакше воно мовчки не діє", () => {
+    // Головний інваріант цієї групи. Усередині будь-якого шару правило
+    // програє `.ring-2` з `utilities` НЕЗАЛЕЖНО від специфічності, і провал
+    // невидимий: кільце просто лишається базовим. Саме тому перевіряємо
+    // локацію, а не лише наявність.
+    expect(layerDepthAt(code.search(RULE))).toBe(0);
+  });
+
+  it("покриті всі три HC-скоупи", () => {
+    // `html.hc` — те, що бачить користувач; два `[data-theme-preview="hc-*"]`
+    // — плитки `DesignShowcase`. Розбіжність означала б, що прев'ю показує не
+    // той HC, який приїде в продакшн.
+    const sel = String.raw`\*:focus-visible:not\(\.focus-ring\)`;
+    const scopes = [
+      new RegExp(String.raw`html\.hc\s+` + sel),
+      new RegExp(String.raw`\[data-theme-preview="hc-light"\]\s+` + sel),
+      new RegExp(String.raw`\[data-theme-preview="hc-dark"\]\s+` + sel),
+    ];
+    for (const rx of scopes) expect(code).toMatch(rx);
+  });
+
+  it("навмисне придушення кільця лишається придушеним", () => {
+    // `DateField`/`TimeField` глушать кільце внутрішнього інпута
+    // (`focus-visible:ring-0`), бо його малює обгортка. Без цього винятку HC
+    // домальовував би друге кільце всередині першого.
+    expect(code).toMatch(/:not\(\.focus-visible\\:ring-0\)/);
+  });
+
+  it("ширину беремо з токена, а не літералом", () => {
+    // Сенс правила — саме індирекція: підняв `--ring-width-hc`, отримав
+    // ширше кільце всюди. Зашитий px повернув би вихідну проблему.
+    const at = code.search(RULE);
+    const decl = code.slice(at, code.indexOf("}", at));
+    expect(decl).toContain("var(--focus-ring-width)");
+    expect(decl).not.toMatch(/0 0 0\s+\d+px/);
   });
 });
