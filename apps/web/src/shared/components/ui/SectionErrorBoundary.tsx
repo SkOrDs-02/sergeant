@@ -32,7 +32,13 @@ export class SectionErrorBoundary extends Component<
   override render() {
     const { error } = this.state;
     if (error) {
-      const title = this.props.title || "Помилка";
+      // Дефолт у формі, якою користуються ВСІ дванадцять call-site-ів
+      // («Не вдалось показати «X»»), а не голе «Помилка»: §7 гайду
+      // копірайтингу називає його забороненою standalone-конструкцією.
+      // Наразі жоден call-site сюди не доходить — усі передають свій title —
+      // тож це не виправлення видимого тексту, а прибрана пастка для
+      // наступного автора, який `title` не передасть (PR-X3).
+      const title = this.props.title || "Не вдалось показати цю секцію";
       const resetLabel = this.props.resetLabel || "Відновити";
       const onReset = this.props.onReset;
       return (
