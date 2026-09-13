@@ -28,6 +28,7 @@ import {
   exchangeCode,
 } from "../modules/silpo/oauth.js";
 import { persistTokens, silpoKeyRing } from "../modules/silpo/tokenStore.js";
+import { diagnoseSilpo } from "../modules/silpo/diagnose.js";
 import {
   getReceiptDetail,
   listReceipts,
@@ -300,6 +301,25 @@ type SyncStateCountRow = { count: string };
 function toIsoOrNull(v: Date | string | null): string | null {
   if (v == null) return null;
   return v instanceof Date ? v.toISOString() : v;
+}
+
+/**
+ * `GET /api/silpo/diag` — «що саме зламано», без походу в серверні логи.
+ *
+ * `SILPO_SCHEMA_DRIFT` показує людині одну копію на кілька різних причин, а
+ * причину пише лише в лог (звіт власника 2026-09-13: «пише все одно, що
+ * змінили формат»). Цей ендпоінт віддає рівно ті докази, яких бракує:
+ * чи на місці потрібні тули і якої форми відповідь. Вміст покупок не
+ * повертає — самі імена ключів і лічильники (Hard Rule #21).
+ */
+export async function diagHandler(req: Request, res: Response): Promise<void> {
+  if (!assertSilpoEnabled(res)) return;
+  const userId = getUserId(req as AuthedRequest, res);
+  if (!userId) return;
+
+  const result = await diagnoseSilpo(userId);
+  logger.info({ msg: "silpo_diag_ran", result });
+  res.status(200).json(result);
 }
 
 export async function syncStateHandler(
@@ -602,6 +622,12 @@ export function createSilpoRouter(): Router {
     "/api/silpo/sync",
     rateLimitExpress({ key: "api:silpo:sync", limit: 5, windowMs: 60_000 }),
     syncHandler,
+  );
+  // Ліміт як у `sync`: діагностика робить такі самі виклики до Сільпо.
+  r.get(
+    "/api/silpo/diag",
+    rateLimitExpress({ key: "api:silpo:diag", limit: 5, windowMs: 60_000 }),
+    diagHandler,
   );
   r.get(
     "/api/silpo/receipts",

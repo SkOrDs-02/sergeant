@@ -1,0 +1,163 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+import type { McpToolProbe } from "./mcpClient.js";
+
+const mocks = vi.hoisted(() => ({
+  callWithFreshAccessToken: vi.fn(),
+  listMcpTools: vi.fn(),
+  probeMcpTool: vi.fn(),
+}));
+
+vi.mock("./tokenStore.js", () => ({
+  callWithFreshAccessToken: mocks.callWithFreshAccessToken,
+}));
+
+vi.mock("./mcpClient.js", () => ({
+  listMcpTools: mocks.listMcpTools,
+  probeMcpTool: mocks.probeMcpTool,
+}));
+
+import { diagnoseSilpo } from "./diagnose.js";
+
+const ALL_TOOLS = [
+  "silpo_get_my_offline_orders",
+  "silpo_get_my_online_orders",
+  "silpo_find_products_batch",
+  "silpo_get_product_details",
+  "silpo_get_my_shopping_cart",
+  "silpo_get_shopping_cart_by_id",
+  "silpo_list_branches",
+].map((name) => ({ name }));
+
+const HEALTHY_PROBE: McpToolProbe = {
+  transportError: null,
+  resultKeys: ["structuredContent", "content", "content:text"],
+  isError: false,
+  refusal: null,
+  payloadExtracted: true,
+  payloadKeys: ["success", "summary", "orders", "meta"],
+  ordersCount: 1,
+};
+
+/** `callWithFreshAccessToken` просто проганяє fn під фейковим токеном. */
+function passThroughToken(): void {
+  mocks.callWithFreshAccessToken.mockImplementation(
+    async (_userId: string, fn: (t: string) => Promise<unknown>) =>
+      fn("access-token"),
+  );
+}
+
+beforeEach(() => {
+  mocks.callWithFreshAccessToken.mockReset();
+  mocks.listMcpTools.mockReset();
+  mocks.probeMcpTool.mockReset();
+  passThroughToken();
+  mocks.listMcpTools.mockResolvedValue({
+    ok: true,
+    data: { tools: ALL_TOOLS },
+  });
+  mocks.probeMcpTool.mockResolvedValue(HEALTHY_PROBE);
+});
+
+describe("diagnoseSilpo", () => {
+  it("здорова інтеграція: тули на місці, відповідь розбирається", async () => {
+    const result = await diagnoseSilpo("u1");
+
+    expect(result).toMatchObject({ missingTools: [], toolsTotal: 7 });
+    expect("verdict" in result && result.verdict).toContain("Все справне");
+  });
+
+  it("зниклу тулу називає поіменно — це і є «що змінили Сільпо»", async () => {
+    mocks.listMcpTools.mockResolvedValue({
+      ok: true,
+      data: {
+        tools: ALL_TOOLS.filter((t) => t.name !== "silpo_get_my_online_orders"),
+      },
+    });
+
+    const result = await diagnoseSilpo("u1");
+
+    expect(result).toMatchObject({
+      missingTools: ["silpo_get_my_online_orders"],
+    });
+    expect("verdict" in result && result.verdict).toContain(
+      "перейменували тули",
+    );
+  });
+
+  it("відмову тули називає відмовою, а НЕ дрейфом формату", async () => {
+    mocks.probeMcpTool.mockResolvedValue({
+      ...HEALTHY_PROBE,
+      isError: true,
+      refusal: "Rate limit exceeded",
+      payloadExtracted: false,
+      payloadKeys: null,
+      ordersCount: null,
+    });
+
+    const result = await diagnoseSilpo("u1");
+
+    expect("verdict" in result && result.verdict).toContain("ВІДМОВИЛА");
+    expect("verdict" in result && result.verdict).toContain(
+      "Rate limit exceeded",
+    );
+  });
+
+  it("нерозбірний payload називає дрейфом і показує ключі результату", async () => {
+    mocks.probeMcpTool.mockResolvedValue({
+      ...HEALTHY_PROBE,
+      payloadExtracted: false,
+      payloadKeys: null,
+      ordersCount: null,
+      resultKeys: ["content", "content:resource"],
+    });
+
+    const result = await diagnoseSilpo("u1");
+
+    expect("verdict" in result && result.verdict).toContain(
+      "справжній дрейф формату",
+    );
+    expect("verdict" in result && result.verdict).toContain("content:resource");
+  });
+
+  it("перейменоване поле «orders» видно окремо від решти дрейфу", async () => {
+    mocks.probeMcpTool.mockResolvedValue({
+      ...HEALTHY_PROBE,
+      payloadKeys: ["success", "summary", "receipts", "meta"],
+      ordersCount: null,
+    });
+
+    const result = await diagnoseSilpo("u1");
+
+    expect("verdict" in result && result.verdict).toContain(
+      "перейменування поля",
+    );
+    expect("verdict" in result && result.verdict).toContain("receipts");
+  });
+
+  it("без підключення віддає unavailable, а не вигаданий діагноз", async () => {
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: false,
+      error: { kind: "not_connected", message: "Silpo is not connected" },
+    });
+
+    expect(await diagnoseSilpo("u1")).toEqual({ unavailable: "not_connected" });
+  });
+
+  it("збій tools/list не ховає пробу — обидва шари незалежні", async () => {
+    mocks.listMcpTools.mockResolvedValue({
+      ok: false,
+      error: { kind: "upstream_unavailable", message: "boom" },
+    });
+
+    const result = await diagnoseSilpo("u1");
+
+    expect(result).toMatchObject({
+      toolsTotal: null,
+      toolsError: { kind: "upstream_unavailable" },
+      missingTools: [],
+    });
+    expect("onlineOrdersProbe" in result && result.onlineOrdersProbe).toEqual(
+      HEALTHY_PROBE,
+    );
+  });
+});

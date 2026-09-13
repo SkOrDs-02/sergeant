@@ -23,6 +23,7 @@ import {
   callMcpTool,
   listMcpTools,
   mcpInitialize,
+  probeMcpTool,
   __silpoMcpTestHooks,
 } from "./mcpClient.js";
 
@@ -402,5 +403,108 @@ describe("listMcpTools", () => {
         "silpo_get_my_online_orders",
       ]);
     }
+  });
+});
+
+describe("probeMcpTool", () => {
+  it("описує форму здорової відповіді, не її вміст", async () => {
+    const mock = fetchMock();
+    mock
+      .mockResolvedValueOnce(jsonResponse(INIT_RESULT))
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          jsonrpc: "2.0",
+          id: 2,
+          result: {
+            structuredContent: {
+              success: true,
+              summary: "1 order",
+              orders: [{ orderId: "o1", amount: 123.45 }],
+            },
+          },
+        }),
+      );
+
+    const probe = await probeMcpTool({
+      accessToken: "token-abc",
+      toolName: "silpo_get_my_online_orders",
+      args: { limit: 1 },
+    });
+
+    expect(probe).toMatchObject({
+      transportError: null,
+      isError: false,
+      refusal: null,
+      payloadExtracted: true,
+      payloadKeys: ["success", "summary", "orders"],
+      ordersCount: 1,
+    });
+    // Жодного поля покупки в діагностиці (Hard Rule #21).
+    expect(JSON.stringify(probe)).not.toContain("123.45");
+    expect(JSON.stringify(probe)).not.toContain("o1");
+  });
+
+  it("показує відмову тули з текстом", async () => {
+    const mock = fetchMock();
+    mock
+      .mockResolvedValueOnce(jsonResponse(INIT_RESULT))
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          jsonrpc: "2.0",
+          id: 2,
+          result: {
+            isError: true,
+            content: [{ type: "text", text: "Session expired" }],
+          },
+        }),
+      );
+
+    const probe = await probeMcpTool({
+      accessToken: "token-abc",
+      toolName: "silpo_get_my_online_orders",
+    });
+
+    expect(probe).toMatchObject({
+      isError: true,
+      refusal: "Session expired",
+      payloadExtracted: false,
+      ordersCount: null,
+    });
+  });
+
+  it("нерозбірний результат віддає ключі, за якими видно, що саме приїхало", async () => {
+    const mock = fetchMock();
+    mock
+      .mockResolvedValueOnce(jsonResponse(INIT_RESULT))
+      .mockResolvedValueOnce(new Response(null, { status: 202 }))
+      .mockResolvedValueOnce(
+        jsonResponse({
+          jsonrpc: "2.0",
+          id: 2,
+          result: { content: [{ type: "resource", text: "not json" }] },
+        }),
+      );
+
+    const probe = await probeMcpTool({
+      accessToken: "token-abc",
+      toolName: "silpo_get_my_online_orders",
+    });
+
+    expect(probe.payloadExtracted).toBe(false);
+    expect(probe.resultKeys).toContain("content:resource");
+  });
+
+  it("збій транспорту віддає типізовану помилку, а не порожню форму", async () => {
+    const mock = fetchMock();
+    mock.mockResolvedValue(new Response("unauthorized", { status: 401 }));
+
+    const probe = await probeMcpTool({
+      accessToken: "stale",
+      toolName: "silpo_get_my_online_orders",
+    });
+
+    expect(probe.transportError).toMatchObject({ kind: "auth_required" });
   });
 });

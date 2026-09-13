@@ -585,6 +585,80 @@ function extractToolPayload(result: unknown): unknown {
 }
 
 /**
+ * Діагностика ОДНОГО виклику тули: що саме приїхало, без вмісту.
+ *
+ * Існує тому, що `schema_drift` віддає людині одну й ту саму копію на
+ * кілька різних причин, а причину видно лише в серверному лозі — куди
+ * власник продукту не дістається (звіт 2026-09-13: «пише все одно, що
+ * змінили формат», і жодного способу дізнатись, що саме). Повертає ФОРМУ:
+ * імена ключів, типи content-блоків, `isError`, кількість елементів —
+ * жодного поля покупки (Hard Rule #21).
+ */
+export interface McpToolProbe {
+  /** Помилка транспорту/протоколу, якщо виклик не дійшов до результату. */
+  transportError: McpError | null;
+  /** Імена ключів результату + типи content-блоків. */
+  resultKeys: string[];
+  isError: boolean;
+  /** Текст відмови тули, якщо `isError: true`. */
+  refusal: string | null;
+  /** Чи вдалось дістати payload (`structuredContent` або JSON у тексті). */
+  payloadExtracted: boolean;
+  /** Імена ключів самого payload — саме тут видно перейменування полів. */
+  payloadKeys: string[] | null;
+  /** Довжина `orders`, якщо такий масив є; `null` — поля немає. */
+  ordersCount: number | null;
+}
+
+export async function probeMcpTool(opts: {
+  accessToken: string;
+  toolName: string;
+  args?: Record<string, unknown>;
+}): Promise<McpToolProbe> {
+  const empty: McpToolProbe = {
+    transportError: null,
+    resultKeys: [],
+    isError: false,
+    refusal: null,
+    payloadExtracted: false,
+    payloadKeys: null,
+    ordersCount: null,
+  };
+
+  const init = await mcpInitialize(opts.accessToken);
+  if (!init.ok) return { ...empty, transportError: init.error };
+
+  const callResult = await mcpRpcCall({
+    accessToken: opts.accessToken,
+    sessionId: init.data.sessionId,
+    method: "tools/call",
+    params: { name: opts.toolName, arguments: opts.args ?? {} },
+  });
+  if (!callResult.ok) return { ...empty, transportError: callResult.error };
+
+  const refusal = toolRefusal(callResult.result);
+  const payload = extractToolPayload(callResult.result);
+  const payloadKeys =
+    payload && typeof payload === "object" && !Array.isArray(payload)
+      ? Object.keys(payload)
+      : null;
+  const orders =
+    payload && typeof payload === "object"
+      ? (payload as { orders?: unknown }).orders
+      : undefined;
+
+  return {
+    transportError: null,
+    resultKeys: resultShape(callResult.result),
+    isError: refusal !== null,
+    refusal,
+    payloadExtracted: payload !== undefined,
+    payloadKeys: Array.isArray(payload) ? ["<array>"] : payloadKeys,
+    ordersCount: Array.isArray(orders) ? orders.length : null,
+  };
+}
+
+/**
  * `tools/list` — used by the contract-drift snapshot test (spec § "Дрейф
  * схеми tools — контрактний пояс") to catch Silpo silently renaming/
  * removing tools we depend on. Permissive on purpose: only `name` is
