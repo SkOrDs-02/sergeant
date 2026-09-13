@@ -2,6 +2,7 @@
  * Last validated: 2026-06-15
  * Status: Active
  */
+import { normalizeNutritionPrefs } from "@sergeant/nutrition-domain";
 import {
   NUTRITION_ACTIVE_PANTRY_KEY,
   NUTRITION_PANTRIES_KEY,
@@ -122,6 +123,11 @@ function normalizePrefs(x: unknown): NutritionPrefs {
       typeof p.adaptiveGoalLastUpdatedAt === "string"
         ? p.adaptiveGoalLastUpdatedAt
         : null,
+    // Знімок підстави проходить бекап через доменну нормалізацію, а не
+    // копіюється як є: половина знімка дала б картці «витрата ≈NaN».
+    adaptiveGoalLastReason: normalizeNutritionPrefs({
+      adaptiveGoalLastReason: p.adaptiveGoalLastReason,
+    }).adaptiveGoalLastReason,
     mealTemplates: Array.isArray(p.mealTemplates)
       ? p.mealTemplates.slice(0, 40)
       : [],

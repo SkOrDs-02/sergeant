@@ -3,6 +3,7 @@ import {
   addDeviceDays,
   clampGoalDelta,
   deviceDayKey,
+  isDayFullyLogged,
   measuredTdee,
   type IntakeDay,
   type NutritionLog,
@@ -31,6 +32,16 @@ export interface AdaptiveGoalState {
   completeDays: number;
   weightPoints: number;
   lastUpdatedAt: string | null;
+  /**
+   * Підстава останнього перерахунку — ті самі три числа, що їх обіцяє
+   * спека: середнє споживання, тренд ваги, виміряна витрата, плюс ціль,
+   * яка з них вийшла. Доти стан їх не віз узагалі, хоча `measuredTdee`
+   * рахує їх усі, тож показати причину зміни цілі було нічим.
+   *
+   * Це ЗНІМОК із моменту зміни (`prefs.adaptiveGoalLastReason`), а не
+   * живий перерахунок: пояснення говорить про подію, що вже сталась.
+   */
+  lastReason: NutritionPrefs["adaptiveGoalLastReason"];
 }
 
 /** Вікно аналізу: 14 завершених днів до сьогодні. */
@@ -99,11 +110,18 @@ function latestWeightKg(weights: readonly WeightPoint[]): number | null {
  * Середньодобові витрати на тренуваннях за те саме вікно, що й решта
  * аналізу.
  *
- * Навіщо середнє, а не «сьогодні» (`useTodayWorkoutKcal`): тут рахується
- * БАЗОВА денна норма, і вона не має стрибати залежно від того, чи саме
- * сьогодні був тренувальний день. `useTodayWorkoutKcal` лишається для
- * пресетів у `DailyPlanGoalSelectors`, де людина свідомо тисне
- * «розрахувати з профілю» і бачить корекцію на сьогодні.
+ * Навіщо середнє, а не «сьогодні»: тут рахується БАЗОВА денна норма, і
+ * вона не має стрибати залежно від того, чи саме сьогодні був
+ * тренувальний день.
+ *
+ * Тут раніше стояло, що спалене за сьогодні «лишається для пресетів у
+ * `DailyPlanGoalSelectors`, де людина свідомо тисне „розрахувати з
+ * профілю“ і бачить корекцію на сьогодні». Половина правди: показати
+ * сьогоднішню корекцію справді доречно, але пресет ЗАПИСУВАВ її в
+ * постійну `dailyTargetKcal` — тобто разове тренування роздувало ціль
+ * назавжди. Обидва шляхи тепер усереднюють
+ * (`core/profile/useAverageWorkoutKcal.ts`), і `useTodayWorkoutKcal`
+ * прибрано, щоб пастку не можна було зібрати наново.
  *
  * Має значення лише при `countWorkoutsInGoal` — у статичному режимі
  * `computeTdee` це число ігнорує, бо тренування вже сидять у множнику
@@ -159,12 +177,22 @@ export function useAdaptiveNutritionGoal(
       intakeDays.push({
         dateKey,
         kcal: summary.kcal,
-        // `loggedMealTypesCount`, not `mealCount`: a photo split into
-        // several journal rows of the same meal type must not read as a
-        // "complete" intake day for TDEE math (nutrition audit PR-N2,
-        // 2026-09-13 — same row-count-vs-meal-occasion bug as the
-        // dashboard's incomplete-day marker).
-        complete: summary.loggedMealTypesCount >= 3,
+        // Повнота — від ВЛАСНОЇ цілі людини, не від лічильника прийомів:
+        // три перекуси на 300 ккал не є повним днем, а один прийом на
+        // 2000 — є. Розбір обох промахів — у `isDayFullyLogged`.
+        //
+        // Лічильник іде другим аргументом і працює лише як запасний, поки
+        // цілі ще немає. Саме `loggedMealTypesCount`, НЕ `mealCount`:
+        // фото, збережене кількома рядками одного прийому, не є кількома
+        // прийомами (аудит PR-N2, 2026-09-13; контракт — у докстрінгу
+        // `DaySummary.mealCount`). Обидві знахідки тут потрібні: та про
+        // рядки проти прийомів виправляє ЛІЧИЛЬНИК, ця — вісь, по якій
+        // міряють повноту взагалі.
+        complete: isDayFullyLogged(
+          summary.kcal,
+          summary.loggedMealTypesCount,
+          prefs.dailyTargetKcal ?? null,
+        ),
       });
     }
     const weights = collectWeights(start, end);
@@ -184,7 +212,19 @@ export function useAdaptiveNutritionGoal(
       ),
       measured: measuredTdee(intakeDays, weights),
     };
-  }, [log, fizrukCacheTick, biometrics.weightKg]);
+    // `prefs.dailyTargetKcal` у залежностях обовʼязковий: він задає поріг
+    // повноти дня, тож без нього класифікація лишалась би порахованою на
+    // старій цілі.
+    //
+    // AI-CONTEXT: так, поріг бере ту саму ціль, яку ці ворота й гейтять —
+    // самопосилання тут свідоме, і воно ЗГАСАЮЧЕ, а не розганяльне. Ціль
+    // униз → поріг униз → днів проходить БІЛЬШЕ (дані повертаються); ціль
+    // угору → поріг угору → днів менше, і перерахунок просто чекає. Рух
+    // самої цілі обмежений ±10% за тиждень (`clampGoalDelta`) і підлогою
+    // BMR, тож петля не має де розігнатись. Незалежним якорем був би BMR,
+    // але він тут недосяжний без циклу: `profileTargets` сам залежить від
+    // `analysis`.
+  }, [log, fizrukCacheTick, biometrics.weightKg, prefs.dailyTargetKcal]);
 
   const profileTargets = useMemo(
     () =>
@@ -263,6 +303,16 @@ export function useAdaptiveNutritionGoal(
       dailyTargetFat_g: targets.fat_g,
       dailyTargetCarbs_g: targets.carbs_g,
       adaptiveGoalLastUpdatedAt: new Date().toISOString(),
+      // Знімок підстави пишеться РАЗОМ із ціллю, одним записом. Інакше
+      // картка пояснення читала б живий `analysis.measured`, який
+      // перераховується з ковзного вікна на кожен рендер, — і через день
+      // приписувала б минулій зміні сьогоднішні числа.
+      adaptiveGoalLastReason: {
+        averageIntakeKcal: analysis.measured.averageIntakeKcal,
+        weightDeltaKg: analysis.measured.weightDeltaKg,
+        tdeeKcal: analysis.measured.tdeeKcal,
+        goalKcal: targets.kcal,
+      },
     });
   }, [analysis, biometrics, prefs, profileTargets]);
 
@@ -272,6 +322,7 @@ export function useAdaptiveNutritionGoal(
       completeDays: 0,
       weightPoints: 0,
       lastUpdatedAt: null,
+      lastReason: null,
     };
   }
   if (!profileTargets) {
@@ -282,6 +333,7 @@ export function useAdaptiveNutritionGoal(
         analysis.intakeDays.filter((d) => d.complete).length,
       weightPoints: analysis.weights.length,
       lastUpdatedAt: prefs.adaptiveGoalLastUpdatedAt,
+      lastReason: prefs.adaptiveGoalLastReason,
     };
   }
   return {
@@ -291,5 +343,6 @@ export function useAdaptiveNutritionGoal(
       analysis.intakeDays.filter((d) => d.complete).length,
     weightPoints: analysis.weights.length,
     lastUpdatedAt: prefs.adaptiveGoalLastUpdatedAt,
+    lastReason: prefs.adaptiveGoalLastReason,
   };
 }
