@@ -19,6 +19,7 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
+- [#1134](https://github.com/Skords-01/Sergeant/pull/1134) — ci(root): повернути apps/mobile у CI і формалізувати web-first паузу окремим ADR _(2026-09-13)_
 - [#1098](https://github.com/Skords-01/Sergeant/pull/1098) — fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника _(2026-09-11)_
 - [#1071](https://github.com/Skords-01/Sergeant/pull/1071) — fix(server): звіряти RAG-евал і parity-тест зі STORED, а не ALLOWED джерелами _(2026-09-03)_
 - [#1064](https://github.com/Skords-01/Sergeant/pull/1064) — feat(root): закрити F1 анти-слоп аудиту, першу хвилю F7 і хвости техборгу _(2026-09-03)_
@@ -28,7 +29,6 @@
 - [#1046](https://github.com/Skords-01/Sergeant/pull/1046) — docs(docs): полагодити dangling ref у ADR-0067 (червоний check на main) _(2026-09-02)_
 - [#1043](https://github.com/Skords-01/Sergeant/pull/1043) — docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення _(2026-09-02)_
 - [#895](https://github.com/Skords-01/Sergeant/pull/895) — fix(agents): полірування агентного шару після розкатки module-owners _(2026-08-28)_
-- [#892](https://github.com/Skords-01/Sergeant/pull/892) — feat(agents): module-owner і службові Claude-агенти _(2026-08-27)_
 
 ## 🔵 В роботі — 73 відкриті документи
 

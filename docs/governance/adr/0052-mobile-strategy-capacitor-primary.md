@@ -90,3 +90,14 @@
 - [ADR-0010](./0010-mobile-dual-track-capacitor-expo.md) — dual-track original decision
 - [`docs/engineering/architecture/platforms.md`](../../engineering/architecture/platforms.md) — feature-parity матриця (Exit dashboard)
 - [`docs/work/specs/initiatives/0010-revenue-first-launch.md` § Phase 1.2](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                            | Merged     |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------- |
+| [#1134](https://github.com/SkOrDs-02/sergeant/pull/1134) | ci(root): повернути apps/mobile у CI і формалізувати web-first паузу окремим ADR | 2026-09-13 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

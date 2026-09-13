@@ -130,3 +130,14 @@ T₀/T₁/T₂ з ініціативи 0002; цей ADR пояснює, чому
 - [ADR-0052](./0052-mobile-strategy-capacitor-primary.md) — попереднє рішення
   (Capacitor primary, обидва активні)
 - [`docs/work/specs/audits/2026-09-13-product-full-review.md`](../../work/specs/audits/2026-09-13-product-full-review.md) — PR-M1 і PR-M2
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                       | Title                                                                            | Merged     |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------- |
+| [#1134](https://github.com/SkOrDs-02/sergeant/pull/1134) | ci(root): повернути apps/mobile у CI і формалізувати web-first паузу окремим ADR | 2026-09-13 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
