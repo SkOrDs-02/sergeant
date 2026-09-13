@@ -481,9 +481,13 @@ export function WorkoutFinishSheets({
                   label="Обʼєм"
                   value={
                     finishFlash.tonnageKg > 0 ? (
+                      // PR-Z3 (аудит 2026-09-13, хвиля 6): "кг" читалось як
+                      // маса, а це `вага_кг × повторення` — канонічний
+                      // варіант "кг×повт", як у `WorkoutSummaryView` і
+                      // `WeeklyVolumeChart`.
                       <Measure
                         value={Math.round(finishFlash.tonnageKg)}
-                        unit="кг"
+                        unit="кг×повт"
                       />
                     ) : (
                       "—"

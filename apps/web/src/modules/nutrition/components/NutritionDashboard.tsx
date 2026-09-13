@@ -98,10 +98,16 @@ export function NutritionDashboard({
 
   // ponytail: honesty threshold for "incomplete day" (canon §5.2 — a
   // partial log must not read as a deficit). The canon's own example is
-  // "1 of 4 meals", so <3 logged meals covers both an empty day and a
+  // "1 of 4 meals", so <3 logged meal TYPES covers both an empty day and a
   // one-meal day without inventing a per-user "expected meal count"
-  // setting; 3+ meals reads as a deliberately completed log.
-  const isIncompleteDay = summary.mealCount < 3;
+  // setting; 3+ meal types reads as a deliberately completed log.
+  //
+  // `loggedMealTypesCount`, not `mealCount` (nutrition audit PR-N2,
+  // 2026-09-13): a single photo split into "суп + хліб + салат" writes 3
+  // journal ROWS of the same meal type, and `mealCount` (row count) read
+  // that as "3 прийоми їжі" — clearing the incomplete-day marker for a day
+  // that only has dinner logged.
+  const isIncompleteDay = summary.loggedMealTypesCount < 3;
 
   // Nutrition audit E-5 / founder decision 2026-08-04: share is calorie-
   // weighted (see `getDaySummary`), threshold is strictly ">50%" — exactly
@@ -226,8 +232,8 @@ export function NutritionDashboard({
             <div>
               <div className="text-style-label text-hero-ink">Сьогодні</div>
               <div className="text-style-caption text-hero-ink">
-                {summary.mealCount}{" "}
-                {pluralUa(summary.mealCount, {
+                {summary.loggedMealTypesCount}{" "}
+                {pluralUa(summary.loggedMealTypesCount, {
                   one: "прийом",
                   few: "прийоми",
                   many: "прийомів",
@@ -274,7 +280,7 @@ export function NutritionDashboard({
               onSetGoal={onGoToDailyPlan ?? onGoToLog}
               incompleteNote={
                 hasGoal && isIncompleteDay
-                  ? `Записано ${summary.mealCount} із 4`
+                  ? `Записано ${summary.loggedMealTypesCount} із ${MEAL_ORDER.length}`
                   : undefined
               }
             />

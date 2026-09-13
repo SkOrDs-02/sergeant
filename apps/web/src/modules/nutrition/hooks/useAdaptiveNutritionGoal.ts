@@ -159,7 +159,12 @@ export function useAdaptiveNutritionGoal(
       intakeDays.push({
         dateKey,
         kcal: summary.kcal,
-        complete: summary.mealCount >= 3,
+        // `loggedMealTypesCount`, not `mealCount`: a photo split into
+        // several journal rows of the same meal type must not read as a
+        // "complete" intake day for TDEE math (nutrition audit PR-N2,
+        // 2026-09-13 — same row-count-vs-meal-occasion bug as the
+        // dashboard's incomplete-day marker).
+        complete: summary.loggedMealTypesCount >= 3,
       });
     }
     const weights = collectWeights(start, end);

@@ -307,6 +307,60 @@ describe("getDayMacros / getDaySummary", () => {
     expect(s.hasMeals).toBe(true);
     expect(s.hasAnyMacros).toBe(true);
     expect(s.kcal).toBe(350);
+    // Обидва рядки фікстури — `mealType: "breakfast"` (дефолт `makeMeal`),
+    // тобто 2 рядки, але 1 ПРИЙОМ.
+    expect(s.loggedMealTypesCount).toBe(1);
+  });
+
+  it("getDaySummary: loggedMealTypesCount рахує рядки одного фото як ОДИН прийом (nutrition audit PR-N2)", () => {
+    // Фото "суп + хліб + салат" пише 3 рядки журналу, усі mealType:
+    // "dinner" (decision 2026-09-03, AddMealSheet multi-item save). Це не
+    // три прийоми — це один прийом (вечеря) із трьома позиціями.
+    const photoDay: NutritionLog = {
+      "2026-07-01": {
+        meals: [
+          makeMeal({ id: "soup", mealType: "dinner", label: "Вечеря" }),
+          makeMeal({ id: "bread", mealType: "dinner", label: "Вечеря" }),
+          makeMeal({ id: "salad", mealType: "dinner", label: "Вечеря" }),
+        ],
+      },
+    };
+    const s = getDaySummary(photoDay, "2026-07-01");
+    expect(s.mealCount).toBe(3);
+    expect(s.loggedMealTypesCount).toBe(1);
+  });
+
+  it("getDaySummary: loggedMealTypesCount рахує 3 СПРАВЖНІ окремі прийоми як 3 (guard)", () => {
+    const realDay: NutritionLog = {
+      "2026-07-02": {
+        meals: [
+          makeMeal({ id: "a", mealType: "breakfast", label: "Сніданок" }),
+          makeMeal({ id: "b", mealType: "lunch", label: "Обід" }),
+          makeMeal({ id: "c", mealType: "dinner", label: "Вечеря" }),
+        ],
+      },
+    };
+    const s = getDaySummary(realDay, "2026-07-02");
+    expect(s.mealCount).toBe(3);
+    expect(s.loggedMealTypesCount).toBe(3);
+  });
+
+  it("getDaySummary: loggedMealTypesCount ігнорує тип із нульовими ккал", () => {
+    const zeroKcalSnack: NutritionLog = {
+      "2026-07-03": {
+        meals: [
+          makeMeal({ id: "a", mealType: "breakfast" }),
+          makeMeal({
+            id: "b",
+            mealType: "snack",
+            macros: { kcal: 0, protein_g: 0, fat_g: 0, carbs_g: 0 },
+          }),
+        ],
+      },
+    };
+    const s = getDaySummary(zeroKcalSnack, "2026-07-03");
+    expect(s.mealCount).toBe(2);
+    expect(s.loggedMealTypesCount).toBe(1);
   });
 
   it("getDaySummary: hasAnyMacros=false коли всі macros null", () => {

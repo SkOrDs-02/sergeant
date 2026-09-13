@@ -87,9 +87,30 @@ export type NutritionLogLike =
 
 export interface DaySummary extends Macros {
   date: string;
+  /**
+   * Raw journal row count for the day. A single photo with N items writes N
+   * rows (`AddMealSheet` multi-item save, decision 2026-09-03) — this field
+   * counts rows, NOT meal occasions. Do not use it to gate "is the day's
+   * meal log complete" (that reads a plated dish as several meals); use
+   * `loggedMealTypesCount` for that. Kept for callers that genuinely want a
+   * row count.
+   */
   mealCount: number;
   hasMeals: boolean;
   hasAnyMacros: boolean;
+  /**
+   * Number of distinct meal occasions (`MEAL_ORDER`: breakfast/lunch/
+   * dinner/snack, 0..4) with non-zero kcal logged for the day —
+   * calorie-weighted per type, mirroring `estimatedKcalShare` below.
+   * Nutrition audit PR-N2 (2026-09-13): a single photo split into "суп +
+   * хліб + салат" writes 3 rows of the SAME meal type, so `mealCount`
+   * (row count) read that dinner as "3 прийоми їжі" and cleared the
+   * incomplete-day marker. This field counts occasions, not rows — three
+   * items from one photo count as 1, three genuinely separate meals count
+   * as 3. Use this (not `mealCount`) for "day complete" / "N of 4 meals
+   * logged" signals (canon §5.2).
+   */
+  loggedMealTypesCount: number;
   /**
    * Share of the day's kcal (0..1) that came from `photoAI`-sourced meals —
    * calorie-weighted, not meal-count-weighted (founder decision 2026-08-04,
