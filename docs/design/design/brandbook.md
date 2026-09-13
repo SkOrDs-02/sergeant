@@ -1,6 +1,6 @@
 # Sergeant Brandbook & Design-система
 
-> **Last touched:** 2026-09-12 by @claude. **Next review:** 2027-03-13.
+> **Last touched:** 2026-09-13 by @claude. **Next review:** 2027-03-14.
 > **Status:** Active
 
 Дизайн-філософія Sergeant — **Soft & Organic** на теплій крем-базі.
@@ -626,8 +626,10 @@ retired ADR-0081).
 > [`apps/web/src/styles/theme.css`](../../../apps/web/src/styles/theme.css) і
 > дзеркалять `inkTheme.surface`: `#14100e` / `#2a231f` / `#3a302b`. Коротка
 > зведена таблиця — [`DESIGN.md § Темна тема`](../../../DESIGN.md).
-> Значення нижче не мертві: `apps/mobile/global.css` шипить саме їх, тобто
-> темна тема мобайла на «Чорнило» ще не мігрувала (розбір — § 2.1 у
+> Значення нижче не мертві й не «застарілі»: `apps/mobile/global.css` шипить
+> саме їх, і рішенням власника (2026-09-12) мобайл лишається на цій темі
+> свідомо — це ДРУГА чинна темна тема продукту, а не відкладена міграція
+> (розбір — § 2.1 у
 > [`01-tokens-colors.md`](./design-system/01-tokens-colors.md)).
 
 ```css
