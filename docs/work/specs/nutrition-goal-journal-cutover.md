@@ -1,7 +1,7 @@
 # SPEC: cutover читачів на журнал цілей КБЖВ (стадія 3)
 
-> **Last touched:** 2026-09-03 by @claude (звірка з `origin/main`: PR-1 у `main`, PR-2/PR-3 ще ні; знято посилання на секцію, якої не існує). **Next review:** 2026-12-02.
-> **Status:** In progress — PR-1 у `main` ([#1044](https://github.com/SkOrDs-02/sergeant/pull/1044), шлях запису доведено тестом); лишились PR-2 (ряд цілей у графіках, `targetKcalByDay`) і PR-3 (cutover девʼяти читачів + `METRICS_VERSION` 12 → 13). Деталі — § Стан виконання.
+> **Last touched:** 2026-09-13 by @claude (звірка з `origin/main`: усі три PR у `main`, спека закрита). **Next review:** 2026-12-12.
+> **Status:** Done — стадія 3 завершена комітом [`2f0c49a`](https://github.com/SkOrDs-02/sergeant/commit/2f0c49a) (PR [#1087](https://github.com/SkOrDs-02/sergeant/pull/1087), 2026-09-06): усі девʼять ретроспективних читачів беруть ціль із журналу, `METRICS_VERSION` 12 → 13. Доказова звірка — § Стан виконання.
 
 <!-- Спека самодостатня: виконавець у свіжій сесії реалізує стадію 3, читаючи
 лише її. Продуктові рішення НЕ виводяться тут заново - вони ратифіковані
@@ -57,11 +57,13 @@ founder-а немає. -->
 | Резолвер ефективної цілі   | [`nutritionGoals.ts`](../../../packages/nutrition-domain/src/nutritionGoals.ts)                                                                                                                                       | Стадія 2: `resolveEffectiveGoal` / `…ForRange`     |
 | Pull-шлях журналу          | [`applyPullGoalPeriods.ts`](../../../apps/web/src/core/syncEngine/applyPullGoalPeriods.ts)                                                                                                                            | Стадія 1: сходинки їдуть між пристроями            |
 
-**Ключовий факт для оцінки обсягу:** `resolveEffectiveGoal` має в репо рівно
-три згадки - власне визначення, свій тест і серверний
+**Ключовий факт для оцінки обсягу (актуальний на момент написання спеки,
+2026-09-02):** `resolveEffectiveGoal` мав у репо рівно три згадки - власне
+визначення, свій тест і серверний
 [`applySyncGoals.ts`](../../../apps/server/src/modules/sync/nutrition/applySyncGoals.ts).
-Ретроспективних споживачів **нуль**. Уся ця спека - підключення споживачів до
-вже готового резолвера, а не будівництво механізму.
+Ретроспективних споживачів було **нуль**. Уся ця спека - підключення
+споживачів до вже готового резолвера, а не будівництво механізму. Станом на
+2026-09-13 підключені всі девʼять - див. § Стан виконання.
 
 **Друга оцінка обсягу:** `dailyTargetKcal` у `apps/server/src` зустрічається
 рівно у міграції 087 і її тесті. Серверної частини в цій поставці **немає** -
@@ -194,15 +196,44 @@ prefs. Це навмисно поведінково-нейтральний кр�
    через межу читати не можна. Тут число рухається **в обидва боки** - у кого
    ціль зростала, минуле позеленіє, у кого падала, почервоніє менше.
 
-## Стан виконання (звірено з `origin/main` 2026-09-03)
+## Стан виконання (звірено з `origin/main` 2026-09-13)
 
-| Крок                         | Стан         | Доказ                                                                                                                                                                                                                                                                           |
-| ---------------------------- | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| PR-1 доказ шляху запису      | **зроблено** | [#1044](https://github.com/SkOrDs-02/sergeant/pull/1044), `goalPeriodsEntrypoint.test.ts` (131 рядок, єдиний файл PR)                                                                                                                                                           |
-| PR-2 ряд цілей у графіках    | не зроблено  | `targetKcalByDay` у `apps/web/src` і `apps/mobile/src` - 0 згадок; `WeekKcalCard.tsx` / `WeekKcalChart.tsx` досі приймають число                                                                                                                                                |
-| PR-3 cutover девʼяти читачів | не зроблено  | `useWeeklyDigest.ts`, `useCoachInsight.ts`, `useStreakSevenDaysInsight.ts`, `weeklyDigestAggregates.ts` досі читають `dailyTargetKcal`; `resolveEffectiveGoalForRange` поза `nutrition-domain` згадується лише коментарем у `NutritionDashboard.tsx:79`; `METRICS_VERSION = 12` |
+| Крок                         | Стан         | Доказ                                                                                                                                                                                                            |
+| ---------------------------- | ------------ | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| PR-1 доказ шляху запису      | **зроблено** | [#1044](https://github.com/SkOrDs-02/sergeant/pull/1044), `goalPeriodsEntrypoint.test.ts` (131 рядок, єдиний файл PR)                                                                                            |
+| PR-2 ряд цілей у графіках    | **зроблено** | `WeekKcalCard` приймає `goalsByDay` (`NutritionDashboard.tsx:315-317`), mobile-дзеркало - те саме через `resolveKcalGoalsForDays` (`Dashboard.tsx:315`)                                                          |
+| PR-3 cutover девʼяти читачів | **зроблено** | коміт `2f0c49a`; `dailyTargetKcal` у всіх девʼяти файлах - 0 згадок (звірка нижче), `METRICS_VERSION = 13` з поясненням межі 12 → 13 у [`metricsVersion.ts`](../../../packages/shared/src/lib/metricsVersion.ts) |
 
-Наступний крок для виконавця - PR-2 за § Порядок; передумови всі виконані.
+**Ім'я пропа розійшлося зі спекою, і це не помилка.** § Рішення дизайну D3
+називає ряд `targetKcalByDay`; у коді він приїхав як `goalsByDay`. Шукати
+спекою по імені не вийде - шукай по `resolveKcalGoalsForDays`.
+
+**Поіменна звірка девʼяти читачів** (0 згадок `dailyTargetKcal` у кожному):
+
+| #   | Читач                | Звідки тепер бере ціль                                                     |
+| --- | -------------------- | -------------------------------------------------------------------------- |
+| 1   | Тижневий дайджест    | `averageKcalGoalForDays(goalPeriods, weekDays)` — `useWeeklyDigest.ts:339` |
+| 2   | Coach-снапшот        | `averageKcalGoalForDays` — `useCoachInsight.ts:267`                        |
+| 3   | Рекомендації         | `resolveEffectiveGoal` — `recommendationEngine.ts:380`                     |
+| 4   | Stories              | через `agg.targetKcal` від читача №1 — власного читання prefs не має       |
+| 5   | Тижневий графік      | проп `goalsByDay` — `NutritionDashboard.tsx:317`                           |
+| 6   | Стрік 7 днів         | `resolveKcalGoalsForDays` — `useStreakSevenDaysInsight.ts:80`              |
+| 7   | Дайджест (mobile)    | журнал через `goalPeriods`                                                 |
+| 8   | Coach-снапшот (mob.) | журнал через `goalPeriods`                                                 |
+| 9   | Графік (mobile)      | `resolveKcalGoalsForDays` — `Dashboard.tsx:315`                            |
+
+Прикордонний `hubChatContext/sections.ts` пішов рівно тим шляхом, який
+вирішено в § Девʼять читачів: рядок поточної цілі лишився з `prefs`
+(`:193`), а семиденний масив дістав власну ціль на кожен день (`:220`).
+
+**Що свідомо лишилось на `prefs.dailyTarget*`** — усе, що про СЬОГОДНІ:
+hero-кільце (`NutritionDashboard.tsx:116`), `DailyPlanCard`,
+`DailyPlanGoalSelectors`, `DailyPlanWarnings`, налаштування, чат-дії, seed
+демо, бекапи. Це не залишок cutover-у, а другий бік того самого розподілу:
+минуле судиться журналом, сьогодні редагується в prefs, і запис у prefs
+породжує сходинку журналу. Той самий попереджувальний абзац стоїть
+`AI-DANGER`-ом у шапці
+[`nutritionGoals.ts`](../../../packages/nutrition-domain/src/nutritionGoals.ts).
 
 ## Маркер реконструкції не робиться
 

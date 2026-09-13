@@ -194,10 +194,23 @@
    OUT of the scrollable band entirely. Padding alone would not do it:
    padding only clears the END of the scroll, while the overlap happens
    mid-scroll, wherever a card passes under the pill.
+
+   PR-X2 (design-audit 2026-09-13): this used to hardcode `2.75rem + 0.5rem`
+   — correct for a pill pinned flush to the bottom safe-area, but the pill
+   moved to `above-tabbar-pill` (styles/utilities.css), which lifts it by a
+   measured nav-inset + 4.5rem of headroom. Nobody updated this half, so
+   the pill sat 64–116px INSIDE the scroll band instead of above it
+   (live-browser audit, 390×844: pill top 656px, scroll end 720–772px).
+   Both halves now read the same `--sgt-demo-badge-*` vars from
+   `utilities.css` — see that file's `:root` block for the shared source;
+   parser-guarded by `mobile.demoBadgeClearance.test.ts`.
    ═══════════════════════════════════════════════════════════════════════ */
 @media (max-width: 639px) {
   html[data-demo-badge] main {
-    margin-bottom: calc(2.75rem + 0.5rem); /* pill 44px + 8px gap */
+    margin-bottom: calc(
+      var(--sgt-demo-badge-bottom-offset) + var(--sgt-demo-badge-height) +
+        0.5rem
+    );
   }
 }
 

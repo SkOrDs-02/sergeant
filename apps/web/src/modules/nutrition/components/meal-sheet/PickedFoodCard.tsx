@@ -24,6 +24,8 @@ import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { cn } from "@shared/lib/ui/cn";
 import { MacroChip } from "./MacroChip";
+import { ProductNutrientsRow } from "./ProductNutrientsRow";
+import { ProductThumb } from "./ProductThumb";
 import { macrosForGrams } from "../../lib/foodDb/foodDb";
 import { MAX_PORTION_GRAMS, type MealFormState } from "./mealFormUtils";
 import { useWheelGrams } from "./useWheelGrams";
@@ -133,7 +135,11 @@ export function PickedFoodCard({
     <div className="mb-4 rounded-2xl border border-nutrition/30 bg-nutrition/5 overflow-hidden">
       {/* Назва + зміна продукту */}
       <div className="flex items-center justify-between gap-2 px-4 pt-3 pb-2">
-        <div className="min-w-0">
+        <ProductThumb
+          name={pickedFood.name ?? ""}
+          imageUrl={pickedFood.imageUrl}
+        />
+        <div className="min-w-0 flex-1">
           <div className="text-style-label text-text truncate">
             {[pickedFood.name, pickedFood.brand].filter(Boolean).join(" · ")}
             {pickedFood.source === "off" && (
@@ -177,6 +183,11 @@ export function PickedFoodCard({
           <Icon name="close" size={16} aria-hidden />
         </button>
       </div>
+
+      {/* Нутрієнти понад КБЖВ — лише перегляд, лише коли джерело їх дало */}
+      {pickedFood.nutrients && (
+        <ProductNutrientsRow nutrients={pickedFood.nutrients} />
+      )}
 
       {/* Порція з кроками */}
       <div className="px-4 pb-3 flex flex-wrap items-center gap-2">
