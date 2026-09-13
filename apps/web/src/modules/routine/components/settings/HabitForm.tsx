@@ -384,7 +384,7 @@ export function HabitForm({
 
           {/* AI-NOTE: caption тут навмисний — це підказка під контролом,
               названий виняток `no-sentence-in-caption`
-              (docs/05-design/design/density-hierarchy-spec.md §4). Рядок
+              (docs/design/design/density-hierarchy-spec.md §4). Рядок
               пояснює поведінку вже обраного режиму й читається разом із
               полями дат над ним, а не як окремий абзац. */}
           {(habitDraft.recurrence === "once" ||
@@ -439,7 +439,7 @@ export function HabitForm({
               </div>
               {/* AI-NOTE: caption навмисний — підказка під контролом,
                   названий виняток `no-sentence-in-caption`
-                  (docs/05-design/design/density-hierarchy-spec.md §4). */}
+                  (docs/design/design/density-hierarchy-spec.md §4). */}
               <span className="mt-1 block text-style-caption text-subtle leading-snug">
                 Можна обрати кілька. Теги створюються в Налаштуваннях →
                 «Рутина».

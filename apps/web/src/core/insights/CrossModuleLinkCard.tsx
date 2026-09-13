@@ -3,9 +3,9 @@
  * Status: Active
  *
  * `CrossModuleLinkCard` — форма крос-модульного звʼязку (анти-слоп P2,
- * `docs/05-design/design/anti-slop-strategy.md` §5 P2). Головний
+ * `docs/design/design/anti-slop-strategy.md` §5 P2). Головний
  * диференціатор продукту («звʼязки між сферами — головна цінність»,
- * `docs/01-product/model/product-overview.md` §1) зараз доставляється
+ * `docs/product/model/product-overview.md` §1) зараз доставляється
  * рядком у списку інсайтів (`digestCorrelations.ts` → `WeeklyDigestCard`);
  * ця картка — його власна форма, а не ще один рядок.
  *

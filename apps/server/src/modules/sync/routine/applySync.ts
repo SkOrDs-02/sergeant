@@ -34,7 +34,7 @@ import type { AppliedStatus } from "../syncV2-types.js";
  * термінальний в outbox). НЕ «відновлюй симетрію» з nutrition.
  * Від stale offline-edit-у захищає LWW-guard нижче
  * (`updated_at >= clientTs` → `lww_conflict`) — до DML доходять лише
- * строго новіші ops. Канон: `docs/01-product/model/routine.md` §2, §12.
+ * строго новіші ops. Канон: `docs/product/modules/routine.md` §2, §12.
  */
 export async function applyRoutineEntries(
   client: PoolClient,
@@ -137,7 +137,7 @@ export async function applyRoutineEntries(
  * «відмітив/зняв» по ВСІХ звичках разом. Одиниця виміру — кліки, не
  * послідовні дні. НЕ читай їх тут (і ніде) для UI / push / digest:
  * справжній стрік рахується client-side (`streakForHabit`) з
- * `routine_entries`/completions. Канон: `docs/01-product/model/routine.md` §4.
+ * `routine_entries`/completions. Канон: `docs/product/modules/routine.md` §4.
  *
  * Apply-шлях для `routine_streaks` (per-user aggregate). PK = user_id,
  * один рядок на юзера; історичного `updated_at` нема. LWW-guard

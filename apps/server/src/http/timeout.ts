@@ -34,7 +34,7 @@ export function requestTimeout(timeoutMs?: number) {
         requestId: req.id,
       });
 
-      // B41 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — SSE не рубаємо.
+      // B41 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — SSE не рубаємо.
       //
       // Докстрінг вище стверджував, що «for streaming responses, individual
       // handlers should manage their own timeouts», але код цього не робив:

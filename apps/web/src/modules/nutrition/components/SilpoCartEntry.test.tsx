@@ -2,7 +2,7 @@
 /**
  * `SilpoCartEntry` — entry gating + end-to-end «У кошик Сільпо» flow через
  * реальний `SilpoCartSheet`/`useSilpoCart` (Silpo integration трек G,
- * спека `docs/90-work/planning/specs/silpo-mcp-integration.md` §
+ * спека `docs/work/specs/silpo-mcp-integration.md` §
  * «Cart (MCP write path)»). `useSilpoSyncState` мокнутий на межі
  * `@finyk/hooks/*` (гейт-стан — не предмет цього тесту), `silpoApi` —
  * на межі `@shared/api` (той самий патерн, що `useBarcodeProductLookup.test.tsx`).

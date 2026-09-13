@@ -20,7 +20,7 @@
  * Байти, не токени: рахувати токени без токенізатора неможливо, а байти
  * стабільні й монотонно повʼязані з ціною. Перевідні коефіцієнти (кирилиця
  * ~1.4-2.4 симв/токен, ASCII ~3.2-4.0) — у
- * `docs/01-product/launch/business/01-monetization-and-pricing.md` § 9.5.
+ * `docs/work/specs/launch/business/01-monetization-and-pricing.md` § 9.5.
  */
 import { describe, it, expect } from "vitest";
 

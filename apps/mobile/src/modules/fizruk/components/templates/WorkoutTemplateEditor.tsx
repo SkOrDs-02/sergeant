@@ -14,7 +14,7 @@
  * hook already round-trips the `groups` field unchanged, so an existing
  * template's groups survive an edit even though the mobile UI does not
  * yet expose group authoring (tracked in
- * `docs/mobile/react-native-migration.md` § 5.3 — a Phase 6 follow-up).
+ * `docs/engineering/mobile/react-native-migration.md` § 5.3 — a Phase 6 follow-up).
  */
 import { exerciseDisplayName } from "@sergeant/fizruk-domain/domain";
 import type { FizrukData } from "@sergeant/fizruk-domain";

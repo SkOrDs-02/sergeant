@@ -11,7 +11,7 @@ import { getApiBaseURL } from "@/api/apiUrl";
  * - `expoClient` — плагін, що:
  *     • серіалізує cookie-стейт у `expo-secure-store`;
  *     • автоматично прикладає `Authorization: Bearer <token>` на
- *       наступні запити після `sign-in/email` (див. `docs/mobile/overview.md`);
+ *       наступні запити після `sign-in/email` (див. `docs/engineering/mobile/overview.md`);
  *     • підтримує redirect-и на `sergeant://` deep links.
  * - `scheme` має збігатися з `expo.scheme` у `app.json` (`sergeant`).
  */
@@ -30,7 +30,7 @@ const authClient = createAuthClient({
 // actions-ендпоінтами. `useSession` з `better-auth/react` НЕ
 // реекспортується — замість нього у продакшн-коді використовуй
 // `useUser()` з `@sergeant/api-client/react` (GET `/api/v1/me`), щоб
-// mobile і web читали ту саму ідентичність. Див. `docs/mobile/overview.md` і
+// mobile і web читали ту саму ідентичність. Див. `docs/engineering/mobile/overview.md` і
 // `app/_layout.tsx`, де піднято `ApiClientProvider`.
 export const { signIn, signUp, signOut, getSession } = authClient;
 export { authClient };

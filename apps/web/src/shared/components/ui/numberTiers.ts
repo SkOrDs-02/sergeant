@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Тири числа — спільна шкала для `Money` і `Measure` (анти-слоп П4,
- * `docs/05-design/design/anti-slop-strategy.md` §4/П4).
+ * `docs/design/design/anti-slop-strategy.md` §4/П4).
  *
  * AI-CONTEXT: файл існує рівно щоб два компоненти не розійшлися. До нього
  * пропорції жили літералами всередині `Money`, і кожен наступний носій

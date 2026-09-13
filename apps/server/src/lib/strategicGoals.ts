@@ -12,7 +12,7 @@
  *   * Hard Rule #1 (DB types): `id` повертається як `number`, а не string,
  *     щоб RQ caches / OpenAPI types не отримували string-bigint.
  *   * Hard Rule #15 (governance + Ukrainian docs).
- *   * Domain invariants (`docs/architecture/domain-invariants.md`):
+ *   * Domain invariants (`docs/engineering/architecture/domain-invariants.md`):
  *       - `week_start` — DATE як `YYYY-MM-DD` у Kyiv local. Helper приймає
  *         або `Date` (тоді конверт-ить у `YYYY-MM-DD`), або вже-готовий
  *         string. Понеділок ISO-тижня — обовʼязково.

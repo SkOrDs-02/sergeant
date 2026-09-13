@@ -11,7 +11,7 @@
  * число користувача зрушило, і це помічено свідомо.
  *
  * Текстовий реєстр із поясненнями:
- * `docs/02-engineering/architecture/metric-registry.md`.
+ * `docs/engineering/architecture/metric-registry.md`.
  *
  * Конвеєри, які тут проганяються НА СПРАВЖНЬОМУ КОДІ:
  *   1. канон — `@sergeant/{finyk,nutrition,fizruk,routine}-domain`;

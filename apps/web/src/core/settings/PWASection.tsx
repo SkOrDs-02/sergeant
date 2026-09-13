@@ -93,7 +93,7 @@ export function PWASection() {
           Скинути кеш PWA
         </Button>
       </div>
-      {/* V-12 (аудит 2026-08-08, docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md
+      {/* V-12 (аудит 2026-08-08, docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md
           §5): цей блок НАВМИСНО не переведено на `SettingsSubGroup`.
           «Результат діагностики» — не структурний заголовок підрозділу, а
           inline-лейбл у ряду з кнопкою «Скопіювати» (флекс-рядок

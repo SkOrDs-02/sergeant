@@ -311,7 +311,7 @@ async function enqueueMemoryIngestImpl(
   // Per-source kill-switch (PR-19) жив тут на `payload.source === "finyk"`.
   // `finyk` прибраний з `ALLOWED_MEMORY_SOURCES` ініціативою 0024 (PR-1,
   // 2026-09-03) — mono-webhook уже не мав продюсера до цієї зміни (замір
-  // у `docs/90-work/initiatives/0024-ai-memory-source-coverage.md` §
+  // у `docs/work/specs/initiatives/0024-ai-memory-source-coverage.md` §
   // Перезамір). Гілку знято; PR-2 тієї ж ініціативи перецілює той самий
   // механізм на `payload.source === "digest"` (kill-switch, який гейтить
   // джерело, що реально забиває слоти RAG полотнами тижневих звітів).

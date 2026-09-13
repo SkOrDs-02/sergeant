@@ -89,7 +89,7 @@ describe("env: CHAT_VIA_OPENROUTER — транспорт і model-id перем
     expect(defaultChatModel("standard")).toBe("deepseek/deepseek-v4-flash");
     // Floor більше не flash-lite: на стрімі з тулами він падав 9/12 у
     // живому замірі 2026-08-25, тоді як чотири інші кандидати дали 0/8
-    // (знахідка B46, docs/90-work/audits/ai-testing-2026-08-25.md).
+    // (знахідка B46, docs/work/specs/audits/ai-testing-2026-08-25.md).
     // Flash-lite лишається дефолтом НЕ-стрімових шляхів — тому міняти
     // тут треба саме floor, а не всі згадки моделі.
     expect(defaultChatModel("floor")).toBe("google/gemini-3.7-flash");

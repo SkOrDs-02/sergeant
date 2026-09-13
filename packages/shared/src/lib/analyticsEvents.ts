@@ -58,7 +58,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // `hub_first_action_completed_v1:<module>` flag у KV) з payload-ом
   // `{ module: "finyk" | "fizruk" | "routine" | "nutrition" }`. Назву
   // події не міняти — залежать дашборди WF-60 та pre-launch funnel у
-  // PostHog (див. `docs/observability/posthog-ftux-dashboards.md`).
+  // PostHog (див. `docs/operations/observability/posthog-ftux-dashboards.md`).
   //
   //   FIRST_ACTION_COMPLETED { module: DashboardModuleId }
   FIRST_ACTION_COMPLETED: "first_action_completed",
@@ -442,7 +442,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   DEMO_DISMISSED: "demo_dismissed",
   DEMO_TO_WIZARD_CONFIRMED: "demo_to_wizard_confirmed",
 
-  // PWA install prompt (Wave 1 PR-07 — `docs/01-product/launch/product-os/ftux-master-tracker.md`).
+  // PWA install prompt (Wave 1 PR-07 — `docs/work/specs/launch/product-os/ftux-master-tracker.md`).
   // Funnel:
   //   PWA_INSTALL_PROMPTED  ≥  PWA_INSTALL_ACCEPTED + PWA_INSTALL_DISMISSED
   //   PWA_INSTALLED          — термінальний успіх, фіксується на ОБОХ платформах
@@ -534,13 +534,13 @@ export const ANALYTICS_EVENTS = Object.freeze({
   //   }
   //
   // Target P50 / P95 thresholds tracked in
-  // `docs/observability/hub-perf-baseline.md` — sampling 100 % for the
+  // `docs/operations/observability/hub-perf-baseline.md` — sampling 100 % for the
   // first 30 days, then 10 % once Sprint 1+2 optimisations land.
   HUB_TAB_SWITCH_PERF: "hub_tab_switch_perf",
 
-  // Feedback loop (GTM § 3.2 — `docs/01-product/launch/business/02-go-to-market.md`).
+  // Feedback loop (GTM § 3.2 — `docs/work/specs/launch/business/02-go-to-market.md`).
   // In-app feedback widget (Settings → «Фідбек») + NPS через PostHog
-  // Surveys. Ops-довідка: `docs/03-operations/observability/feedback-loop.md`.
+  // Surveys. Ops-довідка: `docs/operations/observability/feedback-loop.md`.
   //
   // Payload-контракти:
   //
@@ -592,7 +592,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   ROUTE_CHANGE: "route_change",
 
   // Плашка «залий документи» (спека
-  // `docs/90-work/planning/specs/finyk-import-reminders.md` § Телеметрія).
+  // `docs/work/specs/finyk-import-reminders.md` § Телеметрія).
   //
   // `_SHOWN` — плашка реально відрендерилась; це знаменник CTR у критерії
   // зняття фічі. Окремої shadow-події тут НЕ заводимо саме тому: подія

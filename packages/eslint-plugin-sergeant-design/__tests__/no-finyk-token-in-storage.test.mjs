@@ -51,7 +51,7 @@ describe("no-finyk-token-in-storage", () => {
     assert.equal(messages.length, 1);
   });
 
-  // PrivatBank — F1 у `docs/90-work/planning/specs/beta-security-readiness.md`.
+  // PrivatBank — F1 у `docs/work/specs/beta-security-readiness.md`.
   // Правило спершу знало лише ключі Monobank, тому merchant-токен ПриватБанку
   // роками писався в `localStorage` повз цей гард. Кейси нижче — якір, щоб
   // звуження назад до одного банку не пройшло непоміченим.

@@ -49,11 +49,11 @@ function finalPathFor(oldPath) {
   const moves = [
     ["docs/00-start/playbooks", "docs/start/instructions"],
     ["docs/03-operations/runbooks", "docs/start/instructions"],
-    ["docs/01-product/model/finyk.md", "docs/product/modules/finyk.md"],
-    ["docs/01-product/model/fizruk.md", "docs/product/modules/fizruk.md"],
-    ["docs/01-product/model/hub-coach.md", "docs/product/modules/hub-coach.md"],
-    ["docs/01-product/model/nutrition.md", "docs/product/modules/nutrition.md"],
-    ["docs/01-product/model/routine.md", "docs/product/modules/routine.md"],
+    ["docs/product/modules/finyk.md", "docs/product/modules/finyk.md"],
+    ["docs/product/modules/fizruk.md", "docs/product/modules/fizruk.md"],
+    ["docs/product/modules/hub-coach.md", "docs/product/modules/hub-coach.md"],
+    ["docs/product/modules/nutrition.md", "docs/product/modules/nutrition.md"],
+    ["docs/product/modules/routine.md", "docs/product/modules/routine.md"],
     ["docs/01-product/launch", "docs/work/specs/launch"],
     [
       "docs/04-governance/security/hardening",

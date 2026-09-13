@@ -13,7 +13,7 @@
  *
  * The tone follows the brandbook voice: warning, not danger. "bg-warning"
  * reads as "we're paused, not broken" — data is queued, not lost
- * (per `docs/design/design-system.md` § 15 Offline).
+ * (per `docs/design/design/design-system.md` § 15 Offline).
  */
 import { Button, EmptyState, Icon } from "@shared/components/ui";
 import { OfflineIllustration } from "@assets/illustrations";

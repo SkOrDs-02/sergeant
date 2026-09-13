@@ -48,7 +48,7 @@ export const ALLOWED_MEMORY_SOURCES = [
   // Значення лишається для наявних рядків; двофазне зняття — як вище.
   "product",
   // Migration 118 — L-8, аудит Профілю/Налаштувань (2026-08-08,
-  // docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md). Явно
+  // docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md). Явно
   // заявлені факти про самого користувача (client-side «банк памʼяті»
   // `hub_user_profile_v1` / `USER_PROFILE`, дзеркальований серверним
   // `user_profile` з міграції 115) — НЕ поведінкові events (`product`) і
@@ -105,7 +105,7 @@ export type StoredMemorySource = (typeof STORED_MEMORY_SOURCES)[number];
  *
  * `cofounder` і `product` — тимчасово порожні продюсери (PR #928 видалив
  * `backfill.ts` / `eventSync.ts`, 2026-08-29), лишені для legacy-рядків;
- * ADR/рішення — `docs/90-work/initiatives/0024-ai-memory-source-coverage.md`.
+ * ADR/рішення — `docs/work/specs/initiatives/0024-ai-memory-source-coverage.md`.
  */
 export const RESERVED_SOURCES: readonly MemorySource[] = [
   "cofounder",

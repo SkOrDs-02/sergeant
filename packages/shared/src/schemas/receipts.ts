@@ -10,7 +10,7 @@ import { AMOUNT_MINOR_MAX } from "./bounds";
  * у `sergeant-server-api`); `@sergeant/api-client` дзеркалить їх через
  * `z.infer<>` замість ручного дублювання типів.
  *
- * Спека: `docs/90-work/planning/specs/receipt-scan.md` § API-контракт.
+ * Спека: `docs/work/specs/receipt-scan.md` § API-контракт.
  * Money-інваріант: суми — **kopiykas як number**, ніколи bigint-рядок
  * (Hard Rule #1) і ніколи гривні на цій межі.
  */

@@ -128,7 +128,7 @@ describe("DataExportSection", () => {
     expect(content).not.toContain('"user"');
   });
 
-  // V-12 (аудит 2026-08-08, docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md
+  // V-12 (аудит 2026-08-08, docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md
   // §5): три саморобні `<h3 class="text-style-label">` («Права на дані»,
   // «Куди їдуть дані для AI», «Якщо Sergeant колись закриється») переведено
   // на спільний примітив `SettingsSubGroup` — тепер усі `<h3

@@ -41,7 +41,7 @@ const COPY = {
  * один раз у `POST /api/privat/connect`, далі вони живуть зашифровані на
  * сервері. До цієї зміни merchant-токен лежав у `localStorage` і був видимий
  * будь-кому, хто відкриє DevTools — спека
- * `docs/90-work/planning/specs/beta-security-readiness.md` (F1).
+ * `docs/work/specs/beta-security-readiness.md` (F1).
  *
  * Чекбокса «Запамʼятати на цьому пристрої» більше немає: підключення тепер
  * властивість акаунта, а не пристрою, тож вибір нічого не означав би.

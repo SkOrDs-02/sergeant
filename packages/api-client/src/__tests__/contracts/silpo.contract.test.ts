@@ -2,7 +2,7 @@
 //
 // Consumer contract: `/api/v1/silpo/*` — Silpo MCP receipts integration
 // (finyk persona, walking-skeleton experiment — spec
-// `docs/90-work/planning/specs/silpo-mcp-integration.md`). Covers every
+// `docs/work/specs/silpo-mcp-integration.md`). Covers every
 // `HttpClient`-exercisable route from `apps/server/src/routes/silpo.ts`:
 // disconnect, wipe, sync-state, sync, receipts list, receipt detail, and
 // (Track G) cart preview/apply/get.

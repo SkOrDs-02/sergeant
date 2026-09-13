@@ -327,7 +327,7 @@ function main() {
         "  Remove the offending key(s) from Info.plist or — if a cleartext",
         "  exception is unavoidable — switch to a per-domain entry under",
         "  NSExceptionDomains and document it in",
-        "  docs/security/audit-exceptions.md.",
+        "  docs/governance/security/audit-exceptions.md.",
       ].join("\n") + "\n",
     );
     return 1;

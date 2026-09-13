@@ -732,7 +732,7 @@ describe("chat handler — MAX_TOOL_ITERATIONS cap (M7)", () => {
   });
 });
 
-// B36 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — `tool_results` і
+// B36 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — `tool_results` і
 // `tool_calls_raw` мусять приходити разом. Раніше запит з РІВНО ОДНИМ полем
 // мовчки падав у "перший тур" — виконаний tool round-trip губився без
 // сигналу клієнту.
@@ -879,7 +879,7 @@ describe("chat handler — AI-5 quota refund on pre-upstream rejects", () => {
   });
 });
 
-// B32 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — `tool_calls_raw`
+// B32 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — `tool_calls_raw`
 // більше не unvalidated passthrough: невідоме імʼя інструменту чи
 // tool_use-блок без відповідного tool_result відхиляються 400-кою ДО того,
 // як потраплять у `{role: "assistant", content: tool_calls_raw}`.
@@ -958,7 +958,7 @@ describe("chat handler — B32 tool_calls_raw allowlist + provenance", () => {
   });
 });
 
-// B35 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — `sanitizeMessages`
+// B35 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — `sanitizeMessages`
 // тримає НОВІШЕ з двох послідовних повідомлень однієї ролі, не старіше.
 describe("chat handler — B35 sanitizeMessages keeps newest of same-role run", () => {
   it("два user-повідомлення поспіль → Anthropic отримує НОВІШЕ", async () => {

@@ -49,7 +49,7 @@ export interface NutritionPeriodAverages {
  *
  * AI-CONTEXT: знаменник — **дні з ≥1 прийомом їжі**, а не всі дні періоду і
  * не «дні, для яких існує ключ у лозі». Це ратифікована семантика канону
- * (`docs/01-product/model/nutrition.md` §5.2 «Неповний день позначається»:
+ * (`docs/product/modules/nutrition.md` §5.2 «Неповний день позначається»:
  * пропущений день — це неповні дані, а не нульове споживання, тож він не
  * тягне статистику в дефіцит). Тижневий дайджест
  * (`apps/web/src/core/insights/useWeeklyDigest.ts` → `aggregateNutrition`)
@@ -59,7 +59,7 @@ export interface NutritionPeriodAverages {
  *
  * W1-CANON-AGG стадія 1 — additive: функція нікого не перемикає, переведення
  * Hub-Reports на цю семантику — стадія 4. Реєстр розбіжностей:
- * `docs/02-engineering/architecture/metric-registry.md`.
+ * `docs/engineering/architecture/metric-registry.md`.
  *
  * Межі доби задає викликач (`dayKeys` у форматі `YYYY-MM-DD`; для журналу
  * харчування це день ПРИСТРОЮ, ADR-0078) — функція DOM-free і без власного

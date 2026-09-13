@@ -125,7 +125,7 @@ export async function subscribe(req: Request, res: Response): Promise<void> {
  * `push_subscriptions` flow (upsert + recover з soft-delete), щоб
  * не дублювати state у двох таблицях. Для ios/android — upsert у
  * нову `push_devices`. Реальна відправка для native поки не реалізована
- * (див. docs/mobile/overview.md).
+ * (див. docs/engineering/mobile/overview.md).
  */
 export async function register(req: Request, res: Response): Promise<void> {
   const user = (req as WithSessionUser).user!;

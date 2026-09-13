@@ -106,7 +106,7 @@ beforeEach(() => {
 
 // ────────────────────────────────────────────────────────────────────────────
 // Constants — стабільність контракту, який споживається метриками,
-// дашбордами та документацією (`docs/observability/metrics.md`).
+// дашбордами та документацією (`docs/operations/observability/metrics.md`).
 // ────────────────────────────────────────────────────────────────────────────
 
 describe("APPLY_REJECT_REASONS / ENGINE_REJECT_REASONS — frozen contract", () => {

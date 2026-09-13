@@ -220,7 +220,7 @@ export const aiRequestDurationMs = new client.Histogram({
  *
  * До цієї метрики TTFT не міряли ніде в ран-таймі — єдиний замір жив в
  * офлайн-скрипті `scripts/stream-check.ts` (знахідка з
- * `docs/90-work/audits/ai-testing-2026-08-25.md`, § Телеметрія).
+ * `docs/work/specs/audits/ai-testing-2026-08-25.md`, § Телеметрія).
  *
  * ЧОГО ВОНА НЕ НАКРИВАЄ. Лише тур синтезу після tool-результатів — єдиний,
  * що стрімиться. Перший хід чату не стрімиться взагалі, тож у цих серіях
@@ -329,7 +329,7 @@ export const webVitalsCls = new client.Histogram({
 // allowlist + an `other`/`unknown` bucket) × `disposition` (`report` |
 // `enforce` | `unknown`) — so the time-series count tops out around
 // 75 series. Driving the Phase-1 rollout dashboard for hardening card C2
-// (`docs/security/hardening/C2-frontend-csp.md`): a sustained spike on a
+// (`docs/work/specs/security-hardening/C2-frontend-csp.md`): a sustained spike on a
 // directive that we've explicitly allowed in the policy means the
 // allowlist is too narrow; a sustained spike on a directive we never
 // expected to fire means an exfiltration attempt or a third-party script

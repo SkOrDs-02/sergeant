@@ -13,7 +13,7 @@ import { IMPORT_REMINDER_HISTORY_SIZE } from "@sergeant/finyk-domain/domain/impo
 /**
  * `GET /api/finyk/import/recent` — дати останніх успішних батчів по
  * кожному типу документа, для плашки «залий документи» (спека
- * `docs/90-work/planning/specs/finyk-import-reminders.md`).
+ * `docs/work/specs/finyk-import-reminders.md`).
  *
  * Ендпоінт віддає ФАКТИ, а не вердикт «показувати плашку». Причина не
  * стилістична: умова плашки росте від часу, а не від даних, тож серверна

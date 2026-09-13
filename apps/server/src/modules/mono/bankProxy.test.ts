@@ -1,7 +1,7 @@
 import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
 import type { Request, Response } from "express";
 // Креденшели ПриватБанку резолвляться із сесії, а не із заголовків запиту
-// (спека `docs/90-work/planning/specs/beta-security-readiness.md`, F1).
+// (спека `docs/work/specs/beta-security-readiness.md`, F1).
 vi.mock("./privatStore.js", () => ({
   loadPrivatCredentials: vi.fn(),
 }));

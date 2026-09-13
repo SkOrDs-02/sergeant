@@ -16,7 +16,7 @@
  * must never appear in this payload (L10 hardening). Callers use `hashUserId`
  * from `lib/userIdHash.ts`.
  *
- * See docs/runbooks/security-events.md for operator playbook.
+ * See docs/start/instructions/security-events.md for operator playbook.
  */
 
 import { logger } from "./logger.js";

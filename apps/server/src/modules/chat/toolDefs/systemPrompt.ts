@@ -78,7 +78,7 @@ import { ADVICE_BOUNDARY_RULE } from "../../../lib/adviceBoundary.js";
  *   роль однією парою полів. Огорожа дзеркалить M8-рішення для `tool_output`:
  *   огорожа + парний параграф + сканер інʼєкцій. Обидва блоки одним бампом
  *   навмисно — cache-key привʼязаний побайтно, два бампи = дві інвалідації.
- *   Знахідки A2/A4 в `docs/90-work/audits/ai-abuse-2026-08-05.md`.
+ *   Знахідки A2/A4 в `docs/work/specs/audits/ai-abuse-2026-08-05.md`.
  * v18 (2026-08-05): `remember` став `strict: true`, `category` — обовʼязковою
  *   з `enum`, а опис вимагає один факт на виклик. До цього `category` була
  *   `optional` з переліком лише в прозовому описі, тож модель її здебільшого
@@ -151,7 +151,7 @@ const MODULE_PROMPT_LABEL: Record<CapabilityModule, string> = {
 
 /**
  * Правила голосу: форма звертання, дозволена розмітка, 1-а особа однини.
- * Джерело — `docs/01-product/copy/style-guide.uk.md` § Voice, правило #2;
+ * Джерело — `docs/product/copy/style-guide.uk.md` § Voice, правило #2;
  * текстом, а не посиланням, бо модель документа не бачить.
  *
  * AI-CONTEXT (2026-08-06): markdown БУВ заборонений повністю. Причина була

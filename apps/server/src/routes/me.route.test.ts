@@ -3,7 +3,7 @@ import request from "supertest";
 
 /**
  * Route-level contract test для `PUT /api/me/profile` — L-8 Фаза 2
- * (2026-08-09, docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md).
+ * (2026-08-09, docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md).
  *
  * Головна гарантія, яку тут перевіряємо end-to-end (не лише юніт-рівнем
  * `profileMirror.test.ts`): дзеркалення `memoryBank` у `ai_memories` —

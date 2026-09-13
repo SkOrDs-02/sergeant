@@ -230,7 +230,7 @@ export const finykPageMessages = {
     unlinkKeep: "Залишити",
   },
   // "Чек" — секція деталей транзакції для Silpo MCP інтеграції, трек B
-  // (докс `docs/90-work/planning/specs/silpo-mcp-integration.md`).
+  // (докс `docs/work/specs/silpo-mcp-integration.md`).
   silpoReceipt: {
     title: "Чек із Сільпо",
     splitCta: "Розбити за чеком",
@@ -323,7 +323,7 @@ export const finykPageMessages = {
   // половині випадків. Кажемо перевірений факт і пропонуємо дію.
   /**
    * Плашка «залий документи» (спека
-   * `docs/90-work/planning/specs/finyk-import-reminders.md`).
+   * `docs/work/specs/finyk-import-reminders.md`).
    *
    * Заголовок безособовий («не додавали»), бо минулий час в українській
    * має рід: «ти не додав» половині користувачів було б неправдою.

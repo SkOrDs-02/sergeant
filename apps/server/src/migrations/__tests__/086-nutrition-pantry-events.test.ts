@@ -65,7 +65,7 @@ describe("086 — форма таблиці", () => {
     // AI-DANGER: клієнт генерує НЕ-UUID id (`home`, `p_<ms>_<idx>`,
     // `<pantryId>::<idx>::<name>` — див. nutritionStorage.extractPantrySnapshots).
     // UUID-колонка дала б 22P02 → apply_failed на кожному реальному push-і,
-    // рівно як у docs/90-work/tech-debt/backend.md § «Routine: PK-тип».
+    // рівно як у docs/work/specs/tech-debt/backend.md § «Routine: PK-тип».
     const body = createTableBody(up);
     expect(body).toMatch(/id\s+TEXT PRIMARY KEY/);
     expect(body).toMatch(/pantry_id\s+TEXT NOT NULL/);

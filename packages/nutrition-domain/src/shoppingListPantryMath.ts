@@ -1,6 +1,6 @@
 /**
  * «Рівень 1» списку покупок (детермінований, без AI) — спека
- * `docs/90-work/planning/specs/silpo-mcp-integration.md`, рішення founder-а
+ * `docs/work/specs/silpo-mcp-integration.md`, рішення founder-а
  * 2026-08-18 «роби рівень 1 потім»: трек G (кошик Сільпо) закрито, це
  * наступний крок поверх ВЖЕ згенерованого AI списку.
  *

@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Гребінь місяця — розкладка регулярних списань по днях (анти-слоп P4
- * signature-view, `docs/05-design/design/anti-slop-strategy.md` § П1).
+ * signature-view, `docs/design/design/anti-slop-strategy.md` § П1).
  *
  * AI-CONTEXT: тут немає нових даних. `billingDay` і сума вже є на кожній
  * підписці — список показував їх по одному, а форма місяця (кластер,

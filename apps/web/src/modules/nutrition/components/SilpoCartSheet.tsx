@@ -4,7 +4,7 @@
  *
  * «У кошик Сільпо» зі списку покупок — екран підтвердження (Silpo
  * integration трек G, спека
- * `docs/90-work/planning/specs/silpo-mcp-integration.md` §
+ * `docs/work/specs/silpo-mcp-integration.md` §
  * «Cart (MCP write path)»).
  *
  * Стадії: preview (search-only, `cartPreview()` — нічого не пише) →

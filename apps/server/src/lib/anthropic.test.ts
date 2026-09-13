@@ -592,7 +592,7 @@ describe("recordAnthropicUsage / extractAnthropicText", () => {
     expect(anthropicMocks.recordUsageToDb).toHaveBeenCalledOnce();
   });
 
-  // Знахідка B1 (`docs/90-work/audits/ai-pipeline-2026-08-05.md`): раніше тут
+  // Знахідка B1 (`docs/work/specs/audits/ai-pipeline-2026-08-05.md`): раніше тут
   // стояв гейт `if (pickAnthropicPricing(model))`, який відсікав саме моделі
   // шлюзу — а вони єдині, хто присилає фактичний `usage.cost`. Наслідок:
   // `ai_cost_estimate_usd_total` під `CHAT_VIA_OPENROUTER=true` не рухався,

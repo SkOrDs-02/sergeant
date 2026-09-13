@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * Guards the identity contract every local-first storage boot depends
- * on. See `docs/90-work/planning/specs/anonymous-local-first-persistence.md`.
+ * on. See `docs/work/specs/anonymous-local-first-persistence.md`.
  */
 import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";

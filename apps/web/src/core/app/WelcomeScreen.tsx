@@ -221,7 +221,7 @@ interface WelcomeScreenProps {
  *
  * Phase 7 D4 (2026-05-22) swapped the row-based `OnboardingWizard`
  * splash for a preset-first 2x2 module-card grid — see
- * `docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`
+ * `docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`
  * § D4. The wizard component still ships for tour-replay launched
  * from Settings → «Переглянути вступну екскурсію»; only this
  * `/welcome` cold-start surface swapped. Persistence still flows

@@ -6,7 +6,7 @@ import { elapsedMs, isAbortError, sleep } from "../../lib/timing.js";
 
 /**
  * Minimal JSON-RPC 2.0 client over MCP "streamable HTTP" — see spec
- * `docs/90-work/planning/specs/silpo-mcp-integration.md` § Рішення
+ * `docs/work/specs/silpo-mcp-integration.md` § Рішення
  * дизайну ("Мінімальний власний MCP-клієнт без нових залежностей"). We
  * need 5–7 tools, not the whole protocol, so this hand-rolls exactly the
  * `initialize` → `tools/call` handshake instead of pulling in

@@ -31,7 +31,7 @@ import type { AppliedStatus } from "../syncV2-types.js";
  * AI-CONTEXT: `id` тут — TEXT, а НЕ UUID. Це свідомий обхід пастки
  * `routine_entries.id UUID` (`026_routine_tables.sql`), через яку реальний
  * push із браузера падає на `22P02` → `apply_failed`
- * (`docs/90-work/tech-debt/backend.md` § «Routine: PK-тип»). НЕ «наводь
+ * (`docs/work/specs/tech-debt/backend.md` § «Routine: PK-тип»). НЕ «наводь
  * симетрію» з `routine_entries` — симетрія тут і є баг.
  *
  * Стадія 1 нічого не читає: жоден продуктовий ендпойнт, digest чи

@@ -322,7 +322,7 @@ export async function assertAiQuota(
   // Анонімного трафіку тут не буває. КОЖЕН роут, що монтує цю квоту, стоїть
   // за `requireSession()`: `routes/chat.ts`, `routes/coach.ts`,
   // `routes/weekly-digest.ts` і `r.use("/api/nutrition", requireSession())` —
-  // рішення A1 з `docs/90-work/audits/ai-abuse-2026-08-05.md`, і послаблювати
+  // рішення A1 з `docs/work/specs/audits/ai-abuse-2026-08-05.md`, і послаблювати
   // його не можна (без сесії ключем квоти був би `ip:<addr>`, а IPv6-клієнт
   // має під підпискою цілу /64).
   //

@@ -22,7 +22,7 @@ function parseRate(val: string | undefined, fallback: number): number {
  * tables make audit + drift detection trivial.
  *
  * Defaults derived from H6 (stack-pulse-2026-05/PR-12). Adjustments must
- * update `docs/observability/sentry-sampling.md` in the same PR (drift
+ * update `docs/operations/observability/sentry-sampling.md` in the same PR (drift
  * checked via review, not lint — Sentry quota is the production check).
  */
 export type SentrySamplingRule = {
@@ -30,7 +30,7 @@ export type SentrySamplingRule = {
   match: string;
   /** Sampling rate in [0, 1]. */
   rate: number;
-  /** Why this rate exists (shown in docs/sentry-sampling.md). */
+  /** Why this rate exists (shown in docs/operations/observability/sentry-sampling.md). */
   reason: string;
 };
 
@@ -66,7 +66,7 @@ export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
     rate: 1.0,
     reason: "Login/signup/SSO — security-critical, low-volume.",
   },
-  // AI-шлях (B-телеметрія, `docs/90-work/audits/ai-testing-2026-08-25.md`).
+  // AI-шлях (B-телеметрія, `docs/work/specs/audits/ai-testing-2026-08-25.md`).
   //
   // `/api/photo/analyze` стояло тут із самого початку і НЕ МАТЧИЛО НІЧОГО:
   // такого роута в застосунку немає, реальні — `/api/nutrition/analyze-photo`
@@ -422,7 +422,7 @@ export function applyBeforeSendTransaction<E extends Sentry.Event>(
  * the Sentry error budget on transient 502s. Exported for tests + docs.
  *
  * Use plain strings (not regex) because the Sentry SDK accepts both and
- * strings are easier to audit against `docs/observability/sentry-sampling.md`.
+ * strings are easier to audit against `docs/operations/observability/sentry-sampling.md`.
  */
 export const SENTRY_DENY_URLS: readonly (string | RegExp)[] = [
   "/api/health",
@@ -461,7 +461,7 @@ if (dsn) {
     // `/api/sync/poll`) and under-sampled security-critical low-volume
     // routes (`/api/auth/*`, `/api/account/recovery`). The rule table is
     // declarative — see `SENTRY_SAMPLING_RULES` and
-    // `docs/observability/sentry-sampling.md` for rationale + budget.
+    // `docs/operations/observability/sentry-sampling.md` for rationale + budget.
     //
     // `SENTRY_TRACES_SAMPLE_RATE=0` still works — it lowers the *fallback*
     // rate to 0 for unmatched routes (kill-switch for incident-mitigation).

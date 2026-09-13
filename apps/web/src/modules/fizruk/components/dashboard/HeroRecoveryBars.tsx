@@ -6,7 +6,7 @@
  * `selectHeroRecoveryRows`) and the red-row recovery-by forecast map (via
  * `forecastFullRecoveryByDate`), this component only formats and renders.
  *
- * Спека: `docs/90-work/planning/specs/fizruk-hero-recovery-bars.md` § Рішення
+ * Спека: `docs/work/specs/fizruk-hero-recovery-bars.md` § Рішення
  * дизайну, пункти 1 і 5.
  */
 import type { HeroRecoveryRow } from "@sergeant/fizruk-domain";

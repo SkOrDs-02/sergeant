@@ -325,7 +325,7 @@ function recordUsage(
     // відсутні, тож під `CHAT_VIA_OPENROUTER=true` лічильник стояв на нулі —
     // а `anthropicBudgetGuard` читає саме його, тобто стеля $3/$5 не бачила
     // найдорожчої поверхні взагалі. Знахідка B1,
-    // `docs/90-work/audits/ai-pipeline-2026-08-05.md`.
+    // `docs/work/specs/audits/ai-pipeline-2026-08-05.md`.
     const usd = estimateAnthropicCostUsd(model, usage) ?? 0;
     if (usd > 0) {
       aiCostEstimateUsd.inc(
@@ -414,7 +414,7 @@ async function anthropicMessagesInner(
   const retryDelayMs = [0, 250, 750];
   const overallStart = process.hrtime.bigint();
 
-  // B42 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — сумарний бюджет.
+  // B42 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — сумарний бюджет.
   //
   // `computeRetryDelayMs` клампить сон до `timeoutMs`, але це бюджет ОДНІЄЇ
   // спроби, не запиту. 429 з `retry-after: 60` при `timeoutMs=60000` давав

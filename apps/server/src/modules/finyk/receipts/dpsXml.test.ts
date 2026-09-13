@@ -4,7 +4,7 @@ import { parseDpsCheckXml } from "./dpsXml.js";
 // Фікстури тут — РЕКОНСТРУКЦІЯ за задокументованою структурою
 // (CHECK/CHECKHEAD/CHECKBODY/ROW), НЕ знятий з реального `chkAll`
 // payload (токен ДПС ще не згенеровано — відкритий гейт спеки,
-// `docs/90-work/planning/specs/receipt-scan.md` § Ризики). Перший
+// `docs/work/specs/receipt-scan.md` § Ризики). Перший
 // smoke-тест на живому чеку — обовʼязковий наступний крок.
 
 // Варіант A: РРО, ROWNUM-атрибути, ціла сума в копійках, <CHECKS>-обгортка.

@@ -11,7 +11,7 @@ import {
 
 /**
  * Silpo as the FOURTH source in the food-search / barcode cascades (spec
- * `docs/90-work/planning/specs/silpo-mcp-integration.md` § Рішення дизайну,
+ * `docs/work/specs/silpo-mcp-integration.md` § Рішення дизайну,
  * "Продуктові дані — четверте джерело каскаду"). Narrowed per spec §0's open
  * question ("Відкрите питання авторизаційного контексту"): there is no
  * service-level Silpo credential, only per-user OAuth tokens obtained via

@@ -79,7 +79,7 @@ vi.mock("./../lib/anthropic.js", () => ({
 }));
 
 // `chat` router stacks `rateLimitExpress({ key: "api:chat", … })` after
-// `requireSession()` (B31, `docs/90-work/audits/ai-testing-2026-08-25.md`).
+// `requireSession()` (B31, `docs/work/specs/audits/ai-testing-2026-08-25.md`).
 // Mock it as passthrough so a rate-limit Postgres-fallback query does not
 // consume a `queryMock.mockResolvedValueOnce`. The limiter has its own
 // `http/rateLimit.test.ts`. `rateLimitExpressCalls` records whether
@@ -152,7 +152,7 @@ afterEach(() => {
 });
 
 describe("chat route — auth guard", () => {
-  // Знахідка A1 (`docs/90-work/audits/ai-abuse-2026-08-05.md`): роут довго стояв
+  // Знахідка A1 (`docs/work/specs/audits/ai-abuse-2026-08-05.md`): роут довго стояв
   // без `requireSession()`, і анонімна квота `ip:<addr>` не була межею — під
   // IPv6-підпискою клієнт має цілу /64. Тест фіксує, що сесія обовʼязкова і
   // перевіряється ДО ключа: без неї 401, а не 503.
@@ -170,7 +170,7 @@ describe("chat route — auth guard", () => {
   });
 });
 
-// B31 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — `requireSession()`
+// B31 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — `requireSession()`
 // must run BEFORE `rateLimitExpress`, otherwise `rateLimitSubject`
 // (`http/rateLimit.ts`) never sees `req.user` and every request buckets by
 // IP instead of by user.

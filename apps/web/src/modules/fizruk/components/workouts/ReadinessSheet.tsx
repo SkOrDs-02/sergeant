@@ -4,7 +4,7 @@
  *
  * Аркуш готовності перед стартом тренування.
  *
- * Спека: docs/90-work/planning/specs/fizruk-readiness-check.md
+ * Спека: docs/work/specs/fizruk-readiness-check.md
  *
  * AI-CONTEXT: аркуш НЕ вирішує за людину. Він збирає дві оцінки, а рішення,
  * чи зʼявиться друга кнопка на картці вправи, ухвалює домен

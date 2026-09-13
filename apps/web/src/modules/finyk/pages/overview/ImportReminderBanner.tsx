@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Плашка «залий документи» (спека
- * `docs/90-work/planning/specs/finyk-import-reminders.md`).
+ * `docs/work/specs/finyk-import-reminders.md`).
  *
  * AI-CONTEXT: заголовок безособовий («виписку не додавали»), бо минулий
  * час в українській має рід — «ти не додав» було б неправдою половині

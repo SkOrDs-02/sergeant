@@ -34,7 +34,7 @@ import getRecentImportsHandler from "../modules/finyk/import/recent.js";
  * ручних витрат (state-write-paths doctrine) — це precondition для
  * downstream-міграції `chatActions` (поза скоупом цього PR).
  *
- * Чек-скан v1 (`docs/90-work/planning/specs/receipt-scan.md`):
+ * Чек-скан v1 (`docs/work/specs/receipt-scan.md`):
  *   - `POST /receipts/lookup` — QR/ДПС-шлях, draft без запису в БД.
  *     ДВА ліміти: per-user 30/хв (дешевий відсів) + ГЛОБАЛЬНИЙ добовий
  *     бюджет 800/добу з фіксованим subject-ом — ДПС-токен один на всіх

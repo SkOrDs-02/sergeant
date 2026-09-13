@@ -294,7 +294,7 @@ export const auth = betterAuth({
        * enqueue у `gdpr_cleanup_queue` — на живому шляху **не виконувалось
        * ніколи**: воно висіло тільки на `DELETE /api/me`, який ніхто не
        * викликає. Наслідок — видалений акаунт продовжував оплачуватись
-       * (аудит `docs/90-work/audits/2026-08-05-orphaned-code-audit.md`
+       * (аудит `docs/work/specs/audits/2026-08-05-orphaned-code-audit.md`
        * § 3, п. 1).
        *
        * Тому хук виконує САМ `deleteUserData` — один шлях для обох входів,
@@ -446,7 +446,7 @@ export const auth = betterAuth({
    * Вибір 7d (а не 30/90 typical для consumer SaaS) — security trade-off
    * для daily-habit app: ризик украденого cookie обмежений тижнем, а
    * active-user UX не страждає завдяки rolling refresh. Деталі —
-   * ADR-0017 і `docs/security/better-auth-audit-2026-05.md`.
+   * ADR-0017 і `docs/governance/security/better-auth-audit-2026-05.md`.
    *
    * `cookieCache.maxAge` 5 хв — підписана JWT-style cookie кеш, який
    * `requireSession` валідує без DB-look-up. 30× швидший за SELECT.

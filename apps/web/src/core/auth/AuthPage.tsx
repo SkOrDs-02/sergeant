@@ -90,7 +90,7 @@ export function AuthPage({ onContinueWithoutAccount }: AuthPageProps) {
         shell (auth is pre-module, so no `<ModuleAccentProvider>` here);
         BrandLogo sits ABOVE the hero card per the redesign brief.
         Flow logic is intentionally untouched — see
-        `docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md` D1.
+        `docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md` D1.
       */}
       <MeshBackground
         className="items-center px-5 overflow-y-auto"

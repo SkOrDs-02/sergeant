@@ -67,7 +67,7 @@ export function useStorage({
   // (`NutritionApp`) already do; without it every expense an anonymous
   // visitor adds lives in the warm cache only and dies on reload —
   // measured 2026-08-06, see
-  // `docs/90-work/planning/specs/anonymous-local-first-persistence.md`.
+  // `docs/work/specs/anonymous-local-first-persistence.md`.
   // Re-registration is idempotent: both call sites build an equivalent
   // context and teardown only clears its own.
   useFinykDualWriteBoot();

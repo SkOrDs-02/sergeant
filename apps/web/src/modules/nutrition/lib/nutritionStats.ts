@@ -118,7 +118,7 @@ export function mealTypeBreakdown(
  * Калорії за типами прийомів для ОДНОГО дня — на відміну від
  * `mealTypeBreakdown`, який агрегує count+kcal по діапазону днів. Потрібно
  * для hero-стрічки дня дашборду (`MealStrip`, спека
- * `docs/90-work/planning/specs/nutrition-hero-day-strip.md`).
+ * `docs/work/specs/nutrition-hero-day-strip.md`).
  *
  * Тип прийому береться з `m.mealType`, той самий фолбек `mealTypeFromLabel`
  * (за `m.label`), що й у `mealTypeBreakdown` — легасі-записи без валідного

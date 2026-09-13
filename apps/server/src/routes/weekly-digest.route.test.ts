@@ -128,7 +128,7 @@ afterEach(() => {
 });
 
 describe("weekly-digest route — auth guard", () => {
-  // Знахідка A1 (`docs/90-work/audits/ai-abuse-2026-08-05.md`) — роут витрачає
+  // Знахідка A1 (`docs/work/specs/audits/ai-abuse-2026-08-05.md`) — роут витрачає
   // Anthropic-ключ власника і будує звіт про особисті дані, тож сесія
   // обовʼязкова і перевіряється до ключа.
   it("POST /api/weekly-digest → 401 без сесії", async () => {

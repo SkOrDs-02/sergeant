@@ -21,7 +21,7 @@ import {
  * Pulls Silpo order history (offline + online), normalizes it into our own
  * `silpo_receipts` / `silpo_receipt_items` snapshot, and runs the
  * deterministic matcher against the user's Mono transactions. Spec:
- * `docs/90-work/planning/specs/silpo-mcp-integration.md` § Рішення дизайну
+ * `docs/work/specs/silpo-mcp-integration.md` § Рішення дизайну
  * ("Збагачення, а не створення витрат" / "Unmatched-чеки — першокласний стан").
  *
  * Форми звірені живим спайком §0 (2026-08-18, `serverInfo.version 1.108.0`):

@@ -2,7 +2,7 @@ import { describe, expect, it } from "vitest";
 import { ChatRequestSchema, ToolCallsRawBlockSchema } from "./api";
 
 /**
- * B32 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — locks the
+ * B32 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — locks the
  * `tool_calls_raw` contract on `POST /api/chat`. Before this fix the field
  * was `z.array(z.unknown()).max(60)`, an unvalidated passthrough that lands
  * verbatim in `{ role: "assistant", content: tool_calls_raw }` — the one

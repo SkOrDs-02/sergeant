@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Матриця «мʼяз × тиждень» — signature-view Фізрука (П4,
- * `docs/05-design/design/anti-slop-strategy.md`).
+ * `docs/design/design/anti-slop-strategy.md`).
  *
  * AI-CONTEXT: діагноз тут той самий, що в Рутині (`flexStreak.ts`) і Фініку
  * (`recurringDetect.ts`) — інформація вже порахована, а екран її згортав.

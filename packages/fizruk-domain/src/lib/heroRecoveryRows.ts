@@ -3,7 +3,7 @@
  * "стан тіла" — the muscle-group-or-injury rows that back
  * `HeroRecoveryBars` (web).
  *
- * Спека: `docs/90-work/planning/specs/fizruk-hero-recovery-bars.md` § Рішення
+ * Спека: `docs/work/specs/fizruk-hero-recovery-bars.md` § Рішення
  * дизайну, пункт 1.
  *
  * AI-CONTEXT: два різні простори id стикаються тут навмисно, а не помилково.

@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-08-18
  * Status: Active — Silpo MCP integration, tracks A + B. See
- * `docs/90-work/planning/specs/silpo-mcp-integration.md`.
+ * `docs/work/specs/silpo-mcp-integration.md`.
  *
  * Settings card for the Silpo receipts integration — mono-pattern
  * disconnect (tokens only, receipts survive) + a separate, explicitly

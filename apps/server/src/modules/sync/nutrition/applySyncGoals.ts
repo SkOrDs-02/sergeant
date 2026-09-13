@@ -64,8 +64,8 @@ const GOAL_WATER_ML_MAX = 10_000;
  * всіх екранів. Тому Hard Rule #3 (трійка server ↔ api-client ↔ contract)
  * тут не спрацьовує: форма жодної API-відповіді не змінилась.
  *
- * Канон: docs/01-product/model/nutrition.md §4 / §12
- * Аудит: docs/90-work/audits/product-knowledge-nutrition.md § E-1 / H2
+ * Канон: docs/product/modules/nutrition.md §4 / §12
+ * Аудит: docs/work/specs/audits/product-knowledge-nutrition.md § E-1 / H2
  */
 
 /** Закритий enum `origin`. Дзеркалить CHECK у міграції 087. */

@@ -18,7 +18,7 @@ type NativePushPlatform = "ios" | "android";
  *    для dev-build / standalone. В Expo Go нативний канал недоступний,
  *    тому fallback — `getExpoPushTokenAsync()` (лише для dev-дебагу, для
  *    прод-пушів сервер має говорити з APNs/FCM напряму, див.
- *    `docs/mobile/overview.md`).
+ *    `docs/engineering/mobile/overview.md`).
  * 3. Шлемо `api.push.register({ platform, token })` — не прямий `fetch`.
  * 4. На успіх кладемо токен в `AsyncStorage` під ключем, що містить
  *    `userId` (`push:lastToken:<userId>`), щоб не шарашити сервер

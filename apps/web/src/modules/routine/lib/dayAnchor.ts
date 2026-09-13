@@ -16,7 +16,7 @@
  *
  * **Cutover 2026-09-01 (продуктовий аудит LOG-3, founder-рішення):**
  * ROUTINE_DAY_ANCHOR перемкнуто `kyiv` → `device-local` за ADR-0078
- * (`docs/04-governance/adr/0078-day-boundary-device-local.md`). До цієї
+ * (`docs/governance/adr/0078-day-boundary-device-local.md`). До цієї
  * дати web-routine був київський НАСКРІЗЬ, і саме тому досить було
  * перемкнути лише цей файл: `RoutineStatsPanel`, `HabitHeatmap`,
  * `HabitRangeGrid`, `HabitLeadersBlock`, `HabitDetailSheet`,

@@ -147,7 +147,7 @@ describe("SettingsGroup — icon prop", () => {
 });
 
 // Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
-// `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
+// `docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
 // `SettingsSubGroup` більше не другий рівень акордеона — немає кнопки,
 // `aria-expanded`, стану розкриття чи `inert`-логіки. Це підписана група:
 // заголовок + завжди видимий вміст.

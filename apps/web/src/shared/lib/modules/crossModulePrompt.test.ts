@@ -161,7 +161,7 @@ describe("tryShowCrossModulePrompt", () => {
     toast._action?.onClick();
     expect(onAccept).toHaveBeenCalledTimes(1);
     // Аркуш закриває сам `<ToastRow>` у `finally` після `onClick`
-    // (docs/05-design/ui/toast-policy.md § Action shape) — власний
+    // (docs/design/ui/toast-policy.md § Action shape) — власний
     // `dismiss` тут був би другим закриттям того самого id.
     expect(toast.dismiss).not.toHaveBeenCalled();
     // Snoozed immediately after acceptance

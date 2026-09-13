@@ -63,7 +63,7 @@ export const routineEntries = pgTable(
  *
  * `id` — TEXT, НЕ UUID (свідомо): клієнт шле `habitId:dateKey`, що не є UUID.
  * Ця таблиця обходила пастку з самого початку; решту `routine_*` довела до
- * того ж типу міграція 094 (`docs/90-work/tech-debt/backend.md` §
+ * того ж типу міграція 094 (`docs/work/specs/tech-debt/backend.md` §
  * «Routine: PK-тип»).
  */
 export const routineCompletionEvents = pgTable(
@@ -117,7 +117,7 @@ export const routineCompletionEvents = pgTable(
  * не послідовні дні. НЕ читай ці стовпці для UI / push / digest:
  * справжній стрік рахується client-side (`streakForHabit`) з
  * `routine_entries`/completions. Канон:
- * `docs/01-product/model/routine.md` §4.
+ * `docs/product/modules/routine.md` §4.
  */
 export const routineStreaks = pgTable("routine_streaks", {
   userId: text("user_id").primaryKey(),

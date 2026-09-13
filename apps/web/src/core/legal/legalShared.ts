@@ -7,7 +7,7 @@
  * за GDPR Art. 28. Він мусить збігатися з реальним стеком: кожен запис тут
  * має відповідник у `apps/server/src/env/env.ts`, і навпаки — новий
  * зовнішній сервіс, що отримує дані користувача, спершу зʼявляється тут,
- * потім у `docs/04-governance/security/llm-subprocessors.md`.
+ * потім у `docs/governance/security/llm-subprocessors.md`.
  */
 
 export const LAST_UPDATED = "31 липня 2026";

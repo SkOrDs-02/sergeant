@@ -5,7 +5,7 @@ import { messages } from "@shared/i18n/uk";
 // використовуються більше ніде). Окремий пакет `@sergeant/auth-schemas`
 // був би оверкіл-ом для двох форм. Меседжі — з `messages.validation.*`
 // (`apps/web/src/shared/i18n/uk.ts`), див. AGENTS.md (Hard Rule #15) і
-// `docs/i18n/readiness.md`.
+// `docs/design/i18n/readiness.md`.
 export const loginSchema = z.object({
   email: z
     .string()

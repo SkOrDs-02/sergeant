@@ -60,7 +60,7 @@ export const PROMPT_INJECTION_PATTERNS: ReadonlyArray<RegExp> = [
   /act\s+as\s+(?:if\s+you\s+are\s+)?(?:a\s+different|an?\s+evil)/i,
   /\bnew\s+(?:system\s+)?instructions\s*:/i,
   /jailbreak\s+mode|developer\s+mode\s+enabled/i,
-  // B40 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — UA/RU-патерни.
+  // B40 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — UA/RU-патерни.
   // Огорожа `<tool_output>` мовно-нейтральна і тримала й до цього; діра була
   // у ВИДИМОСТІ: україно/російськомовний продукт не рахував
   // `chat_prompt_injection_attempt_total` для запитів рідною мовою, тобто

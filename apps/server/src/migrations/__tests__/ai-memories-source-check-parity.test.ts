@@ -4,7 +4,7 @@
 // every forward migration in filename order.
 //
 // Why this exists (L-8, аудит Профілю/Налаштувань 2026-08-08,
-// docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md): the
+// docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md): the
 // two-phase "add a source" process documented in `types.ts`'s
 // `ALLOWED_MEMORY_SOURCES` docstring depends on these two lists never
 // drifting apart. Migration 068 already ships this exact class of drift

@@ -12,7 +12,7 @@ import type { RequestOptions } from "../types";
 
 /**
  * `POST /api/finyk/receipts/*` + `GET /api/finyk/receipts/:id` — чек-скан
- * v1 (`docs/90-work/planning/specs/receipt-scan.md`).
+ * v1 (`docs/work/specs/receipt-scan.md`).
  *
  * Response/request shapes re-export `z.infer<>` of the canonical Zod
  * schemas from `@sergeant/shared` (`packages/shared/src/schemas/
