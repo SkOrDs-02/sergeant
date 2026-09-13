@@ -13,9 +13,17 @@ import {
 } from "./demoSeedImport";
 
 const MANUAL_EXPENSES_KEY = "finyk_manual_expenses_v1";
+const ASSETS_KEY = "finyk_assets";
 const CUSTOM_CATS_KEY = "finyk_custom_cats_v1";
 const MONTHLY_PLAN_KEY = "finyk_monthly_plan";
 const TX_CACHE_KEY = "finyk_tx_cache";
+
+/** Мінімальна форма того, що реально пише `seedFinyk()` (PR-F9). */
+function seedAssets() {
+  return [
+    { id: "demo_asset_1", name: "Заощадження", amount: 65000, currency: "UAH" },
+  ];
+}
 
 /** Мінімальна форма того, що реально пише `seedFinyk()`. */
 function seedManualExpenses() {
@@ -117,6 +125,25 @@ describe("readFinykDemoStateFromLs", () => {
     expect(state?.prefs?.dismissedRecurringJson).toBe("[]");
   });
 
+  // PR-F9 (design-audit 2026-09-13): без цього гілка `manualAssets`
+  // (`useFinykStorageSlots`) овервейлить засіяний LS-рядок з ПОРОЖНЬОЇ
+  // SQLite-таблиці, щойно SQLite-кеш прогріється — рівно те, що вже
+  // траплялось із `manualExpenses` (аудит L-8) до цього містка.
+  it("збирає ручний актив, який пише демо-сід, і саме тому не повертає null на самих активах", () => {
+    localStorage.setItem(ASSETS_KEY, JSON.stringify(seedAssets()));
+
+    const state = readFinykDemoStateFromLs();
+
+    expect(state?.assets).toHaveLength(1);
+    expect(state?.assets[0]).toMatchObject({ id: "demo_asset_1" });
+    const parsed = JSON.parse(state!.assets[0]!.dataJson) as {
+      currency: string;
+      amount: number;
+    };
+    expect(parsed.currency).toBe("UAH");
+    expect(parsed.amount).toBe(65000);
+  });
+
   it("форма monthlyPlan: JSON у prefs — точний round-trip того, що лежить у LS", () => {
     // Регресійний тест на розрив, зафіксований у завданні: сід
     // раніше писав числа й пропускав `savings`, тепер пише рядки й усі
@@ -179,6 +206,24 @@ describe("importFinykDemoSeed", () => {
     expect(applied).toBeGreaterThan(0);
     expect(sql.join(" ")).toMatch(/finyk_manual_expenses/i);
     expect(sql.join(" ")).toMatch(/finyk_prefs/i);
+  });
+
+  // PR-F9 (design-audit 2026-09-13): the missing half of this bridge —
+  // without it, the seeded asset would round-trip through LS on first
+  // paint and then vanish the instant the (empty) SQLite table overlays
+  // `manualAssets`, leaving the hero's «Капітал» back at `0 ₴`.
+  it("перетворює засіяний ручний актив на запис у `finyk_assets`", async () => {
+    localStorage.setItem(ASSETS_KEY, JSON.stringify(seedAssets()));
+    const { client, sql } = makeClient();
+
+    const applied = await importFinykDemoSeed({
+      client,
+      userId: "demo-local",
+      nowIso: "2026-08-08T10:00:00.000Z",
+    });
+
+    expect(applied).toBeGreaterThan(0);
+    expect(sql.join(" ")).toMatch(/finyk_assets/i);
   });
 
   it("не кидає, коли sqlite падає — демо не має права завалити бут", async () => {

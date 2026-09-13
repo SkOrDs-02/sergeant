@@ -159,7 +159,13 @@ describe("WelcomeScreen — handlePicksComplete side-effects", () => {
     });
   });
 
-  it("marks onboarding skipped before opening auth for a returning account", () => {
+  // PR-H7 (design-audit 2026-09-13): this button used to call
+  // `markOnboardingDone()` before even navigating — a mistaken tap
+  // followed by "Поки що пропустити" on `/sign-in` then closed the FTUX
+  // gate forever with no account ever created. The gate now closes in
+  // exactly one place, once a session is confirmed (`StandaloneRoutes.tsx`
+  // `SIGN_IN_PATH` entry) — this screen only navigates.
+  it("does NOT mark onboarding done on tap — only navigates to sign-in", () => {
     const onOpenAuth = vi.fn();
     render(<WelcomeScreen onDone={() => {}} onOpenAuth={onOpenAuth} />);
 
@@ -167,10 +173,7 @@ describe("WelcomeScreen — handlePicksComplete side-effects", () => {
       screen.getByRole("button", { name: "У мене вже є акаунт" }),
     );
 
-    expect(markOnboardingDoneMock).toHaveBeenCalledTimes(1);
     expect(onOpenAuth).toHaveBeenCalledTimes(1);
-    expect(markOnboardingDoneMock.mock.invocationCallOrder[0]).toBeLessThan(
-      onOpenAuth.mock.invocationCallOrder[0] ?? Number.POSITIVE_INFINITY,
-    );
+    expect(markOnboardingDoneMock).not.toHaveBeenCalled();
   });
 });

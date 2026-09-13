@@ -1,6 +1,9 @@
 import { Suspense, type ReactNode } from "react";
 import { lazyImport } from "../lib/lazyImport";
-import { shouldShowOnboarding } from "../onboarding/onboardingGate";
+import {
+  markOnboardingDone,
+  shouldShowOnboarding,
+} from "../onboarding/onboardingGate";
 import { PageLoader } from "./PageLoader";
 import { RedirectTo } from "./RedirectTo";
 import {
@@ -177,6 +180,17 @@ const STANDALONE_ROUTES: ReadonlyArray<StandaloneRoute> = [
     paths: [SIGN_IN_PATH],
     render: ({ user, authLoading, onLeaveAuth }) => {
       if (!authLoading && user) {
+        // PR-H7 (design-audit 2026-09-13): closes the local onboarding
+        // gate exactly here — once a session is CONFIRMED (fresh sign-in
+        // *or* an already-restored one), never before. `WelcomeScreen`
+        // used to call `markOnboardingDone()` the instant "У мене вже є
+        // акаунт" was tapped, before knowing whether the visitor actually
+        // had one. A mistaken tap that then hit "Поки що пропустити"
+        // (`onLeaveAuth`) landed on a hub with the FTUX gate already
+        // closed forever — no splash, no "З чого почнемо?" hero, nothing.
+        // Idempotent write; harmless if this render fires more than once
+        // before `<RedirectTo>`'s effect navigates away.
+        markOnboardingDone();
         return <RedirectTo to="/" />;
       }
       return (
