@@ -30,11 +30,11 @@
 - [#1043](https://github.com/SkOrDs-02/sergeant/pull/1043) — docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення _(2026-09-02)_
 - [#895](https://github.com/SkOrDs-02/sergeant/pull/895) — fix(agents): полірування агентного шару після розкатки module-owners _(2026-08-28)_
 
-## 🔵 В роботі — 73 відкриті документи
+## 🔵 В роботі — 75 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 73       |
+| Активні спеки | 75       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -44,8 +44,8 @@
 - [`work/specs/tech-debt/mobile.md`](./work/specs/tech-debt/mobile.md) — Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor) — Active _(Активні спеки)_
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
 - [`work/specs/launch/phases/02-capacitor-launch.md`](./work/specs/launch/phases/02-capacitor-launch.md) — Phase 2 — Capacitor launch roadmap with users — Active — research deliverable for the parent launch program. _(Активні спеки)_
-- [`work/specs/audits/2026-09-11-founder-ux-review-round2.md`](./work/specs/audits/2026-09-11-founder-ux-review-round2.md) — Розбір зауважень власника, хвиля 2 (після Codex) — Active _(Активні спеки)_
-- [`work/specs/initiatives/0024-ai-memory-source-coverage.md`](./work/specs/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться — In progress — PR-1 змержено 2026-09-03 (§ Перезамір нижче). PR-2 (kill-switch rename) і PR-3 (міграція 128) лишаються, п _(Активні спеки)_
+- [`work/specs/pr-body-validator-template-race.md`](./work/specs/pr-body-validator-template-race.md) — SPEC: `PR body validator` червоніє на PR, створених через API — Active _(Активні спеки)_
+- [`work/specs/voice-input-followups.md`](./work/specs/voice-input-followups.md) — SPEC: Голосовий ввід — залишок після виправлення парсерів — Active _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 
