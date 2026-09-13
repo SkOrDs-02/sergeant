@@ -21,6 +21,28 @@
 
 import { foldApostrophes } from "./ukApostrophe";
 
+/**
+ * Межа слова, що працює з кирилицею.
+ *
+ * AI-DANGER: НЕ став `\b` поруч із кириличною літерою. У JavaScript `\b`
+ * визначена через ASCII-`\w`, тож між «а» і пробілом межі для неї не існує
+ * — `/\bкава/u.test("кава")` дає **false**, і прапорець `u` цього не
+ * змінює. Регекс із таким якорем не «іноді помиляється», він НЕ ЗБІГАЄТЬСЯ
+ * НІКОЛИ, тихо перетворюючись на no-op.
+ *
+ * Саме так сюди й приїхав баг: регекси ПОШУКУ числа якорів не мали і
+ * працювали, а регекси ЗАЧИСТКИ назви мали `\b` — тож одиниці лишались у
+ * назві, і «кава сорок пʼять гривень» давало опис «Кава гривень». Тести
+ * цього не бачили, бо перевіряли `toMatch(/кава/i)` — підрядок, який у
+ * «Кава гривень» присутній.
+ *
+ * Репо вже знало цю пастку в чотирьох інших місцях (`llmRedaction.ts`,
+ * `receiptSplitSuggestion.ts`, `genericFoods.test.ts`, `WorkoutsHome.test.tsx`)
+ * і навіть у цьому файлі — коментар біля `gramsRe` нижче. Знання було, але
+ * жило на одному шляху; сусідні про нього не чули.
+ */
+const NOT_WORD_CHAR = "(?![\\p{L}\\p{N}])";
+
 const UA_NUMBER_WORDS: Record<string, number> = {
   нуль: 0,
   один: 1,
@@ -208,6 +230,14 @@ export function normalizeUaNumbers(text: string): string {
 // ── Finyk: expense parser ──────────────────────────────────────────────────
 // e.g. "кава 45 гривень", "продукти 320 грн", "таксі двісті п'ятдесят"
 
+/**
+ * Валюта. Порядок альтернатив — від найдовшої: JS бере ПЕРШИЙ збіг, а не
+ * найдовший, тож «грн» перед «гривень» зʼїло б три літери й лишило «ивень».
+ * `NOT_WORD_CHAR` після групи це теж ловить, але покладатись на бектрекінг
+ * там, де достатньо порядку, — зайвий ризик.
+ */
+const CURRENCY = "(?:гривень|гривні|гривня|гривен|грн|гр|₴|uah)";
+
 export interface ParsedExpense {
   name: string;
   amount: number | null;
@@ -221,9 +251,8 @@ export function parseExpenseSpeech(text: string): ParsedExpense | null {
   const lower = norm.toLowerCase().replace(/[,]/g, ".");
 
   const amountMatch =
-    lower.match(
-      /(\d+(?:\.\d+)?)\s*(?:грн?|гривень|гривні|гривня|гривен|₴|uah)/iu,
-    ) || lower.match(/(\d+(?:\.\d+)?)/u);
+    lower.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*${CURRENCY}`, "iu")) ||
+    lower.match(/(\d+(?:\.\d+)?)/u);
 
   let amount: number | null = null;
   if (amountMatch?.[1]) {
@@ -236,13 +265,12 @@ export function parseExpenseSpeech(text: string): ParsedExpense | null {
     amount = parseUaNumber(text);
   }
 
-  const currencyRe = /\b(?:грн?|гривень|гривні|гривня|гривен|₴|uah)\b/iu;
   let name = norm
     .replace(
-      /(\d+(?:[.,]\d+)?)\s*(?:грн?|гривень|гривні|гривня|гривен|₴|uah)?\b/giu,
+      new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*${CURRENCY}?${NOT_WORD_CHAR}`, "giu"),
       " ",
     )
-    .replace(currencyRe, " ")
+    .replace(new RegExp(`${CURRENCY}${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -294,9 +322,11 @@ export function parseWorkoutSetSpeech(text: string): ParsedWorkoutSet | null {
       /(\d+)\s*(?:повт|повторень|повторів|повторення|reps?|разів|раз)/iu,
     ) || lower.match(/(?:повт|reps?)\s*(\d+)/iu);
 
+  // `підх[іо]д` — чергування і↔о в корені: «підхід» → «підходи». Без нього
+  // найприроднішa форма «3 підходи» не розпізнавалась узагалі.
   const setsMatch =
-    lower.match(/(\d+)\s*(?:підходів|підхід|sets?)/iu) ||
-    lower.match(/(?:підхід|sets?)\s*(\d+)/iu);
+    lower.match(/(\d+)\s*(?:підх[іо]д\p{L}*|sets?)/iu) ||
+    lower.match(/(?:підх[іо]д\p{L}*|sets?)\s*(\d+)/iu);
 
   let weight: number | null = null;
   if (weightMatch?.[1]) {
@@ -311,15 +341,25 @@ export function parseWorkoutSetSpeech(text: string): ParsedWorkoutSet | null {
   let sets: number | null = null;
   if (setsMatch) sets = parseInt(setsMatch[1] ?? setsMatch[2] ?? "", 10);
 
+  // `\\p{L}*` після кириличного кореня з`їдає відмінкове закінчення
+  // («кілограм» + «ів»), якого ASCII-`\\w*` не бачить.
+  const WEIGHT_UNIT =
+    "(?:кілограм\\p{L}*|килограм\\p{L}*|фунт\\p{L}*|кг|kg|lbs|lb)";
+  // `підх[іо]д` — не друкарська помилка: в українській корінь чергує
+  // і↔о («підхід» → «підходи»), тож самого `підхід\\p{L}*` мало.
+  const COUNT_UNIT =
+    "(?:повтор\\p{L}*|повт|підх[іо]д\\p{L}*|разів|раз|reps|rep|sets|set)";
   let exerciseName: string | null = norm
     .replace(
-      /(\d+(?:[.,]\d+)?)\s*(?:кг|kg|кілограм|килограм|lb|lbs|фунт)?\b/giu,
+      new RegExp(
+        `(\\d+(?:[.,]\\d+)?)\\s*${WEIGHT_UNIT}?${NOT_WORD_CHAR}`,
+        "giu",
+      ),
       " ",
     )
-    .replace(
-      /(\d+)\s*(?:повт|повторень|повторів|повторення|reps?|разів|раз|підходів|підхід|sets?)\b/giu,
-      " ",
-    )
+    .replace(new RegExp(`(\\d+)\\s*${COUNT_UNIT}?${NOT_WORD_CHAR}`, "giu"), " ")
+    .replace(new RegExp(`${WEIGHT_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
+    .replace(new RegExp(`${COUNT_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -386,16 +426,26 @@ export function parseMealSpeech(text: string): ParsedMeal | null {
 
   // Strip recognized number-units from the name. Same Cyrillic-aware
   // lookahead trick for "гр"/"г" so we don't munch food-name prefixes.
-  const stripGramsRe = new RegExp(
-    `(\\d+(?:[.,]\\d+)?)\\s*(?:грам|гр(?!${CYR})|г(?!${CYR})|g\\b|ml|мл)?\\b`,
-    "giu",
-  );
-  let name = norm
-    .replace(/(\d+(?:[.,]\d+)?)\s*(?:ккал|кілокалор|калор|kcal|cal)?\b/giu, " ")
-    .replace(stripGramsRe, " ")
-    .replace(/(\d+(?:[.,]\d+)?)\s*(?:г\s*білка|g\s*protein)?\b/giu, " ")
-    .replace(/\s+/g, " ")
-    .trim();
+  // «кілокалор»/«калор» — корені, не слова: далі йде «ій»/«ії». Тому
+  // `\\p{L}*`, інакше межа одразу після кореня не збіглася б.
+  const KCAL_UNIT = "(?:ккал|кілокалор\\p{L}*|калор\\p{L}*|kcal|cal)";
+  // Порядок альтернатив вирішує: `г\\s*білка` мусить стояти ПЕРЕД голим
+  // `г`, інакше «30 г білка» дасть «білка» в назві страви.
+  const MEAL_UNIT =
+    `(?:${KCAL_UNIT}|г\\s*білка|g\\s*protein|protein|грам\\p{L}*` +
+    `|гр(?!${CYR})|г(?!${CYR})|g|ml|мл)`;
+
+  // ТРИ ФАЗИ, і порядок тут не косметичний. Раніше зачистка йшла парами
+  // «число + своя одиниця» послідовно, і кожна фаза зривала ГОЛЕ число
+  // сусідньої (її одиницю вона не знає, тож опційна група матчила порожнечу
+  // і межа лишала саме число). Одиниця лишалась сиротою: «омлет 250 грам
+  // 30 г білка» давало назву «Омлет грам г білка». Спершу знімаємо ВСІ
+  // пари одним алфавітом одиниць, і лише потім — залишки.
+  const name0 = norm
+    .replace(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*${MEAL_UNIT}`, "giu"), " ")
+    .replace(new RegExp(`${MEAL_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
+    .replace(/\d+(?:[.,]\d+)?/gu, " ");
+  let name = name0.replace(/\s+/g, " ").trim();
 
   if (!name) name = "Прийом їжі";
   else name = name.charAt(0).toUpperCase() + name.slice(1);
