@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "6.0.0",
+  "current": "6.0.1",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -491,6 +491,14 @@
         "Hard Rule #26 § Backfill переписано за фактом: механізм ламався двічі й обидва рази тихо. Нормативна частина правила НЕ змінилась — major тут за конвенцією бампера («будь-який дотик до файлу правила = гучна подія»), не через зміну вимоги.",
         "`scripts/ci/update-pr-backlinks.mjs` бере файли PR посторінковим `gh api --paginate` замість `gh pr view --json files` (стеля 100 файлів); `assertCompleteFileList()` валить прогін на неповному списку замість тихого «did not touch any canonical doc». Тест у ланцюжку `pnpm lint`.",
         "Леджер добрано 8 PR-ами періоду 2026-09-02..09-11; масові переїзди файлів (#1021, #1081) свідомо не записані."
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.0.1": {
+      "releasedAt": "2026-09-13",
+      "changes": [
+        "bump from 6.0.0 -> 6.0.1: typo / link / freshness-only change"
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
