@@ -69,12 +69,18 @@ vi.mock("./DayReportSheet", () => ({
   DayReportSheet: ({
     open,
     scheduledHabits,
+    dateKey,
   }: {
     open: boolean;
     scheduledHabits: unknown[];
+    dateKey: string;
   }) =>
     open ? (
-      <div data-testid="day-report-sheet" data-count={scheduledHabits.length} />
+      <div
+        data-testid="day-report-sheet"
+        data-count={scheduledHabits.length}
+        data-date={dateKey}
+      />
     ) : null,
 }));
 vi.mock("./RoutineCalendarMonthGrid", () => ({
@@ -145,6 +151,7 @@ function baseData(
     currentStreak: 3,
     completionRate: { done: 1, total: 2, pct: 50 },
     dayProgress: { done: 1, total: 2, pct: 50 },
+    progressDayKey: "2026-06-23",
     timeMode: "week",
     selectedDay: "2026-06-23",
     todayKey: "2026-06-23",
@@ -643,6 +650,138 @@ describe("RoutineCalendarPanel", () => {
       "data-count",
       "1",
     );
+  });
+
+  /**
+   * PR-R4 (аудит 2026-09): звичка «N разів на тиждень», яка вже добрала
+   * тижневу ціль, не мусить висіти в денному звіті як «Пропущено» — вона
+   * більше не запланована на цей день.
+   */
+  it("excludes a flexible habit from the day report once the weekly target is met", () => {
+    dataFixture.mockReturnValue(
+      baseData({
+        todayKey: "2026-06-04",
+        progressDayKey: "2026-06-04",
+        routine: {
+          ...defaultRoutineState(),
+          habits: [
+            {
+              id: "h-flex",
+              name: "Спорт",
+              emoji: "🏋️",
+              tagIds: [],
+              archived: false,
+              recurrence: "flexible",
+              reminderTimes: [],
+            },
+          ],
+          // 2026-06-04 (чт) — тиждень Пн 2026-06-01..Нд 2026-06-07; три
+          // відмітки пн/вт/ср добирають дефолтну ціль (3) до сьогодні.
+          completions: { "h-flex": ["2026-06-01", "2026-06-02", "2026-06-03"] },
+        },
+      }),
+    );
+
+    render(<RoutineCalendarPanel />);
+    const heroBtn = screen.queryByRole("button", { name: /звіт/i });
+    if (!heroBtn) throw new Error("expected the day-report CTA to render");
+
+    fireEvent.click(heroBtn);
+    expect(screen.getByTestId("day-report-sheet")).toHaveAttribute(
+      "data-count",
+      "0",
+    );
+  });
+
+  /**
+   * Guard проти надто агресивного фіксу вище: гнучка звичка, що ЩЕ не
+   * добрала тижневу ціль, і далі відмічається і показується у звіті.
+   */
+  it("still includes a flexible habit in the day report before the weekly target is met", () => {
+    dataFixture.mockReturnValue(
+      baseData({
+        todayKey: "2026-06-04",
+        progressDayKey: "2026-06-04",
+        routine: {
+          ...defaultRoutineState(),
+          habits: [
+            {
+              id: "h-flex",
+              name: "Спорт",
+              emoji: "🏋️",
+              tagIds: [],
+              archived: false,
+              recurrence: "flexible",
+              reminderTimes: [],
+            },
+          ],
+          completions: { "h-flex": ["2026-06-01"] }, // 1 з 3 цього тижня
+        },
+      }),
+    );
+
+    render(<RoutineCalendarPanel />);
+    const heroBtn = screen.queryByRole("button", { name: /звіт/i });
+    if (!heroBtn) throw new Error("expected the day-report CTA to render");
+
+    fireEvent.click(heroBtn);
+    expect(screen.getByTestId("day-report-sheet")).toHaveAttribute(
+      "data-count",
+      "1",
+    );
+  });
+
+  /**
+   * PR-R6 (аудит 2026-09): денний звіт прибитий до `todayKey`, тоді як
+   * кільце прогресу (`dayProgress`) рахує обраний день. На «Завтра» це
+   * означало звіт із сьогоднішніми звичками під завтрашнім заголовком.
+   * Тепер звіт іде за `progressDayKey`.
+   */
+  it("day report follows progressDayKey, not todayKey, when they differ", () => {
+    dataFixture.mockReturnValue(
+      baseData({
+        timeMode: "tomorrow",
+        todayKey: "2026-06-23",
+        progressDayKey: "2026-06-24",
+        routine: {
+          ...defaultRoutineState(),
+          habits: [
+            {
+              id: "h-today-only",
+              name: "Ранкова кава",
+              emoji: "☕",
+              tagIds: [],
+              archived: false,
+              recurrence: "once",
+              startDate: "2026-06-23",
+              reminderTimes: [],
+            },
+            {
+              id: "h-tomorrow-only",
+              name: "Вечірня прогулянка",
+              emoji: "🚶",
+              tagIds: [],
+              archived: false,
+              recurrence: "once",
+              startDate: "2026-06-24",
+              reminderTimes: [],
+            },
+          ],
+          completions: {},
+        },
+      }),
+    );
+
+    render(<RoutineCalendarPanel />);
+    const heroBtn = screen.queryByRole("button", { name: /звіт/i });
+    if (!heroBtn) throw new Error("expected the day-report CTA to render");
+
+    fireEvent.click(heroBtn);
+    const sheet = screen.getByTestId("day-report-sheet");
+    // Лише завтрашня подія — а не сьогоднішня, яка досі висіла б на
+    // `todayKey`.
+    expect(sheet).toHaveAttribute("data-count", "1");
+    expect(sheet).toHaveAttribute("data-date", "2026-06-24");
   });
 
   it("updates the search draft from the input", () => {

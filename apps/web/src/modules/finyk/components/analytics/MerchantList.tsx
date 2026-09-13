@@ -15,6 +15,8 @@ interface MerchantStat {
 
 interface MerchantListProps {
   merchants?: MerchantStat[];
+  /** «Приховати суми» (PR-F3) — маскує суму кожного продавця. */
+  showBalance?: boolean;
   className?: string;
 }
 
@@ -38,6 +40,7 @@ export function needsKopecks(total: number): boolean {
 // поки масив `merchants` не змінився.
 function MerchantListComponent({
   merchants = [],
+  showBalance = true,
   className,
 }: MerchantListProps) {
   if (!merchants || merchants.length === 0) return null;
@@ -58,11 +61,17 @@ function MerchantListComponent({
                 <span className="text-style-label text-text truncate pr-2">
                   {m.name}
                 </span>
-                <Money
-                  amount={m.total}
-                  kopecks={needsKopecks(m.total)}
-                  className="text-style-label text-text shrink-0"
-                />
+                {showBalance ? (
+                  <Money
+                    amount={m.total}
+                    kopecks={needsKopecks(m.total)}
+                    className="text-style-label text-text shrink-0"
+                  />
+                ) : (
+                  <span className="text-style-label text-text shrink-0">
+                    ••••
+                  </span>
+                )}
               </div>
               <div className="flex items-center gap-2">
                 <div className="flex-1 h-1.5 bg-bg rounded-full overflow-hidden">

@@ -36,6 +36,7 @@ function makeCalendarData(): RoutineCalendarData {
     currentStreak: 2,
     completionRate: { completed: 1, scheduled: 2, rate: 0.5 },
     dayProgress: { completed: 1, scheduled: 2 },
+    progressDayKey: "2026-07-10",
     timeMode: "today",
     selectedDay: "2026-07-10",
     todayKey: "2026-07-10",

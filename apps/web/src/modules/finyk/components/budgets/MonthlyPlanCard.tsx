@@ -60,6 +60,15 @@ export type MonthlyPlan = {
 interface MonthlyPlanCardProps {
   monthlyPlan: MonthlyPlan | null | undefined;
   onChangeMonthlyPlan: Dispatch<SetStateAction<MonthlyPlan>>;
+  /**
+   * «Приховати суми» (PR-F3 founder-UX audit 2026-09-13): доти цей проп
+   * приходив у `Budgets`, але картка його не приймала й малювала суми
+   * завжди — свайп на Планування залишав приховані на Огляді числа
+   * відкритими. Маскує лише РОЗРАХОВАНІ суми (згорнута шапка, таблиця
+   * План/Факт/Δ, safe-to-spend); поля редагування плану лишаються
+   * видимими — людина саме зараз їх вводить.
+   */
+  showBalance?: boolean;
   planIncome: number;
   planExpense: number;
   planSavings: number;
@@ -91,6 +100,7 @@ interface MonthlyPlanCardProps {
 function MonthlyPlanCardComponent({
   monthlyPlan,
   onChangeMonthlyPlan,
+  showBalance = true,
   planIncome,
   planExpense,
   planSavings,
@@ -157,7 +167,9 @@ function MonthlyPlanCardComponent({
                   : "text-muted",
               )}
             >
-              {isOver ? (
+              {!showBalance ? (
+                "••••"
+              ) : isOver ? (
                 <Money amount={planExpense - totalExpenseFact} tone="inherit" />
               ) : planExpense > 0 ? (
                 <>
@@ -212,10 +224,18 @@ function MonthlyPlanCardComponent({
 
               <div className="text-style-caption text-muted">Дохід</div>
               <div className="text-right text-muted">
-                {planIncome > 0 ? <Money amount={planIncome} /> : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : planIncome > 0 ? (
+                  <Money amount={planIncome} />
+                ) : (
+                  "—"
+                )}
               </div>
               <div className="text-right text-success-strong dark:text-success">
-                {factIncome > 0 ? (
+                {!showBalance ? (
+                  "••••"
+                ) : factIncome > 0 ? (
                   <Money amount={factIncome} signed tone="inherit" />
                 ) : (
                   "—"
@@ -231,7 +251,9 @@ function MonthlyPlanCardComponent({
                       : "text-warning-strong dark:text-warning",
                 )}
               >
-                {planIncome > 0 ? (
+                {!showBalance ? (
+                  "••••"
+                ) : planIncome > 0 ? (
                   <Money amount={incomeDelta} signed tone="inherit" />
                 ) : (
                   "—"
@@ -240,7 +262,13 @@ function MonthlyPlanCardComponent({
 
               <div className="text-style-caption text-muted">Витрати</div>
               <div className="text-right text-muted">
-                {planExpense > 0 ? <Money amount={planExpense} /> : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : planExpense > 0 ? (
+                  <Money amount={planExpense} />
+                ) : (
+                  "—"
+                )}
               </div>
               <div
                 className={cn(
@@ -250,7 +278,9 @@ function MonthlyPlanCardComponent({
                     : "text-danger-strong dark:text-danger",
                 )}
               >
-                {totalExpenseFact > 0 ? (
+                {!showBalance ? (
+                  "••••"
+                ) : totalExpenseFact > 0 ? (
                   <Money amount={-totalExpenseFact} tone="inherit" />
                 ) : (
                   "—"
@@ -266,7 +296,9 @@ function MonthlyPlanCardComponent({
                       : "text-success-strong dark:text-success",
                 )}
               >
-                {planExpense > 0 ? (
+                {!showBalance ? (
+                  "••••"
+                ) : planExpense > 0 ? (
                   <Money amount={expenseDelta} signed tone="inherit" />
                 ) : (
                   "—"
@@ -275,7 +307,13 @@ function MonthlyPlanCardComponent({
 
               <div className="text-style-caption text-muted">Накопич.</div>
               <div className="text-right text-muted">
-                {planSavings > 0 ? <Money amount={planSavings} /> : "—"}
+                {!showBalance ? (
+                  "••••"
+                ) : planSavings > 0 ? (
+                  <Money amount={planSavings} />
+                ) : (
+                  "—"
+                )}
               </div>
               <div
                 className={cn(
@@ -285,7 +323,9 @@ function MonthlyPlanCardComponent({
                     : "text-danger-strong dark:text-danger",
                 )}
               >
-                {planSavings > 0 || factSavings !== 0 ? (
+                {!showBalance ? (
+                  "••••"
+                ) : planSavings > 0 || factSavings !== 0 ? (
                   <Money amount={factSavings} signed tone="inherit" />
                 ) : (
                   "—"
@@ -301,7 +341,9 @@ function MonthlyPlanCardComponent({
                       : "text-danger-strong dark:text-danger",
                 )}
               >
-                {planSavings > 0 || factSavings !== 0 ? (
+                {!showBalance ? (
+                  "••••"
+                ) : planSavings > 0 || factSavings !== 0 ? (
                   <Money amount={savingsDelta} signed tone="inherit" />
                 ) : (
                   "—"
@@ -320,16 +362,20 @@ function MonthlyPlanCardComponent({
                 <span>{pctExpense}% витрачено</span>
                 {safePerDay > 0 && daysLeft > 0 && !isOver && (
                   <span className="tabular-nums">
-                    <Money amount={safePerDay} />
+                    {showBalance ? <Money amount={safePerDay} /> : "••••"}
                     /день · {daysLeft} дн.
                   </span>
                 )}
                 {isOver && (
                   <span className="text-danger-strong dark:text-danger font-semibold tabular-nums">
-                    <Money
-                      amount={planExpense - totalExpenseFact}
-                      tone="inherit"
-                    />
+                    {showBalance ? (
+                      <Money
+                        amount={planExpense - totalExpenseFact}
+                        tone="inherit"
+                      />
+                    ) : (
+                      "••••"
+                    )}
                   </span>
                 )}
               </div>

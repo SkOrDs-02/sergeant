@@ -352,4 +352,52 @@ describe("Analytics page", () => {
       ).toBeInTheDocument();
     });
   });
+
+  // PR-F3 (founder-UX audit wave 6, «Чесність показників»): `Analytics`
+  // never accepted `showBalance` at all — the Overview toggle that hides
+  // money left every figure here (summary, comparison, top merchants)
+  // visible one swipe away. `CategoryPieChart` is mocked above, so its own
+  // masking is covered separately in `CategoryPieChart.test.tsx`.
+  it("masks Summary, Comparison, and Merchant amounts when showBalance=false", async () => {
+    const now = Math.floor(KYIV.getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -30000, mayTs)]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({ realTx: [mkTx("cur", -10000, now)], fetchMonth })}
+          storage={buildStorage()}
+          showBalance={false}
+        />,
+      );
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByText("Порівняння з попереднім місяцем"),
+      ).toBeInTheDocument();
+    });
+    // Summary (spent/income/balance) + comparison (2 rows) + merchant list
+    // (1 entry) — at least 3 distinct amounts fall back to the mask glyph.
+    expect(screen.getAllByText("••••").length).toBeGreaterThanOrEqual(3);
+  });
+
+  it("shows real Summary/Comparison/Merchant amounts when showBalance=true (default)", async () => {
+    const now = Math.floor(KYIV.getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -30000, mayTs)]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({ realTx: [mkTx("cur", -10000, now)], fetchMonth })}
+          storage={buildStorage()}
+        />,
+      );
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByText("Порівняння з попереднім місяцем"),
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByText("••••")).not.toBeInTheDocument();
+  });
 });

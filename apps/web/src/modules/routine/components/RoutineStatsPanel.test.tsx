@@ -19,8 +19,18 @@ const FIXED_NOW = new Date("2026-07-10T09:00:00Z");
 // Stub heavy children to lightweight markers. The range-grid stub echoes its
 // window so the tests can assert which slice the panel asked for.
 vi.mock("./HabitHeatmap", () => ({
-  HabitHeatmap: ({ historyWeeks }: { historyWeeks?: number }) => (
-    <div data-testid="habit-heatmap" data-history-weeks={historyWeeks} />
+  HabitHeatmap: ({
+    historyWeeks,
+    skips,
+  }: {
+    historyWeeks?: number;
+    skips?: Record<string, unknown>;
+  }) => (
+    <div
+      data-testid="habit-heatmap"
+      data-history-weeks={historyWeeks}
+      data-skip-keys={Object.keys(skips || {}).join(",")}
+    />
   ),
 }));
 vi.mock("./HabitRangeGrid", () => ({
@@ -142,6 +152,24 @@ describe("RoutineStatsPanel", () => {
     expect(screen.getByTestId("habit-heatmap")).toHaveAttribute(
       "data-history-weeks",
       "53",
+    );
+  });
+
+  /**
+   * PR-R8 (аудит 2026-09): `HabitHeatmap` не отримував `routine.skips`
+   * узагалі, тож перемикання Місяць → Квартал безшумно втрачало розрізнення
+   * «не зміг» від мовчазного провалу, яке `HabitRangeGrid` уже показує.
+   */
+  it("wires routine.skips into HabitHeatmap on long ranges", () => {
+    const routine = makeRoutine({
+      skips: { h1: { "2026-07-01": { reason: "sick", at: "2026-07-01" } } },
+    });
+    render(<RoutineStatsPanel routine={routine} currentStreak={0} />);
+
+    fireEvent.click(screen.getByRole("tab", { name: "Квартал" }));
+    expect(screen.getByTestId("habit-heatmap")).toHaveAttribute(
+      "data-skip-keys",
+      "h1",
     );
   });
 

@@ -56,6 +56,7 @@ interface ComparisonRowProps {
   current: number;
   prev: number;
   kind?: "expense" | "income";
+  showBalance?: boolean;
 }
 
 export interface AnalyticsProps {
@@ -75,6 +76,12 @@ export interface AnalyticsProps {
    * числа до самих операцій було ніяк.
    */
   onSelectCategory?: (categoryId: string) => void;
+  /**
+   * «Приховати суми» (PR-F3 founder-UX audit 2026-09-13): доти сторінка
+   * не приймала цей проп узагалі, тож перемикач з Огляду не діяв тут —
+   * маскує підсумок місяця, порівняння, кільце категорій і топ продавців.
+   */
+  showBalance?: boolean;
 }
 
 // Презентаційний контейнер-секція. memo, бо приймає лише `title/className/children`
@@ -158,6 +165,7 @@ const ComparisonRow = memo(function ComparisonRow({
   current,
   prev,
   kind = "expense",
+  showBalance = true,
 }: ComparisonRowProps) {
   const diff = current - prev;
   const pct = prev > 0 ? Math.round((diff / prev) * 100) : null;
@@ -166,8 +174,12 @@ const ComparisonRow = memo(function ComparisonRow({
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted">{label}</span>
       <div className="flex items-center gap-2">
-        <Money amount={current} className="text-text font-medium" />
-        {prev > 0 && pct !== null && (
+        {showBalance ? (
+          <Money amount={current} className="text-text font-medium" />
+        ) : (
+          <span className="text-text font-medium">••••</span>
+        )}
+        {showBalance && prev > 0 && pct !== null && (
           /* Полярність задає `kind`, а не знак: зростання доходу — добре,
              зростання витрат — ні. Рівно те розділення, заради якого
              `Delta` бере `polarity` окремим пропом. */
@@ -183,7 +195,12 @@ const ComparisonRow = memo(function ComparisonRow({
   );
 });
 
-export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
+export function Analytics({
+  mono,
+  storage,
+  onSelectCategory,
+  showBalance = true,
+}: AnalyticsProps) {
   // Use Kyiv-local year/month so "current month" tracks Europe/Kyiv day boundaries.
   const nowKyiv = getKyivDateParts();
   const [year, setYear] = useState(nowKyiv.year);
@@ -465,19 +482,31 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
                 <div className="text-style-caption text-subtle mb-1">
                   Витрати
                 </div>
-                <Money
-                  amount={summary.spent}
-                  tone="inherit"
-                  className="block text-style-label text-danger-strong dark:text-danger"
-                />
+                {showBalance ? (
+                  <Money
+                    amount={summary.spent}
+                    tone="inherit"
+                    className="block text-style-label text-danger-strong dark:text-danger"
+                  />
+                ) : (
+                  <span className="block text-style-label text-danger-strong dark:text-danger">
+                    ••••
+                  </span>
+                )}
               </div>
               <div className="text-center">
                 <div className="text-style-caption text-subtle mb-1">Дохід</div>
-                <Money
-                  amount={summary.income}
-                  tone="inherit"
-                  className="block text-style-label text-success-strong dark:text-success"
-                />
+                {showBalance ? (
+                  <Money
+                    amount={summary.income}
+                    tone="inherit"
+                    className="block text-style-label text-success-strong dark:text-success"
+                  />
+                ) : (
+                  <span className="block text-style-label text-success-strong dark:text-success">
+                    ••••
+                  </span>
+                )}
               </div>
               <div className="text-center">
                 <div className="text-style-caption text-subtle mb-1">
@@ -486,11 +515,15 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
                 {/* Баланс — підписана дельта, тож `Delta`, а не `Money`:
                     вона й знак ставить сама, і колір бере з того самого
                     `signedDeltaClass`, який тут стояв вручну. */}
-                <Delta
-                  value={summary.balance}
-                  polarity="positive"
-                  className="block text-style-label"
-                />
+                {showBalance ? (
+                  <Delta
+                    value={summary.balance}
+                    polarity="positive"
+                    className="block text-style-label"
+                  />
+                ) : (
+                  <span className="block text-style-label">••••</span>
+                )}
               </div>
             </div>
           )}
@@ -504,12 +537,14 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
                 label="Витрати"
                 current={comparison.currentSpent}
                 prev={comparison.prevSpent}
+                showBalance={showBalance}
               />
               <ComparisonRow
                 label="Дохід"
                 current={comparison.currentIncome}
                 prev={comparison.prevIncome}
                 kind="income"
+                showBalance={showBalance}
               />
             </div>
           </Section>
@@ -532,6 +567,7 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
                 data={distribution}
                 total={distributionTotal}
                 className=""
+                showBalance={showBalance}
                 {...(onSelectCategory ? { onSelectCategory } : {})}
               />
             </Suspense>
@@ -554,7 +590,11 @@ export function Analytics({ mono, storage, onSelectCategory }: AnalyticsProps) {
               description="Витрат за цей місяць ще не записано."
             />
           ) : (
-            <MerchantList merchants={topMerchants} className="" />
+            <MerchantList
+              merchants={topMerchants}
+              showBalance={showBalance}
+              className=""
+            />
           )}
         </Section>
       </div>

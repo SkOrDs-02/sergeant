@@ -165,6 +165,15 @@ export interface TransactionListProps {
   selectMode: boolean;
   selectedIds: Set<string>;
   hiddenTxIdSet: Set<string>;
+  /**
+   * «Не враховувати у статистиці» (`finyk_excluded_stat_txs`, PR-F4
+   * founder-UX audit 2026-09-13) — окремо від `hiddenTxIdSet`, бо
+   * виключена зі статистики транзакція лишається у звичайному списку,
+   * на відміну від прихованої. Рядок несе видимий маркер через
+   * `TxRowMetaChips`, інакше пакетна дія міняє підсумки Огляду й
+   * Аналітики без жодного сліду в самому списку.
+   */
+  excludedStatTxIdSet: Set<string>;
   txCategories: TxCategoriesMap;
   txSplits: TxSplitsMap;
   /** User's own free-text annotation per bank transaction. */
@@ -224,6 +233,7 @@ export function TransactionList({
   selectMode,
   selectedIds,
   hiddenTxIdSet,
+  excludedStatTxIdSet,
   txCategories,
   txSplits,
   txNotes = {},
@@ -456,6 +466,7 @@ export function TransactionList({
                       selectMode={selectMode}
                       selected={selectMode && selectedIds.has(t.id)}
                       hidden={hiddenTxIdSet.has(t.id)}
+                      isExcludedFromStats={excludedStatTxIdSet.has(t.id)}
                       overrideCatId={txCategories[t.id]}
                       txSplits={txSplits}
                       note={txNotes[t.id]}

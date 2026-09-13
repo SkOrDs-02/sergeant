@@ -7,7 +7,12 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { IconButton } from "@shared/components/ui/IconButton";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { habitScheduledOnDate, monthGrid } from "@sergeant/routine-domain";
+import {
+  habitScheduledOnDate,
+  isFlexibleHabit,
+  monthGrid,
+  weekDoneCountExcludingDate,
+} from "@sergeant/routine-domain";
 import { anchoredTodayDate } from "../lib/dayAnchor";
 import { WEEKDAY_LABELS } from "../lib/routineConstants";
 import type { Habit } from "../lib/types";
@@ -113,7 +118,17 @@ export function HabitMonthCalendar({
         {cells.map((day, i) => {
           if (day === null) return <div key={`e${i}`} />;
           const dk = `${calMonth.y}-${String(calMonth.m + 1).padStart(2, "0")}-${String(day).padStart(2, "0")}`;
-          const scheduled = habitScheduledOnDate(habit, dk);
+          // Гнучка звичка («N разів на тиждень») перестає бути запланованою,
+          // щойно тижневу ціль добрано — без `weekDoneCount` предикат завжди
+          // істинний (`schedule.ts`), тож клітинка місяця показувала б
+          // «заплановано» навіть після закритого тижня (аудит 2026-09,
+          // PR-R4, той самий клас, що й денний звіт/bulk-mark/нагадування).
+          const weekDoneCount = isFlexibleHabit(habit)
+            ? weekDoneCountExcludingDate(completions, dk)
+            : undefined;
+          const scheduled = habitScheduledOnDate(habit, dk, {
+            weekDoneCount,
+          });
           const done = completionSet.has(dk);
           const isToday = dk === todayKey;
           return (

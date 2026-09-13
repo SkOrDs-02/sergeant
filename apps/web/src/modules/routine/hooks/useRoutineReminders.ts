@@ -12,6 +12,10 @@ import {
   useModuleReminder,
 } from "@shared/hooks/useModuleReminder";
 import { habitScheduledOnDate } from "../lib/hubCalendarAggregate";
+import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+} from "@sergeant/routine-domain";
 import { normalizeReminderTimes } from "../lib/routineDraftUtils";
 import {
   getRoutineReminderPrivacy,
@@ -76,8 +80,15 @@ export function useRoutineReminders(routine: RoutineState): void {
         const times = normalizeReminderTimes(h);
         if (times.length === 0) continue;
         if (!times.includes(hm)) continue;
-        if (!habitScheduledOnDate(h, dk)) continue;
         const completions = r.completions[h.id] || [];
+        // Гнучка звичка («N разів на тиждень») перестає бути запланованою,
+        // щойно тижневу ціль добрано — без `weekDoneCount` предикат завжди
+        // істинний (`schedule.ts`), тож звичка «3 рази на тиждень»,
+        // виконана 3/3, щодня слала б нагадування (аудит 2026-09, PR-R4).
+        const weekDoneCount = isFlexibleHabit(h)
+          ? weekDoneCountExcludingDate(completions, dk)
+          : undefined;
+        if (!habitScheduledOnDate(h, dk, { weekDoneCount })) continue;
         if (completions.includes(dk)) continue;
 
         const storageKey = `${ROUTINE_NOTIFY_PREFIX}${h.id}_${hm}_${dk}`;

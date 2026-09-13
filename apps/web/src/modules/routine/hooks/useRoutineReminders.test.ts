@@ -269,4 +269,48 @@ describe("useRoutineReminders — scheduler", () => {
 
     expect(showNotificationMock).not.toHaveBeenCalled();
   });
+
+  /**
+   * PR-R4 (аудит 2026-09): `habitScheduledOnDate` для `flexible` без
+   * `weekDoneCount` завжди істинний, тож звичка «3 рази на тиждень»,
+   * виконана 3/3, щодня слала б нагадування. KYIV_TODAY (2026-06-04,
+   * четвер) належить тижню Пн 2026-06-01..Нд 2026-06-07 — три відмітки
+   * пн/вт/ср добирають дефолтну ціль (3) ДО сьогодні.
+   */
+  it("flexible habit: тижневу ціль уже добрано → нагадування не шле", async () => {
+    installNotificationApi("granted");
+    const base = makeState([
+      makeHabit({ id: "h1", name: "Спорт", recurrence: "flexible" }),
+    ]);
+    const state: RoutineState = {
+      ...base,
+      completions: { h1: ["2026-06-01", "2026-06-02", "2026-06-03"] },
+    };
+
+    renderHook(() => useRoutineReminders(state));
+    await flushMicrotasks();
+
+    expect(showNotificationMock).not.toHaveBeenCalled();
+  });
+
+  /**
+   * Guard проти надто агресивного фіксу вище: гнучка звичка, що ЩЕ не
+   * добрала тижневу ціль, і далі нагадує звично — фікс лише вимикає
+   * нагадування, коли ціль справді закрита.
+   */
+  it("flexible habit: тижневу ціль ще НЕ добрано → нагадування шле як раніше", async () => {
+    installNotificationApi("granted");
+    const base = makeState([
+      makeHabit({ id: "h1", name: "Спорт", recurrence: "flexible" }),
+    ]);
+    const state: RoutineState = {
+      ...base,
+      completions: { h1: ["2026-06-01"] }, // 1 з 3 цього тижня
+    };
+
+    renderHook(() => useRoutineReminders(state));
+    await flushMicrotasks();
+
+    expect(showNotificationMock).toHaveBeenCalledTimes(1);
+  });
 });

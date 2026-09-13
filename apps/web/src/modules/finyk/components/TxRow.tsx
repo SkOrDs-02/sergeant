@@ -26,6 +26,8 @@ interface TxRowProps {
   onClick?: ((() => void) | null) | undefined;
   highlighted?: boolean | undefined;
   hidden?: boolean | undefined;
+  /** «Не враховувати у статистиці» (PR-F4) — рендерить маркер у мета-рядку. */
+  isExcludedFromStats?: boolean | undefined;
   overrideCatId?: string | null | undefined;
   /** User's own free-text annotation for this transaction. */
   note?: string | undefined;
@@ -50,6 +52,7 @@ function TxRowImpl({
   onClick,
   highlighted,
   hidden,
+  isExcludedFromStats = false,
   overrideCatId,
   note,
   accounts,
@@ -137,6 +140,7 @@ function TxRowImpl({
           isCreditCard={isCreditCard}
           account={account}
           accountName={accountName}
+          isExcludedFromStats={isExcludedFromStats}
           showAccount={(accounts?.length ?? 0) > 1}
           hasReceipt={hasReceipt}
           note={note}

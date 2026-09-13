@@ -461,6 +461,7 @@ export function useRoutineAppState({
       currentStreak: derived.streakMax,
       completionRate: derived.completionRateVal,
       dayProgress: derived.dayProgress,
+      progressDayKey: derived.progressDayKey,
       timeMode: time.timeMode,
       selectedDay: time.selectedDay,
       todayKey: derived.todayKey,

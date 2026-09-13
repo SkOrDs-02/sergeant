@@ -330,6 +330,61 @@ describe("Budgets page", () => {
     expect(screen.getByText(/2\s?600\s*\/\s*2\s?000/)).toBeInTheDocument();
   });
 
+  // PR-F3 (founder-UX audit wave 6, «Чесність показників»): `showBalance`
+  // reached `Budgets` but the page never destructured it, so «Приховати
+  // суми» on Overview left every money figure on Планування visible one
+  // swipe away. Regression-guards the full thread: MonthlyPlanCard's
+  // Plan/Fact/Δ grid AND LimitBudgetCard's «витрачено / ліміт» line.
+  it("masks Планування money (plan grid + limit card) when showBalance=false", () => {
+    const budgets: Budget[] = [
+      {
+        id: "b1",
+        type: "limit",
+        categoryId: "food",
+        limit: 5000,
+      } as unknown as Budget,
+    ];
+    const { container } = renderBudgets({
+      showBalance: false,
+      storage: buildStorage({ budgets }),
+      focusLimitCategoryId: "food",
+    });
+    // Expand the monthly-plan card to reach its Plan/Fact/Δ grid.
+    fireEvent.click(screen.getByRole("button", { name: /Фінплан на місяць/ }));
+
+    const flatText = (container.textContent ?? "").replace(/\s/g, "");
+    // Default `monthlyPlan` from `buildStorage` — income 30000 / expense
+    // 20000 / savings 5000 — must not leak as formatted numbers anywhere
+    // on the page, and the limit's own "0 / 5000" must not either.
+    expect(flatText).not.toContain("30000");
+    expect(flatText).not.toContain("20000");
+    expect(flatText).not.toMatch(/0\/5000/);
+    // Both the plan grid and the limit card fall back to the mask glyph.
+    expect(screen.getAllByText("••••").length).toBeGreaterThanOrEqual(2);
+  });
+
+  // Same page with showBalance defaulted to `true` (the pre-fix behaviour)
+  // must keep showing real numbers — guards against a mask that always
+  // fires regardless of the prop.
+  it("shows real money on Планування when showBalance=true (default)", () => {
+    const budgets: Budget[] = [
+      {
+        id: "b1",
+        type: "limit",
+        categoryId: "food",
+        limit: 5000,
+      } as unknown as Budget,
+    ];
+    const { container } = renderBudgets({
+      storage: buildStorage({ budgets }),
+      focusLimitCategoryId: "food",
+    });
+    fireEvent.click(screen.getByRole("button", { name: /Фінплан на місяць/ }));
+    const flatText = (container.textContent ?? "").replace(/\s/g, "");
+    expect(flatText).toContain("30000");
+    expect(screen.queryByText("••••")).not.toBeInTheDocument();
+  });
+
   it("counts a manual `cafe` expense against a «Кафе та ресторани» limit", () => {
     const manualExpenses = [
       {

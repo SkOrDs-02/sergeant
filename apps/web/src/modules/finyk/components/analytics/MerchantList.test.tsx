@@ -51,6 +51,24 @@ describe("MerchantList", () => {
     expect(container.textContent).not.toContain(",00");
   });
 
+  // PR-F3 (founder-UX audit wave 6, «Чесність показників»): the list never
+  // accepted `showBalance`, so «Топ продавці» amounts stayed visible after
+  // «Приховати суми» on Overview.
+  it("masks merchant amounts when showBalance=false", () => {
+    render(
+      <MerchantList
+        merchants={[
+          { name: "Сільпо", total: 5000, count: 12 },
+          { name: "АТБ", total: 2500, count: 3 },
+        ]}
+        showBalance={false}
+      />,
+    );
+    expect(screen.queryByText(/5\s?000/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/2\s?500/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("••••").length).toBe(2);
+  });
+
   it("needsKopecks flags only totals that round away entirely", () => {
     expect(needsKopecks(0.01)).toBe(true);
     expect(needsKopecks(0.4)).toBe(true);

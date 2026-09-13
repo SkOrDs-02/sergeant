@@ -29,6 +29,8 @@ export interface BudgetsLimitsSectionProps {
   limitBudgets: LimitBudget[];
   budgets: Budget[];
   setBudgets: Dispatch<SetStateAction<Budget[]>>;
+  /** «Приховати суми» (PR-F3) — прокидається в кожну `LimitBudgetCard`. */
+  showBalance?: boolean;
   editIdx: number | null;
   setEditIdx: Dispatch<SetStateAction<number | null>>;
   customCategories: Category[] | undefined;
@@ -59,6 +61,7 @@ export function BudgetsLimitsSection({
   limitBudgets,
   budgets,
   setBudgets,
+  showBalance = true,
   editIdx,
   setEditIdx,
   customCategories,
@@ -219,6 +222,7 @@ export function BudgetsLimitsSection({
                 }}
                 categoryLabel={catLabel}
                 customCategories={customCategories ?? []}
+                showBalance={showBalance}
                 breakdown={breakdown}
                 spent={usage.spent}
                 pctRaw={usage.pctRaw}
