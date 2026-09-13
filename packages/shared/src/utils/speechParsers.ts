@@ -48,6 +48,18 @@ import { foldApostrophes } from "./ukApostrophe";
 const NOT_WORD_CHAR = "(?![\\p{L}\\p{N}])";
 
 /**
+ * Кирилична літера — для лукахедів після КОРОТКИХ одиниць («г», «гр»).
+ *
+ * AI-DANGER: живе на рівні модуля НАВМИСНО. Доти він був локальною
+ * константою всередині `parseMealSpeech`, тож захист `гр(?!CYR)` стояв лише
+ * там — а `CURRENCY` у парсері витрат мав голе «гр» і зʼїдав «двісті
+ * грамів» як «двісті грн». «Сир двісті грамів сто пʼятдесят гривень»
+ * давало суму 200 замість 150: число знаходилось, тож збою не було видно.
+ * Та сама форма, що й з `\b` вище — знання жило на одному шляху.
+ */
+const CYR_LETTER = "[а-яА-ЯёЁєЄіІїЇґҐ]";
+
+/**
  * Число з відсіченим бектрекінгом.
  *
  * AI-DANGER: `(?!\\d)` наприкінці — не косметика, а захист від
@@ -215,6 +227,49 @@ const UA_NUMBER_WORDS: Record<string, number> = {
 };
 
 /**
+ * Множники — слова, що МНОЖАТЬ накопичене, а не додаються до нього.
+ *
+ * «сто» і «сотня» не синоніми, і саме тому «сотня» не може лежати в таблиці
+ * вище зі значенням 100: «сто двадцять» = 120 (додавання), «дві сотні» =
+ * 200 (множення). У спільній таблиці «дві сотні» дало б 102.
+ *
+ * `тисяча` історично лишається вище й обробляється порівнянням `v === 1000`
+ * — нові множники додавай сюди.
+ */
+const UA_MULTIPLIER_WORDS: Record<string, number> = {
+  сотня: 100,
+  сотні: 100,
+  сотень: 100,
+  сотнею: 100,
+};
+
+/** Розряд, вище за будь-який реальний: скидає перевірку спадання. */
+const TIER_ANY = 6;
+
+/**
+ * Розряд числівника: 0 — дробовий залишок, 1 — одиниці, 2 — «-надцять»,
+ * 3 — десятки, 4 — сотні, 5 — тисячі.
+ *
+ * AI-CONTEXT: існує, щоб відрізнити СКЛАДЕНЕ число від двох сусідніх.
+ * Українське складене число іде строго за спаданням розряду («сто двадцять
+ * пʼять»), тож «пʼять три» — не 8, а два окремі числа.
+ *
+ * Без цієї перевірки «присів сто на пʼять три підходи» давало **8
+ * підходів**: прийменник «на» рве пробіг (він не числівник), далі «пʼять
+ * три» стоять поруч і накопичувач їх додає — рівно так, як мусить додавати
+ * «двадцять пʼять». Найгірший різновид збою: число не просто хибне, воно
+ * ПРАВДОПОДІБНЕ, тож людина його не перевіряє.
+ */
+function numeralTier(v: number): number {
+  if (v < 1) return 0;
+  if (v < 10) return 1;
+  if (v < 20) return 2;
+  if (v < 100) return 3;
+  if (v < 1000) return 4;
+  return 5;
+}
+
+/**
  * Склеює «з половиною» (та «із/та половиною») в один токен `зполовиною`.
  *
  * Потрібно саме до токенізації: пробіг числівників у `normalizeUaNumbers`
@@ -312,6 +367,13 @@ export function parseUaNumber(text: string): number | null {
   for (const raw of words) {
     const w = stripWordPunctuation(raw);
     // Цифра рівноправна зі словом: «2 зполовиною тисячі» — одне число.
+    const mult = UA_MULTIPLIER_WORDS[w];
+    if (mult != null) {
+      matched = true;
+      total += (current || 1) * mult;
+      current = 0;
+      continue;
+    }
     const v = digitTokenValue(w) ?? UA_NUMBER_WORDS[w];
     if (v == null) continue;
     matched = true;
@@ -351,7 +413,8 @@ export function normalizeUaNumbers(text: string): string {
   while (i < words.length) {
     const wi = words[i] ?? "";
     const clean = stripWordPunctuation(wi).toLowerCase();
-    const isWord = UA_NUMBER_WORDS[clean] != null;
+    const isWord =
+      UA_NUMBER_WORDS[clean] != null || UA_MULTIPLIER_WORDS[clean] != null;
     // Пробіг може починатись і з ЦИФРИ — але тільки якщо далі йде
     // число-слово. Інакше «2 з половиною тисячі» розпадалось на «2» окремо
     // і «зполовиною тисячі» = 500, а сума виходила вп'ятеро меншою.
@@ -373,6 +436,13 @@ export function normalizeUaNumbers(text: string): string {
     // Collect a contiguous run of number-words, breaking at punctuation
     // attached to a previous word in the run.
     const runWords: string[] = [clean];
+    // Розряд останнього ДОДАНОГО числівника. Множник («сотня», «тисяча») його
+    // скидає: після множення наступний доданок знову може бути будь-якого
+    // розряду — «дві тисячі двісті».
+    let prevTier =
+      UA_MULTIPLIER_WORDS[clean] != null
+        ? TIER_ANY
+        : numeralTier(digitTokenValue(clean) ?? UA_NUMBER_WORDS[clean] ?? 0);
     let j = i + 1;
     while (j < words.length) {
       // If the previous word ended with separator punctuation, stop the run
@@ -381,8 +451,20 @@ export function normalizeUaNumbers(text: string): string {
       const prev = words[j - 1] ?? "";
       if (PUNCT_BREAK.test(prev)) break;
       const c = stripWordPunctuation(words[j] ?? "").toLowerCase();
-      if (UA_NUMBER_WORDS[c] == null) break;
+      if (UA_MULTIPLIER_WORDS[c] != null) {
+        runWords.push(c);
+        prevTier = TIER_ANY;
+        j++;
+        continue;
+      }
+      const v = UA_NUMBER_WORDS[c];
+      if (v == null) break;
+      // Складене число іде за СПАДАННЯМ розряду («сто двадцять пʼять»).
+      // Рівний або вищий розряд означає, що почалось нове число: «пʼять три»
+      // — це 5 і 3, а не 8. Див. `numeralTier`.
+      if (v !== 1000 && numeralTier(v) >= prevTier) break;
       runWords.push(c);
+      prevTier = v === 1000 ? TIER_ANY : numeralTier(v);
       j++;
     }
     const n = parseUaNumber(runWords.join(" "));
@@ -408,8 +490,15 @@ export function normalizeUaNumbers(text: string): string {
  * найдовший, тож «грн» перед «гривень» зʼїло б три літери й лишило «ивень».
  * `NOT_WORD_CHAR` після групи це теж ловить, але покладатись на бектрекінг
  * там, де достатньо порядку, — зайвий ризик.
+ *
+ * `гр(?!CYR)` — окрема історія. Порядок тут не рятує: у «двісті грамів»
+ * немає довшої валютної альтернативи, тож голе «гр» матчилось і сума
+ * бралася з ГРАМІВ. «Сир двісті грамів сто пʼятдесят гривень» давало 200 ₴
+ * замість 150 — збою не видно, бо число знайшлось. Регекс ПОШУКУ суми
+ * якорів не має (`NUM\\s*CURRENCY`), тож лукахед мусить сидіти в самій
+ * альтернативі, а не після групи.
  */
-const CURRENCY = "(?:гривень|гривні|гривня|гривен|грн|гр|₴|uah)";
+const CURRENCY = `(?:гривень|гривні|гривня|гривен|грн|гр(?!${CYR_LETTER})|₴|uah)`;
 
 export interface ParsedExpense {
   name: string;
@@ -438,9 +527,17 @@ export function parseExpenseSpeech(text: string): ParsedExpense | null {
     amount = parseUaNumber(text);
   }
 
+  // Одиниця КІЛЬКОСТІ, не валюти. «Сир двісті грамів сто пʼятдесят гривень»
+  // лишало опис «Сир грамів»: число зачистка знімала, а слово при ньому — ні,
+  // бо парсер витрат про грами нічого не знав. Валютний лукахед цього не
+  // покриває — він захищає СУМУ, а не назву.
+  const QTY_UNIT =
+    "(?:грам\\p{L}*|мілілітр\\p{L}*|кілограм\\p{L}*|кіло(?!калор)\\p{L}*" +
+    "|штук\\p{L}*|літр\\p{L}*|кг|мл|шт)";
   let name = norm
     .replace(new RegExp(`${NUM}\\s*${CURRENCY}?${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(new RegExp(`${CURRENCY}${NOT_WORD_CHAR}`, "giu"), " ")
+    .replace(new RegExp(`${QTY_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(/\s+/g, " ")
     .trim();
 
@@ -483,9 +580,13 @@ export function parseWorkoutSetSpeech(text: string): ParsedWorkoutSet | null {
   const norm = normalizeUaNumbers(capInput(text));
   const lower = norm.toLowerCase();
 
+  // `кіло(?!калор)` — «сто кіло» це найчастіша усна форма в залі, і доти вона
+  // давала вагу `null`. Лукахед відсікає «кілокалорії»: у Фізруку вони
+  // трапляються рідко, але впевнено неправильна вага гірша за відсутню.
   const weightMatch =
-    lower.match(new RegExp(`${NUM}\\s*(?:кг|kg|кілограм|килограм)`, "iu")) ||
-    lower.match(new RegExp(`${NUM}\\s*(?:lb|lbs|фунт)`, "iu"));
+    lower.match(
+      new RegExp(`${NUM}\\s*(?:кг|kg|кіло(?!калор)|кілограм|килограм)`, "iu"),
+    ) || lower.match(new RegExp(`${NUM}\\s*(?:lb|lbs|фунт)`, "iu"));
 
   const repsMatch =
     lower.match(
@@ -514,10 +615,47 @@ export function parseWorkoutSetSpeech(text: string): ParsedWorkoutSet | null {
   let sets: number | null = null;
   if (setsMatch) sets = parseInt(setsMatch[1] ?? setsMatch[2] ?? "", 10);
 
+  // «вісімдесят на вісім» — найпоширеніша форма в залі, і доти вона давала
+  // ТРИ `null`, тобто `WorkoutItemCard` мовчки викидав фразу цілком (див.
+  // guard у docstring вище). Одиниця в ній не звучить узагалі: «на» і Є
+  // одиницею, вона розділяє вагу й повтори.
+  //
+  // Стоїть ПІСЛЯ основних регексів і лише доповнює: «80 кг на 8 разів» уже
+  // розібрано явними одиницями, і перезаписувати їх здогадом не можна.
+  // Тому кожне поле береться, тільки якщо лишилось порожнім.
+  if (weight == null || reps == null) {
+    const byPreposition = lower.match(
+      new RegExp(`${NUM}\\s*(?:кг|kg|кіло\\p{L}*)?\\s*на\\s+${INT}`, "iu"),
+    );
+    if (byPreposition?.[1] && byPreposition[2]) {
+      if (weight == null)
+        weight = parseFloat(byPreposition[1].replace(",", "."));
+      if (reps == null) reps = parseInt(byPreposition[2], 10);
+    }
+  }
+
+  // «три підходи ПО десять» — та сама конструкція, що й «X на Y», лише
+  // прийменник інший, і повтори там теж не мають одиниці. Лукахед відсікає
+  // «по 80 кг»: там число після «по» — це вага, а не повтори.
+  //
+  // AI-DANGER: межа зліва — лукбігайнд, НЕ `\b`. Перед «п» той якір не
+  // спрацьовує ніколи (див. `NOT_WORD_CHAR` угорі файлу), тож `\bпо` було б
+  // тихим no-op — саме той різновид збою, який цей файл уже ловив двічі.
+  if (reps == null) {
+    const byPo = lower.match(
+      new RegExp(
+        `(?<![\\p{L}\\p{N}])по\\s+${INT}(?!\\s*(?:кг|kg|кіло|lb))`,
+        "iu",
+      ),
+    );
+    if (byPo?.[1]) reps = parseInt(byPo[1], 10);
+  }
+
   // `\\p{L}*` після кириличного кореня з`їдає відмінкове закінчення
   // («кілограм» + «ів»), якого ASCII-`\\w*` не бачить.
   const WEIGHT_UNIT =
-    "(?:кілограм\\p{L}*|килограм\\p{L}*|фунт\\p{L}*|кг|kg|lbs|lb)";
+    "(?:кілограм\\p{L}*|килограм\\p{L}*|кіло(?!калор)\\p{L}*|фунт\\p{L}*" +
+    "|кг|kg|lbs|lb)";
   // `підх[іо]д` — не друкарська помилка: в українській корінь чергує
   // і↔о («підхід» → «підходи»), тож самого `підхід\\p{L}*` мало.
   const COUNT_UNIT =
@@ -546,6 +684,10 @@ export function parseWorkoutSetSpeech(text: string): ParsedWorkoutSet | null {
     // тобто дані користувача. Після `\s+`→` ` і `trim()` пробільних
     // хвостів не лишається, тож літерального пробілу і `$` досить.
     .replace(/ (?:по|на|за|в|у|із|з)$/iu, "")
+    // Прийменник, що лишився САМ — «три підходи по десять» давало назву
+    // «По». Попередній крок його не бере: він вимагає пробіл ліворуч, а тут
+    // прийменник і є весь рядок.
+    .replace(/^(?:по|на|за|в|у|із|з)$/iu, "")
     .trim();
 
   if (!exerciseName) exerciseName = null;
@@ -587,19 +729,27 @@ export function parseMealSpeech(text: string): ParsedMeal | null {
   // Prefer multi-letter alternations first; "гр"/"г" alone use a Cyrillic-aware
   // negative lookahead so they don't gobble "гречка". JS `\b` is ASCII-only and
   // doesn't fire between two Cyrillic chars even with the /u flag.
-  const CYR = /[а-яА-ЯёЁєЄіІїЇґҐ]/.source;
+  const CYR = CYR_LETTER;
+
+  /**
+   * Білок. `грам\p{L}*` поруч із голим `г` — бо вголос люди кажуть саме
+   * «тридцять ГРАМІВ білка», а розпізнавалось лише скорочене «30 г білка».
+   * Довша альтернатива стоїть першою: JS бере перший збіг, не найдовший.
+   */
+  const PROTEIN_UNIT =
+    "(?:(?:грам\\p{L}*|г)\\s*(?:білка|білку|протеїн\\p{L}*)" +
+    "|g\\s*protein|protein)";
+
   const gramsRe = new RegExp(
-    `${NUM}\\s*(?:грам|гр(?!${CYR})|г(?!${CYR})|g\\b|ml|мл)`,
+    `${NUM}\\s*(?:грам\\p{L}*|мілілітр\\p{L}*|гр(?!${CYR})|г(?!${CYR})` +
+      `|g\\b|ml|мл)`,
     "iu",
   );
   const gramsMatch =
     lower.match(gramsRe) || lower.match(/(?:грам|гр)\s*(\d+(?:[.,]\d+)?)/iu);
 
   const proteinMatch = lower.match(
-    new RegExp(
-      `${NUM}\\s*(?:г\\s*білка|г\\s*протеїну|g\\s*protein|protein)`,
-      "iu",
-    ),
+    new RegExp(`${NUM}\\s*${PROTEIN_UNIT}`, "iu"),
   );
 
   let kcal: number | null = null;
@@ -613,15 +763,34 @@ export function parseMealSpeech(text: string): ParsedMeal | null {
   if (proteinMatch?.[1])
     protein = parseFloat(proteinMatch[1].replace(",", "."));
 
+  // Вага страви і вага білка — РІЗНІ числа, а грамовий регекс бачить у
+  // «тридцять грамів білка» свої «30 грам» і повертає страву вагою 30 г,
+  // хоча про вагу страви не сказано нічого.
+  //
+  // AI-DANGER: розводиться ПОЗИЦІЄЮ збігу, а не лукахедом на одиниці. Форма
+  // `грам\p{L}*(?!\s*білка)` виглядає правильною і НЕ працює: `\p{L}*`
+  // жадібний, лукахед падає, рушій вкорочує його до «грамі» — і тоді
+  // праворуч стоїть «в білка», лукахед проходить. Збіг той самий, захисту
+  // немає. Порівняння індексів бектрекінгу не має взагалі.
+  if (
+    grams != null &&
+    protein != null &&
+    gramsMatch?.index != null &&
+    gramsMatch.index === proteinMatch?.index
+  ) {
+    grams = null;
+  }
+
   // Strip recognized number-units from the name. Same Cyrillic-aware
   // lookahead trick for "гр"/"г" so we don't munch food-name prefixes.
   // «кілокалор»/«калор» — корені, не слова: далі йде «ій»/«ії». Тому
   // `\\p{L}*`, інакше межа одразу після кореня не збіглася б.
   const KCAL_UNIT = "(?:ккал|кілокалор\\p{L}*|калор\\p{L}*|kcal|cal)";
-  // Порядок альтернатив вирішує: `г\\s*білка` мусить стояти ПЕРЕД голим
-  // `г`, інакше «30 г білка» дасть «білка» в назві страви.
+  // Порядок альтернатив вирішує: білкова група мусить стояти ПЕРЕД голими
+  // `грам`/`г`, інакше «30 грамів білка» лишить «білка» в назві страви —
+  // рівно так і виглядала назва «Омлет білка».
   const MEAL_UNIT =
-    `(?:${KCAL_UNIT}|г\\s*білка|g\\s*protein|protein|грам\\p{L}*` +
+    `(?:${KCAL_UNIT}|${PROTEIN_UNIT}|грам\\p{L}*|мілілітр\\p{L}*` +
     `|гр(?!${CYR})|г(?!${CYR})|g|ml|мл)`;
 
   // ТРИ ФАЗИ, і порядок тут не косметичний. Раніше зачистка йшла парами
