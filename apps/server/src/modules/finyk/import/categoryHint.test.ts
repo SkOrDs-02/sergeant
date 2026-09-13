@@ -133,3 +133,47 @@ describe("resolveCategoryHint — порядок доказів", () => {
     ).toBeNull();
   });
 });
+
+describe("зняття готівки → внутрішній переказ", () => {
+  // Звіт власника 2026-09-13: рядок «Зняття готівки в банкоматі» у превʼю
+  // виписки їхав у «Інше» і рахувався витратою, хоча гроші ще в кишені.
+  it("мапить MCC банкомата й каси банку", () => {
+    expect(mapMccCell("6011")).toBe("internal_transfer");
+    expect(mapMccCell("6010")).toBe("internal_transfer");
+  });
+
+  it("не чіпає сусідні фінустанови (6012/6051 — не готівка)", () => {
+    expect(mapMccCell("6012")).not.toBe("internal_transfer");
+    expect(mapMccCell("6051")).not.toBe("internal_transfer");
+  });
+
+  it.each([
+    "Зняття готівки в банкоматі",
+    "ВИДАЧА ГОТІВКИ",
+    "  Отримання готівки  ",
+    "Зняття коштів",
+    "ATM Privatbank",
+  ])("ловить опис без колонки MCC: «%s»", (description) => {
+    expect(mapDescription(description, "expense")).toBe("internal_transfer");
+  });
+
+  it("працює наскрізь через resolveCategoryHint — і MCC, і самим описом", () => {
+    expect(
+      resolveCategoryHint({
+        direction: "expense",
+        mcc: "6011",
+        description: "Зняття готівки в банкоматі",
+      }),
+    ).toBe("internal_transfer");
+    expect(
+      resolveCategoryHint({
+        direction: "expense",
+        description: "Зняття готівки в банкоматі",
+      }),
+    ).toBe("internal_transfer");
+  });
+
+  it("не перехоплює звичайну витрату зі словом «готівка» у назві мерчанта", () => {
+    expect(mapDescription("Сільпо", "expense")).toBe("food");
+  });
+});
