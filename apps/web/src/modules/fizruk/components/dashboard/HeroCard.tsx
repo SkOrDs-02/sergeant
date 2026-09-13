@@ -25,7 +25,7 @@
  * this component stays pure/presentational so it can be storybooked and
  * unit-tested in isolation.
  *
- * Спека `docs/90-work/planning/specs/fizruk-hero-recovery-bars.md` added a
+ * Спека `docs/work/specs/fizruk-hero-recovery-bars.md` added a
  * fifth cross-cutting concern in `today` / `upcoming` / `empty` (never
  * `active` — рішення 2): up to six "стан тіла" rows under the kicker
  * (`HeroRecoveryBars.tsx`), and folded the streak/week readout that used to

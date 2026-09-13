@@ -4,7 +4,7 @@
  * Replaces the row-based onboarding wizard as the cold-start surface
  * on `/welcome`: the user picks 1-4 modules from a 2x2 (mobile) / 4-col
  * (tablet+) grid before landing on the Hub. The picker IS the tour —
- * see `docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`
+ * see `docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`
  * D4 for the locked product call.
  *
  * Storage contract: this component is presentational. The host

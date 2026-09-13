@@ -53,7 +53,7 @@
 // tests in `apps/server/src/modules/chat/*.test.ts`,
 // `apps/server/src/modules/nutrition/*.test.ts`, and
 // `apps/server/src/modules/sync/*.test.ts`. See
-// `docs/architecture/api-contracts.md § Extending coverage`.
+// `docs/engineering/architecture/api-contracts.md § Extending coverage`.
 //
 // The 9 new receipt-scan/bulk-import routes are likewise `it.todo`
 // gap-marked below (§ "Finyk receipt-scan + bulk-import — explicit gap
@@ -952,7 +952,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
   //
   // We instead lock the pact contract to a fixed expected wire-shape
   // and leave a `todo` marker so future maintenance knows where to
-  // extend coverage. See `docs/architecture/api-contracts.md
+  // extend coverage. See `docs/engineering/architecture/api-contracts.md
   // § Extending coverage`.
   it.todo(
     "POST /api/v1/chat — replay against real chat handler (requires streaming Anthropic stub)",

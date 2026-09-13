@@ -637,7 +637,7 @@ export const paths: ZodOpenApiPathsObject = {
   // резолвляться за сесією. Раніше вони приходили в заголовках
   // `X-Privat-Id`/`X-Privat-Token`, через що клієнт мусив тримати
   // merchant-токен у браузері, а проксі був анонімним — спека
-  // `docs/90-work/planning/specs/beta-security-readiness.md` (F1/F3).
+  // `docs/work/specs/beta-security-readiness.md` (F1/F3).
   "/api/privat": {
     get: {
       summary: "PrivatBank API proxy (credentials resolved from session)",
@@ -844,7 +844,7 @@ export const paths: ZodOpenApiPathsObject = {
   },
 
   // ────────────────────── Чек-скан v1 (/api/finyk/receipts/*) ───────────────
-  // Спека: `docs/90-work/planning/specs/receipt-scan.md` § API-контракт.
+  // Спека: `docs/work/specs/receipt-scan.md` § API-контракт.
   // 413/415 на `/analyze` — НЕ канонічний `ApiError`-envelope (жодного
   // `error`/`message`/`requestId`) — сервер віддає
   // `{code, detail, declared_mime?, detected_mime?}` напряму з
@@ -993,7 +993,7 @@ export const paths: ZodOpenApiPathsObject = {
   },
 
   // ────────────────────── Масове ведення (/api/finyk/import/*) ──────────────
-  // Спека: `docs/90-work/planning/specs/receipt-scan.md` § Фаза 2.
+  // Спека: `docs/work/specs/receipt-scan.md` § Фаза 2.
   "/api/finyk/import/screenshot/analyze": {
     post: {
       summary: "Vision-розпізнавання скріна банкінгу — draft БЕЗ запису в БД",
@@ -1599,7 +1599,7 @@ export const paths: ZodOpenApiPathsObject = {
     },
   },
   // ────────────────────── Silpo MCP integration (walking-skeleton) ──────────
-  // Spec: `docs/90-work/planning/specs/silpo-mcp-integration.md`. All routes
+  // Spec: `docs/work/specs/silpo-mcp-integration.md`. All routes
   // gated by `requireSession()` + `SILPO_ENABLED` kill switch (503
   // `SILPO_DISABLED` when off — shared across every path below).
   "/api/silpo/connect": {

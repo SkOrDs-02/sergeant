@@ -24,7 +24,7 @@ import { z } from "zod";
 /**
  * A single normalised product row returned by any of the FOUR barcode
  * upstreams (Open Food Facts / USDA Branded Foods / UPCitemdb / Silpo MCP —
- * `"silpo"` added per `docs/90-work/planning/specs/silpo-mcp-integration.md`
+ * `"silpo"` added per `docs/work/specs/silpo-mcp-integration.md`
  * § "Продуктові дані — четверте джерело каскаду"; Silpo only ever appears
  * for the requesting user's own linked account, never as a shared/service
  * source — see `apps/server/src/modules/silpo/foodSource.ts`). Every

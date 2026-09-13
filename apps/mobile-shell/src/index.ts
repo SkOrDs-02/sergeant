@@ -158,7 +158,7 @@ export function isSafeShellPath(path: string): boolean {
  *   - `applinks.details[].appIDs` у `/.well-known/apple-app-site-association` цього хоста;
  *   - `target.package_name` у `/.well-known/assetlinks.json` цього хоста.
  *
- * Список синхронізований з `docs/mobile/overview.md` (секція CORS — «prod»-хости):
+ * Список синхронізований з `docs/engineering/mobile/overview.md` (секція CORS — «prod»-хости):
  *   - `sergeant.vercel.app` — Vercel-preview і прод-дефолт;
  *   - `sergeant.2dmanager.com.ua` — попередній кастомний домен;
  *   - `app.sergeant.com.ua` — цільовий prod-домен.
@@ -281,7 +281,7 @@ function isDarkTheme(): boolean {
  *      для хостів з `DEEP_LINK_HTTPS_HOSTS`. Потребує валідних
  *      `.well-known/assetlinks.json` (Android) та
  *      `.well-known/apple-app-site-association` (iOS) — див.
- *      `docs/mobile/capacitor-deep-links.md`.
+ *      `docs/engineering/mobile/capacitor-deep-links.md`.
  *
  * Обидві форми повертають ту саму канонічну React-Router path, щоби
  * user-facing навігаційна логіка (роутер, analytics, A/B) була єдина.

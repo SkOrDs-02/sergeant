@@ -192,7 +192,7 @@ const envSchema = z.object({
 
   // `AI_DAILY_ANON_LIMIT` прибрано: анонімної гілки квоти більше немає —
   // `/api/chat` та решта AI-роутів стоять за `requireSession()` (A1,
-  // `docs/90-work/audits/ai-abuse-2026-08-05.md`), тож дожити до квоти без
+  // `docs/work/specs/audits/ai-abuse-2026-08-05.md`), тож дожити до квоти без
   // сесії неможливо. Схема не `.strict()`, тому змінна, що ще лишилась в
   // ops-конфігу, просто ігнорується.
 
@@ -332,7 +332,7 @@ const envSchema = z.object({
   PUBLIC_API_BASE_URL: z.string().optional(),
 
   // ─── Silpo MCP integration (walking-skeleton experiment, 2026-08-17) ────
-  // Spec: docs/90-work/planning/specs/silpo-mcp-integration.md § Експеримент.
+  // Spec: docs/work/specs/silpo-mcp-integration.md § Експеримент.
   // Exact parity with the MONO_TOKEN_ENC_KEY* triplet above — same KeyRing
   // helper (`parseKeyRing`), same validation shape below. Default `false`:
   // merging this experiment must never turn the integration on by itself
@@ -418,7 +418,7 @@ const envSchema = z.object({
    * зламати, — але тепер його видно і його можна замінити змінною оточення.
    *
    * Дослідження джерел і рекомендована послідовність дій:
-   * `docs/90-work/research/2026-07-25-barcode-sources-and-moderation.md`.
+   * `docs/work/research/2026-07-25-barcode-sources-and-moderation.md`.
    */
   UPCITEMDB_BASE_URL: stringWithDefault("https://api.upcitemdb.com/prod/trial"),
 
@@ -441,7 +441,7 @@ const envSchema = z.object({
   /**
    * Персональний токен ДПС (Електронний кабінет → «Токени публічної
    * частини») для `GET /ws/api_public/rro/chkAll` — чек-скан v1, QR/ДПС-шлях
-   * (`docs/90-work/planning/specs/receipt-scan.md`). Один спільний токен
+   * (`docs/work/specs/receipt-scan.md`). Один спільний токен
    * founder-а на всіх користувачів — дані чека публічні. Відсутність —
    * толерантний стан: `POST /api/finyk/receipts/lookup` віддає 503 з
    * людським повідомленням; vision-шлях (`/analyze`) від цього не залежить.
@@ -827,7 +827,7 @@ export function assertStartupEnv(): void {
   if (env.AI_MEMORY_ENABLED && !env.VOYAGE_API_KEY) {
     if (isProduction) {
       throw new Error(
-        "VOYAGE_API_KEY is required in production when AI_MEMORY_ENABLED=true. Without it embedding-calls throw MissingVoyageApiKeyError on first request (HTTP 503 у /api/ai-memory/recall, BullMQ skip у ingest) — fail-loud at boot instead of silently shipping a half-wired feature. Set the key from voyageai.com → API keys, або вимкни `AI_MEMORY_ENABLED=false` доки key не буде доступний. Activation runbook: docs/01-product/launch/tech/ai-memory-activation.md.",
+        "VOYAGE_API_KEY is required in production when AI_MEMORY_ENABLED=true. Without it embedding-calls throw MissingVoyageApiKeyError on first request (HTTP 503 у /api/ai-memory/recall, BullMQ skip у ingest) — fail-loud at boot instead of silently shipping a half-wired feature. Set the key from voyageai.com → API keys, або вимкни `AI_MEMORY_ENABLED=false` доки key не буде доступний. Activation runbook: docs/work/specs/launch/tech/ai-memory-activation.md.",
       );
     }
     warnings.push(
@@ -851,7 +851,7 @@ export function assertStartupEnv(): void {
     }
     if (leftoverPats.length > 0) {
       throw new Error(
-        `Hard Rule #20 violated: ${leftoverPats.join(", ")} present in production. Remove the legacy PAT(s) from the secret-store — the OpenClaw Gateway is decommissioned and no component authenticates with these tokens. See docs/00-start/playbooks/rotate-secrets.md.`,
+        `Hard Rule #20 violated: ${leftoverPats.join(", ")} present in production. Remove the legacy PAT(s) from the secret-store — the OpenClaw Gateway is decommissioned and no component authenticates with these tokens. See docs/start/instructions/rotate-secrets.md.`,
       );
     }
   }

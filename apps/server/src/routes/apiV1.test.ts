@@ -4,7 +4,7 @@ import request from "supertest";
 /**
  * Supertest-покриття нового `/api/v1/*` префікса і bearer-auth шляху.
  *
- * Ми покриваємо ключові гарантії з `docs/architecture/api-v1.md`:
+ * Ми покриваємо ключові гарантії з `docs/engineering/architecture/api-v1.md`:
  *   1. роут працює і на `/api/*`, і на `/api/v1/*` (дзеркало 1:1);
  *   2. `/api/v1/me` резолвить юзера і через cookie, і через
  *      `Authorization: Bearer`;

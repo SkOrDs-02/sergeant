@@ -41,8 +41,8 @@
  *    («не знаю»), а не вигадане число. Конверсія одиниць — окреме рішення
  *    продукту, не побічний ефект згортки.
  *
- * Канон: docs/01-product/model/nutrition.md §9
- * ADR:   docs/04-governance/adr/0077-pantry-append-only-ledger.md
+ * Канон: docs/product/modules/nutrition.md §9
+ * ADR:   docs/governance/adr/0077-pantry-append-only-ledger.md
  */
 
 /** Тип події руху. Дзеркалить CHECK у `086_nutrition_pantry_events.sql`. */

@@ -63,7 +63,7 @@ export default defineConfig({
         //    handlers (day-plan/food-search/parse-pantry/
         //    shopping-list/week-plan), modules/sync/syncV2.ts, and
         //    modules/digest/weekly-digest.ts. Stale coverage claims in
-        //    docs/90-work/tech-debt/backend.md § "Tests coverage map"
+        //    docs/work/specs/tech-debt/backend.md § "Tests coverage map"
         //    reconciled the same day.
         //  - 2026-08-04 actual: lines 92.95 / branches 82.75 / fns 92.05
         //    (coverage-depth audit, docs/90-work/audits/

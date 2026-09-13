@@ -44,7 +44,7 @@ import type { ChatPreset } from "@sergeant/shared";
 // `profile_add_info` повторюють тижнями, і спільний бюджет означав би, що
 // після інтервʼю людина до кінця тижня не додасть жодного факту. Тож сумарна
 // стеля = сума лімітів усіх preset-ів; додаєш новий — перерахуй її
-// (`docs/04-governance/security/ai-quota-kill-switch.md § preset-відро`).
+// (`docs/governance/security/ai-quota-kill-switch.md § preset-відро`).
 //
 // Другий бік цієї оборони живе не тут: `OFF_TOPIC_RULE` у `chatPresets.ts`
 // наказує моделі не виконувати сторонні запити всередині режиму. Лічильник

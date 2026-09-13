@@ -25,7 +25,7 @@
  * key (`packages/shared/src/lib/storageKeys.ts`, so CloudSync picks the
  * same slot), and engages `expo-keep-awake` while a workout is active
  * so the screen stays on during a training session — per
- * `docs/mobile/react-native-migration.md` §6.10.
+ * `docs/engineering/mobile/react-native-migration.md` §6.10.
  *
  * Scope note (Phase 6 · PR-B): this hook owns **only** activeWorkoutId
  * + timers. Workout CRUD (sets / items / groups) still lives in the

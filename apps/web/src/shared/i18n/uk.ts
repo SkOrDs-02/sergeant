@@ -20,7 +20,7 @@
  * перекладаємо у `translateApiError` / `translateAuthError` (fallback на цей
  * каталог).
  *
- * Roadmap: див. `docs/i18n/readiness.md` § «Покрокова міграція».
+ * Roadmap: див. `docs/design/i18n/readiness.md` § «Покрокова міграція».
  */
 
 import { fizrukPageMessages } from "./uk.fizruk";
@@ -129,7 +129,7 @@ export const messages = {
      * «Звʼязки». «Аналітика» відкинута навмисно — це слово стоїть у навбарі
      * кожного продукту, тобто не відрізняє нас ні від кого; «Звʼязки»
      * називає рівно те, чого конкурент не має, бо не має чотирьох модулів на
-     * одних даних (`docs/05-design/design/anti-slop-strategy.md` §4).
+     * одних даних (`docs/design/design/anti-slop-strategy.md` §4).
      * «Сержант» теж відкинуто: це вже імʼя асистента в чаті.
      */
     reports: "Звʼязки",
@@ -588,7 +588,7 @@ export const messages = {
     signInOrCreate: "Увійти або створити акаунт",
   },
 
-  // What's new modal (PR-18 у `docs/01-product/launch/product-os/ftux-master-tracker.md`
+  // What's new modal (PR-18 у `docs/work/specs/launch/product-os/ftux-master-tracker.md`
   // §3.3). UI-копія обмежена — release-specific копія (title / summary /
   // items / CTA label) живе у TS-таблиці `apps/web/src/core/whatsNew/
   // releases.ts`; у каталог потрапляють лише chrome-літерали з рамки

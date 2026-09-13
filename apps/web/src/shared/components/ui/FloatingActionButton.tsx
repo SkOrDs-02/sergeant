@@ -196,7 +196,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   // Bottom offset = 6rem (96px) + safe-area-inset-bottom. Clears the v2
   // floating glass `ModuleBottomNav` pill (mx-3 mb-3 outer + 60-64px
   // inner + safe-area-pb) with breathing room above. Per
-  // docs/05-design/design/unified-bottom-nav.md the FAB sits 76px above the nav;
+  // docs/design/design/unified-bottom-nav.md the FAB sits 76px above the nav;
   // we round up to 96 to keep clearance on smaller iPhones where the
   // nav's own safe-area-pb stacks below the inner height. Pre-fix
   // (~24px) the FAB clipped the navbar on every module screen.

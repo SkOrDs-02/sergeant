@@ -276,7 +276,7 @@ export const ToolResult = z.object({
 });
 
 /**
- * B32 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — блоки, дозволені
+ * B32 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — блоки, дозволені
  * всередині `tool_calls_raw`. До 2026-08-25 поле було `z.array(z.unknown())`
  * — фактично unvalidated passthrough: `chat.ts` кладе його НАПРЯМУ в
  * `{ role: "assistant", content: tool_calls_raw }`, єдину роль без
@@ -1476,7 +1476,7 @@ export type MonoBackfillProgress = z.infer<typeof MonoBackfillProgressSchema>;
 // ────────────────────── Waitlist (Phase 0 monetization rails) ───────────────
 // Простий sign-up для майбутнього Pro-тіру. Валідується тут, щоб і клієнт
 // (через `@sergeant/api-client`) і сервер (через `validateBody`) мали одне
-// джерело правди. Tier-и навмисно матчать `docs/01-product/launch/01-monetization-and-pricing.md`.
+// джерело правди. Tier-и навмисно матчать `docs/work/specs/launch/business/01-monetization-and-pricing.md`.
 
 export const WaitlistTierSchema = z.enum(["free", "plus", "pro", "unsure"]);
 export type WaitlistTier = z.infer<typeof WaitlistTierSchema>;
@@ -1823,7 +1823,7 @@ export type AuthSessionResponse = z.infer<typeof AuthSessionResponseSchema>;
  * browser variants (Firefox, older Safari, Chromium reports-API drafts)
  * that all need to keep working through this sink.
  *
- * Audit reference: `docs/security/hardening/C2-frontend-csp.md`.
+ * Audit reference: `docs/work/specs/security-hardening/C2-frontend-csp.md`.
  */
 export const CspViolationDetailsSchema = z.record(z.string(), z.unknown());
 export type CspViolationDetails = z.infer<typeof CspViolationDetailsSchema>;

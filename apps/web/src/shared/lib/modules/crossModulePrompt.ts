@@ -5,7 +5,7 @@ import { safeReadLS, safeRemoveLS, safeWriteLS } from "../storage/storage";
 /**
  * Cross-module nudges — small, dismissible toast prompts that suggest a
  * follow-up action in another module after the user does something in
- * the current module. See `docs/design/cross-module-prompts.md` for the
+ * the current module. See `docs/design/design/cross-module-prompts.md` for the
  * full pattern + decision table.
  *
  * Examples:
@@ -163,7 +163,7 @@ export function tryShowCrossModulePrompt(
       hapticTap();
       recordCrossModulePromptAccepted(opts.id);
       // Явний `dismiss` тут НЕ потрібен: `<ToastRow>` закриває аркуш у
-      // `finally` після `onClick` (docs/05-design/ui/toast-policy.md
+      // `finally` після `onClick` (docs/design/ui/toast-policy.md
       // § Action shape). Другий виклик перезаписував exit-таймер тим
       // самим ключем — перший лишався осиротілим і через 200 мс смикав
       // `setToasts` уже поза життям тоста.

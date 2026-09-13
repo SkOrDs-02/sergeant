@@ -13,7 +13,7 @@
  * Design notes:
  *   - The web version draws a circular SVG progress ring. We are
  *     holding off on `react-native-svg` until the BodyAtlas PR (PR-C)
- *     picks an SVG library — see `docs/mobile/react-native-migration.md` §6.8.
+ *     picks an SVG library — see `docs/engineering/mobile/react-native-migration.md` §6.8.
  *     Until then, the overlay uses a linear progress bar (`View` +
  *     animated width), which reads cleanly on a bottom-of-screen
  *     sheet and is indistinguishable from the web version in

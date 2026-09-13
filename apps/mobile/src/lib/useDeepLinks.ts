@@ -21,7 +21,7 @@
  *  4. For auth-callback URLs, deliberately does nothing so Better
  *     Auth's own `Linking` listener (registered by the `expoClient`
  *     plugin in `src/auth/authClient.ts`) is the one that consumes
- *     the token. This mirrors the guidance in `docs/mobile/overview.md`
+ *     the token. This mirrors the guidance in `docs/engineering/mobile/overview.md`
  *     ("Auth" section) where token capture is owned by Better Auth
  *     end-to-end.
  *  5. For every other parsed link, maps it to an `Href` via

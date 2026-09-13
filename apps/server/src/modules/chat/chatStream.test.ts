@@ -623,7 +623,7 @@ describe("streamAnthropicToSse — heartbeat", () => {
 });
 
 /**
- * B46 — in-stream `error` event (`docs/90-work/audits/ai-testing-2026-08-25.md`).
+ * B46 — in-stream `error` event (`docs/work/specs/audits/ai-testing-2026-08-25.md`).
  *
  * Провайдер відкриває тіло 200-кою і аж потім шле
  * `{"type":"error","error":{...}}`. HTTP-статус про це вже нічого не скаже,

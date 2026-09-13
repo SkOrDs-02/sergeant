@@ -18,7 +18,7 @@ import type { BillingStatusResponse } from "@sergeant/shared";
  * via `queryClient.invalidateQueries`. Provider webhooks (LiqPay/Plata;
  * Stripe dormant for UA) may also NOTIFY-broadcast `subscriptions.changed`;
  * a listener PR will bridge that to React Query
- * (`docs/01-product/launch/business/06-monetization-architecture.md`).
+ * (`docs/work/specs/launch/business/06-monetization-architecture.md`).
  */
 
 export type Plan = "free" | "pro";

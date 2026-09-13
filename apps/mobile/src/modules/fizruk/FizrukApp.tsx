@@ -16,8 +16,8 @@
  *     `workout/new`, `workout/[id]`, `_layout`. `./pages/` carries the
  *     full screen set behind them (Dashboard, Workouts, Programs, Body,
  *     Measurements, Progress, Exercise, PlanCalendar, Atlas) — full
- *     web/shell/RN parity, see `docs/02-engineering/architecture/platforms.md:43`
- *     and `docs/01-product/model/fizruk.md` §11.
+ *     web/shell/RN parity, see `docs/engineering/architecture/platforms.md:43`
+ *     and `docs/product/modules/fizruk.md` §11.
  *
  * This file exports the `Dashboard` screen — the index-route wrapper
  * that the stack pushes when the tab is focused. Naming the file

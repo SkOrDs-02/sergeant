@@ -70,7 +70,7 @@ const COPY = {
 
 /**
  * AI-CONTEXT: підключення Monobank і backfill — БЕЗКОШТОВНІ, і Pro-гейта тут
- * бути не має. Канон: `docs/01-product/model/product-overview.md`, рядок 7 —
+ * бути не має. Канон: `docs/product/model/product-overview.md`, рядок 7 —
  * «Ядро безкоштовне + банк-sync Free назавжди; AI — пейвол». До 2026-09-02
  * пейволл стояв саме тут, і лише тут: другий вхід у те саме
  * `POST /api/mono/connect` (Фінік → `NoBankBanner` → `FinykLoginScreen`)

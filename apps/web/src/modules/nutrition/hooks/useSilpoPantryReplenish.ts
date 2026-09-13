@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Поповнення комори з куплених продуктів Сільпо (Silpo integration трек C,
- * спека `docs/90-work/planning/specs/silpo-mcp-integration.md` §
+ * спека `docs/work/specs/silpo-mcp-integration.md` §
  * «Комора — через готовий ledger»).
  *
  * AI-CONTEXT: жодного нового шляху запису в комору — позиції, які

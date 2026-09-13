@@ -181,7 +181,7 @@ const preset = {
         // fills behind `text-white`. Outside the provider both vars
         // are undefined and the utility falls back to `rgb()` with
         // empty channels (effectively transparent); only use inside a
-        // module subtree. See docs/design/module-accent.md.
+        // module subtree. See docs/design/design/module-accent.md.
         "module-accent": "rgb(var(--module-accent-rgb) / <alpha-value>)",
         "module-accent-strong":
           "rgb(var(--module-accent-strong-rgb) / <alpha-value>)",
@@ -607,7 +607,7 @@ const preset = {
       },
 
       // ═══════════════════════════════════════════════════════════════════
-      // BORDER RADIUS — 3 semantic tiers (see docs/design/radius-rhythm.md)
+      // BORDER RADIUS — 3 semantic tiers (see docs/design/design/radius-rhythm.md)
       //
       //   CONTROL  (12 px, rounded-xl)   — buttons, inputs, badges, chips,
       //                                    icon-buttons, segmented controls
@@ -644,7 +644,7 @@ const preset = {
         // 14/18 px values, and its `rounded-r-*` classes shadowed
         // Tailwind's native per-corner `rounded-r-{size}` utilities. All
         // call sites were migrated onto the canonical scale above /
-        // `rounded-xl`. See docs/05-design/design/radius-rhythm.md.
+        // `rounded-xl`. See docs/design/design/radius-rhythm.md.
       },
 
       // ══════════���════════════════════════════════════════════════════════
@@ -661,7 +661,7 @@ const preset = {
       // working unchanged: `shadow-card === shadow-e1`,
       // `shadow-float === shadow-e3`, `shadow-soft === shadow-e4`.
       // New code should prefer `shadow-eN` for the explicit semantic
-      // level. See docs/design/design-system.md § 4.
+      // level. See docs/design/design/design-system.md § 4.
       // ═══════════════════════════════════════════════════════════════════
       boxShadow: {
         // Semantic elevation scale (preferred for new code).
@@ -847,9 +847,9 @@ const preset = {
         // `hero` вилучено 2026-09-02: він дублював слот
         // `.text-style-headline` фіксованими 26px і був третьою паралельною
         // шкалою поряд із двома, які закрило правило 5 типографіки
-        // (`docs/05-design/design/anti-slop-strategy.md` §4). Сім call-site-ів
+        // (`docs/design/design/anti-slop-strategy.md` §4). Сім call-site-ів
         // переведено на роль; заміри й обґрунтування —
-        // `docs/05-design/design/density-hierarchy-spec.md` §3.2.
+        // `docs/design/design/density-hierarchy-spec.md` §3.2.
         "3xl": ["30px", { lineHeight: "36px" }],
         "4xl": ["36px", { lineHeight: "40px" }],
         "5xl": ["48px", { lineHeight: "1" }],
@@ -1083,7 +1083,7 @@ const preset = {
       // matching `z-*` tier. e0/e1/e2 → `z-base`, e3 → `z-dropdown`,
       // e4 → `z-modal`, e5 → `z-toast`. Mismatched pairs are how
       // popovers slide under modals and toasts get hidden by drawers.
-      // See docs/design/design-system.md § 4 and `zTier` in tokens.js.
+      // See docs/design/design/design-system.md § 4 and `zTier` in tokens.js.
       //
       // Legacy numeric scale (`z-100`/`200`/`300`/`400` and the
       // `z-header`/`modal`/`toast`/`tooltip` aliases) is preserved so

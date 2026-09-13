@@ -2,7 +2,7 @@
  * Unit tests for the `sergeant-design/no-adhoc-metric-aggregation` rule.
  *
  * The rule backs stage 5 of the metric registry
- * (`docs/02-engineering/architecture/metric-registry.md`): a domain metric
+ * (`docs/engineering/architecture/metric-registry.md`): a domain metric
  * must be computed by a canonical function from `@sergeant/*-domain`, not
  * re-derived inline. It targets exactly one shape — an accumulated
  * `Math.abs(<tx>.amount / 100)`, i.e. a hand-rolled copy of

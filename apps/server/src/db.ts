@@ -41,7 +41,7 @@ installInt8Parser();
  *   prepared statements, `LISTEN/NOTIFY`). Якщо `DATABASE_URL_POOL`
  *   порожній — pool fallback-ить на `DATABASE_URL` без зміни поведінки
  *   для single-URL деплоїв (docker-compose, локальний dev).
- *   Runbook: `docs/runbooks/database-connection-pooling.md`.
+ *   Runbook: `docs/start/instructions/database-connection-pooling.md`.
  */
 const runtimeConnectionString = env.DATABASE_URL_POOL || env.DATABASE_URL;
 

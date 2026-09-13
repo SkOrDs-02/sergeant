@@ -4,7 +4,7 @@
  * Tuned to model latency p95 + retry headroom. These were previously inline
  * magic numbers spread across the nutrition handlers; consolidated here so
  * bumps and audits live in one place. Track changes in
- * `docs/tech-debt/backend.md` when adjusting.
+ * `docs/work/specs/tech-debt/backend.md` when adjusting.
  */
 export const NUTRITION_AI_TIMEOUTS_MS = {
   /** `day-plan.ts` — generate single day meal plan. */

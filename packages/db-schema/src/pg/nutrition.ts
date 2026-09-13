@@ -171,7 +171,7 @@ export const nutritionPantryItems = pgTable(
  * на відміну від сусідньої `nutritionPantryItems`. Це свідомо: клієнт
  * генерує НЕ-UUID id (`home`, `p_<ms>_<idx>`, `<pantryId>::<idx>::<name>`),
  * тож `uuid` тут дав би `22P02` на реальному push-і — той самий баг, що
- * задокументований у `docs/90-work/tech-debt/backend.md` § «Routine: PK-тип».
+ * задокументований у `docs/work/specs/tech-debt/backend.md` § «Routine: PK-тип».
  * НЕ «вирівнюй» тип під pantryItems.
  *
  * `deletedAt` — ретракція помилкової події (згортка її пропускає), а не

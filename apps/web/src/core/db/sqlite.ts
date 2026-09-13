@@ -177,7 +177,7 @@ export async function switchSqliteUser(
  * fixed `"local"` name, not per-user), so a wholesale `clearStorage()` used
  * to also erase the anonymous visitor's own rows (and any other account's,
  * on a shared device) — see
- * `docs/90-work/planning/specs/anonymous-local-first-persistence.md`
+ * `docs/work/specs/anonymous-local-first-persistence.md`
  * § «Відомий залишковий ризик». {@link OpenedDb.wipe} is therefore handed
  * the raw id of the user being logged out and, on kvvfs, scopes its
  * teardown to that id's rows only (row-level `DELETE ... WHERE user_id = ?`
@@ -501,7 +501,7 @@ async function openDb(
         async wipe(userId) {
           // Row-level scope instead of `db.clearStorage()` — see the
           // `OpenedDb.wipe` doc comment and
-          // `docs/90-work/planning/specs/anonymous-local-first-persistence.md`
+          // `docs/work/specs/anonymous-local-first-persistence.md`
           // § «Відомий залишковий ризик». A `null`/synthetic-local userId
           // (anon / demo) means there is nothing safe to scope by, so we
           // leave the shared store untouched rather than risk erasing every

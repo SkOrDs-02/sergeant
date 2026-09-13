@@ -10,8 +10,8 @@
  * is why ADR-0083 puts injury marks on the ZONE, with the atlas muscle set as
  * one input rather than the whole ontology.
  *
- * See `docs/04-governance/adr/0083-injury-model-zone-level.md` and audit E-4 in
- * `docs/90-work/audits/product-knowledge-fizruk.md`.
+ * See `docs/governance/adr/0083-injury-model-zone-level.md` and audit E-4 in
+ * `docs/work/specs/audits/product-knowledge-fizruk.md`.
  */
 
 import {

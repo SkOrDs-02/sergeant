@@ -2,7 +2,7 @@
  * Last validated: 2026-08-17
  * Status: Active
  *
- * Чек-скан v1 (спека `docs/90-work/planning/specs/receipt-scan.md` §
+ * Чек-скан v1 (спека `docs/work/specs/receipt-scan.md` §
  * Флоу v1 / § Web UI). Стани: `choose` (камера АБО фото) → `camera`
  * (живий QR-скан) / `processing` (lookup чи analyze у польоті) →
  * `review` (редагована чернетка, `ReceiptReviewForm`) → «Зберегти».

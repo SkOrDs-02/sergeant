@@ -612,7 +612,7 @@ describe("auth config — bearer plugin інтегрований у Better Auth"
    * PR-48 round-2 — session policy pinned до 7-денного hard-expiry з
    * 1-денним rolling refresh. Якщо хтось випадково повернеться до 30d
    * (старе значення) — тест відстрелить.
-   * Audit-док: `docs/security/better-auth-audit-2026-05.md`. ADR-0017.
+   * Audit-док: `docs/governance/security/better-auth-audit-2026-05.md`. ADR-0017.
    */
   /**
    * `ALLOWED_ORIGINS` — comma-separated ops-override для `trustedOrigins`,

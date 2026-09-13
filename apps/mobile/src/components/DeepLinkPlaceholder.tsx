@@ -40,7 +40,7 @@ type Props = {
  *    recipe stub → `/nutrition`, the transaction stub → `/finyk`).
  *
  * Replaced screen-by-screen as the corresponding phase of
- * `docs/mobile/react-native-migration.md` lands real UI.
+ * `docs/engineering/mobile/react-native-migration.md` lands real UI.
  */
 export function DeepLinkPlaceholder({
   title,

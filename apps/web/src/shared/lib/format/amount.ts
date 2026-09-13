@@ -6,7 +6,7 @@
  *
  * AI-CONTEXT: Sergeant currently carries two money units — banking
  * transactions in kopiykas, manual expenses in hryvnia (see
- * `docs/02-engineering/architecture/domain-invariants.md` § Money). This
+ * `docs/engineering/architecture/domain-invariants.md` § Money). This
  * module does NOT unify them. It only guarantees that *parsing and bound
  * checks* happen on integers, so a `12.345` or `1e9` never reaches a
  * storage layer. Callers convert back to whatever unit their wire format

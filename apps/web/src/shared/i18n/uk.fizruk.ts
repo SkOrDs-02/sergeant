@@ -6,7 +6,7 @@
  * module-size discipline (Hard Rule #18, `max-lines: 600`). Spread у
  * `messages.fizruk` всередині `uk.ts`, тож call-site-и й далі звертаються
  * через `messages.fizruk.<page>.<key>`. Конвенції додавання ключів —
- * див. шапку `uk.ts` та `docs/05-design/i18n/readiness.md`.
+ * див. шапку `uk.ts` та `docs/design/i18n/readiness.md`.
  */
 
 export const fizrukPageMessages = {
@@ -93,7 +93,7 @@ export const fizrukPageMessages = {
   // action itself stays a raw literal like the rest of this
   // already-allowlisted component; see `eslint.i18n-allowlist.json`).
   // Сесійний режим активного тренування — список вправ → екран вправи
-  // (спека `docs/90-work/planning/specs/fizruk-active-session.md`).
+  // (спека `docs/work/specs/fizruk-active-session.md`).
   session: {
     collapse: "Згорнути",
     finish: "Завершити",
@@ -242,7 +242,7 @@ export const fizrukPageMessages = {
     harderNote: "сьогодні можна більше",
   },
   // Аркуш готовності перед стартом тренування
-  // (спека docs/90-work/planning/specs/fizruk-readiness-check.md).
+  // (спека docs/work/specs/fizruk-readiness-check.md).
   readiness: {
     title: "Як ти сьогодні?",
     subtitle: "Два питання, і підказка ваги врахує твій стан.",
@@ -602,7 +602,7 @@ export const fizrukPageMessages = {
   /**
    * Старіння 1RM і протокол повернення (канон `fizruk.md` §6).
    *
-   * Тон — за `docs/01-product/copy/style-guide.uk.md`: констатація без
+   * Тон — за `docs/product/copy/style-guide.uk.md`: констатація без
    * докору. Перерва не провал, а регрес не привід соромитись, тож копія
    * пояснює ЧОМУ число інше, а не оцінює людину.
    */

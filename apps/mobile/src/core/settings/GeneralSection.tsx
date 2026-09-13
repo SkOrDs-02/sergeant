@@ -20,7 +20,7 @@
  *    with the dashboard via `useDashboardOrder` and persisted through
  *    the same `STORAGE_KEYS.DASHBOARD_ORDER` slice used by web.
  *
- * Deferred (tracked in `docs/mobile/react-native-migration.md` Phase 2 /
+ * Deferred (tracked in `docs/engineering/mobile/react-native-migration.md` Phase 2 /
  * Hub-core, section 2.4):
  *  - **Cloud sync command buttons.** The v1 provider and pull/push
  *    handlers are removed. A future explicit v2 command hook can wire

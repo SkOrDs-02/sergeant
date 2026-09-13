@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-08-18
  * Status: Active — Silpo MCP integration, track B (finyk receipt
- * enrichment). See `docs/90-work/planning/specs/silpo-mcp-integration.md`
+ * enrichment). See `docs/work/specs/silpo-mcp-integration.md`
  * § Рішення дизайну «Спліт — пропозиція, не мовчазний запис».
  *
  * "Чек" section inside `BankTransactionDetailsSheet` — shows Silpo receipt

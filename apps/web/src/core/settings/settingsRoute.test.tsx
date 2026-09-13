@@ -1,7 +1,7 @@
 /** @vitest-environment jsdom */
 /**
  * Redirect smoke for `/settings/*` — L-1 fix (profile/settings deep audit,
- * `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md`, рішення
+ * `docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md`, рішення
  * власника «варіант а»): маршрут БІЛЬШЕ НЕ монтує власну оболонку з
  * `HubSettingsPage` (немає хедера, нижньої навігації, `role="tabpanel"` —
  * глухий кут, з якого можна було вийти лише жестом браузера). Тепер це

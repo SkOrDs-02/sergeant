@@ -29,7 +29,7 @@ export type PushPlatform = PushRegisterRequest["platform"];
 /**
  * Runtime-схема відповіді `POST /api/v1/push/register`. Сервер відповідає
  * `200 { ok: true, platform }` як на web, так і на native (див.
- * `docs/mobile/overview.md`).
+ * `docs/engineering/mobile/overview.md`).
  */
 export const PushRegisterResponseSchema = z.object({
   ok: z.literal(true),

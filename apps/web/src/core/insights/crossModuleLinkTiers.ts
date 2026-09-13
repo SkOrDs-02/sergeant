@@ -3,9 +3,9 @@
  * Status: Active
  *
  * Три ступені візуальної впевненості для `CrossModuleLinkCard` — П2
- * анти-слоп плану (`docs/05-design/design/anti-slop-strategy.md` §4/П1,
+ * анти-слоп плану (`docs/design/design/anti-slop-strategy.md` §4/П1,
  * §5 P2) і продуктовий канон «епістемічний стандарт звʼязків»
- * (`docs/01-product/model/product-overview.md` §6): «градація впевненості
+ * (`docs/product/model/product-overview.md` §6): «градація впевненості
  * + право мовчати».
  *
  * AI-CONTEXT: пороги НЕ вигадані для цього файлу — вони одна в одну

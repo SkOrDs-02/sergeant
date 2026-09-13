@@ -31,7 +31,7 @@
  *                                          # ідентичними прогонами буває
  *                                          # більшим за різницю між моделями
  *   pnpm eval:models -- --extra=digest:openrouter:some/model-id:label
- *   pnpm eval:models -- --out=docs/90-work/planning/model-eval-2026-08-04.md
+ *   pnpm eval:models -- --out=docs/work/specs/planning/model-eval-2026-08-04.md
  *
  * Код виходу: 0 завжди (це звіт, не гейт), 1 — помилка розбору аргументів.
  */

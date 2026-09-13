@@ -132,7 +132,7 @@ export const routineCompletionEvents = sqliteTable(
  * clamp-ом `>= 0`). Одиниця виміру — кліки, не послідовні дні. НЕ читай
  * ці стовпці для UI / push / digest: справжній стрік рахується
  * client-side (`streakForHabit`) з `routine_entries`/completions. Канон:
- * `docs/01-product/model/routine.md` §4.
+ * `docs/product/modules/routine.md` §4.
  */
 export const routineStreaks = sqliteTable("routine_streaks", {
   userId: text("user_id").primaryKey(),

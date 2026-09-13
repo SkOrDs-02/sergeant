@@ -220,7 +220,7 @@ describe("finyk routes — POST /manual-expenses validation", () => {
 });
 
 /**
- * Чек-скан v1 (`docs/90-work/planning/specs/receipt-scan.md`) —
+ * Чек-скан v1 (`docs/work/specs/receipt-scan.md`) —
  * route-рівень: guard-ланцюг (setModule → rateLimit → requireSession) +
  * повний-стек ДПС-503-без-токена. Глибша бізнес-логіка (matcher,
  * XML-парсинг, vision-нормалізація, ідемпотентність, серіалізація) уже

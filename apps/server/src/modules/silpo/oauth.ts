@@ -8,7 +8,7 @@ import { elapsedMs } from "../../lib/timing.js";
 
 /**
  * OAuth 2.1 + PKCE (S256) + Dynamic Client Registration client for Silpo
- * MCP. Spec: `docs/90-work/planning/specs/silpo-mcp-integration.md` §
+ * MCP. Spec: `docs/work/specs/silpo-mcp-integration.md` §
  * Рішення дизайну ("OAuth за mono-патерном, не через Better Auth social" —
  * this is authorization to a third-party API, not a Sergeant login).
  *

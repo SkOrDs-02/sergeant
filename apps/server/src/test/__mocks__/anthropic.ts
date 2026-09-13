@@ -14,7 +14,7 @@
  * Цей модуль централізує мок плюс додає програмовані response-білдери для
  * найпоширеніших сценаріїв (text turn, tool_use turn, error turn, streaming).
  * Покриває ADR-0027 (server AI-tool harness) і розблоковує PR-T09…T12 з
- * `docs/testing/2026-05-05-tests-pr-plan.md`.
+ * `docs/engineering/testing/2026-05-05-tests-pr-plan.md`.
  *
  * Усі білдери — pure: повертають plain JSON, нічого не мокають самі. Юзкейс:
  *

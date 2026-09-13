@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-08-18
  * Status: Active — Silpo MCP integration, гейт №2 приватності (спека
- * `docs/90-work/planning/specs/silpo-mcp-integration.md` § Відкриті
+ * `docs/work/specs/silpo-mcp-integration.md` § Відкриті
  * гейти). Текст обіцянки затверджений founder-ом дослівно — редагувати
  * можна лише розбиття на абзаци, не саму суть чи формулювання. Змінюй
  * текст лише в `SilpoIntegrationSection.tsx` (`COPY.privacyPromise*`) —

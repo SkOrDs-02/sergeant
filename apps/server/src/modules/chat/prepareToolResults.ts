@@ -15,7 +15,7 @@
  * `category: "http"` — тобто при масці після усічення сирі імена контрагентів
  * та IBAN-и їхали в Sentry повз рішення founder-а #10. Sentry — теж «за
  * периметром». Маскуємо рівно один раз, до обох стоків.
- * Знахідка B2, `docs/90-work/audits/ai-pipeline-2026-08-05.md`.
+ * Знахідка B2, `docs/work/specs/audits/ai-pipeline-2026-08-05.md`.
  *
  * Тест, що це стереже, дивиться саме на breadcrumb, а не на payload
  * (`chat.redaction.test.ts`): payload лишається чистим в обох порядках, тож

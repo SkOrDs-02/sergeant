@@ -12,7 +12,7 @@ import { loadPrivatCredentials } from "./privatStore.js";
  *
  * Креденшели БІЛЬШЕ НЕ приходять із заголовків запиту: вони лежать
  * зашифровані в `privat_connection` і резолвляться за сесійним user id
- * (спека `docs/90-work/planning/specs/beta-security-readiness.md`, F1).
+ * (спека `docs/work/specs/beta-security-readiness.md`, F1).
  * Раніше клієнт мусив тримати merchant-токен у себе, щоб надіслати його в
  * `X-Privat-Token` — тобто банківський креденшел лежав у `localStorage` і
  * був видимий у DevTools. Плюс проксі був неавтентифікований: будь-хто міг

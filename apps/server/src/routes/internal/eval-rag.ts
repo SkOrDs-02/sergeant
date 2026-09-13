@@ -26,7 +26,7 @@
  * сигнали в спостережуваність. Логіка `compute → record → alert` залишається
  * pure-функцією; endpoint = thin сейв-layer.
  *
- * Reaction playbook: `docs/observability/runbook.md` §
+ * Reaction playbook: `docs/operations/observability/runbook.md` §
  * «RagQualityGateDegraded» / «RagQualityGateKillSwitch».
  */
 

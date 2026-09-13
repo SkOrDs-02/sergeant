@@ -96,7 +96,7 @@ export function HabitStatsSection({
   // клітинки, тобто видно, ЯКІ саме дні були паузою, а не лише скільки їх.
   // Тримати обидва означало б лишити рівно той патерн, який полотно й
   // заміняє — одне число плюс текстове виправдання під ним
-  // (`docs/05-design/design/anti-slop-strategy.md` §5 P3).
+  // (`docs/design/design/anti-slop-strategy.md` §5 P3).
   const bestStreak = useMemo(
     () => maxStreakAllTime(habit, completions),
     [habit, completions],

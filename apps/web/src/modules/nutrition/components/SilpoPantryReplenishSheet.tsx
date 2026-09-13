@@ -4,7 +4,7 @@
  *
  * «Поповнити комору з покупок Сільпо» — екран підтвердження (Silpo
  * integration трек C, спека
- * `docs/90-work/planning/specs/silpo-mcp-integration.md` §
+ * `docs/work/specs/silpo-mcp-integration.md` §
  * «Комора — через готовий ledger»).
  *
  * Флоу: список останніх чеків (дефолт — найсвіжіший) → позиції обраного

@@ -39,7 +39,7 @@ type SettingsModule = "finyk" | "fizruk" | "routine" | "nutrition";
  *  badge is gone, see the comment at the render site).
  *
  *  Раніше тут стояло «Hard Rule #12» — правило retired
- *  [ADR-0081](../../../../../docs/04-governance/adr/0081-repository-simplification.md):
+ *  [ADR-0081](../../../../../docs/governance/adr/0081-repository-simplification.md):
  *  module-accent containment лишається чинною конвенцією, але тримається
  *  design tokens і ревʼю, а не ESLint-гейтом. Посилання на неіснуючий номер
  *  правила прибрано (§6 боргу, аудит Профілю/Налаштувань 2026-08-08) — саме
@@ -77,7 +77,7 @@ function matchesHash(anchorId: string | undefined): boolean {
 
 /**
  * Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
- * `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
+ * `docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
  * прибрали другий рівень акордеона. Рішенням власника 2026-09-11
  * forced-first-of-tab (перша секція активної вкладки, що відкривалась за
  * замовчуванням) СКАСОВАНО — на холодному завантаженні жодна секція не
@@ -304,7 +304,7 @@ export interface SettingsSubGroupProps {
 
 /**
  * Варіант A (profile/settings deep audit 2026-08-08, рішення власника №4 —
- * `docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
+ * `docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md` §0.1):
  * підрозділ більше не другий рівень акордеона. Раніше тут стояв власний
  * `<button>` з `aria-expanded`, шевроном зліва (на відміну від
  * `SettingsGroup` вище, де шеврон справа) і власною рамкою-коробкою — два

@@ -8,7 +8,7 @@ import { cspViolationTotal } from "../../obs/metrics.js";
  * Receives Content-Security-Policy violation reports from browsers. The
  * frontend ships CSP via Vercel headers (see root `vercel.json`); this
  * endpoint is the `report-uri` sink referenced from that policy. Closing
- * hardening card C2 (`docs/security/hardening/C2-frontend-csp.md`)
+ * hardening card C2 (`docs/work/specs/security-hardening/C2-frontend-csp.md`)
  * required wiring a real sink so the Phase-1 Report-Only canary can
  * actually surface violations instead of dropping them on the floor.
  *

@@ -137,7 +137,7 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // PR #042b (Stage 5): apply-level allowlist розширено `missing_delta` +
     // `invalid_delta` (PN-counter primitive payload validation у
     // `applyRoutineStreaks`).
-    // Cardinality cap у `docs/observability/metrics.md` §4 = ~28 tables ×
+    // Cardinality cap у `docs/operations/observability/metrics.md` §4 = ~28 tables ×
     // 3 statuses × 59 reasons ≈ 4_956 series worst-case (phenomenologically <100,
     // більшість табл/reason-пар не зустрічаються одночасно). Якщо сума
     // елементів у двох масивах drift-ує — оновити cardinality calc у

@@ -13,7 +13,7 @@ import {
  * GET  /api/privat/status     — is a connection present, and for which id.
  *
  * All three require an authenticated session (enforced by the router).
- * Spec: `docs/90-work/planning/specs/beta-security-readiness.md` (F1).
+ * Spec: `docs/work/specs/beta-security-readiness.md` (F1).
  *
  * The credentials are validated against the upstream balance endpoint before
  * being stored. This is not gold-plating: the previous client-side flow

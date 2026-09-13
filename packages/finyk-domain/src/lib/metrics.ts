@@ -18,7 +18,7 @@
  * Цей модуль **не перемикає** жоден із тих call-site-ів (W1-CANON-AGG,
  * стадія 1 — additive). Він лише дає канонічну реалізацію, на яку стадія 2
  * буде переводити читачів по одному. Реєстр розбіжностей і статус кожного
- * конвеєра: `docs/02-engineering/architecture/metric-registry.md`.
+ * конвеєра: `docs/engineering/architecture/metric-registry.md`.
  *
  * DOM-free: функції приймають ВЖЕ ПРОЧИТАНІ структури (масиви/мапи) і нічого
  * не читають із `localStorage` / MMKV / SQLite. Читання лишається в
@@ -86,7 +86,7 @@ function isTxLevelTransfer(tx: FinykUniverseTx): boolean {
  * Це та сама четвірка, що її збирає web-адаптер
  * `getFinykExcludedTxIdsFromStorage` (`apps/web/.../lib/lsStats.ts`) — але
  * без читання сховища, тож правило можна перевикористати на mobile і в
- * тестах. Канон: `docs/01-product/model/finyk.md` §5 і §139-149.
+ * тестах. Канон: `docs/product/modules/finyk.md` §5 і §139-149.
  */
 export function buildFinykExcludedTxIds(
   input: FinykExcludedTxIdsInput = {},

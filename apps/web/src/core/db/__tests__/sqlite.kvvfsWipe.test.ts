@@ -10,7 +10,7 @@ import {
 
 /**
  * Regression for the "Відомий залишковий ризик" in
- * `docs/90-work/planning/specs/anonymous-local-first-persistence.md`:
+ * `docs/work/specs/anonymous-local-first-persistence.md`:
  * on the `kvvfs` fallback (Safari < 17 / iOS < 16.4) every partition on
  * the device shares ONE physical `localStorage`-backed store (no
  * per-user filename, unlike OPFS). `wipeSqliteDb()` on logout used to

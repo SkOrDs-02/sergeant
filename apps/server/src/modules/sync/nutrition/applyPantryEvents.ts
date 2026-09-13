@@ -45,11 +45,11 @@ import type { AppliedStatus } from "../syncV2-types.js";
  * UUID — на відміну від `nutrition_pantry_items`. Клієнт генерує НЕ-UUID
  * id (`home`, `p_<ms>_<idx>`, `<pantryId>::<idx>::<name>`), тож UUID-колонка
  * дала б `22P02` → `apply_failed` на кожному реальному push-і (той самий
- * клас багу, що в `docs/90-work/tech-debt/backend.md` § «Routine: PK-тип»).
+ * клас багу, що в `docs/work/specs/tech-debt/backend.md` § «Routine: PK-тип»).
  * НЕ «наводь симетрію» з сусідньою таблицею — симетрія тут і є баг.
  *
- * Канон: docs/01-product/model/nutrition.md §9
- * ADR:   docs/04-governance/adr/0077-pantry-append-only-ledger.md
+ * Канон: docs/product/modules/nutrition.md §9
+ * ADR:   docs/governance/adr/0077-pantry-append-only-ledger.md
  */
 
 /** Закритий enum `kind`. Дзеркалить CHECK у міграції 086. */
