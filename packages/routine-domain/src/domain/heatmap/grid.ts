@@ -17,7 +17,7 @@ import {
   habitCountsTowardMetrics,
   habitScheduledOnDate,
 } from "../../schedule.js";
-import type { Habit } from "../../types.js";
+import type { Habit, HabitSkip } from "../../types.js";
 import {
   isFlexibleHabit,
   weekDoneCountExcludingDate,
@@ -153,6 +153,21 @@ export interface BuildHeatmapGridOptions {
    * `metricsVersion`.
    */
   freezePausedPast?: boolean | undefined;
+  /**
+   * Пропуски з причиною: `habitId → dateKey → HabitSkip`.
+   *
+   * Канон §5: «не зміг» — не провал, тож така пара (звичка, день) виходить
+   * зі знаменника клітинки — той самий трактування, що вже мають
+   * `completionRateForRange` і per-habit стрік. Без цього заявлений пропуск
+   * фарбував клітинку РІВНО як мовчазний провал: `HabitRangeGrid` (короткі
+   * зрізи) показує «не зміг» окремим сірим станом, а `HabitHeatmap`
+   * (квартал/рік) на тих самих даних — тим самим кольором, що й провал.
+   * Перемикання зрізу Місяць → Квартал безшумно стирало відмінність
+   * (аудит 2026-09, PR-R8).
+   *
+   * Дефолт (не передано) зберігає історичну поведінку: пропуск = провал.
+   */
+  skips?: Record<string, Record<string, HabitSkip>> | undefined;
 }
 
 /**
@@ -228,6 +243,7 @@ export function buildHeatmapGrid(
 
       let scheduledTotal = 0;
       let scheduledCnt = 0;
+      let skippedCnt = 0;
       for (const h of active) {
         // Гнучка звичка («N разів на тиждень») перестає бути в знаменнику
         // того дня, коли тиждень уже добрано. Без цього людина з ціллю
@@ -245,8 +261,16 @@ export function buildHeatmapGrid(
           })
         )
           continue;
+        const isDone = completionSets.get(h.id)?.has(dateKey) ?? false;
         scheduledTotal += 1;
-        if (completionSets.get(h.id)?.has(dateKey)) scheduledCnt += 1;
+        if (isDone) scheduledCnt += 1;
+        // Покриття «не зміг з причиною» — ЧИСТО додатковий підрахунок, не
+        // зачіпає `scheduledTotal`/`scheduledCnt`/`ratio`: ці три числа вже
+        // побачив користувач, і рухати їх мовчки без версії метрик
+        // (`metricsVersion.ts`) заборонено. `skippedCnt` лише дозволяє
+        // презентації відрізнити «увесь незакритий залишок дня — заявлені
+        // пропуски» від «мовчазний провал» (аудит 2026-09, PR-R8).
+        else if (opts.skips?.[h.id]?.[dateKey]) skippedCnt += 1;
       }
 
       const cnt = useScheduled ? scheduledCnt : cntByDay[dateKey] || 0;
@@ -273,6 +297,7 @@ export function buildHeatmapGrid(
         intensity,
         scheduledTotal,
         scheduledCnt,
+        skippedCnt,
       });
 
       const mk = `${dt.getFullYear()}-${dt.getMonth()}`;

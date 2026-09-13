@@ -13,6 +13,8 @@ interface TxListItemProps {
   selectMode: boolean;
   selected: boolean;
   hidden: boolean;
+  /** «Не враховувати у статистиці» (PR-F4) — threaded straight to `TxRow`. */
+  isExcludedFromStats?: boolean | undefined;
   overrideCatId?: string | null | undefined;
   txSplits: TxSplitsMap;
   /** User's own free-text annotation for this transaction. */
@@ -35,6 +37,7 @@ function TxListItemImpl({
   selectMode,
   selected,
   hidden,
+  isExcludedFromStats = false,
   overrideCatId,
   txSplits,
   note,
@@ -114,6 +117,7 @@ function TxListItemImpl({
             tx={tx}
             onClick={onOpenDetails ? () => onOpenDetails(tx) : undefined}
             hidden={hidden}
+            isExcludedFromStats={isExcludedFromStats}
             overrideCatId={overrideCatId}
             accounts={accounts}
             hideAmount={hideAmount}

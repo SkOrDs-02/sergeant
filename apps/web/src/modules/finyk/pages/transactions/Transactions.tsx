@@ -340,6 +340,18 @@ export function Transactions({
     toast?.success(`Вивантажено операцій: ${count}`);
   }, [filters.selMonth, filters.filtered, filters.getEffectiveCat, toast]);
 
+  // PR-F4 founder-UX audit 2026-09-13: `excludedStatTxIds` — джерело
+  // правди для «не враховувати у статистиці» — доти доходило лише до
+  // `BankTransactionDetailsSheet` (проп `excludedFromStats` нижче), а не
+  // до самого рядка списку чи пакетної дії. Людина бачила підсумки
+  // Огляду/Аналітики, що змінились, і жодного сліду в списку, ЯКІ саме
+  // рядки виключено. Set будується тут же й іде в кожен рядок через
+  // `TransactionList` → `TxListItem` → `TxRow` → `TxRowMetaChips`.
+  const excludedStatTxIdSet = useMemo(
+    () => new Set(excludedStatTxIds ?? []),
+    [excludedStatTxIds],
+  );
+
   const selection = useTransactionSelection({
     hiddenTxIds,
     excludedStatTxIds,
@@ -395,6 +407,7 @@ export function Transactions({
         selectMode={selection.selectMode}
         selectedIds={selection.selectedIds}
         hiddenTxIdSet={filters.hiddenTxIdSet}
+        excludedStatTxIdSet={excludedStatTxIdSet}
         txCategories={txCategories}
         txSplits={txSplits}
         txNotes={txNotes}

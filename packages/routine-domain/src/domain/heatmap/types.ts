@@ -78,6 +78,18 @@ export interface HeatmapCell {
    * de-duplicated per habit, so `scheduledCnt <= scheduledTotal` always.
    */
   scheduledCnt: number;
+  /**
+   * Scheduled, not completed, but marked "не зміг" (`RoutineState.skips`) —
+   * canon §5, an acknowledged skip is not a failure. **Purely additive**:
+   * does NOT reduce `scheduledTotal` or affect `ratio`/`intensity` (that
+   * would move a number the user already saw without a `metricsVersion`
+   * bump, ADR-0079 §3-§4). Presentation layers use it to render a skip day
+   * distinctly from a silent miss — the same distinction `HabitRangeGrid`
+   * already draws for short ranges — without conflating the two the way
+   * the aggregate ratio still does. `0` when `opts.skips` was not passed
+   * (historical behaviour, no skip awareness).
+   */
+  skippedCnt: number;
   /** Pre-selected intensity bucket — use this for colour selection. */
   intensity: HeatmapIntensity;
 }

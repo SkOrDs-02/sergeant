@@ -157,6 +157,7 @@ export function RoutineStatsPanel({
           key={range.id}
           habits={routine.habits}
           completions={routine.completions}
+          skips={routine.skips}
           historyWeeks={range.heatmapWeeks ?? 53}
           futureWeeks={range.heatmapFutureWeeks ?? 4}
           historyLabel={range.heatmapHistoryLabel ?? "рік"}

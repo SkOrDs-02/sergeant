@@ -44,6 +44,8 @@ export interface GoalContributionLike {
 
 interface GoalBudgetCardProps {
   budget: GoalBudgetInput;
+  /** «Приховати суми» (PR-F3) — маскує прогрес/розбивку/історію поповнень. */
+  showBalance?: boolean;
   /** Прогрес = баланс привʼязаної банки + сума ручних поповнень. */
   saved: number;
   pct: number;
@@ -76,6 +78,7 @@ interface GoalBudgetCardProps {
 // перераховувати розмітку при перерендерах сторінки Budgets.
 function GoalBudgetCardComponent({
   budget,
+  showBalance = true,
   saved,
   pct,
   daysLeft,
@@ -207,8 +210,14 @@ function GoalBudgetCardComponent({
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-style-caption text-muted">
-                  <Money amount={saved} /> /{" "}
-                  <Money amount={budget.targetAmount} />
+                  {showBalance ? (
+                    <>
+                      <Money amount={saved} /> /{" "}
+                      <Money amount={budget.targetAmount} />
+                    </>
+                  ) : (
+                    "••••"
+                  )}
                 </span>
                 <button
                   type="button"
@@ -241,9 +250,15 @@ function GoalBudgetCardComponent({
             </div>
             {hasBreakdown && (
               <div className="text-style-caption text-subtle mt-0.5">
-                з банки{linkedJarLabel ? ` «${linkedJarLabel}»` : ""}{" "}
-                <Money amount={fromJar} /> · вручну{" "}
-                <Money amount={fromContributions} />
+                {showBalance ? (
+                  <>
+                    з банки{linkedJarLabel ? ` «${linkedJarLabel}»` : ""}{" "}
+                    <Money amount={fromJar} /> · вручну{" "}
+                    <Money amount={fromContributions} />
+                  </>
+                ) : (
+                  "••••"
+                )}
               </div>
             )}
             <div className="mt-3 flex items-center gap-3">
@@ -330,7 +345,7 @@ function GoalBudgetCardComponent({
                       {c.note ? ` · ${c.note}` : ""}
                     </span>
                     <span className="flex items-center gap-2">
-                      <Money amount={c.amountUah} />
+                      {showBalance ? <Money amount={c.amountUah} /> : "••••"}
                       <button
                         type="button"
                         onClick={() => onDeleteContribution?.(c.id)}

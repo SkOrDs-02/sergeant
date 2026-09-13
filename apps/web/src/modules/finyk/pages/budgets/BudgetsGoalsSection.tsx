@@ -24,6 +24,8 @@ export interface BudgetsGoalsSectionProps {
   goalBudgets: GoalBudget[];
   budgets: Budget[];
   setBudgets: Dispatch<SetStateAction<Budget[]>>;
+  /** «Приховати суми» (PR-F3) — прокидається в кожну `GoalBudgetCard`. */
+  showBalance?: boolean;
   editIdx: number | null;
   setEditIdx: Dispatch<SetStateAction<number | null>>;
   now: Date;
@@ -54,6 +56,7 @@ export function BudgetsGoalsSection({
   goalBudgets,
   budgets,
   setBudgets,
+  showBalance = true,
   editIdx,
   setEditIdx,
   now,
@@ -176,6 +179,7 @@ export function BudgetsGoalsSection({
             <GoalBudgetCard
               key={b.id || i}
               budget={cardBudget}
+              showBalance={showBalance}
               saved={progress.saved}
               pct={progress.pct}
               daysLeft={progress.daysLeft}

@@ -74,4 +74,38 @@ describe("HabitHeatmap", () => {
       container.querySelector('[aria-label="2025-06-16: 1 з 1 запланованих"]'),
     ).not.toBeNull();
   });
+
+  /**
+   * PR-R8 (аудит 2026-09): без `skips` заявлений пропуск фарбує клітинку
+   * РІВНО як мовчазний провал — та сама пара «звичка, день», яку
+   * `HabitRangeGrid` (коротші зрізи) уже показує окремим сірим станом.
+   * `HabitHeatmap` мусить хоч ВІЗУАЛЬНО відрізняти цей день, не змінюючи
+   * `ratio`/колір заливки (та зміна вимагала б `metricsVersion`).
+   */
+  it("marks a day with an acknowledged skip distinctly from a silent miss", () => {
+    const skips = {
+      h1: {
+        "2026-06-16": { reason: "sick" as const, at: FIXED_NOW.toISOString() },
+      },
+    };
+    const { container } = render(
+      <HabitHeatmap habits={habits} completions={{}} skips={skips} />,
+    );
+    const cell = container.querySelector(
+      '[aria-label="2026-06-16: 0 з 1 запланованих, не зміг: 1"]',
+    );
+    expect(cell).not.toBeNull();
+    expect(cell).toHaveClass("border-dashed");
+  });
+
+  it("does not mark a silent miss (no skip) with the dashed skip border", () => {
+    const { container } = render(
+      <HabitHeatmap habits={habits} completions={{}} />,
+    );
+    const cell = container.querySelector(
+      '[aria-label="2026-06-16: 0 з 1 запланованих"]',
+    );
+    expect(cell).not.toBeNull();
+    expect(cell).not.toHaveClass("border-dashed");
+  });
 });

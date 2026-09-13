@@ -42,6 +42,7 @@ const baseProps = {
   selectMode: false,
   selectedIds: new Set<string>(),
   hiddenTxIdSet: new Set<string>(),
+  excludedStatTxIdSet: new Set<string>(),
   txCategories: {},
   txSplits: {},
   accounts: undefined,
@@ -206,6 +207,45 @@ describe("TransactionList — DataState routing", () => {
 
     expect(screen.getByTestId("virtual-list")).toBeInTheDocument();
     expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
+  });
+
+  // PR-F4 (founder-UX audit wave 6, «Чесність показників»): the row-level
+  // «не в статистиці» marker was wired ONLY to internal transfers —
+  // `excludedStatTxIdSet` never reached the row, so a single or batch
+  // "Не враховувати" action changed Overview/Analytics totals with zero
+  // visible trace in the list itself.
+  it("shows the «не в статистиці» marker for a row in excludedStatTxIdSet", () => {
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX]}
+        filtered={[SAMPLE_TX]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX] }]}
+        groupCounts={[1]}
+        flatItems={[SAMPLE_TX]}
+        excludedStatTxIdSet={new Set([SAMPLE_TX.id])}
+      />,
+    );
+
+    expect(screen.getByText("не в статистиці")).toBeInTheDocument();
+  });
+
+  it("omits the «не в статистиці» marker once the transaction leaves excludedStatTxIdSet", () => {
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX]}
+        filtered={[SAMPLE_TX]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX] }]}
+        groupCounts={[1]}
+        flatItems={[SAMPLE_TX]}
+        excludedStatTxIdSet={new Set<string>()}
+      />,
+    );
+
+    expect(screen.queryByText("не в статистиці")).not.toBeInTheDocument();
   });
 
   it("keeps the list visible during a background refetch (loading=true with prior activeTx)", () => {

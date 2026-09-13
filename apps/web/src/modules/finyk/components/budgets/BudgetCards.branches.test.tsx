@@ -138,6 +138,59 @@ describe("LimitBudgetCard", () => {
     expect(screen.getByText(/Перевищено на/)).toBeInTheDocument();
     expect(screen.getByText(/6\s?500 \/ 5\s?000 ₴/)).toBeInTheDocument();
   });
+
+  // PR-F3 (founder-UX audit wave 6, «Чесність показників»): the card never
+  // accepted `showBalance` at all, so «Приховати суми» on Overview left the
+  // «витрачено / ліміт» line and «Перевищено на» text visible on Планування.
+  it("masks the spent/limit line and over-limit text when showBalance=false", () => {
+    render(
+      <LimitBudgetCard
+        budget={baseLimitBudget}
+        categoryLabel="Продукти"
+        spent={6500}
+        pctRaw={130}
+        pctRounded={130}
+        remaining={-1500}
+        isEditing={false}
+        showProactiveAdvice={false}
+        showBalance={false}
+        onBeginEdit={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/6\s?500 \/ 5\s?000 ₴/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Перевищено на/)).not.toBeInTheDocument();
+    expect(screen.getAllByText("••••").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("masks the combo breakdown row amount when showBalance=false", () => {
+    render(
+      <LimitBudgetCard
+        budget={{
+          ...baseLimitBudget,
+          categoryIds: ["food", "cafe"],
+        }}
+        categoryLabel="Продукти + ще 1"
+        breakdown={[
+          { categoryId: "food", label: "Продукти", spent: 3000 },
+          { categoryId: "cafe", label: "Кафе", spent: 1200 },
+        ]}
+        spent={4200}
+        pctRaw={84}
+        pctRounded={84}
+        remaining={800}
+        isEditing={false}
+        showProactiveAdvice={false}
+        showBalance={false}
+        onBeginEdit={vi.fn()}
+        onSave={vi.fn()}
+        onDelete={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/3\s?000/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/1\s?200/)).not.toBeInTheDocument();
+  });
 });
 
 describe("MonthlyPlanCard", () => {
@@ -220,6 +273,27 @@ describe("MonthlyPlanCard", () => {
     expect(
       screen.getByRole("button", { name: "Згорнути" }),
     ).toBeInTheDocument();
+  });
+
+  // PR-F3 (founder-UX audit wave 6, «Чесність показників»): the card never
+  // accepted `showBalance`, so the collapsed-header pill and the expanded
+  // Plan/Fact/Δ grid stayed visible after «Приховати суми» on Overview.
+  it("masks the Plan/Fact/Δ grid and safe-per-day line when showBalance=false", () => {
+    renderMonthlyPlan({ showBalance: false });
+    fireEvent.click(screen.getByRole("button", { name: /Фінплан на місяць/ }));
+    // The safe-per-day hint ("500 ₴/день") must not leak.
+    expect(
+      screen.queryByText((_, el) => el?.textContent === "500 ₴/день · 12 дн.", {
+        selector: "span",
+      }),
+    ).not.toBeInTheDocument();
+    expect(screen.getAllByText("••••").length).toBeGreaterThanOrEqual(2);
+  });
+
+  it("masks the collapsed-header summary pill when showBalance=false", () => {
+    renderMonthlyPlan({ showBalance: false });
+    // Collapsed by default — the header pill is the only visible summary.
+    expect(screen.getByText("••••")).toBeInTheDocument();
   });
 
   it("shows the empty collapsed state for a missing plan", () => {

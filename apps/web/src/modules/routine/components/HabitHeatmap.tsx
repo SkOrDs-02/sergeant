@@ -33,6 +33,8 @@ interface HeatmapCell {
   cnt: number;
   total: number;
   ratio: number;
+  /** Заплановано й не виконано, але позначено «не зміг» (канон §5). */
+  skippedCnt: number;
 }
 
 interface MonthMarker {
@@ -51,6 +53,18 @@ function cellBg(ratio: number, isFuture: boolean): string {
 export interface HabitHeatmapProps {
   habits: Habit[] | null | undefined;
   completions: RoutineState["completions"] | null | undefined;
+  /**
+   * Позначки «не зміг з причиною» (канон §5): `habitId → dateKey → HabitSkip`.
+   *
+   * Без цього пропа клітинка фарбує заявлений пропуск РІВНО як мовчазний
+   * провал — та сама пара «звичка, день», яку `HabitRangeGrid` (коротші
+   * зрізи статистики) уже показує окремим сірим станом. Перемикання
+   * Місяць → Квартал на сторінці статистики безшумно стирало цю
+   * відмінність (аудит 2026-09, PR-R8). Проп лише вмикає ВІЗУАЛЬНУ мітку
+   * (пунктирна рамка) — не рухає `ratio`/`intensity`, які вже бачив
+   * користувач (їх зміна вимагала б `metricsVersion`).
+   */
+  skips?: RoutineState["skips"];
   /**
    * Скільки ISO-тижнів історії малювати. Дефолт — рік (`HISTORY_WEEKS`);
    * коротші вікна приходять із перемикача діапазону на сторінці статистики
@@ -73,6 +87,7 @@ export interface HabitHeatmapProps {
 export function HabitHeatmap({
   habits,
   completions,
+  skips,
   historyWeeks = HISTORY_WEEKS,
   futureWeeks = FUTURE_WEEKS,
   historyLabel = "рік",
@@ -113,6 +128,9 @@ export function HabitHeatmap({
       futureWeeks,
       denominator: "scheduled",
       freezePausedPast: true,
+      // `skips` — лише додає `skippedCnt` (візуальна мітка «не зміг»),
+      // не рухає `ratio`/`intensity` (PR-R8, див. проп-докстрінг вище).
+      ...(skips ? { skips } : {}),
     });
 
     const weeks: HeatmapCell[][] = grid.weeks.map((week) =>
@@ -126,6 +144,7 @@ export function HabitHeatmap({
         cnt: cell.cnt,
         total: cell.total,
         ratio: cell.ratio,
+        skippedCnt: cell.skippedCnt,
       })),
     );
 
@@ -158,7 +177,7 @@ export function HabitHeatmap({
     });
 
     return { weeks, monthMarkers };
-  }, [habits, completions, historyWeeks, futureWeeks]);
+  }, [habits, completions, skips, historyWeeks, futureWeeks]);
 
   // key → (w, d) lookup for O(1) arrow-key navigation
   const cellPositions = useMemo(() => {
@@ -323,7 +342,10 @@ export function HabitHeatmap({
                     aria-label={
                       cell.total === 0
                         ? `${cell.key}: нічого не заплановано`
-                        : `${cell.key}: ${cell.cnt} з ${cell.total} запланованих`
+                        : `${cell.key}: ${cell.cnt} з ${cell.total} запланованих` +
+                          (cell.skippedCnt > 0
+                            ? `, не зміг: ${cell.skippedCnt}`
+                            : "")
                     }
                     aria-pressed={cell.key === selected}
                     data-today={cell.isToday ? "true" : undefined}
@@ -333,6 +355,17 @@ export function HabitHeatmap({
                       cellBg(cell.ratio, cell.isFuture),
                       cell.isToday && cn("ring-1", HEATMAP.ring),
                       cell.key === selected && "opacity-60",
+                      // Заявлений пропуск (канон §5) — не провал, тож клітинка
+                      // з ним отримує пунктирну рамку поверх кольору
+                      // ratio-заливки: сама заливка й далі рахує пропуск як
+                      // невиконаний день (PR-R8 навмисно не рухає ratio, щоб
+                      // не змінювати число без `metricsVersion`), рамка лише
+                      // повідомляє «частина цього — заявлений пропуск, не
+                      // мовчазний провал» — той самий сигнал, що сірий стан
+                      // `HabitRangeGrid` дає на коротших зрізах.
+                      !cell.isFuture &&
+                        cell.skippedCnt > 0 &&
+                        "border border-dashed border-line",
                     )}
                   />
                 ))}
@@ -358,7 +391,10 @@ export function HabitHeatmap({
                     // нічого не було заплановано» — день відпочинку, а не
                     // відсутність звичок узагалі.
                     "нічого не заплановано"
-                  : `${detailCell.cnt} з ${detailCell.total} запланованих виконано`}
+                  : `${detailCell.cnt} з ${detailCell.total} запланованих виконано` +
+                    (detailCell.skippedCnt > 0
+                      ? ` · не зміг: ${detailCell.skippedCnt}`
+                      : "")}
             </span>
           </div>
         ) : (

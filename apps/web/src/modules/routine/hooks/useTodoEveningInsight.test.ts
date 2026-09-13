@@ -118,4 +118,44 @@ describe("useTodoEveningInsight", () => {
     // "a" is a one-off scheduled for a past date, so only b+c count.
     expect(result.current?.title).toBe("2 звичок чекають");
   });
+
+  /**
+   * PR-R4 follow-up (аудит 2026-09-13, coordinator доробка): без
+   * `weekDoneCount` гнучка звичка вважалась запланованою завжди, тож
+   * вечірня підказка рахувала її «незробленою», навіть коли тижневу ціль
+   * уже добрано. TODAY = 2026-07-19 (нд), тиждень Пн 2026-07-13..Нд
+   * 2026-07-19 — три відмітки пн/вт/ср добирають дефолтну ціль (3).
+   */
+  it("excludes a flexible habit whose weekly target is already met", () => {
+    setDeviceHour(21);
+    const state = makeState(
+      [
+        makeHabit({ id: "a", recurrence: "flexible" }),
+        makeHabit({ id: "b" }),
+        makeHabit({ id: "c" }),
+      ],
+      { a: ["2026-07-13", "2026-07-14", "2026-07-15"] },
+    );
+    const { result } = renderHook(() => useTodoEveningInsight(state));
+    // "a" already met its weekly target → only b+c are pending.
+    expect(result.current?.title).toBe("2 звичок чекають");
+  });
+
+  /**
+   * Guard проти надто агресивного фіксу вище: гнучка звичка, що ЩЕ не
+   * добрала тижневу ціль, і далі рахується «незробленою» ввечері.
+   */
+  it("still counts a flexible habit as pending before the weekly target is met", () => {
+    setDeviceHour(21);
+    const state = makeState(
+      [
+        makeHabit({ id: "a", recurrence: "flexible" }),
+        makeHabit({ id: "b" }),
+        makeHabit({ id: "c" }),
+      ],
+      { a: ["2026-07-13"] }, // 1 з 3 цього тижня
+    );
+    const { result } = renderHook(() => useTodoEveningInsight(state));
+    expect(result.current?.title).toBe("3 звичок чекають");
+  });
 });

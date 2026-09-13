@@ -18,7 +18,11 @@ import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
 import { completionNoteKey } from "../lib/completionNoteKey";
 import { useCompletionNoteDrafts } from "../hooks/useCompletionNoteDrafts";
 import { DayReportSheet } from "./DayReportSheet";
-import type { HabitSkip } from "@sergeant/routine-domain";
+import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+  type HabitSkip,
+} from "@sergeant/routine-domain";
 import { RoutineCalendarHero } from "./RoutineCalendarHero";
 import { RoutineCalendarMonthGrid } from "./RoutineCalendarMonthGrid";
 import { RoutineFilterChips } from "./RoutineFilterChips";
@@ -68,6 +72,7 @@ export function RoutineCalendarPanel({
     currentStreak,
     completionRate,
     dayProgress,
+    progressDayKey,
     timeMode,
     selectedDay,
     todayKey,
@@ -144,30 +149,46 @@ export function RoutineCalendarPanel({
     return items;
   }, [grouped]);
 
+  // Денний звіт іде за ТИМ днем, який показує кільце прогресу
+  // (`progressDayKey` — обраний день для однодневних режимів, інакше
+  // сьогодні), а не завжди за сьогодні: раніше звіт був прибитий до
+  // `todayKey`, тож на «Завтра» кільце рахувало один день, а аркуш під
+  // ним показував зовсім інший (аудит 2026-09, PR-R6).
   const scheduledHabitsForReport = routine.habits
-    .filter((h) => !h.archived && habitScheduledOnDate(h, todayKey))
+    .filter((h) => !h.archived)
+    .filter((h) => {
+      // Гнучка звичка перестає бути запланованою, щойно тижневу ціль
+      // добрано — без `weekDoneCount` предикат завжди істинний
+      // (`schedule.ts`), тож звичка «3 рази на тиждень», виконана 3/3,
+      // висіла б у звіті як «Пропущено» (аудит 2026-09, PR-R4).
+      const weekDoneCount = isFlexibleHabit(h)
+        ? weekDoneCountExcludingDate(routine.completions[h.id], progressDayKey)
+        : undefined;
+      return habitScheduledOnDate(h, progressDayKey, { weekDoneCount });
+    })
     .map((h) => ({
       ...h,
-      completed: (routine.completions[h.id] || []).includes(todayKey),
+      completed: (routine.completions[h.id] || []).includes(progressDayKey),
     }));
 
-  // Позначки «не зміг» саме за цей день, зведені в `habitId → HabitSkip`.
-  const skipsForToday = useMemo(() => {
+  // Позначки «не зміг» саме за день звіту, зведені в `habitId → HabitSkip`.
+  const skipsForReportDay = useMemo(() => {
     const out: Record<string, HabitSkip> = {};
     for (const [habitId, byDate] of Object.entries(routine.skips || {})) {
-      const s = byDate?.[todayKey];
+      const s = byDate?.[progressDayKey];
       if (s) out[habitId] = s;
     }
     return out;
-  }, [routine.skips, todayKey]);
+  }, [routine.skips, progressDayKey]);
 
-  // Завтрашній ключ для узгодження стрічки з чипами (див. `onSelectDay`).
+  // Завтрашній ключ для узгодження стрічки з чипами (див. `onSelectDay`) —
+  // рахується від СЬОГОДНІ, не від дня звіту: це навігаційний якір стрічки.
   const tomorrowKey = useMemo(
     () => dateKeyFromDate(addDays(parseDateKey(todayKey), 1)),
     [todayKey],
   );
 
-  const dayLabel = formatUaWeekdayDate(parseDateKey(todayKey), {
+  const dayLabel = formatUaWeekdayDate(parseDateKey(progressDayKey), {
     withYear: true,
   });
   return (
@@ -234,12 +255,12 @@ export function RoutineCalendarPanel({
         dayLabel={dayLabel}
         scheduledHabits={scheduledHabitsForReport}
         onToggleHabit={onToggleHabit}
-        dateKey={todayKey}
-        skipsForDay={skipsForToday}
+        dateKey={progressDayKey}
+        skipsForDay={skipsForReportDay}
         onSetSkip={(habitId, reason) =>
-          onSetHabitSkip(habitId, todayKey, reason)
+          onSetHabitSkip(habitId, progressDayKey, reason)
         }
-        onClearSkip={(habitId) => onClearHabitSkip(habitId, todayKey)}
+        onClearSkip={(habitId) => onClearHabitSkip(habitId, progressDayKey)}
       />
 
       {canBulkMark && (
@@ -316,6 +337,12 @@ export function RoutineCalendarPanel({
           }}
         />
         {timeMode === "day" && (
+          // AI-NOTE: `text-style-caption` тут навмисно — це підказка під
+          // контролом (пояснення, як зняти обраний день), а не текст, який
+          // читають. Виняток, прямо передбачений правилом
+          // `sergeant-design/no-sentence-in-caption`. Правило спрацювало лише
+          // тепер, бо файл уперше потрапив у staged-набір — сам рядок живе в
+          // `main` з репорту власника 2026-08-17.
           <p className="mt-2 text-center text-style-caption text-subtle">
             Обрано один день, натисни «Сьогодні» або «Тиждень», щоб повернути
             зріз

@@ -154,6 +154,7 @@ export interface BudgetsProps {
 export function Budgets({
   mono,
   storage,
+  showBalance = true,
   focusLimitCategoryId = null,
   monthlyPlanFirstRunHint = false,
   onDismissMonthlyPlanFirstRunHint,
@@ -485,6 +486,7 @@ export function Budgets({
             <MonthlyPlanCard
               monthlyPlan={monthlyPlan}
               onChangeMonthlyPlan={setMonthlyPlan}
+              showBalance={showBalance}
               planIncome={planIncome}
               planExpense={planExpense}
               planSavings={planSavings}
@@ -509,6 +511,7 @@ export function Budgets({
               limitBudgets={limitBudgets}
               budgets={budgets}
               setBudgets={setBudgets}
+              showBalance={showBalance}
               editIdx={editIdx}
               setEditIdx={setEditIdx}
               customCategories={customCategories}
@@ -530,6 +533,7 @@ export function Budgets({
               goalBudgets={goalBudgets}
               budgets={budgets}
               setBudgets={setBudgets}
+              showBalance={showBalance}
               editIdx={editIdx}
               setEditIdx={setEditIdx}
               now={now}

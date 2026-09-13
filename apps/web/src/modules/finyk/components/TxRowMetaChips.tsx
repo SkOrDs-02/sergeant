@@ -40,6 +40,15 @@ interface TxRowMetaChipsProps {
   showAccount?: boolean | undefined;
   /** Власні категорії — джерело стабільного відтінку для кастомних чипів. */
   customCategories?: readonly { id: string }[] | undefined;
+  /**
+   * Явне «Не враховувати у статистиці» (`finyk_excluded_stat_txs`,
+   * PR-F4 founder-UX audit 2026-09-13) — окремо від `isTransfer`, який
+   * уже виключений неявно (перекази ніколи не рахуються витратою/доходом).
+   * Доти маркер «не в статистиці» ставився ЛИШЕ для переказів, тож
+   * пакетна дія «Не враховувати» міняла підсумки Огляду й Аналітики без
+   * жодного видимого сліду в самому рядку.
+   */
+  isExcludedFromStats?: boolean | undefined;
   /** Чи знає ЦЕЙ пристрій про чек, привʼязаний до цієї транзакції
    * (`useFinykReceiptLinks`, device-local — див. `lib/receiptLinks.ts`).
    * Розгортка позицій живе в `BankTransactionDetailsSheet`/
@@ -63,11 +72,16 @@ export function TxRowMetaChips({
   hasReceipt = false,
   note,
   customCategories = [],
+  isExcludedFromStats = false,
 }: TxRowMetaChipsProps) {
   const isTransfer = catId === INTERNAL_TRANSFER_ID;
   // Порядок фіксований: рахунок → переказ → «змін.» → П24 → спліт.
   const statuses: string[] = [];
-  if (isTransfer) statuses.push("не в статистиці");
+  // Переказ виключений НЕЯВНО (доменне правило), явне виключення —
+  // окремою дією людини; обидва шляхи ведуть до того самого видимого
+  // маркера, бо для людини наслідок однаковий: рядок не рахується в
+  // підсумках.
+  if (isTransfer || isExcludedFromStats) statuses.push("не в статистиці");
   if (overrideCatId && !isTransfer) statuses.push("змін.");
   if (tx._source === "privatbank") statuses.push("П24");
   if (existingSplitsCount > 0) statuses.push("спліт");

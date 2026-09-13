@@ -91,6 +91,12 @@ interface CategoryPieChartProps {
    * Коли не передано, легенда лишається статичною.
    */
   onSelectCategory?: (categoryId: string) => void;
+  /**
+   * «Приховати суми» (PR-F3) — маскує суму в центрі кільця, кожен рядок
+   * легенди й екранний summary; частки (%) і сама геометрія лишаються
+   * видимими — вони не число, і саме розподіл, а не суму, показує кільце.
+   */
+  showBalance?: boolean;
 }
 
 /**
@@ -128,6 +134,7 @@ function CategoryPieChartComponent({
   className,
   total: totalProp,
   onSelectCategory,
+  showBalance = true,
 }: CategoryPieChartProps) {
   const [showAll, setShowAll] = useState(false);
   const hasOverflow = (data?.length ?? 0) > TOP_N;
@@ -243,7 +250,7 @@ function CategoryPieChartComponent({
             fontWeight="600"
             className="fill-text"
           >
-            {formatNumberUk(displayTotal)} ₴
+            {showBalance ? `${formatNumberUk(displayTotal)} ₴` : "••••"}
           </text>
         </svg>
 
@@ -284,25 +291,32 @@ function CategoryPieChartComponent({
                   </span>
                 );
               })()}
-              <Money
-                amount={arc.spent}
-                className="text-text text-style-caption shrink-0"
-              />
+              {showBalance ? (
+                <Money
+                  amount={arc.spent}
+                  className="text-text text-style-caption shrink-0"
+                />
+              ) : (
+                <span className="text-text text-style-caption shrink-0">
+                  ••••
+                </span>
+              )}
             </Row>
           ))}
         </div>
       </div>
       <div id={summaryId} className="sr-only">
         <p>
-          Розподіл витрат за категоріями. Всього {formatNumberUk(displayTotal)}{" "}
-          ₴.
+          Розподіл витрат за категоріями. Всього{" "}
+          {showBalance ? `${formatNumberUk(displayTotal)} ₴` : "••••"}.
         </p>
         <ul>
           {arcs.map((arc) => {
             const pctInt = Math.round(arc.pct * 100);
             return (
               <li key={arc.categoryId}>
-                {stripLeadingEmoji(arc.label)}: {formatNumberUk(arc.spent)} ₴ (
+                {stripLeadingEmoji(arc.label)}:{" "}
+                {showBalance ? `${formatNumberUk(arc.spent)} ₴` : "••••"} (
                 {pctInt < 1 ? "менше 1" : pctInt}%)
               </li>
             );

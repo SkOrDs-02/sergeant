@@ -23,6 +23,10 @@ import {
   parseDateKey,
 } from "./lib/hubCalendarAggregate";
 import { FINYK_SUB_GROUP_LABEL } from "./lib/finykSubscriptionCalendar";
+import {
+  isFlexibleHabit,
+  weekDoneCountExcludingDate,
+} from "@sergeant/routine-domain";
 import { addDays, startOfIsoWeek } from "./lib/weekUtils";
 import {
   calcRoutineDayProgress,
@@ -65,6 +69,13 @@ export interface RoutineDerivedData {
   rangeLabel: string;
   headlineDate: string;
   todayKey: string;
+  /**
+   * День, за який рахується `dayProgress` — обраний день для однодневних
+   * режимів (today/tomorrow/day), інакше сьогодні (тиждень/місяць не мають
+   * одного «дня прогресу»). Той самий день має показувати денний звіт —
+   * інакше кільце і аркуш під ним говорять про різні дні (PR-R6).
+   */
+  progressDayKey: string;
   streakMax: number;
   completionRateVal: RoutineCompletionRate;
   dayProgress: RoutineDayProgress;
@@ -287,8 +298,17 @@ export function useRoutineDerivedData({
     const dk = range.startKey;
     for (const h of routine.habits) {
       if (h.archived) continue;
-      if (!habitScheduledOnDate(h, dk)) continue;
-      if (!(routine.completions[h.id] || []).includes(dk)) return true;
+      const completionsForHabit = routine.completions[h.id] || [];
+      if (completionsForHabit.includes(dk)) continue;
+      // Гнучка звичка перестає бути запланованою, щойно тижневу ціль
+      // добрано — без `weekDoneCount` предикат завжди істинний
+      // (`schedule.ts`), тож кнопка «Відмітити всі» лишалась би активною
+      // навіть коли добирати вже нічого (аудит 2026-09, PR-R4).
+      const weekDoneCount = isFlexibleHabit(h)
+        ? weekDoneCountExcludingDate(completionsForHabit, dk)
+        : undefined;
+      if (!habitScheduledOnDate(h, dk, { weekDoneCount })) continue;
+      return true;
     }
     return false;
   }, [range.startKey, range.endKey, routine.habits, routine.completions]);
@@ -311,6 +331,7 @@ export function useRoutineDerivedData({
     rangeLabel,
     headlineDate,
     todayKey,
+    progressDayKey,
     streakMax,
     completionRateVal,
     dayProgress,

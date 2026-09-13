@@ -45,6 +45,8 @@ interface LimitBudgetCardProps {
    * «в лімітах є іконки, а у витратах немає» — саме про цю розбіжність.
    */
   customCategories?: readonly { id: string }[] | undefined;
+  /** «Приховати суми» (PR-F3) — маскує факт/ліміт/залишок/розбивку. */
+  showBalance?: boolean;
   /**
    * Розбивка факту по категоріях комбо-ліміту (рішення founder-а 2026-08-25:
    * «сума + розбивка»). Рендериться лише коли рядків 2+; для одиночного
@@ -74,6 +76,7 @@ function LimitBudgetCardComponent({
   budget,
   categoryLabel,
   customCategories = [],
+  showBalance = true,
   breakdown,
   spent,
   pctRaw,
@@ -115,8 +118,14 @@ function LimitBudgetCardComponent({
   // Сума «витрачено / ліміт» — один рядок, ніколи не рветься по «/».
   const amountNode = (
     <span className={cn("tabular-nums whitespace-nowrap", amountTone)}>
-      {formatNumberUk(spent)} / {formatNumberUk(budget.limit)}
-      {NARROW_NBSP}₴
+      {showBalance ? (
+        <>
+          {formatNumberUk(spent)} / {formatNumberUk(budget.limit)}
+          {NARROW_NBSP}₴
+        </>
+      ) : (
+        "••••"
+      )}
     </span>
   );
 
@@ -272,7 +281,9 @@ function LimitBudgetCardComponent({
                   : "text-subtle",
             )}
           >
-            {overLimit ? (
+            {!showBalance ? (
+              "••••"
+            ) : overLimit ? (
               <>
                 Перевищено на <Money amount={spent - budget.limit} />
               </>
@@ -301,7 +312,7 @@ function LimitBudgetCardComponent({
                     <span className="truncate">{row.label}</span>
                   </span>
                   <span className="tabular-nums shrink-0">
-                    <Money amount={row.spent} />
+                    {showBalance ? <Money amount={row.spent} /> : "••••"}
                   </span>
                 </li>
               ))}

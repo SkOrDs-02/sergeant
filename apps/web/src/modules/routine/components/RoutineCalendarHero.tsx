@@ -33,6 +33,25 @@ const SLICE_LABEL: Record<RoutineTimeMode, string> = {
   month: "Звички за місяць",
 };
 
+/**
+ * Порожній стан лічильника дня — той самий хардкод «на сьогодні», що і
+ * `SLICE_LABEL` мав до 2026-08-17, лише тепер у прогрес-рядку: `dayProgress`
+ * рахує `progressDayKey` (обраний день на today/tomorrow/day, інакше
+ * сьогодні — тиждень/місяць не мають одного «дня прогресу»,
+ * `useRoutineDerivedData`), а рядок називав його «сьогодні» завжди. На
+ * «Завтра» це читалось як «на завтра немає жодної звички», хоча йшлось про
+ * завтрашній день (аудит 2026-09, PR-R6).
+ */
+const DAY_PROGRESS_EMPTY_LABEL: Record<RoutineTimeMode, string> = {
+  today: "Звичок на сьогодні ще немає",
+  tomorrow: "Звичок на завтра ще немає",
+  day: "Звичок на цей день ще немає",
+  // Тиждень/місяць: `progressDayKey` лишається сьогоднішнім, тож текст тут
+  // і далі правдивий.
+  week: "Звичок на сьогодні ще немає",
+  month: "Звичок на сьогодні ще немає",
+};
+
 export interface RoutineCalendarHeroProps {
   rangeLabel: string;
   timeMode: RoutineTimeMode;
@@ -69,7 +88,7 @@ export function RoutineCalendarHero({
   const progressText =
     dayProgress.scheduled > 0
       ? `${dayProgress.completed} з ${dayProgress.scheduled} ${habitsGenitive} виконано`
-      : "Звичок на сьогодні ще немає";
+      : DAY_PROGRESS_EMPTY_LABEL[timeMode];
   const flame = useStreakFlame(currentStreak);
 
   // Експозиція стріку (Хвиля 2, `routine_streak_shown`).
@@ -149,8 +168,14 @@ export function RoutineCalendarHero({
           <p className="mt-1 text-style-title text-hero-ink">{headlineDate}</p>
           <p className="mt-2 text-style-label text-hero-ink">
             {progressText}
+            {/* `currentStreak` = `flexibleMaxActiveStreak` — максимум СЕРЕД
+                звичок, не «тримаю все N днів» (телеметрія чесно шле
+                `scope: "max_across_habits"`, підпис мовчав про це — аудит
+                2026-09, PR-R10). «Найкраща» називає це без імені звички
+                (founder-рішення 2026-08-30, `useStreakRecordPendingInsight`:
+                без підстановки назви). */}
             {currentStreak > 0
-              ? ` · серія ${currentStreak} ${pluralDays(currentStreak)}`
+              ? ` · найкраща серія ${currentStreak} ${pluralDays(currentStreak)}`
               : ""}
           </p>
         </div>

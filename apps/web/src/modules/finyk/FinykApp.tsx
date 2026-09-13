@@ -322,6 +322,7 @@ export default function App({
           <Analytics
             mono={mergedMono}
             storage={storage}
+            showBalance={showBalance}
             onSelectCategory={(categoryId) => {
               // Порядок важливий: спершу кладемо категорію, тоді
               // переходимо. `Transactions` монтується вже з нею й одразу
