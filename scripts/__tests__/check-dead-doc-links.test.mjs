@@ -10,7 +10,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { execFileSync } from "node:child_process";
-import { readFileSync, writeFileSync } from "node:fs";
+import { readFileSync, writeFileSync, existsSync } from "node:fs";
 import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
 
@@ -97,5 +97,43 @@ test("--update відмовляється піднімати бюджет", () =
     );
   } finally {
     writeFileSync(BUDGET, orig);
+  }
+});
+
+test("SKIP_FILES — кожен запис із причиною, і саме ті два", () => {
+  // Виняток можна додати, але свідомо: без причини список стає тихим
+  // способом сховати мертвий покажчик замість того, щоб його полагодити.
+  const src = readFileSync(SCRIPT, "utf8");
+  const block = src.slice(
+    src.indexOf("const SKIP_FILES"),
+    src.indexOf("const FIXTURE_DIR"),
+  );
+  const entries = [...block.matchAll(/\[\s*"([^"]+)",\s*"([^"]+)",?\s*\]/g)];
+  assert.equal(entries.length, 2, "склад винятків змінився — перечитай шапку");
+  for (const [, file, reason] of entries) {
+    assert.ok(existsSync(join(ROOT, file)), `виняток на неіснуючий ${file}`);
+    assert.ok(reason.length > 20, `${file}: причина надто коротка`);
+  }
+});
+
+test("виключені таблиці справді ламаються від переписування шляхів", () => {
+  // Пін не на «файл у списку», а на ПРИЧИНУ, з якої він там. Обидва скрипти
+  // тримають пари «історична назва → чинна»; переписавши ліву колонку, пару
+  // робиш тотожною, і резолв старого шляху перестає працювати. Саме це
+  // зробив перший захід T9, і саме тому файли тут.
+  for (const file of [
+    "scripts/docs/rewrite-documentation-paths.mjs",
+    "scripts/docs/generate-documentation-inventory.mjs",
+  ]) {
+    const src = readFileSync(join(ROOT, file), "utf8");
+    const pairs = [...src.matchAll(/\[\s*"(docs\/[^"]+)",\s*"(docs\/[^"]+)"/g)];
+    assert.ok(pairs.length > 0, `${file}: таблиці переїзду не знайдено`);
+    for (const [, from, to] of pairs) {
+      assert.notEqual(
+        from,
+        to,
+        `${file}: тотожна пара ${from} — таблиця мертва`,
+      );
+    }
   }
 });

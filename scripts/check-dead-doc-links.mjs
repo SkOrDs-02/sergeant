@@ -28,6 +28,22 @@
 // Це кураторська робота, не заміна рядків, тож вона окремою чергою. Гейт
 // тримає межу: борг не росте, а кожен PR, що його зменшує, опускає бюджет.
 //
+// **Де шлях у коді — це ДАНІ, а не покажчик.** Сканер шукає текст, тож він
+// не бачить різниці між «прочитай ось цей док» і «ось таблиця, за якою
+// старі шляхи переїхали в нові». Другого в репо два роди, і обидва тут
+// пропускаються (`SKIP_FILES` нижче):
+//
+//   • фікстури тестів — вигадані `docs/a.md`, `docs/foo.md`, `docs/bad.md`;
+//     покажчиком вони не були ніколи, а без пропуску кожен новий тест
+//     доксового тулінгу червонив би гейт на порожньому місці;
+//   • таблиці переїздів у самих скриптах міграції доків — там ЛІВА колонка
+//     мусить лишатись історичною назвою, інакше пара стає тотожною і
+//     скрипт перестає працювати.
+//
+// Це не теоретичне застереження: перший захід T9 переписав саме ці ліві
+// колонки і фікстури, бо перевірка дифу дивилась лише на `apps/**` і
+// `packages/**`. Тест валив збірку, тобто пощастило.
+//
 // Запуск: `node scripts/check-dead-doc-links.mjs`
 //         `--json`   — машинний вивід
 //         `--update` — переписати baseline (лише коли борг ЗМЕНШИВСЯ)
@@ -39,7 +55,7 @@ import {
   statSync,
   existsSync,
 } from "node:fs";
-import { join, relative } from "node:path";
+import { join, relative, sep } from "node:path";
 
 const ROOT = process.cwd();
 const BUDGET_FILE = join(ROOT, ".tech-debt/dead-doc-links-budget.json");
@@ -55,6 +71,26 @@ const SKIP_DIRS = new Set([
   ".next",
 ]);
 const CODE_EXT = /\.(?:tsx?|jsx?|mjs|cjs)$/;
+
+/**
+ * Файли, де `docs/…md` — дані, а не покажчик (розбір — у шапці).
+ *
+ * Рядок сюди додають РАЗОМ із причиною: без неї список стає тихим способом
+ * сховати мертвий покажчик замість того, щоб його полагодити.
+ */
+const SKIP_FILES = new Map([
+  [
+    "scripts/docs/rewrite-documentation-paths.mjs",
+    "таблиця переїзду доків: ліва колонка — історична назва за визначенням",
+  ],
+  [
+    "scripts/docs/generate-documentation-inventory.mjs",
+    "`finalPathFor()` резолвить історичні шляхи в чинні — ті самі пари",
+  ],
+]);
+
+/** Фікстури тестів вигадують шляхи (`docs/a.md`), покажчиками вони не є. */
+const FIXTURE_DIR = `${sep}__tests__${sep}`;
 const DOC_REF = /docs\/[A-Za-z0-9._/-]*\.md/g;
 
 function walk(dir, out = []) {
@@ -71,7 +107,10 @@ function walk(dir, out = []) {
       walk(full, out);
       continue;
     }
-    if (CODE_EXT.test(entry)) out.push(full);
+    if (!CODE_EXT.test(entry)) continue;
+    if (full.includes(FIXTURE_DIR)) continue;
+    if (SKIP_FILES.has(relative(ROOT, full))) continue;
+    out.push(full);
   }
   return out;
 }

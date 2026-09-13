@@ -30,7 +30,7 @@ describe("bumpFiles (integration)", () => {
   let dir;
   const config = {
     ...DEFAULT_CONFIG,
-    cadenceOverrides: { "docs/operations/observability/runbook.md": 60 },
+    cadenceOverrides: { "docs/runbook.md": 60 },
   };
 
   beforeEach(() => {
@@ -102,7 +102,7 @@ describe("bumpFiles (integration)", () => {
   });
 
   it("uses cadenceOverrides per file", () => {
-    const rel = "docs/operations/observability/runbook.md";
+    const rel = "docs/runbook.md";
     writeFileSync(join(dir, rel), HEADER("2026-01-01", "old", "2026-04-01"));
     bumpFiles({
       paths: [rel],
