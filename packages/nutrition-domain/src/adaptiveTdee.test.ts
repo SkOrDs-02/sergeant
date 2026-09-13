@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   clampGoalDelta,
+  isDayFullyLogged,
   measuredTdee,
   measuredTdeeFromBalance,
   weightTrendEma,
@@ -120,5 +121,46 @@ describe("clampGoalDelta", () => {
 
   it("never goes below BMR", () => {
     expect(clampGoalDelta(1000, 1600, 1550)).toBe(1550);
+  });
+});
+
+/**
+ * ВОРОТА ПОВНОТИ ДНЯ.
+ *
+ * Довго повнота міряласьa лічильником прийомів (`mealCount >= 3`), і це
+ * промахувалось в обидва боки одночасно: три перекуси на 300 ккал
+ * проходили як «повний день» (спіраль заниження, проти якої ворота й
+ * ставили), а людина на двох прийомах за добу не набирала 10 повних днів
+ * НІКОЛИ — тобто фіча для неї не вмикалась.
+ *
+ * Лічильник прийомів вимірює харчову звичку, а не повноту логу.
+ */
+describe("isDayFullyLogged", () => {
+  it("три перекуси не є повним днем", () => {
+    expect(isDayFullyLogged(300, 3, 2200)).toBe(false);
+  });
+
+  it("один великий прийом — повний день (OMAD/інтервальне)", () => {
+    expect(isDayFullyLogged(2000, 1, 2200)).toBe(true);
+  });
+
+  it("день дефіциту лишається повним — ворота не судять дієту", () => {
+    // 70% цілі: людина на дефіциті, і це чесний повний день.
+    expect(isDayFullyLogged(1540, 3, 2200)).toBe(true);
+  });
+
+  it("нуль і відʼємне не проходять ніколи", () => {
+    expect(isDayFullyLogged(0, 5, 2200)).toBe(false);
+    expect(isDayFullyLogged(-10, 5, 2200)).toBe(false);
+  });
+
+  // До першого сіду цілі ще немає — краще груба евристика, ніж жодної.
+  // Другий аргумент — ПРИЙОМИ, не рядки журналу: фото, збережене кількома
+  // рядками одного прийому, не є кількома прийомами (аудит PR-N2). На боці
+  // web це `loggedMealTypesCount`; його докстрінг забороняє брати `mealCount`.
+  it("без цілі падає на лічильник прийомів", () => {
+    expect(isDayFullyLogged(300, 3, null)).toBe(true);
+    expect(isDayFullyLogged(300, 2, null)).toBe(false);
+    expect(isDayFullyLogged(300, 3, 0)).toBe(true);
   });
 });

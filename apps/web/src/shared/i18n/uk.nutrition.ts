@@ -352,6 +352,13 @@ export const nutritionPageMessages = {
   adaptiveGoal: {
     heading: "Адаптивна ціль",
     edit: "Змінити",
+    // Підстава зміни цілі. Без неї перерахунок читається як свавілля
+    // застосунку: число просто стало іншим, і чому — невідомо.
+    changedHeading: "Ціль оновлено",
+    // `{intake}`, `{delta}`, `{tdee}` підставляє `AdaptiveGoalCard`.
+    reason:
+      "За 14 днів середнє {intake} ккал, тренд ваги {delta} кг → витрата ≈{tdee} ккал.",
+    goalNow: "Нова ціль: {kcal} ккал на добу.",
   },
 
   photoAuth: {
