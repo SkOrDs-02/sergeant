@@ -198,8 +198,16 @@
             "brand": "Yagotynske",
             "carbs_100g": 4.8,
             "fat_100g": 2,
+            "imageUrl": "https://images.openfoodfacts.org/images/products/482/001/084/0443/front_uk.200.jpg",
             "kcal_100g": 52,
             "name": "Milk 2%",
+            "nutrients": {
+              "alcohol_100g": null,
+              "fiber_100g": 0,
+              "salt_100g": 0.1,
+              "saturatedFat_100g": 1.2,
+              "sugars_100g": 4.8
+            },
             "protein_100g": 3.4,
             "servingGrams": 250,
             "servingSize": "250 ml",

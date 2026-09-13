@@ -18,7 +18,7 @@ import type { FoodSearchProduct } from "@shared/api";
 import { FoodHitRow } from "./FoodHitRow";
 import type { FoodProduct } from "../../lib/foodDb/foodDb";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
-import { SEARCH_QUERY_MAX_LEN } from "@sergeant/shared";
+import { SEARCH_QUERY_MAX_LEN, type ProductNutrients } from "@sergeant/shared";
 
 /**
  * Підписи зовнішніх джерел пошуку (`FoodSearchProduct.source`, енум
@@ -51,6 +51,18 @@ export interface PickedFood {
     carbs_g?: number | null;
   };
   source?: string;
+  /**
+   * Нутрієнти понад КБЖВ із відповіді на скан (N9). Транзитні: живуть у
+   * вʼюмоделі аркуша й НЕ їдуть у `FoodProduct` — розбір у
+   * `ProductNutrientsRow.tsx`. Ключа немає, коли джерело таких даних не
+   * віддає взагалі; `null` усередині — «спитали, немає».
+   */
+  nutrients?: ProductNutrients;
+  /**
+   * Фото продукту з OFF (U1). Транзитне, як і `nutrients`: у
+   * `FoodProduct` не їде. Немає — картка малює іконку категорії.
+   */
+  imageUrl?: string | null;
 }
 
 interface FoodPickerSectionProps {

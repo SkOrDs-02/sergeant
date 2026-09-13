@@ -804,6 +804,14 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
         servingGrams: number | null;
         source: "off" | "usda" | "upcitemdb";
         partial?: boolean;
+        imageUrl?: string | null;
+        nutrients?: {
+          fiber_100g: number | null;
+          sugars_100g: number | null;
+          saturatedFat_100g: number | null;
+          salt_100g: number | null;
+          alcohol_100g: number | null;
+        };
       };
     };
 
@@ -817,14 +825,27 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
         product_name_uk: expected.product.name,
         product_name: expected.product.name,
         brands: expected.product.brand,
+        // Нутрієнти теж їдуть із пакта, а не вписані тут окремо: інакше
+        // мок і очікування розійшлися б, і тест перестав би бути доказом
+        // того, що ці поля справді проходять шлях OFF → нормалізатор →
+        // відповідь. `saturated-fat_100g` — саме з дефісом, так його
+        // називає OFF.
         nutriments: {
           "energy-kcal_100g": expected.product.kcal_100g,
           proteins_100g: expected.product.protein_100g,
           fat_100g: expected.product.fat_100g,
           carbohydrates_100g: expected.product.carbs_100g,
+          fiber_100g: expected.product.nutrients?.fiber_100g ?? null,
+          sugars_100g: expected.product.nutrients?.sugars_100g ?? null,
+          "saturated-fat_100g":
+            expected.product.nutrients?.saturatedFat_100g ?? null,
+          salt_100g: expected.product.nutrients?.salt_100g ?? null,
+          alcohol_100g: expected.product.nutrients?.alcohol_100g ?? null,
         },
         serving_size: expected.product.servingSize,
         serving_quantity: expected.product.servingGrams,
+        // Найдрібніший варіант — саме його бере нормалізатор першим.
+        image_front_small_url: expected.product.imageUrl ?? undefined,
       },
     };
 

@@ -79,7 +79,7 @@ export interface ModuleBottomNavItem {
    *
    * Перш ніж додавати сюди значення — ЗАМІРЯЙ. Доступна підпису ширина
    * рахується як `(W − 8 контейнерних − 4×(N−1) gap) / N − 8 пілюльних`;
-   * гейт `nav-label-fit.spec.ts` міряє це рендером на 320 і 390px.
+   * гейт `nav-label-fit.spec.ts` міряє це рендером на 320 і 393px.
    */
   visibleLabel?: string;
   icon: ReactNode;

@@ -55,6 +55,64 @@ afterEach(() => {
 });
 
 describe("handleBarcodeLookup", () => {
+  // N9: нутрієнти приїжджають тим самим викликом, що й КБЖВ, і мають
+  // дійти до картки. Прокидання йде повз `fakeFood` (той типізований як
+  // `FoodProduct` і лягає в локальну базу), тож перевіряємо саме те, що
+  // потрапило в `setPickedFood`.
+  it("прокидає нутрієнти у вʼюмодель картки", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockResolvedValue({
+      name: "Хліб",
+      brand: "Київхліб",
+      kcal_100g: 250,
+      protein_100g: 8,
+      fat_100g: 3,
+      carbs_100g: 48,
+      servingGrams: 50,
+      source: "off",
+      nutrients: {
+        fiber_100g: 2.7,
+        sugars_100g: 4.4,
+        saturatedFat_100g: 0.3,
+        salt_100g: 1.2,
+        alcohol_100g: null,
+      },
+    });
+    const { result, setPickedFood } = setup();
+    await act(async () => {
+      await result.current.handleBarcodeLookup("4820010840443");
+    });
+    expect(setPickedFood).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nutrients: expect.objectContaining({ fiber_100g: 2.7 }),
+      }),
+    );
+  });
+
+  // Джерело без нутрієнтів не має класти в картку порожній обʼєкт: той
+  // сказав би «дані є, просто порожні», і рядок відрендерився б самими
+  // тире. Ключа не повинно бути взагалі.
+  it("не ставить ключ `nutrients`, коли джерело їх не дало", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockResolvedValue({
+      name: "Щось",
+      brand: null,
+      kcal_100g: 100,
+      protein_100g: 1,
+      fat_100g: 1,
+      carbs_100g: 1,
+      servingGrams: null,
+      source: "upcitemdb",
+    });
+    const { result, setPickedFood } = setup();
+    await act(async () => {
+      await result.current.handleBarcodeLookup("4820010840443");
+    });
+    const picked = setPickedFood.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(picked).toBeDefined();
+    expect("nutrients" in picked).toBe(false);
+  });
+
   it("no-ops for an empty code", async () => {
     const { result } = setup();
     await result.current.handleBarcodeLookup("  ");

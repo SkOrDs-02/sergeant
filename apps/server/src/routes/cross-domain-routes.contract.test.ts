@@ -428,7 +428,10 @@ describe("waitlist route wiring", () => {
 
 describe("voice and lookup route wiring", () => {
   it("protects audio transcribe with session and Groq availability", async () => {
-    const app = appWith(createTranscribeRouter());
+    // `requirePlan` у чейні — no-op при `STRIPE_ENABLED=false` (дефолт у
+    // тестах), тож форма відповідей тут не змінюється. Саме це й перевіряє
+    // окремий тест нижче: гейт стоїть, але сьогодні нічого не закриває.
+    const app = appWith(createTranscribeRouter({ pool: mockPool as never }));
 
     expect(
       await request(app)
@@ -454,6 +457,34 @@ describe("voice and lookup route wiring", () => {
       .send(Buffer.from("audio"));
     expect(ok.status).toBe(200);
     expect(ok.body).toEqual({ ok: true, text: "hello" });
+  });
+
+  /**
+   * V1 (рішення власника 2026-09-11): `/api/transcribe` дістав plan-gate,
+   * бо був доступний в обхід UI. Тест фіксує ДВА факти разом, і другий
+   * важливіший за перший.
+   *
+   * Перший: `requirePlan` справді стоїть у чейні.
+   *
+   * Другий: сьогодні він НІЧОГО не закриває — при `STRIPE_ENABLED=false`
+   * middleware пропускає всіх. Якби тест перевіряв лише «гейт є», він
+   * зеленів би на ендпоінті, відкритому навстіж, і ми б знову отримали
+   * гейт, що виглядає робочим і мовчить. Діру тримає закритою денний
+   * USD-cap, не цей гейт.
+   */
+  it("plan-gate у чейні transcribe є, але при вимкненому білінгу пропускає", async () => {
+    vi.stubEnv("GROQ_API_KEY", "test-groq");
+    const app = appWith(createTranscribeRouter({ pool: mockPool as never }));
+
+    const res = await request(app)
+      .post("/api/transcribe")
+      .set("x-test-user-id", "free-user")
+      .set("content-type", "audio/webm")
+      .send(Buffer.from("audio"));
+
+    // Не 402: білінг вимкнено, гейт — no-op. Зміниться `STRIPE_ENABLED` —
+    // зміниться й це число, і тест має впасти, щоб про це сказали вголос.
+    expect(res.status).toBe(200);
   });
 
   it("serves public food search with stale-while-revalidate cache", async () => {
