@@ -31,6 +31,8 @@ export * from "./pantryLedger.js";
 // дня. Споживачів поки немає за задумом (cutover — стадія 3, гейт
 // founder-а) — див. AI-CONTEXT у nutritionGoals.ts.
 export * from "./nutritionGoals.js";
+// Довжина серії днів у нормі калорій (O1 — віхи серії в Їжі).
+export * from "./kcalStreak.js";
 export * from "./adaptiveTdee.js";
 export * from "./mergeItems.js";
 export * from "./recipeIds.js";
