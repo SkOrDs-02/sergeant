@@ -176,6 +176,70 @@ describe("useSilpoPantryReplenish", () => {
     expect(byId.get(2)?.checked).toBe(false); // "Пральний порошок" → shopping → off
     expect(byId.get(3)?.checked).toBe(false); // "Зубна паста" → health → off
     expect(result.current.checkedCount).toBe(1);
+
+    /**
+     * Іконка харчової категорії — сенс саме в РІЗНИЦІ між сусідніми
+     * рядками: чек це різнорідний кошик, і якір потрібен, щоб його
+     * сканувати. Якби всі рядки діставали одну іконку, вона була б
+     * декоративним полем, а не інформацією.
+     *
+     * Для НЕпродуктів іконка нейтральна навмисно: `categorizeFood`
+     * навчений на їжі й на чужому ловиться на словах — «Зубна паста»
+     * дає «Соуси та пасти». Здогадка біля зубної пасти виглядала б
+     * упевнено і була б хибною.
+     */
+    expect(byId.get(1)?.foodIconName).toBe("drumstick");
+    expect(byId.get(2)?.foodIconName).toBe("package");
+    expect(byId.get(3)?.foodIconName).toBe("package");
+  });
+
+  it("сусідні продуктові рядки дістають РІЗНІ іконки", async () => {
+    mockDetail(
+      detailWithItems([
+        {
+          id: 1,
+          name: "Молоко Яготинське 900г",
+          qty: 1,
+          unit: "шт",
+          priceKop: 4000,
+          categorySlug: null,
+          barcode: null,
+        },
+        {
+          id: 2,
+          name: "Авокадо Хаас",
+          qty: 2,
+          unit: "шт",
+          priceKop: 6000,
+          categorySlug: null,
+          barcode: null,
+        },
+        {
+          id: 3,
+          name: "Хліб",
+          qty: 1,
+          unit: "шт",
+          priceKop: 2500,
+          categorySlug: null,
+          barcode: null,
+        },
+      ]),
+    );
+
+    const { result } = renderHook(() =>
+      useSilpoPantryReplenish({
+        enabled: true,
+        pantryItems: [],
+        upsertItem: vi.fn(),
+      }),
+    );
+
+    await waitFor(() => expect(result.current.rows).toHaveLength(3));
+    const icons = result.current.rows.map((r) => r.foodIconName);
+    // Саме три РІЗНІ: якщо колись усі зведуться до однієї, іконка
+    // перестане нести інформацію — і цей тест має про це сказати.
+    expect(new Set(icons).size).toBe(3);
+    expect(icons).not.toContain("package");
   });
 
   it("toggleItem flips a single row without touching the others", () => {
