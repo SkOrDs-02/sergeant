@@ -19,6 +19,7 @@
       "title": "fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника",
       "merged_at": "2026-09-11T23:03:34Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/governance/adr/0009-hosting-split-railway-vercel.md",
         "docs/governance/adr/0010-mobile-dual-track-capacitor-expo.md",
@@ -30,6 +31,7 @@
       "title": "fix(server): звіряти RAG-евал і parity-тест зі STORED, а не ALLOWED джерелами",
       "merged_at": "2026-09-03T20:54:59Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md"
       ]
@@ -39,6 +41,7 @@
       "title": "feat(root): закрити F1 анти-слоп аудиту, першу хвилю F7 і хвости техборгу",
       "merged_at": "2026-09-03T19:01:22Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/governance/adr/0086-no-anonymous-ai-sign-in-required.md"
       ]
@@ -48,6 +51,7 @@
       "title": "feat(web): писати N рядків журналу з фото-аналізу замість одного злитого (0023, PR-3)",
       "merged_at": "2026-09-03T19:01:05Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/work/specs/initiatives/0023-photo-analysis-multi-item.md"
       ]
@@ -57,6 +61,7 @@
       "title": "feat(server): емітити PostHog $ai_generation з центрального AI-клієнта (0025, Фаза 1)",
       "merged_at": "2026-09-03T18:57:01Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/work/specs/initiatives/0025-posthog-ai-observability.md"
       ]
@@ -66,6 +71,7 @@
       "title": "feat(server): перестати приймати мертві джерела ai_memories (0024, PR-1)",
       "merged_at": "2026-09-03T18:33:14Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md"
       ]
@@ -75,6 +81,7 @@
       "title": "docs(docs): полагодити dangling ref у ADR-0067 (червоний check на main)",
       "merged_at": "2026-09-02T20:55:57Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/governance/adr/0067-engagement-mechanism-standardization.md"
       ]
@@ -84,6 +91,7 @@
       "title": "docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення",
       "merged_at": "2026-09-02T17:30:00Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/governance/adr/0048-apns-provider-library.md",
         "docs/governance/adr/0065-sync-op-log-retention-and-multi-instance-fanout.md",
@@ -99,6 +107,7 @@
       "title": "fix(agents): полірування агентного шару після розкатки module-owners",
       "merged_at": "2026-08-28T00:58:58Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/start/instructions/add-hubchat-tool.md",
         "docs/start/instructions/debug-chat-tool.md",
@@ -113,6 +122,7 @@
       "title": "feat(agents): module-owner і службові Claude-агенти",
       "merged_at": "2026-08-27T23:22:09Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/start/instructions/add-hubchat-tool.md",
         "docs/start/instructions/debug-chat-tool.md",
@@ -127,6 +137,7 @@
       "title": "feat(agents): скіли-дисципліни",
       "merged_at": "2026-08-27T22:47:13Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/start/instructions/add-hubchat-tool.md",
         "docs/start/instructions/debug-chat-tool.md",
@@ -141,6 +152,7 @@
       "title": "feat(agents): інфра module-скіли і nested-роутинг",
       "merged_at": "2026-08-27T22:21:50Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/start/instructions/add-hubchat-tool.md",
         "docs/start/instructions/debug-chat-tool.md",
@@ -155,6 +167,7 @@
       "title": "feat(agents): продуктові module-owner скіли",
       "merged_at": "2026-08-27T21:54:48Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/start/instructions/add-hubchat-tool.md",
         "docs/start/instructions/debug-chat-tool.md",
@@ -169,6 +182,7 @@
       "title": "fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого",
       "merged_at": "2026-08-07T00:15:07Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": ["docs/governance/adr/0062-openapi-source-of-truth.md"]
     },
     {
@@ -176,6 +190,7 @@
       "title": "fix(docs): reconcile canonical docs with current repo",
       "merged_at": "2026-07-29T18:25:31Z",
       "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "AGENTS.md",
         "docs/start/instructions/modify-n8n-workflow.md",
@@ -244,6 +259,7 @@
       "title": "docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants)",
       "merged_at": "2026-07-21T00:32:09Z",
       "author": "@claude",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "AGENTS.md",
         "CLAUDE.md",
@@ -276,6 +292,7 @@
       "title": "feat(agents): add scheduled entropy janitors (doc-drift, dead-code, dep-cycles)",
       "merged_at": "2026-06-30T13:28:53Z",
       "author": "@Skords-01",
+      "repo": "SkOrDs-02/sergeant",
       "touchedDocs": [
         "docs/governance/adr/0066-entropy-janitors.md",
         "docs/governance/governance/entropy-janitors/README.md",

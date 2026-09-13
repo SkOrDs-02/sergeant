@@ -51,7 +51,18 @@ const PR_LEDGER_PATH = resolve(
   "docs/governance/pr-ledger/index.json",
 );
 
-const REPO_SLUG = "Skords-01/Sergeant";
+// Дві бази, як у `scripts/ci/update-pr-backlinks.mjs`, і з тієї ж причини:
+// леджер тримає записи ДВОХ репозиторіїв. 20 записів із номерами 2876–3665
+// злиті у старому `Skords-01/Sergeant` (2026-05-15 … 06-20), 18 із номерами
+// 74–1134 — у поточному (2026-06-30 і далі). Розділення чисте, без перетину
+// ні за номером, ні за датою; #74 звірено з GitHub API напряму.
+//
+// Раніше тут стояв один зашитий слуг старого репо, тож КОЖНЕ посилання на
+// PR поточного репо в `STATUS.md` вело на неіснуючу сторінку — сімнадцять
+// мертвих лінків. Знайдено рев'ю на PR #1137: я полагодив базу в
+// `update-pr-backlinks.mjs` і не помітив, що генераторів два.
+const LEGACY_REPO_SLUG = "Skords-01/Sergeant";
+const CURRENT_REPO_SLUG = "SkOrDs-02/sergeant";
 
 const args = new Set(process.argv.slice(2));
 const CHECK_MODE = args.has("--check");
@@ -122,7 +133,11 @@ export function loadShipped(ledgerPath = PR_LEDGER_PATH, limit = SHIPPED_N) {
 
 function fmtShipped(pr) {
   const date = String(pr.merged_at ?? "").slice(0, 10);
-  const url = `https://github.com/${REPO_SLUG}/pull/${pr.number}`;
+  // Слуг береться з поля `repo` запису — того самого, що читає
+  // `update-pr-backlinks.mjs`. Немає поля — легасі-репо.
+  const slug =
+    pr.repo === CURRENT_REPO_SLUG ? CURRENT_REPO_SLUG : LEGACY_REPO_SLUG;
+  const url = `https://github.com/${slug}/pull/${pr.number}`;
   const title = pr.title ?? `PR #${pr.number}`;
   return `- [#${pr.number}](${url}) — ${title}${date ? ` _(${date})_` : ""}`;
 }

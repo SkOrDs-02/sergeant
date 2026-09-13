@@ -2,7 +2,7 @@
 
 > **Update 2026-07-21:** Backend на **Hetzner/Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)); OpenClaw decommissioned ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)). Railway CLI/дашборд нижче — **historical**, де не позначено Coolify.
 
-> **Last touched:** 2026-09-12 by @claude. **Next review:** 2026-12-23.
+> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-24.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -398,7 +398,7 @@ Auto-create / auto-drop indexes на основі stat-ів — anti-pattern:
 
 | PR                                                       | Title                                                                  | Merged     |
 | -------------------------------------------------------- | ---------------------------------------------------------------------- | ---------- |
-| [#1098](https://github.com/Skords-01/Sergeant/pull/1098) | fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника | 2026-09-11 |
+| [#1098](https://github.com/SkOrDs-02/sergeant/pull/1098) | fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника | 2026-09-11 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

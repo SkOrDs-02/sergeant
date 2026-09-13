@@ -445,7 +445,7 @@ n/a.
 
 | PR                                                       | Title                                                                  | Merged     |
 | -------------------------------------------------------- | ---------------------------------------------------------------------- | ---------- |
-| [#1098](https://github.com/Skords-01/Sergeant/pull/1098) | fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника | 2026-09-11 |
+| [#1098](https://github.com/SkOrDs-02/sergeant/pull/1098) | fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника | 2026-09-11 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
