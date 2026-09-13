@@ -1,6 +1,6 @@
 # Design System — Spacing, Elevation та Theming
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-17.
+> **Last touched:** 2026-09-13 by @claude. **Next review:** 2027-03-19.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює spacing scale, радіуси, тіні, мобільні брейкпоінти та темну тему / High Contrast.
@@ -169,11 +169,20 @@ shadow до e4 — бери `z-modal`. Їх розсинхронізація = p
    йде в pure `#000000` (HC-світла) і `#ffffff` (HC-темна).
 2. **Дільники ≥ 4.5:1** — `--c-line` бампається на near-black/near-white.
    Карти, інпути, таблиці отримують видимий edge без shadow-залежності.
-3. **Focus-ring 3px** — `--ring-width-hc: 3px;` і
+3. **Focus-ring 5px проти базових 3px** — `--ring-width-hc: 5px;` і
    `--focus-ring-width: var(--ring-width-hc);` Усі примітиви, які
    читають `--focus-ring-width`, автоматично отримують ширший фокус-
-   індикатор. Колір — `brand-strong` на світлій, `amber-300` на темній
-   (≥ 3:1 проти власного bg).
+   індикатор.
+
+   > **Виправлення 2026-09-13.** Тут стояло `3px` — рівно стільки ж, скільки
+   > в `:root`. Тобто swap підставляв ідентичне значення, жоден примітив
+   > нічого не отримував, і твердження «автоматично отримують ширший»
+   > було неправдою від моменту написання. Помітити на око неможливо:
+   > токен є, оверайд є, індирекція є — рівні лише самі числа. Розбіжність
+   > тепер тримає `apps/web/src/styles/theme.focusRingHc.test.ts`
+   > (HC строго більший за базу і щонайменше в півтора раза). Колір — `brand-strong` на світлій, `amber-300` на темній
+   > (≥ 3:1 проти власного bg).
+
 4. **Жодних low-opacity surfaces** — soft-варіанти
    (`success-soft`, `brand-soft`, `finyk-soft`, …) фліпаються на
    full-strength fill, щоб banner / badge / pill читалися на 7:1.

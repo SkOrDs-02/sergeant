@@ -883,9 +883,15 @@
 
        1. Text vs. background ≥ 7:1 (WCAG AAA "Contrast (Enhanced)").
        2. Dividers vs. background ≥ 4.5:1 — separators always read.
-       3. Focus ring uses a token-driven width (`--ring-width-hc: 3px`)
-          and brand-strong colour so the visible focus indicator
-          (Hard Rule #14) stays unambiguous at distance.
+       3. Focus ring uses a token-driven width (`--ring-width-hc: 5px`
+          проти базових 3px) and brand-strong colour so the visible focus
+          indicator stays unambiguous at distance.
+
+          AI-DANGER: значення МУСИТЬ лишатись більшим за `--focus-ring-width`
+          у `:root`. До 2026-09-13 обидва були 3px — тобто вся індирекція не
+          робила нічого, а канон при цьому стверджував, що примітиви
+          отримують «ширший» індикатор. Розбіжність тримає
+          `theme.focusRingHc.test.ts`; підіймаєш базу — підіймай і це.
        4. No low-opacity surfaces — "soft" status tints fall back to a
           full-strength bordered surface so banners/badges stay legible.
 
@@ -926,7 +932,7 @@
 
   [data-theme-preview="hc-light"] {
     color-scheme: light;
-    --ring-width-hc: 3px;
+    --ring-width-hc: 5px;
     --focus-ring-width: var(--ring-width-hc);
     --c-bg: 253 249 243;
     --c-panel: 255 255 255;
@@ -945,7 +951,7 @@
 
   [data-theme-preview="hc-dark"] {
     color-scheme: dark;
-    --ring-width-hc: 3px;
+    --ring-width-hc: 5px;
     --focus-ring-width: var(--ring-width-hc);
     --c-bg: 23 20 18;
     --c-panel: 32 28 25;
@@ -965,8 +971,10 @@
   html.hc {
     /* Default focus-ring width swap — primitives that reference
        `--focus-ring-width` get a thicker ring without changing their
-       Tailwind classes. */
-    --ring-width-hc: 3px;
+       Tailwind classes. 5px проти базових 3px: до 2026-09-13 тут стояло
+       3px, тобто «swap» міняв значення на ідентичне і жоден примітив
+       нічого не отримував. */
+    --ring-width-hc: 5px;
     --focus-ring-width: var(--ring-width-hc);
     /* Focus stays teal (the canonical accent) — no longer keyed to `brand`,
        which is now the neutral hub stone (design-audit M1). */
