@@ -128,15 +128,23 @@ export function DayProgressRing({
                 «0/3» → 26.0px    «100/100» → 19.4px
                 «10/12» → 26.0px  «1000/1000» → 15.0px
 
-              Підлога 12px — текстова підлога системи; нижче за неї значення
-              обріжеться, але для цього потрібні шестизначні лічильники. */}
+              Підлога 12px — текстова підлога системи, і НИЖЧЕ ЗА НЕЇ формула
+              вже не рятує: «123456/123456» на 12px дає ~91px при просвіті 82.
+              Тому підлогу страхує кліпер — `maxWidth` на просвіт плюс
+              `overflow-hidden`. Без нього рядок не «обрізався б», як тут
+              спершу було записано, а наліз би на обведення кільця: у
+              `<span>` не було ні межі ширини, ні `overflow` (знахідка рев'ю
+              на #1119 — я задокументував поведінку, якої в коді не існувало).
+              Зміст при цьому не губиться: повне значення несе `aria-label`
+              кнопки. */}
           <span
-            className="text-style-headline-fixed text-hero-ink tabular-nums"
-            style={
-              ringFontSize < RING_MAX_FONT_PX
+            className="text-style-headline-fixed text-hero-ink tabular-nums overflow-hidden text-center"
+            style={{
+              maxWidth: `${RING_APERTURE_PX}px`,
+              ...(ringFontSize < RING_MAX_FONT_PX
                 ? { fontSize: `${ringFontSize}px` }
-                : undefined
-            }
+                : {}),
+            }}
           >
             {completed}/{scheduled}
           </span>
