@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-12 by @claude. **Next review:** 2026-12-29.
+> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-30.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -178,7 +178,7 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 
 | Metric                                           | Budget                              | Where enforced                                                                                                                                                                                                          |
 | ------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web` JS total (brotli)                     | **≤ 1.44 MB**                       | `pnpm --filter @sergeant/web exec size-limit` (CI job `bundle-budgets`)                                                                                                                                                 |
+| `apps/web` JS total (brotli)                     | **≤ 1.46 MB**                       | `pnpm --filter @sergeant/web exec size-limit` (CI job `bundle-budgets`)                                                                                                                                                 |
 | `apps/web` CSS (brotli)                          | **≤ 40 kB**                         | same                                                                                                                                                                                                                    |
 | `apps/web` **eager** JS (критичний шлях, brotli) | **≤ 268 kB**                        | `node scripts/ci/check-eager-bundle.mjs` (CI job `bundle-budgets`); локально `pnpm --filter @sergeant/web size:eager`                                                                                                   |
 | `apps/web` LCP (median, 4 LHCI routes)           | **≤ 3000 ms** (`error` — fail-stop) | `apps/web/lighthouserc.json` + `.github/workflows/lighthouse-ci.yml` (status `Lighthouse CI`); local: `pnpm --filter @sergeant/web lighthouse`                                                                          |
@@ -187,6 +187,23 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 | Backend `/health` p95                            | < 100 ms                            | Formalized in [`docs/operations/observability/SLO.md §2.1`](./docs/operations/observability/SLO.md#21-health-endpoint-p95); alert-правило `BackendHealthP95High` — design-only, не wired (див. SLO.md § Статус wiring). |
 | `/api/chat` **перший хід** p95 повної відповіді  | **< 15 s** (стеля-детектор)         | `chat_first_turn_phase_ms{phase="total"}` (Prometheus → Grafana Cloud). Факт 2026-09-01: медіана ≈6,7 с, max 13,7 с. Перший хід не стрімиться, тож SLO про перший токен тут не має предмета — знахідка AI-2.            |
 | `/api/chat` **тур синтезу** p95 first token      | < 1.5 s                             | `ai_first_token_ms` (той самий скрейп). Моделезалежно: flash-lite 365 мс, haiku-4.5 954 мс, sonnet-5 5 586 мс.                                                                                                          |
+
+**Ратчет 2026-09-13 (JS 1.44 → 1.46 MB) — стеля була вичерпана на `main`, не пробита фічею.**
+
+Заміряно на одній машині тим самим `size-limit`, локально:
+
+| Дерево                    | JS (brotli)   | Стан при ліміті 1 440 000 B |
+| ------------------------- | ------------- | --------------------------- |
+| `origin/main` (`5f60758`) | **1 439 571** | зелено, запас **429 B**     |
+| гілка хвилі 6 (`63cc780`) | **1 440 162** | червоно, перевищення 162 B  |
+
+Тобто внесок гілки — **591 B**, а запасу на `main` лишалось 429. Головне тут не число гілки, а стан бази: **99.97% стелі вибрано**. Гейт у такому стані вже не ловить регресії — він червонітиме на будь-якому наступному PR незалежно від змісту, тобто повертається рівно той стан «червоний завжди = вимкнений», яким обґрунтовані ратчети 2026-08-02 і 2026-08-05.
+
+**Перед підняттям перевірено те, чого вимагає урок 2026-09-01** (не піднімай стелю, поки не переконався, що перевищення не є сміттям, яке код вважає виключеним). `DesignShowcase` у прод-бандлі немає — той борг закрито. 386 чанків; уся верхня дюжина — навмисні важкі фічі, кожна у власному `manualChunk`: `vendor-zxing` (сканер), `vendor-sentry`, `NutritionApp`, `vendor-sqlite`, `vendor-posthog`, `sqlite3-worker1`. Дешевого важеля немає.
+
+**Критичний шлях не постраждав, і це вирішальне.** `size:eager` на тій самій гілці — **261.1 kB при ліміті 268.0** (74 preload-чанки), тобто +0.3 kB до бази 260.8 після ратчету 2026-09-12. Саме eager корелює з відчутною швидкістю завантаження; `size-limit` сумує всі 386 чанків, включно з тими, які більшість людей ніколи не завантажить. Перевірено й окрему підозру: `ProductThumb` кличе `categorizeFood`, а це таблиця на 28 kB сирих — але вона вже була в чанку `NutritionApp` через `useShoppingListPantryMath` і `useSilpoPantryReplenish`, тож нової ваги імпорт не додав.
+
+Нове число дає ~1.4% запасу над фактом 1 440 162 — у межах практики попередніх ратчетів (1-2%): достатньо, щоб звичайна продуктова робота не червонила гейт щотижня, і мало, щоб новий важкий vendor усе одно розбудив. **Це не дозвіл рости далі.** Стеля піднята вчетверте за пів року (1.25 → 1.35 → 1.38 → 1.42 → 1.44 → 1.46), і жодного разу причиною не був новий важкий vendor — щоразу накопичення. Борг на скорочення лишається в [`frontend.md`](./docs/work/specs/tech-debt/frontend.md).
 
 **Ратчет 2026-09-11 (JS 1.42 → 1.44 MB) — і той самий мовчазний гейт, тільки гірше.**
 

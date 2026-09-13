@@ -37,3 +37,16 @@ fcd3c267e1ef00467d1de18d64bbc5b2adb2fba2:docs/03-operations/deploy/monorepo-depl
 # renamed the constant to `STRIP_HINT_DISMISSED_SLOT` so future commits
 # don't carry the pattern.
 decc1928a6b2e2e4f9949835d9b17863318befb5:apps/web/src/modules/finyk/pages/overview/MonthStrip.tsx:generic-api-key:177
+
+# packages/shared/src/lib/streakMilestones.ts (commit a50be17c) carried the
+# localStorage slot constant для дедупу святкувань віх — ALL_CAPS-ім'я з
+# суфіксом `_KEY`, якому присвоєно довге snake_case-значення. Та сама форма,
+# що вже ловилась у `MonthStrip.tsx` (запис вище), і та сама причина:
+# `generic-api-key` реагує на суфікс імені + ентропію значення, а не на
+# те, чим воно є. Це ім'я слота у сховищі пристрою, не облікові дані.
+# Подальший коміт перейменував константу на `CLAIMED_SLOT`, тож майбутні
+# коміти цього патерну вже не несуть; цей fingerprint гасить саме
+# історичний коміт, до якого перейменування не дотягується.
+# (Саме значення тут навмисно не повторене, щоб цей коментар не тригерив
+# ту саму евристику.)
+a50be17c99b85ec3c21584ab1f8731f0b0762c8c:packages/shared/src/lib/streakMilestones.ts:generic-api-key:62

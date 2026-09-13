@@ -146,6 +146,27 @@
   bottom: calc(60px + env(safe-area-inset-bottom, 0px));
 }
 
+:root {
+  /* ═══════════════════════════════════════════════════════════════════════
+     DEMO-BADGE FOOTPRINT — single source for two independent consumers:
+     `above-tabbar-pill` below (positions the pill itself) and the
+     scroll-region clearance in `mobile.css` (`html[data-demo-badge] main`,
+     shrinks the scroll band so cards don't scroll underneath the fixed
+     pill). Both used to hardcode their own copy of this arithmetic and
+     drifted apart when only one side was updated for the measured-inset
+     rework — the pill moved up, the clearance didn't (design-audit
+     2026-09-13, PR-X2; parser-guarded by
+     `mobile.demoBadgeClearance.test.ts`). Change the numbers here once;
+     both consumers follow automatically.
+     ═══════════════════════════════════════════════════════════════════════ */
+  --sgt-demo-badge-bottom-offset: calc(
+    max(env(safe-area-inset-bottom, 0px), var(--sgt-bottom-nav-inset, 0px)) +
+      4.5rem
+  );
+  /* Tailwind `h-11` on the `DemoModeBadge` button (`DemoModeBadge.tsx`). */
+  --sgt-demo-badge-height: 2.75rem;
+}
+
 @utility above-tabbar-pill {
   /* ═══════════════════════════════════════════════════════════════════════
      GENERIC "SITS ABOVE THE DOCKED TABBAR" OFFSET — for `fixed`,
@@ -174,10 +195,7 @@
      font-scale bump away from the exact overlap this utility exists to
      fix — 4.5rem clears it with margin instead.
      ═══════════════════════════════════════════════════════════════════════ */
-  bottom: calc(
-    max(env(safe-area-inset-bottom, 0px), var(--sgt-bottom-nav-inset, 0px)) +
-      4.5rem
-  );
+  bottom: var(--sgt-demo-badge-bottom-offset);
 }
 
 @utility routine-touch-field {

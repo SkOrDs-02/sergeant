@@ -108,9 +108,24 @@ describe("H9 estimateMicros (linear tariff)", () => {
 });
 
 describe("H9 dailyCapMicros (env override)", () => {
-  it("default = $1.00 / day", () => {
-    expect(__testing.dailyCapMicros()).toBe(__testing.MICROS_PER_USD);
-    expect(__testing.dailyCapMicros()).toBe(1_000_000);
+  // Знижено з $1.00 2026-09-13 (V1). Число тут навмисно дубльоване
+  // літералом, а не виведене з `MICROS_PER_USD / 10`: сенс тесту — щоб
+  // зміна дефолту вимагала свідомо переписати очікування, а не тихо
+  // проїхала разом із формулою.
+  it("default = $0.10 / day", () => {
+    expect(__testing.dailyCapMicros()).toBe(100_000);
+    expect(__testing.DEFAULT_DAILY_CAP_MICROS).toBe(100_000);
+  });
+
+  // $0.10 ≈ 25 МБ аудіо ≈ понад 40 хвилин мовлення на добу. Тест тримає
+  // не саме число, а те, що воно лишається придатним для людини: стеля,
+  // за якої не влазить і десять хвилин, була б не обмеженням зловживань,
+  // а поломкою фічі.
+  it("дефолтна стеля лишає простір щонайменше на 20 хвилин мовлення", () => {
+    const tenMbMicros = __testing.estimateMicros(10 * 1024 * 1024);
+    const tenMbMinutes = 10; // ~10 МБ webm/opus ≈ ~10 хв мовлення
+    const minutes = (__testing.dailyCapMicros() / tenMbMicros) * tenMbMinutes;
+    expect(minutes).toBeGreaterThanOrEqual(20);
   });
 
   it("env-override приймається коли ціле невідʼємне", () => {
@@ -135,13 +150,13 @@ describe("H9 dailyCapMicros (env override)", () => {
 describe("H9 assertTranscribeUsdCap — happy path", () => {
   it("пропускає виклик, що в межах cap-у; коерсить bigint→number", async () => {
     queryMock.mockResolvedValueOnce({
-      rows: [{ usd_micros: "100000" }], // 0.10 USD з раніших викликів
+      rows: [{ usd_micros: "20000" }], // 0.02 USD з раніших викликів
     });
     const req = makeReq("user-123");
     const res = makeRes();
     const r = await assertTranscribeUsdCap(req, res, TEN_MB, MODEL);
     expect(r.ok).toBe(true);
-    expect(r.spent_micros).toBe(100_000);
+    expect(r.spent_micros).toBe(20_000);
     expect(res.statusCode).toBe(200);
     expect(res.body).toBeUndefined();
     // SELECT параметризований subject_key, day, bucket
@@ -163,9 +178,9 @@ describe("H9 assertTranscribeUsdCap — happy path", () => {
 
 describe("H9 assertTranscribeUsdCap — cap-hit (402)", () => {
   it("spent + estimate > cap → 402 TRANSCRIBE_USD_CAP, без SELECT-у Groq-a", async () => {
-    // 0.99 USD витрачено → ще один 10 MB ($0.04) перебʼє $1.00 cap.
+    // 0.09 USD витрачено → ще один 10 MB ($0.04) перебʼє $0.10 cap.
     queryMock.mockResolvedValueOnce({
-      rows: [{ usd_micros: "990000" }],
+      rows: [{ usd_micros: "90000" }],
     });
     const req = makeReq("user-spammer");
     const res = makeRes();
@@ -174,24 +189,26 @@ describe("H9 assertTranscribeUsdCap — cap-hit (402)", () => {
     expect(r.reason).toBe("cap_hit");
     expect(res.statusCode).toBe(402);
     expect((res.body as { code?: string }).code).toBe("TRANSCRIBE_USD_CAP");
-    expect((res.body as { cap_usd?: number }).cap_usd).toBe(1);
-    expect((res.body as { spent_usd?: number }).spent_usd).toBeCloseTo(0.99);
+    expect((res.body as { cap_usd?: number }).cap_usd).toBeCloseTo(0.1);
+    expect((res.body as { spent_usd?: number }).spent_usd).toBeCloseTo(0.09);
     expect(capCounterIncMock).toHaveBeenCalledWith({ outcome: "cap_hit" });
     // Структурований лог для алертингу (Sentry hook).
     expect(warnMock).toHaveBeenCalledWith(
       expect.objectContaining({
         msg: "transcribe.usd_cap_hit",
         subject: "u:user-spammer",
-        cap_micros: 1_000_000,
+        cap_micros: 100_000,
       }),
     );
   });
 
   it("граничний кейс: spent + estimate = cap → пропускає (off-by-one)", async () => {
-    // 0.96 USD spent + $0.04 estimate = $1.00 cap. > порівнюється
-    // строго, тож запит має пройти.
+    // Стеля пінується явно, а не береться з дефолту: предмет цього тесту —
+    // строгість порівняння `>`, і він не має падати щоразу, коли рухають
+    // дефолтне число. $0.06 spent + $0.04 estimate = $0.10 cap.
+    process.env["TRANSCRIBE_USD_CAP_DAILY_MICROS"] = "100000";
     queryMock.mockResolvedValueOnce({
-      rows: [{ usd_micros: "960000" }],
+      rows: [{ usd_micros: "60000" }],
     });
     const r = await assertTranscribeUsdCap(
       makeReq("u-edge"),

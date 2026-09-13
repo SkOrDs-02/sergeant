@@ -45,6 +45,8 @@ import {
 } from "../onboarding/vibePicks";
 import { useOnboardingState } from "../onboarding/useOnboardingState";
 import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration";
+import { isDemoMode } from "../onboarding/demoMode";
+import { isLocalOnlyBannerVisible } from "./localOnlyBannerVisibility";
 import { hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
@@ -218,9 +220,17 @@ export interface HubDashboardState {
 export function useHubDashboardState(props: {
   onOpenModule: (module: string) => void;
   user: User | null;
+  /**
+   * `status` з `AuthContext`, прокинутий згори (`HubDashboard.tsx`).
+   * Свідомо проп, а не `useAuthOptional()` тут: два юніт-тести цього модуля
+   * (`*.pluralize`, `*.coachInsightEnabled`) навмисно живуть без DOM, і
+   * імпорт `AuthContext` роняє їх на `window is not defined`. Навіщо статус
+   * потрібен — див. `localOnlyBannerVisibility.ts`.
+   */
+  authStatus?: string | undefined;
   onShowAuth: () => void;
 }): HubDashboardState {
-  const { onOpenModule, user, onShowAuth } = props;
+  const { onOpenModule, user, onShowAuth, authStatus } = props;
 
   const [order, setOrder] = useState(loadDashboardOrder);
   const density = useDashboardDensity();
@@ -239,6 +249,21 @@ export function useHubDashboardState(props: {
   // first non-demo entry — must run alongside detectFirstRealEntry on the render
   // path, else the event never emits and the activation funnel stays at 0%.
   detectFirstActionCompletedPerModule();
+  // Hoisted above its original call-site (near `insightsDefaultOpen` below)
+  // so `useOnboardingState` can read it too — see `localOnlyBannerVisible`.
+  const inFtuxSession = !hasRealEntry && !isFirstRealEntryDone();
+  // Предикат винесено в `localOnlyBannerVisibility.ts` — там і повне
+  // пояснення, чому він мусить збігатися з гейтом самого банера, і чому
+  // `authStatus` обовʼязковий (виправлення ревʼю #1128). Потрібен тут
+  // (PR-H4, design-audit 2026-09-13), щоб soft-auth hero відступав, поки
+  // банер уже ставить те саме питання «увійди» — див.
+  // `computeSoftAuthEligible` в `useOnboardingState.ts`.
+  const localOnlyBannerVisible = isLocalOnlyBannerVisible({
+    inFtuxSession,
+    hasUser: Boolean(user),
+    authStatus,
+    isDemo: isDemoMode(),
+  });
   const entryCount = useMemo(
     () => countRealEntries(),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- storage-write tick
@@ -265,6 +290,7 @@ export function useHubDashboardState(props: {
     todayFocusAvailable: focusProbe.focus !== null,
     reengagementEligible: reengagement.show,
     onShowAuth,
+    localOnlyBannerVisible,
   });
 
   const [crossModulePreviewSource, setCrossModulePreviewSource] =
@@ -503,8 +529,9 @@ export function useHubDashboardState(props: {
 
   // Smart-expand: open insights on first render when the user has at least
   // one actionable rec, is past FTUX, and is on a viewport wide enough to
-  // benefit from seeing expanded content (>= 390px).
-  const inFtuxSession = !hasRealEntry && !isFirstRealEntryDone();
+  // benefit from seeing expanded content (>= 390px). `inFtuxSession` is
+  // computed above (near `hasRealEntry`) so `localOnlyBannerVisible` can
+  // read it too.
   const hasActionableInsight = rest.length > 0;
   const insightsDefaultOpen =
     sessionDays >= 7 ||

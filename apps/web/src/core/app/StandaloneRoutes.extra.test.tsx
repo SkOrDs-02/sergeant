@@ -22,6 +22,7 @@ type AuthUser = ReturnType<typeof useAuth>["user"];
 const mockShouldShowOnboarding = vi.fn<() => boolean>(() => false);
 vi.mock("../onboarding/onboardingGate", () => ({
   shouldShowOnboarding: () => mockShouldShowOnboarding(),
+  markOnboardingDone: () => {},
 }));
 
 const noop = () => {};

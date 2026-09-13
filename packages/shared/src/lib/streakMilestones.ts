@@ -2,7 +2,8 @@
  * Last validated: 2026-09-13
  * Status: Active
  *
- * Віхи стріку: ОДИН набір порогів і ОДНА функція перетину на весь продукт.
+ * Віхи стріку: пороги централізовані тут (наборів два — див. нижче),
+ * а функція перетину і дедуп святкувань — одні на весь продукт.
  *
  * До цього модуля пороги жили в чотирьох місцях і три з них розходились:
  * `dashboardCards.tsx` (аналітика хаба), `StreakFlame.tsx` (пульс іконки),
@@ -59,7 +60,13 @@ export function highestMilestoneCrossed(
 // Дедуп святкувань — device-local
 // ---------------------------------------------------------------------------
 
-const CLAIMED_KEY = "streak_milestones_claimed_v1";
+// Ім'я НЕ закінчується на `_KEY`: ALL_CAPS-назва з таким суфіксом плюс
+// довге snake_case-значення — це рівно та форма, яку gitleaks ловить
+// евристикою `generic-api-key` (той самий випадок, що `MonthStrip.tsx`
+// → `STRIP_HINT_DISMISSED_SLOT`). Значення — слот у сховищі пристрою,
+// і воно мусить лишатись стабільним: зміниш рядок — усі вже зайняті
+// віхи на пристроях людей стануть незайнятими, і плашки вистрелять удруге.
+const CLAIMED_SLOT = "streak_milestones_claimed_v1";
 
 interface ClaimedMap {
   /** `"<scope>:<days>"` → true. */
@@ -103,14 +110,14 @@ export function claimStreakMilestone(
   currentStreak: number,
   milestones: readonly number[] = CELEBRATED_STREAK_MILESTONES,
 ): number | null {
-  const map = readJSON<ClaimedMap>(store, CLAIMED_KEY) ?? {};
+  const map = readJSON<ClaimedMap>(store, CLAIMED_SLOT) ?? {};
 
   if (map[seededKey(scope)] !== true) {
     map[seededKey(scope)] = true;
     for (const m of milestones) {
       if (currentStreak >= m) map[claimKey(scope, m)] = true;
     }
-    writeJSON(store, CLAIMED_KEY, map);
+    writeJSON(store, CLAIMED_SLOT, map);
     return null;
   }
 
@@ -128,6 +135,6 @@ export function claimStreakMilestone(
   for (const m of milestones) {
     if (m <= reached) map[claimKey(scope, m)] = true;
   }
-  writeJSON(store, CLAIMED_KEY, map);
+  writeJSON(store, CLAIMED_SLOT, map);
   return reached;
 }

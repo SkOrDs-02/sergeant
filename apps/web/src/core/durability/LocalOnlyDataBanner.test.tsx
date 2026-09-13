@@ -23,10 +23,12 @@ vi.mock("../auth/useLocalUserId", () => ({
 
 import { LocalOnlyDataBanner } from "./LocalOnlyDataBanner";
 import { NON_SYNCABLE_USER_IDS } from "../syncEngine/syncableUserId";
+import { DEMO_FLAG_KEY } from "../onboarding/seedDemoData/keys";
 
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  localStorage.clear();
 });
 
 describe("LocalOnlyDataBanner", () => {
@@ -45,6 +47,19 @@ describe("LocalOnlyDataBanner", () => {
 
   it("НЕ показується залогіненому — для нього твердження просто неправдиве", () => {
     useLocalUserIdMock.mockReturnValue("usr_abc123");
+    const { container } = render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
+    expect(container.firstChild).toBeNull();
+  });
+
+  // PR-H5 (design-audit 2026-09-13): `demo-local` теж несинхронізований id
+  // (`NON_SYNCABLE_USER_IDS`), тож без явного гейта банер показувався і в
+  // демо — попереджаючи про втрату даних, яких людина ніколи не вводила
+  // (сідер вигадав їх), і разом із карткою «Це приклад» займав понад
+  // половину першого екрана (129–288px банер + 571px до першої картки
+  // модуля з 844).
+  it("НЕ показується в демо — попередження про втрату даних, яких немає", () => {
+    localStorage.setItem(DEMO_FLAG_KEY, "1");
+    useLocalUserIdMock.mockReturnValue("demo-local");
     const { container } = render(<LocalOnlyDataBanner onSignIn={vi.fn()} />);
     expect(container.firstChild).toBeNull();
   });

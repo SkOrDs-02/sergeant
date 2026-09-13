@@ -47,6 +47,7 @@ import { messages } from "@shared/i18n/uk";
 import { useLocalUserId } from "../auth/useLocalUserId";
 import { isSyncableUserId } from "../syncEngine/syncableUserId";
 import { useHubBannerSlot } from "../hub/bannerBudget";
+import { isDemoMode } from "../onboarding/demoMode";
 
 const m = messages.durability.localOnly;
 
@@ -64,9 +65,16 @@ export function LocalOnlyDataBanner({
   const userId = useLocalUserId();
   // Бюджет банерів хабу (F3, 2026-09-01): це попередження — пріоритет 0,
   // тож місце в нього є завжди, коли воно хоче показатись.
+  //
+  // PR-H5 (design-audit 2026-09-13): демо-режим теж пише під несинхронним
+  // id (`demo-local` — див. `syncableUserId.ts`), але його дані вигадані
+  // сідером, а не введені людиною, тож попередження про втрату НЕ
+  // застосовне — воно бреше так само, як бреше залогіненому (докстрінг
+  // вище). У демо цей рядок займав 129–288px і зʼїдав більше половини
+  // першого екрана разом із карткою «Це приклад».
   const hasSlot = useHubBannerSlot(
     "localOnlyData",
-    userId !== null && !isSyncableUserId(userId),
+    userId !== null && !isSyncableUserId(userId) && !isDemoMode(),
   );
 
   // `null` — сесія ще вантажиться. Мигнути попередженням «дані під загрозою»
@@ -74,6 +82,7 @@ export function LocalOnlyDataBanner({
   // запамʼятає тривогу, а не факт.
   if (userId === null) return null;
   if (isSyncableUserId(userId)) return null;
+  if (isDemoMode()) return null;
   if (!hasSlot) return null;
 
   return (

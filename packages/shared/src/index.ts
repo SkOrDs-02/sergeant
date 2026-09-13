@@ -160,7 +160,8 @@ export * from "./lib/hints";
 // Daily nudges & re-engagement (Phase 3 — retention).
 export * from "./lib/nudges";
 
-// Віхи стріку — один набір порогів і один дедуп на весь продукт.
+// Віхи стріку — централізовані набори порогів (святкові + аналітичні)
+// і спільний дедуп святкувань.
 export * from "./lib/streakMilestones";
 
 // Cross-module preview — one-shot post-first-entry promo (S6.4).

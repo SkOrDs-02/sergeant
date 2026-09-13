@@ -12,6 +12,7 @@
 import { describe, it, expect, beforeEach } from "vitest";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
 import {
+  FINYK_ASSETS_KEY,
   FINYK_CUSTOM_CATS_KEY,
   FINYK_MANUAL_EXPENSES_KEY,
   FINYK_MANUAL_ONLY_KEY,
@@ -111,5 +112,29 @@ describe("seedFinyk", () => {
   it("sets the manual-only gate so Finyk skips the Monobank-login wall", () => {
     seedFinyk();
     expect(safeReadStringLS(FINYK_MANUAL_ONLY_KEY)).toBe("1");
+  });
+
+  // PR-F9 (design-audit 2026-09-13): the seeded bank rows above are
+  // TRANSACTIONS, not account BALANCES, so without a manual asset the
+  // Overview hero's «Капітал» rendered a bare `0 ₴` on a demo whose entire
+  // point is to show the product populated.
+  it("seeds a UAH manual asset so the hero's net worth is non-zero", () => {
+    seedFinyk();
+    const assets =
+      safeReadLS<
+        Array<{ id: string; amount: number; currency: string; name: string }>
+      >(FINYK_ASSETS_KEY)!;
+
+    expect(Array.isArray(assets)).toBe(true);
+    expect(assets.length).toBeGreaterThan(0);
+    const totalUah = assets
+      .filter((a) => a.currency === "UAH")
+      .reduce((sum, a) => sum + a.amount, 0);
+    // `computeAssetsSummary` (`@sergeant/finyk-domain`) requires an exact
+    // `"UAH"` match and sums straight into net worth — this is the same
+    // arithmetic Overview's hero runs, pinned so a currency-string typo or
+    // an accidentally-zeroed amount regresses loudly here instead of only
+    // showing up as a silent `0 ₴` in a live browser.
+    expect(totalUah).toBeGreaterThan(0);
   });
 });
