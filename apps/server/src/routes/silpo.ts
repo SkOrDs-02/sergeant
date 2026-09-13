@@ -29,6 +29,7 @@ import {
 } from "../modules/silpo/oauth.js";
 import { persistTokens, silpoKeyRing } from "../modules/silpo/tokenStore.js";
 import { diagnoseSilpo } from "../modules/silpo/diagnose.js";
+import { AppError, ExternalServiceError } from "../obs/errors.js";
 import {
   getReceiptDetail,
   listReceipts,
@@ -360,13 +361,64 @@ export async function syncStateHandler(
 }
 
 /** "Оновити чеки" button. Errors are thrown as `AppError` subclasses (Express 5 forwards async rejections to `errorHandler` automatically) — this is an explicit user action, a clean 4xx/5xx is the correct response, not a swallowed staleness banner. */
+/**
+ * Коди, на яких копія помилки нічого не пояснює: «Сільпо змінили формат
+ * відповіді» і «не віддав чеки» описують СИМПТОМ, а причина лишалась у
+ * серверному лозі. Для них — і тільки для них — доганяємо діагноз.
+ */
+const DIAGNOSABLE_SYNC_CODES = new Set([
+  "SILPO_SCHEMA_DRIFT",
+  "SILPO_TOOL_ERROR",
+]);
+
 export async function syncHandler(req: Request, res: Response): Promise<void> {
   if (!assertSilpoEnabled(res)) return;
   const userId = getUserId(req as AuthedRequest, res);
   if (!userId) return;
 
-  const result = await pullAndSyncReceipts(userId);
-  res.status(200).json(SilpoSyncResultSchema.parse(result));
+  try {
+    const result = await pullAndSyncReceipts(userId);
+    res.status(200).json(SilpoSyncResultSchema.parse(result));
+  } catch (err) {
+    throw await withSyncDiagnosis(userId, err);
+  }
+}
+
+/**
+ * Дописує причину в текст помилки синку.
+ *
+ * Звіт власника 2026-09-13: «пише все одно, що змінили формат». Так і мало
+ * бути — копія не залежала від причини, а причину писав лише лог. Спершу це
+ * лікували окремим ендпоінтом `/api/silpo/diag`, але його треба ЗНАТИ й
+ * відкривати руками, та ще й під тією ж сесією (на піддомені API кука не
+ * їде — перевірено). Тож діагноз доганяємо самі, рівно там, де людина вже
+ * бачить помилку: у тій самій червоній плашці, без жодної нової кнопки.
+ *
+ * Ціна — один додатковий похід до Сільпо, і ЛИШЕ на вже невдалому синку
+ * (успішний шлях не чіпаємо). Провал самої діагностики нічого не ламає:
+ * повертаємо вихідну помилку як є.
+ */
+async function withSyncDiagnosis(
+  userId: string,
+  err: unknown,
+): Promise<unknown> {
+  if (!(err instanceof AppError) || !DIAGNOSABLE_SYNC_CODES.has(err.code)) {
+    return err;
+  }
+  try {
+    const diagnosis = await diagnoseSilpo(userId);
+    if ("unavailable" in diagnosis) return err;
+    logger.info({ msg: "silpo_sync_diagnosed", verdict: diagnosis.verdict });
+    return new ExternalServiceError(`${err.message}. ${diagnosis.verdict}`, {
+      code: err.code,
+    });
+  } catch (diagErr) {
+    logger.warn({
+      msg: "silpo_sync_diagnosis_failed",
+      err: diagErr instanceof Error ? diagErr.message : String(diagErr),
+    });
+    return err;
+  }
 }
 
 // ──────────────────────────────── Receipts read ────────────────────────────

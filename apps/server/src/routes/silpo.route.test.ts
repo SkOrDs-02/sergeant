@@ -25,6 +25,7 @@ const mocks = vi.hoisted(() => ({
   persistTokens: vi.fn(),
   silpoKeyRing: vi.fn(),
   pullAndSyncReceipts: vi.fn(),
+  diagnoseSilpo: vi.fn(),
   listReceipts: vi.fn(),
   getReceiptDetail: vi.fn(),
   unlinkReceiptFromTransaction: vi.fn(),
@@ -46,6 +47,10 @@ vi.mock("../env/env.js", () => ({ env: mocks.envState }));
 
 vi.mock("../auth/verificationMail.js", () => ({
   getWebAppOrigin: mocks.getWebAppOrigin,
+}));
+
+vi.mock("../modules/silpo/diagnose.js", () => ({
+  diagnoseSilpo: mocks.diagnoseSilpo,
 }));
 
 vi.mock("../modules/silpo/oauth.js", () => ({
@@ -105,6 +110,7 @@ vi.mock("../http/index.js", () => ({
 }));
 
 import { createSilpoRouter } from "./silpo.js";
+import { AppError, ExternalServiceError } from "../obs/errors.js";
 
 function appWith(): express.Express {
   const app = express();
@@ -478,7 +484,7 @@ describe("POST /api/silpo/sync", () => {
 
   it("propagates a thrown AppError's status/code to the client", async () => {
     mocks.pullAndSyncReceipts.mockRejectedValue(
-      Object.assign(new Error("Сільпо не підключено"), {
+      new AppError("Сільпо не підключено", {
         status: 409,
         code: "SILPO_NOT_CONNECTED",
       }),
@@ -890,5 +896,102 @@ describe("GET /api/silpo/cart", () => {
 
     expect(res.status).toBe(502);
     expect(res.body).toMatchObject({ code: "SILPO_UPSTREAM_ERROR" });
+  });
+});
+
+/**
+ * Звіт власника 2026-09-13: «пише все одно, що змінили формат». Копія
+ * описує симптом, причина лишалась у лозі. Тепер синк доганяє діагноз і
+ * дописує його в ту саму плашку, яку людина вже бачить.
+ */
+describe("POST /api/silpo/sync — причина в тексті помилки", () => {
+  // Саме `ExternalServiceError`, а не Object.assign-підробка: гард у
+  // `withSyncDiagnosis` перевіряє `instanceof AppError`, і тест мусить
+  // ходити тим самим типом, яким кидає `silpoErrorToAppError`.
+  function driftError(): ExternalServiceError {
+    return new ExternalServiceError(
+      "Сільпо змінили формат відповіді — оновлення тимчасово недоступне",
+      { code: "SILPO_SCHEMA_DRIFT" },
+    );
+  }
+
+  it("дописує вердикт діагностики до помилки дрейфу", async () => {
+    mocks.pullAndSyncReceipts.mockRejectedValue(driftError());
+    mocks.diagnoseSilpo.mockResolvedValue({
+      verdict:
+        "Сільпо прибрали або перейменували тули: silpo_get_my_online_orders.",
+    });
+
+    const res = await request(appWith())
+      .post("/api/silpo/sync")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(502);
+    expect(res.body.code).toBe("SILPO_SCHEMA_DRIFT");
+    expect(res.body.error).toContain("змінили формат");
+    expect(res.body.error).toContain("перейменували тули");
+  });
+
+  it("не ходить по діагноз, коли синк пройшов", async () => {
+    mocks.pullAndSyncReceipts.mockResolvedValue({
+      status: "connected",
+      offlinePulled: 0,
+      onlinePulled: 0,
+      receiptsInserted: 0,
+      itemsInserted: 0,
+      matched: 0,
+      ambiguous: 0,
+      unmatched: 0,
+    });
+
+    const res = await request(appWith())
+      .post("/api/silpo/sync")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(200);
+    expect(mocks.diagnoseSilpo).not.toHaveBeenCalled();
+  });
+
+  it("не чіпає помилки, які й так пояснюють себе", async () => {
+    mocks.pullAndSyncReceipts.mockRejectedValue(
+      Object.assign(new Error("Сільпо не підключено"), {
+        status: 409,
+        code: "SILPO_NOT_CONNECTED",
+      }),
+    );
+
+    const res = await request(appWith())
+      .post("/api/silpo/sync")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.body.error).toBe("Сільпо не підключено");
+    expect(mocks.diagnoseSilpo).not.toHaveBeenCalled();
+  });
+
+  it("провал самої діагностики не підміняє вихідну помилку", async () => {
+    mocks.pullAndSyncReceipts.mockRejectedValue(driftError());
+    mocks.diagnoseSilpo.mockRejectedValue(new Error("boom"));
+
+    const res = await request(appWith())
+      .post("/api/silpo/sync")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(502);
+    expect(res.body.error).toBe(
+      "Сільпо змінили формат відповіді — оновлення тимчасово недоступне",
+    );
+  });
+
+  it("стан без підключення лишає вихідну помилку як є", async () => {
+    mocks.pullAndSyncReceipts.mockRejectedValue(driftError());
+    mocks.diagnoseSilpo.mockResolvedValue({ unavailable: "not_connected" });
+
+    const res = await request(appWith())
+      .post("/api/silpo/sync")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.body.error).toBe(
+      "Сільпо змінили формат відповіді — оновлення тимчасово недоступне",
+    );
   });
 });
