@@ -48,6 +48,7 @@ export function ManualExpenseKindTabs({
         type="button"
         role="tab"
         aria-selected={!isIncome}
+        tabIndex={!isIncome ? 0 : -1}
         disabled={isSubmitting}
         onKeyDown={onTabKeyDown}
         onClick={() => onKindChange("expense")}
@@ -59,6 +60,7 @@ export function ManualExpenseKindTabs({
         type="button"
         role="tab"
         aria-selected={isIncome}
+        tabIndex={isIncome ? 0 : -1}
         disabled={isSubmitting}
         onKeyDown={onTabKeyDown}
         onClick={() => onKindChange("income")}

@@ -125,6 +125,36 @@ describe("useTablistArrowKeys", () => {
     expect(onSelect).not.toHaveBeenCalled();
   });
 
+  it.each([
+    ["altKey", { altKey: true }],
+    ["ctrlKey", { ctrlKey: true }],
+    ["metaKey", { metaKey: true }],
+  ])("модифікована стрілка (%s) належить браузеру, не нам", (_label, mods) => {
+    // Alt+← це «Назад» на Windows/Linux, Cmd+← — на macOS. Перехопивши їх,
+    // ми зʼїли б навігацію (preventDefault) і ще й перемкнули вкладку.
+    render(<Harness selected="b" />);
+    tab("b").focus();
+    const event = new KeyboardEvent("keydown", {
+      key: "ArrowLeft",
+      bubbles: true,
+      cancelable: true,
+      ...mods,
+    });
+    tab("b").dispatchEvent(event);
+    expect(event.defaultPrevented).toBe(false);
+    expect(document.activeElement).toBe(tab("b"));
+    expect(onSelect).not.toHaveBeenCalled();
+  });
+
+  it("немодифікована стрілка працює як і раніше", () => {
+    // Пара до тесту вище: гвардія модифікаторів не сміє гасити звичайний хід.
+    render(<Harness selected="b" />);
+    tab("b").focus();
+    press("b", "ArrowLeft");
+    expect(document.activeElement).toBe(tab("a"));
+    expect(onSelect).toHaveBeenCalledWith("a");
+  });
+
   it("enabled=false вимикає обробку повністю", () => {
     render(<Harness enabled={false} />);
     tab("a").focus();
