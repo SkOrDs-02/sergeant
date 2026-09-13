@@ -36,7 +36,15 @@ const fizrukMock = vi.hoisted(() => ({
   dailyLog: [] as unknown[],
 }));
 
-const persisted = vi.hoisted(() => ({ profile: [] as unknown[] }));
+const persisted = vi.hoisted(() => ({
+  profile: [] as unknown[],
+  /**
+   * Записи ТИЖНЕВОГО перерахунку. Раніше `persistAdaptiveNutritionPrefs`
+   * був заглушкою `() => true`, тож ядро фічі — сам перерахунок — не було
+   * покрите жодним тестом: покривався лише seed першої цілі.
+   */
+  adaptive: [] as unknown[],
+}));
 
 vi.mock("../../../core/profile/useBiometrics", () => ({
   useBiometrics: () => ({
@@ -68,7 +76,10 @@ vi.mock("../lib/nutritionStorage", async () => {
       persisted.profile.push(prefs);
       return true;
     },
-    persistAdaptiveNutritionPrefs: () => true,
+    persistAdaptiveNutritionPrefs: (prefs: unknown) => {
+      persisted.adaptive.push(prefs);
+      return true;
+    },
   };
 });
 
@@ -96,6 +107,18 @@ function basePrefs(): NutritionPrefs {
 
 function Probe({ prefs }: { prefs: NutritionPrefs }) {
   useAdaptiveNutritionGoal(EMPTY_LOG, prefs);
+  return null;
+}
+
+/** Той самий зонд, але з непорожнім журналом — для тижневого шляху. */
+function ProbeWithLog({
+  log,
+  prefs,
+}: {
+  log: NutritionLog;
+  prefs: NutritionPrefs;
+}) {
+  useAdaptiveNutritionGoal(log, prefs);
   return null;
 }
 
@@ -244,5 +267,216 @@ describe("useAdaptiveNutritionGoal · seed цілі", () => {
     expect(heavier).not.toBeNull();
     expect(lighter).not.toBeNull();
     expect(heavier!).toBeGreaterThan(lighter!);
+  });
+});
+
+/* -------------------------------------------------------------------------- *
+ *  ТИЖНЕВИЙ ПЕРЕРАХУНОК — ядро фічі, яке довго лишалось без тестів.
+ *
+ *  Покривався тільки seed першої цілі, бо `persistAdaptiveNutritionPrefs`
+ *  був заглушкою `() => true`. Тобто найдорожча частина — та, що САМА
+ *  змінює людині калорійну ціль, — не перевірялась ніяк.
+ *
+ *  Годинник заморожений на полудні: фікстури днів і сам хук читають
+ *  `Date.now()` НЕЗАЛЕЖНО одне від одного, тож прогін, що перетне місцеву
+ *  північ між цими читаннями, зсунув би вікно на добу. Той самий різновид
+ *  мерехтіння, який уже ловили в `useAverageWorkoutKcal.test.tsx`.
+ * -------------------------------------------------------------------------- */
+
+/** Денний запис із заданою калорійністю — один прийом, макроси явні. */
+function dayWithKcal(kcal: number) {
+  return {
+    meals: [
+      {
+        id: `m-${kcal}`,
+        name: "Прийом",
+        time: "12:00",
+        mealType: "lunch",
+        label: "Обід",
+        macros: { kcal, protein_g: 100, fat_g: 60, carbs_g: 200 },
+        source: "manual",
+        macroSource: "manual",
+        amount_g: null,
+        foodId: null,
+      },
+    ],
+  };
+}
+
+/** Журнал на `days` повних днів поспіль, що закінчується ВЧОРА. */
+function logOfCompleteDays(days: number, kcalPerDay: number): NutritionLog {
+  const log: Record<string, ReturnType<typeof dayWithKcal>> = {};
+  for (let i = 1; i <= days; i += 1) {
+    log[dayKeyDaysAgo(i)] = dayWithKcal(kcalPerDay);
+  }
+  return log as unknown as NutritionLog;
+}
+
+/** Зважування у вікні: `daysAgo` → вага. */
+function weightAt(daysAgo: number, weightKg: number) {
+  return { at: `${dayKeyDaysAgo(daysAgo)}T12:00:00.000Z`, weightKg };
+}
+
+function daysAgoIso(days: number): string {
+  return new Date(Date.now() - days * 86_400_000).toISOString();
+}
+
+/** Prefs із уже наявною ціллю — тобто шлях перерахунку, не seed-у. */
+function prefsWithGoal(
+  kcal: number,
+  lastUpdatedDaysAgo: number | null,
+): NutritionPrefs {
+  return {
+    ...basePrefs(),
+    dailyTargetKcal: kcal,
+    dailyTargetProtein_g: 150,
+    dailyTargetFat_g: 70,
+    dailyTargetCarbs_g: 200,
+    adaptiveGoalLastUpdatedAt:
+      lastUpdatedDaysAgo == null ? null : daysAgoIso(lastUpdatedDaysAgo),
+  } as unknown as NutritionPrefs;
+}
+
+type WrittenPrefs = {
+  dailyTargetKcal?: number;
+  adaptiveGoalLastUpdatedAt?: string | null;
+  adaptiveGoalLastReason?: {
+    averageIntakeKcal: number;
+    weightDeltaKg: number;
+    tdeeKcal: number;
+    goalKcal: number;
+  } | null;
+};
+
+function lastAdaptiveWrite(): WrittenPrefs | undefined {
+  return persisted.adaptive.at(-1) as WrittenPrefs | undefined;
+}
+
+/** Повний набір входів, за яких перерахунок МУСИТЬ відбутись. */
+function armSufficientData(kcalPerDay = 2000) {
+  // Вага падає: 80.0 → 79.5 за 12 днів. Знак тут несе весь сенс —
+  // спад ваги при відомому споживанні означає витрату ВИЩУ за нього.
+  fizrukMock.measurements = [
+    weightAt(13, 80.0),
+    weightAt(9, 79.8),
+    weightAt(5, 79.6),
+    weightAt(1, 79.5),
+  ];
+  return logOfCompleteDays(14, kcalPerDay);
+}
+
+describe("useAdaptiveNutritionGoal · тижневий перерахунок", () => {
+  beforeEach(() => {
+    const noon = new Date();
+    noon.setHours(12, 0, 0, 0);
+    vi.useFakeTimers();
+    vi.setSystemTime(noon);
+    persisted.profile = [];
+    persisted.adaptive = [];
+    fizrukMock.workouts = [];
+    fizrukMock.measurements = [];
+    fizrukMock.dailyLog = [];
+    biometricsMock.value = {
+      ...biometricsMock.value,
+      countWorkoutsInGoal: false,
+    };
+    localStorage.clear();
+    __resetAdaptiveGoalScheduleForTests();
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+    vi.clearAllMocks();
+  });
+
+  it("за достатніх даних і минулого тижня ціль перераховується", () => {
+    const log = armSufficientData();
+    render(<ProbeWithLog log={log} prefs={prefsWithGoal(2000, 8)} />);
+
+    expect(persisted.adaptive).toHaveLength(1);
+    const written = lastAdaptiveWrite();
+    expect(written?.dailyTargetKcal).toBeTypeOf("number");
+    expect(written?.dailyTargetKcal).not.toBe(2000);
+    expect(written?.adaptiveGoalLastUpdatedAt).toBeTypeOf("string");
+  });
+
+  it("до кінця тижня не рухає ціль", () => {
+    const log = armSufficientData();
+    render(<ProbeWithLog log={log} prefs={prefsWithGoal(2000, 3)} />);
+    expect(persisted.adaptive).toHaveLength(0);
+  });
+
+  // Ворота повноти: 9 днів із 14 — нижче порога `MIN_COMPLETE_DAYS`.
+  it("на неповних даних мовчить, а не рахує з того, що є", () => {
+    fizrukMock.measurements = [
+      weightAt(13, 80.0),
+      weightAt(9, 79.8),
+      weightAt(5, 79.6),
+      weightAt(1, 79.5),
+    ];
+    render(
+      <ProbeWithLog
+        log={logOfCompleteDays(9, 2000)}
+        prefs={prefsWithGoal(2000, 8)}
+      />,
+    );
+    expect(persisted.adaptive).toHaveLength(0);
+  });
+
+  it("без чотирьох зважувань мовчить", () => {
+    const log = logOfCompleteDays(14, 2000);
+    fizrukMock.measurements = [
+      weightAt(13, 80.0),
+      weightAt(9, 79.8),
+      weightAt(1, 79.5),
+    ];
+    render(<ProbeWithLog log={log} prefs={prefsWithGoal(2000, 8)} />);
+    expect(persisted.adaptive).toHaveLength(0);
+  });
+
+  /**
+   * Знімок підстави мусить описувати САМЕ той запис, у якому лежить.
+   * Інакше картка пояснення розійдеться з ціллю, яку пояснює, — а це
+   * найгірший різновид розбіжності: обидва числа виглядають правдиво.
+   */
+  it("знімок підстави описує саме записану ціль", () => {
+    const log = armSufficientData(2000);
+    render(<ProbeWithLog log={log} prefs={prefsWithGoal(2000, 8)} />);
+
+    const written = lastAdaptiveWrite();
+    const reason = written?.adaptiveGoalLastReason;
+    expect(reason).toBeTruthy();
+    expect(reason?.goalKcal).toBe(written?.dailyTargetKcal);
+    // Усі дні однакові, тож середнє детерміноване.
+    expect(reason?.averageIntakeKcal).toBe(2000);
+    // Вага впала → витрата ВИЩА за споживання. Переплутаний знак тут
+    // дав би протилежну рекомендацію, і це найдорожча помилка формули.
+    expect(reason?.weightDeltaKg).toBeLessThan(0);
+    expect(reason?.tdeeKcal).toBeGreaterThan(reason!.averageIntakeKcal);
+  });
+
+  /**
+   * Запобіжник амплітуди. Споживання навмисно абсурдне (4000 при цілі
+   * 2000), щоб виміряна витрата полізла далеко вгору: без обрізання одне
+   * вікно зсунуло б ціль на сотні ккал.
+   */
+  it("одне оновлення не зсуває ціль більш ніж на 10%", () => {
+    const log = armSufficientData(4000);
+    render(<ProbeWithLog log={log} prefs={prefsWithGoal(2000, 8)} />);
+
+    const written = lastAdaptiveWrite();
+    expect(written?.dailyTargetKcal).toBeTypeOf("number");
+    expect(written!.dailyTargetKcal!).toBeLessThanOrEqual(2000 * 1.1);
+    expect(written!.dailyTargetKcal!).toBeGreaterThanOrEqual(2000 * 0.9);
+  });
+
+  it("вимкнене автокалібрування не пише нічого", () => {
+    const log = armSufficientData();
+    const prefs = {
+      ...prefsWithGoal(2000, 8),
+      adaptiveGoalEnabled: false,
+    } as unknown as NutritionPrefs;
+    render(<ProbeWithLog log={log} prefs={prefs} />);
+    expect(persisted.adaptive).toHaveLength(0);
   });
 });

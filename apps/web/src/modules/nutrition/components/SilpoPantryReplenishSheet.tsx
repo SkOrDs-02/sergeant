@@ -17,7 +17,7 @@
 import { useState } from "react";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Button } from "@shared/components/ui/Button";
-import { Icon } from "@shared/components/ui/Icon";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
@@ -100,6 +100,22 @@ function ReceiptItemRow({
           checked={row.checked}
           onChange={() => onToggle(row.item.id)}
           className="shrink-0 w-5 h-5 accent-nutrition"
+        />
+        {/* Іконка харчової категорії. Тут вона несе інформацію, а не
+            прикрашає: чек — навмисно різнорідний кошик, і сусідні рядки
+            майже завжди з різних категорій. Саме тому її НЕ варто
+            додавати в результати пошуку («молоко» дає двадцять рядків
+            однієї категорії) — там двадцять однакових іконок були б
+            декоративним полем, а не якорем.
+
+            `aria-hidden`: категорія — це здогадка по назві, і озвучувати
+            її скрінрідеру поруч зі справжньою назвою товару означало б
+            видати здогад за факт. */}
+        <Icon
+          name={row.foodIconName as IconName}
+          size={16}
+          className={cn("shrink-0 text-subtle", !row.checked && "opacity-50")}
+          aria-hidden
         />
         {/* `min-w-0` потрібен і на СОБІ, і на кожній дитині: у grid трек
             за замовчуванням `min-width: auto`, тож дитина не стискається

@@ -46,6 +46,24 @@ export interface SilpoReplenishRow {
   item: SilpoReceiptItemDto;
   /** finyk-категорія позиції (детермінований мапер, `@sergeant/finyk-domain`). */
   category: string;
+  /**
+   * Іконка ХАРЧОВОЇ категорії — не плутати з `category` вище, це різні
+   * класифікації: та витратна (для Фініка), ця продуктова.
+   *
+   * Рахується тут задарма: `categorizeFood` уже викликається поруч
+   * заради `collapseBrand`, і доти її `iconName` просто викидався. Чек
+   * Сільпо на 20-40 рядків максимально різнорідний (молочка, овочі,
+   * побутова хімія, аптека), а єдиним якорем рядка був однаковий на всіх
+   * чекбокс.
+   *
+   * AI-DANGER: для НЕпродуктів тут навмисно нейтральний `package`, а не
+   * здогадка `categorizeFood`. Класифікатор навчений на їжі й на чужому
+   * ловиться на словах: «Зубна паста Sensodyne» дає `bottle` («Соуси та
+   * пасти»). Іконка-здогадка біля зубної пасти — це впевнено неправильна
+   * деталь, а вона гірша за відсутність деталі. Ознака продукту тут та
+   * сама, що вмикає галочку: `mapReceiptItemToCategory(item)`.
+   */
+  foodIconName: string;
   /** Display-назва існуючої позиції комори, якщо знайдено збіг за `canonicalFoodKey`. `null` = «нова позиція». */
   matchedName: string | null;
   /**
@@ -145,18 +163,19 @@ export function useSilpoPantryReplenish({
         const generic = category.collapseBrand
           ? genericFoodName(item.name)
           : "";
+        const finykCategory = mapReceiptItemToCategory(item);
+        const isGrocery = finykCategory === "groceries";
         return {
           item,
-          category: mapReceiptItemToCategory(item),
+          category: finykCategory,
+          foodIconName: isGrocery ? category.iconName : "package",
           matchedName: match ? displayFoodName(match.name) : null,
           genericName:
             generic && matchFoodName(generic) !== matchFoodName(item.name)
               ? generic
               : null,
           keepFull: keepFullState[item.id] ?? false,
-          checked:
-            checkedState[item.id] ??
-            mapReceiptItemToCategory(item) === "groceries",
+          checked: checkedState[item.id] ?? isGrocery,
         };
       }),
     [items, pantryIndex, checkedState, keepFullState],
