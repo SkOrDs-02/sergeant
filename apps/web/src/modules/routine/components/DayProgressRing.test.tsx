@@ -40,11 +40,29 @@ describe("DayProgressRing", () => {
       expect(el.style.fontSize).toBe("");
     });
 
-    it("довше значення дістає обчислений кегль, менший за стелю", () => {
-      const el = ringLabel(100, 100);
-      const px = Number.parseFloat(el.style.fontSize);
-      expect(px).toBeGreaterThan(12);
-      expect(px).toBeLessThan(26);
+    // Ширина рахується з ФАКТИЧНОГО кегля, який обрав компонент, а не
+    // звіряється з другим літералом — інакше це тавтологія, що виглядає як
+    // гейт. Метрики гліфів заміряні рендером (Manrope 700, `tabular-nums`) і
+    // продубльовані тут навмисно: саме вони роблять перевірку незалежною.
+    const DIGIT_EM = 0.6;
+    const SLASH_EM = 0.4131;
+    const APERTURE_PX = 78;
+    const widthAt = (value: string, fontPx: number) =>
+      ((value.length - 1) * DIGIT_EM + SLASH_EM) * fontPx;
+
+    // Округлення саме ВНИЗ: `Math.round` давав «1000/1000» 15.0px → 78.2px,
+    // тобто за кліпер, хоч значення вище підлоги й мало вміститись формулою.
+    // Діапазонна перевірка («менше за стелю») цього не бачила.
+    it.each([
+      [100, 100, "19.4px"],
+      [1000, 1000, "14.9px"],
+      [12345, 12345, "12.1px"],
+    ])("«%s/%s» → %s, і ширина лишається під просвітом", (c, s, fontSize) => {
+      const el = ringLabel(c, s);
+      expect(el.style.fontSize).toBe(fontSize);
+      expect(
+        widthAt(`${c}/${s}`, Number.parseFloat(el.style.fontSize)),
+      ).toBeLessThan(APERTURE_PX);
     });
 
     it("шестизначне значення сідає рівно на підлогу 12px", () => {
