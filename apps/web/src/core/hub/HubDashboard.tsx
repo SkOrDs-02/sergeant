@@ -13,6 +13,7 @@ import { useHubDashboardState } from "./useHubDashboardState";
 import { DENSITY_OUTER_SPACE, type HubDashboardProps } from "./hub.types";
 import { PrivacyLockBanner } from "../security/PrivacyLockBanner";
 import { useHubPref } from "../settings/hubPrefs";
+import { useAuthOptional } from "../auth/AuthContext";
 
 export const DASHBOARD_MODULE_LABELS = SHARED_DASHBOARD_MODULE_LABELS;
 export {
@@ -26,7 +27,18 @@ export function HubDashboard({
   user,
   onShowAuth,
 }: HubDashboardProps) {
-  const s = useHubDashboardState({ onOpenModule, user, onShowAuth });
+  // `useAuthOptional` (не `useAuth`) — поза `AuthProvider` він віддає `null`
+  // замість кидати, тож тести, що монтують цей компонент без провайдера,
+  // поводяться як раніше. Статус потрібен нижче за течією: без нього анонім
+  // у вікні завантаження сесії не бачив НІ банера durability, НІ soft-auth
+  // (ревʼю #1128) — розбір у `localOnlyBannerVisibility.ts`.
+  const auth = useAuthOptional();
+  const s = useHubDashboardState({
+    onOpenModule,
+    user,
+    onShowAuth,
+    authStatus: auth?.status,
+  });
   // C · Контроль: «Чистий режим» (toggle у HubHeader) ховає весь сигнальний
   // шар головної — лишаються лише модулі (+ hero для FTUX). Реактивно
   // оновлюється через спільний HUB_PREFS-стан.
