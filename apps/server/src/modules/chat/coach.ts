@@ -10,6 +10,7 @@ import {
 } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
 import { logger } from "../../obs/logger.js";
+import { refundQuotaOnUpstreamFailure } from "./chatShared.js";
 
 import { ADVICE_BOUNDARY_RULE } from "../../lib/adviceBoundary.js";
 import { VOICE_RULE } from "./toolDefs/systemPrompt.js";
@@ -529,16 +530,28 @@ export async function coachInsight(req: Request, res: Response): Promise<void> {
     anthropicApiKey: apiKey,
     openrouterModel: tier.model,
   });
-  const aiResult = await invokeLLM(provider, {
-    model: env.COACH_MODEL_ANTHROPIC,
-    maxTokens: 300,
-    messages: [{ role: "user", content: prompt.user }],
-    timeoutMs: 20_000,
-    endpoint: "coach-insight",
-    userId: (req as WithSessionUser).user?.id,
-  });
+  // Дзеркалить патерн `chat.ts` (`refundQuotaOnUpstreamFailure` навколо
+  // upstream-виклику): `requireAiQuota()` уже списав квиток ДО цього
+  // handler-а, тож і виняток з `invokeLLM`, і провал провайдера
+  // (`!aiResult.ok`) мають повертати квоту — інакше 5xx OpenRouter/Anthropic
+  // зʼїдає денний ліміт користувача (аудит PR-A2, канон hub-coach §6.2).
+  let aiResult;
+  try {
+    aiResult = await invokeLLM(provider, {
+      model: env.COACH_MODEL_ANTHROPIC,
+      maxTokens: 300,
+      messages: [{ role: "user", content: prompt.user }],
+      timeoutMs: 20_000,
+      endpoint: "coach-insight",
+      userId: (req as WithSessionUser).user?.id,
+    });
+  } catch (e) {
+    await refundQuotaOnUpstreamFailure(req);
+    throw e;
+  }
 
   if (!aiResult.ok) {
+    await refundQuotaOnUpstreamFailure(req);
     throw makeAiProviderError({
       rawProviderMessage: aiResult.error,
       status: aiResult.status,

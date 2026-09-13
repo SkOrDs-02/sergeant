@@ -22,35 +22,63 @@ import {
 /**
  * `/api/push/vapid-public` свідомо поза rate-limiter-ом: його смикає фронт
  * під час реєстрації сервіс-воркера і він має бути швидким/дешевим. Решта
- * endpoint-ів (subscribe/unsubscribe/send) лімітуються.
+ * endpoint-ів (subscribe/unsubscribe/register/unregister/test) лімітуються
+ * спільним "api:push" бакетом, застосованим ПЕРЕД лімітером
+ * `requireSession()`/`requireSessionSoft()` на кожному з них навмисно
+ * (рецидив знахідки B31, PR-A3 у
+ * `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+ * `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
+ * фолбечиться на `ip:<addr>` лише коли сесії немає. Раніше цей бакет
+ * висів через `r.use("/api/push", …)` ПЕРЕД усіма post/delete-роутами,
+ * тож `req.user` завжди був unset у момент перевірки і бакет завжди
+ * фолбечився на IP. `send` — виняток: internal-only endpoint без сесії
+ * взагалі (захист — мережевий allowlist + `X-Api-Secret`), тож там
+ * лімітер лишається per-IP навмисно.
  *
  * subscribe/unsubscribe використовують `requireSessionSoft`, а не
  * `requireSession`: service worker смикає ці endpoint-и у фоні, і
  * історично handler трактував будь-яку невдачу `getSessionUser` як 401
  * (а не 500), щоб тимчасовий збій БД не перетворювався на notification
- * "server error" на фронті. `send` — внутрішній API cron/worker-ів,
- * захищений `X-Api-Secret`.
+ * "server error" на фронті. Обидва варіанти сесії кладуть `req.user`
+ * ПЕРЕД викликом `next()`, тож `rateLimitSubject` бачить `req.user.id` і
+ * після `requireSessionSoft()` так само, як після `requireSession()`.
  */
 export function createPushRouter(): Router {
   const r = Router();
   r.use("/api/push", setModule("push"));
   r.get("/api/push/vapid-public", vapidPublic);
-  r.use(
-    "/api/push",
-    rateLimitExpress({ key: "api:push", limit: 30, windowMs: 60_000 }),
+  const broadRateLimit = rateLimitExpress({
+    key: "api:push",
+    limit: 30,
+    windowMs: 60_000,
+  });
+  r.post(
+    "/api/push/subscribe",
+    requireSessionSoft(),
+    broadRateLimit,
+    pushSubscribe,
   );
-  r.post("/api/push/subscribe", requireSessionSoft(), pushSubscribe);
-  r.delete("/api/push/subscribe", requireSessionSoft(), pushUnsubscribe);
+  r.delete(
+    "/api/push/subscribe",
+    requireSessionSoft(),
+    broadRateLimit,
+    pushUnsubscribe,
+  );
   // `/api/push/register` — уніфікований mobile+web endpoint. Свідомо йде
   // через `requireSession()` (жорсткий 401), а не `requireSessionSoft`:
   // mobile-клієнт має прозорий сигнал "токен протух, треба перелогінитись",
   // а не silently 200 з пустою сесією. Доступний також як `/api/v1/push/register`
   // через `apiVersionRewrite`.
-  r.post("/api/push/register", requireSession(), pushRegister);
+  r.post("/api/push/register", requireSession(), broadRateLimit, pushRegister);
   // `/api/push/unregister` — симетричний анрег. Web шле
   // `{ platform: "web", endpoint }`, native — `{ platform, token }`.
   // Сесія обовʼязкова з тих самих причин, що й у register.
-  r.post("/api/push/unregister", requireSession(), pushUnregister);
+  r.post(
+    "/api/push/unregister",
+    requireSession(),
+    broadRateLimit,
+    pushUnregister,
+  );
   // `/api/push/send` — internal-only fan-out endpoint. Hardening item M14
   // (`docs/security/hardening/M14-internal-push-ip-allowlist.md`) layers
   // three independent checks here:
@@ -69,8 +97,12 @@ export function createPushRouter(): Router {
   //      secret with constant-time compare.
   //   3. Per-target-user rate-limit + audit log inside the `sendPush`
   //      handler itself.
+  // No session on this route (internal secret-based auth), so the broad
+  // "api:push" bucket stays IP-keyed here — that's intentional, not the
+  // B31/PR-A3 bug the routes above were fixed for.
   r.post(
     "/api/push/send",
+    broadRateLimit,
     requireInternalIp({
       // P2-1: читаємо з zod-валідованого env (default "" →
       // legacy `?? ""` semantic). Парсинг формату (CIDR, IP, comma/ньюлайн)
@@ -99,6 +131,7 @@ export function createPushRouter(): Router {
   r.post(
     "/api/push/test",
     requireSession(),
+    broadRateLimit,
     rateLimitExpress({ key: "api:push:test", limit: 1, windowMs: 5_000 }),
     pushTest,
   );

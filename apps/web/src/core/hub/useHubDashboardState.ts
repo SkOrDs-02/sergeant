@@ -127,6 +127,26 @@ export function pluralize(
 }
 
 // ─────────────────────────────────────────────────────────────────────
+// Coach insight visibility gate (аудит PR-A1)
+// ─────────────────────────────────────────────────────────────────────
+
+/**
+ * Чи видно блок з AI-порадою на екрані ЗАРАЗ.
+ *
+ * Дзеркалить умову рендеру `HubInsightsBlock` у `HubDashboard.tsx`
+ * (`s.hasRealEntry && !calmMode && showInsights`) — обидва місця мають
+ * лишатись синхронними, бо саме ця умова вирішує, чи варто взагалі бити
+ * запит до `useCoachInsight` (денна AI-квота Free-плану, ADR-0085).
+ */
+export function shouldFetchCoachInsight(
+  hasRealEntry: boolean,
+  calmMode: boolean,
+  showInsights: boolean,
+): boolean {
+  return hasRealEntry && !calmMode && showInsights;
+}
+
+// ─────────────────────────────────────────────────────────────────────
 // Main aggregated state
 // ─────────────────────────────────────────────────────────────────────
 
@@ -306,6 +326,18 @@ export function useHubDashboardState(props: {
     [onOpenModule],
   );
 
+  // Ті самі два прапори, які `HubDashboard.tsx` читає для видимості
+  // `HubInsightsBlock` (`!calmMode && showInsights`) — читаємо тут-таки,
+  // щоб не робити мережевий запит/не палити AI-квоту заради поради, якої
+  // ніде не показують (аудит PR-A1, канон hub-coach §6.2).
+  const [calmMode] = useHubPref<boolean>("calmMode", false);
+  const [showInsights] = useHubPref<boolean>("showInsights", true);
+  const coachInsightEnabled = shouldFetchCoachInsight(
+    hasRealEntry,
+    calmMode,
+    showInsights,
+  );
+
   const {
     insight: coachInsightText,
     // `advice_id` поточної AI-поради — лише прокидається в UI для телеметрії
@@ -314,7 +346,7 @@ export function useHubDashboardState(props: {
     loading: coachLoading,
     error: coachError,
     refresh: coachRefresh,
-  } = useCoachInsight();
+  } = useCoachInsight({ enabled: coachInsightEnabled });
 
   const modulesWithSignal = useMemo(() => {
     const all = focus ? [focus, ...rest] : rest;
