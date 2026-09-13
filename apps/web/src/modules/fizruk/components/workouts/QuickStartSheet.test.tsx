@@ -117,8 +117,13 @@ describe("QuickStartSheet — pick step", () => {
     fireEvent.change(screen.getByLabelText("Пошук вправи в каталозі"), {
       target: { value: "zzz" },
     });
+    // Рядок роз'їхався на title + description, бо порожній стан переїхав з
+    // рукописної коробки на `<EmptyState compact>` (Tier 2 канону
+    // `docs/design/design/empty-states.md`). Перевіряємо обидві частини:
+    // сам факт стану і підказку, що з ним робити.
+    expect(screen.getByText("Нічого не знайдено")).toBeInTheDocument();
     expect(
-      screen.getByText("Нічого не знайдено за цим запитом."),
+      screen.getByText("Спробуй іншу назву або очисти пошук."),
     ).toBeInTheDocument();
   });
 

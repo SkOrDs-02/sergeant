@@ -5,6 +5,7 @@ import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { Icon } from "@shared/components/ui/Icon";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/ui/cn";
 import type { FizrukData } from "@sergeant/fizruk-domain";
 
@@ -287,11 +288,17 @@ export function QuickStartSheet({
         </div>
 
         {totalCount === 0 ? (
-          <div className="rounded-xl border border-line bg-panelHi p-4 text-center text-style-caption text-subtle">
-            {q.trim()
-              ? "Нічого не знайдено за цим запитом."
-              : "Каталог поки що порожній."}
-          </div>
+          <EmptyState
+            compact
+            module="fizruk"
+            icon={<Icon name="dumbbell" size={20} />}
+            title={q.trim() ? "Нічого не знайдено" : "Каталог поки що порожній"}
+            description={
+              q.trim()
+                ? "Спробуй іншу назву або очисти пошук."
+                : "Додай першу вправу кнопкою вище."
+            }
+          />
         ) : (
           <div className="space-y-4">
             {groups.map((g) => (
