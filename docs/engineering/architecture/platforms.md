@@ -2,27 +2,28 @@
 
 > **Last touched:** 2026-09-13 by @claude (PR-M2: рядок Фініка виправлено — пʼять маршрутів, а не один; мобільна стратегія тепер в [ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md)). **Next review:** 2026-12-13.
 > **Status:** Active.  
-> **Mobile strategy:** [ADR-0052](../../governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor shell **primary**, Expo/RN **parallel** (без активного sunset ADR-0010). Історичний sunset schedule — лише в [`mobile/shell.md`](../mobile/shell.md) § Historical sunset note.
+> **Mobile strategy:** [ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md) — **обидва мобільні стеки на паузі** (не deprecated, не sunset): продуктовий розвиток мобайла чекає підтвердження продукту на вебі, вибір primary-стека відкладено до розморозки. Попередній запис — [ADR-0052](../../governance/adr/0052-mobile-strategy-capacitor-primary.md) «Capacitor primary, Expo parallel» — **superseded**; читати його як чинний означає зробити протилежний висновок про те, чи вкладатись у мобайл. Історичний sunset schedule — лише в [`mobile/shell.md`](../mobile/shell.md) § Historical sunset note.
 > **Initiative:** [`docs/work/specs/initiatives/archive/_0002-mobile-platform-decision.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md).
 
 Короткий репорт «що готово до запуску, що треба доробити» по трьох варіантах Sergeant-а. Живе поруч з `docs/engineering/mobile/overview.md` (API-контракт) і `docs/engineering/mobile/react-native-migration.md` (роадмап порту web → RN).
 
 ## 📋 Поверхні на один погляд
 
-| Поверхня                       | Де живе             | Технології                 | Статус                                                                 |
-| ------------------------------ | ------------------- | -------------------------- | ---------------------------------------------------------------------- |
-| **Web / PWA** (канонічна апка) | `apps/web`          | React 18 + Vite + PWA      | **Production** (live)                                                  |
-| **Native RN** (iOS / Android)  | `apps/mobile`       | Expo SDK 52 + Expo Router  | **Internal dev-client** — паралельний RN-трек (feature parity → store) |
-| **Capacitor shell** (WebView)  | `apps/mobile-shell` | Capacitor 7 + Android Java | **Primary mobile product** (ADR-0052) — store release path             |
+| Поверхня                       | Де живе             | Технології                 | Статус                                                                             |
+| ------------------------------ | ------------------- | -------------------------- | ---------------------------------------------------------------------------------- |
+| **Web / PWA** (канонічна апка) | `apps/web`          | React 18 + Vite + PWA      | **Production** (live)                                                              |
+| **Native RN** (iOS / Android)  | `apps/mobile`       | Expo SDK 52 + Expo Router  | **На паузі** (ADR-0094) — робочий internal dev-client, який не розвивають          |
+| **Capacitor shell** (WebView)  | `apps/mobile-shell` | Capacitor 7 + Android Java | **На паузі** (ADR-0094) — колишній «primary» за ADR-0052, вибір primary відкладено |
 
 ---
 
 ## 🟢 0. Feature-parity матриця (web ↔ shell ↔ RN)
 
-> **Snapshot:** 2026-07-10. Колонки відображають _функціональну_ parity (юзер може зробити цю дію), не code-parity (різна реалізація допустима).  
+> **Snapshot:** 2026-07-10 для всієї матриці, **окрім рядка «Фінік»** — його перевірено й виправлено 2026-09-13 (PR-M2). Дві дати навмисно різні: суцільного перепрогону матриці 13 вересня не було, тож датувати нею решту рядків означало б завищити їхню свіжість.  
+> Колонки відображають _функціональну_ parity (юзер може зробити цю дію), не code-parity (різна реалізація допустима).  
 > **Легенда:** `✅` — повна parity; `🟡` — часткова / smoke-only / без edge-cases; `🟥` — не реалізовано; `n/a` — поза скоупом.
 >
-> Оновлюй цю таблицю в PR-ах, що змінюють mobile parity. Decision-gate для RN-as-primary — окремий accepted ADR після 100% feature parity (див. ADR-0052), не фіксована дата sunset shell-а.
+> Оновлюй цю таблицю в PR-ах, що змінюють mobile parity. **Decision-gate для RN-as-primary наразі не діє**: ADR-0094 поставив обидва стеки на паузу, тож питання «хто primary» не стоїть до розморозки. Формулювання ADR-0052 («окремий accepted ADR після 100% feature parity, не фіксована дата sunset shell-а») лишається історичним записом того, як гейт мав виглядати.
 
 | Capability / module               | Web (`apps/web`) | Capacitor shell | RN (`apps/mobile`) | Notes                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                             |
 | --------------------------------- | ---------------- | --------------- | ------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -52,9 +53,9 @@
 | **Detox / e2e on CI**             | n/a              | n/a             | ✅                 | `detox-ios.yml` — smoke + full sign-in→module→sign-out (×4 модуля), `detox-android.yml` — smoke-build; full під mock-auth flag                                                                                                                                                                                                                                                                                                                                                                                                                                                    |
 | **Native UX** (haptics, sheets)   | 🟡               | 🟡              | ✅                 | Web — обмежено (`navigator.vibrate`); shell — Capacitor Haptics; RN — `react-native-haptics`                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
 
-### 🎯 RN parity backlog (ADR-0052 — не sunset shell)
+### 🎯 RN parity backlog — **заморожений** (ADR-0094)
 
-Залишки перед RN-as-primary decision-gate (окремий ADR, не дата T₀):
+Список нижче історичний: це залишки, які лишались перед RN-as-primary decision-gate до паузи. Ніхто їх зараз не робить, і поява нового рядка тут не є заявкою на роботу. Канонічний перелік замороженого й порядок розморозки — [`tech-debt/mobile.md`](../../work/specs/tech-debt/mobile.md).
 
 - 🟡 **RN shopping weekplan source** — AI shopping-list live, але weekplan-джерело чекає mobile week-plan storage
 - 🟡 **RN Hub voice polish** — STT/TTS wired у HubChat; shell WebView STT/TTS — platform-limited

@@ -1,6 +1,6 @@
 # Architecture Decision Records (ADR) — реєстр рішень
 
-> **Last validated:** 2026-07-21 by @cursoragent (ADR freshness audit: OpenClaw→0075, harness 0069/0071 accepted, hosting/sync refs). **Next review:** 2026-10-18.
+> **Last validated:** 2026-09-13 by @claude (додано ADR-0094, ADR-0052 переведено у superseded). **Next review:** 2026-12-13.
 > **Status:** Active
 
 > Архітектурні рішення Sergeant. Кожен ADR фіксує **рішення з контекстом і альтернативами**, щоб через рік не довелось гадати «чому ми тут зробили так, а не інакше».
@@ -166,7 +166,7 @@ pnpm gen:adr
 | 0093 | Cached ESLint and Prettier pipeline | accepted | 2026-09-02 | ESLint/Prettier remain; Turbo tracks root configuration inputs, workspace lint tasks cache `.eslintcache`, and resolved config has an explicit gate. |
 | 0094 | Mobile web-first freeze — обидва стеки на паузі | accepted | 2026-09-13 | Формалізує рішення власника від 2026-08-25: Expo і Capacitor обидва на паузі (не deprecated, не sunset), продуктовий розвиток мобайла чекає підтвердження продукту на вебі. Typecheck і jest мобайла лишаються під гейтом `check:ci`; Detox, coverage і parity-тести — заморожені, порядок розморозки в `tech-debt/mobile.md`. |
 
-> **Note on next ADR:** наступний номер — **`0094`** (`0029`, `0040` і `0056` лишаються gap-ами). Harness-ADR 0066/0067/0068 з роллауту 2026-06-29 перенумеровано у 0070/0071/0072 (2026-07-01) через колізію з уже виданими номерами (agent-find / engagement / pricing).
+> **Note on next ADR:** наступний номер — **`0095`** (`0029`, `0040` і `0056` лишаються gap-ами). Harness-ADR 0066/0067/0068 з роллауту 2026-06-29 перенумеровано у 0070/0071/0072 (2026-07-01) через колізію з уже виданими номерами (agent-find / engagement / pricing).
 
 > **Note on numbering 0016–0022 jump:** ADRs `0016`–`0022` — це retroactive batch, що був написаний паралельно з `0006`–`0012`. Через паралельне виконання Devin-сесій виникли колізії номерів `0003`–`0012`. Розв'язано через PR `docs(adr): resolve numbering collisions` — same-topic дублі (refund, anthropic, PII) видалено, late-comers перенумеровано в `0016`+.
 
