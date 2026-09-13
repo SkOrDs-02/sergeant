@@ -137,3 +137,59 @@ test("виключені таблиці справді ламаються від
     }
   }
 });
+
+test("шлях, що виводить за межі репо, не рахується мертвим", () => {
+  // Клас символів у `DOC_REF` пропускає `..`, тож така форма — валідний
+  // збіг. Без гарду сканер питав би `existsSync` про довільний шлях за
+  // межами дерева і рахував його мертвим покажчиком. Приманка лежить у
+  // самому сканері (див. попередній тест — дописуємо В КІНЕЦЬ).
+  const victim = join(ROOT, "scripts/check-dead-doc-links.mjs");
+  const orig = readFileSync(victim, "utf8");
+  const before = JSON.parse(run(["--json"]).out);
+  try {
+    writeFileSync(
+      victim,
+      orig + `\n// docs/../../../nowhere-${Date.now()}/probe.md\n`,
+    );
+    const after = JSON.parse(run(["--json"]).out);
+    assert.deepEqual(after.appeared, [], "гард не спрацював: шлях повз ROOT");
+    assert.equal(after.paths, before.paths);
+    assert.equal(after.mentions, before.mentions);
+  } finally {
+    writeFileSync(victim, orig);
+  }
+  assert.equal(run().code, 0, "стан не відновлено");
+});
+
+test("межа довжини в DOC_REF на місці — інакше повертається backtracking", () => {
+  // Пін ПОВЕДІНКОВИЙ, не структурний: беремо патерн із джерела і перевіряємо,
+  // що він справді обмежений. Перша версія цього тесту міряла час повного
+  // прогону сканера і НЕ ловила зняття межі — 8/8 зелених і з нею, і без неї.
+  //
+  // Чому не час: поліном тут росте лише коли префіксів `docs/` багато (одна
+  // стартова позиція дає лінійність). Замір на такому вході, 2026-09-13:
+  //
+  //   довжина │ без межі │ з межею
+  //    10 000 │   0.8 мс │  0.1 мс
+  //    20 000 │   3.0 мс │  0.1 мс
+  //    40 000 │  12.0 мс │  0.2 мс
+  //
+  // Квадрат видно чітко (×4 на кожне подвоєння), але 12 мс усередині прогону
+  // на секунди не відрізнити від шуму. Тож міряємо не час, а саму межу.
+  const src = readFileSync(SCRIPT, "utf8");
+  const literal = /const DOC_REF = (\/.+\/[gimsuy]*);/.exec(src);
+  assert.ok(literal, "DOC_REF більше не оголошений літералом");
+  const rx = new RegExp(literal[1].slice(1, literal[1].lastIndexOf("/")), "g");
+
+  // Рівно на межі — збіг є.
+  assert.ok(rx.test(`docs/${"a".repeat(195)}.md`));
+  rx.lastIndex = 0;
+  // Понад межу — збігу немає. Без `{0,200}` він БУВ БИ, і саме це відрізняє
+  // обмежений патерн від зірочки.
+  assert.equal(rx.test(`docs/${"a".repeat(300)}.md`), false, "межу знято");
+
+  // Ціна межі названа: шляхи довші за 200 символів гейт не побачить.
+  // Найдовший реальний у репо — 88 символів, тож запас понад двократний.
+  const budget = JSON.parse(readFileSync(BUDGET, "utf8"));
+  assert.ok(Math.max(...budget.paths.map((x) => x.length)) < 200);
+});
