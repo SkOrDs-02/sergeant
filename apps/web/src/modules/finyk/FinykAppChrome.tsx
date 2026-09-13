@@ -68,13 +68,19 @@ export function SyncPill({ syncTone }: SyncPillProps): React.ReactElement {
 
 interface AuthErrorBannerProps {
   authError: string;
-  onBackToHub?: (() => void) | undefined;
+  /**
+   * Відкриває Налаштування Hub на секції Фініка (`FinykWebhookServiceSection`
+   * — форма перепідключення токена). До фіксу PR-F2 (аудит 2026-09-13) CTA
+   * тут кликав `onBackToHub` («Назад»), хоча підпис обіцяв Налаштування —
+   * людина верталась у Hub і мусила самостійно шукати шлях назад до Фініка.
+   */
+  onOpenSettings?: (() => void) | undefined;
   setAuthError: (msg: string) => void;
 }
 
 export function AuthErrorBanner({
   authError,
-  onBackToHub,
+  onOpenSettings,
   setAuthError,
 }: AuthErrorBannerProps): React.ReactElement {
   // Offset clears the in-flow ModuleHeader stack: safe-area-pt + 68px title
@@ -94,10 +100,10 @@ export function AuthErrorBanner({
         <div className="flex-1 min-w-0">
           <p className="text-style-label text-text">Токен потребує оновлення</p>
           <p className="text-style-caption text-muted mt-0.5">{authError}</p>
-          {onBackToHub && (
+          {onOpenSettings && (
             <button
               type="button"
-              onClick={onBackToHub}
+              onClick={onOpenSettings}
               className="touch-target focus-ring rounded-xl text-style-caption text-primary mt-2 hover:underline"
             >
               Оновити токен у Налаштуваннях Hub

@@ -624,10 +624,14 @@ describe("FinykApp (extra) — SyncPill balance toggle", () => {
   });
 });
 
-// ── authError banner — onBackToHub link ─────────────────────────────────────
+// ── authError banner — onOpenSettings link ──────────────────────────────────
 
-describe("FinykApp (extra) — authError banner onBackToHub link", () => {
-  it("renders 'Оновити токен' link when onBackToHub is provided", () => {
+// Регресія PR-F2 (аудит 2026-09-13, хвиля 3): CTA підписаний «Оновити
+// токен у Налаштуваннях Hub», але раніше кликав `onBackToHub` («Назад») —
+// людина верталась у Hub, а не в Налаштування, попри те що `onOpenSettings`
+// був поруч і не використовувався.
+describe("FinykApp (extra) — authError banner onOpenSettings link", () => {
+  it("renders 'Оновити токен' link and calls onOpenSettings, not onBackToHub", () => {
     vi.mocked(useMonobank).mockReturnValueOnce({
       clientInfo: null,
       connecting: false,
@@ -640,10 +644,36 @@ describe("FinykApp (extra) — authError banner onBackToHub link", () => {
       syncState: null,
     } as unknown as ReturnType<typeof useMonobank>);
     const onBackToHub = vi.fn();
-    render(<FinykApp onOpenAuth={NOOP_AUTH} onBackToHub={onBackToHub} />);
+    const onOpenSettings = vi.fn();
+    render(
+      <FinykApp
+        onOpenAuth={NOOP_AUTH}
+        onBackToHub={onBackToHub}
+        onOpenSettings={onOpenSettings}
+      />,
+    );
     const link = screen.getByText("Оновити токен у Налаштуваннях Hub");
     fireEvent.click(link);
-    expect(onBackToHub).toHaveBeenCalled();
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+    expect(onBackToHub).not.toHaveBeenCalled();
+  });
+
+  it("does not render the link when onOpenSettings is missing", () => {
+    vi.mocked(useMonobank).mockReturnValueOnce({
+      clientInfo: null,
+      connecting: false,
+      error: null,
+      authError: "Токен застарів",
+      setAuthError: vi.fn(),
+      connect: vi.fn(),
+      accounts: [],
+      transactions: [],
+      syncState: null,
+    } as unknown as ReturnType<typeof useMonobank>);
+    render(<FinykApp onOpenAuth={NOOP_AUTH} onBackToHub={vi.fn()} />);
+    expect(
+      screen.queryByText("Оновити токен у Налаштуваннях Hub"),
+    ).not.toBeInTheDocument();
   });
 });
 

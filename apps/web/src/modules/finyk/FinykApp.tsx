@@ -255,6 +255,7 @@ export default function App({
             onOpenAuth={onOpenAuth}
             showBalance={showBalance}
             onOpenBulkImport={() => setShowBulkImport(true)}
+            onOpenSettings={onOpenSettings}
           />
         </SectionErrorBoundary>
       );
@@ -509,7 +510,7 @@ export default function App({
         {mono.authError && (
           <AuthErrorBanner
             authError={mono.authError}
-            onBackToHub={onBackToHub}
+            onOpenSettings={onOpenSettings}
             setAuthError={mono.setAuthError}
           />
         )}
