@@ -135,7 +135,12 @@ describe("useGroqVoiceInput", () => {
     );
   });
 
-  it("maps provider_unavailable to a fallback callback + error", async () => {
+  // Раніше хук робив ОБИДВА: кликав хендлер І сам писав «перемикаюсь на
+  // браузерне розпізнавання». Формулювати за викликача він не може — на
+  // iOS standalone-PWA перемикатись нема на що, і та фраза була неправдою
+  // (розбір — у `VoiceMicButton.providerFallback.test.tsx`). Тепер текст
+  // належить тому, хто знає про наявність фолбека.
+  it("provider_unavailable віддає рішення викликачу, не озвучуючи його сам", async () => {
     send.mockResolvedValue({ outcome: "provider_unavailable" });
     const onProviderUnavailable = vi.fn();
     const onError = vi.fn();
@@ -144,7 +149,18 @@ describe("useGroqVoiceInput", () => {
     );
     await recordAndStop(result);
     await waitFor(() => expect(onProviderUnavailable).toHaveBeenCalled());
-    expect(onError).toHaveBeenCalled();
+    expect(onError).not.toHaveBeenCalled();
+  });
+
+  // Але мовчки ковтнути 503 теж не можна: хто хендлера не дав, мусить
+  // отримати причину — інакше тап по мікрофону нічим не закінчується.
+  it("без хендлера сам пояснює 503 — і нічого не обіцяє", async () => {
+    send.mockResolvedValue({ outcome: "provider_unavailable" });
+    const onError = vi.fn();
+    const { result } = renderHook(() => useGroqVoiceInput({ onError }));
+    await recordAndStop(result);
+    await waitFor(() => expect(onError).toHaveBeenCalledTimes(1));
+    expect(String(onError.mock.calls[0]?.[0] ?? "")).not.toMatch(/перемикаю/i);
   });
 
   it("maps rate_limited / payload_too_large / unauthorized outcomes to errors", async () => {
