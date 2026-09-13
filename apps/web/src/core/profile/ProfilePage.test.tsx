@@ -387,6 +387,20 @@ describe("ProfilePage", () => {
     });
   });
 
+  /**
+   * Вихід тепер за два кроки: тап по «Вийти» відкриває підтвердження, і лише
+   * його кнопка «Вийти» запускає `logout()`. Тести нижче ходять цим самим
+   * шляхом, а не смикають `handleLogout` в обхід — інакше вони перевіряли б
+   * код, якого користувач не бачить.
+   */
+  async function tapLogoutAndConfirm() {
+    fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+    const gate = await screen.findByRole("alertdialog", {
+      name: "Вийти з акаунта?",
+    });
+    fireEvent.click(within(gate).getByRole("button", { name: "Вийти" }));
+  }
+
   describe("logout", () => {
     it("renders Вийти button at bottom of profile", () => {
       renderPage();
@@ -394,10 +408,46 @@ describe("ProfilePage", () => {
       expect(logoutBtn).toBeInTheDocument();
     });
 
+    // Звіт власника 2026-09-13: один тап стирав локальну БД, SW-кеші й
+    // сесію без жодного кроку назад. Діалог «є незбережені записи» нижче
+    // цього не закривав — він спрацьовує лише за недоставленої черги, тож
+    // чистий вихід не питав нічого взагалі.
+    it("не виходить з першого тапу — спершу питає підтвердження", async () => {
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+
+      const gate = await screen.findByRole("alertdialog", {
+        name: "Вийти з акаунта?",
+      });
+      expect(logoutMock).not.toHaveBeenCalled();
+
+      fireEvent.click(within(gate).getByRole("button", { name: "Залишитись" }));
+      await waitFor(() =>
+        expect(screen.queryByRole("alertdialog")).not.toBeInTheDocument(),
+      );
+      expect(logoutMock).not.toHaveBeenCalled();
+      expect(screen.queryByText("Ти вийшов з акаунта")).not.toBeInTheDocument();
+    });
+
+    // Офлайн вихід не «зворотний із наступним входом»: вхід потребує
+    // мережі, якої немає, а локальна копія стирається одразу. Це інша за
+    // вагою дія, тож і текст інший.
+    it("офлайн попереджає, що ввійти назад не вийде", async () => {
+      useOnlineStatusMock.mockReturnValue(false);
+      renderPage();
+      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+
+      const gate = await screen.findByRole("alertdialog", {
+        name: "Вийти з акаунта?",
+      });
+      expect(
+        within(gate).getByText(/увійти назад не вийде/),
+      ).toBeInTheDocument();
+    });
+
     it("calls logout, shows toast and redirects to /sign-in on click", async () => {
       renderPage();
-      const logoutBtn = screen.getByRole("button", { name: "Вийти" });
-      fireEvent.click(logoutBtn);
+      await tapLogoutAndConfirm();
       await waitFor(() => expect(logoutMock).toHaveBeenCalled());
       await screen.findByText("Ти вийшов з акаунта");
       // Redirect to the auth surface, not the hub root (browser-QA (a)).
@@ -407,7 +457,7 @@ describe("ProfilePage", () => {
     it("shows error toast when logout throws", async () => {
       logoutMock.mockRejectedValueOnce(new Error("network"));
       renderPage();
-      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+      await tapLogoutAndConfirm();
       const errorToast = await screen.findByTestId("toast-error");
       expect(errorToast).toHaveTextContent("Не вдалося вийти");
       expect(within(errorToast).getByText("Повторити")).toBeInTheDocument();
@@ -435,7 +485,7 @@ describe("ProfilePage", () => {
     it('"Все одно вийти": proceeds with logout — toast + redirect fire, exactly like a clean exit', async () => {
       mockLogoutAsksForConfirmation(3);
       renderPage();
-      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+      await tapLogoutAndConfirm();
 
       const dialog = await screen.findByRole("alertdialog", {
         name: "Є незбережені записи",
@@ -458,7 +508,7 @@ describe("ProfilePage", () => {
     it('"Залишитись": cancels logout — session stays alive, so no toast and no redirect', async () => {
       mockLogoutAsksForConfirmation(1);
       renderPage();
-      fireEvent.click(screen.getByRole("button", { name: "Вийти" }));
+      await tapLogoutAndConfirm();
 
       const dialog = await screen.findByRole("alertdialog", {
         name: "Є незбережені записи",
