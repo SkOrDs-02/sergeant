@@ -41,18 +41,22 @@ const captured = vi.hoisted(
     ({
       notifications: undefined,
       onOpenSearch: undefined,
+      activeTab: undefined,
     }) as {
       notifications: { id: string }[] | undefined;
       onOpenSearch: (() => void) | undefined;
+      activeTab: string | undefined;
     },
 );
 vi.mock("./HubHeader", () => ({
   HubHeader: (props: {
     notifications?: { id: string }[];
     onOpenSearch: () => void;
+    activeTab?: string;
   }) => {
     captured.notifications = props.notifications;
     captured.onOpenSearch = props.onOpenSearch;
+    captured.activeTab = props.activeTab;
     return <div data-testid="hub-header" />;
   },
 }));
@@ -142,6 +146,7 @@ describe("HubHomeView", () => {
     gates.shouldShowOnboarding.mockReturnValue(false);
     captured.notifications = undefined;
     captured.onOpenSearch = undefined;
+    captured.activeTab = undefined;
     whatsNewOpts.enabled = undefined;
   });
 
@@ -167,6 +172,14 @@ describe("HubHomeView", () => {
   it("surfaces a PWA-install notification when installable", () => {
     render(<HubHomeView {...props({ canInstall: true })} />);
     expect(captured.notifications?.map((n) => n.id)).toContain("pwa-install");
+  });
+
+  // PR-H2 (аудит 2026-09-13 хвиля 5): шапка мусить знати активну вкладку,
+  // щоб показати видимий підзаголовок — інакше «Доброго дня» лишається
+  // єдиним видимим текстом на Налаштуваннях/Профілі/Звʼязках.
+  it("forwards the active hub tab to the header", () => {
+    render(<HubHomeView {...props({ ui: makeUi({ hubView: "settings" }) })} />);
+    expect(captured.activeTab).toBe("settings");
   });
 
   it("wires the header search callback", () => {

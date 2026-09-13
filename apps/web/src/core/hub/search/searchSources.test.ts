@@ -192,6 +192,21 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
     }
   });
 
+  // PR-S5 (аудит 2026-09-13 хвиля 5): «пароль», «сесії», «PIN», «вага»,
+  // «вийти», «видалити акаунт» давали нуль результатів через увесь
+  // пайплайн `performSearch` — Профіль не мав джерела, на відміну від
+  // Налаштувань. Перевірка на рівні top-level entry point, не лише
+  // ізольованого `searchProfile()` (див. `searchProfile.test.ts`).
+  it("surfaces a Profile hit for queries the audit named as unreachable", () => {
+    for (const query of ["пароль", "сесії", "pin", "вага", "вийти"]) {
+      const results = performSearch(query);
+      expect(
+        results.some((r) => r.target.kind === "profile"),
+        `expected a profile hit for query "${query}"`,
+      ).toBe(true);
+    }
+  });
+
   it("returns the same cached result set for a repeated query (LRU hit)", () => {
     __setFinykMonoMirrorCacheForTests({
       transactions: [

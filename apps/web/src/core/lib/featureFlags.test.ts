@@ -26,6 +26,16 @@ describe("featureFlags", () => {
     globalThis.localStorage = makeLS() as unknown as Storage;
   });
 
+  // PR-S6 (аудит 2026-09-13 хвиля 5): PIN переїхав із Налаштувань →
+  // «Конфіденційність» у Профіль → «Безпека» 2026-09-04, опис флага досі
+  // називав старе місце.
+  it("описує актуальне місце PIN-контролу — Профіль, не Налаштування", async () => {
+    const { FLAG_REGISTRY } = await loadFresh();
+    const flag = FLAG_REGISTRY.find((f) => f.id === "app-lock-enabled");
+    expect(flag?.description).toContain("Профілі");
+    expect(flag?.description).not.toContain("Конфіденційність");
+  });
+
   it("повертає defaultValue з реєстру, якщо флаг не встановлено", async () => {
     const { getFlag, FLAG_REGISTRY } = await loadFresh();
     const sub = FLAG_REGISTRY.find((f) => f.id === "hub_command_palette");

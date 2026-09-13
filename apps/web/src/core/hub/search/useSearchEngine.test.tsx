@@ -212,6 +212,22 @@ describe("useSearchEngine", () => {
     window.history.pushState(null, "", original);
   });
 
+  // PR-S5 (аудит 2026-09-13 хвиля 5): Профіль тепер має власне джерело в
+  // пошуку (`searchProfile.ts`) — ціль лише перемикає вкладку хаба, на
+  // відміну від `settings`, де є per-секційний hash-якір.
+  it("openHit: profile hit navigates to the hub Profile tab", () => {
+    const { result } = setup();
+    act(() =>
+      result.current.openHit(
+        hit({ id: "p1", module: "profile", target: { kind: "profile" } }),
+      ),
+    );
+    expect(navigate).toHaveBeenCalledWith({
+      pathname: "/",
+      search: "?tab=profile",
+    });
+  });
+
   it("openHit: assistant with capability example opens chat", () => {
     const { result } = setup();
     act(() =>

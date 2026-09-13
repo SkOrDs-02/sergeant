@@ -70,7 +70,12 @@ const SETTINGS_PRESENTATION: Readonly<
     icon: "utensils",
   },
   privacy: {
-    description: "PIN-код, блокування, безпека",
+    // PR-S6 (аудит 2026-09-13 хвиля 5): PIN-блокування переїхало в
+    // Профіль → «Безпека» 2026-09-04 (`ProfilePage.tsx`), і видалення
+    // акаунта поїхало разом з ним (`DangerZoneSection`) — ця секція
+    // Налаштувань лишає собі тільки згоди й юрдокументи
+    // (`PrivacySection.tsx`: аналітика, AI-памʼять, дані про здоровʼя).
+    description: "Згоди на аналітику й AI-памʼять, юридичні документи",
     icon: "lock",
   },
   pwa: {

@@ -61,6 +61,18 @@ describe("SETTINGS_INDEX ↔ SETTINGS_SECTIONS_CATALOG parity", () => {
   });
 });
 
+// PR-S6 (аудит 2026-09-13 хвиля 5): PIN переїхав із Налаштувань →
+// «Конфіденційність» у Профіль → «Безпека» 2026-09-04 (`ProfilePage.tsx`),
+// разом з видаленням акаунта (`DangerZoneSection`) — опис секції в ⌘K
+// досі обіцяв «PIN-код, блокування, безпека», яких там більше немає.
+describe("SETTINGS_INDEX privacy description (PR-S6)", () => {
+  it("описує актуальний вміст PrivacySection, не переїхалий PIN", () => {
+    const privacy = SETTINGS_INDEX.find((s) => s.id === "privacy");
+    expect(privacy?.description).not.toContain("PIN");
+    expect(privacy?.description).not.toContain("блокування");
+  });
+});
+
 describe("SETTINGS_PRESENTATION fallback (audit finding #10)", () => {
   it("does not leak the raw keyword-soup subtitle for a section with a genuinely empty description", async () => {
     // `SETTINGS_PRESENTATION` in `searchSettings.ts` falls back to

@@ -161,14 +161,35 @@ export function SettingsGroup({
   const [open, setOpen] = useState<boolean>(
     () => defaultOpen || contextDefaultOpen || matchesHash(anchorId),
   );
+  // PR-S1 (аудит 2026-09-13 хвиля 5): `contextDefaultOpen` раніше читався
+  // ЛИШЕ в ініціалізаторі `useState` вище — коректно на холодному
+  // монтуванні (нова вкладка, новий hash при першому рендері), але
+  // мовчазно ігнорував ЗМІНУ контексту для секції, яка вже змонтована в
+  // активній вкладці. Це давало асиметрію «4 з 14»: `dashboard`/`plan`/
+  // `privacy`/`finyk` (єдині з `anchorId`) мали ОКРЕМИЙ слухач
+  // `window.hashchange`, що й розкривав їх постфактум; решта 10 секцій
+  // такого слухача не мали і не реагували на диплінк із ⌘K/пошуку, коли
+  // «Загальні» вже були відкриті (перехід у «Сповіщення» чи «Сержант»
+  // скролив до згорнутої шапки). Один ефект на сам контекст працює для
+  // всіх 14 однаково — `HubSettingsPage` уже оновлює `defaultOpen` на
+  // будь-який діп-лінк (hash, billing-return, silpo-return), синтетичний
+  // чи природний `hashchange` тут більше не потрібен.
+  //
+  // Ефект лише РОЗКРИВАЄ, ніколи не згортає: диплінк в ІНШУ секцію (де
+  // `contextDefaultOpen` для цієї секції став `false`) не повинен ховати
+  // те, що юзер сам залишив відкритим — той самий односторонній контракт,
+  // що мав старий `hashchange`-слухач.
+  //
+  // `queueMicrotask` — той самий обхід, що вже стоїть у
+  // `HubSettingsPage.tsx` для того ж класу ефектів: синхронний `setState`
+  // у ТІЛІ ефекту ловить `react-hooks/set-state-in-effect` (React Compiler
+  // бачить лише прямі інструкції функції, не вкладені колбеки), а зайвий
+  // каскадний рендер тут і справді не потрібен — ефект реагує на щойно
+  // застосовану зміну контексту, не на подію, яку не можна відкласти.
   useEffect(() => {
-    if (!anchorId) return;
-    const onHashChange = () => {
-      if (matchesHash(anchorId)) setOpen(true);
-    };
-    window.addEventListener("hashchange", onHashChange);
-    return () => window.removeEventListener("hashchange", onHashChange);
-  }, [anchorId]);
+    if (!contextDefaultOpen) return;
+    queueMicrotask(() => setOpen(true));
+  }, [contextDefaultOpen]);
 
   // Scoped module bg class — uses registered token pair, never raw RGB
   // (конвенція module-accent containment, ex-Hard Rule #12, retired

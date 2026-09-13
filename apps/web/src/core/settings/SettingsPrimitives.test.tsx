@@ -3,9 +3,15 @@
 // PR-A v2-polish-redesign — SettingsPrimitives icon prop + glass surface.
 // Covers: SettingsGroup renders the design-system <Icon>; module badge applies
 // the correct scoped surface class.
-import { StrictMode } from "react";
+import { StrictMode, useState } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+} from "@testing-library/react";
 
 import {
   SettingsGroup,
@@ -201,6 +207,84 @@ describe("SettingsGroupDefaultOpenContext", () => {
       name: /Секція без провайдера/,
     });
     expect(btn).toHaveAttribute("aria-expanded", "false");
+  });
+
+  // PR-S1 (аудит 2026-09-13 хвиля 5): диплінк у секцію, що вже змонтована
+  // в активній вкладці (⌘K/пошук → «Сповіщення» чи «Сержант», коли
+  // «Загальні» вже відкриті), мусить розкрити її БЕЗ ремаунту. Раніше
+  // контекстний `defaultOpen` читався лише в ініціалізаторі `useState`,
+  // тож зміна значення провайдера постфактум нічого не робила для 10 із
+  // 14 секцій (усі без `anchorId`) — цей тест ловить рівно ту регресію на
+  // одному примітиві, без потреби піднімати всю `HubSettingsPage`.
+  it("розкриває секцію, коли контекстний defaultOpen змінюється на true ПІСЛЯ монтування, без ремаунту", async () => {
+    function Harness() {
+      const [open, setOpenCtx] = useState(false);
+      return (
+        <>
+          <button type="button" onClick={() => setOpenCtx(true)}>
+            simulate deep-link
+          </button>
+          <SettingsGroupDefaultOpenContext.Provider
+            value={{ defaultOpen: open }}
+          >
+            <SettingsGroup title="Сповіщення" icon="bell">
+              <p>вміст</p>
+            </SettingsGroup>
+          </SettingsGroupDefaultOpenContext.Provider>
+        </>
+      );
+    }
+    render(<Harness />);
+
+    const toggle = screen.getByRole("button", { name: /Сповіщення/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+
+    fireEvent.click(screen.getByText("simulate deep-link"));
+
+    // Ефект розкриття відкладений через `queueMicrotask` (обхід
+    // `react-hooks/set-state-in-effect`, той самий ідіом, що в
+    // `HubSettingsPage.tsx`) — потрібен `waitFor`, а не синхронний assert.
+    await waitFor(() =>
+      expect(
+        screen.getByRole("button", { name: /Сповіщення/ }),
+      ).toHaveAttribute("aria-expanded", "true"),
+    );
+  });
+
+  // Дзеркальна перевірка: контекст, що стає `false` (диплінк в ІНШУ
+  // секцію), не повинен згортати те, що вже відкрито — той самий
+  // односторонній контракт, що мав старий `hashchange`-слухач.
+  it("не згортає вже відкриту секцію, коли контекстний defaultOpen стає false", () => {
+    function Harness() {
+      const [open, setOpenCtx] = useState(true);
+      return (
+        <>
+          <button type="button" onClick={() => setOpenCtx(false)}>
+            simulate deep-link elsewhere
+          </button>
+          <SettingsGroupDefaultOpenContext.Provider
+            value={{ defaultOpen: open }}
+          >
+            <SettingsGroup title="Сержант" icon="sparkles">
+              <p>вміст</p>
+            </SettingsGroup>
+          </SettingsGroupDefaultOpenContext.Provider>
+        </>
+      );
+    }
+    render(<Harness />);
+
+    expect(screen.getByRole("button", { name: /Сержант/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
+
+    fireEvent.click(screen.getByText("simulate deep-link elsewhere"));
+
+    expect(screen.getByRole("button", { name: /Сержант/ })).toHaveAttribute(
+      "aria-expanded",
+      "true",
+    );
   });
 
   // Дефект №3 (адверсарне ревʼю 2026-08-08): без цього зворотного виклику

@@ -132,6 +132,35 @@ describe("HubHeader", () => {
     ).not.toBeInTheDocument();
   });
 
+  // PR-H2 (аудит 2026-09-13 хвиля 5): привітання — єдиний видимий текст на
+  // всіх чотирьох вкладках, назва вкладки жила лише в sr-only `<h1>`.
+  it("renders no visible subtitle on the dashboard tab", () => {
+    render(<HubHeader {...baseProps()} activeTab="dashboard" />);
+    expect(screen.queryByText("Налаштування")).not.toBeInTheDocument();
+    expect(screen.queryByText("Профіль")).not.toBeInTheDocument();
+    expect(screen.queryByText("Звʼязки")).not.toBeInTheDocument();
+  });
+
+  it("renders no visible subtitle when activeTab is omitted", () => {
+    render(<HubHeader {...baseProps()} />);
+    expect(screen.queryByText("Налаштування")).not.toBeInTheDocument();
+  });
+
+  it("shows a visible «Налаштування» subtitle under the greeting on the settings tab", () => {
+    render(<HubHeader {...baseProps()} activeTab="settings" />);
+    expect(screen.getByText("Налаштування")).toBeVisible();
+  });
+
+  it("shows a visible «Профіль» subtitle on the profile tab", () => {
+    render(<HubHeader {...baseProps()} activeTab="profile" />);
+    expect(screen.getByText("Профіль")).toBeVisible();
+  });
+
+  it("shows a visible «Звʼязки» subtitle on the reports tab", () => {
+    render(<HubHeader {...baseProps()} activeTab="reports" />);
+    expect(screen.getByText("Звʼязки")).toBeVisible();
+  });
+
   it("forwards notifications to the bell", () => {
     render(
       <HubHeader
