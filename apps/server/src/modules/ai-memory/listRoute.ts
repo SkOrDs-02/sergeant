@@ -48,6 +48,7 @@ import type {
 import { AiMemoryListQuerySchema } from "@sergeant/shared";
 
 import { logger } from "../../obs/logger.js";
+import { ValidationError } from "../../obs/errors.js";
 import { removeMemoryBankEntry } from "../me/profile.js";
 
 type WithSessionUser = Request & { user?: { id: string } };
@@ -99,8 +100,7 @@ export function buildMemoryListHandler(pool: Pool) {
 
     const parsed = AiMemoryListQuerySchema.safeParse(req.query);
     if (!parsed.success) {
-      res.status(400).json({ error: "invalid_query" });
-      return;
+      throw new ValidationError("invalid_query");
     }
     const limit = Math.min(
       parsed.data.limit ?? MEMORY_LIST_DEFAULT_LIMIT,
@@ -163,8 +163,7 @@ export function buildMemoryDeleteHandler(pool: Pool) {
     const raw = req.params["id"];
     const id = Number(raw);
     if (!Number.isSafeInteger(id) || id <= 0) {
-      res.status(400).json({ error: "invalid_id" });
-      return;
+      throw new ValidationError("invalid_id");
     }
 
     // L-8 Фаза 2 (2026-08-09): DELETE + узгоджене прибирання з
