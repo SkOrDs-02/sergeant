@@ -16,6 +16,7 @@ import {
   defaultNutritionPrefs,
   isMealTypeId,
   normalizeNutritionLog,
+  normalizeNutritionPrefs,
   type NutritionLog,
   type NutritionPrefs,
   type Pantry,
@@ -125,6 +126,14 @@ function normalizePrefs(x: unknown): NutritionPrefs {
       typeof p.adaptiveGoalLastUpdatedAt === "string"
         ? p.adaptiveGoalLastUpdatedAt
         : null,
+    // Знімок підстави проходить бекап через доменну нормалізацію, а не
+    // копіюється як є: половина знімка дала б картці «витрата ≈NaN».
+    // Дзеркало web-гілки — бекап крос-платформенний, тож обидві сторони
+    // мусять чистити знімок однаково, інакше експорт з одного пристрою
+    // ламає картку на іншому.
+    adaptiveGoalLastReason: normalizeNutritionPrefs({
+      adaptiveGoalLastReason: p.adaptiveGoalLastReason,
+    }).adaptiveGoalLastReason,
     mealTemplates: Array.isArray(p.mealTemplates)
       ? p.mealTemplates.slice(0, 40)
       : [],
