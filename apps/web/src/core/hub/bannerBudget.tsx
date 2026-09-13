@@ -26,6 +26,17 @@ import {
  *
  * Пріоритет — менше число = важливіше. Порядок зафіксовано тут, а не в
  * call-site-ах, щоб він читався одним списком:
+ *
+ * AI-CONTEXT (H1, 2026-09-13): `reengagement` навмисно ВІДСУТНІЙ у цьому
+ * списку. Він тут стояв на пріоритеті 5 і програвав `localOnlyData` (0) +
+ * `privacyLock` (3) при бюджеті 2 — картка МІНЯЄ місцями TodayFocus/SoftAuth/
+ * FirstAction (див. `HubHeroBlock.tsx`), а не додається до них, тож для
+ * анонімного юзера з увімкненим блокуванням, який повернувся після паузи,
+ * `ReEngagementCard` рендерила `null`, і hero-смуга лишалась порожньою — ні
+ * заклику увійти, ні чекліста, нічого. Банер, що ЗАМІНЮЄ hero, не має
+ * конкурувати за слоти банерів понад ним: `ReEngagementCard` більше не
+ * викликає `useHubBannerSlot` і рендериться безумовно, коли `HubHeroBlock`
+ * її обирає.
  */
 export const HUB_BANNER_PRIORITY = {
   /** Дані лише на цьому пристрої — попередження про втрату, завжди перше. */
@@ -38,10 +49,8 @@ export const HUB_BANNER_PRIORITY = {
   privacyLock: 3,
   /** Щоденний nudge. */
   dailyNudge: 4,
-  /** Повернення після паузи. */
-  reengagement: 5,
   /** Тизер «Що Sergeant покаже далі» після першого запису. */
-  crossModulePreview: 6,
+  crossModulePreview: 5,
 } as const;
 
 export type HubBannerId = keyof typeof HUB_BANNER_PRIORITY;

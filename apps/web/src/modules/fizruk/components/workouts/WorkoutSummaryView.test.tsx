@@ -24,7 +24,13 @@ function makeWorkout(override: Partial<Workout> = {}): Workout {
 
 describe("WorkoutSummaryView", () => {
   it("shows the finished-workout title, duration and the three stat tiles", () => {
-    render(<WorkoutSummaryView workout={makeWorkout()} onRepeat={vi.fn()} />);
+    render(
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
     expect(screen.getByText("Тренування завершено")).toBeInTheDocument();
     expect(screen.getByText("Вправ")).toBeInTheDocument();
     expect(screen.getByText("Підходів")).toBeInTheDocument();
@@ -49,14 +55,24 @@ describe("WorkoutSummaryView", () => {
         },
       ],
     });
-    render(<WorkoutSummaryView workout={workout} onRepeat={vi.fn()} />);
+    render(
+      <WorkoutSummaryView
+        workout={workout}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
     expect(screen.getByText("Жим лежачи")).toBeInTheDocument();
     expect(screen.getByText("40×8, 45×6")).toBeInTheDocument();
   });
 
   it("shows the wellbeing row only when energy or mood was recorded", () => {
     const { rerender } = render(
-      <WorkoutSummaryView workout={makeWorkout()} onRepeat={vi.fn()} />,
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
     );
     expect(screen.queryByText(/Самопочуття/)).not.toBeInTheDocument();
 
@@ -64,6 +80,7 @@ describe("WorkoutSummaryView", () => {
       <WorkoutSummaryView
         workout={makeWorkout({ wellbeing: { energy: 4, mood: 5 } })}
         onRepeat={vi.fn()}
+        onClose={vi.fn()}
       />,
     );
     expect(screen.getByText(/Самопочуття/)).toBeInTheDocument();
@@ -73,7 +90,11 @@ describe("WorkoutSummaryView", () => {
 
   it("shows the note only when present", () => {
     const { rerender } = render(
-      <WorkoutSummaryView workout={makeWorkout()} onRepeat={vi.fn()} />,
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
     );
     expect(screen.queryByText("Нотатка")).not.toBeInTheDocument();
 
@@ -81,6 +102,7 @@ describe("WorkoutSummaryView", () => {
       <WorkoutSummaryView
         workout={makeWorkout({ note: "Важко на присіданнях" })}
         onRepeat={vi.fn()}
+        onClose={vi.fn()}
       />,
     );
     expect(screen.getByText("Нотатка")).toBeInTheDocument();
@@ -89,8 +111,31 @@ describe("WorkoutSummaryView", () => {
 
   it("calls onRepeat from the Повторити CTA", () => {
     const onRepeat = vi.fn();
-    render(<WorkoutSummaryView workout={makeWorkout()} onRepeat={onRepeat} />);
+    render(
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={onRepeat}
+        onClose={vi.fn()}
+      />,
+    );
     screen.getByRole("button", { name: /повторити це тренування/i }).click();
     expect(onRepeat).toHaveBeenCalledTimes(1);
+  });
+
+  it("calls onClose from the back button — PR-Z1: the only exit that does not start a new workout", () => {
+    // Session chrome (header + bottom nav) is off for the whole `workout`
+    // route (`FizrukApp.sessionMode`); before this, the finished-workout
+    // summary had no way out except «Повторити це тренування», which
+    // starts a brand-new session instead of leaving.
+    const onClose = vi.fn();
+    render(
+      <WorkoutSummaryView
+        workout={makeWorkout()}
+        onRepeat={vi.fn()}
+        onClose={onClose}
+      />,
+    );
+    screen.getByRole("button", { name: "Повернутись до тренувань" }).click();
+    expect(onClose).toHaveBeenCalledTimes(1);
   });
 });

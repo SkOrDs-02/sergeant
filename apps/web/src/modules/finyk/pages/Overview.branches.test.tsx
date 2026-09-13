@@ -18,9 +18,14 @@ import { Overview } from "./Overview";
 import type { useStorage } from "../hooks/useStorage";
 import type { useUnifiedFinanceData } from "../hooks/useUnifiedFinanceData";
 import { useOpenSignIn } from "../../../core/auth/useOpenSignIn";
+import { useLocalUserId } from "../../../core/auth/useLocalUserId";
 
+// `vi.fn()` (не голий `() => "local-anon"`), щоб окремий тест міг
+// перевизначити повернений id через `mockReturnValueOnce` — потрібно для
+// staleness-банера нижче, який ховається за `showLocalOnlyBanner`, доки
+// поточний id несинхронізований.
 vi.mock("../../../core/auth/useLocalUserId", () => ({
-  useLocalUserId: () => "local-anon",
+  useLocalUserId: vi.fn(() => "local-anon"),
 }));
 
 // `vi.fn()`-обгортка (не голий `() => null`), щоб один тест міг
@@ -117,6 +122,7 @@ function renderOverview(
     showBalance: boolean;
     onNavigate: (page: string) => void;
     onOpenAuth: () => void;
+    onOpenSettings: () => void;
   }> = {},
 ) {
   const overviewProps = {
@@ -127,6 +133,7 @@ function renderOverview(
     // дістають безпечний no-op, а не `undefined`.
     onOpenAuth: props.onOpenAuth ?? vi.fn(),
     ...(props.onNavigate ? { onNavigate: props.onNavigate } : {}),
+    ...(props.onOpenSettings ? { onOpenSettings: props.onOpenSettings } : {}),
   };
   return render(
     <Providers>
@@ -294,5 +301,70 @@ describe("Overview page (branches)", () => {
     // ізольований тест не монтує `StandaloneRoutes`, що робить редірект
     // `/auth` → `/sign-in` у справжньому застосунку.
     expect(screen.getByTestId("router-location")).toHaveTextContent("/sign-in");
+  });
+
+  // Регресія PR-F1 (аудит 2026-09-13, хвиля 3): CTA «Перевірити
+  // підключення» раніше кликав `onNavigate("settings")` — сегмента
+  // `settings` у `finykRouter.ts` немає, тож тап фолбечив на `overview` й
+  // не робив нічого. Тест монтує банер із реальним `webhookSyncState` (не
+  // клікає доменний компонент напряму, як `MonoStalenessBanner.test.tsx`)
+  // і перевіряє, куди `Overview` насправді веде клік.
+  it('CTA staleness-банера «Перевірити підключення» веде на onOpenSettings, а не на мертвий onNavigate("settings")', () => {
+    // `local-anon` (дефолтний мок файлу) ховає staleness-банер за
+    // durability-банером (`showLocalOnlyBanner`) — потрібен «синхронізовний»
+    // id, як у реального залогіненого користувача.
+    vi.mocked(useLocalUserId).mockReturnValueOnce("real-user-1");
+    const onOpenSettings = vi.fn();
+    const onNavigate = vi.fn();
+    const staleLastEventAt = new Date(
+      KYIV.getTime() - 10 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    renderOverview({
+      mono: buildMono({
+        realTx: [mkTx("t1", -1000)],
+        webhookSyncState: {
+          status: "active",
+          webhookActive: true,
+          lastEventAt: staleLastEventAt,
+          lastBackfillAt: null,
+          accountsCount: 1,
+        },
+      }),
+      onNavigate,
+      onOpenSettings,
+    });
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Перевірити підключення" }),
+    );
+
+    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+    expect(onNavigate).not.toHaveBeenCalled();
+  });
+
+  it("без onOpenSettings CTA staleness-банера не рендериться (мертву кнопку не лишаємо)", () => {
+    vi.mocked(useLocalUserId).mockReturnValueOnce("real-user-1");
+    const staleLastEventAt = new Date(
+      KYIV.getTime() - 10 * 24 * 60 * 60 * 1000,
+    ).toISOString();
+
+    renderOverview({
+      mono: buildMono({
+        realTx: [mkTx("t1", -1000)],
+        webhookSyncState: {
+          status: "active",
+          webhookActive: true,
+          lastEventAt: staleLastEventAt,
+          lastBackfillAt: null,
+          accountsCount: 1,
+        },
+      }),
+    });
+
+    expect(screen.getByText(/Дані не оновлювались/)).toBeInTheDocument();
+    expect(
+      screen.queryByRole("button", { name: "Перевірити підключення" }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -27,12 +27,15 @@ describe("finykNav", () => {
       );
     }
     expect(NAV_IDS).toEqual(NAV_ITEMS.map((item) => item.id));
+    // `settings` прибрано з `NAV_ICONS` (аудит 2026-09-13, PR-F1): цей
+    // ключ ніколи не мав відповідного пункту в `NAV_ITEMS` — «Налаштування»
+    // Фініка відкриваються через `onOpenSettings` (Hub), не через таб
+    // модуля, тож іконка була мертвим записом.
     expect(Object.keys(NAV_ICONS).sort()).toEqual([
       "analytics",
       "assets",
       "budgets",
       "overview",
-      "settings",
       "transactions",
     ]);
   });

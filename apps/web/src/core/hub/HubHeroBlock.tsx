@@ -91,6 +91,11 @@ export function HubHeroBlock({
   }
 
   if (reengagementIsHero) {
+    // AI-CONTEXT (H1, 2026-09-13): `ReEngagementCard` не бере участь у
+    // бюджеті банерів (`bannerBudget.tsx`) — вона ЗАМІНЮЄ hero, а не
+    // додається до сторінки, тож не має конкурувати за слоти з
+    // `localOnlyData`/`privacyLock` над нею. Раніше конкурувала — і при
+    // насиченому бюджеті рендерила `null`, лишаючи hero-смугу порожньою.
     return (
       <div className="space-y-4">
         <ReEngagementCard

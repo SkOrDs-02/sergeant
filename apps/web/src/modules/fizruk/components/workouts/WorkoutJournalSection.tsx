@@ -156,6 +156,7 @@ export function WorkoutJournalSection({
       <WorkoutSummaryView
         workout={activeWorkout}
         onRepeat={() => onRepeatWorkout(activeWorkout)}
+        onClose={onClose}
       />
     );
   }

@@ -54,6 +54,15 @@ interface OverviewProps {
   showBalance?: boolean;
   /** Відкриває аркуш масового імпорту — той самий, що дія FAB. */
   onOpenBulkImport?: (() => void) | undefined;
+  /**
+   * Відкриває Налаштування Hub на секції Фініка (`FinykWebhookServiceSection`
+   * — саме там живе форма перепідключення токена). Без нього CTA staleness-
+   * банера («Перевірити підключення», канон §6.3) не рендериться — раніше
+   * банер тихо кликав `onNavigate("settings")`, а сегмента `settings` у
+   * `finykRouter.ts` не існує, тож тап фолбечив на `overview` й нічого не
+   * робив (аудит 2026-09-13, PR-F1).
+   */
+  onOpenSettings?: (() => void) | undefined;
 }
 
 const overviewLoadingSkeleton = (
@@ -74,6 +83,7 @@ export function Overview({
   onOpenAuth,
   showBalance = true,
   onOpenBulkImport,
+  onOpenSettings,
 }: OverviewProps) {
   const navigate = useNavigate();
   const d = useOverviewData({ mono, storage, onNavigate });
@@ -163,9 +173,7 @@ export function Overview({
             {showStalenessBanner && monoStaleness.days !== null && (
               <MonoStalenessBanner
                 days={monoStaleness.days}
-                onReconnect={
-                  onNavigate ? () => onNavigate("settings") : undefined
-                }
+                onReconnect={onOpenSettings}
               />
             )}
 
