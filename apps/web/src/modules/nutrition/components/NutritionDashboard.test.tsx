@@ -61,13 +61,19 @@ function logWithSources(entries: Array<{ kcal: number; macroSource: string }>) {
   } as never;
 }
 
-function logWithMealCount(count: number) {
+/**
+ * `mealTypes` lets a test control how many DISTINCT meal occasions the
+ * fixture carries — as opposed to how many journal rows it has. Passing the
+ * same type N times (e.g. `["dinner", "dinner", "dinner"]`) reproduces the
+ * nutrition audit PR-N2 fixture: a single photo saved as N rows of one meal.
+ */
+function logWithMealTypes(mealTypes: string[]) {
   return {
     [today]: {
-      meals: Array.from({ length: count }, (_, i) => ({
+      meals: mealTypes.map((mealType, i) => ({
         id: `m${i + 1}`,
         time: "12:00",
-        mealType: "lunch",
+        mealType,
         name: `Прийом ${i + 1}`,
         macros: { kcal: 300, protein_g: 20, fat_g: 10, carbs_g: 30 },
       })),
@@ -184,22 +190,40 @@ describe("NutritionDashboard", () => {
     render(
       <NutritionDashboard
         onPickMeal={vi.fn()}
-        log={logWithMealCount(1)}
+        log={logWithMealTypes(["lunch"])}
         prefs={GOAL_PREFS}
       />,
     );
     expect(screen.getByText("Записано 1 із 4")).toBeInTheDocument();
   });
 
-  it("hides the incomplete-day note once 3+ meals are logged", () => {
+  it("hides the incomplete-day note once 3 genuinely distinct meals are logged", () => {
     render(
       <NutritionDashboard
         onPickMeal={vi.fn()}
-        log={logWithMealCount(3)}
+        log={logWithMealTypes(["breakfast", "lunch", "dinner"])}
         prefs={GOAL_PREFS}
       />,
     );
     expect(screen.queryByText(/Записано \d+ із 4/)).not.toBeInTheDocument();
+    expect(screen.getByText("3 прийоми їжі")).toBeInTheDocument();
+  });
+
+  it("does NOT clear the incomplete-day note when a photo saves 3 rows of the SAME meal type (nutrition audit PR-N2)", () => {
+    // One photo → "суп + хліб + салат" → 3 journal rows, all `mealType:
+    // "dinner"`. The day has exactly one meal OCCASION, not three, so it
+    // must still read as incomplete — this is the exact symptom PR-N2
+    // reported: `mealCount` (row count) used to clear the marker here.
+    render(
+      <NutritionDashboard
+        onPickMeal={vi.fn()}
+        log={logWithMealTypes(["dinner", "dinner", "dinner"])}
+        prefs={GOAL_PREFS}
+      />,
+    );
+    expect(screen.getByText("Записано 1 із 4")).toBeInTheDocument();
+    expect(screen.getByText("1 прийом їжі")).toBeInTheDocument();
+    expect(screen.queryByText(/3 прийом/)).not.toBeInTheDocument();
   });
 
   it("shows the ≈ badge and caption when photoAI kcal share is above 50% (nutrition audit E-5)", () => {

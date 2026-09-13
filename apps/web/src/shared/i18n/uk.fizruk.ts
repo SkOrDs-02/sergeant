@@ -626,7 +626,11 @@ export const fizrukPageMessages = {
     itemsLabel: "Вправ",
     setsLabel: "Підходів",
     volumeLabel: "Обʼєм",
-    kgUnit: "кг",
+    // PR-Z3 (аудит 2026-09-13, хвиля 6): це `computeWorkoutTonnageKg` —
+    // сума `вага_кг × повторення`, не маса в кілограмах. Було "кг", що
+    // читалось як реальна вага; канонічний варіант — "кг×повт", уже
+    // задокументований у `Measure.tsx` і чинний у `WeeklyVolumeChart`.
+    kgUnit: "кг×повт",
     wellbeingPrefix: "Самопочуття:",
     energyLabel: "енергія",
     moodLabel: "настрій",

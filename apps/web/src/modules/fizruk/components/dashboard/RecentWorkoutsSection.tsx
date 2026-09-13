@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-09-13
  * Status: Active
  */
 /**
@@ -52,18 +52,19 @@ function formatDuration(sec: number): string {
   return m === 0 ? `${h} год` : `${h} год ${m} хв`;
 }
 
+/**
+ * PR-Z3 (аудит 2026-09-13, хвиля 6): раніше великі значення показувались
+ * як «1,5 т» — реальні тонни тут ще менш чесні за голе «кг», бо ця
+ * величина взагалі не маса, а `вага_кг × повторення`
+ * (`computeWorkoutTonnageKg`). Канонічний підпис — "кг×повт", той самий,
+ * що вже стояв у `WeeklyVolumeChart` і тепер уніфікований по всьому
+ * модулю (`WorkoutSummaryView`, `WorkoutFinishSheets`). Абревіатуру до
+ * тонн знято разом зі зняттям неоднозначної одиниці — жодна інша
+ * поверхня fizruk не скорочує велике число так само.
+ */
 function formatTonnage(kg: number): string {
   if (!Number.isFinite(kg) || kg <= 0) return "—";
-  if (kg >= 1000) {
-    const thousands = kg / 1000;
-    const rounded =
-      thousands >= 10 ? Math.round(thousands) : Math.round(thousands * 10) / 10;
-    // Кома, а не крапка: `${rounded}` дає «1.5 т» посеред українського
-    // набору. Рядок тут лишається рядком свідомо — той самий виняток,
-    // що і в `Money`-таблиці: значення йде і в чип, і в межу рядкового API.
-    return `${formatNumberUk(rounded)} т`;
-  }
-  return `${Math.round(kg)} кг`;
+  return `${formatNumberUk(Math.round(kg))} кг×повт`;
 }
 
 export function RecentWorkoutsSection({
@@ -138,7 +139,9 @@ export function RecentWorkoutsSection({
                   <span className="text-style-label text-fizruk-strong dark:text-fizruk">
                     {formatTonnage(row.tonnageKg)}
                   </span>
-                  <span className="text-style-caption text-muted">тоннаж</span>
+                  {/* PR-Z3: назва метрики уніфікована з `WorkoutSummaryView`
+                      / `WorkoutFinishSheets` — усюди "Обʼєм", не "тоннаж". */}
+                  <span className="text-style-caption text-muted">Обʼєм</span>
                 </div>
               </li>
             ))}

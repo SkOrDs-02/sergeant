@@ -15,6 +15,7 @@ import {
 
 import { addDeviceDays } from "./deviceDayKey.js";
 import {
+  MEAL_ORDER,
   isMealTypeId,
   labelForMealType,
   mealTypeFromLabel,
@@ -217,6 +218,34 @@ export function isEstimatedMeal(meal: Meal | null | undefined): boolean {
   return meal?.macroSource === "photoAI";
 }
 
+/**
+ * Meal type of a logged row, mirroring the fallback used by
+ * `mealTypeBreakdown`/`mealTypeKcalForDay` (web `nutritionStats.ts`):
+ * `mealType` first, then a legacy label match.
+ */
+function resolvedMealType(m: Meal | null | undefined) {
+  return isMealTypeId(m?.mealType) ? m.mealType : mealTypeFromLabel(m?.label);
+}
+
+/**
+ * Count of distinct meal occasions (`MEAL_ORDER`) with non-zero kcal for
+ * the day — see `DaySummary.loggedMealTypesCount` doc for why this exists
+ * separately from a raw row count.
+ */
+function countLoggedMealTypes(meals: readonly Meal[]): number {
+  const kcalByType = new Map<string, number>();
+  for (const m of meals) {
+    const type = resolvedMealType(m);
+    const kcal = macrosToTotals(m?.macros).kcal;
+    kcalByType.set(type, (kcalByType.get(type) ?? 0) + kcal);
+  }
+  let count = 0;
+  for (const type of MEAL_ORDER) {
+    if ((kcalByType.get(type) ?? 0) > 0) count += 1;
+  }
+  return count;
+}
+
 export function getDaySummary(log: NutritionLogLike, date: string): DaySummary {
   const day = log?.[date];
   const meals = (Array.isArray(day?.meals) ? day.meals : []) as Meal[];
@@ -230,6 +259,7 @@ export function getDaySummary(log: NutritionLogLike, date: string): DaySummary {
   return {
     date,
     mealCount: meals.length,
+    loggedMealTypesCount: countLoggedMealTypes(meals),
     hasMeals: meals.length > 0,
     hasAnyMacros,
     estimatedKcalShare,

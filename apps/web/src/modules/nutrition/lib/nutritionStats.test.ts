@@ -18,6 +18,7 @@ function makeDay(overrides: Partial<DaySummary> = {}): DaySummary {
     fat_g: 0,
     carbs_g: 0,
     mealCount: 0,
+    loggedMealTypesCount: 0,
     hasMeals: false,
     hasAnyMacros: false,
     estimatedKcalShare: 0,

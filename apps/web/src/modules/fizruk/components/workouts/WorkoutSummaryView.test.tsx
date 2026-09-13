@@ -6,6 +6,7 @@
 import { describe, it, expect, vi } from "vitest";
 import { render, screen } from "@testing-library/react";
 import type { Workout } from "@sergeant/fizruk-domain/domain";
+import { flatMatch } from "@shared/testing/numberText";
 import { WorkoutSummaryView } from "./WorkoutSummaryView";
 
 function makeWorkout(override: Partial<Workout> = {}): Workout {
@@ -35,6 +36,34 @@ describe("WorkoutSummaryView", () => {
     expect(screen.getByText("Вправ")).toBeInTheDocument();
     expect(screen.getByText("Підходів")).toBeInTheDocument();
     expect(screen.getByText("Обʼєм")).toBeInTheDocument();
+  });
+
+  // PR-Z3 (аудит 2026-09-13, хвиля 6): "Обʼєм" тут — `вага_кг × повторення`
+  // (`computeWorkoutTonnageKg`), не маса. Канонічний підпис "кг×повт",
+  // уніфікований з `WorkoutFinishSheets` і `RecentWorkoutsSection`.
+  it("labels the volume stat 'кг×повт', not bare 'кг' — the value is weight × reps, not mass", () => {
+    const workout = makeWorkout({
+      items: [
+        {
+          id: "i1",
+          exerciseId: "bench",
+          nameUk: "Жим лежачи",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "strength",
+          sets: [{ weightKg: 100, reps: 10 }],
+        },
+      ],
+    });
+    render(
+      <WorkoutSummaryView
+        workout={workout}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText(flatMatch("1 000 кг×повт"))).toBeInTheDocument();
   });
 
   it("renders the exercise list with per-item set details", () => {
