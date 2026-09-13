@@ -90,6 +90,56 @@ export const Destructive: Story = {
   args: { variant: "solid", tone: "danger", children: "Видалити" },
 };
 
+/**
+ * ## Дві червоні клітинки — і чому їх НЕ можна звести в одну
+ *
+ * Аудит 2026-09-13 (PR-C1) прочитав `danger` і `destructive` як «два імені
+ * однієї ролі» й пропонував злити. Це не так: вони живуть у різних клітинках
+ * канонічної сітки і виглядають по-різному.
+ *
+ * | Роль | Канонічно | Legacy-alias | Коли |
+ * | --- | --- | --- | --- |
+ * | Незворотна дія у **кроці підтвердження** | `solid` + `danger` | `destructive` | Кнопка, яка ЗАРАЗ видалить. Одна на екран, суцільна червона. `ConfirmDialog` бере саме її. |
+ * | Незворотна дія **в рядку списку** | `soft` + `danger` | `danger` | «Видалити» серед сусідніх дій. Мʼякий червоний чип: помітний, але не кричить із кожного рядка. |
+ *
+ * Третього способу немає. Зокрема, **не можна** брати `secondary` чи `ghost`
+ * і домальовувати `text-danger-*` руками: у `secondary` ховер несе
+ * `hover:border-brand-200`, тож кнопка стає брендовою рівно тоді, коли в неї
+ * цілиться курсор, а в `ghost` без власного `hover:text-danger` червоний
+ * зникає під курсором зовсім. Обидва стани поміряні й закриті тестом
+ * `Button.destructiveStyling.test.ts`.
+ */
+export const DestructiveRoles: Story = {
+  render: () => (
+    <div className="flex flex-col gap-4">
+      <div className="flex flex-col gap-2">
+        <span className="text-style-overline text-subtle">
+          Крок підтвердження — solid / danger
+        </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="solid" tone="danger">
+            Видалити
+          </Button>
+          <Button variant="destructive">Видалити (legacy-alias)</Button>
+        </div>
+      </div>
+      <div className="flex flex-col gap-2">
+        <span className="text-style-overline text-subtle">
+          Рядок списку — soft / danger
+        </span>
+        <div className="flex flex-wrap items-center gap-3">
+          <Button variant="soft" tone="danger" size="sm">
+            Видалити
+          </Button>
+          <Button variant="danger" size="sm">
+            Видалити (legacy-alias)
+          </Button>
+        </div>
+      </div>
+    </div>
+  ),
+};
+
 export const Loading: Story = { args: { loading: true } };
 
 export const Disabled: Story = { args: { disabled: true } };

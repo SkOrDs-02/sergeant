@@ -353,7 +353,7 @@ function SuccessView({
           type="button"
           variant="ghost"
           size="sm"
-          className="min-h-[44px] text-danger-strong dark:text-danger"
+          className="min-h-[44px] text-danger-strong dark:text-danger hover:text-danger"
           onClick={onClear}
           disabled={clearPending}
           loading={clearPending}

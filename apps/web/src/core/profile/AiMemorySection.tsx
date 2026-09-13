@@ -79,7 +79,7 @@ export function AiMemorySection() {
           variant="ghost"
           size="sm"
           disabled={clearingMemory}
-          className="text-danger-strong"
+          className="text-danger-strong hover:text-danger"
           onClick={() => setClearMemoryConfirmOpen(true)}
         >
           {clearingMemory ? copy.clearing : copy.clearButton}
