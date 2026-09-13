@@ -158,7 +158,7 @@ export const messages = {
 
   empty: {
     // Phase 2 — empty-state wording. <EmptyState> компонент має власні
-    // tier-specific повідомлення (див. `docs/design/empty-states.md`),
+    // tier-specific повідомлення (див. `docs/design/design/empty-states.md`),
     // ці ключі — для inline empty-state-ів, де <EmptyState> не вписується
     // (mini-stat tier).
     //

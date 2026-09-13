@@ -336,7 +336,7 @@ export function TransactionList({
   //     answers "why is this list empty" — short, list-appropriate copy, no
   //     inline action (the global "+ Додати витрату" FAB on `FinykApp` is
   //     the primary CTA; duplicating it here is the anti-pattern called out
-  //     in `docs/design/empty-states.md`).
+  //     in `docs/design/design/empty-states.md`).
   //   • month-empty (`activeTx` empty but the user HAS transactions in other
   //     months) → month-scoped state. The first-run hero here read as data
   //     loss: on 1 серпня, with Monobank connected and a full July history,

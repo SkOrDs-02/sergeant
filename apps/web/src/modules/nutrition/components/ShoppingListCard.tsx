@@ -9,6 +9,7 @@ import type {
   ShoppingItemWithCalc,
 } from "@sergeant/nutrition-domain";
 import { Card } from "@shared/components/ui/Card";
+import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Button } from "@shared/components/ui/Button";
 import { cn } from "@shared/lib/ui/cn";
 import { openHubModule } from "@shared/lib/modules/hubNav";
@@ -460,9 +461,13 @@ export function ShoppingListCard({
         )}
 
         {!hasItems && !shoppingBusy && (
-          <div className="rounded-2xl border border-line bg-panel p-4 text-style-label text-muted text-center">
-            Список покупок порожній. Вибери джерело і натисни кнопку генерації.
-          </div>
+          <EmptyState
+            compact
+            module="nutrition"
+            icon={<Icon name="shopping-cart" size={20} />}
+            title="Список покупок порожній"
+            description="Вибери джерело і натисни кнопку генерації."
+          />
         )}
 
         <button
