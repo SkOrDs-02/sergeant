@@ -27,6 +27,15 @@ vi.mock("../cloudSync", () => ({
   useSyncStatus: () => ({ ...syncStatusRef, isOnline: onlineRef.value }),
 }));
 
+const purgeNoticeRef: {
+  value: { purged: number; purgedAtIso: string } | null;
+} = { value: null };
+
+vi.mock("../syncEngine/outboxPurgeNotice", () => ({
+  useOutboxPurgeNotice: () => purgeNoticeRef.value,
+  dismissOutboxPurgeNotice: vi.fn(),
+}));
+
 import { OfflineBanner } from "./OfflineBanner";
 
 beforeEach(() => {
@@ -35,6 +44,7 @@ beforeEach(() => {
   syncStatusRef.syncV2DeadLetterCount = 0;
   syncStatusRef.syncV2RejectedCount = 0;
   retrySyncV2DeadLetters.mockReset();
+  purgeNoticeRef.value = null;
 });
 afterEach(cleanup);
 
@@ -149,6 +159,34 @@ describe("OfflineBanner", () => {
     const { getByTestId } = render(<OfflineBanner />);
     expect(getByTestId("offline-banner").getAttribute("data-state")).toBe(
       "syncing",
+    );
+  });
+
+  // PR-T2 (2026-09-13 product review, "Тиха втрата даних"): the boot-time
+  // TTL sweep can delete the very rejected/dead-letter rows that would
+  // otherwise keep this pill visible. Without a dedicated lowest-priority
+  // state, the purge leaves no entry point into `SyncStatusSheet`.
+  it("renders a 'purged' pill when the only anomaly is a past outbox purge", () => {
+    onlineRef.value = true;
+    purgeNoticeRef.value = {
+      purged: 4,
+      purgedAtIso: "2026-09-13T00:00:00.000Z",
+    };
+    const { getByTestId } = render(<OfflineBanner />);
+    const pill = getByTestId("offline-banner");
+    expect(pill.getAttribute("data-state")).toBe("purged");
+    expect(pill.textContent).toContain("4 старі записи прибрано");
+  });
+
+  it("lets live states win over a past outbox purge", () => {
+    purgeNoticeRef.value = {
+      purged: 4,
+      purgedAtIso: "2026-09-13T00:00:00.000Z",
+    };
+    syncStatusRef.syncV2RejectedCount = 2;
+    const { getByTestId } = render(<OfflineBanner />);
+    expect(getByTestId("offline-banner").getAttribute("data-state")).toBe(
+      "rejected",
     );
   });
 });

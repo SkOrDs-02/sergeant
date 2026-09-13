@@ -11,8 +11,21 @@
  * canonical routine state (LS-backed), the main tab, filter inputs,
  * the quick-add dialog and the storage-error banner. It also wires
  * the side effects that connect the module to the rest of the app
- * (sqlite read boot, dual-write boot, Finyk preview, reminders,
- * deep-link handling and the PWA `add_habit` action).
+ * (sqlite read boot, Finyk preview, reminders, deep-link handling and
+ * the PWA `add_habit` action).
+ *
+ * AI-DANGER: does NOT call `useRoutineDualWriteBoot()` — that hook is
+ * owned by `RoutineBootCluster` (mounted for every session via
+ * `RootLayout`, independent of whether this module is open) and MUST
+ * stay singular. `registerRoutineDualWriteContext` (`sqliteWriter/index.ts`)
+ * keeps a single-slot registry with a teardown that nulls the slot on
+ * unmount; a second registrant here would overwrite the cluster's
+ * context while mounted and then null the slot on module unmount even
+ * though the cluster is still alive — silently degrading dual-write to
+ * a no-op for the rest of the session (product-full-review audit
+ * 2026-09-13, finding PR-R1). `useSqliteReadBoot()` has no such
+ * teardown — it's an idempotent one-shot boot — so calling it again
+ * here alongside the global cluster is harmless.
  */
 
 import {
@@ -51,7 +64,6 @@ import {
 } from "../../core/observability/analytics";
 import { readSignalContext } from "../../core/observability/valueSignalAttribution";
 import { readStreakExposure } from "./lib/streakExposure";
-import { useRoutineDualWriteBoot } from "./hooks/useRoutineDualWriteBoot";
 import { useSqliteReadBoot } from "./hooks/useSqliteReadBoot";
 import { useRoutineReminders } from "./hooks/useRoutineReminders";
 import { HUB_FINYK_ROUTINE_SYNC_EVENT } from "../finyk/hubRoutineSync";
@@ -123,7 +135,6 @@ export function useRoutineAppState({
   const location = useLocation();
   const toast = useToast();
   useSqliteReadBoot();
-  useRoutineDualWriteBoot();
   const [routine, setRoutine] = useRoutineState();
   // Low-priority transition for habit toggles: the checkbox haptic fires
   // instantly while React defers the heavier re-render (full list + persist)

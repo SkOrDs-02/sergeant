@@ -7,9 +7,14 @@
  * Copy is kept in JS constants (interpolated, never JSX-text) so the module
  * stays clear of raw Cyrillic literals.
  */
+import { pluralUa } from "@sergeant/shared";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
 import { SyncRejectedList } from "./SyncRejectedList";
+import {
+  dismissOutboxPurgeNotice,
+  useOutboxPurgeNotice,
+} from "../syncEngine/outboxPurgeNotice";
 
 type RowTone = "ok" | "warn" | "err";
 
@@ -32,7 +37,35 @@ const COPY = {
   rejected: "Не прийнято сервером",
   rejectedEmpty: "Немає",
   retry: "Повторити синхронізацію",
+  purgeNoticeTitle: "Старі записи прибрано",
+  purgeNoticeDismiss: "Зрозуміло",
 } as const;
+
+/**
+ * PR-T2 (2026-09-13 product review, "Тиха втрата даних"): the boot-time
+ * TTL sweep (`purgeStaleTerminalOutbox`, `singleton.ts`) deletes
+ * `rejected`/`dead_letter` outbox rows older than 30 days so the local
+ * DLQ cannot grow forever — but the deleted rows never reached the
+ * server. Without this note the "Помилки"/"Не прийнято сервером" pills
+ * above just quietly drop to zero and nobody is told a record was lost.
+ * Ukrainian numeral agreement: 1 → nominative singular, 2-4 → nominative
+ * plural, 5+ → genitive plural (matches the adjective too).
+ */
+function purgeNoticeBody(purged: number, purgedAtIso: string): string {
+  const noun = pluralUa(purged, {
+    one: "старий запис",
+    few: "старі записи",
+    many: "старих записів",
+  });
+  const dateLabel = new Date(purgedAtIso).toLocaleDateString("uk-UA", {
+    day: "numeric",
+    month: "long",
+  });
+  return (
+    `${purged} ${noun} синхронізації видалено ${dateLabel} (старіші за 30 днів)` +
+    ` — сервер їх так і не отримав, ці зміни втрачено.`
+  );
+}
 
 export interface SyncStatusSheetProps {
   open: boolean;
@@ -57,6 +90,7 @@ export function SyncStatusSheet({
   rejected = 0,
   onRetry,
 }: SyncStatusSheetProps) {
+  const purgeNotice = useOutboxPurgeNotice();
   const rows: { label: string; value: string; tone: RowTone }[] = [
     {
       label: COPY.network,
@@ -121,6 +155,30 @@ export function SyncStatusSheet({
         >
           {COPY.retry}
         </button>
+      )}
+      {purgeNotice && (
+        <div
+          role="status"
+          className="mt-3 rounded-xl border border-warning/30 bg-warning/5 px-3 py-2.5"
+        >
+          <p className="text-style-label font-semibold text-warning-strong dark:text-warning">
+            {COPY.purgeNoticeTitle}
+          </p>
+          <p className="mt-1 text-style-caption text-muted">
+            {purgeNoticeBody(purgeNotice.purged, purgeNotice.purgedAtIso)}
+          </p>
+          <button
+            type="button"
+            onClick={dismissOutboxPurgeNotice}
+            className={cn(
+              "mt-2 w-full min-h-[44px] rounded-xl font-semibold transition-colors",
+              "bg-warning/10 text-warning-strong hover:bg-warning/15",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+            )}
+          >
+            {COPY.purgeNoticeDismiss}
+          </button>
+        </div>
       )}
     </Sheet>
   );
