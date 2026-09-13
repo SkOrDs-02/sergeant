@@ -1,6 +1,6 @@
 # Design System — Примітиви UI, Focus, A11y та Gestures
 
-> **Last touched:** 2026-09-12 by @claude. **Next review:** 2027-03-25.
+> **Last touched:** 2026-09-13 by @claude. **Next review:** 2027-03-26.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює UI-примітиви, focus/disabled/loading контракт, правила кодування, міграційні патерни, нові компоненти та хуки, gestures/a11y, та keyboard-first overlays (DropdownMenu, CommandPalette).
@@ -147,6 +147,28 @@ import {
 
 Обидва примітиви мають повну клавіатурну навігацію: ArrowLeft/Right,
 Home/End, `role="tablist"`.
+
+> **`role="tablist"` — це зобовʼязання, не оформлення.** Скрінрідер
+> оголошує «вкладка 2 з 4» і тим самим каже людині, що між вкладками
+> ходять стрілками. Роль без стрілок — обіцянка, яку інтерфейс не виконує.
+>
+> Аудит 2026-09-13 (PR-C5) знайшов **чотири** таких місця при трьох робочих
+> реалізаціях патерну — тобто логіка лежала поруч, її просто щоразу писали
+> заново. Найдорожчий випадок, `ModuleSwitcher`: roving tabindex БЕЗ
+> стрілок робив неактивні модулі недосяжними з клавіатури взагалі (Tab
+> пропускає, стрілки не працюють).
+>
+> **Пишеш свій ряд вкладок — бери
+> [`useTablistArrowKeys`](../../../../apps/web/src/shared/hooks/useTablistArrowKeys.ts)**
+> і вішай його `onKeyDown` на КОЖНУ кнопку `role="tab"` (не на контейнер:
+> `div[role="tablist"]` без `tabIndex` — це
+> `jsx-a11y/interactive-supports-focus`). Контракт «роль ↔ поведінка»
+> тримає `tablistKeyboardContract.test.ts`: файл із `role="tablist"` або
+> бере хук, або стоїть у його списку власних реалізацій із поясненням.
+>
+> Роль можна й НЕ брати — це нормальний вибір для смужки фільтрів, яка
+> вкладками не є. Так уже зроблено у `BodyAtlasSegGroup` і
+> `PantrySourceTabs`, обидва з коментарем чому.
 
 ### SectionHeader
 

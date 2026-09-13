@@ -8,6 +8,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { hapticTap } from "@shared/lib/adapters/haptic";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { openHubModule } from "@shared/lib/modules/hubNav";
+import { useTablistArrowKeys } from "@shared/hooks/useTablistArrowKeys";
 import {
   MODULE_LABELS,
   type HubModuleId,
@@ -555,6 +556,12 @@ export interface ModuleSwitcherProps {
 }
 
 export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
+  // Тут roving tabindex стояв БЕЗ стрілок, тобто неактивні модулі були
+  // недосяжні з клавіатури взагалі: Tab їх пропускає (`tabIndex={-1}`), а
+  // стрілки нікуди не вели. Половину патерну пінив тест
+  // (`ModuleHeader.test.tsx`), через що друга половина виглядала свідомо
+  // пропущеною. Знахідка PR-C5, аудит 2026-09-13.
+  const onTabKeyDown = useTablistArrowKeys();
   return (
     <div
       role="tablist"
@@ -577,6 +584,7 @@ export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
             aria-selected={isActive}
             aria-label={`Перейти до модуля ${label}`}
             tabIndex={isActive ? 0 : -1}
+            onKeyDown={onTabKeyDown}
             onClick={() => {
               if (isActive) return;
               hapticTap();

@@ -119,6 +119,37 @@ describe("ModuleSwitcher", () => {
       expect(tab.tabIndex).toBe(selected ? 0 : -1);
     }
   });
+
+  // Друга половина патерну. Тест вище пінить roving tabindex, і саме через
+  // це відсутність стрілок довго виглядала свідомою: `tabIndex={-1}` на
+  // неактивних + жодного onKeyDown = неактивні модулі недосяжні з
+  // клавіатури взагалі (Tab пропускає, стрілки не працюють). Знахідка
+  // PR-C5, аудит 2026-09-13. Половини мусять їхати разом.
+  it("стрілки ходять по модулях і перемикають їх", () => {
+    render(<ModuleSwitcher active="finyk" />);
+    const tablist = screen.getByRole("tablist");
+    const tabs = within(tablist).getAllByRole("tab");
+    const first = tabs[0]!;
+    const second = tabs[1]!;
+
+    first.focus();
+    fireEvent.keyDown(first, { key: "ArrowRight" });
+
+    expect(document.activeElement).toBe(second);
+    expect(openHubModule).toHaveBeenCalledTimes(1);
+  });
+
+  it("Home і End доводять до країв ряду", () => {
+    render(<ModuleSwitcher active="finyk" />);
+    const tabs = within(screen.getByRole("tablist")).getAllByRole("tab");
+
+    tabs[0]!.focus();
+    fireEvent.keyDown(tabs[0]!, { key: "End" });
+    expect(document.activeElement).toBe(tabs[tabs.length - 1]!);
+
+    fireEvent.keyDown(tabs[tabs.length - 1]!, { key: "Home" });
+    expect(document.activeElement).toBe(tabs[0]!);
+  });
 });
 
 describe("ModuleHeader buttons", () => {
