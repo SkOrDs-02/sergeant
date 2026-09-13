@@ -67,6 +67,21 @@ export type ModuleNavColor = "finyk" | "fizruk" | "routine" | "nutrition";
 export interface ModuleBottomNavItem {
   id: string;
   label: string;
+  /**
+   * Коротша копія ВИДИМОГО підпису, коли повний не влазить у колонку.
+   * Дзеркалить механізм `HubBottomNav` («Налаштування» → «Опції»).
+   *
+   * AI-DANGER: коротшає ЛИШЕ видимий підпис. Доступна назва лишається
+   * повною — її дає `<span className="sr-only">{label}</span>`, і тести
+   * навбарів шукають таб саме по ній. Не зводь ці два поля в одне:
+   * «План» як accessible name робить таб невідрізненним від будь-якого
+   * іншого планувальника в скрінрідері.
+   *
+   * Перш ніж додавати сюди значення — ЗАМІРЯЙ. Доступна підпису ширина
+   * рахується як `(W − 8 контейнерних − 4×(N−1) gap) / N − 8 пілюльних`;
+   * гейт `nav-label-fit.spec.ts` міряє це рендером на 320 і 390px.
+   */
+  visibleLabel?: string;
   icon: ReactNode;
   /** Show a small unread/attention dot on the icon. */
   badge?: boolean;
@@ -316,16 +331,24 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                   половина ховається зараз чи ховатиметься після редизайну.
                 */}
                 {/*
-                  `text-ellipsis`: стеля `max-w-[88px]` — реальна межа, і
-                  підпис, що в неї не вліз, раніше різало посеред слова
-                  («Прогрес і замір» — знахідка QA-аудиту 2026-08-04, скарга
-                  власника 2026-08-08). Багатослівний підпис у нижній
-                  навігації — сам собою помилка (і його вкорочують у
-                  відповідному `*Nav`-файлі), але обрив із трьома крапками
-                  читається як навмисне скорочення, а не як зламана верстка.
+                  `text-ellipsis`: реальна межа — ширина grid-колонки мінус
+                  `px-1` пілюлі, і підпис, що в неї не вліз, раніше різало
+                  посеред слова («Прогрес і замір» — знахідка QA-аудиту
+                  2026-08-04, скарга власника 2026-08-08). Багатослівний
+                  підпис у нижній навігації — сам собою помилка (і його
+                  вкорочують через `visibleLabel` у відповідному
+                  `*Nav`-файлі), але обрив із трьома крапками читається як
+                  навмисне скорочення, а не як зламана верстка.
+
+                  Попередня редакція цього коментаря називала межею стелю
+                  `max-w-[88px]`. Її в коді немає — активний підпис стоїть
+                  на `max-w-full`, тобто межу задає колонка. Хто читав
+                  коментар замість класів, рахував запас проти числа, якого
+                  не існує (знахідка R1, 2026-09-13).
                 */}
                 <span
                   aria-hidden
+                  data-nav-label
                   className={cn(
                     "text-style-caption font-semibold leading-none overflow-hidden text-ellipsis whitespace-nowrap",
                     "transition-[max-width,opacity] duration-base motion-reduce:transition-none",
@@ -334,7 +357,7 @@ export const ModuleBottomNav = memo(function ModuleBottomNav({
                       : "max-w-0 opacity-0 pointer-events-none",
                   )}
                 >
-                  {item.label}
+                  {item.visibleLabel ?? item.label}
                 </span>
               </span>
               <span className="sr-only">{item.label}</span>
