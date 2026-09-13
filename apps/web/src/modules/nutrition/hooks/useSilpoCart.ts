@@ -59,6 +59,7 @@ function silpoCartErrorKind(error: unknown): SilpoCartErrorKind {
     case "SILPO_RATE_LIMITED":
     case "SILPO_UPSTREAM_ERROR":
     case "SILPO_SCHEMA_DRIFT":
+    case "SILPO_TOOL_ERROR":
     case "SILPO_DISABLED":
     case "SILPO_CONFIG_MISSING":
       return "unavailable";

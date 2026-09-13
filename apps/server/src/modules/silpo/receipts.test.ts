@@ -219,12 +219,22 @@ describe("silpoErrorToAppError", () => {
     ["config_missing", 503, "SILPO_CONFIG_MISSING"],
     ["rate_limited", 429, "SILPO_RATE_LIMITED"],
     ["schema_drift", 502, "SILPO_SCHEMA_DRIFT"],
+    ["tool_error", 502, "SILPO_TOOL_ERROR"],
     ["upstream_unavailable", 502, "SILPO_UPSTREAM_ERROR"],
     ["protocol_error", 502, "SILPO_UPSTREAM_ERROR"],
   ] as const)("maps %s → status %d / code %s", (kind, status, code) => {
     const err = silpoErrorToAppError({ kind, message: "x" });
     expect(err.status).toBe(status);
     expect(err.code).toBe(code);
+  });
+
+  it("a tool refusal does not ring the schema-drift alert", () => {
+    __resetSilpoSchemaDriftAlert();
+    vi.mocked(Sentry.captureException).mockClear();
+
+    silpoErrorToAppError({ kind: "tool_error", message: "Rate limit" });
+
+    expect(Sentry.captureException).not.toHaveBeenCalled();
   });
 });
 

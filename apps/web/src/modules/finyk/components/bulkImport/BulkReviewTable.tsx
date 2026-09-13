@@ -24,6 +24,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
 import { Select } from "@shared/components/ui/Select";
 import type { CustomCategoryInput } from "@sergeant/finyk-domain";
+import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 import { CATEGORY_DISPLAY, CATEGORY_SLUGS } from "../manualExpenseCategories";
 import {
   INCOME_CATEGORY_SLUGS,
@@ -35,6 +36,28 @@ import { ReceiptMoneyInput } from "../receiptScan/receiptMoneyInput";
 import { selectedRowCount, type BulkReviewRow } from "./bulkImportRows";
 
 const CONFIDENCE_WARN_THRESHOLD = 0.7;
+
+/**
+ * «Внутрішній переказ» у пікері імпорту — в ОБОХ напрямах.
+ *
+ * Рух між власними кишенями буває обома боками (зняття готівки, поповнення
+ * банки — витрата; зарахування зі своєї картки — дохід), а сам ярлик не є
+ * ні витратною, ні дохідною категорією: він виключає рядок з підсумків
+ * (`buildFinykExcludedTxIds` → `isTxLevelTransfer`). Тому він і не живе в
+ * `MANUAL_EXPENSE_TAXONOMY`/`MANUAL_INCOME_TAXONOMY` — там кожен чип має
+ * canonicalId і власний тир палітри, а переказ ні в чому не агрегується.
+ *
+ * Доти, доки чипа тут не було, виписку не було ЧИМ розмітити: рядок
+ * «Зняття готівки в банкоматі» їхав у «Інше» і рахувався витратою
+ * (звіт власника 2026-09-13). Ручний запис із цією категорією вже
+ * виключається агрегатами — `manualExpenseToTransaction` кладе
+ * `category` у `categoryId`, а `buildFinykSpendingUniverse` саме на це й
+ * розраховує; бракувало рівно способу її обрати.
+ */
+const TRANSFER_OPTION = {
+  id: INTERNAL_TRANSFER_ID,
+  label: "Внутрішній переказ",
+} as const;
 
 export interface BulkReviewTableProps {
   rows: BulkReviewRow[];
@@ -98,10 +121,12 @@ export function BulkReviewTable({
         .filter((c) => c.label)
         .map((c) => [c.id, { label: c.label ?? "" }]),
     ),
+    [TRANSFER_OPTION.id]: { label: TRANSFER_OPTION.label },
   };
   const expenseCategorySlugs: readonly string[] = [
     ...CATEGORY_SLUGS,
     ...customExpenseCategories.map((c) => c.id),
+    TRANSFER_OPTION.id,
   ];
   const expenseOptions: CategoryOptions = {
     slugs: expenseCategorySlugs,
@@ -111,8 +136,12 @@ export function BulkReviewTable({
     slugs: [
       ...INCOME_CATEGORY_SLUGS,
       ...customIncomeCategories.map((category) => category.id),
+      TRANSFER_OPTION.id,
     ],
-    display: incomeCategoryDisplay(customIncomeCategories),
+    display: {
+      ...incomeCategoryDisplay(customIncomeCategories),
+      [TRANSFER_OPTION.id]: { label: TRANSFER_OPTION.label },
+    },
   };
 
   return (

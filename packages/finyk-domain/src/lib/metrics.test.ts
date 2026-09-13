@@ -82,6 +82,31 @@ describe("buildFinykSpendingUniverse", () => {
     { id: "m1", date: "2026-05-06", amount: 150, kind: "expense" },
   ];
 
+  // Рядок виписки, позначений «Внутрішнім переказом» у bulk-review, лягає в
+  // сховище звичайним ручним записом із `category: "internal_transfer"`.
+  // Тест тримає ланцюжок category → categoryId → excluded: доки чипа в
+  // пікері імпорту не було, розмітити зняття готівки не було чим, а тепер
+  // є — і воно мусить справді виходити з підсумків, не лише малюватись.
+  it("ручний запис із категорією переказу виключається з підсумків", () => {
+    const { transactions, excludedTxIds } = buildFinykSpendingUniverse({
+      manualExpenses: [
+        {
+          id: "atm",
+          date: "2026-05-06",
+          amount: 505,
+          kind: "expense",
+          category: INTERNAL_TRANSFER_ID,
+        },
+        { id: "coffee", date: "2026-05-06", amount: 80, kind: "expense" },
+      ],
+    });
+
+    expect(excludedTxIds.has("manual_atm")).toBe(true);
+    expect(excludedTxIds.has("manual_coffee")).toBe(false);
+    // Гривні: 505 зняття не рахується, лишається сама кава.
+    expect(calcFinykSpendingTotal(transactions, { excludedTxIds })).toBe(80);
+  });
+
   it("мерджить ручні витрати в один список із банківськими", () => {
     const { transactions } = buildFinykSpendingUniverse({
       bankTxs,

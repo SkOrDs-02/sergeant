@@ -69,6 +69,7 @@ export type McpErrorKind =
   | "auth_required" // HTTP 401 — caller (tokenStore) should refresh and retry once
   | "rate_limited" // HTTP 429, retries exhausted
   | "upstream_unavailable" // 5xx / network / timeout, retries exhausted, or breaker open
+  | "tool_error" // tool ran and REFUSED: `isError: true` in the tool result
   | "schema_drift" // response parsed as JSON-RPC but failed the caller's zod schema
   | "protocol_error"; // not a well-formed JSON-RPC envelope at all
 
@@ -444,6 +445,15 @@ export async function mcpInitialize(
  * structuredContent?: unknown, isError?: boolean }` per the spec's tool
  * result convention. We prefer `structuredContent` when present, else parse
  * `content[0].text` as JSON — both paths are provisional until spike §0.
+ *
+ * **`isError: true` — це ВІДМОВА тули, а не дрейф схеми.** За специфікацією
+ * MCP помилка ВИКОНАННЯ тули повертається не як JSON-RPC `error`, а всередині
+ * успішного результату: `isError: true` плюс людський текст у `content[0].text`.
+ * Доти, доки це не читалось, такий текст просто не парсився як JSON,
+ * `extractToolPayload` віддавав `undefined`, і КОЖНА відмова Сільпо — протухла
+ * сесія, ліміт, тимчасова помилка на їхньому боці — доїжджала до людини як
+ * «Сільпо змінили формат відповіді» й дзвонила в Sentry дрейфом схеми. Сам
+ * текст відмови при цьому не логувався ніде, тож діагностувати було нічим.
  */
 export async function callMcpTool<T>(opts: {
   accessToken: string;
@@ -462,8 +472,33 @@ export async function callMcpTool<T>(opts: {
   });
   if (!callResult.ok) return errResult(callResult.error);
 
+  const refusal = toolRefusal(callResult.result);
+  if (refusal !== null) {
+    logger.warn({
+      msg: "silpo_mcp_tool_error",
+      tool: opts.toolName,
+      detail: refusal,
+    });
+    // Відмова через протухлу авторизацію мусить піти тим самим шляхом, що й
+    // HTTP 401, інакше `callWithFreshAccessToken` не зробить refresh і людина
+    // побачить помилку там, де вистачало б мовчазного оновлення токена.
+    return errResult({
+      kind: looksLikeAuthRefusal(refusal) ? "auth_required" : "tool_error",
+      message: refusal,
+    });
+  }
+
   const toolPayload = extractToolPayload(callResult.result);
   if (toolPayload === undefined) {
+    // Без цього рядка справжній дрейф не лишав у логах НІЧОГО, з чого можна
+    // почати: сам `schema_drift` каже лише «не дістали payload». Пишемо
+    // форму, не вміст — імена ключів і типи content-блоків діагностують
+    // випадок і не тягнуть у лог даних покупок (Hard Rule #21).
+    logger.warn({
+      msg: "silpo_mcp_payload_unextractable",
+      tool: opts.toolName,
+      resultKeys: resultShape(callResult.result),
+    });
     return errResult({
       kind: "schema_drift",
       message: `Silpo MCP tool "${opts.toolName}" returned no parseable payload`,
@@ -487,6 +522,50 @@ export async function callMcpTool<T>(opts: {
   }
 
   return { ok: true, data: parsed.data };
+}
+
+/**
+ * Текст відмови, якщо тула повернула `isError: true`, інакше `null`.
+ * Порожній текст теж вважається відмовою — факт `isError` важливіший за
+ * наявність пояснення, і мовчазна відмова не має вдавати дрейф схеми.
+ */
+function toolRefusal(result: unknown): string | null {
+  if (!result || typeof result !== "object") return null;
+  const r = result as {
+    isError?: unknown;
+    content?: Array<{ type?: string; text?: string }>;
+  };
+  if (r.isError !== true) return null;
+  const text = r.content
+    ?.filter((c) => c.type === "text" && typeof c.text === "string")
+    .map((c) => c.text?.trim())
+    .filter((t): t is string => Boolean(t))
+    .join(" ")
+    .slice(0, 500);
+  return text && text.length > 0 ? text : "Silpo tool returned isError";
+}
+
+/**
+ * Евристика — у MCP немає машинного коду для причини відмови тули, лише
+ * текст. Тримаємо перелік вузьким: хибний збіг коштує зайвого refresh-у
+ * (дешево, ідемпотентно), а пропущений — помилки в людини замість
+ * мовчазного оновлення токена.
+ */
+function looksLikeAuthRefusal(text: string): boolean {
+  return /unauthor|unauthenticat|forbidden|401|403|token|expired|сесі|авториз|токен/i.test(
+    text,
+  );
+}
+
+/** Імена ключів результату + типи content-блоків — форма без вмісту. */
+function resultShape(result: unknown): string[] {
+  if (!result || typeof result !== "object") return [`<${typeof result}>`];
+  const r = result as { content?: Array<{ type?: string }> };
+  const keys = Object.keys(r);
+  const contentTypes = Array.isArray(r.content)
+    ? r.content.map((c) => `content:${c?.type ?? "?"}`)
+    : [];
+  return [...keys, ...contentTypes];
 }
 
 function extractToolPayload(result: unknown): unknown {

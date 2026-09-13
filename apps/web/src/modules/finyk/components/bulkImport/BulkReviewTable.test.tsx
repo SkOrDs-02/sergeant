@@ -351,6 +351,46 @@ describe("BulkReviewTable", () => {
     ).not.toContain("Оренда");
   });
 
+  // Звіт власника 2026-09-13: розмітити рух між власними кишенями у виписці
+  // не було чим — «Зняття готівки в банкоматі» лишалось «Іншим», тобто
+  // витратою. Чип потрібен в ОБОХ напрямах: зняття — витрата, зарахування
+  // зі своєї картки — дохід.
+  it("offers «Внутрішній переказ» on both the expense and the income row picker", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    const [expensePicker, incomePicker] = screen.getAllByLabelText("Категорія");
+    for (const picker of [expensePicker!, incomePicker!]) {
+      expect(
+        Array.from(picker.querySelectorAll("option")).map((o) => o.textContent),
+      ).toContain("Внутрішній переказ");
+    }
+  });
+
+  it("offers «Внутрішній переказ» in the bulk-category picker too", () => {
+    render(
+      <BulkReviewTable
+        rows={rows()}
+        onToggleRow={vi.fn()}
+        onToggleAll={vi.fn()}
+        onBulkCategory={vi.fn()}
+        onEditRow={vi.fn()}
+      />,
+    );
+    const bulkPicker = screen.getByLabelText("Категорія для вибраних витрат");
+    expect(
+      Array.from(bulkPicker.querySelectorAll("option")).map(
+        (o) => o.textContent,
+      ),
+    ).toContain("Внутрішній переказ");
+  });
+
   it("toggling select-all calls onToggleAll with the opposite of the current all-selected state", () => {
     const onToggleAll = vi.fn();
     render(

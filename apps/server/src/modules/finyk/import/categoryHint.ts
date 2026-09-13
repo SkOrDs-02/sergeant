@@ -4,6 +4,7 @@ import {
   getIncomeCategory,
 } from "@sergeant/finyk-domain/lib/categories";
 import { MANUAL_INCOME_TAXONOMY } from "@sergeant/finyk-domain/lib/manualTaxonomy";
+import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 import type { ImportDirection } from "@sergeant/shared";
 
 /**
@@ -44,8 +45,10 @@ import type { ImportDirection } from "@sergeant/shared";
  *
  * `sport` і `beauty` у ручному пікері власних чипів не мають, тож
  * зводяться до найближчих: спорт — до «Здоровʼя», краса — до «Покупок».
- * `internal_transfer` осмисленого чипа не має узагалі — краще лишити
- * дефолт, ніж вгадувати. `debt` чип МАЄ («Борги та кредити», id `debt` —
+ * `internal_transfer` чип ТЕПЕР МАЄ — окремим пунктом пікера імпорту в
+ * обох напрямах (`BulkReviewTable.tsx`), доданим 2026-09-13 разом із цією
+ * підказкою; доти розмітити рух між власними кишенями у виписці не було
+ * чим узагалі. `debt` чип МАЄ («Борги та кредити», id `debt` —
  * `packages/finyk-domain/src/lib/manualTaxonomy.ts:174-179`) і тепер
  * замаплений — виправлено 2026-09-11 разом із фіксом категоризації
  * щомісячного погашення кредитки (звіт власника: платіж по кредитці
@@ -169,13 +172,53 @@ export function mapBankCategory(
   return null;
 }
 
+/**
+ * Зняття готівки: 6011 (банкомат) і 6010 (каса банку).
+ *
+ * У `MCC_CATEGORIES` вони свідомо НЕ належать жодній витратній категорії
+ * (`constants.ts` § «6010/6011 СВІДОМО не тут»), тож `categorizeMcc` на них
+ * мовчить і рядок їхав у дефолтне «Інше» — тобто рахувався витратою в той
+ * самий момент, коли гроші ще лежали в кишені.
+ *
+ * Підказка тут — саме підказка: `resolveCategoryHint` нічого не пише, рядок
+ * проходить обовʼязковий bulk-review, і людина знімає чип одним тапом. Це
+ * рівно та «видима overrideable підказка», яку описує ADR-0076.
+ *
+ * **Межа, про яку треба памʼятати.** Поки «Готівки на руках» (ADR-0076) у
+ * коді немає, позначений переказом рядок виходить із підсумків — і готівкова
+ * витрата існує лише тоді, коли людина внесе її сама. Тобто підказка міняє
+ * бік похибки: замість подвійного обліку (зняття + ручна витрата) отримуємо
+ * недооблік, якщо готівку не заносити. Закриє це лише ADR-0076.
+ */
+const CASH_WITHDRAWAL_MCCS: ReadonlySet<number> = new Set([6010, 6011]);
+
 /** Значення MCC-колонки (рядком, як воно прийшло з файлу) → слаг. */
 export function mapMccCell(raw: string): string | null {
   const mcc = Number.parseInt(raw.trim(), 10);
   if (!Number.isInteger(mcc) || mcc <= 0) return null;
+  if (CASH_WITHDRAWAL_MCCS.has(mcc)) return INTERNAL_TRANSFER_ID;
   const catId = categorizeMcc(mcc);
   return catId ? (MCC_CATEGORY_TO_PICKER_SLUG[catId] ?? null) : null;
 }
+
+/**
+ * Опис зняття готівки — той самий випадок, що `CASH_WITHDRAWAL_MCCS`, але
+ * для файлів БЕЗ колонки MCC (а це більшість: у живому Privat24-XLSX
+ * 2026-08-25 MCC немає). Формулювання з реальних виписок: «Зняття готівки в
+ * банкоматі», «Видача готівки», «Отримання готівки».
+ *
+ * Вужче за `getCategory`: перевіряється до нього, бо каталог мерчантів на
+ * ці описи не реагує взагалі й віддає «Інше».
+ */
+const CASH_WITHDRAWAL_FRAGMENTS: readonly string[] = [
+  "зняття готівки",
+  "видача готівки",
+  "отримання готівки",
+  "зняття коштів",
+  "банкомат",
+  "atm",
+  "cash withdrawal",
+];
 
 /** Опис операції (назва мерчанта) → слаг за ключовими словами домену. */
 export function mapDescription(
@@ -190,6 +233,10 @@ export function mapDescription(
       return "refund";
     const id = getIncomeCategory(desc).id;
     return id !== "other-income" && INCOME_SLUGS.has(id) ? id : null;
+  }
+  const normalized = normalize(desc);
+  if (CASH_WITHDRAWAL_FRAGMENTS.some((f) => normalized.includes(f))) {
+    return INTERNAL_TRANSFER_ID;
   }
   const id = getCategory(desc, 0).id;
   return MCC_CATEGORY_TO_PICKER_SLUG[id] ?? null;
