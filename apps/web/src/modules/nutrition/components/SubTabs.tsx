@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { cn } from "@shared/lib/ui/cn";
+import { useTablistArrowKeys } from "@shared/hooks/useTablistArrowKeys";
 
 interface SubTab {
   id: string;
@@ -28,6 +29,8 @@ export function SubTabs({
   className,
   ariaLabel,
 }: SubTabsProps) {
+  // Роль `tablist` обіцяє стрілки; без хука обіцянка була порожня.
+  const onTabKeyDown = useTablistArrowKeys();
   return (
     <div
       role="tablist"
@@ -45,6 +48,7 @@ export function SubTabs({
             type="button"
             role="tab"
             aria-selected={active}
+            onKeyDown={onTabKeyDown}
             onClick={() => onChange(t.id)}
             className={cn(
               "text-style-label flex-1 min-h-[40px] px-3 py-2 rounded-xl transition-colors",

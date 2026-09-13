@@ -16,6 +16,7 @@
  */
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
+import { useTablistArrowKeys } from "@shared/hooks/useTablistArrowKeys";
 
 export type SourceTabId = "search" | "scan" | "photo" | "manual";
 
@@ -36,6 +37,8 @@ interface SourceTabsProps {
 }
 
 export function SourceTabs({ active, onChange }: SourceTabsProps) {
+  // Роль `tablist` обіцяє стрілки; без хука обіцянка була порожня.
+  const onTabKeyDown = useTablistArrowKeys();
   return (
     <div
       role="tablist"
@@ -52,6 +55,7 @@ export function SourceTabs({ active, onChange }: SourceTabsProps) {
             id={`source-tab-${t.id}`}
             aria-selected={isActive}
             aria-controls={`source-panel-${t.id}`}
+            onKeyDown={onTabKeyDown}
             onClick={() => onChange(t.id)}
             className={cn(
               "min-h-[44px] rounded-xl px-2 py-2 flex flex-col items-center justify-center gap-0.5",

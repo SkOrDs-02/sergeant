@@ -12,6 +12,7 @@
  */
 import type { ManualExpenseKind } from "@sergeant/finyk-domain/domain/transactions";
 import { cn } from "@shared/lib/ui/cn";
+import { useTablistArrowKeys } from "@shared/hooks/useTablistArrowKeys";
 import { messages } from "@shared/i18n/uk";
 
 export interface ManualExpenseKindTabsProps {
@@ -35,6 +36,8 @@ export function ManualExpenseKindTabs({
   isSubmitting,
   onKindChange,
 }: ManualExpenseKindTabsProps) {
+  // Роль `tablist` обіцяє стрілки; без хука обіцянка була порожня.
+  const onTabKeyDown = useTablistArrowKeys();
   return (
     <div
       role="tablist"
@@ -46,6 +49,7 @@ export function ManualExpenseKindTabs({
         role="tab"
         aria-selected={!isIncome}
         disabled={isSubmitting}
+        onKeyDown={onTabKeyDown}
         onClick={() => onKindChange("expense")}
         className={tabClass(!isIncome)}
       >
@@ -56,6 +60,7 @@ export function ManualExpenseKindTabs({
         role="tab"
         aria-selected={isIncome}
         disabled={isSubmitting}
+        onKeyDown={onTabKeyDown}
         onClick={() => onKindChange("income")}
         className={tabClass(isIncome)}
       >
