@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-12 by docs:gen-status. **Next review:** 2026-09-19.
+> **Last touched:** 2026-09-13 by docs:gen-status. **Next review:** 2026-09-20.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -30,11 +30,11 @@
 - [#895](https://github.com/Skords-01/Sergeant/pull/895) — fix(agents): полірування агентного шару після розкатки module-owners _(2026-08-28)_
 - [#892](https://github.com/Skords-01/Sergeant/pull/892) — feat(agents): module-owner і службові Claude-агенти _(2026-08-27)_
 
-## 🔵 В роботі — 73 відкриті документи
+## 🔵 В роботі — 74 відкриті документи
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 73       |
+| Активні спеки | 74       |
 
 **Найактивніше (8, за останніми PR):**
 
