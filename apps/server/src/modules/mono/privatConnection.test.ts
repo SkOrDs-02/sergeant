@@ -135,14 +135,18 @@ describe("privatConnectHandler", () => {
     });
   });
 
-  it("без сесії — 401 і жодного звернення до банку", async () => {
-    const res = makeRes();
-    await privatConnectHandler(
-      makeReq({ merchantId: "m-1", token: "t-1" }, null),
-      res,
-    );
+  it("без сесії — кидає UnauthorizedError і жодного звернення до банку", async () => {
+    await expect(
+      privatConnectHandler(
+        makeReq({ merchantId: "m-1", token: "t-1" }, null),
+        makeRes(),
+      ),
+    ).rejects.toMatchObject({
+      name: "UnauthorizedError",
+      status: 401,
+      code: "UNAUTHORIZED",
+    });
 
-    expect(res.statusCode).toBe(401);
     expect(bankProxyFetch).not.toHaveBeenCalled();
     expect(savePrivatCredentials).not.toHaveBeenCalled();
   });
@@ -153,11 +157,16 @@ describe("privatConnectHandler", () => {
     ["немає merchantId", { token: "t-1" }],
     ["порожні рядки", { merchantId: "   ", token: "  " }],
     ["не рядки", { merchantId: 42, token: ["t"] }],
-  ])("400 без проби, коли %s", async (_label, body) => {
-    const res = makeRes();
-    await privatConnectHandler(makeReq(body), res);
+  ])("кидає ValidationError без проби, коли %s", async (_label, body) => {
+    await expect(
+      privatConnectHandler(makeReq(body), makeRes()),
+    ).rejects.toMatchObject({
+      name: "ValidationError",
+      status: 400,
+      code: "VALIDATION",
+      message: "Введи Merchant ID та токен",
+    });
 
-    expect(res.statusCode).toBe(400);
     expect(bankProxyFetch).not.toHaveBeenCalled();
   });
 
@@ -165,63 +174,81 @@ describe("privatConnectHandler", () => {
     ["merchantId", { merchantId: "m-1\r\nX-Injected: 1", token: "t-1" }],
     ["токені", { merchantId: "m-1", token: "t-1\nX-Injected: 1" }],
   ])("відкидає CRLF у %s до звернення в банк", async (_label, body) => {
-    const res = makeRes();
-    await privatConnectHandler(makeReq(body), res);
+    await expect(
+      privatConnectHandler(makeReq(body), makeRes()),
+    ).rejects.toMatchObject({
+      name: "ValidationError",
+      status: 400,
+      code: "VALIDATION",
+      message: "Недозволені символи в credentials",
+    });
 
-    expect(res.statusCode).toBe(400);
-    expect(res.body).toEqual({ error: "Недозволені символи в credentials" });
     // Головне саме це: значення не доїхало до збирача заголовків.
     expect(bankProxyFetch).not.toHaveBeenCalled();
   });
 
   it.each([401, 403])(
-    "%s від банку віддає стабільний код і нічого не зберігає",
+    "%s від банку кидає AppError зі стабільним кодом і нічого не зберігає",
     async (status) => {
       bankProxyFetch.mockResolvedValue({ status, body: "" });
-      const res = makeRes();
-      await privatConnectHandler(
-        makeReq({ merchantId: "m-1", token: "bad" }),
-        res,
-      );
 
-      expect(res.statusCode).toBe(status);
-      expect(res.body).toMatchObject({ code: "PRIVAT_CREDENTIALS_INVALID" });
+      await expect(
+        privatConnectHandler(
+          makeReq({ merchantId: "m-1", token: "bad" }),
+          makeRes(),
+        ),
+      ).rejects.toMatchObject({
+        status,
+        code: "PRIVAT_CREDENTIALS_INVALID",
+      });
+
       expect(savePrivatCredentials).not.toHaveBeenCalled();
     },
   );
 
-  it("інша помилка банку стає 502, а тіло upstream назовні не тече", async () => {
+  it("інша помилка банку кидає ExternalServiceError(502), а тіло upstream назовні не тече", async () => {
     bankProxyFetch.mockResolvedValue({
       status: 500,
       body: "внутрішня деталь банку",
     });
-    const res = makeRes();
-    await privatConnectHandler(
-      makeReq({ merchantId: "m-1", token: "t-1" }),
-      res,
-    );
 
-    expect(res.statusCode).toBe(502);
-    expect(res.body).toEqual({
-      error: "ПриватБанк недоступний",
+    let caught: unknown;
+    try {
+      await privatConnectHandler(
+        makeReq({ merchantId: "m-1", token: "t-1" }),
+        makeRes(),
+      );
+    } catch (err) {
+      caught = err;
+    }
+
+    expect(caught).toMatchObject({
+      name: "ExternalServiceError",
+      status: 502,
       code: "PRIVAT_UPSTREAM_ERROR",
+      message: "ПриватБанк недоступний",
     });
-    expect(JSON.stringify(res.body)).not.toContain("внутрішня деталь");
+    expect(JSON.stringify((caught as Error).message)).not.toContain(
+      "внутрішня деталь",
+    );
     expect(logger.warn).toHaveBeenCalledWith(
       expect.objectContaining({ msg: "privat_connect_probe_failed" }),
     );
   });
 
-  it("падіння запису стає 500, а не мовчазним «підключено»", async () => {
+  it("падіння запису кидає AppError(500), а не мовчазним «підключено»", async () => {
     savePrivatCredentials.mockRejectedValue(new Error("db down"));
-    const res = makeRes();
-    await privatConnectHandler(
-      makeReq({ merchantId: "m-1", token: "t-1" }),
-      res,
-    );
 
-    expect(res.statusCode).toBe(500);
-    expect(res.body).toEqual({ error: "Не вдалося зберегти підключення" });
+    await expect(
+      privatConnectHandler(
+        makeReq({ merchantId: "m-1", token: "t-1" }),
+        makeRes(),
+      ),
+    ).rejects.toMatchObject({
+      name: "AppError",
+      status: 500,
+      message: "Не вдалося зберегти підключення",
+    });
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({ msg: "privat_connect_persist_failed" }),
     );
@@ -238,11 +265,14 @@ describe("privatDisconnectHandler", () => {
     expect(res.body).toEqual({ connected: false });
   });
 
-  it("без сесії — 401 і нічого не витирає", async () => {
-    const res = makeRes();
-    await privatDisconnectHandler(makeReq({}, null), res);
-
-    expect(res.statusCode).toBe(401);
+  it("без сесії — кидає UnauthorizedError і нічого не витирає", async () => {
+    await expect(
+      privatDisconnectHandler(makeReq({}, null), makeRes()),
+    ).rejects.toMatchObject({
+      name: "UnauthorizedError",
+      status: 401,
+      code: "UNAUTHORIZED",
+    });
     expect(deletePrivatCredentials).not.toHaveBeenCalled();
   });
 });
@@ -257,11 +287,14 @@ describe("privatStatusHandler", () => {
     expect(res.body).toEqual({ connected: true, merchantId: "m-1" });
   });
 
-  it("без сесії — 401 і жодного читання зі сховища", async () => {
-    const res = makeRes();
-    await privatStatusHandler(makeReq({}, null), res);
-
-    expect(res.statusCode).toBe(401);
+  it("без сесії — кидає UnauthorizedError і жодного читання зі сховища", async () => {
+    await expect(
+      privatStatusHandler(makeReq({}, null), makeRes()),
+    ).rejects.toMatchObject({
+      name: "UnauthorizedError",
+      status: 401,
+      code: "UNAUTHORIZED",
+    });
     expect(getPrivatStatus).not.toHaveBeenCalled();
   });
 });

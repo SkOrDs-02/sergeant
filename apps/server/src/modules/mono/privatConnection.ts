@@ -2,6 +2,12 @@ import type { Request, Response } from "express";
 import { bankProxyFetch } from "../../lib/bankProxy.js";
 import { logger } from "../../obs/logger.js";
 import {
+  AppError,
+  ExternalServiceError,
+  UnauthorizedError,
+  ValidationError,
+} from "../../obs/errors.js";
+import {
   savePrivatCredentials,
   deletePrivatCredentials,
   getPrivatStatus,
@@ -24,11 +30,10 @@ import {
 /** Cheapest authenticated PrivatBank call — used purely as a credential probe. */
 const VALIDATE_PATH = "/statements/balance/final";
 
-function getUserId(req: Request, res: Response): string | null {
+function getUserId(req: Request): string {
   const userId = (req as Request & { user?: { id?: string } }).user?.id;
   if (!userId) {
-    res.status(401).json({ error: "Потрібна автентифікація" });
-    return null;
+    throw new UnauthorizedError("Потрібна автентифікація");
   }
   return userId;
 }
@@ -37,22 +42,19 @@ export async function privatConnectHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const userId = getUserId(req, res);
-  if (!userId) return;
+  const userId = getUserId(req);
 
   const body = (req.body ?? {}) as { merchantId?: unknown; token?: unknown };
   const merchantId =
     typeof body.merchantId === "string" ? body.merchantId.trim() : "";
   const token = typeof body.token === "string" ? body.token.trim() : "";
   if (!merchantId || !token) {
-    res.status(400).json({ error: "Введи Merchant ID та токен" });
-    return;
+    throw new ValidationError("Введи Merchant ID та токен");
   }
   // CRLF у значенні заголовка дозволив би дописати власні заголовки в
   // upstream-запит — відкидаємо на вході, а не перед кожним проксі-викликом.
   if (/[\r\n]/.test(merchantId) || /[\r\n]/.test(token)) {
-    res.status(400).json({ error: "Недозволені символи в credentials" });
-    return;
+    throw new ValidationError("Недозволені символи в credentials");
   }
 
   const probe = await bankProxyFetch({
@@ -69,11 +71,10 @@ export async function privatConnectHandler(
   });
 
   if (probe.status === 401 || probe.status === 403) {
-    res.status(probe.status).json({
-      error: "Невірні credentials PrivatBank",
+    throw new AppError("Невірні credentials PrivatBank", {
+      status: probe.status,
       code: "PRIVAT_CREDENTIALS_INVALID",
     });
-    return;
   }
   if (probe.status < 200 || probe.status >= 300) {
     // Тіло upstream-помилки клієнту не віддаємо (може містити внутрішні
@@ -82,10 +83,9 @@ export async function privatConnectHandler(
       msg: "privat_connect_probe_failed",
       status: probe.status,
     });
-    res
-      .status(502)
-      .json({ error: "ПриватБанк недоступний", code: "PRIVAT_UPSTREAM_ERROR" });
-    return;
+    throw new ExternalServiceError("ПриватБанк недоступний", {
+      code: "PRIVAT_UPSTREAM_ERROR",
+    });
   }
 
   try {
@@ -95,8 +95,10 @@ export async function privatConnectHandler(
       msg: "privat_connect_persist_failed",
       err: err instanceof Error ? err.message : String(err),
     });
-    res.status(500).json({ error: "Не вдалося зберегти підключення" });
-    return;
+    throw new AppError("Не вдалося зберегти підключення", {
+      status: 500,
+      cause: err,
+    });
   }
 
   logger.info({ event: "privat.connected" });
@@ -107,8 +109,7 @@ export async function privatDisconnectHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const userId = getUserId(req, res);
-  if (!userId) return;
+  const userId = getUserId(req);
   await deletePrivatCredentials(userId);
   logger.info({ event: "privat.disconnected" });
   res.status(200).json({ connected: false });
@@ -118,7 +119,6 @@ export async function privatStatusHandler(
   req: Request,
   res: Response,
 ): Promise<void> {
-  const userId = getUserId(req, res);
-  if (!userId) return;
+  const userId = getUserId(req);
   res.status(200).json(await getPrivatStatus(userId));
 }
