@@ -137,16 +137,25 @@ export function useFinykBackupSync(
           toast?.success("Дані імпортовано.");
           resolve(true);
         } catch (err) {
+          // Технічна деталь іде у звіт, а не на екран. У цей catch доходять
+          // рівно два джерела — виняток `JSON.parse` (англомовний, з
+          // позицією в буфері) і локальний `new Error("невірний формат
+          // файлу")`; `normalizeFinykBackup` не кидає нічого. Обидва
+          // показувались людині з префіксом «Помилка: », тобто §7 (заборонена
+          // standalone-конструкція) і §3 («без stack-trace-у») порушувались
+          // одним рядком. PR-X3, аудит 2026-09-13.
           reportSilentError("import data", err);
-          const raw =
-            err instanceof Error ? err.message : "невірний формат файлу";
-          const msg = raw.startsWith("Помилка:") ? raw : `Помилка: ${raw}`;
-          toast?.error(msg);
+          // Дія у ТЕКСТІ, а не кнопкою, і це навмисно: цей файл у allowlist
+          // `require-toast-error-action`, бо хук приймає готовий `Blob` і не
+          // володіє файловим input-ом, тож «Обери інший» звідси не підняти.
+          toast?.error(
+            "Не вдалось прочитати резервну копію: файл пошкоджений або не той. Обери інший.",
+          );
           resolve(false);
         }
       };
       reader.onerror = () => {
-        toast?.error("Помилка: не вдалось прочитати файл");
+        toast?.error("Не вдалось прочитати файл. Обери інший.");
         resolve(false);
       };
       reader.readAsText(file);

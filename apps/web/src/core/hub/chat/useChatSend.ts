@@ -13,6 +13,7 @@ import {
   consumeHubChatSse,
   friendlyApiError,
   friendlyChatError,
+  CHAT_RESPONSE_TOO_LONG_TEXT,
   getActiveModule,
   isHelpCommand,
   makeAssistantMsg,
@@ -639,7 +640,7 @@ export function useChatSend({
                   // chunks, then throw — the surrounding catch renders the
                   // friendly "Відповідь занадто довга" tail on this turn.
                   ac.abort();
-                  throw new Error("Відповідь занадто довга");
+                  throw new Error(CHAT_RESPONSE_TOO_LONG_TEXT);
                 }
                 acc += delta;
                 setMessages((m) =>
