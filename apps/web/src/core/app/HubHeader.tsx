@@ -17,6 +17,21 @@ import {
   getKyivGreeting,
 } from "@shared/lib/time/greeting";
 import { NotificationBell, type HubNotification } from "./NotificationBell";
+import type { HubView } from "../hooks/useHubUIState";
+
+// PR-H2 (аудит 2026-09-13 хвиля 5): привітання — єдиний видимий текст на
+// всіх чотирьох вкладках хаба, і назва вкладки живе лише в sr-only `<h1>`
+// (1×1 px), тобто людина не бачить, де вона — «Налаштування» виглядають як
+// ще один екран хаба. Дашборд лишається без підпису (привітання й так read
+// as «Головна» — це домашній екран), решта трьох отримують видиму назву
+// ПІД привітанням, а не замість нього: привітання — навмисний ink-якір
+// «мови Папір» (див. коментар нижче над Row 2), підпис лише додає
+// орієнтир, не конкурує з ним за вагу.
+const HUB_TAB_TITLES: Partial<Record<HubView, string>> = {
+  reports: messages.nav.reports,
+  profile: messages.nav.profile,
+  settings: messages.nav.settings,
+};
 
 // WCAG 2.5.5 AAA «Target Size (Enhanced)» рекомендує ≥44×44 пкс для hit-areas;
 // Material 3 / iOS HIG — 48 dp / 44 pt як thumb-comfort бейзлайн. На мобільному
@@ -39,6 +54,12 @@ interface HubHeaderProps {
   hideAuthButton?: boolean;
   /** System notifications (SW update / PWA install) surfaced in the bell. */
   notifications?: readonly HubNotification[];
+  /**
+   * Currently active hub tab. Drives the visible orientation subtitle
+   * (PR-H2) — omit or pass `"dashboard"` on the home tab, where no
+   * subtitle renders.
+   */
+  activeTab?: HubView;
 }
 
 export function HubHeader({
@@ -48,6 +69,7 @@ export function HubHeader({
   onShowAuth,
   hideAuthButton = false,
   notifications,
+  activeTab,
 }: HubHeaderProps) {
   const greetingText = useMemo(() => {
     const base = getKyivGreeting();
@@ -57,6 +79,7 @@ export function HubHeader({
 
   const dateStr = useMemo(() => formatKyivNominativeDate(), []);
   const { modK } = useShortcutGlyph();
+  const tabTitle = activeTab ? HUB_TAB_TITLES[activeTab] : undefined;
 
   return (
     <header
@@ -178,6 +201,16 @@ export function HubHeader({
           </span>
         )}
       </p>
+      {tabTitle && (
+        // Видимий орієнтир вкладки (PR-H2): без нього привітання лишається
+        // єдиним видимим текстом верхніх 200px на Налаштуваннях/Профілі/
+        // Звʼязках, і скрін виглядає як ще одна картка хаба, не окрема
+        // сторінка. `text-style-label` навмисно слабший за привітання —
+        // це підпис, а не другий якір.
+        <p className="mt-0.5 ms-[3px] text-style-label text-muted">
+          {tabTitle}
+        </p>
+      )}
     </header>
   );
 }

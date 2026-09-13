@@ -13,6 +13,7 @@ import { billingKeys } from "@shared/lib/api/queryKeys";
 import { useToast } from "@shared/hooks/useToast";
 import { useLocale } from "@shared/i18n/useLocale";
 import type { BillingCheckoutResponse } from "@sergeant/api-client";
+import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 import { ANALYTICS_EVENTS, trackEvent } from "./observability/analytics";
 import { captureException } from "./observability/sentry";
 import { usePlan } from "./billing";
@@ -222,11 +223,15 @@ export function PricingPage() {
       void queryClient.invalidateQueries({ queryKey: billingKeys.status });
       toast.success(t.toast.subscriptionActive, undefined, {
         label: t.toast.subscriptionActiveCta,
-        // Пряма ціль вкладки хаба, не `/settings` — L-1 (2026-08-08,
-        // ще одне місце, знайдене поза заявленим списком у ТЗ фіксу):
-        // `/settings` тепер сам лише редиректить сюди ж, тож старий
-        // виклик платив зайвим стрибком навігації без жодної користі.
-        onClick: () => navigate("/?tab=settings"),
+        // PR-S7 (аудит 2026-09-13 хвиля 5): `navigate("/?tab=settings")`
+        // без таргета секції приземляв людину на чотири згорнуті рядки
+        // «Загальних» — після скасування форсованого розкриття першої
+        // секції (рішення власника 2026-09-11, див. PR-S1) вона НЕ бачила
+        // свій щойно активований план узагалі. `openHubSettingsSection`
+        // — той самий канал, яким інактивна Bento-картка й ⌘K вже
+        // ведуть у конкретну секцію: перемикає таб на «Налаштування» і
+        // скролить/розкриває «Підписка та план» (`#settings-plan`).
+        onClick: () => openHubSettingsSection("plan"),
       });
       return;
     }

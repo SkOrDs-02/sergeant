@@ -37,6 +37,18 @@ describe("capabilityRegistry", () => {
     }
   });
 
+  // PR-S6 (аудит 2026-09-13 хвиля 5): PIN переїхав із Налаштувань →
+  // «Конфіденційність» у Профіль → «Безпека» 2026-09-04 — картка досі
+  // казала «постав PIN у Налаштуваннях» і вела на `#settings-privacy`,
+  // де PIN-контролу більше немає.
+  it("картка PIN веде у Профіль, а не в неіснуючий PIN-контрол Налаштувань", () => {
+    const privacy = ALL_CAPABILITIES.find((c) => c.id === "privacy");
+    expect(privacy?.href).toBe("/?tab=profile");
+    expect(privacy?.quickAction).toContain("Профілі");
+    expect(privacy?.description).toContain("Профілі");
+    expect(privacy?.href).not.toContain("settings-privacy");
+  });
+
   it("id унікальні — вони є React-ключами і testid-ами", () => {
     const ids = ALL_CAPABILITIES.map((c) => c.id);
     expect(new Set(ids).size).toBe(ids.length);

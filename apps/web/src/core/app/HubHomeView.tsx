@@ -175,6 +175,7 @@ export function HubHomeView(props: HubHomeViewProps) {
         onShowAuth={onOpenAuth}
         hideAuthButton={shouldShowOnboarding() && !user && inFtuxSession}
         notifications={notifications}
+        activeTab={ui.hubView}
       />
 
       <HubMainContent

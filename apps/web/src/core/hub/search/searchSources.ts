@@ -8,6 +8,7 @@ import { getVisibleFinykMonoMirrorState } from "@finyk/lib/monoMirrorReader";
 import { tokenize } from "../hubSearchEngine";
 import { searchActions, searchAiHandoff } from "./searchActions";
 import { safeParseLS, scoreLru } from "./searchCache";
+import { searchProfile } from "./searchProfile";
 import { searchAssistantTools, searchSettings } from "./searchSettings";
 import { type Hit, localDateKey, pushScored } from "./searchTypes";
 
@@ -338,6 +339,7 @@ export function performSearch(query: string): Hit[] {
     ...searchRoutine(tokens),
     ...searchNutrition(tokens),
     ...searchSettings(tokens),
+    ...searchProfile(tokens),
     ...searchAssistantTools(tokens),
     ...searchAiHandoff(query),
   ];

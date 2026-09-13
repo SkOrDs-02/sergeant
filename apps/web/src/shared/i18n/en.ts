@@ -153,6 +153,7 @@ export const messagesEn: Partial<{
     fizrukOverview: "Overview",
     nutritionLog: "Journal",
     reports: "Reports",
+    settings: "Settings",
     openAssistant: "Open AI assistant",
     globalSearch: "Global search",
     searchPlaceholder: "Search across all modules…",

@@ -21,6 +21,7 @@ const {
   toastErrorMock,
   toastInfoMock,
   trackEventMock,
+  openHubSettingsSectionMock,
 } = vi.hoisted(() => ({
   submitMock:
     vi.fn<(input: unknown) => Promise<{ ok: true; created: boolean }>>(),
@@ -49,6 +50,7 @@ const {
   toastErrorMock: vi.fn(),
   toastInfoMock: vi.fn(),
   trackEventMock: vi.fn(),
+  openHubSettingsSectionMock: vi.fn(),
 }));
 
 submitMock.mockResolvedValue({ ok: true, created: true });
@@ -89,6 +91,18 @@ vi.mock("@shared/hooks/useToast", () => ({
     info: toastInfoMock,
   }),
 }));
+
+// PR-S7 (аудит 2026-09-13 хвиля 5): success-toast мусить вести в конкретну
+// секцію Налаштувань («Підписка та план»), не просто в таб — spy на
+// реальний канал, яким уже ходять інактивна Bento-картка й ⌘K. Partial
+// mock (не голий факторі-об'єкт): `appPaths.ts` (transitively, через
+// `PricingPage.tsx` → `./app/appPaths`) читає `HUB_MODULE_IDS` з того ж
+// модуля — заміна ВСЬОГО модуля лишила б цей експорт `undefined`.
+vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@shared/lib/modules/hubNav")>();
+  return { ...actual, openHubSettingsSection: openHubSettingsSectionMock };
+});
 
 vi.mock("./observability/analytics", async () => {
   const shared = await import("@sergeant/shared");
@@ -137,6 +151,7 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
     toastErrorMock.mockClear();
     toastInfoMock.mockClear();
     trackEventMock.mockClear();
+    openHubSettingsSectionMock.mockClear();
     mockAuthStatus = "authenticated";
     statusMock.mockResolvedValue({
       subscription: {
@@ -316,6 +331,15 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
           onClick: expect.any(Function),
         }),
       );
+
+      // PR-S7 (аудит 2026-09-13 хвиля 5): раніше `onClick` вів на
+      // `/?tab=settings` без таргета секції — після скасування
+      // форсованого розкриття першої секції (2026-09-11) людина бачила
+      // чотири згорнуті рядки й не бачила свого щойно активованого
+      // плану. Фікс веде через `openHubSettingsSection("plan")` — той
+      // самий канал, яким уже ходять інактивна Bento-картка й ⌘K.
+      action.onClick?.();
+      expect(openHubSettingsSectionMock).toHaveBeenCalledWith("plan");
 
       // billingKeys.status інвалідується щонайменше раз із правильною
       // фабричною композицією (Hard Rule #2 — RQ keys лише через фабрики).

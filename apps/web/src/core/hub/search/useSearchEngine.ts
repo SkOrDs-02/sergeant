@@ -124,6 +124,7 @@ export function useSearchEngine({
       "routine",
       "nutrition",
       "settings",
+      "profile",
       "assistant",
       "ai",
     ];
@@ -222,6 +223,15 @@ export function useSearchEngine({
           // anchor auto-open only listens for that native event, so
           // without this it silently no-ops on every hit after the first.
           announceSettingsHashChange();
+          break;
+        }
+        case "profile": {
+          // PR-S5 (аудит 2026-09-13 хвиля 5): Профіль — окрема вкладка
+          // хаба, не секція Налаштувань, тож ціль лише перемикає таб —
+          // на відміну від `settings`, тут немає per-секційного hash-
+          // якоря (`CollapsibleSection` у `ProfilePage` не читає
+          // `SettingsGroupDefaultOpenContext`).
+          navigate({ pathname: "/", search: "?tab=profile" });
           break;
         }
         case "assistant": {
