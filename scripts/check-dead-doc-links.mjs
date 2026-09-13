@@ -55,7 +55,7 @@ import {
   statSync,
   existsSync,
 } from "node:fs";
-import { join, relative, sep } from "node:path";
+import { join, relative, resolve, sep } from "node:path";
 
 const ROOT = process.cwd();
 const BUDGET_FILE = join(ROOT, ".tech-debt/dead-doc-links-budget.json");
@@ -91,7 +91,28 @@ const SKIP_FILES = new Map([
 
 /** Фікстури тестів вигадують шляхи (`docs/a.md`), покажчиками вони не є. */
 const FIXTURE_DIR = `${sep}__tests__${sep}`;
-const DOC_REF = /docs\/[A-Za-z0-9._/-]*\.md/g;
+// Межа `{0,200}` тут не косметична, а НЕОБХІДНА. Клас символів містить
+// крапку, тобто перетинається з наступним `\.` — на вході з довгого рядка
+// крапок рушій зʼїдає їх зірочкою, а тоді відкочується по одній, шукаючи
+// `.md`. Без межі це поліноміальний backtracking (CodeQL
+// `js/polynomial-redos`, severity high) на КОЖНІЙ стартовій позиції; із
+// межею робота на позицію стала константною. 200 символів із запасом
+// перекривають найдовший реальний шлях у репо.
+const DOC_REF = /docs\/[A-Za-z0-9._/-]{0,200}\.md/g;
+
+/**
+ * Чи лишається шлях усередині репо.
+ *
+ * Клас символів у `DOC_REF` пропускає `..`, тож збіг на кшталт
+ * `docs/../../../etc/passwd.md` валідний за формою і виводить `existsSync`
+ * за межі дерева. Практичної шкоди тут мало (скрипт лише питає «чи існує»),
+ * але перевіряти існування довільного шляху зі вмісту файла — не те, що цей
+ * гейт має робити, і статичний аналіз читає це так само.
+ */
+function insideRepo(rel) {
+  const abs = resolve(ROOT, rel);
+  return abs === ROOT || abs.startsWith(ROOT + sep);
+}
 
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
@@ -130,7 +151,7 @@ for (const file of walk(ROOT)) {
 }
 
 const dead = [...byPath.keys()]
-  .filter((p) => !existsSync(join(ROOT, p)))
+  .filter((p) => insideRepo(p) && !existsSync(join(ROOT, p)))
   .sort();
 const mentions = dead.reduce((n, p) => n + byPath.get(p).size, 0);
 
