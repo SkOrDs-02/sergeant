@@ -67,7 +67,8 @@ import type { RequestOptions } from "../types";
  *   - `GET  /api/silpo/sync-state`  → `syncState()`
  *   - `POST /api/silpo/sync`        → `sync()` — errors surface as
  *     `ApiError` (409 `SILPO_NOT_CONNECTED`/`SILPO_REAUTH_REQUIRED`, 429
- *     `SILPO_RATE_LIMITED`, 502 `SILPO_UPSTREAM_ERROR`/`SILPO_SCHEMA_DRIFT`).
+ *     `SILPO_RATE_LIMITED`, 502 `SILPO_UPSTREAM_ERROR`/`SILPO_SCHEMA_DRIFT`/
+ *     `SILPO_TOOL_ERROR`).
  *   - `GET  /api/silpo/receipts`    → `receipts()`
  *   - `GET  /api/silpo/receipts/:id`→ `receiptDetail()` — 404 (`NOT_FOUND`)
  *     surfaces as `ApiError` with `status: 404`, not a `null` return.
@@ -191,7 +192,7 @@ export interface SilpoEndpoints {
    * `POST /api/silpo/cart/preview` — search-only, ніколи не пише в кошик.
    * `items` — 1..100 рядків списку покупок. Помилки: `ApiError` (409
    * `SILPO_NOT_CONNECTED`/`SILPO_REAUTH_REQUIRED`, 429 `SILPO_RATE_LIMITED`,
-   * 502 `SILPO_UPSTREAM_ERROR`/`SILPO_SCHEMA_DRIFT`, 503 `SILPO_DISABLED`/
+   * 502 `SILPO_UPSTREAM_ERROR`/`SILPO_SCHEMA_DRIFT`/`SILPO_TOOL_ERROR`, 503 `SILPO_DISABLED`/
    * `SILPO_CONFIG_MISSING`, 400 `VALIDATION`).
    */
   cartPreview: (
