@@ -134,6 +134,8 @@ export const coreMessages = {
       "Переношу дані в профіль і зберігаю на сервері…",
     anonymousMigrationFailure:
       "Не вдалося завершити перенесення. Дані на цьому пристрої не видалено й вони ще не захищені синхронізацією.",
+    anonymousMigrationFailureOffline:
+      "Немає звʼязку, тож перенести дані в профіль не вийшло. Вони лишились на цьому пристрої. Повтори, коли зʼявиться мережа.",
     anonymousMigrationRetry: "Повторити",
     anonymousMigrationDefer: "Продовжити, перенесу пізніше",
     anonymousMigrationDeferredToast:

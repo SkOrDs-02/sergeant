@@ -243,6 +243,57 @@ describe("AnonymousDataMigrationProvider", () => {
     ).not.toBeInTheDocument();
   });
 
+  // Регресія 2026-09-13 (звіт власника, PWA): плашка була простим сусідом
+  // застосунку всередині `#root`, а той має фіксовану висоту й
+  // `overflow: hidden`. Shell (`h-app-dvh` = `height: 100%` від рута)
+  // зсовувався вниз рівно на висоту плашки, і нижній навбар виїжджав за
+  // обрізаний край — застосунок лишався без навігації. Тримаємо контракт
+  // верстки: плашка й діти — сусіди у flex-колонці, діти беруть залишок.
+  it("тримає плашку й застосунок у flex-колонці, щоб навбар не виїхав", async () => {
+    migrate.mockRejectedValue(new Error("boom"));
+    renderAt("/", <div>module content</div>);
+    await userEvent.click(
+      await screen.findByRole("button", {
+        name: "Продовжити, перенесу пізніше",
+      }),
+    );
+    const content = await screen.findByText("module content");
+
+    const notice = screen.getByText(/Дані ще не перенесено в профіль/)
+      .parentElement as HTMLElement;
+    const childrenSlot = content.parentElement as HTMLElement;
+    expect(notice.parentElement).toBe(childrenSlot.parentElement);
+    const column = notice.parentElement as HTMLElement;
+    expect(column.className).toContain("flex-col");
+    expect(column.className).toContain("h-full");
+    // Плашка не стискається, застосунок забирає весь залишок висоти.
+    expect(notice.className).toContain("shrink-0");
+    expect(childrenSlot.className).toContain("flex-1");
+    expect(childrenSlot.className).toContain("min-h-0");
+    // Друга половина того ж звіту: текст заїжджав під динамічний острів.
+    expect(notice.className).toContain("safe-area-inset-top");
+  });
+
+  // Той самий екран на LTE у метро: браузер сам каже, що мережі немає, і
+  // тривожний текст про «незахищені синхронізацією» дані там просто
+  // неправдивий — збою переносу не було, був обрив звʼязку.
+  it("на офлайн-обриві показує причину, а не загальний текст збою", async () => {
+    const online = vi.spyOn(navigator, "onLine", "get").mockReturnValue(false);
+    try {
+      // Формулювання Safari для зірваного fetch — його і класифікує
+      // `tickErrorReport` як транспортне.
+      migrate.mockRejectedValue(new TypeError("Load failed"));
+      renderAt("/", <div>module content</div>);
+
+      expect(await screen.findByText(/Немає звʼязку/)).toBeInTheDocument();
+      expect(
+        screen.queryByText(/ще не захищені синхронізацією/),
+      ).not.toBeInTheDocument();
+    } finally {
+      online.mockRestore();
+    }
+  });
+
   // Юридичні тексти мають лишатись доступними за будь-якого стану синку.
   it("never blocks legal routes while the migration is unfinished", async () => {
     migrate.mockReturnValue(new Promise(() => {}));

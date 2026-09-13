@@ -57,6 +57,12 @@ interface RecurringSuggestionsProps {
   excludedTxIds?: ReadonlySet<string> | readonly string[];
   onAdd?: (candidate: RecurringCandidate) => void;
   onDismiss?: (key: string) => void;
+  /**
+   * Розкрити список одразу на монтуванні. Використовує deep-link із
+   * хаб-інсайту «Знайшов повторення» (`?section=recurring`): інакше юзер
+   * приїжджає на згорнутий акордеон і не бачить, що саме знайдено.
+   */
+  defaultOpen?: boolean;
 }
 
 /**
@@ -91,8 +97,9 @@ export function RecurringSuggestions({
   excludedTxIds,
   onAdd,
   onDismiss,
+  defaultOpen = false,
 }: RecurringSuggestionsProps) {
-  const [open, setOpen] = useState(false);
+  const [open, setOpen] = useState(defaultOpen);
 
   const candidates = useMemo<RecurringCandidate[]>(() => {
     if (!transactions || !transactions.length) return [];
