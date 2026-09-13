@@ -931,8 +931,11 @@ describe("POST /api/silpo/sync — причина в тексті помилки
 
     expect(res.status).toBe(502);
     expect(res.body.code).toBe("SILPO_SCHEMA_DRIFT");
-    expect(res.body.error).toContain("змінили формат");
     expect(res.body.error).toContain("перейменували тули");
+    // Стара загальна копія на діагностованому шляху НЕ зʼявляється: доки
+    // вердикт дописувався до неї, «спрацювало» й «не спрацювало» читались
+    // однаково (звіт власника 2026-09-13).
+    expect(res.body.error).not.toContain("Сільпо змінили формат відповіді");
   });
 
   it("не ходить по діагноз, коли синк пройшов", async () => {
