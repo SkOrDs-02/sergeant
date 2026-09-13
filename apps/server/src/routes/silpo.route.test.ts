@@ -18,6 +18,8 @@ const mocks = vi.hoisted(() => ({
   envState: {
     SILPO_ENABLED: true,
     PUBLIC_API_BASE_URL: "https://api.example.com",
+    // Читає РЕАЛЬНИЙ `getWebAppOrigin()` — див. коментар біля його імпорту.
+    WEB_APP_URL: "https://app.example.com",
   },
   buildAuthorizationUrl: vi.fn(),
   consumeAuthorizationState: vi.fn(),
@@ -30,7 +32,6 @@ const mocks = vi.hoisted(() => ({
   getReceiptDetail: vi.fn(),
   unlinkReceiptFromTransaction: vi.fn(),
   relinkReceiptToTransaction: vi.fn(),
-  getWebAppOrigin: vi.fn(),
   previewCart: vi.fn(),
   applyCart: vi.fn(),
   getCart: vi.fn(),
@@ -45,9 +46,12 @@ vi.mock("../db.js", () => ({ query: mocks.queryMock }));
 
 vi.mock("../env/env.js", () => ({ env: mocks.envState }));
 
-vi.mock("../auth/verificationMail.js", () => ({
-  getWebAppOrigin: mocks.getWebAppOrigin,
-}));
+// `../auth/verificationMail.js` НЕ мокаємо навмисно. Він імпортує рівно
+// один модуль — `env/env.js`, уже застабаний вище, — а `getWebAppOrigin()`
+// зводиться до читання `WEB_APP_URL`. Стаб тут нічого не ізолював би, зате
+// ховав би резолв origin-а, на який спирається редирект OAuth-колбека.
+// Знято ще й тому, що гейт `check-vi-mock-cap` ходить лише вниз: щоб
+// додати потрібний мок `diagnose.js`, треба зняти зайвий.
 
 vi.mock("../modules/silpo/diagnose.js", () => ({
   diagnoseSilpo: mocks.diagnoseSilpo,
@@ -138,7 +142,6 @@ beforeEach(() => {
   mocks.envState.SILPO_ENABLED = true;
   mocks.envState.PUBLIC_API_BASE_URL = "https://api.example.com";
   mocks.queryMock.mockResolvedValue({ rows: [], rowCount: 0 });
-  mocks.getWebAppOrigin.mockReturnValue("https://app.example.com");
 });
 
 afterEach(() => {
