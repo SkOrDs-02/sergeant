@@ -25,19 +25,27 @@ import { syncV2Stream } from "../modules/sync/syncV2Stream.js";
 export function createSyncRouter(): Router {
   const r = Router();
   r.use("/api/sync", setModule("sync"));
+  // requireSession() йде ПЕРЕД rateLimitExpress навмисно (рецидив знахідки
+  // B31, PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+  // `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
+  // фолбечиться на `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
+  // requireSession, `req.user` завжди unset у момент перевірки — бакет
+  // завжди per-IP, а не per-user (спільний NAT/офіс/CGNAT ділить один
+  // бакет). Див. еталон у `chat.ts`.
+  r.use("/api/sync", requireSession());
   r.use(
     "/api/sync",
     rateLimitExpress({ key: "api:sync", limit: 30, windowMs: 60_000 }),
   );
-  r.use("/api/sync", requireSession());
   r.get("/api/sync/audit", listSyncAudit);
 
   r.use("/api/v2/sync", setModule("syncV2"));
+  // Той самий порядок, той самий аргумент — див. коментар вище.
+  r.use("/api/v2/sync", requireSession());
   r.use(
     "/api/v2/sync",
     rateLimitExpress({ key: "api:v2:sync", limit: 60, windowMs: 60_000 }),
   );
-  r.use("/api/v2/sync", requireSession());
   r.post("/api/v2/sync/push", syncV2Push);
   r.get("/api/v2/sync/pull", syncV2Pull);
   // Stage 5 / PR #041: SSE long-polling. Окрема rate-limit-категорія,

@@ -12,9 +12,12 @@ import transcribeHandler from "../modules/transcribe/transcribe.js";
  *
  * Чейн middleware:
  *   - `setModule("transcribe")` — теги в логах/метриках;
- *   - rate-limit 60/хв на subject (per-user або per-IP) — генерують короткі
- *     аудіо-фрагменти (5–15с) під час активної сесії, треба простір;
  *   - `requireSession()` — це per-user фіча, не публічний proxy;
+ *   - rate-limit 60/хв per-user (`rateLimitSubject` резолвить `req.user.id`,
+ *     бо `requireSession()` стоїть ПЕРЕД лімітером — рецидив знахідки B31,
+ *     PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`;
+ *     без сесії перед лімітером бакет завжди фолбечиться на `ip:<addr>`, а
+ *     IPv6-клієнт має /64, тож денний ліміт обходиться зміною адреси);
  *   - `requireGroqKey()` — 503 без ключа, фронт переходить на Web Speech.
  *
  * Body parser змонтовано окремо в `app.ts` як `express.raw({ type: "audio/*" })`
@@ -25,8 +28,8 @@ export function createTranscribeRouter(): Router {
   r.post(
     "/api/transcribe",
     setModule("transcribe"),
-    rateLimitExpress({ key: "api:transcribe", limit: 60, windowMs: 60_000 }),
     requireSession(),
+    rateLimitExpress({ key: "api:transcribe", limit: 60, windowMs: 60_000 }),
     requireGroqKey(),
     transcribeHandler,
   );

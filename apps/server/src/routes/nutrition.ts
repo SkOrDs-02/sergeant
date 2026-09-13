@@ -21,8 +21,10 @@ import shoppingList from "../modules/nutrition/shopping-list.js";
 /**
  * Усі `/api/nutrition/*` endpoint-и мають спільний set guard-ів:
  *   - `setModule("nutrition")` — для логера/метрик
- *   - broad rate-limit ("api:nutrition") — гасить shotgun-атаки
  *   - `requireSession()` — лише авторизовані користувачі (cookie або Bearer)
+ *   - broad rate-limit ("api:nutrition") — гасить shotgun-атаки, per-user
+ *     (`requireSession()` стоїть ПЕРЕД лімітером, щоб `rateLimitSubject`
+ *     бачив `req.user.id`, а не фолбечився на IP — PR-A3)
  *
  * Per-endpoint rate-limit + AI-guards навішуємо нижче: backup-endpoint-и не
  * ходять у Anthropic і не мають тратити квоту, тому `requireAnthropicKey` /
@@ -39,11 +41,17 @@ import shoppingList from "../modules/nutrition/shopping-list.js";
 export function createNutritionRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
   r.use("/api/nutrition", setModule("nutrition"));
+  // requireSession() йде ПЕРЕД rateLimitExpress навмисно (рецидив знахідки
+  // B31, PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+  // `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
+  // фолбечиться на `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
+  // requireSession, `req.user` завжди unset у момент перевірки — бакет
+  // завжди per-IP. Див. еталон у `chat.ts`.
+  r.use("/api/nutrition", requireSession());
   r.use(
     "/api/nutrition",
     rateLimitExpress({ key: "api:nutrition", limit: 120, windowMs: 60_000 }),
   );
-  r.use("/api/nutrition", requireSession());
 
   // Два різні гейти, бо два різні транспорти — і це не косметика.
   //

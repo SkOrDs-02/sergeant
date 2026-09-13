@@ -390,6 +390,63 @@ describe("useCoachInsight", () => {
     expect(result.current.adviceId).toBeTruthy();
   });
 
+  // ── enabled (аудит PR-A1 — не палити AI-квоту, коли блок не рендериться) ──
+
+  it("не робить мережевий запит, коли enabled: false", async () => {
+    mockGetMemory.mockResolvedValue({ memory: null });
+    mockPostInsight.mockResolvedValue({ insight: "Не має прийти" });
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result } = renderHook(() => useCoachInsight({ enabled: false }), {
+      wrapper: makeWrapper(qc),
+    });
+
+    // Даємо шанс мікротаскам відпрацювати, якби запит усе ж пішов.
+    await new Promise((r) => setTimeout(r, 20));
+
+    expect(mockPostInsight).not.toHaveBeenCalled();
+    expect(mockGetMemory).not.toHaveBeenCalled();
+    expect(result.current.insight).toBeNull();
+  });
+
+  it("іде в мережу нормально, коли блок стає видимим пізніше (enabled: false → true)", async () => {
+    mockGetMemory.mockResolvedValue({ memory: null });
+    mockPostInsight.mockResolvedValue({ insight: "Порада після появи блоку" });
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result, rerender } = renderHook(
+      ({ enabled }: { enabled: boolean }) => useCoachInsight({ enabled }),
+      { wrapper: makeWrapper(qc), initialProps: { enabled: false } },
+    );
+
+    await new Promise((r) => setTimeout(r, 20));
+    expect(mockPostInsight).not.toHaveBeenCalled();
+
+    rerender({ enabled: true });
+
+    await waitFor(() =>
+      expect(result.current.insight).toBe("Порада після появи блоку"),
+    );
+    expect(mockPostInsight).toHaveBeenCalledTimes(1);
+  });
+
+  it("enabled за замовчуванням true — існуючі виклики без опцій не міняють поведінку", async () => {
+    mockGetMemory.mockResolvedValue({ memory: null });
+    mockPostInsight.mockResolvedValue({ insight: "Дефолтна поведінка" });
+
+    const { useCoachInsight } = await import("./useCoachInsight");
+
+    const { result } = renderHook(() => useCoachInsight(), {
+      wrapper: makeWrapper(qc),
+    });
+
+    await waitFor(() =>
+      expect(result.current.insight).toBe("Дефолтна поведінка"),
+    );
+  });
+
   it("retries once on a transient network error", async () => {
     mockGetMemory.mockResolvedValue({ memory: null });
     const network = Object.assign(new Error("Failed to fetch"), {

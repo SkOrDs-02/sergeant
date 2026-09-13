@@ -420,6 +420,28 @@ describe("coachInsight", () => {
     } as unknown as Request;
   }
 
+  /**
+   * PR-A2 (аудит 2026-09-13-product-full-review.md) — `requireAiQuota()`
+   * атачить `aiQuotaRefund` до `req` ДО того, як `coachInsight` починає
+   * виконуватись (той самий контракт, що й у `chat.ts`, див.
+   * `chat.test.ts::makeReqWithRefundSpy`). Провал upstream мусить
+   * викликати цей closure, інакше 5xx OpenRouter/Anthropic зʼїдає денну
+   * квоту користувача за пораду, якої він не отримав.
+   */
+  function makeReqWithRefundSpy(body: unknown): {
+    req: Request;
+    aiQuotaRefund: Mock;
+  } {
+    const aiQuotaRefund = vi.fn().mockResolvedValue(undefined);
+    const req = {
+      user: { id: "user_1" },
+      anthropicKey: "sk-test",
+      body,
+      aiQuotaRefund,
+    } as unknown as Request;
+    return { req, aiQuotaRefund };
+  }
+
   it("happy: віддає insight-текст на основі snapshot+memory", async () => {
     anthropicMessages.mockResolvedValueOnce({
       response: { ok: true, status: 200 },
@@ -592,6 +614,42 @@ describe("coachInsight", () => {
       code: "ANTHROPIC_ERROR",
       message: "Асистент тимчасово недоступний. Спробуй пізніше.",
     });
+  });
+
+  // ── PR-A2: провал провайдера має повернути AI-квоту ─────────────────────
+
+  it("upstream !ok (504) повертає квоту через req.aiQuotaRefund", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: false, status: 504 },
+      data: { error: { message: "Upstream timeout" } },
+    });
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({
+      snapshot: {},
+      memory: {},
+    });
+
+    await expect(coachInsight(req, makeRes())).rejects.toBeInstanceOf(
+      ExternalServiceError,
+    );
+
+    expect(aiQuotaRefund).toHaveBeenCalledTimes(1);
+  });
+
+  it("успішний виклик НЕ повертає квоту (списання лишається чинним)", async () => {
+    anthropicMessages.mockResolvedValueOnce({
+      response: { ok: true, status: 200 },
+      data: { content: [{ type: "text", text: "Усе гаразд" }] },
+    });
+    const { req, aiQuotaRefund } = makeReqWithRefundSpy({
+      snapshot: {},
+      memory: {},
+    });
+
+    const res = makeRes();
+    await coachInsight(req, res);
+
+    expect(res.statusCode).toBe(200);
+    expect(aiQuotaRefund).not.toHaveBeenCalled();
   });
 
   it("порожній snapshot → prompt містить 'Даних за поточний тиждень ще немає.'", async () => {

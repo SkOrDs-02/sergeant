@@ -21,9 +21,10 @@ import {
  * Recall (PR3) — semantic retrieval через `recall_memory` HubChat-tool.
  * Sync read-path, окремий від ingestion-черги.
  *
- * Rate-limit `30 req / 5min / IP` — стосується `recall`, лишений щедрим
- * historically ще з часів клієнт-driven ingest-у. Точніший анти-абʼюз —
- * Voyage квотою (per-user) у `service.remember()`.
+ * Rate-limit `30 req / 5min / user` (фолбек на IP лише без сесії) —
+ * стосується `recall`, лишений щедрим historically ще з часів
+ * клієнт-driven ingest-у. Точніший анти-абʼюз — Voyage квотою (per-user) у
+ * `service.remember()`.
  *
  * AI-CONTEXT (2026-07-25): цей ліміт більше НЕ вішається на весь префікс.
  * Він захищає worker-pool і Voyage-бюджет, тобто стосується `recall`.
@@ -53,17 +54,24 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
     windowMs: 5 * 60_000,
   });
 
+  // requireSession() йде ПЕРЕД rate-limit-ером навмисно на всіх чотирьох
+  // роутах нижче (рецидив знахідки B31, PR-A3 у
+  // `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+  // `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
+  // фолбечиться на `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
+  // requireSession, `req.user` завжди unset у момент перевірки — бакет
+  // завжди per-IP, а IPv6-клієнт має /64. Див. еталон у `chat.ts`.
   r.post(
     "/api/ai-memory/recall",
-    heavyRateLimit,
     requireSession(),
+    heavyRateLimit,
     requirePlan(pool, "pro"),
     recallMemoryHandler,
   );
   r.delete(
     "/api/ai-memory",
-    browseRateLimit,
     requireSession(),
+    browseRateLimit,
     clearAiMemoryHandler,
   );
   // AI-CONTEXT: list + per-item delete НЕ мають `requirePlan(pool, "pro")`,
@@ -80,14 +88,14 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
   // спадок від попереднього Pro-періоду — і саме до нього доступ і потрібен.
   r.get(
     "/api/ai-memory/list",
-    browseRateLimit,
     requireSession(),
+    browseRateLimit,
     buildMemoryListHandler(pool),
   );
   r.delete(
     "/api/ai-memory/:id",
-    browseRateLimit,
     requireSession(),
+    browseRateLimit,
     buildMemoryDeleteHandler(pool),
   );
   // `POST /api/ai-memory/event-sync` (PostHog → memory, PR-24) знято

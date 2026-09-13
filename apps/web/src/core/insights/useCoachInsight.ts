@@ -417,7 +417,26 @@ interface UseCoachInsightResult {
   refresh: () => Promise<unknown>;
 }
 
-export function useCoachInsight(): UseCoachInsightResult {
+export interface UseCoachInsightOptions {
+  /**
+   * Чи дозволено робити мережевий запит/фактично генерувати пораду.
+   *
+   * `false`, коли UI, що показує пораду, не рендериться (Чистий режим,
+   * вимкнена секція «Інсайти» в налаштуваннях-дашборда, ще немає першого
+   * реального запису) — саме так «Чистий режим» перестає мовчки палити
+   * денну AI-квоту (аудит PR-A1, канон hub-coach §6.2). За замовчуванням
+   * `true` — існуючі виклики без опцій поведінки не міняють.
+   *
+   * Стандартна семантика React Query `enabled`: перехід `false → true`
+   * (блок став видимим) сам тригерить фетч, окремого коду не треба.
+   */
+  enabled?: boolean;
+}
+
+export function useCoachInsight(
+  options?: UseCoachInsightOptions,
+): UseCoachInsightResult {
+  const enabled = options?.enabled ?? true;
   const queryClient = useQueryClient();
   const todayKey = localDateKey();
   const queryKey = coachInsightQueryKey(todayKey);
@@ -425,6 +444,7 @@ export function useCoachInsight(): UseCoachInsightResult {
   const query = useQuery({
     queryKey,
     queryFn: fetchCoachInsight,
+    enabled,
     // Не ретраїмо 429: ліміт (`api:coach` rate-limit + денна AI-квота)
     // має годинне/добове вікно, тож негайний повтор гарантовано впаде
     // знову, спалить ще один хіт у спільному `api:coach` бакеті й затягне
