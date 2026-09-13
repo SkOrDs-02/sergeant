@@ -11,7 +11,7 @@
  * її руками. Тест тримає саме цю межу: одне тренування не має права
  * піднімати середнє більш ніж на свою чесну частку вікна.
  */
-import { describe, expect, it, vi, beforeEach } from "vitest";
+import { describe, expect, it, vi, beforeEach, afterEach } from "vitest";
 import { renderHook } from "@testing-library/react";
 
 const workouts = vi.hoisted(() => ({ list: [] as unknown[] }));
@@ -41,8 +41,24 @@ function workoutAt(daysAgo: number) {
   };
 }
 
+// Годинник заморожений на полудні за місцевим часом.
+//
+// `workoutAt()` і сам хук читають `Date.now()` НЕЗАЛЕЖНО одне від одного,
+// тож прогін, що перетне місцеву північ між цими двома читаннями, дасть
+// тренування «вчора» там, де хук рахує «сьогодні». Тест на нуль тоді
+// падає раз на кілька тисяч прогонів — рівно той різновид мерехтіння,
+// який потім списують на інфраструктуру. Полудень лишає по 12 годин
+// запасу з обох боків.
 beforeEach(() => {
+  const noon = new Date();
+  noon.setHours(12, 0, 0, 0);
+  vi.useFakeTimers();
+  vi.setSystemTime(noon);
   workouts.list = [];
+});
+
+afterEach(() => {
+  vi.useRealTimers();
 });
 
 describe("useAverageWorkoutKcalPerDay", () => {

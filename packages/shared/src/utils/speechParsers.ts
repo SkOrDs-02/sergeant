@@ -284,19 +284,35 @@ function stripWordPunctuation(token: string): string {
  *   "80,5" → 80.5
  *   "кава" → null
  */
+/** Значення токена-цифри («2», «2.5», «2,5») або `null`. */
+function digitTokenValue(token: string): number | null {
+  if (!/^\d+(?:[.,]\d+)?$/.test(token)) return null;
+  const parsed = parseFloat(token.replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function parseUaNumber(text: string): number | null {
   const lower = collapseHalfPhrases(
     foldApostrophes(capInput(text).toLowerCase()),
   );
-  const parsed = parseFloat(lower.replace(",", "."));
-  if (!isNaN(parsed)) return parsed;
+  const trimmed = lower.trim();
+  // Рядок, що ВЕСЬ є числом. Тут раніше стояв голий `parseFloat(lower)`, і
+  // саме він давав найдорожчу помилку цього парсера: `parseFloat` зупиняє
+  // читання на першому пробілі, тож «2 з половиною тисячі» повертало 2, а
+  // далі фолбек у `parseExpenseSpeech` записував 500 замість 2500 — сума,
+  // помилкова вп'ятеро і мовчки. Перевіряємо ВЕСЬ рядок, а змішані
+  // «цифра + слова» доганяє накопичувач нижче.
+  const whole = digitTokenValue(trimmed);
+  if (whole !== null) return whole;
+
   let total = 0;
   let current = 0;
   let matched = false;
   const words = lower.split(/\s+/);
   for (const raw of words) {
     const w = stripWordPunctuation(raw);
-    const v = UA_NUMBER_WORDS[w];
+    // Цифра рівноправна зі словом: «2 зполовиною тисячі» — одне число.
+    const v = digitTokenValue(w) ?? UA_NUMBER_WORDS[w];
     if (v == null) continue;
     matched = true;
     if (v === 1000) {
@@ -335,7 +351,21 @@ export function normalizeUaNumbers(text: string): string {
   while (i < words.length) {
     const wi = words[i] ?? "";
     const clean = stripWordPunctuation(wi).toLowerCase();
-    if (UA_NUMBER_WORDS[clean] == null) {
+    const isWord = UA_NUMBER_WORDS[clean] != null;
+    // Пробіг може починатись і з ЦИФРИ — але тільки якщо далі йде
+    // число-слово. Інакше «2 з половиною тисячі» розпадалось на «2» окремо
+    // і «зполовиною тисячі» = 500, а сума виходила вп'ятеро меншою.
+    //
+    // AI-DANGER: цифра допускається ЛИШЕ як перший токен пробігу, і далі
+    // збираються самі слова. Дозволити цифру всередині означало б склеїти
+    // сусідні числа: «2 5» стало б 7.
+    const nextClean = stripWordPunctuation(words[i + 1] ?? "").toLowerCase();
+    const digitStartsRun =
+      !isWord &&
+      digitTokenValue(clean) !== null &&
+      !PUNCT_BREAK.test(wi) &&
+      UA_NUMBER_WORDS[nextClean] != null;
+    if (!isWord && !digitStartsRun) {
       out.push(wi);
       i++;
       continue;

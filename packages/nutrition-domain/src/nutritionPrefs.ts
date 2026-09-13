@@ -32,6 +32,37 @@ export function defaultNutritionPrefs(): NutritionPrefs {
     adaptiveGoalEnabled: true,
     adaptiveGoalIntent: "maintenance",
     adaptiveGoalLastUpdatedAt: null,
+    adaptiveGoalLastReason: null,
+  };
+}
+
+/**
+ * Знімок підстави перерахунку. Усі чотири числа мусять бути скінченними —
+ * половина знімка гірша за його відсутність: картка показала б «витрата
+ * ≈NaN» замість того, щоб просто змовчати.
+ */
+function normalizeGoalReason(
+  v: unknown,
+): NutritionPrefs["adaptiveGoalLastReason"] {
+  if (!v || typeof v !== "object" || Array.isArray(v)) return null;
+  const raw = v as Record<string, unknown>;
+  const nums = [
+    "averageIntakeKcal",
+    "weightDeltaKg",
+    "tdeeKcal",
+    "goalKcal",
+  ] as const;
+  const parsed: Record<string, number> = {};
+  for (const key of nums) {
+    const n = Number(raw[key]);
+    if (!Number.isFinite(n)) return null;
+    parsed[key] = n;
+  }
+  return {
+    averageIntakeKcal: parsed["averageIntakeKcal"] as number,
+    weightDeltaKg: parsed["weightDeltaKg"] as number,
+    tdeeKcal: parsed["tdeeKcal"] as number,
+    goalKcal: parsed["goalKcal"] as number,
   };
 }
 
@@ -98,6 +129,9 @@ export function normalizeNutritionPrefs(p: unknown): NutritionPrefs {
         typeof raw["adaptiveGoalLastUpdatedAt"] === "string"
           ? raw["adaptiveGoalLastUpdatedAt"]
           : null,
+      adaptiveGoalLastReason: normalizeGoalReason(
+        raw["adaptiveGoalLastReason"],
+      ),
     };
   } catch {
     return defaultNutritionPrefs();

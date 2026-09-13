@@ -33,7 +33,17 @@ function withinExplainWindow(lastUpdatedAt: string | null): boolean {
   return Math.abs(ageMs) <= EXPLAIN_WINDOW_DAYS * 86_400_000;
 }
 
-/** `−0.4` / `+0.3` — знак несе сенс, тож показуємо його завжди. */
+/**
+ * `−0,4` / `+0,3` — знак несе сенс, тож показуємо його завжди.
+ *
+ * Кома жорстко, не через `Intl.NumberFormat(locale)`, і це навмисно:
+ * `en.ts` не має топ-рівневої групи `nutrition`, а контракт злиття
+ * каталогів — shallow по групах (`i18n/index.ts`). Тобто ВЕСЬ цей текст
+ * лишається українським за будь-якої локалі, і «0.4» усередині
+ * української фрази виглядало б чужорідно.
+ *
+ * Додаси `nutrition` в `en.ts` — поверни сюди локаль.
+ */
 function formatDeltaKg(deltaKg: number): string {
   const rounded = Math.round(deltaKg * 10) / 10;
   // `Object.is` відрізняє −0 від 0: без цього «−0,0» лишало б знак мінус
@@ -65,9 +75,10 @@ export function AdaptiveGoalCard({
 
   if (state.mode === "disabled") return null;
 
+  const reason = state.lastReason;
   const justChanged =
     state.mode === "active" &&
-    state.measured != null &&
+    reason != null &&
     withinExplainWindow(state.lastUpdatedAt);
 
   if (state.mode === "active" && !justChanged) return null;
@@ -77,11 +88,11 @@ export function AdaptiveGoalCard({
   const text =
     state.mode === "profile-needed"
       ? "Додай вагу, зріст, дату народження, стать і рівень активності у профілі."
-      : justChanged && state.measured
+      : justChanged && reason
         ? fill(t.reason, {
-            intake: String(Math.round(state.measured.averageIntakeKcal)),
-            delta: formatDeltaKg(state.measured.weightDeltaKg),
-            tdee: String(Math.round(state.measured.tdeeKcal)),
+            intake: String(Math.round(reason.averageIntakeKcal)),
+            delta: formatDeltaKg(reason.weightDeltaKg),
+            tdee: String(Math.round(reason.tdeeKcal)),
           })
         : `Калібрую за журналом: ${state.completeDays}/10 повних днів і ${state.weightPoints}/4 зважувань.`;
 
@@ -90,9 +101,9 @@ export function AdaptiveGoalCard({
       <div className="min-w-0">
         <div className="text-style-label text-text">{heading}</div>
         <p className="mt-1 text-style-caption text-muted">{text}</p>
-        {justChanged && state.goalKcal != null && (
+        {justChanged && reason && (
           <p className="mt-0.5 text-style-caption text-text">
-            {fill(t.goalNow, { kcal: String(Math.round(state.goalKcal)) })}
+            {fill(t.goalNow, { kcal: String(Math.round(reason.goalKcal)) })}
           </p>
         )}
       </div>

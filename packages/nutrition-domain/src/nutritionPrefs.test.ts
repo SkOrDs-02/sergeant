@@ -27,6 +27,11 @@ describe("defaultNutritionPrefs", () => {
       adaptiveGoalEnabled: true,
       adaptiveGoalIntent: "maintenance",
       adaptiveGoalLastUpdatedAt: null,
+      // Додано 2026-09-13 разом зі знімком підстави зміни цілі. Міграції
+      // НЕ потребує, і саме це варто зафіксувати: prefs зберігаються як
+      // JSON-блоб, а `normalizeNutritionPrefs` віддає `null` для
+      // відсутнього ключа — тож старі записи читаються без дотику.
+      adaptiveGoalLastReason: null,
     });
   });
 
@@ -234,5 +239,74 @@ describe("normalizeNutritionPrefs", () => {
         carbs_g: 50,
       });
     });
+  });
+});
+
+/**
+ * Знімок підстави зміни цілі (`adaptiveGoalLastReason`).
+ *
+ * Половина знімка гірша за його відсутність: картка показала б «витрата
+ * ≈NaN» замість того, щоб змовчати. Тому нормалізація — усе або нічого.
+ */
+describe("adaptiveGoalLastReason", () => {
+  it("старі prefs без ключа читаються без міграції", () => {
+    const legacy = {
+      goal: "balanced",
+      adaptiveGoalEnabled: true,
+      adaptiveGoalLastUpdatedAt: "2026-09-01T10:00:00.000Z",
+    };
+    expect(normalizeNutritionPrefs(legacy).adaptiveGoalLastReason).toBeNull();
+    expect(normalizeNutritionPrefs(legacy).adaptiveGoalLastUpdatedAt).toBe(
+      "2026-09-01T10:00:00.000Z",
+    );
+  });
+
+  it("повний знімок проходить як є", () => {
+    const reason = {
+      averageIntakeKcal: 2180,
+      weightDeltaKg: -0.4,
+      tdeeKcal: 2400,
+      goalKcal: 2275,
+    };
+    expect(
+      normalizeNutritionPrefs({ adaptiveGoalLastReason: reason })
+        .adaptiveGoalLastReason,
+    ).toEqual(reason);
+  });
+
+  it("неповний або зіпсований знімок відкидається цілком", () => {
+    for (const bad of [
+      { averageIntakeKcal: 2180 },
+      { averageIntakeKcal: 2180, weightDeltaKg: -0.4, tdeeKcal: 2400 },
+      {
+        averageIntakeKcal: "багато",
+        weightDeltaKg: -0.4,
+        tdeeKcal: 2400,
+        goalKcal: 2275,
+      },
+      { averageIntakeKcal: NaN, weightDeltaKg: 0, tdeeKcal: 0, goalKcal: 0 },
+      [],
+      "reason",
+    ]) {
+      expect(
+        normalizeNutritionPrefs({ adaptiveGoalLastReason: bad })
+          .adaptiveGoalLastReason,
+      ).toBeNull();
+    }
+  });
+
+  // Нуль — валідне значення (тренд ваги рівно нульовий), і відкидати його
+  // разом зі сміттям було б помилкою: `Number.isFinite(0)` істинне.
+  it("нульова дельта ваги лишається знімком", () => {
+    const reason = {
+      averageIntakeKcal: 2180,
+      weightDeltaKg: 0,
+      tdeeKcal: 2400,
+      goalKcal: 2275,
+    };
+    expect(
+      normalizeNutritionPrefs({ adaptiveGoalLastReason: reason })
+        .adaptiveGoalLastReason,
+    ).toEqual(reason);
   });
 });

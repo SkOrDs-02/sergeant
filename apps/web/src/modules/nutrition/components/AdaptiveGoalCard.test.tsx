@@ -10,19 +10,17 @@ function state(overrides: Partial<AdaptiveGoalState>): AdaptiveGoalState {
     completeDays: 0,
     weightPoints: 0,
     lastUpdatedAt: null,
-    measured: null,
-    goalKcal: null,
+    lastReason: null,
     ...overrides,
   };
 }
 
-const MEASURED = {
+/** Знімок підстави з моменту зміни цілі. */
+const REASON = {
   averageIntakeKcal: 2180,
   weightDeltaKg: -0.4,
-  days: 14,
   tdeeKcal: 2400,
-  completeDays: 12,
-  weightPoints: 5,
+  goalKcal: 2275,
 };
 
 // 2026-09-11: вмикач автокалібрування переїхав у Налаштування → Їжа, тож
@@ -84,8 +82,7 @@ describe("AdaptiveGoalCard — підстава зміни", () => {
       <AdaptiveGoalCard
         state={state({
           mode: "active",
-          measured: MEASURED,
-          goalKcal: 2275,
+          lastReason: REASON,
           lastUpdatedAt: new Date().toISOString(),
         })}
       />,
@@ -103,8 +100,7 @@ describe("AdaptiveGoalCard — підстава зміни", () => {
       <AdaptiveGoalCard
         state={state({
           mode: "active",
-          measured: MEASURED,
-          goalKcal: 2275,
+          lastReason: REASON,
           lastUpdatedAt: eightDaysAgo,
         })}
       />,
@@ -117,7 +113,7 @@ describe("AdaptiveGoalCard — підстава зміни", () => {
   it("без дати перерахунку мовчить", () => {
     const { container } = render(
       <AdaptiveGoalCard
-        state={state({ mode: "active", measured: MEASURED, goalKcal: 2275 })}
+        state={state({ mode: "active", lastReason: REASON })}
       />,
     );
     expect(container).toBeEmptyDOMElement();
@@ -135,5 +131,45 @@ describe("AdaptiveGoalCard — підстава зміни", () => {
       />,
     );
     expect(screen.getByText(/3\/10 повних днів/)).toBeInTheDocument();
+  });
+});
+
+/**
+ * Підстава — ЗНІМОК, а не живий перерахунок.
+ *
+ * Виміряний TDEE рахується з ковзного 14-денного вікна на кожен рендер.
+ * Якщо картка читатиме живі числа, то через день після зміни вона
+ * припише минулій зміні сьогоднішні виміри: «ціль оновлено, бо витрата
+ * 2400» — тоді як 2400 уже інше число, а ціль з нього не виводилась.
+ * Пояснення говорить про ПОДІЮ, і числа мусять бути з неї.
+ */
+describe("AdaptiveGoalCard — підстава не пливе", () => {
+  it("показує знімок, а не те, що виміряно зараз", () => {
+    render(
+      <AdaptiveGoalCard
+        state={state({
+          mode: "active",
+          lastReason: REASON,
+          lastUpdatedAt: new Date().toISOString(),
+        })}
+      />,
+    );
+    expect(screen.getByText(/2180/)).toBeInTheDocument();
+    expect(screen.getByText(/2275/)).toBeInTheDocument();
+  });
+
+  // Без знімка пояснювати нічим: половина підстави гірша за її
+  // відсутність.
+  it("без знімка мовчить, навіть одразу після зміни", () => {
+    const { container } = render(
+      <AdaptiveGoalCard
+        state={state({
+          mode: "active",
+          lastReason: null,
+          lastUpdatedAt: new Date().toISOString(),
+        })}
+      />,
+    );
+    expect(container).toBeEmptyDOMElement();
   });
 });

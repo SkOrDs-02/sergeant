@@ -6,7 +6,6 @@ import {
   isDayFullyLogged,
   measuredTdee,
   type IntakeDay,
-  type MeasuredTdeeResult,
   type NutritionLog,
   type NutritionPrefs,
   type WeightPoint,
@@ -35,13 +34,14 @@ export interface AdaptiveGoalState {
   lastUpdatedAt: string | null;
   /**
    * Підстава останнього перерахунку — ті самі три числа, що їх обіцяє
-   * спека: середнє споживання, тренд ваги, виміряна витрата. Доти стан
-   * їх не віз узагалі, хоча `measuredTdee` рахує їх усі, тож показати
-   * причину зміни цілі було нічим.
+   * спека: середнє споживання, тренд ваги, виміряна витрата, плюс ціль,
+   * яка з них вийшла. Доти стан їх не віз узагалі, хоча `measuredTdee`
+   * рахує їх усі, тож показати причину зміни цілі було нічим.
+   *
+   * Це ЗНІМОК із моменту зміни (`prefs.adaptiveGoalLastReason`), а не
+   * живий перерахунок: пояснення говорить про подію, що вже сталась.
    */
-  measured: MeasuredTdeeResult | null;
-  /** Чинна ціль, щоб підпис показував не лише витрату, а й саме число. */
-  goalKcal: number | null;
+  lastReason: NutritionPrefs["adaptiveGoalLastReason"];
 }
 
 /** Вікно аналізу: 14 завершених днів до сьогодні. */
@@ -303,6 +303,16 @@ export function useAdaptiveNutritionGoal(
       dailyTargetFat_g: targets.fat_g,
       dailyTargetCarbs_g: targets.carbs_g,
       adaptiveGoalLastUpdatedAt: new Date().toISOString(),
+      // Знімок підстави пишеться РАЗОМ із ціллю, одним записом. Інакше
+      // картка пояснення читала б живий `analysis.measured`, який
+      // перераховується з ковзного вікна на кожен рендер, — і через день
+      // приписувала б минулій зміні сьогоднішні числа.
+      adaptiveGoalLastReason: {
+        averageIntakeKcal: analysis.measured.averageIntakeKcal,
+        weightDeltaKg: analysis.measured.weightDeltaKg,
+        tdeeKcal: analysis.measured.tdeeKcal,
+        goalKcal: targets.kcal,
+      },
     });
   }, [analysis, biometrics, prefs, profileTargets]);
 
@@ -312,8 +322,7 @@ export function useAdaptiveNutritionGoal(
       completeDays: 0,
       weightPoints: 0,
       lastUpdatedAt: null,
-      measured: null,
-      goalKcal: null,
+      lastReason: null,
     };
   }
   if (!profileTargets) {
@@ -324,8 +333,7 @@ export function useAdaptiveNutritionGoal(
         analysis.intakeDays.filter((d) => d.complete).length,
       weightPoints: analysis.weights.length,
       lastUpdatedAt: prefs.adaptiveGoalLastUpdatedAt,
-      measured: analysis.measured,
-      goalKcal: prefs.dailyTargetKcal ?? null,
+      lastReason: prefs.adaptiveGoalLastReason,
     };
   }
   return {
@@ -335,7 +343,6 @@ export function useAdaptiveNutritionGoal(
       analysis.intakeDays.filter((d) => d.complete).length,
     weightPoints: analysis.weights.length,
     lastUpdatedAt: prefs.adaptiveGoalLastUpdatedAt,
-    measured: analysis.measured,
-    goalKcal: prefs.dailyTargetKcal ?? null,
+    lastReason: prefs.adaptiveGoalLastReason,
   };
 }
