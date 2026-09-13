@@ -17,6 +17,7 @@ import {
 } from "../../../modules/finyk/utils";
 import { fmt } from "../hubChatUtils";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 import type { AllData, BudgetGoal, BudgetLimit, CategoryDef } from "./types";
 
 function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
@@ -28,8 +29,17 @@ function appendOverviewLines(lines: string[], d: AllData, now: Date): void {
   const daysInMonth = new Date(year, month, 0).getDate();
   const daysLeft = daysInMonth - dayOfMonth;
 
+  // Через хелпер, а не одним `toLocaleDateString` із повним набором опцій.
+  // Той однорядковий виклик — рівно форма, яку `uaWeekdayDate.ts` позначає
+  // `AI-DANGER`: Node віддає «неділя», Chromium — «неділю» (знахідний
+  // відмінок), тобто юніт-тести помилку не ловлять у принципі. Тут вона не
+  // потрапляла на екран, але їхала в контекст моделі — і модель бачила
+  // граматично зіпсований рядок замість дати (PR-C3, аудит 2026-09-13).
   lines.push(
-    `[Сьогодні] ${now.toLocaleDateString("uk-UA", { weekday: "long", day: "numeric", month: "long", year: "numeric", timeZone: "Europe/Kyiv" })}`,
+    `[Сьогодні] ${formatUaWeekdayDate(now, {
+      timeZone: "Europe/Kyiv",
+      withYear: true,
+    })}`,
   );
   // AI-CONTEXT (2026-08-07): годинник тут не косметика. До цього контекст
   // ніс лише дату, тож на «почни тренування на сьогодні» о 02:48 модель

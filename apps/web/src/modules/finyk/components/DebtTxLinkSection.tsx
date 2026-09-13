@@ -129,9 +129,18 @@ export function DebtTxLinkSection({
   const parsedDate = new Date(txDateIso);
   const dateLabel = Number.isNaN(parsedDate.getTime())
     ? null
-    : new Intl.DateTimeFormat("uk-UA", { dateStyle: "medium" }).format(
-        parsedDate,
-      );
+    : new Intl.DateTimeFormat("uk-UA", {
+        dateStyle: "medium",
+        // Київ, а не зона пристрою, і це не косметика. Ця секція живе
+        // ВСЕРЕДИНІ `BankTransactionDetailsSheet`, який шапку тієї самої
+        // транзакції форматує з `timeZone: "Europe/Kyiv"` — і сюди приходить
+        // той самий `txDateIso`. Без зони два рядки одного аркуша про ОДНУ
+        // мить показували різні дні кожному, хто не в київському поясі:
+        // операція о 23:40 за Києвом читалась як «14 вер.» у шапці і
+        // «13 вер.» тут (для UTC-1 і західніше — навпаки). Дата банківської
+        // операції — фінансовий період, тож ADR-0078 віддає її Києву.
+        timeZone: "Europe/Kyiv",
+      }).format(parsedDate);
   const linkedDebt = manualDebts.find((d) =>
     (d.linkedTxIds || []).includes(txId),
   );
