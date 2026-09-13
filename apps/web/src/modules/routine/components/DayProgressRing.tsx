@@ -3,11 +3,34 @@
  * Status: Active
  */
 import { messages } from "@shared/i18n/uk";
-import { cn } from "@shared/lib/ui/cn";
 const SIZE = 96;
 const STROKE = 7;
 const RADIUS = (SIZE - STROKE) / 2;
 const CIRCUMFERENCE = 2 * Math.PI * RADIUS;
+
+/**
+ * Метрики для підгонки числа під просвіт кільця. Просвіт — `SIZE − 2×STROKE`
+ * (82px), мінус 2px запасу з кожного боку. Ширини гліфів — частки em під
+ * `tabular-nums` у Manrope 700, заміряні рендером; слеш вужчий за цифру, тож
+ * рахувати «гліф × коефіцієнт» не можна (похибка росте з довжиною).
+ */
+const RING_APERTURE_PX = SIZE - 2 * STROKE - 4;
+const DIGIT_EM = 0.6;
+const SLASH_EM = 0.4131;
+const RING_MAX_FONT_PX = 26; // = `.text-style-headline-fixed`
+const RING_MIN_FONT_PX = 12; // текстова підлога системи
+
+function fitRingFontPx(value: string): number {
+  const digits = value.length - 1; // рівно один слеш
+  const emWidth = digits * DIGIT_EM + SLASH_EM;
+  return Math.max(
+    RING_MIN_FONT_PX,
+    Math.min(
+      RING_MAX_FONT_PX,
+      Math.round((RING_APERTURE_PX / emWidth) * 10) / 10,
+    ),
+  );
+}
 
 export interface DayProgressRingProps {
   completed: number;
@@ -33,6 +56,7 @@ export function DayProgressRing({
 }: DayProgressRingProps) {
   const ratio = scheduled > 0 ? completed / scheduled : 0;
   const offset = CIRCUMFERENCE * (1 - ratio);
+  const ringFontSize = fitRingFontPx(`${completed}/${scheduled}`);
 
   return (
     <button
@@ -81,35 +105,38 @@ export function DayProgressRing({
               ПРОГРЕС по дню, не сама дата, тож число читається першим, а дата
               в `RoutineCalendarHero` опущена до `title`.
 
-              AI-DANGER: кегль тут ЗАЛЕЖИТЬ ВІД ДОВЖИНИ рядка, і обидві
-              частини цього важливі.
+              AI-DANGER: кегль ОБЧИСЛЮЄТЬСЯ під довжину рядка, і повертати
+              сюди сталу роль не можна — ні плинну, ні фіксовану.
 
-              Нефлюїдний — бо кільце фіксоване (96px, просвіт 82px), а плинні
-              ролі ростуть із вʼюпортом: плинний `headline` дає «10/12» 84.4px
-              на 768 і 97.2px на 1280, тобто налазить на обведення.
+              Плинна не годиться, бо кільце фіксоване (96px, просвіт 82px), а
+              плинні ролі ростуть із вʼюпортом: плинний `headline` дає «10/12»
+              97.2px на 1280, тобто налазить на обведення.
 
-              Digit-aware — бо стелі на кількість звичок немає
-              (`calcRoutineDayProgress` рахує кожну активну заплановану), і
-              «100/100» на 26px дає 104.3px. Один кегль не покриває обидва
-              кінці: 26px переповнює на 7 гліфах, 20px на 3 гліфах втрачає
-              перший рівень. Заміряно справжнім Manrope, будь-який вʼюпорт:
+              Стала не годиться, бо стелі на кількість звичок немає
+              (`applyCreateHabit` не обмежує, `calcRoutineDayProgress` рахує
+              кожну активну заплановану). Будь-яке СТАЛЕ значення має обрив,
+              лише на різній довжині: 26px ламається на 7 гліфах, 20px — на 9.
+              Це знайшло рев'ю після того, як я вже «полагодив» перший обрив
+              порогом — поріг його не прибирає, а пересуває.
 
-                гліфів   26px      20px
-                3 «0/3»   42.0 ✓   32.3 ✓
-                5 «10/12» 73.1 ✓   56.3 ✓
-                7 «100/100» 104.3 ✕ 80.3 ✓
+              Формула точна, не емпірична: під `tabular-nums` цифра має сталу
+              ширину 0.6000em, слеш — 0.4131em (заміряно справжнім Manrope на
+              100px; передбачення сходиться з рендером до 0.0px на «0/3»,
+              «100/100» і «1000/1000»). Звідси ширина рядка лінійна, і кегль,
+              що вміщує будь-яку довжину, рахується прямо.
 
-              Поріг — 5 гліфів. Компактний щабель лишається більшим за дату
-              (`title` 18.0–19.6px) на 320/393/768; на 1280 дата 21.4px трохи
-              більша, але 100+ звичок на десктопі — не той випадок, заради
-              якого варто ламати кільце. */}
+                «0/3» → 26.0px    «100/100» → 19.4px
+                «10/12» → 26.0px  «1000/1000» → 15.0px
+
+              Підлога 12px — текстова підлога системи; нижче за неї значення
+              обріжеться, але для цього потрібні шестизначні лічильники. */}
           <span
-            className={cn(
-              "text-hero-ink tabular-nums",
-              `${completed}/${scheduled}`.length > 5
-                ? "text-style-title-fixed"
-                : "text-style-headline-fixed",
-            )}
+            className="text-style-headline-fixed text-hero-ink tabular-nums"
+            style={
+              ringFontSize < RING_MAX_FONT_PX
+                ? { fontSize: `${ringFontSize}px` }
+                : undefined
+            }
           >
             {completed}/{scheduled}
           </span>
