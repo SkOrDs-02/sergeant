@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-15.
+> **Last touched:** 2026-09-13 by @claude. **Next review:** 2027-04-17.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -472,6 +472,28 @@ Base URL бекенд-API (Coolify), який [`apps/web/middleware.ts`](../../.
 Читає `apps/web/src/core/observability/deployEnvironment.ts` — спільний резолвер `environment` для Sentry і PostHog. Усе, чого немає в списку і що не є localhost, отримує `environment: "preview"`.
 
 Навіщо hostname, а не лише `VITE_APP_ENV`: Vercel віддає preview-збіркам env-vars основного деплою, тож гілкові URL успадковують `VITE_APP_ENV=beta` і осідають у прод-проєкті PostHog під виглядом бети. За 30 днів до аудиту 2026-08-16 туди натекли події з шести preview-хостів. Змінну успадкувати можна, канонічний домен — ні, тому вирішує він.
+
+### `VITE_API_VERSION` _(optional)_
+
+Префікс версії API. **Default**: `v1` — `apiUrl("/api/foo")` фактично йде у `/api/v1/foo`. Значення `""` або `none` повертає старий шлях без префікса; це відкат фронта без редеплою сервера, бо сервер тримає обидва префікси одночасно (`apiVersionRewrite` у `server/app.ts`).
+
+Читає [`apps/web/src/shared/lib/api/apiUrl.ts`](../../../apps/web/src/shared/lib/api/apiUrl.ts). `apiUrl("/api/auth/…")` свідомо НЕ версіонується: Better Auth має фіксований `basePath`.
+
+### `VITE_BUILD_OUT_DIR` _(optional)_
+
+Куди Vite кладе збірку. **Default**: `dist` під `VERCEL=1`, інакше `../server/dist` (unified-режим, звідки сервер роздає статику). Читає [`apps/web/vite.config.js`](../../../apps/web/vite.config.js).
+
+Міняти майже ніколи не треба, і саме тому варто знати: на цей шлях розраховують `size-limit` (`../server/dist/assets/*`) і `check-eager-bundle.mjs`. Перевизначив — і бандл-гейти міряють порожнечу.
+
+### `VITE_INTERNAL_API_KEY` _(dev-only)_
+
+Bearer-токен для `/api/internal/*` у [`internalFetch.ts`](../../../apps/web/src/shared/lib/api/internalFetch.ts). **Ніколи не задавати у прод-білді** — `VITE_*` вшивається в бандл літералом і читається в DevTools.
+
+Незаданість тут не помилка, а робочий стан: без ключа `internalFetch` **відмовляється** робити запит замість того, щоб піти неавторизованим. Тобто прод-поведінка — це «немає ключа», і сторінка `/strategy` показує пояснений порожній стан. Ширший розбір ризику — [`run-beta-wave.md`](../../work/specs/beta-launch/run-beta-wave.md).
+
+### `VITE_SENTRY_SAMPLE_PROFILE` _(optional)_
+
+Пресет частоти трейсів браузерного Sentry: `minimal` / `prod` / … (див. `WEB_SENTRY_SAMPLE_PROFILES` у [`sentry.ts`](../../../apps/web/src/core/observability/sentry.ts)). Явний `VITE_SENTRY_TRACES_SAMPLE_RATE` має пріоритет і перекриває пресет; без обох — дефолт пресету.
 
 ---
 

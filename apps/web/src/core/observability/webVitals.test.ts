@@ -2,7 +2,7 @@
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import { MAX_BATCH, enqueue, __resetForTests } from "./webVitals";
 
-// apiUrl is a thin wrapper around VITE_API_URL + path; we don't care about
+// apiUrl is a thin wrapper around VITE_API_BASE_URL + path; we don't care about
 // the exact URL, only that a single call happens per flush.
 vi.mock("@shared/lib/api/apiUrl", () => ({
   apiUrl: (p: string) => `https://api.test${p}`,
