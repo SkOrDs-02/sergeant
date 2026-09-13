@@ -1,8 +1,19 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-09-12",
+  "generated_at": "2026-09-13",
   "prs": [
+    {
+      "number": 1134,
+      "title": "ci(root): повернути apps/mobile у CI і формалізувати web-first паузу окремим ADR",
+      "merged_at": "2026-09-13T19:16:42Z",
+      "author": "@SkOrDs-02",
+      "repo": "SkOrDs-02/sergeant",
+      "touchedDocs": [
+        "docs/governance/adr/0052-mobile-strategy-capacitor-primary.md",
+        "docs/governance/adr/0094-mobile-web-first-freeze.md"
+      ]
+    },
     {
       "number": 1098,
       "title": "fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника",

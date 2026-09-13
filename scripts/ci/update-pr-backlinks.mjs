@@ -53,7 +53,30 @@ const RE_BLOCK_START =
   /^[ \t]*<!-- AUTO-GENERATED: PR-BACKLINKS-START -->[ \t]*$/m;
 const RE_BLOCK_END = /^[ \t]*<!-- AUTO-GENERATED: PR-BACKLINKS-END -->[ \t]*$/m;
 
-const GITHUB_PR_BASE = "https://github.com/Skords-01/Sergeant/pull";
+// База посилання на PR.
+//
+// `LEGACY_PR_BASE` — старе репо `Skords-01/Sergeant`, звідки прийшли 20 із 37
+// записів леджера. Їхні номери (2876, 3611, …) у поточному репо не існують,
+// тож переписати всі посилання на новий хост означало б наробити 544 битих
+// лінки замість робочих.
+//
+// `CURRENT_PR_BASE` — теперішнє репо. Використовується для записів, які явно
+// несуть `"repo": "SkOrDs-02/sergeant"`; без поля запис вважається легасі.
+// Поле опційне саме тому: так 37 наявних записів лишаються байт-у-байт, а
+// нові перестають генерувати мертве посилання.
+//
+// Знайдено при ручному записі PR #1134 (аудит 2026-09-13): згенерований
+// блок у свіжому ADR-0094 вів на `Skords-01/Sergeant/pull/1134` — сторінку,
+// якої немає. Автоматика цього не показала б, бо вона не відкриває PR-и з
+// 2026-08-28 (див. § Backfill у правилі 26).
+const LEGACY_PR_BASE = "https://github.com/Skords-01/Sergeant/pull";
+const CURRENT_PR_BASE = "https://github.com/SkOrDs-02/sergeant/pull";
+const CURRENT_REPO = "SkOrDs-02/sergeant";
+
+/** База для конкретного запису: явне поле `repo` → нове репо, інакше легасі. */
+function prBaseFor(pr) {
+  return pr.repo === CURRENT_REPO ? CURRENT_PR_BASE : LEGACY_PR_BASE;
+}
 
 // ── Canonical doc whitelist ─────────────────────────────────────────────────
 
@@ -219,7 +242,7 @@ function renderBlock(docRelPath, ledger) {
     .map((pr) => {
       const dateOnly = pr.merged_at.slice(0, 10);
       const title = pr.title.replace(/\|/g, "\\|");
-      return `| [#${pr.number}](${GITHUB_PR_BASE}/${pr.number}) | ${title} | ${dateOnly} |`;
+      return `| [#${pr.number}](${prBaseFor(pr)}/${pr.number}) | ${title} | ${dateOnly} |`;
     })
     .join("\n");
 
@@ -403,6 +426,10 @@ function fetchPRMetadata(prNumber) {
     title: data.title,
     merged_at: data.mergedAt,
     author: `@${data.author?.login || "unknown"}`,
+    // `gh pr view` ходить у поточне репо, тож усе, що збирає ця функція,
+    // походить звідти. Без цього поля рендер узяв би легасі-базу і виписав
+    // посилання на неіснуючу сторінку.
+    repo: CURRENT_REPO,
     touchedDocs,
   };
 }
