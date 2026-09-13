@@ -143,6 +143,14 @@ vi.mock("./RoutineActions", () => ({
 }));
 
 import RoutineApp from "./RoutineApp";
+import { ToastProvider } from "@shared/hooks/useToast";
+
+// `RoutineApp` викликає `useStreakMilestoneCelebration`, а той — `useToast`,
+// який навмисно кидає поза провайдером. У продукті провайдер стоїть у
+// `core/app/Providers.tsx` над усім деревом, тож обгортка тут — це не
+// поблажка тесту, а відтворення реального оточення.
+const renderApp = (ui: React.ReactElement) =>
+  render(<ToastProvider>{ui}</ToastProvider>);
 
 describe("RoutineApp", () => {
   beforeEach(() => {
@@ -153,7 +161,7 @@ describe("RoutineApp", () => {
   });
 
   it("renders the module shell shards without throwing", () => {
-    render(<RoutineApp />);
+    renderApp(<RoutineApp />);
     expect(screen.getByTestId("routine-header")).toBeInTheDocument();
     expect(screen.getByTestId("routine-timeline")).toBeInTheDocument();
     expect(screen.getByTestId("routine-actions")).toBeInTheDocument();
@@ -161,7 +169,7 @@ describe("RoutineApp", () => {
 
   it("wires onBackToHub through RoutineHeader", () => {
     const onBackToHub = vi.fn();
-    render(<RoutineApp onBackToHub={onBackToHub} />);
+    renderApp(<RoutineApp onBackToHub={onBackToHub} />);
     expect(routineAppMocks.headerProps?.onBackToHub).toBe(onBackToHub);
     fireEvent.click(screen.getByRole("button", { name: "Назад" }));
     expect(onBackToHub).toHaveBeenCalledTimes(1);
@@ -169,7 +177,7 @@ describe("RoutineApp", () => {
 
   it("wires onOpenSettings through RoutineHeader", () => {
     const onOpenSettings = vi.fn();
-    render(<RoutineApp onOpenSettings={onOpenSettings} />);
+    renderApp(<RoutineApp onOpenSettings={onOpenSettings} />);
     fireEvent.click(screen.getByRole("button", { name: "Налаштування" }));
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
   });
@@ -177,7 +185,7 @@ describe("RoutineApp", () => {
   it("passes pwaAction and callbacks into useRoutineAppState", async () => {
     const onPwaActionConsumed = vi.fn();
     const onOpenModule = vi.fn();
-    const { rerender } = render(
+    const { rerender } = renderApp(
       <RoutineApp
         pwaAction={null}
         onPwaActionConsumed={onPwaActionConsumed}
@@ -191,12 +199,16 @@ describe("RoutineApp", () => {
       onOpenModule,
     });
 
+    // `rerender` міняє дерево ЦІЛКОМ, тож провайдер треба повторити —
+    // інакше другий рендер іде без нього і `useToast` кидає.
     rerender(
-      <RoutineApp
-        pwaAction="add_habit"
-        onPwaActionConsumed={onPwaActionConsumed}
-        onOpenModule={onOpenModule}
-      />,
+      <ToastProvider>
+        <RoutineApp
+          pwaAction="add_habit"
+          onPwaActionConsumed={onPwaActionConsumed}
+          onOpenModule={onOpenModule}
+        />
+      </ToastProvider>,
     );
 
     await waitFor(() => {
@@ -209,7 +221,7 @@ describe("RoutineApp", () => {
   });
 
   it("forwards orchestrator state into RoutineTimeline and RoutineActions", () => {
-    render(<RoutineApp />);
+    renderApp(<RoutineApp />);
     expect(routineAppMocks.timelineProps).toMatchObject({
       storageErrorMsg: null,
       mainTab: "calendar",

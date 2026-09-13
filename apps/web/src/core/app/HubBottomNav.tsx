@@ -216,6 +216,7 @@ function HubBottomNavTab({
         />
         {/* Label: visible only for active tab, slides in/out */}
         <span
+          data-nav-label
           className={cn(
             "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap text-ellipsis",
             transition,

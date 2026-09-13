@@ -16,6 +16,7 @@ import {
   MEAL_META,
   MEAL_ORDER,
   WEEK_KCAL_OVER_TOLERANCE,
+  countKcalStreakDays,
   deviceWeekStartKey,
   resolveKcalGoalsForDays,
   todayISODate,
@@ -35,6 +36,7 @@ import { nextMealLabel } from "../lib/nextMealLabel";
 import { WaterTrackerCard } from "./WaterTrackerCard";
 import { WeekKcalCard } from "./WeekKcalCard";
 import { useToast } from "@shared/hooks/useToast";
+import { useStreakMilestoneCelebration } from "@shared/hooks/useStreakMilestoneCelebration";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { useNutritionGoalPeriods } from "../hooks/useNutritionGoalPeriods";
 import { useAdaptiveNutritionGoal } from "../hooks/useAdaptiveNutritionGoal";
@@ -173,6 +175,24 @@ export function NutritionDashboard({
   // additionally checks the dismissal LS key so dismissed cards stay gone.
   const proteinLowInsight = useProteinLowInsight(log, prefs);
   const streakInsight = useStreakSevenDaysInsight(log, goalPeriods);
+
+  // Віха серії днів у нормі калорій — тиха плашка (O1, рішення власника
+  // 2026-09-13: святкуємо в Рутині ТА Їжі).
+  //
+  // Лічильник довелось написати: `useStreakSevenDaysInsight` вище — це
+  // перевірка РІВНО СЕМИ днів, булева, тож порогів 30 і 100 у ній немає на
+  // чому рахувати. `countKcalStreakDays` дає довжину, і 7-денний інсайт
+  // лишається окремою поверхнею зі своїм CTA — дублювання тут немає:
+  // інсайт — картка з пропозицією плану, плашка — підтвердження віхи.
+  const kcalStreak = useMemo(
+    () => countKcalStreakDays(log, goalPeriods, todayISODate()),
+    [log, goalPeriods],
+  );
+  useStreakMilestoneCelebration(
+    "nutrition",
+    kcalStreak,
+    messages.nutrition.streakMilestone.toast,
+  );
 
   // Cap at 2 simultaneous insights. Priority: streak > protein-low so the
   // positive signal surfaces first when both conditions fire together.

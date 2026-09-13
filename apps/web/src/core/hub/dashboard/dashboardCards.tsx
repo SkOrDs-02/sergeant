@@ -2,36 +2,22 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import {
-  useEffect,
-  useMemo,
-  useRef,
-  type CSSProperties,
-  type ReactNode,
-} from "react";
+import { useEffect, useMemo, type CSSProperties, type ReactNode } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { StreakBadge } from "@shared/components/ui/StreakFlame";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import {
+  STORAGE_KEYS,
+  TRACKED_STREAK_MILESTONES,
+  claimStreakMilestone,
+} from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
 import { countRealEntries } from "../../onboarding/firstRealEntry";
 import { ANALYTICS_EVENTS, trackEvent } from "../../observability/analytics";
 import { getWeekRange } from "../../insights/useWeeklyDigest";
 import { MODULE_CONFIGS, type ModuleId } from "./moduleConfigs";
 import { useHubStorageBump } from "../useHubStorageBump";
-
-const STREAK_MILESTONES = [7, 14, 21, 30, 60, 90, 100, 365] as const;
-
-function highestMilestoneCrossed(
-  current: number,
-  previous: number,
-): number | null {
-  for (let i = STREAK_MILESTONES.length - 1; i >= 0; i--) {
-    const m = STREAK_MILESTONES[i];
-    if (m !== undefined && current >= m && previous < m) return m;
-  }
-  return null;
-}
 
 const PILL_MODULES: ModuleId[] = ["finyk", "routine", "nutrition", "fizruk"];
 
@@ -157,33 +143,39 @@ export function StreakIndicator() {
     return streaks[0]?.days ?? 0;
   }, [bump]);
 
-  // Detect streak-milestone crossings on the hub itself so the funnel
-  // sees `streak_milestone_reached` from the dashboard render path. We
-  // seed `previousStreakRef` to `streak` on first mount so a returning
-  // user who already crossed a milestone doesn't get double-tracked.
-  const previousStreakRef = useRef<number | null>(null);
+  // Detect streak-milestone crossings on the hub so the funnel sees
+  // `streak_milestone_reached` from the dashboard render path.
+  //
+  // ЧОМУ ЦЕ БІЛЬШЕ НЕ РЕФ. Попередня редакція засівала `previousStreakRef`
+  // поточним значенням на першому монтуванні — і на цьому детектор
+  // структурно НЕ ПРАЦЮВАВ: чекін відбувається в модулі Рутини, тобто на
+  // іншому маршруті, тож повернення на хаб — це нове монтування, реф
+  // засівається вже перетнутим числом, і порівняння нічого не бачить.
+  // Єдиний шлях, яким подія реально летіла, — чекін у СУСІДНІЙ вкладці
+  // (крос-табовий `storageUpdated` без ремаунту). Практичний наслідок:
+  // `streak_milestone_reached` у PostHog порожній не тому, що люди не
+  // доходять до 7 днів (знахідка O1, 2026-09-13).
+  //
+  // `claimStreakMilestone` тримає зайняті віхи в сховищі ПРИСТРОЮ, тож
+  // ремаунт їх не губить, а перший запуск засіває так само, як засівав реф.
+  // Набір лишається широким (`TRACKED_STREAK_MILESTONES`, вісім порогів) —
+  // він дає воронці роздільність, якої три святкові пороги не дають.
+  // Scope окремий від святкування: людина бачить три віхи, аналітика міряє
+  // вісім, і зведення їх в один scope зіпсувало б одне з двох.
   useEffect(() => {
-    if (previousStreakRef.current === null) {
-      previousStreakRef.current = streak;
-      return;
-    }
-    const previous = previousStreakRef.current;
-    if (streak <= previous) {
-      previousStreakRef.current = streak;
-      return;
-    }
-    const crossed = highestMilestoneCrossed(streak, previous);
-    if (crossed !== null) {
-      trackEvent(ANALYTICS_EVENTS.STREAK_MILESTONE_REACHED, {
-        days: crossed,
-        // Hub renders a `<StreakBadge>` for every crossing. Keeping
-        // `type` on the payload lets PostHog segment by surface if a
-        // separate celebration modal is added later without a payload-
-        // shape change to chase.
-        type: "toast" as const,
-      });
-    }
-    previousStreakRef.current = streak;
+    const crossed = claimStreakMilestone(
+      webKVStore,
+      "hub-analytics",
+      streak,
+      TRACKED_STREAK_MILESTONES,
+    );
+    if (crossed === null) return;
+    trackEvent(ANALYTICS_EVENTS.STREAK_MILESTONE_REACHED, {
+      days: crossed,
+      // Keeping `type` on the payload lets PostHog segment by surface
+      // without a payload-shape change to chase.
+      type: "toast" as const,
+    });
   }, [streak]);
 
   if (streak < 2) return null;
