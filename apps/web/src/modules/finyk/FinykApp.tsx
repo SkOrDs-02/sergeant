@@ -568,6 +568,10 @@ export default function App({
           items={NAV_ITEMS.map((item) => ({
             id: item.id,
             label: item.label,
+            // Умовний спред, а не `visibleLabel: item.visibleLabel`:
+            // під `exactOptionalPropertyTypes` явний `undefined` не те саме,
+            // що відсутнє поле.
+            ...(item.visibleLabel ? { visibleLabel: item.visibleLabel } : {}),
             icon: NAV_ICONS[item.id],
           }))}
           activeId={page}
