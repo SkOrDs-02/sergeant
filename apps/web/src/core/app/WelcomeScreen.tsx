@@ -250,14 +250,16 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
     }
   }, []);
 
-  // Returning-account is also an explicit onboarding escape. Without
-  // closing the local gate first, a restored session loops through
-  // `/welcome -> /sign-in -> / -> /welcome`: the sign-in route correctly
-  // redirects an authenticated user home, then the still-open onboarding
-  // gate sends them straight back here. Persist the skip before navigation
-  // so both restored and newly authenticated accounts land in the Hub.
+  // "У мене вже є акаунт" — just navigates to `/sign-in`. Does NOT mark
+  // onboarding done here (PR-H7, design-audit 2026-09-13): a mistaken tap
+  // followed by "Поки що пропустити" on `/sign-in` used to leave the local
+  // gate closed forever (a plain nav.click before we knew whether this
+  // visitor had an account at all), so the visitor landed on an empty hub
+  // with no FTUX hero and no way back to the splash. The gate now closes
+  // in exactly one place, once a session is actually confirmed — see the
+  // `SIGN_IN_PATH` entry in `StandaloneRoutes.tsx`, which covers both a
+  // fresh sign-in on this screen and an already-restored session.
   const handleOpenAuth = useCallback(() => {
-    markOnboardingDone();
     onOpenAuth();
   }, [onOpenAuth]);
 

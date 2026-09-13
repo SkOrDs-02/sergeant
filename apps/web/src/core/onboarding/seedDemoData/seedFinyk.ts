@@ -1,4 +1,5 @@
 import {
+  FINYK_ASSETS_KEY,
   FINYK_CUSTOM_CATS_KEY,
   FINYK_MANUAL_EXPENSES_KEY,
   FINYK_MANUAL_ONLY_KEY,
@@ -272,6 +273,24 @@ export function seedFinyk(): void {
   // Leave custom categories empty — MCC base set covers the seeded
   // expenses and gives the pie-chart enough variety out of the box.
   writeJSON(FINYK_CUSTOM_CATS_KEY, []);
+
+  // PR-F9 (design-audit 2026-09-13): without a manual asset, `assetsSummary`
+  // (`computeAssetsSummary` in `@sergeant/finyk-domain`) has nothing to sum —
+  // the seeded rows above are bank-statement TRANSACTIONS, not account
+  // BALANCES, and manual-only mode never connects a live Monobank account
+  // either. Hero's «Капітал» rendered a bare `0 ₴` on a demo whose entire
+  // point is to show the product populated. One UAH cash-savings row (a
+  // plausible few-months buffer against the seeded 45 000 ₴/mo income) is
+  // enough — `computeAssetsSummary` requires `currency === "UAH"` exactly
+  // (strict match, no case-fold) to count toward net worth.
+  writeJSON(FINYK_ASSETS_KEY, [
+    {
+      id: shortId("demo_asset", 1),
+      name: "Заощадження",
+      amount: 65000,
+      currency: "UAH",
+    },
+  ]);
 
   // Monthly plan so the "бюджет vs факт" cards render with a target
   // instead of the "додай план" empty-state.

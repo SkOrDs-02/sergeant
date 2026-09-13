@@ -86,6 +86,20 @@ export interface UseOnboardingStateOptions {
    *  when this is missing — the card is useless without a way to
    *  open the modal it nags toward. */
   onShowAuth?: (() => void) | undefined;
+  /**
+   * `true` while `LocalOnlyDataBanner` is visible for this session (PR-H4,
+   * design-audit 2026-09-13). Both cards ask for the exact same thing —
+   * "sign in before this disappears" — and the banner budget
+   * (`hub/bannerBudget.tsx`) only caps banner COUNT, not repeated intent:
+   * with just these two competing, both fit under the budget of two and
+   * both render, so an anonymous user with a real entry sees "Увійти" from
+   * the banner AND from the hero card at once. Suppressing the soft-auth
+   * candidate here (rather than the banner) is deliberate — the banner
+   * carries the durability warning, which is the higher-stakes message.
+   * Caller mirrors this to the banner's own visibility gate; see
+   * `useHubDashboardState.ts`.
+   */
+  localOnlyBannerVisible?: boolean;
 }
 
 export interface UseOnboardingStateResult {
@@ -131,11 +145,13 @@ function computeSoftAuthEligible(
   softAuthDismissed: boolean,
   hasRealEntry: boolean,
   sessionDays: number,
+  localOnlyBannerVisible: boolean,
   onShowAuth?: () => void,
 ): boolean {
   return (
     !user &&
     !softAuthDismissed &&
+    !localOnlyBannerVisible &&
     typeof onShowAuth === "function" &&
     ((hasRealEntry && sessionDays >= SOFT_AUTH_AFTER_ENTRY_MIN_SESSION_DAYS) ||
       sessionDays >= SOFT_AUTH_SESSION_DAYS_THRESHOLD)
@@ -170,6 +186,7 @@ export function useOnboardingState(
     todayFocusAvailable,
     reengagementEligible,
     onShowAuth,
+    localOnlyBannerVisible = false,
   } = options;
 
   // Lazy initialisers: storage reads run once on mount, not on every
@@ -193,6 +210,7 @@ export function useOnboardingState(
     softAuthDismissed,
     hasRealEntry,
     sessionDays,
+    localOnlyBannerVisible,
     onShowAuth,
   );
 

@@ -6,11 +6,11 @@
  *
  * AI-CONTEXT: демо-сід (`core/onboarding/seedDemoData/seedFinyk.ts`)
  * пише сирим `writeJSON` у `finyk_manual_expenses_v1` /
- * `finyk_custom_cats_v1` / `finyk_monthly_plan` (+ `finyk_tx_cache` для
- * банківського стріму — див. окремий місток нижче), бо він виконується
- * в `main.tsx` ДО React-дерева і одразу робить `location.replace` —
- * жодного хука, а отже й жодного dual-write-триггера, там ще не існує.
- * Доки модуль читав LS, цього вистачало.
+ * `finyk_custom_cats_v1` / `finyk_monthly_plan` / `finyk_assets` (+
+ * `finyk_tx_cache` для банківського стріму — див. окремий місток нижче),
+ * бо він виконується в `main.tsx` ДО React-дерева і одразу робить
+ * `location.replace` — жодного хука, а отже й жодного dual-write-
+ * тригера, там ще не існує. Доки модуль читав LS, цього вистачало.
  *
  * Далі сталося те саме, що з Фізруком (див. AI-DANGER-блок у
  * `modules/fizruk/lib/demoSeedImport.ts` — той самий root cause,
@@ -52,14 +52,25 @@ import { writeMonoTransactions } from "./monoMirror.js";
 const DEMO_MANUAL_EXPENSES_KEY = "finyk_manual_expenses_v1";
 const DEMO_CUSTOM_CATS_KEY = "finyk_custom_cats_v1";
 const DEMO_MONTHLY_PLAN_KEY = "finyk_monthly_plan";
+/**
+ * PR-F9 (design-audit 2026-09-13): `seedFinyk()` тепер сіє один ручний
+ * актив, щоб hero-«Капітал» не був голим `0 ₴`. Без цього містка LS-рядок
+ * пережив би рівно один рендер: `useFinykStorageSlots` овервейлить
+ * `manualAssets` зі SQLite-кешу БЕЗУМОВНО, щойно той прогріється
+ * (`useFinykSqliteReadBoot` бутиться і для демо — `useLocalUserId()`
+ * віддає `demo-local`), а порожня SQLite-таблиця тихо стерла б засіяний
+ * LS-рядок назад до нуля — той самий root cause, що вбив демо для
+ * `manualExpenses` до PR L-8 (див. AI-CONTEXT класу вище).
+ */
+const DEMO_ASSETS_KEY = "finyk_assets";
 
 /**
  * Зібрати dual-write стан із демо-payload у localStorage.
  *
- * Покриває лише три слайси, які реально пише `seedFinyk()`:
- * `manualExpenses`, `customCategories`, `prefs` (monthly plan +
- * дефолтний `showBalance`). Решта dual-write-таблиць (бюджети,
- * підписки, борги…) демо не заповнює — там нема чого лити.
+ * Покриває чотири слайси, які реально пише `seedFinyk()`: `manualExpenses`,
+ * `assets`, `customCategories`, `prefs` (monthly plan + дефолтний
+ * `showBalance`). Решта dual-write-таблиць (бюджети, підписки, борги…)
+ * демо не заповнює — там нема чого лити.
  *
  * @returns `null`, якщо в LS нема нічого придатного — тоді імпорт
  *   не має чого робити й не має що логувати.
@@ -69,6 +80,7 @@ export function readFinykDemoStateFromLs(): FinykDualWriteState | null {
     DEMO_MANUAL_EXPENSES_KEY,
     null,
   );
+  const assetsRaw = safeReadLS<readonly unknown[]>(DEMO_ASSETS_KEY, null);
   const customCatsRaw = safeReadLS<readonly unknown[]>(
     DEMO_CUSTOM_CATS_KEY,
     null,
@@ -78,10 +90,12 @@ export function readFinykDemoStateFromLs(): FinykDualWriteState | null {
   const manualExpenses = Array.isArray(manualExpensesRaw)
     ? manualExpensesRaw
     : [];
+  const assets = Array.isArray(assetsRaw) ? assetsRaw : [];
   const customCategories = Array.isArray(customCatsRaw) ? customCatsRaw : [];
 
   if (
     manualExpenses.length === 0 &&
+    assets.length === 0 &&
     customCategories.length === 0 &&
     monthlyPlanRaw == null
   ) {
@@ -98,6 +112,7 @@ export function readFinykDemoStateFromLs(): FinykDualWriteState | null {
   return {
     ...EMPTY_FINYK_STATE,
     manualExpenses: blobsFromArray(manualExpenses),
+    assets: blobsFromArray(assets),
     customCategories: blobsFromArray(customCategories),
     prefs: {
       monthlyPlanJson,

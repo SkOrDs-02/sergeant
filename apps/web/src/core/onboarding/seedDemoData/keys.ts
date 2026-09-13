@@ -9,6 +9,15 @@ export const FIRST_REAL_ENTRY_KEY = "hub_first_real_entry_v1";
 export const FINYK_MANUAL_ONLY_KEY = "finyk_manual_only_v1";
 
 export const FINYK_MANUAL_EXPENSES_KEY = "finyk_manual_expenses_v1";
+/**
+ * Manual assets (cash, savings jars, etc — non-bank). Must match
+ * `useFinykStorageSlots`' `"finyk_assets"` literal exactly. PR-F9
+ * (design-audit 2026-09-13): without a seeded row here the hero's
+ * «Капітал» is a bare `0 ₴` on a demo whose whole purpose is showing the
+ * product populated — the seeded bank transactions only ever touch the
+ * spend/income totals, never `assetsSummary.networth`.
+ */
+export const FINYK_ASSETS_KEY = "finyk_assets";
 export const FINYK_CUSTOM_CATS_KEY = "finyk_custom_cats_v1";
 export const FINYK_MONTHLY_PLAN_KEY = "finyk_monthly_plan";
 export const FINYK_TX_CACHE_KEY = "finyk_tx_cache";

@@ -45,6 +45,7 @@ import {
 } from "../onboarding/vibePicks";
 import { useOnboardingState } from "../onboarding/useOnboardingState";
 import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration";
+import { isDemoMode } from "../onboarding/demoMode";
 import { hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
@@ -239,6 +240,22 @@ export function useHubDashboardState(props: {
   // first non-demo entry — must run alongside detectFirstRealEntry on the render
   // path, else the event never emits and the activation funnel stays at 0%.
   detectFirstActionCompletedPerModule();
+  // Hoisted above its original call-site (near `insightsDefaultOpen` below)
+  // so `useOnboardingState` can read it too — see `localOnlyBannerVisible`.
+  const inFtuxSession = !hasRealEntry && !isFirstRealEntryDone();
+  // Approximates `LocalOnlyDataBanner`'s own visibility gate — the render
+  // guard in `HubMainContent.tsx` (`!inFtuxSession && <LocalOnlyDataBanner
+  // .../>`), the component's `!user` branch (an authed `user` is always
+  // syncable), and the demo gate (PR-H5, same audit) — without re-deriving
+  // the synthetic local user id here: `useLocalUserId()`/`useAuth()` would
+  // pull in a context provider this hook's own tests don't wrap with, for
+  // an edge case (auth resolved but the anon→account migration still
+  // in flight) narrow enough that under-suppressing it for one render is
+  // harmless. Needed here (PR-H4, design-audit 2026-09-13) so the
+  // soft-auth hero backs off while the banner already asks the same
+  // "sign in" question — see `computeSoftAuthEligible` in
+  // `useOnboardingState.ts`.
+  const localOnlyBannerVisible = !inFtuxSession && !user && !isDemoMode();
   const entryCount = useMemo(
     () => countRealEntries(),
     // eslint-disable-next-line react-hooks/exhaustive-deps -- storage-write tick
@@ -265,6 +282,7 @@ export function useHubDashboardState(props: {
     todayFocusAvailable: focusProbe.focus !== null,
     reengagementEligible: reengagement.show,
     onShowAuth,
+    localOnlyBannerVisible,
   });
 
   const [crossModulePreviewSource, setCrossModulePreviewSource] =
@@ -503,8 +521,9 @@ export function useHubDashboardState(props: {
 
   // Smart-expand: open insights on first render when the user has at least
   // one actionable rec, is past FTUX, and is on a viewport wide enough to
-  // benefit from seeing expanded content (>= 390px).
-  const inFtuxSession = !hasRealEntry && !isFirstRealEntryDone();
+  // benefit from seeing expanded content (>= 390px). `inFtuxSession` is
+  // computed above (near `hasRealEntry`) so `localOnlyBannerVisible` can
+  // read it too.
   const hasActionableInsight = rest.length > 0;
   const insightsDefaultOpen =
     sessionDays >= 7 ||
