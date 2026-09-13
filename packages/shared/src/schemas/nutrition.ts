@@ -82,6 +82,21 @@ export const BarcodeProductSchema = z.object({
   // віддає, не мусить писати пʼять `null`-ів. Пояснення різниці між
   // «ключа немає» і «значення null» — у докстрінгу `ProductNutrientsSchema`.
   nutrients: ProductNutrientsSchema.optional(),
+  /**
+   * Фото продукту (U1, рішення власника 2026-09-11: джерело — Open Food
+   * Facts за штрихкодом, вільна ліцензія; Unsplash не підключаємо).
+   *
+   * `nullable`, а не `optional`: на відміну від нутрієнтів, тут «немає
+   * фото» — один стан, а не два. Ніякої різниці між «джерело картинок не
+   * має» і «має, але для цього товару немає» споживач не робить: у обох
+   * випадках картка малює іконку категорії.
+   *
+   * Абсолютний URL на хост OFF. CSP його вже пропускає — `img-src` має
+   * `https:` (див. `apps/web/index.html`), тож окремого алловліста не
+   * потрібно. Додасться суворіший `img-src` — цей шлях доведеться туди
+   * внести явно, інакше фото мовчки перестане вантажитись.
+   */
+  imageUrl: z.string().nullable().optional(),
 });
 export type BarcodeProduct = z.infer<typeof BarcodeProductSchema>;
 

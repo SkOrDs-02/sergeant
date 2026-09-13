@@ -19,6 +19,10 @@ export interface OFFProduct {
   nutriments?: Record<string, unknown>;
   serving_size?: string;
   serving_quantity?: number | string;
+  image_front_small_url?: string;
+  image_small_url?: string;
+  image_front_url?: string;
+  image_url?: string;
 }
 
 export interface OFFSearchProduct {
@@ -50,6 +54,8 @@ export interface NormalizedOFFBarcode {
   servingSize: string | null;
   servingGrams: number | null;
   source: "off";
+  /** Фото продукту з OFF (U1) або `null`. Абсолютний URL на хост OFF. */
+  imageUrl: string | null;
   /**
    * Завжди присутній для OFF — на відміну від решти джерел каскаду, які
    * ключ узагалі не ставлять. OFF нутрієнти віддає; `null` усередині
@@ -139,6 +145,35 @@ function extractExtraNutrients(
   };
 }
 
+/**
+ * Фото продукту — найдрібніше з наявних.
+ *
+ * ПОРЯДОК НЕ ДОВІЛЬНИЙ. `image_front_small_url` — це передня сторона
+ * пачки в ~200 px, тобто рівно те, що потрібно, щоб упізнати товар у
+ * списку. `image_url` останній навмисно: він може бути мегабайтним
+ * оригіналом, а картка все одно малює його розміром із ніготь — платити
+ * трафіком за пікселі, яких не видно, немає сенсу. «Передня» сторона
+ * перед «будь-якою» тому, що друга часто виявляється фотографією таблиці
+ * складу, на якій товар не впізнати взагалі.
+ *
+ * OFF лишає в JSON порожні рядки замість відсутніх ключів, тож
+ * перевіряємо саме непорожність, а не наявність.
+ */
+function extractImageUrl(product: OFFProduct): string | null {
+  for (const candidate of [
+    product.image_front_small_url,
+    product.image_small_url,
+    product.image_front_url,
+    product.image_url,
+  ]) {
+    const url = String(candidate || "").trim();
+    // Лише https: підмішаний http-URL дав би mixed-content, і браузер
+    // заблокував би картинку мовчки, без жодного сліду в логах.
+    if (url.startsWith("https://")) return url;
+  }
+  return null;
+}
+
 function hasSomeMacro(m: ExtractedMacros): boolean {
   return (
     m.kcal != null || m.protein != null || m.fat != null || m.carbs != null
@@ -177,6 +212,7 @@ export function normalizeOFFBarcode(
     servingSize,
     servingGrams,
     source: "off",
+    imageUrl: extractImageUrl(product),
     nutrients: extractExtraNutrients(product.nutriments),
   };
 }

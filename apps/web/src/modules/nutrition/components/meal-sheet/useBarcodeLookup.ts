@@ -142,6 +142,7 @@ export function useBarcodeLookup({
       setPickedFood({
         ...fakeFood,
         ...(p.nutrients ? { nutrients: p.nutrients } : {}),
+        ...(p.imageUrl ? { imageUrl: p.imageUrl } : {}),
       });
       setPickedGrams(gramsStr);
       setForm((s) => ({

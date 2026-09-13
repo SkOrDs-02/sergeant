@@ -36,6 +36,7 @@ describe("normalizeOFFBarcode", () => {
       servingSize: "15 g",
       servingGrams: 15,
       source: "off",
+      imageUrl: null,
       // Ключ присутній завжди — OFF нутрієнти віддає. `null` усередині
       // означає «спитали, у цій картці немає»; ключа немає лише у джерел,
       // які таких даних не мають узагалі (див. `ProductNutrientsSchema`).
@@ -96,6 +97,57 @@ describe("normalizeOFFBarcode", () => {
       nutriments: { ...nutriments, alcohol_100g: 11.5 },
     });
     expect(result!.nutrients.alcohol_100g).toBe(11.5);
+  });
+
+  // ─── Фото продукту (U1) ────────────────────────────────────────────
+
+  it("бере найдрібніше фото — передню сторону в ~200 px", () => {
+    const result = normalizeOFFBarcode({
+      product_name: "Молоко",
+      nutriments,
+      image_front_small_url: "https://images.openfoodfacts.org/f.200.jpg",
+      image_small_url: "https://images.openfoodfacts.org/s.200.jpg",
+      image_front_url: "https://images.openfoodfacts.org/f.full.jpg",
+      image_url: "https://images.openfoodfacts.org/full.jpg",
+    });
+    expect(result!.imageUrl).toBe("https://images.openfoodfacts.org/f.200.jpg");
+  });
+
+  // Порядок не довільний: `image_url` останній, бо може бути мегабайтним
+  // оригіналом, а картка малює його розміром із ніготь.
+  it("спускається порядком, коли дрібних немає", () => {
+    const result = normalizeOFFBarcode({
+      product_name: "Молоко",
+      nutriments,
+      image_url: "https://images.openfoodfacts.org/full.jpg",
+    });
+    expect(result!.imageUrl).toBe("https://images.openfoodfacts.org/full.jpg");
+  });
+
+  // OFF лишає в JSON порожні рядки замість відсутніх ключів.
+  it("порожній рядок — це не URL", () => {
+    const result = normalizeOFFBarcode({
+      product_name: "Молоко",
+      nutriments,
+      image_front_small_url: "   ",
+      image_url: "https://images.openfoodfacts.org/full.jpg",
+    });
+    expect(result!.imageUrl).toBe("https://images.openfoodfacts.org/full.jpg");
+  });
+
+  // http дав би mixed-content, і браузер заблокував би картинку мовчки.
+  it("відкидає не-https — інакше браузер зарубає мовчки", () => {
+    const result = normalizeOFFBarcode({
+      product_name: "Молоко",
+      nutriments,
+      image_front_small_url: "http://images.openfoodfacts.org/f.200.jpg",
+    });
+    expect(result!.imageUrl).toBeNull();
+  });
+
+  it("немає жодного фото — `null`, не порожній рядок", () => {
+    const result = normalizeOFFBarcode({ product_name: "Молоко", nutriments });
+    expect(result!.imageUrl).toBeNull();
   });
 
   it("prefers product_name_uk over product_name", () => {

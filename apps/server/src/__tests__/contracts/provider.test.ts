@@ -804,6 +804,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
         servingGrams: number | null;
         source: "off" | "usda" | "upcitemdb";
         partial?: boolean;
+        imageUrl?: string | null;
         nutrients?: {
           fiber_100g: number | null;
           sugars_100g: number | null;
@@ -843,6 +844,8 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
         },
         serving_size: expected.product.servingSize,
         serving_quantity: expected.product.servingGrams,
+        // Найдрібніший варіант — саме його бере нормалізатор першим.
+        image_front_small_url: expected.product.imageUrl ?? undefined,
       },
     };
 

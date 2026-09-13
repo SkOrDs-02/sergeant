@@ -70,6 +70,7 @@ interface CatalogRow {
   saturated_fat_100g: number | null;
   salt_100g: number | null;
   alcohol_100g: number | null;
+  image_url: string | null;
 }
 
 /**
@@ -105,7 +106,8 @@ export async function lookupInCatalog(
   const { rows } = await query<CatalogRow>(
     `SELECT name, brand, kcal_100g, protein_100g, fat_100g, carbs_100g,
             serving_size, serving_grams, source,
-            fiber_100g, sugars_100g, saturated_fat_100g, salt_100g, alcohol_100g
+            fiber_100g, sugars_100g, saturated_fat_100g, salt_100g, alcohol_100g,
+            image_url
        FROM product_catalog
       WHERE barcode = $1
         AND (
@@ -152,6 +154,7 @@ export async function lookupInCatalog(
     // у відповіді API. Інакше довелося б розширювати enum і рухати
     // контрактну трійцю (Hard Rule #3) заради нічого.
     source: row.source as BarcodeProduct["source"],
+    imageUrl: row.image_url,
     // Ключ ставимо лише тоді, коли в рядку є бодай одне число: порожній
     // обʼєкт із пʼятьма `null` сказав би картці продукту «джерело нутрієнти
     // віддає, просто тут їх немає» — а насправді рядок міг приїхати від
@@ -396,8 +399,9 @@ export async function upsertIntoCatalog(
          (barcode, source, name, name_norm, brand,
           kcal_100g, protein_100g, fat_100g, carbs_100g,
           serving_size, serving_grams, source_ref,
-          fiber_100g, sugars_100g, saturated_fat_100g, salt_100g, alcohol_100g)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
+          fiber_100g, sugars_100g, saturated_fat_100g, salt_100g, alcohol_100g,
+          image_url)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17,$18)
        ON CONFLICT (barcode, source) DO UPDATE
          SET name = EXCLUDED.name,
              name_norm = EXCLUDED.name_norm,
@@ -415,6 +419,7 @@ export async function upsertIntoCatalog(
              saturated_fat_100g = COALESCE(EXCLUDED.saturated_fat_100g, product_catalog.saturated_fat_100g),
              salt_100g = COALESCE(EXCLUDED.salt_100g, product_catalog.salt_100g),
              alcohol_100g = COALESCE(EXCLUDED.alcohol_100g, product_catalog.alcohol_100g),
+             image_url = COALESCE(EXCLUDED.image_url, product_catalog.image_url),
              fetched_at = NOW(),
              updated_at = NOW()`,
       [
@@ -435,6 +440,7 @@ export async function upsertIntoCatalog(
         inRange(n?.saturatedFat_100g ?? null, 100),
         inRange(n?.salt_100g ?? null, 100),
         inRange(n?.alcohol_100g ?? null, 100),
+        product.imageUrl?.trim().slice(0, 1000) || null,
       ],
       { op: "product_catalog.upsert" },
     );

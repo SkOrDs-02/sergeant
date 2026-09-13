@@ -58,6 +58,11 @@ export interface PickedFood {
    * віддає взагалі; `null` усередині — «спитали, немає».
    */
   nutrients?: ProductNutrients;
+  /**
+   * Фото продукту з OFF (U1). Транзитне, як і `nutrients`: у
+   * `FoodProduct` не їде. Немає — картка малює іконку категорії.
+   */
+  imageUrl?: string | null;
 }
 
 interface FoodPickerSectionProps {

@@ -22,6 +22,12 @@ function catalogRow(over: Record<string, unknown> = {}) {
     serving_size: null,
     serving_grams: null,
     source: "off",
+    fiber_100g: null,
+    sugars_100g: null,
+    saturated_fat_100g: null,
+    salt_100g: null,
+    alcohol_100g: null,
+    image_url: null,
     ...over,
   };
 }
@@ -47,7 +53,45 @@ describe("lookupInCatalog", () => {
       servingSize: null,
       servingGrams: null,
       source: "off",
+      imageUrl: null,
     });
+  });
+
+  // Ключ `nutrients` ставимо лише за наявності бодай одного числа: обʼєкт
+  // із пʼятьма `null` сказав би картці «джерело нутрієнти віддає, просто
+  // тут їх немає» — а рядок міг приїхати від джерела, яке їх не має.
+  it("рядок без жодного нутрієнта не отримує ключа `nutrients`", async () => {
+    queryMock.mockResolvedValue({ rows: [catalogRow()] });
+
+    const product = await lookupInCatalog("4823005203865");
+
+    expect(product).not.toBeNull();
+    expect("nutrients" in product!).toBe(false);
+  });
+
+  it("нутрієнти й фото з рядка доїжджають до контракту", async () => {
+    queryMock.mockResolvedValue({
+      rows: [
+        catalogRow({
+          fiber_100g: 2.7,
+          salt_100g: 1.2,
+          image_url: "https://images.openfoodfacts.org/f.200.jpg",
+        }),
+      ],
+    });
+
+    const product = await lookupInCatalog("4823005203865");
+
+    expect(product?.nutrients).toEqual({
+      fiber_100g: 2.7,
+      sugars_100g: null,
+      saturatedFat_100g: null,
+      salt_100g: 1.2,
+      alcohol_100g: null,
+    });
+    expect(product?.imageUrl).toBe(
+      "https://images.openfoodfacts.org/f.200.jpg",
+    );
   });
 
   it("віддає ОРИГІНАЛЬНЕ джерело, а не 'catalog'", async () => {
@@ -269,6 +313,37 @@ describe("upsertIntoCatalog", () => {
         `${col} = COALESCE(EXCLUDED.${col}, product_catalog.${col})`,
       );
     }
+  });
+
+  // ─── Фото продукту (U1) ──────────────────────────────────────────────
+
+  it("пише фото продукту", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await upsertIntoCatalog("4823005203865", {
+      ...product,
+      imageUrl: "https://images.openfoodfacts.org/f.200.jpg",
+    });
+
+    const params = queryMock.mock.calls[0]?.[1] as unknown[];
+    expect(params[17]).toBe("https://images.openfoodfacts.org/f.200.jpg");
+  });
+
+  /**
+   * Та сама форма, що з `alcohol_100g`: колонка `image_url` існує в
+   * міграції 123 з 2026-08, bulk-сід її пише, а runtime-шлях до
+   * 2026-09-13 — ні. Різниця лише в наслідку: спирт мовчки вбивав товар,
+   * фото просто ніколи не приїжджало.
+   */
+  it("на конфлікті НЕ затирає наявне фото порожнечею", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    await upsertIntoCatalog("4823005203865", product);
+
+    const sql = String(queryMock.mock.calls[0]?.[0]);
+    expect(sql).toContain(
+      "image_url = COALESCE(EXCLUDED.image_url, product_catalog.image_url)",
+    );
+    const params = queryMock.mock.calls[0]?.[1] as unknown[];
+    expect(params[17]).toBeNull();
   });
 
   it("помилку запису ковтає — користувач уже отримав продукт", async () => {
