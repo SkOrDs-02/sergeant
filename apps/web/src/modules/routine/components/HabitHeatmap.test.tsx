@@ -91,8 +91,12 @@ describe("HabitHeatmap", () => {
     const { container } = render(
       <HabitHeatmap habits={habits} completions={{}} skips={skips} />,
     );
+    // METRICS_VERSION 14: заявлений пропуск виходить зі знаменника, тож
+    // клітинка більше не каже «0 з 1» — вона каже те, що сталось насправді.
+    // Ярлик «нічого не заплановано» тут теж був би неправдою: заплановано
+    // було, людина повідомила, що не змогла.
     const cell = container.querySelector(
-      '[aria-label="2026-06-16: 0 з 1 запланованих, не зміг: 1"]',
+      '[aria-label="2026-06-16: не зміг: 1"]',
     );
     expect(cell).not.toBeNull();
     expect(cell).toHaveClass("border-dashed");

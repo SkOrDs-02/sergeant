@@ -262,15 +262,20 @@ export function buildHeatmapGrid(
         )
           continue;
         const isDone = completionSets.get(h.id)?.has(dateKey) ?? false;
+        // «Не зміг з причиною» виходить зі ЗНАМЕННИКА, а не рахується
+        // провалом — той самий рядок, що вже стоїть у
+        // `completionRateForRange` (`streaks.ts`). До METRICS_VERSION 14
+        // heatmap був єдиним конвеєром, де заявлений пропуск усе ще тягнув
+        // клітинку вниз: людина казала продукту «хворів», а сітка малювала
+        // це провалом. `skippedCnt` лишається — він дозволяє презентації
+        // відрізнити «увесь незакритий залишок дня — заявлені пропуски» від
+        // «мовчазний провал» (PR-R8, аудит 2026-09-13).
+        if (!isDone && opts.skips?.[h.id]?.[dateKey]) {
+          skippedCnt += 1;
+          continue;
+        }
         scheduledTotal += 1;
         if (isDone) scheduledCnt += 1;
-        // Покриття «не зміг з причиною» — ЧИСТО додатковий підрахунок, не
-        // зачіпає `scheduledTotal`/`scheduledCnt`/`ratio`: ці три числа вже
-        // побачив користувач, і рухати їх мовчки без версії метрик
-        // (`metricsVersion.ts`) заборонено. `skippedCnt` лише дозволяє
-        // презентації відрізнити «увесь незакритий залишок дня — заявлені
-        // пропуски» від «мовчазний провал» (аудит 2026-09, PR-R8).
-        else if (opts.skips?.[h.id]?.[dateKey]) skippedCnt += 1;
       }
 
       const cnt = useScheduled ? scheduledCnt : cntByDay[dateKey] || 0;
