@@ -474,14 +474,15 @@ describe("add_asset", () => {
 });
 
 describe("import_monobank_range", () => {
-  it("очищує кеш місяців у діапазоні і диспатчить подію", () => {
-    // month0: Jan=0 ... Mar=2, Apr=3, May=4, Jun=5
-    localStorage.setItem("finyk_tx_cache_2024_2", '{"stub":1}'); // березень — поза діапазоном
-    localStorage.setItem("finyk_tx_cache_2024_4", '{"stub":1}'); // травень
-    localStorage.setItem("finyk_tx_cache_2024_5", '{"stub":1}'); // червень
-    let dispatched = false;
-    const handler = () => {
-      dispatched = true;
+  // Тест раніше засівав ключі `finyk_tx_cache_<рік>_<місяць0>` і перевіряв, що
+  // дія їх зніме. Це був єдиний у репо автор такої форми ключа — тобто тест
+  // сам створював те, що потім «чистилось», а в продакшні чистити не було
+  // чого. Разом із мертвим циклом прибрано і той пін; лишається справжня
+  // робота дії — подія, яку слухає Фінік. Знахідка PR-T7.
+  it("диспатчить подію імпорту з валідним діапазоном", () => {
+    const seen: Array<{ from: string; to: string }> = [];
+    const handler = (e: Event) => {
+      seen.push((e as CustomEvent<{ from: string; to: string }>).detail);
     };
     window.addEventListener("hub:finyk-mono-import-range", handler);
     const msg = executeAction({
@@ -490,10 +491,10 @@ describe("import_monobank_range", () => {
     });
     window.removeEventListener("hub:finyk-mono-import-range", handler);
     expect(msg).toContain("2024-05-01");
-    expect(localStorage.getItem("finyk_tx_cache_2024_2")).not.toBeNull();
-    expect(localStorage.getItem("finyk_tx_cache_2024_4")).toBeNull();
-    expect(localStorage.getItem("finyk_tx_cache_2024_5")).toBeNull();
-    expect(dispatched).toBe(true);
+    expect(msg).toContain("2024-06-15");
+    // Відповідь більше не обіцяє чищення кешу, якого не відбувається.
+    expect(msg).not.toContain("Очищено кеш");
+    expect(seen).toEqual([{ from: "2024-05-01", to: "2024-06-15" }]);
   });
 
   it("відмовляє на некоректний формат дат", () => {

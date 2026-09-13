@@ -172,6 +172,10 @@ export function pickAdaptiveLift({
     return { liftedId: null, reason: null, score: 0 };
   }
 
+  // ADR-0078: це «яка зараз частина доби У ЛЮДИНИ», а не звітний період.
+  // Підняти Рутину зранку має сенс за годинником пристрою; київська година
+  // показала б мандрівнику чужий ранок.
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: день пристрою
   const hour = now.getHours();
   let best: {
     id: ModuleId;

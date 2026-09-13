@@ -45,6 +45,10 @@ function toDate(value: Date | string | number): Date | null {
 }
 
 function startOfDay(d: Date): number {
+  // ADR-0078: межа «Сьогодні / Вчора» тут особиста, не звітна. Поруч
+  // друкується година за годинником пристрою («Вчора о 23:40»), тож київська
+  // межа доби дала б пару, де підпис і час суперечать одне одному.
+  // eslint-disable-next-line sergeant-design/prefer-kyiv-time -- ADR-0078: день пристрою
   return new Date(d.getFullYear(), d.getMonth(), d.getDate()).getTime();
 }
 

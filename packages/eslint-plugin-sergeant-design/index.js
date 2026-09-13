@@ -2051,7 +2051,7 @@ const noConsolePii = {
 //   - Strategy `kyivMondayISO` uses `Intl.DateTimeFormat` directly and is
 //     itself the recommended pattern.
 //
-// See docs/04-governance/governance/rules/kyiv-time-helpers.md for the full
+// See docs/governance/governance/rules/kyiv-time-helpers.md for the full
 // doctrine table, the suppress-comment contract and the audit cross-ref.
 const PREFER_KYIV_TIME_MESSAGE =
   "Host-local date part ({{name}}) — make the day-boundary doctrine explicit (ADR-0078). " +
@@ -2059,7 +2059,7 @@ const PREFER_KYIV_TIME_MESSAGE =
   "(getKyivDateParts, getKyivDayKey, isSameKyivDay). The PERSONAL day (habit tick, meal " +
   "log, daily entry, streak) belongs to the DEVICE — that is canonical, so keep the host " +
   "getters and suppress with `-- ADR-0078: <why the device owns this day>`. " +
-  "See docs/04-governance/governance/rules/kyiv-time-helpers.md.";
+  "See docs/governance/governance/rules/kyiv-time-helpers.md.";
 
 const HOST_TIME_GETTERS = new Set([
   "getFullYear",
