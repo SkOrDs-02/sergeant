@@ -22,6 +22,7 @@ import {
   applySetCompletionNote,
   applySetHabitArchived,
   applySetHabitOrder,
+  applySetHabitSkip,
   applySetPref,
   applyToggleHabitCompletion,
   applyUpdateCategory,
@@ -630,6 +631,48 @@ describe("routine-domain/reducers — completions і нотатки", () => {
       });
       const s = stateWithHabits([habit]);
       expect(applyMarkAllScheduledHabitsComplete(s, "2026-01-05")).toBe(s);
+    });
+
+    // PR-R2 (продуктовий аудит 2026-09-13, хвиля 2): bulk-варіант писав
+    // completions напряму, минаючи `clearSkip` і `weekDoneCount` — три
+    // стани дня переставали бути взаємовиключними, а гнучка звичка з
+    // виконаною тижневою ціллю все одно отримувала зайву відмітку.
+
+    it("знімає «не зміг» на звичці, яку масово відмічено виконаною (три стани дня взаємно виключні)", () => {
+      const habit = makeHabit({ id: "h1" });
+      const withSkip = applySetHabitSkip(
+        stateWithHabits([habit]),
+        "h1",
+        "2026-01-05",
+        "sick",
+      );
+      expect(withSkip.skips?.["h1"]?.["2026-01-05"]).toBeDefined();
+
+      const next = applyMarkAllScheduledHabitsComplete(withSkip, "2026-01-05");
+
+      expect(next.completions["h1"]).toEqual(["2026-01-05"]);
+      expect(next.skips?.["h1"]?.["2026-01-05"]).toBeUndefined();
+    });
+
+    it("не позначає гнучку звичку, що вже виконала тижневу ціль (weekDoneCount проти дефолтної цілі 3)", () => {
+      // Тиждень 2026-01-05 (пн) — 2026-01-11 (нд). Ціль за замовчуванням — 3
+      // рази, і вона вже виконана трьома попередніми днями того ж тижня.
+      const habit = makeHabit({ id: "flex", recurrence: "flexible" });
+      const s: RoutineState = {
+        ...stateWithHabits([habit]),
+        completions: { flex: ["2026-01-05", "2026-01-06", "2026-01-07"] },
+      };
+      expect(applyMarkAllScheduledHabitsComplete(s, "2026-01-08")).toBe(s);
+    });
+
+    it("позначає гнучку звичку, поки тижнева ціль ще не досягнута", () => {
+      const habit = makeHabit({ id: "flex", recurrence: "flexible" });
+      const s: RoutineState = {
+        ...stateWithHabits([habit]),
+        completions: { flex: ["2026-01-05"] },
+      };
+      const next = applyMarkAllScheduledHabitsComplete(s, "2026-01-08");
+      expect(next.completions["flex"]).toEqual(["2026-01-05", "2026-01-08"]);
     });
   });
 

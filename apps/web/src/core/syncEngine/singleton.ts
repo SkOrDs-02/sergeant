@@ -25,6 +25,7 @@ import {
   createSyncEngineReaderRuntime,
   type SyncEngineReaderRuntime,
 } from "./syncEngineReader";
+import { recordOutboxPurgeNotice } from "./outboxPurgeNotice";
 
 type RuntimeFactory = () => Promise<SyncEngineWriterRuntime>;
 type ReaderRuntimeFactory = () => Promise<SyncEngineReaderRuntime>;
@@ -374,7 +375,15 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
     // maintenance failure never blocks the writer boot; a non-zero purge
     // emits a `sync_op_outbox.retention` breadcrumb for the Grafana
     // counter (same pattern as the quarantine breadcrumb below).
-    await sweepStaleTerminalOutbox({
+    //
+    // PR-T2 (2026-09-13 product review, "Тиха втрата даних"): the purge
+    // used to be entirely invisible to the user — `deadLetter`/`rejected`
+    // pills in `SyncStatusSheet` simply dropped to zero along with the
+    // rows they counted. `recordOutboxPurgeNotice` durably records the
+    // count so the sheet can surface "N old records were removed" the
+    // next time it renders, even though this sweep itself runs long
+    // before any UI mounts.
+    const purgedCount = await sweepStaleTerminalOutbox({
       purge: () =>
         dbSchema.purgeStaleTerminalOutbox(client, {
           olderThanDays: dbSchema.SYNC_OP_OUTBOX_STALE_TTL_DAYS,
@@ -386,6 +395,7 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
           context !== undefined ? { extra: context } : undefined,
         ),
     });
+    recordOutboxPurgeNotice(purgedCount);
 
     return client;
   };
