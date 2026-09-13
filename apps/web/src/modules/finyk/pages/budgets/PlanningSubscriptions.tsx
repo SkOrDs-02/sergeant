@@ -34,6 +34,7 @@ export function PlanningSubscriptions({
   storage,
   showBalance = true,
   initialOpen = false,
+  initialOpenRecurring = false,
   openSubscriptionSignal,
 }: {
   mono: AssetsProps["mono"];
@@ -41,6 +42,13 @@ export function PlanningSubscriptions({
   showBalance?: boolean;
   /** `?section=subscriptions` — розгорнути список одразу. */
   initialOpen?: boolean;
+  /**
+   * `?section=recurring` — розгорнути блок «Можливі підписки». Саме сюди
+   * веде хаб-інсайт «Знайшов повторення»: він тільки вказує, а деталі
+   * кандидата (сума, періодичність, впевненість) і кнопка «+ Підписка»
+   * живуть тут. Згорнутий блок робив би тап по інсайту беззмістовним.
+   */
+  initialOpenRecurring?: boolean;
   /**
    * Founder-UX audit round 2 (F2): триггер відкриття форми підписки з
    * комбінованого пікера «Запланувати», який тепер живе в `Budgets.tsx` —
@@ -130,6 +138,7 @@ export function PlanningSubscriptions({
         excludedTxIds={excludedTxIds}
         onAdd={(candidate) => addSubscriptionFromRecurring?.(candidate)}
         onDismiss={(key) => dismissRecurring?.(key)}
+        defaultOpen={initialOpenRecurring}
       />
 
       <div>

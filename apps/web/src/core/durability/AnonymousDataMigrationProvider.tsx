@@ -20,6 +20,12 @@ import { useToast } from "@shared/hooks/useToast";
 import { coreMessages as messages } from "@shared/i18n/uk.core";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
 
+import { captureException } from "../observability/sentry";
+import {
+  classifyTickError,
+  readOnlineStatus,
+} from "../syncEngine/tickErrorReport";
+
 import {
   LEGAL_COOKIES_PATH,
   LEGAL_OFFER_PATH,
@@ -199,6 +205,15 @@ function AuthenticatedMigrationGate({
 }) {
   const { success, warning } = useToast();
   const [state, setState] = useState<"running" | "ready" | "failed">("running");
+  /**
+   * `offline` — браузер сам сказав, що інтерфейсу немає, і текст помилки
+   * транспортний. Це не той самий випадок, що «перенос зламався»: користувач
+   * на LTE у метро отримував тривожну плашку про незахищені дані там, де
+   * чесна відповідь — «немає звʼязку, повторю пізніше».
+   */
+  const [failureKind, setFailureKind] = useState<"offline" | "generic">(
+    "generic",
+  );
   const [deferred, setDeferred] = useState(() => readDeferred(userId));
   const [transferring, setTransferring] = useState(false);
   const [probeGraceElapsed, setProbeGraceElapsed] = useState(false);
@@ -216,7 +231,25 @@ function AuthenticatedMigrationGate({
           success(messages.sync.anonymousMigrationSuccess);
         }
       })
-      .catch(() => setState("failed"))
+      .catch((error: unknown) => {
+        // AI-CONTEXT: до 2026-09-13 тут стояв голий `.catch(() => …)` —
+        // провал переносу не їхав ні в Sentry, ні в консоль, тож звіт
+        // власника «проблема з перенесенням якась» неможливо було
+        // діагностувати: у нас нема жодного поля про те, на якому кроці і
+        // з чим саме воно впало. Класифікацію беремо ту саму, що й
+        // sync-тіки (`tickErrorReport`), щоб офлайн-шум не залив issue.
+        const online = readOnlineStatus();
+        const verdict = classifyTickError(
+          error,
+          "anonymous-profile-migration",
+          online,
+        );
+        setFailureKind(verdict.report ? "generic" : "offline");
+        if (verdict.report) {
+          captureException(error, { extra: verdict.context });
+        }
+        setState("failed");
+      })
       // Синк піднімаємо в `finally`, а не в success-гілці: він потрібен і
       // після провалу переносу (юзер лишається в акаунті й натисне
       // «Перенести пізніше»), і на чистому пристрої, де переносити нічого.
@@ -241,6 +274,7 @@ function AuthenticatedMigrationGate({
 
   const retry = useCallback(() => {
     setState("running");
+    setFailureKind("generic");
     kickoff();
   }, [kickoff]);
 
@@ -290,7 +324,9 @@ function AuthenticatedMigrationGate({
                   className="mb-5 text-style-body leading-relaxed text-muted"
                   role="alert"
                 >
-                  {messages.sync.anonymousMigrationFailure}
+                  {failureKind === "offline"
+                    ? messages.sync.anonymousMigrationFailureOffline
+                    : messages.sync.anonymousMigrationFailure}
                 </p>
                 <div className="flex flex-col gap-2">
                   <Button onClick={retry}>
@@ -316,12 +352,39 @@ function AuthenticatedMigrationGate({
     );
   }
 
+  if (!showDeferredNotice) {
+    return (
+      <MigrationGateContext.Provider value={value}>
+        {children}
+      </MigrationGateContext.Provider>
+    );
+  }
+
   return (
     <MigrationGateContext.Provider value={value}>
-      {showDeferredNotice && (
+      {/*
+        AI-DANGER: плашка мусить жити у flex-колонці, а не просто «перед
+        дітьми». `#root` має `height: 100dvh` (у standalone — `100vh`) і
+        `overflow: hidden` (`styles/base.css`), а shell застосунку —
+        `h-app-dvh`, тобто `height: 100%` ВІД цього ж рута. Простий сусід
+        зверху зсовував shell рівно на свою висоту, і нижній навбар
+        виїжджав за обрізаний край рута: юзер бачив плашку і застосунок без
+        навігації (звіт власника 2026-09-13, скріншот PWA). Тут `flex-1
+        min-h-0` віддає shell рівно залишок висоти, а `shrink-0` не дає
+        плашці стиснутись у нечитабельний рядок.
+
+        Інсет верху дописаний у `pt-[calc(...)]`, а не окремою утилітою
+        `safe-area-pt`: обидві пишуть `padding-top` в одному шарі, і хто
+        переможе, вирішував би порядок правил у згенерованому CSS, а не
+        намір. Це друга половина того самого звіту: рут починається
+        під статус-баром, тож текст плашки заїжджав під динамічний острів.
+        Падінг (а не `top`) тягне фон `bg-warning-soft` у смугу інсету, і
+        під островом лишається колір плашки, а не порожнеча.
+      */}
+      <div className="flex h-full flex-col overflow-hidden">
         <div
           role="status"
-          className="flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-warning-soft px-4 py-2 text-center text-style-body text-warning-soft-fg"
+          className="shrink-0 flex flex-wrap items-center justify-center gap-x-3 gap-y-1 bg-warning-soft px-4 pb-2 pt-[calc(env(safe-area-inset-top,0px)+0.5rem)] text-center text-style-body text-warning-soft-fg"
         >
           <span>{messages.sync.anonymousMigrationDeferredNotice}</span>
           <button
@@ -332,8 +395,8 @@ function AuthenticatedMigrationGate({
             {messages.sync.anonymousMigrationDeferredRetry}
           </button>
         </div>
-      )}
-      {children}
+        <div className="min-h-0 flex-1">{children}</div>
+      </div>
     </MigrationGateContext.Provider>
   );
 }

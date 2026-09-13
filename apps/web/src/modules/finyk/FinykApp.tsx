@@ -300,6 +300,7 @@ export default function App({
                 storage={storage}
                 showBalance={showBalance}
                 initialOpen={focusAssetSection === "subscriptions"}
+                initialOpenRecurring={focusAssetSection === "recurring"}
                 openSubscriptionSignal={subscriptionFormSignal}
               />
             }

@@ -57,6 +57,8 @@ export const messagesEn: Partial<{
       "Moving your data into the profile and saving it to the server…",
     anonymousMigrationFailure:
       "Could not finish the migration. The data on this device was not deleted, but it is not protected by sync yet.",
+    anonymousMigrationFailureOffline:
+      "No connection, so the data could not be moved into the profile. It stayed on this device — retry once you are back online.",
     anonymousMigrationRetry: "Retry",
     anonymousMigrationDefer: "Continue, I'll migrate later",
     anonymousMigrationDeferredToast:
