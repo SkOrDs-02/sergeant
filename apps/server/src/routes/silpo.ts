@@ -409,7 +409,18 @@ async function withSyncDiagnosis(
     const diagnosis = await diagnoseSilpo(userId);
     if ("unavailable" in diagnosis) return err;
     logger.info({ msg: "silpo_sync_diagnosed", verdict: diagnosis.verdict });
-    return new ExternalServiceError(`${err.message}. ${diagnosis.verdict}`, {
+    // Вердикт ЗАМІНЯЄ загальну копію, а не дописується до неї.
+    //
+    // Перша версія дописувала («…недоступне. <вердикт>») — і це зробило
+    // результат нерозрізненним: власник відповів «так само пише змінили
+    // формат», а з тексту неможливо було зрозуміти, чи код не спрацював,
+    // чи спрацював і людина просто переказала початок речення. Ще й
+    // вердикт про справжній дрейф сам містить слово «формат».
+    //
+    // Тепер стара фраза не може зʼявитись на діагностованому шляху взагалі.
+    // Побачив «Сільпо змінили формат відповіді» — значить цей код НЕ
+    // виконався (образ старий), і це діагноз сам по собі.
+    return new ExternalServiceError(`Чеки не оновились. ${diagnosis.verdict}`, {
       code: err.code,
     });
   } catch (diagErr) {
