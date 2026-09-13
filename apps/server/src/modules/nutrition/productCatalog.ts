@@ -65,6 +65,11 @@ interface CatalogRow {
   serving_size: string | null;
   serving_grams: number | null;
   source: string;
+  fiber_100g: number | null;
+  sugars_100g: number | null;
+  saturated_fat_100g: number | null;
+  salt_100g: number | null;
+  alcohol_100g: number | null;
 }
 
 /**
@@ -99,7 +104,8 @@ export async function lookupInCatalog(
 ): Promise<BarcodeProduct | null> {
   const { rows } = await query<CatalogRow>(
     `SELECT name, brand, kcal_100g, protein_100g, fat_100g, carbs_100g,
-            serving_size, serving_grams, source
+            serving_size, serving_grams, source,
+            fiber_100g, sugars_100g, saturated_fat_100g, salt_100g, alcohol_100g
        FROM product_catalog
       WHERE barcode = $1
         AND (
@@ -146,7 +152,33 @@ export async function lookupInCatalog(
     // у відповіді API. Інакше довелося б розширювати enum і рухати
     // контрактну трійцю (Hard Rule #3) заради нічого.
     source: row.source as BarcodeProduct["source"],
+    // Ключ ставимо лише тоді, коли в рядку є бодай одне число: порожній
+    // обʼєкт із пʼятьма `null` сказав би картці продукту «джерело нутрієнти
+    // віддає, просто тут їх немає» — а насправді рядок міг приїхати від
+    // джерела, яке їх не віддає взагалі. Різниця цих двох «немає» —
+    // у докстрінгу `ProductNutrientsSchema`.
+    ...(hasAnyNutrient(row)
+      ? {
+          nutrients: {
+            fiber_100g: row.fiber_100g,
+            sugars_100g: row.sugars_100g,
+            saturatedFat_100g: row.saturated_fat_100g,
+            salt_100g: row.salt_100g,
+            alcohol_100g: row.alcohol_100g,
+          },
+        }
+      : {}),
   };
+}
+
+function hasAnyNutrient(row: CatalogRow): boolean {
+  return (
+    row.fiber_100g != null ||
+    row.sugars_100g != null ||
+    row.saturated_fat_100g != null ||
+    row.salt_100g != null ||
+    row.alcohol_100g != null
+  );
 }
 
 // ── Пошук їжі текстом ───────────────────────────────────────────────────────
@@ -300,6 +332,23 @@ function inRange(v: number | null, max: number): number | null {
  * `ON CONFLICT` оновлює рядок і зсуває `fetched_at` — за ним потім
  * шукатиметься застаріле (рецептури змінюються, а джерела про це не
  * повідомляють).
+ *
+ * AI-DANGER: `alcohol_100g` мусить писатись тут, і це не про показ у
+ * картці — його там і немає. Ворота якості в `lookupInCatalog` міряють
+ * `atwater_delta_kcal`, а та колонка рахує спирт четвертим доданком
+ * (`7 * COALESCE(alcohol_100g, 0)`, міграція 123). Етанол калорійний, але
+ * не є ні білком, ні жиром, ні вуглеводом, тож без нього формула оголошує
+ * битим КОЖЕН алкогольний напій: сухе вино — 82 ккал заявлених проти 11
+ * за макросами, горілка — 231 проти 0.
+ *
+ * Саме це тут і було зламано до 2026-09-13 (знахідка N9 аудиту): міграція
+ * завела колонку і пояснила, навіщо вона, bulk-сід її писав, а ЦЕЙ шлях —
+ * write-through від сканування — ні. Тобто захист, заради якого доданок
+ * існує, діяв лише на посіяних рядках, а на всьому, що приїжджало від
+ * живого скану, алкоголь мовчки випадав із каталогу назавжди: рядок
+ * лишався в таблиці, але ворота його більше не пропускали. Прибереш
+ * `alcohol_100g` зі списку колонок — повернеш рівно цю поведінку, і
+ * жоден тест схеми цього не помітить.
  */
 export async function upsertIntoCatalog(
   barcode: string,
@@ -329,13 +378,26 @@ export async function upsertIntoCatalog(
     inRange(product.carbs_100g, 100) != null;
   if (!hasAnyMacro) return;
 
+  // Нутрієнти понад КБЖВ. Джерело, яке їх не віддає, ключа не ставить
+  // взагалі — тоді в параметри йдуть NULL-и.
+  //
+  // ЧОМУ В `ON CONFLICT` САМЕ `COALESCE`, А НЕ `EXCLUDED.*`. Рядок міг
+  // приїхати з bulk-сіду (`scripts/seed-product-catalog.mjs` пише всі пʼять
+  // колонок), а зверху лягти write-through від джерела, яке нутрієнтів не
+  // має взагалі. Пряме присвоєння занулило б уже наявні дані — і разом із
+  // ними спирт, тобто одним сканом поверталася б рівно та поломка воріт
+  // Атвотера, яку ця зміна лікує. Нове значення виграє лише тоді, коли
+  // воно є; стерти нутрієнт порожнечею не можна.
+  const n = product.nutrients;
+
   try {
     await query(
       `INSERT INTO product_catalog
          (barcode, source, name, name_norm, brand,
           kcal_100g, protein_100g, fat_100g, carbs_100g,
-          serving_size, serving_grams, source_ref)
-       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12)
+          serving_size, serving_grams, source_ref,
+          fiber_100g, sugars_100g, saturated_fat_100g, salt_100g, alcohol_100g)
+       VALUES ($1,$2,$3,$4,$5,$6,$7,$8,$9,$10,$11,$12,$13,$14,$15,$16,$17)
        ON CONFLICT (barcode, source) DO UPDATE
          SET name = EXCLUDED.name,
              name_norm = EXCLUDED.name_norm,
@@ -347,6 +409,12 @@ export async function upsertIntoCatalog(
              serving_size = EXCLUDED.serving_size,
              serving_grams = EXCLUDED.serving_grams,
              source_ref = EXCLUDED.source_ref,
+             -- COALESCE навмисний — пояснення в коментарі над try.
+             fiber_100g = COALESCE(EXCLUDED.fiber_100g, product_catalog.fiber_100g),
+             sugars_100g = COALESCE(EXCLUDED.sugars_100g, product_catalog.sugars_100g),
+             saturated_fat_100g = COALESCE(EXCLUDED.saturated_fat_100g, product_catalog.saturated_fat_100g),
+             salt_100g = COALESCE(EXCLUDED.salt_100g, product_catalog.salt_100g),
+             alcohol_100g = COALESCE(EXCLUDED.alcohol_100g, product_catalog.alcohol_100g),
              fetched_at = NOW(),
              updated_at = NOW()`,
       [
@@ -362,6 +430,11 @@ export async function upsertIntoCatalog(
         product.servingSize?.trim().slice(0, 200) || null,
         inRange(product.servingGrams, 10000),
         `barcode-lookup:${product.source}`,
+        inRange(n?.fiber_100g ?? null, 100),
+        inRange(n?.sugars_100g ?? null, 100),
+        inRange(n?.saturatedFat_100g ?? null, 100),
+        inRange(n?.salt_100g ?? null, 100),
+        inRange(n?.alcohol_100g ?? null, 100),
       ],
       { op: "product_catalog.upsert" },
     );

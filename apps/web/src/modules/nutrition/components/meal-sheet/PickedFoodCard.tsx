@@ -24,6 +24,7 @@ import { useCoarsePointer } from "@shared/hooks/useCoarsePointer";
 import { useDecimalDraft } from "@shared/hooks/useDecimalDraft";
 import { cn } from "@shared/lib/ui/cn";
 import { MacroChip } from "./MacroChip";
+import { ProductNutrientsRow } from "./ProductNutrientsRow";
 import { macrosForGrams } from "../../lib/foodDb/foodDb";
 import { MAX_PORTION_GRAMS, type MealFormState } from "./mealFormUtils";
 import { useWheelGrams } from "./useWheelGrams";
@@ -177,6 +178,11 @@ export function PickedFoodCard({
           <Icon name="close" size={16} aria-hidden />
         </button>
       </div>
+
+      {/* Нутрієнти понад КБЖВ — лише перегляд, лише коли джерело їх дало */}
+      {pickedFood.nutrients && (
+        <ProductNutrientsRow nutrients={pickedFood.nutrients} />
+      )}
 
       {/* Порція з кроками */}
       <div className="px-4 pb-3 flex flex-wrap items-center gap-2">

@@ -36,7 +36,66 @@ describe("normalizeOFFBarcode", () => {
       servingSize: "15 g",
       servingGrams: 15,
       source: "off",
+      // Ключ присутній завжди — OFF нутрієнти віддає. `null` усередині
+      // означає «спитали, у цій картці немає»; ключа немає лише у джерел,
+      // які таких даних не мають узагалі (див. `ProductNutrientsSchema`).
+      nutrients: {
+        fiber_100g: null,
+        sugars_100g: null,
+        saturatedFat_100g: null,
+        salt_100g: null,
+        alcohol_100g: null,
+      },
     });
+  });
+
+  it("витягує нутрієнти понад КБЖВ із того самого блоку", () => {
+    const result = normalizeOFFBarcode({
+      product_name: "Хліб",
+      nutriments: {
+        ...nutriments,
+        fiber_100g: 2.71,
+        sugars_100g: 4.4,
+        "saturated-fat_100g": 0.26,
+        salt_100g: 1.2,
+      },
+    });
+    expect(result!.nutrients).toEqual({
+      fiber_100g: 2.7,
+      sugars_100g: 4.4,
+      saturatedFat_100g: 0.3,
+      salt_100g: 1.2,
+      alcohol_100g: null,
+    });
+  });
+
+  // Частина карток OFF заповнена з американських етикеток, де друкують
+  // натрій, а не сіль. Коефіцієнт 2.5 — стехіометрія NaCl, не наближення.
+  it("рахує сіль із натрію, коли прямого поля немає", () => {
+    const result = normalizeOFFBarcode({
+      product_name: "Чипси",
+      nutriments: { ...nutriments, sodium_100g: 0.5 },
+    });
+    expect(result!.nutrients.salt_100g).toBe(1.3);
+  });
+
+  it("пряма сіль виграє в натрію, якщо є обидва", () => {
+    const result = normalizeOFFBarcode({
+      product_name: "Чипси",
+      nutriments: { ...nutriments, salt_100g: 1.1, sodium_100g: 0.5 },
+    });
+    expect(result!.nutrients.salt_100g).toBe(1.1);
+  });
+
+  // Не для показу в картці, а для воріт Атвотера: без спирту формула
+  // оголошує битим кожен алкогольний напій (див. AI-DANGER у
+  // `productCatalog.ts`).
+  it("тягне спирт, хоча в картці його не показуємо", () => {
+    const result = normalizeOFFBarcode({
+      product_name: "Вино сухе",
+      nutriments: { ...nutriments, alcohol_100g: 11.5 },
+    });
+    expect(result!.nutrients.alcohol_100g).toBe(11.5);
   });
 
   it("prefers product_name_uk over product_name", () => {

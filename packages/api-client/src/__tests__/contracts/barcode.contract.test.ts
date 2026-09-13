@@ -52,6 +52,16 @@ describe("contract @ GET /api/v1/barcode", CONTRACT_SUITE_OPTIONS, () => {
             servingSize: "250 ml",
             servingGrams: 250,
             source: "off",
+            // Нутрієнти понад КБЖВ (N9). Ключ присутній, бо джерело — OFF,
+            // яке такі дані віддає; `alcohol_100g: null` тут означає
+            // «спитали, у картці немає», а не «не питали».
+            nutrients: {
+              fiber_100g: 0,
+              sugars_100g: 4.8,
+              saturatedFat_100g: 1.2,
+              salt_100g: 0.1,
+              alcohol_100g: null,
+            },
           },
         });
       })
@@ -72,6 +82,12 @@ describe("contract @ GET /api/v1/barcode", CONTRACT_SUITE_OPTIONS, () => {
         // for upstream-driven floats).
         expect(typeof product.protein_100g).toBe("number");
         expect(typeof product.servingGrams).toBe("number");
+        // Нутрієнти їдуть тим самим контрактом — не окремим ендпоінтом
+        // і не «як-небудь». Нуль тут значущий: 0 г клітковини — це факт,
+        // а не відсутність даних, тому перевіряємо саме значення.
+        expect(product.nutrients?.fiber_100g).toBe(0);
+        expect(product.nutrients?.saturatedFat_100g).toBe(1.2);
+        expect(product.nutrients?.alcohol_100g).toBeNull();
       });
   });
 });

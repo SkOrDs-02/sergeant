@@ -32,6 +32,14 @@ export interface OFFSearchProduct {
 
 // ── Normalized output types ──────────────────────────────────────────────────
 
+export interface NormalizedOFFNutrients {
+  fiber_100g: number | null;
+  sugars_100g: number | null;
+  saturatedFat_100g: number | null;
+  salt_100g: number | null;
+  alcohol_100g: number | null;
+}
+
 export interface NormalizedOFFBarcode {
   name: string;
   brand: string | null;
@@ -42,6 +50,14 @@ export interface NormalizedOFFBarcode {
   servingSize: string | null;
   servingGrams: number | null;
   source: "off";
+  /**
+   * Завжди присутній для OFF — на відміну від решти джерел каскаду, які
+   * ключ узагалі не ставлять. OFF нутрієнти віддає; `null` усередині
+   * означає «спитали, у цій картці немає», а не «не питали».
+   * Структурно збігається з `ProductNutrientsSchema`
+   * (`@sergeant/shared/schemas`) — Hard Rule #3.
+   */
+  nutrients: NormalizedOFFNutrients;
 }
 
 export interface NormalizedOFFSearch {
@@ -90,6 +106,39 @@ function extractNutriments(
   };
 }
 
+/**
+ * Нутрієнти понад КБЖВ із того самого блоку `nutriments`.
+ *
+ * Дані тут не нові — `barcode.ts` уже запитує повний блок `nutriments`, тож
+ * ці пʼять чисел фізично приїжджали у відповіді OFF і викидались саме тут
+ * (знахідка N9 аудиту 2026-09-11).
+ *
+ * ДВА ІМЕНІ НА СІЛЬ. OFF віддає `salt_100g` не завжди, а `sodium_100g` —
+ * частіше, бо частина карток заповнена з американських етикеток. Перерахунок
+ * ×2.5 — не наближення: це стехіометрія NaCl (молярна маса 58.44 проти 22.99
+ * у натрію), той самий коефіцієнт, що в Reg. (EU) 1169/2011 Annex I.
+ *
+ * `alcohol_100g` тягнемо попри те, що в картці продукту його не показуємо —
+ * без нього ворота Атвотера відсіюють кожен алкогольний напій як «зіпсований
+ * джерелом». Пояснення — в докстрінгу `ProductNutrientsSchema`.
+ */
+function extractExtraNutrients(
+  nutriments: Record<string, unknown> | undefined | null,
+): NormalizedOFFNutrients {
+  const n = (nutriments || {}) as Record<string, unknown>;
+  const saltDirect = round1(n["salt_100g"] ?? null);
+  const sodium = round1(n["sodium_100g"] ?? null);
+  return {
+    fiber_100g: round1(n["fiber_100g"] ?? null),
+    sugars_100g: round1(n["sugars_100g"] ?? null),
+    saturatedFat_100g: round1(n["saturated-fat_100g"] ?? null),
+    salt_100g:
+      saltDirect ??
+      (sodium == null ? null : Math.round(sodium * 2.5 * 10) / 10),
+    alcohol_100g: round1(n["alcohol_100g"] ?? null),
+  };
+}
+
 function hasSomeMacro(m: ExtractedMacros): boolean {
   return (
     m.kcal != null || m.protein != null || m.fat != null || m.carbs != null
@@ -128,6 +177,7 @@ export function normalizeOFFBarcode(
     servingSize,
     servingGrams,
     source: "off",
+    nutrients: extractExtraNutrients(product.nutriments),
   };
 }
 

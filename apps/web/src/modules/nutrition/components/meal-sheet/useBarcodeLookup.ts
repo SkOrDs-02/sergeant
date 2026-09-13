@@ -135,7 +135,14 @@ export function useBarcodeLookup({
         },
         updatedAt: Date.now(),
       };
-      setPickedFood(fakeFood);
+      // Нутрієнти йдуть повз `fakeFood` навмисно: той типізований як
+      // `FoodProduct` і саме в такому вигляді лягає в локальну базу їжі
+      // (`bindBarcodeToFood` нижче). Поле там означало б міграцію
+      // сховища; тут воно потрібне лише картці на час аркуша.
+      setPickedFood({
+        ...fakeFood,
+        ...(p.nutrients ? { nutrients: p.nutrients } : {}),
+      });
       setPickedGrams(gramsStr);
       setForm((s) => ({
         ...s,
