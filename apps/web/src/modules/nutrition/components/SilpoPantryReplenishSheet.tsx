@@ -55,7 +55,13 @@ function CollapseHint({
 }) {
   if (!row.genericName) return null;
   return (
-    <div className="flex items-center gap-2 pl-[38px] pr-1 pb-1">
+    // Відступ тримає підказку під назвою позиції, а не під чекбоксом, тож
+    // він СУМУЄ провідні елементи рядка: `px-1` (4) + чекбокс `w-5` (20)
+    // + `gap-2.5` (10) + іконка `size={16}` (16) + той самий gap (10) =
+    // 60px. Міняєш склад або розміри провідних елементів у
+    // `ReceiptItemRow` — перерахуй тут; звʼязок структурний, але
+    // виражений числом, і мовчить, коли розходиться.
+    <div className="flex items-center gap-2 pl-[60px] pr-1 pb-1">
       <span className="min-w-0 text-style-caption text-subtle truncate">
         {row.keepFull ? (
           COPY.keepFullActive
