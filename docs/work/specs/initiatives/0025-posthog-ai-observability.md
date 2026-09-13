@@ -129,7 +129,7 @@ AI-шар (HubChat, weekly digest, vision-аналіз чеків і їжі) с�
 
 | PR                                                       | Title                                                                                 | Merged     |
 | -------------------------------------------------------- | ------------------------------------------------------------------------------------- | ---------- |
-| [#1067](https://github.com/Skords-01/Sergeant/pull/1067) | feat(server): емітити PostHog $ai_generation з центрального AI-клієнта (0025, Фаза 1) | 2026-09-03 |
+| [#1067](https://github.com/SkOrDs-02/sergeant/pull/1067) | feat(server): емітити PostHog $ai_generation з центрального AI-клієнта (0025, Фаза 1) | 2026-09-03 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

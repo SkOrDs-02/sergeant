@@ -1,6 +1,6 @@
 # Encryption key rotation — runbook
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-19.
+> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-21.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -283,7 +283,7 @@ Deploy. Тепер read-у row-а під v1 буде throw-ити з `keyRing` �
 
 | PR                                                     | Title                                                 | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo | 2026-07-29 |
+| [#508](https://github.com/SkOrDs-02/sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo | 2026-07-29 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

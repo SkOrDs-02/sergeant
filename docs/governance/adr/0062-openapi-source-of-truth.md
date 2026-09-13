@@ -33,7 +33,7 @@ preserve dead file names in the decision text.
 
 | PR                                                     | Title                                                                   | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------------------------- | ---------- |
-| [#689](https://github.com/Skords-01/Sergeant/pull/689) | fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого | 2026-08-07 |
+| [#689](https://github.com/SkOrDs-02/sergeant/pull/689) | fix(ci): governance-sync відрізняє живе посилання від навмисно мертвого | 2026-08-07 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

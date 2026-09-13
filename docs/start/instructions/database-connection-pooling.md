@@ -1,6 +1,6 @@
 # Database connection pooling — runbook (PR #046)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-20.
+> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-22.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -175,7 +175,7 @@ HTTP request ────┤
 
 | PR                                                     | Title                                                 | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------- | ---------- |
-| [#508](https://github.com/Skords-01/Sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo | 2026-07-29 |
+| [#508](https://github.com/SkOrDs-02/sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo | 2026-07-29 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

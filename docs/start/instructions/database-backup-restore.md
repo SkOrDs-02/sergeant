@@ -1,6 +1,6 @@
 # Database backup / restore — runbook (PR #049)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-18.
+> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-20.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -277,7 +277,7 @@ job is the automated smoke, not a replacement for operator practice.
 
 | PR                                                     | Title                                                                                                                   | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
-| [#334](https://github.com/Skords-01/Sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
+| [#334](https://github.com/SkOrDs-02/sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

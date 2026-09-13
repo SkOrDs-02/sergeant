@@ -57,7 +57,7 @@ middleware. Клієнтські тести мають лишати видими
 
 | PR                                                       | Title                                                                     | Merged     |
 | -------------------------------------------------------- | ------------------------------------------------------------------------- | ---------- |
-| [#1064](https://github.com/Skords-01/Sergeant/pull/1064) | feat(root): закрити F1 анти-слоп аудиту, першу хвилю F7 і хвости техборгу | 2026-09-03 |
+| [#1064](https://github.com/SkOrDs-02/sergeant/pull/1064) | feat(root): закрити F1 анти-слоп аудиту, першу хвилю F7 і хвости техборгу | 2026-09-03 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

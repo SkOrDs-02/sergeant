@@ -303,8 +303,8 @@ psql "$DATABASE_URL" -c "INSERT INTO ai_memories (user_id, source, content) VALU
 
 | PR                                                       | Title                                                                         | Merged     |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
-| [#1071](https://github.com/Skords-01/Sergeant/pull/1071) | fix(server): звіряти RAG-евал і parity-тест зі STORED, а не ALLOWED джерелами | 2026-09-03 |
-| [#1068](https://github.com/Skords-01/Sergeant/pull/1068) | feat(server): перестати приймати мертві джерела ai_memories (0024, PR-1)      | 2026-09-03 |
+| [#1071](https://github.com/SkOrDs-02/sergeant/pull/1071) | fix(server): звіряти RAG-евал і parity-тест зі STORED, а не ALLOWED джерелами | 2026-09-03 |
+| [#1068](https://github.com/SkOrDs-02/sergeant/pull/1068) | feat(server): перестати приймати мертві джерела ai_memories (0024, PR-1)      | 2026-09-03 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

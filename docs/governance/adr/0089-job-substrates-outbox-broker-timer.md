@@ -42,7 +42,7 @@ implicit scheduler or claim that all jobs share one queue implementation.
 
 | PR                                                       | Title                                                                         | Merged     |
 | -------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
-| [#1043](https://github.com/Skords-01/Sergeant/pull/1043) | docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення | 2026-09-02 |
+| [#1043](https://github.com/SkOrDs-02/sergeant/pull/1043) | docs(docs): статуси ADR за фактом реалізації + спеки на RLS і вікно видалення | 2026-09-02 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
