@@ -16,7 +16,7 @@
  *      stores + the two `keyPath` indexes), the dbGet/dbSet/dbDel
  *      wrappers, and the `migrateLegacyDbOnce()` flow.
  *
- * Follow-up to `docs/testing/2026-05-05-tests-pr-plan.md` → PR-T03.
+ * Follow-up to `docs/engineering/testing/2026-05-05-tests-pr-plan.md` → PR-T03.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
 import { IDBFactory } from "fake-indexeddb";

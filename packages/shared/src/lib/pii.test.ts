@@ -114,7 +114,7 @@ describe("REDACT_KEY_NAMES", () => {
   it("covers the canonical Class A + Class B fields from pii-handling.md", () => {
     // Spot-check: if any of these names ever disappears from the canonical
     // list, downstream redaction silently regresses. Documentation lives in
-    // docs/security/pii-handling.md.
+    // docs/governance/security/pii-handling.md.
     const required = [
       "password",
       "token",

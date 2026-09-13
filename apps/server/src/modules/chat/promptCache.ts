@@ -36,7 +36,7 @@ import {
  *    SYSTEM_PREFIX ≈ 14 400-21 200 токенів.** Тут раніше стояло «~19 шт» і
  *    «~6000+ токенів» — застаріло в 2.4-3.5 рази, і на цій цифрі вже було
  *    побудовано заниження unit-економіки (див.
- *    `docs/01-product/launch/business/01-monetization-and-pricing.md` § 9.5).
+ *    `docs/work/specs/launch/business/01-monetization-and-pricing.md` § 9.5).
  *
  *    Саме цей вимір і породив дві зміни нижче — TTL=1h і tool search.
  *

@@ -1,5 +1,5 @@
 /**
- * RN port of web's `useVoiceInput` (Phase 8 — `docs/mobile/react-native-migration.md` §6.5).
+ * RN port of web's `useVoiceInput` (Phase 8 — `docs/engineering/mobile/react-native-migration.md` §6.5).
  *
  * Тримаємо публічний API сумісним з web-варіантом
  * (`apps/web/src/shared/components/ui/voice/useVoiceInput.ts`):

@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Плашка «залий документи» — стан і рішення (спека
- * `docs/90-work/planning/specs/finyk-import-reminders.md`).
+ * `docs/work/specs/finyk-import-reminders.md`).
  *
  * AI-DANGER: годинник тут ВЛАСНИЙ, і це не стилістика. Умова плашки
  * («днів від останнього імпорту») росте від ЧАСУ, а не від даних: поки

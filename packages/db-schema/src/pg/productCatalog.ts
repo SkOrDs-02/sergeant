@@ -19,7 +19,7 @@ import { sql } from "drizzle-orm";
  *
  *   * Рядки походженням `off` мусять лишатись відокремлюваними одним
  *     `WHERE source = 'off'` — цього вимагає share-alike ODbL 1.0
- *     (патерн Yuka з `docs/90-work/planning/barcode-database-research.md`).
+ *     (патерн Yuka з `docs/work/specs/planning/barcode-database-research.md`).
  *     Не «зливай» джерела в один рядок на штрихкод.
  *   * PK композитний `(barcode, source)`: один штрихкод має по рядку на
  *     кожне джерело, бо джерела реально не згодні між собою. Пріоритет

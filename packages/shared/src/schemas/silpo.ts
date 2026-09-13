@@ -7,7 +7,7 @@ import { z } from "zod";
  * its wire types from the same `z.infer<>` (added in the api-client-agent
  * follow-up stage of this squad run).
  *
- * Spec: `docs/90-work/planning/specs/silpo-mcp-integration.md`. This is the
+ * Spec: `docs/work/specs/silpo-mcp-integration.md`. This is the
  * **walking-skeleton experiment** (§ Експеримент, 2026-08-17) — the live
  * MCP endpoint has not been exercised yet (spike §0 pending), so the DTOs
  * below describe our OWN normalized storage shape (`silpo_receipts` /

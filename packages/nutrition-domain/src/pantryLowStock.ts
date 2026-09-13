@@ -1,6 +1,6 @@
 /**
  * Мінімальний low-stock сигнал для комори (Silpo integration трек C, спека
- * `docs/90-work/planning/specs/silpo-mcp-integration.md` § «Комора —
+ * `docs/work/specs/silpo-mcp-integration.md` § «Комора —
  * через готовий ledger»: «Low-stock додається як наслідок»).
  *
  * AI-CONTEXT: залишок УЖЕ обчислюваний дешево — `qty` на позиції комори

@@ -1,7 +1,7 @@
 /**
  * `user_profile.payload.memoryBank` → `ai_memories` (`source='profile'`)
  * дзеркалення. L-8 Фаза 2 (2026-08-09,
- * docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md).
+ * docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md).
  *
  * Контекст: Фаза 1 (міграція 118) розширила `ALLOWED_MEMORY_SOURCES` +
  * CHECK-constraint значенням `'profile'`, але лишила його "дозволеним, але

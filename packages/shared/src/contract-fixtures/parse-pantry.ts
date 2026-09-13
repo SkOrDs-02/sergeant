@@ -23,7 +23,7 @@
  *   (`items: []`); `rawText` preserves the model reply for audit.
  *
  * Closes contract slice PR-T30 from
- * `docs/testing/2026-05-05-tests-pr-plan.md` (web `/api/nutrition/parse-pantry`
+ * `docs/engineering/testing/2026-05-05-tests-pr-plan.md` (web `/api/nutrition/parse-pantry`
  * consumer contract).
  */
 

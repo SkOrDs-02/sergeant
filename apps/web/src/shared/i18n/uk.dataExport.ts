@@ -48,7 +48,7 @@ export const dataExportMessages = {
    * AI-CONTEXT: текст живе поруч із кнопками експорту навмисно — це те
    * саме місце, куди людина приходить із питанням «що ви знаєте про
    * мене й куди воно дівається». Повний перелік і межі маскування:
-   * `docs/04-governance/security/llm-subprocessors.md`.
+   * `docs/governance/security/llm-subprocessors.md`.
    */
   subprocessors: {
     title: "Куди їдуть дані для AI",

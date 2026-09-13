@@ -2,7 +2,7 @@
  * Хвиля 2 — канонічні імена подій «петель цінності»
  * («сигнал показано → дію зроблено»).
  *
- * Джерело: `docs/90-work/planning/product-knowledge-backlog.md` § Хвиля 2.
+ * Джерело: `docs/work/specs/planning/product-knowledge-backlog.md` § Хвиля 2.
  *
  * Живе окремим модулем від `analyticsEvents.ts` виключно заради
  * module-size-дисципліни (Hard Rule #18) — реєстр лишається один:

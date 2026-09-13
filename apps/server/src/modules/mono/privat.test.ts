@@ -16,7 +16,7 @@ vi.mock("../../obs/logger.js", () => ({
 
 // Креденшели більше не приходять із заголовків — вони лежать зашифровані
 // в `privat_connection` і резолвляться за сесією (спека
-// `docs/90-work/planning/specs/beta-security-readiness.md`, F1).
+// `docs/work/specs/beta-security-readiness.md`, F1).
 vi.mock("./privatStore.js", () => ({
   loadPrivatCredentials: vi.fn(),
 }));

@@ -111,7 +111,7 @@ function appendMonthlyTotals(lines: string[], d: AllData, now: Date): void {
   // помилка мовчки залежала від того, скільки історії встиг накопичити
   // клієнт. Тепер вікно явне, а самі суми рахує канонічна
   // `calcFinykPeriodAggregate` — та сама, що обслуговує дайджест і
-  // Hub-Reports (реєстр: docs/02-engineering/architecture/metric-registry.md).
+  // Hub-Reports (реєстр: docs/engineering/architecture/metric-registry.md).
   //
   // Межі місяця — host-local, як у дайджеста і Hub-Reports. Київська межа
   // доби лишається окремим боргом на всіх поверхнях одразу (стадія 5г):

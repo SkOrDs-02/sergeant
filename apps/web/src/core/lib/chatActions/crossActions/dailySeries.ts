@@ -207,7 +207,7 @@ function readFinyk(sign: "spending" | "income"): Map<string, number> {
   // Mono-дзеркало, і для тестера без Monobank метрики spending/income
   // були порожні назавжди — жодна курована пара з Фініком не могла
   // заговорити (знахідка F7 репетиції бета-прогону,
-  // docs/90-work/audits/2026-08-07-beta-rehearsal-run.md).
+  // docs/work/specs/audits/2026-08-07-beta-rehearsal-run.md).
   const { txs, splits } = loadFinykSpending();
   for (const t of txs) {
     if (!t.time) continue;

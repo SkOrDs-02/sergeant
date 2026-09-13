@@ -13,7 +13,7 @@
  * який бачить клієнт, camelCase (`ImportScreenshotDraftSchema`,
  * `@sergeant/shared`) — мапінг у `screenshotAnalyze.ts#normalizeImportScreenshotResult`.
  *
- * Спека (`docs/90-work/planning/specs/receipt-scan.md` § «Фаза 2» →
+ * Спека (`docs/work/specs/receipt-scan.md` § «Фаза 2» →
  * «Рішення дизайну Фази 2» → «Скрін банкінгу — це транзакції без позицій,
  * НЕ чек») зобовʼязує промпт:
  *   - ігнорувати рядки балансу/«Доступно»/лімітів;

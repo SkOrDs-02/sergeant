@@ -218,7 +218,7 @@ const EXEMPT_ROUTES: ReadonlySet<string> = new Set([
   //
   // NOT here: `/api/chat`, `/api/weekly-digest`. Both used to be anonymous
   // (IP-keyed AI quota) and lived in this list, but the AI-abuse audit
-  // (finding A1, `docs/90-work/audits/ai-abuse-2026-08-05.md`) found that an
+  // (finding A1, `docs/work/specs/audits/ai-abuse-2026-08-05.md`) found that an
   // IP-keyed quota is not a real limit for an IPv6 client (a whole /64 under
   // one subscription) and that both routes spend the owner's Anthropic key —
   // a per-user feature, not a public proxy. Both now sit behind

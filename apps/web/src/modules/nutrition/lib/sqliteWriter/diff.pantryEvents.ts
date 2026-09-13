@@ -8,8 +8,8 @@
  * адаптера: append-only-семантика фізично відокремлена від LWW-diff-у
  * решти nutrition-сутностей.
  *
- * Канон: docs/01-product/model/nutrition.md §9
- * ADR:   docs/04-governance/adr/0077-pantry-append-only-ledger.md
+ * Канон: docs/product/modules/nutrition.md §9
+ * ADR:   docs/governance/adr/0077-pantry-append-only-ledger.md
  */
 import type { NutritionDualWriteOp, NutritionDualWriteState } from "./diff.js";
 

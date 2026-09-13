@@ -434,7 +434,7 @@ describe("pg/nutritionPantryEvents schema snapshot", () => {
     // Клієнт генерує НЕ-UUID id (`home`, `p_<ms>_<idx>`,
     // `<pantryId>::<idx>::<name>`), тож UUID тут дав би 22P02 на кожному
     // реальному push-і — той самий баг, що в
-    // docs/90-work/tech-debt/backend.md § «Routine: PK-тип».
+    // docs/work/specs/tech-debt/backend.md § «Routine: PK-тип».
     const columnMap = Object.fromEntries(
       config.columns.map((c) => [c.name, c]),
     );

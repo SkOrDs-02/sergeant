@@ -82,7 +82,7 @@ export function DataExportSection() {
       </p>
       <HubBackupPanel className="" />
 
-      {/* V-12 (аудит 2026-08-08, docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md
+      {/* V-12 (аудит 2026-08-08, docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md
           §5): три саморобні `<h3 class="text-style-label">` → спільний
           примітив `SettingsSubGroup` (h3, `text-style-overline`) — той
           самий рецепт, канонічно пояснений у `PrivacySection.tsx`.

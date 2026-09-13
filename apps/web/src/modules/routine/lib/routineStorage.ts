@@ -172,7 +172,7 @@ export function saveRoutineState(next: RoutineState): boolean {
  * СТАРТ hero card, and the card never comes back — so if the write never
  * reached SQLite, the visitor has traded their first action for nothing and
  * finds an empty module after reload. The spec
- * (`docs/90-work/planning/specs/anonymous-local-first-persistence.md`,
+ * (`docs/work/specs/anonymous-local-first-persistence.md`,
  * «Похідне правило») requires a CONFIRMED durable write before the block is
  * marked spent. This is that confirmation: `dualWriteRoutineState` resolves
  * with `status: "applied"` only after the ops actually landed, and reports

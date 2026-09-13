@@ -15,7 +15,7 @@
  *   2. Authorized `GET /api/me` riding the real session cookie Better
  *      Auth just issued → 200 + `MeResponseSchema`-shaped user. The
  *      opaque Better Auth id is asserted as a 32-char alphanumeric
- *      string (see `docs/02-engineering/architecture/domain-invariants.md`)
+ *      string (see `docs/engineering/architecture/domain-invariants.md`)
  *      — deliberately NOT a UUID-format assertion.
  *   3. Negative control: same route, same server, no cookie → 401
  *      UNAUTHORIZED.

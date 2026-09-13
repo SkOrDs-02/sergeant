@@ -16,7 +16,7 @@ import { changePassword } from "../auth/authClient";
 /**
  * Зод-схема — локальна, узгоджена за повідомленнями з `ResetPasswordPage`.
  * Меседжі — з `messages.validation.*` (`apps/web/src/shared/i18n/uk.ts`),
- * див. `docs/i18n/readiness.md`. `confirm` валідуємо через `superRefine`,
+ * див. `docs/design/i18n/readiness.md`. `confirm` валідуємо через `superRefine`,
  * щоб помилка лягла саме на поле підтвердження — стандартний RHF-pattern
  * для cross-field перевірок.
  */

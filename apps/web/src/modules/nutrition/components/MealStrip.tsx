@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Hero-стрічка дня Їжі (спека
- * `docs/90-work/planning/specs/nutrition-hero-day-strip.md`, анти-слоп
+ * `docs/work/specs/nutrition-hero-day-strip.md`, анти-слоп
  * аудит Q3/F6). Замінює `ProgressRing` + `MacroRings` у
  * `NutritionDashboard`'s `prominence="hero"` картці: чотири сегменти за
  * `MEAL_ORDER` (не за фактичним порядком запису — інакше стрічка різна

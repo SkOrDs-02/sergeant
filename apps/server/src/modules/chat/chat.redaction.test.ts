@@ -163,7 +163,7 @@ describe("маскування на вході чату", () => {
     expect(sent).not.toContain("ivan@mail.com");
   });
 
-  // Знахідка B2 (`docs/90-work/audits/ai-pipeline-2026-08-05.md`): Anthropic —
+  // Знахідка B2 (`docs/work/specs/audits/ai-pipeline-2026-08-05.md`): Anthropic —
   // не єдиний стік за периметром. `truncateToolResults` кладе ПОВНИЙ оригінал
   // у Sentry-breadcrumb (`data.full`), а `applyBeforeBreadcrumb` чистить `data`
   // лише для `category: "http"`. Поки маска стояла ПІСЛЯ усічення, сирі імена

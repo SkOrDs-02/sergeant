@@ -58,7 +58,7 @@ export const STORAGE_KEYS = {
   FINYK_QUICK_STATS: "finyk_quick_stats",
   /**
    * Snooze/mute плашки «залий документи» (спека
-   * `docs/90-work/planning/specs/finyk-import-reminders.md`).
+   * `docs/work/specs/finyk-import-reminders.md`).
    *
    * Свідомо localStorage, а не `finyk_prefs.prefs_json`: це стан
    * відхилення підказки, а не дані користувача. Ціна помилки при втраті

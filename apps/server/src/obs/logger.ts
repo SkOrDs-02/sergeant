@@ -198,7 +198,7 @@ export const redactPaths = [
   "req.body.token",
   "req.body.currentPassword",
   "req.body.newPassword",
-  // B43 (`docs/90-work/audits/ai-testing-2026-08-25.md`) — тіла AI-запитів.
+  // B43 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — тіла AI-запитів.
   // Досі розмова не текла в логи лише тому, що її НІХТО не логував: політики
   // не було, був щасливий збіг. Один `logger.error({ req })` на chat-шляху
   // (а pino-std `req`-серіалізатор тягне body) опублікував би листування

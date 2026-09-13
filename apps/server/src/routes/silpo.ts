@@ -57,7 +57,7 @@ import { parseBody } from "../http/validate.js";
  * дефолтом: обидва продуктові гейти знято 2026-08-18 (оферта — як
  * операційний ризик, приватність — текст затверджено), але вмикання в
  * проді — окремий ops-крок із власним DCR-клієнтом
- * (`docs/00-start/playbooks/enable-silpo-integration.md`).
+ * (`docs/start/instructions/enable-silpo-integration.md`).
  *
  * Сесію вимагають УСІ роути, крім `GET /api/silpo/callback`: він
  * реєструється до router-level `requireSession()`, бо приземляється на

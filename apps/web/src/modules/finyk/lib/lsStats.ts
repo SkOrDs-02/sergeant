@@ -148,7 +148,7 @@ interface CategoryLike {
  * ⚠️ Це ПЕРША зміна Хвилі 1, що піднімає видиме число, — тому вона йде
  * разом із бампом `METRICS_VERSION` (3 → 4). Тренд через цю межу будувати
  * не можна: інакше коуч прочитає стрибок визначення як «ти став витрачати
- * більше». Реєстр: docs/02-engineering/architecture/metric-registry.md.
+ * більше». Реєстр: docs/engineering/architecture/metric-registry.md.
  */
 export interface FinykStatsContext {
   txs: BankTxLike[];

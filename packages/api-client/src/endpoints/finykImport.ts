@@ -15,7 +15,7 @@ import type { RequestOptions } from "../types";
 
 /**
  * `POST /api/finyk/import/*` + `GET`/`DELETE /api/finyk/import/batches/:id`
- * — «Масове ведення» (`docs/90-work/planning/specs/receipt-scan.md` §
+ * — «Масове ведення» (`docs/work/specs/receipt-scan.md` §
  * Фаза 2: скрін банкінгу (vision) + виписка CSV + commit/undo журналу
  * батчів). Batch-чеки (N × v1 `finyk.receipts`/`finyk.analyzeReceipt`) —
  * НЕ ця поверхня.

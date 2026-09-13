@@ -21,7 +21,7 @@ import {
 
 /**
  * "Зібрати кошик у Сільпо зі списку покупок" (Track G — spec
- * `docs/90-work/planning/specs/silpo-mcp-integration.md`). Three entry
+ * `docs/work/specs/silpo-mcp-integration.md`). Three entry
  * points: `previewCart` (search only, no write), `applyCart` (confirm-
  * before-write — adds EXACTLY the passed `{lagerId, quantity}` pairs, never
  * more), `getCart` (read current state). All three THROW a mapped

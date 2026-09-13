@@ -12,7 +12,7 @@
  * no fallback at all. The consequence was that an anonymous visitor's
  * first habit/expense reached the warm cache but never SQLite, so it
  * vanished on reload — silently. See
- * `docs/90-work/planning/specs/anonymous-local-first-persistence.md`.
+ * `docs/work/specs/anonymous-local-first-persistence.md`.
  *
  * Read- and write-boot MUST resolve the same id: a write under an id
  * the read path never boots is a row nobody reads back. Route both

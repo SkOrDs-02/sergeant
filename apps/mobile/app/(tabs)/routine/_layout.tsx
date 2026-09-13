@@ -5,8 +5,8 @@
  * `routine.tsx`. Moving to a folder lets deep links like
  * `sergeant://routine/habit/{id}` push a dedicated stack screen on
  * top of the routine hub without losing the bottom tab bar. See
- * `docs/mobile/overview.md` (Deep links) and
- * `docs/mobile/react-native-migration.md` § 6.3.
+ * `docs/engineering/mobile/overview.md` (Deep links) and
+ * `docs/engineering/mobile/react-native-migration.md` § 6.3.
  */
 import { Stack, useRouter } from "expo-router";
 

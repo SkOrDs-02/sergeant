@@ -400,7 +400,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
   });
 });
 
-// V-12 (аудит 2026-08-08, docs/90-work/audits/2026-08-08-profile-settings-deep-audit.md
+// V-12 (аудит 2026-08-08, docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md
 // §5): «Згода та дані» і вкладений «Що ШІ про тебе памʼятає» переведено на
 // спільний примітив `SettingsSubGroup` замість саморобних `<h3>`/`<h4>`
 // з `text-style-label`. Обидва тепер `<h3 class="text-style-overline">` —

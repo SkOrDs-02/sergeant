@@ -25,7 +25,7 @@ import { LegalLinks } from "./legal/LegalLinks";
 /**
  * Phase 7 D3 — Pricing tiers (one paid tier).
  *
- * Decision locked в `docs/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`:
+ * Decision locked в `docs/design/design/redesign-v2/phase-7-product-decisions-2026-05-22.md`:
  *   Free → Premium €X/міс. No Plus/Pro split, no Lifetime, no trial-only gate.
  *
  * v2 chrome: `<MeshBackground>` shell, `<Card prominence="hero">` для Premium,

@@ -12,7 +12,7 @@
  * `rate_limit_hits_total` і використовується у:
  *   - `docs/observability/dashboards/auth.json` (Grafana panel),
  *   - `docs/observability/prometheus/alert_rules.yml` (brute-force alert),
- *   - `docs/observability/runbook.md` (incident-response).
+ *   - `docs/operations/observability/runbook.md` (incident-response).
  * Перейменування `key` зламає ці alerts/dashboards.
  */
 
@@ -25,7 +25,7 @@ import type { RateLimitOptions } from "../http/rateLimit.js";
  * OWASP ASVS V11.1.3 для credential flow. Конкретні числа беруться з env
  * (`AUTH_RATE_LIMIT_MAX` / `AUTH_RATE_LIMIT_WINDOW_SEC`), щоб ops міг
  * дополнити ліміт без redeploy-у. Аудит: PR-48 round-2,
- * `docs/security/better-auth-audit-2026-05.md`.
+ * `docs/governance/security/better-auth-audit-2026-05.md`.
  */
 export const AUTH_SENSITIVE_RATE_LIMIT: RateLimitOptions = {
   key: "api:auth:sensitive",
@@ -36,7 +36,7 @@ export const AUTH_SENSITIVE_RATE_LIMIT: RateLimitOptions = {
 
 /**
  * Per-account credential bucket (F2 у
- * `docs/90-work/planning/specs/beta-security-readiness.md`).
+ * `docs/work/specs/beta-security-readiness.md`).
  *
  * `AUTH_SENSITIVE_RATE_LIMIT` вище обмежує **джерело** запиту (IP до
  * автентифікації). Ботнет зі 100 IP обходить його лінійно: кожен бакет

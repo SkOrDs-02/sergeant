@@ -6,7 +6,7 @@
  * (`messages.<group>.<key>`). Comments, non-JSX literals, test files,
  * stories, and the catalog itself are not flagged. Files listed in
  * the rule's `allowlist` option are also exempt — the burndown gate
- * for item #18 (see `docs/i18n/readiness.md`).
+ * for item #18 (see `docs/design/i18n/readiness.md`).
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";

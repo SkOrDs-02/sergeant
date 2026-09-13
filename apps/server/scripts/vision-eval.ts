@@ -15,7 +15,7 @@
  *   pnpm eval:vision -- --dry-run       # без мережі і без каталогу, $0
  *   pnpm eval:vision -- --pipeline=refine-photo
  *   pnpm eval:vision -- --repeat=3      # мінімум 3 у живому прогоні
- *   pnpm eval:vision -- --out=docs/90-work/planning/vision-eval-2026-08-04.md
+ *   pnpm eval:vision -- --out=docs/work/specs/planning/vision-eval-2026-08-04.md
  *
  * Код виходу: 0 завжди (це звіт, не гейт), 1 — помилка розбору аргументів.
  */

@@ -32,7 +32,7 @@ export type AiProvider = "anthropic" | "openrouter";
 
 /**
  * Вичерпний allowlist властивостей `$ai_generation`. Нове поле = правка
- * § «Контракт даних» у `docs/90-work/initiatives/0025-posthog-ai-observability.md`
+ * § «Контракт даних» у `docs/work/specs/initiatives/0025-posthog-ai-observability.md`
  * у тому ж PR.
  */
 export interface AiGenerationEvent {

@@ -92,7 +92,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
       {statsAvg.daysLogged === 0 ? (
         // UX-2 (аудит 2026-09-01): чотири плитки з нулями «0 на 0 активн.
         // днів» і плаский графік замінені на один Tier-2 `<EmptyState>`
-        // (docs/05-design/design/empty-states.md). Без окремого CTA-
+        // (docs/design/design/empty-states.md). Без окремого CTA-
         // ґудзика: «+ Додати прийом їжі» вже видно нижче на цій самій
         // сторінці `LogCard` — дублювати дію в компактній картці означало
         // б саме той анти-патерн, який документ empty-states забороняє.

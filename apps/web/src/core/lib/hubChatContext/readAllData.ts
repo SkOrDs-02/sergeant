@@ -52,7 +52,7 @@ export function readAllData(): AllData {
   // чат більше не називає меншу суму, ніж дайджест і Звіти на тих самих
   // даних. Канон finyk §5 («банк і ручний світ рівні») вимагає одного
   // всесвіту на всіх поверхнях; реєстр розбіжностей —
-  // docs/02-engineering/architecture/metric-registry.md.
+  // docs/engineering/architecture/metric-registry.md.
   //
   // `transactions` навмисно лишається БАНК-ONLY: на ньому рахуються борги
   // й receivables (`calcDebtRemaining`, `getReceivableEffectiveTotal`), і

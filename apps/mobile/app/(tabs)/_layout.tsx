@@ -47,7 +47,7 @@ function createTabIcon(Icon: LucideIcon) {
  * auth flag is set we intentionally disable the bypass so suites land
  * on `/(auth)/sign-in` after the first launch.
  *
- * Docs: `docs/mobile/react-native-migration.md` §8 / §13 Q8.
+ * Docs: `docs/engineering/mobile/react-native-migration.md` §8 / §13 Q8.
  */
 const E2E_AUTH_BYPASS =
   process.env.EXPO_PUBLIC_E2E === "1" &&

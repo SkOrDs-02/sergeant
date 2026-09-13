@@ -1,7 +1,7 @@
 /**
  * Unit tests for the `sergeant-design/ukrainian-copy` rule.
  *
- * Канон: `docs/01-product/copy/style-guide.uk.md` §1.1 (звертання на «ти»),
+ * Канон: `docs/product/copy/style-guide.uk.md` §1.1 (звертання на «ти»),
  * §1.9 (без довгого тире), §2 (без 1-ї особи множини).
  *
  * Найважливіші кейси тут — НЕ порушення: правило ходить лише по рядкових

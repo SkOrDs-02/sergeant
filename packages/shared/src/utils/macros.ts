@@ -31,7 +31,7 @@ export interface Macros {
  * Explicit contract on the empty string: `""` is treated as "not entered"
  * (`null`), not as `0`. `Number("")` is `0`, which would silently count an
  * empty form field as a real measurement. Canon for five byte-identical
- * copies across `fizruk-domain` (`docs/90-work/audits/unification-modules.md`
+ * copies across `fizruk-domain` (`docs/work/specs/audits/unification-modules.md`
  * §2.14); `packages/dualwrite-core/src/convert.ts` keeps its own `""` → `0`
  * coercion on purpose (sync payloads never carry `""` for a numeric field,
  * and that package has no dependency on `shared`).

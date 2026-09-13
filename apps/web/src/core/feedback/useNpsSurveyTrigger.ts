@@ -22,7 +22,7 @@ export { accountAgeDays } from "./accountAge";
  * throttling («не показувати повторно N днів»), збір відповіді і
  * `survey sent`-події — цілком на боці posthog-js; жодного власного
  * UI тут немає. Setup-довідка:
- * `docs/03-operations/observability/feedback-loop.md`.
+ * `docs/operations/observability/feedback-loop.md`.
  *
  * Вік акаунта — цілі доби від `user.createdAt` (UTC, той самий
  * підхід, що й trait `signup_date` в `identifyTraits.ts` — точність

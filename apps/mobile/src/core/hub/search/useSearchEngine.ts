@@ -56,7 +56,7 @@ export interface UseSearchEngineResult {
    * Escalate the rail prompt to the dedicated chat surface (mobile
    * does not yet ship `/chat` — the helper closes the launcher and is
    * a no-op until HubChat lands). Tracked in
-   * `docs/mobile/react-native-migration.md` § Phase 2 Hub-core.
+   * `docs/engineering/mobile/react-native-migration.md` § Phase 2 Hub-core.
    */
   escalateToChat: (prompt: string) => void;
 }

@@ -1,7 +1,7 @@
 // apps/server/src/routes/rateLimitSessionOrder.test.ts
 //
 // Guard test for PR-A3 (`docs/work/specs/audits/2026-09-13-product-full-review.md`)
-// — a recidive of knahidka B31 (`chat.ts`, `docs/90-work/audits/ai-testing-2026-08-25.md`).
+// — a recidive of knahidka B31 (`chat.ts`, `docs/work/specs/audits/ai-testing-2026-08-25.md`).
 //
 // Two invariants, and both matter independently:
 //

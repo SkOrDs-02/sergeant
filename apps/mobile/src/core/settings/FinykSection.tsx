@@ -14,7 +14,7 @@
  *    Видалення — через `ConfirmDialog`, щоб не зʼєсти запис
  *    випадковим тапом (аналог `AttentionModal` + fade у web).
  *
- * Deferred (див. `docs/mobile/react-native-migration.md` Phase 2 /
+ * Deferred (див. `docs/engineering/mobile/react-native-migration.md` Phase 2 /
  * Hub-core, §2.4) — рендериться як `DeferredNotice`-карточка:
  *  - **Monobank: статус, очистка кешу, disconnect.** Web читає
  *    `finyk_info_cache` + `finyk_token` (одне підʼєднане через

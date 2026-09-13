@@ -418,7 +418,7 @@ export function workoutTonnageKg(w: StatsWorkout | null | undefined): number {
 /**
  * @param nowMs Тестовий шов для незавершеного тренування (`endedAt` ще
  * немає), дефолт `Date.now()`. Канон для двох байт-майже-ідентичних копій
- * (`docs/90-work/audits/unification-modules.md` §2.20).
+ * (`docs/work/specs/audits/unification-modules.md` §2.20).
  */
 export function workoutDurationSec(
   w: StatsWorkout | null | undefined,

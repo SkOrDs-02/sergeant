@@ -2,7 +2,7 @@
 
 /**
  * Копія асистент-шару: картка поради, тижневий звіт, каталог можливостей,
- * nudges. Канон — `docs/01-product/model/hub-coach.md`.
+ * nudges. Канон — `docs/product/modules/hub-coach.md`.
  *
  * AI-CONTEXT: винесено з `uk.ts` 2026-08-05, коли група `crossModuleLink`
  * (P2 анти-слоп плану) штовхнула каталог за `max-lines: 600`

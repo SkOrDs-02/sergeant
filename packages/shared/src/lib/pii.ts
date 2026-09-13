@@ -9,7 +9,7 @@
  * against `redactKeysRecursively`. Keeping the list here closes the historical
  * gap where `apps/web/src/core/observability/sentry.ts:beforeSend` only
  * deleted cookies and missed every other field listed in
- * [`docs/security/pii-handling.md`](../../../../docs/security/pii-handling.md)
+ * [`docs/governance/security/pii-handling.md`](../../../../docs/governance/security/pii-handling.md)
  * (audit `2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`
  * §6.5 — outstanding follow-up).
  *
@@ -34,7 +34,7 @@
  *      case-insensitive, see `REDACT_KEY_SET`).
  *   2. If pino-redaction needs a one-level path mirror, add it to
  *      `redactPaths` in `apps/server/src/obs/logger.ts`.
- *   3. Update the table in `docs/security/pii-handling.md` Class A/B/C.
+ *   3. Update the table in `docs/governance/security/pii-handling.md` Class A/B/C.
  */
 
 export const PII_REDACTED = "[redacted]";
@@ -101,7 +101,7 @@ export const REDACT_KEY_NAMES: readonly string[] = [
   "voyageKey",
   "silpoToken",
   // Class B-adjacent — вміст розмови з асистентом (B43,
-  // `docs/90-work/audits/ai-testing-2026-08-25.md`). Сюди беремо ЛИШЕ
+  // `docs/work/specs/audits/ai-testing-2026-08-25.md`). Сюди беремо ЛИШЕ
   // однозначно чат-специфічні імена: вони не зустрічаються ніде, крім
   // payload-у асистента, тож матч на будь-якій глибині безпечний.
   // `content`/`messages`/`context` НЕ додаємо навмисно — це найуживаніші

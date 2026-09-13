@@ -5,7 +5,7 @@
  * передачу raw `req` / `res` / `req.headers` / `req.body` (та shorthand
  * `{ req }` / `{ res }`) у Pino-style logger-методи. Тести фіксують
  * матрицю forbidden / allowed форм, які описані у
- * `docs/security/logging-redaction-policy.md`.
+ * `docs/governance/security/logging-redaction-policy.md`.
  */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";

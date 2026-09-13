@@ -3,7 +3,7 @@
  * Status: Active
  *
  * Шкала повернення — signature-view Фізрука (анти-слоп П1,
- * `docs/05-design/design/anti-slop-strategy.md` §4/П1; мокап —
+ * `docs/design/design/anti-slop-strategy.md` §4/П1; мокап —
  * `mockups/product/signature-views.html`, рішення власника 2026-08-06).
  *
  * Діагноз: `oneRmAging.ts` рахує пік, знижений орієнтир, поріг

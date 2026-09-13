@@ -92,7 +92,7 @@ export const finykKeys = {
   privatStatement: (idHash: string, accId: string, from: string, to: string) =>
     ["finyk", "privat", "statement", idHash, accId, from, to] as const,
 
-  // Receipt scan (docs/90-work/planning/specs/receipt-scan.md § Web UI).
+  // Receipt scan (docs/work/specs/receipt-scan.md § Web UI).
   // `lookupReceipt`/`analyzeReceipt`/`saveReceipt` are mutations (no cache
   // key needed) — only the by-id GET used for the transaction drill-down
   // is cached here.

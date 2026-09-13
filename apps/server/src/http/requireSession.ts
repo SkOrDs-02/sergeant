@@ -80,7 +80,7 @@ export function requireSession(): RequestHandler {
  * Ціна — DB-lookup на кожен виклик, тому це не заміна `requireSession()`,
  * а гейт для поверхонь, де вартість 5-хвилинного вікна вища за latency:
  * повний експорт даних, видалення акаунта, підʼєднання/відʼєднання банку
- * (аудит `docs/90-work/audits/2026-08-05-orphaned-code-audit.md` § 7а).
+ * (аудит `docs/work/specs/audits/2026-08-05-orphaned-code-audit.md` § 7а).
  *
  * Семантика відповідей тотожна `requireSession()`: без валідної сесії у
  * БД — `401 UNAUTHORIZED` (навіть якщо cookie-кеш ще «живий»); lookup

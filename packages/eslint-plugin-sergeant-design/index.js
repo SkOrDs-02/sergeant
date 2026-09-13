@@ -1012,7 +1012,7 @@ const FINYK_TOKEN_KEY_VALUES = new Set([
   "finyk_token",
   "finyk_token_remembered",
   // PrivatBank merchant credentials. Added after the beta-readiness audit
-  // (`docs/90-work/planning/specs/beta-security-readiness.md`, F1) found the
+  // (`docs/work/specs/beta-security-readiness.md`, F1) found the
   // merchant token sitting in cleartext `localStorage`: the Monobank fix had
   // been locked down by this very rule, but the rule was written narrowly
   // around Monobank's key names, so PrivatBank walked straight past it.
@@ -1127,7 +1127,7 @@ const noFinykTokenInStorage = {
 // `no-cyrillic-jsx-literal` — flag inline cyrillic JSX text/attrs
 // ─────────────────────────────────────────────────────────────────────────
 //
-// docs/i18n/readiness.md describes a "lightweight foundation": every UA
+// docs/design/i18n/readiness.md describes a "lightweight foundation": every UA
 // string the user sees should live in `apps/web/src/shared/i18n/uk.ts`
 // as `messages.<group>.<key>`. The day-to-day code references that key
 // instead of inlining a literal. When/if the project adds runtime-i18n
@@ -1166,7 +1166,7 @@ const noFinykTokenInStorage = {
 const NO_CYRILLIC_JSX_LITERAL_MESSAGE =
   "JSX-літерал з кирилицею має посилатися на messages-каталог. " +
   "Винеси рядок у `apps/web/src/shared/i18n/uk.ts` (group `messages.<group>.<key>`) " +
-  "і використовуй `messages.<group>.<key>` тут. Див. `docs/i18n/readiness.md`.";
+  "і використовуй `messages.<group>.<key>` тут. Див. `docs/design/i18n/readiness.md`.";
 
 const RX_CYRILLIC = /[\u0400-\u04FF]/;
 
@@ -1766,7 +1766,7 @@ const NO_RAW_REQ_IN_PINO_LOG_MESSAGE =
   "Не передавай raw `{{name}}` у `{{method}}()` — це ризик протекти Authorization/Cookie/password/email/session-token " +
   "у Pino-output або Sentry breadcrumbs. Зроби явний destructure: `logger.{{method}}({ field: req.url, status: res.statusCode }, 'msg')`. " +
   "Pino redact-paths у `apps/server/src/obs/logger.ts` ловлять відомі поля, але raw-обʼєкт лишає контракт неявним — " +
-  "нові sensitive-поля зʼявляються без redaction. Див. `docs/security/logging-redaction-policy.md`.";
+  "нові sensitive-поля зʼявляються без redaction. Див. `docs/governance/security/logging-redaction-policy.md`.";
 
 function isPinoLoggerReceiver(callee) {
   if (
@@ -1839,7 +1839,7 @@ const noRawReqInPinoLog = {
     type: "problem",
     docs: {
       description:
-        "Forbid passing raw `req` / `res` / `req.headers` / `req.body` (or shorthand `{ req }` / `{ res }`) to Pino logger methods. Pino redact-paths catch known fields but raw-object logging leaks newly added sensitive fields. See `docs/security/logging-redaction-policy.md`.",
+        "Forbid passing raw `req` / `res` / `req.headers` / `req.body` (or shorthand `{ req }` / `{ res }`) to Pino logger methods. Pino redact-paths catch known fields but raw-object logging leaks newly added sensitive fields. See `docs/governance/security/logging-redaction-policy.md`.",
     },
     schema: [],
     messages: { rawReq: NO_RAW_REQ_IN_PINO_LOG_MESSAGE },
@@ -2131,12 +2131,12 @@ const preferKyivTime = {
 //
 // Rollout: `warn` зараз → `error` через 1 sprint після підтвердження, що
 // усі callsite-и у PR-09 + PR-10 мігровані. Дивись AGENTS.md §Hard rules
-// та docs/04-governance/governance/rules/prefer-parse-body.md.
+// та docs/governance/governance/rules/prefer-parse-body.md.
 
 const PREFER_PARSE_BODY_MESSAGE =
-  "Use `parseBody(Schema, req)` instead of `validateBody(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler` and eliminates the sentinel pattern that caused double-response 500s. See docs/04-governance/governance/rules/prefer-parse-body.md.";
+  "Use `parseBody(Schema, req)` instead of `validateBody(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler` and eliminates the sentinel pattern that caused double-response 500s. See docs/governance/governance/rules/prefer-parse-body.md.";
 const PREFER_PARSE_QUERY_MESSAGE =
-  "Use `parseQuery(Schema, req)` instead of `validateQuery(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler`. See docs/04-governance/governance/rules/prefer-parse-body.md.";
+  "Use `parseQuery(Schema, req)` instead of `validateQuery(Schema, req, res)`. The throw-based helper works with `asyncHandler` + `errorHandler`. See docs/governance/governance/rules/prefer-parse-body.md.";
 
 // Paths that are allowed to import/call validateBody — the definition file
 // and its test.
@@ -2150,7 +2150,7 @@ const preferParseBodyOverValidateBody = {
       description:
         "Prefer throw-based parseBody/parseQuery over sentinel validateBody/validateQuery in Express handlers",
       recommended: false,
-      url: "docs/04-governance/governance/rules/prefer-parse-body.md",
+      url: "docs/governance/governance/rules/prefer-parse-body.md",
     },
     schema: [],
     messages: {
@@ -2366,7 +2366,7 @@ const noRawStorageKey = {
 
 // ─── no-adhoc-metric-aggregation ────────────────────────────────────────
 //
-// Реєстр метрик (`docs/02-engineering/architecture/metric-registry.md`),
+// Реєстр метрик (`docs/engineering/architecture/metric-registry.md`),
 // стадія 5. Аудит показав, що та сама метрика мала 4-6 незалежних
 // реалізацій і числа розходились у користувача на різних екранах в одну
 // хвилину. Cutover звів їх на канонічні функції доменних пакетів; це
@@ -2395,7 +2395,7 @@ const ADHOC_METRIC_MESSAGE =
   "Це копія `getTxStatAmount` без сплітів — число розійдеться з рештою екранів. " +
   "Використай канонічну функцію з `@sergeant/finyk-domain` " +
   "(`getTxStatAmount`, `calcCategorySpent`, `calcFinykPeriodAggregate`). " +
-  "Реєстр метрик: docs/02-engineering/architecture/metric-registry.md.";
+  "Реєстр метрик: docs/engineering/architecture/metric-registry.md.";
 
 /** `<expr>.amount / 100` — інлайн-перетворення копійок у гривні. */
 function isMinorAmountDivision(node) {
@@ -2862,7 +2862,7 @@ const noRawTypeSize = {
 // `ukrainian-copy` — гейт tone-of-voice для UA-копії
 // ─────────────────────────────────────────────────────────────────────────
 //
-// Канон: `docs/01-product/copy/style-guide.uk.md`. До 2026-08-26 він був
+// Канон: `docs/product/copy/style-guide.uk.md`. До 2026-08-26 він був
 // лише документом, і аудит копії показав, що без механічного гейта правила
 // дрейфують саме в найновішому коді: довге тире жило в чек-скані, bulk-
 // імпорті та Сільпо — тобто в тому, що писалося останнім.
@@ -3055,7 +3055,7 @@ const ukrainianCopy = {
 // 2026-09-02 (`scripts/scan-caption-sentences.mjs`) знайшов 190 місць, де
 // нею набрано речення, які людина читає, щоб зрозуміти, що робити, —
 // інструкції, порожні стани, застереження приватності. Розбір і рішення
-// по кожному типу тексту: `docs/05-design/design/density-hierarchy-spec.md`.
+// по кожному типу тексту: `docs/design/design/density-hierarchy-spec.md`.
 //
 // ЧОМУ ГЕЙТ ЛЕГІТИМНИЙ, ХОЧА CODEMOD — НІ. Той самий документ (§4) тричі
 // записав, чим закінчується механічна ЗАМІНА за патерном тексту: вона не
@@ -3152,7 +3152,7 @@ const noSentenceInCaption = {
         "і вона для мети — часу, лічильника, одиниці. Текст, який читають, набирай `text-style-body` " +
         "(вага 400 лишається, тон не змінюється). Якщо кегль тут правильний — підказка під контролом, " +
         "дисклеймер, компактна пара в картці — постав поруч коментар AI-NOTE з причиною. " +
-        "Розбір: docs/05-design/design/density-hierarchy-spec.md §4.",
+        "Розбір: docs/design/design/density-hierarchy-spec.md §4.",
     },
   },
   create(context) {

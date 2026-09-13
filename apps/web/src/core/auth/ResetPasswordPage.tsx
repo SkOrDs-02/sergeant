@@ -20,7 +20,7 @@ import { resetPassword } from "./authClient";
 /**
  * Зод-схема — локальна, як у `AuthPage`. Меседжі — з
  * `messages.validation.*` (`apps/web/src/shared/i18n/uk.ts`), див.
- * `docs/i18n/readiness.md`. `confirm` валідуємо через `superRefine`
+ * `docs/design/i18n/readiness.md`. `confirm` валідуємо через `superRefine`
  * після парсу — стандартний react-hook-form pattern для cross-field
  * перевірок.
  */

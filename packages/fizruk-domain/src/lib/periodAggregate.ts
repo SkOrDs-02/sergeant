@@ -11,7 +11,7 @@
  *
  * W1-CANON-AGG стадія 1 — additive: жоден call-site тут не перемикається,
  * функція поки без споживачів за задумом. Реєстр розбіжностей і план
- * переведення: `docs/02-engineering/architecture/metric-registry.md`.
+ * переведення: `docs/engineering/architecture/metric-registry.md`.
  *
  * DOM-free: приймає вже прочитаний масив тренувань (SQLite warm-cache на web,
  * MMKV на mobile) і межі періоду в мілісекундах; межі доби/тижня рахує

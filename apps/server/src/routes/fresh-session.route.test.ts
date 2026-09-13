@@ -3,7 +3,7 @@ import request from "supertest";
 
 /**
  * Route-level тест підключення `requireFreshSession()` до чутливих поверхонь
- * — аудит `docs/90-work/audits/2026-08-05-orphaned-code-audit.md` § 7а,
+ * — аудит `docs/work/specs/audits/2026-08-05-orphaned-code-audit.md` § 7а,
  * § 12 п. 3.
  *
  * Сценарій «stale»: 5-хвилинний `session.cookieCache` ще вважає сесію

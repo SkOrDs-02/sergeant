@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-08-17
  * Status: Active — walking-skeleton experiment (Silpo MCP integration,
- * track A). See `docs/90-work/planning/specs/silpo-mcp-integration.md`.
+ * track A). See `docs/work/specs/silpo-mcp-integration.md`.
  */
 import { useQuery } from "@tanstack/react-query";
 import { isApiError, silpoApi, type SilpoSyncState } from "@shared/api";
