@@ -51,6 +51,22 @@ export interface NutritionPrefs {
   adaptiveGoalIntent: "cutting" | "maintenance" | "bulking";
   /** ISO timestamp останнього успішного автоматичного перерахунку. */
   adaptiveGoalLastUpdatedAt: string | null;
+  /**
+   * ЗНІМОК підстави останнього перерахунку — числа на момент, коли ціль
+   * змінилась.
+   *
+   * AI-DANGER: картка пояснення мусить читати саме це, а не рахувати
+   * заново. Виміряний TDEE перераховується з ковзного вікна на КОЖЕН
+   * рендер, тож «жива» підстава через день після зміни вже інша — і
+   * картка приписувала б минулій зміні сьогоднішні числа. Пояснення
+   * говорить про ПОДІЮ, а подія вже сталась.
+   */
+  adaptiveGoalLastReason: {
+    averageIntakeKcal: number;
+    weightDeltaKg: number;
+    tdeeKcal: number;
+    goalKcal: number;
+  } | null;
 }
 
 export interface Pantry {

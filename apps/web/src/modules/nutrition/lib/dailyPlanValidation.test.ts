@@ -33,6 +33,7 @@ function makePrefs(
     adaptiveGoalEnabled: false,
     adaptiveGoalIntent: "maintenance",
     adaptiveGoalLastUpdatedAt: null,
+    adaptiveGoalLastReason: null,
     mealTemplates: [],
     reminderEnabled: false,
     reminderHour: 12,

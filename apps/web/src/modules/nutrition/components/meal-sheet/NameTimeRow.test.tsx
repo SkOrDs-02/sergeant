@@ -132,6 +132,55 @@ describe("NameTimeRow", () => {
     });
   });
 
+  /**
+   * Порція, сказана голосом, мусить кудись потрапити.
+   *
+   * `parseMealSpeech` повертає `grams`, підказка Whisper поруч із кнопкою
+   * прямо вчить їх називати — а `MealFormState` поля для них не має: тут
+   * РУЧНИЙ запис, де ккал абсолютні для страви, не на 100 г. Доти число
+   * просто зникало. Назва — єдине поле, здатне його понести.
+   */
+  it("сказана порція йде в назву, а не зникає", () => {
+    vi.mocked(parseMealSpeech).mockReturnValue({
+      name: "Гречка",
+      kcal: 180,
+      protein: null,
+      grams: 200,
+      raw: "гречка двісті грам сто вісімдесят калорій",
+    });
+    const setForm = vi.fn();
+    render(<NameTimeRow form={makeForm()} field={vi.fn()} setForm={setForm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "mic" }));
+
+    const update = setForm.mock.calls[0]?.[0] as (
+      form: MealFormState,
+    ) => MealFormState;
+    expect(update(makeForm())).toMatchObject({
+      name: "Гречка 200 г",
+      kcal: "180",
+    });
+  });
+
+  it("без порції назва лишається чистою", () => {
+    vi.mocked(parseMealSpeech).mockReturnValue({
+      name: "Омлет",
+      kcal: 250,
+      protein: null,
+      grams: null,
+      raw: "омлет 250 ккал",
+    });
+    const setForm = vi.fn();
+    render(<NameTimeRow form={makeForm()} field={vi.fn()} setForm={setForm} />);
+
+    fireEvent.click(screen.getByRole("button", { name: "mic" }));
+
+    const update = setForm.mock.calls[0]?.[0] as (
+      form: MealFormState,
+    ) => MealFormState;
+    expect(update(makeForm()).name).toBe("Омлет");
+  });
+
   it("ignores unparsed voice transcripts and records voice errors", () => {
     vi.mocked(parseMealSpeech).mockReturnValue(null);
     const setForm = vi.fn();

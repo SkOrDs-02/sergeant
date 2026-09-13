@@ -14,10 +14,14 @@
 // ── Ukrainian number-words → digits ────────────────────────────────────────
 //
 // Used by both `parseUaNumber` (single-number parse) and `normalizeUaNumbers`
-// (token-stream rewrite). Inflections are deliberately NOT included here
-// because they only ever appear as the trailing word of a phrase like
-// "вісімдесятьох кілограмів" — the digit comes from "вісімдесят", and the
-// case ending lives on the unit, which the regex tolerates separately.
+// (token-stream rewrite).
+//
+// Тут раніше стояло, що відмінкові форми внесені НЕ будуть, бо «закінчення
+// живе на одиниці, а не на числівнику». Для української це неправда, і
+// коштувало це дорого: «вісімдесяти кілограмів», «сорока гривень», «пʼяти
+// разів», «двохсот грамів» — не екзотика, а звичайна усна форма з
+// квантифікованим іменником. Усі вони давали `null`. Непрямі відмінки
+// внесені нижче окремим блоком.
 
 import { foldApostrophes } from "./ukApostrophe";
 
@@ -42,6 +46,48 @@ import { foldApostrophes } from "./ukApostrophe";
  * жило на одному шляху; сусідні про нього не чули.
  */
 const NOT_WORD_CHAR = "(?![\\p{L}\\p{N}])";
+
+/**
+ * Число з відсіченим бектрекінгом.
+ *
+ * AI-DANGER: `(?!\\d)` наприкінці — не косметика, а захист від
+ * КВАДРАТИЧНОГО бектрекінгу на даних користувача (CodeQL
+ * `js/polynomial-redos`). Без нього на рядку з довгого прогону цифр
+ * `\\d+` зʼїдає все, наступний якір падає, рушій вкорочує збіг на одну
+ * цифру — і так до самого початку, для КОЖНОЇ стартової позиції. Заміряно
+ * на 20 000 цифр: 3.4 с в одному `replace`. З `(?!\\d)` укорочений збіг
+ * помирає одразу, бо праворуч стоїть цифра.
+ *
+ * JS не має атомарних груп, тож цей lookahead — їх штатна заміна.
+ */
+const NUM = "(\\d+(?:[.,]\\d+)?)(?!\\d)";
+const INT = "(\\d+)(?!\\d)";
+
+/**
+ * Стеля довжини розбору.
+ *
+ * AI-DANGER: це не мікрооптимізація, а межа складності. Регекси нижче
+ * шукають «число + одиниця» з КОЖНОЇ позиції рядка, і на довгому прогоні
+ * цифр така форма квадратична за самою природою — не через зайвий
+ * бектрекінг, а тому що жадібний `\\d+` на n позиціях дає n² кроків.
+ * Жодна форма регекса цього не прибирає (перевірено й на атомарній
+ * емуляції через lookahead + backreference: та сама квадратика).
+ *
+ * Прибирає її лише межа на вході. Заміряно до неї: 20 000 цифр — 13.7 с
+ * на чотири парсери, 40 000 — 52.9 с. Вхід — транскрипт мовлення, тобто
+ * дані користувача (CodeQL `js/polynomial-redos`).
+ *
+ * 1024 — та сама стеля, що вже стоїть на `promptHint` у
+ * `useGroqVoiceInput`. Голосова команда («кава 45 гривень») на два
+ * порядки коротша; усе, що довше за абзац, розбирати як команду однаково
+ * безглуздо.
+ */
+const MAX_PARSE_LEN = 1024;
+
+/** Обрізає вхід до стелі розбору. Див. `MAX_PARSE_LEN`. */
+function capInput(text: string): string {
+  return text.length > MAX_PARSE_LEN ? text.slice(0, MAX_PARSE_LEN) : text;
+}
 
 const UA_NUMBER_WORDS: Record<string, number> = {
   нуль: 0,
@@ -88,7 +134,102 @@ const UA_NUMBER_WORDS: Record<string, number> = {
   тисяча: 1000,
   тисячі: 1000,
   тисяч: 1000,
+
+  // ── Непрямі відмінки ──────────────────────────────────────────────────
+  //
+  // Коментар вище колись стверджував, що відмінювати числівник не треба,
+  // бо «закінчення живе на одиниці». Для української це просто неправда:
+  // «вісімдесяти кілограмів», «двохсот грамів», «сорока гривень», «пʼяти
+  // разів» — не край, а звичайна усна форма з квантифікованим іменником.
+  // Саме її вживає людина, яка говорить природно, і саме вона давала
+  // `null`: у Фініку рятував запасний регекс на голе число (сума
+  // знаходилась, хоч і не завжди правильна), а у Фізруку спрацьовував
+  // guard «усі три null» — і фразу мовчки викидало.
+  //
+  // Родовий і місцевий збігаються (`пʼяти`), орудний окремо (`пʼятьма`).
+  // Паралельні форми на `-ох`/`-ьох` теж усні, тож стоять поруч.
+  двох: 2,
+  двома: 2,
+  трьох: 3,
+  трьома: 3,
+  чотирьох: 4,
+  чотирма: 4,
+  пʼяти: 5,
+  пʼятьох: 5,
+  пʼятьма: 5,
+  пʼятьома: 5,
+  шести: 6,
+  шістьох: 6,
+  шістьма: 6,
+  шістьома: 6,
+  семи: 7,
+  сімох: 7,
+  сьома: 7,
+  сімома: 7,
+  восьми: 8,
+  вісьмох: 8,
+  вісьма: 8,
+  вісьмома: 8,
+  девʼяти: 9,
+  девʼятьох: 9,
+  девʼятьма: 9,
+  десяти: 10,
+  десятьох: 10,
+  десятьма: 10,
+  одинадцяти: 11,
+  дванадцяти: 12,
+  тринадцяти: 13,
+  чотирнадцяти: 14,
+  пʼятнадцяти: 15,
+  шістнадцяти: 16,
+  сімнадцяти: 17,
+  вісімнадцяти: 18,
+  девʼятнадцяти: 19,
+  двадцяти: 20,
+  тридцяти: 30,
+  сорока: 40,
+  пʼятдесяти: 50,
+  шістдесяти: 60,
+  сімдесяти: 70,
+  вісімдесяти: 80,
+  девʼяноста: 90,
+  ста: 100,
+  двохсот: 200,
+  трьохсот: 300,
+  чотирьохсот: 400,
+  пʼятисот: 500,
+  шестисот: 600,
+  семисот: 700,
+  восьмисот: 800,
+  девʼятисот: 900,
+  тисячам: 1000,
+  тисячами: 1000,
+
+  // Дробові. «Півтора» — окреме слово, не сума, тож просто значення.
+  півтора: 1.5,
+  півтори: 1.5,
+  // Псевдослово: `collapseHalfPhrases` склеює «з половиною» в один токен,
+  // інакше прийменник «з» рве пробіг числівників навпіл і «дві з половиною
+  // тисячі» дає «2 з половиною 1000».
+  зполовиною: 0.5,
 };
+
+/**
+ * Склеює «з половиною» (та «із/та половиною») в один токен `зполовиною`.
+ *
+ * Потрібно саме до токенізації: пробіг числівників у `normalizeUaNumbers`
+ * рветься на будь-якому слові поза таблицею, а «з» — прийменник, у таблиці
+ * його бути не може.
+ *
+ * Межі — лукараунди, а не `\b`: поруч із кирилицею той якір не
+ * спрацьовує ніколи (див. `NOT_WORD_CHAR` нижче).
+ */
+function collapseHalfPhrases(text: string): string {
+  return text.replace(
+    /(?<![\p{L}\p{N}])(?:з|із|зі|та|і)\s+половиною(?![\p{L}\p{N}])/giu,
+    "зполовиною",
+  );
+}
 
 // Apostrophes Whisper emits vary: ASCII `'`, typographic `’`, modifier `ʼ`.
 // Fold every form to the canonical `ʼ` before lookup so "п'ять" / "п’ять"
@@ -143,17 +284,35 @@ function stripWordPunctuation(token: string): string {
  *   "80,5" → 80.5
  *   "кава" → null
  */
+/** Значення токена-цифри («2», «2.5», «2,5») або `null`. */
+function digitTokenValue(token: string): number | null {
+  if (!/^\d+(?:[.,]\d+)?$/.test(token)) return null;
+  const parsed = parseFloat(token.replace(",", "."));
+  return Number.isFinite(parsed) ? parsed : null;
+}
+
 export function parseUaNumber(text: string): number | null {
-  const lower = foldApostrophes(text.toLowerCase());
-  const parsed = parseFloat(lower.replace(",", "."));
-  if (!isNaN(parsed)) return parsed;
+  const lower = collapseHalfPhrases(
+    foldApostrophes(capInput(text).toLowerCase()),
+  );
+  const trimmed = lower.trim();
+  // Рядок, що ВЕСЬ є числом. Тут раніше стояв голий `parseFloat(lower)`, і
+  // саме він давав найдорожчу помилку цього парсера: `parseFloat` зупиняє
+  // читання на першому пробілі, тож «2 з половиною тисячі» повертало 2, а
+  // далі фолбек у `parseExpenseSpeech` записував 500 замість 2500 — сума,
+  // помилкова вп'ятеро і мовчки. Перевіряємо ВЕСЬ рядок, а змішані
+  // «цифра + слова» доганяє накопичувач нижче.
+  const whole = digitTokenValue(trimmed);
+  if (whole !== null) return whole;
+
   let total = 0;
   let current = 0;
   let matched = false;
   const words = lower.split(/\s+/);
   for (const raw of words) {
     const w = stripWordPunctuation(raw);
-    const v = UA_NUMBER_WORDS[w];
+    // Цифра рівноправна зі словом: «2 зполовиною тисячі» — одне число.
+    const v = digitTokenValue(w) ?? UA_NUMBER_WORDS[w];
     if (v == null) continue;
     matched = true;
     if (v === 1000) {
@@ -184,7 +343,7 @@ export function parseUaNumber(text: string): number | null {
  * extract weights / reps / amounts unchanged.
  */
 export function normalizeUaNumbers(text: string): string {
-  const normalized = foldApostrophes(text);
+  const normalized = collapseHalfPhrases(foldApostrophes(capInput(text)));
   const words = normalized.split(/\s+/).filter((w) => w.length > 0);
   const out: string[] = [];
   const PUNCT_BREAK = /[.,;:!?)»]$/;
@@ -192,7 +351,21 @@ export function normalizeUaNumbers(text: string): string {
   while (i < words.length) {
     const wi = words[i] ?? "";
     const clean = stripWordPunctuation(wi).toLowerCase();
-    if (UA_NUMBER_WORDS[clean] == null) {
+    const isWord = UA_NUMBER_WORDS[clean] != null;
+    // Пробіг може починатись і з ЦИФРИ — але тільки якщо далі йде
+    // число-слово. Інакше «2 з половиною тисячі» розпадалось на «2» окремо
+    // і «зполовиною тисячі» = 500, а сума виходила вп'ятеро меншою.
+    //
+    // AI-DANGER: цифра допускається ЛИШЕ як перший токен пробігу, і далі
+    // збираються самі слова. Дозволити цифру всередині означало б склеїти
+    // сусідні числа: «2 5» стало б 7.
+    const nextClean = stripWordPunctuation(words[i + 1] ?? "").toLowerCase();
+    const digitStartsRun =
+      !isWord &&
+      digitTokenValue(clean) !== null &&
+      !PUNCT_BREAK.test(wi) &&
+      UA_NUMBER_WORDS[nextClean] != null;
+    if (!isWord && !digitStartsRun) {
       out.push(wi);
       i++;
       continue;
@@ -247,12 +420,12 @@ export interface ParsedExpense {
 export function parseExpenseSpeech(text: string): ParsedExpense | null {
   if (!text?.trim()) return null;
 
-  const norm = normalizeUaNumbers(text);
+  const norm = normalizeUaNumbers(capInput(text));
   const lower = norm.toLowerCase().replace(/[,]/g, ".");
 
   const amountMatch =
-    lower.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*${CURRENCY}`, "iu")) ||
-    lower.match(/(\d+(?:\.\d+)?)/u);
+    lower.match(new RegExp(`${NUM}\\s*${CURRENCY}`, "iu")) ||
+    lower.match(new RegExp(NUM, "u"));
 
   let amount: number | null = null;
   if (amountMatch?.[1]) {
@@ -266,10 +439,7 @@ export function parseExpenseSpeech(text: string): ParsedExpense | null {
   }
 
   let name = norm
-    .replace(
-      new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*${CURRENCY}?${NOT_WORD_CHAR}`, "giu"),
-      " ",
-    )
+    .replace(new RegExp(`${NUM}\\s*${CURRENCY}?${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(new RegExp(`${CURRENCY}${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -310,22 +480,25 @@ export interface ParsedWorkoutSet {
 export function parseWorkoutSetSpeech(text: string): ParsedWorkoutSet | null {
   if (!text?.trim()) return null;
 
-  const norm = normalizeUaNumbers(text);
+  const norm = normalizeUaNumbers(capInput(text));
   const lower = norm.toLowerCase();
 
   const weightMatch =
-    lower.match(/(\d+(?:[.,]\d+)?)\s*(?:кг|kg|кілограм|килограм)/iu) ||
-    lower.match(/(\d+(?:[.,]\d+)?)\s*(?:lb|lbs|фунт)/iu);
+    lower.match(new RegExp(`${NUM}\\s*(?:кг|kg|кілограм|килограм)`, "iu")) ||
+    lower.match(new RegExp(`${NUM}\\s*(?:lb|lbs|фунт)`, "iu"));
 
   const repsMatch =
     lower.match(
-      /(\d+)\s*(?:повт|повторень|повторів|повторення|reps?|разів|раз)/iu,
+      new RegExp(
+        `${INT}\\s*(?:повт|повторень|повторів|повторення|reps?|разів|раз)`,
+        "iu",
+      ),
     ) || lower.match(/(?:повт|reps?)\s*(\d+)/iu);
 
   // `підх[іо]д` — чергування і↔о в корені: «підхід» → «підходи». Без нього
   // найприроднішa форма «3 підходи» не розпізнавалась узагалі.
   const setsMatch =
-    lower.match(/(\d+)\s*(?:підх[іо]д\p{L}*|sets?)/iu) ||
+    lower.match(new RegExp(`${INT}\\s*(?:підх[іо]д\\p{L}*|sets?)`, "iu")) ||
     lower.match(/(?:підх[іо]д\p{L}*|sets?)\s*(\d+)/iu);
 
   let weight: number | null = null;
@@ -357,10 +530,22 @@ export function parseWorkoutSetSpeech(text: string): ParsedWorkoutSet | null {
       ),
       " ",
     )
-    .replace(new RegExp(`(\\d+)\\s*${COUNT_UNIT}?${NOT_WORD_CHAR}`, "giu"), " ")
+    .replace(new RegExp(`${INT}\\s*${COUNT_UNIT}?${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(new RegExp(`${WEIGHT_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(new RegExp(`${COUNT_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(/\s+/g, " ")
+    .trim()
+    // Прийменник, що завис у ХВОСТІ після зачистки: «станова 120 кг 3
+    // підходи по 8 разів» лишало «Станова по». Саме в хвості, а не
+    // будь-де: інакше зникло б осмислене «жим НА похилій лаві».
+    //
+    // AI-DANGER: цей крок мусить стояти ПІСЛЯ згортання пробілів, а не
+    // перед ним. Форма `\s+(?:…)\s*$` на пробільному хвості дає
+    // КВАДРАТИЧНИЙ бектрекінг (заміряно: 4 k → 30 мс, 32 k → 1.8 с,
+    // множник 4.0 на кожне подвоєння), а вхід тут — сирий транскрипт,
+    // тобто дані користувача. Після `\s+`→` ` і `trim()` пробільних
+    // хвостів не лишається, тож літерального пробілу і `$` досить.
+    .replace(/ (?:по|на|за|в|у|із|з)$/iu, "")
     .trim();
 
   if (!exerciseName) exerciseName = null;
@@ -391,26 +576,30 @@ export interface ParsedMeal {
 export function parseMealSpeech(text: string): ParsedMeal | null {
   if (!text?.trim()) return null;
 
-  const norm = normalizeUaNumbers(text);
+  const norm = normalizeUaNumbers(capInput(text));
   const lower = norm.toLowerCase();
 
   const kcalMatch =
-    lower.match(/(\d+(?:[.,]\d+)?)\s*(?:ккал|кілокалор|калор|kcal|cal)/iu) ||
-    lower.match(/(?:ккал|kcal)\s*(\d+(?:[.,]\d+)?)/iu);
+    lower.match(
+      new RegExp(`${NUM}\\s*(?:ккал|кілокалор|калор|kcal|cal)`, "iu"),
+    ) || lower.match(/(?:ккал|kcal)\s*(\d+(?:[.,]\d+)?)/iu);
 
   // Prefer multi-letter alternations first; "гр"/"г" alone use a Cyrillic-aware
   // negative lookahead so they don't gobble "гречка". JS `\b` is ASCII-only and
   // doesn't fire between two Cyrillic chars even with the /u flag.
   const CYR = /[а-яА-ЯёЁєЄіІїЇґҐ]/.source;
   const gramsRe = new RegExp(
-    `(\\d+(?:[.,]\\d+)?)\\s*(?:грам|гр(?!${CYR})|г(?!${CYR})|g\\b|ml|мл)`,
+    `${NUM}\\s*(?:грам|гр(?!${CYR})|г(?!${CYR})|g\\b|ml|мл)`,
     "iu",
   );
   const gramsMatch =
     lower.match(gramsRe) || lower.match(/(?:грам|гр)\s*(\d+(?:[.,]\d+)?)/iu);
 
   const proteinMatch = lower.match(
-    /(\d+(?:[.,]\d+)?)\s*(?:г\s*білка|г\s*протеїну|g\s*protein|protein)/iu,
+    new RegExp(
+      `${NUM}\\s*(?:г\\s*білка|г\\s*протеїну|g\\s*protein|protein)`,
+      "iu",
+    ),
   );
 
   let kcal: number | null = null;
@@ -442,7 +631,7 @@ export function parseMealSpeech(text: string): ParsedMeal | null {
   // 30 г білка» давало назву «Омлет грам г білка». Спершу знімаємо ВСІ
   // пари одним алфавітом одиниць, і лише потім — залишки.
   const name0 = norm
-    .replace(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*${MEAL_UNIT}`, "giu"), " ")
+    .replace(new RegExp(`${NUM}\\s*${MEAL_UNIT}`, "giu"), " ")
     .replace(new RegExp(`${MEAL_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(/\d+(?:[.,]\d+)?/gu, " ");
   let name = name0.replace(/\s+/g, " ").trim();

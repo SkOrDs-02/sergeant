@@ -14,7 +14,7 @@ import { messages } from "@shared/i18n/uk";
 import { PROFILE_PATH } from "../../../core/app/appPaths";
 import { useBiometrics } from "../../../core/profile/useBiometrics";
 import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
-import { useTodayWorkoutKcal } from "../../../core/profile/useTodayWorkoutKcal";
+import { useAverageWorkoutKcalPerDay } from "../../../core/profile/useAverageWorkoutKcal";
 import {
   NUTRITION_GOALS,
   computeNutritionTargetsFromBiometrics,
@@ -132,7 +132,15 @@ export function DailyPlanGoalSelectors({
   const fizrukWeightKg = useLatestBodyWeightKg();
   // Має значення лише при `countWorkoutsInGoal: true`; при вимкненому
   // тумблері `computeTdee` цього доданка не бачить узагалі.
-  const workoutKcal = useTodayWorkoutKcal();
+  //
+  // СЕРЕДНЄ, а не «сьогодні», і це не косметика. Пресет пише результат у
+  // ПОСТІЙНУ `dailyTargetKcal` (`applyTdeeTargets` нижче), тож доти
+  // людина, яка тиснула «розрахувати з профілю» після важкого
+  // тренування, лишалась із ціллю, роздутою РАЗОВИМ заняттям — назавжди,
+  // доки не змінить її руками. Разове число не має права ставати
+  // постійним. Адаптивний шлях усереднює за тим самим вікном і з тієї ж
+  // причини (`collectWorkoutKcalPerDay`).
+  const workoutKcal = useAverageWorkoutKcalPerDay();
 
   const tdeeTargets = useMemo<Record<
     NutritionGoalId,
