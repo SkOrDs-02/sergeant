@@ -53,6 +53,22 @@ const OWN_IMPLEMENTATION = new Map<string, string>([
   ],
 ]);
 
+/**
+ * Оголошення ролі `tablist` у JSX — у БУДЬ-ЯКІЙ формі.
+ *
+ * Патерн один на обидві перевірки нижче, і це принципово. Спершу їх було
+ * два: скан шукав лише літерал, а перевірка на протухання знала ще й
+ * тернарник `role={isTablist ? "tablist" : undefined}` — тобто новий файл
+ * з умовною роллю проходив повз вимогу хука, поки та сама форма деінде
+ * вважалась валідною. Знахідка рев'ю на PR #1143.
+ *
+ * Форма навмисно широка (`role=` … `"tablist"` у межах рядка), а не перелік
+ * відомих написань: перелік уже раз розійшовся сам із собою і розійдеться
+ * знову. Хибне спрацювання тут дешеве — воно лише вимагає хук або запис у
+ * списку; пропуск коштує мовчазної дірки в гейті.
+ */
+const TABLIST_ROLE = /role=\{?[^}\n]*"tablist"/;
+
 function collectSourceFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
     const full = join(dir, entry);
@@ -90,7 +106,7 @@ describe("контракт role=tablist ↔ клавіатура", () => {
     const offenders: string[] = [];
     for (const file of files) {
       const code = stripComments(readFileSync(file, "utf8"));
-      if (!/role=(?:"tablist"|\{"tablist"\})/.test(code)) continue;
+      if (!TABLIST_ROLE.test(code)) continue;
 
       const rel = relative(WEB_SRC, file).split("\\").join("/");
       if (OWN_IMPLEMENTATION.has(rel)) continue;
@@ -101,6 +117,27 @@ describe("контракт role=tablist ↔ клавіатура", () => {
       );
     }
     expect(offenders).toEqual([]);
+  });
+
+  it("патерн ролі ловить УСІ форми оголошення, не лише літерал", () => {
+    // Дірка, знайдена рев'ю на PR #1143: скан бачив тільки `role="tablist"`,
+    // тож новий файл з умовною роллю проходив повз вимогу хука. Тепер обидві
+    // перевірки беруть один патерн — цей тест і стереже, що він широкий.
+    for (const form of [
+      'role="tablist"',
+      'role={"tablist"}',
+      'role={isTablist ? "tablist" : undefined}',
+      'role={open ? "tablist" : "presentation"}',
+    ]) {
+      expect(TABLIST_ROLE.test(form), form).toBe(true);
+    }
+    for (const form of [
+      'role="tab"',
+      'role="tabpanel"',
+      'aria-label="tablist"',
+    ]) {
+      expect(TABLIST_ROLE.test(form), form).toBe(false);
+    }
   });
 
   it("список власних реалізацій не протух", () => {
@@ -116,11 +153,7 @@ describe("контракт role=tablist ↔ клавіатура", () => {
         stale.push(`${rel} — файл не існує (${why})`);
         continue;
       }
-      if (
-        !/role=(?:"tablist"|\{"tablist"\}|\{isTablist \? "tablist" : undefined\})/.test(
-          code,
-        )
-      ) {
+      if (!TABLIST_ROLE.test(code)) {
         stale.push(`${rel} — більше не оголошує role="tablist" (${why})`);
       }
     }

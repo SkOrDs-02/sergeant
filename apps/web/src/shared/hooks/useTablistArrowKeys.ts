@@ -61,6 +61,11 @@ export function useTablistArrowKeys<T extends HTMLElement = HTMLButtonElement>(
       if (!HANDLED_KEYS.includes(event.key as (typeof HANDLED_KEYS)[number])) {
         return;
       }
+      // Модифіковані стрілки належать браузеру, не нам: Alt+← це «Назад» на
+      // Windows/Linux, Cmd+← — на macOS. Перехопивши їх, ми б викликали
+      // preventDefault і ще й перемкнули вкладку — тобто зʼїли навігацію
+      // й зробили те, чого людина не просила. Знахідка рев'ю на PR #1143.
+      if (event.altKey || event.ctrlKey || event.metaKey) return;
 
       const tablist = event.currentTarget.closest('[role="tablist"]');
       if (!tablist) return;

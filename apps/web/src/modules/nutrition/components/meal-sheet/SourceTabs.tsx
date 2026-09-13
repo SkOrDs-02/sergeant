@@ -55,6 +55,7 @@ export function SourceTabs({ active, onChange }: SourceTabsProps) {
             id={`source-tab-${t.id}`}
             aria-selected={isActive}
             aria-controls={`source-panel-${t.id}`}
+            tabIndex={isActive ? 0 : -1}
             onKeyDown={onTabKeyDown}
             onClick={() => onChange(t.id)}
             className={cn(

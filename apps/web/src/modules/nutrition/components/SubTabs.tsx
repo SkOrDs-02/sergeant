@@ -48,6 +48,7 @@ export function SubTabs({
             type="button"
             role="tab"
             aria-selected={active}
+            tabIndex={active ? 0 : -1}
             onKeyDown={onTabKeyDown}
             onClick={() => onChange(t.id)}
             className={cn(
