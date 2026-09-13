@@ -339,6 +339,53 @@ describe("@sergeant/design-tokens — бренд і модулі як ТЕКСТ
   }
 });
 
+describe("@sergeant/design-tokens — `moduleColors.primary` мішаний за тиром", () => {
+  // AI-DANGER: 2026-09-12 (D1 крок 3) — цей тест фіксує РОЗХОДЖЕННЯ ТИРІВ як
+  // відомий стан, а не виправляє його. Рішення власника: значень не рушати
+  // (зведення в один тир помітно змінює вигляд двох модулів), закрити гейтом.
+  //
+  // finyk і fizruk сидять на тирі -700, routine і nutrition — на -500. Це та
+  // сама «мішанка тирів», про яку попереджає коментар до `statusStrongHex`,
+  // тільки в мапі модулів. Наслідок під білим текстом: finyk 5.47 і fizruk
+  // 5.36 (повний AA), routine 2.79 і nutrition 1.93 (провал навіть для
+  // large-text 3:1). Тобто правило «модульний акцент під білим» НЕ існує —
+  // під білий іде `-strong` (тир -800, гейтований вище).
+  //
+  // `PAIRS` вище вже фіксує провал routine/nutrition на білому. Негейтованим
+  // лишалося саме розходження: ніщо не стверджувало, що дві родини стоять на
+  // РІЗНИХ щаблях рампи. Тепер зміна будь-якої з них дає видимий діф тут.
+  const TIER_700 = { finyk: "teal", fizruk: "cyan" };
+  const TIER_500 = { routine: "rose", nutrition: "lime" };
+
+  for (const [module, ramp] of Object.entries(TIER_700)) {
+    it(`${module}: primary — тир -700 (${ramp})`, () => {
+      expect(moduleColors[module].primary).toBe(brandColors[ramp][700]);
+    });
+  }
+
+  for (const [module, ramp] of Object.entries(TIER_500)) {
+    it(`${module}: primary — тир -500 (${ramp}), НЕ -700`, () => {
+      expect(moduleColors[module].primary).toBe(brandColors[ramp][500]);
+      expect(moduleColors[module].primary).not.toBe(brandColors[ramp][700]);
+    });
+  }
+
+  it("розходження тирів лишається саме таким: два -700 і два -500", () => {
+    const onSevenHundred = Object.entries(moduleColors)
+      .filter(([, v]) => v.primary)
+      .filter(([, v]) =>
+        [
+          brandColors.teal[700],
+          brandColors.cyan[700],
+          brandColors.rose[700],
+          brandColors.lime[700],
+        ].includes(v.primary),
+      )
+      .map(([m]) => m);
+    expect(onSevenHundred.sort()).toEqual(["finyk", "fizruk"]);
+  });
+});
+
 describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)", () => {
   // The light theme is the tonal inverse of the dark ink base: a warm-beige
   // page (#ecebe7) + white cards, green-ink text tiers, and strong-tier
