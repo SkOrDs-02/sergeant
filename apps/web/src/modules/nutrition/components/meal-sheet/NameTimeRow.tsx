@@ -31,9 +31,24 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
     (transcript: string) => {
       const parsed = parseMealSpeech(transcript);
       if (!parsed) return;
+      // Порція йде В НАЗВУ, і це єдине чесне місце для неї тут.
+      //
+      // `parseMealSpeech` повертає `grams`, підказка Whisper у сусідньому
+      // рядку прямо вчить їх називати — а `MealFormState` поля для них не
+      // має і мати не мусить: це РУЧНИЙ запис, де ккал і білок абсолютні
+      // для всієї страви, а не на 100 г. Масштабувати грамами тут нічого
+      // (на відміну від товарних шляхів — `PackageEntryStep`,
+      // `PickedFoodCard`, — де грами множать склад на 100 г).
+      //
+      // Доти число просто зникало: людина казала «гречка двісті грам», і
+      // порція не лишалась ніде. Назва «Гречка 200 г» — рівно те, що
+      // сказали, і рівно те, що людина написала б рукою.
+      const portionSuffix =
+        parsed.grams != null ? ` ${Math.round(parsed.grams)} г` : "";
+      const spokenName = parsed.name ? `${parsed.name}${portionSuffix}` : "";
       setForm((s) => ({
         ...s,
-        name: parsed.name || s.name,
+        name: spokenName || s.name,
         kcal: parsed.kcal != null ? String(Math.round(parsed.kcal)) : s.kcal,
         protein_g:
           parsed.protein != null

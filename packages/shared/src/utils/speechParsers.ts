@@ -14,10 +14,14 @@
 // ── Ukrainian number-words → digits ────────────────────────────────────────
 //
 // Used by both `parseUaNumber` (single-number parse) and `normalizeUaNumbers`
-// (token-stream rewrite). Inflections are deliberately NOT included here
-// because they only ever appear as the trailing word of a phrase like
-// "вісімдесятьох кілограмів" — the digit comes from "вісімдесят", and the
-// case ending lives on the unit, which the regex tolerates separately.
+// (token-stream rewrite).
+//
+// Тут раніше стояло, що відмінкові форми внесені НЕ будуть, бо «закінчення
+// живе на одиниці, а не на числівнику». Для української це неправда, і
+// коштувало це дорого: «вісімдесяти кілограмів», «сорока гривень», «пʼяти
+// разів», «двохсот грамів» — не екзотика, а звичайна усна форма з
+// квантифікованим іменником. Усі вони давали `null`. Непрямі відмінки
+// внесені нижче окремим блоком.
 
 import { foldApostrophes } from "./ukApostrophe";
 
@@ -88,7 +92,102 @@ const UA_NUMBER_WORDS: Record<string, number> = {
   тисяча: 1000,
   тисячі: 1000,
   тисяч: 1000,
+
+  // ── Непрямі відмінки ──────────────────────────────────────────────────
+  //
+  // Коментар вище колись стверджував, що відмінювати числівник не треба,
+  // бо «закінчення живе на одиниці». Для української це просто неправда:
+  // «вісімдесяти кілограмів», «двохсот грамів», «сорока гривень», «пʼяти
+  // разів» — не край, а звичайна усна форма з квантифікованим іменником.
+  // Саме її вживає людина, яка говорить природно, і саме вона давала
+  // `null`: у Фініку рятував запасний регекс на голе число (сума
+  // знаходилась, хоч і не завжди правильна), а у Фізруку спрацьовував
+  // guard «усі три null» — і фразу мовчки викидало.
+  //
+  // Родовий і місцевий збігаються (`пʼяти`), орудний окремо (`пʼятьма`).
+  // Паралельні форми на `-ох`/`-ьох` теж усні, тож стоять поруч.
+  двох: 2,
+  двома: 2,
+  трьох: 3,
+  трьома: 3,
+  чотирьох: 4,
+  чотирма: 4,
+  пʼяти: 5,
+  пʼятьох: 5,
+  пʼятьма: 5,
+  пʼятьома: 5,
+  шести: 6,
+  шістьох: 6,
+  шістьма: 6,
+  шістьома: 6,
+  семи: 7,
+  сімох: 7,
+  сьома: 7,
+  сімома: 7,
+  восьми: 8,
+  вісьмох: 8,
+  вісьма: 8,
+  вісьмома: 8,
+  девʼяти: 9,
+  девʼятьох: 9,
+  девʼятьма: 9,
+  десяти: 10,
+  десятьох: 10,
+  десятьма: 10,
+  одинадцяти: 11,
+  дванадцяти: 12,
+  тринадцяти: 13,
+  чотирнадцяти: 14,
+  пʼятнадцяти: 15,
+  шістнадцяти: 16,
+  сімнадцяти: 17,
+  вісімнадцяти: 18,
+  девʼятнадцяти: 19,
+  двадцяти: 20,
+  тридцяти: 30,
+  сорока: 40,
+  пʼятдесяти: 50,
+  шістдесяти: 60,
+  сімдесяти: 70,
+  вісімдесяти: 80,
+  девʼяноста: 90,
+  ста: 100,
+  двохсот: 200,
+  трьохсот: 300,
+  чотирьохсот: 400,
+  пʼятисот: 500,
+  шестисот: 600,
+  семисот: 700,
+  восьмисот: 800,
+  девʼятисот: 900,
+  тисячам: 1000,
+  тисячами: 1000,
+
+  // Дробові. «Півтора» — окреме слово, не сума, тож просто значення.
+  півтора: 1.5,
+  півтори: 1.5,
+  // Псевдослово: `collapseHalfPhrases` склеює «з половиною» в один токен,
+  // інакше прийменник «з» рве пробіг числівників навпіл і «дві з половиною
+  // тисячі» дає «2 з половиною 1000».
+  зполовиною: 0.5,
 };
+
+/**
+ * Склеює «з половиною» (та «із/та половиною») в один токен `зполовиною`.
+ *
+ * Потрібно саме до токенізації: пробіг числівників у `normalizeUaNumbers`
+ * рветься на будь-якому слові поза таблицею, а «з» — прийменник, у таблиці
+ * його бути не може.
+ *
+ * Межі — лукараунди, а не `\b`: поруч із кирилицею той якір не
+ * спрацьовує ніколи (див. `NOT_WORD_CHAR` нижче).
+ */
+function collapseHalfPhrases(text: string): string {
+  return text.replace(
+    /(?<![\p{L}\p{N}])(?:з|із|зі|та|і)\s+половиною(?![\p{L}\p{N}])/giu,
+    "зполовиною",
+  );
+}
 
 // Apostrophes Whisper emits vary: ASCII `'`, typographic `’`, modifier `ʼ`.
 // Fold every form to the canonical `ʼ` before lookup so "п'ять" / "п’ять"
@@ -144,7 +243,7 @@ function stripWordPunctuation(token: string): string {
  *   "кава" → null
  */
 export function parseUaNumber(text: string): number | null {
-  const lower = foldApostrophes(text.toLowerCase());
+  const lower = collapseHalfPhrases(foldApostrophes(text.toLowerCase()));
   const parsed = parseFloat(lower.replace(",", "."));
   if (!isNaN(parsed)) return parsed;
   let total = 0;
@@ -184,7 +283,7 @@ export function parseUaNumber(text: string): number | null {
  * extract weights / reps / amounts unchanged.
  */
 export function normalizeUaNumbers(text: string): string {
-  const normalized = foldApostrophes(text);
+  const normalized = collapseHalfPhrases(foldApostrophes(text));
   const words = normalized.split(/\s+/).filter((w) => w.length > 0);
   const out: string[] = [];
   const PUNCT_BREAK = /[.,;:!?)»]$/;
@@ -360,6 +459,10 @@ export function parseWorkoutSetSpeech(text: string): ParsedWorkoutSet | null {
     .replace(new RegExp(`(\\d+)\\s*${COUNT_UNIT}?${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(new RegExp(`${WEIGHT_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(new RegExp(`${COUNT_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
+    // Прийменник, що завис у ХВОСТІ після зачистки: «станова 120 кг 3
+    // підходи по 8 разів» лишало «Станова по». Саме в хвості, а не будь-де
+    // — інакше зникло б осмислене «жим НА похилій лаві».
+    .replace(/\s+(?:по|на|за|в|у|із|з)\s*$/iu, "")
     .replace(/\s+/g, " ")
     .trim();
 

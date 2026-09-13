@@ -119,6 +119,12 @@ export function WorkoutItemCard({
   setDefaultForExercise,
   onDeleteSet,
 }: WorkoutItemCardProps) {
+  // Помилка голосу — ЛОКАЛЬНИЙ стан, свідомо не `useToast`. Той хук
+  // кидає поза `ToastProvider`, а картка рендериться і в деревах без
+  // нього (саме на цьому падали наявні тести) — тобто замість
+  // повідомлення людина отримала б білий екран. Той самий висновок уже
+  // записаний у `SilpoReceiptSection.tsx`.
+  const [voiceErr, setVoiceErr] = useState<string | null>(null);
   const last = it.exerciseId
     ? (lastByExerciseId[it.exerciseId] as LastByExerciseEntry | undefined)
     : undefined;
@@ -340,6 +346,7 @@ export function WorkoutItemCard({
                 // injects 0×0 sets that the cloud-sync queue silently
                 // persists. Voice entry keeps its auto-start on purpose —
                 // the spoken set is already a complete, explicit action.
+                onError={setVoiceErr}
                 onResult={(transcript) => {
                   const parsed = parseWorkoutSetSpeech(transcript);
                   if (
@@ -348,12 +355,19 @@ export function WorkoutItemCard({
                       parsed.reps == null &&
                       parsed.sets == null)
                   ) {
+                    // Мовчазний `return` тут коштував дорожче, ніж
+                    // виглядав: людина говорила, бачила чип із
+                    // розпізнаним текстом — і далі не з'являлось ні
+                    // сету, ні помилки. Збій був невидимий, тому й
+                    // польових скарг на голос не було.
+                    setVoiceErr(messages.fizruk.voiceSet.notParsed);
                     return;
                   }
                   const newSet = {
                     weightKg: parsed.weight ?? 0,
                     reps: parsed.reps ?? 0,
                   };
+                  setVoiceErr(null);
                   setSetIds((prev) => [...prev, crypto.randomUUID()]);
                   updateItem(activeWorkout.id, it.id, {
                     sets: [...(it.sets || []), newSet],
@@ -378,6 +392,13 @@ export function WorkoutItemCard({
                 />
               )}
             </div>
+          )}
+          {voiceErr && (
+            // `role="alert"` — повідомлення зʼявляється у відповідь на дію
+            // людини, і без ролі скрінрідер про нього не дізнається.
+            <p role="alert" className="pt-1 text-style-caption text-danger">
+              {voiceErr}
+            </p>
           )}
         </div>
       )}
