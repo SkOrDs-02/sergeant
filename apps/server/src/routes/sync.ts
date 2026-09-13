@@ -6,8 +6,21 @@ import { syncV2Stream } from "../modules/sync/syncV2Stream.js";
 
 /**
  * `/api/sync/*` — read-only audit log лишається за авторизованою сесією.
- * `setModule` і `requireSession` унесені з handler-ів сюди: handler тепер
- * просто читає `req.user` і виконує бізнес-логіку.
+ * `setModule`, pre-auth IP-лімітер, `requireSession` і per-user лімітер
+ * унесені з handler-ів сюди: handler тепер просто читає `req.user` і
+ * виконує бізнес-логіку.
+ *
+ * Порядок гейтів на кожному з двох префіксів навмисно трирівневий —
+ * pre-auth IP-лімітер → `requireSession()` → per-user лімітер. Рецидив
+ * знахідки B31 (PR-A3) уже вчив, що per-user лімітер має йти ПІСЛЯ сесії
+ * (див. коментар біля `requireSession()` нижче); ревʼю того ж фіксу
+ * знайшло зворотний бік: `requireSession()` при невдачі відповідає 401 і
+ * НЕ кличе `next()`, тож поставивши лімітер ПІСЛЯ сесії, ми водночас
+ * прибрали єдиний захист від безсесійного флуду — раніше спільний
+ * `r.use(...)`-лімітер різав такий трафік по IP ще ДО спроби резолву
+ * сесії, а `getSessionUser` усе одно йде в session-store (робота БД) на
+ * кожен запит. Pre-auth IP-лімітер повертає цей захист, не займаючи
+ * бакет per-user лімітера (окремий `key` із суфіксом `:ip`).
  *
  * `/api/sync/audit` (PR #005) — read-only audit log. Self-режим або
  * admin-allowlist для чужих юзерів; ділить ту ж auth/rate-limit-обгортку
@@ -25,8 +38,22 @@ import { syncV2Stream } from "../modules/sync/syncV2Stream.js";
 export function createSyncRouter(): Router {
   const r = Router();
   r.use("/api/sync", setModule("sync"));
-  // requireSession() йде ПЕРЕД rateLimitExpress навмисно (рецидив знахідки
-  // B31, PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+  // Pre-auth IP-лімітер — ПЕРЕД requireSession() навмисно. `requireSession()`
+  // на невдачі шле 401 і не кличе `next()`, тож без цього гейта запит без
+  // валідної сесії (відсутня чи підроблена кука) взагалі не діставався б до
+  // per-user бакета нижче — а `getSessionUser` усе одно робить lookup у
+  // session-store, тобто такий флуд коштував би роботи БД без жодного
+  // ліміту. Окремий `key` (суфікс `:ip`) — інакше лічильник ділився б із
+  // per-user бакетом `api:sync` і зіпсував би обидва. Ліміт 150/хв = 5×
+  // per-user 30/хв: щедро для NAT/офісу з кількома залогіненими
+  // користувачами (у кожного власний per-user бакет), і на порядок нижче
+  // за необмежений флуд.
+  r.use(
+    "/api/sync",
+    rateLimitExpress({ key: "api:sync:ip", limit: 150, windowMs: 60_000 }),
+  );
+  // requireSession() йде ПЕРЕД per-user rateLimitExpress навмисно (рецидив
+  // знахідки B31, PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`):
   // `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
   // фолбечиться на `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
   // requireSession, `req.user` завжди unset у момент перевірки — бакет
@@ -40,7 +67,16 @@ export function createSyncRouter(): Router {
   r.get("/api/sync/audit", listSyncAudit);
 
   r.use("/api/v2/sync", setModule("syncV2"));
-  // Той самий порядок, той самий аргумент — див. коментар вище.
+  // Той самий трирівневий порядок (pre-auth IP → сесія → per-user), той
+  // самий аргумент — див. коментарі вище. Ліміт 300/хв = 5× per-user 60/хв.
+  r.use(
+    "/api/v2/sync",
+    rateLimitExpress({
+      key: "api:v2:sync:ip",
+      limit: 300,
+      windowMs: 60_000,
+    }),
+  );
   r.use("/api/v2/sync", requireSession());
   r.use(
     "/api/v2/sync",

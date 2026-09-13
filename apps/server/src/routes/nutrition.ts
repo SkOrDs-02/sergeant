@@ -21,6 +21,13 @@ import shoppingList from "../modules/nutrition/shopping-list.js";
 /**
  * Усі `/api/nutrition/*` endpoint-и мають спільний set guard-ів:
  *   - `setModule("nutrition")` — для логера/метрик
+ *   - pre-auth IP-лімітер ("api:nutrition:ip") — стоїть ПЕРЕД
+ *     `requireSession()`. `requireSession()` на невдачі шле 401 і не кличе
+ *     `next()`, тож без цього гейта безсесійний флуд (відсутня/підроблена
+ *     кука) взагалі не діставався б до per-user бакета нижче, а
+ *     `getSessionUser` усе одно робить lookup у session-store на кожен
+ *     такий запит. Окремий `key` (суфікс `:ip`), ліміт 600/хв = 5×
+ *     per-user 120/хв.
  *   - `requireSession()` — лише авторизовані користувачі (cookie або Bearer)
  *   - broad rate-limit ("api:nutrition") — гасить shotgun-атаки, per-user
  *     (`requireSession()` стоїть ПЕРЕД лімітером, щоб `rateLimitSubject`
@@ -41,8 +48,16 @@ import shoppingList from "../modules/nutrition/shopping-list.js";
 export function createNutritionRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
   r.use("/api/nutrition", setModule("nutrition"));
-  // requireSession() йде ПЕРЕД rateLimitExpress навмисно (рецидив знахідки
-  // B31, PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+  r.use(
+    "/api/nutrition",
+    rateLimitExpress({
+      key: "api:nutrition:ip",
+      limit: 600,
+      windowMs: 60_000,
+    }),
+  );
+  // requireSession() йде ПЕРЕД per-user rateLimitExpress навмисно (рецидив
+  // знахідки B31, PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`):
   // `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
   // фолбечиться на `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
   // requireSession, `req.user` завжди unset у момент перевірки — бакет

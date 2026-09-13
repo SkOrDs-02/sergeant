@@ -21,19 +21,34 @@ import {
 
 /**
  * `/api/push/vapid-public` свідомо поза rate-limiter-ом: його смикає фронт
- * під час реєстрації сервіс-воркера і він має бути швидким/дешевим. Решта
- * endpoint-ів (subscribe/unsubscribe/register/unregister/test) лімітуються
- * спільним "api:push" бакетом, застосованим ПЕРЕД лімітером
- * `requireSession()`/`requireSessionSoft()` на кожному з них навмисно
- * (рецидив знахідки B31, PR-A3 у
- * `docs/work/specs/audits/2026-09-13-product-full-review.md`):
- * `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
- * фолбечиться на `ip:<addr>` лише коли сесії немає. Раніше цей бакет
- * висів через `r.use("/api/push", …)` ПЕРЕД усіма post/delete-роутами,
- * тож `req.user` завжди був unset у момент перевірки і бакет завжди
- * фолбечився на IP. `send` — виняток: internal-only endpoint без сесії
- * взагалі (захист — мережевий allowlist + `X-Api-Secret`), тож там
- * лімітер лишається per-IP навмисно.
+ * під час реєстрації сервіс-воркера і він має бути швидким/дешевим.
+ *
+ * Решта захищених endpoint-ів
+ * (subscribe/unsubscribe/register/unregister/test) мають трирівневий гейт,
+ * і порядок навмисний:
+ *   1. Pre-auth IP-лімітер (`api:push:ip`, 150/хв, окремий `preAuthIpRateLimit`)
+ *      — ПЕРЕД `requireSession()`/`requireSessionSoft()`. Обидва варіанти
+ *      сесії на невдачі шлють 401/503 і НЕ кличуть `next()`, тож без цього
+ *      гейта безсесійний флуд (відсутня/підроблена кука) взагалі не
+ *      діставався б до per-user бакета нижче — а `getSessionUser` усе одно
+ *      робить lookup у session-store на кожен такий запит. Окремий `key`
+ *      (суфікс `:ip`), ліміт 150/хв = 5× per-user 30/хв.
+ *   2. `requireSession()` / `requireSessionSoft()` — резолвить сесію.
+ *   3. Спільний per-user бакет `api:push` (30/хв, `broadRateLimit`),
+ *      застосований ПІСЛЯ сесії навмисно (рецидив знахідки B31, PR-A3 у
+ *      `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+ *      `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
+ *      фолбечиться на `ip:<addr>` лише коли сесії немає. Раніше цей бакет
+ *      висів через `r.use("/api/push", …)` ПЕРЕД усіма post/delete-роутами,
+ *      тож `req.user` завжди був unset у момент перевірки і бакет завжди
+ *      фолбечився на IP.
+ *
+ * `send` — єдиний виняток: internal-only endpoint без сесії взагалі
+ * (захист — мережевий allowlist + `X-Api-Secret`), тож його `broadRateLimit`
+ * і так рахується per-IP і окремого pre-auth гейта не потребує.
+ * `test` виняток НЕ становить: те, що `requireSession()` стоїть там першим,
+ * — це і є та сама діра, а не її відсутність, тож pre-auth гейт у нього
+ * такий самий, як у решти чотирьох.
  *
  * subscribe/unsubscribe використовують `requireSessionSoft`, а не
  * `requireSession`: service worker смикає ці endpoint-и у фоні, і
@@ -52,14 +67,23 @@ export function createPushRouter(): Router {
     limit: 30,
     windowMs: 60_000,
   });
+  // Pre-auth IP-бакет — окремий `key` (суфікс `:ip`), інакше ділив би
+  // лічильник із per-user `api:push` вище. 150/хв = 5× per-user ліміт.
+  const preAuthIpRateLimit = rateLimitExpress({
+    key: "api:push:ip",
+    limit: 150,
+    windowMs: 60_000,
+  });
   r.post(
     "/api/push/subscribe",
+    preAuthIpRateLimit,
     requireSessionSoft(),
     broadRateLimit,
     pushSubscribe,
   );
   r.delete(
     "/api/push/subscribe",
+    preAuthIpRateLimit,
     requireSessionSoft(),
     broadRateLimit,
     pushUnsubscribe,
@@ -69,12 +93,19 @@ export function createPushRouter(): Router {
   // mobile-клієнт має прозорий сигнал "токен протух, треба перелогінитись",
   // а не silently 200 з пустою сесією. Доступний також як `/api/v1/push/register`
   // через `apiVersionRewrite`.
-  r.post("/api/push/register", requireSession(), broadRateLimit, pushRegister);
+  r.post(
+    "/api/push/register",
+    preAuthIpRateLimit,
+    requireSession(),
+    broadRateLimit,
+    pushRegister,
+  );
   // `/api/push/unregister` — симетричний анрег. Web шле
   // `{ platform: "web", endpoint }`, native — `{ platform, token }`.
   // Сесія обовʼязкова з тих самих причин, що й у register.
   r.post(
     "/api/push/unregister",
+    preAuthIpRateLimit,
     requireSession(),
     broadRateLimit,
     pushUnregister,
@@ -130,6 +161,7 @@ export function createPushRouter(): Router {
   // інакше — in-memory fallback per-process.
   r.post(
     "/api/push/test",
+    preAuthIpRateLimit,
     requireSession(),
     broadRateLimit,
     rateLimitExpress({ key: "api:push:test", limit: 1, windowMs: 5_000 }),

@@ -33,6 +33,14 @@ import {
  * який чистить памʼять, впирався б у 429 приблизно на 25-му видаленні —
  * рівно посеред дії, яку ми самі йому пропонуємо. Тому list/delete мають
  * власний, ширший бакет.
+ *
+ * Кожен із чотирьох роутів нижче має ще й pre-auth IP-лімітер ПЕРЕД
+ * `requireSession()`: `requireSession()` на невдачі шле 401 і не кличе
+ * `next()`, тож без цього гейта безсесійний флуд (відсутня/підроблена
+ * кука) взагалі не діставався б до per-user бакета — а `getSessionUser`
+ * усе одно робить lookup у session-store на кожен такий запит. Окремі
+ * `key` (суфікс `:ip`) для heavy/browse, ліміти — 5× відповідного
+ * per-user бакета (150/5хв і 1000/5хв).
  */
 export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
@@ -53,9 +61,21 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
     limit: 200,
     windowMs: 5 * 60_000,
   });
+  /** Pre-auth IP-бакет для `recall` — окремий `key`, 5× heavyRateLimit. */
+  const heavyPreAuthIp = rateLimitExpress({
+    key: "api:ai-memory:ip",
+    limit: 150,
+    windowMs: 5 * 60_000,
+  });
+  /** Pre-auth IP-бакет для list/delete — окремий `key`, 5× browseRateLimit. */
+  const browsePreAuthIp = rateLimitExpress({
+    key: "api:ai-memory:browse:ip",
+    limit: 1000,
+    windowMs: 5 * 60_000,
+  });
 
-  // requireSession() йде ПЕРЕД rate-limit-ером навмисно на всіх чотирьох
-  // роутах нижче (рецидив знахідки B31, PR-A3 у
+  // requireSession() йде ПЕРЕД per-user rate-limit-ером навмисно на всіх
+  // чотирьох роутах нижче (рецидив знахідки B31, PR-A3 у
   // `docs/work/specs/audits/2026-09-13-product-full-review.md`):
   // `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
   // фолбечиться на `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
@@ -63,6 +83,7 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
   // завжди per-IP, а IPv6-клієнт має /64. Див. еталон у `chat.ts`.
   r.post(
     "/api/ai-memory/recall",
+    heavyPreAuthIp,
     requireSession(),
     heavyRateLimit,
     requirePlan(pool, "pro"),
@@ -70,6 +91,7 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
   );
   r.delete(
     "/api/ai-memory",
+    browsePreAuthIp,
     requireSession(),
     browseRateLimit,
     clearAiMemoryHandler,
@@ -88,12 +110,14 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
   // спадок від попереднього Pro-періоду — і саме до нього доступ і потрібен.
   r.get(
     "/api/ai-memory/list",
+    browsePreAuthIp,
     requireSession(),
     browseRateLimit,
     buildMemoryListHandler(pool),
   );
   r.delete(
     "/api/ai-memory/:id",
+    browsePreAuthIp,
     requireSession(),
     browseRateLimit,
     buildMemoryDeleteHandler(pool),
