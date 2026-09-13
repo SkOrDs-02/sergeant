@@ -164,7 +164,7 @@ export function WorkoutJournalSection({
   return (
     <>
       <SectionErrorBoundary
-        title="Помилка в активному тренуванні"
+        title="Не вдалось показати активне тренування"
         resetLabel="Спробувати знову"
         onReset={() => {
           // Мінімальний безпечний reset: залишаємось на тому самому
