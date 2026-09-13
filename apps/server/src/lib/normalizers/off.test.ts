@@ -80,6 +80,29 @@ describe("normalizeOFFBarcode", () => {
     expect(result!.nutrients.salt_100g).toBe(1.3);
   });
 
+  /**
+   * РЕГРЕСІЯ. Перша версія округлювала натрій ДО множення, тобто рахувала
+   * двічі: `round1(0.04)` → 0, далі 0 × 2.5 = 0 замість чесних 0.1.
+   * Саме на цих числах воно й коштує все — 0.04 г/100 г натрію типове для
+   * питної води, і сіль там мала б читатись, а не зникати.
+   */
+  it("не округлює натрій ДО множення — інакше дрібні значення зникають", () => {
+    const result = normalizeOFFBarcode({
+      product_name: "Вода мінеральна",
+      nutriments: { ...nutriments, sodium_100g: 0.04 },
+    });
+    expect(result!.nutrients.salt_100g).toBe(0.1);
+  });
+
+  it("округлює один раз, уже на солі", () => {
+    // 0.35 × 2.5 = 0.875 → 0.9. Подвійне округлення дало б 0.4 × 2.5 = 1.
+    const result = normalizeOFFBarcode({
+      product_name: "Сир",
+      nutriments: { ...nutriments, sodium_100g: 0.35 },
+    });
+    expect(result!.nutrients.salt_100g).toBe(0.9);
+  });
+
   it("пряма сіль виграє в натрію, якщо є обидва", () => {
     const result = normalizeOFFBarcode({
       product_name: "Чипси",

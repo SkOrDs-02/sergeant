@@ -133,14 +133,19 @@ function extractExtraNutrients(
 ): NormalizedOFFNutrients {
   const n = (nutriments || {}) as Record<string, unknown>;
   const saltDirect = round1(n["salt_100g"] ?? null);
-  const sodium = round1(n["sodium_100g"] ?? null);
+  // Перерахунок іде на СИРОМУ натрії, а округлення — рівно одне, вже на
+  // солі. Округлити спершу натрій означало б подвійне округлення на
+  // числах, де воно коштує все: натрій 0.04 г/100 г (типово для питної
+  // води) дає round1 → 0, а далі 0 × 2.5 = 0 замість чесних 0.1.
+  // Знахідка CodeRabbit на цьому PR; тест нижче тримає саме цей кейс.
+  const sodiumRaw = n["sodium_100g"];
+  const saltFromSodium =
+    sodiumRaw == null ? null : round1(Number(sodiumRaw) * 2.5);
   return {
     fiber_100g: round1(n["fiber_100g"] ?? null),
     sugars_100g: round1(n["sugars_100g"] ?? null),
     saturatedFat_100g: round1(n["saturated-fat_100g"] ?? null),
-    salt_100g:
-      saltDirect ??
-      (sodium == null ? null : Math.round(sodium * 2.5 * 10) / 10),
+    salt_100g: saltDirect ?? saltFromSodium,
     alcohol_100g: round1(n["alcohol_100g"] ?? null),
   };
 }
