@@ -47,6 +47,48 @@ import { foldApostrophes } from "./ukApostrophe";
  */
 const NOT_WORD_CHAR = "(?![\\p{L}\\p{N}])";
 
+/**
+ * Число з відсіченим бектрекінгом.
+ *
+ * AI-DANGER: `(?!\\d)` наприкінці — не косметика, а захист від
+ * КВАДРАТИЧНОГО бектрекінгу на даних користувача (CodeQL
+ * `js/polynomial-redos`). Без нього на рядку з довгого прогону цифр
+ * `\\d+` зʼїдає все, наступний якір падає, рушій вкорочує збіг на одну
+ * цифру — і так до самого початку, для КОЖНОЇ стартової позиції. Заміряно
+ * на 20 000 цифр: 3.4 с в одному `replace`. З `(?!\\d)` укорочений збіг
+ * помирає одразу, бо праворуч стоїть цифра.
+ *
+ * JS не має атомарних груп, тож цей lookahead — їх штатна заміна.
+ */
+const NUM = "(\\d+(?:[.,]\\d+)?)(?!\\d)";
+const INT = "(\\d+)(?!\\d)";
+
+/**
+ * Стеля довжини розбору.
+ *
+ * AI-DANGER: це не мікрооптимізація, а межа складності. Регекси нижче
+ * шукають «число + одиниця» з КОЖНОЇ позиції рядка, і на довгому прогоні
+ * цифр така форма квадратична за самою природою — не через зайвий
+ * бектрекінг, а тому що жадібний `\\d+` на n позиціях дає n² кроків.
+ * Жодна форма регекса цього не прибирає (перевірено й на атомарній
+ * емуляції через lookahead + backreference: та сама квадратика).
+ *
+ * Прибирає її лише межа на вході. Заміряно до неї: 20 000 цифр — 13.7 с
+ * на чотири парсери, 40 000 — 52.9 с. Вхід — транскрипт мовлення, тобто
+ * дані користувача (CodeQL `js/polynomial-redos`).
+ *
+ * 1024 — та сама стеля, що вже стоїть на `promptHint` у
+ * `useGroqVoiceInput`. Голосова команда («кава 45 гривень») на два
+ * порядки коротша; усе, що довше за абзац, розбирати як команду однаково
+ * безглуздо.
+ */
+const MAX_PARSE_LEN = 1024;
+
+/** Обрізає вхід до стелі розбору. Див. `MAX_PARSE_LEN`. */
+function capInput(text: string): string {
+  return text.length > MAX_PARSE_LEN ? text.slice(0, MAX_PARSE_LEN) : text;
+}
+
 const UA_NUMBER_WORDS: Record<string, number> = {
   нуль: 0,
   один: 1,
@@ -243,7 +285,9 @@ function stripWordPunctuation(token: string): string {
  *   "кава" → null
  */
 export function parseUaNumber(text: string): number | null {
-  const lower = collapseHalfPhrases(foldApostrophes(text.toLowerCase()));
+  const lower = collapseHalfPhrases(
+    foldApostrophes(capInput(text).toLowerCase()),
+  );
   const parsed = parseFloat(lower.replace(",", "."));
   if (!isNaN(parsed)) return parsed;
   let total = 0;
@@ -283,7 +327,7 @@ export function parseUaNumber(text: string): number | null {
  * extract weights / reps / amounts unchanged.
  */
 export function normalizeUaNumbers(text: string): string {
-  const normalized = collapseHalfPhrases(foldApostrophes(text));
+  const normalized = collapseHalfPhrases(foldApostrophes(capInput(text)));
   const words = normalized.split(/\s+/).filter((w) => w.length > 0);
   const out: string[] = [];
   const PUNCT_BREAK = /[.,;:!?)»]$/;
@@ -346,12 +390,12 @@ export interface ParsedExpense {
 export function parseExpenseSpeech(text: string): ParsedExpense | null {
   if (!text?.trim()) return null;
 
-  const norm = normalizeUaNumbers(text);
+  const norm = normalizeUaNumbers(capInput(text));
   const lower = norm.toLowerCase().replace(/[,]/g, ".");
 
   const amountMatch =
-    lower.match(new RegExp(`(\\d+(?:\\.\\d+)?)\\s*${CURRENCY}`, "iu")) ||
-    lower.match(/(\d+(?:\.\d+)?)/u);
+    lower.match(new RegExp(`${NUM}\\s*${CURRENCY}`, "iu")) ||
+    lower.match(new RegExp(NUM, "u"));
 
   let amount: number | null = null;
   if (amountMatch?.[1]) {
@@ -365,10 +409,7 @@ export function parseExpenseSpeech(text: string): ParsedExpense | null {
   }
 
   let name = norm
-    .replace(
-      new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*${CURRENCY}?${NOT_WORD_CHAR}`, "giu"),
-      " ",
-    )
+    .replace(new RegExp(`${NUM}\\s*${CURRENCY}?${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(new RegExp(`${CURRENCY}${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(/\s+/g, " ")
     .trim();
@@ -409,22 +450,25 @@ export interface ParsedWorkoutSet {
 export function parseWorkoutSetSpeech(text: string): ParsedWorkoutSet | null {
   if (!text?.trim()) return null;
 
-  const norm = normalizeUaNumbers(text);
+  const norm = normalizeUaNumbers(capInput(text));
   const lower = norm.toLowerCase();
 
   const weightMatch =
-    lower.match(/(\d+(?:[.,]\d+)?)\s*(?:кг|kg|кілограм|килограм)/iu) ||
-    lower.match(/(\d+(?:[.,]\d+)?)\s*(?:lb|lbs|фунт)/iu);
+    lower.match(new RegExp(`${NUM}\\s*(?:кг|kg|кілограм|килограм)`, "iu")) ||
+    lower.match(new RegExp(`${NUM}\\s*(?:lb|lbs|фунт)`, "iu"));
 
   const repsMatch =
     lower.match(
-      /(\d+)\s*(?:повт|повторень|повторів|повторення|reps?|разів|раз)/iu,
+      new RegExp(
+        `${INT}\\s*(?:повт|повторень|повторів|повторення|reps?|разів|раз)`,
+        "iu",
+      ),
     ) || lower.match(/(?:повт|reps?)\s*(\d+)/iu);
 
   // `підх[іо]д` — чергування і↔о в корені: «підхід» → «підходи». Без нього
   // найприроднішa форма «3 підходи» не розпізнавалась узагалі.
   const setsMatch =
-    lower.match(/(\d+)\s*(?:підх[іо]д\p{L}*|sets?)/iu) ||
+    lower.match(new RegExp(`${INT}\\s*(?:підх[іо]д\\p{L}*|sets?)`, "iu")) ||
     lower.match(/(?:підх[іо]д\p{L}*|sets?)\s*(\d+)/iu);
 
   let weight: number | null = null;
@@ -456,14 +500,22 @@ export function parseWorkoutSetSpeech(text: string): ParsedWorkoutSet | null {
       ),
       " ",
     )
-    .replace(new RegExp(`(\\d+)\\s*${COUNT_UNIT}?${NOT_WORD_CHAR}`, "giu"), " ")
+    .replace(new RegExp(`${INT}\\s*${COUNT_UNIT}?${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(new RegExp(`${WEIGHT_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(new RegExp(`${COUNT_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
-    // Прийменник, що завис у ХВОСТІ після зачистки: «станова 120 кг 3
-    // підходи по 8 разів» лишало «Станова по». Саме в хвості, а не будь-де
-    // — інакше зникло б осмислене «жим НА похилій лаві».
-    .replace(/\s+(?:по|на|за|в|у|із|з)\s*$/iu, "")
     .replace(/\s+/g, " ")
+    .trim()
+    // Прийменник, що завис у ХВОСТІ після зачистки: «станова 120 кг 3
+    // підходи по 8 разів» лишало «Станова по». Саме в хвості, а не
+    // будь-де: інакше зникло б осмислене «жим НА похилій лаві».
+    //
+    // AI-DANGER: цей крок мусить стояти ПІСЛЯ згортання пробілів, а не
+    // перед ним. Форма `\s+(?:…)\s*$` на пробільному хвості дає
+    // КВАДРАТИЧНИЙ бектрекінг (заміряно: 4 k → 30 мс, 32 k → 1.8 с,
+    // множник 4.0 на кожне подвоєння), а вхід тут — сирий транскрипт,
+    // тобто дані користувача. Після `\s+`→` ` і `trim()` пробільних
+    // хвостів не лишається, тож літерального пробілу і `$` досить.
+    .replace(/ (?:по|на|за|в|у|із|з)$/iu, "")
     .trim();
 
   if (!exerciseName) exerciseName = null;
@@ -494,26 +546,30 @@ export interface ParsedMeal {
 export function parseMealSpeech(text: string): ParsedMeal | null {
   if (!text?.trim()) return null;
 
-  const norm = normalizeUaNumbers(text);
+  const norm = normalizeUaNumbers(capInput(text));
   const lower = norm.toLowerCase();
 
   const kcalMatch =
-    lower.match(/(\d+(?:[.,]\d+)?)\s*(?:ккал|кілокалор|калор|kcal|cal)/iu) ||
-    lower.match(/(?:ккал|kcal)\s*(\d+(?:[.,]\d+)?)/iu);
+    lower.match(
+      new RegExp(`${NUM}\\s*(?:ккал|кілокалор|калор|kcal|cal)`, "iu"),
+    ) || lower.match(/(?:ккал|kcal)\s*(\d+(?:[.,]\d+)?)/iu);
 
   // Prefer multi-letter alternations first; "гр"/"г" alone use a Cyrillic-aware
   // negative lookahead so they don't gobble "гречка". JS `\b` is ASCII-only and
   // doesn't fire between two Cyrillic chars even with the /u flag.
   const CYR = /[а-яА-ЯёЁєЄіІїЇґҐ]/.source;
   const gramsRe = new RegExp(
-    `(\\d+(?:[.,]\\d+)?)\\s*(?:грам|гр(?!${CYR})|г(?!${CYR})|g\\b|ml|мл)`,
+    `${NUM}\\s*(?:грам|гр(?!${CYR})|г(?!${CYR})|g\\b|ml|мл)`,
     "iu",
   );
   const gramsMatch =
     lower.match(gramsRe) || lower.match(/(?:грам|гр)\s*(\d+(?:[.,]\d+)?)/iu);
 
   const proteinMatch = lower.match(
-    /(\d+(?:[.,]\d+)?)\s*(?:г\s*білка|г\s*протеїну|g\s*protein|protein)/iu,
+    new RegExp(
+      `${NUM}\\s*(?:г\\s*білка|г\\s*протеїну|g\\s*protein|protein)`,
+      "iu",
+    ),
   );
 
   let kcal: number | null = null;
@@ -545,7 +601,7 @@ export function parseMealSpeech(text: string): ParsedMeal | null {
   // 30 г білка» давало назву «Омлет грам г білка». Спершу знімаємо ВСІ
   // пари одним алфавітом одиниць, і лише потім — залишки.
   const name0 = norm
-    .replace(new RegExp(`(\\d+(?:[.,]\\d+)?)\\s*${MEAL_UNIT}`, "giu"), " ")
+    .replace(new RegExp(`${NUM}\\s*${MEAL_UNIT}`, "giu"), " ")
     .replace(new RegExp(`${MEAL_UNIT}${NOT_WORD_CHAR}`, "giu"), " ")
     .replace(/\d+(?:[.,]\d+)?/gu, " ");
   let name = name0.replace(/\s+/g, " ").trim();

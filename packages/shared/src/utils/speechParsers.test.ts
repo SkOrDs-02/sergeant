@@ -378,3 +378,52 @@ describe("дробові числівники", () => {
     );
   });
 });
+
+/**
+ * МЕЖА СКЛАДНОСТІ на вході (CodeQL `js/polynomial-redos`).
+ *
+ * Регекси шукають «число + одиниця» з КОЖНОЇ позиції рядка, і на довгому
+ * прогоні цифр ця форма квадратична за природою: жадібний `\d+` на n
+ * позиціях дає n² кроків. Це не «зайвий бектрекінг», який лікується
+ * формою регекса — перевірено й на атомарній емуляції через
+ * lookahead + backreference, квадратика та сама.
+ *
+ * Заміряно ДО межі, на чотирьох парсерах разом: 20 000 цифр — 13.7 с,
+ * 40 000 — 52.9 с. Вхід тут — транскрипт мовлення, тобто дані
+ * користувача.
+ *
+ * Поріг у тесті навмисно грубий (2 с): чинна реалізація дає ~20 мс
+ * незалежно від довжини, а зламана — десятки секунд. Запас на два
+ * порядки, тож у CI це не мерехтітиме.
+ */
+describe("межа складності розбору", () => {
+  it("довгий прогін цифр не підвішує парсери", () => {
+    const evil = "1".repeat(200_000) + "я";
+    const started = performance.now();
+    parseExpenseSpeech(evil);
+    parseWorkoutSetSpeech(evil);
+    parseMealSpeech(evil);
+    normalizeUaNumbers(evil);
+    expect(performance.now() - started).toBeLessThan(2000);
+  });
+
+  it("час не залежить від довжини входу", () => {
+    const short = "1".repeat(5_000) + "я";
+    const long = "1".repeat(100_000) + "я";
+    const t1 = performance.now();
+    parseExpenseSpeech(short);
+    const shortMs = performance.now() - t1;
+    const t2 = performance.now();
+    parseExpenseSpeech(long);
+    const longMs = performance.now() - t2;
+    // Квадратика дала б тут різницю в 400 разів. Межа робить її ~1.
+    expect(longMs).toBeLessThan(Math.max(shortMs * 10, 500));
+  });
+
+  // Межа не має зачіпати реальні фрази — вони на два порядки коротші.
+  it("звичайна команда розбирається як і раніше", () => {
+    expect(parseExpenseSpeech("кава 45 гривень")?.amount).toBe(45);
+    expect(parseWorkoutSetSpeech("жим 80 кг 8 разів")?.weight).toBe(80);
+    expect(parseMealSpeech("гречка 200 грам 180 ккал")?.kcal).toBe(180);
+  });
+});
