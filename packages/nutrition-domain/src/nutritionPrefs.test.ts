@@ -274,6 +274,53 @@ describe("adaptiveGoalLastReason", () => {
     ).toEqual(reason);
   });
 
+  /**
+   * НЕ `Number(...)`, а `typeof`.
+   *
+   * Тут була діра рівно в тому правилі, заради якого функція й існує:
+   * `Number(null)`, `Number("")`, `Number(false)`, `Number([])` — усе це
+   * 0, тож знімок із суцільних `null` ставав валідною «нульовою
+   * підставою», а булеві давали ще й `weightDeltaKg: 1` — вигаданий тренд
+   * «+1,0 кг». Людині показали б упевнене пояснення зміни цілі, зіткане з
+   * нічого.
+   *
+   * Перший набір тестів цього не спіймав, бо перевіряв `NaN` і неповні
+   * обʼєкти — тобто форми, де коерція й так падає. Саме всі-`null` і
+   * булеві проходили наскрізь.
+   */
+  it("значення, які коерція перетворила б на нулі, відкидаються", () => {
+    const shapes = [
+      {
+        averageIntakeKcal: null,
+        weightDeltaKg: null,
+        tdeeKcal: null,
+        goalKcal: null,
+      },
+      { averageIntakeKcal: "", weightDeltaKg: "", tdeeKcal: "", goalKcal: "" },
+      {
+        averageIntakeKcal: false,
+        weightDeltaKg: true,
+        tdeeKcal: false,
+        goalKcal: false,
+      },
+      { averageIntakeKcal: [], weightDeltaKg: [], tdeeKcal: [], goalKcal: [] },
+      // Рядок-число теж не проходить: знімок пише наш код через
+      // `JSON.stringify`, тож рядок означає пошкоджені дані.
+      {
+        averageIntakeKcal: "2180",
+        weightDeltaKg: "-0.4",
+        tdeeKcal: "2400",
+        goalKcal: "2275",
+      },
+    ];
+    for (const bad of shapes) {
+      expect(
+        normalizeNutritionPrefs({ adaptiveGoalLastReason: bad })
+          .adaptiveGoalLastReason,
+      ).toBeNull();
+    }
+  });
+
   it("неповний або зіпсований знімок відкидається цілком", () => {
     for (const bad of [
       { averageIntakeKcal: 2180 },
