@@ -10,7 +10,6 @@ import { Input } from "@shared/components/ui/Input";
 import { Measure } from "@shared/components/ui/Measure";
 import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
 import { searchMealsByName } from "../lib/nutritionStorage";
-import { newMealId } from "../lib/mealId";
 import type { Meal, NutritionLog } from "@sergeant/nutrition-domain";
 
 interface LogCardSearchProps {
@@ -116,12 +115,26 @@ export function LogCardSearch({
                   type="button"
                   className="shrink-0 w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] flex items-center justify-center rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition hover:bg-nutrition/20 transition-colors"
                   onClick={() => {
+                    // AI-DANGER: походження запису НЕ переписуємо.
+                    //
+                    // Тут стояло жорстке `source: "manual", macroSource:
+                    // "manual", foodId: null, amount_g: null` — тобто копія
+                    // запису з фото (`source: "photo"`) або з бази продуктів
+                    // (`macroSource: "productDb"`) ставала «ручною», а
+                    // звʼязок із продуктом рвався.
+                    // `searchMealsByName` віддає СПРАВЖНІ записи журналу з
+                    // їхнім походженням; копіювати їх і брехати про джерело
+                    // означає псувати і статистику по джерелах, і всю
+                    // математику, що спирається на `foodId`/`amount_g`
+                    // (комора, поповнення Сільпо). Знахідка PR-N1, аудит
+                    // 2026-09-13.
+                    //
+                    // `id` тут не генеруємо: сторінка все одно видає свій
+                    // (`NutritionLogPage`), і два генератори на один запис
+                    // читались як два різні id.
                     onAddMealFromSearch?.({
-                      id: newMealId(),
+                      ...meal,
                       time: "",
-                      name: meal.name,
-                      mealType: meal.mealType,
-                      label: meal.label,
                       macros: meal.macros
                         ? { ...meal.macros }
                         : {
@@ -130,10 +143,6 @@ export function LogCardSearch({
                             fat_g: null,
                             carbs_g: null,
                           },
-                      source: "manual",
-                      macroSource: "manual",
-                      foodId: null,
-                      amount_g: null,
                     });
                     setSearchQuery("");
                   }}
