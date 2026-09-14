@@ -16,6 +16,11 @@ import {
 } from "./mcpClient.js";
 import { resolveBranchContext } from "./branchContext.js";
 import { diffToolContract } from "./toolContract.js";
+import {
+  OFFLINE_ORDERS_LIMIT,
+  ONLINE_ORDERS_LIMIT,
+  ONLINE_ORDERS_PAGE_SIZE,
+} from "./orderLimits.js";
 import { matchAndLink } from "./receiptsMatch.js";
 import {
   callWithFreshAccessToken,
@@ -228,36 +233,6 @@ function normalizeRawOrder(
 }
 
 // ─────────────────────────────── MCP fetch step ─────────────────────────────
-
-// Ліміти з живих input schemas (спайк §0, 2026-08-18): offline max 10,
-// online тоді був max 100.
-/** Експортується для `toolContract.ts`: таблиця очікувань бере значення
- * з констант виклику, а не переписує їх числом. */
-export const OFFLINE_ORDERS_LIMIT = 10;
-
-/**
- * Скільки онлайн-замовлень тягнемо за один синк. Це НЕ `limit` запиту:
- * запит іде сторінками (див. нижче), а це стеля обходу.
- *
- * Експортується для `diagnose.ts`: проба мусить шукати РІВНО те, що синк.
- */
-export const ONLINE_ORDERS_LIMIT = 100;
-
-/**
- * Розмір однієї сторінки онлайн-замовлень.
- *
- * **2026-09-14 Сільпо зарізали максимум зі 100 до 50** — мовчки, без
- * жодного оголошення. Синк просив рівно 100 і почав падати валідацією:
- * `MCP error -32602 … "code":"too_big","maximum":50,"path":["limit"]`.
- * Зафіксована фікстура контракту знята 18 серпня і досі каже `maximum: 100`,
- * тож снапшот-тест цього зловити не міг: він звіряє код із ЗАПИСОМ, а не з
- * живим сервером.
- *
- * Тому 50 — не «нова константа замість старої», а лише стартова здогадка:
- * `fetchOnlineOrders` нижче вміє звузитись сам, прочитавши стелю з тексту
- * відмови. Наступне зниження ліміту синк переживе без правки коду.
- */
-export const ONLINE_ORDERS_PAGE_SIZE = 50;
 
 /**
  * Одна сторінка замовлень, розібрана **поелементно**: збій рівня MCP

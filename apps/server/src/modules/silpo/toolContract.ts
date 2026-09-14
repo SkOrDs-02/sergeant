@@ -27,7 +27,10 @@
  *      їхнього боку ламає виклик так само надійно, як знижена стеля.
  */
 import type { McpToolsList } from "./mcpClient.js";
-import { OFFLINE_ORDERS_LIMIT, ONLINE_ORDERS_PAGE_SIZE } from "./receipts.js";
+import {
+  OFFLINE_ORDERS_LIMIT,
+  ONLINE_ORDERS_PAGE_SIZE,
+} from "./orderLimits.js";
 
 /** Що саме код шле в тулу — джерело правди для звірки. */
 export interface ToolExpectation {

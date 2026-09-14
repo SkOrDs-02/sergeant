@@ -30,10 +30,8 @@ import {
   type McpToolProbe,
 } from "./mcpClient.js";
 import { callWithFreshAccessToken, type QueryFn } from "./tokenStore.js";
-import {
-  ONLINE_ORDERS_PAGE_SIZE,
-  parseLimitCeilingFromRefusal,
-} from "./receipts.js";
+import { parseLimitCeilingFromRefusal } from "./receipts.js";
+import { ONLINE_ORDERS_PAGE_SIZE } from "./orderLimits.js";
 import { diffToolContract } from "./toolContract.js";
 
 /**
