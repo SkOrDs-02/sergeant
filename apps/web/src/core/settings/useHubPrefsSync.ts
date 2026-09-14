@@ -17,11 +17,21 @@
  * boot-read, а не кешований спільний ресурс, тож фабрики ключів
  * (Hard Rule #2) тут не потрібні.
  */
-import { useEffect, useRef } from "react";
+import { useEffect, useRef, useState } from "react";
 import { logger } from "@shared/lib";
 import { useAuth } from "../auth/AuthContext";
 import { readHubPrefsBag, writeHubPrefsBag } from "./hubPrefs";
 import { hydrateHubPrefs, setHubPrefsSyncEnabled } from "./hubPrefsSync";
+
+/**
+ * Скільки разів повторювати гідратацію після невдалого GET-а і з якими
+ * паузами. Обмежено навмисно: нескінченний ретрай по мережі, якої може не
+ * бути, палив би батарею й нічого не гарантував — незбережені локальні
+ * зміни й так переживають перезавантаження через мітку
+ * `HUB_PREFS_UNSYNCED`.
+ */
+const RETRY_DELAYS_MS = [2_000, 8_000, 30_000] as const;
+const MAX_HYDRATE_RETRIES = RETRY_DELAYS_MS.length;
 
 export function useHubPrefsSync(): void {
   const { user } = useAuth();
@@ -33,6 +43,20 @@ export function useHubPrefsSync(): void {
    * відповіді акаунт міг змінитись.
    */
   const currentUserRef = useRef<string | null>(userId);
+  /**
+   * Лічильник спроб гідратації. У залежностях ефекту — і це єдине, що
+   * реально дає ПОВТОР після невдалого GET-а.
+   *
+   * Перша версія покладалась на скидання `hydratedForUserRef` у `.catch`,
+   * і я написав на PR, що «наступний ререндер спробує ще раз». Це було
+   * невірно, і рев'ю це знайшло: запис у ref не викликає ререндера, а
+   * залежності ефекту — `[userId]`, тож без зміни акаунта ефект більше не
+   * запускається взагалі. Один невдалий GET вимикав би синхронізацію до
+   * кінця сесії, і мовчки.
+   */
+  const [attempt, setAttempt] = useState(0);
+  const retryCountRef = useRef(0);
+  const retryTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
     // Пишеться в ефекті, не в рендері (`react-hooks/refs`). Порядок
@@ -46,6 +70,7 @@ export function useHubPrefsSync(): void {
       // іншим акаунтом на спільному пристрої) гідратувався заново, а не
       // лишався з налаштуваннями попереднього користувача.
       hydratedForUserRef.current = null;
+      retryCountRef.current = 0;
       setHubPrefsSyncEnabled(false);
       return;
     }
@@ -78,13 +103,29 @@ export function useHubPrefsSync(): void {
         // Канал НЕ вмикаємо: ми не знаємо, що на акаунті, тож піднімати
         // туди локальний мішок наосліп означало б ризикувати затерти
         // налаштування з іншого пристрою.
-        //
-        // І знімаємо guard, щоб наступний ререндер під тим самим
-        // користувачем спробував ще раз. Без цього один невдалий GET
-        // вимикав би синхронізацію до кінця сесії, і мовчки.
-        if (hydratedForUserRef.current === userId) {
-          hydratedForUserRef.current = null;
+        if (hydratedForUserRef.current !== userId) return;
+        hydratedForUserRef.current = null;
+
+        if (retryCountRef.current >= MAX_HYDRATE_RETRIES) {
+          logger.warn("[hubPrefs] boot hydrate gave up", {
+            attempts: retryCountRef.current + 1,
+          });
+          return;
         }
+        const delay = RETRY_DELAYS_MS[retryCountRef.current] ?? 0;
+        retryCountRef.current += 1;
+        // Таймер скасовується у cleanup нижче — вихід з акаунта чи вхід
+        // іншим не має тягнути за собою спробу для попереднього.
+        retryTimerRef.current = window.setTimeout(() => {
+          if (currentUserRef.current === userId) setAttempt((n) => n + 1);
+        }, delay);
       });
-  }, [userId]);
+
+    return () => {
+      if (retryTimerRef.current !== null) {
+        window.clearTimeout(retryTimerRef.current);
+        retryTimerRef.current = null;
+      }
+    };
+  }, [userId, attempt]);
 }
