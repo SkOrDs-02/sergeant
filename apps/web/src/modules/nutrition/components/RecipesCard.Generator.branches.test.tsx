@@ -195,4 +195,34 @@ describe("GeneratorCard", () => {
     ).toBeInTheDocument();
     expect(screen.getByText("raw ai payload")).toBeInTheDocument();
   });
+
+  // Regression PR-N8 (аудит 2026-09-13): сира відповідь моделі була видима
+  // КОЖНОМУ в проді. Перевірка вище цього не ловила, бо під Vitest
+  // `import.meta.env.DEV` і так `true` — вона описувала лише dev-гілку.
+  it("ховає сиру діагностику в прод-збірці", () => {
+    vi.stubEnv("DEV", false);
+    try {
+      render(
+        <GeneratorCard
+          prefs={PREFS}
+          setPrefs={vi.fn()}
+          recommendRecipes={vi.fn()}
+          recipes={[]}
+          recipesTried
+          recipesRaw="raw ai payload"
+          fmtMacro={(v) => String(v)}
+          onSave={vi.fn()}
+          onAddToLog={vi.fn()}
+        />,
+      );
+      expect(
+        screen.queryByText("Показати діагностику (raw відповідь AI)"),
+      ).toBeNull();
+      expect(screen.queryByText("raw ai payload")).toBeNull();
+      // Сам порожній стан лишається — ховаємо діагностику, не підказку.
+      expect(screen.getByText(/Рецептів не повернулося/)).toBeInTheDocument();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });

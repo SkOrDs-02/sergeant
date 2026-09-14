@@ -124,7 +124,13 @@ export function LogCard({
             onClick={() => setDuplicateConfirm(true)}
             className="w-full h-10 touch-target rounded-2xl border border-line bg-panel/40 px-3 text-style-caption text-subtle hover:text-text hover:border-nutrition/50 transition-colors flex items-center justify-center gap-1.5"
           >
-            Скопіювати з попереднього дня ({previousDayIso})
+            {/* Підпис бере той самий `formatDate`, що й заголовок вище:
+                він уміє «Вчора» / «Сьогодні» і лише для дальших дат падає
+                в `ДД.ММ.РРРР`. Раніше тут стояв сирий `previousDayIso`
+                (`2026-09-11`) — і це впадало в око саме тому, що поруч, за
+                60 рядків вище, та сама дата вже показана по-людськи
+                (знахідка PR-N6, аудит 2026-09-13). */}
+            Скопіювати з попереднього дня ({formatDate(previousDayIso)})
           </button>
         )}
 

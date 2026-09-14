@@ -121,6 +121,26 @@ describe("LogCard", () => {
     expect(onDuplicateYesterday).toHaveBeenCalled();
   });
 
+  // Regression PR-N6 (аудит 2026-09-13): у підписі кнопки стояла сира
+  // ISO-дата (`2026-09-11`), хоча заголовок за 60 рядків вище вже показував
+  // той самий день по-людськи через `formatDate`. Пін дивиться саме на
+  // «Вчора»: коли відкрито сьогодні, попередній день — це вчора, і
+  // `formatDate` має його так і назвати.
+  it("називає попередній день по-людськи, а не сирою ISO-датою", () => {
+    const yesterday = addDaysISODate(today, -1);
+    renderLog({
+      onDuplicateYesterday: vi.fn(),
+      log: {
+        [yesterday]: {
+          meals: [{ id: "y1", name: "Вчора", mealType: "lunch" }],
+        },
+      } as never,
+    });
+    const btn = screen.getByText(/Скопіювати з попереднього дня/);
+    expect(btn.textContent).toContain("(Вчора)");
+    expect(btn.textContent).not.toContain(yesterday);
+  });
+
   it("cancels the duplicate-yesterday flow", () => {
     const onDuplicateYesterday = vi.fn();
     const yesterday = addDaysISODate(today, -1);
