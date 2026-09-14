@@ -56,29 +56,19 @@ function routineWithTagsAndCategories(): RoutineState {
 
 function Harness({
   editingId = null,
-  hideHeading = false,
-  hideActions = false,
   errors,
   initialDraft,
   routine = emptyRoutine,
-  onSaveSpy,
-  onCancelSpy,
 }: {
   editingId?: string | null;
-  hideHeading?: boolean;
-  hideActions?: boolean;
   errors?: { name?: string; weekdays?: string };
   initialDraft?: Partial<HabitDraft>;
   routine?: RoutineState;
-  onSaveSpy?: () => void;
-  onCancelSpy?: () => void;
 }) {
   const [draft, setDraft] = useState<HabitDraft>(() => ({
     ...emptyHabitDraft(),
     ...initialDraft,
   }));
-  const onSave = onSaveSpy ?? vi.fn();
-  const onCancel = onCancelSpy ?? vi.fn();
   // exactOptionalPropertyTypes: only spread errors into props when defined.
   const errorsProps = errors !== undefined ? { errors } : {};
   return (
@@ -87,82 +77,22 @@ function Harness({
       habitDraft={draft}
       setHabitDraft={setDraft}
       editingId={editingId}
-      onSave={onSave}
-      onCancel={onCancel}
-      hideHeading={hideHeading}
-      hideActions={hideActions}
       {...errorsProps}
     />
   );
 }
 
+// Заголовок, кнопки дії та Card-обгортка тут БІЛЬШЕ НЕ ПЕРЕВІРЯЮТЬСЯ, і це
+// не прогалина: форма їх не рендерить узагалі. Їх дає єдиний хост,
+// `HabitQuickCreateDialog` (`title` аркуша + sticky-футер), і перевіряє
+// `HabitQuickCreateDialog.test.tsx`. Доти сім тестів тут пінили гілки під
+// `hideHeading`/`hideActions`, які хост завжди вмикав — тобто зелень
+// описувала UI, недосяжний жодному користувачеві (знахідка PR-R12).
 describe("HabitForm – editing mode", () => {
-  it("shows 'Редагувати звичку' heading when editingId is set", () => {
-    render(<Harness editingId="h1" />);
-    expect(screen.getByText("Редагувати звичку")).toBeInTheDocument();
-  });
-
-  it("shows 'Нова звичка' heading when editingId is null", () => {
-    render(<Harness editingId={null} />);
-    expect(screen.getByText("Нова звичка")).toBeInTheDocument();
-  });
-
-  it("shows 'Зберегти зміни' and 'Скасувати' buttons in editing mode", () => {
-    render(<Harness editingId="h1" />);
-    const save = screen.getByRole("button", { name: "Зберегти зміни" });
-    const cancel = screen.getByRole("button", { name: "Скасувати" });
-    expect(save).toBeInTheDocument();
-    expect(cancel).toBeInTheDocument();
-    expect(save).toHaveClass("w-full", "min-w-0", "sm:flex-1");
-    expect(cancel).toHaveClass("w-full", "min-w-0", "sm:flex-1");
-  });
-
-  it("shows 'Додати звичку' button when creating a new habit", () => {
-    render(<Harness editingId={null} />);
-    expect(
-      screen.getByRole("button", { name: "Додати звичку" }),
-    ).toBeInTheDocument();
-  });
-
-  it("wires save and cancel actions", () => {
-    const onSaveSpy = vi.fn();
-    const onCancelSpy = vi.fn();
-    render(
-      <Harness
-        editingId="h1"
-        onSaveSpy={onSaveSpy}
-        onCancelSpy={onCancelSpy}
-      />,
-    );
-
-    fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
-    fireEvent.click(screen.getByRole("button", { name: "Зберегти зміни" }));
-
-    expect(onCancelSpy).toHaveBeenCalledTimes(1);
-    expect(onSaveSpy).toHaveBeenCalledTimes(1);
-  });
-
   it("opens the advanced section automatically in editing mode", () => {
     render(<Harness editingId="h1" />);
     // Advanced section is open → date inputs are visible
     expect(screen.getByLabelText(/Початок/)).toBeInTheDocument();
-  });
-});
-
-describe("HabitForm – hideActions + hideHeading", () => {
-  it("hides action buttons when hideActions=true", () => {
-    render(<Harness hideActions />);
-    expect(
-      screen.queryByRole("button", { name: "Додати звичку" }),
-    ).not.toBeInTheDocument();
-    expect(
-      screen.queryByRole("button", { name: "Скасувати" }),
-    ).not.toBeInTheDocument();
-  });
-
-  it("hides the heading when hideHeading=true", () => {
-    render(<Harness hideHeading />);
-    expect(screen.queryByText("Нова звичка")).not.toBeInTheDocument();
   });
 });
 
