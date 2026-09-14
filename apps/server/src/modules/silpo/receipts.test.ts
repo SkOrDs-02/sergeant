@@ -966,6 +966,8 @@ describe("пагінація онлайн-замовлень", () => {
   it("не крутить цикл, коли відмова повторюється після звуження", async () => {
     runRealFetchPath();
     let calls = 0;
+    // Стеля нижча за стартові 50 — інакше звуження не спрацьовує і тест
+    // не перевіряє нічого, крім того, що перший запит упав.
     mocks.callMcpTool.mockImplementation(async () => {
       calls += 1;
       return {
@@ -973,7 +975,7 @@ describe("пагінація онлайн-замовлень", () => {
         error: {
           kind: "tool_error",
           message:
-            'Invalid arguments: [ { "code": "too_big", "maximum": 50, "path": [ "limit" ] } ]',
+            'Invalid arguments: [ { "code": "too_big", "maximum": 20, "path": [ "limit" ] } ]',
         },
       };
     });
@@ -985,7 +987,41 @@ describe("пагінація онлайн-замовлень", () => {
         withTransaction: db.withTransaction,
       }),
     ).rejects.toThrow();
-    // Одне звуження на сторінку: перший запит + один повтор, не більше.
-    expect(calls).toBeLessThanOrEqual(2);
+    // Рівно одне звуження на сторінку: перший запит + один повтор.
+    expect(calls).toBe(2);
+  });
+
+  it("не зупиняє обхід через один непарсабельний рядок на сторінці", async () => {
+    runRealFetchPath();
+    const offsets: number[] = [];
+    mocks.callMcpTool.mockImplementation(
+      async ({ args }: { args: Record<string, unknown> }) => {
+        const offset = Number(args["offset"] ?? 0);
+        offsets.push(offset);
+        if (offset === 0) {
+          // Повна сторінка (50 елементів), але один рядок битий: після
+          // фільтрації лишається 49. Якби пагінація міряла розібрані
+          // рядки, вона вирішила б, що замовлення скінчились, і друга
+          // сторінка ніколи б не приїхала.
+          const page: unknown[] = Array.from({ length: 49 }, (_v, i) =>
+            onlineOrder(`a${i}`),
+          );
+          page.splice(10, 0, { orderId: 42 });
+          return { ok: true, data: { orders: page } };
+        }
+        return { ok: true, data: { orders: [onlineOrder("b0")] } };
+      },
+    );
+
+    const db = makeFakeDb();
+    const result = await pullAndSyncReceipts("u1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    // Offset рухається на сирий розмір сторінки, не на 49 — інакше один
+    // елемент приїхав би двічі.
+    expect(offsets).toEqual([0, 50]);
+    expect(result.onlinePulled).toBe(50);
   });
 });

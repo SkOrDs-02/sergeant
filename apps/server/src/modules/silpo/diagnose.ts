@@ -30,7 +30,10 @@ import {
   type McpToolProbe,
 } from "./mcpClient.js";
 import { callWithFreshAccessToken, type QueryFn } from "./tokenStore.js";
-import { ONLINE_ORDERS_PAGE_SIZE } from "./receipts.js";
+import {
+  ONLINE_ORDERS_PAGE_SIZE,
+  parseLimitCeilingFromRefusal,
+} from "./receipts.js";
 
 /**
  * Тули, на яких тримається інтеграція. Дзеркало списку з
@@ -69,6 +72,15 @@ function buildVerdict(
   const smallOk = probeSmall.payloadExtracted && !probeSmall.isError;
   const bigBroken = !probe.payloadExtracted || probe.isError;
   if (smallOk && bigBroken) {
+    // Відмова, яка САМА називає стелю, — це вже не збій: `fetchOnlineOrders`
+    // читає з неї число і повторює сторінку меншою. Рапортувати такий стан
+    // як поломку синку означало б відправити людину лагодити справне.
+    const ceiling = probe.isError
+      ? parseLimitCeilingFromRefusal(probe.refusal ?? "")
+      : null;
+    if (ceiling !== null) {
+      return `Сільпо знизили стелю «limit» до ${ceiling} (синк стартує з ${ONLINE_ORDERS_PAGE_SIZE}). Це синк переживає сам — звужує сторінку до названої стелі й тягне решту наступними. Правити код треба лише якщо чеки все одно не приїжджають.`;
+    }
     const why = probe.isError
       ? `відмова: «${probe.refusal ?? "без тексту"}»`
       : `payload не дістається, ключі ${JSON.stringify(probe.resultKeys)}`;
