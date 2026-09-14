@@ -498,8 +498,22 @@ export function useNutritionRemoteActions({
     fat_g?: number | null;
     carbs_g?: number | null;
   }
+  /**
+   * Записати страву з денного плану в журнал.
+   *
+   * Повертає `{ id, dateKey }` — куди саме ліг запис, щоб сторінка могла
+   * запропонувати «Скасувати». Сам тост ЖИВЕ НЕ ТУТ: за рішенням власника
+   * 2026-09-11 тости нутриції належать рівню `NutritionApp`, де вже є
+   * `useToast()`, а дата-хуки лишаються без презентації (той самий доказ
+   * у коментарі `NutritionApp.tsx` про `pantryRef`).
+   *
+   * Доти цей шлях був ЄДИНИМ із трьох, що писав у журнал мовчки: аркуш
+   * прийому і рядок пошуку вже мали «Скасувати», а тап по страві з плану —
+   * ні, тож помилковий тап коштував ручного пошуку запису й видалення
+   * (залишок знахідки PR-N1, аудит 2026-09-13).
+   */
   const addMealFromPlan = useCallback(
-    (meal: PlanMealInput) => {
+    (meal: PlanMealInput): { id: string; dateKey: string } => {
       const id = newMealId();
       const typeLabels: Record<string, string> = {
         breakfast: "Сніданок",
@@ -534,6 +548,7 @@ export function useNutritionRemoteActions({
         source: "manual",
         macroSource: "recipeAI",
       });
+      return { id, dateKey: log.selectedDate };
     },
     [log],
   );
