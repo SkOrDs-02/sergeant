@@ -358,14 +358,26 @@ jobs:
           STATUS=""
           POLL_CODE=""
           while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            # Фолбек ставимо ПОЗА підстановкою. `-w` друкує `000` і на
+            # транспортній помилці, а curl при цьому виходить ненулем —
+            # тож `|| echo "000"` УСЕРЕДИНІ дав би `000000`, і гілка
+            # «API недосяжний» не спрацювала б (заміряно).
             POLL_CODE=$(curl -sS -o /tmp/coolify-deployment.json \
               -w '%{http_code}' \
               --max-time 30 "${AUTH[@]}" \
-              "${API_BASE}/api/v1/deployments/${UUID}" || echo "000")
-            # Статус читаємо з трьох можливих форм. Версії Coolify віддають
-            # то обʼєкт, то масив, то обгортку `deployments` — і мовчазна
-            # порожнеча тут виглядає рівно як «деплой ще триває».
-            STATUS=$(jq -r '(.status // .[0].status // .deployments[0].status) // empty' \
+              "${API_BASE}/api/v1/deployments/${UUID}") || POLL_CODE="000"
+            # Статус читаємо з трьох можливих форм: версії Coolify віддають
+            # то обʼєкт, то масив, то обгортку `deployments`.
+            #
+            # Гілка по `type` — не стиль, а необхідність: `//` ловить лише
+            # `null` і `false`, а `.status` НА МАСИВІ — це помилка jq, яка
+            # валить весь вираз ще до фолбеків. Ланцюжок через `//` тому
+            # читав рівно одну форму з трьох, мовчки віддаючи порожнечу на
+            # решті — тобто рівно те «ще триває», від якого ми тут і
+            # лікуємось.
+            STATUS=$(jq -r 'if type == "array" then .[0].status
+                            elif type == "object" then (.status // .deployments[0].status)
+                            else empty end // empty' \
               /tmp/coolify-deployment.json 2>/dev/null || true)
             case "$STATUS" in
               finished|success) break ;;

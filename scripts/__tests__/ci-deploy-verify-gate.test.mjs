@@ -33,6 +33,7 @@
 import { test } from "node:test";
 import assert from "node:assert/strict";
 import { readFileSync } from "node:fs";
+import { spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
 
@@ -175,6 +176,43 @@ test("явна відмова не чекає таймауту", () => {
     /401\|403\|404\|405\)\s*\n?\s*break/,
     "на 4xx цикл має вийти одразу: наступний опит нічого не змінить",
   );
+});
+
+// Третя хвиля, того самого дня. Тести вище грепають ТЕКСТ кроку — і саме
+// тому проґавили, що ланцюжок `(.status // .[0].status // …)` читав лише
+// одну форму з трьох: `.status` на масиві це не «порожньо», а ПОМИЛКА jq,
+// яка валить увесь вираз до фолбеків. Рядковий тест бачив три форми в
+// коді й був зелений; знайшов це рев'ю.
+//
+// Тому цей тест ВИКОНУЄ вираз, витягнутий із самого workflow, на всіх
+// трьох формах. Перевіряє не наявність слів, а поведінку.
+test("парсер статусу справді читає всі три форми відповіді", () => {
+  const verify = STEPS[verifyIndex];
+  const m = verify.match(
+    /jq -r '([\s\S]*?)' \\\n\s*\/tmp\/coolify-deployment\.json/,
+  );
+  assert.ok(
+    m?.[1],
+    "не знайдено jq-вираз розбору статусу — тест втратив предмет",
+  );
+  const expr = m[1];
+
+  const shapes = {
+    обʼєкт: '{"status":"finished"}',
+    масив: '[{"status":"finished"}]',
+    "обгортка deployments": '{"deployments":[{"status":"finished"}]}',
+  };
+  for (const [name, json] of Object.entries(shapes)) {
+    const out = spawnSync("jq", ["-r", expr], {
+      input: json,
+      encoding: "utf-8",
+    });
+    assert.equal(
+      out.stdout.trim(),
+      "finished",
+      `форма «${name}» не розібралась: ${out.stderr.trim() || "порожньо"}`,
+    );
+  }
 });
 
 test("нечитабельний статус називає причину, а не лише факт", () => {
