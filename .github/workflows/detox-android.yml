@@ -54,12 +54,22 @@ name: Detox (Android)
 # + workflow_dispatch лишаються», а нижче стояв абзац про 03:15 UTC — хоча
 # `schedule:` тригера у файлі немає з web-focus фази (2026-07). Дрейф зафіксував
 # аудит покриття 2026-08-04; тепер коментар описує фактичний стан.
+#
+# ⛔ PR-ТРИГЕР ЗНЯТО 2026-09-14 (рішення founder-а, знахідка PR-M1).
+# Доти лейн запускався на кожен PR, що чіпає mobile-поверхні, і ЗАВЖДИ
+# завершувався зеленим: крок прогону ковтав провал через `|| { warning }`
+# плюс `exit 0`, а сам крок стояв ще й під `continue-on-error: true`. Тобто в
+# списку перевірок PR-а стояла зелена галочка «Detox», яка не означала нічого
+# — найгірший зі станів гейта, бо вона не мовчить, а стверджує. Мобільні
+# стеки на паузі з 2026-08-25 (ADR-0094), тож чесний стан під час паузи —
+# ВІДСУТНІЙ гейт, а не гейт, який завжди зелений.
+#
+# Лишається `workflow_dispatch`: прогін руками можливий і тепер каже правду —
+# `exit 0` і `continue-on-error` зняті разом із тригером. Сьюти в
+# `apps/mobile/e2e/` НЕ видалені — вони актив на момент розморозки.
+# Розморозка повертає `pull_request:`-блок разом із рештою мобільного лейну;
+# порядок — `docs/work/specs/tech-debt/mobile.md`.
 on:
-  pull_request:
-    paths:
-      - "apps/mobile/**"
-      - "apps/mobile-shell/**"
-      - ".github/workflows/detox-android.yml"
   workflow_dispatch:
 
 permissions:
@@ -192,7 +202,11 @@ jobs:
 
       - name: Run Detox Android suite
         # reactivecircus/android-emulator-runner v2.37.0 (SHA-pinned)
-        continue-on-error: true
+        #
+        # PR-M1: `continue-on-error: true` знято разом із PR-тригером. Лейн
+        # тепер запускається лише руками (`workflow_dispatch`), а прогін,
+        # який запустили навмисно, мусить казати правду про результат —
+        # інакше запускати його немає сенсу.
         uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a
         with:
           api-level: ${{ matrix.api-level }}
@@ -205,10 +219,7 @@ jobs:
           disable-animations: true
           working-directory: apps/mobile
           script: |
-            pnpm e2e:test:android:ci || {
-              echo "::warning::Detox Android suite failed during app readiness/runtime execution; keeping this lane non-blocking until the instrumentation readiness issue is fixed."
-            }
-            exit 0
+            pnpm e2e:test:android:ci
 
       - name: Upload Detox artefacts on failure
         if: always()
