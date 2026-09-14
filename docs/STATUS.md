@@ -45,7 +45,7 @@
 - [`work/specs/launch/product-os/ftux-master-tracker.md`](./work/specs/launch/product-os/ftux-master-tracker.md) — FTUX Master Tracker — стан, проблеми, план — Active — **single source of truth** для First-Time User Experience. _(Активні спеки)_
 - [`work/specs/launch/phases/02-capacitor-launch.md`](./work/specs/launch/phases/02-capacitor-launch.md) — Phase 2 — Capacitor launch roadmap with users — Active — research deliverable for the parent launch program. _(Активні спеки)_
 - [`work/specs/audits/2026-09-13-product-full-review.md`](./work/specs/audits/2026-09-13-product-full-review.md) — Повний огляд продукту: візуал, логіка, маршрути, шум — Active _(Активні спеки)_
-- [`work/specs/pr-body-validator-template-race.md`](./work/specs/pr-body-validator-template-race.md) — SPEC: `PR body validator` червоніє на PR, створених через API — Active _(Активні спеки)_
+- [`work/specs/launch/phases/00-readiness-audit.md`](./work/specs/launch/phases/00-readiness-audit.md) — 00 — Launch readiness audit: 5 застосунків Sergeant — Active _(Активні спеки)_
 
 ## ⏭️ Наступний крок / заблоковано
 

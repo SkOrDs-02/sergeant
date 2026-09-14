@@ -73,7 +73,7 @@ The script is zero-dep and offline-safe (`[gh unavailable: ...]` for sections th
 | Server-роути, серіалізатори, api-client, контракти, pino, OpenAPI | `sergeant-server-api`              |
 | Backend-архітектура, CQRS, Temporal, Saga, service boundaries    | `sergeant-backend-architecture`    |
 | SQL, схема, дизайн запитів, міграції, prod DB rollout (Coolify), `db-schema/`, index audit | `sergeant-data-and-migrations`     |
-| Expo, React Native, mobile-shell, MMKV, deep-link-и, EAS         | `sergeant-mobile-expo`             |
+| Expo, React Native, mobile-shell, MMKV, deep-link-и, EAS         | `sergeant-mobile-expo` (контур на паузі) |
 | Незрозуміло, де саме код має жити в монорепо                     | `sergeant-monorepo-boundaries`     |
 | Деплой, env-vars, health checks, Sentry, Coolify/Vercel          | `sergeant-deploy-and-observability`|
 | Логін/сесія/кукі/account lifecycle                               | `better-auth-best-practices`       |

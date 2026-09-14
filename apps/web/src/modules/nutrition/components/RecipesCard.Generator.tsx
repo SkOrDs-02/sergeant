@@ -51,6 +51,13 @@ export function GeneratorCard({
   return (
     <Card className="p-4">
       <div className="text-style-label text-text">Рецепти</div>
+      {/* AI-NOTE: `text-style-caption` тут правильний — це підказка ПІД
+          контролом (named-виняток правила `no-sentence-in-caption`), а не
+          текст, який читають підряд. Анотацію додано при мержі `main` у
+          гілку #1188: `lint-staged` ганяє eslint із `--max-warnings=0` по
+          всіх файлах, які мерж заносить у стейдж, тож попередження, що на
+          `main` живе тихо (CI лінт warning-и пропускає), блокує будь-який
+          мерж-коміт у довгоживучу гілку. Сам текст не змінювався. */}
       <div className="text-style-caption text-muted mt-0.5">
         Рекомендації на базі продуктів з комори. Можна вказати час, порції та
         &quot;не хочу&quot;.

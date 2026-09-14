@@ -1,6 +1,6 @@
 # Sergeant — Launch phases plan-guide
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-10-26.
+> **Last touched:** 2026-09-14 by @claude. **Next review:** 2027-10-29.
 > **Status:** Active — draft master plan-guide for sequencing launch with real users.
 >
 > **Update 2026-07-29:** in-app landing і standalone `apps/landing` shipped у коді; marketing landing має Telegram-конверсію, OG, cookieless PostHog і окремий Vercel config. Зовнішні `sergeant.com.ua` DNS/production-deploy треба підтвердити в Vercel. Public launch далі блокується legal/live payment env/cookie consent/store readiness.
@@ -99,7 +99,7 @@ keys + ФОП, Apple Developer Program не куплений. Код окрем�
 
 **Ключові ADRs / initiatives:**
 
-- [ADR-0052](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md) — Capacitor PRIMARY до Expo parity (Accepted 2026-05-06)
+- [ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md) — обидва мобільні стеки на паузі з 2026-08-25, web-first (Accepted 2026-09-13; supersedes [ADR-0052](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md) «Capacitor PRIMARY до Expo parity»)
 - [ADR-0068](../../../../governance/adr/0068-pricing-v4-uah-reverse-trial.md) — Free + Pro ₴199/міс / ₴1490/рік, reverse trial 7 днів (Supersedes ADR-0051)
 - [Initiative 0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md) — revenue-first sprint (Stripe billing у Phase 2-4)
 - [Initiative 0002](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0002-mobile-platform-decision.md) — оригінальна mobile dual-track decision
@@ -180,28 +180,43 @@ Vite/React лендінгом. До public launch лишається підтв�
 | W+8    | **Capacitor handoff trigger**        | Web stable, paywall live (Stripe Checkout + Customer Portal), >2K MAU                                        | → Phase 2 entry criteria met                             |
 | W+9–12 | Stable + Capacitor parallel work     | Web FTUX optimizations, Capacitor enrollment + signing finalization                                          | Phase 2 ready for internal alpha                         |
 
-### Phase 2 — Capacitor (W+8 .. W+16)
+### Phase 2 — Capacitor (W+8 .. W+16) — НЕ стартує, контур заморожений
 
-> Стартує **paralelно** з Phase 1 W+8 (як тільки Apple Dev enrollment пройшов D-U-N-S).
-> Детально: [02 — Capacitor launch](./02-capacitor-launch.md).
+> **Фаза на паузі з 2026-08-25** ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md), web-first).
+> Розклад нижче лишається як **готовий план на момент розморозки**, а не як
+> вказівка починати: поки пауза чинна, тижні W+8…W+16 не відлічуються від
+> жодної дати, і жоден із гейтів не є зобовʼязанням. Розморозка — рішення
+> власника, не наслідок проходження Phase 1.
+>
+> Стартувала б **паралельно** з Phase 1 W+8 (як тільки Apple Dev enrollment
+> пройшов D-U-N-S). Детально: [02 — Capacitor launch](./02-capacitor-launch.md).
 
-| Wk      | Фокус                                       | Що робимо                                                                        | Gate                                                                       |
-| ------- | ------------------------------------------- | -------------------------------------------------------------------------------- | -------------------------------------------------------------------------- |
-| W+8     | Enrollment finalize + secrets               | Apple ASC API key, provisioning profile, Android keystore у CI                   | All CI secrets green; signed build artefact passes smoke                   |
-| W+9     | Store metadata draft                        | Іконки, screenshots, demo-video, App Privacy / Data Safety форми                 | Listing draft submitted (not yet live)                                     |
-| W+10    | Internal alpha — TestFlight + Play Internal | 5–10 internal testers (founder + 5 friends), nightly builds, crash-free baseline | < 2 crashes / 100 sessions; P0 bugs = 0                                    |
-| W+11    | Closed Beta — 50–150 testers                | TestFlight external + Play Closed Testing track, Telegram beta group             | NPS ≥ 35 для mobile cohort; retention D7 ≥ 25%                             |
-| W+12–13 | Polish + UX-divergence chemicals            | Status bar, splash, keyboard, back-button regression на real devices             | UX-checklist pass (від Phase 2 § 7)                                        |
-| W+14    | Staged production rollout — 1% Play         | Staged rollout 1% → 10% → 50% Android, TestFlight → App Store Review submission  | App Store review approved; Play 50% with crash-free ≥ 99%                  |
-| W+15    | Production GA — Android 100% + iOS approved | Full GA, marketing push, ASO start, monitor reviews                              | Crash-free 7-day ≥ 99% iOS / ≥ 98.5% Android                               |
-| W+16    | **Native decision gate**                    | Зібрати дані Capacitor у проді 4-6 тижнів, оцінити gap to native                 | Decision: Phase 3 Сценарій A (sunset) / B (premium) / C (next-gen replace) |
+| Wk      | Фокус                                       | Що робимо                                                                        | Gate                                                                                                                                                            |
+| ------- | ------------------------------------------- | -------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| W+8     | Enrollment finalize + secrets               | Apple ASC API key, provisioning profile, Android keystore у CI                   | All CI secrets green; signed build artefact passes smoke                                                                                                        |
+| W+9     | Store metadata draft                        | Іконки, screenshots, demo-video, App Privacy / Data Safety форми                 | Listing draft submitted (not yet live)                                                                                                                          |
+| W+10    | Internal alpha — TestFlight + Play Internal | 5–10 internal testers (founder + 5 friends), nightly builds, crash-free baseline | < 2 crashes / 100 sessions; P0 bugs = 0                                                                                                                         |
+| W+11    | Closed Beta — 50–150 testers                | TestFlight external + Play Closed Testing track, Telegram beta group             | NPS ≥ 35 для mobile cohort; retention D7 ≥ 25%                                                                                                                  |
+| W+12–13 | Polish + UX-divergence chemicals            | Status bar, splash, keyboard, back-button regression на real devices             | UX-checklist pass (від Phase 2 § 7)                                                                                                                             |
+| W+14    | Staged production rollout — 1% Play         | Staged rollout 1% → 10% → 50% Android, TestFlight → App Store Review submission  | App Store review approved; Play 50% with crash-free ≥ 99%                                                                                                       |
+| W+15    | Production GA — Android 100% + iOS approved | Full GA, marketing push, ASO start, monitor reviews                              | Crash-free 7-day ≥ 99% iOS / ≥ 98.5% Android                                                                                                                    |
+| W+16    | **Native decision gate**                    | Зібрати дані Capacitor у проді 4-6 тижнів, оцінити gap to native                 | Decision: Phase 3 Сценарій A (sunset) / B (premium) / C (next-gen replace). **Під паузою предмета не має:** дані з проду не збираються, бо rollout не стартував |
 
 ### Phase 3 — Native (Expo) — conditional
 
-> **За поточними даними рекомендація — НЕ запускати окремо у цьому циклі.**
-> Decision gate у W+16 після Capacitor production rollout. Рішення зафіксоване
-> у [ADR-0052](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md) («Capacitor primary»);
-> сценарії A/B/C нижче лишаються як conditional-гілки для W+16-перегляду.
+> **Фаза не запускається: мобільний контур на паузі з 2026-08-25**
+> ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md), web-first).
+> Тобто відповідь тут уже не «не в цьому циклі за поточними даними», а
+> «не раніше, ніж web доведе, що продукт потрібен» — і це рішення власника,
+> не наслідок метрик нижче. Decision gate W+16 після Capacitor production
+> rollout втратив предмет разом із самим rollout-ом.
+>
+> Сценарії A/B/C нижче лишаються як conditional-гілки **на момент
+> розморозки**, але жоден із них не є чинним планом. Зокрема сценарій A
+> (sunset `apps/mobile`) під паузою НЕ активується: ADR-0094 прямо розводить
+> «на паузі» і «в sunset» — код обох стеків лишається активом. Попереднє
+> рішення «Capacitor primary» — історія в
+> [ADR-0052](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md).
 
 | Сценарій                  | Trigger                                                                                                              | Дія                                                                 | Effort        |
 | ------------------------- | -------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------- | ------------- |

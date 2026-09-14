@@ -1,7 +1,7 @@
 # @sergeant/mobile
 
 > **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-07.
-> **Mobile strategy:** Expo + RN продовжує розвиватись паралельно з Capacitor shell; обидва стеки активні — [ADR-0052](../../docs/governance/adr/0052-mobile-strategy-capacitor-primary.md).
+> **Mobile strategy:** продуктовий розвиток Expo + RN **на паузі з 2026-08-25** разом із Capacitor shell (web-first) — [ADR-0094](../../docs/governance/adr/0094-mobile-web-first-freeze.md). Пауза, не sunset: код лишається активом, `typecheck` і Jest далі гейтять `main`. Попереднє «обидва стеки активні» — [ADR-0052](../../docs/governance/adr/0052-mobile-strategy-capacitor-primary.md), superseded.
 
 Нативний клієнт Sergeant (iOS/Android) на Expo + React Native. Для web-апки
 див. `apps/web` — вони живуть у тому самому монорепо і ділять пакети
@@ -12,6 +12,12 @@
 **Internal dev-client** — готово до `eas build --profile development` і
 установки на фізичний пристрій / симулятор, але ще не для store.
 
+**Розвиток заморожений з 2026-08-25** ([ADR-0094](../../docs/governance/adr/0094-mobile-web-first-freeze.md)).
+Тобто все, що нижче названо «у дорожній карті» чи «в роботі», насправді
+**не в роботі**: це інвентар непортованого на момент паузи, корисний при
+розморозці, а не план на зараз. Канонічний перелік замороженого й порядок
+розморозки — [`docs/work/specs/tech-debt/mobile.md`](../../docs/work/specs/tech-debt/mobile.md).
+
 Портовано з `apps/web` у `src/modules/`:
 
 - **ФІНІК** — pages (Overview, Transactions, Analytics, Budgets,
@@ -21,8 +27,9 @@
 - **Рутина** — pages (Habits, Heatmap), components, hooks, lib + `__tests__`.
 - **Харчування** — `NutritionApp` (4 вкладки) + **Комора** (`/nutrition/pantry`),
   `AddMealSheet` (ручний ввід + сканер), `useShoppingList` / `useNutritionPantries`,
-  MMKV + `useNutritionLog` / `useNutritionPrefs` + `__tests__`. AI-parse pantry
-  / повні рецепти / photo-AI — у дорожній карті.
+  MMKV + `useNutritionLog` / `useNutritionPrefs` + `__tests__`, рецепти
+  (`RecipeRecommender`, `RecipeDetail`, deep link `recipe/[id]`) і photo-AI
+  (`analyze-photo` / `refine-photo` в `AddMealSheet`).
 
 Інфраструктура готова:
 
@@ -37,12 +44,22 @@
 - Detox e2e конфіги для iOS і Android у CI (поки smoke-build, реальні
   сценарії треба дописати).
 
-**Ще не зроблено / в роботі:**
+**Не зроблено на момент заморозки** (не «в роботі» — див. статус вище):
 
-- **Харчування (решта Phase 7+)** — комора, список покупок, рецепти, deep link
-  `recipe/[id].tsx` все ще заглушка; photo-AI.
-- **Voice / Speech** — `expo-speech` + STT ще не підключено.
 - **Store-listing** (іконки, privacy manifest iOS, data safety Android).
+
+> **Тут був довший список, і він виявився застарілим** (перевірено 2026-09-14
+> на вимогу рев'ю #1188). Він називав непортованими комору, список покупок,
+> рецепти, deep link `recipe/[id].tsx` («все ще заглушка») і photo-AI — усе це
+> в репо є, з тестами: `pages/Pantry.tsx`, `pages/Shopping.tsx`,
+> `pages/RecipeDetail.tsx`, `app/(tabs)/nutrition/recipe/[id].tsx` (рендерить
+> `RecipeDetailPage`, не заглушка), `AddMealSheet` з photo-гілкою. Голос теж:
+> `components/ui/VoiceMicButton.tsx`. Канонічна матриця
+> [`platforms.md`](../../docs/engineering/architecture/platforms.md) ставить
+> усім цим рядкам ✅ для RN.
+>
+> **Звідси правило для розморозки:** обсяг непортованого бери з `platforms.md`,
+> а не з цього файлу. Список у README старіє тихо, бо ніщо його не гейтить.
 
 **Серверний push (APNs/FCM/web):** fan-out у `apps/server/src/push/send.ts`;
 у проді ще потрібні credentials — `docs/work/specs/tech-debt/backend.md#push-credentials`.

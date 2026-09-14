@@ -1,6 +1,6 @@
 # 00 — Launch readiness audit: 5 застосунків Sergeant
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-16.
+> **Last touched:** 2026-09-14 by @claude. **Next review:** 2027-11-19.
 > **Status:** Active
 
 > **Канон 2026-07-29:** billing scaffold, in-app landing і standalone `apps/landing` shipped у коді. Для marketing surface не підтверджені з репо лише зовнішні Vercel production deployment і `sergeant.com.ua` DNS. Public launch блокується legal publish, live payment env/cookie consent/store readiness — не створенням ще одного лендінгу.
@@ -65,7 +65,7 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 ### 3.3 Capacitor shell (`apps/mobile-shell`)
 
-- **Стан:** `stabilize` (MVP) — Capacitor 7 wrapper навколо `@sergeant/web`. ADR-0052 фіксує: **Capacitor primary** до Expo feature parity, T₀/T₁/T₂ sunset — НЕ active commitments.
+- **Стан:** `stabilize` (MVP) — Capacitor 7 wrapper навколо `@sergeant/web`. **Розвиток на паузі з 2026-08-25** ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md), web-first): пауза, не sunset — код лишається активом, `typecheck` і Jest далі гейтять `main`. Попереднє «**Capacitor primary** до Expo feature parity, T₀/T₁/T₂ sunset — НЕ active commitments» ([ADR-0052](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md)) читається як історія: під паузою питання «хто primary» предмета не має.
 - **Готове:** bearer-auth у Keychain/EncryptedSharedPrefs (PR #505), native barcode (`@capacitor-mlkit/barcode-scanning`, PR #504), status-bar/splash/keyboard/deep-links (PR #506), native push (`@capacitor/push-notifications`, PR #512+#524), Android hardware-back → web-history. Deep-link bridge через BroadcastChannel + pre-mount queue (PR-29).
 - **Release pipeline:**
   - **Android:** [`.github/workflows/mobile-shell-android-release.yml`](../../../../../.github/workflows/mobile-shell-android-release.yml) — повний AAB (Play) + APK (sideload) з `SERGEANT_RELEASE_*` env-secrets. Signing config у [`apps/mobile-shell/android/app/build.gradle`](../../../../../apps/mobile-shell/android/app/build.gradle), ProGuard/R8 ввімкнено.
@@ -75,12 +75,12 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 ### 3.4 Native Expo (`apps/mobile`)
 
-- **Стан:** `active`, **internal dev-client** — готово до `eas build --profile development`, ще не для store. Expo SDK 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Better Auth Expo + bearer у `expo-secure-store`.
-- **Feature parity** (з [`platforms.md`](../../../../engineering/architecture/platforms.md)): 18/22 рядків функціонально на parity з web; Hub voice (STT/TTS) — 🟡 (HubChat composer Phase 8 follow-up), Onboarding wizard — 🟡 (повний AI-customize крок Phase 7), Харчування — 🟡 (pantry/shopping/recipes/photo-AI).
+- **Стан:** **розвиток заморожений з 2026-08-25** ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md)), **internal dev-client** — готово до `eas build --profile development`, ще не для store. Пауза, не sunset: код лишається активом, `typecheck` і Jest далі гейтять `main`, баг-фікси дозволені. Expo SDK 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Better Auth Expo + bearer у `expo-secure-store`.
+- **Feature parity:** число і перелік 🟡 бери з [`platforms.md`](../../../../engineering/architecture/platforms.md), не звідси. Знімок, що стояв тут, застарів: він тримав Харчування в 🟡 за pantry / shopping / recipes / photo-AI, тоді як матриця дає всім чотирьом ✅ для RN (перевірено 2026-09-14, рев'ю #1188).
 - **Push:** native APNs/FCM через `expo-notifications`, `PushRegistrar` шле токени у `POST /api/v1/push/register` з ідемпотентним кешем.
 - **CI/tests:** Detox iOS + Android конфіги у CI (поки smoke-build), окремий [`mobile-flaky-verify.yml`](../../../../../.github/workflows/mobile-flaky-verify.yml) воркфлоу — 20-run baseline.
 - **EAS:** [`eas.json`](../../../../../apps/mobile/eas.json) має `development` / `preview` / `production` profile-и, `production.android.buildType = app-bundle`, `production.distribution = store`. **Submit-secret-и не налаштовані**, store-listing-у не існує (іконки, privacy manifest iOS, data safety Android).
-- **Висновок:** native — це **другий ешелон launch-у**. Реально випустити internal-track-білд через ~4–6 тижнів після Capacitor public, або раніше — якщо власник свідомо переключиться на Expo як primary (зараз ADR-0052 говорить protilezhne).
+- **Висновок:** оцінка «другий ешелон, ~4–6 тижнів після Capacitor public» була чинною до заморозки і лишається як **оцінка готовності на момент паузи**, а не як план. Розморозка — рішення власника за [ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md); питання «хто primary» під паузою предмета не має, а [ADR-0052](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md) читається як історія.
 
 ### 3.5 Landing site
 
