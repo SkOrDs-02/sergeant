@@ -102,6 +102,26 @@ export function SessionView({
     () => new Set<string>(),
   );
 
+  /**
+   * AI-CONTEXT: на сьогодні тут ЗАВЖДИ `false`, і це не мертвий код, а
+   * другий шар захисту. Єдиний виклик `SessionView` стоїть у
+   * `WorkoutJournalSection.tsx` ПІСЛЯ раннього повернення
+   * `if (activeWorkout.endedAt) return <WorkoutSummaryView …>`, тож у цю
+   * панель завершене тренування не потрапляє. Інваріант пінить
+   * `components/workouts/WorkoutJournalSection.extra.test.tsx` — обидва боки:
+   * «renders WorkoutSummaryView instead of the editable panel» і
+   * «renders SessionView for a non-ended workout».
+   *
+   * **Не знімай прапорець як недосяжний.** По-перше, він не всюди
+   * недосяжний: `WorkoutItemTypeSwitcher` ділить той самий проп із
+   * `ExerciseDetailSheet.tsx:279`, а ТОЙ аркуш живе на тому ж
+   * route-owned екрані й бере `activeWorkout` напряму з оркестратора —
+   * там `endedAt` цілком можливий (`useWorkoutsLifecycle.ts:76`
+   * самоочищає id лише коли маршрут ним НЕ володіє). По-друге, тут
+   * прапорець тримає рівно ту межу, заради якої існує: якщо маршрутизацію
+   * колись послаблять, редагування підходів завершеного тренування має
+   * лишитись закритим, а не тихо ожити.
+   */
   const isReadOnly = Boolean(activeWorkout.endedAt);
   const items: WorkoutItem[] = activeWorkout.items || [];
   const groups: WorkoutGroup[] = useMemo(
