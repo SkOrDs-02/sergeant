@@ -26,6 +26,16 @@ import { emitHubBus } from "@shared/lib/modules/hubBus";
 import type { Insight } from "@shared/lib/insights/types";
 import type { Rec, NudgeDefinition } from "@sergeant/shared";
 
+/**
+ * Ключ, під яким `CollapsibleSection` тримає розгорнутість секції.
+ *
+ * Експортується тому, що його читає ще й `HubDashboard` — щоб ПЕРШИЙ
+ * рендер уже знав правду й не робив зайвого оновлення стану на маунті
+ * (див. коментар там). Один константний рядок на обидва місця: якби
+ * кожне мало свій літерал, вони розійшлись би мовчки.
+ */
+export const HUB_INSIGHTS_OPEN_STORAGE_KEY = "sergeant:hub.insights.open";
+
 export interface HubInsightsBlockProps {
   insightsDefaultOpen: boolean;
   /**
@@ -111,7 +121,7 @@ export function HubInsightsBlock({
 
   return (
     <CollapsibleSection
-      storageKey="sergeant:hub.insights.open"
+      storageKey={HUB_INSIGHTS_OPEN_STORAGE_KEY}
       defaultOpen={insightsDefaultOpen}
       onOpenChange={onInsightsOpenChange}
       title="Що зараз важливо"
