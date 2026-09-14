@@ -336,6 +336,7 @@ async function initSqliteDb(
   // акаунтами неможливий — лишається спільне сховище, але підтвердити
   // це нічим. Той самий тег розділяє `SQLITE_CORRUPT` (`API-P` / `API-Q`)
   // за бекендом зберігання.
+  lastVfs = driver.vfs;
   setSentryTag("sqlite.vfs", driver.vfs);
 
   const handle: SqliteDbHandle = {
@@ -500,6 +501,22 @@ export interface SqliteStorageDiagnostics {
   readonly capacity: number;
   /** Скільки з них зайнято файлами. */
   readonly fileCount: number;
+}
+
+/**
+ * VFS, на якому реально відкрилась база.
+ *
+ * AI-CONTEXT: до 2026-09-14 це знання жило тільки в Sentry-тезі, а на
+ * екрані збою його не було — і відсутність `pool=` у діагностиці довелось
+ * ТЛУМАЧИТИ як «пул не встановився». Тлумачення виявилось правильним, але
+ * покладатись на відсутність поля — поганий інструмент. Тепер VFS
+ * називається прямо.
+ */
+let lastVfs: SqliteVfs | null = null;
+
+/** Який VFS обслуговує базу, або `null` доки її не відкривали. */
+export function readActiveSqliteVfs(): SqliteVfs | null {
+  return lastVfs;
 }
 
 /**

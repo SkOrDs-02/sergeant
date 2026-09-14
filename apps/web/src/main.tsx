@@ -38,6 +38,7 @@ import { maybeRunOnboarding } from "./core/onboarding/index.js";
 import { isCapacitor, getPlatform } from "@sergeant/shared";
 import { bootSyncEngineWriter } from "./core/syncEngine/singleton.js";
 import { requestPersistentStorage } from "./core/db/persistentStorage.js";
+import { probeOpfsInWorker } from "./core/db/opfsProbe.js";
 import { bootstrapKvStore } from "./core/db/kvStoreBoot.js";
 import {
   markStorageBooting,
@@ -253,6 +254,11 @@ void (async () => {
     // ЄДИНА (черга `sync_op_outbox` тримає записи, яких немає на сервері),
     // а типове сховище система витирає першим під тиском місця.
     void requestPersistentStorage();
+    // Стадія 0 спеки `sqlite-opfs-worker.md`: дізнатись із РЕАЛЬНОГО
+    // пристрою, чи підніметься OPFS у воркері. Нічого не гейтить і нічого
+    // не змінює — лише ставить тег у Sentry, щоб рішення про переїзд бази
+    // спиралось на факт, а не на припущення про Safari.
+    void probeOpfsInWorker();
     void bootSyncEngineWriter({ captureException });
     // Release the gate last — after the synchronous migrations have run — so
     // guards never observe a half-migrated store.
