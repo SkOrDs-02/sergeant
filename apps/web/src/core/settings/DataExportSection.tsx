@@ -4,6 +4,7 @@ import { Button } from "@shared/components/ui/Button";
 import { meApi, type MeExportResponse } from "@shared/api";
 import { downloadString } from "@shared/lib/ui/export";
 import { messages } from "@shared/i18n/uk";
+import { useAuthOptional } from "../auth/AuthContext";
 import { HubBackupPanel } from "../hub/HubBackupPanel";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { SettingsGroup, SettingsSubGroup } from "./SettingsPrimitives";
@@ -42,6 +43,17 @@ function toCsvSections(payload: MeExportResponse): ExportCsvSection[] {
 }
 
 export function DataExportSection() {
+  const auth = useAuthOptional();
+  /**
+   * Три стани, а не два: `null` означає «ще не знаємо».
+   *
+   * `useAuthOptional` повертає `null` там, де провайдера немає взагалі
+   * (демо-рендер, частина тестів) — там ми теж НЕ знаємо і нічого не
+   * стверджуємо. Те саме поки `isLoading`. Гейт нижче реагує лише на
+   * явне `false`, тобто на підтверджене «це гість».
+   */
+  const signedIn: boolean | null =
+    auth == null || auth.isLoading ? null : auth.user != null;
   const [serverExportBusy, setServerExportBusy] = useState(false);
   const [serverMessage, setServerMessage] = useState<string | null>(null);
   const [serverError, setServerError] = useState<string | null>(null);
@@ -96,13 +108,24 @@ export function DataExportSection() {
             Серверний експорт не включає сирі секрети й токени. Видалити акаунт
             можна у профілі, там зібрані всі дії керування акаунтом.
           </p>
+          {/* PR-S14: дві кнопки б'ють у `meApi.exportAccount`, який для гостя
+              завжди 401. Доти гість натискав їх і отримував помилку — тобто
+              інтерфейс пропонував дію, якої не існує для його стану, і
+              пояснював це вже постфактум. Тепер стан видно ДО натискання.
+
+              AI-DANGER: гейт стоїть на `signedIn === false`, а не на
+              `!signedIn`. Різниця не косметична: доки сесія гідрується,
+              `signedIn` це `null`, і кнопки лишаються як були. Заміна на
+              `!signedIn` зробила б так, що кожен залогінений користувач на
+              частку секунди бачить «увійди» — рівно той дефект, який
+              PR-S2 лікував у сусідній секції. */}
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
               variant="secondary"
               size="sm"
               onClick={() => void handleServerExport("json")}
-              disabled={serverExportBusy}
+              disabled={serverExportBusy || signedIn === false}
             >
               {serverExportBusy ? m.busy : m.downloadJson}
             </Button>
@@ -111,11 +134,16 @@ export function DataExportSection() {
               variant="secondary"
               size="sm"
               onClick={() => void handleServerExport("csv")}
-              disabled={serverExportBusy}
+              disabled={serverExportBusy || signedIn === false}
             >
               {serverExportBusy ? m.busy : m.downloadCsv}
             </Button>
           </div>
+          {signedIn === false ? (
+            <p className="text-style-caption text-subtle leading-relaxed">
+              {m.guestHint}
+            </p>
+          ) : null}
           <p className="text-style-caption text-subtle leading-relaxed">
             {m.formatsHint}
           </p>
