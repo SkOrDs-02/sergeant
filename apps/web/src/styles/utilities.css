@@ -121,12 +121,31 @@
 
 @utility page-tabbar-pad {
   /* ═══════════════════════════════════════════════════════════════════════
-     BOTTOM CLEARANCE — docked bottom-nav + iOS home indicator. 88px clears
-     the nav so module content scrolls fully above it. The extra +44px that
-     used to clear the floating AIPill was dropped when the assistant moved
-     into the module header (mobile-audit A4).
+     BOTTOM CLEARANCE — лише смуга home indicator, БЕЗ запасу під навігацію.
+
+     88px тут стояли з часів, коли нав був поза потоком і перекривав низ
+     контенту. Зараз не перекриває: `bottom-nav-shell` — `position: relative`
+     (див. цей же файл), а сам нав рендериться СУСІДОМ контенту у флекс-
+     колонці `ModuleShell` (`shared/components/layout/ModuleShell.tsx`: `<div
+     class="flex-1 overflow-hidden …">{children}</div>` і одразу `{nav}`).
+     Тобто контент фізично не може заїхати під нав — а 88px усередині
+     скрол-контейнера лишались порожнечею в кінці КОЖНОЇ сторінки всіх
+     чотирьох модулів (Фізрук, Фінік, Рутина, Їжа — ~25 місць). Перевірено
+     2026-09-14 у продуктовому аудиті (PR-Z5); `Atlas.tsx` зняв цей клас у
+     себе ще раніше, але діагноз там був вужчий («на цій сторінці нава
+     немає»), тож решта модулів борг зберегла.
+
+     Safe-area лишається, і саме вона тут єдина робота: на сторінках БЕЗ
+     нава (`FizrukApp.showBottomNav === false`) низ контенту впирається в
+     смугу home indicator. Там, де нав є, він уже несе власний
+     `padding-bottom: env(safe-area-inset-bottom)`, тож цей рядок нічого не
+     додає — дублювання безпечне, а окремий клас під два випадки коштував би
+     дорожче за нього.
+
+     Назва лишилась попри зміну змісту: перейменування — це 25 call-site-ів
+     churn-у заради слова, і саме тому тут стоїть цей абзац.
      ═══════════════════════════════════════════════════════════════════════ */
-  padding-bottom: calc(88px + env(safe-area-inset-bottom, 0px));
+  padding-bottom: env(safe-area-inset-bottom, 0px);
 }
 
 @utility routine-main-pad {

@@ -669,7 +669,9 @@ export const fizrukPageMessages = {
   workoutHistory: {
     title: "Історія тренувань",
     subtitlePrefix: "Завершено:",
-    backAria: "Повернутись до тренувань",
+    // PR-Z7: `backAria` знято разом зі стрілкою сторінки. Вихід із
+    // `/fizruk/history` тепер один і належить шапці модуля, тож рядок
+    // лишався б підписом до кнопки, якої немає.
     emptyTitle: "Поки немає тренувань",
     emptyDescription: "Заверши перше тренування, воно зʼявиться тут.",
     endedBadge: "Завершене",

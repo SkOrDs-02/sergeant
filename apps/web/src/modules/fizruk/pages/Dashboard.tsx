@@ -6,7 +6,7 @@ import type { FizrukPage } from "../shell/fizrukRoute";
 // FizrukPage is referenced in the JSDoc above and in the onNavigate type
 // signature — keep the import even when TS doesn't track JSDoc refs.
 
-import { safeWriteLS, safeWriteSS } from "@shared/lib/storage/storage";
+import { safeWriteLS } from "@shared/lib/storage/storage";
 import { pluralExercises } from "@sergeant/shared";
 import { formatKyivNominativeDate } from "@shared/lib/time/greeting";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
@@ -76,6 +76,13 @@ interface DashboardProps {
    * absorbed the planning surface.
    */
   onNavigate: (target: FizrukPage | string) => void;
+  /**
+   * «Швидкий старт» — порожнє тренування зараз. До PR-Z6 порожній hero
+   * пропонував лише «Створити шаблон» і «До програм», тобто на першому
+   * запуску з Огляду СТАРТУВАТИ було нічим: обидві кнопки вели у списки, а
+   * єдина кнопка старту жила на сусідній вкладці.
+   */
+  onQuickStart?: (() => void) | undefined;
 }
 
 export function Dashboard({
@@ -83,6 +90,7 @@ export function Dashboard({
   activeProgram,
   todaySession,
   onStartProgramWorkout,
+  onQuickStart,
   onNavigate,
 }: DashboardProps) {
   // Use the shared nominative formatter so weekday matches HubHeader
@@ -388,8 +396,12 @@ export function Dashboard({
     onNavigate(activeWorkout?.id ? `workout/${activeWorkout.id}` : "workouts");
   };
   const openTemplates = () => {
-    safeWriteSS("fizruk_workouts_mode", "templates");
-    onNavigate("workouts");
+    // PR-Z8: канонічний маршрут, а не `workouts` + прапорець у
+    // sessionStorage. Старий шлях лишав адресу `/fizruk/workouts`, хоч на
+    // екрані були «Шаблони», тож браузерне «назад» звідси виходило з
+    // МОДУЛЯ замість повернення на Огляд, а перезавантаження показувало
+    // зовсім інший екран (прапорець споживався на читанні).
+    onNavigate("templates");
   };
   const openPlan = () => {
     // «План» tab was dissolved into the Workouts tab — "plan" is not a
@@ -472,6 +484,7 @@ export function Dashboard({
           onOpenPlan={openPlan}
           onOpenTemplates={openTemplates}
           onOpenPrograms={() => onOpenPrograms?.()}
+          {...(onQuickStart ? { onQuickStart } : {})}
           cornerSlot={<PrBadge pr={prLatest} />}
         />
 

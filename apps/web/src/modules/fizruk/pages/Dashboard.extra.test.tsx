@@ -647,10 +647,16 @@ describe("Dashboard — navigation callbacks", () => {
     expect(mockNavigate).toHaveBeenCalledWith("workouts");
   });
 
-  it("calls onNavigate('workouts') via openTemplates (hero-open-templates)", () => {
+  it("веде на КАНОНІЧНИЙ маршрут шаблонів, а не на 'workouts' із прапорцем", () => {
+    // PR-Z8. Раніше цей шлях писав `fizruk_workouts_mode=templates` у
+    // sessionStorage і навігував на `workouts`: на екрані були «Шаблони»,
+    // а в адресі — `/fizruk/workouts`. Наслідки бачила людина, не код:
+    // браузерне «назад» виходило з модуля, а перезавантаження давало інший
+    // екран, бо прапорець споживався на читанні.
     render(<Dashboard {...defaultProps} />);
     fireEvent.click(screen.getByTestId("hero-open-templates"));
-    expect(mockNavigate).toHaveBeenCalledWith("workouts");
+    expect(mockNavigate).toHaveBeenCalledWith("templates");
+    expect(mockNavigate).not.toHaveBeenCalledWith("workouts");
   });
 });
 

@@ -2,13 +2,11 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 import { act, renderHook } from "@testing-library/react";
 import { ACTIVE_WORKOUT_KEY, type Workout } from "@sergeant/fizruk-domain";
-import type { WorkoutsView } from "../pages/Workouts.types";
 import {
   useActiveWorkoutIdPersistence,
   useLiveWorkoutTick,
   useRestTimerCountdown,
   useStaleActiveWorkoutCleanup,
-  useWorkoutsViewFromSession,
 } from "./useWorkoutsLifecycle";
 
 describe("useActiveWorkoutIdPersistence", () => {
@@ -106,25 +104,6 @@ describe("useStaleActiveWorkoutCleanup", () => {
       );
       expect(setId).toHaveBeenCalledWith(null);
     });
-  });
-});
-
-describe("useWorkoutsViewFromSession", () => {
-  beforeEach(() => sessionStorage.clear());
-
-  it("consumes a templates flag and clears it", () => {
-    sessionStorage.setItem("fizruk_workouts_mode", "templates");
-    const setView = vi.fn();
-    renderHook(() => useWorkoutsViewFromSession(setView));
-    expect(setView).toHaveBeenCalledWith("templates");
-    expect(sessionStorage.getItem("fizruk_workouts_mode")).toBeNull();
-  });
-
-  it("ignores an unknown flag", () => {
-    sessionStorage.setItem("fizruk_workouts_mode", "bogus");
-    const setView = vi.fn<(v: WorkoutsView) => void>();
-    renderHook(() => useWorkoutsViewFromSession(setView));
-    expect(setView).not.toHaveBeenCalled();
   });
 });
 

@@ -73,6 +73,38 @@ describe("FizrukHeader", () => {
     expect(screen.queryByText("Активна: Сила 5×5")).toBeNull();
   });
 
+  // PR-Z7: до цієї правки набір контекстного back був вужчий, тож на цих
+  // чотирьох підсторінках шапка малювала пару «Назад» + «На хаб», а
+  // сторінка згори докладала власну стрілку — два-три виходи поруч
+  // (`programs` при цьому не мала жодного).
+  it.each([
+    ["catalog", "Назад до Тренування"],
+    ["templates", "Назад до Тренування"],
+    ["history", "Назад до Огляд"],
+    ["programs", "Назад до Огляд"],
+  ] as const)(
+    "на '%s' дає РІВНО один вихід — контекстний back «%s»",
+    (page, label) => {
+      const onContextualBack = vi.fn();
+      render(
+        <FizrukHeader
+          page={page}
+          onContextualBack={onContextualBack}
+          onBackToHub={vi.fn()}
+          onGoToHub={vi.fn()}
+        />,
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: label }));
+      expect(onContextualBack).toHaveBeenCalledTimes(1);
+
+      // Головне тут — саме ці два рядки: `onBackToHub`/`onGoToHub` передані,
+      // і до правки шапка малювала б обидві кнопки поруч зі стрілкою сторінки.
+      expect(screen.queryByRole("button", { name: "Назад" })).toBeNull();
+      expect(screen.queryByRole("button", { name: "На хаб" })).toBeNull();
+    },
+  );
+
   it("renders settings button when onOpenSettings is provided", () => {
     const onOpenSettings = vi.fn();
     render(

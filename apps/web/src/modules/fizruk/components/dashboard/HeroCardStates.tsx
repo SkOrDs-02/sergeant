@@ -400,6 +400,7 @@ export function EmptyState({
   body,
   onOpenTemplates,
   onOpenPrograms,
+  onQuickStart,
   cornerSlot,
 }: {
   readonly state: Extract<HeroCardState, { kind: "empty" }>;
@@ -407,20 +408,33 @@ export function EmptyState({
   readonly body: HeroBodyInfo;
   readonly onOpenTemplates: () => void;
   readonly onOpenPrograms: () => void;
+  readonly onQuickStart?: (() => void) | undefined;
   readonly cornerSlot?: ReactNode;
 }) {
-  const primaryLabel = state.hasTemplates ? "Обрати шаблон" : "Створити шаблон";
+  const templatesLabel = state.hasTemplates
+    ? "Обрати шаблон"
+    : "Створити шаблон";
+  // PR-Z6: коли старт доступний, він і є головною дією — порожній план не
+  // повинен вимагати спершу завести шаблон. Ієрархія повторює вкладку
+  // «Тренування» (звіт 2026-09-03): старт кнопкою, шаблон посиланням.
+  // Без `onQuickStart` розкладка лишається дослівно старою, тож Storybook і
+  // споживачі поза `Dashboard` нічого не помічають.
+  const primaryLabel = onQuickStart ? "Швидкий старт" : templatesLabel;
   return (
     <HeroShell ariaLabel="План на сьогодні порожній" cornerSlot={cornerSlot}>
       <HeroKicker {...kicker} />
       <HeroStateLabel>План порожній</HeroStateLabel>
       <h2 className="text-style-headline font-black text-hero-ink mt-1 leading-tight text-balance">
-        Обери шаблон або заплануй день
+        {onQuickStart
+          ? "Почни зараз або обери шаблон"
+          : "Обери шаблон або заплануй день"}
       </h2>
       <p className="mt-2 text-style-body text-hero-ink">
-        {state.hasTemplates
-          ? "Нічого не заплановано, запусти готовий шаблон або відкрий програми."
-          : "У тебе ще немає шаблонів. Створи свій перший або обери програму."}
+        {onQuickStart
+          ? "Нічого не заплановано. Почни порожнє тренування і додавай вправи на ходу."
+          : state.hasTemplates
+            ? "Нічого не заплановано, запусти готовий шаблон або відкрий програми."
+            : "У тебе ще немає шаблонів. Створи свій перший або обери програму."}
       </p>
       <HeroRecoveryBars
         rows={body.recoveryRows}
@@ -438,10 +452,19 @@ export function EmptyState({
         <button
           type="button"
           className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
-          onClick={onOpenTemplates}
+          onClick={onQuickStart ?? onOpenTemplates}
         >
           {primaryLabel}
         </button>
+        {onQuickStart ? (
+          <button
+            type="button"
+            onClick={onOpenTemplates}
+            className="focus-ring min-h-[44px] w-full rounded-xl text-style-caption font-semibold text-hero-ink underline-offset-4 hover:underline"
+          >
+            {state.hasTemplates ? "або із шаблону →" : "або створити шаблон →"}
+          </button>
+        ) : null}
         <Button
           variant="fizruk-soft"
           className="w-full h-12 min-h-[44px]"

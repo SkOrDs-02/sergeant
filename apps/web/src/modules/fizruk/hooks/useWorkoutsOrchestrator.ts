@@ -15,7 +15,6 @@ import {
   useActiveWorkoutIdPersistence,
   useLiveWorkoutTick,
   useStaleActiveWorkoutCleanup,
-  useWorkoutsViewFromSession,
 } from "./useWorkoutsLifecycle";
 import { useRestTimer } from "../context/RestTimerContext";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
@@ -259,7 +258,6 @@ export function useWorkoutsOrchestrator(
     setActiveWorkoutId,
     { routeOwnsWorkoutId: Boolean(options.requestedWorkoutId) },
   );
-  useWorkoutsViewFromSession(setView, !options.requestedWorkoutId);
 
   useLiveWorkoutTick(activeWorkout, setNow);
 

@@ -19,6 +19,7 @@ import { useFizrukRoute } from "./hooks/useFizrukRoute";
 import { usePwaAction } from "@shared/hooks/usePwaAction";
 import { useExerciseCatalog } from "./hooks/useExerciseCatalog";
 import { useFizrukProgramStart } from "./hooks/useFizrukProgramStart";
+import { useFizrukQuickStart } from "./hooks/useFizrukQuickStart";
 import { useFizrukDualWriteBoot } from "./hooks/useFizrukDualWriteBoot";
 import { useFizrukSqliteReadBoot } from "./hooks/useFizrukSqliteReadBoot";
 import { useFizrukWorkoutReminder } from "./hooks/useFizrukWorkoutReminder";
@@ -120,6 +121,16 @@ export default function FizrukApp({
     createWorkout,
     addItem,
     exercises,
+    navigate,
+    onConflict: (start) => setPendingProgramStart(() => start),
+  });
+
+  // Той самий `onConflict`, що й у програмного старту: діалог «уже є
+  // активне тренування» один на обидва шляхи, тож людина не бачить двох
+  // схожих модалок залежно від того, звідки почала.
+  const handleQuickStart = useFizrukQuickStart({
+    workouts,
+    createWorkout,
     navigate,
     onConflict: (start) => setPendingProgramStart(() => start),
   });
@@ -264,6 +275,7 @@ export default function FizrukApp({
             onStartProgramWorkout={(session) =>
               handleStartProgramWorkout(session)
             }
+            onQuickStart={handleQuickStart}
             onOpenModule={onOpenModule}
           />
         </SwipePages>

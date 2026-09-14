@@ -1,16 +1,15 @@
 import { useEffect } from "react";
 import type { Dispatch, SetStateAction } from "react";
-import {
-  safeReadStringSS,
-  safeRemoveLS,
-  safeRemoveSS,
-  safeWriteLS,
-} from "@shared/lib/storage/storage";
+import { safeRemoveLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { ACTIVE_WORKOUT_KEY, type Workout } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "./useFizrukRestSound";
-import type { WorkoutsView } from "../pages/Workouts.types";
 
-const VIEW_FROM_SESSION_KEY = "fizruk_workouts_mode";
+// PR-Z8: `useWorkoutsViewFromSession` і ключ `fizruk_workouts_mode` знято.
+// Це був другий, безадресний вхід у «Шаблони»: Огляд писав прапорець у
+// sessionStorage і навігував на `workouts`, а вигляд перемикався вже після
+// монтування. Єдиний писар був один (`Dashboard.openTemplates`) і тепер
+// ходить канонічним маршрутом `templates`, тож механізм лишався б кодом,
+// який ніхто не викликає, але який усе одно читається на кожному вході.
 
 /**
  * Persist `activeWorkoutId` into local storage so a refresh keeps the
@@ -83,27 +82,6 @@ export function useStaleActiveWorkoutCleanup(
     setActiveWorkoutId,
     routeOwnsWorkoutId,
   ]);
-}
-
-/**
- * Restore `view` from a one-shot `sessionStorage` flag set by other
- * surfaces ("open Templates" / "open Journal" deep-links). The flag
- * is consumed (cleared) on read so a refresh reverts to "home".
- */
-export function useWorkoutsViewFromSession(
-  setView: (v: WorkoutsView) => void,
-  enabled = true,
-): void {
-  useEffect(() => {
-    if (!enabled) return;
-    // `safeReadStringSS`/`safeRemoveSS` centralise the private-mode-Safari /
-    // disabled-storage guard that used to live as an inline try/catch here.
-    const m = safeReadStringSS(VIEW_FROM_SESSION_KEY);
-    if (m === "templates") {
-      setView(m);
-      safeRemoveSS(VIEW_FROM_SESSION_KEY);
-    }
-  }, [enabled, setView]);
 }
 
 /**
