@@ -27,8 +27,9 @@
 - **Рутина** — pages (Habits, Heatmap), components, hooks, lib + `__tests__`.
 - **Харчування** — `NutritionApp` (4 вкладки) + **Комора** (`/nutrition/pantry`),
   `AddMealSheet` (ручний ввід + сканер), `useShoppingList` / `useNutritionPantries`,
-  MMKV + `useNutritionLog` / `useNutritionPrefs` + `__tests__`. AI-parse pantry
-  / повні рецепти / photo-AI — непортовані, заморожені.
+  MMKV + `useNutritionLog` / `useNutritionPrefs` + `__tests__`, рецепти
+  (`RecipeRecommender`, `RecipeDetail`, deep link `recipe/[id]`) і photo-AI
+  (`analyze-photo` / `refine-photo` в `AddMealSheet`).
 
 Інфраструктура готова:
 
@@ -43,12 +44,22 @@
 - Detox e2e конфіги для iOS і Android у CI (поки smoke-build, реальні
   сценарії треба дописати).
 
-**Непортоване на момент заморозки** (не «в роботі» — див. статус вище):
+**Не зроблено на момент заморозки** (не «в роботі» — див. статус вище):
 
-- **Харчування (решта Phase 7+)** — комора, список покупок, рецепти, deep link
-  `recipe/[id].tsx` все ще заглушка; photo-AI.
-- **Voice / Speech** — `expo-speech` + STT ще не підключено.
 - **Store-listing** (іконки, privacy manifest iOS, data safety Android).
+
+> **Тут був довший список, і він виявився застарілим** (перевірено 2026-09-14
+> на вимогу рев'ю #1188). Він називав непортованими комору, список покупок,
+> рецепти, deep link `recipe/[id].tsx` («все ще заглушка») і photo-AI — усе це
+> в репо є, з тестами: `pages/Pantry.tsx`, `pages/Shopping.tsx`,
+> `pages/RecipeDetail.tsx`, `app/(tabs)/nutrition/recipe/[id].tsx` (рендерить
+> `RecipeDetailPage`, не заглушка), `AddMealSheet` з photo-гілкою. Голос теж:
+> `components/ui/VoiceMicButton.tsx`. Канонічна матриця
+> [`platforms.md`](../../docs/engineering/architecture/platforms.md) ставить
+> усім цим рядкам ✅ для RN.
+>
+> **Звідси правило для розморозки:** обсяг непортованого бери з `platforms.md`,
+> а не з цього файлу. Список у README старіє тихо, бо ніщо його не гейтить.
 
 **Серверний push (APNs/FCM/web):** fan-out у `apps/server/src/push/send.ts`;
 у проді ще потрібні credentials — `docs/work/specs/tech-debt/backend.md#push-credentials`.

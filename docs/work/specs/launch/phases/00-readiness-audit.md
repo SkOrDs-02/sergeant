@@ -75,12 +75,12 @@ Sergeant фактично вже **технічно деплоїться у пр
 
 ### 3.4 Native Expo (`apps/mobile`)
 
-- **Стан:** `active`, **internal dev-client** — готово до `eas build --profile development`, ще не для store. Expo SDK 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Better Auth Expo + bearer у `expo-secure-store`.
-- **Feature parity** (з [`platforms.md`](../../../../engineering/architecture/platforms.md)): 18/22 рядків функціонально на parity з web; Hub voice (STT/TTS) — 🟡 (HubChat composer Phase 8 follow-up), Onboarding wizard — 🟡 (повний AI-customize крок Phase 7), Харчування — 🟡 (pantry/shopping/recipes/photo-AI).
+- **Стан:** **розвиток заморожений з 2026-08-25** ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md)), **internal dev-client** — готово до `eas build --profile development`, ще не для store. Пауза, не sunset: код лишається активом, `typecheck` і Jest далі гейтять `main`, баг-фікси дозволені. Expo SDK 52 + RN 0.76 + Expo Router + NativeWind + MMKV + Better Auth Expo + bearer у `expo-secure-store`.
+- **Feature parity:** число і перелік 🟡 бери з [`platforms.md`](../../../../engineering/architecture/platforms.md), не звідси. Знімок, що стояв тут, застарів: він тримав Харчування в 🟡 за pantry / shopping / recipes / photo-AI, тоді як матриця дає всім чотирьом ✅ для RN (перевірено 2026-09-14, рев'ю #1188).
 - **Push:** native APNs/FCM через `expo-notifications`, `PushRegistrar` шле токени у `POST /api/v1/push/register` з ідемпотентним кешем.
 - **CI/tests:** Detox iOS + Android конфіги у CI (поки smoke-build), окремий [`mobile-flaky-verify.yml`](../../../../../.github/workflows/mobile-flaky-verify.yml) воркфлоу — 20-run baseline.
 - **EAS:** [`eas.json`](../../../../../apps/mobile/eas.json) має `development` / `preview` / `production` profile-и, `production.android.buildType = app-bundle`, `production.distribution = store`. **Submit-secret-и не налаштовані**, store-listing-у не існує (іконки, privacy manifest iOS, data safety Android).
-- **Висновок:** native — це **другий ешелон launch-у**. Реально випустити internal-track-білд через ~4–6 тижнів після Capacitor public, або раніше — якщо власник свідомо переключиться на Expo як primary (зараз ADR-0052 говорить protilezhne).
+- **Висновок:** оцінка «другий ешелон, ~4–6 тижнів після Capacitor public» була чинною до заморозки і лишається як **оцінка готовності на момент паузи**, а не як план. Розморозка — рішення власника за [ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md); питання «хто primary» під паузою предмета не має, а [ADR-0052](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md) читається як історія.
 
 ### 3.5 Landing site
 
