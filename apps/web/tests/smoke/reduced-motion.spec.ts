@@ -31,15 +31,27 @@ test("@critical a11y: reduced-motion зупиняє анімації хаба (�
   });
   await page.waitForTimeout(1_200);
 
-  const runningCssAnimations = await page.evaluate(
-    () =>
-      document
-        .getAnimations()
-        .filter(
-          (a) =>
-            a.constructor.name === "CSSAnimation" && a.playState === "running",
-        )
-        .map((a) => (a as CSSAnimation).animationName), // імена — у повідомлення асерта
+  // Збираємо не лише ІМЕНА, а й носіїв. Самі імена нечитабельні: падіння
+  // виглядало як «pulse, pulse, pulse» і не називало жодного елемента, тож
+  // причину доводилось вгадувати. Тег + класи + псевдоелемент кажуть, який
+  // саме скелетон не догас.
+  const runningCssAnimations = await page.evaluate(() =>
+    document
+      .getAnimations()
+      .filter(
+        (a) =>
+          a.constructor.name === "CSSAnimation" && a.playState === "running",
+      )
+      .map((a) => {
+        const name = (a as CSSAnimation).animationName;
+        const effect = a.effect as KeyframeEffect | null;
+        const el = effect?.target ?? null;
+        const pseudo = effect?.pseudoElement ?? "";
+        if (!el) return `${name}@<без елемента>${pseudo}`;
+        const cls =
+          typeof el.className === "string" ? el.className.slice(0, 120) : "";
+        return `${name}@${el.tagName.toLowerCase()}${pseudo}[${cls}]`;
+      }),
   );
 
   expect(
