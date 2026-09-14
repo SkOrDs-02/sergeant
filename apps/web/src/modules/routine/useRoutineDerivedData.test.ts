@@ -280,6 +280,44 @@ describe("useRoutineDerivedData", () => {
       expect(result.current.canBulkMark).toBe(false);
     });
 
+    /**
+     * PR-R3 (рішення власника 2026-09-14): домен не позначає майбутній
+     * день, тож кнопка на зрізі «Завтра» була б мертвою — натиснув, і
+     * нічого. Рівно той дефект, який цей же аудит ловив у Фініку (PR-F1),
+     * тож гейт мусить стояти і в UI, а не лише в домені.
+     */
+    it("«Завтра» → false: домен майбутнє не позначає, мертвої кнопки не лишаємо", () => {
+      const routine = mkRoutine({
+        habits: [{ id: "h1", name: "Daily", recurrence: "daily" }],
+      });
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({
+            routine,
+            timeState: mkTimeState({ timeMode: "tomorrow" }),
+          }),
+        ),
+      );
+      expect(result.current.canBulkMark).toBe(false);
+    });
+
+    it("сьогодні → true: гейт не зʼїв робочий день", () => {
+      // Парний до попереднього. Гейт на `>=` замість `>` зробив би кнопку
+      // мертвою в ЄДИНИЙ день, коли вона потрібна.
+      const routine = mkRoutine({
+        habits: [{ id: "h1", name: "Daily", recurrence: "daily" }],
+      });
+      const { result } = renderHook(() =>
+        useRoutineDerivedData(
+          buildParams({
+            routine,
+            timeState: mkTimeState({ timeMode: "today" }),
+          }),
+        ),
+      );
+      expect(result.current.canBulkMark).toBe(true);
+    });
+
     it("is false in week/month mode (multi-day range)", () => {
       const routine = mkRoutine({
         habits: [{ id: "h1", name: "Daily", recurrence: "daily" }],

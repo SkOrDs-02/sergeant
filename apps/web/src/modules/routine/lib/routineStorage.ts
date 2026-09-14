@@ -19,6 +19,7 @@
  * the SQLite cache.
  */
 
+import { anchoredCompletionBounds } from "./dayAnchor";
 import {
   ROUTINE_STORAGE_KEY,
   ROUTINE_EVENT,
@@ -325,7 +326,12 @@ export function toggleHabitCompletion(
   habitId: string,
   dateKey: string,
 ): RoutineState {
-  const next = applyToggleHabitCompletion(state, habitId, dateKey);
+  const next = applyToggleHabitCompletion(
+    state,
+    habitId,
+    dateKey,
+    anchoredCompletionBounds(),
+  );
   if (next === state) return state;
   return persist(next);
 }
@@ -335,7 +341,11 @@ export function markAllScheduledHabitsComplete(
   state: RoutineState,
   dateKey: string,
 ): RoutineState {
-  const next = applyMarkAllScheduledHabitsComplete(state, dateKey);
+  const next = applyMarkAllScheduledHabitsComplete(
+    state,
+    dateKey,
+    anchoredCompletionBounds(),
+  );
   if (next === state) return state;
   return persist(next);
 }

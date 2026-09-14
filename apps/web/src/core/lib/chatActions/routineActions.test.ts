@@ -863,18 +863,25 @@ describe("mark_habit_done · undo", () => {
       // LOG-2 fix: дата має бути в межах розкладу звички.
       // `seedHabit` дефолтить `startDate: "2026-01-01"`, тож дата ДО
       // старту (як стара «2024-06-15») тепер коректно no-op-ить.
-      input: { habit_id: "h1", date: "2026-06-15" },
+      //
+      // PR-R3: і не пізніше «сьогодні». Годинник цього файлу запінено на
+      // 2026-04-22 (`vi.setSystemTime` вище), а дати тут були «2026-06-15»
+      // — тобто майже два місяці в МАЙБУТНЄ відносно пінованого сьогодні.
+      // Тести цього не помічали, бо до заборони майбутньої відмітки дата
+      // ні на що не впливала. Зсунуто в минуле відносно піна; перевіряють
+      // вони, як і раніше, поведінку undo, а не дату.
+      input: { habit_id: "h1", date: "2026-04-20" },
     });
     if (typeof out === "string" || out == null) {
       throw new Error(`expected undoable result, got ${typeof out}`);
     }
     const before = loadRoutineState();
-    expect(before.completions["h1"]).toContain("2026-06-15");
+    expect(before.completions["h1"]).toContain("2026-04-20");
 
     out.undo?.();
 
     const after = loadRoutineState();
-    expect(after.completions["h1"] ?? []).not.toContain("2026-06-15");
+    expect(after.completions["h1"] ?? []).not.toContain("2026-04-20");
   });
 
   it("якщо дата вже була виконана — повертає результат БЕЗ undo (no-op)", () => {
@@ -882,14 +889,14 @@ describe("mark_habit_done · undo", () => {
     // Перший виклик — вставляємо completion
     const first = handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2026-06-15" },
+      input: { habit_id: "h1", date: "2026-04-20" },
     });
     expect(typeof first).toBe("object");
 
     // Другий виклик з тією ж датою — completion вже є, undo не потрібен
     const second = handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2026-06-15" },
+      input: { habit_id: "h1", date: "2026-04-20" },
     });
     // Форма змінилась разом із F-12: no-op теж несе `confirm`, але undo
     // лишається відсутнім — реверсити нема чого.
@@ -900,11 +907,11 @@ describe("mark_habit_done · undo", () => {
     seedHabit("h1", "Вода");
     handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2026-06-13" },
+      input: { habit_id: "h1", date: "2026-04-18" },
     });
     const out = handleRoutineAction({
       name: "mark_habit_done",
-      input: { habit_id: "h1", date: "2026-06-15" },
+      input: { habit_id: "h1", date: "2026-04-20" },
     });
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
@@ -912,8 +919,8 @@ describe("mark_habit_done · undo", () => {
     out.undo?.();
 
     const after = loadRoutineState();
-    expect(after.completions["h1"]).toContain("2026-06-13");
-    expect(after.completions["h1"]).not.toContain("2026-06-15");
+    expect(after.completions["h1"]).toContain("2026-04-18");
+    expect(after.completions["h1"]).not.toContain("2026-04-20");
   });
 
   // LOG-2 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
@@ -1146,5 +1153,38 @@ describe("archive_habit — undo", () => {
     const st = loadRoutineState();
     saveRoutineState({ ...st, habits: [] });
     expect(() => out.undo?.()).not.toThrow();
+  });
+});
+
+// ─────────────────────────────────────────────────────────────────────────
+// Регресія рев'ю #1209: неявна дата `mark_habit_done` мусить бути днем
+// ПРИСТРОЮ, а не київським.
+//
+// Доти там стояв `getKyivDayKey()`, і поки межі майбутнього не існувало,
+// різниця ні на що не впливала. Після PR-R3 вона стала відмовою: у поясі
+// на захід від Києва ввечері київська доба вже наступна, тож неявна ціль
+// потрапляла в «майбутнє», редюсер її відхиляв, і чат відповідав «не
+// заплановано» на звичку, яку людина саме зараз виконала.
+//
+// Годинник тут пінимо в UTC-інстант, де ДВІ доби розходяться: 22:00 UTC =
+// 01:00 наступного дня за Києвом. Прогін іде під TZ=UTC, тож пристрій
+// бачить 2026-04-22, а Київ — уже 2026-04-23.
+// ─────────────────────────────────────────────────────────────────────────
+describe("mark_habit_done · неявна дата біля межі доби", () => {
+  it("відмічає день ПРИСТРОЮ, коли київська доба вже наступна", () => {
+    vi.setSystemTime(new Date("2026-04-22T22:00:00Z"));
+    seedHabit("h1", "Вода");
+
+    const out = handleRoutineAction({
+      name: "mark_habit_done",
+      input: { habit_id: "h1" },
+    });
+
+    // Головне — НЕ відмова. Зі старим `getKyivDayKey()` тут повертався б
+    // рядок «не заплановано на 2026-04-23».
+    expect(typeof out).not.toBe("string");
+    const state = loadRoutineState();
+    expect(state.completions["h1"]).toContain("2026-04-22");
+    expect(state.completions["h1"]).not.toContain("2026-04-23");
   });
 });

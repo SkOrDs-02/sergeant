@@ -21,6 +21,7 @@
 import {
   applyMarkAllScheduledHabitsComplete,
   applyToggleHabitCompletion,
+  type CompletionDayBounds,
 } from "./reducers.js";
 import {
   createCompletionEvent,
@@ -53,9 +54,10 @@ export function applyToggleHabitCompletionWithEvents(
   state: RoutineState,
   habitId: string,
   dateKey: string,
+  bounds: CompletionDayBounds,
   ctx: CompletionEventContext,
 ): RoutineStateWithEvents {
-  const next = applyToggleHabitCompletion(state, habitId, dateKey);
+  const next = applyToggleHabitCompletion(state, habitId, dateKey, bounds);
   if (next === state) return { state, events: [] };
 
   const nowDone = hasCompletion(next, habitId, dateKey);
@@ -78,9 +80,10 @@ export function applyToggleHabitCompletionWithEvents(
 export function applyMarkAllScheduledHabitsCompleteWithEvents(
   state: RoutineState,
   dateKey: string,
+  bounds: CompletionDayBounds,
   ctx: CompletionEventContext,
 ): RoutineStateWithEvents {
-  const next = applyMarkAllScheduledHabitsComplete(state, dateKey);
+  const next = applyMarkAllScheduledHabitsComplete(state, dateKey, bounds);
   if (next === state) return { state, events: [] };
 
   const events: CompletionEvent[] = [];

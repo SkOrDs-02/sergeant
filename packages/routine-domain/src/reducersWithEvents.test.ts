@@ -44,14 +44,21 @@ function baseState(): RoutineState {
   };
 }
 
+// Межа «сьогодні» для редюсерів відмітки (PR-R3). Навмисно далеке
+// майбутнє: жодна дата в наявних кейсах не є «завтра» відносно неї,
+// тож ці тести перевіряють рівно те, що й перевіряли. Сам гейт
+// закритий окремими кейсами нижче.
+const BOUNDS = { todayKey: "2099-12-31" };
+
 describe("applyToggleHabitCompletionWithEvents", () => {
   it("віддає той самий стан, що й старий редюсер (additive-контракт)", () => {
     const s = baseState();
-    const legacy = applyToggleHabitCompletion(s, "hab_1", "2026-07-20");
+    const legacy = applyToggleHabitCompletion(s, "hab_1", "2026-07-20", BOUNDS);
     const next = applyToggleHabitCompletionWithEvents(
       s,
       "hab_1",
       "2026-07-20",
+      BOUNDS,
       CTX,
     );
     expect(next.state.completions).toEqual(legacy.completions);
@@ -62,6 +69,7 @@ describe("applyToggleHabitCompletionWithEvents", () => {
       baseState(),
       "hab_1",
       "2026-07-20",
+      BOUNDS,
       CTX,
     );
     expect(next.events).toHaveLength(1);
@@ -78,11 +86,17 @@ describe("applyToggleHabitCompletionWithEvents", () => {
   });
 
   it("зняття відмітки породжує подію `undone` — факт більше не зникає безслідно", () => {
-    const s = applyToggleHabitCompletion(baseState(), "hab_1", "2026-07-20");
+    const s = applyToggleHabitCompletion(
+      baseState(),
+      "hab_1",
+      "2026-07-20",
+      BOUNDS,
+    );
     const next = applyToggleHabitCompletionWithEvents(
       s,
       "hab_1",
       "2026-07-20",
+      BOUNDS,
       { ...CTX, occurredAt: "2026-07-20T09:05:00.000+03:00" },
     );
     expect(next.state.completions["hab_1"]).toEqual([]);
@@ -96,6 +110,7 @@ describe("applyToggleHabitCompletionWithEvents", () => {
       s,
       "missing",
       "2026-07-20",
+      BOUNDS,
       CTX,
     );
     expect(next.state).toBe(s);
@@ -117,6 +132,7 @@ describe("applyToggleHabitCompletionWithEvents", () => {
       s,
       "hab_1",
       "2026-07-19",
+      BOUNDS,
       CTX,
     );
     expect(next.state).toBe(s);
@@ -135,6 +151,7 @@ describe("applyToggleHabitCompletionWithEvents", () => {
         state,
         "hab_1",
         "2026-07-20",
+        BOUNDS,
         { ...CTX, occurredAt: at },
       );
       state = step.state;
@@ -153,10 +170,11 @@ describe("applyToggleHabitCompletionWithEvents", () => {
 describe("applyMarkAllScheduledHabitsCompleteWithEvents", () => {
   it("віддає той самий стан, що й старий редюсер", () => {
     const s = baseState();
-    const legacy = applyMarkAllScheduledHabitsComplete(s, "2026-07-20");
+    const legacy = applyMarkAllScheduledHabitsComplete(s, "2026-07-20", BOUNDS);
     const next = applyMarkAllScheduledHabitsCompleteWithEvents(
       s,
       "2026-07-20",
+      BOUNDS,
       CTX,
     );
     expect(next.state.completions).toEqual(legacy.completions);
@@ -166,6 +184,7 @@ describe("applyMarkAllScheduledHabitsCompleteWithEvents", () => {
     const next = applyMarkAllScheduledHabitsCompleteWithEvents(
       baseState(),
       "2026-07-20",
+      BOUNDS,
       CTX,
     );
     expect(next.events.map((e) => e.habitId)).toEqual(["hab_1", "hab_2"]);
@@ -173,20 +192,31 @@ describe("applyMarkAllScheduledHabitsCompleteWithEvents", () => {
   });
 
   it("вже відмічені звички подій не породжують", () => {
-    const s = applyToggleHabitCompletion(baseState(), "hab_1", "2026-07-20");
+    const s = applyToggleHabitCompletion(
+      baseState(),
+      "hab_1",
+      "2026-07-20",
+      BOUNDS,
+    );
     const next = applyMarkAllScheduledHabitsCompleteWithEvents(
       s,
       "2026-07-20",
+      BOUNDS,
       CTX,
     );
     expect(next.events.map((e) => e.habitId)).toEqual(["hab_2"]);
   });
 
   it("no-op (усе вже відмічено) не породжує подій", () => {
-    const s = applyMarkAllScheduledHabitsComplete(baseState(), "2026-07-20");
+    const s = applyMarkAllScheduledHabitsComplete(
+      baseState(),
+      "2026-07-20",
+      BOUNDS,
+    );
     const next = applyMarkAllScheduledHabitsCompleteWithEvents(
       s,
       "2026-07-20",
+      BOUNDS,
       CTX,
     );
     expect(next.state).toBe(s);

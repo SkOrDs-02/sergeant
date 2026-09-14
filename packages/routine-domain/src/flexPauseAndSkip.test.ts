@@ -32,6 +32,12 @@ function stateWith(habit: Partial<Habit> = {}): RoutineState {
   };
 }
 
+// Межа «сьогодні» для редюсерів відмітки (PR-R3). Навмисно далеке
+// майбутнє: жодна дата в наявних кейсах не є «завтра» відносно неї,
+// тож ці тести перевіряють рівно те, що й перевіряли. Сам гейт
+// закритий окремими кейсами нижче.
+const BOUNDS = { todayKey: "2099-12-31" };
+
 describe("dateKeyInPauseInterval", () => {
   it("межі інтервалу включні", () => {
     const iv = [{ from: "2026-07-10", to: "2026-07-12" }];
@@ -127,7 +133,7 @@ describe("normalizeSkipsMap", () => {
 describe("applySetHabitSkip / applyClearHabitSkip", () => {
   it("ставить пропуск і знімає відмітку виконання", () => {
     let s = stateWith();
-    s = applyToggleHabitCompletion(s, "h1", "2026-07-10");
+    s = applyToggleHabitCompletion(s, "h1", "2026-07-10", BOUNDS);
     expect(s.completions["h1"]).toEqual(["2026-07-10"]);
 
     s = applySetHabitSkip(s, "h1", "2026-07-10", "sick", "застуда");
@@ -139,7 +145,7 @@ describe("applySetHabitSkip / applyClearHabitSkip", () => {
   it("відмітка виконання знімає пропуск — три стани взаємно виключні", () => {
     let s = stateWith();
     s = applySetHabitSkip(s, "h1", "2026-07-10", "busy");
-    s = applyToggleHabitCompletion(s, "h1", "2026-07-10");
+    s = applyToggleHabitCompletion(s, "h1", "2026-07-10", BOUNDS);
     expect(s.completions["h1"]).toEqual(["2026-07-10"]);
     expect(s.skips?.["h1"]).toBeUndefined();
   });
