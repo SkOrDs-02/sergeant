@@ -113,4 +113,36 @@ describe("Skeleton", () => {
     ).toBeInTheDocument();
     expect(document.querySelector(".set .bg-fizruk\\/10")).toBeInTheDocument();
   });
+  // ── Анімаційний бюджет (Hard Rule #17) ────────────────────────────
+  // Знайдено smoke-тестом `reduced-motion.spec.ts`, а не рев'ю: три рядки
+  // скелетона поради давали ТРИ Animation-обʼєкти, хоча коментар поруч
+  // стверджував «≤1 AMBIENT». Той самий урок уже був записаний у
+  // `PageLoader` (design-audit F8) — до `SkeletonText` він не доїхав.
+  describe("pulse рахується обʼєктами, а не рядками", () => {
+    it("багаторядковий текст пульсує КОНТЕЙНЕРОМ, а не кожним рядком", () => {
+      const { container } = render(<SkeletonText lines={4} />);
+      const pulsing = container.querySelectorAll(
+        "[class*='motion-safe:animate-pulse']",
+      );
+      // Рівно один обʼєкт на всю групу — візуально ідентично, бюджетно ні.
+      expect(pulsing.length).toBe(1);
+      expect(pulsing[0]).toBe(container.firstElementChild);
+    });
+
+    it("`pulse={false}` знімає анімацію з одиночного рядка", () => {
+      const { container } = render(<SkeletonText pulse={false} />);
+      expect(
+        container.querySelectorAll("[class*='motion-safe:animate-pulse']")
+          .length,
+      ).toBe(0);
+    });
+
+    it("одиночний рядок за замовчуванням пульсує — регресії немає", () => {
+      const { container } = render(<SkeletonText />);
+      expect(
+        container.querySelectorAll("[class*='motion-safe:animate-pulse']")
+          .length,
+      ).toBe(1);
+    });
+  });
 });

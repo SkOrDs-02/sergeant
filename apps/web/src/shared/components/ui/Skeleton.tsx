@@ -172,6 +172,7 @@ export function SkeletonText({
   lines = 1,
   gap = "gap-2",
   module,
+  pulse = true,
 }: SkeletonTextProps) {
   if (lines > 1) {
     // Deterministic pseudo-random widths from a small bag so the
@@ -179,7 +180,16 @@ export function SkeletonText({
     const widths = ["w-full", "w-11/12", "w-10/12", "w-9/12", "w-8/12"];
     return (
       <div
-        className={cn("flex flex-col", gap, className)}
+        className={cn(
+          "flex flex-col",
+          gap,
+          // Pulse на КОНТЕЙНЕРІ, а не на кожному рядку — той самий урок,
+          // що вже записано в `PageLoader` (design-audit F8): N рядків
+          // давали N Animation-обʼєктів проти бюджету «≤2 concurrent»
+          // (Hard Rule #17), хоча візуально пульсують як одне ціле.
+          pulse && !shimmer && "motion-safe:animate-pulse",
+          className,
+        )}
         style={style}
         aria-hidden="true"
       >
@@ -195,6 +205,7 @@ export function SkeletonText({
               className={widths[widthIdx]}
               lines={1}
               module={module}
+              pulse={false}
             />
           );
         })}
@@ -206,7 +217,9 @@ export function SkeletonText({
       className={cn(
         module ? MODULE_ACCENT_TINT[module] : "bg-panelHi",
         "rounded-xl h-3",
-        shimmer ? "relative overflow-hidden" : "motion-safe:animate-pulse",
+        shimmer
+          ? "relative overflow-hidden"
+          : pulse && "motion-safe:animate-pulse",
         className,
       )}
       style={style}
