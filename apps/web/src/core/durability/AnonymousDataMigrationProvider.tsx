@@ -257,7 +257,7 @@ function AuthenticatedMigrationGate({
         setFailureKind(verdict.report ? "generic" : "offline");
         setFailureCode(
           error instanceof Error && error.message.startsWith("anon-migration/")
-            ? error.message.slice(0, 160)
+            ? error.message.slice(0, 240)
             : null,
         );
         if (verdict.report) {

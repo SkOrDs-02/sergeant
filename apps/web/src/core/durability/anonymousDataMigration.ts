@@ -347,14 +347,50 @@ async function deleteSourceRows(
  */
 export class AnonymousMigrationStepError extends Error {
   readonly step: string;
-  constructor(step: string, cause: unknown) {
+  constructor(step: string, cause: unknown, storage?: string) {
     const detail =
       cause instanceof Error ? cause.message : String(cause ?? "unknown");
-    super(`anon-migration/${step}: ${detail}`);
+    super(`anon-migration/${step}: ${detail}${storage ? ` [${storage}]` : ""}`);
     this.name = "AnonymousMigrationStepError";
     this.step = step;
     this.cause = cause;
   }
+}
+
+/**
+ * Стан сховища одним рядком — для екрана збою і для Sentry.
+ *
+ * AI-CONTEXT: `SQLITE_IOERR` в sqlite один на ВСІ дискові біди, тож сам по
+ * собі він не розрізняє переповнений SAH-пул, вичерпану квоту origin і
+ * зайнятий іншим контекстом файл. Звіт власника 2026-09-14 приніс саме цю
+ * помилку, і щоб не гадати втретє, наступний скріншот має принести числа,
+ * якими ці випадки розводяться: заповненість пулу (`pool=зайнято/ємність`)
+ * і використання сховища (`disk=використано/квота`).
+ *
+ * Ніколи не кидає і нічого не чекає довго: діагностика не має права стати
+ * новим шляхом відмови в коді, який і так уже впав.
+ */
+async function describeStorage(): Promise<string | undefined> {
+  const parts: string[] = [];
+  try {
+    const sqlite = await import("../db/sqlite.js");
+    const pool = sqlite.readSqliteStorageDiagnostics();
+    if (pool) parts.push(`pool=${pool.fileCount}/${pool.capacity}`);
+  } catch {
+    // Пул міг не встановитись узагалі (kvvfs-фолбек) — тоді просто мовчимо.
+  }
+  try {
+    const estimate = await navigator.storage?.estimate?.();
+    const usage = estimate?.usage;
+    const quota = estimate?.quota;
+    if (typeof usage === "number" && typeof quota === "number") {
+      const mb = (bytes: number) => Math.round(bytes / 1_048_576);
+      parts.push(`disk=${mb(usage)}/${mb(quota)}MB`);
+    }
+  } catch {
+    // `estimate()` недоступний або відхилений — не біда.
+  }
+  return parts.length > 0 ? parts.join(" ") : undefined;
 }
 
 /** Run or resume the durable first-auth handoff. */
@@ -368,8 +404,11 @@ export async function migrateAnonymousDataToProfile(
   try {
     return await runMigration(targetUserId, options, tracker);
   } catch (error) {
-    if (error instanceof AnonymousMigrationStepError) throw error;
-    throw new AnonymousMigrationStepError(tracker.step, error);
+    const storage = await describeStorage();
+    if (error instanceof AnonymousMigrationStepError) {
+      throw new AnonymousMigrationStepError(error.step, error.cause, storage);
+    }
+    throw new AnonymousMigrationStepError(tracker.step, error, storage);
   }
 }
 

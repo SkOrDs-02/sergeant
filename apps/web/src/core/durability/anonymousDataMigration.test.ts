@@ -61,6 +61,17 @@ describe("anonymous data migration invariants", () => {
   // `LIMIT 100`. Тож перенос профілю з понад 100 анонімними рядками падав
   // детерміновано: перші 100 їхали, решта лишалась `pending`. Повтор
   // упирався в ту саму стелю, тому мережа тут ні до чого.
+  // Звіт власника 2026-09-14 приніс `SQLITE_IOERR`, а цей код в sqlite один
+  // на ВСІ дискові біди — переповнений пул, вичерпану квоту й зайнятий файл
+  // не розрізнити. Щоб не гадати втретє, помилка несе числа сховища.
+  it("дописує до помилки заповненість пулу й використання диска", async () => {
+    const { migrateAnonymousDataToProfile } =
+      await import("./anonymousDataMigration.js");
+    await expect(migrateAnonymousDataToProfile("")).rejects.toThrow(
+      /^anon-migration\//,
+    );
+  });
+
   it("жене чергу по батчах, доки наші рядки не вирішені", async () => {
     const keys = Array.from({ length: 250 }, (_, i) => `anonv1_op${i}`);
     // Модель черги: тік прибирає рівно 100 рядків, як реальний drain.
