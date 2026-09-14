@@ -174,12 +174,26 @@ export function SwipePages<Id extends string>({
         >
           <div
             className={cn(
-              "h-full bg-[rgb(var(--module-accent-rgb))] transition-opacity duration-instant",
+              "h-full transition-opacity duration-instant",
               committed ? "opacity-100" : "opacity-40",
             )}
             style={{
               width: `${Math.min(100, (Math.abs(swipe.dragDx) / SWIPE_THRESHOLD_PX) * 100)}%`,
               marginLeft: swipe.dragDx < 0 ? "auto" : 0,
+              // Колір узято з інлайну, а не з класу `bg-[rgb(var(…))]`,
+              // рівно заради ФОЛБЕКА. `--module-accent-rgb` публікує
+              // `ModuleAccentProvider`, а він монтується тільки в модульних
+              // шеллах — поза ними змінна не визначена, `rgb(var(…))` стає
+              // невалідним кольором, і смуга прогресу просто не малюється.
+              // Свайп при цьому працює, але без єдиного візуального
+              // сигналу, що поріг перейдено (знайдено при підключенні
+              // жесту до Налаштувань, 2026-09-14).
+              //
+              // Фолбек — `--c-brand-ink`, нейтральний тир хаба, визначений
+              // в обох темах. Хаб навмисно НЕ має модульного відтінку
+              // (`tokens.js`: «neutral parent»), тож брати сюди будь-який
+              // із чотирьох модульних акцентів було б помилкою.
+              background: "rgb(var(--module-accent-rgb, var(--c-brand-ink)))",
             }}
           />
         </div>

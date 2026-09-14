@@ -37,6 +37,7 @@ import { NotificationsSection } from "../settings/NotificationsSection";
 import { PlanSection } from "../settings/PlanSection";
 import { PrivacySection } from "../settings/PrivacySection";
 import { PWASection } from "../settings/PWASection";
+import { SwipePages } from "@shared/components/layout";
 import { VISIBLE_SETTINGS_SECTIONS } from "./settingsSectionsCatalog";
 
 // Initiative 0017 Sprint 1.1 PR-1.2 — the four module-scoped sections
@@ -244,6 +245,14 @@ export const GROUPS = [
     ],
   },
 ] as const;
+
+/**
+ * Порядок вкладок як плоский список — саме ним ходить горизонтальний
+ * свайп (рішення founder-а 2026-09-14). Похідний від `GROUPS`, щоб
+ * додана вкладка автоматично потрапляла в жест: окремий список рано чи
+ * пізно розʼїхався б із тим, що малюють `Tabs`.
+ */
+export const GROUP_IDS = GROUPS.map((g) => g.id);
 
 // Human copy for `?silpo=error&reason=…` codes sent by
 // `apps/server/src/routes/silpo.ts` (`redirectToSettings`). Unmapped/absent
@@ -671,94 +680,115 @@ export function HubSettingsPage({ scrollContainer }: HubSettingsPageProps) {
           without editing that component; `getPanelId` above already gives
           AT users the tab→panel link via `aria-controls`, and `aria-label`
           gives the reverse (panel→name) link without needing that id. */}
-      <div
-        className="flex flex-col gap-4"
-        role="tabpanel"
-        id={groupPanelId}
-        aria-label={
-          activeGroupLabel ? `Налаштування · ${activeGroupLabel}` : undefined
-        }
-      >
-        {visible.map((s) => {
-          // Рішення власника 2026-09-11: forced-first-of-tab (Варіант A,
-          // адверсарне ревʼю 2026-08-08, дефекти №2/№3) знято. Жодна
-          // секція більше НЕ відкривається автоматично лише тому, що вона
-          // перша у видимій вкладці — на холодному завантаженні і після
-          // перемикання вкладки всі секції стартують ЗГОРНУТИМИ, доки їх
-          // не відкриє один з двох явних сигналів нижче.
-          //
-          // Сигнал №1 — ціль хеш-діп-лінка чи query-return (`#settings-
-          // <id>`, `?billing=portal-return|manage`, `?silpo=connected|
-          // error`): їх усі зводить до одного `hashSectionId`-стейту
-          // ефекти вище в файлі, і секція, на яку він вказує, відкриється
-          // незалежно від позиції в списку чи активної вкладки.
-          //
-          // Сигнал №2 (дефект №3, лишається чинним і після зняття
-          // Варіанта A): памʼять явного вибору юзера
-          // (`sectionOpenOverrides`, per-section-id) переважає дефолт —
-          // якщо юзер сам розгорнув чи згорнув секцію, ремаунт при
-          // перемиканні вкладки відтворює саме той стан.
-          const userOverride = sectionOpenOverrides[s.id];
-          const defaultOpenForSection = userOverride ?? hashSectionId === s.id;
+      {/* Горизонтальний свайп між вкладками (рішення founder-а
+          2026-09-14). Жест той самий, що у Фініка / Фізрука / Рутини /
+          Харчування — спільний `SwipePages`, не друга реалізація: він
+          сам гасить жест на краях списку, ігнорує вертикальні скроли й
+          не свайпає всередині горизонтальних скролерів (смуга вкладок
+          `overflow-x-auto` вище — саме такий).
 
-          return (
-            <SettingsGroupDefaultOpenContext.Provider
-              key={s.id}
-              value={{
-                defaultOpen: defaultOpenForSection,
-                onUserToggle: (open) => {
-                  setSectionOpenOverrides((prev) => ({
-                    ...prev,
-                    [s.id]: open,
-                  }));
-                },
-              }}
-            >
-              <div
-                id={`settings-${s.id}`}
-                data-search-keywords={`${s.title} ${s.keywords}`}
-                ref={(el) => {
-                  refs.current[s.id] = el;
+          Чому це, а не повернення пошуку по сторінці. Пошук на цьому
+          екрані був і його навмисно зняли 2026-09-04 (#1097) з причиною
+          «14 секцій у трьох вкладках не потребують третього механізму
+          навігації». Свайп третього механізму не додає — він робить
+          дешевшим перехід між тими самими трьома вкладками, тобто
+          підсилює рішення #1097, а не скасовує його.
+
+          `SwipePages` кладе власну обгортку з `flex-1 overflow-hidden
+          flex flex-col min-h-0`, а `role="tabpanel"` лишається на
+          внутрішньому елементі — атрибути доступності не переїжджають,
+          бо `aria-controls` кожної вкладки вказує саме на `groupPanelId`. */}
+      <SwipePages ids={GROUP_IDS} activeId={tab} onChange={setTab}>
+        <div
+          className="flex flex-col gap-4"
+          role="tabpanel"
+          id={groupPanelId}
+          aria-label={
+            activeGroupLabel ? `Налаштування · ${activeGroupLabel}` : undefined
+          }
+        >
+          {visible.map((s) => {
+            // Рішення власника 2026-09-11: forced-first-of-tab (Варіант A,
+            // адверсарне ревʼю 2026-08-08, дефекти №2/№3) знято. Жодна
+            // секція більше НЕ відкривається автоматично лише тому, що вона
+            // перша у видимій вкладці — на холодному завантаженні і після
+            // перемикання вкладки всі секції стартують ЗГОРНУТИМИ, доки їх
+            // не відкриє один з двох явних сигналів нижче.
+            //
+            // Сигнал №1 — ціль хеш-діп-лінка чи query-return (`#settings-
+            // <id>`, `?billing=portal-return|manage`, `?silpo=connected|
+            // error`): їх усі зводить до одного `hashSectionId`-стейту
+            // ефекти вище в файлі, і секція, на яку він вказує, відкриється
+            // незалежно від позиції в списку чи активної вкладки.
+            //
+            // Сигнал №2 (дефект №3, лишається чинним і після зняття
+            // Варіанта A): памʼять явного вибору юзера
+            // (`sectionOpenOverrides`, per-section-id) переважає дефолт —
+            // якщо юзер сам розгорнув чи згорнув секцію, ремаунт при
+            // перемиканні вкладки відтворює саме той стан.
+            const userOverride = sectionOpenOverrides[s.id];
+            const defaultOpenForSection =
+              userOverride ?? hashSectionId === s.id;
+
+            return (
+              <SettingsGroupDefaultOpenContext.Provider
+                key={s.id}
+                value={{
+                  defaultOpen: defaultOpenForSection,
+                  onUserToggle: (open) => {
+                    setSectionOpenOverrides((prev) => ({
+                      ...prev,
+                      [s.id]: open,
+                    }));
+                  },
                 }}
-                // The Search + Tabs island above is `sticky top-0` (≈146px
-                // with the card paddings). With `scroll-mt-4` (16px) the
-                // section title landed *behind* that sticky chrome after
-                // `scrollIntoView`, so deep-links like `#settings-dashboard`
-                // from the inactive Bento card felt like they "just opened
-                // the Settings tab" (issue 2026-05-08). 10rem clears the
-                // island on every viewport while still leaving a small
-                // visual gap above the landed section.
-                className="scroll-mt-40"
               >
-                {s.lazy ? (
-                  // V-15: резервуємо рівно ту висоту, якою секція
-                  // намалюється — розгорнуту лише тоді, коли вона справді
-                  // буде розгорнутою (див. `SECTION_LAZY` вище).
-                  <ChunkErrorBoundary
-                    minH={lazySectionMinH(s.lazy.minH, defaultOpenForSection)}
-                  >
-                    <Suspense
-                      fallback={
-                        <SectionSkeleton
-                          minH={lazySectionMinH(
-                            s.lazy.minH,
-                            defaultOpenForSection,
-                          )}
-                          ariaLabel={`Завантажую ${s.title}`}
-                        />
-                      }
+                <div
+                  id={`settings-${s.id}`}
+                  data-search-keywords={`${s.title} ${s.keywords}`}
+                  ref={(el) => {
+                    refs.current[s.id] = el;
+                  }}
+                  // The Search + Tabs island above is `sticky top-0` (≈146px
+                  // with the card paddings). With `scroll-mt-4` (16px) the
+                  // section title landed *behind* that sticky chrome after
+                  // `scrollIntoView`, so deep-links like `#settings-dashboard`
+                  // from the inactive Bento card felt like they "just opened
+                  // the Settings tab" (issue 2026-05-08). 10rem clears the
+                  // island on every viewport while still leaving a small
+                  // visual gap above the landed section.
+                  className="scroll-mt-40"
+                >
+                  {s.lazy ? (
+                    // V-15: резервуємо рівно ту висоту, якою секція
+                    // намалюється — розгорнуту лише тоді, коли вона справді
+                    // буде розгорнутою (див. `SECTION_LAZY` вище).
+                    <ChunkErrorBoundary
+                      minH={lazySectionMinH(s.lazy.minH, defaultOpenForSection)}
                     >
-                      {s.render()}
-                    </Suspense>
-                  </ChunkErrorBoundary>
-                ) : (
-                  s.render()
-                )}
-              </div>
-            </SettingsGroupDefaultOpenContext.Provider>
-          );
-        })}
-      </div>
+                      <Suspense
+                        fallback={
+                          <SectionSkeleton
+                            minH={lazySectionMinH(
+                              s.lazy.minH,
+                              defaultOpenForSection,
+                            )}
+                            ariaLabel={`Завантажую ${s.title}`}
+                          />
+                        }
+                      >
+                        {s.render()}
+                      </Suspense>
+                    </ChunkErrorBoundary>
+                  ) : (
+                    s.render()
+                  )}
+                </div>
+              </SettingsGroupDefaultOpenContext.Provider>
+            );
+          })}
+        </div>
+      </SwipePages>
     </div>
   );
 }

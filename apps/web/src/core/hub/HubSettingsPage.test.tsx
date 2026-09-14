@@ -13,7 +13,12 @@ import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { billingKeys, silpoKeys } from "@shared/lib/api/queryKeys";
-import { GROUPS, HubSettingsPage, lazySectionMinH } from "./HubSettingsPage";
+import {
+  GROUPS,
+  GROUP_IDS,
+  HubSettingsPage,
+  lazySectionMinH,
+} from "./HubSettingsPage";
 import { SETTINGS_SECTIONS_CATALOG } from "./settingsSectionsCatalog";
 
 // `DashboardSection` and `PWASection` consume `useToast`, which throws
@@ -600,5 +605,102 @@ describe("lazySectionMinH — V-15", () => {
     // те саме число, що дефолт `minH` у `SectionSkeleton`.
     expect(lazySectionMinH(600, false)).toBe(72);
     expect(lazySectionMinH(280, false)).toBe(72);
+  });
+});
+
+// Горизонтальний свайп між вкладками (рішення founder-а 2026-09-14).
+// jsdom не має справжнього `TouchEvent`, тож жест синтезується
+// структурними літералами — рівно ті поля, які читає
+// `useSwipeNavigation`; та сама техніка, що в `SwipePages.test.tsx`.
+//
+// Break-test прогнано: без обгортки `<SwipePages>` падає РІВНО ОДИН тест —
+// «свайп ліворуч веде на наступну вкладку» («1 failed | 24 passed»). Решта
+// чотири на зламаному коді проходять, і це нормально: три з них
+// стверджують, що нічого НЕ стається (край списку, вертикальний рух), а
+// пʼятий пінить звʼязок таб→панель, який від жесту не залежить. Тобто
+// доказом підключення є один тест, а решта — піни на інваріанти, і читати
+// їх як докази не треба.
+describe("свайп між вкладками налаштувань", () => {
+  function swipe(area: HTMLElement, fromX: number, toX: number): void {
+    fireEvent.touchStart(area, { touches: [{ clientX: fromX, clientY: 100 }] });
+    fireEvent.touchMove(area, { touches: [{ clientX: toX, clientY: 100 }] });
+    fireEvent.touchEnd(area, {
+      changedTouches: [{ clientX: toX, clientY: 100 }],
+    });
+  }
+
+  /** Регіон із тач-хендлерами — обгортка `SwipePages` навколо табпанелі. */
+  function swipeArea(): HTMLElement {
+    const panel = screen.getByRole("tabpanel");
+    const area = panel.parentElement?.parentElement;
+    if (!area) throw new Error("swipe area not found");
+    return area;
+  }
+
+  it("GROUP_IDS повторює порядок GROUPS — жест ходить тим самим списком, що й таби", () => {
+    // Не тавтологія: `GROUP_IDS` МОЖЕ розʼїхатись, якщо його колись
+    // перепишуть літералом замість похідної від `GROUPS`. Саме це й
+    // сталося б непоміченим — таби малюються з `GROUPS`, а свайп ходив
+    // би за старим списком.
+    expect(GROUP_IDS).toEqual(GROUPS.map((g) => g.id));
+  });
+
+  it("свайп ліворуч веде на наступну вкладку", () => {
+    renderWithToast(<HubSettingsPage />);
+    expect(screen.getByRole("tab", { name: "Загальні" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+
+    swipe(swipeArea(), 300, 200);
+
+    expect(screen.getByRole("tab", { name: "Розділи" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("свайп праворуч на ПЕРШІЙ вкладці нікуди не веде", () => {
+    // Крайовий випадок, який легко втратити: `SwipePages` гасить жест на
+    // краях списку сам, і тест стереже, що ми не обійшли цю логіку.
+    renderWithToast(<HubSettingsPage />);
+
+    swipe(swipeArea(), 200, 300);
+
+    expect(screen.getByRole("tab", { name: "Загальні" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("вертикальний рух не перемикає вкладку", () => {
+    // Найдорожчий регрес цього жесту: скрол довгої секції, який починає
+    // гортати вкладки.
+    renderWithToast(<HubSettingsPage />);
+    const area = swipeArea();
+
+    fireEvent.touchStart(area, { touches: [{ clientX: 300, clientY: 100 }] });
+    fireEvent.touchMove(area, { touches: [{ clientX: 280, clientY: 400 }] });
+    fireEvent.touchEnd(area, {
+      changedTouches: [{ clientX: 280, clientY: 400 }],
+    });
+
+    expect(screen.getByRole("tab", { name: "Загальні" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("табпанель лишається табпанеллю під обгорткою свайпу", () => {
+    // `aria-controls` кожної вкладки вказує саме на цей id — якщо
+    // обгортка колись «зʼїсть» атрибути, звʼязок таб→панель зникне мовчки.
+    renderWithToast(<HubSettingsPage />);
+    const panel = screen.getByRole("tabpanel");
+    expect(panel.id).toBeTruthy();
+    expect(
+      screen
+        .getByRole("tab", { name: "Загальні" })
+        .getAttribute("aria-controls"),
+    ).toBe(panel.id);
   });
 });
