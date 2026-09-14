@@ -72,6 +72,23 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
+  {
+    // Стадія 1 спеки `docs/work/specs/sqlite-opfs-worker.md`. Тумблер
+    // користувацький навмисно: це рішення ПРИСТРОЮ, і власник має вмикати
+    // й вимикати його на своєму телефоні без редеплою.
+    //
+    // AI-DANGER: опис нижче каже правду, і її не можна пом'якшувати.
+    // Стадія 1 переносить лише ДВИГУН, не дані: під увімкненим тумблером
+    // відкривається порожня база в іншому сховищі. Старе сховище лишається
+    // недоторканим, тож вимикання повертає все назад. Перелиття даних —
+    // стадія 2; коли вона приїде, опис треба переписати.
+    id: "storage_sqlite_worker",
+    label: "Нове сховище бази (проба)",
+    description:
+      "Тримає локальну базу у файловому сховищі браузера замість старого, обмеженого 5 МБ. Поки що переносить тільки двигун: записи лишаються у старому сховищі, тож тут ти побачиш порожньо. Вимкни тумблер, і все повернеться.",
+    defaultValue: false,
+    experimental: true,
+  },
   // Stage 13 PR #078: `feature.finyk.sqlite_v2.mono_mirror` retired.
   // Previously defaultValue: true, experimental: true. Mono mirror now
   // triggers unconditionally — see monoMirrorBoot.ts / monoMirrorGate.ts.

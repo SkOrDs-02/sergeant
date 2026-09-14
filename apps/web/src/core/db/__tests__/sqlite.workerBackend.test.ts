@@ -1,0 +1,104 @@
+// @vitest-environment jsdom
+/**
+ * @status Active
+ *
+ * Стадія 1 спеки `docs/work/specs/sqlite-opfs-worker.md`: база у воркері
+ * за прапорцем.
+ *
+ * Тести стережуть саме те, що робить стадію злитною без зміни поведінки:
+ * вимкнений прапорець НЕ чіпає воркер узагалі, а будь-яка невдача воркера
+ * тихо повертає застосунок на наявний головнопотоковий шлях. Третій випадок
+ * — увімкнений прапорець і робочий воркер — перевіряє, що запити справді
+ * йдуть туди, а не лишаються на старому з'єднанні.
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+import { __resetSqliteDbForTests, getSqliteDb } from "../sqlite";
+import { sqlite3InitModuleMock } from "./sqlite-wasm-fake";
+
+vi.mock("@sqlite.org/sqlite-wasm", () => import("./sqlite-wasm-fake"));
+vi.mock("../../observability/sentry.js", () => ({
+  addSentryBreadcrumb: vi.fn(),
+  setSentryTag: vi.fn(),
+}));
+vi.mock("../../lib/featureFlags.js", () => ({ getFlag: vi.fn(() => false) }));
+vi.mock("../sqliteWorkerClient.js", () => ({
+  openSqliteInWorker: vi.fn(),
+}));
+
+import { getFlag } from "../../lib/featureFlags.js";
+import { openSqliteInWorker } from "../sqliteWorkerClient.js";
+
+function fakeWorkerConnection() {
+  return {
+    dbName: "sergeant-anon.db",
+    grewBy: 0,
+    exec: vi.fn(async () => {}),
+    run: vi.fn(async () => {}),
+    all: vi.fn(async () => [] as unknown[]),
+    diagnostics: vi.fn(async () => ({ capacity: 24, fileCount: 2 })),
+    close: vi.fn(async () => {}),
+    wipe: vi.fn(async () => {}),
+  };
+}
+
+beforeEach(() => {
+  __resetSqliteDbForTests();
+  vi.mocked(getFlag).mockReturnValue(false);
+  vi.mocked(openSqliteInWorker).mockReset();
+  sqlite3InitModuleMock.mockClear();
+  // Без OPFS на головному потоці — щоб фолбек був однозначно kvvfs і його
+  // не можна було сплутати з успіхом воркера.
+  Object.defineProperty(globalThis.navigator, "storage", {
+    value: undefined,
+    configurable: true,
+  });
+  Object.defineProperty(globalThis, "localStorage", {
+    value: {
+      getItem: () => null,
+      setItem: () => {},
+      removeItem: () => {},
+    },
+    configurable: true,
+  });
+});
+
+afterEach(() => {
+  __resetSqliteDbForTests();
+});
+
+describe("бекенд бази у воркері", () => {
+  it("вимкнений прапорець не піднімає воркер узагалі", async () => {
+    const handle = await getSqliteDb();
+
+    expect(openSqliteInWorker).not.toHaveBeenCalled();
+    expect(handle.vfs).toBe("kvvfs");
+  });
+
+  it("увімкнений прапорець веде запити у воркер", async () => {
+    vi.mocked(getFlag).mockReturnValue(true);
+    const conn = fakeWorkerConnection();
+    vi.mocked(openSqliteInWorker).mockResolvedValue(conn);
+
+    const handle = await getSqliteDb();
+    await handle.migrationClient().exec("CREATE TABLE t (id INTEGER)");
+
+    expect(handle.vfs).toBe("opfs-sahpool");
+    expect(conn.exec).toHaveBeenCalledWith("CREATE TABLE t (id INTEGER)");
+    // Головнопотоковий модуль під цим прапорцем не потрібен — і не
+    // вантажиться. Це половина сенсу переїзду: важкий WASM не займає
+    // головний потік.
+    expect(sqlite3InitModuleMock).not.toHaveBeenCalled();
+  });
+
+  it("невдача воркера тихо повертає застосунок на наявний шлях", async () => {
+    vi.mocked(getFlag).mockReturnValue(true);
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("Missing required OPFS APIs."),
+    );
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("kvvfs");
+  });
+});
