@@ -72,7 +72,35 @@ export interface RoutineDualWriteContext {
 }
 
 let registeredContext: RoutineDualWriteContext | null = null;
+/** Усі живі реєстрації в порядку появи — див. AI-DANGER нижче. */
+const liveContexts: RoutineDualWriteContext[] = [];
 
+/**
+ * AI-DANGER: реєстрантів БІЛЬШЕ НІЖ ОДИН, і це навмисно — тому teardown
+ * ПОВЕРТАЄ попередній контекст, а не обнуляє слот.
+ *
+ * Як воно ламалось (знахідка PR-R1, аудит 2026-09-13). Слот був один, а
+ * teardown робив `if (registeredContext === ctx) registeredContext = null`.
+ * Реєструються двоє: глобальний boot-кластер (змонтований завжди через
+ * `RootLayout`) і сам модуль. Модуль реєструється пізніше й перекриває
+ * кластерний контекст; на анмаунті модуля його teardown бачить СВІЙ
+ * контекст у слоті й обнуляє його — а кластер більше нічого не
+ * реєструє, бо його ефект залежить від `[userId]`. Далі
+ * `is…DualWriteRegistered()` вертає `false`, і dual-write мовчки стає
+ * no-op до кінця сесії: запис із чату доїжджає лише до localStorage.
+ *
+ * Чому саме стек, а не «прибрати другого реєстранта». У Фініку кластер
+ * гейтиться на `user || isDemoActive()`, тож для анонімного відвідувача
+ * він не рендериться взагалі — і модульна реєстрація там єдина робоча
+ * (замір 2026-08-06: без неї кожна витрата аноніма жила лише в теплому
+ * кеші й зникала на перезавантаженні). Тобто другий реєстрант потрібен;
+ * поламаний був сам реєстр.
+ *
+ * `liveContexts` тримає всі живі реєстрації в порядку появи, а
+ * `registeredContext` — завжди остання з них. Teardown прибирає СВІЙ
+ * запис зі стека (де б він не стояв) і перераховує поточний. Порядок
+ * анмаунтів тому не має значення.
+ */
 /**
  * Install the dual-write context. Call from the platform bootstrap
  * file (`apps/web/src/main.tsx`, mobile equivalent) when the React
@@ -84,15 +112,20 @@ let registeredContext: RoutineDualWriteContext | null = null;
 export function registerRoutineDualWriteContext(
   ctx: RoutineDualWriteContext,
 ): () => void {
+  liveContexts.push(ctx);
   registeredContext = ctx;
   return () => {
-    if (registeredContext === ctx) registeredContext = null;
+    const at = liveContexts.lastIndexOf(ctx);
+    if (at === -1) return;
+    liveContexts.splice(at, 1);
+    registeredContext = liveContexts[liveContexts.length - 1] ?? null;
   };
 }
 
 /** Test-only escape hatch — clears any registered context. */
 export function __clearRoutineDualWriteContextForTests(): void {
   registeredContext = null;
+  liveContexts.length = 0;
 }
 
 /**
