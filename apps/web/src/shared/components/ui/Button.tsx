@@ -1,5 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
+import { useModuleAccent } from "../layout/ModuleAccentProvider";
 import { cn } from "../../lib/ui/cn";
 
 /**
@@ -350,10 +351,27 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) {
+    // Акцент модуля, у якому стоїть кнопка. Явний проп `module` виграє —
+    // контекст лише закриває випадок «проп забули», який доти давав
+    // генеричний синій усередині брендованого модуля (PR-C1, рішення
+    // власника 2026-09-14; замір: 105 кнопок у модулях + до 117 спільних,
+    // коли ті рендеряться всередині модуля).
+    //
+    // AI-DANGER: жодна кнопка не має змінити ФОРМУ від цього. Тримається
+    // це на тому, що всі беспропні виклики йдуть ЛЕГАСІ-гілкою
+    // `resolveStyleKey`, де `MODULE_LEGACY_OVERRIDE` мапить лише
+    // `primary`/`secondary`, а `ghost`/`danger`/`destructive` проходять
+    // наскрізь. Канонічна гілка такої гарантії НЕ дає: клітинок
+    // `outline × модуль` і `ghost × модуль` у `EMPHASIS_TONE_MAP` немає,
+    // тож там був би фолбек у суцільний `primary`. Пін —
+    // `Button.moduleContext.test.tsx`.
+    const contextAccent = useModuleAccent();
+    const effectiveModule = module ?? contextAccent ?? undefined;
+
     const isDisabled = disabled || loading;
     const hasProgress = typeof progress === "number" && progress >= 0;
     const needsCoarseMinTarget = iconOnly || size === "xs" || size === "sm";
-    const resolvedVariant = resolveStyleKey(variant, tone, module);
+    const resolvedVariant = resolveStyleKey(variant, tone, effectiveModule);
 
     return (
       <button
