@@ -296,6 +296,8 @@ type SyncStateConnRow = {
   status: "connected" | "reauth_required";
   access_token_expires_at: Date | string | null;
   last_sync_at: Date | string | null;
+  last_failed_at: Date | string | null;
+  last_error_code: string | null;
 };
 type SyncStateCountRow = { count: string };
 
@@ -335,7 +337,9 @@ export async function syncStateHandler(
     query<SyncStateConnRow>(
       // last_sync_at — персистований момент успішного pullAndSyncReceipts
       // (не MAX(created_at) по чеках: sync без нових чеків теж «оновлення»).
-      "SELECT status, access_token_expires_at, last_sync_at FROM silpo_connection WHERE user_id = $1",
+      `SELECT status, access_token_expires_at, last_sync_at,
+                last_failed_at, last_error_code
+           FROM silpo_connection WHERE user_id = $1`,
       [userId],
       { op: "silpo_sync_state_connection" },
     ),
@@ -355,6 +359,8 @@ export async function syncStateHandler(
       status: conn?.status ?? "disconnected",
       accessTokenExpiresAt: toIsoOrNull(conn?.access_token_expires_at ?? null),
       lastSyncAt: toIsoOrNull(conn?.last_sync_at ?? null),
+      lastFailedAt: toIsoOrNull(conn?.last_failed_at ?? null),
+      lastErrorCode: conn?.last_error_code ?? null,
       receiptsCount: Number(counts?.count ?? 0),
     }),
   );

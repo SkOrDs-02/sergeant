@@ -8670,6 +8670,28 @@
               }
             ]
           },
+          "lastFailedAt": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
+          "lastErrorCode": {
+            "default": null,
+            "anyOf": [
+              {
+                "type": "string"
+              },
+              {
+                "type": "null"
+              }
+            ]
+          },
           "receiptsCount": {
             "type": "integer",
             "minimum": 0,
@@ -8680,6 +8702,8 @@
           "status",
           "accessTokenExpiresAt",
           "lastSyncAt",
+          "lastFailedAt",
+          "lastErrorCode",
           "receiptsCount"
         ],
         "additionalProperties": false,

@@ -191,6 +191,8 @@ describe(
             status: "connected",
             accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
             lastSyncAt: "2026-08-17T09:15:00.000Z",
+            lastFailedAt: null,
+            lastErrorCode: null,
             receiptsCount: 5,
           });
         })
@@ -201,6 +203,10 @@ describe(
           expect(state.status).toBe("connected");
           expect(state.accessTokenExpiresAt).toBe("2026-08-24T10:00:00.000Z");
           expect(state.lastSyncAt).toBe("2026-08-17T09:15:00.000Z");
+          // Здоровий стан: слід провалу порожній. Успішний синк гасить обидва
+          // поля, тож непорожній `lastFailedAt` завжди означає «зараз зламано».
+          expect(state.lastFailedAt).toBeNull();
+          expect(state.lastErrorCode).toBeNull();
           expect(typeof state.receiptsCount).toBe("number");
           expect(state.receiptsCount).toBe(5);
         });
@@ -220,6 +226,8 @@ describe(
             status: "disconnected",
             accessTokenExpiresAt: null,
             lastSyncAt: null,
+            lastFailedAt: null,
+            lastErrorCode: null,
             receiptsCount: 0,
           });
         })
@@ -231,6 +239,78 @@ describe(
           expect(state.accessTokenExpiresAt).toBeNull();
           expect(state.lastSyncAt).toBeNull();
           expect(state.receiptsCount).toBe(0);
+        });
+    });
+
+    // Третій стан, якого контракт не знав до 2026-09-14: підключено, але
+    // синк падає. Доти його не існувало на дроті взагалі — клієнт бачив
+    // лише `lastSyncAt`, який просто переставав рухатись, і зламаний синк
+    // був не відрізнити від «людина не ходила в магазин». Саме так він
+    // простояв мертвим два тижні при 304 подіях у Sentry.
+    it("returns the last failure alongside the stale success timestamp", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-003 has a connected Silpo account whose sync fails")
+        .uponReceiving("a GET /api/v1/silpo/sync-state request (sync broken)")
+        .withRequest("GET", "/api/v1/silpo/sync-state", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            status: "connected",
+            accessTokenExpiresAt: "2026-09-20T10:00:00.000Z",
+            lastSyncAt: "2026-08-31T09:15:00.000Z",
+            lastFailedAt: "2026-09-14T08:00:00.000Z",
+            lastErrorCode: "SILPO_TOOL_ERROR",
+            receiptsCount: 12,
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const state = await silpo.syncState();
+          // Статус лишається `connected`: звʼязок цілий, ламається САМЕ
+          // синк. Плутати ці два стани не можна — `reauth_required` веде
+          // людину перепідключати акаунт, що тут не допоможе.
+          expect(state.status).toBe("connected");
+          expect(state.lastSyncAt).toBe("2026-08-31T09:15:00.000Z");
+          expect(state.lastFailedAt).toBe("2026-09-14T08:00:00.000Z");
+          // Код НАШ, не текст відповіді Сільпо (Hard Rule #21).
+          expect(state.lastErrorCode).toBe("SILPO_TOOL_ERROR");
+        });
+    });
+
+    // Порядок деплою, а не теорія: web їде Vercel-ом, server — Coolify, і
+    // між ними є вікно, де новий клієнт питає СТАРИЙ сервер. Без дефолту
+    // `parse` кинув би на відповіді без полів провалу, і зламалась би вся
+    // картка налаштувань — через поле, яке лише повідомляє про поломку.
+    // Відсутнє поле = «провалів не записано», і це чесно: старий сервер їх
+    // справді не записував.
+    it("tolerates an older server that does not send the failure fields yet", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-004 is served by a server without migration 138")
+        .uponReceiving("a GET /api/v1/silpo/sync-state request (legacy body)")
+        .withRequest("GET", "/api/v1/silpo/sync-state", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            status: "connected",
+            accessTokenExpiresAt: null,
+            lastSyncAt: "2026-08-31T09:15:00.000Z",
+            receiptsCount: 3,
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const state = await silpo.syncState();
+          expect(state.status).toBe("connected");
+          expect(state.lastFailedAt).toBeNull();
+          expect(state.lastErrorCode).toBeNull();
         });
     });
   },
