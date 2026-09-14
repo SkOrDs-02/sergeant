@@ -250,3 +250,141 @@ describe("PR-S13: вихідний канал глушиться без сесі
     expect(local.current()).toEqual({ calmMode: false });
   });
 });
+
+// ── Знахідки рев'ю CodeRabbit на #1195 ──────────────────────────────────────
+//
+// Три Major-зауваження, усі три перевірені по коду й усі три виявились
+// справжніми. Тести нижче пінять саме їх, бо кожна дірка тиха: жодна не
+// дає ні помилки, ні падіння — лише налаштування, що «самі відкотились».
+//
+// Break-тест прогнано фактично: знявши коалесценцію (незалежні
+// fire-and-forget PATCH-і) І гард сесії, падають ЧОТИРИ з шести — обидва
+// про порядок, той, що про злив черги при увімкненні, і той, що про
+// зміну акаунта.
+//
+// «Відхилений PATCH не губиться» на зламаному коді ПРОХОДИТЬ, і це чесно
+// треба знати: у тій версії другий push просто стріляє власним запитом,
+// тож остання відправка збігається за формою. Тест лишається, бо стереже
+// іншу властивість — що черга не викидає мішок, — але доказом
+// коалесценції він не є.
+describe("PR-S13: коалесценція вихідних PATCH-ів", () => {
+  it("два швидкі перемикання не можуть приїхати на сервер у зворотному порядку", async () => {
+    // Без черги це два незалежні fire-and-forget запити, і HTTP не
+    // обіцяє порядку. Старіший мішок перезаписав би новіший, а на
+    // наступному буті серверний (не-null) виграв би й відкотив тумблер.
+    let settleFirst: () => void = () => {};
+    updatePreferences
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            settleFirst = () => resolve();
+          }),
+      )
+      .mockResolvedValue(undefined);
+
+    pushHubPrefs({ calmMode: true });
+    pushHubPrefs({ calmMode: false });
+    // Поки перший у польоті, другий НЕ стартував окремим запитом.
+    expect(updatePreferences).toHaveBeenCalledTimes(1);
+
+    settleFirst();
+    await new Promise((r) => setTimeout(r, 0));
+
+    expect(updatePreferences).toHaveBeenCalledTimes(2);
+    // Другим пішов саме НОВІШИЙ стан.
+    expect(updatePreferences).toHaveBeenLastCalledWith({
+      hubPrefs: { calmMode: false },
+    });
+  });
+
+  it("проміжні стани не відправляються — важливий лише останній", async () => {
+    let settleFirst: () => void = () => {};
+    updatePreferences
+      .mockImplementationOnce(
+        () =>
+          new Promise<void>((resolve) => {
+            settleFirst = () => resolve();
+          }),
+      )
+      .mockResolvedValue(undefined);
+
+    pushHubPrefs({ calmMode: true });
+    pushHubPrefs({ calmMode: false });
+    pushHubPrefs({ calmMode: true, showInsights: false });
+    settleFirst();
+    await new Promise((r) => setTimeout(r, 0));
+
+    // Два запити, не три: середній мішок нікому не потрібен.
+    expect(updatePreferences).toHaveBeenCalledTimes(2);
+    expect(updatePreferences).toHaveBeenLastCalledWith({
+      hubPrefs: { calmMode: true, showInsights: false },
+    });
+  });
+
+  it("відхилений PATCH не губиться — мішок лишається в черзі", async () => {
+    updatePreferences.mockRejectedValueOnce(new Error("offline"));
+    pushHubPrefs({ calmMode: true });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(updatePreferences).toHaveBeenCalledTimes(1);
+
+    // Наступне перемикання зливає чергу; якби мішок викинули, тут пішов
+    // би лише новий стан, а старіший ключ зник би з акаунта назавжди.
+    updatePreferences.mockResolvedValue(undefined);
+    pushHubPrefs({ calmMode: true, showInsights: false });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(updatePreferences).toHaveBeenLastCalledWith({
+      hubPrefs: { calmMode: true, showInsights: false },
+    });
+  });
+
+  it("увімкнення каналу зливає те, що накопичилось під час гідратації", async () => {
+    // Саме заради цього `setHubPrefsSyncEnabled(true)` кличе flush:
+    // інакше тумблер, перемкнутий поки йшов бутовий GET, не доїхав би на
+    // акаунт до наступного буту.
+    setHubPrefsSyncEnabled(false);
+    pushHubPrefs({ calmMode: true });
+    expect(updatePreferences).not.toHaveBeenCalled();
+
+    setHubPrefsSyncEnabled(true);
+    await new Promise((r) => setTimeout(r, 0));
+    expect(updatePreferences).toHaveBeenCalledWith({
+      hubPrefs: { calmMode: true },
+    });
+  });
+});
+
+describe("PR-S13: гідратація не переживає зміну акаунта", () => {
+  it("відповідь користувача A не пишеться в сховище під сесією B", async () => {
+    // Лічильник поколінь тут НЕ рятує: якщо ніхто нічого не перемикав,
+    // він не зсувається, і мішок A спокійно ліг би локально вже під
+    // сесією B. Тому викликач передає `isStillCurrent`.
+    let resolveGet: (v: unknown) => void = () => {};
+    getPreferences.mockImplementation(
+      () =>
+        new Promise((resolve) => {
+          resolveGet = resolve;
+        }),
+    );
+    const local = makeLocal();
+    let signedInUser = "user-a";
+
+    const inFlight = hydrateHubPrefs(
+      local.read,
+      local.write,
+      () => signedInUser === "user-a",
+    );
+    signedInUser = "user-b";
+    resolveGet(serverPrefs({ calmMode: true }));
+    await inFlight;
+
+    expect(local.current()).toEqual({});
+  });
+
+  it("а без зміни акаунта — пишеться, як і має", async () => {
+    // Пін на те, що гард не забрав зайвого разом із потрібним.
+    getPreferences.mockResolvedValue(serverPrefs({ calmMode: true }));
+    const local = makeLocal();
+    await hydrateHubPrefs(local.read, local.write, () => true);
+    expect(local.current()).toEqual({ calmMode: true });
+  });
+});
