@@ -448,6 +448,74 @@ interface OpenedDb {
   wipe(userId: string | null): Promise<void>;
 }
 
+/**
+ * Скільки слотів пул тримає під файли.
+ *
+ * AI-DANGER: раніше `initialCapacity` не передавали взагалі, тобто діяв
+ * дефолт бібліотеки — **6**. Її власна документація каже про цей дефолт
+ * дослівно: «The default capacity is only large enough for one or two
+ * databases and their associated temp files». А Sergeant тримає МІНІМУМ дві
+ * бази (`sergeant-anon.db` і `sergeant-<userId>.db`, розведені навмисно —
+ * page-audit-10 F17), і кожен акаунт, що колись входив на цьому пристрої,
+ * лишає по файлу назавжди. Плюс SQLite сам створює rollback-журнал і
+ * тимчасові файли, і кожен із них ТЕЖ займає слот пулу.
+ *
+ * Пул не росте сам. `xOpen` у VFS робить рівно це:
+ *
+ *     if (pool.getFileCount() < pool.getCapacity()) { …взяти слот… }
+ *     else toss("SAH pool is full. Cannot create file", path)
+ *
+ * Тобто на переповненні будь-яке створення файлу падає, і sqlite віддає це
+ * як `SQLITE_IOERR: disk I/O error` — без жодного натяку на справжню
+ * причину. Саме це й ловив звіт власника 2026-09-14: перенос анонімних
+ * даних відкриває ОБИДВІ бази й жене транзакцію на 1356 рядків, тобто
+ * впирається рівно в ту межу «одна-дві бази з темпами», про яку попереджає
+ * документація.
+ */
+const SAH_POOL_INITIAL_CAPACITY = 24;
+
+/**
+ * Скільки вільних слотів лишати про запас під журнали й темпи SQLite.
+ *
+ * Одного `initialCapacity` замало: він діє лише на ПЕРШІЙ ініціалізації
+ * пулу в цьому origin. У людини, яка вже користувалась застосунком, пул
+ * створено зі старою ємністю, і він таким і лишиться — саме тому окремо
+ * доростаємо на місці. Це ж покриває пристрій, де входили кілька акаунтів:
+ * файлів там більше, ніж передбачав будь-який статичний дефолт.
+ */
+const SAH_POOL_MIN_FREE_SLOTS = 8;
+
+interface SahPoolLike {
+  getCapacity: () => number;
+  getFileCount: () => number;
+  addCapacity: (n: number) => Promise<unknown>;
+}
+
+async function ensureSahPoolHeadroom(pool: SahPoolLike): Promise<void> {
+  try {
+    const free = pool.getCapacity() - pool.getFileCount();
+    if (free >= SAH_POOL_MIN_FREE_SLOTS) return;
+    const grewBy = SAH_POOL_MIN_FREE_SLOTS - free;
+    await pool.addCapacity(grewBy);
+    addSentryBreadcrumb({
+      category: "storage",
+      level: "info",
+      message: "sqlite: opfs-sahpool capacity grown",
+      data: { grewBy, capacity: pool.getCapacity() },
+    });
+  } catch (err) {
+    // Не фатально: база могла відкритись і на наявних слотах. Ковтаємо, щоб
+    // не перетворити оптимізацію на новий шлях відмови, але лишаємо слід —
+    // якщо `SQLITE_IOERR` повернеться, ця крихта скаже, що запасу не було.
+    addSentryBreadcrumb({
+      category: "storage",
+      level: "warning",
+      message: "sqlite: opfs-sahpool addCapacity failed",
+      data: { error: err instanceof Error ? err.message : String(err) },
+    });
+  }
+}
+
 async function openDb(
   sqlite3: Sqlite3Static,
   userKey: string,
@@ -459,7 +527,9 @@ async function openDb(
     try {
       const pool = await sqlite3.installOpfsSAHPoolVfs({
         directory: "/sergeant/sqlite",
+        initialCapacity: SAH_POOL_INITIAL_CAPACITY,
       });
+      await ensureSahPoolHeadroom(pool);
       // Per-user filename so two accounts on one device never share a DB
       // (page-audit-10 F17).
       const dbName = `sergeant-${userKey}.db`;

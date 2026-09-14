@@ -89,16 +89,37 @@ class OpfsSAHPoolDb extends FakeRows {
   }
 }
 
-const installOpfsSAHPoolVfs = vi.fn(async () => ({
-  OpfsSAHPoolDb,
-  unlink: opfsUnlinkMock,
-  addCapacity: vi.fn(),
-  exportFile: vi.fn(),
-  getCapacity: vi.fn(),
-  getFileCount: vi.fn(),
-  getFileNames: vi.fn(),
-  importDb: vi.fn(),
-}));
+/**
+ * Стан ємності SAH-пулу для тестів.
+ *
+ * Раніше `getCapacity`/`getFileCount` були порожніми `vi.fn()` і віддавали
+ * `undefined` — арифметика над ними давала `NaN`, тож будь-яка перевірка
+ * запасу слотів у коді проходила б повз тест непоміченою. Тримаємо
+ * справжні числа: саме на переповненні цього пулу застосунок і отримував
+ * `SQLITE_IOERR` (звіт власника 2026-09-14).
+ */
+export const sahPoolState = { capacity: 0, fileCount: 0 };
+
+/** Спай на доростання ємності — пул не росте сам, це робить `sqlite.ts`. */
+export const addCapacityMock = vi.fn(async (n: number) => {
+  sahPoolState.capacity += n;
+});
+
+const installOpfsSAHPoolVfs = vi.fn(
+  async (options?: { initialCapacity?: number }) => {
+    sahPoolState.capacity = options?.initialCapacity ?? 6;
+    return {
+      OpfsSAHPoolDb,
+      unlink: opfsUnlinkMock,
+      addCapacity: addCapacityMock,
+      exportFile: vi.fn(),
+      getCapacity: () => sahPoolState.capacity,
+      getFileCount: () => sahPoolState.fileCount,
+      getFileNames: vi.fn(),
+      importDb: vi.fn(),
+    };
+  },
+);
 
 export const installOpfsSAHPoolVfsMock = installOpfsSAHPoolVfs;
 
