@@ -1,5 +1,6 @@
 import { useEffect } from "react";
 import ROUTE_META_JSON from "./routeMeta.json";
+import { absolutizeJsonLd } from "./jsonLd";
 import { reportSsgJsonLd } from "./ssgJsonLd";
 
 /**
@@ -37,9 +38,10 @@ function upsertMeta(name: string, content: string) {
 }
 
 /**
- * Per-page SEO для SPA: лендінг рендериться клієнтом, тож title/description
- * і JSON-LD виставляються після маунта. Google виконує JS і бачить їх;
- * повний SSG – свідомо відкладений апгрейд (див. README лендінга).
+ * Per-page SEO. Статичний HTML кожного маршруту вже несе title, description
+ * і JSON-LD – їх кладе білд (`postbuild-seo.mjs` + `prerender.mjs`). Цей хук
+ * тримає те саме для клієнтської навігації, коли сторінка змінюється без
+ * перезавантаження і краулер із виконанням JS дивиться на живий DOM.
  */
 export function usePageMeta({ title, description, noindex, jsonLd }: PageMeta) {
   // SSG-прохід (entry-server): ефекти не виконуються, тож jsonLd сторінки
@@ -56,7 +58,11 @@ export function usePageMeta({ title, description, noindex, jsonLd }: PageMeta) {
     if (jsonLd) {
       const script = document.createElement("script");
       script.type = "application/ld+json";
-      script.textContent = JSON.stringify(jsonLd);
+      // Той самий прохід, що й у SSG: url і logo пишуться відносними, а в
+      // розмітку мають потрапити абсолютними.
+      script.textContent = JSON.stringify(
+        absolutizeJsonLd(jsonLd, window.location.origin),
+      );
       document.head.appendChild(script);
       return () => {
         script.remove();
