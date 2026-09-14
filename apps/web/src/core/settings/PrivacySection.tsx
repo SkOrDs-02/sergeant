@@ -10,6 +10,11 @@ import {
   ToggleRow,
 } from "./SettingsPrimitives";
 import { setAnalyticsConsent } from "../observability/analyticsConsent";
+import {
+  classifyPreferenceLoadFailure,
+  PREFERENCE_LOAD_FAILURE_COPY,
+  type PreferenceLoadFailure,
+} from "./preferenceLoadFailure";
 
 // Експортовано для `PrivacySection.test.tsx` (L-3): loading-гейт нижче
 // означає, що це значення НІКОЛИ не може просочитись у DOM чи
@@ -51,6 +56,12 @@ export function PrivacySection() {
     useState<UserPreferences>(DEFAULT_PREFERENCES);
   const [preferencesLoaded, setPreferencesLoaded] = useState(false);
   const [preferencesError, setPreferencesError] = useState<string | null>(null);
+  // ЧОМУ не вдалося завантажити, а не лише «не вдалося»: гість і збій мережі
+  // розходяться і в тексті, і в подачі (див. гілку рендеру нижче). `null`
+  // поки нічого не падало або коли впало ЗБЕРЕЖЕННЯ (там гілка своя).
+  const [loadFailure, setLoadFailure] = useState<PreferenceLoadFailure | null>(
+    null,
+  );
   const [savingPreference, setSavingPreference] =
     useState<PreferenceKey | null>(null);
 
@@ -65,13 +76,22 @@ export function PrivacySection() {
         setPreferences(next);
         setPreferencesLoaded(true);
         setPreferencesError(null);
+        setLoadFailure(null);
         setAnalyticsConsent(next.analytics);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (cancelled) return;
+        // PR-S2: доти будь-який збій GET (офлайн, 5xx, таймаут) ставав
+        // «Увійди в акаунт» — неправдиве твердження про стан акаунта, яке
+        // жене залогінену людину перелогінюватись. Причину тепер
+        // розрізняємо; обґрунтування сигналу — `preferenceLoadFailure.ts`.
+        const failure = classifyPreferenceLoadFailure(err);
         setPreferencesLoaded(false);
+        setLoadFailure(failure);
         setPreferencesError(
-          "Увійди в акаунт, щоб керувати налаштуваннями згоди на сервері.",
+          failure === "auth"
+            ? "Увійди в акаунт, щоб керувати налаштуваннями згоди на сервері."
+            : PREFERENCE_LOAD_FAILURE_COPY[failure],
         );
       });
     return () => {
@@ -83,6 +103,7 @@ export function PrivacySection() {
 
   const updatePreference = async (key: PreferenceKey, checked: boolean) => {
     setPreferencesError(null);
+    setLoadFailure(null);
     setSavingPreference(key);
     const previous = preferences;
     setPreferences({ ...previous, [key]: checked });
@@ -167,14 +188,27 @@ export function PrivacySection() {
             ) : null}
           </>
         ) : preferencesError ? (
-          // Огляд 2026-09-04: для гостя це не збій, а очікуваний стан —
+          // Огляд 2026-09-04: для ГОСТЯ це не збій, а очікуваний стан —
           // «увійди, і зможеш керувати» — тож фарбувати його danger і
           // оголошувати як alert означало показувати демо зламаним.
           // Помилка ЗБЕРЕЖЕННЯ (гілка вище) лишається червоною: там
           // людина щойно щось натиснула, і тумблер відкотився.
           // Finding #9: справжній retry, а не глухий кут.
+          //
+          // PR-S2 (2026-09-14): спокійна подача правильна саме для гостя, а
+          // не для будь-якого збою. Офлайн чи 500 — це таки поломка, і
+          // людина має почути її як поломку, інакше вона шукатиме проблему
+          // в собі. Тому подача тепер іде за ПРИЧИНОЮ, а не за самим
+          // фактом помилки.
           <div className="flex flex-col items-start gap-2">
-            <p className="text-style-caption text-muted" role="status">
+            <p
+              className={
+                loadFailure === "auth"
+                  ? "text-style-caption text-muted"
+                  : "text-style-caption text-danger-strong"
+              }
+              role={loadFailure === "auth" ? "status" : "alert"}
+            >
               {preferencesError}
             </p>
             <Button
@@ -183,6 +217,7 @@ export function PrivacySection() {
               size="sm"
               onClick={() => {
                 setPreferencesError(null);
+                setLoadFailure(null);
                 loadPreferences();
               }}
             >
