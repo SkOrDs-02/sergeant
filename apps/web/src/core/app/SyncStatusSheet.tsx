@@ -7,6 +7,7 @@
  * Copy is kept in JS constants (interpolated, never JSX-text) so the module
  * stays clear of raw Cyrillic literals.
  */
+import { useEffect, useState } from "react";
 import { pluralUa } from "@sergeant/shared";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { cn } from "@shared/lib/ui/cn";
@@ -15,6 +16,16 @@ import {
   dismissOutboxPurgeNotice,
   useOutboxPurgeNotice,
 } from "../syncEngine/outboxPurgeNotice";
+// AI-DANGER: беремо VFS із легкого `storageBackendState`, а НЕ з
+// `sqlite.ts`. Той статично тягне `drizzle-orm` і схему, тож один імпорт
+// звідси поклав би весь drizzle на критичний шлях (root `AGENTS.md`
+// § Performance budgets, історія `vendor-sqlite`).
+import {
+  readActiveSqliteVfs,
+  type SqliteVfsName,
+} from "../db/storageBackendState";
+import { probeOpfsInWorker } from "../db/opfsProbe";
+import type { OpfsProbeResult } from "../db/opfsProbe.worker";
 
 type RowTone = "ok" | "warn" | "err";
 
@@ -36,6 +47,14 @@ const COPY = {
   errorsEmpty: "Немає",
   rejected: "Не прийнято сервером",
   rejectedEmpty: "Немає",
+  storage: "Сховище",
+  storageUnknown: "Ще не відкривали",
+  storageOpfs: "OPFS, файли",
+  storageLocalStorage: "localStorage, ліміт ~5 МБ",
+  storageMemory: "Лише памʼять, до перезапуску",
+  opfsWorker: "OPFS у фоні",
+  opfsWorkerChecking: "Перевіряю…",
+  opfsWorkerOk: "Доступний",
   retry: "Повторити синхронізацію",
   purgeNoticeTitle: "Старі записи прибрано",
   purgeNoticeDismiss: "Зрозуміло",
@@ -81,6 +100,51 @@ export interface SyncStatusSheetProps {
   onRetry?: (() => Promise<void>) | undefined;
 }
 
+/**
+ * Де фізично лежить локальна база, людською мовою.
+ *
+ * AI-CONTEXT: у Sentry це є тегом `sqlite.vfs` від 2026-09-14, але доступ
+ * до Sentry є не в кожного, хто дивиться на цей аркуш. Розслідування
+ * `SQLITE_IOERR` двічі просунулось саме тому, що діагностика потрапила НА
+ * ЕКРАН і приїхала скріншотом, а не тому, що хтось відкрив дашборд.
+ */
+function describeVfs(vfs: SqliteVfsName | null): {
+  value: string;
+  tone: RowTone;
+} {
+  if (vfs === "opfs-sahpool") return { value: COPY.storageOpfs, tone: "ok" };
+  if (vfs === "kvvfs") return { value: COPY.storageLocalStorage, tone: "warn" };
+  if (vfs === "memory") return { value: COPY.storageMemory, tone: "err" };
+  return { value: COPY.storageUnknown, tone: "ok" };
+}
+
+/**
+ * Відповідь стадії 0 спеки `sqlite-opfs-worker.md` — чи підніметься OPFS у
+ * воркері на ЦЬОМУ пристрої. Розвідка вже відпрацювала на буті, тож тут
+ * лише читаємо закешований результат.
+ */
+function useOpfsWorkerStatus(open: boolean): {
+  value: string;
+  tone: RowTone;
+} {
+  const [result, setResult] = useState<OpfsProbeResult | null>(null);
+  useEffect(() => {
+    if (!open) return;
+    let alive = true;
+    void probeOpfsInWorker().then((probe) => {
+      if (alive) setResult(probe);
+    });
+    return () => {
+      alive = false;
+    };
+  }, [open]);
+
+  if (!result) return { value: COPY.opfsWorkerChecking, tone: "ok" };
+  return result.kind === "ok"
+    ? { value: COPY.opfsWorkerOk, tone: "ok" }
+    : { value: result.reason, tone: "warn" };
+}
+
 export function SyncStatusSheet({
   open,
   onClose,
@@ -91,6 +155,8 @@ export function SyncStatusSheet({
   onRetry,
 }: SyncStatusSheetProps) {
   const purgeNotice = useOutboxPurgeNotice();
+  const storage = describeVfs(readActiveSqliteVfs());
+  const opfsWorker = useOpfsWorkerStatus(open);
   const rows: { label: string; value: string; tone: RowTone }[] = [
     {
       label: COPY.network,
@@ -111,6 +177,12 @@ export function SyncStatusSheet({
       label: COPY.rejected,
       value: rejected > 0 ? String(rejected) : COPY.rejectedEmpty,
       tone: rejected > 0 ? "err" : "ok",
+    },
+    { label: COPY.storage, value: storage.value, tone: storage.tone },
+    {
+      label: COPY.opfsWorker,
+      value: opfsWorker.value,
+      tone: opfsWorker.tone,
     },
   ];
 
