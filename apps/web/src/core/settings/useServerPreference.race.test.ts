@@ -52,6 +52,7 @@ const BASE_PREFS: UserPreferences = {
   sergeantNudges: false,
   healthDataConsent: false,
   activeModules: null,
+  hubPrefs: null,
   updatedAt: null,
 };
 

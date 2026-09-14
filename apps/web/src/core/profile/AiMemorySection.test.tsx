@@ -36,6 +36,7 @@ vi.mock("@shared/api", () => {
     sergeantNudges: false,
     healthDataConsent: false,
     activeModules: null,
+    hubPrefs: null,
     updatedAt: null,
   };
   return {

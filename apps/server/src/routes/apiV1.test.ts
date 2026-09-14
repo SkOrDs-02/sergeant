@@ -252,6 +252,7 @@ describe("/api/v1/me data rights", () => {
       // Міграція 116 (знахідка B2): `null` = «серверного вибору нема»,
       // і це НЕ те саме, що `[]` = «вибір є, і він порожній».
       activeModules: null,
+      hubPrefs: null,
       updatedAt: null,
     });
   });

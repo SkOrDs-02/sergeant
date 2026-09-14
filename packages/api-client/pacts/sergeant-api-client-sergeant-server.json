@@ -598,6 +598,7 @@
           "aiMemory": true,
           "analytics": false,
           "healthDataConsent": false,
+          "hubPrefs": null,
           "pushNotifications": false,
           "sergeantNudges": false,
           "updatedAt": "2026-08-05T09:00:00.000Z"
@@ -632,6 +633,7 @@
           "aiMemory": true,
           "analytics": false,
           "healthDataConsent": false,
+          "hubPrefs": null,
           "pushNotifications": false,
           "sergeantNudges": false,
           "updatedAt": "2026-08-05T09:00:00.000Z"
@@ -663,9 +665,77 @@
           "aiMemory": true,
           "analytics": false,
           "healthDataConsent": true,
+          "hubPrefs": null,
           "pushNotifications": true,
           "sergeantNudges": false,
           "updatedAt": "2026-08-01T12:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (hubPrefs empty)",
+      "providerStates": [
+        {
+          "name": "user-pact-011 has hub prefs on the account, all at defaults"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": null,
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "hubPrefs": {},
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-09-14T09:00:00.000Z"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (hubPrefs set)",
+      "providerStates": [
+        {
+          "name": "user-pact-010 turned calm mode on and hid the motivational line"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": null,
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "hubPrefs": {
+            "calmMode": true,
+            "showMotivational": false
+          },
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-09-14T09:00:00.000Z"
         },
         "headers": {
           "Content-Type": "application/json",
@@ -725,6 +795,37 @@
           "pushNotifications": false,
           "sergeantNudges": true,
           "updatedAt": null
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/me/preferences request (pre-137 server, no hubPrefs)",
+      "providerStates": [
+        {
+          "name": "user-pact-012 predates the hub_prefs column"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/me/preferences"
+      },
+      "response": {
+        "body": {
+          "activeModules": null,
+          "aiMemory": true,
+          "analytics": false,
+          "healthDataConsent": false,
+          "pushNotifications": false,
+          "sergeantNudges": false,
+          "updatedAt": "2026-09-14T09:00:00.000Z"
         },
         "headers": {
           "Content-Type": "application/json",
