@@ -18,6 +18,27 @@ vi.mock("./mcpClient.js", () => ({
 
 import { diagnoseSilpo } from "./diagnose.js";
 
+// Схеми двох тул, які викликає синк, мусять бути РЕАЛЬНИМИ: вердикт тепер
+// звіряє їх із таблицею очікувань (`toolContract.ts`), і голий `{ name }`
+// читався б як «аргументи зникли зі схеми» — тобто тест ганяв би шлях
+// дрейфу замість того, що перевіряє.
+const TOOLS_WITH_SCHEMA: Record<string, unknown> = {
+  silpo_get_my_online_orders: {
+    properties: { limit: { minimum: 1, maximum: 100 }, offset: { minimum: 0 } },
+  },
+  silpo_get_my_offline_orders: {
+    properties: {
+      branchId: {},
+      deliveryType: {},
+      timeslotStart: {},
+      timeslotEnd: {},
+      limit: { minimum: 1, maximum: 10 },
+      offset: { minimum: 0 },
+    },
+    required: ["branchId", "deliveryType", "timeslotStart", "timeslotEnd"],
+  },
+};
+
 const ALL_TOOLS = [
   "silpo_get_my_offline_orders",
   "silpo_get_my_online_orders",
@@ -26,7 +47,11 @@ const ALL_TOOLS = [
   "silpo_get_my_shopping_cart",
   "silpo_get_shopping_cart_by_id",
   "silpo_list_branches",
-].map((name) => ({ name }));
+].map((name) =>
+  TOOLS_WITH_SCHEMA[name]
+    ? { name, inputSchema: TOOLS_WITH_SCHEMA[name] }
+    : { name },
+);
 
 const HEALTHY_PROBE: McpToolProbe = {
   transportError: null,
