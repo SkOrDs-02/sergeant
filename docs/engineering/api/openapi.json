@@ -8671,6 +8671,7 @@
             ]
           },
           "lastFailedAt": {
+            "default": null,
             "anyOf": [
               {
                 "type": "string"
@@ -8681,6 +8682,7 @@
             ]
           },
           "lastErrorCode": {
+            "default": null,
             "anyOf": [
               {
                 "type": "string"

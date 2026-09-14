@@ -1422,6 +1422,34 @@
       }
     },
     {
+      "description": "a GET /api/v1/silpo/sync-state request (legacy body)",
+      "providerStates": [
+        {
+          "name": "user-pact-004 is served by a server without migration 138"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/sync-state"
+      },
+      "response": {
+        "body": {
+          "accessTokenExpiresAt": null,
+          "lastSyncAt": "2026-08-31T09:15:00.000Z",
+          "receiptsCount": 3,
+          "status": "connected"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
       "description": "a GET /api/v1/silpo/sync-state request (no connection)",
       "providerStates": [
         {

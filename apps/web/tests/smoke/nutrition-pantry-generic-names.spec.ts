@@ -115,6 +115,8 @@ async function mockSilpo(page: Page) {
         status: "connected",
         accessTokenExpiresAt: null,
         lastSyncAt: "2026-08-28T10:00:00.000Z",
+        lastFailedAt: null,
+        lastErrorCode: null,
         receiptsCount: 2,
       }),
     }),

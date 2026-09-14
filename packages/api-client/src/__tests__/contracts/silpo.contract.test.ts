@@ -280,6 +280,39 @@ describe(
           expect(state.lastErrorCode).toBe("SILPO_TOOL_ERROR");
         });
     });
+
+    // Порядок деплою, а не теорія: web їде Vercel-ом, server — Coolify, і
+    // між ними є вікно, де новий клієнт питає СТАРИЙ сервер. Без дефолту
+    // `parse` кинув би на відповіді без полів провалу, і зламалась би вся
+    // картка налаштувань — через поле, яке лише повідомляє про поломку.
+    // Відсутнє поле = «провалів не записано», і це чесно: старий сервер їх
+    // справді не записував.
+    it("tolerates an older server that does not send the failure fields yet", async () => {
+      await pact
+        .addInteraction()
+        .given("user-pact-004 is served by a server without migration 138")
+        .uponReceiving("a GET /api/v1/silpo/sync-state request (legacy body)")
+        .withRequest("GET", "/api/v1/silpo/sync-state", (req) => {
+          req.headers({ accept: "application/json" });
+        })
+        .willRespondWith(200, (res) => {
+          res.headers({ "content-type": "application/json" });
+          res.jsonBody({
+            status: "connected",
+            accessTokenExpiresAt: null,
+            lastSyncAt: "2026-08-31T09:15:00.000Z",
+            receiptsCount: 3,
+          });
+        })
+        .executeTest(async (mockServer) => {
+          const http = createHttpClient({ baseUrl: mockServer.url });
+          const silpo = createSilpoEndpoints(http);
+          const state = await silpo.syncState();
+          expect(state.status).toBe("connected");
+          expect(state.lastFailedAt).toBeNull();
+          expect(state.lastErrorCode).toBeNull();
+        });
+    });
   },
 );
 
