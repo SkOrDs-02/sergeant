@@ -20,7 +20,11 @@
 import { useEffect, useRef, useState } from "react";
 import { logger } from "@shared/lib";
 import { useAuth } from "../auth/AuthContext";
-import { readHubPrefsBag, writeHubPrefsBag } from "./hubPrefs";
+import {
+  readHubPrefsBag,
+  writeHubPrefsBag,
+  migrateLegacyHubPrefs,
+} from "./hubPrefs";
 import { hydrateHubPrefs, setHubPrefsSyncEnabled } from "./hubPrefsSync";
 
 /**
@@ -118,7 +122,16 @@ export function useHubPrefsSync(): void {
         // Сесія могла змінитись, поки запит був у польоті — тоді вмикати
         // канал для ЦЬОГО userId вже немає сенсу: ефект для нового
         // користувача вмикає його сам після своєї гідратації.
-        if (currentUserRef.current === userId) setHubPrefsSyncEnabled(true);
+        if (currentUserRef.current !== userId) return;
+        setHubPrefsSyncEnabled(true);
+        // AI-DANGER: переїзд старих ключів іде ЛИШЕ ТУТ — після
+        // гідратації, і порядок несучий. `migrateLegacyHubPrefs` пише в
+        // мішок через `pushHubPrefs`, а той зсуває лічильник поколінь;
+        // зроблений раніше, він змусив би `hydrateHubPrefs` відкинути
+        // серверну відповідь як застарілу — рівно та гонка, яку закривали
+        // в #1195. Після гідратації ж він безпечний і потрібен: якщо на
+        // акаунті ключа немає, локальний вибір доллється вгору.
+        migrateLegacyHubPrefs();
       })
       .catch((err: unknown) => {
         logger.warn("[hubPrefs] boot hydrate failed", err);

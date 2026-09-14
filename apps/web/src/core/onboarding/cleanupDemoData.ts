@@ -9,6 +9,7 @@
 
 import {
   safeReadLS,
+  safeReadStringLS,
   safeWriteLS,
   safeRemoveLS,
 } from "@shared/lib/storage/storage";
@@ -112,10 +113,17 @@ function cleanNutrition(): void {
  * Run the one-time FTUX demo-data cleanup. Safe to call on every boot —
  * it exits in O(1) after the first successful run.
  *
- * `safeReadLS` decodes JSON, so the legacy-string-flag check needs raw
- * comparison; we use the helper's null-fallback sentinel instead. If the
- * flag isn't set yet, `safeReadLS` returns `null` → we proceed with the
- * cleanup. If it's set, the parsed string `"1"` short-circuits.
+ * Прапорець читається `safeReadStringLS`, і це несуче. `safeWriteLS`
+ * пропускає РЯДОК наскрізь, без лапок, тож у сховищі лежить один символ
+ * `1`. `safeReadLS` розбирає його як JSON і повертає ЧИСЛО 1, а не рядок
+ * `"1"` — тому попередній предикат `safeReadLS(...) === "1"` був хибним
+ * ЗАВЖДИ, і охоронець не спрацьовував жодного разу: прибирання йшло на
+ * кожному буті. Дані це не псувало (усі чотири прибиральники фільтрують
+ * рівно `demo === true` і виходять без запису, коли нічого не змінилось),
+ * але обіцянка «one-shot per device» нижче не виконувалась, а два юніти
+ * поруч стверджували, що виконується — вони мокають сховище тотожним
+ * `Map`, де рядок лишається рядком. Гейт на справжніх хелперах —
+ * `cleanupDemoData.guard.test.ts`.
  */
 // AI-DANGER: one-shot per device. Once `CLEANUP_DONE_KEY` is set, this is
 // never run again. If the guard ever inverts (e.g. a refactor flips the
@@ -123,7 +131,7 @@ function cleanNutrition(): void {
 // Never weaken the early-return guard without a regression test that calls
 // this function twice in a row and asserts the second call is a no-op.
 export function runDemoCleanupOnce(): void {
-  if (safeReadLS<unknown>(CLEANUP_DONE_KEY) === "1") return;
+  if (safeReadStringLS(CLEANUP_DONE_KEY) === "1") return;
   cleanFinyk();
   cleanFizruk();
   cleanRoutine();

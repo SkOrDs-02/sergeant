@@ -1,6 +1,5 @@
 import { useEffect, useRef, useState } from "react";
-import { safeReadLS } from "@shared/lib/storage/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { useHubPref, HUB_PREF_MONDAY_AUTO } from "../../settings/hubPrefs";
 import {
   getWeekKey,
   loadDigest,
@@ -40,11 +39,13 @@ export function useMondayAutoDigest() {
   );
   const { generate } = useWeeklyDigest(previousWeekKey);
   const firedRef = useRef(false);
+  // Прапорець переїхав у мішок `hub_prefs_v1` разом із рештою хабових
+  // налаштувань (залишок PR-S13), тож тепер він ще й спільний між
+  // пристроями. Дефолт ON зберігся: відсутність ключа = увімкнено.
+  const [mondayAuto] = useHubPref<boolean>(HUB_PREF_MONDAY_AUTO, true);
 
   useEffect(() => {
-    const enabled =
-      safeReadLS<string>(STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO, "") !== "0";
-    if (!enabled) return;
+    if (!mondayAuto) return;
 
     const now = new Date();
     // Device-local weekday — той самий годинник, що й `getWeekKey`
@@ -66,5 +67,12 @@ export function useMondayAutoDigest() {
       generate();
     }, 3000);
     return () => clearTimeout(timer);
-  }, [generate, previousWeekKey]);
+    // `mondayAuto` у залежностях — не поступка лінтеру. Прапорець тепер
+    // реактивний (мішок `hub_prefs_v1`), тож вимкнення ПІД ЧАС відліку
+    // тригерить очищення і гасить таймер — раніше значення читалось один
+    // раз усередині ефекту, і скасувати вже запущений відлік було нічим.
+    // Зворотний бік: `firedRef` лишається піднятим, тож повторне
+    // вмикання в тій же сесії відлік не переозброїть. Це навмисно —
+    // консервативніше не згенерувати, ніж згенерувати попри відмову.
+  }, [generate, previousWeekKey, mondayAuto]);
 }

@@ -2,9 +2,7 @@
  * Last validated: 2026-05-14
  * Status: Active
  */
-import { useState } from "react";
-import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { useHubPref, HUB_PREF_MONDAY_AUTO } from "./hubPrefs";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useWeeklyDigest } from "../insights/useWeeklyDigest";
 import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
@@ -14,14 +12,16 @@ export function AIDigestSection() {
   // Default ON з 2026-08-30: дайджест поза AI-квотою, тож автозапуск
   // більше нічого не «зʼїдає». Відсутнє значення = увімкнено; «0» —
   // явний opt-out.
-  const [mondayAuto, setMondayAuto] = useState<boolean>(
-    () =>
-      safeReadLS<string>(STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO, "") !== "0",
+  // Тумблер переїхав у мішок `hub_prefs_v1` і тепер їде на акаунт
+  // (залишок PR-S13). Дефолт лишається ON: відсутність ключа = увімкнено,
+  // тож нічого не змінюється для тих, хто його не чіпав.
+  const [mondayAuto, setMondayAuto] = useHubPref<boolean>(
+    HUB_PREF_MONDAY_AUTO,
+    true,
   );
 
   const handleToggleMondayAuto = (next: boolean) => {
     setMondayAuto(next);
-    safeWriteLS(STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO, next ? "1" : "0");
   };
 
   const generatedAt = digest?.generatedAt

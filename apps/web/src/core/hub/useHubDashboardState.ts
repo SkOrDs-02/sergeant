@@ -6,11 +6,8 @@
  */
 
 import { useCallback, useEffect, useMemo, useState } from "react";
-import { safeReadStringLS } from "@shared/lib/storage/storage";
 import {
-  DASHBOARD_DENSITY_EVENT,
   DEFAULT_DASHBOARD_DENSITY,
-  STORAGE_KEYS,
   getActiveModules,
   getActiveNudge,
   getHideInactiveModules,
@@ -67,7 +64,7 @@ import {
   pickAdaptiveLift,
   pickStrongestSeverity,
 } from "./dashboard/adaptiveSort";
-import { useHubPref } from "../settings/hubPrefs";
+import { useHubPref, HUB_PREF_DENSITY } from "../settings/hubPrefs";
 import { useMondayAutoDigest } from "./dashboard/useMondayAutoDigest";
 import type { User } from "./hub.types";
 
@@ -78,36 +75,16 @@ import type { User } from "./hub.types";
 /**
  * Reactive read of the user's dashboard-density preference.
  *
- * Same-window `localStorage` writes do NOT fire `storage`, so the picker in
- * Settings → Дашборд dispatches a `DASHBOARD_DENSITY_EVENT` we listen to
- * here. Cross-tab writes are still handled via the standard `storage` event.
+ * Раніше тут жила власна машинерія: свій ключ `localStorage`, свій
+ * `DASHBOARD_DENSITY_EVENT` (бо same-window запис не піднімає `storage`)
+ * і свій слухач крос-табу. Тепер щільність — звичайний ключ мішка
+ * `hub_prefs_v1`, тож усе це дає `useHubPref`: і same-window сповіщення,
+ * і крос-таб, і — головне — синхронізацію між пристроями, якої в неї не
+ * було (залишок PR-S13).
  */
 export function useDashboardDensity(): DashboardDensity {
-  const [density, setDensity] = useState<DashboardDensity>(() => {
-    const raw = safeReadStringLS(STORAGE_KEYS.DASHBOARD_DENSITY);
-    return raw === null
-      ? DEFAULT_DASHBOARD_DENSITY
-      : normalizeDashboardDensity(raw);
-  });
-  useEffect(() => {
-    if (typeof window === "undefined") return;
-    const onCustom = (e: Event) => {
-      const detail = (e as CustomEvent<unknown>).detail;
-      setDensity(normalizeDashboardDensity(detail));
-    };
-    const onStorage = (e: StorageEvent) => {
-      if (e.key === STORAGE_KEYS.DASHBOARD_DENSITY) {
-        setDensity(normalizeDashboardDensity(e.newValue));
-      }
-    };
-    window.addEventListener(DASHBOARD_DENSITY_EVENT, onCustom);
-    window.addEventListener("storage", onStorage);
-    return () => {
-      window.removeEventListener(DASHBOARD_DENSITY_EVENT, onCustom);
-      window.removeEventListener("storage", onStorage);
-    };
-  }, []);
-  return density;
+  const [raw] = useHubPref<string>(HUB_PREF_DENSITY, DEFAULT_DASHBOARD_DENSITY);
+  return normalizeDashboardDensity(raw);
 }
 
 // ─────────────────────────────────────────────────────────────────────

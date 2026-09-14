@@ -17,11 +17,10 @@ import { ToastProvider } from "@shared/hooks/useToast";
 import type { UserPreferences } from "@shared/api";
 import {
   DASHBOARD_DENSITIES,
-  DASHBOARD_DENSITY_EVENT,
   getActiveModules,
   STORAGE_KEYS,
 } from "@sergeant/shared";
-import { safeReadStringLS, webKVStore } from "@shared/lib/storage/storage";
+import { webKVStore } from "@shared/lib/storage/storage";
 
 // pushActiveModules (activeModulesSync.ts) fire-and-forgets
 // `meApi.updatePreferences` на кожному кліку по модулю — без мока цей
@@ -166,38 +165,35 @@ describe("DashboardSection", () => {
   // покрито вище, але блок щільності (`DASHBOARD_DENSITIES`) не мав
   // ЖОДНОГО тесту — ні дефолту, ні кліку, ні персисту, ні події, на яку
   // підписаний дашборд для live-ресайзу карток без reload.
-  it("density selector: defaults to «Комфортно», persists a click to storage and broadcasts DASHBOARD_DENSITY_EVENT", () => {
-    const listener = vi.fn();
-    window.addEventListener(DASHBOARD_DENSITY_EVENT, listener);
-    try {
-      renderSection();
+  it("density selector: defaults to «Комфортно» and persists a click into the hub-prefs bag", () => {
+    renderSection();
 
-      const comfortableBtn = screen.getByText("Комфортно").closest("button");
-      const compactBtn = screen.getByText("Компактно").closest("button");
-      if (!comfortableBtn || !compactBtn) {
-        throw new Error("density buttons missing");
-      }
-      // Дефолт без збереженого значення — `DEFAULT_DASHBOARD_DENSITY`
-      // ("comfortable"), не перша чи остання кнопка списку.
-      expect(comfortableBtn).toHaveAttribute("aria-pressed", "true");
-      expect(compactBtn).toHaveAttribute("aria-pressed", "false");
-
-      fireEvent.click(compactBtn);
-
-      expect(compactBtn).toHaveAttribute("aria-pressed", "true");
-      expect(comfortableBtn).toHaveAttribute("aria-pressed", "false");
-      // Персист і подія — це те, на що підписані інші споживачі (сам
-      // хабовий грід читає STORAGE_KEYS.DASHBOARD_DENSITY на старті і
-      // слухає подію для live-ресайзу без перезавантаження сторінки);
-      // без обох секція виглядає так, ніби змінилась, але сусідній грід
-      // про це не дізнається, доки юзер не оновить сторінку.
-      expect(safeReadStringLS(STORAGE_KEYS.DASHBOARD_DENSITY)).toBe("compact");
-      expect(listener).toHaveBeenCalledTimes(1);
-      const event = listener.mock.calls[0]?.[0] as CustomEvent<string>;
-      expect(event.detail).toBe("compact");
-    } finally {
-      window.removeEventListener(DASHBOARD_DENSITY_EVENT, listener);
+    const comfortableBtn = screen.getByText("Комфортно").closest("button");
+    const compactBtn = screen.getByText("Компактно").closest("button");
+    if (!comfortableBtn || !compactBtn) {
+      throw new Error("density buttons missing");
     }
+    // Дефолт без збереженого значення — `DEFAULT_DASHBOARD_DENSITY`
+    // ("comfortable"), не перша чи остання кнопка списку.
+    expect(comfortableBtn).toHaveAttribute("aria-pressed", "true");
+    expect(compactBtn).toHaveAttribute("aria-pressed", "false");
+
+    fireEvent.click(compactBtn);
+
+    expect(compactBtn).toHaveAttribute("aria-pressed", "true");
+    expect(comfortableBtn).toHaveAttribute("aria-pressed", "false");
+
+    // Персист тепер у спільному мішку, а не у власному ключі: щільність
+    // переїхала туди разом із рештою хабових налаштувань, щоб їхати на
+    // акаунт (залишок PR-S13). Власна `CustomEvent` більше не потрібна —
+    // `useHubPref` сам сповіщає і це вікно (синтетичний StorageEvent), і
+    // сусідні вкладки. Саме тому тут перевіряється ВМІСТ МІШКА: без нього
+    // секція виглядала б зміненою, а хабовий грід і сусідній пристрій про
+    // це не дізнались би.
+    const bag = JSON.parse(
+      localStorage.getItem(STORAGE_KEYS.HUB_PREFS) ?? "{}",
+    ) as Record<string, unknown>;
+    expect(bag["density"]).toBe("compact");
   });
 
   // Наявний тест "toggles a dashboard module checkbox…" вимикає модулі, але
