@@ -86,13 +86,36 @@ async function handle(
       });
       pool = installed;
       const grewBy = await ensureHeadroom(installed, request.minFreeSlots);
+      // Імпорт — ПЕРЕД відкриттям: `importDb` пише файл цілком, тож на
+      // відкритій базі він або не спрацює, або залишить її в невідомому
+      // стані. Наявний файл не чіпаємо взагалі: там уже живуть дані, і
+      // перезапис затер би саме те, заради чого переїзд робиться.
+      //
+      // AI-DANGER: ім'я для `importDb` мусить бути НОРМАЛІЗОВАНИМ, зі
+      // скісною на початку. Пул кладе імпортований файл у свою мапу рівно
+      // під тим рядком, який йому дали, а `xOpen` шукає файл під шляхом
+      // після `new URL(name, "file://localhost/").pathname`, тобто під
+      // `/sergeant-…db`. Передати сюди голе ім'я — і імпорт ляже під
+      // ключем, якого відкриття ніколи не спитає: байти на диску є, база
+      // порожня, і жодної помилки.
+      const path = `/${request.dbName}`;
+      const exists = installed.getFileNames().includes(path);
+      const imported = Boolean(request.importBytes) && !exists;
+      if (imported && request.importBytes) {
+        await installed.importDb(path, request.importBytes);
+      }
       db = new installed.OpfsSAHPoolDb(request.dbName);
       openDbName = request.dbName;
       return {
         id,
         ok: true,
         kind: "open",
-        result: { dbName: request.dbName, grewBy, diagnostics: diagnostics() },
+        result: {
+          dbName: request.dbName,
+          grewBy,
+          diagnostics: diagnostics(),
+          imported,
+        },
       };
     }
     case "exec": {

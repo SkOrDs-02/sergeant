@@ -71,6 +71,7 @@ function happyResponder(rows: unknown[] = []): Responder {
             dbName: request.dbName,
             grewBy: 4,
             diagnostics: { capacity: 24, fileCount: 3 },
+            imported: false,
           },
         };
       case "all":

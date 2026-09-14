@@ -38,6 +38,8 @@ export interface SqliteWorkerConnection {
   readonly dbName: string;
   /** Скільки слотів пул доростив на відкритті. */
   readonly grewBy: number;
+  /** Чи справді відбувся імпорт старої бази (стадія 2). */
+  readonly imported: boolean;
   exec(sql: string): Promise<void>;
   run(sql: string, bind: SqliteWorkerBind): Promise<void>;
   all(
@@ -54,6 +56,13 @@ export interface SqliteWorkerOpenOptions {
   readonly directory: string;
   readonly initialCapacity: number;
   readonly minFreeSlots: number;
+  /**
+   * Байти старої бази для перелиття (стадія 2), або `null`.
+   *
+   * AI-DANGER: буфер передається у воркер як transferable і після цього
+   * на головному потоці порожній. Так і задумано — база важить мегабайти.
+   */
+  readonly importBytes?: ArrayBuffer | null;
 }
 
 /**
@@ -122,6 +131,7 @@ export async function openSqliteInWorker(
   const send = (
     request: SqliteWorkerCall,
     timeoutMs?: number,
+    transfer?: Transferable[],
   ): Promise<SqliteWorkerResponse> => {
     if (dead) return Promise.reject(dead);
     const id = nextId++;
@@ -143,15 +153,19 @@ export async function openSqliteInWorker(
           reject(err);
         },
       });
-      worker.postMessage({ ...request, id } as SqliteWorkerRequest);
+      const message = { ...request, id } as SqliteWorkerRequest;
+      if (transfer && transfer.length > 0)
+        worker.postMessage(message, transfer);
+      else worker.postMessage(message);
     });
   };
 
   const call = async (
     request: SqliteWorkerCall,
     timeoutMs?: number,
+    transfer?: Transferable[],
   ): Promise<SqliteWorkerResponse> => {
-    const response = await send(request, timeoutMs);
+    const response = await send(request, timeoutMs, transfer);
     if (!response.ok) {
       throw new SqliteWorkerError(
         response.error.name,
@@ -164,6 +178,7 @@ export async function openSqliteInWorker(
 
   let opened: SqliteWorkerResponse;
   try {
+    const importBytes = options.importBytes ?? undefined;
     opened = await call(
       {
         kind: "open",
@@ -171,8 +186,10 @@ export async function openSqliteInWorker(
         directory: options.directory,
         initialCapacity: options.initialCapacity,
         minFreeSlots: options.minFreeSlots,
+        ...(importBytes ? { importBytes } : {}),
       },
       OPEN_TIMEOUT_MS,
+      importBytes ? [importBytes] : undefined,
     );
   } catch (err) {
     // Невдале відкриття — воркер більше ні для чого не потрібен. Лишити
@@ -181,6 +198,8 @@ export async function openSqliteInWorker(
     throw err;
   }
   const grewBy = opened.ok && opened.kind === "open" ? opened.result.grewBy : 0;
+  const imported =
+    opened.ok && opened.kind === "open" ? opened.result.imported : false;
 
   const terminate = () => {
     killAll(new Error("sqlite-worker: connection closed"));
@@ -190,6 +209,7 @@ export async function openSqliteInWorker(
   return {
     dbName,
     grewBy,
+    imported,
     async exec(sql) {
       await call({ kind: "exec", sql });
     },
