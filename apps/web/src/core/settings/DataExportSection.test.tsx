@@ -20,15 +20,29 @@ vi.mock("@shared/api", () => ({
 const downloadString = vi.hoisted(() => vi.fn());
 vi.mock("@shared/lib/ui/export", () => ({ downloadString }));
 
+// PR-S14: секція тепер питає стан сесії. Мок дає керувати всіма ТРЬОМА
+// станами — гість, залогінений і «ще не знаємо» — бо саме третій стан
+// відрізняє цей гейт від наївного `!signedIn`.
+const authState = vi.hoisted(() => ({
+  value: null as { user: unknown; isLoading: boolean } | null,
+}));
+vi.mock("../auth/AuthContext", () => ({
+  useAuthOptional: () => authState.value,
+}));
+
 vi.mock("../hub/HubBackupPanel", () => ({
   HubBackupPanel: () => <div data-testid="hub-backup-panel" />,
 }));
 
+import { messages } from "@shared/i18n/uk";
 import { DataExportSection } from "./DataExportSection";
 
 describe("DataExportSection", () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // Дефолт — «провайдера немає», як було до цієї правки: наявні тести
+    // нижче не знають про сесію і не мають почати від неї залежати.
+    authState.value = null;
   });
 
   afterEach(() => {
@@ -87,10 +101,11 @@ describe("DataExportSection", () => {
 
     fireEvent.click(screen.getByText("Завантажити JSON"));
 
+    // PR-S14: читаємо з каталогу, а не літералом. Доти тут стояв рядок
+    // копії дослівно, тож правка самої копії ламала тест, який про копію
+    // не був — він про те, що збій ВЗАГАЛІ показують.
     expect(
-      await screen.findByText(
-        "Не вдалося створити серверний експорт. Перевір вхід.",
-      ),
+      await screen.findByText(messages.dataExport.failed),
     ).toBeInTheDocument();
     expect(downloadString).not.toHaveBeenCalled();
   });
@@ -156,5 +171,52 @@ describe("DataExportSection", () => {
       container.querySelectorAll("h1,h2,h3,h4,h5,h6"),
     ).map((el) => Number(el.tagName.slice(1)));
     expect(levels).toEqual([2, 3, 3, 3]);
+  });
+
+  // PR-S14. Дві кнопки бʼють у серверний експорт, який для гостя завжди 401.
+  // Доти гість натискав їх і читав постфактум «Перевір вхід» — інтерфейс
+  // пропонував дію, якої для його стану не існує.
+  it("PR-S14: гість бачить, що серверний експорт потребує входу, ДО натискання", () => {
+    authState.value = { user: null, isLoading: false };
+    render(<DataExportSection />);
+
+    expect(
+      screen.getByText("Завантажити JSON").closest("button"),
+    ).toBeDisabled();
+    expect(
+      screen.getByText("Завантажити CSV").closest("button"),
+    ).toBeDisabled();
+    expect(screen.getByText(/доступний після входу/i)).toBeInTheDocument();
+  });
+
+  // Break-test прогнано: на старому коді падає ЛИШЕ тест гостя вище. Два
+  // наступні там проходять — бо гейта не було взагалі, тож кнопки були
+  // ввімкнені завжди. Вони лишаються свідомо, але як піни на інваріант
+  // («гейт не має зачепити нікого зайвого»), а не як докази дефекту.
+  it("PR-S14: залогінений користувач кнопок не втрачає", () => {
+    authState.value = { user: { id: "u1" }, isLoading: false };
+    render(<DataExportSection />);
+
+    expect(
+      screen.getByText("Завантажити JSON").closest("button"),
+    ).not.toBeDisabled();
+    expect(
+      screen.queryByText(/доступний після входу/i),
+    ).not.toBeInTheDocument();
+  });
+
+  // Найважливіший із трьох: доки сесія гідрується, стверджувати НЕ МОЖНА.
+  // Наївний `!signedIn` тут показав би «увійди» кожному залогіненому на
+  // частку секунди — рівно дефект, який PR-S2 лікував у сусідній секції.
+  it("PR-S14: поки сесія не відома, нічого не стверджує", () => {
+    authState.value = { user: null, isLoading: true };
+    render(<DataExportSection />);
+
+    expect(
+      screen.getByText("Завантажити JSON").closest("button"),
+    ).not.toBeDisabled();
+    expect(
+      screen.queryByText(/доступний після входу/i),
+    ).not.toBeInTheDocument();
   });
 });

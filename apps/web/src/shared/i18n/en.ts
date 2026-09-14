@@ -242,7 +242,9 @@ export const messagesEn: Partial<{
       "JSON is the complete file for moving your data elsewhere. CSV is a table for simply looking at it in Excel or Google Sheets.",
     doneJson: "Server export downloaded as JSON.",
     doneCsv: "Server export downloaded as CSV.",
-    failed: "Could not create the server export. Check that you are signed in.",
+    failed: "Could not create the server export. Please try again.",
+    guestHint:
+      "The server export is available once you sign in. You can build a local copy above without signing in.",
     sections: {
       moduleData: "Module data",
       monoAccounts: "Monobank accounts",
