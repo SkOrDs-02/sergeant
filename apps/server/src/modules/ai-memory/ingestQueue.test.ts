@@ -110,17 +110,26 @@ vi.mock("./dlq.js", () => ({
   })),
 }));
 
-const { hasAiMemoryConsentMock } = vi.hoisted(() => ({
+const { hasAiMemoryConsentMock, hasHealthDataConsentMock } = vi.hoisted(() => ({
   hasAiMemoryConsentMock: vi.fn().mockResolvedValue(true),
+  hasHealthDataConsentMock: vi.fn().mockResolvedValue(false),
 }));
 
 vi.mock("./consent.js", () => ({
   hasAiMemoryConsent: hasAiMemoryConsentMock,
+  hasHealthDataConsent: hasHealthDataConsentMock,
 }));
 
 beforeEach(() => {
   hasAiMemoryConsentMock.mockReset();
   hasAiMemoryConsentMock.mockResolvedValue(true);
+  // PR-S3: дефолт мока — `false`, дзеркалячи і колонку
+  // (`NOT NULL DEFAULT FALSE`, міграція 111), і застосунок
+  // (`dataRights.ts`). Тест, який хоче побачити запис health-payload-у,
+  // мусить згоду поставити ЯВНО — інакше зелений тест описував би стан, у
+  // якому насправді не перебуває майже ніхто.
+  hasHealthDataConsentMock.mockReset();
+  hasHealthDataConsentMock.mockResolvedValue(false);
 });
 
 import {
@@ -478,6 +487,126 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
     ).toHaveBeenCalledWith({
       mode: "consent_disabled",
       source: "cofounder",
+    });
+  });
+
+  // ── PR-S3: другий гейт згоди, саме на персистентному записі ──────────────
+  //
+  // Рішення founder-а 2026-09-14. Ефемерна відповідь у чаті лишається всім
+  // (гейт на читання вимкнув би AI-шар за замовчуванням — тумблер
+  // дефолтиться у `false`), а от осідання назавжди потребує згоди: вимкнути
+  // тумблер постфактум і цим прибрати вже записане неможливо.
+  //
+  // Break-test прогнано (обовʼязковий за `sergeant-bugfix-and-regression`):
+  // прибери гілку `payload.healthData === true` в `enqueueMemoryIngestImpl`
+  // — падають ТРИ з пʼяти, «3 failed | 27 passed». Падають перший, другий і
+  // пʼятий (fail-closed) — саме вони і є знахідкою.
+  //
+  // Третій (payload без прапорця) і четвертий (згода є) на зламаному коді
+  // проходять, і лишаються свідомо: вони стережуть, щоб гейт не забрав
+  // зайвого разом із потрібним. Тобто це піни на інваріант, а не докази
+  // дефекту, і читати їх як докази не треба.
+  describe("PR-S3: health-payload під окремою згодою", () => {
+    const healthPayload: MemoryIngestPayload = {
+      ...samplePayload,
+      source: "digest",
+      healthData: true,
+    };
+
+    it("не пише health-payload без згоди «Дані про здоровʼя»", async () => {
+      process.env["AI_MEMORY_ENABLED"] = "true";
+      vi.resetModules();
+      hasAiMemoryConsentMock.mockResolvedValue(true);
+      hasHealthDataConsentMock.mockResolvedValue(false);
+      const remember = vi.fn().mockResolvedValue(undefined);
+      const mod = await import("./ingestQueue.js");
+      mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+      await mod.enqueueMemoryIngest(healthPayload);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(remember).not.toHaveBeenCalled();
+      const { aiMemoryIngestEnqueuedTotal } =
+        await import("../../obs/metrics.js");
+      expect(
+        (
+          aiMemoryIngestEnqueuedTotal as unknown as {
+            inc: ReturnType<typeof vi.fn>;
+          }
+        ).inc,
+      ).toHaveBeenCalledWith({
+        mode: "health_consent_disabled",
+        source: "digest",
+      });
+    });
+
+    it("загальної згоди на памʼять НЕ досить — потрібні обидві", async () => {
+      // Найлегша помилка при читанні цього коду — вирішити, що `aiMemory:
+      // true` покриває все. Саме тому тут згода на памʼять УВІМКНЕНА.
+      process.env["AI_MEMORY_ENABLED"] = "true";
+      vi.resetModules();
+      hasAiMemoryConsentMock.mockResolvedValue(true);
+      hasHealthDataConsentMock.mockResolvedValue(false);
+      const remember = vi.fn().mockResolvedValue(undefined);
+      const mod = await import("./ingestQueue.js");
+      mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+      await mod.enqueueMemoryIngest(healthPayload);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(hasAiMemoryConsentMock).toHaveBeenCalled();
+      expect(remember).not.toHaveBeenCalled();
+    });
+
+    it("не чіпає payload без прапорця — гейт не ширший за знахідку", async () => {
+      process.env["AI_MEMORY_ENABLED"] = "true";
+      vi.resetModules();
+      hasAiMemoryConsentMock.mockResolvedValue(true);
+      hasHealthDataConsentMock.mockResolvedValue(false);
+      const remember = vi.fn().mockResolvedValue(undefined);
+      const mod = await import("./ingestQueue.js");
+      mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+      await mod.enqueueMemoryIngest(samplePayload);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(remember).toHaveBeenCalled();
+      // Дорогий запит до БД не має робитись там, де він не потрібен.
+      expect(hasHealthDataConsentMock).not.toHaveBeenCalled();
+    });
+
+    it("зі згодою health-payload проходить", async () => {
+      process.env["AI_MEMORY_ENABLED"] = "true";
+      vi.resetModules();
+      hasAiMemoryConsentMock.mockResolvedValue(true);
+      hasHealthDataConsentMock.mockResolvedValue(true);
+      const remember = vi.fn().mockResolvedValue(undefined);
+      const mod = await import("./ingestQueue.js");
+      mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+      await mod.enqueueMemoryIngest(healthPayload);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(remember).toHaveBeenCalled();
+    });
+
+    it("падіння перевірки згоди не пускає запис (fail-closed)", async () => {
+      // Асиметрія навмисна й протилежна до `hasAiMemoryConsent`: там
+      // відсутній рядок означає продуктовий дефолт «увімкнено», тут —
+      // «згоди не давали». Помилитись у бік «не записали» дешево,
+      // у бік «записали дані про здоровʼя без згоди» — ні.
+      process.env["AI_MEMORY_ENABLED"] = "true";
+      vi.resetModules();
+      hasAiMemoryConsentMock.mockResolvedValue(true);
+      hasHealthDataConsentMock.mockRejectedValue(new Error("db down"));
+      const remember = vi.fn().mockResolvedValue(undefined);
+      const mod = await import("./ingestQueue.js");
+      mod.__resetMemoryIngestQueueForTesting(makeFakeService(remember));
+
+      await mod.enqueueMemoryIngest(healthPayload);
+      await new Promise((resolve) => setTimeout(resolve, 0));
+
+      expect(remember).not.toHaveBeenCalled();
     });
   });
 

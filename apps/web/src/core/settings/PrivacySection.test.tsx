@@ -222,7 +222,9 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     // і ПЕРЕД правовими посиланнями/підказкою про Профіль.
     const text = container.textContent ?? "";
     const bannerIndex = text.indexOf("Не вдалося зберегти налаштування");
-    const lastToggleIndex = text.indexOf("Дані про здоровʼя");
+    // PR-S3: тумблер перейменовано «Дані про здоровʼя» → «Памʼять про
+    // здоровʼя» разом зі звуженням обіцянки до того, що гейт справді робить.
+    const lastToggleIndex = text.indexOf("Памʼять про здоровʼя");
     expect(bannerIndex).toBeGreaterThan(-1);
     expect(lastToggleIndex).toBeGreaterThan(-1);
     expect(bannerIndex).toBeGreaterThan(lastToggleIndex);
@@ -341,7 +343,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     await openSection();
 
     const consentToggle = await screen.findByRole("switch", {
-      name: /Дані про здоровʼя/i,
+      name: /Памʼять про здоровʼя/i,
     });
     expect(consentToggle).not.toBeChecked();
     fireEvent.click(consentToggle);

@@ -518,6 +518,14 @@ export function createWeeklyDigestHandler(
               usedFallback,
             },
             dedupeSalt: generatedAt,
+            // PR-S3: тижневий звіт осідає в `ai_memories` і потім щоразу
+            // підмішується в system prompt через `buildRagContext`. Коли в
+            // ньому є секції Фізрука чи Їжі — це дані про здоровʼя, і на
+            // персистентний запис потрібна окрема згода (GDPR Art. 9).
+            // Прапорець рахується з ФАКТИЧНОГО складу звіту, не з джерела:
+            // фінансово-рутинний тиждень health-даних не несе й гейтитись
+            // не має.
+            healthData: !!fizruk || !!nutrition,
           });
         } catch (err) {
           logger.warn({

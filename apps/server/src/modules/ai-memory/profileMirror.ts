@@ -334,7 +334,7 @@ async function runChunked<T>(
 function toRememberInput(
   userId: string,
   entry: NormalizedProfileMemoryEntry,
-): RememberInput & { dedupeSalt: string } {
+): RememberInput & { dedupeSalt: string; healthData: boolean } {
   return {
     userId,
     source: PROFILE_SOURCE,
@@ -342,6 +342,17 @@ function toRememberInput(
     content: entry.fact,
     metadata: { category: entry.category },
     dedupeSalt: contentFingerprint(entry.fact),
+    // PR-S3: факт із категорії «Здоровʼя» (в UI банку памʼяті —
+    // `health: { label: "Здоровʼя" }`) потребує окремої згоди на
+    // ПЕРСИСТЕНТНИЙ запис (GDPR Art. 9). Решта категорій — ні: те, що
+    // людина любить каву, спеціальною категорією даних не є.
+    //
+    // Категорія нормалізована (`normalizeCategory` — trim + lowercase),
+    // тож порівняння з літералом безпечне. Клієнт може прислати будь-що —
+    // усе незнайоме стає `other` і гейт не вмикає; це правильний бік
+    // помилки, бо гейт тут не про приховування, а про згоду на категорію,
+    // яку продукт сам і називає.
+    healthData: entry.category === "health",
   };
 }
 
