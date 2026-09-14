@@ -205,7 +205,10 @@ describe("hubChatSessions", () => {
     it("falls back to date-based title when no user message is present", () => {
       const s = createSession();
       expect(s.title).toMatch(/^Бесіда \d{2}\.\d{2}/);
-      expect(s.messages.length).toBeGreaterThan(0); // assistant intro
+      // PR-A7 regression guard: a brand-new session must NOT get a
+      // synthesized assistant intro — that substitution made
+      // `<ChatEmpty>` (suggestion chips) unreachable forever.
+      expect(s.messages).toHaveLength(0);
     });
 
     it("derives title from first user message and truncates >40 chars", () => {
