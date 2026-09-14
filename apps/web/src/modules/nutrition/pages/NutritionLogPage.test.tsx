@@ -28,11 +28,13 @@ vi.mock("../components/LogCard", () => ({
   LogCard: ({
     log,
     onAddMeal,
+    onAddMealFromSearch,
     onRemoveMeal,
     onEditMeal,
   }: {
     log: NutritionLog;
     onAddMeal?: () => void;
+    onAddMealFromSearch?: (meal: Meal) => void;
     onRemoveMeal?: (date: string, meal: Meal) => void;
     onEditMeal?: (date: string, meal: Meal) => void;
   }) => {
@@ -54,6 +56,9 @@ vi.mock("../components/LogCard", () => ({
       <div>
         <div data-testid="meal-count">{meals.length}</div>
         <button onClick={onAddMeal}>Додати прийом їжі</button>
+        <button onClick={() => onAddMealFromSearch?.(meal)}>
+          Додати з пошуку
+        </button>
         <button onClick={() => onRemoveMeal?.(date, meal)}>
           Видалити meal
         </button>
@@ -210,6 +215,48 @@ describe("NutritionLogPage", () => {
     expect(capturedOnUndo).toBeDefined();
     capturedOnUndo!();
     expect(handleRestoreMeal).toHaveBeenCalledTimes(1);
+  });
+
+  // Regression PR-N1 (аудит 2026-09-13): додавання з пошуку кликало
+  // `handleAddMeal` голим — без тосту й без «Скасувати», на відміну від
+  // аркуша прийому і від видалення поруч. Помилковий тап коштував ручного
+  // пошуку запису й видалення.
+  it("додавання з пошуку дає тост зі «Скасувати», який знімає запис", async () => {
+    const handleAddMeal = vi.fn();
+    const handleRemoveMeal = vi.fn();
+    const log = makeLog({ handleAddMeal, handleRemoveMeal });
+
+    let capturedOnUndo: (() => void) | undefined;
+    const toast = makeToast();
+    (toast.show as ReturnType<typeof vi.fn>).mockImplementation(
+      (_msg, _type, _dur, action?: { label: string; onClick: () => void }) => {
+        capturedOnUndo = action?.onClick;
+        return 1;
+      },
+    );
+
+    render(
+      <NutritionLogPage
+        log={log}
+        toast={toast}
+        setEditingMeal={vi.fn()}
+        onOpenAddMeal={vi.fn()}
+      />,
+    );
+
+    await userEvent.click(
+      screen.getByRole("button", { name: /Додати з пошуку/ }),
+    );
+
+    expect(handleAddMeal).toHaveBeenCalledTimes(1);
+    expect(toast.show).toHaveBeenCalledTimes(1);
+    expect(capturedOnUndo).toBeDefined();
+
+    // «Скасувати» мусить знімати САМЕ доданий запис — за тим `id`, що його
+    // видала сторінка, а не за `id` знайденого рядка.
+    const addedId = (handleAddMeal.mock.calls[0]![0] as Meal).id;
+    capturedOnUndo!();
+    expect(handleRemoveMeal).toHaveBeenCalledWith(log.selectedDate, addedId);
   });
 
   it("clicking 'Редагувати meal' calls setEditingMeal with date + meal fields", async () => {
