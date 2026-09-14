@@ -288,7 +288,7 @@ export function NutritionDashboard({
         </div>
       </Card>
 
-      <AdaptiveGoalCard state={adaptiveGoal} onOpenSettings={onGoToDailyPlan} />
+      <AdaptiveGoalCard state={adaptiveGoal} />
 
       {/* ── Insight cards (Phase 5d) — below hero, above weekly mini-bar ── */}
       {activeInsights.map((insight) => (
