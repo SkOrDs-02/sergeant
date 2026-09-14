@@ -1408,6 +1408,8 @@
       "response": {
         "body": {
           "accessTokenExpiresAt": "2026-08-24T10:00:00.000Z",
+          "lastErrorCode": null,
+          "lastFailedAt": null,
           "lastSyncAt": "2026-08-17T09:15:00.000Z",
           "receiptsCount": 5,
           "status": "connected"
@@ -1436,9 +1438,41 @@
       "response": {
         "body": {
           "accessTokenExpiresAt": null,
+          "lastErrorCode": null,
+          "lastFailedAt": null,
           "lastSyncAt": null,
           "receiptsCount": 0,
           "status": "disconnected"
+        },
+        "headers": {
+          "Content-Type": "application/json",
+          "content-type": "application/json"
+        },
+        "status": 200
+      }
+    },
+    {
+      "description": "a GET /api/v1/silpo/sync-state request (sync broken)",
+      "providerStates": [
+        {
+          "name": "user-pact-003 has a connected Silpo account whose sync fails"
+        }
+      ],
+      "request": {
+        "headers": {
+          "accept": "application/json"
+        },
+        "method": "GET",
+        "path": "/api/v1/silpo/sync-state"
+      },
+      "response": {
+        "body": {
+          "accessTokenExpiresAt": "2026-09-20T10:00:00.000Z",
+          "lastErrorCode": "SILPO_TOOL_ERROR",
+          "lastFailedAt": "2026-09-14T08:00:00.000Z",
+          "lastSyncAt": "2026-08-31T09:15:00.000Z",
+          "receiptsCount": 12,
+          "status": "connected"
         },
         "headers": {
           "Content-Type": "application/json",

@@ -692,6 +692,47 @@ export function silpoErrorToAppError(
 }
 
 /**
+ * Лишає в `silpo_connection` слід останнього провалу синку.
+ *
+ * Це та половина, якої бракувало два тижні. `last_sync_at` торкався лише
+ * на успіху, тож «синк зламано» і «людина не ходила в магазин» виглядали
+ * в інтерфейсі однаково — поломку видно було тільки в Sentry (304 події),
+ * куди власник продукту не дивиться. Тепер провал лишає слід там же, де
+ * успіх, і застосунок може про нього сказати.
+ *
+ * Пишемо НАШ код, а не текст відмови Сільпо: чужий текст може нести поля
+ * покупки, а це друга копія чекових даних у місці, де їх ніхто не чекає
+ * (Hard Rule #21). Причина лишається в логах і в діагностиці.
+ *
+ * **Помилка запису ковтається навмисно.** Ця функція викликається на
+ * шляху, який УЖЕ падає: кинути звідси другу помилку означало б підмінити
+ * справжню причину збою технічною — тобто зламати рівно ту діагностику,
+ * заради якої все це й робиться.
+ */
+async function recordSyncFailure(
+  userId: string,
+  code: string,
+  queryFn: QueryFn,
+): Promise<void> {
+  try {
+    await queryFn(
+      `UPDATE silpo_connection
+          SET last_failed_at = NOW(),
+              last_error_code = $2,
+              updated_at = NOW()
+        WHERE user_id = $1`,
+      [userId, code],
+      { op: "silpo_connection_record_failure" },
+    );
+  } catch (err) {
+    logger.warn({
+      msg: "silpo_record_sync_failure_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
  * `POST /api/silpo/sync` ("Оновити чеки") entry point. Pulls both order
  * lists, upserts new receipts/items (existing ones are immutable — never
  * re-fetched/re-written), then runs the deterministic matcher over
@@ -714,7 +755,11 @@ export async function pullAndSyncReceipts(
     makeFetchBothOrderLists(userId),
     { query: queryFn },
   );
-  if (!call.ok) throw silpoErrorToAppError(call.error);
+  if (!call.ok) {
+    const appError = silpoErrorToAppError(call.error);
+    await recordSyncFailure(userId, appError.code, queryFn);
+    throw appError;
+  }
 
   const offlineParsed = call.data.offline
     .map((raw) => normalizeRawOrder(raw, "offline"))
@@ -740,9 +785,16 @@ export async function pullAndSyncReceipts(
 
   // Персистимо факт УСПІШНОГО завершення: sync без нових чеків теж оновлює
   // «Останнє оновлення» в UI (MAX(created_at) по чеках цього не вміє).
+  //
+  // Тим самим запитом ГАСИМО слід останнього провалу. Без цього плашка
+  // «синк зламано» лишалась би висіти після того, як усе полагодилось —
+  // а хибна тривога знецінює сигнал швидше, ніж його відсутність.
   await queryFn(
     `UPDATE silpo_connection
-        SET last_sync_at = NOW(), updated_at = NOW()
+        SET last_sync_at = NOW(),
+            last_failed_at = NULL,
+            last_error_code = NULL,
+            updated_at = NOW()
       WHERE user_id = $1`,
     [userId],
     { op: "silpo_connection_touch_last_sync" },
