@@ -645,4 +645,16 @@ describe("HubDashboard", () => {
     // Останній виклик — уже після розгортання.
     expect(mocks.coachInsightCalls.at(-1)?.enabled).toBe(true);
   });
+  it("гейт коуча правильний уже на ПЕРШОМУ рендері, коли секція збережена розгорнутою", () => {
+    // Пін на ініціалізацію стану зі сховища. Раніше батько стартував із
+    // `false` і чекав на ефект секції, тож ПЕРШИЙ виклик хука завжди йшов
+    // із `enabled: false`, навіть коли людина лишила блок розгорнутим.
+    // Один зайвий прохід рендера на кожному вході в хаб — і гейт, який
+    // тактом пізніше.
+    localStorage.setItem("sergeant:hub.insights.open", "true");
+
+    renderDashboard();
+
+    expect(mocks.coachInsightCalls[0]?.enabled).toBe(true);
+  });
 });

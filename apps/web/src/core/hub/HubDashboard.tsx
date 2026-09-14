@@ -9,11 +9,15 @@ import { FirstEntryCelebrationModal } from "../onboarding/FirstEntryCelebrationM
 import { MotivationalFooter, StaggerChild } from "./dashboard/dashboardCards";
 import { HubHeroBlock } from "./HubHeroBlock";
 import { HubModulesGrid } from "./HubModulesGrid";
-import { HubInsightsBlock } from "./HubInsightsBlock";
+import {
+  HubInsightsBlock,
+  HUB_INSIGHTS_OPEN_STORAGE_KEY,
+} from "./HubInsightsBlock";
 import { useHubDashboardState } from "./useHubDashboardState";
 import { DENSITY_OUTER_SPACE, type HubDashboardProps } from "./hub.types";
 import { PrivacyLockBanner } from "../security/PrivacyLockBanner";
 import { useHubPref } from "../settings/hubPrefs";
+import { safeReadLS } from "@shared/lib/storage/storage";
 import { useAuthOptional } from "../auth/AuthContext";
 
 export const DASHBOARD_MODULE_LABELS = SHARED_DASHBOARD_MODULE_LABELS;
@@ -39,10 +43,28 @@ export function HubDashboard({
   // показ під згорнутим pill) і `useHubDashboardState` (не палити денну
   // AI-квоту на пораду, якої на екрані немає — аудит PR-A1).
   //
-  // Стартує `false` навмисно: справжнє значення віддасть `CollapsibleSection`
-  // своїм ефектом на монтуванні, прочитавши localStorage. Тобто до першого
-  // ефекту запит не піде — і це саме те, що треба.
-  const [insightsOpen, setInsightsOpen] = useState(false);
+  // Читаємо ТОЙ САМИЙ ключ, що й `CollapsibleSection` усередині блоку, і
+  // читаємо його в ініціалізаторі — навмисно.
+  //
+  // Перша версія стартувала з `false` і покладалась на те, що справжнє
+  // значення прилетить ефектом секції. Це коштувало ЗАЙВОГО оновлення стану
+  // одразу після монтування — тобто повного ре-рендеру дашборда на кожному
+  // вході в хаб. Читання в ініціалізаторі знімає той прохід і, головне,
+  // робить гейт AI-квоти нижче коректним уже на ПЕРШОМУ рендері, а не
+  // тактом пізніше.
+  //
+  // AI-NOTE: правка зроблена ще й як гіпотеза на падіння
+  // `tests/smoke/reduced-motion.spec.ts` (три `pulse` при бюджеті ≤2).
+  // Доведено там небагато: `main` зелений, гілка червона, а reduce-шар
+  // гасить анімацію за 100 мс — отже три «running» на 1.2 с означають три
+  // щойно змонтовані скелетони. Що їх монтує саме цей зайвий прохід —
+  // НЕ доведено: smoke-стек потребує Postgres, якого в середовищі не було,
+  // тож локально відтворити не вдалось. Якщо тест упаде знову, шукай
+  // причину деінде, а не повертай старий варіант: він гірший незалежно
+  // від цього тесту.
+  const [insightsOpen, setInsightsOpen] = useState(
+    () => safeReadLS<boolean>(HUB_INSIGHTS_OPEN_STORAGE_KEY, false) ?? false,
+  );
   const s = useHubDashboardState({
     onOpenModule,
     user,
