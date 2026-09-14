@@ -175,20 +175,26 @@ export function AssistantAdviceCard({
               // Skeleton stand-in matches three lines of body copy at
               // the real text size — keeps the card height stable so
               // the swap to real content does not nudge the dashboard
-              // grid below (CLS budget). Pulse here is the only
-              // AMBIENT animation on screen during initial load; the
-              // refresh-button spin is hidden until an insight is
-              // cached so we stay within Hard Rule #17 (≤1 AMBIENT).
+              // grid below (CLS budget).
+              //
+              // AI-DANGER: pulse живе на КОНТЕЙНЕРІ, а рядки йдуть із
+              // `pulse={false}`. Доти тут стояло три `SkeletonText` зі
+              // своїм pulse кожен — тобто ТРИ Animation-обʼєкти, — а
+              // коментар поруч стверджував протилежне: «the only AMBIENT
+              // animation… within Hard Rule #17 (≤1 AMBIENT)». Неправду
+              // зловив не рев'ю, а smoke `reduced-motion.spec.ts`, який
+              // назвав усі три поіменно. Той самий урок уже записано в
+              // `PageLoader` (design-audit F8) — сюди він не доїхав.
               <div
                 role="status"
                 aria-live="polite"
                 aria-label={messages.sergeant.adviceLoadingAria}
-                className="space-y-2 py-0.5"
+                className="space-y-2 py-0.5 motion-safe:animate-pulse"
               >
                 <span className="sr-only">Готую пораду…</span>
-                <SkeletonText className="h-3.5 w-full" />
-                <SkeletonText className="h-3.5 w-11/12" />
-                <SkeletonText className="h-3.5 w-4/5" />
+                <SkeletonText className="h-3.5 w-full" pulse={false} />
+                <SkeletonText className="h-3.5 w-11/12" pulse={false} />
+                <SkeletonText className="h-3.5 w-4/5" pulse={false} />
               </div>
             ) : null}
 
