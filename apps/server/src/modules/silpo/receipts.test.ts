@@ -36,6 +36,7 @@ vi.mock("@sentry/node", () => ({ captureException: vi.fn() }));
 import * as Sentry from "@sentry/node";
 import {
   listReceipts,
+  parseLimitCeilingFromRefusal,
   pullAndSyncReceipts,
   silpoErrorToAppError,
   __resetSilpoSchemaDriftAlert,
@@ -871,5 +872,120 @@ describe("silpoErrorToAppError → Sentry на schema_drift", () => {
     silpoErrorToAppError({ kind: "upstream_unavailable", message: "503" });
     silpoErrorToAppError({ kind: "not_connected", message: "no row" });
     expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+});
+
+// ─────────────────── Стеля `limit` і пагінація онлайн-замовлень ──────────────
+//
+// 2026-09-14 Сільпо мовчки знизили максимум `limit` зі 100 до 50, і синк,
+// який просив рівно 100, перестав працювати. Числова константа тут
+// ненадійна за побудовою: її значення живе на чужому сервері.
+
+describe("parseLimitCeilingFromRefusal", () => {
+  // Текст — дослівно той, що приїхав у проді.
+  const REAL = `MCP error -32602: Input validation error: Invalid arguments for tool silpo_get_my_online_orders: [ { "origin": "number", "code": "too_big", "maximum": 50, "inclusive": true, "path": [ "limit" ], "message": "Too big: expected number to be <=50" } ]`;
+
+  it("читає стелю з живого тексту відмови", () => {
+    expect(parseLimitCeilingFromRefusal(REAL)).toBe(50);
+  });
+
+  it("не плутає стелю з кодом помилки", () => {
+    // `-32602` стоїть у рядку РАНІШЕ за `maximum` — наївний «перше число»
+    // дав би 32602 і зробив би звуження безглуздим.
+    expect(parseLimitCeilingFromRefusal(REAL)).not.toBe(32602);
+  });
+
+  it.each([
+    ["відмова не про limit", 'too_big … "path": [ "offset" ]'],
+    ["відмова не про розмір", '"code": "invalid_type", "path": [ "limit" ]'],
+    ["звичайний текст", "Rate limit exceeded"],
+    ["порожньо", ""],
+  ])("повертає null: %s", (_case, message) => {
+    expect(parseLimitCeilingFromRefusal(message)).toBeNull();
+  });
+});
+
+describe("пагінація онлайн-замовлень", () => {
+  const BRANCH_FAIL = { ok: false as const, error: { kind: "upstream" } };
+
+  function onlineOrder(id: string) {
+    return {
+      orderId: id,
+      createdAt: "2026-09-01T10:00:00+00:00",
+      amount: 10,
+      products: [],
+    };
+  }
+
+  /** Проганяє реальні `makeFetchBothOrderLists` → `fetchOnlineOrders`. */
+  function runRealFetchPath() {
+    mocks.callWithFreshAccessToken.mockImplementation(
+      async (_userId: string, fn: (token: string) => Promise<unknown>) =>
+        fn("fake-access-token"),
+    );
+    // Офлайн свідомо вимикаємо: тест саме про онлайн-гілку.
+    mocks.resolveBranchContext.mockResolvedValue(BRANCH_FAIL);
+  }
+
+  it("звужується до стелі, яку Сільпо назвав сам, і доводить синк до кінця", async () => {
+    runRealFetchPath();
+    const asked: number[] = [];
+    // Стеля НИЖЧА за стартовий розмір сторінки — інакше гілка звуження не
+    // виконується взагалі, і тест проходив би на зламаному коді (спіймано
+    // мутацією: підміна парсера стелі на `null` його не валила).
+    const SERVER_CEILING = 20;
+    mocks.callMcpTool.mockImplementation(
+      async ({ args }: { args: Record<string, unknown> }) => {
+        const limit = Number(args["limit"]);
+        asked.push(limit);
+        if (limit > SERVER_CEILING) {
+          return {
+            ok: false,
+            error: {
+              kind: "tool_error",
+              message: `Invalid arguments: [ { "code": "too_big", "maximum": ${SERVER_CEILING}, "path": [ "limit" ] } ]`,
+            },
+          };
+        }
+        // Коротка сторінка — обхід має зупинитись після неї.
+        return { ok: true, data: { orders: [onlineOrder("o1")] } };
+      },
+    );
+
+    const db = makeFakeDb();
+    const result = await pullAndSyncReceipts("u1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    // Спершу просимо сторінку, потім — рівно стелю, яку назвав сервер.
+    expect(asked).toEqual([50, SERVER_CEILING]);
+    expect(result.onlinePulled).toBe(1);
+  });
+
+  it("не крутить цикл, коли відмова повторюється після звуження", async () => {
+    runRealFetchPath();
+    let calls = 0;
+    mocks.callMcpTool.mockImplementation(async () => {
+      calls += 1;
+      return {
+        ok: false,
+        error: {
+          kind: "tool_error",
+          message:
+            'Invalid arguments: [ { "code": "too_big", "maximum": 50, "path": [ "limit" ] } ]',
+        },
+      };
+    });
+
+    const db = makeFakeDb();
+    await expect(
+      pullAndSyncReceipts("u1", {
+        query: db.query,
+        withTransaction: db.withTransaction,
+      }),
+    ).rejects.toThrow();
+    // Одне звуження на сторінку: перший запит + один повтор, не більше.
+    expect(calls).toBeLessThanOrEqual(2);
   });
 });

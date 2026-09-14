@@ -30,7 +30,7 @@ import {
   type McpToolProbe,
 } from "./mcpClient.js";
 import { callWithFreshAccessToken, type QueryFn } from "./tokenStore.js";
-import { ONLINE_ORDERS_LIMIT } from "./receipts.js";
+import { ONLINE_ORDERS_PAGE_SIZE } from "./receipts.js";
 
 /**
  * Тули, на яких тримається інтеграція. Дзеркало списку з
@@ -72,7 +72,7 @@ function buildVerdict(
     const why = probe.isError
       ? `відмова: «${probe.refusal ?? "без тексту"}»`
       : `payload не дістається, ключі ${JSON.stringify(probe.resultKeys)}`;
-    return `Сільпо віддає 1 замовлення, але ламається на ${ONLINE_ORDERS_LIMIT} — ${why}. Синк просить саме ${ONLINE_ORDERS_LIMIT}, звідси й збій.`;
+    return `Сільпо віддає 1 замовлення, але ламається на ${ONLINE_ORDERS_PAGE_SIZE} — ${why}. Синк просить сторінку саме такого розміру, звідси й збій.`;
   }
   if (missingTools.length > 0) {
     return `Сільпо прибрали або перейменували тули: ${missingTools.join(", ")}. Це справжній дрейф контракту.`;
@@ -110,9 +110,13 @@ export async function diagnoseSilpo(
       // Перша версія шукала `limit: 1` — дрібний запит, щоб не тягнути
       // зайвого. Через це 2026-09-14 діагноз сказав «Все справне: тули на
       // місці, відповідь розбирається, у вибірці 1 замовлень» рівно тоді,
-      // коли синк падав: синк шле `limit: ONLINE_ORDERS_LIMIT` (100), і
-      // ламається саме на ньому. Діагностика, яка виконує НЕ те, що
+      // коли синк падав: синк шле сторінку `ONLINE_ORDERS_PAGE_SIZE`, і
+      // ламається саме на ній. Діагностика, яка виконує НЕ те, що
       // зламалось, гірша за її відсутність — вона відводить від причини.
+      //
+      // Береться САМЕ розмір сторінки, а не `ONLINE_ORDERS_LIMIT`: після
+      // переходу на пагінацію синк ніколи не просить сотню одним запитом,
+      // і проба сотнею рапортувала б збій там, де синк цілком справний.
       //
       // Тепер проби дві: дешева (1) і справжня (та, що в синку). Різниця
       // між ними САМА є діагнозом — вона називає межу, за якою Сільпо
@@ -125,7 +129,7 @@ export async function diagnoseSilpo(
       const probe = await probeMcpTool({
         accessToken,
         toolName: "silpo_get_my_online_orders",
-        args: { limit: ONLINE_ORDERS_LIMIT },
+        args: { limit: ONLINE_ORDERS_PAGE_SIZE },
       });
       return { ok: true as const, data: { tools, probe, probeSmall } };
     },

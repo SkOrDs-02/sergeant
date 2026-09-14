@@ -223,10 +223,33 @@ function normalizeRawOrder(
 
 // ─────────────────────────────── MCP fetch step ─────────────────────────────
 
-// Ліміти з живих input schemas (спайк §0): offline max 10, online max 100.
+// Ліміти з живих input schemas (спайк §0, 2026-08-18): offline max 10,
+// online тоді був max 100.
 const OFFLINE_ORDERS_LIMIT = 10;
-/** Експортується для `diagnose.ts`: проба мусить шукати РІВНО те, що синк. */
+
+/**
+ * Скільки онлайн-замовлень тягнемо за один синк. Це НЕ `limit` запиту:
+ * запит іде сторінками (див. нижче), а це стеля обходу.
+ *
+ * Експортується для `diagnose.ts`: проба мусить шукати РІВНО те, що синк.
+ */
 export const ONLINE_ORDERS_LIMIT = 100;
+
+/**
+ * Розмір однієї сторінки онлайн-замовлень.
+ *
+ * **2026-09-14 Сільпо зарізали максимум зі 100 до 50** — мовчки, без
+ * жодного оголошення. Синк просив рівно 100 і почав падати валідацією:
+ * `MCP error -32602 … "code":"too_big","maximum":50,"path":["limit"]`.
+ * Зафіксована фікстура контракту знята 18 серпня і досі каже `maximum: 100`,
+ * тож снапшот-тест цього зловити не міг: він звіряє код із ЗАПИСОМ, а не з
+ * живим сервером.
+ *
+ * Тому 50 — не «нова константа замість старої», а лише стартова здогадка:
+ * `fetchOnlineOrders` нижче вміє звузитись сам, прочитавши стелю з тексту
+ * відмови. Наступне зниження ліміту синк переживе без правки коду.
+ */
+export const ONLINE_ORDERS_PAGE_SIZE = 50;
 
 /**
  * Fetches one order list and parses it **per order**: an MCP-level failure
@@ -274,6 +297,83 @@ interface BothOrderLists {
 }
 
 /**
+/**
+ * Стеля `limit`, яку Сільпо назвав у відмові валідації, або `null`.
+ *
+ * Текст відмови несе zod-issue дослівно:
+ * `[{"origin":"number","code":"too_big","maximum":50,…,"path":["limit"],…}]`.
+ * Читаємо саме `maximum` поруч із `"too_big"` — не перше число в рядку:
+ * там же трапляються коди помилок (`-32602`) і номери шляхів.
+ */
+export function parseLimitCeilingFromRefusal(message: string): number | null {
+  if (!/too_big/i.test(message) || !/"limit"/.test(message)) return null;
+  const m = /"maximum"\s*:\s*(\d+)/.exec(message);
+  if (!m?.[1]) return null;
+  const ceiling = Number(m[1]);
+  return Number.isInteger(ceiling) && ceiling > 0 ? ceiling : null;
+}
+
+/**
+ * Онлайн-замовлення сторінками, з адаптацією до стелі `limit`.
+ *
+ * Доти запит ішов одним викликом на `ONLINE_ORDERS_LIMIT`, і коли Сільпо
+ * 2026-09-14 знизили максимум зі 100 до 50, синк просто перестав працювати.
+ * Числова константа тут ненадійна за побудовою: її значення живе на чужому
+ * сервері й може змінитись мовчки будь-коли.
+ *
+ * Тому: йдемо сторінками по `ONLINE_ORDERS_PAGE_SIZE`, а коли сторінка
+ * відмовлена через завеликий `limit` — звужуємось до стелі, яку Сільпо
+ * назвав САМ, і повторюємо цю ж сторінку. Звуження одноразове на сторінку:
+ * друга відмова поспіль — це вже не відома нам межа, і її треба показати,
+ * а не крутити цикл.
+ *
+ * Обхід зупиняється, коли набрано `ONLINE_ORDERS_LIMIT`, або коли сторінка
+ * прийшла коротшою за запит (замовлення скінчились) — інакше порожні
+ * сторінки крутились би до стелі.
+ */
+async function fetchOnlineOrders(
+  accessToken: string,
+): Promise<McpResult<RawOrder[]>> {
+  const orders: RawOrder[] = [];
+  let pageSize = ONLINE_ORDERS_PAGE_SIZE;
+  let offset = 0;
+
+  while (orders.length < ONLINE_ORDERS_LIMIT) {
+    const want = Math.min(pageSize, ONLINE_ORDERS_LIMIT - orders.length);
+    let page = await fetchOrderList(accessToken, "silpo_get_my_online_orders", {
+      limit: want,
+      offset,
+    });
+
+    if (!page.ok && page.error.kind === "tool_error") {
+      const ceiling = parseLimitCeilingFromRefusal(page.error.message);
+      if (ceiling !== null && ceiling < want) {
+        logger.warn({
+          msg: "silpo_online_limit_ceiling_lowered",
+          asked: want,
+          ceiling,
+        });
+        pageSize = ceiling;
+        page = await fetchOrderList(accessToken, "silpo_get_my_online_orders", {
+          limit: ceiling,
+          offset,
+        });
+      }
+    }
+
+    if (!page.ok) return page;
+    orders.push(...page.data);
+    // Коротша сторінка = замовлення скінчились. Порівнюємо з тим, що
+    // РЕАЛЬНО просили останнім запитом, а не з `want`: після звуження це
+    // різні числа, і `want` дав би нескінченний цикл на повній сторінці.
+    if (page.data.length < Math.min(pageSize, want)) break;
+    offset += page.data.length;
+  }
+
+  return { ok: true, data: orders.slice(0, ONLINE_ORDERS_LIMIT) };
+}
+
+/**
  * Offline-tool вимагає контекст філії (спайк §0). Якщо контекст добути не
  * вдалося — offline-канал деградує до порожнього списку з `logger.warn`
  * (best-effort принцип спеки), online синкається завжди.
@@ -311,11 +411,7 @@ function makeFetchBothOrderLists(
       logger.warn({ msg: "silpo_offline_orders_skipped_no_branch_context" });
     }
 
-    const online = await fetchOrderList(
-      accessToken,
-      "silpo_get_my_online_orders",
-      { limit: ONLINE_ORDERS_LIMIT },
-    );
+    const online = await fetchOnlineOrders(accessToken);
     if (!online.ok) return { ok: false, error: online.error };
     return { ok: true, data: { offline, online: online.data } };
   };
