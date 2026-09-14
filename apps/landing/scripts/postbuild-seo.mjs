@@ -7,6 +7,7 @@
 import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
+import { resolveSiteUrl } from "./site-url.mjs";
 
 const ROOT = path.dirname(path.dirname(fileURLToPath(import.meta.url)));
 const DIST = path.join(ROOT, "dist");
@@ -15,12 +16,7 @@ const routes = JSON.parse(
   readFileSync(path.join(ROOT, "src/lib/routeMeta.json"), "utf8"),
 );
 
-const site = (
-  process.env.SITE_URL?.trim() ||
-  (process.env.VERCEL_PROJECT_PRODUCTION_URL
-    ? `https://${process.env.VERCEL_PROJECT_PRODUCTION_URL.trim()}`
-    : "https://sergeant.com.ua")
-).replace(/\/$/, "");
+const site = resolveSiteUrl();
 
 const base = readFileSync(path.join(DIST, "index.html"), "utf8");
 

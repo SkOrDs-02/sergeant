@@ -143,16 +143,35 @@ export default function HomePage() {
     ...ROUTE_META["/"],
     // Головна після переїзду секцій – пітч продукту. FAQPage поїхав на
     // /pytannya разом із питаннями: розмітка без видимого контенту не тримається.
+    // Вузол, який читає модель, коли її питають «що це за продукт». Тримай
+    // його багатшим за назву й ціну: без description і featureList відповідь
+    // спирається лише на applicationCategory. url і logo – відносні, бо домен
+    // знає лише білд (див. lib/jsonLd.ts).
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "SoftwareApplication",
       name: "Sergeant",
+      url: "/",
       inLanguage: "uk",
       applicationCategory: "LifestyleApplication",
       // Лише веб: мобільний застосунок існує, але його публічний вихід
       // відкладено (рішення §10.1 спеки site-ia), а схему читають без контексту.
       operatingSystem: "Web",
+      description: ROUTE_META["/"].description,
+      featureList: [
+        "Гроші: чотири входи витрат – синк Monobank, фото чека, виписка файлом, ручна форма",
+        "Тіло: щоденник тренувань, тоннаж і рекорди",
+        "Звички: серія, яку не обнуляє пропуск із причиною",
+        "Їжа: КБЖВ зі штрихкоду, фото страви та української бази продуктів",
+        "Звʼязки між сферами, підписані рівнем впевненості",
+      ],
       offers: { "@type": "Offer", price: 0, priceCurrency: "UAH" },
+      publisher: {
+        "@type": "Organization",
+        name: "Sergeant",
+        url: "/",
+        logo: "/apple-touch-icon.png",
+      },
     },
   });
 
