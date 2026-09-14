@@ -89,18 +89,19 @@ jobs:
         if: steps.secrets.outputs.ready == 'true'
         run: pnpm install --frozen-lockfile
 
-      # Версія НЕ пінована навмисно: точної мажорної CLI на момент
-      # написання я не знаю, а вигадане число зламало б воркфлоу мовчки.
-      # Після першого зеленого прогону підстав сюди версію з логу кроку.
+      # Мажор узято з логу першого прогону (`Vercel CLI 59.16.0`): репо
+      # пінить версії інструментів, і `@latest` тут був лише тимчасовим,
+      # поки фактична версія не стала відомою.
       - name: Vercel CLI
         if: steps.secrets.outputs.ready == 'true'
-        run: pnpm add -g vercel@latest
+        run: pnpm add -g vercel@59
 
-      # Root Directory проєкту `sergeant-landing` — `apps/landing`, тож CLI
-      # працює звідти: інакше `vercel build` не побачить свій `vercel.json`.
+      # ВСІ три команди йдуть із КОРЕНЯ репо, не з `apps/landing`. Root
+      # Directory проєкту (`apps/landing`) CLI додає САМ, відносно cwd — з
+      # cwd=apps/landing шлях подвоювався, і деплой падав на
+      # `apps/landing/apps/landing does not exist` (прогін #1).
       - name: Pull project settings
         if: steps.secrets.outputs.ready == 'true'
-        working-directory: apps/landing
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_LANDING }}
@@ -108,7 +109,6 @@ jobs:
 
       - name: Build
         if: steps.secrets.outputs.ready == 'true'
-        working-directory: apps/landing
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_LANDING }}
@@ -117,7 +117,6 @@ jobs:
       - name: Deploy
         if: steps.secrets.outputs.ready == 'true'
         id: deploy
-        working-directory: apps/landing
         env:
           VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
           VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_LANDING }}
@@ -128,19 +127,56 @@ jobs:
 
       # Успішний деплой ще не означає живу сторінку: пререндер міг не
       # відпрацювати, і тоді краулер дістане порожній `#root` — рівно та
-      # вада, яку закрив GEO-аудит. Перевіряємо факт, а не код виходу.
-      - name: Прод віддає пререндерений HTML
+      # вада, яку закрив GEO-аудит.
+      #
+      # Перевіряємо URL САМЕ цього деплою, а не лише прод-домен: canonical і
+      # непорожній `#root` є і на старій збірці, тож перевірка домену не
+      # відрізнила б «доїхало нове» від «лишилось старе» — вона була б
+      # зеленою навіть тоді, коли деплой узагалі не змінив прод.
+      - name: Деплой віддає пререндерений HTML
         if: steps.secrets.outputs.ready == 'true'
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
         run: |
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "::error::Крок Deploy не віддав URL — перевіряти нічого."
+            exit 1
+          fi
           for attempt in 1 2 3 4 5; do
-            html=$(curl -fsS --max-time 20 https://sergeant.com.ua/ || true)
+            html=$(curl -fsSL --max-time 20 "$DEPLOY_URL" || true)
             if printf '%s' "$html" | grep -q 'rel="canonical"' \
               && ! printf '%s' "$html" | grep -q '<div id="root"></div>'; then
-              echo "Прод живий: canonical на місці, #root не порожній."
+              echo "Збірка жива: canonical на місці, #root не порожній."
               exit 0
             fi
-            echo "Спроба $attempt: прод ще віддає стару або порожню сторінку, чекаю."
+            echo "Спроба $attempt: деплой ще не віддає пререндерений HTML, чекаю."
             sleep 15
           done
-          echo "::error::sergeant.com.ua не віддає пререндерений HTML після деплою."
+          echo "::error::$DEPLOY_URL не віддає пререндерений HTML."
+          exit 1
+
+      # Окремо від пререндеру: чи справді прод-домен показує НОВУ збірку.
+      # Порівнюємо за іменем зібраного JS-бандла — воно містить хеш вмісту,
+      # тож збігається лише тоді, коли домен перемкнувся на цей деплой.
+      - name: Прод-домен показує цю збірку
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          asset=$(curl -fsSL --max-time 20 "$DEPLOY_URL" \
+            | grep -o '/assets/[A-Za-z0-9._-]*\.js' | head -1)
+          if [ -z "$asset" ]; then
+            echo "::warning::Не вдалось витягти ім'я бандла зі свіжої збірки — пропускаю звірку."
+            exit 0
+          fi
+          echo "Шукаю на проді: $asset"
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsSL --max-time 20 https://sergeant.com.ua/ | grep -q "$asset"; then
+              echo "sergeant.com.ua віддає цю збірку."
+              exit 0
+            fi
+            echo "Спроба $attempt: прод ще на попередній збірці, чекаю."
+            sleep 20
+          done
+          echo "::error::sergeant.com.ua не перемкнувся на цей деплой. Деплой пройшов, але домен показує стару збірку — перевір, чи прив'язаний домен до проєкту sergeant-landing."
           exit 1
