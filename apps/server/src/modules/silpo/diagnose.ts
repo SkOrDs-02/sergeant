@@ -30,6 +30,7 @@ import {
   type McpToolProbe,
 } from "./mcpClient.js";
 import { callWithFreshAccessToken, type QueryFn } from "./tokenStore.js";
+import { ONLINE_ORDERS_LIMIT } from "./receipts.js";
 
 /**
  * Тули, на яких тримається інтеграція. Дзеркало списку з
@@ -61,7 +62,18 @@ export interface SilpoDiagnosis {
 function buildVerdict(
   missingTools: readonly string[],
   probe: McpToolProbe,
+  probeSmall: McpToolProbe,
 ): string {
+  // Найцінніший випадок: дрібний запит проходить, справжній — ні. Це не
+  // «формат змінили», а межа обсягу, і назвати її треба першою.
+  const smallOk = probeSmall.payloadExtracted && !probeSmall.isError;
+  const bigBroken = !probe.payloadExtracted || probe.isError;
+  if (smallOk && bigBroken) {
+    const why = probe.isError
+      ? `відмова: «${probe.refusal ?? "без тексту"}»`
+      : `payload не дістається, ключі ${JSON.stringify(probe.resultKeys)}`;
+    return `Сільпо віддає 1 замовлення, але ламається на ${ONLINE_ORDERS_LIMIT} — ${why}. Синк просить саме ${ONLINE_ORDERS_LIMIT}, звідси й збій.`;
+  }
   if (missingTools.length > 0) {
     return `Сільпо прибрали або перейменували тули: ${missingTools.join(", ")}. Це справжній дрейф контракту.`;
   }
@@ -93,19 +105,36 @@ export async function diagnoseSilpo(
     userId,
     async (accessToken) => {
       const tools = await listMcpTools(accessToken);
-      const probe = await probeMcpTool({
+      // Проба мусить відтворювати ТОЙ САМИЙ виклик, що впав.
+      //
+      // Перша версія шукала `limit: 1` — дрібний запит, щоб не тягнути
+      // зайвого. Через це 2026-09-14 діагноз сказав «Все справне: тули на
+      // місці, відповідь розбирається, у вибірці 1 замовлень» рівно тоді,
+      // коли синк падав: синк шле `limit: ONLINE_ORDERS_LIMIT` (100), і
+      // ламається саме на ньому. Діагностика, яка виконує НЕ те, що
+      // зламалось, гірша за її відсутність — вона відводить від причини.
+      //
+      // Тепер проби дві: дешева (1) і справжня (та, що в синку). Різниця
+      // між ними САМА є діагнозом — вона називає межу, за якою Сільпо
+      // перестає віддавати відповідь.
+      const probeSmall = await probeMcpTool({
         accessToken,
         toolName: "silpo_get_my_online_orders",
         args: { limit: 1 },
       });
-      return { ok: true as const, data: { tools, probe } };
+      const probe = await probeMcpTool({
+        accessToken,
+        toolName: "silpo_get_my_online_orders",
+        args: { limit: ONLINE_ORDERS_LIMIT },
+      });
+      return { ok: true as const, data: { tools, probe, probeSmall } };
     },
     deps.query ? { query: deps.query } : {},
   );
 
   if (!call.ok) return { unavailable: call.error.kind as McpError["kind"] };
 
-  const { tools, probe } = call.data;
+  const { tools, probe, probeSmall } = call.data;
   const names = tools.ok ? new Set(tools.data.tools.map((t) => t.name)) : null;
   const missingTools = names
     ? REQUIRED_TOOLS.filter((name) => !names.has(name))
@@ -116,6 +145,6 @@ export async function diagnoseSilpo(
     toolsError: tools.ok ? null : tools.error,
     missingTools,
     onlineOrdersProbe: probe,
-    verdict: buildVerdict(missingTools, probe),
+    verdict: buildVerdict(missingTools, probe, probeSmall),
   };
 }
