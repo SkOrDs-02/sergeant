@@ -36,8 +36,6 @@ function renderActions(
         setRoutine={vi.fn()}
         quickAddHabitOpen={false}
         quickAddFocusTick={0}
-        quickAddFirstRunHint={false}
-        onDismissQuickAddFirstRunHint={vi.fn()}
         onOpenQuickAddHabit={vi.fn()}
         onCloseQuickAddHabit={vi.fn()}
         {...props}
@@ -62,7 +60,6 @@ describe("RoutineActions", () => {
     renderActions({
       quickAddHabitOpen: true,
       quickAddFocusTick: 1,
-      quickAddFirstRunHint: true,
     });
 
     expect(screen.getByRole("dialog")).toBeInTheDocument();
