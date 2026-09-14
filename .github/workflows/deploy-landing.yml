@@ -1,0 +1,146 @@
+name: Deploy landing (Vercel CLI)
+
+# Owner: @SkOrDs-02 (solo maintainer).
+#
+# Чому цей воркфлоу існує. Лендінг їхав у прод ВИКЛЮЧНО через нативну
+# Git-інтеграцію Vercel, і коли вона відвалилась, деплої просто перестали
+# приходити: кожен PR отримував `Deployment failed … There is no GitHub
+# account connected to this Vercel account`, а прод тихо лишався на збірці
+# від 10 вересня. Нічого в репозиторії про це не сигналізувало — гілка
+# зелена, код змерджений, сайт старий.
+#
+# Тут той самий шлях, яким уже їде API (`deploy-api.yml`): білд робить
+# GitHub Actions, а не чужа інтеграція. Vercel CLI з токеном не залежить
+# від того, чи прив'язаний GitHub-акаунт до Vercel-проєкту.
+#
+# `vercel pull` тягне налаштування проєкту (Root Directory, env), `vercel
+# build` виконує `buildCommand` з `apps/landing/vercel.json` — тобто ті самі
+# security-заголовки, редіректи і постбілд-SEO, що й раніше. `--prebuilt`
+# на деплої означає «не збирай удруге на боці Vercel».
+#
+# `ignoreCommand` з `vercel.json` тут НЕ діє: він існує для Git-інтеграції.
+# Замість нього фільтрує `paths` нижче.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/landing/**"
+      - "packages/design-tokens/**"
+      - "packages/shared/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/deploy-landing.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-landing
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Поки секретів немає, push-прогін НЕ падає: інакше кожен мерж із
+      # правкою лендінга давав би червоний `main`, а «червоний завжди»
+      # інформаційно дорівнює «вимкнений» — той самий урок, що вже двічі
+      # записаний у AGENTS.md про бандл-гейти. Натомість крок пише warning і
+      # чесно каже, що поставки немає. Ручний запуск — інша річ: людина
+      # явно просила деплой, тож там відсутність секретів це помилка.
+      - name: Секрети на місці?
+        id: secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID_LANDING: ${{ secrets.VERCEL_PROJECT_ID_LANDING }}
+        run: |
+          missing=()
+          [ -n "$VERCEL_TOKEN" ] || missing+=("VERCEL_TOKEN")
+          [ -n "$VERCEL_ORG_ID" ] || missing+=("VERCEL_ORG_ID")
+          [ -n "$VERCEL_PROJECT_ID_LANDING" ] || missing+=("VERCEL_PROJECT_ID_LANDING")
+          if [ ${#missing[@]} -eq 0 ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          hint="Немає секретів: ${missing[*]}. Додай у Settings → Secrets and variables → Actions. TOKEN — vercel.com/account/settings/tokens; ORG_ID і PROJECT_ID — Vercel → проєкт sergeant-landing → Settings → General."
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::error::$hint"
+            exit 1
+          fi
+          echo "::warning::$hint Лендінг НЕ задеплоєно — прод лишається на попередній збірці."
+
+      - if: steps.secrets.outputs.ready == 'true'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v5.0.0
+
+      - if: steps.secrets.outputs.ready == 'true'
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v4.2.0
+
+      - if: steps.secrets.outputs.ready == 'true'
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v5.0.0
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install
+        if: steps.secrets.outputs.ready == 'true'
+        run: pnpm install --frozen-lockfile
+
+      # Версія НЕ пінована навмисно: точної мажорної CLI на момент
+      # написання я не знаю, а вигадане число зламало б воркфлоу мовчки.
+      # Після першого зеленого прогону підстав сюди версію з логу кроку.
+      - name: Vercel CLI
+        if: steps.secrets.outputs.ready == 'true'
+        run: pnpm add -g vercel@latest
+
+      # Root Directory проєкту `sergeant-landing` — `apps/landing`, тож CLI
+      # працює звідти: інакше `vercel build` не побачить свій `vercel.json`.
+      - name: Pull project settings
+        if: steps.secrets.outputs.ready == 'true'
+        working-directory: apps/landing
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_LANDING }}
+        run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Build
+        if: steps.secrets.outputs.ready == 'true'
+        working-directory: apps/landing
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_LANDING }}
+        run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Deploy
+        if: steps.secrets.outputs.ready == 'true'
+        id: deploy
+        working-directory: apps/landing
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_LANDING }}
+        run: |
+          url=$(vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Задеплоєно: $url"
+
+      # Успішний деплой ще не означає живу сторінку: пререндер міг не
+      # відпрацювати, і тоді краулер дістане порожній `#root` — рівно та
+      # вада, яку закрив GEO-аудит. Перевіряємо факт, а не код виходу.
+      - name: Прод віддає пререндерений HTML
+        if: steps.secrets.outputs.ready == 'true'
+        run: |
+          for attempt in 1 2 3 4 5; do
+            html=$(curl -fsS --max-time 20 https://sergeant.com.ua/ || true)
+            if printf '%s' "$html" | grep -q 'rel="canonical"' \
+              && ! printf '%s' "$html" | grep -q '<div id="root"></div>'; then
+              echo "Прод живий: canonical на місці, #root не порожній."
+              exit 0
+            fi
+            echo "Спроба $attempt: прод ще віддає стару або порожню сторінку, чекаю."
+            sleep 15
+          done
+          echo "::error::sergeant.com.ua не віддає пререндерений HTML після деплою."
+          exit 1
