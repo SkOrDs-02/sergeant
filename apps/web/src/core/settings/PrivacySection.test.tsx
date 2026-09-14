@@ -36,6 +36,7 @@ vi.mock("@shared/api", () => {
     sergeantNudges: false,
     healthDataConsent: false,
     activeModules: null,
+    hubPrefs: null,
     updatedAt: null,
   };
   return {
@@ -125,6 +126,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     sergeantNudges: false,
     healthDataConsent: false,
     activeModules: null,
+    hubPrefs: null,
     updatedAt: null,
   };
 

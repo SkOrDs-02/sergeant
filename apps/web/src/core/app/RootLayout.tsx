@@ -59,6 +59,7 @@ const RoutineBootCluster = lazy(
 import { useProfileWriteThroughBoot } from "../profile/useProfileWriteThroughBoot";
 import { useAnalyticsConsentBoot } from "../observability/useAnalyticsConsentBoot";
 import { useActiveModulesSync } from "../hub/useActiveModulesSync";
+import { useHubPrefsSync } from "../settings/useHubPrefsSync";
 import { HubShellProvider, type HubShellValue } from "./HubShellContext";
 import { ErrorBoundary } from "../ErrorBoundary";
 
@@ -142,6 +143,9 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // знахідка B2): без цього той самий акаунт на новому пристрої бачив
   // хаб із дефолтом «усі чотири» замість власного вибору.
   useActiveModulesSync();
+  // PR-S13: налаштування вигляду хаба їдуть між пристроями тим самим
+  // write-through каналом, що й вибір модулів рядком вище.
+  useHubPrefsSync();
   return (
     <>
       {/* Single app-wide skip-link — first focusable on EVERY route
