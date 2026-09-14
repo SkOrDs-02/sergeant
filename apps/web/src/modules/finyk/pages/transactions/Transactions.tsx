@@ -465,7 +465,6 @@ export function Transactions({
                     type="button"
                     size="xs"
                     variant="ghost"
-                    tone="finyk"
                     onClick={onClearDayFilter}
                     aria-label={messages.finyk.todayFilter.showAllAria}
                   >

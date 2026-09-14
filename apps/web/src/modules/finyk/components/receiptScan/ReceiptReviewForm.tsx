@@ -192,7 +192,6 @@ export function ReceiptReviewForm({
           <Button
             type="button"
             variant="ghost"
-            tone="finyk"
             size="xs"
             onClick={handleAddItem}
             disabled={disabled}

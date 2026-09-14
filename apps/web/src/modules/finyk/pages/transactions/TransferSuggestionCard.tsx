@@ -130,13 +130,7 @@ export function TransferSuggestionCard({
         >
           {messages.finyk.transferSuggestion.reject}
         </Button>
-        <Button
-          type="button"
-          size="sm"
-          variant="ghost"
-          tone="neutral"
-          onClick={onSnooze}
-        >
+        <Button type="button" size="sm" variant="ghost" onClick={onSnooze}>
           {messages.finyk.transferSuggestion.dismiss}
         </Button>
       </div>

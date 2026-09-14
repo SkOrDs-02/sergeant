@@ -366,6 +366,12 @@ export function ReceiptScanSheet({
             <Icon name="camera" size={16} aria-hidden />
             Завантажити фото
           </Button>
+          {/* AI-NOTE: кегль тут навмисний — це підказка ПІД контролом, один
+              із випадків, які `no-sentence-in-caption` називає прийнятними.
+              Речення пояснює межу пакета й долю кожного фото; підняти його
+              до `text-style-body` означало б зрівняти підказку з підписом
+              самої кнопки. Попередження було й раніше, просто лінт бачить
+              файл лише коли той потрапляє в коміт. */}
           <p className="text-style-caption text-subtle">
             Можна вибрати одразу кілька фото, до {BATCH_RECEIPTS_MAX_FILES}{" "}
             чеків за раз, кожен збережеться окремою витратою.
@@ -379,7 +385,6 @@ export function ReceiptScanSheet({
             <Button
               type="button"
               variant="ghost"
-              tone="finyk"
               size="xs"
               onClick={() => setEditingItemId(null)}
             >

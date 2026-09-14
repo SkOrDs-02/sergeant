@@ -390,7 +390,7 @@ export function BulkImportSheet({
           commitResult &&
           commitResult.created > 0 ? (
           <Button
-            variant="secondary"
+            variant="soft"
             tone="danger"
             className="w-full"
             loading={batchUndo.isPending}
