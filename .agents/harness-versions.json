@@ -1,6 +1,6 @@
 {
   "schemaVersion": 1,
-  "current": "6.0.1",
+  "current": "6.1.0",
   "versions": {
     "0.1.0": {
       "releasedAt": "2026-06-29",
@@ -499,6 +499,16 @@
       "releasedAt": "2026-09-13",
       "changes": [
         "bump from 6.0.0 -> 6.0.1: typo / link / freshness-only change"
+      ],
+      "agentsTestedWith": [],
+      "passRateBaseline": null
+    },
+    "6.1.0": {
+      "releasedAt": "2026-09-14",
+      "changes": [
+        "Мобільна стратегія в агентних вказівниках приведена до ADR-0094 (пауза обох стеків, web-first) замість superseded ADR-0052. Зачеплено `.agents/skills/sergeant-mobile-expo/SKILL.md` (розділ стратегії переписано + явна поведінка «схоже на нову мобільну фічу → скажи про паузу і спитай власника»), `.claude/agents/mobile-agent.md` + регенерований `.codex/agents/mobile-agent.toml`, роутинг-нотатка під таблицею кореневого `AGENTS.md` і помітка в таблиці `sergeant-start-here`.",
+        "Причина bump-у саме minor: RED-прогон показав, що зі старим текстом агент штатним роутингом відповідав «Capacitor primary, обидва стеки активні, новий екран у `apps/mobile` йде за правилом» — тобто вів до роботи, яку власник заморозив. Після правки той самий прогон зупиняється і йде питати власника. Це зміна поведінки, не формулювання.",
+        "Заморозка тепер видима і на вході в роутинг: задача «нова фіча / новий екран» веде в `sergeant-feature-delivery`, який про мобільну паузу не знав нічого."
       ],
       "agentsTestedWith": [],
       "passRateBaseline": null
