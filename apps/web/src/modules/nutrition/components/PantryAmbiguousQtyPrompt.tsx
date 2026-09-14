@@ -66,7 +66,7 @@ export function PantryAmbiguousQtyPrompt({
             </span>
             <Button
               type="button"
-              variant="outline"
+              variant="soft"
               tone="nutrition"
               size="xs"
               disabled={busy}
@@ -76,7 +76,7 @@ export function PantryAmbiguousQtyPrompt({
             </Button>
             <Button
               type="button"
-              variant="outline"
+              variant="soft"
               tone="nutrition"
               size="xs"
               disabled={busy}

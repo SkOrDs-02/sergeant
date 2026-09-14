@@ -172,7 +172,6 @@ function ItemRow({
                 <Button
                   type="button"
                   variant="ghost"
-                  tone="finyk"
                   size="xs"
                   disabled={disabled}
                   onClick={() => onEditItem(item.id)}

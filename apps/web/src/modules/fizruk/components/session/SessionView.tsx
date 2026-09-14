@@ -391,7 +391,7 @@ export function SessionView({
               {ss.makeSuperset} ({groupCount}/3)
             </Button>
             <Button
-              variant="outline"
+              variant="soft"
               tone="fizruk"
               className="h-11 flex-1"
               disabled={groupDisabled}
