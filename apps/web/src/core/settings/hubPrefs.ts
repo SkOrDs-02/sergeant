@@ -1,8 +1,9 @@
 import { useEffect, useState } from "react";
 import { z } from "zod";
-import { STORAGE_KEYS } from "@sergeant/shared";
+import { STORAGE_KEYS, normalizeDashboardDensity } from "@sergeant/shared";
 import {
   safeReadLSValidated,
+  safeReadStringLS,
   safeWriteLS,
   webKVStore,
 } from "@shared/lib/storage/storage";
@@ -14,6 +15,15 @@ import {
 } from "./hubPrefsSync";
 
 const HUB_PREFS_KEY = STORAGE_KEYS.HUB_PREFS;
+
+/**
+ * Імена ключів усередині мішка. Константи, а не літерали по місцях:
+ * читач і писар кожного налаштування живуть у різних файлах, і розійтись
+ * рядком тут — питання часу, а помилка була б тихою (значення просто
+ * «не знайшлось», і людина побачила б дефолт).
+ */
+export const HUB_PREF_DENSITY = "density";
+export const HUB_PREF_MONDAY_AUTO = "mondayAutoDigest";
 
 function loadHubPrefs(): HubPrefs {
   return safeReadLSValidated(HUB_PREFS_KEY, HubPrefsSchema, {});
@@ -120,6 +130,66 @@ function saveHubPref(key: string, value: unknown): void {
   // PR-S13: мішок їде на акаунт ЦІЛКОМ, а не по одному ключу — саме тому
   // LWW тут по всьому мішку (розбір у `hubPrefsSync.ts`). Fire-and-forget:
   // локальний запис уже стався, і мережа не має відкочувати тумблер.
+  pushHubPrefs(toServerBag(next));
+}
+
+/**
+ * Переїзд двох хабових налаштувань зі своїх ключів у спільний мішок.
+ *
+ * Щільність дашборда і автогенерація дайджесту щопонеділка жили кожна у
+ * власному ключі `localStorage` і НЕ їхали на акаунт — залишок знахідки
+ * PR-S13, яку для пʼяти тумблерів головної закрив PR #1195. Мішок
+ * `hub_prefs_v1` уже має серверний канал, тож переїзд дає їм синхронізацію
+ * без нової колонки: обидва — скаляри, а мішок навмисно відкритий.
+ *
+ * AI-DANGER: викликати ЛИШЕ ПІСЛЯ гідратації, і це не стилістика.
+ * Запис у мішок іде через `saveHubPref` → `pushHubPrefs`, а той зсуває
+ * лічильник поколінь. Зроблений під час бутового GET-а, він змусив би
+ * `hydrateHubPrefs` відкинути серверну відповідь як застарілу — рівно та
+ * гонка, яку закривали в #1195. Після гідратації ж переїзд безпечний і
+ * навіть потрібен: якщо на акаунті ключа немає, локальне значення
+ * доллється вгору звичайним шляхом.
+ *
+ * Ідемпотентна: ключ, який у мішку вже є (свій чи серверний), не чіпається.
+ * Старі ключі НЕ видаляються — двофазність, як для DROP у міграціях:
+ * відкат клієнта не має знецінити вибір людини.
+ */
+export function migrateLegacyHubPrefs(): void {
+  const prefs = loadHubPrefs();
+  const next: HubPrefs = { ...prefs };
+  let changed = false;
+
+  if (!(HUB_PREF_DENSITY in prefs)) {
+    const raw = safeReadStringLS(STORAGE_KEYS.DASHBOARD_DENSITY);
+    if (raw !== null) {
+      next[HUB_PREF_DENSITY] = normalizeDashboardDensity(raw);
+      changed = true;
+    }
+  }
+
+  if (!(HUB_PREF_MONDAY_AUTO in prefs)) {
+    // Історична форма — рядок «1»/«0», причому ВІДСУТНІСТЬ означала
+    // «увімкнено» (дефолт ON з 2026-08-30). Тож мігруємо лише явний
+    // opt-out: інакше записали б у мішок значення, якого людина не
+    // обирала, і затерли б ним дефолт на іншому пристрої.
+    //
+    // AI-NOTE: читаємо `safeReadStringLS`, і це не стиль. `safeWriteLS`
+    // пропускає РЯДОК наскрізь, без лапок, тож у сховищі лежить один
+    // символ `0`. `safeReadLS` розбирає його як JSON і повертає ЧИСЛО 0 —
+    // саме через це старий предикат `... !== "0"` був істинним завжди, і
+    // вимкнений тумблер не переживав перезавантаження (розбір у § PR-S13
+    // аудиту). Пара «пиши рядком → читай `safeReadStringLS`» — єдина
+    // правильна для таких прапорців.
+    const raw = safeReadStringLS(STORAGE_KEYS.WEEKLY_DIGEST_MONDAY_AUTO);
+    if (raw === "0") {
+      next[HUB_PREF_MONDAY_AUTO] = false;
+      changed = true;
+    }
+  }
+
+  if (!changed) return;
+  safeWriteLS(HUB_PREFS_KEY, next);
+  notifyHubPrefsChanged();
   pushHubPrefs(toServerBag(next));
 }
 

@@ -1,21 +1,15 @@
 import { useCallback, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { useToast } from "@shared/hooks/useToast";
-import {
-  safeReadStringLS,
-  safeWriteLS,
-  webKVStore,
-} from "@shared/lib/storage/storage";
+import { webKVStore } from "@shared/lib/storage/storage";
 import {
   ALL_MODULES,
   DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS,
   DASHBOARD_DENSITIES,
   DASHBOARD_DENSITY_LABELS,
   DASHBOARD_DENSITY_DESCRIPTIONS,
-  DASHBOARD_DENSITY_EVENT,
   DEFAULT_DASHBOARD_DENSITY,
   normalizeDashboardDensity,
-  STORAGE_KEYS,
   getActiveModules,
   setActiveModules,
   type DashboardDensity,
@@ -29,7 +23,7 @@ import {
   SettingsSubGroup,
   ToggleRow,
 } from "./SettingsPrimitives";
-import { useHubPref } from "./hubPrefs";
+import { useHubPref, HUB_PREF_DENSITY } from "./hubPrefs";
 
 export function DashboardSection() {
   const [calmMode, setCalmMode] = useHubPref<boolean>("calmMode", false);
@@ -49,21 +43,21 @@ export function DashboardSection() {
     "showMotivational",
     true,
   );
-  const [density, setDensityState] = useState<DashboardDensity>(() => {
-    const raw = safeReadStringLS(STORAGE_KEYS.DASHBOARD_DENSITY);
-    return raw === null
-      ? DEFAULT_DASHBOARD_DENSITY
-      : normalizeDashboardDensity(raw);
-  });
-  const handleDensityChange = useCallback((next: DashboardDensity) => {
-    setDensityState(next);
-    safeWriteLS(STORAGE_KEYS.DASHBOARD_DENSITY, next);
-    if (typeof window !== "undefined") {
-      window.dispatchEvent(
-        new CustomEvent(DASHBOARD_DENSITY_EVENT, { detail: next }),
-      );
-    }
-  }, []);
+  // Щільність тепер живе в тому самому мішку, що й пʼять тумблерів вище,
+  // тож їде на акаунт разом із ними (залишок PR-S13). Власний ключ і
+  // власна `CustomEvent` більше не потрібні: `useHubPref` сам сповіщає і
+  // це вікно, і сусідні вкладки.
+  const [densityRaw, setDensityRaw] = useHubPref<string>(
+    HUB_PREF_DENSITY,
+    DEFAULT_DASHBOARD_DENSITY,
+  );
+  const density = normalizeDashboardDensity(densityRaw);
+  const handleDensityChange = useCallback(
+    (next: DashboardDensity) => {
+      setDensityRaw(next);
+    },
+    [setDensityRaw],
+  );
   const toast = useToast();
 
   const [activeModules, setActiveModulesState] = useState<DashboardModuleId[]>(
