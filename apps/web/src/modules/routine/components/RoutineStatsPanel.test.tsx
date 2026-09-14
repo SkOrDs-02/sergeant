@@ -85,16 +85,22 @@ describe("RoutineStatsPanel", () => {
     expect(panel).toHaveAttribute("aria-labelledby", "routine-tab-stats");
   });
 
-  it("shows the current streak value", () => {
+  // Знахідка PR-R10: обидва числа тут — крос-звичкові МАКСИМУМИ, а підписи
+  // казали «Серія сьогодні» й «Макс. серія», тобто людина читала агрегат як
+  // власну суцільну серію. Ці ж два тести її й закріплювали: вони пінували
+  // рівно ті підписи, що вводили в оману.
+  //
+  // Слово «найкраща» взяте з `RoutineCalendarHero`, де ту саму величину вже
+  // виправили раніше — дві поверхні мусять називати її однаково.
+  it("labels the streak row as a best-across-habits aggregate, not a personal run", () => {
     render(<RoutineStatsPanel routine={makeRoutine()} currentStreak={7} />);
-    // The Stat renders "7" as a string in a cell labelled "Серія сьогодні"
     expect(screen.getByText("7")).toBeInTheDocument();
-    expect(screen.getByText("Серія сьогодні")).toBeInTheDocument();
-  });
-
-  it("renders the max-streak stat label", () => {
-    render(<RoutineStatsPanel routine={makeRoutine()} currentStreak={0} />);
-    expect(screen.getByText("Макс. серія")).toBeInTheDocument();
+    expect(screen.getByText("Найкраща серія:")).toBeInTheDocument();
+    expect(screen.getByText("сьогодні")).toBeInTheDocument();
+    expect(screen.getByText("за весь час")).toBeInTheDocument();
+    // Старі підписи не повертаються непоміченими.
+    expect(screen.queryByText("Серія сьогодні")).not.toBeInTheDocument();
+    expect(screen.queryByText("Макс. серія")).not.toBeInTheDocument();
   });
 
   it("renders every range chip and defaults to Місяць", () => {

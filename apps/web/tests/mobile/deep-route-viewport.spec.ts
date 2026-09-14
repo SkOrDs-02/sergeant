@@ -22,7 +22,8 @@ const ROUTES: ReadonlyArray<{
   {
     id: "ROUTINE_STATS",
     path: "/routine/stats",
-    visibleText: "Серія сьогодні",
+    // Підпис змінено разом із PR-R10 (крос-звичковий максимум, не власна серія).
+    visibleText: "Найкраща серія:",
   },
 ];
 
