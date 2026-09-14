@@ -261,7 +261,16 @@ export function GeneratorCard({
           <div className="rounded-2xl border border-line bg-panel p-4 text-style-label text-muted">
             Рецептів не повернулося. Спробуй натиснути &quot;Розібрати&quot; або
             додати 2–3 базові продукти (яйця/крупа/овочі).
-            {recipesRaw && (
+            {/* AI-DANGER: сира відповідь моделі — DEV-ONLY.
+                Це діагностика для розробника: неформатований текст від
+                LLM, який у продакшн-UI не пояснює людині нічого, зате
+                показує їй внутрішню кухню (знахідка PR-N8, аудит
+                2026-09-13). `import.meta.env.DEV` статично `false` у
+                прод-збірці, тож Vite вирізає гілку цілком — це той самий
+                гейт, що в `StandaloneRoutes` для внутрішнього стайлгайду.
+                Повертаєш це людям — роби через прапорець і у вигляді,
+                який можна прочитати, а не `<pre>{raw}</pre>`. */}
+            {import.meta.env.DEV && recipesRaw && (
               <details className="mt-3">
                 <summary className="cursor-pointer text-style-caption text-muted hover:text-text">
                   Показати діагностику (raw відповідь AI)

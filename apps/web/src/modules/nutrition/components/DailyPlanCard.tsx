@@ -391,16 +391,27 @@ export function DailyPlanCard({
           </div>
         )}
 
-        {weekPlanRaw && (!weekPlan?.days || weekPlan.days.length === 0) && (
-          <details className="rounded-2xl border border-line bg-bg p-3">
-            <summary className="cursor-pointer text-style-caption text-muted">
-              Діагностика плану (raw)
-            </summary>
-            <pre className="mt-2 whitespace-pre-wrap text-style-caption text-muted max-h-48 overflow-auto">
-              {weekPlanRaw}
-            </pre>
-          </details>
-        )}
+        {/* AI-DANGER: сира відповідь моделі — DEV-ONLY.
+                Це діагностика для розробника: неформатований текст від
+                LLM, який у продакшн-UI не пояснює людині нічого, зате
+                показує їй внутрішню кухню (знахідка PR-N8, аудит
+                2026-09-13). `import.meta.env.DEV` статично `false` у
+                прод-збірці, тож Vite вирізає гілку цілком — це той самий
+                гейт, що в `StandaloneRoutes` для внутрішнього стайлгайду.
+                Повертаєш це людям — роби через прапорець і у вигляді,
+                який можна прочитати, а не `<pre>{raw}</pre>`. */}
+        {import.meta.env.DEV &&
+          weekPlanRaw &&
+          (!weekPlan?.days || weekPlan.days.length === 0) && (
+            <details className="rounded-2xl border border-line bg-bg p-3">
+              <summary className="cursor-pointer text-style-caption text-muted">
+                Діагностика плану (raw)
+              </summary>
+              <pre className="mt-2 whitespace-pre-wrap text-style-caption text-muted max-h-48 overflow-auto">
+                {weekPlanRaw}
+              </pre>
+            </details>
+          )}
 
         {sortedMeals.length > 0 && (
           <div className="space-y-3">

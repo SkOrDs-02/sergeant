@@ -409,6 +409,28 @@ describe("DailyPlanCard — weekPlan section", () => {
     expect(screen.getByText("Діагностика плану (raw)")).toBeInTheDocument();
     expect(screen.getByText("raw diagnostic text")).toBeInTheDocument();
   });
+
+  // Regression PR-N8 (аудит 2026-09-13): сира відповідь моделі була видима
+  // КОЖНОМУ в проді — жодного гейта, крім стану даних. Перевірка вище цього
+  // не ловила, бо під Vitest `import.meta.env.DEV` і так `true`: вона
+  // описувала лише dev-гілку, не знаючи про це.
+  it("ховає сиру діагностику в прод-збірці", () => {
+    vi.stubEnv("DEV", false);
+    try {
+      render(
+        <DailyPlanCard
+          prefs={EMPTY_PREFS}
+          {...defaultHandlers}
+          weekPlanRaw="raw diagnostic text"
+          weekPlan={null}
+        />,
+      );
+      expect(screen.queryByText("Діагностика плану (raw)")).toBeNull();
+      expect(screen.queryByText("raw diagnostic text")).toBeNull();
+    } finally {
+      vi.unstubAllEnvs();
+    }
+  });
 });
 
 describe("DailyPlanCard — dayPlan meals section", () => {

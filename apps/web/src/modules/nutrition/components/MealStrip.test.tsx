@@ -280,4 +280,55 @@ describe("MealStrip", () => {
     );
     expect(screen.getByText("Записано 1 із 4")).toBeInTheDocument();
   });
+
+  // Regression PR-N7 (аудит 2026-09-13): макро-смуга без цілі малювалась
+  // ПОВНОЮ на будь-якому ненульовому споживанні (`m.consumed > 0 ? 100 : 0`)
+  // — візуальне «готово» там, де порівнювати немає з чим. Підпис поруч це
+  // вже знав і чесно ховав знаменник, тож смуга суперечила числу над собою.
+  //
+  // Це НЕ та сама поведінка, що в kcal-смузі вище: та без цілі навмисно
+  // розподіляє 100% МІЖ прийомами (частки одне до одного), і її тести лишені
+  // без змін. Тут же кожна смуга самостійна, і ділити немає на що.
+  it("не малює макро-смугу повною, коли цілі немає", () => {
+    const { container } = render(
+      <MealStrip
+        onPickMeal={vi.fn()}
+        segments={FOUR_SEGMENTS}
+        goalKcal={null}
+        remainingLabel="лишилось на сніданок"
+        macros={[
+          { label: "Білки", consumed: 12, goal: 0, unit: "г" },
+          { label: "Жири", consumed: 0, goal: 0, unit: "г" },
+          { label: "Вугл.", consumed: 30, goal: 0, unit: "г" },
+        ]}
+      />,
+    );
+    const bars = Array.from(
+      container.querySelectorAll(
+        '[role="img"][aria-label^="Білки"], [role="img"][aria-label^="Жири"], [role="img"][aria-label^="Вугл."]',
+      ),
+    );
+    expect(bars).toHaveLength(3);
+    for (const bar of bars) {
+      const fill = bar.firstElementChild as HTMLElement;
+      expect(fill.style.width).toBe("0%");
+    }
+    // Саме число нікуди не дівається — його несе підпис, а не смуга.
+    expect(screen.getByText(/12/)).toBeInTheDocument();
+  });
+
+  it("макро-смуга з ціллю рахує частку як і раніше", () => {
+    const { container } = render(
+      <MealStrip
+        onPickMeal={vi.fn()}
+        segments={FOUR_SEGMENTS}
+        goalKcal={2000}
+        remainingLabel="лишилось на сніданок"
+        macros={[{ label: "Білки", consumed: 70, goal: 140, unit: "г" }]}
+      />,
+    );
+    const bar = container.querySelector('[role="img"][aria-label^="Білки"]');
+    const fill = bar?.firstElementChild as HTMLElement;
+    expect(fill.style.width).toBe("50%");
+  });
 });
