@@ -61,13 +61,21 @@ describe("HubChat (mobile)", () => {
   });
 
   it("рендерить empty-state на свіжій сесії", () => {
+    // Тест називався так і раніше, але перевіряв три сторонні testID
+    // (header/input/send), а коментар усередині прямо ВИПРАВДОВУВАВ
+    // відсутність порожнього стану: «intro-message теж вважаємо валідним
+    // baseline-ом». Тобто він проходив однаково і тоді, коли `ChatEmpty`
+    // рендерився, і тоді, коли `normalizeStoredMessages` робив його
+    // недосяжним — а робив він це завжди. Тепер тест перевіряє те, що
+    // обіцяє назвою.
     const { getByTestId } = renderHubChat({ text: "noop" });
-    // Intro-message ("Привіт! Я твій особистий асистент…") теж
-    // вважаємо валідним baseline-ом — assert на header testID,
-    // який гарантує, що шелл змонтувався без падіння провайдерів.
     expect(getByTestId("hub-chat-header")).toBeTruthy();
     expect(getByTestId("hub-chat-input")).toBeTruthy();
     expect(getByTestId("hub-chat-send")).toBeTruthy();
+    expect(getByTestId("chat-empty")).toBeTruthy();
+    // Чіпи — те, заради чого порожній стан і існує: вони кажуть, ЩО САМЕ
+    // можна спитати, тоді як привітальний абзац переказував це прозою.
+    expect(getByTestId("chat-empty-suggestion-finyk")).toBeTruthy();
   });
 
   it("надсилає message через `api.chat.send` після тапу на send", async () => {
