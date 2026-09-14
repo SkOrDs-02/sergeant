@@ -50,7 +50,7 @@ import {
 } from "../../obs/metrics.js";
 import { elapsedMs } from "../../lib/timing.js";
 import { getAiMemory } from "./bootstrap.js";
-import { hasAiMemoryConsent } from "./consent.js";
+import { hasAiMemoryConsent, hasHealthDataConsent } from "./consent.js";
 import { recordIngestDlq } from "./dlq.js";
 import { MissingVoyageApiKeyError, VoyageHttpError } from "./embeddings.js";
 import type { AiMemoryService } from "./service.js";
@@ -93,6 +93,27 @@ export interface MemoryIngestPayload {
    * змінений — ні.
    */
   dedupeSalt?: string | undefined;
+  /**
+   * «Цей запис несе дані про здоровʼя» — тренування, вагу, самопочуття,
+   * калорії, прийоми їжі. Вмикає ДРУГИЙ гейт згоди (`health_data_consent`,
+   * GDPR Art. 9) поверх звичайного `ai_memory`.
+   *
+   * AI-CONTEXT (PR-S3, рішення founder-а 2026-09-14). Прапорець
+   * ЯВНИЙ, а не виведений із `source`, і це навмисно. `digest` несе
+   * health-дані лише коли в звіт зайшли секції fizruk/nutrition —
+   * фінансово-рутинний тиждень їх не має; `profile` — лише для фактів
+   * категорії `health`. Виводити це з джерела означало б або гейтити
+   * зайве (і мовчки викидати корисні записи), або пропускати health-дані
+   * під виглядом «джерело ж не health».
+   *
+   * НЕ персиститься в рядок `ai_memories`: `processMemoryIngestJob` бере
+   * з payload рівно пʼять полів, і цього серед них немає. Це чистий
+   * гейт-сигнал. **Але в DLQ воно мусить доїхати** — `payload_json`
+   * зберігається цілим, і replay у `routes/internal/ai-memory-dlq.ts`
+   * перебирає поля поіменно, тож пропущене там поле відкрило б обхід
+   * гейта через ретрай.
+   */
+  healthData?: boolean | undefined;
 }
 
 /**
@@ -306,6 +327,46 @@ async function enqueueMemoryIngestImpl(
     });
     if (opts.rethrowEnqueueError) throw err;
     return;
+  }
+
+  // PR-S3 (рішення founder-а 2026-09-14): другий гейт згоди — саме для
+  // даних про здоровʼя і саме на ПЕРСИСТЕНТНОМУ записі. Ефемерну відповідь
+  // у чаті він не чіпає: тумблер дефолтиться у `false`, ніхто не вмикає
+  // його в онбордингу, тож гейт на читання вимкнув би AI-шар за
+  // замовчуванням для всіх. Осідання назавжди — інша річ: вимкнути тумблер
+  // постфактум і цим прибрати вже записане неможливо.
+  if (payload.healthData === true) {
+    try {
+      if (!(await hasHealthDataConsent(pool, payload.userId))) {
+        aiMemoryIngestEnqueuedTotal.inc({
+          mode: "health_consent_disabled",
+          source: sourceLabel,
+        });
+        logger.debug({
+          msg: "ai_memory_ingest_skipped_health_consent_disabled",
+          userId: payload.userId,
+          source: sourceLabel,
+        });
+        return;
+      }
+    } catch (err) {
+      aiMemoryIngestEnqueuedTotal.inc({
+        mode: "consent_check_error",
+        source: sourceLabel,
+      });
+      logger.warn({
+        msg: "ai_memory_ingest_health_consent_check_failed",
+        userId: payload.userId,
+        source: sourceLabel,
+        err: serializeError(err, { includeStack: false }),
+      });
+      // Fail-closed однаково в обох гілках: strict-виклик (DLQ-replay)
+      // отримує помилку й лишає рядок у черзі на повтор, звичайний — тихо
+      // не пише. Записати health-дані «бо перевірка згоди впала» не можна
+      // ні в якому разі.
+      if (opts.rethrowEnqueueError) throw err;
+      return;
+    }
   }
 
   // Per-source kill-switch (PR-19) жив тут на `payload.source === "finyk"`.

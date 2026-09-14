@@ -1,6 +1,7 @@
 import { useCallback, useEffect, useState } from "react";
 import { Button } from "@shared/components/ui/Button";
 import { meApi, type UserPreferences } from "@shared/api";
+import { messages } from "@shared/i18n/uk";
 import { useOptionalHubShell } from "../app/HubShellContext";
 import { LegalLinks } from "../legal/LegalLinks";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
@@ -21,6 +22,8 @@ import {
 // `analyticsConsent` до завершення гідрації, тож перевіряти його треба
 // напряму, а не виводити з відрендереного виводу (2026-08-08 adversarial
 // review, finding #4).
+const disclosure = messages.dataDisclosure;
+
 export const DEFAULT_PREFERENCES: UserPreferences = {
   // L-3: продукт — opt-in analytics, не opt-out. Дефолт тут мусить
   // збігатися з серверним DEFAULT FALSE (apps/server/src/modules/me/
@@ -166,12 +169,28 @@ export function PrivacySection() {
               checked={preferences.aiMemory}
               onChange={(checked) => void updatePreference("aiMemory", checked)}
             />
+            {/* PR-S3 (рішення founder-а 2026-09-14). Копія доти обіцяла
+                «без неї ця інформація не використовується» — і це було
+                неправдою для КОЖНОГО, хто жодного разу не відкривав цей
+                екран: тумблер дефолтиться у `false`, а коуч, дайджест і чат
+                читали тренування й харчування однаково для всіх.
+
+                Рішення: гейтити не використання, а ПЕРСИСТЕНТНИЙ ЗАПИС у
+                памʼять (`ai-memory/ingestQueue.ts`, прапорець `healthData`).
+                Гейт на використання вимкнув би AI-шар за замовчуванням;
+                осідання назавжди — інша річ, бо вимкнути тумблер постфактум
+                і цим прибрати вже записане неможливо.
+
+                Копія тепер каже рівно те, що робить код. Не «ця інформація
+                не використовується», а «не осідає в памʼяті» — і прямо
+                проговорює, що відповідь у чаті працює без згоди. Обіцянка,
+                ширша за механізм, гірша за відсутність обіцянки. */}
             <ToggleRow
-              label="Дані про здоровʼя"
+              label="Памʼять про здоровʼя"
               description={
                 savingPreference === "healthDataConsent"
                   ? "Зберігаю…"
-                  : "Явна згода на обробку тренувань, самопочуття й харчування, без неї ця інформація не використовується."
+                  : "Дозволяє Сержанту запамʼятовувати тренування, самопочуття й харчування надовго: тижневі звіти й факти з категорії «Здоровʼя». Без неї Сержант відповідає на питання як завжди, але нічого з цього не зберігає. Вимкнення не видаляє вже збережене."
               }
               checked={preferences.healthDataConsent}
               onChange={(checked) =>
@@ -254,6 +273,28 @@ export function PrivacySection() {
           </div>
         ) : null}
         <LegalLinks compact className="justify-start" />
+      </SettingsSubGroup>
+
+      {/* PR-S4 (рішення founder-а 2026-09-14): обидві декларації переїхали
+          сюди з «Резервної копії». Вони стоять ПІСЛЯ згод і юрдоків
+          навмисно — спершу те, чим людина керує, потім те, що їй обіцяють.
+          Текст не змінено жодним словом, лише місце. */}
+      <SettingsSubGroup title={disclosure.subprocessors.title}>
+        <p className="text-style-body text-subtle leading-relaxed">
+          {disclosure.subprocessors.body}
+        </p>
+        <p className="text-style-body text-subtle leading-relaxed">
+          {disclosure.subprocessors.photoNote}
+        </p>
+      </SettingsSubGroup>
+
+      <SettingsSubGroup title={disclosure.sunset.title}>
+        <p className="text-style-body text-subtle leading-relaxed">
+          {disclosure.sunset.body}
+        </p>
+        <p className="text-style-body text-subtle leading-relaxed">
+          {disclosure.sunset.bankNote}
+        </p>
       </SettingsSubGroup>
     </SettingsGroup>
   );

@@ -26,6 +26,7 @@
 import { fizrukPageMessages } from "./uk.fizruk";
 import { finykPageMessages } from "./uk.finyk";
 import { routinePageMessages } from "./uk.routine";
+import { dataDisclosureMessages } from "./uk.dataDisclosure";
 import { dataExportMessages } from "./uk.dataExport";
 import { nutritionPageMessages } from "./uk.nutrition";
 import { nutritionTdeeMessages } from "./uk.nutritionTdee";
@@ -213,6 +214,7 @@ export const messages = {
     },
   },
 
+  dataDisclosure: dataDisclosureMessages,
   dataExport: dataExportMessages,
 
   // Оцінка AI-поради (`AdviceFeedback`). Підписи — для скрінрідера:

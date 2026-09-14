@@ -234,6 +234,21 @@ export const messagesEn: Partial<{
     },
   },
 
+  dataDisclosure: {
+    subprocessors: {
+      title: "Where your data goes for AI",
+      body: "To answer in chat, give advice and recognize photos, we send requests to Anthropic, and to Voyage AI for memory search. Before sending we strip email, phone, IBAN, card number and tax ID, and people's names from bank transfers.",
+      photoNote:
+        "Photos are the exception: part of the frame cannot be hidden, so it is sent whole. We warn you before the first photo.",
+    },
+    sunset: {
+      title: "If Sergeant ever shuts down",
+      body: "We will warn you at least 30 days ahead, and export will keep working the whole time. Your data is yours: take it whenever you like, no permission and no explanation needed.",
+      bankNote:
+        "One honest caveat: we do not duplicate bank transactions, they can always be pulled from the bank again. But if you no longer have access to the bank, nobody can restore that history.",
+    },
+  },
+
   dataExport: {
     busy: "Preparing export…",
     downloadJson: "Download JSON",
@@ -254,18 +269,6 @@ export const messagesEn: Partial<{
       pushDevices: "Notification devices",
       aiUsage: "AI usage by day",
       aiMemories: "AI memory",
-    },
-    subprocessors: {
-      title: "Where your data goes for AI",
-      body: "To answer in chat, give advice and recognize photos, we send requests to Anthropic, and to Voyage AI for memory search. Before sending we strip email, phone, IBAN, card number and tax ID, and people's names from bank transfers.",
-      photoNote:
-        "Photos are the exception: part of the frame cannot be hidden, so it is sent whole. We warn you before the first photo.",
-    },
-    sunset: {
-      title: "If Sergeant ever shuts down",
-      body: "We will warn you at least 30 days ahead, and export will keep working the whole time. Your data is yours: take it whenever you like, no permission and no explanation needed.",
-      bankNote:
-        "One honest caveat: we do not duplicate bank transactions, they can always be pulled from the bank again. But if you no longer have access to the bank, nobody can restore that history.",
     },
   },
 

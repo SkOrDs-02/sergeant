@@ -160,34 +160,12 @@ export function DataExportSection() {
         </SettingsSubGroup>
       </div>
 
-      {/* Рішення founder-а #10, друга половина: маскування без декларації —
-          внутрішня деталь, про яку користувач не знає. Перелік обробників
-          стоїть тут, поруч із експортом, бо це те саме питання «що ви про
-          мене знаєте і куди воно дівається». */}
-      <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
-        <SettingsSubGroup title={m.subprocessors.title}>
-          <p className="text-style-body text-subtle leading-relaxed">
-            {m.subprocessors.body}
-          </p>
-          <p className="text-style-body text-subtle leading-relaxed">
-            {m.subprocessors.photoNote}
-          </p>
-        </SettingsSubGroup>
-      </div>
-
-      {/* Рішення founder-а #6: попередження за 30 днів + вікно на експорт.
-          Обіцянка живе В ПРОДУКТІ, поруч із кнопками, якими її виконують —
-          а не лише в умовах використання, куди ніхто не заходить. */}
-      <div className="rounded-2xl border border-line/60 bg-surface-soft-glass p-3">
-        <SettingsSubGroup title={m.sunset.title}>
-          <p className="text-style-body text-subtle leading-relaxed">
-            {m.sunset.body}
-          </p>
-          <p className="text-style-body text-subtle leading-relaxed">
-            {m.sunset.bankNote}
-          </p>
-        </SettingsSubGroup>
-      </div>
+      {/* Тут раніше стояли дві декларації — «Куди їдуть дані для AI»
+          (рішення founder-а #10) і sunset-обіцянка (рішення #6). Вони
+          переїхали в «Дані та приватність» (`PrivacySection`) рішенням
+          founder-а 2026-09-14, знахідка PR-S4 продуктового огляду: питання
+          «що ви про мене знаєте» людина носить у приватність, а сюди йде по
+          файл. Розділ тепер про самі файли й нічого більше. */}
     </SettingsGroup>
   );
 }
