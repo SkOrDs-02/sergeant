@@ -39,8 +39,21 @@ const {
   hydrateHubPrefs,
   pushHubPrefs,
   setHubPrefsSyncEnabled,
+  __setHubPrefsUnsyncedAdapter,
   __resetHubPrefsSyncForTests,
 } = await import("./hubPrefsSync");
+
+/** Проста памʼять замість localStorage — тест керує міткою явно. */
+function installUnsyncedAdapter(initial = false) {
+  let flag = initial;
+  __setHubPrefsUnsyncedAdapter({
+    mark: (v: boolean) => {
+      flag = v;
+    },
+    has: () => flag,
+  });
+  return { get: () => flag };
+}
 
 function serverPrefs(hubPrefs: Record<string, unknown> | null) {
   return {
@@ -385,6 +398,65 @@ describe("PR-S13: гідратація не переживає зміну ака
     getPreferences.mockResolvedValue(serverPrefs({ calmMode: true }));
     const local = makeLocal();
     await hydrateHubPrefs(local.read, local.write, () => true);
+    expect(local.current()).toEqual({ calmMode: true });
+  });
+});
+
+describe("PR-S13: незбережена зміна переживає перезавантаження", () => {
+  // Третя знахідка рев'ю, і без неї попередні дві лікували лише половину.
+  // Черга відправки живе в памʼяті модуля — перезавантаження її стирає.
+  it("ставить мітку одразу при перемиканні, ще до відповіді сервера", async () => {
+    // Саме «до», не «після невдачі»: між локальним записом і відповіддю
+    // вкладку можуть закрити, і тоді ніякий catch уже не виконається.
+    const marker = installUnsyncedAdapter();
+    updatePreferences.mockImplementation(() => new Promise(() => {}));
+    pushHubPrefs({ calmMode: true });
+    expect(marker.get()).toBe(true);
+  });
+
+  it("знімає мітку, коли сервер підтвердив", async () => {
+    const marker = installUnsyncedAdapter();
+    updatePreferences.mockResolvedValue(undefined);
+    pushHubPrefs({ calmMode: true });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(marker.get()).toBe(false);
+  });
+
+  it("лишає мітку, коли PATCH упав", async () => {
+    const marker = installUnsyncedAdapter();
+    updatePreferences.mockRejectedValue(new Error("offline"));
+    pushHubPrefs({ calmMode: true });
+    await new Promise((r) => setTimeout(r, 0));
+    expect(marker.get()).toBe(true);
+  });
+
+  it("з міткою локальне ВИГРАЄ, а не затирається старим серверним", async () => {
+    // Це і є сценарій, який раніше губив зміну: перемкнув у метро → PATCH
+    // упав → вкладку закрито → на буті сервер віддає СТАРИЙ мішок.
+    installUnsyncedAdapter(true);
+    getPreferences.mockResolvedValue(serverPrefs({ calmMode: true }));
+    updatePreferences.mockResolvedValue(undefined);
+    const local = makeLocal({ calmMode: false });
+
+    await hydrateHubPrefs(local.read, local.write);
+
+    // Локальне не перезаписане…
+    expect(local.current()).toEqual({ calmMode: false });
+    // …і поїхало нагору, щоб сервер нарешті дізнався.
+    expect(updatePreferences).toHaveBeenCalledWith({
+      hubPrefs: { calmMode: false },
+    });
+  });
+
+  it("без мітки серверне виграє, як і раніше", async () => {
+    // Пін у зворотний бік: мітка не має ламати звичайний сценарій
+    // «новий пристрій».
+    installUnsyncedAdapter(false);
+    getPreferences.mockResolvedValue(serverPrefs({ calmMode: true }));
+    const local = makeLocal({ calmMode: false });
+
+    await hydrateHubPrefs(local.read, local.write);
+
     expect(local.current()).toEqual({ calmMode: true });
   });
 });

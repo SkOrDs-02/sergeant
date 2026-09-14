@@ -84,6 +84,23 @@ let pendingBag: HubPrefsBag | null = null;
 let flushing = false;
 
 /**
+ * Персистентна мітка «є незбережена зміна». Інʼєктується, а не імпортується
+ * напряму з `hubPrefs.ts`, щоб не замкнути імпорти в кільце: `hubPrefs.ts`
+ * уже імпортує `pushHubPrefs` звідси.
+ */
+let markUnsynced: (v: boolean) => void = () => {};
+let hasUnsynced: () => boolean = () => false;
+
+/** Підключити персистентність мітки. Кличе `hubPrefs.ts` один раз. */
+export function __setHubPrefsUnsyncedAdapter(adapter: {
+  mark: (v: boolean) => void;
+  has: () => boolean;
+}): void {
+  markUnsynced = adapter.mark;
+  hasUnsynced = adapter.has;
+}
+
+/**
  * Вмикає/вимикає вихідний канал. Кличе лише boot-хук.
  *
  * Увімкнення ще й ЗЛИВАЄ те, що накопичилось під час гідратації: тумблер,
@@ -104,6 +121,8 @@ async function flushHubPrefs(): Promise<void> {
       pendingBag = null;
       try {
         await meApi.updatePreferences({ hubPrefs: bag });
+        // Підтверджено сервером — мітка «є незбережене» більше не потрібна.
+        markUnsynced(false);
       } catch (err: unknown) {
         logger.warn("[hubPrefs] push failed", err);
         // Повертаємо мішок у чергу — але ЛИШЕ якщо новіший не приїхав,
@@ -132,6 +151,10 @@ async function flushHubPrefs(): Promise<void> {
 export function pushHubPrefs(bag: HubPrefsBag): void {
   prefsGeneration += 1;
   pendingBag = { ...bag };
+  // Мітка ставиться ДО спроби, не після невдачі: між локальним записом і
+  // відповіддю сервера вкладку можуть закрити, і тоді ніякий catch уже не
+  // виконається.
+  markUnsynced(true);
   if (!syncEnabled) return;
   void flushHubPrefs();
 }
@@ -142,6 +165,8 @@ export function __resetHubPrefsSyncForTests(): void {
   syncEnabled = true;
   pendingBag = null;
   flushing = false;
+  markUnsynced = () => {};
+  hasUnsynced = () => false;
 }
 
 /**
@@ -187,6 +212,24 @@ export async function hydrateHubPrefs(
   if (!isStillCurrent()) return;
 
   const local = readLocal();
+
+  // **Незбережена зміна з ПОПЕРЕДНЬОЇ сесії виграє** — третя знахідка
+  // рев'ю на #1195, і без неї попередні дві лікували лише половину.
+  //
+  // Черга відправки живе в памʼяті модуля, тож перезавантаження її стирає.
+  // Сценарій: людина перемикає тумблер у метро → PATCH падає → вкладку
+  // закрито → на наступному буті сервер віддає СТАРИЙ (не-`null`) мішок і
+  // перезаписує ним свіжіше локальне значення. Зміна не просто не доїхала —
+  // вона зникла.
+  //
+  // Мітка `hub_prefs_unsynced_v1` переживає перезавантаження, і поки вона
+  // стоїть, локальне трактується як новіше за наміром. Це не порушує LWW,
+  // а виконує його: локальна зміна СТАЛАСЯ пізніше за те, що лежить на
+  // сервері.
+  if (hasUnsynced()) {
+    if (Object.keys(local).length > 0) pushHubPrefs(local);
+    return;
+  }
 
   if (prefs.hubPrefs !== null && prefs.hubPrefs !== undefined) {
     const remote = prefs.hubPrefs;

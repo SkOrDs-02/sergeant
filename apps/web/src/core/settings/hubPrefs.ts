@@ -1,8 +1,17 @@
 import { useEffect, useState } from "react";
+import { z } from "zod";
 import { STORAGE_KEYS } from "@sergeant/shared";
-import { safeReadLSValidated, safeWriteLS } from "@shared/lib/storage/storage";
+import {
+  safeReadLSValidated,
+  safeWriteLS,
+  webKVStore,
+} from "@shared/lib/storage/storage";
 import { HubPrefsSchema, type HubPrefs } from "./hubPrefs.schema";
-import { pushHubPrefs, type HubPrefsBag } from "./hubPrefsSync";
+import {
+  pushHubPrefs,
+  __setHubPrefsUnsyncedAdapter,
+  type HubPrefsBag,
+} from "./hubPrefsSync";
 
 const HUB_PREFS_KEY = STORAGE_KEYS.HUB_PREFS;
 
@@ -36,6 +45,39 @@ export function toServerBag(prefs: HubPrefs): HubPrefsBag {
   }
   return out;
 }
+
+/**
+ * Мітка «локальні налаштування мають зміну, якої сервер ще не підтвердив».
+ *
+ * Черга відправки живе в памʼяті модуля й не переживає перезавантаження,
+ * тож без цієї мітки зміна, чий PATCH упав, зникала б: на наступному буті
+ * гідратація побачила б не-`null` СТАРИЙ серверний мішок і перезаписала
+ * ним свіжіше локальне значення (знахідка рев'ю на #1195).
+ */
+export function setHubPrefsUnsynced(unsynced: boolean): void {
+  if (unsynced) {
+    safeWriteLS(STORAGE_KEYS.HUB_PREFS_UNSYNCED, true);
+  } else {
+    webKVStore.remove(STORAGE_KEYS.HUB_PREFS_UNSYNCED);
+  }
+}
+
+/** Чи лишилась незбережена локальна зміна з попередньої сесії. */
+export function hasHubPrefsUnsynced(): boolean {
+  return safeReadLSValidated(
+    STORAGE_KEYS.HUB_PREFS_UNSYNCED,
+    z.boolean(),
+    false,
+  );
+}
+
+// Персистентність мітки підключається сюди, а не імпортується всередині
+// `hubPrefsSync.ts`: той модуль уже імпортується звідси, і прямий імпорт
+// назад замкнув би кільце.
+__setHubPrefsUnsyncedAdapter({
+  mark: setHubPrefsUnsynced,
+  has: hasHubPrefsUnsynced,
+});
 
 /** Читання локального мішка у серверній формі — для гідратації. */
 export function readHubPrefsBag(): HubPrefsBag {
