@@ -4,6 +4,7 @@ import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useStorage } from "./hooks/useStorage";
 import { readRaw } from "./lib/finykStorage";
+import { isDemoActive } from "../../core/onboarding/onboardingGate";
 import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { messages } from "@shared/i18n/uk";
@@ -18,6 +19,7 @@ import {
   SwipePages,
 } from "@shared/components/layout";
 import { NoBankBanner } from "./components/NoBankBanner";
+import { shouldShowNoBankBanner } from "./components/NoBankBanner.visibility";
 import { FinykManualExpenseConflictBanner } from "./components/FinykManualExpenseConflictBanner";
 import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
 import { Icon } from "@shared/components/ui/Icon";
@@ -238,7 +240,13 @@ export default function App({
     setShowLoginOverlay(false);
   }
 
-  const showNoBankBanner = !hasConnectedProvider && !manualOnly;
+  // Умова живе окремою чистою функцією поруч із самим банером — розбір
+  // чому саме там, і що означає `inDemo`, у її докстрінгу (PR-F5).
+  const showNoBankBanner = shouldShowNoBankBanner({
+    hasConnectedProvider,
+    manualOnly,
+    inDemo: isDemoActive(),
+  });
 
   // Page render helpers
   const renderPage = () => {

@@ -47,7 +47,10 @@
  * коректно читається без спеціальної гілки: колонка `day_anchor` — метадані
  * для майбутньої аналітики/міграції, а не вхід поточних агрегаторів.
  */
-import { dateKeyFromDate } from "@sergeant/routine-domain";
+import {
+  dateKeyFromDate,
+  type CompletionDayBounds,
+} from "@sergeant/routine-domain";
 
 /**
  * Значення для `routine_completion_events.day_anchor`. Словник колонки —
@@ -82,4 +85,17 @@ export function anchoredTodayDate(): Date {
 /** «Сьогодні» web-routine як `YYYY-MM-DD`. Анкер — `ROUTINE_DAY_ANCHOR`. */
 export function anchoredTodayKey(): string {
   return dateKeyFromDate(anchoredTodayDate());
+}
+
+/**
+ * Межа «сьогодні» для редюсерів відмітки (`CompletionDayBounds`).
+ *
+ * Існує як окрема назва, щоб жоден call-site не збирав обʼєкт руками — і
+ * не підставив туди київський день. Саме ця підміна й лежить в основі
+ * PR-R5: нагадування рутини рахують добу за Києвом, а відмітки — за
+ * пристроєм, тож `getKyivDayKey()` тут виглядав би доречним і був би
+ * хибним для будь-кого на захід від Києва.
+ */
+export function anchoredCompletionBounds(): CompletionDayBounds {
+  return { todayKey: anchoredTodayKey() };
 }

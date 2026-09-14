@@ -2,7 +2,6 @@ import {
   FINYK_ASSETS_KEY,
   FINYK_CUSTOM_CATS_KEY,
   FINYK_MANUAL_EXPENSES_KEY,
-  FINYK_MANUAL_ONLY_KEY,
   FINYK_MONTHLY_PLAN_KEY,
   FINYK_TX_CACHE_KEY,
   FINYK_TX_CACHE_LAST_GOOD_KEY,
@@ -14,7 +13,6 @@ import {
   shortId,
   toISO,
   writeJSON,
-  writeRaw,
 } from "./utils";
 
 export function seedFinyk(): void {
@@ -313,6 +311,17 @@ export function seedFinyk(): void {
     savings: "0",
   });
 
-  // Skip the Monobank-login gate so Finyk renders its full UI.
-  writeRaw(FINYK_MANUAL_ONLY_KEY, "1");
+  // PR-F5 (рішення власника 2026-09-14): демо БІЛЬШЕ не пише
+  // `FINYK_MANUAL_ONLY_KEY`.
+  //
+  // Прапорець персистентний і скидання не має ніде — `disableFinykManualOnly`
+  // не існує. Тож демо назавжди глушило банер «підключити банк» людині, яка
+  // кнопку «Без банку продовжити» ніколи не тиснула: наслідок вибору без
+  // самого вибору.
+  //
+  // Коментар, що тут стояв («Skip the Monobank-login gate so Finyk renders
+  // its full UI»), був СТАЛЕ: логін-екран гейтиться на `showLoginOverlay`,
+  // який стартує з `false` і відкривається лише дією людини. Єдиний
+  // сьогоднішній наслідок прапорця — `showNoBankBanner` у `FinykApp`, і банер
+  // у демо тепер ховає власна демо-умова, а не запис у сховище.
 }

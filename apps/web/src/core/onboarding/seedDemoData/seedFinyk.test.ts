@@ -2,12 +2,12 @@
 /**
  * Tests for `seedFinyk` — the demo-data seeder that populates the Finyk
  * localStorage surface (tx cache, manual expenses, custom cats, monthly
- * plan, manual-only flag) so the dashboard renders with realistic numbers.
+ * plan) so the dashboard renders with realistic numbers.
  *
  * Asserts on the persisted blobs via the real `@shared/storage` wrapper
  * (jsdom localStorage), verifying shape + invariants rather than exact
  * fixture values: signed-kopeck amounts, income/expense split, snapshot
- * mirror, and the manual-only gate.
+ * mirror. Окремо пінить, що manual-only прапорець сідер НЕ пише (PR-F5).
  */
 import { describe, it, expect, beforeEach } from "vitest";
 import { safeReadLS, safeReadStringLS } from "@shared/lib/storage/storage";
@@ -109,9 +109,16 @@ describe("seedFinyk", () => {
     expect(typeof plan["savings"]).toBe("string");
   });
 
-  it("sets the manual-only gate so Finyk skips the Monobank-login wall", () => {
+  // PR-F5 (рішення власника 2026-09-14). Цей тест раніше стверджував
+  // протилежне — що сідер прапорець СТАВИТЬ, «щоб Фінік пропустив
+  // логін-стіну». Обидві половини були хибні: логін-екран гейтиться на
+  // `showLoginOverlay` (стартує з `false`, відкривається лише дією), а
+  // прапорець персистентний і скидання не має, тож демо глушило банер
+  // «підключити банк» НАЗАВЖДИ — і після виходу з демо теж, якщо людина не
+  // вийшла тим шляхом, що чистить `SEEDED_KEYS`.
+  it("НЕ пише manual-only: демо не робить за людину вибору «без банку»", () => {
     seedFinyk();
-    expect(safeReadStringLS(FINYK_MANUAL_ONLY_KEY)).toBe("1");
+    expect(safeReadStringLS(FINYK_MANUAL_ONLY_KEY)).toBeNull();
   });
 
   // PR-F9 (design-audit 2026-09-13): the seeded bank rows above are

@@ -296,6 +296,12 @@ export function useRoutineDerivedData({
   const canBulkMark = useMemo(() => {
     if (range.startKey !== range.endKey) return false;
     const dk = range.startKey;
+    // Майбутній день домен не позначає (PR-R3), тож без цього рядка кнопка
+    // «Відмітити всі» лишалась би на зрізі «Завтра» і не робила б НІЧОГО —
+    // рівно та мертва кнопка, яку цей же аудит ловив у Фініку (PR-F1).
+    // `todayKey` тут — device-local (`anchoredTodayKey`), той самий ключ,
+    // яким домен рахує межу.
+    if (dk > todayKey) return false;
     for (const h of routine.habits) {
       if (h.archived) continue;
       const completionsForHabit = routine.completions[h.id] || [];
@@ -311,7 +317,13 @@ export function useRoutineDerivedData({
       return true;
     }
     return false;
-  }, [range.startKey, range.endKey, routine.habits, routine.completions]);
+  }, [
+    range.startKey,
+    range.endKey,
+    routine.habits,
+    routine.completions,
+    todayKey,
+  ]);
 
   const activeHabitsCount = routine.habits.filter((h) => !h.archived).length;
   const hasNoHabits = activeHabitsCount === 0;

@@ -24,6 +24,8 @@ import {
   applyCreateHabit,
   applyDeleteHabit,
   applyMarkAllScheduledHabitsComplete,
+  dateKeyFromDate,
+  type CompletionDayBounds,
   applyMoveHabitInOrder,
   applyRestoreHabit,
   applySetCompletionNote,
@@ -236,6 +238,20 @@ export interface UseRoutineStoreReturn {
  * `saveRoutineState` for write-through reactivity) instead of the
  * MMKV `addOnValueChangedListener` that backed the legacy LS read.
  */
+
+/**
+ * Межа «сьогодні» для редюсерів відмітки, дзеркально до вебового
+ * `anchoredCompletionBounds()` (`web/modules/routine/lib/dayAnchor.ts`).
+ *
+ * ADR-0078: день-ключ відмітки визначає годинник ПРИСТРОЮ, а на мобілці
+ * пристрій — це і є `new Date()`. Окрема назва існує з тієї ж причини, що
+ * й у вебі: щоб call-site не збирав обʼєкт руками й не підставив туди
+ * київський день.
+ */
+function deviceCompletionBounds(): CompletionDayBounds {
+  return { todayKey: dateKeyFromDate(new Date()) };
+}
+
 export function useRoutineStore(): UseRoutineStoreReturn {
   const [routine, setRoutineState] = useState<RoutineState>(loadRoutineState);
 
@@ -260,7 +276,12 @@ export function useRoutineStore(): UseRoutineStoreReturn {
 
   const toggleHabit = useCallback((habitId: string, dateKey: string) => {
     setRoutineState((prev) => {
-      const next = applyToggleHabitCompletion(prev, habitId, dateKey);
+      const next = applyToggleHabitCompletion(
+        prev,
+        habitId,
+        dateKey,
+        deviceCompletionBounds(),
+      );
       if (next === prev) return prev;
       saveRoutineState(next);
       return next;
@@ -269,7 +290,11 @@ export function useRoutineStore(): UseRoutineStoreReturn {
 
   const bulkMarkDay = useCallback((dateKey: string) => {
     setRoutineState((prev) => {
-      const next = applyMarkAllScheduledHabitsComplete(prev, dateKey);
+      const next = applyMarkAllScheduledHabitsComplete(
+        prev,
+        dateKey,
+        deviceCompletionBounds(),
+      );
       if (next === prev) return prev;
       saveRoutineState(next);
       return next;

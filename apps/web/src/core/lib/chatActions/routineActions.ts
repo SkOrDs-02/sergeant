@@ -2,6 +2,11 @@ import {
   loadRoutineState,
   saveRoutineState,
 } from "../../../modules/routine/lib/routineStorage";
+// ADR-0078: межа доби відмітки — годинник ПРИСТРОЮ. У цьому ж файлі поруч
+// живе `getKyivDayKey` (він доречний для звітних періодів), тож підставити
+// його сюди було б природно і хибно — для користувача на захід від Києва
+// «завтра» настало б на добу раніше, ніж у нього на екрані.
+import { anchoredCompletionBounds } from "../../../modules/routine/lib/dayAnchor";
 import { persistRoutineState } from "./routinePersistence";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import {
@@ -80,6 +85,7 @@ export function handleRoutineAction(
         routineState,
         habitId,
         targetDate,
+        anchoredCompletionBounds(),
       );
       if (nextState === routineState) {
         return `Звичку "${habitLabel}" не заплановано на ${targetDate}, тому не відмічаю.`;
@@ -93,7 +99,12 @@ export function handleRoutineAction(
           // Toggle назад знімає саме цю відмітку (idempotent: якщо стан
           // тим часом змінили ще раз, `applyToggleHabitCompletion` все одно
           // діє коректно на актуальному знімку).
-          const reverted = applyToggleHabitCompletion(cur, habitId, targetDate);
+          const reverted = applyToggleHabitCompletion(
+            cur,
+            habitId,
+            targetDate,
+            anchoredCompletionBounds(),
+          );
           const restored = previousSkip
             ? applySetHabitSkip(
                 reverted,
@@ -259,7 +270,12 @@ export function handleRoutineAction(
         // LOG-2 — той самий домен-редʼюсер, що й `mark_habit_done`: не
         // пише незаплановий день, знімає «не зміг» на цю дату (канон §5).
         const previousSkip = state.skips?.[id]?.[d];
-        const nextState = applyToggleHabitCompletion(state, id, d);
+        const nextState = applyToggleHabitCompletion(
+          state,
+          id,
+          d,
+          anchoredCompletionBounds(),
+        );
         if (nextState === state) {
           return `Звичку "${habitLabel}" не заплановано на ${d}, тому не відмічаю.`;
         }
@@ -269,7 +285,12 @@ export function handleRoutineAction(
           confirm,
           undo: () => {
             const cur = loadRoutineState();
-            const reverted = applyToggleHabitCompletion(cur, id, d);
+            const reverted = applyToggleHabitCompletion(
+              cur,
+              id,
+              d,
+              anchoredCompletionBounds(),
+            );
             const restored = previousSkip
               ? applySetHabitSkip(
                   reverted,
@@ -287,14 +308,16 @@ export function handleRoutineAction(
       // розкладу (день уже позначено — самим фактом позначки він був
       // запланований, коли позначку ставили).
       const confirm = persistRoutineState(
-        applyToggleHabitCompletion(state, id, d),
+        applyToggleHabitCompletion(state, id, d, anchoredCompletionBounds()),
       );
       return {
         result,
         confirm,
         undo: () => {
           const cur = loadRoutineState();
-          saveRoutineState(applyToggleHabitCompletion(cur, id, d));
+          saveRoutineState(
+            applyToggleHabitCompletion(cur, id, d, anchoredCompletionBounds()),
+          );
         },
       };
     }
