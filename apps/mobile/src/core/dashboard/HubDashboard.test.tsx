@@ -99,13 +99,19 @@ jest.mock("./useWeeklyDigest", () => ({
   }),
 }));
 
+// Аргумент хука ЗАПИСУЄМО, а не ковтаємо: `enabled` тут вирішує, чи піде
+// запит у `api.coach.postInsight`, тобто чи спалиться денна AI-квота
+// Free-плану. Доти мок ігнорував аргумент, і саме тому дрейф `enabled:
+// signedIn` жив непоміченим (знахідка PR-A1).
+const mockUseCoachInsight = jest.fn((_options: { enabled: boolean }) => ({
+  insight: null,
+  loading: false,
+  error: null,
+  refresh: jest.fn(),
+}));
 jest.mock("./useCoachInsight", () => ({
-  useCoachInsight: () => ({
-    insight: null,
-    loading: false,
-    error: null,
-    refresh: jest.fn(),
-  }),
+  useCoachInsight: (options: { enabled: boolean }) =>
+    mockUseCoachInsight(options),
 }));
 
 jest.mock("../hints/useHints", () => ({
@@ -149,6 +155,7 @@ describe("HubDashboard one-hero rule", () => {
     mockUseRoutineSqliteReadBoot.mockReset();
     mockUseFizrukSqliteReadBoot.mockReset();
     mockUseNutritionSqliteReadBoot.mockReset();
+    mockUseCoachInsight.mockClear();
   });
 
   afterEach(() => {
@@ -195,6 +202,50 @@ describe("HubDashboard one-hero rule", () => {
     expect(queryByTestId("first-action-hero")).toBeNull();
     expect(queryByTestId("soft-auth-prompt")).toBeNull();
     expect(queryByTestId("today-focus-empty")).toBeNull();
+  });
+
+  // PR-A1: запит поради коуча йде в `api.coach.postInsight` і палить денну
+  // AI-квоту Free-плану. Текст рендериться ЛИШЕ в третій гілці hero
+  // (`TodayFocusCard`).
+  //
+  // Break-test (відкат компонента) уточнив, який саме кейс був дефектом, і
+  // це вужче, ніж здавалося: зі старим `enabled: signedIn` падає **лише
+  // FTUX-гілка** — залогінений користувач із незавершеним first-action
+  // платив квотою за текст, якого не бачив. Гілка soft-auth вимагає
+  // `!signedIn`, тож туди запит і так не йшов.
+  //
+  // Тест на soft-auth лишається СВІДОМО, але пінує інваріант на майбутнє,
+  // а не цей дефект: якщо колись умову гілки послаблять і вона стане
+  // досяжною для залогіненого, запит не має ожити мовчки.
+  const enabledArg = () => mockUseCoachInsight.mock.calls[0]?.[0]?.enabled;
+
+  it("PR-A1: does not request the coach insight while the FTUX hero is up", () => {
+    _getMMKVInstance().set(FIRST_ACTION_PENDING_KEY, "1");
+    mockUserData.data = { user: { name: "Test" } };
+
+    renderDashboard();
+
+    expect(mockUseCoachInsight).toHaveBeenCalled();
+    expect(enabledArg()).toBe(false);
+  });
+
+  it("PR-A1: does not request the coach insight behind the soft-auth hero", () => {
+    _getMMKVInstance().set(FIRST_REAL_ENTRY_KEY, "1");
+
+    renderDashboard();
+
+    expect(mockUseCoachInsight).toHaveBeenCalled();
+    expect(enabledArg()).toBe(false);
+  });
+
+  it("PR-A1: requests the coach insight only where the text can render", () => {
+    _getMMKVInstance().set(FIRST_REAL_ENTRY_KEY, "1");
+    mockUserData.data = { user: { name: "Test" } };
+
+    renderDashboard();
+
+    expect(mockUseCoachInsight).toHaveBeenCalled();
+    expect(enabledArg()).toBe(true);
   });
 
   it("respects a previous soft-auth dismissal", () => {
