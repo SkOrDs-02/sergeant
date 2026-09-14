@@ -214,6 +214,16 @@ function AuthenticatedMigrationGate({
   const [failureKind, setFailureKind] = useState<"offline" | "generic">(
     "generic",
   );
+  /**
+   * Технічний код збою — прямо на екрані, дрібним.
+   *
+   * AI-CONTEXT: звіт власника 2026-09-13 прийшов трьома скріншотами ОДНОГО
+   * й того самого тексту. Sentry тут не заміна: людина фотографує екран і
+   * шле фото, а не лізе в дашборд, тож діагноз має бути в кадрі. Сюди йде
+   * лише крок і назва таблиці (див. `AnonymousMigrationStepError`) — ані
+   * вмісту рядків, ані ідентифікаторів користувача.
+   */
+  const [failureCode, setFailureCode] = useState<string | null>(null);
   const [deferred, setDeferred] = useState(() => readDeferred(userId));
   const [transferring, setTransferring] = useState(false);
   const [probeGraceElapsed, setProbeGraceElapsed] = useState(false);
@@ -245,6 +255,11 @@ function AuthenticatedMigrationGate({
           online,
         );
         setFailureKind(verdict.report ? "generic" : "offline");
+        setFailureCode(
+          error instanceof Error && error.message.startsWith("anon-migration/")
+            ? error.message.slice(0, 160)
+            : null,
+        );
         if (verdict.report) {
           captureException(error, { extra: verdict.context });
         }
@@ -275,6 +290,7 @@ function AuthenticatedMigrationGate({
   const retry = useCallback(() => {
     setState("running");
     setFailureKind("generic");
+    setFailureCode(null);
     kickoff();
   }, [kickoff]);
 
@@ -328,6 +344,11 @@ function AuthenticatedMigrationGate({
                     ? messages.sync.anonymousMigrationFailureOffline
                     : messages.sync.anonymousMigrationFailure}
                 </p>
+                {failureCode !== null && (
+                  <p className="mb-5 break-all text-style-caption text-muted">
+                    {failureCode}
+                  </p>
+                )}
                 <div className="flex flex-col gap-2">
                   <Button onClick={retry}>
                     {messages.sync.anonymousMigrationRetry}
