@@ -174,4 +174,44 @@ describe("useHubPrefsSync — повтор після невдалої гідр�
       vi.useRealTimers();
     }
   });
+
+  it("новий акаунт отримує власний бюджет повторів", async () => {
+    // Знахідка рев'ю: скидання лічильника стояло лише в гілці `!userId`,
+    // тож прямий перехід A → B **без проміжного рендера гостя** віддавав
+    // B успадкований лічильник A. Якщо A свій уже вичерпав — B не
+    // отримував жодного повтору, і теж мовчки.
+    vi.useFakeTimers();
+    try {
+      hydrateHubPrefs.mockRejectedValue(new Error("offline"));
+      const { rerender } = render(<Probe />);
+
+      await act(async () => {});
+      for (const delay of [2_000, 8_000, 30_000]) {
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(delay);
+        });
+      }
+      // A вичерпав свій бюджет повністю.
+      expect(hydrateHubPrefs).toHaveBeenCalledTimes(4);
+
+      // Перехід одразу на іншого користувача, без гостя між ними.
+      authUser = { id: "user-b" };
+      hydrateHubPrefs.mockClear();
+      await act(async () => {
+        rerender(<Probe />);
+      });
+
+      await act(async () => {});
+      expect(hydrateHubPrefs).toHaveBeenCalledTimes(1);
+      for (const delay of [2_000, 8_000, 30_000]) {
+        await act(async () => {
+          await vi.advanceTimersByTimeAsync(delay);
+        });
+      }
+      // Свій бюджет, не залишок від A.
+      expect(hydrateHubPrefs).toHaveBeenCalledTimes(4);
+    } finally {
+      vi.useRealTimers();
+    }
+  });
 });

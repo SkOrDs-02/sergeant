@@ -56,6 +56,16 @@ export function useHubPrefsSync(): void {
    */
   const [attempt, setAttempt] = useState(0);
   const retryCountRef = useRef(0);
+  /**
+   * Кому саме належить лічильник спроб вище.
+   *
+   * Без нього бюджет повторів протікав між акаунтами: скидання стояло
+   * лише в гілці `!userId`, тож прямий перехід A → B **без проміжного
+   * рендера гостя** (оновлення сесії, що віддало іншого користувача)
+   * давав B успадкований лічильник A — а якщо A свій уже вичерпав, то
+   * жодного повтору. Знахідка рев'ю CodeRabbit на #1195.
+   */
+  const retryUserRef = useRef<string | null>(null);
   const retryTimerRef = useRef<number | null>(null);
 
   useEffect(() => {
@@ -65,12 +75,24 @@ export function useHubPrefsSync(): void {
     // бачить уже новий id і мовчки виходить.
     currentUserRef.current = userId;
 
+    // Бюджет повторів належить КОНКРЕТНОМУ акаунту, тож скидається на
+    // будь-якій зміні `userId` — і на виході в гості, і на прямому
+    // переході A → B.
+    //
+    // AI-DANGER: скидати його нижче, у гілці «свіжа гідратація», НЕ
+    // можна — туди ж заходить і сам повтор (`.catch` знімає
+    // `hydratedForUserRef`), і лічильник обнулявся б щоразу, тобто
+    // стеля перетворилась би на нескінченний ретрай.
+    if (retryUserRef.current !== userId) {
+      retryUserRef.current = userId;
+      retryCountRef.current = 0;
+    }
+
     if (!userId) {
       // Вийшли з акаунта — скидаємо guard, щоб НАСТУПНИЙ вхід (можливо
       // іншим акаунтом на спільному пристрої) гідратувався заново, а не
       // лишався з налаштуваннями попереднього користувача.
       hydratedForUserRef.current = null;
-      retryCountRef.current = 0;
       setHubPrefsSyncEnabled(false);
       return;
     }
