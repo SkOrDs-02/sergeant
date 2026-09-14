@@ -61,6 +61,7 @@ import { useNutritionQuickStatsWriter } from "./hooks/useNutritionQuickStatsWrit
 import { buildRecipeCacheKey, readRecipeCache } from "./lib/recipeCache";
 import { fileToThumbnailBlob, saveMealThumbnail } from "./lib/mealPhotoStorage";
 import { useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
 import type { AccessDenial } from "@shared/lib/api/accessDenial";
 import { AccessDenialNotice } from "../../core/access/AccessDenialNotice";
 import { useNutritionFirstRun } from "./hooks/useNutritionFirstRun";
@@ -626,7 +627,16 @@ export default function NutritionApp({
                     dayPlanSavedAt={dayPlanSavedAt}
                     dayPlanLoadingSkeleton={dayPlanLoadingSkeleton}
                     fetchDayPlan={fetchDayPlan}
-                    addMealFromPlan={addMealFromPlan}
+                    addMealFromPlan={(meal) => {
+                      // Тост «Скасувати» живе тут, а не в дата-хуку — та сама
+                      // межа, що для «куди лягло» вище. Хук повертає, КУДИ
+                      // ліг запис, бо id він генерує сам (PR-N1).
+                      const { id, dateKey } = addMealFromPlan(meal);
+                      showUndoToast(toast, {
+                        msg: "Страву додано в журнал",
+                        onUndo: () => log.handleRemoveMeal(dateKey, id),
+                      });
+                    }}
                     weekPlan={weekPlan}
                     weekPlanRaw={weekPlanRaw}
                     weekPlanBusy={weekPlanBusy}
