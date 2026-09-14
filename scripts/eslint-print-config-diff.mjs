@@ -53,6 +53,18 @@ const SNAPSHOT_DIR = join(
  */
 export const FIXTURES = [
   { surface: "server", path: "apps/server/src/index.ts", cwd: "apps/server" },
+  // Друга точка на тій самій поверхні — і вона тут не для повноти.
+  // `index.ts` не бачить правил, заскоупованих на підтеку: гейт лишався б
+  // зеленим, якби хтось зняв блок `ukrainian-copy` для копійних тек сервера
+  // (`email/**`, `modules/telegram/**`, `routes/email-unsubscribe.ts`,
+  // додано 2026-09-14). Тобто снапшот-гейт на одному файлі з воркспейсу
+  // мовчить саме про ті правила, які вмикають вибірково. Додаєш скоуповане
+  // правило — додавай сюди файл із його скоупу.
+  {
+    surface: "server-copy",
+    path: "apps/server/src/email/ftuxDripCopy.ts",
+    cwd: "apps/server",
+  },
   { surface: "web", path: "apps/web/src/main.tsx", cwd: "apps/web" },
   {
     surface: "mobile",
