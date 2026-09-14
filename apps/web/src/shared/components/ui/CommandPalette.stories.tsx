@@ -72,7 +72,7 @@ const DEMO_COMMANDS: PaletteCommand[] = [
     title: "Налаштування експорту",
     group: "Налаштування",
     disabled: true,
-    description: "Доступно після підписки Pro",
+    description: "Доступно після підписки Premium",
     run: () => console.log("[story] export"),
   },
 ];

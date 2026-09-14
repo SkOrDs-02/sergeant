@@ -47,10 +47,10 @@ export function accessDenialCopy(denial: AccessDenial): AccessDenialCopy {
       };
     case "plan-required":
       return {
-        title: "Ця дія входить у Pro",
-        body: "На безкоштовному тарифі вона недоступна. Подивись, що ще дає Pro, і вирішуй без поспіху.",
+        title: "Ця дія входить у Premium",
+        body: "На безкоштовному тарифі вона недоступна. Подивись, що ще дає Premium, і вирішуй без поспіху.",
         actionLabel: "Подивитись тарифи",
-        short: "Ця дія входить у Pro.",
+        short: "Ця дія входить у Premium.",
       };
     case "quota-exhausted":
       return denial.preset

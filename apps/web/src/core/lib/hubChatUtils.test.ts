@@ -299,11 +299,19 @@ describe("message helpers", () => {
 });
 
 describe("normalizeStoredMessages", () => {
-  it("returns greeting for empty input", () => {
-    const msgs = normalizeStoredMessages(null);
-    expect(msgs).toHaveLength(1);
-    expect(msgs[0]!.role).toBe("assistant");
-    expect(msgs[0]!.text).toContain("Привіт");
+  // PR-A7 regression guard (audit `2026-09-13-product-full-review.md`):
+  // substituting a greeting for an empty/missing input made
+  // `messages.length === 0` unreachable everywhere this function is
+  // called (`createInitialSession`, `parseSessionsBlob`, cold-boot in
+  // `useChatSessions`), so `<ChatEmpty>` never rendered. Do NOT reinstate
+  // a synthesized message here.
+  it("does not synthesize a greeting for missing input — ChatEmpty must stay reachable", () => {
+    expect(normalizeStoredMessages(null)).toEqual([]);
+    expect(normalizeStoredMessages(undefined)).toEqual([]);
+  });
+
+  it("does not synthesize a greeting for an empty stored array", () => {
+    expect(normalizeStoredMessages([])).toEqual([]);
   });
   it("normalizes stored messages and synthesizes ids", () => {
     const msgs = normalizeStoredMessages([

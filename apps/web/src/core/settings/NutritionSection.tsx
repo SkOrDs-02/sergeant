@@ -1,17 +1,12 @@
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
-import { Select } from "@shared/components/ui/Select";
 import {
   defaultNutritionPrefs,
-  loadActivePantryId,
   loadNutritionPrefs,
-  loadPantries,
   persistNutritionPrefs,
-  persistPantries,
   type NutritionPrefs,
-  type Pantry,
 } from "../../modules/nutrition/lib/nutritionStorage";
 import {
   SettingsGroup,
@@ -103,18 +98,6 @@ export function NutritionSection() {
     persistAndCaptureErr(loadNutritionPrefs()),
   );
 
-  // Pantry picker state (stored separately from prefs, in
-  // NUTRITION_PANTRIES_KEY / NUTRITION_ACTIVE_PANTRY_KEY).
-  const [pantries, setPantries] = useState<Pantry[]>(() => loadPantries());
-  const [activePantryId, setActivePantryId] = useState<string>(() =>
-    loadActivePantryId(),
-  );
-
-  const activePantry = useMemo(
-    () => pantries.find((p) => p.id === activePantryId) || pantries[0] || null,
-    [pantries, activePantryId],
-  );
-
   // Persist on every change and update the error banner. Called from event
   // handlers (not effects) so setState is safe without the microtask deferral.
   const patchPrefs = useCallback(
@@ -126,14 +109,6 @@ export function NutritionSection() {
     [prefs],
   );
 
-  const handleSetActivePantry = useCallback(
-    (id: string) => {
-      setActivePantryId(id);
-      persistPantries(undefined, undefined, pantries, id);
-    },
-    [pantries],
-  );
-
   const navigate = useNavigate();
 
   const openPantryManager = useCallback(() => {
@@ -142,10 +117,6 @@ export function NutritionSection() {
     // the settings page we send the user to the Nutrition → Комора tab;
     // they can tap «Керування» once there.
     navigate("/nutrition/pantry");
-    // Best-effort reload of freshly persisted pantry list so the UI
-    // reflects any rename/add the user does through the manager.
-    setPantries(loadPantries());
-    setActivePantryId(loadActivePantryId());
   }, [navigate]);
 
   return (
@@ -192,34 +163,8 @@ export function NutritionSection() {
       <SettingsSubGroup title="Підстановка з комори">
         <p className="text-style-body text-subtle leading-snug">
           У діалозі «Додати прийом їжі» поряд з пошуком і штрихкодом показуються
-          продукти з активної комори, їх можна вибрати одним тапом.
+          продукти з усіх комор, їх можна вибрати одним тапом.
         </p>
-        <label className="flex items-center gap-3 min-h-[44px]">
-          <span className="text-style-label text-text flex-1 min-w-0">
-            Активна комора
-          </span>
-          {/* Shared Select (default variant = той самий brand-focus, що й
-              колишній `input-focus`); геометрію сайту збережено через
-              className (last-wins у cn): h-10, лівий відступ 10px,
-              min-w-[140px], rounded-xl. pr лишаємо від size="sm" (pr-9) —
-              місце під декоративну каретку, як раніше під нативну стрілку. */}
-          <Select
-            size="sm"
-            className="h-10 pl-2.5 min-w-[140px]"
-            value={activePantry?.id || ""}
-            onChange={(e) => handleSetActivePantry(e.target.value)}
-          >
-            {pantries.length === 0 && <option value="">Немає комор</option>}
-            {pantries.map((p) => (
-              <option key={p.id} value={p.id}>
-                {p.name || "Без назви"}
-                {Array.isArray(p.items) && p.items.length > 0
-                  ? ` · ${p.items.length}`
-                  : ""}
-              </option>
-            ))}
-          </Select>
-        </label>
         <p className="text-style-body text-subtle">
           Деталі продуктів і перейменування комор – у менеджері комори всередині
           модуля Їжі.
