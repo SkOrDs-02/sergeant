@@ -158,6 +158,44 @@ describe("create_habit", () => {
     expect(out).toMatch(/id:/);
   });
 
+  // Знахідка PR-R9: домен має ШІСТЬ розкладів, цей тул уміє пʼять. Доти
+  // шостий (`flexible`, «N разів на тиждень») мовчки падав у `daily`, і
+  // відповідь рапортувала успіх — людина просила три рази на тиждень і
+  // отримувала щоденну звичку без жодного слова про це.
+  it("PR-R9: says out loud when the asked-for recurrence was not applied", () => {
+    const out = call({
+      name: "create_habit",
+      input: { name: "Басейн", recurrence: "flexible" },
+    });
+    expect(typeof out).toBe("string");
+    // Фолбек лишається (звичка таки створюється), але вже НЕ мовчазний.
+    expect(out).toContain("щодня");
+    expect(out).toContain("«flexible»");
+    expect(out).toContain("Рутина");
+  });
+
+  it("PR-R9: stays silent when the recurrence was applied", () => {
+    const out = call({
+      name: "create_habit",
+      input: { name: "Читання", recurrence: "weekdays" },
+    });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("по буднях");
+    expect(out).not.toContain("не ставлю");
+  });
+
+  // `once` у цьому тулі ПРИЙМАЄТЬСЯ (на відміну від `edit_habit`) — пін
+  // тримає цю асиметрію видимою, бо опис тулзи доти казав інше.
+  it("PR-R9: accepts 'once' on create", () => {
+    const out = call({
+      name: "create_habit",
+      input: { name: "Візит", recurrence: "once" },
+    });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("разово");
+    expect(out).not.toContain("не ставлю");
+  });
+
   // audit routine E-5: weekdays — Mon-first 0..6 (ISO 8601). Executor —
   // чистий passthrough; anchor задає опис тулзи в
   // `apps/server/src/modules/chat/toolDefs/routine.ts`. Межовий день
@@ -412,6 +450,33 @@ describe("edit_habit", () => {
     });
     expect(typeof out).toBe("string");
     expect(out).toContain("Немає");
+  });
+
+  // Знахідка PR-R9, друга половина. Тут фолбеку не було взагалі: прохання
+  // просто зникало. Перевіряються ОБИДВА шляхи — коли розклад був єдиною
+  // зміною (інакше відповідь «Немає змін» не пояснювала причини) і коли
+  // поруч ішла інша зміна (тоді успіх рапортувався, а прохання гинуло).
+  it("PR-R9: explains an unsupported recurrence when it was the only ask", () => {
+    seedHabit("h1", "Басейн");
+    const out = call({
+      name: "edit_habit",
+      input: { habit_id: "h1", recurrence: "flexible" },
+    });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("Немає змін");
+    expect(out).toContain("«flexible»");
+  });
+
+  it("PR-R9: explains an unsupported recurrence alongside a change that did apply", () => {
+    seedHabit("h1", "Старе");
+    const out = call({
+      name: "edit_habit",
+      input: { habit_id: "h1", name: "Нове", recurrence: "flexible" },
+    });
+    expect(typeof out).toBe("string");
+    expect(out).toContain("оновлено");
+    expect(out).toContain("назва");
+    expect(out).toContain("«flexible»");
   });
 
   it("shape: result is a non-empty string", () => {

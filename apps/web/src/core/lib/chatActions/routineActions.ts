@@ -126,6 +126,15 @@ export function handleRoutineAction(
       ]);
       const rec =
         recurrence && allowedRec.has(recurrence) ? recurrence : "daily";
+      // Мовчазний фолбек на "daily" був брехнею в бік успіху: на прохання
+      // «тричі на тиждень» (`flexible` — шосте значення енума, яке цей тул
+      // не вміє) звичка створювалась ЩОДЕННОЮ, а відповідь рапортувала
+      // успіх. Домен має шість розкладів, тул — пʼять; різницю треба
+      // називати вголос, а не ховати (знахідка PR-R9 огляду 2026-09-13).
+      const recNote =
+        recurrence && !allowedRec.has(recurrence)
+          ? ` Розклад «${recurrence}» через чат не ставлю, тож звичка поки щоденна. Постав гнучкий розклад у модулі «Рутина».`
+          : "";
       // Mon-first 0..6 — passthrough без remap; anchor задає опис `weekdays`
       // у `apps/server/src/modules/chat/toolDefs/routine.ts` (audit E-5).
       const wdays = Array.isArray(weekdays)
@@ -157,7 +166,7 @@ export function handleRoutineAction(
         monthly: "щомісяця",
         once: "разово",
       };
-      const result = `Звичку "${trimmed}" створено (${recLabelMap[rec] || rec}, id:${createdId || "?"})`;
+      const result = `Звичку "${trimmed}" створено (${recLabelMap[rec] || rec}, id:${createdId || "?"})${recNote}`;
       if (!createdId) return { result, confirm };
       // Undo тримає id (а не повний snapshot), щоб не переписувати
       // інші зміни, які можуть статися між створенням і undo
@@ -378,11 +387,24 @@ export function handleRoutineAction(
         updated.emoji = nextGlyph;
         changes.push(`іконка → ${nextGlyph}`);
       }
+      // Тут фолбеку не було взагалі: непідтриманий розклад просто не
+      // потрапляв у `changes`, тож прохання зникало безслідно — а якщо
+      // поруч ішла інша зміна, відповідь ще й рапортувала успіх. Нотатка
+      // йде ОКРЕМО від `changes`, щоб не вмикати запис там, де насправді
+      // нічого не змінилось.
+      //
+      // AI-CONTEXT: набір тут ВУЖЧИЙ, ніж у `create_habit` вище — там є ще
+      // `once`. Асиметрія навмисно не вирівнюється цією правкою: додати
+      // `once` в редагування означає лишити звичку без дати, а це вже
+      // зміна поведінки, не чесності.
+      let recNote = "";
       if (recurrence) {
         const allowedRec = new Set(["daily", "weekdays", "weekly", "monthly"]);
         if (allowedRec.has(recurrence)) {
           updated.recurrence = recurrence;
           changes.push(`розклад → ${recurrence}`);
+        } else {
+          recNote = ` Розклад «${recurrence}» через чат не ставлю. Зміни його в модулі «Рутина».`;
         }
       }
       // Mon-first 0..6 — passthrough без remap (див. create_habit вище).
@@ -392,11 +414,11 @@ export function handleRoutineAction(
         );
         changes.push(`дні → [${updated.weekdays.join(",")}]`);
       }
-      if (changes.length === 0) return "Немає змін для оновлення.";
+      if (changes.length === 0) return `Немає змін для оновлення.${recNote}`;
       habits[hIdx] = updated;
       const confirm = persistRoutineState({ ...state, habits });
       return {
-        result: `Звичку "${updated.name || id}" оновлено: ${changes.join(", ")}`,
+        result: `Звичку "${updated.name || id}" оновлено: ${changes.join(", ")}.${recNote}`,
         confirm,
       };
     }
