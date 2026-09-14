@@ -63,7 +63,12 @@ export function handleRoutineAction(
       if (!habit) {
         return `Не знайшов звичку "${habitId || String(rawHabitId ?? "")}", перевір список звичок.`;
       }
-      const targetDate = habitDate || getKyivDayKey();
+      // Дефолт беремо з ТІЄЇ САМОЇ межі, якою редюсер відсікає майбутнє,
+      // тож неявна ціль не може бути ним відхилена за побудовою. Доти тут
+      // стояв `getKyivDayKey()` — після появи межі (PR-R3) він став
+      // регресією: на захід від Києва ввечері київська доба вже наступна,
+      // ціль ставала «майбутньою», і чат відмовляв. Пін — тест «біля межі».
+      const targetDate = habitDate || anchoredCompletionBounds().todayKey;
       const habitLabel = habit.name || habitId;
       const prevArr = Array.isArray(routineState.completions[habitId])
         ? routineState.completions[habitId]
