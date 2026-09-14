@@ -1,5 +1,5 @@
 /** @vitest-environment jsdom */
-import type { ReactNode } from "react";
+import { useState, type ReactNode } from "react";
 import { afterEach, describe, expect, it, vi } from "vitest";
 import {
   cleanup,
@@ -194,6 +194,8 @@ function props(
 ): HubInsightsBlockProps {
   return {
     insightsDefaultOpen: true,
+    insightsOpen: true,
+    onInsightsOpenChange: vi.fn(),
     coachLoading: false,
     coachError: null,
     coachInsightText: "coach insight",
@@ -293,7 +295,25 @@ describe("HubInsightsBlock", () => {
   });
 
   it("віддає вниз згортання секції — картка дізнається, що її не видно", () => {
-    render(<HubInsightsBlock {...props({ insightsDefaultOpen: true })} />);
+    // Стан розгорнутості піднято в `HubDashboard` (PR-A1: та сама
+    // відповідь потрібна батьківському хуку, щоб не палити AI-квоту на
+    // пораду під закритим акордеоном). Тож компонент тепер КЕРОВАНИЙ, і
+    // тест мусить тримати стан замість нього — інакше він перевіряв би
+    // мок, а не проводку.
+    function ControlledHost() {
+      const [open, setOpen] = useState(true);
+      return (
+        <HubInsightsBlock
+          {...props({
+            insightsDefaultOpen: true,
+            insightsOpen: open,
+            onInsightsOpenChange: setOpen,
+          })}
+        />
+      );
+    }
+
+    render(<ControlledHost />);
 
     fireEvent.click(screen.getByText("toggle section"));
 
