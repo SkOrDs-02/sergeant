@@ -70,6 +70,11 @@ export function deriveSessionTitle(
   return `Бесіда ${getKyivShortDateStamp(createdAt)}`;
 }
 
+// A brand-new session (`createSession()` with no args) gets `msgs: []`
+// from `normalizeStoredMessages(null)` — PR-A7: no synthesized greeting,
+// so `HubChatBody` renders `<ChatEmpty>` instead. Do not special-case an
+// empty result here to re-add one; see the AI-DANGER note in
+// `normalizeStoredMessages`.
 function createInitialSession(messages?: ChatMessage[]): HubChatSession {
   const now = Date.now();
   const msgs = normalizeStoredMessages(messages ?? null);

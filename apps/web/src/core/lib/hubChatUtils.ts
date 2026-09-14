@@ -313,14 +313,26 @@ export function makeUserMsg(text: string): ChatMessage {
   return { id: newMsgId(), role: "user", text };
 }
 
+/**
+ * PR-A7 (аудит `2026-09-13-product-full-review.md`): раніше порожній чи
+ * відсутній `raw` замінювався на одноелементний масив із привітальною
+ * реплікою. Це робило `messages.length === 0` НЕДОСЯЖНИМ за побудовою —
+ * кожна нова сесія (`createInitialSession`), кожне відновлення після
+ * пошкодженого сховища (`parseSessionsBlob`) і кожен «холодний» boot
+ * (`useChatSessions`) проходили через цю функцію, тож `<ChatEmpty>` (4
+ * модуль-залежні suggestion-и — `uk.core.ts` `chatEmptySuggestion*`) не
+ * рендерився НІКОЛИ. Тепер порожній вхід лишається порожнім масивом:
+ * порожній стан рендерить `<ChatEmpty>` замість прози-привітання —
+ * розкриття «це AI» (`chatEmptyAiDisclosure`) уже не залежить від цієї
+ * умови (воно безумовне в `HubChatBody`), тож EU AI Act ст. 50(1)
+ * лишається виконаним і для порожньої стрічки.
+ *
+ * AI-DANGER: не повертай сюди дефолтне assistant-повідомлення для
+ * порожнього/відсутнього `raw` — це саме той регрес, від якого захищає
+ * `hubChatUtils.test.ts` («does NOT synthesize a greeting…»).
+ */
 export function normalizeStoredMessages(raw: unknown): ChatMessage[] {
-  if (!Array.isArray(raw) || raw.length === 0) {
-    return [
-      makeAssistantMsg(
-        "Привіт! Я твій особистий асистент. Запитуй про фінанси (Фінік), тренування (Фізрук), звички (Рутина) або харчування. Можу також змінювати категорії, додавати борги, відмічати звички та записувати прийоми їжі.",
-      ),
-    ];
-  }
+  if (!Array.isArray(raw)) return [];
   return raw.map((m: Partial<ChatMessage> & Record<string, unknown>, i) => ({
     role: "assistant" as ChatRole,
     text: "",
