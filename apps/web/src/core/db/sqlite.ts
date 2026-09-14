@@ -358,12 +358,39 @@ async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
   if (!getFlag(SQLITE_WORKER_FLAG)) return null;
   try {
     const { openSqliteInWorker } = await import("./sqliteWorkerClient.js");
+    const handoff = await import("./kvvfsHandoff.js");
     const dbName = `sergeant-${userKey}.db`;
+    // Стадія 2: перелиття старої бази. Байти читаються ЛИШЕ доки немає
+    // позначки — після переїзду цей шлях більше не виконується і важкий
+    // модуль на головний потік не потрапляє.
+    const needsHandoff = !handoff.isHandoffDone(userKey);
+    const importBytes = needsHandoff
+      ? await handoff.readKvvfsSnapshotBytes()
+      : null;
     const conn = await openSqliteInWorker(dbName, {
       directory: SAH_POOL_DIRECTORY,
       initialCapacity: SAH_POOL_INITIAL_CAPACITY,
       minFreeSlots: SAH_POOL_MIN_FREE_SLOTS,
+      importBytes,
     });
+    if (needsHandoff) {
+      // Підчищаємо ЗАВЖДИ, а не лише після свіжого імпорту: попередня
+      // спроба могла впасти саме між імпортом і підчищанням, і тоді файл
+      // уже існує, але містить чужі партиції. На чистій базі це no-op.
+      const prunedTables = await handoff.pruneForeignPartitionRows(
+        conn,
+        activeUserId,
+      );
+      // Позначка ставиться ОСТАННЬОЮ. Доки її немає, перелиття вважається
+      // таким, що не відбулось, і наступний запуск доробить його.
+      handoff.markHandoffDone(userKey);
+      addSentryBreadcrumb({
+        category: "storage",
+        level: "info",
+        message: "sqlite: kvvfs handoff completed",
+        data: { imported: conn.imported, prunedTables },
+      });
+    }
     lastWorkerDiagnostics = await conn.diagnostics();
     addSentryBreadcrumb({
       category: "storage",

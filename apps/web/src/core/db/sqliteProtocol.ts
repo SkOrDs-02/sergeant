@@ -32,6 +32,16 @@ export type SqliteWorkerRequest =
       readonly directory: string;
       readonly initialCapacity: number;
       readonly minFreeSlots: number;
+      /**
+       * Байти старої бази для перелиття (стадія 2). Якщо задані і файл
+       * партиції ще не існує, воркер імпортує їх ПЕРЕД відкриттям.
+       *
+       * AI-DANGER: буфер передається як transferable — після
+       * `postMessage` він на головному потоці порожній. Це навмисно:
+       * база власника важить мегабайти, і копіювати їх удруге немає
+       * сенсу. Не читай його після відправки.
+       */
+      readonly importBytes?: ArrayBuffer;
     }
   | { readonly id: number; readonly kind: "exec"; readonly sql: string }
   | {
@@ -62,6 +72,12 @@ export interface SqliteWorkerOpenResult {
   /** Скільки слотів пул доростив на відкритті; 0 — запасу вистачало. */
   readonly grewBy: number;
   readonly diagnostics: SqliteWorkerDiagnostics | null;
+  /**
+   * Чи справді відбувся імпорт старої бази. `false` означає або що байтів
+   * не передавали, або що файл партиції вже існував — у другому випадку
+   * імпорт затер би дані, які вже живуть в OPFS.
+   */
+  readonly imported: boolean;
 }
 
 /**

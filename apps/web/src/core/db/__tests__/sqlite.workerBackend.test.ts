@@ -25,14 +25,27 @@ vi.mock("../../lib/featureFlags.js", () => ({ getFlag: vi.fn(() => false) }));
 vi.mock("../sqliteWorkerClient.js", () => ({
   openSqliteInWorker: vi.fn(),
 }));
+vi.mock("../kvvfsHandoff.js", () => ({
+  isHandoffDone: vi.fn(() => true),
+  markHandoffDone: vi.fn(),
+  readKvvfsSnapshotBytes: vi.fn(async () => null),
+  pruneForeignPartitionRows: vi.fn(async () => 0),
+}));
 
 import { getFlag } from "../../lib/featureFlags.js";
 import { openSqliteInWorker } from "../sqliteWorkerClient.js";
+import {
+  isHandoffDone,
+  markHandoffDone,
+  pruneForeignPartitionRows,
+  readKvvfsSnapshotBytes,
+} from "../kvvfsHandoff.js";
 
 function fakeWorkerConnection() {
   return {
     dbName: "sergeant-anon.db",
     grewBy: 0,
+    imported: false,
     exec: vi.fn(async () => {}),
     run: vi.fn(async () => {}),
     all: vi.fn(async () => [] as unknown[]),
@@ -46,6 +59,11 @@ beforeEach(() => {
   __resetSqliteDbForTests();
   vi.mocked(getFlag).mockReturnValue(false);
   vi.mocked(openSqliteInWorker).mockReset();
+  vi.mocked(isHandoffDone).mockReturnValue(true);
+  vi.mocked(markHandoffDone).mockClear();
+  vi.mocked(pruneForeignPartitionRows).mockClear();
+  vi.mocked(readKvvfsSnapshotBytes).mockClear();
+  vi.mocked(readKvvfsSnapshotBytes).mockResolvedValue(null);
   sqlite3InitModuleMock.mockClear();
   // Без OPFS на головному потоці — щоб фолбек був однозначно kvvfs і його
   // не можна було сплутати з успіхом воркера.
@@ -89,6 +107,55 @@ describe("бекенд бази у воркері", () => {
     // вантажиться. Це половина сенсу переїзду: важкий WASM не займає
     // головний потік.
     expect(sqlite3InitModuleMock).not.toHaveBeenCalled();
+  });
+
+  it("переливає стару базу один раз і ставить позначку ОСТАННЬОЮ", async () => {
+    vi.mocked(getFlag).mockReturnValue(true);
+    vi.mocked(isHandoffDone).mockReturnValue(false);
+    const bytes = new ArrayBuffer(512);
+    vi.mocked(readKvvfsSnapshotBytes).mockResolvedValue(bytes);
+    const conn = fakeWorkerConnection();
+    vi.mocked(openSqliteInWorker).mockResolvedValue({
+      ...conn,
+      imported: true,
+    });
+
+    await getSqliteDb();
+
+    expect(vi.mocked(openSqliteInWorker).mock.calls[0]?.[1]).toMatchObject({
+      importBytes: bytes,
+    });
+    expect(pruneForeignPartitionRows).toHaveBeenCalled();
+    expect(markHandoffDone).toHaveBeenCalledWith("anon");
+  });
+
+  it("підчищає партиції навіть коли файл уже існував", async () => {
+    // Попередня спроба могла впасти рівно між імпортом і підчищанням:
+    // файл на місці, позначки немає, чужі рядки всередині. Пропустити
+    // підчищання тут означало б залишити їх назавжди.
+    vi.mocked(getFlag).mockReturnValue(true);
+    vi.mocked(isHandoffDone).mockReturnValue(false);
+    vi.mocked(openSqliteInWorker).mockResolvedValue({
+      ...fakeWorkerConnection(),
+      imported: false,
+    });
+
+    await getSqliteDb();
+
+    expect(pruneForeignPartitionRows).toHaveBeenCalled();
+  });
+
+  it("не чіпає перелиття вдруге, коли позначка вже стоїть", async () => {
+    vi.mocked(getFlag).mockReturnValue(true);
+    vi.mocked(isHandoffDone).mockReturnValue(true);
+    vi.mocked(openSqliteInWorker).mockResolvedValue(fakeWorkerConnection());
+
+    await getSqliteDb();
+
+    // Головне тут — що важкий WASM не вантажиться на головний потік
+    // щоразу заради байтів, які вже перелито.
+    expect(readKvvfsSnapshotBytes).not.toHaveBeenCalled();
+    expect(pruneForeignPartitionRows).not.toHaveBeenCalled();
   });
 
   it("невдача воркера тихо повертає застосунок на наявний шлях", async () => {
