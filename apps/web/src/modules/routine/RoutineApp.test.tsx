@@ -30,8 +30,6 @@ const routineAppMocks = vi.hoisted(() => {
     setMainTab: vi.fn(),
     quickAddHabitOpen: false,
     quickAddFocusTick: 0,
-    quickAddFirstRunHint: false,
-    dismissQuickAddFirstRunHint: vi.fn(),
     openQuickAddHabit: vi.fn(),
     closeQuickAddHabit: vi.fn(),
     streakMax: 0,
@@ -230,7 +228,6 @@ describe("RoutineApp", () => {
     expect(routineAppMocks.actionsProps).toMatchObject({
       mainTab: "calendar",
       quickAddHabitOpen: false,
-      quickAddFirstRunHint: false,
     });
   });
 });

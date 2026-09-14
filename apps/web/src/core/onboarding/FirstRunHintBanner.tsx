@@ -20,7 +20,7 @@ import { cn } from "@shared/lib/ui/cn";
  * part of the page rather than a global app chrome strip.
  */
 
-export type FirstRunHintBannerVariant = "nutrition" | "finyk" | "routine";
+export type FirstRunHintBannerVariant = "nutrition" | "finyk";
 
 export interface FirstRunHintBannerProps {
   variant: FirstRunHintBannerVariant;
@@ -47,11 +47,6 @@ const VARIANT_CLASSES: Record<
     wrap: "border-success/30 bg-success/10",
     pill: "bg-success-strong text-white",
     cta: "border-success/40 text-success-strong hover:bg-success/15 dark:text-success",
-  },
-  routine: {
-    wrap: "border-routine/30 bg-routine/10",
-    pill: "bg-routine-strong text-white",
-    cta: "border-routine/40 text-routine-strong hover:bg-routine/15 dark:text-routine",
   },
 };
 

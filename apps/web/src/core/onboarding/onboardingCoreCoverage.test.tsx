@@ -112,7 +112,10 @@ import type { ReactNode } from "react";
 
 import { trackEvent } from "../observability/analytics";
 import { FirstActionHeroCard } from "./FirstActionSheet";
-import { FirstRunHintBanner } from "./FirstRunHintBanner";
+import {
+  FirstRunHintBanner,
+  type FirstRunHintBannerVariant,
+} from "./FirstRunHintBanner";
 import { GoalFirstScreen } from "./GoalFirstScreen";
 import { ModuleChecklist } from "./ModuleChecklist";
 import { ReEngagementCard } from "./ReEngagementCard";
@@ -280,8 +283,20 @@ describe("FirstRunHintBanner", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
+  // Перелік варіантів тримає ТИП, а не літерал у тесті. Доти тут стояв
+  // захардкоджений `["finyk", "routine"]`, і коли варіант `routine` пішов
+  // разом із мертвим банером Рутини (PR-R11), розійшовся саме тест. Ключ
+  // `Record<…, true>` дає зворотний зв'язок в обидва боки: зайвий варіант
+  // не збереться, а НОВИЙ варіант без рядка тут — теж не збереться.
+  const EVERY_VARIANT: Record<FirstRunHintBannerVariant, true> = {
+    nutrition: true,
+    finyk: true,
+  };
+
   it("uses the default CTA label for every supported variant", () => {
-    for (const variant of ["finyk", "routine"] as const) {
+    for (const variant of Object.keys(
+      EVERY_VARIANT,
+    ) as FirstRunHintBannerVariant[]) {
       const { unmount } = render(
         <FirstRunHintBanner
           variant={variant}

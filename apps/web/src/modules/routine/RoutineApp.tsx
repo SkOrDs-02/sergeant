@@ -58,8 +58,6 @@ export default function RoutineApp({
     setMainTab,
     quickAddHabitOpen,
     quickAddFocusTick,
-    quickAddFirstRunHint,
-    dismissQuickAddFirstRunHint,
     openQuickAddHabit,
     closeQuickAddHabit,
     streakMax,
@@ -130,8 +128,6 @@ export default function RoutineApp({
           setRoutine={setRoutine}
           quickAddHabitOpen={quickAddHabitOpen}
           quickAddFocusTick={quickAddFocusTick}
-          quickAddFirstRunHint={quickAddFirstRunHint}
-          onDismissQuickAddFirstRunHint={dismissQuickAddFirstRunHint}
           onOpenQuickAddHabit={openQuickAddHabit}
           onCloseQuickAddHabit={closeQuickAddHabit}
         />

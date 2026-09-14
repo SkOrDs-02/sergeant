@@ -15,11 +15,6 @@ export const routinePageMessages = {
   archive: "Архів",
   // HubReports RoutineCard
   reportHeading: "Звички",
-  firstRun: {
-    title: "Перша звичка: попередня",
-    description:
-      "Додай будь-яку звичку для старту. Далі сам редагуватимеш і додаватимеш нові з цього ж діалогу.",
-  },
   // Рядок чипів-фільтрів над стрічкою «Огляду». Містить і теги, і
   // категорії — див. `components/RoutineFilterChips.tsx`.
   filterChips: {

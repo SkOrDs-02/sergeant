@@ -114,10 +114,6 @@ export interface RoutineAppStateBundle {
   setMainTab: Dispatch<SetStateAction<RoutineMainTab>>;
   quickAddHabitOpen: boolean;
   quickAddFocusTick: number;
-  /** True only on the very first quick-add open of a fresh user. */
-  quickAddFirstRunHint: boolean;
-  /** Acknowledge the first-run hint banner inside the quick-add dialog. */
-  dismissQuickAddFirstRunHint: () => void;
   openQuickAddHabit: () => void;
   closeQuickAddHabit: () => void;
   streakMax: number;
@@ -271,10 +267,23 @@ export function useRoutineAppState({
   // empty-state / FAB are the explicit "Add habit" affordances. We still mark
   // the first-run flag as seen so returning to Routine does not keep carrying
   // stale onboarding state.
+  //
+  // AI-CONTEXT: тому тут немає `quickAddFirstRunHint`, і це не забуте —
+  // прибрано свідомо (знахідка PR-R11 огляду 2026-09-13). Банер
+  // `FirstRunHintBanner` у діалозі пояснював, ЧОМУ той відкрився сам
+  // («Перша звичка: попередня»), тобто його засновок тримався на
+  // авто-відкритті. Рішення вище авто-відкриття зняло, а банер лишився
+  // підключеним до константи `false` — недосяжний, але з виглядом живого
+  // коду, з проп-ланцюжком через чотири компоненти і з зеленим тестом, який
+  // передавав проп напряму. Фінік і Їжа банер МАЮТЬ по-справжньому
+  // (`firstRunFinykActive`, `firstRunNutritionActive` — обидва з
+  // `useModuleFirstRun`); Рутина навмисно ні.
+  //
+  // Захочеш повернути — це один рядок: віддати `isRoutineFirstRun` у діалог
+  // замість константи. Але тоді спершу перепиши копію: стара говорила про
+  // діалог, який людина не відкривала, а тепер вона відкриває його сама.
   const { firstRun: isRoutineFirstRun, markSeen: markRoutineFirstRunSeen } =
     useModuleFirstRun("routine");
-  const [quickAddFirstRunHint, setQuickAddFirstRunHint] =
-    useState<boolean>(false);
   const firstRunSeenRef = useRef(false);
   useEffect(() => {
     if (firstRunSeenRef.current) return;
@@ -283,10 +292,6 @@ export function useRoutineAppState({
     firstRunSeenRef.current = true;
     void Promise.resolve().then(() => markRoutineFirstRunSeen());
   }, [isRoutineFirstRun, markRoutineFirstRunSeen, pwaAction]);
-  const dismissQuickAddFirstRunHint = useCallback(() => {
-    setQuickAddFirstRunHint(false);
-  }, []);
-
   const deepLinkHandledRef = useRef(false);
   useEffect(() => {
     if (deepLinkHandledRef.current) return;
@@ -547,8 +552,6 @@ export function useRoutineAppState({
     setMainTab,
     quickAddHabitOpen,
     quickAddFocusTick,
-    quickAddFirstRunHint,
-    dismissQuickAddFirstRunHint,
     openQuickAddHabit,
     closeQuickAddHabit,
     streakMax: derived.streakMax,
