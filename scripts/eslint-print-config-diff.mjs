@@ -37,9 +37,13 @@ const SNAPSHOT_DIR = join(
 );
 
 /**
- * Fixture set — one entry per resolvable ESLint surface in the monorepo.
- * Add an entry when introducing a new app/package boundary; remove when a
- * surface is consolidated away.
+ * Fixture set — one entry per resolvable ESLint surface in the monorepo,
+ * ПЛЮС по точці на кожен блок правил, заскоупований на підтеку (див.
+ * `server-copy` нижче). Add an entry when introducing a new app/package
+ * boundary or such a scoped block; remove when a surface is consolidated
+ * away. Інваріант покриття тримає
+ * `scripts/__tests__/eslint-print-config-diff.test.mjs` — від 2026-09-14
+ * він у ланцюжку `pnpm lint:eslint-config-diff`, а не сам по собі.
  *
  * `cwd` is the package directory (repo-relative) that owns a standalone
  * `eslint.config.js` (PR-31 phase 2b). The gate runs `eslint --print-config`
@@ -53,6 +57,18 @@ const SNAPSHOT_DIR = join(
  */
 export const FIXTURES = [
   { surface: "server", path: "apps/server/src/index.ts", cwd: "apps/server" },
+  // Друга точка на тій самій поверхні — і вона тут не для повноти.
+  // `index.ts` не бачить правил, заскоупованих на підтеку: гейт лишався б
+  // зеленим, якби хтось зняв блок `ukrainian-copy` для копійних тек сервера
+  // (`email/**`, `modules/telegram/**`, `routes/email-unsubscribe.ts`,
+  // додано 2026-09-14). Тобто снапшот-гейт на одному файлі з воркспейсу
+  // мовчить саме про ті правила, які вмикають вибірково. Додаєш скоуповане
+  // правило — додавай сюди файл із його скоупу.
+  {
+    surface: "server-copy",
+    path: "apps/server/src/email/ftuxDripCopy.ts",
+    cwd: "apps/server",
+  },
   { surface: "web", path: "apps/web/src/main.tsx", cwd: "apps/web" },
   {
     surface: "mobile",
@@ -94,9 +110,18 @@ export const FIXTURES = [
  * e.g. the `\\b` / `\\d` escapes inside `no-restricted-syntax` regex
  * selectors become `/b` / `/d`, diverging from the POSIX-generated
  * snapshots and making the gate un-passable on a Windows checkout.
+ *
+ * AI-DANGER: розділювач тут НЕ береться з `path.sep`. Так було до
+ * 2026-09-14, і це рівно суперечило обіцянці рядком вище: на POSIX-раннері
+ * `sep` це `/`, тож віндова доріжка `C:\repo\apps\…` не нормалізувалась
+ * узагалі — «Windows-прогін збігається з POSIX» трималось лише в один бік.
+ * Юніт, який це перевіряв, через те падав на кожному Linux-прогоні (і
+ * падав би в CI, якби цей файл тестів був у ланцюжку `pnpm lint` — його там
+ * не було). Тепер конвертація не залежить від платформи раннера.
  */
 export function normaliseConfig(config, repoRoot = REPO_ROOT) {
-  const repoRootForward = repoRoot.split(sep).join("/");
+  const toForwardSlashes = (value) => value.replaceAll("\\", "/");
+  const repoRootForward = toForwardSlashes(repoRoot);
 
   function visit(value) {
     if (value === null || value === undefined) return value;
@@ -111,7 +136,7 @@ export function normaliseConfig(config, repoRoot = REPO_ROOT) {
       return out;
     }
     if (typeof value === "string") {
-      const forward = value.split(sep).join("/");
+      const forward = toForwardSlashes(value);
       if (forward.startsWith(repoRootForward)) {
         return "<repo>" + forward.slice(repoRootForward.length);
       }

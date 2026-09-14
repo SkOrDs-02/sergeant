@@ -249,7 +249,12 @@ export function GeneralSection() {
     setActiveModulesState((prev) => {
       const isActive = prev.includes(id);
       if (isActive && prev.length === 1) {
-        toast.error("Щонайменше один модуль має бути активним");
+        // PR-X3: це ВАЛІДАЦІЯ, не збій — застосунок відмовився виконати
+        // дію і нічого не зламалось. `error` тут обіцяв поломку, якої
+        // немає, а recovery-дії в нього бути не може: «Повторити»
+        // означало б «спробуй вимкнути ще раз» і дало б той самий текст.
+        // Вихід у людини на екрані — увімкнути інший модуль.
+        toast.warning("Щонайменше один модуль має бути активним");
         return prev;
       }
       const next = isActive
@@ -272,8 +277,12 @@ export function GeneralSection() {
         payload,
       );
     } catch (err) {
+      // Ретрай безпечний: `buildHubBackupPayload` перечитує стан наново, а
+      // часткового запису тут не буває — файл або створився, або ні.
       toast.error(
         err instanceof Error ? err.message : "Не вдалось експортувати",
+        undefined,
+        { label: "Повторити", onPress: () => void handleExport() },
       );
     }
   };
@@ -286,8 +295,18 @@ export function GeneralSection() {
       applyHubBackupPayload(result.data);
       toast.success("Резервну копію відновлено");
     } catch (err) {
+      // «Обрати інший», а не «Повторити»: сюди долітає лише виняток
+      // валідації з `applyHubBackupPayload` (`hubBackup.ts:98-100`), яка
+      // стоїть ПЕРЕД будь-яким записом — тобто файл виявився не тим, а не
+      // імпорт зламався на півдорозі. Кожен модульний зріз усередині має
+      // власний try/catch, тож часткового застосування теж не буває.
       toast.error(
         err instanceof Error ? err.message : "Не вдалось імпортувати файл",
+        undefined,
+        {
+          label: "Обрати інший",
+          onPress: () => void handleImportConfirmed(),
+        },
       );
     }
   };

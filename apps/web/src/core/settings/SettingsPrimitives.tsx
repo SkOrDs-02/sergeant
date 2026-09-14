@@ -333,6 +333,20 @@ export interface ToggleRowProps {
   description?: ReactNode;
   checked: boolean;
   onChange: (checked: boolean) => void;
+  /**
+   * Вимикає САМ контрол, а не малює його вимкненим.
+   *
+   * Доти цієї пропи не було, і єдиний споживач із заблокованими тумблерами
+   * (`ExperimentalSection`) обходився `aria-disabled` на КОНТЕЙНЕРІ плюс
+   * `opacity` плюс no-op в `onChange`. Візуально це читалось як
+   * заблоковане, а для клавіатури й скрінрідера тумблер лишався звичайним
+   * активним switch-ем: його можна сфокусувати, натиснути, почути
+   * підтвердження — і нічого не станеться. Знахідка PR-S11.
+   *
+   * `Switch` вимкнений стан має повний (`disabled` на контролі,
+   * `opacity-60`, `cursor-not-allowed`) — бракувало лише шляху до нього.
+   */
+  disabled?: boolean;
 }
 
 /**
@@ -362,18 +376,23 @@ export function ToggleRow({
   description,
   checked,
   onChange,
+  disabled = false,
 }: ToggleRowProps) {
   const labelId = useId();
   return (
     <label
       data-row
       className={cn(
-        "flex items-center justify-between gap-4 cursor-pointer group min-h-[44px]",
+        "flex items-center justify-between gap-4 group min-h-[44px]",
+        // Курсор і hover теж мусять піти: рядок, який підсвічується під
+        // мишею, обіцяє дію, якої не буде.
+        disabled ? "cursor-not-allowed" : "cursor-pointer",
         // Рядок списку на hairline, а не картка в картці (огляд 2026-09-04,
         // П2 анти-слоп стратегії: контекст під заголовком — щільний список
         // без карток). Тап лишається на всю ширину рядка.
         "py-3 -mx-2 px-2 rounded-lg border-b border-line/60 last:border-b-0",
-        "hover:bg-panelHi active:bg-panelHi transition-[background-color]",
+        !disabled && "hover:bg-panelHi active:bg-panelHi",
+        "transition-[background-color]",
       )}
     >
       <div className="flex-1 min-w-0">
@@ -402,6 +421,7 @@ export function ToggleRow({
         <Switch
           checked={checked}
           onChange={onChange}
+          disabled={disabled}
           aria-labelledby={labelId}
         />
       </div>

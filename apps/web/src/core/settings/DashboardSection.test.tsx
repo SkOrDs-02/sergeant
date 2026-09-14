@@ -5,11 +5,18 @@
  * тумблера «Показувати підказки».
  */
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
-import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  within,
+} from "@testing-library/react";
 import { ToastContainer } from "@shared/components/ui/Toast";
 import { ToastProvider } from "@shared/hooks/useToast";
 import type { UserPreferences } from "@shared/api";
 import {
+  DASHBOARD_DENSITIES,
   DASHBOARD_DENSITY_EVENT,
   getActiveModules,
   STORAGE_KEYS,
@@ -215,5 +222,21 @@ describe("DashboardSection", () => {
     expect(target).toBeChecked();
     const afterReEnable = getActiveModules(webKVStore);
     expect(afterReEnable).toHaveLength(checkboxes.length);
+  });
+
+  // PR-S14: кнопки щільності вже мали `aria-pressed`, але не мали спільної
+  // назви — скрінрідер читав три незвʼязані контроли посеред секції.
+  it("PR-S14: перемикач щільності — названа група", () => {
+    renderSection();
+    // Роль видно лише в розгорнутій секції — інваріант L-7, пояснений
+    // над `openSection` вище.
+    openSection();
+
+    const group = screen.getByRole("group", {
+      name: /щільність карток/i,
+    });
+    expect(within(group).getAllByRole("button")).toHaveLength(
+      DASHBOARD_DENSITIES.length,
+    );
   });
 });

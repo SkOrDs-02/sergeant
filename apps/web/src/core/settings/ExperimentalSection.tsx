@@ -101,24 +101,27 @@ export function ExperimentalSection() {
           </label>
         </div>
       )}
-      <div
-        className="space-y-4"
-        aria-disabled={togglesDisabled || undefined}
-        // Поки користувач не визнав ризик — тумблери видимі, але tap-and-flip
-        // без ефекту: setFlag-no-op гасить взаємодію, opacity натякає, що
-        // секція розблоковується чекбоксом вище.
-        style={togglesDisabled ? { opacity: 0.55 } : undefined}
-      >
+      {/*
+        Блокування тепер на САМОМУ тумблері, а не на коробці навколо нього.
+        Доти тут стояли `aria-disabled` на цьому `div`, `opacity: 0.55` і
+        no-op в `onChange` — виглядало заблокованим, але для клавіатури й
+        скрінрідера кожен тумблер лишався звичайним активним switch-ем:
+        сфокусувати, натиснути, почути підтвердження — і нічого не
+        станеться. Знахідка PR-S11.
+
+        `opacity` на контейнері прибрано навмисно: `Switch` у вимкненому
+        стані вже гасить себе сам (`opacity-60`), а подвійне приглушення
+        робило підписи менш читабельними без жодної нової інформації.
+      */}
+      <div className="space-y-4">
         {items.map((flag) => (
           <ToggleRow
             key={flag.id}
             label={flag.label}
             description={flag.description}
             checked={Boolean(flags[flag.id])}
-            onChange={(checked) => {
-              if (togglesDisabled) return;
-              setFlag(flag.id, checked);
-            }}
+            disabled={togglesDisabled}
+            onChange={(checked) => setFlag(flag.id, checked)}
           />
         ))}
       </div>

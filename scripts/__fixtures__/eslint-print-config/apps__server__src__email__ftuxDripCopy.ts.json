@@ -1224,7 +1224,8 @@
     "jsx-a11y:eslint-plugin-jsx-a11y@6.10.2",
     "react-hooks:eslint-plugin-react-hooks@7.0.0",
     "sergeant-design",
-    "import"
+    "import",
+    "security:eslint-plugin-security@4.0.1"
   ],
   "rules": {
     "@babel/object-curly-spacing": [
@@ -2014,10 +2015,6 @@
     "implicit-arrow-linebreak": [
       0
     ],
-    "import/extensions": [
-      2,
-      "never"
-    ],
     "import/no-cycle": [
       2,
       {
@@ -2290,6 +2287,14 @@
     "max-len": [
       0
     ],
+    "max-lines": [
+      2,
+      {
+        "max": 600,
+        "skipBlankLines": true,
+        "skipComments": true
+      }
+    ],
     "max-statements-per-line": [
       0
     ],
@@ -2485,14 +2490,14 @@
       0
     ],
     "no-restricted-syntax": [
-      2,
+      1,
       {
-        "message": "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
-        "selector": "Literal[value=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]"
+        "message": "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/M11-eslint-plugin-security.md.",
+        "selector": "CallExpression[callee.property.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]"
       },
       {
-        "message": "Legacy `forest` / tonal `accent-NNN` retired — use semantic `accent`, `brand-500`, `fizruk`, `routine`, `nutrition`, or `finyk` instead.",
-        "selector": "TemplateElement[value.raw=/\\b(?:bg|text|border|ring|from|to|via|fill|stroke|shadow|outline|divide|placeholder|caret)-(?:forest(?:-grad)?|accent-\\d+)(?:\\/\\d+)?\\b/]"
+        "message": "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/M11-eslint-plugin-security.md.",
+        "selector": "CallExpression[callee.type='Identifier'][callee.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]"
       }
     ],
     "no-self-assign": [
@@ -2810,6 +2815,15 @@
     "rest-spread-spacing": [
       0
     ],
+    "security/detect-eval-with-expression": [
+      2
+    ],
+    "security/detect-non-literal-fs-filename": [
+      1
+    ],
+    "security/detect-non-literal-regexp": [
+      1
+    ],
     "semi": [
       0
     ],
@@ -2822,26 +2836,29 @@
     "sergeant-design/ai-marker-syntax": [
       2
     ],
-    "sergeant-design/no-raw-local-storage": [
+    "sergeant-design/no-anthropic-key-in-logs": [
       2
     ],
-    "sergeant-design/no-raw-storage-key": [
-      1
+    "sergeant-design/no-bigint-string": [
+      2
     ],
-    "sergeant-design/no-raw-tracked-storage": [
+    "sergeant-design/no-console-pii": [
+      2
+    ],
+    "sergeant-design/no-finyk-token-in-storage": [
+      2
+    ],
+    "sergeant-design/no-inline-body-size-limit": [
+      2
+    ],
+    "sergeant-design/no-raw-req-in-pino-log": [
       2
     ],
     "sergeant-design/no-strict-bypass": [
       2
     ],
-    "sergeant-design/require-toast-error-action": [
-      2,
-      {
-        "allowlist": [
-          "apps/mobile/src/lib/showUndoToast.ts",
-          "apps/mobile/src/core/hub/HubChat.tsx"
-        ]
-      }
+    "sergeant-design/prefer-parse-body-over-validate-body": [
+      1
     ],
     "sergeant-design/ukrainian-copy": [
       2

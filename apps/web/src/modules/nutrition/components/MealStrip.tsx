@@ -281,12 +281,19 @@ export function MealStrip({
       >
         {macros.map((m) => {
           const unit = m.unit ?? "г";
+          // Без цілі смуга лишається ПОРОЖНЬОЮ, а не повною.
+          //
+          // Тут стояло `m.consumed > 0 ? 100 : 0`, тобто 12 г білка без
+          // заданої цілі малювали повний трек — візуальне «готово» там, де
+          // готовності не існує, бо немає з чим порівнювати. Підпис поруч
+          // це вже знав і чесно ховав знаменник (`m.goal > 0 ? " / N" : ""`),
+          // тож смуга суперечила числу над собою (знахідка PR-N7, аудит
+          // 2026-09-13). Порожній трек читається як «цілі немає», і це
+          // правда; число поруч несе сам факт спожитого.
           const pct =
             m.goal > 0
               ? Math.min(100, Math.round((m.consumed / m.goal) * 100))
-              : m.consumed > 0
-                ? 100
-                : 0;
+              : 0;
           return (
             <li key={m.label} className="flex flex-col gap-1">
               <div className="flex items-baseline justify-between text-style-caption text-hero-ink tabular-nums">

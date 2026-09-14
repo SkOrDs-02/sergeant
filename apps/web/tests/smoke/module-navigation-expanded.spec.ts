@@ -62,7 +62,9 @@ test("@critical routine: stats tab deep-link round-trips to calendar", async ({
   await stats.click();
   await expect(page).toHaveURL(/\/routine\/stats$/);
   await expect(stats).toHaveAttribute("aria-selected", "true");
-  await expect(page.getByText("Серія сьогодні")).toBeVisible();
+  // Підпис змінено разом із PR-R10: обидва числа в рядку — крос-звичкові
+  // максимуми, тож «Серія сьогодні» читалось як власна суцільна серія.
+  await expect(page.getByText("Найкраща серія:")).toBeVisible();
 
   const overview = nav.getByRole("tab", { name: "Огляд" });
   await overview.click();

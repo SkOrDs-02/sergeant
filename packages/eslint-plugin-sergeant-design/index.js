@@ -2513,7 +2513,8 @@ const noAdhocMetricAggregation = {
 // ─────────────────────────────────────────────────────────────────────────
 // ── require-toast-error-action ──────────────────────────────────────────
 //
-// `toast.error(...)` мусить нести recovery-дію `{ label, onClick }`.
+// `toast.error(...)` мусить нести recovery-дію `{ label, onClick }`
+// (на мобілці — `{ label, onPress }`, різниця лише в обробнику).
 //
 // Історія. Правило з такою ж назвою існувало до ADR-0081 і було retired
 // разом із рештою «естетичних» AST-правил — з тезою, що коректність дії
@@ -2567,7 +2568,13 @@ function hasToastAction(args) {
           ? String(key.value)
           : null;
     if (name === "label") hasLabel = true;
-    if (name === "onClick") hasClick = true;
+    // `onPress` — мобільний еквівалент. Обидві поверхні мають ОДНАКОВИЙ
+    // API тоста (`error(msg, duration?, action?)`), але різний обробник
+    // натискання: у вебі `onClick` (DOM), у React Native `onPress`.
+    // Доти правило знало лише веб-форму, тож на мобілці воно не змогло б
+    // визнати жодної коректної дії — і глоб, розширений без цієї правки,
+    // валив би навіть правильний код (знахідка при закритті PR-X3).
+    if (name === "onClick" || name === "onPress") hasClick = true;
   }
   return hasLabel && hasClick;
 }
@@ -2936,6 +2943,24 @@ const RX_FIRST_PERSON_PLURAL =
 // зламав би збіг. Тому дві версії рядка, а не одна.
 const UA_EXPR_SENTINEL = "\u0001";
 
+// SQL у шаблонному літералі — не копія, і правило мусить це знати.
+//
+// Докстрінг вище обіцяє «що НЕ ловить: коментарі (ESLint не віддає їх як
+// вузли)». Для JS-коментарів це правда, а для SQL — ні: `-- Знімаємо
+// очікування…` живе ВСЕРЕДИНІ рядкового вузла, тож правило його бачить і
+// чесно рапортує 1-шу множини в тексті, який людина ніколи не побачить.
+// Знайдено заміром перед вмиканням правила на `apps/server` (2026-09-14):
+// з девʼяти влучань у копійних теках два були саме такі, обидва в
+// `waitlistBot.ts`.
+//
+// Скіпаємо ЦІЛИЙ літерал, а не вирізаємо з нього коментарі: запит — це від
+// початку до кінця машинний текст, і перевіряти в ньому тон голосу не має
+// сенсу ні в коментарі, ні поза ним. Межа вузька навмисно — літерал
+// мусить ПОЧИНАТИСЬ інструкцією SQL, тож звичайна копія, у якій випадково
+// трапилось слово `select`, під виняток не потрапляє.
+const RX_SQL_STATEMENT_START =
+  /^\s*(SELECT|INSERT|UPDATE|DELETE|WITH|CREATE|ALTER|DROP|TRUNCATE|BEGIN|COMMIT|ROLLBACK)\s/i;
+
 function ukrainianCopyViolations(text, emDashText = text) {
   if (!RX_CYRILLIC.test(text)) return [];
   const out = [];
@@ -3041,6 +3066,7 @@ const ukrainianCopy = {
       // Повідомляємо один раз — обидві версії йдуть в один виклик.
       TemplateLiteral(node) {
         const parts = node.quasis.map((q) => q.value.cooked ?? q.value.raw);
+        if (RX_SQL_STATEMENT_START.test(parts[0] ?? "")) return;
         report(node, parts.join(" "), parts.join(UA_EXPR_SENTINEL));
       },
     };

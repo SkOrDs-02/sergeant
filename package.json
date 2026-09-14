@@ -33,7 +33,7 @@
     "design:scan-captions": "node scripts/scan-caption-sentences.mjs",
     "lint:design-conventions": "node scripts/check-design-conventions.mjs && node --test scripts/__tests__/check-design-conventions.test.mjs",
     "lint:imports": "node scripts/check-imports.mjs",
-    "lint:eslint-config-diff": "node scripts/eslint-print-config-diff.mjs",
+    "lint:eslint-config-diff": "node scripts/eslint-print-config-diff.mjs && node --test scripts/__tests__/eslint-print-config-diff.test.mjs",
     "lint:migrations": "node scripts/lint-migrations.mjs",
     "lint:db-indexes": "node scripts/lint-db-indexes.mjs",
     "db:drill:down": "node scripts/migration-down-drill.mjs",

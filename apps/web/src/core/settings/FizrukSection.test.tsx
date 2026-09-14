@@ -6,7 +6,7 @@
  * акценту на бейджі іконки секції.
  */
 import { afterEach, beforeEach, describe, expect, it } from "vitest";
-import { cleanup, fireEvent, screen } from "@testing-library/react";
+import { cleanup, fireEvent, screen, within } from "@testing-library/react";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
 import { REST_CATEGORY_LABELS } from "../../modules/fizruk/hooks/useRestSettings";
@@ -52,5 +52,33 @@ describe("FizrukSection", () => {
     const { container } = renderSettingsSection(<FizrukSection />);
     const badge = container.querySelector(`.text-${"fizruk"}`);
     expect(badge).not.toBeNull();
+  });
+
+  // PR-S14: обраний час відпочинку передавався ЛИШЕ кольором рамки й фону.
+  // Для скрінрідера обраного стану не існувало, а людина з порушенням
+  // сприйняття кольору не бачила, що саме вибрано.
+  it("PR-S14: обраний час відпочинку читається без кольору", () => {
+    localStorage.setItem(REST_KEY, JSON.stringify({ compound: 120 }));
+    renderSettingsSection(<FizrukSection />);
+
+    const group = screen.getByRole("group", {
+      name: REST_CATEGORY_LABELS.compound,
+    });
+    const pressed = within(group)
+      .getAllByRole("button")
+      .filter((b) => b.getAttribute("aria-pressed") === "true");
+
+    expect(pressed).toHaveLength(1);
+    expect(pressed[0]).toHaveTextContent("120с");
+  });
+
+  // Другий бік того самого: без назви групи ряд «30с 60с 90с 120с 180с»
+  // звучить пʼять разів поспіль і нічим не відрізняється між категоріями.
+  it("PR-S14: кожен ряд кнопок має назву своєї категорії", () => {
+    renderSettingsSection(<FizrukSection />);
+
+    for (const label of Object.values(REST_CATEGORY_LABELS)) {
+      expect(screen.getByRole("group", { name: label })).toBeInTheDocument();
+    }
   });
 });

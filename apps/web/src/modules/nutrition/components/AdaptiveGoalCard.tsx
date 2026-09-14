@@ -1,9 +1,11 @@
+import { Link } from "react-router-dom";
+
 import { useLocale } from "@shared/i18n/useLocale";
+import { PROFILE_PATH } from "../../../core/app/appPaths";
 import type { AdaptiveGoalState } from "../hooks/useAdaptiveNutritionGoal";
 
 interface AdaptiveGoalCardProps {
   state: AdaptiveGoalState;
-  onOpenSettings?: (() => void) | undefined;
 }
 
 /**
@@ -66,10 +68,7 @@ function fill(template: string, values: Record<string, string>): string {
  * рядком (не повною Card), бо це стани, де людині справді може
  * знадобитись дія.
  */
-export function AdaptiveGoalCard({
-  state,
-  onOpenSettings,
-}: AdaptiveGoalCardProps) {
+export function AdaptiveGoalCard({ state }: AdaptiveGoalCardProps) {
   const { messages } = useLocale();
   const t = messages.nutrition.adaptiveGoal;
 
@@ -107,17 +106,24 @@ export function AdaptiveGoalCard({
           </p>
         )}
       </div>
-      {/* Немає окремого коллбека навігації в профіль (`onGoToProfile`) —
-          лишаємо наявний `onOpenSettings`, як і до переносу вмикача в
-          Налаштування → Їжа. */}
-      {state.mode === "profile-needed" && onOpenSettings && (
-        <button
-          type="button"
-          onClick={onOpenSettings}
-          className="touch-target shrink-0 text-style-caption text-nutrition-strong dark:text-nutrition focus:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60"
+      {/* Веде В ПРОФІЛЬ, бо саме туди відсилає текст поруч («…у профілі»).
+          Доти тут стояв `onOpenSettings`, який на єдиному call-site
+          прокидається як `onGoToDailyPlan` → `setActivePageAndHash("menu")`,
+          тобто кнопка приземляла людину в Харчування → Меню. Коментар на
+          цьому місці визнавав проблему («немає окремого коллбека навігації
+          в профіль») і лишав обхід замість виправлення. Знахідка PR-N4.
+
+          `Link` замість коллбека навмисно: кнопка рендериться ТІЛЬКИ для
+          `profile-needed`, тож окрема пропа нікому більше не потрібна, а
+          сусід у тому ж модулі (`DailyPlanGoalSelectors`) уже водить у
+          профіль рівно так. Тач-таргет під coarse pointer — звідти ж. */}
+      {state.mode === "profile-needed" && (
+        <Link
+          to={PROFILE_PATH}
+          className="shrink-0 inline-flex items-center pointer-coarse:min-h-[44px] text-style-caption text-nutrition-strong dark:text-nutrition focus:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60"
         >
           {t.edit}
-        </button>
+        </Link>
       )}
     </div>
   );

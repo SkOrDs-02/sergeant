@@ -182,4 +182,53 @@ describe("WeekKcalCard", () => {
     fireEvent.click(screen.getByRole("button", { name: /Журнал/ }));
     expect(clicked).toBe(1);
   });
+
+  // Regression PR-N5 (аудит 2026-09-13): картка має власний обраний день, а
+  // посилання «Журнал» його ігнорувало — людина тапала середу, читала її
+  // калорії в підрядку й потрапляла в сьогодні.
+  it("відкриває журнал на дні, який обрано в графіку", () => {
+    const calls: (string | undefined)[] = [];
+    render(
+      <WeekKcalCard
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+        onGoToLog={(dateIso) => calls.push(dateIso)}
+      />,
+    );
+    fireEvent.click(screen.getByTestId("week-kcal-bar-2026-08-11"));
+    fireEvent.click(screen.getByRole("button", { name: /Журнал/ }));
+    expect(calls).toEqual(["2026-08-11"]);
+  });
+
+  it("не нав'язує день, коли в графіку нічого не обрано", () => {
+    const calls: (string | undefined)[] = [];
+    render(
+      <WeekKcalCard
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+        onGoToLog={(dateIso) => calls.push(dateIso)}
+      />,
+    );
+    fireEvent.click(screen.getByRole("button", { name: /Журнал/ }));
+    expect(calls).toEqual([undefined]);
+  });
+
+  it("знімає день із наміру разом зі зняттям вибору", () => {
+    const calls: (string | undefined)[] = [];
+    render(
+      <WeekKcalCard
+        rows={WEEK}
+        goalsByDay={flat(2000, WEEK)}
+        todayIso={TODAY}
+        onGoToLog={(dateIso) => calls.push(dateIso)}
+      />,
+    );
+    const bar = screen.getByTestId("week-kcal-bar-2026-08-11");
+    fireEvent.click(bar);
+    fireEvent.click(bar);
+    fireEvent.click(screen.getByRole("button", { name: /Журнал/ }));
+    expect(calls).toEqual([undefined]);
+  });
 });

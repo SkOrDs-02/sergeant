@@ -7,10 +7,22 @@ import { LoadCalculator } from "./LoadCalculator";
 afterEach(cleanup);
 
 describe("LoadCalculator", () => {
-  it("renders the three training zones and the 1RM header", () => {
+  // Підпис шапки несе слово з каталогу (`oneRmAging.peakLabel`), а не
+  // акронім. Доти тут стояв літерал «1RM», і цей тест його ж і пінив — тобто
+  // ЗАКРІПЛЮВАВ розбіжність: `ReturnProtocolNotice` підписує ТЕ САМЕ число
+  // словом «рекорд», а калькулятор називав його «1RM».
+  //
+  // Перевіряємо саме ШАПКУ, а не всю картку. «1RM» лишається в підписах зон
+  // («85–95% від 1RM»), бо ті рядки приходять готовими з
+  // `@sergeant/fizruk-domain` (`exerciseDetail.ts:405,411,417`) і їх рендерить
+  // ще й мобайл. Зняти акронім там — крос-поверхнева зміна словника, і вона
+  // не має однієї правильної відповіді: на вебі база буває зниженою
+  // («орієнтир»), а мобайл рахує від сирого піка. Деталі — у знахідці PR-Z10.
+  it("renders the three training zones and the peak-labelled header", () => {
     render(<LoadCalculator oneRM={100} />);
     expect(screen.getByText("Калькулятор навантаження")).toBeInTheDocument();
-    expect(screen.getByText(flatMatch(/1RM = 100 кг/))).toBeInTheDocument();
+    expect(screen.getByText(flatMatch(/рекорд = 100 кг/))).toBeInTheDocument();
+    expect(screen.queryByText(flatMatch(/1RM = /))).not.toBeInTheDocument();
     expect(screen.getByText("Сила")).toBeInTheDocument();
     expect(screen.getByText("Гіпертрофія")).toBeInTheDocument();
     expect(screen.getByText("Витривалість")).toBeInTheDocument();
@@ -39,10 +51,10 @@ describe("LoadCalculator", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("labels the header as a reduced reference instead of 1RM when reduced", () => {
+  it("labels the header as a reduced reference instead of the peak when reduced", () => {
     render(<LoadCalculator oneRM={90} reduced />);
     expect(screen.getByText(flatMatch(/орієнтир = 90 кг/))).toBeInTheDocument();
-    expect(screen.queryByText(flatMatch(/1RM =/))).not.toBeInTheDocument();
+    expect(screen.queryByText(flatMatch(/рекорд =/))).not.toBeInTheDocument();
     // The zones still render — `reduced` only changes the caption, the
     // calculator keeps working off the (already-reduced) `oneRM` it got.
     expect(screen.getByText("Сила")).toBeInTheDocument();

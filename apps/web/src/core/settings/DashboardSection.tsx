@@ -150,10 +150,19 @@ export function DashboardSection() {
           onChange={setShowMotivational}
         />
         <div className="space-y-2">
+          {/* PR-S14: три кнопки щільності вже мали `aria-pressed`, але не
+              мали спільної назви — скрінрідер читав їх як три незвʼязані
+              контроли посеред секції. Абзац нижче є ОПИСОМ, не назвою, тож
+              група дістає власний `aria-label`, а не `aria-labelledby` на
+              нього. */}
           <p className="text-style-caption text-subtle leading-snug">
             Скільки простору між картками на головному екрані.
           </p>
-          <div className="flex gap-2">
+          <div
+            className="flex gap-2"
+            role="group"
+            aria-label="Щільність карток на головному екрані"
+          >
             {DASHBOARD_DENSITIES.map((d) => (
               <button
                 key={d}

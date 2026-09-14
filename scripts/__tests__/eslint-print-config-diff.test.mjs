@@ -113,8 +113,15 @@ describe("FIXTURES — coverage invariants", () => {
     // never lints it) and no standalone `eslint.config.js`, so there is no
     // per-package config to resolve. Its security rules live in the shared
     // cross-surface block and are exercised via the server fixture.
+    //
+    // `server-copy` — ДРУГА точка на поверхні `server`, а не окремий пакет:
+    // фікстура на `apps/server/src/index.ts` не бачить правил, заскоупованих
+    // на підтеку (`ukrainian-copy` на копійних теках, 2026-09-14). Тобто
+    // інваріант «один фікстур на пакет» від цього дня не єдиний — до нього
+    // додається «плюс точка на кожен скоупований блок правил».
     const expected = [
       "server",
+      "server-copy",
       "web",
       "mobile",
       "mobile-shell",

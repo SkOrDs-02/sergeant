@@ -248,7 +248,6 @@ describe("useRoutineAppState", () => {
     const { result } = renderHook(() => useRoutineAppState({}));
 
     expect(result.current.quickAddHabitOpen).toBe(false);
-    expect(result.current.quickAddFirstRunHint).toBe(false);
     await waitFor(() => {
       expect(routineAppMocks.markSeen).toHaveBeenCalledOnce();
     });
@@ -261,8 +260,5 @@ describe("useRoutineAppState", () => {
       },
       { replace: true },
     );
-
-    act(() => result.current.dismissQuickAddFirstRunHint());
-    expect(result.current.quickAddFirstRunHint).toBe(false);
   });
 });

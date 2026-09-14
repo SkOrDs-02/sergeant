@@ -53,7 +53,7 @@ function todayISO(): string {
 interface NutritionDashboardProps {
   log: NutritionLog;
   prefs: NutritionPrefs;
-  onGoToLog?: (() => void) | undefined;
+  onGoToLog?: ((dateIso?: string) => void) | undefined;
   onGoToDailyPlan?: (() => void) | undefined;
   /** Тап по сегменту hero — аркуш прийому з уже обраним типом. */
   onPickMeal: (type: MealTypeId) => void;
@@ -288,7 +288,7 @@ export function NutritionDashboard({
         </div>
       </Card>
 
-      <AdaptiveGoalCard state={adaptiveGoal} onOpenSettings={onGoToDailyPlan} />
+      <AdaptiveGoalCard state={adaptiveGoal} />
 
       {/* ── Insight cards (Phase 5d) — below hero, above weekly mini-bar ── */}
       {activeInsights.map((insight) => (

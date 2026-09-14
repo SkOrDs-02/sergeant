@@ -1,5 +1,9 @@
 import { useCallback, useEffect, useRef, useState } from "react";
 import { meApi, type UserPreferences } from "@shared/api";
+import {
+  classifyPreferenceLoadFailure,
+  PREFERENCE_LOAD_FAILURE_COPY,
+} from "./preferenceLoadFailure";
 
 /**
  * Один булевий прапорець із `/api/me/preferences` з оптимістичним записом.
@@ -90,12 +94,22 @@ export function useServerPreference(
         setValue(prefs[key] === true);
         setLoaded(true);
       })
-      .catch(() => {
+      .catch((err: unknown) => {
         if (cancelled) return;
-        // Гість або збій мережі. Не помилка збереження — тумблер просто
-        // нема куди писати, і копія має пояснити саме це.
+        // Не помилка ЗБЕРЕЖЕННЯ: тумблер просто нема куди писати, і копія
+        // має пояснити саме це. Але раніше тут стояло беззастережне
+        // `copy.authRequired`, тобто «гість АБО збій мережі» злипались в
+        // одне твердження «ти не залогінений» — і залогінена людина в
+        // метро йшла перелогінюватись (знахідка PR-S2). Тепер причину
+        // розрізняємо; чому саме так, а не через `useOnlineStatus`, —
+        // у `preferenceLoadFailure.ts`.
+        const failure = classifyPreferenceLoadFailure(err);
         setLoaded(false);
-        setError(copy.authRequired);
+        setError(
+          failure === "auth"
+            ? copy.authRequired
+            : PREFERENCE_LOAD_FAILURE_COPY[failure],
+        );
       });
     return () => {
       cancelled = true;

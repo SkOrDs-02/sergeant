@@ -45,7 +45,13 @@ export function NutritionStartPage({
           log={log.nutritionLog}
           prefs={prefs}
           onPickMeal={onPickMeal}
-          onGoToLog={() => setActivePageAndHash("log")}
+          onGoToLog={(dateIso) => {
+            // Порядок важливий: спершу день, потім навігація — журнал
+            // читає `log.selectedDate` на рендері, тож зворотний порядок
+            // дав би кадр із сьогоднішнім днем перед підміною.
+            if (dateIso) log.setSelectedDate(dateIso);
+            setActivePageAndHash("log");
+          }}
           onGoToDailyPlan={() => {
             setActivePageAndHash("menu");
           }}

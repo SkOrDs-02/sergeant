@@ -62,6 +62,7 @@ vi.mock("./AiMemoryList", () => ({
 }));
 
 import { meApi } from "@shared/api";
+import { ApiError } from "@sergeant/api-client";
 import {
   __resetAnalyticsConsentForTests,
   getAnalyticsConsent,
@@ -71,6 +72,19 @@ import { DEFAULT_PREFERENCES, PrivacySection } from "./PrivacySection";
 // Огляд 2026-09-04: PIN-блокування живе в `security/AppLockSettings`
 // (тести — `AppLockSettings.test.tsx`), серверна памʼять з очищенням — у
 // `profile/AiMemorySection` (тести там же). Тут лишились згоди.
+
+// PR-S2: до 2026-09-14 будь-яка помилка GET давала «Увійди в акаунт», тож
+// тести нижче обходились `new Error("401")` — рядок був декорацією, код його
+// не читав. Тепер причину розрізняють по `ApiError`, і гостьовий випадок
+// треба будувати чесно: інакше тест перевіряв би гілку `failure`, думаючи, що
+// перевіряє гостя.
+const unauthorized = () =>
+  new ApiError({
+    kind: "http",
+    status: 401,
+    message: "Unauthorized",
+    url: "/api/me/preferences",
+  });
 
 async function openSection() {
   const trigger = await screen.findByRole("button", {
@@ -366,7 +380,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
   });
 
   it("shows an error when getPreferences API call fails", async () => {
-    vi.mocked(meApi.getPreferences).mockRejectedValue(new Error("401"));
+    vi.mocked(meApi.getPreferences).mockRejectedValue(unauthorized());
     renderSection();
     await openSection();
 
@@ -380,7 +394,7 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
     // ні тумблерів (коректно, L-3), ні способу вийти з цього стану, крім
     // виходу зі сторінки Налаштувань і повернення. Тепер поруч із
     // повідомленням є кнопка, що повторно кличе той самий фетч.
-    vi.mocked(meApi.getPreferences).mockRejectedValueOnce(new Error("401"));
+    vi.mocked(meApi.getPreferences).mockRejectedValueOnce(unauthorized());
     renderSection();
     await openSection();
 
@@ -397,6 +411,56 @@ describe("PrivacySection — preferences (analytics / aiMemory / healthDataConse
       await screen.findByRole("switch", { name: /Аналітика продукту/i }),
     ).toBeInTheDocument();
     expect(screen.queryByText(/Увійди в акаунт/i)).not.toBeInTheDocument();
+  });
+
+  // PR-S2. Гостю спокійний `role="status"` правильний: для нього це не
+  // поломка, а очікуваний стан (огляд 2026-09-04). Але доти ТА САМА подача
+  // діставалась і офлайну, і 500-ці — тобто справжню поломку показували як
+  // норму, ще й стверджуючи неправду про стан акаунта.
+  it("PR-S2: офлайн читається як поломка, а не як «ти не залогінений»", async () => {
+    vi.mocked(meApi.getPreferences).mockRejectedValue(
+      new ApiError({
+        kind: "network",
+        message: "Failed to fetch",
+        url: "/api/me/preferences",
+      }),
+    );
+    renderSection();
+    await openSection();
+
+    const message = await screen.findByRole("alert");
+    expect(message).toHaveTextContent(/Немає звʼязку з сервером/i);
+    expect(screen.queryByText(/Увійди в акаунт/i)).not.toBeInTheDocument();
+    // Вихід зі стану лишається: кнопка повтору не зникла разом зі зміною подачі.
+    expect(
+      screen.getByRole("button", { name: "Спробувати ще" }),
+    ).toBeInTheDocument();
+  });
+
+  it("PR-S2: 500 теж читається як поломка", async () => {
+    vi.mocked(meApi.getPreferences).mockRejectedValue(
+      new ApiError({
+        kind: "http",
+        status: 500,
+        message: "Internal Server Error",
+        url: "/api/me/preferences",
+      }),
+    );
+    renderSection();
+    await openSection();
+
+    const message = await screen.findByRole("alert");
+    expect(message).toHaveTextContent(/Не вдалося завантажити налаштування/i);
+    expect(screen.queryByText(/Увійди в акаунт/i)).not.toBeInTheDocument();
+  });
+
+  it("PR-S2: гість лишається спокійним status, а не alert", async () => {
+    vi.mocked(meApi.getPreferences).mockRejectedValue(unauthorized());
+    renderSection();
+    await openSection();
+
+    await screen.findByText(/Увійди в акаунт/i);
+    expect(screen.queryByRole("alert")).not.toBeInTheDocument();
   });
 });
 

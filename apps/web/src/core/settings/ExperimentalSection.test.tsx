@@ -79,6 +79,37 @@ describe("ExperimentalSection (PR-36 / §9.3)", () => {
     expect(__flagsStoreForTests.get()[firstFlag.id]).toBeUndefined();
   });
 
+  it("заблокований тумблер вимкнений САМ, а не лише виглядає вимкненим", () => {
+    // Тест вище перевіряє наслідок (стор не змінився) і проходив однаково
+    // і до фікса: no-op в `onChange` давав той самий результат. Але для
+    // клавіатури й скрінрідера тумблер лишався звичайним активним
+    // switch-ем — сфокусувати, натиснути, почути підтвердження, і нічого
+    // не станеться. Обіцянка дії, якої немає, гірша за явне «вимкнено».
+    // Знахідка PR-S11.
+    render(<ExperimentalSection />);
+    expandSection();
+
+    const firstFlag = FLAG_REGISTRY.find((f) => f.experimental);
+    if (!firstFlag) throw new Error("expected at least one experimental flag");
+
+    const toggle = screen.getByRole("switch", { name: firstFlag.label });
+    expect((toggle as HTMLButtonElement).disabled).toBe(true);
+  });
+
+  it("після визнання ризику тумблер стає справді активним", () => {
+    // Дзеркало попереднього: без цього «завжди disabled» теж був би
+    // зеленим, а це інший дефект — секція, яку неможливо розблокувати.
+    render(<ExperimentalSection />);
+    expandSection();
+    fireEvent.click(screen.getByTestId("experimental-opt-in"));
+
+    const firstFlag = FLAG_REGISTRY.find((f) => f.experimental);
+    if (!firstFlag) throw new Error("expected at least one experimental flag");
+
+    const toggle = screen.getByRole("switch", { name: firstFlag.label });
+    expect((toggle as HTMLButtonElement).disabled).toBe(false);
+  });
+
   it("styles the warning banner with the real `warning` design token, not the nonexistent `warn`", () => {
     // V-5 (аудит P2): банер малювався класами `border-warn/40 bg-warn/10
     // text-warn` — токена `warn` немає в дизайн-системі (packages/design-

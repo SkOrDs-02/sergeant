@@ -1,6 +1,7 @@
 // @vitest-environment jsdom
-import { describe, expect, it, vi } from "vitest";
-import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it } from "vitest";
+import { render, screen } from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
 import { AdaptiveGoalCard } from "./AdaptiveGoalCard";
 import type { AdaptiveGoalState } from "../hooks/useAdaptiveNutritionGoal";
 
@@ -40,27 +41,34 @@ describe("AdaptiveGoalCard", () => {
     expect(container).toBeEmptyDOMElement();
   });
 
-  it("renders a compact row with progress for 'calibrating', no action button", () => {
+  it("renders a compact row with progress for 'calibrating', no action", () => {
     render(
-      <AdaptiveGoalCard
-        state={state({ mode: "calibrating", completeDays: 3, weightPoints: 2 })}
-        onOpenSettings={vi.fn()}
-      />,
+      <MemoryRouter>
+        <AdaptiveGoalCard
+          state={state({
+            mode: "calibrating",
+            completeDays: 3,
+            weightPoints: 2,
+          })}
+        />
+      </MemoryRouter>,
     );
     expect(screen.getByText(/3\/10 повних днів/)).toBeInTheDocument();
-    expect(screen.queryByRole("button")).not.toBeInTheDocument();
+    expect(screen.queryByRole("link")).not.toBeInTheDocument();
   });
 
-  it("renders an action for 'profile-needed' that calls onOpenSettings", () => {
-    const onOpenSettings = vi.fn();
+  it("дія для 'profile-needed' веде В ПРОФІЛЬ, куди й відсилає текст", () => {
+    // Раніше тест пінив, що викликано `onOpenSettings` — тобто ФАКТ
+    // виклику, а не його наслідок. А наслідком на єдиному call-site був
+    // `setActivePageAndHash("menu")`: текст казав «додай … у профілі», а
+    // кнопка вела в Харчування → Меню. Знахідка PR-N4.
     render(
-      <AdaptiveGoalCard
-        state={state({ mode: "profile-needed" })}
-        onOpenSettings={onOpenSettings}
-      />,
+      <MemoryRouter>
+        <AdaptiveGoalCard state={state({ mode: "profile-needed" })} />
+      </MemoryRouter>,
     );
-    fireEvent.click(screen.getByRole("button"));
-    expect(onOpenSettings).toHaveBeenCalledTimes(1);
+    expect(screen.getByText(/у профілі/)).toBeInTheDocument();
+    expect(screen.getByRole("link")).toHaveAttribute("href", "/profile");
   });
 });
 
