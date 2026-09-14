@@ -49,7 +49,9 @@ describe("anonymous data migration invariants", () => {
       __anonymousMigrationInternals.assertServerAcknowledged(client, [
         "anonv1_pending",
       ]),
-    ).rejects.toThrow("not server-confirmed");
+      // Повідомлення тепер несе крок і числа — саме воно їде і в Sentry, і
+      // на екран збою, тож перевіряємо форму, а не тільки факт кидка.
+    ).rejects.toThrow("anon-migration/confirm: 1/1 unsettled");
     expect(client.run).not.toHaveBeenCalled();
   });
 
@@ -91,7 +93,7 @@ describe("anonymous data migration invariants", () => {
   // Зворотний бік: зірвана посеред переносу мережа не має крутити цикл
   // вічно. Тік, який не зрушив жодного рядка, зупиняє гонитву — розбір
   // віддається `assertServerAcknowledged` з реальною причиною.
-  it("зупиняється, коли тік більше нічого не зрушує", async () => {
+  it("зупиняється після кількох поспіль тіків, що нічого не зрушили", async () => {
     const client = {
       all: vi.fn(async () => [
         { id: 1, status: "pending", reject_reason: null },
@@ -107,7 +109,10 @@ describe("anonymous data migration invariants", () => {
       ["anonv1_stuck"],
     );
 
-    expect(flushNow).toHaveBeenCalledTimes(1);
+    // Терпимість, а не миттєва здача: `flushNow()` приєднується до чужого
+    // тіку в польоті й може повернутись без нових рядків на цілком живій
+    // мережі. Одноразовий вихід обірвав би перенос саме там.
+    expect(flushNow).toHaveBeenCalledTimes(3);
   });
 
   it("treats an LWW rejection as an authoritative conflict winner", async () => {

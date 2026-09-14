@@ -132,7 +132,7 @@ async function snapshotAnonymousRows(
     if (!(await tableExists(client, table))) continue;
     const primaryKey = await primaryKeyColumns(client, table);
     if (primaryKey.length === 0)
-      throw new Error("Anonymous table has no primary key");
+      throw new AnonymousMigrationStepError("snapshot-no-pk", table);
     const rows = await client.all<Record<string, unknown>>(
       `SELECT * FROM ${table} WHERE user_id = ?`,
       [LOCAL_ANON_USER_ID],
@@ -157,7 +157,7 @@ async function getOrCreateClaim(
   const claim = existing[0];
   if (claim) {
     if (claim.target_user_id !== targetUserId) {
-      throw new Error("Anonymous data is already bound to another profile");
+      throw new AnonymousMigrationStepError("claim-bound-elsewhere", "");
     }
     return claim;
   }
@@ -248,21 +248,35 @@ function unsettledOf(rows: readonly OutboxStateRow[]): OutboxStateRow[] {
  * 2026-09-13: два скріншоти з різницею у пів години, обидва на LTE з
  * повним сигналом).
  *
- * Цикл завершується завжди: кожна ітерація мусить СТРОГО зменшити
- * кількість невирішених рядків, інакше виходимо. Тобто зірвана мережа
- * посеред переносу не крутить нас вічно — вона віддає розбір
- * `assertServerAcknowledged`, який кине помилку з реальною причиною.
+ * Цикл завершується завжди: гонитва спиняється після
+ * {@link FLUSH_STALL_TOLERANCE} поспіль тіків, які не зрушили жодного
+ * рядка. Тобто зірвана мережа посеред переносу не крутить нас вічно — вона
+ * віддає розбір `assertServerAcknowledged`, який кине помилку з реальною
+ * причиною і числами.
+ *
+ * AI-DANGER: терпимість до «порожніх» тіків тут обовʼязкова, а не про
+ * запас. `flushNow()` НЕ запускає новий тік, якщо один уже в польоті — він
+ * віддає ту саму обіцянку (докстрінг `syncV2.pushScheduler`), а періодичний
+ * writer тікає кожні ~30 с (`singleton.ts`). Отже наш виклик може
+ * приєднатись до чужого тіку, який щойно вже вичерпав свою сотню ДО нашого
+ * заміру, повернутись без жодного нового рядка — і одноразовий вихід
+ * «не зрушило = здаємось» обірвав би перенос на живій мережі. На 1356
+ * рядках черги (звіт власника 2026-09-14) це 14 тіків, тобто хвилини поруч
+ * із періодичним, і шанс на такий збіг не теоретичний.
  */
+const FLUSH_STALL_TOLERANCE = 3;
+
 async function flushUntilSettled(
   client: SqliteMigrationClient,
   writer: { flushNow: () => Promise<unknown> },
   keys: readonly string[],
 ): Promise<void> {
   let remaining = unsettledOf(await readUnsettledOps(client, keys)).length;
-  while (remaining > 0) {
+  let stalls = 0;
+  while (remaining > 0 && stalls < FLUSH_STALL_TOLERANCE) {
     await writer.flushNow();
     const next = unsettledOf(await readUnsettledOps(client, keys)).length;
-    if (next >= remaining) return;
+    stalls = next >= remaining ? stalls + 1 : 0;
     remaining = next;
   }
 }
@@ -275,8 +289,9 @@ async function assertServerAcknowledged(
   const rows = await readUnsettledOps(client, keys);
   const unresolved = unsettledOf(rows);
   if (unresolved.length > 0)
-    throw new Error(
-      `Anonymous migration is not server-confirmed (${unresolved.length}/${keys.length} ops unsettled, first status: ${unresolved[0]?.status ?? "unknown"})`,
+    throw new AnonymousMigrationStepError(
+      "confirm",
+      `${unresolved.length}/${keys.length} unsettled, first status ${unresolved[0]?.status ?? "unknown"}`,
     );
   for (const row of rows) {
     await client.run(`DELETE FROM sync_op_outbox WHERE id = ?`, [row.id]);
@@ -317,33 +332,84 @@ async function deleteSourceRows(
   }
 }
 
+/**
+ * Мітка кроку, на якому перенос упав.
+ *
+ * AI-CONTEXT: звіт власника 2026-09-13 прийшов трьома скріншотами одного
+ * й того самого тексту «Не вдалося завершити перенесення» — і більше в нас
+ * не було НІЧОГО. Жодне з одинадцяти місць, де ця функція кидає, не
+ * називало себе, тож навіть із Sentry подія сказала б «щось впало». Тепер
+ * кожна помилка звідси несе крок і, де це має сенс, таблицю — це і
+ * потрапляє в Sentry, і показується на самому екрані збою, щоб наступний
+ * скріншот уже містив діагноз.
+ *
+ * Дані рядків сюди НЕ потрапляють — лише назви кроків, таблиць і числа.
+ */
+export class AnonymousMigrationStepError extends Error {
+  readonly step: string;
+  constructor(step: string, cause: unknown) {
+    const detail =
+      cause instanceof Error ? cause.message : String(cause ?? "unknown");
+    super(`anon-migration/${step}: ${detail}`);
+    this.name = "AnonymousMigrationStepError";
+    this.step = step;
+    this.cause = cause;
+  }
+}
+
 /** Run or resume the durable first-auth handoff. */
 export async function migrateAnonymousDataToProfile(
   targetUserId: string,
   options: AnonymousMigrationOptions = {},
 ): Promise<AnonymousMigrationResult> {
+  // `step` оновлюється перед кожною ділянкою, яка вміє впасти. Читає її
+  // лише `catch` нижче, тож вартість — одне присвоєння на крок.
+  const tracker = { step: "start" };
+  try {
+    return await runMigration(targetUserId, options, tracker);
+  } catch (error) {
+    if (error instanceof AnonymousMigrationStepError) throw error;
+    throw new AnonymousMigrationStepError(tracker.step, error);
+  }
+}
+
+async function runMigration(
+  targetUserId: string,
+  options: AnonymousMigrationOptions,
+  tracker: { step: string },
+): Promise<AnonymousMigrationResult> {
   if (!targetUserId) throw new Error("Target user id is required");
+  tracker.step = "open-source-partition";
   const sqlite = await import("../db/sqlite.js");
   await sqlite.switchSqliteUser(null);
   const sourceClient = (await sqlite.getSqliteDb()).migrationClient();
+  tracker.step = "migrate-source-schemas";
   await migrateModuleSchemas(sourceClient);
+  tracker.step = "snapshot";
   const snapshot = await snapshotAnonymousRows(sourceClient);
   if (snapshot.length === 0) {
     await sqlite.switchSqliteUser(targetUserId);
     return { migratedRows: 0 };
   }
   options.onTransferStart?.();
+  tracker.step = "claim";
   const claim = await getOrCreateClaim(sourceClient, targetUserId);
 
+  tracker.step = "open-target-partition";
   await sqlite.switchSqliteUser(targetUserId);
   const targetClient = (await sqlite.getSqliteDb()).migrationClient();
+  tracker.step = "migrate-target-schemas";
   await migrateModuleSchemas(targetClient);
 
+  tracker.step = "boot-reader";
   const sync = await import("../syncEngine/singleton.js");
   const reader = await sync.bootSyncEngineReader();
-  if (!reader) throw new Error("Sync reader is unavailable");
+  if (!reader)
+    throw new AnonymousMigrationStepError("boot-reader", "no reader");
+  tracker.step = "pull-before";
   await reader.pullOnce();
 
+  tracker.step = "apply-local";
   const pushedKeys: string[] = [];
   for (const item of snapshot) {
     const row = { ...decodeJsonColumns(item.row), user_id: targetUserId };
@@ -363,7 +429,10 @@ export async function migrateAnonymousDataToProfile(
       MIGRATION_ORIGIN_DEVICE_ID,
     );
     if (outcome === "rejected")
-      throw new Error("Anonymous row could not be applied");
+      throw new AnonymousMigrationStepError(
+        "apply-rejected",
+        `${item.table} (${op.op})`,
+      );
     const key = await idempotencyKey(claim.batch_id, targetUserId, item);
     await enqueueOutboxUpsert(targetClient, {
       userId: targetUserId,
@@ -376,13 +445,19 @@ export async function migrateAnonymousDataToProfile(
     pushedKeys.push(key);
   }
 
+  tracker.step = "boot-writer";
   const writer = await sync.bootSyncEngineWriter();
-  if (!writer) throw new Error("Sync writer is unavailable");
+  if (!writer)
+    throw new AnonymousMigrationStepError("boot-writer", "no writer");
+  tracker.step = "push";
   if (pushedKeys.length > 0)
     await flushUntilSettled(targetClient, writer, pushedKeys);
+  tracker.step = "confirm";
   await assertServerAcknowledged(targetClient, pushedKeys);
+  tracker.step = "pull-after";
   await reader.pullOnce();
 
+  tracker.step = "cleanup";
   await sqlite.switchSqliteUser(null);
   const cleanupClient = (await sqlite.getSqliteDb()).migrationClient();
   await deleteSourceRows(cleanupClient, snapshot, claim.batch_id);

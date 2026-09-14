@@ -294,6 +294,32 @@ describe("AnonymousDataMigrationProvider", () => {
     }
   });
 
+  // Звіт власника прийшов трьома скріншотами одного й того самого тексту —
+  // діагностувати не було чим. Код кроку має бути В КАДРІ, бо людина шле
+  // фото екрана, а не заглядає в Sentry.
+  it("показує технічний код збою на самому екрані", async () => {
+    migrate.mockRejectedValue(
+      new Error("anon-migration/apply-rejected: finyk_tx_splits (insert)"),
+    );
+    renderAt("/", <div>module content</div>);
+
+    expect(
+      await screen.findByText(
+        "anon-migration/apply-rejected: finyk_tx_splits (insert)",
+      ),
+    ).toBeInTheDocument();
+  });
+
+  // Зворотний бік: чужа помилка (не з нашого кроку) не має малювати на
+  // екрані випадковий текст рушія.
+  it("не показує код, коли помилка не з переносу", async () => {
+    migrate.mockRejectedValue(new TypeError("Load failed"));
+    renderAt("/", <div>module content</div>);
+
+    await screen.findByRole("button", { name: "Повторити" });
+    expect(screen.queryByText(/Load failed/)).not.toBeInTheDocument();
+  });
+
   // Юридичні тексти мають лишатись доступними за будь-якого стану синку.
   it("never blocks legal routes while the migration is unfinished", async () => {
     migrate.mockReturnValue(new Promise(() => {}));
