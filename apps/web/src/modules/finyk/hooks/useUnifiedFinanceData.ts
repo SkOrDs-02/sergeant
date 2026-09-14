@@ -85,7 +85,17 @@ export function useUnifiedFinanceData({
           ? "partial"
           : mono.syncState?.status === "loading" || privat.loadingTx
             ? "loading"
-            : mono.syncState?.status;
+            : // Успіх ПриватБанку теж піднімаємо в об'єднаний стан. Без цього
+              // рядка гілки error/partial/loading читали обидва провайдери, а
+              // успіх — лише Monobank, тож у людини з самим Приватом
+              // об'єднаний статус лишався моновським `idle`. Доки `getSyncTone`
+              // фолбечив невідоме в зелене, це виглядало правильно з хибної
+              // причини; після його фіксу (PR-F7) той самий рядок став би
+              // вічним «очікування» на успішно засинхроненому Приваті.
+              mono.syncState?.status === "success" ||
+                privat.syncState?.status === "success"
+              ? "success"
+              : mono.syncState?.status;
     const combinedSyncState = {
       ...mono.syncState,
       status: combinedSyncStatus,
