@@ -148,8 +148,51 @@ function toPayload(err: unknown): SqliteWorkerErrorPayload {
   };
 }
 
-self.onmessage = (event: MessageEvent<SqliteWorkerRequest>) => {
+/** Набір відомих команд — для перевірки форми вхідного повідомлення. */
+const KNOWN_KINDS: ReadonlySet<string> = new Set([
+  "open",
+  "exec",
+  "run",
+  "all",
+  "diagnostics",
+  "close",
+  "wipe",
+]);
+
+function isRequest(value: unknown): value is SqliteWorkerRequest {
+  if (typeof value !== "object" || value === null) return false;
+  const candidate = value as { id?: unknown; kind?: unknown };
+  return (
+    typeof candidate.id === "number" &&
+    typeof candidate.kind === "string" &&
+    KNOWN_KINDS.has(candidate.kind)
+  );
+}
+
+/**
+ * Чи прийшло повідомлення звідти, звідки має.
+ *
+ * AI-CONTEXT: знахідка CodeQL «Missing origin verification in postMessage
+ * handler» на цьому обробнику. Виділений воркер за специфікацією отримує
+ * повідомлення ЛИШЕ від документа, який його створив, і саме тому браузер
+ * лишає `origin` порожнім рядком — перевірка на рівність `location.origin`
+ * тут відхиляла б УСІ легітимні виклики. Тому порожній рядок дозволений
+ * явно, а будь-яке інше значення відхиляється: покладатись на інваріант
+ * мовчки, без жодного рядка коду, і означає той самий клас дірок, що
+ * ловить це правило.
+ */
+function isTrustedMessage(event: MessageEvent<unknown>): boolean {
+  return event.origin === "" || event.origin === self.location.origin;
+}
+
+self.onmessage = (event: MessageEvent<unknown>) => {
+  if (!isTrustedMessage(event)) return;
   const request = event.data;
+  // Форма теж перевіряється: без цього чуже або пошкоджене повідомлення
+  // доходило б до `handle()` і падало з `id: undefined`, тобто відповіддю,
+  // яку клієнт нікуди не може віднести. Такі повідомлення просто
+  // ігноруються — жоден наш виклик на них не чекає.
+  if (!isRequest(request)) return;
   handle(request).then(
     (response) => self.postMessage(response),
     (err: unknown) =>
