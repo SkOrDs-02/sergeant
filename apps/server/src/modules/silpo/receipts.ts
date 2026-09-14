@@ -8,8 +8,14 @@ import {
   ExternalServiceError,
   RateLimitError,
 } from "../../obs/errors.js";
-import { callMcpTool, type McpError, type McpResult } from "./mcpClient.js";
+import {
+  callMcpTool,
+  listMcpTools,
+  type McpError,
+  type McpResult,
+} from "./mcpClient.js";
 import { resolveBranchContext } from "./branchContext.js";
+import { diffToolContract } from "./toolContract.js";
 import { matchAndLink } from "./receiptsMatch.js";
 import {
   callWithFreshAccessToken,
@@ -225,7 +231,9 @@ function normalizeRawOrder(
 
 // Ліміти з живих input schemas (спайк §0, 2026-08-18): offline max 10,
 // online тоді був max 100.
-const OFFLINE_ORDERS_LIMIT = 10;
+/** Експортується для `toolContract.ts`: таблиця очікувань бере значення
+ * з констант виклику, а не переписує їх числом. */
+export const OFFLINE_ORDERS_LIMIT = 10;
 
 /**
  * Скільки онлайн-замовлень тягнемо за один синк. Це НЕ `limit` запиту:
@@ -389,6 +397,67 @@ async function fetchOnlineOrders(
 }
 
 /**
+ * Як часто звіряти живу специфікацію тул із тим, що шле код. Раз на добу:
+ * це один додатковий `tools/list` на всіх користувачів разом, а зміни на
+ * їхньому боці не бувають частішими за деплої.
+ */
+const CONTRACT_CHECK_INTERVAL_MS = 24 * 60 * 60_000;
+let lastContractCheckAt = 0;
+
+/** Test-only: скидає вікно звірки контракту між тестами. */
+export function __resetSilpoContractCheck(): void {
+  lastContractCheckAt = 0;
+}
+
+/**
+ * Профілактична звірка специфікації тул — щоб зміна на боці Сільпо
+ * називала себе САМА, а не через два тижні мертвого синку.
+ *
+ * 2026-09-14 вони знизили стелю `limit` зі 100 до 50, і єдиним сигналом був
+ * збій синку, який виглядав як «змінили формат відповіді». Снапшот-тест
+ * цього не бачив за побудовою (він звіряє код із записом, не з сервером).
+ *
+ * Три властивості цієї перевірки навмисні:
+ *   - **не блокує синк.** Будь-яка її помилка ковтається: діагностика не
+ *     має права зламати те, що працює;
+ *   - **раз на добу**, не на кожен синк — зайвий виклик до чужого API
+ *     коштує квоти, а специфікація так часто не міняється;
+ *   - **дзвонить у Sentry**, а не лише в лог. Рядок у лозі, якого ніхто не
+ *     читає, — це не сигнал; той самий урок, що й з дрейфом схеми.
+ */
+async function checkToolContract(accessToken: string): Promise<void> {
+  const now = Date.now();
+  if (now - lastContractCheckAt < CONTRACT_CHECK_INTERVAL_MS) return;
+  lastContractCheckAt = now;
+
+  try {
+    const tools = await listMcpTools(accessToken);
+    if (!tools.ok) return;
+
+    const drift = diffToolContract(tools.data);
+    if (drift.length === 0) return;
+
+    logger.error({ msg: "silpo_tool_contract_drift", drift });
+    try {
+      Sentry.captureException(
+        new Error(`Silpo tool contract drift: ${drift.join("; ")}`), // NOSONAR — синтетична помилка як носій алерту
+        {
+          level: "warning",
+          tags: { integration: "silpo", kind: "contract_drift" },
+        },
+      );
+    } catch {
+      /* Sentry ніколи не має ламати обробку */
+    }
+  } catch (err) {
+    logger.warn({
+      msg: "silpo_tool_contract_check_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+/**
  * Offline-tool вимагає контекст філії (спайк §0). Якщо контекст добути не
  * вдалося — offline-канал деградує до порожнього списку з `logger.warn`
  * (best-effort принцип спеки), online синкається завжди.
@@ -428,6 +497,12 @@ function makeFetchBothOrderLists(
 
     const online = await fetchOnlineOrders(accessToken);
     if (!online.ok) return { ok: false, error: online.error };
+
+    // Після успішного синку — профілактична звірка специфікації (раз на
+    // добу). Саме після, а не до: зайвий виклик не має стояти на шляху
+    // роботи, заради якої користувач тапнув кнопку.
+    await checkToolContract(accessToken);
+
     return { ok: true, data: { offline, online: online.data } };
   };
 }

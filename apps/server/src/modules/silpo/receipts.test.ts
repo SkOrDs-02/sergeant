@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   callWithFreshAccessToken: vi.fn(),
   callMcpTool: vi.fn(),
+  listMcpTools: vi.fn(),
   resolveBranchContext: vi.fn(),
   poolConnect: vi.fn(),
   dbQuery: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock("./tokenStore.js", () => ({
 // `callWithFreshAccessToken` that never reaches `callMcpTool`.
 vi.mock("./mcpClient.js", () => ({
   callMcpTool: mocks.callMcpTool,
+  listMcpTools: mocks.listMcpTools,
 }));
 
 vi.mock("./branchContext.js", () => ({
@@ -35,6 +37,7 @@ vi.mock("@sentry/node", () => ({ captureException: vi.fn() }));
 
 import * as Sentry from "@sentry/node";
 import {
+  __resetSilpoContractCheck,
   listReceipts,
   parseLimitCeilingFromRefusal,
   pullAndSyncReceipts,
@@ -1023,5 +1026,108 @@ describe("пагінація онлайн-замовлень", () => {
     // елемент приїхав би двічі.
     expect(offsets).toEqual([0, 50]);
     expect(result.onlinePulled).toBe(50);
+  });
+});
+
+// ───────────── Профілактична звірка специфікації тул (раз на добу) ───────────
+
+describe("checkToolContract", () => {
+  const ONLINE_OK = {
+    ok: true as const,
+    data: { orders: [] },
+  };
+
+  beforeEach(() => {
+    __resetSilpoContractCheck();
+    mocks.listMcpTools.mockReset();
+    vi.mocked(Sentry.captureException).mockClear();
+  });
+
+  function runSync() {
+    mocks.callWithFreshAccessToken.mockImplementation(
+      async (_userId: string, fn: (token: string) => Promise<unknown>) =>
+        fn("fake-access-token"),
+    );
+    mocks.resolveBranchContext.mockResolvedValue({
+      ok: false as const,
+      error: { kind: "upstream" },
+    });
+    mocks.callMcpTool.mockResolvedValue(ONLINE_OK);
+    const db = makeFakeDb();
+    return pullAndSyncReceipts("u1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+  }
+
+  /** Жива специфікація зі стелею, нижчою за те, що шле синк. */
+  const LOWERED_CEILING = {
+    ok: true as const,
+    data: {
+      tools: [
+        {
+          name: "silpo_get_my_online_orders",
+          inputSchema: { properties: { limit: { maximum: 10 }, offset: {} } },
+        },
+      ],
+    },
+  };
+
+  it("дзвонить у Sentry, коли жива специфікація розійшлась із кодом", async () => {
+    mocks.listMcpTools.mockResolvedValue(LOWERED_CEILING);
+
+    await runSync();
+
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    const [err] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+    expect((err as Error).message).toContain("contract drift");
+  });
+
+  it("мовчить, коли контракт цілий", async () => {
+    mocks.listMcpTools.mockResolvedValue({
+      ok: true,
+      data: {
+        tools: [
+          {
+            name: "silpo_get_my_online_orders",
+            inputSchema: {
+              properties: { limit: { maximum: 100 }, offset: {} },
+            },
+          },
+          {
+            name: "silpo_get_my_offline_orders",
+            inputSchema: {
+              properties: {
+                branchId: {},
+                deliveryType: {},
+                timeslotStart: {},
+                timeslotEnd: {},
+                limit: { maximum: 10 },
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    await runSync();
+
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it("не бʼє в tools/list частіше, ніж раз на добу", async () => {
+    mocks.listMcpTools.mockResolvedValue(LOWERED_CEILING);
+
+    await runSync();
+    await runSync();
+
+    expect(mocks.listMcpTools).toHaveBeenCalledTimes(1);
+  });
+
+  it("падіння самої звірки НЕ валить синк", async () => {
+    mocks.listMcpTools.mockRejectedValue(new Error("boom"));
+
+    // Головне твердження: синк доходить до кінця і віддає результат.
+    await expect(runSync()).resolves.toMatchObject({ status: "connected" });
   });
 });
