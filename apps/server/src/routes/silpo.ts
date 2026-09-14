@@ -407,7 +407,16 @@ async function withSyncDiagnosis(
   }
   try {
     const diagnosis = await diagnoseSilpo(userId);
-    if ("unavailable" in diagnosis) return err;
+    if ("unavailable" in diagnosis) {
+      logger.warn({
+        msg: "silpo_sync_diagnosis_unavailable",
+        state: diagnosis.unavailable,
+      });
+      return new ExternalServiceError(
+        `${err.message}. Причину дізнатись не вдалось: ${diagnosis.unavailable}`,
+        { code: err.code },
+      );
+    }
     logger.info({ msg: "silpo_sync_diagnosed", verdict: diagnosis.verdict });
     // Вердикт ЗАМІНЯЄ загальну копію, а не дописується до неї.
     //
@@ -417,18 +426,28 @@ async function withSyncDiagnosis(
     // чи спрацював і людина просто переказала початок речення. Ще й
     // вердикт про справжній дрейф сам містить слово «формат».
     //
-    // Тепер стара фраза не може зʼявитись на діагностованому шляху взагалі.
-    // Побачив «Сільпо змінили формат відповіді» — значить цей код НЕ
-    // виконався (образ старий), і це діагноз сам по собі.
+    // Тепер стара фраза не може зʼявитись на діагностованому шляху взагалі,
+    // а три різні стани дають три різні тексти — це й потрібно, щоб
+    // СКРІНШОТ був доказом. Доти вони зливались в один рядок, і на
+    // скріншоті 2026-09-13 неможливо було відрізнити:
+    //   1. «Чеки не оновились. <вердикт>»       — код виконався, причина є;
+    //   2. «…недоступне. Причину дізнатись…»    — виконався, діагностика
+    //      не мала куди піти (немає підключення);
+    //   3. «…недоступне. Діагностика впала: …»  — виконався, діагностика
+    //      кинула помилку;
+    //   4. РІВНО стара фраза без хвоста         — цей код НЕ виконався,
+    //      тобто на сервері старий образ.
+    // Четвертий випадок тепер єдиний, що дає голу стару копію.
     return new ExternalServiceError(`Чеки не оновились. ${diagnosis.verdict}`, {
       code: err.code,
     });
   } catch (diagErr) {
-    logger.warn({
-      msg: "silpo_sync_diagnosis_failed",
-      err: diagErr instanceof Error ? diagErr.message : String(diagErr),
-    });
-    return err;
+    const detail = diagErr instanceof Error ? diagErr.message : String(diagErr);
+    logger.warn({ msg: "silpo_sync_diagnosis_failed", err: detail });
+    return new ExternalServiceError(
+      `${err.message}. Діагностика впала: ${detail}`,
+      { code: err.code },
+    );
   }
 }
 

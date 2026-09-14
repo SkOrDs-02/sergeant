@@ -974,7 +974,7 @@ describe("POST /api/silpo/sync — причина в тексті помилки
     expect(mocks.diagnoseSilpo).not.toHaveBeenCalled();
   });
 
-  it("провал самої діагностики не підміняє вихідну помилку", async () => {
+  it("провал діагностики видно в тексті, а не мовчки", async () => {
     mocks.pullAndSyncReceipts.mockRejectedValue(driftError());
     mocks.diagnoseSilpo.mockRejectedValue(new Error("boom"));
 
@@ -983,12 +983,10 @@ describe("POST /api/silpo/sync — причина в тексті помилки
       .set("x-test-user-id", "user-1");
 
     expect(res.status).toBe(502);
-    expect(res.body.error).toBe(
-      "Сільпо змінили формат відповіді — оновлення тимчасово недоступне",
-    );
+    expect(res.body.error).toContain("Діагностика впала: boom");
   });
 
-  it("стан без підключення лишає вихідну помилку як є", async () => {
+  it("стан без підключення теж має власний текст", async () => {
     mocks.pullAndSyncReceipts.mockRejectedValue(driftError());
     mocks.diagnoseSilpo.mockResolvedValue({ unavailable: "not_connected" });
 
@@ -996,8 +994,32 @@ describe("POST /api/silpo/sync — причина в тексті помилки
       .post("/api/silpo/sync")
       .set("x-test-user-id", "user-1");
 
-    expect(res.body.error).toBe(
-      "Сільпо змінили формат відповіді — оновлення тимчасово недоступне",
+    expect(res.body.error).toContain(
+      "Причину дізнатись не вдалось: not_connected",
     );
   });
+
+  // Головне твердження цієї групи: ГОЛА стара копія лишається можливою
+  // рівно в одному випадку — коли цей код не виконався взагалі. Тому
+  // жоден діагностований шлях не має права її віддати.
+  it.each([
+    ["вердикт", { verdict: "Все справне." }, undefined],
+    ["unavailable", { unavailable: "not_connected" }, undefined],
+    ["падіння", undefined, new Error("boom")],
+  ])(
+    "жоден шлях (%s) не віддає голу стару копію",
+    async (_case, resolved, rejected) => {
+      mocks.pullAndSyncReceipts.mockRejectedValue(driftError());
+      if (rejected) mocks.diagnoseSilpo.mockRejectedValue(rejected);
+      else mocks.diagnoseSilpo.mockResolvedValue(resolved);
+
+      const res = await request(appWith())
+        .post("/api/silpo/sync")
+        .set("x-test-user-id", "user-1");
+
+      expect(res.body.error).not.toBe(
+        "Сільпо змінили формат відповіді — оновлення тимчасово недоступне",
+      );
+    },
+  );
 });
