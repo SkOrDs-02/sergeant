@@ -2834,6 +2834,15 @@
     "sergeant-design/no-strict-bypass": [
       2
     ],
+    "sergeant-design/require-toast-error-action": [
+      2,
+      {
+        "allowlist": [
+          "apps/mobile/src/lib/showUndoToast.ts",
+          "apps/mobile/src/core/hub/HubChat.tsx"
+        ]
+      }
+    ],
     "sergeant-design/ukrainian-copy": [
       2
     ],

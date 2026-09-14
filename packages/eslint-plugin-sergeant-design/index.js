@@ -2513,7 +2513,8 @@ const noAdhocMetricAggregation = {
 // ─────────────────────────────────────────────────────────────────────────
 // ── require-toast-error-action ──────────────────────────────────────────
 //
-// `toast.error(...)` мусить нести recovery-дію `{ label, onClick }`.
+// `toast.error(...)` мусить нести recovery-дію `{ label, onClick }`
+// (на мобілці — `{ label, onPress }`, різниця лише в обробнику).
 //
 // Історія. Правило з такою ж назвою існувало до ADR-0081 і було retired
 // разом із рештою «естетичних» AST-правил — з тезою, що коректність дії
@@ -2567,7 +2568,13 @@ function hasToastAction(args) {
           ? String(key.value)
           : null;
     if (name === "label") hasLabel = true;
-    if (name === "onClick") hasClick = true;
+    // `onPress` — мобільний еквівалент. Обидві поверхні мають ОДНАКОВИЙ
+    // API тоста (`error(msg, duration?, action?)`), але різний обробник
+    // натискання: у вебі `onClick` (DOM), у React Native `onPress`.
+    // Доти правило знало лише веб-форму, тож на мобілці воно не змогло б
+    // визнати жодної коректної дії — і глоб, розширений без цієї правки,
+    // валив би навіть правильний код (знахідка при закритті PR-X3).
+    if (name === "onClick" || name === "onPress") hasClick = true;
   }
   return hasLabel && hasClick;
 }
