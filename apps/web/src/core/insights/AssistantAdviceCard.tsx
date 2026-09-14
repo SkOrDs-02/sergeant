@@ -201,6 +201,18 @@ export function AssistantAdviceCard({
               </p>
             )}
 
+            {/* Розкриття авторства — під ТІЛОМ поради і лише коли тіло є, та
+                сама форма, що в `WeeklyDigestCard`: підписувати скелетон або
+                порожній стан нема чого, там немає згенерованого тексту.
+                Бейдж «Припущення» у шапці цього не замінює — він про ступінь
+                впевненості й однаково стоятиме над текстом, який написала
+                людина (знахідка PR-A10). */}
+            {insight && (
+              <p className="mt-1.5 text-style-caption text-subtle leading-snug">
+                {messages.sergeant.adviceAiSignature}
+              </p>
+            )}
+
             {!(loading && !insight) && (
               <div className="mt-2.5 flex items-center gap-2">
                 {/* Actionable insight (UX-пропозиція 2026-07): порада була
