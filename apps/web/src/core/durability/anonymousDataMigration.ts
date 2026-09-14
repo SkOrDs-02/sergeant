@@ -374,6 +374,12 @@ async function describeStorage(): Promise<string | undefined> {
   const parts: string[] = [];
   try {
     const sqlite = await import("../db/sqlite.js");
+    // VFS називаємо ПРЯМО. Доти тут був лише `pool=`, і його відсутність
+    // доводилось тлумачити як «пул не встановився» — тлумачення виявилось
+    // правильним (база жила в localStorage), але покладатись на відсутність
+    // поля як на сигнал не можна.
+    const vfs = sqlite.readActiveSqliteVfs();
+    if (vfs) parts.push(`vfs=${vfs}`);
     const pool = sqlite.readSqliteStorageDiagnostics();
     if (pool) parts.push(`pool=${pool.fileCount}/${pool.capacity}`);
   } catch {
