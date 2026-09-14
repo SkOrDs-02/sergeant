@@ -134,6 +134,7 @@ describe("createMeEndpoints", () => {
       // сервер до міграції 116) — схема підставляє `null`, а не `[]`:
       // «сервер не знає вибору», а не «вибору немає».
       activeModules: null,
+      hubPrefs: null,
       updatedAt: "2026-06-06T10:00:00.000Z",
     });
     const url = firstCall(fetchMock)[0] as string;
@@ -313,6 +314,11 @@ describe("createMeEndpoints", () => {
         sergeantNudges: false,
         healthDataConsent: false,
         activeModules: ["finyk", "routine"],
+        // PR-S13: серіалізатор ЗАВЖДИ віддає ключ (а схема має
+        // `.default(null)`), тож фікстура експорту мусить його нести —
+        // інакше `toEqual` порівнює розібрану відповідь із формою
+        // pre-137-сервера.
+        hubPrefs: null,
         updatedAt: null,
       },
       data: {

@@ -59,6 +59,11 @@ const DEFAULT_PREFERENCES: Omit<UserPreferences, "updatedAt"> = {
   // локальний `hub_onboarding_vibes_v1`. Збігається з nullable-колонкою
   // без DEFAULT у міграції 116.
   activeModules: null,
+  // `null`, НЕ `{}` — та сама трійця станів, що в `activeModules` вище, і
+  // з тієї ж причини: `{}` означало б «людина лишила все дефолтним», а не
+  // «сервер ще не знає». Збігається з nullable-колонкою без DEFAULT
+  // (міграція 137).
+  hubPrefs: null,
 };
 
 function iso(value: Date | string): string {
@@ -96,6 +101,7 @@ function serializePreferences(
     // ручний запит без неї) дасть `undefined`, і воно має читатись як
     // «вибору немає», а не впасти на `.filter` нижче.
     activeModules: serializeActiveModules(row["active_modules"]),
+    hubPrefs: serializeHubPrefs(row["hub_prefs"]),
     updatedAt: maybeIso(row["updated_at"] as Date | string | null | undefined),
   };
 }
@@ -113,13 +119,48 @@ function serializeActiveModules(value: unknown): DashboardModuleId[] | null {
   );
 }
 
+/**
+ * DB → API для `hub_prefs`. `jsonb` приїжджає з `pg` уже розібраним, але
+ * shape-guard тут не зайвий із трьох причин.
+ *
+ * 1. До міграції 137 колонки не існувало, тож старий рядок дасть
+ *    `undefined`, і це має читатись як «серверних налаштувань немає».
+ * 2. CHECK у БД гарантує лише `jsonb_typeof = 'object'`, а масив у JSONB —
+ *    це НЕ object, тож масив відсіється тут, як і має.
+ * 3. **Скаляри фільтруються поелементно, і це не перестраховка.** Тип
+ *    відповіді обіцяє `Record<string, string | number | boolean>`, а БД
+ *    цього не гарантує: Zod-межа стоїть на ВХОДІ, тож рядок, записаний до
+ *    неї, вставлений вручну через SQL або вцілілий після майбутнього
+ *    послаблення схеми, цілком може нести вкладений обʼєкт. Віддати його
+ *    означало б збрехати типом — клієнт за контрактом має право покласти
+ *    значення прямо в `boolean`-проп.
+ *
+ * Невідповідні ключі ВИКИДАЮТЬСЯ, а не валять запит: єдиний зіпсутий
+ * прапорець не має класти всю сторінку налаштувань.
+ */
+function serializeHubPrefs(
+  value: unknown,
+): Record<string, string | number | boolean> | null {
+  if (value === null || value === undefined) return null;
+  if (typeof value !== "object" || Array.isArray(value)) return null;
+  const out: Record<string, string | number | boolean> = {};
+  for (const [key, v] of Object.entries(value as Record<string, unknown>)) {
+    if (typeof v === "boolean" || typeof v === "string") {
+      out[key] = v;
+    } else if (typeof v === "number" && Number.isFinite(v)) {
+      out[key] = v;
+    }
+  }
+  return out;
+}
+
 export async function getUserPreferences(
   db: Queryable,
   userId: string,
 ): Promise<UserPreferences> {
   const result = await db.query<Record<string, unknown>>(
     `SELECT analytics, ai_memory, push_notifications, sergeant_nudges,
-            health_data_consent, active_modules, updated_at
+            health_data_consent, active_modules, hub_prefs, updated_at
        FROM user_preferences
       WHERE user_id = $1`,
     [userId],
@@ -148,12 +189,21 @@ export async function upsertUserPreferences(
       patch.activeModules !== undefined
         ? patch.activeModules
         : current.activeModules,
+    // Те саме розрізнення за `undefined`, що й для `activeModules` вище, і
+    // з тієї ж причини: `null` тут — осмислене значення («прибери серверні
+    // налаштування»), яке `??` мовчки перетворив би на «не чіпай».
+    //
+    // Мішок замінюється ЦІЛКОМ, а не зливається по ключах. Це і є
+    // LWW-рішення 2026-09-14: пʼять тумблерів живуть на одному екрані й
+    // їдуть одним патчем, тож частковий мерж лише створив би стан, якого
+    // не бачив жоден пристрій.
+    hubPrefs: patch.hubPrefs !== undefined ? patch.hubPrefs : current.hubPrefs,
   };
   const result = await db.query<Record<string, unknown>>(
     `INSERT INTO user_preferences
         (user_id, analytics, ai_memory, push_notifications, sergeant_nudges,
-         health_data_consent, active_modules, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, NOW())
+         health_data_consent, active_modules, hub_prefs, updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
       ON CONFLICT (user_id) DO UPDATE SET
         analytics = EXCLUDED.analytics,
         ai_memory = EXCLUDED.ai_memory,
@@ -161,9 +211,10 @@ export async function upsertUserPreferences(
         sergeant_nudges = EXCLUDED.sergeant_nudges,
         health_data_consent = EXCLUDED.health_data_consent,
         active_modules = EXCLUDED.active_modules,
+        hub_prefs = EXCLUDED.hub_prefs,
         updated_at = NOW()
       RETURNING analytics, ai_memory, push_notifications, sergeant_nudges,
-                health_data_consent, active_modules, updated_at`,
+                health_data_consent, active_modules, hub_prefs, updated_at`,
     [
       userId,
       next.analytics,
@@ -172,6 +223,7 @@ export async function upsertUserPreferences(
       next.sergeantNudges,
       next.healthDataConsent,
       next.activeModules,
+      next.hubPrefs,
     ],
   );
   return serializePreferences(result.rows[0]);

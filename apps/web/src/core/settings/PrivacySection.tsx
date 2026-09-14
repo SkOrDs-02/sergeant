@@ -39,6 +39,7 @@ export const DEFAULT_PREFERENCES: UserPreferences = {
   // Приватність цим екраном не керує — вибір модулів живе в «Головна»
   // (`DashboardSection`) і синхронізується окремо (`activeModulesSync`).
   activeModules: null,
+  hubPrefs: null,
   updatedAt: null,
 };
 

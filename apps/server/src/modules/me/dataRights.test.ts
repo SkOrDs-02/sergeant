@@ -58,6 +58,7 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       // сказав би клієнту «людина свідомо вимкнула всі модулі» і затер
       // би її локальний вибір — дефолт тут частина контракту.
       activeModules: null,
+      hubPrefs: null,
       updatedAt: null,
     });
   });
@@ -71,6 +72,7 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
         sergeant_nudges: true,
         health_data_consent: true,
         active_modules: ["nutrition", "finyk"],
+        hub_prefs: { calmMode: true },
         updated_at: new Date("2026-06-06T10:00:00.000Z"),
       },
     ]);
@@ -85,6 +87,7 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       // серіалізатор. Це не косметика — на хабі плитки шикуються саме
       // в порядку вибору.
       activeModules: ["nutrition", "finyk"],
+      hubPrefs: { calmMode: true },
       updatedAt: "2026-06-06T10:00:00.000Z",
     });
   });
@@ -111,6 +114,64 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       "user-1",
     );
     expect(dirty.activeModules).toEqual(["finyk"]);
+  });
+
+  // PR-S13 (міграція 137). Серіалізатор `hub_prefs` мусить тримати три
+  // речі, і кожна з них уже колись була багом у сусідній колонці.
+  it("PR-S13: hub_prefs — три стани, масив і не-скаляри відсіюються", async () => {
+    // 1. Рядок, створений до 137, колонки не має → «серверних
+    //    налаштувань немає», не падіння.
+    const legacy = await getUserPreferences(
+      mockDb([{ analytics: true, ai_memory: true, updated_at: null }]),
+      "user-1",
+    );
+    expect(legacy.hubPrefs).toBeNull();
+
+    // 2. Порожній обʼєкт — це ІНШИЙ стан, не `null`. На цій різниці
+    //    тримається гідратація на клієнті.
+    const empty = await getUserPreferences(
+      mockDb([{ analytics: true, hub_prefs: {}, updated_at: null }]),
+      "user-1",
+    );
+    expect(empty.hubPrefs).toEqual({});
+    expect(empty.hubPrefs).not.toBeNull();
+
+    // 3. Масив — валідний JSONB, але НЕ обʼєкт; CHECK у БД його не
+    //    пропустить, а ось рядок, що лежав до 137, міг би.
+    const arrayRow = await getUserPreferences(
+      mockDb([{ analytics: true, hub_prefs: [1, 2], updated_at: null }]),
+      "user-1",
+    );
+    expect(arrayRow.hubPrefs).toBeNull();
+
+    // 4. Не-скаляри викидаються ПОЕЛЕМЕНТНО, а не валять запит. Тип
+    //    відповіді обіцяє скаляри, а Zod-межа стоїть на вході — тож
+    //    рядок, записаний до неї чи вручну через SQL, цілком може нести
+    //    вкладений обʼєкт. Один зіпсутий прапорець не має класти всю
+    //    сторінку налаштувань.
+    const dirty = await getUserPreferences(
+      mockDb([
+        {
+          analytics: true,
+          hub_prefs: {
+            calmMode: true,
+            layout: "compact",
+            size: 3,
+            nested: { a: 1 },
+            list: [1],
+            nope: null,
+            nan: Number.NaN,
+          },
+          updated_at: null,
+        },
+      ]),
+      "user-1",
+    );
+    expect(dirty.hubPrefs).toEqual({
+      calmMode: true,
+      layout: "compact",
+      size: 3,
+    });
   });
 
   it("output passes UserPreferencesSchema — contract triplet anchor", async () => {

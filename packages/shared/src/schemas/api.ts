@@ -41,6 +41,36 @@ export const MeResponseSchema = z.object({ user: UserSchema });
 export type MeResponse = z.infer<typeof MeResponseSchema>;
 
 // ────────────────────── Data rights / /api/me/* ──────────────────────
+/**
+ * Межі мішка `hubPrefs`, спільні для відповіді й патча.
+ *
+ * Мішок навмисно ВІДКРИТИЙ — `hubPrefs.schema.ts` на вебі прямо каже, що
+ * власники фіч кладуть туди прапорці «without going through a central
+ * registry», і закритий перелік зняв би саме цю властивість. Але те, що
+ * годиться для localStorage, не годиться для колонки в чужій БД: відкритий
+ * `z.record(z.string(), z.unknown())` на серверному ендпоінті означав би,
+ * що будь-який клієнт із валідною сесією пише в `user_preferences`
+ * довільний JSON довільного розміру.
+ *
+ * Тому межі такі: значення — лише СКАЛЯРИ (той самий словник, що описує
+ * локальна схема: «booleans, layout strings, accent IDs»), без обʼєктів і
+ * масивів; ключ — до 64 символів; ключів — до 32. Фактичних ключів на
+ * 2026-09-14 пʼять, тож стеля з семикратним запасом і не тисне на
+ * продуктову роботу.
+ *
+ * `.catchall`/`.strict` тут не застосовні — це `z.record`, і саме він
+ * зберігає відкритість.
+ */
+const HUB_PREFS_MAX_KEYS = 32;
+const HubPrefsBagSchema = z
+  .record(
+    z.string().min(1).max(64),
+    z.union([z.boolean(), z.string().max(256), z.number().finite()]),
+  )
+  .refine((bag) => Object.keys(bag).length <= HUB_PREFS_MAX_KEYS, {
+    message: `hubPrefs: не більше ${HUB_PREFS_MAX_KEYS} ключів`,
+  });
+
 export const UserPreferencesSchema = z.object({
   analytics: z.boolean(),
   aiMemory: z.boolean(),
@@ -94,6 +124,22 @@ export const UserPreferencesSchema = z.object({
     .max(DASHBOARD_MODULE_IDS.length)
     .nullable()
     .default(null),
+  /**
+   * Налаштування вигляду хаба — дзеркало локального `hub_prefs_v1`
+   * (знахідка PR-S13 огляду 2026-09-13, рішення founder-а 2026-09-14).
+   *
+   * Три стани, і всі три різні — та сама трійця, що в `activeModules`
+   * вище, і з тієї ж причини (nullable-колонка без `DEFAULT`, міграція 137):
+   *  - `null` — серверних налаштувань ще немає; клієнт лишає локальні як є;
+   *  - `{}` — налаштування є, і всі дефолтні;
+   *  - непорожній обʼєкт — власне налаштування.
+   *
+   * `.default(null)` — з тієї ж rolling-deploy причини, що й у сусідів:
+   * web (Vercel) і сервер (Coolify) деплояться окремо, тож новий клієнт
+   * може розмовляти зі старим сервером, який поля ще не віддає. «Поля
+   * нема» і «серверних налаштувань нема» означають тут рівно те саме.
+   */
+  hubPrefs: HubPrefsBagSchema.nullable().default(null),
   updatedAt: z.string().datetime({ offset: true }).nullable(),
 });
 export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
@@ -120,6 +166,17 @@ export const UserPreferencesPatchSchema = z
       .transform((ids) => [...new Set(ids)])
       .nullable()
       .optional(),
+    /**
+     * Відсутнє поле = «не чіпай налаштування»; `null` = «прибери серверні»
+     * (повернення до локальних); обʼєкт = новий стан ЦІЛКОМ.
+     *
+     * Саме цілком, не по-ключово — і це головне, що тут треба знати.
+     * Мішок їде як одне значення, тобто розвʼязання конфлікту між
+     * пристроями — LWW по всьому мішку (рішення 2026-09-14). Пер-ключові
+     * мітки часу були б над-інженерією для пʼяти тумблерів, які людина
+     * перемикає на одному екрані.
+     */
+    hubPrefs: HubPrefsBagSchema.nullable().optional(),
   })
   .strict();
 export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;

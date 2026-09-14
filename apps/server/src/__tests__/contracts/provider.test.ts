@@ -274,7 +274,7 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 76 expected consumer interactions across 50 routes", () => {
+  it("pact file has 79 expected consumer interactions across 50 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
     // 75, не 73: +2 інтеракції 2026-08-25 на ВЖЕ покритих маршрутах
@@ -282,7 +282,11 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // `screenshot/analyze` із причиною) — `expectedRoutes` нижче не росте.
     // 76, не 75: +1 інтеракція на НОВОМУ маршруті `import/recent` (#930),
     // тож цього разу росте і `expectedRoutes`.
-    expect(pact.interactions).toHaveLength(76);
+    // 79, не 76: +3 інтеракції `hubPrefs` (PR-S13, міграція 137) на вже
+    // покритому `GET /api/v1/me/preferences` — дзеркально до трьох, які
+    // свого часу додав `activeModules`. Маршрут той самий, тож
+    // `expectedRoutes` не росте: змінилась лише кількість інтеракцій.
+    expect(pact.interactions).toHaveLength(79);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",
@@ -426,6 +430,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       sergeantNudges: boolean;
       healthDataConsent: boolean;
       activeModules: string[] | null;
+      hubPrefs: Record<string, unknown> | null;
       updatedAt: string | null;
     };
 
@@ -443,6 +448,12 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
           // серіалізатор — `activeModules: null` («сервер не знає
           // вибору»), НЕ `[]` («вибір є і він порожній»).
           active_modules: expected.activeModules,
+          // Nullable-колонка без DEFAULT (міграція 137), та сама трійця
+          // станів, що в `active_modules` вище: персона pact-а ще не
+          // синхронізувала налаштування хаба, тож `pg` віддає `null`, а
+          // серіалізатор — `hubPrefs: null` («сервер не знає, лиши
+          // локальні»), НЕ `{}` («знає, і всі дефолтні»).
+          hub_prefs: expected.hubPrefs,
           updated_at: expected.updatedAt,
         },
       ],
@@ -459,6 +470,10 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // Ключ мусить бути присутній навіть коли вибору немає — на цьому
     // тримається три-станова семантика на клієнті.
     expect(res.body).toHaveProperty("activeModules", null);
+    // Те саме для `hubPrefs`: ключ мусить бути присутній навіть коли
+    // серверних налаштувань немає — інакше клієнт не відрізнить «не знаю»
+    // від «знаю, і все дефолтне», і затре локальні налаштування.
+    expect(res.body).toHaveProperty("hubPrefs", null);
   });
 
   // ── GET /api/v1/me/profile ─────────────────────────────────────────────────

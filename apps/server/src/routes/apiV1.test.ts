@@ -252,6 +252,7 @@ describe("/api/v1/me data rights", () => {
       // Міграція 116 (знахідка B2): `null` = «серверного вибору нема»,
       // і це НЕ те саме, що `[]` = «вибір є, і він порожній».
       activeModules: null,
+      hubPrefs: null,
       updatedAt: null,
     });
   });
@@ -293,14 +294,28 @@ describe("/api/v1/me data rights", () => {
       sergeantNudges: false,
       healthDataConsent: true,
       activeModules: ["finyk", "routine"],
+      // Міграція 137: колонка нова, мок-рядок її не несе — тобто
+      // серіалізатор мусить дати `null` («серверних налаштувань вигляду
+      // ще немає»), а не `{}` і не `undefined`.
+      hubPrefs: null,
       updatedAt: "2026-06-06T10:05:00.000Z",
     });
     const [sql, params] = queryMock.mock.calls[1]!;
     expect(String(sql)).toMatch(/INSERT INTO user_preferences/);
-    // Останній параметр — `active_modules`. Патч його не згадує, тож
-    // upsert мусить перенести поточне значення (тут `null`, бо перший
-    // SELECT повернув порожній набір), а не затерти вибір.
-    expect(params).toEqual([user.id, false, true, false, false, false, null]);
+    // Два останні параметри — `active_modules` і `hub_prefs`. Патч не
+    // згадує жодного, тож upsert мусить перенести поточні значення (тут
+    // обидва `null`, бо перший SELECT повернув порожній набір), а не
+    // затерти вибір.
+    expect(params).toEqual([
+      user.id,
+      false,
+      true,
+      false,
+      false,
+      false,
+      null,
+      null,
+    ]);
   });
 
   it("PATCH /api/v1/me/preferences зберігає вибір модулів і дедуплікує його", async () => {

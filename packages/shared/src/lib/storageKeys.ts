@@ -43,6 +43,20 @@ export const STORAGE_KEYS = {
   FTUX_MODULES_HINT_DISMISSED: "sergeant.hub.ftuxModulesHint.dismissed.v1",
   DASHBOARD_ORDER: "hub_dashboard_order_v1",
   HUB_PREFS: "hub_prefs_v1",
+  /**
+   * Мітка «локальні `HUB_PREFS` мають зміну, якої сервер ще не підтвердив».
+   *
+   * Потрібна тому, що черга відправки (`hubPrefsSync.ts`) живе в памʼяті
+   * модуля й не переживає перезавантаження. Без мітки сценарій такий:
+   * людина перемикає тумблер → PATCH падає (метро, літак) → вкладку
+   * закрито → на наступному буті гідратація бачить не-`null` СТАРИЙ
+   * серверний мішок і перезаписує ним свіжіше локальне значення. Тобто
+   * зміна не просто не доїхала — вона зникла (знахідка рев'ю на #1195).
+   *
+   * Окремий ключ, а не поле всередині мішка: мішок цілком їде на сервер,
+   * і службова мітка синхронізації там була б і зайвою, і брехливою.
+   */
+  HUB_PREFS_UNSYNCED: "hub_prefs_unsynced_v1",
   USER_PROFILE: "hub_user_profile_v1",
   /**
    * Hub-level biometric parameters for nutrition / fitness calculations
