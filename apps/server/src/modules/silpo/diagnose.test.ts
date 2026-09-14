@@ -134,6 +134,56 @@ describe("diagnoseSilpo", () => {
     expect("verdict" in result && result.verdict).toContain("receipts");
   });
 
+  // Звіт власника 2026-09-14: діагноз сказав «Все справне… у вибірці 1
+  // замовлень» рівно тоді, коли синк падав. Причина — проба шукала
+  // `limit: 1`, а синк шле 100. Діагностика, яка виконує НЕ те, що
+  // зламалось, відводить від причини.
+  it("проба шле ТОЙ САМИЙ ліміт, що й синк", async () => {
+    await diagnoseSilpo("u1");
+
+    const limits = mocks.probeMcpTool.mock.calls.map((call: unknown[]) => {
+      const opts = call[0] as { args?: { limit?: number } } | undefined;
+      return opts?.args?.limit;
+    });
+    expect(limits).toContain(100);
+  });
+
+  it("дрібний запит проходить, справжній ні — вердикт називає саме межу", async () => {
+    mocks.probeMcpTool
+      .mockResolvedValueOnce(HEALTHY_PROBE)
+      .mockResolvedValueOnce({
+        ...HEALTHY_PROBE,
+        payloadExtracted: false,
+        payloadKeys: null,
+        ordersCount: null,
+        resultKeys: ["content", "content:text"],
+      });
+
+    const result = await diagnoseSilpo("u1");
+    const verdict = "verdict" in result ? result.verdict : "";
+
+    expect(verdict).toContain("1 замовлення");
+    expect(verdict).toContain("100");
+    expect(verdict).not.toContain("Все справне");
+  });
+
+  it("межу видно і коли великий запит дає відмову тули", async () => {
+    mocks.probeMcpTool
+      .mockResolvedValueOnce(HEALTHY_PROBE)
+      .mockResolvedValueOnce({
+        ...HEALTHY_PROBE,
+        isError: true,
+        refusal: "limit must be <= 20",
+        payloadExtracted: false,
+        ordersCount: null,
+      });
+
+    const result = await diagnoseSilpo("u1");
+    const verdict = "verdict" in result ? result.verdict : "";
+
+    expect(verdict).toContain("limit must be <= 20");
+  });
+
   it("без підключення віддає unavailable, а не вигаданий діагноз", async () => {
     mocks.callWithFreshAccessToken.mockResolvedValue({
       ok: false,

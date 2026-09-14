@@ -225,7 +225,8 @@ function normalizeRawOrder(
 
 // Ліміти з живих input schemas (спайк §0): offline max 10, online max 100.
 const OFFLINE_ORDERS_LIMIT = 10;
-const ONLINE_ORDERS_LIMIT = 100;
+/** Експортується для `diagnose.ts`: проба мусить шукати РІВНО те, що синк. */
+export const ONLINE_ORDERS_LIMIT = 100;
 
 /**
  * Fetches one order list and parses it **per order**: an MCP-level failure
