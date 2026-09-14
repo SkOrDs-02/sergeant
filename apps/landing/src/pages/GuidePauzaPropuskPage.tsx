@@ -32,7 +32,7 @@ export default function GuidePauzaPropuskPage() {
     jsonLd: {
       "@context": "https://schema.org",
       "@type": "HowTo",
-      name: "Як заявити паузу і пояснити пропуск у трекері звичок",
+      name: "Як заявити паузу і пояснити пропуск, щоб серія не обнулилась",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/pauza-i-propusk"].lastmod,
       author: { "@type": "Person", name: "Автор Sergeant" },

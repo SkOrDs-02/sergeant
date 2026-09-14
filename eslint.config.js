@@ -19,6 +19,7 @@ import { baseline } from "./eslint.baseline.js";
 import { webBlocks } from "./eslint.web.js";
 import { serverBlocks } from "./eslint.server.js";
 import { mobileBlocks } from "./eslint.mobile.js";
+import { landingBlocks } from "./eslint.landing.js";
 import { shellBlocks } from "./eslint.shell.js";
 import { packageBlocks } from "./eslint.packages.js";
 import { crossSurfaceBlocks } from "./eslint.cross-surface.js";
@@ -28,6 +29,7 @@ export default [
   ...webBlocks,
   ...serverBlocks,
   ...mobileBlocks,
+  ...landingBlocks,
   ...shellBlocks,
   ...packageBlocks,
   ...crossSurfaceBlocks,
