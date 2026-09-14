@@ -138,14 +138,14 @@ describe("diagnoseSilpo", () => {
   // замовлень» рівно тоді, коли синк падав. Причина — проба шукала
   // `limit: 1`, а синк шле 100. Діагностика, яка виконує НЕ те, що
   // зламалось, відводить від причини.
-  it("проба шле ТОЙ САМИЙ ліміт, що й синк", async () => {
+  it("проба шле ТОЙ САМИЙ розмір сторінки, що й синк", async () => {
     await diagnoseSilpo("u1");
 
     const limits = mocks.probeMcpTool.mock.calls.map((call: unknown[]) => {
       const opts = call[0] as { args?: { limit?: number } } | undefined;
       return opts?.args?.limit;
     });
-    expect(limits).toContain(100);
+    expect(limits).toContain(50);
   });
 
   it("дрібний запит проходить, справжній ні — вердикт називає саме межу", async () => {
@@ -163,7 +163,7 @@ describe("diagnoseSilpo", () => {
     const verdict = "verdict" in result ? result.verdict : "";
 
     expect(verdict).toContain("1 замовлення");
-    expect(verdict).toContain("100");
+    expect(verdict).toContain("50");
     expect(verdict).not.toContain("Все справне");
   });
 
