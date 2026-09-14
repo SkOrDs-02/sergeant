@@ -116,7 +116,7 @@ export function ConnectionExamples() {
           <span className="text-routine-strong">Рутина</span>
         </div>
         <blockquote className="text-lg font-medium leading-snug text-foreground">
-          «У дні, коли тренуєшся зранку, інші звички зриваються рідше»
+          «Коли тренуєшся важче, краще тримаєш звички»
         </blockquote>
         <figcaption className="mt-auto text-xs text-subtle">
           {CONFIDENCE.stable} · 34 спільні дні
@@ -133,7 +133,7 @@ export function ConnectionExamples() {
           <span className="text-routine-strong">Рутина</span>
         </div>
         <blockquote className="text-lg font-medium leading-snug text-foreground">
-          «Коли снідаєш удома, ранкова рутина тримається довше»
+          «Коли тримаєш звички, їси менше»
         </blockquote>
         <figcaption className="mt-auto text-xs text-subtle">
           {CONFIDENCE.coincidence} · 2 тижні даних
@@ -184,7 +184,7 @@ export function ConnectionsSection() {
           <span className="text-routine-strong">Рутина</span>
         </div>
         <blockquote className="text-lg font-medium leading-snug text-foreground">
-          «У дні, коли тренуєшся зранку, інші звички зриваються рідше»
+          «Коли тренуєшся важче, краще тримаєш звички»
         </blockquote>
         <figcaption className="mt-auto text-xs text-subtle">
           {CONFIDENCE.stable} · 34 спільні дні
