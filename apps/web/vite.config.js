@@ -320,6 +320,16 @@ export default defineConfig(({ mode }) => {
         telemetry: false,
       }),
     ].filter(Boolean),
+    // AI-DANGER: воркери збираються ОКРЕМИМ Rollup-білдом із власним
+    // конвеєром плагінів — плагіни з `plugins` вище туди НЕ потрапляють.
+    // Без цього блоку `sqliteWorker.ts` тягнув за собою ту саму мертву
+    // копію `sqlite3-worker1` (54.5 kB brotli), яку плагін щойно вирізав
+    // із головного графа: замір 2026-09-14 показав стуб у `vendor-sqlite`
+    // і незайманий виклик у воркерному чанку.
+    worker: {
+      format: "es",
+      plugins: () => [dropUnusedSqliteWorker1()],
+    },
     build: {
       outDir,
       emptyOutDir: true,
