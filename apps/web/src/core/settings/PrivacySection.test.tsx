@@ -489,4 +489,36 @@ describe("PrivacySection — V-12 (SettingsSubGroup primitive)", () => {
     expect(heading).toHaveClass("text-style-overline");
     expect(heading).not.toHaveClass("text-style-label");
   });
+
+  // PR-S4 (рішення founder-а 2026-09-14). Обидва блоки приїхали з «Резервної
+  // копії»: питання «що ви про мене знаєте і куди воно дівається» людина
+  // носить у приватність, а в резервну копію йде по файл. Доти розділ
+  // приватності відповідав на своє питання наполовину.
+  describe("PR-S4: декларації про дані живуть тут, а не при експорті", () => {
+    it("несе декларацію субпроцесорів разом зі згодами", async () => {
+      renderSection();
+      await openSection();
+      expect(screen.getByText("Куди їдуть дані для AI")).toBeInTheDocument();
+      expect(screen.getByText(/Anthropic/)).toBeInTheDocument();
+      // Фото — саме той виняток, заради якого декларація й потрібна: воно
+      // їде цілим, і замовчати це означало б обіцяти маскування, якого
+      // немає.
+      expect(screen.getByText(/Фото – виняток/)).toBeInTheDocument();
+    });
+
+    it("несе sunset-обіцянку в продукті, а не лише в умовах використання", async () => {
+      // Рішення founder-а #6 — попередження за 30 днів + вікно на експорт.
+      // Обіцянка має жити в продукті: у розділі юридичних текстів її ніхто
+      // не прочитає в момент, коли вона важлива.
+      renderSection();
+      await openSection();
+      expect(
+        screen.getByText(/Якщо Sergeant колись закриється/),
+      ).toBeInTheDocument();
+      expect(screen.getByText(/щонайменше за 30 днів/)).toBeInTheDocument();
+      // Друга половина обіцянки — чесне застереження про банк (рішення #2).
+      // Без нього «твої дані твої» обіцяло б більше, ніж продукт виконує.
+      expect(screen.getByText(/не відновить ніхто/)).toBeInTheDocument();
+    });
+  });
 });
