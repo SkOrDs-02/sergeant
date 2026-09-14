@@ -8,9 +8,6 @@ import {
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { motionScrollBehavior } from "@shared/lib/ui/motion";
-import { SectionHeading } from "@shared/components/ui/SectionHeading";
-import { Button } from "@shared/components/ui/Button";
-import { Card } from "@shared/components/ui/Card";
 import { Icon } from "@shared/components/ui/Icon";
 import { DateField } from "@shared/components/ui/DateField";
 import { Input } from "@shared/components/ui/Input";
@@ -43,8 +40,6 @@ export interface HabitFormProps {
   habitDraft: HabitDraft;
   setHabitDraft: Dispatch<SetStateAction<HabitDraft>>;
   editingId: string | null;
-  onSave: () => void;
-  onCancel: () => void;
   /**
    * Monotonic tick bumped by the parent (`RoutineApp`) when the
    * `add_habit` PWA action or the FTUX first-action sheet wants us to
@@ -54,38 +49,38 @@ export interface HabitFormProps {
    */
   focusTick?: number;
   /**
-   * When true, suppress the internal "Нова звичка / Редагувати звичку"
-   * heading. The dialog host already renders a bolder title so we skip
-   * the duplicate for a cleaner one-title-per-screen look.
-   */
-  hideHeading?: boolean;
-  /**
    * Inline error messages for individual fields, rendered next to the
    * offending field (red border + message). Replaces the old toast-only
    * validation pattern so users can see what to fix without scrolling
    * back up.
    */
   errors?: HabitFormErrors;
-  /**
-   * When the form is embedded inside a dialog host that renders its
-   * own action buttons in a sticky footer, suppress the in-flow
-   * "Скасувати / Додати звичку" row so the user always sees the CTA
-   * without scrolling to the end of the form.
-   */
-  hideActions?: boolean;
 }
 
+/**
+ * Поля створення й редагування звички — і **тільки поля**.
+ *
+ * AI-CONTEXT: форма навмисно не несе ні власного заголовка, ні кнопок дії,
+ * ні `Card`-обгортки. Усе це дає єдиний хост — `HabitQuickCreateDialog`
+ * (`title` аркуша та sticky-футер із «Зберегти зміни» / «Скасувати» /
+ * «Додати звичку»), і саме там воно під тестом.
+ *
+ * Доти тут стояв другий комплект того самого хрому під прапорцями
+ * `hideHeading`/`hideActions`, які єдиний хост **завжди** вмикав — тож
+ * жодна з тих гілок не рендерилась ніколи (знахідка PR-R12 огляду
+ * 2026-09-13). Вкладений `Card` до того ж малював «дві панелі одна в
+ * одній» на mobile Safari і зʼїдав ~32px бічних відступів.
+ *
+ * **Додаєш сюди заголовок або кнопку — спершу подивись на хост:** майже
+ * напевно там уже є те саме, і зʼявиться третій комплект замість другого.
+ */
 export function HabitForm({
   routine,
   habitDraft,
   setHabitDraft,
   editingId,
-  onSave,
-  onCancel,
   focusTick,
-  hideHeading = false,
   errors,
-  hideActions = false,
 }: HabitFormProps) {
   const fieldIds = useId();
   const startId = `${fieldIds}-start`;
@@ -152,18 +147,11 @@ export function HabitForm({
   }, [focusTick]);
 
   // When embedded in a dialog (HabitQuickCreateDialog) we skip the outer
-  // Card chrome — the dialog already provides the bordered, rounded
-  // container. Nesting another Card here visually duplicates the "flash
-  // card" around the form (noticed on mobile Safari where it looked like
-  // two stacked panels) and eats ~32px of horizontal padding.
+  // Тип обгортки тримай СТАЛИМ між рендерами: оголошення компонента
+  // всередині render перемонтовує поле вводу на кожній зміні стану, а це
+  // закриває софт-клавіатуру в мобільних PWA-браузерах.
   const formContent = (
     <>
-      {!hideHeading && (
-        <SectionHeading as="h2" size="xs" variant="routine">
-          {editingId ? "Редагувати звичку" : "Нова звичка"}
-        </SectionHeading>
-      )}
-
       <div>
         <Label htmlFor={nameId}>Назва звички</Label>
         <div className="flex gap-2 items-center">
@@ -472,52 +460,12 @@ export function HabitForm({
           )}
         </div>
       )}
-
-      {!hideActions && (
-        <div
-          className={cn(
-            "flex gap-2",
-            // Inside the quick-create dialog the sheet already has an "X"
-            // close in the top-right, so the Cancel button would be
-            // redundant. Editing actions stack on narrow phones so neither
-            // label is squeezed beyond its button, then share the row at sm.
-            editingId ? "flex-col sm:flex-row" : "flex-col",
-          )}
-        >
-          {editingId && (
-            <Button
-              type="button"
-              variant="secondary"
-              className="w-full min-w-0 sm:flex-1"
-              onClick={onCancel}
-            >
-              Скасувати
-            </Button>
-          )}
-          <Button
-            type="button"
-            variant="routine"
-            className="w-full min-w-0 sm:flex-1"
-            onClick={onSave}
-          >
-            {editingId ? "Зберегти зміни" : "Додати звичку"}
-          </Button>
-        </div>
-      )}
     </>
   );
 
-  // When embedded in a dialog (HabitQuickCreateDialog) we skip the outer
-  // Card chrome. Keep the wrapper element type stable across keystrokes:
-  // declaring a component inside render remounts the input on every state
-  // update, which closes the software keyboard in mobile PWA browsers.
-  return hideHeading ? (
+  return (
     <section ref={sectionRef} className="space-y-4">
       {formContent}
     </section>
-  ) : (
-    <Card as="section" ref={sectionRef} radius="lg" className="space-y-3">
-      {formContent}
-    </Card>
   );
 }
