@@ -104,6 +104,29 @@ export function ActiveHabitsSection({
           }
         />
       )}
+      {/* Порожній РЕЗУЛЬТАТ ПОШУКУ — не те саме, що порожній список. Вище
+          `EmptyState` ловить лише `!hasActive` («звичок ще немає»), тож при
+          непорожньому списку й запиті без збігів під полем не було нічого:
+          ані пояснення, ані виходу (знахідка PR-R13 огляду 2026-09-13).
+          Форма взята з такого ж випадку в цьому ж модулі —
+          `RoutineCalendarPanel.tsx:391-405`: заголовок, причина і кнопка, що
+          скидає саме той фільтр, який сховав список. */}
+      {hasActive && filteredActiveHabits.length === 0 && (
+        <EmptyState
+          title="Нічого не знайдено"
+          description={`Серед активних звичок немає жодної за запитом «${habitListQuery.trim()}».`}
+          module="routine"
+          action={
+            <Button
+              type="button"
+              variant="secondary"
+              onClick={() => setHabitListQuery("")}
+            >
+              Скинути пошук
+            </Button>
+          }
+        />
+      )}
       <ul className="space-y-2">
         {filteredActiveHabits.map((h) => (
           <HabitListItem
