@@ -32,10 +32,18 @@ vi.mock("./SyncRejectedList", () => ({
   SyncRejectedList: () => <div data-testid="sync-rejected-list" />,
 }));
 
+const opfsProbeRef: { value: Promise<unknown> } = {
+  value: Promise.resolve({ kind: "ok" }),
+};
+
 const purgeNoticeRef: {
   value: { purged: number; purgedAtIso: string } | null;
 } = { value: null };
 const dismissOutboxPurgeNoticeMock = vi.fn();
+
+vi.mock("../db/opfsProbe", () => ({
+  probeOpfsInWorker: () => opfsProbeRef.value,
+}));
 
 vi.mock("../syncEngine/outboxPurgeNotice", () => ({
   useOutboxPurgeNotice: () => purgeNoticeRef.value,
@@ -43,12 +51,57 @@ vi.mock("../syncEngine/outboxPurgeNotice", () => ({
 }));
 
 import { SyncStatusSheet } from "./SyncStatusSheet";
+import {
+  __resetActiveSqliteVfsForTests,
+  noteActiveSqliteVfs,
+} from "../db/storageBackendState";
 
 describe("SyncStatusSheet", () => {
   afterEach(() => {
     cleanup();
     purgeNoticeRef.value = null;
     dismissOutboxPurgeNoticeMock.mockClear();
+    opfsProbeRef.value = Promise.resolve({ kind: "ok" });
+    __resetActiveSqliteVfsForTests();
+  });
+
+  // Доступу до Sentry є не в кожного, хто дивиться на цей аркуш, а
+  // розслідування `SQLITE_IOERR` двічі просунулось саме тому, що
+  // діагностика потрапила НА ЕКРАН і приїхала скріншотом. Тому стан
+  // сховища читається тут, а не лише в дашборді.
+  it("називає, де фізично лежить локальна база", async () => {
+    noteActiveSqliteVfs("kvvfs");
+    render(
+      <SyncStatusSheet
+        open
+        onClose={vi.fn()}
+        online
+        pending={0}
+        deadLetter={0}
+      />,
+    );
+
+    expect(await screen.findByText(/localStorage/)).toBeInTheDocument();
+  });
+
+  it("показує відповідь розвідки OPFS, а не ховає її", async () => {
+    opfsProbeRef.value = Promise.resolve({
+      kind: "unavailable",
+      reason: "async close() — OPFS API too old",
+    });
+    render(
+      <SyncStatusSheet
+        open
+        onClose={vi.fn()}
+        online
+        pending={0}
+        deadLetter={0}
+      />,
+    );
+
+    // Причина має бути видимою дослівно: «ні» без причини вже одного разу
+    // коштувало двох хибних гіпотез.
+    expect(await screen.findByText(/OPFS API too old/)).toBeInTheDocument();
   });
 
   it("renders nothing while closed", () => {

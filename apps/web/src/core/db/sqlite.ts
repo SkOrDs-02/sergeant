@@ -9,6 +9,7 @@ import {
 import { logger } from "@shared/lib";
 import { isSyncableUserId } from "../syncEngine/syncableUserId.js";
 import { CLIENT_PULL_SUPPORTED_TABLES } from "../syncEngine/applyPullOp.js";
+import { noteActiveSqliteVfs } from "./storageBackendState.js";
 
 /**
  * Lazy-loaded SQLite-WASM client for `apps/web` (PR #015 in
@@ -337,6 +338,7 @@ async function initSqliteDb(
   // це нічим. Той самий тег розділяє `SQLITE_CORRUPT` (`API-P` / `API-Q`)
   // за бекендом зберігання.
   lastVfs = driver.vfs;
+  noteActiveSqliteVfs(driver.vfs);
   setSentryTag("sqlite.vfs", driver.vfs);
 
   const handle: SqliteDbHandle = {
