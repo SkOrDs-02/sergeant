@@ -35,8 +35,13 @@
         // монорепо заради разового скрипта не варто.
         "sharp"
       ],
-      // External binary installed by the operator/CI image, not from npm.
-      "ignoreBinaries": ["gitleaks"]
+      // External binaries installed by the operator/CI image, not from npm.
+      // `jq` — ним і сам workflow деплою розбирає відповідь Coolify, і
+      // тест `ci-deploy-verify-gate` ВИКОНУЄ той самий вираз на фікстурах
+      // (рядкова перевірка вже раз проґавила парсер, який читав лише одну
+      // форму з трьох). Тобто це не зайва залежність, а той самий
+      // інструмент, що й у проді гейта.
+      "ignoreBinaries": ["gitleaks", "jq"]
     },
     "apps/web": {
       "entry": ["src/sw.ts"],
