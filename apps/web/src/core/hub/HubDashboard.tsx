@@ -2,6 +2,7 @@
  * Last validated: 2026-08-03
  * Status: Active
  */
+import { useState } from "react";
 import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
 import { DemoModeBanner } from "../onboarding/DemoModeBanner";
 import { FirstEntryCelebrationModal } from "../onboarding/FirstEntryCelebrationModal";
@@ -33,10 +34,20 @@ export function HubDashboard({
   // у вікні завантаження сесії не бачив НІ банера durability, НІ soft-auth
   // (ревʼю #1128) — розбір у `localOnlyBannerVisibility.ts`.
   const auth = useAuthOptional();
+  // Розгорнутість блоку «Що зараз важливо» живе ТУТ, а не в самому блоці,
+  // бо відповідь потрібна двом споживачам одразу: самому блоку (не рахувати
+  // показ під згорнутим pill) і `useHubDashboardState` (не палити денну
+  // AI-квоту на пораду, якої на екрані немає — аудит PR-A1).
+  //
+  // Стартує `false` навмисно: справжнє значення віддасть `CollapsibleSection`
+  // своїм ефектом на монтуванні, прочитавши localStorage. Тобто до першого
+  // ефекту запит не піде — і це саме те, що треба.
+  const [insightsOpen, setInsightsOpen] = useState(false);
   const s = useHubDashboardState({
     onOpenModule,
     user,
     onShowAuth,
+    insightsOpen,
     authStatus: auth?.status,
   });
   // C · Контроль: «Чистий режим» (toggle у HubHeader) ховає весь сигнальний
@@ -131,6 +142,8 @@ export function HubDashboard({
         <StaggerChild index={2}>
           <HubInsightsBlock
             insightsDefaultOpen={false}
+            insightsOpen={insightsOpen}
+            onInsightsOpenChange={setInsightsOpen}
             coachLoading={s.coachLoading}
             coachError={s.coachError}
             coachInsightText={s.coachInsightText}

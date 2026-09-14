@@ -48,6 +48,15 @@ const mocks = vi.hoisted(() => ({
     handlers: undefined as undefined,
   },
   announce: vi.fn(),
+  /**
+   * Аргументи КОЖНОГО виклику `useCoachInsight`.
+   *
+   * Мок нижче раніше аргумент ковтав — і саме тому жоден веб-тест не міг
+   * упіймати дрейф `enabled`. Рівно ця хвороба вже ловилась на мобілці
+   * (PR #1187): зелена галочка, яка документує дефект замість падати на
+   * ньому. Тут вона була й на вебі.
+   */
+  coachInsightCalls: [] as Array<{ enabled?: boolean } | undefined>,
 }));
 
 vi.mock("@shared/components/ui/ScreenReaderAnnouncer", () => ({
@@ -155,12 +164,15 @@ vi.mock("./dashboard/dashboardCards", () => ({
 }));
 
 vi.mock("../insights/useCoachInsight", () => ({
-  useCoachInsight: () => ({
-    insight: "coach insight",
-    loading: false,
-    error: null,
-    refresh: vi.fn(),
-  }),
+  useCoachInsight: (opts?: { enabled?: boolean }) => {
+    mocks.coachInsightCalls.push(opts);
+    return {
+      insight: "coach insight",
+      loading: false,
+      error: null,
+      refresh: vi.fn(),
+    };
+  },
 }));
 
 vi.mock("../insights/AssistantAdviceCard", () => ({
@@ -301,6 +313,7 @@ describe("HubDashboard", () => {
     mocks.openHubModuleWithAction.mockClear();
     mocks.openHubSettingsSection.mockClear();
     mocks.announce.mockClear();
+    mocks.coachInsightCalls.length = 0;
   });
 
   afterEach(() => {
@@ -607,5 +620,29 @@ describe("HubDashboard", () => {
       "data-fresh",
       "true",
     );
+  });
+  // ── PR-A1, залишок ─────────────────────────────────────────────────
+  // Юніт на `shouldFetchCoachInsight` перевіряє лише чистий предикат.
+  // Ці два піни перевіряють ПРОВОДКУ: що справжня розгорнутість секції
+  // (localStorage + `onOpenChange` у `CollapsibleSection`) доходить до
+  // хука через `HubDashboard`. Саме проводка тут і була відсутня.
+  it("не палить AI-квоту коуча, поки блок «Що зараз важливо» згорнутий", () => {
+    renderDashboard();
+
+    // Секція монтується згорнутою (рішення «Тихо»), тож це не крайній
+    // випадок, а звичайний вхід на хаб.
+    expect(mocks.coachInsightCalls.length).toBeGreaterThan(0);
+    expect(mocks.coachInsightCalls.every((c) => c?.enabled === false)).toBe(
+      true,
+    );
+  });
+
+  it("вмикає запит коуча, коли людина розгорнула блок", () => {
+    const { container } = renderDashboard();
+
+    expandSingleCollapsedSection(container);
+
+    // Останній виклик — уже після розгортання.
+    expect(mocks.coachInsightCalls.at(-1)?.enabled).toBe(true);
   });
 });

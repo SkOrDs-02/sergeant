@@ -144,8 +144,9 @@ export function shouldFetchCoachInsight(
   hasRealEntry: boolean,
   calmMode: boolean,
   showInsights: boolean,
+  insightsOpen: boolean,
 ): boolean {
-  return hasRealEntry && !calmMode && showInsights;
+  return hasRealEntry && !calmMode && showInsights && insightsOpen;
 }
 
 // ─────────────────────────────────────────────────────────────────────
@@ -228,9 +229,18 @@ export function useHubDashboardState(props: {
    * потрібен — див. `localOnlyBannerVisibility.ts`.
    */
   authStatus?: string | undefined;
+  /**
+   * Чи РОЗГОРНУТИЙ блок «Що зараз важливо» прямо зараз.
+   *
+   * Стан живе в `HubDashboard`, а не тут, бо його джерело —
+   * `CollapsibleSection` усередині `HubInsightsBlock` (localStorage +
+   * `onOpenChange`). Хук лише читає його, щоб не палити денну AI-квоту
+   * Free-плану заради поради під закритим акордеоном (аудит PR-A1).
+   */
+  insightsOpen: boolean;
   onShowAuth: () => void;
 }): HubDashboardState {
-  const { onOpenModule, user, onShowAuth, authStatus } = props;
+  const { onOpenModule, user, onShowAuth, authStatus, insightsOpen } = props;
 
   const [order, setOrder] = useState(loadDashboardOrder);
   const density = useDashboardDensity();
@@ -358,10 +368,24 @@ export function useHubDashboardState(props: {
   // ніде не показують (аудит PR-A1, канон hub-coach §6.2).
   const [calmMode] = useHubPref<boolean>("calmMode", false);
   const [showInsights] = useHubPref<boolean>("showInsights", true);
+  // AI-DANGER: `insightsOpen` — НЕ дублікат трьох прапорців вище, і
+  // прибрати його не можна.
+  //
+  // Три прапорці кажуть «блок змонтований», а він монтується ЗГОРНУТИМ:
+  // `HubDashboard` передає `insightsDefaultOpen={false}` навмисно
+  // (рішення «Тихо» — увесь розумний шум живе під згорнутим pill).
+  // Тобто без цього терма порада генерувалась у КОЖНОГО, хто просто
+  // відкрив хаб, і Free-користувач щодня платив частиною денної квоти
+  // (5 запитів) за текст, якого на екрані немає — залишок аудиту PR-A1.
+  //
+  // Згорнутий підпис від цього не біднішає: він поради не показує
+  // (`HubInsightsBlock.tsx` — третя гілка `collapsedSubtitle` віддає
+  // `rest[0]?.title`), тож зникає лише блимання «Готую AI-пораду…».
   const coachInsightEnabled = shouldFetchCoachInsight(
     hasRealEntry,
     calmMode,
     showInsights,
+    insightsOpen,
   );
 
   const {

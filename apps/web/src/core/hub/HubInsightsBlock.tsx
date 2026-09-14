@@ -12,7 +12,6 @@
  * rendering their own insights locally via per-trigger hooks.
  */
 
-import { useState } from "react";
 import { useNavigate } from "react-router-dom";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { AssistantAdviceCard } from "../insights/AssistantAdviceCard";
@@ -29,6 +28,16 @@ import type { Rec, NudgeDefinition } from "@sergeant/shared";
 
 export interface HubInsightsBlockProps {
   insightsDefaultOpen: boolean;
+  /**
+   * Справжня розгорнутість секції, піднята в `HubDashboard`.
+   *
+   * Раніше цей стан жив тут і нікуди не виходив — через що `useCoachInsight`
+   * у батьківському хуці не мав як дізнатися, що блок закритий, і палив
+   * денну AI-квоту на пораду під згорнутим pill (аудит PR-A1).
+   */
+  insightsOpen: boolean;
+  /** Стабільний setter із `useState` батька — вимога `CollapsibleSection`. */
+  onInsightsOpenChange: (open: boolean) => void;
   coachLoading: boolean;
   coachError: string | null;
   coachInsightText: string | null;
@@ -53,6 +62,8 @@ export interface HubInsightsBlockProps {
 
 export function HubInsightsBlock({
   insightsDefaultOpen,
+  insightsOpen,
+  onInsightsOpenChange,
   coachLoading,
   coachError,
   coachInsightText,
@@ -73,12 +84,13 @@ export function HubInsightsBlock({
   const navigate = useNavigate();
   const moduleInsights = useAllInsights({ surface: "hub", cap: 3 });
   const askAiDisabled = useAskAiQuotaExhausted();
-  // Реальний стан розгорнутості секції. `CollapsibleSection` тримає дітей у
-  // DOM і згорнутою, тож без цього AI-порада і дайджест рахували б показ,
-  // якого користувач не бачив (подвійний collapse). Ініціалізація значенням
-  // `insightsDefaultOpen` — доки `onOpenChange` не віддав справжній стан із
-  // localStorage; setter стабільний, тож ефект у секції не циклиться.
-  const [insightsOpen, setInsightsOpen] = useState(insightsDefaultOpen);
+  // Реальний стан розгорнутості секції тепер живе в `HubDashboard`.
+  // `CollapsibleSection` тримає дітей у DOM і згорнутою, тож він потрібен
+  // тут, щоб AI-порада й дайджест не рахували показ, якого користувач не
+  // бачив (подвійний collapse) — а ПІДНЯТИЙ він тому, що та сама відповідь
+  // потрібна батьківському хуку, щоб не палити AI-квоту на пораду під
+  // закритим акордеоном (PR-A1). Ініціалізація в батька — `false`, доки
+  // `onOpenChange` не віддасть справжній стан із localStorage.
 
   function handleInsightActivate(insight: Insight) {
     if (insight.action.type === "navigate") {
@@ -101,7 +113,7 @@ export function HubInsightsBlock({
     <CollapsibleSection
       storageKey="sergeant:hub.insights.open"
       defaultOpen={insightsDefaultOpen}
-      onOpenChange={setInsightsOpen}
+      onOpenChange={onInsightsOpenChange}
       title="Що зараз важливо"
       collapsedIcon="sergeant"
       collapsedSubtitle={
