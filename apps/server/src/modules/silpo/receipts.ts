@@ -260,16 +260,27 @@ export const ONLINE_ORDERS_LIMIT = 100;
 export const ONLINE_ORDERS_PAGE_SIZE = 50;
 
 /**
- * Fetches one order list and parses it **per order**: an MCP-level failure
- * (network/auth/protocol/schema-drift on the envelope) still surfaces as
- * an `McpError`, but a single malformed *element* is dropped +
- * `logger.warn("silpo_raw_order_unparseable")` instead of failing the sync.
+ * Одна сторінка замовлень, розібрана **поелементно**: збій рівня MCP
+ * (мережа/авторизація/протокол/дрейф схеми конверта) і далі спливає як
+ * `McpError`, але окремий непарсабельний *елемент* просто відкидається з
+ * `logger.warn("silpo_raw_order_unparseable")`, не валячи синк.
+ *
+ * Повертає ДВА числа, і різниця між ними принципова: `orders` — те, що
+ * вдалось розібрати, `rawCount` — скільки елементів було в конверті. Для
+ * пагінації годиться лише другий: сторінка з одним битим рядком виглядає
+ * коротшою за запит, і по `orders.length` обхід вирішив би, що замовлення
+ * скінчились, мовчки загубивши все, що йде далі.
  */
+interface OrderPage {
+  orders: RawOrder[];
+  rawCount: number;
+}
+
 async function fetchOrderList(
   accessToken: string,
   toolName: "silpo_get_my_offline_orders" | "silpo_get_my_online_orders",
   args: Record<string, unknown>,
-): Promise<McpResult<RawOrder[]>> {
+): Promise<McpResult<OrderPage>> {
   const result = await callMcpTool({
     accessToken,
     toolName,
@@ -279,7 +290,8 @@ async function fetchOrderList(
   if (!result.ok) return result;
 
   const orders: RawOrder[] = [];
-  (result.data.orders ?? []).forEach((raw, index) => {
+  const rawOrders = result.data.orders ?? [];
+  rawOrders.forEach((raw, index) => {
     const parsed = RawOrderSchema.safeParse(raw);
     if (!parsed.success) {
       logger.warn({
@@ -296,7 +308,7 @@ async function fetchOrderList(
     orders.push(parsed.data);
   });
 
-  return { ok: true, data: orders };
+  return { ok: true, data: { orders, rawCount: rawOrders.length } };
 }
 
 interface BothOrderLists {
@@ -370,12 +382,15 @@ async function fetchOnlineOrders(
     }
 
     if (!page.ok) return page;
-    orders.push(...page.data);
-    // Коротша сторінка = замовлення скінчились. Порівнюємо з тим, що
-    // РЕАЛЬНО просили останнім запитом, а не з `want`: після звуження це
-    // різні числа, і `want` дав би нескінченний цикл на повній сторінці.
-    if (page.data.length < Math.min(pageSize, want)) break;
-    offset += page.data.length;
+    orders.push(...page.data.orders);
+    // Коротша сторінка = замовлення скінчились. Два уточнення, і обидва
+    // з граблів. Перше: порівнюємо з тим, що РЕАЛЬНО просили останнім
+    // запитом, а не з `want` — після звуження це різні числа, і `want`
+    // дав би нескінченний цикл на повній сторінці. Друге: міряємо
+    // `rawCount`, а не `orders.length` — один непарсабельний рядок робить
+    // повну сторінку «короткою», і обхід зупинився б, загубивши решту.
+    if (page.data.rawCount < Math.min(pageSize, want)) break;
+    offset += page.data.rawCount;
   }
 
   return { ok: true, data: orders.slice(0, ONLINE_ORDERS_LIMIT) };
@@ -474,7 +489,7 @@ function makeFetchBothOrderLists(
           kind: offlineResult.error.kind,
         });
       } else {
-        offline = offlineResult.data;
+        offline = offlineResult.data.orders;
       }
     } else {
       logger.warn({ msg: "silpo_offline_orders_skipped_no_branch_context" });
