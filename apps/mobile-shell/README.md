@@ -1,7 +1,7 @@
 # `@sergeant/mobile-shell` — Capacitor shell
 
 > **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-16.
-> **Mobile strategy:** Capacitor shell — primary до Expo feature parity; sunset-дати T₀/T₁/T₂ не є active commitments — [ADR-0052](../../docs/governance/adr/0052-mobile-strategy-capacitor-primary.md).
+> **Mobile strategy:** обидва мобільні стеки на паузі з 2026-08-25 (web-first) — [ADR-0094](../../docs/governance/adr/0094-mobile-web-first-freeze.md). Пауза, не sunset: код лишається активом, `typecheck` і Jest далі гейтять `main`. Питання «хто primary» під паузою предмета не має; попереднє рішення «Capacitor primary до Expo parity» — історія в [ADR-0052](../../docs/governance/adr/0052-mobile-strategy-capacitor-primary.md).
 
 Тонкий native-shell навколо `@sergeant/web`. Спочатку задумувався як PoC
 («чи запуститься поточний веб-код у WebView»), але зараз доріс до MVP:

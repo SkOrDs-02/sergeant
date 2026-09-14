@@ -74,7 +74,7 @@
     "sergeant-mobile-expo": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "96dfc722a74654f2614ac6f8c2bb11234db5a2b2fc9c4f57551f9eaae52e0524"
+      "computedHash": "28a144d7a5f9ceefd081a1712c21ed83b1be8d543e085f454c38bb7dca268d3b"
     },
     "sergeant-module-ai": {
       "source": "local",
@@ -164,7 +164,7 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "8a38a473cbc8cb6e18760b71038486768ec09754c88d6e5f62c1c626dd75229d"
+      "computedHash": "b74f29675b6839b5110ec4b0a31ff460d58d3f32e3c26897f8890bda4c084f86"
     },
     "sergeant-tech-debt": {
       "source": "local",

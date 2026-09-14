@@ -15,13 +15,19 @@ Sergeant mobile — не тонка копія web-app-у. Він викорис
 - `apps/mobile-shell/**`
 - shared domain-packages, коли зміна mobile-driven
 
-## Мобільна стратегія (ADR-0052)
+## Мобільна стратегія ([ADR-0094](../../../docs/governance/adr/0094-mobile-web-first-freeze.md))
 
-**Capacitor = primary production path. Expo = parallel path без дати sunset.**
+**Обидва стеки — `apps/mobile` (Expo) і `apps/mobile-shell` (Capacitor) — на паузі з 2026-08-25. Web-first.**
 
-- PR не повинен ламати жоден із шляхів.
-- Sunset Expo → Capacitor відбудеться лише коли Expo досягне feature parity ≥18 з поточної кількості рядків у matrix (поріг з ADR-0052). **Не бери число з пам'яті і не з цього рядка** — актуальна матриця живе в [`docs/engineering/architecture/platforms.md`](../../../docs/engineering/architecture/platforms.md) (§ «Feature-parity матриця», рахуй рядки звідти); поріг уже досягнуто, тож питання «чи планувати sunset» — рішення founder-а, а не автоматичний наслідок. Агент його не ухвалює самостійно.
-- `forbid-shell-only-feature` lint rule активний: legitimate shell-glue PRs дозволені; feature-only в shell без відповідного Expo PR — ні.
+Це рішення власника, не технічне обмеження, і агент його не переглядає. Питають «чи варто зараз вкладатись у мобайл», «додаймо новий екран у `apps/mobile`», «який стек основний» — відповідь іде звідси, а не з інженерної оцінки поверхні.
+
+- **Пауза — не sunset і не deprecation.** Код обох стеків лишається активом на момент розморозки: не видаляється, не позначається застарілим, і `typecheck` + Jest для `@sergeant/mobile` далі гейтять `main` у джобі `check`. «Не вкладаємось у мобайл» і «мобайлу можна ламати збірку» — різні речі; друге не діє.
+- **Питання «хто primary» під паузою предмета не має.** Воно повертається окремим ADR на момент розморозки. Попереднє «Capacitor = primary production path, Expo = parallel» — це [ADR-0052](../../../docs/governance/adr/0052-mobile-strategy-capacitor-primary.md), superseded 2026-09-13; читай його як історію, не як інструкцію.
+- **Питання sunset Expo так само закрите.** Поріг feature-parity з ADR-0052 більше нічого не запускає: під паузою sunset не активується за визначенням. Не пропонуй його як наслідок parity-матриці з [`platforms.md`](../../../docs/engineering/architecture/platforms.md) — сама матриця лишається довідкою про стан портування, а рішення належить founder-у.
+- **Баг-фікс і підтримка збірки дозволені**, продуктовий розвиток — ні. Якщо задача виглядає як нова мобільна фіча, спершу скажи, що контур на паузі, і спитай founder-а; не плануй роботу мовчки.
+- `forbid-shell-only-feature` lint rule лишається активним: legitimate shell-glue PRs дозволені; feature-only в shell без відповідного Expo PR — ні. Правило чинне саме як guard симетрії, а не як вимога розвивати обидва стеки.
+
+> **AI-DANGER: перелік заморожених напрямів не дублюй тут.** Канонічний перелік і порядок розморозки — [`docs/work/specs/tech-debt/mobile.md`](../../../docs/work/specs/tech-debt/mobile.md). Другий список розійдеться з першим, і це вже коштувало знахідки P1 (PR-M2 огляду 2026-09-13): рішення про паузу (2026-08-25) три тижні жило лише в шапці tech-debt-нотатки, поки єдиний ADR про мобільну стратегію стверджував протилежне.
 
 ## Жорсткі правила
 

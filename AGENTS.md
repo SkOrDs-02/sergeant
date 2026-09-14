@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-30.
+> **Last touched:** 2026-09-14 by @claude. **Next review:** 2026-12-31.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -53,6 +53,8 @@ Sergeant is **tool-agnostic**: any AI agent harness drives this repo through the
 | Full QA across all surfaces in parallel                              | `sergeant-qa-squad`                   |
 | Founder needs multi-perspective product/strategy/UX advice           | `sergeant-council`                    |
 | Execute a batch of planning tasks via parallel agents                | `sergeant-planning-batch`             |
+
+> **Мобільний контур на паузі з 2026-08-25** — [ADR-0094](./docs/governance/adr/0094-mobile-web-first-freeze.md) (web-first, обидва стеки). Це стосується і задач, які роутяться НЕ в `sergeant-mobile-expo`: «нова фіча / новий екран» веде в `sergeant-feature-delivery`, і там про паузу не сказано нічого. Продуктовий розвиток `apps/mobile` і `apps/mobile-shell` не планують без рішення власника. Пауза, **не** sunset: код лишається активом, `typecheck` і Jest далі гейтять `main`, баг-фікси дозволені.
 
 If two surfaces overlap (e.g. web + e2e), load the **owner** first; add the other only when the workflow requires it or when blocked. Full catalog: [`docs/start/agents/agent-skills-catalog.md`](./docs/start/agents/agent-skills-catalog.md).
 
