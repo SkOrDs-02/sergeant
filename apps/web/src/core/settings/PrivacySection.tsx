@@ -272,6 +272,33 @@ export function PrivacySection() {
             </Button>
           </div>
         ) : null}
+        {/* Рішення founder-а 2026-09-14. Видалення акаунта ІСНУЄ —
+            `profile/DangerZoneSection` із підтвердженням, — але живе воно в
+            Профілі, а шукають його тут: це та сама поличка «мої дані й що з
+            ними можна зробити», що й експорт зі згодами. Продуктовий огляд
+            спершу записав це як «пункту немає взагалі», і помилився; чинна
+            знахідка вужча — його немає ТАМ, ДЕ ЙОГО ШУКАЮТЬ.
+
+            Тому тут вказівник, а не друга кнопка. Дублювати незворотну дію
+            в два місця означало б два шляхи до неї й два місця, де може
+            розʼїхатись підтвердження. Форма та сама, що у вказівника на
+            памʼять вище. */}
+        {shell ? (
+          <div className="flex flex-col items-start gap-1">
+            <p className="text-style-body text-subtle leading-relaxed">
+              Видалити акаунт разом з усіма даними можна в Профілі, у розділі
+              «Небезпечна зона».
+            </p>
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={() => shell.ui.setHubView("profile")}
+            >
+              Відкрити Профіль → Небезпечна зона
+            </Button>
+          </div>
+        ) : null}
         <LegalLinks compact className="justify-start" />
       </SettingsSubGroup>
 

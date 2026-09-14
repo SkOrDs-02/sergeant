@@ -52,6 +52,14 @@ vi.mock("../legal/LegalLinks", () => ({
   LegalLinks: () => null,
 }));
 
+// Обидва вказівники на Профіль (Памʼять і Небезпечна зона) стоять під
+// `{shell ? … : null}`, тож без шелла вони не рендеряться взагалі — і доти
+// жоден тест їх не бачив. Мок дає рівно те, що вони з нього беруть.
+const { mockSetHubView } = vi.hoisted(() => ({ mockSetHubView: vi.fn() }));
+vi.mock("../app/HubShellContext", () => ({
+  useOptionalHubShell: () => ({ ui: { setHubView: mockSetHubView } }),
+}));
+
 // AiMemoryList ганяє власний React Query трафік (`/api/ai-memory/list`).
 // Цей набір — про per-user PIN scoping — монтування реального списку
 // змусило б додавати QueryClientProvider у КОЖЕН `render()` тут і
@@ -506,6 +514,27 @@ describe("PrivacySection — V-12 (SettingsSubGroup primitive)", () => {
       // їде цілим, і замовчати це означало б обіцяти маскування, якого
       // немає.
       expect(screen.getByText(/Фото – виняток/)).toBeInTheDocument();
+    });
+
+    it("вказує, де видалити акаунт, і НЕ дублює саму дію", async () => {
+      // Рішення founder-а 2026-09-14. Дія існує в `profile/DangerZoneSection`
+      // і лишається там: дублювати незворотну дію в два місця означало б два
+      // шляхи до неї й два місця, де може розʼїхатись підтвердження. Тут —
+      // тільки вказівник, бо шукають її саме на цій поличці.
+      renderSection();
+      await openSection();
+
+      expect(
+        screen.getByText(/Видалити акаунт разом з усіма даними/),
+      ).toBeInTheDocument();
+      const open = screen.getByRole("button", { name: /Небезпечна зона/ });
+      fireEvent.click(open);
+      // Вказівник, який нікуди не веде, гірший за його відсутність.
+      expect(mockSetHubView).toHaveBeenCalledWith("profile");
+      // Ключова половина тесту: саме дія сюди НЕ переїхала.
+      expect(
+        screen.queryByRole("button", { name: /^Видалити акаунт$/ }),
+      ).not.toBeInTheDocument();
     });
 
     it("несе sunset-обіцянку в продукті, а не лише в умовах використання", async () => {
