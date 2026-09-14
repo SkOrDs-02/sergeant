@@ -3,6 +3,7 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 const mocks = vi.hoisted(() => ({
   callWithFreshAccessToken: vi.fn(),
   callMcpTool: vi.fn(),
+  listMcpTools: vi.fn(),
   resolveBranchContext: vi.fn(),
   poolConnect: vi.fn(),
   dbQuery: vi.fn(),
@@ -17,6 +18,7 @@ vi.mock("./tokenStore.js", () => ({
 // `callWithFreshAccessToken` that never reaches `callMcpTool`.
 vi.mock("./mcpClient.js", () => ({
   callMcpTool: mocks.callMcpTool,
+  listMcpTools: mocks.listMcpTools,
 }));
 
 vi.mock("./branchContext.js", () => ({
@@ -35,6 +37,7 @@ vi.mock("@sentry/node", () => ({ captureException: vi.fn() }));
 
 import * as Sentry from "@sentry/node";
 import {
+  __resetSilpoContractCheck,
   listReceipts,
   parseLimitCeilingFromRefusal,
   pullAndSyncReceipts,
@@ -966,6 +969,8 @@ describe("пагінація онлайн-замовлень", () => {
   it("не крутить цикл, коли відмова повторюється після звуження", async () => {
     runRealFetchPath();
     let calls = 0;
+    // Стеля нижча за стартові 50 — інакше звуження не спрацьовує і тест
+    // не перевіряє нічого, крім того, що перший запит упав.
     mocks.callMcpTool.mockImplementation(async () => {
       calls += 1;
       return {
@@ -973,7 +978,7 @@ describe("пагінація онлайн-замовлень", () => {
         error: {
           kind: "tool_error",
           message:
-            'Invalid arguments: [ { "code": "too_big", "maximum": 50, "path": [ "limit" ] } ]',
+            'Invalid arguments: [ { "code": "too_big", "maximum": 20, "path": [ "limit" ] } ]',
         },
       };
     });
@@ -985,7 +990,144 @@ describe("пагінація онлайн-замовлень", () => {
         withTransaction: db.withTransaction,
       }),
     ).rejects.toThrow();
-    // Одне звуження на сторінку: перший запит + один повтор, не більше.
-    expect(calls).toBeLessThanOrEqual(2);
+    // Рівно одне звуження на сторінку: перший запит + один повтор.
+    expect(calls).toBe(2);
+  });
+
+  it("не зупиняє обхід через один непарсабельний рядок на сторінці", async () => {
+    runRealFetchPath();
+    const offsets: number[] = [];
+    mocks.callMcpTool.mockImplementation(
+      async ({ args }: { args: Record<string, unknown> }) => {
+        const offset = Number(args["offset"] ?? 0);
+        offsets.push(offset);
+        if (offset === 0) {
+          // Повна сторінка (50 елементів), але один рядок битий: після
+          // фільтрації лишається 49. Якби пагінація міряла розібрані
+          // рядки, вона вирішила б, що замовлення скінчились, і друга
+          // сторінка ніколи б не приїхала.
+          const page: unknown[] = Array.from({ length: 49 }, (_v, i) =>
+            onlineOrder(`a${i}`),
+          );
+          page.splice(10, 0, { orderId: 42 });
+          return { ok: true, data: { orders: page } };
+        }
+        return { ok: true, data: { orders: [onlineOrder("b0")] } };
+      },
+    );
+
+    const db = makeFakeDb();
+    const result = await pullAndSyncReceipts("u1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    // Offset рухається на сирий розмір сторінки, не на 49 — інакше один
+    // елемент приїхав би двічі.
+    expect(offsets).toEqual([0, 50]);
+    expect(result.onlinePulled).toBe(50);
+  });
+});
+
+// ───────────── Профілактична звірка специфікації тул (раз на добу) ───────────
+
+describe("checkToolContract", () => {
+  const ONLINE_OK = {
+    ok: true as const,
+    data: { orders: [] },
+  };
+
+  beforeEach(() => {
+    __resetSilpoContractCheck();
+    mocks.listMcpTools.mockReset();
+    vi.mocked(Sentry.captureException).mockClear();
+  });
+
+  function runSync() {
+    mocks.callWithFreshAccessToken.mockImplementation(
+      async (_userId: string, fn: (token: string) => Promise<unknown>) =>
+        fn("fake-access-token"),
+    );
+    mocks.resolveBranchContext.mockResolvedValue({
+      ok: false as const,
+      error: { kind: "upstream" },
+    });
+    mocks.callMcpTool.mockResolvedValue(ONLINE_OK);
+    const db = makeFakeDb();
+    return pullAndSyncReceipts("u1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+  }
+
+  /** Жива специфікація зі стелею, нижчою за те, що шле синк. */
+  const LOWERED_CEILING = {
+    ok: true as const,
+    data: {
+      tools: [
+        {
+          name: "silpo_get_my_online_orders",
+          inputSchema: { properties: { limit: { maximum: 10 }, offset: {} } },
+        },
+      ],
+    },
+  };
+
+  it("дзвонить у Sentry, коли жива специфікація розійшлась із кодом", async () => {
+    mocks.listMcpTools.mockResolvedValue(LOWERED_CEILING);
+
+    await runSync();
+
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    const [err] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+    expect((err as Error).message).toContain("contract drift");
+  });
+
+  it("мовчить, коли контракт цілий", async () => {
+    mocks.listMcpTools.mockResolvedValue({
+      ok: true,
+      data: {
+        tools: [
+          {
+            name: "silpo_get_my_online_orders",
+            inputSchema: {
+              properties: { limit: { maximum: 100 }, offset: {} },
+            },
+          },
+          {
+            name: "silpo_get_my_offline_orders",
+            inputSchema: {
+              properties: {
+                branchId: {},
+                deliveryType: {},
+                timeslotStart: {},
+                timeslotEnd: {},
+                limit: { maximum: 10 },
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    await runSync();
+
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it("не бʼє в tools/list частіше, ніж раз на добу", async () => {
+    mocks.listMcpTools.mockResolvedValue(LOWERED_CEILING);
+
+    await runSync();
+    await runSync();
+
+    expect(mocks.listMcpTools).toHaveBeenCalledTimes(1);
+  });
+
+  it("падіння самої звірки НЕ валить синк", async () => {
+    mocks.listMcpTools.mockRejectedValue(new Error("boom"));
+
+    // Головне твердження: синк доходить до кінця і віддає результат.
+    await expect(runSync()).resolves.toMatchObject({ status: "connected" });
   });
 });

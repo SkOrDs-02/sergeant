@@ -30,7 +30,9 @@ import {
   type McpToolProbe,
 } from "./mcpClient.js";
 import { callWithFreshAccessToken, type QueryFn } from "./tokenStore.js";
-import { ONLINE_ORDERS_PAGE_SIZE } from "./receipts.js";
+import { parseLimitCeilingFromRefusal } from "./receipts.js";
+import { ONLINE_ORDERS_PAGE_SIZE } from "./orderLimits.js";
+import { diffToolContract } from "./toolContract.js";
 
 /**
  * Тули, на яких тримається інтеграція. Дзеркало списку з
@@ -55,6 +57,12 @@ export interface SilpoDiagnosis {
   missingTools: string[];
   /** Проба `silpo_get_my_online_orders` з `limit: 1`. */
   onlineOrdersProbe: McpToolProbe;
+  /**
+   * Розбіжності живої специфікації тул із тим, що шле код: знижена стеля
+   * аргументу, зниклий аргумент, нова обовʼязкова вимога. Порожньо —
+   * контракт цілий.
+   */
+  contractDrift: string[];
   /** Однорядковий людський вердикт — що саме зламано. */
   verdict: string;
 }
@@ -63,12 +71,22 @@ function buildVerdict(
   missingTools: readonly string[],
   probe: McpToolProbe,
   probeSmall: McpToolProbe,
+  contractDrift: readonly string[] = [],
 ): string {
   // Найцінніший випадок: дрібний запит проходить, справжній — ні. Це не
   // «формат змінили», а межа обсягу, і назвати її треба першою.
   const smallOk = probeSmall.payloadExtracted && !probeSmall.isError;
   const bigBroken = !probe.payloadExtracted || probe.isError;
   if (smallOk && bigBroken) {
+    // Відмова, яка САМА називає стелю, — це вже не збій: `fetchOnlineOrders`
+    // читає з неї число і повторює сторінку меншою. Рапортувати такий стан
+    // як поломку синку означало б відправити людину лагодити справне.
+    const ceiling = probe.isError
+      ? parseLimitCeilingFromRefusal(probe.refusal ?? "")
+      : null;
+    if (ceiling !== null) {
+      return `Сільпо знизили стелю «limit» до ${ceiling} (синк стартує з ${ONLINE_ORDERS_PAGE_SIZE}). Це синк переживає сам — звужує сторінку до названої стелі й тягне решту наступними. Правити код треба лише якщо чеки все одно не приїжджають.`;
+    }
     const why = probe.isError
       ? `відмова: «${probe.refusal ?? "без тексту"}»`
       : `payload не дістається, ключі ${JSON.stringify(probe.resultKeys)}`;
@@ -76,6 +94,15 @@ function buildVerdict(
   }
   if (missingTools.length > 0) {
     return `Сільпо прибрали або перейменували тули: ${missingTools.join(", ")}. Це справжній дрейф контракту.`;
+  }
+  // Далі — розбіжність специфікації. Порядок навмисний: зникла тула
+  // фундаментальніша, бо без неї не працює нічого, і решта перевірок лише
+  // повторила б це іншими словами. А от серед решти специфікація йде
+  // ПЕРШОЮ: вона називає причину прямо, тоді як проби нижче показують
+  // тільки наслідок. Саме цього бракувало 2026-09-14 — знижену стелю
+  // `limit` довелось вичитувати з тексту відмови.
+  if (contractDrift.length > 0) {
+    return `Сільпо змінили специфікацію тул: ${contractDrift.join("; ")}.`;
   }
   if (probe.transportError) {
     return `Виклик не дійшов до результату: ${probe.transportError.kind} — ${probe.transportError.message}.`;
@@ -144,11 +171,14 @@ export async function diagnoseSilpo(
     ? REQUIRED_TOOLS.filter((name) => !names.has(name))
     : [];
 
+  const contractDrift = tools.ok ? diffToolContract(tools.data) : [];
+
   return {
     toolsTotal: tools.ok ? tools.data.tools.length : null,
     toolsError: tools.ok ? null : tools.error,
     missingTools,
     onlineOrdersProbe: probe,
-    verdict: buildVerdict(missingTools, probe, probeSmall),
+    contractDrift,
+    verdict: buildVerdict(missingTools, probe, probeSmall, contractDrift),
   };
 }

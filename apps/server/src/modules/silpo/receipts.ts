@@ -8,8 +8,19 @@ import {
   ExternalServiceError,
   RateLimitError,
 } from "../../obs/errors.js";
-import { callMcpTool, type McpError, type McpResult } from "./mcpClient.js";
+import {
+  callMcpTool,
+  listMcpTools,
+  type McpError,
+  type McpResult,
+} from "./mcpClient.js";
 import { resolveBranchContext } from "./branchContext.js";
+import { diffToolContract } from "./toolContract.js";
+import {
+  OFFLINE_ORDERS_LIMIT,
+  ONLINE_ORDERS_LIMIT,
+  ONLINE_ORDERS_PAGE_SIZE,
+} from "./orderLimits.js";
 import { matchAndLink } from "./receiptsMatch.js";
 import {
   callWithFreshAccessToken,
@@ -223,45 +234,28 @@ function normalizeRawOrder(
 
 // ─────────────────────────────── MCP fetch step ─────────────────────────────
 
-// Ліміти з живих input schemas (спайк §0, 2026-08-18): offline max 10,
-// online тоді був max 100.
-const OFFLINE_ORDERS_LIMIT = 10;
-
 /**
- * Скільки онлайн-замовлень тягнемо за один синк. Це НЕ `limit` запиту:
- * запит іде сторінками (див. нижче), а це стеля обходу.
+ * Одна сторінка замовлень, розібрана **поелементно**: збій рівня MCP
+ * (мережа/авторизація/протокол/дрейф схеми конверта) і далі спливає як
+ * `McpError`, але окремий непарсабельний *елемент* просто відкидається з
+ * `logger.warn("silpo_raw_order_unparseable")`, не валячи синк.
  *
- * Експортується для `diagnose.ts`: проба мусить шукати РІВНО те, що синк.
+ * Повертає ДВА числа, і різниця між ними принципова: `orders` — те, що
+ * вдалось розібрати, `rawCount` — скільки елементів було в конверті. Для
+ * пагінації годиться лише другий: сторінка з одним битим рядком виглядає
+ * коротшою за запит, і по `orders.length` обхід вирішив би, що замовлення
+ * скінчились, мовчки загубивши все, що йде далі.
  */
-export const ONLINE_ORDERS_LIMIT = 100;
+interface OrderPage {
+  orders: RawOrder[];
+  rawCount: number;
+}
 
-/**
- * Розмір однієї сторінки онлайн-замовлень.
- *
- * **2026-09-14 Сільпо зарізали максимум зі 100 до 50** — мовчки, без
- * жодного оголошення. Синк просив рівно 100 і почав падати валідацією:
- * `MCP error -32602 … "code":"too_big","maximum":50,"path":["limit"]`.
- * Зафіксована фікстура контракту знята 18 серпня і досі каже `maximum: 100`,
- * тож снапшот-тест цього зловити не міг: він звіряє код із ЗАПИСОМ, а не з
- * живим сервером.
- *
- * Тому 50 — не «нова константа замість старої», а лише стартова здогадка:
- * `fetchOnlineOrders` нижче вміє звузитись сам, прочитавши стелю з тексту
- * відмови. Наступне зниження ліміту синк переживе без правки коду.
- */
-export const ONLINE_ORDERS_PAGE_SIZE = 50;
-
-/**
- * Fetches one order list and parses it **per order**: an MCP-level failure
- * (network/auth/protocol/schema-drift on the envelope) still surfaces as
- * an `McpError`, but a single malformed *element* is dropped +
- * `logger.warn("silpo_raw_order_unparseable")` instead of failing the sync.
- */
 async function fetchOrderList(
   accessToken: string,
   toolName: "silpo_get_my_offline_orders" | "silpo_get_my_online_orders",
   args: Record<string, unknown>,
-): Promise<McpResult<RawOrder[]>> {
+): Promise<McpResult<OrderPage>> {
   const result = await callMcpTool({
     accessToken,
     toolName,
@@ -271,7 +265,8 @@ async function fetchOrderList(
   if (!result.ok) return result;
 
   const orders: RawOrder[] = [];
-  (result.data.orders ?? []).forEach((raw, index) => {
+  const rawOrders = result.data.orders ?? [];
+  rawOrders.forEach((raw, index) => {
     const parsed = RawOrderSchema.safeParse(raw);
     if (!parsed.success) {
       logger.warn({
@@ -288,7 +283,7 @@ async function fetchOrderList(
     orders.push(parsed.data);
   });
 
-  return { ok: true, data: orders };
+  return { ok: true, data: { orders, rawCount: rawOrders.length } };
 }
 
 interface BothOrderLists {
@@ -362,15 +357,79 @@ async function fetchOnlineOrders(
     }
 
     if (!page.ok) return page;
-    orders.push(...page.data);
-    // Коротша сторінка = замовлення скінчились. Порівнюємо з тим, що
-    // РЕАЛЬНО просили останнім запитом, а не з `want`: після звуження це
-    // різні числа, і `want` дав би нескінченний цикл на повній сторінці.
-    if (page.data.length < Math.min(pageSize, want)) break;
-    offset += page.data.length;
+    orders.push(...page.data.orders);
+    // Коротша сторінка = замовлення скінчились. Два уточнення, і обидва
+    // з граблів. Перше: порівнюємо з тим, що РЕАЛЬНО просили останнім
+    // запитом, а не з `want` — після звуження це різні числа, і `want`
+    // дав би нескінченний цикл на повній сторінці. Друге: міряємо
+    // `rawCount`, а не `orders.length` — один непарсабельний рядок робить
+    // повну сторінку «короткою», і обхід зупинився б, загубивши решту.
+    if (page.data.rawCount < Math.min(pageSize, want)) break;
+    offset += page.data.rawCount;
   }
 
   return { ok: true, data: orders.slice(0, ONLINE_ORDERS_LIMIT) };
+}
+
+/**
+ * Як часто звіряти живу специфікацію тул із тим, що шле код. Раз на добу:
+ * це один додатковий `tools/list` на всіх користувачів разом, а зміни на
+ * їхньому боці не бувають частішими за деплої.
+ */
+const CONTRACT_CHECK_INTERVAL_MS = 24 * 60 * 60_000;
+let lastContractCheckAt = 0;
+
+/** Test-only: скидає вікно звірки контракту між тестами. */
+export function __resetSilpoContractCheck(): void {
+  lastContractCheckAt = 0;
+}
+
+/**
+ * Профілактична звірка специфікації тул — щоб зміна на боці Сільпо
+ * називала себе САМА, а не через два тижні мертвого синку.
+ *
+ * 2026-09-14 вони знизили стелю `limit` зі 100 до 50, і єдиним сигналом був
+ * збій синку, який виглядав як «змінили формат відповіді». Снапшот-тест
+ * цього не бачив за побудовою (він звіряє код із записом, не з сервером).
+ *
+ * Три властивості цієї перевірки навмисні:
+ *   - **не блокує синк.** Будь-яка її помилка ковтається: діагностика не
+ *     має права зламати те, що працює;
+ *   - **раз на добу**, не на кожен синк — зайвий виклик до чужого API
+ *     коштує квоти, а специфікація так часто не міняється;
+ *   - **дзвонить у Sentry**, а не лише в лог. Рядок у лозі, якого ніхто не
+ *     читає, — це не сигнал; той самий урок, що й з дрейфом схеми.
+ */
+async function checkToolContract(accessToken: string): Promise<void> {
+  const now = Date.now();
+  if (now - lastContractCheckAt < CONTRACT_CHECK_INTERVAL_MS) return;
+  lastContractCheckAt = now;
+
+  try {
+    const tools = await listMcpTools(accessToken);
+    if (!tools.ok) return;
+
+    const drift = diffToolContract(tools.data);
+    if (drift.length === 0) return;
+
+    logger.error({ msg: "silpo_tool_contract_drift", drift });
+    try {
+      Sentry.captureException(
+        new Error(`Silpo tool contract drift: ${drift.join("; ")}`), // NOSONAR — синтетична помилка як носій алерту
+        {
+          level: "warning",
+          tags: { integration: "silpo", kind: "contract_drift" },
+        },
+      );
+    } catch {
+      /* Sentry ніколи не має ламати обробку */
+    }
+  } catch (err) {
+    logger.warn({
+      msg: "silpo_tool_contract_check_failed",
+      err: err instanceof Error ? err.message : String(err),
+    });
+  }
 }
 
 /**
@@ -405,7 +464,7 @@ function makeFetchBothOrderLists(
           kind: offlineResult.error.kind,
         });
       } else {
-        offline = offlineResult.data;
+        offline = offlineResult.data.orders;
       }
     } else {
       logger.warn({ msg: "silpo_offline_orders_skipped_no_branch_context" });
@@ -413,6 +472,12 @@ function makeFetchBothOrderLists(
 
     const online = await fetchOnlineOrders(accessToken);
     if (!online.ok) return { ok: false, error: online.error };
+
+    // Після успішного синку — профілактична звірка специфікації (раз на
+    // добу). Саме після, а не до: зайвий виклик не має стояти на шляху
+    // роботи, заради якої користувач тапнув кнопку.
+    await checkToolContract(accessToken);
+
     return { ok: true, data: { offline, online: online.data } };
   };
 }
