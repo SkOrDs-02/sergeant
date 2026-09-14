@@ -125,15 +125,29 @@ export function RoutineStatsPanel({
           sublabel={`${summary.rate.completed}/${summary.rate.scheduled}`}
           size="md"
         />
+        {/* Обидва числа — крос-звичкові МАКСИМУМИ, не «тримаю все N днів»:
+            `currentStreak` приходить як `streakMax` (`flexibleMaxActiveStreak`
+            по всіх звичках), `maxAllTime` — `flexibleMaxStreakAllTimeAcrossHabits`.
+            Доти підписи казали «Серія сьогодні» й «Макс. серія», тобто людина
+            читала агрегат як власну суцільну серію (знахідка PR-R10).
+
+            AI-DANGER: це ДРУГА поверхня тієї ж знахідки. Першу
+            (`RoutineCalendarHero.tsx:170-178`) виправили раніше — там підпис
+            уже каже «найкраща серія», і там же стоїть пояснення з посиланням
+            на PR-R10. Воно не вберегло цей файл: коментар у файлі А не боронить
+            файл Б. Слово «найкраща» тут узяте звідти навмисно, щоб дві
+            поверхні називали одну величину однаково; міняєш формулювання —
+            міняй в обох. */}
         <p className="mt-3 flex flex-wrap items-baseline gap-x-1.5 text-style-label text-muted">
-          <span>Серія сьогодні</span>
+          <span>Найкраща серія:</span>
+          <span>сьогодні</span>
           <span className="font-semibold text-text tabular-nums">
             {currentStreak}
           </span>
           <span aria-hidden className="text-subtle">
             ·
           </span>
-          <span>Макс. серія</span>
+          <span>за весь час</span>
           <span className="font-semibold text-text tabular-nums">
             {summary.maxAllTime}
           </span>
