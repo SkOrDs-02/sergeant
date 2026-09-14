@@ -181,6 +181,13 @@ jobs:
             2??)
               echo "Coolify deploy requested (HTTP $HTTP_CODE)."
               echo "✅ Coolify deploy замовлено (HTTP $HTTP_CODE)." >> "$GITHUB_STEP_SUMMARY"
+              # Кладемо uuid деплою для КРОКУ ПЕРЕВІРКИ нижче. «Замовлено» і
+              # «викотилось» — різні факти: Coolify приймає запит, а потім
+              # може відкотитись на старий контейнер, і без цього uuid ми
+              # про відкат не дізнаємось (інцидент 2026-09-14).
+              jq -r '.deployments[0].deployment_uuid // empty' \
+                /tmp/coolify-response.txt > /tmp/coolify-deployment-uuid 2>/dev/null \
+                || true
               exit 0
               ;;
           esac
@@ -295,4 +302,118 @@ jobs:
           [ -n "$ALLOW" ] && echo "Coolify $ALLOW"
           [ -n "$BODY" ] && echo "Coolify response: $BODY"
 
+          exit 1
+
+      - name: Verify Coolify actually deployed (not rolled back)
+        # AI-DANGER: цей крок НЕ можна робити `continue-on-error`, і його
+        # мовчазний успіх гірший за відсутність кроку.
+        #
+        # Попередній крок доводить рівно одне: Coolify ПРИЙНЯВ запит. Далі
+        # він тягне образ, піднімає новий контейнер і чекає healthcheck — і
+        # якщо той не проходить, ТИХО відкочується на старий контейнер:
+        # «New container is not healthy, rolling back to the old container».
+        # Джоба при цьому лишалась зеленою, бо hook відповів 2xx.
+        #
+        # Так 2026-09-14 знайшлося, що кожен деплой відкочувався, а на VPS
+        # тижнями крутився старий образ. Фікси мерджились, CI був зелений,
+        # у проді не мінялось нічого — і жоден сигнал про це не існував.
+        # Це той самий клас поломки, що й `401` на хук у серпні, лише на крок
+        # пізніше в ланцюжку.
+        env:
+          HOOK: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
+          TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
+        run: |
+          set -uo pipefail
+
+          UUID=$(cat /tmp/coolify-deployment-uuid 2>/dev/null || true)
+          if [ -z "$UUID" ]; then
+            # Per-app webhook (вкладка Webhooks) віддає інше тіло без uuid.
+            # Перевірити нічим — і про це треба СКАЗАТИ, а не змовчати:
+            # рівно ця тиша й коштувала інциденту.
+            echo "::warning::Coolify не повернув deployment_uuid — результат деплою НЕ перевірено. Деплой замовлено, але чи він доїхав, невідомо."
+            {
+              echo "⚠️ **Результат деплою не перевірено.**"
+              echo ""
+              echo "Hook відповів 2xx, але тіло не містить \`deployment_uuid\`, тож дізнатись, чи новий контейнер пройшов healthcheck, звідси неможливо."
+              echo ""
+              echo "Щоб перевірка працювала, у \`COOLIFY_DEPLOY_WEBHOOK\` має бути API-ендпоінт \`/api/v1/deploy?uuid=…\` (він повертає uuid деплою), а не per-app webhook із вкладки Webhooks."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # База API =хук без шляху `/api/v1/deploy` і query-string.
+          API_BASE="${HOOK%%/api/v1/deploy*}"
+          TOKEN_CLEAN=$(printf '%s' "$TOKEN" | tr -d '\r\n' \
+            | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          AUTH=()
+          if [ -n "$TOKEN_CLEAN" ]; then
+            AUTH=(-H "Authorization: Bearer $TOKEN_CLEAN")
+          fi
+
+          # Coolify тягне образ, чекає start-period (40 с) і робить до трьох
+          # спроб healthcheck із інтервалом — разом це ~3 хв на відкат. Стеля
+          # у 15 хв лишає запас на повільний pull і НЕ ховає зависання:
+          # вичерпаний таймаут теж фейлить джобу.
+          DEADLINE=$(( $(date +%s) + 900 ))
+          STATUS=""
+          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            curl -sS -o /tmp/coolify-deployment.json -w '' \
+              --max-time 30 "${AUTH[@]}" \
+              "${API_BASE}/api/v1/deployments/${UUID}" || true
+            STATUS=$(jq -r '.status // empty' /tmp/coolify-deployment.json 2>/dev/null || true)
+            case "$STATUS" in
+              finished|success) break ;;
+              failed|cancelled|error) break ;;
+            esac
+            sleep 10
+          done
+
+          case "$STATUS" in
+            finished|success)
+              echo "Coolify deployment ${UUID} → ${STATUS}."
+              echo "✅ Новий контейнер прийнято: деплой \`${STATUS}\`." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+              ;;
+          esac
+
+          # Витягуємо з лога рівно ті рядки, що називають причину, і НЕ
+          # друкуємо його цілком: там бувають змінні оточення.
+          REASON=$(jq -r '.logs // empty' /tmp/coolify-deployment.json 2>/dev/null \
+            | grep -iE "rolling back|not healthy|healthcheck|unhealthy|error response" \
+            | head -c 1000 | sed 's/^/| /' || true)
+
+          if [ -z "$STATUS" ]; then
+            echo "::error::Статус деплою Coolify не вдалося прочитати за 15 хв — деплой НЕ підтверджено. Образ у registry; перевір стан застосунку в Coolify вручну."
+            {
+              echo "❌ **Деплой не підтверджено** — статус не прочитано за 15 хв."
+              echo ""
+              echo "Можливі причини: API Coolify недоступний, токен не має прав на читання деплоїв, або деплой досі триває."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "::error::Coolify деплой завершився зі статусом ${STATUS} — новий контейнер НЕ прийнято, на VPS лишився старий образ."
+          {
+            echo "❌ **Деплой не доїхав** — Coolify повернув статус \`${STATUS}\`."
+            echo ""
+            echo "Образ у registry, але на сервері працює ПОПЕРЕДНІЙ контейнер. Найчастіша причина — новий контейнер не пройшов healthcheck \`GET /health\`, і Coolify відкотився."
+            echo ""
+            echo "\`/health\` віддає 503, коли не проходить \`SELECT 1\` до Postgres. Перевіряй у такому порядку:"
+            echo ""
+            echo "1. **Змінні оточення нового контейнера.** Coolify пише \`.env\` наново на кожен деплой, тож старий контейнер живе зі СТАРИМИ значеннями і працює, поки новий падає. Звір \`DATABASE_URL\` (і \`DATABASE_URL_POOL\`, якщо задана) з тими, що в робочому контейнері."
+            echo "2. **Мережа.** Новий контейнер має бути в тій самій докер-мережі, що й Postgres; хост у URL — внутрішнє імʼя контейнера, не \`localhost\`."
+            echo "3. **Зʼєднання Postgres.** \`SELECT count(*) FROM pg_stat_activity\` проти \`max_connections\`: під час rolling update живуть обидва контейнери."
+            echo ""
+            echo "Деталі: [\`apps/server/AGENTS.md\`](../blob/main/apps/server/AGENTS.md) § Health & deploy."
+            if [ -n "$REASON" ]; then
+              echo ""
+              echo "<details><summary>Рядки лога деплою</summary>"
+              echo ""
+              echo "\`\`\`"
+              echo "$REASON"
+              echo "\`\`\`"
+              echo ""
+              echo "</details>"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
           exit 1
