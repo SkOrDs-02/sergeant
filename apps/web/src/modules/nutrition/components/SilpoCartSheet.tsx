@@ -20,6 +20,9 @@ import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
+// `<option>` не приймає React-дітей, тільки текст, тому тут рядковий
+// форматер, а не компонент `<Money>`, яким користується решта аркуша.
+import { formatMoneyFromKopecks } from "@sergeant/shared";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import type { SilpoCartDto, SilpoCartMatchDto } from "@shared/api";
@@ -153,7 +156,10 @@ function MatchPicker({
       >
         {matches.map((m) => (
           <option key={m.lagerId} value={m.lagerId}>
-            {m.name} — {(m.priceKop / 100).toFixed(2)} ₴
+            {m.name}:{" "}
+            {formatMoneyFromKopecks(m.priceKop, {
+              minFractionDigits: 2,
+            })}
           </option>
         ))}
       </select>
