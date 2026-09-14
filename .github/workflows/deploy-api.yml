@@ -356,14 +356,39 @@ jobs:
           # вичерпаний таймаут теж фейлить джобу.
           DEADLINE=$(( $(date +%s) + 900 ))
           STATUS=""
+          POLL_CODE=""
           while [ "$(date +%s)" -lt "$DEADLINE" ]; do
-            curl -sS -o /tmp/coolify-deployment.json -w '' \
+            # Фолбек ставимо ПОЗА підстановкою. `-w` друкує `000` і на
+            # транспортній помилці, а curl при цьому виходить ненулем —
+            # тож `|| echo "000"` УСЕРЕДИНІ дав би `000000`, і гілка
+            # «API недосяжний» не спрацювала б (заміряно).
+            POLL_CODE=$(curl -sS -o /tmp/coolify-deployment.json \
+              -w '%{http_code}' \
               --max-time 30 "${AUTH[@]}" \
-              "${API_BASE}/api/v1/deployments/${UUID}" || true
-            STATUS=$(jq -r '.status // empty' /tmp/coolify-deployment.json 2>/dev/null || true)
+              "${API_BASE}/api/v1/deployments/${UUID}") || POLL_CODE="000"
+            # Статус читаємо з трьох можливих форм: версії Coolify віддають
+            # то обʼєкт, то масив, то обгортку `deployments`.
+            #
+            # Гілка по `type` — не стиль, а необхідність: `//` ловить лише
+            # `null` і `false`, а `.status` НА МАСИВІ — це помилка jq, яка
+            # валить весь вираз ще до фолбеків. Ланцюжок через `//` тому
+            # читав рівно одну форму з трьох, мовчки віддаючи порожнечу на
+            # решті — тобто рівно те «ще триває», від якого ми тут і
+            # лікуємось.
+            STATUS=$(jq -r 'if type == "array" then .[0].status
+                            elif type == "object" then (.status // .deployments[0].status)
+                            else empty end // empty' \
+              /tmp/coolify-deployment.json 2>/dev/null || true)
             case "$STATUS" in
               finished|success) break ;;
               failed|cancelled|error) break ;;
+            esac
+            # Явна відмова — не привід чекати чверть години. 4xx означає, що
+            # ЖОДЕН наступний опит нічого не змінить: помиляється не час, а
+            # доступ чи адреса. Перший інцидент цього кроку (2026-09-14) був
+            # саме такий: 15 хв мовчання й «не вдалося прочитати» без причини.
+            case "$POLL_CODE" in
+              401|403|404|405) break ;;
             esac
             sleep 10
           done
@@ -383,11 +408,45 @@ jobs:
             | head -c 1000 | sed 's/^/| /' || true)
 
           if [ -z "$STATUS" ]; then
-            echo "::error::Статус деплою Coolify не вдалося прочитати за 15 хв — деплой НЕ підтверджено. Образ у registry; перевір стан застосунку в Coolify вручну."
+            # Тіло — ВІДДАЛЕНИЙ вхід: префікс `| ` на кожному рядку, щоб
+            # `::`-рядок не став workflow-командою, а бектики не розірвали
+            # огорожу (той самий прийом, що й у кроці-тригері вище).
+            POLL_BODY=$(head -c 300 /tmp/coolify-deployment.json 2>/dev/null \
+              | tr -d '\r' | sed 's/^/| /' || true)
+            case "$POLL_CODE" in
+              401|403)
+                WHY="Токен не має права ЧИТАТИ деплої. Хук на запис працює, тож \`COOLIFY_DEPLOY_TOKEN\` живий — бракує саме read-доступу до \`/api/v1/deployments\`. Перевипусти токен із ним."
+                ;;
+              404)
+                WHY="Ендпоінт \`/api/v1/deployments/<uuid>\` не знайдено: або ця версія Coolify тримає його за іншою адресою, або база API зібралась неправильно з \`COOLIFY_DEPLOY_WEBHOOK\`."
+                ;;
+              405)
+                WHY="За адресою щось є, але GET воно не приймає — швидше за все база API зібралась не з того URL."
+                ;;
+              000)
+                WHY="API Coolify недосяжний із раннера (мережа або VPS)."
+                ;;
+              *)
+                WHY="Відповідь прийшла (HTTP \`${POLL_CODE}\`), але поля \`status\` в ній немає в жодній із трьох відомих форм — схоже, форма відповіді змінилась."
+                ;;
+            esac
+            echo "::error::Статус деплою Coolify не прочитано (HTTP ${POLL_CODE}) — деплой НЕ підтверджено. Образ у registry; перевір стан застосунку в Coolify вручну."
             {
-              echo "❌ **Деплой не підтверджено** — статус не прочитано за 15 хв."
+              echo "❌ **Деплой не підтверджено** — статус прочитати не вдалось (HTTP \`${POLL_CODE}\`)."
               echo ""
-              echo "Можливі причини: API Coolify недоступний, токен не має прав на читання деплоїв, або деплой досі триває."
+              echo "$WHY"
+              echo ""
+              echo "**Це НЕ означає, що деплой провалився** — лише що перевірити його звідси нічим. Поки причина не усунена, стан застосунку дивись у Coolify вручну."
+              if [ -n "$POLL_BODY" ]; then
+                echo ""
+                echo "<details><summary>Що відповів API</summary>"
+                echo ""
+                echo "\`\`\`"
+                echo "$POLL_BODY"
+                echo "\`\`\`"
+                echo ""
+                echo "</details>"
+              fi
             } >> "$GITHUB_STEP_SUMMARY"
             exit 1
           fi
