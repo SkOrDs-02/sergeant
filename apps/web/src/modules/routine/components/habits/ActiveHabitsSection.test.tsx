@@ -138,6 +138,42 @@ describe("ActiveHabitsSection", () => {
     expect(screen.queryByText(hasText("Біг"))).not.toBeInTheDocument();
   });
 
+  // Знахідка PR-R13: порожній РЕЗУЛЬТАТ ПОШУКУ — не те саме, що порожній
+  // список. Тест вище пінує, що нерелевантні рядки зникають; він же був
+  // зеленим і тоді, коли після них не лишалось нічого — ані пояснення, ані
+  // виходу. Тому тут перевіряються обидві половини: і що стан зʼявився, і
+  // що кнопка справді повертає список.
+  it("shows a no-results state when the query matches nothing, and its CTA restores the list", () => {
+    const routine = makeRoutine([
+      makeHabit("h1", "Вода", 0),
+      makeHabit("h2", "Біг", 1),
+    ]);
+    render(<Harness initial={routine} />);
+
+    fireEvent.change(screen.getByLabelText("Пошук звичок у списку"), {
+      target: { value: "зззз" },
+    });
+    expect(screen.getByText("Нічого не знайдено")).toBeInTheDocument();
+    expect(screen.getByText(/«зззз»/)).toBeInTheDocument();
+    expect(screen.queryByText(hasText("Вода"))).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: "Скинути пошук" }));
+    expect(screen.queryByText("Нічого не знайдено")).not.toBeInTheDocument();
+    expect(screen.getByText(hasText("Вода"))).toBeInTheDocument();
+    expect(screen.getByText(hasText("Біг"))).toBeInTheDocument();
+  });
+
+  // Порожній список і порожній пошук не мають накладатись: коли активних
+  // звичок немає взагалі, працює `EmptyState` «Поки порожньо», а не цей.
+  it("keeps the no-habits empty state when the list is empty and a query is typed", () => {
+    render(<Harness initial={makeRoutine([])} />);
+    fireEvent.change(screen.getByLabelText("Пошук звичок у списку"), {
+      target: { value: "будь-що" },
+    });
+    expect(screen.getByText("Поки порожньо")).toBeInTheDocument();
+    expect(screen.queryByText("Нічого не знайдено")).not.toBeInTheDocument();
+  });
+
   it("wires the Деталі button to onOpenDetails", () => {
     const onOpenDetails = vi.fn();
     const routine = makeRoutine([makeHabit("h1", "Вода", 0)]);
