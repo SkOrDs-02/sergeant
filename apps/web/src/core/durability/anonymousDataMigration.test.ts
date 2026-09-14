@@ -53,6 +53,63 @@ describe("anonymous data migration invariants", () => {
     expect(client.run).not.toHaveBeenCalled();
   });
 
+  // Регресія 2026-09-13 (звіт власника: «Не вдалося завершити перенесення»
+  // двічі з різницею у пів години, обидва рази на LTE з повним сигналом).
+  // Один `flushNow()` — це РІВНО ОДИН тік push-лупа, а тік бере з черги
+  // `LIMIT 100`. Тож перенос профілю з понад 100 анонімними рядками падав
+  // детерміновано: перші 100 їхали, решта лишалась `pending`. Повтор
+  // упирався в ту саму стелю, тому мережа тут ні до чого.
+  it("жене чергу по батчах, доки наші рядки не вирішені", async () => {
+    const keys = Array.from({ length: 250 }, (_, i) => `anonv1_op${i}`);
+    // Модель черги: тік прибирає рівно 100 рядків, як реальний drain.
+    let pending = keys.length;
+    const client = {
+      all: vi.fn(async () =>
+        Array.from({ length: pending }, (_, i) => ({
+          id: i,
+          status: "pending",
+          reject_reason: null,
+        })),
+      ),
+      run: vi.fn(),
+      exec: vi.fn(),
+    } as unknown as SqliteMigrationClient;
+    const flushNow = vi.fn(async () => {
+      pending = Math.max(0, pending - 100);
+    });
+
+    await __anonymousMigrationInternals.flushUntilSettled(
+      client,
+      { flushNow },
+      keys,
+    );
+
+    expect(flushNow).toHaveBeenCalledTimes(3);
+    expect(pending).toBe(0);
+  });
+
+  // Зворотний бік: зірвана посеред переносу мережа не має крутити цикл
+  // вічно. Тік, який не зрушив жодного рядка, зупиняє гонитву — розбір
+  // віддається `assertServerAcknowledged` з реальною причиною.
+  it("зупиняється, коли тік більше нічого не зрушує", async () => {
+    const client = {
+      all: vi.fn(async () => [
+        { id: 1, status: "pending", reject_reason: null },
+      ]),
+      run: vi.fn(),
+      exec: vi.fn(),
+    } as unknown as SqliteMigrationClient;
+    const flushNow = vi.fn(async () => undefined);
+
+    await __anonymousMigrationInternals.flushUntilSettled(
+      client,
+      { flushNow },
+      ["anonv1_stuck"],
+    );
+
+    expect(flushNow).toHaveBeenCalledTimes(1);
+  });
+
   it("treats an LWW rejection as an authoritative conflict winner", async () => {
     const run = vi.fn(async () => undefined);
     const client = {

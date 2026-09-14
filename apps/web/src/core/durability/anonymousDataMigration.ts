@@ -201,27 +201,83 @@ async function idempotencyKey(
   return `anonv1_${hex.slice(0, 48)}`;
 }
 
-async function assertServerAcknowledged(
+interface OutboxStateRow extends Record<string, unknown> {
+  readonly id: number;
+  readonly status: string;
+  readonly reject_reason: string | null;
+}
+
+/**
+ * Рядки черги, що ще НЕ доїхали. Успішно запушений рядок writer видаляє
+ * (`markOutboxSuccess` → `DELETE`), а `lww_conflict` — це теж вирішений
+ * стан: сервер має свіжішу версію, і наша копія програла чесно.
+ */
+async function readUnsettledOps(
   client: SqliteMigrationClient,
   keys: readonly string[],
-): Promise<void> {
-  if (keys.length === 0) return;
+): Promise<OutboxStateRow[]> {
+  if (keys.length === 0) return [];
   const placeholders = keys.map(() => "?").join(", ");
-  const rows = await client.all<{
-    id: number;
-    status: string;
-    reject_reason: string | null;
-  }>(
+  const rows = await client.all<OutboxStateRow>(
     `SELECT id, status, reject_reason
        FROM sync_op_outbox
       WHERE idempotency_key IN (${placeholders})`,
     [...keys],
   );
-  const unresolved = rows.filter(
+  return rows;
+}
+
+function unsettledOf(rows: readonly OutboxStateRow[]): OutboxStateRow[] {
+  return rows.filter(
     (row) => row.status !== "rejected" || row.reject_reason !== "lww_conflict",
   );
+}
+
+/**
+ * Женемо чергу, доки в ній лишається бодай один НАШ рядок.
+ *
+ * AI-DANGER: один `flushNow()` — це РІВНО ОДИН тік push-лупа, а тік бере
+ * з черги не все, а `LIMIT` (у `singleton.ts` — 100; SQL у
+ * `db-schema/sqlite/syncOpOutboxDrain.ts`). Доти, доки тут стояв
+ * одноразовий `flushNow()`, перенос будь-якого профілю з понад 100
+ * анонімними рядками падав ДЕТЕРМІНОВАНО: перші 100 їхали на сервер,
+ * решта лишалась `pending`, і `assertServerAcknowledged` нижче бачив їх
+ * як непідтверджені. Користувач отримував «Не вдалося завершити
+ * перенесення» на кожному «Повторити» — незалежно від мережі, бо
+ * повторний прогін упирався в ту саму стелю батча (звіт власника
+ * 2026-09-13: два скріншоти з різницею у пів години, обидва на LTE з
+ * повним сигналом).
+ *
+ * Цикл завершується завжди: кожна ітерація мусить СТРОГО зменшити
+ * кількість невирішених рядків, інакше виходимо. Тобто зірвана мережа
+ * посеред переносу не крутить нас вічно — вона віддає розбір
+ * `assertServerAcknowledged`, який кине помилку з реальною причиною.
+ */
+async function flushUntilSettled(
+  client: SqliteMigrationClient,
+  writer: { flushNow: () => Promise<unknown> },
+  keys: readonly string[],
+): Promise<void> {
+  let remaining = unsettledOf(await readUnsettledOps(client, keys)).length;
+  while (remaining > 0) {
+    await writer.flushNow();
+    const next = unsettledOf(await readUnsettledOps(client, keys)).length;
+    if (next >= remaining) return;
+    remaining = next;
+  }
+}
+
+async function assertServerAcknowledged(
+  client: SqliteMigrationClient,
+  keys: readonly string[],
+): Promise<void> {
+  if (keys.length === 0) return;
+  const rows = await readUnsettledOps(client, keys);
+  const unresolved = unsettledOf(rows);
   if (unresolved.length > 0)
-    throw new Error("Anonymous migration is not server-confirmed");
+    throw new Error(
+      `Anonymous migration is not server-confirmed (${unresolved.length}/${keys.length} ops unsettled, first status: ${unresolved[0]?.status ?? "unknown"})`,
+    );
   for (const row of rows) {
     await client.run(`DELETE FROM sync_op_outbox WHERE id = ?`, [row.id]);
   }
@@ -322,7 +378,8 @@ export async function migrateAnonymousDataToProfile(
 
   const writer = await sync.bootSyncEngineWriter();
   if (!writer) throw new Error("Sync writer is unavailable");
-  if (pushedKeys.length > 0) await writer.flushNow();
+  if (pushedKeys.length > 0)
+    await flushUntilSettled(targetClient, writer, pushedKeys);
   await assertServerAcknowledged(targetClient, pushedKeys);
   await reader.pullOnce();
 
@@ -336,6 +393,7 @@ export async function migrateAnonymousDataToProfile(
 /** Test-only seams for deterministic retry and acknowledgement invariants. */
 export const __anonymousMigrationInternals = {
   assertServerAcknowledged,
+  flushUntilSettled,
   decodeJsonColumns,
   idempotencyKey,
   resolveClientTs,

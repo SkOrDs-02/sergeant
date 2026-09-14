@@ -66,6 +66,16 @@ export function ProfilePage() {
     pending: number;
     resolve: (proceed: boolean) => void;
   } | null>(null);
+  /**
+   * Підтвердження самого виходу. Це НЕ те саме, що діалог «є незбережені
+   * записи» нижче: той спрацьовує лише тоді, коли черга синку не доїхала, і
+   * питає про конкретну втрату. До цієї правки чистий вихід (усе
+   * синхронізовано) не питав нічого взагалі — один тап по «Вийти» стирав
+   * локальну БД, SW-кеші й сесію без жодного кроку назад (звіт власника
+   * 2026-09-13). Ціна помилкового тапу тут не «перелогінитись»: локальні
+   * дані треба тягнути з сервера наново, а офлайн назад узагалі не ввійти.
+   */
+  const [confirmingLogout, setConfirmingLogout] = useState(false);
 
   if (!user) {
     return null;
@@ -144,7 +154,7 @@ export function ProfilePage() {
           className="gap-2 text-muted"
           disabled={loggingOut}
           loading={loggingOut}
-          onClick={handleLogout}
+          onClick={() => setConfirmingLogout(true)}
         >
           <Icon name="log-out" size={16} />
           {loggingOut ? messages.loadingActions.exiting : "Вийти"}
@@ -232,6 +242,28 @@ export function ProfilePage() {
           <DangerZoneSection online={online} onLogout={logout} />
         </CollapsibleSection>
       </ProfileGroup>
+
+      {/* Крок назад перед виходом. Офлайн це не просто «перепитати»: вихід
+          стирає локальну копію ЗАРАЗ, а вхід назад потребує мережі, якої
+          немає — тому там і текст інший, і діалог `danger`. На живій мережі
+          вихід зворотний (дані повернуться з сервера), тож нейтральний. */}
+      <ConfirmDialog
+        open={confirmingLogout}
+        danger={!online}
+        title="Вийти з акаунта?"
+        description={
+          online
+            ? "Дані з цього пристрою зітруться, а після наступного входу завантажаться з сервера. Синхронізовані записи не зникнуть."
+            : "Зараз немає мережі, тож увійти назад не вийде, доки вона не зʼявиться. Дані з цього пристрою зітруться одразу, а повернуться лише після входу."
+        }
+        confirmLabel="Вийти"
+        cancelLabel="Залишитись"
+        onConfirm={() => {
+          setConfirmingLogout(false);
+          void handleLogout();
+        }}
+        onCancel={() => setConfirmingLogout(false)}
+      />
 
       {/* Вихід стирає локальну базу разом із чергою синхронізації, а поки
           запис не доїхав на сервер — локальна копія єдина. Показуємо це
