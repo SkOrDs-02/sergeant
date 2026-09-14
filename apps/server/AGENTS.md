@@ -1,6 +1,6 @@
 # Agents in apps/server
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-06.
+> **Last touched:** 2026-09-14 by @claude. **Next review:** 2027-01-09.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють у `apps/server/`. Не дублюй repo policy: hard rules і CI matrix живуть у корені.
@@ -48,6 +48,36 @@ pnpm api:check-openapi                                # freshness gate (CI-block
 Того разу пронесло, бо backfill даних — код без нього працює. Міграція, що додає колонку, яку новий код одразу читає, дасть 500-ки у вікні між деплоями N і N+1. `/healthz` розбіжність показує, але НЕ блокує: гейт `MIGRATION_DRIFT_BLOCKS_READINESS` (`lib/schemaDrift.ts` → `driftBlocksReadiness`) опційний і вимкнений.
 
 **Зламане тут не рішення, а прив'язка до платформи.** Release-stage модель у [`migrate.mjs`](./migrate.mjs) обрана правильно (чому саме так — три причини в його doc-string: race на `INSERT schema_migrations`, напіврозкочана довга міграція, затримка readiness). Вона припускає, що job бачить НОВИЙ код — на Railway pre-deploy піднімав свіжий контейнер, Coolify ж перевикористовує старий. Повертати `ensureSchema()` у бут web-процесу без розбору цих трьох причин не можна.
+
+**Зелена джоба деплою ≠ деплой доїхав (інцидент 2026-09-14).** Хук
+відповідає `2xx` на «запит прийнято», а далі Coolify тягне образ, піднімає
+новий контейнер і чекає healthcheck — і якщо той не проходить, **тихо
+відкочується на старий**: `New container is not healthy, rolling back to the
+old container`. Джоба при цьому лишалась зеленою. Так знайшлося, що деплої
+відкочувались підряд, а на VPS крутився старий образ: фікси мерджились, CI
+був зелений, у проді не мінялось нічого. Це той самий клас поломки, що й
+`401` на хук у серпні, лише на крок пізніше в ланцюжку.
+
+Тепер у [`deploy-api.yml`](../../.github/workflows/deploy-api.yml) є крок
+**Verify Coolify actually deployed**: він бере `deployment_uuid` з відповіді
+хука, дочікується термінального статусу через `/api/v1/deployments/<uuid>` і
+**фейлить джобу** на відкоті чи вичерпаному таймауті, друкуючи в summary
+причину й порядок перевірки. Форму стереже парсерний тест
+[`ci-deploy-verify-gate.test.mjs`](../../scripts/__tests__/ci-deploy-verify-gate.test.mjs)
+(крок у джобі `check` — він парсить YAML і має бігати на КОЖНОМУ PR).
+`continue-on-error` у цих двох кроках заборонений — тест на це теж.
+
+**Причина того конкретного відкоту — `/health` віддавав 503 у новому
+контейнері.** Readiness падає, коли не проходить `SELECT 1` до Postgres, а
+старий контейнер при цьому працює: Coolify пише `.env` наново на кожен
+деплой, тож старий живе зі СТАРИМИ значеннями. Звідси порядок розбору:
+(1) звірити змінні нового контейнера з тими, що в робочому
+(`docker inspect … --format '{{range .Config.Env}}…'`); (2) мережа — хост у
+`DATABASE_URL` має бути внутрішнім імʼям контейнера, не `localhost`;
+(3) `pg_stat_activity` проти `max_connections` — під час rolling update
+живуть обидва контейнери. Пам'ятай ще й про те, що pre-deploy міграція
+виконується в СТАРОМУ контейнері (див. абзац вище), тож її `migrate_ok`
+нічого не каже про новий `.env`.
 
 **`curl: not found` у логах деплою Coolify - це НЕ мертвий гейт.** Команду Coolify не бере з поля вводу: він збирає її сам з полів `health_check_*` (`generate_healthcheck_commands()` у `ApplicationDeploymentJob.php`) в один рядок `CMD-SHELL` виду `curl … || wget … || exit 1`. У distroless перша гілка падає ЗАВЖДИ, тож `/bin/sh: curl: not found` стоїть у логах навіть під цілком здоровим контейнером, а результат вирішує друга гілка, busybox-`wget`. Тому `Return code: 0` поруч із тим рядком читається як «wget отримав 200», а не як «shell проковтнув помилку». Заміряно 2026-08-29 на образі з [`Dockerfile.api`](../../Dockerfile.api): БД на місці → `/health` 200 → `healthy` / exit 0; БД недосяжна → 503 → `unhealthy` / exit 1 (лог додає `wget: server returned error: HTTP/1.1 503`); порт не слухає → `unhealthy` / exit 1 (`connection refused`); той самий runtime без `/bin/wget` → `unhealthy` / exit 1. Справді вимкнений гейт має інший підпис: коли `health_check_enabled = false`, Coolify **взагалі не додає** healthcheck у compose і одразу ставить `newVersionIsHealthy = true`, тож у логах немає ні рядка `Healthcheck URL (inside the container)`, ні `Attempt N of M`. Що виконується насправді - `docker inspect --format '{{json .Config.Healthcheck}}' <container>` на VPS. Додавати `HEALTHCHECK` в образ як «свій» безглуздо: Coolify читає його лише коли САМ будує з репо, а тут тягне готовий образ із ghcr, тож compose-healthcheck усе одно перекриє запечений.
 

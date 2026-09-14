@@ -135,6 +135,16 @@ jobs:
         # навмисно: він парсить YAML і не потребує білда.
         run: node --test scripts/__tests__/ci-bundle-budget-gates.test.mjs
 
+      - name: Deploy-verification gate shape regression test
+        # Той самий прийом для гейта в `deploy-api.yml`. Він стереже крок,
+        # що дочікується РЕЗУЛЬТАТУ деплою: hook відповідає 2xx на
+        # «прийнято», а Coolify потім може тихо відкотитись на старий
+        # контейнер — саме так 2026-09-14 знайшлося, що на VPS тижнями
+        # крутився старий образ при зеленому CI. Живе тут, а не в
+        # `deploy-api.yml`: тест парсить YAML і не потребує ні образу, ні
+        # секретів, тож має бігати на КОЖНОМУ PR, а не лише на мержі в main.
+        run: node --test scripts/__tests__/ci-deploy-verify-gate.test.mjs
+
       - name: Governance sync (Hard Rules + Status badges + dangling refs)
         run: pnpm lint:governance-sync
 
