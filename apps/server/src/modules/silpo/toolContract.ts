@@ -64,6 +64,21 @@ export const SILPO_TOOL_EXPECTATIONS: readonly ToolExpectation[] = [
       limit: OFFLINE_ORDERS_LIMIT,
     },
   },
+  // Шість "loyalty" тул (benefits.ts) — жодна не потребує branchContext.
+  // Порожній `sends` усе одно ловить зникнення самої тули (крок 1
+  // `diffToolContract`); для `silpo_get_coupon_details` `businessCouponId`
+  // — динамічне значення з відповіді `silpo_get_my_coupons`, а не константа
+  // виклику, тому в таблиці лише РЯДКОВИЙ плейсхолдер (існування аргумента
+  // в схемі), без числового діапазону.
+  { tool: "silpo_get_loyalty_info", sends: {} },
+  { tool: "silpo_get_my_coupons", sends: {} },
+  {
+    tool: "silpo_get_coupon_details",
+    sends: { businessCouponId: "<id>" },
+  },
+  { tool: "silpo_get_my_promos", sends: {} },
+  { tool: "silpo_get_promo_codes", sends: {} },
+  { tool: "silpo_get_my_certificates", sends: {} },
 ];
 
 interface JsonSchemaProp {

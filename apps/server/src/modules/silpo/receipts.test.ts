@@ -1106,6 +1106,21 @@ describe("checkToolContract", () => {
               },
             },
           },
+          // Шість "loyalty" тул читання (`benefits.ts`) — теж у таблиці
+          // очікувань (`toolContract.ts`); лише `silpo_get_coupon_details`
+          // несе обовʼязковий аргумент.
+          { name: "silpo_get_loyalty_info" },
+          { name: "silpo_get_my_coupons" },
+          {
+            name: "silpo_get_coupon_details",
+            inputSchema: {
+              properties: { businessCouponId: { type: "number" } },
+              required: ["businessCouponId"],
+            },
+          },
+          { name: "silpo_get_my_promos" },
+          { name: "silpo_get_promo_codes" },
+          { name: "silpo_get_my_certificates" },
         ],
       },
     });

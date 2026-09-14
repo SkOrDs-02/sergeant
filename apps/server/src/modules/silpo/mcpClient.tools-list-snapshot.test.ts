@@ -33,6 +33,12 @@ describe("silpo tools/list contract snapshot", () => {
       "silpo_get_my_shopping_cart",
       "silpo_get_shopping_cart_by_id",
       "silpo_list_branches",
+      "silpo_get_loyalty_info",
+      "silpo_get_my_coupons",
+      "silpo_get_coupon_details",
+      "silpo_get_my_promos",
+      "silpo_get_promo_codes",
+      "silpo_get_my_certificates",
     ]) {
       expect(names.has(required)).toBe(true);
     }
