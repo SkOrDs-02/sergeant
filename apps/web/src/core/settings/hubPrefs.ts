@@ -42,17 +42,39 @@ export function readHubPrefsBag(): HubPrefsBag {
   return toServerBag(loadHubPrefs());
 }
 
+/**
+ * Сповістити слухачів у ЦІЙ вкладці, що мішок змінився.
+ *
+ * Браузер сам шле `storage` лише в ІНШІ вкладки, тож без цього виклику
+ * `useHubPref` у тій самій вкладці не перемалювався б після власного
+ * запису.
+ *
+ * **Другий аргумент тут несучий, попри те, що CodeQL позначає його як
+ * «superfluous trailing argument» (алерт 458, правило
+ * `js/superfluous-trailing-arguments`).** Це хибний спрацьовок: підпис
+ * `StorageEvent(type, eventInitDict?)` — стандартний DOM API, і саме
+ * `key` вирішує, чи слухач відреагує: предикат нижче — `e.key ===
+ * HUB_PREFS_KEY || e.key === null`. Подія без `key` дала б `undefined`,
+ * не пройшла б жодну з двох гілок, і зміна тумблера мовчки не доїхала б
+ * до сусіднього компонента в тій самій вкладці. Прибирати аргумент, щоб
+ * задовольнити сканер, означало б зламати робочий код заради зеленого
+ * значка.
+ */
+function notifyHubPrefsChanged(): void {
+  window.dispatchEvent(new StorageEvent("storage", { key: HUB_PREFS_KEY }));
+}
+
 /** Запис серверного мішка в локальне сховище — для гідратації. */
 export function writeHubPrefsBag(bag: HubPrefsBag): void {
   safeWriteLS(HUB_PREFS_KEY, { ...bag });
-  window.dispatchEvent(new StorageEvent("storage", { key: HUB_PREFS_KEY }));
+  notifyHubPrefsChanged();
 }
 
 function saveHubPref(key: string, value: unknown): void {
   const prefs = loadHubPrefs();
   const next = { ...prefs, [key]: value };
   safeWriteLS(HUB_PREFS_KEY, next);
-  window.dispatchEvent(new StorageEvent("storage", { key: HUB_PREFS_KEY }));
+  notifyHubPrefsChanged();
   // PR-S13: мішок їде на акаунт ЦІЛКОМ, а не по одному ключу — саме тому
   // LWW тут по всьому мішку (розбір у `hubPrefsSync.ts`). Fire-and-forget:
   // локальний запис уже стався, і мережа не має відкочувати тумблер.
