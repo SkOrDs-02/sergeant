@@ -57,7 +57,17 @@ export interface WeekKcalCardProps {
    */
   goalsByDay: readonly (number | null)[];
   todayIso: string;
-  onGoToLog?: (() => void) | undefined;
+  /**
+   * Відкриває журнал. Аргумент — день, на якому його відкрити; без
+   * аргументу журнал лишається на своєму поточному дні (сьогодні).
+   *
+   * AI-CONTEXT: картка має власний обраний день (тап по стовпчику), і до
+   * фіксу PR-N5 (аудит 2026-09-13) посилання «Журнал» його ігнорувало:
+   * людина тапала середу, читала її калорії в підрядку, тиснула «Журнал» —
+   * і потрапляла в сьогодні. Обраний день тут не косметика підрядка, а
+   * намір; посилання його передає.
+   */
+  onGoToLog?: ((dateIso?: string) => void) | undefined;
 }
 
 export function WeekKcalCard({
@@ -104,7 +114,7 @@ export function WeekKcalCard({
         <div className="text-style-label text-text">{t.heading}</div>
         <button
           type="button"
-          onClick={onGoToLog}
+          onClick={() => onGoToLog?.(selectedDate ?? undefined)}
           className="inline-flex items-center gap-0.5 text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
         >
           {t.logLink}

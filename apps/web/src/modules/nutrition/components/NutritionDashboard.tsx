@@ -53,7 +53,7 @@ function todayISO(): string {
 interface NutritionDashboardProps {
   log: NutritionLog;
   prefs: NutritionPrefs;
-  onGoToLog?: (() => void) | undefined;
+  onGoToLog?: ((dateIso?: string) => void) | undefined;
   onGoToDailyPlan?: (() => void) | undefined;
   /** Тап по сегменту hero — аркуш прийому з уже обраним типом. */
   onPickMeal: (type: MealTypeId) => void;
