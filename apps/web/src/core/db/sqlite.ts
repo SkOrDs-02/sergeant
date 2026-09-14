@@ -485,6 +485,39 @@ const SAH_POOL_INITIAL_CAPACITY = 24;
  */
 const SAH_POOL_MIN_FREE_SLOTS = 8;
 
+/**
+ * Останній встановлений SAH-пул — лише для діагностики.
+ *
+ * Тримаємо посилання, бо пул ставиться один раз на origin, а прочитати
+ * його заповненість потрібно ЗВІДТИ, де стається збій (перенос анонімних
+ * даних). Без цих двох чисел `SQLITE_IOERR` не відрізнити від будь-якої
+ * іншої дискової біди: код помилки в sqlite один на всі випадки.
+ */
+let lastSahPool: SahPoolLike | null = null;
+
+export interface SqliteStorageDiagnostics {
+  /** Скільки слотів має пул. */
+  readonly capacity: number;
+  /** Скільки з них зайнято файлами. */
+  readonly fileCount: number;
+}
+
+/**
+ * Заповненість SAH-пулу, або `null` поза OPFS-гілкою (kvvfs, memory, тести).
+ * Ніколи не кидає: це діагностика, а не робочий шлях.
+ */
+export function readSqliteStorageDiagnostics(): SqliteStorageDiagnostics | null {
+  if (!lastSahPool) return null;
+  try {
+    return {
+      capacity: lastSahPool.getCapacity(),
+      fileCount: lastSahPool.getFileCount(),
+    };
+  } catch {
+    return null;
+  }
+}
+
 interface SahPoolLike {
   getCapacity: () => number;
   getFileCount: () => number;
@@ -529,6 +562,7 @@ async function openDb(
         directory: "/sergeant/sqlite",
         initialCapacity: SAH_POOL_INITIAL_CAPACITY,
       });
+      lastSahPool = pool;
       await ensureSahPoolHeadroom(pool);
       // Per-user filename so two accounts on one device never share a DB
       // (page-audit-10 F17).
