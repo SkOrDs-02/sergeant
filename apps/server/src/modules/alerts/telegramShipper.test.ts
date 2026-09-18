@@ -784,4 +784,27 @@ describe("createTelegramApiClient", () => {
       text: "updated",
     });
   });
+
+  it("bounds every Bot API call with an abort signal", async () => {
+    // Регресія (аудит 2026-09-16): без `signal` undici чекає на заголовки до
+    // 300 с. Це шлях доставки АЛЕРТІВ — зависання тут ховає інцидент рівно
+    // на той час, поки на нього ще можна зреагувати.
+    const fetchImpl = vi.fn().mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ ok: true, result: { message_id: 1 } }),
+    } as unknown as Response);
+    vi.stubGlobal("fetch", fetchImpl);
+    const client = createTelegramApiClient("token");
+
+    await client.sendMessage({ chatId: 1, text: "a" });
+    await client.editMessageText({ chatId: 1, messageId: 2, text: "b" });
+    await client.answerCallbackQuery({ callbackQueryId: "cb" });
+
+    expect(fetchImpl).toHaveBeenCalledTimes(3);
+    for (const call of fetchImpl.mock.calls) {
+      const init = call[1] as RequestInit;
+      expect(init.signal).toBeInstanceOf(AbortSignal);
+    }
+  });
 });

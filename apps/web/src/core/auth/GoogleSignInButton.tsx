@@ -12,7 +12,7 @@ export function GoogleSignInButton({
   return (
     <Button
       type="button"
-      variant="secondary"
+      variant="outline"
       size="lg"
       className="w-full"
       loading={loading}

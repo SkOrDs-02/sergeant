@@ -1,6 +1,6 @@
 # Voyage AI + pgvector — AI memory
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-03.
+> **Last touched:** 2026-09-17 by @claude (секцію ingest знято, compose-абзац виправлено, дубль GDPR прибрано). **Next review:** 2026-12-16.
 > **Status:** Active (vendor/setup reference; behavior SSOT is architecture doc)
 
 AI memory підсистема. Canonical behavior/ownership lives in [`docs/engineering/architecture/ai-memory.md`](../architecture/ai-memory.md); цей файл лишається reference для Voyage/pgvector setup, env, retry/cost knobs. ADR — [`0028-pgvector-ai-memory.md`](../../governance/adr/0028-pgvector-ai-memory.md).
@@ -107,12 +107,12 @@ PR3 (retrieval) — використовує `recall()` з двох сторін
 Producer-и → BullMQ-черга `ai-memory-ingest` (Redis-keys під `sergeant:` prefix-ом) → worker → `aiMemory.remember()` → Voyage embed → pgvector upsert.
 
 ```
-┌─ Server-side hooks ──────────────────┐    ┌─ Client-driven ──────────┐
-│ mono/webhook.ts (finyk transactions) │    │ POST /api/ai-memory/     │
-│ digest/weekly-digest (digest source) │    │ ingest                   │
-└─────────────┬────────────────────────┘    └─────────┬────────────────┘
-              │                                       │
-              ▼                                       ▼
+┌─ Server-side hooks ────────────────────────┐
+│ digest/weekly-digest.ts (source=digest)    │
+│ profileMirror.ts (source=profile)          │
+└─────────────┬───────────────────────────────┘
+              │
+              ▼
         enqueueMemoryIngest({ userId, source, sourceRef, content, metadata? })
                                   │
                 ┌─────────────────┴─────────────────┐
@@ -129,13 +129,12 @@ Producer-и → BullMQ-черга `ai-memory-ingest` (Redis-keys під `sergean
 
 ### Producer-и
 
-| Producer                                                                              | Source                                              | sourceRef                  | Коли                                                                                                                         |
-| ------------------------------------------------------------------------------------- | --------------------------------------------------- | -------------------------- | ---------------------------------------------------------------------------------------------------------------------------- |
-| [`mono/webhook.ts`](../../../apps/server/src/modules/mono/webhook.ts)                 | `finyk`                                             | `mono_tx_id`               | Після успішного COMMIT транзакції; gate-нуто `MONO_AI_MEMORY_INGEST_ENABLED` (default `true` після PR-19) у `ingestQueue.ts` |
-| [`digest/weekly-digest.ts`](../../../apps/server/src/modules/digest/weekly-digest.ts) | `digest`                                            | `userId:weekKey`           | Після генерації AI-summary тижня                                                                                             |
-| `POST /api/ai-memory/ingest`                                                          | `chat`, `fizruk`, `nutrition`, `routine`, `journal` | client-supplied (optional) | Клієнт вирішує "це варто памʼятати"                                                                                          |
+> Оновлено ініціативою [0024](../../work/specs/initiatives/0024-ai-memory-source-coverage.md) (PR-1, PR-2): клієнт-driven `POST /api/ai-memory/ingest` і mono-webhook-producer (`source=finyk`, ніколи не мав живого продюсера) видалені; per-source kill-switch перецілений із `finyk` на `digest`.
 
-`finyk` і `digest` навмисно ВИКЛЮЧЕНІ з client-driven endpoint-у — для них є server-side hooks з повноціннішим payload-ом (item, weekRange).
+| Producer                                                                              | Source    | sourceRef        | Коли                                                                                                                                                              |
+| ------------------------------------------------------------------------------------- | --------- | ---------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [`digest/weekly-digest.ts`](../../../apps/server/src/modules/digest/weekly-digest.ts) | `digest`  | `userId:weekKey` | Після генерації AI-summary тижня; gate-нуто `DIGEST_AI_MEMORY_INGEST_ENABLED` (default `true`) і runtime kill-switch `digest_ai_memory_ingest` у `ingestQueue.ts` |
+| [`profileMirror.ts`](../../../apps/server/src/modules/ai-memory/profileMirror.ts)     | `profile` | local fact id    | Дзеркало банку памʼяті профілю, на кожен `PUT /api/me/profile`                                                                                                    |
 
 ### Дедуплікація
 
@@ -165,26 +164,9 @@ Backoff: 30s → 2min → 8min → 32min → 2h. Сумарно ~2.5h, дост�
 
 `enqueueMemoryIngest()` навмисно НЕ throw-ить — failure mode = log + drop. Тобто mono-webhook ніколи не падає через memory-ingestion-incident, ні Voyage outage не валить /api/chat. Memory — best-effort, втрата одного job-у НЕ ламає UX.
 
-### POST /api/ai-memory/ingest
+### `POST /api/ai-memory/ingest` — знято (2026-09-03)
 
-Зразок payload:
-
-```json
-{
-  "source": "nutrition",
-  "sourceRef": "meal-2026-05-01-08-00",
-  "content": "вівсянка з горіхами 350 ккал",
-  "metadata": { "calories": 350, "mealType": "breakfast" }
-}
-```
-
-- 401 без сесії
-- 503 коли `AI_MEMORY_ENABLED=false`
-- 400 для invalid source / empty content / unknown fields / oversized content
-- 413 для metadata > 8KB
-- 202 happy path (job enqueued)
-
-Дозволені source-и: `chat`, `fizruk`, `nutrition`, `routine`, `journal` (НЕ `finyk`/`digest` — server-side hooks).
+Клієнт-driven ingest-endpoint (source-и `chat`/`fizruk`/`nutrition`/`routine`/`journal`, 202 на enqueue) видалено ініціативою [0024](../../work/specs/initiatives/0024-ai-memory-source-coverage.md) PR-1 — жодне з цих джерел не мало продюсера. Живі продюсери — лише серверні (таблиця § Producer-и вище); поведінка — в [`ai-memory.md`](../architecture/ai-memory.md).
 
 ## Retrieval (PR3)
 
@@ -252,10 +234,6 @@ Smaller top-K (4) ніж explicit tool-call (8) — баланс між context-
 
 `forgetUser(userId)` API лишається доступним як explicit-hook для пайплайнів, які видаляють лише vector-data без видалення акаунта (PostHog Person delete sync, наприклад).
 
-## GDPR
-
-`ai_memories.user_id` — FK з `ON DELETE CASCADE` до `"user"(id)`. Better Auth `DELETE /api/me` автоматично purge-ить vector rows. Додатковий queue-job не потрібен.
-
 ## Cost / scaling notes
 
 Embedding-bill для 10k активних × 500 memories/міс × 200 tokens ≈ 1B tokens/міс ≈ **$20/міс** (Voyage `voyage-3.5-lite` ~ $0.02/1M tokens).
@@ -286,9 +264,7 @@ Threshold-и міграції на dedicated vector DB — у [ADR-0028 § scali
 | [`ci.yml`](../../../.github/workflows/ci.yml)                     | `Critical-flow E2E` | services.postgres.image = `pgvector/pgvector:pg17@sha256:feb68f4f…` |
 | [`extended-e2e.yml`](../../../.github/workflows/extended-e2e.yml) | `Extended-flow E2E` | той самий digest                                                    |
 
-Якщо додаєш новий CI-job, що чіпає server / БД — копіюй `services.postgres` блок з `ci.yml`. Локальний `docker-compose.yml` залишається на `postgres:17-alpine`, бо AI-memory feature-flag-нутий через `AI_MEMORY_ENABLED=false` за замовчуванням і dev-loop не виконує міграцію 025 без ручного flip-а; коли вмикаєш фічу локально — переключай на `pgvector/pgvector:pg17` точково.
-
-> **Потребує перевірки (не виправлено в межах цієї правки):** абзац вище стверджує, що кореневий `docker-compose.yml` за замовчуванням підіймає plain `postgres:17-alpine`, а перемикається на pgvector лише точково. Фактично `docker-compose.yml` (рядок 30) вже безумовно піднімає `pgvector/pgvector:pg17@sha256:…` — не plain `postgres`. Ця розбіжність виходить за межі простого pg16→pg17 version-bump-у (стосується самої feature-flag-логіки, не лише тега image-у) і потребує окремої перевірки перед подальшим редагуванням цього розділу.
+Якщо додаєш новий CI-job, що чіпає server / БД — копіюй `services.postgres` блок з `ci.yml`. Локальний `docker-compose.yml` піднімає **той самий** `pgvector/pgvector:pg17@sha256:…` digest (виправлено 2026-09-17: раніше тут стояло «`postgres:17-alpine`, перемикай на pgvector точково» — це вже не так, dev-loop виконує міграцію 025 без ручних кроків; лише сам ingest лишається за `AI_MEMORY_ENABLED`).
 
 ## Зовнішні посилання
 

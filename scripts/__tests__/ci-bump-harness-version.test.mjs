@@ -38,6 +38,15 @@ function runBumper({ files, registry }) {
     GIT_COMMITTER_NAME: "t",
     GIT_COMMITTER_EMAIL: "t@e",
     GIT_TERMINAL_PROMPT: "0",
+    // Авто-обслуговування git (gc --auto, maintenance) може відпустити
+    // фоновий процес, який ще дописує в .git/objects/pack, коли тест уже
+    // прибирає теку: у CI це давало ENOTEMPTY на rmdir (2026-09-17, PR #109).
+    // Тимчасовому репо на два коміти обслуговування не потрібне взагалі.
+    GIT_CONFIG_COUNT: "2",
+    GIT_CONFIG_KEY_0: "gc.auto",
+    GIT_CONFIG_VALUE_0: "0",
+    GIT_CONFIG_KEY_1: "maintenance.auto",
+    GIT_CONFIG_VALUE_1: "false",
   };
   execFileSync("git", ["init", "-q", "-b", "main"], { cwd: dir, env });
   execFileSync("git", ["config", "user.email", "t@e"], { cwd: dir, env });
@@ -64,7 +73,9 @@ function runBumper({ files, registry }) {
   const updated = JSON.parse(
     readFileSync(join(agentsDir, "harness-versions.json"), "utf8"),
   );
-  rmSync(dir, { recursive: true, force: true });
+  // Ретраї на випадок, якщо файл у теці ще тримає процес, що завершується:
+  // Node повторює rm на EBUSY/ENOTEMPTY/EPERM із лінійною паузою.
+  rmSync(dir, { recursive: true, force: true, maxRetries: 10, retryDelay: 50 });
   return { out, updated };
 }
 

@@ -1,6 +1,6 @@
 # Pact contract drift — runbook
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-05-01.
+> **Last touched:** 2026-09-17 by @claude (прибрано застарілий лічильник інтеракцій). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Статус автоматизації:** [`.github/workflows/pact-drift.yml`](../../../.github/workflows/pact-drift.yml) закомічений — cron 06:00 UTC + `workflow_dispatch`. Локально/ad-hoc — CLI [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs). § Workflow YAML — дзеркало для review у docs.
@@ -20,7 +20,7 @@
 - Файл: [`.github/workflows/pact-drift.yml`](../../../.github/workflows/pact-drift.yml) (§ Workflow YAML — дзеркало).
 - Тригери: cron `0 6 * * *` (06:00 UTC щодня) + `workflow_dispatch` з опціями (`base_url`, `include_mutations`, `strict`).
 - Скрипт: [`scripts/pact-drift-check.mjs`](../../../scripts/pact-drift-check.mjs).
-- Контракти: `packages/api-client/pacts/*.json` (зараз — один файл `sergeant-api-client-sergeant-server.json` з 37 інтеракціями).
+- Контракти: `packages/api-client/pacts/*.json` (один файл `sergeant-api-client-sergeant-server.json`; кількість інтеракцій — у header-коментарі `apps/server/src/__tests__/contracts/provider.test.ts`, тут не дублюється).
 - Idempotent issue logic: один open issue `[Pact drift] …` із label `contract-drift`. Наступні детекції → comment у той самий issue, а не дубльований issue. Mirrors `db-backup-verify.yml`.
 - **Issue заводиться лише на `drift_exit == 1`** (реальний drift). Код `2` = чекер не зміг запуститись; він валить workflow, але issue з лейблом `contract-drift` НЕ створює — див. § Exit-коди нижче.
 - **Чистий прогін закриває** відкритий `[Pact drift]`-issue з коментарем. Руками закривати не треба.

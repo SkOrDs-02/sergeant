@@ -104,8 +104,9 @@ export function ManualEntryTab({
           </p>
           <Button
             type="button"
-            variant="primary"
-            module="nutrition"
+            variant="solid"
+            tone="nutrition"
+
             className="w-full min-h-[44px]"
             onClick={onWholeMeal}
           >

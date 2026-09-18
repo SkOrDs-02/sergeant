@@ -1210,7 +1210,9 @@
       "ecmaFeatures": {
         "jsx": true
       },
-      "jsxPragma": null
+      "jsxPragma": null,
+      "projectService": true,
+      "tsconfigRootDir": "<repo>"
     },
     "sourceType": "module"
   },
@@ -1827,6 +1829,9 @@
     ],
     "@typescript-eslint/no-extra-semi": [
       0
+    ],
+    "@typescript-eslint/no-floating-promises": [
+      2
     ],
     "@typescript-eslint/no-misused-new": [
       2

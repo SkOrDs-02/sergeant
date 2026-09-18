@@ -113,7 +113,7 @@ function SubCardComponent({
         {/* AI-NOTE: caption навмисно — це підказка під полем «Ключове
             слово», а не текст для читання (density-hierarchy-spec §4). */}
         <p className="text-style-caption text-subtle">
-          Якщо немає ручної привʼязки, для суми підписки знайдемо найновішу
+          Якщо немає ручної привʼязки, для суми підписки знайду найновішу
           витратну транзакцію, опис якої містить це слово.
         </p>
         <div className="flex gap-2">
@@ -150,7 +150,6 @@ function SubCardComponent({
         ) : null}
         <div className="flex gap-2">
           <Button
-            variant="finyk-soft"
             size="md"
             className="flex-1"
             onClick={saveEdit}
@@ -159,7 +158,7 @@ function SubCardComponent({
             Зберегти
           </Button>
           <Button
-            variant="secondary"
+            variant="outline"
             size="md"
             className="flex-1"
             onClick={() => {
@@ -197,7 +196,7 @@ function SubCardComponent({
       <div className="flex items-start gap-3">
         <Icon
           name="refresh-cw"
-          size={20}
+          size="lg"
           className="mt-0.5 shrink-0 text-finyk"
           aria-hidden
         />
@@ -280,7 +279,7 @@ function SubCardComponent({
             onClick={() => setEditing(true)}
             className="text-subtle hover:text-primary"
           >
-            <Icon name="edit" size={16} aria-hidden />
+            <Icon name="edit" size="md" aria-hidden />
           </Button>
         )}
         <Button
@@ -291,7 +290,7 @@ function SubCardComponent({
           onClick={onDelete}
           className="text-subtle hover:text-danger"
         >
-          <Icon name="trash" size={16} aria-hidden />
+          <Icon name="trash" size="md" aria-hidden />
         </Button>
       </div>
     </Card>

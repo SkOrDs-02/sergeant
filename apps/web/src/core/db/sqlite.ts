@@ -14,11 +14,10 @@ import {
   makeLocalConnection,
   type SqliteConnection,
 } from "./sqliteConnection.js";
-import { getFlag } from "../lib/featureFlags.js";
 
 /**
  * Lazy-loaded SQLite-WASM client for `apps/web` (PR #015 in
- * `docs/planning/storage-roadmap.md`).
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *
  * Why this lives outside the main bundle:
  *
@@ -33,14 +32,20 @@ import { getFlag } from "../lib/featureFlags.js";
  *
  * VFS selection (best → worst):
  *
- * 1. **OPFS-SAH Pool** — persistent, durable, no COOP/COEP needed
- *    (`installOpfsSAHPoolVfs()`). Available in Chrome 86+, Firefox 111+,
- *    Safari 17+ on the main thread.
- * 2. **kvvfs (`localStorage`)** — persistent fallback for older Safari /
- *    iOS < 16.4 where `FileSystemSyncAccessHandle` is missing. Capped at
- *    ~5 MB by the browser; sufficient as a stop-gap until a true IDB-VFS
- *    lands.
- * 3. **`:memory:`** — last resort so the contract still resolves; data
+ * 1. **OPFS-SAH Pool у ВОРКЕРІ** ({@link openWorkerBackedDb}) — основний
+ *    шлях від стадії 3 спеки `sqlite-opfs-worker.md`. Файл на акаунт,
+ *    стеля — частка вільного місця пристрою.
+ * 2. **OPFS-SAH Pool на головному потоці** — історична гілка, яка на
+ *    практиці не спрацьовує НІКОЛИ: `installOpfsSAHPoolVfs()` вимагає
+ *    `FileSystemSyncAccessHandle`, доступний лише у воркері, тож виклик
+ *    кидає `Missing required OPFS APIs`. Саме через це kvvfs-фолбек
+ *    «для старого iOS» був основним шляхом для всіх до стадії 1.
+ *    Лишена свідомо: вона нічого не коштує, поки воркер живий, і є
+ *    останнім шансом на OPFS, якщо воркер не піднявся.
+ * 3. **kvvfs (`localStorage`)** — фолбек, коли воркер не піднявся.
+ *    Стеля ~5 МБ; продукт на такому пристрої лишається робочим, але
+ *    переростає її так само, як переріс до переїзду.
+ * 4. **`:memory:`** — last resort so the contract still resolves; data
  *    does not survive a reload.
  *
  * Concurrency: every caller awaits the same in-flight init promise — see
@@ -345,17 +350,27 @@ async function initSqliteDb(
  * Відкриває базу у фоновому воркері, або віддає `null`, якщо не судилось.
  *
  * `null`, а не виняток: рішення «куди падати» ухвалюється тут, вище по
- * стеку про існування воркера знати не треба. Будь-яка невдача — вимкнений
- * прапорець, відсутній `Worker`, OPFS, що не піднявся, — веде в наявний
+ * стеку про існування воркера знати не треба. Будь-яка невдача — відсутній
+ * `Worker`, OPFS, що не піднявся, впале перелиття — веде в наявний
  * головнопотоковий шлях.
  *
  * AI-DANGER: під цим прапорцем база ІНША — окремий файл в OPFS, а не
- * спільний localStorage-блоб. Дані зі старого сховища сюди НЕ переїжджають:
- * це стадія 2 спеки. Тобто перше вмикання показує порожню базу, а вимикання
- * повертає все як було — старе сховище лишається недоторканим.
+ * спільний localStorage-блоб. Від стадії 2 дані переїжджають разом із
+ * двигуном: при першому відкритті стара база копіюється сюди цілком
+ * (`kvvfsHandoff`). Старе сховище при цьому НЕ чіпається, тому вимикання
+ * прапорця повертає все як було — але записи, зроблені під увімкненим,
+ * лишаються тут.
+ *
+ * Від стадії 3 це БЕЗУМОВНИЙ основний шлях: прапорця більше немає.
+ *
+ * AI-DANGER: не повертай сюди тумблер. Його прибрано за рішенням власника
+ * саме тому, що ручне вимикання розщеплює дані — записи, зроблені в OPFS,
+ * у старе сховище не повертаються, і людина лишається з двома половинами
+ * історії, не знаючи про це. Відкат тепер один і чесний: ревертнути
+ * коміт. Автоматичний фолбек від цього не постраждав — він нижче і
+ * спрацьовує на будь-якій невдачі воркера.
  */
 async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
-  if (!getFlag(SQLITE_WORKER_FLAG)) return null;
   try {
     const { openSqliteInWorker } = await import("./sqliteWorkerClient.js");
     const handoff = await import("./kvvfsHandoff.js");
@@ -456,7 +471,7 @@ async function openMainThreadDb(userKey: string): Promise<OpenedDb> {
  * available.
  *
  * COOP/COEP wiring itself is tracked separately as PR #016 in
- * `docs/planning/storage-roadmap.md`.
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  */
 function warnIfNotCrossOriginIsolated(): boolean {
   const isolated =
@@ -585,7 +600,6 @@ const SAH_POOL_DIRECTORY = "/sergeant/sqlite";
  * результат, а відкат не потребує редеплою. Дефолт — вимкнено: стадія 1
  * має зливатись без зміни поведінки.
  */
-const SQLITE_WORKER_FLAG = "storage_sqlite_worker";
 
 /**
  * Заповненість пулу, як її повідомив воркер на відкритті.

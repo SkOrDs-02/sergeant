@@ -1,6 +1,6 @@
 # CodeQL — SAST taint-flow analysis для TypeScript
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-12.
+> **Last touched:** 2026-09-17 by @claude (Trivy-шар: alpine → distroless Debian 13). **Next review:** 2026-12-16.
 > **Status:** Active
 
 ## Огляд
@@ -15,7 +15,7 @@ analyzer від GitHub — на повному TypeScript codebase (`apps/web`,
 | Інструмент      | Шар                                                                                    | Тригер                                                                   |
 | --------------- | -------------------------------------------------------------------------------------- | ------------------------------------------------------------------------ |
 | **CodeQL**      | TypeScript source taint-flow (SQLi, XSS, SSRF, prototype pollution, path traversal, …) | PR + push to `main` + понеділок 06:00 UTC                                |
-| **Trivy**       | Hub API container image (alpine OS + runtime npm tree)                                 | PR (Dockerfile / lockfile / server) + push to `main` + щоденно 04:00 UTC |
+| **Trivy**       | Hub API container image (distroless Debian 13 OS-шар + runtime npm tree)               | PR (Dockerfile / lockfile / server) + push to `main` + щоденно 04:00 UTC |
 | **OSV-Scanner** | Lockfile залежностей (SCA по всьому npm tree)                                          | nightly 03:00 UTC ([`nightly-audit.md`](./nightly-audit.md))             |
 
 Це доповнює `eslint-plugin-security` (див.

@@ -22,24 +22,39 @@ import {
 } from "./SettingsPrimitives";
 
 // Icon is a thin wrapper; stub it so tests don't need an SVG sprite.
-vi.mock("@shared/components/ui/Icon", () => ({
-  Icon: ({
-    name,
-    size,
-    className,
-  }: {
-    name: string;
-    size?: number;
-    className?: string;
-  }) => (
-    <span
-      data-testid="icon"
-      data-name={name}
-      data-size={size}
-      className={className}
-    />
-  ),
-}));
+//
+// Мок РОЗВʼЯЗУЄ токен у піксель через справжній `ICON_SIZES`, а не віддає
+// сирий проп. До 2026-09-15 він приймав лише `size?: number` і писав його в
+// `data-size` як є — це було вірно рівно доти, доки всі виклики сиділи на
+// числах. Щойно `SettingsGroup` перейшов на `size="lg"`, мок віддав рядок
+// «lg» там, де тест чекав «20», і падіння виглядало як регресія, хоча
+// компонент рендерив ті самі 20px.
+//
+// Тягнемо шкалу з оригіналу, а не дублюємо її тут: мок, який має ВЛАСНУ
+// копію канону, розходиться з ним тихо — а це рівно те, що цей тест і
+// мав би ловити.
+vi.mock("@shared/components/ui/Icon", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@shared/components/ui/Icon")>();
+  return {
+    Icon: ({
+      name,
+      size = "lg",
+      className,
+    }: {
+      name: string;
+      size?: import("@shared/components/ui/Icon").IconSize;
+      className?: string;
+    }) => (
+      <span
+        data-testid="icon"
+        data-name={name}
+        data-size={typeof size === "number" ? size : actual.ICON_SIZES[size]}
+        className={className}
+      />
+    ),
+  };
+});
 
 afterEach(() => {
   cleanup();

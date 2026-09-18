@@ -1,6 +1,6 @@
 # Playbook: Тижневий operator-дайджест
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-30.
+> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-01-05.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -28,8 +28,8 @@
 
 ### 2. Перегляньте операційний борг (operating debt)
 
-- застарілі feature-прапори, які час прибрати — [feature-flags.md](../../governance/governance/feature-flags.md)
-- прострочені пункти дій з post-mortem-ів і прострочені `Next review` дати — [`docs/open-work.md`](../../open-work.md) (генерується `pnpm docs:gen-open-work`, входить у `pnpm docs:gen-daily`; актуальність — ручний `workflow_dispatch` [`docs-daily-brief.yml`](../../../.github/workflows/docs-daily-brief.yml), календарний cron знято 2026-07-09 навмисно, щоб не палити Actions-хвилини solo-мейнтейнеру)
+- застарілі feature-прапори, які час прибрати — [feature-flags.md](../../engineering/architecture/feature-flags.md) (колонка «умова зняття»)
+- прострочені пункти дій з post-mortem-ів і прострочені `Next review` дати — [`docs/open-work.md`](../../open-work.md) (генерується `pnpm docs:gen-open-work`, входить у `pnpm docs:gen-daily`; актуальність тримає [`docs-daily-brief.yml`](../../../.github/workflows/docs-daily-brief.yml) — щоденний cron о 05:30 UTC плюс ручний `workflow_dispatch`; cron знімали 2026-07-09 заради Actions-хвилин і повернули 2026-09-16, бо дрейф цих артефактів червонить PR-гейти)
 - CI-гейти, що падали протягом тижня — перевір живі nightly/weekly cron-workflow-и: [`nightly-audit.yml`](../../../.github/workflows/nightly-audit.yml) (щодня 03:00 UTC), [`container-scan.yml`](../../../.github/workflows/container-scan.yml) (щодня 04:00), [`pact-drift.yml`](../../../.github/workflows/pact-drift.yml) (щодня 06:00), [`post-deploy-smoke.yml`](../../../.github/workflows/post-deploy-smoke.yml) (щодня 06:30), [`extended-e2e.yml`](../../../.github/workflows/extended-e2e.yml) (щодня 02:00), [`codeql.yml`](../../../.github/workflows/codeql.yml), [`mutation-testing.yml`](../../../.github/workflows/mutation-testing.yml), [`mobile-flaky-verify.yml`](../../../.github/workflows/mobile-flaky-verify.yml) (усі три — щопонеділка), [`db-backup-verify.yml`](../../../.github/workflows/db-backup-verify.yml) (щонеділі). `docs-freshness.yml`/`skill-freshness.yml` — тепер PR-only гейти (ADR-0082 §5, без окремого календарного прогону), дивись на них через історію PR, а не окремий дашборд.
 - відкриті винятки з безпекового SLA — [`audit-exceptions.md`](../../governance/security/audit-exceptions.md) (ledger waived CVE). `security-sla-reminder` крон, що раніше штовхав це автоматично, знято ADR-0082 §3 (retired як reviewer-oriented гейт без другого рев'юера в петлі) — перевіряй файл вручну щотижня саме тут.
 
@@ -56,3 +56,15 @@
 - [release.md](./release.md)
 - [write-postmortem.md](./write-postmortem.md)
 - [retire-feature-flag.md](./retire-feature-flag.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                              | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------- | ---------- |
+| [#91](https://github.com/zaebal-beep/sergeant/pull/91) | ci(ci): restore the daily cron on the docs brief workflow                          | 2026-09-16 |
+| [#61](https://github.com/zaebal-beep/sergeant/pull/61) | docs(docs): governance — прибрати застаріле з ADR-індексу, governance/ і security/ | 2026-09-16 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

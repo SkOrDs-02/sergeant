@@ -18,6 +18,7 @@ import type {
   SpendingTrendAction,
 } from "../types";
 import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
+import { formatDateNumeric } from "@shared/lib/time/formatDate";
 
 export function spendingTrend(action: SpendingTrendAction): string {
   const { period_days } = (action as SpendingTrendAction).input || {};
@@ -168,9 +169,7 @@ export function detectAnomalies(action: DetectAnomaliesAction): string {
     `Аномальні витрати за ${days} днів (середня: ${Math.round(avg)} грн, поріг ×${threshold}):`,
   ];
   for (const tx of anomalies) {
-    const d = tx.time
-      ? new Date(tx.time * 1000).toLocaleDateString("uk-UA")
-      : "?";
+    const d = tx.time ? formatDateNumeric(new Date(tx.time * 1000)) : "?";
     parts.push(
       `  ${d}: ${Math.round(getTxStatAmount(tx, anomalySplits))} грн: ${tx.description || "(без опису)"}`,
     );

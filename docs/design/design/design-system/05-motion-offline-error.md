@@ -1,6 +1,6 @@
 # Design System — Motion, Animation та Offline/Error стани
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-14.
+> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-03-14.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює motion tokens, choreography rules, reduced-motion стратегію та патерни для offline/empty/error станів.
@@ -36,10 +36,13 @@ Single source of truth — `apps/web/src/styles/theme.css → :root`. Tailwind
 
 > AMBIENT loops жодного з шести не використовують — їх тривалість
 > інтенційно довша. Канонічні AMBIENT-тривалості:
-> `--motion-duration-loop-spin` (800 ms), `--motion-duration-loop`
+> `--motion-duration-loop-spin` (800 ms), `--motion-duration-loop-spin-slow`
+> (2400 ms, пасивні sync-індикатори), `--motion-duration-loop`
 > (1500 ms, shimmer), `--motion-duration-loop-glow` (2000 ms),
-> `--motion-duration-loop-float` (8000 ms),
-> `--motion-duration-confetti-fall` (2500 ms — CELEBRATE).
+> `--motion-duration-loop-float` (8000 ms). Токен
+> `--motion-duration-confetti-fall` (2500 ms) прибрано 2026-09-12 (аудит O1)
+> разом із єдиним споживачем `.animate-confetti-fall` — див.
+> AI-NOTE в `animations.css` над `confetti-particle-burst`.
 
 #### Easing scale
 
@@ -64,11 +67,11 @@ Legacy aliases (`ease-smooth`, `ease-bounce`, `ease-spring`) залишають�
 - **CELEBRATE — лише milestone-події** (7/30/100/365 day streaks, weekly
   goal hit, first entry). NOT every checkbox.
 
-| Tier      | Lifecycle                | Duration range              | Easing                             | Reduced-motion            |
-| --------- | ------------------------ | --------------------------- | ---------------------------------- | ------------------------- |
-| AMBIENT   | Infinite loop            | 800 ms – 8 s                | linear / standard                  | Pause (зберігається стан) |
-| RESPONSE  | One-shot per user action | 75 – 320 ms                 | decelerate / accelerate / standard | Opacity fade ≤ 100 ms     |
-| CELEBRATE | One-shot, milestone      | 480 – 680 ms (+ 2.5 s loop) | overshoot / decelerate             | Opacity fade ≤ 100 ms     |
+| Tier      | Lifecycle                | Duration range | Easing                             | Reduced-motion            |
+| --------- | ------------------------ | -------------- | ---------------------------------- | ------------------------- |
+| AMBIENT   | Infinite loop            | 800 ms – 8 s   | linear / standard                  | Pause (зберігається стан) |
+| RESPONSE  | One-shot per user action | 75 – 320 ms    | decelerate / accelerate / standard | Opacity fade ≤ 100 ms     |
+| CELEBRATE | One-shot, milestone      | 480 – 680 ms   | overshoot / decelerate             | Opacity fade ≤ 100 ms     |
 
 #### Stagger
 
@@ -130,20 +133,30 @@ paused`. Елемент залишається composed, але рух зупи�
 ### 14.4 Legacy animation-class inventory
 
 Покриває `apps/web/src/styles/animations.css` (всі класи pinned до
-motion-tokens, без magic numbers).
+motion-tokens, без magic numbers). Виняток — `animate-stagger-in`: це
+Tailwind-утиліта з `theme.extend.animation` у
+`packages/design-tokens/tailwind-preset.js` (`fadeSlideUp × duration-slow ×
+ease-standard`), а не клас із `animations.css`; у CSS-файлі під тим самим
+ім'ям живуть лише `@keyframes stagger-in` для `.stagger-children`.
 
-| Class                      | Tier      | Використання               |
-| -------------------------- | --------- | -------------------------- |
-| `animate-shake`            | RESPONSE  | Form validation errors     |
-| `animate-confetti-fall`    | CELEBRATE | CelebrationModal particles |
-| `animate-streak-milestone` | CELEBRATE | Achievement / streak cards |
-| `animate-scale-out`        | RESPONSE  | Modal exit                 |
-| `animate-stagger-in`       | RESPONSE  | List item stagger entrance |
-| `animate-shimmer`          | AMBIENT   | Skeleton placeholder       |
-| `animate-streak-glow`      | AMBIENT   | StreakFlame ≥ 7-day glow   |
-| `animate-pull-rotate`      | AMBIENT   | Pull-to-refresh spinner    |
-| `animate-float-slow`       | AMBIENT   | Welcome page background    |
-| `animate-bar-grow`         | CELEBRATE | Chart bar entrance         |
+| Class                      | Tier      | Використання                                    |
+| -------------------------- | --------- | ----------------------------------------------- |
+| `animate-shake`            | RESPONSE  | Form validation errors                          |
+| `animate-confetti`         | CELEBRATE | `CelebrationModal` (keyframes `confetti-burst`) |
+| `animate-confetti-burst`   | CELEBRATE | `AnimatedCheckbox` (`confetti-particle-burst`)  |
+| `animate-streak-milestone` | CELEBRATE | Achievement / streak cards                      |
+| `animate-scale-out`        | RESPONSE  | Modal exit                                      |
+| `animate-stagger-in`       | RESPONSE  | List item stagger entrance (preset)             |
+| `animate-shimmer`          | AMBIENT   | Skeleton placeholder                            |
+| `animate-streak-glow`      | AMBIENT   | StreakFlame ≥ 7-day glow                        |
+| `animate-pull-rotate`      | AMBIENT   | Pull-to-refresh spinner                         |
+| `animate-float-slow`       | AMBIENT   | Welcome page background                         |
+| `animate-bar-grow`         | CELEBRATE | Chart bar entrance                              |
+
+`animate-confetti-fall` (пряме падіння згори вниз) видалено 2026-09-12 —
+нуль JSX-споживачів (аудит O1). Імена перехрещені: keyframes
+`confetti-burst` живлять `.animate-confetti`, а keyframes
+`confetti-particle-burst` — `.animate-confetti-burst`.
 
 ---
 

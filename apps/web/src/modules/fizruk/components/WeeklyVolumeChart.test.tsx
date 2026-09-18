@@ -57,4 +57,16 @@ describe("WeeklyVolumeChart", () => {
     );
     expect(screen.getByText("Поки без обʼєму за тиждень")).toBeInTheDocument();
   });
+
+  it("не глушить вертикальний скрол сторінки пальцем по графіку", () => {
+    // Незакритий хвіст фіксу #3: `MiniLineChart` перевели на `touch-pan-y`
+    // і закріпили тестом, а цей графік лишився на `touch-none` — тобто
+    // палець на ньому не міг прокрутити сторінку (аудит 2026-09-16, WF-8).
+    render(<WeeklyVolumeChart volumeKg={[100, 200, 0, 400, 0, 600, 700]} />);
+    const chart = screen.getByLabelText(
+      "Графік обсягу тренувань за дні поточного тижня",
+    );
+    expect(chart).toHaveClass("touch-pan-y");
+    expect(chart).not.toHaveClass("touch-none");
+  });
 });

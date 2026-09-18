@@ -1,6 +1,6 @@
 name: Weekly DB backup verify
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @zaebal-beep (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: storage-roadmap.md PR #049b — weekly rehearsal of Postgres
 # restore + smoke-test schema integrity. Backend moved Railway → Hetzner +
@@ -251,7 +251,7 @@ jobs:
               '',
               'See [database-backup-restore.md](docs/start/instructions/database-backup-restore.md) for investigation steps.',
               '',
-              'cc @SkOrDs-02',
+              'cc @zaebal-beep',
             ].join('\n');
 
             // Dedup: only create if no open issue with this title prefix exists.

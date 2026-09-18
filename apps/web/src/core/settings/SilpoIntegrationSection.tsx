@@ -237,12 +237,12 @@ export function SilpoIntegrationSection({
               {COPY.checkFailed}
             </p>
             <Button
-              variant="ghost"
+              variant="outline"
               className="w-full h-11"
               onClick={() => void refetch()}
               disabled={isFetching}
             >
-              <Icon name="refresh-cw" size={16} aria-hidden />
+              <Icon name="refresh-cw" size="md" aria-hidden />
               {isFetching ? COPY.checking : COPY.retryCheck}
             </Button>
           </div>
@@ -255,7 +255,7 @@ export function SilpoIntegrationSection({
               >
                 <Icon
                   name="alert-triangle"
-                  size={16}
+                  size="md"
                   className="shrink-0 mt-0.5 text-warning-strong dark:text-warning"
                   aria-hidden
                 />
@@ -289,16 +289,17 @@ export function SilpoIntegrationSection({
             </div>
             <div className="flex gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 className="flex-1 h-11"
                 onClick={runSync}
                 disabled={syncMutation.isPending}
               >
-                <Icon name="refresh-cw" size={16} aria-hidden />
+                <Icon name="refresh-cw" size="md" aria-hidden />
                 {syncMutation.isPending ? COPY.syncing : COPY.sync}
               </Button>
               <Button
-                variant="danger"
+                variant="soft"
+                tone="danger"
                 className="flex-1 h-11"
                 onClick={() => setConfirmKind("disconnect")}
                 disabled={destructivePending}
@@ -332,7 +333,7 @@ export function SilpoIntegrationSection({
               </div>
             </div>
             <Button
-              variant="secondary"
+              variant="outline"
               className="w-full h-11"
               onClick={goToSilpoConnect}
             >
@@ -345,11 +346,11 @@ export function SilpoIntegrationSection({
                 (гейт №2 спеки). */}
             <SilpoPrivacyPromise copy={COPY} variant="inline" />
             <Button
-              variant="secondary"
+              variant="outline"
               className="w-full h-11"
               onClick={goToSilpoConnect}
             >
-              <Icon name="shopping-cart" size={16} aria-hidden />
+              <Icon name="shopping-cart" size="md" aria-hidden />
               {COPY.connect}
             </Button>
           </div>
@@ -361,12 +362,13 @@ export function SilpoIntegrationSection({
         (syncState?.receiptsCount ?? 0) > 0) && (
         <SettingsSubGroup title={COPY.dangerTitle}>
           <Button
-            variant="danger"
+            variant="soft"
+            tone="danger"
             className="w-full h-11"
             onClick={() => setConfirmKind("wipe")}
             disabled={destructivePending}
           >
-            <Icon name="trash" size={16} aria-hidden />
+            <Icon name="trash" size="md" aria-hidden />
             {COPY.wipeCta}
           </Button>
         </SettingsSubGroup>

@@ -23,7 +23,7 @@ function ChevronIcon({ expanded }: ChevronIconProps) {
   return (
     <Icon
       name="chevron-right"
-      size={16}
+      size="md"
       className={cn(
         "transition-transform duration-base shrink-0",
         expanded && "rotate-90",
@@ -270,7 +270,7 @@ export function SettingsGroup({
             {icon && (
               <Icon
                 name={icon}
-                size={20}
+                size="lg"
                 className={cn("shrink-0", moduleBg || "text-muted")}
                 aria-hidden
               />

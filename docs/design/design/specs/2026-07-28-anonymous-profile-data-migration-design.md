@@ -1,7 +1,7 @@
 # Міграція анонімних даних у профіль
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-19.
-> **Status:** Shipped — implementation pending PR.
+> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-03-19.
+> **Status:** Shipped — `core/durability/anonymousDataMigration.ts` + `AnonymousDataMigrationProvider.tsx`, міграція `008_anonymous_profile_migration.sql` (`db-schema/sqlite/migrations`), smoke-покриття у `tests/smoke/{fizruk,routine}-smoke.spec.ts`.
 
 ## Мета
 

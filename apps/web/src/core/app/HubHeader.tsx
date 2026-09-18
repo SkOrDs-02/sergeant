@@ -44,7 +44,7 @@ const HUB_TAB_TITLES: Partial<Record<HubView, string>> = {
 // chrome with the new floating-glass HubBottomNav pill (which uses
 // `rounded-3xl` on the outer container).
 const ICON_BUTTON_CLS =
-  "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 interface HubHeaderProps {
   onOpenSearch: () => void;
@@ -124,7 +124,7 @@ export function HubHeader({
               className={cn(
                 "w-12 h-12 sm:w-11 sm:h-11 flex items-center justify-center rounded-xl",
                 "bg-brand-strong text-white hover:bg-brand-strong/90 transition-colors",
-                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+                "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
               )}
             >
               <Icon name="sergeant" size="lg" />

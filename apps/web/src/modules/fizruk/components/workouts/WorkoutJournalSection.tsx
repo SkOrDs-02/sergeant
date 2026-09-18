@@ -143,7 +143,12 @@ export function WorkoutJournalSection({
           {copy.notFoundDescription}
         </div>
         <div className="mt-3">
-          <Button module="fizruk" className="w-full h-11" onClick={onClose}>
+          <Button
+            variant="solid"
+            tone="fizruk"
+            className="w-full h-11"
+            onClick={onClose}
+          >
             {copy.backToWorkouts}
           </Button>
         </div>

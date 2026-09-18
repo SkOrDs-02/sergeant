@@ -129,7 +129,7 @@ export function useFinykBackupSync(
         try {
           const result = e.target?.result;
           if (typeof result !== "string") {
-            throw new Error("невірний формат файлу");
+            throw new Error("неправильний формат файлу");
           }
           const parsed = JSON.parse(result);
           const normalized = normalizeFinykBackup(parsed);
@@ -139,7 +139,7 @@ export function useFinykBackupSync(
         } catch (err) {
           // Технічна деталь іде у звіт, а не на екран. У цей catch доходять
           // рівно два джерела — виняток `JSON.parse` (англомовний, з
-          // позицією в буфері) і локальний `new Error("невірний формат
+          // позицією в буфері) і локальний `new Error("неправильний формат
           // файлу")`; `normalizeFinykBackup` не кидає нічого. Обидва
           // показувались людині з префіксом «Помилка: », тобто §7 (заборонена
           // standalone-конструкція) і §3 («без stack-trace-у») порушувались

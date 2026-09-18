@@ -1,5 +1,5 @@
 /**
- * AI-6 рішення 3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`,
+ * AI-6 рішення 3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`,
  * founder-рішення 2026-09-01) — класифікація HubChat tool-ів за тим, чи їхня
  * цінність залежить від СИНТЕЗУ другого туру (tool-result-повідомлення від
  * моделі), а не лише від виконання самого інструмента на клієнті.

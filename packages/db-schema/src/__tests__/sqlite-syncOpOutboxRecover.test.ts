@@ -17,7 +17,7 @@ import { recoverDeadLetter } from "../sqlite/syncOpOutboxRecover.js";
 /**
  * Integration tests for the dead-letter recovery helper
  * (`recoverDeadLetter`, PR #042e-recover of
- * `docs/planning/storage-roadmap.md`). Runs the full SPIKE + PR #040
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Runs the full SPIKE + PR #040
  * + PR #042d-prep migration stack against a fresh `:memory:` engine
  * and pins the contract:
  *
@@ -72,9 +72,10 @@ function readRow(db: BetterSqliteDatabase, id: number): OutboxRow | undefined {
 async function enqueueFresh(
   client: SqliteMigrationClient,
   idempotencyKey: string,
+  userId = "u-test",
 ): Promise<number> {
   const r = await enqueueOutboxIncrement(client, {
-    userId: "u-test",
+    userId,
     table: "routine_streaks",
     row: { delta: 1 },
     clientTs: "2026-05-05T10:00:00.000+00:00",
@@ -299,7 +300,10 @@ describe("recoverDeadLetter", () => {
 
   describe("all-mode recovery", () => {
     it("returns empty result when no dead-letter rows exist", async () => {
-      const result = await recoverDeadLetter(client, { all: true });
+      const result = await recoverDeadLetter(client, {
+        all: true,
+        userId: "u-test",
+      });
       expect(result).toEqual({ recovered: [], skipped: [] });
     });
 
@@ -317,7 +321,10 @@ describe("recoverDeadLetter", () => {
         );
       }
 
-      const result = await recoverDeadLetter(client, { all: true });
+      const result = await recoverDeadLetter(client, {
+        all: true,
+        userId: "u-test",
+      });
 
       expect([...result.recovered].sort()).toEqual(ids.sort());
       expect(result.skipped).toEqual([]);
@@ -339,7 +346,10 @@ describe("recoverDeadLetter", () => {
       setDeadLetterState(db, dead1, 7, "2026-05-05T13:00:00.000Z", "http_503");
       setDeadLetterState(db, dead2, 7, "2026-05-05T13:00:00.000Z", "network");
 
-      const result = await recoverDeadLetter(client, { all: true });
+      const result = await recoverDeadLetter(client, {
+        all: true,
+        userId: "u-test",
+      });
 
       expect([...result.recovered].sort()).toEqual([dead1, dead2].sort());
       expect(result.skipped).toEqual([]);
@@ -355,11 +365,80 @@ describe("recoverDeadLetter", () => {
       setDeadLetterState(db, a, 7, "2026-05-05T13:00:00.000Z", "http_503");
       setDeadLetterState(db, b, 7, "2026-05-05T13:00:00.000Z", "network");
 
-      const first = await recoverDeadLetter(client, { all: true });
-      const second = await recoverDeadLetter(client, { all: true });
+      const first = await recoverDeadLetter(client, {
+        all: true,
+        userId: "u-test",
+      });
+      const second = await recoverDeadLetter(client, {
+        all: true,
+        userId: "u-test",
+      });
 
       expect([...first.recovered].sort()).toEqual([a, b].sort());
       expect(second).toEqual({ recovered: [], skipped: [] });
+    });
+  });
+
+  // ───────────────────────────────────────────────────────────────
+  // owner scope — `{ all: true }` не чіпає чужі акаунти
+  // ───────────────────────────────────────────────────────────────
+
+  describe("owner scope", () => {
+    it("`{ all: true }` оживляє лише рядки свого user_id", async () => {
+      // На kvvfs-фолбеку всі локальні партиції ділять один фізичний файл,
+      // тож «оживи все» без фільтра діставало чужі рядки. Тут це один
+      // SQLite на два user_id — рівно та ж форма.
+      const mine = await enqueueFresh(client, "idem-mine", "u-test");
+      const theirs = await enqueueFresh(client, "idem-theirs", "u-other");
+      setDeadLetterState(db, mine, 7, "2026-05-05T13:00:00.000Z", "http_503");
+      setDeadLetterState(db, theirs, 7, "2026-05-05T13:00:00.000Z", "network");
+
+      const result = await recoverDeadLetter(client, {
+        all: true,
+        userId: "u-test",
+      });
+
+      expect(result).toEqual({ recovered: [mine], skipped: [] });
+      expect(readRow(db, mine)?.status).toBe("pending");
+      // Головне твердження: чужий рядок лишився мертвим і зі своїм станом.
+      expect(readRow(db, theirs)?.status).toBe("dead_letter");
+      expect(readRow(db, theirs)?.attempts).toBe(7);
+      expect(readRow(db, theirs)?.last_error).toBe("network");
+    });
+
+    it("`{ ids }` зі скоупом лишає чужий id у skipped", async () => {
+      const theirs = await enqueueFresh(client, "idem-theirs-2", "u-other");
+      setDeadLetterState(db, theirs, 7, "2026-05-05T13:00:00.000Z", "network");
+
+      const result = await recoverDeadLetter(client, {
+        ids: [theirs],
+        userId: "u-test",
+      });
+
+      expect(result).toEqual({ recovered: [], skipped: [theirs] });
+      expect(readRow(db, theirs)?.status).toBe("dead_letter");
+    });
+
+    it("`{ ids }` без скоупу працює як раніше — тріаж `__legacy__`-рядків", async () => {
+      // Міграція 005 зберегла термінальні рядки старої схеми під
+      // синтетичним `user_id='__legacy__'`; обовʼязковий скоуп відрізав би
+      // єдиний спосіб їх оживити.
+      const legacy = await enqueueFresh(client, "idem-legacy", "__legacy__");
+      setDeadLetterState(db, legacy, 7, "2026-05-05T13:00:00.000Z", "network");
+
+      const result = await recoverDeadLetter(client, { ids: [legacy] });
+
+      expect(result).toEqual({ recovered: [legacy], skipped: [] });
+      expect(readRow(db, legacy)?.status).toBe("pending");
+    });
+
+    it("`{ all: true }` без userId кидає, а не розширює вибірку", async () => {
+      await expect(
+        recoverDeadLetter(client, { all: true } as never),
+      ).rejects.toThrow(/requires a non-empty userId/);
+      await expect(
+        recoverDeadLetter(client, { all: true, userId: "" }),
+      ).rejects.toThrow(/requires a non-empty userId/);
     });
   });
 

@@ -3,6 +3,7 @@ import { extractJsonFromText } from "../../http/jsonSafe.js";
 import { parseBody } from "../../http/validate.js";
 import { AnalyzePhotoSchema } from "../../http/schemas.js";
 import { makeAiProviderError } from "../../obs/errors.js";
+import { als } from "../../obs/requestContext.js";
 import { visionModel, visionViaOpenRouter } from "./visionTransport.js";
 import {
   anthropicMessages,
@@ -182,6 +183,9 @@ export default async function handler(
     timeoutMs: 20000,
     endpoint: "analyze-photo",
     allowOpenRouter: visionViaOpenRouter(),
+    // Ініціатива 0025, Фаза 2 — «id обробки фото». Переюзаємо наявний
+    // per-request W3C trace id, не вигадуємо новий.
+    traceId: als.getStore()?.traceId ?? undefined,
     ...(userId ? { userId } : {}),
   });
   if (!response || !response.ok) {

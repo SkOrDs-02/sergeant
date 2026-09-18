@@ -11,6 +11,11 @@ import {
   setCachedSqliteCompletions,
   setCachedSqliteRoutineState,
 } from "./sqliteReader";
+import {
+  __resetRoutineLocalWriteWindowForTests,
+  beginRoutineLocalWrite,
+  endRoutineLocalWrite,
+} from "./localWriteWindow";
 
 interface Row {
   [k: string]: unknown;
@@ -189,5 +194,76 @@ describe("sqliteReader full-state cache", () => {
   it("test helper seeds the full-state cache", () => {
     __setRoutineSqliteStateCacheForTests({ habitOrder: ["a", "b"] });
     expect(getCachedSqliteRoutineState().habitOrder).toEqual(["a", "b"]);
+  });
+});
+
+describe("sqliteReader: оновлення кеша не затирає запис у польоті", () => {
+  beforeEach(() => {
+    clearSqliteRoutineStateCache();
+    __resetRoutineLocalWriteWindowForTests();
+  });
+
+  /**
+   * Гейт на причинність, а не на порядок видачі. Наявний seq-гвард
+   * (DCRUD-007b) рахує, ХТО СТАРТУВАВ пізніше, і тому не бачить випадку
+   * нижче: оновлення стартує ПІСЛЯ write-through (тобто «новіше»), але
+   * читає базу, у яку вставка ще не дійшла. Розбір і заміри —
+   * `./localWriteWindow.ts`.
+   */
+  it("відкидає знімок, прочитаний доки dual-write у польоті", async () => {
+    setCachedSqliteRoutineState({
+      habits: [{ id: "h1", name: "Вода" }] as never,
+      tags: [],
+      categories: [],
+      prefs: {} as never,
+      habitOrder: ["h1"],
+      completionNotes: {},
+      skips: {},
+    });
+
+    beginRoutineLocalWrite();
+    // База ще порожня — вставка в польоті.
+    await refreshSqliteRoutineState(makeClient({}), "u1");
+    endRoutineLocalWrite();
+
+    expect(getCachedSqliteRoutineState().habits).toHaveLength(1);
+  });
+
+  it("відкидає й тоді, коли запис завершився вже під час читання", async () => {
+    setCachedSqliteRoutineState({
+      habits: [{ id: "h1", name: "Вода" }] as never,
+      tags: [],
+      categories: [],
+      prefs: {} as never,
+      habitOrder: ["h1"],
+      completionNotes: {},
+      skips: {},
+    });
+
+    beginRoutineLocalWrite();
+    const client = {
+      all: vi.fn(async () => {
+        // Запис долітає рівно посеред читання — мітка «до» вже нічого не
+        // каже, тому гвард звіряє ще й епоху завершень.
+        endRoutineLocalWrite();
+        return [] as never;
+      }),
+    } as never;
+    await refreshSqliteRoutineState(client, "u1");
+
+    expect(getCachedSqliteRoutineState().habits).toHaveLength(1);
+  });
+
+  it("публікує знімок, коли локальних записів не було", async () => {
+    await refreshSqliteRoutineState(
+      makeClient({
+        routine_habits: [
+          { id: "h2", name: "Читання", emoji: "", tag_ids_json: "[]" },
+        ],
+      }),
+      "u1",
+    );
+
+    expect(getCachedSqliteRoutineState().habits).toHaveLength(1);
   });
 });

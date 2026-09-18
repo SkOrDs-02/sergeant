@@ -387,8 +387,33 @@ export function HabitHeatmap({
         </div>
       </div>
 
+      {/* Ключ до колірної шкали. Раніше він стояв ГІЛКОЮ ELSE поряд із
+          деталями клітинки — і був недосяжний: `detailCell` це
+          `selectedCell ?? todayCell`, а `todayCell` не буває null, бо сітка
+          будується навколо `today` (`buildHeatmapGrid` завжди включає
+          сьогодні). Тобто else-гілка не виконувалась ЖОДНОГО разу, і пʼять
+          рівнів заповнення лишались без пояснення (аудит 2026-09-16, WF-10).
+          Тепер ключ постійний, а деталі клітинки живуть у власному
+          aria-live-рядку нижче. */}
+      <div
+        role="group"
+        aria-label="Легенда заповнення"
+        className="mt-3 flex items-center gap-2 text-style-caption text-subtle select-none"
+      >
+        <span>менше</span>
+        {HEATMAP.levels.map((c, i) => (
+          <span
+            key={i}
+            role="img"
+            aria-label={`Рівень ${i + 1}`}
+            className={cn("w-2.5 h-2.5 rounded-sm inline-block shrink-0", c)}
+          />
+        ))}
+        <span>більше</span>
+      </div>
+
       {/* Persistent aria-live region: SR announces when a cell is selected */}
-      <div aria-live="polite" aria-atomic="true" className="mt-3">
+      <div aria-live="polite" aria-atomic="true" className="mt-2">
         {detailCell ? (
           <div className="flex items-center justify-between gap-2 rounded-xl border border-line bg-bg px-3 py-2 text-style-caption">
             <span className="text-subtle truncate">
@@ -414,27 +439,7 @@ export function HabitHeatmap({
                       : "")}
             </span>
           </div>
-        ) : (
-          <div
-            role="group"
-            aria-label="Легенда заповнення"
-            className="flex items-center gap-2 text-style-caption text-subtle select-none"
-          >
-            <span>менше</span>
-            {HEATMAP.levels.map((c, i) => (
-              <span
-                key={i}
-                role="img"
-                aria-label={`Рівень ${i + 1}`}
-                className={cn(
-                  "w-2.5 h-2.5 rounded-sm inline-block shrink-0",
-                  c,
-                )}
-              />
-            ))}
-            <span>більше</span>
-          </div>
-        )}
+        ) : null}
       </div>
     </Card>
   );

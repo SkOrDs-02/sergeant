@@ -1,6 +1,6 @@
 # `INTERNAL_API_KEY` — rotation, audit & revocation runbook
 
-> **Last validated:** 2026-07-29 by @Skords-01 (Coolify topology; OpenClaw consumer removed). **Next review:** 2027-10-03.
+> **Last touched:** 2026-09-17 by @claude (HMAC required by default since 2026-09-16; consumer count; register row added). **Next review:** 2026-12-16.
 > **Status:** Scaffolded.
 > **Owner:** ops + server.
 > **Related:** [`api-internal-hmac.md`](./api-internal-hmac.md), [`secret-ownership-register.md`](./secret-ownership-register.md), [`secret-rotation.md`](./secret-rotation.md), [`docs/work/specs/initiatives/stack-pulse-2026-05/pr-27-internal-api-key-rotation.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-27-internal-api-key-rotation.md).
@@ -22,13 +22,13 @@ The bearer is defined once and consumed by a single shared guard:
 - **Definition:** `apps/server/src/env/env.ts` → `INTERNAL_API_KEY: stringWithDefault("")` (re-exported via `apps/server/src/env.ts`).
 - **Guard:** `apps/server/src/routes/internal/index.ts` mounts two middleware on `/api/internal/*`, in order:
   1. Constant-time bearer compare — `safeStringEqual(authHeader, \`Bearer ${INTERNAL_API_KEY}\`)`. **Fail-closed:** `503 "Internal API not configured"`if the key is unset;`401 "Unauthorized"` on mismatch. Constant-time (`crypto.timingSafeEqual`) so a naive `!==` can't leak the secret one byte at a time via branch timing.
-  2. `verifyWebhookSignature()` — HMAC-SHA256, a no-op when `WEBHOOK_HMAC_SECRET` is empty (grace mode by default). See [`api-internal-hmac.md`](./api-internal-hmac.md).
+  2. `verifyWebhookSignature()` — HMAC-SHA256. **Required by default since 2026-09-16** (`WEBHOOK_HMAC_REQUIRED: boolFromEnv(true)` in `env.ts`); before that the grace mode was the default. Caveat that matters more than the flag: the verifier still no-ops when `WEBHOOK_HMAC_SECRET` is empty — `assertStartupEnv()` warns about that configuration at boot. See [`api-internal-hmac.md`](./api-internal-hmac.md).
 
 **There is no per-route ACL and no per-key identity.** Every sub-router mounted in `index.ts` sits behind the same bearer; any holder reaches the entire internal surface.
 
 ### Consumer surfaces
 
-All four consume the same shared bearer via the `index.ts` guard (PR-27 §Context):
+All of them consume the same shared bearer via the `index.ts` guard (PR-27 §Context counted four when n8n was still a consumer; today there are three route groups):
 
 | Consumer route group        | File                                                                   | What it serves                                        |
 | --------------------------- | ---------------------------------------------------------------------- | ----------------------------------------------------- |
@@ -40,7 +40,7 @@ All four consume the same shared bearer via the `index.ts` guard (PR-27 §Contex
 
 ### Secret ownership
 
-`INTERNAL_API_KEY` is owned by the **Founder**, stored in the Coolify `sergeant-api` env (and local `.env` / CI where needed), per the [secret-ownership register](./secret-ownership-register.md). It is **not** yet broken out as its own register row — it currently rides under the general internal/auth secret groups. When the per-key design lands, add a dedicated register row (owner, storage, consumers, rotation cadence, blast radius).
+`INTERNAL_API_KEY` is owned by the **Founder**, stored in the Coolify `sergeant-api` env (and local `.env` / CI where needed), per the [secret-ownership register](./secret-ownership-register.md) — since 2026-09-17 it has its own row there (shared with `WEBHOOK_HMAC_SECRET`, because the two rotate together). When the per-key design lands, split that row per named key.
 
 ## Manual rotation (works today — no tooling)
 

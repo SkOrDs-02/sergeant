@@ -12,7 +12,7 @@ import {
 import { elapsedMs } from "../../lib/timing.js";
 
 /**
- * Stage 5 / PR #041 із `docs/planning/storage-roadmap.md` — real-time pull
+ * Stage 5 / PR #041 із `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — real-time pull
  * через Server-Sent Events.
  *
  * Доповнює `GET /api/v2/sync/pull` (PR #021) живим стрімом: коли

@@ -568,7 +568,7 @@ export function Budgets({
                     label: messages.finyk.planning.addSubscription,
                     description:
                       messages.finyk.planning.addSubscriptionDescription,
-                    icon: <Icon name="refresh-cw" size={16} aria-hidden />,
+                    icon: <Icon name="refresh-cw" size="md" aria-hidden />,
                     onSelect: () => onAddSubscription?.(),
                   },
                   {
@@ -576,7 +576,7 @@ export function Budgets({
                     id: "limit",
                     label: messages.finyk.planning.addLimitLabel,
                     description: messages.finyk.planning.addLimitDescription,
-                    icon: <Icon name="flag" size={16} aria-hidden />,
+                    icon: <Icon name="flag" size="md" aria-hidden />,
                     onSelect: () => openBudgetForm("limit"),
                   },
                   {
@@ -584,7 +584,7 @@ export function Budgets({
                     id: "goal",
                     label: messages.finyk.planning.addGoalLabel,
                     description: messages.finyk.planning.addGoalDescription,
-                    icon: <Icon name="target" size={16} aria-hidden />,
+                    icon: <Icon name="target" size="md" aria-hidden />,
                     onSelect: () => openBudgetForm("goal"),
                   },
                 ]}

@@ -12,6 +12,7 @@ import { parseDateKey } from "../lib/hubCalendarAggregate";
 import type { HubCalendarEvent } from "../lib/types";
 import { Icon } from "@shared/components/ui/Icon";
 import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
+import { ROUTINE_OUTLINE_ICON_BUTTON } from "./routineIconButton";
 
 type GroupedListItem =
   { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
@@ -63,7 +64,7 @@ export function RoutineCalendarMonthGrid({
           <IconButton
             size="md"
             variant="ghost"
-            className="border border-line bg-panel/90 shadow-sm"
+            className={ROUTINE_OUTLINE_ICON_BUTTON}
             onClick={() => goMonth(-1)}
             aria-label="Попередній місяць"
           >
@@ -75,7 +76,7 @@ export function RoutineCalendarMonthGrid({
           <IconButton
             size="md"
             variant="ghost"
-            className="border border-line bg-panel/90 shadow-sm"
+            className={ROUTINE_OUTLINE_ICON_BUTTON}
             onClick={() => goMonth(1)}
             aria-label="Наступний місяць"
           >
@@ -224,7 +225,7 @@ export function RoutineCalendarMonthGrid({
                     >
                       <Icon
                         name={e.completed ? "check" : "circle-outline"}
-                        size={14}
+                        size="sm"
                         aria-hidden
                       />
                     </IconButton>

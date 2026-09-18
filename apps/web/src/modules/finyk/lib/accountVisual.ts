@@ -25,7 +25,7 @@ export interface AccountVisual {
    * Підпис рахунку. Дублює `getAccountLabel` із `@sergeant/finyk-domain`,
    * який до 2026-08-21 ніс емодзі-префікс і тому був непридатний тут;
    * тепер обидві таблиці чисті, тож дубль лишився без причини — зведення
-   * в одну винесено окремим боргом (див. `docs/90-work/audits/icons-and-emoji.md`).
+   * в одну винесено окремим боргом (див. `docs/work/specs/audits/icons-and-emoji.md`).
    */
   name: string;
 }

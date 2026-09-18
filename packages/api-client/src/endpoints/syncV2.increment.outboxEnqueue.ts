@@ -6,14 +6,14 @@ import type { SyncV2PushOp } from "./syncV2";
  * shape that `enqueueOutboxIncrement` (db-schema) expects.
  *
  * `db-schema` deliberately does NOT depend on `api-client` (see
- * PR #042d-builder Risk note in `docs/planning/storage-roadmap.md`),
+ * PR #042d-builder Risk note in `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`),
  * so this adapter sits on the consumer side. The contract — field-name
  * alignment between snake_case `SyncV2PushOp` and camelCase
  * `OutboxIncrementInput` — is byte-aligned and pinned by
  * `syncV2.increment.outboxEnqueue.test.ts`; any drift on either side
  * fails CI before reaching production.
  *
- * Stage 5 PR #042e-mapping (`docs/planning/storage-roadmap.md`).
+ * Stage 5 PR #042e-mapping (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  * The actual sync-engine writer that calls `enqueueOutboxIncrement`
  * with this output ships in PR #042e (push-loop refactor).
  *

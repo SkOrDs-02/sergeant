@@ -1,9 +1,24 @@
+import { MEASUREMENT_BOUNDS } from "@sergeant/shared";
 import { recordBodyWeight } from "../../../profile/recordBodyWeight";
-import { persistFizrukDailyLog, readFizrukDailyLog } from "./shared";
+import {
+  deleteFizrukDailyLogEntry,
+  persistFizrukDailyLog,
+  readFizrukDailyLog,
+} from "./shared";
 import type { LogWellbeingAction, ChatActionResult } from "../types";
 
 export function logWellbeing(action: LogWellbeingAction): ChatActionResult {
   const input = action.input || {};
+  // Канонічна межа ваги (ADR-0080): без неї запис проходив клієнт, а сервер
+  // реджектив увесь рядок на `invalid_weight_kg` — запис застрягав
+  // несинхронізованим, і людина про це не дізнавалась.
+  const weight = Number(input.weight_kg);
+  if (Number.isFinite(weight) && weight > 0) {
+    const { min, max } = MEASUREMENT_BOUNDS.weightKg;
+    if (weight < min || weight > max) {
+      return `Вага має бути від ${min} до ${max} кг. Перевір число і спробуй ще раз.`;
+    }
+  }
   const entry: Record<string, number | string | null> = {
     id: `dl_${Date.now().toString(36)}_${crypto.randomUUID()}`,
     at: new Date().toISOString(),
@@ -14,7 +29,6 @@ export function logWellbeing(action: LogWellbeingAction): ChatActionResult {
     note: "",
   };
   const parts: string[] = [];
-  const weight = Number(input.weight_kg);
   if (Number.isFinite(weight) && weight > 0) {
     entry["weightKg"] = weight;
     parts.push(`вага ${weight} кг`);
@@ -39,8 +53,9 @@ export function logWellbeing(action: LogWellbeingAction): ChatActionResult {
   }
   if (parts.length === 0 && !entry["note"])
     return "Немає жодного валідного поля для самопочуття.";
-  // `useDailyLog` reads LS but mirrors to SQLite; reproduce both so an
-  // AI-logged entry is visible in the UI AND synced cross-device.
+  // Той самий кеш і той самий dual-write, що й у `useDailyLog`: запис
+  // видно в UI і він синхронізується між пристроями. `readFizrukDailyLog`
+  // МУСИТЬ читати кеш — див. AI-DANGER у `shared.ts`.
   persistFizrukDailyLog([entry, ...readFizrukDailyLog()]);
   // Bidirectional weight sync — a Fizruk weigh-in is the canonical "current
   // weight" for Nutrition/Profile (mirrors `useDailyLog.addEntry`).
@@ -54,9 +69,7 @@ export function logWellbeing(action: LogWellbeingAction): ChatActionResult {
   return {
     result: `Самопочуття записано${parts.length ? ": " + parts.join(", ") : ""}.`,
     undo: () => {
-      const cur = readFizrukDailyLog();
-      const next = cur.filter((e) => e.id !== entryId);
-      if (next.length !== cur.length) persistFizrukDailyLog(next);
+      deleteFizrukDailyLogEntry({ ...entry, id: entryId });
     },
   };
 }

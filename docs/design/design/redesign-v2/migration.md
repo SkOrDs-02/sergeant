@@ -1,7 +1,7 @@
 # Sergeant v2 — Migration guide для розробників
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-24.
-> **Status:** Active
+> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-04-24.
+> **Status:** Reference — BEFORE/AFTER-патерни переходу на v2 (травень 2026). Частина «AFTER» уже не є каноном: простір радіусів `rounded-r-*` видалено в аудиті 2026-07 (чинна шкала — [`radius-rhythm.md`](../radius-rhythm.md)), glass-токени лишились back-compat-аліасами з непрозорою заливкою, mesh-свічення зняті 2026-09-03. Для нового коду — [`../design-system.md`](../design-system.md) і [`DESIGN.md`](../../../../DESIGN.md).
 
 Цей doc — практичний reference для **engineers** які пишуть новий код або торкаються існуючого у post-v2-rollout world. Містить **BEFORE/AFTER** для типових патернів.
 

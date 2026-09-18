@@ -11,6 +11,7 @@ import {
   parseDateKey,
   startOfIsoWeek,
 } from "../lib/weekUtils";
+import { ROUTINE_OUTLINE_ICON_BUTTON } from "./routineIconButton";
 
 function weekKeysFromAnchor(anchorKey: string): string[] {
   const s = startOfIsoWeek(parseDateKey(anchorKey));
@@ -130,7 +131,7 @@ export function WeekShiftControls({ onShiftWeek }: WeekShiftControlsProps) {
       <IconButton
         size="md"
         variant="ghost"
-        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-muted"
+        className={cn("shrink-0", ROUTINE_OUTLINE_ICON_BUTTON)}
         onClick={() => onShiftWeek(-1)}
         aria-label="Попередній тиждень"
       >
@@ -139,7 +140,7 @@ export function WeekShiftControls({ onShiftWeek }: WeekShiftControlsProps) {
       <IconButton
         size="md"
         variant="ghost"
-        className="focus-ring shrink-0 rounded-xl border border-line bg-panel/90 text-muted"
+        className={cn("shrink-0", ROUTINE_OUTLINE_ICON_BUTTON)}
         onClick={() => onShiftWeek(1)}
         aria-label="Наступний тиждень"
       >

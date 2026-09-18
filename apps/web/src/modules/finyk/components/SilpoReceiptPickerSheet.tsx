@@ -103,7 +103,7 @@ export function SilpoReceiptPickerSheet({
           <EmptyState
             size="sm"
             module="finyk"
-            icon={<Icon name="file-text" size={20} />}
+            icon={<Icon name="file-text" size="lg" />}
             title={COPY.emptyTitle}
             description={COPY.emptyHint}
           />
@@ -147,7 +147,7 @@ export function SilpoReceiptPickerSheet({
                 </span>
                 <Icon
                   name="chevron-right"
-                  size={16}
+                  size="md"
                   className="shrink-0 text-muted"
                   aria-hidden
                 />

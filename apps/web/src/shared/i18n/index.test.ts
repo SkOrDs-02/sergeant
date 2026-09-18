@@ -1,6 +1,9 @@
 /** @vitest-environment node */
 import { describe, it, expect } from "vitest";
 import { messages as uk } from "./uk";
+// Leaf-модуль без рантайм-залежностей — навмисно, щоб цей `node`-тест не
+// притягнув React і react-query через `useFeatureGate`.
+import { PREMIUM_FEATURE_IDS } from "../../core/billing/premiumFeatures";
 import {
   DEFAULT_LOCALE,
   SUPPORTED_LOCALES,
@@ -36,7 +39,7 @@ describe("i18n resolver", () => {
       expect(paywall["ai-photo-analysis"]?.["title"]).toBe(
         "AI photo analysis: Premium",
       );
-      expect(paywall["multi-currency"]?.["name"]).toBe("Multi-currency assets");
+      expect(paywall["analytics-export-pdf"]?.["name"]).toBe("PDF export");
     });
 
     it("a group declared in en.ts resolves to EN values (auth)", () => {
@@ -49,7 +52,7 @@ describe("i18n resolver", () => {
       );
       // The uk catalog itself is unchanged
       const ukAuth = uk.auth as Record<string, string>;
-      expect(ukAuth["invalidEmail"]).toBe("Невірний формат email.");
+      expect(ukAuth["invalidEmail"]).toBe("Неправильний формат email.");
     });
 
     it("does not mutate the uk catalog when resolving en", () => {
@@ -112,16 +115,23 @@ describe("i18n resolver", () => {
       }
     });
 
-    it("paywall covers all 3 PremiumFeatureId values", () => {
+    it("paywall covers every PremiumFeatureId value", () => {
       const enPaywall = messagesEn["paywall"] as
         Record<string, Record<string, string>> | undefined;
       expect(enPaywall).toBeDefined();
-      // These IDs are locked by useFeatureGate's PremiumFeatureId union.
-      // If a new gate is added, en.ts MUST add the matching key — this test
-      // is the trip-wire.
-      expect(enPaywall?.["ai-photo-analysis"]).toBeDefined();
-      expect(enPaywall?.["multi-currency"]).toBeDefined();
-      expect(enPaywall?.["analytics-export-pdf"]).toBeDefined();
+      // Список деривується з `FEATURE_TO_SURFACE` (типізованої мапи
+      // `Record<PremiumFeatureId, …>`), а не дублюється тут. Копія рівно в
+      // цьому місці й розійшлась: гейт `multi-currency` прибрали
+      // 2026-08-05, а тест ще пів місяця вимагав його ключ, тобто сторожував
+      // борг. Новий гейт → TS вимагає ключ у мапі → цей тест вимагає копі.
+      expect(PREMIUM_FEATURE_IDS.length).toBeGreaterThan(0);
+      for (const id of PREMIUM_FEATURE_IDS) {
+        expect(enPaywall?.[id]).toBeDefined();
+      }
+      // І назад: у каталозі не має бути ключів під гейти, яких уже немає.
+      expect(Object.keys(enPaywall ?? {}).sort()).toEqual(
+        [...PREMIUM_FEATURE_IDS].sort(),
+      );
     });
   });
 });

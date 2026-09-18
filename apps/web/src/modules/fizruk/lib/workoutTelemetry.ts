@@ -20,7 +20,13 @@ export type FizrukWorkoutStartSource =
   | "resume"
   | "repeat"
   /** «Внести проведене заняття» — жива сесія з мітками часу заднім числом. */
-  | "past";
+  | "past"
+  /**
+   * «Швидкий запис» — вправа з власною вагою + число повторень, сесія
+   * народжується завершеною (наступник лічильника «Легка активність»,
+   * рішення власника 2026-09-15).
+   */
+  | "quick_log";
 export type FizrukRestTimerOutcome = "completed" | "skipped";
 
 const NEW_ROUTE_MARKER = "fizruk_workout_new_route_v1";

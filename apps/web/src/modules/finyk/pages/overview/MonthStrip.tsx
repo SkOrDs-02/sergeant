@@ -1,9 +1,15 @@
-import { memo, useState } from "react";
+import {
+  memo,
+  useRef,
+  useState,
+  type KeyboardEvent as ReactKeyboardEvent,
+} from "react";
 import { formatMoney } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { Icon } from "@shared/components/ui/Icon";
 import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+import { formatDayMonth } from "@shared/lib/time/formatDate";
 
 export interface MonthStripDay {
   /** Київський день-ключ, `YYYY-MM-DD`. */
@@ -33,24 +39,19 @@ export interface MonthStripProps {
 /** `"2026-09-01"` → `"вересня"` (родовий відмінок, UTC-anchored щоб не зʼїжджати на день). */
 function monthGenitive(dayKey: string): string {
   const [y = 1970, m = 1] = dayKey.split("-").map(Number);
-  const withDay = new Date(Date.UTC(y, m - 1, 1)).toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "long",
+  // "1 вересня" → "вересня": родовий відмінок місяця приходить лише в парі
+  // з числом дня (сам по собі `month: "long"` дає називний "вересень"), тож
+  // форматуємо фіктивне перше число й зрізаємо його.
+  const withDay = formatDayMonth(new Date(Date.UTC(y, m - 1, 1)), {
     timeZone: "UTC",
   });
-  // "1 вересня" → "вересня": родовий відмінок місяця приходить лише в парі
-  // з числом дня (сам по собі `month: "long"` дає називний "вересень").
   return withDay.replace(/^\d+\s*/, "");
 }
 
 /** `"2026-09-12"` → `"12 вересня"`, той самий UTC-anchored парс. */
 function dayLabel(dayKey: string): string {
   const [y = 1970, m = 1, d = 1] = dayKey.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  });
+  return formatDayMonth(new Date(Date.UTC(y, m - 1, d)), { timeZone: "UTC" });
 }
 
 function cellAriaLabel(
@@ -102,9 +103,68 @@ const MonthStripImpl = function MonthStrip({
   const monthLabel = days[0] ? monthGenitive(days[0].dayKey) : "";
   const lastDay = days.length;
 
+  // Roving tabindex: смуга — ОДНА зупинка табуляції, стрілки ходять по днях.
+  //
+  // До цього кожен день був власною зупинкою, тобто до першого контентного
+  // контрола на `/finyk` треба було натиснути Tab тридцять разів (аудит
+  // 2026-09-16: 30 із 40 клікабельних елементів сторінки — це ця смуга).
+  // Тап нічого не втрачає: кнопки лишаються кнопками, змінюється лише те,
+  // скільки з них видно клавіатурі одночасно.
+  const interactiveKeys = days
+    .filter((d) => d.dayKey <= todayKey)
+    .map((d) => d.dayKey);
+  const stripRef = useRef<HTMLDivElement | null>(null);
+  const [activeKey, setActiveKey] = useState<string | null>(null);
+  // Поточна зупинка: явно обраний день, інакше сьогодні, інакше останній
+  // доступний. Обчислюємо щоразу, бо місяць змінюється під ногами.
+  const fallbackKey = interactiveKeys.includes(todayKey)
+    ? todayKey
+    : (interactiveKeys[interactiveKeys.length - 1] ?? null);
+  const tabStopKey =
+    activeKey && interactiveKeys.includes(activeKey) ? activeKey : fallbackKey;
+
+  const moveTo = (nextKey: string | undefined) => {
+    if (!nextKey) return;
+    setActiveKey(nextKey);
+    // Фокус переносимо вручну: `tabIndex` міняється в тому ж рендері, а
+    // браузер сам фокус не переставляє.
+    stripRef.current
+      ?.querySelector<HTMLButtonElement>(`[data-day-key="${nextKey}"]`)
+      ?.focus();
+  };
+
+  const onStripKeyDown = (e: ReactKeyboardEvent<HTMLButtonElement>) => {
+    if (!tabStopKey) return;
+    const i = interactiveKeys.indexOf(tabStopKey);
+    if (i === -1) return;
+    switch (e.key) {
+      case "ArrowLeft":
+      case "ArrowUp":
+        e.preventDefault();
+        moveTo(interactiveKeys[Math.max(0, i - 1)]);
+        break;
+      case "ArrowRight":
+      case "ArrowDown":
+        e.preventDefault();
+        moveTo(interactiveKeys[Math.min(interactiveKeys.length - 1, i + 1)]);
+        break;
+      case "Home":
+        e.preventDefault();
+        moveTo(interactiveKeys[0]);
+        break;
+      case "End":
+        e.preventDefault();
+        moveTo(interactiveKeys[interactiveKeys.length - 1]);
+        break;
+      default:
+        break;
+    }
+  };
+
   return (
     <div>
       <div
+        ref={stripRef}
         role="group"
         aria-label={`${messages.finyk.monthStrip.groupAriaPrefix} ${monthLabel}`}
         className="flex items-end gap-px h-11"
@@ -130,7 +190,15 @@ const MonthStripImpl = function MonthStrip({
               key={day.dayKey}
               type="button"
               data-compact
+              data-day-key={day.dayKey}
               data-today={isToday ? "true" : undefined}
+              tabIndex={day.dayKey === tabStopKey ? 0 : -1}
+              // Слухач на самій кнопці, а не на контейнері `role="group"`:
+              // контейнер не інтерактивний, і вішати на нього клавіатуру
+              // забороняє `jsx-a11y/no-noninteractive-element-interactions`.
+              // Для roving tabindex різниці немає — фокус завжди всередині.
+              onKeyDown={onStripKeyDown}
+              onFocus={() => setActiveKey(day.dayKey)}
               onClick={() => onOpenDay(day.dayKey)}
               aria-label={cellAriaLabel(day, dayBudget, showBalance)}
               className={cn(
@@ -202,9 +270,9 @@ export function MonthStripHint({ hasPlan }: { hasPlan: boolean }) {
           setDismissed(true);
         }}
         aria-label={m.hintDismiss}
-        className="touch-target -m-2 inline-flex shrink-0 items-center justify-center rounded-full p-2 text-hero-ink/70 hover:text-hero-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+        className="touch-target -m-2 inline-flex shrink-0 items-center justify-center rounded-full p-2 text-hero-ink/70 hover:text-hero-ink focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
       >
-        <Icon name="close" size={14} aria-hidden />
+        <Icon name="close" size="sm" aria-hidden />
       </button>
     </div>
   );

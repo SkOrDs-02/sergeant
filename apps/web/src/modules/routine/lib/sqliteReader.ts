@@ -1,7 +1,7 @@
 /**
  * SQLite-backed read path for routine state fields.
  *
- * Stage 4 PR #025 of `docs/planning/storage-roadmap.md`. Originally
+ * Stage 4 PR #025 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Originally
  * read only completions from `routine_entries`. **Stage 10 / PR
  * #070r-dualwrite** extends the reader to all 7 new tables:
  *
@@ -34,6 +34,10 @@ import {
   type SkipReason,
   type WeeklyTargetInterval,
 } from "@sergeant/routine-domain";
+import {
+  markRoutineLocalWrites,
+  routineLocalWritesMoved,
+} from "./localWriteWindow.js";
 
 // -----------------------------------------------------------------------
 // Legacy completions cache (unchanged API, still used by loadRoutineState)
@@ -163,6 +167,7 @@ export async function refreshSqliteRoutineState(
   userId: string,
 ): Promise<SqliteRoutineStateCache> {
   const seq = ++stateRefreshSeq;
+  const localWrites = markRoutineLocalWrites();
   const [habits, tags, categories, prefs, order, notes, skips] =
     await Promise.all([
       readHabits(client, userId),
@@ -175,6 +180,10 @@ export async function refreshSqliteRoutineState(
     ]);
 
   if (seq <= statePublishedSeq) return stateCache;
+  // Знімок, прочитаний доки локальний запис у польоті, причинно старший за
+  // оптимістичний стан — публікувати його означає затерти щойно створене
+  // нулем. Розбір і заміри — `./localWriteWindow.ts`.
+  if (routineLocalWritesMoved(localWrites)) return stateCache;
   statePublishedSeq = seq;
   stateCache = {
     habits,

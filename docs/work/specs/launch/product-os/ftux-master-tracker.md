@@ -1,6 +1,6 @@
 # FTUX Master Tracker — стан, проблеми, план
 
-> **Last touched:** 2026-07-20 by @cursor (docs-drift: S6.3/S6.11/PR-12 reconciled). **Next review:** 2027-10-23.
+> **Last touched:** 2026-09-17 by @claude (snapshot §1 звірено з кодом: LiqPay/Plata live, legal пак закрито; решта секцій — historical). **Next review:** 2026-12-16.
 > **Status:** Active — **single source of truth** для First-Time User Experience.
 >
 > **Update 2026-07-10:** billing scaffold landed (`usePlan()`, `PaywallModal`, `TrialBanner`, `/api/billing/*`). Pricing — ADR-0068 (₴199, reverse trial 7d). Summer refresh whats-new shipped (`2026-06-26-summer-refresh`). Секції §1–§3 нижче містять historical PR-snapshots (2026-05) + новий зріз.
@@ -50,7 +50,7 @@
 
 > **Snapshot 2026-07-10 (code truth):**
 >
-> - **Billing:** scaffold shipped — `usePlan()`, `PaywallModal`, `TrialBanner`, `PricingPage`, server `/api/billing/checkout|status|portal|stripe-webhook`. Open: live Stripe prod env, legal publish, remaining placement polish.
+> - **Billing:** scaffold shipped — `usePlan()`, `PaywallModal`, `TrialBanner`, `PricingPage`, server `/api/billing/checkout|status|portal|stripe-webhook`. Open (звірка 2026-09-17): live prod env для LiqPay/Plata — саме вони live UA-провайдери, Stripe dormant за флагом (`apps/server/src/modules/billing/provider.ts`); реквізити ФОП + представник у ЄС — legal пак опубліковано 12.07.2026 ([04 § 1.1](../business/04-launch-readiness.md#11-обовязкові-документи)); remaining placement polish.
 > - **Pricing/trial:** ADR-0068 — ₴199/міс, ₴1490/рік, reverse trial 7 днів, cloud-sync 2 devices; Free AI **5 msg/day** (ADR-0085); анонім AI не отримує зовсім — асистент за `requireSession()`, гість бачить 401 і запрошення увійти (ADR-0086).
 > - **Landing:** in-app `LandingPage` на `/` + waitlist shipped; standalone `sergeant.com.ua` — TBD.
 > - **FTUX sprints:** S1–S3 core items merged; S6 cleanup mostly done. Real-world activation conversion still **TBD** (needs 14+ day cohort).

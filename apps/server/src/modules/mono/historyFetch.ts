@@ -16,7 +16,7 @@ import { logger } from "../../obs/logger.js";
 import { categorizeMcc } from "./mccCategories.js";
 import type { KeyRing } from "../../lib/keyRing.js";
 import { decryptAndLazyReencrypt, type MonoTokenRow } from "./tokenStore.js";
-import { formatNumberUk } from "@sergeant/shared";
+import { formatNumberUk, toKyivISODate } from "@sergeant/shared";
 
 const MONO_API_TIMEOUT_MS = 15_000;
 /** Monobank personal statement rate limit: 1 req / 60 s per token. */
@@ -50,7 +50,11 @@ export function buildMemoryContent(
     ? `${sign}${formatted} ${symbol}`
     : `${sign}${formatted}`;
   const description = (item.description || "Без опису").trim().slice(0, 200);
-  const dateIso = new Date(item.time * 1000).toISOString().slice(0, 10);
+  // Київська доба: `item.time` — момент транзакції в Unix-секундах, а рядок
+  // читає модель і показує людині. UTC-нарізка підписувала б нічну покупку
+  // (після 21:00 UTC влітку) вчорашнім днем. Заборона на цей патерн —
+  // `modules/finyk/receipts/kyivClock.ts`.
+  const dateIso = toKyivISODate(item.time * 1000);
   const categoryPart = categorySlug ? ` · ${categorySlug}` : "";
   return `${verb} ${amountStr} ${description}${categoryPart} · ${dateIso}`;
 }

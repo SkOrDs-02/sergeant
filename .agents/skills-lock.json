@@ -99,7 +99,7 @@
     "sergeant-module-integrations": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "9ebc1ca02c734890a20189bdac44fa7573590db4ed2cd2d042cf6f4e64a3e26d"
+      "computedHash": "96de87e47a9d8e4f2a8d15aae455584623fa3a4efbcd384dc8fe87d0f2a9dd37"
     },
     "sergeant-module-nutrition": {
       "source": "local",

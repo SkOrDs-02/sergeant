@@ -1,7 +1,7 @@
 name: PR backlinks
 
 # Phase 5 of Initiative 0014 (knowledge graph & auto-generated catalogs).
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @zaebal-beep (solo maintainer).
 # Specification: docs/governance/adr/0061-pr-backlink-storage.md.
 #
 # When a PR merges and touches a canonical doc (ADR / initiative /
@@ -33,11 +33,29 @@ name: PR backlinks
 on:
   pull_request_target:
     types: [closed]
+    # ⚠️ Цей список МУСИТЬ збігатися з `CANONICAL_DOC_ROOTS` у
+    # `scripts/ci/update-pr-backlinks.mjs`, і з 2026-09-15 розбіжність
+    # гейтить тест `scripts/ci/__tests__/update-pr-backlinks.test.mjs`.
+    #
+    # Два боки роблять різні половини однієї роботи: `paths:` вирішує, чи
+    # ЗАПУСТИТИ воркфлоу, а `CANONICAL_DOC_ROOTS` — що саме записати. Тека
+    # лише тут → воркфлоу біжить, `upsertPR` виходить на порожньому
+    # `touchedDocs`, запису немає. Тека лише там → воркфлоу не стартує
+    # взагалі. В обох випадках CI зелений, а ledger просто не росте — рівно
+    # та форма мовчання, якою цей реєстр уже завмирав на 25 днів (див. шапку
+    # кроку «Install dependencies» нижче).
+    #
+    # Скоуп змінюється РІШЕННЯМ, не правкою цього файлу: аудити повернули
+    # 2026-09-15, `docs/engineering/architecture/` лишається виключеною
+    # (її покривають drift-детектори Фази 3). Причини записані в тілі правила
+    # `docs/governance/governance/rules/26-pr-ledger-update-on-merge.md`.
+    # Розширюєш набір — спершу онови ТЕ рішення, потім обидва списки.
     paths:
       - "docs/governance/adr/**"
       - "docs/work/specs/initiatives/**"
       - "docs/start/instructions/**"
       - "docs/governance/governance/rules/**"
+      - "docs/work/specs/audits/**"
 
 permissions:
   contents: write

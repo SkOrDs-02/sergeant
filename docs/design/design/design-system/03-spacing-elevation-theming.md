@@ -1,6 +1,6 @@
 # Design System — Spacing, Elevation та Theming
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2027-03-19.
+> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-03-19.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює spacing scale, радіуси, тіні, мобільні брейкпоінти та темну тему / High Contrast.
@@ -20,15 +20,27 @@ Tailwind `spacing` (базова шкала 4px) + кастомні:
 
 ### Радіуси
 
-| Клас           | Значення | Використання                   |
-| -------------- | -------- | ------------------------------ |
-| `rounded-md`   | 6 px     | Дрібні бейджі, pill            |
-| `rounded-lg`   | 8 px     | Маленькі кнопки `xs`           |
-| `rounded-xl`   | 12 px    | Кнопки, інпути `sm`            |
-| `rounded-2xl`  | 16 px    | Інпути `md/lg`, картки дефолт  |
-| `rounded-3xl`  | 24 px    | Картки hero, панелі модулів    |
-| `rounded-4xl`  | 32 px    | Великі модалки, bottom-sheets  |
-| `rounded-full` | —        | Кружечки, pill-бейджі, аватари |
+Три семантичні тири (`borderRadius` у
+[`tailwind-preset.js`](../../../../packages/design-tokens/tailwind-preset.js),
+розбір — [`radius-rhythm.md`](../radius-rhythm.md)):
+
+| Тир     | Клас           | Значення | Використання                                                     |
+| ------- | -------------- | -------- | ---------------------------------------------------------------- |
+| CONTROL | `rounded-xl`   | 12 px    | Кнопки, інпути, бейджі, чипи, icon-buttons, segmented            |
+| CARD    | `rounded-2xl`  | 16 px    | Картки, панелі, рядки списку, dropdown-и, sticky-банери          |
+| HERO    | `rounded-3xl`  | 24 px    | `Modal`, `Sheet`, hero-картки, bento-плитки модулів              |
+| PILL    | `rounded-full` | 9999 px  | FAB, аватари, статус-точки, теги                                 |
+| SWATCH  | `rounded-sm`   | 2 px     | Комірки heatmap, точки легенди чарта                             |
+| —       | `rounded-4xl`  | 32 px    | **Не частина ритму** — one-off ілюстративні поверхні (5xl 40 px) |
+
+**Заборонено в новому коді:** `rounded-lg` (8 px — між CONTROL і CARD
+без ролі), `rounded-md` (6 px — злито в CONTROL, бери `rounded-xl`),
+`rounded` / `rounded-DEFAULT` (4 px — без семантичного слота). Колишнє
+ESLint-правило `no-rounded-lg` retired
+[ADR-0081](../../../governance/adr/0081-repository-simplification.md) —
+конвенцію тримають tokens + review. Паралельний v2-namespace
+(`r-md`/`r-lg`/`r-xl`/`r-2xl`, 12/14/18/24 px) прибрано в design-audit
+2026-07.
 
 Правило: **одна картка — один радіус**. Не змішуй `rounded-xl`
 header + `rounded-2xl` body.
@@ -116,8 +128,10 @@ shadow до e4 — бери `z-modal`. Їх розсинхронізація = p
 1. Touch targets ≥44×44 (розмір `Button md`+, `IconButton md`+).
 2. `min-h-[44px]` для інпутів навіть коли контент коротший.
 3. Текст в інпутах ≥16 px — інакше iOS зумить екран при фокусі.
-4. Safe-area insets (notch / home indicator) — через `page-tabbar-pad`,
-   `routine-main-pad`, `fizruk-above-tabbar` (див. `src/index.css`).
+4. Safe-area insets (notch / home indicator) — через `page-tabbar-pad`
+   (88px + inset-bottom), `routine-main-pad`, `routine-sheet-pad`,
+   `fizruk-sheet-pad`, `fizruk-above-tabbar` — це `@utility`-правила в
+   [`apps/web/src/styles/utilities.css`](../../../../apps/web/src/styles/utilities.css).
 
 ---
 
@@ -211,16 +225,21 @@ shadow до e4 — бери `z-modal`. Їх розсинхронізація = p
 
 #### Аудит токенів у HC
 
-| Token              | Light → HC-light              | Dark → HC-dark                | Контраст vs `--c-bg` |
-| ------------------ | ----------------------------- | ----------------------------- | -------------------- |
-| `--c-text`         | `#1c1917` → `#000000`         | `#faf7f1` → `#ffffff`         | ≥ 18 : 1             |
-| `--c-muted`        | `#57534e` → `#1f1c19`         | `#b4aea9` → `#e6e0da`         | ≥ 14 : 1             |
-| `--c-subtle`       | `#605a54` → `#332e29`         | `#878079` → `#cfc7bf`         | ≥ 9 : 1              |
-| `--c-line`         | `#ebe4da` → `#574b3c`         | `#524a41` → `#a89c8e`         | ≥ 4.7 : 1            |
-| `--c-border`       | = `--c-line`                  | = `--c-line`                  | ≥ 4.7 : 1            |
-| `--c-success-soft` | `emerald-100` → `emerald-200` | `emerald-900` → `emerald-700` | ≥ 4.6 : 1            |
-| `--c-danger-soft`  | `red-100` → `red-200`         | `red-900` → `red-700`         | ≥ 4.6 : 1            |
-| `--c-brand-soft`   | `emerald-100` → `emerald-200` | `emerald-900` → `emerald-700` | ≥ 4.6 : 1            |
+| Token              | Light → HC-light                  | Dark → HC-dark                    | Контраст vs `--c-bg` |
+| ------------------ | --------------------------------- | --------------------------------- | -------------------- |
+| `--c-text`         | `#0f1713` → `#000000`             | `#f2f6f2` → `#ffffff`             | ≥ 18 : 1             |
+| `--c-muted`        | `#535c56` → `#1f1c19`             | `#a3aea6` → `#e6e0da`             | ≥ 14 : 1             |
+| `--c-subtle`       | `#605a54` → `#332e29`             | `#98a49c` → `#cfc7bf`             | ≥ 9 : 1              |
+| `--c-line`         | `#e2e0da` → `#574b3c`             | `#48423e` → `#a89c8e`             | ≥ 4.7 : 1            |
+| `--c-border`       | = `--c-line`                      | = `--c-line`                      | ≥ 4.7 : 1            |
+| `--c-success-soft` | `emerald-100` → `emerald-200`     | `#065f46` → `emerald-700`         | ≥ 4.6 : 1            |
+| `--c-danger-soft`  | `red-100` → `red-200`             | `red-800` → `red-700`             | ≥ 4.6 : 1            |
+| `--c-brand-soft`   | `stone-100 #f5f5f4` → `stone-200` | `stone-800 #292524` → `stone-700` | ≥ 4.6 : 1            |
+
+> Базові колонки оновлено 2026-09-16 за `:root` / `.dark` у `theme.css`
+> (світла база Б1 2026-08-07, темна — «Чорнило» з `inkTheme` у `tokens.js`);
+> HC-колонки — `html.hc` / `html.hc.dark` там само. `brand-soft` — stone,
+> не emerald, з M1 (хаб нейтральний).
 
 > ⚠ Додаючи новий semantic-token, дзеркаль override у `html.hc { ... }`
 > _і_ `html.hc.dark { ... }`. Скоупні preview-блоки
@@ -244,7 +263,8 @@ audit X4 — деталі в докстрингу `ThemeSwitcher.tsx`.
 - Token-only стилізація (дизайн-конвенція — tokens + review, ex-Hard
   Rules #11/#13, retired ADR-0081). Жодного `bg-[#...]` —
   все через `bg-panel`, `bg-brand-soft`, `border-line`.
-- `focus-visible:ring-2 ring-brand-500/45` (дизайн-конвенція).
+- `focus-visible:ring-2 ring-focus/45` (`--c-ring`, teal; дизайн-конвенція —
+  `brand` з M1 нейтральний і кільця не фарбує).
 - Кожен radio-item має `aria-label` (Ukrainian) + `aria-checked`.
 
 ### 8.4 Не пиши `dark:` пар
@@ -262,3 +282,24 @@ audit X4 — деталі в докстрингу `ThemeSwitcher.tsx`.
 
 Dark-override потрібен тільки коли ефект несиметричний між темами
 (напр. градієнти hero-картки). У таких випадках документуй у комменті.
+
+### 8.5 Стіл і зона (фон у hue модуля)
+
+Фонова система web з 2026-09-03 (рішення власника; замінила mesh —
+радіальних свічень більше немає в жодній темі). **Стіл** — фон сторінки,
+зсунутий у hue модуля (хрома ≤5%, світлота майже як `--c-bg`, бо
+`--c-subtle` має тримати ≥4.5:1 на кожному столі — гейт
+`contrast.test.js`); **зона** — той самий hue на крок глибше, лише під
+шапкою й табами модуля. Хаб нейтральний, без hue, щоб не читатись як
+п'ятий модуль. Темна тема: стіл один для всіх (ink base `#14100e`), зона —
+7% tier-400 акценту на ньому. HC зводить обидва до `--c-bg-base`.
+
+Джерело hex — `moduleSurfaces` у
+[`tokens.js`](../../../../packages/design-tokens/tokens.js); дзеркало —
+`--module-desk-rgb` / `--module-zone-rgb` у `theme.css` (модульні значення
+через `[data-module-accent=…]`, який ставить `ModuleAccentProvider`).
+Класи: `.bg-mesh` (лишив назву заради `MeshBackground.tsx`) малює стіл,
+`.bg-zone` — зону (її рендерить `ModuleHeader`), `.zone-chip` — прозорі
+контроли в зоні з контуром 30% сильного акценту модуля. Міняй пару
+tokens.js ↔ theme.css разом; поглиблюючи стіл чи зону, спершу дивись у
+`contrast.test.js`, чи тримає драбина третинних тонів.

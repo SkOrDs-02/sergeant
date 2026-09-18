@@ -1,7 +1,9 @@
 # Mobile client — API contract
 
-> **Last validated:** 2026-05-13 by @SkOrDs-02 / Devin.
+> **Last touched:** 2026-09-17 by @claude (шапка нормалізована; мобільний контур на паузі — ADR-0094). **Next review:** 2026-12-16.
 > **Status:** Active
+
+> **Мобільний контур на паузі з 2026-08-25** — [ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md) (web-first). Контракт нижче лишається чинним для баг-фіксів; продуктовий розвиток `apps/mobile` не планується без рішення власника.
 
 Референс для Expo/React Native клієнта Sergeant (`apps/mobile`). Сервер і bearer-auth контракт готові; мобільний застосунок — internal dev-client з 4 модулями, Detox E2E і Universal Links (див. [`react-native-migration.md`](./react-native-migration.md)).
 

@@ -228,7 +228,7 @@ export function iconFor(name: string): string | undefined {
 }
 
 /**
- * AI-4 / AI-6 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+ * AI-4 / AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
  * один мапер ключ → підпис на всі три родини «карта показує сирий id/enum
  * замість людського тексту»: звичка (`hab_<uuid>`), категорія Фініка
  * (`restaurant`), тип прийому їжі (`dinner`). Кожна функція повертає

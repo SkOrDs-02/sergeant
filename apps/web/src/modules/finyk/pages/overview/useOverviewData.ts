@@ -31,6 +31,7 @@ import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { logger } from "@shared/lib";
 import { computeAssetsSummary } from "@sergeant/finyk-domain/domain/assets/aggregates";
 import { filterToKyivMonth, txEpochMs } from "../../lib/monthWindow";
+import { KYIV_TIME_ZONE, formatDayMonth } from "@shared/lib/time/formatDate";
 
 type StorageLike = ReturnType<typeof useStorage>;
 type MergedMonoLike = ReturnType<typeof useUnifiedFinanceData>["mergedMono"];
@@ -453,11 +454,7 @@ export function useOverviewData({
   const spendPlanRatio = hasExpensePlan ? spent / planExpense : 0;
 
   const dateLabel = ucFirst(
-    new Date(nowMs).toLocaleDateString("uk-UA", {
-      timeZone: "Europe/Kyiv",
-      day: "numeric",
-      month: "long",
-    }),
+    formatDayMonth(new Date(nowMs), { timeZone: KYIV_TIME_ZONE }),
   );
 
   return {

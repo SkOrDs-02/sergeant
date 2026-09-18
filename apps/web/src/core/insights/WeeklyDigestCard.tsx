@@ -29,6 +29,7 @@ import {
   trackAdviceReaction,
   type AdviceSurface,
 } from "../observability/adviceTelemetry";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 
 // `hasLiveWeeklyDigest` now lives in `@sergeant/shared` (DOM-free, reused by
 // mobile). The web-side adapter in `@shared/lib/weeklyDigestStorage` binds
@@ -333,7 +334,7 @@ function DigestContent({
                           <div key={i} className="flex items-start gap-1.5">
                             <Icon
                               name="sergeant"
-                              size={12}
+                              size="xs"
                               className="text-primary mt-1 shrink-0"
                               aria-hidden
                             />
@@ -584,10 +585,7 @@ export function WeeklyDigestCard({
           <div className="flex items-center gap-1.5 shrink-0">
             {digest?.generatedAt && (
               <span className="text-style-caption text-subtle">
-                {new Date(digest.generatedAt).toLocaleDateString("uk-UA", {
-                  day: "numeric",
-                  month: "short",
-                })}
+                {formatDateShort(new Date(digest.generatedAt))}
               </span>
             )}
             {history.length > 1 && (

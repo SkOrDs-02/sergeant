@@ -1,6 +1,6 @@
 name: Mutation testing
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @zaebal-beep (solo maintainer).
 # Visibility: a red weekly run creates/refreshes an idempotent
 #             `mutation-testing` issue (job `report-red-run` below) — same
 #             pattern as `pact-drift.yml` / `db-backup-verify.yml`, so a
@@ -333,7 +333,7 @@ jobs:
               '3. Do NOT lower `thresholds.break` to make the job green; a bump',
               '   needs an explicit owner decision in the PR description.',
               '',
-              'cc @SkOrDs-02',
+              'cc @zaebal-beep',
             ].join('\n');
 
             // Idempotent: refresh the existing open issue rather than creating

@@ -1,7 +1,19 @@
 # Telemetry rollout plan
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-05.
-> **Status:** Active
+> **Last touched:** 2026-09-17 by @claude (Status → Draft; врізка про стан виконання PR-1…PR-7). **Next review:** 2026-12-16.
+> **Status:** Draft — план 2026-05, не виконаний; звірка нижче
+
+> **Стан виконання (звірка з кодом 2026-09-17).** Жоден із семи PR-ів нижче
+> не приземлився: файлів `apps/web/src/core/observability/identity.ts` і
+> `apps/mobile/src/lib/observability/sentry.ts` (PR-1) у репо немає;
+> `MODULE_SETTINGS_OPENED` у [`analyticsEvents.ts`](../../../packages/shared/src/lib/analyticsEvents.ts)
+> досі має значення `module_settings_opened_from_module` (PR-3 не зроблено).
+> Мобільна частина плану (PR-1 mobile Sentry, PR-4 `screen_viewed`) заморожена
+> разом із мобільним контуром ([ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md),
+> web-first з 2026-08-25). Згадані нижче `ops/n8n-workflows/` — історія
+> ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)); перед PR-7
+> аудитувати треба лише PostHog saved insights. Числа «94/96 events» — стан на
+> 2026-05-17; актуальний каталог — сам `analyticsEvents.ts`.
 
 > Канонічний план перебудови product-telemetry layer Sergeant. Згенеровано
 > через chain skills `product-tracking-skills` (audit → design → guide →

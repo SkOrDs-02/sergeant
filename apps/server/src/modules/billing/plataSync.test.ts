@@ -321,3 +321,198 @@ describe("PlataSyncPoller", () => {
     await stopPromise;
   });
 });
+
+/**
+ * Дунінг на юзері з КІЛЬКОМА plata-рядками (фікс аудиту 2026-09-16).
+ * Скасовані рядки нікуди не діваються — частковий унікальний індекс
+ * `subscriptions_user_active_idx` стереже лише активний набір. Доти
+ * `applyPastDue` брав `rows[0]` без `ORDER BY`/`LIMIT` і оновлював УСІ рядки
+ * юзера: або воскрешав скасований у `past_due` (для `getUserPlan` = активний
+ * доступ), або штовхав два рядки разом у той індекс → 23505, який
+ * `reconcileSubscription` ковтає своїм catch, і дунінг тихо не застосовувався.
+ */
+describe("applyPastDue — юзер із кількома plata-рядками", () => {
+  const ACTIVE_SET = ["active", "trialing", "past_due"];
+
+  interface FakeRow {
+    user_id: string;
+    provider: string;
+    status: string;
+    current_period_end: string | null;
+    updated_at: number;
+  }
+
+  /**
+   * Мок, що інтерпретує WHERE/ORDER BY/LIMIT по маленькій таблиці в пам'яті і
+   * відтворює частковий унікальний індекс. Без цього тест перевіряв би лише
+   * текст SQL, а не наслідок — а наслідок тут і є багом.
+   */
+  function tablePool(rows: FakeRow[]) {
+    const calls: { sql: string; params: unknown[] | undefined }[] = [];
+    const query = vi.fn(async (sql: string, params?: unknown[]) => {
+      calls.push({ sql, params });
+      const userId = params?.[0];
+      const scopedToActive = sql.includes(
+        "status IN ('active', 'trialing', 'past_due')",
+      );
+      const matches = (r: FakeRow) =>
+        r.user_id === userId &&
+        r.provider === "plata" &&
+        (!scopedToActive || ACTIVE_SET.includes(r.status));
+
+      if (sql.includes("SELECT current_period_end")) {
+        let hits = rows.filter(matches);
+        if (sql.includes("ORDER BY updated_at DESC")) {
+          hits = [...hits].sort((a, b) => b.updated_at - a.updated_at);
+        }
+        if (sql.includes("LIMIT 1")) hits = hits.slice(0, 1);
+        return {
+          rows: hits.map((r) => ({ current_period_end: r.current_period_end })),
+        };
+      }
+
+      if (sql.includes("UPDATE subscriptions")) {
+        const hits = rows.filter(matches);
+        // Частковий унікальний індекс перевіряється до застосування —
+        // statement або проходить цілком, або не змінює нічого.
+        const afterActive = rows.filter((r) =>
+          hits.includes(r) ? true : ACTIVE_SET.includes(r.status),
+        );
+        if (afterActive.length > 1) {
+          const err = new Error(
+            'duplicate key value violates unique constraint "subscriptions_user_active_idx"',
+          ) as Error & { code?: string };
+          err.code = "23505";
+          throw err;
+        }
+        for (const r of hits) {
+          r.status = "past_due";
+          if (sql.includes("current_period_end = $2")) {
+            r.current_period_end = (params?.[1] as Date).toISOString();
+          }
+        }
+        return { rows: [] };
+      }
+
+      return { rows: [] };
+    });
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    return { pool: { query } as any, calls, rows };
+  }
+
+  function stubFailureFetch() {
+    vi.stubGlobal(
+      "fetch",
+      vi.fn().mockResolvedValue(
+        new Response(
+          JSON.stringify({
+            subscriptionId: "s2_multi",
+            status: "active",
+            walletData: { failureDescription: "Недостатньо коштів" },
+          }),
+        ),
+      ),
+    );
+  }
+
+  it("переводить у past_due лише активний рядок і не чіпає скасований", async () => {
+    stubFailureFetch();
+    const canceled: FakeRow = {
+      user_id: "usr_multi",
+      provider: "plata",
+      status: "canceled",
+      current_period_end: null,
+      updated_at: 1,
+    };
+    const active: FakeRow = {
+      user_id: "usr_multi",
+      provider: "plata",
+      status: "active",
+      current_period_end: null,
+      updated_at: 2,
+    };
+    const { pool } = tablePool([canceled, active]);
+
+    await reconcileSubscription(pool, {
+      user_id: "usr_multi",
+      subscription_id: "s2_multi",
+    });
+
+    expect(active.status).toBe("past_due");
+    // Скасований рядок не «воскресає» — для getUserPlan це був би Pro-доступ.
+    expect(canceled.status).toBe("canceled");
+    expect(canceled.current_period_end).toBeNull();
+  });
+
+  it("читає грейс із рядка, що тримає ентайтлмент, а не з першого-ліпшого", async () => {
+    stubFailureFetch();
+    // Скасований рядок має грейс у майбутньому і СТАРШИЙ updated_at —
+    // без фільтра і ORDER BY саме він приїжджав у rows[0].
+    const canceled: FakeRow = {
+      user_id: "usr_pick",
+      provider: "plata",
+      status: "canceled",
+      current_period_end: new Date(
+        Date.now() + 10 * 24 * 60 * 60 * 1000,
+      ).toISOString(),
+      updated_at: 5,
+    };
+    const active: FakeRow = {
+      user_id: "usr_pick",
+      provider: "plata",
+      status: "active",
+      current_period_end: null,
+      updated_at: 1,
+    };
+    const { pool, calls } = tablePool([canceled, active]);
+
+    const before = Date.now();
+    await reconcileSubscription(pool, {
+      user_id: "usr_pick",
+      subscription_id: "s2_multi",
+    });
+
+    // Грейс відкривається вперше → зсув дати має статись.
+    const shift = calls.find(
+      (c) =>
+        c.sql.includes("UPDATE subscriptions") &&
+        c.sql.includes("current_period_end = $2"),
+    );
+    expect(shift).toBeDefined();
+    expect(active.status).toBe("past_due");
+    const graceMs = new Date(active.current_period_end!).getTime() - before;
+    expect(graceMs).toBeGreaterThan(2.9 * 24 * 60 * 60 * 1000);
+    expect(graceMs).toBeLessThan(3.1 * 24 * 60 * 60 * 1000);
+  });
+
+  it("SELECT звужений до активного набору з ORDER BY/LIMIT, обидва UPDATE — теж", async () => {
+    stubFailureFetch();
+    const { pool, calls } = tablePool([
+      {
+        user_id: "usr_sql",
+        provider: "plata",
+        status: "active",
+        current_period_end: null,
+        updated_at: 1,
+      },
+    ]);
+    await reconcileSubscription(pool, {
+      user_id: "usr_sql",
+      subscription_id: "s2_multi",
+    });
+
+    const select = calls.find((c) =>
+      c.sql.includes("SELECT current_period_end"),
+    );
+    expect(select?.sql).toContain(
+      "status IN ('active', 'trialing', 'past_due')",
+    );
+    expect(select?.sql).toContain("ORDER BY updated_at DESC");
+    expect(select?.sql).toContain("LIMIT 1");
+    for (const c of calls.filter((x) =>
+      x.sql.includes("UPDATE subscriptions"),
+    )) {
+      expect(c.sql).toContain("status IN ('active', 'trialing', 'past_due')");
+    }
+  });
+});

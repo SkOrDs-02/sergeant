@@ -16,7 +16,10 @@ function strengthWorkout(
   startedAt?: string,
 ) {
   return {
-    startedAt: startedAt ?? endedAt,
+    // 45 хвилин по годиннику — повноцінне за тривалістю (канон §8), тож
+    // тести стріку не залежать від кількості підходів у фікстурі.
+    startedAt:
+      startedAt ?? new Date(Date.parse(endedAt) - 45 * 60_000).toISOString(),
     endedAt,
     items: [
       {
@@ -62,6 +65,22 @@ describe("computeStreakDays", () => {
   it("returns 0 when neither today nor yesterday has any workouts", () => {
     const workouts = [strengthWorkout("2026-04-19T11:00:00Z", [[60, 5]])];
     expect(computeStreakDays(workouts, FROZEN_NOW)).toBe(0);
+  });
+
+  it("легкий запис день у серії не закриває (канон §8, 2026-09-15)", () => {
+    // Сьогодні — лише «+20 відтискань» одним підходом за пів хвилини;
+    // вчора й позавчора — повноцінні. День є в журналі, але серія рахує
+    // повноцінні, тож сьогодні порожньо → grace на вчора → 2.
+    const workouts = [
+      strengthWorkout(
+        "2026-04-22T10:00:00Z",
+        [[0, 20]],
+        "2026-04-22T09:59:30Z",
+      ),
+      strengthWorkout("2026-04-21T11:00:00Z", [[60, 5]]),
+      strengthWorkout("2026-04-20T12:00:00Z", [[60, 5]]),
+    ];
+    expect(computeStreakDays(workouts, FROZEN_NOW)).toBe(2);
   });
 
   it("breaks the streak on the first missing day", () => {

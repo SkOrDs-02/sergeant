@@ -85,6 +85,19 @@ describe("ReceiptReviewForm", () => {
     );
   });
 
+  // Пін на контракт ширини нативного контрола. Поле дати стояло тут у
+  // grid-колонці з саморобними `appearance-none min-w-0` і налазило на
+  // сусіднє «Сума» (бета-фідбек №2, 2026-08-18). `[min-inline-size:0]` дає
+  // лише `DateField` — локальна копія контракту його не мала. Chromium цей
+  // дефект не відтворює (заміряно 2026-09-15), тож юніт — єдиний гейт:
+  // docs/start/instructions/fix-mobile-horizontal-overflow.md
+  it("тримає поле дати в межах колонки — жодного intrinsic-розпирання", () => {
+    render(<Harness initialDraft={baseDraft()} />);
+    expect(screen.getByLabelText("Дата").className).toContain(
+      "[min-inline-size:0]",
+    );
+  });
+
   it("renders every item with its name pre-filled", () => {
     render(<Harness initialDraft={baseDraft()} />);
     expect(screen.getByDisplayValue("Хліб")).toBeInTheDocument();

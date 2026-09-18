@@ -13,9 +13,11 @@ import {
   monthGrid,
   weekDoneCountExcludingDate,
 } from "@sergeant/routine-domain";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
 import { anchoredTodayDate } from "../lib/dayAnchor";
 import { WEEKDAY_LABELS } from "../lib/routineConstants";
 import type { Habit } from "../lib/types";
+import { ROUTINE_OUTLINE_ICON_BUTTON } from "./routineIconButton";
 
 interface MonthCursor {
   y: number;
@@ -52,13 +54,7 @@ export function HabitMonthCalendar({
   );
   const completionSet = useMemo(() => new Set(completions), [completions]);
 
-  const calMonthTitle = new Date(calMonth.y, calMonth.m, 1).toLocaleDateString(
-    "uk-UA",
-    {
-      month: "long",
-      year: "numeric",
-    },
-  );
+  const calMonthTitle = formatMonthYear(new Date(calMonth.y, calMonth.m, 1));
 
   const goCalMonth = (delta: number) => {
     setCalMonth((c) => {
@@ -87,7 +83,7 @@ export function HabitMonthCalendar({
             size="xs"
             variant="ghost"
             onClick={() => goCalMonth(-1)}
-            className="rounded-xl border border-line text-muted"
+            className={ROUTINE_OUTLINE_ICON_BUTTON}
             aria-label="Попередній місяць"
           >
             <Icon name="chevron-left" size="xs" />
@@ -99,7 +95,7 @@ export function HabitMonthCalendar({
             size="xs"
             variant="ghost"
             onClick={() => goCalMonth(1)}
-            className="rounded-xl border border-line text-muted"
+            className={ROUTINE_OUTLINE_ICON_BUTTON}
             aria-label="Наступний місяць"
           >
             <Icon name="chevron-right" size="xs" />

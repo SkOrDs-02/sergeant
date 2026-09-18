@@ -43,7 +43,7 @@ export function ManualExpenseFooter({
     <div className="space-y-2">
       <div className="flex gap-3">
         <Button
-          variant="secondary"
+          variant="outline"
           className="flex-1"
           onClick={onCancel}
           disabled={isSubmitting}
@@ -68,7 +68,8 @@ export function ManualExpenseFooter({
       ) : null}
       {isEditing && onDelete ? (
         <Button
-          variant="danger"
+          variant="soft"
+          tone="danger"
           className="w-full"
           onClick={onDelete}
           disabled={isSubmitting}

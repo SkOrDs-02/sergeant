@@ -42,7 +42,7 @@ function makeReq(body: unknown): Request {
 }
 
 /**
- * AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — same
+ * AI-5 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) — same
  * as `makeReq`, but with a spy-able `aiQuotaRefund` closure attached, the
  * way `requireAiQuota()`/`assertAiQuota` attach it in production before
  * `handler` ever runs.
@@ -806,7 +806,7 @@ describe("chat handler — B36 tool_results/tool_calls_raw XOR", () => {
   });
 });
 
-// AI-5 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+// AI-5 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
 // `assertAiQuota` consumes a daily-quota ticket in router middleware BEFORE
 // this handler runs. A 4xx/422 that `handler` itself raises before ever
 // calling `anthropicMessages` used to keep that ticket burned — free users

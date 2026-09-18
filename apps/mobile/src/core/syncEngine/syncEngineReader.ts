@@ -10,7 +10,7 @@
  *
  * @see apps/web/src/core/syncEngine/syncEngineReader.ts
  */
-import type { SyncV2PullResponse } from "@sergeant/api-client";
+import type { SyncV2PullOp, SyncV2PullResponse } from "@sergeant/api-client";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { applyPullOp } from "./applyPullOp";
@@ -55,6 +55,49 @@ export interface SyncEngineReaderDeps {
     error: unknown,
     context?: Record<string, unknown>,
   ) => void;
+}
+
+/**
+ * Відхилений на застосуванні оп — у Sentry, а не в тишу.
+ *
+ * `rejected` на pull означає передусім «таблиці немає в
+ * `CLIENT_PULL_SUPPORTED_TABLES` ЦЬОГО білда», тобто клієнт старший за
+ * сервер. Курсор при цьому просувається СВІДОМО: такий оп не стане
+ * застосовним ніколи, тож притримування курсора застрягло б на ньому
+ * назавжди і пристрій перестав би тягнути взагалі все — повна зупинка
+ * синку замість часткової.
+ *
+ * Ціна такого рішення — дані, що не доїхали, лишаються непоміченими. Саме
+ * так і сталось двічі (`fizruk_custom_activities`, `fizruk_injuries`):
+ * проблема була не в тому, що оп відхилили, а в тому, що цього ніхто не
+ * бачив. Один `captureException` із `table`/`op` закрив би обидва випадки
+ * в день появи.
+ *
+ * `row` навмисно не передається (Hard Rule #21). Дзеркалить
+ * `apps/web/src/core/syncEngine/syncEngineReader.ts`.
+ */
+function reportPullRejection(
+  deps: SyncEngineReaderDeps,
+  op: SyncV2PullOp,
+): void {
+  if (!deps.captureException) return;
+  try {
+    deps.captureException(
+      new Error(`sync pull op rejected: ${op.table}.${op.op}`),
+      {
+        scope: "sync-v2-pull-apply",
+        tags: {
+          area: "sync",
+          sync_direction: "pull",
+          sync_table: op.table,
+          sync_op: op.op,
+        },
+        opId: op.id,
+      },
+    );
+  } catch {
+    /* обсервабіліті ніколи не має ламати шлях читання */
+  }
 }
 
 export function createSyncEngineReaderRuntime(
@@ -110,6 +153,7 @@ export function createSyncEngineReaderRuntime(
             skipped += 1;
           } else {
             rejected += 1;
+            reportPullRejection(deps, op);
           }
         }
 

@@ -1,6 +1,6 @@
 # Playbook: Retire Feature Flag
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-01.
+> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-01-07.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -13,7 +13,7 @@
 
 ## Required context
 
-- Перегляньте [feature-flags.md](../../governance/governance/feature-flags.md) і [add-feature-flag.md](./add-feature-flag.md).
+- Перегляньте [feature-flags.md](../../engineering/architecture/feature-flags.md) і [add-feature-flag.md](./add-feature-flag.md).
 - Якщо прапор захищає mobile- або backend-реліз, відкрийте також відповідний release playbook.
 
 ## Steps
@@ -32,14 +32,14 @@
 
 ### 3. Приберіть operational docs
 
-- Видаліть рядок із [feature-flags.md](../../governance/governance/feature-flags.md).
+- Видаліть рядок із [feature-flags.md](../../engineering/architecture/feature-flags.md).
 - Оновіть release notes або playbooks, якщо прапор був задокументований як rollback-важіль.
 
 ## Verification
 
 - [ ] Прапор видалено з code registry
 - [ ] Мертві гілки видалено
-- [ ] Запис у registry видалено з `docs/governance/governance/feature-flags.md`
+- [ ] Запис у registry видалено з `docs/engineering/architecture/feature-flags.md`
 - [ ] Verification покриває поведінку, що залишилася
 
 ## When not to use this playbook
@@ -52,3 +52,14 @@
 - [add-feature-flag.md](./add-feature-flag.md)
 - [cleanup-dead-code.md](./cleanup-dead-code.md)
 - [release.md](./release.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                              | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------- | ---------- |
+| [#61](https://github.com/zaebal-beep/sergeant/pull/61) | docs(docs): governance — прибрати застаріле з ADR-індексу, governance/ і security/ | 2026-09-16 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

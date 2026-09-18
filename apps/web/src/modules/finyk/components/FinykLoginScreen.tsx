@@ -284,7 +284,7 @@ export function FinykLoginScreen({
           </div>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             className="w-full min-h-[48px]"
             onClick={onContinueWithoutBank}
           >
@@ -301,7 +301,7 @@ export function FinykLoginScreen({
           {typeof onBackToHub === "function" && (
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               className="mt-1 w-full min-h-[44px]"
               onClick={onBackToHub}
             >

@@ -7,12 +7,22 @@
 
 export const SHOPPING_LIST_KEY = "nutrition_shopping_list_v1";
 
+/**
+ * Походження позиції. `"manual"` — людина дописала позицію сама
+ * (`addManualShoppingItem`); `"ai"` — прийшла з генерації
+ * (рецепти/тижневий план). Відсутнє поле (легасі-записи до цієї фічі)
+ * трактується як `"ai"` скрізь, де походження впливає на поведінку —
+ * див. `mergeGeneratedShoppingList`.
+ */
+export type ShoppingItemSource = "manual" | "ai";
+
 export interface ShoppingItem {
   id: string;
   name: string;
   quantity: string;
   note: string;
   checked: boolean;
+  source?: ShoppingItemSource;
 }
 
 export interface ShoppingCategory {
@@ -48,21 +58,36 @@ function sanitizeItem(raw: unknown, seenIds: Set<string>): ShoppingItem | null {
   if (!id || seenIds.has(id)) id = makeItemId();
   while (seenIds.has(id)) id = makeItemId();
   seenIds.add(id);
+  const rawSource = r["source"];
+  const source: ShoppingItemSource | undefined =
+    rawSource === "manual" ? "manual" : rawSource === "ai" ? "ai" : undefined;
   return {
     id,
     name: itemName,
     quantity: String(r["quantity"] || "").trim(),
     note: String(r["note"] || "").trim(),
     checked: Boolean(r["checked"]),
+    // `exactOptionalPropertyTypes: true` (Hard Rule #19) rejects an explicit
+    // `source: undefined` — conditional spread keeps the key absent instead
+    // of present-but-undefined for legacy items that never had it.
+    ...(source ? { source } : {}),
   };
 }
 
 function mergeItem(existing: ShoppingItem, next: ShoppingItem): ShoppingItem {
+  // Ручна позиція має пережити мердж із будь-якою іншою (в т.ч. з
+  // однойменною AI-позицією регенерації) — інакше `mergeGeneratedShoppingList`
+  // ризикує тихо "розманити" щойно дописане людиною.
+  const source: ShoppingItemSource | undefined =
+    existing.source === "manual" || next.source === "manual"
+      ? "manual"
+      : (existing.source ?? next.source);
   return {
     ...existing,
     quantity: existing.quantity || next.quantity,
     note: existing.note || next.note,
     checked: existing.checked || next.checked,
+    ...(source ? { source } : {}),
   };
 }
 
@@ -121,6 +146,86 @@ export function normalizeShoppingList(raw: unknown): ShoppingList {
     categories.push({ name, items });
   }
   return { categories };
+}
+
+const DEFAULT_MANUAL_CATEGORY = "Інше";
+
+export interface AddShoppingItemInput {
+  name: string;
+  quantity?: string;
+  note?: string;
+  category?: string;
+}
+
+/**
+ * Додає одну ручну позицію в список. Дедуп і санітизація йдуть через
+ * `normalizeShoppingList` (та сама логіка, що й для AI-списку) — тут лише
+ * складаємо вхідний shape і позначаємо походження `"manual"`, щоб позиція
+ * пережила наступну регенерацію (`mergeGeneratedShoppingList`).
+ */
+export function addManualShoppingItem(
+  list: ShoppingListLike | null | undefined,
+  input: AddShoppingItemInput,
+): ShoppingList {
+  const name = String(input.name || "").trim();
+  if (!name) return normalizeShoppingList(list);
+  const categoryName =
+    String(input.category || "").trim() || DEFAULT_MANUAL_CATEGORY;
+  const base = normalizeShoppingList(list);
+  const newCategory = {
+    name: categoryName,
+    items: [
+      {
+        name,
+        quantity: String(input.quantity || "").trim(),
+        note: String(input.note || "").trim(),
+        checked: false,
+        source: "manual" as const,
+      },
+    ],
+  };
+  return normalizeShoppingList({
+    categories: [...base.categories, newCategory],
+  });
+}
+
+/**
+ * Регенерація AI-списку (рецепти/тижневий план) НЕ стирає ручні позиції.
+ * До 2026-09 `setGeneratedList` повністю перезаписував список — ручна
+ * позиція, дописана людиною, зникала на наступній генерації. Тут
+ * генерований набір позначається `source: "ai"`, ручні позиції з
+ * поточного списку виживають повз нього, а фінальний дедуп/merge — той
+ * самий `normalizeShoppingList`, що й скрізь (Hard Rule: не дублюй
+ * арифметику дедупу).
+ */
+export function mergeGeneratedShoppingList(
+  current: ShoppingListLike | null | undefined,
+  generatedCategories: unknown,
+): ShoppingList {
+  const currentNormalized = normalizeShoppingList(current);
+  const manualCategories = currentNormalized.categories
+    .map((cat) => ({
+      name: cat.name,
+      items: cat.items.filter((item) => item.source === "manual"),
+    }))
+    .filter((cat) => cat.items.length > 0);
+
+  const generatedRaw = Array.isArray(generatedCategories)
+    ? generatedCategories
+    : [];
+  const generatedNormalized = normalizeShoppingList({
+    categories: generatedRaw,
+  }).categories.map((cat) => ({
+    name: cat.name,
+    items: cat.items.map((item) => ({
+      ...item,
+      source: item.source ?? ("ai" as const),
+    })),
+  }));
+
+  return normalizeShoppingList({
+    categories: [...generatedNormalized, ...manualCategories],
+  });
 }
 
 export function toggleShoppingItem(

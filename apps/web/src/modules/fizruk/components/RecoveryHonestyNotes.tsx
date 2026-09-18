@@ -71,7 +71,7 @@ export function RecoveryHonestyNotes({
         <div className="mb-3 px-3 py-2 rounded-xl bg-panel border border-line flex items-start gap-2">
           <Icon
             name="info"
-            size={16}
+            size="md"
             className="shrink-0 text-subtle mt-0.5"
             aria-hidden
           />

@@ -35,7 +35,7 @@ describe("shouldDehydrateQueryForPersist", () => {
     // Деталі finyk-транзакцій не sensitive: PAT живе тільки на сервері
     // (PR #002), а самі транзакції — це звичайні budgets/categories.
     // Раніше тут стояло ["finyk", "balance"], але після PR #004
-    // (`docs/planning/storage-roadmap.md`) `balance` як сегмент query-key
+    // (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`) `balance` як сегмент query-key
     // потрапляє у `SENSITIVE_QUERY_KEY_FRAGMENTS` і свідомо
     // виключається з персиста — тому для тесту "вдалі дані
     // персистяться" треба key, що не натикається на той блок-list.

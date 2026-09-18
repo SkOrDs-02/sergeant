@@ -4,7 +4,6 @@ import { useMonobank } from "./hooks/useMonobank";
 import { usePrivatbank } from "./hooks/usePrivatbank";
 import { useStorage } from "./hooks/useStorage";
 import { readRaw } from "./lib/finykStorage";
-import { isDemoActive } from "../../core/onboarding/onboardingGate";
 import { FINYK_MANUAL_ONLY_KEY, enableFinykManualOnly } from "./lib/demoData";
 import { ModuleBottomNav } from "@shared/components/ui/ModuleBottomNav";
 import { messages } from "@shared/i18n/uk";
@@ -245,7 +244,6 @@ export default function App({
   const showNoBankBanner = shouldShowNoBankBanner({
     hasConnectedProvider,
     manualOnly,
-    inDemo: isDemoActive(),
   });
 
   // Page render helpers

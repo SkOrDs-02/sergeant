@@ -4,7 +4,6 @@
  */
 import { useState } from "react";
 import { DASHBOARD_MODULE_LABELS as SHARED_DASHBOARD_MODULE_LABELS } from "@sergeant/shared";
-import { DemoModeBanner } from "../onboarding/DemoModeBanner";
 import { FirstEntryCelebrationModal } from "../onboarding/FirstEntryCelebrationModal";
 import { MotivationalFooter, StaggerChild } from "./dashboard/dashboardCards";
 import { HubHeroBlock } from "./HubHeroBlock";
@@ -19,6 +18,9 @@ import { PrivacyLockBanner } from "../security/PrivacyLockBanner";
 import { useHubPref } from "../settings/hubPrefs";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { useAuthOptional } from "../auth/AuthContext";
+import { ModuleRail } from "@shared/components/layout/ModuleRail";
+import { NowPile } from "./now/NowPile";
+import { ClosedTodayPile } from "./now/ClosedTodayPile";
 
 export const DASHBOARD_MODULE_LABELS = SHARED_DASHBOARD_MODULE_LABELS;
 export {
@@ -75,12 +77,17 @@ export function HubDashboard({
   // C · Контроль: «Чистий режим» (toggle у HubHeader) ховає весь сигнальний
   // шар головної — лишаються лише модулі (+ hero для FTUX). Реактивно
   // оновлюється через спільний HUB_PREFS-стан.
-  const [calmMode] = useHubPref<boolean>("calmMode", false);
+  const [calmPref] = useHubPref<boolean>("calmMode", false);
+  // Вісь дії (спека `hub-action-axis.md`): «Чистого режиму» під нею немає —
+  // збережене значення ігнорується, kill-switch повертає його як було.
+  const calmMode = s.axis ? false : calmPref;
   // C · Контроль (per-section visibility): постійне тонке налаштування з
   // Settings → Дашборд — на відміну від тимчасового «Чистого режиму», ці
   // прапори назавжди прибирають конкретні секції. Today-focus ховаємо лише
   // для досвідченого юзача; у FTUX hero — єдиний CTA, його не чіпаємо.
-  const [showTodayFocus] = useHubPref<boolean>("showTodayFocus", true);
+  const [showTodayFocusPref] = useHubPref<boolean>("showTodayFocus", true);
+  // Купи під віссю не вимикаються — це і є головна.
+  const showTodayFocus = s.axis ? true : showTodayFocusPref;
   const [showInsights] = useHubPref<boolean>("showInsights", true);
   const [showMotivational] = useHubPref<boolean>("showMotivational", true);
 
@@ -113,6 +120,36 @@ export function HubDashboard({
         activeModules={s.activeModules}
         goals={s.goals}
         hasValueBar={s.hasValueBar}
+        nowPile={
+          s.axis && s.hasRealEntry ? (
+            <NowPile onOpenTarget={s.openInsightTarget} />
+          ) : undefined
+        }
+      />
+    </StaggerChild>
+  );
+
+  // Вісь дії: безумовний вхід у модуль — рейок під шапкою, той самий
+  // компонент, що й перемикач усередині модулів. Неактивні модулі
+  // приглушені, не сховані. Замінює сітку плиток цілком.
+  const rail = (
+    <StaggerChild index={0}>
+      <ModuleRail
+        active={null}
+        source="module_rail"
+        activeModules={s.activeModules}
+      />
+    </StaggerChild>
+  );
+
+  // Друга купа — одне твердження на активний модуль (`closedToday.ts`).
+  const closedPile = (
+    <StaggerChild index={2}>
+      <ClosedTodayPile
+        activeModules={s.activeModules}
+        recs={s.focus ? [s.focus, ...s.rest] : s.rest}
+        onOpenModule={onOpenModule}
+        storageBump={s.storageBump}
       />
     </StaggerChild>
   );
@@ -137,9 +174,16 @@ export function HubDashboard({
 
   return (
     <div className={DENSITY_OUTER_SPACE[s.density]}>
-      <DemoModeBanner />
-
-      {s.hasRealEntry ? (
+      {s.axis ? (
+        // Вісь дії: рейок → «Зараз» (у hero-слоті) → «Закрито сьогодні».
+        // Новачок без запису бачить FTUX-hero і рейок; куп немає, доки
+        // немає запису (рішення власника 2026-09-17).
+        <>
+          {rail}
+          {hero}
+          {s.hasRealEntry && closedPile}
+        </>
+      ) : s.hasRealEntry ? (
         <>
           {modules}
           {showTodayFocus && hero}
@@ -161,8 +205,9 @@ export function HubDashboard({
           на вимогу, а не зустрічає розгорнутим на кожному вході.
           C · Контроль: у «Чистому режимі» прибирається повністю. */}
       {s.hasRealEntry && !calmMode && showInsights && (
-        <StaggerChild index={2}>
+        <StaggerChild index={s.axis ? 3 : 2}>
           <HubInsightsBlock
+            axis={s.axis}
             insightsDefaultOpen={false}
             insightsOpen={insightsOpen}
             onInsightsOpenChange={setInsightsOpen}

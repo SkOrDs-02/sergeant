@@ -168,7 +168,11 @@ function NetworthChartInner({
       <svg
         ref={svgRef}
         viewBox={`0 0 ${W} ${H}`}
-        className="w-full overflow-visible touch-none cursor-crosshair"
+        // `touch-pan-y`, не `touch-none`: остання глушила ВЕСЬ нативний
+        // скрол, тобто палець, покладений на графік, не міг прокрутити
+        // сторінку. Еталон — `MiniLineChart` (фікс #3), там це вже так і
+        // закріплено тестом; тут лишався незакритий хвіст того ж фіксу.
+        className="w-full overflow-visible touch-pan-y cursor-crosshair"
         role="img"
         aria-label="Графік капіталу за місяці"
         aria-describedby={summaryId}

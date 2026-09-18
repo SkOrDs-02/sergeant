@@ -18,6 +18,7 @@ import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { AddMeasurementForm } from "./Measurements/AddMeasurementForm";
 import { formatNumberUk } from "@sergeant/shared";
 import { fmt } from "../lib/numberFmt";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 
 // Programmatic-focus target for the guide view's `<h2>` — see the
 // scroll/focus-management effect below.
@@ -108,12 +109,7 @@ export function Measurements() {
 
   const stats = useMemo(() => {
     const total = entries?.length || 0;
-    const latestAt = latest?.at
-      ? new Date(latest.at).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        })
-      : "—";
+    const latestAt = latest?.at ? formatDateShort(new Date(latest.at)) : "—";
     const filledLatest = latest
       ? MEASURE_FIELDS.filter((f) => latest[f.id] != null).length
       : 0;
@@ -138,9 +134,18 @@ export function Measurements() {
                   scroll/focus-management effect above (not part of tab
                   order; SectionHeading isn't a forwardRef component, so a
                   DOM ref isn't available here — id + getElementById is the
-                  pragmatic substitute). */}
+                  pragmatic substitute).
+
+                  `as="h1"`, не `h2`: гайд — це повноекранне під-в'ю з
+                  власним раннім `return`, тож на екрані він єдиний і свого
+                  `<h1>` не мав узагалі (сторінковий заголовок «Заміри
+                  тіла» рендериться в ІНШІЙ гілці й сюди не потрапляє).
+                  Свіп цього не бачив і побачити не міг: гайд — стан
+                  `guideOpen`, а не адреса, тож жоден маршрутний лейн у
+                  нього не заходить. Візуально нічого не змінюється —
+                  `size="lg"` лишається, міняється лише тег. */}
               <SectionHeading
-                as="h2"
+                as="h1"
                 size="lg"
                 id={GUIDE_HEADING_ID}
                 tabIndex={-1}
@@ -225,6 +230,19 @@ export function Measurements() {
   return (
     <div ref={scrollContainerRef} className="flex-1 overflow-y-auto">
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-3">
+        {/* Сторінка не мала ЖОДНОГО `<h1>` — лише `SectionHeading as="div"`
+            по картках (axe `page-has-heading-one`, замір свіпу 2026-09-16).
+            Видимий заголовок за зразком сусідніх сторінок модуля
+            (`Programs.tsx`, `components/workouts/WorkoutsHeader.tsx`) —
+            той самий `text-style-title text-text` плюс підпис-caption. */}
+        <div>
+          <h1 className="text-style-title text-text">
+            {messages.fizruk.progress.measurementsTitle}
+          </h1>
+          <p className="text-style-caption text-subtle mt-0.5">
+            {messages.fizruk.progress.measurementsSubtitle}
+          </p>
+        </div>
         <button
           ref={guideTriggerRef}
           type="button"
@@ -363,10 +381,8 @@ export function Measurements() {
             </SectionHeading>
           </div>
           {(entries || []).map((e) => {
-            const dateLabel = new Date(e.at).toLocaleDateString("uk-UA", {
-              month: "short",
-              day: "numeric",
-              year: "numeric",
+            const dateLabel = formatDateShort(new Date(e.at), {
+              withYear: true,
             });
             const filledFields = MEASURE_FIELDS.filter((f) => e[f.id] != null);
             // Defect #7: a record can carry up to 14 fields — silently

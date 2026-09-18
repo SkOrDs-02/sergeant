@@ -10,7 +10,12 @@ const { hapticTap, emitHubBus, openHubModule } = vi.hoisted(() => ({
 
 vi.mock("@shared/lib/adapters/haptic", () => ({ hapticTap }));
 vi.mock("@shared/lib/modules/hubBus", () => ({ emitHubBus }));
-vi.mock("@shared/lib/modules/hubNav", () => ({ openHubModule }));
+// `openHubSettingsSection` потрібен `ModuleRail` (неактивний модуль веде в
+// налаштування); мок без нього кидає на імпорті.
+vi.mock("@shared/lib/modules/hubNav", () => ({
+  openHubModule,
+  openHubSettingsSection: vi.fn(),
+}));
 
 import {
   ModuleHeader,
@@ -97,7 +102,13 @@ describe("ModuleHeader", () => {
 
     fireEvent.click(screen.getByRole("tab", { name: /Фінік/ }));
     expect(hapticTap).toHaveBeenCalledTimes(1);
-    expect(openHubModule).toHaveBeenCalledWith("finyk");
+    // `undefined` замість hash і `module_switcher` як джерело для
+    // `MODULE_OPENED` (базова лінія перед віссю дії хабу, P3).
+    expect(openHubModule).toHaveBeenCalledWith(
+      "finyk",
+      undefined,
+      "module_switcher",
+    );
 
     fireEvent.click(screen.getByRole("tab", { name: "Перейти до модуля Їжа" }));
     expect(openHubModule).toHaveBeenCalledTimes(1);

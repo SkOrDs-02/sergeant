@@ -191,7 +191,7 @@ export function SectionBar({
         <span>{open ? "Згорнути" : "Розкласти"}</span>
         <Icon
           name={open ? "chevron-up" : "chevron-down"}
-          size={14}
+          size="sm"
           aria-hidden
         />
       </span>

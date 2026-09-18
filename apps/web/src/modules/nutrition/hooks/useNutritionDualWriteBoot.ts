@@ -3,7 +3,7 @@
  * Status: Active
  * React hook that installs the Nutrition dual-write context.
  *
- * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. Mirror of
+ * Stage 4 PR #032 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirror of
  * `useFizrukDualWriteBoot`.
  *
  * Stage 8 PR #056n dropped the `feature.nutrition.sqlite_v2.dual_write`
@@ -23,7 +23,7 @@ export function useNutritionDualWriteBoot(): void {
     // AI-CONTEXT: імпорт динамічний, щоб `lib/dualWriteBoot.js`
     // (→ `core/db/sqlite.ts` → `drizzle-orm`) не потрапляв у eager-граф.
     // Статичний імпорт тут тягнув би весь чанк `vendor-sqlite` у
-    // критичний шлях — див. `docs/90-work/tech-debt/frontend.md`.
+    // критичний шлях — див. `docs/work/specs/tech-debt/frontend.md`.
     let teardown: (() => void) | undefined;
     let cancelled = false;
     void import("../lib/dualWriteBoot.js")

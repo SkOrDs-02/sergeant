@@ -44,10 +44,14 @@ function search(q: string): RawExerciseDef[] {
   );
 }
 
-function renderSheet(open = true) {
+function renderSheet(
+  open = true,
+  programTile?: { label: string; onStart: () => void },
+) {
   return render(
     <QuickStartSheet
       open={open}
+      programTile={programTile}
       onClose={onClose}
       exercises={EXERCISES}
       search={search}
@@ -78,6 +82,22 @@ describe("QuickStartSheet — choose step", () => {
     expect(screen.getByText("Почати тренування")).toBeInTheDocument();
     expect(screen.getByText("За шаблоном")).toBeInTheDocument();
     expect(screen.getByText("Підібрати вправи")).toBeInTheDocument();
+  });
+
+  it("без активної програми плитки «За програмою» немає", () => {
+    renderSheet();
+    expect(screen.queryByText("За програмою")).not.toBeInTheDocument();
+  });
+
+  it("з сьогоднішньою сесією програми показує третю плитку і стартує через неї", () => {
+    // Той самий старт, що й hero-картка Огляду: прогресія ваги та конфлікт
+    // «одне активне» живуть у `FizrukApp.handleStartProgramWorkout`.
+    const onStart = vi.fn();
+    renderSheet(true, { label: "День A · груди", onStart });
+    expect(screen.getByText("Сьогодні: День A · груди")).toBeInTheDocument();
+    fireEvent.click(screen.getByText("За програмою"));
+    expect(onClose).toHaveBeenCalledTimes(1);
+    expect(onStart).toHaveBeenCalledTimes(1);
   });
 
   it("'За шаблоном' closes the sheet and routes to templates", () => {

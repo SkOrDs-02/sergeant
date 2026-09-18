@@ -11,8 +11,30 @@ import type { DashboardWorkoutInput } from "./types.js";
 // Середа, 12:00 Kyiv — поточний тиждень почався в понеділок 2026-07-27.
 const NOW = new Date("2026-07-29T09:00:00.000Z");
 
+/**
+ * Повноцінне тренування: 45 хвилин по годиннику. Доти фікстура мала
+ * `startedAt === endedAt` — нульову тривалість і жодного підходу, тобто за
+ * каноном §8 це «легка активність», яку стрік із 2026-09-15 не рахує.
+ */
 function workout(endedAt: string): DashboardWorkoutInput {
-  return { endedAt, startedAt: endedAt } as DashboardWorkoutInput;
+  const startedAt = new Date(Date.parse(endedAt) - 45 * 60_000).toISOString();
+  return { endedAt, startedAt } as DashboardWorkoutInput;
+}
+
+/** Легкий запис: один підхід відтискань за пів хвилини — на дні є, у стрік ні. */
+function lightWorkout(endedAt: string): DashboardWorkoutInput {
+  const startedAt = new Date(Date.parse(endedAt) - 30_000).toISOString();
+  return {
+    endedAt,
+    startedAt,
+    items: [
+      {
+        exerciseId: "pushup",
+        type: "strength",
+        sets: [{ weightKg: 0, reps: 20 }],
+      },
+    ],
+  } as DashboardWorkoutInput;
 }
 
 /** N тренувань у тижні, що починається вказаним понеділком. */
@@ -43,6 +65,24 @@ describe("computeWeeklyStreakBreakdown", () => {
     expect(b.weeks).toBe(3);
     expect(b.targetPerWeek).toBe(DEFAULT_WEEKLY_STREAK_TARGET);
     expect(b.currentWeekPending).toBe(false);
+  });
+
+  it("легка активність тиждень не закриває, але й не ламає (канон §8, 2026-09-15)", () => {
+    // Минулий тиждень — два повноцінні. Цього тижня — одне повноцінне і
+    // три «+20 відтискань». За старою логікою тиждень був би закритий
+    // чотирма записами; тепер поріг рахує лише повноцінні, тож тиждень
+    // ще триває з прогресом «1 з 2».
+    const workouts = [
+      ...weekOf("2026-07-27", 1),
+      lightWorkout("2026-07-27T18:00:00.000Z"),
+      lightWorkout("2026-07-28T18:00:00.000Z"),
+      lightWorkout("2026-07-29T07:00:00.000Z"),
+      ...weekOf("2026-07-20", 2),
+    ];
+    const b = computeWeeklyStreakBreakdown(workouts, { now: NOW });
+    expect(b.currentWeekWorkouts).toBe(1);
+    expect(b.currentWeekPending).toBe(true);
+    expect(b.weeks).toBe(1);
   });
 
   it("день відпочинку серію НЕ рве — на відміну від щоденної логіки", () => {

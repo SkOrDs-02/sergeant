@@ -109,7 +109,7 @@ vi.mock("@parse/node-apn", () => {
 vi.stubGlobal("fetch", fetchMock);
 
 // ───────────────────────── Test imports ──────────────────────────
-import { sendAPNs, sendFCM, sendToUser } from "./send.js";
+import { retryDelayMs, sendAPNs, sendFCM, sendToUser } from "./send.js";
 import { loadApnsKey } from "./apnsClient.js";
 
 beforeEach(() => {
@@ -772,5 +772,65 @@ describe("sendToUser", () => {
     // Web — url у data, без зміни поведінки service-worker-а
     const webPayload = JSON.parse(sendWebPushMock.mock.calls[0]![1] as string);
     expect(webPayload.data).toEqual({ url: "sergeant://finyk/tx/42" });
+  });
+});
+
+// ───────────────────── Bounded upstream calls ────────────────────
+/**
+ * Регресії стійкості (аудит 2026-09-16):
+ *   1. FCM-fetch без `signal` — undici бере `headersTimeout` 300 с, а при
+ *      `MAX_ATTEMPTS = 3` це до 15 хвилин на ОДИН пуш. У слот нагадувань
+ *      (09:00/12:00/20:00) такі зависання накопичуються паралельно.
+ *   2. Ретраї без розкиду — усі токени слоту б'ють апстрім у ту саму
+ *      мілісекунду саме тоді, коли він уже показав, що йому важко.
+ */
+describe("FCM upstream call is bounded", () => {
+  beforeEach(() => {
+    fcmProjectIdMock.mockReturnValue("sergeant-test");
+    getFcmAccessTokenMock.mockResolvedValue("ya29.test-token");
+  });
+
+  it("passes an abort signal to every FCM fetch", async () => {
+    fetchMock.mockResolvedValueOnce({
+      status: 200,
+      ok: true,
+      text: async () => "{}",
+    } as unknown as Response);
+
+    await sendFCM("u1", "tok", { title: "hi" });
+
+    const init = fetchMock.mock.calls[0]![1] as RequestInit;
+    expect(init.signal).toBeInstanceOf(AbortSignal);
+    // Сигнал саме таймаутний, а не вічно-відкритий: прив'язаний до
+    // `PUSH_FCM_TIMEOUT_MS`, тож `aborted` ще false, але сигнал існує.
+    expect(init.signal?.aborted).toBe(false);
+  });
+});
+
+describe("retryDelayMs", () => {
+  it("never returns the bare base delay for every call", () => {
+    // Без розкиду всі ретраї слоту збігаються в одну мілісекунду. Беремо
+    // вибірку: щонайменше одне значення мусить відрізнятись від бази.
+    const samples = Array.from({ length: 40 }, () => retryDelayMs(0));
+    expect(new Set(samples).size).toBeGreaterThan(1);
+  });
+
+  it("keeps jitter above the base and within +50%", () => {
+    for (const [index, base] of [200, 1000, 3000].entries()) {
+      for (let i = 0; i < 50; i++) {
+        const delay = retryDelayMs(index);
+        // Ніколи не швидше за базу — інакше ретрай б'є раніше, ніж апстрім
+        // встиг віддихатись.
+        expect(delay).toBeGreaterThanOrEqual(base);
+        // І не настільки повільніше, щоб помітно подовжити worst-case.
+        expect(delay).toBeLessThan(base * 1.5);
+      }
+    }
+  });
+
+  it("falls back to a sane delay for an out-of-range retry index", () => {
+    const delay = retryDelayMs(99);
+    expect(delay).toBeGreaterThanOrEqual(1000);
+    expect(delay).toBeLessThan(1500);
   });
 });

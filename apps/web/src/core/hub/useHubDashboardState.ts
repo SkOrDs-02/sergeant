@@ -42,7 +42,6 @@ import {
 } from "../onboarding/vibePicks";
 import { useOnboardingState } from "../onboarding/useOnboardingState";
 import { useFirstEntryCelebration } from "../onboarding/useFirstEntryCelebration";
-import { isDemoMode } from "../onboarding/demoMode";
 import { isLocalOnlyBannerVisible } from "./localOnlyBannerVisibility";
 import { hasAnyValueBar } from "./ValueProgressBar";
 import { webKVStore } from "@shared/lib/storage/storage";
@@ -65,6 +64,7 @@ import {
   pickStrongestSeverity,
 } from "./dashboard/adaptiveSort";
 import { useHubPref, HUB_PREF_DENSITY } from "../settings/hubPrefs";
+import { useFlag } from "../lib/featureFlags";
 import { useMondayAutoDigest } from "./dashboard/useMondayAutoDigest";
 import type { User } from "./hub.types";
 
@@ -161,6 +161,10 @@ export interface HubDashboardState {
   editMode: boolean;
   toggleEditMode: () => void;
   displayOrder: readonly string[];
+  /** Вісь дії увімкнена (`hub_action_axis_v1`) — розкладка купами. */
+  axis: boolean;
+  /** Тік сховища — купа «Закрито» перераховується після запису в модулі. */
+  storageBump: number;
   order: readonly string[];
   sortableHandlers: NativeSortableHandlers;
   adaptive: { liftedId: ModuleId | null; reason: string | null };
@@ -249,7 +253,6 @@ export function useHubDashboardState(props: {
     inFtuxSession,
     hasUser: Boolean(user),
     authStatus,
-    isDemo: isDemoMode(),
   });
   const entryCount = useMemo(
     () => countRealEntries(),
@@ -343,7 +346,13 @@ export function useHubDashboardState(props: {
   // `HubInsightsBlock` (`!calmMode && showInsights`) — читаємо тут-таки,
   // щоб не робити мережевий запит/не палити AI-квоту заради поради, якої
   // ніде не показують (аудит PR-A1, канон hub-coach §6.2).
-  const [calmMode] = useHubPref<boolean>("calmMode", false);
+  const [calmPref] = useHubPref<boolean>("calmMode", false);
+  // Під віссю дії «Чистого режиму» немає (рішення власника 2026-09-17,
+  // спека `hub-action-axis.md`): він був відповіддю на шум сітки з
+  // акордеоном, а вісь цей шум знімає сама. Збережене значення ігнорується,
+  // не стирається — kill-switch мусить повертати стару головну як була.
+  const axis = useFlag("hub_action_axis_v1");
+  const calmMode = axis ? false : calmPref;
   const [showInsights] = useHubPref<boolean>("showInsights", true);
   // AI-DANGER: `insightsOpen` — НЕ дублікат трьох прапорців вище, і
   // прибрати його не можна.
@@ -573,6 +582,8 @@ export function useHubDashboardState(props: {
     editMode,
     toggleEditMode,
     displayOrder,
+    axis,
+    storageBump,
     order,
     sortableHandlers,
     adaptive,

@@ -39,6 +39,10 @@ import { SilpoReceiptSection } from "./SilpoReceiptSection";
 import { TxRowCategoryPicker } from "./TxRowCategoryPicker";
 import { TxRowSplitEditor } from "./TxRowSplitEditor";
 import { ReceiptItemsSection } from "./ReceiptItemsSection";
+import {
+  KYIV_TIME_ZONE,
+  formatDateTimeShort,
+} from "@shared/lib/time/formatDate";
 
 interface BankTransactionAccount {
   id?: string | undefined;
@@ -92,11 +96,12 @@ const ACCOUNT_LABELS: Readonly<Record<string, string>> = {
 function formatTransactionDate(transaction: Transaction): string {
   const milliseconds = Number(transaction.time) * 1000;
   if (Number.isFinite(milliseconds) && milliseconds > 0) {
-    return new Intl.DateTimeFormat("uk-UA", {
-      dateStyle: "medium",
-      timeStyle: "short",
-      timeZone: "Europe/Kyiv",
-    }).format(new Date(milliseconds));
+    // `withYear` збігається байт-у-байт із `dateStyle:"medium"` +
+    // `timeStyle:"short"` — закріплено тестом у `formatDate.test.ts`.
+    return formatDateTimeShort(new Date(milliseconds), {
+      withYear: true,
+      timeZone: KYIV_TIME_ZONE,
+    });
   }
   return transaction.date || "Дата не вказана";
 }
@@ -232,8 +237,9 @@ export function BankTransactionDetailsSheet({
       bodyClassName="px-4 pb-6"
       footer={
         <Button
-          variant="primary"
-          module="finyk"
+          variant="solid"
+          tone="finyk"
+
           onClick={onClose}
           className="w-full"
         >
@@ -349,8 +355,9 @@ export function BankTransactionDetailsSheet({
                 </p>
               </div>
               <Button
-                variant="secondary"
-                module="finyk"
+                variant="soft"
+                tone="finyk"
+
                 size="xs"
                 onClick={openSplitEditor}
               >

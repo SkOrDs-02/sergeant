@@ -157,7 +157,9 @@ describe("ChangePasswordSection — submit flow", () => {
       expect(
         screen
           .getAllByRole("alert")
-          .some((el) => el.textContent?.includes("Невірний поточний пароль.")),
+          .some((el) =>
+            el.textContent?.includes("Неправильний поточний пароль."),
+          ),
       ).toBe(true);
     });
     expect(toastSuccessMock).not.toHaveBeenCalled();

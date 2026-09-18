@@ -13,30 +13,30 @@ describe("runtimeKillSwitch", () => {
   });
 
   it("defaults all switches to inactive", () => {
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(false);
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
     expect(listActiveKillSwitches()).toEqual([]);
   });
 
   it("activates a switch and reports it as active", () => {
-    activateKillSwitch("mono_ai_memory_ingest", {
+    activateKillSwitch("digest_ai_memory_ingest", {
       reason: "test: rag-eval kill",
       context: { recall: 0.3, mode: "live" },
     });
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(true);
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(true);
     const active = listActiveKillSwitches();
     expect(active).toHaveLength(1);
-    expect(active[0]?.name).toBe("mono_ai_memory_ingest");
+    expect(active[0]?.name).toBe("digest_ai_memory_ingest");
     expect(active[0]?.reason).toBe("test: rag-eval kill");
     expect(active[0]?.context).toEqual({ recall: 0.3, mode: "live" });
     expect(active[0]?.activatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it("reactivates overwrites reason + context", () => {
-    activateKillSwitch("mono_ai_memory_ingest", {
+    activateKillSwitch("digest_ai_memory_ingest", {
       reason: "first reason",
       context: { round: 1 },
     });
-    activateKillSwitch("mono_ai_memory_ingest", {
+    activateKillSwitch("digest_ai_memory_ingest", {
       reason: "second reason",
       context: { round: 2 },
     });
@@ -47,21 +47,21 @@ describe("runtimeKillSwitch", () => {
   });
 
   it("deactivates an active switch", () => {
-    activateKillSwitch("mono_ai_memory_ingest", { reason: "x" });
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(true);
+    activateKillSwitch("digest_ai_memory_ingest", { reason: "x" });
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(true);
 
-    deactivateKillSwitch("mono_ai_memory_ingest");
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(false);
+    deactivateKillSwitch("digest_ai_memory_ingest");
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
     expect(listActiveKillSwitches()).toEqual([]);
   });
 
   it("deactivate is noop when switch is already inactive", () => {
-    expect(() => deactivateKillSwitch("mono_ai_memory_ingest")).not.toThrow();
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(false);
+    expect(() => deactivateKillSwitch("digest_ai_memory_ingest")).not.toThrow();
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
   });
 
   it("listActiveKillSwitches returns immutable snapshot — mutations don't leak", () => {
-    activateKillSwitch("mono_ai_memory_ingest", { reason: "x" });
+    activateKillSwitch("digest_ai_memory_ingest", { reason: "x" });
     const snap1 = listActiveKillSwitches();
     expect(snap1).toHaveLength(1);
     // Mutate the returned array — should not affect internal state.
@@ -70,9 +70,9 @@ describe("runtimeKillSwitch", () => {
   });
 
   it("__resetKillSwitchesForTest clears all state", () => {
-    activateKillSwitch("mono_ai_memory_ingest", { reason: "a" });
+    activateKillSwitch("digest_ai_memory_ingest", { reason: "a" });
     __resetKillSwitchesForTest();
     expect(listActiveKillSwitches()).toEqual([]);
-    expect(isKillSwitchActive("mono_ai_memory_ingest")).toBe(false);
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
   });
 });

@@ -26,8 +26,8 @@
  *
  * Чого функція свідомо НЕ робить: не звіряє `isSyncableUserId` для
  * анонімного id. Коли `user === null`, `useLocalUserId()` може повернути
- * лише `local-anon` або `demo-local`, і обидва несинкабельні — тож окремий
- * випадок був би мертвою гілкою.
+ * лише `local-anon`, і він несинкабельний — тож окремий випадок був би
+ * мертвою гілкою.
  */
 export function isLocalOnlyBannerVisible(args: {
   /** Перша сесія: FTUX тримає рівно один сигнал на екрані, банера немає. */
@@ -36,13 +36,10 @@ export function isLocalOnlyBannerVisible(args: {
   hasUser: boolean;
   /** `status` з `AuthContext`; `undefined` — рендер поза `AuthProvider`. */
   authStatus: string | undefined;
-  /** Демо-режим: дані вигадані, попереджати про їх втрату нічого. */
-  isDemo: boolean;
 }): boolean {
-  const { inFtuxSession, hasUser, authStatus, isDemo } = args;
+  const { inFtuxSession, hasUser, authStatus } = args;
   if (inFtuxSession) return false;
   if (hasUser) return false;
   if (authStatus === "loading") return false;
-  if (isDemo) return false;
   return true;
 }

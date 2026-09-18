@@ -83,7 +83,11 @@ export function renderIndex(entries, { today = todayISO() } = {}) {
   return [
     "# Playbooks — Trigger Index",
     "",
-    `> **Last validated:** ${today} by @devin-ai. **Next review:** ${addDays(today, 90)}.`,
+    // Author is the generator itself, not a harness: Devin retired (ADR-0088).
+    // `Last validated` stays (legacy label accepted by check-freshness.mjs and
+    // asserted by the generator test); switch to `Last touched` together with
+    // scripts/docs/__tests__/generate-playbook-index.test.mjs.
+    `> **Last validated:** ${today} by docs:gen-playbook-index. **Next review:** ${addDays(today, 90)}.`,
     "> **Status:** Active",
     "",
     "<!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-playbook-index`. -->",

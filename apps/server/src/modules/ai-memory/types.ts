@@ -21,7 +21,7 @@
  *
  * Звужено ініціативою 0024 (PR-1, 2026-09-03): `chat`, `finyk`, `fizruk`,
  * `nutrition`, `routine`, `journal` прибрані — жоден із них ніколи не мав
- * продюсера в дереві (замір: `docs/90-work/initiatives/0024-ai-memory-
+ * продюсера в дереві (замір: `docs/work/specs/initiatives/0024-ai-memory-
  * source-coverage.md` § Перезамір 2026-09-03). CHECK-constraint у БД поки
  * що дозволяє старі значення — це фаза 1 двофазного звуження; фаза 2
  * (DROP + двофазний CHECK) — PR-3 тієї ж ініціативи. Зворотний шлях (якщо

@@ -110,7 +110,7 @@ export function SavedSection({
                       <div className="flex gap-2 shrink-0 flex-wrap">
                         <Button
                           type="button"
-                          variant="secondary"
+                          variant="outline"
                           size="sm"
                           onClick={() => onAddToLog(r, key)}
                         >
@@ -118,7 +118,8 @@ export function SavedSection({
                         </Button>
                         <Button
                           type="button"
-                          variant="danger"
+                          variant="soft"
+                          tone="danger"
                           size="sm"
                           onClick={() => onDeleteClick(r)}
                         >

@@ -83,6 +83,16 @@ export const nutritionPageMessages = {
     overshootSuffix: "ккал понад норму",
   },
 
+  /** Аркуш одного прийому — те, що розгортає тап по сегменту hero. */
+  mealTypeSheet: {
+    /** Форми для «N записів» у підзаголовку аркуша. */
+    entriesOne: "запис",
+    entriesFew: "записи",
+    entriesMany: "записів",
+    kcalUnit: "ккал",
+    remove: "Видалити",
+  },
+
   /** Помʼякшена копія `nutrition-protein-low` при високій частці photoAI. */
   proteinLowEstimated: {
     subtitle: "Схоже, білка малувато, але сьогодні багато цифр з фото-оцінки.",
@@ -230,6 +240,18 @@ export const nutritionPageMessages = {
     // `LOW_STOCK_CATEGORY_NAME` («Закінчується вдома»), щоб бейдж на
     // позиції не дублював слово в слово заголовок її ж категорії.
     lowStockBadge: "Закінчується",
+  },
+
+  /**
+   * Ручне додавання позиції у список покупок — список не лише
+   * AI-генерований, людина може дописати свою позицію в будь-який момент.
+   * Ручні позиції позначені `source: "manual"` (`nutrition-domain`) і
+   * переживають наступну генерацію AI-списку (`mergeGeneratedShoppingList`).
+   */
+  shoppingListManualAdd: {
+    inputLabel: "Назва товару для списку покупок",
+    placeholder: "напр. хліб",
+    addCta: "Додати",
   },
 
   /**

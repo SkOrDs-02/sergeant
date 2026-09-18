@@ -1,15 +1,9 @@
-<!-- Lifecycle: Active -->
-<!-- Owner: @Skords-01 -->
-<!-- Last validated: 2026-06-03 -->
-<!-- Next review: 2026-09-03 -->
-
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-13.
-> **Status:** Active
+> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-09-18.
+> **Status:** Reference — звіт аудиту секретів 2026-06-03 і vendor-by-vendor кроки на ту дату. Канонічна процедура ротації — [`rotate-secrets.md`](../../start/instructions/rotate-secrets.md); власники, каденс і blast radius — [`secret-ownership-register.md`](./secret-ownership-register.md). Vendor-кроки нижче лишаються корисною шпаргалкою, але рішення «що і коли ротувати» береться з тих двох документів.
 
 # Ротація Production Secrets
 
-> **Статус:** Active  
-> **Пріоритет:** 🔴 P0 (критична безпека)  
+> **Пріоритет на дату аудиту:** 🔴 P0 (критична безпека)  
 > **Аудит:** 2026-06-03 виявив 10+ credentials у локальному `.env`
 
 ## Чому це критично
@@ -25,7 +19,7 @@
 
 ### 1. GitHub Personal Access Token (PAT)
 
-**Поточний токен:** `ghp_yYDCBT5...` (truncated для безпеки)
+**Формат токена:** `ghp_…` (сам токен і його усічені фрагменти в публічному репо не зберігаємо)
 
 #### Revoke (відкликати старий)
 
@@ -54,7 +48,7 @@
 
 ### 2. Vercel Token
 
-**Поточний токен:** `vcp_7H3VgFh...`
+**Формат токена:** `vcp_…`
 
 #### Revoke
 
@@ -79,28 +73,9 @@
 
 ---
 
-### 3. Railway Token
+### 3. Railway Token _(retired)_
 
-**Поточний токен:** `f9ed9d0a-...`
-
-#### Revoke
-
-1. Перейди на https://railway.app/account/tokens
-2. Знайди токен у списку
-3. Натисни **Delete**
-4. Підтверди
-
-#### Створити новий
-
-1. Натисни **Create Token**
-2. **Name:** `Sergeant Local 2026-06`
-3. Натисни **Create**
-4. Скопіюй токен
-
-#### Оновити
-
-- **Локально:** заміни `RAILWAY_TOKEN` у `.env`
-- **GitHub Actions:** більше не потрібно — `db-backup-verify.yml` мігровано на прямий `pg_dump` з Coolify (secret `MIGRATE_DATABASE_URL`, [ADR-0074](../adr/0074-hosting-hetzner-coolify.md)); це був останній CI-споживач Railway CLI. Якщо `RAILWAY_TOKEN` ще лежить у repo Secrets → Actions, його можна видалити.
+Railway виведено з експлуатації ([ADR-0074](../adr/0074-hosting-hetzner-coolify.md)); акаунт і CLI-токен ротації не потребують — якщо `RAILWAY_TOKEN` ще лежить у локальному `.env` чи в repo Secrets → Actions, просто видали його (останній CI-споживач, `db-backup-verify.yml`, мігрував на прямий `pg_dump` з Coolify через `MIGRATE_DATABASE_URL`). Історичні кроки — у git history цього файлу.
 
 ---
 
@@ -112,7 +87,7 @@ n8n виведено з експлуатації ([ADR-0090](../adr/0090-n8n-dec
 
 ### 5. Voyage AI API Key
 
-**Поточний ключ:** `pa-MmKpcms...`
+**Формат ключа:** `pa-…`
 
 #### Revoke
 
@@ -136,7 +111,7 @@ n8n виведено з експлуатації ([ADR-0090](../adr/0090-n8n-dec
 
 ### 6. Sentry DSN
 
-**Поточний DSN:** `sntryu_d3a9...`
+**Формат DSN-токена:** `sntryu_…`
 
 #### Revoke
 
@@ -163,7 +138,7 @@ n8n виведено з експлуатації ([ADR-0090](../adr/0090-n8n-dec
 
 ### 7. PostHog API Key + Project Token
 
-**Поточні ключі:** `phx_LaujFK...` (API key), `phc_A8dsjh...` (project token)
+**Формати ключів:** `phx_…` (API key), `phc_…` (project token)
 
 #### Revoke
 
@@ -192,7 +167,7 @@ n8n виведено з експлуатації ([ADR-0090](../adr/0090-n8n-dec
 
 ### 8. Grafana API Key + Loki Key
 
-**Поточні ключі:** `glsa_gIDey...` (Grafana API key), `glc_eyJv...` (Loki key)
+**Формати ключів:** `glsa_…` (Grafana API key), `glc_…` (Loki key)
 
 #### Revoke
 
@@ -272,7 +247,3 @@ git commit -m "docs(security): update secret rotation guide after 2026-06 audit"
 - [GitHub Security Best Practices](https://docs.github.com/en/code-security/getting-started/github-security-features)
 - [Vercel Security](https://vercel.com/docs/security)
 - [OWASP Secrets Management Cheat Sheet](https://cheatsheetseries.owasp.org/cheatsheets/Secrets_Management_Cheat_Sheet.html)
-
----
-
-**Наступна перевірка:** 2026-09-03 (через 3 місяці)

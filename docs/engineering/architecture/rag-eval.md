@@ -1,6 +1,6 @@
 # RAG eval harness — golden-set, metrics, baseline comparison
 
-> **Last validated:** 2026-06-02 by @SkOrDs-02 / Devin.
+> **Last touched:** 2026-09-17 by @claude (домени golden-set ≠ `ALLOWED_MEMORY_SOURCES` — пояснено). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Canonical reference for the RAG quality-eval pipeline shipped as **PR-20**
@@ -108,19 +108,23 @@ business-level reference (наприклад, `finyk:tx-coffee-w17-001` →
 
 ### 50 queries — domain breakdown
 
-Distribution по 8 доменах із `ALLOWED_MEMORY_SOURCES`
-(`apps/server/src/modules/ai-memory/types.ts`):
+Distribution по 8 доменах. **Ці домени — власний словник golden-set-у, а не
+`ALLOWED_MEMORY_SOURCES`** (уточнено 2026-09-17): з 2026-09-03 enum у
+`apps/server/src/modules/ai-memory/types.ts` містить лише `digest`, `cofounder`,
+`product`, `profile`; `finyk`/`fizruk`/`nutrition`/`routine`/`journal`/`chat`
+зняті ініціативою 0024 PR-1 і живуть тут лише як мітки сценаріїв у
+`golden.json` (значення `source` у fixture-рядках, які eval сідає сам):
 
 | Domain      | Count | Сценарії (паралель до Telegram-патернів founder-а)                                                |
 | ----------- | ----- | ------------------------------------------------------------------------------------------------- |
 | `finyk`     | 8     | "скільки витратив на каву", "топ-3 категорії за квітень", "subscription-и", "перевищення бюджету" |
 | `fizruk`    | 8     | "PR жим лежачи", "км за місяць", "обʼєм тренувань", "streak", "RPE", "split push/pull/legs"       |
 | `nutrition` | 8     | "калорії сьогодні", "середній протеїн", "calorie deficit", "макроси сніданку", "гідратація"       |
-| `routine`   | 7     | "час підйому", "habit streak", "skipped routines", "morning ritual"                               |
-| `journal`   | 6     | "що писав 1 квітня", "теми минулого тижня", "stress mentions"                                     |
+| `routine`   | 8     | "час підйому", "habit streak", "skipped routines", "morning ritual"                               |
+| `journal`   | 8     | "що писав 1 квітня", "теми минулого тижня", "stress mentions"                                     |
 | `digest`    | 5     | "weekly digest 2026-W18", "monthly summary", "trends"                                             |
-| `chat`      | 4     | "що я питав про RAG", "previous discussion about budget"                                          |
-| `cofounder` | 4     | "milestones with X", "next steps with Y"                                                          |
+| `chat`      | 3     | "що я питав про RAG", "previous discussion about budget"                                          |
+| `cofounder` | 2     | "milestones with X", "next steps with Y"                                                          |
 
 Curation guideline: queries — natural Ukrainian / mixed-language phrasing
 (як founder реально пише у Telegram), 5-15 слів. Кожна query має 1-5
@@ -133,7 +137,7 @@ expected refs. Empty `expected_memory_ids` заборонене Zod-validation-�
 2. Згенеруй stable id: `<domain>-NNN` (sequential — глянь max NNN у файлі).
 3. Згенеруй stable expected refs: `<domain>:<sourceRef>` де `sourceRef` —
    business-level identifier (transaction ref, digest period, journal day).
-4. Додай у `queries[]` блок. Pre-commit lint validates Zod schema.
+4. Додай у `queries[]` блок. Zod-схему стереже `golden.test.ts` (юніти сервера).
 5. Запусти `pnpm eval:rag` локально — у mock-mode query повинна давати
    recall@4 = 1.0 (sanity).
 
@@ -195,20 +199,20 @@ pnpm eval:rag -- --baseline=prev-summary.json
 
 ### Modes
 
-| Mode       | Поведінка                                                                                |
-| ---------- | ---------------------------------------------------------------------------------------- |
-| `mock`     | Deterministic: `retrieved = [...expected, ...noise]` → recall@4 = 1.0. Sanity CI.        |
-| `simulate` | Global-budget algorithm — mean recall ≈ `--simulate-recall` (default=1).                 |
-| `live`     | Real AI-memory service (Voyage + pgvector). **NOT IMPLEMENTED** — placeholder для PR-21. |
+| Mode       | Поведінка                                                                                                                                                                                     |
+| ---------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `mock`     | Deterministic: `retrieved = [...expected, ...noise]` → recall@4 = 1.0. Sanity CI.                                                                                                             |
+| `simulate` | Global-budget algorithm — mean recall ≈ `--simulate-recall` (default=1).                                                                                                                      |
+| `live`     | У `.mjs` більше не існує — CLI відповідає підказкою. Живий вимір переїхав у TypeScript: `pnpm --filter @sergeant/server rag-eval:live` (реальні Voyage + pgvector), див. «Двошаровість» вище. |
 
 ### Exit codes
 
-| Code | Status  | Threshold (default)                                                                 |
-| ---- | ------- | ----------------------------------------------------------------------------------- |
-| 0    | `pass`  | recall@4 mean ≥ 0.5                                                                 |
-| 1    | `warn`  | 0.4 ≤ recall@4 mean < 0.5 — open issue, RAG залишається ON                          |
-| 2    | `kill`  | recall@4 mean < 0.4 — open critical issue, RAG автоматично OFF (env-flag у Coolify) |
-| 3    | `error` | CLI configuration error (invalid --mode, threshold paradox)                         |
+| Code | Status  | Threshold (default)                                                                                                                                |
+| ---- | ------- | -------------------------------------------------------------------------------------------------------------------------------------------------- |
+| 0    | `pass`  | recall@4 mean ≥ 0.5                                                                                                                                |
+| 1    | `warn`  | 0.4 ≤ recall@4 mean < 0.5 — open issue, RAG залишається ON                                                                                         |
+| 2    | `kill`  | recall@4 mean < 0.4 — рекомендація вимкнути RAG (`AI_MEMORY_ENABLED=false` у Coolify, redeploy); автоматичного гасіння немає — див. «Двошаровість» |
+| 3    | `error` | CLI configuration error (invalid --mode, threshold paradox)                                                                                        |
 
 ### Output schema (v2.0)
 
@@ -295,7 +299,9 @@ Threshold `regression: true` — drop recall@K mean більше ніж на **0
 4. Розшир `--baseline` comparison у `compareToBaseline()`.
 5. Update цей файл (нова секція з формулою).
 
-## Weekly automation layer (post-PR-20)
+## Weekly automation layer (post-PR-20) — історичний контур
+
+> n8n WF-28/WF-29 і `rag-quality-gate.yml` прибрано (ADR-0082 §4, 2026-08-06). Схема нижче показує, як endpoint був підключений; сьогодні його ніхто не викликає автоматично.
 
 Eval-harness — pure-function: bere golden-set + retrieval-call →
 повертає JSON summary. Automation-шар довкола ловить deviations і
@@ -335,8 +341,8 @@ Eval-harness — pure-function: bere golden-set + retrieval-call →
                 ║      tags: module=rag-eval, auto_disable_recommended, mode
                 ║      extra.baselineComparison (delta vs прошлий тиждень)
                 ║
-                ╚── 4. activateKillSwitch("mono_ai_memory_ingest")
-                       only if status="kill"
+                ╚── 4. activateKillSwitch("digest_ai_memory_ingest")
+                       only if status="kill" AND body.autoDisable === true
                        in-memory Map (apps/server/src/lib/featureFlags/
                        runtimeKillSwitch.ts) — single-instance only
 ```
@@ -348,7 +354,7 @@ runtimeKillSwitch.ts`):
   inc counter, Sentry breadcrumb, log Pino warn.
 - `isKillSwitchActive(name)` — `O(1)` Map.get — викликається у
   `apps/server/src/modules/ai-memory/ingestQueue.ts` перед env-flag-ом
-  `MONO_AI_MEMORY_INGEST_ENABLED`. Перебиває env у бік skip.
+  `DIGEST_AI_MEMORY_INGEST_ENABLED`. Перебиває env у бік skip.
 - `deactivateKillSwitch(name)` — manual reset (operator action).
 - In-memory: Map<KillSwitchName, KillSwitchState>. **Reset на
   process-restart** — це навмисно (operator може investigation-ити
@@ -363,12 +369,12 @@ WF-29 видалено. Схема вище — історичний конту�
 
 **Status decoder**:
 
-| Status | recall@4 vs threshold            | Action                                           |
-| ------ | -------------------------------- | ------------------------------------------------ |
-| pass   | mean ≥ `warn_threshold`          | Record. Жодного alert-у.                         |
-| warn   | `kill_threshold` ≤ mean < `warn` | Sentry warning. Recommend investigation.         |
-| kill   | mean < `kill_threshold` (= 0.4)  | Sentry error + **auto-flip kill-switch**.        |
-| error  | CLI hard-fail (exit ≥3)          | Endpoint не отримає payload — cron alert окремо. |
+| Status | recall@4 vs threshold            | Action                                                          |
+| ------ | -------------------------------- | --------------------------------------------------------------- |
+| pass   | mean ≥ `warn_threshold`          | Record. Жодного alert-у.                                        |
+| warn   | `kill_threshold` ≤ mean < `warn` | Sentry warning. Recommend investigation.                        |
+| kill   | mean < `kill_threshold` (= 0.4)  | Sentry error; kill-switch — лише за `autoDisable: true` у тілі. |
+| error  | CLI hard-fail (exit ≥3)          | Endpoint не отримає payload — cron alert окремо.                |
 
 **Reaction playbook**: [`docs/operations/observability/runbook.md`](../../operations/observability/runbook.md)
 секції `RagQualityGateDegraded`, `RagQualityGateKillSwitch`,

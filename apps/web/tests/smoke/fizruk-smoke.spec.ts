@@ -4,6 +4,7 @@ import { seedFTUX } from "../utils/seedFTUX";
 import {
   collectPageErrors,
   deferAnonymousMigration,
+  startWorkoutWithFirstExercise,
   waitForInitialSqliteRefresh,
 } from "./smokeHelpers";
 
@@ -31,7 +32,7 @@ test("@critical fizruk: cold-load mounts module shell", async ({ page }) => {
   expect(errors, "Uncaught page errors on fizruk cold load").toEqual([]);
 });
 
-test("@critical fizruk: workouts empty state → «Швидкий старт» opens route", async ({
+test("@critical fizruk: workouts empty state → «Почати тренування» → підбір вправ → route", async ({
   page,
 }) => {
   await seedFTUX(page, "post-ftux");
@@ -43,7 +44,9 @@ test("@critical fizruk: workouts empty state → «Швидкий старт» o
     timeout: 10_000,
   });
 
-  await page.getByRole("button", { name: "Швидкий старт" }).click();
+  // Одна кнопка старту з вибором усередині (власник 2026-09-16): порожньої
+  // сесії більше немає, таймер стартує після першої обраної вправи.
+  await startWorkoutWithFirstExercise(page);
   await expect(page).toHaveURL(/\/fizruk\/workout\/[^/]+$/);
 
   expect(errors, "Uncaught page errors on fizruk CTA happy path").toEqual([]);

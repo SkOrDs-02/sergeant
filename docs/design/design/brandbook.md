@@ -1,9 +1,11 @@
 # Sergeant Brandbook & Design-система
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2027-03-14.
+> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-03-14.
 > **Status:** Active
 
-Дизайн-філософія Sergeant — **Soft & Organic** на теплій крем-базі.
+Дизайн-філософія Sergeant — **Soft & Organic** на теплій нейтральній базі:
+фон сторінки — `--c-bg` `#ecebe7` (`theme.css`, рішення Б1 2026-08-07), а
+кремова рампа `cream.*` лишається в токенах для hero-ink і `apps/landing`.
 
 > **⚠️ Канон палітри — [`DESIGN.md`](../../../DESIGN.md) (генерується з `packages/design-tokens/tokens.js`).**
 > Після stone-ребренду M1 (2026-07) `brand` більше не aliasить emerald: це `stone-700 #44403c`
@@ -40,26 +42,47 @@
 
 ### Основні бренд-кольори
 
-#### Emerald (основний акцент)
+#### Stone (бренд хабу — `brand`)
 
-Головний бренд-колір — символ росту, здоров'я й фінансового добробуту.
+Головний бренд-колір з M1-ребренду (2026-07) — **нейтральний**: хаб і shell
+є «нейтральним батьком», щоб на кожному екрані єдиною плямою кольору лишався
+акцент модуля. `brand` у `tailwind-preset.js` = stone-700, `brand-strong` =
+stone-800; рампа — `brandColors.stone` у `tokens.js`.
+
+```text
+Stone 100: #f5f5f4  (brand-subtle)
+Stone 300: #d6d3d1  (text-brand-strong у «Чорнилі», --c-brand-ink)
+Stone 500: #78716c  (brand-light)
+Stone 700: #44403c  (PRIMARY — brand: текст, іконки хабу)
+Stone 800: #292524  (brand-strong / brand-dark — заливка під text-white)
+Stone 900: #1c1917
+```
+
+#### Emerald (історичний акцент)
+
+Був головним бренд-кольором до M1 (2026-07) — символ росту, здоров'я й
+фінансового добробуту. У коді emerald тепер живе лише як семантичний
+`success` (`statusColors.success` = emerald-500, `-strong` = emerald-800) і
+як `chartPalette[1]`; бренд і Finyk на ньому більше не сидять.
 
 ```
 Emerald 50:  #ecfdf5  (Lightest surfaces)
 Emerald 100: #d1fae5
 Emerald 200: #a7f3d0  (Rings, borders)
 Emerald 300: #6ee7b7
-Emerald 400: #34d399  (Light accent)
-Emerald 500: #10b981  (PRIMARY - buttons, icons)
-Emerald 600: #059669  (Hover states)
-Emerald 700: #047857  (Dark accent)
-Emerald 800: #065f46
+Emerald 400: #34d399  (success-ink у «Чорнилі»)
+Emerald 500: #10b981  (statusColors.success / chartPalette[1]; legacy PRIMARY)
+Emerald 600: #059669
+Emerald 700: #047857
+Emerald 800: #065f46  (success-strong)
 Emerald 900: #064e3b  (Darkest)
 ```
 
-#### Teal (вторинний акцент)
+#### Teal (модуль Finyk)
 
-Використовується для модуля Fizruk і додаткових акцентів.
+Використовується для модуля Finyk (`moduleColors.finyk.primary` = teal-700,
+з 2026-07 замість emerald-500) і додаткових акцентів. Fizruk на teal більше
+не сидить — див. Cyan нижче.
 
 ```
 Teal 50:  #f0fdfa
@@ -73,10 +96,12 @@ Teal 700: #0f766e
 ```
 
 Sergeant v2 редизайн (2026-05) виокремив окрему **Cyan**-палітру для
-Fizruk-модуля, аби disambiguate його від finyk-emerald spectrum:
+Fizruk-модуля, аби disambiguate його від finyk-спектра (тоді emerald, з
+2026-07 — teal):
 
 ```text
 Cyan 50:  #ecfeff
+Cyan 100: #cffafe
 Cyan 200: #a5f3fc  (fizruk-soft v2)
 Cyan 700: #0e7490  (Fizruk primary — v2)
 Cyan 800: #155e75  (fizruk-strong v2 — WCAG AA companion)
@@ -84,25 +109,41 @@ Cyan 800: #155e75  (fizruk-strong v2 — WCAG AA companion)
 
 ### Кольори модулів
 
-| Модуль    | Primary | Surface | Сфера      |
-| --------- | ------- | ------- | ---------- |
-| Finyk     | #0f766e | #f0fdfa | Фінанси    |
-| Fizruk    | #0e7490 | #ecfeff | Фітнес     |
-| Routine   | #f97066 | #fff5f3 | Звички     |
-| Nutrition | #92cc17 | #f8fee7 | Харчування |
+Джерело — `moduleColors` у `packages/design-tokens/tokens.js`.
+
+| Модуль    | Primary            | Surface           | Сфера      |
+| --------- | ------------------ | ----------------- | ---------- |
+| Finyk     | #0f766e (teal-700) | #f0fdfa (teal-50) | Фінанси    |
+| Fizruk    | #0e7490 (cyan-700) | #ecfeff (cyan-50) | Фітнес     |
+| Routine   | #eb7691 (rose-500) | #fff5f6 (rose-50) | Звички     |
+| Nutrition | #92cc17 (lime-500) | #f8fee7 (lime-50) | Харчування |
+
+> **Routine: коралову рампу (`#f97066` / `#fff5f3`) замінено трояндовою
+> 2026-08-07** (рішення власника Б1+Р2). Нова рампа ізолюмінантна до
+> попередньої, тож контрастні пари лишились чинними; причина заміни —
+> корал сидів на hue 0°, тому самому, що й `danger` red-500. Ключ у
+> `tokens.js` і Tailwind-класи й далі звуться `rose`.
 
 #### Chart series
 
 Bar-чарти у `HubReports` та майбутніх дашбордах використовують семантичні
 `chart-{module}` токени замість raw Tailwind-палітри. Кожен токен маппується
-до `-strong` тіру свого модуля — це гарантує ≥ 5:1 на кремовому `bg-bg`.
+до `-strong` тіру (-800) свого модуля — це гарантує ≥ 5:1 на фоні сторінки
+`bg-bg` `#ecebe7`. Живі значення — `--c-chart-{module}` у `theme.css`
+(перемикаються за темою); статичний фолбек у пресеті лишається на
+попередньому тирі (наприклад `chart-routine` → `172 76 100` = rose-700
+`#ac4c64`) лише для споживачів без CSS-змінних.
 
-| Токен             | Utility              | Hex       | Contrast vs `bg-bg` |
-| ----------------- | -------------------- | --------- | ------------------- |
-| `chart-finyk`     | `bg-chart-finyk`     | `#115e59` | 5.12 : 1            |
-| `chart-fizruk`    | `bg-chart-fizruk`    | `#155e75` | 7.50 : 1            |
-| `chart-routine`   | `bg-chart-routine`   | `#c23a3a` | 5.06 : 1            |
-| `chart-nutrition` | `bg-chart-nutrition` | `#466212` | 6.64 : 1            |
+| Токен             | Utility              | Hex (light, `theme.css`) | Contrast vs `bg-bg` |
+| ----------------- | -------------------- | ------------------------ | ------------------- |
+| `chart-finyk`     | `bg-chart-finyk`     | `#115e59` (teal-800)     | 6.36 : 1            |
+| `chart-fizruk`    | `bg-chart-fizruk`    | `#155e75` (cyan-800)     | 6.09 : 1            |
+| `chart-routine`   | `bg-chart-routine`   | `#8d4256` (rose-800)     | 5.78 : 1            |
+| `chart-nutrition` | `bg-chart-nutrition` | `#466212` (lime-800)     | 5.84 : 1            |
+
+> Попередні числа в цій таблиці (5.12 / 7.50 / 5.06 / 6.64) міряли контраст
+> проти білого, а не проти фону сторінки; `chart-routine` до 2026-08-07
+> сидів на rose-700 і давав 4.43 — єдиний тир, що вибивався з AA.
 
 Raw `bg-sky-500`, `bg-orange-500`, `bg-emerald-500`, `bg-lime-500` тощо у
 `core/hub/Hub*.tsx` заборонені дизайн-конвенцією module-accent containment
@@ -253,10 +294,18 @@ Border:             #e2e0da (Warm gray)
 ### Кольори тексту (Light-режим)
 
 ```
-Primary Text:   #1c1917 (Warm black - Stone 900)
-Muted Text:     #57534e (Stone 600)
-Subtle Text:    #a8a29e (Stone 400)
+Primary Text:   #0f1713 (--c-text — green near-black, «Чорнило» light pair)
+Muted Text:     #535c56 (--c-muted — ≥4.78:1 на столі й зоні)
+Subtle Text:    #605a54 (--c-subtle — ≥4.69:1 на столі, зоні, panel/bg)
 ```
+
+> **Було `#1c1917` / `#57534e` / `#a8a29e` (stone-900/600/400).** Стара
+> `subtle`-тінь stone-400 не проходила AA як текст на body-розмірах, а
+> проміжні значення 2026-09-11 (`#5c665f` / `#6b645d`) сиділи рівно на
+> порозі 4.5:1 і «поїхали» на тонованому столі й зоні (#1063). Джерело
+> істини — `--c-text` / `--c-muted` / `--c-subtle` у
+> [`theme.css`](../../../apps/web/src/styles/theme.css); гейт —
+> `contrast.test.js`.
 
 ---
 
@@ -264,10 +313,21 @@ Subtle Text:    #a8a29e (Stone 400)
 
 ### Font Family
 
-**DM Sans** — геометричний sans-serif, дружній і водночас професійний.
+**Manrope Variable** — геометричний sans-serif, дружній і водночас
+професійний; з v2-редизайну (2026-05) він і `sans`, і `display` (display —
+та сама родина, вага 800 у hero/H1). **DM Sans** лишається в стеку лише як
+фолбек після `Manrope Fallback` (метрики підігнані через Capsize у
+`theme.css`). Технічні значення (великі числа, гроші, код) — `font-mono` =
+**JetBrains Mono Variable**. Джерело — `fontFamily` у
+`packages/design-tokens/tailwind-preset.js`; пакети —
+`@fontsource-variable/{manrope,dm-sans,jetbrains-mono}` в `apps/web`.
 
 ```css
 font-family:
+  "Manrope Variable",
+  "Manrope",
+  "Manrope Fallback",
+  "DM Sans Variable",
   "DM Sans",
   system-ui,
   -apple-system,
@@ -284,8 +344,9 @@ tokens + review, ex-Hard Rule #16, retired [ADR-0081](../../governance/adr/0081-
 Повний контракт —
 у [`design-system/02-typography.md` § 3](./design-system/02-typography.md#3-типографічна-шкала).
 Для семантичних use-case-ів використовуй утиліти `.text-style-*`
-(`.text-style-meta`, `.text-style-caption`, `.text-style-body-sm`, …) — вони
-прив'язані до slots, а не до сирих pixel-розмірів.
+(`.text-style-caption`, `.text-style-label`, `.text-style-body`, …) — вони
+прив'язані до ролей, а не до сирих pixel-розмірів (повний перелік ролей —
+§ _Type scale_ нижче).
 
 | Назва | Size | Line Height | Weight   | Сфера                                              |
 | ----- | ---- | ----------- | -------- | -------------------------------------------------- |
@@ -342,11 +403,16 @@ full: 9999px (Pills, avatars)
 ```
 
 > **Канонічний контракт:** рав-розміри вище — референс-таблиця. У
-> продакшн-коді використовуй size-driven semantic-утиліти
-> (`rounded-swatch` / `rounded-marker` / `rounded-control` / `rounded-card` /
-> `rounded-hero` / `rounded-pill`) з [`radius-rhythm.md`](./radius-rhythm.md);
-> сирі `rounded-2xl` в `apps/web` — порушення дизайн-конвенції
-> (tokens + review; колишнє ESLint-правило `no-raw-rounded-utility` retired ADR-0081).
+> продакшн-коді обирай тир із size-driven шкали
+> [`radius-rhythm.md`](./radius-rhythm.md): **SWATCH** `rounded-sm` (2 px) ·
+> **CONTROL** `rounded-xl` (12 px) · **CARD** `rounded-2xl` (16 px) ·
+> **HERO** `rounded-3xl` (24 px) · **PILL** `rounded-full`. Шару семантичних
+> аліасів (`rounded-card` / `rounded-control` тощо) свідомо **немає** —
+> Tailwind уже дає правильний примітив, а два імені для однієї речі
+> збільшують дрейф. `rounded-lg` (8 px) і `rounded-md` (6 px) у новому коді
+> заборонені (`tailwind-preset.js` § BORDER RADIUS); `4xl` / `5xl` — лише для
+> разових ілюстрацій поза ритмом. Насамперед бери готовий `Button` / `Card` /
+> `Modal` — шкала вже зашита в компоненти.
 
 ---
 
@@ -391,12 +457,12 @@ box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 
 #### Primary-кнопка
 
-- Background: `bg-brand-strong` (= emerald-700, `#047857`) — проходить
-  WCAG AA 5.48 : 1 проти `text-white`. Насичений `bg-brand` (`#10b981`)
-  давав лише ~2.5 : 1 і був виведений з CTA в PR #855;
-  див. _WCAG-AA `-strong`-тір_ вище.
+- Background: `bg-brand-strong` (= stone-800, `#292524`) — ~14 : 1 проти
+  `text-white`. До M1 (2026-07) це був emerald-700 `#047857`; насичений
+  emerald-500 `#10b981` давав лише ~2.5 : 1 і був виведений з CTA ще в
+  PR #855; див. _WCAG-AA `-strong`-тір_ вище.
 - Text: `text-white`
-- Hover: темніший відтінок (`bg-brand-800`) + легкий glow
+- Hover: темніший відтінок + легкий glow
 - Active: scale down до 98 %
 
 #### Secondary-кнопка
@@ -450,9 +516,10 @@ box-shadow: 0 0 0 3px rgba(16, 185, 129, 0.15);
 Pill-status-індикатори. Усі solid-тони використовують `-strong`-fill,
 щоб лейбли лишалися читабельними на body-розмірах (див. _WCAG-AA `-strong`-тір_).
 
-- Success: `bg-success-strong` (emerald-700) + `text-white`
-- Warning: `bg-warning-strong` (amber-700) + `text-white`
-- Danger: `bg-danger-strong` (red-700) + `text-white`
+- Success: `bg-success-strong` (emerald-800 `#065f46`) + `text-white`
+- Warning: `bg-warning-strong` (amber-800 `#92400e`) + `text-white`
+- Danger: `bg-danger-strong` (red-800 `#991b1b`) + `text-white`
+  (усі чотири статуси на `-800` з 2026-08-07 — `statusStrongHex` у `tokens.js`)
 - Outline / soft-варіанти: `text-{tone}-strong` на tinted-
   або прозорій surface
 - Розміри: xs, sm, md, lg
@@ -507,11 +574,11 @@ translateY(-2px) + upgrade-тіні.
 ### Hero-градієнти (light-фони)
 
 ```css
-/* Emerald (Finyk) */
-background: linear-gradient(135deg, #ecfdf5 0%, #d1fae5 50%, #a7f3d0 100%);
-
-/* Teal (Fizruk) */
+/* Teal (Finyk) — teal-50 / 100 / 200; до 2026-07 — emerald */
 background: linear-gradient(135deg, #f0fdfa 0%, #ccfbf1 50%, #99f6e4 100%);
+
+/* Cyan (Fizruk) — cyan-50 / 100 / 200; до v2 (2026-05) — teal */
+background: linear-gradient(135deg, #ecfeff 0%, #cffafe 50%, #a5f3fc 100%);
 
 /* Rose (Routine) */
 background: linear-gradient(135deg, #fff5f6 0%, #ffe7eb 50%, #fed3db 100%);
@@ -537,10 +604,17 @@ background: linear-gradient(150deg, #fdf9f3 0%, #fefdfb 50%, #f0fdfa 100%);
 - Line join: Round
 - Розміри: 16px, 18px, 20px, 22px, 24px
 
-### Рекомендовані джерела
+### Джерело іконок у web
 
-- Lucide Icons (primary)
-- Heroicons (alternative)
+У `apps/web` немає залежності від `lucide-react` (перевірено в
+`apps/web/package.json`). Іконки — власноруч намальовані SVG-path-и в
+`apps/web/src/shared/components/ui/Icon.paths.{system,status,domain,content}.tsx`,
+які збираються в одну типізовану мапу й рендеряться через
+`<Icon name="chevron-right" size="md" />` (`Icon.tsx`; шкала `ICON_SIZES`
+xs 12 · sm 14 · md 16 · lg 20 · xl 24). Нова іконка — це новий path у
+відповідному `Icon.paths.*` файлі, а не імпорт з бібліотеки. Lucide /
+Heroicons — лише стилістичний референс (stroke, round cap/join), не
+залежність.
 
 ---
 
@@ -598,9 +672,12 @@ Toolkit: `shadow-soft`, `shadow-card`, `shadow-float` плюс card-варіан
 
 ### Type scale
 
-Канонічний type-scale живе в `design-system.md` § Typography. Семантичні
-утиліти `.text-style-{hero,title,body,label,caption,overline}` — обов'язкові
-для нового UI-коду. Голий `text-2xl font-extrabold` і eyebrow combo
+Канонічний type-scale живе в `design-system.md` § Typography. Вісім
+семантичних ролей
+`.text-style-{display,headline,title,body,label,caption,overline,code}`
+(реєструються в `tailwind-preset.js` через `addUtilities`) — обов'язкові для
+нового UI-коду. `.text-style-hero` — колишня назва слота page-H1 /
+hero-стат; клас **не зареєстрований**, пиши `.text-style-headline`. Голий `text-2xl font-extrabold` і eyebrow combo
 (`uppercase + tracking-* + text-*`) — порушення дизайн-конвенції (tokens +
 review; колишні lint-правила `prefer-text-style` / `no-eyebrow-drift`
 retired ADR-0081).
@@ -753,8 +830,9 @@ await saveTransaction();
 
 ### Platform-adaptive-типографія
 
-Mobile успадковує type-scale від `@sergeant/design-tokens` (той самий DM Sans,
-ті самі розміри). Платформовані відмінності залишаються на рівні OS-accessibility:
+Mobile успадковує type-scale від `@sergeant/design-tokens` (той самий стек
+`fontFamily` з пресета — Manrope Variable, DM Sans лише як фолбек — і ті
+самі розміри). Платформовані відмінності залишаються на рівні OS-accessibility:
 
 - Поважати OS `Dynamic Type` (iOS) і `Font scale` (Android) **до 1.3×**.
   Вище — clamp-имо, щоб зберегти layout карток, ring-ів, таблиць.
@@ -791,8 +869,10 @@ Mobile просто резолвить її з OS-теми:
 
 - **Навігація & tab-и:** platform-idiomatic-набір через `@expo/vector-icons`
   (Apple HIG на iOS, Material на Android), щоб tab-bar відчувався native.
-- **Content-іконки:** Lucide (як в web), щоб module-surface-и були
-  візуально консистентними на платформах.
+- **Content-іконки:** `lucide-react-native` (`apps/mobile/package.json`) —
+  на відміну від web, де іконки намальовані вручну в `Icon.paths.*.tsx`.
+  Візуальна консистентність тримається спільними правилами stroke/розміру,
+  а не спільною бібліотекою.
 - Правила stroke/розміру з секції [Іконки](#іконки) вище — зберігати.
 
 ### Заборонено на mobile

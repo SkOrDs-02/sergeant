@@ -1,6 +1,6 @@
 # Hardening pen-test sweep — 2026-05 (H5/H6/H8/H9)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-15.
+> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-11-20.
 > **Status:** Reference
 
 | Field        | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -130,7 +130,8 @@ pnpm --filter @sergeant/server dev
 
 ### Residual risk
 
-- An operator with Railway env-write access can re-add `exp://` to
+- An operator with env-write access on the deploy platform (Railway at the
+  time of the sweep; Coolify since ADR-0074) can re-add `exp://` to
   `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES`; this is intentional (ops break-glass).
   Tracked under the `secret-ownership-register.md` access-policy review.
 - No automated CI check asserts the prod default. The unit test in
@@ -487,6 +488,7 @@ this initiative adds a real-Postgres e2e to close that gap.
 - [ ] Re-run the sweep against the **production** Railway service (this run
       used a staging Postgres). Owner: `@Skords-01`. Target: pre-launch
       `2026-Q3` window (post-0010 launch).
+      _Примітка 2026-09-16: ціль минула, Railway виведено (ADR-0074) — повтор має бути проти Coolify-проду. Чекбокс не закрито: підтвердження, що re-run відбувся, у репо немає, а `docs/open-work.md` цей Reference-док не сканує. Рішення власника — перенести в живий трекер із новою ціллю або закрити._
 - [ ] Pair this transcript with an external pen-tester engagement before
       the public launch — see `docs/work/specs/launch/launch-readiness.md` for the
       gate checklist.

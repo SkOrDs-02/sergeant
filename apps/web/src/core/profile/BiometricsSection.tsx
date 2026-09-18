@@ -545,7 +545,7 @@ export function BiometricsSection({ online = true }: BiometricsSectionProps) {
 
         <div className="px-4 py-4 flex items-center justify-end gap-2">
           <Button
-            variant="primary"
+            variant="solid"
             size="sm"
             disabled={!dirty || editingDisabled}
             onClick={handleSave}

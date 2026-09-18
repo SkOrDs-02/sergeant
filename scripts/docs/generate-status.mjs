@@ -61,8 +61,10 @@ const PR_LEDGER_PATH = resolve(
 // PR поточного репо в `STATUS.md` вело на неіснуючу сторінку — сімнадцять
 // мертвих лінків. Знайдено рев'ю на PR #1137: я полагодив базу в
 // `update-pr-backlinks.mjs` і не помітив, що генераторів два.
+// 2026-09-17: третій переїзд репо (`zaebal-beep/Sergeant`) показав, що
+// зашитий «поточний» слуг застаріває разом із репо. Тепер слуг береться з
+// поля `repo` запису як є; зашитим лишається лише легасі-фолбек.
 const LEGACY_REPO_SLUG = "Skords-01/Sergeant";
-const CURRENT_REPO_SLUG = "SkOrDs-02/sergeant";
 
 const args = new Set(process.argv.slice(2));
 const CHECK_MODE = args.has("--check");
@@ -98,10 +100,22 @@ const DEFAULT_FOCUS = [
  */
 export function extractFocus(existing) {
   if (!existing) return DEFAULT_FOCUS;
-  const i = existing.indexOf(FOCUS_START);
-  const j = existing.indexOf(FOCUS_END);
-  if (i === -1 || j === -1 || j < i) return DEFAULT_FOCUS;
-  const inner = existing.slice(i + FOCUS_START.length, j).trim();
+  // Маркери шукаються як ОКРЕМІ рядки. Простий `indexOf` знаходив перший
+  // збіг у службовому коментарі під шапкою («Редагуй лише між
+  // `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`»), брав текст між ними —
+  // «` / `» — і кожна регенерація тихо затирала ручний блок на «`/`».
+  // Так FOCUS стояв порожнім з першого коміту цієї історії (знайдено
+  // аудитом 2026-09-17).
+  const startRe = new RegExp(`^[ \\t]*${FOCUS_START}[ \\t]*$`, "m");
+  const endRe = new RegExp(`^[ \\t]*${FOCUS_END}[ \\t]*$`, "m");
+  const startMatch = startRe.exec(existing);
+  if (!startMatch) return DEFAULT_FOCUS;
+  const from = startMatch.index + startMatch[0].length;
+  endRe.lastIndex = 0;
+  const rest = existing.slice(from);
+  const endMatch = endRe.exec(rest);
+  if (!endMatch) return DEFAULT_FOCUS;
+  const inner = rest.slice(0, endMatch.index).trim();
   return inner.length > 0 ? inner : DEFAULT_FOCUS;
 }
 
@@ -136,7 +150,9 @@ function fmtShipped(pr) {
   // Слуг береться з поля `repo` запису — того самого, що читає
   // `update-pr-backlinks.mjs`. Немає поля — легасі-репо.
   const slug =
-    pr.repo === CURRENT_REPO_SLUG ? CURRENT_REPO_SLUG : LEGACY_REPO_SLUG;
+    typeof pr.repo === "string" && pr.repo.includes("/")
+      ? pr.repo
+      : LEGACY_REPO_SLUG;
   const url = `https://github.com/${slug}/pull/${pr.number}`;
   const title = pr.title ?? `PR #${pr.number}`;
   return `- [#${pr.number}](${url}) — ${title}${date ? ` _(${date})_` : ""}`;

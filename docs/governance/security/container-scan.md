@@ -1,6 +1,6 @@
 # Сканування container-image — Trivy
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-28.
+> **Last touched:** 2026-09-17 by @claude (кроки triage переписано під distroless runtime, alpine-поради — історія). **Next review:** 2026-12-16.
 > **Status:** Active
 
 ## Огляд
@@ -73,17 +73,24 @@ Trivy-джоби для нього ніколи не було потреби з�
 2. Якщо це CVE без патчу (наприклад, base-image поки немає виправленого
    тегу) — додай у `.trivyignore` з коментарем + посиланням на upstream
    issue. Ignore-and-revisit, не silent-suppress.
-3. Розглянь варіант оновити base image (`node:22.16.0-alpine` → новіший
-   minor) у Dockerfile.api.
+3. Якщо CVE в OS-шарі — розглянь оновлення runtime-образу
+   `gcr.io/distroless/nodejs22-debian13:nonroot` (стейдж `runtime` у
+   `Dockerfile.api`) до свіжішого digest-у; distroless не має пакетного
+   менеджера, тож патч приходить лише новим образом. Політика вибору
+   образу — [`docker-image-policy.md`](../../operations/ops/docker-image-policy.md);
+   історія міграції з alpine — [`distroless-upgrade-plan.md`](./distroless-upgrade-plan.md).
+   `node:22.16.0-alpine` лишився тільки у `builder`/`deps` стейджах —
+   CVE звідти в runtime-скан не потрапляють, бампати їх заради Trivy
+   не потрібно.
 4. Якщо CVE прийшла від dev-тулчейну (`vite`, `vitest`, `esbuild`, `tsx`,
    `rollup`), яка просочилась у runtime через optional-peer-и
    (`pnpm install --prod` авто-ставить peer-и за замовчуванням) — приберіть
-   ці модулі post-install у Dockerfile.api замість того, щоб тягти бамп
-   у lockfile (приклад: PR #1196). Подібно — bundled `npm` / `corepack`
-   у `node:*-alpine` ловлять CVE на `cross-spawn` / `glob` / `minimatch` /
-   `tar`; якщо runtime не використовує жоден із цих менеджерів,
-   видаляйте `/usr/local/lib/node_modules/{npm,corepack}` та супутні
-   symlink-и одним `RUN rm -rf` під root, до зміни на non-root юзера.
+   ці модулі post-install у `deps`-стейджі Dockerfile.api замість того,
+   щоб тягти бамп у lockfile (приклад: PR #1196). _Історична порада часів
+   alpine-runtime (до 2026-06):_ bundled `npm` / `corepack` у `node:*-alpine`
+   ловили CVE на `cross-spawn` / `glob` / `minimatch` / `tar` і їх видаляли
+   `RUN rm -rf /usr/local/lib/node_modules/{npm,corepack}`; у distroless
+   `nodejs22` цих менеджерів немає взагалі, тож крок відпав.
 
 ### 4. Перевір, що nightly-audit і container-scan не дублюють виняток
 
@@ -113,7 +120,7 @@ Trivy сканує arm64-шар, а прод (Hetzner/Coolify) деплоїть 
 ```bash
 # 1. Build image (явно amd64 — інакше локально на Apple Silicon отримаєш
 # arm64-image, що не збігається з тим, що сканується в CI / деплоїться
-# на Railway).
+# на Hetzner/Coolify).
 docker buildx build --platform linux/amd64 -f Dockerfile.api -t hub-api:scan .
 
 # 2. Перевір arch (defense-in-depth, як у workflow).

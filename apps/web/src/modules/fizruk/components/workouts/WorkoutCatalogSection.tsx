@@ -155,7 +155,7 @@ export function WorkoutCatalogSection({
             aria-label="Очистити пошук"
             className="touch-target absolute right-1 top-1/2 -translate-y-1/2 text-subtle hover:text-text"
           >
-            <Icon name="close" size={16} aria-hidden />
+            <Icon name="close" size="md" aria-hidden />
           </button>
         )}
       </div>
@@ -190,7 +190,7 @@ export function WorkoutCatalogSection({
                 ) : (
                   <span>{fmt(availableEquipment.length)} видів</span>
                 )}
-                <Icon name="chevron-down" size={16} aria-hidden />
+                <Icon name="chevron-down" size="md" aria-hidden />
               </span>
             </button>
             {selectedEquipment.length > 0 && (
@@ -214,7 +214,7 @@ export function WorkoutCatalogSection({
           Object.keys(equipmentUk || {}).length,
         )} видів має сенс тут`}
         footer={
-          <Button variant="primary" onClick={() => setEquipmentOpen(false)}>
+          <Button variant="solid" onClick={() => setEquipmentOpen(false)}>
             Готово
           </Button>
         }
@@ -243,7 +243,7 @@ export function WorkoutCatalogSection({
                         : "border-border-strong",
                     )}
                   >
-                    {active ? <Icon name="check" size={12} /> : null}
+                    {active ? <Icon name="check" size="xs" /> : null}
                   </span>
                   <span className="flex-1">{equipmentUk[id]}</span>
                   <span className="text-style-caption tabular-nums text-muted">
@@ -352,7 +352,7 @@ export function WorkoutCatalogSection({
                                       className="text-warning shrink-0"
                                       title={
                                         catCf.injury.blocked
-                                          ? "Позначено біль: не радимо навантажувати"
+                                          ? "Позначено біль: не раджу навантажувати"
                                           : "Мʼязи ще відновлюються"
                                       }
                                     />
@@ -361,7 +361,7 @@ export function WorkoutCatalogSection({
                                 {addedCount > 0 && (
                                   <div className="mt-1">
                                     <span className="inline-flex items-center gap-1 rounded-full bg-success/15 px-2 py-0.5 text-style-caption font-semibold text-success">
-                                      <Icon name="check" size={12} />
+                                      <Icon name="check" size="xs" />
                                       {catalogCopy.addedBadge}
                                       {addedCount > 1
                                         ? ` ${catalogCopy.addedBadgeTimes}${addedCount}`

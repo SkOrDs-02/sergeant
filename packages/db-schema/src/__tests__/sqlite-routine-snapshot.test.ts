@@ -7,7 +7,6 @@ import {
   routineTags,
   routineCategories,
   routinePrefs,
-  routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
   routineCompletionEvents,
@@ -27,7 +26,7 @@ import {
  * mirroring the structural lock-down that `pg-routine-snapshot.test.ts`
  * applies to the Postgres source-of-truth.
  *
- * Why both PG and SQLite snapshots: Stage 4 of `docs/planning/storage-roadmap.md`
+ * Why both PG and SQLite snapshots: Stage 4 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`
  * relies on the two schemas staying byte-aligned (mod the documented PG↔SQLite
  * differences in `migrations/index.ts`). Drift here means push/pull echo a row
  * that round-trips with subtly different data, and LWW comparisons stop being
@@ -468,19 +467,6 @@ describe("sqlite/routinePrefs schema snapshot", () => {
   });
 });
 
-describe("sqlite/routinePushups schema snapshot", () => {
-  const config = getTableConfig(routinePushups);
-
-  it("has the canonical table name", () => {
-    expect(config.name).toBe("routine_pushups");
-  });
-
-  it("declares all expected columns", () => {
-    const columnNames = config.columns.map((c) => c.name);
-    expect(columnNames).toEqual(["user_id", "date_key", "reps", "updated_at"]);
-  });
-});
-
 describe("sqlite/routineHabitOrder schema snapshot", () => {
   const config = getTableConfig(routineHabitOrder);
 
@@ -527,8 +513,8 @@ describe("sqlite/routineCompletionNotes schema snapshot", () => {
 });
 
 describe("sqlite/migrations exports", () => {
-  it("exports the ordered Routine migrations through weekly-target migration 010", () => {
-    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(10);
+  it("exports the ordered Routine migrations through the pushups drop 011", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS).toHaveLength(11);
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.name).toBe("001_routine_spike.sql");
     expect(ROUTINE_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS routine_entries/,
@@ -704,6 +690,15 @@ describe("sqlite/migrations exports", () => {
     );
     expect(ROUTINE_CLIENT_MIGRATIONS[9]!.sql).toMatch(
       /ALTER TABLE routine_habits ADD COLUMN weekly_target_history_json TEXT NOT NULL DEFAULT '\[\]'/,
+    );
+  });
+
+  it("ends with the 011 pushups drop (mirror of server migration 139)", () => {
+    expect(ROUTINE_CLIENT_MIGRATIONS[10]!.name).toBe(
+      "011_routine_drop_pushups.sql",
+    );
+    expect(ROUTINE_CLIENT_MIGRATIONS[10]!.sql).toMatch(
+      /DROP TABLE IF EXISTS routine_pushups/,
     );
   });
 

@@ -91,9 +91,9 @@ export function AssetsSubscriptionsSection({ state }: { state: State }) {
           onClick={() => openHubModule("routine", "")}
           className="w-full text-style-caption text-muted hover:text-text transition-colors pb-2 flex items-center justify-center gap-1.5"
         >
-          <Icon name="calendar" size={14} aria-hidden />
+          <Icon name="calendar" size="sm" aria-hidden />
           <span>Побачити у календарі Рутини</span>
-          <Icon name="chevron-right" size={14} aria-hidden />
+          <Icon name="chevron-right" size="sm" aria-hidden />
         </button>
       )}
       {subscriptions.map((sub, i) => (

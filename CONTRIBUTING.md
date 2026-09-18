@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-05.
+> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-01-10.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/start/instructions/README.md](./docs/start/instructions/README.md).
@@ -158,7 +158,7 @@ Playbooks - це канонічні покрокові рецепти викон
 
 ### Pre-commit hooks
 
-Husky `pre-commit` запускає два кроки послідовно:
+Husky `pre-commit` запускає два кроки послідовно під `set -e`, тож червоний перший крок зупиняє коміт, не чекаючи на другий (до 2026-09-16 результат визначав лише останній крок, і червоний `lint-staged` перекривався зеленим gitleaks):
 
 1. `lint-staged` з пайплайнами для staged-файлів (таблиця нижче).
 2. `node scripts/pre-commit-gitleaks.mjs` — secret-scan на staged-changes ([I5](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/I5-pre-commit-secret-detection.md); деталі та інсталяція — у §«Локальний secret-scan (gitleaks)» вище).

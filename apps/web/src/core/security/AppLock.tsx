@@ -159,7 +159,7 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
           focusOnMount
         />
         <Button
-          variant="primary"
+          variant="solid"
           size="md"
           className="w-full mt-2"
           disabled={first.length < PIN_MIN}
@@ -185,7 +185,7 @@ function PinSetupFlow({ onDone, onCancel, onSave }: PinSetupFlowProps) {
         focusOnMount
       />
       <Button
-        variant="primary"
+        variant="solid"
         size="md"
         className="w-full mt-2"
         disabled={second.length < PIN_MIN}
@@ -256,7 +256,7 @@ function UnlockScreen({ onUnlock }: UnlockScreenProps) {
         focusOnMount
       />
       <Button
-        variant="primary"
+        variant="solid"
         size="md"
         className="w-full mt-2"
         disabled={pin.length < PIN_MIN || busy}

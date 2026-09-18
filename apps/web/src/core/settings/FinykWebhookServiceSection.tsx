@@ -305,7 +305,7 @@ export function FinykWebhookServiceSection({
             </div>
             <div className="flex gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 className="flex-1 h-11"
                 onClick={triggerBackfill}
                 disabled={backfillProgress?.status === "running"}
@@ -315,7 +315,8 @@ export function FinykWebhookServiceSection({
                   : "Синхронізувати історію"}
               </Button>
               <Button
-                variant="danger"
+                variant="soft"
+                tone="danger"
                 className="flex-1 h-11"
                 onClick={() => setConfirmKind("disconnect")}
               >
@@ -350,7 +351,8 @@ export function FinykWebhookServiceSection({
               help={null}
             />
             <Button
-              variant="danger"
+              variant="soft"
+              tone="danger"
               className="w-full h-11"
               onClick={() => setConfirmKind("disconnect")}
             >
@@ -366,12 +368,12 @@ export function FinykWebhookServiceSection({
               {COPY.checkFailed}
             </p>
             <Button
-              variant="ghost"
+              variant="outline"
               className="w-full h-11"
               onClick={() => syncStateQuery.refetch()}
               disabled={syncStateQuery.isFetching}
             >
-              <Icon name="refresh-cw" size={16} aria-hidden />
+              <Icon name="refresh-cw" size="md" aria-hidden />
               {syncStateQuery.isFetching ? COPY.checking : COPY.retryCheck}
             </Button>
           </div>
@@ -400,20 +402,21 @@ export function FinykWebhookServiceSection({
           {COPY.serviceHelp}
         </p>
         <Button
-          variant="ghost"
+          variant="outline"
           className="w-full h-11"
           onClick={refreshAllData}
           disabled={refreshing}
         >
-          <Icon name="refresh-cw" size={16} aria-hidden />
+          <Icon name="refresh-cw" size="md" aria-hidden />
           {refreshing ? COPY.refreshing : COPY.refresh}
         </Button>
         <Button
-          variant="ghost"
+          variant="soft"
+          tone="danger"
           className="w-full h-11"
           onClick={() => setConfirmKind("cache")}
         >
-          <Icon name="trash" size={16} aria-hidden />
+          <Icon name="trash" size="md" aria-hidden />
           {COPY.clearTransactions}
         </Button>
       </SettingsSubGroup>

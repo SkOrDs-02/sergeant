@@ -1,4 +1,5 @@
 import { ls, lsSet } from "../../hubChatUtils";
+import { formatDateNumeric } from "@shared/lib/time/formatDate";
 import type {
   ChatActionResult,
   ListNotesAction,
@@ -52,7 +53,7 @@ export function listNotes(action: ListNotesAction): string {
   const shown = filtered.slice(0, max);
   const parts: string[] = [`Нотатки (${filtered.length} всього):`];
   for (const n of shown) {
-    const d = new Date(n.createdAt).toLocaleDateString("uk-UA");
+    const d = formatDateNumeric(new Date(n.createdAt));
     parts.push(
       `  [${n.tag}] ${n.text.slice(0, 80)}${n.text.length > 80 ? "\u2026" : ""} (${d})`,
     );

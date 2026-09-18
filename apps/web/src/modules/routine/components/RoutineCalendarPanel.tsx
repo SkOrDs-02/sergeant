@@ -2,16 +2,12 @@
  * Last validated: 2026-05-19
  * Status: Active
  */
-import { useEffect, useMemo, useState, type ChangeEvent } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
-import { Card } from "@shared/components/ui/Card";
 import { Input } from "@shared/components/ui/Input";
-import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
-import { Segmented } from "@shared/components/ui/Segmented";
 import { EmptyState } from "@shared/components/ui/EmptyState";
-import { WeekDayStrip, WeekShiftControls } from "./WeekDayStrip";
 import { HabitDetailSheet } from "./HabitDetailSheet";
 import { FizrukDayPlanSheet } from "@fizruk/components/planning/FizrukDayPlanSheet";
 import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
@@ -25,17 +21,13 @@ import {
 } from "@sergeant/routine-domain";
 import { RoutineCalendarHero } from "./RoutineCalendarHero";
 import { RoutineCalendarMonthGrid } from "./RoutineCalendarMonthGrid";
-import { RoutineFilterChips } from "./RoutineFilterChips";
+import { RoutineFeedControls } from "./RoutineFeedControls";
 import {
   parseDateKey,
   habitScheduledOnDate,
 } from "../lib/hubCalendarAggregate";
 import { addDays, dateKeyFromDate } from "../lib/weekUtils";
-import {
-  ROUTINE_THEME as C,
-  ROUTINE_TIME_MODES as TIME_MODES,
-  type RoutineTimeModeId,
-} from "../lib/routineConstants";
+import { ROUTINE_THEME as C } from "../lib/routineConstants";
 import {
   useRoutineCalendarActions,
   useRoutineCalendarData,
@@ -51,11 +43,6 @@ import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
 
 type GroupedListItem =
   { kind: "header"; label: string } | { kind: "event"; e: HubCalendarEvent };
-
-const timeModeItems: ReadonlyArray<{
-  value: RoutineTimeModeId;
-  label: string;
-}> = TIME_MODES.map((tm) => ({ value: tm.id, label: tm.label }));
 
 export interface RoutineCalendarPanelProps {
   hidden?: boolean;
@@ -280,95 +267,31 @@ export function RoutineCalendarPanel({
           статистики, хоча він фільтрує список нижче (найпростіший доказ, що
           це не звіт — чип «Завтра»). Копірайт розводить дві поверхні
           словами; сама статистика живе на вкладці «Статистика». */}
-      <div className="flex flex-col gap-1.5">
-        <SectionHeading as="p" size="xs" variant="routine">
-          Показувати у стрічці
-        </SectionHeading>
-        <p className="text-style-body text-subtle">
-          Фільтр списку нижче. Підсумки – на вкладці «Статистика».
-        </p>
-
-        <Segmented
-          style="soft"
-          size="sm"
-          variant="routine"
-          ariaLabel="Діапазон стрічки"
-          // AI-DANGER: без `overflow-x-auto` навмисно. Чотири чипи діапазону
-          // вміщаються в найвужчий підтримуваний екран, а якщо колись не
-          // вмістяться — перенесуться рядком (`flex-wrap` у `Segmented`).
-          // Горизонтальний скролер тут не потрібен, зате він створював
-          // композиторний шар, який iOS малював зі зсувом: заливка обраного
-          // чипа зʼявлялась на сусідньому ПРАВОРУЧ (обрано «Тиждень» —
-          // рожевий «Місяць»). Репорт власника 2026-08-17, підтверджено
-          // зсувом на двох незалежних рядах.
-          className="[&>button]:shrink-0"
-          items={timeModeItems}
-          value={timeMode}
-          onChange={applyTimeMode}
-        />
-      </div>
-
-      <Card variant="default" radius="lg" padding="sm" className="bg-panel/80">
-        {/* Шеврони тут, а не в ряду днів: там вони забирали 100px і не давали
-            сімці клітинок влізти без скролера (див. `WeekDayStrip`). */}
-        <div className="mb-2 flex items-center justify-between gap-2">
-          <SectionHeading as="p" size="xs" variant="routine">
-            Тиждень
-          </SectionHeading>
-          <WeekShiftControls onShiftWeek={shiftWeekStrip} />
-        </div>
-        <WeekDayStrip
-          anchorKey={selectedDay}
+      {/* Пульт фільтрації живе окремо — див. `RoutineFeedControls`:
+          там і умова показу, і чому вона саме така. Предикат ТОЧНО той
+          самий, що й у порожнього стану «Почни з однієї звички» нижче:
+          пульт зникає рівно тоді, коли ми й так кажемо «додай першу». */}
+      {!(listIsEmpty && !hasListFilter && hasNoHabits) && (
+        <RoutineFeedControls
+          timeMode={timeMode}
+          applyTimeMode={applyTimeMode}
           selectedDay={selectedDay}
           todayKey={todayKey}
-          onSelectDay={(k) => {
-            setSelectedDay(k);
-            // Стрічка узгоджена з чипами: тап по сьогоднішній даті дає режим
-            // `today`, по завтрашній — `tomorrow`, і лише довільний день —
-            // `day`. Раніше будь-який тап давав `day`, тож навіть після
-            // вибору СЬОГОДНІ знизу висів припис «Обрано один день…», і
-            // зняти його можна було тільки чипом (репорт власника
-            // 2026-08-17). Діапазон від цього не змінюється: для
-            // `today`/`tomorrow` він такий самий однодневний, як для `day`
-            // із тією ж датою (`useRoutineDerivedData` § range).
-            setTimeMode(
-              k === todayKey ? "today" : k === tomorrowKey ? "tomorrow" : "day",
-            );
-          }}
+          tomorrowKey={tomorrowKey}
+          shiftWeekStrip={shiftWeekStrip}
+          setSelectedDay={setSelectedDay}
+          setTimeMode={setTimeMode}
+          listQueryDraft={listQueryDraft}
+          setListQueryDraft={setListQueryDraft}
+          tagFilter={tagFilter}
+          setTagFilter={setTagFilter}
+          tagChips={tagChips}
+          showFizruk={routine.prefs.showFizrukInCalendar !== false}
+          showFinykSubs={
+            routine.prefs.showFinykSubscriptionsInCalendar !== false
+          }
         />
-        {timeMode === "day" && (
-          // AI-NOTE: `text-style-caption` тут навмисно — це підказка під
-          // контролом (пояснення, як зняти обраний день), а не текст, який
-          // читають. Виняток, прямо передбачений правилом
-          // `sergeant-design/no-sentence-in-caption`. Правило спрацювало лише
-          // тепер, бо файл уперше потрапив у staged-набір — сам рядок живе в
-          // `main` з репорту власника 2026-08-17.
-          <p className="mt-2 text-center text-style-caption text-subtle">
-            Обрано один день, натисни «Сьогодні» або «Тиждень», щоб повернути
-            зріз
-          </p>
-        )}
-      </Card>
-
-      <Input
-        className="routine-touch-field w-full max-w-md"
-        {...searchFieldProps("routine-feed-search")}
-        placeholder="Пошук у стрічці…"
-        value={listQueryDraft}
-        onChange={(e: ChangeEvent<HTMLInputElement>) =>
-          setListQueryDraft(e.target.value)
-        }
-        aria-label="Пошук подій"
-      />
-
-      <RoutineFilterChips
-        tagFilter={tagFilter}
-        setTagFilter={setTagFilter}
-        onClearFilter={() => setTagFilter(null)}
-        tagChips={tagChips}
-        showFizruk={routine.prefs.showFizrukInCalendar !== false}
-        showFinykSubs={routine.prefs.showFinykSubscriptionsInCalendar !== false}
-      />
+      )}
 
       {timeMode === "month" && (
         <RoutineCalendarMonthGrid
@@ -395,7 +318,7 @@ export function RoutineCalendarPanel({
             action={
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 onClick={() => {
                   setTagFilter(null);
                   setListQuery("");
@@ -549,7 +472,7 @@ export function RoutineCalendarPanel({
                           {e.fizruk && (
                             <Button
                               size="sm"
-                              variant="secondary"
+                              variant="outline"
                               className="h-9! px-3! text-xs! bg-info/5"
                               type="button"
                               onClick={() => setFizrukPlanDateKey(e.date)}
@@ -560,7 +483,7 @@ export function RoutineCalendarPanel({
                           {e.finykSub && typeof onOpenModule === "function" && (
                             <Button
                               size="sm"
-                              variant="secondary"
+                              variant="outline"
                               className="h-9! px-3! text-xs! bg-success/5"
                               type="button"
                               onClick={() =>

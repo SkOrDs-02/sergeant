@@ -2,8 +2,8 @@
 
 # Усунення founder-feedback регресій у web PWA
 
-> **Last touched:** 2026-07-16 by Codex. **Next review:** 2027-02-23.
-> **Status:** Active
+> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-02-23.
+> **Status:** Shipped — контрактні пункти в коді (звірено 2026-09-16): `LimitBudget.period` (`finyk-domain`), спільний `DateField`, consent-гейт `aiMemory`, внутрішня сторінка вимірів, `pantryMode` + тип прийому в рецептах, sync-chrome у слотах шапки (`FinykAppChrome` / `TransactionSyncPill`), `Icon` замість емодзі у split-пікері, спільний пікер транзакцій. Два залишки без реалізації: згортання «Інші активи» / «Мені винні» після трьох і авто-превʼю збігу за ключовим словом підписки (`SubCard.tsx`).
 
 ## Мета
 

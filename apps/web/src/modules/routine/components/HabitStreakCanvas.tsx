@@ -31,6 +31,7 @@ import { Card } from "@shared/components/ui/Card";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 import { flexibleStreakBreakdown } from "../lib/streaks";
 import { SKIP_REASON_LABELS } from "../lib/skipReasons";
 import type { Habit } from "../lib/types";
@@ -55,7 +56,7 @@ function formatCellDate(key: string): string {
   // Парсимо готовий day-key на візуальну мітку — не читаємо годинник
   // хоста, тож "prefer-kyiv-time" тут не застосовний.
   const dt = new Date(`${key}T12:00:00`);
-  return dt.toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
+  return formatDateShort(dt);
 }
 
 /** Клітинка полотна — форма/патерн різні для кожного типу, не лише колір. */

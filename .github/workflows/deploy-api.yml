@@ -1,6 +1,6 @@
 name: Deploy API image (ghcr.io)
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @zaebal-beep (solo maintainer).
 #
 # Будує Hub API-образ з `Dockerfile.api` і пушить у GitHub Container
 # Registry (`ghcr.io/<owner>/sergeant-api`). Coolify на Hetzner VPS тягне
@@ -72,7 +72,7 @@ jobs:
 
       - name: Compute image tags
         id: tags
-        # GHCR namespace мусить бути lowercase (owner "SkOrDs-02" → "skords-02").
+        # GHCR namespace мусить бути lowercase, а `github.repository_owner` може містити великі літери.
         run: |
           owner="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
           image="ghcr.io/${owner}/sergeant-api"

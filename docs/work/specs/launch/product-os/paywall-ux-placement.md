@@ -1,10 +1,10 @@
 # Paywall UX placement — sketch + decision doc
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-12-02.
-> **Status:** Active draft (sketch). Закриває tracker `PR-19` per [ftux-master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr).
+> **Last touched:** 2026-09-17 by @claude (Status → Reference: sketch виконаний, trial-механіка superseded ADR-0068). **Next review:** 2026-12-16.
+> **Status:** Reference — sketch виконаний: `PR-19` ✅ landed, `PR-20` billing scaffold shipped ([ftux-master-tracker §1](./ftux-master-tracker.md#1-tldr)); trial-механіка з §1 superseded by [ADR-0068](../../../../governance/adr/0068-pricing-v4-uah-reverse-trial.md) (див. Update 2026-07-10). Історично: `Active draft (sketch)`, закривав tracker `PR-19` per [ftux-master-tracker §3.4](./ftux-master-tracker.md#34-хвиля-4--paywall--polish-week-5-6-4-pr).
 >
 > **Update 2026-07-10:** trial-механіка в коді — ADR-0068 **reverse trial 7 днів** (авто Pro → downgrade), не 14d opt-in trial без картки з §1 нижче. Placement sketch (post-first-real-entry sheet) лишається валідним; trial copy оновити під ADR-0068.
-> **Owner:** @Skords-01 + Devin (sketch session 2026-05-06).
+> **Owner:** @Skords-01 (sketch session 2026-05-06 з агентом Devin — harness retired, [ADR-0088](../../../../governance/adr/0088-devin-kilo-harness-retirement.md)).
 
 > Тільки UX-placement sketch для FTUX-релевантного paywall touch-point-у. Технічний skeleton (Stripe, webhooks, gating-middleware, ADR list) — у [Архітектура монетизації v2](../business/06-monetization-architecture.md) та [Initiative 0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md). Цей документ — **тільки про те, ДЕ і КОЛИ** показуємо paywall новому юзеру, а не **ЯК** його технічно реалізуємо. Імплементація — `PR-20`.
 >

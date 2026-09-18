@@ -15,11 +15,15 @@ import {
 } from "./adapter.js";
 import { diffRoutineDualWriteOps } from "./diff.js";
 import { probeRoutineParity } from "./parity.js";
+import {
+  beginRoutineLocalWrite,
+  endRoutineLocalWrite,
+} from "../localWriteWindow.js";
 
 /**
  * Orchestrator for the routine dual-write layer.
  *
- * Stage 4 PR #024 of `docs/planning/storage-roadmap.md`. Glues
+ * Stage 4 PR #024 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Glues
  * together:
  *
  *  - the **identity** resolver (`getUserId()`) — web reads from the
@@ -229,10 +233,27 @@ export function triggerRoutineDualWrite(
   prev: RoutineState,
   next: RoutineState,
 ): void {
-  if (!registeredContext) return;
+  const ctx = registeredContext;
+  if (!ctx) return;
+  // Вікно відкривається СИНХРОННО, ще до мікротаски: оновлення кеша, яке
+  // стартує в цьому ж тіку, має вже бачити запис у польоті. Розбір —
+  // `../localWriteWindow.ts`.
+  beginRoutineLocalWrite();
   // Schedule on a microtask so a synchronous LS-side caller gets
   // control back before any async work begins.
-  void Promise.resolve().then(() => dualWriteRoutineState(prev, next));
+  void Promise.resolve()
+    .then(() => dualWriteRoutineState(prev, next))
+    .catch((err) => {
+      logSafe(ctx, "warn", "dual-write task failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    })
+    // `.finally` ПІСЛЯ `.catch`: вікно має закритись і на успіху, і на
+    // відмові. Якби `.catch` стояв нижче, відмова закривала б вікно, не
+    // дійшовши до логу.
+    .finally(() => {
+      endRoutineLocalWrite();
+    });
 }
 
 function logSafe(

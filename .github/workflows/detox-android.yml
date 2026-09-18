@@ -1,6 +1,6 @@
 name: Detox (Android)
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @zaebal-beep (solo maintainer).
 # Triage: build/prebuild failures stay blocking. Detox app-readiness/test
 # failures soft-pass with a GitHub warning while the Android instrumentation
 # readiness issue is open; use uploaded artifacts/logs for follow-up triage.

@@ -68,7 +68,7 @@ export function Programs({
           </div>
           {activeProgram && (
             <Button
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={deactivateProgram}
               className="text-style-caption text-subtle hover:text-text"
@@ -148,7 +148,15 @@ export function Programs({
                               ? isToday && isActive
                                 ? "bg-success-strong text-white"
                                 : "bg-success/15 text-success-strong dark:text-success"
-                              : "bg-line/30 text-subtle/40",
+                              : // Без `/40`: розведений `text-subtle` давав
+                                // 1.83:1 на світлій темі (#bab8b4 на #f6f6f4)
+                                // при 12px bold — axe `color-contrast`,
+                                // serious, замір свіпу 2026-09-16. Повна
+                                // сила токена дає ≥4.5:1 і не знімає
+                                // де-акцент: дні БЕЗ тренування і так
+                                // відрізняються від `bg-success/15` фоном
+                                // і відтінком, а не лише блідістю.
+                                "bg-line/30 text-subtle",
                           )}
                         >
                           {DAY_LABELS[i]}

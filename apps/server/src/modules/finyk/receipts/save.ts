@@ -29,7 +29,7 @@ const FALLBACK_STORE_NAME = "Невідомий магазин";
 // Колонки `receipts`, потрібні серіалізатору (`serialize.ts#ReceiptRow`).
 // Виписані буквально в КОЖНОМУ з трьох SQL нижче (а не через спільний
 // template-interpolated constant) навмисно: `no-restricted-syntax`
-// (`docs/04-governance/security/hardening/M11-eslint-plugin-security.md`)
+// (`docs/work/specs/security-hardening/M11-eslint-plugin-security.md`)
 // застерігає проти templated `query(...)` з `${...}` — тут інтерполяція
 // була б статичною (не user input), але лишати її дешевше усунути, ніж
 // пояснювати щоразу.

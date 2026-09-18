@@ -37,7 +37,7 @@ import {
   ANALYTICS_EVENTS,
 } from "../../../core/observability/analytics";
 import { markFinykAnalyticsViewed } from "../../../core/onboarding/useChecklistSignals";
-import { ucFirst } from "@shared/lib/ui/ucFirst";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
 
 interface SectionProps {
   title: string;
@@ -111,12 +111,9 @@ const MonthNav = memo(function MonthNav({
   // Use Kyiv-local year/month so "current month" matches Europe/Kyiv day boundaries.
   const nowKyiv = getKyivDateParts();
   const isCurrentMonth = year === nowKyiv.year && month === nowKyiv.month;
-  const label = ucFirst(
-    new Date(year, month - 1, 1).toLocaleDateString("uk-UA", {
-      month: "long",
-      year: "numeric",
-    }),
-  );
+  const label = formatMonthYear(new Date(year, month - 1, 1), {
+    capitalize: true,
+  });
 
   const go = (delta: number) => {
     let m = month + delta;
@@ -389,14 +386,25 @@ export function Analytics({
   // Клампимо й `monthCache`-гілку: вона приходить із місяцевого fetch-у, але
   // його межі анкорені на фіксований `+03:00`, а `filterToKyivMonth` — на
   // справжній київський зсув, тож взимку краї місяця розходяться на годину.
+  // Банківський зріз ОКРЕМО від обʼєднаного: на ньому — і тільки на ньому —
+  // гейтиться банер помилки завантаження нижче. Доти гейт стояв на
+  // обʼєднаному `activeTx`, тож ОДНА ручна витрата в місяці ховала збій
+  // читання банку разом із єдиною кнопкою «Повторити» — а `ensureMonth`
+  // навмисно не перезапускає впалий місяць сам, тож стан лишався
+  // невідновним до перемикання місяця чи релоаду (аудит 2026-09-16, WF-6).
+  const bankTx = useMemo(
+    () =>
+      filterToKyivMonth(
+        isCurrentMonth ? mono.realTx || [] : monthCache[monthKey] || [],
+        monthKey,
+      ),
+    [isCurrentMonth, mono.realTx, monthCache, monthKey],
+  );
+
   const activeTx = useMemo(() => {
-    const bankTx = filterToKyivMonth(
-      isCurrentMonth ? mono.realTx || [] : monthCache[monthKey] || [],
-      monthKey,
-    );
     if (manualExpenseTxs.length === 0) return bankTx;
     return [...bankTx, ...manualExpenseTxs];
-  }, [isCurrentMonth, mono.realTx, monthCache, monthKey, manualExpenseTxs]);
+  }, [bankTx, manualExpenseTxs]);
 
   const prevTx = useMemo(() => {
     const bankTx = filterToKyivMonth(monthCache[prevKey] || [], prevKey);
@@ -455,7 +463,7 @@ export function Analytics({
       <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
         <MonthNav year={year} month={month} onChange={handleMonthChange} />
 
-        {fetchError && activeTx.length === 0 && (
+        {fetchError && bankTx.length === 0 && (
           <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger-strong dark:text-danger">
             <span>{fetchError}</span>
             <button

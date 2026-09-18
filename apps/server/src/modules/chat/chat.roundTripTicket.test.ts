@@ -1,13 +1,12 @@
 /**
- * AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+ * AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
  * — handler-level: перевіряє, що `round_trip_ticket` приклеюється до
  * `tool_calls`-відповіді, коли сесія відома, і що цей квиток дійсно
  * приймається `consumeRoundTripTicket` для того самого userId.
  *
  * Окремий файл (не `chat.test.ts`), бо тут — на відміну від решти
- * handler-тестів — потрібен мокнутий `../../auth.js` із реальним
- * `sessionUser.id`; решта `chat.test.ts` навмисно лишає сесію
- * незамоканою (`getSessionUser` кидає → `.catch(() => null)` → анонім).
+ * handler-тестів — запит несе `req.user` (те, що в проді кладе
+ * `requireSession()`); `chat.test.ts` навмисно лишає його порожнім (анонім).
  */
 import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { Request, Response } from "express";
@@ -19,10 +18,6 @@ vi.mock("../../lib/anthropic.js", () => ({
   extractAnthropicText: vi.fn(() => ""),
 }));
 
-vi.mock("../../auth.js", () => ({
-  getSessionUser: vi.fn(async () => ({ id: "u-ticket-1" })),
-}));
-
 import { anthropicMessages as _anthropicMessages } from "../../lib/anthropic.js";
 import handler from "./chat.js";
 import { __resetChatResponseCache } from "./chatResponseCache.js";
@@ -31,7 +26,11 @@ import { consumeRoundTripTicket } from "./chatRoundTripTicket.js";
 const anthropicMessages = _anthropicMessages as unknown as Mock;
 
 function makeReq(body: unknown): Request {
-  return { anthropicKey: "sk-test", body } as unknown as Request;
+  return {
+    anthropicKey: "sk-test",
+    body,
+    user: { id: "u-ticket-1" },
+  } as unknown as Request;
 }
 
 function makeRes() {

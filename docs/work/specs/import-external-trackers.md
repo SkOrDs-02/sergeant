@@ -104,7 +104,9 @@ XLSX/ZIP це великий шмат коду, який потягнувся б
 - **Адаптер Strong - клієнтський**, у `apps/web/src/modules/fizruk/`. Пише через
   ті самі шляхи, що ручне введення (dualwrite → sync), а не в обхід. Прецедент
   клієнтського масового запису вже є:
-  [`lib/demoSeedImport.ts`](../../../apps/web/src/modules/fizruk/lib/demoSeedImport.ts).
+  [`finyk/lib/importStatementFile.ts`](../../../apps/web/src/modules/finyk/lib/importStatementFile.ts)
+  (імпорт банківської виписки). Доти тут стояв демо-сід `fizruk/lib/demoSeedImport.ts`
+  — демо-режим знято [ADR-0095](../../governance/adr/0095-demo-mode-removed.md).
 - **Назви вправ: автозбіг плюс ручне звіряння.** Впевнені збіги мапимо самі
   через наявний `searchExercises` (він уже ранжує по назвах, аліасах і описі);
   решта йде в екран звіряння, де людина обирає вправу з каталогу або пропускає

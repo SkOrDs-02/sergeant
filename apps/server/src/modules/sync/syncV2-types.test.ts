@@ -47,6 +47,9 @@ describe("syncV2 wire reason/type registries", () => {
       "apply_failed",
       "duplicate",
       "op_not_supported",
+      // Запис у `sync_op_log` живе під savepoint-ом `op_log_write`; його
+      // помилка відхиляє один оп, а не валить батч 500-кою.
+      "oplog_write_failed",
     ]);
     expect(new Set(ENGINE_REJECT_REASONS).size).toBe(
       ENGINE_REJECT_REASONS.length,

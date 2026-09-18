@@ -1,7 +1,7 @@
 /**
  * React hook that boots the SQLite read path for routine completions.
  *
- * PR #025 of `docs/planning/storage-roadmap.md`. When the
+ * PR #025 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. When the
  * `feature.routine.sqlite_v2.read_sqlite` flag is on, this hook runs
  * `bootSqliteReadPath()` once after mount so that subsequent
  * `loadRoutineState()` calls overlay completions from the local

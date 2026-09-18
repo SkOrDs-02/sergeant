@@ -183,6 +183,40 @@ describe("ukrainian-copy — 1-а особа множини (§2)", () => {
     ]);
   });
 
+  it("ловить -емо / -имо / -їмо та зворотні -мось / -мося (дірка з аудиту 2026-09-15)", () => {
+    for (const s of [
+      "Робимо перший крок.",
+      "Ідемо далі",
+      "Вчимося разом.",
+      "Боїмось пропустити день",
+      "Тримаємося плану!",
+    ]) {
+      assert.deepEqual(
+        ids(lint(`const a = "${s}";`)),
+        ["firstPersonPlural"],
+        s,
+      );
+    }
+  });
+
+  it("не ловить «демо», прислівники на -емо/-имо та «ласкаво просимо»", () => {
+    assert.deepEqual(lint('const a = "Демо-режим увімкнено";'), []);
+    assert.deepEqual(lint('const a = "Режим демо";'), []);
+    assert.deepEqual(
+      lint('const a = "Кожен факт можна видалити окремо.";'),
+      [],
+    );
+    assert.deepEqual(
+      lint('const a = "Показую їх окремо, у капітал не зводжу.";'),
+      [],
+    );
+    assert.deepEqual(lint('const a = "Ласкаво просимо в Premium!";'), []);
+    // Allowlist — лише для цих слів: те саме закінчення в дієслові ловиться.
+    assert.deepEqual(ids(lint('const a = "Окремо зберемо всі чеки.";')), [
+      "firstPersonPlural",
+    ]);
+  });
+
   it("мовчить на 1-й особі однини та іменнику", () => {
     assert.deepEqual(lint('const a = "Завантажую…";'), []);
     assert.deepEqual(lint('const a = "Завантаження…";'), []);

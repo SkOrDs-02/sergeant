@@ -78,14 +78,15 @@ export function BarcodeLookupNotice({
       </div>
       <div className="flex flex-wrap gap-2">
         {kind === "unavailable" && onRetry && (
-          <Button type="button" variant="secondary" size="sm" onClick={onRetry}>
+          <Button type="button" variant="outline" size="sm" onClick={onRetry}>
             {messages.nutrition.barcodeNoticeRetry}
           </Button>
         )}
         {kind === "not-found" && onUsePhoto && (
           <Button
             type="button"
-            variant="nutrition-soft"
+            variant="soft"
+            tone="nutrition"
             size="sm"
             onClick={onUsePhoto}
           >

@@ -37,7 +37,6 @@ describe("EMPTY_FIZRUK_DUAL_WRITE_STATE", () => {
       monthlyPlan: null,
       workoutTemplates: [],
       injuries: [],
-      pushups: {},
       customActivities: [],
     });
   });

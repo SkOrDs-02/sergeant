@@ -1,6 +1,6 @@
 # Playbook: Зміна deploy-конфігу (vercel / Dockerfile / Coolify)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-18.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -17,7 +17,8 @@
 
 - Стартуй з `sergeant-start-here`, тоді відкрий `sergeant-deploy-and-observability`.
 - Перечитай [vercel.md](../../operations/deploy/vercel.md), [service-catalog.md](../../engineering/architecture/service-catalog.md), [release-policy.md](../../governance/governance/release-policy.md).
-- Vercel SSOT-нотатка: `apps/web/vercel.json` — канонічний. У Vercel Project «Root Directory» = `apps/web`. Додавати другий `vercel.json` (наприклад, у корені monorepo) **заборонено** — `pnpm lint` енфорсить це через `scripts/check-vercel-config.sh`.
+- Vercel SSOT-нотатка: `apps/web/vercel.json` — канонічний **для застосунку**. У Vercel Project «Root Directory» = `apps/web`. Додавати `vercel.json` у корінь monorepo **заборонено** — `pnpm lint` енфорсить це через `scripts/check-vercel-config.sh`.
+- **Лендінг — окремий Vercel-проєкт із власним `apps/landing/vercel.json`** (заголовки безпеки, редіректи, постбілд-SEO). Це не порушення SSOT: заборонений саме кореневий конфіг, а не другий застосунок. Деплой лендінга йде **через GitHub Actions + Vercel CLI**, а не через Git-інтеграцію Vercel — та відвалилась, і прод тихо стояв на старій збірці, поки в репо нічого про це не сигналізувало. Ключова пастка: усі команди CLI йдуть **з кореня репо**, бо Root Directory проєкту CLI додає сам, і з `cwd=apps/landing` шлях подвоюється. Деталі й пост-деплойні гейти — [`verify-site-claims.md § Деплой і якість лендінга`](./verify-site-claims.md).
 
 ## Чому існує цей playbook
 
@@ -86,6 +87,14 @@ flowchart TD
 4. Якщо зміна ризикована (env/pre-deploy migrate) — тримай напоготові попередній image-tag для миттєвого rollback (Coolify → Deployments → previous → Redeploy).
 5. Постав лейбл `verified-on-staging` (для Coolify-поверхні він означає «verified on prod deploy з rollback-планом»).
 
+### Лендінг: окремий контур деплою (якщо чіпав `apps/landing/**`)
+
+Воркфлоу деплою лендінга спрацьовує на зміни `apps/landing/**`, `packages/design-tokens/**`,
+`packages/shared/**` і лок-файлів. Після мержу переконайся, що обидва пост-деплойні
+гейти зелені: деплой віддає **пререндерений** HTML (canonical + непорожній корінь) і
+прод-домен показує **саме цю** збірку (звірка імені хешованого бандла). Обидва існують
+тому, що зелений деплой сам по собі не доводить, що прод оновився.
+
 ### 4. Emergency escape-hatch
 
 Справжні prod-хотфікси, які неможливо прокатати на staging (наприклад, CDN-edge конфіг, який лише Vercel застосовує; toggling kill-switch-у), можуть використати лейбл `verified-on-staging-emergency`. Цей лейбл — **не** free pass:
@@ -94,7 +103,7 @@ flowchart TD
    - Чому staging неможливо задіяти (наприклад, «лише production Vercel-проєкт має edge-config binding»).
    - План мітигації, якщо зміна поведе себе погано (rollback commit SHA, шлях kill-switch, on-call rotation).
    - Зобовʼязання написати post-mortem протягом 7 календарних днів, з лінком у `docs/operations/postmortems/`.
-2. Принаймні один додатковий reviewer від `@Skords-01` (або призначений reviewer) на PR перед merge.
+2. Принаймні один додатковий reviewer від `@zaebal-beep` (або призначений reviewer) на PR перед merge.
 3. Стеж за prod-логами / Sentry перші 30 хвилин після деплою.
 4. Напиши post-mortem; полінкуй цей PR.
 
@@ -126,3 +135,15 @@ flowchart TD
 - Джерело CI-job: [`.github/workflows/deploy-config-staging-gate.yml`](../../../.github/workflows/deploy-config-staging-gate.yml). Логіка: [`scripts/ci/check-deploy-config-staging-gate.mjs`](../../../scripts/ci/check-deploy-config-staging-gate.mjs).
 - Initiative ref: [`docs/work/specs/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0011-foundation-adoption-and-process-discipline.md) §Фаза 1 → PR 1.3.
 - Закриває type-incident PR #1595 → PR #1600.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                           | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#57](https://github.com/zaebal-beep/sergeant/pull/57) | fix(root): закрити знахідки наскрізного аудиту — валідація AI-шару, метрика конфліктів синку, браузерні дефекти | 2026-09-16 |
+| [#51](https://github.com/zaebal-beep/sergeant/pull/51) | docs(agents): пʼять нових playbook-ів під повторювані поломки і ревізія наявних                                 | 2026-09-15 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

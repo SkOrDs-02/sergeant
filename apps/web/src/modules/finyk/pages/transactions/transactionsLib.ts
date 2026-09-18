@@ -3,6 +3,7 @@ import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { INTERNAL_TRANSFER_ID } from "@sergeant/finyk-domain/constants";
 import type { TxSplit, TxSplitsMap } from "@sergeant/finyk-domain/domain/types";
+import { formatDayMonth } from "@shared/lib/time/formatDate";
 
 export const DAY_COLLAPSE_KEY = STORAGE_KEYS.FINYK_TX_DAY_COLLAPSE;
 
@@ -45,11 +46,7 @@ export function isDayFilterKey(value: string): boolean {
  */
 export function formatDayFilterDate(dayKey: string): string {
   const [y = 1970, m = 1, d = 1] = dayKey.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  });
+  return formatDayMonth(new Date(Date.UTC(y, m - 1, d)), { timeZone: "UTC" });
 }
 
 export type DayCollapseOverrides = Record<string, boolean>;
@@ -262,10 +259,6 @@ export function formatStickyDayLabel(key: string): string {
   // однакові в будь-якій TZ, host-local getters тут не потрібні.
   const d = new Date(Date.UTC(y, m - 1, da));
   const weekday = STICKY_WEEKDAYS_NOMINATIVE[d.getUTCDay()] ?? "";
-  const dayMonth = d.toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "long",
-    timeZone: "UTC",
-  });
+  const dayMonth = formatDayMonth(d, { timeZone: "UTC" });
   return `${weekday}, ${dayMonth}`;
 }

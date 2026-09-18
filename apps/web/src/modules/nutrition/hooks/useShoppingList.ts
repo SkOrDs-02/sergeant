@@ -11,6 +11,9 @@ import {
   removeCheckedItems,
   getCheckedItems,
   normalizeShoppingList,
+  addManualShoppingItem,
+  mergeGeneratedShoppingList,
+  type AddShoppingItemInput,
   type ShoppingCategory,
   type ShoppingItem,
   type ShoppingList,
@@ -24,6 +27,7 @@ export interface UseShoppingListResult {
   clearChecked: () => void;
   clearAll: () => void;
   setGeneratedList: (categories: ShoppingCategory[] | null | undefined) => void;
+  addItem: (input: AddShoppingItemInput) => void;
   checkedItems: ShoppingItem[];
 }
 
@@ -60,10 +64,17 @@ export function useShoppingList(): UseShoppingListResult {
   }, [setShoppingList]);
 
   const setGeneratedList = useCallback(
+    // Merge, не replace: ручні позиції (`source: "manual"`) переживають
+    // регенерацію AI-списку — див. `mergeGeneratedShoppingList`.
     (categories: ShoppingCategory[] | null | undefined) => {
-      setShoppingList({
-        categories: Array.isArray(categories) ? categories : [],
-      });
+      setShoppingList((list) => mergeGeneratedShoppingList(list, categories));
+    },
+    [setShoppingList],
+  );
+
+  const addItem = useCallback(
+    (input: AddShoppingItemInput) => {
+      setShoppingList((list) => addManualShoppingItem(list, input));
     },
     [setShoppingList],
   );
@@ -76,6 +87,7 @@ export function useShoppingList(): UseShoppingListResult {
     clearChecked,
     clearAll,
     setGeneratedList,
+    addItem,
     checkedItems,
   };
 }

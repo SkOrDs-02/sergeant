@@ -1,7 +1,7 @@
 # Спека: персистентність даних незалогіненого користувача
 
-> **Last touched:** 2026-09-03 by @claude (звірка з `origin/main`: § Стан імплементації суперечив шапці щодо durable-write правила — приведено до коду). **Next review:** 2027-11-11.
-> **Status:** Active — Р1, Р2(а) і durable-write правило для СТАРТ-блоку змерджені (гасимо блок лише після підтвердженого запису; банер локальності піднято в хаб). Залишок: E2E-приймання «створив анонімно → reload → запис на місці» — такого тесту в `apps/web/tests` немає (smoke-тести лише відкладають анонімну міграцію через `deferAnonymousMigration`).
+> **Last touched:** 2026-09-16 by @claude (E2E-приймання «анонімно → reload» додано — `anonymous-persistence.spec.ts`; раніше 2026-09-03: звірка з `origin/main`, § Стан імплементації приведено до коду). **Next review:** 2027-11-11.
+> **Status:** Active — Р1, Р2(а) і durable-write правило для СТАРТ-блоку змерджені (гасимо блок лише після підтвердженого запису; банер локальності піднято в хаб). E2E-приймання «створив анонімно → reload → запис на місці» є з 2026-09-16 — [`anonymous-persistence.spec.ts`](../../../apps/web/tests/smoke/anonymous-persistence.spec.ts) у critical-flow смузі. Відкритими лишаються пункти DoD про юніт-тест на кожен із чотирьох модулів і про прогін під логіном / на rate-limit.
 > **Agent-ready:** yes — residual має зафіксований контракт і не потребує нового продуктового рішення.
 
 ## Проблема
@@ -111,11 +111,22 @@ Checkpoint 008 і детерміновані idempotency keys роблять п�
 на цю секцію спеки. Банер «дані лише на цьому пристрої» стоїть першим у бюджеті
 банерів хабу ([`bannerBudget.tsx`](../../../apps/web/src/core/hub/bannerBudget.tsx)).
 
-**Залишок — E2E-приймання (§ Definition of done, пункт 3):** тесту «створив
-анонімно → reload → запис на місці» в `apps/web/tests` немає станом на
-2026-09-03; `routine-smoke.spec.ts` лише відкладає анонімну міграцію
-(`deferAnonymousMigration`), а `onboarding-happy-path.spec.ts` перевіряє
-воронку, не персистентність після reload.
+**E2E-приймання (§ Definition of done, пункт 3) — зроблено 2026-09-16.**
+[`apps/web/tests/smoke/anonymous-persistence.spec.ts`](../../../apps/web/tests/smoke/anonymous-persistence.spec.ts)
+(`@critical`, смуга `Critical-flow E2E`): порожній `storageState`, доказ
+анонімності — 401 від `GET /api/me` на першому запиті (саме з нього
+`AuthContext` виводить `unauthenticated`, а `useLocalUserId` — `local-anon`),
+далі витрата Фініка → барʼєр тиші лічильника refresh-ів
+(`waitForSqliteRefreshAfter`) → барʼєр сервіс-воркера
+(`waitForServiceWorkerActivated`) → `page.reload()` → запис у списку. Модуль
+обрано за наявністю детермінованого барʼєра «запис долетів»: лічильник
+`__sergeantSqliteRefreshCounts` публікують лише finyk / fizruk / nutrition,
+Рутина (яку спека міряла наживо) його не має — рестарт після її запису був би
+гонкою. Резолвер анонімного id спільний на всі чотири модулі, тож різниця
+«анонім ↔ акаунт» перевіряється будь-яким із них однаково. До 2026-09-16
+такого тесту не було: `routine-smoke.spec.ts` лише відкладає анонімну
+міграцію (`deferAnonymousMigration`), а `onboarding-happy-path.spec.ts`
+перевіряє воронку, не персистентність після reload.
 
 > Історія репо squash-нута 2026-09-02 (`2308a580f`), тож коміт, що вніс правило
 > в `PresetSheet.tsx`, і PR #419/#420 через історію комітів уже не простежити —
@@ -188,7 +199,9 @@ Checkpoint 008 і детерміновані idempotency keys роблять п�
 
 - Р1–Р3 ухвалені й записані сюди.
 - Анонімний запис переживає reload у всіх чотирьох модулях (тест на кожен).
-- E2E-регресія: створити запис анонімно → reload → запис на місці.
+- E2E-регресія: створити запис анонімно → reload → запис на місці — ✅
+  [`anonymous-persistence.spec.ts`](../../../apps/web/tests/smoke/anonymous-persistence.spec.ts)
+  (2026-09-16, витрата Фініка).
 - Якщо обрано міграцію (Р2а) — окремий тест «анонімно створив → залогінився →
   дані на місці».
 - Прогін під логіном і на чистому rate-limit (у вимірі 2026-07-22 консоль

@@ -9,7 +9,7 @@ describe("mapApiErrorToUserCopy", () => {
         message: "Invalid password",
         status: 400,
       }),
-    ).toBe("Невірний поточний пароль.");
+    ).toBe("Неправильний поточний пароль.");
   });
 
   it("мапить USER_ALREADY_EXISTS у людську копію", () => {
@@ -169,14 +169,14 @@ describe("mapApiErrorToUserCopy", () => {
 
   it("мапить INVALID_EMAIL у людську копію", () => {
     expect(mapApiErrorToUserCopy({ code: "INVALID_EMAIL", status: 400 })).toBe(
-      "Невірний формат email.",
+      "Неправильний формат email.",
     );
   });
 
   it("мапить INVALID_EMAIL_OR_PASSWORD у людську копію", () => {
     expect(
       mapApiErrorToUserCopy({ code: "INVALID_EMAIL_OR_PASSWORD", status: 400 }),
-    ).toBe("Невірний email або пароль.");
+    ).toBe("Неправильний email або пароль.");
   });
 
   it("мапить PASSWORD_TOO_SHORT у людську копію", () => {

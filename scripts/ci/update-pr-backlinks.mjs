@@ -69,13 +69,37 @@ const RE_BLOCK_END = /^[ \t]*<!-- AUTO-GENERATED: PR-BACKLINKS-END -->[ \t]*$/m;
 // блок у свіжому ADR-0094 вів на `Skords-01/Sergeant/pull/1134` — сторінку,
 // якої немає. Автоматика цього не показала б, бо вона не відкриває PR-и з
 // 2026-08-28 (див. § Backfill у правилі 26).
+//
+// 2026-09-17: репо переїхало втретє (`zaebal-beep/Sergeant`), і зашитий
+// «поточний» слуг знову дав мертві лінки — цього разу на 22 дозаповнені
+// записи. Тому база тепер береться з самого поля `repo` (яке репо записано,
+// на те й лінк), а зашитим лишається лише легасі-фолбек для записів без поля.
 const LEGACY_PR_BASE = "https://github.com/Skords-01/Sergeant/pull";
-const CURRENT_PR_BASE = "https://github.com/SkOrDs-02/sergeant/pull";
-const CURRENT_REPO = "SkOrDs-02/sergeant";
 
-/** База для конкретного запису: явне поле `repo` → нове репо, інакше легасі. */
+/**
+ * Слуг поточного репо для НОВИХ записів: у GitHub Actions — `GITHUB_REPOSITORY`,
+ * локально — з `origin`. Не зашивається, бо репо вже тричі змінювало дім.
+ */
+export function currentRepoSlug(env = process.env) {
+  const fromEnv = env.GITHUB_REPOSITORY;
+  if (typeof fromEnv === "string" && fromEnv.includes("/")) return fromEnv;
+  try {
+    const url = execFileSync("git", ["remote", "get-url", "origin"], {
+      encoding: "utf8",
+    }).trim();
+    const m = /github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/u.exec(url);
+    if (m) return m[1];
+  } catch {
+    // немає origin — лишаємо undefined, рендер візьме легасі-базу
+  }
+  return undefined;
+}
+
+/** База для конкретного запису: явне поле `repo` → його слуг, інакше легасі. */
 function prBaseFor(pr) {
-  return pr.repo === CURRENT_REPO ? CURRENT_PR_BASE : LEGACY_PR_BASE;
+  return typeof pr.repo === "string" && pr.repo.includes("/")
+    ? `https://github.com/${pr.repo}/pull`
+    : LEGACY_PR_BASE;
 }
 
 // ── Canonical doc whitelist ─────────────────────────────────────────────────
@@ -85,7 +109,7 @@ function prBaseFor(pr) {
  * is { rootDir, recursive, excludes? }. Files matching `excludes`
  * (filename match against basename) are skipped.
  */
-const CANONICAL_DOC_ROOTS = [
+export const CANONICAL_DOC_ROOTS = [
   {
     rootDir: "docs/governance/adr",
     recursive: false,
@@ -104,6 +128,15 @@ const CANONICAL_DOC_ROOTS = [
   },
   {
     rootDir: "docs/governance/governance/rules",
+    recursive: false,
+    excludes: ["README.md"],
+  },
+  // Додано 2026-09-15. Первісне рішення виключало аудити як «snapshot-natured»;
+  // практика його спростувала — реєстр наскрізного огляду правився шість разів
+  // за день, і чотири рази розходився з кодом. Розбір — у тілі правила
+  // `docs/governance/governance/rules/26-pr-ledger-update-on-merge.md`.
+  {
+    rootDir: "docs/work/specs/audits",
     recursive: false,
     excludes: ["README.md"],
   },
@@ -429,7 +462,7 @@ function fetchPRMetadata(prNumber) {
     // `gh pr view` ходить у поточне репо, тож усе, що збирає ця функція,
     // походить звідти. Без цього поля рендер узяв би легасі-базу і виписав
     // посилання на неіснуючу сторінку.
-    repo: CURRENT_REPO,
+    repo: currentRepoSlug(),
     touchedDocs,
   };
 }

@@ -6,14 +6,9 @@ const bootMock = vi.fn();
 const emitMock = vi.fn();
 let authUser: { id: string } | null = null;
 let authStatus = "unauthenticated";
-let demoActive = false;
 
 vi.mock("../../../core/auth/AuthContext", () => ({
   useAuth: () => ({ user: authUser, status: authStatus }),
-}));
-vi.mock("../../../core/onboarding/onboardingGate", () => ({
-  DEMO_LOCAL_USER_ID: "demo-local-user",
-  isDemoActive: () => demoActive,
 }));
 vi.mock("../lib/sqliteReadBoot", () => ({
   bootSqliteReadPath: (...args: unknown[]) => bootMock(...args),
@@ -29,7 +24,6 @@ describe("useSqliteReadBoot", () => {
     vi.clearAllMocks();
     authUser = null;
     authStatus = "unauthenticated";
-    demoActive = false;
     bootMock.mockResolvedValue(false);
   });
 
@@ -37,7 +31,6 @@ describe("useSqliteReadBoot", () => {
     cleanup();
     authUser = null;
     authStatus = "unauthenticated";
-    demoActive = false;
   });
 
   it("boots under the anonymous id when nobody is signed in", async () => {
@@ -75,17 +68,6 @@ describe("useSqliteReadBoot", () => {
       expect(emitMock).toHaveBeenCalledTimes(1);
     });
     expect(bootMock).toHaveBeenCalledTimes(1);
-  });
-
-  it("uses the synthetic demo user id when demo mode is active", async () => {
-    demoActive = true;
-    bootMock.mockResolvedValue(true);
-
-    renderHook(() => useSqliteReadBoot());
-
-    await waitFor(() => {
-      expect(bootMock).toHaveBeenCalledWith("demo-local-user");
-    });
   });
 
   it("does not emit storage when SQLite read boot does not activate", async () => {

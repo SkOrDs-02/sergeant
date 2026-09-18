@@ -4,6 +4,12 @@ export type NavChordTarget =
   "hub" | "finyk" | "fizruk" | "routine" | "nutrition";
 
 interface HubKeyboardShortcutsOptions {
+  /**
+   * Cmd/Ctrl+K. Єдиний власник клавіші (рішення власника 2026-09-16):
+   * `RootLayout` сам вирішує, що відкрити — пошук хаба або, з увімкненим
+   * `hub_command_palette`, палітру команд. Другого слухача на `Cmd+K` у
+   * застосунку більше немає.
+   */
   onOpenSearch: () => void;
   onOpenShortcuts: () => void;
   /** Cmd/Ctrl+/ — open AI assistant drawer */
@@ -13,6 +19,19 @@ interface HubKeyboardShortcutsOptions {
    * H=hub, F=finyk, Z=fizruk, R=routine, N=nutrition
    */
   onNavigate?: (target: NavChordTarget) => void;
+  /**
+   * `N` без модифікатора — «створити» в поточному контексті: первинна дія
+   * модуля (`MODULE_PRIMARY_ACTION`) або швидке додавання на хабі. Не
+   * спрацьовує з полів вводу і як друга клавіша `G`-акорду (`G N` —
+   * Nutrition).
+   */
+  onCreate?: () => void;
+  /**
+   * Cmd/Ctrl+Z поза полями вводу. Повертає `true`, якщо було що скасувати
+   * (тоді браузерний default гаситься), інакше `false` — і клавіша йде
+   * далі як звичайний undo браузера. `Cmd+Shift+Z` (redo) сюди не йде.
+   */
+  onUndo?: () => boolean;
 }
 
 /** Map the second key of a G-chord to a navigation target. */
@@ -53,6 +72,8 @@ export function useHubKeyboardShortcuts({
   onOpenShortcuts,
   onOpenAssistant,
   onNavigate,
+  onCreate,
+  onUndo,
 }: HubKeyboardShortcutsOptions) {
   // Track whether we are in the G-chord first-key window.
   const gPendingRef = useRef(false);
@@ -120,10 +141,33 @@ export function useHubKeyboardShortcuts({
         return;
       }
 
+      // Cmd/Ctrl+Z — скасувати останню дію з вікном undo (тост «Повернути»).
+      // Поза полями вводу браузеру скасовувати нічого, тож default гаситься
+      // лише коли ми справді щось скасували. Shift = redo, не наше.
+      if (mod && !event.shiftKey && event.key.toLowerCase() === "z") {
+        if (onUndo?.()) {
+          event.preventDefault();
+        }
+        return;
+      }
+
       // ? — open shortcuts modal
       if (!mod && event.key === "?") {
         event.preventDefault();
         onOpenShortcuts();
+        return;
+      }
+
+      // N — «створити» в поточному контексті. Без `altKey`: на macOS
+      // Option+N дає мертву клавішу для тильди, її не перехоплюємо.
+      if (
+        !mod &&
+        !event.altKey &&
+        event.key.toLowerCase() === "n" &&
+        onCreate
+      ) {
+        event.preventDefault();
+        onCreate();
         return;
       }
 
@@ -139,5 +183,12 @@ export function useHubKeyboardShortcuts({
       window.removeEventListener("keydown", handler);
       clearGPending();
     };
-  }, [onOpenSearch, onOpenShortcuts, onOpenAssistant, onNavigate]);
+  }, [
+    onOpenSearch,
+    onOpenShortcuts,
+    onOpenAssistant,
+    onNavigate,
+    onCreate,
+    onUndo,
+  ]);
 }

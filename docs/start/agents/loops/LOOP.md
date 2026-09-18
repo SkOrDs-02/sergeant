@@ -2,13 +2,13 @@
 
 # Loop Manifest — Autonomous Agent Workflows
 
-> **Last touched:** 2026-07-01 by @claude (per-run brakes: max_turns/max_budget_usd/circuit_breaker/heartbeat). **Next review:** 2026-10-24.
+> **Last touched:** 2026-09-17 by @claude (прибрано лічильник скілів; статуси loops і 4 QA-поверхні узгоджено з таблицею). **Next review:** 2026-12-16.
 > **Status:** Active
 > **Source of truth:** [`registry.yaml`](./registry.yaml) (machine-readable, 10 loops)
 
-Цей документ описує автономні agent loops, що працюють у Sergeant. На відміну від [`agent-skills-catalog.md`](../agent-skills-catalog.md), який каталогізує **всі** skills (23 шт, з ручним trigger), цей manifest обмежений **loops, що можуть запускатись без human-in-the-loop trigger** (scheduled, per-PR, per-batch, per-decision).
+Цей документ описує автономні agent loops, що працюють у Sergeant. На відміну від [`agent-skills-catalog.md`](../agent-skills-catalog.md), який каталогізує **всі** skills (з ручним trigger; актуальний перелік — `ls .agents/skills`), цей manifest обмежений **loops, що можуть запускатись без human-in-the-loop trigger** (scheduled, per-PR, per-batch, per-decision).
 
-Loops існують у режимі **L1 report-only → L2 assisted fixes → L3 unattended** (phased rollout per `docs/loop-design-checklist` від loop-engineering convention). Поточний стан: **0 loops unattended, 1 loop active (scheduled task), 2 loops manual (trigger-by-owner), 7 loops designed (не ввімкнено)**.
+Loops існують у режимі **L1 report-only → L2 assisted fixes → L3 unattended** (phased rollout per `docs/loop-design-checklist` від loop-engineering convention). Поточний стан (див. таблицю нижче): **0 loops unattended, 1 loop active (scheduled task), 2 loops manual (trigger-by-owner), 6 loops designed (не ввімкнено), 1 loop blocked-on-infra**.
 
 Taxonomy статусів:
 
@@ -134,7 +134,7 @@ Schema, phased rollout (L1/L2/L3), gates vocabulary і cost fields запози�
 
 ### qa-squad-parallel
 
-- **Goal:** Per-surface test + typecheck across all 3 surfaces before synthesis; full QA fan-out.
+- **Goal:** Per-surface test + typecheck across all 4 surfaces (server, web, mobile, packages) before synthesis; full QA fan-out.
 - **Phases:** discover → fan-out → synthesize → report.
 - **Gates:** cross-surface bug, baseline amendment.
 - **Hard rules:** #18, #19.

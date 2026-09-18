@@ -162,7 +162,7 @@ export function ResetPasswordPage() {
               </p>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="md"
                 className="w-full"
                 onClick={() => navigate("/sign-in", { replace: true })}
@@ -249,7 +249,7 @@ export function ResetPasswordPage() {
 
               <Button
                 type="submit"
-                variant="primary"
+                variant="solid"
                 size="lg"
                 loading={status === "sending"}
                 className="w-full"

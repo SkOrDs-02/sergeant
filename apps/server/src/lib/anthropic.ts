@@ -57,6 +57,16 @@ export interface AnthropicCallOptions {
    * `retry-after` міг розтягнути «20-секундний» виклик на дві хвилини.
    */
   maxTotalMs?: number | undefined;
+  /**
+   * `$ai_trace_id` для PostHog AI Observability (ініціатива 0025, Фаза 2).
+   * Стабільний per-call id, щоб caller міг звʼязати кілька подій в одне
+   * дерево: chat передає round-trip-квиток (`chatRoundTripTicket.ts`) для
+   * tool-ходів, digest/vision — серверний `traceId` з ALS
+   * (`obs/requestContext.ts`, той самий W3C trace, що вже йде в
+   * `X-Trace-Id`). Без нього — `captureAiGeneration` генерує випадковий
+   * per-call UUID (Фаза 1 поведінка).
+   */
+  traceId?: string | undefined;
 }
 
 /**
@@ -152,6 +162,8 @@ export interface AnthropicUsageMeta {
   provider?: AiProvider | undefined;
   latencyMs?: number | null | undefined;
   httpStatus?: number | undefined;
+  /** `$ai_trace_id` — див. `AnthropicCallOptions.traceId` (ініціатива 0025, Фаза 2). */
+  traceId?: string | undefined;
 }
 
 interface RecordOutcomeMeta {
@@ -172,6 +184,7 @@ function recordAiError(
   provider: AiProvider,
   userId: string | undefined,
   httpStatus?: number,
+  traceId?: string,
 ): void {
   captureAiGeneration({
     userId,
@@ -181,6 +194,7 @@ function recordAiError(
     latencyMs: ms,
     isError: true,
     httpStatus,
+    traceId,
   });
 }
 
@@ -371,6 +385,7 @@ function recordUsage(
       latencyMs: meta?.latencyMs,
       httpStatus: meta?.httpStatus,
       promptVersion,
+      traceId: meta?.traceId,
     });
   } catch {
     /* ignore */
@@ -400,6 +415,7 @@ async function anthropicMessagesInner(
     userId,
     allowOpenRouter,
     maxTotalMs: maxTotalMsOpt,
+    traceId,
   }: AnthropicCallOptions,
   model: string,
 ): Promise<AnthropicMessagesResult> {
@@ -438,7 +454,15 @@ async function anthropicMessagesInner(
     if (externalSignal?.aborted) {
       const ms = Number(process.hrtime.bigint() - overallStart) / 1e6;
       recordOutcome("timeout", { model, endpoint, ms });
-      recordAiError(model, endpoint, ms, transport.provider, userId);
+      recordAiError(
+        model,
+        endpoint,
+        ms,
+        transport.provider,
+        userId,
+        undefined,
+        traceId,
+      );
       throw new DOMException("client disconnected", "AbortError");
     }
     // Сон ПЕРЕД тим, як озброїти таймер спроби. Доти таймер стартував
@@ -497,6 +521,7 @@ async function anthropicMessagesInner(
           provider: transport.provider,
           latencyMs: ms,
           httpStatus: response.status,
+          traceId,
         });
       } else {
         recordOutcome(response.status === 429 ? "rate_limited" : "error", {
@@ -511,6 +536,7 @@ async function anthropicMessagesInner(
           transport.provider,
           userId,
           response.status,
+          traceId,
         );
       }
       return { response, data };
@@ -523,7 +549,15 @@ async function anthropicMessagesInner(
           endpoint,
           ms,
         });
-        recordAiError(model, endpoint, ms, transport.provider, userId);
+        recordAiError(
+          model,
+          endpoint,
+          ms,
+          transport.provider,
+          userId,
+          undefined,
+          traceId,
+        );
         throw e;
       }
       continue;
@@ -564,6 +598,7 @@ async function anthropicMessagesStreamInner(
     signal: externalSignal,
     allowOpenRouter,
     userId,
+    traceId,
   }: AnthropicCallOptions,
   model: string,
 ): Promise<AnthropicStreamResult> {
@@ -590,7 +625,15 @@ async function anthropicMessagesStreamInner(
       endpoint,
       ms,
     });
-    recordAiError(model, endpoint, ms, transport.provider, userId);
+    recordAiError(
+      model,
+      endpoint,
+      ms,
+      transport.provider,
+      userId,
+      undefined,
+      traceId,
+    );
     throw e;
   }
 
@@ -609,6 +652,7 @@ async function anthropicMessagesStreamInner(
       transport.provider,
       userId,
       response.status,
+      traceId,
     );
     return {
       response,

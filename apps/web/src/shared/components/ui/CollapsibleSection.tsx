@@ -180,7 +180,7 @@ export function CollapsibleSection({
           type="button"
           onClick={toggle}
           aria-expanded={open}
-          className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-xl -ml-0.5 pl-0.5"
+          className="flex items-center gap-1.5 w-full text-left touch-target pointer-coarse:py-2 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-xl -ml-0.5 pl-0.5"
         >
           <MorphChevron
             open
@@ -202,7 +202,7 @@ export function CollapsibleSection({
             "px-3.5 py-3 rounded-2xl",
             "bg-panel hover:bg-panelHi border border-line shadow-soft",
             "transition-colors active:scale-[0.99]",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
         >
           {/* Гліф без тонованого квадрата (огляд 2026-09-04) — той самий

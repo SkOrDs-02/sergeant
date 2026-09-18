@@ -266,7 +266,7 @@ export const HabitCheckbox = memo(function HabitCheckbox({
       </div>
       {streak != null && streak > 0 && (
         <span className="flex items-center gap-1 text-style-caption font-semibold text-warning-strong dark:text-warning">
-          <Icon name="zap" size={12} />
+          <Icon name="zap" size="xs" />
           {streak}
         </span>
       )}

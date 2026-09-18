@@ -24,7 +24,7 @@ import { Button } from "@shared/components/ui/Button";
 import { messages } from "@shared/i18n/uk";
 
 const FOCUS_RING =
-  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
+  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
 export interface HubNotification {
   /** Stable id for the React key + analytics. */
@@ -126,7 +126,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
                 )}
                 <div className="flex items-center gap-2 mt-2">
                   <Button
-                    variant="secondary"
+                    variant="outline"
                     size="xs"
                     onClick={() => {
                       n.onAction();

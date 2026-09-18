@@ -11,6 +11,8 @@ import {
   STORAGE_KEYS,
   TRACKED_STREAK_MILESTONES,
   claimStreakMilestone,
+  pluralUa,
+  type UaPluralForms,
 } from "@sergeant/shared";
 import { webKVStore } from "@shared/lib/storage/storage";
 import { countRealEntries } from "../../onboarding/firstRealEntry";
@@ -20,6 +22,13 @@ import { MODULE_CONFIGS, type ModuleId } from "./moduleConfigs";
 import { useHubStorageBump } from "../useHubStorageBump";
 
 const PILL_MODULES: ModuleId[] = ["finyk", "routine", "nutrition", "fizruk"];
+
+/** «Вже 1 запис» / «Вже 2 записи» / «Вже 5 записів» — не бінарна форма. */
+const RECORD_FORMS: UaPluralForms = {
+  one: "запис",
+  few: "записи",
+  many: "записів",
+};
 
 // AI-CONTEXT: Pill numbers render as bold text on the cream `bg-panel`
 // surface. The saturated `text-{module}` shades only clear ~2.4–3.1:1
@@ -239,10 +248,7 @@ export function MotivationalFooter() {
 
   if (entryCount === 0) return null;
 
-  const message =
-    entryCount === 1
-      ? "Вже 1 запис, продовжуй!"
-      : `Вже ${entryCount} записів, продовжуй!`;
+  const message = `Вже ${entryCount} ${pluralUa(entryCount, RECORD_FORMS)}, продовжуй!`;
 
   return (
     <p className="text-style-caption text-subtle text-center py-8">{message}</p>
@@ -313,7 +319,7 @@ export function WeeklyDigestFooter({
       </span>
       <Icon
         name="chevron-right"
-        size={14}
+        size="sm"
         strokeWidth={2.5}
         className="text-muted shrink-0"
       />

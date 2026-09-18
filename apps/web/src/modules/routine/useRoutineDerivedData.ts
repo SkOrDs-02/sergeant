@@ -47,6 +47,7 @@ import type {
 import type { HubCalendarEvent, RoutineState } from "./lib/types";
 import type { TimeState } from "./useRoutineTimeState";
 import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
 
 export interface UseRoutineDerivedDataParams {
   routine: RoutineState;
@@ -173,14 +174,7 @@ export function useRoutineDerivedData({
 
   const dayCounts = useMemo(() => countEventsByDate(events), [events]);
 
-  const monthTitle = new Date(
-    monthCursor.y,
-    monthCursor.m,
-    1,
-  ).toLocaleDateString("uk-UA", {
-    month: "long",
-    year: "numeric",
-  });
+  const monthTitle = formatMonthYear(new Date(monthCursor.y, monthCursor.m, 1));
 
   const { cells } = monthGrid(monthCursor.y, monthCursor.m);
 

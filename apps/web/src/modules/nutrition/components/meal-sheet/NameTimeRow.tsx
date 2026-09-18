@@ -6,6 +6,7 @@ import { useCallback, useState } from "react";
 import type { Dispatch, SetStateAction } from "react";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Input } from "@shared/components/ui/Input";
+import { TimeField } from "@shared/components/ui/TimeField";
 import { VoiceMicButton } from "@shared/components/ui/VoiceMicButton";
 import { parseMealSpeech } from "@sergeant/shared";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
@@ -65,7 +66,10 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
       <div
         className={
           timeVisible
-            ? "grid grid-cols-[1fr_auto] gap-3"
+            ? // Обидва треки явні: `1fr` без `minmax(0,…)` має floor
+              // min-content, а `auto` під поле часу брав ширину з контента —
+              // рівно два канали, якими нативний контрол розпирає рядок.
+              "grid grid-cols-[minmax(0,1fr)_7rem] gap-3"
             : "grid grid-cols-1 gap-3"
         }
       >
@@ -104,12 +108,17 @@ export function NameTimeRow({ form, field, setForm }: NameTimeRowProps) {
             >
               Час
             </SectionHeading>
-            <Input
-              type="time"
+            {/* Спільний примітив, а не `Input type="time"` з фіксованим
+                `w-[100px]`: фіксована ширина задає БАЖАНУ, не мінімальну, і
+                нативний контрол зі своїм intrinsic inline-size все одно
+                розпирав `auto`-трек грида. `TimeField` форсує
+                `inline-size: 100%` від треку, а трек тепер заданий явно
+                (див. `grid-cols` вище) і внеску контента не має взагалі.
+                Рецепт: docs/start/instructions/fix-mobile-horizontal-overflow.md */}
+            <TimeField
               value={form.time}
               onChange={(e) => field("time")(e.target.value)}
               aria-label="Час"
-              className="w-[100px]"
             />
           </div>
         )}

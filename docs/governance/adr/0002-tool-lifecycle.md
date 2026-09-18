@@ -3,7 +3,6 @@
 - **Status:** Accepted
 - **Date:** 2026-04-27
 - **Last validated:** 2026-07-25 by @claude. **Next review:** 2026-10-23.
-  > **Status:** Active
 - **Reviewers:** @Skords-01
 - **Supersedes:** —
 - **Related:**
@@ -555,3 +554,14 @@ opt-in коментарі в `toolDefs/query{Finyk,Fizruk,Routine,Nutrition}.ts`
 2. **Cross-tool dependency.** Наприклад, `start_workout` залежить від `get_active_workout_session`. **Рішення зараз:** описувати у `motivation`-секції issue (фаза 1 ADR-2.2) як free-form text. Explicit `depends_on`-поле у tool-spec додамо, як тільки буде >5 живих випадків у реєстрі (зараз — 0). Ревалідуємо при кожному KPI-review.
 3. **A/B testing нового tool.** **Рішення зараз:** використовуємо existing feature-flag систему (плейбук [`add-feature-flag.md`](../../start/instructions/add-feature-flag.md)) + `userId %% N`-cohort split у SYSTEM_PREFIX. Перший A/B-tested tool — у PR-12.F (ще не відкритий). Для більш складних cohort-flow (вік, geo) — ADR-0018 (бек-лог в README).
 4. **Output cap реалізація.** Safety checklist в ADR-2.3 вимагає `output ≤ 8000 chars`. Реалізація вже є: в `apps/server/src/modules/chat/tools.ts` ToolResult schema truncate-ить овер-cap output і пише metric `chat_tool_result_truncated_total{tool}`. Нові tool-и наслідують автоматично.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                              | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------- | ---------- |
+| [#61](https://github.com/zaebal-beep/sergeant/pull/61) | docs(docs): governance — прибрати застаріле з ADR-індексу, governance/ і security/ | 2026-09-16 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

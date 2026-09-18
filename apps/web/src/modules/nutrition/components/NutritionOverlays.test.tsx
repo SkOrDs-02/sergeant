@@ -172,6 +172,8 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     restoreConfirm: null,
     setRestoreConfirm: vi.fn(),
     applyRestorePayload: vi.fn(),
+    // Аркуш прийому (`MealTypeSheet`) робить undo після видалення свайпом.
+    toast: { show: vi.fn(), dismiss: vi.fn() } as never,
     ...overrides,
   };
 }

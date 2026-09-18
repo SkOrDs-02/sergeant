@@ -73,7 +73,7 @@ export function OutcomeCard({
         </div>
         <Button
           type="button"
-          variant="primary"
+          variant="solid"
           size="sm"
           onClick={() => onOpenModule(preferred.id)}
         >

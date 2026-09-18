@@ -118,13 +118,25 @@ async function applyActive(
  * Read-then-write (не одна CASE-UPDATE) навмисно: звірка сама read-only й
  * ідемпотентна (не рухає гроші), тож гонки тут нема — а два прогони з
  * ідентичним DB-станом дають ідентичний результат.
+ *
+ * Кілька plata-рядків у одного юзера — норма: скасовані нікуди не діваються
+ * (частковий унікальний індекс `subscriptions_user_active_idx` стереже лише
+ * активний набір). Тому і SELECT, і обидва UPDATE фільтрують саме той рядок,
+ * що зараз тримає ентайтлмент. Без фільтра дунінг бив по ВСІХ рядках юзера і
+ * давав одне з двох: або воскрешав скасований рядок у `past_due` (для
+ * `getUserPlan` = активний доступ), або штовхав два рядки одночасно в
+ * частковий унікальний індекс → 23505, який `reconcileSubscription` ковтає
+ * своїм catch — і дунінг тихо не застосовувався взагалі.
  */
 async function applyPastDue(pool: Pool, userId: string): Promise<void> {
   const { rows } = await pool.query<{
     current_period_end: Date | string | null;
   }>(
     `SELECT current_period_end FROM subscriptions
-      WHERE user_id = $1 AND provider = 'plata'`,
+      WHERE user_id = $1 AND provider = 'plata'
+        AND status IN ('active', 'trialing', 'past_due')
+      ORDER BY updated_at DESC
+      LIMIT 1`,
     [userId],
   );
   const currentPeriodEnd = rows[0]?.current_period_end
@@ -136,7 +148,8 @@ async function applyPastDue(pool: Pool, userId: string): Promise<void> {
     await pool.query(
       `UPDATE subscriptions
           SET status = 'past_due', updated_at = NOW()
-        WHERE user_id = $1 AND provider = 'plata'`,
+        WHERE user_id = $1 AND provider = 'plata'
+          AND status IN ('active', 'trialing', 'past_due')`,
       [userId],
     );
   } else {
@@ -144,7 +157,8 @@ async function applyPastDue(pool: Pool, userId: string): Promise<void> {
     await pool.query(
       `UPDATE subscriptions
           SET status = 'past_due', current_period_end = $2, updated_at = NOW()
-        WHERE user_id = $1 AND provider = 'plata'`,
+        WHERE user_id = $1 AND provider = 'plata'
+          AND status IN ('active', 'trialing', 'past_due')`,
       [userId, graceUntil],
     );
   }

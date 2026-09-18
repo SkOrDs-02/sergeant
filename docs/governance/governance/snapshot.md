@@ -1,7 +1,7 @@
 # Dynamic Snapshot — Governance
 
 > **Status:** Active
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-03.
+> **Last touched:** 2026-09-17 by @claude (removed machine-specific `D:\Sergeant` index path). **Next review:** 2026-12-16.
 > **Owner:** @SkOrDs-02
 > **Supersedes:** —
 > **Related:** [ADR-0071](../adr/0071-dynamic-agent-snapshot.md) — rationale and design; [tools/agent-snapshot/README.md](../../../tools/agent-snapshot/README.md) — usage; §0.1 in [`.agents/skills/sergeant-start-here/SKILL.md`](../../../.agents/skills/sergeant-start-here/SKILL.md) — required entry point.
@@ -37,7 +37,8 @@ _signal_, not to gate.
 
 ## Interaction with codebase-memory-mcp
 
-`codebase-memory-mcp` (the structural knowledge graph indexed from `D:\Sergeant`)
+`codebase-memory-mcp` (the structural knowledge graph indexed from the local
+checkout — its path is harness/machine config, not part of this doc)
 answers **structural** questions:
 
 - "Where is `useFinykCache` defined and who calls it?"

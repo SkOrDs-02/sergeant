@@ -41,6 +41,7 @@ import { isApiError, type AiMemoryListItem } from "@sergeant/api-client";
 // портальний `ConfirmDialog` — причина в `FinykWebhookServiceSection.tsx`.
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
+import { KYIV_TIME_ZONE, formatDayMonth } from "@shared/lib/time/formatDate";
 
 const m = messages.privacy.aiMemory;
 
@@ -119,11 +120,7 @@ function formatDay(iso: string): string {
   // Europe/Kyiv — доменний інваріант: дата факту має читатись у часовому
   // поясі юзера, а не у UTC, інакше вечірні записи «переїжджають» на
   // наступний день.
-  return new Intl.DateTimeFormat("uk-UA", {
-    day: "numeric",
-    month: "long",
-    timeZone: "Europe/Kyiv",
-  }).format(new Date(iso));
+  return formatDayMonth(new Date(iso), { timeZone: KYIV_TIME_ZONE });
 }
 
 interface MemoryGroup {
@@ -191,7 +188,7 @@ function MemoryFact({
             className={cn(
               "mt-1 text-style-caption text-brand-strong",
               "hover:text-brand-600 transition-colors",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 rounded-lg",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-lg",
             )}
           >
             {expanded ? m.collapseFact : m.expandFact}
@@ -212,7 +209,7 @@ function MemoryFact({
         className="text-danger-strong hover:text-danger"
         onClick={() => onDelete(item)}
       >
-        <Icon name="close" size={14} aria-hidden />
+        <Icon name="close" size="sm" aria-hidden />
       </Button>
     </li>
   );
@@ -293,7 +290,7 @@ function MemoryGroupSection({
         className={cn(
           "w-full flex items-center justify-between gap-2 px-3 py-2 rounded-xl touch-target",
           "border border-line bg-panel hover:bg-panelHi transition-colors",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
         )}
       >
         <span className="flex items-center gap-2 text-style-label font-semibold text-text">

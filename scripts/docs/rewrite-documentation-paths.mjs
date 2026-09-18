@@ -90,16 +90,24 @@ for (const file of files) {
         urls.push(url);
         return token;
       });
-      for (const [from, to] of prefixes) {
-        if (from.startsWith("docs/")) {
-          next = next.replaceAll(from, to);
-          continue;
+      // Правила залежать одне від одного (`docs/01-product/model/x.md` →
+      // `docs/product/model/x.md` → `docs/product/modules/x.md`), тож один
+      // прохід по списку може лишити шлях у проміжному стані. Крутимо до
+      // нерухомої точки, щоб `--check` не був зеленим лише з другого запуску.
+      for (let pass = 0; pass < 5; pass += 1) {
+        const before = next;
+        for (const [from, to] of prefixes) {
+          if (from.startsWith("docs/")) {
+            next = next.replaceAll(from, to);
+            continue;
+          }
+          const escaped = from.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
+          next = next.replace(
+            new RegExp(`(^|/)${escaped}(?=/)`, "gu"),
+            `$1${to}`,
+          );
         }
-        const escaped = from.replace(/[.*+?^${}()|[\]\\]/gu, "\\$&");
-        next = next.replace(
-          new RegExp(`(^|/)${escaped}(?=/)`, "gu"),
-          `$1${to}`,
-        );
+        if (next === before) break;
       }
       return next.replace(
         /__DOC_PATH_URL_(\d+)__/gu,

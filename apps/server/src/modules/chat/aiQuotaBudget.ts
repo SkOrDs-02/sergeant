@@ -24,7 +24,7 @@ import type { ChatPreset } from "@sergeant/shared";
 // новий користувач упирався в paywall посеред онбордингу, з половиною
 // незбережених фактів.
 //
-// AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`,
+// AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`,
 // 2026-09-01) закрило подвійне списання: другий запит того самого ходу
 // проходить за round-trip-квитком (`chatRoundTripTicket.ts`) і не списує
 // нового квитка з ЖОДНОГО відра — ні денного, ні preset-ного. Ліміти нижче

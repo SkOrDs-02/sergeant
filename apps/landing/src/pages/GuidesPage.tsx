@@ -3,71 +3,84 @@ import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 
 /**
  * Реєстр гайдів. Один запис – один файл сторінки; нові гайди додаються
- * сюди і в роутер App.tsx.
+ * сюди і в роутер App.tsx. Назва картки береться з `routeMeta.title`: до
+ * 2026-09-15 каталог тримав власні формулювання, і той самий гайд мав три
+ * імені в трьох місцях (мета, каталог, llms.txt).
  */
-const GUIDES = [
+const GUIDES: {
+  href: keyof typeof ROUTE_META;
+  module: { href: string; label: string };
+  teaser: string;
+}[] = [
   {
     href: "/guides/bank-bezpeka",
     module: { href: "/data", label: "Твої дані" },
-    title:
-      "Чи безпечно давати застосунку доступ до банку: що перевірити перед підключенням",
     teaser:
       "Сім питань, які варто поставити будь-якому фінансовому сервісу до того, як дати йому доступ. Відповідь Sergeant стоїть одразу під кожним.",
   },
   {
     href: "/guides/foto-kalorii",
     module: { href: "/yizha", label: "Їжа" },
-    title: "Чи можна порахувати калорії страви з фото – і наскільки це точно",
     teaser:
       "Що фото справді впізнає, а де починає вгадувати, і як Sergeant закриває сліпі місця уточнюючими питаннями. Плюс ієрархія точності від штрихкоду до ока.",
   },
   {
     href: "/guides/cheky",
     module: { href: "/hroshi", label: "Гроші" },
-    title:
-      "Як перетворити паперовий чек на облік витрат, коли QR не сканується",
     teaser:
       "Чому QR-код на фіскальному чеку зараз веде в нікуди, що чек знає понад банківську виписку і як його сфотографувати з першого разу.",
   },
   {
     href: "/guides/kbzhv",
     module: { href: "/yizha", label: "Їжа" },
-    title: "Як рахувати КБЖВ, коли в базі немає українських продуктів",
     teaser:
-      "Штрихкод, українська база і рецепти замість щоденного перебирання інгредієнтів. Плюс чесна відповідь, скільки похибки можна собі дозволити.",
+      "Штрихкод, українська база і рецепти замість щоденного перебирання інгредієнтів. Плюс скільки похибки можна собі дозволити.",
   },
   {
     href: "/guides/pauza-i-propusk",
     module: { href: "/zvychky", label: "Звички" },
-    title: "Як заявити паузу і пояснити пропуск, щоб серія не обнулилась",
     teaser:
       "Три різні механізми мʼякості: пауза датами, причина пропуску і заморозка, яку серія заробляє сама. Кроки для кожного.",
   },
   {
     href: "/guides/ohlyad-dnya",
     module: { href: "/zvychky", label: "Звички" },
-    title: "Як бачити тренування і планові платежі поруч зі звичками",
     teaser:
       "Календар Рутини показує не лише звички. Що саме туди підтягується з інших модулів і де межі цього перегляду.",
   },
   {
+    href: "/guides/zamist-chotyryokh-trekeriv",
+    module: { href: "/zvyazky", label: "Звʼязки" },
+    teaser:
+      "Що саме він замінює, що переноситься зі старих застосунків (виписки і Strong), що ні (Apple Health, чужі звички та їжа), і коли окремі трекери будуть кращими.",
+  },
+  {
     href: "/guides/tyzhnevyi-pidsumok",
     module: { href: "/zvyazky", label: "Звʼязки" },
-    title: "Коли приходить тижневий підсумок і як отримати його раніше",
     teaser:
       "Збирається автоматично в понеділок за тиждень, що завершився. Тому у вівторок «цього тижня» там ще немає.",
   },
   {
     href: "/guides/kilka-bankiv",
     module: { href: "/hroshi", label: "Гроші" },
-    title: "Як звести витрати докупи, якщо карти в кількох банках",
     teaser:
       "Автосинк є лише з Monobank. Решта карт заводиться випискою файлом раз на місяць, і все опиняється в одній стрічці.",
   },
   {
+    href: "/guides/pryvat24",
+    module: { href: "/hroshi", label: "Гроші" },
+    teaser:
+      "Прямого підключення до Привату поки немає. Виписка файлом Excel або CSV, підказка категорії з колонки банку і перевірка дублів до збереження.",
+  },
+  {
+    href: "/guides/silpo",
+    module: { href: "/hroshi", label: "Гроші" },
+    teaser:
+      "Звʼязаний акаунт приносить чеки по позиціях. Одна сума ділиться за реальними категоріями, а продукти йдуть у комору Харчування.",
+  },
+  {
     href: "/guides/monobank",
     module: { href: "/hroshi", label: "Гроші" },
-    title: "Як підʼєднати Monobank до трекера витрат – і що він реально бачить",
     teaser:
       "Персональний токен за хвилину, таблиця «бачить / не може» і як усе відкликати одним кліком.",
   },
@@ -101,7 +114,7 @@ export default function GuidesPage() {
       itemListElement: GUIDES.map((guide, index) => ({
         "@type": "ListItem",
         position: index + 1,
-        name: guide.title,
+        name: ROUTE_META[guide.href].title,
         url: guide.href,
       })),
     },
@@ -138,7 +151,7 @@ export default function GuidesPage() {
                   className="group block border-t border-cardline py-6 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
                 >
                   <h3 className="max-w-2xl text-xl font-bold leading-snug text-balance text-foreground-strong group-hover:underline sm:text-2xl">
-                    {guide.title}
+                    {ROUTE_META[guide.href].title}
                   </h3>
                   <p className="mt-2 max-w-2xl text-sm leading-relaxed text-muted">
                     {guide.teaser}

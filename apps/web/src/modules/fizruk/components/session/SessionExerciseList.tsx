@@ -116,12 +116,14 @@ export function SessionExerciseList({
         {!isReadOnly && (
           <div className="mt-4">
             <Button
-              module="fizruk"
+              variant="solid"
+              tone="fizruk"
+
               className="h-11 w-full"
               onClick={onAddExercise}
               aria-label={ss.addExerciseAria}
             >
-              <Icon name="plus" size={16} aria-hidden />
+              <Icon name="plus" size="md" aria-hidden />
               {ss.addExercise}
             </Button>
           </div>
@@ -183,7 +185,7 @@ export function SessionExerciseList({
                         : "border-border-strong bg-panel",
                     )}
                   >
-                    {checked ? <Icon name="check" size={14} /> : null}
+                    {checked ? <Icon name="check" size="sm" /> : null}
                   </span>
                 ) : (
                   <span

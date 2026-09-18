@@ -1,6 +1,6 @@
 # Environment variables — повний reference
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2027-04-17.
+> **Last touched:** 2026-09-17 by @claude (§ `LLM_*` узгоджено з `env/aiRoutingEnv.ts` — OpenRouter живий, дефолти `openrouter`; продюсери ai-memory без ingest/mono). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Цей документ — канонічний reference усіх змінних оточення Sergeant. Мінімальний `.env` (12 змінних, потрібних для `pnpm dev:web` + `pnpm dev:server`) лежить у [`/.env.example`](../../../.env.example) у корені репо. Сюди винесено: повний опис, формати, default-и, наслідки незаповненості, перехресні посилання на код / ADR / hardening-ноти.
@@ -156,7 +156,7 @@ Pro-юзери відра не торкаються взагалі (unlimited в
 
 ### `CHAT_MODEL_FIRST_TURN`, `CHAT_MODEL_SYNTHESIS` _(optional)_
 
-Tiered-моделі для `/api/chat` ([`apps/server/src/modules/chat/chat.ts`](../../../apps/server/src/modules/chat/chat.ts)). Chat-шлях прибитий до Anthropic (streaming + tool-use + prompt-caching), тож значення мають лишатись Anthropic-model-id. Винесено в env, щоб ops міг ре-тирити без редеплою (env читається на startup-і → достатньо рестарту сервісу).
+Tiered-моделі для `/api/chat` ([`apps/server/src/modules/chat/chat.ts`](../../../apps/server/src/modules/chat/chat.ts)). Chat-шлях працює на Anthropic-моделях (streaming + tool-use + prompt-caching), тож значення мають лишатись Anthropic-model-id; **транспорт** при цьому — OpenRouter-шлюз за замовчуванням (`CHAT_VIA_OPENROUTER=true` з 2026-08-05, `env/env.ts`; без `OPENROUTER_API_KEY` прапорець не діє) або прямий Anthropic при `false` — див. [`feature-flags.md`](../architecture/feature-flags.md). Винесено в env, щоб ops міг ре-тирити без редеплою (env читається на startup-і → достатньо рестарту сервісу).
 
 - `CHAT_MODEL_FIRST_TURN=claude-haiku-4-5-20251001` (default) — перший тур (швидкий роутер: direct-text або tool_use-пропозиції). Haiku ~4× дешевший за Sonnet ($1 vs $3 /1M input, $5 vs $15 /1M output); якості вистачає, бо тут немає важких звітів.
 - `CHAT_MODEL_SYNTHESIS=claude-sonnet-4-6` (default) — тур синтезу tool-result (фінальні брифінги/підсумки бюджету, stream + non-stream). Sonnet за замовчуванням — тут важлива якість складних markdown-звітів. Найбільший cost-важіль: щоб ще здешевшати, push сюди Haiku.
@@ -167,37 +167,37 @@ Tiered-моделі для `/api/chat` ([`apps/server/src/modules/chat/chat.ts`]
 
 - `anthropic` (default) — `AnthropicProvider`, тонкий wrapper навколо `anthropicMessages()` із PR-12 logic (retry, timeout, prompt-caching, USD-ledger). Якщо `ANTHROPIC_API_KEY` пустий → factory деградує у `stub` (warn-log на startup-і).
 - `stub` — `StubProvider`, no-op повертає `{"ok":true,"stub":true}` JSON. Призначення: e2e-тести без real-Anthropic-калькування, локальний dev без ключа, інцидент-recovery під час Anthropic-outage.
-- `openrouter` — зарезервовано під майбутню імплементацію (OpenRouter fallback). Поки що деградує у `stub`, щоб неочікуваний env не валив app.
+- `openrouter` — **живий** `OpenRouterProvider` (OpenAI-compatible endpoint, `lib/llm/provider.ts`; потребує `OPENROUTER_API_KEY`). Рядок «зарезервовано, деградує у stub» тут був застарілим — знято 2026-09-17.
 
-PR-25 wire-up: `weekly-digest` (через окремий `LLM_DIGEST_PROVIDER` toggle — див. нижче). Інші Anthropic-call-sites (chat, coach, nutrition) поки що працюють напряму через `anthropicMessages()`, як і раніше.
+Per-flow перемикачі (`LLM_READONLY_PROVIDER`, `LLM_DIGEST_PROVIDER`, `LLM_COACH_PROVIDER`, `LLM_NUTRITION_PROVIDER`, `LLM_MONO_PROVIDER`, receipt-analyze) живуть у [`env/aiRoutingEnv.ts`](../../../apps/server/src/env/aiRoutingEnv.ts) і з 2026-08 **дефолтять у `openrouter`**; лише `LLM_PROVIDER` лишається `anthropic`. Повний реєстр тумблерів — [`feature-flags.md`](../architecture/feature-flags.md).
 
-### `LLM_READONLY_PROVIDER` _(optional, default `anthropic`)_
+### `LLM_READONLY_PROVIDER` _(optional, default `openrouter`)_
 
-Окремий provider для read-only flows. Дозволяє перемкнути fallback-режим, **не зачіпаючи** основний `LLM_PROVIDER`, який обслуговує chat/coach/nutrition.
+Окремий provider для read-only flows (internal `routes/internal/categorize.ts`; історично — OpenClaw classify, OpenClaw retired [ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)). Дозволяє перемкнути fallback-режим, **не зачіпаючи** основний `LLM_PROVIDER`, який обслуговує chat/coach/nutrition.
 
 Значення такі самі, як у `LLM_PROVIDER`:
 
-- `anthropic` (default) — повний шлях через `anthropicMessages()`.
+- `openrouter` (default з 2026-08, `aiRoutingEnv.ts`) — через `OpenRouterProvider`.
+- `anthropic` — повний шлях через `anthropicMessages()`.
 - `stub` — повертає plausible default `{"class":"chat"}` без HTTP-callu. Idey для:
   - **Anthropic-outage:** classifier деградує у `chat`-default, чат-flow продовжує працювати окремо (Layer 2 повний agent).
   - **Local-dev без `ANTHROPIC_API_KEY`:** не падає на classify-розі.
   - **E2E-тести:** детермінований, безкоштовний шлях без витрат токенів.
-- `openrouter` — зарезервовано, поки що деградує у stub (PR-26+).
 
 **Спостережуваність (PR-24).** Кожен виклик `LLMProvider.generate()` через обгортку [`invokeLLM()`](../../../apps/server/src/lib/llm/provider.ts) інкрементує Prom-counter `llm_provider_invocations_total{provider,endpoint,outcome}` (outcome: `ok|error|missing_api_key|rate_limited|timeout`) + кладе Sentry breadcrumb `category=llm.provider, level=info|warning` з provider/endpoint/outcome/model. Дашборд `ai-cost` (PR-13) використовує цей counter для розщеплення runtime-distribution між Anthropic vs stub-режимами.
 
-### `LLM_DIGEST_PROVIDER` _(optional, default `anthropic`)_
+### `LLM_DIGEST_PROVIDER` _(optional, default `openrouter`)_
 
-**PR-25** — окремий provider для WF-08 weekly-digest endpoint-у (`POST /api/weekly-digest` у [`apps/server/src/modules/digest/weekly-digest.ts`](../../../apps/server/src/modules/digest/weekly-digest.ts)). Дозволяє перемкнути саме digest у fallback-режим, **не зачіпаючи** ні головний `LLM_PROVIDER` (chat/coach/nutrition), ні `LLM_READONLY_PROVIDER` (OpenClaw classify).
+**PR-25** — окремий provider для weekly-digest endpoint-у (`POST /api/weekly-digest` у [`apps/server/src/modules/digest/weekly-digest.ts`](../../../apps/server/src/modules/digest/weekly-digest.ts); «WF-08» — історична n8n-назва, ADR-0090). Дозволяє перемкнути саме digest у fallback-режим, **не зачіпаючи** ні головний `LLM_PROVIDER` (chat/coach/nutrition), ні `LLM_READONLY_PROVIDER`.
 
 Значення такі самі, як у `LLM_PROVIDER`:
 
-- `anthropic` (default) — повний AI-аналіз через `AnthropicProvider`: модель `claude-sonnet-4-6`, `max_tokens=2500`, JSON-відповідь зі структурованими `summary`/`comment`/`recommendations` на кожну секцію (finyk/fizruk/nutrition/routine) + `overallRecommendations`.
+- `openrouter` (default з 2026-08, `aiRoutingEnv.ts`) — той самий AI-аналіз через `OpenRouterProvider`.
+- `anthropic` — повний AI-аналіз через `AnthropicProvider`: модель `claude-sonnet-4-6`, `max_tokens=2500`, JSON-відповідь зі структурованими `summary`/`comment`/`recommendations` на кожну секцію (finyk/fizruk/nutrition/routine) + `overallRecommendations`.
 - `stub` — повертає **template-based digest** із raw тижневих метрик (числа тижня прямо у `summary` секції) і **порожніми `recommendations`/`overallRecommendations`** — `StubProvider` обслуговує запит без HTTP-call-у до Anthropic. Use-cases:
   - **Anthropic-incident:** founder бачить тижневі числа без AI-коментарів. Краще, ніж 502 на digest-роуті.
   - **Local-dev без `ANTHROPIC_API_KEY`:** endpoint не падає, digest-UI може dev-тестуватися з числами.
   - **E2E-тести:** детермінований template-вихід без витрат токенів.
-- `openrouter` — зарезервовано, поки що деградує у stub (PR-26+).
 
 ### `LLM_DIGEST_FALLBACK_ON_ERROR` _(optional, default `true`)_
 
@@ -291,18 +291,18 @@ Internal semver embedding-схеми. Bumping triggers re-embed. Default: `1`.
 
 ### `AI_MEMORY_INGEST_CONCURRENCY`, `AI_MEMORY_INGEST_ATTEMPTS`, `AI_MEMORY_INGEST_MAX_CONTENT_LEN` _(optional)_
 
-Async-черга `ai-memory-ingest` (BullMQ; Redis-keys під префіксом `sergeant:`). Producer-и: mono webhook (finyk), weekly-digest (digest), `POST /api/ai-memory/ingest` (chat/fizruk/nutrition/routine/journal).
+Async-черга `ai-memory-ingest` (BullMQ; Redis-keys під префіксом `sergeant:`). Producer-и (з 2026-09-03, ініціатива 0024 PR-1/PR-2): weekly-digest (`source=digest`) і profile mirror (`source=profile`, `ai-memory/profileMirror.ts`); mono-webhook (`finyk`) і клієнт-driven `POST /api/ai-memory/ingest` знято.
 
 - `AI_MEMORY_INGEST_CONCURRENCY=4` (default) — Voyage rate-limit ~3 RPS на free tier; тримай ≤ 4 на одну реплику.
 - `AI_MEMORY_INGEST_ATTEMPTS=5` (default) — спроб (BullMQ attempts) на retryable failure (5xx, 429, network). Backoff: 30s → 2min → 8min → 32min → 2h.
 - `AI_MEMORY_INGEST_MAX_CONTENT_LEN=8000` (default) — жорсткий ліміт на content-розмір (чарів). Захист від випадкового embed-у гігабайт-payload-у з мобайл-клієнта.
 
-### `MONO_AI_MEMORY_INGEST_ENABLED` _(optional, default `true`)_
+### `DIGEST_AI_MEMORY_INGEST_ENABLED` _(optional, default `true`)_
 
-Per-source kill-switch для finyk-ingest з Mono webhook-у (PR-19). Subordinate до master `AI_MEMORY_ENABLED` — якщо master `false`, цей прапор ігнорується (всі source-и no-op). Default `true` означає: після активації master-flag-у у Coolify finyk-ingest стартує без додаткового toggle-у.
+Per-source kill-switch для `digest`-ingest із weekly-digest-а (PR-19; перецілено з `finyk` на `digest` ініціативою [0024](../../work/specs/initiatives/0024-ai-memory-source-coverage.md), PR-2 — `finyk` ніколи не мав продюсера, mono-webhook memory-ingest не викликав). Subordinate до master `AI_MEMORY_ENABLED` — якщо master `false`, цей прапор ігнорується (всі source-и no-op). Default `true` означає: після активації master-flag-у у Coolify digest-ingest стартує без додаткового toggle-у.
 
-- `true` (default) — Mono webhook викликає `enqueueMemoryIngest(...)`, що формує BullMQ-job у `ai-memory-ingest`.
-- `false` — Mono-webhook-source повністю обходиться; метрика `ai_memory_ingest_enqueued_total{mode="source_disabled", source="finyk"}` росте замість `mode="queued"`. Інші source-и (`digest`, `chat`, `fizruk`, `nutrition`, `routine`, `journal`) не зачіпаються.
+- `true` (default) — `weekly-digest.ts` викликає `enqueueMemoryIngest(...)`, що формує BullMQ-job у `ai-memory-ingest`.
+- `false` — digest-source повністю обходиться; метрика `ai_memory_ingest_enqueued_total{mode="source_disabled", source="digest"}` росте замість `mode="queued"`. Runtime kill-switch `digest_ai_memory_ingest` (in-memory, авто-flip з RAG-евалу) форсує той самий ефект незалежно від цього env-флага. Інші живі source-и (`profile`; legacy-читані `cofounder`/`product`) не зачіпаються.
 
 Decision-point Day 30 — [`docs/operations/observability/runbook.md § AI memory activation & Day-30 decision-point`](../../operations/observability/runbook.md#ai-memory-activation--day-30-decision-point).
 
@@ -314,7 +314,7 @@ Operator-toggle для n8n WF-30 [`30-ai-memory-daily-digest.json`](https://gith
 
 - Суто n8n-side toggle: server-side digest-hook не існує (PR-21 — n8n-only activation). Дублювальний server-env парсинг «для парності» прибрано 2026-08-06 (0 production-читань) — `apps/server/src/env/env.ts` цю змінну більше не знає.
 - **Activation step:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=true` на n8n Railway env (Settings → Environment Variables), потім flip workflow toggle у self-hosted n8n UI. Без цього кроку workflow JSON залишається `active=false` у git per hard-rule [`validate-n8n-workflows.mjs`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/scripts/n8n/validate-n8n-workflows.mjs) («workflows in git must be inactive by default»).
-- **Pre-requisites:** `AI_MEMORY_ENABLED=true` (master) + `MONO_AI_MEMORY_INGEST_ENABLED=true` (PR-19 ingest) — щоб `ai_memories` наповнювалась. Без цього digest буде слати graceful «За добу нічого не записано» kожен ранок.
+- **Pre-requisites:** `AI_MEMORY_ENABLED=true` (master) + `DIGEST_AI_MEMORY_INGEST_ENABLED=true` (PR-19 ingest) — щоб `ai_memories` наповнювалась. Без цього digest буде слати graceful «За добу нічого не записано» kожен ранок.
 - **Monitoring:** [`docs/operations/observability/runbook.md § WF-30 AI memory daily digest (PR-21)`](../../operations/observability/runbook.md#wf-30-ai-memory-daily-digest-pr-21).
 
 ---
@@ -467,9 +467,11 @@ Base URL бекенд-API (Coolify), який [`apps/web/middleware.ts`](../../.
 
 ### `VITE_CANONICAL_HOSTS` _(optional)_
 
-Кома-розділений список хостів, які вважаються «справжніми» деплоями. Default: `sergeant.vercel.app,beta-tau-gilt.vercel.app,sergeant-landing.vercel.app`.
+Кома-розділений список хостів, які вважаються «справжніми» деплоями. Default: `app.sergeant.com.ua,sergeant.2dmanager.com.ua,sergeant.vercel.app,beta-tau-gilt.vercel.app,sergeant-landing.vercel.app`.
 
 Читає `apps/web/src/core/observability/deployEnvironment.ts` — спільний резолвер `environment` для Sentry і PostHog. Усе, чого немає в списку і що не є localhost, отримує `environment: "preview"`.
+
+**Урок 2026-09-17: fail-safe-напрямок мовчить так само, як справність.** Прод переїхав на `app.sergeant.com.ua`, а дефолтний список лишився на `*.vercel.app` — і **248 із 264 подій веба за 30 днів (94%) приїхали з міткою `preview`**, включно з потоком `SQLITE_IOERR` на 38 користувачів. Фільтр по `production` показував 16 подій і читався як тиша, а не як поломка. Тепер дефолт тримає реальні прод-походження, а розходження з `PROD_ORIGINS` (`apps/server/src/http/cors.ts`) стереже `pnpm lint:canonical-hosts` у ланцюжку `pnpm lint`. **Заводиш новий домен — вноси його в обидва списки в одному PR.**
 
 Навіщо hostname, а не лише `VITE_APP_ENV`: Vercel віддає preview-збіркам env-vars основного деплою, тож гілкові URL успадковують `VITE_APP_ENV=beta` і осідають у прод-проєкті PostHog під виглядом бети. За 30 днів до аудиту 2026-08-16 туди натекли події з шести preview-хостів. Змінну успадкувати можна, канонічний домен — ні, тому вирішує він.
 
@@ -519,6 +521,8 @@ Bearer-токен для `/api/internal/*` у [`internalFetch.ts`](../../../apps
 | `VITE_SENTRY_REPLAY_SAMPLE_RATE` | `0`     | Session Replay sample rate. `0` = вимкнено; `0.1` = 10% сесій.                                                                                             |
 
 > **⚠ DSN задавай окремо на КОЖНОМУ фронт-деплої.** На 2026-08-16 beta-деплой (`beta-tau-gilt.vercel.app`) слав браузерні помилки в проєкт **`sergeant-api`**, а не `sergeant-web`. Симптом легко впізнати: в API-проєкті лежать issue з культпритами на кшталт `/nutrition`, `/fizruk`, `/pricing` і стектрейсами у `assets/vendor-*.js`, а поле `release` змішує два формати — `sergeant@<short-sha>` (сервер) і голі 40-символьні SHA (фронт). Наслідок: одна й та сама помилка живе двома окремими issue в двох проєктах (`SERGEANT-API-M` і `SERGEANT-WEB-R` — той самий wasm-краш), і жодне число «скільки в нас фронт-помилок» не є правдою.
+>
+> **Замір 2026-09-17: попередження не спрацювало, і ось як це виглядало.** Усі **47 браузерних подій у проєкті `sergeant-api`** за 30 днів — з одного хоста `beta-tau-gilt.vercel.app`, з проду не прийшло жодної. Виправити це з репо неможливо: змінна живе у Vercel, а не в чекауті, тож єдиний доступний захист — звірка руками. Чек-лист: Vercel → проєкт бети → Settings → Environment Variables → `VITE_SENTRY_DSN` має бути ключем проєкту **`sergeant-web`**, а `VITE_SENTRY_ENVIRONMENT` — `beta`. Різницю видно відразу: у правильно налаштованому деплої фільтр `project:sergeant-api platform:javascript` повертає порожньо.
 
 ---
 
@@ -708,9 +712,9 @@ Endpoint `/api/internal/alerts/send` приймає `dedupSignature` (stable has
 
 32+ байтовий shared-secret. Згенерувати: `openssl rand -hex 32`. Пустий рядок (default) — middleware no-op, тільки bearer guard. Виставлений → перевіряється `X-Signature` = `hex(HMAC-SHA256(secret, "<X-Timestamp>.<rawBody>"))`. Той самий байтовий вміст має бути виставлений на n8n Railway, інакше Function-node-template падає з `WEBHOOK_HMAC_SECRET is not set`. Ротація — атомарно в обох місцях через [`rotate-secrets.md`](../../start/instructions/rotate-secrets.md) (replay-window 5min робить тимчасовий розфаз нешкідливим).
 
-### `WEBHOOK_HMAC_REQUIRED` _(optional, default `false`)_
+### `WEBHOOK_HMAC_REQUIRED` _(optional, default `true` since 2026-09-16)_
 
-Двофазний rollout. `false` (grace, default) — server warn-логує `webhook_hmac_mismatch` + Sentry breadcrumb на mismatch, але пропускає запит. Дозволяє per-workflow міграцію без cross-cutting cut-over-у. `true` — flip після того, як усі 25 `INTERNAL_API_KEY`-using workflows у `manifest.json` показують `hmacSigned: true`; з цього моменту missing/invalid signature → `401 WEBHOOK_HMAC_INVALID`.
+`true` (default) — missing/invalid signature → `401 WEBHOOK_HMAC_INVALID`. `false` — server warn-логує `webhook_hmac_mismatch` + Sentry breadcrumb на mismatch, але пропускає запит; це був grace-режим поетапної міграції n8n-воркфлоу, а після ADR-0090 — свідомий тимчасовий opt-out на час підключення нового внутрішнього caller-а. **Прапорець безсилий без `WEBHOOK_HMAC_SECRET`:** із порожнім секретом middleware — no-op незалежно від значення. Цю комбінацію видно в логах старту: `assertStartupEnv` пише `WEBHOOK_HMAC_REQUIRED=true but WEBHOOK_HMAC_SECRET is empty`.
 
 ### `WEBHOOK_HMAC_TS_TOLERANCE_SEC` _(optional, default `300`)_
 

@@ -212,10 +212,17 @@ describe("eval-rag-recall.mjs — baseline comparison", () => {
 });
 
 describe("eval-rag-recall.mjs — error handling", () => {
-  it("--mode=live → exit 3 (placeholder для PR-21)", () => {
+  it("--mode=live → exit 3 і каже, КУДИ переїхав живий вимір", () => {
+    // Раніше тут стояла англомовна заглушка «not implemented» (PR-21).
+    // Живий режим відтоді переїхав у TypeScript, і скрипт тепер не просто
+    // відмовляє, а називає заміну. Перевіряємо саме це — код виходу плюс
+    // наявність обох команд-наступників, бо тест без них знову зафіксував
+    // би формулювання замість поведінки.
     const r = runCli(["--mode=live"]);
     assert.equal(r.exitCode, 3);
-    assert.match(r.stderr, /not implemented/i);
+    assert.match(r.stderr, /--mode=live/);
+    assert.match(r.stderr, /test:rag-eval/);
+    assert.match(r.stderr, /rag-eval:live/);
   });
 
   it("invalid --mode → exit 3", () => {

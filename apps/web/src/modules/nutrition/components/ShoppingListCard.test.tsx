@@ -67,6 +67,7 @@ function baseProps(overrides: Record<string, unknown> = {}) {
     onClearChecked: vi.fn(),
     onClearAll: vi.fn(),
     onAddCheckedToPantry: vi.fn(),
+    onAddItem: vi.fn(),
     checkedItems: [],
     ...overrides,
   };
@@ -157,6 +158,46 @@ describe("ShoppingListCard", () => {
   });
 });
 
+describe("ShoppingListCard — manual add", () => {
+  it("is disabled with an empty input and does not call onAddItem", () => {
+    const onAddItem = vi.fn();
+    render(<ShoppingListCard {...baseProps({ onAddItem })} />);
+    const addButton = screen.getByText("Додати");
+    expect(addButton).toBeDisabled();
+    fireEvent.click(addButton);
+    expect(onAddItem).not.toHaveBeenCalled();
+  });
+
+  it("calls onAddItem with the trimmed name and clears the input", () => {
+    const onAddItem = vi.fn();
+    render(<ShoppingListCard {...baseProps({ onAddItem })} />);
+    const input = screen.getByPlaceholderText("напр. хліб");
+    fireEvent.change(input, { target: { value: "  Хліб  " } });
+    fireEvent.click(screen.getByText("Додати"));
+    expect(onAddItem).toHaveBeenCalledWith({ name: "  Хліб  " });
+    expect(input).toHaveValue("");
+  });
+
+  it("adds a manual item on Enter", () => {
+    const onAddItem = vi.fn();
+    render(<ShoppingListCard {...baseProps({ onAddItem })} />);
+    const input = screen.getByPlaceholderText("напр. хліб");
+    fireEvent.change(input, { target: { value: "Молоко" } });
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onAddItem).toHaveBeenCalledWith({ name: "Молоко" });
+  });
+
+  it("does not call onAddItem for a whitespace-only value", () => {
+    const onAddItem = vi.fn();
+    render(<ShoppingListCard {...baseProps({ onAddItem })} />);
+    const input = screen.getByPlaceholderText("напр. хліб");
+    fireEvent.change(input, { target: { value: "   " } });
+    expect(screen.getByText("Додати")).toBeDisabled();
+    fireEvent.keyDown(input, { key: "Enter" });
+    expect(onAddItem).not.toHaveBeenCalled();
+  });
+});
+
 describe("ShoppingListCard — pantry math (рівень 1)", () => {
   it("reduces a partially-covered item's quantity and shows the calcNote", () => {
     render(
@@ -219,5 +260,21 @@ describe("ShoppingListCard — pantry math (рівень 1)", () => {
     expect(
       screen.queryByText("700 г − 400 г у коморі"),
     ).not.toBeInTheDocument();
+  });
+
+  it("озвучує стан «куплено» через aria-pressed, а не лише візуально", () => {
+    // Регресія WF-17 (аудит 2026-09-16): коло-індикатор має `aria-hidden`,
+    // а `opacity-50`/`line-through` скрінрідер не читає — куплений і
+    // некуплений пункт звучали ідентично.
+    render(
+      <ShoppingListCard
+        {...baseProps({
+          shoppingList: listWithItems,
+          checkedItems: [{ id: "i2", name: "Сир", checked: true }],
+        })}
+      />,
+    );
+    const row = screen.getByText("Молоко").closest("button")!;
+    expect(row).toHaveAttribute("aria-pressed", "false");
   });
 });

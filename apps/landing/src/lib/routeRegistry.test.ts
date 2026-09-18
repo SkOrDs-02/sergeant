@@ -61,6 +61,27 @@ describe("реєстри маршрутів", () => {
     expect([...listed].filter((route) => !(route in ROUTE_META))).toEqual([]);
   });
 
+  it("текст посилання кожного гайда в llms.txt дорівнює його title", () => {
+    // Три імені одного гайда (мета, каталог, llms.txt) – знахідка ради
+    // 2026-09-15. Каталог тепер читає title з routeMeta; llms.txt рукописний,
+    // тож рівність тримає цей тест.
+    const llms = readFileSync(path.join(PUBLIC_DIR, "llms.txt"), "utf8");
+    const mismatched = indexedRoutes
+      .filter(([route]) => route.startsWith("/guides/"))
+      .flatMap(([route, meta]) => {
+        const match = llms.match(
+          new RegExp(
+            String.raw`\[([^\]]+)\]\(https://sergeant\.com\.ua${route}\)`,
+          ),
+        );
+        const text = match?.[1];
+        return text === meta.title
+          ? []
+          : [`${route}: «${text}» ≠ «${meta.title}»`];
+      });
+    expect(mismatched).toEqual([]);
+  });
+
   it("title і description кожного індексованого маршруту в межах видачі", () => {
     // 30–60 і 120–160 символів: коротший title пошуковик замінює власним
     // рядком зі сторінки, довший — ріже. Ті самі межі перевіряє GEO-аудит.

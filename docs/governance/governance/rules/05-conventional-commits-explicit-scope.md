@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-24.
+> **Last touched:** 2026-09-17 by @claude (CI job name: `Commit messages (commitlint)`, not `Workflow lint`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #5. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -13,7 +13,7 @@
 
 ## Enforced by
 
-- **ci** — Workflow lint (commitlint)
+- **ci** — ci.yml job `Commit messages (commitlint)` (`Workflow lint` у тому ж `ci.yml` — це actionlint, інший гейт)
 - **hook** — .husky/commit-msg
 
 ## Why / What is enforced

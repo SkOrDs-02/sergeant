@@ -25,7 +25,7 @@
  * прибрати tombstone означає прибрати й residual-import drain, тобто
  * вирішити, що застарілі localStorage-дані вже нікому не треба
  * підбирати. Це рішення власника про долю legacy-даних бета-тестерів,
- * не рефакторинг — реєстр у `docs/90-work/tech-debt/frontend.md`
+ * не рефакторинг — реєстр у `docs/work/specs/tech-debt/frontend.md`
  * § «Прострочені `@removeBy` 2026-09-01».
  */
 export const STORAGE_KEYS = {
@@ -114,7 +114,7 @@ export const STORAGE_KEYS = {
   // SYNC_OFFLINE_QUEUE ("hub_sync_offline_queue"),
   // SYNC_MIGRATION_DONE ("hub_sync_migrated_users").
   // All were dead since PR #052b (cloudSync v1 engine drop). See
-  // docs/planning/storage-roadmap.md § Stage 13 PR #077.
+  // https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md § Stage 13 PR #077.
   /**
    * Per-install stable device ID forwarded as `X-Origin-Device-Id` on
    * every sync v2 push / pull / stream request. Server uses it for
@@ -347,7 +347,7 @@ export const STORAGE_KEYS = {
   // MOBILE_SYNC_DEAD_LETTER_QUEUE ("mobile:sync_dead_letter_queue"),
   // MOBILE_SYNC_MIGRATION_DONE ("mobile:sync_migrated_users").
   // All were dead since PR #052b (cloudSync v1 engine drop).
-  // See docs/planning/storage-roadmap.md § Stage 13 PR #077.
+  // See https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md § Stage 13 PR #077.
   MOBILE_QUERY_CACHE: "mobile:query_cache_v1",
 
   // ─── Web: React Query persisted cache ────────────────────────────────

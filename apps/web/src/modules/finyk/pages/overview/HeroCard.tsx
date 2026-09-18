@@ -194,7 +194,7 @@ const HeroCardImpl = function HeroCard({
               <button
                 type="button"
                 onClick={onSetPlan}
-                className="mt-3 touch-target inline-flex items-center rounded-xl border border-hero-ink/25 bg-hero-ink/10 px-4 text-style-label font-semibold text-hero-ink transition-colors hover:bg-hero-ink/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+                className="mt-3 touch-target inline-flex items-center rounded-xl border border-hero-ink/25 bg-hero-ink/10 px-4 text-style-label font-semibold text-hero-ink transition-colors hover:bg-hero-ink/15 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               >
                 Задати план
               </button>

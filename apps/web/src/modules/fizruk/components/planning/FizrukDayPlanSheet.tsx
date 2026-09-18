@@ -95,8 +95,8 @@ export function FizrukDayPlanSheet({
                 <Button
                   type="button"
                   size="sm"
-                  variant="ghost"
-                  className="text-xs! border border-line shrink-0"
+                  variant="outline"
+                  className="text-xs! shrink-0"
                   onClick={() => handleAssign(null)}
                 >
                   {messages.fizruk.dayPlan.removeTemplate}

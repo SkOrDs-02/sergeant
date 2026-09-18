@@ -8,6 +8,8 @@ import {
 import { env } from "../env.js";
 import { logger } from "../obs/logger.js";
 import { authAttemptsTotal } from "../obs/metrics.js";
+import { ipPrefix } from "../auth/sessionFingerprint.js";
+import { normaliseUserAgent } from "../lib/uaNormalise.js";
 
 /**
  * Жорсткіший ліміт на sign-in / sign-up / reset (POST).
@@ -118,7 +120,10 @@ function emailFingerprint(raw: unknown): string | undefined {
 /**
  * Класифікує auth-ендпоінти better-auth і після відповіді інкрементує
  * `authAttemptsTotal{op,outcome}` + пише structured `auth_event` лог
- * з `emailHash` / `ip` для brute-force тріажу. Ставити ПЕРЕД
+ * з `emailHash` / мережевим походженням для brute-force тріажу.
+ *
+ * Скільки саме походження логувати — вирішує РЕЗУЛЬТАТ, див.
+ * `networkOriginFor()` нижче. Ставити ПЕРЕД
  * `authSensitiveRateLimit` (і ДО `toNodeHandler(auth)`): `res.on("finish")`
  * спрацьовує, навіть коли rate-limiter короткозамикає пайплайн без
  * `next()`, тому реєстрація listener-а мусить відбутись раніше за сам
@@ -126,6 +131,58 @@ function emailFingerprint(raw: unknown): string | undefined {
  */
 type AuthOp =
   "sign_in" | "sign_up" | "forget_password" | "reset_password" | "signout";
+
+type AuthOutcome =
+  "ok" | "bad_credentials" | "rate_limited" | "invalid" | "error";
+
+/**
+ * Скільки мережевого походження класти в `auth_event` — залежно від
+ * результату спроби.
+ *
+ * Політика репо (`docs/governance/security/pii-handling.md`, Class C)
+ * класифікує IP як identifier за GDPR Art. 4(1) і формулює компроміс так:
+ * «логуємо для security events; уникаємо у звичайних info». Успішний вхід —
+ * це НЕ security event: він іде рівнем `info`, трапляється щодня в кожного
+ * користувача і разом із `emailHash` у тому ж рядку дає готовий журнал
+ * «хто звідки заходив» із багатоденним ретеншном. Саме такий журнал ми і
+ * не збираємось вести.
+ *
+ * Невдала спроба — навпаки, рівно той випадок, заради якого виняток і
+ * зроблено: щоб заблокувати джерело credential-stuffing-у, потрібна ТОЧНА
+ * адреса, а не мережа, — по /24 бан зачепить сусідів по провайдеру.
+ *
+ * Тому:
+ *   - `bad_credentials` / `rate_limited` / `invalid` — повний `ip` (плюс
+ *     `ipPrefix`, щоб запити по мережі працювали однаково на обох гілках);
+ *   - `ok` / `error` — лише `/24` (IPv6 — `/64`) через наявний `ipPrefix()`
+ *     із `auth/sessionFingerprint.ts`. Для brute-force-тріажу мережі
+ *     достатньо: розподілена атака все одно міняє хости всередині /24.
+ *
+ * UA завжди йде через `normaliseUserAgent()` — сирий `User-Agent` давав
+ * >300 унікальних значень на добу і де-факто реідентифікував окремих людей
+ * (та сама знахідка M12, що й для `/api/metrics/web-vitals`); канонічна
+ * форма («chrome 121») лишає сигнал про клієнта без квазі-ідентифікатора.
+ */
+function networkOriginFor(
+  outcome: AuthOutcome,
+  req: Request,
+): {
+  ip?: string | undefined;
+  ipPrefix?: string | undefined;
+  ua_family: string;
+} {
+  const prefix = ipPrefix(req.ip) ?? undefined;
+  const ua_family = normaliseUserAgent(req.get("user-agent"));
+  const isSecurityEvent =
+    outcome === "bad_credentials" ||
+    outcome === "rate_limited" ||
+    outcome === "invalid";
+
+  if (isSecurityEvent) {
+    return { ip: req.ip, ipPrefix: prefix, ua_family };
+  }
+  return { ipPrefix: prefix, ua_family };
+}
 
 export function authMetricsMiddleware(
   req: Request,
@@ -199,8 +256,7 @@ export function authMetricsMiddleware(
         outcome,
         status: s,
         emailHash,
-        ip: req.ip,
-        ua: req.get("user-agent") || undefined,
+        ...networkOriginFor(outcome, req),
       });
     } catch {
       /* logging must never break a response */

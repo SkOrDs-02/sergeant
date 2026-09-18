@@ -107,7 +107,7 @@ const OverviewTextRowsImpl = function OverviewTextRows({
               aria-label={messages.finyk.monthRow.currencyInfoAria}
               className="inline-flex items-center justify-center text-muted hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk/60 rounded-full"
             >
-              <Icon name="info" size={14} />
+              <Icon name="info" size="sm" />
             </button>
           </Tooltip>
         </div>

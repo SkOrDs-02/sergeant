@@ -49,6 +49,7 @@ import type {
 } from "@sergeant/finyk-domain/domain/types";
 import { exportToCSV, type ExportColumn } from "@shared/lib/ui/export";
 import { dayKeyFromTx } from "./transactionsLib";
+import { formatTimeHm, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
 
 /** Резолвер ефективної категорії — з `useTransactionFilters`. */
 export type EffectiveCategoryResolver = (tx: Transaction) => Category;
@@ -76,11 +77,7 @@ const COLUMNS: ExportColumn<CsvRow>[] = [
 function kyivTimeLabel(ts: number): string {
   if (!Number.isFinite(ts) || ts <= 0) return "";
   try {
-    return new Intl.DateTimeFormat("uk-UA", {
-      timeZone: "Europe/Kyiv",
-      hour: "2-digit",
-      minute: "2-digit",
-    }).format(new Date(ts));
+    return formatTimeHm(new Date(ts), { timeZone: KYIV_TIME_ZONE });
   } catch {
     return "";
   }

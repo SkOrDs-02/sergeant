@@ -71,7 +71,7 @@ describe("ToolCallsRawBlockSchema", () => {
   });
 
   it("accepts a tool_use block routed through OpenRouter with a `caller` field (AI-1)", () => {
-    // AI-1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`):
+    // AI-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`):
     // OpenRouter's `tool_use` blocks carry a `caller` field Anthropic-direct
     // doesn't emit. Before the fix `.strict()` rejected the whole block for
     // this one known-but-unlisted field, so every OpenRouter tool round trip

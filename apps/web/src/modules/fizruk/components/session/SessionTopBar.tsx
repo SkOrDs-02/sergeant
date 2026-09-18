@@ -44,7 +44,7 @@ export function SessionTopBar({
       type: "item",
       id: "delete-workout",
       label: messages.fizruk.sessionHeader.deleteWorkout,
-      icon: <Icon name="trash" size={16} aria-hidden />,
+      icon: <Icon name="trash" size="md" aria-hidden />,
       destructive: true,
       onSelect: onDeleteWorkout,
     },
@@ -74,7 +74,9 @@ export function SessionTopBar({
           {duration ?? "00:00"}
         </div>
         <Button
-          module="fizruk"
+          variant="solid"
+          tone="fizruk"
+
           size="sm"
           className="h-9 px-4"
           type="button"
@@ -95,7 +97,7 @@ export function SessionTopBar({
               type="button"
               aria-label={ss.moreActions}
             >
-              <Icon name="more-horizontal" size={16} aria-hidden />
+              <Icon name="more-horizontal" size="md" aria-hidden />
             </Button>
           }
         />

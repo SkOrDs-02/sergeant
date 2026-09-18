@@ -690,7 +690,7 @@ export function useChatSend({
             setMessages((m) =>
               m.map((x) => {
                 if (x.id !== assistantId) return x;
-                // AI-6 (`docs/90-work/audits/2026-09-01-product-audit/
+                // AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/
                 // findings.md`) — синтез (другий тур) упав, але картки вже
                 // побудовані з результату ВИКОНАННЯ tool-а на клієнті, до
                 // того, як стало відомо, чи синтез узагалі відбудеться.

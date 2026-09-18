@@ -135,10 +135,6 @@
       "reason": "EU legislative portal (cited in docs/work/specs/launch/business/04-launch-readiness.md as the Cookie Directive reference). eur-lex.europa.eu aborts connections from CI runner User-Agents with 'This operation was aborted'; the pages render correctly in browsers. Legislative URLs are permanent and citation-stable."
     },
     {
-      "pattern": "^https?://docs\\.railway\\.app/reference/security$",
-      "reason": "Cited in docs/governance/security/secret-rotation.md as a Railway security reference. Railway reorganized their docs tree and this path now returns 404; the citation is preserved as a historical reference to Railway's security practices at the time of writing."
-    },
-    {
       "pattern": "^https?://github\\.com/[Ss]kords-01/[Ss]ergeant/",
       "reason": "Historical PR/commit backlinks to the pre-migration GitHub repo Skords-01/Sergeant, suspended during the 2026-06-26 account migration to SkOrDs-02. They reference real PRs/commits from the old repo that no longer resolve (the old PR numbers do not exist on the new repo, which started fresh — so they cannot be rewritten to the new handle either); preserved verbatim in CHANGELOG.md, AGENTS.md, and per-app READMEs as an immutable historical record. New backlinks point at SkOrDs-02/sergeant."
     },
@@ -261,6 +257,10 @@
     {
       "pattern": "^https?://api\\.ukrainealarm\\.com(/|$)",
       "reason": "Офіційний API повітряних тривог, цитований як джерело в docs/work/research/2026-08-26-integrations-second-pass.md. Це bare API-хост без публічної кореневої сторінки: віддає 403 і на HEAD, і на GET, з браузерним User-Agent і без нього (заміряно 2026-08-26). Документація живе за токеном, тож перевіряти лінк автоматично нічим."
+    },
+    {
+      "pattern": "^https?://github\\.com/(SkOrDs-02|Skords-01)/[Ss]ergeant(/|$)",
+      "reason": "Історичні посилання на попередній дім репо (SkOrDs-02/sergeant, Skords-01/Sergeant): PR-номери, коміти й blob-шляхи з періоду до переїзду на zaebal-beep у вересні 2026. Старий власник більше не віддає ці сторінки (404 для CI з 2026-09-14), а PR-нумерація нового репо інша, тож заміна власника посилання не оживить. Доки в доках лишається ~1 200 таких згадок, перевіряти їх наживо означає завжди червоний гейт, тобто вимкнений. Нові посилання на поточний дім (zaebal-beep) під перевіркою лишаються."
     }
   ]
 }

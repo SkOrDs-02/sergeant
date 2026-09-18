@@ -65,6 +65,20 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
+    // Вісь дії хабу (спека `docs/work/specs/hub-action-axis.md`; рішення
+    // власника 2026-09-17). Дефолт УВІМКНЕНО — це kill-switch, а не
+    // бета-тумблер: усі бачать купи «Зараз»/«Закрито» і рейок модулів
+    // замість сітки плиток, а вимкнення повертає стару головну без деплою,
+    // якщо прод-дані зламають розкладку. Умова зняття: один цикл (≈2
+    // тижні) без відкату — PR 3 прибирає прапорець разом із сіткою.
+    id: "hub_action_axis_v1",
+    label: "Головна за віссю дії",
+    description:
+      "Замість сітки модулів: «Зараз» і «Закрито сьогодні», модулі в рейку під шапкою. Вимкни, щоб повернути стару головну.",
+    defaultValue: true,
+    experimental: true,
+  },
+  {
     id: "finyk_import_reminder",
     label: "Нагадування залити документи",
     description:
@@ -73,23 +87,18 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     experimental: true,
   },
   {
-    // Стадія 1 спеки `docs/work/specs/sqlite-opfs-worker.md`. Тумблер
-    // користувацький навмисно: це рішення ПРИСТРОЮ, і власник має вмикати
-    // й вимикати його на своєму телефоні без редеплою.
-    //
-    // AI-DANGER: опис нижче каже правду, і її не можна пом'якшувати.
-    // Від стадії 2 дані переїжджають разом із двигуном: при першому
-    // вмиканні стара база копіюється в нове сховище цілком. Старе сховище
-    // при цьому НЕ чіпається, тому вимикання тумблера повертає все назад,
-    // а записи, зроблені під увімкненим тумблером, лишаються у новому.
-    // Прибирання старого сховища — стадія 3, окремим рішенням; коли вона
-    // приїде, опис знову треба переписати.
-    id: "storage_sqlite_worker",
-    label: "Нове сховище бази (проба)",
+    // Сплячий прапорець без тумблера в UI (не `experimental`): банер про
+    // кінець trial суперечить рішенню D3 («один платний план, без
+    // trial-таймера», phase-7-product-decisions-2026-05-22.md) і копі
+    // `/pricing`. Код лишено на випадок плану Б з D3 (перехід на 14-денний
+    // trial, якщо конверсія Free → Premium буде низькою). Умова зняття:
+    // або D3 переглянуто і банер вмикається дефолтом, або через квартал
+    // рішення не змінилось — тоді видалити разом із `TrialBanner.tsx`.
+    id: "billing_trial_banner",
+    label: "Банер про кінець trial",
     description:
-      "Тримає локальну базу у файловому сховищі браузера замість старого, обмеженого 5 МБ. При першому вмиканні переносить усі наявні записи. Старе сховище лишається недоторканим, тож вимкнути можна будь-коли, але зміни, зроблені у новому, у старе не повернуться.",
+      "Плашка «Залишилось N днів trial» на хабі. Вимкнена: у продукті немає trial-таймера (рішення D3).",
     defaultValue: false,
-    experimental: true,
   },
   // Stage 13 PR #078: `feature.finyk.sqlite_v2.mono_mirror` retired.
   // Previously defaultValue: true, experimental: true. Mono mirror now
@@ -111,6 +120,11 @@ const flagsStore = createTypedStore<FlagValues>({
   schema: FlagValuesSchema,
   defaultValue: {},
 });
+
+// Кеш снапшоту всіх флагів. `useSyncExternalStore` вимагає реф-стабільний
+// результат від `getSnapshot` між оновленнями store'а — інакше React
+// вважає, що state змінився, і ганяє ре-рендери/лупить у concurrent mode.
+let cachedAllFlagsSnapshot: Record<string, boolean> | null = null;
 
 function defaults(): FlagValues {
   const out: FlagValues = {};
@@ -144,10 +158,6 @@ export function resetFlags(): void {
   flagsStore.reset();
 }
 
-// Кеш снапшоту всіх флагів. `useSyncExternalStore` вимагає реф-стабільний
-// результат від `getSnapshot` між оновленнями store'а — інакше React
-// вважає, що state змінився, і ганяє ре-рендери/лупить у concurrent mode.
-let cachedAllFlagsSnapshot: Record<string, boolean> | null = null;
 flagsStore.subscribe(() => {
   cachedAllFlagsSnapshot = null;
 });

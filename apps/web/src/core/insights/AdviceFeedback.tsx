@@ -95,7 +95,7 @@ export function AdviceFeedback({ adviceId, className }: AdviceFeedbackProps) {
         aria-pressed={verdict === "helpful"}
         className={buttonClass("helpful")}
       >
-        <Icon name="thumbs-up" size={14} />
+        <Icon name="thumbs-up" size="sm" />
       </button>
       <button
         type="button"
@@ -104,7 +104,7 @@ export function AdviceFeedback({ adviceId, className }: AdviceFeedbackProps) {
         aria-pressed={verdict === "not_helpful"}
         className={buttonClass("not_helpful")}
       >
-        <Icon name="thumbs-down" size={14} />
+        <Icon name="thumbs-down" size="sm" />
       </button>
       {verdict && (
         <span className="text-style-caption text-muted ml-0.5">

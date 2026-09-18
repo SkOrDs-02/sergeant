@@ -179,23 +179,22 @@ export const SYSTEM_PATHS: Record<string, ReactNode> = {
   // docs/design/design/redesign-v2/governance.md § Icons.
   // ═══════════════════════════════════════════════════════════════════════
 
-  // `x` — close glyph, alias of `close`. Handoff uses bare `x`; keep both
-  // names to avoid breaking existing call sites.
-  x: (
-    <>
-      <line x1="18" y1="6" x2="6" y2="18" />
-      <line x1="6" y1="6" x2="18" y2="18" />
-    </>
-  ),
-  // `more` — three horizontal dots, alias of `more-horizontal`. Handoff
-  // canonical name is `more`.
-  more: (
-    <>
-      <circle cx="5" cy="12" r="1.5" />
-      <circle cx="12" cy="12" r="1.5" />
-      <circle cx="19" cy="12" r="1.5" />
-    </>
-  ),
+  // Тут стояли два «аліаси», знятих 2026-09-15 (знахідка PR-C10 наскрізного
+  // огляду). Обидва прибрано, і причини в них різні:
+  //
+  //   `x` — БУВ справжнім аліасом `close`: ті самі два `<line>`, байт у байт.
+  //   Але два імені на один гліф означали, що вибір між ними випадковий, і
+  //   замір це підтвердив — 38 `close` проти 8 `x` без жодної закономірності.
+  //   Вісім call-site-ів переведено на `close`.
+  //
+  //   `more` — аліасом НЕ був, хоч коментар поруч це стверджував. Радіус
+  //   крапок був 1.5 проти 1 у `more-horizontal`, тобто гліф інший, а підпис
+  //   казав «те саме». Call-site-ів у нього було НУЛЬ, тож він жив лише як
+  //   пастка: наступний, хто повірив би коментарю, отримав би товщі крапки
+  //   за сусідні. Вживається `more-horizontal` (6 місць).
+  //
+  // Мораль на майбутнє: аліас, який розійшовся з оригіналом, гірший за
+  // відсутність аліаса — він обіцяє тотожність, якої немає.
   // `arrow-up` / `arrow-down` — vertical pointers for trending / numeric
   // change indicators. Lucide spec.
   "arrow-up": (

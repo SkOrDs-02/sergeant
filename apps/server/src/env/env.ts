@@ -15,6 +15,7 @@ import {
   optionalUrl,
   stringWithDefault,
 } from "./envHelpers.js";
+import { pgEnvShape } from "./pgEnv.js";
 import { telegramEnvShape } from "./telegramEnv.js";
 
 const envSchema = z.object({
@@ -36,29 +37,7 @@ const envSchema = z.object({
 
   COMPRESSION_ENABLED: boolFromEnv(true),
 
-  DATABASE_URL: optionalUrl(),
-
-  DATABASE_URL_POOL: optionalUrl(),
-
-  DATABASE_URL_REPLICA: optionalUrl(),
-
-  PG_POOL_SIZE: intFromEnv(20),
-
-  PG_CONNECTION_TIMEOUT_MS: intFromEnv(5_000),
-
-  PG_SLOW_CONNECT_MS: intFromEnv(500),
-
-  PG_IDLE_TIMEOUT_MS: intFromEnv(30_000),
-
-  PG_STATEMENT_TIMEOUT_MS: intFromEnv(30_000),
-
-  DB_MAX_RETRIES: intFromEnv(3),
-
-  DB_SLOW_MS: coerceInt.positive().default(200),
-
-  SLOW_QUERY_THRESHOLD_MS: intFromEnv(100),
-
-  LOG_SLOW_QUERIES: boolFromEnv(true),
+  ...pgEnvShape,
 
   REDIS_URL: stringWithDefault(""),
 
@@ -271,6 +250,30 @@ const envSchema = z.object({
 
   FCM_SERVICE_ACCOUNT_JSON: z.string().optional(),
 
+  /**
+   * Стеля часу на ОДИН HTTP-виклик до FCM v1 (`messages:send`).
+   *
+   * AI-DANGER: без явного `signal` undici бере власний `headersTimeout`
+   * у 300 с. Помножити на `MAX_ATTEMPTS = 3` у `push/send.ts` — і один
+   * завислий пуш тримає задачу до 15 хвилин. У слот нагадувань
+   * (09:00/12:00/20:00) такі зависання накопичуються паралельно й з'їдають
+   * пам'ять 4 ГБ VPS. 10 с — це «FCM або відповів, або його вже нема»:
+   * той самий порядок, що й `webpushSend` (`timeoutMs: 10_000`).
+   */
+  PUSH_FCM_TIMEOUT_MS: coerceInt.positive().default(10_000),
+
+  /**
+   * Стеля часу на один запит до APNs у `@parse/node-apn`.
+   *
+   * Тут проблеми зависання НЕ було: бібліотека має власний дефолт
+   * `requestTimeout: 5000` (`node_modules/@parse/node-apn/lib/config.js`).
+   * Виставляємо те саме значення ЯВНО, щоб стеля була нашим рішенням, а не
+   * успадкованим дефолтом, який мовчки поміняє наступний bump залежності.
+   * Дефолт навмисно 5_000, а не 10_000 як у FCM — щоб не погіршити
+   * поточну поведінку.
+   */
+  PUSH_APNS_REQUEST_TIMEOUT_MS: coerceInt.positive().default(5_000),
+
   RESEND_API_KEY: stringWithDefault(""),
 
   RESEND_FROM: z.string().optional(),
@@ -309,7 +312,7 @@ const envSchema = z.object({
   // (`phc_…`) для `$ai_generation` з `lib/anthropic.ts` через `posthog-node`.
   // Задано → увімкнено; не задано → AI-івенти не шлються взагалі (dev/test).
   // Окремий від `POSTHOG_PROJECT_API_KEY` навмисно — це незалежний тумблер
-  // AI-шару (реєстр: docs/02-engineering/architecture/feature-flags.md § 3.3).
+  // AI-шару (реєстр: docs/engineering/architecture/feature-flags.md § 3.3).
   // Умова зняття: Фаза 2 закрита і дашборд/алерти живі — тоді ключ стає
   // обовʼязковим у проді.
   POSTHOG_AI_OBSERVABILITY_KEY: z.string().optional(),
@@ -424,15 +427,52 @@ const envSchema = z.object({
 
   UPCITEMDB_API_KEY: z.string().optional(),
 
-  SHUTDOWN_GRACE_MS: coerceInt.nonnegative().default(15_000),
+  /**
+   * Скільки чекаємо на завершення in-flight HTTP-запитів після SIGTERM.
+   *
+   * AI-DANGER: стеля прив'язана до stop-grace платформи, а не до наших
+   * побажань. До 2026-09-16 тут стояло 15_000 із коментарем про Railway
+   * (grace ~30 с). Railway виведено з експлуатації (ADR-0074); зараз
+   * Coolify/Docker, а `docker stop` за замовчуванням дає **10 секунд** до
+   * SIGKILL. Тобто 15-секундний grace не встигав НІКОЛИ — процес помирав
+   * посеред drain-у, і весь graceful-код був декорацією.
+   *
+   * 5_000 обрано так, щоб увесь graceful-шлях вліз у ці 10 с БЕЗ ручного
+   * налаштування поза репо. Піднімати це значення можна лише разом зі
+   * `stop_grace_period` у Coolify — див. шапку `index.ts`.
+   */
+  SHUTDOWN_GRACE_MS: coerceInt.nonnegative().default(5_000),
 
-  SHUTDOWN_HARD_TIMEOUT_MS: coerceInt.nonnegative().default(25_000),
+  /**
+   * Абсолютний запасний вихід: після цього часу процес виходить сам,
+   * незалежно від того, що ще не додренувалось.
+   *
+   * 9_000 — на секунду менше за дефолтні 10 с `docker stop`, щоб вийти
+   * САМИМ із правильним кодом, а не отримати SIGKILL. Бюджет фаз рахується
+   * від цього числа мінус `SHUTDOWN_TAIL_MARGIN_MS` (`index.ts`), тож
+   * hard-таймер спрацьовує лише на справжньому зависанні.
+   */
+  SHUTDOWN_HARD_TIMEOUT_MS: coerceInt.nonnegative().default(9_000),
 
   INTERNAL_API_KEY: stringWithDefault(""),
 
   WEBHOOK_HMAC_SECRET: stringWithDefault(""),
 
-  WEBHOOK_HMAC_REQUIRED: boolFromEnv(false),
+  /**
+   * Чи відхиляти непідписані запити на `/api/internal/*` (401), а не лише
+   * логувати розбіжність. Дефолт `true` з 2026-09-16 (рішення власника).
+   *
+   * AI-CONTEXT: дефолт був `false` як grace-вікно на час поетапної міграції
+   * 25 n8n-воркфлоу на підпис. n8n виведено з експлуатації ADR-0090, тож
+   * grace-вікно лишилось без предмета — єдині внутрішні caller-и тепер
+   * CI/admin-тулінг, який ми контролюємо.
+   *
+   * AI-DANGER: `true` тут НЕ вмикає перевірку сам по собі. `verifyWebhookRequest`
+   * виходить із `{ ok: true }`, коли `WEBHOOK_HMAC_SECRET` порожній, тож без
+   * секрета цей прапорець не робить нічого. `assertStartupEnv` попереджає про
+   * таку конфігурацію при старті — див. warning `WEBHOOK_HMAC_REQUIRED=true`.
+   */
+  WEBHOOK_HMAC_REQUIRED: boolFromEnv(true),
 
   WEBHOOK_HMAC_TS_TOLERANCE_SEC: intFromEnv(300),
 
@@ -538,7 +578,7 @@ const envSchema = z.object({
 
   AI_MEMORY_INGEST_ATTEMPTS: intFromEnv(5),
 
-  MONO_AI_MEMORY_INGEST_ENABLED: boolFromEnv(true),
+  DIGEST_AI_MEMORY_INGEST_ENABLED: boolFromEnv(true),
 
   N8N_WEBHOOK_BASE_URL: stringWithDefault(""),
 
@@ -824,6 +864,27 @@ export function assertStartupEnv(): void {
     );
   }
 
+  // Три асерти вище ловлять «провайдер увімкнений, але недоналаштований».
+  // Протилежна конфігурація — жоден провайдер не ввімкнений у ПРОДІ —
+  // мовчки стартувала, і саме вона найдорожча: `requirePlan` тоді
+  // пропускає всіх, тобто весь Pro роздається безкоштовно, а ті, хто
+  // заплатив, платять за відкрите. Симптомів у логах немає, бо з погляду
+  // коду все «працює».
+  //
+  // Warning, а не throw: зупиняти прод через конфігурацію білінгу — гірше
+  // за саму проблему (сервіс лежить замість того, щоб працювати зі
+  // знятими гейтами). Але мовчати про це не можна.
+  if (
+    isProduction &&
+    !env.STRIPE_ENABLED &&
+    !env.LIQPAY_ENABLED &&
+    !env.PLATA_ENABLED
+  ) {
+    warnings.push(
+      "No billing provider is enabled in production (STRIPE_ENABLED, LIQPAY_ENABLED, PLATA_ENABLED all false). `requirePlan` therefore enforces nothing and every Pro-gated route is open to free users. Enable the provider you actually sell through, or accept that paid gates are off.",
+    );
+  }
+
   if (env.AI_MEMORY_ENABLED && !env.VOYAGE_API_KEY) {
     if (isProduction) {
       throw new Error(
@@ -899,7 +960,7 @@ export function assertStartupEnv(): void {
     }
     if (!env.SILPO_OAUTH_CLIENT_ID) {
       throw new Error(
-        "SILPO_OAUTH_CLIENT_ID is required when SILPO_ENABLED=true (one-time Dynamic Client Registration output — see docs/02-engineering/integrations/env-vars.md § Silpo MCP).",
+        "SILPO_OAUTH_CLIENT_ID is required when SILPO_ENABLED=true (one-time Dynamic Client Registration output — see docs/engineering/integrations/env-vars.md § Silpo MCP).",
       );
     }
     if (!env.PUBLIC_API_BASE_URL) {
@@ -931,6 +992,23 @@ export function assertStartupEnv(): void {
   } else if (env.DATABASE_URL) {
     warnings.push(
       "BETTER_AUTH_TOKEN_ENC_KEY is not set — OAuth tokens will be stored as plaintext (insecure; allowed in dev only).",
+    );
+  }
+
+  // Прапорець обіцяє «непідписане відхиляємо», але сам верифікатор — no-op
+  // без секрета (`verifyWebhookRequest` → `if (!opts.secret) return ok`).
+  // Без цього попередження конфігурація `WEBHOOK_HMAC_REQUIRED=true` +
+  // порожній `WEBHOOK_HMAC_SECRET` виглядає захищеною і мовчить — рівно та
+  // форма «гейт, якого насправді немає», через яку в цьому репо вже двічі
+  // тихо ріс борг. Warn, а не throw: `/api/internal/*` і без HMAC лишається
+  // за fail-closed bearer-гейтом, тож валити старт було б непропорційно.
+  if (
+    env.WEBHOOK_HMAC_REQUIRED &&
+    env.INTERNAL_API_KEY &&
+    !env.WEBHOOK_HMAC_SECRET
+  ) {
+    warnings.push(
+      "WEBHOOK_HMAC_REQUIRED=true but WEBHOOK_HMAC_SECRET is empty — signature checking is OFF (the verifier no-ops without a secret). /api/internal/* is protected by the bearer token alone. Set WEBHOOK_HMAC_SECRET to make the flag mean anything.",
     );
   }
 

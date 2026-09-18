@@ -97,7 +97,7 @@ export function useMonobankWebhook({
 
   // === Jars ("банки") ===
   // Separate query from `accounts` (own endpoint/table, migration 088) —
-  // goal-progress auto-sync (docs/90-work/planning/specs/goal-progress-auto.md)
+  // goal-progress auto-sync (docs/work/specs/goal-progress-auto.md)
   // reads a linked jar's balance to compute a goal's saved amount.
   const jarsQuery = useQuery<MonoJarDto[]>({
     queryKey: finykKeys.monoWebhookJars,

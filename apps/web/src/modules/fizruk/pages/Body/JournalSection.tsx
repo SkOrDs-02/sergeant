@@ -125,7 +125,8 @@ export function JournalSection({
                 {messages.fizruk.journal.shownOfWord} {totalCount}
               </p>
               <Button
-                variant="fizruk-soft"
+                variant="soft"
+                tone="fizruk"
                 size="sm"
                 onClick={() =>
                   setVisibleCount((c) => Math.min(c + PAGE_SIZE, totalCount))

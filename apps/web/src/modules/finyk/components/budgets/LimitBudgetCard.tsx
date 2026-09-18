@@ -180,7 +180,8 @@ function LimitBudgetCardComponent({
             <Button
               className="flex-1"
               size="sm"
-              variant="danger"
+              variant="soft"
+              tone="danger"
               onClick={onDelete}
             >
               Видалити
@@ -254,7 +255,7 @@ function LimitBudgetCardComponent({
                 onClick={onBeginEdit}
                 aria-label="Редагувати ліміт"
               >
-                <Icon name="edit" size={16} aria-hidden />
+                <Icon name="edit" size="md" aria-hidden />
               </Button>
             </div>
           </div>
@@ -332,12 +333,12 @@ function LimitBudgetCardComponent({
                         className="flex-1 flex items-center justify-between gap-2 px-3 py-2 text-left hover:bg-panelHi transition-colors"
                       >
                         <span className="flex items-center gap-2 text-style-caption text-text">
-                          <Icon name="sergeant" size={16} aria-hidden />
+                          <Icon name="sergeant" size="md" aria-hidden />
                           Порада Сержанта
                         </span>
                         <Icon
                           name="chevron-down"
-                          size={14}
+                          size="sm"
                           className={cn(
                             "transition-transform text-muted",
                             adviceOpen ? "rotate-180" : "",

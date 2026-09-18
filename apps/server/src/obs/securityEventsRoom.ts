@@ -22,6 +22,12 @@ import {
   type ResolvedSecurityEvent,
 } from "./securityEvents.js";
 
+/**
+ * Стеля часу на один виклик Telegram Bot API з цього модуля. Те саме
+ * значення, що й у `modules/alerts/telegramShipper.ts` — апстрім один.
+ */
+const SECURITY_ROOM_TIMEOUT_MS = 10_000;
+
 // ─────────────────────────────────────────────────────────────────────────────
 // Formatter (sole copy since the OpenClaw bot package was removed, ADR-0075)
 // ─────────────────────────────────────────────────────────────────────────────
@@ -76,6 +82,10 @@ async function sendToTelegram(event: ResolvedSecurityEvent): Promise<void> {
       method: "POST",
       headers: { "Content-Type": "application/json" },
       body: JSON.stringify(body),
+      // Без `signal` undici чекав би на заголовки до 300 с. Це канал
+      // сповіщень про БЕЗПЕКОВІ події — зависання тут ховає інцидент рівно
+      // на той час, поки на нього ще можна зреагувати.
+      signal: AbortSignal.timeout(SECURITY_ROOM_TIMEOUT_MS),
     },
   );
   if (!res.ok) {
@@ -144,7 +154,13 @@ export async function pingSecurityRoom(): Promise<{
     return { ok: false, reason: "chat_id_missing" };
   }
   try {
-    const res = await fetch(`https://api.telegram.org/bot${botToken}/getMe`);
+    // Цей ping виконується на СТАРТІ процесу. Без стелі недоступний
+    // api.telegram.org затримував би boot на хвилини, а health-probe
+    // платформи за цей час устигає визнати контейнер нездоровим і відкотити
+    // цілком справний деплой.
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/getMe`, {
+      signal: AbortSignal.timeout(SECURITY_ROOM_TIMEOUT_MS),
+    });
     if (!res.ok) {
       const reason = res.status >= 500 ? "http_5xx" : "http_4xx";
       securityRoomUnreachableTotal.inc({ reason });

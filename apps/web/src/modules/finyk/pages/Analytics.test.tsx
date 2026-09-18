@@ -333,6 +333,46 @@ describe("Analytics page", () => {
     expect(await screen.findByTestId("pie")).toBeInTheDocument();
   });
 
+  it("показує помилку завантаження банку навіть коли в місяці є ручна витрата", async () => {
+    // Регресія WF-6 (аудит 2026-09-16): банер і єдина кнопка «Повторити»
+    // гейтились на ОБʼЄДНАНОМУ зрізі (банк + ручні витрати), тож одна
+    // ручна витрата ховала збій читання банку. `ensureMonth` навмисно не
+    // перезапускає впалий місяць сам, а ретрай живе всередині прихованого
+    // банера — стан ставав невідновним до перемикання місяця чи релоаду,
+    // а підсумок місяця тихо занижувався до самих ручних витрат.
+    const fetchMonth = vi.fn().mockRejectedValue(new Error("net"));
+    const manualExpenses = [
+      {
+        id: "m1",
+        amount: 200,
+        date: "2026-05-10",
+        description: "manual",
+        category: "food",
+      },
+    ];
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({ fetchMonth })}
+          storage={buildStorage({
+            manualExpenses: manualExpenses as unknown as NonNullable<
+              AnalyticsProps["storage"]["manualExpenses"]
+            >,
+          })}
+        />,
+      );
+    });
+    await act(async () => {
+      fireEvent.click(screen.getByLabelText("Попередній місяць"));
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByText("Не вдалось завантажити транзакції"),
+      ).toBeInTheDocument();
+    });
+    expect(screen.getByText("Повторити")).toBeInTheDocument();
+  });
+
   it("renders the comparison section when a prior month has data", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
     // May 2026 timestamp (prev month)

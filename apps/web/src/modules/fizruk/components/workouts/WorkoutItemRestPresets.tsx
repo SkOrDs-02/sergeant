@@ -69,7 +69,7 @@ export function WorkoutItemRestPresets({
         onClick={() => setRestTimer({ remaining: defSec, total: defSec })}
         title={`${rt.presetsRecommendedTitle} ${catLabel.toLowerCase()}`}
       >
-        <Icon name="clock" size={14} aria-hidden />
+        <Icon name="clock" size="sm" aria-hidden />
         {defSec} {rt.presetsSecondsShort}
       </Button>
       {menuItems.length > 0 && (
@@ -86,7 +86,7 @@ export function WorkoutItemRestPresets({
               aria-label={rt.presetsMenuTriggerAriaLabel}
               title={rt.presetsSaveDefaultTitle}
             >
-              <Icon name="chevron-down" size={14} aria-hidden />
+              <Icon name="chevron-down" size="sm" aria-hidden />
             </Button>
           }
         />

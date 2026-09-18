@@ -61,6 +61,19 @@ describe("ANALYTICS_EVENTS registry", () => {
     expect(ANALYTICS_EVENTS.NPS_SURVEY_ELIGIBLE).toBe("nps_survey_eligible");
   });
 
+  it("exposes the hub-axis baseline group verbatim", () => {
+    // Базова лінія перед віссю дії хабу (P3). Рядки пінимо, бо саме ці
+    // імена підуть у PostHog-запити двотижневого заміру, з яким потім
+    // порівнюватимуть A1 — ренейм посеред заміру обнулив би порівняння.
+    expect(ANALYTICS_EVENTS.HUB_MODULE_TILE_CLICKED).toBe(
+      "hub_module_tile_clicked",
+    );
+    expect(ANALYTICS_EVENTS.MODULE_OPENED).toBe("module_opened");
+    expect(ANALYTICS_EVENTS.TODAY_FOCUS_CTA_CLICKED).toBe(
+      "today_focus_cta_clicked",
+    );
+  });
+
   it("exposes the billing-failure (observability) event verbatim", () => {
     // Fired server-side from the Stripe webhook handler; PostHog funnels for
     // checkout drop-rate / 3DS-fail rate key off this exact string. Renaming
@@ -85,9 +98,6 @@ describe("ANALYTICS_EVENTS registry", () => {
 
     // Landing surfaces (initiative 0010 Phase 6.1).
     expect(ANALYTICS_EVENTS.LANDING_VIEWED).toBe("landing_viewed");
-    expect(ANALYTICS_EVENTS.LANDING_EMAIL_CAPTURED).toBe(
-      "landing_email_captured",
-    );
     expect(ANALYTICS_EVENTS.LANDING_TELEGRAM_CLICKED).toBe(
       "landing_telegram_clicked",
     );

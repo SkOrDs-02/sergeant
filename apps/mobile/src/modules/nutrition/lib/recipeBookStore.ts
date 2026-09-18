@@ -1,7 +1,7 @@
 /**
  * Локальна книга рецептів (mobile).
  *
- * Stage 13 PR #073 of `docs/planning/storage-roadmap.md` —
+ * Stage 13 PR #073 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` —
  * `loadSavedRecipes` reads recipes з SQLite warm cache (`nutrition_recipes`),
  * `saveRecipeBook` диспатчить через `triggerNutritionDualWrite` без
  * MMKV-write. Boot-time `residualImport.ts` дренує старі MMKV-блоби

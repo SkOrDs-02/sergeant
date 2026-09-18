@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last touched:** 2026-09-06 by docs:gen-today. **Next review:** 2026-09-13.
+> **Last touched:** 2026-09-17 by docs:gen-today. **Next review:** 2026-09-24.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -25,7 +25,7 @@ _Жодного документа не пропустило `Next review:` да
 
 ## Quick links
 
-- [`open-work.md`](./open-work.md) — повний rollup усіх 7 trackers
+- [`open-work.md`](./open-work.md) — повний rollup усіх 1 tracker
 - [`governance/freshness-dashboard.html`](./governance/governance/freshness-dashboard.html) — повний freshness огляд
 - [`AGENTS.md`](../AGENTS.md) — repo policy + hard rules + routing
 - [`README.md`](./README.md) — docs index (genre-grouped)

@@ -1,13 +1,29 @@
 # Backend Tech Debt Inventory
 
-> **Оновлено 2026-08-07 (tech-debt reconcile).** Переміряно на HEAD: міграцій **117** up (`117_fizruk_workout_sets_user_idx.sql`), а не 82 — маркер від 2026-07-20 нижче застарів на 35 міграцій. `eslint.server-maxlines-allowlist.json` = `[]` (підтверджено). **Увесь блок § «P1 (наступний спринт)» виявився закритим і не переміряним:** `vitest --coverage` у CI живе job-ом `Test coverage (vitest)` (`ci.yml`, `test:coverage:ci` + `coverage-ratchet.mjs --floors`); Playwright happy-path — **23** `@critical`-специ (пункт просив «3–4»); CSP `report-uri` шле і `apps/web/vercel.json`, і `apps/landing/vercel.json` у сінк `/api/csp-report` (`routes/csp-report.ts`); explicit `Permissions-Policy` — там само, 19 директив, під pin-тестом `apps/web/src/test/permissionsPolicyHeader.test.ts`. **Хвіст:** докстрінг `apps/server/src/http/security.ts` досі стверджує, що `report-uri`/`report-to` endpoint не налаштований — це вже неправда для фронтенд-політики (для API-only CSP сервера — усе ще так). Server raw >600 LOC (12 файлів, найбільші `modules/chat/aiQuota.ts` 921, `env/env.ts` 852) лишаються під **effective** порогом — не борг.
+> **Last touched:** 2026-09-17 by @claude (звірка всіх відкритих пунктів реєстру з HEAD + Railway-згадки в `security.ts`). **Next review:** 2026-12-16.
+> **Status:** Active
+
+> **Оновлено 2026-09-17 (звірка реєстру з HEAD).** Прохід по всіх відкритих пунктах цього файлу; нижче — лише те, що розійшлося з кодом.
+>
+> | Твердження в реєстрі                                                                                                                                   | Факт на HEAD (2026-09-17)                                                                                                                     | Дія                                                                     |
+> | ------------------------------------------------------------------------------------------------------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------- | ----------------------------------------------------------------------- |
+> | «міграцій **117** up, найновіша `117_fizruk_workout_sets_user_idx.sql`» (маркер 2026-08-07) і «**82**, `082_plata_card_token.sql`» (§ Міграції)        | **144** up-файли, найновіша `143_schema_migrations_legacy_names.sql`                                                                          | § Міграції переписано; обидва старі числа названо застарілими           |
+> | «`eslint.server-maxlines-allowlist.json` = `[]`»                                                                                                       | **Файла немає взагалі** — allowlist прибрано, а `eslint.server.js:140` це фіксує: «reached zero and was removed»                              | формулювання оновлено нижче                                             |
+> | «Server raw >600 LOC — 12 файлів, найбільші `aiQuota.ts` 921, `env/env.ts` 852»                                                                        | **18** файлів raw >600; найбільші `env/env.ts` **1026**, `modules/chat/aiQuota.ts` **946**, `modules/silpo/receipts.ts` **898**               | число оновлено; висновок «не борг» **стоїть** — див. рядок нижче        |
+> | Hard Rule #18 на сервері                                                                                                                               | `npx eslint "apps/server/src/**/*.ts" "apps/web/src/**/*.{ts,tsx}"` → **0 errors, 8 warnings, жодного `max-lines`**                           | підтверджено лінтом, не `wc -l`                                         |
+> | «Хвіст: докстрінг `security.ts` … + згадки Railway»                                                                                                    | докстрінг уже розрізняв API-CSP і фронтенд-політику, але **чотири згадки Railway** (рядки 14, 21, 49, 68) пережили переїзд на Hetzner+Coolify | **виправлено в коді цим проходом** → `apps/server/src/http/security.ts` |
+> | «Playwright happy-path — **23** `@critical`-специ»                                                                                                     | **26** спек із тегом `@critical` (`grep -rl "@critical" apps/web/tests`, без `auth.setup.ts`)                                                 | число оновлено                                                          |
+> | § Pre-beta: `107` DROP «НЕ виконано», `dataRights.analytics=true`, `nutrition_backups` «перенос коду — Stage 2», sentinel `anthropicUsageStore.ts:169` | усі чотири **закриті**; `anthropicUsageStore.ts` взагалі видалено                                                                             | позначено закритими з доказом у § Pre-beta                              |
+> | `routine_streaks` rename                                                                                                                               | блок реальний, але **без токена** `🚫 Blocked-reason:` — `grep -rn "Blocked-reason" docs/work/specs/tech-debt/` не бачив пункт                | токен `owner-decision` додано                                           |
+>
+> **Підтверджено відкритими** (перевірено, не закривати «для чистоти»): `idx_module_data_server_updated_at` досі не створений (`grep` по `migrations/` → 0); legacy `POST`/`DELETE /api/push/subscribe` живі (`routes/push.ts:78,85`); `routine_habits.paused` має живого читача `lib/reminders/sweep.ts:106,135,161`, тож two-phase Phase 1 не відбувся; CSP `report-uri` шле і `apps/web/vercel.json:41,45`, і `apps/landing/vercel.json:48` — цей рядок і далі чинний.
+
+> **Оновлено 2026-08-07 (tech-debt reconcile).** Переміряно на HEAD: міграцій **117** up (`117_fizruk_workout_sets_user_idx.sql`), а не 82 — маркер від 2026-07-20 нижче застарів на 35 міграцій. `eslint.server-maxlines-allowlist.json` = `[]` (підтверджено; **звірка 2026-09-17: файла більше немає** — allowlist прибрано, `eslint.server.js:140` це фіксує). **Увесь блок § «P1 (наступний спринт)» виявився закритим і не переміряним:** `vitest --coverage` у CI живе job-ом `Test coverage (vitest)` (`ci.yml`, `test:coverage:ci` + `coverage-ratchet.mjs --floors`); Playwright happy-path — **23** `@critical`-специ (пункт просив «3–4»; переміряно 2026-09-17: **26**); CSP `report-uri` шле і `apps/web/vercel.json`, і `apps/landing/vercel.json` у сінк `/api/csp-report` (`routes/csp-report.ts`); explicit `Permissions-Policy` — там само, 19 директив, під pin-тестом `apps/web/src/test/permissionsPolicyHeader.test.ts`. **Хвіст:** докстрінг `apps/server/src/http/security.ts` досі стверджує, що `report-uri`/`report-to` endpoint не налаштований — це вже неправда для фронтенд-політики (для API-only CSP сервера — усе ще так). _Хвіст закрито (звірка 2026-09-17): докстрінг `security.ts` уже розрізняє API-CSP без `report-uri` (навмисно) і фронтенд-політику з `report-uri`/`report-to` на `/api/csp-report`._ Server raw >600 LOC (12 файлів, найбільші `modules/chat/aiQuota.ts` 921, `env/env.ts` 852) лишаються під **effective** порогом — не борг. **Переміряно 2026-09-17: 18 файлів**, найбільші `env/env.ts` 1026, `aiQuota.ts` 946, `modules/silpo/receipts.ts` 898 — висновок не змінився, `max-lines` рахує з `skipBlankLines`+`skipComments` і ESLint на `apps/server/src/**/*.ts` дає нуль порушень.
 >
 > **Оновлено 2026-08-01.** § «Tests coverage map» нижче звірено з живим прогоном — застарілі цифри з 2026-05-05 (60.51% lines, три «0-15%» surface-и) замінені актуальними (93.02% lines; nutrition tool handlers / `syncV2.ts` / `weekly-digest.ts` тепер 95-100%). Заразом знайдено й полагоджено міграцією `096_finyk_fizruk_pk_text.sql`: **8 finyk + 7 fizruk таблиць** мали PK `uuid`, а клієнт шле доменно-префіксовані id (`b_…`, `w_…`, `dl_…`, тощо) — той самий клас бага, що й `094`/`095` того ж дня для routine/nutrition. Живий доказ — `invalid input syntax for type uuid` у CI на `finyk_manual_expenses` і `fizruk_daily_log`; повний розбір, включно з тим, чому «а де ще» знайшло ще 13 таблиць, — у коментарі міграції `097`. **Побічний хвіст того самого класу бага:** `apps/server/src/migrations/__tests__/{035-nutrition-tables,039-finyk-tables,050-routine-full-state,052-fizruk-full-state}.test.ts` (Testcontainers, `information_schema.columns` snapshot) досі очікували буквальний `uuid`-тип для тих самих колонок — `094`/`095` зламали два з них ще 2026-08-01 і ніхто не помітив (Docker-залежні, soft-skip локально), `097` зламала решту два. Виправлено: очікування → `text`, а «down → re-up restores the same schema fingerprint» тести обгорнуто down/up відповідної PK-міграції (`094`/`095`/`097`) навколо власного down/up тестованого файлу — інакше re-up без PK-міграції повертав колонку назад до `uuid`.
 >
-> **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-09-27.
 > **Оновлено 2026-07-20.** Re-audit: міграції **82** (latest `082_plata_card_token.sql`); `eslint.server-maxlines-allowlist.json` = `[]`; `asyncHandler` **видалено** ([PR #134](https://github.com/SkOrDs-02/sergeant/pull/134)) — Express 5 native async rejection; `chat.ts` ~547 / `metrics.ts` ~557 / `syncV2.ts` ~520 LOC. Hosting ops-секції переведені з Railway на **Coolify/Hetzner** (ADR-0074). **Post-waves:** Privat/Mono upstream body scrub — **Closed** [#347](https://github.com/SkOrDs-02/sergeant/pull/347). Server files з raw >600 (env/aiQuota/rateLimit/…) лишаються під порогом **effective** LOC — не allowlist.
 > **Оновлено 2026-06-01.** PR E/F закрито (див. Status log).
-> **Status:** Active
 
 > **Оновлено 2026-07-09 (CodeQL rate-limit finding).** [PR #134](https://github.com/SkOrDs-02/sergeant/pull/134) (asyncHandler cleanup) отримав 40 CodeQL high-severity `missing rate limiting` алертів — CodeQL позначає їх «new in this PR», бо prettier переформатував (де-індентував) майже кожен route-registration блок після зняття `asyncHandler`-обгортки. Перевірено 2 конкретні приклади (`routes/billing.ts` § `/api/billing/stripe-webhook`, `routes/mono-webhook.ts`) — в обох умова (authorized/webhook-роут без `rateLimitExpress()` у middleware-ланцюжку) існувала **до** PR #134; сам PR не додав і не прибрав жодного rate-limiter-виклику. Це diff-атрибуційний false-positive CodeQL, не регрес.
 >
@@ -312,6 +328,24 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ## Database & migrations review
 
+### Курсор pull покладається на порядок BIGSERIAL, а той не збігається з порядком коміту
+
+**Заведено 2026-09-16** під час аудиту серверного шару. Це єдина знахідка того аудиту, яку свідомо **не** виправлено патчем: діагноз твердий, а лікування зачіпає контракт синку, тож рішення за власником.
+
+**Що не так.** `syncV2Pull` (`apps/server/src/modules/sync/syncV2.ts`) віддає `WHERE user_id = $1 AND id > $2 … ORDER BY id ASC`, а клієнт пише курсором максимальний побачений `id` (`apps/web/src/core/syncEngine/syncEngineReader.ts`). `id` — `BIGSERIAL`: номер видається на `INSERT`, а видимість настає на `COMMIT`, і порядок цих двох подій між паралельними транзакціями не збігається. Тобто рядок із **меншим** `id`, що закомітився **пізніше** за вже віддану сторінку, під `id > since` не потрапить ніколи.
+
+**Коли це стріляє.** Потрібна довга транзакція запису поруч із короткою. Такий кандидат у коді є: `modules/finyk/import/commit.ts` тримає один `BEGIN` на весь батч імпорту виписки і кличе `emitServerSyncOps` аж перед `COMMIT`. Якщо в це вікно телефон зробить свій push (коротка транзакція, більші `id`, комітиться першою) і наступний pull віддасть саме їх, клієнт просуне курсор за межу — і операції імпорту зникнуть для всіх інших пристроїв назавжди. Те саме на undo-імпорті: tombstone не доїжджає, на іншому пристрої лишається фантом.
+
+**Чому не полагоджено одним рядком.** Три очевидні варіанти мають свою ціну, і вибір між ними — продуктовий:
+
+- **Watermark по часу** (`AND server_ts <= now() - interval '…'`) — найпростіший, але додає всім затримку синку рівно на розмір вікна, і вікно доводиться брати «з запасом» під найдовшу транзакцію.
+- **Watermark по снапшоту** (віддавати лише рядки, чий `xmin` старший за `pg_snapshot_xmin(pg_current_snapshot())`) — коректний і без затримки, але `xid` 32-бітний і порівняння вимагає акуратності з wraparound; це не той код, який можна написати «між іншим».
+- **Емісія серверних оп-ів окремою короткою транзакцією після основного COMMIT** — знімає вікно, але вводить протилежний ризик: оп існує, а рядка ще немає.
+
+**Чого НЕ бракує** (перевірено, щоб наступний не шукав там): сам курсор строго-більший по монотонному `id`, тож нескінченного циклу чи дублювання сторінок немає; `next_cursor` віддається лише на повній сторінці; ідемпотентність push закрита `UNIQUE (user_id, idempotency_key)` (міграція 027); порядок операцій у межах одного клієнта зберігається.
+
+**Ознаки в проді, якщо вже трапилось:** запис є на пристрої-джерелі й на сервері, але відсутній на решті пристроїв, причому наступні правки того ж рядка теж не доїжджають. Це ЗБІГАЄТЬСЯ за симптомом із двома вже закритими дефектами клієнта (tombstone-guard і `rejected`-курсор), тож перед тим як лікувати цей пункт — переконайся, що йдеться саме про нього.
+
 ### `user_profile.payload` не має серверного правила «чий запис новіший»
 
 **Заведено 2026-08-09** під час ревʼю PR [#762](https://github.com/SkOrDs-02/sergeant/pull/762) (L-8 фаза 2). Знахідку підняв CodeRabbit, свою ж пропозицію відкликав після розбору — запис збережено саме тому, що правильний діагноз там прозвучав, а простий фікс до нього не підходить.
@@ -330,7 +364,7 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ### Міграції (`apps/server/src/migrations/`)
 
-На 2026-07-20 — **82** файли міграцій (lex order, без `.down.sql`-компаньйонів), найновіша `082_plata_card_token.sql`. **Канонічний список — сама директорія `apps/server/src/migrations/`**; повний перелік тут навмисно не дублюємо, бо інлайн-енумерація швидко дрейфує (на 2026-05-13 тут стояло «32», на 2026-05-29 — «73»). Більшість має `.down.sql` companion для local rollback (production runner у `apps/server/migrate.mjs` ніколи не виконує down-міграції).
+На 2026-09-17 — **144** up-файли міграцій (lex order, без `.down.sql`-компаньйонів), найновіша `143_schema_migrations_legacy_names.sql` (звірено `ls apps/server/src/migrations/*.sql | grep -v '\.down\.sql'`). Попередній маркер «82 / `082_plata_card_token.sql`» від 2026-07-20 відставав на 62 міграції; проміжний маркер «117» від 2026-08-07 — на 27. **Канонічний список — сама директорія `apps/server/src/migrations/`**; повний перелік тут навмисно не дублюємо, бо інлайн-енумерація швидко дрейфує (на 2026-05-13 тут стояло «32», на 2026-05-29 — «73»). Більшість має `.down.sql` companion для local rollback (production runner у `apps/server/migrate.mjs` ніколи не виконує down-міграції).
 
 ### Індекси — по реальних query-патернах
 
@@ -517,6 +551,14 @@ Rule #4 (двофазність) і рішення власника поверх
 
 ### Routine: фізичне перейменування `routine_streaks` (відкрито, `недок`)
 
+> 🚫 **Blocked-reason: owner-decision** — токен додано 2026-09-17 при звірці
+> реєстру: пункт із 2026-07-24 описував блок словами («потрібен координований
+> web+mobile rollout з EAS-лагом»), але канонічного токена не мав, тож
+> `grep -rn "Blocked-reason" docs/work/specs/tech-debt/` (рецепт із
+> [`README.md § Статус-маркери`](./README.md#статус-маркери--що-можна-брати-зараз-а-що-ні))
+> показував його як actionable. Розблокування — рішення власника про
+> координований web+mobile rollout; механічної правки тут немає.
+
 **Знайдено:** audit routine E-4. `routine_streaks.current_streak` /
 `longest_streak` — net-лічильник кліків «відмітив/зняв» по всіх звичках
 разом (increment-only PN-counter, clamp `>= 0`), а не derived день-стрік.
@@ -550,13 +592,23 @@ two-phase DROP цього класу змін не покриває.
 - ✅ **`ai_usage_daily` PK vs `ON CONFLICT`** — `106_ai_usage_daily_endpoint_pk.sql`
   перебудував PK на 4 колонки `(subject_key, usage_day, bucket, endpoint)`;
   див. рядок в "Індекси" вище. Sentinel-канон для відсутнього ендпоінта —
-  `'legacy'` (backfill), Stage 2 має уніфікувати з живим кодом
-  (`anthropicUsageStore.ts:169` досі пише `'unknown'`).
-- ⚠️ **`mono_connection.webhook_secret` (plaintext) — DROP НЕ виконано, лише
-  запланований.** `107_mono_connection_drop_webhook_secret.sql` містить
-  Phase-2 DROP із `TWO-PHASE-DROP` header-ом, готовий до merge, АЛЕ
-  `connection.ts`/`rotateSecret.ts` досі пишуть цю колонку — Stage 2 має
-  спершу прибрати ці записи, інакше деплой цієї міграції зламає upsert.
+  `'legacy'` (backfill). ~~Stage 2 має уніфікувати з живим кодом
+  (`anthropicUsageStore.ts:169` досі пише `'unknown'`).~~ **Знято
+  2026-09-17:** файла `apps/server/src/obs/anthropicUsageStore.ts` більше не
+  існує, тож у розбіжності, яку описував пункт, немає предмета. Живий
+  quota-шлях пише фіксовану константу `AI_QUOTA_ENDPOINT = "quota"`
+  (`apps/server/src/modules/chat/aiQuota.ts:842`) і обґрунтовує це в
+  докстрінгу над нею — навмисно, щоб не змішувати вісь «скільки
+  повідомлень» з віссю «скільки коштував конкретний endpoint» в одній
+  колонці.
+- ✅ **`mono_connection.webhook_secret` (plaintext) — DROP виконано**
+  (звірено 2026-09-17; формулювання «DROP НЕ виконано» було чинним на
+  2026-08-04 і застаріло). `107_mono_connection_drop_webhook_secret.sql` +
+  `.down.sql` на місці, і Stage 2, якого пункт вимагав, відбувся:
+  `grep -rn "webhook_secret" apps/server/src --include='*.ts'` поза
+  міграціями дає лише `webhook_secret_hash` / `webhook_secret_rotated_at`,
+  а `modules/mono/rotateSecret.ts:154` прямо фіксує «Migration 107 dropped
+  the plaintext `webhook_secret` column entirely».
 - ✅ **`routine_habits.paused` — DROP НЕ виконано (свідомо).** На відміну
   від задачі, знайдено ЖИВИХ читачів/писарів по обидва боки:
   `applySyncFullState.ts` + `lib/reminders/sweep.ts` (сервер),
@@ -564,6 +616,24 @@ two-phase DROP цього класу змін не покриває.
   (клієнт). Two-phase Phase 1 (сервер перестає читати/писати) ще не
   відбувся — DROP зараз повторив би incident #704. Задокументовано в
   `packages/db-schema/src/pg/routine.ts` і `sqlite/routine.ts`.
+- ✅ **`fizruk_pushups` + `routine_pushups` — DROP закрито (фаза 2 з 2,
+  2026-09-15).** Серверна `139_drop_routine_pushups.sql` знімає
+  `routine_pushups` (TWO-PHASE-DROP: deprecation 2026-08-30, вікно
+  витримано); `140_fizruk_pushups_to_workouts.sql` одним statement-ом
+  конвертує кожен день лічильника у `fizruk_workouts` + item + set тією ж
+  формою, що й швидкий запис (user-scoped id `pushups:<user>:<день>`,
+  UTC-полудень дня, `clamp(reps*2, 30 с, 10 хв)`), і дропає
+  `fizruk_pushups` (`ALLOW_DROP`: рішення власника закрити перенос одним
+  днем — дані не втрачаються, конверсія в тій самій міграції). Дзеркала на
+  клієнті — fizruk `007_fizruk_pushups_to_workouts` і routine
+  `011_routine_drop_pushups`; клієнтський перенос фази 1
+  (`pushupsToWorkouts.ts`), читачі/писарі у вебі, pull-списки sync-engine,
+  серверні handler-и `applyFizrukPushups`/`applyRoutinePushups` і
+  Drizzle-моделі обох таблиць видалені. Відомий наслідок: op зі старого
+  клієнта в будь-яку з двох таблиць тепер відхиляється як
+  `unsupported_table` і осідає в rejected-списку синку замість тихого
+  дропу. Down 140 розкладає перенесені тренування назад у лічильник за
+  хвостом id.
 - ✅ **`finyk_networth_history.networth` REAL → DOUBLE PRECISION** —
   `108_finyk_networth_history_double.sql`, лослесс widening cast.
 - ✅ **day-key доктрина (ADR-0078)** — `nutrition_pantry_events` і
@@ -577,13 +647,19 @@ two-phase DROP цього класу змін не покриває.
   `nutrition_water_log.date_key`, `fizruk_wellbeing.date_key`,
   `routine_completion_events.date_key`, `push_reminder_log.day_key`.
 - ✅ **GDPR-схема** — `111_user_preferences_gdpr.sql`
-  (`health_data_consent` + `analytics` DEFAULT TRUE→FALSE; **server-side
+  (`health_data_consent` + `analytics` DEFAULT TRUE→FALSE; ~~**server-side
   fallback `dataRights.ts:DEFAULT_PREFERENCES.analytics=true` НЕ
-  оновлено цією міграцією — Stage 2**), `112_user_force_verify_at.sql`
+  оновлено цією міграцією — Stage 2**~~ — **Stage 2 закрито, звірено
+  2026-09-17:** `apps/server/src/modules/me/dataRights.ts:49` тепер
+  `analytics: false`, а `healthDataConsent: false` (рядок 55) несе
+  inline-коментар «DEFAULT FALSE matches the DB column (migration 111)»), `112_user_force_verify_at.sql`
   (`"user".force_verify_at`, Phase D email-verification-sweep gate),
   `113_gdpr_cleanup_queue.sql` (ADR-0016 § ADR-6.3, wiring — Stage 2).
 - ✅ **`nutrition_backups`** — `114_nutrition_backups.sql`, PG-заміна
-  ефемерного `fs.writeFile` у `backup-upload.ts` (перенос коду — Stage 2).
+  ефемерного `fs.writeFile` у `backup-upload.ts` (~~перенос коду — Stage 2~~
+  — **Stage 2 закрито, звірено 2026-09-17:** `backup-upload.ts:60` робить
+  `INSERT INTO nutrition_backups … ON CONFLICT` write-through upsert,
+  `fs.writeFile` у файлі немає).
 - ✅ **`user_profile`** — `115_user_profile.sql` + Drizzle-модель
   `packages/db-schema/src/pg/profile.ts`, write-through сховище для
   `USER_PROFILE`/`HUB_BIOMETRICS` (endpoint-и — Stage 2/4).
@@ -772,8 +848,8 @@ two-phase DROP цього класу змін не покриває.
 - ~~Розпил 5 найтовщих компонентів: `Assets.jsx` … `HubDashboard.tsx`.~~ **Усі декомпозовані** — `HubDashboard.tsx` зараз ~150 LOC (див. [`frontend.md` §4](./frontend.md)).
 - ~~`vitest --coverage` у CI.~~ **Done** — job `Test coverage (vitest)` у [`ci.yml`](../../../../.github/workflows/ci.yml): `pnpm test:coverage:ci` + гейт `scripts/ci/coverage-ratchet.mjs --floors` (floors у `coverage-thresholds.json`). NB: `apps/mobile` навмисно виключений (`--filter=!@sergeant/mobile`, web-focus фаза) — саме тому mobile-floor 30 не має CI-виміру для ратчету.
 - ~~TS-міграція~~ **Done**.
-- ~~3–4 E2E happy-path у Playwright.~~ **Done з запасом** — **23** `@critical`-специ у `apps/web/tests/smoke/`, лейн `critical-flow` блокує PR.
-- ~~CSP `report-uri` + explicit `Permissions-Policy`.~~ **Done** — обидва заголовки в `apps/web/vercel.json` і `apps/landing/vercel.json`; `report-uri` + `report-to` вказують на `/api/csp-report` (сінк — `apps/server/src/routes/csp-report.ts`, `modules/observability/csp-report.ts`), `Permissions-Policy` має 19 директив і pin-тест `apps/web/src/test/permissionsPolicyHeader.test.ts`. **Залишковий борг — один докстрінг:** `apps/server/src/http/security.ts` усе ще пише «`report-uri`/`report-to` endpoint НЕ налаштований». Для API-only CSP самого сервера це правда, для фронтенд-політики — ні; формулювання вводить в оману і варте правки при наступному дотику до файлу.
+- ~~3–4 E2E happy-path у Playwright.~~ **Done з запасом** — **26** `@critical`-спек (звірено 2026-09-17, `grep -rl "@critical" apps/web/tests` без `auth.setup.ts`; було записано 23), переважно у `apps/web/tests/smoke/` плюс `tests/mobile/viewport-shell-regression.spec.ts`; лейн `critical-flow` блокує PR.
+- ~~CSP `report-uri` + explicit `Permissions-Policy`.~~ **Done** — обидва заголовки в `apps/web/vercel.json` і `apps/landing/vercel.json`; `report-uri` + `report-to` вказують на `/api/csp-report` (сінк — `apps/server/src/routes/csp-report.ts`, `modules/observability/csp-report.ts`), `Permissions-Policy` має 19 директив і pin-тест `apps/web/src/test/permissionsPolicyHeader.test.ts`. ~~**Залишковий борг — один докстрінг:** `apps/server/src/http/security.ts` усе ще пише «`report-uri`/`report-to` endpoint НЕ налаштований».~~ **Закрито, звірено 2026-09-17:** докстрінг уже розрізняє API-CSP (`report-uri` навмисно немає — API віддає JSON без скриптів) і фронтенд-політику з `report-uri`/`report-to` на `/api/csp-report`. **Але той самий докстрінг ніс інший застарілий факт** — чотири згадки Railway («Railway сервер віддає лише JSON», «connect-src — Railway», «API-only (Railway)», «Vercel → Railway») після переїзду на Hetzner + Coolify ([ADR-0074](../../../governance/adr/0074-hosting-hetzner-coolify.md)). Виправлено цим проходом: `apps/server/src/http/security.ts:14,22,50,70`.
 
 ---
 

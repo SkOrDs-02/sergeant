@@ -21,7 +21,6 @@ vi.mock("../../observability/sentry.js", () => ({
   addSentryBreadcrumb: vi.fn(),
   setSentryTag: vi.fn(),
 }));
-vi.mock("../../lib/featureFlags.js", () => ({ getFlag: vi.fn(() => false) }));
 vi.mock("../sqliteWorkerClient.js", () => ({
   openSqliteInWorker: vi.fn(),
 }));
@@ -32,7 +31,6 @@ vi.mock("../kvvfsHandoff.js", () => ({
   pruneForeignPartitionRows: vi.fn(async () => 0),
 }));
 
-import { getFlag } from "../../lib/featureFlags.js";
 import { openSqliteInWorker } from "../sqliteWorkerClient.js";
 import {
   isHandoffDone,
@@ -57,7 +55,6 @@ function fakeWorkerConnection() {
 
 beforeEach(() => {
   __resetSqliteDbForTests();
-  vi.mocked(getFlag).mockReturnValue(false);
   vi.mocked(openSqliteInWorker).mockReset();
   vi.mocked(isHandoffDone).mockReturnValue(true);
   vi.mocked(markHandoffDone).mockClear();
@@ -86,15 +83,7 @@ afterEach(() => {
 });
 
 describe("бекенд бази у воркері", () => {
-  it("вимкнений прапорець не піднімає воркер узагалі", async () => {
-    const handle = await getSqliteDb();
-
-    expect(openSqliteInWorker).not.toHaveBeenCalled();
-    expect(handle.vfs).toBe("kvvfs");
-  });
-
-  it("увімкнений прапорець веде запити у воркер", async () => {
-    vi.mocked(getFlag).mockReturnValue(true);
+  it("запити йдуть у воркер без жодного прапорця (стадія 3)", async () => {
     const conn = fakeWorkerConnection();
     vi.mocked(openSqliteInWorker).mockResolvedValue(conn);
 
@@ -110,7 +99,6 @@ describe("бекенд бази у воркері", () => {
   });
 
   it("переливає стару базу один раз і ставить позначку ОСТАННЬОЮ", async () => {
-    vi.mocked(getFlag).mockReturnValue(true);
     vi.mocked(isHandoffDone).mockReturnValue(false);
     const bytes = new ArrayBuffer(512);
     vi.mocked(readKvvfsSnapshotBytes).mockResolvedValue(bytes);
@@ -133,7 +121,6 @@ describe("бекенд бази у воркері", () => {
     // Попередня спроба могла впасти рівно між імпортом і підчищанням:
     // файл на місці, позначки немає, чужі рядки всередині. Пропустити
     // підчищання тут означало б залишити їх назавжди.
-    vi.mocked(getFlag).mockReturnValue(true);
     vi.mocked(isHandoffDone).mockReturnValue(false);
     vi.mocked(openSqliteInWorker).mockResolvedValue({
       ...fakeWorkerConnection(),
@@ -146,7 +133,6 @@ describe("бекенд бази у воркері", () => {
   });
 
   it("не чіпає перелиття вдруге, коли позначка вже стоїть", async () => {
-    vi.mocked(getFlag).mockReturnValue(true);
     vi.mocked(isHandoffDone).mockReturnValue(true);
     vi.mocked(openSqliteInWorker).mockResolvedValue(fakeWorkerConnection());
 
@@ -159,7 +145,6 @@ describe("бекенд бази у воркері", () => {
   });
 
   it("невдача воркера тихо повертає застосунок на наявний шлях", async () => {
-    vi.mocked(getFlag).mockReturnValue(true);
     vi.mocked(openSqliteInWorker).mockRejectedValue(
       new Error("Missing required OPFS APIs."),
     );

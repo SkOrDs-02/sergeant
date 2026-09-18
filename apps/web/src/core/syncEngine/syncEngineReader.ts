@@ -1,4 +1,4 @@
-import type { SyncV2PullResponse } from "@sergeant/api-client";
+import type { SyncV2PullOp, SyncV2PullResponse } from "@sergeant/api-client";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { applyPullOp } from "./applyPullOp.js";
@@ -10,6 +10,13 @@ export interface SyncEnginePullResult {
   readonly pulled: number;
   readonly applied: number;
   readonly skipped: number;
+  /**
+   * Опи, які `applyPullOp` відхилив термінально. Жоден споживач `pullOnce`
+   * це поле не читає, і це свідомо: сигнал іде в Sentry негайно, з місця
+   * події — див. `reportPullRejection`. Не покладайся на це число як на
+   * канал сповіщення; додаєш споживача — додавай і те, що він із ним
+   * робить.
+   */
   readonly rejected: number;
   readonly lastOpId: number;
 }
@@ -40,10 +47,71 @@ export interface SyncEngineReaderDeps {
   };
   readonly intervalMs: number;
   readonly limit: number;
+  /**
+   * Канал обсервабіліті тіка. Крім помилок самого тіка сюди їде КОЖНЕ
+   * термінальне відхилення опа на застосуванні (`reportPullRejection`) —
+   * без цього невідома таблиця означала мовчазну втрату даних.
+   */
   readonly captureException?: (
     error: unknown,
     context?: Record<string, unknown>,
   ) => void;
+}
+
+/**
+ * Термінальне відхилення на PULL-шляху — у Sentry, іменем таблиці й опа.
+ *
+ * Чому саме звіт, а не «не просувати курсор». Розглядались два варіанти.
+ *
+ *   (а) Тримати `maxOpId` по останньому суцільному ЗАСТОСОВАНОМУ префіксу,
+ *       тобто не переступати через `rejected`. Коректніше на папері — і
+ *       рівно тому небезпечно тут. `rejected` на pull-шляху означає
+ *       передусім «таблиці немає в `CLIENT_PULL_SUPPORTED_TABLES` ЦЬОГО
+ *       білда» (`applyPullOp`), а це стан клієнта, старшого за сервер. Такий
+ *       оп не стане застосовним ніколи, тож курсор застрягне на ньому
+ *       НАЗАВЖДИ і пристрій перестане тягнути взагалі все — повна зупинка
+ *       синку замість часткової. Обидва відомі інциденти
+ *       (`fizruk_custom_activities`, `fizruk_injuries` — див. коментарі в
+ *       `applyPullOp.ts`) були рівно цим випадком, тобто варіант (а) там не
+ *       врятував би дані, а вимкнув би синк цілком.
+ *   (б) Лишити просування і зробити відхилення ГУЧНИМ. Обидва інциденти
+ *       існували не тому, що дані не доїхали, а тому, що ніхто не знав, що
+ *       вони не доїхали: `SyncEnginePullResult.rejected` не читає жоден
+ *       споживач (`useAppEffects`, `singleton`, `useBulkImport`,
+ *       `anonymousDataMigration` — усі ігнорують результат). Один
+ *       `captureException` із `table`/`op` знімає саме цю сліпоту, і саме
+ *       він закрив би обидва інциденти в день появи.
+ *
+ * Обрано (б) — дзеркало `reportTerminalRejection` із push-шляху
+ * (`singleton.ts`). Таблиця й тип операції йдуть у ЗАГОЛОВОК помилки, а не
+ * лише в теги: Sentry групує issue за текстом, тож без цього відхилення
+ * різних сутностей злипаються в одну issue без предмета.
+ *
+ * `row` (payload) сюди НЕ потрапляє навмисно: там суми, назви й нотатки
+ * користувача, а це прямий шлях у Sentry повз redaction (Hard Rule #21).
+ */
+function reportPullRejection(
+  deps: SyncEngineReaderDeps,
+  op: SyncV2PullOp,
+): void {
+  if (!deps.captureException) return;
+  try {
+    deps.captureException(
+      new Error(`sync pull op rejected: ${op.table}.${op.op}`),
+      {
+        scope: "sync-v2-pull-apply",
+        tags: {
+          area: "sync",
+          sync_direction: "pull",
+          sync_table: op.table,
+          sync_op: op.op,
+        },
+        opId: op.id,
+      },
+    );
+  } catch {
+    /* обсервабіліті ніколи не має ламати шлях читання */
+  }
 }
 
 export function createSyncEngineReaderRuntime(
@@ -99,6 +167,7 @@ export function createSyncEngineReaderRuntime(
             skipped += 1;
           } else {
             rejected += 1;
+            reportPullRejection(deps, op);
           }
         }
 

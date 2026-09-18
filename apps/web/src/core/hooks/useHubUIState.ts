@@ -28,14 +28,30 @@ function readViewFromSearch(search: string): HubView {
 // this hook tracks only search/hub-view.
 export interface HubUIState {
   searchOpen: boolean;
+  /**
+   * Запит, з яким пошук відкрили ззовні (палітра команд → «Шукати „…“»).
+   * Порожній для звичайного відкриття; скидається разом із закриттям.
+   */
+  searchQuery: string;
   hubView: HubView;
   setHubView: (view: HubView, options?: { syncUrl?: boolean }) => void;
   setSearchOpen: (value: boolean) => void;
+  /** Відкрити пошук із готовим запитом (порожній — як `setSearchOpen(true)`). */
+  openSearch: (query?: string) => void;
   closeSearch: () => void;
 }
 
 export function useHubUIState(): HubUIState {
-  const [searchOpen, setSearchOpen] = useState(false);
+  const [searchOpen, setSearchOpenRaw] = useState(false);
+  const [searchQuery, setSearchQuery] = useState("");
+  const setSearchOpen = useCallback((value: boolean) => {
+    if (!value) setSearchQuery("");
+    setSearchOpenRaw(value);
+  }, []);
+  const openSearch = useCallback((query: string = "") => {
+    setSearchQuery(query);
+    setSearchOpenRaw(true);
+  }, []);
   const routerLocation = useLocation();
   const location = useBrowserLocation(routerLocation);
   const navigate = useNavigate();
@@ -102,13 +118,15 @@ export function useHubUIState(): HubUIState {
     setHubViewRaw(readViewFromSearch(location.search));
   });
 
-  const closeSearch = useCallback(() => setSearchOpen(false), []);
+  const closeSearch = useCallback(() => setSearchOpen(false), [setSearchOpen]);
 
   return {
     searchOpen,
+    searchQuery,
     hubView,
     setHubView,
     setSearchOpen,
+    openSearch,
     closeSearch,
   };
 }

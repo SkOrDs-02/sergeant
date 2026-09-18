@@ -47,7 +47,7 @@ export function createChatRouter(): Router {
     // rationale. This is now genuinely a per-user bucket (`u:<id>`), not
     // per-IP — see the ordering note above.
     //
-    // AI-3 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+    // AI-3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
     // the burst bucket ALONE forced a choice between "generous enough for a
     // quick back-and-forth" and "tight enough over several minutes": at
     // 6/min flat, a normal conversation (question, follow-up, action, undo)

@@ -654,15 +654,99 @@ describe("enqueueMemoryIngest — fallback path (no Redis)", () => {
   });
 });
 
-// PR-19 per-source kill-switch `MONO_AI_MEMORY_INGEST_ENABLED` жив тут на
-// `payload.source === "finyk"`. Гілку прибрано ініціативою 0024 (PR-1,
-// 2026-09-03) — `finyk` ніколи не мав продюсера в дереві (mono-webhook не
-// enqueue-ив). Разом з нею прибрано й цей describe-блок: тести перевіряли
-// саме ту гілку, а не generic-поведінку. `master AI_MEMORY_ENABLED=false`
-// gate лишається і покритий вище (`enqueueMemoryIngest — fallback path`,
-// тест «AI_MEMORY_ENABLED=false: skip без виклику remember»). PR-2 тієї ж
-// ініціативи перецілює механізм на `payload.source === "digest"` і
-// повертає еквівалентне покриття під новою назвою.
+// PR-19 per-source kill-switch (стара назва флага — див. ініціативу 0024,
+// § План змін, PR-2) жив тут на `payload.source === "finyk"`. Гілку
+// прибрано ініціативою 0024 (PR-1, 2026-09-03) — `finyk` ніколи не мав
+// продюсера в дереві (mono-webhook не enqueue-ив). `master
+// AI_MEMORY_ENABLED=false` gate лишається і покритий вище
+// (`enqueueMemoryIngest — fallback path`, тест «AI_MEMORY_ENABLED=false:
+// skip без виклику remember»). PR-2 тієї ж ініціативи перецілює механізм на
+// `payload.source === "digest"` під новою назвою флага/kill-switch-а —
+// покриття нижче.
+describe("digest per-source kill-switch (ініціатива 0024, PR-2)", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    resetBullmqMocks();
+    __resetMemoryIngestQueueForTesting();
+    process.env["AI_MEMORY_ENABLED"] = "true";
+    process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"] = "true";
+  });
+
+  afterEach(() => {
+    __resetMemoryIngestQueueForTesting();
+    delete process.env["AI_MEMORY_ENABLED"];
+    delete process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"];
+  });
+
+  const digestPayload: MemoryIngestPayload = {
+    ...samplePayload,
+    source: "digest",
+    sourceRef: "2026-W18",
+  };
+
+  it("DIGEST_AI_MEMORY_INGEST_ENABLED=false: digest не інджеститься, mode=source_disabled", async () => {
+    process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"] = "false";
+    const fresh = await loadFreshMemoryIngestModule();
+
+    await fresh.mod.enqueueMemoryIngest(digestPayload);
+
+    expect(bullmqMocks.queueAdd).not.toHaveBeenCalled();
+    expect(fresh.enqueuedInc).toHaveBeenCalledWith({
+      mode: "source_disabled",
+      source: "digest",
+    });
+  });
+
+  it("DIGEST_AI_MEMORY_INGEST_ENABLED=false: інші джерела (cofounder) проходять як звичайно", async () => {
+    process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"] = "false";
+    const fresh = await loadFreshMemoryIngestModule();
+    fresh.createBullConnectionMock.mockReturnValue({
+      quit: vi.fn(),
+      disconnect: vi.fn(),
+    });
+    bullmqMocks.queueAdd.mockResolvedValue({ id: "job-1" });
+
+    await fresh.mod.enqueueMemoryIngest(samplePayload);
+
+    expect(bullmqMocks.queueAdd).toHaveBeenCalled();
+    expect(fresh.enqueuedInc).toHaveBeenCalledWith({
+      mode: "queued",
+      source: "cofounder",
+    });
+  });
+
+  it("DIGEST_AI_MEMORY_INGEST_ENABLED=true (default): digest інджеститься як звичайно", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    fresh.createBullConnectionMock.mockReturnValue({
+      quit: vi.fn(),
+      disconnect: vi.fn(),
+    });
+    bullmqMocks.queueAdd.mockResolvedValue({ id: "job-1" });
+
+    await fresh.mod.enqueueMemoryIngest(digestPayload);
+
+    expect(bullmqMocks.queueAdd).toHaveBeenCalled();
+    expect(fresh.enqueuedInc).toHaveBeenCalledWith({
+      mode: "queued",
+      source: "digest",
+    });
+  });
+
+  it("runtime kill-switch digest_ai_memory_ingest форсує OFF навіть при env=true", async () => {
+    const fresh = await loadFreshMemoryIngestModule();
+    const { activateKillSwitch } =
+      await import("../../lib/featureFlags/runtimeKillSwitch.js");
+    activateKillSwitch("digest_ai_memory_ingest", { reason: "test" });
+
+    await fresh.mod.enqueueMemoryIngest(digestPayload);
+
+    expect(bullmqMocks.queueAdd).not.toHaveBeenCalled();
+    expect(fresh.enqueuedInc).toHaveBeenCalledWith({
+      mode: "source_disabled",
+      source: "digest",
+    });
+  });
+});
 
 describe("memory ingest BullMQ lifecycle and stats", () => {
   beforeEach(() => {
@@ -670,13 +754,13 @@ describe("memory ingest BullMQ lifecycle and stats", () => {
     resetBullmqMocks();
     __resetMemoryIngestQueueForTesting();
     process.env["AI_MEMORY_ENABLED"] = "true";
-    process.env["MONO_AI_MEMORY_INGEST_ENABLED"] = "true";
+    process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"] = "true";
   });
 
   afterEach(() => {
     __resetMemoryIngestQueueForTesting();
     delete process.env["AI_MEMORY_ENABLED"];
-    delete process.env["MONO_AI_MEMORY_INGEST_ENABLED"];
+    delete process.env["DIGEST_AI_MEMORY_INGEST_ENABLED"];
   });
 
   it("queues via BullMQ with a stable jobId when Redis is available", async () => {
@@ -757,15 +841,20 @@ describe("memory ingest BullMQ lifecycle and stats", () => {
       },
     );
 
+    // Назовні (`/health/workers` — анонімний роут) їде лише КЛАС помилки:
+    // `ioredis` кладе у `message` приватний хост і порт, і саме це раніше
+    // отримував будь-який перехожий.
     bullmqMocks.queueGetJobCounts.mockRejectedValueOnce(
-      new Error("redis unavailable"),
+      Object.assign(new Error("connect ECONNREFUSED 10.0.0.12:6379"), {
+        code: "ECONNREFUSED",
+      }),
     );
-    await expect(fresh.mod.getMemoryIngestWorkerStats()).resolves.toMatchObject(
-      {
-        jobCounts: null,
-        error: "redis unavailable",
-      },
-    );
+    const failed = await fresh.mod.getMemoryIngestWorkerStats();
+    expect(failed).toMatchObject({
+      jobCounts: null,
+      errorCode: "ECONNREFUSED",
+    });
+    expect(JSON.stringify(failed)).not.toContain("10.0.0.12");
   });
 
   it("starts, reuses, and closes the worker without leaking connections", async () => {

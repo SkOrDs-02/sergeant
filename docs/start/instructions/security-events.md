@@ -1,6 +1,6 @@
 # Security Events — Операційний Playbook
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-23.
+> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-29.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -185,17 +185,15 @@ hardening). Запит відхилено з HTTP 402.
 обслуговування або під час розслідування патерну хибних спрацьовувань з
 великим обсягом.
 
-**Вимкнути:**
+> **Railway виведено з експлуатації** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)).
+> Змінна живе в env застосунку `sergeant-api` у Coolify, і **Coolify застосовує
+> env-зміни лише при новому деплої** — сама по собі зміна значення нічого не
+> вимикає. Порядок і застереження — [rotate-secrets.md § Coolify](./rotate-secrets.md).
 
-```
-railway variables set SECURITY_EVENTS_MUTED=1 --service api
-```
+**Вимкнути:** Coolify → застосунок `sergeant-api` → **Environment Variables** →
+`SECURITY_EVENTS_MUTED=1` → **Redeploy**.
 
-**Увімкнути:**
-
-```
-railway variables set SECURITY_EVENTS_MUTED=0 --service api
-```
+**Увімкнути:** там само `SECURITY_EVENTS_MUTED=0` → **Redeploy**.
 
 Або видалити змінну повністю — emitter трактує будь-яке значення, відмінне від
 `"1"`, як «не вимкнено».
@@ -221,3 +219,15 @@ rate(chat_prompt_injection_attempt_total[5m]) by (tool)
 # події cap transcribe
 rate(transcribe_usd_cap_events_total{outcome="cap_hit"}[1h])
 ```
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                                           | Merged     |
+| ------------------------------------------------------ | --------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#57](https://github.com/zaebal-beep/sergeant/pull/57) | fix(root): закрити знахідки наскрізного аудиту — валідація AI-шару, метрика конфліктів синку, браузерні дефекти | 2026-09-16 |
+| [#51](https://github.com/zaebal-beep/sergeant/pull/51) | docs(agents): пʼять нових playbook-ів під повторювані поломки і ревізія наявних                                 | 2026-09-15 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

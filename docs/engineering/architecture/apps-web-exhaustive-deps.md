@@ -1,21 +1,36 @@
 # Web: навмисні винятки `react-hooks/exhaustive-deps`
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-04.
+> **Last touched:** 2026-09-17 by @claude (каталог перезнято: 15 сайтів, лічильник → `rg`-команда, знято «нуль без WHY»). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Документ фіксує **інваріанти** там, де ESLint `react-hooks/exhaustive-deps` вимкнено у виробничих модулях. Мета — не «вимкнути правило», а зафіксувати контракт для рев'ю та рефакторингу.
 
-**Поточний стан (2026-08-07):** **5 активних `eslint-disable` у виробничому `apps/web/src`** (тестові файли не враховуються). Хвиля 4 (2026-07-10) звела каталог до нуля; наведені нижче п'ять з'явилися після неї як свідомі винятки.
+**Поточний стан:** лічильник тут не тримаємо — він похідний і застаріває за тиждень (знімок 2026-08-07 казав «5», на 2026-09-17 сайтів уже 15 у 14 файлах). Джерело істини — сам код:
 
-> **Виправлено 2026-08-07.** Рядок вище стверджував, що «кожен має інлайн-обґрунтування поруч із директивою» — насправді його мав рівно один (`usePrivatbank.ts`), решта чотири покладались на цю таблицю. Інваріанти перенесені в код (`-- <why>` у самій директиві), тож твердження тепер відповідає дійсності, а `grep`-перевірка «disable без WHY» дає по web нуль. Таблиця лишається джерелом розгорнутого контексту.
+```bash
+rg -n "eslint-disable.*exhaustive-deps" apps/web/src -g '*.{ts,tsx}' -g '!**/*.{test,spec}.{ts,tsx}'
+```
 
-| Файл                                         | Рядок | Інваріант                                                                               |
-| -------------------------------------------- | ----- | --------------------------------------------------------------------------------------- |
-| `modules/finyk/components/NetworthChart.tsx` | 133   | `px(i)` — стабільна проєкція; додавання в deps перераховувало б memo щорендеру          |
-| `modules/finyk/hooks/usePrivatbank.ts`       | 484   | bootstrap рівно раз під guard `bootstrapped`; `hydrate`/`loadAccounts` нестабільні      |
-| `shared/hooks/useTweenedValues.ts`           | 71    | `values` навмисно поза deps — інакше tween рестартує щокадру; retarget лише на `target` |
-| `shared/hooks/useActiveFizrukWorkout.ts`     | 87    | ефект перезапускається саме на «тік» після запису, який правило не бачить               |
-| `core/app/HubMainContent.tsx`                | 219   | `HUB_TAB_ORDER` — module-level константа, dep не потрібен                               |
+Хвиля 4 (2026-07-10) звела каталог до нуля; усе нижче з'явилось після неї як свідомі винятки.
+
+> **Про WHY поруч із директивою.** 2026-08-07 інваріанти перших п'яти сайтів перенесли в код (`-- <why>` у самій директиві), і тоді `grep` «disable без WHY» давав нуль. Станом на 2026-09-17 це вже не так: чотири сайти (`CrossModuleLinksSection`, обидва в `PhotoStep`, `RestTimerOverlay`) мають обґрунтування **коментарем над директивою**, а не у `-- <why>`-хвості. Контракт лишається: рев'ю блокує disable без WHY у будь-якій із двох форм і без рядка в цій таблиці. Номери рядків тут не пишемо — вони пливуть; шукай через `rg` вище.
+
+| Файл                                                        | Інваріант                                                                                                                      |
+| ----------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `modules/finyk/components/NetworthChart.tsx`                | `px(i)` — стабільна проєкція; додавання в deps перераховувало б memo щорендеру                                                 |
+| `modules/finyk/hooks/usePrivatbank.ts`                      | bootstrap рівно раз під guard `bootstrapped`; `hydrate`/`loadAccounts` нестабільні                                             |
+| `modules/finyk/pages/budgets/PlanningSubscriptions.tsx`     | `openSubscriptionForm` замикає стабільні сеттери з `useAssetsState`; перезапуск на зміну ідентичності повторив би сигнал       |
+| `modules/finyk/components/receiptScan/ReceiptScanSheet.tsx` | reset-on-close only; `bulkReceipts` — новий обʼєкт щорендера                                                                   |
+| `modules/fizruk/components/BodyAtlas.tsx`                   | один раз на вхідний focus-target; `announce`/`data` навмисно поза deps                                                         |
+| `modules/fizruk/components/dashboard/HeroCardStates.tsx`    | mount-only announce                                                                                                            |
+| `modules/fizruk/components/workouts/RestTimerOverlay.tsx`   | keyed на `isActive`, не на `restTimer`: ±15/±30 замінюють обʼєкт, але не мають повторно оголошувати «старт»                    |
+| `modules/nutrition/components/meal-sheet/PhotoStep.tsx` ×2  | (1) `photo.analyzePhoto` перестворюється щорендера, повтор для того ж кадру відсікає ref; (2) mount-only автовідкриття піккера |
+| `shared/hooks/useTweenedValues.ts`                          | `values` навмисно поза deps — інакше tween рестартує щокадру; retarget лише на `target`                                        |
+| `shared/hooks/useActiveFizrukWorkout.ts`                    | ефект перезапускається саме на «тік» після запису, який правило не бачить                                                      |
+| `core/app/HubMainContent.tsx`                               | `HUB_TAB_ORDER` — module-level константа, dep не потрібен                                                                      |
+| `core/hub/useHubDashboardState.ts`                          | storage-write tick (патерн «тік», див. нижче)                                                                                  |
+| `core/insights/CrossModuleLinksSection.tsx`                 | deps — ключі інвалідації (`storageBump`, `*Tick`), а не значення: дані йдуть з кешів поза React (B1)                           |
+| `core/security/AppLockSettings.tsx`                         | `appLock` — новий обʼєкт-літерал щорендеру; важливі лише `.state` і `.hasPin`, обидва вже в deps                               |
 
 Нижче — історія хвиль і патерни, які замінили disable. Аналогічний список для mobile: [`apps-mobile-exhaustive-deps.md`](./apps-mobile-exhaustive-deps.md).
 
@@ -29,7 +44,7 @@
 - **«Тік» після запису в storage** — Hub-картки (калорії, звички, витрати) читають localStorage/SQLite. Значення `bump` саме по собі не використовується в обчисленні — воно лише каже «щойно щось записали, перечитай». ESLint вважало `bump` зайвим і просило прибрати — тоді картки не оновлювались би після зміни даних.
 - **Стабільні функції** — `reset` з react-hook-form, `setView` з useState, module-level `loadNutritionLog`. Вони не змінюються, але лінтер вимагав їх у списку — або навпаки, зайвий `user`-об'єкт після refetch `/me` викликав би повторний PostHog identify.
 
-**Що зробили по хвилях** (каталог з **34 → 0** файлів з disable):
+**Що зробили по хвилях** (каталог з **34 → 0** файлів з disable на 2026-07-10; поточний список свідомих винятків — таблиця вище):
 
 | Хвиля | Що                                           | Як                                                                                |
 | ----- | -------------------------------------------- | --------------------------------------------------------------------------------- |

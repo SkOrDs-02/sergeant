@@ -879,7 +879,7 @@ const noAnthropicKeyInLogs = {
 //      TSAsExpression whose typeAnnotation is TSUnknownKeyword)
 //
 // Test files are exempt via eslint.config.js `ignores`.
-// Existing violations are allowlisted (see docs/tech-debt/frontend.md).
+// Existing violations are allowlisted (see docs/work/specs/tech-debt/frontend.md).
 
 const NO_STRICT_BYPASS_MESSAGES = {
   tsExpectError:
@@ -1488,7 +1488,7 @@ const forbidShellOnlyFeature = {
 // Звіт через `messageId: "hashRouter"` з посиланням на initiative 0006.
 
 const NO_HASH_ROUTER_MESSAGE =
-  "hash-router callsite виявлено: initiative 0006 (frontend routing & code-split) поступово мігрує `apps/web` на `react-router@7`. Уникай нових `useHashRouter` / `useHashRoute` / `window.location.hash = ...` callsite-ів у `apps/web/src/modules/**` — після завершення Phase 2 ця rule переходить у `error`. Деталі: docs/90-work/initiatives/archive/_0006-frontend-routing-and-code-split.md.";
+  "hash-router callsite виявлено: initiative 0006 (frontend routing & code-split) поступово мігрує `apps/web` на `react-router@7`. Уникай нових `useHashRouter` / `useHashRoute` / `window.location.hash = ...` callsite-ів у `apps/web/src/modules/**` — після завершення Phase 2 ця rule переходить у `error`. Деталі: docs/work/specs/initiatives/archive/_0006-frontend-routing-and-code-split.md.";
 
 const HASH_ROUTER_HOOK_NAMES = new Set(["useHashRouter", "useHashRoute"]);
 
@@ -2933,8 +2933,61 @@ const RX_IMPERATIVE_PLURAL =
 // («'Готово'») і англійські контракції, які до §1.10 стосунку не мають.
 const RX_APOSTROPHE = /[а-яіїєґА-ЯІЇЄҐ](['’])[а-яіїєґА-ЯІЇЄҐ]/;
 
+// Закінчення: -ємо/-емо (ідемо, радимо → ні, це -имо), -имо (робимо,
+// любимо), -їмо (боїмо-сь), плюс зворотні -мось/-мося (вчимося). До
+// 2026-09-16 -емо/-имо/-мось проходили повз (аудит 2026-09-15 § 6) — тобто
+// «робимо», «вчимося», «ідемо» правило не бачило, і саме такі рядки жили в
+// копі. Дві літери перед закінченням (перша може бути великою: «Ідемо»,
+// «Вчимося») — щоб «демо» (1 літера) не ловилось.
 const RX_FIRST_PERSON_PLURAL =
-  /(^|[\s"'`>(«])(М|м)и\s+[а-яіїєґ]|[а-яіїєґ]{2}(аємо|уємо|юємо|имемо|немо|ємо)(\s|[.,!?»…:;)]|$)/;
+  /(^|[\s"'`>(«])(М|м)и\s+[а-яіїєґ]|[а-яіїєґА-ЯІЇЄҐ][а-яіїєґ](аємо|уємо|юємо|имемо|немо|ємо|емо|имо|їмо)(сь|ся)?(\s|[.,!?»…:;)]|$)/;
+
+// Слова з тими самими закінченнями, які НЕ є дієсловами 1-ї множини:
+// прислівники на -емо/-имо («окремо», «видимо») і усталене привітання
+// «ласкаво просимо». Останнє — свідомий виняток: заміна привітання на
+// «Вітаю» — рішення founder-а, а не лінтера (аудит 2026-09-15 § 6).
+const FIRST_PERSON_PLURAL_ALLOWLIST = new Set([
+  "окремо",
+  "видимо",
+  "невидимо",
+  "незримо",
+  "невловимо",
+  "терпимо",
+  "нестерпимо",
+]);
+const FIRST_PERSON_PLURAL_ALLOWED_PHRASES = [/ласкаво\s+просимо/i];
+const RX_UA_LETTER = /[а-яіїєґА-ЯІЇЄҐʼ'’]/;
+
+/**
+ * Перший збіг 1-ї особи множини, що не потрапляє в allowlist. Дієслівна
+ * гілка регулярки ловить лише хвіст слова (дві літери + закінчення), тож
+ * для звірки з allowlist збіг розширюється до цілого слова.
+ */
+function findFirstPersonPlural(text) {
+  const re = new RegExp(RX_FIRST_PERSON_PLURAL.source, "g");
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    if (m[0] === "") {
+      re.lastIndex += 1;
+      continue;
+    }
+    if (m[3] === undefined) return m; // гілка «ми …» — allowlist не стосується
+    let start = m.index;
+    while (start > 0 && RX_UA_LETTER.test(text[start - 1])) start -= 1;
+    let end = m.index + m[0].length;
+    while (end < text.length && RX_UA_LETTER.test(text[end])) end += 1;
+    const word = text
+      .slice(start, end)
+      .replace(/[^а-яіїєґА-ЯІЇЄҐ]/g, "")
+      .toLowerCase();
+    if (FIRST_PERSON_PLURAL_ALLOWLIST.has(word)) continue;
+    const phraseWindow = text.slice(Math.max(0, start - 12), end);
+    if (FIRST_PERSON_PLURAL_ALLOWED_PHRASES.some((rx) => rx.test(phraseWindow)))
+      continue;
+    return m;
+  }
+  return null;
+}
 
 // Непробільний сентинел на місці інтерполяції: каже «тут вираз МОЖЕ
 // віддати текст». Потрібен лише перевірці тире, яка дивиться на сусідів
@@ -2980,7 +3033,7 @@ function ukrainianCopyViolations(text, emDashText = text) {
   if (apostrophe) {
     out.push({ messageId: "apostrophe", data: { found: apostrophe[1] } });
   }
-  const plural = RX_FIRST_PERSON_PLURAL.exec(text);
+  const plural = findFirstPersonPlural(text);
   if (plural) {
     out.push({
       messageId: "firstPersonPlural",

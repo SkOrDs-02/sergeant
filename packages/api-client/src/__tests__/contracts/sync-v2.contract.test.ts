@@ -90,6 +90,7 @@ describe("contract @ POST /api/v2/sync/push", CONTRACT_SUITE_OPTIONS, () => {
         res.jsonBody({
           accepted: 2,
           last_op_id: 1042,
+          server_now: "2026-05-12T09:30:01.000Z",
           results: [
             {
               idempotency_key: "01HZ000000000000000000000A",
@@ -136,6 +137,9 @@ describe("contract @ POST /api/v2/sync/push", CONTRACT_SUITE_OPTIONS, () => {
         // Hard Rule #1: BIGSERIAL must arrive as a number, not a string.
         expect(typeof out.last_op_id).toBe("number");
         expect(out.last_op_id).toBe(1042);
+        // Годинник сервера — ISO-рядок, який клієнт парсить для заміру зсуву.
+        expect(typeof out.server_now).toBe("string");
+        expect(Number.isNaN(Date.parse(out.server_now!))).toBe(false);
         expect(out.results).toHaveLength(2);
         expect(out.results[0]!.status).toBe("applied");
         expect(out.results[1]!.status).toBe("applied");

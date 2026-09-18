@@ -69,7 +69,7 @@ const BudgetAlertsListImpl = function BudgetAlertsList({
             aria-label={`${catLabel}: ${pct}%. Відкрити ліміт у плануванні`}
             className={cn(
               "w-full rounded-2xl px-4 py-3 flex items-center justify-between border text-left",
-              "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
+              "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               pct >= 100
                 ? "bg-danger/8 border-danger/20 hover:bg-danger/10"
                 : "bg-warning/8 border-warning/20 hover:bg-warning/10",

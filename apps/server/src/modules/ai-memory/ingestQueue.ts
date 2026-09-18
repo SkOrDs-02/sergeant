@@ -41,7 +41,9 @@ import {
   BULLMQ_QUEUE_PREFIX,
   createBullConnection,
 } from "../../lib/jobs/connection.js";
+import { isKillSwitchActive } from "../../lib/featureFlags/runtimeKillSwitch.js";
 import { logger, serializeError } from "../../obs/logger.js";
+import { toPublicErrorCode } from "../../obs/errorCode.js";
 import {
   aiMemoryIngestEnqueuedTotal,
   aiMemoryIngestProcessedTotal,
@@ -373,9 +375,27 @@ async function enqueueMemoryIngestImpl(
   // `finyk` прибраний з `ALLOWED_MEMORY_SOURCES` ініціативою 0024 (PR-1,
   // 2026-09-03) — mono-webhook уже не мав продюсера до цієї зміни (замір
   // у `docs/work/specs/initiatives/0024-ai-memory-source-coverage.md` §
-  // Перезамір). Гілку знято; PR-2 тієї ж ініціативи перецілює той самий
-  // механізм на `payload.source === "digest"` (kill-switch, який гейтить
-  // джерело, що реально забиває слоти RAG полотнами тижневих звітів).
+  // Перезамір). PR-2 тієї ж ініціативи перецілює той самий механізм на
+  // `payload.source === "digest"` — джерело, що реально забиває слоти RAG
+  // полотнами тижневих звітів. Гейтить два незалежних вимикача: env-флаг
+  // `DIGEST_AI_MEMORY_INGEST_ENABLED` (permanent, Coolify) і runtime
+  // kill-switch `digest_ai_memory_ingest` (in-memory, авто-flip з
+  // `eval-rag.ts` при `status=kill`, живе до рестарту процесу).
+  if (
+    payload.source === "digest" &&
+    (!env.DIGEST_AI_MEMORY_INGEST_ENABLED ||
+      isKillSwitchActive("digest_ai_memory_ingest"))
+  ) {
+    aiMemoryIngestEnqueuedTotal.inc({
+      mode: "source_disabled",
+      source: sourceLabel,
+    });
+    logger.debug({
+      msg: "ai_memory_ingest_skipped_source_disabled",
+      source: sourceLabel,
+    });
+    return;
+  }
 
   const queue = getOrCreateMemoryIngestQueue();
 
@@ -645,9 +665,13 @@ async function sampleMemoryIngestQueueDepth(): Promise<void> {
  * Snapshot AI-memory-ingest worker/queue stats для `/health/workers`. Не
  * пише метрики, не ходить у serviceOverride. Безпечний для виклику з HTTP
  * handler-а — `getJobCounts()` йде у Redis, тож обертається у try/catch
- * і повертає `jobCounts: null` + `error` повідомлення без stack-у. Ніколи
- * не throw-ить — health-endpoint має лишатись reachable навіть у
- * Redis-incident.
+ * і повертає `jobCounts: null` + `errorCode`. Ніколи не throw-ить —
+ * health-endpoint має лишатись reachable навіть у Redis-incident.
+ *
+ * Чому код, а не текст помилки: snapshot їде в `/health/workers`, а той
+ * змонтований без auth і без rate-limit, і `ioredis` кладе у `message`
+ * приватний хост із портом (`connect ECONNREFUSED 10.0.0.12:6379`). Повний
+ * текст лишається в `logger.error` — контракт у `obs/errorCode.ts`.
  */
 export interface MemoryIngestWorkerStats {
   enabled: boolean;
@@ -661,7 +685,8 @@ export interface MemoryIngestWorkerStats {
     delayed: number;
     failed: number;
   } | null;
-  error?: string;
+  /** Клас помилки для публічної відповіді; повний текст — лише в логу. */
+  errorCode?: string;
 }
 
 export async function getMemoryIngestWorkerStats(): Promise<MemoryIngestWorkerStats> {
@@ -671,7 +696,7 @@ export async function getMemoryIngestWorkerStats(): Promise<MemoryIngestWorkerSt
   // null (Redis недоступний) — у production це degraded-стан: producer-и
   // падають у in-process direct dispatch (`runDirectDispatch`).
   const fallbackMode = enabled && !started;
-  const base: Omit<MemoryIngestWorkerStats, "jobCounts" | "error"> = {
+  const base: Omit<MemoryIngestWorkerStats, "jobCounts" | "errorCode"> = {
     enabled,
     started,
     fallbackMode,
@@ -698,10 +723,14 @@ export async function getMemoryIngestWorkerStats(): Promise<MemoryIngestWorkerSt
       },
     };
   } catch (err) {
+    logger.error({
+      msg: "ai_memory_ingest_job_counts_failed",
+      err: serializeError(err),
+    });
     return {
       ...base,
       jobCounts: null,
-      error: err instanceof Error ? err.message : String(err),
+      errorCode: toPublicErrorCode(err),
     };
   }
 }

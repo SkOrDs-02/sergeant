@@ -352,7 +352,7 @@ export const auth = betterAuth({
      *   - Поточний email підтверджений → лист-підтвердження йде на СТАРУ
      *     адресу; лише після кліку летить верифікація на нову. Це захист
      *     від тихого перепривʼязування вкраденої сесії — саме той вектор,
-     *     який описує H6 (`docs/04-governance/security/hardening/archive/
+     *     який описує H6 (`docs/work/specs/security-hardening/archive/
      *     H6-email-verification.md`).
      *
      * Обидва листи йдуть у ту саму durable-чергу `auth-mail`, що й

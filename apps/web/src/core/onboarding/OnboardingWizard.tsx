@@ -68,12 +68,11 @@ export function OnboardingWizard({
     emptyPicksHint,
     finish,
     submitting,
-    secondaryAction,
     goalFirstVariant,
     pickGoal,
     skipGoalFirst,
     goalFirstSkipped,
-  } = useOnboardingWizardState({ onDone, onSecondaryAction });
+  } = useOnboardingWizardState({ onDone });
 
   // PR-13: render the outcome-first screen for users assigned to the
   // `goal_first` arm until they either pick an outcome (the hook
@@ -146,7 +145,6 @@ export function OnboardingWizard({
           copy={heroCopy}
           ctaDisabled={ctaDisabled}
           emptyPicksHint={emptyPicksHint}
-          onSecondaryAction={secondaryAction}
           headingRef={headingRef}
           ctaBusy={submitting}
         />
@@ -163,7 +161,6 @@ export function OnboardingWizard({
       heroCopy,
       ctaDisabled,
       emptyPicksHint,
-      secondaryAction,
       submitting,
     ],
   );

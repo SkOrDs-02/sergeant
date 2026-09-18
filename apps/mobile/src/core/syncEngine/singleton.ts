@@ -19,13 +19,13 @@
  *     emits `"visibilitychange"` when `AppState === "active"` (replaces
  *     `document.visibilityState` from the web version).
  *
- * @see docs/planning/storage-roadmap.md (Stage 5 mobile writer wiring)
+ * @see https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md (Stage 5 mobile writer wiring)
  */
 import {
   resolveOriginDeviceId,
   sweepStaleTerminalOutbox,
 } from "@sergeant/shared";
-import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
+import type { RecoverDeadLetterTarget } from "@sergeant/db-schema/sqlite";
 
 import { mobileKVStore } from "@/lib/storage";
 
@@ -278,8 +278,20 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       (globalThis.clearInterval as (h: unknown) => void)(handle),
     eventTarget,
     getStatus: () => dbSchema.countOutboxByStatus(client),
-    recoverDeadLetter: (selector: RecoverDeadLetterSelector) =>
-      dbSchema.recoverDeadLetter(client, selector),
+    // Скоуп власника домішуємо тут — це єдиний шар, що знає сесію. Без
+    // нього `{ all: true }` оживляв dead-letter-рядки всіх локальних
+    // акаунтів; немає користувача — немає чого оживляти (той самий
+    // контракт, що в `drain` вище).
+    recoverDeadLetter: async (target: RecoverDeadLetterTarget) => {
+      const userId = await resolveUserId();
+      if (!userId) return { recovered: [], skipped: [] };
+      return dbSchema.recoverDeadLetter(
+        client,
+        target.all === true
+          ? { all: true, userId }
+          : { ids: target.ids, userId },
+      );
+    },
     addBreadcrumb: observability.addSentryBreadcrumb,
     captureException: (error, context) =>
       observability.captureError(error, context),
