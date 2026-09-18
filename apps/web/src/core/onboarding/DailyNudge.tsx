@@ -1,0 +1,129 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+import { useCallback, useEffect } from "react";
+import { Icon } from "@shared/components/ui/Icon";
+import { Button } from "@shared/components/ui/Button";
+import { Popover, PopoverItem } from "@shared/components/ui/Popover";
+import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
+import {
+  dismissNudge,
+  snoozeNudge,
+  type NudgeDefinition,
+} from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
+import { useHubBannerSlot } from "../hub/bannerBudget";
+
+const SNOOZE_DAYS = 7;
+
+export function DailyNudge({
+  nudge,
+  sessionDays,
+  onDismiss,
+  onAction,
+}: {
+  nudge: NudgeDefinition;
+  sessionDays: number;
+  onDismiss: () => void;
+  onAction?: () => void;
+}) {
+  // Бюджет банерів хабу (F3, 2026-09-01): пріоритет 4; аналітика «показано» — лише коли є місце.
+  const hasSlot = useHubBannerSlot("dailyNudge");
+  useEffect(() => {
+    if (!hasSlot) return;
+    trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_SHOWN, {
+      day: sessionDays,
+      nudgeId: nudge.id,
+    });
+  }, [nudge.id, sessionDays, hasSlot]);
+
+  const handlePrimary = useCallback(() => {
+    dismissNudge(webKVStore, nudge.id);
+    trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_ACTION, {
+      day: sessionDays,
+      nudgeId: nudge.id,
+      type: "primary",
+    });
+    onAction?.();
+    onDismiss();
+  }, [nudge.id, sessionDays, onAction, onDismiss]);
+
+  const handleDismiss = useCallback(() => {
+    dismissNudge(webKVStore, nudge.id);
+    trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_ACTION, {
+      day: sessionDays,
+      nudgeId: nudge.id,
+      type: "dismiss",
+    });
+    onDismiss();
+  }, [nudge.id, sessionDays, onDismiss]);
+
+  const handleSnooze = useCallback(() => {
+    snoozeNudge(webKVStore, nudge.id, SNOOZE_DAYS);
+    trackEvent(ANALYTICS_EVENTS.DAILY_NUDGE_ACTION, {
+      day: sessionDays,
+      nudgeId: nudge.id,
+      type: "snooze",
+      snoozeDays: SNOOZE_DAYS,
+    });
+    onDismiss();
+  }, [nudge.id, sessionDays, onDismiss]);
+
+  if (!hasSlot) return null;
+
+  return (
+    <section
+      className="relative bg-panel border border-brand-500/20 rounded-2xl p-4 shadow-card"
+      aria-label="Щоденна порада"
+    >
+      <div className="flex items-start gap-3">
+        <div className="shrink-0 w-9 h-9 rounded-xl bg-brand-500/10 text-brand-strong flex items-center justify-center">
+          <Icon name="sergeant" size={18} />
+        </div>
+        <div className="min-w-0 flex-1">
+          <p className="text-style-body text-text leading-relaxed">
+            {nudge.message}
+          </p>
+          <div className="flex items-center gap-2 mt-2.5">
+            {onAction && (
+              <Button variant="solid" size="xs" onClick={handlePrimary}>
+                Спробувати
+              </Button>
+            )}
+            <Popover
+              placement="bottom-start"
+              trigger={
+                <button
+                  type="button"
+                  className="min-w-[44px] min-h-[44px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                  aria-label="Інші дії"
+                >
+                  <Icon name="more-horizontal" size="md" />
+                </button>
+              }
+              className="min-w-[200px]"
+            >
+              <PopoverItem
+                icon={<Icon name="clock" size="sm" />}
+                onClick={handleSnooze}
+              >
+                Нагадай за тиждень
+              </PopoverItem>
+            </Popover>
+          </div>
+        </div>
+        <Button
+          variant="ghost"
+          size="xs"
+          iconOnly
+          onClick={handleDismiss}
+          aria-label="Закрити"
+          className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
+        >
+          <Icon name="close" size="sm" />
+        </Button>
+      </div>
+    </section>
+  );
+}

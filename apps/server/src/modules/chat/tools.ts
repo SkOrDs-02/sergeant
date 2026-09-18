@@ -1,0 +1,168 @@
+/**
+ * Anthropic tool-use definitions + system-prompt префікс для `/api/chat`.
+ *
+ * Tool-дефініції розбиті по доменних файлах у `toolDefs/`, щоб кожен домен
+ * можна було редагувати незалежно. Цей файл збирає їх у єдиний масив `TOOLS`
+ * і реекспортує `SYSTEM_PREFIX` — публічний контракт, який імпортує `chat.ts`.
+ *
+ * Всі tool-результати виконуються клієнтом, сервер лише пересилає `tool_use`-
+ * блоки від моделі й отримує назад `tool_results` — тому змінювати сигнатури
+ * tools треба синхронно з frontend-виконавцями (`src/core/lib/hubChatActions.ts`).
+ *
+ * INCIDENT 2026-05-16: `applyStrictModeToAll` (PR 830c1342) обгортав весь
+ * масив у Anthropic Strict tool use. Anthropic API має жорсткий ліміт
+ * **20 strict tools на запит**, а в масиві на той момент було 66 — тож кожен
+ * `/api/chat` падав із 400 `Too many strict tools (66)`. Unit-тести
+ * верифікували `strict: true` на кожному tool, але не били реальний
+ * Anthropic — регресія пройшла повз. Обидві «66» тут історичні (друга — цитата
+ * помилки API); реєстр відтоді виріс, актуальний розмір — довжина
+ * `ALL_HUBCHAT_TOOL_NAMES` у `@sergeant/shared`.
+ *
+ * ПОТОЧНА СТРАТЕГІЯ (opt-in ≤20): strict вмикається per-tool через `strict: true`
+ * у domain-defs (`toolDefs/*.ts`) лише на high-value write-tools (гроші/вага/
+ * звички/харчування) — зараз 19, під cap-ом 20. `validateToolRegistry` кидає на
+ * старті, якщо strict-tools >20. У payload strict-прапор проходить лише коли
+ * `CHAT_STRICT_TOOLS=true` (default); `false` — миттєвий kill-switch у
+ * `promptCache.ts` без редеплою. Non-strict tools завжди йдуть без прапора.
+ */
+
+export type { AnthropicTool } from "./toolDefs/types.js";
+
+import { FINYK_TOOLS } from "./toolDefs/finyk.js";
+import { QUERY_FINYK_TOOLS } from "./toolDefs/queryFinyk.js";
+import { FIZRUK_TOOLS } from "./toolDefs/fizruk.js";
+import { QUERY_FIZRUK_TOOLS } from "./toolDefs/queryFizruk.js";
+import { ROUTINE_TOOLS } from "./toolDefs/routine.js";
+import { QUERY_ROUTINE_TOOLS } from "./toolDefs/queryRoutine.js";
+import { NUTRITION_TOOLS } from "./toolDefs/nutrition.js";
+import { QUERY_NUTRITION_TOOLS } from "./toolDefs/queryNutrition.js";
+import { CROSS_MODULE_TOOLS } from "./toolDefs/crossModule.js";
+import { UTILITY_TOOLS } from "./toolDefs/utility.js";
+import { MEMORY_TOOLS } from "./toolDefs/memory.js";
+import { normalizeStrictTools } from "./toolDefs/strict.js";
+import { DASHBOARD_MODULE_IDS, type DashboardModuleId } from "@sergeant/shared";
+import { logger } from "../../obs/logger.js";
+
+import type { AnthropicTool } from "./toolDefs/types.js";
+
+export const TOOLS: AnthropicTool[] = normalizeStrictTools([
+  ...FINYK_TOOLS,
+  ...QUERY_FINYK_TOOLS,
+  ...ROUTINE_TOOLS,
+  ...QUERY_ROUTINE_TOOLS,
+  ...FIZRUK_TOOLS,
+  ...QUERY_FIZRUK_TOOLS,
+  ...NUTRITION_TOOLS,
+  ...QUERY_NUTRITION_TOOLS,
+  ...CROSS_MODULE_TOOLS,
+  ...UTILITY_TOOLS,
+  ...MEMORY_TOOLS,
+]);
+
+/**
+ * Доменні tools у розрізі модулів дашборда — основа для звуження реєстру
+ * під конкретного користувача (`filterToolsByActiveModules`).
+ *
+ * Тут ЛИШЕ доменні набори. `CROSS_MODULE_TOOLS`, `UTILITY_TOOLS` і
+ * `MEMORY_TOOLS` навмисно поза мапою: вони або обслуговують кілька модулів
+ * одразу, або взагалі не про модулі, і різати їх за цією ознакою означало б
+ * ламати чат людині, яка просто не додала модуль на дашборд.
+ */
+const TOOL_NAMES_BY_MODULE: Record<DashboardModuleId, ReadonlySet<string>> = {
+  finyk: new Set([...FINYK_TOOLS, ...QUERY_FINYK_TOOLS].map((t) => t.name)),
+  fizruk: new Set([...FIZRUK_TOOLS, ...QUERY_FIZRUK_TOOLS].map((t) => t.name)),
+  routine: new Set(
+    [...ROUTINE_TOOLS, ...QUERY_ROUTINE_TOOLS].map((t) => t.name),
+  ),
+  nutrition: new Set(
+    [...NUTRITION_TOOLS, ...QUERY_NUTRITION_TOOLS].map((t) => t.name),
+  ),
+};
+
+/**
+ * Прибирає з реєстру tools модулів, яких людина НЕ увімкнула.
+ *
+ * AI-CONTEXT: вимір 2026-07-25 (шапка `toolSearch.ts`) показав, що весь
+ * реєстр — 43 КБ JSON, і він домінує у вартості запиту. Anthropic tool
+ * search це лікує, але **лише на `claude-*` моделях**, а дефолтні chat-
+ * моделі — gateway-ні (`gemini`, `deepseek`, `glm`), тож там payload тихо
+ * відкочується на повний масив і платиться щоразу. Це звуження працює
+ * незалежно від моделі й від того, чи ввімкнений tool search.
+ *
+ * Консервативно за задумом: ріжемо ТІЛЬКИ коли є непорожній явний вибір
+ * модулів. `null` — «вибору немає» (людина не проходила онбординг, або
+ * колонки ще не існувало), `[]` — «вимкнула все»; в обох випадках повний
+ * реєстр безпечніший за здогад. Ціна помилки асиметрична: зайвий tool у
+ * контексті коштує токенів, відсутній — ламає дію, яку людина просить.
+ */
+export function filterToolsByActiveModules<T extends { name: string }>(
+  tools: readonly T[],
+  activeModules: readonly DashboardModuleId[] | null | undefined,
+): readonly T[] {
+  if (!activeModules || activeModules.length === 0) return tools;
+
+  const active = new Set<string>(activeModules);
+  const off = DASHBOARD_MODULE_IDS.filter((id) => !active.has(id));
+  if (off.length === 0) return tools;
+
+  const dropped = new Set<string>();
+  for (const id of off) {
+    for (const name of TOOL_NAMES_BY_MODULE[id]) dropped.add(name);
+  }
+  return tools.filter((t) => !dropped.has(t.name));
+}
+
+/**
+ * Validate tool registry at startup:
+ * - Tool names are unique
+ * - Strict tools ≤ 20 (Anthropic limit)
+ * - Required fields exist (name, description, input_schema)
+ */
+function validateToolRegistry(tools: AnthropicTool[]): void {
+  const names = new Set<string>();
+  let strictCount = 0;
+
+  for (const tool of tools) {
+    // Check required fields
+    if (!tool.name) {
+      throw new Error("Tool missing name");
+    }
+    if (!tool.description) {
+      throw new Error(`Tool ${tool.name} missing description`);
+    }
+    if (!tool.input_schema || typeof tool.input_schema !== "object") {
+      throw new Error(`Tool ${tool.name} missing input_schema`);
+    }
+
+    // Check uniqueness
+    if (names.has(tool.name)) {
+      throw new Error(`Duplicate tool name: ${tool.name}`);
+    }
+    names.add(tool.name);
+
+    // Count strict tools
+    if (tool.strict) {
+      strictCount++;
+    }
+  }
+
+  if (strictCount > 20) {
+    throw new Error(
+      `Too many strict tools (${strictCount}). Anthropic API limit is 20. ` +
+        "Remove strict:true from some tools or implement tool subset strategy.",
+    );
+  }
+
+  logger.info(
+    { tools: tools.length, strict: strictCount },
+    "[chat/tools] Registry validated",
+  );
+}
+
+// Run validation on module load
+validateToolRegistry(TOOLS);
+
+export {
+  SYSTEM_PREFIX,
+  SYSTEM_PROMPT_VERSION,
+} from "./toolDefs/systemPrompt.js";

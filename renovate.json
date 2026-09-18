@@ -1,0 +1,180 @@
+{
+  "$schema": "https://docs.renovatebot.com/renovate-schema.json",
+  "extends": [
+    "config:recommended",
+    ":semanticCommitTypeAll(chore)",
+    ":semanticCommitScope(deps)",
+    ":dependencyDashboard",
+    ":maintainLockFilesWeekly",
+    ":separateMultipleMajorReleases",
+    ":prHourlyLimit2",
+    "group:monorepos",
+    "group:recommended"
+  ],
+  "prConcurrentLimit": 30,
+  "timezone": "Europe/Kyiv",
+  "schedule": ["before 6am on monday"],
+  "labels": ["dependencies"],
+  "rangeStrategy": "bump",
+  "rebaseWhen": "conflicted",
+  "prCreation": "not-pending",
+  "automergeStrategy": "squash",
+  "ignorePaths": [
+    "**/node_modules/**",
+    "**/dist/**",
+    "**/dist-server/**",
+    "apps/mobile-shell/android/**",
+    "apps/mobile-shell/ios/**",
+    "apps/mobile/android/**",
+    "apps/mobile/ios/**"
+  ],
+  "vulnerabilityAlerts": {
+    "labels": ["security"],
+    "schedule": ["at any time"],
+    "minimumReleaseAge": "0 days"
+  },
+  "lockFileMaintenance": {
+    "schedule": ["before 6am on monday"],
+    "commitMessageAction": "refresh"
+  },
+  "packageRules": [
+    {
+      "description": "Pin @types/node to Node 22 LTS major — production runtime is Node 22 (Volta). Node 23+ types describe APIs that don't exist at runtime. See ADR-0050 and pnpm.overrides.",
+      "matchPackageNames": ["@types/node"],
+      "allowedVersions": "<23",
+      "groupName": "type definitions"
+    },
+    {
+      "description": "All other @types/* together (type-only updates rarely break anything)",
+      "matchPackageNames": ["/^@types//"],
+      "excludePackageNames": ["@types/node"],
+      "groupName": "type definitions",
+      "automerge": false
+    },
+    {
+      "description": "ESLint and plugins",
+      "matchPackageNames": [
+        "eslint",
+        "/^eslint-/",
+        "/^@typescript-eslint//",
+        "/^@eslint//"
+      ],
+      "groupName": "eslint"
+    },
+    {
+      "description": "Anthropic SDK + AI deps — single PR щоб версії клієнта і tool-defs не дрейфували окремо (CVE 2026-04 з @anthropic-ai/sdk показав, що split-update застрягає на 3 дні)",
+      "matchPackageNames": ["/^@anthropic-ai//", "/^@anthropic-ai/sdk/"],
+      "groupName": "anthropic"
+    },
+    {
+      "description": "Sentry SDKs — @sentry/node + @sentry/react + @sentry/profiling-node мають піднiматись разом (mismatch ламає trace-correlation)",
+      "matchPackageNames": ["/^@sentry//"],
+      "groupName": "sentry"
+    },
+    {
+      "description": "OpenTelemetry SDK — пакети @opentelemetry/* мають strict cross-version contract; partial bumps падають із 'plugin not compatible'",
+      "matchPackageNames": ["/^@opentelemetry//"],
+      "groupName": "opentelemetry"
+    },
+    {
+      "description": "Vitest ecosystem",
+      "matchPackageNames": ["vitest", "/^@vitest//"],
+      "groupName": "vitest"
+    },
+    {
+      "description": "Playwright (browsers + runner together)",
+      "matchPackageNames": ["/^@playwright//", "/^playwright/"],
+      "groupName": "playwright"
+    },
+    {
+      "description": "TanStack ecosystem (Query, Router, etc.)",
+      "matchPackageNames": ["/^@tanstack//"],
+      "groupName": "tanstack"
+    },
+    {
+      "description": "Radix UI primitives",
+      "matchPackageNames": ["/^@radix-ui//"],
+      "groupName": "radix-ui"
+    },
+    {
+      "description": "Vite ecosystem",
+      "matchPackageNames": ["vite", "/^@vitejs//", "/^vite-/"],
+      "groupName": "vite"
+    },
+    {
+      "description": "Turbo + tooling",
+      "matchPackageNames": ["turbo"],
+      "groupName": "turborepo"
+    },
+    {
+      "description": "Expo SDK pieces stay grouped — version is tied to Expo SDK release",
+      "matchPackageNames": ["expo", "/^expo-/", "/^@expo//"],
+      "groupName": "expo sdk",
+      "rangeStrategy": "pin",
+      "schedule": ["before 6am on monday"]
+    },
+    {
+      "description": "Capacitor stays grouped",
+      "matchPackageNames": ["/^@capacitor//"],
+      "groupName": "capacitor"
+    },
+    {
+      "description": "React Native + react-native-* peers",
+      "matchPackageNames": ["react-native", "/^react-native-/"],
+      "groupName": "react-native",
+      "rangeStrategy": "pin"
+    },
+    {
+      "description": "Pin Node engine — must match CI matrix",
+      "matchManagers": ["npm"],
+      "matchDepTypes": ["engines"],
+      "matchPackageNames": ["node"],
+      "enabled": false
+    },
+    {
+      "description": "Auto-merge dev-only patch updates after CI passes. minimumReleaseAge дає вікно на відкликання компрометованого релізу — auto-merge тут іде в main із секретами CI, тож нульова затримка = нульовий шанс помітити. Security-бампи цієї затримки не мають (vulnerabilityAlerts: 0 days).",
+      "matchDepTypes": ["devDependencies"],
+      "matchUpdateTypes": ["patch", "pin", "digest"],
+      "minimumReleaseAge": "3 days",
+      "automerge": true,
+      "automergeType": "pr",
+      "platformAutomerge": true
+    },
+    {
+      "description": "GitHub Actions: pin to commit SHA + add a comment with the version tag",
+      "matchManagers": ["github-actions"],
+      "pinDigests": true,
+      "groupName": "github-actions"
+    },
+    {
+      "description": "Postgres + pgvector image — pin to @sha256:* digest (stack-pulse PR-37 / L10). Floating :pg16 tag silently mutates upstream and breaks reproducibility / CI ↔ local parity. Monthly cadence is enough — pgvector minor releases are infrequent, and a security advisory still lands via vulnerabilityAlerts (any time).",
+      "matchManagers": ["docker-compose", "github-actions"],
+      "matchPackageNames": ["pgvector/pgvector"],
+      "pinDigests": true,
+      "schedule": ["before 6am on the first day of the month"],
+      "groupName": "pgvector",
+      "automerge": false,
+      "labels": ["dependencies", "infra-pin"]
+    },
+    {
+      "description": "OpenClaw runtime — weekly PR з manual review (Locked decision #2 у docs/work/specs/planning/openclaw-migration-plan.md). Pinned у Dockerfile.openclaw-gateway через `npm install -g openclaw@<pin>`; auto-merge заборонено — кожен апгрейд має проходити Phase 6.5 parity-window observation.",
+      "matchManagers": ["custom.regex"],
+      "matchPackageNames": ["openclaw"],
+      "groupName": "openclaw",
+      "automerge": false,
+      "labels": ["dependencies", "infra-pin"]
+    }
+  ],
+  "customManagers": [
+    {
+      "customType": "regex",
+      "description": "Track `openclaw@<version>` pinned globally in Dockerfile.openclaw-gateway (Locked decision #2).",
+      "fileMatch": ["^Dockerfile\\.openclaw-gateway$"],
+      "matchStrings": [
+        "npm install -g (?<depName>openclaw)@(?<currentValue>[\\w\\.\\-]+)"
+      ],
+      "datasourceTemplate": "npm",
+      "versioningTemplate": "npm"
+    }
+  ]
+}

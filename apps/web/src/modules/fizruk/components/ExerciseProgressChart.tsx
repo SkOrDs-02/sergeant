@@ -1,0 +1,187 @@
+import { cn } from "@shared/lib/ui/cn";
+import {
+  seriesExtent,
+  pointStep,
+  xAt,
+  linearY,
+  buildLinePath,
+  buildAreaPath,
+} from "@shared/charts";
+import { fmt } from "../lib/numberFmt";
+
+export interface ProgressPoint {
+  value: number;
+  dateLabel: string;
+}
+
+interface ExerciseProgressChartProps {
+  points: ProgressPoint[];
+  label: string;
+  unit: string;
+  color: string;
+}
+
+export function ExerciseProgressChart({
+  points,
+  label,
+  unit,
+  color,
+}: ExerciseProgressChartProps) {
+  if (!points || points.length < 2) {
+    return (
+      <div className="rounded-xl border border-dashed border-line bg-panelHi/50 py-6 text-center text-style-caption text-subtle">
+        Потрібно щонайменше 2 тренування для графіка
+      </div>
+    );
+  }
+
+  const vals = points.map((p) => p.value);
+  const { min: minVal, range } = seriesExtent(vals);
+
+  const w = 320;
+  const h = 90;
+  const padL = 38;
+  const padR = 8;
+  const padT = 10;
+  const padB = 24;
+  const innerW = w - padL - padR;
+  const innerH = h - padT - padB;
+  const n = points.length;
+  const step = pointStep(innerW, n);
+
+  const mapped = points.map((p, i) => {
+    const x = xAt(padL, i, step);
+    const y = linearY(p.value, minVal, range, padT, innerH);
+    return { x, y, ...p };
+  });
+
+  const lineD = buildLinePath(mapped);
+  const areaD = buildAreaPath(mapped, padT + innerH);
+
+  const gradId = `prog_${label.replace(/\s/g, "_")}`;
+
+  const yTicks = [0, 0.5, 1].map((fr) => ({
+    y: padT + innerH * (1 - fr),
+    lab: fmt(minVal + fr * range),
+  }));
+
+  const labelSet = new Set([0, n - 1]);
+  if (n > 3) labelSet.add(Math.floor(n / 2));
+
+  const lastVal = points[points.length - 1]?.value ?? 0;
+  const firstVal = points[0]?.value ?? 0;
+  const delta = lastVal - firstVal;
+  const summaryId = `fizruk-exercise-progress-${label.replace(/\s/g, "-")}`;
+
+  return (
+    <div className="w-full">
+      <svg
+        viewBox={`0 0 ${w} ${h}`}
+        className="w-full h-auto max-h-[120px] overflow-visible"
+        role="img"
+        aria-label={`Графік ${label}`}
+        aria-describedby={summaryId}
+      >
+        <defs>
+          <linearGradient id={gradId} x1="0" y1="0" x2="0" y2="1">
+            <stop offset="0%" stopColor={color} stopOpacity="0.25" />
+            <stop offset="100%" stopColor={color} stopOpacity="0" />
+          </linearGradient>
+        </defs>
+        {yTicks.map((t, i) => (
+          <g key={i}>
+            <line
+              x1={padL}
+              x2={w - padR}
+              y1={t.y}
+              y2={t.y}
+              stroke="currentColor"
+              className="text-line/60"
+              strokeWidth="1"
+              strokeDasharray="3 4"
+            />
+            <text
+              x={padL - 4}
+              y={t.y + 4}
+              textAnchor="end"
+              fontSize="10"
+              className="fill-subtle"
+            >
+              {t.lab}
+            </text>
+          </g>
+        ))}
+        <path d={areaD} fill={`url(#${gradId})`} />
+        <path
+          d={lineD}
+          fill="none"
+          stroke={color}
+          strokeWidth="2.2"
+          strokeLinecap="round"
+          strokeLinejoin="round"
+        />
+        {mapped.map((p, i) => (
+          <circle
+            key={i}
+            cx={p.x}
+            cy={p.y}
+            r="3"
+            fill={color}
+            /* #4 — surface token instead of a static white "cut-out" ring so
+             * dots stay clean against the dark-theme panel (`--c-panel`). */
+            stroke="rgb(var(--c-panel))"
+            strokeWidth="1.5"
+          />
+        ))}
+        {mapped.map((p, i) => {
+          if (!labelSet.has(i)) return null;
+          return (
+            <text
+              key={i}
+              x={p.x}
+              y={h - 4}
+              textAnchor="middle"
+              fontSize="10"
+              className="fill-muted"
+            >
+              {p.dateLabel}
+            </text>
+          );
+        })}
+      </svg>
+      <div id={summaryId} className="sr-only">
+        <p>
+          Прогрес {label}. Поточне значення: {fmt(lastVal, 1)} {unit}.
+          {delta !== 0 && Number.isFinite(delta)
+            ? ` Зміна від першого запису: ${delta > 0 ? "+" : ""}${fmt(delta, 1)} ${unit}.`
+            : ""}
+        </p>
+        <ul>
+          {points.map((p, i) => (
+            <li key={i}>
+              {p.dateLabel}: {fmt(p.value, 1)} {unit}
+            </li>
+          ))}
+        </ul>
+      </div>
+      <div className="flex items-baseline gap-2 mt-1">
+        <span className="text-lg font-extrabold tabular-nums text-text">
+          {fmt(lastVal, 1)} {unit}
+        </span>
+        {delta !== 0 && Number.isFinite(delta) && (
+          <span
+            className={cn(
+              "text-style-caption",
+              delta > 0
+                ? "text-success-strong dark:text-success"
+                : "text-warning-strong dark:text-warning",
+            )}
+          >
+            {delta > 0 ? "+" : ""}
+            {fmt(delta, 1)} {unit}
+          </span>
+        )}
+      </div>
+    </div>
+  );
+}

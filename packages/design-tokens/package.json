@@ -1,0 +1,39 @@
+{
+  "name": "@sergeant/design-tokens",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Shared Sergeant design tokens & Tailwind preset (web + mobile)",
+  "files": [
+    "tailwind-preset.js",
+    "tokens.js",
+    "index.d.ts",
+    "mobile.js",
+    "mobile.d.ts"
+  ],
+  "main": "./tokens.js",
+  "types": "./index.d.ts",
+  "exports": {
+    ".": {
+      "types": "./index.d.ts",
+      "default": "./tokens.js"
+    },
+    "./tokens": {
+      "types": "./index.d.ts",
+      "default": "./tokens.js"
+    },
+    "./tailwind-preset": "./tailwind-preset.js",
+    "./mobile": {
+      "types": "./mobile.d.ts",
+      "default": "./mobile.js"
+    }
+  },
+  "scripts": {
+    "typecheck": "echo 'design-tokens has no ts sources'",
+    "lint": "echo 'design-tokens has no ts sources'",
+    "test": "vitest run"
+  },
+  "devDependencies": {
+    "vitest": "^4.1.10"
+  }
+}

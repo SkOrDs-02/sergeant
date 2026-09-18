@@ -1,0 +1,66 @@
+name: Docs freshness check
+
+# Owner: @zaebal-beep (solo maintainer).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - "**/*.md"
+      - "scripts/docs/**"
+      - ".github/workflows/docs-freshness.yml"
+
+permissions:
+  issues: write
+  contents: read
+
+concurrency:
+  group: docs-freshness-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  check-freshness:
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+
+      - name: Coverage gate — every non-excluded .md must have a freshness header
+        # Auto-discovery (PR-12.B): we no longer maintain a manual allowlist,
+        # so the gate that catches "new doc landed without a header" is this
+        # CI step. Runs on every event (PR + scheduled) so a regression is
+        # caught before merge AND in the next nightly cron after main.
+        run: node scripts/docs/check-freshness.mjs --check-coverage
+
+      - name: Open GitHub issues for overdue docs
+        # Issue-creation is skipped on pull_request because forks cannot write.
+        # The dry-run below still validates the auto-discovered list on every PR.
+        if: github.event_name != 'pull_request'
+        run: node scripts/docs/check-freshness.mjs
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Dry-run freshness check (PRs — smoke-test the auto-discovered list)
+        if: github.event_name == 'pull_request'
+        run: DRY_RUN=1 node scripts/docs/check-freshness.mjs
+
+      - name: Build freshness dashboard (HTML artifact)
+        # Always produce the dashboard so engineers can download a single
+        # HTML file from any run instead of grepping the allowlist or the
+        # open-issues list.
+        run: node scripts/docs/generate-freshness-dashboard.mjs
+
+      - name: Upload freshness dashboard
+        # actions/upload-artifact v7.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: docs-freshness-dashboard
+          path: dist/freshness-dashboard.html
+          retention-days: 30

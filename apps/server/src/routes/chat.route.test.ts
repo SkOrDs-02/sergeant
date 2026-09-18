@@ -1,0 +1,316 @@
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import request from "supertest";
+
+// Cold dynamic imports of the full Express app are slow on Windows when this
+// route-wiring file runs inside a large parallel batch; keep assertions strict.
+vi.setConfig({ testTimeout: 60_000 });
+
+/**
+ * Route-level contract tests for `POST /api/chat`.
+ *
+ * Covers the full HTTP wiring (setModule → rateLimit → requireAnthropicKey →
+ * requireAiQuota → handler) for two paths that `modules/chat/chat.test.ts`
+ * (handler-level) and `modules/chat/chat.stream.test.ts` (SSE forwarding) only
+ * exercise by calling the handler directly:
+ *
+ *   1. Key guard: missing `ANTHROPIC_API_KEY` → 503 `ANTHROPIC_KEY_MISSING`.
+ *   2. Non-stream tool_use: a first-turn request where Anthropic returns a
+ *      `tool_use` block surfaces as `{ tool_calls, tool_calls_raw }`.
+ *   3. SSE + tool_use end-to-end: a second-turn request (`stream: true` with
+ *      `tool_results` + `tool_calls_raw`) opens the SSE response and forwards
+ *      Anthropic text-deltas as `data: {"t":"…"}` events, terminated by
+ *      `[DONE]`.
+ *
+ * AI-CONTEXT: env single-source migration.  `requireAnthropicKey` reads
+ * `env.ANTHROPIC_API_KEY` (validated Zod env captured at first load of
+ * `apps/server/src/env/env.ts`), so the canonical pattern from
+ * `apps/server/src/routes/coach.route.test.ts` applies: `vi.stubEnv` BEFORE a
+ * `vi.resetModules()` + dynamic `import("./../app.js")`.  `vi.mock` calls are
+ * hoisted and persist across `vi.resetModules`, so the anthropic mock stays
+ * wired through every re-import.
+ */
+
+const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
+  const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
+  const mockPool = {
+    query: queryMock,
+    connect: vi.fn(),
+    on: vi.fn(),
+    totalCount: 0,
+    idleCount: 0,
+    waitingCount: 0,
+  };
+  const getSessionUserMock = vi.fn().mockResolvedValue(null);
+  return { mockPool, queryMock, getSessionUserMock };
+});
+
+vi.mock("./../db.js", () => ({
+  default: mockPool,
+  pool: mockPool,
+  query: queryMock,
+  ensureSchema: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("./../auth.js", () => ({
+  auth: { handler: async () => new Response(null, { status: 404 }) },
+  getSessionUser: getSessionUserMock,
+  getSessionUserSoft: vi.fn().mockResolvedValue(null),
+}));
+
+const { anthropicMessagesMock, anthropicMessagesStreamMock } = vi.hoisted(
+  () => ({
+    anthropicMessagesMock: vi.fn(),
+    anthropicMessagesStreamMock: vi.fn(),
+  }),
+);
+
+vi.mock("./../lib/anthropic.js", () => ({
+  anthropicMessages: anthropicMessagesMock,
+  anthropicMessagesStream: anthropicMessagesStreamMock,
+  extractAnthropicText: vi.fn(
+    (d: { content?: { type: string; text?: string }[] }) =>
+      (d?.content ?? [])
+        .filter((b) => b.type === "text")
+        .map((b) => b.text)
+        .join("\n")
+        .trim(),
+  ),
+  recordAnthropicUsage: vi.fn(),
+}));
+
+// `chat` router stacks `rateLimitExpress({ key: "api:chat", … })` after
+// `requireSession()` (B31, `docs/work/specs/audits/ai-testing-2026-08-25.md`).
+// Mock it as passthrough so a rate-limit Postgres-fallback query does not
+// consume a `queryMock.mockResolvedValueOnce`. The limiter has its own
+// `http/rateLimit.test.ts`. `rateLimitExpressCalls` records whether
+// `req.user` was already populated at call-time — the B31 regression test
+// below asserts on it directly, since `rateLimitSubject` (`http/rateLimit.ts`)
+// only buckets by `u:<id>` when `req.user` exists at the point it runs.
+const { rateLimitExpressCalls } = vi.hoisted(() => ({
+  rateLimitExpressCalls: [] as Array<{ hasUser: boolean }>,
+}));
+
+vi.mock("./../http/rateLimit.js", async () => {
+  const actual = await vi.importActual<typeof import("./../http/rateLimit.js")>(
+    "./../http/rateLimit.js",
+  );
+  return {
+    ...actual,
+    rateLimitExpress:
+      () => (req: { user?: unknown }, _res: unknown, next: () => void) => {
+        rateLimitExpressCalls.push({ hasUser: !!req.user });
+        next();
+      },
+  };
+});
+
+/** Builds a fetch-`Response` whose body streams `data: <json>\n\n` × N. */
+function makeUpstreamSse(events: Array<Record<string, unknown>>): Response {
+  const encoder = new TextEncoder();
+  const stream = new ReadableStream<Uint8Array>({
+    start(controller) {
+      const body = events.map((e) => `data: ${JSON.stringify(e)}\n\n`).join("");
+      controller.enqueue(encoder.encode(body));
+      controller.close();
+    },
+  });
+  return new Response(stream, {
+    status: 200,
+    headers: { "content-type": "text/event-stream" },
+  });
+}
+
+async function loadCreateApp(): Promise<
+  (typeof import("./../app.js"))["createApp"]
+> {
+  vi.resetModules();
+  const mod = await import("./../app.js");
+  return mod.createApp;
+}
+
+beforeEach(() => {
+  queryMock.mockReset();
+  queryMock.mockResolvedValue({ rows: [{ "?column?": 1 }] });
+  getSessionUserMock.mockReset();
+  // Дефолт — залогінений: `/api/chat` за ланцюгом стоїть за `requireSession()`,
+  // тож без юзера кожен тест нижче впирався б у 401 замість своєї перевірки.
+  // Анонімну гілку перевіряє окремий блок «auth guard».
+  getSessionUserMock.mockResolvedValue({ id: "u1" });
+  anthropicMessagesMock.mockReset();
+  anthropicMessagesStreamMock.mockReset();
+  rateLimitExpressCalls.length = 0;
+  // Default: no Anthropic key (covers the key-guard test). Quota disabled so
+  // `requireAiQuota` is a no-op (it reads `process.env.AI_QUOTA_DISABLED` at
+  // runtime — no re-import needed).
+  vi.stubEnv("ANTHROPIC_API_KEY", "");
+  vi.stubEnv("AI_QUOTA_DISABLED", "1");
+});
+
+afterEach(() => {
+  vi.unstubAllEnvs();
+  vi.resetModules();
+});
+
+describe("chat route — auth guard", () => {
+  // Знахідка A1 (`docs/work/specs/audits/ai-abuse-2026-08-05.md`): роут довго стояв
+  // без `requireSession()`, і анонімна квота `ip:<addr>` не була межею — під
+  // IPv6-підпискою клієнт має цілу /64. Тест фіксує, що сесія обовʼязкова і
+  // перевіряється ДО ключа: без неї 401, а не 503.
+  it("POST /api/chat → 401 без сесії", async () => {
+    getSessionUserMock.mockResolvedValue(null);
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ messages: [{ role: "user", content: "Привіт" }] });
+    expect(res.status).toBe(401);
+    expect(anthropicMessagesMock).not.toHaveBeenCalled();
+  });
+});
+
+// B31 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — `requireSession()`
+// must run BEFORE `rateLimitExpress`, otherwise `rateLimitSubject`
+// (`http/rateLimit.ts`) never sees `req.user` and every request buckets by
+// IP instead of by user.
+describe("chat route — B31 rate-limit ordering", () => {
+  it("req.user є заповненим на момент виклику rateLimitExpress (session-first)", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    anthropicMessagesMock.mockResolvedValue({
+      response: { ok: true, status: 200 } as unknown as Response,
+      data: { content: [{ type: "text", text: "Привіт!" }] },
+    });
+
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ messages: [{ role: "user", content: "Привіт" }] });
+
+    expect(res.status).toBe(200);
+    expect(rateLimitExpressCalls).toHaveLength(1);
+    expect(rateLimitExpressCalls[0]).toEqual({ hasUser: true });
+  });
+
+  it("без сесії rateLimitExpress НЕ виконується (401 зупиняє ланцюг раніше)", async () => {
+    getSessionUserMock.mockResolvedValue(null);
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ messages: [{ role: "user", content: "Привіт" }] });
+
+    expect(res.status).toBe(401);
+    expect(rateLimitExpressCalls).toHaveLength(0);
+  });
+});
+
+describe("chat route — key guard", () => {
+  it("POST /api/chat → 503 без ANTHROPIC_API_KEY", async () => {
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ messages: [{ role: "user", content: "Привіт" }] });
+    expect(res.status).toBe(503);
+    expect(res.body).toMatchObject({ code: "ANTHROPIC_KEY_MISSING" });
+  });
+});
+
+describe("chat route — non-stream tool_use", () => {
+  it("повертає { tool_calls, tool_calls_raw } коли Anthropic присилає tool_use", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    anthropicMessagesMock.mockResolvedValue({
+      response: { ok: true, status: 200 } as unknown as Response,
+      data: {
+        content: [
+          { type: "text", text: "Видаляю…" },
+          {
+            type: "tool_use",
+            id: "toolu_01ABC",
+            name: "delete_transaction",
+            input: { tx_id: "m_abc123" },
+          },
+        ],
+        stop_reason: "tool_use",
+      },
+    });
+
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        messages: [{ role: "user", content: "Видали транзакцію m_abc123" }],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      text: "Видаляю…",
+      tool_calls: [
+        {
+          id: "toolu_01ABC",
+          name: "delete_transaction",
+          input: { tx_id: "m_abc123" },
+        },
+      ],
+    });
+    expect(Array.isArray(res.body.tool_calls_raw)).toBe(true);
+  });
+});
+
+describe("chat route — SSE + tool_use end-to-end", () => {
+  it("stream:true з tool_results форвардить text-дельти і завершує [DONE]", async () => {
+    vi.stubEnv("ANTHROPIC_API_KEY", "test-key");
+    anthropicMessagesStreamMock.mockResolvedValue({
+      response: makeUpstreamSse([
+        {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "Готово, " },
+        },
+        {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "транзакцію видалено." },
+        },
+        { type: "message_delta", delta: { stop_reason: "end_turn" } },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+
+    const createApp = await loadCreateApp();
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/chat")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({
+        stream: true,
+        messages: [{ role: "user", content: "Видали транзакцію m_abc123" }],
+        tool_calls_raw: [
+          {
+            type: "tool_use",
+            id: "toolu_01ABC",
+            name: "delete_transaction",
+            input: { tx_id: "m_abc123" },
+          },
+        ],
+        tool_results: [{ tool_use_id: "toolu_01ABC", content: "ok" }],
+      });
+
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/text\/event-stream/);
+    // supertest buffers the whole SSE body into `res.text`.
+    expect(res.text).toContain(`data: ${JSON.stringify({ t: "Готово, " })}`);
+    expect(res.text).toContain(
+      `data: ${JSON.stringify({ t: "транзакцію видалено." })}`,
+    );
+    expect(res.text).toContain("data: [DONE]");
+    expect(anthropicMessagesStreamMock).toHaveBeenCalledTimes(1);
+  });
+});

@@ -1,0 +1,24 @@
+# Файл читається build context-ом Dockerfile.api + Dockerfile.console.
+# Виключаємо лише артефакти і речі, які точно не потрібні в API/console-
+# образах. Під монорепо-layout образ явно COPY-ить apps/server +
+# packages/shared + packages/config — ніколи не виключати ці шляхи тут,
+# інакше buildkit падає на `failed to compute cache key: "/apps/server": not found`.
+#
+# `**/node_modules` (а не `node_modules`) — patterns в .dockerignore матчать
+# точний path-segment від кореня контексту, тому `node_modules` excluded
+# тільки `/node_modules`, не `tools/openclaw/node_modules` чи `apps/server/node_modules`.
+# При COPY apps/server ./apps/server (PR-30 multi-stage build) збереження
+# host-side `tools/openclaw/node_modules/dotenv/` як reg. directory колізіонило
+# зі pnpm-створеним symlink-ом у container-i. `**/` префікс гарантує
+# рекурсивне виключення.
+**/node_modules
+**/dist
+.git
+.github
+.husky
+.vercel
+.env*
+artifacts
+attached_assets
+apps/web
+apps/mobile

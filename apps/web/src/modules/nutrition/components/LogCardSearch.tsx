@@ -1,0 +1,161 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+/* eslint-disable sergeant-design/no-cyrillic-jsx-literal -- pre-existing i18n tech debt; strings moved from LogCard.tsx during T3 decomposition */
+import { useEffect, useMemo, useState } from "react";
+import { Card } from "@shared/components/ui/Card";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Input } from "@shared/components/ui/Input";
+import { Measure } from "@shared/components/ui/Measure";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
+import { searchMealsByName } from "../lib/nutritionStorage";
+import type { Meal, NutritionLog } from "@sergeant/nutrition-domain";
+
+interface LogCardSearchProps {
+  log: NutritionLog;
+  setSelectedDate: (date: string) => void;
+  onAddMealFromSearch?: ((meal: Meal, date?: string) => void) | undefined;
+}
+
+export function LogCardSearch({
+  log,
+  setSelectedDate,
+  onAddMealFromSearch,
+}: LogCardSearchProps) {
+  const [searchQuery, setSearchQuery] = useState("");
+  const [debouncedSearchQuery, setDebouncedSearchQuery] = useState("");
+
+  useEffect(() => {
+    const id = setTimeout(() => setDebouncedSearchQuery(searchQuery), 150);
+    return () => clearTimeout(id);
+  }, [searchQuery]);
+
+  const searchHits = useMemo(() => {
+    const q = debouncedSearchQuery.trim();
+    if (!q) return [];
+    return searchMealsByName(log, q).slice(0, 40);
+  }, [log, debouncedSearchQuery]);
+
+  return (
+    <Card
+      variant="flat"
+      radius="lg"
+      padding="none"
+      className="bg-panel/40 px-3 py-3 space-y-2"
+    >
+      <SectionHeading as="div" size="xs" variant="nutrition">
+        Пошук по журналу
+      </SectionHeading>
+      <Input
+        value={searchQuery}
+        onChange={(e) => setSearchQuery(e.target.value)}
+        placeholder="Назва страви…"
+        aria-label="Пошук по журналу"
+        // Без `type="search"`, тож автоматичний guard з `Input` сюди не
+        // дістає — спред обовʼязковий. Розбір, чому Chrome інакше пропонує
+        // тут збережений пароль, — у `searchFieldProps.ts`.
+        {...searchFieldProps("nutrition-log-search")}
+      />
+      {searchQuery.trim() && (
+        <ul className="max-h-48 overflow-y-auto space-y-1">
+          {searchHits.length === 0 && (
+            <li className="text-muted text-style-caption">
+              Нічого не знайдено
+            </li>
+          )}
+          {searchHits.map(({ date, meal }) => {
+            const mac = meal.macros || {
+              kcal: null,
+              protein_g: null,
+              fat_g: null,
+              carbs_g: null,
+            };
+            return (
+              <li
+                key={`${date}-${meal.id}`}
+                className="flex items-center gap-2 bg-panelHi rounded-xl px-2.5 py-2"
+              >
+                <button
+                  type="button"
+                  className="text-left min-w-0 flex-1"
+                  onClick={() => {
+                    setSelectedDate(date);
+                    setSearchQuery("");
+                  }}
+                >
+                  <div className="text-style-caption text-text truncate">
+                    {meal.name}
+                  </div>
+                  <div className="flex gap-1.5 mt-0.5 flex-wrap">
+                    <span className="text-style-caption text-subtle">
+                      {date}
+                    </span>
+                    {mac.kcal != null && (
+                      <Measure
+                        value={Math.round(mac.kcal)}
+                        unit="ккал"
+                        tone="inherit"
+                        className="text-style-caption text-nutrition-strong dark:text-nutrition font-bold"
+                      />
+                    )}
+                    {mac.protein_g != null && (
+                      <span className="text-style-caption text-subtle">
+                        {/* Одиниця тут раніше була відсутня зовсім (`Б24`),
+                            тоді як сусідній `MealRow` набирав `Б 24г`, а
+                            `FoodHitRow` — `Б 24г` із пробілом після літери.
+                            Той самий факт трьома наборами — рівно те, проти
+                            чого П4. */}
+                        Б <Measure value={Math.round(mac.protein_g)} unit="г" />
+                      </span>
+                    )}
+                  </div>
+                </button>
+                <button
+                  type="button"
+                  className="shrink-0 w-8 h-8 pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] flex items-center justify-center rounded-xl bg-nutrition/10 text-nutrition-strong dark:text-nutrition hover:bg-nutrition/20 transition-colors"
+                  onClick={() => {
+                    // AI-DANGER: походження запису НЕ переписуємо.
+                    //
+                    // Тут стояло жорстке `source: "manual", macroSource:
+                    // "manual", foodId: null, amount_g: null` — тобто копія
+                    // запису з фото (`source: "photo"`) або з бази продуктів
+                    // (`macroSource: "productDb"`) ставала «ручною», а
+                    // звʼязок із продуктом рвався.
+                    // `searchMealsByName` віддає СПРАВЖНІ записи журналу з
+                    // їхнім походженням; копіювати їх і брехати про джерело
+                    // означає псувати і статистику по джерелах, і всю
+                    // математику, що спирається на `foodId`/`amount_g`
+                    // (комора, поповнення Сільпо). Знахідка PR-N1, аудит
+                    // 2026-09-13.
+                    //
+                    // `id` тут не генеруємо: сторінка все одно видає свій
+                    // (`NutritionLogPage`), і два генератори на один запис
+                    // читались як два різні id.
+                    onAddMealFromSearch?.({
+                      ...meal,
+                      time: "",
+                      macros: meal.macros
+                        ? { ...meal.macros }
+                        : {
+                            kcal: null,
+                            protein_g: null,
+                            fat_g: null,
+                            carbs_g: null,
+                          },
+                    });
+                    setSearchQuery("");
+                  }}
+                  title="Додати до поточного дня"
+                  aria-label={`Додати ${meal.name} до поточного дня`}
+                >
+                  +
+                </button>
+              </li>
+            );
+          })}
+        </ul>
+      )}
+    </Card>
+  );
+}

@@ -1,0 +1,275 @@
+import { createAuthClient } from "better-auth/react";
+import { apiUrl } from "@shared/lib/api/apiUrl";
+import {
+  clearBearerToken,
+  getBearerToken,
+  setBearerToken,
+} from "@shared/lib/api/bearerToken";
+import { isCapacitor } from "@sergeant/shared";
+
+function getAuthBaseURL(): string {
+  const configured = apiUrl("");
+  if (configured && configured !== "/" && configured.startsWith("http")) {
+    return configured;
+  }
+  return window.location.origin;
+}
+
+/**
+ * У Capacitor-оточенні cookie-сесія не тримається стабільно (Android cold
+ * start, iOS ITP). Тому у shell вмикаємо bearer-гілку:
+ *
+ *   - `auth.token` — асинхронний провайдер, який читає токен з
+ *     `@capacitor/preferences` (Keychain / EncryptedSharedPreferences).
+ *     Better Auth підставить його у `Authorization: Bearer <token>` на
+ *     кожен запит до `/api/auth/*`.
+ *   - `onSuccess` — на відповідях від sign-in/sign-up сервер виставляє
+ *     header `set-auth-token` (Better Auth `bearer()` плагін). Ловимо
+ *     його і пишемо у сховище. Сервер також додає `set-auth-token` у
+ *     `Access-Control-Expose-Headers`, тож крос-оріджн CORS його не
+ *     ріже.
+ *
+ * У браузері `isCapacitor()` повертає `false`, провайдери ранньо
+ * виходять, cookie-флов лишається недоторканим.
+ */
+const fetchOptions = {
+  headers: {
+    "X-Requested-With": "XMLHttpRequest",
+  },
+  // `auth` у better-fetch — стандартизований шлях ставити Authorization.
+  // `token` може бути sync або async; ми даємо async щоб попадати у
+  // той самий dynamic-import chunk, що й API-клієнт (`shared/api`).
+  auth: {
+    type: "Bearer" as const,
+    token: async (): Promise<string | undefined> => {
+      if (!isCapacitor()) return undefined;
+      const token = await getBearerToken();
+      return token ?? undefined;
+    },
+  },
+  onSuccess: async (ctx: { response: Response }) => {
+    if (!isCapacitor()) return;
+    const token = ctx.response.headers.get("set-auth-token");
+    if (token) {
+      await setBearerToken(token);
+    }
+  },
+};
+
+type AuthResult<T = unknown> = {
+  data?: T;
+  error?: { message?: string; status?: number; statusText?: string } | null;
+};
+
+interface SessionItem {
+  id: string;
+  token: string;
+  userId: string;
+  expiresAt: Date;
+  createdAt: Date;
+  updatedAt: Date;
+  ipAddress?: string | null | undefined;
+  userAgent?: string | null | undefined;
+}
+
+// Named extension surface for the Better Auth React client Proxy. The
+// runtime Proxy exposes these methods over the email/password and account
+// plugins, but the static `createAuthClient` return type does not advertise
+// them. Declaring the augmentation as a named interface (instead of an
+// inline `& { ... }` on the cast) keeps the cast narrow and the intent
+// explicit: this is a manual stand-in for `declare module` augmentation
+// against `better-auth/react`. If Better Auth ever lands these methods
+// upstream, this interface will conflict loudly rather than silently
+// shadowing the upstream shape.
+//
+// Better Auth 1.6+ renamed the email-password reset endpoint to
+// `/request-password-reset`; the React client Proxy maps the camelCase
+// method `requestPasswordReset` to that path. The legacy alias
+// `forgetPassword` is no longer served and silently 404s, so we MUST
+// use the new name on the wire.
+interface BetterAuthProxyExtensions {
+  requestPasswordReset: (args: {
+    email: string;
+    redirectTo?: string;
+  }) => Promise<AuthResult>;
+  resetPassword: (args: {
+    token: string;
+    newPassword: string;
+  }) => Promise<AuthResult>;
+  updateUser: (args: {
+    name?: string;
+    image?: string | null;
+  }) => Promise<AuthResult>;
+  changePassword: (args: {
+    currentPassword: string;
+    newPassword: string;
+  }) => Promise<AuthResult>;
+  listSessions: () => Promise<AuthResult<SessionItem[]>>;
+  revokeSession: (args: { id: string }) => Promise<AuthResult>;
+  revokeSessions: () => Promise<AuthResult>;
+  deleteUser: (args?: {
+    callbackURL?: string;
+    password?: string;
+    token?: string;
+  }) => Promise<AuthResult>;
+  sendVerificationEmail: (args: {
+    email: string;
+    callbackURL?: string;
+  }) => Promise<AuthResult>;
+  changeEmail: (args: {
+    newEmail: string;
+    callbackURL?: string;
+  }) => Promise<AuthResult>;
+}
+
+const authClient = createAuthClient({
+  baseURL: getAuthBaseURL(),
+  fetchOptions,
+}) as ReturnType<typeof createAuthClient> & BetterAuthProxyExtensions;
+
+type PasswordResetResult = {
+  data?: unknown;
+  error: {
+    message?: string;
+    status?: number;
+    statusText?: string;
+  } | null;
+};
+
+// Narrower variant of the password-reset surface — the underlying Proxy
+// method shape is the same as in `BetterAuthProxyExtensions`, but here we
+// surface the richer `PasswordResetResult` (with a non-nullable `error`
+// field) that the consumers of `typedAuthClient` actually depend on.
+interface PasswordResetProxyExtensions {
+  requestPasswordReset: (args: {
+    email: string;
+    redirectTo?: string;
+  }) => Promise<PasswordResetResult>;
+  resetPassword: (args: {
+    newPassword: string;
+    token?: string;
+  }) => Promise<PasswordResetResult>;
+}
+
+// The React auth-client's static TypeScript surface doesn't advertise
+// `requestPasswordReset` / `resetPassword` — Better Auth resolves them at
+// runtime via a Proxy over the email/password plugin endpoints. We extend
+// the type here so consumers can keep destructuring them; runtime
+// behaviour is unchanged.
+//
+// AI-CONTEXT: manual Proxy type extension. The cast asserts methods exist on
+// the runtime Proxy that the static `authClient` type does not expose. A
+// rename or drop of those plugin endpoints in Better Auth surfaces only at
+// runtime (TS still type-checks). When upgrading Better Auth, smoke-test the
+// password-reset flow end-to-end before trusting the type extension.
+const typedAuthClient = authClient as typeof authClient &
+  PasswordResetProxyExtensions;
+
+// NOTE: `useSession` is intentionally NOT re-exported here. The single
+// source of truth for "who am I" lives in `AuthContext`, which drives off
+// `useUser()` from `@sergeant/api-client/react` (→ `GET /api/v1/me`). Better
+// Auth survives only as the actions layer (sign-in / sign-up / sign-out /
+// password reset). If you need a one-off session check outside React (e.g.
+// service worker, Playwright helper), import `getSession` below.
+const {
+  signIn,
+  signUp,
+  signOut: rawSignOut,
+  getSession,
+  requestPasswordReset,
+  resetPassword,
+  updateUser,
+  changePassword,
+  listSessions,
+  revokeSession,
+  revokeSessions,
+  deleteUser,
+  sendVerificationEmail,
+  changeEmail,
+} = typedAuthClient;
+
+type SignOutFn = typeof rawSignOut;
+
+/**
+ * Обгортка над `signOut`, що додатково витирає bearer-токен зі сховища
+ * shell-а. Сервер при sign-out інвалідує сесію у БД, але токен у
+ * Keychain/SharedPreferences треба прибрати самим — інакше наступний
+ * cold start спробує пристосувати протухлий `Authorization` і полетить у
+ * 401 ще до того, як юзер побачить sign-in. Поза Capacitor це no-op.
+ */
+const signOut: SignOutFn = (async (...args) => {
+  try {
+    return await rawSignOut(...args);
+  } finally {
+    if (isCapacitor()) {
+      await clearBearerToken();
+    }
+  }
+}) as SignOutFn;
+
+// Module-level in-flight promise for getSession. Concurrent callers on the
+// same tick (e.g. SessionsSection + syncEngine drain) share one network round-
+// trip. The promise is cleared when it settles so a subsequent call after a
+// sign-in/sign-out goes back to the network instead of replaying a stale result.
+let _getSessionInflight: Promise<unknown> | null = null;
+
+const _rawGetSession = getSession;
+
+/**
+ * Примусово перечитує сесію з БД і переписує cookie-кеш.
+ *
+ * AI-CONTEXT: `session.cookieCache` на сервері живе 5 хвилин
+ * (`apps/server/src/auth.ts` → `session.cookieCache.maxAge`), а
+ * `GET /api/auth/verify-email` оновлює лише рядок у БД — cookie лишається
+ * зі старим `emailVerified: false`. Оскільки `/api/v1/me` резолвить юзера
+ * через `auth.api.getSession`, після успішного підтвердження профіль ще до
+ * 5 хвилин показував би «Не підтверджено». `disableCookieCache=true`
+ * змушує Better Auth піти в БД і — важливо — перезаписати кеш свіжими
+ * даними (`setCookieCache` наприкінці хендлера `get-session`).
+ *
+ * Свідомо НЕ проходить через `deduplicatedGetSession`: там кешується
+ * in-flight проміс звичайного (cache-friendly) запиту, і переюз того
+ * промісу повернув би саме те протухле значення, від якого ми тікаємо.
+ *
+ * Best-effort: помилку глушимо — верифікація вже відбулась на сервері,
+ * а протухлий бейдж сам розсмокчеться за TTL кеша.
+ */
+export async function refreshSessionCookieCache(): Promise<void> {
+  try {
+    await _rawGetSession({ query: { disableCookieCache: true } });
+  } catch {
+    // no-op — див. JSDoc.
+  }
+}
+
+function deduplicatedGetSession(): ReturnType<typeof getSession> {
+  if (_getSessionInflight) {
+    return _getSessionInflight as ReturnType<typeof getSession>;
+  }
+  _getSessionInflight = _rawGetSession().finally(() => {
+    _getSessionInflight = null;
+  });
+  return _getSessionInflight as ReturnType<typeof getSession>;
+}
+
+export {
+  signIn,
+  signUp,
+  signOut,
+  requestPasswordReset,
+  resetPassword,
+  updateUser,
+  changePassword,
+  listSessions,
+  revokeSession,
+  revokeSessions,
+  deleteUser,
+  sendVerificationEmail,
+  changeEmail,
+};
+
+// Export the deduplicated wrapper under the original name so all callers
+// (SessionsSection, syncEngine/singleton) share one in-flight request.
+export { deduplicatedGetSession as getSession };
+
+export type { AuthResult, SessionItem };

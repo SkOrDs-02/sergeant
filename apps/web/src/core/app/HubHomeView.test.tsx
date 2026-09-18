@@ -1,0 +1,238 @@
+/** @vitest-environment jsdom */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+import type { User } from "@sergeant/shared";
+
+const gates = vi.hoisted(() => ({
+  hasAnyRealEntry: vi.fn(() => true),
+  isFirstRealEntryDone: vi.fn(() => true),
+  shouldShowOnboarding: vi.fn(() => false),
+}));
+vi.mock("../onboarding/firstRealEntry", () => ({
+  hasAnyRealEntry: gates.hasAnyRealEntry,
+}));
+vi.mock("../onboarding/vibePicks", () => ({
+  isFirstRealEntryDone: gates.isFirstRealEntryDone,
+}));
+vi.mock("../onboarding/onboardingGate", () => ({
+  shouldShowOnboarding: gates.shouldShowOnboarding,
+  isDemoActive: () => false,
+}));
+
+// Ловимо `opts`, з якими викликано хук: гейт «Що нового» — це не UI, а саме
+// набір умов, і перевіряти його треба на них.
+const whatsNewOpts = vi.hoisted(() => ({ enabled: undefined as unknown }));
+vi.mock("../whatsNew", () => ({
+  useWhatsNew: (opts: { enabled: boolean }) => {
+    whatsNewOpts.enabled = opts.enabled;
+    return {
+      open: false,
+      release: null,
+      onClose: vi.fn(),
+      onCtaClick: vi.fn(),
+    };
+  },
+}));
+
+// Capture the notifications prop handed to the header so we can assert the
+// FTUX-suppression / update / install logic without rendering the real bell.
+const captured = vi.hoisted(
+  () =>
+    ({
+      notifications: undefined,
+      onOpenSearch: undefined,
+      activeTab: undefined,
+    }) as {
+      notifications: { id: string }[] | undefined;
+      onOpenSearch: (() => void) | undefined;
+      activeTab: string | undefined;
+    },
+);
+vi.mock("./HubHeader", () => ({
+  HubHeader: (props: {
+    notifications?: { id: string }[];
+    onOpenSearch: () => void;
+    activeTab?: string;
+  }) => {
+    captured.notifications = props.notifications;
+    captured.onOpenSearch = props.onOpenSearch;
+    captured.activeTab = props.activeTab;
+    return <div data-testid="hub-header" />;
+  },
+}));
+vi.mock("./NotificationBell", () => ({ NotificationBell: () => null }));
+vi.mock("./HubMainContent", () => ({
+  HubMainContent: () => <div data-testid="hub-main" />,
+}));
+vi.mock("./HubBottomNav", () => ({
+  HubBottomNav: () => <div data-testid="hub-bottom-nav" />,
+}));
+vi.mock("./HubModals", () => ({ HubModals: () => null }));
+vi.mock("./ActiveWorkoutBanner", () => ({
+  ActiveWorkoutBanner: (props: { hidden?: boolean }) => (
+    <div data-testid="active-workout" data-hidden={String(!!props.hidden)} />
+  ),
+}));
+vi.mock("./OfflineBanner", () => ({ OfflineBanner: () => null }));
+vi.mock("@shared/components/layout/MeshBackground", () => ({
+  MeshBackground: ({ children }: { children: React.ReactNode }) => (
+    <div>{children}</div>
+  ),
+}));
+const hubNav = vi.hoisted(() => ({
+  openHubSettingsSection: vi.fn(),
+}));
+vi.mock("@shared/lib/modules/hubNav", () => ({
+  openHubSettingsSection: hubNav.openHubSettingsSection,
+}));
+vi.mock("@shared/components/ui/KeyboardShortcutsModalUI", () => ({
+  KeyboardShortcutsModal: ({
+    open,
+    onClose,
+  }: {
+    open: boolean;
+    onClose: () => void;
+  }) =>
+    open ? (
+      <button
+        type="button"
+        data-testid="keyboard-shortcuts-modal"
+        onClick={onClose}
+      >
+        shortcuts
+      </button>
+    ) : null,
+}));
+
+import { HubHomeView, type HubHomeViewProps } from "./HubHomeView";
+
+function makeUi(overrides: Partial<HubHomeViewProps["ui"]> = {}) {
+  return {
+    searchOpen: false,
+    hubView: "dashboard",
+    setHubView: vi.fn(),
+    setSearchOpen: vi.fn(),
+    closeSearch: vi.fn(),
+    ...overrides,
+  } as HubHomeViewProps["ui"];
+}
+
+function props(overrides: Partial<HubHomeViewProps> = {}): HubHomeViewProps {
+  return {
+    ui: makeUi(),
+    user: { name: "Іван" } as User,
+    authLoading: false,
+    onOpenAuth: vi.fn(),
+    canInstall: false,
+    onInstall: vi.fn().mockResolvedValue(undefined),
+    onDismissInstall: vi.fn(),
+    iosVisible: false,
+    onDismissIosForever: vi.fn(),
+    onSnoozeIos: vi.fn(),
+    updateAvailable: false,
+    onApplyUpdate: vi.fn(),
+    openModule: vi.fn(),
+    shortcutsOpen: false,
+    onCloseShortcuts: vi.fn(),
+    ...overrides,
+  };
+}
+
+describe("HubHomeView", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    gates.hasAnyRealEntry.mockReturnValue(true);
+    gates.isFirstRealEntryDone.mockReturnValue(true);
+    gates.shouldShowOnboarding.mockReturnValue(false);
+    captured.notifications = undefined;
+    captured.onOpenSearch = undefined;
+    captured.activeTab = undefined;
+    whatsNewOpts.enabled = undefined;
+  });
+
+  afterEach(() => cleanup());
+
+  it("renders the hub shell scaffolding", () => {
+    render(<HubHomeView {...props()} />);
+    expect(screen.getByTestId("hub-header")).toBeInTheDocument();
+    expect(screen.getByTestId("hub-main")).toBeInTheDocument();
+    expect(screen.getByTestId("hub-bottom-nav")).toBeInTheDocument();
+  });
+
+  it("passes no notifications when nothing is pending", () => {
+    render(<HubHomeView {...props()} />);
+    expect(captured.notifications).toEqual([]);
+  });
+
+  it("surfaces an SW-update notification when an update is available", () => {
+    render(<HubHomeView {...props({ updateAvailable: true })} />);
+    expect(captured.notifications?.map((n) => n.id)).toContain("sw-update");
+  });
+
+  it("surfaces a PWA-install notification when installable", () => {
+    render(<HubHomeView {...props({ canInstall: true })} />);
+    expect(captured.notifications?.map((n) => n.id)).toContain("pwa-install");
+  });
+
+  // PR-H2 (аудит 2026-09-13 хвиля 5): шапка мусить знати активну вкладку,
+  // щоб показати видимий підзаголовок — інакше «Доброго дня» лишається
+  // єдиним видимим текстом на Налаштуваннях/Профілі/Звʼязках.
+  it("forwards the active hub tab to the header", () => {
+    render(<HubHomeView {...props({ ui: makeUi({ hubView: "settings" }) })} />);
+    expect(captured.activeTab).toBe("settings");
+  });
+
+  it("wires the header search callback", () => {
+    const ui = makeUi();
+    render(<HubHomeView {...props({ ui })} />);
+
+    captured.onOpenSearch?.();
+
+    expect(ui.setSearchOpen).toHaveBeenCalledWith(true);
+  });
+
+  it("suppresses notifications during the FTUX session", () => {
+    // No real entry yet AND first-real-entry not done → inFtuxSession = true.
+    gates.hasAnyRealEntry.mockReturnValue(false);
+    gates.isFirstRealEntryDone.mockReturnValue(false);
+    render(
+      <HubHomeView {...props({ updateAvailable: true, canInstall: true })} />,
+    );
+    expect(captured.notifications).toEqual([]);
+  });
+
+  it("hides the active-workout banner during FTUX", () => {
+    gates.hasAnyRealEntry.mockReturnValue(false);
+    gates.isFirstRealEntryDone.mockReturnValue(false);
+    render(<HubHomeView {...props()} />);
+    expect(screen.getByTestId("active-workout")).toHaveAttribute(
+      "data-hidden",
+      "true",
+    );
+  });
+
+  it("renders the shortcuts modal branch and wires close", async () => {
+    const onCloseShortcuts = vi.fn();
+    render(
+      <HubHomeView {...props({ shortcutsOpen: true, onCloseShortcuts })} />,
+    );
+
+    fireEvent.click(await screen.findByTestId("keyboard-shortcuts-modal"));
+
+    expect(onCloseShortcuts).toHaveBeenCalledTimes(1);
+  });
+
+  // Ревʼю PR #1053. Поки сесія резолвиться, `user` ще `null`, тобто й
+  // `accountCreatedAt`. Якби гейт був відкритий, 2.5-секундний таймер устиг би
+  // показати реліз БЕЗ перевірки віку акаунта, а `shownRef` усередині хука
+  // одноразовий — приїзд `createdAt` після відкриття вже нічого не змінив би.
+  it("не вмикає «Що нового», поки сесія ще резолвиться", () => {
+    render(<HubHomeView {...props({ authLoading: true, user: null })} />);
+    expect(whatsNewOpts.enabled).toBe(false);
+  });
+
+  it("вмикає «Що нового» для того, хто вже минув FTUX", () => {
+    render(<HubHomeView {...props()} />);
+    expect(whatsNewOpts.enabled).toBe(true);
+  });
+});

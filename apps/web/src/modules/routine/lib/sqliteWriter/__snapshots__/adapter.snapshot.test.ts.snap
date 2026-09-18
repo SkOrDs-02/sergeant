@@ -1,0 +1,601 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`routine dual-write SQL snapshot (ADR-0073 Крок 0) > emits a byte-stable (sql, params) sequence for the canonical op set 1`] = `
+[
+  {
+    "params": [
+      "h1:2026-06-20",
+      "u1",
+      "Пити воду",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_entries
+           (id, user_id, name, completed_at, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL)
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name,
+           completed_at = excluded.completed_at,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_entries.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_streaks",
+      "{"user_id":"u1","delta":1}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000002",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, 'increment', ?, ?, ?)",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "h1:2026-06-19",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_entries
+            SET deleted_at = ?, updated_at = ?
+          WHERE id = ?
+            AND user_id = ?
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_entries",
+      "insert",
+      "{"id":"h1:2026-06-20","user_id":"u1","name":"Пити воду","completed_at":"2026-06-23T00:00:00.000Z","created_at":"2026-06-23T00:00:00.000Z","deleted_at":null}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000001",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_streaks",
+      "{"user_id":"u1","delta":-1}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000004",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, 'increment', ?, ?, ?)",
+  },
+  {
+    "params": [
+      "h1|2026-06-20|done|dev-snapshot",
+      "u1",
+      "h1",
+      "2026-06-20",
+      "done",
+      "2026-06-23T00:00:00.000Z",
+      180,
+      "device-local",
+      "ui",
+      "dev-snapshot",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT OR IGNORE INTO routine_completion_events
+           (id, user_id, habit_id, date_key, state, occurred_at,
+            tz_offset_min, day_anchor, source, device_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "h1|2026-06-19|undone|dev-snapshot",
+      "u1",
+      "h1",
+      "2026-06-19",
+      "undone",
+      "2026-06-23T00:00:00.000Z",
+      180,
+      "device-local",
+      "ui",
+      "dev-snapshot",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT OR IGNORE INTO routine_completion_events
+           (id, user_id, habit_id, date_key, state, occurred_at,
+            tz_offset_min, day_anchor, source, device_id, created_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_entries",
+      "delete",
+      "{"id":"h1:2026-06-19","user_id":"u1"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000003",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "Пити 2л води",
+      "2026-06-23T00:00:00.000Z",
+      "u1",
+      "h1:%",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_entries
+            SET name = ?, updated_at = ?
+          WHERE user_id = ?
+            AND id LIKE ?
+            AND deleted_at IS NULL
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "h1",
+      "u1",
+      "Пити 2л води",
+      "💧",
+      "["t1"]",
+      "c1",
+      0,
+      0,
+      "daily",
+      "2026-06-01",
+      null,
+      "morning",
+      "["08:00"]",
+      "[1,2,3,4,5]",
+      "[{"from":"2026-06-10","to":"2026-06-14"}]",
+      "[]",
+      "2026-06-01T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_habits
+           (id, user_id, name, emoji, tag_ids_json, category_id,
+            archived, paused, recurrence, start_date, end_date,
+            time_of_day, reminder_times_json, weekdays_json,
+            pause_intervals_json, weekly_target_history_json,
+            created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name,
+           emoji = excluded.emoji,
+           tag_ids_json = excluded.tag_ids_json,
+           category_id = excluded.category_id,
+           archived = excluded.archived,
+           paused = excluded.paused,
+           recurrence = excluded.recurrence,
+           start_date = excluded.start_date,
+           end_date = excluded.end_date,
+           time_of_day = excluded.time_of_day,
+           reminder_times_json = excluded.reminder_times_json,
+           weekdays_json = excluded.weekdays_json,
+           pause_intervals_json = excluded.pause_intervals_json,
+           weekly_target_history_json = excluded.weekly_target_history_json,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_habits.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_completion_events",
+      "insert",
+      "{"id":"h1|2026-06-20|done|dev-snapshot","user_id":"u1","habit_id":"h1","date_key":"2026-06-20","state":"done","occurred_at":"2026-06-23T00:00:00.000Z","tz_offset_min":180,"day_anchor":"device-local","source":"ui","device_id":"dev-snapshot","created_at":"2026-06-23T00:00:00.000Z"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000005",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "h2",
+      "u1",
+      "Читати",
+      "",
+      "[]",
+      null,
+      0,
+      0,
+      "daily",
+      null,
+      null,
+      "",
+      "[]",
+      "[0,1,2,3,4,5,6]",
+      "[]",
+      "[]",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_habits
+           (id, user_id, name, emoji, tag_ids_json, category_id,
+            archived, paused, recurrence, start_date, end_date,
+            time_of_day, reminder_times_json, weekdays_json,
+            pause_intervals_json, weekly_target_history_json,
+            created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, NULL)
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name,
+           emoji = excluded.emoji,
+           tag_ids_json = excluded.tag_ids_json,
+           category_id = excluded.category_id,
+           archived = excluded.archived,
+           paused = excluded.paused,
+           recurrence = excluded.recurrence,
+           start_date = excluded.start_date,
+           end_date = excluded.end_date,
+           time_of_day = excluded.time_of_day,
+           reminder_times_json = excluded.reminder_times_json,
+           weekdays_json = excluded.weekdays_json,
+           pause_intervals_json = excluded.pause_intervals_json,
+           weekly_target_history_json = excluded.weekly_target_history_json,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_habits.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "h3",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_habits
+            SET deleted_at = ?, updated_at = ?
+          WHERE id = ?
+            AND user_id = ?
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_completion_events",
+      "insert",
+      "{"id":"h1|2026-06-19|undone|dev-snapshot","user_id":"u1","habit_id":"h1","date_key":"2026-06-19","state":"undone","occurred_at":"2026-06-23T00:00:00.000Z","tz_offset_min":180,"day_anchor":"device-local","source":"ui","device_id":"dev-snapshot","created_at":"2026-06-23T00:00:00.000Z"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000006",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "t1",
+      "u1",
+      "ранок",
+      "",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_tags
+           (id, user_id, name, scope, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL)
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name,
+           scope = excluded.scope,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_tags.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "t2",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_tags
+            SET deleted_at = ?, updated_at = ?
+          WHERE id = ?
+            AND user_id = ?
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_habits",
+      "insert",
+      "{"id":"h1","user_id":"u1","name":"Пити 2л води","emoji":"💧","tag_ids_json":"[\\"t1\\"]","category_id":"c1","archived":0,"paused":0,"recurrence":"daily","start_date":"2026-06-01","end_date":null,"time_of_day":"morning","reminder_times_json":"[\\"08:00\\"]","weekdays_json":"[1,2,3,4,5]","pause_intervals_json":"[{\\"from\\":\\"2026-06-10\\",\\"to\\":\\"2026-06-14\\"}]","weekly_target_history_json":"[]","created_at":"2026-06-01T00:00:00.000Z"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000007",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "c1",
+      "u1",
+      "Здоровʼя",
+      "🏥",
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_categories
+           (id, user_id, name, emoji, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL)
+         ON CONFLICT(id) DO UPDATE SET
+           name = excluded.name,
+           emoji = excluded.emoji,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_categories.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "c2",
+      "u1",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_categories
+            SET deleted_at = ?, updated_at = ?
+          WHERE id = ?
+            AND user_id = ?
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_habits",
+      "insert",
+      "{"id":"h2","user_id":"u1","name":"Читати","emoji":"","tag_ids_json":"[]","category_id":null,"archived":0,"paused":0,"recurrence":"daily","start_date":null,"end_date":null,"time_of_day":"","reminder_times_json":"[]","weekdays_json":"[0,1,2,3,4,5,6]","pause_intervals_json":"[]","weekly_target_history_json":"[]","created_at":"2026-06-23T00:00:00.000Z"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000008",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "{"showFizrukInCalendar":true,"routineRemindersEnabled":false}",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_prefs (user_id, data_json, updated_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET
+           data_json = excluded.data_json,
+           updated_at = excluded.updated_at
+         WHERE excluded.updated_at > routine_prefs.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "["h2","h1"]",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_habit_order (user_id, order_json, updated_at)
+         VALUES (?, ?, ?)
+         ON CONFLICT(user_id) DO UPDATE SET
+           order_json = excluded.order_json,
+           updated_at = excluded.updated_at
+         WHERE excluded.updated_at > routine_habit_order.updated_at",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_habits",
+      "delete",
+      "{"id":"h3","user_id":"u1"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000009",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "h1__2026-06-20",
+      "вдалося",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_completion_notes
+           (user_id, note_key, note, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, NULL)
+         ON CONFLICT(user_id, note_key) DO UPDATE SET
+           note = excluded.note,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_completion_notes.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "u1",
+      "h1__2026-06-19",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_completion_notes
+            SET deleted_at = ?, updated_at = ?
+          WHERE user_id = ?
+            AND note_key = ?
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_tags",
+      "insert",
+      "{"id":"t1","user_id":"u1","name":"ранок","scope":"","created_at":"2026-06-23T00:00:00.000Z"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000010",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "h1__2026-06-18",
+      "sick",
+      "температура",
+      "2026-06-18T07:30:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "INSERT INTO routine_habit_skips
+           (user_id, skip_key, reason, note, at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?, NULL)
+         ON CONFLICT(user_id, skip_key) DO UPDATE SET
+           reason = excluded.reason,
+           note = excluded.note,
+           at = excluded.at,
+           updated_at = excluded.updated_at,
+           deleted_at = NULL
+         WHERE excluded.updated_at > routine_habit_skips.updated_at",
+  },
+  {
+    "params": [
+      "2026-06-23T00:00:00.000Z",
+      "2026-06-23T00:00:00.000Z",
+      "u1",
+      "h1__2026-06-17",
+      "2026-06-23T00:00:00.000Z",
+    ],
+    "sql": "UPDATE routine_habit_skips
+            SET deleted_at = ?, updated_at = ?
+          WHERE user_id = ?
+            AND skip_key = ?
+            AND updated_at < ?",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_tags",
+      "delete",
+      "{"id":"t2","user_id":"u1"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000011",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_categories",
+      "insert",
+      "{"id":"c1","user_id":"u1","name":"Здоровʼя","emoji":"🏥","created_at":"2026-06-23T00:00:00.000Z"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000012",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_categories",
+      "delete",
+      "{"id":"c2","user_id":"u1"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000013",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_prefs",
+      "insert",
+      "{"user_id":"u1","data_json":"{\\"showFizrukInCalendar\\":true,\\"routineRemindersEnabled\\":false}"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000014",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_habit_order",
+      "insert",
+      "{"user_id":"u1","order_json":"[\\"h2\\",\\"h1\\"]"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000015",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_completion_notes",
+      "insert",
+      "{"user_id":"u1","note_key":"h1__2026-06-20","note":"вдалося"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000016",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_completion_notes",
+      "delete",
+      "{"user_id":"u1","note_key":"h1__2026-06-19"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000017",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_habit_skips",
+      "insert",
+      "{"user_id":"u1","skip_key":"h1__2026-06-18","reason":"sick","note":"температура","at":"2026-06-18T07:30:00.000Z"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000018",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+  {
+    "params": [
+      "u1",
+      "routine_habit_skips",
+      "delete",
+      "{"user_id":"u1","skip_key":"h1__2026-06-17"}",
+      "2026-06-23T00:00:00.000Z",
+      "00000000-0000-4000-8000-000000000019",
+    ],
+    "sql": "INSERT OR IGNORE INTO sync_op_outbox
+       (user_id, table_name, op, row, client_ts, idempotency_key)
+     VALUES (?, ?, ?, ?, ?, ?)",
+  },
+]
+`;

@@ -1,0 +1,868 @@
+import { describe, it, expect } from "vitest";
+import pino from "pino";
+import { hashUserId, isUserIdHash } from "../lib/userIdHash.js";
+import { als } from "./requestContext.js";
+import {
+  redactKeyNames,
+  redactKeysRecursively,
+  redactPaths,
+  serializeError,
+} from "./logger.js";
+
+function makeTestLogger(): {
+  logger: pino.Logger;
+  chunks: string[];
+} {
+  const chunks: string[] = [];
+  const stream: pino.DestinationStream = {
+    write(chunk: string) {
+      chunks.push(chunk);
+    },
+  };
+  const logger = pino(
+    {
+      level: "info",
+      redact: { paths: redactPaths, censor: "[redacted]" },
+      formatters: {
+        // Дзеркально до production-конфігу (див. `pinoOptions.formatters.log` у
+        // `logger.ts`) — рекурсивний редактор працює перед path-redact-ом, тож
+        // тести перевіряють саме ту поведінку, яка летить у Railway/Loki.
+        log(obj) {
+          return redactKeysRecursively(obj) as Record<string, unknown>;
+        },
+      },
+    },
+    stream,
+  );
+  return { logger, chunks };
+}
+
+describe("logger", () => {
+  describe("redactPaths", () => {
+    it("містить обовʼязкові шляхи для секретів та PII", () => {
+      expect(redactPaths).toContain("req.headers.authorization");
+      expect(redactPaths).toContain("req.headers.cookie");
+      expect(redactPaths).toContain('req.headers["x-csrf-token"]');
+      expect(redactPaths).toContain('res.headers["set-cookie"]');
+      expect(redactPaths).toContain("password");
+      expect(redactPaths).toContain("token");
+      expect(redactPaths).toContain("sessionToken");
+      expect(redactPaths).toContain("email");
+      expect(redactPaths).toContain("phone");
+      expect(redactPaths).toContain("privateKey");
+      expect(redactPaths).toContain("signature");
+      expect(redactPaths).toContain("connectionString");
+      expect(redactPaths).toContain("dsn");
+    });
+
+    // S4 (audit `docs/audits/2026-05-13-security-observability-roast.md`) —
+    // статичні `*.password`, `*.*.password`, `*.email`, `req.body.email`
+    // patterns повинні бути видалені — якщо вони повертаються, хтось
+    // відкотив рекурсивний редактор і лишився лише крихкий patch-варіант
+    // — redactPaths повинен бути вужчим, а рекурсія — авторитетною.
+    it("НЕ містить wildcard-depth patterns (S4 — рекурсивний walker вже покриває)", () => {
+      expect(redactPaths).not.toContain("*.password");
+      expect(redactPaths).not.toContain("*.*.password");
+      expect(redactPaths).not.toContain("*.email");
+      expect(redactPaths).not.toContain("*.*.email");
+      expect(redactPaths).not.toContain("req.body.email");
+      expect(redactPaths).not.toContain("res.body.email");
+    });
+
+    it("redact працює з pino — маскує секретні поля у root", () => {
+      const { logger, chunks } = makeTestLogger();
+
+      logger.info({
+        msg: "test_redact",
+        password: "super-secret-123",
+        token: "jwt-token-abc",
+        email: "user@example.com",
+        phone: "+380991234567",
+        safeField: "this-should-remain",
+      });
+
+      expect(chunks).toHaveLength(1);
+      const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
+      expect(parsed["password"]).toBe("[redacted]");
+      expect(parsed["token"]).toBe("[redacted]");
+      expect(parsed["email"]).toBe("[redacted]");
+      expect(parsed["phone"]).toBe("[redacted]");
+      expect(parsed["safeField"]).toBe("this-should-remain");
+    });
+
+    it("redact wildcard ловить вкладені password/token/apiKey", () => {
+      const { logger, chunks } = makeTestLogger();
+
+      logger.info({
+        msg: "nested_redact",
+        body: {
+          user: { password: "p1", apiKey: "k1" },
+        },
+        ctx: { secret: "s1", privateKey: "pk1" },
+      });
+
+      const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
+      const body = parsed["body"] as { user: Record<string, unknown> };
+      expect(body.user["password"]).toBe("[redacted]");
+      expect(body.user["apiKey"]).toBe("[redacted]");
+      const ctx = parsed["ctx"] as Record<string, unknown>;
+      expect(ctx["secret"]).toBe("[redacted]");
+      expect(ctx["privateKey"]).toBe("[redacted]");
+    });
+
+    it("redact ловить sensitive headers у req/res", () => {
+      const { logger, chunks } = makeTestLogger();
+
+      logger.info({
+        msg: "headers_redact",
+        req: {
+          headers: {
+            authorization: "Bearer abcdef",
+            cookie: "session=xxx",
+            "x-csrf-token": "csrf-yyy",
+            "x-api-key": "key-zzz",
+            "user-agent": "Mozilla/5.0",
+          },
+        },
+        res: {
+          headers: { "set-cookie": "auth=qqq" },
+        },
+      });
+
+      const parsed = JSON.parse(chunks[0]!) as {
+        req: { headers: Record<string, unknown> };
+        res: { headers: Record<string, unknown> };
+      };
+      expect(parsed.req.headers["authorization"]).toBe("[redacted]");
+      expect(parsed.req.headers["cookie"]).toBe("[redacted]");
+      expect(parsed.req.headers["x-csrf-token"]).toBe("[redacted]");
+      expect(parsed.req.headers["x-api-key"]).toBe("[redacted]");
+      // Не маскуємо нейтральні headers — sanity check.
+      expect(parsed.req.headers["user-agent"]).toBe("Mozilla/5.0");
+      expect(parsed.res.headers["set-cookie"]).toBe("[redacted]");
+    });
+
+    it("redact маскує session.token (структуроване auth) і хешує вкладений userId (W4)", () => {
+      const { logger, chunks } = makeTestLogger();
+
+      logger.info({
+        msg: "session_redact",
+        session: {
+          token: "session-abc",
+          userId: "user-123",
+        },
+      });
+
+      const parsed = JSON.parse(chunks[0]!) as {
+        session: Record<string, unknown>;
+      };
+      expect(parsed.session["token"]).toBe("[redacted]");
+      // W4: userId — sensitive, але не через generic "[redacted]" (втратили б
+      // кореляцію) — хеш-censor, той самий сталий sha256-префікс, що й у
+      // `mixin()`-шляху нижче.
+      expect(parsed.session["userId"]).toBe(hashUserId("user-123"));
+      expect(parsed.session["userId"]).not.toBe("user-123");
+    });
+  });
+
+  // M3 — `docs/security/hardening/M3-pino-redact-paths.md`
+  // Table-driven: для кожного нового entry у redactPaths переконуємось,
+  // що pino дійсно маскує його при дамп-у. Single source of truth — цей
+  // масив; redactPaths можна розширювати без правки індивідуальних it().
+  describe("M3 — extended redactPaths coverage", () => {
+    interface Case {
+      readonly name: string;
+      readonly payload: Record<string, unknown>;
+      readonly readRedacted: (parsed: Record<string, unknown>) => unknown;
+      readonly readSafe?: (parsed: Record<string, unknown>) => unknown;
+    }
+
+    const cases: ReadonlyArray<Case> = [
+      {
+        name: "X-Mono-Webhook-Secret header у req.headers",
+        payload: {
+          msg: "mono_webhook_dbg",
+          req: {
+            headers: {
+              "x-mono-webhook-secret": "leaked-secret-abc",
+              "user-agent": "Monobank/1.0",
+            },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p["req"] as {
+              headers: Record<string, unknown>;
+            }
+          ).headers["x-mono-webhook-secret"],
+        readSafe: (p) =>
+          (
+            p["req"] as {
+              headers: Record<string, unknown>;
+            }
+          ).headers["user-agent"],
+      },
+      {
+        name: "X-Openclaw-Webhook-Secret header",
+        payload: {
+          req: {
+            headers: { "x-openclaw-webhook-secret": "openclaw-secret-xyz" },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p["req"] as {
+              headers: Record<string, unknown>;
+            }
+          ).headers["x-openclaw-webhook-secret"],
+      },
+      {
+        name: "X-Api-Secret header",
+        payload: {
+          req: {
+            headers: { "x-api-secret": "api-secret-123" },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p["req"] as {
+              headers: Record<string, unknown>;
+            }
+          ).headers["x-api-secret"],
+      },
+      {
+        name: "X-Internal-Token header",
+        payload: {
+          req: {
+            headers: { "x-internal-token": "internal-tok-abc" },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p["req"] as {
+              headers: Record<string, unknown>;
+            }
+          ).headers["x-internal-token"],
+      },
+      {
+        name: "groqKey у root",
+        payload: { groqKey: "gsk_live_xxx" },
+        readRedacted: (p) => p["groqKey"],
+      },
+      {
+        name: "anthropicKey у root",
+        payload: { anthropicKey: "sk-ant-xxx" },
+        readRedacted: (p) => p["anthropicKey"],
+      },
+      {
+        name: "voyageKey у root",
+        payload: { voyageKey: "pa-voyage-xxx" },
+        readRedacted: (p) => p["voyageKey"],
+      },
+      {
+        name: "groqKey всередині debug-обʼєкта (1 рівень)",
+        payload: { ctx: { groqKey: "gsk_live_xxx", model: "llama" } },
+        readRedacted: (p) => (p["ctx"] as Record<string, unknown>)["groqKey"],
+        readSafe: (p) => (p["ctx"] as Record<string, unknown>)["model"],
+      },
+      {
+        name: "req.body.password (login flow)",
+        payload: {
+          req: { body: { email: "u@example.com", password: "leak" } },
+        },
+        readRedacted: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body["password"],
+      },
+      {
+        name: "req.body.token (CSRF / form token)",
+        payload: { req: { body: { token: "form-token-xxx" } } },
+        readRedacted: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body["token"],
+      },
+      {
+        name: "req.body.currentPassword (change-password endpoint)",
+        payload: { req: { body: { currentPassword: "old-pass" } } },
+        readRedacted: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body[
+            "currentPassword"
+          ],
+      },
+      {
+        name: "req.body.newPassword (change-password endpoint)",
+        payload: { req: { body: { newPassword: "new-pass" } } },
+        readRedacted: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body["newPassword"],
+      },
+      {
+        name: "err.config.headers.Authorization (axios upstream failure)",
+        payload: {
+          err: {
+            message: "ECONNRESET",
+            config: {
+              headers: {
+                Authorization: "Bearer leaked-token",
+                "Content-Type": "application/json",
+              },
+            },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p["err"] as {
+              config: { headers: Record<string, unknown> };
+            }
+          ).config.headers["Authorization"],
+        readSafe: (p) =>
+          (
+            p["err"] as {
+              config: { headers: Record<string, unknown> };
+            }
+          ).config.headers["Content-Type"],
+      },
+      {
+        name: "err.config.headers.authorization (lowercase)",
+        payload: {
+          err: { config: { headers: { authorization: "Bearer leak" } } },
+        },
+        readRedacted: (p) =>
+          (
+            p["err"] as {
+              config: { headers: Record<string, unknown> };
+            }
+          ).config.headers["authorization"],
+      },
+      {
+        name: "err.config.headers.Cookie (axios upstream)",
+        payload: {
+          err: { config: { headers: { Cookie: "session=leaked" } } },
+        },
+        readRedacted: (p) =>
+          (
+            p["err"] as {
+              config: { headers: Record<string, unknown> };
+            }
+          ).config.headers["Cookie"],
+      },
+      {
+        name: "err.config.headers['x-mono-webhook-secret'] (axios outbound)",
+        payload: {
+          err: {
+            config: { headers: { "x-mono-webhook-secret": "outbound-leak" } },
+          },
+        },
+        readRedacted: (p) =>
+          (
+            p["err"] as {
+              config: { headers: Record<string, unknown> };
+            }
+          ).config.headers["x-mono-webhook-secret"],
+      },
+      // Round 17 — PII paths beyond root-level email/phone. Pino redact
+      // wildcards match exactly one nesting level, so `*.email` covers
+      // `user.email` but NOT `req.body.email`. Each entry below
+      // exercises a distinct path that must be reachable; mutating the
+      // redactPaths array (e.g. dropping `req.body.email`) trips at
+      // least one of these cases.
+      {
+        name: "req.body.email (login flow — explicit 3-level path)",
+        payload: {
+          req: { body: { email: "user@example.com", role: "owner" } },
+        },
+        readRedacted: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body["email"],
+        readSafe: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body["role"],
+      },
+      {
+        name: "req.body.phone (OTP / sign-in via SMS)",
+        payload: {
+          req: { body: { phone: "+380991234567", channel: "sms" } },
+        },
+        readRedacted: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body["phone"],
+        readSafe: (p) =>
+          (p["req"] as { body: Record<string, unknown> }).body["channel"],
+      },
+      {
+        name: "res.body.email (response with user data)",
+        payload: {
+          res: { body: { email: "user@example.com", id: "u-123" } },
+        },
+        readRedacted: (p) =>
+          (p["res"] as { body: Record<string, unknown> }).body["email"],
+        readSafe: (p) =>
+          (p["res"] as { body: Record<string, unknown> }).body["id"],
+      },
+      {
+        name: "res.body.phone (response with user data)",
+        payload: {
+          res: { body: { phone: "+380991234567", id: "u-123" } },
+        },
+        readRedacted: (p) =>
+          (p["res"] as { body: Record<string, unknown> }).body["phone"],
+      },
+      {
+        name: "*.*.email — 2-level wildcard (e.g. result.user.email)",
+        payload: {
+          result: {
+            user: { email: "user@example.com", id: "u-123" },
+          },
+        },
+        readRedacted: (p) =>
+          (p["result"] as { user: Record<string, unknown> }).user["email"],
+        readSafe: (p) =>
+          (p["result"] as { user: Record<string, unknown> }).user["id"],
+      },
+      {
+        name: "*.*.phone — 2-level wildcard (e.g. data.contact.phone)",
+        payload: {
+          data: {
+            contact: { phone: "+380991234567", channel: "sms" },
+          },
+        },
+        readRedacted: (p) =>
+          (p["data"] as { contact: Record<string, unknown> }).contact["phone"],
+      },
+    ];
+
+    cases.forEach((c) => {
+      it(`маскує ${c.name}`, () => {
+        const { logger, chunks } = makeTestLogger();
+        logger.info(c.payload);
+        expect(chunks).toHaveLength(1);
+        const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
+        expect(c.readRedacted(parsed)).toBe("[redacted]");
+        if (c.readSafe) {
+          // Sanity-check — нейтральне поле в тому ж payload-і не зачеплене.
+          const safe = c.readSafe(parsed);
+          expect(safe).not.toBe("[redacted]");
+          expect(safe).toBeDefined();
+        }
+      });
+    });
+  });
+
+  // S4 (audit `docs/audits/2026-05-13-security-observability-roast.md`) —
+  // рекурсивний редактор покриває довільну глибину лог-обʼєкта.
+  // Cтатичні `*.password`, `*.*.password` patterns покривали тільки 1–2 рівні;
+  // axios `err.config.data` без проблем виносив password на 3+ рівнях.
+  describe("S4 — recursive redactor (deep nesting)", () => {
+    it("маскує password на 3 рівні вглиб (substring 'x' відсутній у stringify-output)", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({ a: { b: { c: { password: "x" } } } });
+
+      expect(chunks).toHaveLength(1);
+      const raw = chunks[0]!;
+      // Acceptance criteria із audit S4: substring `'x'` НЕ повинен бути у виводі.
+      // Це сильніше за перевірку явного поля, бо ловить випадок, коли
+      // password випадково увійшов на інший ключ (наприклад, у вигляді
+      // stringified-JSON під `err.message`-рядком).
+      expect(raw).not.toContain('"x"');
+      const parsed = JSON.parse(raw) as {
+        a: { b: { c: Record<string, unknown> } };
+      };
+      expect(parsed.a.b.c["password"]).toBe("[redacted]");
+    });
+
+    it("маскує вкладений PII (email на 4 рівні) і не зачіпає нейтральні поля", () => {
+      const { logger, chunks } = makeTestLogger();
+      const original = {
+        result: {
+          payload: {
+            data: {
+              user: {
+                email: "hidden@example.com",
+                publicId: "u-123",
+              },
+            },
+          },
+        },
+      };
+      logger.info(original);
+
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("hidden@example.com");
+      const parsed = JSON.parse(raw) as {
+        result: {
+          payload: {
+            data: { user: { email: unknown; publicId: unknown } };
+          };
+        };
+      };
+      expect(parsed.result.payload.data.user.email).toBe("[redacted]");
+      expect(parsed.result.payload.data.user.publicId).toBe("u-123");
+      // Non-mutating: caller обʼєкт НЕ мутується.
+      expect(original.result.payload.data.user.email).toBe(
+        "hidden@example.com",
+      );
+    });
+
+    it("маскує sensitive-ключі в масивах на будь-якій глибині", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({
+        users: [
+          { id: "u-1", token: "jwt-leak-A" },
+          {
+            id: "u-2",
+            session: { token: "jwt-leak-B", expiresAt: "2026-01-01" },
+          },
+        ],
+      });
+
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("jwt-leak-A");
+      expect(raw).not.toContain("jwt-leak-B");
+      const parsed = JSON.parse(raw) as {
+        users: Array<{
+          id: string;
+          token?: unknown;
+          session?: { token?: unknown; expiresAt?: unknown };
+        }>;
+      };
+      expect(parsed.users[0]!.token).toBe("[redacted]");
+      expect(parsed.users[0]!.id).toBe("u-1");
+      expect(parsed.users[1]!.session!.token).toBe("[redacted]");
+      expect(parsed.users[1]!.session!.expiresAt).toBe("2026-01-01");
+    });
+
+    it("case-insensitive матч — 'Password' / 'AUTHORIZATION' теж маскуються", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({
+        deeply: {
+          nested: { ctx: { Password: "caseA", AUTHORIZATION: "Bearer xx" } },
+        },
+      });
+
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("caseA");
+      expect(raw).not.toContain("Bearer xx");
+    });
+
+    it("обʼєкт-значення sensitive-ключа мапиться у `null` (не лишає структуру)", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({
+        ctx: { token: { algo: "HS256", value: "opaque-leak" } },
+      });
+
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("opaque-leak");
+      expect(raw).not.toContain("HS256");
+      const parsed = JSON.parse(raw) as {
+        ctx: { token: unknown };
+      };
+      expect(parsed.ctx.token).toBeNull();
+    });
+
+    // S4 acceptance — 5-рівневий nesting: `password` на глибині 5 повинен
+    // бути замаскований; substring 'secret-xyz' НЕ повинен зʼявлятись у
+    // stringify-output (тест-контракт із docs/planning/pr-plan-security-obs-2026-05.md § S4).
+    it("маскує password на 5 рівнів вглиб — substring 'secret-xyz' відсутній", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({
+        a: { b: { c: { d: { e: { password: "secret-xyz" } } } } },
+      });
+
+      expect(chunks).toHaveLength(1);
+      const raw = chunks[0]!;
+      // Primary acceptance: the literal secret value must not appear anywhere.
+      expect(raw).not.toContain("secret-xyz");
+      // Secondary: the field itself must be redacted (not dropped).
+      const parsed = JSON.parse(raw) as {
+        a: { b: { c: { d: { e: Record<string, unknown> } } } };
+      };
+      expect(parsed.a.b.c.d.e["password"]).toBe("[redacted]");
+    });
+
+    it("маскує email на 5 рівнів вглиб (PII class B)", () => {
+      const { logger, chunks } = makeTestLogger();
+      logger.info({
+        l1: {
+          l2: {
+            l3: {
+              l4: { l5: { email: "deep-secret@example.com", safe: "ok" } },
+            },
+          },
+        },
+      });
+
+      expect(chunks).toHaveLength(1);
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("deep-secret@example.com");
+      const parsed = JSON.parse(raw) as {
+        l1: { l2: { l3: { l4: { l5: Record<string, unknown> } } } };
+      };
+      expect(parsed.l1.l2.l3.l4.l5["email"]).toBe("[redacted]");
+      // Safe non-sensitive sibling must survive.
+      expect(parsed.l1.l2.l3.l4.l5["safe"]).toBe("ok");
+    });
+
+    it("cycle-safe — self-referencing object не зациклює walker", () => {
+      // Прямий unit-тест рекурсивної функції — pino-stream робить власну
+      // цикл-детекцію через safe-stable-stringify, тож тут викликаємо
+      // walker безпосередньо на само-посилальній структурі.
+      const cyclic: Record<string, unknown> = { token: "leak" };
+      cyclic["self"] = cyclic;
+      const result = redactKeysRecursively(cyclic) as Record<string, unknown>;
+      expect(result["token"]).toBe("[redacted]");
+    });
+
+    it("aliasing — той самий обʼєкт у двох гілках редагується в обох", () => {
+      const shared = { password: "shared-leak" };
+      const { logger, chunks } = makeTestLogger();
+      logger.info({ first: shared, second: { nested: shared } });
+
+      const raw = chunks[0]!;
+      expect(raw).not.toContain("shared-leak");
+      const parsed = JSON.parse(raw) as {
+        first: Record<string, unknown>;
+        second: { nested: Record<string, unknown> };
+      };
+      expect(parsed.first["password"]).toBe("[redacted]");
+      expect(parsed.second.nested["password"]).toBe("[redacted]");
+      // Non-mutating: вихідний обʼєкт залишився недоторканим.
+      expect(shared.password).toBe("shared-leak");
+    });
+  });
+
+  // M3 — Sentry redactKeyNames узгоджені з Pino redactPaths
+  describe("M3 — redactKeyNames extended", () => {
+    it("містить webhook-secret-headers (Sentry case-insensitive scrub)", () => {
+      expect(redactKeyNames).toContain("x-mono-webhook-secret");
+      expect(redactKeyNames).toContain("x-openclaw-webhook-secret");
+      expect(redactKeyNames).toContain("x-api-secret");
+      expect(redactKeyNames).toContain("x-internal-token");
+    });
+
+    it("містить provider-specific API-keys (для extra/contexts у Sentry)", () => {
+      expect(redactKeyNames).toContain("groqKey");
+      expect(redactKeyNames).toContain("anthropicKey");
+      expect(redactKeyNames).toContain("voyageKey");
+    });
+  });
+
+  describe("redactKeyNames (для Sentry-скрабера)", () => {
+    it("експортується з обовʼязковими ключами", () => {
+      // Sentry beforeSend hook використовує цей список для рекурсивного
+      // скрабу. Якщо переставив — оновити sentry.ts.
+      expect(redactKeyNames).toContain("password");
+      expect(redactKeyNames).toContain("token");
+      expect(redactKeyNames).toContain("email");
+      expect(redactKeyNames).toContain("phone");
+      expect(redactKeyNames).toContain("authorization");
+      expect(redactKeyNames).toContain("cookie");
+      expect(redactKeyNames).toContain("set-cookie");
+      expect(redactKeyNames).toContain("privateKey");
+      expect(redactKeyNames).toContain("dsn");
+    });
+  });
+
+  // L10 — `docs/security/hardening/L10-user-id-hash-in-logs.md`. Pino's
+  // `mixin()` reads `userId` from ALS-context and rewrites it as a 16-hex
+  // `userIdHash`. Both directions are covered:
+  //   - the helper itself (idempotent, deterministic, lower-cases UUIDs);
+  //   - the integration with the real logger (mixin emits `userIdHash`,
+  //     never raw `userId`, even with email/phone redaction in the same
+  //     payload).
+  describe("L10 — userIdHash in logs", () => {
+    it("isUserIdHash returns true only for 16-char lowercase hex", () => {
+      expect(isUserIdHash("0123456789abcdef")).toBe(true);
+      expect(isUserIdHash("0123456789ABCDEF")).toBe(false);
+      expect(isUserIdHash("0123456789abcde")).toBe(false); // 15
+      expect(isUserIdHash("0123456789abcdef0")).toBe(false); // 17
+      expect(isUserIdHash("xxxxxxxxxxxxxxxx")).toBe(false);
+    });
+
+    it("hashUserId returns null for empty/undefined input", () => {
+      expect(hashUserId(undefined)).toBeNull();
+      expect(hashUserId(null)).toBeNull();
+      expect(hashUserId("")).toBeNull();
+    });
+
+    it("hashUserId is deterministic across calls", () => {
+      const id = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+      expect(hashUserId(id)).toBe(hashUserId(id));
+    });
+
+    it("hashUserId is case-insensitive (UUID lower/upper produce same hash)", () => {
+      const lower = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+      const upper = lower.toUpperCase();
+      expect(hashUserId(lower)).toBe(hashUserId(upper));
+    });
+
+    it("hashUserId is idempotent — passing an existing hash returns it as-is", () => {
+      const id = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+      const first = hashUserId(id);
+      expect(first).not.toBeNull();
+      // Re-hashing the already-hashed value must not change it (otherwise
+      // child loggers would double-hash and we'd lose grep-stability).
+      expect(hashUserId(first!)).toBe(first);
+    });
+
+    it("hashUserId returns 16 hex chars and contains no UUID dashes", () => {
+      const id = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+      const hash = hashUserId(id)!;
+      expect(hash).toMatch(/^[0-9a-f]{16}$/);
+      expect(hash).not.toContain("-");
+    });
+
+    it("logger emits `userIdHash` and NOT raw `userId` from ALS context", () => {
+      const { logger, chunks } = makeTestLogger();
+      const rawUuid = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+
+      als.run(
+        {
+          requestId: "req-1",
+          userId: rawUuid,
+          module: "test",
+          traceId: null,
+        },
+        () => {
+          // makeTestLogger() builds a bare pino without our mixin, so
+          // assert directly with a child that pulls userId from ALS:
+          const child = logger.child({
+            requestId: "req-1",
+            userIdHash: hashUserId(rawUuid)!,
+            module: "test",
+          });
+          child.info({ msg: "sync_completed" });
+        },
+      );
+
+      expect(chunks).toHaveLength(1);
+      const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
+      expect(parsed["userIdHash"]).toBe(hashUserId(rawUuid));
+      // Hard requirement: NO raw UUID anywhere in the serialised log line.
+      const uuidRegex =
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+      expect(chunks[0]).not.toMatch(uuidRegex);
+      // And no top-level `userId` key — caller must rely on `userIdHash`.
+      expect(parsed["userId"]).toBeUndefined();
+    });
+
+    it("logger.test stream verifies hashed UUID does not contain dashes", () => {
+      const id = "AAAAAAAA-BBBB-CCCC-DDDD-EEEEEEEEEEEE";
+      const h = hashUserId(id)!;
+      // Sanity for the regex above — even an upper-case UUID becomes a
+      // dash-free 16-hex token, so the negative match cannot accidentally
+      // pass on a different format.
+      expect(h).toMatch(/^[0-9a-f]{16}$/);
+    });
+
+    // W4 — до цієї правки `redactKeysRecursively` не знав про `userId`
+    // взагалі (test вище на `session.userId` це й документував як "не
+    // sensitive, лишається"). Explicit `logger.x({ userId })` /
+    // `{ user_id })` — реальний патерн у ~11 файлах (push/send.ts,
+    // ai-memory/*, mono/*, syncV2Stream.ts, ftuxDrip.ts) — обходив
+    // `mixin()` і публікував сирий Better Auth ID напряму в Loki/Railway.
+    it("хешує явний root-level `userId` замість generic [redacted]", () => {
+      const { logger, chunks } = makeTestLogger();
+      const rawUuid = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+
+      logger.info({ msg: "push_dead_token_cleanup", userId: rawUuid });
+
+      const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
+      expect(parsed["userId"]).toBe(hashUserId(rawUuid));
+      expect(parsed["userId"]).not.toBe(rawUuid);
+      const uuidRegex =
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+      expect(chunks[0]).not.toMatch(uuidRegex);
+    });
+
+    it("хешує snake_case `user_id` (справжня форма в push/send.ts) на будь-якій глибині", () => {
+      const { logger, chunks } = makeTestLogger();
+      const rawUuid = "9b0a4d96-1d4d-4c4f-9a8a-1bd3e9b35ddc";
+
+      logger.info({
+        msg: "apns_send_failed",
+        user_id: rawUuid,
+        nested: { user_id: rawUuid },
+      });
+
+      const parsed = JSON.parse(chunks[0]!) as {
+        user_id: unknown;
+        nested: { user_id: unknown };
+      };
+      expect(parsed.user_id).toBe(hashUserId(rawUuid));
+      expect(parsed.nested.user_id).toBe(hashUserId(rawUuid));
+      const uuidRegex =
+        /[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}/i;
+      expect(chunks[0]).not.toMatch(uuidRegex);
+    });
+
+    it("не падає на не-стрінгове/відсутнє значення userId (defensive fallback)", () => {
+      const { logger, chunks } = makeTestLogger();
+
+      logger.info({ msg: "edge_case", userId: null, user_id: undefined });
+
+      const parsed = JSON.parse(chunks[0]!) as Record<string, unknown>;
+      // null/undefined не хешуються (hashUserId сам повертає null для них) —
+      // падаємо назад на "[redacted]", а не кидаємо помилку в hot log path.
+      expect(parsed["userId"]).toBe("[redacted]");
+      expect(parsed["user_id"]).toBe("[redacted]");
+    });
+  });
+
+  describe("serializeError", () => {
+    it("серіалізує звичайний Error", () => {
+      const err = new Error("test error");
+      err.name = "TestError";
+      const result = serializeError(err);
+      expect(result).toMatchObject({
+        name: "TestError",
+        message: "test error",
+      });
+      expect(result?.stack).toBeUndefined();
+    });
+
+    it("включає stack коли includeStack=true", () => {
+      const err = new Error("with stack");
+      const result = serializeError(err, { includeStack: true });
+      expect(result?.stack).toBeDefined();
+      expect(result?.stack).toContain("with stack");
+    });
+
+    it("розгортає err.cause рекурсивно", () => {
+      const root = new Error("root cause");
+      const mid = new Error("middle", { cause: root });
+      const top = new Error("top", { cause: mid });
+
+      const result = serializeError(top);
+      expect(result?.message).toBe("top");
+      expect(result?.cause?.message).toBe("middle");
+      expect(result?.cause?.cause?.message).toBe("root cause");
+    });
+
+    it("обмежує глибину рекурсії (depth)", () => {
+      const deep = new Error("deep", {
+        cause: new Error("deeper", {
+          cause: new Error("deepest"),
+        }),
+      });
+      const result = serializeError(deep, { depth: 1 });
+      expect(result?.message).toBe("deep");
+      expect(result?.cause?.message).toBe("deeper");
+      // depth=1 на рівні cause → cause.cause має depth=0 → undefined
+      expect(result?.cause?.cause).toBeUndefined();
+    });
+
+    it("повертає undefined для null/undefined", () => {
+      expect(serializeError(null)).toBeUndefined();
+      expect(serializeError(undefined)).toBeUndefined();
+    });
+
+    it("обробляє не-обʼєктні значення", () => {
+      const result = serializeError("string error");
+      expect(result).toEqual({ message: "string error" });
+    });
+
+    it("включає code та status", () => {
+      const err = Object.assign(new Error("http error"), {
+        code: "ECONNREFUSED",
+        status: 502,
+      });
+      const result = serializeError(err);
+      expect(result?.code).toBe("ECONNREFUSED");
+      expect(result?.status).toBe(502);
+    });
+  });
+});

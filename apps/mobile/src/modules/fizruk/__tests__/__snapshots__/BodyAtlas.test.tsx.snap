@@ -1,0 +1,1350 @@
+// Jest Snapshot v1, https://goo.gl/fbAQLP
+
+exports[`BodyAtlas matches snapshot for the back view 1`] = `
+<View
+  className="gap-2"
+  testID="body-atlas"
+>
+  <View
+    className="items-center justify-center"
+  >
+    <RNSVGSvgView
+      align="xMidYMid"
+      bbHeight={420}
+      bbWidth={200}
+      focusable={false}
+      height={420}
+      meetOrSlice={0}
+      minX={0}
+      minY={0}
+      style={
+        [
+          {
+            "backgroundColor": "transparent",
+            "borderWidth": 0,
+          },
+          {
+            "flex": 0,
+            "height": 420,
+            "width": 200,
+          },
+        ]
+      }
+      testID="body-atlas-svg"
+      vbHeight={420}
+      vbWidth={200}
+      width={200}
+    >
+      <RNSVGGroup
+        fill={
+          {
+            "payload": 4278190080,
+            "type": 0,
+          }
+        }
+      >
+        <RNSVGGroup
+          fill={
+            {
+              "payload": 4293387748,
+              "type": 0,
+            }
+          }
+          propList={
+            [
+              "fill",
+              "stroke",
+              "strokeWidth",
+            ]
+          }
+          stroke={
+            {
+              "payload": 4289241758,
+              "type": 0,
+            }
+          }
+          strokeWidth={1}
+        >
+          <RNSVGCircle
+            cx="100"
+            cy="38"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+            r="22"
+          />
+          <RNSVGPath
+            d="M65 80 Q65 72 85 72 L115 72 Q135 72 135 80 L140 210 Q140 222 128 222 L72 222 Q60 222 60 210 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+          <RNSVGPath
+            d="M65 218 L135 218 L142 260 L58 260 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+          <RNSVGPath
+            d="M66 258 L98 258 L96 400 L74 400 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+          <RNSVGPath
+            d="M102 258 L134 258 L126 400 L104 400 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+          <RNSVGPath
+            d="M40 90 L65 82 L68 200 L46 200 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+          <RNSVGPath
+            d="M160 90 L135 82 L132 200 L154 200 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+        </RNSVGGroup>
+        <RNSVGGroup
+          fill={
+            {
+              "payload": 4278190080,
+              "type": 0,
+            }
+          }
+          testID="body-atlas-back"
+        >
+          <RNSVGGroup
+            accessibilityLabel="Шия"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-neck"
+          >
+            <RNSVGRect
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              height="14"
+              rx="4"
+              width="20"
+              x="90"
+              y="58"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Трапеція"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-trapezius"
+          >
+            <RNSVGPath
+              d="M72 76 Q100 68 128 76 L120 110 Q100 102 80 110 Z"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Задні дельти"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-back-deltoids"
+          >
+            <RNSVGEllipse
+              cx="60"
+              cy="94"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="14"
+              ry="12"
+            />
+            <RNSVGEllipse
+              cx="140"
+              cy="94"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="14"
+              ry="12"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Верх спини"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-upper-back"
+          >
+            <RNSVGPath
+              d="M76 106 Q100 100 124 106 L132 166 Q100 160 68 166 Z"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Низ спини"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-lower-back"
+          >
+            <RNSVGRect
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              height="44"
+              rx="8"
+              width="36"
+              x="82"
+              y="170"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Трицепс"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-triceps"
+          >
+            <RNSVGEllipse
+              cx="54"
+              cy="132"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="10"
+              ry="22"
+            />
+            <RNSVGEllipse
+              cx="146"
+              cy="132"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="10"
+              ry="22"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Передпліччя"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-forearm"
+          >
+            <RNSVGEllipse
+              cx="52"
+              cy="180"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="9"
+              ry="20"
+            />
+            <RNSVGEllipse
+              cx="148"
+              cy="180"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="9"
+              ry="20"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Сідниці"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-gluteal"
+          >
+            <RNSVGEllipse
+              cx="84"
+              cy="238"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="16"
+              ry="16"
+            />
+            <RNSVGEllipse
+              cx="116"
+              cy="238"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="16"
+              ry="16"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Відвідні мʼязи"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-abductors"
+          >
+            <RNSVGEllipse
+              cx="66"
+              cy="258"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="7"
+              ry="16"
+            />
+            <RNSVGEllipse
+              cx="134"
+              cy="258"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="7"
+              ry="16"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Задня поверхня стегна, інтенсивність 70%"
+            accessible={true}
+            fill={
+              {
+                "payload": 4279548070,
+                "type": 0,
+              }
+            }
+            fillOpacity={0.8049999999999999}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-hamstring"
+          >
+            <RNSVGEllipse
+              cx="82"
+              cy="300"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="14"
+              ry="34"
+            />
+            <RNSVGEllipse
+              cx="118"
+              cy="300"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="14"
+              ry="34"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Литки"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-calves"
+          >
+            <RNSVGEllipse
+              cx="84"
+              cy="370"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="10"
+              ry="22"
+            />
+            <RNSVGEllipse
+              cx="116"
+              cy="370"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="10"
+              ry="22"
+            />
+          </RNSVGGroup>
+        </RNSVGGroup>
+      </RNSVGGroup>
+    </RNSVGSvgView>
+  </View>
+</View>
+`;
+
+exports[`BodyAtlas matches snapshot for the front view 1`] = `
+<View
+  className="gap-2"
+  testID="body-atlas"
+>
+  <View
+    className="items-center justify-center"
+  >
+    <RNSVGSvgView
+      align="xMidYMid"
+      bbHeight={420}
+      bbWidth={200}
+      focusable={false}
+      height={420}
+      meetOrSlice={0}
+      minX={0}
+      minY={0}
+      style={
+        [
+          {
+            "backgroundColor": "transparent",
+            "borderWidth": 0,
+          },
+          {
+            "flex": 0,
+            "height": 420,
+            "width": 200,
+          },
+        ]
+      }
+      testID="body-atlas-svg"
+      vbHeight={420}
+      vbWidth={200}
+      width={200}
+    >
+      <RNSVGGroup
+        fill={
+          {
+            "payload": 4278190080,
+            "type": 0,
+          }
+        }
+      >
+        <RNSVGGroup
+          fill={
+            {
+              "payload": 4293387748,
+              "type": 0,
+            }
+          }
+          propList={
+            [
+              "fill",
+              "stroke",
+              "strokeWidth",
+            ]
+          }
+          stroke={
+            {
+              "payload": 4289241758,
+              "type": 0,
+            }
+          }
+          strokeWidth={1}
+        >
+          <RNSVGCircle
+            cx="100"
+            cy="38"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+            r="22"
+          />
+          <RNSVGPath
+            d="M65 80 Q65 72 85 72 L115 72 Q135 72 135 80 L140 210 Q140 222 128 222 L72 222 Q60 222 60 210 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+          <RNSVGPath
+            d="M65 218 L135 218 L142 260 L58 260 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+          <RNSVGPath
+            d="M66 258 L98 258 L96 400 L74 400 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+          <RNSVGPath
+            d="M102 258 L134 258 L126 400 L104 400 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+          <RNSVGPath
+            d="M40 90 L65 82 L68 200 L46 200 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+          <RNSVGPath
+            d="M160 90 L135 82 L132 200 L154 200 Z"
+            fill={
+              {
+                "payload": 4278190080,
+                "type": 0,
+              }
+            }
+          />
+        </RNSVGGroup>
+        <RNSVGGroup
+          fill={
+            {
+              "payload": 4278190080,
+              "type": 0,
+            }
+          }
+          testID="body-atlas-front"
+        >
+          <RNSVGGroup
+            accessibilityLabel="Шия"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-neck"
+          >
+            <RNSVGRect
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              height="14"
+              rx="4"
+              width="20"
+              x="90"
+              y="58"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Трапеція"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-trapezius"
+          >
+            <RNSVGPath
+              d="M70 76 Q100 66 130 76 L126 86 Q100 78 74 86 Z"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Передні дельти"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-front-deltoids"
+          >
+            <RNSVGEllipse
+              cx="60"
+              cy="92"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="14"
+              ry="12"
+            />
+            <RNSVGEllipse
+              cx="140"
+              cy="92"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="14"
+              ry="12"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Груди, інтенсивність 80%"
+            accessible={true}
+            fill={
+              {
+                "payload": 4279548070,
+                "type": 0,
+              }
+            }
+            fillOpacity={0.87}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-chest"
+          >
+            <RNSVGEllipse
+              cx="86"
+              cy="110"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="18"
+              ry="14"
+            />
+            <RNSVGEllipse
+              cx="114"
+              cy="110"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="18"
+              ry="14"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Біцепс, інтенсивність 60%"
+            accessible={true}
+            fill={
+              {
+                "payload": 4279548070,
+                "type": 0,
+              }
+            }
+            fillOpacity={0.74}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-biceps"
+          >
+            <RNSVGEllipse
+              cx="54"
+              cy="130"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="10"
+              ry="18"
+            />
+            <RNSVGEllipse
+              cx="146"
+              cy="130"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="10"
+              ry="18"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Передпліччя"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-forearm"
+          >
+            <RNSVGEllipse
+              cx="52"
+              cy="176"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="9"
+              ry="20"
+            />
+            <RNSVGEllipse
+              cx="148"
+              cy="176"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="9"
+              ry="20"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Прес"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-abs"
+          >
+            <RNSVGRect
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              height="72"
+              rx="6"
+              width="20"
+              x="90"
+              y="130"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Косі мʼязи"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-obliques"
+          >
+            <RNSVGEllipse
+              cx="78"
+              cy="176"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="8"
+              ry="22"
+            />
+            <RNSVGEllipse
+              cx="122"
+              cy="176"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="8"
+              ry="22"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Квадрицепс, інтенсивність 100%"
+            accessible={true}
+            fill={
+              {
+                "payload": 4279548070,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-quadriceps"
+          >
+            <RNSVGEllipse
+              cx="82"
+              cy="292"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="14"
+              ry="34"
+            />
+            <RNSVGEllipse
+              cx="118"
+              cy="292"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="14"
+              ry="34"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Привідні мʼязи"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-adductor"
+          >
+            <RNSVGEllipse
+              cx="92"
+              cy="282"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="6"
+              ry="22"
+            />
+            <RNSVGEllipse
+              cx="108"
+              cy="282"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="6"
+              ry="22"
+            />
+          </RNSVGGroup>
+          <RNSVGGroup
+            accessibilityLabel="Литки"
+            accessible={true}
+            fill={
+              {
+                "payload": 4293387748,
+                "type": 0,
+              }
+            }
+            fillOpacity={1}
+            propList={
+              [
+                "fill",
+                "fillOpacity",
+                "stroke",
+                "strokeWidth",
+              ]
+            }
+            stroke={
+              {
+                "payload": 4289241758,
+                "type": 0,
+              }
+            }
+            strokeWidth={0.75}
+            testID="body-atlas-muscle-calves"
+          >
+            <RNSVGEllipse
+              cx="84"
+              cy="370"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="10"
+              ry="22"
+            />
+            <RNSVGEllipse
+              cx="116"
+              cy="370"
+              fill={
+                {
+                  "payload": 4278190080,
+                  "type": 0,
+                }
+              }
+              rx="10"
+              ry="22"
+            />
+          </RNSVGGroup>
+        </RNSVGGroup>
+      </RNSVGGroup>
+    </RNSVGSvgView>
+  </View>
+</View>
+`;

@@ -1,0 +1,224 @@
+/**
+ * Last validated: 2026-06-05
+ * Status: Active
+ */
+import { Suspense } from "react";
+import { ModulePageLoader } from "@shared/components/ui/ModulePageLoader";
+import { SectionErrorBoundary } from "@shared/components/ui/SectionErrorBoundary";
+import { lazyImport } from "../../../core/lib/lazyImport";
+import type { FizrukPage } from "./fizrukRoute";
+import type {
+  TrainingProgramDef,
+  ProgramSessionDef,
+} from "@sergeant/fizruk-domain/domain";
+import { messages } from "@shared/i18n/uk";
+
+interface RouterTodaySession {
+  sessionKey: string;
+  name: string;
+}
+
+const PAGE_ERROR_TITLES: Record<FizrukPage, string> = {
+  dashboard: "Не вдалось показати головну",
+  atlas: "Не вдалось показати «Атлас»",
+  workouts: "Не вдалось показати «Тренування»",
+  progress: "Не вдалось показати «Прогрес»",
+  measurements: "Не вдалось показати «Заміри»",
+  programs: "Не вдалось показати «Програми»",
+  body: "Не вдалось показати «Склад тіла»",
+  exercise: "Не вдалось показати вправу",
+  workout: "Не вдалось показати активне тренування",
+  history: "Не вдалось показати історію тренувань",
+  catalog: "Не вдалось показати каталог вправ",
+  templates: "Не вдалось показати шаблони",
+};
+
+// Per-page lazy chunks. Previously this file eager-imported all nine
+// Fizruk pages, which forced the whole module subtree (Atlas exercise
+// catalogue, Body composition, full Workouts editor, Programs, …) into a
+// single chunk on first navigation into Fizruk. Splitting per page lets
+// each route load only the code it actually renders; the four
+// `prefetchModule("fizruk")` paths in `useRoutePrefetch.ts` continue to
+// warm the parent `FizrukApp` chunk, so subsequent page loads see warm
+// cache for whichever page the user is most likely to hit next.
+const Dashboard = lazyImport(() => import("../pages/Dashboard"), "Dashboard");
+const Atlas = lazyImport(() => import("../pages/Atlas"), "Atlas");
+const Exercise = lazyImport(() => import("../pages/Exercise"), "Exercise");
+const Workouts = lazyImport(() => import("../pages/Workouts"), "Workouts");
+const ActiveWorkout = lazyImport(
+  () => import("../pages/ActiveWorkout"),
+  "ActiveWorkout",
+);
+const WorkoutHistory = lazyImport(
+  () => import("../pages/WorkoutHistory"),
+  "WorkoutHistory",
+);
+const Progress = lazyImport(() => import("../pages/Progress"), "Progress");
+const Measurements = lazyImport(
+  () => import("../pages/Measurements"),
+  "Measurements",
+);
+const Body = lazyImport(() => import("../pages/Body"), "Body");
+const Programs = lazyImport(() => import("../pages/Programs"), "Programs");
+
+export interface FizrukRouterProps {
+  page: FizrukPage;
+  exerciseId?: string | undefined;
+  workoutId?: string | undefined;
+  /** `workout/<id>/<itemId>` — вправа, відкрита на весь екран у сесії. */
+  workoutItemId?: string | undefined;
+  /**
+   * Спека `fizruk-hero-recovery-bars.md` рішення 4 — атласна зона (або
+   * зона травми), яку hero-рядок просить підсвітити на сторінці «Атлас».
+   */
+  atlasMuscleId?: string | undefined;
+  activeProgramId: string | null;
+  activeProgram: TrainingProgramDef | null;
+  activateProgram: (id: string) => void;
+  deactivateProgram: () => void;
+  todaySession: RouterTodaySession | null;
+  /**
+   * Лічильник запитів «відкрити аркуш „Почати тренування“» (PWA-інтент
+   * `start_workout`, клавіша `N`). Кожен інкремент відкриває аркуш на
+   * домашній «Тренувань»; `0` — нічого не просили.
+   */
+  quickStartRequest?: number | undefined;
+  /**
+   * Switch the active Fizruk page. Accepts either a typed `FizrukPage`
+   * (`onNavigate("workouts")`) or a `<page>/<segment>` deep-link string
+   * (`onNavigate("exercise/abc-123")`) — mirrors the shape exposed by
+   * `useFizrukRoute().navigate` so call-sites can hand-roll a path-based
+   * deep-link without reaching into `window.location.hash`.
+   */
+  onNavigate: (target: FizrukPage | string) => void;
+  onStartProgramWorkout: (
+    session: ProgramSessionDef,
+    program: TrainingProgramDef,
+  ) => void;
+  onOpenModule?:
+    ((moduleId: string, opts?: { hash?: string }) => void) | undefined;
+}
+
+function renderPage(props: FizrukRouterProps) {
+  const {
+    page,
+    exerciseId,
+    workoutId,
+    workoutItemId,
+    atlasMuscleId,
+    activeProgramId,
+    activeProgram,
+    activateProgram,
+    deactivateProgram,
+    todaySession,
+    quickStartRequest,
+    onNavigate,
+    onStartProgramWorkout,
+    onOpenModule,
+  } = props;
+  switch (page) {
+    case "dashboard":
+      return (
+        <Dashboard
+          onOpenPrograms={() => onNavigate("programs")}
+          activeProgram={activeProgram}
+          todaySession={todaySession}
+          onStartProgramWorkout={onStartProgramWorkout}
+          onNavigate={onNavigate}
+        />
+      );
+    case "atlas":
+      return (
+        <Atlas
+          onOpenBody={() => onNavigate("body")}
+          focusMuscleId={atlasMuscleId}
+        />
+      );
+    case "workouts": {
+      // Плитка «За програмою» в аркуші «Почати тренування» — той самий
+      // старт, що й hero-картка Огляду; без активної програми чи без сесії
+      // на сьогодні плитки немає.
+      const programSession =
+        activeProgram && todaySession
+          ? activeProgram.sessions?.[todaySession.sessionKey]
+          : undefined;
+      return (
+        <Workouts
+          onOpenRoutine={
+            onOpenModule
+              ? () => onOpenModule("routine", { hash: "calendar" })
+              : undefined
+          }
+          quickStartRequest={quickStartRequest}
+          onNavigate={onNavigate}
+          programStart={
+            programSession && activeProgram && todaySession
+              ? {
+                  label: todaySession.name,
+                  onStart: () =>
+                    onStartProgramWorkout(programSession, activeProgram),
+                }
+              : undefined
+          }
+        />
+      );
+    }
+    case "catalog":
+      return <Workouts section="catalog" onNavigate={onNavigate} />;
+    case "templates":
+      return <Workouts section="templates" onNavigate={onNavigate} />;
+    case "workout":
+      return (
+        <ActiveWorkout
+          workoutId={workoutId ?? ""}
+          focusItemId={workoutItemId}
+          onNavigate={onNavigate}
+        />
+      );
+    case "history":
+      return <WorkoutHistory onNavigate={onNavigate} />;
+    case "progress":
+      return <Progress onNavigate={onNavigate} />;
+    case "measurements":
+      return <Measurements />;
+    case "programs":
+      return (
+        <Programs
+          onStartWorkout={onStartProgramWorkout}
+          activeProgramId={activeProgramId}
+          activeProgram={activeProgram}
+          activateProgram={activateProgram}
+          deactivateProgram={deactivateProgram}
+        />
+      );
+    case "body":
+      return <Body onOpenAtlas={() => onNavigate("atlas")} />;
+    case "exercise":
+      return <Exercise exerciseId={exerciseId ?? ""} onNavigate={onNavigate} />;
+    default:
+      return null;
+  }
+}
+
+/**
+ * Thin page switch for Fizruk. Kept here (instead of inlining in
+ * FizrukApp) so adding/removing pages touches one small file and the
+ * top-level App stays focused on orchestration. Each page is a `lazy()`
+ * chunk wrapped in a single `<Suspense>` boundary with the
+ * fizruk-themed `ModulePageLoader` skeleton.
+ */
+export function FizrukRouter(props: FizrukRouterProps) {
+  return (
+    <Suspense fallback={<ModulePageLoader module="fizruk" />}>
+      <SectionErrorBoundary
+        key={props.page}
+        title={
+          PAGE_ERROR_TITLES[props.page] ??
+          messages.errors.generic.cannotRenderPage
+        }
+      >
+        {renderPage(props)}
+      </SectionErrorBoundary>
+    </Suspense>
+  );
+}

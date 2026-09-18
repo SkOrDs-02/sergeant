@@ -1,0 +1,50 @@
+// Grafana Alloy — scrape-only config that ships /metrics to Grafana Cloud.
+//
+// Used by Phase 2 (`docs/engineering/architecture/hosting-evolution.md`): no local TSDB,
+// just scrape apps/server and `remote_write` everything to the
+// Prometheus endpoint of a Grafana Cloud free-tier stack.
+//
+// Inputs (env vars):
+//   - GRAFANA_CLOUD_PROMETHEUS_URL       https://prometheus-prod-XX-XXXX.grafana.net/api/prom/push
+//   - GRAFANA_CLOUD_PROMETHEUS_USERNAME  numeric instance ID
+//   - GRAFANA_CLOUD_PROMETHEUS_API_KEY   API token with `metrics:write` scope
+//   - METRICS_TOKEN                      bearer for apps/server /metrics
+//   - SERGEANT_SERVER_TARGET             host:port (default: host.docker.internal:3000)
+//   - SERGEANT_SERVER_SCHEME             http | https (default: http)
+//
+// Run locally with:  docker compose -f ops/docker-compose.ops.yml --profile cloud up -d grafana-alloy
+// Production:        deploy ops/grafana-alloy as a standalone Docker service in Coolify (Dockerfile included).
+
+prometheus.remote_write "grafana_cloud" {
+  endpoint {
+    url = sys.env("GRAFANA_CLOUD_PROMETHEUS_URL")
+
+    basic_auth {
+      username = sys.env("GRAFANA_CLOUD_PROMETHEUS_USERNAME")
+      password = sys.env("GRAFANA_CLOUD_PROMETHEUS_API_KEY")
+    }
+  }
+
+  external_labels = {
+    project = "sergeant",
+  }
+}
+
+prometheus.scrape "sergeant_server" {
+  job_name        = "sergeant-server"
+  scrape_interval = "15s"
+  scrape_timeout  = "10s"
+  metrics_path    = "/metrics"
+  scheme          = sys.env("SERGEANT_SERVER_SCHEME")
+
+  targets = [{
+    __address__ = sys.env("SERGEANT_SERVER_TARGET"),
+  }]
+
+  authorization {
+    type        = "Bearer"
+    credentials = sys.env("METRICS_TOKEN")
+  }
+
+  forward_to = [prometheus.remote_write.grafana_cloud.receiver]
+}

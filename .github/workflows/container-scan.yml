@@ -1,0 +1,151 @@
+name: Container image scan (Trivy)
+
+# Owner: @zaebal-beep (solo maintainer).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
+# Сканує зібраний Docker-образ Hub API (`Dockerfile.api`) на CVE через Trivy.
+# Це OS+бібліотечний шар поверх існуючого `pnpm audit` / OSV-Scanner
+# / Snyk pipeline (див. `.github/workflows/nightly-audit.yml`) — там
+# скануються лише lockfile-залежності, тут — реальний runtime-image
+# (alpine layers, transitive npm у рантайм-вузлі тощо).
+#
+# Retired Telegram-бот (`Dockerfile.openclaw`) видалено у #3470; OpenClaw
+# Gateway (`Dockerfile.openclaw-gateway`) — decommissioned ADR-0075
+# (2026-07-20). Єдиний образ у цьому workflow: `Dockerfile.api`.
+
+on:
+  pull_request:
+    paths:
+      - "Dockerfile.api"
+      - ".dockerignore"
+      - "pnpm-lock.yaml"
+      - "apps/server/**"
+      - "packages/shared/**"
+      - "packages/config/**"
+      - "packages/finyk-domain/**"
+      - "packages/routine-domain/**"
+      - "packages/tabular-import/**"
+      - "patches/**"
+      - ".github/workflows/container-scan.yml"
+  push:
+    branches: [main]
+  schedule:
+    # Daily 04:00 UTC — через годину після nightly-audit, щоб не шарити
+    # runner pool у пік (03:00 UTC).
+    - cron: "0 4 * * *"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  security-events: write
+
+concurrency:
+  group: container-scan-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  trivy-image:
+    name: Trivy image scan (Dockerfile.api)
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # docker/setup-buildx-action v4.0.0 (SHA-pinned)
+      - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
+
+      # docker/build-push-action v7.1.0 (SHA-pinned)
+      - name: Build hub-api image (load into local Docker, no push)
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
+        with:
+          context: .
+          file: Dockerfile.api
+          # `platforms: linux/amd64` робить платформу образу явною
+          # (closes hardening card L13 — `docs/work/specs/security-hardening/L13-docker-platform-pin.md`).
+          # Railway runtime — amd64; без явного pin-а локальний build на
+          # Apple Silicon видає arm64-image, який не збігається з production,
+          # а Trivy сканує те, що зібрав buildx, тож drift проходить
+          # повз nightly-audit.
+          platforms: linux/amd64
+          load: true
+          push: false
+          tags: hub-api:scan
+          cache-from: type=gha,scope=container-scan
+          cache-to: type=gha,mode=max,scope=container-scan
+
+      - name: Confirm scanned image is linux/amd64
+        run: |
+          # Defense-in-depth: якщо хтось у майбутньому забере `platforms`
+          # вище, цей крок упаде до Trivy і пояснить чому. Inspect format
+          # друкує саме arch шару, який пройшов docker load.
+          arch="$(docker image inspect hub-api:scan --format '{{.Architecture}}')"
+          os="$(docker image inspect hub-api:scan --format '{{.Os}}')"
+          echo "hub-api:scan platform = ${os}/${arch}"
+          if [[ "${os}/${arch}" != "linux/amd64" ]]; then
+            echo "::error::hub-api:scan was built for ${os}/${arch}, expected linux/amd64."
+            echo "See docs/work/specs/security-hardening/L13-docker-platform-pin.md."
+            exit 1
+          fi
+
+      # aquasecurity/trivy-action v0.36.0 (SHA-pinned)
+      # Один прогін генерує SARIF (для code-scanning + артефакту) і
+      # одночасно фейлить job на CRITICAL/HIGH через `exit-code: 1`.
+      # `ignore-unfixed: true` — типовий шум від CVE без патчу не
+      # блокує merge; такі випадки лишаються в SARIF-trend і
+      # розглядаються в nightly-audit triage.
+      # `trivyignores: ./.trivyignore` — escape hatch для CRITICAL/HIGH
+      # CVE, чий fix залежить від upstream distroless rebuild (Google
+      # rebuilds щотижня-три). Кожен entry має `exp:YYYY-MM-DD` self-
+      # cleaning expiry; деталі — у самому `.trivyignore`.
+      - name: Trivy image scan (SARIF + fail on CRITICAL/HIGH)
+        id: trivy
+        uses: aquasecurity/trivy-action@ed142fd0673e97e23eac54620cfb913e5ce36c25
+        with:
+          image-ref: hub-api:scan
+          format: sarif
+          output: trivy-image.sarif
+          severity: "CRITICAL,HIGH"
+          # `limit-severities-for-sarif: true` makes the action apply
+          # `severity:` to BOTH the SARIF report and the exit-code count.
+          # Without it (the default), the action emits a SARIF with all
+          # severities and the underlying Trivy CLI still exits 1 whenever
+          # any vulnerability of any severity is found (10 MEDIUM/LOW libc6
+          # + qs/ws on the 2026-06-02 nightly), even though the workflow's
+          # intent is to gate on CRITICAL/HIGH only. Setting this to true
+          # aligns "what the SARIF says" with "what the job exit code
+          # represents".
+          limit-severities-for-sarif: true
+          ignore-unfixed: true
+          trivyignores: ./.trivyignore
+          vuln-type: "os,library"
+          exit-code: "1"
+
+      - name: Upload SARIF to code-scanning
+        if: ${{ !cancelled() }}
+        # github/codeql-action/upload-sarif v4.36.0 (SHA-pinned)
+        uses: github/codeql-action/upload-sarif@8aad20d150bbac5944a9f9d289da16a4b0d87c1e
+        with:
+          sarif_file: trivy-image.sarif
+          category: trivy-image
+
+      - name: Upload SARIF artifact
+        if: ${{ !cancelled() }}
+        # actions/upload-artifact v7.0.0 (SHA-pinned)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: trivy-image-sarif
+          path: trivy-image.sarif
+          retention-days: 30
+
+      - name: Summary
+        if: ${{ !cancelled() }}
+        run: |
+          {
+            echo "### Trivy image scan summary"
+            echo
+            echo "- Image: \`hub-api:scan\` (built from \`Dockerfile.api\`)"
+            echo "- Severity gate: CRITICAL, HIGH (ignore-unfixed = true)"
+            echo "- SARIF artifact: \`trivy-image-sarif\`"
+            echo "- Code Scanning category: \`trivy-image\`"
+          } >> "$GITHUB_STEP_SUMMARY"

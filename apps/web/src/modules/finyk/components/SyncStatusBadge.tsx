@@ -1,0 +1,109 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+import { memo } from "react";
+import { cn } from "@shared/lib/ui/cn";
+import { messages } from "@shared/i18n/uk";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+
+interface SyncStateLike {
+  status?: "idle" | "loading" | "success" | "error" | "partial" | string;
+  lastError?: string;
+  [extra: string]: unknown;
+}
+
+interface SyncStatusBadgeProps {
+  syncState?: SyncStateLike | null;
+  lastUpdated?: string | number | Date | null;
+  error?: string | null;
+  onRetry?: () => void;
+  loading?: boolean;
+}
+
+function formatTs(ts: SyncStatusBadgeProps["lastUpdated"]) {
+  if (!ts) return null;
+  const d = new Date(ts);
+  if (Number.isNaN(d.getTime())) return null;
+  // Use Kyiv-local hour/minute so the timestamp matches the user's
+  // day boundary (Europe/Kyiv) rather than the host system clock.
+  const parts = getKyivDateParts(d);
+  const hh = String(parts.hour).padStart(2, "0");
+  const mm = String(parts.minute).padStart(2, "0");
+  return `${hh}:${mm}`;
+}
+
+// Простий індикатор синхронізації. Рендериться в Overview, де багато
+// стан-залежних значень змінюються часто — memo зменшує зайві рендери.
+function SyncStatusBadgeComponent({
+  syncState,
+  lastUpdated,
+  error,
+  onRetry,
+  loading,
+}: SyncStatusBadgeProps) {
+  const status = syncState?.status || "idle";
+  const isError = status === "error";
+  const isPartial = status === "partial";
+  const isLoading = status === "loading" || loading;
+  const isSuccess = status === "success";
+
+  const dotClass = isLoading
+    ? "bg-warning motion-safe:animate-pulse"
+    : isError
+      ? "bg-danger"
+      : isPartial
+        ? "bg-warning"
+        : isSuccess
+          ? "bg-success"
+          : "bg-subtle/40";
+
+  const label = isLoading
+    ? "Синхронізація…"
+    : isError
+      ? "Помилка синхронізації"
+      : isPartial
+        ? "Часткова синхронізація"
+        : isSuccess
+          ? "Синхронізовано"
+          : "Очікування";
+
+  const ts = formatTs(lastUpdated);
+
+  return (
+    <div
+      className={cn(
+        "flex items-center gap-2 rounded-xl px-3 py-2 text-style-caption border",
+        isError
+          ? "bg-danger/10 border-danger/30"
+          : isPartial
+            ? "bg-warning/10 border-warning/30"
+            : "bg-panel border-line",
+      )}
+    >
+      <span className={cn("w-2 h-2 rounded-full shrink-0", dotClass)} />
+      <span className="text-text font-medium">{label}</span>
+      {ts && <span className="text-subtle ml-auto tabular-nums">{ts}</span>}
+      {(isError || isPartial) && typeof onRetry === "function" && (
+        <button
+          type="button"
+          onClick={onRetry}
+          disabled={isLoading}
+          className="ml-1 px-2 py-1 rounded-xl bg-panel border border-line text-style-caption text-text hover:bg-panelHi transition-colors disabled:opacity-50"
+        >
+          {messages.actions.retry}
+        </button>
+      )}
+      {error && !isLoading && (
+        <span
+          className="text-danger-strong dark:text-danger text-style-caption truncate max-w-[160px]"
+          title={error}
+        >
+          {error}
+        </span>
+      )}
+    </div>
+  );
+}
+
+export const SyncStatusBadge = memo(SyncStatusBadgeComponent);

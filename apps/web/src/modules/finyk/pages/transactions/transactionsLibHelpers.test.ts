@@ -1,0 +1,188 @@
+import { describe, it, expect, vi } from "vitest";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+
+// transactionsLib imports safeReadLS/safeWriteLS from @shared/lib/storage/storage,
+// which in turn chains into kvStoreBoot → @sergeant/db-schema/sqlite (not
+// available in the vitest node environment). Mock the entire storage module so
+// only the pure helpers under test are exercised.
+vi.mock("@shared/lib/storage/storage", () => ({
+  safeReadLS: vi.fn(() => null),
+  safeWriteLS: vi.fn(),
+}));
+
+import {
+  dayKeyFromTx,
+  findAddedManualExpenseDayKey,
+  isDayExpanded,
+  formatStickyDayLabel,
+  manualExpenseDayKey,
+} from "./transactionsLib";
+
+describe("dayKeyFromTx", () => {
+  it("converts UNIX seconds to YYYY-MM-DD string", () => {
+    // 2026-01-15 00:00:00 UTC — Date.UTC returns ms; divide by 1000 for seconds
+    const ts = Date.UTC(2026, 0, 15, 12, 0, 0) / 1000;
+    const key = dayKeyFromTx(ts);
+    expect(key).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    // We only test structure here to avoid TZ assumptions; the important
+    // property is the format contract.
+  });
+
+  it("zero-pads single-digit months and days", () => {
+    // Build a timestamp that would produce single-digit month/day in local time
+    // by using a known date. We check the zero-pad behaviour by parsing the result.
+    const ts = Date.UTC(2026, 0, 5, 10, 0, 0) / 1000;
+    const key = dayKeyFromTx(ts);
+    const [, m, d] = key.split("-");
+    // Ensure each segment has 2 digits
+    expect(m!.length).toBe(2);
+    expect(d!.length).toBe(2);
+  });
+
+  it("different seconds within the same hour produce the same day key", () => {
+    const ts1 = Date.UTC(2026, 3, 20, 8, 0, 0) / 1000;
+    const ts2 = Date.UTC(2026, 3, 20, 8, 59, 59) / 1000;
+    // Same local date → same key (assuming UTC/local parity is not needed —
+    // we test that the function is at least self-consistent).
+    expect(typeof dayKeyFromTx(ts1)).toBe("string");
+    expect(dayKeyFromTx(ts1).split("-").length).toBe(3);
+    expect(dayKeyFromTx(ts2).split("-").length).toBe(3);
+  });
+});
+
+describe("isDayExpanded", () => {
+  it("returns false for a key not in overrides", () => {
+    expect(isDayExpanded({}, "2026-05-01", "2026-05-01")).toBe(false);
+  });
+
+  it("returns true when override is explicitly true", () => {
+    expect(
+      isDayExpanded({ "2026-05-01": true }, "2026-05-01", "2026-05-01"),
+    ).toBe(true);
+  });
+
+  it("returns false when override is explicitly false", () => {
+    expect(
+      isDayExpanded({ "2026-05-01": false }, "2026-05-01", "2026-05-01"),
+    ).toBe(false);
+  });
+
+  it("does not treat today differently — respects overrides only", () => {
+    // Today key matches the key but override is absent → still false
+    expect(isDayExpanded({}, "2026-05-10", "2026-05-10")).toBe(false);
+  });
+
+  it("checks the correct key in overrides (not the todayKey)", () => {
+    const overrides = { "2026-05-09": true };
+    // key = "2026-05-09" with today = "2026-05-10" → should be true
+    expect(isDayExpanded(overrides, "2026-05-09", "2026-05-10")).toBe(true);
+    // key = "2026-05-10" (today) with no override → false
+    expect(isDayExpanded(overrides, "2026-05-10", "2026-05-10")).toBe(false);
+  });
+});
+
+describe("manualExpenseDayKey", () => {
+  it("бере Kyiv-день з ISO-інстанта запису (UTC-полудень із форми)", () => {
+    expect(manualExpenseDayKey("2026-05-02T12:00:00.000Z")).toBe("2026-05-02");
+  });
+
+  it("збігається з ключем групування (dayKeyFromTx) для того ж інстанта", () => {
+    const iso = "2026-05-02T21:30:00.000Z";
+    expect(manualExpenseDayKey(iso)).toBe(
+      dayKeyFromTx(Math.floor(Date.parse(iso) / 1000)),
+    );
+  });
+
+  it("повертає null для відсутньої чи некоректної дати", () => {
+    expect(manualExpenseDayKey(undefined)).toBeNull();
+    expect(manualExpenseDayKey("")).toBeNull();
+    expect(manualExpenseDayKey("не дата")).toBeNull();
+  });
+});
+
+describe("findAddedManualExpenseDayKey", () => {
+  it("повертає день єдиного нового запису", () => {
+    const known = new Set(["a"]);
+    expect(
+      findAddedManualExpenseDayKey(known, [
+        { id: "b", date: "2026-05-02T12:00:00.000Z" },
+        { id: "a", date: "2026-04-01T12:00:00.000Z" },
+      ]),
+    ).toBe("2026-05-02");
+  });
+
+  it("повертає день записаної дати, а не сьогоднішній", () => {
+    // Форма дозволяє «Не сьогодні? Змінити дату» — розгортати треба
+    // групу дня самої транзакції.
+    expect(
+      findAddedManualExpenseDayKey(new Set(), [
+        { id: "x", date: "2020-01-15T12:00:00.000Z" },
+      ]),
+    ).toBe("2020-01-15");
+  });
+
+  it("повертає null, коли нових записів немає", () => {
+    expect(
+      findAddedManualExpenseDayKey(new Set(["a"]), [
+        { id: "a", date: "2026-05-02T12:00:00.000Z" },
+      ]),
+    ).toBeNull();
+  });
+
+  it("повертає null при bulk-гідрації (2+ нових записів)", () => {
+    expect(
+      findAddedManualExpenseDayKey(new Set(), [
+        { id: "a", date: "2026-05-02T12:00:00.000Z" },
+        { id: "b", date: "2026-05-03T12:00:00.000Z" },
+      ]),
+    ).toBeNull();
+  });
+
+  it("повертає null для порожнього / відсутнього списку", () => {
+    expect(findAddedManualExpenseDayKey(new Set(), [])).toBeNull();
+    expect(findAddedManualExpenseDayKey(new Set(), undefined)).toBeNull();
+  });
+
+  it("повертає null, якщо в нового запису невалідна дата", () => {
+    expect(
+      findAddedManualExpenseDayKey(new Set(), [{ id: "a", date: "хтозна" }]),
+    ).toBeNull();
+  });
+});
+
+describe("formatStickyDayLabel", () => {
+  // Day keys are Europe/Kyiv-anchored (domain invariant), тож «сьогодні»
+  // будуємо через getKyivDayKey — тест детермінований у будь-якій TZ
+  // (host-local ключ у вікні 00:00–03:00 Kyiv зʼїжджав на день назад).
+  it("returns 'Сьогодні' for today's KYIV date key", () => {
+    expect(formatStickyDayLabel(getKyivDayKey())).toBe("Сьогодні");
+  });
+
+  it("returns 'Вчора' for yesterday's KYIV date key", () => {
+    const yesterdayKey = getKyivDayKey(new Date(Date.now() - 86400000));
+    expect(formatStickyDayLabel(yesterdayKey)).toBe("Вчора");
+  });
+
+  it("returns a Ukrainian weekday + date for older dates", () => {
+    // Use a fixed date well in the past to avoid boundary effects
+    const label = formatStickyDayLabel("2025-01-06");
+    // Should not be "Сьогодні" or "Вчора"
+    expect(label).not.toBe("Сьогодні");
+    expect(label).not.toBe("Вчора");
+    // Should be a non-empty string with Ukrainian characters
+    expect(label.length).toBeGreaterThan(0);
+  });
+
+  it("uses the nominative weekday case, not the accusative", () => {
+    // As a group heading it must read "субота" (nominative), not "суботу"
+    // (accusative) — some browser CLDR builds emit the accusative form for
+    // toLocaleDateString(weekday:"long"), which this helper avoids.
+    expect(formatStickyDayLabel("2026-05-02")).toBe("субота, 2 травня");
+    expect(formatStickyDayLabel("2026-05-01")).toBe("пʼятниця, 1 травня");
+    expect(formatStickyDayLabel("2026-05-06")).toBe("середа, 6 травня");
+  });
+
+  it("does not throw for a well-formed YYYY-MM-DD input", () => {
+    expect(() => formatStickyDayLabel("2024-12-25")).not.toThrow();
+  });
+});

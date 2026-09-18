@@ -1,0 +1,7 @@
+# Commits listed here are ignored by `git blame` (both locally via
+# `git config blame.ignoreRevsFile .git-blame-ignore-revs` and automatically
+# by GitHub). Only pure-mechanical rewrites belong here — never commits that
+# also change behavior.
+
+# PR 2/5 — rename server/api/ -> server/modules/
+9526cfa78a1305f4e37c077f642a700e11ffe3e9

@@ -1,0 +1,1295 @@
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const mocks = vi.hoisted(() => ({
+  callWithFreshAccessToken: vi.fn(),
+  callMcpTool: vi.fn(),
+  listMcpTools: vi.fn(),
+  resolveBranchContext: vi.fn(),
+  poolConnect: vi.fn(),
+  dbQuery: vi.fn(),
+}));
+
+vi.mock("./tokenStore.js", () => ({
+  callWithFreshAccessToken: mocks.callWithFreshAccessToken,
+}));
+
+// Only needed for the `fetchOrderList` per-order-parsing tests below —
+// other tests drive `pullAndSyncReceipts` via a fully-mocked
+// `callWithFreshAccessToken` that never reaches `callMcpTool`.
+vi.mock("./mcpClient.js", () => ({
+  callMcpTool: mocks.callMcpTool,
+  listMcpTools: mocks.listMcpTools,
+}));
+
+vi.mock("./branchContext.js", () => ({
+  resolveBranchContext: mocks.resolveBranchContext,
+}));
+
+// Only needed for the real-transaction (`defaultWithTransaction`) test
+// below — every other test injects an explicit `deps.withTransaction`/
+// `deps.query` fake and never touches `../../db.js`.
+vi.mock("../../db.js", () => ({
+  query: mocks.dbQuery,
+  pool: { connect: mocks.poolConnect },
+}));
+
+vi.mock("@sentry/node", () => ({ captureException: vi.fn() }));
+
+import * as Sentry from "@sentry/node";
+import {
+  __resetSilpoContractCheck,
+  listReceipts,
+  parseLimitCeilingFromRefusal,
+  pullAndSyncReceipts,
+  silpoErrorToAppError,
+  __resetSilpoAlerts,
+  __test__,
+  type SilpoTransactionRunner,
+} from "./receipts.js";
+import type { QueryFn } from "./tokenStore.js";
+
+const { normalizeRawOrder } = __test__;
+
+beforeEach(() => {
+  mocks.callWithFreshAccessToken.mockReset();
+  mocks.callMcpTool.mockReset();
+  mocks.resolveBranchContext.mockReset();
+  mocks.poolConnect.mockReset();
+  mocks.dbQuery.mockReset();
+});
+
+// ─────────────── normalizeRawOrder (форми зі спайку §0, 2026-08-18) ─────────
+// Усі назви/суми/ID у фікстурах вигадані — реальні дані покупок у git не
+// потрапляють (форми полів звірені з живим капчуром, значення — ні).
+
+describe("normalizeRawOrder (живі форми Silpo MCP)", () => {
+  it("offline: id з receiptUrl-токена, наївна Kyiv-дата, sumReg→kop, unit-price items", () => {
+    const parsed = normalizeRawOrder(
+      {
+        filId: 999,
+        filialName: "Сільпо, м. Тестове",
+        createdAt: "2026-08-10T15:00:00", // наївний Kyiv-local (без офсету)
+        sumReg: 123.45,
+        receiptUrl: "https://receipt.silpo.elkasa.com.ua/AbCdTest01",
+        products: [
+          {
+            lagerId: 111111,
+            name: "Тестове молоко 2.6% 900г",
+            unit: "шт",
+            quantity: 2,
+            price: 45.5, // UAH за одиницю
+          },
+        ],
+      },
+      "offline",
+    );
+
+    expect(parsed).toMatchObject({
+      receiptId: "AbCdTest01",
+      storeId: "999",
+      paymentHint: null,
+      totalKop: 12345,
+    });
+    // Серпень → Kyiv = UTC+3: 15:00 Kyiv = 12:00Z, незалежно від TZ процесу.
+    expect(parsed?.purchasedAtMs).toBe(Date.parse("2026-08-10T15:00:00+03:00"));
+    expect(parsed?.items).toEqual([
+      {
+        name: "Тестове молоко 2.6% 900г",
+        qty: 2,
+        unit: "шт",
+        priceKop: 4550,
+        categorySlug: null,
+        barcode: null,
+      },
+    ]);
+  });
+
+  it("offline без receiptUrl: детермінований fallback-id filId+createdAt", () => {
+    const parsed = normalizeRawOrder(
+      {
+        filId: 42,
+        createdAt: "2026-01-15T10:00:00",
+        sumReg: 10,
+        receiptUrl: null,
+      },
+      "offline",
+    );
+    expect(parsed?.receiptId).toBe("offline_42_2026-01-15T10:00:00");
+    // Січень → Kyiv = UTC+2.
+    expect(parsed?.purchasedAtMs).toBe(Date.parse("2026-01-15T10:00:00+02:00"));
+  });
+
+  it("online: orderId, ISO-дата з офсетом, amount→kop, items з products", () => {
+    const parsed = normalizeRawOrder(
+      {
+        orderId: "test-uuid-1",
+        status: "received",
+        createdAt: "2026-08-11T08:00:00+00:00",
+        amount: 99.5, // UAH → 9950 kop
+        products: [
+          {
+            id: "cat-uuid-1",
+            name: "Тестовий хліб",
+            price: 40,
+            quantity: 1,
+            subtotal: 40,
+          },
+        ],
+      },
+      "online",
+    );
+
+    expect(parsed).toMatchObject({
+      receiptId: "test-uuid-1",
+      storeId: null,
+      totalKop: 9950,
+    });
+    expect(parsed?.purchasedAtMs).toBe(Date.parse("2026-08-11T08:00:00+00:00"));
+    expect(parsed?.items).toEqual([
+      {
+        name: "Тестовий хліб",
+        qty: 1,
+        unit: null,
+        priceKop: 4000,
+        categorySlug: null,
+        barcode: null,
+      },
+    ]);
+  });
+
+  it("drops a receipt with no usable id (never throws)", () => {
+    expect(
+      normalizeRawOrder(
+        { createdAt: "2026-08-10T12:00:00", sumReg: 10 },
+        "offline",
+      ),
+    ).toBeNull();
+  });
+
+  it("drops a receipt with no usable date", () => {
+    expect(
+      normalizeRawOrder(
+        { receiptUrl: "https://receipt.silpo.elkasa.com.ua/x1", sumReg: 10 },
+        "offline",
+      ),
+    ).toBeNull();
+  });
+
+  it("drops a receipt with no usable total", () => {
+    expect(
+      normalizeRawOrder(
+        {
+          receiptUrl: "https://receipt.silpo.elkasa.com.ua/x2",
+          createdAt: "2026-08-10T12:00:00",
+        },
+        "offline",
+      ),
+    ).toBeNull();
+  });
+
+  it("drops individual items that have no name, but keeps the receipt", () => {
+    const parsed = normalizeRawOrder(
+      {
+        receiptUrl: "https://receipt.silpo.elkasa.com.ua/x3",
+        createdAt: "2026-08-10T12:00:00",
+        sumReg: 10,
+        products: [
+          { quantity: 1, price: 1 },
+          { name: "Хліб", price: 20 },
+        ],
+      },
+      "offline",
+    );
+    expect(parsed?.items).toEqual([
+      {
+        name: "Хліб",
+        qty: null,
+        unit: null,
+        priceKop: 2000,
+        categorySlug: null,
+        barcode: null,
+      },
+    ]);
+  });
+});
+
+// ─────────────────────────────── silpoErrorToAppError ───────────────────────
+
+describe("silpoErrorToAppError", () => {
+  it.each([
+    ["not_connected", 409, "SILPO_NOT_CONNECTED"],
+    ["reauth_required", 409, "SILPO_REAUTH_REQUIRED"],
+    ["auth_required", 409, "SILPO_REAUTH_REQUIRED"],
+    ["config_missing", 503, "SILPO_CONFIG_MISSING"],
+    ["rate_limited", 429, "SILPO_RATE_LIMITED"],
+    ["schema_drift", 502, "SILPO_SCHEMA_DRIFT"],
+    ["tool_error", 502, "SILPO_TOOL_ERROR"],
+    ["upstream_unavailable", 502, "SILPO_UPSTREAM_ERROR"],
+    ["protocol_error", 502, "SILPO_UPSTREAM_ERROR"],
+  ] as const)("maps %s → status %d / code %s", (kind, status, code) => {
+    const err = silpoErrorToAppError({ kind, message: "x" });
+    expect(err.status).toBe(status);
+    expect(err.code).toBe(code);
+  });
+
+  it("a tool refusal does not ring the schema-drift alert", () => {
+    // Намір тесту незмінний: відмова тули НЕ є дрейфом контракту й не сміє
+    // підписуватись як він — інакше «Сільпо змінили формат» переставало б
+    // означати те, що означає. Змінилось інше: з 2026-09-17 така відмова
+    // сигналить під ВЛАСНИМ видом, а не мовчить (раніше про неї знала лише
+    // колонка `last_error_code`).
+    __resetSilpoAlerts();
+    vi.mocked(Sentry.captureException).mockClear();
+
+    silpoErrorToAppError({ kind: "tool_error", message: "Rate limit" });
+
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    const [captured, opts] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+    expect((opts as { tags: { kind: string } }).tags.kind).toBe("tool_error");
+    expect((captured as Error).message).not.toContain("schema drift");
+    // І текст відмови Сільпо в подію не потрапляє (Hard Rule #21).
+    expect((captured as Error).message).not.toContain("Rate limit");
+  });
+});
+
+// ─────────────────────────────── pullAndSyncReceipts ─────────────────────────
+
+interface FakeReceiptRow {
+  receiptId: string;
+  purchasedAt: Date;
+  totalKop: number;
+}
+interface FakeMonoTx {
+  id: string;
+  amountKop: number;
+  time: Date;
+  mcc?: number | null;
+  description?: string | null;
+  receiptId?: string | null;
+}
+
+function makeFakeDb(
+  seed: {
+    monoTransactions?: FakeMonoTx[];
+    /**
+     * Ручні витрати (`finyk_manual_expenses`) — той самий кандидатний
+     * запит, друга гілка UNION. Окремим полем, бо форма інша: суми в
+     * гривнях і додатні, час — лише дата.
+     */
+    manualExpenses?: FakeMonoTx[];
+    /** Пари, які користувач уже розлінкував (`silpo_tx_receipt_link_rejections`). */
+    rejections?: Array<{ transactionId: string; receiptId: string }>;
+  } = {},
+) {
+  const receipts = new Map<string, FakeReceiptRow>();
+  const items: Array<{ receiptId: string; name: string; priceKop: number }> =
+    [];
+  const links: Array<{ transactionId: string; receiptId: string }> = [];
+  const rejections = seed.rejections ?? [];
+  const monoTx = seed.monoTransactions ?? [];
+  const manualTx = seed.manualExpenses ?? [];
+
+  const query = (async (text: string, values: unknown[] = []) => {
+    if (text.includes("INSERT INTO silpo_receipts")) {
+      const [, receiptId, purchasedAt, , , , totalKop] = values as [
+        string,
+        string,
+        Date,
+        string | null,
+        string,
+        string | null,
+        number,
+        string,
+      ];
+      if (receipts.has(receiptId)) return { rows: [], rowCount: 0 };
+      receipts.set(receiptId, { receiptId, purchasedAt, totalKop });
+      return { rows: [], rowCount: 1 };
+    }
+    if (text.includes("INSERT INTO silpo_receipt_items")) {
+      let inserted = 0;
+      for (let i = 0; i < values.length; i += 8) {
+        const [, receiptId, name, , , priceKop] = values.slice(i, i + 8) as [
+          string,
+          string,
+          string,
+          number | null,
+          string | null,
+          number,
+          string | null,
+          string | null,
+        ];
+        items.push({ receiptId, name, priceKop });
+        inserted++;
+      }
+      return { rows: [], rowCount: inserted };
+    }
+    if (text.includes("COUNT(*)::int AS n")) {
+      // Скільки позицій уже лежить у цього чека — гейт доливки в
+      // `upsertReceipt`.
+      const [, receiptId] = values as [string, string];
+      const n = items.filter((i) => i.receiptId === receiptId).length;
+      return { rows: [{ n }], rowCount: 1 };
+    }
+    if (text.includes("r.receipt_id, r.total_kop, r.purchased_at")) {
+      const rows = [...receipts.values()]
+        .filter((r) => !links.some((l) => l.receiptId === r.receiptId))
+        .map((r) => ({
+          receipt_id: r.receiptId,
+          total_kop: r.totalKop,
+          purchased_at: r.purchasedAt,
+        }));
+      return { rows, rowCount: rows.length };
+    }
+    if (text.includes("FROM mono_transaction t")) {
+      // ОДИН запит на два джерела: `mono_transaction UNION ALL
+      // finyk_manual_expenses`. Фейк повертає обидві добірки разом — інакше
+      // тест «бачить» лише банківські кандидати, і зникнення UNION-у з SQL
+      // пройшло б непоміченим (саме так manual-витрати й лишались невидимі
+      // для matcher-а до 2026-08-25).
+      expect(text).toContain("finyk_manual_expenses");
+      const [, windowStart, windowEnd] = values as [string, Date, Date];
+      const rows = [...monoTx, ...manualTx]
+        .filter(
+          (t) =>
+            !links.some((l) => l.transactionId === t.id) &&
+            t.time >= windowStart &&
+            t.time <= windowEnd,
+        )
+        .map((t) => ({
+          id: t.id,
+          amountKop: t.amountKop,
+          timeSeconds: Math.floor(t.time.getTime() / 1000),
+          mcc: t.mcc ?? null,
+          description: t.description ?? null,
+          receiptId: t.receiptId ?? null,
+        }));
+      return { rows, rowCount: rows.length };
+    }
+    if (text.includes("FROM silpo_tx_receipt_link_rejections")) {
+      // Пари, які користувач зняв руками (міграція 127) — негативний
+      // фільтр matcher-а.
+      const rows = rejections.map((r) => ({
+        transaction_id: r.transactionId,
+        receipt_id: r.receiptId,
+      }));
+      return { rows, rowCount: rows.length };
+    }
+    if (text.includes("INSERT INTO silpo_tx_receipt_links")) {
+      const [, transactionId, receiptId] = values as [string, string, string];
+      if (!links.some((l) => l.transactionId === transactionId)) {
+        links.push({ transactionId, receiptId });
+      }
+      return { rows: [], rowCount: 1 };
+    }
+    if (text.includes("UPDATE silpo_connection")) {
+      // last_sync_at touch наприкінці успішного pullAndSyncReceipts.
+      return { rows: [], rowCount: 1 };
+    }
+    throw new Error(`fake db: unhandled query: ${text}`);
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+  }) as any as QueryFn;
+
+  // Faithful-enough transaction fake for `upsertReceipt`: snapshots
+  // `receipts`/`items` before running `fn`, restores them on throw. `query`
+  // above mutates those in place synchronously, so this gives real
+  // rollback semantics without a real Postgres connection.
+  const withTransaction: SilpoTransactionRunner = async (fn) => {
+    const receiptsSnapshot = new Map(receipts);
+    const itemsSnapshot = [...items];
+    try {
+      return await fn(query);
+    } catch (err) {
+      receipts.clear();
+      for (const [k, v] of receiptsSnapshot) receipts.set(k, v);
+      items.length = 0;
+      items.push(...itemsSnapshot);
+      throw err;
+    }
+  };
+
+  return { query, withTransaction, receipts, items, links };
+}
+
+// Вигадані дані у формі живого silpo_get_my_offline_orders (спайк §0).
+const OFFLINE_ORDER = {
+  filId: 777,
+  filialName: "Сільпо, м. Тестове",
+  createdAt: "2026-08-10T15:00:00", // Kyiv-local = 12:00Z у серпні
+  sumReg: 50,
+  receiptUrl: "https://receipt.silpo.elkasa.com.ua/r1token",
+  products: [
+    { lagerId: 1, name: "Хліб", unit: "шт", quantity: 1, price: 30 },
+    { lagerId: 2, name: "Молоко", unit: "шт", quantity: 1, price: 20 },
+  ],
+};
+const OFFLINE_ORDER_RECEIPT_ID = "r1token";
+
+describe("pullAndSyncReceipts", () => {
+  it("upserts receipts + items and links an unambiguous mono transaction match", async () => {
+    const db = makeFakeDb({
+      monoTransactions: [
+        {
+          id: "mono-1",
+          amountKop: -5000,
+          time: new Date("2026-08-10T12:05:00.000Z"),
+          mcc: 5411,
+        },
+      ],
+    });
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({
+      status: "connected",
+      offlinePulled: 1,
+      onlinePulled: 0,
+      receiptsInserted: 1,
+      itemsInserted: 2,
+      matched: 1,
+      ambiguous: 0,
+      unmatched: 0,
+    });
+    expect(db.receipts.has(OFFLINE_ORDER_RECEIPT_ID)).toBe(true);
+    expect(db.items).toHaveLength(2);
+    expect(db.links).toEqual([
+      { transactionId: "mono-1", receiptId: OFFLINE_ORDER_RECEIPT_ID },
+    ]);
+  });
+
+  it("матчить і РУЧНУ витрату, не лише mono", async () => {
+    // Репорт founder-а 2026-08-25: витрата, залита скріном банкінгу вже
+    // після звʼязки Сільпо, живе у `finyk_manual_expenses`, а не в
+    // `mono_transaction` — і matcher її просто не бачив. У стрічці Фініка
+    // обидві виглядають однаково, тож «чек без транзакції» на очевидній
+    // покупці читався як баг, яким і був.
+    const db = makeFakeDb({
+      manualExpenses: [
+        {
+          id: "manual-1",
+          amountKop: -5000,
+          // Ручна витрата має лише дату — SQL бере полудень.
+          time: new Date("2026-08-10T12:00:00.000Z"),
+          description: "Сільпо",
+        },
+      ],
+    });
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({ matched: 1, unmatched: 0 });
+    expect(db.links).toEqual([
+      { transactionId: "manual-1", receiptId: OFFLINE_ORDER_RECEIPT_ID },
+    ]);
+  });
+
+  it("НЕ відновлює пару, яку користувач розлінкував руками", async () => {
+    // Головний тест міграції 127. Без негативного фільтра розлінк був би
+    // косметикою: matcher детермінований, тож той самий чек і та сама
+    // транзакція дали б рівно той самий матч, і найближчий sync (ручний
+    // або фоновий poller) мовчки повернув би те, що людина щойно прибрала.
+    const db = makeFakeDb({
+      monoTransactions: [
+        {
+          id: "mono-1",
+          amountKop: -5000,
+          time: new Date("2026-08-10T12:05:00.000Z"),
+          mcc: 5411,
+        },
+      ],
+      rejections: [
+        { transactionId: "mono-1", receiptId: OFFLINE_ORDER_RECEIPT_ID },
+      ],
+    });
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    // Чек зберігається як завжди — відхилено ПАРУ, а не сам чек.
+    expect(db.receipts.has(OFFLINE_ORDER_RECEIPT_ID)).toBe(true);
+    expect(db.links).toEqual([]);
+    // І в звітності це «без пари», а не «зматчено».
+    expect(result).toMatchObject({ matched: 0, unmatched: 1 });
+  });
+
+  it("is idempotent — a second sync with the same data inserts nothing new", async () => {
+    const db = makeFakeDb();
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+    const second = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(second).toMatchObject({ receiptsInserted: 0, itemsInserted: 0 });
+    expect(db.items).toHaveLength(2); // still just the first sync's items
+  });
+
+  it("leaves a receipt unmatched (first-class state) when no mono transaction candidate exists", async () => {
+    const db = makeFakeDb({ monoTransactions: [] });
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: true,
+      data: { offline: [OFFLINE_ORDER], online: [] },
+    });
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({ matched: 0, unmatched: 1, ambiguous: 0 });
+    expect(db.links).toEqual([]);
+  });
+
+  it("throws a mapped AppError instead of a raw error when not connected", async () => {
+    mocks.callWithFreshAccessToken.mockResolvedValue({
+      ok: false,
+      error: { kind: "not_connected", message: "Silpo is not connected" },
+    });
+    const db = makeFakeDb();
+
+    await expect(
+      pullAndSyncReceipts("user-1", { query: db.query }),
+    ).rejects.toMatchObject({ status: 409, code: "SILPO_NOT_CONNECTED" });
+  });
+});
+
+// ─────────────── Finding #1: per-order parsing, not array-level ─────────────
+
+describe("fetchOrderList (per-order parsing via callMcpTool envelope)", () => {
+  const BRANCH_CTX = {
+    ok: true as const,
+    data: {
+      branchId: "branch-uuid-1",
+      deliveryType: "SelfPickup",
+      timeslotStart: "",
+      timeslotEnd: "",
+    },
+  };
+
+  it("drops one unparseable order and keeps syncing the rest of the list instead of failing the whole sync", async () => {
+    const db = makeFakeDb();
+    // `callWithFreshAccessToken` actually invokes the passed `fn`
+    // (`makeFetchBothOrderLists`) here — unlike the other
+    // `pullAndSyncReceipts` tests above, which mock the whole token/MCP
+    // round-trip away, THIS test needs the real `fetchOrderList` →
+    // `callMcpTool` path to exercise the per-order `safeParse` fix.
+    mocks.callWithFreshAccessToken.mockImplementation(
+      async (_userId: string, fn: (token: string) => Promise<unknown>) =>
+        fn("fake-access-token"),
+    );
+    mocks.resolveBranchContext.mockResolvedValue(BRANCH_CTX);
+    mocks.callMcpTool.mockImplementation(
+      async ({
+        toolName,
+        args,
+      }: {
+        toolName: string;
+        args: Record<string, unknown>;
+      }) => {
+        if (toolName === "silpo_get_my_offline_orders") {
+          // Контекст філії має долітати до самого tool-виклику.
+          expect(args["branchId"]).toBe("branch-uuid-1");
+          expect(args["deliveryType"]).toBe("SelfPickup");
+          return {
+            ok: true,
+            data: {
+              success: true,
+              orders: [
+                OFFLINE_ORDER,
+                // Malformed: `createdAt` мусить бути рядком per
+                // `RawOrderSchema` — реальний дрейф Сільпо валив би ВЕСЬ
+                // масив під старим array-level envelope. Тепер він
+                // DROP-ається + `logger.warn`-иться.
+                { ...OFFLINE_ORDER, receiptUrl: null, createdAt: 12345 },
+              ],
+            },
+          };
+        }
+        return { ok: true, data: { success: true, orders: [] } };
+      },
+    );
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({
+      status: "connected",
+      offlinePulled: 1, // the malformed order never made it past fetchOrderList
+      onlinePulled: 0,
+      receiptsInserted: 1,
+    });
+    expect(db.receipts.has(OFFLINE_ORDER_RECEIPT_ID)).toBe(true);
+    expect(mocks.callMcpTool).toHaveBeenCalledTimes(2); // offline + online
+  });
+
+  it("деградує offline-канал (порожній список + warn), коли контекст філії недоступний — online синкається далі", async () => {
+    const db = makeFakeDb();
+    mocks.callWithFreshAccessToken.mockImplementation(
+      async (_userId: string, fn: (token: string) => Promise<unknown>) =>
+        fn("fake-access-token"),
+    );
+    mocks.resolveBranchContext.mockResolvedValue({
+      ok: false,
+      error: { kind: "schema_drift", message: "no branch context" },
+    });
+    mocks.callMcpTool.mockImplementation(
+      async ({ toolName }: { toolName: string }) => {
+        expect(toolName).toBe("silpo_get_my_online_orders");
+        return {
+          ok: true,
+          data: {
+            success: true,
+            orders: [
+              {
+                orderId: "online-1",
+                createdAt: "2026-08-11T08:00:00+00:00",
+                amount: 10,
+              },
+            ],
+          },
+        };
+      },
+    );
+
+    const result = await pullAndSyncReceipts("user-1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    expect(result).toMatchObject({
+      offlinePulled: 0,
+      onlinePulled: 1,
+      receiptsInserted: 1,
+    });
+    expect(mocks.callMcpTool).toHaveBeenCalledTimes(1); // лише online
+  });
+});
+
+// ──────────── Finding #2: receipt + items insert in one transaction ────────
+
+describe("upsertReceipt (receipt + items atomicity)", () => {
+  const RECEIPT = {
+    receiptId: "r1",
+    purchasedAtMs: Date.parse("2026-08-10T12:00:00.000Z"),
+    storeId: null,
+    paymentHint: null,
+    totalKop: 5000,
+    items: [
+      {
+        name: "Хліб",
+        qty: null,
+        unit: null,
+        priceKop: 3000,
+        categorySlug: null,
+        barcode: null,
+      },
+    ],
+    raw: {},
+  };
+
+  it("rolls back the receipt insert (fake in-memory transaction) when the items insert throws", async () => {
+    const db = makeFakeDb();
+    const originalQuery = db.query;
+    const failingQuery: QueryFn = (async (text: string, values?: unknown[]) => {
+      if (text.includes("INSERT INTO silpo_receipt_items")) {
+        throw new Error("items insert failed");
+      }
+      return originalQuery(text, values);
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any;
+    const withFailingTransaction: SilpoTransactionRunner = async (fn) => {
+      const receiptsSnapshot = new Map(db.receipts);
+      try {
+        return await fn(failingQuery);
+      } catch (err) {
+        db.receipts.clear();
+        for (const [k, v] of receiptsSnapshot) db.receipts.set(k, v);
+        throw err;
+      }
+    };
+
+    await expect(
+      __test__.upsertReceipt(
+        "user-1",
+        "offline",
+        RECEIPT,
+        withFailingTransaction,
+      ),
+    ).rejects.toThrow("items insert failed");
+
+    expect(db.receipts.has("r1")).toBe(false); // rolled back, not left orphaned
+  });
+
+  it("real BEGIN…COMMIT/ROLLBACK transaction (mock-sequence): items insert throws → BEGIN+ROLLBACK+release, never COMMIT", async () => {
+    const calls: string[] = [];
+    const client = {
+      query: vi.fn(async (text: string) => {
+        calls.push(text);
+        if (text === "BEGIN" || text === "COMMIT" || text === "ROLLBACK") {
+          return { rows: [], rowCount: 0 };
+        }
+        if (text.includes("INSERT INTO silpo_receipts")) {
+          return { rows: [], rowCount: 1 };
+        }
+        if (text.includes("INSERT INTO silpo_receipt_items")) {
+          throw new Error("items insert failed");
+        }
+        throw new Error(`unexpected query in test: ${text}`);
+      }),
+      release: vi.fn(),
+    };
+    mocks.poolConnect.mockResolvedValue(client);
+
+    await expect(
+      __test__.upsertReceipt(
+        "user-1",
+        "offline",
+        RECEIPT,
+        __test__.defaultWithTransaction,
+      ),
+    ).rejects.toThrow("items insert failed");
+
+    expect(calls[0]).toBe("BEGIN");
+    expect(calls).toContain("ROLLBACK");
+    expect(calls).not.toContain("COMMIT");
+    expect(client.release).toHaveBeenCalledTimes(1);
+  });
+
+  // Щілина, через яку вечірній чек лишався вічно порожнім: Сільпо віддає
+  // голову офлайн-чека раніше, ніж до неї доїжджають `products[]`.
+  it("доливає позиції в уже збережений чек, у якого їх нуль", async () => {
+    const db = makeFakeDb();
+    const headOnly = { ...RECEIPT, items: [] };
+
+    const first = await __test__.upsertReceipt(
+      "user-1",
+      "offline",
+      headOnly,
+      db.withTransaction,
+    );
+    expect(first).toEqual({ inserted: true, itemsInserted: 0 });
+    expect(db.items).toHaveLength(0);
+
+    const second = await __test__.upsertReceipt(
+      "user-1",
+      "offline",
+      RECEIPT,
+      db.withTransaction,
+    );
+    // `inserted: false` — це ТОЙ САМИЙ чек, новим він не рахується; але
+    // позиції тепер на місці.
+    expect(second).toEqual({ inserted: false, itemsInserted: 1 });
+    expect(db.items).toEqual([
+      { receiptId: "r1", name: "Хліб", priceKop: 3000 },
+    ]);
+  });
+
+  it("не перезаписує позиції чека, у якого вони вже є", async () => {
+    const db = makeFakeDb();
+    await __test__.upsertReceipt(
+      "user-1",
+      "offline",
+      RECEIPT,
+      db.withTransaction,
+    );
+    expect(db.items).toHaveLength(1);
+
+    // Другий синк того самого чека з ІНШИМИ позиціями — снапшот
+    // незмінний, дублів немає.
+    const again = await __test__.upsertReceipt(
+      "user-1",
+      "offline",
+      {
+        ...RECEIPT,
+        items: [
+          {
+            name: "Підмінене",
+            qty: null,
+            unit: null,
+            priceKop: 1,
+            categorySlug: null,
+            barcode: null,
+          },
+        ],
+      },
+      db.withTransaction,
+    );
+    expect(again).toEqual({ inserted: false, itemsInserted: 0 });
+    expect(db.items).toEqual([
+      { receiptId: "r1", name: "Хліб", priceKop: 3000 },
+    ]);
+  });
+});
+
+describe("listReceipts", () => {
+  it("rejects a malformed cursor with a 400 AppError", async () => {
+    const db = makeFakeDb();
+    await expect(
+      listReceipts("user-1", { limit: 10, cursor: "no-colon-here" }, db.query),
+    ).rejects.toMatchObject({ status: 400 });
+  });
+
+  it("nextCursor — opaque base64url, декодований назад приймається без 400", async () => {
+    const summaryRow = (n: number) => ({
+      receiptId: `r:${n}`, // receipt_id із двокрапкою — саме та колізія, від якої рятує base64url
+      purchasedAt: new Date("2026-08-10T12:00:00.000Z"),
+      storeId: null,
+      channel: "offline" as const,
+      paymentHint: null,
+      totalKop: 1000,
+      transactionId: null,
+    });
+    const capturedParams: unknown[][] = [];
+    const query = (async (_text: string, values: unknown[] = []) => {
+      capturedParams.push(values);
+      return { rows: [summaryRow(1), summaryRow(2)], rowCount: 2 };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any as QueryFn;
+
+    const page1 = await listReceipts("user-1", { limit: 1 }, query);
+    expect(page1.nextCursor).not.toBeNull();
+    expect(page1.nextCursor).not.toContain(":"); // opaque, не сирий формат
+
+    const decoded = Buffer.from(page1.nextCursor ?? "", "base64url").toString(
+      "utf8",
+    );
+    expect(JSON.parse(decoded)).toEqual(["2026-08-10T12:00:00.000Z", "r:1"]);
+
+    await listReceipts(
+      "user-1",
+      { limit: 1, cursor: page1.nextCursor ?? undefined },
+      query,
+    );
+    // Декодований курсор розібрано за ОСТАННЬОЮ двокрапкою: receipt_id "r:1" цілий.
+    expect(capturedParams[1]).toEqual([
+      "user-1",
+      "2026-08-10T12:00:00.000Z",
+      "r:1",
+      2,
+    ]);
+  });
+
+  it("filters by transactionId on the link table instead of returning a page", async () => {
+    // Регресія: клієнт шукав збіг по першій сторінці, тож чек транзакції з
+    // довгої історії ставав невидимим. Фільтр має бути в SQL.
+    let capturedSql = "";
+    let capturedParams: unknown[] = [];
+    const query = (async (text: string, values: unknown[] = []) => {
+      capturedSql = text;
+      capturedParams = values;
+      return { rows: [], rowCount: 0 };
+      // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    }) as any as QueryFn;
+
+    await listReceipts("user-1", { limit: 1, transactionId: "tx-42" }, query);
+
+    expect(capturedSql).toContain("l.transaction_id = $2");
+    expect(capturedParams).toEqual(["user-1", "tx-42", 2]);
+  });
+});
+
+// ─── Sentry-алерт на дрейф схеми ────────────────────────────────────────────
+//
+// Дрейф контракту Сільпо — єдина відмова, про яку ніхто не дізнається сам:
+// версіонування в них немає, а `errorHandler` шле в Sentry лише
+// НЕ-operational 5xx (наш `SILPO_SCHEMA_DRIFT` — operational `AppError`).
+// Тому capture викликається явно в мапері; тут перевіряємо і сам виклик,
+// і дедуп-вікно (дрейф — стан, а не подія: без вікна кожен тап «Оновити
+// чеки» кожного юзера створював би окрему подію).
+describe("silpoErrorToAppError → Sentry на schema_drift", () => {
+  beforeEach(() => {
+    __resetSilpoAlerts();
+    vi.clearAllMocks();
+  });
+
+  it("шле подію в Sentry на дрейф схеми", () => {
+    const err = silpoErrorToAppError({
+      kind: "schema_drift",
+      message: "orders[0].createdAt відсутнє",
+    });
+    expect(err.code).toBe("SILPO_SCHEMA_DRIFT");
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    const [captured, opts] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+    expect((captured as Error).message).toContain("orders[0].createdAt");
+    expect(opts).toMatchObject({
+      tags: { integration: "silpo", kind: "schema_drift" },
+    });
+  });
+
+  it("дедупає повторний дрейф у межах вікна", () => {
+    silpoErrorToAppError({ kind: "schema_drift", message: "перший" });
+    silpoErrorToAppError({ kind: "schema_drift", message: "другий" });
+    silpoErrorToAppError({ kind: "schema_drift", message: "третій" });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+  });
+
+  it("не шле подію на очікувані стани користувача", () => {
+    // Це не поломки інтеграції, а стани, які інтерфейс і так показує:
+    // не підключено, треба перепідключитись, забагато запитів. Алерт на них
+    // означав би постійний червоний, тобто вимкнений гейт.
+    silpoErrorToAppError({ kind: "rate_limited", message: "429" });
+    silpoErrorToAppError({ kind: "not_connected", message: "no row" });
+    silpoErrorToAppError({ kind: "reauth_required", message: "reauth" });
+    silpoErrorToAppError({ kind: "auth_required", message: "auth" });
+    silpoErrorToAppError({ kind: "config_missing", message: "no env" });
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+});
+
+// До 2026-09-17 у Sentry летів РІВНО ОДИН вид збою з чотирьох: `schema_drift`.
+// Три інші (`tool_error`, `protocol_error`, `upstream_unavailable`) писались
+// у `silpo_connection.last_error_code` і нікуди не сигналили — тобто про
+// зламаний синк дізнавались із того, що чеки перестали приходити, а не з
+// дашборда. Ці тести тримають рівно цю властивість.
+describe("silpoErrorToAppError → Sentry на решті збоїв інтеграції", () => {
+  beforeEach(() => {
+    __resetSilpoAlerts();
+    vi.clearAllMocks();
+  });
+
+  it.each([
+    ["tool_error", "SILPO_TOOL_ERROR"],
+    ["protocol_error", "SILPO_UPSTREAM_ERROR"],
+    ["upstream_unavailable", "SILPO_UPSTREAM_ERROR"],
+  ] as const)("сигналить про %s", (kind, code) => {
+    const err = silpoErrorToAppError({ kind, message: "щось пішло не так" });
+    expect(err.code).toBe(code);
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    const [, opts] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+    expect(opts).toMatchObject({ tags: { integration: "silpo", kind } });
+  });
+
+  it.each(["tool_error", "protocol_error", "upstream_unavailable"] as const)(
+    "не кладе текст відмови Сільпо в подію (%s)",
+    (kind) => {
+      // Hard Rule #21: чужий текст може нести поля покупки. Вид збою — наш,
+      // текст — ні, тож у подію йде тільки вид.
+      silpoErrorToAppError({ kind, message: "чек №42 на 317,50 грн" });
+      const [captured] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+      expect((captured as Error).message).not.toContain("317,50");
+      expect((captured as Error).message).not.toContain("чек №42");
+      expect((captured as Error).message).toContain(kind);
+    },
+  );
+
+  it("дедупає повтор того самого виду в межах вікна", () => {
+    silpoErrorToAppError({ kind: "upstream_unavailable", message: "503" });
+    silpoErrorToAppError({ kind: "upstream_unavailable", message: "503" });
+    silpoErrorToAppError({ kind: "upstream_unavailable", message: "503" });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+  });
+
+  it("веде вікно ОКРЕМО по кожному виду", () => {
+    // Спільний лічильник зробив би алерти взаємно глушними: найгучніший вид
+    // ховав би найрідший і найважливіший (`schema_drift` вимагає правки коду).
+    silpoErrorToAppError({ kind: "upstream_unavailable", message: "503" });
+    silpoErrorToAppError({ kind: "tool_error", message: "refused" });
+    silpoErrorToAppError({ kind: "protocol_error", message: "bad frame" });
+    silpoErrorToAppError({ kind: "schema_drift", message: "orders[0] зникло" });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(4);
+    const kinds = vi
+      .mocked(Sentry.captureException)
+      .mock.calls.map(
+        ([, opts]) => (opts as { tags: { kind: string } }).tags.kind,
+      );
+    expect(new Set(kinds)).toEqual(
+      new Set([
+        "upstream_unavailable",
+        "tool_error",
+        "protocol_error",
+        "schema_drift",
+      ]),
+    );
+  });
+
+  it("зберігає заголовок дрейфу дослівно — щоб повтор перевідкрив ту саму issue", () => {
+    silpoErrorToAppError({ kind: "schema_drift", message: "orders[0] зникло" });
+    const [captured] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+    expect((captured as Error).message).toBe(
+      "Silpo MCP schema drift: orders[0] зникло",
+    );
+  });
+});
+
+// ─────────────────── Стеля `limit` і пагінація онлайн-замовлень ──────────────
+//
+// 2026-09-14 Сільпо мовчки знизили максимум `limit` зі 100 до 50, і синк,
+// який просив рівно 100, перестав працювати. Числова константа тут
+// ненадійна за побудовою: її значення живе на чужому сервері.
+
+describe("parseLimitCeilingFromRefusal", () => {
+  // Текст — дослівно той, що приїхав у проді.
+  const REAL = `MCP error -32602: Input validation error: Invalid arguments for tool silpo_get_my_online_orders: [ { "origin": "number", "code": "too_big", "maximum": 50, "inclusive": true, "path": [ "limit" ], "message": "Too big: expected number to be <=50" } ]`;
+
+  it("читає стелю з живого тексту відмови", () => {
+    expect(parseLimitCeilingFromRefusal(REAL)).toBe(50);
+  });
+
+  it("не плутає стелю з кодом помилки", () => {
+    // `-32602` стоїть у рядку РАНІШЕ за `maximum` — наївний «перше число»
+    // дав би 32602 і зробив би звуження безглуздим.
+    expect(parseLimitCeilingFromRefusal(REAL)).not.toBe(32602);
+  });
+
+  it.each([
+    ["відмова не про limit", 'too_big … "path": [ "offset" ]'],
+    ["відмова не про розмір", '"code": "invalid_type", "path": [ "limit" ]'],
+    ["звичайний текст", "Rate limit exceeded"],
+    ["порожньо", ""],
+  ])("повертає null: %s", (_case, message) => {
+    expect(parseLimitCeilingFromRefusal(message)).toBeNull();
+  });
+});
+
+describe("пагінація онлайн-замовлень", () => {
+  const BRANCH_FAIL = { ok: false as const, error: { kind: "upstream" } };
+
+  function onlineOrder(id: string) {
+    return {
+      orderId: id,
+      createdAt: "2026-09-01T10:00:00+00:00",
+      amount: 10,
+      products: [],
+    };
+  }
+
+  /** Проганяє реальні `makeFetchBothOrderLists` → `fetchOnlineOrders`. */
+  function runRealFetchPath() {
+    mocks.callWithFreshAccessToken.mockImplementation(
+      async (_userId: string, fn: (token: string) => Promise<unknown>) =>
+        fn("fake-access-token"),
+    );
+    // Офлайн свідомо вимикаємо: тест саме про онлайн-гілку.
+    mocks.resolveBranchContext.mockResolvedValue(BRANCH_FAIL);
+  }
+
+  it("звужується до стелі, яку Сільпо назвав сам, і доводить синк до кінця", async () => {
+    runRealFetchPath();
+    const asked: number[] = [];
+    // Стеля НИЖЧА за стартовий розмір сторінки — інакше гілка звуження не
+    // виконується взагалі, і тест проходив би на зламаному коді (спіймано
+    // мутацією: підміна парсера стелі на `null` його не валила).
+    const SERVER_CEILING = 20;
+    mocks.callMcpTool.mockImplementation(
+      async ({ args }: { args: Record<string, unknown> }) => {
+        const limit = Number(args["limit"]);
+        asked.push(limit);
+        if (limit > SERVER_CEILING) {
+          return {
+            ok: false,
+            error: {
+              kind: "tool_error",
+              message: `Invalid arguments: [ { "code": "too_big", "maximum": ${SERVER_CEILING}, "path": [ "limit" ] } ]`,
+            },
+          };
+        }
+        // Коротка сторінка — обхід має зупинитись після неї.
+        return { ok: true, data: { orders: [onlineOrder("o1")] } };
+      },
+    );
+
+    const db = makeFakeDb();
+    const result = await pullAndSyncReceipts("u1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    // Спершу просимо сторінку, потім — рівно стелю, яку назвав сервер.
+    expect(asked).toEqual([50, SERVER_CEILING]);
+    expect(result.onlinePulled).toBe(1);
+  });
+
+  it("не крутить цикл, коли відмова повторюється після звуження", async () => {
+    runRealFetchPath();
+    let calls = 0;
+    // Стеля нижча за стартові 50 — інакше звуження не спрацьовує і тест
+    // не перевіряє нічого, крім того, що перший запит упав.
+    mocks.callMcpTool.mockImplementation(async () => {
+      calls += 1;
+      return {
+        ok: false,
+        error: {
+          kind: "tool_error",
+          message:
+            'Invalid arguments: [ { "code": "too_big", "maximum": 20, "path": [ "limit" ] } ]',
+        },
+      };
+    });
+
+    const db = makeFakeDb();
+    await expect(
+      pullAndSyncReceipts("u1", {
+        query: db.query,
+        withTransaction: db.withTransaction,
+      }),
+    ).rejects.toThrow();
+    // Рівно одне звуження на сторінку: перший запит + один повтор.
+    expect(calls).toBe(2);
+  });
+
+  it("не зупиняє обхід через один непарсабельний рядок на сторінці", async () => {
+    runRealFetchPath();
+    const offsets: number[] = [];
+    mocks.callMcpTool.mockImplementation(
+      async ({ args }: { args: Record<string, unknown> }) => {
+        const offset = Number(args["offset"] ?? 0);
+        offsets.push(offset);
+        if (offset === 0) {
+          // Повна сторінка (50 елементів), але один рядок битий: після
+          // фільтрації лишається 49. Якби пагінація міряла розібрані
+          // рядки, вона вирішила б, що замовлення скінчились, і друга
+          // сторінка ніколи б не приїхала.
+          const page: unknown[] = Array.from({ length: 49 }, (_v, i) =>
+            onlineOrder(`a${i}`),
+          );
+          page.splice(10, 0, { orderId: 42 });
+          return { ok: true, data: { orders: page } };
+        }
+        return { ok: true, data: { orders: [onlineOrder("b0")] } };
+      },
+    );
+
+    const db = makeFakeDb();
+    const result = await pullAndSyncReceipts("u1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+
+    // Offset рухається на сирий розмір сторінки, не на 49 — інакше один
+    // елемент приїхав би двічі.
+    expect(offsets).toEqual([0, 50]);
+    expect(result.onlinePulled).toBe(50);
+  });
+});
+
+// ───────────── Профілактична звірка специфікації тул (раз на добу) ───────────
+
+describe("checkToolContract", () => {
+  const ONLINE_OK = {
+    ok: true as const,
+    data: { orders: [] },
+  };
+
+  beforeEach(() => {
+    __resetSilpoContractCheck();
+    mocks.listMcpTools.mockReset();
+    vi.mocked(Sentry.captureException).mockClear();
+  });
+
+  function runSync() {
+    mocks.callWithFreshAccessToken.mockImplementation(
+      async (_userId: string, fn: (token: string) => Promise<unknown>) =>
+        fn("fake-access-token"),
+    );
+    mocks.resolveBranchContext.mockResolvedValue({
+      ok: false as const,
+      error: { kind: "upstream" },
+    });
+    mocks.callMcpTool.mockResolvedValue(ONLINE_OK);
+    const db = makeFakeDb();
+    return pullAndSyncReceipts("u1", {
+      query: db.query,
+      withTransaction: db.withTransaction,
+    });
+  }
+
+  /** Жива специфікація зі стелею, нижчою за те, що шле синк. */
+  const LOWERED_CEILING = {
+    ok: true as const,
+    data: {
+      tools: [
+        {
+          name: "silpo_get_my_online_orders",
+          inputSchema: { properties: { limit: { maximum: 10 }, offset: {} } },
+        },
+      ],
+    },
+  };
+
+  it("дзвонить у Sentry, коли жива специфікація розійшлась із кодом", async () => {
+    mocks.listMcpTools.mockResolvedValue(LOWERED_CEILING);
+
+    await runSync();
+
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    const [err] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+    expect((err as Error).message).toContain("contract drift");
+  });
+
+  it("мовчить, коли контракт цілий", async () => {
+    mocks.listMcpTools.mockResolvedValue({
+      ok: true,
+      data: {
+        tools: [
+          {
+            name: "silpo_get_my_online_orders",
+            inputSchema: {
+              properties: { limit: { maximum: 100 }, offset: {} },
+            },
+          },
+          {
+            name: "silpo_get_my_offline_orders",
+            inputSchema: {
+              properties: {
+                branchId: {},
+                deliveryType: {},
+                timeslotStart: {},
+                timeslotEnd: {},
+                limit: { maximum: 10 },
+              },
+            },
+          },
+        ],
+      },
+    });
+
+    await runSync();
+
+    expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+
+  it("не бʼє в tools/list частіше, ніж раз на добу", async () => {
+    mocks.listMcpTools.mockResolvedValue(LOWERED_CEILING);
+
+    await runSync();
+    await runSync();
+
+    expect(mocks.listMcpTools).toHaveBeenCalledTimes(1);
+  });
+
+  it("падіння самої звірки НЕ валить синк", async () => {
+    mocks.listMcpTools.mockRejectedValue(new Error("boom"));
+
+    // Головне твердження: синк доходить до кінця і віддає результат.
+    await expect(runSync()).resolves.toMatchObject({ status: "connected" });
+  });
+});

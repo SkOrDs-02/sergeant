@@ -1,0 +1,270 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+import { useEffect, useMemo, useRef } from "react";
+import { useNavigate, useSearchParams } from "react-router-dom";
+import { z } from "zod";
+import { Button } from "@shared/components/ui/Button";
+import { Card } from "@shared/components/ui/Card";
+import { Input } from "@shared/components/ui/Input";
+import { MeshBackground } from "@shared/components/layout/MeshBackground";
+import { useToast } from "@shared/hooks/useToast";
+import { useApiForm } from "@shared/forms";
+import { POST_SUCCESS_REDIRECT_MS } from "@shared/lib/ui/timeouts";
+import { messages } from "@shared/i18n/uk";
+import { BrandLogo } from "../app/BrandLogo";
+import { translateAuthError } from "./AuthContext";
+import { resetPassword } from "./authClient";
+
+/**
+ * Зод-схема — локальна, як у `AuthPage`. Меседжі — з
+ * `messages.validation.*` (`apps/web/src/shared/i18n/uk.ts`), див.
+ * `docs/design/i18n/readiness.md`. `confirm` валідуємо через `superRefine`
+ * після парсу — стандартний react-hook-form pattern для cross-field
+ * перевірок.
+ */
+const resetPasswordSchema = z
+  .object({
+    password: z
+      .string()
+      .min(10, messages.validation.passwordResetMin10)
+      .max(128, messages.validation.passwordMax128),
+    confirm: z.string(),
+  })
+  .superRefine((data, ctx) => {
+    if (data.confirm !== data.password) {
+      ctx.addIssue({
+        code: z.ZodIssueCode.custom,
+        path: ["confirm"],
+        message: messages.validation.passwordsDontMatchDot,
+      });
+    }
+  });
+
+type ResetPasswordValues = z.infer<typeof resetPasswordSchema>;
+
+/**
+ * Landing page for the Better Auth password-reset magic link. The email
+ * we send contains `<origin>/reset-password?token=...`; here we read the
+ * token, let the user pick a new password, and call `resetPassword`.
+ *
+ * Kept intentionally minimal (no design system overlays or hub chrome)
+ * so that even a user without local Sergeant data can land on this
+ * route and recover their account.
+ */
+export function ResetPasswordPage() {
+  const [searchParams] = useSearchParams();
+  const navigate = useNavigate();
+  const toast = useToast();
+  const token = useMemo(() => searchParams.get("token") || "", [searchParams]);
+
+  // `useApiForm` зводить валідацію + isSubmitting + server-error mapping
+  // в один hook. Better Auth повертає помилку через `result.error` поле,
+  // а не через `throw`, тому ми штучно кидаємо `Error(message)`, щоб
+  // `useApiForm.serverError` його підхопив.
+  const {
+    register,
+    submit,
+    formState,
+    isSubmitting,
+    serverError,
+    lastResponse,
+  } = useApiForm<ResetPasswordValues, true>({
+    schema: resetPasswordSchema,
+    defaultValues: { password: "", confirm: "" },
+    onSubmit: async (values) => {
+      const result = await resetPassword({
+        token,
+        newPassword: values.password,
+      });
+      if (result?.error) {
+        // Better Auth returns english messages keyed off `code`
+        // (`INVALID_TOKEN`, `PASSWORD_TOO_SHORT`, ...). Run them
+        // through `translateAuthError` so the user sees Ukrainian.
+        throw new Error(
+          translateAuthError(
+            result.error,
+            "Не вдалося скинути пароль. Посилання могло вже бути використане.",
+          ),
+        );
+      }
+      return true as const;
+    },
+    onSuccess: () => {
+      toast.success("Пароль оновлено");
+      window.setTimeout(
+        () => navigate("/sign-in", { replace: true }),
+        POST_SUCCESS_REDIRECT_MS,
+      );
+    },
+  });
+
+  // `useApiForm` swallows errors thrown from `onSubmit` into
+  // `serverError`, so react-hook-form's `formState.isSubmitSuccessful`
+  // becomes `true` even when the server rejected the submit. Drive
+  // the visual "done" state off `lastResponse` (only set on real
+  // success) so users can retry after an `INVALID_TOKEN` server error
+  // instead of getting stuck on a disabled form.
+  const status =
+    lastResponse !== undefined ? "done" : isSubmitting ? "sending" : "idle";
+
+  // Heading-focus pattern (same as `WelcomeOneScreen.tsx`) — gives the
+  // SR user the page context before they reach the first input. Replaces
+  // `autoFocus` on the password field, which yanked focus past the
+  // heading (F25 in `docs/audits/2026-05-13-page-audit-01-auth-onboarding.md`).
+  const headingRef = useRef<HTMLHeadingElement | null>(null);
+  useEffect(() => {
+    headingRef.current?.focus();
+  }, []);
+
+  return (
+    // Phase 7 D1 — visual refresh. Pre-module surface, so MeshBackground
+    // is mounted without `<ModuleAccentProvider>` (auth is module-agnostic).
+    <MeshBackground
+      className="items-center px-5 overflow-y-auto"
+      style={{
+        paddingTop: "max(1.25rem, env(safe-area-inset-top))",
+        paddingBottom: "max(1.25rem, env(safe-area-inset-bottom))",
+      }}
+    >
+      <main
+        id="main"
+        tabIndex={-1}
+        className="w-full max-w-sm my-auto motion-safe:animate-in motion-safe:fade-in motion-safe:duration-slower outline-none"
+      >
+        <div className="text-center mb-6">
+          <BrandLogo as="h1" size="md" className="justify-center" />
+        </div>
+
+        <Card prominence="hero" radius="xl" padding="lg" className="space-y-5">
+          <div className="text-center">
+            <h2
+              ref={headingRef}
+              tabIndex={-1}
+              className="text-style-display text-text outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded-sm"
+            >
+              Новий пароль
+            </h2>
+            <p className="text-style-label text-subtle mt-2">
+              Встанови новий пароль для свого акаунта.
+            </p>
+          </div>
+
+          {!token ? (
+            <div
+              role="alert"
+              className="text-style-label text-text bg-danger/10 border border-danger/30 rounded-xl px-4 py-3 leading-relaxed space-y-3"
+            >
+              <p>
+                Посилання на скидання пароля неповне або протерміноване. Відкрий
+                останній лист повністю або запроси новий на сторінці входу.
+              </p>
+              <Button
+                type="button"
+                variant="outline"
+                size="md"
+                className="w-full"
+                onClick={() => navigate("/sign-in", { replace: true })}
+              >
+                На сторінку входу
+              </Button>
+            </div>
+          ) : (
+            <form onSubmit={submit} noValidate className="space-y-4">
+              <div className="space-y-1">
+                <label
+                  htmlFor="reset-password-new"
+                  className="block text-style-caption text-muted mb-1.5"
+                >
+                  Новий пароль
+                </label>
+                <Input
+                  id="reset-password-new"
+                  type="password"
+                  placeholder="Мінімум 10 символів"
+                  autoComplete="new-password"
+                  error={!!formState.errors.password}
+                  aria-invalid={!!formState.errors.password}
+                  aria-describedby={
+                    formState.errors.password ? "reset-pw-error" : undefined
+                  }
+                  disabled={isSubmitting || status === "done"}
+                  {...register("password")}
+                />
+                {formState.errors.password?.message && (
+                  <p
+                    id="reset-pw-error"
+                    role="alert"
+                    className="text-style-caption text-danger-strong dark:text-danger"
+                  >
+                    {formState.errors.password.message}
+                  </p>
+                )}
+              </div>
+
+              <div className="space-y-1">
+                <label
+                  htmlFor="reset-password-confirm"
+                  className="block text-style-caption text-muted mb-1.5"
+                >
+                  Підтвердження
+                </label>
+                <Input
+                  id="reset-password-confirm"
+                  type="password"
+                  placeholder="Введи пароль ще раз"
+                  autoComplete="new-password"
+                  error={!!formState.errors.confirm}
+                  aria-invalid={!!formState.errors.confirm}
+                  aria-describedby={
+                    formState.errors.confirm ? "reset-confirm-error" : undefined
+                  }
+                  disabled={isSubmitting || status === "done"}
+                  {...register("confirm")}
+                />
+                {formState.errors.confirm?.message && (
+                  <p
+                    id="reset-confirm-error"
+                    role="alert"
+                    className="text-style-caption text-danger-strong dark:text-danger"
+                  >
+                    {formState.errors.confirm.message}
+                  </p>
+                )}
+              </div>
+
+              {(serverError || status === "done") && (
+                <div
+                  role={serverError ? "alert" : "status"}
+                  className={
+                    serverError
+                      ? "text-style-caption text-danger-strong dark:text-danger bg-danger/10 border border-danger/20 rounded-xl px-4 py-2.5"
+                      : "text-style-caption text-text bg-brand-500/10 border border-brand-500/30 rounded-xl px-4 py-2.5"
+                  }
+                >
+                  {serverError || "Пароль оновлено. Зараз перенесу на вхід…"}
+                </div>
+              )}
+
+              <Button
+                type="submit"
+                variant="solid"
+                size="lg"
+                loading={status === "sending"}
+                className="w-full"
+                disabled={status === "done"}
+              >
+                {status === "sending"
+                  ? "Зберігаю…"
+                  : status === "done"
+                    ? "Готово"
+                    : "Встановити новий пароль"}
+              </Button>
+            </form>
+          )}
+        </Card>
+      </main>
+    </MeshBackground>
+  );
+}

@@ -1,0 +1,85 @@
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { __resetHubBusForTests, emitHubBus, onHubBus } from "./hubBus";
+
+afterEach(() => {
+  __resetHubBusForTests();
+});
+
+describe("hubBus", () => {
+  it("delivers typed openChat detail to subscribers", () => {
+    const handler = vi.fn();
+    onHubBus("openChat", handler);
+    emitHubBus("openChat", { message: "hi", autoSend: true });
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith({ message: "hi", autoSend: true });
+  });
+
+  it("delivers void storageUpdated event to subscribers", () => {
+    const handler = vi.fn();
+    onHubBus("storageUpdated", handler);
+    emitHubBus("storageUpdated", undefined);
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("supports multiple subscribers per event in registration order", () => {
+    const order: number[] = [];
+    onHubBus("storageUpdated", () => order.push(1));
+    onHubBus("storageUpdated", () => order.push(2));
+    onHubBus("storageUpdated", () => order.push(3));
+    emitHubBus("storageUpdated", undefined);
+    expect(order).toEqual([1, 2, 3]);
+  });
+
+  it("unsubscribe stops further deliveries", () => {
+    const handler = vi.fn();
+    const off = onHubBus("openChat", handler);
+    emitHubBus("openChat", { message: null });
+    off();
+    emitHubBus("openChat", { message: "post-unsub" });
+    expect(handler).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not crosstalk between different events", () => {
+    const chatHandler = vi.fn();
+    const searchHandler = vi.fn();
+    onHubBus("openChat", chatHandler);
+    onHubBus("storageUpdated", searchHandler);
+    emitHubBus("openChat", { message: "x" });
+    expect(chatHandler).toHaveBeenCalledTimes(1);
+    expect(searchHandler).not.toHaveBeenCalled();
+  });
+
+  it("delivers void storageUpdated event to subscribers", () => {
+    const handler = vi.fn();
+    onHubBus("storageUpdated", handler);
+    emitHubBus("storageUpdated", undefined);
+    expect(handler).toHaveBeenCalledTimes(1);
+    expect(handler).toHaveBeenCalledWith(undefined);
+  });
+
+  it("storageUpdated does not crosstalk with openChat", () => {
+    const storageHandler = vi.fn();
+    const chatHandler = vi.fn();
+    onHubBus("storageUpdated", storageHandler);
+    onHubBus("openChat", chatHandler);
+    emitHubBus("storageUpdated", undefined);
+    expect(storageHandler).toHaveBeenCalledTimes(1);
+    expect(chatHandler).not.toHaveBeenCalled();
+  });
+
+  it("a throwing handler does not break other handlers", () => {
+    vi.useFakeTimers();
+    const good = vi.fn();
+    onHubBus("storageUpdated", () => {
+      throw new Error("boom");
+    });
+    onHubBus("storageUpdated", good);
+    expect(() => emitHubBus("storageUpdated", undefined)).not.toThrow();
+    expect(good).toHaveBeenCalledTimes(1);
+    // The error is re-thrown asynchronously via setTimeout(0) so the
+    // publishing site stays clean. Drop the queued throw before the
+    // test environment surfaces it.
+    expect(() => vi.runAllTimers()).toThrow("boom");
+    vi.useRealTimers();
+  });
+});

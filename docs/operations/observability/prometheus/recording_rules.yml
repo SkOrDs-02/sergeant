@@ -1,0 +1,194 @@
+# Recording rules для SLO burn-rate алертів.
+#
+# STATUS: LIVE (verified 2026-06-26). Залито в Grafana Cloud Mimir і оцінюється
+# в реальному часі — grafana-alloy scrape-ить `/metrics` → remote_write. 25
+# recording rules в evaluation. Sync у Grafana Cloud — `mimirtool rules sync`.
+# Див. ../SLO.md § Статус wiring.
+#
+# Іменування: `sli:<domain>_<sli>:ratio_rate<window>` (за Google SRE Workbook).
+# Ці rules попередньо обчислюють error-ratio по різних вікнах, щоб alert-
+# rules не робили важкий `sum(rate(...))` щосекунди.
+#
+# Валідовано `promtool check rules`.
+
+groups:
+  # ──────────────────────────── HTTP API ────────────────────────
+  - name: sli_http
+    interval: 30s
+    rules:
+      - record: sli:http_error:ratio_rate5m
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[5m]))
+          /
+          clamp_min(sum(rate(http_requests_total[5m])), 1)
+      - record: sli:http_error:ratio_rate30m
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[30m]))
+          /
+          clamp_min(sum(rate(http_requests_total[30m])), 1)
+      - record: sli:http_error:ratio_rate1h
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[1h]))
+          /
+          clamp_min(sum(rate(http_requests_total[1h])), 1)
+      - record: sli:http_error:ratio_rate6h
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[6h]))
+          /
+          clamp_min(sum(rate(http_requests_total[6h])), 1)
+      - record: sli:http_error:ratio_rate3d
+        expr: |
+          sum(rate(http_requests_total{status=~"5.."}[3d]))
+          /
+          clamp_min(sum(rate(http_requests_total[3d])), 1)
+
+      - record: sli:http_latency_p95_ms:rate5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_request_duration_ms_bucket{path!~"/api/(chat|coach|weekly-digest|nutrition/.*)"}[5m])) by (le)
+          )
+
+      - record: job:health_p95_5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(http_request_duration_ms_bucket{path=~"/health(|/.*)|/healthz|/readyz|/livez|/startupz"}[5m])) by (le)
+          )
+
+  # ──────────────────────────── Sync ────────────────────────────
+  - name: sli_sync
+    interval: 30s
+    rules:
+      - record: sli:sync_error:ratio_rate5m
+        expr: |
+          sum(rate(sync_operations_total{outcome=~"error|too_large|unauthorized"}[5m]))
+          /
+          clamp_min(sum(rate(sync_operations_total[5m])), 1)
+      - record: sli:sync_error:ratio_rate30m
+        expr: |
+          sum(rate(sync_operations_total{outcome=~"error|too_large|unauthorized"}[30m]))
+          /
+          clamp_min(sum(rate(sync_operations_total[30m])), 1)
+      - record: sli:sync_error:ratio_rate1h
+        expr: |
+          sum(rate(sync_operations_total{outcome=~"error|too_large|unauthorized"}[1h]))
+          /
+          clamp_min(sum(rate(sync_operations_total[1h])), 1)
+      - record: sli:sync_error:ratio_rate6h
+        expr: |
+          sum(rate(sync_operations_total{outcome=~"error|too_large|unauthorized"}[6h]))
+          /
+          clamp_min(sum(rate(sync_operations_total[6h])), 1)
+
+      - record: sli:sync_latency_p95_ms:rate5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(sync_duration_ms_bucket[5m])) by (le)
+          )
+
+      - record: sli:sync_conflict:ratio_rate1h
+        expr: |
+          sum(rate(sync_operations_total{op=~"push|push_all",outcome="conflict"}[1h]))
+          /
+          clamp_min(sum(rate(sync_operations_total{op=~"push|push_all"}[1h])), 1)
+
+      # Initiative 0003 Phase 1 — sunset baseline. v1 (`module=sync` legacy
+      # LWW-blob) vs v2 (`module=syncV2` op-log) per-version split. Target:
+      # `sli:sync_v1:rate5m` → 0 by T₀; legacy survey counter каже, хто саме
+      # ще ходить.
+      - record: sli:sync_v1:rate5m
+        expr: |
+          sum(rate(sync_operations_total{module="sync"}[5m]))
+      - record: sli:sync_v2:rate5m
+        expr: |
+          sum(rate(sync_operations_total{module="syncV2"}[5m]))
+      - record: sli:sync_v1_legacy:rate1h_by_appversion
+        expr: |
+          sum by (app_version) (rate(sync_v1_legacy_clients_total[1h]))
+
+  # ──────────────────────────── Auth ────────────────────────────
+  - name: sli_auth
+    interval: 30s
+    rules:
+      - record: sli:auth_error:ratio_rate5m
+        expr: |
+          sum(rate(auth_attempts_total{outcome="error"}[5m]))
+          /
+          clamp_min(sum(rate(auth_attempts_total[5m])), 1)
+      - record: sli:auth_error:ratio_rate30m
+        expr: |
+          sum(rate(auth_attempts_total{outcome="error"}[30m]))
+          /
+          clamp_min(sum(rate(auth_attempts_total[30m])), 1)
+      - record: sli:auth_error:ratio_rate1h
+        expr: |
+          sum(rate(auth_attempts_total{outcome="error"}[1h]))
+          /
+          clamp_min(sum(rate(auth_attempts_total[1h])), 1)
+      - record: sli:auth_error:ratio_rate6h
+        expr: |
+          sum(rate(auth_attempts_total{outcome="error"}[6h]))
+          /
+          clamp_min(sum(rate(auth_attempts_total[6h])), 1)
+
+      - record: sli:auth_session_lookup_p95_ms:rate5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(auth_session_lookup_duration_ms_bucket[5m])) by (le)
+          )
+
+      - record: sli:auth_rate_limited:ratio_rate5m
+        expr: |
+          sum(rate(auth_attempts_total{outcome="rate_limited"}[5m]))
+          /
+          clamp_min(sum(rate(auth_attempts_total[5m])), 1)
+
+  # ──────────────────────────── AI ──────────────────────────────
+  - name: sli_ai
+    interval: 30s
+    rules:
+      - record: sli:ai_error:ratio_rate5m
+        expr: |
+          sum(rate(ai_requests_total{outcome!="ok"}[5m]))
+          /
+          clamp_min(sum(rate(ai_requests_total[5m])), 1)
+      - record: sli:ai_error:ratio_rate30m
+        expr: |
+          sum(rate(ai_requests_total{outcome!="ok"}[30m]))
+          /
+          clamp_min(sum(rate(ai_requests_total[30m])), 1)
+      - record: sli:ai_error:ratio_rate1h
+        expr: |
+          sum(rate(ai_requests_total{outcome!="ok"}[1h]))
+          /
+          clamp_min(sum(rate(ai_requests_total[1h])), 1)
+      - record: sli:ai_error:ratio_rate6h
+        expr: |
+          sum(rate(ai_requests_total{outcome!="ok"}[6h]))
+          /
+          clamp_min(sum(rate(ai_requests_total[6h])), 1)
+
+      - record: sli:ai_latency_p95_ms:rate5m
+        expr: |
+          histogram_quantile(
+            0.95,
+            sum(rate(ai_request_duration_ms_bucket[5m])) by (le, endpoint)
+          )
+
+  # ──────────────────────────── External HTTP ───────────────────
+  - name: sli_external_http
+    interval: 30s
+    rules:
+      - record: sli:external_http_error:ratio_rate30m
+        expr: |
+          sum by (upstream) (rate(external_http_requests_total{outcome=~"error|timeout"}[30m]))
+          /
+          clamp_min(sum by (upstream) (rate(external_http_requests_total[30m])), 1)
+      - record: sli:external_http_error:ratio_rate6h
+        expr: |
+          sum by (upstream) (rate(external_http_requests_total{outcome=~"error|timeout"}[6h]))
+          /
+          clamp_min(sum by (upstream) (rate(external_http_requests_total[6h])), 1)

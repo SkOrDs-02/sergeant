@@ -1,0 +1,253 @@
+/// <reference lib="WebWorker" />
+/**
+ * Workbox precache + runtime cache routes + cache-cleanup helpers.
+ *
+ * Виокремлено з sw.ts (initiative 0001 Phase 2 — module decomposition).
+ * Сторонні залежності (workbox-*) живуть тільки тут — entry-point
+ * лишається коротким composition root-ом.
+ */
+
+import {
+  precacheAndRoute,
+  cleanupOutdatedCaches,
+  matchPrecache,
+} from "workbox-precaching";
+import {
+  registerRoute,
+  NavigationRoute,
+  setCatchHandler,
+} from "workbox-routing";
+import { CacheFirst, NetworkFirst } from "workbox-strategies";
+import { ExpirationPlugin } from "workbox-expiration";
+import { CacheableResponsePlugin } from "workbox-cacheable-response";
+import { CACHE_NAMES } from "./version";
+import { shouldCacheExerciseImage, shouldUseRuntimeCache } from "./cachePolicy";
+import { isNavigationRequest, resolveOfflineShell } from "./offlineFallback";
+
+declare const self: ServiceWorkerGlobalScope & {
+  __WB_MANIFEST: Array<{ url: string; revision: string | null }>;
+};
+
+/**
+ * Audit 03 / Decision #2 (C) + `2026-05-13-consolidated-page-audit.md` C2:
+ * module-scope active-user cache partition.
+ *
+ * Holds a **hashed** identifier derived from the opaque Better Auth user id
+ * posted from the main thread via `SW_SET_USER`. The `cacheKeyWillBeUsed`
+ * plugin below appends it to the Request URL (`__u=<hash>`) so user A's cache
+ * entries never resolve user B's reads. Resets to `"anon"` on SW restart —
+ * main thread re-posts on next mount, and `signOut → CLEAR_SW_CACHES` already
+ * wipes the caches as the security boundary.
+ *
+ * Why hashed and not the raw id: the partition value is written into cache-key
+ * URLs (and surfaces in any cache-inspection / debug snapshot). Hashing keeps
+ * the raw account identifier out of those keys — a stable, collision-resistant
+ * SHA-256 prefix is enough to isolate users without leaking the id itself.
+ *
+ * Why a query param and not a per-user cacheName: cache.delete() under
+ * `clearAppCaches` already walks every cache name; an unbounded set of
+ * per-user cache names would leak across logged-out users and require
+ * extra cleanup logic. A varied cache *key* keeps the cache count fixed.
+ */
+let activeUserKey = "anon";
+
+const PARTITION_HASH_LEN = 32; // 128 bits of SHA-256 hex — collision-safe here
+
+/**
+ * SHA-256 → truncated lowercase hex. Uses Web Crypto, available in the SW
+ * global scope. Falls back to `"anon"` if hashing throws (no crypto / bad
+ * input) so a failure degrades to the shared-anon partition rather than
+ * leaking the raw id.
+ */
+async function hashUserKey(raw: string): Promise<string> {
+  try {
+    const bytes = new TextEncoder().encode(raw);
+    const digest = await crypto.subtle.digest("SHA-256", bytes);
+    const hex = Array.from(new Uint8Array(digest))
+      .map((b) => b.toString(16).padStart(2, "0"))
+      .join("");
+    return hex.slice(0, PARTITION_HASH_LEN);
+  } catch {
+    return "anon";
+  }
+}
+
+/**
+ * Store the hashed partition for the active user. Async because hashing goes
+ * through Web Crypto; the message handler wraps the returned promise in
+ * `event.waitUntil` so the SW stays alive until the key is updated. Anonymous
+ * / empty input resets to the shared `"anon"` partition synchronously.
+ */
+export async function setActiveUserKey(key: string | null): Promise<void> {
+  if (!key || key.length === 0) {
+    activeUserKey = "anon";
+    return;
+  }
+  activeUserKey = await hashUserKey(key);
+}
+
+const PARTITION_PARAM = "__u";
+
+/**
+ * Workbox `cacheKeyWillBeUsed` hook: appends the active user key as a
+ * synthetic query param so the cache key varies per user without changing
+ * the actual network Request that flies on miss. Drop-in: idempotent if
+ * called twice on the same Request.
+ */
+const userPartitionPlugin = {
+  cacheKeyWillBeUsed: async ({
+    request,
+  }: {
+    request: Request;
+    mode: string;
+  }): Promise<Request> => {
+    try {
+      const url = new URL(request.url);
+      if (url.searchParams.get(PARTITION_PARAM) === activeUserKey) {
+        return request;
+      }
+      url.searchParams.set(PARTITION_PARAM, activeUserKey);
+      return new Request(url.toString(), {
+        method: request.method,
+        headers: request.headers,
+      });
+    } catch {
+      return request;
+    }
+  },
+};
+
+/**
+ * Реєструє precache і runtime route-и. Викликається
+ * один раз при старті SW. Розбиття на функцію (а не side-effect на
+ * import) дає змогу легше mock-ати у тестах і робить порядок
+ * ініціалізації явним.
+ */
+export function setupCacheRoutes(): void {
+  cleanupOutdatedCaches();
+  precacheAndRoute(self.__WB_MANIFEST);
+
+  registerRoute(
+    new NavigationRoute(
+      new NetworkFirst({
+        cacheName: CACHE_NAMES.navigations,
+        networkTimeoutSeconds: 3,
+        plugins: [
+          new CacheableResponsePlugin({ statuses: [0, 200] }),
+          userPartitionPlugin,
+        ],
+      }),
+      { denylist: [/^\/api\//] },
+    ),
+  );
+
+  // GET /api/* — NetworkFirst with a short timeout so the cache only kicks in
+  // when the network is actually unreachable or very slow. Non-GET requests
+  // (POST/PUT/DELETE) are NOT cached; mutation retry semantics live in the
+  // app-level sync writer rather than in the service worker cache.
+  // Auth endpoints (`/api/auth/*`) are explicitly excluded: serving a stale
+  // cached session could make the app believe a user is still authenticated
+  // after logout or session expiry.
+  registerRoute(
+    // Predicate lives in `./cachePolicy` so it can be unit-tested
+    // without dragging workbox imports into the jsdom env. See
+    // `cachePolicy.ts` for the canonical volatile-prefix list +
+    // rationale (T3 audit MEDIUM finding — `/api/v2/sync/*` was
+    // previously cacheable and silently desynced pullV2/SSE).
+    ({ url, request }) => shouldUseRuntimeCache(url.pathname, request.method),
+    new NetworkFirst({
+      cacheName: CACHE_NAMES.api,
+      networkTimeoutSeconds: 5,
+      plugins: [
+        new CacheableResponsePlugin({ statuses: [200] }),
+        new ExpirationPlugin({
+          maxEntries: 60,
+          // Keep it short: the API is largely user-specific and can change
+          // quickly. This cache is meant to help in brief offline windows,
+          // not to serve old state for days.
+          maxAgeSeconds: 60 * 30, // 30 min
+          purgeOnQuotaError: true,
+        }),
+        userPartitionPlugin,
+      ],
+    }),
+    "GET",
+  );
+
+  registerRoute(
+    ({ url }) => shouldCacheExerciseImage(url.pathname),
+    new CacheFirst({
+      cacheName: CACHE_NAMES.exerciseImages,
+      plugins: [
+        new ExpirationPlugin({
+          maxEntries: 400,
+          maxAgeSeconds: 60 * 60 * 24 * 180,
+          purgeOnQuotaError: true,
+        }),
+      ],
+    }),
+    "GET",
+  );
+
+  // Offline navigation fallback (page-audit-10 F1). `setCatchHandler` only
+  // runs when a matched route's handler *throws* — i.e. the navigation
+  // NetworkFirst above already tried network (3s) and missed the cache while
+  // offline. The success path and every non-navigation request are untouched;
+  // if no shell is precached we return the default error (no behaviour change
+  // vs today), so the blast radius is exactly the already-broken offline-miss.
+  setCatchHandler(async ({ request }) => {
+    if (isNavigationRequest(request.mode)) {
+      const shell = await resolveOfflineShell((url) => matchPrecache(url));
+      if (shell) return shell;
+    }
+    return Response.error();
+  });
+}
+
+export async function cacheEntryCount(
+  cacheName: string,
+): Promise<number | null> {
+  try {
+    const cache = await caches.open(cacheName);
+    const keys = await cache.keys();
+    return keys.length;
+  } catch {
+    return null;
+  }
+}
+
+/**
+ * Повертає список застарілих cache-name-ів (older `navigations-v*` /
+ * `api-cache-v*` / `exercise-images-v*`), які SW зачищає на `activate`.
+ */
+export async function listStaleCaches(): Promise<string[]> {
+  const cacheNames = await caches.keys();
+  return cacheNames.filter(
+    (n) =>
+      (n.startsWith("navigations-v") && n !== CACHE_NAMES.navigations) ||
+      (n.startsWith("api-cache-v") && n !== CACHE_NAMES.api) ||
+      (n.startsWith("exercise-images-v") && n !== CACHE_NAMES.exerciseImages),
+  );
+}
+
+/**
+ * Викидає все, що SW колись закешував (precache, navigation, API,
+ * Google Fonts). Використовується ручним «Очистити кеш» з UI.
+ */
+export async function clearAppCaches(): Promise<{
+  ok: true;
+  deleted: string[];
+}> {
+  const names = await caches.keys();
+  const toDelete = names.filter(
+    (n) =>
+      n === "google-fonts-css" ||
+      n === "google-fonts-woff" ||
+      n.startsWith("navigations-v") ||
+      n.startsWith("api-cache-v") ||
+      n.startsWith("exercise-images-v") ||
+      n.startsWith("workbox-precache"),
+  );
+  await Promise.allSettled(toDelete.map((n) => caches.delete(n)));
+  return { ok: true, deleted: toDelete };
+}

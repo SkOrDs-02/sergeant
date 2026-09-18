@@ -1,0 +1,59 @@
+{
+  "$schema": "./freshness-config.schema.json",
+  "_comment": "See scripts/docs/freshness-config.mjs for semantics. cadenceOverrides accepts exact paths AND globs; exact wins, then the longest matching glob, then defaultCadenceDays. Tiers exist because a flat cadence over ~400 docs is a review load nobody can carry — see docs/governance/governance/doc-freshness.md § Каденція.",
+  "_comment_excludes": "docs/today.md, docs/open-work.md і docs/STATUS.md — три артефакти ОДНОГО генератора (`pnpm docs:gen-daily`). Їхній заголовок штампує сам генератор, тож людині там нема чого валідувати. today.md висів у трекінгу до 2026-08-23 і давав вічний issue: генератор ставить `Next review` +7 днів, а `docs-daily-brief.yml` втратив `schedule:` 2026-07-09 (dca267eeb) — отже файл протухав через тиждень після кожного ручного прогону. Це й був issue #305.",
+  "defaultCadenceDays": 90,
+  "cadenceOverrides": {
+    "docs/operations/observability/runbook.md": 60,
+    "docs/work/specs/tech-debt/backend.md": 60,
+    "docs/work/specs/tech-debt/frontend.md": 60,
+    "docs/start/instructions/debug-chat-tool.md": 60,
+    "docs/start/instructions/hotfix-prod-regression.md": 60,
+    "docs/start/instructions/investigate-alert.md": 60,
+    "docs/start/instructions/pre-merge-migration-checklist.md": 60,
+    "docs/start/instructions/rotate-secrets.md": 60,
+    "docs/governance/governance/audit-freeze-2026-05-05.md": 180,
+
+    "docs/governance/security/**": 365,
+    "docs/work/specs/audits/**": 365,
+    "docs/work/specs/planning/**": 365,
+    "docs/work/research/**": 365,
+    "docs/work/specs/beta-launch/**": 365,
+    "docs/work/specs/superpowers/**": 365,
+    "docs/engineering/notes/**": 365,
+    "docs/operations/postmortems/**": 365,
+    "docs/product/whats-new/**": 365,
+    "docs/work/specs/launch/**": 365,
+    "docs/assets/**": 365,
+
+    "docs/product/**": 180,
+    "docs/engineering/**": 180,
+    "docs/design/**": 180,
+    "docs/work/**": 180,
+
+    "docs/product/modules/**": 90,
+    "docs/engineering/architecture/**": 90,
+    "docs/work/specs/tech-debt/**": 90,
+
+    "docs/governance/governance/rules/**": 180
+  },
+  "excludeGlobs": [
+    "docs/work/specs/initiatives/follow-ups.md",
+    "docs/open-work.md",
+    "docs/STATUS.md",
+    "docs/today.md",
+    "docs/work/specs/planning/model-eval-*.md",
+    "docs/work/specs/planning/vision-eval-*.md",
+    "scripts/__tests__/fixtures/**",
+    ".telemetry/**",
+    "mockups/**",
+    "_scratch/**",
+    "docs/**/archive/**"
+  ],
+  "explicitInclude": [],
+  "explicitExclude": [
+    "docs/design/design/redesign-v2/handoff.md",
+    "docs/work/specs/planning/model-eval-2026-08-04.md",
+    "docs/work/specs/planning/vision-eval-2026-08-04.md"
+  ]
+}

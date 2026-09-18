@@ -1,0 +1,218 @@
+// @vitest-environment jsdom
+import { describe, expect, it, beforeEach, vi } from "vitest";
+import { fireEvent, render, screen, within } from "@testing-library/react";
+
+const { hapticTap, emitHubBus, openHubModule } = vi.hoisted(() => ({
+  hapticTap: vi.fn(),
+  emitHubBus: vi.fn(),
+  openHubModule: vi.fn(),
+}));
+
+vi.mock("@shared/lib/adapters/haptic", () => ({ hapticTap }));
+vi.mock("@shared/lib/modules/hubBus", () => ({ emitHubBus }));
+// `openHubSettingsSection` потрібен `ModuleRail` (неактивний модуль веде в
+// налаштування); мок без нього кидає на імпорті.
+vi.mock("@shared/lib/modules/hubNav", () => ({
+  openHubModule,
+  openHubSettingsSection: vi.fn(),
+}));
+
+import {
+  ModuleHeader,
+  ModuleHeaderAssistantButton,
+  ModuleHeaderBackButton,
+  ModuleHeaderChevronButton,
+  ModuleHeaderHubButton,
+  ModuleHeaderIconButton,
+  ModuleHeaderSettingsButton,
+  ModuleSwitcher,
+} from "./ModuleHeader";
+
+describe("ModuleHeader", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("renders a short subtitle for narrow screens next to the full one (VIS-1)", () => {
+    render(
+      <ModuleHeader
+        title="ФІЗРУК"
+        subtitle="Рух · сила · відновлення"
+        subtitleShort="Рух і відновлення"
+      />,
+    );
+    expect(screen.getByText("Рух і відновлення")).toHaveClass("sm:hidden");
+    expect(screen.getByText("Рух · сила · відновлення")).toHaveClass(
+      "hidden",
+      "sm:inline",
+    );
+  });
+
+  it("renders the default title stack and optional slots", () => {
+    render(
+      <ModuleHeader
+        title="ФІЗРУК"
+        eyebrow="ОСОБИСТИЙ ЖУРНАЛ"
+        subtitle="Тренування · прогрес"
+        left={<button type="button">Назад</button>}
+        right={<button type="button">Дія</button>}
+        className="custom-header"
+      />,
+    );
+
+    expect(screen.getByText("ФІЗРУК")).toBeInTheDocument();
+    // Module chrome title is shell decoration, not a section heading — it
+    // precedes each page's own <h1> in DOM order, so it must not register
+    // as a heading (would invert the a11y heading outline).
+    expect(screen.queryByRole("heading", { name: "ФІЗРУК" })).toBeNull();
+    expect(screen.getByText("ОСОБИСТИЙ ЖУРНАЛ")).toBeInTheDocument();
+    expect(screen.getByText("Тренування · прогрес")).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Назад" })).toBeInTheDocument();
+    expect(screen.getByRole("button", { name: "Дія" })).toBeInTheDocument();
+    expect(screen.queryByRole("tablist")).toBeNull();
+    expect(screen.getByText("ФІЗРУК").closest(".custom-header")).not.toBeNull();
+  });
+
+  it("uses titleSlot and suppresses the switcher when requested", () => {
+    const { container } = render(
+      <ModuleHeader
+        module="finyk"
+        showSwitcher={false}
+        titleSlot={<div data-testid="title-slot">Custom title</div>}
+      />,
+    );
+
+    expect(screen.getByTestId("title-slot")).toHaveTextContent("Custom title");
+    expect(screen.queryByRole("tablist")).toBeNull();
+    // Шапка модуля стоїть на зоні (`--module-zone-rgb`), а не на градієнті.
+    expect((container.firstElementChild as HTMLElement).className).toContain(
+      "bg-zone",
+    );
+  });
+
+  it("renders module switcher tabs and opens inactive modules", () => {
+    render(<ModuleHeader module="nutrition" title="Харчування" />);
+
+    const tabs = screen.getAllByRole("tab");
+    expect(tabs).toHaveLength(4);
+    expect(
+      screen.getByRole("tab", { name: "Перейти до модуля Їжа" }),
+    ).toHaveAttribute("aria-selected", "true");
+    expect(screen.getByText("Їжа")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("tab", { name: /Фінік/ }));
+    expect(hapticTap).toHaveBeenCalledTimes(1);
+    // `undefined` замість hash і `module_switcher` як джерело для
+    // `MODULE_OPENED` (базова лінія перед віссю дії хабу, P3).
+    expect(openHubModule).toHaveBeenCalledWith(
+      "finyk",
+      undefined,
+      "module_switcher",
+    );
+
+    fireEvent.click(screen.getByRole("tab", { name: "Перейти до модуля Їжа" }));
+    expect(openHubModule).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("ModuleSwitcher", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("marks only the active tab as selected", () => {
+    render(<ModuleSwitcher active="routine" className="switcher-extra" />);
+
+    const tablist = screen.getByRole("tablist");
+    expect(tablist.className).toContain("switcher-extra");
+    for (const tab of within(tablist).getAllByRole("tab")) {
+      const selected = tab.getAttribute("aria-selected") === "true";
+      expect(tab.tabIndex).toBe(selected ? 0 : -1);
+    }
+  });
+
+  // Друга половина патерну. Тест вище пінить roving tabindex, і саме через
+  // це відсутність стрілок довго виглядала свідомою: `tabIndex={-1}` на
+  // неактивних + жодного onKeyDown = неактивні модулі недосяжні з
+  // клавіатури взагалі (Tab пропускає, стрілки не працюють). Знахідка
+  // PR-C5, аудит 2026-09-13. Половини мусять їхати разом.
+  it("стрілки ходять по модулях і перемикають їх", () => {
+    render(<ModuleSwitcher active="finyk" />);
+    const tablist = screen.getByRole("tablist");
+    const tabs = within(tablist).getAllByRole("tab");
+    const first = tabs[0]!;
+    const second = tabs[1]!;
+
+    first.focus();
+    fireEvent.keyDown(first, { key: "ArrowRight" });
+
+    expect(document.activeElement).toBe(second);
+    expect(openHubModule).toHaveBeenCalledTimes(1);
+  });
+
+  it("Home і End доводять до країв ряду", () => {
+    render(<ModuleSwitcher active="finyk" />);
+    const tabs = within(screen.getByRole("tablist")).getAllByRole("tab");
+
+    tabs[0]!.focus();
+    fireEvent.keyDown(tabs[0]!, { key: "End" });
+    expect(document.activeElement).toBe(tabs[tabs.length - 1]!);
+
+    fireEvent.keyDown(tabs[tabs.length - 1]!, { key: "Home" });
+    expect(document.activeElement).toBe(tabs[0]!);
+  });
+});
+
+describe("ModuleHeader buttons", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+  });
+
+  it("runs callbacks from icon, back, hub, chevron and settings buttons", () => {
+    const onIcon = vi.fn();
+    const onBack = vi.fn();
+    const onHub = vi.fn();
+    const onChevron = vi.fn();
+    const onSettings = vi.fn();
+    render(
+      <>
+        <ModuleHeaderIconButton ariaLabel="Іконка" onClick={onIcon}>
+          I
+        </ModuleHeaderIconButton>
+        <ModuleHeaderBackButton onClick={onBack} label="" />
+        <ModuleHeaderHubButton onClick={onHub} />
+        <ModuleHeaderChevronButton onClick={onChevron} ariaLabel="До списку" />
+        <ModuleHeaderSettingsButton onClick={onSettings} title="Налаштувати" />
+      </>,
+    );
+
+    fireEvent.click(screen.getByRole("button", { name: "Іконка" }));
+    fireEvent.click(screen.getByRole("button", { name: "Назад" }));
+    fireEvent.click(screen.getByRole("button", { name: "На хаб" }));
+    fireEvent.click(screen.getByRole("button", { name: "До списку" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Налаштування модуля" }),
+    );
+
+    expect(onIcon).toHaveBeenCalledTimes(1);
+    expect(onBack).toHaveBeenCalledTimes(1);
+    expect(onHub).toHaveBeenCalledTimes(1);
+    expect(onChevron).toHaveBeenCalledTimes(1);
+    expect(onSettings).toHaveBeenCalledTimes(1);
+    expect(screen.queryByText("Назад")).toBeNull();
+    expect(screen.getByTitle("Налаштувати")).toBeInTheDocument();
+  });
+
+  it("opens the assistant through the hub bus", () => {
+    render(<ModuleHeaderAssistantButton ariaLabel="AI" title="Асистент" />);
+
+    fireEvent.click(screen.getByRole("button", { name: "AI" }));
+
+    expect(hapticTap).toHaveBeenCalledTimes(1);
+    expect(emitHubBus).toHaveBeenCalledWith("openChat", {
+      message: null,
+      autoSend: false,
+    });
+    expect(screen.getByTitle("Асистент")).toBeInTheDocument();
+  });
+});

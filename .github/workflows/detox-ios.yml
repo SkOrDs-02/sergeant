@@ -1,0 +1,166 @@
+name: Detox (iOS)
+
+# Owner: @zaebal-beep (solo maintainer).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
+# Mobile E2E lane for the iOS Detox suites in `apps/mobile/e2e/*`.
+# Kept separate from the main `CI` workflow in `.github/workflows/ci.yml`
+# because:
+#   - It runs on `macos-14` (≈3× the cost of `ubuntu-latest`).
+#   - The iOS simulator boot + `expo prebuild` + `xcodebuild` pipeline
+#     takes >10 min, so we only want it on `main` / mobile-scoped PRs.
+#   - A failing Detox run should not block an unrelated web-only PR.
+#
+# Android CI lives in `.github/workflows/detox-android.yml` — they share
+# the same suite set (`apps/mobile/e2e/*.e2e.ts`) and the same
+# `pnpm e2e:*` entry points.
+
+# Path trigger covers two failure modes (PR-18, M2):
+#   1. Direct mobile surface changes (`apps/mobile/**`, mobile-facing
+#      packages) — the original trigger set.
+#   2. Server-shape changes that mobile silently depends on — this half of
+#      the PR-18 trigger set (`apps/server/src/modules/**/*.routes.ts`,
+#      `**/serializers/**`, `apps/server/src/migrations/**`) was DROPPED in
+#      the web-focus phase below and is no longer in `paths`. The M2 failure
+#      mode it covered (server-only PR renames a response field,
+#      `packages/api-client/` lags, bug surfaces in production) is now caught
+#      only by the Hard Rule #3 contract tests + `pnpm api:check-openapi`
+#      (root `lint` script). Behavioural drift those cannot see — route
+#      ordering, header changes — needs a manual `workflow_dispatch` run.
+#   See `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
+#
+# Web-focus phase (2026-07): `push` вимкнено — Detox не гониться на кожен
+# merge до `main`. Ручний прогін: `workflow_dispatch`. PR-тригер лише на
+# прямі зміни mobile-shell.
+#
+# ⛔ PR-ТРИГЕР ЗНЯТО 2026-09-14 (рішення founder-а, знахідка PR-M1).
+# Доти лейн запускався на кожен PR, що чіпає mobile-поверхні, і завжди
+# завершувався зеленим — причому тут гірше, ніж на Android: крок «Run Detox
+# iOS suite» СЬЮТУ НЕ ЗАПУСКАВ ВЗАГАЛІ, він друкував warning і робив
+# `exit 0`. Тобто назва кроку стверджувала те, чого крок не робив, а в
+# списку перевірок PR-а стояла зелена галочка «Detox (iOS)». Мобільні стеки
+# на паузі з 2026-08-25 (ADR-0094), тож чесний стан під час паузи —
+# ВІДСУТНІЙ гейт, а не гейт, який завжди зелений.
+#
+# Лишається `workflow_dispatch`: прогін руками можливий і тепер справді
+# ганяє сьют. Сьюти в `apps/mobile/e2e/` НЕ видалені — вони актив на момент
+# розморозки, яка поверне `pull_request:`-блок разом із рештою мобільного
+# лейну (`docs/work/specs/tech-debt/mobile.md`).
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: detox-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detox-ios:
+    runs-on: macos-14
+    # Build routinely takes ~25-30 minutes on macOS runners. Keep the job
+    # timeout above the 45-minute runtime guard below so the suite can exit via
+    # its intentional non-blocking warning path instead of GitHub cancelling it.
+    timeout-minutes: 90
+    env:
+      EXPO_PUBLIC_E2E: "1"
+      # Enables the mock-auth fetch interceptor so the new "full" suites
+      # (sign-in → module-action → sign-out) can exercise the real Better
+      # Auth client without a live backend. Smoke suites stay on the
+      # `EXPO_PUBLIC_E2E=1` auth-bypass — the two flags are compatible.
+      EXPO_PUBLIC_E2E_REAL_AUTH: "1"
+      EXPO_PUBLIC_E2E_USER_EMAIL: "e2e-detox@sergeant.test"
+      EXPO_PUBLIC_E2E_USER_PASSWORD: "detox-pass-2026"
+      E2E_BUILD: "1"
+      # `@sentry/react-native` injects a `sentry-cli` upload step into
+      # xcodebuild that aborts with `An organization ID or slug is
+      # required` whenever SENTRY_ORG / SENTRY_PROJECT / SENTRY_AUTH_TOKEN
+      # are unset — which they are on every CI run except EAS release
+      # lanes. Disabling the auto-upload turns the step into an explicit
+      # no-op so Detox can finish building the app.
+      SENTRY_DISABLE_AUTO_UPLOAD: "true"
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening).
+      # `version:` mirrors `packageManager` in root package.json — without
+      # it the action defaults to pnpm@latest (10.x, needs Node ≥22.13)
+      # which crashes setup-node `cache: pnpm` on macOS runners.
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+        with:
+          version: 9.15.1
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      - name: Setup Detox CLI + simulator utils
+        run: |
+          brew tap wix/brew
+          # Homebrew on runner images ≥2026-06-29 refuses formulae from
+          # untrusted third-party taps; older brew has no `trust`
+          # subcommand — hence the fallback.
+          brew trust wix/brew 2>/dev/null || true
+          brew install applesimutils
+
+      # Detox 20.x ships no prebuilt `Detox.framework`. The iOS test
+      # runner expects a content-addressed copy under
+      # `~/Library/Detox/ios/framework/<hash>`, where `<hash>` is keyed
+      # on the Detox version + the runner's Xcode build. A fresh
+      # `macos-14` runner (or a bumped image / Xcode) has an empty cache,
+      # so every suite aborts in `IosSimulatorEnvValidator.validate` with
+      # "Detox.framework could not be found ... either you changed a
+      # version of Xcode or Detox postinstall script was unsuccessful."
+      # Build the framework explicitly so it exists at test time; `clean`
+      # first drops any stale/partial entry from a previous Xcode. ~2-3
+      # min, amortised by the >10 min prebuild/xcodebuild below.
+      - name: Build Detox iOS framework cache
+        working-directory: apps/mobile
+        run: |
+          pnpm exec detox clean-framework-cache
+          pnpm exec detox build-framework-cache
+
+      # Detox drives the binary produced by `expo prebuild` + `xcodebuild`.
+      # `--platform ios` so we don't waste macOS minutes on Android projects
+      # that the matching Android workflow will regenerate anyway.
+      - name: Prebuild iOS project
+        working-directory: apps/mobile
+        run: pnpm exec expo prebuild --platform ios --clean --non-interactive
+
+      - name: Pod install
+        working-directory: apps/mobile/ios
+        run: pod install --repo-update
+
+      - name: Build Detox iOS framework cache
+        working-directory: apps/mobile
+        run: pnpm exec detox build-framework-cache
+
+      - name: Build Detox iOS app
+        working-directory: apps/mobile
+        run: pnpm e2e:build:ios
+
+      - name: Run Detox iOS suite
+        working-directory: apps/mobile
+        # PR-M1: доти цей крок друкував warning і робив `exit 0` — тобто
+        # «Run Detox iOS suite» нічого не запускав. Ручний прогін
+        # (`workflow_dispatch`) тепер справді ганяє сьют і справді падає,
+        # якщо той падає. Відомий busy-loop інструментації нікуди не зник —
+        # але побачити його можна лише запустивши, а не сховавши за зеленим.
+        run: pnpm e2e:test:ios:ci
+
+      - name: Upload Detox artefacts on failure
+        if: always()
+        # actions/upload-artifact v7.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: detox-ios-artifacts
+          path: apps/mobile/.detox-artifacts
+          if-no-files-found: ignore

@@ -1,0 +1,332 @@
+import { describe, it, expect } from "vitest";
+import type { RawExerciseDef } from "@sergeant/fizruk-domain/data";
+import type { Workout } from "@sergeant/fizruk-domain";
+import {
+  buildGroupedExercises,
+  buildPastWorkoutTimes,
+  collectLastByExerciseId,
+  countItemsByExerciseId,
+  defaultPastWorkoutTimes,
+  formatAddExerciseDoneLabel,
+  formatActiveDuration,
+  MUSCLE_GROUP_ORDER,
+} from "./Workouts.helpers";
+
+// ─── helpers ──────────────────────────────────────────────────────────────────
+
+function makeExercise(
+  id: string,
+  primaryGroup: string,
+  equipment: string[] = [],
+): RawExerciseDef {
+  return { id, name: { uk: id }, primaryGroup, equipment };
+}
+
+function makeWorkout(
+  id: string,
+  startedAt: string,
+  items: Workout["items"] = [],
+): Workout {
+  return {
+    id,
+    startedAt,
+    items: items ?? [],
+    isActive: false,
+    endedAt: null,
+    date: startedAt.slice(0, 10),
+    templateId: null,
+    wellbeing: null,
+  } as unknown as Workout;
+}
+
+// ─── buildGroupedExercises ────────────────────────────────────────────────────
+
+describe("buildGroupedExercises", () => {
+  const exercises: RawExerciseDef[] = [
+    makeExercise("bench", "chest", ["barbell"]),
+    makeExercise("row", "back", ["barbell"]),
+    makeExercise("squat", "quadriceps", ["barbell"]),
+    makeExercise("curl", "biceps", ["dumbbell"]),
+  ];
+
+  const labels: Record<string, string> = {
+    chest: "Груди",
+    back: "Спина",
+    quadriceps: "Квадрицепси",
+    biceps: "Біцепс",
+  };
+
+  it("groups exercises by primaryGroup", () => {
+    const groups = buildGroupedExercises(exercises, [], labels);
+    const ids = groups.map((g) => g.id);
+    expect(ids).toContain("chest");
+    expect(ids).toContain("back");
+    expect(ids).toContain("quadriceps");
+    expect(ids).toContain("biceps");
+  });
+
+  it("returns the correct count per group", () => {
+    const groups = buildGroupedExercises(exercises, [], labels);
+    const chest = groups.find((g) => g.id === "chest");
+    expect(chest?.total).toBe(1);
+    expect(chest?.items).toHaveLength(1);
+  });
+
+  it("uses the Ukrainian label when provided", () => {
+    const groups = buildGroupedExercises(exercises, [], labels);
+    const back = groups.find((g) => g.id === "back");
+    expect(back?.label).toBe("Спина");
+  });
+
+  it("falls back to the group id when label is missing", () => {
+    const groups = buildGroupedExercises(exercises, [], {});
+    const chest = groups.find((g) => g.id === "chest");
+    expect(chest?.label).toBe("chest");
+  });
+
+  it("filters by equipment when equipmentFilter is non-empty", () => {
+    // Only dumbbell exercises → should keep curl (biceps) and drop barbell ones
+    const groups = buildGroupedExercises(exercises, ["dumbbell"], labels);
+    const ids = groups.map((g) => g.id);
+    expect(ids).toContain("biceps");
+    expect(ids).not.toContain("chest"); // bench is barbell only
+  });
+
+  it("respects MUSCLE_GROUP_ORDER for sorting", () => {
+    const groups = buildGroupedExercises(exercises, [], labels);
+    const chestIdx = groups.findIndex((g) => g.id === "chest");
+    const backIdx = groups.findIndex((g) => g.id === "back");
+    const quadsIdx = groups.findIndex((g) => g.id === "quadriceps");
+    // chest (index 0) should come before back (index 1) and quadriceps (index 8)
+    expect(chestIdx).toBeLessThan(backIdx);
+    expect(backIdx).toBeLessThan(quadsIdx);
+  });
+
+  it("MUSCLE_GROUP_ORDER has chest first", () => {
+    expect(MUSCLE_GROUP_ORDER[0]).toBe("chest");
+  });
+
+  it("returns empty array for empty exercise list", () => {
+    expect(buildGroupedExercises([], [], labels)).toEqual([]);
+  });
+});
+
+// ─── collectLastByExerciseId ──────────────────────────────────────────────────
+
+describe("collectLastByExerciseId", () => {
+  it("returns empty object for no workouts", () => {
+    expect(collectLastByExerciseId([], null)).toEqual({});
+  });
+
+  it("picks the most recent workout item for each exerciseId", () => {
+    const older = makeWorkout("w1", "2026-01-01T10:00:00Z", [
+      {
+        id: "i1",
+        exerciseId: "bench",
+        nameUk: "Bench",
+        primaryGroup: "chest",
+        musclesPrimary: [],
+        musclesSecondary: [],
+        type: "strength",
+        sets: [{ weightKg: 80, reps: 5, id: "s1" }],
+      },
+    ]);
+    const newer = makeWorkout("w2", "2026-01-08T10:00:00Z", [
+      {
+        id: "i2",
+        exerciseId: "bench",
+        nameUk: "Bench",
+        primaryGroup: "chest",
+        musclesPrimary: [],
+        musclesSecondary: [],
+        type: "strength",
+        sets: [{ weightKg: 90, reps: 5, id: "s2" }],
+      },
+    ]);
+
+    const result = collectLastByExerciseId([older, newer], null);
+    expect(result["bench"]).toBeDefined();
+    // The newer workout has weightKg 90
+    expect(result["bench"]?.sets?.[0]?.weightKg).toBe(90);
+  });
+
+  it("skips the active workout", () => {
+    const active = makeWorkout("active-id", "2026-01-10T10:00:00Z", [
+      {
+        id: "i1",
+        exerciseId: "squat",
+        nameUk: "Squat",
+        primaryGroup: "quadriceps",
+        musclesPrimary: [],
+        musclesSecondary: [],
+        type: "strength",
+        sets: [],
+      },
+    ]);
+
+    const result = collectLastByExerciseId([active], "active-id");
+    expect(result["squat"]).toBeUndefined();
+  });
+
+  it("skips items with no exerciseId", () => {
+    const w = makeWorkout("w1", "2026-01-01T10:00:00Z", [
+      {
+        id: "i1",
+        exerciseId: null as unknown as string,
+        nameUk: "?",
+        primaryGroup: "chest",
+        musclesPrimary: [],
+        musclesSecondary: [],
+        type: "strength",
+        sets: [],
+      },
+    ]);
+    expect(collectLastByExerciseId([w], null)).toEqual({});
+  });
+});
+
+// ─── formatActiveDuration ─────────────────────────────────────────────────────
+
+describe("formatActiveDuration", () => {
+  it("returns null when startedAt is null", () => {
+    expect(formatActiveDuration(null, null, Date.now())).toBeNull();
+  });
+
+  it("returns null when startedAt is undefined", () => {
+    expect(formatActiveDuration(undefined, null, Date.now())).toBeNull();
+  });
+
+  it("formats duration as mm:ss", () => {
+    const start = new Date("2026-01-01T10:00:00Z").toISOString();
+    const end = new Date("2026-01-01T10:01:30Z").toISOString();
+    const result = formatActiveDuration(start, end, Date.now());
+    expect(result).toBe("01:30");
+  });
+
+  it("zero-pads both minutes and seconds", () => {
+    const start = new Date("2026-01-01T10:00:00Z").toISOString();
+    const end = new Date("2026-01-01T10:00:05Z").toISOString();
+    const result = formatActiveDuration(start, end, Date.now());
+    expect(result).toBe("00:05");
+  });
+
+  it("uses `now` when endedAt is absent", () => {
+    const start = new Date(Date.now() - 90_000).toISOString(); // 90 s ago
+    const result = formatActiveDuration(start, null, Date.now());
+    expect(result).not.toBeNull();
+    expect(result).toMatch(/^\d{2}:\d{2}$/);
+  });
+
+  it("returns null when end < start (invalid)", () => {
+    const start = new Date("2026-01-01T10:01:00Z").toISOString();
+    const end = new Date("2026-01-01T10:00:00Z").toISOString();
+    expect(formatActiveDuration(start, end, Date.now())).toBeNull();
+  });
+
+  it("returns '00:00' for equal start and end", () => {
+    const ts = new Date("2026-01-01T10:00:00Z").toISOString();
+    expect(formatActiveDuration(ts, ts, Date.now())).toBe("00:00");
+  });
+});
+
+/**
+ * Дефолт форми «Внести проведене заняття» мусить бути ВАЛІДНИМ вводом:
+ * форма відкривалась із «сьогодні 18:00 → 19:00» незалежно від годинника, тож
+ * до сьомої вечора кнопка «Записати» була вимкнена одразу при відкритті
+ * (browser-QA 2026-09-02).
+ */
+describe("defaultPastWorkoutTimes", () => {
+  function at(iso: string): Date {
+    return new Date(iso);
+  }
+
+  it("після 19:00 лишає вечірній дефолт", () => {
+    const d = at("2026-09-03T21:30:00");
+    expect(defaultPastWorkoutTimes(d)).toEqual({
+      date: "2026-09-03",
+      start: "18:00",
+      end: "19:00",
+    });
+  });
+
+  it("серед дня пропонує годину, що щойно скінчилась", () => {
+    const out = defaultPastWorkoutTimes(at("2026-09-03T10:07:00"));
+    expect(out).toEqual({ date: "2026-09-03", start: "09:05", end: "10:05" });
+  });
+
+  it("глибокої ночі відкочується на вчорашній вечір", () => {
+    const out = defaultPastWorkoutTimes(at("2026-09-03T00:20:00"));
+    expect(out).toEqual({ date: "2026-09-02", start: "18:00", end: "19:00" });
+  });
+
+  // Ревʼю PR #1053: дата й час мусять бути з ОДНОГО годинника. Київський
+  // день-ключ поруч із пристроєвою годиною дає майбутнє для будь-якого хоста
+  // західніше Києва — тобто рівно той дефект, який ця функція й лікує.
+  it("ніколи не віддає пару в майбутньому", () => {
+    for (const iso of [
+      "2026-09-03T00:05:00",
+      "2026-09-03T01:10:00",
+      "2026-09-03T10:07:00",
+      "2026-09-03T18:59:00",
+      "2026-09-03T19:00:00",
+      "2026-09-03T23:59:00",
+    ]) {
+      const now = at(iso);
+      const d = defaultPastWorkoutTimes(now);
+      const times = buildPastWorkoutTimes(d.date, d.start, d.end, now);
+      expect(times, iso).not.toBeNull();
+      expect(times?.inFuture, iso).toBe(false);
+      expect(times?.implausiblyLong, iso).toBe(false);
+    }
+  });
+});
+
+describe("countItemsByExerciseId", () => {
+  it("порожній список дає порожню мапу", () => {
+    expect(countItemsByExerciseId([])).toEqual({});
+    expect(countItemsByExerciseId(null)).toEqual({});
+    expect(countItemsByExerciseId(undefined)).toEqual({});
+  });
+
+  it("рахує дублі, бо повторне додавання дозволене", () => {
+    expect(
+      countItemsByExerciseId([
+        { exerciseId: "bench" },
+        { exerciseId: "squat" },
+        { exerciseId: "bench" },
+      ]),
+    ).toEqual({ bench: 2, squat: 1 });
+  });
+
+  it("ігнорує позиції без exerciseId (кастомна вправа з сесії)", () => {
+    expect(
+      countItemsByExerciseId([
+        { exerciseId: "bench" },
+        {},
+        { exerciseId: undefined },
+      ]),
+    ).toEqual({ bench: 1 });
+  });
+});
+
+describe("formatAddExerciseDoneLabel", () => {
+  const copy = {
+    addExerciseDone: "Готово",
+    exercisesOne: "вправа",
+    exercisesFew: "вправи",
+    exercisesMany: "вправ",
+  };
+
+  it("без доданих вправ — просто «Готово»", () => {
+    expect(formatAddExerciseDoneLabel(0, copy)).toBe("Готово");
+    expect(formatAddExerciseDoneLabel(-1, copy)).toBe("Готово");
+  });
+
+  it("несе біжучий підсумок з правильною формою слова", () => {
+    expect(formatAddExerciseDoneLabel(1, copy)).toBe("Готово · 1 вправа");
+    expect(formatAddExerciseDoneLabel(3, copy)).toBe("Готово · 3 вправи");
+    expect(formatAddExerciseDoneLabel(5, copy)).toBe("Готово · 5 вправ");
+    expect(formatAddExerciseDoneLabel(11, copy)).toBe("Готово · 11 вправ");
+    expect(formatAddExerciseDoneLabel(22, copy)).toBe("Готово · 22 вправи");
+  });
+});

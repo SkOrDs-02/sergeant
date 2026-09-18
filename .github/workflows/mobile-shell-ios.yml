@@ -1,0 +1,153 @@
+name: Mobile Shell (iOS)
+
+# Owner: @zaebal-beep (solo maintainer).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
+# iOS build-only lane for the Capacitor shell in `apps/mobile-shell/**`.
+# Proves the shell still compiles on an Apple toolchain every PR.
+# No signing, no TestFlight, no device deployment — a simulator build
+# is enough to catch Pod / Swift / Capacitor plugin breakage early.
+#
+# Pipeline:
+#   1. `pnpm build:web`              — Vite bundle into `apps/server/dist`
+#   2. `cap add ios`                 — scaffold `apps/mobile-shell/ios` +
+#                                       `pod install` (ios/ is intentionally
+#                                       uncommitted; see apps/mobile-shell/README.md)
+#   3. `cap sync ios`                — copy assets + refresh plugin graph
+#   4. `xcodebuild ... build`        — build App scheme for iOS Simulator
+#                                       with CODE_SIGNING_ALLOWED=NO
+#
+# The job intentionally runs on `macos-latest` (billed ≈10× Linux) and is
+# path-filtered to mobile-shell / web surfaces so web-only PRs don't pay
+# for a macOS runner they do not need.
+
+# Web-focus phase (2026-07): PR/push triggers лише на `apps/mobile-shell/**`
+# — web-only зміни не гонять macOS shell-build. Ручний прогін:
+# `workflow_dispatch`. Повернути `apps/web/**` у paths, коли mobile знову
+# в обов'язковому CI-контурі.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/mobile-shell/**"
+      - "pnpm-lock.yaml"
+      - "package.json"
+      - ".github/workflows/mobile-shell-ios.yml"
+  pull_request:
+    paths:
+      - "apps/mobile-shell/**"
+      - "pnpm-lock.yaml"
+      - "package.json"
+      - ".github/workflows/mobile-shell-ios.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-shell-ios-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-ios-debug:
+    name: Build iOS Simulator (Debug)
+    runs-on: macos-latest
+    timeout-minutes: 45
+    steps:
+      # actions/checkout v4.3.1 (SHA-pinned)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening).
+      # `version:` mirrors `packageManager` in root package.json. Without
+      # an explicit pin the action defaults to pnpm@latest (currently 10.x)
+      # which requires Node ≥22.13 — see
+      # https://github.com/pnpm/action-setup#inputs and PR #990 CI logs.
+      # The macOS runner image's bootstrap node trips this earlier than
+      # Linux ones (where the cache step is skipped on miss).
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+        with:
+          version: 9.15.1
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      # `pnpm build:web` (vite build) calls Rolldown to resolve the web
+      # bundle's imports. `apps/web/src/modules/{nutrition,fizruk,routine}/lib/clientMigrate.ts`
+      # imports `@sergeant/db-schema/sqlite/migrations`, whose `exports`
+      # map points at `./dist/sqlite/migrations/index.js` — the package's
+      # build artefact. Without this step the resolver errors with
+      # `Rolldown failed to resolve import "@sergeant/db-schema/sqlite/migrations"`
+      # and the whole job aborts before xcodebuild. Mirrors the explicit
+      # prebuild already present in `ci.yml > critical-flow`,
+      # `extended-e2e.yml`, and `visual-regression.yml`.
+      - name: Build @sergeant/db-schema
+        run: pnpm --filter @sergeant/db-schema build
+
+      - name: Build web bundle
+        run: pnpm build:web
+
+      - name: Scaffold iOS project (cap add ios)
+        # `ios/` is intentionally uncommitted in the repo — see the
+        # "iOS" section of apps/mobile-shell/README.md. `cap add ios`
+        # first scaffolds the Xcode project and _then_ runs `pod install`.
+        # The pod install step fails on the default template because
+        # @capacitor-mlkit/barcode-scanning 7.5 → GoogleMLKit 7.0 needs
+        # iOS ≥ 15.5 while the template ships `platform :ios, '14.0'`.
+        # The Xcode project + Podfile are already on disk at that point
+        # though, so we swallow the exit code, patch the Podfile, and
+        # run `pod install` ourselves in the next step via `cap sync ios`.
+        working-directory: apps/mobile-shell
+        run: pnpm exec cap add ios || true
+
+      - name: Raise iOS deployment target in Podfile
+        working-directory: apps/mobile-shell/ios/App
+        # Bump `platform :ios, 'X'` from the Capacitor template default to
+        # 15.5 so `pod install` can resolve GoogleMLKit/BarcodeScanning
+        # 7.0.0 (the transitive dep of @capacitor-mlkit/barcode-scanning).
+        run: |
+          test -f Podfile || { echo "Podfile missing — cap add ios did not scaffold"; exit 1; }
+          sed -i.bak "s/^platform :ios, '[0-9.]*'/platform :ios, '15.5'/" Podfile
+          diff -u Podfile.bak Podfile || true
+          rm Podfile.bak
+
+      - name: Capacitor sync (ios)
+        working-directory: apps/mobile-shell
+        # `cap sync ios` now runs `pod install` against the patched
+        # Podfile and refreshes the plugin graph / web assets.
+        run: pnpm exec cap sync ios
+
+      - name: Audit iOS App Transport Security (L12)
+        # Runs after `cap sync ios` has written the freshly-generated
+        # Info.plist and before xcodebuild consumes it. Fails the build
+        # if `NSAppTransportSecurity.NSAllowsArbitraryLoads` (or any of
+        # the related per-surface flags) is `true` — which would
+        # silently bypass the `cleartext: false` guarantee declared in
+        # `apps/mobile-shell/capacitor.config.ts`. See
+        # `docs/work/specs/security-hardening/L12-ios-app-transport-security.md`.
+        run: node apps/mobile-shell/scripts/check-info-plist.mjs
+
+      - name: Build App scheme for iOS Simulator (no signing)
+        working-directory: apps/mobile-shell/ios/App
+        # NSBuildDesktopApp: xcodebuild needs an explicit -destination when
+        # the scheme has multiple supported platforms. `generic/platform=iOS
+        # Simulator` avoids picking a specific simulator OS version that the
+        # runner image may not have cached.
+        run: |
+          set -euo pipefail
+          xcodebuild \
+            -workspace App.xcworkspace \
+            -scheme App \
+            -configuration Debug \
+            -sdk iphonesimulator \
+            -destination 'generic/platform=iOS Simulator' \
+            CODE_SIGNING_ALLOWED=NO \
+            CODE_SIGNING_REQUIRED=NO \
+            build

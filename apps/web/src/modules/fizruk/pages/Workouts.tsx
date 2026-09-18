@@ -1,0 +1,528 @@
+/**
+ * Last validated: 2026-06-05
+ * Status: Active
+ */
+import { PullToRefresh } from "@shared/components/ui/PullToRefresh";
+import { useMemo, useState } from "react";
+import { Skeleton } from "@shared/components/ui/Skeleton";
+import { Button } from "@shared/components/ui/Button";
+import { DataState } from "@shared/components/ui/DataState";
+import { WorkoutTemplatesSection } from "../components/WorkoutTemplatesSection";
+import { ReadinessSheet } from "../components/workouts/ReadinessSheet";
+import { WorkoutFinishSheets } from "../components/workouts/WorkoutFinishSheets";
+import { AddExerciseSheet } from "../components/workouts/AddExerciseSheet";
+import { ExerciseDetailSheet } from "../components/workouts/ExerciseDetailSheet";
+import { WorkoutJournalSection } from "../components/workouts/WorkoutJournalSection";
+import { WorkoutCatalogSection } from "../components/workouts/WorkoutCatalogSection";
+import { WorkoutsHome } from "../components/workouts/WorkoutsHome";
+import { LogPastWorkoutSheet } from "../components/workouts/LogPastWorkoutSheet";
+import { QuickStartSheet } from "../components/workouts/QuickStartSheet";
+import { WorkoutsHeader } from "../components/workouts/WorkoutsHeader";
+import { WorkoutsConfirmDialogs } from "../components/workouts/WorkoutsConfirmDialogs";
+import { Sheet } from "@shared/components/ui/Sheet";
+import { StrongImportReview } from "../components/StrongImportReview";
+import { useWorkoutsOrchestrator } from "../hooks/useWorkoutsOrchestrator";
+import { useTrainingProgram } from "../hooks/useTrainingProgram";
+import { useDailyLog } from "../hooks/useDailyLog";
+import { useCustomActivities } from "../hooks/useCustomActivities";
+import { useLatestBodyWeightKg } from "../../../core/profile/useLatestBodyWeight";
+import { useCloudPullPending } from "@shared/hooks/useCloudPullPending";
+import { messages } from "@shared/i18n/uk";
+import {
+  countItemsByExerciseId,
+  formatAddExerciseDoneLabel,
+} from "./Workouts.helpers";
+import {
+  markComposeSaved,
+  useComposeTelemetry,
+} from "../../../core/observability/composeTelemetry";
+
+/** Стабільний ключ виміру тертя — той самий на всіх відкриттях форми. */
+const FIZRUK_PAST_WORKOUT_COMPOSE_KEY = "fizruk:log-past-workout";
+
+interface WorkoutsProps {
+  workoutId?: string | undefined;
+  /** `workout/<id>/<itemId>` — вправа, відкрита на весь екран у сесії. */
+  focusItemId?: string | undefined;
+  activeOnly?: boolean;
+  /**
+   * Розділ із власним маршрутом (`/fizruk/catalog`, `/fizruk/templates`).
+   * Сторінка та сама, але вона відкривається одразу в цьому вигляді, а
+   * «назад» веде на хаб «Тренування», а не перемикає локальний `view`.
+   */
+  section?: "catalog" | "templates" | undefined;
+  onNavigate?: ((target: string) => void) | undefined;
+  /**
+   * Deep-link to the Routine module's calendar tab. Wired by
+   * `FizrukRouter.tsx` from the optional `onOpenModule` prop on the
+   * Fizruk shell. When present, the workouts home shows a third
+   * action — «Запланувати тренування» — next to the «Почати» /
+   * «Внести проведене» CTAs. This used to live on a separate «План»
+   * tab that the user asked us to dissolve.
+   */
+  onOpenRoutine?: (() => void) | undefined;
+  /**
+   * Сьогоднішня сесія активної програми — третя плитка в аркуші «Почати
+   * тренування». Роутер збирає її з `activeProgram` + `todaySession` і
+   * віддає той самий старт, що й hero-картка Огляду; без програми —
+   * `undefined`, і плитки немає.
+   */
+  programStart?: { label: string; onStart: () => void } | undefined;
+  /**
+   * Лічильник зовнішніх запитів відкрити аркуш «Почати тренування»
+   * (`FizrukApp` → PWA-інтент `start_workout` / клавіша `N`). Реагуємо на
+   * зміну значення, не на саме значення: аркуш, закритий після першого
+   * запиту, має відкритись знову на другому.
+   */
+  quickStartRequest?: number | undefined;
+}
+
+export function Workouts({
+  workoutId,
+  focusItemId,
+  activeOnly = false,
+  section,
+  onNavigate,
+  onOpenRoutine,
+  programStart,
+  quickStartRequest = 0,
+}: WorkoutsProps = {}) {
+  const o = useWorkoutsOrchestrator({
+    requestedWorkoutId: workoutId,
+    initialView: activeOnly ? "log" : (section ?? "home"),
+    onWorkoutStarted: onNavigate
+      ? (id) => onNavigate(`workout/${id}`)
+      : undefined,
+  });
+  const cloudPullPending = useCloudPullPending();
+  // Тертя запису проведеного заняття (`entry_compose_finished`, §6
+  // контракту). `open` враховує ще й вкладку: шит рендериться лише на
+  // `view === "home"`, тож перехід на іншу вкладку з відкритою формою — це
+  // теж кинута композиція, і без цієї кон'юнкції вона зникла б зі
+  // знаменника мовчки.
+  useComposeTelemetry({
+    key: FIZRUK_PAST_WORKOUT_COMPOSE_KEY,
+    open: o.view === "home" && o.logPastOpen,
+    module: "fizruk",
+    entryKind: "past_workout",
+    surface: "workouts_home",
+  });
+  // Вага потрібна формі «Записати заняття»: без неї витрати рахувати нічим,
+  // і саме тоді форма просить її одним полем.
+  const bodyWeightKg = useLatestBodyWeightKg();
+  const { addEntry: addDailyLogEntry } = useDailyLog();
+  const { activities, addActivity } = useCustomActivities();
+  // 04-A — permanent "Програми" row in the home "Довідники" block reads
+  // the active program name directly (cheap: `BUILTIN_PROGRAMS.find` over
+  // a static in-memory list + one localStorage read on mount, no network).
+  // A second `useTrainingProgram()` instance alongside `FizrukApp.tsx`'s
+  // is intentional here — this call only *reads* `activeProgram`, never
+  // `activateProgram`/`deactivateProgram`, so there is nothing to keep in
+  // sync beyond what a fresh mount already re-reads from `localStorage`.
+  const { activeProgram } = useTrainingProgram();
+  const [strongImportOpen, setStrongImportOpen] = useState(false);
+  /**
+   * Аркуш «Почати тренування» (рішення власника 2026-09-16). Одна кнопка на
+   * домашній замість «Швидкий старт» + «або із шаблону →»: спосіб обирають
+   * усередині. Порожньої сесії тут немає навмисно — таймер стартує, коли
+   * є хоча б одна вправа (докблок `QuickStartSheet`).
+   */
+  const [quickStartOpen, setQuickStartOpen] = useState(false);
+  // Зовнішній запит відкрити аркуш — «стан, похідний від пропа»: реагуємо на
+  // зміну лічильника прямо в рендері (той самий патерн, що `prevOpen` у
+  // `CommandPaletteUI`), без ефекту, який би ставив стан після коміту.
+  const [seenQuickStartRequest, setSeenQuickStartRequest] =
+    useState(quickStartRequest);
+  if (quickStartRequest !== seenQuickStartRequest) {
+    setSeenQuickStartRequest(quickStartRequest);
+    if (quickStartRequest > 0) setQuickStartOpen(true);
+  }
+  // Каталог у сесії — аркуш із «+ Вправа», а не хвіст сторінки (спека
+  // `fizruk-active-session.md`, рішення 4).
+  const [catalogSheetOpen, setCatalogSheetOpen] = useState(false);
+  const sessionCopy = messages.fizruk.session;
+
+  /**
+   * Скільки разів кожна вправа вже в активному тренуванні. Каталог у
+   * сесії живе в аркуші, який навмисно НЕ закривається після
+   * додавання, тож саме ця мапа робить успішний тап видимим — рядок
+   * дістає позначку «Додано», а повторний тап показує «×2» (дублі
+   * дозволені). Звіт власника 2026-09-12: додавання «нічого не
+   * робило», бо єдиним сигналом була `active:`-підсвітка, яка на
+   * телефоні зникає разом із пальцем.
+   */
+  const addedCountByExerciseId = useMemo(
+    () => countItemsByExerciseId(o.activeWorkout?.items),
+    [o.activeWorkout?.items],
+  );
+  const addedTotal = o.activeWorkout?.items?.length ?? 0;
+
+  const workoutsLoadingSkeleton = (
+    <div
+      className="space-y-3"
+      role="status"
+      aria-live="polite"
+      aria-label={messages.loadingActions.loadingWorkouts}
+    >
+      <Skeleton className="h-28 w-full" />
+      <Skeleton className="h-20 w-full" />
+      <Skeleton className="h-20 w-full" />
+    </div>
+  );
+
+  return (
+    <PullToRefresh
+      onRefresh={o.handlePullRefresh}
+      variant="fizruk"
+      enabled={!cloudPullPending}
+    >
+      <div
+        className={
+          activeOnly ? "" : "max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad"
+        }
+      >
+        {!activeOnly && (
+          <WorkoutsHeader
+            view={o.view}
+            activeWorkout={o.activeWorkout}
+            finishedCount={o.finishedCount}
+            onBack={() =>
+              section ? onNavigate?.("workouts") : o.setView("home")
+            }
+            onAddCatalog={() => o.setAddOpen(true)}
+          />
+        )}
+
+        {o.view === "home" ? (
+          <WorkoutsHome
+            activeWorkout={o.activeWorkout}
+            activeDuration={o.activeDuration}
+            recentWorkouts={o.recentWorkouts}
+            activeProgramName={activeProgram?.name ?? null}
+            onOpenSession={() => {
+              if (o.activeWorkout?.id && onNavigate) {
+                onNavigate(`workout/${o.activeWorkout.id}`);
+              } else {
+                o.setView("log");
+              }
+            }}
+            // Каталог і шаблони мають власні адреси (`FIZRUK_PAGES`), тож
+            // це навігація, а не перемикання локального `view`.
+            onOpenCatalog={() => onNavigate?.("catalog")}
+            // 03-A — "Всі →" now owns its own URL (`/fizruk/history`)
+            // instead of flipping `view` to "log" on the same
+            // `/fizruk/workouts` path (the dual start-path bug).
+            onOpenJournal={() => onNavigate?.("history")}
+            // Рядок «Останніх» веде у свій запис, а не в загальний журнал —
+            // той самий маршрут, яким уже ходять `WorkoutHistory` і активна
+            // сесія (аудит 2026-09-16, WF-7).
+            onOpenWorkout={(id) => onNavigate?.(`workout/${id}`)}
+            onOpenPrograms={() => onNavigate?.("programs")}
+            onOpenStrongImport={() => setStrongImportOpen(true)}
+            onRequestStart={() => setQuickStartOpen(true)}
+            onLogPast={() => o.setLogPastOpen(true)}
+            onOpenSchedule={onOpenRoutine}
+          />
+        ) : null}
+
+        {o.view === "home" ? (
+          <QuickStartSheet
+            open={quickStartOpen}
+            onClose={() => setQuickStartOpen(false)}
+            exercises={o.exercises}
+            search={o.search}
+            primaryGroupsUk={o.primaryGroupsUk}
+            // Шаблони мають власну адресу (`/fizruk/templates`) — це навігація.
+            onPickTemplate={() => onNavigate?.("templates")}
+            onConfirmExercises={(picks) => {
+              setQuickStartOpen(false);
+              // Разовий набір — той самий шлях, що й шаблон (перевірка
+              // відновлення, конфлікт «одне активне»), лише без id: його
+              // не позначають використаним і телеметрія каже `quick_start`.
+              o.startWorkoutFromTemplate({
+                id: "",
+                name: "",
+                exerciseIds: picks.map((ex) => ex.id),
+                groups: [],
+              });
+            }}
+            programTile={programStart}
+          />
+        ) : null}
+
+        {o.view === "home" ? (
+          <LogPastWorkoutSheet
+            open={o.logPastOpen}
+            onClose={() => o.setLogPastOpen(false)}
+            onSubmit={(payload) => {
+              // Позначка ДО консюмерського шляху: подію емітить закриття
+              // форми, і воно прилітає вже після цього виклику.
+              markComposeSaved(FIZRUK_PAST_WORKOUT_COMPOSE_KEY);
+              o.submitPastWorkout(payload);
+            }}
+            // Третій режим форми — швидкий запис однієї вправи. Та сама форма,
+            // той самий лічильник тертя: закриття після запису — завершена
+            // композиція, а не кинута.
+            onQuickLog={(payload) => {
+              markComposeSaved(FIZRUK_PAST_WORKOUT_COMPOSE_KEY);
+              o.setLogPastOpen(false);
+              o.submitQuickLog(payload);
+            }}
+            weightKg={bodyWeightKg}
+            // Той самий писач, що й у решті зважувань: `addEntry` сам
+            // funnel-ить у `recordBodyWeight`, тож профільний знімок для
+            // КБЖВ оновлюється разом із fizruk-журналом (ADR-0080).
+            onRecordWeight={(weightKg) => addDailyLogEntry({ weightKg })}
+            activities={activities}
+            onCreateActivity={addActivity}
+          />
+        ) : null}
+
+        {o.view === "log" && (
+          // §4.4 audit fix — on desktop the outer `max-w-4xl` (896px) let
+          // this panel stretch to ~1030px: set-input fields ballooned to
+          // ~230px and "+ Підхід" to ~800px, even though a set row is a
+          // short vertical stack of numeric fields, not something that
+          // benefits from extra width. The exercise catalog right below
+          // (`WorkoutCatalogSection`, outside this wrapper) intentionally
+          // stays at the outer `max-w-4xl` — it is a browsable list, not a
+          // form. Minimal fix per audit §4.4: narrow just this panel, no
+          // two-column layout.
+          <div>
+            <DataState
+              query={o.journalQuery}
+              skeleton={workoutsLoadingSkeleton}
+              errorAction={
+                // R2-UX-18 · If a retry of the journal query keeps failing
+                // (e.g. corrupted local cache after a bad sync), a full
+                // reload is the reliable second path out.
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => window.location.reload()}
+                >
+                  {messages.actions.reload}
+                </Button>
+              }
+            >
+              {() => (
+                <WorkoutJournalSection
+                  activeWorkout={o.activeWorkout}
+                  activeDuration={o.activeDuration}
+                  focusItemId={focusItemId}
+                  onOpenItem={(itemId) => {
+                    if (!o.activeWorkout) return;
+                    onNavigate?.(
+                      itemId
+                        ? `workout/${o.activeWorkout.id}/${itemId}`
+                        : `workout/${o.activeWorkout.id}`,
+                    );
+                  }}
+                  onAddExercise={() => setCatalogSheetOpen(true)}
+                  onOpenExerciseInfo={(exerciseId) => {
+                    const ex = o.exercises.find((e) => e.id === exerciseId);
+                    if (ex) o.setSelected(ex);
+                  }}
+                  onOpenExerciseStats={(exerciseId) =>
+                    onNavigate?.(`exercise/${exerciseId}`)
+                  }
+                  pendingRetroEnd={o.pendingRetroEnd}
+                  onPendingRetroEndChange={o.updatePendingRetroEnd}
+                  recBy={o.rec.by}
+                  lastByExerciseId={o.lastByExerciseId}
+                  setRestTimer={o.setRestTimer}
+                  updateWorkout={o.updateWorkout}
+                  updateItem={o.updateItem}
+                  removeItem={o.removeItemWithUndo}
+                  setFinishFlash={o.setFinishFlash}
+                  endWorkout={o.endWorkout}
+                  summarizeWorkoutForFinish={o.summarizeWorkoutForFinish}
+                  deleteWorkout={o.deleteWorkout}
+                  restoreWorkout={o.restoreWorkout}
+                  onRepeatWorkout={o.repeatWorkout}
+                  onClose={() => onNavigate?.("workouts")}
+                />
+              )}
+            </DataState>
+          </div>
+        )}
+
+        {o.view === "templates" && (
+          <WorkoutTemplatesSection
+            exercises={o.exercises}
+            search={o.search}
+            templates={o.templateApi.templates}
+            addTemplate={o.templateApi.addTemplate}
+            updateTemplate={o.templateApi.updateTemplate}
+            removeTemplate={o.templateApi.removeTemplate}
+            restoreTemplate={o.templateApi.restoreTemplate}
+            onStartTemplate={o.startWorkoutFromTemplate}
+          />
+        )}
+
+        {o.view === "catalog" && (
+          <WorkoutCatalogSection
+            mode={o.mode}
+            q={o.q}
+            setQ={o.setQ}
+            equipmentFilter={o.equipmentFilter}
+            setEquipmentFilter={o.setEquipmentFilter}
+            locationFilter={o.locationFilter}
+            setLocationFilter={o.setLocationFilter}
+            equipmentUk={o.equipmentUk}
+            equipmentCounts={o.equipmentCounts}
+            grouped={o.grouped}
+            open={o.open}
+            setOpen={o.setOpen}
+            handleExerciseInListClick={o.handleExerciseInListClick}
+            setSelected={o.setSelected}
+            recoveryConflictsForExercise={o.recoveryConflictsForExercise}
+            rec={o.rec}
+            musclesUk={o.musclesUk}
+          />
+        )}
+
+        {/* Каталог у сесії: той самий `WorkoutCatalogSection` (пошук,
+            локація, обладнання, групи), лише в аркуші. Раніше він жив
+            хвостом сторінки на ~6 екранів під активним тренуванням, а
+            щоб додати вправу, треба було прогорнути всі картки (аудит
+            09-03, A1). Аркуш не закривається після додавання — за один
+            захід зазвичай беруть кілька вправ. */}
+        {o.view === "log" && (
+          <Sheet
+            open={
+              catalogSheetOpen &&
+              Boolean(o.activeWorkout) &&
+              !o.activeWorkout?.endedAt
+            }
+            onClose={() => setCatalogSheetOpen(false)}
+            title={sessionCopy.addExerciseSheetTitle}
+            footer={
+              <Button
+                variant="solid"
+                tone="fizruk"
+
+                className="w-full h-11"
+                onClick={() => setCatalogSheetOpen(false)}
+              >
+                {formatAddExerciseDoneLabel(addedTotal, sessionCopy)}
+              </Button>
+            }
+          >
+            <WorkoutCatalogSection
+              mode="log"
+              q={o.q}
+              setQ={o.setQ}
+              equipmentFilter={o.equipmentFilter}
+              setEquipmentFilter={o.setEquipmentFilter}
+              locationFilter={o.locationFilter}
+              setLocationFilter={o.setLocationFilter}
+              equipmentUk={o.equipmentUk}
+              equipmentCounts={o.equipmentCounts}
+              grouped={o.grouped}
+              open={o.open}
+              setOpen={o.setOpen}
+              handleExerciseInListClick={o.handleExerciseInListClick}
+              setSelected={o.setSelected}
+              recoveryConflictsForExercise={o.recoveryConflictsForExercise}
+              rec={o.rec}
+              musclesUk={o.musclesUk}
+              addedCountByExerciseId={addedCountByExerciseId}
+            />
+          </Sheet>
+        )}
+
+        <ExerciseDetailSheet
+          selected={o.selected}
+          onClose={() => o.setSelected(null)}
+          mode={o.mode}
+          musclesUk={o.musclesUk}
+          primaryGroupsUk={o.primaryGroupsUk}
+          equipmentUk={o.equipmentUk}
+          rec={o.rec}
+          recoveryConflictsForExercise={o.recoveryConflictsForExercise}
+          activeWorkoutId={o.activeWorkoutId}
+          activeWorkout={o.activeWorkout}
+          addExerciseToActive={o.addExerciseToActive}
+          updateItem={o.updateItem}
+          onDeleteRequest={() => o.setDeleteExerciseConfirm(true)}
+          toast={o.toast}
+          onNavigate={onNavigate}
+        />
+
+        <AddExerciseSheet
+          open={o.addOpen}
+          onClose={() => o.setAddOpen(false)}
+          form={o.form}
+          setForm={o.setForm}
+          primaryGroupsUk={o.primaryGroupsUk}
+          musclesUk={o.musclesUk}
+          musclesByPrimaryGroup={o.musclesByPrimaryGroup}
+          addExercise={o.addExercise}
+        />
+
+        {/*
+          Питаємо ОДИН раз на тренування. Ознака «вже питали» — наявність
+          ключів `sleep`/`soreness` у `wellbeing`, навіть зі значенням `null`:
+          пропуск теж пишеться, інакше аркуш вигулькував би після кожного
+          перезавантаження. `null` домен читає як «нема даних», а не як
+          «погано».
+        */}
+        <ReadinessSheet
+          open={
+            !!o.activeWorkout &&
+            !o.activeWorkout.endedAt &&
+            !(
+              o.activeWorkout.wellbeing &&
+              ("sleep" in o.activeWorkout.wellbeing ||
+                "soreness" in o.activeWorkout.wellbeing)
+            )
+          }
+          onSubmit={(answer) => {
+            const w = o.activeWorkout;
+            if (!w) return;
+            o.updateWorkout(w.id, {
+              wellbeing: { ...(w.wellbeing ?? {}), ...answer },
+            });
+          }}
+          onSkip={() => {
+            const w = o.activeWorkout;
+            if (!w) return;
+            o.updateWorkout(w.id, {
+              wellbeing: {
+                ...(w.wellbeing ?? {}),
+                sleep: null,
+                soreness: null,
+              },
+            });
+          }}
+        />
+
+        <WorkoutFinishSheets
+          finishFlash={o.finishFlash}
+          setFinishFlash={o.setFinishFlash}
+          updateWorkout={o.updateWorkout}
+          onDone={activeOnly ? () => onNavigate?.("workouts") : undefined}
+        />
+        <StrongImportReview
+          open={strongImportOpen}
+          onClose={() => setStrongImportOpen(false)}
+          exercises={o.exercises}
+        />
+      </div>
+
+      <WorkoutsConfirmDialogs
+        deleteExerciseConfirm={o.deleteExerciseConfirm}
+        onDeleteExerciseConfirm={o.handleDeleteExerciseConfirm}
+        onDeleteExerciseCancel={() => o.setDeleteExerciseConfirm(false)}
+        riskyTemplate={o.riskyTemplateConfirm}
+        onRiskyTemplateConfirm={o.handleRiskyTemplateConfirm}
+        onRiskyTemplateCancel={() => o.setRiskyTemplateConfirm(null)}
+        activeWorkoutConflictOpen={o.activeWorkoutConflictOpen}
+        onFinishActiveAndContinue={o.finishActiveAndContinue}
+        onDiscardActiveAndContinue={o.discardActiveAndContinue}
+        onCancelActiveConflict={o.cancelPendingWorkoutStart}
+      />
+    </PullToRefresh>
+  );
+}

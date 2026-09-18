@@ -1,0 +1,148 @@
+/**
+ * Render + interaction tests for `pages/Calendar/` (Phase 5 / PR 2,
+ * decomposed into a folder by audit `P2.2b` on 2026-05-13).
+ *
+ * Covers:
+ *  - Порожній стан (без звичок) рендерить календар без краху;
+ *  - Перемикач режимів видимий (Сьогодні / Тиждень / Місяць);
+ *  - Звичку, запланована на сьогодні, видно у списку;
+ *  - Тап по її рядку викликає `applyToggleHabitCompletion` через
+ *    `useRoutineStore`, і стан зберігається у SQLite warm cache
+ *    (Stage 8 PR #057r-tombstone-mobile — MMKV write retired).
+ */
+
+import { fireEvent, render } from "@testing-library/react-native";
+
+import {
+  dateKeyFromDate,
+  todayDate,
+  type Habit,
+} from "@sergeant/routine-domain";
+
+jest.mock("../../lib/sqliteReadGate", () => ({
+  __resetRoutineSqliteReadGateForTests: jest.fn(),
+  notifyRoutineSqliteCacheRefresh: jest.fn(),
+  useRoutineSqliteReadTick: () => 0,
+}));
+
+import { _getMMKVInstance } from "@/lib/storage";
+import {
+  __setRoutineSqliteCompletionsCacheForTests,
+  __setRoutineSqliteStateCacheForTests,
+  clearSqliteCompletionsCache,
+  clearSqliteRoutineStateCache,
+  getCachedSqliteCompletions,
+} from "../../lib/sqliteReader";
+import { __resetRoutineSqliteReadGateForTests } from "../../lib/sqliteReadGate";
+
+import { Calendar } from "./index";
+
+beforeEach(() => {
+  // Stage 8 PR #057r-tombstone-mobile — load/persist now read from the
+  // SQLite warm caches instead of MMKV, so each test starts from a
+  // known-cold cache plus a clean MMKV (in case any unrelated keys
+  // are exercised).
+  _getMMKVInstance().clearAll();
+  clearSqliteCompletionsCache();
+  clearSqliteRoutineStateCache();
+  __resetRoutineSqliteReadGateForTests();
+});
+
+function seedHabit(habit: Partial<Habit> = {}): void {
+  const seeded: Habit = {
+    id: "h1",
+    name: "Випити воду",
+    emoji: "💧",
+    recurrence: "daily",
+    tagIds: [],
+    categoryId: null,
+    archived: false,
+    reminderTimes: [],
+    ...habit,
+  } as Habit;
+  __setRoutineSqliteStateCacheForTests({
+    habits: [seeded],
+    habitOrder: [seeded.id],
+    prefs: {
+      showFizrukInCalendar: false,
+      showFinykSubscriptionsInCalendar: false,
+    },
+  });
+  __setRoutineSqliteCompletionsCacheForTests({ completions: {} });
+}
+
+describe("Calendar (mobile)", () => {
+  it("renders without crashing when there are no habits", () => {
+    const { getByText } = render(<Calendar />);
+    expect(getByText("Hub календар")).toBeTruthy();
+    expect(getByText("Сьогодні")).toBeTruthy();
+  });
+
+  it("shows time-mode segmented control", () => {
+    const { getAllByText } = render(<Calendar />);
+    // "Сьогодні" used twice: mode button + "go-to-today" action when in
+    // month view — in initial "today" mode there is only the segmented
+    // entry, so this is still assertable via the label.
+    expect(getAllByText("Сьогодні").length).toBeGreaterThan(0);
+    expect(getAllByText("Тиждень").length).toBeGreaterThan(0);
+    expect(getAllByText("Місяць").length).toBeGreaterThan(0);
+  });
+
+  it("opens month mode and wires month navigation controls", () => {
+    const { getByLabelText } = render(<Calendar />);
+
+    fireEvent.press(getByLabelText("Місяць"));
+    fireEvent.press(getByLabelText("Попередній місяць"));
+    fireEvent.press(getByLabelText("Наступний місяць"));
+    fireEvent.press(getByLabelText("Перейти на сьогодні"));
+
+    expect(getByLabelText("Місяць").props.accessibilityState).toEqual({
+      selected: false,
+    });
+    expect(getByLabelText("Сьогодні").props.accessibilityState).toEqual({
+      selected: true,
+    });
+  });
+
+  // Заголовок події — рівно `habit.name`, БЕЗ склейки з `emoji`. З
+  // 2026-08-03 у полі `emoji` лежить icon-slug з `glyphs.ts`, а не емодзі,
+  // тож склейка давала видимий «check Ранкова зарядка» (аудит 2026-08-04,
+  // знахідка 12; контракт зафіксовано в
+  // `packages/routine-domain/src/calendarEvents.test.ts`). Ці два тести
+  // очікували стару склейку «💧 Випити воду» і червоніли на main.
+  it("renders a seeded daily habit in today's list", () => {
+    seedHabit();
+    const { getByText } = render(<Calendar />);
+    expect(getByText("Випити воду")).toBeTruthy();
+  });
+
+  it("toggles habit completion and persists to the SQLite warm cache", () => {
+    seedHabit();
+    const todayKey = dateKeyFromDate(todayDate());
+    const { getByText } = render(<Calendar />);
+
+    fireEvent.press(getByText("Випити воду"));
+
+    // Stage 8 PR #057r-tombstone-mobile — `saveRoutineState` now
+    // updates the SQLite completions cache (write-through) and
+    // triggers the dual-write pipeline. MMKV no longer holds the
+    // routine blob, so we assert against the warm cache directly.
+    const completions = getCachedSqliteCompletions();
+    expect(completions.refreshedAt).not.toBeNull();
+    expect(completions.completions.h1 ?? []).toContain(todayKey);
+  });
+
+  it("bulk-marks all scheduled habits for the focused day", () => {
+    seedHabit();
+    const todayKey = dateKeyFromDate(todayDate());
+    const { getByLabelText } = render(<Calendar />);
+
+    fireEvent.press(
+      getByLabelText("Позначити всі заплановані звички виконаними"),
+    );
+
+    const completions = getCachedSqliteCompletions();
+    expect(completions.refreshedAt).not.toBeNull();
+    expect(completions.completions.h1 ?? []).toContain(todayKey);
+  });
+});

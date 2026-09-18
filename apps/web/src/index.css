@@ -1,0 +1,50 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   ENTRY — Tailwind core + decomposed style modules.
+
+   Per docs/diagnostics/2026-05-03-web-deep-dive §1.4, this file contains
+   only `@import` directives + the Tailwind v3-config compatibility hook.
+   All actual rules live in `./styles/*.css`:
+
+     - theme.css           — light/dark CSS-vars, DM Sans fallback metrics,
+                             `.bg-mesh` (стіл: фон сторінки в hue модуля)
+     - base.css            — html/body resets, ::selection, reduced-motion,
+                             iOS input-zoom fix
+     - animations.css      — `@keyframes`, page/module entry transitions
+     - utilities.css       — Tailwind v4 `@utility` rules (focus rings,
+                             typography scale, panels, gradients)
+     - components.css      — `.skeleton`, `.glass`, `.fab`, `.tooltip`,
+                             `.pill-nav`, micro-interactions
+     - module-surfaces.css — module-tinted hero cards (finyk/fizruk/etc.)
+     - mobile.css          — touch-target floor, mobile-first helpers,
+                             compact viewport typography
+
+   `@import` statements MUST precede all other rules (CSS spec). The
+   `@config` directive is a Tailwind-only hook processed away by PostCSS.
+   ═══════════════════════════════════════════════════════════════════════ */
+/* Self-hosted variable fonts — `font-display: swap` is baked into the
+   fontsource `@font-face` blocks, so there is no FOIT. Fonts are bundled
+   into the Vite build at hashed paths and served from same-origin: no
+   external preconnect required.
+
+   Sergeant v2 redesign (introduced 2026-05) — Manrope is the primary
+   sans + display family; JetBrains Mono Variable is used for technical
+   values (hero numbers, code, monospace stats). DM Sans Variable is
+   retained during PR-2..PR-8 rollout as the fallback; PR-8 polish
+   decides whether to retire it based on `pnpm size-limit` measurement.
+
+   Fallback metrics for both DM Sans and Manrope live in
+   `styles/theme.css` → `@font-face "*Fallback"` (size-adjust +
+   ascent/descent overrides) to suppress CLS during the swap window. */
+@import "@fontsource-variable/manrope" layer(base);
+@import "@fontsource-variable/jetbrains-mono" layer(base);
+@import "@fontsource-variable/dm-sans" layer(base);
+@import "./styles/animations.css" layer(base);
+@import "./styles/module-surfaces.css";
+@import "tailwindcss";
+@import "./styles/theme.css";
+@import "./styles/base.css";
+@import "./styles/utilities.css";
+@import "./styles/components.css";
+@import "./styles/mobile.css";
+
+@config '../tailwind.config.js';

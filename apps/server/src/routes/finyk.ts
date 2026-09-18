@@ -1,0 +1,219 @@
+import { Router } from "express";
+import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
+import { createManualExpense } from "../modules/finyk/manualExpenses.js";
+import lookupReceiptHandler from "../modules/finyk/receipts/lookup.js";
+import analyzeReceiptHandler from "../modules/finyk/receipts/analyze.js";
+import saveReceiptHandler from "../modules/finyk/receipts/save.js";
+import getReceiptHandler from "../modules/finyk/receipts/get.js";
+import screenshotAnalyzeHandler from "../modules/finyk/import/screenshotAnalyze.js";
+import statementPreviewHandler from "../modules/finyk/import/statementPreview.js";
+import commitImportHandler from "../modules/finyk/import/commit.js";
+import {
+  deleteImportBatchHandler,
+  getImportBatchHandler,
+} from "../modules/finyk/import/batches.js";
+import getRecentImportsHandler from "../modules/finyk/import/recent.js";
+
+/**
+ * `/api/finyk/*` — server-side доменні endpoint-и Фініка.
+ *
+ * Шлях канонізований під `/api/*`: `apiVersionRewrite` у `app.ts` переписує
+ * `/api/v1/*` → `/api/*` ДО роутерів, тому той самий handler віддає дзеркало
+ * під `/api/v1/finyk/*` (явна версія для мобільних клієнтів) без окремої
+ * реєстрації. Реєструвати тут напряму `/api/v1/...` НЕ можна — після
+ * rewrite такий шлях ніколи не зматчиться.
+ *
+ * Спільний guard-ланцюг (як у `coach`/`nutrition`) — порядок значущий:
+ *   - `setModule("finyk")` — логер/метрики
+ *   - pre-auth IP-лімітер ("api:finyk:ip", 600/хв) — ПЕРЕД сесією
+ *   - `requireSession()` — лише авторизовані; кладе `req.user.id`
+ *     (Better Auth opaque string), на який скоупиться запис. `user_id`
+ *     ніколи не приймається з body.
+ *   - per-user лімітер ("api:finyk", 120/хв) — ПІСЛЯ сесії, інакше
+ *     `rateLimitSubject` не бачить `req.user` і бакет мовчки стає per-IP.
+ *
+ * `POST /manual-expenses` замінює клієнтський `safeWriteLS`-bypass для
+ * ручних витрат (state-write-paths doctrine) — це precondition для
+ * downstream-міграції `chatActions` (поза скоупом цього PR).
+ *
+ * Чек-скан v1 (`docs/work/specs/receipt-scan.md`):
+ *   - `POST /receipts/lookup` — QR/ДПС-шлях, draft без запису в БД.
+ *     ДВА ліміти: per-user 30/хв (дешевий відсів) + ГЛОБАЛЬНИЙ добовий
+ *     бюджет 800/добу з фіксованим subject-ом — ДПС-токен один на всіх
+ *     користувачів із квотою 1000 запитів/добу (ревʼю PR #818: per-user
+ *     ліміт сам по собі квоту не обмежує), 200 лишаємо на запас/ретраї.
+ *     failMode closed: при деградації лімітера краще відмовити, ніж
+ *     спалити спільну квоту (vision-шлях і так працює).
+ *   - `POST /receipts/analyze` — vision-fallback (фото без QR), draft без
+ *     запису в БД. Тісніший rate-limit — платний AI-виклик; failMode
+ *     closed (ревʼю PR #818): при відмові Redis+PG per-process бакети
+ *     множили б дозволений спенд на кількість інстансів.
+ *   - `POST /receipts` — save: matcher → receipt+items+link (mono) АБО
+ *     receipt+items+manual-expense+link (unmatched). Ідемпотентний
+ *     повторний скан.
+ *   - `GET /receipts/:id` — чек з позиціями для розгортки; явний
+ *     per-route ліміт (дешевий read, але CodeQL/консистентність — кожен
+ *     DB-роут несе власний ліміттер; скоуп по user_id у handler-і).
+ *
+ * Масове ведення — Фаза 2а/2б (той самий документ § «Фаза 2 — Масове
+ * ведення»), модуль `modules/finyk/import/`. Batch-чеки (N × v1-ендпоінтів
+ * вище) — НЕ поверхня цих роутів; журнал `import_batches` тут покриває
+ * лише transaction-рядки (скріни банкінгу / виписки CSV):
+ *   - `POST /import/screenshot/analyze` — vision-розпізнавання скріна
+ *     банкінгу, draft без запису в БД. Платний AI-виклик — той самий
+ *     тісніший rate-limit клас і failMode closed, що `/receipts/analyze`.
+ *   - `POST /import/statement/preview` — CSV-only парсинг виписки
+ *     (автопрофілі mono/Privat24 + ручний column-mapper), без запису в БД.
+ *   - `POST /import/commit` — триярусний дедуп (mono-matcher +
+ *     between-imports row-key) → `import_batches` + `finyk_manual_expenses`
+ *     рядки. Найтісніший rate-limit — єдиний write-шлях цього модуля.
+ *   - `GET /import/batches/:id` — статус/підсумок батчу; явний
+ *     per-route ліміт (скоуп по user_id у самому handler-і).
+ *   - `DELETE /import/batches/:id` — undo батчу (tombstone
+ *     `created_row_ids`), ідемпотентний повторний виклик; явний
+ *     per-route ліміт.
+ */
+const DPS_DAILY_GLOBAL_SUBJECT = "dps-token-daily";
+export function createFinykRouter(): Router {
+  const r = Router();
+  r.use("/api/finyk", setModule("finyk"));
+  // Pre-auth IP-лімітер — ПЕРЕД requireSession() навмисно. `requireSession()`
+  // на невдачі шле 401 і не кличе `next()`, тобто без цього рівня анонімний
+  // флуд бив би по session-store без жодного ліміту. Окремий `key` (суфікс
+  // `:ip`) — інакше лічильник ділився б із per-user бакетом `api:finyk` і
+  // зіпсував би обидва. 600/хв = 5× per-user 120/хв, як у `nutrition.ts`.
+  r.use(
+    "/api/finyk",
+    rateLimitExpress({ key: "api:finyk:ip", limit: 600, windowMs: 60_000 }),
+  );
+  // requireSession() йде ПЕРЕД per-user rateLimitExpress навмисно (рецидив
+  // знахідки B31, PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+  // `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
+  // фолбечиться на `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
+  // requireSession, `req.user` завжди unset у момент перевірки — бакет
+  // завжди per-IP. Див. еталон у `chat.ts`.
+  //
+  // Фінік був ЧЕТВЕРТИМ рецидивом цього дефекту і єдиним, якого не побачив
+  // наскрізний огляд 2026-09-13: він перевіряв шість названих роутів, а цей
+  // до списку не входив. Знайшов його гейт `check-auth-before-rate-limit.mjs`
+  // на першому ж прогоні — тобто саме та механічна перевірка, відсутність
+  // якої PR-A3 називала єдиною незакритою частиною.
+  r.use("/api/finyk", requireSession());
+  r.use(
+    "/api/finyk",
+    rateLimitExpress({ key: "api:finyk", limit: 120, windowMs: 60_000 }),
+  );
+
+  r.post(
+    "/api/finyk/manual-expenses",
+    rateLimitExpress({
+      key: "finyk:manual-expenses",
+      limit: 60,
+      windowMs: 60_000,
+    }),
+    createManualExpense,
+  );
+
+  r.post(
+    "/api/finyk/receipts/lookup",
+    rateLimitExpress({
+      key: "finyk:receipts-lookup",
+      limit: 30,
+      windowMs: 60_000,
+    }),
+    rateLimitExpress({
+      key: "finyk:dps-daily-budget",
+      limit: 800,
+      windowMs: 86_400_000,
+      subject: () => DPS_DAILY_GLOBAL_SUBJECT,
+      failMode: "closed",
+    }),
+    lookupReceiptHandler,
+  );
+  r.post(
+    "/api/finyk/receipts/analyze",
+    rateLimitExpress({
+      key: "finyk:receipts-analyze",
+      limit: 20,
+      windowMs: 60_000,
+      failMode: "closed",
+    }),
+    analyzeReceiptHandler,
+  );
+  r.post(
+    "/api/finyk/receipts",
+    rateLimitExpress({
+      key: "finyk:receipts-save",
+      limit: 30,
+      windowMs: 60_000,
+    }),
+    saveReceiptHandler,
+  );
+  r.get(
+    "/api/finyk/receipts/:id",
+    rateLimitExpress({
+      key: "finyk:receipts-get",
+      limit: 60,
+      windowMs: 60_000,
+    }),
+    getReceiptHandler,
+  );
+
+  r.post(
+    "/api/finyk/import/screenshot/analyze",
+    rateLimitExpress({
+      key: "finyk:import-screenshot-analyze",
+      limit: 20,
+      windowMs: 60_000,
+      failMode: "closed",
+    }),
+    screenshotAnalyzeHandler,
+  );
+  r.post(
+    "/api/finyk/import/statement/preview",
+    rateLimitExpress({
+      key: "finyk:import-statement-preview",
+      limit: 30,
+      windowMs: 60_000,
+    }),
+    statementPreviewHandler,
+  );
+  r.post(
+    "/api/finyk/import/commit",
+    rateLimitExpress({
+      key: "finyk:import-commit",
+      limit: 10,
+      windowMs: 60_000,
+    }),
+    commitImportHandler,
+  );
+  r.get(
+    "/api/finyk/import/batches/:id",
+    rateLimitExpress({
+      key: "finyk:import-batches-get",
+      limit: 60,
+      windowMs: 60_000,
+    }),
+    getImportBatchHandler,
+  );
+  r.delete(
+    "/api/finyk/import/batches/:id",
+    rateLimitExpress({
+      key: "finyk:import-batches-undo",
+      limit: 20,
+      windowMs: 60_000,
+    }),
+    deleteImportBatchHandler,
+  );
+  r.get(
+    "/api/finyk/import/recent",
+    rateLimitExpress({
+      key: "finyk:import-recent",
+      limit: 60,
+      windowMs: 60_000,
+    }),
+    getRecentImportsHandler,
+  );
+
+  return r;
+}

@@ -1,0 +1,50 @@
+{
+  "extends": "@sergeant/config/tsconfig.react.json",
+  "compilerOptions": {
+    "strict": true,
+    "allowJs": false,
+    "checkJs": false,
+    "types": ["vite/client", "@testing-library/jest-dom", "node"],
+    "paths": {
+      "@sergeant/shared": ["../../packages/shared/src/index.ts"],
+      "@sergeant/shared/*": ["../../packages/shared/src/*"],
+      "@sergeant/api-client": ["../../packages/api-client/src/index.ts"],
+      "@sergeant/api-client/react": [
+        "../../packages/api-client/src/react/index.ts"
+      ],
+      "@sergeant/api-client/*": ["../../packages/api-client/src/*"],
+      "@sergeant/db-schema": ["../../packages/db-schema/src/index.ts"],
+      "@sergeant/db-schema/sqlite": [
+        "../../packages/db-schema/src/sqlite/index.ts"
+      ],
+      "@sergeant/db-schema/sqlite/migrations": [
+        "../../packages/db-schema/src/sqlite/migrations/index.ts"
+      ],
+      "@sergeant/db-schema/migrate/runner": [
+        "../../packages/db-schema/src/migrate/runner.ts"
+      ],
+      "@sergeant/db-schema/migrate/sqlite": [
+        "../../packages/db-schema/src/migrate/adapters/sqlite.ts"
+      ],
+      "@sergeant/db-schema/*": ["../../packages/db-schema/src/*"],
+      "@sergeant/finyk-domain": ["../../packages/finyk-domain/src/index.ts"],
+      "@sergeant/finyk-domain/*": ["../../packages/finyk-domain/src/*"],
+      "@sergeant/fizruk-domain": ["../../packages/fizruk-domain/src/index.ts"],
+      "@sergeant/fizruk-domain/*": ["../../packages/fizruk-domain/src/*"],
+      "@sergeant/insights": ["../../packages/insights/src/index.ts"],
+      "@sergeant/insights/*": ["../../packages/insights/src/*"],
+      "@shared/*": ["./src/shared/*"],
+      "@assets/*": ["./src/assets/*"],
+      "@finyk": ["./src/modules/finyk/index.ts"],
+      "@finyk/*": ["./src/modules/finyk/*"],
+      "@fizruk": ["./src/modules/fizruk/index.ts"],
+      "@fizruk/*": ["./src/modules/fizruk/*"],
+      "@routine": ["./src/modules/routine/index.ts"],
+      "@routine/*": ["./src/modules/routine/*"],
+      "@nutrition": ["./src/modules/nutrition/index.ts"],
+      "@nutrition/*": ["./src/modules/nutrition/*"]
+    }
+  },
+  "include": ["src/**/*"],
+  "exclude": ["node_modules", "dist", "src/sw.ts", "src/sw"]
+}

@@ -1,0 +1,88 @@
+import {
+  BillingCancelResponseSchema,
+  BillingCheckoutRequestSchema,
+  BillingCheckoutResponseSchema,
+  BillingPortalResponseSchema,
+  BillingProvidersResponseSchema,
+  BillingStatusResponseSchema,
+  z,
+} from "@sergeant/shared";
+import type { HttpClient } from "../httpClient";
+import type { RequestOptions } from "../types";
+
+export const BillingCheckoutRequestBodySchema = BillingCheckoutRequestSchema;
+export const BillingCheckoutResponseBodySchema = BillingCheckoutResponseSchema;
+export const BillingStatusResponseBodySchema = BillingStatusResponseSchema;
+export const BillingPortalResponseBodySchema = BillingPortalResponseSchema;
+export const BillingCancelResponseBodySchema = BillingCancelResponseSchema;
+export const BillingProvidersResponseBodySchema =
+  BillingProvidersResponseSchema;
+
+export type BillingCheckoutRequest = z.infer<
+  typeof BillingCheckoutRequestBodySchema
+>;
+export type BillingCheckoutResponse = z.infer<
+  typeof BillingCheckoutResponseBodySchema
+>;
+export type BillingStatusResponse = z.infer<
+  typeof BillingStatusResponseBodySchema
+>;
+export type BillingPortalResponse = z.infer<
+  typeof BillingPortalResponseBodySchema
+>;
+export type BillingCancelResponse = z.infer<
+  typeof BillingCancelResponseBodySchema
+>;
+export type BillingProvidersResponse = z.infer<
+  typeof BillingProvidersResponseBodySchema
+>;
+
+export interface BillingEndpoints {
+  createCheckout: (
+    body: BillingCheckoutRequest,
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<BillingCheckoutResponse>;
+  status: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<BillingStatusResponse>;
+  createPortal: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<BillingPortalResponse>;
+  cancel: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<BillingCancelResponse>;
+  providers: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<BillingProvidersResponse>;
+}
+
+export function createBillingEndpoints(http: HttpClient): BillingEndpoints {
+  return {
+    createCheckout: async (body, { signal } = {}) => {
+      const raw = await http.post<unknown>("/api/billing/checkout", body, {
+        signal,
+      });
+      return BillingCheckoutResponseBodySchema.parse(raw);
+    },
+    status: async ({ signal } = {}) => {
+      const raw = await http.get<unknown>("/api/billing/status", { signal });
+      return BillingStatusResponseBodySchema.parse(raw);
+    },
+    createPortal: async ({ signal } = {}) => {
+      const raw = await http.post<unknown>("/api/billing/portal", undefined, {
+        signal,
+      });
+      return BillingPortalResponseBodySchema.parse(raw);
+    },
+    cancel: async ({ signal } = {}) => {
+      const raw = await http.post<unknown>("/api/billing/cancel", undefined, {
+        signal,
+      });
+      return BillingCancelResponseBodySchema.parse(raw);
+    },
+    providers: async ({ signal } = {}) => {
+      const raw = await http.get<unknown>("/api/billing/providers", { signal });
+      return BillingProvidersResponseBodySchema.parse(raw);
+    },
+  };
+}

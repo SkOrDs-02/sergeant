@@ -1,0 +1,589 @@
+// @vitest-environment jsdom
+import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  cleanup,
+  fireEvent,
+  render,
+  screen,
+  waitFor,
+  within,
+} from "@testing-library/react";
+import { MemoryRouter } from "react-router-dom";
+import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
+import { billingKeys } from "@shared/lib/api/queryKeys";
+
+const {
+  submitMock,
+  createCheckoutMock,
+  createPortalMock,
+  statusMock,
+  toastSuccessMock,
+  toastErrorMock,
+  toastInfoMock,
+  trackEventMock,
+  openHubSettingsSectionMock,
+} = vi.hoisted(() => ({
+  submitMock:
+    vi.fn<(input: unknown) => Promise<{ ok: true; created: boolean }>>(),
+  createCheckoutMock: vi.fn<
+    (input: unknown) => Promise<{
+      ok: true;
+      mode: "test";
+      sessionId: string;
+      url: string;
+    }>
+  >(),
+  createPortalMock: vi.fn<() => Promise<{ ok: true; url: string }>>(),
+  statusMock: vi.fn<
+    () => Promise<{
+      subscription: {
+        active: boolean;
+        id: string | null;
+        plan: "plus" | "pro" | null;
+        status: string | null;
+        currentPeriodEnd: string | null;
+        cancelAtPeriodEnd: boolean;
+      };
+    }>
+  >(),
+  toastSuccessMock: vi.fn(),
+  toastErrorMock: vi.fn(),
+  toastInfoMock: vi.fn(),
+  trackEventMock: vi.fn(),
+  openHubSettingsSectionMock: vi.fn(),
+}));
+
+submitMock.mockResolvedValue({ ok: true, created: true });
+createCheckoutMock.mockResolvedValue({
+  ok: true,
+  mode: "test",
+  sessionId: "cs_test_123",
+  url: "https://checkout.stripe.com/c/pay/cs_test_123",
+});
+createPortalMock.mockResolvedValue({
+  ok: true,
+  url: "https://billing.stripe.com/session/test_portal_abc",
+});
+statusMock.mockResolvedValue({
+  subscription: {
+    active: false,
+    id: null,
+    plan: null,
+    status: null,
+    currentPeriodEnd: null,
+    cancelAtPeriodEnd: false,
+  },
+});
+
+vi.mock("@shared/api", () => ({
+  waitlistApi: { submit: submitMock },
+  billingApi: {
+    createCheckout: createCheckoutMock,
+    createPortal: createPortalMock,
+    status: statusMock,
+  },
+}));
+
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => ({
+    success: toastSuccessMock,
+    error: toastErrorMock,
+    info: toastInfoMock,
+  }),
+}));
+
+// PR-S7 (аудит 2026-09-13 хвиля 5): success-toast мусить вести в конкретну
+// секцію Налаштувань («Підписка та план»), не просто в таб — spy на
+// реальний канал, яким уже ходять інактивна Bento-картка й ⌘K. Partial
+// mock (не голий факторі-об'єкт): `appPaths.ts` (transitively, через
+// `PricingPage.tsx` → `./app/appPaths`) читає `HUB_MODULE_IDS` з того ж
+// модуля — заміна ВСЬОГО модуля лишила б цей експорт `undefined`.
+vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@shared/lib/modules/hubNav")>();
+  return { ...actual, openHubSettingsSection: openHubSettingsSectionMock };
+});
+
+vi.mock("./observability/analytics", async () => {
+  const shared = await import("@sergeant/shared");
+  return {
+    ANALYTICS_EVENTS: shared.ANALYTICS_EVENTS,
+    trackEvent: (name: string, payload?: unknown) =>
+      trackEventMock(name, payload),
+  };
+});
+
+// Гість vs залогінений: сторінка читає лише `status` з `useAuthOptional`.
+let mockAuthStatus: "loading" | "authenticated" | "unauthenticated" | null =
+  "authenticated";
+vi.mock("./auth/AuthContext", () => ({
+  useAuthOptional: () =>
+    mockAuthStatus === null ? null : { status: mockAuthStatus, user: null },
+}));
+
+import { PricingPage } from "./PricingPage";
+import { ANALYTICS_EVENTS } from "@sergeant/shared";
+
+function makeClient(): QueryClient {
+  return new QueryClient({
+    defaultOptions: { queries: { retry: false }, mutations: { retry: false } },
+  });
+}
+
+function renderPricing(initialUrl = "/pricing", queryClient = makeClient()) {
+  const view = render(
+    <QueryClientProvider client={queryClient}>
+      <MemoryRouter initialEntries={[initialUrl]}>
+        <PricingPage />
+      </MemoryRouter>
+    </QueryClientProvider>,
+  );
+  return { ...view, queryClient };
+}
+
+describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
+  beforeEach(() => {
+    submitMock.mockClear();
+    createCheckoutMock.mockClear();
+    createPortalMock.mockClear();
+    statusMock.mockClear();
+    toastSuccessMock.mockClear();
+    toastErrorMock.mockClear();
+    toastInfoMock.mockClear();
+    trackEventMock.mockClear();
+    openHubSettingsSectionMock.mockClear();
+    mockAuthStatus = "authenticated";
+    statusMock.mockResolvedValue({
+      subscription: {
+        active: false,
+        id: null,
+        plan: null,
+        status: null,
+        currentPeriodEnd: null,
+        cancelAtPeriodEnd: false,
+      },
+    });
+  });
+  afterEach(() => cleanup());
+
+  it("fires PRICING_VIEWED on mount and renders two tier cards (Free + Premium)", () => {
+    renderPricing();
+    expect(trackEventMock).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.PRICING_VIEWED,
+      { source: "direct" },
+    );
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Free" }),
+    ).toBeTruthy();
+    expect(
+      screen.getByRole("heading", { level: 3, name: "Premium" }),
+    ).toBeTruthy();
+    expect(
+      screen.queryByRole("heading", { level: 3, name: "Plus" }),
+    ).toBeNull();
+    expect(screen.queryByRole("heading", { level: 3, name: "Pro" })).toBeNull();
+  });
+
+  // Браузерний аудит 2026-08-05, B3: рядок «Активи в іноземній валюті»
+  // обіцяв функцію, якої немає — у формі активу валюта статична («UAH»)
+  // однаково для Free і Premium.
+  it("does not advertise foreign-currency assets in either column (B3)", () => {
+    renderPricing();
+    expect(screen.queryByText(/іноземній валюті/i)).toBeNull();
+  });
+
+  // B4: Premium не запущений — конкретної ціни на сторінці бути не має,
+  // інакше вона суперечить waitlist-у «Ціну оголошу на запуску».
+  it("shows a launch placeholder instead of a concrete price (B4)", () => {
+    renderPricing();
+    expect(screen.queryByText(/199/)).toBeNull();
+    expect(screen.getByText("Скоро")).toBeInTheDocument();
+    expect(screen.getByText("Ціну оголошу на запуску")).toBeInTheDocument();
+    // Free-картка не змінилась.
+    expect(screen.getByText("0 ₴")).toBeInTheDocument();
+  });
+
+  // B4: вступний абзац більше не обіцяє, що тап одразу відкриє оплату.
+  it("does not promise that tapping Premium opens payment (B4)", () => {
+    renderPricing();
+    expect(screen.queryByText(/відкриється оплата/i)).toBeNull();
+    expect(
+      screen.getByText(/Один платний план\. Без рівнів/),
+    ).toBeInTheDocument();
+    // Кнопка checkout лишається на місці — прибрано лише обіцянку в тексті.
+    expect(
+      screen.getByRole("button", { name: /Спробувати Premium/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("submits the waitlist form and tracks the WAITLIST_SUBMITTED event", async () => {
+    renderPricing();
+
+    const emailInput = screen.getByLabelText(/email/i);
+    fireEvent.change(emailInput, {
+      target: { value: "alice@example.com" },
+    });
+
+    const submit = screen.getByRole("button", {
+      name: /Підписатись на waitlist/i,
+    });
+    fireEvent.click(submit);
+
+    await waitFor(() => {
+      expect(submitMock).toHaveBeenCalledTimes(1);
+    });
+    expect(submitMock).toHaveBeenCalledWith(
+      expect.objectContaining({
+        email: "alice@example.com",
+        tier_interest: "unsure",
+        source: "pricing_page",
+      }),
+    );
+    expect(trackEventMock).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.WAITLIST_SUBMITTED,
+      expect.objectContaining({
+        tier_interest: "unsure",
+        source: "pricing_page",
+        created: true,
+      }),
+    );
+    expect(toastSuccessMock).toHaveBeenCalled();
+  });
+
+  it("shows an inline email error and skips the network call on invalid input", async () => {
+    renderPricing();
+
+    const emailInput = screen.getByLabelText(/email/i);
+    fireEvent.change(emailInput, { target: { value: "not-an-email" } });
+    fireEvent.click(
+      screen.getByRole("button", { name: /Підписатись на waitlist/i }),
+    );
+
+    await waitFor(() => {
+      // Точний матч на inline-error по `id` — не плутаємо з <label>Email</label>.
+      expect(document.getElementById("waitlist-email-error")).not.toBeNull();
+    });
+    expect(submitMock).not.toHaveBeenCalled();
+  });
+
+  it("opens checkout when Pro CTA is pressed and tracks CHECKOUT_OPENED", async () => {
+    const assignMock = vi.fn();
+    Object.defineProperty(window, "location", {
+      configurable: true,
+      value: { ...window.location, assign: assignMock },
+    });
+    renderPricing();
+    fireEvent.click(
+      screen.getByRole("button", { name: /Спробувати Premium/i }),
+    );
+    await waitFor(() => {
+      expect(createCheckoutMock).toHaveBeenCalledWith({ plan: "pro" });
+    });
+    expect(assignMock).toHaveBeenCalledWith(
+      "https://checkout.stripe.com/c/pay/cs_test_123",
+    );
+    expect(trackEventMock).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.PRICING_CTA_CLICKED,
+      // Phase 7 UA billing: provider-aware label. Без mock-нутого
+      // /providers список порожній → default-flow → cta "checkout".
+      expect.objectContaining({ cta: "checkout" }),
+    );
+    expect(trackEventMock).toHaveBeenCalledWith(
+      ANALYTICS_EVENTS.CHECKOUT_OPENED,
+      { plan: "pro", mode: "test" },
+    );
+  });
+
+  it("falls back to the waitlist block when billing is unavailable", async () => {
+    createCheckoutMock.mockRejectedValueOnce(new Error("billing down"));
+    renderPricing();
+    fireEvent.click(
+      screen.getAllByRole("button", { name: /Спробувати Premium/i })[0]!,
+    );
+    expect(await screen.findByRole("alert")).toHaveTextContent(
+      /Оплата тимчасово недоступна/i,
+    );
+    expect(document.getElementById("waitlist-anchor")).not.toBeNull();
+  });
+
+  // P1-8 (audit `2026-05-13-revenue-monetization-roast.md`): checkout return
+  // URL `/pricing?checkout=success|cancel|cancelled`. На success ми
+  // інвалідовуємо `billingKeys.status` (щоб `usePlan` перевірив новий plan
+  // без очікування на webhook) + success-toast із "Перейти у налаштування" action.
+  // На cancelled виводимо нейтральний info-toast (без invalidate — підписка
+  // не створена). У обох випадках чистимо `?checkout=...` з URL.
+  describe("checkout return URL (P1-8)", () => {
+    it("on ?checkout=success: invalidates billingKeys.status and shows success toast with settings action", async () => {
+      const client = makeClient();
+      const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+      renderPricing("/pricing?checkout=success", client);
+
+      await waitFor(() => {
+        expect(toastSuccessMock).toHaveBeenCalledTimes(1);
+      });
+
+      const [msg, duration, action] = toastSuccessMock.mock.calls[0]!;
+      expect(String(msg)).toMatch(/Підписку активовано/i);
+      expect(duration).toBeUndefined();
+      expect(action).toEqual(
+        expect.objectContaining({
+          label: "Перейти у налаштування",
+          onClick: expect.any(Function),
+        }),
+      );
+
+      // PR-S7 (аудит 2026-09-13 хвиля 5): раніше `onClick` вів на
+      // `/?tab=settings` без таргета секції — після скасування
+      // форсованого розкриття першої секції (2026-09-11) людина бачила
+      // чотири згорнуті рядки й не бачила свого щойно активованого
+      // плану. Фікс веде через `openHubSettingsSection("plan")` — той
+      // самий канал, яким уже ходять інактивна Bento-картка й ⌘K.
+      action.onClick?.();
+      expect(openHubSettingsSectionMock).toHaveBeenCalledWith("plan");
+
+      // billingKeys.status інвалідується щонайменше раз із правильною
+      // фабричною композицією (Hard Rule #2 — RQ keys лише через фабрики).
+      const billingInvalidations = invalidateSpy.mock.calls.filter((call) => {
+        const arg = call[0] as { queryKey?: unknown } | undefined;
+        return (
+          Array.isArray(arg?.queryKey) &&
+          (arg.queryKey as ReadonlyArray<unknown>).join("|") ===
+            billingKeys.status.join("|")
+        );
+      });
+      expect(billingInvalidations.length).toBeGreaterThanOrEqual(1);
+
+      expect(toastInfoMock).not.toHaveBeenCalled();
+      expect(toastErrorMock).not.toHaveBeenCalled();
+    });
+
+    it("on ?checkout=cancelled: shows neutral info toast and does NOT invalidate billing status", async () => {
+      const client = makeClient();
+      const invalidateSpy = vi.spyOn(client, "invalidateQueries");
+      renderPricing("/pricing?checkout=cancelled", client);
+
+      await waitFor(() => {
+        expect(toastInfoMock).toHaveBeenCalledTimes(1);
+      });
+      expect(String(toastInfoMock.mock.calls[0]![0])).toMatch(
+        /Оплату скасовано/i,
+      );
+
+      const billingInvalidations = invalidateSpy.mock.calls.filter((call) => {
+        const arg = call[0] as { queryKey?: unknown } | undefined;
+        return (
+          Array.isArray(arg?.queryKey) &&
+          (arg.queryKey as ReadonlyArray<unknown>).join("|") ===
+            billingKeys.status.join("|")
+        );
+      });
+      expect(billingInvalidations).toHaveLength(0);
+
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+    });
+
+    it("on ?checkout=cancel: accepts the server cancel_url spelling", async () => {
+      const client = makeClient();
+      renderPricing("/pricing?checkout=cancel", client);
+
+      await waitFor(() => {
+        expect(toastInfoMock).toHaveBeenCalledTimes(1);
+      });
+      expect(String(toastInfoMock.mock.calls[0]![0])).toMatch(
+        /Оплату скасовано/i,
+      );
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+    });
+
+    it("does NOT fire toast on plain /pricing (no checkout param)", () => {
+      renderPricing("/pricing");
+      expect(toastSuccessMock).not.toHaveBeenCalled();
+      expect(toastInfoMock).not.toHaveBeenCalled();
+    });
+  });
+
+  // Initiative 0010 Phase 4.2 residual — active Premium subscriber sees a
+  // "Керувати підпискою" CTA → POST /api/billing/portal (Stripe Portal або
+  // in-app Settings URL для LiqPay/Plata). Free-tier users keep
+  // the "Спробувати Premium" checkout CTA.
+  describe("Manage subscription CTA (Phase 4.2 residual)", () => {
+    function withActiveSubscription(): void {
+      statusMock.mockResolvedValue({
+        subscription: {
+          active: true,
+          id: "sub_test_abc",
+          plan: "pro",
+          status: "active",
+          currentPeriodEnd: new Date(Date.now() + 86_400_000).toISOString(),
+          cancelAtPeriodEnd: false,
+        },
+      });
+    }
+
+    it("renders 'Керувати підпискою' on the Premium card when subscriber is active", async () => {
+      withActiveSubscription();
+      renderPricing();
+      const portalBtn = await screen.findByRole("button", {
+        name: /Керувати підпискою/i,
+      });
+      expect(portalBtn).toBeTruthy();
+      expect(
+        screen.queryByRole("button", { name: /Спробувати Premium/i }),
+      ).toBeNull();
+    });
+
+    it("opens billing manage URL when Premium subscriber clicks 'Керувати підпискою'", async () => {
+      withActiveSubscription();
+      const assignMock = vi.fn();
+      Object.defineProperty(window, "location", {
+        configurable: true,
+        value: { ...window.location, assign: assignMock },
+      });
+      renderPricing();
+      const portalBtn = await screen.findByRole("button", {
+        name: /Керувати підпискою/i,
+      });
+      fireEvent.click(portalBtn);
+      await waitFor(() => {
+        expect(createPortalMock).toHaveBeenCalledTimes(1);
+      });
+      expect(assignMock).toHaveBeenCalledWith(
+        "https://billing.stripe.com/session/test_portal_abc",
+      );
+      expect(trackEventMock).toHaveBeenCalledWith(
+        ANALYTICS_EVENTS.PRICING_CTA_CLICKED,
+        expect.objectContaining({ cta: "manage_subscription" }),
+      );
+    });
+
+    // B5 (браузерний аудит 2026-08-05): маркер «Зараз твій план» жив лише
+    // в disabled-кнопці Free-картки, тож підписник не бачив свого статусу
+    // ніде — його Premium-кнопка зайнята дією «Керувати підпискою».
+    function badgeTierName(badge: HTMLElement): string | null {
+      const card = badge.closest("article");
+      expect(card).not.toBeNull();
+      return within(card!).getByRole("heading", { level: 3 }).textContent;
+    }
+
+    it("marks the Free card as current for a free user (B5)", async () => {
+      renderPricing();
+      const badges = await screen.findAllByTestId("current-plan-badge");
+      expect(badges).toHaveLength(1);
+      expect(badges[0]!.textContent).toBe("Зараз твій план");
+      expect(badgeTierName(badges[0]!)).toBe("Free");
+    });
+
+    it("marks the Premium card as current for an active subscriber (B5)", async () => {
+      withActiveSubscription();
+      renderPricing();
+      // Чекаємо на перехід usePlan у стан pro — його ознака на екрані.
+      await screen.findByRole("button", { name: /Керувати підпискою/i });
+      const badges = screen.getAllByTestId("current-plan-badge");
+      expect(badges).toHaveLength(1);
+      expect(badges[0]!.textContent).toBe("Зараз твій план");
+      expect(badgeTierName(badges[0]!)).toBe("Premium");
+    });
+
+    it("shows a specific message on 409 NO_BILLING_CUSTOMER", async () => {
+      withActiveSubscription();
+      const err = Object.assign(new Error("no billing customer"), {
+        status: 409,
+      });
+      createPortalMock.mockRejectedValueOnce(err);
+      renderPricing();
+      const portalBtn = await screen.findByRole("button", {
+        name: /Керувати підпискою/i,
+      });
+      fireEvent.click(portalBtn);
+      const alert = await screen.findByRole("alert");
+      expect(alert.textContent).toMatch(/платіжний профіль/i);
+    });
+  });
+  // Regression (browser QA 2026-08-23): анонімний відвідувач бачив на Free
+  // бейдж «Зараз твій план» і однойменну disabled-кнопку, хоча жодного
+  // акаунта немає. «Поточний план» — твердження про сесію, не про дефолт.
+  describe("anonymous visitor", () => {
+    it("claims no current plan and offers signing in instead", async () => {
+      mockAuthStatus = "unauthenticated";
+      renderPricing();
+
+      await waitFor(() =>
+        expect(screen.queryAllByTestId("current-plan-badge")).toHaveLength(0),
+      );
+      expect(screen.queryByText("Зараз твій план")).toBeNull();
+
+      const signIn = screen.getByRole("button", { name: "Увійти й почати" });
+      expect(signIn).not.toBeDisabled();
+      fireEvent.click(signIn);
+      expect(trackEventMock).toHaveBeenCalledWith(
+        ANALYTICS_EVENTS.PRICING_CTA_CLICKED,
+        expect.objectContaining({ cta: "sign_in" }),
+      );
+    });
+
+    it("keeps the current-plan marker for a signed-in free user", async () => {
+      mockAuthStatus = "authenticated";
+      renderPricing();
+
+      const badges = await screen.findAllByTestId("current-plan-badge");
+      expect(badges).toHaveLength(1);
+      expect(
+        screen.queryByRole("button", { name: "Увійти й почати" }),
+      ).toBeNull();
+    });
+
+    // Гола сторінка без `AuthProvider` (так її монтують інші юніти):
+    // `useAuthOptional()` віддає `null`, і сторінка НЕ має читати це як
+    // «вийшов» — відсутність контексту не є твердженням про сесію.
+    it("does not claim a signed-out visitor when there is no auth context", async () => {
+      mockAuthStatus = null;
+      renderPricing();
+
+      const badges = await screen.findAllByTestId("current-plan-badge");
+      expect(badges).toHaveLength(1);
+      expect(
+        screen.queryByRole("button", { name: "Увійти й почати" }),
+      ).toBeNull();
+    });
+  });
+
+  it("озвучує виключену функцію текстом, а не лише формою іконки", () => {
+    // Регресія WF-25 (аудит 2026-09-16): `Icon` без `title` рендериться
+    // `aria-hidden`, тож «PDF-експорт звітів» (не входить) і «AI-чат»
+    // (входить) звучали для скрінрідера ІДЕНТИЧНО — різницю несли лише
+    // гліф і приглушений колір (WCAG 1.4.1, «сенс лише кольором»).
+    renderPricing();
+    // Назва фічі трапляється двічі (картка тарифу + порівняльний блок) —
+    // беремо ті входження, що живуть у списку фіч картки.
+    const excludedRows = screen
+      .getAllByText("PDF-експорт звітів")
+      .map((n) => n.closest("li"))
+      .filter((li): li is HTMLLIElement => li !== null);
+    expect(excludedRows.length).toBeGreaterThan(0);
+    expect(
+      excludedRows.some((li) => li.textContent?.includes("не входить:")),
+    ).toBe(true);
+
+    const includedRows = screen
+      .getAllByText("Ручний трекінг без числових лімітів")
+      .map((n) => n.closest("li"))
+      .filter((li): li is HTMLLIElement => li !== null);
+    expect(
+      includedRows.some(
+        (li) =>
+          li.textContent?.includes("входить:") &&
+          !li.textContent.includes("не входить:"),
+      ),
+    ).toBe(true);
+  });
+
+  it("тримає розведене чорнило Premium-героя над порогом AA", () => {
+    // Регресія WF-23: `text-hero-ink/70` і `/60` давали 3.40:1 і 2.90:1 на
+    // світлому кінці градієнта (teal-700) при 12-14px тексті, де поріг
+    // 4.5:1. Лінт цього не бачить — `no-opacity-on-text-token` не знає
+    // токена `hero-ink`, а контрастний гейт міряє лише 100%-пари.
+    const { container } = renderPricing();
+    expect(container.querySelector('[class*="text-hero-ink/70"]')).toBeNull();
+    expect(container.querySelector('[class*="text-hero-ink/60"]')).toBeNull();
+  });
+});

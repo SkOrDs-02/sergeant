@@ -1,0 +1,382 @@
+#!/usr/bin/env node
+/**
+ * ESLint print-config diff-test gate
+ *
+ * Runs `eslint --print-config <fixture>` for a set of surface-spanning
+ * fixture files, normalises the resolved config (strip absolute paths,
+ * recursively sort keys), and compares against committed snapshots under
+ * `scripts/__fixtures__/eslint-print-config/`.
+ *
+ * Purpose: gate PR-31 Phase 2 (per-surface eslint.config.js extraction).
+ * Any change to the resolved config — intended or accidental — flips
+ * exactly the snapshots it affects; reviewer reads the diff to confirm
+ * intent before merge.
+ *
+ * Usage:
+ *   node scripts/eslint-print-config-diff.mjs            # CI mode: diff or pass
+ *   node scripts/eslint-print-config-diff.mjs --update   # rewrite snapshots
+ *   node scripts/eslint-print-config-diff.mjs --json     # machine-readable
+ *
+ * Exit codes:
+ *   0 — all snapshots match (or --update wrote them)
+ *   1 — at least one snapshot diverges, a fixture file is missing,
+ *       or eslint failed
+ */
+
+import { execFileSync } from "node:child_process";
+import { mkdirSync, readFileSync, writeFileSync, existsSync } from "node:fs";
+import { dirname, join, relative, resolve, sep } from "node:path";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+const REPO_ROOT = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+const SNAPSHOT_DIR = join(
+  REPO_ROOT,
+  "scripts",
+  "__fixtures__",
+  "eslint-print-config",
+);
+
+/**
+ * Fixture set — one entry per resolvable ESLint surface in the monorepo,
+ * ПЛЮС по точці на кожен блок правил, заскоупований на підтеку (див.
+ * `server-copy` нижче). Add an entry when introducing a new app/package
+ * boundary or such a scoped block; remove when a surface is consolidated
+ * away. Інваріант покриття тримає
+ * `scripts/__tests__/eslint-print-config-diff.test.mjs` — від 2026-09-14
+ * він у ланцюжку `pnpm lint:eslint-config-diff`, а не сам по собі.
+ *
+ * `cwd` is the package directory (repo-relative) that owns a standalone
+ * `eslint.config.js` (PR-31 phase 2b). The gate runs `eslint --print-config`
+ * from that cwd so flat-config discovery resolves the *per-package* config
+ * (which `turbo run lint` also resolves) rather than walking up to the root
+ * manifest. The resolved output must stay byte-identical to the root config —
+ * the per-package files re-export it via a `basePath` wrapper. `path` stays
+ * repo-relative so snapshot filenames are unchanged across the phase-2a→2b
+ * move; the package-relative argument passed to `--print-config` is derived
+ * from `path` and `cwd`.
+ */
+export const FIXTURES = [
+  { surface: "server", path: "apps/server/src/index.ts", cwd: "apps/server" },
+  // Друга точка на тій самій поверхні — і вона тут не для повноти.
+  // `index.ts` не бачить правил, заскоупованих на підтеку: гейт лишався б
+  // зеленим, якби хтось зняв блок `ukrainian-copy` для копійних тек сервера
+  // (`email/**`, `modules/telegram/**`, `routes/email-unsubscribe.ts`,
+  // додано 2026-09-14). Тобто снапшот-гейт на одному файлі з воркспейсу
+  // мовчить саме про ті правила, які вмикають вибірково. Додаєш скоуповане
+  // правило — додавай сюди файл із його скоупу.
+  {
+    surface: "server-copy",
+    path: "apps/server/src/email/ftuxDripCopy.ts",
+    cwd: "apps/server",
+  },
+  { surface: "web", path: "apps/web/src/main.tsx", cwd: "apps/web" },
+  {
+    surface: "mobile",
+    path: "apps/mobile/app/(tabs)/index.tsx",
+    cwd: "apps/mobile",
+  },
+  {
+    surface: "mobile-shell",
+    path: "apps/mobile-shell/src/index.ts",
+    cwd: "apps/mobile-shell",
+  },
+  {
+    surface: "shared",
+    path: "packages/shared/src/index.ts",
+    cwd: "packages/shared",
+  },
+  {
+    surface: "api-client",
+    path: "packages/api-client/src/index.ts",
+    cwd: "packages/api-client",
+  },
+  {
+    surface: "eslint-plugin-sergeant-design",
+    path: "packages/eslint-plugin-sergeant-design/index.js",
+    cwd: "packages/eslint-plugin-sergeant-design",
+  },
+];
+
+/**
+ * Normalise resolved ESLint config so snapshots are stable across machines:
+ *   - replace the REPO_ROOT prefix in absolute-path strings with `<repo>`,
+ *     emitting forward slashes so a Windows run matches a POSIX one
+ *   - sort every object's keys
+ *   - drop ESLint-internal keys that vary by run (`cwd`, plugin SHA blobs)
+ *
+ * The separator swap is applied **only** to strings that resolve to a path
+ * under REPO_ROOT. Other strings are returned verbatim: a blanket
+ * `split(sep).join("/")` corrupts native-backslash content on Windows —
+ * e.g. the `\\b` / `\\d` escapes inside `no-restricted-syntax` regex
+ * selectors become `/b` / `/d`, diverging from the POSIX-generated
+ * snapshots and making the gate un-passable on a Windows checkout.
+ *
+ * AI-DANGER: розділювач тут НЕ береться з `path.sep`. Так було до
+ * 2026-09-14, і це рівно суперечило обіцянці рядком вище: на POSIX-раннері
+ * `sep` це `/`, тож віндова доріжка `C:\repo\apps\…` не нормалізувалась
+ * узагалі — «Windows-прогін збігається з POSIX» трималось лише в один бік.
+ * Юніт, який це перевіряв, через те падав на кожному Linux-прогоні (і
+ * падав би в CI, якби цей файл тестів був у ланцюжку `pnpm lint` — його там
+ * не було). Тепер конвертація не залежить від платформи раннера.
+ */
+export function normaliseConfig(config, repoRoot = REPO_ROOT) {
+  const toForwardSlashes = (value) => value.replaceAll("\\", "/");
+  const repoRootForward = toForwardSlashes(repoRoot);
+
+  function visit(value) {
+    if (value === null || value === undefined) return value;
+    if (Array.isArray(value)) return value.map(visit);
+    if (typeof value === "object") {
+      const sortedKeys = Object.keys(value).sort();
+      const out = {};
+      for (const key of sortedKeys) {
+        if (key === "cwd") continue;
+        out[key] = visit(value[key]);
+      }
+      return out;
+    }
+    if (typeof value === "string") {
+      const forward = toForwardSlashes(value);
+      if (forward.startsWith(repoRootForward)) {
+        return "<repo>" + forward.slice(repoRootForward.length);
+      }
+      return value;
+    }
+    return value;
+  }
+
+  return visit(config);
+}
+
+/**
+ * Stable filename for a fixture's snapshot. Slashes → `__`, parens → `_`
+ * so the resulting filename is portable on Windows.
+ */
+export function snapshotPathFor(fixturePath) {
+  const slug = fixturePath
+    .replaceAll("/", "__")
+    .replaceAll("(", "_")
+    .replaceAll(")", "_");
+  return join(SNAPSHOT_DIR, slug + ".json");
+}
+
+/**
+ * Package-relative file path for a fixture — strips the `cwd` prefix so the
+ * argument passed to `--print-config` is resolved from the package directory
+ * (e.g. `apps/web/src/main.tsx` + cwd `apps/web` → `src/main.tsx`).
+ */
+function relPathFor(fixture) {
+  if (!fixture.cwd) return fixture.path;
+  const prefix = fixture.cwd.replace(/\/?$/, "/");
+  return fixture.path.startsWith(prefix)
+    ? fixture.path.slice(prefix.length)
+    : fixture.path;
+}
+
+function runEslintPrintConfig(fixture) {
+  const onWindows = process.platform === "win32";
+  const command = onWindows ? "pnpm.cmd" : "pnpm";
+  // PR-31 phase 2b: run from the package cwd (not REPO_ROOT) so flat-config
+  // discovery resolves the package's own `eslint.config.js` — the same file
+  // `turbo run lint` resolves — instead of walking up to the root manifest.
+  const cwd = fixture.cwd ? join(REPO_ROOT, fixture.cwd) : REPO_ROOT;
+  const relPath = relPathFor(fixture);
+  // On Windows pnpm dispatches through a `.cmd` wrapper; without an explicit
+  // shell the wrapper resolves but `execFileSync` cannot find the binary
+  // along PATH for `pnpm` (no extension). With `shell: true` the `cmd.exe`
+  // tokeniser then strips parens like `(tabs)`, so we wrap the fixture path
+  // in literal double-quotes. POSIX shells pass either form fine.
+  const arg = onWindows ? `"${relPath}"` : relPath;
+  const stdout = execFileSync(
+    command,
+    ["exec", "eslint", "--print-config", arg],
+    {
+      cwd,
+      encoding: "utf8",
+      maxBuffer: 32 * 1024 * 1024,
+      stdio: ["ignore", "pipe", "pipe"],
+      shell: onWindows,
+    },
+  );
+  return JSON.parse(stdout);
+}
+
+/**
+ * Чи валить цей результат гейт.
+ *
+ * `skipped` (fixture-файл зник) рахується провалом нарівні з `diff` / `missing`
+ * / `error`. Інакше видалення чи перейменування одного з фікстур-файлів мовчки
+ * знімало б покриття з поверхні, а гейт лишався б зеленим — рівно той клас
+ * «гейт, чий вхід зник, гейтом не є», проти якого цей скрипт і стоїть. Знята
+ * поверхня має бути правкою списку `FIXTURES`, свідомою і видимою в дифі.
+ *
+ * @param {{ status: string }} result
+ * @returns {boolean}
+ */
+export function isFailingResult(result) {
+  return (
+    result.status === "diff" ||
+    result.status === "missing" ||
+    result.status === "error" ||
+    result.status === "skipped"
+  );
+}
+
+function serialise(config) {
+  return JSON.stringify(config, null, 2) + "\n";
+}
+
+function main() {
+  const args = new Set(process.argv.slice(2));
+  const updateMode = args.has("--update");
+  const jsonMode = args.has("--json");
+
+  mkdirSync(SNAPSHOT_DIR, { recursive: true });
+
+  const results = [];
+
+  for (const fixture of FIXTURES) {
+    const fixtureAbs = join(REPO_ROOT, fixture.path);
+    if (!existsSync(fixtureAbs)) {
+      results.push({
+        surface: fixture.surface,
+        path: fixture.path,
+        status: "skipped",
+        reason: "fixture file missing",
+      });
+      continue;
+    }
+
+    let config;
+    try {
+      const raw = runEslintPrintConfig(fixture);
+      config = normaliseConfig(raw);
+    } catch (err) {
+      results.push({
+        surface: fixture.surface,
+        path: fixture.path,
+        status: "error",
+        reason: err.stderr?.toString().slice(-500) ?? err.message,
+      });
+      continue;
+    }
+
+    const snapPath = snapshotPathFor(fixture.path);
+    const next = serialise(config);
+
+    if (updateMode) {
+      writeFileSync(snapPath, next);
+      results.push({
+        surface: fixture.surface,
+        path: fixture.path,
+        status: existsSync(snapPath) ? "updated" : "created",
+      });
+      continue;
+    }
+
+    if (!existsSync(snapPath)) {
+      results.push({
+        surface: fixture.surface,
+        path: fixture.path,
+        status: "missing",
+        reason: `snapshot not found at ${relative(REPO_ROOT, snapPath)} — run with --update`,
+      });
+      continue;
+    }
+
+    const prev = readFileSync(snapPath, "utf8");
+    if (prev === next) {
+      results.push({
+        surface: fixture.surface,
+        path: fixture.path,
+        status: "match",
+      });
+    } else {
+      results.push({
+        surface: fixture.surface,
+        path: fixture.path,
+        status: "diff",
+        snapshotPath: relative(REPO_ROOT, snapPath).replaceAll(sep, "/"),
+      });
+    }
+  }
+
+  const failed = results.filter(isFailingResult);
+
+  if (jsonMode) {
+    process.stdout.write(
+      JSON.stringify({ results, failed: failed.length }, null, 2) + "\n",
+    );
+  } else {
+    for (const r of results) {
+      const tag =
+        r.status === "match"
+          ? "✓"
+          : r.status === "updated" || r.status === "created"
+            ? "↻"
+            : r.status === "skipped"
+              ? "·"
+              : "✗";
+      const tail =
+        r.status === "diff"
+          ? ` (snapshot: ${r.snapshotPath})`
+          : r.reason
+            ? ` — ${r.reason}`
+            : "";
+      process.stdout.write(
+        `${tag} ${r.surface.padEnd(32)} ${r.status}${tail}\n`,
+      );
+    }
+    if (failed.length > 0 && !updateMode) {
+      // Розбивка за статусами, бо ліки різні: `diff`/`missing` лікуються
+      // `--update`, зниклий fixture — правкою списку FIXTURES, а `error` —
+      // це падіння самого eslint, де `--update` не допоможе взагалі. Спільне
+      // формулювання «diverged» радило б неправильну дію на дві причини з
+      // трьох.
+      const byStatus = { diff: [], missing: [], skipped: [], error: [] };
+      for (const r of failed) byStatus[r.status]?.push(r.surface);
+
+      const lines = [`\n${failed.length} fixture(s) failed:`];
+      if (byStatus.diff.length) {
+        lines.push(
+          `  · ${byStatus.diff.length} diverged from snapshot (${byStatus.diff.join(", ")})`,
+        );
+      }
+      if (byStatus.missing.length) {
+        lines.push(
+          `  · ${byStatus.missing.length} without a committed snapshot (${byStatus.missing.join(", ")})`,
+        );
+      }
+      if (byStatus.skipped.length) {
+        lines.push(
+          `  · ${byStatus.skipped.length} fixture file(s) gone (${byStatus.skipped.join(", ")}) — update the FIXTURES list if the surface was removed on purpose`,
+        );
+      }
+      if (byStatus.error.length) {
+        lines.push(
+          `  · ${byStatus.error.length} eslint execution error(s) (${byStatus.error.join(", ")}) — fix the config or the run, --update will not help`,
+        );
+      }
+      if (byStatus.diff.length || byStatus.missing.length) {
+        lines.push(
+          "\nRun `pnpm lint:eslint-config-diff -- --update` to refresh snapshots after intentional config changes.",
+        );
+      }
+      process.stderr.write(lines.join("\n") + "\n");
+    } else if (updateMode) {
+      process.stdout.write(
+        `\nWrote ${results.filter((r) => r.status === "updated" || r.status === "created").length} snapshot(s).\n`,
+      );
+    } else {
+      process.stdout.write(
+        `\nAll ${results.filter((r) => r.status === "match").length} fixture(s) matched.\n`,
+      );
+    }
+  }
+
+  process.exit(failed.length > 0 && !updateMode ? 1 : 0);
+}
+
+if (import.meta.url === pathToFileURL(process.argv[1]).href) {
+  main();
+}

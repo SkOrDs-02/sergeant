@@ -1,0 +1,246 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   MODULE SURFACES — Hero cards, branded gradients, module-specific rules.
+   Extracted from index.css for maintainability.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+/* ── Module card base ────────────────────────────────────────────────── */
+
+@utility module-card {
+  @apply relative rounded-3xl p-5 border overflow-hidden
+         transition-interactive;
+
+  &::before {
+    content: "";
+    position: absolute;
+    inset: 0;
+    opacity: 0;
+    transition: opacity 0.3s ease;
+  }
+
+  &:hover::before {
+    opacity: 1;
+  }
+}
+
+/* ── Finyk (teal) ────────────────────────────────────────────────────── */
+/* 2026-07: migrated from emerald to teal (moduleColors.finyk = teal-700). */
+
+.module-card-finyk {
+  @apply module-card bg-linear-to-br from-teal-50 via-teal-50/50 to-white;
+  border-color: rgba(153, 246, 228, 0.6); /* teal-200 */
+}
+
+.module-card-finyk::before {
+  background: linear-gradient(
+    135deg,
+    rgba(13, 148, 136, 0.08) 0%,
+    transparent 60%
+  ); /* teal-600 */
+}
+
+.dark .module-card-finyk {
+  @apply bg-panel;
+  border-color: rgba(13, 148, 136, 0.2); /* teal-600 */
+  background-image: linear-gradient(
+    135deg,
+    rgba(13, 148, 136, 0.12) 0%,
+    transparent 60%
+  ); /* teal-600 */
+}
+
+/* ── Fizruk (cyan) ───────────────────────────────────────────────────── */
+
+.module-card-fizruk {
+  @apply module-card bg-linear-to-br from-cyan-50 via-cyan-50/50 to-white;
+  border-color: rgba(153, 246, 228, 0.6);
+}
+
+.module-card-fizruk::before {
+  background: linear-gradient(
+    135deg,
+    rgba(6, 182, 212, 0.08) 0%,
+    transparent 60%
+  );
+}
+
+.dark .module-card-fizruk {
+  @apply bg-panel;
+  border-color: rgba(6, 182, 212, 0.2);
+  background-image: linear-gradient(
+    135deg,
+    rgba(6, 182, 212, 0.12) 0%,
+    transparent 60%
+  );
+}
+
+/* ── Routine (rose) ─────────────────────────────────────────────────── */
+
+.module-card-routine {
+  @apply module-card bg-linear-to-br from-rose-50/80 via-orange-50/30 to-white;
+  border-color: rgba(255, 212, 203, 0.6);
+}
+
+.module-card-routine::before {
+  background: linear-gradient(
+    135deg,
+    rgba(249, 112, 102, 0.08) 0%,
+    transparent 60%
+  );
+}
+
+.dark .module-card-routine {
+  @apply bg-panel;
+  border-color: rgba(249, 112, 102, 0.2);
+  background-image: linear-gradient(
+    135deg,
+    rgba(249, 112, 102, 0.12) 0%,
+    transparent 60%
+  );
+}
+
+/* ── Routine calendar hero — dark-mode on-color text ─────────────────────
+   WHY: in dark mode the routine hero Card resolves to a saturated, opaque
+   rose-900 fill (`dark:bg-routine-soft`, rgb(117 57 73)). The shared
+   `KpiRowCompact` labels and the `HeroValueLine` narrative paint with the
+   neutral `text-subtle` tertiary token (rgb(135 128 121)) — tuned for the
+   app's dark panel, not for a coloured surface — yielding only ~1.96:1
+   against the rose fill (WCAG AA fails small text). We can't retint the
+   shared token (it would shift every other surface) so we scope an on-color
+   override to this hero only. rose-100 lands ~6.6:1 on rose-900; the
+   `tabular-nums` value/metric already use `text-text` (warm-white, ~7.8:1)
+   so they stay untouched. Light theme keeps the soft-pink hero where the
+   neutral subtle token is already compliant — hence `.dark`-only. */
+.dark .routine-hero .text-subtle {
+  color: rgb(255 231 235); /* rose-100 — ≥4.5:1 on rose-900 */
+}
+.dark .routine-hero .text-routine {
+  color: rgb(251 175 190); /* rose-300 — visible separator on rose-900 */
+}
+
+/* ── Routine heatmap cells ───────────────────────────────────────────────
+   Wave 2b: chart-side palette tokens for the routine activity heatmap.
+   The CSS layer owns the per-theme (light, dark) pair so consumers in
+   `apps/web/src/shared/charts/chartTheme.ts` reference one class per
+   level and the JS module stops carrying `dark:` overrides.
+
+   Level scale (0 → 3):
+     0 → no activity (uses semantic `bg-panelHi dark:bg-line/25` directly)
+     1 → rose-200 light, rose-900 dark
+     2 → rose-400 light, rose-600 dark
+     3 → rose-500 light, rose-500 dark
+
+   Opacity is baked into each declaration (light/dark differ slightly so
+   the heatmap reads as warm in both themes without hand-tuning at the
+   call-site). */
+.bg-routine-heat-l1 {
+  background-color: rgb(254 211 219 / 0.8); /* rose-200 @ 80% */
+}
+.dark .bg-routine-heat-l1 {
+  background-color: rgb(117 57 73 / 0.55); /* rose-900 @ 55% */
+}
+
+.bg-routine-heat-l2 {
+  background-color: rgb(246 141 164 / 0.75); /* rose-400 @ 75% */
+}
+.dark .bg-routine-heat-l2 {
+  background-color: rgb(209 92 122 / 0.7); /* rose-600 @ 70% */
+}
+
+.bg-routine-heat-l3 {
+  background-color: rgb(235 118 145 / 0.9); /* rose-500 @ 90% */
+}
+.dark .bg-routine-heat-l3 {
+  background-color: rgb(235 118 145 / 0.8); /* rose-500 @ 80% */
+}
+
+/* ── Nutrition (lime) ────────────────────────────────────────────────── */
+
+.module-card-nutrition {
+  @apply module-card bg-linear-to-br from-lime-50 via-green-50/30 to-white;
+  border-color: rgba(217, 249, 157, 0.6);
+}
+
+.module-card-nutrition::before {
+  background: linear-gradient(
+    135deg,
+    rgba(132, 204, 22, 0.08) 0%,
+    transparent 60%
+  );
+}
+
+.dark .module-card-nutrition {
+  @apply bg-panel;
+  border-color: rgba(132, 204, 22, 0.2);
+  background-image: linear-gradient(
+    135deg,
+    rgba(132, 204, 22, 0.12) 0%,
+    transparent 60%
+  );
+}
+
+/* ── Fizruk-specific surface helpers ─────────────────────────────────── */
+
+.fizruk-cta-accent {
+  @apply bg-fizruk-strong text-white font-semibold rounded-2xl
+         transition-interactive
+         hover:bg-cyan-900
+         active:scale-[0.98];
+}
+
+.fizruk-cta-accent:hover {
+  box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.15);
+}
+
+.fizruk-summary-header {
+  @apply p-4;
+  background-image: linear-gradient(
+    135deg,
+    #ecfeff 0%,
+    #cffafe 50%,
+    #a5f3fc 100%
+  );
+}
+.dark .fizruk-summary-header {
+  @apply bg-panel;
+  background-image: linear-gradient(
+    135deg,
+    rgba(34, 211, 238, 0.15) 0%,
+    transparent 100%
+  );
+}
+
+/* ── Module-scoped input focus (design-audit F3) ─────────────────────────
+   Shared `Input` defaults to the brand focus treatment
+   (`focus-visible:border-brand-400 ring-focus/30`), so every input inside
+   a module lit up EMERALD regardless of the host accent — a Rule #12
+   containment breach measured live on fizruk/routine/nutrition (кадри
+   t42-* в audit-shots/). `ModuleAccentProvider` already writes
+   `--module-accent-rgb` on its wrapper, so one cascade-level override
+   recolours border, ring and caret for every input in every module —
+   no per-call-site work. Error state keeps the danger treatment
+   (`aria-invalid` opt-out). Specificity (0,2,1) beats the Tailwind
+   focus-visible classes (0,2,0). */
+[data-module-accent]
+  :is(input, textarea, select):focus-visible:not([aria-invalid="true"]) {
+  border-color: rgb(var(--module-accent-rgb) / 0.6);
+  --tw-ring-color: rgb(var(--module-accent-rgb) / 0.25);
+}
+[data-module-accent] :is(input, textarea) {
+  caret-color: rgb(var(--module-accent-rgb));
+}
+
+/* ── Module-scoped focus ring (V-20) ─────────────────────────────────────
+   Inputs already recolour their focus treatment above, but every OTHER
+   focusable inside a module (Button, tab, card, link, IconButton) still
+   painted the canonical teal `ring-focus`, so keyboard focus felt visually
+   detached from the host module's accent. `ring-focus*` utilities resolve
+   to `rgb(var(--c-ring) / …)`, so remapping the two ring triplets to the
+   accent (already published on the provider as `--module-accent-rgb` /
+   `--module-accent-strong-rgb`) recolours the whole focus system in one
+   cascade step — no per-call-site changes. Accents are tuned ≥3:1 against
+   module surfaces, so WCAG 2.4.11 / 1.4.11 still hold. The offset token is
+   left untouched so the ring stays legible against panels. */
+[data-module-accent] {
+  --c-ring: var(--module-accent-rgb);
+  --c-ring-strong: var(--module-accent-strong-rgb);
+}

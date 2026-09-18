@@ -1,0 +1,170 @@
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
+
+import { MONTHLY_PLAN_STORAGE_KEY } from "@sergeant/fizruk-domain";
+import { safeReadLS } from "@shared/lib/storage/storage";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractMonthlyPlanSnapshot } from "../lib/fizrukDualWriteState";
+import {
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+  type FizrukIntendedSliceRef,
+} from "../lib/fizrukDualWriteIntent";
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
+
+const STORAGE_KEY = MONTHLY_PLAN_STORAGE_KEY;
+
+interface DayEntry {
+  templateId: string;
+}
+
+interface MonthlyPlanState {
+  reminderEnabled: boolean;
+  reminderHour: number;
+  reminderMinute: number;
+  days: Record<string, DayEntry>;
+}
+
+function todayKey() {
+  // Kyiv-anchored day key so the plan's "today" doesn't drift for users whose
+  // host clock is outside Europe/Kyiv (domain invariant: day boundaries in Kyiv).
+  return getKyivDayKey();
+}
+
+const DEFAULT_STATE: MonthlyPlanState = {
+  reminderEnabled: true,
+  reminderHour: 18,
+  reminderMinute: 0,
+  days: {},
+};
+
+function loadState(): MonthlyPlanState {
+  const p = safeReadLS<Partial<MonthlyPlanState>>(STORAGE_KEY);
+  if (!p) return DEFAULT_STATE;
+  return {
+    reminderEnabled: p.reminderEnabled !== false,
+    reminderHour: Number.isFinite(p.reminderHour) ? (p.reminderHour ?? 18) : 18,
+    reminderMinute: Number.isFinite(p.reminderMinute)
+      ? (p.reminderMinute ?? 0)
+      : 0,
+    days: typeof p.days === "object" && p.days ? p.days : {},
+  };
+}
+
+/**
+ * Cache-first initial state: prefer the SQLite cache (warm on repeat
+ * boots) over the LS blob. Teardown Phase 3 removed the LS write-mirror;
+ * `loadState()` remains only as a pre-warm fallback for whatever this
+ * device's LS blob already held. The boot-time drain that used to
+ * refresh this blob from residual LS data (`residualImport.ts`) was
+ * removed 2026-08 — no pre-beta testers were left with pre-SQLite LS
+ * state to migrate — so on a fresh install this fallback simply misses
+ * and `loadState()` returns `DEFAULT_STATE`.
+ */
+function loadInitialState(): MonthlyPlanState {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt !== null && cache.monthlyPlan) return cache.monthlyPlan;
+  return loadState();
+}
+
+function saveState(
+  s: MonthlyPlanState,
+  intended: FizrukIntendedSliceRef<"monthlyPlan">,
+): void {
+  // Teardown Phase 3 — SQLite-only write via the dual-write pipeline; the
+  // LS mirror was removed. Fire-and-forget; the trigger is a no-op when no
+  // dual-write context is registered.
+  const transition = fizrukDualWriteTransition(
+    "monthlyPlan",
+    intended,
+    extractMonthlyPlanSnapshot(s),
+  );
+  try {
+    triggerFizrukDualWrite(transition.prev, transition.next);
+  } catch {
+    /* trigger is fire-and-forget — never propagate */
+  }
+}
+
+export function useMonthlyPlan() {
+  const sqliteCacheTick = useFizrukSqliteReadTick();
+  const intended = useFizrukIntendedSlice<"monthlyPlan">(sqliteCacheTick);
+  const [state, setState] = useSqliteTickOverlay<MonthlyPlanState>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      if (cache.refreshedAt === null || !cache.monthlyPlan) return undefined;
+      return cache.monthlyPlan;
+    },
+    loadInitialState,
+  );
+
+  const setReminder = useCallback(
+    (hour: number, minute: number) => {
+      setState((prev) => {
+        const next = {
+          ...prev,
+          reminderHour: Math.max(0, Math.min(23, hour)),
+          reminderMinute: Math.max(0, Math.min(59, minute)),
+        };
+        saveState(next, intended);
+        return next;
+      });
+    },
+    [intended, setState],
+  );
+
+  const setReminderEnabled = useCallback(
+    (enabled: boolean) => {
+      setState((prev) => {
+        const next = { ...prev, reminderEnabled: !!enabled };
+        saveState(next, intended);
+        return next;
+      });
+    },
+    [intended, setState],
+  );
+
+  const setDayTemplate = useCallback(
+    (dateKey: string, templateId: string | null) => {
+      setState((prev) => {
+        const days = { ...prev.days };
+        if (templateId == null || templateId === "") {
+          delete days[dateKey];
+        } else {
+          days[dateKey] = { templateId };
+        }
+        const next = { ...prev, days };
+        saveState(next, intended);
+        return next;
+      });
+    },
+    [intended, setState],
+  );
+
+  const getTemplateForDate = useCallback(
+    (dateKey: string) => state.days[dateKey]?.templateId ?? null,
+    [state.days],
+  );
+
+  const todayTemplateId = useMemo(
+    () => state.days[todayKey()]?.templateId ?? null,
+    [state.days],
+  );
+
+  return {
+    reminderEnabled: state.reminderEnabled,
+    reminderHour: state.reminderHour,
+    reminderMinute: state.reminderMinute,
+    days: state.days,
+    setReminder,
+    setReminderEnabled,
+    setDayTemplate,
+    getTemplateForDate,
+    todayTemplateId,
+    getTodayDateKey: todayKey,
+  };
+}

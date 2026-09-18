@@ -1,0 +1,255 @@
+import {
+  describe,
+  it,
+  expect,
+  beforeEach,
+  afterEach,
+  afterAll,
+  vi,
+} from "vitest";
+import request from "supertest";
+
+/**
+ * PR-31 — `/health/workers` endpoint regression guard.
+ *
+ * Контракт відповіді (документований у `apps/server/src/http/health.ts ::
+ * createWorkersHealthHandler`):
+ *
+ *   {
+ *     status: 'healthy' | 'unhealthy',
+ *     timestamp: string (ISO),
+ *     workers: {
+ *       aiMemoryIngest: { enabled, started, fallbackMode, concurrency,
+ *                         attempts, jobCounts, error? },
+ *       monoEnrichment: { enabled, intervalMs, queueDepth, error? },
+ *     },
+ *   }
+ *
+ * Status code:
+ *   - 200 — обидві worker-sample-функції повернулися без `error`
+ *   - 503 — хоч одна повернула `error` (DB/Redis incident)
+ *
+ * Ці тести закріплюють shape + status-code-mapping, щоб майбутні зміни не
+ * зламали мовчки дашборди / runbook-и, які парсять цей JSON.
+ */
+const { mockPool, queryMock } = vi.hoisted(() => {
+  const queryMock = vi.fn().mockResolvedValue({ rows: [{ "?column?": 1 }] });
+  const mockPool = {
+    query: queryMock,
+    connect: vi.fn(),
+    on: vi.fn(),
+    totalCount: 0,
+    idleCount: 0,
+    waitingCount: 0,
+  };
+  return { mockPool, queryMock };
+});
+
+vi.mock("../db.js", () => ({
+  default: mockPool,
+  pool: mockPool,
+  query: queryMock,
+  ensureSchema: vi.fn().mockResolvedValue(undefined),
+}));
+
+vi.mock("../auth.js", () => ({
+  auth: { handler: async () => new Response(null, { status: 404 }) },
+  getSessionUser: vi.fn().mockResolvedValue(null),
+  getSessionUserSoft: vi.fn().mockResolvedValue(null),
+}));
+
+import { createApp } from "../app.js";
+
+const ENV_KEYS = [
+  "AI_MEMORY_ENABLED",
+  "MONO_ENRICHMENT_WORKER_ENABLED",
+  "ANTHROPIC_API_KEY",
+  "DATABASE_URL",
+  "RATE_LIMIT_DISABLED",
+];
+const savedEnv: Record<string, string | undefined> = {};
+for (const k of ENV_KEYS) savedEnv[k] = process.env[k];
+
+beforeEach(() => {
+  for (const k of ENV_KEYS) delete process.env[k];
+  queryMock.mockReset();
+});
+
+afterAll(() => {
+  for (const k of ENV_KEYS) {
+    if (savedEnv[k] === undefined) delete process.env[k];
+    else process.env[k] = savedEnv[k];
+  }
+});
+
+describe("GET /health/workers — happy path (no Redis, mono queue empty)", () => {
+  it("returns 200 + healthy with disabled flags and zero queueDepth", async () => {
+    // Mono enrichment SQL: empty queue (0 rows). The handler swallows the
+    // result via Promise.all so SELECT 1 isn't needed for healthz parity.
+    queryMock.mockResolvedValue({ rows: [] });
+    const app = createApp();
+    const res = await request(app).get("/health/workers");
+    expect(res.status).toBe(200);
+    expect(res.headers["content-type"]).toMatch(/application\/json/);
+    expect(res.body).toMatchObject({
+      status: "healthy",
+      timestamp: expect.any(String),
+      workers: {
+        aiMemoryIngest: {
+          enabled: false,
+          started: false,
+          fallbackMode: false,
+          concurrency: expect.any(Number),
+          attempts: expect.any(Number),
+          jobCounts: null,
+        },
+        monoEnrichment: {
+          enabled: false,
+          intervalMs: expect.any(Number),
+          queueDepth: {
+            pending: 0,
+            processing: 0,
+            done: 0,
+            failed: 0,
+            dead_letter: 0,
+            total: 0,
+          },
+        },
+      },
+    });
+    // ISO 8601 timestamp.
+    expect(new Date(res.body.timestamp).toISOString()).toBe(res.body.timestamp);
+  });
+
+  it("aggregates monoEnrichment queueDepth from grouped rows", async () => {
+    queryMock.mockResolvedValue({
+      rows: [
+        { status: "pending", count: "5" },
+        { status: "processing", count: 1 },
+        { status: "done", count: "4242" },
+        { status: "failed", count: "0" },
+        { status: "dead_letter", count: 2 },
+        // unknown statuses are tolerated (counted in `total` only).
+        { status: "scheduled", count: "3" },
+      ],
+    });
+    const app = createApp();
+    const res = await request(app).get("/health/workers");
+    expect(res.status).toBe(200);
+    expect(res.body.workers.monoEnrichment.queueDepth).toEqual({
+      pending: 5,
+      processing: 1,
+      done: 4242,
+      failed: 0,
+      dead_letter: 2,
+      total: 5 + 1 + 4242 + 0 + 2 + 3,
+    });
+  });
+});
+
+describe("GET /health/workers — degraded paths", () => {
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("returns 503 + queueDepth=null, і НЕ віддає текст помилки БД", async () => {
+    // Раніше тут очікувався `error: /ECONNREFUSED/` — тобто тест закріплював
+    // витік: `/health/workers` змонтований без auth і без rate-limit, а
+    // `pg`/`ioredis` кладуть у `err.message` внутрішній хост, порт і імʼя
+    // DB-користувача (`password authentication failed for user
+    // "sergeant_app"`). Анонім отримував внутрішню топологію.
+    //
+    // Тепер клієнту йде лише КЛАС помилки (`errorCode`, allowlist
+    // `^[A-Za-z0-9_]{1,40}$` — див. `obs/errorCode.ts`), а повний текст
+    // лишається в `logger.error`. Перевіряємо обидві половини: код є, а
+    // подробиць немає.
+    queryMock.mockRejectedValue(new Error("ECONNREFUSED 127.0.0.1:5432"));
+    const app = createApp();
+    const res = await request(app).get("/health/workers");
+    expect(res.status).toBe(503);
+    expect(res.body.status).toBe("unhealthy");
+    expect(res.body.workers.monoEnrichment.queueDepth).toBeNull();
+    expect(res.body.workers.monoEnrichment.errorCode).toBeTruthy();
+    expect(res.body.workers.monoEnrichment).not.toHaveProperty("error");
+
+    // Ні хоста, ні порту, ні тексту драйвера в тілі відповіді.
+    const body = JSON.stringify(res.body);
+    expect(body).not.toContain("ECONNREFUSED");
+    expect(body).not.toContain("127.0.0.1");
+    expect(body).not.toContain("5432");
+
+    // Без stack trace в response body. Це L7 invariant
+    // (не leak-аємо file paths / dependency versions через error string).
+    expect(res.body.workers.monoEnrichment).not.toHaveProperty("stack");
+  });
+
+  it("reflects MONO_ENRICHMENT_WORKER_ENABLED + provider-key env flags", async () => {
+    // Гейт воркера з 2026-08-29 (#928) питає ключ РЕАЛЬНОГО провайдера
+    // категоризації — providerUpstreamReady("readonly"), дефолт
+    // LLM_READONLY_PROVIDER=openrouter → потрібен OPENROUTER_API_KEY
+    // (Anthropic-ключ цим шляхом більше не вимагається).
+    // HR-3: env читається з Zod-singleton-а (fixed at module-eval time), тож
+    // канонічний патерн vi.stubEnv + vi.resetModules() + dynamic import().
+    vi.stubEnv("MONO_ENRICHMENT_WORKER_ENABLED", "true");
+    vi.stubEnv("OPENROUTER_API_KEY", "sk-or-test");
+    queryMock.mockResolvedValue({ rows: [] });
+    vi.resetModules();
+    const { createApp: freshCreateApp } = await import("../app.js");
+    const app = freshCreateApp();
+    const res = await request(app).get("/health/workers");
+    expect(res.status).toBe(200);
+    expect(res.body.workers.monoEnrichment.enabled).toBe(true);
+  });
+
+  it("reports monoEnrichment.enabled=false when provider key missing", async () => {
+    process.env["MONO_ENRICHMENT_WORKER_ENABLED"] = "true";
+    // Без OPENROUTER_API_KEY (і без ANTHROPIC_API_KEY як fallback-гілки
+    // предиката) readonly-провайдер недосяжний → enabled=false. Обидва
+    // дефолтяться у "" в env-схемі — re-import не потрібен.
+    queryMock.mockResolvedValue({ rows: [] });
+    const app = createApp();
+    const res = await request(app).get("/health/workers");
+    expect(res.body.workers.monoEnrichment.enabled).toBe(false);
+  });
+});
+
+describe("GET /health/workers — L7 audit invariants", () => {
+  it("does not leak build identifiers (commit / sha / version / build*)", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    const app = createApp();
+    const res = await request(app).get("/health/workers");
+    const seen = new Set<string>();
+    const collect = (v: unknown): void => {
+      if (v === null || typeof v !== "object") return;
+      if (Array.isArray(v)) {
+        for (const x of v) collect(x);
+        return;
+      }
+      for (const [k, x] of Object.entries(v as Record<string, unknown>)) {
+        seen.add(k);
+        collect(x);
+      }
+    };
+    collect(res.body);
+    for (const k of [
+      "commit",
+      "sha",
+      "version",
+      "build",
+      "buildDate",
+      "buildSha",
+      "gitSha",
+      "release",
+    ]) {
+      expect(seen.has(k)).toBe(false);
+    }
+  });
+
+  it("remains reachable without a session (UptimeRobot / openclaw)", async () => {
+    queryMock.mockResolvedValue({ rows: [] });
+    const app = createApp();
+    const res = await request(app).get("/health/workers");
+    expect([200, 503]).toContain(res.status);
+  });
+});

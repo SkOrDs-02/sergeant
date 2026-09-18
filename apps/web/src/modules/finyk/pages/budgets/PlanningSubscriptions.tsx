@@ -1,0 +1,161 @@
+/**
+ * Last validated: 2026-09-11
+ * Status: Active
+ */
+import { useEffect, useRef, useState } from "react";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { messages } from "@shared/i18n/uk";
+import { RecurringSuggestions } from "../../components/RecurringSuggestions";
+import { SectionBar } from "../AssetsBars";
+import { AssetsSubscriptionsSection } from "../AssetsSubscriptionsSection";
+import { AssetsTxPickerView } from "../AssetsTxPickerView";
+import { useAssetsState, type AssetsProps } from "../useAssetsState";
+import { useFlowSchedule } from "../overview/useFlowSchedule";
+import { PlannedFlowsCard } from "./PlannedFlowsCard";
+
+/**
+ * Блок «майбутнього» на сторінці Планування: найближчі платежі, підказки
+ * про регулярні витрати («схоже на підписку»), список підписок і вхід у
+ * форму нової підписки.
+ *
+ * AI-CONTEXT: до 2026-09-03 підписки й підказки жили в «Активах», а
+ * «Найближчі платежі» — в Огляді (канон § 13, рядок «Дублювання
+ * підписок»). Рішення власника 2026-09-03: «Активи» — це баланс (картки,
+ * банки, борги, мені винні), а все, що про майбутнє — план, підписки,
+ * регулярні потоки, ліміти, цілі — живе в Плануванні. Стан беремо з
+ * `useAssetsState`: він уже вміє форму підписки, прив'язку транзакцій і
+ * місячну суму, і дублювати цю логіку заради іншої сторінки не варто.
+ * Зайві для цієї сторінки поля хука (активи/пасиви) просто не читаються.
+ */
+const t = messages.finyk.planning;
+
+export function PlanningSubscriptions({
+  mono,
+  storage,
+  showBalance = true,
+  initialOpen = false,
+  initialOpenRecurring = false,
+  openSubscriptionSignal,
+}: {
+  mono: AssetsProps["mono"];
+  storage: AssetsProps["storage"];
+  showBalance?: boolean;
+  /** `?section=subscriptions` — розгорнути список одразу. */
+  initialOpen?: boolean;
+  /**
+   * `?section=recurring` — розгорнути блок «Можливі підписки». Саме сюди
+   * веде хаб-інсайт «Знайшов повторення»: він тільки вказує, а деталі
+   * кандидата (сума, періодичність, впевненість) і кнопка «+ Підписка»
+   * живуть тут. Згорнутий блок робив би тап по інсайту беззмістовним.
+   */
+  initialOpenRecurring?: boolean;
+  /**
+   * Founder-UX audit round 2 (F2): триггер відкриття форми підписки з
+   * комбінованого пікера «Запланувати», який тепер живе в `Budgets.tsx` —
+   * фізично іншому React-піддереві з власним `useAssetsState`-інстансом, а
+   * не тим, який тримає ЦЕЙ компонент. Пряме посилання на
+   * `openSubscriptionForm` іншого інстансу неможливе, тож `FinykApp`
+   * інкрементує лічильник при виборі пункту «Підписка» — кожна зміна
+   * значення (не саме монтування) відкриває форму тут.
+   */
+  openSubscriptionSignal?: number;
+}) {
+  const state = useAssetsState({
+    mono,
+    storage,
+    showBalance,
+    initialOpenSubscriptions: initialOpen,
+  });
+  const {
+    open,
+    setOpen,
+    subscriptions,
+    transactions,
+    dismissedRecurring,
+    excludedTxIds,
+    addSubscriptionFromRecurring,
+    dismissRecurring,
+    openSubscriptionForm,
+    manualDebts,
+    receivables,
+  } = state;
+
+  const prevSubscriptionSignal = useRef(openSubscriptionSignal);
+  useEffect(() => {
+    if (
+      openSubscriptionSignal !== undefined &&
+      openSubscriptionSignal !== prevSubscriptionSignal.current
+    ) {
+      openSubscriptionForm();
+    }
+    prevSubscriptionSignal.current = openSubscriptionSignal;
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- `openSubscriptionForm` closes over stable setters from useAssetsState; re-running on its identity change would refire the signal spuriously.
+  }, [openSubscriptionSignal]);
+
+  // Київські частини «сьогодні» — раз на монтування, як в `useOverviewData`.
+  const [kyivToday] = useState(() => getKyivDateParts(Date.now()));
+  const { plannedFlows } = useFlowSchedule({
+    subscriptions,
+    manualDebts,
+    receivables,
+    transactions,
+    kyivYear: kyivToday.year,
+    kyivMonth: kyivToday.month - 1,
+    kyivDay: kyivToday.day,
+  });
+
+  if (state.txPicker) {
+    return (
+      <AssetsTxPickerView
+        txPicker={state.txPicker}
+        setTxPicker={state.setTxPicker}
+        accounts={state.accounts as never}
+        transactions={state.transactions}
+        loading={state.loadingTx}
+        error={state.transactionsError}
+        onRetry={state.refetchTransactions}
+        monoDebtLinkedTxIds={state.monoDebtLinkedTxIds}
+        toggleMonoDebtTx={state.toggleMonoDebtTx}
+        subscriptions={state.subscriptions}
+        updateSubscription={state.updateSubscription}
+        manualDebts={state.manualDebts}
+        receivables={state.receivables}
+        setLinkedTxRole={state.setLinkedTxRole}
+        showBalance={state.showBalance}
+        customCategories={state.customCategories}
+      />
+    );
+  }
+
+  return (
+    <div className="space-y-3" id="finyk-subscriptions-section">
+      <PlannedFlowsCard plannedFlows={plannedFlows} showBalance={showBalance} />
+
+      <RecurringSuggestions
+        transactions={transactions}
+        subscriptions={subscriptions}
+        dismissedRecurring={dismissedRecurring}
+        excludedTxIds={excludedTxIds}
+        onAdd={(candidate) => addSubscriptionFromRecurring?.(candidate)}
+        onDismiss={(key) => dismissRecurring?.(key)}
+        defaultOpen={initialOpenRecurring}
+      />
+
+      <div>
+        <SectionBar
+          title={t.subscriptionsTitle}
+          iconName="refresh-cw"
+          iconTone="finyk"
+          summary={`${subscriptions.length} ${
+            subscriptions.length === 1 ? t.activeOne : t.activeMany
+          }`}
+          open={open.subscriptions}
+          onToggle={() =>
+            setOpen((v) => ({ ...v, subscriptions: !v.subscriptions }))
+          }
+        />
+        {open.subscriptions && <AssetsSubscriptionsSection state={state} />}
+      </div>
+    </div>
+  );
+}

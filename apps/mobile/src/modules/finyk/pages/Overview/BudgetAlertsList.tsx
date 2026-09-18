@@ -1,0 +1,100 @@
+/**
+ * BudgetAlertsList — cautionary pills for budgets at >60% / >=100% spent.
+ *
+ * Mobile port of `apps/web/src/modules/finyk/pages/overview/BudgetAlertsList.tsx`.
+ * Re-uses the same pure selectors from `@sergeant/finyk-domain`
+ * (`calcCategorySpent`, `resolveExpenseCategoryMeta`) that the web
+ * version calls.
+ */
+import { memo } from "react";
+import { Text, View } from "react-native";
+
+import {
+  calcCategorySpent,
+  resolveExpenseCategoryMeta,
+} from "@sergeant/finyk-domain";
+import {
+  formatLimitBudgetLabel,
+  limitBudgetCategoryIds,
+} from "@sergeant/finyk-domain/domain";
+import type {
+  Category,
+  LimitBudget,
+  Transaction,
+  TxCategoriesMap,
+  TxSplitsMap,
+} from "@sergeant/finyk-domain/domain";
+
+import { cn } from "./cn";
+
+export interface BudgetAlertsListProps {
+  budgetAlerts: LimitBudget[];
+  statTx: Transaction[];
+  txCategories: TxCategoriesMap;
+  txSplits: TxSplitsMap;
+  customCategories: Category[];
+}
+
+const BudgetAlertsListImpl = function BudgetAlertsList({
+  budgetAlerts,
+  statTx,
+  txCategories,
+  txSplits,
+  customCategories,
+}: BudgetAlertsListProps) {
+  if (budgetAlerts.length === 0) return null;
+  return (
+    <View className="gap-1.5">
+      {budgetAlerts.map((b) => {
+        const catId = b.categoryId ?? "";
+        const catLabel =
+          formatLimitBudgetLabel(
+            b,
+            (id) => resolveExpenseCategoryMeta(id, customCategories)?.label,
+          ) || catId;
+        // Комбо-ліміт: факт — сума по всіх категоріях набору (транзакція
+        // резолвиться в одну категорію, подвійного рахунку немає).
+        const s = limitBudgetCategoryIds(b).reduce(
+          (sum, id) =>
+            sum +
+            calcCategorySpent(
+              statTx,
+              id,
+              txCategories,
+              txSplits,
+              customCategories,
+            ),
+          0,
+        );
+        const limit = b.limit;
+        const pct = limit > 0 ? Math.round((s / limit) * 100) : 0;
+        const over = pct >= 100;
+        return (
+          <View
+            key={b.id}
+            className={cn(
+              "rounded-2xl px-4 py-3 flex-row items-center justify-between border",
+              over
+                ? "bg-rose-50 border-rose-200"
+                : "bg-amber-50 border-amber-200",
+            )}
+          >
+            <Text className="text-sm font-medium text-fg flex-1 mr-2">
+              {catLabel}
+            </Text>
+            <Text
+              className={cn(
+                "text-sm font-bold",
+                over ? "text-rose-600" : "text-amber-600",
+              )}
+            >
+              {pct}% {over ? "⚠ перевищено" : "· понад 60% ліміту"}
+            </Text>
+          </View>
+        );
+      })}
+    </View>
+  );
+};
+
+export const BudgetAlertsList = memo(BudgetAlertsListImpl);

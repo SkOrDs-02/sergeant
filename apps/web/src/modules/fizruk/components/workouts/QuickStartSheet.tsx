@@ -1,0 +1,402 @@
+import { useMemo, useState } from "react";
+import { Button } from "@shared/components/ui/Button";
+import { Input } from "@shared/components/ui/Input";
+import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Sheet } from "@shared/components/ui/Sheet";
+import { Icon } from "@shared/components/ui/Icon";
+import { EmptyState } from "@shared/components/ui/EmptyState";
+import { cn } from "@shared/lib/ui/cn";
+import type { FizrukData } from "@sergeant/fizruk-domain";
+
+type RawExerciseDef = FizrukData.RawExerciseDef;
+
+interface QuickStartGroup {
+  id: string;
+  label: string;
+  items: RawExerciseDef[];
+}
+
+interface QuickStartSheetProps {
+  open: boolean;
+  onClose: () => void;
+  exercises: RawExerciseDef[];
+  search: (q: string) => RawExerciseDef[];
+  primaryGroupsUk?: Record<string, string>;
+  onPickTemplate: () => void;
+  onConfirmExercises: (picks: RawExerciseDef[]) => void;
+  /**
+   * Сьогоднішня сесія активної програми (§9 канону). Плитка показується
+   * лише коли програма активна і на сьогодні є сесія — інакше вибір лишається
+   * двоплитковим. Старт іде через той самий обробник, що й на Огляді
+   * (`FizrukApp.handleStartProgramWorkout`): прогресія ваги та конфлікт
+   * «одне активне» — там.
+   */
+  programTile?: { label: string; onStart: () => void } | undefined;
+}
+
+type Step = "choose" | "pick";
+
+/**
+ * Two-step launcher for a new workout. Replaces the old standalone
+ * "Тренування за шаблоном" tile + immediate "Почати тренування" CTA
+ * combo on the Workouts landing.
+ *
+ *   step "choose" — user picks the path:
+ *     • "За шаблоном"     → caller routes to the templates view.
+ *     • "Підібрати вправи" → switches to step "pick".
+ *
+ *   step "pick"   — user multi-selects from the catalogue and confirms.
+ *     The session (and its timer) is created by the caller only after
+ *     `onConfirmExercises` fires, so the timer never starts before the
+ *     user has at least one exercise lined up.
+ *
+ * Header/title updates per step so screen readers announce the change.
+ *
+ * The pick step renders the catalogue grouped by primary muscle group
+ * (chest → back → shoulders → …) — the same canonical order as the
+ * full Workouts catalog — so picking from a long list reads as the
+ * familiar grouped catalogue and not as a flat random scroll. The
+ * search input is kept sticky at the top of the body so it never
+ * scrolls out of view.
+ */
+
+// Canonical primary-group order, mirrors `WorkoutCatalogSection` /
+// `Workouts.tsx` `grouped` factory. Keep in sync if either side moves.
+const PRIMARY_GROUP_ORDER = [
+  "chest",
+  "back",
+  "shoulders",
+  "biceps",
+  "triceps",
+  "forearms",
+  "core",
+  "quadriceps",
+  "hamstrings",
+  "calves",
+  "glutes",
+  "full_body",
+  "cardio",
+];
+
+export function QuickStartSheet({
+  open,
+  onClose,
+  exercises,
+  search,
+  primaryGroupsUk,
+  onPickTemplate,
+  onConfirmExercises,
+  programTile,
+}: QuickStartSheetProps) {
+  const [step, setStep] = useState<Step>("choose");
+  const [q, setQ] = useState("");
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(
+    () => new Set<string>(),
+  );
+
+  const [prevOpen, setPrevOpen] = useState(open);
+  if (open && !prevOpen) {
+    setPrevOpen(true);
+    setStep("choose");
+    setQ("");
+    setSelectedIds(new Set());
+  } else if (!open && prevOpen) {
+    setPrevOpen(false);
+  }
+
+  const groups: QuickStartGroup[] = useMemo(() => {
+    if (step !== "pick") return [];
+    const filtered = search(q);
+    const m = new Map<string, RawExerciseDef[]>();
+    for (const ex of filtered) {
+      const gid = ex?.primaryGroup || "full_body";
+      const bucket = m.get(gid);
+      if (bucket) bucket.push(ex);
+      else m.set(gid, [ex]);
+    }
+    return Array.from(m.entries())
+      .sort((a, b) => {
+        const ai = PRIMARY_GROUP_ORDER.indexOf(a[0]);
+        const bi = PRIMARY_GROUP_ORDER.indexOf(b[0]);
+        return (
+          (ai === -1 ? 999 : ai) - (bi === -1 ? 999 : bi) ||
+          a[0].localeCompare(b[0])
+        );
+      })
+      .map(([gid, items]) => ({
+        id: gid,
+        label: (primaryGroupsUk && primaryGroupsUk[gid]) || gid,
+        items,
+      }));
+  }, [search, q, step, primaryGroupsUk]);
+
+  const totalCount = useMemo(
+    () => groups.reduce((sum, g) => sum + g.items.length, 0),
+    [groups],
+  );
+
+  const byId = useMemo(() => {
+    const m = new Map<string, RawExerciseDef>();
+    for (const ex of exercises || []) {
+      if (ex?.id) m.set(ex.id, ex);
+    }
+    return m;
+  }, [exercises]);
+
+  const selectedCount = selectedIds.size;
+
+  const toggle = (id: string) => {
+    setSelectedIds((prev: Set<string>) => {
+      const next = new Set(prev);
+      if (next.has(id)) next.delete(id);
+      else next.add(id);
+      return next;
+    });
+  };
+
+  const handleConfirm = () => {
+    if (selectedCount === 0) return;
+    const picks: RawExerciseDef[] = [];
+    for (const id of selectedIds) {
+      const ex = byId.get(id);
+      if (ex) picks.push(ex);
+    }
+    if (picks.length === 0) return;
+    onConfirmExercises(picks);
+  };
+
+  if (step === "choose") {
+    return (
+      <Sheet
+        open={open}
+        onClose={onClose}
+        title="Почати тренування"
+        description="Обери, з чого почати: таймер запуститься після вибору."
+        closeLabel="Закрити вибір"
+        panelClassName="fizruk-sheet"
+        zIndex={90}
+      >
+        <div className="grid grid-cols-1 gap-2 pb-2">
+          {programTile ? (
+            <button
+              type="button"
+              onClick={() => {
+                onClose();
+                programTile.onStart();
+              }}
+              className="rounded-2xl border border-line bg-panelHi p-4 text-left hover:border-muted active:scale-[0.99] transition"
+            >
+              <div className="flex items-center gap-3">
+                <Icon name="list-checks" size={22} className="text-muted" />
+                <div className="flex-1 min-w-0">
+                  <div className="text-style-label text-text">За програмою</div>
+                  <div className="text-style-caption text-subtle mt-0.5 truncate">
+                    Сьогодні: {programTile.label}
+                  </div>
+                </div>
+                <Icon
+                  name="chevron-right"
+                  size="sm"
+                  className="text-subtle"
+                  aria-hidden
+                />
+              </div>
+            </button>
+          ) : null}
+
+          <button
+            type="button"
+            onClick={() => {
+              onClose();
+              onPickTemplate();
+            }}
+            className="rounded-2xl border border-line bg-panelHi p-4 text-left hover:border-muted active:scale-[0.99] transition"
+          >
+            <div className="flex items-center gap-3">
+              <Icon name="clipboard" size={22} className="text-muted" />
+              <div className="flex-1 min-w-0">
+                <div className="text-style-label text-text">За шаблоном</div>
+                <div className="text-style-caption text-subtle mt-0.5">
+                  Готовий набір вправ, старт із заповненим списком.
+                </div>
+              </div>
+              <Icon
+                name="chevron-right"
+                size="sm"
+                className="text-subtle"
+                aria-hidden
+              />
+            </div>
+          </button>
+
+          <button
+            type="button"
+            onClick={() => setStep("pick")}
+            className="rounded-2xl border border-line bg-panelHi p-4 text-left hover:border-muted active:scale-[0.99] transition"
+          >
+            <div className="flex items-center gap-3">
+              <Icon name="dumbbell" size={22} className="text-muted" />
+              <div className="flex-1 min-w-0">
+                <div className="text-style-label text-text">
+                  Підібрати вправи
+                </div>
+                <div className="text-style-caption text-subtle mt-0.5">
+                  Обери вправи зараз і почни, без збереження шаблону.
+                </div>
+              </div>
+              <Icon
+                name="chevron-right"
+                size="sm"
+                className="text-subtle"
+                aria-hidden
+              />
+            </div>
+          </button>
+        </div>
+      </Sheet>
+    );
+  }
+
+  return (
+    <Sheet
+      open={open}
+      onClose={onClose}
+      title="Підібрати вправи"
+      description={
+        selectedCount > 0
+          ? `Обрано: ${selectedCount} · натисни «Почати», щоб запустити таймер.`
+          : "Познач хоча б одну вправу, таймер запуститься після старту."
+      }
+      closeLabel="Закрити підбір"
+      panelClassName="fizruk-sheet"
+      zIndex={90}
+      headerRight={
+        <Button
+          variant="outline"
+          size="sm"
+          className="h-9 min-h-[44px]"
+          onClick={() => setStep("choose")}
+          aria-label="Повернутись до вибору способу"
+        >
+          <Icon name="chevron-left" size="sm" />
+          Назад
+        </Button>
+      }
+      footer={
+        <div className="flex flex-col sm:flex-row gap-2">
+          <Button
+            variant="outline"
+            className="h-12 min-h-[44px] sm:flex-1"
+            onClick={onClose}
+          >
+            Скасувати
+          </Button>
+          <Button
+            variant="solid"
+            tone="fizruk"
+
+            className="h-12 min-h-[44px] sm:flex-1"
+            onClick={handleConfirm}
+            disabled={selectedCount === 0}
+          >
+            <Icon name="play" size="md" aria-hidden /> Почати
+            {selectedCount > 0 ? ` · ${selectedCount}` : ""}
+          </Button>
+        </div>
+      }
+    >
+      <div className="space-y-3">
+        {/*
+         * Sticky-top so the search input stays anchored while the
+         * user scrolls the (potentially long) grouped catalogue
+         * instead of scrolling out of view together with the first
+         * group's rows. Background matches the sheet panel so the
+         * rounded-corner edge of the first group below it isn't
+         * clipped through a translucent bar.
+         */}
+        <div className="sticky top-0 z-10 -mx-5 px-5 pt-1 pb-2 bg-panel">
+          <Input
+            {...searchFieldProps("quick-start-exercise-search")}
+            placeholder="Пошук вправи…"
+            value={q}
+            onChange={(e) => setQ(e.target.value)}
+            aria-label="Пошук вправи в каталозі"
+          />
+        </div>
+
+        {totalCount === 0 ? (
+          <EmptyState
+            compact
+            module="fizruk"
+            icon={<Icon name="dumbbell" size="lg" />}
+            title={q.trim() ? "Нічого не знайдено" : "Каталог поки що порожній"}
+            description={
+              q.trim()
+                ? "Спробуй іншу назву або очисти пошук."
+                : "Додай першу вправу кнопкою вище."
+            }
+          />
+        ) : (
+          <div className="space-y-4">
+            {groups.map((g) => (
+              <section key={g.id} aria-label={g.label}>
+                <SectionHeading
+                  size="xs"
+                  variant="subtle"
+                  className="px-1 mb-1.5"
+                  action={
+                    <span className="text-style-caption text-muted normal-case tracking-normal font-normal">
+                      {g.items.length}
+                    </span>
+                  }
+                >
+                  {g.label}
+                </SectionHeading>
+                <ul className="space-y-1.5">
+                  {g.items.map((ex: RawExerciseDef) => {
+                    const id = ex.id;
+                    const active = selectedIds.has(id);
+                    const name = ex?.name?.uk || ex?.name?.en || id;
+                    return (
+                      <li key={id}>
+                        <button
+                          type="button"
+                          onClick={() => toggle(id)}
+                          aria-pressed={active}
+                          className={cn(
+                            "w-full text-left rounded-xl border p-3 min-h-[52px] flex items-center gap-3 transition-colors",
+                            active
+                              ? "border-brand-500 bg-brand-500/10"
+                              : "border-line bg-bg hover:border-muted",
+                          )}
+                        >
+                          <span
+                            className={cn(
+                              "shrink-0 inline-flex items-center justify-center w-6 h-6 rounded-full border text-style-caption font-bold",
+                              active
+                                ? "bg-brand-strong border-brand-strong text-white"
+                                : "border-line text-subtle",
+                            )}
+                            aria-hidden
+                          >
+                            {active ? (
+                              <Icon name="check" size="sm" aria-hidden />
+                            ) : null}
+                          </span>
+                          <span className="text-style-label text-text truncate flex-1">
+                            {name}
+                          </span>
+                        </button>
+                      </li>
+                    );
+                  })}
+                </ul>
+              </section>
+            ))}
+          </div>
+        )}
+      </div>
+    </Sheet>
+  );
+}

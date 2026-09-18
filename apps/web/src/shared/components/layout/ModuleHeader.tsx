@@ -1,0 +1,518 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+import type { ReactNode } from "react";
+import type { ModuleAccent } from "@sergeant/design-tokens";
+import { cn } from "@shared/lib/ui/cn";
+import { hapticTap } from "@shared/lib/adapters/haptic";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
+import { ModuleRail } from "./ModuleRail";
+import type { HubModuleId } from "@shared/lib/modules/moduleLabels";
+import { messages } from "@shared/i18n/uk";
+
+/**
+ * Sticky module header used by Фінік / Фізрук / Рутина.
+ *
+ * Owns the layout contract — safe-area padding, 68px min-height, divider,
+ * backdrop blur, sticky flex row — and exposes slots so each module can
+ * drop in its own back/hub/settings buttons without re-declaring the shell
+ * styles. Title/subtitle/eyebrow are conventional text rows; modules that
+ * need a completely custom title body can pass `titleSlot` instead.
+ *
+ * Typical composition:
+ *
+ *     <ModuleHeader
+ *       left={<ModuleHeaderBackButton onClick={onBackToHub} />}
+ *       right={<ModuleHeaderIconButton ... />}
+ *       title="ФІЗРУК"
+ *       eyebrow="ОСОБИСТИЙ ЖУРНАЛ"
+ *       subtitle="Тренування · прогрес"
+ *     />
+ */
+
+export interface ModuleHeaderProps {
+  title?: ReactNode | undefined;
+  subtitle?: ReactNode | undefined;
+  /**
+   * Коротша версія `subtitle` для вузьких екранів (< `sm`). На 390 px
+   * підпис Фізрука «Рух · сила · відновлення» не вміщався поруч із двома
+   * кнопками дій і різався до «…віднов…» (VIS-1, аудит 2026-09) — замість
+   * крапок показуємо осмислений короткий рядок.
+   */
+  subtitleShort?: string | undefined;
+  eyebrow?: ReactNode | undefined;
+  left?: ReactNode | undefined;
+  right?: ReactNode | undefined;
+  /** Override the default title/eyebrow/subtitle body entirely. */
+  titleSlot?: ReactNode | undefined;
+  /** Optional: when provided the header gets a module-colored gradient tint and subtitle uses the module color. */
+  module?: ModuleAccent | undefined;
+  /**
+   * Render a row of module-switching chips below the title. Defaults to
+   * `true` whenever {@link module} is set so top-level module shells get
+   * cross-module navigation for free; sub-pages that should keep the
+   * header compact can opt out with `showSwitcher={false}`.
+   */
+  showSwitcher?: boolean | undefined;
+  className?: string | undefined;
+}
+
+const MODULE_HEADER_TOKENS: Record<
+  ModuleAccent,
+  {
+    border: string;
+    subtitle: string;
+    /** Title accent — applied as a left accent dot for module identity. */
+    accentDot: string;
+    /** Saturated accent strip below the header. */
+    accentStrip: string;
+  }
+> = {
+  finyk: {
+    border: "border-finyk/15",
+    subtitle: "text-finyk-strong dark:text-finyk-300/70",
+    accentDot: "bg-finyk",
+    accentStrip: "bg-finyk/45",
+  },
+  fizruk: {
+    border: "border-fizruk/15",
+    subtitle: "text-fizruk-strong dark:text-fizruk-300/70",
+    accentDot: "bg-fizruk",
+    accentStrip: "bg-fizruk/45",
+  },
+  routine: {
+    border: "border-routine/15",
+    subtitle: "text-routine-strong dark:text-routine-300/70",
+    accentDot: "bg-routine",
+    accentStrip: "bg-routine/45",
+  },
+  nutrition: {
+    border: "border-nutrition/15",
+    subtitle: "text-nutrition-strong dark:text-nutrition/70",
+    accentDot: "bg-nutrition",
+    accentStrip: "bg-nutrition/45",
+  },
+};
+
+export function ModuleHeader({
+  title,
+  subtitle,
+  subtitleShort,
+  eyebrow,
+  left,
+  right,
+  titleSlot,
+  module,
+  showSwitcher,
+  className,
+}: ModuleHeaderProps) {
+  const mt = module ? MODULE_HEADER_TOKENS[module] : null;
+  const renderSwitcher = module ? (showSwitcher ?? true) : false;
+
+  return (
+    <div
+      className={cn(
+        "shrink-0 backdrop-blur-md z-40 relative safe-area-pt",
+        // Зона: шапка і таби модуля стоять на тоні модуля на крок глибшому
+        // за стіл (`--module-zone-rgb`), не на градієнті до панелі. Текст
+        // тут завжди чорнило або `-strong`, тож глибший тон не зачіпає AA.
+        mt
+          ? cn("bg-zone", mt.border, "border-b")
+          : "bg-panel/95 border-b border-line",
+        className,
+      )}
+      // R2-V-2 · Shared-element morph counterpart to the hub bento tile
+      // (see `BentoCard` SortableCard root). Matching `view-transition-name`
+      // makes the module chrome grow out of the tapped card on entry and
+      // collapse back on exit. Only set when the header is module-scoped;
+      // generic headers stay part of the plain root crossfade.
+      style={
+        module ? { viewTransitionName: `sgt-module-${module}` } : undefined
+      }
+    >
+      <div className="flex min-h-[68px] items-center px-4 py-2 sm:px-5 gap-3">
+        {left}
+        <div className="min-w-0 flex-1">
+          {titleSlot ?? (
+            <>
+              {eyebrow ? (
+                // AI-NOTE: 2026-09-02 було `text-brand-700 dark:text-brand`
+                // — пара-нуль: обидва класи віддають stone-700, тобто в
+                // темній темі надрядок був 1.75:1. `text-brand-strong`
+                // резолвиться через `--c-brand-ink` і перемикається сам
+                // (розбір — `accentInkHex` у @sergeant/design-tokens).
+                <span className="text-style-overline text-brand-strong block leading-none mb-0.5">
+                  {eyebrow}
+                </span>
+              ) : null}
+              {title ? (
+                // AI-CONTEXT: навмисно `<p>`, не заголовок — назва модуля це
+                // хром оболонки, який у DOM-порядку йде ПЕРЕД сторінковим
+                // `<h1>` і інвертував би структуру заголовків (#527). Тому
+                // тести адресують його через `data-testid`, а не
+                // `getByRole("heading")` — роль тут не повинна зʼявитись.
+                <p
+                  data-testid="module-header-title"
+                  className="text-style-body font-semibold tracking-wide text-text leading-tight flex items-center gap-2"
+                >
+                  {mt ? (
+                    <span
+                      aria-hidden
+                      className={cn(
+                        "inline-block w-1.5 h-1.5 rounded-full shrink-0",
+                        mt.accentDot,
+                      )}
+                    />
+                  ) : null}
+                  <span className="truncate">{title}</span>
+                </p>
+              ) : null}
+              {subtitle ? (
+                // AI-DANGER: `block` тут обовʼязковий. `truncate` — це
+                // `overflow:hidden` + `text-overflow:ellipsis`, а на ІНЛАЙН-боксі
+                // `overflow` не діє взагалі: підпис ігнорував `min-w-0 flex-1`
+                // батька, розтягувався на всю потрібну ширину і заповзав ПІД
+                // кнопки дій праворуч («Рух · сила · відновлення» під AI-кнопкою
+                // на 390px, «Фінанси» під «Приховати суми» на 320px — браузерний
+                // аудит 2026-08-26). Заголовок вище обрізається правильно лише
+                // тому, що він flex-item і його span блокифікується.
+                <span
+                  className={cn(
+                    "block text-style-caption font-medium truncate",
+                    mt ? mt.subtitle : "text-subtle",
+                  )}
+                >
+                  {subtitleShort ? (
+                    <>
+                      <span className="sm:hidden">{subtitleShort}</span>
+                      <span className="hidden sm:inline">{subtitle}</span>
+                    </>
+                  ) : (
+                    subtitle
+                  )}
+                </span>
+              ) : null}
+            </>
+          )}
+        </div>
+        <span data-sync-status-slot className="contents" />
+        {right}
+      </div>
+      {renderSwitcher && module ? <ModuleSwitcher active={module} /> : null}
+      {/* Saturated accent strip — pinned to the bottom edge so module
+          identity stays visible even when the header gradient is muted
+          (e.g. dark mode, contextual sub-page overrides). */}
+      {mt ? (
+        <span
+          aria-hidden
+          className={cn(
+            "absolute left-0 right-0 -bottom-px h-px",
+            mt.accentStrip,
+          )}
+        />
+      ) : null}
+    </div>
+  );
+}
+
+export interface ModuleHeaderIconButtonProps {
+  onClick: () => void;
+  ariaLabel: string;
+  title?: string | undefined;
+  children: ReactNode;
+  className?: string | undefined;
+}
+
+/**
+ * Standardized 40×40 icon button used in module headers (back, settings).
+ */
+export function ModuleHeaderIconButton({
+  onClick,
+  ariaLabel,
+  title,
+  children,
+  className,
+}: ModuleHeaderIconButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
+        className,
+      )}
+      aria-label={ariaLabel}
+      title={title ?? ariaLabel}
+    >
+      {children}
+    </button>
+  );
+}
+
+export interface ModuleHeaderAssistantButtonProps {
+  ariaLabel?: string;
+  title?: string;
+  className?: string;
+}
+
+/**
+ * Sparkle button that opens the AI-assistant. Lives next to
+ * module-specific chrome in the header `right` slot so the assistant is
+ * one tap away from every module — mirrors the dashboard FAB without
+ * adding another floating affordance on top of module-level FABs
+ * (Фінік / Рутина quick-add).
+ *
+ * Sergeant v2 Phase 7 D5 — tapping no longer navigates to `/chat`; it
+ * emits `openChat` on the hub bus so `useAppEffects` opens the bottom-
+ * sheet overlay over the current module surface. The `/chat` route
+ * remains mounted for deep-link / notification entry — see
+ * `HubChatOverlay.tsx` for the rationale.
+ */
+export function ModuleHeaderAssistantButton({
+  ariaLabel = "Відкрити AI-асистента",
+  title,
+  className,
+}: ModuleHeaderAssistantButtonProps = {}) {
+  return (
+    <button
+      type="button"
+      onClick={() => {
+        hapticTap();
+        emitHubBus("openChat", { message: null, autoSend: false });
+      }}
+      className={cn(
+        "shrink-0 w-10 h-10 min-w-[40px] min-h-[40px] flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+        className,
+      )}
+      aria-label={ariaLabel}
+      title={title ?? ariaLabel}
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        {/* Шеврони Сержанта — той самий гліф, що `Icon name="sergeant"`
+            (Icon.paths.status.tsx), вписаний руками з тієї ж причини, що й
+            іконки перемикача нижче: не тягнути реєстр Icon у шапку. Іскра
+            тут пережила прохід F2 анти-слоп аудиту 2026-09-01 саме тому,
+            що не проходила через реєстр і не ловилась грепом за назвою. */}
+        <circle cx="12" cy="3.5" r="1.6" fill="currentColor" stroke="none" />
+        <path d="M5 11l7-4 7 4" />
+        <path d="M5 16l7-4 7 4" />
+        <path d="M5 21l7-4 7 4" />
+      </svg>
+    </button>
+  );
+}
+
+export interface ModuleHeaderBackButtonProps {
+  onClick: () => void;
+  /** Visible label next to the chevron. Defaults to "Назад". */
+  label?: string;
+  ariaLabel?: string;
+  className?: string;
+}
+
+/**
+ * "Back" button — steps back one in-app entry (`useHubNavigation.goBackOrHub`
+ * falls back to the hub itself when there's no history to step through).
+ * Always reads "Назад": the adjacent {@link ModuleHeaderHubButton} is the
+ * dedicated always-hub affordance, so this button no longer needs to lie
+ * about its destination on a fresh/deep-link entry (round-2 UI audit X3 —
+ * users landing on a deep link never saw a way to reach the hub because
+ * this button rendered but the label/behavior split was implicit).
+ */
+export function ModuleHeaderBackButton({
+  onClick,
+  label = "Назад",
+  ariaLabel = "Назад",
+  className,
+}: ModuleHeaderBackButtonProps) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        // `h-11 min-h-[44px]` — round-2 UI audit X3 requires this pair
+        // (back + hub) meet the 44px touch-target floor explicitly, even
+        // though other module-header icon buttons in this file stayed at
+        // 40px (pre-existing, out of scope here).
+        "shrink-0 h-11 min-h-[44px] -ml-1 pl-2 pr-3 gap-1.5 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors border zone-chip",
+        className,
+      )}
+      aria-label={ariaLabel}
+      title={ariaLabel}
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+      {label ? <span className="text-style-label">{label}</span> : null}
+    </button>
+  );
+}
+
+export interface ModuleHeaderHubButtonProps {
+  onClick: () => void;
+  ariaLabel?: string;
+  className?: string;
+}
+
+/**
+ * Dedicated "always go to hub" icon button — pairs with
+ * {@link ModuleHeaderBackButton} so a one-tap hub exit is reachable from any
+ * navigation depth, including a cold-start deep link where `goBackOrHub`
+ * would otherwise be the only exit and history-dependent (round-2 UI audit
+ * X3, owner decision 2026-07-12).
+ */
+export function ModuleHeaderHubButton({
+  onClick,
+  ariaLabel = "На хаб",
+  className,
+}: ModuleHeaderHubButtonProps) {
+  return (
+    <ModuleHeaderIconButton
+      onClick={onClick}
+      ariaLabel={ariaLabel}
+      // Overrides `ModuleHeaderIconButton`'s 40px default — round-2 UI
+      // audit X3 explicitly requires this pair (back + hub) at 44px.
+      className={cn("w-11 h-11 min-w-[44px] min-h-[44px]", className)}
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="2"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <path d="M3 10.5 12 3l9 7.5" />
+        <path d="M5 9.5V20a1 1 0 0 0 1 1h3v-6h6v6h3a1 1 0 0 0 1-1V9.5" />
+      </svg>
+    </ModuleHeaderIconButton>
+  );
+}
+
+/**
+ * Перемикач модулів у шапці — тепер лише тонка обгортка над спільним
+ * `ModuleRail` (спека `hub-action-axis.md`: один компонент і на хабі, і в
+ * модулях). Джерело `module_switcher` лишається, щоб базова лінія
+ * `module_opened` не втратила неперервності.
+ */
+export interface ModuleSwitcherProps {
+  active: HubModuleId;
+  className?: string;
+}
+
+export function ModuleSwitcher({ active, className }: ModuleSwitcherProps) {
+  return (
+    <ModuleRail
+      active={active}
+      source="module_switcher"
+      className={cn("px-3 sm:px-4 pb-2", className)}
+    />
+  );
+}
+
+/**
+ * Plain chevron-only back button (no label). Used inside a module when a
+ * sub-page (e.g. Atlas, Exercise) wants to return to the module's own
+ * dashboard rather than the global hub.
+ */
+export function ModuleHeaderChevronButton({
+  onClick,
+  ariaLabel = "Назад",
+  className,
+}: {
+  onClick: () => void;
+  ariaLabel?: string;
+  className?: string;
+}) {
+  return (
+    <button
+      type="button"
+      onClick={onClick}
+      className={cn(
+        "w-10 h-10 min-w-[40px] min-h-[40px] -ml-1 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors",
+        className,
+      )}
+      aria-label={ariaLabel}
+    >
+      <svg
+        width="22"
+        height="22"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+      >
+        <path d="M15 18l-6-6 6-6" />
+      </svg>
+    </button>
+  );
+}
+
+export interface ModuleHeaderSettingsButtonProps {
+  onClick: () => void;
+  ariaLabel?: string;
+  title?: string;
+  className?: string;
+}
+
+/**
+ * Gear-icon button in module headers that deep-links to the module's
+ * Settings section in the hub. PR-2 UX-roast 2026-Q2.
+ */
+export function ModuleHeaderSettingsButton({
+  onClick,
+  ariaLabel = messages.modules.openSettings,
+  title,
+  className,
+}: ModuleHeaderSettingsButtonProps) {
+  return (
+    <ModuleHeaderIconButton
+      onClick={onClick}
+      ariaLabel={ariaLabel}
+      title={title ?? ariaLabel}
+      className={className}
+    >
+      <svg
+        width="20"
+        height="20"
+        viewBox="0 0 24 24"
+        fill="none"
+        stroke="currentColor"
+        strokeWidth="1.8"
+        strokeLinecap="round"
+        strokeLinejoin="round"
+        aria-hidden
+      >
+        <circle cx="12" cy="12" r="3" />
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z" />
+      </svg>
+    </ModuleHeaderIconButton>
+  );
+}

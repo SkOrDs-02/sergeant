@@ -1,0 +1,222 @@
+/** @vitest-environment jsdom */
+import { afterEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, render, screen } from "@testing-library/react";
+
+// Бейдж деградації тепер гейтиться планом, тож картка тягне `usePlan`, а той —
+// `useQuery`. Мокаємо хук, а не піднімаємо QueryClientProvider: тести тут про
+// рендер картки, і зайвий провайдер сховав би саме те, що перевіряємо.
+const planMock = { isPro: true };
+vi.mock("../billing/usePlan", () => ({
+  usePlan: () => ({
+    plan: planMock.isPro ? "pro" : "free",
+    isPro: planMock.isPro,
+    isLoading: false,
+    subscription: null,
+  }),
+}));
+
+import { AssistantAdviceCard } from "./AssistantAdviceCard";
+import { publishAiTier, __resetAiTierForTests } from "@shared/api/aiTierBus";
+import { onHubBus, __resetHubBusForTests } from "@shared/lib/modules/hubBus";
+
+describe("AssistantAdviceCard — loading vs loaded", () => {
+  afterEach(() => {
+    cleanup();
+    window.localStorage.clear();
+    planMock.isPro = true;
+  });
+
+  it("renders a skeleton stand-in (no plain-text fallback) while loading without a cached insight", () => {
+    render(
+      <AssistantAdviceCard
+        insight={null}
+        loading={true}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    // Skeleton block carries a role=status node — that is the canonical
+    // "still loading" affordance now. The previous "Готую пораду…"
+    // body copy must no longer leak as a visible <p>; only the sr-only
+    // mirror inside the status region stays for AT users.
+    const status = screen.getByRole("status", {
+      // `messages.sergeant.adviceLoadingAria` — «Сержант готує пораду».
+      name: /сержант готує пораду/i,
+    });
+    expect(status).toBeInTheDocument();
+    expect(screen.queryByText(/^Готую пораду…$/, { selector: "p" })).toBeNull();
+    // The visible loading payload is the skeleton lines, not text.
+    expect(
+      status.querySelectorAll('[aria-hidden="true"]').length,
+    ).toBeGreaterThanOrEqual(3);
+
+    // While the card is in its initial-load state there is nothing for
+    // the user to refresh — hide the refresh button so we keep within
+    // Hard Rule #17 (≤1 AMBIENT animation on screen at once).
+    expect(
+      screen.queryByRole("button", { name: /оновити пораду/i }),
+    ).toBeNull();
+  });
+
+  it("renders the insight (with fade-in) and a refresh button once a cached value is present", () => {
+    render(
+      <AssistantAdviceCard
+        insight="Сьогодні ти витратив на 18% більше за середній тиждень."
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText(/сьогодні ти витратив на 18% більше/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("status", { name: /готую пораду/i })).toBeNull();
+    expect(
+      screen.getByRole("button", { name: /оновити пораду/i }),
+    ).toBeInTheDocument();
+  });
+
+  it("keeps the cached insight visible while a refresh is in flight (no skeleton flash, refresh button spins)", () => {
+    render(
+      <AssistantAdviceCard
+        insight="Кешована порада з попереднього запиту."
+        loading={true}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.getByText(/кешована порада з попереднього запиту/i),
+    ).toBeInTheDocument();
+    expect(screen.queryByRole("status", { name: /готую пораду/i })).toBeNull();
+    const refresh = screen.getByRole("button", { name: /оновити пораду/i });
+    expect(refresh).toBeInTheDocument();
+    expect(refresh).toBeDisabled();
+  });
+
+  it("exposes an actionable 'ask AI' CTA that opens chat seeded with the insight (autoSend off)", () => {
+    __resetHubBusForTests();
+    const insight = "Сьогодні ти витратив на 18% більше за середній тиждень.";
+    const received: { message: string | null; autoSend?: boolean }[] = [];
+    const off = onHubBus("openChat", (d) => received.push(d));
+
+    render(
+      <AssistantAdviceCard
+        insight={insight}
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    const cta = screen.getByRole("button", { name: /запитати ai про це/i });
+    fireEvent.click(cta);
+    off();
+
+    expect(received).toHaveLength(1);
+    // Prompt must carry the insight verbatim so the assistant has context,
+    // and autoSend stays falsy so the user can edit before sending.
+    expect(received[0]?.message).toContain(insight);
+    expect(received[0]?.autoSend).toBeFalsy();
+  });
+
+  it("hides the 'ask AI' CTA while loading without a cached insight", () => {
+    render(
+      <AssistantAdviceCard
+        insight={null}
+        loading={true}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(
+      screen.queryByRole("button", { name: /запитати ai про це/i }),
+    ).toBeNull();
+  });
+
+  it("renders nothing when the request errors out and there is no cached insight (no infinite skeleton)", () => {
+    const { container } = render(
+      <AssistantAdviceCard
+        insight={null}
+        loading={false}
+        error="Помилка генерації інсайту"
+        onRefresh={vi.fn()}
+      />,
+    );
+
+    expect(container).toBeEmptyDOMElement();
+  });
+});
+
+describe("AssistantAdviceCard — Pro tier badge", () => {
+  afterEach(() => {
+    cleanup();
+    window.localStorage.clear();
+    __resetAiTierForTests();
+    // Кейс про неплатника ставить `isPro=false`; без скидання він протікав би
+    // у наступні тести цього ж блоку і ховав би бейдж там, де він має бути.
+    planMock.isPro = true;
+  });
+
+  it("shows no badge for the default premium tier (or before any tier is known)", () => {
+    render(
+      <AssistantAdviceCard
+        insight="Порада"
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/стандартна модель/i)).toBeNull();
+    expect(screen.queryByText(/економний режим/i)).toBeNull();
+
+    publishAiTier("premium");
+    expect(screen.queryByText(/стандартна модель/i)).toBeNull();
+  });
+
+  it("shows a muted badge once the response carries a degraded standard tier", () => {
+    publishAiTier("standard");
+    render(
+      <AssistantAdviceCard
+        insight="Порада"
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Стандартна модель")).toBeInTheDocument();
+  });
+
+  // Бейдж означає «твоя premium-квота вичерпана» — подію, якої у Free не
+  // існує. Відколи Free ходить standard-моделлю чату, без цього гейта він
+  // горів би в неплатника постійно й не вказував ні на що.
+  it("не показує бейдж деградації неплатнику, хоч тир і standard", () => {
+    planMock.isPro = false;
+    publishAiTier("standard");
+    render(
+      <AssistantAdviceCard
+        insight="Порада"
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(screen.queryByText(/стандартна модель/i)).toBeNull();
+  });
+
+  it("shows the floor-tier label once degraded to the cheapest model", () => {
+    publishAiTier("floor");
+    render(
+      <AssistantAdviceCard
+        insight="Порада"
+        loading={false}
+        error={null}
+        onRefresh={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("Економний режим")).toBeInTheDocument();
+  });
+});

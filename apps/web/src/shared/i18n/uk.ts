@@ -1,0 +1,849 @@
+/**
+ * Український message-каталог для apps/web.
+ *
+ * **Це не runtime-i18n.** Це plain-constants-каталог, який зведено в одне
+ * місце, щоб (1) мати точку правди для всіх UA-strings, (2) полегшити
+ * майбутню міграцію на runtime-i18n коли (й якщо) проєкт почне приймати
+ * англомовних юзерів.
+ *
+ * **Як додавати нові ключі.** Сортуй за поверхнею (`auth`, `sync`,
+ * `validation`, `actions`, `empty`, `errors`, `toast`, …). Якщо новий
+ * ключ — це reused-string з кількох місць, обовʼязково веди його сюди.
+ * Якщо ключ використовується лише в одному компоненті — також ОК тримати
+ * тут (homogenізує підхід). ESLint-правило
+ * `sergeant-design/no-cyrillic-jsx-literal` (warn-режим, allowlist у
+ * `apps/web/eslint.config.js`) ловить нові JSX-літерали, які забули
+ * винести сюди.
+ *
+ * **Що не входить.** Лонг-формальні повідомлення/маркетинг-копії — у
+ * `docs/copy/`. Помилки серверного API, що повертаються як `error.message` —
+ * перекладаємо у `translateApiError` / `translateAuthError` (fallback на цей
+ * каталог).
+ *
+ * Roadmap: див. `docs/design/i18n/readiness.md` § «Покрокова міграція».
+ */
+
+import { fizrukPageMessages } from "./uk.fizruk";
+import { finykPageMessages } from "./uk.finyk";
+import { routinePageMessages } from "./uk.routine";
+import { dataDisclosureMessages } from "./uk.dataDisclosure";
+import { dataExportMessages } from "./uk.dataExport";
+import { nutritionPageMessages } from "./uk.nutrition";
+import { nutritionTdeeMessages } from "./uk.nutritionTdee";
+import { pricingMessages } from "./uk.pricing";
+import { privacyMessages } from "./uk.privacy";
+import { crossModuleLinkMessages } from "./uk.crossModuleLink";
+import { sergeantMessages } from "./uk.sergeant";
+import { coreMessages } from "./uk.core";
+
+export const messages = {
+  // AI-CONTEXT (2026-09-12): групи, потрібні до першого екрана, живуть у
+  // `./uk.core`, а тут розкладаються назад — щоб `messages.actions.save`
+  // і решта call-site-ів працювали без жодної правки. Поділ зроблено не
+  // для чистоти: eager-бандл був 286.7 kB при ліміті 280, і 128.4 з
+  // 147.1 kB сирих джерел чанку `cn` були саме цим каталогом (розбір — у
+  // шапці `uk.core.ts`).
+  //
+  // AI-DANGER: цей файл статично зшиває ДЕСЯТЬ модульних каталогів нижче,
+  // тож будь-який eager-модуль, що імпортує `messages`, тягне всі. Потрібен
+  // рядок у eager-поверхні — бери його з `./uk.core`, а не звідси.
+  ...coreMessages,
+  validation: {
+    // Unified zod-error catalog. Канонічні рядки, які раніше повторювалися
+    // inline у різних формах (`AuthPage.tsx`, `ResetPasswordPage.tsx`,
+    // `ChangePasswordSection.tsx`, `WaitlistForm.tsx`, `Body.tsx`,
+    // `AddBudgetForm.tsx`, `TagsSection.tsx`).
+    //
+    // Іменування — за призначенням, не за рядком. Якщо в майбутньому буде
+    // змінено формулювання чи довжину пароля, зміна торкнеться лише
+    // value-у тут.
+    emailRequired: "Введи email",
+    emailInvalid: "Некоректний формат email",
+    // Альтернативне формулювання для public-facing waitlist-форми (не
+    // login/signup) — лексика підкреслює, що адреса некоректна, а не
+    // формат поля. Тримаємо роздільно, щоб уніфікація стала окремим
+    // copy-PR-ом з оновленням e2e/snapshot-тестів.
+    emailInvalidPublic: "Некоректна email-адреса",
+    emailMax254: "Не більше 254 символів",
+    passwordRequired: "Введи пароль",
+    passwordCurrentRequired: "Введи поточний пароль",
+    passwordMin8: "Мінімум 8 символів",
+    passwordMin10: "Мінімум 10 символів",
+    passwordMax128: "Не більше 128 символів",
+    nameMax80: "Не більше 80 символів",
+    noteMax200: "Не більше 200 символів",
+    sleepHoursRange: "Сон має бути від 0 до 24 годин",
+    weightKgRange: "Вага має бути від 20 до 300 кг",
+    // PR-31 / §C6 — уніфікація під 1-у особу «Введи X» / «Обери X».
+    // Раніше каталог змішував чотири стилі (`Поле обовʼязкове`,
+    // `Назва тега не може бути порожньою`, `Вкажіть назву`, `Введи`).
+    // Тримаємо стиль одним: для input-полів — «Введи …», для select-ів
+    // — «Обери …». Snapshot-и `AddBudgetForm.test.tsx` оновлюються
+    // разом з цим (тести закривають user-facing copy contract).
+    tagNameRequired: "Введи назву тега",
+    // PR-058 (web): Reducer-level dedupe в `applyCreateTag` /
+    // `applyCreateCategory` (case-insensitive trim) — UI ловить
+    // `next === state` після `setRoutine` і показує цей copy у toast.
+    tagNameDuplicate: "Тег з такою назвою вже існує",
+    categoryNameRequired: "Введи назву категорії",
+    categoryNameDuplicate: "Категорія з такою назвою вже існує",
+    goalNameRequired: "Введи назву цілі",
+    goalAmountRequired: "Введи суму цілі більше 0",
+    goalSavedNonNegative: "Відкладена сума не може бути відʼємною",
+    limitAmountRequired: "Введи ліміт більше 0",
+    categoryRequired: "Обери категорію",
+    passwordResetMin10: "Пароль має бути мінімум 10 символів.",
+    // Дві варіації паролі-не-збігаються тримаємо роздільно — крапка є
+    // частиною snapshot-ів і existing-копірайту (`ResetPasswordPage` на
+    // standalone-сторінці закрапленна; in-page `ChangePasswordSection`
+    // — ні). Уніфікація — окремий copy-PR з цілеспрямованим оновленням
+    // обох тестів.
+    passwordsDontMatchDot: "Паролі не збігаються.",
+    passwordsDontMatch: "Паролі не збігаються",
+  },
+
+  period: {
+    // Round 16 — common period-labels. «День»/«Тиждень»/«Місяць» зʼявляються
+    // у range-toggle-ах (analytics, journal, dashboard); «Сьогодні» — у
+    // header-міток і chip-ах.
+    today: "Сьогодні",
+    day: "День",
+    week: "Тиждень",
+    month: "Місяць",
+  },
+
+  nav: {
+    // Round 16 — a11y/nav strings (bottom-nav, header, search); centralized for grep on later a11y rounds.
+    hubSections: "Розділи хабу",
+    dashboard: "Головна",
+    profile: "Профіль",
+    chat: "Чат з асистентом",
+    nutritionOverview: "Огляд",
+    // Окремий ключ для фініка: Overview фініка позичав nutritionOverview —
+    // семантичний copy-paste, який маскував модуль для скрінрідера
+    // (design-audit P3/D6).
+    finykOverview: "Огляд",
+    fizrukOverview: "Огляд",
+    nutritionLog: "Журнал",
+    /**
+     * Рішення власника 2026-08-05: сторінка перейменована зі «Звіти» на
+     * «Звʼязки». «Аналітика» відкинута навмисно — це слово стоїть у навбарі
+     * кожного продукту, тобто не відрізняє нас ні від кого; «Звʼязки»
+     * називає рівно те, чого конкурент не має, бо не має чотирьох модулів на
+     * одних даних (`docs/design/design/anti-slop-strategy.md` §4).
+     * «Сержант» теж відкинуто: це вже імʼя асистента в чаті.
+     */
+    reports: "Звʼязки",
+    /**
+     * Видимий підзаголовок вкладки в шапці хаба (PR-H2, аудит
+     * 2026-09-13 хвиля 5): «Доброго дня» — єдиний видимий текст на
+     * Налаштуваннях/Профілі/Звʼязках, sr-only `<h1>` людина не бачить.
+     * Тут же лежить назва для Налаштувань — `HubSettingsPage.tsx` досі
+     * тримає власний sr-only `<h1>` літералом, цей ключ його не чіпає.
+     */
+    settings: "Налаштування",
+    finykSections: "Розділи Фініка",
+    fizrukSections: "Розділи Фізрука",
+    routineSections: "Розділи Рутини",
+    nutritionSections: "Розділи Їжі",
+    openAssistant: "Відкрити AI-асистента",
+    globalSearch: "Глобальний пошук",
+    searchPlaceholder: "Пошук по всіх модулях…",
+    moduleSwitcher: "Перемикач модулів",
+    closeSettings: "Закрити налаштування",
+    closeMenu: "Закрити меню",
+    quickActions: "Швидкі дії",
+    voiceInput: "Голосовий ввід",
+    welcome: "Ласкаво просимо",
+  },
+
+  empty: {
+    // Phase 2 — empty-state wording. <EmptyState> компонент має власні
+    // tier-specific повідомлення (див. `docs/design/design/empty-states.md`),
+    // ці ключі — для inline empty-state-ів, де <EmptyState> не вписується
+    // (mini-stat tier).
+    //
+    // Цей каталог покриває inline-tier порожніх станів поза <EmptyState>.
+    nothingYet: "Поки що порожньо",
+    noDataYet: "Ще немає даних",
+    nothingFound: "Нічого не знайдено",
+    listEmpty: "Список порожній",
+    historyEmpty: "Історія порожня",
+  },
+
+  // Audit 09 F11 — Ukrainian copy for the strategy page (PR-34 skeleton).
+  // Persona id strings stay English (server API contract).
+  strategy: {
+    title: "Стратегічні цілі",
+    weekPrefix: "Тиждень з",
+    placeholderTag: "placeholder UI (PR-34 skeleton)",
+    addGoal: "Додати ціль",
+    personaLabel: "Персона",
+    goalTextLabel: "Текст цілі",
+    goalTextPlaceholder:
+      "напр.: Скоротити витрати в категорії «Кава» на 60% до неділі",
+    saving: "Зберігаю…",
+    thisWeeksGoals: "Цілі цього тижня",
+    loading: "Завантаження…",
+    emptyStatePrefix: "Цілей на тиждень з",
+    emptyStateSuffix:
+      "немає. WF-26 cron стартує понеділок 09:00 Kyiv, або додай ціль вручну через форму вище.",
+    goalTextRequired: "Текст цілі не може бути порожнім",
+  },
+
+  toast: {
+    // Phase 2 — generic success/error toast strings. Конкретні
+    // module-toast-и (наприклад, `Витрату додано`) лишай inline у модулі —
+    // вони дуже доменні, і ESLint-allowlist на конкретний файл прийнятний.
+    saved: "Збережено",
+    deleted: "Видалено",
+    copied: "Скопійовано",
+    updated: "Оновлено",
+    failed: "Не вдалося виконати",
+  },
+
+  // Канон finyk §6.2 — durability. Попередження для незалогіненого
+  // користувача: ручний світ (готівка, активи, борги, бюджети + оверлеї
+  // над банківськими транзакціями) з банку НЕ відновлюється.
+  durability: {
+    localOnly: {
+      title: "Дані лише на цьому пристрої",
+      body: "Витрати готівкою, активи, борги й твої категорії до банківських операцій зберігаються тільки тут. Очистиш дані браузера, вони зникнуть, і банк їх не поверне.",
+      signIn: "Увійти",
+      backup: "Завантажити копію",
+    },
+  },
+
+  dataDisclosure: dataDisclosureMessages,
+  dataExport: dataExportMessages,
+
+  // Оцінка AI-поради (`AdviceFeedback`). Підписи — для скрінрідера:
+  // самі кнопки несуть лише гліфи, і без `aria-label` пара пальців була б
+  // двома безіменними кнопками поспіль.
+  adviceFeedback: {
+    helpful: "Порада корисна",
+    notHelpful: "Порада не корисна",
+    // Підтвердження, а не подяка-ввічливість: людина має бачити, що
+    // натискання зарахувалось, бо більше нічого на екрані не змінюється.
+    thanks: "Дякую",
+  },
+
+  // Phase 7 D4 — WelcomeScreen preset picker. The 2x2 module grid that
+  // replaces the row-based OnboardingWizard as the `/welcome` cold-start
+  // surface. Taglines are kept short (~5-7 words each) so the cards stay
+  // scannable at the 2-col mobile breakpoint without truncation.
+  welcomeModulePicker: {
+    heading: "З чого почати?",
+    // Копія мусить описувати ФАКТИЧНИЙ стан гріда: усі чотири модулі вже
+    // ввімкнені (`WelcomeModulePicker` стартує з `[...ALL_MODULES]`). Стара
+    // фраза «Обери модулі, з яких хочеш почати» читалася як «нічого не
+    // обрано» — і природний жест «тапнути потрібне» насправді ВИМИКАВ модуль:
+    // людина тапала «Фінік» і «Їжа», а стартувала з Фізруком і Рутиною
+    // (browser QA 2026-08-05, F-001).
+    subtitle: "Усі чотири ввімкнено. Прибери зайве, додати можна будь-коли.",
+    gridAriaLabel: "Модулі для старту",
+    cta: "Почати",
+    emptyHint: "Обери хоча б один модуль, щоб продовжити.",
+    lateHint: "Можна додати пізніше у налаштуваннях.",
+    haveAccount: "У мене вже є акаунт",
+    taglines: {
+      finyk: "Витрати, бюджети та тренди",
+      fizruk: "Тренування, прогрес і заміри",
+      routine: "Звички, серії днів і нагадування",
+      nutrition: "Калорії, AI-аналіз фото та план",
+    },
+  },
+
+  form: {
+    // Round 16 — generic form-shell labels. `quickFill` — keyboard-accessory
+    // ("autocomplete") header, зʼявляється над клавіатурою на мобілці.
+    quickFill: "Швидке заповнення",
+  },
+
+  loadingActions: {
+    // Round 17 — first-person singular для transient action-button busy
+    // states. Уніфікує раніше inconsistent inline-копію («Зачекайте…»,
+    // «Виходимо…», «Підключення…»), зводячи voice до «що *я* зараз
+    // роблю» замість passive 3rd-person plural («ми…») або noun-form
+    // («Підключення…»).
+    //
+    // Відрізняється від `status.loading` (= "Завантаження…", noun-form
+    // для generic-spinner-ів без action-context). Якщо у тебе кнопка
+    // з `loading={isSubmitting}` і ти знаєш дієслово — клади тут;
+    // якщо просто spinner у пустому section-і — там `status.loading`.
+    //
+    // PR-30 / §C5 з docs/audits/2026-05-06-ux-roast-pr-plan.md.
+    exiting: "Виходжу…",
+    signingIn: "Входжу…",
+    registering: "Реєструю…",
+    connecting: "Підключаюсь…",
+    // Module-/surface-specific варіації (поки що використовуються лише
+    // в одному місці кожна, але живуть тут заради unified voice).
+    loadingTransactions: "Завантажую транзакції…",
+    loadingWorkouts: "Завантажую тренування",
+  },
+
+  // Module-specific groups. Сюди потрапляють labels, що домінантно живуть
+  // в одному модулі, але з причини фрагментованості surface-у заслуговують
+  // централізованого ключа (rebrand-аме на всіх місцях одною зміною).
+  modules: {
+    // PR-2 UX-roast 2026-Q2 — gear-icon shortcut in module headers.
+    openSettings: "Налаштування модуля",
+  },
+
+  // Планована пауза звички (канон `routine.md` §4, Хвиля 4 — гнучкий стрік).
+  routinePause: {
+    heading: "Пауза",
+    hint: "Заяви паузу наперед: відпустку чи хворобу. Дні паузи випадають із розкладу і серію не ламають.",
+    activeHint: "Ці дні не рахуються, серія їх не помітить.",
+    fromLabel: "З",
+    toLabel: "По (необовʼязково)",
+    declare: "Поставити паузу",
+    resumeToday: "Повернутись сьогодні",
+    activePrefix: "На паузі",
+    activeOpenPrefix: "На паузі з",
+    plannedPrefix: "Заплановано:",
+    fromShort: "з",
+  },
+
+  fizruk: {
+    returnToActiveWorkout: "Повернутись до активного тренування",
+    workoutRest: "Відпочинок",
+    // PrBadge weight-unit suffix on the Fizruk hero PR pill.
+    kgUnit: "кг",
+    // Strength PR leaderboard on the Progress page (`Progress/PrBoard.tsx`).
+    prBoard: {
+      heading: "Рекорди (PR)",
+      shownSuffix: "показано",
+      filterAll: "Всі",
+      emptyTitle: "Поки немає силових PR",
+      emptyFilteredTitle: "Немає PR для цієї групи мʼязів",
+      emptyDescription:
+        "Заверши сети з вагою, рекорди зʼявляться тут автоматично.",
+      emptyFilteredDescription: "Спробуй іншу групу або скинь фільтр.",
+      /** Канон §6: борд бачить не лише рух угору. */
+      staleBadge: "давно не робив",
+      belowPeakPrefix: "зараз",
+    },
+    /**
+     * Шкала повернення — signature-view Фізрука (анти-слоп П1).
+     *
+     * AI-CONTEXT: тон констатувальний, без докору — канон `fizruk.md` §6
+     * вимагає саме цього. Тому в середині шкали стоїть факт про паузу
+     * («34 дні без роботи»), а не оцінка людини, і слово «спад»
+     * зʼявляється лише коли він справді дійшов до підлоги.
+     */
+    returnScale: {
+      referenceLabel: "орієнтир",
+      kgUnit: "кг",
+      peakPrefix: "пік",
+      fresh: "свіже",
+      daysAgo: "дн. тому",
+      daysWithoutWork: "дн. без роботи",
+      atFloor: "нижче не опускаю",
+      noHistory: "історії ще немає",
+    },
+    // Shared Fizruk unit suffixes (composed at call-site as `${n} ${unit}`).
+    hoursUnit: "год",
+    secondsUnit: "с",
+
+    // Exercise detail page (`pages/Exercise.tsx`) — set-history pagination
+    // (defect #4: `history.slice(0, 20)` used to cut silently, no counter,
+    // no way to see the rest). Rendered as `${historyShownPrefix} ${shown}
+    // ${historyShownOfWord} ${total}` so the catalog stays plain-string
+    // (см. `MessageCatalog` constraint, той самий патерн, що
+    // `biometrics.ageLabel`).
+    exercise: {
+      historyShownPrefix: "Показано",
+      historyShownOfWord: "з",
+      showMoreHistory: "Показати ще",
+    },
+
+    // Per-page Fizruk strings live in `uk.fizruk.ts` (split out for the
+    // 600-line module-size guardrail, Hard Rule #18) and are spread here so
+    // call-sites keep referencing `messages.fizruk.<page>.<key>`.
+    ...fizrukPageMessages,
+  },
+
+  nutrition: {
+    fromPantry: "З комори",
+    mealType: "Прийом їжі",
+    templates: "Швидкі прийоми",
+    deleteTemplateTitle: "Видалити швидкий прийом?",
+    reportHeading: "Калорії", // HubReports NutritionCard
+    kcalUnit: "ккал",
+    macrosToday: "Макроси за сьогодні", // MacroRings group label (V-10)
+    // Порожній стан сканера штрихкодів (аудит nutrition E-6).
+    barcodeNoticeRetry: "Спробувати ще раз",
+    barcodeNoticeUsePhoto: "Сфотографувати страву",
+    barcodeNoticeManual: "Ввести вручну",
+    waterHistory: {
+      openLabel: "Історія води",
+      title: "Історія води",
+      weekChartTitle: "Останні 7 днів",
+      avg7Label: "Середнє за 7 днів",
+      avg30Label: "Середнє за 30 днів",
+      streakLabel: "Серія з ціллю",
+      streakUnit: "дн.",
+      dayListTitle: "Останні 14 днів",
+      goalPctSuffix: "% від цілі",
+      emptyTitle: "Поки немає історії",
+      emptyDescription: "Додай воду за сьогодні, і тут зʼявиться графік.",
+    },
+    // Комора: згортка-гайд режиму «Списком» + превʼю розібраних позицій.
+    pantryGuide: {
+      summary: "Як писати список?",
+      separators: "Розділяй продукти комою або новим рядком:",
+      separatorsExample: "курка, рис, огірки",
+      qtyPlacement: "Кількість можна ставити спереду або ззаду:",
+      qtyExampleLeading: "2 яйця",
+      qtyExampleTrailing: "курка 500 г",
+      unitsLabel: "Одиниці:",
+      unitsList: "г, кг, мл, л, шт, уп",
+      unitsFallback:
+        "Без одиниці невелика кількість читається як «шт». Від 100 без одиниці спитаю, шт це чи г.",
+      aiNote:
+        "Можна писати як завгодно: список розбирає AI, він переживе помилки, скорочення й відмінки («помідорів 3», «0.5л молока»).",
+      confirmNote:
+        "Розібране буде показано списком. Додасться лише те, що ти підтвердиш.",
+    },
+    pantryPreview: {
+      parsedCount: "Розібрано",
+      localFallback: "AI недоступний, розібрано на пристрої",
+      confirm: "Додати",
+      dismiss: "Скасувати",
+    },
+    pantryEmpty: {
+      // Не «Комора порожня» — цей рядок уже показує NutritionPantrySelector
+      // над карткою, і дослівний повтор читався як збій рендеру.
+      title: "Тут поки порожньо",
+      description:
+        "Тут зʼявляться продукти, які є вдома, і Sergeant рахуватиме страви та список покупок з того, що вже маєш.",
+      hint: "Додай перший продукт полем вище або надиктуй одразу весь список.",
+    },
+    // Частка photoAI-оцінок у денному агрегаті (аудит nutrition E-5) —
+    // винесено в `uk.nutrition.ts`, каталог поруч за 600-рядковим лімітом.
+    ...nutritionPageMessages,
+  },
+
+  routine: routinePageMessages,
+
+  finyk: finykPageMessages,
+
+  // Profile sessions list (PR-10 ux-roast 2026-Q2 / §10.3 «Цей пристрій +
+  // last-seen у людському форматі»). Section copy + accessibility-labels
+  // живуть тут одним вузлом, бо `SessionsSection.tsx` — цілком UA-only
+  // surface і всі рядки треба в каталозі.
+  profileSessions: {
+    sectionTitle: "Активні сесії",
+    refresh: "Оновити",
+    loading: "Завантаження…",
+    empty: "Немає сесій",
+    loadFailed: "Не вдалося завантажити сесії",
+    revoke: "Завершити",
+    revokeSuccess: "Сесію завершено",
+    revokeFailed: "Не вдалося завершити сесію",
+    expired: "Закінчилась",
+    thisDevice: "Цей пристрій",
+    unknownIp: "IP невідомий",
+    unknownDevice: "Невідомий пристрій",
+    lastSeenPrefix: "Активна",
+    currentUnknown:
+      "Не вдалося визначити сесію цього пристрою. Онови список, щоб завершувати сесії.",
+  },
+
+  // Асистент-шар (картка поради, тижневий звіт, каталог, nudges) — копія
+  // в `uk.sergeant.ts` (той самий прецедент, що `uk.privacy.ts`).
+  sergeant: sergeantMessages,
+
+  // Крос-модульний звʼязок (`CrossModuleLinkCard`, P2 анти-слоп плану) —
+  // копія в `uk.crossModuleLink.ts` (той самий прецедент, що `uk.privacy.ts`).
+  crossModuleLink: crossModuleLinkMessages,
+
+  // App-lock / Privacy settings (PR-1a UX-roast 2026-Q2).
+  privacy: privacyMessages,
+  // Profile → "Біометрія" section (Mifflin-St Jeor inputs for Nutrition).
+  // Owns the form labels, the activity-ladder copy, and the small status
+  // hint that tells the user whether the record is complete enough for
+  // TDEE. Cross-links to Fizruk Body's daily-log are described inline so
+  // the user understands why weight is shared between the two surfaces.
+  biometrics: {
+    sectionTitle: "Біометрія",
+    statusReady: "Готово до розрахунку TDEE",
+    statusIncomplete: "Заповни дані для розрахунку",
+    heightLabel: "Зріст (см)",
+    birthDateLabel: "Дата народження",
+    sexLabel: "Стать",
+    sexMale: "Чоловік",
+    sexFemale: "Жінка",
+    sexPlaceholder: "Обери",
+    activityLabel: "Рівень активності",
+    activityPlaceholder: "Обери",
+    activitySedentaryLabel: "Малорухливий",
+    activitySedentaryHint: "Офісна робота, майже без тренувань",
+    activityLightLabel: "Легка активність",
+    activityLightHint: "Тренування 1-3 дні на тиждень",
+    activityModerateLabel: "Помірна",
+    activityModerateHint: "Тренування 3-5 днів на тиждень",
+    activityActiveLabel: "Висока",
+    activityActiveHint: "Тренування 6-7 днів на тиждень",
+    activityVeryActiveLabel: "Дуже висока",
+    activityVeryActiveHint: "Фізична праця або 2× тренування на день",
+    weightLabel: "Поточна вага (кг)",
+    weightSyncHint: "Синхронізується з журналом «Тіло» у Фізрукові",
+    countWorkoutsLabel: "Враховувати тренування в нормі",
+    countWorkoutsHint:
+      "Вимкнено: норма рахується з рівня активності, який уже включає тренування наперед. Увімкнено: норма йде від спокою плюс те, що ти справді спалив за день, а рівень активності тренувань більше не враховує.",
+    save: "Зберегти",
+    saveSuccess: "Біометрію збережено",
+    saveError: "Не вдалося зберегти біометрію",
+    // Числа тут дублюють `HEIGHT_CM_RANGE`/`WEIGHT_KG_RANGE` з
+    // `biometrics.ts` (єдине джерело для UI-атрибутів `<Input min max>` І
+    // zod-меж `BiometricsSchema` — D5) — інлайн, бо весь цей каталог
+    // складається з простих рядків без інтерполяції, тож самі рядки текст
+    // все одно не оновлять автоматично при зміні константи. Розсинхрон
+    // ловлять ДВА пін-тести в `BiometricsSection.test.tsx` (по одному на
+    // зріст і вагу, точна рівність — D3: `toContain` раніше пропускав
+    // підрядки на кшталт "60" усередині "260") + два пін-тести на межі
+    // самої zod-схеми в `biometrics.test.ts` — зсунута константа без
+    // синхронного оновлення будь-якого з цих чотирьох місць зробить
+    // відповідний тест червоним.
+    heightRangeError: "Зріст має бути від 80 до 260 см",
+    weightRangeError: "Вага має бути від 20 до 400 кг",
+    // The age line is rendered as `${ageLabel}: ${n} ${ageYearsSuffix}` so
+    // the catalog stays plain-string (см. `MessageCatalog` constraint).
+    ageLabel: "Вік",
+    ageYearsSuffix: "років",
+  },
+
+  // Nutrition → DailyPlanCard «Розрахувати з профілю» CTA — copy винесено
+  // в `uk.nutritionTdee.ts` (Hard Rule #18, той самий патерн, що й
+  // `finyk`/`privacy`/`pricing`).
+  nutritionTdee: nutritionTdeeMessages,
+
+  nutritionGoalRange: {
+    // Scientifically-grounded soft bounds for daily nutrition targets.
+    // Values outside these ranges trigger a non-blocking warning so the
+    // user knows they typed something that's almost certainly an error
+    // (or extreme enough to need medical supervision). We don't block
+    // the input — we just surface the warning.
+    //
+    // - kcal:  ВООЗ і American College of Sports Medicine рекомендують
+    //   мінімум ~1200 ккал/день для жінок та ~1500 для чоловіків;
+    //   нижче 800 ккал — VLCD (Very Low Calorie Diet), потребує
+    //   медичного нагляду. Верх 6000 ккал — навіть професійні
+    //   витривалі атлети рідко перевищують.
+    // - protein: 30 г — мінімум, щоб уникнути дефіциту; 300 г — стеля
+    //   навіть для важкоатлетів (~3 г/кг для 100-кг людини).
+    // - fat: 20 г — мінімум для незамінних жирних кислот; 250 г —
+    //   крайня межа кето / hi-fat дієт.
+    // - carbs: 0 г допустимо (кето), стеля 700 г — endurance-атлети.
+    kcalTooLow: "Менше 800 ккал, небезпечно без нагляду лікаря.",
+    kcalTooHigh: "Більше 6000 ккал, це дуже багато навіть для атлетів.",
+    proteinTooLow: "Менше 30 г білка, ризик дефіциту.",
+    proteinTooHigh: "Більше 300 г білка, це дуже багато навіть для атлетів.",
+    fatTooLow: "Менше 20 г жиру, ризик дефіциту незамінних жирних кислот.",
+    fatTooHigh: "Більше 250 г жиру, це дуже багато для типового раціону.",
+    carbsTooHigh: "Більше 700 г вуглеводів, це дуже багато навіть для атлетів.",
+  },
+
+  // Public status page (`/status`, PR-41). Анонімна health-сторінка; копія
+  // має лишатись нейтральною (без module-accent persona-голосу), бо це
+  // public-trust surface.
+  publicStatus: {
+    pageTitle: "Sergeant · Status",
+    pollNote: "Поточний стан компонентів. Оновлюється автоматично кожні",
+    pollNoteSuffix: "с.",
+    loading: "Завантаження стану сервісу…",
+    overallOperational: "Усі сервіси працюють",
+    overallDegraded: "Часткова деградація",
+    overallDown: "Серйозна проблема",
+    pillOperational: "Працює",
+    pillDegraded: "Деградація",
+    pillDown: "Не працює",
+    timestampPrefix: "оновлено",
+    componentsLabel: "Компоненти",
+    lastIncidentNone: "Інцидентів за останні 7 днів не зафіксовано.",
+    lastIncidentPrefix: "Останній інцидент:",
+    errorTitle: "Не вдалося завантажити статус",
+    errorRetry: "Спробувати ще",
+    errorFallback: "Не вдалося завантажити статус сервісу.",
+    errorHttpPrefix: "Сервер відповів HTTP",
+  },
+
+  // Legal pages (`/legal/*`, PR-#3465). Публічні юридичні сторінки
+  // (privacy / terms / cookies / offer) — UA-only surface. Сам контент
+  // документів (`documents`-таблиця у `LegalPage.tsx`) лишається inline як
+  // plain-string-константи; сюди винесено лише JSX-position-літерали з
+  // chrome-рамки сторінки та `LegalLinks` навігації, які раніше тригерили
+  // `sergeant-design/no-cyrillic-jsx-literal`.
+  legal: {
+    // LegalLinks nav — aria-label юридичної навігації у футері.
+    linksNavAria: "Юридичні документи",
+    // LegalPage chrome.
+    homeLogoAria: "На головну Sergeant",
+    reviewGateNotice:
+      "це робочий draft до public launch, не юридична консультація. Перед відкритою реєстрацією засновник або юрист має підтвердити реквізити, refunds, processors і застосовне право.",
+    lastUpdatedPrefix: "Останнє оновлення:",
+    goToPricing: "Перейти до pricing",
+    signInOrCreate: "Увійти або створити акаунт",
+  },
+
+  // What's new modal (PR-18 у `docs/work/specs/launch/product-os/ftux-master-tracker.md`
+  // §3.3). UI-копія обмежена — release-specific копія (title / summary /
+  // items / CTA label) живе у TS-таблиці `apps/web/src/core/whatsNew/
+  // releases.ts`; у каталог потрапляють лише chrome-літерали з рамки
+  // самого modal-у.
+  whatsNew: {
+    badge: "Що нового",
+    dismiss: "Зрозуміло",
+  },
+
+  // Feedback loop (GTM § 3.2) — in-app feedback widget у Settings.
+  // Копія за style-guide: звертання «ти», заголовки без крапки,
+  // toast-success — перфект минулого часу.
+  feedback: {
+    settingsTitle: "Фідбек",
+    settingsSubGroupTitle: "Є ідея чи знайшов баг?",
+    settingsDescription:
+      "Розкажи, що поламалось або чого бракує, кожне повідомлення читає людина.",
+    openButton: "Написати фідбек",
+    dialogTitle: "Твій фідбек",
+    dialogDescription: "Кілька речень достатньо, головне, суть.",
+    categoryLabel: "Про що це",
+    categoryIdea: "Ідея",
+    categoryBug: "Баг",
+    categoryOther: "Інше",
+    messageLabel: "Повідомлення",
+    placeholderIdea: "Чого тобі бракує в застосунку?",
+    placeholderBug: "Що саме поламалось і на якому екрані?",
+    placeholderOther: "Розкажи, що думаєш",
+    submit: "Надіслати",
+    submitting: "Надсилаю…",
+    submitted: "Дякую! Відгук надіслано.",
+    emptyError: "Напиши хоча б кілька слів, порожній відгук не долетить.",
+    // Помилки закриваються дією (style-guide.uk.md): людина щойно витратила
+    // час на текст, і найгірше — залишити її без способу його врятувати.
+    errorOffline:
+      "Немає звʼязку, відгук не надіслався. Скопіюй текст і спробуй ще раз, коли зʼявиться інтернет.",
+    errorGeneric:
+      "Не вдалося надіслати, запит не дійшов. Спробуй ще раз або скопіюй текст і кинь у чат бети.",
+    copyMessage: "Скопіювати текст",
+    copied: "Скопійовано",
+  },
+
+  // Копі першої дії FTUX — аркуш `FirstActionSheet` і його плитки.
+  //
+  // AI-CONTEXT: це `uk.ts` (лінивий модульний каталог), а НЕ `uk.core.ts`.
+  // Дизайн-контракт онбордингу спершу казав «перенести в `uk.core`» — це
+  // була помилка: `uk.core` їде до першого екрана, і копі поверхні, яку
+  // видно лише новому користувачеві на хабі, там створила б рівно ту
+  // проблему, яку ратчет eager 2026-09-12 щойно вилікував. Аркуш живе в
+  // лінивому чанку хаба, тож повний каталог йому безкоштовний.
+  firstAction: {
+    sheetLabel: "Перша дія",
+    hideLabel: "Сховати",
+    picksLabel: "Обрані модулі для старту",
+    otherModuleLabel: "Інший модуль",
+    orPrefix: "Або:",
+    headingMany: "З чого хочеш почати?",
+    headingOne: "Почни з однієї дії",
+    kicker: "Старт",
+    // Три підзаголовки під одним кікером: single — один обраний модуль,
+    // multi — кілька, empty — жодного запису ще немає.
+    subtitleSingle:
+      "Обери модуль для першого запису. Routine не відкриється автоматично.",
+    subtitleMulti:
+      "Ти обрав кілька модулів, кожен може бути першим, без прихованого пріоритету.",
+    subtitleEmpty:
+      "Твої показники зʼявляться після першого збереженого запису.",
+    // Персоналізація за цілями онбордингу: підставляється в шаблон
+    // «Створи {label}, і починається серія днів.».
+    habitLabels: {
+      water: "«Пити воду»",
+      exercise: "«Зарядка»",
+      reading: "«Читання»",
+      fallback: "свою звичку",
+    },
+    goalLabels: {
+      lose: "Схуднути",
+      gain: "Набрати масу",
+      maintain: "Підтримка",
+    },
+    actions: {
+      routine: {
+        title: "Створи першу звичку",
+        desc: "~5 секунд. І серія днів стартує одразу.",
+        chipLabel: "Рутина",
+      },
+      finyk: {
+        title: "Додай першу витрату",
+        desc: "~5 секунд, будь-яка сума.",
+        chipLabel: "Фінік",
+      },
+      nutrition: {
+        title: "Запиши перший прийом їжі",
+        desc: "Калорії порахую я.",
+        chipLabel: "Їжа",
+      },
+      fizruk: {
+        title: "Увімкни розминку",
+        desc: "10 хв, таймер сам.",
+        chipLabel: "Фізрук",
+      },
+    },
+  },
+
+  // Копі аркуша пресетів FTUX — `core/onboarding/PresetSheet.tsx`.
+  //
+  // AI-CONTEXT: як і `firstAction` вище, це `uk.ts`, а не `uk.core.ts`.
+  // Дизайн-контракт онбордингу казав «перенести в `uk.core`» — помилка тієї
+  // самої форми: `uk.core` їде до першого екрана, а аркуш пресетів бачить
+  // лише новий користувач, і то з лінивого чанку хаба.
+  //
+  // `name` плиток — НЕ підпис, а те, що реально лягає в сховище як імʼя
+  // звички чи опис витрати, тож воно теж копі і теж живе тут. У коді
+  // лишились лише неперекладні слаги: `icon` / `emoji` з каталогу `Icon`
+  // і `category` Фініка (`cafe` — слаг «Кафе та ресторани», не мітка).
+  presets: {
+    routine: {
+      title: "З якої звички почати?",
+      desc: "Одне натискання, і вона у твоєму списку сьогодні.",
+      fallbackLabel: "Своя звичка",
+      items: {
+        water: {
+          title: "Випити воду",
+          desc: "Щодня, будь-коли",
+          name: "Випити воду",
+        },
+        walk: {
+          title: "Пройти 10 хв",
+          desc: "Короткий вихід після обіду",
+          name: "Пройти 10 хв",
+        },
+        read: {
+          title: "Прочитати 10 сторінок",
+          desc: "Вечірня звичка",
+          name: "Прочитати 10 сторінок",
+        },
+      },
+    },
+    finyk: {
+      title: "На що витратив?",
+      desc: "Тицяй, відкриється форма з назвою. Суму введеш сам.",
+      fallbackLabel: "Своя витрата",
+      items: {
+        coffee: {
+          title: "Кава",
+          // Підзаголовок — підказка «скільки вводити», а не таксономія:
+          // ярлик категорії тут нічого не додавав, бо категорію людина
+          // однаково підтверджує у формі модуля.
+          desc: "ранкова звичка, введи свою суму",
+          name: "Кава",
+        },
+        ride: {
+          title: "Таксі",
+          desc: "дорога на роботу чи додому",
+          name: "Таксі",
+        },
+        lunch: {
+          title: "Обід",
+          desc: "що зʼїв, і за скільки",
+          name: "Обід",
+        },
+      },
+    },
+    nutrition: {
+      title: "Що зʼїв зараз?",
+      desc: "Відкрию форму добавляння страви, калорії підтвердиш у модулі.",
+      fallbackLabel: "Додати страву",
+    },
+    fizruk: {
+      title: "Швидкий старт",
+      desc: "Відкрию старт тренування, тривалість вкажеш на фініші.",
+      fallbackLabel: "Почати тренування",
+    },
+  },
+
+  // Дефолти самої модалки paywall — CTA, відмова і три булети переваг.
+  // Окрема група, а не ключ усередині `paywall`: той індексується рівно
+  // id-ями гейтів (`PremiumFeatureId`), і контрактний тест
+  // `shared/i18n/index.test.ts` звіряє його ключі з реєстром
+  // `core/billing/premiumFeatures.ts` один-до-одного.
+  //
+  // Булет про «7 днів trial» сюди НЕ повертати: рішення D3 — один платний
+  // план без trial-таймера, і сторінка тарифів каже те саме (AI-NOTE у
+  // `PaywallModal.tsx`, знахідка B4 браузерного аудиту 2026-08-05).
+  // Булети — три плоскі ключі, а не масив: `MessageCatalog` типізований як
+  // `string | MessageCatalog`, тобто дерево рядків без масивів і функцій
+  // (та сама конвенція, що в гребені Фініка). Порядок збирає компонент.
+  paywallModal: {
+    cta: "Перейти на Premium",
+    dismiss: "Не зараз",
+    featureAi: "Безлімітний AI-чат + щоденні брифи",
+    featureSync: "Авто-синхронізація Mono + CloudSync між пристроями",
+    featureExport: "Експорт CSV/PDF + крос-модульні звіти",
+
+    // Гейт ліміту AI-чату (`HubChat` → `surface="ai_chat_limit"`). Тут же,
+    // а не в групі `paywall`: та індексується рівно id-ями `PremiumFeatureId`,
+    // а цей гейт живе не через `useFeatureGate`, а на власному лічильнику.
+    //
+    // AI-5 (аудит 2026-09-01): round-trip-квиток зробив кожен хід рівно
+    // одним запитом, тож застереження «може коштувати кілька» більше не
+    // правда — не повертай його.
+    aiChatTitle: "Безлімітний AI-чат у Premium",
+    /** `{limit}` — денна квота Free-тарифу, коли сервер її назвав. */
+    aiChatDescription:
+      "Free-тариф має {limit} запитів до AI на день, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.",
+    aiChatDescriptionUnknownLimit:
+      "Free-тариф має денний ліміт запитів до AI, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.",
+  },
+
+  // Phase 7 D2 — paywall feature gates. Per-feature copy used by the
+  // shared `<PaywallModal>` when a call-site gates an action via
+  // `useFeatureGate(featureId)`. Keep `name` short enough to plug
+  // into «Розблокувати {name}» (≤ 35 chars).
+  paywall: {
+    "ai-photo-analysis": {
+      name: "AI-аналіз фото їжі",
+      title: "AI-аналіз фото – у Premium",
+      description:
+        "ШІ визначить КБЖВ та порцію за фото страви. Доступно у Premium підписці.",
+    },
+    "analytics-export-pdf": {
+      name: "Експорт PDF",
+      title: "PDF-звіти – у Premium",
+      description:
+        "Розширені звіти між модулями та експорт PDF – у Premium підписці.",
+    },
+  },
+
+  // Initiative 0010 Phase 6 — Pricing page (`/pricing`). Conversion-funnel
+  // surface; EN translation is launch-critical. All user-visible strings on
+  // the page route through this group so they can be locale-switched per
+  // `?lang=en` URL trigger (see `useLocale.ts`). Tier names ("Free",
+  // "Premium") kept here for symmetry but they're brand-stable across
+  // locales — the same identifiers ship in both `uk.ts` and `en.ts`.
+  pricing: pricingMessages,
+} as const satisfies MessageCatalog;
+
+/**
+ * Тип-структура каталогу повідомлень. Рекурсивний, щоб можна було вкладати
+ * групи. Літерали зберігаються через `as const`-присвоєння вище — лінтер
+ * запропонує auto-complete для `messages.auth.invalidEmail` etc.
+ */
+export interface MessageCatalog {
+  readonly [key: string]: string | MessageCatalog;
+}
+
+/**
+ * Структурне дзеркало групи каталогу: та сама форма ключів, але кожен
+ * літеральний рядок розширено до `string`. Використовується en-каталогами,
+ * щоб оголошена група БУЛА ЗОБОВʼЯЗАНА покривати кожен листовий ключ
+ * uk-групи (shallow-merge контракт `index.ts → getMessages`).
+ */
+export type MessageGroupShape<T> = {
+  readonly [K in keyof T]: T[K] extends string
+    ? string
+    : MessageGroupShape<T[K]>;
+};

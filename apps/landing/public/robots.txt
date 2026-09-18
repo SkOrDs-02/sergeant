@@ -1,0 +1,9 @@
+User-agent: *
+Allow: /
+
+# Домен закріплено 2026-08 (sergeant.com.ua), sitemap генерує
+# scripts/postbuild-seo.mjs на кожному білді з src/lib/routeMeta.json.
+Sitemap: https://sergeant.com.ua/sitemap.xml
+
+# Карта для ШІ-агентів і повний текст сайту (генерує scripts/prerender.mjs).
+# LLM-Policy: https://sergeant.com.ua/llms.txt

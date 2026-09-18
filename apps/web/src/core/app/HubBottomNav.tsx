@@ -1,0 +1,498 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+import { useEffect, useRef, useState, type KeyboardEvent } from "react";
+import { useVisualKeyboardInset } from "@sergeant/shared";
+import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
+import { useReducedMotion } from "@shared/hooks/useReducedMotion";
+import {
+  BOTTOM_NAV_INSET_VAR,
+  useBottomInsetVar,
+} from "@shared/hooks/useBottomInsetVar";
+import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import type { HubView } from "../hooks/useHubUIState";
+import { getPagePrefetchProps, type PageKey } from "../lib/useRoutePrefetch";
+import { messages } from "@shared/i18n/uk";
+
+/**
+ * Sergeant Design System — `HubBottomNav`
+ *
+ * Hub-level bottom navigation. Renders as a floating pill — inset from
+ * the screen edges (`mx-3` + bottom margin clearing the home indicator)
+ * with the page mesh background continuing behind and below it, matching
+ * `ModuleBottomNav` so the whole app reads under one navigation pattern.
+ *
+ * Canonical shape:
+ * - 60 px height (64 px on coarse-pointer devices).
+ * - Docked edge-to-edge against the screen bottom in both browser and PWA
+ *   standalone via `bottom-nav-shell` — no horizontal margins, flat bottom,
+ *   rounded only at the top. The panel background fills the safe-area strip
+ *   (padding-bottom) so there's no page-coloured dead space below the labels
+ *   and the nav never floats above the home indicator
+ *   (user report 2026-06-05 / bottom-nav-gap; mobile-audit A1).
+ * - Active indicator (fix spec v2 § 1 — light mirrors dark, solid not
+ *   outline):
+ *   - Light: a solid emerald (`brand-strong`) square with an ink-on-cream
+ *     foreground (`text-bg`). Module-agnostic — the hub carries emerald,
+ *     not a per-module accent.
+ *   - Dark («Чорнило»): a solid emerald (`brand-400`, the hub's default
+ *     accent) square with the same ink foreground (`text-bg` resolves to
+ *     `#14100e` under `.dark`, so one bare class covers both themes).
+ * - `role="tablist"` + `aria-selected` for AT.
+ *
+ * Layout contract:
+ * - Rendered at the bottom of the hub `<div h-dvh flex-col>` shell, so
+ *   `ActiveWorkoutBanner` and other floating chrome must offset
+ *   their `bottom:` by 60 px + safe-area-inset-bottom to sit above it.
+ * - Tab strip is a CSS grid with `repeat(N, minmax(0, 1fr))` columns and a
+ *   fixed-width pill (`h-full w-full`) per tab, identical to
+ *   `ModuleBottomNav` — до фіксу R1 (founder-аудит 2026-09-11) тут стояв
+ *   `flex` із `flex-initial`/`flex-1`, тобто інший алгоритм при однаковій
+ *   візуальній оболонці; тепер обидва наві рахують ширину табу однаково.
+ *
+ * The reports-tab reveal behavior (a single bounce-in animation when
+ * the tab first appears) is preserved from the old `HubTabs` — see
+ * comments on `safeReadStringLS` usage below. The previous one-time
+ * toast was removed per UX-roast 2026-Q2 R1 (it overlapped with the
+ * Re-engagement card and the install banner that appear in the same
+ * frame and overwhelmed the FTUX). Storage key is unchanged so
+ * existing users aren't re-animated.
+ */
+
+const REPORTS_TAB_REVEALED_AT_KEY = "sergeant.hub.reportsTabRevealedAt";
+
+interface HubBottomNavTabProps {
+  active: boolean;
+  onClick: () => void;
+  label: string;
+  /** Optional compact label for the narrow visual pill; full label remains in SR text. */
+  visibleLabel?: string | undefined;
+  iconName: string;
+  className?: string | undefined;
+  panelId: string;
+  id: string;
+  prefetchPage?: PageKey | undefined;
+  /**
+   * Слот рендериться у DOM, але приховується від користувача й AT.
+   * Використовується для збереження геометрії tab-strip-у в момент,
+   * коли «Звіти» ще не розблоковані (FTUX без жодного запису). Без цього
+   * перехід `showReports: false → true` спричиняє reflow усього grid-а
+   * і CLS під час першого реального запису (UX-roast 2026-Q2 §7.2 / PR-23).
+   */
+  hiddenSlot?: boolean | undefined;
+  /**
+   * Навігаційна дія (наприклад, гостьове «Увійти» → /sign-in), а не
+   * перемикач hub-панелі. Рендериться як звичайна кнопка без
+   * `role="tab"`/`aria-selected`/`aria-controls`: AT-семантика «вкладка,
+   * не вибрано», що насправді виконує навігацію, вводить в оману
+   * screen-reader-користувачів.
+   */
+  action?: boolean | undefined;
+  onKeyDown?: ((event: KeyboardEvent<HTMLButtonElement>) => void) | undefined;
+  /**
+   * On-screen keyboard is open (keyboard-and-scroll.md § design
+   * decision 2) — the whole nav is sliding out of view, so every tab
+   * drops to `tabIndex={-1}` and loses its handlers the same way a
+   * `hiddenSlot` tab does. Kept distinct from `hiddenSlot` (FTUX
+   * geometry placeholder, `visibility: hidden`, no animation) because
+   * this one participates in the nav's slide-down transform instead.
+   */
+  kbHidden?: boolean | undefined;
+  /**
+   * #20 — Variant C. When true the active tab shows icon + label inside a
+   * pill; inactive tabs show only their icon. Animated with CSS transitions
+   * (width/opacity) unless reduced-motion is on.
+   */
+  reduceMotion?: boolean | undefined;
+}
+
+interface HubBottomNavItem extends HubBottomNavTabProps {
+  key: string;
+}
+
+function HubBottomNavTab({
+  active,
+  onClick,
+  label,
+  visibleLabel,
+  iconName,
+  className,
+  panelId,
+  id,
+  prefetchPage,
+  hiddenSlot = false,
+  action = false,
+  onKeyDown,
+  kbHidden = false,
+  reduceMotion = false,
+}: HubBottomNavTabProps) {
+  const prefetchProps =
+    !hiddenSlot && prefetchPage ? getPagePrefetchProps(prefetchPage) : {};
+  const tabAria = action
+    ? {}
+    : ({
+        role: "tab",
+        "aria-selected": active,
+        "aria-controls": panelId,
+      } as const);
+
+  // #20 Variant C — pill wraps icon+label for the active tab; inactive tabs
+  // show only their icon. The pill itself carries the brand background so the
+  // button background stays transparent: this way the active "slot" doesn't
+  // change size and there is no layout shift as tabs switch. Width/opacity of
+  // the label span is animated with CSS transitions (collapsed to opacity-only
+  // under prefers-reduced-motion via the `reduceMotion` prop).
+  const transition = reduceMotion
+    ? "transition-opacity"
+    : "transition-[max-width,opacity]";
+
+  return (
+    <button
+      type="button"
+      id={`hub-tab-${id}`}
+      {...tabAria}
+      tabIndex={hiddenSlot || kbHidden ? -1 : active || action ? 0 : -1}
+      onClick={hiddenSlot || kbHidden ? undefined : onClick}
+      onKeyDown={hiddenSlot || action || kbHidden ? undefined : onKeyDown}
+      {...prefetchProps}
+      style={hiddenSlot ? { visibility: "hidden" } : undefined}
+      className={cn(
+        // Контейнер розкладає таби через CSS grid із рівними колонками
+        // (`repeat(N, minmax(0,1fr))` — той самий алгоритм, що в
+        // `ModuleBottomNav`), тож таб більше не рахує собі ширину сам —
+        // ні `flex-initial`, ні `flex-1` тут більше не потрібні (founder-
+        // аудит R1, 2026-09-11: два нижні наві виглядали однаково, але
+        // розкладались різними алгоритмами, і саме звідси бралась
+        // нерівність між центрами іконок).
+        "relative flex items-center justify-center min-w-0",
+        "min-h-[48px] pointer-coarse:min-h-[52px]",
+        "active:scale-[0.96]",
+        "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
+        "text-text",
+        hiddenSlot && "invisible pointer-events-none",
+        className,
+      )}
+    >
+      {/*
+        Inner pill — ОДНАКОВИЙ горизонтальний бокс (`h-full w-full`) в
+        активному й неактивному стані, по центру grid-колонки. Раніше
+        активний піл ріс за вмістом (`flex-initial`) і потребував власного
+        `max-w-full`-запобіжника, щоб не вилізти за межі слота — а підпис
+        при цьому різало до нечитабельних 42px («Налаштування» 87→42px,
+        браузерний аудит 2026-08-26). Тепер підпис лежить ПІД іконкою
+        (`flex-col`), а не поруч із нею: колонка вже рівна для всіх табів,
+        і підпису дістається вся її ширина, а не залишок після іконки —
+        той самий прийом, що в `ModuleBottomNav`.
+      */}
+      <span
+        aria-hidden
+        className={cn(
+          // AI-DANGER: підпис активного табу мусить лишатись ПІД іконкою
+          // (`flex-col`). Не повертай його в один рядок з іконкою — ні
+          // `flex-row`, ні `gap` між ними по горизонталі. Рівні grid-колонки
+          // вище тримаються саме на цьому: у рядку іконка й підпис ділять
+          // ширину колонки, і підпису лишається залишок (~42px на 4-табовому
+          // наві при 390px — «Налаштування» різало 87→42px, браузерний аудит
+          // 2026-08-26, через що рівні колонки тоді й відкотили). У стовпчику
+          // підпис отримує ВСЮ ширину колонки (~84.5px), і саме тому рівні
+          // колонки тут знову припустимі. Тобто це не дві незалежні правки, а
+          // одна: `grid` рівних колонок діє лише в парі з `flex-col`. Зміниш
+          // одне — перевір ширини 320-390px, інакше повернеш дефект 2026-08-26.
+          "flex h-full w-full min-w-0 items-center justify-center rounded-2xl px-1 py-1",
+          "duration-base ease-standard",
+          active
+            ? "flex-col gap-0.5 bg-brand-strong dark:bg-brand-400 text-bg"
+            : "bg-transparent text-text",
+          !reduceMotion && "transition-[background-color,color]",
+        )}
+      >
+        <Icon
+          name={iconName}
+          size="lg"
+          strokeWidth={active ? 2.5 : 2}
+          className="shrink-0"
+        />
+        {/* Label: visible only for active tab, slides in/out */}
+        <span
+          data-nav-label
+          className={cn(
+            "text-style-caption font-semibold leading-none overflow-hidden whitespace-nowrap text-ellipsis",
+            transition,
+            "duration-base ease-standard",
+            active
+              ? "max-w-full opacity-100"
+              : "max-w-0 opacity-0 pointer-events-none",
+          )}
+        >
+          {visibleLabel ?? label}
+        </span>
+      </span>
+      {/* Screen-reader-only label so every tab has an accessible name */}
+      <span className="sr-only">{label}</span>
+    </button>
+  );
+}
+
+export interface HubBottomNavProps {
+  hubView: HubView;
+  onChange: (view: HubView) => void;
+  /**
+   * «Звіти» прибрана з tab-strip-а, поки у користувача немає жодного
+   * реального запису. Порожній звіт — найгірший FTUX-стан: юзер тапне,
+   * побачить «— ₴» і втратить довіру до модуля. Тому tab зʼявляється
+   * лише коли `hasAnyRealEntry()` повертає `true` (див. `firstRealEntry.ts`).
+   */
+  showReports?: boolean | undefined;
+  /**
+   * When `true`, renders a «Профіль» tab for the signed-in user.
+   * When `false` and `onShowAuth` is provided, renders an «Увійти» tab
+   * for guests so sign-in is reachable from the bottom nav (one-tap
+   * instead of hunting for the header icon).
+   */
+  showProfile?: boolean | undefined;
+  /**
+   * Callback to open the auth sheet. When provided and `showProfile`
+   * is `false`, the nav shows an «Увійти» tab for guests.
+   */
+  onShowAuth?: (() => void) | undefined;
+}
+
+export function HubBottomNav({
+  hubView,
+  onChange,
+  showReports = true,
+  showProfile = false,
+  onShowAuth,
+}: HubBottomNavProps) {
+  // Чи був перехід `showReports: false → true` в межах поточного маунту.
+  // Тільки в цьому випадку ми вмикаємо bounce-анімацію (без toast — див.
+  // UX-roast 2026-Q2 R1: одночасні «нова вкладка»-toast + Re-engagement
+  // card + install banner перевантажували перший запис).
+  // Якщо компонент маунтиться вже з `showReports === true` без флага в
+  // localStorage — це або легасі-користувач (виставлявся ще до цього
+  // прапора), або повне перезавантаження після розблокування. В обох
+  // сценаріях bounce у момент перезавантаження виглядав би невчасно,
+  // тож тихо ставимо флаг і нічого не показуємо.
+  const prevShowReportsRef = useRef(showReports);
+  const [animateReveal, setAnimateReveal] = useState(false);
+  const tablistRef = useRef<HTMLDivElement>(null);
+  // On-screen keyboard open → slide the nav away (spec
+  // keyboard-and-scroll.md § design decision 2; same treatment as
+  // ModuleBottomNav / RoutineBottomNav's FAB).
+  const kbInsetPx = useVisualKeyboardInset(true);
+  const kbHidden = kbInsetPx > 0;
+  const reduceMotion = useReducedMotion();
+  // Публікуємо зайняту знизу смугу для fixed-шарів з інших гілок дерева
+  // (`<ToastContainer>` живе у `Providers`, поза `children`, тож локальний
+  // `--bottom-nav-height` до нього не доходить). Під відкритою клавіатурою
+  // навігація зʼїжджає вниз — тоді змінна знімається і тост опускається.
+  const navRef = useRef<HTMLElement>(null);
+  useBottomInsetVar(navRef, BOTTOM_NAV_INSET_VAR, !kbHidden);
+
+  // Roving tabindex (інактивні таби tabIndex=-1) без стрілок робив
+  // «Звіти»/«Налаштування» недосяжними з клавіатури — WAI-ARIA tabs
+  // pattern вимагає Left/Right (+Home/End) переміщення фокуса.
+  const handleTablistKeyDown = (event: KeyboardEvent<HTMLButtonElement>) => {
+    if (!["ArrowLeft", "ArrowRight", "Home", "End"].includes(event.key)) {
+      return;
+    }
+    const root = tablistRef.current;
+    if (!root) return;
+    const visibleTabs = Array.from(
+      root.querySelectorAll<HTMLButtonElement>('[role="tab"]'),
+    ).filter((el) => el.style.visibility !== "hidden");
+    if (visibleTabs.length === 0) return;
+    const currentIndex = visibleTabs.indexOf(
+      document.activeElement as HTMLButtonElement,
+    );
+    let nextIndex: number;
+    if (event.key === "Home") {
+      nextIndex = 0;
+    } else if (event.key === "End") {
+      nextIndex = visibleTabs.length - 1;
+    } else {
+      const delta = event.key === "ArrowRight" ? 1 : -1;
+      nextIndex =
+        currentIndex === -1
+          ? 0
+          : (currentIndex + delta + visibleTabs.length) % visibleTabs.length;
+    }
+    event.preventDefault();
+    visibleTabs[nextIndex]?.focus();
+  };
+
+  useEffect(() => {
+    const prevShowReports = prevShowReportsRef.current;
+    prevShowReportsRef.current = showReports;
+
+    if (!showReports) return;
+    if (safeReadStringLS(REPORTS_TAB_REVEALED_AT_KEY)) return;
+
+    if (!prevShowReports) {
+      // Справжнє розблокування «в реальному часі»: користувач щойно
+      // зробив перший реальний запис, і `hasAnyRealEntry()` flip-нув.
+      // Bounce-анімація сама по собі звертає увагу на нову вкладку
+      // без додаткового toast.
+      safeWriteLS(REPORTS_TAB_REVEALED_AT_KEY, String(Date.now()));
+      setAnimateReveal(true);
+      return;
+    }
+
+    // Migration / cold-start path: tab уже мав бути розблокований
+    // (минулий маунт), просто на ньому не було флага. Ставимо тихо.
+    safeWriteLS(REPORTS_TAB_REVEALED_AT_KEY, String(Date.now()));
+  }, [showReports]);
+
+  const tabs: HubBottomNavItem[] = [
+    {
+      key: "dashboard",
+      id: "dashboard",
+      panelId: "hub-panel-dashboard",
+      active: hubView === "dashboard",
+      onClick: () => onChange("dashboard"),
+      iconName: "grid",
+      label: "Головна",
+    },
+  ];
+
+  // Слот «Звіти» завжди є у DOM, навіть коли вкладка ще не розблокована
+  // (FTUX без жодного запису). Це фіксує геометрію tab-strip-у і прибирає
+  // CLS у момент `showReports: false → true` (UX-roast 2026-Q2 §7.2 /
+  // PR-23). Поки `showReports === false`, слот рендериться з
+  // `aria-hidden="true"`/`visibility: hidden`, тому AT і користувач його
+  // не бачать і не таплять — RTL `getByRole` теж його ігнорує.
+  tabs.push({
+    key: "reports",
+    id: "reports",
+    panelId: "hub-panel-reports",
+    active: showReports && hubView === "reports",
+    onClick: () => onChange("reports"),
+    iconName: "bar-chart",
+    prefetchPage: "reports",
+    label: messages.nav.reports,
+    hiddenSlot: !showReports,
+    className: animateReveal ? "animate-bounce-in" : undefined,
+  });
+
+  if (showProfile) {
+    tabs.push({
+      key: "profile",
+      id: "profile",
+      panelId: "hub-panel-profile",
+      active: hubView === "profile",
+      onClick: () => onChange("profile"),
+      iconName: "user",
+      prefetchPage: "profile",
+      label: "Профіль",
+    });
+  }
+
+  const authAction: HubBottomNavItem | null =
+    !showProfile && onShowAuth
+      ? {
+          key: "auth",
+          id: "auth",
+          panelId: "hub-panel-profile",
+          active: false,
+          onClick: onShowAuth,
+          iconName: "user",
+          prefetchPage: "auth",
+          label: "Увійти",
+          action: true,
+        }
+      : null;
+
+  tabs.push({
+    key: "settings",
+    id: "settings",
+    panelId: "hub-panel-settings",
+    active: hubView === "settings",
+    onClick: () => onChange("settings"),
+    iconName: "settings",
+    prefetchPage: "settings",
+    label: "Налаштування",
+    // Рішення власника 2026-09-12 (founder-ux-review round 2, R1). «Налаштування»
+    // — 12 символів проти 5-7 у сусідів («Головна», «Звіти», «Профіль»), і на
+    // ≤375px воно не влазило в свою колонку: text-ellipsis давав
+    // «Налаштува…». Розглядались два інші варіанти й обидва відкинуті: два
+    // рядки лишали 2px запасу у 60px-наві (тобто ламались би від будь-якої
+    // зміни шрифта, і ламались би тихо), а прийняте обрізання лишало
+    // видимий дефект на найпоширенішій ширині.
+    //
+    // AI-DANGER: коротшає лише ВИДИМИЙ підпис. Доступна назва мусить
+    // лишатись повною — її дає `<span className="sr-only">{label}</span>`,
+    // і всі тести навбара шукають таб саме по `name: /Налаштування/`.
+    // Не зводь ці два поля в одне: «Опції» як accessible name зробить таб
+    // невідрізненним від будь-якого меню опцій у скрінрідері.
+    visibleLabel: "Опції",
+  });
+
+  // Grid-колонки, не flex: усі таби (включно з action-табом «Увійти», який
+  // рендериться поза `tabs`-масивом) мають бути РІВНОЇ ширини (тим самим
+  // алгоритмом, що в `ModuleBottomNav`), інакше центр іконки в кожному
+  // табі сидить у своїй унікальній точці замість центру колонки.
+  const columnCount = tabs.length + (authAction ? 1 : 0);
+
+  return (
+    <nav
+      ref={navRef}
+      aria-label={messages.nav.hubSections}
+      aria-hidden={kbHidden || undefined}
+      className={cn(
+        "shrink-0 relative z-30",
+        "bottom-nav-shell border border-line bg-panel shadow-lg",
+        "transition-transform duration-base motion-reduce:transition-none",
+        kbHidden && "translate-y-full pointer-events-none",
+      )}
+    >
+      <div
+        className="relative grid h-[60px] pointer-coarse:h-[64px] gap-1 px-1"
+        style={{
+          gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))`,
+        }}
+      >
+        <div role="tablist" ref={tablistRef} className="contents">
+          {tabs.map((tab) => (
+            <HubBottomNavTab
+              key={tab.key}
+              id={tab.id}
+              panelId={tab.panelId}
+              active={tab.active}
+              onClick={tab.onClick}
+              iconName={tab.iconName}
+              label={tab.label}
+              visibleLabel={tab.visibleLabel}
+              className={tab.className}
+              prefetchPage={tab.prefetchPage}
+              hiddenSlot={tab.hiddenSlot}
+              action={tab.action}
+              onKeyDown={handleTablistKeyDown}
+              kbHidden={kbHidden}
+              reduceMotion={reduceMotion}
+            />
+          ))}
+        </div>
+        {authAction && (
+          <HubBottomNavTab
+            key={authAction.key}
+            id={authAction.id}
+            panelId={authAction.panelId}
+            active={authAction.active}
+            onClick={authAction.onClick}
+            iconName={authAction.iconName}
+            label={authAction.label}
+            visibleLabel={authAction.visibleLabel}
+            className={authAction.className}
+            prefetchPage={authAction.prefetchPage}
+            hiddenSlot={authAction.hiddenSlot}
+            action={authAction.action}
+            kbHidden={kbHidden}
+            reduceMotion={reduceMotion}
+          />
+        )}
+      </div>
+    </nav>
+  );
+}

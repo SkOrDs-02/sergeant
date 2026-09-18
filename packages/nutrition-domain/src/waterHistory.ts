@@ -1,0 +1,102 @@
+/**
+ * Pure-helpers для історії журналу води: last-N-days вибірка, середні за
+ * 7/30 днів, поточна серія днів із досягнутою ціллю.
+ *
+ * Межі доби — ПРИСТРІЙ, не Kyiv (ADR-0078): `deviceDayKey` /
+ * `previousDeviceDayKey` — той самий генератор ключа, що й `getTodayWaterMl`
+ * у `waterLog.ts`, аби «сьогодні» в історії завжди збігалося з «сьогодні» в
+ * трекері (інакше історія читала б інший день, ніж той, під яким трекер щойно
+ * записав).
+ */
+import { deviceDayKey, previousDeviceDayKey } from "./deviceDayKey.js";
+import { normalizeWaterLog, type WaterLog } from "./waterLog.js";
+
+export interface WaterHistoryDay {
+  dayKey: string;
+  ml: number;
+}
+
+/**
+ * Попередній день пристрою (ADR-0078), DST-safe (див. docstring
+ * `previousDeviceDayKey`). Експортована — UI-шар (day-list "Сьогодні/Вчора"
+ * formatter) реюзить той самий генератор, щоб не дублювати логіку.
+ */
+export function getPreviousWaterDayKey(key: string): string {
+  return previousDeviceDayKey(key);
+}
+const prevDayKey = getPreviousWaterDayKey;
+
+/**
+ * Останні `count` днів пристрою, що закінчуються "сьогодні" (`referenceMs`),
+ * найстаріший день першим. Дні без запису → `ml: 0`.
+ */
+export function getWaterLastNDays(
+  log: unknown,
+  count: number,
+  referenceMs: number = Date.now(),
+): WaterHistoryDay[] {
+  const normalized = normalizeWaterLog(log);
+  if (count <= 0) return [];
+  const keys: string[] = [];
+  let key = deviceDayKey(referenceMs);
+  for (let i = 0; i < count; i++) {
+    keys.push(key);
+    key = prevDayKey(key);
+  }
+  keys.reverse();
+  return keys.map((dayKey) => ({ dayKey, ml: normalized[dayKey] ?? 0 }));
+}
+
+/**
+ * УСІ дні з ненульовим записом води, найновіший першим.
+ *
+ * AI-CONTEXT: `getWaterLastNDays` дивиться лише у фіксоване вікно від
+ * «сьогодні», тож вода, залита давніше за це вікно, не потрапляла ні в
+ * список, ні навіть у перевірку «чи є взагалі дані» — аркуш історії
+ * малював порожній стан людині, у якої в журналі лежали літри. Ця
+ * вибірка не залежить від «сьогодні» взагалі: що записано — те видно.
+ */
+export function getWaterLoggedDays(log: unknown): WaterHistoryDay[] {
+  const normalized = normalizeWaterLog(log);
+  return Object.entries(normalized)
+    .filter(([, ml]) => ml > 0)
+    .map(([dayKey, ml]) => ({ dayKey, ml }))
+    .sort((a, b) => (a.dayKey < b.dayKey ? 1 : a.dayKey > b.dayKey ? -1 : 0));
+}
+
+/** Середнє мл/день за останні `days` днів пристрою (дні без запису рахуються як 0). */
+export function getWaterAverageMl(
+  log: unknown,
+  days: number,
+  referenceMs: number = Date.now(),
+): number {
+  if (days <= 0) return 0;
+  const list = getWaterLastNDays(log, days, referenceMs);
+  const sum = list.reduce((acc, d) => acc + d.ml, 0);
+  return Math.round(sum / days);
+}
+
+/**
+ * Поточна серія послідовних днів пристрою із досягнутою ціллю, рахуючи назад
+ * від сьогодні. Якщо ціль на сьогодні ще не досягнута, сьогоднішній день не
+ * рахується як «зрив» серії (день ще не завершився) — відлік просто
+ * починається з учора.
+ */
+export function getWaterStreak(
+  log: unknown,
+  goalMl: number,
+  referenceMs: number = Date.now(),
+): number {
+  if (!(goalMl > 0)) return 0;
+  const normalized = normalizeWaterLog(log);
+  let key = deviceDayKey(referenceMs);
+  if ((normalized[key] ?? 0) < goalMl) key = prevDayKey(key);
+  let streak = 0;
+  while ((normalized[key] ?? 0) >= goalMl) {
+    streak++;
+    key = prevDayKey(key);
+  }
+  return streak;
+}
+
+export type { WaterLog };

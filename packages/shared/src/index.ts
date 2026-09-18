@@ -1,0 +1,218 @@
+// Zod schemas (HTTP request/response + domain)
+export * from "./schemas";
+
+// Shared, DOM-free utilities (macros, date, pluralization, speech parsers)
+export * from "./utils";
+
+// Pure types (currently empty barrel for future expansion)
+export * from "./types";
+
+// AI-DANGER: корпус базової їжі (`GENERIC_FOODS`, ~390 позицій) свідомо
+// НЕ реекспортується з цього барелю, хоча місце для нього тут напрошується.
+// `apps/web` імпортує `@sergeant/shared` у десятках місць на критичному
+// шляху, тож реекспорт масивних даних звідси затягує їх в eager-чанк — а
+// той гейтиться жорстко (≤ 280 kB brotli, блокуючий крок CI). Споживачі
+// беруть корпус підпаточним імпортом `@sergeant/shared/data/genericFoods`:
+// він лишається окремим модулем і не тягне за собою решту барелю.
+
+// Shared, DOM-free constants (storage keys, etc.)
+export * from "./lib/storageKeys";
+export * from "./lib/nutritionPantryMode";
+
+// Stable per-install origin-device-id resolver used by the web and
+// mobile sync-engine singletons to populate `X-Origin-Device-Id` on
+// every sync v2 push / pull / SSE stream request.
+export * from "./lib/originDeviceId";
+
+// Sensitive query-key policy for the React Query persisters
+// (web → IDB, mobile → MMKV). See PR #004 in
+// `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
+export * from "./lib/sensitiveQueryKeys";
+
+// PII / secret redaction policy — single source of truth for pino
+// (server), Sentry.beforeSend (server + web), and OTel attribute
+// denylist. See `docs/governance/security/pii-handling.md` and audit
+// `2026-05-03-web-deep-dive/04-security-observability-testing-devx.md` §6.5.
+export * from "./lib/pii";
+
+// Hub dashboard module ordering (pure helpers; storage I/O is per-platform).
+export * from "./lib/dashboard";
+
+// Assistant capability catalogue — single source of truth for chat
+// quick actions, the catalogue UI, and (PR 2) the system-prompt tool list.
+export * from "./lib/assistantCatalogue";
+export * from "./lib/toolRisk";
+
+// Canonical HubChat tool-name registry — single source of truth for the
+// server toolDefs ↔ web executor contract. See `./hubchat/toolNames.ts`
+// docstring for rationale (audit gap #2, 2026-08).
+export * from "./hubchat/toolNames";
+
+// AI-6 рішення 3 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
+// — state-mutating vs advice/read-only-з-синтезом класифікація tool-ів,
+// одне джерело істини поруч із реєстром імен вище.
+export * from "./hubchat/toolOutcomeClass";
+
+// Канонічні межі числових полів заміру тіла (Фізрук) — єдине джерело
+// правди для доменного реєстру полів і серверного sync-апплаєра.
+// Див. docstring `./fizruk/measurementBounds.ts` (аудит 2026-08-04).
+export * from "./fizruk/measurementBounds";
+
+// Провенанс метрик — версія методики підрахунку (ADR-0079 §3-§4).
+export * from "./lib/metricsVersion";
+export * from "./lib/exportCsv";
+
+// Platform-agnostic key/value store contract + factories. See
+// `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` → PR #006.
+//   - `createWebKVStore(localStorage, window)` on web.
+//   - `createMmkvKVStore(() => activeMmkv)` on mobile.
+//   - `createMemoryKVStore()` lives in `@sergeant/shared/test-utils`.
+export * from "./storage/kv";
+
+// Cross-platform cloud-sync module registry. Single source of truth
+// for which `STORAGE_KEYS.*` belong to which sync module on web
+// (localStorage) and mobile (MMKV). See PR #007 in
+// `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
+export * from "./sync/modules";
+
+// Boot-time TTL sweep orchestration for the client-side `sync_op_outbox`
+// dead-letter buckets. Called once at boot by the web/mobile sync-engine
+// singletons; pairs with `purgeStaleTerminalOutbox` in @sergeant/db-schema.
+export * from "./sync/outboxRetention";
+
+// Onboarding "vibe picks" state + FTUX time-to-value helpers.
+export * from "./lib/vibePicks";
+
+// Active-modules helpers (derived from vibe picks) + hide-inactive toggle.
+export * from "./lib/activeModules";
+
+// Defaults shared by web/mobile undo-toast helpers.
+export * from "./lib/undoToast";
+
+// Onboarding gate helpers (first-launch detection, done flag, splash taxonomy).
+export * from "./lib/onboarding";
+
+// Onboarding goal-setting (multi-step v2).
+export * from "./lib/onboardingGoals";
+export * from "./lib/onboardingHero";
+
+// Pre-first-entry value-promise bars (S3.3 shared logic — used by
+// the web `<ValueProgressBar>` and the mobile RN port).
+export * from "./lib/valueProgressBars";
+
+// OnboardingWizard hero copy A/B (S1.1 + S1.2).
+export * from "./lib/onboardingHeroCopy";
+
+// S6.1: 50/50 A/B between `none` (opt-in, new behaviour) and `all`
+// (legacy ALL_MODULES fallback). Wizard reads `assignVariant` to
+// decide whether the splash starts with empty picks or pre-selected.
+export * from "./lib/onboardingDefaultPicks";
+
+// PR-13 / S5.1: 50/50 A/B between module-first (`control`) and
+// outcome-first (`goal_first`) onboarding. Outcome → module mapping
+// + experiment definition shared with the mobile parity PR-21.
+export * from "./lib/onboardingGoalFirst";
+
+// Reset helpers for Settings ("Restart onboarding").
+export * from "./lib/onboardingReset";
+
+// Module onboarding checklists (Phase 2 — activation).
+export * from "./lib/moduleChecklist";
+
+// Real-data evidence that a checklist step is already done.
+export * from "./lib/moduleChecklistSignals";
+
+// First-real-entry detection shared between web and mobile.
+export * from "./lib/firstRealEntry";
+
+// Module-aware copy for the first-entry CelebrationModal.
+export * from "./lib/onboardingCelebrations";
+
+// Gain-first / fear A/B copy for the post-FTUX SoftAuth prompt.
+export * from "./lib/softAuthCopy";
+
+// Dashboard recommendation types + helpers.
+export * from "./lib/recommendations";
+
+// `useDashboardFocus` pure core — dismissal map, visible filter, focus+rest.
+export * from "./lib/dashboardFocus";
+
+// Hub dashboard quick-stats preview selector (pure; callers own storage I/O).
+export * from "./lib/quickStats";
+
+// Centralized hryvnia / currency formatter — single source of truth for ₴
+// amounts across the web app and shared package. See `formatMoney.ts`
+// for conventions; `fmtAmt` (in `@sergeant/finyk-domain`) remains the
+// transaction-row formatter and is intentionally separate.
+export * from "./lib/formatNumber";
+export * from "./lib/formatMoney";
+
+// Hub weekly-digest helpers — week key / storage key / digest freshness.
+export * from "./lib/weeklyDigest";
+
+// Weekly-digest / coach publication threshold — shared client↔server signal
+// count (audit §2.23: `coachSnapshotSignals` ↔ `countDigestSignalModules`).
+export * from "./lib/weeklyDigestSignals";
+
+// Shared hint/tip system (taxonomy + caps). Rendering is per-platform.
+export * from "./lib/hints";
+
+// Daily nudges & re-engagement (Phase 3 — retention).
+export * from "./lib/nudges";
+
+// Віхи стріку — централізовані набори порогів (святкові + аналітичні)
+// і спільний дедуп святкувань.
+export * from "./lib/streakMilestones";
+
+// Cross-module preview — one-shot post-first-entry promo (S6.4).
+export * from "./lib/crossModulePreview";
+
+// A/B testing infrastructure (deterministic variant assignment).
+export * from "./lib/abTest";
+
+// Canonical analytics event names shared across platforms.
+export * from "./lib/analyticsEvents";
+export {
+  MODULE_OPEN_SOURCES,
+  type ModuleOpenSource,
+} from "./lib/analyticsEvents.hubAxis";
+
+// Landing → Telegram-bot attribution handoff. Один формат `start`-payload на
+// два боки (лендінг збирає, вебхук бота розбирає), щоб половини воронки
+// склеювались по спільному `ref`.
+export * from "./lib/landingAttribution";
+
+// DOM-free haptic contract (platform adapters register at app bootstrap).
+export * from "./lib/haptic";
+
+// Platform feature-detect (Capacitor WebView vs browser). DOM-free; reads
+// the `Capacitor` global injected by the native runtime, so `@sergeant/web`
+// can import it without pulling `@capacitor/*` into the browser bundle.
+export * from "./lib/platform";
+
+// DOM-free file-download contract (platform adapters register at app bootstrap).
+export * from "./lib/fileDownload";
+
+// DOM-free file-import contract (platform adapters register at app bootstrap).
+export * from "./lib/fileImport";
+
+// DOM-free visual-keyboard-inset hook contract (platform adapters register at
+// app bootstrap).
+export * from "./hooks/useVisualKeyboardInset";
+
+// Contract fixtures — canonical wire-shape samples shared between
+// `apps/server` (producer) and `packages/api-client` (consumer). See
+// `./contract-fixtures/README.md` and the diagnostic in
+// `docs/diagnostics/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md` §7.4.
+export * from "./contract-fixtures";
+
+// Shell deep-link bridge (PR-29 у `docs/initiatives/stack-pulse-2026-05/`).
+// BroadcastChannel-based cross-context navigation для mobile-shell → web;
+// з null-channel fallback для старих WebView без BroadcastChannel-у.
+export * from "./shell/deepLinkChannel";
+
+// Origin-agnostic Sentry release tag (`sergeant@<short-sha>`) — single source
+// of truth shared across server / web / mobile SDKs so one deploy maps to one
+// Sentry release regardless of origin. See PR-25 in
+// `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-25-two-production-origins.md`.
+export * from "./observability/release";

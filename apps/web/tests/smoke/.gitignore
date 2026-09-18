@@ -1,0 +1,4 @@
+# Authenticated browser state produced by `auth.setup.ts` (Playwright
+# storageState). Created at test time, not part of the repo. Each CI run
+# generates its own.
+.auth/

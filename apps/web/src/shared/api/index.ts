@@ -1,0 +1,166 @@
+/**
+ * `@shared/api` — легасі-барел для веб-додатку.
+ *
+ * Усі реальні сутності живуть у пакеті `@sergeant/api-client`; тут ми лише
+ * створюємо дефолтний інстанс `createApiClient(...)`, конфігуємо його під
+ * Vite-середовище (baseUrl із `VITE_API_BASE_URL`) і реекспортуємо окремі
+ * групи методів під іменами, що вже використовуються по всьому `apps/web/src`.
+ *
+ * Для нового коду краще брати клієнт через `useApiClient()` з
+ * `@sergeant/api-client/react` (DI через провайдер), але існуючі
+ * імпорти `import { monoWebhookApi, pushApi, ... } from "@shared/api"`
+ * продовжують працювати через цей файл.
+ */
+import { createApiClient } from "@sergeant/api-client";
+
+import { apiUrl, getApiPrefix } from "@shared/lib/api/apiUrl";
+import { getBearerToken } from "@shared/lib/api/bearerToken";
+import { publishServerBuildId } from "./serverBuildIdBus";
+import { publishAiTier } from "./aiTierBus";
+
+export const apiClient = createApiClient({
+  baseUrl: apiUrl(""),
+  // `apiPrefix` синхронізує api-client із `apiUrl()` прямих `fetch`-викликів:
+  // обидва канали шлють у `/api/v1/*` (default) або `/api/*` (VITE_API_VERSION=none).
+  apiPrefix: getApiPrefix(),
+  // У Capacitor WebView cookie-сесія ненадійна (Android cold-start, iOS ITP),
+  // тож шлемо `Authorization: Bearer <token>` — Better Auth `bearer()`
+  // плагін резолвить його у сесію нарівно з cookie. У браузері
+  // `getBearerToken()` повертає `null` і header не ставиться, cookie-флов
+  // працює як раніше.
+  getToken: () => getBearerToken(),
+  // PR-21 (stack-pulse 2026-05) — server stamps every response with
+  // `X-Server-Build-Id`. We forward observations into the SW auto-update
+  // controller through `serverBuildIdBus`; the SW controller is the only
+  // subscriber today, but the indirection keeps the api-client agnostic.
+  // Model-routing 2026-07 — chat/coach responses also carry `X-AI-Tier`
+  // (Pro tiered degradation); forwarded into `aiTierBus` for `useAiTier()`.
+  onResponseHeaders: (headers) => {
+    const buildId = headers.get("X-Server-Build-Id");
+    if (buildId) publishServerBuildId(buildId);
+    publishAiTier(headers.get("X-AI-Tier"));
+  },
+});
+
+export const coachApi = apiClient.coach;
+export const chatApi = apiClient.chat;
+export const pushApi = apiClient.push;
+export const nutritionApi = apiClient.nutrition;
+export const barcodeApi = apiClient.barcode;
+export const foodSearchApi = apiClient.foodSearch;
+export const monoWebhookApi = apiClient.monoWebhook;
+export const privatApi = apiClient.privat;
+export const waitlistApi = apiClient.waitlist;
+export const feedbackApi = apiClient.feedback;
+export const billingApi = apiClient.billing;
+export const meApi = apiClient.me;
+export const weeklyDigestApi = apiClient.weeklyDigest;
+export const transcribeApi = apiClient.transcribe;
+export const webVitalsApi = apiClient.webVitals;
+export const silpoApi = apiClient.silpo;
+
+// Errors, types, HTTP primitives
+export {
+  ApiError,
+  isApiError,
+  createHttpClient,
+  silpoConnectUrl,
+} from "@sergeant/api-client";
+export type {
+  ApiClient,
+  ApiClientConfig,
+  ApiErrorInit,
+  ApiErrorKind,
+  BillingCheckoutRequest,
+  BillingCheckoutResponse,
+  BillingEndpoints,
+  BillingStatusResponse,
+  BarcodeLookupResponse,
+  BarcodeProduct,
+  ChatCallOpts,
+  ChatMessage,
+  ChatRequestPayload,
+  ChatResponse,
+  CoachInsightPayload,
+  FoodSearchProduct,
+  FoodSearchResponse,
+  HttpClient,
+  HttpClientConfig,
+  HttpMethod,
+  MonoAccount,
+  MonoBackfillProgress,
+  MonoBackfillResponse,
+  MonoCashbackType,
+  MonoClientInfo,
+  MonoAccountDto,
+  MonoConnectionStatus,
+  MonoJar,
+  MonoJarDto,
+  MonoSyncState,
+  MonoTransactionDto,
+  MonoTransactionsPage,
+  MonoWebhookEndpoints,
+  NutritionBackupDownloadResponse,
+  NutritionBackupUploadResponse,
+  NutritionDayMeal,
+  NutritionDayPlan,
+  NutritionDayPlanResponse,
+  NutritionMacros,
+  NutritionMealType,
+  NutritionPantryItem,
+  NutritionParsePantryResponse,
+  NutritionPhotoIngredient,
+  NutritionPhotoPortion,
+  NutritionPhotoResponse,
+  NutritionPhotoItem,
+  NutritionPhotoResult,
+  NutritionRecipe,
+  NutritionRecipesResponse,
+  NutritionShoppingCategory,
+  NutritionShoppingItem,
+  NutritionShoppingListResponse,
+  NutritionWeekDay,
+  NutritionWeekPlan,
+  NutritionWeekPlanResponse,
+  ParseMode,
+  PrivatBalanceFinalResponse,
+  PrivatBalanceRecord,
+  PrivatCredentials,
+  PrivatStatementEntry,
+  PrivatStatementsResponse,
+  QueryValue,
+  RequestOptions,
+  TokenProvider,
+  MeDeleteResponse,
+  MeExportResponse,
+  WeeklyDigestPayload,
+  WeeklyDigestReport,
+  WeeklyDigestResponse,
+  UserPreferences,
+  UserPreferencesPatch,
+  UserProfilePayload,
+  UserProfileResponse,
+  SilpoCartApplyRequest,
+  SilpoCartDto,
+  SilpoCartItemDto,
+  SilpoCartMatchDto,
+  SilpoCartPreviewItem,
+  SilpoCartPreviewQueryDto,
+  SilpoCartPreviewRequest,
+  SilpoCartPreviewResponse,
+  SilpoCartSelection,
+  SilpoConnectionStatus,
+  SilpoDisconnectResponse,
+  SilpoEndpoints,
+  SilpoReceiptChannel,
+  SilpoReceiptDetailDto,
+  SilpoReceiptItemDto,
+  SilpoReceiptsListParams,
+  SilpoReceiptsPage,
+  SilpoReceiptSummaryDto,
+  SilpoSyncResult,
+  SilpoSyncState,
+  SilpoRelinkResponse,
+  SilpoUnlinkResponse,
+  SilpoWipeResponse,
+} from "@sergeant/api-client";

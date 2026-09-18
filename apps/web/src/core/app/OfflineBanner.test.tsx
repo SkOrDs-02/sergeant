@@ -1,0 +1,192 @@
+/** @vitest-environment jsdom */
+import { describe, it, expect, vi, afterEach, beforeEach } from "vitest";
+import { render, cleanup, act } from "@testing-library/react";
+
+// Mock the two hooks. The component is small and self-contained, so
+// driving the hook return values directly is simpler — and keeps the
+// test stable against changes in the cloudSync engine.
+const onlineRef: { value: boolean } = { value: true };
+const retrySyncV2DeadLetters = vi.fn();
+const syncStatusRef: {
+  syncV2PendingCount: number;
+  syncV2DeadLetterCount: number;
+  syncV2RejectedCount: number;
+  retrySyncV2DeadLetters: () => Promise<void>;
+} = {
+  syncV2PendingCount: 0,
+  syncV2DeadLetterCount: 0,
+  syncV2RejectedCount: 0,
+  retrySyncV2DeadLetters,
+};
+
+vi.mock("@shared/hooks/useOnlineStatus", () => ({
+  useOnlineStatus: () => onlineRef.value,
+}));
+
+vi.mock("../cloudSync", () => ({
+  useSyncStatus: () => ({ ...syncStatusRef, isOnline: onlineRef.value }),
+}));
+
+const purgeNoticeRef: {
+  value: { purged: number; purgedAtIso: string } | null;
+} = { value: null };
+
+vi.mock("../syncEngine/outboxPurgeNotice", () => ({
+  useOutboxPurgeNotice: () => purgeNoticeRef.value,
+  dismissOutboxPurgeNotice: vi.fn(),
+}));
+
+import { OfflineBanner } from "./OfflineBanner";
+
+beforeEach(() => {
+  onlineRef.value = true;
+  syncStatusRef.syncV2PendingCount = 0;
+  syncStatusRef.syncV2DeadLetterCount = 0;
+  syncStatusRef.syncV2RejectedCount = 0;
+  retrySyncV2DeadLetters.mockReset();
+  purgeNoticeRef.value = null;
+});
+afterEach(cleanup);
+
+describe("OfflineBanner", () => {
+  it("renders nothing when online and nothing pending (happy path)", () => {
+    onlineRef.value = true;
+    syncStatusRef.syncV2PendingCount = 0;
+    const { queryByTestId } = render(<OfflineBanner />);
+    expect(queryByTestId("offline-banner")).toBeNull();
+  });
+
+  it("renders an 'offline' pill with role=status when offline", () => {
+    onlineRef.value = false;
+    const { getByTestId } = render(<OfflineBanner />);
+    const pill = getByTestId("offline-banner");
+    expect(pill.getAttribute("data-state")).toBe("offline");
+    expect(pill.tagName).toBe("BUTTON");
+    expect(pill.getAttribute("aria-live")).toBe("polite");
+    expect(pill).toHaveClass("min-h-11", "min-w-11");
+    expect(pill).not.toHaveClass("fixed");
+    expect(pill.textContent).toContain("Офлайн");
+    // No queue — should not include a count.
+    expect(pill.textContent).not.toContain("·");
+  });
+
+  it("includes the queue count in the offline label when items are pending", () => {
+    onlineRef.value = false;
+    syncStatusRef.syncV2PendingCount = 3;
+    const { getByTestId } = render(<OfflineBanner />);
+    const pill = getByTestId("offline-banner");
+    expect(pill.getAttribute("data-state")).toBe("offline");
+    expect(pill.textContent).toContain("Офлайн");
+    expect(pill.textContent).toContain("3");
+    expect(pill.textContent).toContain("в черзі");
+  });
+
+  it("renders a 'syncing' pill when online with pending changes", () => {
+    onlineRef.value = true;
+    syncStatusRef.syncV2PendingCount = 5;
+    const { getByTestId } = render(<OfflineBanner />);
+    const pill = getByTestId("offline-banner");
+    expect(pill.getAttribute("data-state")).toBe("syncing");
+    expect(pill.tagName).toBe("BUTTON");
+    expect(pill.textContent).toContain("Синхронізація");
+    expect(pill.textContent).toContain("5");
+    expect(pill.textContent).toContain("в черзі");
+  });
+
+  it("transitions cleanly between states on rerender", () => {
+    onlineRef.value = false;
+    const { queryByTestId, rerender } = render(<OfflineBanner />);
+    expect(queryByTestId("offline-banner")?.getAttribute("data-state")).toBe(
+      "offline",
+    );
+
+    // Reconnect, but with pending queue.
+    act(() => {
+      onlineRef.value = true;
+      syncStatusRef.syncV2PendingCount = 1;
+    });
+    rerender(<OfflineBanner />);
+    expect(queryByTestId("offline-banner")?.getAttribute("data-state")).toBe(
+      "syncing",
+    );
+
+    // Queue drains.
+    act(() => {
+      syncStatusRef.syncV2PendingCount = 0;
+    });
+    rerender(<OfflineBanner />);
+    expect(queryByTestId("offline-banner")).toBeNull();
+  });
+
+  it("opens the sync sheet and retries dead-letter rows", async () => {
+    onlineRef.value = true;
+    syncStatusRef.syncV2DeadLetterCount = 3;
+    const { getByRole, getByTestId } = render(<OfflineBanner />);
+
+    const pill = getByTestId("offline-banner");
+    expect(pill.getAttribute("data-state")).toBe("blocked");
+    expect(pill.textContent).toContain("3");
+    // The pill must be UA-only (no English fallback strings).
+    expect(pill.textContent).toContain("помилки синхронізації");
+    expect(pill.textContent).not.toMatch(/blocked/i);
+
+    // Tap the pill to open the detail sheet, then retry from there.
+    await act(async () => {
+      pill.click();
+    });
+    await act(async () => {
+      getByRole("button", { name: /Повторити/i }).click();
+    });
+
+    expect(retrySyncV2DeadLetters).toHaveBeenCalledTimes(1);
+  });
+
+  // tech-debt/frontend.md, знахідка 2026-08-25: відхилений сервером оп був
+  // невидимим — локально запис є, тож виглядає збереженим. Тепер він дає
+  // власний стан пілюлі, коли інших живих станів немає.
+  it("renders a 'rejected' pill when the only anomaly is server-rejected rows", () => {
+    onlineRef.value = true;
+    syncStatusRef.syncV2RejectedCount = 2;
+    const { getByTestId } = render(<OfflineBanner />);
+    const pill = getByTestId("offline-banner");
+    expect(pill.getAttribute("data-state")).toBe("rejected");
+    expect(pill.textContent).toContain("2 записи не прийнято");
+  });
+
+  it("lets live states (dead-letter, offline, queue) win over rejected rows", () => {
+    syncStatusRef.syncV2RejectedCount = 2;
+    syncStatusRef.syncV2PendingCount = 1;
+    const { getByTestId } = render(<OfflineBanner />);
+    expect(getByTestId("offline-banner").getAttribute("data-state")).toBe(
+      "syncing",
+    );
+  });
+
+  // PR-T2 (2026-09-13 product review, "Тиха втрата даних"): the boot-time
+  // TTL sweep can delete the very rejected/dead-letter rows that would
+  // otherwise keep this pill visible. Without a dedicated lowest-priority
+  // state, the purge leaves no entry point into `SyncStatusSheet`.
+  it("renders a 'purged' pill when the only anomaly is a past outbox purge", () => {
+    onlineRef.value = true;
+    purgeNoticeRef.value = {
+      purged: 4,
+      purgedAtIso: "2026-09-13T00:00:00.000Z",
+    };
+    const { getByTestId } = render(<OfflineBanner />);
+    const pill = getByTestId("offline-banner");
+    expect(pill.getAttribute("data-state")).toBe("purged");
+    expect(pill.textContent).toContain("4 старі записи прибрано");
+  });
+
+  it("lets live states win over a past outbox purge", () => {
+    purgeNoticeRef.value = {
+      purged: 4,
+      purgedAtIso: "2026-09-13T00:00:00.000Z",
+    };
+    syncStatusRef.syncV2RejectedCount = 2;
+    const { getByTestId } = render(<OfflineBanner />);
+    expect(getByTestId("offline-banner").getAttribute("data-state")).toBe(
+      "rejected",
+    );
+  });
+});

@@ -1,0 +1,326 @@
+import type { PoolClient } from "pg";
+import type { SyncV2Op } from "../../../http/schemas.js";
+import { MEASUREMENT_BOUNDS } from "@sergeant/shared";
+
+import {
+  parseOptionalDate,
+  parseRequiredDate,
+  parseOptionalBoundedNumber,
+  parseOptionalBoundedInt,
+  toJsonbParam,
+} from "../syncV2-core.js";
+import type { AppliedStatus } from "../syncV2-types.js";
+
+/**
+ * Готові запити для таблиць-JSON-блобів. Тексти зібрані наперед, а не
+ * інтерполяцією імені таблиці в `client.query`: динамічний SQL у цьому
+ * репо заборонений лінтом (M11), і правило слушне навіть тут, де значення
+ * приходить із двох літералів - варіант з інтерполяцією виглядав би точно
+ * так само в той день, коли ім'я почне приходити ззовні.
+ */
+const JSON_BLOB_SQL = {
+  fizruk_custom_exercises: {
+    select:
+      "SELECT user_id, updated_at, deleted_at FROM fizruk_custom_exercises WHERE id = $1",
+    softDelete:
+      "UPDATE fizruk_custom_exercises SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3",
+    insert:
+      "INSERT INTO fizruk_custom_exercises (id, user_id, data_json, created_at, updated_at, deleted_at) VALUES ($1, $2, $3::jsonb, $4, $5, $6)",
+    update:
+      "UPDATE fizruk_custom_exercises SET data_json = $1::jsonb, updated_at = $2, deleted_at = $3 WHERE id = $4 AND user_id = $5",
+  },
+  fizruk_custom_activities: {
+    select:
+      "SELECT user_id, updated_at, deleted_at FROM fizruk_custom_activities WHERE id = $1",
+    softDelete:
+      "UPDATE fizruk_custom_activities SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3",
+    insert:
+      "INSERT INTO fizruk_custom_activities (id, user_id, data_json, created_at, updated_at, deleted_at) VALUES ($1, $2, $3::jsonb, $4, $5, $6)",
+    update:
+      "UPDATE fizruk_custom_activities SET data_json = $1::jsonb, updated_at = $2, deleted_at = $3 WHERE id = $4 AND user_id = $5",
+  },
+} as const;
+
+/**
+ * Апплай рядка-JSON-блоба: `fizruk_custom_exercises` і
+ * `fizruk_custom_activities` мають однакову форму (id + user_id +
+ * data_json + мітки), тож логіка LWW у них буквально та сама.
+ */
+async function applyFizrukJsonBlobRow(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+  table: keyof typeof JSON_BLOB_SQL,
+): Promise<AppliedStatus> {
+  const sql = JSON_BLOB_SQL[table];
+  const row = op.row;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
+  if (!id) return { status: "rejected", reason: "missing_id" };
+
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(sql.select, [id]);
+  if (existing.rows.length > 0) {
+    if (existing!.rows[0]!.user_id !== userId) {
+      return { status: "rejected", reason: "fk_violation" };
+    }
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  if (op.op === "delete") {
+    if (existing.rows.length === 0) {
+      return { status: "rejected", reason: "not_found" };
+    }
+    await client.query(sql.softDelete, [clientTs, id, userId]);
+    return { status: "applied" };
+  }
+
+  const dataJson = toJsonbParam(row["data_json"]);
+  if (dataJson === null) {
+    return { status: "rejected", reason: "missing_data_json" };
+  }
+  const createdAt = parseOptionalDate(row["created_at"]);
+  if (createdAt === "invalid") {
+    return { status: "rejected", reason: "invalid_created_at" };
+  }
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
+  if (deletedAt === "invalid") {
+    return { status: "rejected", reason: "invalid_deleted_at" };
+  }
+
+  if (existing.rows.length === 0) {
+    await client.query(sql.insert, [
+      id,
+      userId,
+      dataJson,
+      createdAt ?? clientTs,
+      clientTs,
+      deletedAt ?? null,
+    ]);
+  } else {
+    await client.query(sql.update, [
+      dataJson,
+      clientTs,
+      deletedAt ?? null,
+      id,
+      userId,
+    ]);
+  }
+  return { status: "applied" };
+}
+
+export async function applyFizrukCustomExercises(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFizrukJsonBlobRow(
+    client,
+    op,
+    userId,
+    clientTs,
+    "fizruk_custom_exercises",
+  );
+}
+
+/** Свої заняття для короткого запису - та сама форма, що й свої вправи. */
+export async function applyFizrukCustomActivities(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  return applyFizrukJsonBlobRow(
+    client,
+    op,
+    userId,
+    clientTs,
+    "fizruk_custom_activities",
+  );
+}
+
+export async function applyFizrukMeasurements(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  const row = op.row;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
+  if (!id) return { status: "rejected", reason: "missing_id" };
+
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM fizruk_measurements WHERE id = $1`,
+    [id],
+  );
+  if (existing.rows.length > 0) {
+    if (existing!.rows[0]!.user_id !== userId) {
+      return { status: "rejected", reason: "fk_violation" };
+    }
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  if (op.op === "delete") {
+    if (existing.rows.length === 0) {
+      return { status: "rejected", reason: "not_found" };
+    }
+    await client.query(
+      `UPDATE fizruk_measurements
+         SET deleted_at = $1, updated_at = $1
+       WHERE id = $2 AND user_id = $3`,
+      [clientTs, id, userId],
+    );
+    return { status: "applied" };
+  }
+
+  const measuredAt = parseRequiredDate(row["measured_at"]);
+  if (measuredAt === "invalid") {
+    return { status: "rejected", reason: "invalid_measured_at" };
+  }
+  const weightKg = parseOptionalBoundedNumber(
+    row["weight_kg"],
+    MEASUREMENT_BOUNDS.weightKg,
+  );
+  if (weightKg === "invalid") {
+    return { status: "rejected", reason: "invalid_weight_kg" };
+  }
+  const waistCm = parseOptionalBoundedNumber(
+    row["waist_cm"],
+    MEASUREMENT_BOUNDS.waistCm,
+  );
+  if (waistCm === "invalid") {
+    return { status: "rejected", reason: "invalid_waist_cm" };
+  }
+  const chestCm = parseOptionalBoundedNumber(
+    row["chest_cm"],
+    MEASUREMENT_BOUNDS.chestCm,
+  );
+  if (chestCm === "invalid") {
+    return { status: "rejected", reason: "invalid_chest_cm" };
+  }
+  const hipsCm = parseOptionalBoundedNumber(
+    row["hips_cm"],
+    MEASUREMENT_BOUNDS.hipsCm,
+  );
+  if (hipsCm === "invalid") {
+    return { status: "rejected", reason: "invalid_hips_cm" };
+  }
+  const bicepCm = parseOptionalBoundedNumber(
+    row["bicep_cm"],
+    MEASUREMENT_BOUNDS.bicepCm,
+  );
+  if (bicepCm === "invalid") {
+    return { status: "rejected", reason: "invalid_bicep_cm" };
+  }
+  const sleepHours = parseOptionalBoundedNumber(
+    row["sleep_hours"],
+    MEASUREMENT_BOUNDS.sleepHours,
+  );
+  if (sleepHours === "invalid") {
+    return { status: "rejected", reason: "invalid_sleep_hours" };
+  }
+  const energyLevel = parseOptionalBoundedInt(
+    row["energy_level"],
+    MEASUREMENT_BOUNDS.energyLevel,
+  );
+  if (energyLevel === "invalid") {
+    return { status: "rejected", reason: "invalid_energy_level" };
+  }
+  const mood = parseOptionalBoundedInt(row["mood"], MEASUREMENT_BOUNDS.mood);
+  if (mood === "invalid") {
+    return { status: "rejected", reason: "invalid_mood" };
+  }
+  const createdAt = parseOptionalDate(row["created_at"]);
+  if (createdAt === "invalid") {
+    return { status: "rejected", reason: "invalid_created_at" };
+  }
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
+  if (deletedAt === "invalid") {
+    return { status: "rejected", reason: "invalid_deleted_at" };
+  }
+
+  if (existing.rows.length === 0) {
+    await client.query(
+      `INSERT INTO fizruk_measurements
+         (id, user_id, measured_at, weight_kg, waist_cm, chest_cm,
+          hips_cm, bicep_cm, sleep_hours, energy_level, mood,
+          created_at, updated_at, deleted_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11,
+               $12, $13, $14)`,
+      [
+        id,
+        userId,
+        measuredAt,
+        weightKg ?? null,
+        waistCm ?? null,
+        chestCm ?? null,
+        hipsCm ?? null,
+        bicepCm ?? null,
+        sleepHours ?? null,
+        energyLevel ?? null,
+        mood ?? null,
+        createdAt ?? clientTs,
+        clientTs,
+        deletedAt ?? null,
+      ],
+    );
+  } else {
+    await client.query(
+      `UPDATE fizruk_measurements
+         SET measured_at  = $1,
+             weight_kg    = $2,
+             waist_cm     = $3,
+             chest_cm     = $4,
+             hips_cm      = $5,
+             bicep_cm     = $6,
+             sleep_hours  = $7,
+             energy_level = $8,
+             mood         = $9,
+             updated_at   = $10,
+             deleted_at   = $11
+       WHERE id = $12 AND user_id = $13`,
+      [
+        measuredAt,
+        weightKg ?? null,
+        waistCm ?? null,
+        chestCm ?? null,
+        hipsCm ?? null,
+        bicepCm ?? null,
+        sleepHours ?? null,
+        energyLevel ?? null,
+        mood ?? null,
+        clientTs,
+        deletedAt ?? null,
+        id,
+        userId,
+      ],
+    );
+  }
+  return { status: "applied" };
+}

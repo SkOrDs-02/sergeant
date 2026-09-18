@@ -1,0 +1,504 @@
+/**
+ * Last validated: 2026-06-15
+ * Status: Active
+ * Web I/O-адаптер для модуля Харчування: prefs, pantries, log.
+ *
+ * Stage 8 PR #057n-tombstone (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`): the
+ * `load*` / `persist*` helpers below no longer touch `localStorage`.
+ * The SQLite-WASM `nutrition_*` tables are the source of truth — reads
+ * pull from the in-process cache populated by
+ * `refreshNutritionSqliteState` (warmed at boot), and writes go through
+ * the dual-write pipeline (`triggerNutritionDualWrite`) which mirrors
+ * to SQLite and bumps the cache so subsequent reads see the change.
+ *
+ * Pure-логіка (normalize/default/mutation-хелпери + типи + LS-ключі) живе
+ * у `@sergeant/nutrition-domain` і спільна з `apps/mobile`. Реекспорти
+ * старої поверхні цього модуля лишаються тут, щоб існуючі
+ * `../lib/nutritionStorage.js` імпорти всередині `apps/web` не довелось
+ * переписувати.
+ */
+import {
+  NUTRITION_ACTIVE_PANTRY_KEY,
+  NUTRITION_LOG_KEY,
+  NUTRITION_PANTRIES_KEY,
+  NUTRITION_PREFS_KEY,
+  buildPantryInitialCheckpointId,
+  canonicalFoodKey,
+  defaultNutritionPrefs,
+  makeDefaultPantry,
+  normalizeNutritionLog,
+  normalizeNutritionPrefs,
+  normalizePantries,
+  normalizeShoppingList,
+  type NutritionLog,
+  type GoalPeriod,
+  type NutritionPrefs,
+  type Pantry,
+  type ShoppingList,
+} from "@sergeant/nutrition-domain";
+
+import {
+  isNutritionDualWriteRegistered,
+  triggerNutritionDualWrite,
+  type NutritionDualWriteState,
+} from "./sqliteWriter/index.js";
+import type {
+  NutritionMealSnapshot,
+  NutritionPantryEventSnapshot,
+  NutritionPantrySnapshot,
+  NutritionRecipeSnapshot,
+} from "./sqliteWriter/diff.js";
+import { getCachedNutritionSqliteState } from "./sqliteReader.js";
+import type { SavedRecipe } from "./recipeBook.js";
+import { emitHubBus } from "@shared/lib/modules/hubBus";
+
+export {
+  ESTIMATED_KCAL_SHARE_THRESHOLD,
+  NUTRITION_ACTIVE_PANTRY_KEY,
+  NUTRITION_LOG_KEY,
+  NUTRITION_PANTRIES_KEY,
+  NUTRITION_PREFS_KEY,
+  addDaysISODate,
+  addLogEntry,
+  defaultNutritionPrefs,
+  duplicatePreviousDayMeals,
+  estimateLogBytes,
+  getDayMacros,
+  getDaySummary,
+  getMacrosForDateRange,
+  lastNDayKeysOldestFirst,
+  makeDefaultPantry,
+  mergeNutritionLogs,
+  normalizeMeal,
+  normalizeNutritionLog,
+  normalizePantries,
+  removeLogEntry,
+  searchMealsByName,
+  trimLogOldestDays,
+  updateLogEntry,
+  updatePantry,
+} from "@sergeant/nutrition-domain";
+export { toLocalISODate } from "@sergeant/shared";
+export type {
+  DaySummary,
+  MacrosRow,
+  Meal,
+  MealMacroSource,
+  MealSearchResult,
+  MealSource,
+  MealTemplate,
+  NutritionDay,
+  NutritionGoal,
+  NutritionLog,
+  NutritionLogLike,
+  NutritionPrefs,
+  Pantry,
+} from "@sergeant/nutrition-domain";
+// W1-PANTRY-APPEND стадія 2 — re-export так, щоб callers (useNutritionPantries,
+// chat-action executors, тести) не мусили знати, що тип фізично живе в
+// `sqliteWriter/diff.ts`.
+export type { NutritionPantryEventSnapshot };
+
+// ─────────────────────────────────────────────
+// Reads — backed by the SQLite warm cache (Stage 8 PR #057n-tombstone).
+//
+// Before the boot completes the cache returns its `EMPTY_CACHE`
+// defaults; the hooks pair these synchronous reads with an overlay
+// effect that re-renders once the cache warms (see `sqliteReadGate`).
+// ─────────────────────────────────────────────
+
+export function loadNutritionPrefs(
+  _key: string = NUTRITION_PREFS_KEY,
+): NutritionPrefs {
+  const cache = getCachedNutritionSqliteState();
+  return cache.prefs
+    ? normalizeNutritionPrefs(cache.prefs)
+    : defaultNutritionPrefs();
+}
+
+export function persistNutritionPrefs(
+  prefs: NutritionPrefs | null | undefined,
+  _key: string = NUTRITION_PREFS_KEY,
+  goalOrigin?: "manual" | "preset" | "tdee",
+): boolean {
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return true;
+  const previousPrefs = prev.prefs
+    ? normalizeNutritionPrefs(JSON.parse(prev.prefs.prefsJson) as unknown)
+    : defaultNutritionPrefs();
+  const requestedPrefs = prefs || defaultNutritionPrefs();
+  const effectiveOrigin =
+    goalOrigin ??
+    (requestedPrefs.adaptiveGoalEnabled &&
+    requestedPrefs.adaptiveGoalLastUpdatedAt != null &&
+    requestedPrefs.adaptiveGoalLastUpdatedAt !==
+      previousPrefs.adaptiveGoalLastUpdatedAt
+      ? "preset"
+      : "manual");
+  const goalChanged =
+    previousPrefs.dailyTargetKcal !== requestedPrefs.dailyTargetKcal ||
+    previousPrefs.dailyTargetProtein_g !==
+      requestedPrefs.dailyTargetProtein_g ||
+    previousPrefs.dailyTargetFat_g !== requestedPrefs.dailyTargetFat_g ||
+    previousPrefs.dailyTargetCarbs_g !== requestedPrefs.dailyTargetCarbs_g;
+  const nextPrefs =
+    goalChanged && effectiveOrigin === "manual"
+      ? { ...requestedPrefs, adaptiveGoalEnabled: false }
+      : requestedPrefs;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    prefs: {
+      prefsJson: JSON.stringify(nextPrefs),
+      activePantryId: prev.prefs?.activePantryId ?? null,
+    },
+    goalOrigin: effectiveOrigin,
+  };
+  triggerNutritionDualWrite(prev, next);
+  return true;
+}
+
+export function persistAdaptiveNutritionPrefs(prefs: NutritionPrefs): boolean {
+  return persistNutritionPrefs(
+    { ...prefs, adaptiveGoalEnabled: true },
+    NUTRITION_PREFS_KEY,
+    "tdee",
+  );
+}
+
+export function persistProfileNutritionPrefs(prefs: NutritionPrefs): boolean {
+  return persistNutritionPrefs(
+    { ...prefs, adaptiveGoalEnabled: true },
+    NUTRITION_PREFS_KEY,
+    "preset",
+  );
+}
+
+export function loadActivePantryId(
+  _activeKey: string = NUTRITION_ACTIVE_PANTRY_KEY,
+): string {
+  const cache = getCachedNutritionSqliteState();
+  return cache.activePantryId ?? "home";
+}
+
+export function loadPantries(
+  _key: string = NUTRITION_PANTRIES_KEY,
+  _activeKey: string = NUTRITION_ACTIVE_PANTRY_KEY,
+): Pantry[] {
+  const cache = getCachedNutritionSqliteState();
+  if (cache.pantries.length > 0) return cache.pantries;
+
+  // No SQLite-side pantries (fresh user, or boot not yet complete).
+  // The hook's first paint gets a single default `home` pantry — the
+  // first user mutation will dual-write the row to SQLite via
+  // `persistPantries` below.
+  return [makeDefaultPantry()];
+}
+
+export function persistPantries(
+  _key: string = NUTRITION_PANTRIES_KEY,
+  _activeKey: string = NUTRITION_ACTIVE_PANTRY_KEY,
+  pantries?: Pantry[] | null,
+  activeId?: string | null,
+): boolean {
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return true;
+  const nextPantries: Pantry[] = Array.isArray(pantries) ? pantries : [];
+  const nextActive: string | null = activeId ? String(activeId) : null;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    pantries: extractPantrySnapshots(nextPantries),
+    prefs: {
+      prefsJson:
+        prev.prefs?.prefsJson ?? JSON.stringify(defaultNutritionPrefs()),
+      activePantryId: nextActive ?? prev.prefs?.activePantryId ?? null,
+    },
+  };
+  triggerNutritionDualWrite(prev, next);
+  return true;
+}
+
+export function loadNutritionLog(
+  _key: string = NUTRITION_LOG_KEY,
+): NutritionLog {
+  const cache = getCachedNutritionSqliteState();
+  return normalizeNutritionLog(cache.log);
+}
+
+/** Append-only history used by retrospective goal comparisons. */
+export function loadNutritionGoalPeriods(): readonly GoalPeriod[] {
+  return getCachedNutritionSqliteState().goalPeriods;
+}
+
+export function persistNutritionLog(
+  log: NutritionLog | null | undefined,
+  _key: string = NUTRITION_LOG_KEY,
+): boolean {
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return true;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    meals: extractMealSnapshots(normalizeNutritionLog(log ?? {})),
+  };
+  triggerNutritionDualWrite(prev, next);
+  // Notify same-tab Hub consumers (F3/F10 fix) so Hub Reports / Dashboard
+  // re-aggregate immediately without waiting for a cross-tab storage event.
+  emitHubBus("storageUpdated", undefined);
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Stage 11 / PR #070n-dualwrite — water-log + shopping-list
+// dual-write hooks. Mirrors `persistNutritionLog` shape: peek prev
+// from the warm cache, build a `next` state with the new slice,
+// and fire the dual-write trigger.
+// ─────────────────────────────────────────────
+
+/**
+ * Persist the entire water-log map. Mirrors `persistNutritionLog` — the
+ * caller passes the full `Record<dateKey, volumeMl>` and the diff
+ * layer emits one `water-log-set` op per changed date. Pre-boot or
+ * pre-auth (`peekNutritionDualWriteState() === null`) is a no-op so
+ * first-paint stays on the in-memory hook state.
+ */
+export function persistNutritionWaterLog(
+  waterLog: Record<string, number> | null | undefined,
+): boolean {
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return true;
+  const safe: Record<string, number> = {};
+  if (waterLog && typeof waterLog === "object") {
+    for (const [k, v] of Object.entries(waterLog)) {
+      const n = Number(v);
+      if (Number.isFinite(n) && n >= 0) safe[k] = Math.round(n);
+    }
+  }
+  const next: NutritionDualWriteState = { ...prev, waterLog: safe };
+  triggerNutritionDualWrite(prev, next);
+  return true;
+}
+
+/**
+ * Persist the full saved-recipes list into SQLite. `recipeBook.ts` owns
+ * IndexedDB as the write target (`saveRecipeToBook` / `deleteSavedRecipe`);
+ * without this mirror, `sqliteReader.ts`'s `cache.recipes` — what
+ * `RecipesCard`'s "Мої рецепти" actually reads — never sees an IDB-only
+ * write, so a saved recipe shows once (optimistic local state) and then
+ * disappears on the next cache refresh.
+ */
+export function persistNutritionRecipes(
+  recipes: readonly SavedRecipe[] | null | undefined,
+): boolean {
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return true;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    recipes: (recipes ?? []).map(recipeSnapshot),
+  };
+  triggerNutritionDualWrite(prev, next);
+  return true;
+}
+
+/**
+ * Persist the shopping-list singleton. The whole document is sent as
+ * one `shopping-list-set` op carrying `dataJson` for `data_json`.
+ */
+export function persistNutritionShoppingList(
+  shoppingList: ShoppingList | null | undefined,
+): boolean {
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return true;
+  const normalized = normalizeShoppingList(shoppingList ?? null);
+  const next: NutritionDualWriteState = {
+    ...prev,
+    shoppingList: { dataJson: JSON.stringify(normalized) },
+  };
+  triggerNutritionDualWrite(prev, next);
+  return true;
+}
+
+// ─────────────────────────────────────────────
+// Dual-write state extraction (Stage 4 PR #032; rewired by
+// PR #057n-tombstone to peek the SQLite warm cache instead of LS).
+//
+// Returns `null` when no dual-write context is registered — the
+// write call sites use this as a fast-path gate so we never enqueue
+// SQLite ops pre-auth.
+//
+// Recipes live in IndexedDB (`recipeBook.ts`) rather than LS, but the
+// SQLite `nutrition_recipes` table is what `sqliteReader.ts` reads back
+// into `cache.recipes` — so `prev.recipes` below reflects the cache, and
+// `persistNutritionRecipes()` is how `recipeBook.ts` mirrors an IDB write
+// into SQLite so the next cache refresh actually contains it.
+// ─────────────────────────────────────────────
+
+function recipeSnapshot(r: SavedRecipe): NutritionRecipeSnapshot {
+  return { id: r.id, title: r.title, dataJson: JSON.stringify(r) };
+}
+
+function peekNutritionDualWriteState(): NutritionDualWriteState | null {
+  if (!isNutritionDualWriteRegistered()) return null;
+  try {
+    const cache = getCachedNutritionSqliteState();
+    const prefs = cache.prefs ?? defaultNutritionPrefs();
+    return {
+      meals: extractMealSnapshots(normalizeNutritionLog(cache.log)),
+      pantries: extractPantrySnapshots(normalizePantries(cache.pantries)),
+      prefs: {
+        prefsJson: JSON.stringify(prefs),
+        activePantryId: cache.activePantryId ?? null,
+      },
+      recipes: cache.recipes.map(recipeSnapshot),
+      // Stage 11 / PR #070n-dualwrite — peek water-log + shopping-list
+      // from the warm cache. Pre-tombstone these slices may be empty
+      // until the call site below dual-writes them on first save —
+      // that's fine: the diff treats `0 → N` as a write op and the
+      // subsequent reads re-warm them.
+      waterLog: cache.waterLog ?? {},
+      shoppingList: cache.shoppingList
+        ? { dataJson: JSON.stringify(cache.shoppingList) }
+        : null,
+      // W1-PANTRY-APPEND стадія 2 — завжди `[]`: журнал не читається назад
+      // із кешу (readers — стадія 3+). Викликач, що хоче емітити подію,
+      // будує `next.pantryEvents` сам — див. `appendNutritionPantryEvent`.
+      pantryEvents: [],
+    };
+  } catch {
+    return null;
+  }
+}
+
+// ─────────────────────────────────────────────
+// W1-PANTRY-APPEND стадія 2 — append-only журнал руху комори.
+//
+// Окремий тригер від `persistPantries`: той продовжує писати
+// `nutrition_pantry_items.qty` через `pantry-upsert` (незмінно), а ці
+// функції ПАРАЛЕЛЬНО дописують у `nutrition_pantry_events` через
+// `pantry-event-append` (`diff.pantryEvents.ts`). Викликаються з мутаторів
+// `useNutritionPantries.ts` і з HubChat-екзекутора `consume_from_pantry`
+// одразу після (або замість, для backfill) звичайного `setPantries`.
+// ─────────────────────────────────────────────
+
+/**
+ * Дописати ОДНУ подію в журнал руху комори. No-op до автентифікації/бута
+ * (`peekNutritionDualWriteState()` поверне `null`) — той самий fast-path
+ * gate, що й у решти `persist*`-хелперів цього файлу.
+ */
+export function appendNutritionPantryEvent(
+  event: NutritionPantryEventSnapshot,
+): void {
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    pantryEvents: [...(prev.pantryEvents ?? []), event],
+  };
+  triggerNutritionDualWrite(prev, next);
+}
+
+// Once-per-session guard: backfill-чекпойнти ідемпотентні (детермінований
+// `id` + `INSERT OR IGNORE` і локально, і на сервері), тож повтор нешкідливий
+// — але й немає сенсу штовхати N мережевих push-ів на кожен mount хука.
+// ponytail: модульний прапор, не персистований — переживає одну вкладку,
+// не переживає перезавантаження; підняти до `@shared/storage`, якщо
+// повторний виклик між сесіями стане виміряною проблемою.
+let pantryBackfillDone = false;
+
+/**
+ * Один чекпойнт `'initial'` на кожну живу позицію комори з відомою `qty`
+ * (ADR-0077 §5). Детермінований `id` (`buildPantryInitialCheckpointId`)
+ * робить повторний виклик безпечним: `INSERT OR IGNORE` схлопує дублі
+ * замість подвоєння залишку.
+ */
+export function backfillNutritionPantryCheckpoints(): void {
+  if (pantryBackfillDone) return;
+  const prev = peekNutritionDualWriteState();
+  if (prev === null) return;
+  pantryBackfillDone = true;
+
+  const events: NutritionPantryEventSnapshot[] = [];
+  for (const pantry of prev.pantries) {
+    for (const item of pantry.items) {
+      if (item.qty == null) continue;
+      const itemKey = canonicalFoodKey(item.name);
+      events.push({
+        id: buildPantryInitialCheckpointId(pantry.id, itemKey),
+        pantryId: pantry.id,
+        itemId: item.id,
+        itemKey,
+        kind: "initial",
+        deltaQty: null,
+        absQty: item.qty,
+        unit: item.unit,
+        source: "backfill",
+        mealId: null,
+      });
+    }
+  }
+  if (events.length === 0) return;
+  const next: NutritionDualWriteState = {
+    ...prev,
+    pantryEvents: [...(prev.pantryEvents ?? []), ...events],
+  };
+  triggerNutritionDualWrite(prev, next);
+}
+
+/** Test-only: reset the once-per-session backfill guard. */
+export function __resetNutritionPantryBackfillForTests(): void {
+  pantryBackfillDone = false;
+}
+
+export function extractMealSnapshots(
+  log: NutritionLog,
+): NutritionMealSnapshot[] {
+  const out: NutritionMealSnapshot[] = [];
+  for (const [dateKey, day] of Object.entries(log)) {
+    const meals = Array.isArray(day?.meals) ? day.meals : [];
+    for (const m of meals) {
+      if (!m || typeof m !== "object" || !m.id) continue;
+      out.push({
+        id: String(m.id),
+        dateKey,
+        time: typeof m.time === "string" ? m.time : "",
+        mealType: typeof m.mealType === "string" ? m.mealType : "snack",
+        name: typeof m.name === "string" ? m.name : "",
+        label: typeof m.label === "string" ? m.label : "",
+        macros: m.macros ?? null,
+        source: typeof m.source === "string" ? m.source : "manual",
+        macroSource:
+          typeof m.macroSource === "string" ? m.macroSource : "manual",
+        amountG: typeof m.amount_g === "number" ? m.amount_g : null,
+        foodId: typeof m.foodId === "string" ? m.foodId : null,
+        isDemo: m.demo === true,
+      });
+    }
+  }
+  return out;
+}
+
+export function extractPantrySnapshots(
+  pantries: readonly Pantry[],
+): NutritionPantrySnapshot[] {
+  // Pantry items in LS are positional and have no stable `id`. Generate a
+  // deterministic id from `pantryId::index::name` so the same item gets
+  // the same row across reads — the adapter relies on `id` for upsert /
+  // soft-delete, and a stable derivation prevents thrash on every diff.
+  return pantries.map((p) => ({
+    id: p.id,
+    name: p.name,
+    text: p.text,
+    items: (p.items ?? []).map((it, idx) => ({
+      id: `${p.id}::${idx}::${it.name ?? ""}`,
+      name: it.name,
+      qty: typeof it.qty === "number" ? it.qty : null,
+      unit: typeof it.unit === "string" ? it.unit : null,
+      notes: typeof it.notes === "string" ? it.notes : null,
+      // Варіанти покупок їдуть одним JSON-полем разом зі своєю позицією
+      // (міграція 130). Порожній список і `null` означають одне й те саме —
+      // пишемо `null`, щоб diff не бачив зміни там, де її немає.
+      sources:
+        Array.isArray(it.sources) && it.sources.length > 0
+          ? JSON.stringify(it.sources)
+          : null,
+    })),
+  }));
+}

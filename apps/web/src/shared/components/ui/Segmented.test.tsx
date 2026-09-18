@@ -1,0 +1,147 @@
+/** @vitest-environment jsdom */
+import { describe, it, expect, vi } from "vitest";
+import { render, fireEvent, cleanup } from "@testing-library/react";
+import { afterEach } from "vitest";
+import { Segmented } from "./Segmented";
+
+afterEach(cleanup);
+
+const ITEMS = [
+  { value: "day", label: "День" },
+  { value: "week", label: "Тиждень" },
+  { value: "month", label: "Місяць" },
+] as const;
+
+/**
+ * Contract tests for the DS Segmented primitive. Locks role=tablist,
+ * aria-selected wiring, onChange dispatch, and the variant × style
+ * matrix for the active chip.
+ */
+describe("Segmented", () => {
+  it("renders role='tablist' with a role='tab' per item", () => {
+    const { getByRole, getAllByRole } = render(
+      <Segmented items={ITEMS} value="day" onChange={() => {}} />,
+    );
+    expect(getByRole("tablist")).not.toBeNull();
+    expect(getAllByRole("tab")).toHaveLength(ITEMS.length);
+  });
+
+  it("marks only the active item with aria-selected='true'", () => {
+    const { getAllByRole } = render(
+      <Segmented items={ITEMS} value="week" onChange={() => {}} />,
+    );
+    const tabs = getAllByRole("tab");
+    expect(tabs[0]!.getAttribute("aria-selected")).toBe("false");
+    expect(tabs[1]!.getAttribute("aria-selected")).toBe("true");
+    expect(tabs[2]!.getAttribute("aria-selected")).toBe("false");
+  });
+
+  it("invokes onChange with the clicked item's value", () => {
+    const onChange = vi.fn();
+    const { getAllByRole } = render(
+      <Segmented items={ITEMS} value="day" onChange={onChange} />,
+    );
+    fireEvent.click(getAllByRole("tab")[2]!);
+    expect(onChange).toHaveBeenCalledTimes(1);
+    expect(onChange).toHaveBeenCalledWith("month");
+  });
+
+  it("style='solid' + variant='fizruk' paints the active tab inverted-ink", () => {
+    const { getAllByRole } = render(
+      <Segmented
+        items={ITEMS}
+        value="day"
+        onChange={() => {}}
+        style="solid"
+        variant="fizruk"
+      />,
+    );
+    const active = getAllByRole("tab")[0];
+    // «Чорнило» v3.1 § 6 — solid active is inverted-ink (bg-ink/text-bg,
+    // theme-aware) instead of a saturated module fill; border keeps the
+    // module accent for continuity with siblings.
+    expect(active!.className!).toContain("bg-ink");
+    expect(active!.className!).toContain("text-bg");
+    expect(active!.className!).toContain("border-fizruk");
+  });
+
+  it("supports roving tabindex: only the active tab is a tab stop", () => {
+    const { getAllByRole } = render(
+      <Segmented items={ITEMS} value="week" onChange={() => {}} />,
+    );
+    const tabs = getAllByRole("tab");
+    expect(tabs[0]!.tabIndex).toBe(-1);
+    expect(tabs[1]!.tabIndex).toBe(0);
+    expect(tabs[2]!.tabIndex).toBe(-1);
+  });
+
+  it("ArrowRight moves focus + selection to the next tab, wrapping at the end", () => {
+    const onChange = vi.fn();
+    const { getAllByRole } = render(
+      <Segmented items={ITEMS} value="month" onChange={onChange} />,
+    );
+    const tabs = getAllByRole("tab");
+    tabs[2]!.focus();
+    fireEvent.keyDown(tabs[2]!, { key: "ArrowRight" });
+    expect(onChange).toHaveBeenCalledWith("day");
+    expect(document.activeElement).toBe(tabs[0]);
+  });
+
+  it("Home/End jump to the first/last tab", () => {
+    const onChange = vi.fn();
+    const { getAllByRole } = render(
+      <Segmented items={ITEMS} value="week" onChange={onChange} />,
+    );
+    const tabs = getAllByRole("tab");
+    tabs[1]!.focus();
+    fireEvent.keyDown(tabs[1]!, { key: "End" });
+    expect(onChange).toHaveBeenCalledWith("month");
+    expect(document.activeElement).toBe(tabs[2]);
+
+    fireEvent.keyDown(tabs[2]!, { key: "Home" });
+    expect(onChange).toHaveBeenCalledWith("day");
+    expect(document.activeElement).toBe(tabs[0]);
+  });
+
+  it("style='soft' (default) + variant='routine' paints the active tab with routine-soft palette", () => {
+    const { getAllByRole } = render(
+      <Segmented
+        items={ITEMS}
+        value="day"
+        onChange={() => {}}
+        variant="routine"
+      />,
+    );
+    const active = getAllByRole("tab")[0];
+    expect(active!.className!).toContain("bg-routine-surface");
+    // Soft active label uses the theme-aware `-soft-fg` token (deep on the
+    // pale light/HC surface, bright on dark) instead of the static
+    // `text-routine-strong` hex that went sub-AA in HC. See VARIANT_SOFT.
+    expect(active!.className!).toContain("text-routine-soft-fg");
+  });
+
+  it("defaults to the pill layout: rounded chips on a wrapping row", () => {
+    const { getByRole, getAllByRole } = render(
+      <Segmented items={ITEMS} value="day" onChange={() => {}} />,
+    );
+    expect(getByRole("tablist").className).toContain("flex-wrap");
+    for (const tab of getAllByRole("tab")) {
+      expect(tab.className).toContain("rounded-xl");
+      expect(tab.className).not.toContain("flex-1");
+    }
+  });
+
+  it("layout='bar' makes one full-width track of equal segments", () => {
+    const { getByRole, getAllByRole } = render(
+      <Segmented items={ITEMS} value="day" onChange={() => {}} layout="bar" />,
+    );
+    const tablist = getByRole("tablist");
+    expect(tablist.className).toContain("w-full");
+    // A wrapped segment would break the single track the layout promises.
+    expect(tablist.className).not.toContain("flex-wrap");
+    for (const tab of getAllByRole("tab")) {
+      expect(tab.className).toContain("flex-1");
+      expect(tab.className).toContain("rounded-2xl");
+    }
+  });
+});

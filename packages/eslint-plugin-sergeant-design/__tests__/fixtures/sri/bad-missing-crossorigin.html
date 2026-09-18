@@ -1,0 +1,14 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SRI bad fixture — missing crossorigin</title>
+    <!-- Synthetic bad-case: has integrity but no crossorigin="anonymous",
+         so the browser silently skips the SRI check. -->
+    <script
+      src="https://cdn.example.com/x.js"
+      integrity="sha384-AbC123+/dEf456gHiJkLmNoPqRsTuVwXyZ0123456789aBcDeFgHiJkLmNoPqRsTuV"
+    ></script>
+  </head>
+  <body></body>
+</html>

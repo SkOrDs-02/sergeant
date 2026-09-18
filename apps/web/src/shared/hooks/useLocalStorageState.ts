@@ -1,0 +1,203 @@
+/**
+ * `useLocalStorageState<T>` — `useState`-like hook with localStorage persistence.
+ *
+ * Replaces the very common pattern of:
+ *   const [v, setV] = useState<T>(() => readJSON(key, fallback));
+ *   useEffect(() => writeJSON(key, v), [key, v]);
+ *
+ * The hook:
+ *  - reads synchronously in the state initializer so there is no first-paint
+ *    flicker from `undefined → stored value`;
+ *  - swallows storage errors (quota, private mode, disabled) via the shared
+ *    `safeReadLS` / `safeWriteLS` helpers;
+ *  - optionally validates the stored value with a type guard and falls back
+ *    to `initialValue` if the stored shape is unexpected;
+ *  - optionally debounces writes (useful for large payloads written many
+ *    times per second, e.g. a budgets list the user is dragging);
+ *  - does not subscribe to cross-tab `storage` events by default — most
+ *    call sites are user-owned UI state, and opting in via a listener is
+ *    still available by reading `safeReadLS` on focus/visibility if needed.
+ *
+ * Signature matches `useState<T>` as closely as possible so swapping in is
+ * mechanical.
+ */
+import {
+  useCallback,
+  useEffect,
+  useMemo,
+  useRef,
+  useState,
+  type Dispatch,
+  type SetStateAction,
+} from "react";
+
+import { safeReadLS, webKVStore } from "@shared/lib/storage/storage";
+
+function hasLocalStorage(): boolean {
+  // Reads/writes are routed through `webKVStore`, which falls back to a
+  // memory store on SSR / restricted environments. We still gate on
+  // global `localStorage` existence so non-browser callers retain the
+  // historical "use the seeded initial value, do not write" semantics
+  // instead of silently round-tripping through the memory fallback.
+  const g = globalThis as { localStorage?: unknown };
+  return typeof g.localStorage !== "undefined" && g.localStorage !== null;
+}
+
+export interface UseLocalStorageStateOptions<T> {
+  /**
+   * Runtime shape guard. Called with the raw parsed value from storage;
+   * should return `true` when the value is structurally compatible with
+   * `T`. If absent, any parsed value is accepted.
+   */
+  validate?: (raw: unknown) => raw is T;
+  /**
+   * Debounce window (ms) between the last `setValue` call and the actual
+   * localStorage write. Use for hot paths that update many times per frame
+   * (drag/resize, typing). 0 / undefined means write immediately inside
+   * the effect.
+   */
+  debounceMs?: number;
+  /**
+   * Store the value as a raw string (no JSON.parse / JSON.stringify).
+   * Shortcut for `serialize: (v) => v`, `deserialize: (raw) => raw`.
+   * Useful for legacy keys that were written as bare strings (e.g.
+   * "calendar" / "stats" rather than `"\"calendar\""`) — switching to
+   * JSON would silently invalidate every existing user's preference.
+   * Only meaningful when `T` is `string`.
+   */
+  raw?: boolean;
+  /**
+   * Custom serializer. Defaults to `JSON.stringify`.
+   */
+  serialize?: (value: T) => string;
+  /**
+   * Custom deserializer. Defaults to `JSON.parse`. Can return anything —
+   * the result is narrowed by `validate` (if provided) or trusted as `T`.
+   */
+  deserialize?: (raw: string) => unknown;
+}
+
+function resolveInitial<T>(initial: T | (() => T)): T {
+  return typeof initial === "function" ? (initial as () => T)() : initial;
+}
+
+export function useLocalStorageState<T>(
+  key: string,
+  initialValue: T | (() => T),
+  options: UseLocalStorageStateOptions<T> = {},
+): [T, Dispatch<SetStateAction<T>>] {
+  const { validate, debounceMs, raw, serialize, deserialize } = options;
+  const effectiveSerialize = useMemo(
+    () => serialize ?? (raw ? (v: T) => String(v) : undefined),
+    [serialize, raw],
+  );
+  const effectiveDeserialize = useMemo(
+    () => deserialize ?? (raw ? (r: string) => r : undefined),
+    [deserialize, raw],
+  );
+
+  // Stable ref for the latest options so the read/write effects don't
+  // re-subscribe on every render if the caller inlines an options object.
+  const optionsRef = useRef({
+    validate,
+    serialize: effectiveSerialize,
+    deserialize: effectiveDeserialize,
+  });
+
+  useEffect(() => {
+    optionsRef.current = {
+      validate,
+      serialize: effectiveSerialize,
+      deserialize: effectiveDeserialize,
+    };
+  }, [validate, effectiveSerialize, effectiveDeserialize]);
+
+  const [value, setValue] = useState<T>(() => {
+    const fallback = resolveInitial(initialValue);
+    if (!hasLocalStorage()) return fallback;
+    const storedRaw = webKVStore.getString(key);
+    if (storedRaw === null) return fallback;
+    try {
+      const parsed = effectiveDeserialize
+        ? effectiveDeserialize(storedRaw)
+        : JSON.parse(storedRaw);
+      if (validate && !validate(parsed)) return fallback;
+      return (parsed ?? fallback) as T;
+    } catch {
+      // `safeReadLS` handles this too but we need the raw path above so a
+      // custom deserializer can own the parsing. Fall through to fallback.
+      return safeReadLS<T>(key, fallback) ?? fallback;
+    }
+  });
+
+  const [persistGate, setPersistGate] = useState(0);
+  const lastPersistedGateRef = useRef(persistGate);
+  const skipInitialWriteRef = useRef(true);
+
+  const [prevKey, setPrevKey] = useState(key);
+  if (key !== prevKey) {
+    setPrevKey(key);
+    if (!hasLocalStorage()) {
+      setValue(resolveInitial(initialValue));
+    } else {
+      const raw = webKVStore.getString(key);
+      if (raw === null) {
+        setValue(resolveInitial(initialValue));
+      } else {
+        try {
+          const parsed = effectiveDeserialize
+            ? effectiveDeserialize(raw)
+            : JSON.parse(raw);
+          if (validate && !validate(parsed)) {
+            setValue(resolveInitial(initialValue));
+          } else {
+            setValue((parsed ?? resolveInitial(initialValue)) as T);
+          }
+        } catch {
+          setValue(resolveInitial(initialValue));
+        }
+      }
+    }
+    setPersistGate((g) => g + 1);
+  }
+
+  // Skip the write on the very first render: `value` was just read from
+  // storage (or is the seeded initial for a missing key), so writing it
+  // back is either a no-op or an unwanted side-effect on first paint.
+  // Subsequent `setValue` calls go through this effect normally.
+  useEffect(() => {
+    if (!hasLocalStorage()) return undefined;
+    if (skipInitialWriteRef.current) {
+      skipInitialWriteRef.current = false;
+      lastPersistedGateRef.current = persistGate;
+      return undefined;
+    }
+    if (lastPersistedGateRef.current !== persistGate) {
+      lastPersistedGateRef.current = persistGate;
+      return undefined;
+    }
+    const write = () => {
+      const { serialize: s } = optionsRef.current;
+      let raw: string;
+      try {
+        raw = s ? s(value) : JSON.stringify(value);
+      } catch {
+        return; // serialization failure (cyclic structure, throwing toJSON)
+      }
+      // `webKVStore.setString` already swallows quota / private-mode errors.
+      webKVStore.setString(key, raw);
+    };
+    if (!debounceMs || debounceMs <= 0) {
+      write();
+      return undefined;
+    }
+    const id = setTimeout(write, debounceMs);
+    return () => clearTimeout(id);
+  }, [key, value, debounceMs, persistGate]);
+
+  const setStable = useCallback<Dispatch<SetStateAction<T>>>((next) => {
+    setValue(next);
+  }, []);
+
+  return [value, setStable];
+}

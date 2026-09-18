@@ -1,0 +1,14 @@
+import { defineConfig } from "vitest/config";
+import { baseCoverageConfig } from "@sergeant/config/vitest.base";
+
+export default defineConfig({
+  test: {
+    environment: "{{#if (eq kind "react")}}jsdom{{else}}node{{/if}}",
+    include: ["src/**/*.test.ts{{#if (eq kind "react")}}x{{/if}}"],
+    passWithNoTests: true,
+    coverage: {
+      ...baseCoverageConfig,
+      include: ["src/**/*.ts{{#if (eq kind "react")}}x{{/if}}"],
+    },
+  },
+});

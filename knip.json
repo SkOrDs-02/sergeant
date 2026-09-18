@@ -1,0 +1,171 @@
+{
+  "$schema": "https://unpkg.com/knip@latest/schema.json",
+  // Suppress categories that generate false positives in this monorepo:
+  // - exports/types: intentionally exported for public APIs, test helpers (__reset*), future consumers
+  // - duplicates: named + default dual exports are intentional style in many files
+  // - unresolved: .js-extension imports (moduleResolution:bundler), build-artifact paths, broken
+  //     sync/http/schemas.js refs (pre-existing TS errors on main — not a knip task)
+  "exclude": ["exports", "types", "duplicates", "unresolved"],
+  // Generated telemetry directory — not a real workspace, contains vitest/@sentry test fixtures
+  "ignore": [".telemetry/**"],
+  "workspaces": {
+    ".": {
+      // Expanded from scripts/*.mjs to cover subdirectory scripts (ci/,
+      // claude-hooks/, codemods/, docs/) and .ts files.
+      "entry": ["scripts/**/*.{mjs,ts}"],
+      "project": ["scripts/**"],
+      "ignoreDependencies": [
+        "@eslint/js",
+        "eslint-plugin-jsx-a11y",
+        "eslint-plugin-react",
+        "eslint-plugin-react-hooks",
+        "typescript-eslint",
+        "tsc-files",
+        // globals — imported in eslint.baseline.js (detected via eslint knip plugin); not in entry
+        "globals",
+        // @commitlint/types — used in commitlint.config.js (detected via commitlint plugin)
+        "@commitlint/types",
+        // vitest — used in scripts/ci/*.mjs,
+        //          tools/tsconfig-guard/__tests__/check.test.mjs (no package.json → root workspace)
+        "vitest",
+        // semver — used in scripts/check-pnpm-overrides.mjs
+        "semver",
+        // sharp — one-off ілюстрації вправ (scripts/fizruk/fetch-exercise-images.mjs),
+        // запускається вручну через npx; тягнути нативний білд у dev-deps
+        // монорепо заради разового скрипта не варто.
+        "sharp"
+      ],
+      // External binaries installed by the operator/CI image, not from npm.
+      // `jq` — ним і сам workflow деплою розбирає відповідь Coolify, і
+      // тест `ci-deploy-verify-gate` ВИКОНУЄ той самий вираз на фікстурах
+      // (рядкова перевірка вже раз проґавила парсер, який читав лише одну
+      // форму з трьох). Тобто це не зайва залежність, а той самий
+      // інструмент, що й у проді гейта.
+      "ignoreBinaries": ["gitleaks", "jq"]
+    },
+    "apps/web": {
+      "entry": ["src/sw.ts"],
+      "project": ["src/**/*.{js,jsx,ts,tsx}"],
+      // Scaffolded module barrels — all carry @scaffolded + @nextStep markers per AGENTS.md
+      // Hard Rule #10. Do NOT delete; wire the barrel consumers in follow-up PRs.
+      //
+      // `scripts/knip-respects-scaffolded.mjs` читає ці маркери сам, але CI
+      // ганяє сирий `pnpm knip`, який про них не знає — тож файл має бути
+      // і тут, і з маркером у шапці.
+      "ignore": [
+        "src/core/errors/index.ts",
+        "src/core/profile/index.ts",
+        "src/modules/finyk/index.ts",
+        "src/modules/fizruk/index.ts",
+        "src/modules/nutrition/index.ts",
+        "src/modules/routine/index.ts",
+        "src/shared/lib/insights/index.ts"
+      ],
+      "ignoreDependencies": [
+        // @testing-library/user-event — used in nutrition page tests; not in web package.json
+        "@testing-library/user-event",
+        // @tanstack/query-persist-client-core — sub-path of @tanstack/react-query-persist-client
+        "@tanstack/query-persist-client-core",
+        // @stryker-mutator/vitest-runner — loaded by name via stryker.time.conf.json
+        //   ("testRunner": "vitest"); not an ES import, so knip cannot see it.
+        "@stryker-mutator/vitest-runner"
+      ]
+    },
+    "apps/landing": {
+      // entry-server.tsx — SSG-вхід (`vite build --ssr`, див. package.json
+      // build): Vite-плагін knip бачить лише index.html → main.tsx.
+      // middleware.ts прибрано: файл видалено разом з edge-проксі (README
+      // § «Якщо тут колись зʼявиться запит до API») — патерн без збігів.
+      // site-url.d.mts — типова декларація для site-url.mjs. Імпорту на неї
+      // немає і бути не може: TypeScript підхоплює .d.mts за іменем сусіднього
+      // .mjs, тож для knip вона виглядає файлом-сиротою. Сам резолвер лишається
+      // .mjs, бо його імпортують і Node-скрипти білда, і vite.config.ts.
+      "entry": ["src/entry-server.tsx", "scripts/generate-og.mjs"],
+      "ignore": ["scripts/site-url.d.mts"]
+    },
+    "apps/server": {
+      "project": ["src/**/*.{js,ts}"],
+      // Scaffolded server barrels — all carry @scaffolded + @nextStep markers.
+      "ignore": ["src/lib/ragEval/index.ts", "src/modules/ai-memory/index.ts"],
+      "ignoreDependencies": [
+        "pino-pretty",
+        // pino-loki — used as string reference `target: "pino-loki"` in lokiTransport.ts,
+        //   not an ES import; added in 03f1596db (feat: loki transport). Confirmed real infra.
+        "pino-loki",
+        // @stryker-mutator/vitest-runner — loaded by name via stryker.normalizers.conf.json
+        //   ("testRunner": "vitest"); not an ES import, so knip cannot see it.
+        "@stryker-mutator/vitest-runner"
+      ]
+    },
+    "apps/mobile": {
+      // Entry — ЛИШЕ роути expo-router. Доти тут стояв ще й `src/**`, тобто
+      // КОЖЕН файл поверхні був точкою входу, і knip на мобайлі структурно
+      // не міг знайти нічого мертвого: гейт стояв, світився зеленим і не
+      // перевіряв нічого (знахідка PR-M3 наскрізного огляду 2026-09-13 —
+      // «knip це й не ловить, бо весь src/** досі entry»). Порівняй із
+      // сусідами: `apps/web` тримає entry `["src/sw.ts"]`, `apps/server` і
+      // `apps/mobile-shell` не задають його взагалі.
+      "entry": ["app/**/*.{ts,tsx}"],
+      "project": ["app/**/*.{ts,tsx}", "src/**/*.{ts,tsx}"],
+      // Звуження entry оголило 15 файлів без жодного імпортера. Їх
+      // видалено 2026-09-16 рішенням власника — 1737 рядків, серед них
+      // чотири UI-примітиви з барелем, який не імпортував ніхто, мертвий
+      // кластер онбордингу (`SplashStep` + `VibeChipRow`) і `FizrukApp.tsx`,
+      // чий докстрінг борг PR-D1 два аудити поспіль вважав застарілим —
+      // файл, який ніхто не імпортує. Список у `ignore` більше не
+      // потрібен: борг закрито, а не приховано.
+      "metro": false,
+      "ignoreDependencies": [
+        "@babel/preset-typescript",
+        "@config-plugins/detox",
+        // expo-updates, expo-system-ui — detected by knip Expo plugin from app.config.ts;
+        //   these are implicit Expo runtime deps, not direct imports
+        "expo-updates",
+        "expo-system-ui"
+      ]
+    },
+    "apps/mobile-shell": {
+      "project": ["src/**/*.{ts,tsx}"],
+      // @capacitor/ios is consumed by the Capacitor CLI (`cap add/sync/open ios`,
+      // see add:ios/build:ios/open:ios scripts), not via JS imports, and there is
+      // no ios/ native project yet — so knip cannot see it. Kept for iOS-readiness
+      // (version-locked with the other @capacitor/* deps). Knip false-positive.
+      "ignoreDependencies": ["@capacitor/ios"]
+    },
+    "packages/api-client": {
+      "project": ["src/**/*.{ts,tsx}"]
+    },
+    "packages/config": {
+      "entry": ["*.ts", "*.json"],
+      "project": ["**/*"],
+      // vitest — used via vitest/config sub-path in vitest.base.js;
+      //   not declared in packages/config/package.json
+      "ignoreDependencies": ["vitest"]
+    },
+    "packages/design-tokens": {
+      "project": ["**/*.js"],
+      // tailwindcss — used in tailwind-preset.js; not declared in packages/design-tokens/package.json
+      "ignoreDependencies": ["tailwindcss"]
+    },
+    "packages/eslint-plugin-sergeant-design": {
+      // @typescript-eslint/parser — used directly in __tests__/no-strict-bypass.test.mjs;
+      //   package has no package.json dependencies at all (hoisted from root)
+      "ignoreDependencies": ["@typescript-eslint/parser"]
+    },
+    "packages/finyk-domain": {
+      "ignoreDependencies": [
+        // @stryker-mutator/vitest-runner — loaded by name via stryker.core.conf.json
+        //   ("testRunner": "vitest"); not an ES import, so knip cannot see it.
+        "@stryker-mutator/vitest-runner"
+      ]
+    },
+    "packages/shared": {
+      "project": ["src/**/*.ts"],
+      "ignoreDependencies": [
+        // @stryker-mutator/vitest-runner — loaded by name via stryker.utils.conf.json
+        "@stryker-mutator/vitest-runner"
+      ]
+    }
+  },
+  "ignoreExportsUsedInFile": true
+}

@@ -1,0 +1,184 @@
+/** @vitest-environment jsdom */
+import { renderHook } from "@testing-library/react";
+import { beforeEach, describe, expect, it, vi } from "vitest";
+
+const {
+  navigateMock,
+  toastInfoMock,
+  toastSuccessMock,
+  toastErrorMock,
+  setChoiceMock,
+  registerMock,
+  debugMock,
+  logoutMock,
+  openHubSettingsSectionMock,
+  themeState,
+} = vi.hoisted(() => ({
+  navigateMock: vi.fn(),
+  toastInfoMock: vi.fn(),
+  toastSuccessMock: vi.fn(),
+  toastErrorMock: vi.fn(),
+  setChoiceMock: vi.fn(),
+  registerMock: vi.fn(),
+  debugMock: vi.fn(),
+  logoutMock: vi.fn<() => Promise<void>>(),
+  openHubSettingsSectionMock: vi.fn(),
+  themeState: { isDark: false },
+}));
+
+vi.mock("react-router-dom", () => ({ useNavigate: () => navigateMock }));
+vi.mock("@shared/lib", () => ({ logger: { debug: debugMock } }));
+vi.mock("@shared/hooks/useToast", () => ({
+  useToast: () => ({
+    info: toastInfoMock,
+    success: toastSuccessMock,
+    error: toastErrorMock,
+  }),
+}));
+vi.mock("@shared/hooks/useTheme", () => ({
+  useTheme: () => ({ isDark: themeState.isDark, setChoice: setChoiceMock }),
+}));
+vi.mock("@shared/components/ui/CommandPalette", () => ({
+  useRegisterCommand: registerMock,
+}));
+vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => {
+  const actual =
+    await importOriginal<typeof import("@shared/lib/modules/hubNav")>();
+  return { ...actual, openHubSettingsSection: openHubSettingsSectionMock };
+});
+vi.mock("../auth/AuthContext.jsx", () => ({
+  useAuth: () => ({ logout: logoutMock }),
+}));
+
+import { useDemoCommands } from "./useDemoCommands";
+
+type Command = {
+  id: string;
+  title: string;
+  run: () => void;
+};
+
+function getCommands(): Command[] {
+  const lastCall = registerMock.mock.calls.at(-1);
+  return (lastCall?.[1] ?? []) as Command[];
+}
+
+describe("useDemoCommands", () => {
+  beforeEach(() => {
+    navigateMock.mockReset();
+    toastInfoMock.mockReset();
+    toastSuccessMock.mockReset();
+    toastErrorMock.mockReset();
+    setChoiceMock.mockReset();
+    registerMock.mockReset();
+    debugMock.mockReset();
+    logoutMock.mockReset();
+    logoutMock.mockResolvedValue(undefined);
+    openHubSettingsSectionMock.mockReset();
+    themeState.isDark = false;
+  });
+
+  it("registers the baseline command set under core.demo", () => {
+    renderHook(() => useDemoCommands());
+    expect(registerMock).toHaveBeenCalledWith("core.demo", expect.any(Array));
+    const ids = getCommands().map((c) => c.id);
+    expect(ids).toEqual([
+      "nav.hub",
+      "nav.finyk",
+      "nav.fizruk",
+      "nav.routine",
+      "nav.nutrition",
+      "settings.toggle-dark",
+      "settings.open",
+      "session.sign-out",
+    ]);
+  });
+
+  it("navigation commands route to their module paths", () => {
+    renderHook(() => useDemoCommands());
+    const byId = Object.fromEntries(getCommands().map((c) => [c.id, c]));
+    byId["nav.hub"]!.run();
+    byId["nav.finyk"]!.run();
+    byId["nav.fizruk"]!.run();
+    byId["nav.routine"]!.run();
+    byId["nav.nutrition"]!.run();
+    expect(navigateMock).toHaveBeenNthCalledWith(1, "/");
+    expect(navigateMock).toHaveBeenNthCalledWith(2, "/finyk");
+    expect(navigateMock).toHaveBeenNthCalledWith(3, "/fizruk");
+    expect(navigateMock).toHaveBeenNthCalledWith(4, "/routine");
+    expect(navigateMock).toHaveBeenNthCalledWith(5, "/nutrition");
+  });
+
+  // Рішення власника 2026-09-16: з увімкненою палітрою `Cmd+K` веде в неї,
+  // тож пошук хаба мусить бути досяжним ізсередини — першою командою.
+  it("exposes hub search as the first command when the shell hands in openSearch", () => {
+    const openSearch = vi.fn();
+    renderHook(() => useDemoCommands({ openSearch }));
+    const commands = getCommands();
+    expect(commands[0]?.id).toBe("search.open");
+    commands[0]!.run();
+    expect(openSearch).toHaveBeenCalledTimes(1);
+  });
+
+  it("toggles to dark when currently light", () => {
+    themeState.isDark = false;
+    renderHook(() => useDemoCommands());
+    const toggle = getCommands().find((c) => c.id === "settings.toggle-dark")!;
+    expect(toggle.title).toBe("Темна тема");
+    toggle.run();
+    expect(setChoiceMock).toHaveBeenCalledWith("dark");
+  });
+
+  it("toggles to light when currently dark", () => {
+    themeState.isDark = true;
+    renderHook(() => useDemoCommands());
+    const toggle = getCommands().find((c) => c.id === "settings.toggle-dark")!;
+    expect(toggle.title).toBe("Світла тема");
+    toggle.run();
+    expect(setChoiceMock).toHaveBeenCalledWith("light");
+  });
+
+  it("settings.open navigates to the Hub Settings tab via openHubSettingsSection()", () => {
+    renderHook(() => useDemoCommands());
+    const byId = Object.fromEntries(getCommands().map((c) => [c.id, c]));
+    byId["settings.open"]!.run();
+    expect(openHubSettingsSectionMock).toHaveBeenCalledTimes(1);
+    expect(openHubSettingsSectionMock).toHaveBeenCalledWith();
+    expect(debugMock).toHaveBeenCalledTimes(1);
+    // No longer a WIP stub.
+    expect(toastInfoMock).not.toHaveBeenCalled();
+  });
+
+  // Regression: `session.sign-out` used to be a `toast.info` stub that never
+  // called `logout()` — the ⌘K "Вийти з акаунту" command did nothing. It
+  // must now drive the real AuthContext logout flow and redirect to sign-in,
+  // mirroring `ProfilePage.handleLogout`.
+  it("session.sign-out logs out and redirects to sign-in", async () => {
+    renderHook(() => useDemoCommands());
+    const byId = Object.fromEntries(getCommands().map((c) => [c.id, c]));
+    byId["session.sign-out"]!.run();
+
+    await vi.waitFor(() => expect(logoutMock).toHaveBeenCalledTimes(1));
+    await vi.waitFor(() =>
+      expect(navigateMock).toHaveBeenCalledWith("/sign-in", { replace: true }),
+    );
+    expect(toastSuccessMock).toHaveBeenCalledWith("Вихід виконано");
+    expect(toastInfoMock).not.toHaveBeenCalled();
+  });
+
+  it("session.sign-out shows an error toast when logout fails", async () => {
+    logoutMock.mockRejectedValueOnce(new Error("network"));
+    renderHook(() => useDemoCommands());
+    const byId = Object.fromEntries(getCommands().map((c) => [c.id, c]));
+    byId["session.sign-out"]!.run();
+
+    await vi.waitFor(() =>
+      expect(toastErrorMock).toHaveBeenCalledWith(
+        "Не вдалося вийти",
+        undefined,
+        expect.objectContaining({ label: "Повторити" }),
+      ),
+    );
+    expect(navigateMock).not.toHaveBeenCalled();
+  });
+});

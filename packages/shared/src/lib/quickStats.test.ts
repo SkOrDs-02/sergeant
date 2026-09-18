@@ -1,0 +1,208 @@
+import { describe, expect, it } from "vitest";
+
+import {
+  QUICK_STATS_MODULE_IDS,
+  parseQuickStatsJson,
+  selectModulePreview,
+} from "./quickStats";
+
+describe("QUICK_STATS_MODULE_IDS", () => {
+  it("exposes the four Hub modules in the canonical order", () => {
+    expect([...QUICK_STATS_MODULE_IDS]).toEqual([
+      "finyk",
+      "fizruk",
+      "routine",
+      "nutrition",
+    ]);
+  });
+});
+
+describe("parseQuickStatsJson", () => {
+  it("returns null for null / undefined / empty input", () => {
+    expect(parseQuickStatsJson(null)).toBeNull();
+    expect(parseQuickStatsJson(undefined)).toBeNull();
+    expect(parseQuickStatsJson("")).toBeNull();
+  });
+
+  it("returns null for malformed JSON", () => {
+    expect(parseQuickStatsJson("{not json")).toBeNull();
+    expect(parseQuickStatsJson("null")).toBeNull();
+  });
+
+  it("returns null for non-object JSON (arrays, primitives)", () => {
+    expect(parseQuickStatsJson("[1,2]")).toBeNull();
+    expect(parseQuickStatsJson("42")).toBeNull();
+    expect(parseQuickStatsJson('"hello"')).toBeNull();
+  });
+
+  it("returns the parsed object for valid JSON objects", () => {
+    expect(parseQuickStatsJson('{"a":1}')).toEqual({ a: 1 });
+  });
+});
+
+describe("selectModulePreview — finyk", () => {
+  it("formats todaySpent and budgetLeft via the centralized money formatter", () => {
+    const raw = JSON.stringify({ todaySpent: 1250, budgetLeft: 7300 });
+    const preview = selectModulePreview("finyk", raw);
+    // `formatMoney` emits "<number> ₴" — we assert the suffix and digits
+    // separately so the test stays robust against whichever NBSP-flavoured
+    // thousand separator the active Intl runtime picks for `uk-UA`.
+    expect(preview.main).toMatch(/₴$/);
+    expect(preview.main).toContain("1");
+    expect(preview.main).toContain("250");
+    expect(preview.sub).toMatch(/Залишок плану:/);
+    expect(preview.sub).toMatch(/₴$/);
+    expect(preview.sub).toContain("7");
+    expect(preview.sub).toContain("300");
+    expect(preview.progress).toBeUndefined();
+  });
+
+  it("renders zero spent as live data instead of the onboarding placeholder", () => {
+    const raw = JSON.stringify({ todaySpent: 0, budgetLeft: 0 });
+    const preview = selectModulePreview("finyk", raw);
+    expect(preview.main).toMatch(/^0.*₴$/);
+    expect(preview.sub).toBeNull();
+  });
+
+  it("coerces non-number values to null", () => {
+    const raw = JSON.stringify({ todaySpent: "200", budgetLeft: null });
+    expect(selectModulePreview("finyk", raw)).toEqual({
+      main: null,
+      sub: null,
+    });
+  });
+
+  it("falls back to empty preview on malformed JSON", () => {
+    expect(selectModulePreview("finyk", "{broken")).toEqual({
+      main: null,
+      sub: null,
+    });
+    expect(selectModulePreview("finyk", null)).toEqual({
+      main: null,
+      sub: null,
+    });
+  });
+});
+
+describe("selectModulePreview — fizruk", () => {
+  it("formats weekWorkouts + streak", () => {
+    const raw = JSON.stringify({ weekWorkouts: 3, streak: 5 });
+    expect(selectModulePreview("fizruk", raw)).toEqual({
+      main: "3 трен.",
+      sub: "Серія: 5 тижнів",
+    });
+  });
+
+  // Одиниця стріка мусить збігатися з тією, яку рахує домен Фізрука
+  // (`computeWeeklyStreakWeeks` → ТИЖНІ). Поки тут стояло «днів», хаб і
+  // модуль на одному екрані шляху користувача показували різні речі:
+  // «Серія: 5 днів» проти «0 тижнів» (аудит L-8, 2026-08-07).
+  it("підписує серію тижнями — домен рахує тижні, не дні", () => {
+    const raw = JSON.stringify({ weekWorkouts: 1, streak: 5 });
+    expect(selectModulePreview("fizruk", raw).sub).not.toContain("дн");
+  });
+
+  it("renders zeros as null", () => {
+    const raw = JSON.stringify({ weekWorkouts: 0, streak: 0 });
+    expect(selectModulePreview("fizruk", raw)).toEqual({
+      main: null,
+      sub: null,
+    });
+  });
+
+  // Картка хаба після першого ж тренування показувала «Серія: 1 днів»
+  // (browser QA 2026-08-05, F-004): число підставлялося у зашитий множинний
+  // суфікс. Три форми — три перевірки, бо саме межі 1 / 2-4 / 5+ і ламаються.
+  it.each([
+    [1, "Серія: 1 тиждень"],
+    [2, "Серія: 2 тижні"],
+    [5, "Серія: 5 тижнів"],
+    [11, "Серія: 11 тижнів"],
+    [21, "Серія: 21 тиждень"],
+  ])("declines the streak suffix for %i", (streak, expected) => {
+    const raw = JSON.stringify({ weekWorkouts: 1, streak });
+    expect(selectModulePreview("fizruk", raw).sub).toBe(expected);
+  });
+
+  it("falls back to empty preview on missing data", () => {
+    expect(selectModulePreview("fizruk", null)).toEqual({
+      main: null,
+      sub: null,
+    });
+  });
+});
+
+describe("selectModulePreview — routine", () => {
+  it("renders todayDone/todayTotal + streak and computes progress", () => {
+    const raw = JSON.stringify({ todayDone: 3, todayTotal: 6, streak: 4 });
+    expect(selectModulePreview("routine", raw)).toEqual({
+      main: "3/6",
+      sub: "Серія: 4 дні",
+      progress: 50,
+    });
+  });
+
+  it("renders 0/N as '0/N' and progress 0 (todayDone = 0 is valid)", () => {
+    const raw = JSON.stringify({ todayDone: 0, todayTotal: 4 });
+    expect(selectModulePreview("routine", raw)).toEqual({
+      main: "0/4",
+      sub: null,
+      progress: 0,
+    });
+  });
+
+  it("drops main when todayTotal is missing", () => {
+    const raw = JSON.stringify({ todayDone: 3 });
+    expect(selectModulePreview("routine", raw)).toEqual({
+      main: null,
+      sub: null,
+      progress: 0,
+    });
+  });
+
+  it("emits progress: 0 shape when storage is empty / malformed", () => {
+    expect(selectModulePreview("routine", null)).toEqual({
+      main: null,
+      sub: null,
+      progress: 0,
+    });
+    expect(selectModulePreview("routine", "{not json")).toEqual({
+      main: null,
+      sub: null,
+      progress: 0,
+    });
+  });
+});
+
+describe("selectModulePreview — nutrition", () => {
+  it("formats todayCal + calGoal and computes progress", () => {
+    const raw = JSON.stringify({ todayCal: 1500, calGoal: 2000 });
+    expect(selectModulePreview("nutrition", raw)).toEqual({
+      main: "1500 ккал",
+      sub: "Ціль: 2000 ккал",
+      progress: 75,
+    });
+  });
+
+  it("drops main/sub when their numbers are 0", () => {
+    const raw = JSON.stringify({ todayCal: 0, calGoal: 0 });
+    expect(selectModulePreview("nutrition", raw)).toEqual({
+      main: null,
+      sub: null,
+      progress: 0,
+    });
+  });
+
+  it("emits progress: 0 shape when storage is empty / malformed", () => {
+    expect(selectModulePreview("nutrition", null)).toEqual({
+      main: null,
+      sub: null,
+      progress: 0,
+    });
+    expect(selectModulePreview("nutrition", "[]")).toEqual({
+      main: null,
+      sub: null,
+      progress: 0,
+    });
+  });
+});

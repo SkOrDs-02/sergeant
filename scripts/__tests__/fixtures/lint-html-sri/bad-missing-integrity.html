@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="uk">
+  <head>
+    <meta charset="UTF-8" />
+    <title>SRI fixture — missing integrity</title>
+    <!-- Cross-origin CDN, no integrity attr at all -->
+    <script
+      src="https://cdn.example.com/widget.js"
+      crossorigin="anonymous"
+    ></script>
+  </head>
+  <body>
+    <div id="root"></div>
+  </body>
+</html>

@@ -1,0 +1,120 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+import { chartHex } from "@sergeant/design-tokens/tokens";
+import { Measure } from "@shared/components/ui/Measure";
+import {
+  ATWATER_KCAL_PER_G,
+  type NutritionPrefs,
+} from "@sergeant/nutrition-domain";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { cn } from "@shared/lib/ui/cn";
+
+export function MacroRatioBar({ prefs }: { prefs: NutritionPrefs }) {
+  const prot = prefs.dailyTargetProtein_g ?? 0;
+  const fat = prefs.dailyTargetFat_g ?? 0;
+  const carb = prefs.dailyTargetCarbs_g ?? 0;
+  if (!(prot > 0) && !(fat > 0) && !(carb > 0)) return null;
+
+  const protKcal = prot * ATWATER_KCAL_PER_G.protein;
+  const fatKcal = fat * ATWATER_KCAL_PER_G.fat;
+  const carbKcal = carb * ATWATER_KCAL_PER_G.carbs;
+  const total = protKcal + fatKcal + carbKcal || 1;
+
+  const pctP = Math.round((protKcal / total) * 100);
+  const pctF = Math.round((fatKcal / total) * 100);
+  const pctC = 100 - pctP - pctF;
+
+  return (
+    <div className="mt-3 space-y-1.5">
+      <SectionHeading as="div" size="xs" variant="nutrition">
+        Відсоткове співвідношення макро
+      </SectionHeading>
+      <div className="flex rounded-xl overflow-hidden h-5">
+        {pctP > 0 && (
+          <div
+            className="flex items-center justify-center text-style-caption font-bold text-white"
+            style={{ width: `${pctP}%`, backgroundColor: chartHex.protein }}
+          >
+            {pctP}%
+          </div>
+        )}
+        {pctF > 0 && (
+          <div
+            className="flex items-center justify-center text-style-caption font-bold text-white"
+            style={{ width: `${pctF}%`, backgroundColor: chartHex.fat }}
+          >
+            {pctF}%
+          </div>
+        )}
+        {pctC > 0 && (
+          <div
+            className="flex items-center justify-center text-style-caption font-bold text-white"
+            style={{ width: `${pctC}%`, backgroundColor: chartHex.carbs }}
+          >
+            {pctC}%
+          </div>
+        )}
+      </div>
+      <div className="flex gap-3 flex-wrap">
+        <span className="flex items-center gap-1 text-style-caption text-subtle">
+          <span
+            className="w-2 h-2 rounded-sm"
+            style={{ backgroundColor: chartHex.protein }}
+          />{" "}
+          Б <Measure value={pctP} unit="%" /> ·{" "}
+          <Measure value={prot} unit="г" /> ·{" "}
+          <Measure value={Math.round(protKcal)} unit="ккал" />
+        </span>
+        <span className="flex items-center gap-1 text-style-caption text-subtle">
+          <span
+            className="w-2 h-2 rounded-sm"
+            style={{ backgroundColor: chartHex.fat }}
+          />{" "}
+          Ж <Measure value={pctF} unit="%" /> · <Measure value={fat} unit="г" />{" "}
+          · <Measure value={Math.round(fatKcal)} unit="ккал" />
+        </span>
+        <span className="flex items-center gap-1 text-style-caption text-subtle">
+          <span
+            className="w-2 h-2 rounded-sm"
+            style={{ backgroundColor: chartHex.carbs }}
+          />{" "}
+          В <Measure value={pctC} unit="%" /> ·{" "}
+          <Measure value={carb} unit="г" /> ·{" "}
+          <Measure value={Math.round(carbKcal)} unit="ккал" />
+        </span>
+      </div>
+    </div>
+  );
+}
+
+interface MacroBadgeProps {
+  label: string;
+  value: number | null | undefined;
+  unit?: string;
+  color?: string;
+}
+
+export function MacroBadge({
+  label,
+  value,
+  unit = "г",
+  color = "bg-panelHi border border-line text-subtle",
+}: MacroBadgeProps) {
+  if (value == null) return null;
+  return (
+    <span
+      className={cn(
+        // AI-NOTE: сирий `text-xs` — розмір ЧИПА: висота плашки тримається
+        // на парі з `py-0.5`, а `rounded-xl` розрахований під неї.
+        "inline-flex items-center gap-1 text-xs rounded-xl px-2 py-0.5",
+        color || "bg-bg border border-line text-subtle",
+      )}
+    >
+      <span className="font-semibold text-text">{Math.round(value)}</span>
+      <span>{unit}</span>
+      <span className="text-muted">{label}</span>
+    </span>
+  );
+}

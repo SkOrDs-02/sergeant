@@ -1,0 +1,147 @@
+import { test, expect, type Page } from "@playwright/test";
+
+const SEEDED_LS: Record<string, string> = {
+  hub_onboarding_done_v1: "1",
+  hub_first_action_done_v1: "1",
+  hub_vibe_picks_v1: JSON.stringify({
+    picks: ["finyk", "fizruk", "nutrition", "routine"],
+    firstActionPending: null,
+    firstActionStartedAt: null,
+    firstRealEntryAt: Date.now(),
+    updatedAt: Date.now(),
+  }),
+};
+
+async function seedLocalStorage(page: Page) {
+  await page.addInitScript((entries: Record<string, string>) => {
+    try {
+      for (const [k, v] of Object.entries(entries)) {
+        window.localStorage.setItem(k, v);
+      }
+    } catch {
+      /* ignore */
+    }
+  }, SEEDED_LS);
+}
+
+test("@extended nav: module routes render (best-effort)", async ({ page }) => {
+  await seedLocalStorage(page);
+
+  for (const mod of ["finyk", "fizruk", "nutrition", "routine"] as const) {
+    await page.goto(`/?module=${mod}`, { waitUntil: "domcontentloaded" });
+    await expect(page.locator("#root")).toBeVisible();
+  }
+});
+
+test("@extended offline: shows OfflineBanner status", async ({
+  page,
+  context,
+}) => {
+  await seedLocalStorage(page);
+  // `domcontentloaded` fires before lazily-loaded vendor chunks
+  // (web-vitals, fonts, Sentry) finish, so flipping `setOffline(true)`
+  // immediately after can leave an in-flight chunk in
+  // `net::ERR_INTERNET_DISCONNECTED`, stalling React before it ever
+  // mounts the OfflineBanner — see chromium trace in the nightly
+  // extended-e2e run #25821506416. Wait for the `load` event AND for
+  // React's first commit (root has at least one child) before dropping
+  // the network so the banner is guaranteed to be mounted and the only
+  // thing left to test is its reaction to the `offline` event.
+  await page.goto("/", { waitUntil: "load" });
+  await expect(page.locator("#root > *").first()).toBeAttached();
+
+  // HubPage renders <PageLoader aria-busy="true"> while bootstrapKvStore()
+  // is in flight (markStorageBooting() arms the gate before first paint;
+  // markStorageReady() releases it once the SQLite warm-cache — a ~700 KB
+  // dynamic import — has settled). If we drop the network while that WASM
+  // chunk fetch is still in-flight it fails with ERR_INTERNET_DISCONNECTED,
+  // bootstrapKvStore never resolves, markStorageReady() is never called, and
+  // HubHomeView (which hosts OfflineBanner) is never mounted.
+  // Wait for HubBottomNav — the nav element unique to HubHomeView — to be
+  // attached: this proves storageReady flipped true and HubHomeView is in the
+  // DOM before we drop the network.
+  await expect(page.locator("nav[aria-label='Розділи хабу']")).toBeAttached({
+    timeout: 15_000,
+  });
+
+  await context.setOffline(true);
+
+  await expect(
+    page.locator('[data-testid="offline-banner"][data-state="offline"]'),
+  ).toBeVisible({ timeout: 10_000 });
+
+  await context.setOffline(false);
+});
+
+test("@extended sw: debug roundtrip works (best-effort)", async ({ page }) => {
+  await seedLocalStorage(page);
+  await page.goto("/?sw=debug", { waitUntil: "load" });
+  await expect(page.locator("#root > *").first()).toBeAttached();
+
+  async function debugRoundtrip() {
+    return page.evaluate(async () => {
+      if (!("serviceWorker" in navigator)) {
+        return { ok: false, reason: "no_service_worker" as const };
+      }
+      const reg = await navigator.serviceWorker.ready;
+      const ctl: ServiceWorker | null =
+        navigator.serviceWorker.controller || reg.active;
+      if (!ctl) return { ok: false, reason: "no_controller" as const };
+
+      const requestId = `pw_${crypto.randomUUID()}`;
+      const snapshot = await new Promise<unknown>((resolve, reject) => {
+        const timer = setTimeout(() => {
+          navigator.serviceWorker.removeEventListener("message", onMessage);
+          reject(new Error("timeout"));
+        }, 4000);
+        const onMessage = (event: MessageEvent) => {
+          const data = event.data as
+            | { type?: string; requestId?: string | null; snapshot?: unknown }
+            | undefined;
+          if (!data || data.type !== "SW_DEBUG_RESULT") return;
+          if ((data.requestId || null) !== requestId) return;
+          clearTimeout(timer);
+          navigator.serviceWorker.removeEventListener("message", onMessage);
+          resolve(data.snapshot);
+        };
+        navigator.serviceWorker.addEventListener("message", onMessage);
+        ctl.postMessage({ type: "SW_DEBUG", data: { requestId } });
+      });
+
+      return { ok: true, snapshot };
+    });
+  }
+
+  let res:
+    | Awaited<ReturnType<typeof debugRoundtrip>>
+    | { ok: false; reason: "navigation_race" };
+  try {
+    res = await debugRoundtrip();
+  } catch (error) {
+    const message = error instanceof Error ? error.message : String(error);
+    if (!message.includes("Execution context was destroyed")) {
+      throw error;
+    }
+    await page.waitForLoadState("load").catch(() => undefined);
+    try {
+      res = await debugRoundtrip();
+    } catch (retryError) {
+      const retryMessage =
+        retryError instanceof Error ? retryError.message : String(retryError);
+      if (!retryMessage.includes("Execution context was destroyed")) {
+        throw retryError;
+      }
+      res = { ok: false, reason: "navigation_race" };
+    }
+  }
+
+  if (!res.ok) {
+    test.info().annotations.push({
+      type: "sw-skip",
+      description: `SW smoke skipped: ${res.reason}`,
+    });
+    test.skip(true, `SW smoke skipped: ${res.reason}`);
+  }
+
+  expect(res.ok).toBe(true);
+});

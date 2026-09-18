@@ -1,0 +1,478 @@
+name: Deploy API image (ghcr.io)
+
+# Owner: @zaebal-beep (solo maintainer).
+#
+# Будує Hub API-образ з `Dockerfile.api` і пушить у GitHub Container
+# Registry (`ghcr.io/<owner>/sergeant-api`). Coolify на Hetzner VPS тягне
+# цей образ і деплоїть (ADR — hosting-hetzner-coolify). Білд НАВМИСНО тут,
+# а не на VPS: distroless multi-stage + pnpm-install монорепи впирається в
+# RAM/CPU, яких на CX23 (4 GB) бракує. GA-раннер amd64 → образ нативний,
+# без QEMU (`--platform=linux/amd64` пінено на FROM у Dockerfile.api).
+#
+# Міграції на образ НЕ запускаються тут — це pre-deploy Coolify-крок
+# (`node dist-server/migrate.js`, requires MIGRATE_DATABASE_URL), дзеркало
+# колишнього `railway.toml` → `[deploy].preDeployCommand`.
+#
+# Build-surface дзеркалить `container-scan.yml` (той самий набір шляхів, що
+# реально потрапляє в образ) — щоб scan і deploy тригерились синхронно.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "Dockerfile.api"
+      - ".dockerignore"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - "package.json"
+      - "patches/**"
+      - "apps/server/**"
+      - "packages/shared/**"
+      - "packages/config/**"
+      - "packages/db-schema/**"
+      - "packages/finyk-domain/**"
+      # `routine-domain` (сервер читає предикат розкладу звички з #592) і
+      # `tabular-import` (спільний шар імпорту виписок, #1001) лежать в
+      # образі — див. Dockerfile.api. Без цих шляхів зміна, замкнена в
+      # одному з них, не тригерить деплой, і в проді лишається стара збірка.
+      - "packages/routine-domain/**"
+      - "packages/tabular-import/**"
+      - ".github/workflows/deploy-api.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  # Не переривати деплой на півдорозі — черга, а не cancel.
+  group: deploy-api
+  cancel-in-progress: false
+
+jobs:
+  build-and-push:
+    name: Build & push sergeant-api
+    runs-on: ubuntu-latest
+    # `workflow_dispatch` можна дернути з будь-якої гілки — прод-образ
+    # збираємо лише з main. Environment вмикає GitHub-side protection
+    # (required reviewer / deployment branch policy) на цьому job.
+    if: github.ref == 'refs/heads/main'
+    environment: production
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned, як у решті workflow-ів)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # docker/setup-buildx-action v4.0.0 (SHA-pinned)
+      - uses: docker/setup-buildx-action@d7f5e7f509e45cec5c76c4d5afdd7de93d0b3df5
+
+      - name: Log in to ghcr.io
+        # Без окремої login-action: `docker login` через GITHUB_TOKEN
+        # (packages: write) — менше SHA-пінів для супроводу.
+        run: echo "${{ secrets.GITHUB_TOKEN }}" | docker login ghcr.io -u "${{ github.actor }}" --password-stdin
+
+      - name: Compute image tags
+        id: tags
+        # GHCR namespace мусить бути lowercase, а `github.repository_owner` може містити великі літери.
+        run: |
+          owner="$(echo "${{ github.repository_owner }}" | tr '[:upper:]' '[:lower:]')"
+          image="ghcr.io/${owner}/sergeant-api"
+          {
+            echo "tags<<EOF"
+            echo "${image}:latest"
+            echo "${image}:${{ github.sha }}"
+            echo "EOF"
+          } >> "$GITHUB_OUTPUT"
+
+      # docker/build-push-action v7.1.0 (SHA-pinned)
+      - name: Build & push
+        uses: docker/build-push-action@f9f3042f7e2789586610d6e8b85c8f03e5195baf
+        with:
+          context: .
+          file: Dockerfile.api
+          platforms: linux/amd64
+          push: true
+          tags: ${{ steps.tags.outputs.tags }}
+          # Bake the commit SHA into the image — Coolify pulls a prebuilt image
+          # and injects no runtime SHA, so this is the only per-deploy release
+          # identity (Sentry release, X-Server-Build-Id, app_build_info).
+          build-args: |
+            GIT_SHA=${{ github.sha }}
+          # `:latest` мутабельний — attestation-и дають перевіряний зв'язок
+          # образ ↔ комміт ↔ склад залежностей.
+          provenance: true
+          sbom: true
+          # Спільний gha-кеш прискорює важкий pnpm-install шар. Окремий
+          # scope, щоб не битись за кеш із container-scan.
+          cache-from: type=gha,scope=deploy-api
+          cache-to: type=gha,mode=max,scope=deploy-api
+
+      - name: Trigger Coolify deploy
+        # Coolify deploy webhook: повний URL у COOLIFY_DEPLOY_WEBHOOK,
+        # опційний Bearer у COOLIFY_DEPLOY_TOKEN.
+        #
+        # AI-DANGER: крок НАВМИСНО фейлить джобу, коли hook відповів
+        # помилкою, і `continue-on-error` сюди повертати НЕ можна. Раніше
+        # він тут стояв із міркування «образ уже в registry, Coolify
+        # дернемо вручну» — і рівно це коштувало п'яти днів мовчазного
+        # простою: hook віддавав 401 на кожен мерж від 18-08 до 23-08,
+        # джоба світилася зеленою, а на VPS крутився контейнер тижневої
+        # давності. Помилка в логах, якої ніхто не читає, — це не сигнал.
+        #
+        # Образ на цей момент уже запушено, тож червона джоба нічого не
+        # руйнує: вона повідомляє рівно один факт — «деплой НЕ замовлено».
+        env:
+          HOOK: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
+          TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
+        run: |
+          set -uo pipefail
+
+          if [ -z "$HOOK" ]; then
+            echo "::warning::COOLIFY_DEPLOY_WEBHOOK не заданий — деплой не замовлено. Образ у registry, викочувати вручну."
+            echo "⚠️ Coolify deploy **не замовлено**: секрет \`COOLIFY_DEPLOY_WEBHOOK\` не заданий." >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # Coolify /api/v1/deploy — POST, uuid у query string.
+          #
+          # AI-DANGER: метод саме POST, і міняти на GET НЕ можна. Донедавна
+          # ендпоінт приймав GET (успішний прогін 09-08 це доводить), потім
+          # Coolify перевів його на POST, лишивши GET заглушкою ЗА
+          # авторизацією. Через це поломка маскувалась: протухлий токен давав
+          # `401` і до заглушки не доходило, а щойно токен полагодили — виліз
+          # `405` із тілом «This endpoint has changed to a POST request»
+          # (заміряно на живому інстансі 2026-08-25).
+          #
+          # `--retry` б'є лише по мережевих збоях і 5xx; 401/403/405 не
+          # ретраяться, і це правильно: ні протухлий токен, ні не той метод
+          # від повтору не полагодяться. Повтор POST теоретично міг би
+          # поставити два деплої в чергу, але спрацьовує він тільки там, де
+          # відповіді не було, а зайвий деплой того самого образу нешкідливий.
+          # Секрет часто приїжджає з переносом рядка чи пробілами по краях —
+          # у Bearer-заголовку це ламає авторизацію, а виглядає рівно як
+          # «протух токен». Обрізаємо і НАЗИВАЄМО факт: інакше власник
+          # перевипускав би справний токен. Значення не друкуємо; сам факт
+          # обрізання секретом не є.
+          TOKEN_CLEAN=$(printf '%s' "$TOKEN" | tr -d '\r\n' \
+            | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          TOKEN_WAS_PADDED=""
+          if [ "$TOKEN_CLEAN" != "$TOKEN" ]; then
+            TOKEN_WAS_PADDED="1"
+            echo "::warning::COOLIFY_DEPLOY_TOKEN містив пробіли або перенос рядка — обрізано перед запитом. Перезбережи секрет без них."
+          fi
+
+          AUTH=()
+          if [ -n "$TOKEN_CLEAN" ]; then
+            AUTH=(-H "Authorization: Bearer $TOKEN_CLEAN")
+          fi
+
+          # URL і токен НЕ друкуємо: `-sS` глушить прогрес, лишаючи текст
+          # помилки, а `-o` відводить тіло у файл, щоб воно не змішалось
+          # зі статусом. Маскування секретів у логах GitHub — остання
+          # лінія, а не перша.
+          HTTP_CODE=$(curl -sS -X POST -o /tmp/coolify-response.txt -w '%{http_code}' \
+            -D /tmp/coolify-headers.txt \
+            --retry 2 --retry-connrefused --max-time 30 \
+            "${AUTH[@]}" "$HOOK") || HTTP_CODE="000"
+
+          # `case`, а не числове порівняння: якщо curl віддасть щось поза
+          # форматом (порожньо, текст), `[ -ge ]` кинув би помилку тесту
+          # замість того, щоб чесно піти в гілку відмови.
+          case "$HTTP_CODE" in
+            2??)
+              echo "Coolify deploy requested (HTTP $HTTP_CODE)."
+              echo "✅ Coolify deploy замовлено (HTTP $HTTP_CODE)." >> "$GITHUB_STEP_SUMMARY"
+              # Кладемо uuid деплою для КРОКУ ПЕРЕВІРКИ нижче. «Замовлено» і
+              # «викотилось» — різні факти: Coolify приймає запит, а потім
+              # може відкотитись на старий контейнер, і без цього uuid ми
+              # про відкат не дізнаємось (інцидент 2026-09-14).
+              jq -r '.deployments[0].deployment_uuid // empty' \
+                /tmp/coolify-response.txt > /tmp/coolify-deployment-uuid 2>/dev/null \
+                || true
+              exit 0
+              ;;
+          esac
+
+          # 3xx — окрема гілка, і `-L` сюди НЕ додаємо. Редирект Coolify веде
+          # на /login (Laravel-web-роут для неавторизованої сесії), а та
+          # сторінка віддає 200 HTML — тобто з `-L` крок звітував би «деплой
+          # замовлено», не замовивши його. Це рівно та хвороба мовчазного
+          # зеленого, яку цей крок і лікує, тож редирект чесніше вважати
+          # відмовою. Заміряно 2026-08-24: hook віддав 302, а в підказці нижче
+          # рядка про 3xx не було, тож власник побачив пояснення лише про
+          # 401/403 і 000 — жодне з них не про його випадок.
+          HINT=""
+          case "$HTTP_CODE" in
+            3??)
+              HINT="Редирект означає, що URL веде не на API-ендпоінт: запит потрапив на веб-роут Coolify, і той відкидає неавторизовану сесію на сторінку входу. Токен тут ні до чого — правити треба \`COOLIFY_DEPLOY_WEBHOOK\`."
+              # Дві найчастіші причини перевіряємо, НЕ друкуючи сам URL.
+              case "$HOOK" in
+                http://*)
+                  HINT="${HINT} Зараз він починається з \`http://\` — Coolify підіймає на \`https://\` редиректом; постав https-схему."
+                  ;;
+              esac
+              case "$HOOK" in
+                *"/api/v1/deploy"*) ;;
+                *)
+                  HINT="${HINT} Шлях не містить \`/api/v1/deploy\` — потрібен саме він (uuid застосунку в query-string), а не адреса застосунку в UI."
+                  ;;
+              esac
+              ;;
+            405)
+              # `405` доводить, що за URL щось Є (інакше був би 404) і що воно
+              # відмовляє саме методу. Крок шле GET (curl без -X), тож це майже
+              # напевно POST-only webhook із вкладки Webhooks застосунку.
+              HINT="Крок шле **POST** — саме його вимагає \`/api/v1/deploy\` (Coolify свого часу перевів ендпоінт із GET на POST). Якщо він відповідає \`405\` навіть на POST, значить твоя версія чекає ще іншого методу або URL веде не на API: дивись заголовок \`Allow\` і тіло відповіді нижче — вони називають дозволене прямим текстом."
+              ;;
+            401|403)
+              # Той самий урок, що й для 3xx: неповний список причин відправляє
+              # перевіряти справне. `401` тут НЕ синонім «протух токен» —
+              # запит уже дійшов до API, тож кандидатів рівно чотири, і три з
+              # них не про строк дії.
+              if [ -z "$TOKEN_CLEAN" ]; then
+                HINT="\`COOLIFY_DEPLOY_TOKEN\` порожній або не заданий, а ендпоінт \`/api/v1/deploy\` вимагає Bearer. Або задай токен, або постав у \`COOLIFY_DEPLOY_WEBHOOK\` per-app webhook із вкладки Webhooks — той працює без Authorization."
+              elif [ -n "$TOKEN_WAS_PADDED" ]; then
+                HINT="У секреті \`COOLIFY_DEPLOY_TOKEN\` були пробіли або перенос рядка (обрізали, але авторизація все одно не пройшла). Перезбережи секрет без них і перевір решту причин нижче."
+              else
+                HINT="Запит дійшов до API — значить URL уже правильний, і \`401\` тут НЕ обовʼязково про строк дії токена."
+              fi
+              ;;
+          esac
+
+          echo "::error::Coolify deploy hook відповів HTTP ${HTTP_CODE} — деплой НЕ замовлено. Образ у registry; перевір COOLIFY_DEPLOY_WEBHOOK / COOLIFY_DEPLOY_TOKEN і викоти вручну."
+          {
+            echo "❌ **Coolify deploy НЕ замовлено** — hook відповів \`HTTP ${HTTP_CODE}\`."
+            echo ""
+            echo "Образ запушено в registry, але на VPS він не поїде сам."
+            echo ""
+            if [ -n "$HINT" ]; then
+              echo "$HINT"
+              echo ""
+            fi
+            echo "- \`3xx\` — URL веде не на API-ендпоінт (схема \`http://\` або шлях не \`/api/v1/deploy\`); редирект НЕ виконуємо, бо сторінка входу віддає 200 і зробила б гейт мовчазно зеленим."
+            echo "- \`401\`/\`403\` — авторизацію відхилено. Чотири кандидати, і лише перший про строк дії:"
+            echo "  1. токен відкликано чи перевипущено, а секрет лишився старий;"
+            echo "  2. **API вимкнено** в Coolify (Settings → API → Enable API) — тоді 401 віддає будь-який \`/api/v1/*\`;"
+            echo "  3. **IP-allowlist** на API (Settings → API → Allowed IPs) не містить діапазонів GitHub-раннерів — класика «з ноутбука працює, з CI ні»;"
+            echo "  4. у токена немає права **deploy** (read-only токен цього ендпоінта не відкриє)."
+            echo "  Швидкий розділювальний тест: той самий \`curl\` зі свого ноутбука. Пройшов там, але не в CI → це пункт 3."
+            echo "- \`404\` — застосунку з таким uuid у Coolify більше немає."
+            echo "- \`405\` — за URL щось є, але GET не приймає: у секреті POST-only webhook замість API-ендпоінта \`GET /api/v1/deploy?uuid=…\`."
+            echo "- \`000\` — hook недосяжний (мережа або VPS)."
+            echo ""
+            echo "Поки не полагоджено — викочувати вручну в Coolify."
+          } >> "$GITHUB_STEP_SUMMARY"
+
+          # ГОЛОВНЕ, і цього тут бракувало від початку: сервер САМ пише, що
+          # не так, а крок відводив тіло у файл і мовчки його викидав. Через
+          # це причину доводилось вгадувати за одним лише кодом — на 302,
+          # 401, 403 і 405 поспіль. Laravel на 405 віддає `Allow` зі списком
+          # методів, на 403 — текст про бракуючий scope; це діагностика, а не
+          # секрет. Ріжемо до 300 символів, щоб довга HTML-сторінка входу не
+          # залила лог, і друкуємо лише `Allow` з заголовків — решта може
+          # містити cookie.
+          # Тіло й заголовки — ВІДДАЛЕНИЙ вхід, тож перед друком знешкоджуємо.
+          # Рядок, що починається з `::`, Actions виконає як workflow-команду
+          # (`::error::`, `::add-mask::`), а рядок із трьома бектиками розірве
+          # markdown-огорожу в summary. Префікс `| ` на КОЖНОМУ рядку лікує
+          # обидва разом: після нього жоден рядок не починається ні з `::`,
+          # ні з огорожі, а текст лишається читабельним.
+          ALLOW=$(grep -i '^allow:' /tmp/coolify-headers.txt 2>/dev/null \
+            | tr -d '\r' | sed 's/^/| /' || true)
+          BODY=$(head -c 300 /tmp/coolify-response.txt 2>/dev/null \
+            | tr -d '\r' | sed 's/^/| /' || true)
+          {
+            echo ""
+            echo "<details><summary>Що відповів сервер</summary>"
+            echo ""
+            if [ -n "$ALLOW" ]; then
+              echo "\`\`\`"
+              echo "$ALLOW"
+              echo "\`\`\`"
+            fi
+            if [ -n "$BODY" ]; then
+              echo "\`\`\`"
+              echo "$BODY"
+              echo "\`\`\`"
+            else
+              echo "_Тіло відповіді порожнє._"
+            fi
+            echo ""
+            echo "</details>"
+          } >> "$GITHUB_STEP_SUMMARY"
+          [ -n "$ALLOW" ] && echo "Coolify $ALLOW"
+          [ -n "$BODY" ] && echo "Coolify response: $BODY"
+
+          exit 1
+
+      - name: Verify Coolify actually deployed (not rolled back)
+        # AI-DANGER: цей крок НЕ можна робити `continue-on-error`, і його
+        # мовчазний успіх гірший за відсутність кроку.
+        #
+        # Попередній крок доводить рівно одне: Coolify ПРИЙНЯВ запит. Далі
+        # він тягне образ, піднімає новий контейнер і чекає healthcheck — і
+        # якщо той не проходить, ТИХО відкочується на старий контейнер:
+        # «New container is not healthy, rolling back to the old container».
+        # Джоба при цьому лишалась зеленою, бо hook відповів 2xx.
+        #
+        # Так 2026-09-14 знайшлося, що кожен деплой відкочувався, а на VPS
+        # тижнями крутився старий образ. Фікси мерджились, CI був зелений,
+        # у проді не мінялось нічого — і жоден сигнал про це не існував.
+        # Це той самий клас поломки, що й `401` на хук у серпні, лише на крок
+        # пізніше в ланцюжку.
+        env:
+          HOOK: ${{ secrets.COOLIFY_DEPLOY_WEBHOOK }}
+          TOKEN: ${{ secrets.COOLIFY_DEPLOY_TOKEN }}
+        run: |
+          set -uo pipefail
+
+          UUID=$(cat /tmp/coolify-deployment-uuid 2>/dev/null || true)
+          if [ -z "$UUID" ]; then
+            # Per-app webhook (вкладка Webhooks) віддає інше тіло без uuid.
+            # Перевірити нічим — і про це треба СКАЗАТИ, а не змовчати:
+            # рівно ця тиша й коштувала інциденту.
+            echo "::warning::Coolify не повернув deployment_uuid — результат деплою НЕ перевірено. Деплой замовлено, але чи він доїхав, невідомо."
+            {
+              echo "⚠️ **Результат деплою не перевірено.**"
+              echo ""
+              echo "Hook відповів 2xx, але тіло не містить \`deployment_uuid\`, тож дізнатись, чи новий контейнер пройшов healthcheck, звідси неможливо."
+              echo ""
+              echo "Щоб перевірка працювала, у \`COOLIFY_DEPLOY_WEBHOOK\` має бути API-ендпоінт \`/api/v1/deploy?uuid=…\` (він повертає uuid деплою), а не per-app webhook із вкладки Webhooks."
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 0
+          fi
+
+          # База API =хук без шляху `/api/v1/deploy` і query-string.
+          API_BASE="${HOOK%%/api/v1/deploy*}"
+          TOKEN_CLEAN=$(printf '%s' "$TOKEN" | tr -d '\r\n' \
+            | sed -e 's/^[[:space:]]*//' -e 's/[[:space:]]*$//')
+          AUTH=()
+          if [ -n "$TOKEN_CLEAN" ]; then
+            AUTH=(-H "Authorization: Bearer $TOKEN_CLEAN")
+          fi
+
+          # Coolify тягне образ, чекає start-period (40 с) і робить до трьох
+          # спроб healthcheck із інтервалом — разом це ~3 хв на відкат. Стеля
+          # у 15 хв лишає запас на повільний pull і НЕ ховає зависання:
+          # вичерпаний таймаут теж фейлить джобу.
+          DEADLINE=$(( $(date +%s) + 900 ))
+          STATUS=""
+          POLL_CODE=""
+          while [ "$(date +%s)" -lt "$DEADLINE" ]; do
+            # Фолбек ставимо ПОЗА підстановкою. `-w` друкує `000` і на
+            # транспортній помилці, а curl при цьому виходить ненулем —
+            # тож `|| echo "000"` УСЕРЕДИНІ дав би `000000`, і гілка
+            # «API недосяжний» не спрацювала б (заміряно).
+            POLL_CODE=$(curl -sS -o /tmp/coolify-deployment.json \
+              -w '%{http_code}' \
+              --max-time 30 "${AUTH[@]}" \
+              "${API_BASE}/api/v1/deployments/${UUID}") || POLL_CODE="000"
+            # Статус читаємо з трьох можливих форм: версії Coolify віддають
+            # то обʼєкт, то масив, то обгортку `deployments`.
+            #
+            # Гілка по `type` — не стиль, а необхідність: `//` ловить лише
+            # `null` і `false`, а `.status` НА МАСИВІ — це помилка jq, яка
+            # валить весь вираз ще до фолбеків. Ланцюжок через `//` тому
+            # читав рівно одну форму з трьох, мовчки віддаючи порожнечу на
+            # решті — тобто рівно те «ще триває», від якого ми тут і
+            # лікуємось.
+            STATUS=$(jq -r 'if type == "array" then .[0].status
+                            elif type == "object" then (.status // .deployments[0].status)
+                            else empty end // empty' \
+              /tmp/coolify-deployment.json 2>/dev/null || true)
+            case "$STATUS" in
+              finished|success) break ;;
+              failed|cancelled|error) break ;;
+            esac
+            # Явна відмова — не привід чекати чверть години. 4xx означає, що
+            # ЖОДЕН наступний опит нічого не змінить: помиляється не час, а
+            # доступ чи адреса. Перший інцидент цього кроку (2026-09-14) був
+            # саме такий: 15 хв мовчання й «не вдалося прочитати» без причини.
+            case "$POLL_CODE" in
+              401|403|404|405) break ;;
+            esac
+            sleep 10
+          done
+
+          case "$STATUS" in
+            finished|success)
+              echo "Coolify deployment ${UUID} → ${STATUS}."
+              echo "✅ Новий контейнер прийнято: деплой \`${STATUS}\`." >> "$GITHUB_STEP_SUMMARY"
+              exit 0
+              ;;
+          esac
+
+          # Витягуємо з лога рівно ті рядки, що називають причину, і НЕ
+          # друкуємо його цілком: там бувають змінні оточення.
+          REASON=$(jq -r '.logs // empty' /tmp/coolify-deployment.json 2>/dev/null \
+            | grep -iE "rolling back|not healthy|healthcheck|unhealthy|error response" \
+            | head -c 1000 | sed 's/^/| /' || true)
+
+          if [ -z "$STATUS" ]; then
+            # Тіло — ВІДДАЛЕНИЙ вхід: префікс `| ` на кожному рядку, щоб
+            # `::`-рядок не став workflow-командою, а бектики не розірвали
+            # огорожу (той самий прийом, що й у кроці-тригері вище).
+            POLL_BODY=$(head -c 300 /tmp/coolify-deployment.json 2>/dev/null \
+              | tr -d '\r' | sed 's/^/| /' || true)
+            case "$POLL_CODE" in
+              401|403)
+                WHY="Токен не має права ЧИТАТИ деплої. Хук на запис працює, тож \`COOLIFY_DEPLOY_TOKEN\` живий — бракує саме read-доступу до \`/api/v1/deployments\`. Перевипусти токен із ним."
+                ;;
+              404)
+                WHY="Ендпоінт \`/api/v1/deployments/<uuid>\` не знайдено: або ця версія Coolify тримає його за іншою адресою, або база API зібралась неправильно з \`COOLIFY_DEPLOY_WEBHOOK\`."
+                ;;
+              405)
+                WHY="За адресою щось є, але GET воно не приймає — швидше за все база API зібралась не з того URL."
+                ;;
+              000)
+                WHY="API Coolify недосяжний із раннера (мережа або VPS)."
+                ;;
+              *)
+                WHY="Відповідь прийшла (HTTP \`${POLL_CODE}\`), але поля \`status\` в ній немає в жодній із трьох відомих форм — схоже, форма відповіді змінилась."
+                ;;
+            esac
+            echo "::error::Статус деплою Coolify не прочитано (HTTP ${POLL_CODE}) — деплой НЕ підтверджено. Образ у registry; перевір стан застосунку в Coolify вручну."
+            {
+              echo "❌ **Деплой не підтверджено** — статус прочитати не вдалось (HTTP \`${POLL_CODE}\`)."
+              echo ""
+              echo "$WHY"
+              echo ""
+              echo "**Це НЕ означає, що деплой провалився** — лише що перевірити його звідси нічим. Поки причина не усунена, стан застосунку дивись у Coolify вручну."
+              if [ -n "$POLL_BODY" ]; then
+                echo ""
+                echo "<details><summary>Що відповів API</summary>"
+                echo ""
+                echo "\`\`\`"
+                echo "$POLL_BODY"
+                echo "\`\`\`"
+                echo ""
+                echo "</details>"
+              fi
+            } >> "$GITHUB_STEP_SUMMARY"
+            exit 1
+          fi
+
+          echo "::error::Coolify деплой завершився зі статусом ${STATUS} — новий контейнер НЕ прийнято, на VPS лишився старий образ."
+          {
+            echo "❌ **Деплой не доїхав** — Coolify повернув статус \`${STATUS}\`."
+            echo ""
+            echo "Образ у registry, але на сервері працює ПОПЕРЕДНІЙ контейнер. Найчастіша причина — новий контейнер не пройшов healthcheck \`GET /health\`, і Coolify відкотився."
+            echo ""
+            echo "\`/health\` віддає 503, коли не проходить \`SELECT 1\` до Postgres. Перевіряй у такому порядку:"
+            echo ""
+            echo "1. **Змінні оточення нового контейнера.** Coolify пише \`.env\` наново на кожен деплой, тож старий контейнер живе зі СТАРИМИ значеннями і працює, поки новий падає. Звір \`DATABASE_URL\` (і \`DATABASE_URL_POOL\`, якщо задана) з тими, що в робочому контейнері."
+            echo "2. **Мережа.** Новий контейнер має бути в тій самій докер-мережі, що й Postgres; хост у URL — внутрішнє імʼя контейнера, не \`localhost\`."
+            echo "3. **Зʼєднання Postgres.** \`SELECT count(*) FROM pg_stat_activity\` проти \`max_connections\`: під час rolling update живуть обидва контейнери."
+            echo ""
+            echo "Деталі: [\`apps/server/AGENTS.md\`](../blob/main/apps/server/AGENTS.md) § Health & deploy."
+            if [ -n "$REASON" ]; then
+              echo ""
+              echo "<details><summary>Рядки лога деплою</summary>"
+              echo ""
+              echo "\`\`\`"
+              echo "$REASON"
+              echo "\`\`\`"
+              echo ""
+              echo "</details>"
+            fi
+          } >> "$GITHUB_STEP_SUMMARY"
+          exit 1

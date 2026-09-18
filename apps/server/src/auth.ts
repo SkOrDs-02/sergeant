@@ -1,0 +1,836 @@
+import { createHash } from "node:crypto";
+
+import { betterAuth } from "better-auth";
+import { APIError, createAuthMiddleware } from "better-auth/api";
+import { fromNodeHeaders } from "better-auth/node";
+import { bearer } from "better-auth/plugins";
+import { expo } from "@better-auth/expo";
+import { importPKCS8, SignJWT } from "jose";
+import type { Request } from "express";
+import { env } from "./env/env.js";
+import { isAccessAllowed, isAccessGateEnabled } from "./auth/accessGate.js";
+import { startAppleSecretRefresher } from "./auth/appleClientSecretCache.js";
+import { createEncryptingAdapter } from "./auth/encryptingAdapter.js";
+import { drizzleAdapter } from "@better-auth/drizzle-adapter";
+import { parseKeyRing } from "./lib/keyRing.js";
+import { db } from "./drizzle.js";
+import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
+import { detectFingerprintDrift, ipPrefix } from "./auth/sessionFingerprint.js";
+import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
+import {
+  changeEmailConfirmationMail,
+  getWebAppOrigin,
+  passwordResetMail,
+  verificationMail,
+} from "./auth/verificationMail.js";
+import { queueFtuxDripForNewUser } from "./email/ftuxDripMail.js";
+import { logger } from "./obs/logger.js";
+import {
+  authAttemptsTotal,
+  authSessionLookupDurationMs,
+} from "./obs/metrics.js";
+import { emitSecurityEvent } from "./obs/securityEvents.js";
+import { hashUserId } from "./lib/userIdHash.js";
+import { elapsedMs } from "./lib/timing.js";
+
+/**
+ * Короткий fingerprint email-у для логів. Той самий патерн (sha256 → 12 hex),
+ * що й у `email/authTransactionalMail.ts`: дозволяє корелювати auth-event-и
+ * у Datadog/Sentry без зливу самої адреси у логи. Локальна копія — щоб не
+ * створювати cross-module coupling заради 5 рядків.
+ */
+function emailFingerprint(email: string): string {
+  return createHash("sha256")
+    .update(email.toLowerCase(), "utf8")
+    .digest("hex")
+    .slice(0, 12);
+}
+
+interface AdvancedCookieOptions {
+  useSecureCookies: true;
+  defaultCookieAttributes: {
+    sameSite: "none";
+    secure: true;
+  };
+}
+
+function getBaseURL(): string {
+  if (env.BETTER_AUTH_URL) return env.BETTER_AUTH_URL;
+  return `http://localhost:${process.env["PORT"] || 3000}`;
+}
+
+/**
+ * Фронт (Vercel) і API (Railway) — різні сайти: кукі сесії потребують SameSite=None + Secure.
+ * Увімкнено, коли base URL API — HTTPS (типово Railway), якщо не BETTER_AUTH_CROSS_SITE_COOKIES=0.
+ * Локально http://localhost — без змін (Lax за замовчуванням у better-auth).
+ */
+function getAdvancedCookieOptions(): AdvancedCookieOptions | null {
+  if (env.BETTER_AUTH_CROSS_SITE_COOKIES === "0") {
+    return null;
+  }
+  const base = getBaseURL();
+  if (!base.startsWith("https://")) {
+    return null;
+  }
+  return {
+    useSecureCookies: true,
+    defaultCookieAttributes: {
+      sameSite: "none",
+      secure: true,
+    },
+  };
+}
+
+const advancedCookies = getAdvancedCookieOptions();
+
+/**
+ * Generates the Apple `client_secret` JWT. Apple does not issue a long-lived
+ * shared secret — instead, you upload a `.p8` private key in Apple Developer
+ * Console and sign a short-lived JWT per OAuth handshake using ES256. Better
+ * Auth treats this JWT as the static `clientSecret` for the provider; we
+ * regenerate it on server boot with a 180-day expiry (Apple's hard ceiling)
+ * and re-sign on each restart. Long-running Railway deployments → schedule
+ * a restart before T+180d (доки немає auto-refresh у Better Auth — issue
+ * tracked in better-auth#TBD). Implementation mirrors Better Auth docs:
+ * https://better-auth.com/docs/authentication/apple
+ */
+async function generateAppleClientSecret(
+  clientId: string,
+  teamId: string,
+  keyId: string,
+  privateKey: string,
+): Promise<string> {
+  const key = await importPKCS8(privateKey, "ES256");
+  const now = Math.floor(Date.now() / 1000);
+  return new SignJWT({})
+    .setProtectedHeader({ alg: "ES256", kid: keyId })
+    .setIssuer(teamId)
+    .setSubject(clientId)
+    .setAudience("https://appleid.apple.com")
+    .setIssuedAt(now)
+    .setExpirationTime(now + 180 * 24 * 60 * 60)
+    .sign(key);
+}
+
+interface GoogleProviderConfig {
+  clientId: string;
+  clientSecret: string;
+}
+
+interface AppleProviderConfig {
+  clientId: string;
+  clientSecret: string;
+  appBundleIdentifier?: string;
+}
+
+interface SocialProvidersConfig {
+  google?: GoogleProviderConfig;
+  apple?: AppleProviderConfig;
+}
+
+/**
+ * Збираємо `socialProviders` тільки коли всі обовʼязкові env-и пари
+ * присутні. Якщо хоч одна порожня — провайдер не вмикаємо і фронтова кнопка
+ * отримає `PROVIDER_NOT_FOUND` через стандартний `authError` (див.
+ * `loginWithGoogle` у `apps/web/src/core/auth/AuthContext.tsx`), а сервер
+ * стартує без сюрпризів.
+ *
+ * Google потребує пари `GOOGLE_CLIENT_ID` + `GOOGLE_CLIENT_SECRET`.
+ *
+ * Apple потребує квартета: `APPLE_CLIENT_ID` (Services ID, наприклад
+ * `com.sergeant.app.web`), `APPLE_TEAM_ID` (10-symbol Team ID з Apple
+ * Developer), `APPLE_KEY_ID` (10-symbol Sign In with Apple key ID) і
+ * `APPLE_PRIVATE_KEY` (PEM-зміст `.p8`-файлу, перенесений з реальними
+ * `\n` newlines — Railway/Vercel приймає multi-line secret values).
+ * `APPLE_APP_BUNDLE_IDENTIFIER` — опціонально, потрібен лише для native
+ * iOS ID-token flow (Capacitor). На Apple-стороні налаштовується Sign In
+ * with Apple capability + Services ID + Return URL =
+ * `${BETTER_AUTH_URL}/api/auth/callback/apple`.
+ */
+async function getSocialProviders(): Promise<
+  SocialProvidersConfig | undefined
+> {
+  const config: SocialProvidersConfig = {};
+
+  const googleClientId = process.env["GOOGLE_CLIENT_ID"];
+  const googleClientSecret = process.env["GOOGLE_CLIENT_SECRET"];
+  if (googleClientId && googleClientSecret) {
+    config.google = {
+      clientId: googleClientId,
+      clientSecret: googleClientSecret,
+    };
+  }
+
+  const appleClientId = process.env["APPLE_CLIENT_ID"];
+  const appleTeamId = process.env["APPLE_TEAM_ID"];
+  const appleKeyId = process.env["APPLE_KEY_ID"];
+  const applePrivateKey = process.env["APPLE_PRIVATE_KEY"];
+  const appleBundleId = process.env["APPLE_APP_BUNDLE_IDENTIFIER"];
+  if (appleClientId && appleTeamId && appleKeyId && applePrivateKey) {
+    try {
+      const clientSecret = await generateAppleClientSecret(
+        appleClientId,
+        appleTeamId,
+        appleKeyId,
+        applePrivateKey,
+      );
+      const apple: AppleProviderConfig = {
+        clientId: appleClientId,
+        clientSecret,
+      };
+      if (appleBundleId) {
+        apple.appBundleIdentifier = appleBundleId;
+      }
+      // Schedule periodic re-signing so the token never expires mid-deploy.
+      // Better Auth reads `apple.clientSecret` from the config object at each
+      // OAuth token exchange; mutating it in place keeps the live reference
+      // fresh without re-initialising the auth singleton.
+      startAppleSecretRefresher(
+        () =>
+          generateAppleClientSecret(
+            appleClientId,
+            appleTeamId,
+            appleKeyId,
+            applePrivateKey,
+          ),
+        (jwt) => {
+          apple.clientSecret = jwt;
+        },
+      );
+      config.apple = apple;
+    } catch (err) {
+      // Misformatted `.p8` (e.g. missing PEM headers) — fail-open so the
+      // server starts and email/Google still work; surface the issue via
+      // logger so ops sees it on first boot rather than learning at the
+      // first user click.
+      logger.error(
+        {
+          event: "auth.apple.client_secret.generate_failed",
+          err: err instanceof Error ? err.message : String(err),
+        },
+        "Failed to generate Apple client_secret JWT — Apple provider disabled",
+      );
+      // Fail-open is a deliberate availability trade-off, but a login provider
+      // silently disappearing in prod (env/key-rotation typo) must page, not
+      // just log — ops otherwise learns only from user PROVIDER_NOT_FOUND reports.
+      emitSecurityEvent({
+        event: "auth_apple_client_secret_failed",
+        severity: "high",
+        details: `Apple client_secret JWT generation failed — Apple sign-in disabled: ${
+          err instanceof Error ? err.message : String(err)
+        }`,
+      });
+    }
+  }
+
+  // Boot-time visibility — без цього operator дізнається про missing Apple/Google
+  // env лише коли користувач натисне кнопку і отримає PROVIDER_NOT_FOUND.
+  // Structured log дає одразу: який провайдер enabled, які env vars missing для
+  // disabled, плюс implicit signal "env усі є, але JWT failed" коли missing-array
+  // порожній а enabled=false (cross-check з existing auth.apple.client_secret.generate_failed).
+  const googleMissing: string[] = [];
+  if (!process.env["GOOGLE_CLIENT_ID"]) googleMissing.push("GOOGLE_CLIENT_ID");
+  if (!process.env["GOOGLE_CLIENT_SECRET"])
+    googleMissing.push("GOOGLE_CLIENT_SECRET");
+  const appleMissing: string[] = [];
+  if (!process.env["APPLE_CLIENT_ID"]) appleMissing.push("APPLE_CLIENT_ID");
+  if (!process.env["APPLE_TEAM_ID"]) appleMissing.push("APPLE_TEAM_ID");
+  if (!process.env["APPLE_KEY_ID"]) appleMissing.push("APPLE_KEY_ID");
+  if (!process.env["APPLE_PRIVATE_KEY"]) appleMissing.push("APPLE_PRIVATE_KEY");
+  logger.info({
+    msg: "auth_social_providers_status",
+    google_enabled: Boolean(config.google),
+    google_missing_env: googleMissing,
+    apple_enabled: Boolean(config.apple),
+    apple_missing_env: appleMissing,
+  });
+
+  if (!config.google && !config.apple) return undefined;
+  return config;
+}
+
+const socialProviders = await getSocialProviders();
+
+/**
+ * `accessToken` / `refreshToken` / `idToken` стовпці в `account` за
+ * замовчуванням `TEXT` plaintext (фікс C1). Якщо є env-ключ — заходимо
+ * в Better Auth через encrypting-adapter, який шифрує токени AES-256-GCM
+ * на запис і дешифрує на читання. Без ключа (dev/local) лишаємось на
+ * стандартному Drizzle adapter — `assertStartupEnv` уже заборонив такий
+ * старт у production. Обидва шляхи ділять один пул (`./db.js`) через
+ * Drizzle instance — двох окремих pool-ів більше нема.
+ *
+ * H4: побудоване через `parseKeyRing`, який підтримує два формати
+ * env-конфігурації — single-key (legacy `BETTER_AUTH_TOKEN_ENC_KEY`) і
+ * multi-key (`*_KEYS` + `*_CURRENT_VERSION`) — без зміни callsite-у.
+ * Validation помилки вже спливли у `assertStartupEnv`; тут ми просто
+ * дублюємо catch для випадку, коли auth.ts завантажується без
+ * `assertStartupEnv` (наприклад, у тестах).
+ */
+const tokenKeyRing = parseKeyRing({
+  keysCsv: env.BETTER_AUTH_TOKEN_ENC_KEYS,
+  currentVersion: env.BETTER_AUTH_TOKEN_ENC_KEY_CURRENT_VERSION,
+  legacyKey: env.BETTER_AUTH_TOKEN_ENC_KEY,
+  envName: "BETTER_AUTH_TOKEN_ENC_KEY",
+});
+const databaseConfig = tokenKeyRing
+  ? createEncryptingAdapter(tokenKeyRing)
+  : drizzleAdapter(db, { provider: "pg" });
+
+export const auth = betterAuth({
+  database: databaseConfig,
+  baseURL: getBaseURL(),
+  basePath: "/api/auth",
+  user: {
+    deleteUser: {
+      enabled: true,
+      /**
+       * Живий шлях видалення акаунта — `POST /api/auth/delete-user` з
+       * `DangerZoneSection.tsx`. До цього хука Better Auth робив лише
+       * `DELETE FROM "user"` (каскад прибирав доменні дані), а все, що
+       * живе в `modules/me/dataRights.ts::deleteUserData`, — best-effort
+       * скасування підписки у Stripe / LiqPay / Plata, `subscriptions →
+       * canceled`, purge `ai_usage_daily` (без FK, каскад не дістає),
+       * enqueue у `gdpr_cleanup_queue` — на живому шляху **не виконувалось
+       * ніколи**: воно висіло тільки на `DELETE /api/me`, який ніхто не
+       * викликає. Наслідок — видалений акаунт продовжував оплачуватись
+       * (аудит `docs/work/specs/audits/2026-08-05-orphaned-code-audit.md`
+       * § 3, п. 1).
+       *
+       * Тому хук виконує САМ `deleteUserData` — один шлях для обох входів,
+       * і контракт-тест на `DELETE /api/me` знов покриває реальність.
+       * `deleteUserData` завершується `DELETE FROM "user"` у транзакції,
+       * після чого власний `internalAdapter.deleteUser` Better Auth стає
+       * no-op (0 рядків — Drizzle не кидає). Провайдер-помилка всередині —
+       * warn-лог `delete_user_provider_cancel_failed` і продовження (ADR-0016
+       * best-effort; Stripe-ретрай іде через `gdpr_cleanup_queue`).
+       *
+       * Fail-safe: якщо `deleteUserData` кинув (БД недоступна), транзакція
+       * відкочена, акаунт лишається **цілим**, а не напіввидаленим — ми
+       * логуємо error і пробросуємо `APIError`, щоб Better Auth не дійшов до
+       * власного DELETE і клієнт побачив помилку замість «Акаунт видалено».
+       *
+       * Динамічний import — щоб `auth.ts` (його тягне кожен роутер через
+       * `requireSession`) не тягнув billing-реєстр у свій статичний граф.
+       */
+      beforeDelete: async (user) => {
+        const [{ deleteUserData }, { pool }] = await Promise.all([
+          import("./modules/me/dataRights.js"),
+          import("./db.js"),
+        ]);
+        try {
+          await deleteUserData(pool, user.id);
+        } catch (err) {
+          logger.error(
+            {
+              event: "auth.user.delete.before_hook_failed",
+              user_id_hash: hashUserId(user.id),
+              err: err instanceof Error ? err.message : String(err),
+            },
+            "deleteUserData threw in user.deleteUser.beforeDelete — account left intact",
+          );
+          throw new APIError("INTERNAL_SERVER_ERROR", {
+            code: "ACCOUNT_DELETE_FAILED",
+            message: "Не вдалося видалити акаунт. Спробуй ще раз.",
+          });
+        }
+      },
+    },
+    /**
+     * Зміна email із профілю. До цього блоку `POST /api/auth/change-email`
+     * безумовно падав у `400 CHANGE_EMAIL_DISABLED` — Better Auth першим
+     * рядком хендлера перевіряє саме `user.changeEmail.enabled`, а веб
+     * викликав ендпоінт із `PersonalInfoSection`. Кнопка «Змінити» у
+     * профілі не працювала жодного разу з моменту появи.
+     *
+     * Дві гілки (обидві всередині Better Auth, `update-user.ts`):
+     *
+     *   - Поточний email НЕ підтверджений → `updateEmailWithoutVerification`
+     *     дозволяє оновити адресу одразу, після чого на НОВУ адресу летить
+     *     звичайний верифікаційний лист. Підтверджувати старий ящик немає
+     *     сенсу: власність над ним ніколи не була доведена.
+     *   - Поточний email підтверджений → лист-підтвердження йде на СТАРУ
+     *     адресу; лише після кліку летить верифікація на нову. Це захист
+     *     від тихого перепривʼязування вкраденої сесії — саме той вектор,
+     *     який описує H6 (`docs/work/specs/security-hardening/archive/
+     *     H6-email-verification.md`).
+     *
+     * Обидва листи йдуть у ту саму durable-чергу `auth-mail`, що й
+     * verify/reset (Resend + 5 ретраїв).
+     */
+    changeEmail: {
+      enabled: true,
+      updateEmailWithoutVerification: true,
+      sendChangeEmailConfirmation: async ({ user, newEmail, url }) => {
+        const mail = changeEmailConfirmationMail(newEmail, url);
+        queueAuthTransactionalEmail({
+          kind: "email_change_confirmation",
+          to: user.email,
+          ...mail,
+        });
+      },
+    },
+  },
+  ...(socialProviders ? { socialProviders } : {}),
+  emailAndPassword: {
+    enabled: true,
+    // NIST SP 800-63B рекомендує мінімум 8 символів; 10 — розумний trade-off,
+    // що блокує атаки брут-форсом через словники без UX-пенальті для юзера.
+    // maxPasswordLength (256) — DoS-захист, щоб обмежити CPU/memory одного
+    // scrypt-виклику. Better Auth хешить через scrypt (не bcrypt), тому
+    // 72-byte truncation тут не релевантний; деталі — ADR-0042.
+    minPasswordLength: env.MIN_PASSWORD_LENGTH,
+    maxPasswordLength: env.MAX_PASSWORD_LENGTH,
+    /**
+     * H6 — gate sign-in on `email_verified=true` коли ops явно увімкнув це
+     * через `REQUIRE_EMAIL_VERIFICATION` env-var. Default `false` навмисно:
+     * існуючі акаунти створені до H6 з `email_verified=false` миттєво
+     * залочаться, якщо просто фліпнути на `true`. Plan rollout-у —
+     * у `docs/security/hardening/H6-email-verification.md` (Implementation log).
+     *
+     * Незалежно від цього flag-а:
+     *   - `emailVerification.sendOnSignUp = true` нижче — нові акаунти ВЖЕ
+     *     отримують верифікаційний лист (одразу мають канал верифікації).
+     *   - `requireVerifiedEmail()` middleware гейтить `/api/mono/connect`
+     *     unconditional — найпотужніша атака з картки (squat email →
+     *     підвʼязати чужий банк) не чекає на глобальний flip.
+     */
+    requireEmailVerification: env.REQUIRE_EMAIL_VERIFICATION,
+    /**
+     * Скидання пароля — це дія «мене зламали, виженіть усіх». Better Auth
+     * дефолтить прапорець у `false`, тож без нього вкрадена сесія переживала
+     * reset до кінця 7-денного TTL. Дзеркалить `hooks.before` нижче, який
+     * форсує те саме для `/change-password`.
+     */
+    revokeSessionsOnPasswordReset: true,
+    // Не await-имо відправку — зменшує ризик timing enumeration (див. Better Auth docs).
+    sendResetPassword: async ({ user, url }) => {
+      queueAuthTransactionalEmail({
+        kind: "password_reset",
+        to: user.email,
+        ...passwordResetMail(url),
+      });
+    },
+  },
+  emailVerification: {
+    /**
+     * H6 — кожен sign-up тепер триггерить верифікаційний лист. До цього був
+     * `false`, тож `email_verified` лишався `false` навічно і ми не мали
+     * каналу для cross-check власника email-а. Зміна безризикова: лист
+     * іде в існуючу `auth-mail` BullMQ-чергу (Resend), ретраї та fallback
+     * вже зроблені у `email/authTransactionalMail.ts`. Без `RESEND_API_KEY`
+     * (dev) — лог-warn без падіння flow-у sign-up.
+     */
+    sendOnSignUp: true,
+    /**
+     * `url` від Better Auth має вигляд
+     * `{baseURL}/api/auth/verify-email?token=…&callbackURL=/`, тобто після
+     * підтвердження редиректить у корінь **API**-домену. API не роздає SPA
+     * (`config.servesFrontend === false`), тож користувач бачив 404 JSON
+     * замість застосунку. `verificationMail()` перезаписує `callbackURL`
+     * на `{WEB_APP_URL}/verify-email` — деталі у `auth/verificationMail.ts`.
+     */
+    sendVerificationEmail: async ({ user, url }) => {
+      queueAuthTransactionalEmail({
+        kind: "email_verification",
+        to: user.email,
+        ...verificationMail(url),
+      });
+    },
+  },
+  /**
+   * 7-day hard expiry + 1-day rolling refresh. Active користувачі
+   * (≥1 запит/день) ніколи не бачать logout — `updateAge` подовжує сесію
+   * на чергові 7 днів. Холодні сесії після 7 днів простою — re-login.
+   *
+   * Вибір 7d (а не 30/90 typical для consumer SaaS) — security trade-off
+   * для daily-habit app: ризик украденого cookie обмежений тижнем, а
+   * active-user UX не страждає завдяки rolling refresh. Деталі —
+   * ADR-0017 і `docs/governance/security/better-auth-audit-2026-05.md`.
+   *
+   * `cookieCache.maxAge` 5 хв — підписана JWT-style cookie кеш, який
+   * `requireSession` валідує без DB-look-up. 30× швидший за SELECT.
+   */
+  session: {
+    expiresIn: 60 * 60 * 24 * 7,
+    updateAge: 60 * 60 * 24,
+    cookieCache: {
+      enabled: true,
+      maxAge: 60 * 5,
+    },
+  },
+  /**
+   * `databaseHooks.user.{create,update}.before` пропускає payload через
+   * `sanitizeUserImage`, який нулить `image`, якщо клієнт прислав
+   * `data:` URL або рядок > 2 КБ. Чому це треба:
+   *
+   * Better Auth писав весь user-обʼєкт у session cookie cache (стратегія
+   * `compact`, HMAC + base64). Якщо у `user.image` сидить 19 КБ-ова
+   * embedded картинка (реальний інцидент 2026-05-02), один Set-Cookie
+   * розчленовується на 7+ chunks, відповідь зависає на 90+ секунд через
+   * проксі-ланцюг Vercel → Railway → iOS Safari, і логін падає у 504
+   * («Сервер тимчасово недоступний» на UI, хоч пароль правильний).
+   *
+   * Логимо WARN, щоб у Sentry/Datadog видно, які клієнти ще шлють
+   * data-URL — це сигнал на UI-фікс (треба робити нормальний
+   * upload-pipeline у CDN, не вшивати base64 у БД). Сам реквест
+   * успішний — зрізаний `image` краще, ніж 504.
+   */
+  databaseHooks: {
+    user: {
+      create: {
+        before: async (data) => {
+          // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу.
+          // Стоїть саме тут, а не на формі реєстрації: `user.create`
+          // спрацьовує однаково для email+пароля, Google і Apple, тож
+          // соцвхід не обходить гейт створенням користувача в колбеку.
+          if (isAccessGateEnabled()) {
+            throw new APIError("FORBIDDEN", {
+              code: "REGISTRATION_CLOSED",
+              message: "Реєстрація зараз закрита.",
+            });
+          }
+          const result = sanitizeUserImage(data);
+          if (result.imageStripped) {
+            logger.warn(
+              {
+                event: "auth.user.image.stripped",
+                op: "create",
+                reason: result.reason,
+                email_hash:
+                  typeof data.email === "string"
+                    ? emailFingerprint(data.email)
+                    : null,
+              },
+              "sanitizeUserImage stripped oversized/data-URL image on user.create",
+            );
+          }
+          return { data: result.data };
+        },
+        /**
+         * S4.3 — FTUX email drip (Day 0 / 1 / 3) через Resend.
+         *
+         * Триггер свідомо у `.after`, а не у `.before`: до `.after`-моменту
+         * у нас уже є реальний `user.id`, потрібний для unsubscribe-токена,
+         * idempotency-row-у в `email_campaigns_log`, і opt-out check-у в
+         * `email_unsubscribes`. У `.before` `id` ще не присвоєний.
+         *
+         * Не блокуємо callback Better Auth — `queueFtuxDripForNewUser`
+         * усередині `void enqueue()` (як у `queueAuthTransactionalEmail`),
+         * тож sign-up-flow завжди завершується за <50ms, навіть якщо
+         * BullMQ або Redis тимчасово недоступні.
+         *
+         * Без `RESEND_API_KEY` (dev / preview): dispatcher логує warn і
+         * відмовляється від зовнішнього fetch-у; `email_campaigns_log` row
+         * усе одно записується — це потрібно для idempotency у production
+         * cutover-і (не пхати дублікати у юзерів, що зареєструвались до
+         * вмикання Resend).
+         */
+        after: async (user) => {
+          if (
+            !user ||
+            typeof user.id !== "string" ||
+            typeof user.email !== "string"
+          ) {
+            return;
+          }
+          try {
+            queueFtuxDripForNewUser({ userId: user.id, email: user.email });
+          } catch (err) {
+            logger.error(
+              {
+                event: "auth.user.ftux_drip.enqueue_error",
+                email_hash: emailFingerprint(user.email),
+                err: err instanceof Error ? err.message : String(err),
+              },
+              "queueFtuxDripForNewUser threw during user.create.after hook",
+            );
+          }
+        },
+      },
+      update: {
+        before: async (data) => {
+          const result = sanitizeUserImage(data);
+          if (result.imageStripped) {
+            logger.warn(
+              {
+                event: "auth.user.image.stripped",
+                op: "update",
+                reason: result.reason,
+              },
+              "sanitizeUserImage stripped oversized/data-URL image on user.update",
+            );
+          }
+          return { data: result.data };
+        },
+      },
+    },
+    /**
+     * H3 — `databaseHooks.session.create.before` truncates `ipAddress` до
+     * privacy-friendly prefix (`/24` для IPv4, `/64` для IPv6) ДО запису у
+     * `session.ipAddress`. На цей момент Better Auth уже резолвив реальний
+     * client-IP з reverse-proxy ланцюга (з урахуванням `app.set('trust
+     * proxy', …)` на нашому Express), тож ми йдемо «вниз» по точності з
+     * максимальної до достатньої для drift-detection (24/64 біти ASN/підмережі).
+     *
+     * Чому prefix замість повного IP. Повний IP у `session` — це
+     * персональні дані (GDPR Art. 4(1)), що зберігаються 30 днів. Ми це
+     * не використовуємо ніде, окрім fingerprint-порівняння у
+     * `requireSession`, яке і так оперує prefix-ом. Звуження до /24 / /64
+     * виключає сесію як storage-layer для повних IP, не псуючи функціонал.
+     *
+     * Закриває: `docs/security/hardening/H3-session-revoke-and-binding.md`.
+     */
+    session: {
+      create: {
+        before: async (data) => {
+          // AI-LEGACY: expires 2026-11-30 — друга половина рубильника.
+          // Блокування `user.create` зупиняє лише НОВИХ; сесію ж отримує
+          // і той, хто зареєструвався під час бети. Перевірка тут ловить
+          // кожен логін незалежно від провайдера. Уже видані сесії живуть
+          // до свого TTL — їх знімає одноразовий DELETE (див. env-vars.md).
+          if (!isAccessAllowed(data.userId)) {
+            throw new APIError("FORBIDDEN", {
+              code: "ACCESS_CLOSED",
+              message: "Доступ зараз закритий.",
+            });
+          }
+          if (!data.ipAddress) return undefined;
+          const truncated = ipPrefix(data.ipAddress);
+          if (truncated && truncated !== data.ipAddress) {
+            return { data: { ...data, ipAddress: truncated } };
+          }
+          return undefined;
+        },
+      },
+    },
+  },
+  /**
+   * H3 — глобальний `hooks.before` забезпечує, що будь-який successful
+   * `POST /api/auth/change-password` ВЖЕ revoke-ає інші сесії того ж юзера,
+   * навіть якщо клієнт випадково забув передати `revokeOtherSessions: true`
+   * у тілі. Defense-in-depth: один скомпрометований cookie перестає бути
+   * валідним рівно у момент зміни пароля, не чекаючи 30-денного TTL.
+   *
+   * Реалізація мінімальна — тільки мутуємо `ctx.body`, нічого не запускаємо
+   * самостійно. Better Auth далі сам викликає вбудований
+   * `revokeOtherSessions` flow (див. `change-password` endpoint у
+   * `node_modules/better-auth/dist/api/routes/update-user.mjs`).
+   *
+   * Закриває: `docs/security/hardening/H3-session-revoke-and-binding.md`.
+   */
+  hooks: {
+    before: createAuthMiddleware(async (ctx) => {
+      if (ctx.path !== "/change-password") return;
+      const body = ctx.body;
+      if (body && typeof body === "object" && !Array.isArray(body)) {
+        (body as Record<string, unknown>)["revokeOtherSessions"] = true;
+      }
+    }),
+  },
+  trustedOrigins: getTrustedOrigins(),
+  /**
+   * Плагіни:
+   *   - `bearer()` — дозволяє мобільним клієнтам передавати сесію через
+   *     `Authorization: Bearer <token>` без cookie. Веб-браузери й далі
+   *     можуть ходити з cookie — плагін тільки додає альтернативний
+   *     канал, нічого не ламає.
+   *   - `expo()` — коригує origin-handling для `sergeant://` / `exp://`
+   *     схем і автоматично розширює `trustedOrigins` deep-link-схемами
+   *     Expo API Routes.
+   */
+  plugins: [bearer(), expo()],
+  ...(advancedCookies ? { advanced: advancedCookies } : {}),
+});
+
+/**
+ * Native deep-link schemes that Better Auth treats as trusted origins for
+ * mobile flows (OAuth callbacks, cross-origin sign-in).
+ *
+ * `sergeant://` — production scheme published by the RN app
+ * (`apps/mobile/app.config.ts → scheme: "sergeant"`). Always trusted.
+ *
+ * `exp://` — Expo Go dev scheme. NOT bound to a single application: any
+ * Expo Go app on the device can claim it, so a hostile dev-build could
+ * intercept OAuth codes / session bearers. We gate it behind
+ * `NODE_ENV !== "production"` (closes hardening card H5,
+ * docs/security/hardening/H5-trusted-origins-exp-scheme.md).
+ *
+ * `BETTER_AUTH_TRUSTED_NATIVE_SCHEMES` — optional comma-separated override
+ * for ops (e.g. staging that needs a custom scheme without a code change).
+ * When set, it replaces the entire defaults — there is no "merge with
+ * defaults" mode by design (the threat model rules out additive overrides
+ * because the only realistic use case is "remove `exp://` even in dev").
+ */
+function getTrustedNativeSchemes(): string[] {
+  const override = process.env["BETTER_AUTH_TRUSTED_NATIVE_SCHEMES"];
+  if (override !== undefined) {
+    return override
+      .split(",")
+      .map((s) => s.trim())
+      .filter(Boolean);
+  }
+  if (process.env["NODE_ENV"] === "production") {
+    return ["sergeant://"];
+  }
+  return ["sergeant://", "exp://"];
+}
+
+function getTrustedOrigins(): string[] {
+  // Mobile-клієнти використовують кастомні схеми deep-link (`sergeant://`
+  // у проді, `exp://` додатково у Expo dev) і локальний Metro bundler на
+  // `http://localhost:8081`. Better Auth перевіряє `Origin` / `Referer`
+  // проти цього списку при чутливих операціях (callback OAuth,
+  // cross-origin sign-in) — без явного додавання ці ж запити летіли б
+  // у 403. Список нативних схем формується у `getTrustedNativeSchemes()`
+  // (див. опис вище).
+  const origins: string[] = [
+    // Local dev surfaces (unified-mode server :5000, Vite :5173, Metro
+    // :8081). Audit 2026-06-11 ws-11: gated on NODE_ENV — у production ці
+    // origins НЕ потрапляють у список, бо session-cookies SameSite=None і
+    // /api/auth/* виключений з X-Requested-With CSRF-guard-а: сторінка на
+    // localhost жертви (будь-який dev-сервер зі скомпрометованим npm-
+    // пакетом) інакше проходила б origin-check проти прод-API. Той самий
+    // NODE_ENV-gate, що вже застосовано до `exp://` у
+    // getTrustedNativeSchemes().
+    ...(process.env["NODE_ENV"] === "production"
+      ? []
+      : [
+          "http://localhost:5000",
+          "http://localhost:5173",
+          "http://localhost:8081",
+        ]),
+    // Apple Sign-In form-posts the OAuth response from `appleid.apple.com`
+    // back to our callback URL; Better Auth checks `Origin` against this
+    // list and otherwise 403s the callback. Safe to leave on even when
+    // Apple provider is not configured — it's just an allowlist entry.
+    "https://appleid.apple.com",
+    ...getTrustedNativeSchemes(),
+  ];
+  if (process.env["ALLOWED_ORIGINS"]) {
+    for (const o of process.env["ALLOWED_ORIGINS"].split(",")) {
+      const trimmed = o.trim();
+      if (trimmed) origins.push(trimmed);
+    }
+  }
+  // Origin, на який ми самі шлемо `callbackURL` у верифікаційних листах.
+  // Better Auth ганяє цей параметр через `originCheck` і 403-ить усе, чого
+  // немає у списку — без цього рядка явно заданий `WEB_APP_URL` (той, що не
+  // збігається з жодним `ALLOWED_ORIGINS`) ламав би кожен клік у листі.
+  // Похідні з `ALLOWED_ORIGINS` / `BETTER_AUTH_URL` значення вже у списку,
+  // дублікати Better Auth ігнорує.
+  // Порожньо = origin не сконфігурований (див. `getWebAppOrigin`); тоді ми й
+  // посилання не переписуємо, тож додавати в allowlist нічого.
+  const webAppOrigin = getWebAppOrigin();
+  if (webAppOrigin && !origins.includes(webAppOrigin)) {
+    origins.push(webAppOrigin);
+  }
+  return origins;
+}
+
+interface SessionUser {
+  id: string;
+  email?: string;
+  name?: string;
+  image?: string;
+  emailVerified?: boolean;
+}
+
+export async function getSessionUser(
+  req: Request,
+  opts?: { disableCookieCache?: boolean },
+): Promise<SessionUser | null> {
+  const start = process.hrtime.bigint();
+  let outcome: "miss" | "hit" | "error" = "miss";
+  try {
+    const session = await auth.api.getSession({
+      headers: fromNodeHeaders(req.headers),
+      ...(opts?.disableCookieCache
+        ? { query: { disableCookieCache: true } }
+        : {}),
+    });
+    const user = (session?.user ?? null) as SessionUser | null;
+    if (user?.id) {
+      outcome = "hit";
+      // H3 — порівнюємо stored fingerprint (UA + IP-prefix) з поточним
+      // запитом. На drift кидаємо warn-лог `auth.session.ua_drift` —
+      // Sentry/Datadog alert-rule вже може на нього реагувати. Сесію не
+      // викидаємо: drift сам по собі не доказ компромісу (юзер міг
+      // переключити мережу / оновити браузер), але patterns у логах
+      // дають фундамент для майбутнього step-up flow для high-risk
+      // операцій (Mono connect, password change).
+      const stored = (session?.session ?? null) as {
+        id?: string;
+        ipAddress?: string | null;
+        userAgent?: string | null;
+      } | null;
+      if (stored) {
+        const drift = detectFingerprintDrift({
+          storedUserAgent: stored.userAgent ?? null,
+          storedIp: stored.ipAddress ?? null,
+          currentUserAgent:
+            typeof req.headers["user-agent"] === "string"
+              ? req.headers["user-agent"]
+              : null,
+          currentIp: typeof req.ip === "string" ? req.ip : null,
+        });
+        if (drift) {
+          logger.warn(
+            {
+              event: "auth.session.ua_drift",
+              session_id: stored.id,
+              user_id: user.id,
+              ua_changed: drift.ua,
+              ip_changed: drift.ip,
+              stored_ip_prefix: drift.storedIpPrefix,
+              current_ip_prefix: drift.currentIpPrefix,
+            },
+            "session fingerprint drift detected",
+          );
+          emitSecurityEvent({
+            event: "auth_session_ua_drift",
+            severity: "medium",
+            userIdHash: hashUserId(user.id) ?? undefined,
+            details: `ua_changed=${drift.ua} ip_changed=${drift.ip} stored_ip=${drift.storedIpPrefix ?? "null"} current_ip=${drift.currentIpPrefix ?? "null"}`,
+          });
+        }
+      }
+      // Ліниво привʼязуємо сесію до request-context і Sentry-scope. Завдяки
+      // цьому будь-який log/Sentry-івент далі в ланцюжку знає, хто саме
+      // виконує запит. Безпечно без сесії — просто no-op.
+      try {
+        const [{ setUserId }, Sentry] = await Promise.all([
+          import("./obs/requestContext.js"),
+          import("@sentry/node"),
+        ]);
+        setUserId(user.id);
+        Sentry.getCurrentScope?.().setUser({ id: user.id });
+      } catch {
+        /* ignore — observability не має блокувати auth */
+      }
+    }
+    return user;
+  } catch (e) {
+    outcome = "error";
+    throw e;
+  } finally {
+    const ms = elapsedMs(start);
+    try {
+      authSessionLookupDurationMs.observe({ outcome }, ms);
+      authAttemptsTotal.inc({ op: "session_check", outcome });
+    } catch {
+      /* metrics must never break a request */
+    }
+  }
+}
+
+/**
+ * Той самий резолв сесії, але в обхід 5-хвилинного `session.cookieCache`:
+ * відкликана сесія перестає проходити негайно, а не за кеш-вікно. Ціна —
+ * один SELECT на запит, тому лишаємо це для поверхонь, де вартість вікна
+ * вища за latency: повний експорт даних, видалення акаунта, привʼязка
+ * банку.
+ */
+export function getFreshSessionUser(req: Request): Promise<SessionUser | null> {
+  return getSessionUser(req, { disableCookieCache: true });
+}

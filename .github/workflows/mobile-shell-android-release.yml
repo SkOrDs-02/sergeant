@@ -1,0 +1,189 @@
+name: Mobile Shell (Android, Release AAB + APK)
+
+# Owner: @zaebal-beep (solo maintainer).
+# Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
+# Release-lane workflow for the Capacitor shell (`apps/mobile-shell`).
+#
+# Companion to `mobile-shell-android.yml` (debug-APK). This workflow
+# produces TWO release artefacts and can run either with or without
+# signing secrets:
+#
+#   - `sergeant-shell-release-aab` (via `:app:bundleRelease`) — the
+#     Play-Store-ready bundle. This is what `upload-google-play` will
+#     consume in the follow-up internal-track workflow.
+#   - `sergeant-shell-release-apk` (via `:app:assembleRelease`) — the
+#     direct-install APK for `adb install` / file-manager sideload
+#     outside Play. Lives next to the AAB so operators don't need a
+#     second workflow run to get a sideloadable build.
+#
+# Both artefacts use the same `signingConfig` rules:
+#
+#   - If the four signing secrets are present (see below) we decode the
+#     base64 keystore into a file, export it as the `SERGEANT_RELEASE_*`
+#     properties that `apps/mobile-shell/android/app/build.gradle`
+#     reads, and Gradle produces a **signed** AAB ready for Play.
+#   - If they are missing we still run `bundleRelease` +
+#     `assembleRelease`, but the resulting AAB / APK are unsigned
+#     (Android itself will refuse to install the unsigned APK — that's
+#     expected; the run still validates the entire release build graph:
+#     ProGuard/R8 keep-rules, resource shrinking, Capacitor sync). This
+#     lets contributors without access to production signing material
+#     exercise the release lane on forks or release-branch PRs.
+#
+# The Play-Store upload step (`google-github-actions/upload-google-play`
+# with a service account) is deliberately out of scope — that will land
+# in a follow-up PR together with an internal-track rollout plan.
+#
+# Pipeline:
+#   1. pnpm install --frozen-lockfile
+#   2. pnpm --filter @sergeant/mobile-shell build:web   → apps/server/dist
+#   3. cap sync android                                 — refresh plugin graph
+#   4. (optional) decode keystore + export SERGEANT_RELEASE_* env vars
+#   5. ./gradlew :app:bundleRelease :app:assembleRelease → *.aab + *.apk
+
+on:
+  workflow_dispatch:
+  push:
+    tags:
+      - "v*"
+
+permissions:
+  contents: read
+
+concurrency:
+  group: mobile-shell-android-release-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  build-android-release:
+    name: Build release AAB + APK
+    runs-on: ubuntu-latest
+    timeout-minutes: 40
+    env:
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g"
+    steps:
+      # actions/checkout v4.3.1 (SHA-pinned for supply-chain hardening,
+      # matches `mobile-shell-android.yml`).
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned). Version resolved from the
+      # `packageManager` field in root package.json (pnpm@9.15.1).
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+
+      # actions/setup-node v4.4.0 (SHA-pinned).
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      # actions/setup-java v4.7.1 — Capacitor 7's auto-generated
+      # `capacitor.build.gradle` pins `sourceCompatibility` /
+      # `targetCompatibility` to VERSION_21 (see
+      # apps/mobile-shell/android/app/capacitor.build.gradle — header
+      # explicitly says "DO NOT EDIT"). Anything below 21 trips
+      # `error: invalid source release: 21` during javac.
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
+        with:
+          distribution: temurin
+          java-version: "21"
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      # Vite/Rolldown needs `@sergeant/db-schema`'s `dist/` to resolve
+      # `@sergeant/db-schema/sqlite/migrations` from the web bundle (see
+      # `apps/web/src/modules/{nutrition,fizruk,routine}/lib/clientMigrate.ts`).
+      # The exports map only ships built artefacts; without this step
+      # `pnpm --filter @sergeant/mobile-shell build:web` errors with
+      # `Rolldown failed to resolve import "@sergeant/db-schema/sqlite/migrations"`.
+      - name: Build @sergeant/db-schema
+        run: pnpm --filter @sergeant/db-schema build
+
+      - name: Build web bundle
+        # `VITE_TARGET=capacitor` via `@sergeant/mobile-shell#build:web`
+        # disables vite-plugin-pwa for the shell build. Emits to
+        # `apps/server/dist` — `capacitor.config.ts` reads from there.
+        run: pnpm --filter @sergeant/mobile-shell build:web
+
+      - name: Capacitor sync (android)
+        working-directory: apps/mobile-shell
+        run: pnpm exec cap sync android
+
+      # Cache key shares the shape of `mobile-shell-android.yml` so the
+      # two lanes warm the same `~/.gradle/caches` entries when running
+      # back-to-back on the same runner class.
+      - name: Cache Gradle
+        # actions/cache v4.2.0 (SHA-pinned).
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            apps/mobile-shell/android/.gradle
+          key: ${{ runner.os }}-mobile-shell-gradle-release-${{ hashFiles('apps/mobile-shell/android/**/*.gradle*', 'apps/mobile-shell/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-mobile-shell-gradle-release-
+            ${{ runner.os }}-mobile-shell-gradle-
+
+      - name: Decode release keystore (if secrets present)
+        id: keystore
+        env:
+          ANDROID_RELEASE_KEYSTORE_BASE64: ${{ secrets.ANDROID_RELEASE_KEYSTORE_BASE64 }}
+          ANDROID_RELEASE_KEYSTORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          ANDROID_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          ANDROID_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          if [ -z "${ANDROID_RELEASE_KEYSTORE_BASE64}" ] \
+              || [ -z "${ANDROID_RELEASE_KEYSTORE_PASSWORD}" ] \
+              || [ -z "${ANDROID_RELEASE_KEY_ALIAS}" ] \
+              || [ -z "${ANDROID_RELEASE_KEY_PASSWORD}" ]; then
+            echo "::notice::Release signing secrets not present; building UNSIGNED AAB."
+            echo "signing=false" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          KEYSTORE_PATH="${RUNNER_TEMP}/sergeant-release.keystore"
+          printf '%s' "${ANDROID_RELEASE_KEYSTORE_BASE64}" | base64 -d > "${KEYSTORE_PATH}"
+          echo "keystore_path=${KEYSTORE_PATH}" >> "$GITHUB_OUTPUT"
+          echo "signing=true" >> "$GITHUB_OUTPUT"
+
+      - name: Gradle bundleRelease + assembleRelease
+        working-directory: apps/mobile-shell/android
+        env:
+          # Gradle reads these via `System.getenv(...)` (see
+          # `apps/mobile-shell/android/app/build.gradle`). When any is
+          # empty the Gradle side leaves `signingConfig` null and both
+          # the AAB and the APK are produced unsigned.
+          SERGEANT_RELEASE_STORE_FILE: ${{ steps.keystore.outputs.keystore_path }}
+          SERGEANT_RELEASE_STORE_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEYSTORE_PASSWORD }}
+          SERGEANT_RELEASE_KEY_ALIAS: ${{ secrets.ANDROID_RELEASE_KEY_ALIAS }}
+          SERGEANT_RELEASE_KEY_PASSWORD: ${{ secrets.ANDROID_RELEASE_KEY_PASSWORD }}
+        # Run both tasks in one Gradle invocation so they share the
+        # configuration phase and the R8 cache (≈2× faster than two
+        # separate invocations).
+        run: ./gradlew --no-daemon :app:bundleRelease :app:assembleRelease
+
+      - name: Upload release AAB
+        # actions/upload-artifact v7.0.0 (SHA-pinned).
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: sergeant-shell-release-aab
+          path: apps/mobile-shell/android/app/build/outputs/bundle/release/*.aab
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Upload release APK
+        # Separate artefact so sideload-consumers can grab just the APK
+        # from the run summary without also pulling the bundle.
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: sergeant-shell-release-apk
+          path: apps/mobile-shell/android/app/build/outputs/apk/release/*.apk
+          if-no-files-found: error
+          retention-days: 14
+
+      - name: Clean up keystore
+        if: always() && steps.keystore.outputs.signing == 'true'
+        run: rm -f "${{ steps.keystore.outputs.keystore_path }}"

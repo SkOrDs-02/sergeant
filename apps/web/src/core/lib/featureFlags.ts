@@ -1,0 +1,194 @@
+// Легкі feature flags для Hub.
+//
+// Мета: постачати експериментальні фічі під «тумблером», який користувач
+// бачить у Settings → Експериментальне, і мати можливість вмикати/вимикати
+// їх з коду без редеплою (корисно, коли експеримент ламається у прод-даних).
+//
+// API надихнувся vercel/flags і react-feature-flags, але без мережевого шару:
+// значення живуть у localStorage (`hub_flags_v1`) поверх typedStore, тобто
+// отримують ті самі бонуси — валідація, міграції, sync між tab'ами.
+//
+// Правила:
+//  - всі флаги декларовані у одному реєстрі нижче;
+//  - кожен флаг має id, default, label/description і опц. `experimental: true`;
+//  - для нових флагів ДОДАЙТЕ запис у FLAG_REGISTRY, не створюйте окремі LS-ключі.
+
+import { useSyncExternalStore } from "react";
+import { z } from "zod";
+import { createTypedStore } from "../../shared/lib/storage/typedStore";
+
+export interface FlagDefinition {
+  id: string;
+  /** Видима назва у Settings. */
+  label: string;
+  /** Коротка підказка — чому це включати. */
+  description: string;
+  /** Значення за замовчуванням, якщо користувач ще не торкався. */
+  defaultValue: boolean;
+  /** Якщо true — показується у розділі «Експериментальне» з ярликом beta. */
+  experimental?: boolean;
+}
+
+// ---------------------------------------------------------------------------
+// Реєстр флагів. Додавайте сюди — решта екосистеми (Settings UI, `useFlag`)
+// підхоплює автоматично.
+// ---------------------------------------------------------------------------
+
+export const FLAG_REGISTRY: readonly FlagDefinition[] = [
+  {
+    id: "app-lock-enabled",
+    label: "Блокування додатку (PIN)",
+    // PR-S6 (аудит 2026-09-13 хвиля 5): PIN переїхав із Налаштувань →
+    // «Конфіденційність» у Профіль → «Безпека» → «Блокування застосунку»
+    // 2026-09-04 (`ProfilePage.tsx`); опис досі називав старе місце.
+    description:
+      "Захищає твої дані PIN-кодом. Після ввімкнення встанови PIN у Профілі → «Безпека» → «Блокування застосунку».",
+    defaultValue: false,
+  },
+  // `finyk_subscriptions_category` прибрано: флаг рендерився тумблером у
+  // Settings → Експериментальні, зберігався у сховище — і не мав жодного
+  // читача в коді. Юзер вмикав опцію, яка нічого не робить.
+  {
+    id: "hub_command_palette",
+    label: "Швидкі команди (Ctrl / ⌘ + K)",
+    description:
+      "Глобальний пошук і швидкі дії прямо з клавіатури. Рання функція, подекуди може працювати нестабільно.",
+    defaultValue: false,
+    experimental: true,
+  },
+  {
+    id: "ftux_outcome_card_v1",
+    label: "Картка результату для новачків",
+    description:
+      "Новим користувачам без жодного запису показує картку очікуваного результату замість смуги прогресу.",
+    defaultValue: false,
+    experimental: true,
+  },
+  {
+    // Вісь дії хабу (спека `docs/work/specs/hub-action-axis.md`; рішення
+    // власника 2026-09-17). Дефолт УВІМКНЕНО — це kill-switch, а не
+    // бета-тумблер: усі бачать купи «Зараз»/«Закрито» і рейок модулів
+    // замість сітки плиток, а вимкнення повертає стару головну без деплою,
+    // якщо прод-дані зламають розкладку. Умова зняття: один цикл (≈2
+    // тижні) без відкату — PR 3 прибирає прапорець разом із сіткою.
+    id: "hub_action_axis_v1",
+    label: "Головна за віссю дії",
+    description:
+      "Замість сітки модулів: «Зараз» і «Закрито сьогодні», модулі в рейку під шапкою. Вимкни, щоб повернути стару головну.",
+    defaultValue: true,
+    experimental: true,
+  },
+  {
+    id: "finyk_import_reminder",
+    label: "Нагадування залити документи",
+    description:
+      "Плашка в Огляді Фініка, коли ти давно не додавав виписку чи скрін банкінгу. Показується лише за твоїм звичним ритмом: якщо імпортів не було, вона мовчить.",
+    defaultValue: false,
+    experimental: true,
+  },
+  {
+    // Сплячий прапорець без тумблера в UI (не `experimental`): банер про
+    // кінець trial суперечить рішенню D3 («один платний план, без
+    // trial-таймера», phase-7-product-decisions-2026-05-22.md) і копі
+    // `/pricing`. Код лишено на випадок плану Б з D3 (перехід на 14-денний
+    // trial, якщо конверсія Free → Premium буде низькою). Умова зняття:
+    // або D3 переглянуто і банер вмикається дефолтом, або через квартал
+    // рішення не змінилось — тоді видалити разом із `TrialBanner.tsx`.
+    id: "billing_trial_banner",
+    label: "Банер про кінець trial",
+    description:
+      "Плашка «Залишилось N днів trial» на хабі. Вимкнена: у продукті немає trial-таймера (рішення D3).",
+    defaultValue: false,
+  },
+  // Stage 13 PR #078: `feature.finyk.sqlite_v2.mono_mirror` retired.
+  // Previously defaultValue: true, experimental: true. Mono mirror now
+  // triggers unconditionally — see monoMirrorBoot.ts / monoMirrorGate.ts.
+] as const;
+
+export type FlagId = (typeof FLAG_REGISTRY)[number]["id"];
+
+// ---------------------------------------------------------------------------
+// Сховище
+// ---------------------------------------------------------------------------
+
+const FlagValuesSchema = z.record(z.string(), z.boolean());
+type FlagValues = z.infer<typeof FlagValuesSchema>;
+
+const flagsStore = createTypedStore<FlagValues>({
+  key: "hub_flags_v1",
+  version: 1,
+  schema: FlagValuesSchema,
+  defaultValue: {},
+});
+
+// Кеш снапшоту всіх флагів. `useSyncExternalStore` вимагає реф-стабільний
+// результат від `getSnapshot` між оновленнями store'а — інакше React
+// вважає, що state змінився, і ганяє ре-рендери/лупить у concurrent mode.
+let cachedAllFlagsSnapshot: Record<string, boolean> | null = null;
+
+function defaults(): FlagValues {
+  const out: FlagValues = {};
+  for (const f of FLAG_REGISTRY) out[f.id] = f.defaultValue;
+  return out;
+}
+
+export function getFlagDefinition(id: string): FlagDefinition | undefined {
+  return FLAG_REGISTRY.find((f) => f.id === id);
+}
+
+export function getFlag(id: FlagId | string): boolean {
+  const def = getFlagDefinition(id);
+  if (!def) return false;
+  const stored = flagsStore.get();
+  if (Object.prototype.hasOwnProperty.call(stored, id)) {
+    return Boolean(stored[id]);
+  }
+  return def.defaultValue;
+}
+
+export function setFlag(id: FlagId | string, value: boolean): boolean {
+  const def = getFlagDefinition(id);
+  if (!def) return false;
+  const current = flagsStore.get();
+  const next: FlagValues = { ...current, [id]: Boolean(value) };
+  return flagsStore.set(next);
+}
+
+export function resetFlags(): void {
+  flagsStore.reset();
+}
+
+flagsStore.subscribe(() => {
+  cachedAllFlagsSnapshot = null;
+});
+
+/** Повертає поточні значення з підставленими defaults — зручно для UI. */
+export function getAllFlags(): Record<string, boolean> {
+  if (cachedAllFlagsSnapshot) return cachedAllFlagsSnapshot;
+  const snapshot = { ...defaults(), ...flagsStore.get() };
+  cachedAllFlagsSnapshot = snapshot;
+  return snapshot;
+}
+
+/**
+ * React-хук: реактивно читає значення одного флагу. Оновлюється при
+ * `setFlag` з будь-якого компонента, а також при зовнішніх змінах LS.
+ */
+export function useFlag(id: FlagId | string): boolean {
+  return useSyncExternalStore(
+    (onChange) => flagsStore.subscribe(onChange),
+    () => getFlag(id),
+    () => getFlag(id),
+  );
+}
+
+/** React-хук: всі флаги одразу, для Settings-екрану. */
+export function useAllFlags(): Record<string, boolean> {
+  return useSyncExternalStore(
+    (onChange) => flagsStore.subscribe(onChange),
+    getAllFlags,
+    getAllFlags,
+  );
+}
+
+export { flagsStore as __flagsStoreForTests };

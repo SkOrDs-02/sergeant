@@ -1,0 +1,16 @@
+# Exclude the web app and heavy monorepo paths from EAS uploads.
+# node_modules is already auto-excluded by EAS but we keep it here
+# for clarity and to prevent accidental inclusion.
+apps/web/**
+.git/**
+node_modules/
+**/node_modules/
+.turbo/
+**/.turbo/
+dist/
+**/dist/
+build/
+**/build/
+coverage/
+**/coverage/
+*.log

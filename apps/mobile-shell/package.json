@@ -1,0 +1,58 @@
+{
+  "name": "@sergeant/mobile-shell",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "description": "Capacitor shell that wraps @sergeant/web into a native Android/iOS app.",
+  "main": "./src/index.ts",
+  "types": "./src/index.ts",
+  "exports": {
+    ".": "./src/index.ts",
+    "./platform": "./src/platform.ts",
+    "./barcodeNative": "./src/barcodeNative.ts",
+    "./auth-storage": "./src/auth-storage.ts",
+    "./pushNative": "./src/pushNative.ts"
+  },
+  "scripts": {
+    "sync": "cap sync",
+    "copy": "cap copy",
+    "open:android": "cap open android",
+    "open:ios": "cap open ios",
+    "add:android": "cap add android",
+    "add:ios": "cap add ios",
+    "build:web": "pnpm --filter @sergeant/web build:capacitor",
+    "build:android": "pnpm build:web && pnpm sync android",
+    "build:ios": "pnpm build:web && pnpm sync ios",
+    "lint": "eslint --cache .",
+    "typecheck": "tsc -p tsconfig.json --noEmit",
+    "test": "vitest run && pnpm test:scripts",
+    "test:scripts": "node --test scripts/__tests__/*.test.mjs",
+    "test:watch": "vitest",
+    "test:coverage": "vitest run --coverage"
+  },
+  "dependencies": {
+    "@aparajita/capacitor-secure-storage": "^7.1.6",
+    "@capacitor-mlkit/barcode-scanning": "^7.5.0",
+    "@capacitor/android": "^7.6.7",
+    "@capacitor/app": "^7.1.2",
+    "@capacitor/core": "^7.6.7",
+    "@capacitor/ios": "^7.6.7",
+    "@capacitor/keyboard": "^7.0.6",
+    "@capacitor/preferences": "^7.0.4",
+    "@capacitor/push-notifications": "^7.0.6",
+    "@capacitor/splash-screen": "^7.0.5",
+    "@capacitor/status-bar": "^7.0.6",
+    "@sergeant/shared": "workspace:*"
+  },
+  "devDependencies": {
+    "@capacitor/cli": "^7.6.7",
+    "@sergeant/config": "workspace:*",
+    "@vitest/coverage-v8": "^4.1.10",
+    "jsdom": "^29.1.1",
+    "typescript": "^6.0.3",
+    "vitest": "^4.1.10"
+  },
+  "engines": {
+    "node": "22.x"
+  }
+}

@@ -1,0 +1,182 @@
+[
+  {
+    "name": "Разом смачніше «Франческо»",
+    "category": "ready_meals",
+    "source": "ai",
+    "set": "receipt"
+  },
+  {
+    "name": "Рогалики з маком",
+    "category": "sweets_snacks",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Балик свинячий",
+    "category": "meat",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Язик яловичий",
+    "category": "meat",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Корейка свиняча",
+    "category": "meat",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Голова свиняча",
+    "category": "meat",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Набір для юшки",
+    "category": "fish",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Грибний мікс",
+    "category": "canned",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Крупа гречана",
+    "category": "grains",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Фрикадельки яловичі",
+    "category": "frozen",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Нут Власна Фасовка 300г",
+    "category": "legumes",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Горох Поляна 0.8кг",
+    "category": "legumes",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Горох Жовтий Цілий 1.2кг",
+    "category": "legumes",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Кеш'ю Цілий 220г",
+    "category": "nuts_seeds",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Горох Відбірний 0.9кг",
+    "category": "legumes",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Комплекс вітамінів SportVita",
+    "category": "sports",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Енергетичний гель",
+    "category": "sports",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "CLA (кон'югована лінолева кислота)",
+    "category": "sports",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Комплекс мінералів",
+    "category": "sports",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Крученики по-київськи",
+    "category": "ready_meals",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Гречаники",
+    "category": "ready_meals",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Капусняк",
+    "category": "ready_meals",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Куліш",
+    "category": "ready_meals",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Вергуни",
+    "category": "sweets_snacks",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Бурріто Санта Фе",
+    "category": "ready_meals",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Веганський боул",
+    "category": "ready_meals",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Бурріто Чилі кон Карне",
+    "category": "ready_meals",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Філадельфія лайт",
+    "category": "ready_meals",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Бурріто Вегетаріанський",
+    "category": "ready_meals",
+    "source": "ai",
+    "set": "synthetic"
+  },
+  {
+    "name": "Боул BBQ",
+    "category": "ready_meals",
+    "source": "ai",
+    "set": "synthetic"
+  }
+]

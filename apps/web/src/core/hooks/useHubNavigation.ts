@@ -1,0 +1,218 @@
+import { useCallback, useState } from "react";
+import { startViewTransition } from "@shared/lib/ui/viewTransition";
+import { useSyncedFromKey } from "@shared/hooks/useSyncedFromKey";
+import { isHubModuleId, type HubModuleId } from "@shared/lib/modules/hubNav";
+import { useLocation, useNavigate } from "react-router-dom";
+import { ANALYTICS_EVENTS, type ModuleOpenSource } from "@sergeant/shared";
+import { capturePostHogEvent } from "../observability/posthog";
+import { trackEvent } from "../observability/analytics";
+import { recordModuleOpen } from "../lib/recentModules";
+import { PATH_BASED_MODULE_IDS } from "../app/appPaths";
+
+/**
+ * Subset of {@link VALID_MODULES} which has graduated from the legacy
+ * `?module=<id>` URL contract to a top-level path-based one (initiative
+ * 0006 §Phase 2). For these modules we (a) recognize `/<id>[/...]` as
+ * `activeModule = id` and (b) emit clean `/<id>` URLs from
+ * `openModule(id, { hash })` instead of `/?module=<id>#<hash>`.
+ *
+ * Single source of truth lives in `core/app/appPaths.ts` so the App
+ * shell's standalone-route 404 fallback (`renderStandaloneRoute`) and
+ * this hook agree on which URLs are owned by a module.
+ */
+const PATH_BASED_MODULES = PATH_BASED_MODULE_IDS;
+
+// `HubModuleId` живе у `@shared/lib/modules/hubNav`; реекспортуємо для
+// споживачів цього хука (ModuleShell / HubShellContext / useModuleRouteLoader).
+export type { HubModuleId };
+
+export interface OpenModuleOptions {
+  hash?: string | null;
+  /**
+   * Звідки відкрито модуль — для `MODULE_OPENED` (базова лінія перед
+   * віссю дії хабу, P3 `anti-slop-strategy.md`). Без значення → `other`.
+   */
+  source?: ModuleOpenSource | undefined;
+}
+
+export interface HubNavigation {
+  activeModule: HubModuleId | null;
+  openModule: (id: string | null | undefined, opts?: OpenModuleOptions) => void;
+  goToHub: () => void;
+  /**
+   * History-aware "back" for the module header back button: steps back one
+   * in-app entry when the browser history has one (idx > 0), otherwise falls
+   * back to the hub. Distinct from {@link goToHub}, which always hard-navigates
+   * to `/` (used by swipe-back and the module error boundary).
+   */
+  goBackOrHub: () => void;
+  /** Navigate to hub and scroll to the given module's settings section. */
+  goToModuleSettings: (moduleId: HubModuleId) => void;
+  moduleAnimClass: "module-enter" | "hub-enter";
+}
+
+function parseModule(value: string | null): HubModuleId | null {
+  if (isHubModuleId(value)) return value;
+  return null;
+}
+
+/**
+ * Path-based module detection. `/<id>` and `/<id>/...` count; `/<id>foo`
+ * does not (would otherwise alias `/finykprofile` → finyk). Returns the
+ * first segment when it matches a `PATH_BASED_MODULES` id, else `null`.
+ *
+ * Why this is in addition to `?module=<id>` and not a replacement: legacy
+ * deep-links (PWA installs, share-cards, push notifications) still ship
+ * with `?module=<id>` URLs, and we keep them functional through Phase 5
+ * cleanup. New navigation emits the clean URL — see `openModule`.
+ */
+function parsePathnameModule(pathname: string): HubModuleId | null {
+  if (typeof pathname !== "string" || pathname.length < 2) return null;
+  if (!pathname.startsWith("/")) return null;
+  const firstSegment = pathname.slice(1).split("/", 1)[0] ?? "";
+  if (!firstSegment) return null;
+  if (!PATH_BASED_MODULES.has(firstSegment as HubModuleId)) return null;
+  return firstSegment as HubModuleId;
+}
+
+/**
+ * History depth within the current app session. React Router 7 stores an
+ * incrementing `idx` on `window.history.state`; `idx > 0` means there is a
+ * previous in-app entry we can safely `navigate(-1)` to (mobile-audit A5).
+ */
+function readHistoryIdx(): number {
+  if (typeof window === "undefined") return 0;
+  const state = window.history.state as { idx?: number } | null;
+  return typeof state?.idx === "number" ? state.idx : 0;
+}
+
+export function useHubNavigation(): HubNavigation {
+  const navigate = useNavigate();
+  // Module entry is path/search driven. React Router is the canonical
+  // location; a second native-location snapshot can be stale between rapid
+  // clicks and incorrectly re-apply the previous module.
+  const location = useLocation();
+  const searchParams = new URLSearchParams(location.search);
+
+  // Pathname wins over `?module=` — once a domain has migrated, the
+  // path is the canonical contract and we don't want a stale
+  // `?module=...` query param to override it.
+  const initialModule =
+    parsePathnameModule(location.pathname) ??
+    parseModule(searchParams.get("module"));
+
+  const [activeModule, setActiveModule] = useState<HubModuleId | null>(
+    initialModule,
+  );
+  const [moduleAnimClass, setModuleAnimClass] = useState<
+    "module-enter" | "hub-enter"
+  >("module-enter");
+
+  const goToHub = useCallback(() => {
+    // R2-V-1/V-2 · Wrap the visible module→hub swap in a view transition
+    // so the module card morphs back into its hub tile. Keep the state swap
+    // and URL mutation in the same transition transaction so neither can
+    // race the other during rapid taps.
+    startViewTransition(() => {
+      setModuleAnimClass("hub-enter");
+      setActiveModule(null);
+      navigate("/", { replace: false });
+    });
+  }, [navigate]);
+
+  const goBackOrHub = useCallback(() => {
+    if (readHistoryIdx() > 0) {
+      // A previous in-app entry exists — step back through history so the
+      // deep-page → module-overview → hub chain unwinds naturally.
+      navigate(-1);
+      return;
+    }
+    // Fresh entry / deep link with no in-app history — land on the hub.
+    startViewTransition(() => {
+      setModuleAnimClass("hub-enter");
+      setActiveModule(null);
+      navigate("/", { replace: false });
+    });
+  }, [navigate]);
+
+  const goToModuleSettings = useCallback(
+    (moduleId: HubModuleId) => {
+      capturePostHogEvent(ANALYTICS_EVENTS.MODULE_SETTINGS_OPENED, {
+        module: moduleId,
+      });
+      setModuleAnimClass("hub-enter");
+      setActiveModule(null);
+      // `?tab=settings` is the source of truth for the Hub view (see
+      // `useHubUIState.readViewFromSearch`). Without it, the URL hash
+      // says `#settings-<id>` but the Hub still renders the Dashboard
+      // tab — the user lands on hub home instead of the settings
+      // section. The hash drives the in-tab scroll-to-anchor behaviour
+      // (see `HubSettingsPage`'s `readSettingsSectionHash`), so we need
+      // both the query param and the hash here.
+      navigate(`/?tab=settings#settings-${moduleId}`, { replace: false });
+    },
+    [navigate],
+  );
+
+  const openModule = useCallback(
+    (id: string | null | undefined, opts: OpenModuleOptions = {}) => {
+      const nextId = String(id ?? "").trim();
+      if (!isHubModuleId(nextId)) return;
+      const typedId = nextId;
+      let pathSuffix = "";
+      try {
+        const raw = opts.hash != null ? String(opts.hash).trim() : "";
+        if (raw) {
+          // All modules are path-based. Strip a legacy leading hash so old
+          // callers can keep passing either "log" or "#log".
+          const cleaned = raw.startsWith("#") ? raw.slice(1) : raw;
+          pathSuffix = cleaned ? `/${cleaned}` : "";
+        }
+      } catch {
+        /* ignore */
+      }
+
+      // R2-V-1/V-2 · Hub→module entry: the tapped hub tile morphs into
+      // the module header via matching `view-transition-name`s while the
+      // rest of the surface crossfades.
+      startViewTransition(() => {
+        setModuleAnimClass("module-enter");
+        setActiveModule(typedId);
+      });
+      // Best-effort tracker for `prefetchCriticalModules` priority —
+      // see `core/lib/recentModules.ts`. Storage failures are swallowed
+      // there; nothing here cares about the result.
+      recordModuleOpen(typedId);
+      // Базова лінія перед віссю дії хабу (P3, рішення власника
+      // 2026-08-07): «відкриття модуля як продуктова подія». Стріляє
+      // ТУТ, а не в кожному вході окремо, бо крізь цю функцію проходять
+      // усі шляхи — проп із головної, шина `hub:open-module`, PWA-shortcut
+      // із сервіс-воркера. Джерело їде property-полем.
+      trackEvent(ANALYTICS_EVENTS.MODULE_OPENED, {
+        module: typedId,
+        source: opts.source ?? "other",
+      });
+      navigate(`/${typedId}${pathSuffix}`, { replace: false });
+    },
+    [navigate],
+  );
+
+  const locKey = `${location.pathname}|${location.search}`;
+  useSyncedFromKey(locKey, () => {
+    const params = new URLSearchParams(location.search);
+    const mod =
+      parsePathnameModule(location.pathname) ??
+      parseModule(params.get("module"));
+    setModuleAnimClass(mod ? "module-enter" : "hub-enter");
+    setActiveModule(mod);
+  });
+
+  return {
+    activeModule,
+    openModule,
+    goToHub,
+    goBackOrHub,
+    goToModuleSettings,
+    moduleAnimClass,
+  };
+}

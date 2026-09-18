@@ -1,0 +1,72 @@
+/**
+ * SW debug-snapshot helper + debug-flag accessor.
+ *
+ * Виокремлено з sw.ts (initiative 0001 Phase 2 — module decomposition).
+ * Snapshot використовується UI «Дебаг service worker» (page
+ * `/debug/sw`), де ми показуємо адміну поточний стан кешів і
+ * dedup-set-у. Збираємо все async-у і повертаємо плоский обʼєкт, бо
+ * postMessage сериалізує тільки structured-clonable.
+ */
+
+import { CACHE_NAMES, SW_VERSION } from "./version";
+import { cacheEntryCount } from "./cache";
+import { loadNotifiedKeys, notifiedKeys } from "./notifiedKeys";
+
+let debugEnabled = false;
+
+export function setDebugEnabled(next: boolean): void {
+  debugEnabled = next;
+  if (debugEnabled && import.meta.env?.DEV) {
+    // DEV-only confirmation that the SW debug toggle was flipped. The
+    // canonical inspection path in production is `buildSwSnapshot()`
+    // (postMessage → PWASection); see `apps/web/AGENTS.md` and
+    // `docs/tech-debt/frontend.md §7`.
+    // eslint-disable-next-line no-console -- SW debug-flag confirmation; DEV-only, production path is buildSwSnapshot() (docs §7)
+    console.log("[sw] debug enabled", { version: SW_VERSION });
+  }
+}
+
+export type SwSnapshot =
+  | {
+      ok: true;
+      version: string;
+      debugEnabled: boolean;
+      caches: { names: string[]; counts: Record<string, number | null> };
+      // `hasRoutine` / `hasFizruk` / `hasNutrition` прибрані разом із
+      // локальним циклом нагадувань у SW — нагадування шле сервер.
+      // Лишається лічильник dedup-ключів: він усе ще наповнюється з
+      // `notificationclose` і показує, скільки банерів SW уже бачив.
+      reminders: {
+        notifiedKeys: number | null;
+      };
+    }
+  | { ok: false; version: string; error: string };
+
+export async function buildSwSnapshot(): Promise<SwSnapshot> {
+  const cacheNames = await caches.keys();
+  const workboxCaches = cacheNames.filter((n) => n.startsWith("workbox-"));
+  const counts: Record<string, number | null> = {};
+  for (const n of [CACHE_NAMES.navigations, CACHE_NAMES.api]) {
+    counts[n] = await cacheEntryCount(n);
+  }
+  for (const n of workboxCaches.slice(0, 5)) {
+    // Best-effort: don't scan unbounded.
+    if (counts[n] == null) counts[n] = await cacheEntryCount(n);
+  }
+
+  let notifiedKeyCount: number | null = null;
+  try {
+    await loadNotifiedKeys();
+    notifiedKeyCount = notifiedKeys.size;
+  } catch {
+    notifiedKeyCount = null;
+  }
+
+  return {
+    ok: true,
+    version: SW_VERSION,
+    debugEnabled,
+    caches: { names: cacheNames, counts },
+    reminders: { notifiedKeys: notifiedKeyCount },
+  };
+}

@@ -1,0 +1,116 @@
+import type { CSSProperties, ReactNode } from "react";
+import type { ModuleAccent } from "@sergeant/design-tokens";
+import { cn } from "@shared/lib/ui/cn";
+import { MeshBackground } from "./MeshBackground";
+import { ModuleAccentProvider } from "./ModuleAccentProvider";
+
+/**
+ * Module shell skeleton used by Фінік / Фізрук / Рутина / Харчування.
+ *
+ * Owns the full-viewport flex column, background tokens, and overflow
+ * discipline so every module entrypoint renders identically. Slots keep
+ * module-specific bits (header, banner, bottom nav, overlays) composable
+ * without forcing each module to re-declare the layout.
+ *
+ * Pass `module` to publish the module's accent color on
+ * `--module-accent-rgb` and the `useModuleAccent()` context. Child
+ * components can then opt in to module-tinted backgrounds, borders,
+ * and CTAs via Tailwind arbitrary values:
+ *
+ *     className="bg-[rgb(var(--module-accent-rgb)/0.08)]"
+ *
+ *     <ModuleShell
+ *       module="fizruk"
+ *       header={<ModuleHeader … />}
+ *       banner={<StorageErrorBanner eventName={…} />}
+ *       nav={<ModuleBottomNav … />}
+ *       overlays={<ModuleSettingsDrawer open={…} … />}
+ *     >
+ *       {page === "dashboard" && <Dashboard />}
+ *       …
+ *     </ModuleShell>
+ */
+
+export interface ModuleShellProps {
+  /** Module accent — exposes `--module-accent-rgb` and the
+   *  `useModuleAccent()` context for descendants. */
+  module?: ModuleAccent;
+  header?: ReactNode;
+  banner?: ReactNode;
+  nav?: ReactNode;
+  /** Rendered outside the main flex column — drawers, modal overlays, etc. */
+  overlays?: ReactNode;
+  children: ReactNode;
+  className?: string;
+  mainClassName?: string;
+}
+
+export function ModuleShell({
+  module,
+  header,
+  banner,
+  nav,
+  overlays,
+  children,
+  className,
+  mainClassName,
+}: ModuleShellProps) {
+  // Expose the bottom-nav height as a CSS variable so descendants
+  // (e.g. bottom sheets rendered inside this shell) can lift themselves
+  // above it without having to know whether the current page renders a
+  // nav. Defaults to 0px when no nav is slotted. When a nav IS slotted the
+  // value comes from the shared `bottom-nav-height-var` utility rather
+  // than an inline literal: the utility also carries the coarse-pointer
+  // track height, which an inline style cannot express. Consumers that add
+  // `env(safe-area-inset-bottom)` again on top of this variable
+  // (Sheet.tsx, Toast.tsx) are accounting for the nav's *own* bottom
+  // padding, which is separate from the shell's top one.
+  const shellStyle: CSSProperties = nav
+    ? {}
+    : ({ "--bottom-nav-height": "0px" } as CSSProperties);
+
+  // Sergeant v2 redesign (2026-05, PR-6) — module shell wraps content in
+  // <MeshBackground> so the mesh-gradient surface renders behind every
+  // module screen, identical to the hub («Чорнило» v3.1 § 1). MeshBackground
+  // bakes `h-dvh flex flex-col overflow-hidden` + the `.bg-mesh` utility;
+  // remaining shell-level classes (`text-text`) slot through via className.
+  // Inline `shellStyle` (the `--bottom-nav-height` CSS var) passes through
+  // MeshBackground's `style` prop so descendants still see it.
+  const inner = (
+    <MeshBackground
+      style={shellStyle}
+      className={cn(
+        "text-text",
+        nav ? "bottom-nav-height-var" : undefined,
+        className,
+      )}
+    >
+      {header}
+      {overlays}
+      {banner}
+      <div
+        className={cn(
+          "flex-1 overflow-hidden flex flex-col module-card-tight",
+          mainClassName,
+        )}
+      >
+        {children}
+      </div>
+      {nav}
+    </MeshBackground>
+  );
+
+  if (module) {
+    // The provider only needs to publish the CSS var + context — the
+    // shell itself already owns the viewport sizing, so we render a
+    // pass-through wrapper rather than asking the provider to also
+    // size the box.
+    return (
+      <ModuleAccentProvider module={module} className="contents">
+        {inner}
+      </ModuleAccentProvider>
+    );
+  }
+
+  return inner;
+}

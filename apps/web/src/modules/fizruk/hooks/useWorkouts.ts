@@ -1,0 +1,326 @@
+import { useCallback, useMemo } from "react";
+import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
+import type {
+  ChecklistItem,
+  Workout,
+  WorkoutGroup,
+  WorkoutItem,
+} from "@sergeant/fizruk-domain/domain";
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractWorkoutSnapshots } from "../lib/fizrukDualWriteState";
+import {
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
+import {
+  clearPendingRetroEnd,
+  takePendingRetroEnd,
+} from "../lib/pendingRetroEnd";
+
+/**
+ * Window event fired when persisting workouts fails. Kept for backwards
+ * compatibility with the `<StorageErrorBanner>` listener — Stage 8 PR
+ * #057f-tombstone makes SQLite the only sink, so this event is now
+ * dispatched only when the dual-write context is unavailable (typically
+ * pre-auth) and we have no place to persist mutations to.
+ */
+export const FIZRUK_WORKOUTS_STORAGE_ERROR = "fizruk-workouts-storage-error";
+
+function uid(prefix = "id") {
+  // F19: use crypto.randomUUID() — collision-resistant unlike Math.random()-based suffixes.
+  // Prefix is preserved for human-readable debugging of IDs in LS / SQLite dumps.
+  return `${prefix}_${crypto.randomUUID()}`;
+}
+
+const DEFAULT_WARMUP_ITEMS = [
+  { label: "Загальна розминка (5-10 хв легкого кардіо)" },
+  {
+    label: "Суглобова розминка (шия, плечі, лікті, запʼястки, стегна, коліна)",
+  },
+  { label: "Специфічна розминка до тренування (легкі підходи)" },
+];
+
+const DEFAULT_COOLDOWN_ITEMS = [
+  { label: "Статична розтяжка опрацьованих мʼязів (2-3 хв)" },
+  { label: "Дихальні вправи / заспокоєння пульсу" },
+  { label: "Пінний ролик або масаж (за потреби)" },
+];
+
+/** Build a default warmup checklist with generated IDs. */
+export function makeDefaultWarmup(): ChecklistItem[] {
+  return DEFAULT_WARMUP_ITEMS.map((x) => ({
+    id: uid("wm"),
+    ...x,
+    done: false,
+  }));
+}
+
+/** Build a default cooldown checklist with generated IDs. */
+export function makeDefaultCooldown(): ChecklistItem[] {
+  return DEFAULT_COOLDOWN_ITEMS.map((x) => ({
+    id: uid("cd"),
+    ...x,
+    done: false,
+  }));
+}
+
+/**
+ * Hook for managing the list of workout sessions.
+ *
+ * Stage 8 PR #057f-tombstone: state is initialised from the SQLite
+ * warm cache (empty `[]` until `useFizrukSqliteReadBoot` finishes)
+ * and re-overlaid whenever the cache ticks. Mutations call
+ * `triggerFizrukDualWrite` directly (no LS round-trip).
+ */
+export function useWorkouts() {
+  const sqliteCacheTick = useFizrukSqliteReadTick();
+  const [workouts, setWorkouts] = useSqliteTickOverlay<Workout[]>(
+    sqliteCacheTick,
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null ? undefined : cache.workouts;
+    },
+    () => {
+      const cache = getCachedFizrukSqliteState();
+      return cache.refreshedAt === null ? [] : cache.workouts;
+    },
+  );
+  const loaded = getCachedFizrukSqliteState().refreshedAt !== null;
+
+  /**
+   * Persist an updated workouts array. Stage 8 PR #057f-tombstone: the
+   * SQLite-backed dual-write pipeline is the only sink — LS writes are
+   * gone. Pre-auth (no dual-write context) the call is a silent no-op
+   * on the persistence side, but the React state still updates so the
+   * pending UI reflects the change until the boot wires up the
+   * context.
+   */
+  const intended = useFizrukIntendedSlice<"workouts">(sqliteCacheTick);
+
+  const persist = useCallback(
+    (nextOrUpdater: Workout[] | ((prev: Workout[]) => Workout[])) => {
+      setWorkouts((prevState) => {
+        const next =
+          typeof nextOrUpdater === "function"
+            ? nextOrUpdater(prevState)
+            : nextOrUpdater;
+
+        const transition = fizrukDualWriteTransition(
+          "workouts",
+          intended,
+          extractWorkoutSnapshots(next),
+        );
+        try {
+          triggerFizrukDualWrite(transition.prev, transition.next);
+        } catch (err) {
+          // The trigger is fire-and-forget — it should never throw, but
+          // surface unexpected sync failures via the existing banner so
+          // the user knows the change did not persist.
+          try {
+            window.dispatchEvent(
+              new CustomEvent(FIZRUK_WORKOUTS_STORAGE_ERROR, {
+                detail: {
+                  message:
+                    err instanceof Error
+                      ? err.message
+                      : "не вдалося зберегти сесію",
+                },
+              }),
+            );
+          } catch {
+            /* dispatchEvent can throw in exotic embeddings — ignore */
+          }
+        }
+
+        return next;
+      });
+    },
+    [intended, setWorkouts],
+  );
+
+  const createWorkout = useCallback((): Workout => {
+    const w: Workout = {
+      id: uid("w"),
+      // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
+      startedAt: new Date().toISOString(),
+      endedAt: null,
+      items: [],
+      groups: [],
+      warmup: null,
+      cooldown: null,
+      note: "",
+    };
+    persist((prev: Workout[]) => [w, ...prev]);
+    return w;
+  }, [persist]);
+
+  /**
+   * `startedAt` із форми — для «внести проведене заняття»: сесія жива, просто
+   * почалась не зараз. `endedAt` тут лишається необовʼязковим і в ретро-шляху
+   * НЕ передається: введений кінець чекає у `pendingRetroEnd` до кроку
+   * «Завершити», інакше тренування одразу стало б read-only підсумком.
+   */
+  const createWorkoutWithTimes = useCallback(
+    ({
+      startedAt,
+      endedAt = null,
+    }: {
+      startedAt: string;
+      endedAt?: string | null;
+    }): Workout => {
+      const w: Workout = {
+        id: uid("w"),
+        // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для startedAt (не Kyiv-межа доби)
+        startedAt: startedAt || new Date().toISOString(),
+        endedAt,
+        items: [],
+        groups: [],
+        warmup: null,
+        cooldown: null,
+        note: "",
+      };
+      persist((prev: Workout[]) => [w, ...prev]);
+      return w;
+    },
+    [persist],
+  );
+
+  const endWorkout = useCallback(
+    (id: string): Workout | null => {
+      // Ретро-сесія («Внести проведене заняття») заклала свій кінець ще у
+      // формі — беремо його замість «зараз». Гасіння всередині `take`, тож
+      // повторне завершення того самого id вже піде звичайним шляхом.
+      // eslint-disable-next-line no-restricted-syntax -- UTC-anchored wall-clock instant для endedAt (не Kyiv-межа доби)
+      const nowIso = takePendingRetroEnd(id) ?? new Date().toISOString();
+      let ended: Workout | null = null;
+      persist((prev: Workout[]) =>
+        prev.map((w: Workout): Workout => {
+          if (w.id !== id) return w;
+          if (w.endedAt) {
+            ended = w;
+            return w;
+          }
+          ended = { ...w, endedAt: nowIso };
+          return ended;
+        }),
+      );
+      return ended;
+    },
+    [persist],
+  );
+
+  const updateWorkout = useCallback(
+    (id: string, patch: Partial<Workout>) => {
+      persist((prev: Workout[]) =>
+        prev.map((w: Workout) => (w.id === id ? { ...w, ...patch } : w)),
+      );
+    },
+    [persist],
+  );
+
+  const deleteWorkout = useCallback(
+    (id: string) => {
+      // Ретро викинули, не завершивши — інакше його мітка дочекалась би
+      // наступного тренування й тихо переписала б тому чужий `endedAt`.
+      clearPendingRetroEnd(id);
+      persist((prev: Workout[]) => prev.filter((w: Workout) => w.id !== id));
+    },
+    [persist],
+  );
+
+  const restoreWorkout = useCallback(
+    (workout: Workout) => {
+      if (!workout?.id) return;
+      persist((prev: Workout[]) => {
+        if (prev.some((w: Workout) => w.id === workout.id)) return prev;
+        const next = [...prev, workout];
+        next.sort((a: Workout, b: Workout) => {
+          const at = Date.parse(a?.startedAt || "") || 0;
+          const bt = Date.parse(b?.startedAt || "") || 0;
+          return at - bt;
+        });
+        return next;
+      });
+    },
+    [persist],
+  );
+
+  const addItem = useCallback(
+    (workoutId: string, item: Partial<WorkoutItem>): string => {
+      const itemId = item.id || uid("i");
+      persist((prev: Workout[]) =>
+        prev.map((w: Workout): Workout => {
+          if (w.id !== workoutId) return w;
+          return {
+            ...w,
+            items: [...(w.items || []), { id: itemId, ...item } as WorkoutItem],
+          };
+        }),
+      );
+      return itemId;
+    },
+    [persist],
+  );
+
+  const updateItem = useCallback(
+    (workoutId: string, itemId: string, patch: Partial<WorkoutItem>) => {
+      persist((prev: Workout[]) =>
+        prev.map((w: Workout): Workout => {
+          if (w.id !== workoutId) return w;
+          return {
+            ...w,
+            items: (w.items || []).map((i: WorkoutItem) =>
+              i.id === itemId ? { ...i, ...patch } : i,
+            ),
+          };
+        }),
+      );
+    },
+    [persist],
+  );
+
+  const removeItem = useCallback(
+    (workoutId: string, itemId: string) => {
+      persist((prev: Workout[]) =>
+        prev.map((w: Workout): Workout => {
+          if (w.id !== workoutId) return w;
+          const newGroups = (w.groups || [])
+            .map((g: WorkoutGroup) => ({
+              ...g,
+              itemIds: (g.itemIds || []).filter((id: string) => id !== itemId),
+            }))
+            .filter((g: WorkoutGroup) => (g.itemIds || []).length >= 2);
+          return {
+            ...w,
+            items: (w.items || []).filter((i: WorkoutItem) => i.id !== itemId),
+            groups: newGroups,
+          };
+        }),
+      );
+    },
+    [persist],
+  );
+
+  /** Workouts sorted by `startedAt` descending (most recent first). */
+  const sorted = useMemo(() => {
+    return [...workouts].sort((a, b) =>
+      (b.startedAt || "").localeCompare(a.startedAt || ""),
+    );
+  }, [workouts]);
+
+  return {
+    workouts: sorted,
+    loaded,
+    createWorkout,
+    createWorkoutWithTimes,
+    updateWorkout,
+    deleteWorkout,
+    restoreWorkout,
+    endWorkout,
+    addItem,
+    updateItem,
+    removeItem,
+  };
+}

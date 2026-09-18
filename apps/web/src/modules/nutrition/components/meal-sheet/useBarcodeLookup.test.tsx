@@ -1,0 +1,269 @@
+// @vitest-environment jsdom
+/**
+ * Last validated: 2026-06-23
+ * Status: Active
+ * Unit tests for the meal-sheet `useBarcodeLookup` hook.
+ */
+import { act, renderHook } from "@testing-library/react";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const lookupFoodByBarcodeMock = vi.fn();
+const bindBarcodeToFoodMock = vi.fn();
+const lookupProductMock = vi.fn();
+
+vi.mock("../../lib/foodDb/foodDb", () => ({
+  lookupFoodByBarcode: (...a: unknown[]) => lookupFoodByBarcodeMock(...a),
+  bindBarcodeToFood: (...a: unknown[]) => bindBarcodeToFoodMock(...a),
+}));
+
+vi.mock("../../hooks/useBarcodeProduct", () => ({
+  useBarcodeProductLookup: () => lookupProductMock,
+}));
+
+vi.mock("@shared/api", async () => {
+  const actual =
+    await vi.importActual<typeof import("@shared/api")>("@shared/api");
+  return actual;
+});
+
+import { ApiError } from "@shared/api";
+import { useBarcodeLookup } from "./useBarcodeLookup";
+
+function setup(pickedFood: { id?: string } | null = null) {
+  const setPickedFood = vi.fn();
+  const setPickedGrams = vi.fn();
+  const setForm = vi.fn();
+  const { result } = renderHook(() =>
+    useBarcodeLookup({
+      pickedFood: pickedFood as never,
+      setPickedFood,
+      setPickedGrams,
+      setForm,
+    }),
+  );
+  return { result, setPickedFood, setPickedGrams, setForm };
+}
+
+beforeEach(() => {
+  lookupFoodByBarcodeMock.mockReset();
+  bindBarcodeToFoodMock.mockReset();
+  lookupProductMock.mockReset();
+});
+
+afterEach(() => {
+  vi.clearAllMocks();
+});
+
+describe("handleBarcodeLookup", () => {
+  // N9: нутрієнти приїжджають тим самим викликом, що й КБЖВ, і мають
+  // дійти до картки. Прокидання йде повз `fakeFood` (той типізований як
+  // `FoodProduct` і лягає в локальну базу), тож перевіряємо саме те, що
+  // потрапило в `setPickedFood`.
+  it("прокидає нутрієнти у вʼюмодель картки", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockResolvedValue({
+      name: "Хліб",
+      brand: "Київхліб",
+      kcal_100g: 250,
+      protein_100g: 8,
+      fat_100g: 3,
+      carbs_100g: 48,
+      servingGrams: 50,
+      source: "off",
+      nutrients: {
+        fiber_100g: 2.7,
+        sugars_100g: 4.4,
+        saturatedFat_100g: 0.3,
+        salt_100g: 1.2,
+        alcohol_100g: null,
+      },
+    });
+    const { result, setPickedFood } = setup();
+    await act(async () => {
+      await result.current.handleBarcodeLookup("4820010840443");
+    });
+    expect(setPickedFood).toHaveBeenCalledWith(
+      expect.objectContaining({
+        nutrients: expect.objectContaining({ fiber_100g: 2.7 }),
+      }),
+    );
+  });
+
+  // Джерело без нутрієнтів не має класти в картку порожній обʼєкт: той
+  // сказав би «дані є, просто порожні», і рядок відрендерився б самими
+  // тире. Ключа не повинно бути взагалі.
+  it("не ставить ключ `nutrients`, коли джерело їх не дало", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockResolvedValue({
+      name: "Щось",
+      brand: null,
+      kcal_100g: 100,
+      protein_100g: 1,
+      fat_100g: 1,
+      carbs_100g: 1,
+      servingGrams: null,
+      source: "upcitemdb",
+    });
+    const { result, setPickedFood } = setup();
+    await act(async () => {
+      await result.current.handleBarcodeLookup("4820010840443");
+    });
+    const picked = setPickedFood.mock.calls[0]?.[0] as Record<string, unknown>;
+    expect(picked).toBeDefined();
+    expect("nutrients" in picked).toBe(false);
+  });
+
+  it("no-ops for an empty code", async () => {
+    const { result } = setup();
+    await result.current.handleBarcodeLookup("  ");
+    expect(lookupFoodByBarcodeMock).not.toHaveBeenCalled();
+  });
+
+  it("uses a local DB hit and picks it", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue({
+      id: "food_1",
+      name: "Локальний",
+      defaultGrams: 120,
+    });
+    const { result, setPickedFood, setPickedGrams } = setup();
+    await result.current.handleBarcodeLookup("4820000000001");
+    expect(setPickedFood).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "food_1" }),
+    );
+    expect(setPickedGrams).toHaveBeenCalledWith("120");
+  });
+
+  it("falls back to remote lookup and fills the form", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockResolvedValue({
+      name: "Молоко",
+      brand: "Бренд",
+      kcal_100g: 52,
+      protein_100g: 3,
+      fat_100g: 2.5,
+      carbs_100g: 5,
+      servingGrams: 200,
+      partial: false,
+    });
+    const { result, setPickedFood, setForm } = setup();
+    await result.current.handleBarcodeLookup("4820000000002");
+    expect(setPickedFood).toHaveBeenCalledWith(
+      expect.objectContaining({ id: "barcode_4820000000002", name: "Молоко" }),
+    );
+    expect(setForm).toHaveBeenCalled();
+  });
+
+  it("reports a partial remote product", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockResolvedValue({ name: "Снек", partial: true });
+    const { result } = setup();
+    await result.current.handleBarcodeLookup("4820000000003");
+    // No throw; the status string path executed (covered).
+    expect(lookupProductMock).toHaveBeenCalled();
+  });
+
+  it("reports product-not-found as a distinct not-found notice (404, not a 503 text blob)", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockResolvedValue(null);
+    const { result, setPickedFood } = setup();
+    await act(async () => {
+      await result.current.handleBarcodeLookup("4820000000004");
+    });
+    expect(setPickedFood).not.toHaveBeenCalled();
+    expect(result.current.barcodeNotice).toEqual({
+      kind: "not-found",
+      code: "4820000000004",
+    });
+  });
+
+  it("reports a 503 (upstreams down) as unavailable — distinct from not-found", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockRejectedValue(
+      new ApiError({
+        kind: "http",
+        message: "upstreams down",
+        url: "/api/barcode",
+        status: 503,
+      }),
+    );
+    const { result, setPickedFood } = setup();
+    await act(async () => {
+      await result.current.handleBarcodeLookup("4820000000010");
+    });
+    expect(setPickedFood).not.toHaveBeenCalled();
+    expect(result.current.barcodeNotice).toEqual({
+      kind: "unavailable",
+      code: "4820000000010",
+    });
+  });
+
+  it("reports an incomplete remote product (no name)", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockResolvedValue({ name: "" });
+    const { result, setPickedFood } = setup();
+    await result.current.handleBarcodeLookup("4820000000005");
+    expect(setPickedFood).not.toHaveBeenCalled();
+  });
+
+  it("handles an offline ApiError from remote lookup", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    const onLineSpy = vi
+      .spyOn(navigator, "onLine", "get")
+      .mockReturnValue(false);
+    lookupProductMock.mockRejectedValue(
+      new ApiError({ kind: "network", message: "off", url: "/api/barcode" }),
+    );
+    const { result, setPickedFood } = setup();
+    await result.current.handleBarcodeLookup("4820000000006");
+    expect(setPickedFood).not.toHaveBeenCalled();
+    onLineSpy.mockRestore();
+  });
+
+  it("handles an http ApiError from remote lookup", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockRejectedValue(
+      new ApiError({
+        kind: "http",
+        message: "x",
+        url: "/api/barcode",
+        status: 500,
+        body: { error: "Сервер" },
+      }),
+    );
+    const { result, setPickedFood } = setup();
+    await result.current.handleBarcodeLookup("4820000000007");
+    expect(setPickedFood).not.toHaveBeenCalled();
+  });
+
+  it("handles a generic error from remote lookup", async () => {
+    lookupFoodByBarcodeMock.mockResolvedValue(null);
+    lookupProductMock.mockRejectedValue(new Error("weird"));
+    const { result, setPickedFood } = setup();
+    await result.current.handleBarcodeLookup("4820000000008");
+    expect(setPickedFood).not.toHaveBeenCalled();
+  });
+});
+
+describe("handleBarcodeBind", () => {
+  it("rejects a malformed barcode", async () => {
+    const { result } = setup({ id: "food_1" });
+    await result.current.handleBarcodeBind("abc");
+    expect(bindBarcodeToFoodMock).not.toHaveBeenCalled();
+  });
+
+  it("requires a picked food", async () => {
+    const { result } = setup(null);
+    await result.current.handleBarcodeBind("4820000000001");
+    expect(bindBarcodeToFoodMock).not.toHaveBeenCalled();
+  });
+
+  it("binds the barcode to the picked food", async () => {
+    bindBarcodeToFoodMock.mockResolvedValue(true);
+    const { result } = setup({ id: "food_1" });
+    await result.current.handleBarcodeBind("4820000000001");
+    expect(bindBarcodeToFoodMock).toHaveBeenCalledWith(
+      "4820000000001",
+      "food_1",
+    );
+  });
+});

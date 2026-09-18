@@ -1,0 +1,424 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ═══════════════════════════════════════════════════════════════════════
+   SEMANTIC DESIGN TOKENS — mirrors apps/web/src/index.css
+   NativeWind resolves CSS variables at compile time; values here must
+   be space-separated RGB triplets so Tailwind opacity modifiers work.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  :root {
+    /* Light theme */
+    --c-bg: 253 249 243;
+    --c-panel: 255 255 255;
+    --c-panel-hi: 250 247 241;
+    --c-line: 235 228 218;
+    --c-text: 28 25 23;
+    --c-muted: 87 83 78;
+    --c-subtle: 107 100 93;
+    --c-primary: 28 25 23;
+    --c-accent: 15 118 110; /* teal-700 (2026-07: was emerald-500 #10b981) */
+    --c-surface: var(--c-panel);
+    --c-surface-muted: var(--c-panel-hi);
+    --c-fg: var(--c-text);
+    --c-fg-muted: var(--c-muted);
+    --c-border: var(--c-line);
+    --c-border-strong: 221 211 197;
+    --c-success: 16 185 129;
+    --c-warning: 245 158 11;
+    --c-danger: 239 68 68;
+    --c-info: 14 165 233;
+    --c-success-soft: 209 250 229;
+    --c-warning-soft: 254 243 199;
+    --c-danger-soft: 254 226 226;
+    --c-info-soft: 224 242 254;
+    /* `-soft-fg` — theme-aware foreground ink for status soft fills
+       (soft Badges/Banners). Mirror apps/web/src/styles/theme.css. */
+    --c-success-soft-fg: 4 120 87; /* emerald-700 on emerald-100 */
+    --c-warning-soft-fg: 180 83 9; /* amber-700 on amber-100 */
+    --c-danger-soft-fg: 185 28 28; /* red-700 on red-100 */
+    --c-info-soft-fg: 7 89 133; /* sky-800 on sky-100 */
+
+    /* Чорнильний (текстовий) тир — те, у що резолвиться
+       `text-{family}-strong`. Світла тема лишає рівно ті значення, які
+       пресет віддавав статично; пара до них — у `.dark` нижче. Дзеркалить
+       `--c-{family}-ink` з apps/web/src/styles/theme.css. */
+    --c-success-ink: 6 95 70; /* emerald-800 */
+    --c-warning-ink: 146 64 14; /* amber-800 */
+    --c-danger-ink: 153 27 27; /* red-800 */
+    --c-info-ink: 7 89 133; /* sky-800 */
+    --c-brand-ink: 41 37 36; /* stone-800 */
+    --c-finyk-ink: 17 94 89; /* teal-800 */
+    --c-fizruk-ink: 21 94 117; /* cyan-800 */
+    --c-routine-ink: 141 66 86; /* rose-800 */
+    --c-nutrition-ink: 70 98 18; /* lime-800 */
+
+    /* ───────────────────────────────────────────────────────────────────
+       SOFT BRAND & MODULE TINTS — mirror apps/web/src/styles/theme.css.
+       `-soft` is the tinted surface wash, `-soft-border` the paired
+       hairline, `-soft-hover` the subtle hover tint, `-soft-fg` the
+       theme-aware foreground ink for soft-fill controls. Consumed by
+       `Card` module variants, `Badge`, `Tabs`, `SearchResultItem`,
+       `InlineAiRail`.
+       ─────────────────────────────────────────────────────────────────── */
+    --c-brand-soft: 245 245 244; /* stone-100 */
+    --c-brand-soft-border: 231 229 228; /* stone-200 */
+    --c-brand-soft-hover: 231 229 228; /* stone-200 */
+    --c-brand-soft-fg: 41 37 36; /* stone-800 */
+
+    --c-finyk-soft: 240 253 250; /* teal-50 */
+    --c-finyk-soft-border: 153 246 228; /* teal-200 */
+    --c-finyk-soft-hover: 204 251 241; /* teal-100 */
+    --c-finyk-soft-fg: 17 94 89; /* teal-800 */
+
+    --c-fizruk-soft: 236 254 255; /* cyan-50 */
+    --c-fizruk-soft-border: 165 243 252; /* cyan-200 */
+    --c-fizruk-soft-hover: 207 250 254; /* cyan-100 */
+    --c-fizruk-soft-fg: 21 94 117; /* cyan-800 */
+
+    --c-routine-soft: 255 245 246; /* rose-50 */
+    --c-routine-soft-border: 254 211 219; /* rose-200 */
+    --c-routine-soft-hover: 255 231 235; /* rose-100 */
+    --c-routine-soft-fg: 172 76 100; /* rose-700 */
+
+    --c-nutrition-soft: 248 254 231; /* lime-50 */
+    --c-nutrition-soft-border: 217 249 157; /* lime-200 */
+    --c-nutrition-soft-hover: 239 252 203; /* lime-100 */
+    --c-nutrition-soft-fg: 70 98 18; /* lime-800 */
+
+    /* Chart series — mirror `--c-chart-{module}` in web theme.css. Backs
+       `bg-chart-{module}` progress fills used by the hub report cards. */
+    --c-chart-finyk: 17 94 89; /* teal-800 */
+    --c-chart-fizruk: 21 94 117; /* cyan-800 */
+    --c-chart-routine: 172 76 100; /* rose-700 */
+    --c-chart-nutrition: 70 98 18; /* lime-800 */
+
+    /* Semantic A11y / states tokens — mirror apps/web/src/styles/theme.css.
+       NativeWind reads these RGB triplets at compile time; opacity
+       modifiers (`ring-focus/45`) work the same way as on web. */
+    --c-ring: 16 185 129;
+    --c-ring-strong: 4 120 87;
+    --c-ring-offset: 255 255 255;
+    --c-selection-bg: 167 243 208;
+    --c-selection-fg: 6 78 59;
+    --c-caret: 16 185 129;
+    --c-scrollbar-track: 250 247 241;
+    --c-scrollbar-thumb: 221 211 197;
+    --c-scrollbar-thumb-hover: 180 174 169;
+    --c-divider-weak: 245 238 228;
+    --c-divider: 235 228 218;
+    --c-divider-strong: 221 211 197;
+
+    /* Celebration / gamification tokens */
+    --c-celebration: 251 191 36; /* amber-400 */
+    --c-streak-glow: 235 118 145; /* rose-500 */
+    --c-xp: 139 92 246; /* violet-500 */
+
+    /* Enhanced focus ring */
+    --focus-ring-width: 3px;
+    --focus-ring-color: rgba(16, 185, 129, 0.4);
+  }
+
+  .dark {
+    color-scheme: dark;
+
+    /* AI-DANGER: ці поверхні НЕ мусять збігатися з `.dark` у вебі, і це
+       рішення власника (2026-09-12), а не відкладена міграція. Веб живе на
+       «Чорнилі» (`#14100e / #2a231f / #3a302b` після кроку 2 D1); мобайл
+       свідомо лишається на своїй генерації `#171412 / #201c19 / #302a25`.
+
+       Не «синхронізуй» це з `inkTheme.surface` — drift-тесту між мобайлом і
+       токенами немає саме тому, що синхронність тут не є вимогою. Доступність
+       не страждає: контраст тримає AA з запасом (найтісніше `subtle` 4.61:1 і
+       `danger-ink` 5.12:1 на `panel-hi`), і чорнильний тир нижче це гейтує
+       через `contrast.test.js`.
+
+       Якщо колись міграція таки буде — вона починається з рішення власника,
+       і разом із нею треба завести drift-гейт мобайл↔токени, інакше
+       розійдеться втретє. */
+    --c-bg: 23 20 18;
+    --c-panel: 32 28 25;
+    --c-panel-hi: 48 42 37;
+    --c-line: 82 74 65;
+    --c-text: 250 247 241;
+    --c-muted: 180 174 169;
+    --c-subtle: 135 128 121;
+    --c-primary: 250 247 241;
+    --c-accent: 45 212 191; /* teal-400 (2026-07: was emerald-500 #10b981) */
+    --c-border-strong: 112 102 90;
+    --c-success-soft: 6 95 70;
+    --c-warning-soft: 146 64 14;
+    --c-danger-soft: 153 27 27;
+    --c-info-soft: 7 89 133;
+    --c-success-soft-fg: 110 231 183; /* emerald-300 */
+    --c-warning-soft-fg: 252 211 77; /* amber-300 */
+    --c-danger-soft-fg: 254 202 202; /* red-200 */
+    --c-info-soft-fg: 125 211 252; /* sky-300 */
+
+    /* Чорнильний (текстовий) тир — щабель -400, у парі зі світлим тиром
+       у `:root`. Без цих змінних пресет віддає статичний тир -800, і на
+       поверхнях цього блоку (#171412 / #201c19 / #302a25) текст статусу
+       та модуля виходить 1.70…2.66:1 — темне по темному. Заміри на
+       `panel-hi` (найтісніша поверхня): danger 1.70 → 5.12, finyk
+       1.87 → 7.60, routine 2.05 → 6.24, nutrition 2.03 → 9.58.
+       Гейт значень — `contrast.test.js` у @sergeant/design-tokens
+       (`statusInkHex` / `accentInkHex`). */
+    --c-success-ink: 52 211 153; /* emerald-400 */
+    --c-warning-ink: 251 191 36; /* amber-400 */
+    --c-danger-ink: 248 113 113; /* red-400 */
+    --c-info-ink: 56 189 248; /* sky-400 */
+    --c-brand-ink: 214 211 209; /* stone-300 */
+    --c-finyk-ink: 45 212 191; /* teal-400 */
+    --c-fizruk-ink: 34 211 238; /* cyan-400 */
+    --c-routine-ink: 246 141 164; /* rose-400 */
+    --c-nutrition-ink: 176 230 54; /* lime-400 */
+
+    /* Dark-theme overrides for the soft brand/module tints — mirror
+       apps/web/src/styles/theme.css. Values are deliberately deep
+       (`-900` family) so tinted surfaces read as accent, not bright
+       fill, on the dark panel. */
+    --c-brand-soft: 41 37 36; /* stone-800 */
+    --c-brand-soft-border: 68 64 60; /* stone-700 */
+    --c-brand-soft-hover: 68 64 60; /* stone-700 */
+    --c-brand-soft-fg: 214 211 209; /* stone-300 */
+
+    --c-finyk-soft: 19 78 74; /* teal-900 */
+    --c-finyk-soft-border: 17 94 89; /* teal-800 */
+    --c-finyk-soft-hover: 17 94 89; /* teal-800 */
+    --c-finyk-soft-fg: 94 234 212; /* teal-300 */
+
+    --c-fizruk-soft: 22 78 99; /* cyan-900 */
+    --c-fizruk-soft-border: 21 94 117; /* cyan-800 */
+    --c-fizruk-soft-hover: 21 94 117; /* cyan-800 */
+    --c-fizruk-soft-fg: 103 232 249; /* cyan-300 */
+
+    --c-routine-soft: 117 57 73; /* rose-900 */
+    --c-routine-soft-border: 172 76 100; /* rose-800 */
+    --c-routine-soft-hover: 172 76 100; /* rose-800 */
+    --c-routine-soft-fg: 254 211 219; /* rose-200 */
+
+    --c-nutrition-soft: 63 98 18; /* lime-800 */
+    --c-nutrition-soft-border: 86 124 15; /* lime-700 */
+    --c-nutrition-soft-hover: 86 124 15; /* lime-700 */
+    --c-nutrition-soft-fg: 200 242 100; /* lime-300 */
+
+    /* Chart series — brighter -400 tier for visibility on dark bg.
+       Mirror apps/web/src/styles/theme.css. */
+    --c-chart-finyk: 45 212 191; /* teal-400 */
+    --c-chart-fizruk: 34 211 238; /* cyan-400 */
+    --c-chart-routine: 246 141 164; /* rose-400 */
+    --c-chart-nutrition: 176 230 54; /* lime-400 */
+
+    /* Dark-theme A11y / states overrides — mirror apps/web/src/styles/theme.css. */
+    --c-ring: 52 211 153;
+    --c-ring-strong: 110 231 183;
+    --c-ring-offset: 32 28 25;
+    --c-selection-bg: 4 120 87;
+    --c-selection-fg: 209 250 229;
+    --c-caret: 52 211 153;
+    --c-scrollbar-track: 32 28 25;
+    --c-scrollbar-thumb: 82 74 65;
+    --c-scrollbar-thumb-hover: 135 128 121;
+    --c-divider-weak: 60 53 47;
+    --c-divider: 82 74 65;
+    --c-divider-strong: 112 102 90;
+
+    /* ───────────────────────────────────────────────────────────────────
+       MODULE DARK SURFACES & BORDERS — mirrors apps/web/src/index.css
+       Premixed accents tuned for use over the dark `panel` background.
+       Decoupled from the live `--c-finyk` / `--c-routine` / … accents so
+       the visual proportions of `bg-<m>-surface-dark/N` and
+       `border-<m>-border-dark/N` opacity tints don't silently drift if a
+       module's primary colour is later retuned. Initial RGB values
+       mirror the corresponding `moduleColors.<m>.primary` from
+       `packages/design-tokens/tokens.js` — change them here
+       independently when dark-mode tints need their own treatment.
+       ─────────────────────────────────────────────────────────────────── */
+    --c-finyk-surface-dark: 15 118 110; /* teal-700 (2026-07: was emerald-500) */
+    --c-finyk-border-dark: 15 118 110; /* teal-700 (2026-07: was emerald-500) */
+    --c-fizruk-surface-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
+    --c-fizruk-border-dark: 14 116 144; /* cyan-700 — mirrors moduleColors.fizruk.primary (was teal-500) */
+    --c-routine-surface-dark: 235 118 145; /* rose-500 */
+    --c-routine-border-dark: 235 118 145; /* rose-500 */
+    --c-nutrition-surface-dark: 176 230 54; /* lime-400 — WCAG AA ≥4.5:1 on dark panel (was lime-500) */
+    --c-nutrition-border-dark: 176 230 54; /* lime-400 (was lime-500) */
+  }
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   TYPOGRAPHY UTILITY CLASSES — matches apps/web/src/index.css heading scale.
+   NativeWind applies these as className strings on <Text> components.
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.text-display {
+  @apply text-4xl leading-none font-bold tracking-tight;
+  font-variant-numeric: tabular-nums;
+}
+
+.text-h1 {
+  @apply text-2xl leading-tight font-bold tracking-tight;
+}
+
+.text-h2 {
+  @apply text-lg leading-snug font-semibold;
+  letter-spacing: -0.01em;
+}
+
+.text-h3 {
+  @apply text-[15px] leading-snug font-semibold;
+}
+
+.text-body {
+  @apply text-[15px] leading-relaxed font-normal;
+}
+
+.text-body-sm {
+  @apply text-[13px] leading-relaxed font-normal;
+}
+
+.text-caption {
+  @apply text-xs leading-snug font-normal;
+  letter-spacing: 0.01em;
+}
+
+.text-eyebrow {
+  @apply text-[11px] leading-none font-semibold uppercase;
+  letter-spacing: 0.08em;
+}
+
+.text-celebration {
+  @apply text-xl leading-tight font-bold;
+  letter-spacing: 0.02em;
+  color: rgb(251 191 36);
+}
+
+.text-xp {
+  @apply text-[13px] leading-none font-bold;
+  letter-spacing: 0.02em;
+  font-variant-numeric: tabular-nums;
+  color: rgb(139 92 246);
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   HERO CARD GRADIENT OVERLAYS — visual depth for hero surfaces
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.hero-gradient-finyk {
+  background: linear-gradient(
+    135deg,
+    rgba(15, 118, 110, 0.08) 0%,
+    rgba(15, 118, 110, 0.02) 100%
+  ); /* teal-700 (2026-07: was emerald-500) */
+}
+
+.hero-gradient-fizruk {
+  background: linear-gradient(
+    135deg,
+    rgba(20, 184, 166, 0.08) 0%,
+    rgba(20, 184, 166, 0.02) 100%
+  );
+}
+
+.hero-gradient-routine {
+  background: linear-gradient(
+    135deg,
+    rgba(249, 112, 102, 0.08) 0%,
+    rgba(249, 112, 102, 0.02) 100%
+  );
+}
+
+.hero-gradient-nutrition {
+  background: linear-gradient(
+    135deg,
+    rgba(146, 204, 23, 0.08) 0%,
+    rgba(146, 204, 23, 0.02) 100%
+  );
+}
+
+.hero-gradient-brand {
+  background: linear-gradient(
+    135deg,
+    rgba(16, 185, 129, 0.06) 0%,
+    transparent 100%
+  );
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   ICON STROKE WIDTH SYSTEM — consistent icon weights
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Icon weight CSS custom properties for consistency */
+:root {
+  --icon-stroke-thin: 1.5;
+  --icon-stroke-default: 2;
+  --icon-stroke-bold: 2.5;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MICRO-ANIMATIONS — subtle state transitions
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+/* Press scale animation utility */
+.press-scale {
+  transition:
+    transform 150ms ease-out,
+    opacity 150ms ease-out;
+}
+
+.press-scale:active {
+  transform: scale(0.97);
+  opacity: 0.9;
+}
+
+/* Fade transition utility */
+.fade-transition {
+  transition: opacity 200ms ease-out;
+}
+
+/* Scale-up on hover/focus (for web fallback) */
+.hover-lift {
+  transition:
+    transform 200ms ease-out,
+    box-shadow 200ms ease-out;
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   MODULE ACCENT COLORS — enhanced differentiation
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+:root {
+  /* Primary module colors (enhanced contrast) */
+  --c-finyk-primary: 16 185 129; /* emerald-500 */
+  --c-finyk-secondary: 5 150 105; /* emerald-600 */
+
+  --c-fizruk-primary: 14 116 144; /* cyan-700 (2026-07: was cyan-500 #06b6d4) */
+  --c-fizruk-secondary: 8 145 178; /* cyan-600 */
+
+  --c-routine-primary: 235 118 145; /* rose-500 */
+  --c-routine-secondary: 239 68 68; /* red-500 */
+
+  --c-nutrition-primary: 146 204 23; /* brand lime #92cc17 (was stock Tailwind lime-500 #84cc16) */
+  --c-nutrition-secondary: 101 163 13; /* lime-600 */
+}
+
+/* ═══════════════════════════════════════════════════════════════════════════
+   SETTINGS SECTION HIERARCHY — visual dividers and headers
+   ═══════════════════════════════════════════════════════════════════════════ */
+
+.settings-section-header {
+  @apply flex-row items-center gap-2 pb-2 mb-3 border-b border-cream-200;
+}
+
+.settings-section-header.dark {
+  @apply border-cream-700;
+}
+
+.settings-section-divider {
+  @apply h-px bg-cream-200 my-4;
+}
+
+.settings-section-divider.dark {
+  @apply bg-cream-700;
+}

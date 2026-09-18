@@ -1,0 +1,52 @@
+groups:
+  - name: voyage-cost
+    rules:
+      # PR-38 (48-plan) — Voyage daily soft-limit alert.
+      #
+      # Compares trailing 24h spend (via `increase()` of cumulative
+      # `ai_cost_estimate_usd_total{provider="voyage"}` counter) against the
+      # daily soft threshold from `voyage_daily_budget_usd` gauge. The gauge
+      # is published only when `VOYAGE_DAILY_BUDGET_USD > 0` in server env
+      # (see `apps/server/src/obs/cost.ts::applyVoyageDailyBudget`), so the
+      # `voyage_daily_budget_usd > 0` guard prevents the rule from firing
+      # spuriously on dev / staging where the feature is unconfigured.
+      #
+      # 80% — warning (notice-only, no page). 100% — page. Both alerts go
+      # to the `🟠 Контрол-план` Telegram topic via Alertmanager → WF-98
+      # generic alert routing; severity label drives the Alertmanager route.
+      - alert: VoyageDailyBudgetSoftBreach
+        expr: >
+          (sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h])))
+          > 0.8 * (sum(voyage_daily_budget_usd) > 0)
+        for: 10m
+        labels:
+          severity: warning
+          provider: voyage
+        annotations:
+          summary: "Voyage 24h spend >80% of daily budget"
+          description: >
+            Trailing 24h cost for Voyage embeddings exceeded 80% of the
+            configured daily soft budget (`voyage_daily_budget_usd`). Check
+            `cost-monitoring` Grafana dashboard for the offending model /
+            endpoint and consider switching ingestion to a cheaper model
+            (`voyage-3.5-lite` is ~3× cheaper than `voyage-3.5`).
+
+      - alert: VoyageDailyBudgetHardBreach
+        expr: >
+          (sum(increase(ai_cost_estimate_usd_total{provider="voyage"}[24h])))
+          >= 1.0 * (sum(voyage_daily_budget_usd) > 0)
+        for: 5m
+        labels:
+          severity: page
+          provider: voyage
+        annotations:
+          summary: "Voyage 24h spend ≥100% of daily budget — soft cap hit"
+          description: >
+            Trailing 24h cost for Voyage embeddings hit or exceeded the
+            configured daily soft budget (`voyage_daily_budget_usd`). The
+            cap is informational — Voyage API is NOT blocked, but the
+            run-rate is on track to overshoot the monthly envelope. Decide
+            within the next 1h whether to (a) raise `VOYAGE_DAILY_BUDGET_USD`
+            (one-off spike), (b) downgrade `VOYAGE_EMBEDDING_MODEL` to
+            cheaper tier, or (c) disable `AI_MEMORY_ENABLED` until
+            ingestion is throttled.

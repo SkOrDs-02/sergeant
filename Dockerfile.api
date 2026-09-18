@@ -1,0 +1,289 @@
+# Hub API container — multi-stage with distroless runtime (PR-30 / L3).
+#
+# Build (Coolify / Docker): docker buildx build --platform linux/amd64 \
+#     -f Dockerfile.api -t hub-api .
+#
+# `--platform=linux/amd64` піниться явно на FROM-рівні (closes hardening
+# card L13 — `docs/work/specs/security-hardening/L13-docker-platform-pin.md`). Hetzner/Coolify
+# runtime це amd64, і dev-машина на Apple Silicon (arm64) без явного pin-у
+# зібрала б arm64-image, який локально проходить smoke, але на сервері
+# падає з "exec format error".
+#
+# Stage map (PR-30 — `docs/work/specs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
+#
+#   1. `builder`  — node:alpine + full dev deps + `pnpm build` (esbuild
+#      бандл у `dist-server/index.js` + копія `migrations/*.sql`).
+#   2. `deps`     — node:alpine + `pnpm install --prod` + cleanup CVE-
+#      noisy optional peers (vite / esbuild / vitest / rollup / tsx).
+#      Має shell, тому `find … -prune` працює; в distroless його б не
+#      було.
+#   3. `runtime`  — `gcr.io/distroless/nodejs20-debian12:nonroot`. NO
+#      shell, NO package managers, NO `corepack` / `npm` / `pnpm` / `yarn`.
+#      Trivy attack surface shrinks ~90% порівняно з alpine: усі CVE
+#      бувшого fragile `find … -delete` cleanup тепер відсутні by-design,
+#      бо binary просто немає у образі.
+#
+# Healthcheck: Coolify для образних деплоїв перевіряє здоровʼя ВСЕРЕДИНІ
+# контейнера. Команда не редагується в UI напряму: Coolify збирає її з
+# полів `health_check_*` (`generate_healthcheck_commands()` у
+# `ApplicationDeploymentJob.php`) в один рядок CMD-SHELL:
+#
+#   curl -s -X 'GET' -f 'http://localhost:3000/health' > /dev/null
+#     || wget -q -O- 'http://localhost:3000/health' > /dev/null || exit 1
+#
+# тобто `curl` і `wget` тут не альтернатива на вибір, а ланцюг `||`.
+# Distroless не має ні того, ні іншого, і доставити їх пакетним
+# менеджером неможливо (його теж немає). Тому нижче в runtime-стейдж
+# запікається busybox і як `/bin/sh`, і як `/bin/wget` (див. коментар
+# над тими двома `COPY`).
+#
+# Наслідок, який виглядає як поломка і нею не є: перша гілка ланцюга
+# падає ЗАВЖДИ, тож у логах деплою стоїть `/bin/sh: curl: not found`
+# навіть на цілком здоровому контейнері. Перевірку фактично виконує
+# друга гілка, busybox-wget, і саме її код вирішує результат. Тому
+# `Return code: 0` поруч із тим рядком означає «wget отримав 200», а не
+# «shell проковтнув помилку»: якби `/bin/wget` не було, ланцюг дійшов
+# би до `exit 1`. Заміряно 2026-08-29 docker-health-пробою на цьому ж
+# runtime: `/health` 200 → healthy / exit 0, 503 → unhealthy / exit 1,
+# образ без `/bin/wget` → unhealthy / exit 1.
+#
+# Dockerfile-івський `HEALTHCHECK` лишається опущеним свідомо, і додати
+# його «своїм» healthcheck-ом НЕ вийде: Coolify читає `HEALTHCHECK` з
+# Dockerfile лише коли САМ будує з репозиторію
+# (`parseHealthcheckFromDockerfile` викликається з
+# `dockerfile_from_repo`). Тут він тягне готовий образ із ghcr, тож
+# `custom_healthcheck_found` лишається false, Coolify додає власний
+# healthcheck у compose, і той перекриває запечений в образ.
+#
+# Історична примітка: раніше тут стояло «Railway моніторить через
+# external HTTP-probe». Railway виведено з експлуатації (ADR-0074), а
+# Coolify влаштований інакше — перевірка внутрішня, не зовнішня.
+#
+# Pre-deploy міграції: Coolify виконує `pre_deployment_command`
+# (`node dist-server/migrate.js`; те саме робив Railway `preDeployCommand`)
+# через `/bin/sh -c "<cmd>"` всередині того ж runtime-образу. Distroless
+# шела не має, тому pre-deploy мовчки фейлиться (deploy-логи порожні,
+# контейнер не встигає нічого написати). Щоб не ламати release-stage
+# міграцій, у runtime-стейдж
+# нижче запікаємо `busybox` (~800 KB) з official `busybox:stable-musl`
+# (static-pie ELF, без жодних .so-залежностей) як `/bin/sh`, і додаємо
+# `/nodejs/bin` у PATH, щоб `sh -c "node ..."` міг його зарезолвити.
+#
+# Чому НЕ alpine-busybox: у alpine `/bin/busybox` dynamically linked
+# проти musl-libc (`/lib/ld-musl-x86_64.so.1`), якої немає у
+# distroless-debian (там glibc, `/lib/x86_64-linux-gnu`). Kernel не
+# знаходить інтерпретатор і повертає мовчазне `exec /bin/sh: no such
+# file or directory` ще до того, як user-space код встигне щось вивести.
+# Static `busybox:stable-musl` цю проблему обходить — у нього INTERP
+# відсутній, NEEDED порожній.
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Stage 1: builder — full dev deps + pnpm build
+FROM --platform=linux/amd64 node:22.16.0-alpine AS builder
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
+
+# --- Залежності (кеш-шар) ---
+# `patches/` обов'язково ДО `pnpm install`: `pnpm.patchedDependencies` у
+# package.json (наразі `@expo/cli@0.22.28`) застосовується завжди — навіть з
+# `--ignore-scripts` — і відсутність патч-файлу валить frozen-install.
+# AI-DANGER: список workspace-пакетів нижче — РУЧНИЙ, і його треба розширювати
+# щоразу, коли `apps/server` починає імпортувати новий `@sergeant/*`. Пропуск не
+# ловиться ні тестами, ні typecheck-ом (там пакет резолвиться через
+# node_modules монорепо) — падає ЛИШЕ збірка образу, на `pnpm build` усередині
+# Docker, з «Could not resolve». Саме так `@sergeant/routine-domain` (серверні
+# нагадування) зробив образ незбираним. Перевірка на майбутнє:
+#   grep -rhoE "@sergeant/[A-Za-z0-9_-]+" apps/server/src \
+#     --include=*.ts --include=*.tsx --include=*.js --include=*.jsx \
+#     --include=*.mjs --include=*.cjs | sort -u
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY patches ./patches
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/config/package.json ./packages/config/package.json
+COPY packages/db-schema/package.json ./packages/db-schema/package.json
+COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
+# `@sergeant/routine-domain` — серверна залежність від #592: прохід нагадувань
+# бере звідти канонічний предикат розкладу звички замість власної копії
+# (`apps/server/src/lib/reminders/due.ts`). Без цього рядка frozen-install
+# усередині образу падає на відсутньому workspace-пакеті, і образ не
+# збирається взагалі.
+COPY packages/routine-domain/package.json ./packages/routine-domain/package.json
+# `@sergeant/tabular-import` — спільний шар імпорту виписок (#1001):
+# `apps/server/src/modules/finyk/import/statement*.ts` резолвить його при
+# esbuild-збірці. Без цього рядка `pnpm build` у builder-стейджі падає на
+# «Could not resolve "@sergeant/tabular-import"» — той самий клас поломки,
+# що описано в нагадуванні вище.
+COPY packages/tabular-import/package.json ./packages/tabular-import/package.json
+COPY apps/server/package.json ./apps/server/package.json
+
+RUN pnpm install --frozen-lockfile --ignore-scripts \
+      --filter @sergeant/server... \
+      --filter @sergeant/shared... \
+      --filter @sergeant/db-schema... \
+      --filter @sergeant/finyk-domain... \
+      --filter @sergeant/routine-domain... \
+      --filter @sergeant/tabular-import...
+
+# --- Джерела ---
+COPY packages/shared ./packages/shared
+COPY packages/config ./packages/config
+COPY packages/db-schema ./packages/db-schema
+COPY packages/finyk-domain ./packages/finyk-domain
+COPY packages/routine-domain ./packages/routine-domain
+COPY packages/tabular-import ./packages/tabular-import
+COPY apps/server ./apps/server
+
+# `@sergeant/db-schema` мусить бути ЗБИЛДЖЕНИЙ ДО серверного `pnpm build`:
+# `apps/server/build.mjs` (esbuild, packages: "bundle") резолвить
+# `@sergeant/db-schema/pg` через `packages/db-schema/dist/pg/index.js`,
+# який існує тільки після `tsc -p tsconfig.build.json`.
+RUN pnpm --filter @sergeant/db-schema build
+
+WORKDIR /app/apps/server
+ENV NODE_ENV=production
+RUN pnpm build
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Stage 2: deps — production-only node_modules + CVE-cleanup (potrebuje shell)
+FROM --platform=linux/amd64 node:22.16.0-alpine AS deps
+WORKDIR /app
+
+RUN corepack enable && corepack prepare pnpm@9.15.1 --activate
+
+COPY pnpm-workspace.yaml pnpm-lock.yaml package.json ./
+COPY patches ./patches
+COPY packages/shared/package.json ./packages/shared/package.json
+COPY packages/config/package.json ./packages/config/package.json
+COPY packages/db-schema/package.json ./packages/db-schema/package.json
+COPY packages/finyk-domain/package.json ./packages/finyk-domain/package.json
+COPY packages/routine-domain/package.json ./packages/routine-domain/package.json
+# `@sergeant/tabular-import` — спільний шар імпорту виписок (#1001):
+# `apps/server/src/modules/finyk/import/statement*.ts` резолвить його при
+# esbuild-збірці. Без цього рядка `pnpm build` у builder-стейджі падає на
+# «Could not resolve "@sergeant/tabular-import"» — той самий клас поломки,
+# що описано в нагадуванні вище.
+COPY packages/tabular-import/package.json ./packages/tabular-import/package.json
+COPY apps/server/package.json ./apps/server/package.json
+
+# `pnpm install --prod --filter @sergeant/server...` обходить deps-граф, у
+# тому числі workspace-only `@sergeant/db-schema` (через `apps/server`).
+# Сам `dist/` нам у runtime не потрібен — esbuild у builder-стейджі
+# забандлив db-schema у `dist-server/index.js`.
+RUN pnpm install --prod --frozen-lockfile --ignore-scripts \
+      --filter @sergeant/server...
+
+# Trim CVE-noisy optional peers. `--frozen-lockfile` блокує перемикання
+# `auto-install-peers`, тому прибираємо ці модулі постфактум, тримаючи
+# lockfile незмінним:
+#   - `vite` / `vitest` / `vite-node` / `@vitest+*` — Trivy фейлить
+#     CRITICAL/HIGH через bundle Go-stdlib `esbuild`.
+#   - `esbuild` / `@esbuild+*` / `tsx` — самі Go-binary артефакти.
+#   - `rollup` / `@rollup+*` — peer Vite-у, аналогічна логіка.
+#
+# Distroless runtime НЕ виконує жодного з цих бінарів (немає shell-у), але
+# Trivy все одно scan-ить файли і фейлить, тому позбавляємось їх.
+RUN find node_modules -maxdepth 3 -type d \
+      \( -path 'node_modules/.pnpm/vite@*' \
+         -o -path 'node_modules/.pnpm/vitest@*' \
+         -o -path 'node_modules/.pnpm/vite-node@*' \
+         -o -path 'node_modules/.pnpm/@vitest+*' \
+         -o -path 'node_modules/.pnpm/esbuild@*' \
+         -o -path 'node_modules/.pnpm/@esbuild+*' \
+         -o -path 'node_modules/.pnpm/tsx@*' \
+         -o -path 'node_modules/.pnpm/rollup@*' \
+         -o -path 'node_modules/.pnpm/@rollup+*' \) \
+      -prune -exec rm -rf {} +
+
+# ──────────────────────────────────────────────────────────────────────────────
+# Stage 3: runtime — distroless. Жодного package manager-у, жодного
+# `corepack` / `npm` / `pnpm` / `yarn`. Entrypoint = `/nodejs/bin/node`.
+#
+# Єдиний shell-binary — busybox з `busybox:stable-musl` (static-pie,
+# self-contained ~800 KB). Потрібен виключно тому, що Coolify виконує
+# `pre_deployment_command` через `/bin/sh -c "..."`; без нього release-stage
+# міграцій падає мовчки ще до того, як `node dist-server/migrate.js`
+# встигне щось вивести.
+FROM --platform=linux/amd64 gcr.io/distroless/nodejs22-debian13:nonroot AS runtime
+WORKDIR /app
+
+# Запікаємо static busybox як `/bin/sh`. ВАЖЛИВО взяти його саме з
+# `busybox:stable-musl` (static-pie ELF, без INTERP / NEEDED), а НЕ з
+# `node:*-alpine /bin/busybox`: alpine-овий busybox dynamically linked
+# проти `/lib/ld-musl-x86_64.so.1`, якого немає у distroless-debian, і
+# kernel мовчки повертає `exec /bin/sh: no such file or directory` ще
+# до user-space — pre-deploy не отримує жодного логу.
+# Власник `root:root`, права `0755` — runtime user `nonroot` (uid
+# 65532) виконує його через PATH-lookup, write-доступ йому не потрібен.
+COPY --from=busybox:stable-musl /bin/busybox /bin/sh
+
+# Той самий бінарник удруге, під імʼям `wget`. BusyBox диспетчеризує за
+# `argv[0]`, тож копія з такою назвою поводиться як wget — а `wget` є
+# серед його аплетів. Дублювання ~800 KB свідоме: альтернатива —
+# симлінк, а він потребує `RUN ln`, тобто shell на етапі збірки, якого
+# у distroless немає.
+#
+# Потрібен рівно для одного: health check Coolify для образних деплоїв
+# виконується ВСЕРЕДИНІ контейнера як `curl` або `wget`. Без цього рядка
+# перевірка завжди падає з `/bin/sh: wget: not found`, новий контейнер
+# ніколи не стає healthy, і Coolify відкочує КОЖЕН деплой — включно з
+# цілком справним. Саме так і сталося 2026-08-06.
+COPY --from=busybox:stable-musl /bin/busybox /bin/wget
+
+# Coolify виконує `pre_deployment_command` через `/bin/sh -c "<cmd>"`. Default
+# PATH у distroless — `/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin`,
+# `node` живе у `/nodejs/bin/node` і у цьому списку відсутній. Без
+# наступного override-у sh не знаходить `node` і pre-deploy валиться
+# на 127 (`node: not found`). Runtime entrypoint (`/nodejs/bin/node …
+# dist-server/index.js`) PATH-lookup не використовує — отже зміна
+# впливає виключно на shell-обгорнуті команди.
+ENV PATH="/nodejs/bin:/usr/local/sbin:/usr/local/bin:/usr/sbin:/usr/bin:/sbin:/bin"
+
+ENV NODE_ENV=production
+
+# Per-deploy commit SHA. No PaaS injects one at runtime here (Coolify pulls a
+# prebuilt ghcr image), so `deploy-api.yml` passes `--build-arg GIT_SHA=${{
+# github.sha }}` and we bake it as an env var. Feeds `resolveSentryRelease`,
+# `resolveServerBuildId`, and `app_build_info` so Sentry releases + the
+# X-Server-Build-Id header stop reading "unknown". Empty in local `docker build`.
+ARG GIT_SHA=""
+ENV GIT_SHA=${GIT_SHA}
+
+# ЗАЛИШОК OpenClaw (ADR-0075): рантайм `read_strategy_docs` видалено, цей
+# ENV і COPY docs нижче ніщо не читає. Лишаються навмисно: зняття — non-comment
+# зміна deploy-конфігу, яка вимагає лейбла `verified-on-staging` за
+# `docs/start/instructions/deploy-config-change.md` (§3, Coolify prod-деплой).
+# Зняти окремим PR після спостереження одного деплой-циклу.
+ENV OPENCLAW_REPO_ROOT=/app
+
+# Production node_modules + workspace symlinks з deps-stage. Зберігаємо
+# обидва шари (root + apps/server) — pnpm symlinks у `apps/server/node_modules`
+# вказують у `/app/node_modules/.pnpm/...`, тож обидва шляхи мають існувати
+# для node module resolution. `--chown=nonroot:nonroot` ставить власника
+# `nonroot:nonroot` (uid:gid 65532:65532) у distroless.
+COPY --from=deps --chown=nonroot:nonroot /app/node_modules /app/node_modules
+COPY --from=deps --chown=nonroot:nonroot /app/apps/server/node_modules /app/apps/server/node_modules
+
+# Manifest-и для workspace-resolution на runtime. `node` сам пакетами не
+# керує, але `read-pkg` / `find-up`-патерни деяких deps можуть їх читати.
+COPY --from=deps --chown=nonroot:nonroot /app/package.json /app/package.json
+COPY --from=deps --chown=nonroot:nonroot /app/apps/server/package.json /app/apps/server/package.json
+
+# Build артефакт: `dist-server/index.js` + bundled `dist-server/migrations/*.sql`
+# (esbuild build.mjs копіює migrations поряд із bundle).
+COPY --from=builder --chown=nonroot:nonroot /app/apps/server/dist-server /app/apps/server/dist-server
+
+# ЗАЛИШОК OpenClaw (ADR-0075) — див. примітку біля `OPENCLAW_REPO_ROOT` вище:
+# ці COPY ніщо не читає, зняти окремим deploy-config PR.
+COPY --chown=nonroot:nonroot docs/governance/adr /app/docs/governance/adr
+COPY --chown=nonroot:nonroot docs/work/specs/launch /app/docs/work/specs/launch
+COPY --chown=nonroot:nonroot docs/engineering/integrations /app/docs/engineering/integrations
+COPY --chown=nonroot:nonroot docs/governance/governance /app/docs/governance/governance
+
+WORKDIR /app/apps/server
+
+EXPOSE 3000
+
+# Distroless entrypoint = `/nodejs/bin/node`. CMD = args only. NO
+# HEALTHCHECK у самому образі — Coolify додає власний (див. примітку вище).
+CMD ["dist-server/index.js"]

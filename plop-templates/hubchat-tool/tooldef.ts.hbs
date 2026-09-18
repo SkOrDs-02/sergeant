@@ -1,0 +1,26 @@
+import type { AnthropicTool } from "./types.js";
+
+// TODO: move this definition into the appropriate domain file:
+// apps/server/src/modules/chat/toolDefs/{{domain}}.ts
+// and add it to the exported array there.
+
+export const {{constantCase toolName}}_TOOL: AnthropicTool = {
+  name: "{{toolName}}",
+  description:
+    // TODO: describe in Ukrainian, imperatively. E.g.:
+    // "Залогувати X. Викликай коли користувач каже про Y."
+    "TODO: описати дію українською",
+  input_schema: {
+    type: "object",
+    properties: {
+      // TODO: define your input properties
+      // example_param: {
+      //   type: "string",
+      //   description: "Опис параметра",
+      // },
+    },
+    required: [
+      // TODO: list required fields
+    ],
+  },
+};

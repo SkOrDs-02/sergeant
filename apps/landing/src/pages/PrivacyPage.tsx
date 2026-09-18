@@ -1,0 +1,82 @@
+import SiteLayout from "../components/SiteLayout";
+import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
+import { EXPORT_CLAIM } from "../content/exportClaim";
+import UpdatedOn from "../components/UpdatedOn";
+
+/**
+ * Політика приватності сайту. Коротка, бо сайт справді збирає мінімум:
+ * cookieless-аналітика з чотирма явними подіями і Telegram-естафета без
+ * персистентних ідентифікаторів (див. lib/analytics.ts і
+ * @sergeant/shared landingAttribution).
+ */
+export default function PrivacyPage() {
+  usePageMeta({
+    ...ROUTE_META["/privacy"],
+    // До 2026-09-17 — одна з чотирьох сторінок без розмітки: для краулера
+    // текст без типу й дати. `WebPage`, а не `Article`: це документ сайту,
+    // не авторський матеріал, тож author тут не ставиться.
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: ROUTE_META["/privacy"].title,
+      description: ROUTE_META["/privacy"].description,
+      inLanguage: "uk",
+      dateModified: ROUTE_META["/privacy"].lastmod,
+      publisher: { "@type": "Organization", name: "Sergeant" },
+    },
+  });
+
+  const h2 =
+    "mt-9 font-display text-lg font-extrabold uppercase tracking-tight text-foreground-strong";
+  const p = "mt-3 max-w-2xl leading-relaxed text-foreground";
+
+  return (
+    <SiteLayout mainClassName="mx-auto w-full max-w-3xl px-5 pb-24 pt-12 sm:px-8 sm:pt-16">
+      <h1 className="font-display text-3xl font-extrabold uppercase tracking-tight text-foreground-strong sm:text-4xl">
+        Політика приватності
+      </h1>
+      <p className="mt-3 text-sm text-subtle">
+        Оновлено <UpdatedOn iso={ROUTE_META["/privacy"].lastmod} />
+      </p>
+
+      <h2 className={h2}>Що збирає цей сайт</h2>
+      <p className={p}>
+        Сайт не ставить кукі і не будує персональних профілів. Аналітика
+        (PostHog, ЄС-сервери) отримує кілька анонімних подій: перегляд сторінки,
+        перехід у Telegram, перемикання демо-віджета на першому екрані і
+        відкриття питання у FAQ. Жодна подія не несе введеного тексту. Кожне
+        відвідування – новий анонім; повʼязати їх між собою чи з тобою особисто
+        неможливо.
+      </p>
+
+      <h2 className={h2}>Черга в бету</h2>
+      <p className={p}>
+        Черга живе в Telegram. Сайт не збирає пошту і не має форм: у deep link
+        передається лише місце кнопки та одноразовий випадковий токен, який
+        помирає разом із вкладкою. Далі спілкування відбувається в Telegram за
+        його правилами, і бот бачить тільки те, що ти сам йому напишеш.
+      </p>
+
+      <h2 className={h2}>Дані в застосунку</h2>
+      <p className={p}>
+        Це політика сайту. Про дані всередині застосунку коротко: токен Monobank
+        – лише читання і зберігається зашифрованим; я не продаю і не передаю
+        твої дані нікому. {EXPORT_CLAIM} Повна мапа доступів – що бачить
+        банківський токен, куди їдуть фото чеків, як працює AI-помічник –
+        зібрана на сторінці{" "}
+        <a
+          href="/data"
+          className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+        >
+          «Твої дані»
+        </a>
+        .
+      </p>
+
+      <h2 className={h2}>Питання</h2>
+      <p className={p}>
+        Напиши в Telegram-бот або у Threads @sergeant.app – відповідаю сам.
+      </p>
+    </SiteLayout>
+  );
+}

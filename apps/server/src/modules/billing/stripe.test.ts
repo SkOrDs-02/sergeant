@@ -1,0 +1,671 @@
+import { createHmac } from "node:crypto";
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  processStripeWebhook,
+  verifyStripeSignature,
+  __setPostHogCaptureForTesting,
+} from "./stripe.js";
+import type { capturePostHogEvent } from "../../lib/posthogCapture.js";
+
+function signedHeader(
+  secret: string,
+  timestampSeconds: number,
+  payload: Buffer,
+): string {
+  const v1 = createHmac("sha256", secret)
+    .update(`${timestampSeconds}.${payload.toString("utf8")}`)
+    .digest("hex");
+  return `t=${timestampSeconds},v1=${v1}`;
+}
+
+function createClient(rowCount: number) {
+  const query = vi.fn().mockResolvedValue({ rowCount, rows: [] });
+  return {
+    query,
+    release: vi.fn(),
+  };
+}
+
+describe("Stripe billing webhook processing", () => {
+  beforeEach(() => {
+    delete process.env["STRIPE_WEBHOOK_SECRET"];
+  });
+
+  afterEach(() => {
+    __setPostHogCaptureForTesting(null);
+  });
+
+  it("records webhook idempotency and applies checkout completion once", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+
+    const result = await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_1",
+        type: "checkout.session.completed",
+        data: {
+          object: {
+            id: "cs_test_1",
+            client_reference_id: "user_1",
+            customer: "cus_1",
+            subscription: "sub_1",
+            metadata: { plan: "pro" },
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(result).toEqual({ ok: true, duplicate: false });
+    expect(client.query).toHaveBeenCalledWith("BEGIN");
+    expect(String(client.query.mock.calls[1]![0])).toContain(
+      "INSERT INTO stripe_webhook_events",
+    );
+    expect(String(client.query.mock.calls[2]![0])).toContain(
+      "INSERT INTO subscriptions",
+    );
+    expect(client.query).toHaveBeenLastCalledWith("COMMIT");
+  });
+
+  it("skips subscription writes on duplicate Stripe events", async () => {
+    const client = createClient(0);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+
+    const result = await processStripeWebhook(
+      pool as never,
+      { id: "evt_1", type: "checkout.session.completed", data: {} },
+      Buffer.from("{}"),
+    );
+
+    expect(result).toEqual({ ok: true, duplicate: true });
+    expect(client.query).toHaveBeenCalledTimes(3);
+    expect(client.query).toHaveBeenLastCalledWith("COMMIT");
+  });
+});
+
+describe("subscription_started PostHog capture (PR-09)", () => {
+  beforeEach(() => {
+    delete process.env["STRIPE_WEBHOOK_SECRET"];
+  });
+
+  afterEach(() => {
+    __setPostHogCaptureForTesting(null);
+  });
+
+  function buildSubscriptionCreatedEvent() {
+    return {
+      id: "evt_sub_created_1",
+      type: "customer.subscription.created" as const,
+      data: {
+        object: {
+          id: "sub_test_1",
+          status: "active",
+          customer: "cus_1",
+          cancel_at_period_end: false,
+          current_period_end: 1_770_000_000,
+          metadata: { user_id: "user_42", plan: "pro" },
+          items: {
+            data: [
+              {
+                price: {
+                  unit_amount: 700,
+                  currency: "usd",
+                  recurring: { interval: "month" },
+                },
+              },
+            ],
+          },
+        },
+      },
+    };
+  }
+
+  it("fires subscription_started with plan, $revenue, currency, source on customer.subscription.created", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture: ReturnType<typeof vi.fn> = vi
+      .fn()
+      .mockResolvedValue({ outcome: "ok" });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+
+    await processStripeWebhook(
+      pool as never,
+      buildSubscriptionCreatedEvent(),
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const callArg = capture.mock.calls[0]![0] as {
+      event: string;
+      distinctId: string;
+      uuid: string;
+      properties: Record<string, unknown>;
+    };
+    expect(callArg.event).toBe("subscription_started");
+    expect(callArg.distinctId).toBe("user_42");
+    expect(callArg.uuid).toBe("evt_sub_created_1");
+    expect(callArg.properties["plan"]).toBe("pro");
+    expect(callArg.properties["cadence"]).toBe("month");
+    expect(callArg.properties["source"]).toBe("stripe_webhook");
+    expect(callArg.properties["status"]).toBe("active");
+    expect(callArg.properties["price_cents"]).toBe(700);
+    expect(callArg.properties["currency"]).toBe("USD");
+    expect(callArg.properties["$revenue"]).toBe(7);
+    expect(callArg.properties["stripe_subscription_id"]).toBe("sub_test_1");
+  });
+
+  it("emits PostHog capture AFTER the DB COMMIT (analytics outside the transaction)", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const callOrder: string[] = [];
+    client.query.mockImplementation(async (sql: string) => {
+      callOrder.push(`query:${sql.split(" ")[0]}`);
+      return { rowCount: 1, rows: [] };
+    });
+    const capture: ReturnType<typeof vi.fn> = vi.fn(async () => {
+      callOrder.push("capture");
+      return { outcome: "ok" as const };
+    });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+
+    await processStripeWebhook(
+      pool as never,
+      buildSubscriptionCreatedEvent(),
+      Buffer.from("{}"),
+    );
+
+    expect(callOrder).toContain("capture");
+    expect(callOrder.indexOf("capture")).toBeGreaterThan(
+      callOrder.indexOf("query:COMMIT"),
+    );
+  });
+
+  it("fires subscription_renewed (NOT _started) on active customer.subscription.updated", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture: ReturnType<typeof vi.fn> = vi
+      .fn()
+      .mockResolvedValue({ outcome: "ok" });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_sub_updated_1",
+        type: "customer.subscription.updated",
+        data: {
+          object: {
+            id: "sub_test_1",
+            status: "active",
+            metadata: { user_id: "user_42", plan: "pro" },
+            items: {
+              data: [
+                {
+                  price: {
+                    unit_amount: 700,
+                    currency: "usd",
+                    recurring: { interval: "month" },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const callArg = capture.mock.calls[0]![0] as {
+      event: string;
+      properties: Record<string, unknown>;
+    };
+    expect(callArg.event).toBe("subscription_renewed");
+    expect(callArg.properties["$revenue"]).toBe(7);
+  });
+
+  it("fires subscription_canceled with `reason` on customer.subscription.deleted (no $revenue)", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture: ReturnType<typeof vi.fn> = vi
+      .fn()
+      .mockResolvedValue({ outcome: "ok" });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_sub_deleted_1",
+        type: "customer.subscription.deleted",
+        data: {
+          object: {
+            id: "sub_test_1",
+            status: "canceled",
+            metadata: { user_id: "user_42", plan: "pro" },
+            cancellation_details: { reason: "cancellation_requested" },
+            items: {
+              data: [
+                {
+                  price: {
+                    unit_amount: 700,
+                    currency: "usd",
+                    recurring: { interval: "month" },
+                  },
+                },
+              ],
+            },
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const callArg = capture.mock.calls[0]![0] as {
+      event: string;
+      properties: Record<string, unknown>;
+    };
+    expect(callArg.event).toBe("subscription_canceled");
+    expect(callArg.properties["reason"]).toBe("user");
+    // Cancellation events MUST NOT push $revenue — PostHog would otherwise
+    // double-count the original charge as fresh revenue on churn.
+    expect(callArg.properties["$revenue"]).toBeUndefined();
+  });
+
+  it("does NOT fire subscription_started on duplicate webhook (idempotent)", async () => {
+    const client = createClient(0); // rowCount=0 → duplicate
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture: ReturnType<typeof vi.fn> = vi
+      .fn()
+      .mockResolvedValue({ outcome: "ok" });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+
+    await processStripeWebhook(
+      pool as never,
+      buildSubscriptionCreatedEvent(),
+      Buffer.from("{}"),
+    );
+
+    expect(capture).not.toHaveBeenCalled();
+  });
+
+  it("does NOT fire subscription_started when user_id is missing from metadata", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture: ReturnType<typeof vi.fn> = vi
+      .fn()
+      .mockResolvedValue({ outcome: "ok" });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_sub_created_no_user",
+        type: "customer.subscription.created",
+        data: {
+          object: {
+            id: "sub_test_2",
+            status: "active",
+            metadata: { plan: "pro" }, // no user_id
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).not.toHaveBeenCalled();
+  });
+
+  it("does NOT throw or rollback when PostHog capture itself throws (analytics is best-effort)", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture: ReturnType<typeof vi.fn> = vi
+      .fn()
+      .mockRejectedValue(new Error("posthog network down"));
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+
+    const result = await processStripeWebhook(
+      pool as never,
+      buildSubscriptionCreatedEvent(),
+      Buffer.from("{}"),
+    );
+
+    expect(result).toEqual({ ok: true, duplicate: false });
+    expect(client.query).toHaveBeenLastCalledWith("COMMIT");
+    expect(capture).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("payment_failed PostHog capture (billing observability)", () => {
+  beforeEach(() => {
+    delete process.env["STRIPE_WEBHOOK_SECRET"];
+  });
+
+  afterEach(() => {
+    __setPostHogCaptureForTesting(null);
+  });
+
+  function setupCapture() {
+    const capture: ReturnType<typeof vi.fn> = vi
+      .fn()
+      .mockResolvedValue({ outcome: "ok" });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+    return capture;
+  }
+
+  it("fires payment_failed with is_3ds + decline codes on payment_intent.payment_failed (anonymous when customer unknown)", async () => {
+    // createClient(1): the customer→user_id SELECT resolves to rows:[] → the
+    // payer is unknown, so the event must fall back to an anonymous distinctId.
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture = setupCapture();
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_pi_failed_1",
+        type: "payment_intent.payment_failed",
+        data: {
+          object: {
+            id: "pi_1",
+            customer: "cus_unknown",
+            last_payment_error: {
+              code: "payment_intent_authentication_failure",
+              decline_code: "authentication_required",
+            },
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const arg = capture.mock.calls[0]![0] as {
+      event: string;
+      distinctId: string;
+      uuid: string;
+      properties: Record<string, unknown>;
+    };
+    expect(arg.event).toBe("payment_failed");
+    expect(arg.uuid).toBe("evt_pi_failed_1");
+    expect(arg.properties["kind"]).toBe("payment_intent");
+    expect(arg.properties["is_3ds"]).toBe(true);
+    expect(arg.properties["error_code"]).toBe(
+      "payment_intent_authentication_failure",
+    );
+    expect(arg.properties["decline_code"]).toBe("authentication_required");
+    expect(arg.properties["source"]).toBe("stripe_webhook");
+    expect(arg.properties["user_resolved"]).toBe(false);
+    expect(arg.distinctId).toBe("stripe_customer:cus_unknown");
+  });
+
+  it("resolves user_id via the customer→subscription lookup for charge.failed", async () => {
+    const client = createClient(1);
+    // The user_id SELECT maps cus_77 → user_77; every other query keeps the
+    // default 1-row / empty-rows shape.
+    client.query.mockImplementation(async (sql: string) => {
+      if (typeof sql === "string" && sql.includes("SELECT user_id")) {
+        return { rowCount: 1, rows: [{ user_id: "user_77" }] };
+      }
+      return { rowCount: 1, rows: [] };
+    });
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture = setupCapture();
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_charge_failed_1",
+        type: "charge.failed",
+        data: {
+          object: {
+            id: "ch_1",
+            customer: "cus_77",
+            failure_code: "card_declined",
+            outcome: { network_decline_code: "51" },
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const arg = capture.mock.calls[0]![0] as {
+      distinctId: string;
+      properties: Record<string, unknown>;
+    };
+    expect(arg.properties["kind"]).toBe("charge");
+    expect(arg.properties["failure_code"]).toBe("card_declined");
+    expect(arg.properties["network_decline_code"]).toBe("51");
+    expect(arg.properties["user_resolved"]).toBe(true);
+    expect(arg.distinctId).toBe("user_77");
+  });
+
+  it("fires payment_failed for invoice.payment_failed with attempt_count + ISO next_payment_attempt", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture = setupCapture();
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_inv_failed_1",
+        type: "invoice.payment_failed",
+        data: {
+          object: {
+            id: "in_1",
+            customer: "cus_unknown",
+            subscription: "sub_9",
+            attempt_count: 2,
+            next_payment_attempt: 1_770_000_000,
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const arg = capture.mock.calls[0]![0] as {
+      properties: Record<string, unknown>;
+    };
+    expect(arg.properties["kind"]).toBe("invoice");
+    expect(arg.properties["attempt_count"]).toBe(2);
+    expect(arg.properties["next_payment_attempt"]).toBe(
+      new Date(1_770_000_000 * 1000).toISOString(),
+    );
+    expect(arg.properties["stripe_subscription_id"]).toBe("sub_9");
+  });
+
+  it("fires payment_failed (kind=checkout_expired) using client_reference_id, with no DB customer lookup", async () => {
+    const client = createClient(1);
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture = setupCapture();
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_cs_expired_1",
+        type: "checkout.session.expired",
+        data: {
+          object: {
+            id: "cs_expired_1",
+            client_reference_id: "user_55",
+            customer: "cus_55",
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).toHaveBeenCalledTimes(1);
+    const arg = capture.mock.calls[0]![0] as {
+      distinctId: string;
+      properties: Record<string, unknown>;
+    };
+    expect(arg.properties["kind"]).toBe("checkout_expired");
+    expect(arg.properties["user_resolved"]).toBe(true);
+    expect(arg.distinctId).toBe("user_55");
+    // Expiry must not touch subscriptions: only BEGIN, INSERT webhook, COMMIT —
+    // no SELECT user_id, no upsert.
+    const sqls = client.query.mock.calls.map((c: unknown[]) => String(c[0]));
+    expect(sqls.some((s) => s.includes("SELECT user_id"))).toBe(false);
+    expect(sqls.some((s) => s.includes("INSERT INTO subscriptions"))).toBe(
+      false,
+    );
+  });
+
+  it("emits payment_failed AFTER COMMIT and never rolls back when capture throws", async () => {
+    const client = createClient(1);
+    const callOrder: string[] = [];
+    client.query.mockImplementation(async (sql: string) => {
+      callOrder.push(`query:${String(sql).split(" ")[0]}`);
+      return { rowCount: 1, rows: [] };
+    });
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture: ReturnType<typeof vi.fn> = vi.fn(async () => {
+      callOrder.push("capture");
+      throw new Error("posthog down");
+    });
+    __setPostHogCaptureForTesting(
+      capture as unknown as typeof capturePostHogEvent,
+    );
+
+    const result = await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_pi_failed_2",
+        type: "payment_intent.payment_failed",
+        data: {
+          object: { id: "pi_2", last_payment_error: { code: "card_declined" } },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(result).toEqual({ ok: true, duplicate: false });
+    expect(client.query).toHaveBeenLastCalledWith("COMMIT");
+    expect(capture).toHaveBeenCalledTimes(1);
+    expect(callOrder.indexOf("capture")).toBeGreaterThan(
+      callOrder.indexOf("query:COMMIT"),
+    );
+  });
+
+  it("does NOT fire payment_failed on a duplicate webhook (idempotent)", async () => {
+    const client = createClient(0); // rowCount=0 → duplicate
+    const pool = { connect: vi.fn().mockResolvedValue(client) };
+    const capture = setupCapture();
+
+    await processStripeWebhook(
+      pool as never,
+      {
+        id: "evt_pi_failed_dup",
+        type: "payment_intent.payment_failed",
+        data: {
+          object: {
+            id: "pi_dup",
+            last_payment_error: { code: "card_declined" },
+          },
+        },
+      },
+      Buffer.from("{}"),
+    );
+
+    expect(capture).not.toHaveBeenCalled();
+  });
+});
+
+describe("verifyStripeSignature (T2 audit hardening)", () => {
+  const SECRET = "whsec_test_1234567890abcdef";
+  const payload = Buffer.from(`{"id":"evt_1","type":"ping"}`);
+
+  beforeEach(() => {
+    delete process.env["STRIPE_WEBHOOK_SECRET"];
+    delete process.env["STRIPE_WEBHOOK_TOLERANCE_SECONDS"];
+  });
+
+  afterEach(() => {
+    delete process.env["STRIPE_WEBHOOK_SECRET"];
+    delete process.env["STRIPE_WEBHOOK_TOLERANCE_SECONDS"];
+  });
+
+  it("returns false when STRIPE_WEBHOOK_SECRET is unset (no accept-all in non-prod)", () => {
+    const nowSec = Math.floor(Date.now() / 1000);
+    const header = signedHeader(SECRET, nowSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("returns true for a freshly-signed payload when secret is set", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const header = signedHeader(SECRET, nowSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(true);
+  });
+
+  it("returns false for a payload signed 10 minutes ago (replay outside tolerance)", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const tenMinutesAgo = Math.floor(Date.now() / 1000) - 600;
+    const header = signedHeader(SECRET, tenMinutesAgo, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("returns false for a future-dated signature outside tolerance", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const futureSec = Math.floor(Date.now() / 1000) + 600;
+    const header = signedHeader(SECRET, futureSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("accepts a borderline timestamp within tolerance (299s old)", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const nowSec = Math.floor(Date.now() / 1000) - 299;
+    const header = signedHeader(SECRET, nowSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(true);
+  });
+
+  it("respects STRIPE_WEBHOOK_TOLERANCE_SECONDS override", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    process.env["STRIPE_WEBHOOK_TOLERANCE_SECONDS"] = "60";
+    const tooOldSec = Math.floor(Date.now() / 1000) - 120;
+    const header = signedHeader(SECRET, tooOldSec, payload);
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+
+  it("returns false on a tampered payload even when timestamp is fresh", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const nowSec = Math.floor(Date.now() / 1000);
+    const header = signedHeader(SECRET, nowSec, payload);
+    const tampered = Buffer.from(`{"id":"evt_1","type":"evil"}`);
+    expect(verifyStripeSignature(tampered, header)).toBe(false);
+  });
+
+  it("returns false when signature header is missing", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    expect(verifyStripeSignature(payload, undefined)).toBe(false);
+  });
+
+  it("returns false when timestamp is non-numeric", () => {
+    process.env["STRIPE_WEBHOOK_SECRET"] = SECRET;
+    const v1 = createHmac("sha256", SECRET)
+      .update(`abc.${payload.toString("utf8")}`)
+      .digest("hex");
+    const header = `t=abc,v1=${v1}`;
+    expect(verifyStripeSignature(payload, header)).toBe(false);
+  });
+});

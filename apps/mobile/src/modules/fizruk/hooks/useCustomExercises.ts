@@ -1,0 +1,216 @@
+/**
+ * `useCustomExercises` — mobile hook for the Fizruk **Exercise library**
+ * (user-created entries layered on top of the built-in catalogue).
+ *
+ * Stage 8 PR #057f-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
+ * Reads from the SQLite warm cache and persists exclusively through
+ * the dual-write pipeline (`triggerFizrukDualWrite`). The legacy MMKV
+ * slot `STORAGE_KEYS.FIZRUK_CUSTOM_EXERCISES` is drained on first
+ * boot via `importFizrukResidualFromMmkv` and removed.
+ *
+ * Mutators are no-op-guarded: passing an unknown id to `update` /
+ * `remove` keeps the in-memory state referentially identical and
+ * skips the dual-write trigger entirely.
+ */
+import { useCallback, useEffect, useRef, useState } from "react";
+
+import type { FizrukData } from "@sergeant/fizruk-domain";
+
+import { triggerFizrukDualWrite } from "../lib/sqliteWriter";
+import {
+  EMPTY_FIZRUK_DUAL_WRITE_STATE,
+  extractCustomExerciseSnapshots,
+  peekFizrukDualWriteState,
+} from "../lib/fizrukDualWriteState";
+import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
+import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
+
+type RawExerciseDef = FizrukData.RawExerciseDef;
+
+export interface CustomExercise {
+  id: string;
+  nameUk: string;
+  primaryGroup?: string;
+  musclesPrimary?: string[];
+  musclesSecondary?: string[];
+  type?: "strength" | "distance" | "time";
+  notes?: string;
+  [extra: string]: unknown;
+}
+
+export interface CustomExerciseDraft {
+  id?: string;
+  nameUk: string;
+  primaryGroup?: string;
+  musclesPrimary?: string[];
+  musclesSecondary?: string[];
+  type?: "strength" | "distance" | "time";
+  notes?: string;
+  [extra: string]: unknown;
+}
+
+function uid(): string {
+  return `cex_${Date.now().toString(36)}_${crypto.randomUUID()}`;
+}
+
+/**
+ * Translate the cache's `RawExerciseDef[]` shape (from
+ * `@sergeant/fizruk-domain`) onto the loose mobile `CustomExercise`
+ * shape consumed by `useExerciseCatalog`.
+ */
+function projectFromCache(ex: RawExerciseDef): CustomExercise {
+  return {
+    id: ex.id,
+    nameUk: ex.name?.uk ?? "",
+    primaryGroup: ex.primaryGroup ?? "",
+    musclesPrimary: ex.muscles?.primary ?? [],
+    musclesSecondary: ex.muscles?.secondary ?? [],
+  };
+}
+
+/**
+ * Translate the loose mobile `CustomExercise` shape into the
+ * `RawExerciseDef` shape understood by the dual-write snapshot
+ * extractor and the SQLite adapter.
+ */
+function toRawExerciseDef(ex: CustomExercise): RawExerciseDef {
+  return {
+    id: ex.id,
+    name: { uk: ex.nameUk },
+    primaryGroup: ex.primaryGroup ?? "",
+    muscles: {
+      primary: ex.musclesPrimary ?? [],
+      secondary: ex.musclesSecondary ?? [],
+    },
+    _custom: true,
+  };
+}
+
+export interface UseCustomExercisesResult {
+  exercises: readonly CustomExercise[];
+  add(draft: CustomExerciseDraft): CustomExercise;
+  update(id: string, patch: Partial<CustomExercise>): CustomExercise | null;
+  remove(id: string): void;
+  clear(): void;
+}
+
+function readInitialFromCache(): CustomExercise[] {
+  const cache = getCachedFizrukSqliteState();
+  if (cache.refreshedAt === null) return [];
+  return cache.customExercises.map(projectFromCache);
+}
+
+export function useCustomExercises(): UseCustomExercisesResult {
+  const [exercises, setExercises] =
+    useState<CustomExercise[]>(readInitialFromCache);
+  // See `useFizrukWorkouts` for why we mirror state in a ref.
+  const stateRef = useRef<CustomExercise[]>(exercises);
+
+  // Stage 8 PR #057f-tombstone: overlay custom exercises from the
+  // SQLite warm cache once it's available.
+  // Render-time update avoids `react-hooks/set-state-in-effect` (init 0021).
+  const sqliteCacheTick = useFizrukSqliteReadTick();
+  const [prevTick, setPrevTick] = useState(sqliteCacheTick);
+  if (sqliteCacheTick !== prevTick) {
+    setPrevTick(sqliteCacheTick);
+    const cache = getCachedFizrukSqliteState();
+    if (cache.refreshedAt !== null) {
+      setExercises(cache.customExercises.map(projectFromCache));
+    }
+  }
+
+  // Keep stateRef in sync after every state change (including cache overlay).
+  useEffect(() => {
+    stateRef.current = exercises;
+  }, [exercises]);
+
+  const persist = useCallback(
+    (updater: (prev: CustomExercise[]) => CustomExercise[]) => {
+      const prev = stateRef.current;
+      const next = updater(prev);
+      if (next === prev) return;
+      stateRef.current = next;
+
+      const prevDualWrite =
+        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
+      const nextDualWrite = {
+        ...prevDualWrite,
+        customExercises: extractCustomExerciseSnapshots(
+          next.map(toRawExerciseDef),
+        ),
+      };
+      try {
+        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+      } catch {
+        /* trigger is fire-and-forget */
+      }
+
+      setExercises(next);
+    },
+    [],
+  );
+
+  const add = useCallback<UseCustomExercisesResult["add"]>(
+    (draft) => {
+      // Construct CustomExercise explicitly per known field so the
+      // `[extra: string]: unknown` index signature does not widen
+      // spread-result property types. Mirrors the `update` branch
+      // which spreads two CustomExercise-shaped inputs cleanly.
+      const entry: CustomExercise = {
+        id: draft.id || uid(),
+        nameUk: draft.nameUk,
+        ...(draft.primaryGroup !== undefined && {
+          primaryGroup: draft.primaryGroup,
+        }),
+        ...(draft.musclesPrimary !== undefined && {
+          musclesPrimary: draft.musclesPrimary,
+        }),
+        ...(draft.musclesSecondary !== undefined && {
+          musclesSecondary: draft.musclesSecondary,
+        }),
+        ...(draft.type !== undefined && { type: draft.type }),
+        ...(draft.notes !== undefined && { notes: draft.notes }),
+      };
+      persist((prev) => [entry, ...prev]);
+      return entry;
+    },
+    [persist],
+  );
+
+  const update = useCallback<UseCustomExercisesResult["update"]>(
+    (id, patch) => {
+      const idx = stateRef.current.findIndex((e) => e.id === id);
+      if (idx < 0) return null;
+      const updated: CustomExercise = {
+        ...stateRef.current[idx]!,
+        ...patch,
+        id,
+      };
+      persist((prev) => {
+        const i = prev.findIndex((e) => e.id === id);
+        if (i < 0) return prev;
+        const next = prev.slice();
+        next[i] = updated;
+        return next;
+      });
+      return updated;
+    },
+    [persist],
+  );
+
+  const remove = useCallback<UseCustomExercisesResult["remove"]>(
+    (id) => {
+      persist((prev) => {
+        const next = prev.filter((e) => e.id !== id);
+        return next.length === prev.length ? prev : next;
+      });
+    },
+    [persist],
+  );
+
+  const clear = useCallback<UseCustomExercisesResult["clear"]>(() => {
+    persist((prev) => (prev.length === 0 ? prev : []));
+  }, [persist]);
+
+  return { exercises, add, update, remove, clear };
+}

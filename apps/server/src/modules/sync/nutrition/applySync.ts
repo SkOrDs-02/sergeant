@@ -1,0 +1,572 @@
+import type { PoolClient } from "pg";
+import type { SyncV2Op } from "../../../http/schemas.js";
+import {
+  isWithinTextBound,
+  NOTE_MAX_LEN,
+  parseOptionalDate,
+  parseRequiredDate,
+  parseOptionalNumber,
+  parseOptionalInt,
+  toJsonbParam,
+  toNonNegativeInt,
+} from "../syncV2-core.js";
+import type { AppliedStatus } from "../syncV2-types.js";
+
+/**
+ * Стеля для `nutrition_pantry_items.sources` — JSON-масиву варіантів
+ * покупок (міграція 130). Клієнт тримає щонайбільше 10 записів, кожен із
+ * назвою під `NAME_MAX_LEN` (200); 4000 лишає запас на розділові символи
+ * й одиниці, але й далі відсікає зловмисно роздутий payload. `NOTE_MAX_LEN`
+ * (1000) тут не годиться — він відкидав би легітимну повну картку.
+ */
+const PANTRY_SOURCES_MAX_LEN = 4000;
+
+export async function applyNutritionMeals(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  const row = op.row;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
+  if (!id) return { status: "rejected", reason: "missing_id" };
+
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM nutrition_meals WHERE id = $1`,
+    [id],
+  );
+  if (existing.rows.length > 0) {
+    if (existing!.rows[0]!.user_id !== userId) {
+      return { status: "rejected", reason: "fk_violation" };
+    }
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  if (op.op === "delete") {
+    if (existing.rows.length === 0) {
+      return { status: "rejected", reason: "not_found" };
+    }
+    await client.query(
+      `UPDATE nutrition_meals
+         SET deleted_at = $1, updated_at = $1
+       WHERE id = $2 AND user_id = $3`,
+      [clientTs, id, userId],
+    );
+    return { status: "applied" };
+  }
+
+  const eatenAt = parseRequiredDate(row["eaten_at"]);
+  if (eatenAt === "invalid") {
+    return { status: "rejected", reason: "invalid_eaten_at" };
+  }
+  const createdAt = parseOptionalDate(row["created_at"]);
+  if (createdAt === "invalid") {
+    return { status: "rejected", reason: "invalid_created_at" };
+  }
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
+  if (deletedAt === "invalid") {
+    return { status: "rejected", reason: "invalid_deleted_at" };
+  }
+
+  const mealType =
+    typeof row["meal_type"] === "string" ? row["meal_type"] : "snack";
+  const name = typeof row["name"] === "string" ? row["name"] : "";
+  const label = typeof row["label"] === "string" ? row["label"] : "";
+  // Pre-beta input-boundaries audit: `curl` bypasses the client-side
+  // `NAME_MAX_LEN` guard on the meal name/label — bound it server-side too.
+  if (!isWithinTextBound(name) || !isWithinTextBound(label)) {
+    return { status: "rejected", reason: "text_too_long" };
+  }
+  const source = typeof row["source"] === "string" ? row["source"] : "manual";
+  const macroSource =
+    typeof row["macro_source"] === "string" ? row["macro_source"] : "manual";
+  const foodId = typeof row["food_id"] === "string" ? row["food_id"] : null;
+  const isDemo = row["is_demo"] === true || row["is_demo"] === 1;
+
+  const kcal = parseOptionalInt(row["kcal"]);
+  if (kcal === "invalid") {
+    return { status: "rejected", reason: "invalid_kcal" };
+  }
+  const proteinG = parseOptionalNumber(row["protein_g"]);
+  if (proteinG === "invalid") {
+    return { status: "rejected", reason: "invalid_protein_g" };
+  }
+  const fatG = parseOptionalNumber(row["fat_g"]);
+  if (fatG === "invalid") {
+    return { status: "rejected", reason: "invalid_fat_g" };
+  }
+  const carbsG = parseOptionalNumber(row["carbs_g"]);
+  if (carbsG === "invalid") {
+    return { status: "rejected", reason: "invalid_carbs_g" };
+  }
+  const amountG = parseOptionalNumber(row["amount_g"]);
+  if (amountG === "invalid") {
+    return { status: "rejected", reason: "invalid_amount_g" };
+  }
+
+  if (existing.rows.length === 0) {
+    await client.query(
+      `INSERT INTO nutrition_meals
+         (id, user_id, eaten_at, meal_type, name, label,
+          kcal, protein_g, fat_g, carbs_g,
+          source, macro_source, amount_g, food_id, is_demo,
+          created_at, updated_at, deleted_at)
+       VALUES ($1, $2, $3, $4, $5, $6,
+               $7, $8, $9, $10,
+               $11, $12, $13, $14, $15,
+               $16, $17, $18)`,
+      [
+        id,
+        userId,
+        eatenAt,
+        mealType,
+        name,
+        label,
+        kcal ?? null,
+        proteinG ?? null,
+        fatG ?? null,
+        carbsG ?? null,
+        source,
+        macroSource,
+        amountG ?? null,
+        foodId,
+        isDemo,
+        createdAt ?? clientTs,
+        clientTs,
+        deletedAt ?? null,
+      ],
+    );
+  } else {
+    await client.query(
+      `UPDATE nutrition_meals
+         SET eaten_at     = $1,
+             meal_type    = $2,
+             name         = $3,
+             label        = $4,
+             kcal         = $5,
+             protein_g    = $6,
+             fat_g        = $7,
+             carbs_g      = $8,
+             source       = $9,
+             macro_source = $10,
+             amount_g     = $11,
+             food_id      = $12,
+             is_demo      = $13,
+             updated_at   = $14,
+             deleted_at   = $15
+       WHERE id = $16 AND user_id = $17`,
+      [
+        eatenAt,
+        mealType,
+        name,
+        label,
+        kcal ?? null,
+        proteinG ?? null,
+        fatG ?? null,
+        carbsG ?? null,
+        source,
+        macroSource,
+        amountG ?? null,
+        foodId,
+        isDemo,
+        clientTs,
+        deletedAt ?? null,
+        id,
+        userId,
+      ],
+    );
+  }
+  return { status: "applied" };
+}
+
+export async function applyNutritionPantries(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  const row = op.row;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
+  if (!id) return { status: "rejected", reason: "missing_id" };
+
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  // AI-CONTEXT: lookup обовʼязково user-scoped — `id` унікальний У МЕЖАХ
+  // КОРИСТУВАЧА, не глобально (композитний PK, міграція 129). Клієнт віддає
+  // кожному юзеру комору з id `home` (`makeDefaultPantry()`), тож глобальний
+  // `WHERE id = $1` знаходив ЧУЖИЙ рядок і повертав `fk_violation` — комора
+  // синхронізувалася лише в того, хто перший її допушив (SERGEANT-WEB-T).
+  // Перевірки `existing.user_id !== userId` тут більше немає й бути не може:
+  // запит уже звужений по `user_id`, тож чужий рядок сюди не долітає.
+  const existing = await client.query<{
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT updated_at, deleted_at FROM nutrition_pantries WHERE id = $1 AND user_id = $2`,
+    [id, userId],
+  );
+  if (existing.rows.length > 0) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  if (op.op === "delete") {
+    if (existing.rows.length === 0) {
+      return { status: "rejected", reason: "not_found" };
+    }
+    await client.query(
+      `UPDATE nutrition_pantries
+         SET deleted_at = $1, updated_at = $1
+       WHERE id = $2 AND user_id = $3`,
+      [clientTs, id, userId],
+    );
+    return { status: "applied" };
+  }
+
+  const name = typeof row["name"] === "string" ? row["name"] : "";
+  const text = typeof row["text"] === "string" ? row["text"] : "";
+  // Pre-beta input-boundaries audit: `text` is the longer free-text note
+  // on a pantry, `name` is name-shaped — different bounds, same guard.
+  if (!isWithinTextBound(name) || !isWithinTextBound(text, NOTE_MAX_LEN)) {
+    return { status: "rejected", reason: "text_too_long" };
+  }
+  const createdAt = parseOptionalDate(row["created_at"]);
+  if (createdAt === "invalid") {
+    return { status: "rejected", reason: "invalid_created_at" };
+  }
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
+  if (deletedAt === "invalid") {
+    return { status: "rejected", reason: "invalid_deleted_at" };
+  }
+
+  if (existing.rows.length === 0) {
+    await client.query(
+      `INSERT INTO nutrition_pantries
+         (id, user_id, name, text, created_at, updated_at, deleted_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7)`,
+      [
+        id,
+        userId,
+        name,
+        text,
+        createdAt ?? clientTs,
+        clientTs,
+        deletedAt ?? null,
+      ],
+    );
+  } else {
+    await client.query(
+      `UPDATE nutrition_pantries
+         SET name       = $1,
+             text       = $2,
+             updated_at = $3,
+             deleted_at = $4
+       WHERE id = $5 AND user_id = $6`,
+      [name, text, clientTs, deletedAt ?? null, id, userId],
+    );
+  }
+  return { status: "applied" };
+}
+
+export async function applyNutritionPantryItems(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  const row = op.row;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
+  if (!id) return { status: "rejected", reason: "missing_id" };
+
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  // AI-CONTEXT: user-scoped із тієї ж причини, що й комора вище (міграція 129),
+  // і тут колізія навіть імовірніша: id позиції — `<pantryId>::<index>::<name>`,
+  // тож у двох користувачів із коморою `home` і однаковим продуктом на тій
+  // самій позиції id збігаються посимвольно.
+  const existing = await client.query<{
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT updated_at, deleted_at FROM nutrition_pantry_items WHERE id = $1 AND user_id = $2`,
+    [id, userId],
+  );
+  if (existing.rows.length > 0) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  if (op.op === "delete") {
+    if (existing.rows.length === 0) {
+      return { status: "rejected", reason: "not_found" };
+    }
+    await client.query(
+      `UPDATE nutrition_pantry_items
+         SET deleted_at = $1, updated_at = $1
+       WHERE id = $2 AND user_id = $3`,
+      [clientTs, id, userId],
+    );
+    return { status: "applied" };
+  }
+
+  const pantryId =
+    typeof row["pantry_id"] === "string" ? row["pantry_id"] : null;
+  if (!pantryId) {
+    return { status: "rejected", reason: "missing_pantry_id" };
+  }
+  const name = typeof row["name"] === "string" ? row["name"] : "";
+  const qty = parseOptionalNumber(row["qty"]);
+  if (qty === "invalid") {
+    return { status: "rejected", reason: "invalid_qty" };
+  }
+  const unit = typeof row["unit"] === "string" ? row["unit"] : null;
+  const notes = typeof row["notes"] === "string" ? row["notes"] : null;
+  // Варіанти покупок їдуть як серіалізований JSON — сервер його НЕ
+  // розбирає й не валідує форму: інваріант суми тримає домен на клієнті
+  // (`packages/nutrition-domain/src/pantrySources.ts`), а сюди доїжджає
+  // непрозорий blob рівно як `prefs_json` чи `data_json`.
+  const sources = typeof row["sources"] === "string" ? row["sources"] : null;
+  // Pre-beta input-boundaries audit: pantry item name/unit are name-shaped,
+  // free-form notes get the longer bound.
+  if (
+    !isWithinTextBound(name) ||
+    !isWithinTextBound(unit) ||
+    !isWithinTextBound(notes, NOTE_MAX_LEN) ||
+    !isWithinTextBound(sources, PANTRY_SOURCES_MAX_LEN)
+  ) {
+    return { status: "rejected", reason: "text_too_long" };
+  }
+  const sortOrder = toNonNegativeInt(row["sort_order"]) ?? 0;
+  const createdAt = parseOptionalDate(row["created_at"]);
+  if (createdAt === "invalid") {
+    return { status: "rejected", reason: "invalid_created_at" };
+  }
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
+  if (deletedAt === "invalid") {
+    return { status: "rejected", reason: "invalid_deleted_at" };
+  }
+
+  if (existing.rows.length === 0) {
+    await client.query(
+      `INSERT INTO nutrition_pantry_items
+         (id, pantry_id, user_id, name, qty, unit, notes, sources, sort_order,
+          created_at, updated_at, deleted_at)
+       VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, $10, $11, $12)`,
+      [
+        id,
+        pantryId,
+        userId,
+        name,
+        qty ?? null,
+        unit,
+        notes,
+        sources,
+        sortOrder,
+        createdAt ?? clientTs,
+        clientTs,
+        deletedAt ?? null,
+      ],
+    );
+  } else {
+    await client.query(
+      `UPDATE nutrition_pantry_items
+         SET pantry_id  = $1,
+             name       = $2,
+             qty        = $3,
+             unit       = $4,
+             notes      = $5,
+             sources    = $6,
+             sort_order = $7,
+             updated_at = $8,
+             deleted_at = $9
+       WHERE id = $10 AND user_id = $11`,
+      [
+        pantryId,
+        name,
+        qty ?? null,
+        unit,
+        notes,
+        sources,
+        sortOrder,
+        clientTs,
+        deletedAt ?? null,
+        id,
+        userId,
+      ],
+    );
+  }
+  return { status: "applied" };
+}
+
+export async function applyNutritionPrefs(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  if (op.op === "delete") {
+    return { status: "rejected", reason: "delete_not_supported" };
+  }
+
+  const row = op.row;
+
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  const existing = await client.query<{ user_id: string; updated_at: Date }>(
+    `SELECT user_id, updated_at FROM nutrition_prefs WHERE user_id = $1`,
+    [userId],
+  );
+  if (existing.rows.length > 0) {
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  const prefsJson = toJsonbParam(row["prefs_json"]) ?? "{}";
+  const activePantryId =
+    typeof row["active_pantry_id"] === "string"
+      ? row["active_pantry_id"]
+      : null;
+
+  if (existing.rows.length === 0) {
+    await client.query(
+      `INSERT INTO nutrition_prefs
+         (user_id, prefs_json, active_pantry_id, created_at, updated_at)
+       VALUES ($1, $2::jsonb, $3, $4, $5)`,
+      [userId, prefsJson, activePantryId, clientTs, clientTs],
+    );
+  } else {
+    await client.query(
+      `UPDATE nutrition_prefs
+         SET prefs_json       = $1::jsonb,
+             active_pantry_id = $2,
+             updated_at       = $3
+       WHERE user_id = $4`,
+      [prefsJson, activePantryId, clientTs, userId],
+    );
+  }
+  return { status: "applied" };
+}
+
+export async function applyNutritionRecipes(
+  client: PoolClient,
+  op: SyncV2Op,
+  userId: string,
+  clientTs: Date,
+): Promise<AppliedStatus> {
+  const row = op.row;
+  const id = typeof row["id"] === "string" ? row["id"] : null;
+  if (!id) return { status: "rejected", reason: "missing_id" };
+
+  if (row["user_id"] == null) {
+    return { status: "rejected", reason: "missing_user_id" };
+  }
+  if (row["user_id"] !== userId) {
+    return { status: "rejected", reason: "user_id_mismatch" };
+  }
+
+  const existing = await client.query<{
+    user_id: string;
+    updated_at: Date;
+    deleted_at: Date | null;
+  }>(
+    `SELECT user_id, updated_at, deleted_at FROM nutrition_recipes WHERE id = $1`,
+    [id],
+  );
+  if (existing.rows.length > 0) {
+    if (existing!.rows[0]!.user_id !== userId) {
+      return { status: "rejected", reason: "fk_violation" };
+    }
+    if (existing!.rows[0]!.updated_at.getTime() >= clientTs.getTime()) {
+      return { status: "rejected", reason: "lww_conflict" };
+    }
+  }
+
+  if (op.op === "delete") {
+    if (existing.rows.length === 0) {
+      return { status: "rejected", reason: "not_found" };
+    }
+    await client.query(
+      `UPDATE nutrition_recipes
+         SET deleted_at = $1, updated_at = $1
+       WHERE id = $2 AND user_id = $3`,
+      [clientTs, id, userId],
+    );
+    return { status: "applied" };
+  }
+
+  const name = typeof row["name"] === "string" ? row["name"] : "";
+  if (!isWithinTextBound(name)) {
+    return { status: "rejected", reason: "text_too_long" };
+  }
+  const dataJson = toJsonbParam(row["data_json"]);
+  if (dataJson === null) {
+    return { status: "rejected", reason: "missing_data_json" };
+  }
+  const createdAt = parseOptionalDate(row["created_at"]);
+  if (createdAt === "invalid") {
+    return { status: "rejected", reason: "invalid_created_at" };
+  }
+  const deletedAt = parseOptionalDate(row["deleted_at"]);
+  if (deletedAt === "invalid") {
+    return { status: "rejected", reason: "invalid_deleted_at" };
+  }
+
+  if (existing.rows.length === 0) {
+    await client.query(
+      `INSERT INTO nutrition_recipes
+         (id, user_id, name, data_json, created_at, updated_at, deleted_at)
+       VALUES ($1, $2, $3, $4::jsonb, $5, $6, $7)`,
+      [
+        id,
+        userId,
+        name,
+        dataJson,
+        createdAt ?? clientTs,
+        clientTs,
+        deletedAt ?? null,
+      ],
+    );
+  } else {
+    await client.query(
+      `UPDATE nutrition_recipes
+         SET name       = $1,
+             data_json  = $2::jsonb,
+             updated_at = $3,
+             deleted_at = $4
+       WHERE id = $5 AND user_id = $6`,
+      [name, dataJson, clientTs, deletedAt ?? null, id, userId],
+    );
+  }
+  return { status: "applied" };
+}

@@ -1,0 +1,65 @@
+import { useEffect } from "react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
+import { STORAGE_KEYS } from "@sergeant/shared";
+import { safeReadLS } from "@shared/lib/storage/storage";
+import { hubKeys } from "@shared/lib/api/queryKeys";
+
+/**
+ * React Query-backed signal for "does Finyk have Monobank data loaded?".
+ *
+ * Replaces the legacy `window.dispatchEvent("hub-finyk-cache-updated")` fan-out
+ * used by the Hub chat and the Routine calendar. Writers (see
+ * `useMonobank.saveCache/disconnect/clearTxCache` and the Settings "Clear
+ * cache" button) invalidate `hubKeys.preview("finyk")`, and every consumer
+ * that subscribes to this hook re-renders without a manual bus.
+ *
+ * Cross-tab updates are covered by listening to the `storage` event and
+ * triggering the same invalidation — `localStorage` already broadcasts the
+ * write to other tabs, so we only need to rebuild the derived value there.
+ */
+
+export interface FinykHubPreview {
+  hasMonoData: boolean;
+}
+
+function readHasMonoData(): boolean {
+  // Intentional LS-backed preview signal; this hook's source of truth is
+  // localStorage by design (see header). Key centralized to STORAGE_KEYS via
+  // #3171; full SQLite-overlay migration is separate storage-roadmap work.
+  // eslint-disable-next-line no-restricted-syntax -- intentional LS-shard preview via STORAGE_KEYS; SQLite overlay is storage-roadmap work
+  const parsed = safeReadLS<{ txs?: unknown[] }>(STORAGE_KEYS.FINYK_TX_CACHE);
+  return Array.isArray(parsed?.txs) && parsed.txs.length > 0;
+}
+
+function readPreview(): FinykHubPreview {
+  return { hasMonoData: readHasMonoData() };
+}
+
+export function useFinykHubPreview() {
+  const queryClient = useQueryClient();
+
+  useEffect(() => {
+    const onStorage = (e: StorageEvent) => {
+      // Comparing against the same LS preview key (see readHasMonoData above).
+      // eslint-disable-next-line no-restricted-syntax -- storage-event key match for FINYK_TX_CACHE preview shard (same intentional LS read)
+      if (e.key === null || e.key === STORAGE_KEYS.FINYK_TX_CACHE) {
+        queryClient.invalidateQueries({ queryKey: hubKeys.preview("finyk") });
+      }
+    };
+    window.addEventListener("storage", onStorage);
+    return () => window.removeEventListener("storage", onStorage);
+  }, [queryClient]);
+
+  return useQuery({
+    queryKey: hubKeys.preview("finyk"),
+    queryFn: readPreview,
+    // The source of truth is `localStorage`; RQ is used purely as a pub/sub
+    // broadcaster for derived values. Explicit invalidations refetch.
+    staleTime: 60_000,
+    gcTime: Infinity,
+    // Returning to the tab rebuilds the preview — covers the case where a
+    // storage event was dropped (Safari occasionally does). Use "always" so
+    // the refetch fires even when the query is still fresh within staleTime.
+    refetchOnWindowFocus: "always",
+  });
+}

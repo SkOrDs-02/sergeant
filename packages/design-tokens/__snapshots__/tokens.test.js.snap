@@ -1,0 +1,270 @@
+// Vitest Snapshot v1, https://vitest.dev/guide/snapshot.html
+
+exports[`@sergeant/design-tokens — mobile.js > mobile.colors matches the canonical web moduleColors + statusColors 1`] = `
+{
+  "accent": "#0f766e",
+  "accentStrong": "#115e59",
+  "bg": "#0b0d10",
+  "border": "#1f242c",
+  "danger": "#ef4444",
+  "dangerStrong": "#991b1b",
+  "info": "#0ea5e9",
+  "infoStrong": "#075985",
+  "success": "#10b981",
+  "successStrong": "#065f46",
+  "surface": "#13161b",
+  "text": "#f2f4f7",
+  "textMuted": "#8a94a6",
+  "warning": "#f59e0b",
+  "warningStrong": "#92400e",
+}
+`;
+
+exports[`@sergeant/design-tokens — mobile.js > mobile.radius scale is stable 1`] = `
+{
+  "lg": 14,
+  "md": 10,
+  "sm": 6,
+  "xl": 20,
+}
+`;
+
+exports[`@sergeant/design-tokens — mobile.js > mobile.spacing scale is stable 1`] = `
+{
+  "lg": 16,
+  "md": 12,
+  "sm": 8,
+  "xl": 24,
+  "xs": 4,
+  "xxl": 32,
+}
+`;
+
+exports[`@sergeant/design-tokens — tokens.js > brandColors matrix is stable (emerald/teal/cyan/cream/rose/lime/stone scales) 1`] = `
+{
+  "cream": {
+    "100": "#fdf9f3",
+    "200": "#faf3e8",
+    "300": "#f5ead8",
+    "400": "#eedcc4",
+    "50": "#fefdfb",
+    "500": "#e4ccab",
+  },
+  "cyan": {
+    "100": "#cffafe",
+    "200": "#a5f3fc",
+    "300": "#67e8f9",
+    "400": "#22d3ee",
+    "50": "#ecfeff",
+    "500": "#06b6d4",
+    "600": "#0891b2",
+    "700": "#0e7490",
+    "800": "#155e75",
+    "900": "#164e63",
+  },
+  "emerald": {
+    "100": "#d1fae5",
+    "200": "#a7f3d0",
+    "300": "#6ee7b7",
+    "400": "#34d399",
+    "50": "#ecfdf5",
+    "500": "#10b981",
+    "600": "#059669",
+    "700": "#047857",
+    "800": "#065f46",
+    "900": "#064e3b",
+  },
+  "lime": {
+    "100": "#effccb",
+    "200": "#dff99d",
+    "300": "#c8f264",
+    "400": "#b0e636",
+    "50": "#f8fee7",
+    "500": "#92cc17",
+    "600": "#71a30d",
+    "700": "#567c0f",
+    "800": "#466212",
+    "900": "#3b5314",
+  },
+  "rose": {
+    "100": "#ffe7eb",
+    "200": "#fed3db",
+    "300": "#fcb3c1",
+    "400": "#f68da4",
+    "50": "#fff5f6",
+    "500": "#eb7691",
+    "600": "#d15c7a",
+    "700": "#ac4c64",
+    "800": "#8d4256",
+    "900": "#753949",
+  },
+  "stone": {
+    "100": "#f5f5f4",
+    "200": "#e7e5e4",
+    "300": "#d6d3d1",
+    "400": "#a8a29e",
+    "50": "#fafaf9",
+    "500": "#78716c",
+    "600": "#57534e",
+    "700": "#44403c",
+    "800": "#292524",
+    "900": "#1c1917",
+  },
+  "teal": {
+    "100": "#ccfbf1",
+    "200": "#99f6e4",
+    "300": "#5eead4",
+    "400": "#2dd4bf",
+    "50": "#f0fdfa",
+    "500": "#14b8a6",
+    "600": "#0d9488",
+    "700": "#0f766e",
+    "800": "#115e59",
+    "900": "#134e4a",
+  },
+}
+`;
+
+exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList / chartHex keep the same ordered palette 1`] = `
+{
+  "1": "#10b981",
+  "2": "#14b8a6",
+  "3": "#eb7691",
+  "4": "#92cc17",
+  "5": "#60a5fa",
+  "6": "#a78bfa",
+  "7": "#fbbf24",
+  "8": "#f472b6",
+}
+`;
+
+exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList / chartHex keep the same ordered palette 2`] = `
+[
+  "#10b981",
+  "#14b8a6",
+  "#eb7691",
+  "#92cc17",
+  "#60a5fa",
+  "#a78bfa",
+  "#fbbf24",
+  "#f472b6",
+]
+`;
+
+exports[`@sergeant/design-tokens — tokens.js > chartPalette / chartPaletteList / chartHex keep the same ordered palette 3`] = `
+{
+  "carbs": "#567c0f",
+  "fat": "#ac4c64",
+  "limit": "#ef4444",
+  "neutral": "#98a49c",
+  "protein": "#0e7490",
+}
+`;
+
+exports[`@sergeant/design-tokens — tokens.js > elevation recipes snapshot — light + dark per level 1`] = `
+{
+  "e0": {
+    "dark": "none",
+    "light": "none",
+  },
+  "e1": {
+    "dark": "0 1px 2px rgba(0, 0, 0, 0.30), 0 2px 6px rgba(0, 0, 0, 0.35), inset 0 1px 0 rgba(255, 255, 255, 0.03)",
+    "light": "0 1px 2px rgba(28, 25, 23, 0.04), 0 2px 6px rgba(28, 25, 23, 0.06), inset 0 1px 0 rgba(255, 255, 255, 0.9)",
+  },
+  "e2": {
+    "dark": "0 2px 4px rgba(0, 0, 0, 0.35), 0 8px 20px rgba(0, 0, 0, 0.45), inset 0 1px 0 rgba(255, 255, 255, 0.04)",
+    "light": "0 1px 3px rgba(28, 25, 23, 0.06), 0 6px 16px rgba(28, 25, 23, 0.10), inset 0 1px 0 rgba(255, 255, 255, 0.9)",
+  },
+  "e3": {
+    "dark": "0 3px 10px rgba(0, 0, 0, 0.40), 0 14px 30px rgba(0, 0, 0, 0.55), inset 0 1px 0 rgba(255, 255, 255, 0.05)",
+    "light": "0 2px 8px rgba(28, 25, 23, 0.08), 0 12px 24px rgba(28, 25, 23, 0.14), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
+  },
+  "e4": {
+    "dark": "0 6px 18px rgba(0, 0, 0, 0.45), 0 28px 56px rgba(0, 0, 0, 0.65), inset 0 1px 0 rgba(255, 255, 255, 0.06)",
+    "light": "0 4px 16px rgba(28, 25, 23, 0.10), 0 24px 48px rgba(28, 25, 23, 0.18), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
+  },
+  "e5": {
+    "dark": "0 10px 28px rgba(0, 0, 0, 0.50), 0 36px 72px rgba(0, 0, 0, 0.70), inset 0 1px 0 rgba(255, 255, 255, 0.07)",
+    "light": "0 8px 24px rgba(28, 25, 23, 0.12), 0 32px 64px rgba(28, 25, 23, 0.22), inset 0 1px 0 rgba(255, 255, 255, 0.85)",
+  },
+}
+`;
+
+exports[`@sergeant/design-tokens — tokens.js > moduleAccentRgb is stable (snapshot) 1`] = `
+{
+  "finyk": {
+    "default": "15 118 110",
+    "strong": "17 94 89",
+  },
+  "fizruk": {
+    "default": "14 116 144",
+    "strong": "21 94 117",
+  },
+  "nutrition": {
+    "default": "146 204 23",
+    "strong": "70 98 18",
+  },
+  "routine": {
+    "default": "235 118 145",
+    "strong": "141 66 86",
+  },
+}
+`;
+
+exports[`@sergeant/design-tokens — tokens.js > moduleColors define canonical finyk/fizruk/routine/nutrition primary+surface 1`] = `
+{
+  "finyk": {
+    "primary": "#0f766e",
+    "secondary": "#0d9488",
+    "surface": "#f0fdfa",
+    "surfaceAlt": "#ccfbf1",
+  },
+  "fizruk": {
+    "accent": "#c8f264",
+    "primary": "#0e7490",
+    "secondary": "#0891b2",
+    "surface": "#ecfeff",
+  },
+  "nutrition": {
+    "primary": "#92cc17",
+    "secondary": "#b0e636",
+    "surface": "#f8fee7",
+    "surfaceAlt": "#effccb",
+  },
+  "routine": {
+    "primary": "#eb7691",
+    "secondary": "#f68da4",
+    "surface": "#fff5f6",
+    "surfaceAlt": "#ffe7eb",
+  },
+}
+`;
+
+exports[`@sergeant/design-tokens — tokens.js > statusColors + statusHex pair matches \`statusColors.<name>.primary → statusHex.<name>\` 1`] = `
+{
+  "danger": "#ef4444",
+  "info": "#0ea5e9",
+  "success": "#10b981",
+  "warning": "#f59e0b",
+}
+`;
+
+exports[`@sergeant/design-tokens — tokens.js > statusColors + statusHex pair matches \`statusColors.<name>.primary → statusHex.<name>\` 2`] = `
+{
+  "danger": "#ef4444",
+  "info": "#0ea5e9",
+  "success": "#10b981",
+  "warning": "#f59e0b",
+}
+`;
+
+exports[`@sergeant/design-tokens — tokens.js > zTier snapshot — exact numeric assignment 1`] = `
+{
+  "base": "0",
+  "dropdown": "50",
+  "modal": "200",
+  "overlay": "150",
+  "sticky": "100",
+  "toast": "300",
+}
+`;

@@ -1,0 +1,139 @@
+/**
+ * Last validated: 2026-05-19
+ * Status: Active
+ *
+ * Detection hook for the "coffee MoM growth ≥ 25%" insight trigger.
+ *
+ * There is no "coffee" category in the Finyk MCC taxonomy. The closest
+ * matching slug is "restaurant" (id: "restaurant", label: "🍔 Кафе та
+ * ресторани", MCC 5812/5813/5814). That slug covers coffee-shop and café
+ * spend, which is the intended trigger surface. See PR body for rationale.
+ *
+ * The hook is pure-memoized — no side effects, no additional subscriptions.
+ */
+
+import { useMemo } from "react";
+import { calcLimitCategorySpent } from "@sergeant/finyk-domain/lib/limitCategorySpend";
+import type { Insight } from "@shared/lib/insights/types";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import type {
+  Transaction,
+  TxSplitsMap,
+} from "@sergeant/finyk-domain/domain/types";
+import { formatNumberUk } from "@sergeant/shared";
+import { filterToKyivMonth } from "../lib/monthWindow";
+
+// Tunable thresholds — export so tests can override.
+/** MoM growth ratio that triggers the insight (0.25 = 25%). */
+export const COFFEE_MOM_GROWTH_THRESHOLD = 0.25;
+
+/**
+ * Category slug used as a proxy for "coffee" spend.
+ * Taxonomy has no dedicated "coffee" id — "restaurant" (MCC 5812-5814)
+ * covers cafés and is the closest match.
+ */
+export const COFFEE_CATEGORY_SLUG = "restaurant";
+
+/** "YYYY-MM" for the month before `month`. */
+function previousMonth(month: string): string {
+  const [y, m] = month.split("-").map(Number);
+  if (!y || !m) return "";
+  const prevY = m === 1 ? y - 1 : y;
+  const prevM = m === 1 ? 12 : m - 1;
+  return `${prevY}-${String(prevM).padStart(2, "0")}`;
+}
+
+/** "YYYY-MM" for today, anchored to the Europe/Kyiv civil date (domain invariant). */
+function currentMonth(): string {
+  const { year, month } = getKyivDateParts();
+  return `${year}-${String(month).padStart(2, "0")}`;
+}
+
+/** Sum category spend for a given "YYYY-MM" month slice. */
+function monthlyCategorySpend(
+  transactions: readonly Transaction[],
+  categoryId: string,
+  month: string,
+  txCategories: Record<string, string | undefined>,
+  txSplits: TxSplitsMap,
+  customCategories: readonly { id: string; label?: string | undefined }[],
+): number {
+  // Kyiv-anchored clamp (§1.8: a host-local `new Date(y, m-1, 1)` bound
+  // put late-month transactions outside their month on devices west of
+  // Kyiv), same helper the bank-tx month clamp uses elsewhere in Finyk.
+  const filtered = filterToKyivMonth(transactions, month);
+
+  return calcLimitCategorySpent(
+    filtered,
+    categoryId,
+    txCategories,
+    txSplits,
+    customCategories,
+  );
+}
+
+interface UseCoffeeLimitInsightArgs {
+  transactions: readonly Transaction[];
+  txCategories: Record<string, string | undefined>;
+  txSplits: TxSplitsMap;
+  customCategories?:
+    readonly { id: string; label?: string | undefined }[] | undefined;
+}
+
+export function useCoffeeLimitInsight({
+  transactions,
+  txCategories,
+  txSplits,
+  customCategories = [],
+}: UseCoffeeLimitInsightArgs): Insight | null {
+  return useMemo(() => {
+    if (!transactions.length) return null;
+
+    const month = currentMonth();
+    const prevMonth = previousMonth(month);
+    if (!prevMonth) return null;
+
+    const thisMonthSpend = monthlyCategorySpend(
+      transactions,
+      COFFEE_CATEGORY_SLUG,
+      month,
+      txCategories,
+      txSplits,
+      customCategories,
+    );
+    const lastMonthSpend = monthlyCategorySpend(
+      transactions,
+      COFFEE_CATEGORY_SLUG,
+      prevMonth,
+      txCategories,
+      txSplits,
+      customCategories,
+    );
+
+    if (
+      lastMonthSpend <= 0 ||
+      thisMonthSpend / lastMonthSpend < 1 + COFFEE_MOM_GROWTH_THRESHOLD
+    ) {
+      return null;
+    }
+
+    const pct = Math.round((thisMonthSpend / lastMonthSpend - 1) * 100);
+    const amount = Math.round(thisMonthSpend);
+
+    return {
+      id: `finyk-coffee-limit-${month}`,
+      module: "finyk",
+      title: `Витрати на каву ↑ ${pct}%`,
+      subtitle: `Це ${formatNumberUk(amount)} грн. Встановити ліміт?`,
+      askAiPrompt: `Витрати на каву цього місяця ${formatNumberUk(amount)} грн, на ${pct}% більше за минулий. Варто ставити ліміт чи це норм?`,
+      action: {
+        type: "navigate",
+        path: `/finyk/budgets?cat=${COFFEE_CATEGORY_SLUG}`,
+      },
+      // Hub surface promoted post-Phase 5e: spending awareness is useful
+      // cross-module — user may not be in Finyk when threshold matters, and
+      // the "Встановити ліміт?" action navigates with full context.
+      showOn: "both",
+    };
+  }, [transactions, txCategories, txSplits, customCategories]);
+}

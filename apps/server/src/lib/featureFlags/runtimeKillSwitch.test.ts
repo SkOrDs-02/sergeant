@@ -1,0 +1,78 @@
+import { beforeEach, describe, expect, it } from "vitest";
+import {
+  __resetKillSwitchesForTest,
+  activateKillSwitch,
+  deactivateKillSwitch,
+  isKillSwitchActive,
+  listActiveKillSwitches,
+} from "./runtimeKillSwitch.js";
+
+describe("runtimeKillSwitch", () => {
+  beforeEach(() => {
+    __resetKillSwitchesForTest();
+  });
+
+  it("defaults all switches to inactive", () => {
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
+    expect(listActiveKillSwitches()).toEqual([]);
+  });
+
+  it("activates a switch and reports it as active", () => {
+    activateKillSwitch("digest_ai_memory_ingest", {
+      reason: "test: rag-eval kill",
+      context: { recall: 0.3, mode: "live" },
+    });
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(true);
+    const active = listActiveKillSwitches();
+    expect(active).toHaveLength(1);
+    expect(active[0]?.name).toBe("digest_ai_memory_ingest");
+    expect(active[0]?.reason).toBe("test: rag-eval kill");
+    expect(active[0]?.context).toEqual({ recall: 0.3, mode: "live" });
+    expect(active[0]?.activatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
+  });
+
+  it("reactivates overwrites reason + context", () => {
+    activateKillSwitch("digest_ai_memory_ingest", {
+      reason: "first reason",
+      context: { round: 1 },
+    });
+    activateKillSwitch("digest_ai_memory_ingest", {
+      reason: "second reason",
+      context: { round: 2 },
+    });
+    const active = listActiveKillSwitches();
+    expect(active).toHaveLength(1);
+    expect(active[0]?.reason).toBe("second reason");
+    expect(active[0]?.context).toEqual({ round: 2 });
+  });
+
+  it("deactivates an active switch", () => {
+    activateKillSwitch("digest_ai_memory_ingest", { reason: "x" });
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(true);
+
+    deactivateKillSwitch("digest_ai_memory_ingest");
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
+    expect(listActiveKillSwitches()).toEqual([]);
+  });
+
+  it("deactivate is noop when switch is already inactive", () => {
+    expect(() => deactivateKillSwitch("digest_ai_memory_ingest")).not.toThrow();
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
+  });
+
+  it("listActiveKillSwitches returns immutable snapshot — mutations don't leak", () => {
+    activateKillSwitch("digest_ai_memory_ingest", { reason: "x" });
+    const snap1 = listActiveKillSwitches();
+    expect(snap1).toHaveLength(1);
+    // Mutate the returned array — should not affect internal state.
+    snap1.pop();
+    expect(listActiveKillSwitches()).toHaveLength(1);
+  });
+
+  it("__resetKillSwitchesForTest clears all state", () => {
+    activateKillSwitch("digest_ai_memory_ingest", { reason: "a" });
+    __resetKillSwitchesForTest();
+    expect(listActiveKillSwitches()).toEqual([]);
+    expect(isKillSwitchActive("digest_ai_memory_ingest")).toBe(false);
+  });
+});

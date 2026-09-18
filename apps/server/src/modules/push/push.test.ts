@@ -1,0 +1,636 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+
+/**
+ * Module-load testing strategy (P2-1 з 2026-05-13-backend-performance-roast):
+ *
+ * `push.ts` reads `VAPID_PUBLIC_KEY` / `VAPID_PRIVATE_KEY` / `VAPID_EMAIL` /
+ * `NODE_ENV` once at module-load via the zod-validated `env` singleton
+ * (а не raw `process.env[...]`-reads). Тому, щоб перевірити різні
+ * комбінації (зчитуючи `vapidReady`, `vapidPublic`, `subscribe`,
+ * `sendPush`), треба пере-impport-ити обидва модулі (`push.ts` і
+ * `env/env.ts`) на свіжих env-значеннях.
+ *
+ * Canonical pattern — той самий, що в `apps/server/src/auth.test.ts`:
+ *   1. `vi.resetModules()` — скинути ESM-кеш.
+ *   2. `vi.stubEnv(name, value)` — поставити потрібні env-и (стиль, який
+ *      Vitest офіційно підтримує; ефект скасовується `vi.unstubAllEnvs()`).
+ *   3. `await import("./push.js")` — динамічний імпорт після стабу.
+ *   4. У `finally` / `afterEach` — `vi.unstubAllEnvs()` + `vi.resetModules()`.
+ *
+ * Без цього паттерну тести проходили б на старому env-cached синглтоні
+ * (особливо коли в одному файлі по 5+ комбінацій env-варів).
+ */
+
+// Mock logger so we can assert the "vapid_email_missing" log in prod without
+// noise, and so the import below does not try to reach pino sinks.
+const loggerMock = {
+  debug: vi.fn(),
+  info: vi.fn(),
+  warn: vi.fn(),
+  error: vi.fn(),
+  fatal: vi.fn(),
+};
+vi.mock("../../obs/logger.js", async () => {
+  const actual = await vi.importActual("../../obs/logger.js");
+  return { ...actual, logger: loggerMock };
+});
+
+// `push.ts` imports web-push/pg/etc at module scope. We don't exercise those
+// here — just resolveVapidEmail — but the imports still need to succeed.
+vi.mock("web-push", () => ({
+  default: { setVapidDetails: vi.fn(), sendNotification: vi.fn() },
+}));
+vi.mock("../../db.js", () => ({ default: { query: vi.fn() } }));
+vi.mock("../../lib/webpushSend.js", () => ({ sendWebPush: vi.fn() }));
+// AI-NOTE: мок мусить віддавати ВСЕ, що `push.ts` імпортує з цього модуля.
+// `recordDomainOutcome` тут не тому, що тест його перевіряє, а тому, що
+// без нього fan-out падає на першому ж виклику — vi.mock замінює модуль
+// цілком, і невказаний експорт стає відсутнім, а не справжнім.
+vi.mock("../../push/send.js", () => ({
+  sendToUser: vi.fn(),
+  recordDomainOutcome: vi.fn(),
+}));
+vi.mock("./audit.js", () => ({ logPushSend: vi.fn() }));
+vi.mock("../../http/rateLimit.js", () => ({
+  getIp: vi.fn(() => "203.0.113.7"),
+  getPerTargetRateLimit: vi.fn(() =>
+    Promise.resolve({ ok: true, remaining: 9, resetAt: Date.now() + 60_000 }),
+  ),
+}));
+
+describe("resolveVapidEmail", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    loggerMock.error.mockReset();
+    // Clear any env-state from a previous test in this file.
+    vi.unstubAllEnvs();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("returns the env value verbatim when it already has a mailto: prefix", async () => {
+    vi.stubEnv("VAPID_EMAIL", "mailto:admin@example.org");
+    const { resolveVapidEmail } = await import("./push.js");
+    expect(resolveVapidEmail()).toBe("mailto:admin@example.org");
+    expect(loggerMock.error).not.toHaveBeenCalled();
+  });
+
+  it("prepends mailto: when the env value is a bare address", async () => {
+    vi.stubEnv("VAPID_EMAIL", "admin@example.org");
+    const { resolveVapidEmail } = await import("./push.js");
+    expect(resolveVapidEmail()).toBe("mailto:admin@example.org");
+  });
+
+  it("trims surrounding whitespace on the env value", async () => {
+    vi.stubEnv("VAPID_EMAIL", "  mailto:admin@example.org  ");
+    const { resolveVapidEmail } = await import("./push.js");
+    expect(resolveVapidEmail()).toBe("mailto:admin@example.org");
+  });
+
+  it("returns null and logs an error in production when unset", async () => {
+    vi.stubEnv("VAPID_EMAIL", "");
+    vi.stubEnv("NODE_ENV", "production");
+    const { resolveVapidEmail } = await import("./push.js");
+    // `push.ts` calls `resolveVapidEmail()` once at module-load (to derive
+    // `vapidReady`), so reset the mock here to isolate the explicit
+    // invocation below — pre-P2-1 this implicit call did not exist because
+    // module-load read `process.env["NODE_ENV"]` cold and the test stubbed
+    // it AFTER. Now the env singleton freezes at import time.
+    loggerMock.error.mockReset();
+    expect(resolveVapidEmail()).toBeNull();
+    expect(loggerMock.error).toHaveBeenCalledTimes(1);
+    expect(loggerMock!.error.mock.calls[0]![0]).toMatchObject({
+      msg: "vapid_email_missing",
+    });
+  });
+
+  it("returns null in production when VAPID_EMAIL is blank whitespace", async () => {
+    vi.stubEnv("VAPID_EMAIL", "   ");
+    vi.stubEnv("NODE_ENV", "production");
+    const { resolveVapidEmail } = await import("./push.js");
+    expect(resolveVapidEmail()).toBeNull();
+    expect(loggerMock.error).toHaveBeenCalledWith(
+      expect.objectContaining({ msg: "vapid_email_missing" }),
+    );
+  });
+
+  it("falls back to the dev placeholder outside production", async () => {
+    vi.stubEnv("VAPID_EMAIL", "");
+    vi.stubEnv("NODE_ENV", "development");
+    const { resolveVapidEmail } = await import("./push.js");
+    expect(resolveVapidEmail()).toBe("mailto:admin@example.com");
+    expect(loggerMock.error).not.toHaveBeenCalled();
+  });
+
+  it("uses the placeholder in test environments too", async () => {
+    vi.stubEnv("VAPID_EMAIL", "");
+    vi.stubEnv("NODE_ENV", "test");
+    const { resolveVapidEmail } = await import("./push.js");
+    expect(resolveVapidEmail()).toBe("mailto:admin@example.com");
+  });
+});
+
+describe("push handler VAPID readiness gating", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    loggerMock.error.mockReset();
+    vi.unstubAllEnvs();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  function makeRes() {
+    return {
+      statusCode: 200,
+      body: null as unknown,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      json(obj: unknown) {
+        this.body = obj;
+        return this;
+      },
+    };
+  }
+
+  it("vapidPublic returns 503 in production when VAPID_EMAIL is missing", async () => {
+    // Regression: before this gate only checked VAPID_PUBLIC, so the
+    // endpoint happily returned the public key while `setVapidDetails`
+    // was silently skipped — all later sends would throw.
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VAPID_PUBLIC_KEY", "BPUB");
+    vi.stubEnv("VAPID_PRIVATE_KEY", "BPRIV");
+    vi.stubEnv("VAPID_EMAIL", "");
+
+    const { vapidPublic } = await import("./push.js");
+    const res = makeRes();
+    await vapidPublic({} as never, res as never);
+
+    expect(res.statusCode).toBe(503);
+    expect(res.body).toEqual({ error: "Push not configured" });
+  });
+
+  it("subscribe returns 503 in production when VAPID_EMAIL is missing", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VAPID_PUBLIC_KEY", "BPUB");
+    vi.stubEnv("VAPID_PRIVATE_KEY", "BPRIV");
+    vi.stubEnv("VAPID_EMAIL", "");
+
+    const { subscribe } = await import("./push.js");
+    const res = makeRes();
+    await subscribe({ body: {} } as never, res as never);
+    expect(res.statusCode).toBe(503);
+  });
+
+  it("sendPush returns 503 in production when VAPID_EMAIL is missing", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VAPID_PUBLIC_KEY", "BPUB");
+    vi.stubEnv("VAPID_PRIVATE_KEY", "BPRIV");
+    vi.stubEnv("VAPID_EMAIL", "");
+
+    const { sendPush } = await import("./push.js");
+    const res = makeRes();
+    await sendPush({ body: {} } as never, res as never);
+    expect(res.statusCode).toBe(503);
+  });
+
+  it("vapidPublic returns the key when all three VAPID pieces are set", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VAPID_PUBLIC_KEY", "BPUB");
+    vi.stubEnv("VAPID_PRIVATE_KEY", "BPRIV");
+    vi.stubEnv("VAPID_EMAIL", "mailto:admin@example.org");
+
+    const { vapidPublic } = await import("./push.js");
+    const res = makeRes();
+    await vapidPublic({} as never, res as never);
+    expect(res.statusCode).toBe(200);
+    expect(res.body).toEqual({ publicKey: "BPUB" });
+  });
+
+  // Happy path — додано в P2-1 разом із міграцією на `env.ts`. Перевіряє,
+  // що `subscribe` пропускає gate-перевірку коли усі VAPID-поля задані
+  // (а не падає 503), і що endpoint-handler дочитується до `validateBody`.
+  it("subscribe passes the vapid gate when all three keys are set (proceeds to body validation)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VAPID_PUBLIC_KEY", "BPUB");
+    vi.stubEnv("VAPID_PRIVATE_KEY", "BPRIV");
+    vi.stubEnv("VAPID_EMAIL", "mailto:admin@example.org");
+
+    const { subscribe } = await import("./push.js");
+    // Порожнє body завалить `parseBody` → ValidationError throws, але ВАЖЛИВО
+    // для цього тесту лише те, що 503-gate НЕ виставився: handler дійшов
+    // до body-валідації, тобто vapid-gate (raise 503) пройшов.
+    await expect(
+      subscribe(
+        { body: {}, user: { id: "u_test" } } as never,
+        makeRes() as never,
+      ),
+    ).rejects.toMatchObject({ name: "ValidationError" });
+  });
+
+  // Edge case — додано в P2-1: `env.VAPID_EMAIL` отримує whitespace.
+  // Без `.trim()` у `resolveVapidEmail()` ми б імпортували `vapidReady=true`
+  // (бо рядок truthy), і `setVapidDetails` падав би в run-time на mailto:
+  // " ". Перевіряємо, що pipeline зважає whitespace-only як «не задано».
+  it("treats whitespace-only VAPID_EMAIL as missing in production (vapidReady=false)", async () => {
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VAPID_PUBLIC_KEY", "BPUB");
+    vi.stubEnv("VAPID_PRIVATE_KEY", "BPRIV");
+    vi.stubEnv("VAPID_EMAIL", "    ");
+
+    const { vapidPublic } = await import("./push.js");
+    const res = makeRes();
+    await vapidPublic({} as never, res as never);
+    expect(res.statusCode).toBe(503);
+    expect(res.body).toEqual({ error: "Push not configured" });
+  });
+});
+
+// ── P2-1: env-routed configuration (regression coverage) ──────────────────
+//
+// Раніше push.ts читав `process.env[...]` напряму при module-load, що
+// обходило zod-валідацію в `env.ts`. Тут перевіряємо, що валідовані поля
+// `PUSH_SEND_TARGET_LIMIT` / `PUSH_SEND_TARGET_WINDOW_MS` / `VAPID_*`
+// доступні з `env`-singleton-у і мають правильні defaults.
+describe("env.ts — push-related fields (P2-1 migration)", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.unstubAllEnvs();
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  it("PUSH_SEND_TARGET_LIMIT defaults to 10 when env var is unset", async () => {
+    vi.stubEnv("PUSH_SEND_TARGET_LIMIT", "");
+    const { env } = await import("../../env/env.js");
+    expect(env.PUSH_SEND_TARGET_LIMIT).toBe(10);
+  });
+
+  it("PUSH_SEND_TARGET_LIMIT accepts a positive integer override", async () => {
+    vi.stubEnv("PUSH_SEND_TARGET_LIMIT", "42");
+    const { env } = await import("../../env/env.js");
+    expect(env.PUSH_SEND_TARGET_LIMIT).toBe(42);
+  });
+
+  // Edge: бек-сумісність із legacy-IIFE → silent fallback на default
+  // замість fail-fast. CI / Railway інколи отримує `0` як «вимкнути»
+  // (помилково) — ми зберігаємо стару поведінку, щоб не зламати ops.
+  it("PUSH_SEND_TARGET_LIMIT silently falls back on non-positive / NaN input", async () => {
+    for (const bad of ["0", "-5", "abc", "  "]) {
+      vi.resetModules();
+      vi.stubEnv("PUSH_SEND_TARGET_LIMIT", bad);
+      const { env } = await import("../../env/env.js");
+      expect(env.PUSH_SEND_TARGET_LIMIT).toBe(10);
+    }
+  });
+
+  it("PUSH_SEND_TARGET_WINDOW_MS defaults to 60_000 when env var is unset", async () => {
+    vi.stubEnv("PUSH_SEND_TARGET_WINDOW_MS", "");
+    const { env } = await import("../../env/env.js");
+    expect(env.PUSH_SEND_TARGET_WINDOW_MS).toBe(60_000);
+  });
+
+  it("PUSH_INTERNAL_ALLOWED_IPS defaults to empty string", async () => {
+    vi.stubEnv("PUSH_INTERNAL_ALLOWED_IPS", "");
+    const { env } = await import("../../env/env.js");
+    expect(env.PUSH_INTERNAL_ALLOWED_IPS).toBe("");
+  });
+
+  it("PUSH_INTERNAL_ALLOWED_IPS round-trips a CIDR allowlist verbatim", async () => {
+    vi.stubEnv("PUSH_INTERNAL_ALLOWED_IPS", "100.64.0.0/10,10.0.0.5");
+    const { env } = await import("../../env/env.js");
+    expect(env.PUSH_INTERNAL_ALLOWED_IPS).toBe("100.64.0.0/10,10.0.0.5");
+  });
+});
+
+describe("push handlers", () => {
+  beforeEach(() => {
+    vi.resetModules();
+    vi.clearAllMocks();
+    vi.unstubAllEnvs();
+    vi.stubEnv("NODE_ENV", "production");
+    vi.stubEnv("VAPID_PUBLIC_KEY", "BPUB");
+    vi.stubEnv("VAPID_PRIVATE_KEY", "BPRIV");
+    vi.stubEnv("VAPID_EMAIL", "mailto:admin@example.org");
+  });
+
+  afterEach(() => {
+    vi.unstubAllEnvs();
+    vi.resetModules();
+  });
+
+  function makeRes() {
+    return {
+      statusCode: 200,
+      body: null as unknown,
+      headers: {} as Record<string, string>,
+      status(code: number) {
+        this.statusCode = code;
+        return this;
+      },
+      setHeader(name: string, value: string) {
+        this.headers[name] = value;
+        return this;
+      },
+      json(obj: unknown) {
+        this.body = obj;
+        return this;
+      },
+    };
+  }
+
+  async function loadHandlerMocks() {
+    const db = (await import("../../db.js")).default as unknown as {
+      query: ReturnType<typeof vi.fn>;
+    };
+    const webPush = await import("../../lib/webpushSend.js");
+    const pushSend = await import("../../push/send.js");
+    const rateLimit = await import("../../http/rateLimit.js");
+    const audit = await import("./audit.js");
+    return {
+      db,
+      sendWebPush: webPush.sendWebPush as ReturnType<typeof vi.fn>,
+      sendToUser: pushSend.sendToUser as ReturnType<typeof vi.fn>,
+      getPerTargetRateLimit: rateLimit.getPerTargetRateLimit as ReturnType<
+        typeof vi.fn
+      >,
+      logPushSend: audit.logPushSend as ReturnType<typeof vi.fn>,
+    };
+  }
+
+  it("registers and unregisters web and native push targets", async () => {
+    const mocks = await loadHandlerMocks();
+    mocks.db.query.mockResolvedValue({ rows: [] });
+    const { register, unregister, subscribe, unsubscribe } =
+      await import("./push.js");
+
+    await register(
+      {
+        user: { id: "u1" },
+        body: {
+          platform: "web",
+          token: "https://push.example/sub",
+          keys: { p256dh: "p256", auth: "auth" },
+        },
+      } as never,
+      makeRes() as never,
+    );
+    await register(
+      {
+        user: { id: "u1" },
+        body: { platform: "ios", token: "apns-token" },
+      } as never,
+      makeRes() as never,
+    );
+    await subscribe(
+      {
+        user: { id: "u1" },
+        body: {
+          endpoint: "https://push.example/legacy",
+          keys: { p256dh: "p256", auth: "auth" },
+        },
+      } as never,
+      makeRes() as never,
+    );
+    await unregister(
+      {
+        user: { id: "u1" },
+        body: { platform: "web", endpoint: "https://push.example/sub" },
+      } as never,
+      makeRes() as never,
+    );
+    await unregister(
+      {
+        user: { id: "u1" },
+        body: { platform: "android", token: "fcm" },
+      } as never,
+      makeRes() as never,
+    );
+    await unsubscribe(
+      {
+        user: { id: "u1" },
+        body: { endpoint: "https://push.example/sub" },
+      } as never,
+      makeRes() as never,
+    );
+
+    expect(mocks.db.query).toHaveBeenCalledTimes(6);
+    expect(mocks.db.query.mock.calls[0]?.[1]).toEqual([
+      "u1",
+      "https://push.example/sub",
+      "p256",
+      "auth",
+    ]);
+    expect(mocks.db.query.mock.calls[1]?.[1]).toEqual([
+      "u1",
+      "ios",
+      "apns-token",
+    ]);
+    expect(mocks.db.query.mock.calls[2]?.[1]).toEqual([
+      "u1",
+      "https://push.example/legacy",
+      "p256",
+      "auth",
+    ]);
+    expect(mocks.db.query.mock.calls[4]?.[1]).toEqual(["u1", "android", "fcm"]);
+  });
+
+  it("sendPush rate-limits before reading subscriptions", async () => {
+    const mocks = await loadHandlerMocks();
+    mocks.getPerTargetRateLimit.mockResolvedValueOnce({
+      ok: false,
+      retryAfterSec: 17,
+    });
+    const { sendPush } = await import("./push.js");
+    const res = makeRes();
+
+    await sendPush(
+      {
+        body: { userId: "u2", title: "Hi", body: "Body", module: "finyk" },
+      } as never,
+      res as never,
+    );
+
+    expect(res.statusCode).toBe(429);
+    expect(res.headers["Retry-After"]).toBe("17");
+    expect(mocks.db.query).not.toHaveBeenCalled();
+  });
+
+  it("sendPush handles empty subscriptions and mixed fan-out outcomes", async () => {
+    const mocks = await loadHandlerMocks();
+    mocks.db.query
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({
+        rows: [
+          { endpoint: "https://push.example/ok", p256dh: "p1", auth: "a1" },
+          { endpoint: "https://push.example/stale", p256dh: "p2", auth: "a2" },
+        ],
+      })
+      .mockResolvedValueOnce({ rows: [] });
+    mocks.sendWebPush
+      .mockResolvedValueOnce({ outcome: "ok" })
+      .mockResolvedValueOnce({ outcome: "invalid_endpoint" });
+    const { sendPush } = await import("./push.js");
+
+    const emptyRes = makeRes();
+    await sendPush(
+      { body: { userId: "u2", title: "Hi", body: "Body" } } as never,
+      emptyRes as never,
+    );
+    expect(emptyRes.body).toEqual({ sent: 0 });
+
+    const fanoutRes = makeRes();
+    await sendPush(
+      {
+        body: {
+          userId: "u2",
+          title: "Hi",
+          body: "Body",
+          module: "finyk",
+          tag: "daily",
+        },
+      } as never,
+      fanoutRes as never,
+    );
+
+    expect(fanoutRes.body).toEqual({ sent: 1, stale: 1 });
+    expect(mocks.sendWebPush).toHaveBeenCalledTimes(2);
+    expect(mocks.db.query.mock.calls[2]?.[1]).toEqual([
+      ["https://push.example/stale"],
+    ]);
+    expect(mocks.logPushSend).toHaveBeenCalledWith(
+      expect.objectContaining({
+        callerIp: "203.0.113.7",
+        targetUserId: "u2",
+        subsCount: 2,
+        sentCount: 1,
+      }),
+    );
+  });
+
+  it("pushTest delegates to sendToUser and returns its summary", async () => {
+    const mocks = await loadHandlerMocks();
+    const summary = {
+      delivered: { ios: 1, android: 0, web: 1 },
+      cleaned: 0,
+      errors: [],
+    };
+    mocks.sendToUser.mockResolvedValueOnce(summary);
+    const { pushTest } = await import("./push.js");
+    const res = makeRes();
+
+    await pushTest(
+      {
+        user: { id: "u1" },
+        body: {
+          title: "Test",
+          body: "Body",
+          data: { source: "spec" },
+          url: "sergeant://finyk",
+          silent: true,
+        },
+      } as never,
+      res as never,
+    );
+
+    expect(mocks.sendToUser).toHaveBeenCalledWith("u1", {
+      title: "Test",
+      body: "Body",
+      data: { source: "spec" },
+      url: "sergeant://finyk",
+      silent: true,
+    });
+    expect(res.body).toEqual(summary);
+  });
+
+  // Регресія: `push_subscriptions.endpoint` глобально UNIQUE, тож арбітр
+  // конфлікту НЕ містить `user_id`, і беззастережний `DO UPDATE SET
+  // user_id` віддавав чужий рядок тому, хто останнім покликав register —
+  // жертва мовчки переставала отримувати свої сповіщення. Native-гілка
+  // (`push_devices`) цей guard мала від початку, web-таблиця лишалась
+  // відкритою. Endpoint своєї підписки людина бачить у власному
+  // GDPR-експорті, тож «його ніхто не знає» захистом не було.
+  //
+  // Guard навмисно ширший за `user_id = $1`: web-push endpoint належить
+  // БРАУЗЕРУ, і на спільному компʼютері `pushManager.subscribe()` віддає
+  // новому користувачу ТУ САМУ підписку — той самий endpoint і ті самі
+  // ключі. Тому збіг ключів теж дозволяє зміну власника; розбіжність при
+  // тому самому endpoint — ні.
+  for (const handler of ["register", "subscribe"] as const) {
+    it(`${handler}: не дозволяє забрати чужий endpoint, коли ключі не збігаються`, async () => {
+      const mocks = await loadHandlerMocks();
+      // rowCount = 0 → WHERE-гілка upsert-а не пропустила зміну власника.
+      mocks.db.query.mockResolvedValue({ rows: [], rowCount: 0 });
+      const handlers = await import("./push.js");
+      const res = makeRes();
+
+      const body =
+        handler === "register"
+          ? {
+              platform: "web" as const,
+              token: "https://push.example/victim",
+              keys: { p256dh: "attacker", auth: "attacker" },
+            }
+          : {
+              endpoint: "https://push.example/victim",
+              keys: { p256dh: "attacker", auth: "attacker" },
+            };
+
+      await expect(
+        handlers[handler](
+          { user: { id: "attacker" }, body } as never,
+          res as never,
+        ),
+      ).rejects.toMatchObject({
+        status: 409,
+        code: "PUSH_SUBSCRIPTION_OWNED",
+      });
+
+      // Хендлер не пише у відповідь узагалі — тіло складе errorHandler.
+      expect(res.body).toBeNull();
+    });
+
+    it(`${handler}: SQL несе guard на власника і на збіг ключів`, async () => {
+      const mocks = await loadHandlerMocks();
+      mocks.db.query.mockResolvedValue({ rows: [], rowCount: 1 });
+      const handlers = await import("./push.js");
+
+      const body =
+        handler === "register"
+          ? {
+              platform: "web" as const,
+              token: "https://push.example/own",
+              keys: { p256dh: "p256", auth: "auth" },
+            }
+          : {
+              endpoint: "https://push.example/own",
+              keys: { p256dh: "p256", auth: "auth" },
+            };
+
+      await handlers[handler](
+        { user: { id: "u1" }, body } as never,
+        makeRes() as never,
+      );
+
+      const upsert = mocks.db.query.mock.calls
+        .map((c) => String(c[0]))
+        .find((sql) => sql.includes("INSERT INTO push_subscriptions"));
+      expect(upsert).toBeDefined();
+      expect(upsert).toMatch(/push_subscriptions\.user_id = \$1/);
+      expect(upsert).toMatch(/push_subscriptions\.deleted_at IS NOT NULL/);
+      expect(upsert).toMatch(
+        /push_subscriptions\.p256dh = \$3 AND push_subscriptions\.auth = \$4/,
+      );
+    });
+  }
+});

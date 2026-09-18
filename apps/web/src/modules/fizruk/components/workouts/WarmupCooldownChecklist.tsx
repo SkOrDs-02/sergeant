@@ -1,0 +1,104 @@
+/**
+ * Last validated: 2026-09-03
+ * Status: Active
+ */
+interface ChecklistItem {
+  id: string;
+  label: string;
+  done: boolean;
+}
+
+interface WarmupCooldownChecklistProps {
+  title: string;
+  items: ChecklistItem[] | null | undefined;
+  onToggle: (id: string) => void;
+  onInit: () => void;
+}
+
+/**
+ * Collapsible checklist for the warm-up / cool-down sections of a workout.
+ *
+ * When `items` is null/undefined, renders a "[Title] · Додати" prompt that
+ * calls `onInit` to seed defaults (`makeDefaultWarmup` / `makeDefaultCooldown`).
+ * When items exist, the `<details>` defaults to open while there are
+ * unchecked items and collapses automatically once the user finishes the
+ * full list — the count badge changes color to `text-success` to signal
+ * completion.
+ *
+ * Колір один і нейтральний, той самий, що в `WorkoutTimeEditor` і рядку
+ * нотаток: помаранчева й блакитна пунктирні рамки читались як два різні
+ * віджети й додавали шуму панелі (звіт 2026-09-03).
+ */
+export function WarmupCooldownChecklist({
+  title,
+  items,
+  onToggle,
+  onInit,
+}: WarmupCooldownChecklistProps) {
+  if (!items) {
+    return (
+      <div className="rounded-xl border border-line bg-panelHi/50 px-3 py-2 flex items-center justify-between gap-2 min-h-[44px]">
+        <span className="text-style-caption text-subtle">{title}</span>
+        <button
+          type="button"
+          className="focus-ring min-h-[44px] -my-2 px-2 rounded-lg text-style-caption font-semibold text-fizruk hover:opacity-80 transition-opacity"
+          onClick={onInit}
+        >
+          Додати
+        </button>
+      </div>
+    );
+  }
+
+  const doneCount = items.filter((x) => x.done).length;
+  const total = items.length;
+
+  return (
+    <details
+      className="rounded-xl border border-line bg-panelHi/50 px-3 py-2"
+      open={doneCount < total}
+    >
+      <summary className="text-style-caption text-subtle cursor-pointer select-none flex items-center justify-between min-h-[28px]">
+        <span>{title}</span>
+        <span
+          className={`ml-2 text-style-caption font-bold tabular-nums ${doneCount === total ? "text-success-strong dark:text-success" : "text-text"}`}
+        >
+          {doneCount}/{total}
+        </span>
+      </summary>
+      <ul className="mt-2 space-y-1.5">
+        {items.map((item) => (
+          <li key={item.id} className="flex items-center gap-2">
+            <button
+              type="button"
+              className={`w-5 h-5 rounded-xl border flex items-center justify-center shrink-0 transition-colors ${item.done ? "bg-success-strong border-success-strong text-white" : "border-line bg-bg"}`}
+              onClick={() => onToggle(item.id)}
+              aria-label={
+                item.done
+                  ? `${item.label}: позначити як незавершене`
+                  : `${item.label}: позначити як завершене`
+              }
+            >
+              {item.done && (
+                <svg width="10" height="10" viewBox="0 0 10 10" fill="none">
+                  <path
+                    d="M2 5l2.5 2.5L8 3"
+                    stroke="currentColor"
+                    strokeWidth="1.6"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                  />
+                </svg>
+              )}
+            </button>
+            <span
+              className={`text-style-caption ${item.done ? "line-through text-subtle" : "text-text"}`}
+            >
+              {item.label}
+            </span>
+          </li>
+        ))}
+      </ul>
+    </details>
+  );
+}

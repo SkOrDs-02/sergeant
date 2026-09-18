@@ -1,0 +1,162 @@
+// @vitest-environment jsdom
+/**
+ * Last validated: 2026-06-23
+ * Status: Active
+ * Unit tests for `ItemEditSheet`.
+ */
+import { fireEvent, render, screen } from "@testing-library/react";
+import { describe, expect, it, vi } from "vitest";
+import type { SetStateAction } from "react";
+
+import type { Pantry } from "@sergeant/nutrition-domain";
+
+import { ItemEditSheet, type ItemEditState } from "./ItemEditSheet";
+
+/** Три відомі місця — перемикач місця показується лише коли їх >1. */
+const PLACES: Pantry[] = [
+  { id: "fridge", name: "Холодильник", items: [], text: "" },
+  { id: "freezer", name: "Морозилка", items: [], text: "" },
+  { id: "home", name: "Комора", items: [], text: "" },
+];
+
+function state(overrides: Partial<ItemEditState> = {}): ItemEditState {
+  return {
+    open: true,
+    idx: 0,
+    name: "Молоко",
+    qty: "2",
+    unit: "л",
+    err: "",
+    pantryId: "fridge",
+    ...overrides,
+  };
+}
+
+describe("ItemEditSheet", () => {
+  it("renders the item name and current qty/unit", () => {
+    render(
+      <ItemEditSheet
+        itemEdit={state()}
+        setItemEdit={vi.fn()}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        places={PLACES}
+      />,
+    );
+    expect((screen.getByLabelText("Кількість") as HTMLInputElement).value).toBe(
+      "2",
+    );
+    expect((screen.getByLabelText("Одиниця") as HTMLInputElement).value).toBe(
+      "л",
+    );
+  });
+
+  it("saves the parsed qty + normalized unit", () => {
+    const onSave = vi.fn();
+    render(
+      <ItemEditSheet
+        itemEdit={state({ qty: "3,5", unit: "л" })}
+        setItemEdit={vi.fn()}
+        onClose={vi.fn()}
+        onSave={onSave}
+        places={PLACES}
+      />,
+    );
+    fireEvent.click(screen.getByText("Зберегти"));
+    // Пʼятий аргумент — місце позиції: воно їде разом зі «Зберегти».
+    expect(onSave).toHaveBeenCalledWith(
+      0,
+      "Молоко",
+      3.5,
+      expect.any(String),
+      "fridge",
+    );
+  });
+
+  it("flags an invalid quantity", () => {
+    const setItemEdit = vi.fn();
+    const onSave = vi.fn();
+    render(
+      <ItemEditSheet
+        itemEdit={state({ qty: "abc" })}
+        setItemEdit={setItemEdit}
+        onClose={vi.fn()}
+        onSave={onSave}
+        places={PLACES}
+      />,
+    );
+    fireEvent.click(screen.getByText("Зберегти"));
+    expect(onSave).not.toHaveBeenCalled();
+    expect(setItemEdit).toHaveBeenCalled();
+  });
+
+  it("saves null qty when the field is empty", () => {
+    const onSave = vi.fn();
+    render(
+      <ItemEditSheet
+        itemEdit={state({ qty: "", unit: "" })}
+        setItemEdit={vi.fn()}
+        onClose={vi.fn()}
+        onSave={onSave}
+        places={PLACES}
+      />,
+    );
+    fireEvent.click(screen.getByText("Зберегти"));
+    expect(onSave).toHaveBeenCalledWith(0, "Молоко", null, null, "fridge");
+  });
+
+  it("invokes onClose from cancel", () => {
+    const onClose = vi.fn();
+    render(
+      <ItemEditSheet
+        itemEdit={state()}
+        setItemEdit={vi.fn()}
+        onClose={onClose}
+        onSave={vi.fn()}
+        places={PLACES}
+      />,
+    );
+    fireEvent.click(screen.getByText("Скасувати"));
+    expect(onClose).toHaveBeenCalled();
+  });
+
+  it("renders an error message when present", () => {
+    render(
+      <ItemEditSheet
+        itemEdit={state({ err: "Некоректна кількість." })}
+        setItemEdit={vi.fn()}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        places={PLACES}
+      />,
+    );
+    expect(screen.getByText("Некоректна кількість.")).toBeInTheDocument();
+  });
+
+  it("clears the error when qty or unit fields change", () => {
+    let current = state({ err: "Некоректна кількість." });
+    const setItemEdit = vi.fn((update: SetStateAction<ItemEditState>) => {
+      current = typeof update === "function" ? update(current) : update;
+    });
+    render(
+      <ItemEditSheet
+        itemEdit={current}
+        setItemEdit={setItemEdit}
+        onClose={vi.fn()}
+        onSave={vi.fn()}
+        places={PLACES}
+      />,
+    );
+
+    fireEvent.change(screen.getByLabelText("Кількість"), {
+      target: { value: "4" },
+    });
+    expect(current).toMatchObject({ qty: "4", err: "" });
+
+    current = state({ err: "Некоректна кількість." });
+    fireEvent.change(screen.getByLabelText("Одиниця"), {
+      target: { value: "кг" },
+    });
+    expect(current).toMatchObject({ unit: "кг", err: "" });
+  });
+});

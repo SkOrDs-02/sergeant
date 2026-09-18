@@ -1,0 +1,268 @@
+/**
+ * Async tool-handler-и, які вимагають серверного call-у. На відміну від
+ * sync-handler-ів у `crossActions.ts` (writes у localStorage), ці викликають
+ * `/api/ai-memory/...` і чекають мережу.
+ *
+ * Виноситься окремо, щоб:
+ *  - sync handler-и (`handleCrossAction` тощо) лишилися sync і не "зїли" Promise-зворотки
+ *    у `??`-чейн-і `dispatch`;
+ *  - тести `executeAction(...)` (~30+ юніт-тестів) лишилися sync і не падали з
+ *    `Promise.resolve(...)`-обгорткою;
+ *  - локально це єдина точка, куди клієнт має право бити в HTTP — інші handler-и
+ *    зумисно offline-only.
+ *
+ * Виклик `recall_memory` тут не truncate-ить content серверним лімітом
+ * (`AI_MEMORY_RECALL_CONTENT_TRUNCATE_LEN` дзеркальована з PR2 `ingest`-у),
+ * бо truncation вже відбулась on-write. Достатньо красивого формату.
+ */
+
+import { apiUrl } from "../../../shared/lib/api/apiUrl";
+import { apiClient } from "../../../shared/api";
+import { resolveExpenseCategoryMeta } from "../../../modules/finyk/utils";
+import {
+  flushPendingWrites,
+  getCategories,
+  getTransactions,
+  saveTransactions,
+} from "../../../modules/finyk/lib/finykStorage";
+import { createTransaction as createTransactionLocal } from "./finykActions/transactions";
+import { finykChatMirrorManualExpenses } from "./finykActions/dualWriteBridge";
+import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import type {
+  RecallMemoryRequest,
+  RecallMemoryResponse,
+} from "@sergeant/shared";
+import { parseKyivDate } from "@shared/lib/time/kyivTime";
+import type {
+  ChatAction,
+  ChatActionResult,
+  CreateTransactionAction,
+  RecallMemoryAction,
+} from "./types";
+
+/**
+ * Кількість мс, яку клієнт чекає на відповідь recall перш ніж скасувати
+ * запит. Більше за середній RTT (Voyage embed ~300мс + pgvector query
+ * ~10мс + мережа), але менше за upper-bound в чат-стрімі (60с), щоб
+ * recall, що завис у Voyage 5xx, не утримував UI повністю.
+ */
+const RECALL_TIMEOUT_MS = 12_000;
+
+const SOURCE_LABEL_UK: Record<string, string> = {
+  chat: "чат",
+  finyk: "Фінік",
+  fizruk: "Фізрук",
+  nutrition: "Їжа",
+  routine: "Рутина",
+  journal: "журнал",
+  digest: "дайджест",
+};
+
+function formatRecallResults(
+  query: string,
+  memories: RecallMemoryResponse["memories"],
+): string {
+  if (memories.length === 0) {
+    return `Не знайшов схожих записів для "${query}".`;
+  }
+  const lines: string[] = [
+    `Знайшов ${memories.length} схожих записів для "${query}":`,
+  ];
+  for (const m of memories) {
+    const sourceLabel = SOURCE_LABEL_UK[m.source] ?? m.source;
+    const date = m.createdAt.slice(0, 10);
+    const score = (m.score * 100).toFixed(0);
+    const content =
+      m.content.length > 200 ? `${m.content.slice(0, 200)}\u2026` : m.content;
+    lines.push(`  - [${sourceLabel} • ${date} • ${score}%] ${content}`);
+  }
+  return lines.join("\n");
+}
+
+async function callRecallApi(
+  body: RecallMemoryRequest,
+): Promise<RecallMemoryResponse | { error: string }> {
+  const controller = new AbortController();
+  const timer = setTimeout(() => controller.abort(), RECALL_TIMEOUT_MS);
+  try {
+    const res = await fetch(apiUrl("/api/ai-memory/recall"), {
+      method: "POST",
+      credentials: "include",
+      headers: {
+        "Content-Type": "application/json",
+        // M10 — CSRF guard. Решта app-у йде через `createHttpClient()`, який
+        // виставляє цей хедер автоматично; цей raw fetch свідомо обмежений
+        // одним handler-ом і має дзеркалити поведінку клієнта, інакше після
+        // mount-у `requireCsrfHeader` сервер відстрілить запит 403.
+        // Карта: `docs/security/hardening/M10-csrf-token-check.md`.
+        "X-Requested-With": "XMLHttpRequest",
+      },
+      body: JSON.stringify(body),
+      signal: controller.signal,
+    });
+    if (res.status === 503) {
+      // Сервер розрізняє два стани, і вони вимагають різних дій. Раніше обидва
+      // склеювались у «тимчасово недоступне»: для вимкненої фічі «тимчасово»
+      // означає «почекай, минеться», і чекати можна вічно — вмикається вона
+      // змінною оточення, а не часом. Коди: `recallRoute.ts`.
+      const code = await res
+        .json()
+        .then((b: unknown) => (b as { code?: string } | null)?.code)
+        .catch(() => undefined);
+      return {
+        error:
+          code === "AI_MEMORY_DISABLED"
+            ? "Памʼять ШІ вимкнена на сервері, це не збій, фічу ще не активовано. Чекати марно."
+            : "Памʼять ШІ тимчасово недоступна: провайдер ембеддингів не відповідає. Спробуй за кілька хвилин.",
+      };
+    }
+    if (res.status === 401) {
+      return { error: "Потрібна авторизація для пошуку памʼяті." };
+    }
+    if (!res.ok) {
+      return { error: `Помилка серверу при recall (HTTP ${res.status}).` };
+    }
+    return (await res.json()) as RecallMemoryResponse;
+  } catch (err) {
+    if (err instanceof Error && err.name === "AbortError") {
+      return { error: "Recall таймаут, спробуй простіший запит." };
+    }
+    return { error: "Не вдалося звʼязатися з сервером для recall." };
+  } finally {
+    clearTimeout(timer);
+  }
+}
+
+/**
+ * `recall_memory` — async handler, що бʼє у `/api/ai-memory/recall`.
+ * Повертає форматовану в Markdown-light строку (Anthropic tool_result).
+ */
+async function handleRecallMemory(action: RecallMemoryAction): Promise<string> {
+  const { query, top_k, sources } = action.input ?? { query: "" };
+  const trimmedQuery = typeof query === "string" ? query.trim() : "";
+  if (!trimmedQuery) {
+    return "Потрібен непорожній query для recall_memory.";
+  }
+  const topKNum = Number(top_k);
+  const topK =
+    Number.isFinite(topKNum) && topKNum > 0 ? Math.floor(topKNum) : undefined;
+
+  const body: RecallMemoryRequest = {
+    query: trimmedQuery,
+    ...(topK ? { topK } : {}),
+    ...(Array.isArray(sources) && sources.length > 0
+      ? { sources: sources as RecallMemoryRequest["sources"] }
+      : {}),
+  };
+
+  const out = await callRecallApi(body);
+  if ("error" in out) return out.error;
+  return formatRecallResults(trimmedQuery, out.memories);
+}
+
+/**
+ * `create_transaction` — витрати йдуть через `POST /api/finyk/manual-expenses`
+ * (server-of-record + локальне LS-дзеркало для миттєвого UI), доходи та
+ * offline-fallback лишаються на legacy LS-обробнику.
+ *
+ * Server-шлях не дає undo: DELETE-ендпоінта для manual-expenses ще немає,
+ * тож «скасувати» означало б розсинхрон LS ↔ DB. Fallback-шлях зберігає
+ * undo від `createTransactionLocal`.
+ */
+async function handleCreateTransaction(
+  action: CreateTransactionAction,
+): Promise<ChatActionResult> {
+  const { type, amount, category, description, date } = action.input;
+  const amt = Number(amount);
+  if (!Number.isFinite(amt) || amt <= 0) {
+    return "Некоректна сума транзакції.";
+  }
+  // Income сервер не приймає (manual-expenses — лише витрати) — пишемо локально.
+  if (type === "income") {
+    return createTransactionLocal(action);
+  }
+  try {
+    const { expense } = await apiClient.finyk.createManualExpense({
+      // LS та tool-input історично у гривнях; API — у копійках (Hard Rule #1).
+      amount: Math.round(Math.abs(amt) * 100),
+      category: category?.trim() || "other",
+      ...(description?.trim() ? { note: description.trim() } : {}),
+      ...(date && /^\d{4}-\d{2}-\d{2}$/.test(date) ? { date } : {}),
+    });
+    // LS-дзеркало через канонічний finykStorage-wrapper: списки/статистика
+    // читають blob синхронно, без рефетчу. `amount` — у ГРИВНЯХ і legacy-поле
+    // `category` поруч із канонічним `categoryId`: blob історично тримає
+    // shape із `finykActions/transactions.ts#createTransaction`, і його
+    // читачі очікують саме його.
+    const isoDate =
+      parseKyivDate(expense.date)?.toISOString() ?? new Date().toISOString();
+    const entry: Transaction & { category: string } = {
+      id: expense.id,
+      amount: Math.abs(amt),
+      date: isoDate,
+      categoryId: category?.trim() || "",
+      category: category?.trim() || "",
+      type: "expense",
+      source: "ai",
+      time: Math.floor(Date.parse(isoDate) / 1000),
+      description: description?.trim() || "",
+      mcc: 0,
+      accountId: null,
+      manual: true,
+      _source: "ai",
+      _accountId: null,
+      _manual: true,
+    };
+    const prevManual = getTransactions();
+    const nextManual = [entry, ...prevManual];
+    saveTransactions(nextManual);
+    // saveTransactions — debounced; flush одразу, щоб запис не загубився
+    // при швидкому закритті вкладки після відповіді чату.
+    flushPendingWrites();
+    // Mirror into the SQLite dual-write store so the canonical Finyk read
+    // path (module UI overlay) shows the AI-created expense — the LS mirror
+    // alone never reaches the structured `finyk_manual_expenses` table the
+    // UI reads post-cutover.
+    finykChatMirrorManualExpenses(prevManual, nextManual);
+    const meta = category?.trim()
+      ? resolveExpenseCategoryMeta(category.trim(), getCategories())
+      : undefined;
+    const label = meta?.label || category?.trim() || "";
+    return `Витрату ${amt} грн${description?.trim() ? ` "${description.trim()}"` : ""}${label ? ` (${label})` : ""} записано на сервері (id:${expense.id})`;
+  } catch {
+    // Мережа/401/5xx — не губимо запис: пишемо локально зі старим undo-шляхом.
+    const local = createTransactionLocal(action);
+    const suffix = " (сервер недоступний, записано лише локально)";
+    if (typeof local === "string") return local + suffix;
+    return { ...local, result: local.result + suffix };
+  }
+}
+
+/**
+ * Async dispatcher — повертає результат, якщо action — "server-side" tool,
+ * інакше `undefined` (sync-flow обробить решту).
+ *
+ * `recall_memory` — read-only, undo не потрібен. `create_transaction` —
+ * server-write (undo лише у offline-fallback-а).
+ */
+export async function handleAsyncChatAction(
+  action: ChatAction,
+): Promise<ChatActionResult | undefined> {
+  switch (action.name) {
+    case "recall_memory":
+      return handleRecallMemory(action as RecallMemoryAction);
+    case "create_transaction":
+      return handleCreateTransaction(action as CreateTransactionAction);
+    default:
+      return undefined;
+  }
+}
+
+/**
+ * Whitelist tool-імен, що вимагають async/server-call. Імпортується у
+ * `hubChatActions.ts` для швидкого pre-check без try/catch-у async pathу.
+ */
+export const ASYNC_CHAT_ACTION_NAMES: ReadonlySet<string> = new Set([
+  "recall_memory",
+  "create_transaction",
+]);

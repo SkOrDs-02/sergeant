@@ -1,0 +1,502 @@
+import { useState, useEffect, useRef } from "react";
+import { privatApi, isApiError } from "@shared/api";
+import { logger } from "@shared/lib";
+import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { readRaw, removeItem, readJSON, writeJSON } from "../lib/finykStorage";
+
+// Сирий рядок із PrivatBank Statements API. PrivatBank віддає скорочений
+// payload із багатьма опційними полями, тому всі поля мітимо optional, а
+// решту залишаємо у `Record<string, unknown>` — щоб не злякалися нових
+// ключів, але мати точну сигнатуру для тих, які реально читаємо.
+export type PrivatTxApiRow = Record<string, unknown> & {
+  SUM?: string | number;
+  TRANDATE?: string;
+  TRANTIME?: string;
+  OSND?: string;
+  PRYZNACH?: string;
+  AUT_CNTR_NAM?: string;
+  REF?: string;
+  REFN?: string;
+  DOC_NUMBER?: string;
+  AUT_MY_ACC?: string;
+};
+
+// Транзакція PrivatBank у домен-нормалізованому вигляді — той самий
+// канонічний `Transaction`, що і для monobank / manual / AI-import. Всі
+// списки в hook-у тримаємо у нормалізованій формі (її повертає
+// `normalizePrivatTransaction(...)`).
+export type PrivatTransaction = Transaction;
+
+// Денормалізований акаунт PrivatBank — повертає `normalizeAccount(...)`.
+// Сума — у minor units (копійках) для сумісності з рештою фініку.
+export interface PrivatAccount {
+  id: string;
+  balance: number;
+  creditLimit: number;
+  currency: string;
+  type: "privatbank";
+  alias: string;
+  _source: "privatbank";
+}
+
+const PRIVAT_ID_KEY = "finyk_privat_id";
+const PRIVAT_TOKEN_KEY = "finyk_privat_token";
+const PRIVAT_CACHE_KEY = "finyk_privat_tx_cache";
+const PRIVAT_BALANCE_KEY = "finyk_privat_balance_cache";
+const PRIVAT_CACHE_TTL = 30 * 60 * 1000;
+
+/**
+ * Legacy-креденшели з часів, коли merchant-токен жив у браузері. Читаємо їх
+ * рівно один раз, щоб перенести на сервер, і одразу стираємо.
+ *
+ * Дзеркало `useMonoTokenMigration` — без цього кроку кожен, хто вже
+ * підключив ПриватБанк, після деплою побачив би «не підключено» і мусив би
+ * шукати токен заново. Читання/видалення цих ключів — єдине, що ESLint-
+ * правило `no-finyk-token-in-storage` тут дозволяє; запис заборонений.
+ */
+function readLegacyCreds(): { id: string; token: string } | null {
+  const read = (key: string) => {
+    const fromLocal = readRaw(key, "");
+    if (fromLocal) return fromLocal;
+    try {
+      return sessionStorage.getItem(key) || "";
+    } catch {
+      return "";
+    }
+  };
+  const id = read(PRIVAT_ID_KEY);
+  const token = read(PRIVAT_TOKEN_KEY);
+  return id && token ? { id, token } : null;
+}
+
+function clearLegacyCreds() {
+  removeItem(PRIVAT_ID_KEY);
+  removeItem(PRIVAT_TOKEN_KEY);
+  try {
+    sessionStorage.removeItem(PRIVAT_ID_KEY);
+    sessionStorage.removeItem(PRIVAT_TOKEN_KEY);
+  } catch {}
+}
+
+interface PrivatTxCache {
+  txs: PrivatTransaction[];
+  timestamp: number;
+}
+function loadTxCache(): PrivatTxCache | null {
+  const c = readJSON<PrivatTxCache | null>(PRIVAT_CACHE_KEY, null);
+  if (!c || typeof c !== "object") return null;
+  if (!c.timestamp || Date.now() - c.timestamp > PRIVAT_CACHE_TTL) return null;
+  if (!Array.isArray(c.txs) || c.txs.length === 0) return null;
+  return c;
+}
+
+function saveTxCache(txs: PrivatTransaction[]) {
+  writeJSON(PRIVAT_CACHE_KEY, { txs, timestamp: Date.now() });
+}
+
+interface PrivatBalanceCache {
+  accounts: PrivatAccount[];
+  timestamp: number;
+}
+function loadBalanceCache(): PrivatAccount[] | null {
+  const c = readJSON<PrivatBalanceCache | null>(PRIVAT_BALANCE_KEY, null);
+  if (!c || typeof c !== "object") return null;
+  if (!c.timestamp || Date.now() - c.timestamp > PRIVAT_CACHE_TTL) return null;
+  return Array.isArray(c.accounts) ? c.accounts : null;
+}
+
+function saveBalanceCache(accounts: PrivatAccount[]) {
+  writeJSON(PRIVAT_BALANCE_KEY, { accounts, timestamp: Date.now() });
+}
+
+function fmtDate(isoDate: string) {
+  if (!isoDate) return "";
+  const [y, m, d] = isoDate.split("-");
+  if (y && m && d) return `${d}-${m}-${y}`;
+  return isoDate;
+}
+
+function toTimestamp(trandate: string, trantime: string) {
+  try {
+    const [d, m, y] = (trandate || "").split(".");
+    const dateStr = `${y}-${m}-${d}T${trantime || "00:00:00"}`;
+    const ts = new Date(dateStr).getTime();
+    if (!isNaN(ts)) return Math.floor(ts / 1000);
+  } catch {}
+  return Math.floor(Date.now() / 1000);
+}
+
+function normalizePrivatTransaction(
+  row: PrivatTxApiRow,
+  accountId: string | null | undefined,
+): PrivatTransaction {
+  const amountRaw = parseFloat(String(row.SUM ?? "")) || 0;
+  const amountKopecks = Math.round(amountRaw * 100);
+  const ts = toTimestamp(row.TRANDATE ?? "", row.TRANTIME ?? "");
+  const description =
+    row.OSND || row.PRYZNACH || row.AUT_CNTR_NAM || "Транзакція";
+  const sourceId =
+    row.REF || row.REFN || row.DOC_NUMBER || `${ts}_${amountKopecks}`;
+
+  return normalizeTransaction(
+    {
+      id: `privat_${sourceId}`,
+      time: ts,
+      amount: amountKopecks,
+      description,
+      mcc: 0,
+      raw: row,
+    },
+    { source: "privatbank", accountId: accountId || row.AUT_MY_ACC || null },
+  );
+}
+
+function normalizeAccount(raw: Record<string, unknown>): PrivatAccount {
+  const r = raw as {
+    acc?: string;
+    id?: string;
+    AUT_MY_ACC?: string;
+    balance?: string | number;
+    creditLimit?: string | number;
+    currency?: string;
+    alias?: string;
+  };
+  return {
+    id: r.acc || r.id || r.AUT_MY_ACC || "",
+    balance: Math.round((parseFloat(String(r.balance ?? "")) || 0) * 100),
+    creditLimit: Math.round(
+      (parseFloat(String(r.creditLimit ?? "")) || 0) * 100,
+    ),
+    currency: r.currency || "UAH",
+    type: "privatbank",
+    alias: r.alias || r.acc || "",
+    _source: "privatbank",
+  };
+}
+
+type PrivatApiResponse = {
+  StatementsResponse?: { data?: unknown[] };
+  data?: unknown[];
+} & Record<string, unknown>;
+
+/**
+ * Креденшелів у сигнатурі більше немає: сервер бере їх із
+ * `privat_connection` за сесією (спека beta-security-readiness, F1).
+ */
+async function apiFetch(
+  path: string,
+  queryParams: Record<string, string> = {},
+): Promise<PrivatApiResponse> {
+  try {
+    return await privatApi.request(path, queryParams);
+  } catch (e) {
+    if (isApiError(e) && e.kind === "http") {
+      const msg = e.serverMessage || `HTTP ${e.status}`;
+      if (e.isAuth) {
+        const err = new Error(msg);
+        err.name = "AuthError";
+        throw err;
+      }
+      throw new Error(msg);
+    }
+    throw e;
+  }
+}
+
+export function usePrivatbank(enabled = true) {
+  const [merchantId, setMerchantId] = useState("");
+  const [accounts, setAccounts] = useState<PrivatAccount[]>([]);
+  const [transactions, setTransactions] = useState<PrivatTransaction[]>([]);
+  const [connecting, setConnecting] = useState(false);
+  const [loadingTx, setLoadingTx] = useState(false);
+  const [error, setError] = useState("");
+  const [connected, setConnected] = useState(false);
+  const [lastUpdated, setLastUpdated] = useState<Date | null>(null);
+  const [syncState, setSyncState] = useState<{
+    status: string;
+    source: string;
+    lastSuccess: Date | null;
+    lastError: string;
+  }>({
+    status: "idle",
+    source: "none",
+    lastSuccess: null,
+    lastError: "",
+  });
+
+  const fetchTransactions = async (accs: PrivatAccount[]) => {
+    setLoadingTx(true);
+    setSyncState((s) => ({ ...s, status: "loading", source: "none" }));
+    try {
+      // Kyiv-anchored month window so users outside EET fetch the correct
+      // month's statements (domain invariant: day boundaries in Europe/Kyiv).
+      const { year, month, day } = getKyivDateParts();
+      const mm = String(month).padStart(2, "0");
+      const startDate = fmtDate(`${year}-${mm}-01`);
+      const endDate = fmtDate(`${year}-${mm}-${String(day).padStart(2, "0")}`);
+
+      const allTxs: PrivatTransaction[] = [];
+      for (const acc of accs) {
+        try {
+          const data = await apiFetch("/statements/transactions", {
+            acc: acc.id,
+            startDate,
+            endDate,
+            country: "UA",
+            limit: "500",
+          });
+
+          const rows: unknown[] =
+            data?.StatementsResponse?.data ||
+            data?.data ||
+            (Array.isArray(data) ? (data as unknown[]) : []);
+
+          const normalized = rows.map((r) =>
+            normalizePrivatTransaction(
+              r as Parameters<typeof normalizePrivatTransaction>[0],
+              acc.id,
+            ),
+          );
+          allTxs.push(...normalized);
+        } catch (e) {
+          const err = e as { name?: string; message?: string };
+          if (err.name === "AuthError") throw e;
+          logger.warn(`[privat] failed for account ${acc.id}:`, err.message);
+        }
+      }
+
+      const unique = Array.from(
+        new Map(allTxs.map((t) => [t.id, t])).values(),
+      ).sort((a, b) => b.time - a.time);
+
+      setTransactions(unique);
+      saveTxCache(unique);
+      // eslint-disable-next-line no-restricted-syntax -- UTC wall-clock sync-completed stamp (lastUpdated/lastSuccess), not a Kyiv day boundary
+      const now2 = new Date();
+      setLastUpdated(now2);
+      setSyncState({
+        status: "success",
+        source: "network",
+        lastSuccess: now2,
+        lastError: "",
+      });
+    } catch (e) {
+      const err = e as { name?: string; message?: string };
+      if (err.name === "AuthError") {
+        setError(
+          "Неправильні credentials PrivatBank. Перевір Merchant ID та токен.",
+        );
+        setSyncState((s) => ({
+          ...s,
+          status: "error",
+          lastError: err.message ?? "",
+        }));
+        return;
+      }
+      const cached = loadTxCache();
+      if (cached) {
+        setTransactions(cached.txs);
+        setLastUpdated(new Date(cached.timestamp));
+        setSyncState((s) => ({
+          ...s,
+          status: "partial",
+          source: "cache",
+          lastError: err.message ?? "",
+        }));
+      } else {
+        setSyncState((s) => ({
+          ...s,
+          status: "error",
+          source: "none",
+          lastError: err.message ?? "",
+        }));
+      }
+      setError(err.message || "Помилка завантаження транзакцій PrivatBank");
+    } finally {
+      setLoadingTx(false);
+    }
+  };
+
+  /** Тягне залишки й нормалізує їх у рахунки; кеш рятує від удару по банку на кожен маунт. */
+  const loadAccounts = async (): Promise<PrivatAccount[]> => {
+    const cachedAccounts = loadBalanceCache();
+    if (cachedAccounts) return cachedAccounts;
+
+    const data = await apiFetch("/statements/balance/final", {
+      country: "UA",
+      showRest: "true",
+    });
+    const rawAccs: unknown[] =
+      data?.StatementsResponse?.data ||
+      data?.data ||
+      (Array.isArray(data) ? (data as unknown[]) : []);
+    const accs = rawAccs.map((r) =>
+      normalizeAccount(r as Record<string, unknown>),
+    );
+    saveBalanceCache(accs);
+    return accs;
+  };
+
+  /** Показує кеш або тягне свіже. Спільне для connect і для bootstrap. */
+  const hydrate = async (accs: PrivatAccount[]) => {
+    setAccounts(accs);
+    const cached = loadTxCache();
+    if (cached) {
+      setTransactions(cached.txs);
+      setLastUpdated(new Date(cached.timestamp));
+      setSyncState({
+        status: "success",
+        source: "cache",
+        lastSuccess: new Date(cached.timestamp),
+        lastError: "",
+      });
+      return;
+    }
+    await fetchTransactions(accs);
+  };
+
+  /**
+   * Віддає креденшели серверу рівно один раз. Локально вони не осідають —
+   * у цьому й суть F1: у браузері не лишається банківського токена.
+   */
+  const connect = async (merchantIdInput: string, merchantToken: string) => {
+    setConnecting(true);
+    setError("");
+
+    const cleanId = (merchantIdInput || "").trim();
+    const cleanToken = (merchantToken || "").trim();
+    if (!cleanId || !cleanToken) {
+      setError("Введи Merchant ID та токен");
+      setConnecting(false);
+      return;
+    }
+
+    try {
+      await privatApi.connect({ merchantId: cleanId, token: cleanToken });
+      setMerchantId(cleanId);
+      setConnected(true);
+      await hydrate(await loadAccounts());
+    } catch (e) {
+      // Дві форми однієї й тієї ж помилки: `privatApi.connect` кидає
+      // `ApiError`, а `apiFetch` нижче по стеку вже перетворив 401/403 на
+      // звичайний Error з `name === "AuthError"`. Обидві мають давати
+      // однакове повідомлення користувачу.
+      const err = e as { name?: string; message?: string };
+      if (err.name === "AuthError") {
+        setError(
+          "Неправильні credentials PrivatBank. Перевір Merchant ID та токен.",
+        );
+      } else if (isApiError(e) && e.kind === "http") {
+        setError(
+          e.status === 401 || e.status === 403
+            ? "Неправильні credentials PrivatBank. Перевір Merchant ID та токен."
+            : e.serverMessage || `Помилка ${e.status}`,
+        );
+      } else {
+        setError(err.message || "Помилка підключення до PrivatBank");
+      }
+    } finally {
+      setConnecting(false);
+    }
+  };
+
+  const refresh = async () => {
+    if (!connected) return;
+    try {
+      removeItem(PRIVAT_BALANCE_KEY);
+      const accs = await loadAccounts();
+      setAccounts(accs);
+      await fetchTransactions(accs);
+    } catch (e) {
+      const err = e as { message?: string };
+      setError(err.message || "Помилка оновлення PrivatBank");
+    }
+  };
+
+  const disconnect = async () => {
+    try {
+      await privatApi.disconnect();
+    } catch {
+      // Мережева помилка не має лишати UI у стані «підключено»: серверний
+      // рядок або вже зник, або зникне на наступній спробі, а користувач
+      // щойно попросив відключити банк.
+    }
+    setMerchantId("");
+    setAccounts([]);
+    setTransactions([]);
+    setConnected(false);
+    setError("");
+    setSyncState({
+      status: "idle",
+      source: "none",
+      lastSuccess: null,
+      lastError: "",
+    });
+    removeItem(PRIVAT_CACHE_KEY);
+    removeItem(PRIVAT_BALANCE_KEY);
+  };
+
+  const clearCache = () => {
+    removeItem(PRIVAT_CACHE_KEY);
+    removeItem(PRIVAT_BALANCE_KEY);
+    setTransactions([]);
+    setAccounts([]);
+    setLastUpdated(null);
+  };
+
+  const bootstrapped = useRef(false);
+  useEffect(() => {
+    if (!enabled || bootstrapped.current) return;
+    bootstrapped.current = true;
+
+    void (async () => {
+      // Одноразовий перенос legacy-креденшелів із браузера на сервер. Без
+      // нього кожен, хто підключив банк до цієї зміни, побачив би
+      // «не підключено» і мусив би шукати токен наново.
+      const legacy = readLegacyCreds();
+      if (legacy) {
+        try {
+          await privatApi.connect({
+            merchantId: legacy.id,
+            token: legacy.token,
+          });
+        } catch {
+          // Токен міг протухнути — тоді просто просимо підключитися заново.
+        }
+        // Стираємо в будь-якому разі: тримати банківський токен у браузері
+        // не можна навіть тоді, коли перенос не вдався.
+        clearLegacyCreds();
+      }
+
+      try {
+        const status = await privatApi.status();
+        if (!status.connected) return;
+        setConnected(true);
+        setMerchantId(status.merchantId ?? "");
+        await hydrate(await loadAccounts());
+      } catch {
+        // Статус недоступний (офлайн / 401) — лишаємось у «не підключено»:
+        // користувач побачить форму, а не порожній екран без пояснення.
+      }
+    })();
+    // eslint-disable-next-line react-hooks/exhaustive-deps -- bootstrap виконується рівно раз (guard `bootstrapped`); додавання `hydrate`/`loadAccounts`, які перестворюються щорендеру, перезапускало б перенос legacy-креденшелів
+  }, [enabled]);
+
+  return {
+    merchantId,
+    connected,
+    accounts,
+    transactions,
+    connecting,
+    loadingTx,
+    error,
+    lastUpdated,
+    syncState,
+    connect,
+    refresh,
+    disconnect,
+    clearCache,
+  };
+}

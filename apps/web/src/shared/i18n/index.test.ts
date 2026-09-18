@@ -1,0 +1,137 @@
+/** @vitest-environment node */
+import { describe, it, expect } from "vitest";
+import { messages as uk } from "./uk";
+// Leaf-модуль без рантайм-залежностей — навмисно, щоб цей `node`-тест не
+// притягнув React і react-query через `useFeatureGate`.
+import { PREMIUM_FEATURE_IDS } from "../../core/billing/premiumFeatures";
+import {
+  DEFAULT_LOCALE,
+  SUPPORTED_LOCALES,
+  getMessages,
+  messagesEn,
+  parseLocale,
+} from "./index";
+
+/**
+ * Contract tests for the i18n resolver. These lock the shallow-merge
+ * semantics + the parse-locale defensiveness so consumer migrations don't
+ * have to re-derive guarantees on their own.
+ */
+describe("i18n resolver", () => {
+  it("exposes uk as default locale", () => {
+    expect(DEFAULT_LOCALE).toBe("uk");
+    expect(SUPPORTED_LOCALES).toEqual(["uk", "en"]);
+  });
+
+  describe("getMessages", () => {
+    it("returns canonical uk catalog without copy for lang='uk'", () => {
+      const result = getMessages("uk");
+      // Identity check — uk path must not allocate. Catches accidental
+      // {...uk} spread that would break Object.is and bust referential-
+      // equality optimizations downstream.
+      expect(result).toBe(uk);
+    });
+
+    it("shallow-merges en over uk for lang='en' — translated group fully replaces", () => {
+      const result = getMessages("en");
+      // paywall is fully translated in en.ts → en wins
+      const paywall = result.paywall as Record<string, Record<string, string>>;
+      expect(paywall["ai-photo-analysis"]?.["title"]).toBe(
+        "AI photo analysis: Premium",
+      );
+      expect(paywall["analytics-export-pdf"]?.["name"]).toBe("PDF export");
+    });
+
+    it("a group declared in en.ts resolves to EN values (auth)", () => {
+      const result = getMessages("en");
+      const resultAuth = result.auth as Record<string, string>;
+      // auth IS in en.ts (fully translated) → EN values must be returned
+      expect(resultAuth["invalidEmail"]).toBe("Invalid email format.");
+      expect(resultAuth["genericFailure"]).toBe(
+        "Sign-in failed. Please try again.",
+      );
+      // The uk catalog itself is unchanged
+      const ukAuth = uk.auth as Record<string, string>;
+      expect(ukAuth["invalidEmail"]).toBe("Неправильний формат email.");
+    });
+
+    it("does not mutate the uk catalog when resolving en", () => {
+      const ukPaywallBefore = uk.paywall;
+      getMessages("en");
+      // Same object ref AFTER an en resolution — proves we don't write back
+      expect(uk.paywall).toBe(ukPaywallBefore);
+    });
+
+    it("freezes the en-resolved catalog to prevent downstream mutation", () => {
+      const result = getMessages("en");
+      expect(Object.isFrozen(result)).toBe(true);
+    });
+  });
+
+  describe("parseLocale", () => {
+    it.each([
+      ["uk", "uk"],
+      ["en", "en"],
+      ["UK", "uk"],
+      ["EN", "en"],
+      ["en-US", "en"],
+      ["en-GB", "en"],
+      ["uk-UA", "uk"],
+      ["fr", "uk"], // unsupported → default
+      ["", "uk"],
+      [null, "uk"],
+      [undefined, "uk"],
+    ])("parses %s → %s", (input, expected) => {
+      expect(parseLocale(input as string | null | undefined)).toBe(expected);
+    });
+  });
+
+  describe("messagesEn contract", () => {
+    it("only declares top-level groups that are fully populated (leaf-path parity)", () => {
+      // За shallow-merge контрактом оголошена EN-група ПОВНІСТЮ замінює
+      // UA-групу, тож кожна оголошена група мусить мати ІДЕНТИЧНИЙ набір
+      // листових шляхів. Попередня версія цього тесту звіряла лише
+      // `typeof` груп і пропускала 3-ключовий stub, що затирав 283
+      // UA-ключі та давав TypeError під `?lang=en`.
+      const leafPaths = (obj: unknown, prefix = ""): string[] => {
+        if (typeof obj === "string") return [prefix];
+        if (obj === null || typeof obj !== "object") return [prefix];
+        return Object.entries(obj as Record<string, unknown>).flatMap(
+          ([key, value]) => leafPaths(value, prefix ? `${prefix}.${key}` : key),
+        );
+      };
+      for (const [groupName, enGroup] of Object.entries(messagesEn)) {
+        const ukGroup = (uk as Record<string, unknown>)[groupName];
+        expect(
+          ukGroup,
+          `en.ts has group "${groupName}" but uk.ts doesn't`,
+        ).toBeDefined();
+        const ukLeaves = leafPaths(ukGroup).sort();
+        const enLeaves = leafPaths(enGroup).sort();
+        expect(
+          enLeaves,
+          `en.ts group "${groupName}" must mirror the exact uk leaf-path set`,
+        ).toEqual(ukLeaves);
+      }
+    });
+
+    it("paywall covers every PremiumFeatureId value", () => {
+      const enPaywall = messagesEn["paywall"] as
+        Record<string, Record<string, string>> | undefined;
+      expect(enPaywall).toBeDefined();
+      // Список деривується з `FEATURE_TO_SURFACE` (типізованої мапи
+      // `Record<PremiumFeatureId, …>`), а не дублюється тут. Копія рівно в
+      // цьому місці й розійшлась: гейт `multi-currency` прибрали
+      // 2026-08-05, а тест ще пів місяця вимагав його ключ, тобто сторожував
+      // борг. Новий гейт → TS вимагає ключ у мапі → цей тест вимагає копі.
+      expect(PREMIUM_FEATURE_IDS.length).toBeGreaterThan(0);
+      for (const id of PREMIUM_FEATURE_IDS) {
+        expect(enPaywall?.[id]).toBeDefined();
+      }
+      // І назад: у каталозі не має бути ключів під гейти, яких уже немає.
+      expect(Object.keys(enPaywall ?? {}).sort()).toEqual(
+        [...PREMIUM_FEATURE_IDS].sort(),
+      );
+    });
+  });
+});

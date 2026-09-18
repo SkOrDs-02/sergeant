@@ -1,0 +1,267 @@
+import { useEffect, useRef } from "react";
+import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { AssistantMessageBody } from "@shared/components/AssistantMessageBody";
+import { cn } from "@shared/lib/ui/cn";
+import type { InlineAiState } from "./useInlineAiRail";
+
+export interface InlineAiRailProps {
+  state: InlineAiState;
+  /** Re-run the same prompt without leaving the launcher. */
+  onRetry: (prompt: string) => void;
+  /** Abort an in-flight request without dismissing the rail. */
+  onCancel: () => void;
+  /**
+   * Escalate to the fullscreen chat surface. The launcher closes and
+   * the chat opens with the prompt prefilled (no auto-send), so the
+   * user can edit / continue multi-turn from where they left off.
+   */
+  onOpenInChat: (prompt: string) => void;
+  /** Dismiss the rail without leaving the launcher. */
+  onDismiss: () => void;
+}
+
+const STATUS_LABEL: Record<InlineAiState["status"], string> = {
+  idle: "",
+  loading: "AI шукає відповідь",
+  success: "Відповідь асистента",
+  aborted: "Запит скасовано",
+  error: "Помилка асистента",
+};
+
+/**
+ * Audit 03 F21 (security/phishing): `question` is user-sourced — it is the raw
+ * search query (and, via the launcher, can echo localStorage-cached titles
+ * other modules wrote). It is rendered as plain text here, never through the
+ * markdown-aware {@link AssistantMessageBody} (reserved for assistant text).
+ *
+ * React already escapes it against HTML/XSS, but a query like
+ * `` `rm -rf` `` or `[click](javascript:…)` still *looks* like a formatted
+ * AI suggestion to a sighted user and reads as a "code"/"link" token to a
+ * screen reader. We neutralise the markdown control characters so a crafted
+ * query cannot fake assistant-style emphasis, code, or links inside the rail.
+ */
+function neutralizeMarkdown(text: string): string {
+  return text
+    .replace(/[*_`[\]()#>~|\\]/g, " ")
+    .replace(/\s+/g, " ")
+    .trim();
+}
+
+/**
+ * Inline answer rail rendered under SearchInput when the user picks
+ * the `ai-handoff` hit. Replaces the previous behaviour of opening
+ * `HubChat` as a 92dvh overlay for what is most often a single-shot
+ * Q&A.
+ *
+ * The rail purposefully does NOT execute tool_calls — mutations need
+ * the chat surface's undo/confirm flow. When the model returns
+ * tool_calls we surface the answer text (or a stub) plus an "Open in
+ * chat" CTA that hands the prompt back to {@link HubChat}.
+ */
+export function InlineAiRail({
+  state,
+  onRetry,
+  onCancel,
+  onOpenInChat,
+  onDismiss,
+}: InlineAiRailProps) {
+  // Pull the answer block into the focus ring once it lands so screen
+  // readers announce it without the user having to navigate back. We
+  // only auto-focus on success/error; loading/aborted are transient.
+  // Guard: only focus when the relatedTarget (the previously-focused element)
+  // is still inside the rail — prevents stealing focus from the search input
+  // or other elements outside the rail when the answer arrives.
+  const answerRef = useRef<HTMLDivElement | null>(null);
+  const focusWithinRef = useRef(false);
+  useEffect(() => {
+    if (state.status === "success" || state.status === "error") {
+      if (focusWithinRef.current) {
+        answerRef.current?.focus({ preventScroll: false });
+      }
+    }
+  }, [state.status]);
+
+  if (state.status === "idle") return null;
+
+  const { question } = state;
+
+  return (
+    <div
+      className="px-3 sm:px-4 pt-2"
+      role="region"
+      aria-label="Inline-відповідь асистента"
+      onFocusCapture={() => {
+        focusWithinRef.current = true;
+      }}
+      onBlurCapture={(e) => {
+        // `relatedTarget` is the element receiving focus next.
+        // If it is still inside this rail we stay "focus-within"; if it
+        // has left the rail (or is null, meaning focus left the page) we
+        // clear the flag so the next answer-arrival does not steal focus.
+        const rail = e.currentTarget;
+        if (!rail.contains(e.relatedTarget as Node | null)) {
+          focusWithinRef.current = false;
+        }
+      }}
+    >
+      <Card
+        variant="default"
+        radius="lg"
+        padding="md"
+        className="space-y-3"
+        ref={answerRef as never}
+        tabIndex={-1}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="flex items-start gap-2 min-w-0">
+            <span
+              className={cn(
+                "flex h-7 w-7 shrink-0 items-center justify-center rounded-full",
+                state.status === "error"
+                  ? "bg-danger-soft text-danger-strong"
+                  : "bg-brand-soft text-brand-strong dark:text-brand-300",
+              )}
+              aria-hidden="true"
+            >
+              <Icon
+                name={state.status === "error" ? "alert-circle" : "sergeant"}
+                size="md"
+                strokeWidth={2.2}
+              />
+            </span>
+            <div className="min-w-0">
+              <SectionHeading as="p" size="xs" variant="muted">
+                {STATUS_LABEL[state.status]}
+              </SectionHeading>
+              <div className="text-style-label text-text truncate">
+                {neutralizeMarkdown(question)}
+              </div>
+            </div>
+          </div>
+          <button
+            type="button"
+            onClick={onDismiss}
+            aria-label="Закрити відповідь"
+            className="shrink-0 -m-1 p-1 rounded-md text-muted hover:bg-panelHi hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+          >
+            <Icon name="close" size="md" strokeWidth={2.2} />
+          </button>
+        </div>
+
+        {state.status === "loading" && (
+          <div className="flex items-center justify-between gap-3">
+            <div
+              className="flex items-center gap-2 text-style-caption text-muted"
+              aria-live="polite"
+            >
+              <span
+                className="inline-block h-3 w-3 rounded-full border-2 border-brand-300 border-t-transparent animate-spin"
+                aria-hidden="true"
+              />
+              <span>Думаю…</span>
+            </div>
+            <button
+              type="button"
+              onClick={onCancel}
+              className="text-style-label text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-2 py-1"
+            >
+              Скасувати
+            </button>
+          </div>
+        )}
+
+        {state.status === "success" && (
+          <>
+            <div aria-live="polite">
+              <AssistantMessageBody text={state.answer} />
+            </div>
+            <div className="flex flex-wrap items-center gap-2 pt-1">
+              <button
+                type="button"
+                onClick={() => onOpenInChat(state.question)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
+                  "bg-brand-soft text-brand-strong dark:text-brand-300",
+                  "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                )}
+              >
+                <Icon name="sergeant" size="sm" strokeWidth={2.2} />
+                Відкрити в чаті
+              </button>
+              {state.hasToolCalls && (
+                <span className="text-style-caption text-muted">
+                  Дія потребує підтвердження в чаті
+                </span>
+              )}
+              {state.truncated && !state.hasToolCalls && (
+                <span className="text-style-caption text-muted">
+                  Повна відповідь – у чаті
+                </span>
+              )}
+              <button
+                type="button"
+                onClick={() => onRetry(state.question)}
+                className="ml-auto text-style-label text-muted hover:text-text focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-2 py-1"
+              >
+                Спробувати ще раз
+              </button>
+            </div>
+          </>
+        )}
+
+        {state.status === "aborted" && (
+          <div className="flex items-center justify-between gap-3">
+            <p className="text-style-body text-muted">
+              Запит скасовано, натисни «Запитати знову», щоб спробувати ще раз.
+            </p>
+            <button
+              type="button"
+              onClick={() => onRetry(state.question)}
+              className="text-style-label text-brand-strong dark:text-brand-300 hover:underline focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 rounded px-2 py-1"
+            >
+              Запитати знову
+            </button>
+          </div>
+        )}
+
+        {state.status === "error" && (
+          <div className="space-y-2">
+            <p className="text-style-body text-danger-strong dark:text-red-200">
+              {state.message}
+            </p>
+            <div className="flex flex-wrap items-center gap-2">
+              <button
+                type="button"
+                onClick={() => onRetry(state.question)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
+                  "bg-panel border border-line text-text hover:bg-panelHi",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                )}
+              >
+                <Icon name="refresh-cw" size="sm" strokeWidth={2.2} />
+                Повторити
+              </button>
+              <button
+                type="button"
+                onClick={() => onOpenInChat(state.question)}
+                className={cn(
+                  "inline-flex items-center gap-1.5 rounded-full px-3 py-1.5 text-style-label",
+                  "bg-brand-soft text-brand-strong dark:text-brand-300",
+                  "border border-brand-soft-border/50 hover:bg-brand-soft-hover",
+                  "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                )}
+              >
+                <Icon name="sergeant" size="sm" strokeWidth={2.2} />
+                Відкрити в чаті
+              </button>
+            </div>
+          </div>
+        )}
+      </Card>
+    </div>
+  );
+}

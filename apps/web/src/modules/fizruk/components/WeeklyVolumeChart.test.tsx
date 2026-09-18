@@ -1,0 +1,72 @@
+// @vitest-environment jsdom
+import { afterEach, describe, expect, it } from "vitest";
+import { cleanup, render, screen } from "@testing-library/react";
+import { WeeklyVolumeChart } from "./WeeklyVolumeChart";
+
+afterEach(cleanup);
+
+describe("WeeklyVolumeChart", () => {
+  it("renders the empty-state when total volume is zero", () => {
+    render(<WeeklyVolumeChart volumeKg={[0, 0, 0, 0, 0, 0, 0]} />);
+    expect(screen.getByText("Поки без обʼєму за тиждень")).toBeInTheDocument();
+  });
+
+  it("renders the empty-state for missing / malformed input", () => {
+    render(<WeeklyVolumeChart />);
+    expect(screen.getByText("Поки без обʼєму за тиждень")).toBeInTheDocument();
+  });
+
+  it("renders the area chart with non-zero weekly volume", () => {
+    render(<WeeklyVolumeChart volumeKg={[100, 200, 0, 400, 0, 600, 700]} />);
+    const chart = screen.getByLabelText(
+      "Графік обсягу тренувань за дні поточного тижня",
+    );
+    expect(chart).toBeInTheDocument();
+    expect(chart).toHaveAttribute(
+      "aria-describedby",
+      "fizruk-weekly-volume-summary",
+    );
+    expect(document.getElementById("fizruk-weekly-volume-summary")).toHaveClass(
+      "sr-only",
+    );
+    // Day labels are present.
+    expect(screen.getByText("Пн")).toBeInTheDocument();
+    expect(screen.getByText("Нд")).toBeInTheDocument();
+  });
+
+  it("formats large y-axis values with a k suffix", () => {
+    render(<WeeklyVolumeChart volumeKg={[2000, 0, 0, 0, 0, 0, 0]} />);
+    // max = 2000 → верхня поділка українською, не англійське «2.0k»
+    // (браузерне QA 2026-08-23).
+    expect(screen.getByText("2 тис.")).toBeInTheDocument();
+    expect(screen.queryByText("2.0k")).toBeNull();
+  });
+
+  // П1 — cold-start regression: `volumeKg={[0,...]}` is indistinguishable
+  // from "still loading" unless the host explicitly says so via `isLoading`.
+  it("renders a skeleton instead of the empty-state while isLoading", () => {
+    render(<WeeklyVolumeChart volumeKg={[0, 0, 0, 0, 0, 0, 0]} isLoading />);
+    expect(
+      screen.queryByText("Поки без обʼєму за тиждень"),
+    ).not.toBeInTheDocument();
+  });
+
+  it("renders the empty-state (not a skeleton) once isLoading resolves to false with no volume", () => {
+    render(
+      <WeeklyVolumeChart volumeKg={[0, 0, 0, 0, 0, 0, 0]} isLoading={false} />,
+    );
+    expect(screen.getByText("Поки без обʼєму за тиждень")).toBeInTheDocument();
+  });
+
+  it("не глушить вертикальний скрол сторінки пальцем по графіку", () => {
+    // Незакритий хвіст фіксу #3: `MiniLineChart` перевели на `touch-pan-y`
+    // і закріпили тестом, а цей графік лишився на `touch-none` — тобто
+    // палець на ньому не міг прокрутити сторінку (аудит 2026-09-16, WF-8).
+    render(<WeeklyVolumeChart volumeKg={[100, 200, 0, 400, 0, 600, 700]} />);
+    const chart = screen.getByLabelText(
+      "Графік обсягу тренувань за дні поточного тижня",
+    );
+    expect(chart).toHaveClass("touch-pan-y");
+    expect(chart).not.toHaveClass("touch-none");
+  });
+});

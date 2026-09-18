@@ -1,0 +1,317 @@
+/**
+ * Sergeant Design System — UI primitives barrel.
+ *
+ * Prefer importing from `@shared/components/ui` instead of deep paths so
+ * renames stay cheap and IDE autocomplete surfaces the full API:
+ *
+ *   import { Card, Button, IconButton, Badge } from "@shared/components/ui";
+ *
+ * Deep imports (`@shared/components/ui/Card`) still work and remain the
+ * recommended pattern for large files where tree-shaking clarity matters.
+ */
+
+export { Badge } from "./Badge";
+export type { BadgeProps, BadgeSize, BadgeTone, BadgeVariant } from "./Badge";
+
+export { Banner } from "./Banner";
+export type { BannerProps, BannerVariant } from "./Banner";
+
+export { Button } from "./Button";
+export type {
+  ButtonProps,
+  ButtonSize,
+  ButtonVariant,
+  ButtonEmphasis,
+  ButtonTone,
+  ButtonVariantLegacy,
+} from "./Button";
+
+export { IconButton } from "./IconButton";
+export type { IconButtonProps } from "./IconButton";
+
+export {
+  Card,
+  CardContent,
+  CardDescription,
+  CardFooter,
+  CardHeader,
+  CardTitle,
+} from "./Card";
+export type {
+  CardPadding,
+  CardProps,
+  CardRadius,
+  CardTitleProps,
+  CardVariant,
+} from "./Card";
+
+export { Avatar } from "./Avatar";
+export type { AvatarProps, AvatarSize, AvatarStatus } from "./Avatar";
+
+export { DateScrubber } from "./DateScrubber";
+export type { DateScrubberProps } from "./DateScrubber";
+
+export { MorphChevron } from "./MorphChevron";
+export type { MorphChevronProps } from "./MorphChevron";
+
+export { EmptyState, ModuleEmptyState } from "./EmptyState";
+export type {
+  EmptyStateProps,
+  EmptyStateSize,
+  EmptyStateVariant,
+  ModuleEmptyStateProps,
+} from "./EmptyState";
+
+export {
+  useKeyboardShortcutsModal,
+  ShortcutRegistryProvider,
+  ShortcutRegistryContext,
+  useRegisterShortcuts,
+} from "./KeyboardShortcutsModal";
+export type { KeyboardShortcut } from "./KeyboardShortcutsModal";
+// The heavy modal body lives in its own module so it can be lazy-loaded
+// at the render sites (initiative 0017). Re-exported here as a
+// tree-shakeable binding — pulled into a chunk only when actually used.
+export { KeyboardShortcutsModal } from "./KeyboardShortcutsModalUI";
+
+export {
+  AnimatedNumber,
+  AnimatedCurrency,
+  AnimatedPercent,
+} from "./AnimatedNumber";
+export type {} from "./AnimatedNumber";
+
+export { MaskedAmount } from "./MaskedAmount";
+export type { MaskedAmountProps } from "./MaskedAmount";
+
+export { PullToRefresh } from "./PullToRefresh";
+export type { PullToRefreshProps, PullToRefreshVariant } from "./PullToRefresh";
+export { PullToRefreshIndicator } from "./PullToRefreshIndicator";
+export type { PullToRefreshIndicatorProps } from "./PullToRefreshIndicator";
+
+export { FormField, Label } from "./FormField";
+export type { FormFieldProps, LabelProps } from "./FormField";
+
+export { Icon, ICON_NAMES } from "./Icon";
+export type { IconName, IconProps } from "./Icon";
+
+export { Input, Textarea } from "./Input";
+export type {
+  InputProps,
+  InputSize,
+  InputVariant,
+  TextareaProps,
+} from "./Input";
+
+export { SectionHeader, SectionHeading } from "./SectionHeading";
+export type {
+  SectionHeadingProps,
+  SectionHeadingSize,
+  SectionHeadingVariant,
+} from "./SectionHeading";
+
+export { Segmented } from "./Segmented";
+export type {
+  SegmentedItem,
+  SegmentedProps,
+  SegmentedSize,
+  SegmentedStyle,
+  SegmentedVariant,
+} from "./Segmented";
+
+export { Select } from "./Select";
+export type { SelectProps, SelectSize, SelectVariant } from "./Select";
+
+export { Popover, PopoverDivider, PopoverItem } from "./Popover";
+export type {
+  PopoverItemProps,
+  PopoverPlacement,
+  PopoverProps,
+  PopoverRole,
+} from "./Popover";
+
+export { ProgressBar } from "./ProgressBar";
+export type {
+  ProgressBarProps,
+  ProgressBarSize,
+  ProgressBarVariant,
+} from "./ProgressBar";
+
+export { ProgressCircle } from "./ProgressCircle";
+export type {
+  ProgressCircleProps,
+  ProgressCircleSize,
+  ProgressCircleVariant,
+} from "./ProgressCircle";
+
+export { ProgressRing } from "./ProgressRing";
+export type {
+  ProgressRingProps,
+  ProgressRingSize,
+  ProgressRingVariant,
+} from "./ProgressRing";
+
+export {
+  Skeleton,
+  SkeletonText,
+  SkeletonAvatar,
+  SkeletonCardBlock,
+  SkeletonTransactionRow,
+  SkeletonBudgetBar,
+  SkeletonHabitRow,
+  SkeletonWorkoutSet,
+  SkeletonMealCard,
+} from "./Skeleton";
+export type {
+  SkeletonProps,
+  SkeletonTextProps,
+  SkeletonVariant,
+} from "./Skeleton";
+
+export { Slider } from "./Slider";
+export type {
+  SliderProps,
+  SliderSize,
+  SliderOrientation,
+  SingleSliderProps,
+  RangeSliderProps,
+} from "./Slider";
+
+export { SkeletonCard, SkeletonList } from "./SkeletonCard";
+export type { SkeletonCardProps, SkeletonListProps } from "./SkeletonCard";
+
+export { DataState } from "./DataState";
+export type { DataStateProps, DataStateQueryLike } from "./DataState";
+
+export { DataTable } from "./DataTable";
+export type {
+  DataTableColumn,
+  DataTableDensity,
+  DataTableProps,
+} from "./DataTable";
+
+export { SkipLink } from "./SkipLink";
+export type { SkipLinkProps } from "./SkipLink";
+
+export { Spinner } from "./Spinner";
+export type { SpinnerProps, SpinnerSize } from "./Spinner";
+
+export { Switch } from "./Switch";
+export type { SwitchProps, SwitchSize } from "./Switch";
+
+export { Stat } from "./Stat";
+export type { StatProps, StatSize, StatVariant } from "./Stat";
+
+export { Tabs } from "./Tabs";
+export type {
+  TabItem,
+  TabsProps,
+  TabsSize,
+  TabsStyle,
+  TabsVariant,
+} from "./Tabs";
+
+export { ToastContainer } from "./Toast";
+
+export { Tooltip } from "./Tooltip";
+export type { TooltipPlacement, TooltipProps, TooltipSize } from "./Tooltip";
+
+export { ThemeSwitcher } from "./ThemeSwitcher";
+export type { ThemeSwitcherProps } from "./ThemeSwitcher";
+
+export { DateField } from "./DateField";
+export type { DateFieldProps } from "./DateField";
+
+export type { FormVariant, SmallMediumLarge } from "./types";
+
+export {
+  CelebrationModal,
+  MiniSuccess,
+  useCelebration,
+} from "./CelebrationModal";
+export type {
+  CelebrationModalProps,
+  CelebrationType,
+  MiniSuccessProps,
+  ModuleTheme,
+} from "./CelebrationModal";
+
+export { AnimatedCheckbox, HabitCheckbox } from "./AnimatedCheckbox";
+export type {
+  AnimatedCheckboxProps,
+  CheckboxSize,
+  CheckboxVariant,
+  HabitCheckboxProps,
+} from "./AnimatedCheckbox";
+
+export { StreakFlame, StreakBadge } from "./StreakFlame";
+export type {
+  StreakFlameProps,
+  StreakFlameSize,
+  StreakBadgeProps,
+} from "./StreakFlame";
+
+export {
+  AnimatedList,
+  AnimatedFadeIn,
+  AnimatedSlideIn,
+  AnimatedScale,
+} from "./AnimatedList";
+export type {
+  AnimatedListProps,
+  AnimatedFadeInProps,
+  AnimationStyle,
+} from "./AnimatedList";
+
+export { FloatingActionButton } from "./FloatingActionButton";
+export type {
+  FloatingActionButtonProps,
+  FABAction,
+  FABSize,
+  FABVariant,
+} from "./FloatingActionButton";
+
+export {
+  KeyboardAccessory,
+  AMOUNT_CHIPS_UAH,
+  PORTION_CHIPS_GRAM,
+  WEIGHT_CHIPS_KG,
+  REP_CHIPS,
+  WATER_CHIPS_ML,
+} from "./KeyboardAccessory";
+export type {
+  KeyboardAccessoryProps,
+  QuickFillChip,
+} from "./KeyboardAccessory";
+
+export {
+  ScreenReaderAnnouncerProvider,
+  useAnnounce,
+} from "./ScreenReaderAnnouncer";
+
+export { DropdownMenu } from "./DropdownMenu";
+export type {
+  DropdownMenuEntry,
+  DropdownMenuHandle,
+  DropdownMenuItem,
+  DropdownMenuLabel,
+  DropdownMenuPlacement,
+  DropdownMenuProps,
+  DropdownMenuSeparator,
+  DropdownMenuSubmenuEntry,
+} from "./DropdownMenu";
+
+export {
+  CommandPalette,
+  CommandPaletteProvider,
+  useCommandPalette,
+  useCommandPaletteControls,
+  useRegisterCommand,
+} from "./CommandPalette";
+export type { PaletteCommand } from "./CommandPalette";
+
+// Sergeant v2 redesign (2026-05, PR-7a) — AI push surface.
+// `<InsightCard>` shows AI-detected actionable insights with dismissal
+// tracked via `@shared/lib/insights/useInsightDismissal`.
+export { InsightCard } from "./InsightCard";
+export type { InsightCardProps } from "./InsightCard";

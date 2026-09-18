@@ -1,0 +1,500 @@
+import { useEffect, useMemo, useState } from "react";
+import { cn } from "@shared/lib/ui/cn";
+import { Button } from "@shared/components/ui/Button";
+import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { trackEvent, ANALYTICS_EVENTS } from "../observability/analytics";
+import { clearFirstActionPending, getVibePicks } from "./vibePicks";
+import { PresetSheet, getPresetModule } from "./PresetSheet";
+import type { ModuleId } from "./presetApply";
+import {
+  getOnboardingGoals,
+  rankFirstActionCandidates,
+  type FirstActionRanking,
+  formatNumberUk,
+} from "@sergeant/shared";
+import { webKVStore } from "@shared/lib/storage/storage";
+// AI-CONTEXT: `uk.ts`, не `uk.core` — аркуш живе в лінивому чанку хаба, тож
+// повний каталог йому безкоштовний (розбір — у самій групі `firstAction`).
+import { messages } from "@shared/i18n/uk";
+
+type IconName = Parameters<typeof Icon>[0]["name"];
+
+interface FirstActionEntry {
+  icon: IconName;
+  title: string;
+  desc: string;
+  accent: string;
+  /**
+   * Short label rendered in the inline chip row (S2.3). Module titles
+   * like «Запиши перший прийом їжі» are too long for a chip; the chip
+   * uses just the module name. Icon carries the rest of the meaning.
+   */
+  chipLabel: string;
+}
+
+/**
+ * Per-module "one tap to your first real entry" copy. Tapping a row
+ * opens `PresetSheet` for that module instead of routing into the
+ * module's full input wizard — the preset sheet's tiles write a real
+ * entry directly to storage, which is materially faster than any
+ * module's stock flow and the shortest path to the 30-second promise.
+ * If the user wants the full input, the preset sheet has a
+ * «Власний варіант» fallback that still deep-links via
+ * `openHubModuleWithAction`.
+ */
+const COPY = messages.firstAction;
+
+const ACTIONS: Record<ModuleId, FirstActionEntry> = {
+  routine: {
+    icon: "check",
+    accent: "text-routine-soft-fg bg-routine-soft",
+    ...COPY.actions.routine,
+  },
+  finyk: {
+    icon: "credit-card",
+    accent: "text-finyk-soft-fg bg-finyk-soft",
+    ...COPY.actions.finyk,
+  },
+  nutrition: {
+    icon: "utensils",
+    accent: "text-nutrition-soft-fg bg-nutrition-soft",
+    ...COPY.actions.nutrition,
+  },
+  fizruk: {
+    icon: "dumbbell",
+    accent: "text-fizruk-soft-fg bg-fizruk-soft",
+    ...COPY.actions.fizruk,
+  },
+};
+
+function isModuleId(id: string): id is ModuleId {
+  return id in ACTIONS;
+}
+
+/**
+ * Goal-aware primary + chip ordering + analytics reason for the FTUX
+ * hero (PR-11). Reads the onboarding goals once per render and delegates
+ * to `rankFirstActionCandidates` so web and mobile resolve the primary
+ * and the alt-module chip-row order identically. The returned `reason`
+ * is forwarded to PostHog through `onboarding_first_action_*` events so
+ * the SLO dashboard can break first-entry rate down by selection mode
+ * (`single-goal` vs `multi-goal-vibe` vs `multi-pick-static`).
+ */
+function rankPrimary(picks: string[]): FirstActionRanking {
+  return rankFirstActionCandidates(picks, getOnboardingGoals(webKVStore));
+}
+
+/**
+ * Inline FTUX row rendered at the top of the Hub dashboard when a first
+ * action is pending. Replaces the earlier 4-tile `FirstActionHeroCard`
+ * with one opinionated primary CTA plus an inline expand.
+ *
+ * Rationale: the old layout asked the user to *choose* a module before
+ * they knew what any of them did, even though they had just selected
+ * module chips on the splash one screen earlier. Forcing a second
+ * explicit selection cost ~6 s and a visible beat of indecision. The
+ * row now makes the default choice for them (highest-priority pick) and
+ * only reveals the alternatives if they tap "Інший модуль".
+ */
+/**
+ * Goal-aware contextual descriptions. If the user set a goal during
+ * onboarding, the first-action card reflects it, making the CTA feel
+ * more personal than the generic static copy.
+ */
+function getGoalAwareDesc(moduleId: string, fallback: string): string {
+  const goals = getOnboardingGoals(webKVStore);
+  if (moduleId === "finyk" && goals.finykBudget) {
+    return `Встанови бюджет ${formatNumberUk(goals.finykBudget)}₴, додай першу витрату.`;
+  }
+  if (moduleId === "fizruk" && goals.fizrukWeeklyGoal) {
+    return `${goals.fizrukWeeklyGoal}× на тиждень, починай із розминки.`;
+  }
+  if (moduleId === "routine" && goals.routineFirstHabit) {
+    const habitLabels: Record<string, string> = COPY.habitLabels;
+    const label =
+      habitLabels[goals.routineFirstHabit] ?? COPY.habitLabels.fallback;
+    return `Створи ${label}, і починається серія днів.`;
+  }
+  if (moduleId === "nutrition" && goals.nutritionGoal) {
+    const goalLabels: Record<string, string> = COPY.goalLabels;
+    return `${goalLabels[goals.nutritionGoal]}, залогай перший прийом їжі.`;
+  }
+  return fallback;
+}
+
+interface FirstActionHeroCardProps {
+  onDismiss?: () => void;
+}
+
+export function FirstActionHeroCard({ onDismiss }: FirstActionHeroCardProps) {
+  const picks = useMemo<ModuleId[]>(() => {
+    const raw = getVibePicks();
+    return raw.filter((id) => isModuleId(id));
+  }, []);
+
+  const [activePresetId, setActivePresetId] = useState<ModuleId | null>(null);
+
+  // `rankPrimary` reads onboarding goals once and runs a trivial
+  // 4-module scan; memoising would add more bookkeeping than it
+  // saves. The goals payload is stable for the FTUX session — once
+  // wizard.finish() persists them they won't mutate until reset.
+  const ranking = rankPrimary(picks);
+  const primaryId = ranking.primary;
+  const primary = ACTIONS[primaryId];
+  const others = useMemo<ModuleId[]>(
+    () => ranking.others.filter((id): id is ModuleId => isModuleId(id)),
+    [ranking.others],
+  );
+
+  useEffect(() => {
+    if (picks.length === 0) return;
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_SHOWN, {
+      picks,
+      primary: primaryId,
+      primary_reason: ranking.reason,
+    });
+  }, [picks, primaryId, ranking.reason]);
+
+  const dismiss = () => {
+    clearFirstActionPending();
+    onDismiss?.();
+  };
+
+  const openPreset = (id: ModuleId) => {
+    if (!getPresetModule(id)) return;
+    trackEvent(ANALYTICS_EVENTS.ONBOARDING_FIRST_ACTION_PICKED, {
+      module: id,
+      primary: primaryId,
+      primary_reason: picks.length === 0 ? "no-picks" : ranking.reason,
+      // S2.3: "chip" replaces the legacy "expand" tag now that the inline
+      // chip row is always-visible. PostHog dashboards reading the raw
+      // event can compute switch-rate as `count(via="chip") /
+      // count(*)`. Keep the value short (one token) — it's faceted on.
+      via:
+        picks.length === 1 && id === primaryId
+          ? "primary"
+          : picks.length > 1
+            ? "equal-choice"
+            : "chip",
+    });
+    setActivePresetId(id);
+  };
+
+  const handlePresetPick = (
+    { persisted }: { persisted: boolean } = { persisted: true },
+  ) => {
+    // Тільки routine-пресет дійсно пише запис у storage. Для
+    // finyk/fizruk/nutrition ми лише навігуємо у повний add-sheet
+    // модуля, а реальне збереження відбудеться, коли користувач
+    // натисне «Зберегти» там. Якщо б ми гасили FTUX-прапор одразу,
+    // hero-картка зникала б назавжди навіть коли юзер скасував
+    // add-sheet — і `detectFirstRealEntry` → `useFirstEntryCelebration`
+    // ніколи б не спрацювали. Натомість лишаємо прапор висіти: при
+    // наступному маунті дашборду hero-картка повертається, а коли
+    // справжній запис зʼявиться — обидва механізми знімуть її разом.
+    setActivePresetId(null);
+    if (persisted) {
+      clearFirstActionPending();
+      onDismiss?.();
+    }
+  };
+
+  if (picks.length === 0) {
+    const moduleIds = Object.keys(ACTIONS).filter((id): id is ModuleId =>
+      isModuleId(id),
+    );
+
+    return (
+      <>
+        <Card
+          as="section"
+          radius="lg"
+          padding="md"
+          className="relative space-y-3"
+          aria-label={COPY.sheetLabel}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <SectionHeading as="div" size="xs" variant="subtle">
+                {COPY.kicker}
+              </SectionHeading>
+              <h2 className="text-style-title text-text mt-0.5">
+                {COPY.headingMany}
+              </h2>
+              <p className="text-style-body text-muted mt-0.5 leading-snug">
+                {COPY.subtitleSingle}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="xs"
+              iconOnly
+              onClick={dismiss}
+              aria-label={COPY.hideLabel}
+              className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
+            >
+              <Icon name="close" size="md" />
+            </Button>
+          </div>
+
+          <div className="grid grid-cols-1 gap-2 sm:grid-cols-2">
+            {moduleIds.map((id) => {
+              const action = ACTIONS[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => openPreset(id)}
+                  className={cn(
+                    "w-full min-h-[56px] rounded-xl border border-line bg-panelHi px-3 py-2",
+                    "text-left transition-[background-color,border-color]",
+                    "hover:border-brand-500/50 hover:bg-brand-500/5",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                  )}
+                >
+                  <span className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center",
+                        action.accent,
+                      )}
+                      aria-hidden
+                    >
+                      <Icon name={action.icon} size="lg" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-style-title text-text">
+                        {action.chipLabel}
+                      </span>
+                      <span className="block text-style-caption text-muted">
+                        {action.title}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+        <PresetSheet
+          open={activePresetId != null}
+          moduleId={activePresetId}
+          onClose={() => setActivePresetId(null)}
+          onPick={handlePresetPick}
+        />
+      </>
+    );
+  }
+
+  if (picks.length > 1) {
+    return (
+      <>
+        <Card
+          as="section"
+          radius="lg"
+          padding="md"
+          className="relative space-y-3"
+          aria-label={COPY.sheetLabel}
+        >
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <SectionHeading as="div" size="xs" variant="subtle">
+                {COPY.kicker}
+              </SectionHeading>
+              <h2 className="text-style-title text-text mt-0.5">
+                {COPY.headingMany}
+              </h2>
+              <p className="text-style-body text-muted mt-0.5 leading-snug">
+                {COPY.subtitleMulti}
+              </p>
+            </div>
+            <Button
+              variant="ghost"
+              size="xs"
+              iconOnly
+              onClick={dismiss}
+              aria-label={COPY.hideLabel}
+              className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
+            >
+              <Icon name="close" size="md" />
+            </Button>
+          </div>
+
+          <div
+            className="grid grid-cols-1 gap-2 sm:grid-cols-2"
+            role="group"
+            aria-label={COPY.picksLabel}
+          >
+            {picks.map((id) => {
+              const action = ACTIONS[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => openPreset(id)}
+                  className={cn(
+                    "w-full min-h-[60px] rounded-xl border border-line bg-panelHi px-3 py-2",
+                    "text-left transition-[background-color,border-color]",
+                    "hover:border-brand-500/50 hover:bg-brand-500/5",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                  )}
+                >
+                  <span className="flex items-center gap-3">
+                    <span
+                      className={cn(
+                        "w-10 h-10 shrink-0 rounded-xl flex items-center justify-center",
+                        action.accent,
+                      )}
+                      aria-hidden
+                    >
+                      <Icon name={action.icon} size="lg" />
+                    </span>
+                    <span className="min-w-0">
+                      <span className="block text-style-title text-text">
+                        {action.chipLabel}
+                      </span>
+                      <span className="block text-style-caption text-muted">
+                        {action.title}
+                      </span>
+                    </span>
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        </Card>
+        <PresetSheet
+          open={activePresetId != null}
+          moduleId={activePresetId}
+          onClose={() => setActivePresetId(null)}
+          onPick={handlePresetPick}
+        />
+      </>
+    );
+  }
+
+  if (!primary) return null;
+
+  return (
+    <>
+      <Card
+        as="section"
+        radius="lg"
+        padding="md"
+        className="relative space-y-3"
+        aria-label={COPY.sheetLabel}
+      >
+        <div className="flex items-start justify-between gap-3">
+          <div className="min-w-0">
+            <SectionHeading as="div" size="xs" variant="subtle">
+              {COPY.kicker}
+            </SectionHeading>
+            <h2 className="text-style-title text-text mt-0.5">
+              {picks.length > 1 ? COPY.headingMany : COPY.headingOne}
+            </h2>
+            <p className="text-style-body text-muted mt-0.5 leading-snug">
+              {COPY.subtitleEmpty}
+            </p>
+          </div>
+          <Button
+            variant="ghost"
+            size="xs"
+            iconOnly
+            onClick={dismiss}
+            aria-label={COPY.hideLabel}
+            className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
+          >
+            <Icon name="close" size="md" />
+          </Button>
+        </div>
+
+        <button
+          type="button"
+          onClick={() => openPreset(primaryId)}
+          className={cn(
+            "w-full text-left px-4 py-3 rounded-xl border-2 border-brand-500/50 bg-brand-500/5",
+            "hover:border-brand-500 hover:bg-brand-500/10 transition-[background-color,border-color,opacity]",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+          )}
+        >
+          <div className="flex items-center gap-3">
+            <div
+              className={cn(
+                "w-11 h-11 shrink-0 rounded-xl flex items-center justify-center",
+                primary.accent,
+              )}
+            >
+              <Icon name={primary.icon} size={22} />
+            </div>
+            <div className="min-w-0 flex-1">
+              <div className="text-style-title text-text">{primary.title}</div>
+              <div className="text-style-body text-muted mt-0.5 truncate">
+                {getGoalAwareDesc(primaryId, primary.desc)}
+              </div>
+            </div>
+            <Icon
+              name="chevron-right"
+              size={18}
+              className="text-brand-strong"
+            />
+          </div>
+        </button>
+
+        {others.length > 0 && (
+          // S2.3: Always-visible inline chip row replaces the previous
+          // «Інший модуль» accordion. Each chip opens its module's
+          // PresetSheet directly. Switch-rate dashboards consume the
+          // `onboarding_first_action_picked` event with `via="chip"`
+          // vs `via="primary"`.
+          <div
+            className="flex flex-wrap items-center gap-2 pt-1"
+            role="group"
+            aria-label={COPY.otherModuleLabel}
+          >
+            <span className="text-style-caption text-muted shrink-0">
+              {COPY.orPrefix}
+            </span>
+            {others.map((id) => {
+              const a = ACTIONS[id];
+              return (
+                <button
+                  key={id}
+                  type="button"
+                  onClick={() => openPreset(id)}
+                  className={cn(
+                    "inline-flex items-center gap-1.5 px-3 h-8 rounded-full",
+                    "border border-line bg-panelHi text-text",
+                    "hover:border-brand-500/50 hover:bg-brand-500/5",
+                    "transition-[background-color,border-color]",
+                    "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
+                  )}
+                >
+                  <span
+                    className={cn(
+                      "w-5 h-5 shrink-0 rounded-md flex items-center justify-center",
+                      a.accent,
+                    )}
+                    aria-hidden
+                  >
+                    <Icon name={a.icon} size="xs" />
+                  </span>
+                  <span className="text-style-caption font-medium">
+                    {a.chipLabel}
+                  </span>
+                </button>
+              );
+            })}
+          </div>
+        )}
+      </Card>
+      <PresetSheet
+        open={activePresetId != null}
+        moduleId={activePresetId}
+        onClose={() => setActivePresetId(null)}
+        onPick={handlePresetPick}
+      />
+    </>
+  );
+}

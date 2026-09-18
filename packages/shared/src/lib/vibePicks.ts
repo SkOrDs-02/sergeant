@@ -1,0 +1,227 @@
+/**
+ * Onboarding "vibe picks" — DOM-free helpers.
+ *
+ * Ported from `apps/web/src/core/onboarding/vibePicks.ts`. The original
+ * file reads/writes `localStorage` directly; here we accept a
+ * platform-agnostic `KVStore` so both the web adapter (localStorage)
+ * and the mobile adapter (MMKV) can share the same sanitization
+ * rules, key constants and normalization logic.
+ *
+ * The web adapter is expected to reexport these helpers under the old
+ * names using a localStorage-backed `KVStore`, so no existing web
+ * call-site needs to change.
+ */
+
+import type { DashboardModuleId } from "./dashboard";
+import { DASHBOARD_MODULE_IDS } from "./dashboard";
+import { readJSON, type KVStore, writeJSON } from "../storage/kv";
+import { deviceDayKey } from "../utils/date";
+
+/** localStorage / MMKV keys used by the onboarding funnel. */
+export const VIBE_PICKS_KEY = "hub_onboarding_vibes_v1";
+export const FIRST_ACTION_PENDING_KEY = "hub_first_action_pending_v1";
+export const FIRST_REAL_ENTRY_KEY = "hub_first_real_entry_done_v1";
+export const SOFT_AUTH_DISMISSED_KEY = "hub_soft_auth_dismissed_v1";
+export const SESSION_DAYS_KEY = "hub_session_days_v1";
+export const LAST_SESSION_DAY_KEY = "hub_last_session_day_v1";
+export const FIRST_ACTION_STARTED_AT_KEY = "hub_first_action_started_at_v1";
+export const TTV_MS_KEY = "hub_ftux_ttv_ms_v1";
+
+/**
+ * PR-08 — per-module first-action-completed prefix. Concrete key is
+ * `${PREFIX}${moduleId}` (e.g. `hub_first_action_completed_v1:finyk`).
+ *
+ * Окремий per-module flag замість одного big-blob — мінімізує race-вікна
+ * між модулями (одночасні виклики `markFirstActionCompletedForModule`
+ * пишуть у різні KV-keys, тож на кінцевому стані не бʼються) і дозволяє
+ * клієнтам читати один модуль без deserialize цілого обʼєкта.
+ */
+export const FIRST_ACTION_COMPLETED_KEY_PREFIX =
+  "hub_first_action_completed_v1:";
+
+/** Canonical set of module ids accepted as a "vibe pick". */
+export const ALL_MODULES: readonly DashboardModuleId[] = DASHBOARD_MODULE_IDS;
+
+/**
+ * Normalise any raw payload (JSON parse output, user input, legacy
+ * schema) into a deduplicated list of known `DashboardModuleId`s.
+ * Unknown ids and duplicates are dropped; preserves caller order.
+ */
+export function sanitizePicks(raw: unknown): DashboardModuleId[] {
+  if (!Array.isArray(raw)) return [];
+  const known = new Set<string>(ALL_MODULES);
+  const seen = new Set<string>();
+  const out: DashboardModuleId[] = [];
+  for (const v of raw) {
+    if (typeof v !== "string") continue;
+    if (!known.has(v)) continue;
+    if (seen.has(v)) continue;
+    seen.add(v);
+    out.push(v as DashboardModuleId);
+  }
+  return out;
+}
+
+export function getVibePicks(store: KVStore): DashboardModuleId[] {
+  return sanitizePicks(readJSON(store, VIBE_PICKS_KEY));
+}
+
+export function saveVibePicks(
+  store: KVStore,
+  picks: readonly DashboardModuleId[],
+): void {
+  writeJSON(store, VIBE_PICKS_KEY, sanitizePicks(picks));
+}
+
+export function markFirstActionPending(store: KVStore): void {
+  store.setString(FIRST_ACTION_PENDING_KEY, "1");
+}
+
+export function clearFirstActionPending(store: KVStore): void {
+  store.remove(FIRST_ACTION_PENDING_KEY);
+}
+
+export function isFirstActionPending(store: KVStore): boolean {
+  return store.getString(FIRST_ACTION_PENDING_KEY) === "1";
+}
+
+export function markFirstRealEntryDone(store: KVStore): void {
+  store.setString(FIRST_REAL_ENTRY_KEY, "1");
+}
+
+export function isFirstRealEntryDone(store: KVStore): boolean {
+  return store.getString(FIRST_REAL_ENTRY_KEY) === "1";
+}
+
+/**
+ * PR-08 — flip the per-module first-action flag. Idempotent at the
+ * storage layer, but callers should still gate on
+ * `isFirstActionCompletedForModule` first to avoid firing a duplicate
+ * analytics event on every dashboard render.
+ */
+export function markFirstActionCompletedForModule(
+  store: KVStore,
+  moduleId: DashboardModuleId,
+): void {
+  store.setString(`${FIRST_ACTION_COMPLETED_KEY_PREFIX}${moduleId}`, "1");
+}
+
+export function isFirstActionCompletedForModule(
+  store: KVStore,
+  moduleId: DashboardModuleId,
+): boolean {
+  return (
+    store.getString(`${FIRST_ACTION_COMPLETED_KEY_PREFIX}${moduleId}`) === "1"
+  );
+}
+
+/**
+ * Tier 2 — cross-module activation. Distinct modules a user has
+ * completed a first action in count toward the breadth signal that
+ * `activation_v2` (Finyk-only depth) misses. Returns the flagged
+ * modules in `ALL_MODULES` order.
+ */
+export function getModulesWithFirstAction(store: KVStore): DashboardModuleId[] {
+  return ALL_MODULES.filter((moduleId) =>
+    isFirstActionCompletedForModule(store, moduleId),
+  );
+}
+
+/**
+ * Distinct-module count at which a user counts as "multi-module
+ * activated". Two is the smallest count that proves the cross-module
+ * promise landed — the user did not stay inside a single tracker.
+ */
+export const MULTI_MODULE_ACTIVATION_THRESHOLD = 2;
+
+/** Idempotency flag for the once-per-profile `multi_module_activated` event. */
+export const MULTI_MODULE_ACTIVATED_FIRED_KEY = "hub_multi_module_activated_v1";
+
+export function markMultiModuleActivatedFired(store: KVStore): void {
+  store.setString(MULTI_MODULE_ACTIVATED_FIRED_KEY, "1");
+}
+
+export function isMultiModuleActivatedFired(store: KVStore): boolean {
+  return store.getString(MULTI_MODULE_ACTIVATED_FIRED_KEY) === "1";
+}
+
+/** Inverse of {@link markMultiModuleActivatedFired} — for tests and the Settings → «Restart onboarding» reset. */
+export function clearMultiModuleActivatedFired(store: KVStore): void {
+  store.remove(MULTI_MODULE_ACTIVATED_FIRED_KEY);
+}
+
+export function isSoftAuthDismissed(store: KVStore): boolean {
+  return store.getString(SOFT_AUTH_DISMISSED_KEY) === "1";
+}
+
+export function dismissSoftAuth(store: KVStore): void {
+  store.setString(SOFT_AUTH_DISMISSED_KEY, "1");
+}
+
+/**
+ * Stamp the origin of the 30-second FTUX clock. Idempotent — if a
+ * timestamp is already recorded, leaves it alone so bouncing in and
+ * out of /welcome doesn't reset the clock.
+ */
+export function markFirstActionStartedAt(
+  store: KVStore,
+  now: () => number = Date.now,
+): void {
+  if (store.getString(FIRST_ACTION_STARTED_AT_KEY)) return;
+  store.setString(FIRST_ACTION_STARTED_AT_KEY, String(now()));
+}
+
+export function getFirstActionStartedAt(store: KVStore): number | null {
+  const v = store.getString(FIRST_ACTION_STARTED_AT_KEY);
+  if (v === null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n > 0 ? n : null;
+}
+
+export function saveTimeToValueMs(store: KVStore, ms: number): void {
+  if (!Number.isFinite(ms) || ms < 0) return;
+  store.setString(TTV_MS_KEY, String(Math.round(ms)));
+}
+
+export function getTimeToValueMs(store: KVStore): number | null {
+  const v = store.getString(TTV_MS_KEY);
+  if (v === null) return null;
+  const n = Number(v);
+  return Number.isFinite(n) && n >= 0 ? n : null;
+}
+
+/**
+ * Build a calendar-day key (`YYYY-MM-DD`) in the local timezone of the
+ * provided `date`. Exposed for tests. Delegate to canonical
+ * {@link deviceDayKey}.
+ */
+export function todayKey(date: Date = new Date()): string {
+  return deviceDayKey(date);
+}
+
+/**
+ * Record a Hub session for the current calendar day. Idempotent
+ * within the same day. Returns the (possibly incremented) counter
+ * so callers can render conditional UI without a second read.
+ */
+export function recordSessionDay(
+  store: KVStore,
+  now: () => Date = () => new Date(),
+): number {
+  const key = todayKey(now());
+  const last = store.getString(LAST_SESSION_DAY_KEY);
+  const rawCurrent = store.getString(SESSION_DAYS_KEY);
+  const current = rawCurrent === null ? 0 : Number(rawCurrent) || 0;
+  if (last === key) return current;
+  const next = current + 1;
+  store.setString(LAST_SESSION_DAY_KEY, key);
+  store.setString(SESSION_DAYS_KEY, String(next));
+  return next;
+}
+
+export function getSessionDays(store: KVStore): number {
+  const raw = store.getString(SESSION_DAYS_KEY);
+  if (raw === null) return 0;
+  const n = Number(raw);
+  return Number.isFinite(n) && n > 0 ? n : 0;
+}

@@ -1,0 +1,317 @@
+import {
+  forwardRef,
+  type HTMLInputTypeAttribute,
+  type InputHTMLAttributes,
+  type ReactNode,
+  type TextareaHTMLAttributes,
+} from "react";
+import { cn } from "../../lib/ui/cn";
+import { searchFieldAutofillGuard } from "../../lib/ui/searchFieldProps";
+import type { FormVariant, SmallMediumLarge } from "./types";
+
+/**
+ * Opinionated per-`type` defaults for `spellCheck`, `inputMode`, and
+ * `autoComplete`. Per the Web Interface Guidelines, non-prose inputs
+ * (email / url / password / numeric / code fields) should disable
+ * spellcheck so the browser does not red-underline legitimate values
+ * and should hint the right software keyboard / autofill category on
+ * mobile. Consumers can always override by passing the prop explicitly
+ * — the Input only fills in a default when the caller did not.
+ */
+const NON_PROSE_TYPES = new Set<HTMLInputTypeAttribute>([
+  "email",
+  "password",
+  "url",
+  "tel",
+  "number",
+  "search",
+]);
+
+const DEFAULT_INPUT_MODE: Partial<
+  Record<
+    HTMLInputTypeAttribute,
+    InputHTMLAttributes<HTMLInputElement>["inputMode"]
+  >
+> = {
+  email: "email",
+  tel: "tel",
+  url: "url",
+  number: "decimal",
+  search: "search",
+};
+
+/**
+ * Sergeant Design System — Input Component
+ *
+ * Sizes: sm, md, lg
+ * Variants: default, filled, ghost
+ * States: error, success
+ */
+
+export type InputSize = SmallMediumLarge;
+export type InputVariant = FormVariant;
+
+/**
+ * AI-DANGER: `pointer-coarse:min-h-[44px]` — у ПІКСЕЛЯХ, не в rem, і це не
+ * дублювання `h-11`. На вузьких мобільних вьюпортах корінний шрифт падає до
+ * 15px (перевірено: 320px → 15px, 390px → 16px), тож `h-11` = 2.75rem дає
+ * 41.25px і тихо провалює 44px-флор WCAG 2.5.5 саме там, де палець
+ * найтовщий. `Button` цю ж пастку обходить тим самим px-флором
+ * (`Button.tsx`); `Input` його не мав — браузерний аудит 2026-08-26.
+ */
+const COARSE_TOUCH_FLOOR = "pointer-coarse:min-h-[44px]";
+
+const sizes: Record<InputSize, string> = {
+  sm: `h-9 px-3 text-style-body rounded-xl ${COARSE_TOUCH_FLOOR}`,
+  md: `h-11 px-4 text-style-body rounded-2xl ${COARSE_TOUCH_FLOOR}`,
+  lg: `h-12 px-5 text-style-body rounded-2xl ${COARSE_TOUCH_FLOOR}`,
+};
+
+/**
+ * Focus treatment — mirrors `Button`'s `focus-visible:ring-2 ring-focus/45`
+ * contract so all interactive elements share one a11y language. Keyboard
+ * users always see a ring; pointer clicks on text inputs don't flash it.
+ * Uses the semantic `ring-focus` token (Hard Rule #14) and the
+ * `caret-brand` utility for the text-caret colour.
+ */
+const variants: Record<InputVariant, string> = {
+  default:
+    "bg-panelHi border border-line caret-brand focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
+  filled:
+    "bg-panelHi border-transparent caret-brand focus-visible:bg-panel focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
+  ghost:
+    "bg-transparent border-transparent caret-brand hover:bg-panelHi focus-visible:bg-panelHi focus-visible:ring-2 focus-visible:ring-focus/45",
+};
+
+export interface InputProps extends Omit<
+  InputHTMLAttributes<HTMLInputElement>,
+  "size"
+> {
+  size?: InputSize | undefined;
+  variant?: InputVariant | undefined;
+  error?: boolean | undefined;
+  success?: boolean | undefined;
+  icon?: ReactNode | undefined;
+  suffix?: ReactNode | undefined;
+  /** Helper text shown below the input — turns red on error. */
+  helperText?: string | undefined;
+  /** Input label — rendered above the field with correct `htmlFor`. */
+  label?: string | undefined;
+  /**
+   * When `true` (or when `maxLength` is set and a `value` prop is present),
+   * renders a live "12/50" counter in the helper row. Color shifts to
+   * warning at ≥80 % and danger at 100 %.
+   */
+  showCharCount?: boolean | undefined;
+}
+
+export const Input = forwardRef<HTMLInputElement, InputProps>(function Input(
+  {
+    className,
+    size = "md",
+    variant = "default",
+    error,
+    success,
+    icon,
+    suffix,
+    helperText,
+    label,
+    id,
+    type,
+    spellCheck,
+    inputMode,
+    showCharCount,
+    ...props
+  },
+  ref,
+) {
+  const stateClass = error
+    ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25"
+    : success
+      ? "border-brand-400 focus-visible:border-brand-500 focus-visible:ring-focus/45"
+      : "";
+
+  const maxLen = props.maxLength;
+  const currentLen =
+    maxLen !== undefined ? String(props.value ?? "").length : 0;
+  // Explicit `showCharCount={false}` wins over the maxLength auto-opt-in.
+  // Without this escape hatch, adding `maxLength` purely as a storage guard
+  // (see the beta-input-boundaries spec, which rejected counters as UI noise)
+  // silently ships a counter — and on an uncontrolled RHF field, where
+  // `props.value` is undefined, it is stuck reading "0/200".
+  const renderCounter =
+    showCharCount !== false &&
+    (showCharCount || maxLen !== undefined) &&
+    maxLen !== undefined;
+  const maxLenSafe = maxLen ?? 0;
+  const counterColor =
+    currentLen >= maxLenSafe
+      ? "text-danger-strong dark:text-danger"
+      : maxLenSafe > 0 && currentLen / maxLenSafe >= 0.8
+        ? "text-warning-strong dark:text-warning"
+        : "text-subtle";
+
+  // Type-aware defaults. The caller's explicit prop always wins — these
+  // only fill in when `undefined` so existing call sites don't change.
+  const resolvedSpellCheck =
+    spellCheck ?? (type && NON_PROSE_TYPES.has(type) ? false : undefined);
+  const resolvedInputMode =
+    inputMode ?? (type ? DEFAULT_INPUT_MODE[type] : undefined);
+  // Password-manager guard for search fields (tester report 2026-08-10:
+  // Chrome offered saved credentials in the settings-search box and refilled
+  // the e-mail after every clear). Spread BEFORE `...props` below so an
+  // explicit `autoComplete` / `name` from the caller still wins — see
+  // `searchFieldProps.ts` for why `autocomplete="off"` alone is not enough.
+  const searchGuard = type === "search" ? searchFieldAutofillGuard : undefined;
+
+  return (
+    <div className="flex w-full min-w-0 max-w-full flex-col gap-1">
+      {label && (
+        <label
+          htmlFor={id}
+          className="text-style-label font-medium text-text leading-snug"
+        >
+          {label}
+        </label>
+      )}
+      <div className="relative w-full min-w-0 max-w-full">
+        {icon && (
+          <div className="absolute left-3 top-1/2 -translate-y-1/2 text-muted pointer-events-none">
+            {icon}
+          </div>
+        )}
+        <input
+          ref={ref}
+          id={id}
+          type={type}
+          {...searchGuard}
+          spellCheck={resolvedSpellCheck}
+          inputMode={resolvedInputMode}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={helperText && id ? `${id}-helper` : undefined}
+          className={cn(
+            "box-border w-full text-text placeholder:text-subtle",
+            "outline-none transition-colors duration-base",
+            "disabled:opacity-50 disabled:cursor-not-allowed",
+            sizes[size],
+            variants[variant],
+            stateClass,
+            icon && "pl-10",
+            suffix && "pr-10",
+            className,
+          )}
+          {...props}
+        />
+        {suffix && (
+          <div className="absolute right-3 top-1/2 -translate-y-1/2 text-muted">
+            {suffix}
+          </div>
+        )}
+      </div>
+      {(helperText || renderCounter) && (
+        <div className="flex items-center justify-between gap-2">
+          {helperText ? (
+            <p
+              id={id ? `${id}-helper` : undefined}
+              role={error ? "alert" : "status"}
+              className={cn(
+                "text-style-caption leading-snug",
+                error ? "text-danger-strong dark:text-danger" : "text-subtle",
+              )}
+            >
+              {helperText}
+            </p>
+          ) : (
+            <span />
+          )}
+          {renderCounter && (
+            <span
+              className={cn(
+                "text-style-caption tabular-nums shrink-0 transition-colors",
+                counterColor,
+              )}
+              aria-live="polite"
+              aria-atomic="true"
+              aria-label={`${currentLen} з ${maxLen} символів`}
+            >
+              {currentLen}/{maxLen}
+            </span>
+          )}
+        </div>
+      )}
+    </div>
+  );
+});
+
+export interface TextareaProps extends TextareaHTMLAttributes<HTMLTextAreaElement> {
+  variant?: InputVariant;
+  error?: boolean;
+  /** Helper text shown below the textarea — turns red on error. */
+  helperText?: string;
+  /** Label rendered above the textarea. */
+  label?: string;
+}
+
+/**
+ * Textarea — Multi-line text input
+ */
+export const Textarea = forwardRef<HTMLTextAreaElement, TextareaProps>(
+  function Textarea(
+    {
+      className,
+      variant = "default",
+      error,
+      rows = 3,
+      helperText,
+      label,
+      id,
+      ...props
+    },
+    ref,
+  ) {
+    const stateClass = error
+      ? "border-danger/70 focus-visible:border-danger focus-visible:ring-danger/25"
+      : "";
+
+    return (
+      <div className="flex flex-col gap-1">
+        {label && (
+          <label
+            htmlFor={id}
+            className="text-style-label font-medium text-text leading-snug"
+          >
+            {label}
+          </label>
+        )}
+        <textarea
+          ref={ref}
+          id={id}
+          rows={rows}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={helperText && id ? `${id}-helper` : undefined}
+          className={cn(
+            "w-full px-4 py-3 text-style-body text-text placeholder:text-subtle rounded-2xl",
+            "outline-none transition-colors duration-base resize-none",
+            "disabled:opacity-50 disabled:cursor-not-allowed",
+            variants[variant],
+            stateClass,
+            className,
+          )}
+          {...props}
+        />
+        {helperText && (
+          <p
+            id={id ? `${id}-helper` : undefined}
+            role={error ? "alert" : "status"}
+            className={cn(
+              "text-style-caption leading-snug",
+              error ? "text-danger" : "text-subtle",
+            )}
+          >
+            {helperText}
+          </p>
+        )}
+      </div>
+    );
+  },
+);

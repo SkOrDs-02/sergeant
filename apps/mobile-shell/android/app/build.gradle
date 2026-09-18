@@ -1,0 +1,105 @@
+apply plugin: 'com.android.application'
+
+android {
+    namespace "com.sergeant.shell"
+    compileSdk rootProject.ext.compileSdkVersion
+    defaultConfig {
+        applicationId "com.sergeant.shell"
+        minSdkVersion rootProject.ext.minSdkVersion
+        targetSdkVersion rootProject.ext.targetSdkVersion
+        versionCode 1
+        versionName "1.0"
+        testInstrumentationRunner "androidx.test.runner.AndroidJUnitRunner"
+        aaptOptions {
+             // Files and dirs to omit from the packaged assets dir, modified to accommodate modern web apps.
+             // Default: https://android.googlesource.com/platform/frameworks/base/+/282e181b58cf72b6ca770dc7ca5f91f135444502/tools/aapt/AaptAssets.cpp#61
+            ignoreAssetsPattern '!.svn:!.git:!.ds_store:!*.scc:.*:!CVS:!thumbs.db:!picasa.ini:!*~'
+        }
+    }
+
+    // Release signing is driven by four properties that may come from either
+    // Gradle properties (e.g. `~/.gradle/gradle.properties` on a dev machine)
+    // or the environment (CI job exports them from decoded base64 keystore +
+    // GitHub Secrets — see `.github/workflows/mobile-shell-android-release.yml`).
+    //
+    //   SERGEANT_RELEASE_STORE_FILE      — absolute path to the .jks / .keystore
+    //   SERGEANT_RELEASE_STORE_PASSWORD  — keystore password
+    //   SERGEANT_RELEASE_KEY_ALIAS       — signing key alias inside the store
+    //   SERGEANT_RELEASE_KEY_PASSWORD    — password for that alias
+    //
+    // If *any* of them is missing we leave the release `signingConfig` null.
+    // That keeps local `./gradlew :app:assembleDebug` and the unsigned
+    // `:app:bundleRelease` path in CI working without secrets — the release
+    // AAB just ships unsigned in that case, which is fine for lint-style
+    // validation on PRs that don't need to upload to Play.
+    def resolveReleaseProp = { String name ->
+        if (project.hasProperty(name)) {
+            return project.property(name)
+        }
+        return System.getenv(name)
+    }
+
+    def releaseStoreFile = resolveReleaseProp('SERGEANT_RELEASE_STORE_FILE')
+    def releaseStorePassword = resolveReleaseProp('SERGEANT_RELEASE_STORE_PASSWORD')
+    def releaseKeyAlias = resolveReleaseProp('SERGEANT_RELEASE_KEY_ALIAS')
+    def releaseKeyPassword = resolveReleaseProp('SERGEANT_RELEASE_KEY_PASSWORD')
+
+    def hasReleaseSigning = releaseStoreFile?.toString()?.trim() &&
+            releaseStorePassword?.toString()?.trim() &&
+            releaseKeyAlias?.toString()?.trim() &&
+            releaseKeyPassword?.toString()?.trim()
+
+    signingConfigs {
+        if (hasReleaseSigning) {
+            release {
+                storeFile file(releaseStoreFile)
+                storePassword releaseStorePassword
+                keyAlias releaseKeyAlias
+                keyPassword releaseKeyPassword
+            }
+        }
+    }
+
+    buildTypes {
+        release {
+            // R8 full-mode shrinking + resource shrinking. Kept together: AGP
+            // rejects `shrinkResources true` without `minifyEnabled true`.
+            // Capacitor-plugin keep-rules live in `proguard-rules.pro`.
+            minifyEnabled true
+            shrinkResources true
+            proguardFiles getDefaultProguardFile('proguard-android-optimize.txt'), 'proguard-rules.pro'
+            if (hasReleaseSigning) {
+                signingConfig signingConfigs.release
+            }
+        }
+    }
+}
+
+repositories {
+    flatDir{
+        dirs '../capacitor-cordova-android-plugins/src/main/libs', 'libs'
+    }
+}
+
+dependencies {
+    implementation fileTree(include: ['*.jar'], dir: 'libs')
+    implementation "androidx.appcompat:appcompat:$androidxAppCompatVersion"
+    implementation "androidx.coordinatorlayout:coordinatorlayout:$androidxCoordinatorLayoutVersion"
+    implementation "androidx.core:core-splashscreen:$coreSplashScreenVersion"
+    implementation project(':capacitor-android')
+    testImplementation "junit:junit:$junitVersion"
+    androidTestImplementation "androidx.test.ext:junit:$androidxJunitVersion"
+    androidTestImplementation "androidx.test.espresso:espresso-core:$androidxEspressoCoreVersion"
+    implementation project(':capacitor-cordova-android-plugins')
+}
+
+apply from: 'capacitor.build.gradle'
+
+try {
+    def servicesJSON = file('google-services.json')
+    if (servicesJSON.text) {
+        apply plugin: 'com.google.gms.google-services'
+    }
+} catch(Exception e) {
+    logger.info("google-services.json not found, google-services plugin not applied. Push Notifications won't work")
+}

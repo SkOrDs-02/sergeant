@@ -1,0 +1,98 @@
+/** @vitest-environment jsdom */
+/**
+ * Last validated: 2026-08-03
+ * Status: Active
+ *
+ * Покриття блоку «Рутина» в Налаштуваннях після 2026-08-03: тут лишились
+ * календарні тумблери + теги/категорії. Керування звичками (список,
+ * порядок, архів, видалення) переїхало у вкладку модуля — його покриття
+ * живе в `modules/routine/components/RoutineHabitsPanel.test.tsx`.
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { cleanup, fireEvent, screen } from "@testing-library/react";
+import { renderSettingsSection } from "../../test/helpers/collapsibleSection";
+
+const routineState = vi.hoisted(() => ({
+  routine: {
+    prefs: {} as Record<string, unknown>,
+  },
+  setRoutine: vi.fn(),
+  updatePref: vi.fn(),
+}));
+vi.mock("../../modules/routine/hooks/useRoutineState", () => ({
+  useRoutineState: () => routineState,
+}));
+
+vi.mock("../../modules/routine/components/settings/TagsSection", () => ({
+  TagsSection: () => <div data-testid="tags-section" />,
+}));
+vi.mock("../../modules/routine/components/settings/CategoriesSection", () => ({
+  CategoriesSection: () => <div data-testid="categories-section" />,
+}));
+
+import { RoutineSection } from "./RoutineSection";
+
+describe("RoutineSection", () => {
+  beforeEach(() => {
+    vi.clearAllMocks();
+    routineState.routine = { prefs: {} };
+  });
+
+  afterEach(() => cleanup());
+
+  it("renders the calendar toggles and the tags/categories subgroup", () => {
+    renderSettingsSection(<RoutineSection />);
+    expect(
+      screen.getByText("Показувати тренування з Фізрука в календарі"),
+    ).toBeInTheDocument();
+    expect(screen.getByTestId("tags-section")).toBeInTheDocument();
+    expect(screen.getByTestId("categories-section")).toBeInTheDocument();
+  });
+
+  it("no longer hosts habit management — that moved into the module", () => {
+    renderSettingsSection(<RoutineSection />);
+    expect(screen.queryByText("Активні звички")).not.toBeInTheDocument();
+    expect(screen.queryByText("Архів")).not.toBeInTheDocument();
+  });
+
+  it("defaults the Fizruk-in-calendar toggle to on when pref is unset", () => {
+    renderSettingsSection(<RoutineSection />);
+    const switches = screen.getAllByRole("switch");
+    expect(switches[0]).toBeChecked();
+  });
+
+  it("reflects an explicit false pref as an off toggle", () => {
+    routineState.routine = { prefs: { showFizrukInCalendar: false } };
+    renderSettingsSection(<RoutineSection />);
+    expect(screen.getAllByRole("switch")[0]).not.toBeChecked();
+  });
+
+  it("calls updatePref when toggling the Fizruk calendar switch", () => {
+    routineState.routine = { prefs: { showFizrukInCalendar: false } };
+    renderSettingsSection(<RoutineSection />);
+    fireEvent.click(screen.getAllByRole("switch")[0]!);
+    expect(routineState.updatePref).toHaveBeenCalledWith(
+      "showFizrukInCalendar",
+      true,
+    );
+  });
+
+  it("calls updatePref for the Finyk-subscriptions calendar switch", () => {
+    renderSettingsSection(<RoutineSection />);
+    fireEvent.click(screen.getAllByRole("switch")[1]!);
+    expect(routineState.updatePref).toHaveBeenCalledWith(
+      "showFinykSubscriptionsInCalendar",
+      false,
+    );
+  });
+
+  // V-13 (profile/settings deep audit 2026-08-08, §«Вкладка Розділи») —
+  // без `module="routine"` іконка секції рендериться нейтрально-сірою
+  // (`bg-surface-soft-glass`), і всі чотири модульні секції виглядають
+  // однаково. Перевіряємо, що бейдж іконки несе саме routine-акцент.
+  it("renders the section glyph with the routine module accent (без тонованого квадрата, огляд 2026-09-04)", () => {
+    const { container } = renderSettingsSection(<RoutineSection />);
+    const badge = container.querySelector(`.text-${"routine"}`);
+    expect(badge).not.toBeNull();
+  });
+});

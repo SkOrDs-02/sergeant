@@ -1,0 +1,368 @@
+import { useCallback, useEffect, useState } from "react";
+import { cn } from "@shared/lib/ui/cn";
+import { Banner } from "@shared/components/ui/Banner";
+import { logger } from "@shared/lib";
+import { formatRelativeUk } from "@shared/lib/format/relativeTime.uk";
+import { messages } from "@shared/i18n/uk";
+import type { ComponentStatus, StatusComponent, StatusResponse } from "./types";
+
+/**
+ * Public status page (`/status`) — PR-41.
+ *
+ * Anonymous surface (no auth gate) that reads `/api/status` and renders
+ * a compact per-component health view. Intended for founder-Pulse and
+ * public-trust use cases — visitors check this page when "is the app
+ * working?" is in doubt.
+ *
+ * Design constraints (Hard Rule #12 — module-accent containment):
+ * neutral palette only. We use the repo's semantic `success` /
+ * `warning` / `danger` tokens (already wired through `Banner` and the
+ * `-soft` / `-strong` pairs in `tailwind.config.js`) — no module
+ * accents (`finyk`, `fizruk`, `routine`, `nutrition`) leak in.
+ *
+ * Polling: `STATUS_POLL_INTERVAL_MS` (default 30 s). The page does
+ * not display request-id, build sha, or anything else — see the L7
+ * info-leak audit at `docs/security/hardening/L7-health-endpoint-info-leak.md`.
+ */
+
+const STATUS_POLL_INTERVAL_MS = 30_000;
+
+type FetchState =
+  | { kind: "loading" }
+  | { kind: "error"; message: string }
+  | { kind: "ready"; data: StatusResponse };
+
+/**
+ * Чи має тіло відповіді ту форму, яку рендерить `ReadyView`.
+ *
+ * Раніше тут стояв голий `as StatusResponse`, і будь-яка 200-ка з іншою
+ * формою (проксі-заглушка, CDN-інтерстишал, зміна контракту сервера)
+ * валила сторінку незловленим `TypeError: Cannot read properties of
+ * undefined (reading 'map')` на `data.components.map` — білий екран
+ * замість картки помилки, яка тут і так є. Знайдено браузерним свіпом
+ * 2026-09-16 на `/status`.
+ *
+ * Це найгірший можливий режим відмови саме для цієї сторінки: її
+ * відкривають, щоб дізнатись, чи застосунок працює. Тож перевіряємо рівно
+ * те, чого торкається рендер, і за розбіжності показуємо `errorFallback`
+ * з кнопкою «Спробувати ще».
+ */
+function isStatusResponse(value: unknown): value is StatusResponse {
+  if (typeof value !== "object" || value === null) return false;
+  const v = value as Record<string, unknown>;
+  if (typeof v["status"] !== "string") return false;
+  if (typeof v["timestamp"] !== "string") return false;
+  if (!Array.isArray(v["components"])) return false;
+  for (const raw of v["components"]) {
+    if (typeof raw !== "object" || raw === null) return false;
+    const c = raw as Record<string, unknown>;
+    if (typeof c["id"] !== "string") return false;
+    if (typeof c["label"] !== "string") return false;
+    if (typeof c["status"] !== "string") return false;
+  }
+  // `lastIncident` рендериться через `if (!lastIncident)`, тож `null`,
+  // `undefined` і відсутність ключа однаково безпечні — перевіряємо лише
+  // непорожній обʼєкт, чиї поля читає `LastIncidentRow`.
+  const incident = v["lastIncident"];
+  if (incident !== null && incident !== undefined) {
+    if (typeof incident !== "object") return false;
+    const i = incident as Record<string, unknown>;
+    if (typeof i["at"] !== "string") return false;
+    if (typeof i["component"] !== "string") return false;
+  }
+  return true;
+}
+
+export function StatusPage(): JSX.Element {
+  const [state, setState] = useState<FetchState>({ kind: "loading" });
+
+  const load = useCallback(async (signal?: AbortSignal): Promise<void> => {
+    try {
+      const res = await fetch("/api/status", {
+        method: "GET",
+        headers: { Accept: "application/json" },
+        ...(signal !== undefined ? { signal } : {}),
+        credentials: "omit",
+      });
+      if (!res.ok) {
+        setState({
+          kind: "error",
+          message: `${messages.publicStatus.errorHttpPrefix} ${res.status}.`,
+        });
+        return;
+      }
+      const data: unknown = await res.json();
+      if (!isStatusResponse(data)) {
+        logger.warn("[StatusPage] /api/status returned an unexpected shape");
+        setState({
+          kind: "error",
+          message: messages.publicStatus.errorFallback,
+        });
+        return;
+      }
+      setState({ kind: "ready", data });
+    } catch (err) {
+      if (err instanceof DOMException && err.name === "AbortError") return;
+      // Audit F10: не показуємо raw err.message анонімним відвідувачам —
+      // може просочити target URL, CORS-preflight або DNS-підказки.
+      logger.warn("[StatusPage] /api/status fetch failed", err);
+      setState({
+        kind: "error",
+        message: messages.publicStatus.errorFallback,
+      });
+    }
+  }, []);
+
+  useEffect(() => {
+    const controller = new AbortController();
+    void Promise.resolve().then(() => load(controller.signal));
+    const id = window.setInterval(() => {
+      // Don't poll a backgrounded tab — wasteful network/CPU on a status
+      // page nobody is looking at (page-audit-10 F26).
+      if (document.visibilityState === "hidden") return;
+      void Promise.resolve().then(() => load());
+    }, STATUS_POLL_INTERVAL_MS);
+    // Refresh immediately on return to foreground so a user who tabs back
+    // doesn't stare at stale status until the next interval.
+    const onVisible = () => {
+      if (document.visibilityState === "visible") {
+        void Promise.resolve().then(() => load());
+      }
+    };
+    document.addEventListener("visibilitychange", onVisible);
+    return () => {
+      controller.abort();
+      window.clearInterval(id);
+      document.removeEventListener("visibilitychange", onVisible);
+    };
+  }, [load]);
+
+  return (
+    <main
+      id="main"
+      tabIndex={-1}
+      className="mx-auto flex w-full max-w-2xl flex-col gap-6 px-4 py-10 outline-none"
+      data-testid="status-page"
+    >
+      <header className="flex flex-col gap-2">
+        <h1 className="text-style-headline font-semibold tracking-tight text-text">
+          {messages.publicStatus.pageTitle}
+        </h1>
+        <p className="text-style-body text-textDim">
+          {messages.publicStatus.pollNote}{" "}
+          {Math.round(STATUS_POLL_INTERVAL_MS / 1000)}{" "}
+          {messages.publicStatus.pollNoteSuffix}
+        </p>
+      </header>
+
+      {state.kind === "loading" ? <LoadingCard /> : null}
+      {state.kind === "error" ? (
+        <ErrorCard
+          message={state.message}
+          onRetry={() => {
+            setState({ kind: "loading" });
+            void load();
+          }}
+        />
+      ) : null}
+      {state.kind === "ready" ? <ReadyView data={state.data} /> : null}
+    </main>
+  );
+}
+
+function ReadyView({ data }: { data: StatusResponse }): JSX.Element {
+  return (
+    <div className="flex flex-col gap-4" data-testid="status-ready">
+      <OverallBanner status={data.status} timestamp={data.timestamp} />
+      <ul
+        className="flex flex-col gap-2"
+        aria-label={messages.publicStatus.componentsLabel}
+      >
+        {data.components.map((component) => (
+          <ComponentRow key={component.id} component={component} />
+        ))}
+      </ul>
+      <LastIncidentRow lastIncident={data.lastIncident} />
+    </div>
+  );
+}
+
+function OverallBanner({
+  status,
+  timestamp,
+}: {
+  status: ComponentStatus;
+  timestamp: string;
+}): JSX.Element {
+  const headline = OVERALL_HEADLINE[status];
+  const variant: "success" | "warning" | "danger" =
+    status === "operational"
+      ? "success"
+      : status === "degraded"
+        ? "warning"
+        : "danger";
+  return (
+    <Banner variant={variant} data-testid="status-overall">
+      <div className="flex items-center justify-between gap-3">
+        <span className="font-semibold">{headline}</span>
+        {/* No raw `opacity-80` here: axe flagged this span at 3.96:1 on
+            `/status` (the danger variant renders `text-danger-soft-fg` —
+            already ≥4.5:1 on `bg-danger-soft` on its own — and diluting it
+            with element opacity blends it toward the background, dropping
+            below AA). Full-strength `-soft-fg` token stays compliant across
+            all variants. */}
+        <span className="text-style-caption" data-testid="status-timestamp">
+          {messages.publicStatus.timestampPrefix} {formatRelativeUk(timestamp)}
+        </span>
+      </div>
+    </Banner>
+  );
+}
+
+function ComponentRow({
+  component,
+}: {
+  component: StatusComponent;
+}): JSX.Element {
+  return (
+    <li
+      className="flex items-center justify-between gap-3 rounded-2xl border border-line bg-panel px-4 py-3"
+      data-testid={`status-row-${component.id}`}
+      data-status={component.status}
+    >
+      <span className="text-style-label text-text">{component.label}</span>
+      <StatusPill status={component.status} />
+    </li>
+  );
+}
+
+function StatusPill({ status }: { status: ComponentStatus }): JSX.Element {
+  const classes = PILL_CLASSES[status];
+  return (
+    <span
+      className={cn(
+        "inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-style-caption",
+        classes,
+      )}
+    >
+      <StatusDot status={status} />
+      {PILL_LABEL[status]}
+    </span>
+  );
+}
+
+function StatusDot({ status }: { status: ComponentStatus }): JSX.Element {
+  return (
+    <span
+      aria-hidden
+      className={cn("inline-block size-2 rounded-full", DOT_CLASSES[status])}
+    />
+  );
+}
+
+function LastIncidentRow({
+  lastIncident,
+}: {
+  lastIncident: StatusResponse["lastIncident"];
+}): JSX.Element {
+  if (!lastIncident) {
+    return (
+      <p
+        className="text-style-caption text-textDim"
+        data-testid="status-last-incident"
+      >
+        {messages.publicStatus.lastIncidentNone}
+      </p>
+    );
+  }
+  return (
+    <p
+      className="text-style-caption text-textDim"
+      data-testid="status-last-incident"
+    >
+      {messages.publicStatus.lastIncidentPrefix}{" "}
+      <span className="text-text">{formatRelativeUk(lastIncident.at)}</span>
+      {", "}
+      <span className="text-text">
+        {COMPONENT_NAME[lastIncident.component]}
+      </span>
+      .
+    </p>
+  );
+}
+
+function LoadingCard(): JSX.Element {
+  return (
+    <div
+      className="rounded-2xl border border-line bg-panel px-4 py-3 text-style-body text-textDim"
+      data-testid="status-loading"
+    >
+      {messages.publicStatus.loading}
+    </div>
+  );
+}
+
+function ErrorCard({
+  message,
+  onRetry,
+}: {
+  message: string;
+  onRetry: () => void;
+}): JSX.Element {
+  return (
+    <Banner variant="danger" data-testid="status-error">
+      <div className="flex flex-col gap-2">
+        <span className="font-semibold">
+          {messages.publicStatus.errorTitle}
+        </span>
+        {/* See rationale on `status-timestamp` above — same `opacity-80`
+            dilution of `text-danger-soft-fg` dropped this line to 3.96:1. */}
+        <span className="text-style-body">{message}</span>
+        <button
+          type="button"
+          onClick={onRetry}
+          className="self-start rounded-xl border border-danger/40 px-3 py-1 text-style-caption focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-danger"
+        >
+          {messages.publicStatus.errorRetry}
+        </button>
+      </div>
+    </Banner>
+  );
+}
+
+const OVERALL_HEADLINE: Record<ComponentStatus, string> = {
+  operational: messages.publicStatus.overallOperational,
+  degraded: messages.publicStatus.overallDegraded,
+  down: messages.publicStatus.overallDown,
+};
+
+const PILL_LABEL: Record<ComponentStatus, string> = {
+  operational: messages.publicStatus.pillOperational,
+  degraded: messages.publicStatus.pillDegraded,
+  down: messages.publicStatus.pillDown,
+};
+
+// `-strong` відтінки розраховані на світле тло; на темному вони давали 4.0:1
+// проти потрібних 4.5:1 (замір браузерного QA 2026-09-02). Companion-клас
+// `dark:text-{status}` — той самий патерн, що вже стоїть у `HabitForm`,
+// `HabitListItem` і `RoutineTimeline`.
+const PILL_CLASSES: Record<ComponentStatus, string> = {
+  operational: "bg-success-soft text-success-strong dark:text-success",
+  degraded: "bg-warning-soft text-warning-strong dark:text-warning",
+  down: "bg-danger-soft text-danger-strong dark:text-danger",
+};
+
+const DOT_CLASSES: Record<ComponentStatus, string> = {
+  operational: "bg-success",
+  degraded: "bg-warning",
+  down: "bg-danger",
+};
+
+const COMPONENT_NAME: Record<StatusComponent["id"], string> = {
+  server: "API-сервер",
+  database: "База даних",
+  n8n: "n8n-воркфлоу",
+  "console-bot": "OpenClaw-бот",
+};
+
+export default StatusPage;

@@ -1,0 +1,4 @@
+id,respondent,segment,date,duration_min,recording_link,notes_doc,top_pain,priority_module,new_insight,saturation_flag
+I01,"Приклад: Олена",quit,2026-07-02,38,drive-link,interview-01-olena.md,"ручний ввід задовго",finances,yes,no
+I02,"Приклад: Тарас",active,2026-07-03,42,drive-link,interview-02-taras.md,"все в різних місцях",routine,yes,no
+I03,"Приклад: Ірина",never,2026-07-04,30,drive-link,interview-03-iryna.md,"не знає з чого почати",nutrition,partial,no

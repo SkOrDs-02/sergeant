@@ -1,0 +1,115 @@
+/**
+ * Last validated: 2026-07-20
+ * Status: Active
+ */
+import { useMemo } from "react";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { SwipeToAction } from "@shared/components/ui/SwipeToAction";
+import { VirtualList } from "@shared/components/ui/VirtualList";
+import { type Meal, type MealTypeId } from "@sergeant/nutrition-domain";
+import { MEAL_ORDER, MEAL_META } from "../lib/mealTypes";
+import { Icon, type IconName } from "@shared/components/ui/Icon";
+import { MealRow } from "./MealRow";
+
+const MEAL_ROW_HEIGHT = 68;
+const MEAL_HEADER_HEIGHT = 32;
+const MAX_MEAL_LIST_HEIGHT = MEAL_ROW_HEIGHT * 8;
+
+interface VirtualMealListProps {
+  groups: Record<MealTypeId, Meal[]>;
+  meals: Meal[];
+  selectedDate: string;
+  onRemoveMeal?: ((date: string, meal: Meal) => void) | undefined;
+  onEditMeal?: ((date: string, meal: Meal) => void) | undefined;
+}
+
+type MealListItem =
+  | { kind: "header"; type: MealTypeId }
+  | { kind: "meal"; type: MealTypeId; meal: Meal };
+
+export function VirtualMealList({
+  groups,
+  meals,
+  selectedDate,
+  onRemoveMeal,
+  onEditMeal,
+}: VirtualMealListProps) {
+  const activeTypes = useMemo(
+    () =>
+      MEAL_ORDER.filter((t: MealTypeId) => groups[t]?.length) as MealTypeId[],
+    [groups],
+  );
+  const flatItems = useMemo<MealListItem[]>(() => {
+    const items: MealListItem[] = [];
+    for (const type of activeTypes) {
+      items.push({ kind: "header", type });
+      for (const meal of groups[type] ?? []) {
+        items.push({ kind: "meal", type, meal });
+      }
+    }
+    return items;
+  }, [groups, activeTypes]);
+
+  const listHeight = Math.min(
+    meals.length * MEAL_ROW_HEIGHT + activeTypes.length * MEAL_HEADER_HEIGHT,
+    MAX_MEAL_LIST_HEIGHT,
+  );
+
+  return (
+    <VirtualList
+      items={flatItems}
+      height={listHeight}
+      estimateSize={(index) =>
+        flatItems[index]?.kind === "header"
+          ? MEAL_HEADER_HEIGHT
+          : MEAL_ROW_HEIGHT
+      }
+      getItemKey={(_index, item) =>
+        item.kind === "header" ? `h-${item.type}` : item.meal.id
+      }
+    >
+      {(item) => {
+        if (item.kind === "header") {
+          const meta = MEAL_META[item.type];
+          return (
+            <div className="flex items-center gap-2 pt-2 pb-1">
+              <Icon
+                name={meta.iconName as IconName}
+                size="md"
+                className="text-nutrition"
+                aria-hidden
+              />
+              <SectionHeading as="span" size="xs" variant="nutrition">
+                {meta.label}
+              </SectionHeading>
+            </div>
+          );
+        }
+        return (
+          <div className="mb-1.5">
+            <SwipeToAction
+              onSwipeLeft={() => onRemoveMeal?.(selectedDate, item.meal)}
+              rightLabel={
+                <span className="inline-flex items-center gap-1.5">
+                  <Icon name="trash" size={18} aria-hidden />
+                  Видалити
+                </span>
+              }
+              rightColor="bg-danger"
+            >
+              <MealRow
+                meal={item.meal}
+                onEdit={
+                  onEditMeal
+                    ? () => onEditMeal(selectedDate, item.meal)
+                    : undefined
+                }
+                onRemove={() => onRemoveMeal?.(selectedDate, item.meal)}
+              />
+            </SwipeToAction>
+          </div>
+        );
+      }}
+    </VirtualList>
+  );
+}

@@ -1,0 +1,78 @@
+/**
+ * @status Active
+ * @owner @Skords-01
+ *
+ * Canonical `/404` (page-not-found) surface. Composed entirely from the
+ * design-system `<EmptyState>` primitive + the curated `NotFoundIllustration`,
+ * so the same focus contract, motion budget, and SR announcement
+ * shipped by the primitive ship here for free. Route renderers land here
+ * via `@core/errors/NotFoundPage` (was previously a re-export shim at
+ * `apps/web/src/core/NotFoundPage.tsx` — deleted 2026-05-21).
+ */
+import { useNavigate } from "react-router-dom";
+import { Button, EmptyState, Icon } from "@shared/components/ui";
+import { NotFoundIllustration } from "@assets/illustrations";
+
+export interface NotFoundPageProps {
+  /**
+   * Override the "home" CTA target. Defaults to `/`. Useful when the
+   * 404 is rendered inside a module sub-tree and a softer "back to
+   * module home" lands better than a hub-wide reset.
+   */
+  homePath?: string;
+}
+
+export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
+  const navigate = useNavigate();
+  return (
+    <main
+      id="main"
+      tabIndex={-1}
+      // Full-bleed surface — error pages are landing-tier, not nested.
+      className="min-h-svh flex items-center justify-center bg-bg px-6 outline-none"
+    >
+      <EmptyState
+        size="lg"
+        variant="info"
+        eyebrow="404"
+        illustration={<NotFoundIllustration size={200} />}
+        title="Сторінку не знайдено"
+        // The empty state is the entire 404 surface, so it has to carry the
+        // page heading — otherwise this route ships with no heading at all.
+        titleAs="h1"
+        description="Здається, ця адреса вже не існує. Перевір посилання або повернись на головну, звідти можна знайти потрібний модуль."
+        primaryAction={
+          <Button
+            type="button"
+            variant="solid"
+            size="lg"
+            onClick={() => {
+              navigate(homePath, { replace: true });
+            }}
+          >
+            <Icon name="home" size="md" />
+            На головну
+          </Button>
+        }
+        secondaryAction={
+          <Button
+            type="button"
+            variant="outline"
+            size="lg"
+            onClick={() => {
+              navigate(-1);
+            }}
+          >
+            <Icon name="chevron-left" size="md" />
+            Назад
+          </Button>
+        }
+        // §2 забороняє «ми», але тут це не голос застосунку, а жива команда,
+        // до якої людину і просять написати. 1-а однини («напиши мені, я
+        // полагоджу») обіцяла б, що битий лінк лагодить сам застосунок.
+        // eslint-disable-next-line sergeant-design/ukrainian-copy -- голос команди, не продукту
+        hint="Якщо ти перейшов сюди із зовнішнього посилання, напиши нам, ми його полагодимо."
+      />
+    </main>
+  );
+}

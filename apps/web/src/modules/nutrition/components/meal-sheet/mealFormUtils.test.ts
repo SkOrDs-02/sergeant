@@ -1,0 +1,129 @@
+import { describe, it, expect, vi, beforeEach, afterEach } from "vitest";
+import {
+  deviceDayKey,
+  deviceWallClockToInstant,
+} from "@sergeant/nutrition-domain";
+import { currentTime, emptyForm } from "./mealFormUtils";
+
+// mealTypeByNow comes from @sergeant/nutrition-domain via the mealTypes re-export.
+// We stub it so tests are not hour-sensitive.
+vi.mock("../../lib/mealTypes", () => ({
+  mealTypeByNow: () => "lunch" as const,
+}));
+
+describe("emptyForm", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-06-02T12:30:00Z"));
+  });
+
+  afterEach(() => {
+    vi.useRealTimers();
+  });
+
+  it("returns a form with empty name when no photoResult provided", () => {
+    const form = emptyForm();
+    expect(form.name).toBe("");
+  });
+
+  it("sets mealType from mealTypeByNow (stubbed as lunch)", () => {
+    const form = emptyForm();
+    expect(form.mealType).toBe("lunch");
+  });
+
+  it("formats the time as HH:MM using current clock", () => {
+    const form = emptyForm();
+    expect(form.time).toMatch(/^\d{2}:\d{2}$/);
+  });
+
+  /**
+   * Регресія: `currentTime()` брав київський настінний час, а день-ключ
+   * журналу — девайсовий (ADR-0078). О 23:53 UTC пара виходила
+   * «2026-08-23 + 02:53» і складалась у момент, якого не було. Пінимо
+   * пізній вечір UTC (= наступна доба за Києвом) і перевіряємо ОБИДВІ
+   * половини: день лишається 23-тім, момент дорівнює фактичному.
+   */
+  it("пізній вечір UTC: час доби девайсовий, момент — справжній", () => {
+    const realInstant = new Date("2026-08-23T23:53:00.000Z");
+    vi.setSystemTime(realInstant);
+
+    const time = currentTime();
+    const dateKey = deviceDayKey(realInstant);
+    expect(time).toBe("23:53");
+    expect(dateKey).toBe("2026-08-23");
+
+    const eatenAt = deviceWallClockToInstant(dateKey, time);
+    expect(eatenAt.slice(0, 10)).toBe("2026-08-23");
+    expect(new Date(eatenAt).getTime()).toBe(realInstant.getTime());
+  });
+
+  it("initializes macro fields as empty strings when no photoResult", () => {
+    const form = emptyForm();
+    expect(form.kcal).toBe("");
+    expect(form.protein_g).toBe("");
+    expect(form.fat_g).toBe("");
+    expect(form.carbs_g).toBe("");
+  });
+
+  it("initializes err as empty string", () => {
+    expect(emptyForm().err).toBe("");
+  });
+
+  it("uses dishName from photoResult when provided", () => {
+    const form = emptyForm({ dishName: "Гречана каша" });
+    expect(form.name).toBe("Гречана каша");
+  });
+
+  it("uses null dishName → empty string", () => {
+    const form = emptyForm({ dishName: null });
+    expect(form.name).toBe("");
+  });
+
+  it("populates kcal from photoResult.macros (rounded)", () => {
+    const form = emptyForm({ macros: { kcal: 312.7 } });
+    expect(form.kcal).toBe("313");
+  });
+
+  it("populates protein_g from photoResult.macros (rounded)", () => {
+    const form = emptyForm({ macros: { protein_g: 24.3 } });
+    expect(form.protein_g).toBe("24");
+  });
+
+  it("populates fat_g from photoResult.macros (rounded)", () => {
+    const form = emptyForm({ macros: { fat_g: 8.9 } });
+    expect(form.fat_g).toBe("9");
+  });
+
+  it("populates carbs_g from photoResult.macros (rounded)", () => {
+    const form = emptyForm({ macros: { carbs_g: 45.1 } });
+    expect(form.carbs_g).toBe("45");
+  });
+
+  it("leaves kcal empty when photoResult.macros.kcal is null", () => {
+    const form = emptyForm({ macros: { kcal: null } });
+    expect(form.kcal).toBe("");
+  });
+
+  it("handles partial macros — fills present fields only", () => {
+    const form = emptyForm({ macros: { kcal: 500, protein_g: 30 } });
+    expect(form.kcal).toBe("500");
+    expect(form.protein_g).toBe("30");
+    expect(form.fat_g).toBe(""); // not provided
+    expect(form.carbs_g).toBe(""); // not provided
+  });
+
+  it("handles null photoResult gracefully (same as no arg)", () => {
+    const form = emptyForm(null);
+    expect(form.name).toBe("");
+    expect(form.kcal).toBe("");
+  });
+
+  it("blanks the name when dishName is the server's unidentified-food fallback literal", () => {
+    // AI photo analysis couldn't identify the food — the server falls back
+    // to the literal "Результат" (see nutritionResponse.ts). Prefilling it
+    // reads as a real name, so we blank it and let name-required validation
+    // nudge the user to type one instead.
+    const form = emptyForm({ dishName: "Результат" });
+    expect(form.name).toBe("");
+  });
+});

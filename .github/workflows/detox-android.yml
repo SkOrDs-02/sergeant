@@ -1,0 +1,231 @@
+name: Detox (Android)
+
+# Owner: @zaebal-beep (solo maintainer).
+# Triage: build/prebuild failures stay blocking. Detox app-readiness/test
+# failures soft-pass with a GitHub warning while the Android instrumentation
+# readiness issue is open; use uploaded artifacts/logs for follow-up triage.
+# Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
+
+# Mobile E2E lane for the Android Detox suites in `apps/mobile/e2e/*`.
+# Separate from the main `CI` workflow in `.github/workflows/ci.yml`
+# because:
+#   - An AVD boot + `gradle assembleDebug` + `assembleAndroidTest` pipeline
+#     takes ≥10 min on `ubuntu-latest` with KVM enabled, so we only run
+#     it on `main` / mobile-scoped PRs and once nightly to catch silent
+#     drift on dependencies that don't trigger a mobile-touching PR
+#     (Android SDK image refresh, AGP upgrade via Renovate, etc.).
+#   - A failing Detox run should not block an unrelated web-only PR.
+#
+# iOS CI is configured in the sibling `.github/workflows/detox-ios.yml` —
+# they share the same suite set (`apps/mobile/e2e/*.e2e.ts`) and the
+# same `pnpm e2e:*` entry points.
+#
+# The emulator is driven by `reactivecircus/android-emulator-runner@v2`
+# (SHA-pinned below). Rationale for this action over a hand-rolled
+# `sdkmanager` + `emulator` invocation: it ships the KVM setup (`sudo
+# chmod 666 /dev/kvm`), AVD cache keying, and headless GPU flags
+# already battle-tested by the React Native community.
+
+# Path trigger covers two failure modes (PR-18, M2):
+#   1. Direct mobile surface changes (`apps/mobile/**`, mobile-facing
+#      packages) — the original trigger set.
+#   2. Server-shape changes that mobile silently depends on — this half of
+#      the PR-18 trigger set (`apps/server/src/modules/**/*.routes.ts`,
+#      `**/serializers/**`, `apps/server/src/migrations/**`) was DROPPED in
+#      the web-focus phase below and is no longer in `paths`. The M2 failure
+#      mode it covered (server-only PR renames a response field,
+#      `packages/api-client/` lags, bug surfaces in production) is now caught
+#      only by the Hard Rule #3 contract tests + `pnpm api:check-openapi`
+#      (root `lint` script). Behavioural drift those cannot see — route
+#      ordering, header changes — needs a manual `workflow_dispatch` run.
+#   See `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-18-detox-server-shape-trigger.md`.
+#
+# Web-focus phase (2026-07): `push` вимкнено — Detox не гониться на кожен
+# merge до `main`. PR-тригер лише на прямі зміни mobile-поверхонь.
+#
+# ⛔ ЗАМОРОЖЕНО (web-first, 2026-08-25). Mobile-застосунки запускаємо лише
+# якщо web доведе потребу в продукті, тож цей лейн свідомо тримається
+# non-blocking, а `schedule:` НЕ повертається до розморозки. Обсяг заморозки і
+# порядок розморозки — `docs/work/specs/tech-debt/mobile.md`, блок
+# «Оновлено 2026-08-25». Сьюти в `apps/mobile/e2e/` НЕ видаляємо — вони актив
+# на момент розморозки.
+#
+# DOC-DRIFT FIX 2026-08-25: до цієї правки шапка стверджувала «Nightly schedule
+# + workflow_dispatch лишаються», а нижче стояв абзац про 03:15 UTC — хоча
+# `schedule:` тригера у файлі немає з web-focus фази (2026-07). Дрейф зафіксував
+# аудит покриття 2026-08-04; тепер коментар описує фактичний стан.
+#
+# ⛔ PR-ТРИГЕР ЗНЯТО 2026-09-14 (рішення founder-а, знахідка PR-M1).
+# Доти лейн запускався на кожен PR, що чіпає mobile-поверхні, і ЗАВЖДИ
+# завершувався зеленим: крок прогону ковтав провал через `|| { warning }`
+# плюс `exit 0`, а сам крок стояв ще й під `continue-on-error: true`. Тобто в
+# списку перевірок PR-а стояла зелена галочка «Detox», яка не означала нічого
+# — найгірший зі станів гейта, бо вона не мовчить, а стверджує. Мобільні
+# стеки на паузі з 2026-08-25 (ADR-0094), тож чесний стан під час паузи —
+# ВІДСУТНІЙ гейт, а не гейт, який завжди зелений.
+#
+# Лишається `workflow_dispatch`: прогін руками можливий і тепер каже правду —
+# `exit 0` і `continue-on-error` зняті разом із тригером. Сьюти в
+# `apps/mobile/e2e/` НЕ видалені — вони актив на момент розморозки.
+# Розморозка повертає `pull_request:`-блок разом із рештою мобільного лейну;
+# порядок — `docs/work/specs/tech-debt/mobile.md`.
+on:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: detox-android-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  detox-android:
+    # Must be a Linux runner with nested virtualisation — ubuntu-latest
+    # currently enables KVM on the default image. macOS would work too
+    # but it is 10× the cost of Linux, so stay here unless the AVD
+    # stack regresses.
+    runs-on: ubuntu-latest
+    timeout-minutes: 75
+    env:
+      EXPO_PUBLIC_E2E: "1"
+      # Same mock-auth flags as detox-ios.yml so the "full" suites can
+      # run on Android once the emulator pipeline stabilises.
+      EXPO_PUBLIC_E2E_REAL_AUTH: "1"
+      EXPO_PUBLIC_E2E_USER_EMAIL: "e2e-detox@sergeant.test"
+      EXPO_PUBLIC_E2E_USER_PASSWORD: "detox-pass-2026"
+      E2E_BUILD: "1"
+      # Keep Gradle's daemon off so artefacts / memory don't leak
+      # between the `assembleDebug` and `assembleAndroidTest` passes
+      # that Detox triggers via `pnpm e2e:build:android`.
+      GRADLE_OPTS: "-Dorg.gradle.daemon=false -Dorg.gradle.jvmargs=-Xmx4g"
+      # `@sentry/react-native` registers a Gradle task that runs
+      # `sentry-cli` to upload source maps. Without SENTRY_ORG /
+      # SENTRY_PROJECT / SENTRY_AUTH_TOKEN (only set on EAS release
+      # lanes) the task aborts the build. Mirror the iOS workflow's
+      # no-op flag so Detox Android builds succeed on CI.
+      SENTRY_DISABLE_AUTO_UPLOAD: "true"
+    # Pixel_5_API_34 mirrors the Detox `devices.emulator` avdName in
+    # `apps/mobile/.detoxrc.js`, so contributors who run Detox locally
+    # against the same AVD see identical behaviour.
+    strategy:
+      matrix:
+        api-level: [34]
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # Enable hardware acceleration for the x86_64 emulator.
+      - name: Enable KVM
+        run: |
+          echo 'KERNEL=="kvm", GROUP="kvm", MODE="0666", OPTIONS+="static_node=kvm"' | sudo tee /etc/udev/rules.d/99-kvm4all.rules
+          sudo udevadm control --reload-rules
+          sudo udevadm trigger --name-match=kvm
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      # actions/setup-java v4.7.1 — required for the Gradle wrapper
+      # shipped by `expo prebuild` (Android Gradle Plugin needs JDK 17+).
+      - uses: actions/setup-java@be666c2fcd27ec809703dec50e508c2fdc7f6654
+        with:
+          distribution: temurin
+          java-version: "17"
+
+      - name: Install JS deps
+        run: pnpm install --frozen-lockfile
+
+      # Detox drives the APK produced by `expo prebuild` + `gradle
+      # assembleDebug/assembleAndroidTest`. `--platform android` keeps
+      # the iOS projects out of the workspace so this job does not
+      # generate a dangling `ios/` tree.
+      - name: Prebuild Android project
+        working-directory: apps/mobile
+        run: pnpm exec expo prebuild --platform android --clean --non-interactive
+
+      # Cache the Gradle dependency graph so follow-up runs skip the
+      # Android dependency resolution pass (~2–3 min).
+      - name: Cache Gradle
+        # actions/cache v5.0.5 (SHA-pinned for supply-chain hardening)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        with:
+          path: |
+            ~/.gradle/caches
+            ~/.gradle/wrapper
+            apps/mobile/android/.gradle
+          key: ${{ runner.os }}-gradle-${{ hashFiles('apps/mobile/android/**/*.gradle*', 'apps/mobile/android/gradle/wrapper/gradle-wrapper.properties') }}
+          restore-keys: |
+            ${{ runner.os }}-gradle-
+
+      # The `android-emulator-runner` action exposes an AVD snapshot cache
+      # step so cold-boot times drop from ~2 min to ~30 s on cache hit.
+      - name: AVD cache
+        # actions/cache v5.0.5 (SHA-pinned for supply-chain hardening)
+        uses: actions/cache@27d5ce7f107fe9357f9df03efb73ab90386fccae
+        id: avd-cache
+        with:
+          path: |
+            ~/.android/avd/*
+            ~/.android/adb*
+          key: avd-${{ matrix.api-level }}-google_apis
+
+      - name: Create AVD + snapshot cache
+        if: steps.avd-cache.outputs.cache-hit != 'true'
+        # reactivecircus/android-emulator-runner v2.37.0 (SHA-pinned)
+        uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          # Explicit AVD name aligned with `apps/mobile/.detoxrc.js:67`
+          # (`avdName: "Pixel_5_API_34"`). Without it the action defaults
+          # to `test`, and Detox's `AVDValidator._assertAVDMatch` fails
+          # with `Cannot boot Android Emulator with the name: 'Pixel_5
+          # _API_34'`. Same name has to be passed on both action calls
+          # (snapshot create + run) so the cached snapshot is reusable.
+          avd-name: Pixel_5_API_34
+          force-avd-creation: false
+          emulator-options: -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          script: echo "AVD snapshot generated"
+
+      - name: Build Detox Android app
+        working-directory: apps/mobile
+        run: pnpm e2e:build:android
+
+      - name: Run Detox Android suite
+        # reactivecircus/android-emulator-runner v2.37.0 (SHA-pinned)
+        #
+        # PR-M1: `continue-on-error: true` знято разом із PR-тригером. Лейн
+        # тепер запускається лише руками (`workflow_dispatch`), а прогін,
+        # який запустили навмисно, мусить казати правду про результат —
+        # інакше запускати його немає сенсу.
+        uses: reactivecircus/android-emulator-runner@e89f39f1abbbd05b1113a29cf4db69e7540cae5a
+        with:
+          api-level: ${{ matrix.api-level }}
+          target: google_apis
+          arch: x86_64
+          profile: pixel_5
+          avd-name: Pixel_5_API_34
+          force-avd-creation: false
+          emulator-options: -no-snapshot-save -no-window -gpu swiftshader_indirect -noaudio -no-boot-anim -camera-back none
+          disable-animations: true
+          working-directory: apps/mobile
+          script: |
+            pnpm e2e:test:android:ci
+
+      - name: Upload Detox artefacts on failure
+        if: always()
+        # actions/upload-artifact v7.0.0 (SHA-pinned for supply-chain hardening)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: detox-android-artifacts
+          path: apps/mobile/.detox-artifacts
+          if-no-files-found: ignore

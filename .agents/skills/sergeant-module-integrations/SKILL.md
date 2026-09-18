@@ -1,0 +1,38 @@
+---
+name: sergeant-module-integrations
+description: Use when the task touches external integrations — Silpo receipts import, Telegram bots, audio transcription, inbound webhooks; UA: задача про silpo/telegram/transcribe/webhooks.
+lang: uk
+lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+---
+
+# Integrations — власник інфра-модуля
+
+Покриває чотири зовнішні поверхні: Silpo (імпорт чеків), Telegram (боти/репортинг), transcribe (аудіо → текст), webhooks (вхідні події). Інфра-модуль без канону: контекст і журнал — тут (рішення 6 спеки `docs/work/specs/archive/agent-module-owners.md`).
+
+## Контекст
+
+- Silpo: імпорт чеків у finyk/nutrition — `apps/server/src/modules/silpo/` (branchContext, cart, фікстури зі снапшотами).
+- Telegram: `apps/server/src/modules/telegram/` (waitlist-бот, beta-тексти); структура каналів репортингу — [ADR-0030](../../../docs/governance/adr/0030-telegram-reporting-channel-structure.md).
+- Transcribe: `apps/server/src/modules/transcribe/` з USD-капом витрат (`usdCap.ts`).
+- Webhooks: `apps/server/src/modules/webhooks/` — запис, replay, retention-полер вхідних подій; n8n-шар виведено з репо ([ADR-0090](../../../docs/governance/adr/0090-n8n-decommissioned.md)); періодичні задачі — серверні таймери ([ADR-0089](../../../docs/governance/adr/0089-job-substrates-outbox-broker-timer.md)).
+
+## Інваріанти модуля
+
+- Зовнішній провайдер може впасти — кожен інтеграційний шлях має явний error-шлях і не блокує основний продуктовий потік.
+- Секрети інтеграцій — лише env (Coolify), у логах — редаговані поля (Hard Rule #21, pino redaction).
+- Платні зовнішні виклики (transcribe) — під капом витрат; не знімай кап без рішення maintainer-а.
+- Вхідні webhook-події — ідемпотентні: запис + replay замість повторної обробки на льоту.
+
+## Журнал рішень
+
+| Дата       | Рішення                                                          | Джерело/ADR                                                                                   |
+| ---------- | ----------------------------------------------------------------- | --------------------------------------------------------------------------------------------- |
+| 2026-09-17 | Silpo: поріг автосинку одного користувача 20 → **8 год** (рішення власника) — 20 давали один синк на добу, тож вечірню покупку полер у той самий вечір не бачив за побудовою; 4 год відкинуто через спільний на весь деплой `client_id` | [спека § Дві щілини (2026-09-17)](../../../docs/work/specs/silpo-mcp-integration.md) |
+| 2026-09-17 | Silpo: чек, збережений без позицій (Сільпо віддає голову офлайн-чека раніше за `products[]`), доливається найближчим синком — наявні позиції незмінні. Стан «чек відвʼязано» дає ОДНУ дію — «Прикріпити чек» (пікер уже показує щойно відчеплений чек першим рядком, тож «повернути» і «виправити» — той самий жест); окремої кнопки «Повернути» більше немає | [спека § Дві щілини (2026-09-17)](../../../docs/work/specs/silpo-mcp-integration.md) |
+| 2026-08-19 | Silpo-інтеграція чеків приїхала в main (розчинена в finyk/nutrition-чанках) | [PR #819](https://github.com/Skords-01/Sergeant/pull/819)                                     |
+| 2026-05-02 | Telegram-репортинг — фіксована структура каналів для n8n         | [ADR-0030](../../../docs/governance/adr/0030-telegram-reporting-channel-structure.md)      |
+
+## Роутинг далі
+
+- Технічні правила поверхні: `sergeant-server-api`; деплой/env — `sergeant-deploy-and-observability`.
+- Каталог: [docs/start/agents/agent-skills-catalog.md](../../../docs/start/agents/agent-skills-catalog.md).

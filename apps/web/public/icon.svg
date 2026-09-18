@@ -1,0 +1,83 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="1024" height="1024" viewBox="0 0 1024 1024">
+  <defs>
+    <clipPath id="clip">
+      <rect width="1024" height="1024" rx="230"/>
+    </clipPath>
+    <radialGradient id="bggrad" cx="40%" cy="35%" r="75%">
+      <stop offset="0%" stop-color="#1c2c48"/>
+      <stop offset="100%" stop-color="#0b1120"/>
+    </radialGradient>
+    <filter id="glow-green" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-sky" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+    <filter id="glow-rose" x="-40%" y="-40%" width="180%" height="180%">
+      <feGaussianBlur stdDeviation="18" result="b"/>
+      <feMerge><feMergeNode in="b"/><feMergeNode in="SourceGraphic"/></feMerge>
+    </filter>
+  </defs>
+
+  <!-- Background -->
+  <rect width="1024" height="1024" rx="230" fill="url(#bggrad)"/>
+
+  <g clip-path="url(#clip)">
+    <!-- Subtle top-center shimmer -->
+    <ellipse cx="512" cy="200" rx="320" ry="120" fill="rgba(255,255,255,0.03)"/>
+
+    <!-- Connection lines from hub to nodes -->
+    <line x1="512" y1="512" x2="512" y2="238" stroke="rgba(255,255,255,0.12)" stroke-width="8" stroke-linecap="round"/>
+    <line x1="512" y1="512" x2="734" y2="654" stroke="rgba(255,255,255,0.12)" stroke-width="8" stroke-linecap="round"/>
+    <line x1="512" y1="512" x2="290" y2="654" stroke="rgba(255,255,255,0.12)" stroke-width="8" stroke-linecap="round"/>
+
+    <!-- Finyk node (emerald, top) glow -->
+    <circle cx="512" cy="238" r="145" fill="#16a34a" opacity="0.18"/>
+    <!-- Finyk node solid -->
+    <circle cx="512" cy="238" r="108" fill="#16a34a"/>
+    <circle cx="512" cy="238" r="108" fill="url(#finyk-shine)" opacity="0.3"/>
+    <!-- Finyk icon: bar chart uptrend -->
+    <rect x="455" y="262" width="26" height="42" rx="6" fill="white" opacity="0.55"/>
+    <rect x="489" y="246" width="26" height="58" rx="6" fill="white" opacity="0.78"/>
+    <rect x="523" y="230" width="26" height="74" rx="6" fill="white"/>
+    <!-- Finyk hryvnia sign -->
+    <text x="512" y="214" text-anchor="middle" font-family="-apple-system, Arial" font-weight="800" font-size="38" fill="white" opacity="0.9">₴</text>
+
+    <!-- Fizruk node (sky blue, bottom-right) glow -->
+    <circle cx="734" cy="654" r="145" fill="#0ea5e9" opacity="0.18"/>
+    <!-- Fizruk node solid -->
+    <circle cx="734" cy="654" r="108" fill="#0ea5e9"/>
+    <!-- Fizruk icon: dumbbell -->
+    <rect x="680" y="645" width="108" height="18" rx="9" fill="white"/>
+    <rect x="670" y="628" width="22" height="52" rx="8" fill="white"/>
+    <rect x="776" y="628" width="22" height="52" rx="8" fill="white"/>
+    <rect x="653" y="636" width="20" height="36" rx="6" fill="white" opacity="0.7"/>
+    <rect x="795" y="636" width="20" height="36" rx="6" fill="white" opacity="0.7"/>
+
+    <!-- Routine node (rose, bottom-left) glow -->
+    <circle cx="290" cy="654" r="145" fill="#e5708c" opacity="0.18"/>
+    <!-- Routine node solid -->
+    <circle cx="290" cy="654" r="108" fill="#e5708c"/>
+    <!-- Routine icon: calendar with checkmark -->
+    <rect x="242" y="624" width="96" height="80" rx="10" fill="white" opacity="0.2" stroke="white" stroke-width="7"/>
+    <line x1="242" y1="648" x2="338" y2="648" stroke="white" stroke-width="7"/>
+    <line x1="266" y1="614" x2="266" y2="635" stroke="white" stroke-width="7" stroke-linecap="round"/>
+    <line x1="314" y1="614" x2="314" y2="635" stroke="white" stroke-width="7" stroke-linecap="round"/>
+    <!-- Check mark -->
+    <polyline points="262,672 278,688 318,660" fill="none" stroke="white" stroke-width="9" stroke-linecap="round" stroke-linejoin="round"/>
+
+    <!-- Hub center: white ring -->
+    <circle cx="512" cy="512" r="72" fill="rgba(255,255,255,0.08)" stroke="rgba(255,255,255,0.20)" stroke-width="3"/>
+    <!-- Hub center dot -->
+    <circle cx="512" cy="512" r="50" fill="white" opacity="0.95"/>
+    <!-- Hub: three-dot grid icon in center -->
+    <circle cx="494" cy="502" r="7" fill="#0b1120"/>
+    <circle cx="512" cy="502" r="7" fill="#0b1120"/>
+    <circle cx="530" cy="502" r="7" fill="#0b1120"/>
+    <circle cx="494" cy="520" r="7" fill="#0b1120"/>
+    <circle cx="512" cy="520" r="7" fill="#0b1120"/>
+    <circle cx="530" cy="520" r="7" fill="#0b1120"/>
+  </g>
+</svg>

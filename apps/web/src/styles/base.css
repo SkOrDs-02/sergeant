@@ -1,0 +1,200 @@
+/* ═══════════════════════════════════════════════════════════════════════
+   BASE — Reset, body, scrollbar, selection, iOS input zoom fix.
+   (Reduced-motion lives in styles/animations.css — see note below.)
+   Extracted from index.css per
+   docs/diagnostics/2026-05-03-web-deep-dive §1.4.
+   ═══════════════════════════════════════════════════════════════════════ */
+
+@layer base {
+  *,
+  ::after,
+  ::before,
+  ::backdrop,
+  ::file-selector-button {
+    /* Was a static `--color-gray-200` fallback that never flipped in dark
+       mode (2026-08 design-audit T12) — `--c-line` is the theme-aware
+       border token (light: warm-gray hairline; dark: ink hairline). */
+    border-color: rgb(var(--c-line));
+  }
+}
+
+@layer base {
+  /* ═══════════════════════════════════════════════════════════════════════
+     BASE STYLES
+     ═══════════════════════════════════════════════════════════════════════ */
+  html,
+  body {
+    width: 100%;
+    height: 100%;
+    /* App pages own their scroll in explicit inner containers. Keep the
+       document itself immovable: a transformed full-height child or
+       `scrollIntoView()` must never create root scroll range on iOS, because
+       that shifts the whole shell under the status bar and leaves a strip
+       below `/welcome` (owner repro 2026-07-13). */
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  #root {
+    width: 100%;
+    height: 100dvh;
+    overflow: hidden;
+    overscroll-behavior: none;
+  }
+
+  /* WebKit reports `dvh`, `visualViewport.height`, and the fixed-position
+     containing block without the viewport-fit extension in installed PWAs.
+     The result is a root that starts under the status bar but ends one top
+     safe-area inset above the physical bottom (WebKit 237961 / 254868).
+     In standalone there is no collapsible browser toolbar, so legacy `vh`
+     is the stable unit and includes the full edge-to-edge PWA viewport. */
+  @media (display-mode: standalone) {
+    html,
+    body,
+    #root {
+      height: 100vh;
+    }
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     OPEN-TYPE DEFAULTS — kerning + common ligatures + DM Sans stylistic
+     alternates (`ss01`). Applied at the html/body root so the whole UI
+     inherits a consistent, polished glyph baseline. Override per-element
+     via `font-feature-settings: normal;` for monospace runs that must
+     keep their literal glyph forms (e.g. code blocks, inside `.text-style-code`
+     where we explicitly reset).
+     ═══════════════════════════════════════════════════════════════════════ */
+  html {
+    /* Canvas backdrop — propagates to the window canvas, including the
+       iOS PWA home-indicator strip that sits *below* the `h-dvh` content.
+       Match the desk (`--app-mesh-background`, what `.bg-mesh` paints)
+       rather than `--c-bg`, so that bottom strip continues the page
+       surface instead of showing a lighter `bg-bg` band under it
+       (navbar-dead-space, 2026-05-29). */
+    background: var(--app-mesh-background, rgb(var(--c-bg-base)));
+    text-rendering: optimizeLegibility;
+    -webkit-font-feature-settings:
+      "kern" 1,
+      "liga" 1,
+      "calt" 1,
+      "ss01" 1;
+    font-feature-settings:
+      "kern" 1,
+      "liga" 1,
+      "calt" 1,
+      "ss01" 1;
+    font-kerning: normal;
+  }
+
+  body {
+    @apply bg-bg text-text antialiased font-sans;
+    margin: 0;
+    -webkit-font-smoothing: antialiased;
+    -webkit-tap-highlight-color: transparent;
+    -webkit-overflow-scrolling: touch;
+  }
+
+  * {
+    box-sizing: border-box;
+  }
+
+  /* Touch optimization */
+  button,
+  a,
+  label,
+  [role="button"] {
+    touch-action: manipulation;
+  }
+
+  .tabular-nums {
+    font-variant-numeric: tabular-nums;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     SELECTION — global `::selection` wash, backed by the semantic
+     `--c-selection-bg` / `--c-selection-fg` tokens. Both rules
+     (`::selection` for WebKit/Blink/standard, `::-moz-selection` for
+     Firefox compat) share the same colour pair so a copy-paste from
+     either engine renders identically.
+     ═══════════════════════════════════════════════════════════════════════ */
+  ::selection {
+    background-color: rgb(var(--c-selection-bg));
+    color: rgb(var(--c-selection-fg));
+  }
+  ::-moz-selection {
+    background-color: rgb(var(--c-selection-bg));
+    color: rgb(var(--c-selection-fg));
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     SCROLLBAR — polished, semantic, theme-aware. WebKit/Blink uses the
+     `::-webkit-scrollbar*` pseudo-elements; Firefox uses the
+     `scrollbar-color` + `scrollbar-width` properties. Both branches
+     reference the same `--c-scrollbar-*` tokens so the look stays
+     identical across engines and adapts automatically between light
+     and dark mode.
+
+     The thumb is 10 px wide (a touch chubbier than the default ~6 px) so
+     it's an easy target on touchpads without dominating dense lists.
+     The track is transparent on the outer edge so it doesn't carve a
+     line through the page background, while the thumb sits on a warm-
+     neutral fill with a hover step that telegraphs the affordance.
+
+     The `.scrollbar-hide` utility (see utilities.css `no-scrollbar`) and
+     the `.swipeable` mobile snap-strip in `mobile.css` opt out where the
+     scrollbar would clutter horizontal carousels.
+     ═══════════════════════════════════════════════════════════════════════ */
+  *,
+  *::before,
+  *::after {
+    scrollbar-color: rgb(var(--c-scrollbar-thumb))
+      rgb(var(--c-scrollbar-track) / 0);
+    scrollbar-width: thin;
+  }
+  ::-webkit-scrollbar {
+    width: 10px;
+    height: 10px;
+  }
+  ::-webkit-scrollbar-track {
+    background-color: rgb(var(--c-scrollbar-track) / 0);
+  }
+  ::-webkit-scrollbar-thumb {
+    background-color: rgb(var(--c-scrollbar-thumb));
+    border-radius: 9999px;
+    /* 2px border inset gives the thumb a "floating capsule" feel without
+       requiring a wider rail. */
+    border: 2px solid transparent;
+    background-clip: padding-box;
+  }
+  ::-webkit-scrollbar-thumb:hover,
+  ::-webkit-scrollbar-thumb:active {
+    background-color: rgb(var(--c-scrollbar-thumb-hover));
+  }
+  ::-webkit-scrollbar-corner {
+    background-color: transparent;
+  }
+
+  /* ═══════════════════════════════════════════════════════════════════════
+     REDUCED MOTION — owned solely by `styles/animations.css` (the designed
+     Hard-Rule-#17 strategy: RESPONSE/CELEBRATE collapse to a 100ms
+     `rm-opacity-fade`, AMBIENT loops pause in place, `scroll-behavior: auto`).
+     A previous blanket `animation-duration: 0.01ms !important` lived here in
+     the same `base` layer and, because base.css is imported *after*
+     animations.css, silently won the equal-specificity `*` cascade and
+     flattened the graceful fade to an invisible instant flash. Removed so
+     animations.css is the single source of truth (WCAG 2.3.3 still satisfied).
+     ═══════════════════════════════════════════════════════════════════════ */
+}
+
+/* ═══════════════════════════════════════════════════════════════════════
+   iOS INPUT ZOOM FIX — Keep 16px minimum on touch devices only.
+   Uses `hover: none` media query so desktop inputs keep their intended
+   font size from the typographic scale.
+   ═══════════════════════════════════════════════════════════════════════ */
+@media (hover: none) {
+  input:not([type="checkbox"]):not([type="radio"]):not([type="range"]),
+  select,
+  textarea {
+    font-size: 16px !important;
+  }
+}

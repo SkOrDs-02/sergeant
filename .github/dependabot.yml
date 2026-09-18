@@ -1,0 +1,103 @@
+# Dependabot configuration for the Sergeant monorepo.
+#
+# **Per ADR-0044** (`docs/governance/adr/0044-renovate-vs-dependabot.md`) — Dependabot's
+# scope is **security-only fallback**. Regular weekly bumps are owned by
+# Renovate (`renovate.json`); Dependabot lifts security-updates daily so a
+# CVE disclosed Tuesday lands in a PR Wednesday morning, not next Monday.
+#
+# Scopes kept here:
+# - **npm** : security updates only, daily.
+# - **github-actions** : SHA-pin rotation (overlap з Renovate `pinDigests:
+#   true` навмисний — supply-chain integrity критична).
+# - **docker** : same logic as github-actions.
+#
+# Scopes that used to live here (production-deps / dev-deps groups) belong
+# to Renovate now; видалено щоб уникнути duplicate-PR-noise.
+#
+# Auto-merge for patch-only security updates lives in
+# `.github/workflows/dependabot-automerge.yml`.
+
+version: 2
+updates:
+  - package-ecosystem: "npm"
+    directory: "/"
+    schedule:
+      # Daily — security-updates повинні landed на наступному робочому дні
+      # після disclosure, не чекати наступного понеділка (initiative 0008
+      # Phase 3 vulnerability-window <24h target).
+      interval: "daily"
+      time: "06:00"
+      timezone: "Europe/Kyiv"
+    open-pull-requests-limit: 10
+    versioning-strategy: "increase"
+    commit-message:
+      prefix: "chore(deps)"
+    groups:
+      security-updates:
+        applies-to: security-updates
+        patterns:
+          - "*"
+    # Без `production-deps` / `dev-deps` groups — їх власник Renovate
+    # (див. ADR-0044). Якщо Dependabot створить non-security PR з npm
+    # ecosystem, це bug у налаштуванні і має бути закритий вручну з
+    # коментарем «duplicate of Renovate group: <name>».
+    ignore:
+      # Manual pins via pnpm.overrides in package.json — Dependabot must
+      # not propose updates that fight the override pin. Keep this list in
+      # sync with package.json:pnpm.overrides whenever overrides change.
+      - dependency-name: "react-server-dom-webpack"
+      - dependency-name: "tar"
+      - dependency-name: "@xmldom/xmldom"
+      - dependency-name: "serialize-javascript"
+      - dependency-name: "postcss"
+      - dependency-name: "uuid"
+      - dependency-name: "@tootallnate/once"
+    labels:
+      - "dependencies"
+      - "security"
+      - "automerge-eligible"
+
+  - package-ecosystem: "github-actions"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Kyiv"
+    open-pull-requests-limit: 5
+    commit-message:
+      # `ci(deps)` lands the bump under the `ci` type (workflow change)
+      # with the `deps` scope so commitlint scope-enum accepts it.
+      prefix: "ci(deps)"
+    labels:
+      - "dependencies"
+      - "ci"
+
+  - package-ecosystem: "docker"
+    directory: "/"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Kyiv"
+    open-pull-requests-limit: 5
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+      - "docker"
+
+  - package-ecosystem: "docker"
+    directory: "/ops/grafana-alloy"
+    schedule:
+      interval: "weekly"
+      day: "monday"
+      time: "06:00"
+      timezone: "Europe/Kyiv"
+    open-pull-requests-limit: 3
+    commit-message:
+      prefix: "chore(deps)"
+    labels:
+      - "dependencies"
+      - "docker"
+      - "observability"

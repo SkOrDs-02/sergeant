@@ -1,0 +1,77 @@
+import IORedis, { type Redis as IORedisClient } from "ioredis";
+
+import { env } from "../../env.js";
+import { logger, serializeError } from "../../obs/logger.js";
+
+/**
+ * Створює окремий ioredis-клієнт для BullMQ.
+ *
+ * Чому окремий, а не шерити `lib/redis.ts`:
+ * 1. BullMQ ВИМАГАЄ `maxRetriesPerRequest: null` для воркер-конекшнів
+ *    (інакше `bclient` падає на blocking-команді при reconnect).
+ * 2. `enableOfflineQueue: true` потрібний, щоб `Queue.add()` не кидав
+ *    помилку у момент reconnect — він буферизується.
+ * 3. Наш базовий ioredis-клієнт у `lib/redis.ts` навмисне використовує
+ *    `maxRetriesPerRequest: 1` + `enableOfflineQueue: false`, щоб
+ *    rate-limiter швидко падав у in-memory fallback. Це несумісно з BullMQ.
+ *
+ * Повертає null, якщо `REDIS_URL` не заданий — caller-и відрабляють у
+ * fallback-режимі (in-process direct dispatch замість enqueue).
+ */
+export function createBullConnection(name: string): IORedisClient | null {
+  if (!env.REDIS_URL) {
+    return null;
+  }
+
+  const client = new IORedis(env.REDIS_URL, {
+    maxRetriesPerRequest: null,
+    enableOfflineQueue: true,
+    connectTimeout: 10_000,
+  });
+
+  client.on("error", (err) => {
+    logger.warn({
+      msg: "bullmq_connection_error",
+      connection: name,
+      err: serializeError(err, { includeStack: false }),
+    });
+  });
+
+  client.on("connect", () => {
+    logger.info({ msg: "bullmq_connection_ready", connection: name });
+  });
+
+  return client;
+}
+
+/**
+ * BullMQ key-namespace для всіх наших черг. Передається у Queue/Worker як
+ * `prefix`; підсумкові Redis-ключі мають форму `sergeant:<queue>:*`.
+ *
+ * Чому prefix-у недостатньо у самій назві черги: починаючи з BullMQ v5
+ * `:` у назві викидає `Queue name cannot contain :` ще на конструкторі
+ * (`QueueBase`). До цього історично `sergeant:auth-mail` працював і
+ * зашивав namespace у назву; тепер namespace задається окремим полем.
+ *
+ * Зміна Redis-key-layout-у була backwards-compatible: на момент переходу на
+ * окремий `prefix` (2026-05-02, Railway) Redis у production ніколи не був
+ * увімкнений, тож legacy-job-ів зі старим префіксом не існувало. Відтоді
+ * Redis зʼявився — з переїздом на Coolify (2026-07-11) `REDIS_URL` заданий,
+ * і всі три черги реально працюють. Тобто речення вище — історична довідка
+ * про ту міграцію, а не опис поточного стану.
+ */
+export const BULLMQ_QUEUE_PREFIX = "sergeant";
+
+/** Імʼя BullMQ-черги, шарене між producer-ом і consumer-ом. */
+export const AUTH_MAIL_QUEUE_NAME = "auth-mail";
+
+/**
+ * Черга async-ingestion-у AI memory (PR2 з ADR-0028). Живі producer-и
+ * (ініціатива 0024, замір § Перезамір 2026-09-03) —
+ * `digest/weekly-digest.ts` (`source=digest`) і
+ * `ai-memory/profileMirror.ts` (`source=profile`). `mono/webhook.ts`
+ * (`finyk`) і клієнт-driven `POST /api/ai-memory/ingest` прибрані PR-1
+ * тієї ж ініціативи — жоден із них не мав продюсера в дереві.
+ * Consumer — `startMemoryIngestWorker` у `modules/ai-memory/ingestQueue.ts`.
+ */
+export const AI_MEMORY_INGEST_QUEUE_NAME = "ai-memory-ingest";

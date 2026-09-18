@@ -1,0 +1,182 @@
+name: Deploy landing (Vercel CLI)
+
+# Owner: @zaebal-beep (solo maintainer).
+#
+# Чому цей воркфлоу існує. Лендінг їхав у прод ВИКЛЮЧНО через нативну
+# Git-інтеграцію Vercel, і коли вона відвалилась, деплої просто перестали
+# приходити: кожен PR отримував `Deployment failed … There is no GitHub
+# account connected to this Vercel account`, а прод тихо лишався на збірці
+# від 10 вересня. Нічого в репозиторії про це не сигналізувало — гілка
+# зелена, код змерджений, сайт старий.
+#
+# Тут той самий шлях, яким уже їде API (`deploy-api.yml`): білд робить
+# GitHub Actions, а не чужа інтеграція. Vercel CLI з токеном не залежить
+# від того, чи прив'язаний GitHub-акаунт до Vercel-проєкту.
+#
+# `vercel pull` тягне налаштування проєкту (Root Directory, env), `vercel
+# build` виконує `buildCommand` з `apps/landing/vercel.json` — тобто ті самі
+# security-заголовки, редіректи і постбілд-SEO, що й раніше. `--prebuilt`
+# на деплої означає «не збирай удруге на боці Vercel».
+#
+# `ignoreCommand` з `vercel.json` тут НЕ діє: він існує для Git-інтеграції.
+# Замість нього фільтрує `paths` нижче.
+
+on:
+  push:
+    branches: [main]
+    paths:
+      - "apps/landing/**"
+      - "packages/design-tokens/**"
+      - "packages/shared/**"
+      - "pnpm-lock.yaml"
+      - "pnpm-workspace.yaml"
+      - ".github/workflows/deploy-landing.yml"
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: deploy-landing
+  cancel-in-progress: false
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    steps:
+      # Поки секретів немає, push-прогін НЕ падає: інакше кожен мерж із
+      # правкою лендінга давав би червоний `main`, а «червоний завжди»
+      # інформаційно дорівнює «вимкнений» — той самий урок, що вже двічі
+      # записаний у AGENTS.md про бандл-гейти. Натомість крок пише warning і
+      # чесно каже, що поставки немає. Ручний запуск — інша річ: людина
+      # явно просила деплой, тож там відсутність секретів це помилка.
+      - name: Секрети на місці?
+        id: secrets
+        env:
+          VERCEL_TOKEN: ${{ secrets.VERCEL_TOKEN }}
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID_LANDING: ${{ secrets.VERCEL_PROJECT_ID_LANDING }}
+        run: |
+          missing=()
+          [ -n "$VERCEL_TOKEN" ] || missing+=("VERCEL_TOKEN")
+          [ -n "$VERCEL_ORG_ID" ] || missing+=("VERCEL_ORG_ID")
+          [ -n "$VERCEL_PROJECT_ID_LANDING" ] || missing+=("VERCEL_PROJECT_ID_LANDING")
+          if [ ${#missing[@]} -eq 0 ]; then
+            echo "ready=true" >> "$GITHUB_OUTPUT"
+            exit 0
+          fi
+          echo "ready=false" >> "$GITHUB_OUTPUT"
+          hint="Немає секретів: ${missing[*]}. Додай у Settings → Secrets and variables → Actions. TOKEN — vercel.com/account/settings/tokens; ORG_ID і PROJECT_ID — Vercel → проєкт sergeant-landing → Settings → General."
+          if [ "${{ github.event_name }}" = "workflow_dispatch" ]; then
+            echo "::error::$hint"
+            exit 1
+          fi
+          echo "::warning::$hint Лендінг НЕ задеплоєно — прод лишається на попередній збірці."
+
+      - if: steps.secrets.outputs.ready == 'true'
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v5.0.0
+
+      - if: steps.secrets.outputs.ready == 'true'
+        uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093 # v4.2.0
+
+      - if: steps.secrets.outputs.ready == 'true'
+        uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e # v5.0.0
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install
+        if: steps.secrets.outputs.ready == 'true'
+        run: pnpm install --frozen-lockfile
+
+      # Мажор узято з логу першого прогону (`Vercel CLI 59.16.0`): репо
+      # пінить версії інструментів, і `@latest` тут був лише тимчасовим,
+      # поки фактична версія не стала відомою.
+      - name: Vercel CLI
+        if: steps.secrets.outputs.ready == 'true'
+        run: pnpm add -g vercel@59
+
+      # ВСІ три команди йдуть із КОРЕНЯ репо, не з `apps/landing`. Root
+      # Directory проєкту (`apps/landing`) CLI додає САМ, відносно cwd — з
+      # cwd=apps/landing шлях подвоювався, і деплой падав на
+      # `apps/landing/apps/landing does not exist` (прогін #1).
+      - name: Pull project settings
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_LANDING }}
+        run: vercel pull --yes --environment=production --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Build
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_LANDING }}
+        run: vercel build --prod --token="${{ secrets.VERCEL_TOKEN }}"
+
+      - name: Deploy
+        if: steps.secrets.outputs.ready == 'true'
+        id: deploy
+        env:
+          VERCEL_ORG_ID: ${{ secrets.VERCEL_ORG_ID }}
+          VERCEL_PROJECT_ID: ${{ secrets.VERCEL_PROJECT_ID_LANDING }}
+        run: |
+          url=$(vercel deploy --prebuilt --prod --token="${{ secrets.VERCEL_TOKEN }}")
+          echo "url=$url" >> "$GITHUB_OUTPUT"
+          echo "Задеплоєно: $url"
+
+      # Успішний деплой ще не означає живу сторінку: пререндер міг не
+      # відпрацювати, і тоді краулер дістане порожній `#root` — рівно та
+      # вада, яку закрив GEO-аудит.
+      #
+      # Перевіряємо URL САМЕ цього деплою, а не лише прод-домен: canonical і
+      # непорожній `#root` є і на старій збірці, тож перевірка домену не
+      # відрізнила б «доїхало нове» від «лишилось старе» — вона була б
+      # зеленою навіть тоді, коли деплой узагалі не змінив прод.
+      - name: Деплой віддає пререндерений HTML
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          if [ -z "$DEPLOY_URL" ]; then
+            echo "::error::Крок Deploy не віддав URL — перевіряти нічого."
+            exit 1
+          fi
+          for attempt in 1 2 3 4 5; do
+            html=$(curl -fsSL --max-time 20 "$DEPLOY_URL" || true)
+            if printf '%s' "$html" | grep -q 'rel="canonical"' \
+              && ! printf '%s' "$html" | grep -q '<div id="root"></div>'; then
+              echo "Збірка жива: canonical на місці, #root не порожній."
+              exit 0
+            fi
+            echo "Спроба $attempt: деплой ще не віддає пререндерений HTML, чекаю."
+            sleep 15
+          done
+          echo "::error::$DEPLOY_URL не віддає пререндерений HTML."
+          exit 1
+
+      # Окремо від пререндеру: чи справді прод-домен показує НОВУ збірку.
+      # Порівнюємо за іменем зібраного JS-бандла — воно містить хеш вмісту,
+      # тож збігається лише тоді, коли домен перемкнувся на цей деплой.
+      - name: Прод-домен показує цю збірку
+        if: steps.secrets.outputs.ready == 'true'
+        env:
+          DEPLOY_URL: ${{ steps.deploy.outputs.url }}
+        run: |
+          asset=$(curl -fsSL --max-time 20 "$DEPLOY_URL" \
+            | grep -o '/assets/[A-Za-z0-9._-]*\.js' | head -1)
+          if [ -z "$asset" ]; then
+            echo "::warning::Не вдалось витягти ім'я бандла зі свіжої збірки — пропускаю звірку."
+            exit 0
+          fi
+          echo "Шукаю на проді: $asset"
+          for attempt in 1 2 3 4 5 6; do
+            if curl -fsSL --max-time 20 https://sergeant.com.ua/ | grep -q "$asset"; then
+              echo "sergeant.com.ua віддає цю збірку."
+              exit 0
+            fi
+            echo "Спроба $attempt: прод ще на попередній збірці, чекаю."
+            sleep 20
+          done
+          echo "::error::sergeant.com.ua не перемкнувся на цей деплой. Деплой пройшов, але домен показує стару збірку — перевір, чи прив'язаний домен до проєкту sergeant-landing."
+          exit 1

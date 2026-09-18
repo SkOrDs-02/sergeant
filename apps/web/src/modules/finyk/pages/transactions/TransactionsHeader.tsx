@@ -1,0 +1,157 @@
+import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
+
+export interface TransactionsHeaderProps {
+  monthLabel: string;
+  isCurrentMonth: boolean;
+  goMonth: (delta: number) => void;
+  selectMode: boolean;
+  exitSelectMode: () => void;
+  setSelectMode: (v: boolean) => void;
+  showHidden: boolean;
+  setShowHidden: (updater: (v: boolean) => boolean) => void;
+  hiddenCount: number;
+  /** Batch selection size — drives the inline "Обери транзакції" hint. */
+  selectedCount?: number;
+  /**
+   * Вивантажити видимі операції у CSV. Без колбека кнопка не рендериться:
+   * експортувати нема чого.
+   */
+  onExportCsv?: (() => void) | undefined;
+  /**
+   * Скільки рядків піде у файл. `0` ховає кнопку — порожній CSV із самою
+   * шапкою виглядає як поламаний експорт, а не як порожній місяць.
+   */
+  exportCount?: number;
+}
+
+/**
+ * Top header for the Transactions page: month switcher on the left,
+ * action buttons (toggle-hidden / select-mode) on the right.
+ *
+ * The "select-mode" toggle replaces the action cluster with a single
+ * "Скасувати" button while batch selection is active — the actions
+ * only make sense outside of select-mode anyway. Manual refresh lives in
+ * Hub → Налаштування → Фінік → Сервіс (mono webhook means data already
+ * refetches on focus / staleness; the manual button is a fallback).
+ */
+export function TransactionsHeader({
+  monthLabel,
+  isCurrentMonth,
+  goMonth,
+  selectMode,
+  exitSelectMode,
+  setSelectMode,
+  showHidden,
+  setShowHidden,
+  hiddenCount,
+  selectedCount = 0,
+  onExportCsv,
+  exportCount = 0,
+}: TransactionsHeaderProps) {
+  return (
+    <div className="flex items-center justify-between mb-3">
+      <div className="flex items-center gap-1">
+        <button
+          onClick={() => goMonth(-1)}
+          aria-label="Попередній місяць"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors"
+        >
+          <Icon name="chevron-left" size="sm" />
+        </button>
+        <span className="text-style-label text-text px-1">{monthLabel}</span>
+        <button
+          onClick={() => goMonth(1)}
+          disabled={isCurrentMonth}
+          aria-label="Наступний місяць"
+          className="w-8 h-8 min-h-[44px] min-w-[44px] flex items-center justify-center rounded-xl text-subtle hover:text-text hover:bg-panelHi transition-colors disabled:opacity-30"
+        >
+          <Icon name="chevron-right" size="sm" />
+        </button>
+      </div>
+      <div className="flex items-center gap-1.5">
+        {selectMode ? (
+          <>
+            {selectedCount === 0 && (
+              <span className="text-style-caption text-muted">
+                Обери транзакції
+              </span>
+            )}
+            <button
+              onClick={exitSelectMode}
+              className="text-xs px-3 py-2 rounded-full border border-primary/40 bg-primary/8 text-primary min-h-[36px] font-semibold"
+            >
+              Скасувати
+            </button>
+          </>
+        ) : (
+          <>
+            {hiddenCount > 0 && (
+              <button
+                onClick={() => setShowHidden((v) => !v)}
+                className={cn(
+                  "text-xs px-3 py-2 rounded-full border border-line transition-colors min-h-[36px]",
+                  showHidden ? "text-primary border-primary" : "text-subtle",
+                )}
+              >
+                {showHidden ? (
+                  <svg
+                    width="14"
+                    height="14"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="2"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden
+                  >
+                    <path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z" />
+                    <circle cx="12" cy="12" r="3" />
+                  </svg>
+                ) : (
+                  <span>{hiddenCount} прих.</span>
+                )}
+              </button>
+            )}
+            {/* Експорт стоїть поруч із «прих.» і режимом вибору — у тому
+                самому кластері дій над видимим списком. Ховається разом із
+                ними в select-режимі: вивантажувати те, що людина зараз
+                перебирає, означало б віддати файл із проміжного стану. */}
+            {onExportCsv && exportCount > 0 && (
+              <button
+                onClick={onExportCsv}
+                className="w-11 h-11 flex items-center justify-center rounded-full border border-line text-subtle hover:text-text hover:border-muted transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+                title={`Вивантажити ${exportCount} у CSV`}
+                aria-label={`Вивантажити операції у CSV: ${exportCount}`}
+              >
+                <Icon name="download" size="md" aria-hidden />
+              </button>
+            )}
+            <button
+              onClick={() => setSelectMode(true)}
+              className="w-11 h-11 flex items-center justify-center rounded-full border border-line text-subtle hover:text-text hover:border-muted transition-colors"
+              title="Вибрати кілька"
+              aria-label="Режим вибору"
+            >
+              <svg
+                width="16"
+                height="16"
+                viewBox="0 0 24 24"
+                fill="none"
+                stroke="currentColor"
+                strokeWidth="2"
+                strokeLinecap="round"
+                strokeLinejoin="round"
+                aria-hidden
+              >
+                <polyline points="9 11 12 14 22 4" />
+                <path d="M21 12v7a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2V5a2 2 0 0 1 2-2h11" />
+              </svg>
+            </button>
+          </>
+        )}
+      </div>
+    </div>
+  );
+}

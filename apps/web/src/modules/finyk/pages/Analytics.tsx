@@ -1,0 +1,611 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+import {
+  memo,
+  useCallback,
+  useState,
+  useEffect,
+  useMemo,
+  useRef,
+  Suspense,
+  type ReactNode,
+} from "react";
+import { Card } from "@shared/components/ui/Card";
+import { Icon } from "@shared/components/ui/Icon";
+import { SectionHeading } from "@shared/components/ui/SectionHeading";
+import { Skeleton } from "@shared/components/ui/Skeleton";
+import { EmptyState } from "@shared/components/ui/EmptyState";
+import { Money, Delta } from "@shared/components/ui/Money";
+import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { filterToKyivMonth } from "../lib/monthWindow";
+import { isMonoNotConnectedError } from "../lib/monoBankErrors";
+import { useAnalytics } from "../hooks/useAnalytics";
+import { CategoryPieChart } from "../components/charts/lazy";
+import { ChartFallback } from "../components/charts/ChartFallback";
+import { MerchantList } from "../components/analytics/MerchantList";
+import { getTrendComparison } from "@sergeant/finyk-domain/domain/selectors";
+import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
+import type {
+  Transaction,
+  TxSplitsMap,
+} from "@sergeant/finyk-domain/domain/types";
+import {
+  trackEvent,
+  ANALYTICS_EVENTS,
+} from "../../../core/observability/analytics";
+import { markFinykAnalyticsViewed } from "../../../core/onboarding/useChecklistSignals";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
+
+interface SectionProps {
+  title: string;
+  children: ReactNode;
+  className?: string;
+}
+
+interface MonthNavProps {
+  year: number;
+  month: number;
+  onChange: (year: number, month: number) => void;
+}
+
+interface ComparisonRowProps {
+  label: string;
+  current: number;
+  prev: number;
+  kind?: "expense" | "income";
+  showBalance?: boolean;
+}
+
+export interface AnalyticsProps {
+  mono: {
+    realTx?: Transaction[];
+    loadingTx?: boolean;
+    fetchMonth: (year: number, month0Based: number) => Promise<Transaction[]>;
+  };
+  storage: {
+    excludedTxIds: Set<string> | Iterable<string>;
+    txSplits: TxSplitsMap;
+    manualExpenses?: ManualExpense[];
+  };
+  /**
+   * Дрил-даун із кільця категорій у список операцій. Саме він робить
+   * Аналітику не глухим кутом: доти вона казала «скільки», але дійти від
+   * числа до самих операцій було ніяк.
+   */
+  onSelectCategory?: (categoryId: string) => void;
+  /**
+   * «Приховати суми» (PR-F3 founder-UX audit 2026-09-13): доти сторінка
+   * не приймала цей проп узагалі, тож перемикач з Огляду не діяв тут —
+   * маскує підсумок місяця, порівняння, кільце категорій і топ продавців.
+   */
+  showBalance?: boolean;
+}
+
+// Презентаційний контейнер-секція. memo, бо приймає лише `title/className/children`
+// і не має побічних ефектів — уникаємо рендеру при оновленнях, не повʼязаних з пропсами.
+const Section = memo(function Section({
+  title,
+  children,
+  className,
+}: SectionProps) {
+  return (
+    <Card radius="lg" padding="lg" className={className}>
+      <SectionHeading as="div" size="xs" className="mb-4" variant="finyk">
+        {title}
+      </SectionHeading>
+      {children}
+    </Card>
+  );
+});
+
+// Навігація між місяцями. memo — пропси (year/month/onChange) змінюються рідко,
+// а сторінка Analytics ре-рендериться при кожному завантаженні історії.
+const MonthNav = memo(function MonthNav({
+  year,
+  month,
+  onChange,
+}: MonthNavProps) {
+  // Use Kyiv-local year/month so "current month" matches Europe/Kyiv day boundaries.
+  const nowKyiv = getKyivDateParts();
+  const isCurrentMonth = year === nowKyiv.year && month === nowKyiv.month;
+  const label = formatMonthYear(new Date(year, month - 1, 1), {
+    capitalize: true,
+  });
+
+  const go = (delta: number) => {
+    let m = month + delta;
+    let y = year;
+    if (m > 12) {
+      m = 1;
+      y++;
+    }
+    if (m < 1) {
+      m = 12;
+      y--;
+    }
+    onChange(y, m);
+  };
+
+  return (
+    <div className="flex items-center justify-between">
+      <button
+        type="button"
+        onClick={() => go(-1)}
+        className="min-w-[44px] min-h-[44px] rounded-xl border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panelHi transition-colors"
+        aria-label="Попередній місяць"
+      >
+        <Icon name="chevron-left" size="sm" />
+      </button>
+      <span className="text-style-label text-text">{label}</span>
+      <button
+        type="button"
+        onClick={() => go(1)}
+        disabled={isCurrentMonth}
+        className="min-w-[44px] min-h-[44px] rounded-xl border border-line flex items-center justify-center text-muted hover:text-text hover:bg-panelHi transition-colors disabled:opacity-30"
+        aria-label="Наступний місяць"
+      >
+        <Icon name="chevron-right" size="sm" />
+      </button>
+    </div>
+  );
+});
+
+// Рядок порівняння метрики з попереднім місяцем. Чиста функція від пропсів —
+// memo знімає перерендер при оновленнях сусідніх секцій Analytics.
+// `kind` визначає семантику знаку: для "expense" зростання — погано
+// (червоне), для "income" — добре (зелене).
+const ComparisonRow = memo(function ComparisonRow({
+  label,
+  current,
+  prev,
+  kind = "expense",
+  showBalance = true,
+}: ComparisonRowProps) {
+  const diff = current - prev;
+  const pct = prev > 0 ? Math.round((diff / prev) * 100) : null;
+
+  return (
+    <div className="flex items-center justify-between text-sm">
+      <span className="text-muted">{label}</span>
+      <div className="flex items-center gap-2">
+        {showBalance ? (
+          <Money amount={current} className="text-text font-medium" />
+        ) : (
+          <span className="text-text font-medium">••••</span>
+        )}
+        {showBalance && prev > 0 && pct !== null && (
+          /* Полярність задає `kind`, а не знак: зростання доходу — добре,
+             зростання витрат — ні. Рівно те розділення, заради якого
+             `Delta` бере `polarity` окремим пропом. */
+          <Delta
+            value={pct}
+            symbol="%"
+            polarity={kind === "income" ? "positive" : "negative"}
+            className="text-style-caption font-normal"
+          />
+        )}
+      </div>
+    </div>
+  );
+});
+
+export function Analytics({
+  mono,
+  storage,
+  onSelectCategory,
+  showBalance = true,
+}: AnalyticsProps) {
+  // Use Kyiv-local year/month so "current month" tracks Europe/Kyiv day boundaries.
+  const nowKyiv = getKyivDateParts();
+  const [year, setYear] = useState(nowKyiv.year);
+  const [month, setMonth] = useState(nowKyiv.month);
+
+  // Fire-and-forget: record that the analytics view was opened. Intentionally
+  // runs once on mount (no month dep) so re-selecting months doesn't spam.
+  //
+  // AI-DANGER: `markFinykAnalyticsViewed` latches the «Переглянути
+  // аналітику» крок чекліста НАЗАВЖДИ, тож ставити його можна рівно
+  // там, де екран справді відкрився — тобто тут. Спершу він стояв у
+  // `HubHeroBlock` перед диспатчем навігації, і це було хибно: подія
+  // веде в `useAppEffects`, який передає далі лише `module`, а не
+  // `action`, тож Фінік відкривався на ДЕФОЛТНІЙ сторінці (огляд), і
+  // `FinykApp` споживає з усіх дій саму `add_expense`. Відмітка
+  // ставилась, аналітика не відкривалась — чекліст брехав знову, тільки
+  // іншими дверима (знахідка рев'ю до PR #1106). Звідси ж випливає
+  // побічна користь: сигнал тепер чесний для БУДЬ-ЯКОГО шляху сюди —
+  // нижній нав, пряме посилання, чекліст, — а не лише для одного
+  // викликача.
+  useEffect(() => {
+    trackEvent(ANALYTICS_EVENTS.ANALYTICS_OPENED, { module: "finyk" });
+    markFinykAnalyticsViewed();
+  }, []);
+
+  const isCurrentMonth = year === nowKyiv.year && month === nowKyiv.month;
+
+  // In-memory cache of fetched historical months. Keyed by "YYYY-MM".
+  // No localStorage — source of truth is the server; React Query handles
+  // HTTP-level caching so repeated navigations don't re-fetch.
+  const [monthCache, setMonthCache] = useState<Record<string, Transaction[]>>(
+    {},
+  );
+  const [loading, setLoading] = useState(false);
+  // Помилки читання ПО МІСЯЦЯХ, а не одна на сторінку. Дві причини.
+  //
+  // 1) Реєстр упалих місяців розриває нескінченний цикл: `mono` приходить
+  //    новим обʼєктом на КОЖЕН рендер (`useMonobankWebhook` повертає
+  //    літерал, `useUnifiedFinanceData` його перепаковує), тож `ensureMonth`
+  //    міняв ідентичність, ефекти нижче перезапускались, місяця в кеші не
+  //    було — і fetch стартував знову: реджект → `setFetchError` → рендер →
+  //    новий fetch → реджект. Саме через цей цикл кнопка «Повторити»
+  //    виглядала мертвою: вона таки перезапускала читання, але плашка
+  //    поверталась за мілісекунди від наступної спроби.
+  // 2) Ключ = місяць, тож провал ФОНОВОГО fetch-у попереднього місяця
+  //    (його тягнуть лише заради секції «Порівняння») більше не малює
+  //    червону плашку над місяцем, який завантажився нормально.
+  const [fetchErrors, setFetchErrors] = useState<Record<string, string>>({});
+  const fetchingRef = useRef(new Set<string>());
+
+  const monthKey = `${year}-${String(month).padStart(2, "0")}`;
+  const fetchError = fetchErrors[monthKey] ?? null;
+
+  const prevYear = month === 1 ? year - 1 : year;
+  const prevMonth = month === 1 ? 12 : month - 1;
+  const prevKey = `${prevYear}-${String(prevMonth).padStart(2, "0")}`;
+
+  // `fetchMonth` — стабільний `useCallback` усередині `useMonobankWebhook`,
+  // на відміну від обгортки `mono`. Тримаємось за саму функцію, щоб
+  // ідентичність `ensureMonth` мінялась лише від реальних змін.
+  const fetchMonth = mono.fetchMonth;
+
+  // Fetch a month from the server (via mono.fetchMonth → React Query)
+  // and store the result in the in-memory cache.
+  const ensureMonth = useCallback(
+    (y: number, m1: number, key: string) => {
+      if (fetchingRef.current.has(key)) return;
+      if (monthCache[key]) return;
+      // Місяць уже впав — не перезапускаємо самі. Перезапуск робить
+      // «Повторити», і лише він (див. цикл в описі `fetchErrors`).
+      if (fetchErrors[key]) return;
+      fetchingRef.current.add(key);
+      void Promise.resolve().then(() => {
+        setLoading(true);
+      });
+      fetchMonth(y, m1 - 1)
+        .then((txs) => {
+          setMonthCache((prev) => ({ ...prev, [key]: txs }));
+          // Успіх гасить плашку саме цього місяця — доти вона лишалась на
+          // екрані навіть після того, як дані приїхали.
+          setFetchErrors((prev) => {
+            if (!(key in prev)) return prev;
+            const next = { ...prev };
+            delete next[key];
+            return next;
+          });
+        })
+        .catch((err: unknown) => {
+          if (isMonoNotConnectedError(err)) {
+            // Банку просто немає — це порожній місяць, а не збій. Кладемо
+            // порожній зріз у кеш, щоб секції показали empty-state, а не
+            // червону плашку (у людини з самими ручними витратами вона
+            // висіла назавжди й не зникала після «Повторити»).
+            setMonthCache((prev) => ({ ...prev, [key]: [] }));
+            return;
+          }
+          // Не отруюємо кеш порожнім масивом — тимчасовий збій має
+          // лишатись перезапускним. Порожній ключ у кеші виглядав би як
+          // чесний «0 ₴».
+          setFetchErrors((prev) => ({
+            ...prev,
+            [key]: "Не вдалось завантажити транзакції",
+          }));
+        })
+        .finally(() => {
+          fetchingRef.current.delete(key);
+          // Keep the loading indicator on while any other month fetch is
+          // still in flight; flipping to `false` unconditionally would
+          // hide loading whenever the first parallel fetch resolves.
+          setLoading(fetchingRef.current.size > 0);
+        });
+    },
+    [fetchMonth, monthCache, fetchErrors],
+  );
+
+  // «Повторити» = зняти позначку провалу і викинути кеш обраного місяця
+  // (та попереднього, який живить «Порівняння»). Обидва `set*` віддають
+  // НОВІ обʼєкти, тож `ensureMonth` міняє ідентичність і ефекти нижче
+  // перезапускають читання — це і є справжній ретрай, а не лише ховання
+  // плашки.
+  const retryCurrentMonth = useCallback(() => {
+    setFetchErrors((prev) => {
+      if (!(monthKey in prev) && !(prevKey in prev)) return { ...prev };
+      const next = { ...prev };
+      delete next[monthKey];
+      delete next[prevKey];
+      return next;
+    });
+    setMonthCache((prev) => {
+      const next = { ...prev };
+      delete next[monthKey];
+      delete next[prevKey];
+      return next;
+    });
+  }, [monthKey, prevKey]);
+
+  useEffect(() => {
+    if (!isCurrentMonth) ensureMonth(year, month, monthKey);
+  }, [isCurrentMonth, year, month, monthKey, ensureMonth]);
+
+  useEffect(() => {
+    ensureMonth(prevYear, prevMonth, prevKey);
+  }, [prevYear, prevMonth, prevKey, ensureMonth]);
+
+  // Manual expenses for the currently selected month.
+  // storage (localStorage-backed), not in the server tx stream, so they
+  // must be merged into `activeTx` explicitly — otherwise Analytics shows
+  // 0 ₴ even when Transactions clearly lists them. See useTransactionFilters
+  // for the source-of-truth merge pattern.
+  // §1.8: host-local `new Date(year, month-1, 1)` bounds put an entry
+  // dated "2026-08-01" outside August for any device west of Kyiv (its
+  // UTC-midnight instant lands before the host's local month start).
+  // `filterToKyivMonth` is the same Kyiv-anchored clamp the bank slice
+  // below already uses, reuse it instead of a second, host-local rule.
+  const manualExpenseTxs = useMemo(() => {
+    const list = storage.manualExpenses;
+    if (!list || list.length === 0) return [] as Transaction[];
+    return filterToKyivMonth(
+      list.map((e) => manualExpenseToTransaction(e)),
+      monthKey,
+    );
+  }, [storage.manualExpenses, monthKey]);
+
+  const prevManualExpenseTxs = useMemo(() => {
+    const list = storage.manualExpenses;
+    if (!list || list.length === 0) return [] as Transaction[];
+    return filterToKyivMonth(
+      list.map((e) => manualExpenseToTransaction(e)),
+      prevKey,
+    );
+  }, [storage.manualExpenses, prevKey]);
+
+  // AI-DANGER: банківський зріз ОБОВʼЯЗКОВО клампиться по місяцю, як в
+  // Огляді (`useOverviewData`) і Бюджетах (`Budgets.tsx`). Ручні витрати
+  // вище вже вікноавані, а банківські — ні, і саме ця асиметрія робила
+  // Аналітику єдиною поверхнею Фініка без клампу.
+  //
+  // `mono.realTx` — це `overlayTransactions` із `useMonobankWebhook`: коли
+  // мережевий зріз поточного місяця порожній (холодний старт, перше число
+  // місяця), він підставляє ВЕСЬ SQLite-mirror. Відколи `fetchMonth`
+  // backfill-ить дзеркало історією, цей overlay тягне сюди кожен
+  // синхронізований місяць — і «Підсумок місяця» показував би суму за весь
+  // час. Це той самий клас бага, що й founder-репорт 2026-07-31 («Витрати
+  // 128 842 ₴ за серпень» першого числа), лише інша поверхня.
+  //
+  // Клампимо й `monthCache`-гілку: вона приходить із місяцевого fetch-у, але
+  // його межі анкорені на фіксований `+03:00`, а `filterToKyivMonth` — на
+  // справжній київський зсув, тож взимку краї місяця розходяться на годину.
+  // Банківський зріз ОКРЕМО від обʼєднаного: на ньому — і тільки на ньому —
+  // гейтиться банер помилки завантаження нижче. Доти гейт стояв на
+  // обʼєднаному `activeTx`, тож ОДНА ручна витрата в місяці ховала збій
+  // читання банку разом із єдиною кнопкою «Повторити» — а `ensureMonth`
+  // навмисно не перезапускає впалий місяць сам, тож стан лишався
+  // невідновним до перемикання місяця чи релоаду (аудит 2026-09-16, WF-6).
+  const bankTx = useMemo(
+    () =>
+      filterToKyivMonth(
+        isCurrentMonth ? mono.realTx || [] : monthCache[monthKey] || [],
+        monthKey,
+      ),
+    [isCurrentMonth, mono.realTx, monthCache, monthKey],
+  );
+
+  const activeTx = useMemo(() => {
+    if (manualExpenseTxs.length === 0) return bankTx;
+    return [...bankTx, ...manualExpenseTxs];
+  }, [bankTx, manualExpenseTxs]);
+
+  const prevTx = useMemo(() => {
+    const bankTx = filterToKyivMonth(monthCache[prevKey] || [], prevKey);
+    if (prevManualExpenseTxs.length === 0) return bankTx;
+    return [...bankTx, ...prevManualExpenseTxs];
+  }, [monthCache, prevKey, prevManualExpenseTxs]);
+
+  const analyticsMono = useMemo(
+    () => ({ ...mono, realTx: activeTx, loadingTx: mono.loadingTx || loading }),
+    [mono, activeTx, loading],
+  );
+
+  const { summary, distribution, distributionTotal, topMerchants } =
+    useAnalytics({
+      mono: analyticsMono,
+      storage,
+    });
+
+  const comparison = useMemo(() => {
+    if (!(prevKey in monthCache)) return null;
+    const c = getTrendComparison(activeTx, prevTx, {
+      excludedTxIds: storage.excludedTxIds,
+      txSplits: storage.txSplits,
+    });
+    if (
+      c.currentSpent === 0 &&
+      c.prevSpent === 0 &&
+      c.currentIncome === 0 &&
+      c.prevIncome === 0
+    ) {
+      return null;
+    }
+    return c;
+  }, [
+    activeTx,
+    prevTx,
+    monthCache,
+    prevKey,
+    storage.excludedTxIds,
+    storage.txSplits,
+  ]);
+
+  const pageLoading =
+    (isCurrentMonth ? mono.loadingTx : loading) && activeTx.length === 0;
+
+  // useCallback — передається у memo(MonthNav); стабільне посилання дозволяє
+  // уникати перерендеру навігації при оновленні інших частин сторінки.
+  const handleMonthChange = useCallback((y: number, m: number) => {
+    setYear(y);
+    setMonth(m);
+  }, []);
+
+  return (
+    <div className="flex-1 overflow-y-auto">
+      <h1 className="sr-only">Аналітика</h1>
+      <div className="max-w-4xl mx-auto px-4 pt-4 page-tabbar-pad space-y-4">
+        <MonthNav year={year} month={month} onChange={handleMonthChange} />
+
+        {fetchError && bankTx.length === 0 && (
+          <div className="flex items-center justify-between gap-3 px-4 py-3 rounded-xl bg-danger/10 border border-danger/20 text-sm text-danger-strong dark:text-danger">
+            <span>{fetchError}</span>
+            <button
+              type="button"
+              onClick={retryCurrentMonth}
+              className="shrink-0 font-medium underline underline-offset-2 hover:no-underline"
+            >
+              Повторити
+            </button>
+          </div>
+        )}
+
+        {/* Summary */}
+        <Section title="Підсумок місяця">
+          {pageLoading ? (
+            <div className="grid grid-cols-3 gap-3">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-12 rounded-xl" />
+              ))}
+            </div>
+          ) : (
+            <div className="grid grid-cols-3 gap-3">
+              <div className="text-center">
+                <div className="text-style-caption text-subtle mb-1">
+                  Витрати
+                </div>
+                {showBalance ? (
+                  <Money
+                    amount={summary.spent}
+                    tone="inherit"
+                    className="block text-style-label text-danger-strong dark:text-danger"
+                  />
+                ) : (
+                  <span className="block text-style-label text-danger-strong dark:text-danger">
+                    ••••
+                  </span>
+                )}
+              </div>
+              <div className="text-center">
+                <div className="text-style-caption text-subtle mb-1">Дохід</div>
+                {showBalance ? (
+                  <Money
+                    amount={summary.income}
+                    tone="inherit"
+                    className="block text-style-label text-success-strong dark:text-success"
+                  />
+                ) : (
+                  <span className="block text-style-label text-success-strong dark:text-success">
+                    ••••
+                  </span>
+                )}
+              </div>
+              <div className="text-center">
+                <div className="text-style-caption text-subtle mb-1">
+                  Баланс
+                </div>
+                {/* Баланс — підписана дельта, тож `Delta`, а не `Money`:
+                    вона й знак ставить сама, і колір бере з того самого
+                    `signedDeltaClass`, який тут стояв вручну. */}
+                {showBalance ? (
+                  <Delta
+                    value={summary.balance}
+                    polarity="positive"
+                    className="block text-style-label"
+                  />
+                ) : (
+                  <span className="block text-style-label">••••</span>
+                )}
+              </div>
+            </div>
+          )}
+        </Section>
+
+        {/* Comparison */}
+        {comparison && (
+          <Section title="Порівняння з попереднім місяцем">
+            <div className="space-y-2">
+              <ComparisonRow
+                label="Витрати"
+                current={comparison.currentSpent}
+                prev={comparison.prevSpent}
+                showBalance={showBalance}
+              />
+              <ComparisonRow
+                label="Дохід"
+                current={comparison.currentIncome}
+                prev={comparison.prevIncome}
+                kind="income"
+                showBalance={showBalance}
+              />
+            </div>
+          </Section>
+        )}
+
+        {/* Categories */}
+        <Section title="Категорії">
+          {pageLoading ? (
+            <Skeleton className="h-40 rounded-xl" />
+          ) : distribution.length === 0 ? (
+            <EmptyState
+              compact
+              module="finyk"
+              title="Поки немає витрат"
+              description="За цей місяць транзакцій не знайдено, обери інший період зверху."
+            />
+          ) : (
+            <Suspense fallback={<ChartFallback className="h-40" />}>
+              <CategoryPieChart
+                data={distribution}
+                total={distributionTotal}
+                className=""
+                showBalance={showBalance}
+                {...(onSelectCategory ? { onSelectCategory } : {})}
+              />
+            </Suspense>
+          )}
+        </Section>
+
+        {/* Merchants */}
+        <Section title="Топ продавці">
+          {pageLoading ? (
+            <div className="space-y-2">
+              {[0, 1, 2].map((i) => (
+                <Skeleton key={i} className="h-8 rounded-xl" />
+              ))}
+            </div>
+          ) : topMerchants.length === 0 ? (
+            <EmptyState
+              compact
+              module="finyk"
+              title="Поки немає продавців"
+              description="Витрат за цей місяць ще не записано."
+            />
+          ) : (
+            <MerchantList
+              merchants={topMerchants}
+              showBalance={showBalance}
+              className=""
+            />
+          )}
+        </Section>
+      </div>
+    </div>
+  );
+}

@@ -1,0 +1,34 @@
+groups:
+  - name: gdpr-cleanup
+    rules:
+      # ADR-0016 § ADR-6.3 — audit-предикат «stuck»: `completed_at IS NULL
+      # AND attempts > 5`. Рядок, що фейлить vendor-delete понад 5 разів
+      # поспіль (або вже exhausted: attempts=10, next_attempt_at='infinity'
+      # — воркер його більше НЕ ретраїть), означає, що PII користувача
+      # лишається у зовнішньому сервісі попри запит на видалення.
+      #
+      # Метрику `gdpr_cleanup_queue_depth{status="stuck"}` семплить
+      # in-process полер (`apps/server/src/modules/gdpr/cleanupPoller.ts`)
+      # раз на `GDPR_CLEANUP_POLL_INTERVAL_MS` (default — година); gauge
+      # тримає останнє значення між семплами, тож `for: 2h` гарантує
+      # мінімум два tick-и підряд зі stuck-рядками — transient-рядок, який
+      # доретраївся сам, алерт не будить. Severity `ticket`, не `page`:
+      # GDPR-вікно «without undue delay» міряється днями, потрібен оператор
+      # у робочий час (перевірити `last_error`, зкинути `next_attempt_at`
+      # для exhausted-рядків або доналаштувати vendor-токен), а не підйом
+      # о 3-й ночі.
+      - alert: GdprCleanupQueueStuckRows
+        expr: gdpr_cleanup_queue_depth{job="sergeant-server", status="stuck"} > 0
+        for: 2h
+        labels:
+          severity: ticket
+        annotations:
+          summary: "GDPR cleanup queue has stuck rows (attempts > 5, not completed)"
+          description: >
+            gdpr_cleanup_queue contains rows matching the ADR-0016 audit
+            predicate (completed_at IS NULL AND attempts > 5) for over 2h —
+            external PII deletion (Stripe/Sentry/PostHog/Resend) is failing
+            repeatedly or rows are parked as exhausted
+            (next_attempt_at = 'infinity'). Inspect `last_error` per row,
+            fix the vendor token/config, and reset `next_attempt_at` for
+            exhausted rows so the worker retries them.

@@ -1,0 +1,155 @@
+import { DebtCard } from "../components/DebtCard";
+import {
+  getMonoDebt,
+  getDebtPaid,
+  calcDebtRemaining,
+  getDebtEffectiveTotal,
+} from "../utils";
+import { sumMonoCardPaid } from "@sergeant/finyk-domain/domain/monoCardDebt";
+import { getAccountVisual } from "../lib/accountVisual";
+import { useToast } from "@shared/hooks/useToast";
+import { showUndoToast } from "@shared/lib/ui/undoToast";
+import { DebtForm } from "./AssetsForm";
+import type { useAssetsState } from "./useAssetsState";
+
+type State = ReturnType<typeof useAssetsState>;
+
+export function AssetsLiabilitiesSection({ state }: { state: State }) {
+  const toast = useToast();
+  const {
+    transactions,
+    manualDebts,
+    setManualDebts,
+    monoDebtAccounts,
+    monoDebtLinkedTxIds,
+    showDebtForm,
+    setShowDebtForm,
+    newDebt,
+    setNewDebt,
+    editingDebtId,
+    setEditingDebtId,
+    debtFormRef,
+    debtNameInputRef,
+    setTxPicker,
+    showBalance,
+  } = state;
+
+  const liabilitiesEmpty =
+    monoDebtAccounts.length === 0 && manualDebts.length === 0 && !showDebtForm;
+
+  return (
+    <div className="mb-3 space-y-0">
+      {liabilitiesEmpty && (
+        <div className="space-y-2 mb-3">
+          <p className="text-style-body text-muted px-1">
+            Кредити, розстрочки, позики, комунальні борги, додавайте з датою
+            повернення, привʼязуйте транзакції-платежі, і картка сама покаже
+            прогрес «Сплачено N з M».
+          </p>
+          <div className="flex flex-wrap gap-1.5 px-1">
+            {["Кредит", "Розстрочка", "Позика", "Комуналка"].map((chip) => (
+              <span
+                key={chip}
+                className="inline-flex items-center text-style-caption text-muted bg-panelHi border border-line rounded-full px-2 py-0.5"
+              >
+                {chip}
+              </span>
+            ))}
+          </div>
+        </div>
+      )}
+      {/* Вхід у форму — quick-action «+ Пасив» угорі сторінки; власна
+          кнопка секції дублювала його (звіт власника 2026-09-03). */}
+      {showDebtForm && (
+        <DebtForm
+          newDebt={newDebt}
+          setNewDebt={setNewDebt}
+          setManualDebts={setManualDebts}
+          setShowDebtForm={(next) => {
+            setShowDebtForm(next);
+            if (!next) setEditingDebtId(null);
+          }}
+          debtFormRef={debtFormRef}
+          debtNameInputRef={debtNameInputRef}
+          editingId={editingDebtId}
+          editingDebt={manualDebts.find((debt) => debt.id === editingDebtId)}
+          transactions={transactions}
+          onUpdate={(id, value) => {
+            setManualDebts((ds) =>
+              ds.map((item) =>
+                item.id === id
+                  ? {
+                      ...item,
+                      ...value,
+                      id,
+                      linkedTxIds: item.linkedTxIds ?? [],
+                    }
+                  : item,
+              ),
+            );
+            setEditingDebtId(null);
+          }}
+        />
+      )}
+      {monoDebtAccounts.map((a, i) => {
+        const linkedIds = (a.id ? monoDebtLinkedTxIds[a.id] : []) || [];
+        // Правило погашення — канонічне в `@sergeant/finyk-domain`; раніше
+        // воно жило двома копіями (тут і в пікері) й розійшлося.
+        const paidFromLinked = sumMonoCardPaid(
+          transactions,
+          linkedIds,
+          a.id ?? "",
+        );
+        const remaining = getMonoDebt(a);
+        const volatileTotal = paidFromLinked + remaining;
+        const visual = getAccountVisual(a);
+        return (
+          <DebtCard
+            key={i}
+            name={visual.name}
+            emoji={"\u{1F4B3}"}
+            remaining={remaining}
+            paid={paidFromLinked}
+            total={volatileTotal}
+            showBalance={showBalance}
+            onLink={() => setTxPicker({ id: a.id ?? "", type: "monoDebt" })}
+            linkedCount={linkedIds.length}
+          />
+        );
+      })}
+      {manualDebts.map((d) => (
+        <DebtCard
+          key={d.id}
+          name={d.name ?? ""}
+          emoji={d.emoji ?? ""}
+          onEdit={() => {
+            setEditingDebtId(d.id);
+            setNewDebt({
+              name: d.name ?? "",
+              emoji: d.emoji ?? "",
+              totalAmount: String(d.totalAmount ?? d.amount ?? ""),
+              dueDate: d.dueDate ?? "",
+              autoLinkKeyword: d.autoLinkKeyword ?? "",
+            });
+            setShowDebtForm(true);
+          }}
+          remaining={calcDebtRemaining(d, transactions)}
+          paid={getDebtPaid(d, transactions)}
+          total={getDebtEffectiveTotal(d, transactions)}
+          dueDate={d.dueDate}
+          showBalance={showBalance}
+          onDelete={() => {
+            const removed = d;
+            setManualDebts((ds) => ds.filter((x) => x.id !== removed.id));
+            showUndoToast(toast, {
+              msg: `Видалено борг «${removed.name}»`,
+              onUndo: () => setManualDebts((ds) => [...ds, removed]),
+            });
+          }}
+          onLink={() => setTxPicker({ id: d.id, type: "debt" })}
+          linkedCount={d.linkedTxIds?.length || 0}
+        />
+      ))}
+    </div>
+  );
+}

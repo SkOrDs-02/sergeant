@@ -1,0 +1,97 @@
+import { expect, test, type Page } from "@playwright/test";
+
+import { seedFTUX } from "../utils/seedFTUX";
+
+const ROUTES: ReadonlyArray<{
+  id: string;
+  path: string;
+  visibleText: string | RegExp;
+}> = [
+  {
+    // Підписки переїхали в Планування (2026-09-03); на холодних «Активах»
+    // завжди видимий quick-action «+ Актив» з `AssetsTable`.
+    id: "FINYK_ASSETS",
+    path: "/finyk/assets",
+    visibleText: "+ Актив",
+  },
+  {
+    id: "FIZRUK_WORKOUTS",
+    path: "/fizruk/workouts",
+    visibleText: "Немає активного тренування",
+  },
+  {
+    id: "ROUTINE_STATS",
+    path: "/routine/stats",
+    // Підпис змінено разом із PR-R10 (крос-звичковий максимум, не власна серія).
+    visibleText: "Найкраща серія:",
+  },
+];
+
+async function mockApi(page: Page) {
+  // Лише реальний API (`/api/...` на будь-якому origin). Глоб `**/api/**`
+  // ловив ще й вихідники застосунку — `src/shared/lib/api/…` під dev-сервером
+  // і будь-який чанк зі сегментом `api` у шляху — і віддавав їм `{ ok: true }`
+  // замість модуля (аудит 2026-09-15, §8): аудит тоді міряв порожню сторінку.
+  await page.route(
+    (url) => url.pathname === "/api" || url.pathname.startsWith("/api/"),
+    async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      const method = route.request().method();
+      if (path.includes("/me")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            ok: true,
+            user: {
+              id: "qa-user",
+              name: "QA User",
+              email: "qa@example.com",
+              emailVerified: true,
+            },
+          }),
+        });
+        return;
+      }
+      await route.fulfill({
+        status: method === "POST" ? 204 : 200,
+        contentType: "application/json",
+        body: method === "POST" ? "" : JSON.stringify({ ok: true }),
+      });
+    },
+  );
+}
+
+async function auditMobileShell(page: Page, id: string) {
+  await page
+    .locator("main, [role='main'], [data-a11y-root], #root > *")
+    .first()
+    .waitFor({ state: "visible", timeout: 15_000 });
+
+  await expect
+    .poll(
+      () => page.evaluate(() => window.matchMedia("(pointer: coarse)").matches),
+      { message: `pointer:coarse must be active — ${id}` },
+    )
+    .toBe(true);
+
+  const overflowPx = await page.evaluate(
+    () => document.documentElement.scrollWidth - window.innerWidth,
+  );
+  expect(overflowPx, `horizontal overflow (px) — ${id}`).toBeLessThanOrEqual(1);
+}
+
+test.describe("mobile deep-route viewport smoke", () => {
+  for (const routeCase of ROUTES) {
+    test(`${routeCase.id} ${routeCase.path}`, async ({ page }) => {
+      await mockApi(page);
+      await seedFTUX(page, "post-ftux", {
+        extra: { finyk_manual_only_v1: "1" },
+      });
+
+      await page.goto(routeCase.path, { waitUntil: "domcontentloaded" });
+      await auditMobileShell(page, routeCase.id);
+      await expect(page.getByText(routeCase.visibleText).first()).toBeVisible();
+    });
+  }
+});

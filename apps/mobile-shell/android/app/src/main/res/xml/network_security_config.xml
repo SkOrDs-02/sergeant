@@ -1,0 +1,15 @@
+<?xml version="1.0" encoding="utf-8"?>
+<!--
+  Disallow cleartext HTTP traffic app-wide. The shell loads
+  `apps/server/dist` via `https`-scheme (see `capacitor.config.ts`
+  → `server.androidScheme`) and talks to `apps/server` over HTTPS,
+  so there is no legitimate need for cleartext connections.
+
+  This mirrors `android:usesCleartextTraffic="false"` in the
+  manifest — the XML form is authoritative for Android 7.0+
+  (API 24) when both are present, while the attribute still
+  protects older devices.
+-->
+<network-security-config>
+    <base-config cleartextTrafficPermitted="false" />
+</network-security-config>

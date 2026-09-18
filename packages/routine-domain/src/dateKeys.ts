@@ -1,0 +1,75 @@
+/**
+ * Date-key helpers for the Routine module — pure, timezone-free.
+ *
+ * The routine module keys calendar data by local-YYYY-MM-DD strings
+ * (never UTC) so that "today" on the user's phone always matches
+ * "today" in the store, regardless of host OS tz settings. All helpers
+ * here operate on those strings or on `Date` objects constructed from
+ * them.
+ *
+ * Extracted from `apps/web/src/modules/routine/lib/hubCalendarAggregate.ts`
+ * and `weekUtils.ts` (Phase 5 / PR 2). The web `hubCalendarAggregate.ts`
+ * still owns the storage-bound `loadMonthlyPlanDays`
+ * / `loadTemplateNameById` / `buildHubCalendarEvents` bits.
+ *
+ * `dateKeyFromDate` delegates to `@sergeant/shared`'s `deviceDayKey` — the
+ * canon for the device-local `YYYY-MM-DD` formatter that used to be
+ * byte-identically duplicated in 8 places across the monorepo
+ * (`docs/work/specs/audits/unification-modules.md` §2.1).
+ */
+
+import { deviceDayKey } from "@sergeant/shared";
+
+export function dateKeyFromDate(d: Date): string {
+  return deviceDayKey(d);
+}
+
+export function parseDateKey(key: string): Date {
+  const [y, m, day] = key.split("-").map(Number);
+  if (!y || !m || !day || isNaN(y) || isNaN(m) || isNaN(day)) {
+    throw new Error(`parseDateKey: invalid date key "${key}"`);
+  }
+  return new Date(y, m - 1, day);
+}
+
+export function enumerateDateKeys(startKey: string, endKey: string): string[] {
+  const out: string[] = [];
+  const d = parseDateKey(startKey);
+  const end = parseDateKey(endKey);
+  d.setHours(12, 0, 0, 0);
+  end.setHours(12, 0, 0, 0);
+  while (d <= end) {
+    out.push(dateKeyFromDate(d));
+    d.setDate(d.getDate() + 1);
+  }
+  return out;
+}
+
+export function addDays(base: Date, n: number): Date {
+  const d = new Date(base);
+  d.setDate(d.getDate() + n);
+  return d;
+}
+
+/** `baseKey` minus `daysBack` calendar days, noon-anchored against DST. */
+export function dateKeyMinusDays(baseKey: string, daysBack: number): string {
+  const d = parseDateKey(baseKey);
+  d.setDate(d.getDate() - daysBack);
+  d.setHours(12, 0, 0, 0);
+  return dateKeyFromDate(d);
+}
+
+/** Monday-first ISO week start (00:00 local); mutates a copy, not the arg. */
+export function startOfIsoWeek(d: Date): Date {
+  const x = new Date(d);
+  const wd = (x.getDay() + 6) % 7;
+  x.setDate(x.getDate() - wd);
+  x.setHours(12, 0, 0, 0);
+  return x;
+}
+
+/** Пн=0 … Нд=6 */
+export function isoWeekdayFromDateKey(dateKey: string): number {
+  const d = parseDateKey(dateKey);
+  return (d.getDay() + 6) % 7;
+}

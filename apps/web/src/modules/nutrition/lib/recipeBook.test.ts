@@ -1,0 +1,213 @@
+// @vitest-environment jsdom
+/**
+ * Last validated: 2026-06-23
+ * Status: Active
+ * Unit tests for the IndexedDB-backed saved-recipes book.
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import { IDBFactory } from "fake-indexeddb";
+
+import {
+  __resetSergeantDbForTests,
+  openSergeantDb,
+} from "../../../shared/lib/idb/sergeantDb";
+import {
+  deleteSavedRecipe,
+  listSavedRecipes,
+  normalizeRecipeForSave,
+  saveRecipeToBook,
+  scaleMacros,
+} from "./recipeBook";
+
+const originalIndexedDB = (globalThis as { indexedDB?: unknown }).indexedDB;
+const LEGACY_DB_NAME = "hub_nutrition_recipe_book";
+
+async function seedLegacyRecipeBook(recipes: unknown[]): Promise<void> {
+  await new Promise<void>((resolve, reject) => {
+    const req = indexedDB.open(LEGACY_DB_NAME, 1);
+    req.onupgradeneeded = () => {
+      req.result.createObjectStore("recipes", { keyPath: "id" });
+    };
+    req.onsuccess = () => {
+      const db = req.result;
+      const tx = db.transaction("recipes", "readwrite");
+      const store = tx.objectStore("recipes");
+      for (const recipe of recipes) store.put(recipe);
+      tx.oncomplete = () => {
+        db.close();
+        resolve();
+      };
+      tx.onerror = () => reject(tx.error);
+    };
+    req.onerror = () => reject(req.error);
+  });
+}
+
+beforeEach(() => {
+  (globalThis as { indexedDB?: IDBFactory }).indexedDB = new IDBFactory();
+  __resetSergeantDbForTests();
+});
+
+afterEach(() => {
+  if (originalIndexedDB === undefined) {
+    delete (globalThis as { indexedDB?: unknown }).indexedDB;
+  } else {
+    (globalThis as { indexedDB?: unknown }).indexedDB = originalIndexedDB;
+  }
+  __resetSergeantDbForTests();
+  vi.clearAllMocks();
+});
+
+describe("normalizeRecipeForSave (pure)", () => {
+  it("trims title, generates id, and normalizes arrays + macros", () => {
+    const r = normalizeRecipeForSave({
+      title: "  Борщ  ",
+      timeMinutes: -10,
+      servings: 4,
+      ingredients: ["Буряк", "", "Капуста", 5],
+      steps: ["Крок 1"],
+      tips: [""],
+      macros: { kcal: -2, protein_g: null, fat_g: 3, carbs_g: 10 },
+    });
+    expect(r.title).toBe("Борщ");
+    expect(r.id).toMatch(/^rcp_/);
+    expect(r.timeMinutes).toBe(0);
+    expect(r.servings).toBe(4);
+    expect(r.ingredients).toEqual(["Буряк", "Капуста", "5"]);
+    expect(r.steps).toEqual(["Крок 1"]);
+    expect(r.tips).toEqual([]);
+    // unification-modules.md #1.28: normalizeMacrosNullable (canon) treats
+    // a negative/invalid macro as "not entered" (null), not as a fake 0 —
+    // 0 would silently count a broken AI-generated recipe as a real
+    // macros-having day in period averages.
+    expect(r.macros).toEqual({
+      kcal: null,
+      protein_g: null,
+      fat_g: 3,
+      carbs_g: 10,
+    });
+    expect(typeof r.createdAt).toBe("number");
+    expect(typeof r.updatedAt).toBe("number");
+  });
+
+  it("preserves an explicit id and createdAt", () => {
+    const r = normalizeRecipeForSave({
+      title: "X",
+      id: "rcp_keep",
+      createdAt: 1000,
+    });
+    expect(r.id).toBe("rcp_keep");
+    expect(r.createdAt).toBe(1000);
+  });
+
+  it("defaults null sub-fields when absent", () => {
+    const r = normalizeRecipeForSave({ title: "Y" });
+    expect(r.timeMinutes).toBeNull();
+    expect(r.servings).toBeNull();
+    expect(r.ingredients).toEqual([]);
+    expect(r.macros).toEqual({
+      kcal: null,
+      protein_g: null,
+      fat_g: null,
+      carbs_g: null,
+    });
+  });
+
+  it("tolerates non-object input", () => {
+    expect(normalizeRecipeForSave(null).title).toBe("");
+  });
+});
+
+describe("scaleMacros (pure)", () => {
+  it("scales non-null macros by a positive factor", () => {
+    expect(
+      scaleMacros({ kcal: 100, protein_g: 10, fat_g: null, carbs_g: 5 }, 2),
+    ).toEqual({ kcal: 200, protein_g: 20, fat_g: null, carbs_g: 10 });
+  });
+
+  it("falls back to factor 1 for non-positive/invalid factor", () => {
+    expect(scaleMacros({ kcal: 50 }, -1)).toEqual({
+      kcal: 50,
+      protein_g: null,
+      fat_g: null,
+      carbs_g: null,
+    });
+    expect(scaleMacros({ kcal: 50 }, "bad")).toMatchObject({ kcal: 50 });
+    expect(scaleMacros(null, 2)).toEqual({
+      kcal: null,
+      protein_g: null,
+      fat_g: null,
+      carbs_g: null,
+    });
+  });
+});
+
+describe("saveRecipeToBook + listSavedRecipes", () => {
+  it("rejects an empty title", async () => {
+    expect(await saveRecipeToBook({ title: "  " })).toEqual({
+      ok: false,
+      error: "Порожня назва рецепту",
+    });
+  });
+
+  it("saves and lists recipes newest-first", async () => {
+    const r1 = await saveRecipeToBook({ title: "Перший" });
+    expect(r1.ok).toBe(true);
+    await new Promise((r) => setTimeout(r, 2));
+    await saveRecipeToBook({ title: "Другий" });
+    const list = await listSavedRecipes();
+    expect(list.map((x) => x.title)).toEqual(["Другий", "Перший"]);
+  });
+
+  it("respects the limit argument", async () => {
+    await saveRecipeToBook({ title: "A" });
+    await saveRecipeToBook({ title: "B" });
+    expect(await listSavedRecipes(1)).toHaveLength(1);
+  });
+
+  it("migrates recipes from the legacy recipe book DB on first read", async () => {
+    await seedLegacyRecipeBook([
+      normalizeRecipeForSave({
+        id: "rcp_legacy",
+        title: "Легасі суп",
+        updatedAt: 1_700_000_000_000,
+      }),
+    ]);
+
+    const list = await listSavedRecipes();
+    expect(list.map((recipe) => recipe.title)).toContain("Легасі суп");
+
+    const dbs = await indexedDB.databases();
+    expect(dbs.map((db) => db.name)).not.toContain(LEGACY_DB_NAME);
+  });
+
+  it("returns safe fallbacks when recipe transactions fail", async () => {
+    const db = await openSergeantDb();
+    expect(db).not.toBeNull();
+    const txSpy = vi.spyOn(db!, "transaction").mockImplementation(() => {
+      throw new Error("tx failed");
+    });
+
+    expect(await listSavedRecipes()).toEqual([]);
+    expect(await saveRecipeToBook({ title: "Broken" })).toEqual({
+      ok: false,
+      error: "Не вдалося зберегти рецепт",
+    });
+    expect(await deleteSavedRecipe("rcp_broken")).toBe(false);
+
+    txSpy.mockRestore();
+  });
+});
+
+describe("deleteSavedRecipe", () => {
+  it("returns false for an empty id", async () => {
+    expect(await deleteSavedRecipe("")).toBe(false);
+  });
+
+  it("removes a saved recipe", async () => {
+    const res = await saveRecipeToBook({ title: "Видалити" });
+    const id = res.ok ? res.recipe.id : "";
+    expect(await deleteSavedRecipe(id)).toBe(true);
+    expect(await listSavedRecipes()).toEqual([]);
+  });
+});

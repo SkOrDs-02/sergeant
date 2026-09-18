@@ -1,0 +1,55 @@
+<?xml version="1.0" encoding="UTF-8"?>
+<!--
+  Template for `xcodebuild -exportArchive -exportOptionsPlist` run by
+  `.github/workflows/mobile-shell-ios-release.yml`.
+
+  The workflow renders this file via `envsubst` at runtime — the
+  `${IOS_*}` placeholders below are substituted from workflow `env` /
+  secrets. Any un-substituted placeholder will leave a literal
+  `${VAR}` in the final plist, which xcodebuild rejects with a clear
+  error. The allow-list of recognised variables is hard-coded in the
+  `envsubst` call in the workflow (i.e. nothing else gets interpolated
+  even if a secret value accidentally contains `$FOO`).
+
+  Placeholders:
+    ${IOS_TEAM_ID}                   — Apple Developer team id (10 chars).
+    ${IOS_BUNDLE_ID}                 — com.sergeant.shell (matches
+                                       `apps/mobile-shell/capacitor.config.ts`).
+    ${IOS_PROVISIONING_PROFILE_NAME} — human-readable name of the
+                                       "App Store Distribution" profile
+                                       downloaded by
+                                       apple-actions/download-provisioning-profiles@v2
+                                       (NOT the UUID).
+
+  Keep `method=app-store` (Xcode still accepts it; the newer
+  `app-store-connect` alias came in with Xcode 15.3 but both produce
+  the same IPA). Do not flip `signingStyle` to `automatic` — the
+  workflow deliberately imports the distribution cert + profile by
+  hand so the runner never needs to touch Apple ID / session tokens.
+-->
+<!DOCTYPE plist PUBLIC "-//Apple//DTD PLIST 1.0//EN" "http://www.apple.com/DTDs/PropertyList-1.0.dtd">
+<plist version="1.0">
+<dict>
+    <key>method</key>
+    <string>app-store</string>
+    <key>teamID</key>
+    <string>${IOS_TEAM_ID}</string>
+    <key>signingStyle</key>
+    <string>manual</string>
+    <key>stripSwiftSymbols</key>
+    <true/>
+    <key>uploadBitcode</key>
+    <false/>
+    <key>uploadSymbols</key>
+    <true/>
+    <key>compileBitcode</key>
+    <false/>
+    <key>destination</key>
+    <string>export</string>
+    <key>provisioningProfiles</key>
+    <dict>
+        <key>${IOS_BUNDLE_ID}</key>
+        <string>${IOS_PROVISIONING_PROFILE_NAME}</string>
+    </dict>
+</dict>
+</plist>

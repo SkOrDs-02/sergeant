@@ -1,0 +1,2030 @@
+import { z } from "zod";
+
+import { DASHBOARD_MODULE_IDS } from "../lib/dashboard";
+import { SEARCH_QUERY_MAX_LEN } from "./bounds";
+
+/**
+ * Централізовані zod-схеми для AI/публічних endpoint-ів.
+ * Обрізаємо довгі поля на сервері, щоб не платити Anthropic за
+ * безконтрольні payload-и і не давати prompt injection-у розростатись.
+ */
+
+/** Локаль — вільний рядок, але не надто довгий (наприклад 'uk-UA'). */
+const Locale = z.string().trim().min(2).max(16).optional();
+
+// ────────────────────── User / /api/me ──────────────────────
+/**
+ * Публічний профіль користувача — повертається з `/api/me` і описує
+ * мінімум, що бачить клієнт (web cookie-сесія або мобільний bearer-токен).
+ *
+ * Форма навмисно обрізана: без internal timestamps, id сесії чи інших
+ * полів, що не повинні потрапляти в UI. Це єдине джерело правди для
+ * `@sergeant/shared`, `@sergeant/api-client` та `apps/server`.
+ */
+export const UserSchema = z.object({
+  id: z.string().min(1),
+  email: z.string().email().nullable(),
+  name: z.string().nullable(),
+  image: z.string().nullable(),
+  emailVerified: z.boolean(),
+  // Better Auth's `user.createdAt` (час реєстрації акаунта) — ISO-8601
+  // рядок. Потрібен PostHog `identify` для трейту `signup_date` і для
+  // майбутніх "за днем життя акаунта" сегментацій. Nullable, бо для
+  // legacy-юзерів, у яких поле відсутнє у БД, краще лишити null, ніж
+  // валити `/api/v1/me` для всієї сесії.
+  createdAt: z.string().datetime({ offset: true }).nullable(),
+});
+export type User = z.infer<typeof UserSchema>;
+
+/** Response shape for `/api/me` (і `/api/v1/me`). */
+export const MeResponseSchema = z.object({ user: UserSchema });
+export type MeResponse = z.infer<typeof MeResponseSchema>;
+
+// ────────────────────── Data rights / /api/me/* ──────────────────────
+/**
+ * Межі мішка `hubPrefs`, спільні для відповіді й патча.
+ *
+ * Мішок навмисно ВІДКРИТИЙ — `hubPrefs.schema.ts` на вебі прямо каже, що
+ * власники фіч кладуть туди прапорці «without going through a central
+ * registry», і закритий перелік зняв би саме цю властивість. Але те, що
+ * годиться для localStorage, не годиться для колонки в чужій БД: відкритий
+ * `z.record(z.string(), z.unknown())` на серверному ендпоінті означав би,
+ * що будь-який клієнт із валідною сесією пише в `user_preferences`
+ * довільний JSON довільного розміру.
+ *
+ * Тому межі такі: значення — лише СКАЛЯРИ (той самий словник, що описує
+ * локальна схема: «booleans, layout strings, accent IDs»), без обʼєктів і
+ * масивів; ключ — до 64 символів; ключів — до 32. Фактичних ключів на
+ * 2026-09-14 пʼять, тож стеля з семикратним запасом і не тисне на
+ * продуктову роботу.
+ *
+ * `.catchall`/`.strict` тут не застосовні — це `z.record`, і саме він
+ * зберігає відкритість.
+ */
+const HUB_PREFS_MAX_KEYS = 32;
+const HubPrefsBagSchema = z
+  .record(
+    z.string().min(1).max(64),
+    z.union([z.boolean(), z.string().max(256), z.number().finite()]),
+  )
+  .refine((bag) => Object.keys(bag).length <= HUB_PREFS_MAX_KEYS, {
+    message: `hubPrefs: не більше ${HUB_PREFS_MAX_KEYS} ключів`,
+  });
+
+export const UserPreferencesSchema = z.object({
+  analytics: z.boolean(),
+  aiMemory: z.boolean(),
+  pushNotifications: z.boolean(),
+  /**
+   * Opt-in на проактивні повідомлення Сержанта (денний нудж від серверного
+   * шедулера). Свідомо окремо від `pushNotifications`: той прапорець — згода
+   * на пуші взагалі, цей — на конкретний канал. Дефолт `false` для всіх,
+   * включно з новими акаунтами, тож деплой нікого не будить.
+   *
+   * `.default(false)`, а не просто `z.boolean()`: веб їде на Vercel, а сервер
+   * на Coolify — окремими деплоями. У вікні між ними новий клієнт розмовляє зі
+   * старим сервером, який поля ще не віддає; без дефолту `getPreferences()`
+   * кидав би ZodError і клав усю сторінку налаштувань заради тумблера, який
+   * усе одно вимкнений. Дефолт збігається з `DEFAULT` колонки в міграції 100,
+   * тож «поля нема» і «поле false» означають рівно те саме.
+   */
+  sergeantNudges: z.boolean().default(false),
+  /**
+   * Explicit consent for processing health-adjacent data (fizruk
+   * workouts/wellbeing, nutrition logs) per GDPR Art. 9 — special category
+   * personal data requires explicit opt-in, never inferred silence.
+   * `.default(false)` for the same rolling-deploy reason as
+   * `sergeantNudges`: web/server deploy independently (Vercel vs Coolify),
+   * so an old server response missing the field must not throw ZodError
+   * client-side. Matches the DB column DEFAULT (migration 111).
+   */
+  healthDataConsent: z.boolean().default(false),
+  /**
+   * Модулі, які людина лишила активними на хабі (браузерний аудит
+   * 2026-08-05, знахідка B2 — частина 2). До міграції 116 цей вибір жив
+   * ЛИШЕ в локальному KV (`hub_onboarding_vibes_v1` на web, MMKV на
+   * mobile) і не входив у cloud-sync, тож на новому пристрої хаб
+   * рендерився з фолбеком «усі чотири» замість справжнього вибору.
+   *
+   * Три стани, і всі три різні:
+   *  - `null` — серверного вибору ще немає; клієнт лишає локальний як є
+   *    (саме тому колонка nullable і без `DEFAULT '{}'` — див. 116);
+   *  - `[]` — вибір є, і він порожній;
+   *  - непорожній масив — власне вибір, у порядку, який людина зробила
+   *    (`sanitizePicks` порядок зберігає, `TEXT[]` теж).
+   *
+   * `.default(null)` — з тієї ж rolling-deploy причини, що й
+   * `sergeantNudges`/`healthDataConsent`: web (Vercel) і сервер
+   * (Coolify) деплояться окремо, тож новий клієнт може розмовляти зі
+   * старим сервером, який поля ще не віддає. «Поля нема» і «серверного
+   * вибору нема» тут означають рівно те саме, тож дефолт безпечний.
+   */
+  activeModules: z
+    .array(z.enum(DASHBOARD_MODULE_IDS))
+    .max(DASHBOARD_MODULE_IDS.length)
+    .nullable()
+    .default(null),
+  /**
+   * Налаштування вигляду хаба — дзеркало локального `hub_prefs_v1`
+   * (знахідка PR-S13 огляду 2026-09-13, рішення founder-а 2026-09-14).
+   *
+   * Три стани, і всі три різні — та сама трійця, що в `activeModules`
+   * вище, і з тієї ж причини (nullable-колонка без `DEFAULT`, міграція 137):
+   *  - `null` — серверних налаштувань ще немає; клієнт лишає локальні як є;
+   *  - `{}` — налаштування є, і всі дефолтні;
+   *  - непорожній обʼєкт — власне налаштування.
+   *
+   * `.default(null)` — з тієї ж rolling-deploy причини, що й у сусідів:
+   * web (Vercel) і сервер (Coolify) деплояться окремо, тож новий клієнт
+   * може розмовляти зі старим сервером, який поля ще не віддає. «Поля
+   * нема» і «серверних налаштувань нема» означають тут рівно те саме.
+   */
+  hubPrefs: HubPrefsBagSchema.nullable().default(null),
+  updatedAt: z.string().datetime({ offset: true }).nullable(),
+});
+export type UserPreferences = z.infer<typeof UserPreferencesSchema>;
+
+export const UserPreferencesPatchSchema = z
+  .object({
+    analytics: z.boolean().optional(),
+    aiMemory: z.boolean().optional(),
+    pushNotifications: z.boolean().optional(),
+    sergeantNudges: z.boolean().optional(),
+    healthDataConsent: z.boolean().optional(),
+    /**
+     * Відсутнє поле = «не чіпай вибір»; `null` = «прибери серверний
+     * вибір» (повернення до локального); масив = новий вибір.
+     *
+     * Дедуп робимо ТУТ, а не в БД: вираз `CHECK` не може містити
+     * підзапит, тож `{finyk,finyk}` пройшов би констрейнт міграції 116.
+     * `sanitizePicks` уже дедуплікує на клієнті — це друга лінія для
+     * будь-якого іншого споживача API.
+     */
+    activeModules: z
+      .array(z.enum(DASHBOARD_MODULE_IDS))
+      .max(DASHBOARD_MODULE_IDS.length)
+      .transform((ids) => [...new Set(ids)])
+      .nullable()
+      .optional(),
+    /**
+     * Відсутнє поле = «не чіпай налаштування»; `null` = «прибери серверні»
+     * (повернення до локальних); обʼєкт = новий стан ЦІЛКОМ.
+     *
+     * Саме цілком, не по-ключово — і це головне, що тут треба знати.
+     * Мішок їде як одне значення, тобто розвʼязання конфлікту між
+     * пристроями — LWW по всьому мішку (рішення 2026-09-14). Пер-ключові
+     * мітки часу були б над-інженерією для пʼяти тумблерів, які людина
+     * перемикає на одному екрані.
+     */
+    hubPrefs: HubPrefsBagSchema.nullable().optional(),
+  })
+  .strict();
+export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;
+
+const ExportRecordSchema = z.record(z.string(), z.unknown());
+
+export const MeExportResponseSchema = z.object({
+  generatedAt: z.string().datetime({ offset: true }),
+  user: UserSchema,
+  preferences: UserPreferencesSchema,
+  data: z.object({
+    moduleData: z.array(ExportRecordSchema),
+    mono: z.object({
+      connection: ExportRecordSchema.nullable(),
+      accounts: z.array(ExportRecordSchema),
+      transactions: z.array(ExportRecordSchema),
+    }),
+    billing: z.object({
+      subscriptions: z.array(ExportRecordSchema),
+    }),
+    push: z.object({
+      webSubscriptions: z.array(ExportRecordSchema),
+      devices: z.array(ExportRecordSchema),
+    }),
+    ai: z.object({
+      usageDaily: z.array(ExportRecordSchema),
+      memories: z.array(ExportRecordSchema),
+    }),
+  }),
+});
+export type MeExportResponse = z.infer<typeof MeExportResponseSchema>;
+
+export const MeDeleteResponseSchema = z.object({
+  ok: z.literal(true),
+  deletedAt: z.string().datetime({ offset: true }),
+});
+export type MeDeleteResponse = z.infer<typeof MeDeleteResponseSchema>;
+
+// ────────────────────── Profile write-through (/api/me/profile) ───────────
+
+/**
+ * Serialized size cap for the profile blob (migration 115 `user_profile.
+ * payload`). ~16KB — generous for a profile/biometrics blob (mirrors
+ * `USER_PROFILE` + `HUB_BIOMETRICS` client-side shapes,
+ * `packages/shared/src/sync/modules.ts`), tight enough that a `curl` can't
+ * turn this write-through singleton into a free-form blob store.
+ */
+export const USER_PROFILE_MAX_BYTES = 16 * 1024;
+
+/**
+ * Max OBJECT property-nesting depth for the profile payload. The top-level
+ * object itself counts as depth 1, so depth 3 allows e.g.
+ * `{ biometrics: { history: [{ weightKg: 70 }] } }` (biometrics → history →
+ * the array-element object = 3 levels of object nesting) but rejects a 4th
+ * level. Arrays are transparent for this count — a list is a sibling
+ * collection, not an extra hierarchy level, so `weightHistory: [...]`
+ * (a very ordinary profile shape) doesn't get penalized just for being an
+ * array. Guards against pathological recursive payloads (JSON-bomb style)
+ * reaching JSONB storage unchecked — this is genuinely a write-through
+ * blob (no column-level schema, migration 115's own comment), so depth is
+ * the one structural invariant we DO enforce.
+ */
+export const USER_PROFILE_MAX_DEPTH = 3;
+
+function isJsonContainer(
+  value: unknown,
+): value is Record<string, unknown> | unknown[] {
+  return Array.isArray(value) || (value !== null && typeof value === "object");
+}
+
+/**
+ * Depth of OBJECT property nesting only. Arrays are transparent: their
+ * elements are evaluated at the array's own depth, not depth+1 — so an
+ * array of objects costs exactly as much depth as the objects it contains,
+ * not one extra level for the array wrapper itself.
+ */
+function jsonNestingDepth(value: unknown): number {
+  if (Array.isArray(value)) {
+    if (value.length === 0) return 0;
+    return Math.max(...value.map((item) => jsonNestingDepth(item)));
+  }
+  if (value !== null && typeof value === "object") {
+    const containerChildren = Object.values(
+      value as Record<string, unknown>,
+    ).filter(isJsonContainer);
+    if (containerChildren.length === 0) return 1;
+    return 1 + Math.max(...containerChildren.map(jsonNestingDepth));
+  }
+  return 0;
+}
+
+/**
+ * The profile payload itself — an open-ended JSON object (no column-level
+ * schema by design, migration 115), bounded by size and nesting depth.
+ * `z.record` already rejects arrays/primitives at the top level (must be a
+ * plain object).
+ */
+export const UserProfilePayloadSchema = z
+  .record(z.string(), z.unknown())
+  .refine(
+    (value) => {
+      try {
+        // `String.length` counts UTF-16 code units, not bytes — Unicode text
+        // (Cyrillic, emoji) that fits well under the 16KB cap by `.length`
+        // can still exceed it once encoded as the UTF-8 bytes Postgres/JSONB
+        // and the HTTP wire actually store/transmit (every non-Latin-1
+        // codepoint costs 2-4 UTF-8 bytes but only 1-2 UTF-16 units).
+        // CodeRabbit PR #627 review: measure real bytes via `TextEncoder`.
+        return (
+          new TextEncoder().encode(JSON.stringify(value)).byteLength <=
+          USER_PROFILE_MAX_BYTES
+        );
+      } catch {
+        return false;
+      }
+    },
+    {
+      message: `profile payload must be at most ${USER_PROFILE_MAX_BYTES} bytes`,
+    },
+  )
+  .refine((value) => jsonNestingDepth(value) <= USER_PROFILE_MAX_DEPTH, {
+    message: `profile payload must not nest more than ${USER_PROFILE_MAX_DEPTH} levels deep`,
+  });
+export type UserProfilePayload = z.infer<typeof UserProfilePayloadSchema>;
+
+/** Request body for `PUT /api/me/profile`. */
+export const UserProfilePutBodySchema = z.object({
+  profile: UserProfilePayloadSchema,
+});
+export type UserProfilePutBody = z.infer<typeof UserProfilePutBodySchema>;
+
+/**
+ * Response shape for both `GET /api/me/profile` and `PUT /api/me/profile`.
+ * `profile: {}` / `updatedAt: null` is the default when no row exists yet
+ * (first-ever read before any write) — same "defaults, not 404" pattern as
+ * `UserPreferencesSchema`.
+ */
+export const UserProfileResponseSchema = z.object({
+  profile: UserProfilePayloadSchema,
+  updatedAt: z.string().datetime({ offset: true }).nullable(),
+});
+export type UserProfileResponse = z.infer<typeof UserProfileResponseSchema>;
+
+/** Модерація: чат-повідомлення. */
+export const ChatMessage = z.object({
+  role: z.enum(["user", "assistant"]),
+  content: z.string().min(1).max(8000),
+});
+
+/** Результат виконання tool call-а на клієнті (повертається в chat). */
+export const ToolResult = z.object({
+  tool_use_id: z.string().min(1).max(200),
+  content: z.union([z.string().max(8000), z.number(), z.boolean()]).optional(),
+});
+
+/**
+ * B32 (`docs/work/specs/audits/ai-testing-2026-08-25.md`) — блоки, дозволені
+ * всередині `tool_calls_raw`. До 2026-08-25 поле було `z.array(z.unknown())`
+ * — фактично unvalidated passthrough: `chat.ts` кладе його НАПРЯМУ в
+ * `{ role: "assistant", content: tool_calls_raw }`, єдину роль без
+ * `<user_data>`/`<tool_output>`-огорожі (`toolOutputWrapping.ts`). Клієнт
+ * міг тому написати довільний assistant-текст, повністю обійшовши
+ * injection-фенсинг, і отруїти `ai_memories` через `remember`.
+ *
+ * Type-allowlist сам по собі НЕ достатній, поки поля всередині блоку
+ * лишаються `unknown` — тому кожен варіант нижче `.strict()` з явним
+ * переліком полів (зайве поле → 400, не мовчазне перенесення).
+ *
+ * Навмисно НЕ у списку: `type: "text"`. Це той самий блок, що Anthropic
+ * повертає як текстовий preamble перед `tool_use` (див. фікстуру
+ * `textAndToolCall` у `contract-fixtures/chat.ts`) — і водночас РІВНО
+ * вектор цієї знахідки: `text`-поле є вільним рядком незалежно від
+ * `.strict()`-форми блоку, тож дозволити тип не закривши вміст означало б
+ * залишити injection-поверхню відкритою. Наслідок: клієнт, що echo-ить
+ * `tool_calls_raw` з text-preamble назад у другому турі, отримає 400 —
+ * `apps/web` має відфільтрувати нетул-блоки перед replay (окремий фронтовий
+ * фікс, поза скоупом цього серверного PR).
+ *
+ * Реальний whitelist ІМЕН інструментів (`TOOLS` з server-only
+ * `modules/chat/tools.ts`) і provenance-звʼязок з `tool_results`
+ * перевіряються ДАЛІ на сервері (`validateToolCallsRawProvenance` у
+ * `chat.ts`) — сюди server-модулі імпортувати не можна: `@sergeant/shared`
+ * лишається edge-runtime-friendly (той самий принцип, що й
+ * `RECALL_MEMORY_SOURCES` вище).
+ */
+const ToolUseBlockSchema = z
+  .object({
+    type: z.literal("tool_use"),
+    id: z.string().min(1).max(200),
+    name: z.string().min(1).max(200),
+    input: z.unknown(),
+    /**
+     * AI-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
+     * OpenRouter's `tool_use` blocks carry a `caller` field that Anthropic's
+     * own API doesn't emit (provenance of which upstream hop issued the
+     * call). `.strict()` below rejected the whole block for this one
+     * known-but-unlisted field, so every tool round trip on
+     * `CHAT_VIA_OPENROUTER=true` failed the second turn with 400
+     * `CHAT_TOOL_ROUND_TRIP_INCOMPLETE` — no assistant text ever synthesised
+     * after a tool call. Allowlisted explicitly (not `.passthrough()`) so
+     * the B32 threat model — a genuinely unexpected field smuggled into the
+     * one assistant-role message with no `<user_data>` fencing — still 400s;
+     * `validateToolCallsRawProvenance` (`apps/server/src/modules/chat/
+     * validateToolCallsRaw.ts`) never reads `caller`, so widening the schema
+     * doesn't widen what the server trusts from this field.
+     */
+    caller: z.unknown().optional(),
+  })
+  .strict();
+
+/**
+ * Anthropic-hosted server tool call — наразі єдиний такий інструмент у нас
+ * — `tool_search_tool_regex` (`modules/chat/toolSearch.ts`). Форма поля
+ * ідентична `tool_use`; сервер додатково звіряє `name` з реальним
+ * `TOOL_SEARCH_TOOL.name`.
+ */
+const ServerToolUseBlockSchema = z
+  .object({
+    type: z.literal("server_tool_use"),
+    id: z.string().min(1).max(200),
+    name: z.string().min(1).max(200),
+    input: z.unknown(),
+  })
+  .strict();
+
+/**
+ * Результат серверного tool-search — Anthropic генерує це на своєму боці,
+ * ми лише echo-имо назад НЕЗМІНЕНИМ (інакше 400 від upstream), тому
+ * `content` навмисно `z.unknown()`: це не наша форма для валідації, і
+ * Anthropic розширює її без узгодження з нами.
+ */
+const ToolSearchToolResultBlockSchema = z
+  .object({
+    type: z.literal("tool_search_tool_result"),
+    tool_use_id: z.string().min(1).max(200),
+    content: z.unknown(),
+  })
+  .strict();
+
+export const ToolCallsRawBlockSchema = z.discriminatedUnion("type", [
+  ToolUseBlockSchema,
+  ServerToolUseBlockSchema,
+  ToolSearchToolResultBlockSchema,
+]);
+export type ToolCallsRawBlock = z.infer<typeof ToolCallsRawBlockSchema>;
+
+/**
+ * Ідентифікатори серверних preset-ів системної інструкції для `/api/chat`.
+ *
+ * Клієнт шле ЛИШЕ ідентифікатор — сам текст інструкції живе на сервері
+ * (`apps/server/src/modules/chat/chatPresets.ts`) і в клієнтський бандл не
+ * потрапляє. Це навмисно: інструкція, яку шле клієнт, — це переписаний
+ * системний промпт (та сама діра, що закрив v17 огорожею `<user_data>`
+ * навколо `context`). Enum на вході означає, що зловмисний POST може лише
+ * обрати один із двох наших сценаріїв, а не написати свій.
+ *
+ * Другий ефект — UX: інструкція більше не рендериться бульбашкою «від
+ * користувача» і не сміттить в історії чату (`hub_chat_history`).
+ *
+ * - `profile_interview` — коротке інтервʼю на порожньому банку памʼяті
+ *   (кнопка «Заповнити профіль» у секції «Памʼять ШІ»);
+ * - `profile_add_info` — доповнення вже непорожнього банку («Додати інфо»).
+ */
+export const CHAT_PRESETS = ["profile_interview", "profile_add_info"] as const;
+export type ChatPreset = (typeof CHAT_PRESETS)[number];
+
+/** /api/chat */
+export const ChatRequestSchema = z.object({
+  context: z.string().max(40_000).optional().default(""),
+  preset: z.enum(CHAT_PRESETS).optional(),
+  messages: z.array(ChatMessage).max(50).optional().default([]),
+  tool_results: z.array(ToolResult).max(20).optional(),
+  // B32 — раніше `z.array(z.unknown())`; тепер кожен блок валідується проти
+  // `ToolCallsRawBlockSchema` (див. докстрінг вище). `name`-allowlist проти
+  // реального `TOOLS`-реєстру і provenance-звʼязок з `tool_results`
+  // перевіряються далі на сервері (`chat.ts`), сюди їх заносити не можна.
+  //
+  // AI-CONTEXT: cap підняли 20 → 60 разом із tool search (2026-07-25). Тепер
+  // у `content` крім `tool_use` приїжджають ще `server_tool_use` +
+  // `tool_search_tool_result` на КОЖЕН пошук, і Anthropic вимагає повернути
+  // їх назад НЕЗМІНЕНИМИ — інакше 400. Стеля на кількість самих `tool_use`
+  // лишається `MAX_TOOL_ITERATIONS = 8` і перевіряється окремо в `chat.ts`,
+  // тож це послаблення не розширює runaway-поверхню: воно лише перестає
+  // рубати легітимний пошуковий трафік нашою ж валідацією.
+  tool_calls_raw: z.array(ToolCallsRawBlockSchema).max(60).optional(),
+  stream: z.boolean().optional(),
+  /**
+   * AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
+   * — echo-иться назад із першого-турового `tool_calls`-відповіді на другому
+   * (tool-result-синтезному) запиті того самого ходу. Сервер видає його лише
+   * своєму ж юзеру (`chatRoundTripTicket.ts`), одноразово й короткоживуче;
+   * невалідний/відсутній квиток просто НЕ звільняє від звичайного списання
+   * квоти (safe default) — це не контракт довіри до клієнта, а суто
+   * best-effort optimization, тож поле опційне й без додаткової семантики
+   * тут, у схемі.
+   */
+  round_trip_ticket: z.string().max(200).optional(),
+});
+
+/**
+ * GET /api/chat/usage (PR-42 chat counter). `limit`/`remaining` are `null`
+ * for Pro (unlimited `aiRequestsPerDay` — see `billing/effectiveLimits`);
+ * the frontend counter pill hides itself in that case.
+ */
+export const ChatUsageResponseSchema = z.object({
+  plan: z.enum(["free", "pro"]),
+  limit: z.number().int().nonnegative().nullable(),
+  remaining: z.number().int().nonnegative().nullable(),
+});
+export type ChatUsageResponse = z.infer<typeof ChatUsageResponseSchema>;
+
+/**
+ * Допустимі `source`-фільтри для `POST /api/ai-memory/recall`. Дзеркалить
+ * `ALLOWED_MEMORY_SOURCES` у server-side `types.ts`. Тримаємо строкові
+ * літерали тут (а не enum-import з server-only модуля), щоб
+ * `@sergeant/shared` лишився edge-runtime-friendly без deps на Postgres.
+ */
+const RECALL_MEMORY_SOURCES = [
+  "chat",
+  "finyk",
+  "fizruk",
+  "nutrition",
+  "routine",
+  "journal",
+  "digest",
+  "cofounder",
+  // Migration 068 historically used `product` for PostHog → AI-memory sync.
+  // The event-sync endpoint was removed on 2026-08-29 because telemetry added
+  // noise to RAG; keep the value here only so existing rows remain readable in
+  // list/recall filters.
+  "product",
+  // Migration 118 — L-8 (аудит Профілю/Налаштувань 2026-08-08). `profile` —
+  // явно заявлені людиною факти про себе (банк памʼяті: інтервʼю з
+  // асистентом або ручне введення). Дозволяємо у recall-фільтрі, бо саме
+  // заради recall-у цей source і заводиться: `ai-memory/ragContext.ts`
+  // автоматично вкидає top-K схожих записів у system prompt чату, тож
+  // асистент враховує «не їм молочне» без явного виклику тула `my_profile`.
+  "profile",
+] as const;
+
+/** POST /api/ai-memory/recall — semantic memory retrieval. */
+export const RecallMemoryRequestSchema = z
+  .object({
+    query: z.string().min(1).max(1000),
+    topK: z.number().int().min(1).max(50).optional(),
+    sources: z.array(z.enum(RECALL_MEMORY_SOURCES)).max(10).optional(),
+  })
+  .strict();
+
+/** Один результат у відповіді `/api/ai-memory/recall`. */
+export const RecallMemoryResultSchema = z.object({
+  /** ID запису. Number, не bigint (rule #1, AGENTS.md). */
+  id: z.number().int(),
+  source: z.enum(RECALL_MEMORY_SOURCES),
+  sourceRef: z.string().nullable(),
+  content: z.string(),
+  /** Cosine similarity у [0, 1]. Більше — ближче. */
+  score: z.number().min(0).max(1),
+  /** ISO-8601 timestamp. */
+  createdAt: z.string(),
+  metadata: z.record(z.string(), z.unknown()),
+});
+
+/** Response для `POST /api/ai-memory/recall`. */
+export const RecallMemoryResponseSchema = z.object({
+  memories: z.array(RecallMemoryResultSchema),
+});
+export type RecallMemoryRequest = z.infer<typeof RecallMemoryRequestSchema>;
+export type RecallMemoryResult = z.infer<typeof RecallMemoryResultSchema>;
+export type RecallMemoryResponse = z.infer<typeof RecallMemoryResponseSchema>;
+
+/** Response для `DELETE /api/ai-memory`. */
+export const AiMemoryClearResponseSchema = z.object({
+  ok: z.literal(true),
+  deleted: z.number().int().nonnegative(),
+});
+export type AiMemoryClearResponse = z.infer<typeof AiMemoryClearResponseSchema>;
+
+/**
+ * Query для `GET /api/ai-memory/list`.
+ *
+ * `coerce`, бо це query-string: `?limit=20` приходить рядком. `cursor` —
+ * keyset по `ai_memories.id` (не OFFSET: черга ingest-у дописує рядки
+ * поки користувач гортає, і OFFSET між сторінками або дублює, або губить).
+ */
+export const AiMemoryListQuerySchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).optional(),
+  cursor: z.coerce.number().int().positive().optional(),
+});
+export type AiMemoryListQuery = z.infer<typeof AiMemoryListQuerySchema>;
+
+/**
+ * Один факт AI-памʼяті у списку налаштувань.
+ *
+ * `id` — `number`: у Postgres це `BIGSERIAL`, і pg-драйвер віддає його
+ * стрінгою. Коерція живе в серверному серіалізаторі (Hard Rule #1) — тут
+ * контракт уже числовий, бо клієнт кладе id у RQ-ключ і в URL.
+ */
+export const AiMemoryListItemSchema = z.object({
+  id: z.number().int().positive(),
+  source: z.string().min(1),
+  content: z.string(),
+  topic: z.string().nullable(),
+  createdAt: z.string().datetime({ offset: true }),
+});
+export type AiMemoryListItem = z.infer<typeof AiMemoryListItemSchema>;
+
+/** Response для `GET /api/ai-memory/list`. */
+export const AiMemoryListResponseSchema = z.object({
+  items: z.array(AiMemoryListItemSchema),
+  /** `null` — сторінок більше немає. */
+  nextCursor: z.number().int().positive().nullable(),
+});
+export type AiMemoryListResponse = z.infer<typeof AiMemoryListResponseSchema>;
+
+/**
+ * Response для `DELETE /api/ai-memory/:id`.
+ *
+ * `deleted: false` — рядка вже не було. Це успіх, а не помилка: повторний
+ * тап чи паралельна вкладка приводять систему в той самий бажаний стан.
+ */
+export const AiMemoryDeleteResponseSchema = z.object({
+  ok: z.literal(true),
+  deleted: z.boolean(),
+});
+export type AiMemoryDeleteResponse = z.infer<
+  typeof AiMemoryDeleteResponseSchema
+>;
+
+/** /api/nutrition/analyze-photo */
+export const AnalyzePhotoSchema = z.object({
+  image_base64: z
+    .string()
+    .min(100, "Порожнє зображення")
+    .max(7_000_000, "Зображення завелике"),
+  mime_type: z
+    .string()
+    .regex(/^image\/[a-z+.-]+$/i)
+    .max(64)
+    .optional(),
+  locale: Locale,
+});
+
+/** /api/nutrition/refine-photo */
+export const RefinePhotoSchema = z.object({
+  image_base64: z
+    .string()
+    .min(100, "Порожнє зображення")
+    .max(7_000_000, "Зображення завелике"),
+  mime_type: z
+    .string()
+    .regex(/^image\/[a-z+.-]+$/i)
+    .max(64)
+    .optional(),
+  prior_result: z.unknown().optional(),
+  portion_grams: z.number().finite().positive().optional().nullable(),
+  qna: z
+    .array(
+      z.object({
+        question: z.string().max(500).optional(),
+        answer: z.string().max(500).optional(),
+      }),
+    )
+    .max(8)
+    .optional(),
+  locale: Locale,
+});
+
+/** /api/nutrition/parse-pantry */
+export const ParsePantrySchema = z.object({
+  text: z
+    .string()
+    .trim()
+    .min(1, "text is required")
+    .max(10_000, "Text too large"),
+  locale: Locale,
+});
+
+/** /api/nutrition/backup-upload */
+export const BackupUploadSchema = z.object({
+  // Зашифровано на клієнті; сервер не заглядає всередину структуру. Обмежуємо
+  // лише тип і загальний розмір (останнє — у handler-і, бо z.object не
+  // міряє JSON.stringify-байти).
+  blob: z.record(z.string(), z.unknown()),
+});
+
+/** Спільний формат елемента комори для nutrition-ендпойнтів. */
+const PantryItem = z.union([
+  z.string().max(200),
+  z.object({
+    name: z.string().max(120).optional(),
+    qty: z
+      .union([z.number().finite(), z.string().max(32)])
+      .optional()
+      .nullable(),
+    unit: z.string().max(32).optional().nullable(),
+    notes: z.string().max(200).optional().nullable(),
+  }),
+]);
+
+/**
+ * Як генератор має ставитись до комори. Спільний для рецептів, денного і
+ * тижневого плану — користувач обирає режим один раз у «Меню», і всі три
+ * генератори мусять його поважати (інакше вибір «ignore» тихо губиться).
+ */
+export const PantryModeSchema = z.enum(["prefer", "only", "ignore"]);
+export type PantryMode = z.infer<typeof PantryModeSchema>;
+
+/**
+ * Тип прийому їжі — канон для трьох окремих оголошень (nutrition-domain
+ * `MealTypeId`, api-client `NutritionMealType`, і цей файл), знайдених
+ * unification-modules.md #2.25.
+ */
+export const MealTypeIdSchema = z.enum([
+  "breakfast",
+  "lunch",
+  "dinner",
+  "snack",
+]);
+export type MealTypeId = z.infer<typeof MealTypeIdSchema>;
+
+/** /api/nutrition/recommend-recipes */
+export const RecommendRecipesSchema = z.object({
+  pantry: z.array(PantryItem).max(200).optional(),
+  preferences: z
+    .object({
+      goal: z.string().max(40).optional(),
+      servings: z.number().finite().positive().optional(),
+      timeMinutes: z.number().finite().positive().optional(),
+      exclude: z.string().max(500).optional(),
+      mealType: z
+        .enum(["any", "breakfast", "lunch", "dinner", "snack"])
+        .optional(),
+      pantryMode: PantryModeSchema.optional(),
+      locale: Locale,
+    })
+    .partial()
+    .optional(),
+  count: z.number().finite().int().positive().max(10).optional(),
+  locale: Locale,
+});
+
+/**
+ * Цілі КБЖВ для /api/nutrition/day-plan, week-plan і shopping-list.
+ * Приймаємо і короткі `kcal/protein_g/...`, і довгі
+ * `dailyTargetKcal/dailyTargetProtein_g/...` — тому `passthrough()`.
+ */
+const NutritionTargets = z
+  .object({
+    kcal: z.number().finite().nonnegative().nullable().optional(),
+    protein_g: z.number().finite().nonnegative().nullable().optional(),
+    fat_g: z.number().finite().nonnegative().nullable().optional(),
+    carbs_g: z.number().finite().nonnegative().nullable().optional(),
+    dailyTargetKcal: z.number().finite().nonnegative().nullable().optional(),
+    dailyTargetProtein_g: z
+      .number()
+      .finite()
+      .nonnegative()
+      .nullable()
+      .optional(),
+    dailyTargetFat_g: z.number().finite().nonnegative().nullable().optional(),
+    dailyTargetCarbs_g: z.number().finite().nonnegative().nullable().optional(),
+  })
+  .passthrough();
+
+export const DayPlanSchema = z.object({
+  pantry: z.array(PantryItem).max(200).optional(),
+  /** Дефолт — `prefer` (історична поведінка ендпоінта до появи поля). */
+  pantryMode: PantryModeSchema.optional(),
+  targets: NutritionTargets.optional(),
+  regenerateMealType: MealTypeIdSchema.optional(),
+  locale: Locale,
+});
+
+export const WeekPlanSchema = z.object({
+  pantry: z.array(PantryItem).max(200).optional(),
+  /** Дефолт — `prefer` (історична поведінка ендпоінта до появи поля). */
+  pantryMode: PantryModeSchema.optional(),
+  preferences: z
+    .object({
+      goal: z.string().max(40).optional(),
+    })
+    .partial()
+    .optional(),
+  locale: Locale,
+});
+
+/** Рецепт для shopping-list — довільна форма з клієнта, обмежуємо розміри. */
+const ShoppingListRecipe = z.object({
+  title: z.string().max(200).optional(),
+  ingredients: z.array(z.string().max(200)).max(50).optional(),
+});
+
+const ShoppingListWeekPlan = z
+  .object({
+    days: z
+      .array(
+        z.object({
+          label: z.string().max(80).optional(),
+          meals: z.array(z.string().max(500)).max(10).optional(),
+        }),
+      )
+      .max(7)
+      .optional(),
+  })
+  .partial();
+
+export const ShoppingListSchema = z.object({
+  recipes: z.array(ShoppingListRecipe).max(20).optional(),
+  weekPlan: ShoppingListWeekPlan.optional(),
+  pantryItems: z.array(PantryItem).max(300).optional(),
+  locale: Locale,
+});
+
+// ────────────────────── Weekly digest / coach ──────────────────────
+// Верхня межа рядків на аналітичних полях — захист від безконтрольного
+// prompt-injection payload-у в Anthropic. Числа тримаємо скінченними, щоб
+// Infinity/NaN не просочились у промт.
+const Num = z.number().finite().optional().nullable();
+
+const FinykDigestSchema = z
+  .object({
+    totalSpent: Num,
+    totalIncome: Num,
+    monthlyBudget: Num,
+    txCount: Num,
+    topCategories: z
+      .array(z.object({ name: z.string().max(120), amount: Num }))
+      .max(20)
+      .optional(),
+  })
+  .partial();
+
+const FizrukDigestSchema = z
+  .object({
+    workoutsCount: Num,
+    totalVolume: Num,
+    recoveryLabel: z.string().max(120).optional().nullable(),
+    topExercises: z
+      .array(z.object({ name: z.string().max(120), totalVolume: Num }))
+      .max(20)
+      .optional(),
+  })
+  .partial();
+
+const NutritionDigestSchema = z
+  .object({
+    avgKcal: Num,
+    targetKcal: Num,
+    avgProtein: Num,
+    avgFat: Num,
+    avgCarbs: Num,
+    daysLogged: Num,
+  })
+  .partial();
+
+const RoutineDigestSchema = z
+  .object({
+    overallRate: Num,
+    habitCount: Num,
+    habits: z
+      .array(
+        z.object({
+          name: z.string().max(120),
+          completionRate: Num,
+          done: Num,
+          total: Num,
+        }),
+      )
+      .max(50)
+      .optional(),
+  })
+  .partial();
+
+// Клієнтські агрегатори повертають `null`, коли у модулі немає даних за
+// тиждень (див. `aggregateFizruk`/`aggregateNutrition`/`aggregateRoutine` у
+// `src/core/insights/useWeeklyDigest.ts`). `.nullish()` приймає і `null`, і
+// `undefined`, тож запит проходить валідацію незалежно від того, чи
+// клієнт пропускає поле, чи надсилає його як `null`.
+export const WeeklyDigestSchema = z.object({
+  weekRange: z.string().max(80).optional(),
+  // ISO-понеділок тижня (`YYYY-MM-DD`) — канонічний ключ тижня. Йде у
+  // `ai_memories.source_ref` (контракт `MemoryWrite.sourceRef` завжди
+  // обіцяв week_key, а фактично їхав display-рядок weekRange). Опційне з
+  // тих самих причин, що `metricsVersion` нижче: старі PWA-бандли поля не
+  // шлють — тоді сервер падає назад на weekRange.
+  weekKey: z
+    .string()
+    .regex(/^\d{4}-\d{2}-\d{2}$/)
+    .optional(),
+  // Версія МЕТОДИКИ підрахунку, якою клієнт порахував числа нижче — див.
+  // `@sergeant/shared` → `METRICS_VERSION`. Опційне навмисно: старіші бандли
+  // (PWA з service-worker-ом) поля не шлють, і їхні дайджести мають
+  // прийматись, а не 400-ити. Відсутнє поле означає легасі-версію `0`, а НЕ
+  // поточну — методика на момент запису невідома.
+  //
+  // AI-DANGER: споживач, що будує ТРЕНД (коуч по 8 тижнях із `coach_memory`,
+  // тижневий графік, «порівняй тижні»), НЕ має права порівнювати записи
+  // різних версій — інакше стрибок визначення читається як зміна поведінки
+  // користувача. Перевірка — `comparableAsTrend` у `@sergeant/shared`.
+  metricsVersion: z.number().int().min(0).optional(),
+  finyk: FinykDigestSchema.nullish(),
+  fizruk: FizrukDigestSchema.nullish(),
+  nutrition: NutritionDigestSchema.nullish(),
+  routine: RoutineDigestSchema.nullish(),
+});
+/**
+ * Request payload type for `POST /api/weekly-digest`. Both the server handler
+ * and the api-client derive their types from `WeeklyDigestSchema` per Hard
+ * Rule #3 — the api-client's historical `WeeklyDigestPayload` typed every
+ * field as `unknown`, which was only a way to silence TypeScript rather than
+ * describe the contract.
+ */
+export type WeeklyDigestRequest = z.infer<typeof WeeklyDigestSchema>;
+
+// ── Weekly digest response ─────────────────────────────────────────────
+//
+// Response from `POST /api/weekly-digest`. The server prompts Claude for a
+// JSON blob with four module-specific analysis blocks + an overall
+// recommendations array (see the prompt template in
+// `apps/server/src/modules/digest/weekly-digest.ts`). The blob is the
+// contract with Claude; after `extractJsonObject` succeeds, we validate it
+// against `WeeklyDigestReportSchema` so a shape drift from the LLM becomes
+// a 502 `ANTHROPIC_PARSE_ERROR` at the edge rather than a typed lie going
+// all the way to the UI.
+//
+// Each module block is `.partial()` — Claude is explicitly instructed to
+// return `null` for modules with no input data, and `.nullable()` captures
+// that. `recommendations` is always an array of strings (the prompt asks
+// for it; an empty array is the "no recommendation" encoding).
+
+const DigestModuleBlockSchema = z
+  .object({
+    summary: z.string().max(500),
+    comment: z.string().max(2000),
+    recommendations: z.array(z.string().max(500)).max(20),
+  })
+  .nullable();
+
+/**
+ * The AI-generated digest body. Lives under `report` in the HTTP response.
+ * Shape is fixed by the system prompt in the server handler; if the prompt
+ * changes, update this schema in the same PR (Hard Rule #3).
+ */
+export const WeeklyDigestReportSchema = z.object({
+  finyk: DigestModuleBlockSchema,
+  fizruk: DigestModuleBlockSchema,
+  nutrition: DigestModuleBlockSchema,
+  routine: DigestModuleBlockSchema,
+  overallRecommendations: z.array(z.string().max(500)).max(30),
+});
+export type WeeklyDigestReport = z.infer<typeof WeeklyDigestReportSchema>;
+
+/**
+ * Success envelope: the parsed `report` plus an ISO timestamp used by the
+ * client as a "when was this generated" marker (persisted to localStorage
+ * alongside the report so the UI can show a relative time like "6h ago").
+ */
+export const WeeklyDigestSuccessSchema = z.object({
+  report: WeeklyDigestReportSchema,
+  generatedAt: z.string().min(1),
+});
+export type WeeklyDigestSuccess = z.infer<typeof WeeklyDigestSuccessSchema>;
+
+/** Error envelope — validation / Anthropic upstream / parse failures. */
+export const WeeklyDigestErrorSchema = z.object({
+  error: z.string().min(1),
+});
+export type WeeklyDigestErrorResponse = z.infer<typeof WeeklyDigestErrorSchema>;
+
+/**
+ * Discriminated response. Same `{ data } | { error }` shape as the other
+ * AI-backed endpoints in this file.
+ */
+export const WeeklyDigestResponseSchema = z.union([
+  WeeklyDigestSuccessSchema,
+  WeeklyDigestErrorSchema,
+]);
+export type WeeklyDigestResponse = z.infer<typeof WeeklyDigestResponseSchema>;
+
+// AI-NOTE: `dateContext` обовʼязковий для адекватного темпорального
+// обрамлення інсайту (без нього модель імпровізує "середина тижня" в неділю).
+// Поля: `todayKey` — Kyiv-time `YYYY-MM-DD`; `weekDayUk` — день тижня
+// українською ("понеділок"…"неділя"); `dayOfWeekIso` — 1 (пн)…7 (нд);
+// `daysIntoWeek` — скільки днів тижня вже пройшло (= `dayOfWeekIso`);
+// `weekRange` — людиночитабельний діапазон тижня для контексту.
+const CoachDateContextSchema = z
+  .object({
+    todayKey: z
+      .string()
+      .regex(/^\d{4}-\d{2}-\d{2}$/)
+      .optional(),
+    weekDayUk: z.string().max(20).optional(),
+    dayOfWeekIso: z.number().int().min(1).max(7).optional(),
+    daysIntoWeek: z.number().int().min(1).max(7).optional(),
+    weekRange: z.string().max(80).optional(),
+  })
+  .partial();
+
+const CoachSnapshotSchema = z
+  .object({
+    dateContext: CoachDateContextSchema.nullish(),
+    finyk: FinykDigestSchema.nullish(),
+    fizruk: FizrukDigestSchema.nullish(),
+    nutrition: NutritionDigestSchema.nullish(),
+    routine: RoutineDigestSchema.nullish(),
+  })
+  .partial();
+
+// Памʼять coach-а зберігається сервером і повертається назад клієнтом —
+// не валідуємо глибоко, лише обмежуємо кількість digest-ів.
+const CoachMemoryEchoSchema = z
+  .object({
+    weeklyDigests: z.array(z.unknown()).max(24).optional(),
+    lastInsightDate: z.string().max(80).optional().nullable(),
+    lastInsightText: z.string().max(4000).optional().nullable(),
+  })
+  .partial();
+
+// `snapshot` і `memory` можуть надходити як `null` (нема даних / перший
+// сеанс без збереженої памʼяті), тому приймаємо `nullish`, а handler уже
+// коректно обробляє обидва випадки через `snapshot?.finyk` / `memory || null`.
+export const CoachInsightSchema = z.object({
+  snapshot: CoachSnapshotSchema.nullish(),
+  memory: CoachMemoryEchoSchema.nullish(),
+});
+
+// Розмірні ліміти на окремі поля не застосовуємо — загальний
+// blob-size check у `coachMemoryPost` (через `MAX_BLOB_SIZE`) слугує єдиним
+// джерелом правди про розмір payload-у. Тут лише структура.
+export const CoachMemoryPostSchema = z.object({
+  weeklyDigest: z
+    .object({
+      weekKey: z.string(),
+      weekRange: z.string().optional(),
+      generatedAt: z.string().optional(),
+      finyk: z.unknown().optional(),
+      fizruk: z.unknown().optional(),
+      nutrition: z.unknown().optional(),
+      routine: z.unknown().optional(),
+      overallRecommendations: z.array(z.string()).optional(),
+      correlations: z.array(z.string()).optional(),
+    })
+    .optional(),
+});
+
+// ────────────────────── Sync v2 (op-log) ──────────────────────
+//
+// V1 module-data sync schemas (`SyncPushSchema` / `SyncPullSchema` /
+// `SyncPushAllSchema` + `SyncModuleEnum` + `ClientUpdatedAtSchema`)
+// were dropped together with their OpenAPI registrations in PR #076
+// (storage-roadmap Stage 13). The corresponding routes return 410
+// Gone since 2026-05-06 (T₀ in ADR-0047) and the schemas had no
+// other callers, so the sunset middleware no longer needs them for
+// payload validation.
+//
+// Stage 2 / PR #021 із `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. v2 — per-row
+// op-log замість whole-blob LWW v1. Ці схеми валідують HTTP-payload
+// до того, як handler звертається до `sync_op_log`. Серверний whitelist
+// дозволених `table` живе в `apps/server/src/modules/sync/syncV2.ts`
+// (`OP_LOG_TABLE_REGISTRY`); тут перевіряється тільки формат.
+
+/** Hard cap на op-payload, узгоджений із документацією PR #021. */
+export const SYNC_V2_MAX_OPS_PER_PUSH = 200;
+export const SYNC_V2_MAX_ROW_BYTES = 256 * 1024;
+export const SYNC_V2_MAX_TABLE_NAME_LEN = 64;
+export const SYNC_V2_MAX_IDEMPOTENCY_KEY_LEN = 64;
+export const SYNC_V2_PULL_DEFAULT_LIMIT = 100;
+export const SYNC_V2_PULL_MAX_LIMIT = 500;
+
+/**
+ * Допустимі op-kind на per-row рівні.
+ *
+ * `insert` / `update` / `delete` — LWW-протокол від PR #021. `increment`
+ * — додатковий PN-counter primitive, переданий у Stage 5 PR #042a як
+ * protocol-only заділ під PR #042b (`routine_streaks` PN-counter,
+ * `delta`-payload, atomic `UPDATE … SET counter = counter + delta`).
+ *
+ * **Важливо:** після PR #042a server-side apply-шлях відхиляє кожний
+ * `op='increment'` engine-level причиною `op_not_supported` —
+ * ні одна apply-fn його не обробляє. Whitelist підтримуваних таблиць
+ * вмикається у PR #042b разом із самою counter-семантикою.
+ */
+const SyncV2OpKindEnum = z.enum(["insert", "update", "delete", "increment"]);
+
+/**
+ * Один запис op-log-а. `row` — JSON-payload (PK + поля); серверний
+ * apply-шлях знає shape per-table і не валідує тут. Розмір payload-а
+ * обмежено окремим refine-ом (256 KB), щоб не платити за safeParse-инг
+ * мегабайтних обʼєктів.
+ *
+ * `client_ts` приймається як ISO-8601 рядок з offset-ом; пізніше
+ * сервер відхилить значення з clock skew > 1 година.
+ */
+const SyncV2OpSchema = z.object({
+  table: z.string().trim().min(1).max(SYNC_V2_MAX_TABLE_NAME_LEN),
+  op: SyncV2OpKindEnum,
+  row: z.record(z.string(), z.unknown()).refine(
+    (v) => {
+      // Обмежуємо розмір per-row payload-а на серверному boundary.
+      // 256 KB — щедро для UI-row-у і захищає від PG `data too large`
+      // помилок усередині транзакції.
+      try {
+        return JSON.stringify(v).length <= SYNC_V2_MAX_ROW_BYTES;
+      } catch {
+        return false;
+      }
+    },
+    { message: "row_too_large" },
+  ),
+  client_ts: z.string().datetime({ offset: true }),
+  idempotency_key: z
+    .string()
+    .min(1)
+    .max(SYNC_V2_MAX_IDEMPOTENCY_KEY_LEN)
+    // ULID/UUID — alphanum + `-`/`_`. Тримаємо мінімально-вузький
+    // pattern, щоб клієнти могли використовувати власну схему ключів,
+    // але не leak-али шлях для smuggle через NULL/keep-alive.
+    .regex(/^[A-Za-z0-9_-]+$/, "invalid_idempotency_key"),
+});
+
+export const SyncV2PushSchema = z.object({
+  ops: z.array(SyncV2OpSchema).min(1).max(SYNC_V2_MAX_OPS_PER_PUSH),
+});
+export type SyncV2PushRequest = z.infer<typeof SyncV2PushSchema>;
+export type SyncV2Op = z.infer<typeof SyncV2OpSchema>;
+
+/**
+ * Pull — cursor-based по `id`. `since=0` означає "з самого початку";
+ * `limit` за замовчуванням 100, до 500.
+ *
+ * Query-парам-и приходять як рядки, тож використовуємо `z.coerce.number`
+ * — `.int().nonnegative()` і `.min(1).max(500)` уже після coerce,
+ * щоб `?since=foo` падав 400-кою на schema-етапі.
+ */
+export const SyncV2PullSchema = z.object({
+  since: z.coerce.number().int().nonnegative().optional().default(0),
+  limit: z.coerce
+    .number()
+    .int()
+    .min(1)
+    .max(SYNC_V2_PULL_MAX_LIMIT)
+    .optional()
+    .default(SYNC_V2_PULL_DEFAULT_LIMIT),
+});
+export type SyncV2PullRequest = z.infer<typeof SyncV2PullSchema>;
+
+// ────────────────────── Bank proxies (query validation) ──────────────────────
+// `path` перевіряється ще raw-regex-ом в handler-ах (whitelist), тут тільки
+// формат: починається з `/`, без CRLF і розумна довжина.
+const BankApiPath = z
+  .string()
+  .trim()
+  .min(1)
+  .max(256)
+  .regex(/^\/[A-Za-z0-9\-_/]+$/, "Некоректний шлях API");
+
+export const PrivatQuerySchema = z
+  .object({
+    path: BankApiPath.optional(),
+  })
+  .passthrough();
+
+// ────────────────────── Web-push ──────────────────────
+// PushSubscription.endpoint — URL, але браузери видають доволі довгі
+// (FCM/Apple > 300 символів), тому лише розумна верхня межа.
+const PushKeys = z.object({
+  p256dh: z.string().min(1).max(256),
+  auth: z.string().min(1).max(256),
+});
+
+export const PushSubscribeSchema = z.object({
+  endpoint: z.string().url().max(2048),
+  keys: PushKeys,
+});
+
+export const PushUnsubscribeSchema = z.object({
+  endpoint: z.string().url().max(2048),
+});
+
+/**
+ * `/api/v1/push/register` — уніфікована реєстрація push-пристрою.
+ *
+ * `platform: "web"` — web-push: `token` несемо як endpoint URL, `keys`
+ * обовʼязкові (див. RFC 8030). `platform: "ios"|"android"` — native push:
+ * `token` — opaque APNs/FCM device token, `endpoint`/`keys` відсутні.
+ *
+ * Валідатор нижче приймає обидва shape-и; handler сам маршрутизує у
+ * правильну таблицю (`push_subscriptions` для web vs `push_devices` для
+ * native). Довжини полів підібрані під реальні ліміти: FCM registration
+ * token — до ~4KB, APNs — 64 hex (32 bytes), endpoint URL — до 2KB.
+ */
+export const PushRegisterSchema = z.discriminatedUnion("platform", [
+  z.object({
+    platform: z.literal("web"),
+    token: z.string().url().max(2048),
+    keys: PushKeys,
+  }),
+  z.object({
+    platform: z.enum(["ios", "android"]),
+    token: z.string().min(1).max(4096),
+  }),
+]);
+
+/**
+ * `/api/v1/push/unregister` — уніфіковане видалення push-пристрою.
+ *
+ * Web — знімаємо підписку за `endpoint` (запис у `push_subscriptions`
+ * soft-delete-иться). Для native (ios/android) — soft-delete у
+ * `push_devices` за opaque `token`. Форма поля — дзеркало
+ * `PushRegisterSchema`, але для web ідентифікатор іменується `endpoint`
+ * (як у `PushSubscription.endpoint`), а не `token`, щоб бек/фронт
+ * не плутали payload реєстрації та анрегу при читанні логів.
+ */
+export const PushUnregisterSchema = z.discriminatedUnion("platform", [
+  z.object({
+    platform: z.literal("web"),
+    endpoint: z.string().url().max(2048),
+  }),
+  z.object({
+    platform: z.enum(["ios", "android"]),
+    token: z.string().min(1).max(4096),
+  }),
+]);
+
+// `.nullable()` на необовʼязкових полях — для back-compat із воркерами, які
+// історично слали `null` замість відсутнього поля.
+export const PushSendSchema = z.object({
+  userId: z.string().min(1).max(200),
+  title: z.string().min(1).max(200),
+  body: z.string().max(2000).optional().nullable(),
+  module: z.string().max(40).optional().nullable(),
+  tag: z.string().max(120).optional().nullable(),
+});
+
+/**
+ * `POST /api/v1/push/test` — ручка для відправки тестового пуша на всі
+ * зареєстровані пристрої поточного користувача. Auth обовʼязкова; сервер
+ * пропускає body через `sendToUser` (див. `apps/server/src/push/send.ts`)
+ * і повертає агрегований summary.
+ *
+ * `data` — довільні key/value-рядки, що APNs/FCM передадуть у payload
+ * без інтерпретації (дозволяє debug-payload без зміни schema).
+ */
+export const PushTestRequestSchema = z.object({
+  title: z.string().min(1).max(200),
+  body: z.string().min(1).max(2000),
+  data: z.record(z.string().max(200), z.string().max(2000)).optional(),
+  /**
+   * Deep-link, що клієнт відкриє по тапу. Сервер прокине у `data.url` для
+   * всіх трьох каналів; native/web handler читають з одного ключа.
+   * URL-валідацію навмисно робимо мʼякою (`.url()` без `.startsWith`), щоб
+   * поза-HTTPS кастом-схеми (`sergeant://finyk/tx/123`) теж проходили.
+   */
+  url: z.string().trim().min(1).max(2048).optional(),
+  /**
+   * Background/silent push. `true` → iOS `content-available=1` без banner,
+   * Android/FCM data-only. Web-push гілка ігнорує (див. `PushPayload`).
+   */
+  silent: z.boolean().optional(),
+});
+
+/**
+ * Уніфікований summary-результат `sendToUser`. `delivered` — скільки
+ * пристроїв по кожній платформі отримали push; `cleaned` — скільки dead
+ * tokens сервер soft-deleted у цьому ж виклику; `errors` — список
+ * платформо-специфічних помилок (per-device, не per-виклик).
+ */
+export const PushSendPlatformSchema = z.enum(["ios", "android", "web"]);
+export const PushSendErrorSchema = z.object({
+  platform: PushSendPlatformSchema,
+  reason: z.string(),
+});
+export const PushTestResponseSchema = z.object({
+  delivered: z.object({
+    ios: z.number().int().nonnegative(),
+    android: z.number().int().nonnegative(),
+    web: z.number().int().nonnegative(),
+  }),
+  cleaned: z.number().int().nonnegative(),
+  errors: z.array(PushSendErrorSchema),
+});
+
+// `/api/push/send` (worker fan-out) повертає той самий summary, що й
+// `/api/push/test`. OpenAPI registry віддає їх як окремі іменовані схеми
+// `PushSendSummary` / `PushTestResponse`, тож тримаємо явний alias —
+// рефактор може розщепити їх у майбутньому без зміни контракту.
+export const PushSendSummarySchema = PushTestResponseSchema;
+
+// ────────────────────── Pagination ──────────────────────
+// Переused у будь-якому endpoint-і, що повертає список. Query-params завжди
+// приходять рядками — `z.coerce.number()` конвертує "8" → 8 автоматично.
+export const PaginationSchema = z.object({
+  limit: z.coerce.number().int().min(1).max(100).default(20),
+  offset: z.coerce.number().int().min(0).default(0),
+});
+
+// ────────────────────── Food-search / barcode ──────────────────────
+export const FoodSearchQuerySchema = z.object({
+  q: z.string().trim().min(2).max(SEARCH_QUERY_MAX_LEN),
+  // `limit` — скільки результатів повернути (1–20, default 8). Query-param
+  // приходить рядком — coerce конвертує автоматично.
+  limit: z.coerce.number().int().min(1).max(20).default(8),
+});
+
+export const BarcodeQuerySchema = z.object({
+  // клієнт може присилати з пробілами/знаками — нормалізуємо у handler-і,
+  // тут лише обмежуємо довжину й склад.
+  barcode: z.string().trim().min(1, "Штрихкод не може бути порожнім").max(32),
+});
+
+// ────────────────────── Mono webhook integration (Track A/B/C) ──────────────
+//
+// SSOT for the `/api/mono/*` HTTP contract per AGENTS.md Hard Rule #3.
+// Server handlers in `apps/server/src/modules/mono/{connection,read,backfill}`
+// derive their response shapes from these schemas, validate via `.parse()`
+// before `res.json()`, and the api-client (`packages/api-client/src/endpoints/
+// mono.ts`) re-exports `z.infer<>` so the three artefacts (server, client
+// types, tests) cannot drift again silently.
+
+export const MonoTransactionsQuerySchema = z.object({
+  from: z.string().optional(),
+  to: z.string().optional(),
+  accountId: z.string().optional(),
+  limit: z.coerce.number().int().min(1).max(200).default(50),
+  cursor: z.string().min(3).optional(),
+});
+
+/**
+ * Lifecycle of the per-user `mono_connection` row. Webhook flips
+ * `active`→`invalid` when Monobank rejects a delivery (e.g. token revoked);
+ * UI then prompts the user to reconnect. `pending` exists for a short
+ * window between `connect` and the first webhook delivery / accounts
+ * upsert (currently unused — `connect` immediately sets `active`).
+ */
+export const MonoConnectionStatusSchema = z.enum([
+  "pending",
+  "active",
+  "invalid",
+  "disconnected",
+]);
+export type MonoConnectionStatus = z.infer<typeof MonoConnectionStatusSchema>;
+
+/**
+ * `transaction.source` — `'webhook'` for live deliveries from Monobank,
+ * `'backfill'` for rows ingested by `POST /api/mono/backfill` (last 31d
+ * statement window). Used by the upsert-conflict CASE so a webhook row
+ * never gets its `received_at` overwritten by a later backfill.
+ */
+export const MonoTransactionSourceSchema = z.enum(["webhook", "backfill"]);
+export type MonoTransactionSource = z.infer<typeof MonoTransactionSourceSchema>;
+
+/**
+ * Row from `GET /api/mono/accounts`. Mirrors the columns of `mono_account`
+ * after `normalizeMonoAccount()` coerces `bigint`→`number` (Hard Rule #1)
+ * and `Date`→ISO-8601 string. `lastSeenAt` is always present — DB column
+ * is `NOT NULL` and the normalizer renders `null` to a string only via
+ * `.toISOString()`, never null.
+ */
+export const MonoAccountDtoSchema = z.object({
+  userId: z.string().min(1),
+  monoAccountId: z.string().min(1),
+  sendId: z.string().nullable(),
+  type: z.string().nullable(),
+  currencyCode: z.number().int(),
+  cashbackType: z.string().nullable(),
+  // Monobank can return up to 4 PANs per account (multi-card). Empty array
+  // is the "no cards" encoding (e.g. FOP accounts).
+  maskedPan: z.array(z.string()).max(8),
+  iban: z.string().nullable(),
+  // bigint columns coerced to number by `normalizeMonoAccount`; `null` when
+  // Monobank hadn't reported a balance yet.
+  balance: z.number().nullable(),
+  creditLimit: z.number().nullable(),
+  lastSeenAt: z.string().min(1),
+});
+export type MonoAccountDto = z.infer<typeof MonoAccountDtoSchema>;
+
+/** Response of `GET /api/mono/accounts` — array of accounts, no envelope. */
+export const MonoAccountsResponseSchema = z.array(MonoAccountDtoSchema);
+export type MonoAccountsResponse = z.infer<typeof MonoAccountsResponseSchema>;
+
+/**
+ * Row from `GET /api/mono/jars`. Mirrors the columns of `mono_jar` after
+ * `normalizeMonoJar()` coerces `bigint`→`number` (Hard Rule #1) and
+ * `Date`→ISO-8601 string. Jars ("банки") are Monobank's named savings
+ * sub-accounts — `goal` is the user-set target amount in the jar itself
+ * (nullable when the user never set one in the Monobank app), used as the
+ * default target when a Фінік goal links to this jar
+ * (docs/work/specs/goal-progress-auto.md).
+ */
+export const MonoJarDtoSchema = z.object({
+  userId: z.string().min(1),
+  monoJarId: z.string().min(1),
+  sendId: z.string().nullable(),
+  title: z.string().nullable(),
+  description: z.string().nullable(),
+  currencyCode: z.number().int(),
+  // bigint columns coerced to number by `normalizeMonoJar`; `null` when
+  // Monobank hadn't reported a balance/goal yet.
+  balance: z.number().nullable(),
+  goal: z.number().nullable(),
+  lastSeenAt: z.string().min(1),
+});
+export type MonoJarDto = z.infer<typeof MonoJarDtoSchema>;
+
+/** Response of `GET /api/mono/jars` — array of jars, no envelope. */
+export const MonoJarsResponseSchema = z.array(MonoJarDtoSchema);
+export type MonoJarsResponse = z.infer<typeof MonoJarsResponseSchema>;
+
+/**
+ * Row from `GET /api/mono/transactions`. Mirrors the columns of
+ * `mono_transaction` after `normalizeMonoTransaction()`. Bigint money
+ * columns (`amount`, `operationAmount`, `cashbackAmount`,
+ * `commissionRate`, `balance`) are coerced to `number`; `time` and
+ * `receivedAt` are ISO-8601 strings.
+ */
+export const MonoTransactionDtoSchema = z.object({
+  userId: z.string().min(1),
+  monoAccountId: z.string().min(1),
+  monoTxId: z.string().min(1),
+  time: z.string().min(1),
+  // Monobank denominates in the smallest currency unit (kopecks for UAH);
+  // negative values are debits, positive are credits.
+  amount: z.number(),
+  operationAmount: z.number(),
+  currencyCode: z.number().int(),
+  // MCC / original-MCC / hold are missing for jar-to-jar internal transfers
+  // and a few legacy rows; UI must handle null.
+  mcc: z.number().int().nullable(),
+  originalMcc: z.number().int().nullable(),
+  hold: z.boolean().nullable(),
+  description: z.string().nullable(),
+  comment: z.string().nullable(),
+  cashbackAmount: z.number().nullable(),
+  commissionRate: z.number().nullable(),
+  balance: z.number().nullable(),
+  receiptId: z.string().nullable(),
+  invoiceId: z.string().nullable(),
+  counterEdrpou: z.string().nullable(),
+  counterIban: z.string().nullable(),
+  counterName: z.string().nullable(),
+  /**
+   * Server-resolved expense-category slug derived from `mcc` via the
+   * `MCC_CATEGORIES` map in `@sergeant/finyk-domain/constants`. `null` when
+   * the MCC is unknown / 0 / missing — UI then falls back to its own
+   * client-side categorisation (description keywords, user override).
+   */
+  categorySlug: z.string().nullable(),
+  /**
+   * Sticky latch set by the (forthcoming) `PATCH /api/mono/transactions/:id/
+   * category` endpoint and the data-migrations. Once `true`, subsequent
+   * webhook deliveries (e.g. Monobank refunds with a different MCC) do not
+   * silently undo the user's manual correction.
+   */
+  categoryOverridden: z.boolean(),
+  source: MonoTransactionSourceSchema,
+  receivedAt: z.string().min(1),
+});
+export type MonoTransactionDto = z.infer<typeof MonoTransactionDtoSchema>;
+
+/**
+ * Cursor-paginated response from `GET /api/mono/transactions`. Server
+ * returns up to `limit` items (default 50, max 200) ordered by
+ * `(time DESC, monoTxId DESC)`; `nextCursor` is non-null when more rows
+ * are available and is consumed by `fetchAllMonoTransactions`.
+ */
+export const MonoTransactionsPageSchema = z.object({
+  data: z.array(MonoTransactionDtoSchema),
+  nextCursor: z.string().nullable(),
+});
+export type MonoTransactionsPage = z.infer<typeof MonoTransactionsPageSchema>;
+
+/**
+ * Response of `GET /api/mono/sync-state`. UI uses this to decide whether
+ * to render the "Connect Monobank" form or the connected dashboard.
+ * `webhookActive=true` means the row is `active` and Monobank has
+ * confirmed registration (`webhook_registered_at != NULL`).
+ */
+export const MonoSyncStateSchema = z.object({
+  status: MonoConnectionStatusSchema,
+  webhookActive: z.boolean(),
+  lastEventAt: z.string().nullable(),
+  lastBackfillAt: z.string().nullable(),
+  accountsCount: z.number().int().nonnegative(),
+});
+export type MonoSyncState = z.infer<typeof MonoSyncStateSchema>;
+
+/**
+ * Response of `POST /api/mono/connect`. After token validation +
+ * webhook registration with Monobank succeeded, the connection is
+ * persisted as `active` and the response carries the count of accounts
+ * upserted from `client-info` (used by UI to confirm "X accounts
+ * connected").
+ */
+export const MonoConnectResponseSchema = z.object({
+  status: z.literal("active"),
+  accountsCount: z.number().int().nonnegative(),
+});
+export type MonoConnectResponse = z.infer<typeof MonoConnectResponseSchema>;
+
+/**
+ * Response of `POST /api/mono/disconnect`. Server best-efforts deregister
+ * the webhook with Monobank, then deletes `mono_connection`. The `ok:
+ * true` envelope mirrors the rest of the boolean-result write endpoints
+ * in this codebase.
+ */
+export const MonoDisconnectResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type MonoDisconnectResponse = z.infer<
+  typeof MonoDisconnectResponseSchema
+>;
+
+/**
+ * Response of `POST /api/mono/backfill`. The handler returns `started`
+ * synchronously and runs the per-account 31-day statement pull in the
+ * background; clients poll `sync-state.lastBackfillAt` to detect
+ * completion.
+ */
+export const MonoBackfillResponseSchema = z.object({
+  status: z.literal("started"),
+  accountsCount: z.number().int().nonnegative(),
+});
+export type MonoBackfillResponse = z.infer<typeof MonoBackfillResponseSchema>;
+
+/**
+ * Response of `GET /api/mono/backfill-progress`. Reports the current state
+ * of the per-user backfill job started by `POST /api/mono/backfill`.
+ *
+ * - `idle`: no backfill ever started (or the in-memory record was cleared
+ *   by a server restart). Counters are zero, `startedAt`/`completedAt` are null.
+ * - `running`: backfill is in flight. UI should poll while in this state.
+ * - `completed`: last backfill finished successfully. `completedAt` is set
+ *   and `accountsProcessed === accountsTotal`. UI may show a toast then drop
+ *   the polling.
+ * - `failed`: last backfill threw. `lastError` carries a short message.
+ *
+ * Numbers are coerced from internal counters via `Number()` per Hard Rule #1
+ * even though they originate as JS numbers, to keep the contract explicit.
+ */
+export const MonoBackfillProgressSchema = z.object({
+  status: z.enum(["idle", "running", "completed", "failed"]),
+  startedAt: z.string().nullable(),
+  completedAt: z.string().nullable(),
+  accountsTotal: z.number().int().nonnegative(),
+  accountsProcessed: z.number().int().nonnegative(),
+  currentAccountId: z.string().nullable(),
+  transactionsProcessed: z.number().int().nonnegative(),
+  lastError: z.string().nullable(),
+});
+export type MonoBackfillProgress = z.infer<typeof MonoBackfillProgressSchema>;
+
+// ────────────────────── Waitlist (Phase 0 monetization rails) ───────────────
+// Простий sign-up для майбутнього Pro-тіру. Валідується тут, щоб і клієнт
+// (через `@sergeant/api-client`) і сервер (через `validateBody`) мали одне
+// джерело правди. Tier-и навмисно матчать `docs/work/specs/launch/business/01-monetization-and-pricing.md`.
+
+export const WaitlistTierSchema = z.enum(["free", "plus", "pro", "unsure"]);
+export type WaitlistTier = z.infer<typeof WaitlistTierSchema>;
+
+export const WaitlistSourceSchema = z.enum([
+  "pricing_page",
+  "landing",
+  "paywall",
+  "settings",
+  "onboarding",
+]);
+export type WaitlistSource = z.infer<typeof WaitlistSourceSchema>;
+
+export const WaitlistSubmitSchema = z.object({
+  email: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .email("Некоректна email-адреса")
+    .max(254),
+  tier_interest: WaitlistTierSchema.default("unsure"),
+  source: WaitlistSourceSchema.default("pricing_page"),
+  // ISO-639-1, два символи: "uk", "en". Опційний — UI може не знати.
+  locale: z
+    .string()
+    .trim()
+    .toLowerCase()
+    .regex(/^[a-z]{2}$/, "locale має бути 2-літерний ISO-639-1")
+    .optional(),
+});
+export type WaitlistSubmitPayload = z.infer<typeof WaitlistSubmitSchema>;
+
+export const WaitlistSubmitResponseSchema = z.object({
+  ok: z.literal(true),
+  // `created` — true якщо це новий запис; false якщо email уже був у списку.
+  // Дозволяє UI показати «ми памʼятаємо твій інтерес» замість «дякуємо що
+  // підписався». Це СВІДОМО розкриває членство у вейтлисті (і нічого
+  // більше — таблиця окрема від акаунтів); повний розбір інваріанта — у
+  // doc-string `apps/server/src/routes/waitlist.ts`.
+  created: z.boolean(),
+});
+export type WaitlistSubmitResponse = z.infer<
+  typeof WaitlistSubmitResponseSchema
+>;
+
+// ────────────────────── In-app feedback ─────────────────────────────────────
+// Головний багрепорт-канал закритої бети. Одне джерело правди для клієнта
+// (`@sergeant/api-client`) і сервера (`parseBody`).
+//
+// Чому взагалі є серверний endpoint, якщо подія вже летить у PostHog:
+// PostHog — аналітика (воронка opened → submitted), і її домен блокують
+// розширення. Текст фідбеку мусить пережити блокувальник, офлайн і будь-який
+// збій транспорту, тому джерело істини для нього — власна БД, а клієнт
+// показує «надіслано» лише після 200. Розбір — feedback-loop.md § 2a.
+
+export const FeedbackCategorySchema = z.enum(["idea", "bug", "other"]);
+export type FeedbackCategory = z.infer<typeof FeedbackCategorySchema>;
+
+/** Дзеркалить `MAX_MESSAGE_LENGTH` у `FeedbackDialog.tsx` і CHECK у міграції 093. */
+export const FEEDBACK_MESSAGE_MAX_LENGTH = 2000;
+
+export const FeedbackSubmitSchema = z.object({
+  category: FeedbackCategorySchema,
+  message: z.string().trim().min(1).max(FEEDBACK_MESSAGE_MAX_LENGTH),
+  // Контекст сторінки — опційний: `buildPageContext()` повертає null поза DOM.
+  // `page` уже пройшов `sanitizeUrl()` на клієнті, але сервер не довіряє
+  // цьому й ріже довжину сам (trust boundary).
+  page: z.string().trim().max(2048).optional(),
+  viewport: z
+    .string()
+    .trim()
+    .regex(/^\d{1,5}x\d{1,5}$/, "viewport має бути у форматі WxH")
+    .optional(),
+});
+export type FeedbackSubmitPayload = z.infer<typeof FeedbackSubmitSchema>;
+
+export const FeedbackSubmitResponseSchema = z.object({
+  ok: z.literal(true),
+  // `id` рядка у `feedback_entries`. BIGSERIAL у pg приїжджає рядком —
+  // серіалізатор коерсить у number (Hard Rule #1). Віддаємо, щоб людина
+  // могла назвати номер у Telegram, і щоб підтвердження було доказовим,
+  // а не просто «ok: true».
+  id: z.number().int().positive(),
+});
+export type FeedbackSubmitResponse = z.infer<
+  typeof FeedbackSubmitResponseSchema
+>;
+
+// ────────────────────── Billing (Stripe checkout MVP) ──────────────────────
+// SSOT for authenticated billing endpoints. The server validates request
+// bodies with these schemas, and api-client parses responses from the same
+// contract.
+
+export const BillingPlanSchema = z.enum(["plus", "pro"]);
+export type BillingPlan = z.infer<typeof BillingPlanSchema>;
+
+// Web payment providers (Phase 7 UA billing) — те, що юзер може ОБРАТИ на
+// checkout. `stripe` — dormant (ніколи не пропонується UA); `liqpay`
+// (ПриватБанк) + `plata` (monobank) — live UA.
+export const BillingProviderIdSchema = z.enum(["stripe", "liqpay", "plata"]);
+export type BillingProviderId = z.infer<typeof BillingProviderIdSchema>;
+
+// Provider, що може бути ЗАПИСАНИЙ у subscriptions.provider — ширший за
+// checkout-набір: включає `manual` (founder/comp-акаунти через
+// /api/internal/billing/upgrade, DB DEFAULT з m056). Read-side (status)
+// мусить серіалізувати такі рядки, тож окрема схема від checkout-enum.
+export const BillingSubscriptionProviderSchema = z.enum([
+  "stripe",
+  "liqpay",
+  "plata",
+  "manual",
+]);
+export type BillingSubscriptionProvider = z.infer<
+  typeof BillingSubscriptionProviderSchema
+>;
+
+export const BillingCheckoutRequestSchema = z.object({
+  plan: BillingPlanSchema,
+  // Optional для back-compat зі старими `{plan}`-only Stripe-викликами: коли
+  // не передано, server бере перший enabled-provider для країни юзера.
+  provider: BillingProviderIdSchema.optional(),
+});
+export type BillingCheckoutRequest = z.infer<
+  typeof BillingCheckoutRequestSchema
+>;
+
+export const BillingCheckoutResponseSchema = z.object({
+  ok: z.literal(true),
+  mode: z.enum(["test", "live"]),
+  sessionId: z.string().min(1),
+  url: z.string().url(),
+});
+export type BillingCheckoutResponse = z.infer<
+  typeof BillingCheckoutResponseSchema
+>;
+
+export const BillingSubscriptionSchema = z.object({
+  id: z.number().int().positive().nullable(),
+  provider: BillingSubscriptionProviderSchema.nullable(),
+  plan: BillingPlanSchema.nullable(),
+  status: z.string().nullable(),
+  active: z.boolean(),
+  currentPeriodEnd: z.string().nullable(),
+});
+export type BillingSubscription = z.infer<typeof BillingSubscriptionSchema>;
+
+export const BillingStatusResponseSchema = z.object({
+  subscription: BillingSubscriptionSchema,
+});
+export type BillingStatusResponse = z.infer<typeof BillingStatusResponseSchema>;
+
+// `POST /api/billing/portal` — створює manage-session і повертає
+// короткоживучий redirect-URL. Stripe legacy → Customer Portal; LiqPay/Plata →
+// same-origin `/settings?billing=manage`. Endpoint доступний для користувачів
+// з active/trialing/past_due підпискою; інакше — `409 NO_BILLING_CUSTOMER`.
+// Якщо billing не сконфігурований — `503 BILLING_UNAVAILABLE` (як у `/checkout`).
+export const BillingPortalResponseSchema = z.object({
+  ok: z.literal(true),
+  url: z.string().url(),
+});
+export type BillingPortalResponse = z.infer<typeof BillingPortalResponseSchema>;
+
+// `POST /api/billing/cancel` (Phase 7 UA billing) — власна кнопка «Скасувати
+// Pro» замість Customer Portal (якого немає в LiqPay/Plata). Тіла запиту
+// немає (діє над поточним юзером). Доступ лишається до кінця оплаченого
+// періоду (`cancel_at_period_end`).
+export const BillingCancelResponseSchema = z.object({
+  ok: z.literal(true),
+});
+export type BillingCancelResponse = z.infer<typeof BillingCancelResponseSchema>;
+
+// `GET /api/billing/providers` — список payment-provider-ів, доступних
+// поточному юзеру (для кнопок на /pricing). UA → увімкнені liqpay/plata;
+// інші країни → stripe.
+export const BillingProvidersResponseSchema = z.object({
+  providers: z.array(BillingProviderIdSchema),
+});
+export type BillingProvidersResponse = z.infer<
+  typeof BillingProvidersResponseSchema
+>;
+
+// ────────────────────── Transcribe (Groq Whisper proxy) ─────────────────────
+// `POST /api/transcribe` приймає сире audio-тіло (Content-Type: `audio/*`),
+// query визначає мову/prompt. Schema тут — SSOT і для server-side
+// `validateQuery`, і для `@sergeant/api-client` (типізує query + response).
+
+const TRANSCRIBE_MAX_PROMPT_LENGTH = 1024;
+
+export const TranscribeQuerySchema = z.object({
+  language: z
+    .string()
+    .trim()
+    .min(2)
+    .max(8)
+    .optional()
+    .describe("ISO-код мови, напр. uk або en. Якщо порожньо — auto-detect."),
+  prompt: z
+    .string()
+    .trim()
+    .max(TRANSCRIBE_MAX_PROMPT_LENGTH)
+    .optional()
+    .describe("Доменна підказка (списки вправ, продуктів тощо)."),
+});
+export type TranscribeQuery = z.infer<typeof TranscribeQuerySchema>;
+
+export const TranscribeResponseSchema = z.object({
+  text: z.string(),
+  durationSec: z.number().nonnegative(),
+  model: z.string(),
+});
+export type TranscribeResponse = z.infer<typeof TranscribeResponseSchema>;
+
+// ────────────────────── Web Vitals ingestion ────────────────────────────────
+// `POST /api/metrics/web-vitals` — анонімний beacon-endpoint, приймає батч
+// Core Web Vitals замірів. Server завжди відповідає 204 No Content.
+
+export const WebVitalsMetricNameSchema = z.enum([
+  "LCP",
+  "INP",
+  "FCP",
+  "TTFB",
+  "CLS",
+]);
+export type WebVitalsMetricName = z.infer<typeof WebVitalsMetricNameSchema>;
+
+export const WebVitalsMetricRatingSchema = z.enum([
+  "good",
+  "needs-improvement",
+  "poor",
+]);
+export type WebVitalsMetricRating = z.infer<typeof WebVitalsMetricRatingSchema>;
+
+// CLS — безрозмірний (0..1+, 0.25 = "poor"). Таймінги (LCP/INP/FCP/TTFB) —
+// мс, upper-bound 120_000 (2 хв — будь-що більше це зламаний клієнтський
+// таймер). Окремий upper-bound для CLS не дає анонімному endpoint-у інфлейтити
+// `web_vitals_cls_sum`, що зробило б `avg = _sum / _count` беззмістовним.
+//
+// Розбито на дискримінований union по `name` замість `.refine()` так, щоб межі
+// `value` для CLS (≤10) і таймінгів (≤120_000) переживали серіалізацію в
+// OpenAPI: кастомні `.refine()`-предикати у `docs/api/openapi.json` не
+// потрапляють, і генерований контракт мовчки втрачав би верхні межі.
+const WebVitalsClsMetricSchema = z.object({
+  name: z.literal("CLS"),
+  value: z.number().finite().min(0).max(10),
+  rating: WebVitalsMetricRatingSchema,
+});
+
+const WebVitalsTimingMetricSchema = z.object({
+  name: z.enum(["LCP", "INP", "FCP", "TTFB"]),
+  value: z.number().finite().min(0).max(120_000),
+  rating: WebVitalsMetricRatingSchema,
+});
+
+export const WebVitalsMetricSchema = z.discriminatedUnion("name", [
+  WebVitalsClsMetricSchema,
+  WebVitalsTimingMetricSchema,
+]);
+export type WebVitalsMetric = z.infer<typeof WebVitalsMetricSchema>;
+
+export const WebVitalsPayloadSchema = z.object({
+  metrics: z.array(WebVitalsMetricSchema).min(1).max(10),
+});
+export type WebVitalsPayload = z.infer<typeof WebVitalsPayloadSchema>;
+
+// ────────────────────── /api/auth/get-session ──────────────────────
+/**
+ * Wire shape of Better Auth's `GET /api/auth/get-session`. Mounted by
+ * `apps/server/src/routes/auth.ts` via `toNodeHandler(auth)`; the upstream
+ * type lives at `node_modules/@better-auth/core/dist/db/schema/session.d.mts`
+ * (`sessionSchema`) but is private to better-auth — we mirror only the fields
+ * the Sergeant clients actually depend on plus the small set required to
+ * keep `H3 — session fingerprint drift detection`
+ * (`apps/server/src/auth/sessionFingerprint.ts`) honest.
+ *
+ * The endpoint returns `null` (no active session) or a `{ user, session }`
+ * envelope. JSON serialisation flattens Better Auth's internal `Date` fields
+ * into ISO-8601 strings — we lock that here so any future schema change
+ * (e.g. moving `expiresAt` to a numeric epoch) fails the contract test
+ * before it hits the web/mobile clients.
+ *
+ * Closes audit `docs/audits/2026-05-13-security-observability-roast.md` § S7
+ * (carry-over from `2026-05-03-web-deep-dive/04-security-observability-testing-devx.md` §7.4).
+ */
+export const AuthSessionUserSchema = z.object({
+  id: z.string().min(1),
+  email: z.string().email().nullable(),
+  name: z.string().nullable(),
+  image: z.string().nullable(),
+  emailVerified: z.boolean(),
+  createdAt: z.string().datetime({ offset: true }).nullable(),
+});
+export type AuthSessionUser = z.infer<typeof AuthSessionUserSchema>;
+
+/**
+ * Mirror of Better Auth's `sessionSchema`. `ipAddress` is *truncated to /24
+ * IPv4 prefix or /48 IPv6 prefix* by the `session.create.before` hook in
+ * `apps/server/src/auth.ts` (Hardening H3) — the wire format still carries a
+ * `string | null`, so the schema keeps the same shape and the fixture pins
+ * the truncated representation.
+ *
+ * `token` is the rotating opaque cookie/bearer token; never logged, never
+ * surfaced to the UI, but present in the wire response — leaving it
+ * un-validated would let a regression that drops it slip past contract CI.
+ */
+export const AuthSessionSessionSchema = z.object({
+  id: z.string().min(1),
+  userId: z.string().min(1),
+  token: z.string().min(1),
+  expiresAt: z.string().datetime({ offset: true }),
+  createdAt: z.string().datetime({ offset: true }),
+  updatedAt: z.string().datetime({ offset: true }),
+  ipAddress: z.string().nullable().optional(),
+  userAgent: z.string().nullable().optional(),
+});
+export type AuthSessionSession = z.infer<typeof AuthSessionSessionSchema>;
+
+/** Active envelope returned by `/api/auth/get-session` when authenticated. */
+export const AuthSessionActiveSchema = z.object({
+  user: AuthSessionUserSchema,
+  session: AuthSessionSessionSchema,
+});
+export type AuthSessionActive = z.infer<typeof AuthSessionActiveSchema>;
+
+/**
+ * Better Auth's `/api/auth/get-session` emits `null` when there's no active
+ * session (HTTP 200 with body `null`). Modelling both arms in one schema
+ * means the api-client / consumer test can `safeParse()` the body without
+ * branching on status code.
+ */
+export const AuthSessionResponseSchema = z.union([
+  z.null(),
+  AuthSessionActiveSchema,
+]);
+export type AuthSessionResponse = z.infer<typeof AuthSessionResponseSchema>;
+
+// ────────────────────── /api/csp-report (request body) ──────────────────────
+/**
+ * Wire shape of `POST /api/csp-report` request bodies.
+ *
+ * Browsers POST in two formats — see the producer module documentation at
+ * `apps/server/src/modules/observability/csp-report.ts` for the full
+ * rationale. Both wire formats are loosely typed by spec (every field is
+ * effectively optional and `unknown`-shaped) so the schema only locks the
+ * envelope — the inner `body` is `z.record()` to mirror the producer's
+ * actual permissiveness. A *stricter* inner schema would reject legitimate
+ * browser variants (Firefox, older Safari, Chromium reports-API drafts)
+ * that all need to keep working through this sink.
+ *
+ * Audit reference: `docs/work/specs/security-hardening/C2-frontend-csp.md`.
+ */
+export const CspViolationDetailsSchema = z.record(z.string(), z.unknown());
+export type CspViolationDetails = z.infer<typeof CspViolationDetailsSchema>;
+
+/**
+ * Legacy `application/csp-report` envelope (Firefox + Chromium pre-Reporting-API).
+ */
+export const CspReportLegacyEnvelopeSchema = z
+  .object({
+    "csp-report": CspViolationDetailsSchema,
+  })
+  .strict();
+export type CspReportLegacyEnvelope = z.infer<
+  typeof CspReportLegacyEnvelopeSchema
+>;
+
+/**
+ * Modern Reporting-API entry inside an `application/reports+json` array.
+ * `type` is `"csp-violation"` per the W3C Reporting spec; we also accept
+ * the older `"csp"` value some Chromium builds emitted during the draft.
+ */
+export const CspReportingApiEntrySchema = z.object({
+  type: z.string(),
+  body: CspViolationDetailsSchema.optional(),
+  url: z.string().optional(),
+  age: z.number().optional(),
+  user_agent: z.string().optional(),
+});
+export type CspReportingApiEntry = z.infer<typeof CspReportingApiEntrySchema>;
+
+/** Modern Reporting-API top-level payload. */
+export const CspReportingApiArraySchema = z
+  .array(CspReportingApiEntrySchema)
+  .min(1);
+export type CspReportingApiArray = z.infer<typeof CspReportingApiArraySchema>;
+
+/**
+ * Union of every wire shape the handler accepts. The "bare" arm is the
+ * Safari quirk where the browser drops the `csp-report` envelope and posts
+ * the violation fields at the top level (`{"violated-directive": "..."}`
+ * with no outer key). The handler treats it as a violation iff one of the
+ * directive keys is present.
+ */
+export const CspReportBareSchema = CspViolationDetailsSchema.refine(
+  (body) =>
+    "violated-directive" in body ||
+    "violatedDirective" in body ||
+    "effective-directive" in body ||
+    "effectiveDirective" in body,
+  { message: "bare CSP report must carry a directive field" },
+);
+export type CspReportBare = z.infer<typeof CspReportBareSchema>;
+
+export const CspReportBodySchema = z.union([
+  CspReportLegacyEnvelopeSchema,
+  CspReportingApiArraySchema,
+  CspReportBareSchema,
+]);
+export type CspReportBody = z.infer<typeof CspReportBodySchema>;
+
+// ────────────────────── /api/account/recovery (planned) ──────────────────────
+/**
+ * Wire shapes for the planned `POST /api/account/recovery` /
+ * `POST /api/account/recovery/confirm` security-critical endpoints. The
+ * routes are referenced in the Sentry sampling table
+ * (`apps/server/src/sentry.ts` line 42, `100%` trace rate) and the
+ * fail-closed rate-limit policy (`docs/initiatives/stack-pulse-2026-05/pr-02-rate-limit-fail-closed.md`)
+ * but have **no handler yet** — locking the contract here means the
+ * eventual implementation can be reviewed against an already-agreed shape
+ * instead of bike-shed-debated mid-PR.
+ *
+ * Hard rule applied: response shape **MUST NOT** distinguish "email is
+ * registered" from "email is not registered" via status code or body
+ * differences — the response is identical in both cases (HTTP 202 +
+ * `{ ok: true }`) to prevent account-enumeration. See
+ * `docs/audits/2026-05-13-security-observability-roast.md` § S7 for the
+ * carry-over rationale and `OWASP ASVS v4.0 § 2.2.1` for the enumeration
+ * threat model.
+ */
+export const AccountRecoveryInitiateRequestSchema = z
+  .object({
+    email: z.string().email().max(254),
+  })
+  .strict();
+export type AccountRecoveryInitiateRequest = z.infer<
+  typeof AccountRecoveryInitiateRequestSchema
+>;
+
+/**
+ * Identical for both registered + unregistered emails (anti-enumeration).
+ * `ok: true` is the only guaranteed field — the route is async / queue-based.
+ */
+export const AccountRecoveryInitiateResponseSchema = z
+  .object({
+    ok: z.literal(true),
+  })
+  .strict();
+export type AccountRecoveryInitiateResponse = z.infer<
+  typeof AccountRecoveryInitiateResponseSchema
+>;
+
+/**
+ * Confirm step — caller submits the opaque single-use token from the
+ * recovery email plus the new password. Schema validates the same minimum
+ * password strength rule as Better Auth's `password.min` config in
+ * `apps/server/src/auth.ts`; if Better Auth ever raises the floor, this
+ * schema must move in lockstep (Hard Rule #3).
+ */
+export const AccountRecoveryConfirmRequestSchema = z
+  .object({
+    token: z.string().min(16).max(512),
+    newPassword: z.string().min(8).max(128),
+  })
+  .strict();
+export type AccountRecoveryConfirmRequest = z.infer<
+  typeof AccountRecoveryConfirmRequestSchema
+>;
+
+/**
+ * Success: `{ ok: true }`. The route deliberately omits the rotated session
+ * to force the client through a fresh `/api/auth/sign-in` — preventing
+ * token-replay from re-authenticating an attacker mid-flow.
+ */
+export const AccountRecoveryConfirmResponseSchema = z
+  .object({
+    ok: z.literal(true),
+  })
+  .strict();
+export type AccountRecoveryConfirmResponse = z.infer<
+  typeof AccountRecoveryConfirmResponseSchema
+>;
+
+/**
+ * Error envelope — kept generic-shaped because the route must NOT reveal
+ * whether the token was wrong, expired, or already-used (uniform 400
+ * response defeats token-existence probing).
+ */
+export const AccountRecoveryErrorSchema = z
+  .object({
+    error: z.string().min(1).max(200),
+  })
+  .strict();
+export type AccountRecoveryError = z.infer<typeof AccountRecoveryErrorSchema>;
+
+export { z };

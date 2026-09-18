@@ -1,0 +1,92 @@
+node_modules
+dist
+apps/server/dist-server/
+.env
+.env.local
+.vercel
+.vitest-localstorage.json*
+
+# Turbo
+.turbo/
+
+# ESLint incremental cache (per-workspace; restored via turbo `lint` outputs)
+.eslintcache
+
+# Vitest coverage
+coverage/
+
+# Storybook
+storybook-static/
+
+# Playwright (a11y tests)
+playwright-report/
+test-results/
+# Playwright MCP scratch (snapshots + console logs from agent browser sessions)
+.playwright-mcp/
+
+# Lighthouse CI reports (uploaded as workflow artifact + to temporary-public-storage)
+.lighthouseci/
+
+# Stryker mutation testing artefacts
+.stryker-tmp/
+stryker-tmp/
+reports/mutation/
+**/reports/mutation/
+stryker-reports/
+
+# Session-only artifacts from the DS visual-QA harness
+.agents/ds-qa/
+.agents/test-plans/
+
+# Cursor / local IDE settings
+.cursor/
+
+# Local screenshots / scratch assets (use external storage like Notion/Figma)
+attached_assets/
+_scratch/
+apps/web/screenshots/
+
+# Mobile / EAS
+apps/mobile/google-services.json
+apps/mobile/GoogleService-Info.plist
+apps/mobile/.expo/
+apps/mobile/ios/
+apps/mobile/android/
+
+# Ops stack secrets (Prometheus / Grafana)
+ops/.env.ops
+
+# Sandbox / experimental prototypes
+artifacts/
+
+# CI-local caches
+.cache/
+
+# Agent snapshot local cache + output (tools/agent-snapshot)
+.agents/snapshot.md
+.agents/snapshot.cache.json
+
+# Pre-commit timing log (P1-5 from 2026-05-13-testing-devx-roast.md).
+# Local dev signal only — never a CI gate. Aggregate via
+# `pnpm pre-commit:timings`.
+.husky/.pre-commit-timings.log
+
+# Mock-runner workspace for `pnpm precommit:bench` (D-1 follow-up).
+# Created/cleaned by `scripts/precommit-bench.mjs`. Never committed.
+.husky/.bench-tmp/
+
+# Claude Code agent worktrees (temporary, auto-cleaned)
+.claude/worktrees/
+
+# Local analysis artifacts & sibling worktree (do not commit)
+# understand-anything knowledge/domain graphs — generated, per-developer, never committed
+.understand-anything/
+.playwright-mcp/
+/knip-report.txt
+/lint-report.txt
+/..wt-0017-s2-reports/
+
+# Auto-generated planning-run scratch (read-only multi-agent backlog plan);
+# regenerated on demand, never hand-edited — must not be tracked.
+plans/agent-fanout-plan-*.md
+bash.exe.stackdump

@@ -1,0 +1,177 @@
+/**
+ * I7 — Bridge: connects the in-process `securityEvents` emitter to a direct
+ * Telegram push via `SERGEANT_ALERT_BOT_TOKEN`.
+ *
+ * Architecture note: the server sends Telegram messages directly — the same
+ * pattern as `modules/alerts/telegramShipper.ts`. The formatter below was
+ * originally mirrored from the OpenClaw bot package (`tools/openclaw`), which
+ * is gone (ADR-0075); this file is now the only copy.
+ *
+ * Muting: set `SECURITY_EVENTS_MUTED=1` to suppress Telegram push without
+ * removing call sites (useful for load-test windows).
+ *
+ * Fail-open: Telegram errors are logged at warn level and never propagate to
+ * callers.
+ */
+
+import { env } from "../env/env.js";
+import { logger } from "./logger.js";
+import { securityRoomUnreachableTotal } from "./metrics.js";
+import {
+  onSecurityEvent,
+  type ResolvedSecurityEvent,
+} from "./securityEvents.js";
+
+/**
+ * Стеля часу на один виклик Telegram Bot API з цього модуля. Те саме
+ * значення, що й у `modules/alerts/telegramShipper.ts` — апстрім один.
+ */
+const SECURITY_ROOM_TIMEOUT_MS = 10_000;
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Formatter (sole copy since the OpenClaw bot package was removed, ADR-0075)
+// ─────────────────────────────────────────────────────────────────────────────
+
+const SEVERITY_EMOJI: Record<ResolvedSecurityEvent["severity"], string> = {
+  critical: "🔴",
+  high: "🟠",
+  medium: "🟡",
+  low: "🟢",
+  info: "⚪",
+};
+
+function formatMessage(event: ResolvedSecurityEvent): string {
+  const emoji = SEVERITY_EMOJI[event.severity] ?? "⚠️";
+  const lines = [
+    `${emoji} [${event.severity.toUpperCase()}] security_event`,
+    `Event: ${event.event}`,
+    `Details: ${event.details}`,
+  ];
+  if (event.userIdHash) lines.push(`UserHash: ${event.userIdHash}`);
+  lines.push(`Time: ${event.timestamp}`);
+  return lines.join("\n");
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Telegram send (thin fetch wrapper — fail-open)
+// ─────────────────────────────────────────────────────────────────────────────
+
+async function sendToTelegram(event: ResolvedSecurityEvent): Promise<void> {
+  if (env.SECURITY_EVENTS_MUTED) return;
+
+  const botToken = env.SERGEANT_ALERT_BOT_TOKEN;
+  const chatId = env.SERGEANT_OPS_CHAT_ID;
+  if (!botToken || !chatId) return; // not configured — skip silently
+
+  const text = formatMessage(event);
+  const threadId = env.TELEGRAM_TOPIC_ENGINEERING;
+
+  const body: Record<string, unknown> = {
+    chat_id: chatId,
+    text,
+    disable_notification: event.severity === "low" || event.severity === "info",
+  };
+  if (threadId) {
+    const n = Number(threadId);
+    if (Number.isFinite(n)) body["message_thread_id"] = n;
+  }
+
+  const res = await fetch(
+    `https://api.telegram.org/bot${botToken}/sendMessage`,
+    {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+      // Без `signal` undici чекав би на заголовки до 300 с. Це канал
+      // сповіщень про БЕЗПЕКОВІ події — зависання тут ховає інцидент рівно
+      // на той час, поки на нього ще можна зреагувати.
+      signal: AbortSignal.timeout(SECURITY_ROOM_TIMEOUT_MS),
+    },
+  );
+  if (!res.ok) {
+    const desc = await res.text().catch(() => `HTTP ${res.status}`);
+    securityRoomUnreachableTotal.inc({
+      reason: res.status >= 500 ? "http_5xx" : "http_4xx",
+    });
+    logger.warn({
+      msg: "security_event_telegram_push_failed",
+      event: event.event,
+      httpStatus: res.status,
+      description: desc,
+    });
+  }
+}
+
+// ─────────────────────────────────────────────────────────────────────────────
+// Registration
+// ─────────────────────────────────────────────────────────────────────────────
+
+/**
+ * Register the Telegram push listener. Returns an unsubscribe handle for
+ * clean shutdown (useful in tests).
+ */
+export function registerSecurityEventsRoom(): () => void {
+  return onSecurityEvent((event) => {
+    sendToTelegram(event).catch((err: unknown) => {
+      securityRoomUnreachableTotal.inc({ reason: "fetch_error" });
+      logger.warn({
+        msg: "security_event_telegram_push_error",
+        event: event.event,
+        err: err instanceof Error ? err.message : String(err),
+      });
+    });
+  });
+}
+
+/**
+ * Boot-time reachability check for the security events Telegram push channel.
+ *
+ * Uses Telegram `getMe` — canonical health-check endpoint that validates the
+ * bot token without sending any message (no chat side-effect, no spam at
+ * startup). Returns `ok: true` even when muted via `SECURITY_EVENTS_MUTED=1`
+ * (muting is intentional config, not unreachability).
+ *
+ * Caller (server `index.ts`) logs at `info` on success and `error` on failure,
+ * which surfaces a misconfigured/rotated bot token immediately at boot rather
+ * than silently when the first security event fires. Counter bumps fan out
+ * to Grafana for dashboards.
+ */
+export async function pingSecurityRoom(): Promise<{
+  ok: boolean;
+  reason?: string;
+}> {
+  if (env.SECURITY_EVENTS_MUTED) {
+    return { ok: true, reason: "muted" };
+  }
+  const botToken = env.SERGEANT_ALERT_BOT_TOKEN;
+  const chatId = env.SERGEANT_OPS_CHAT_ID;
+  if (!botToken) {
+    securityRoomUnreachableTotal.inc({ reason: "bot_token_missing" });
+    return { ok: false, reason: "bot_token_missing" };
+  }
+  if (!chatId) {
+    securityRoomUnreachableTotal.inc({ reason: "chat_id_missing" });
+    return { ok: false, reason: "chat_id_missing" };
+  }
+  try {
+    // Цей ping виконується на СТАРТІ процесу. Без стелі недоступний
+    // api.telegram.org затримував би boot на хвилини, а health-probe
+    // платформи за цей час устигає визнати контейнер нездоровим і відкотити
+    // цілком справний деплой.
+    const res = await fetch(`https://api.telegram.org/bot${botToken}/getMe`, {
+      signal: AbortSignal.timeout(SECURITY_ROOM_TIMEOUT_MS),
+    });
+    if (!res.ok) {
+      const reason = res.status >= 500 ? "http_5xx" : "http_4xx";
+      securityRoomUnreachableTotal.inc({ reason });
+      return { ok: false, reason: `${reason}:${res.status}` };
+    }
+    return { ok: true };
+  } catch (err) {
+    securityRoomUnreachableTotal.inc({ reason: "fetch_error" });
+    return {
+      ok: false,
+      reason: err instanceof Error ? err.message : String(err),
+    };
+  }
+}

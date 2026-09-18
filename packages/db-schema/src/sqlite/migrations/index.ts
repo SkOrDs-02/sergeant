@@ -1,0 +1,1813 @@
+/**
+ * Bundled SQLite migration files for client consumers.
+ *
+ * Browser (sqlite-wasm) and React Native (`expo-sqlite`) bundles cannot
+ * read `*.sql` files from disk at runtime — they receive the SQL as
+ * string constants embedded in the JS bundle. Server-side and CLI
+ * consumers have `loadMigrationFiles()` from
+ * `@sergeant/db-schema/migrate/files` for filesystem-driven loading; this
+ * module is the parallel surface for client bundles.
+ *
+ * The bundled migration creates the four client-side tables that back
+ * the routine module on SQLite:
+ *
+ *   - routine_entries — habit-completion rows.
+ *   - routine_streaks — per-user aggregate streak metrics.
+ *   - sync_op_outbox  — client-only queue of pending /v2/sync/push ops.
+ *   - sync_op_cursor  — client-only cursor for /v2/sync/pull.
+ *
+ * History: the inline migration shipped first as the Stage 3 routine
+ * SQLite SPIKE (PR #022 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`); the
+ * PR #023 introduced the neutral `ROUTINE_CLIENT_MIGRATIONS` /
+ * `ROUTINE_MIGRATIONS_TABLE` names; the `ROUTINE_SPIKE_*` aliases that
+ * bridged the Stage 4 promotion were removed 2026-09-03 once their
+ * `@removeBy 2026-09-01` date passed (every consumer had already moved to
+ * the neutral names). The `001_routine_spike.sql` ledger row name is kept
+ * on purpose: renaming it would break already-migrated local SQLite
+ * states for zero functional gain.
+ *
+ * SQL is kept inline (not loaded via `?raw`) so the same module works
+ * unchanged across the three bundlers we target — Vite, Metro, and
+ * Vitest's Node runner. The DDL mirrors the Postgres counterparts
+ * (migration 026 in `apps/server/src/migrations/`).
+ *
+ * Differences from PG:
+ *   - `id` columns are TEXT (no native UUID type in SQLite).
+ *   - TIMESTAMPTZ → TEXT (ISO-8601). Defaults emit `datetime('now')`
+ *     (UTC, no offset); clients writing through the repo overwrite
+ *     these with ISO-8601-with-offset so cross-device LWW comparisons
+ *     stay byte-identical to what the server records.
+ *   - No FK to `"user"(id)` — there is no auth schema on the client.
+ *   - Index names get a `_lite` suffix to make accidental drift between
+ *     server and client visible at code-review time.
+ *
+ * Append-only: never edit `001_*` in place — already-migrated client
+ * DBs must not re-apply. Schema changes ship as `002_*`, `003_*`, …
+ */
+
+import type { MigrationFile } from "../../migrate/types.js";
+
+const ROUTINE_SPIKE_SQL = `
+CREATE TABLE IF NOT EXISTS routine_entries (
+  id           TEXT PRIMARY KEY,
+  user_id      TEXT NOT NULL,
+  name         TEXT NOT NULL,
+  completed_at TEXT,
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at   TEXT
+);
+
+CREATE INDEX IF NOT EXISTS routine_entries_user_created_idx_lite
+  ON routine_entries (user_id, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS routine_entries_user_active_idx_lite
+  ON routine_entries (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS routine_streaks (
+  user_id            TEXT PRIMARY KEY,
+  current_streak     INTEGER NOT NULL DEFAULT 0,
+  longest_streak     INTEGER NOT NULL DEFAULT 0,
+  last_completed_at  TEXT
+);
+
+CREATE TABLE IF NOT EXISTS sync_op_outbox (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  table_name      TEXT NOT NULL,
+  op              TEXT NOT NULL CHECK (op IN ('insert','update','delete')),
+  row             TEXT NOT NULL,
+  client_ts       TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','rejected')),
+  reject_reason   TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE UNIQUE INDEX IF NOT EXISTS sync_op_outbox_idem_uniq_lite
+  ON sync_op_outbox (idempotency_key);
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_idx_lite
+  ON sync_op_outbox (id)
+  WHERE status = 'pending';
+
+CREATE TABLE IF NOT EXISTS sync_op_cursor (
+  key        TEXT PRIMARY KEY,
+  value_int  INTEGER NOT NULL,
+  updated_at TEXT NOT NULL DEFAULT (datetime('now'))
+);
+`;
+
+/**
+ * Stage 5 / PR #040 retry-policy migration for `sync_op_outbox`.
+ *
+ * The original SPIKE shape (`001_routine_spike.sql`) only knew two
+ * statuses (`pending`, `rejected`) and had no per-row retry state.
+ * The persistent op-log v2 introduces:
+ *
+ *   - `attempts` — number of failed push attempts (starts at 0).
+ *   - `next_retry_at` — earliest UTC ISO-8601 timestamp at which the
+ *     sync engine may pick this op up again. NULL means "ready
+ *     immediately" (fresh enqueue, or a transient transport failure
+ *     before any backoff was scheduled).
+ *   - `last_error` — short, free-form, machine-readable reason from
+ *     the last transient failure (e.g. `network`, `http_503`,
+ *     `timeout`). Persisted across restarts so the dev panel can show
+ *     why a row is sitting in the queue without grepping logs.
+ *   - `'dead_letter'` status — a row reaches this terminal status
+ *     after `SYNC_OP_MAX_ATTEMPTS` (10) failed attempts. Sync engine
+ *     never retries it automatically; human triage routes it back to
+ *     `pending` after fixing the cause.
+ *
+ * SQLite cannot relax a `CHECK` constraint in place (the original
+ * migration locked status to `('pending','rejected')`), so we rebuild
+ * the table following the standard SQLite "12-step ALTER" recipe:
+ *
+ *   1. Rename old table out of the way.
+ *   2. Create the new shape with the relaxed `CHECK`.
+ *   3. Copy rows across, defaulting the new columns.
+ *   4. Drop the renamed legacy table.
+ *   5. Re-create indexes (old ones dropped with the rename).
+ *
+ * The whole thing runs inside the per-migration `BEGIN`/`COMMIT` the
+ * runner installs — see `applyMigration` in
+ * `packages/db-schema/src/migrate/adapters/sqlite.ts`.
+ */
+const SYNC_OP_OUTBOX_RETRY_SQL = `
+ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy;
+
+CREATE TABLE sync_op_outbox (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  table_name      TEXT NOT NULL,
+  op              TEXT NOT NULL CHECK (op IN ('insert','update','delete')),
+  row             TEXT NOT NULL,
+  client_ts       TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','rejected','dead_letter')),
+  reject_reason   TEXT,
+  attempts        INTEGER NOT NULL DEFAULT 0,
+  next_retry_at   TEXT,
+  last_error      TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+INSERT INTO sync_op_outbox (
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, attempts, next_retry_at, last_error, created_at
+)
+SELECT
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, 0, NULL, NULL, created_at
+FROM sync_op_outbox_legacy;
+
+DROP TABLE sync_op_outbox_legacy;
+
+CREATE UNIQUE INDEX IF NOT EXISTS sync_op_outbox_idem_uniq_lite
+  ON sync_op_outbox (idempotency_key);
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_idx_lite
+  ON sync_op_outbox (id)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
+  ON sync_op_outbox (next_retry_at, id)
+  WHERE status = 'pending';
+`;
+
+/**
+ * Stage 5 / PR #042d-prep migration: relax the `sync_op_outbox.op`
+ * CHECK constraint so PN-counter `'increment'` rows can sit in the
+ * outbox alongside the original three LWW kinds.
+ *
+ * Server-side, `'increment'` shipped in PR #042a (engine-gate +
+ * `OP_LOG_TABLE_REGISTRY` allowlist) and PR #042b (`applyRoutineStreaks`
+ * apply-fn). The api-client typed builder
+ * (`buildSyncV2IncrementOp`, PR #042c) lives in
+ * `packages/api-client/src/endpoints/syncV2.increment.ts` and is the
+ * sole supported way of constructing an envelope. Until this migration
+ * runs, however, the SPIKE-era CHECK
+ * (`op IN ('insert','update','delete')`) silently rejects any
+ * `INSERT … op='increment'` against the local outbox — preventing the
+ * eventual client-side push-loop refactor from durably enqueueing
+ * PN-counter ops.
+ *
+ * SQLite cannot relax a `CHECK` constraint in place, so we follow the
+ * same "12-step ALTER" recipe as `002_sync_op_outbox_retry.sql`
+ * (PR #040): rename the existing table out of the way, recreate it
+ * with the relaxed `CHECK`, copy every row across (no defaulting —
+ * every column is preserved verbatim), drop the renamed legacy table,
+ * and recreate the three indexes the runner just lost when the
+ * original table went away.
+ *
+ * Migration runs inside the per-migration BEGIN/COMMIT installed by
+ * `applyMigration` in `packages/db-schema/src/migrate/adapters/sqlite.ts`,
+ * so a partial failure leaves the SPIKE shape intact.
+ */
+const SYNC_OP_OUTBOX_INCREMENT_OP_SQL = `
+ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy;
+
+CREATE TABLE sync_op_outbox (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  table_name      TEXT NOT NULL,
+  op              TEXT NOT NULL
+                  CHECK (op IN ('insert','update','delete','increment')),
+  row             TEXT NOT NULL,
+  client_ts       TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','rejected','dead_letter')),
+  reject_reason   TEXT,
+  attempts        INTEGER NOT NULL DEFAULT 0,
+  next_retry_at   TEXT,
+  last_error      TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+INSERT INTO sync_op_outbox (
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, attempts, next_retry_at, last_error, created_at
+)
+SELECT
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, attempts, next_retry_at, last_error, created_at
+FROM sync_op_outbox_legacy;
+
+DROP TABLE sync_op_outbox_legacy;
+
+CREATE UNIQUE INDEX IF NOT EXISTS sync_op_outbox_idem_uniq_lite
+  ON sync_op_outbox (idempotency_key);
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_idx_lite
+  ON sync_op_outbox (id)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
+  ON sync_op_outbox (next_retry_at, id)
+  WHERE status = 'pending';
+`;
+
+/**
+ * Stage 5 / PR HIGH-#2 migration: add `user_id TEXT NOT NULL` column
+ * to `sync_op_outbox` so client-side drain queries can be scoped by
+ * the currently-authenticated user, and a shared-device session swap
+ * cannot silently push the previous user's queued ops under the new
+ * user's session cookie.
+ *
+ * Background — the original SPIKE shape (`001_routine_spike.sql`,
+ * PR #022) had no `user_id` column. Stage 5 / PR #040 added the
+ * retry columns but not `user_id`. PR #042d-prep / `003` extended the
+ * `op` CHECK constraint with `'increment'`. None of the prior
+ * migrations gave the outbox a per-user scope, so the engine layer
+ * (`drainSyncOpOutbox`) could not filter — and the server's apply
+ * functions had to fall back to `userId = session.userId` whenever
+ * `row.user_id` was absent. That fallback is exactly how a
+ * cross-account leak happens: user A enqueues N ops while signed in,
+ * signs out, user B signs in on the same device, the periodic 30s
+ * drain pushes those rows under B's session, the server has no
+ * authoritative `user_id` on the envelope and writes them as B's
+ * data. See HIGH-#2 finding in the T3 audit
+ * (https://app.devin.ai/sessions/8574143f172540b7be52c314facfc0c5).
+ *
+ * Pending rows are **dropped on migration** rather than backfilled —
+ * the outbox is a transient queue (not durable user data); ops are
+ * idempotent on `(user_id, idempotency_key)` server-side, so any
+ * lost-on-migration row will be re-enqueued by the next dual-write
+ * tick from the canonical (LS/MMKV) store. Backfilling from the
+ * current session cookie would be **wrong**: at migration time the
+ * client cannot know which user owned a given row, and guessing is
+ * precisely the bug we are closing.
+ *
+ * Terminal rows (`'rejected'` / `'dead_letter'`) are preserved with a
+ * synthetic `user_id='__legacy__'` placeholder so forensic value
+ * (status, reject_reason, last_error, attempts) survives the
+ * rebuild. The placeholder cannot match any real session user, so
+ * the drain helper's `WHERE user_id = ?` clause will never surface
+ * these rows to the push-loop, even by accident. The recover-helper
+ * (`syncOpOutboxRecover`) explicitly targets `'dead_letter'` rows by
+ * id and is safe to keep operating on the legacy set; the dev panel
+ * can still triage them. This is the same trade-off the prior
+ * 12-step migrations (002, 003, 004) made for their copy-forward
+ * sets — forensic stability over a clean wipe.
+ *
+ * SQLite cannot add a `NOT NULL` column without a default in place,
+ * so we follow the same "12-step ALTER" recipe as `002` and `003`:
+ * rename → create-new → copy-rows (but only those we keep) → drop
+ * legacy → recreate indexes. Recreating indexes is needed because
+ * `ALTER TABLE … RENAME` drops indexes by name; the runner installs
+ * BEGIN/COMMIT around the whole migration so a partial failure
+ * leaves the prior shape intact.
+ */
+const SYNC_OP_OUTBOX_USER_ID_SQL = `
+ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy;
+
+CREATE TABLE sync_op_outbox (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  user_id         TEXT NOT NULL,
+  table_name      TEXT NOT NULL,
+  op              TEXT NOT NULL
+                  CHECK (op IN ('insert','update','delete','increment')),
+  row             TEXT NOT NULL,
+  client_ts       TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','rejected','dead_letter','quarantined')),
+  reject_reason   TEXT,
+  attempts        INTEGER NOT NULL DEFAULT 0,
+  next_retry_at   TEXT,
+  last_error      TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+-- Preserve terminal rows (forensic value) with a synthetic user_id
+-- placeholder that cannot match any Better Auth opaque user id, so
+-- the drain helper's WHERE user_id = ? clause never resurfaces
+-- them to a live push-loop. Pending rows are dropped -- see the
+-- migration docstring for the rationale. Quarantined rows (added in
+-- migration 005) are preserved alongside rejected / dead_letter so
+-- SRE can still inspect them post-rebuild.
+INSERT INTO sync_op_outbox
+  (user_id, table_name, op, row, client_ts, idempotency_key,
+   status, reject_reason, attempts, next_retry_at, last_error,
+   created_at)
+SELECT '__legacy__', table_name, op, row, client_ts, idempotency_key,
+       status, reject_reason, attempts, next_retry_at, last_error,
+       created_at
+  FROM sync_op_outbox_legacy
+ WHERE status IN ('rejected', 'dead_letter', 'quarantined');
+
+DROP TABLE sync_op_outbox_legacy;
+
+CREATE UNIQUE INDEX IF NOT EXISTS sync_op_outbox_idem_uniq_lite
+  ON sync_op_outbox (idempotency_key);
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_idx_lite
+  ON sync_op_outbox (id)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
+  ON sync_op_outbox (next_retry_at, id)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_user_pending_idx_lite
+  ON sync_op_outbox (user_id, next_retry_at, id)
+  WHERE status = 'pending';
+`;
+
+/**
+ * Stage 10 / PR #070r-schema migration: extend Routine SQLite schema
+ * to full LS-state coverage.
+ *
+ * Adds 7 new tables for the remaining `RoutineState` fields that were
+ * still LS/MMKV-only:
+ *
+ *   - `routine_habits`           — Habit[] (per-row, JSON arrays for
+ *                                   tagIds / reminderTimes / weekdays)
+ *   - `routine_tags`             — Tag[]
+ *   - `routine_categories`       — Category[]
+ *   - `routine_prefs`            — RoutinePrefs (single row per user,
+ *                                   JSON blob)
+ *   - `routine_pushups`          — pushupsByDate (composite PK
+ *                                   user_id + date_key)
+ *   - `routine_habit_order`      — habitOrder (single row per user,
+ *                                   JSON array)
+ *   - `routine_completion_notes` — completionNotes (composite PK
+ *                                   user_id + note_key)
+ *
+ * This migration is additive (CREATE TABLE IF NOT EXISTS) — safe to
+ * replay on an already-migrated client DB. All tables follow the
+ * established conventions:
+ *   - TEXT for timestamps (ISO-8601 with offset)
+ *   - `_lite`-suffixed index names
+ *   - `deleted_at` soft-delete where applicable
+ *   - `updated_at` for LWW comparison
+ */
+const ROUTINE_004_FULL_STATE_SQL = `
+CREATE TABLE IF NOT EXISTS routine_habits (
+  id                  TEXT PRIMARY KEY,
+  user_id             TEXT NOT NULL,
+  name                TEXT NOT NULL,
+  emoji               TEXT NOT NULL DEFAULT '',
+  tag_ids_json        TEXT NOT NULL DEFAULT '[]',
+  category_id         TEXT,
+  archived            INTEGER NOT NULL DEFAULT 0,
+  paused              INTEGER NOT NULL DEFAULT 0,
+  recurrence          TEXT NOT NULL DEFAULT 'daily',
+  start_date          TEXT,
+  end_date            TEXT,
+  time_of_day         TEXT NOT NULL DEFAULT '',
+  reminder_times_json TEXT NOT NULL DEFAULT '[]',
+  weekdays_json       TEXT NOT NULL DEFAULT '[0,1,2,3,4,5,6]',
+  created_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at          TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at          TEXT
+);
+
+CREATE INDEX IF NOT EXISTS routine_habits_user_active_idx_lite
+  ON routine_habits (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS routine_tags (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  scope       TEXT NOT NULL DEFAULT '',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS routine_tags_user_active_idx_lite
+  ON routine_tags (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS routine_categories (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  name        TEXT NOT NULL,
+  emoji       TEXT NOT NULL DEFAULT '',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS routine_categories_user_active_idx_lite
+  ON routine_categories (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS routine_prefs (
+  user_id     TEXT PRIMARY KEY,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS routine_pushups (
+  user_id     TEXT NOT NULL,
+  date_key    TEXT NOT NULL,
+  reps        INTEGER NOT NULL DEFAULT 0,
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, date_key)
+);
+
+CREATE TABLE IF NOT EXISTS routine_habit_order (
+  user_id     TEXT PRIMARY KEY,
+  order_json  TEXT NOT NULL DEFAULT '[]',
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS routine_completion_notes (
+  user_id     TEXT NOT NULL,
+  note_key    TEXT NOT NULL,
+  note        TEXT NOT NULL DEFAULT '',
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT,
+  PRIMARY KEY (user_id, note_key)
+);
+
+CREATE INDEX IF NOT EXISTS routine_completion_notes_user_active_idx_lite
+  ON routine_completion_notes (user_id)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
+ * Client migration 009 — гнучкий стрік (Хвиля 4).
+ *
+ * Дзеркалить серверну `098_routine_habit_skips.sql`:
+ *   - `routine_habit_skips` — третій стан дня «не зміг з причиною»
+ *     (канон `routine.md` §5), форма один-в-один як
+ *     `routine_completion_notes`;
+ *   - `routine_habits.pause_intervals_json` — датовані інтервали
+ *     планованої паузи (канон §4).
+ *
+ * `ALTER TABLE ... ADD COLUMN` у SQLite не має `IF NOT EXISTS`, але
+ * міграції append-only і ведуться леджером `__migrations`, тож повторного
+ * застосування не буде. Колонка `paused` лишається — старі клієнти все ще
+ * пишуть недатований прапор.
+ */
+const ROUTINE_009_HABIT_SKIPS_SQL = `
+ALTER TABLE routine_habits ADD COLUMN pause_intervals_json TEXT NOT NULL DEFAULT '[]';
+
+CREATE TABLE IF NOT EXISTS routine_habit_skips (
+  user_id     TEXT NOT NULL,
+  skip_key    TEXT NOT NULL,
+  reason      TEXT NOT NULL DEFAULT 'other',
+  note        TEXT NOT NULL DEFAULT '',
+  at          TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT,
+  PRIMARY KEY (user_id, skip_key)
+);
+
+CREATE INDEX IF NOT EXISTS routine_habit_skips_user_active_idx_lite
+  ON routine_habit_skips (user_id)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
+ * Client migration 010 — історія тижневої цілі для `recurrence='flexible'`.
+ *
+ * Дзеркалить серверну `135_routine_weekly_target_history.sql`.
+ * SQLite не має JSONB, тому поле зберігається як JSON-рядок у TEXT,
+ * за тим самим патерном, що `weekdays_json` і `pause_intervals_json`.
+ *
+ * `ALTER TABLE ... ADD COLUMN` у SQLite не має `IF NOT EXISTS`, але
+ * міграції append-only і ведуться леджером `__migrations`, тож повторного
+ * застосування не буде.
+ */
+const ROUTINE_010_WEEKLY_TARGET_HISTORY_SQL = `
+ALTER TABLE routine_habits ADD COLUMN weekly_target_history_json TEXT NOT NULL DEFAULT '[]';
+`;
+
+/**
+ * Ordered list of bundled client migrations for the routine module on
+ * SQLite. Pass this directly to `runMigrations` from
+ * `@sergeant/db-schema/migrate/runner`.
+ *
+ * The migration name `001_routine_spike.sql` is preserved verbatim so
+ * client DBs that ran the migration under the SPIKE name don't see a
+ * different ledger entry on the Stage 4 cut-over and re-apply the DDL.
+ * `002_sync_op_outbox_retry.sql` adds the Stage 5 / PR #040 retry
+ * columns and the `'dead_letter'` status onto the same `__migrations`
+ * ledger; `003_sync_op_outbox_increment_op.sql` extends the `op`
+ * CHECK constraint with `'increment'` for PN-counter outbox writes
+ * (PR #042d-prep). `004_routine_full_state.sql` extends the routine
+ * schema to full LS-state coverage (Stage 10 / PR #070r-schema).
+ */
+/**
+ * T3 audit HIGH#3 migration: relax the `sync_op_outbox.status` CHECK
+ * constraint so a poisoned row (unparseable JSON in `row`, op outside
+ * the supported tuple, etc.) can be moved to a dedicated terminal
+ * status `'quarantined'` instead of head-of-line blocking the entire
+ * writer-runtime forever.
+ *
+ * Before: a `drainSyncOpOutbox` `.map(parseDrainedRow)` throw would
+ * abort the whole batch, the offending row would re-appear at the
+ * head of the next 30 s tick, and the queue would silently stall.
+ * After: the per-row catch in `drainSyncOpOutbox` marks the row
+ * `status='quarantined'` with a populated `reject_reason` (e.g.
+ * `'parse_failed:unexpected token'`), increments a Sentry breadcrumb,
+ * and the drain proceeds with the remaining rows.
+ *
+ * `'quarantined'` is intentionally a NEW terminal status, distinct
+ * from `'rejected'` (server-side LWW / FK reject) and `'dead_letter'`
+ * (push-loop give-up after exhausting retries). It carries forensic
+ * value for the dev-panel triage flow and never re-pushes — the
+ * writer-runtime filters by `status='pending'` and so excludes
+ * quarantined rows by construction.
+ *
+ * SQLite cannot relax a `CHECK` constraint in place, so we follow
+ * the same 12-step rebuild recipe as `002_sync_op_outbox_retry.sql`
+ * and `003_sync_op_outbox_increment_op.sql`. Indexes are recreated
+ * verbatim — the partial-pending filter (`WHERE status = 'pending'`)
+ * keeps its meaning since `'quarantined'` is just another non-pending
+ * status excluded by the predicate.
+ */
+const SYNC_OP_OUTBOX_QUARANTINE_SQL = `
+ALTER TABLE sync_op_outbox RENAME TO sync_op_outbox_legacy;
+
+CREATE TABLE sync_op_outbox (
+  id              INTEGER PRIMARY KEY AUTOINCREMENT,
+  table_name      TEXT NOT NULL,
+  op              TEXT NOT NULL
+                  CHECK (op IN ('insert','update','delete','increment')),
+  row             TEXT NOT NULL,
+  client_ts       TEXT NOT NULL,
+  idempotency_key TEXT NOT NULL,
+  status          TEXT NOT NULL DEFAULT 'pending'
+                  CHECK (status IN ('pending','rejected','dead_letter','quarantined')),
+  reject_reason   TEXT,
+  attempts        INTEGER NOT NULL DEFAULT 0,
+  next_retry_at   TEXT,
+  last_error      TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+INSERT INTO sync_op_outbox (
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, attempts, next_retry_at, last_error, created_at
+)
+SELECT
+  id, table_name, op, row, client_ts, idempotency_key, status,
+  reject_reason, attempts, next_retry_at, last_error, created_at
+FROM sync_op_outbox_legacy;
+
+DROP TABLE sync_op_outbox_legacy;
+
+CREATE UNIQUE INDEX IF NOT EXISTS sync_op_outbox_idem_uniq_lite
+  ON sync_op_outbox (idempotency_key);
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_idx_lite
+  ON sync_op_outbox (id)
+  WHERE status = 'pending';
+
+CREATE INDEX IF NOT EXISTS sync_op_outbox_pending_due_idx_lite
+  ON sync_op_outbox (next_retry_at, id)
+  WHERE status = 'pending';
+`;
+
+/**
+ * `007_routine_completion_events.sql` — append-only журнал відміток звичок.
+ *
+ * Хвиля 1, СТАДІЯ 1 задачі W1-ROUTINE-APPEND. Дзеркалить PG-міграцію
+ * `apps/server/src/migrations/085_routine_completion_events.sql`. Без цієї
+ * інлайн-міграції таблиці НЕ буде на вже встановлених web/mobile клієнтах —
+ * runner застосовує лише те, чого нема в ledger-і `__migrations`.
+ *
+ * Чисто additive: один `CREATE TABLE IF NOT EXISTS` + два індекси. Жодна
+ * існуюча таблиця не чіпається, тому 12-крокового rebuild-рецепту (як у
+ * `002`/`003`/`005`/`006`) тут не потрібно.
+ *
+ * Append-only за конструкцією: немає ні `updated_at`, ні `deleted_at`, тож
+ * LWW-guard і soft-delete тут просто нема на що почепити. Писар
+ * (`sqliteWriter/adapter.completionEvents.ts`) використовує
+ * `INSERT OR IGNORE` з детермінованим `id`.
+ */
+const ROUTINE_007_COMPLETION_EVENTS_SQL = `
+CREATE TABLE IF NOT EXISTS routine_completion_events (
+  id             TEXT PRIMARY KEY,
+  user_id        TEXT NOT NULL,
+  habit_id       TEXT NOT NULL,
+  date_key       TEXT NOT NULL,
+  state          TEXT NOT NULL DEFAULT 'done'
+                 CHECK (state IN ('done','undone')),
+  occurred_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  tz_offset_min  INTEGER,
+  day_anchor     TEXT NOT NULL DEFAULT 'unknown',
+  source         TEXT NOT NULL DEFAULT 'ui',
+  device_id      TEXT,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE INDEX IF NOT EXISTS routine_completion_events_user_habit_date_idx_lite
+  ON routine_completion_events (user_id, habit_id, date_key, occurred_at);
+
+CREATE INDEX IF NOT EXISTS routine_completion_events_user_occurred_idx_lite
+  ON routine_completion_events (user_id, occurred_at);
+`;
+
+/**
+ * Durable checkpoint for the anonymous-to-profile handoff. The row lives in
+ * the anonymous partition and binds an in-flight batch to exactly one Better
+ * Auth user id. A reload reuses the same batch id (and therefore the same
+ * Sync V2 idempotency keys); completion is recorded only after every pushed
+ * row has been acknowledged by the server.
+ */
+const ROUTINE_008_ANONYMOUS_PROFILE_MIGRATION_SQL = `
+CREATE TABLE IF NOT EXISTS anonymous_profile_migrations (
+  source_user_id TEXT PRIMARY KEY,
+  target_user_id TEXT NOT NULL,
+  batch_id       TEXT NOT NULL UNIQUE,
+  status         TEXT NOT NULL DEFAULT 'pending'
+                 CHECK (status IN ('pending', 'completed')),
+  started_at     TEXT NOT NULL,
+  completed_at   TEXT
+);
+`;
+
+/**
+ * 011 — DROP `routine_pushups` (дзеркало серверної 139).
+ *
+ * Клієнт у цю таблицю не пише з Phase B переносу власності pushup-даних
+ * (2026-08-30, канон routine.md §10); її копію в `fizruk_pushups` серверна
+ * 131 зробила ще тоді, а фаза 2 (140 / fizruk `007`) конвертує ту копію в
+ * звичайні тренування. Тут лише знімаємо мертвий артефакт — копіювати
+ * нічого, інакше одна цифра мала б три джерела.
+ */
+const ROUTINE_011_DROP_PUSHUPS_SQL = `
+DROP TABLE IF EXISTS routine_pushups;
+`;
+
+export const ROUTINE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
+  { name: "001_routine_spike.sql", sql: ROUTINE_SPIKE_SQL },
+  { name: "002_sync_op_outbox_retry.sql", sql: SYNC_OP_OUTBOX_RETRY_SQL },
+  {
+    name: "003_sync_op_outbox_increment_op.sql",
+    sql: SYNC_OP_OUTBOX_INCREMENT_OP_SQL,
+  },
+  { name: "004_routine_full_state.sql", sql: ROUTINE_004_FULL_STATE_SQL },
+  {
+    name: "005_sync_op_outbox_quarantine.sql",
+    sql: SYNC_OP_OUTBOX_QUARANTINE_SQL,
+  },
+  {
+    name: "006_sync_op_outbox_user_id.sql",
+    sql: SYNC_OP_OUTBOX_USER_ID_SQL,
+  },
+  {
+    name: "007_routine_completion_events.sql",
+    sql: ROUTINE_007_COMPLETION_EVENTS_SQL,
+  },
+  {
+    name: "008_anonymous_profile_migration.sql",
+    sql: ROUTINE_008_ANONYMOUS_PROFILE_MIGRATION_SQL,
+  },
+  {
+    name: "009_routine_habit_skips.sql",
+    sql: ROUTINE_009_HABIT_SKIPS_SQL,
+  },
+  {
+    name: "010_routine_weekly_target_history.sql",
+    sql: ROUTINE_010_WEEKLY_TARGET_HISTORY_SQL,
+  },
+  {
+    name: "011_routine_drop_pushups.sql",
+    sql: ROUTINE_011_DROP_PUSHUPS_SQL,
+  },
+] as const;
+
+/**
+ * Stable ledger table name used by the routine SQLite module. Matches
+ * the runner default but spelled out so consumers can write
+ * self-documenting `runMigrations` calls without reaching into
+ * `@sergeant/db-schema/migrate/runner` for the default constant.
+ */
+export const ROUTINE_MIGRATIONS_TABLE = "__migrations";
+
+// ---------------------------------------------------------------------------
+// Fizruk module — Stage 4 / PR #027
+// ---------------------------------------------------------------------------
+
+const FIZRUK_001_SQL = `
+CREATE TABLE IF NOT EXISTS fizruk_workouts (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL,
+  started_at      TEXT NOT NULL,
+  ended_at        TEXT,
+  note            TEXT NOT NULL DEFAULT '',
+  groups_json     TEXT NOT NULL DEFAULT '[]',
+  warmup_json     TEXT,
+  cooldown_json   TEXT,
+  wellbeing_json  TEXT,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_workouts_user_started_idx_lite
+  ON fizruk_workouts (user_id, started_at DESC);
+
+CREATE INDEX IF NOT EXISTS fizruk_workouts_user_active_idx_lite
+  ON fizruk_workouts (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS fizruk_workout_items (
+  id                 TEXT PRIMARY KEY,
+  workout_id         TEXT NOT NULL,
+  user_id            TEXT NOT NULL,
+  exercise_id        TEXT NOT NULL,
+  name_uk            TEXT NOT NULL,
+  primary_group      TEXT NOT NULL DEFAULT '',
+  muscles_primary    TEXT NOT NULL DEFAULT '[]',
+  muscles_secondary  TEXT NOT NULL DEFAULT '[]',
+  type               TEXT NOT NULL DEFAULT 'strength',
+  duration_sec       INTEGER,
+  distance_m         INTEGER,
+  sort_order         INTEGER NOT NULL DEFAULT 0,
+  created_at         TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at         TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at         TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_workout_items_workout_idx_lite
+  ON fizruk_workout_items (workout_id, sort_order);
+
+CREATE INDEX IF NOT EXISTS fizruk_workout_items_user_idx_lite
+  ON fizruk_workout_items (user_id);
+
+CREATE TABLE IF NOT EXISTS fizruk_workout_sets (
+  id               TEXT PRIMARY KEY,
+  workout_item_id  TEXT NOT NULL,
+  user_id          TEXT NOT NULL,
+  weight_kg        INTEGER NOT NULL DEFAULT 0,
+  reps             INTEGER NOT NULL DEFAULT 0,
+  rpe              INTEGER,
+  sort_order       INTEGER NOT NULL DEFAULT 0,
+  created_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at       TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at       TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_workout_sets_item_idx_lite
+  ON fizruk_workout_sets (workout_item_id, sort_order);
+
+CREATE TABLE IF NOT EXISTS fizruk_custom_exercises (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_custom_exercises_user_idx_lite
+  ON fizruk_custom_exercises (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS fizruk_measurements (
+  id            TEXT PRIMARY KEY,
+  user_id       TEXT NOT NULL,
+  measured_at   TEXT NOT NULL,
+  weight_kg     INTEGER,
+  waist_cm      INTEGER,
+  chest_cm      INTEGER,
+  hips_cm       INTEGER,
+  bicep_cm      INTEGER,
+  sleep_hours   INTEGER,
+  energy_level  INTEGER,
+  mood          INTEGER,
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_measurements_user_date_idx_lite
+  ON fizruk_measurements (user_id, measured_at DESC);
+`;
+
+/**
+ * Stage 12 / PR #070f-schema — extend the Fizruk SQLite schema to
+ * full LS-state coverage.
+ *
+ * Mirrors the Postgres migration `052_fizruk_full_state.sql`.
+ * Append-only — `001_fizruk_tables.sql` shipped first; this file is
+ * `002_*` so already-migrated client DBs only apply the delta.
+ *
+ * Why these six tables specifically: each maps 1-to-1 to an LS-only
+ * Fizruk slice that Stage 4 (PR #027) left outside dual-write —
+ * `fizruk_daily_log` (`useDailyLog`), `fizruk_monthly_plan`
+ * (`useMonthlyPlan`), `fizruk_plan_templates` (`usePlanTemplate`),
+ * `fizruk_programs` (`usePrograms` active selection),
+ * `fizruk_wellbeing` (`useWellbeing`), `fizruk_workout_templates`
+ * (`useWorkoutTemplates`). The seventh hook —
+ * `useActiveFizrukWorkout` — is a single string slot and rides on
+ * the existing Stage 9 `kv_store` table without needing its own
+ * Fizruk-module table.
+ */
+const FIZRUK_002_FULL_STATE_SQL = `
+CREATE TABLE IF NOT EXISTS fizruk_daily_log (
+  id            TEXT PRIMARY KEY,
+  user_id       TEXT NOT NULL,
+  entry_at      TEXT NOT NULL,
+  weight_kg     REAL,
+  sleep_hours   REAL,
+  energy_level  INTEGER,
+  mood          INTEGER,
+  note          TEXT NOT NULL DEFAULT '',
+  created_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at    TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at    TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_daily_log_user_entry_idx_lite
+  ON fizruk_daily_log (user_id, entry_at DESC);
+
+CREATE INDEX IF NOT EXISTS fizruk_daily_log_user_active_idx_lite
+  ON fizruk_daily_log (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS fizruk_monthly_plan (
+  user_id     TEXT PRIMARY KEY,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS fizruk_plan_templates (
+  user_id     TEXT PRIMARY KEY,
+  data_json   TEXT NOT NULL DEFAULT 'null',
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS fizruk_programs (
+  user_id            TEXT PRIMARY KEY,
+  active_program_id  TEXT,
+  updated_at         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS fizruk_wellbeing (
+  user_id        TEXT NOT NULL,
+  date_key       TEXT NOT NULL,
+  mood           INTEGER,
+  energy         INTEGER,
+  sleep_quality  INTEGER,
+  sleep_hours    REAL,
+  notes          TEXT NOT NULL DEFAULT '',
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at     TEXT,
+  PRIMARY KEY (user_id, date_key)
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_wellbeing_user_active_idx_lite
+  ON fizruk_wellbeing (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS fizruk_workout_templates (
+  id                 TEXT PRIMARY KEY,
+  user_id            TEXT NOT NULL,
+  name               TEXT NOT NULL,
+  exercise_ids_json  TEXT NOT NULL DEFAULT '[]',
+  groups_json        TEXT NOT NULL DEFAULT '[]',
+  last_used_at       TEXT,
+  created_at         TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at         TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at         TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_workout_templates_user_idx_lite
+  ON fizruk_workout_templates (user_id, updated_at DESC)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
+ * Injury marks — the client half of the "не можна" model (ADR-0083).
+ *
+ * Mirrors `apps/server/src/migrations/097_fizruk_injuries.sql`. `site` spans
+ * atlas muscle groups AND joints / spinal segments; the canonical keyspace is
+ * `packages/fizruk-domain/src/data/injurySites.ts`. `cleared_at IS NULL`
+ * means the mark is still active — there is no time-based expiry.
+ */
+const FIZRUK_003_INJURIES_SQL = `
+CREATE TABLE IF NOT EXISTS fizruk_injuries (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  site        TEXT NOT NULL,
+  started_at  TEXT NOT NULL,
+  cleared_at  TEXT,
+  note        TEXT NOT NULL DEFAULT '',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_injuries_user_active_idx_lite
+  ON fizruk_injuries (user_id, site)
+  WHERE deleted_at IS NULL AND cleared_at IS NULL;
+
+CREATE INDEX IF NOT EXISTS fizruk_injuries_user_started_at_idx_lite
+  ON fizruk_injuries (user_id, started_at DESC)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
+ * Pushup counter — перенос власності routine → fizruk (канон `routine.md`
+ * §10, рішення 2026-08-30). Знята міграцією 007 (історія конвертована в
+ * `fizruk_workouts`); лишається в списку, бо реєстр append-only.
+ * Дзеркалила `routine_pushups` за формою і серверну міграцію
+ * `131_fizruk_pushups.sql`.
+ */
+const FIZRUK_004_PUSHUPS_SQL = `
+CREATE TABLE IF NOT EXISTS fizruk_pushups (
+  user_id     TEXT NOT NULL,
+  date_key    TEXT NOT NULL,
+  reps        INTEGER NOT NULL DEFAULT 0,
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, date_key)
+);
+`;
+
+/**
+ * Оцінка витрат за сесію + свої заняття (дзеркало серверної 132).
+ *
+ * SQLite не має `ADD COLUMN IF NOT EXISTS`, і це тут безпечно: реєстр
+ * `__fizruk_migrations` не дає файлу виконатись двічі, а на свіжій базі
+ * `001` створює таблицю без цієї колонки, тож `ALTER` завжди має що додати.
+ */
+const FIZRUK_005_KCAL_AND_ACTIVITIES_SQL = `
+ALTER TABLE fizruk_workouts ADD COLUMN kcal_burned INTEGER;
+
+CREATE TABLE IF NOT EXISTS fizruk_custom_activities (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS fizruk_custom_activities_user_idx_lite
+  ON fizruk_custom_activities (user_id)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
+ * 006 - вибір варіанта підказки на позиції тренування.
+ *
+ * Дзеркалить серверну міграцію 134. `CHECK` тут навмисно немає: клієнтський
+ * SQLite приймає лише те, що записав власний адаптер, а валідація значення
+ * стоїть на серверному боці sync (`applySync` віддає
+ * `invalid_chosen_variant`). Дублювати обмеження в двох діалектах дорожче,
+ * ніж користі: розійтись вони можуть, а зловити розбіжність нічим.
+ */
+const FIZRUK_006_ITEM_CHOSEN_VARIANT_SQL = `
+ALTER TABLE fizruk_workout_items ADD COLUMN chosen_variant TEXT;
+`;
+
+/**
+ * 007 — історія лічильника віджимань → звичайні тренування, і DROP
+ * `fizruk_pushups` (дзеркало серверної 140; фаза 2 з 2, рішення власника
+ * 2026-09-15).
+ *
+ * Той самий перенос, що біг на буті в `pushupsToWorkouts.ts` у фазі 1, лише
+ * в SQL і за один раз: пристрій, що не бутнувся між фазами, після DROP не
+ * мав би звідки читати. Форма запису — та, що в `buildQuickLogWorkout`:
+ * один item «Віджимання від підлоги», один підхід без ваги, тривалість
+ * `clamp(reps*2, 30 с, 10 хв)`, нотатка про перенос. Id детерміновані й
+ * user-scoped (`pushups:<user>:<день>`, item `…_i1`, set `…_i1:s0`) — ті
+ * самі, що ставить сервер, тож pull після цієї міграції зустріне вже наявні
+ * рядки, а не подвоїть їх. Predicate «уже перенесено» знає й стару форму id
+ * без user_id (`pushups:<день>`), яку давав клієнтський перенос фази 1.
+ *
+ * Мить запису — UTC-полудень дня-ключа: лічильник знав лише день, а SQL
+ * не знає часового поясу пристрою; UTC-полудень лишається в тому ж
+ * календарному дні для зсувів від -11 до +11 годин і збігається з тим, що
+ * пише сервер. `INSERT OR IGNORE` — на випадок повторного прогону на базі,
+ * де ці id уже є.
+ *
+ * Порядок statement-ів: сети → позиції → тренування. Predicate у кожному
+ * дивиться на `fizruk_workouts`, тож поки тренування не вставлені, усі три
+ * бачать той самий набір днів.
+ */
+const FIZRUK_007_PUSHUPS_TO_WORKOUTS_SQL = `
+INSERT OR IGNORE INTO fizruk_workout_sets
+  (id, workout_item_id, user_id, weight_kg, reps, rpe, sort_order,
+   created_at, updated_at, deleted_at)
+SELECT
+  'pushups:' || p.user_id || ':' || p.date_key || '_i1:s0',
+  'pushups:' || p.user_id || ':' || p.date_key || '_i1',
+  p.user_id, 0, p.reps, NULL, 0,
+  p.updated_at, p.updated_at, NULL
+  FROM fizruk_pushups p
+ WHERE p.reps > 0
+   AND NOT EXISTS (
+     SELECT 1 FROM fizruk_workouts w
+      WHERE w.user_id = p.user_id
+        AND w.id IN ('pushups:' || p.date_key,
+                     'pushups:' || p.user_id || ':' || p.date_key)
+   );
+
+INSERT OR IGNORE INTO fizruk_workout_items
+  (id, workout_id, user_id, exercise_id, name_uk, primary_group,
+   muscles_primary, muscles_secondary, type, duration_sec, distance_m,
+   chosen_variant, sort_order, created_at, updated_at, deleted_at)
+SELECT
+  'pushups:' || p.user_id || ':' || p.date_key || '_i1',
+  'pushups:' || p.user_id || ':' || p.date_key,
+  p.user_id, 'pushup', 'Віджимання від підлоги', 'chest',
+  '["pectoralis_major","triceps"]',
+  '["serratus_anterior","front_deltoid"]',
+  'strength', NULL, NULL, NULL, 0,
+  p.updated_at, p.updated_at, NULL
+  FROM fizruk_pushups p
+ WHERE p.reps > 0
+   AND NOT EXISTS (
+     SELECT 1 FROM fizruk_workouts w
+      WHERE w.user_id = p.user_id
+        AND w.id IN ('pushups:' || p.date_key,
+                     'pushups:' || p.user_id || ':' || p.date_key)
+   );
+
+INSERT OR IGNORE INTO fizruk_workouts
+  (id, user_id, started_at, ended_at, note, groups_json,
+   warmup_json, cooldown_json, wellbeing_json, kcal_burned,
+   created_at, updated_at, deleted_at)
+SELECT
+  'pushups:' || p.user_id || ':' || p.date_key,
+  p.user_id,
+  strftime('%Y-%m-%dT%H:%M:%S', p.date_key || ' 12:00:00',
+           '-' || MIN(600, MAX(30, p.reps * 2)) || ' seconds') || '.000Z',
+  p.date_key || 'T12:00:00.000Z',
+  'Перенесено з лічильника відтискань',
+  '[]', NULL, NULL, NULL, NULL,
+  p.updated_at, p.updated_at, NULL
+  FROM fizruk_pushups p
+ WHERE p.reps > 0
+   AND NOT EXISTS (
+     SELECT 1 FROM fizruk_workouts w
+      WHERE w.user_id = p.user_id
+        AND w.id IN ('pushups:' || p.date_key,
+                     'pushups:' || p.user_id || ':' || p.date_key)
+   );
+
+DROP TABLE IF EXISTS fizruk_pushups;
+`;
+
+/**
+ * Ordered list of bundled client migrations for the Fizruk module on
+ * SQLite. Pass this directly to `runMigrations` from
+ * `@sergeant/db-schema/migrate/runner`.
+ *
+ * The Fizruk module uses a separate ledger table (`__fizruk_migrations`)
+ * so that routine and fizruk migrations are independent — each module
+ * can be migrated, rolled out, and rolled back without affecting the
+ * other.
+ *
+ * `002_fizruk_full_state.sql` extends the schema to full LS-state
+ * coverage (Stage 12 / PR #070f-schema).
+ *
+ * `003_fizruk_injuries.sql` adds the injury-mark table behind the "не можна"
+ * model (ADR-0083); it mirrors server migration `097_fizruk_injuries.sql`.
+ */
+export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
+  { name: "001_fizruk_tables.sql", sql: FIZRUK_001_SQL },
+  {
+    name: "002_fizruk_full_state.sql",
+    sql: FIZRUK_002_FULL_STATE_SQL,
+  },
+  {
+    name: "003_fizruk_injuries.sql",
+    sql: FIZRUK_003_INJURIES_SQL,
+  },
+  {
+    name: "004_fizruk_pushups.sql",
+    sql: FIZRUK_004_PUSHUPS_SQL,
+  },
+  {
+    name: "005_fizruk_kcal_and_custom_activities.sql",
+    sql: FIZRUK_005_KCAL_AND_ACTIVITIES_SQL,
+  },
+  {
+    name: "006_fizruk_item_chosen_variant.sql",
+    sql: FIZRUK_006_ITEM_CHOSEN_VARIANT_SQL,
+  },
+  {
+    name: "007_fizruk_pushups_to_workouts.sql",
+    sql: FIZRUK_007_PUSHUPS_TO_WORKOUTS_SQL,
+  },
+] as const;
+
+/**
+ * Stable ledger table name used by the Fizruk SQLite module. Separate
+ * from routine's `__migrations` so the two modules' migration histories
+ * don't collide.
+ */
+export const FIZRUK_MIGRATIONS_TABLE = "__fizruk_migrations";
+
+// ---------------------------------------------------------------------------
+// Nutrition module — Stage 4 / PR #031
+// ---------------------------------------------------------------------------
+
+const NUTRITION_001_SQL = `
+CREATE TABLE IF NOT EXISTS nutrition_meals (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL,
+  eaten_at        TEXT NOT NULL,
+  meal_type       TEXT NOT NULL DEFAULT 'snack',
+  name            TEXT NOT NULL DEFAULT '',
+  label           TEXT NOT NULL DEFAULT '',
+  kcal            INTEGER,
+  protein_g       REAL,
+  fat_g           REAL,
+  carbs_g         REAL,
+  source          TEXT NOT NULL DEFAULT 'manual',
+  macro_source    TEXT NOT NULL DEFAULT 'manual',
+  amount_g        REAL,
+  food_id         TEXT,
+  is_demo         INTEGER NOT NULL DEFAULT 0,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_meals_user_eaten_idx_lite
+  ON nutrition_meals (user_id, eaten_at DESC);
+
+CREATE INDEX IF NOT EXISTS nutrition_meals_user_active_idx_lite
+  ON nutrition_meals (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS nutrition_pantries (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL,
+  name            TEXT NOT NULL DEFAULT '',
+  text            TEXT NOT NULL DEFAULT '',
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_pantries_user_active_idx_lite
+  ON nutrition_pantries (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS nutrition_pantry_items (
+  id              TEXT PRIMARY KEY,
+  pantry_id       TEXT NOT NULL,
+  user_id         TEXT NOT NULL,
+  name            TEXT NOT NULL DEFAULT '',
+  qty             REAL,
+  unit            TEXT,
+  notes           TEXT,
+  sort_order      INTEGER NOT NULL DEFAULT 0,
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_pantry_items_pantry_idx_lite
+  ON nutrition_pantry_items (pantry_id, sort_order);
+
+CREATE INDEX IF NOT EXISTS nutrition_pantry_items_user_active_idx_lite
+  ON nutrition_pantry_items (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS nutrition_prefs (
+  user_id           TEXT PRIMARY KEY,
+  prefs_json        TEXT NOT NULL DEFAULT '{}',
+  active_pantry_id  TEXT,
+  created_at        TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at        TEXT NOT NULL DEFAULT (datetime('now'))
+);
+
+CREATE TABLE IF NOT EXISTS nutrition_recipes (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL,
+  name            TEXT NOT NULL DEFAULT '',
+  data_json       TEXT NOT NULL DEFAULT '{}',
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_recipes_user_active_idx_lite
+  ON nutrition_recipes (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
+ * Stage 11 / PR #070n-schema — extend Nutrition SQLite schema to full
+ * LS-state coverage (water_log, shopping_list).
+ *
+ * Mirrors the Postgres migration `051_nutrition_full_state.sql`.
+ * Append-only — `001_nutrition_tables.sql` shipped first; this file
+ * is `002_*` so already-migrated client DBs only apply the delta.
+ *
+ * Why these two tables specifically:
+ *   - water_log та shopping_list — це ті дві LS-only сутності, які
+ *     Stage 4 (PR #031) лишив поза dual-write. Web `#057n-tombstone`
+ *     (PR #2274) їх теж не зачепив. Stage 11 закриває цей schema gap.
+ */
+const NUTRITION_002_FULL_STATE_SQL = `
+CREATE TABLE IF NOT EXISTS nutrition_water_log (
+  user_id     TEXT NOT NULL,
+  date_key    TEXT NOT NULL,
+  volume_ml   INTEGER NOT NULL DEFAULT 0,
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, date_key)
+);
+
+CREATE TABLE IF NOT EXISTS nutrition_shopping_list (
+  user_id     TEXT PRIMARY KEY,
+  data_json   TEXT NOT NULL DEFAULT '{"categories":[]}',
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now'))
+);
+`;
+
+/**
+ * Ordered list of bundled client migrations for the Nutrition module on
+ * SQLite. Pass this directly to `runMigrations` from
+ * `@sergeant/db-schema/migrate/runner`.
+ *
+ * The Nutrition module uses a separate ledger table
+ * (`__nutrition_migrations`) so that routine, fizruk, and nutrition
+ * migrations are independent — each module can be migrated, rolled
+ * out, and rolled back without affecting the others. Same rationale
+ * as fizruk's split from routine in PR #027.
+ *
+ * `002_nutrition_full_state.sql` extends the schema to full LS-state
+ * coverage (Stage 11 / PR #070n-schema).
+ */
+/**
+ * ADR-0073 (рішення власника №5, 2026-07-03) — додати `created_at` до
+ * water_log і shopping_list. Дзеркалить Postgres-міграцію
+ * `079_nutrition_created_at.sql`. Колонка nullable: SQLite не дозволяє
+ * неконстантний DEFAULT в ADD COLUMN, а писати її адаптери почнуть лише
+ * з Кроку 2 (`entity.createdAt ?? clientTs`). Backfill = updated_at.
+ */
+const NUTRITION_003_CREATED_AT_SQL = `
+ALTER TABLE nutrition_water_log ADD COLUMN created_at TEXT;
+UPDATE nutrition_water_log
+   SET created_at = updated_at
+ WHERE created_at IS NULL;
+
+ALTER TABLE nutrition_shopping_list ADD COLUMN created_at TEXT;
+UPDATE nutrition_shopping_list
+   SET created_at = updated_at
+ WHERE created_at IS NULL;
+`;
+
+/**
+ * Клієнтське дзеркало `086_nutrition_pantry_events.sql` — append-only журнал
+ * руху продуктів у коморі (W1-PANTRY-APPEND, стадія 1).
+ *
+ * `CREATE TABLE IF NOT EXISTS` — чисто additive: старі клієнти, які ще не
+ * прокрутили цю міграцію, працюють як раніше, бо на стадії 1 у таблицю
+ * ніхто не пише і ніхто з неї не читає.
+ *
+ * AI-CONTEXT: id-колонки TEXT, FK немає (SQLite-дзеркала їх взагалі не
+ * оголошують), а CHECK-и продубльовані з PG навмисно — локальний писар
+ * стадії 2 має падати на тій самій умові, що й сервер, а не «домовлятись»
+ * із ним постфактум.
+ */
+const NUTRITION_004_PANTRY_EVENTS_SQL = `
+CREATE TABLE IF NOT EXISTS nutrition_pantry_events (
+  id           TEXT PRIMARY KEY,
+  user_id      TEXT NOT NULL,
+  pantry_id    TEXT NOT NULL,
+  item_id      TEXT,
+  item_key     TEXT NOT NULL,
+  kind         TEXT NOT NULL
+               CHECK (kind IN ('consume','replenish','adjust','initial')),
+  delta_qty    REAL,
+  abs_qty      REAL,
+  unit         TEXT,
+  source       TEXT NOT NULL DEFAULT 'manual',
+  meal_id      TEXT,
+  occurred_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  created_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at   TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at   TEXT,
+  CONSTRAINT nutrition_pantry_events_qty_shape CHECK (
+    (kind IN ('consume','replenish') AND delta_qty IS NOT NULL)
+    OR (kind IN ('adjust','initial') AND abs_qty IS NOT NULL)
+  )
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_pantry_events_user_item_idx_lite
+  ON nutrition_pantry_events (user_id, pantry_id, item_key, occurred_at);
+
+CREATE INDEX IF NOT EXISTS nutrition_pantry_events_user_active_idx_lite
+  ON nutrition_pantry_events (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
+ * Клієнтське дзеркало `087_nutrition_goal_periods.sql` — append-only журнал
+ * цілей КБЖВ (W1-KBJU-APPEND, стадія 1).
+ *
+ * `CREATE TABLE IF NOT EXISTS` — чисто additive: старий клієнт, який ще не
+ * прокрутив цю міграцію, працює як раніше, бо цілі на екранах і далі
+ * читаються з `nutrition_prefs`.
+ *
+ * AI-DANGER: тут СВІДОМО НЕМАЄ backfill-у, на відміну від серверної 087.
+ * Це не недогляд і не «докінчимо потім» — backfill тут неможливо зробити
+ * ЧЕСНО, і напівчесний зробив би гірше, ніж жодного:
+ *
+ *   1. `effective_from` мусить бути Kyiv-локальним днем. SQLite не має бази
+ *      таймзон: доступні лише UTC і `'localtime'` пристрою. `+2 hours`
+ *      бреше пів року (Kyiv — UTC+2/+3 з DST), `'localtime'` бреше для
+ *      кожного, хто не в Києві. Для реконструкції, сенс якої саме в тому,
+ *      щоб не вигадувати минуле, приблизний день — це той самий клас
+ *      брехні, тільки записаний у журнал назавжди.
+ *   2. Розбіжність була б НЕВИПРАВНОЮ. Обидві сторони дали б рядку той
+ *      самий детермінований id `backfill::<user_id>`, але з різними
+ *      `effective_from`. Pull-шлях журналу insert-only (append-only:
+ *      `op='update'` відхиляється), тож серверне — правильне — значення
+ *      ніколи б не перезаписало локальне хибне.
+ *
+ * Що відбувається натомість: серверний backfill (у якого Є
+ * `AT TIME ZONE 'Europe/Kyiv'`) створює рядок і той приїжджає звичайним
+ * sync-pull-ом. Офлайн-клієнт до першого синку живе без backfill-рядка — і
+ * це БЕЗПЕЧНО саме на стадії 1, бо журнал ніхто не читає; перша ж зміна
+ * цілі створює нормальну сходинку через дуал-райт. Якщо на стадії 3
+ * знадобиться локальна реконструкція — їй місце в TypeScript, де є
+ * `getKyivDayKey`, а не в цьому DDL.
+ */
+const NUTRITION_005_GOAL_PERIODS_SQL = `
+CREATE TABLE IF NOT EXISTS nutrition_goal_periods (
+  id              TEXT PRIMARY KEY,
+  user_id         TEXT NOT NULL,
+  effective_from  TEXT NOT NULL
+                  CHECK (effective_from GLOB '[0-9][0-9][0-9][0-9]-[0-9][0-9]-[0-9][0-9]'),
+  kcal            INTEGER,
+  protein_g       REAL,
+  fat_g           REAL,
+  carbs_g         REAL,
+  water_ml        INTEGER,
+  origin          TEXT NOT NULL DEFAULT 'manual'
+                  CHECK (origin IN ('manual','preset','tdee','backfill')),
+  created_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at      TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at      TEXT
+);
+
+CREATE INDEX IF NOT EXISTS nutrition_goal_periods_user_effective_idx_lite
+  ON nutrition_goal_periods (user_id, effective_from DESC, created_at DESC);
+
+CREATE INDEX IF NOT EXISTS nutrition_goal_periods_user_active_idx_lite
+  ON nutrition_goal_periods (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+`;
+
+/**
+ * Клієнтське дзеркало серверної `109_nutrition_events_tz_offset.sql` —
+ * pre-beta schema-debt аудит 2026-08-04. Обидва Хвиля-1 журнали
+ * (`004_nutrition_pantry_events.sql`, `005_nutrition_goal_periods.sql`)
+ * народились БЕЗ `tz_offset_min`, хоча ADR-0078 §3.2 стверджує, що всі
+ * Хвиля-1 журнали вже несуть offset на момент запису — тут це правило
+ * нарешті виконано і на клієнті, а не лише на сервері (яким уже дзеркало
+ * `routine_completion_events.tz_offset_min`, міграція 007).
+ *
+ * `ALTER TABLE ... ADD COLUMN` — SQLite не підтримує `IF NOT EXISTS` на
+ * ADD COLUMN, але міграції append-only й ведуться леджером
+ * `__nutrition_migrations`, тож повторного застосування не буде (той самий
+ * патерн, що й `009_routine_habit_skips.sql` для routine).
+ */
+const NUTRITION_006_EVENTS_TZ_OFFSET_SQL = `
+ALTER TABLE nutrition_pantry_events ADD COLUMN tz_offset_min INTEGER;
+ALTER TABLE nutrition_goal_periods ADD COLUMN tz_offset_min INTEGER;
+`;
+
+/**
+ * Клієнтське дзеркало `130_pantry_item_sources.sql` — варіанти покупок у
+ * позиції комори (картка продукту).
+ *
+ * `ALTER TABLE ... ADD COLUMN` без `IF NOT EXISTS` — SQLite його не
+ * підтримує, але міграції append-only й ведуться леджером
+ * `__nutrition_migrations`, тож повторного застосування не буде (той самий
+ * патерн, що й `006_nutrition_events_tz_offset.sql`).
+ */
+const NUTRITION_007_PANTRY_ITEM_SOURCES_SQL = `
+ALTER TABLE nutrition_pantry_items ADD COLUMN sources TEXT;
+`;
+
+export const NUTRITION_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
+  { name: "001_nutrition_tables.sql", sql: NUTRITION_001_SQL },
+  {
+    name: "002_nutrition_full_state.sql",
+    sql: NUTRITION_002_FULL_STATE_SQL,
+  },
+  {
+    name: "003_nutrition_created_at.sql",
+    sql: NUTRITION_003_CREATED_AT_SQL,
+  },
+  {
+    name: "004_nutrition_pantry_events.sql",
+    sql: NUTRITION_004_PANTRY_EVENTS_SQL,
+  },
+  {
+    name: "005_nutrition_goal_periods.sql",
+    sql: NUTRITION_005_GOAL_PERIODS_SQL,
+  },
+  {
+    name: "006_nutrition_events_tz_offset.sql",
+    sql: NUTRITION_006_EVENTS_TZ_OFFSET_SQL,
+  },
+  {
+    name: "007_nutrition_pantry_item_sources.sql",
+    sql: NUTRITION_007_PANTRY_ITEM_SOURCES_SQL,
+  },
+] as const;
+
+/**
+ * Stable ledger table name used by the Nutrition SQLite module.
+ * Separate from `__migrations` (routine) and `__fizruk_migrations`
+ * (fizruk) so the three modules' migration histories don't collide.
+ */
+export const NUTRITION_MIGRATIONS_TABLE = "__nutrition_migrations";
+
+// ---------------------------------------------------------------------------
+// Finyk module — Stage 4 / PR #035
+// ---------------------------------------------------------------------------
+
+const FINYK_001_SQL = `
+CREATE TABLE IF NOT EXISTS finyk_hidden_accounts (
+  user_id     TEXT NOT NULL,
+  account_id  TEXT NOT NULL,
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT,
+  PRIMARY KEY (user_id, account_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_hidden_accounts_user_active_idx_lite
+  ON finyk_hidden_accounts (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_hidden_transactions (
+  user_id        TEXT NOT NULL,
+  transaction_id TEXT NOT NULL,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at     TEXT,
+  PRIMARY KEY (user_id, transaction_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_hidden_transactions_user_active_idx_lite
+  ON finyk_hidden_transactions (user_id)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_budgets (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_budgets_user_active_idx_lite
+  ON finyk_budgets (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_subscriptions (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_subscriptions_user_active_idx_lite
+  ON finyk_subscriptions (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_assets (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_assets_user_active_idx_lite
+  ON finyk_assets (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_debts (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_debts_user_active_idx_lite
+  ON finyk_debts (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_receivables (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_receivables_user_active_idx_lite
+  ON finyk_receivables (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_tx_categories (
+  user_id        TEXT NOT NULL,
+  transaction_id TEXT NOT NULL,
+  category_id    TEXT NOT NULL,
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, transaction_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_tx_categories_user_idx_lite
+  ON finyk_tx_categories (user_id);
+
+CREATE TABLE IF NOT EXISTS finyk_tx_splits (
+  user_id        TEXT NOT NULL,
+  transaction_id TEXT NOT NULL,
+  splits_json    TEXT NOT NULL DEFAULT '[]',
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, transaction_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_tx_splits_user_idx_lite
+  ON finyk_tx_splits (user_id);
+
+CREATE TABLE IF NOT EXISTS finyk_mono_debt_links (
+  user_id        TEXT NOT NULL,
+  transaction_id TEXT NOT NULL,
+  debt_ids_json  TEXT NOT NULL DEFAULT '[]',
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, transaction_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_debt_links_user_idx_lite
+  ON finyk_mono_debt_links (user_id);
+
+CREATE TABLE IF NOT EXISTS finyk_networth_history (
+  user_id        TEXT NOT NULL,
+  month          TEXT NOT NULL,
+  networth       REAL NOT NULL DEFAULT 0,
+  snapshot_json  TEXT NOT NULL DEFAULT '{}',
+  created_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at     TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, month)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_networth_history_user_month_idx_lite
+  ON finyk_networth_history (user_id, month DESC);
+
+CREATE TABLE IF NOT EXISTS finyk_custom_categories (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_custom_categories_user_active_idx_lite
+  ON finyk_custom_categories (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_manual_expenses (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_manual_expenses_user_active_idx_lite
+  ON finyk_manual_expenses (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_tx_filters (
+  id          TEXT PRIMARY KEY,
+  user_id     TEXT NOT NULL,
+  data_json   TEXT NOT NULL DEFAULT '{}',
+  created_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  deleted_at  TEXT
+);
+
+CREATE INDEX IF NOT EXISTS finyk_tx_filters_user_active_idx_lite
+  ON finyk_tx_filters (user_id, deleted_at)
+  WHERE deleted_at IS NULL;
+
+CREATE TABLE IF NOT EXISTS finyk_prefs (
+  user_id            TEXT PRIMARY KEY,
+  prefs_json         TEXT NOT NULL DEFAULT '{}',
+  monthly_plan_json  TEXT NOT NULL DEFAULT '{}',
+  show_balance       INTEGER NOT NULL DEFAULT 1,
+  created_at         TEXT NOT NULL DEFAULT (datetime('now')),
+  updated_at         TEXT NOT NULL DEFAULT (datetime('now'))
+);
+`;
+
+// ---------------------------------------------------------------------------
+// Finyk module — Stage 4 / PR #038 — Mono cache mirror
+//
+// Adds three client-only tables that mirror the Mono cache LS keys
+// (`finyk_tx_cache`, `finyk_info_cache`, `finyk_tx_cache_last_good`)
+// into per-row SQLite. Mono is the external source-of-truth — rows
+// are upserted by `(user_id, tx_id)` with LWW against Mono's own
+// `time` field. No Postgres counterpart: server-side Mono integration
+// already lives in `apps/server/src/modules/finyk/` with its own
+// row-level schema, so we don't push these client mirrors back
+// through op-log. See `packages/db-schema/src/sqlite/finyk.ts`.
+// ---------------------------------------------------------------------------
+
+const FINYK_002_SQL = `
+CREATE TABLE IF NOT EXISTS finyk_mono_transactions (
+  user_id      TEXT NOT NULL,
+  tx_id        TEXT NOT NULL,
+  account_id   TEXT NOT NULL,
+  mono_time    INTEGER NOT NULL,
+  data_json    TEXT NOT NULL DEFAULT '{}',
+  imported_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, tx_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_transactions_user_time_idx_lite
+  ON finyk_mono_transactions (user_id, mono_time DESC);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_transactions_user_account_idx_lite
+  ON finyk_mono_transactions (user_id, account_id, mono_time DESC);
+
+CREATE TABLE IF NOT EXISTS finyk_mono_accounts (
+  user_id      TEXT NOT NULL,
+  account_id   TEXT NOT NULL,
+  data_json    TEXT NOT NULL DEFAULT '{}',
+  imported_at  TEXT NOT NULL DEFAULT (datetime('now')),
+  PRIMARY KEY (user_id, account_id)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_accounts_user_idx_lite
+  ON finyk_mono_accounts (user_id);
+
+CREATE TABLE IF NOT EXISTS finyk_mono_account_snapshots (
+  user_id       TEXT NOT NULL,
+  account_id    TEXT NOT NULL,
+  snapshot_at   TEXT NOT NULL,
+  balance       INTEGER NOT NULL DEFAULT 0,
+  credit_limit  INTEGER,
+  data_json     TEXT NOT NULL DEFAULT '{}',
+  PRIMARY KEY (user_id, account_id, snapshot_at)
+);
+
+CREATE INDEX IF NOT EXISTS finyk_mono_account_snapshots_account_time_idx_lite
+  ON finyk_mono_account_snapshots (user_id, account_id, snapshot_at DESC);
+`;
+
+// ---------------------------------------------------------------------------
+// Finyk module — Stage 13 / PR #075 — extend `finyk_prefs` із двома
+// масивами: `excluded_stat_tx_ids_json` та `dismissed_recurring_json`.
+//
+// Перетягує `finyk_excluded_stat_txs` + `finyk_rec_dismissed` з LS у
+// SQLite-overlay через ту саму singleton-таблицю, що несе
+// `monthly_plan_json` / `show_balance`. Mirror серверної міграції
+// `053_finyk_prefs_excluded_dismissed.sql`. Адитивно — `IF EXISTS` /
+// default `'[]'` на існуючих рядках без backfill-у.
+// ---------------------------------------------------------------------------
+
+const FINYK_003_SQL = `
+ALTER TABLE finyk_prefs
+  ADD COLUMN excluded_stat_tx_ids_json TEXT NOT NULL DEFAULT '[]';
+
+ALTER TABLE finyk_prefs
+  ADD COLUMN dismissed_recurring_json TEXT NOT NULL DEFAULT '[]';
+`;
+
+/**
+ * Ordered list of bundled client migrations for the Finyk module on
+ * SQLite. Pass this directly to `runMigrations` from
+ * `@sergeant/db-schema/migrate/runner`.
+ *
+ * The Finyk module uses a separate ledger table
+ * (`__finyk_migrations`) so that routine, fizruk, nutrition, and
+ * finyk migrations are independent — each module can be migrated,
+ * rolled out, and rolled back without affecting the others. Same
+ * rationale as nutrition's split from fizruk in PR #031.
+ */
+export const FINYK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
+  { name: "001_finyk_tables.sql", sql: FINYK_001_SQL },
+  { name: "002_finyk_mono_mirror.sql", sql: FINYK_002_SQL },
+  { name: "003_finyk_prefs_excluded_dismissed.sql", sql: FINYK_003_SQL },
+] as const;
+
+/**
+ * Stable ledger table name used by the Finyk SQLite module.
+ * Separate from `__migrations` (routine), `__fizruk_migrations`
+ * (fizruk), and `__nutrition_migrations` (nutrition) so all four
+ * modules' migration histories stay independent.
+ */
+export const FINYK_MIGRATIONS_TABLE = "__finyk_migrations";
+
+// ---------------------------------------------------------------------------
+// KV store — Stage 9 / PR #060
+//
+// Per-device key-value table that backs the SQLite swap of the
+// LocalStorage-backed `webKVStore` primitive (and its MMKV mobile
+// counterpart). Schema-only at this PR — `createSqliteKVStore` +
+// warm-cache (PR #061), bootstrap + LS→kv_store one-time migration
+// (PR #062), and the `webKVStore` impl swap (PR #063) follow in
+// later PRs of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` Stage 9.
+//
+// Differences from the routine/fizruk/nutrition/finyk pattern:
+//   - `updated_at` is INTEGER (Unix epoch ms) rather than TEXT ISO-8601.
+//     Warm-cache eviction heuristics need a sortable numeric timestamp,
+//     and LWW comparisons happen entirely client-local — there is no
+//     server apply-path that needs offset-aware ISO-8601 byte alignment.
+//   - No `_lite`-suffixed indexes. The table is not mirrored
+//     server-side (no Postgres counterpart) and the warm-cache hits
+//     only the PRIMARY KEY on `key`, so additional indexes would be
+//     dead weight.
+// ---------------------------------------------------------------------------
+
+const KV_STORE_001_SQL = `
+CREATE TABLE IF NOT EXISTS kv_store (
+  key        TEXT PRIMARY KEY,
+  value      TEXT NOT NULL,
+  updated_at INTEGER NOT NULL DEFAULT (CAST((unixepoch() * 1000) AS INTEGER))
+);
+`;
+
+/**
+ * Ordered list of bundled client migrations for the per-device
+ * `kv_store` table. Pass this directly to `runMigrations` from
+ * `@sergeant/db-schema/migrate/runner`.
+ *
+ * The `kv_store` module uses its own ledger table
+ * (`__kv_store_migrations`) so the warm-cache bootstrap (PR #061+)
+ * can run independently of the routine / fizruk / nutrition / finyk
+ * module migrations — each module's history stays independent so
+ * canary rollouts and rollbacks don't interlock.
+ */
+export const KV_STORE_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
+  { name: "001_kv_store.sql", sql: KV_STORE_001_SQL },
+] as const;
+
+/**
+ * Stable ledger table name used by the `kv_store` SQLite module.
+ * Separate from `__migrations` (routine), `__fizruk_migrations`
+ * (fizruk), `__nutrition_migrations` (nutrition), and
+ * `__finyk_migrations` (finyk) so all five modules' migration
+ * histories stay independent.
+ */
+export const KV_STORE_MIGRATIONS_TABLE = "__kv_store_migrations";

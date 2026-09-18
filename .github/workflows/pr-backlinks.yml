@@ -1,0 +1,165 @@
+name: PR backlinks
+
+# Phase 5 of Initiative 0014 (knowledge graph & auto-generated catalogs).
+# Owner: @zaebal-beep (solo maintainer).
+# Specification: docs/governance/adr/0061-pr-backlink-storage.md.
+#
+# When a PR merges and touches a canonical doc (ADR / initiative /
+# playbook / hard-rule), this workflow:
+#   1. fetches the PR's metadata + changed files via `gh`,
+#   2. upserts a record into `docs/governance/pr-ledger/index.json`,
+#   3. regenerates the `<!-- AUTO-GENERATED: PR-BACKLINKS-START -->`
+#      block at the end of each touched canonical doc with the top
+#      5 most recent PRs from the ledger,
+#   4. opens a follow-up PR `docs/pr-backlinks-<NNNN>` with the
+#      changes. Never pushes directly to `main` (Hard Rule #6).
+#
+# Loop prevention: the workflow skips PRs whose `head_ref` starts
+# with `docs/pr-backlinks-` — these are the follow-up PRs themselves
+# and shouldn't re-trigger the action.
+#
+# Repo setting required (one-time, per #2899 post-merge run):
+#   Settings → Actions → General → Workflow permissions →
+#   ✅ Allow GitHub Actions to create and approve pull requests
+# Without this, `gh pr create` in the "Create follow-up PR" step
+# fails with:
+#   GraphQL: GitHub Actions is not permitted to create or approve
+#   pull requests (createPullRequest)
+# The branch is still pushed (so `git push` succeeds), but no PR is
+# opened — meaning the ledger update is published as a branch but
+# never reviewed. Operator can either flip the setting (one-time) or
+# swap `secrets.GITHUB_TOKEN` for a PAT with `repo` scope.
+
+on:
+  pull_request_target:
+    types: [closed]
+    # ⚠️ Цей список МУСИТЬ збігатися з `CANONICAL_DOC_ROOTS` у
+    # `scripts/ci/update-pr-backlinks.mjs`, і з 2026-09-15 розбіжність
+    # гейтить тест `scripts/ci/__tests__/update-pr-backlinks.test.mjs`.
+    #
+    # Два боки роблять різні половини однієї роботи: `paths:` вирішує, чи
+    # ЗАПУСТИТИ воркфлоу, а `CANONICAL_DOC_ROOTS` — що саме записати. Тека
+    # лише тут → воркфлоу біжить, `upsertPR` виходить на порожньому
+    # `touchedDocs`, запису немає. Тека лише там → воркфлоу не стартує
+    # взагалі. В обох випадках CI зелений, а ledger просто не росте — рівно
+    # та форма мовчання, якою цей реєстр уже завмирав на 25 днів (див. шапку
+    # кроку «Install dependencies» нижче).
+    #
+    # Скоуп змінюється РІШЕННЯМ, не правкою цього файлу: аудити повернули
+    # 2026-09-15, `docs/engineering/architecture/` лишається виключеною
+    # (її покривають drift-детектори Фази 3). Причини записані в тілі правила
+    # `docs/governance/governance/rules/26-pr-ledger-update-on-merge.md`.
+    # Розширюєш набір — спершу онови ТЕ рішення, потім обидва списки.
+    paths:
+      - "docs/governance/adr/**"
+      - "docs/work/specs/initiatives/**"
+      - "docs/start/instructions/**"
+      - "docs/governance/governance/rules/**"
+      - "docs/work/specs/audits/**"
+
+permissions:
+  contents: write
+  pull-requests: write
+
+concurrency:
+  # Serialize follow-up PR creation so two near-simultaneous merges
+  # don't race on the ledger.
+  group: pr-backlinks
+  cancel-in-progress: false
+
+jobs:
+  update-backlinks:
+    name: Update PR backlinks
+    if: >
+      github.event.pull_request.merged == true &&
+      !startsWith(github.event.pull_request.head.ref, 'docs/pr-backlinks-')
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening,
+      # matches pattern in docs-automation.yml).
+      - name: Checkout main
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+        with:
+          ref: main
+          fetch-depth: 0
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+
+      # actions/setup-node v6.4.0
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        # update-pr-backlinks.mjs lazy-imports `prettier` to format the
+        # regenerated PR-BACKLINKS blocks. The workflow ran WITHOUT any
+        # install for ~25 days: the upsert succeeded, then the script
+        # crashed on `Cannot find package 'prettier'` BEFORE committing —
+        # the ledger froze at 6 PRs while ~600 doc-touching merges went
+        # unrecorded (Hard Rule #26 dead; independent audit 2026-06-11
+        # ws-09).
+        run: pnpm install --frozen-lockfile
+
+      - name: Configure git author
+        run: |
+          git config user.name "github-actions[bot]"
+          git config user.email "41898282+github-actions[bot]@users.noreply.github.com"
+
+      - name: Update PR ledger + in-doc blocks
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          node scripts/ci/update-pr-backlinks.mjs --pr "${{ github.event.pull_request.number }}"
+
+      - name: Check for changes
+        id: changes
+        run: |
+          if [ -n "$(git status --porcelain)" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
+      - name: Create follow-up PR
+        if: steps.changes.outputs.changed == 'true'
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+          PR_NUMBER: ${{ github.event.pull_request.number }}
+          PR_TITLE: ${{ github.event.pull_request.title }}
+        # Guarded against the "GitHub Actions is not permitted to create
+        # pull requests" GraphQL error — branch is always pushed (so an
+        # operator can open the PR manually), and `gh pr create` failure
+        # is surfaced with a clear hint instead of an opaque exit code.
+        run: |
+          BRANCH="docs/pr-backlinks-${PR_NUMBER}"
+          git checkout -b "$BRANCH"
+          git add docs/governance/pr-ledger/index.json docs/governance/adr docs/work/specs/initiatives docs/start/instructions docs/governance/governance/rules
+          git commit -m "docs(docs): backlinks for #${PR_NUMBER}
+
+          Auto-generated by .github/workflows/pr-backlinks.yml after merge
+          of #${PR_NUMBER}. Updates docs/governance/pr-ledger/index.json and the
+          PR-BACKLINKS block in every touched canonical doc.
+
+          See docs/governance/adr/0061-pr-backlink-storage.md for the storage strategy.
+          "
+          git push origin "$BRANCH"
+          if ! gh pr create \
+            --base main \
+            --head "$BRANCH" \
+            --title "docs(docs): PR backlinks for #${PR_NUMBER}" \
+            --body "Auto-generated follow-up to #${PR_NUMBER}. Updates the canonical PR ledger and the \`<!-- AUTO-GENERATED: PR-BACKLINKS-START -->\` blocks in every touched canonical doc.
+
+          Original PR: #${PR_NUMBER} — ${PR_TITLE}
+
+          Storage strategy: [ADR-0061](../blob/main/docs/governance/adr/0061-pr-backlink-storage.md).
+
+          ## Test plan
+
+          - [x] Generated by workflow run \`${{ github.run_id }}\`
+          - [ ] \`pnpm docs:check-pr-ledger\` green (covered by CI on this PR)"; then
+            echo "::warning::gh pr create failed. The branch '${BRANCH}' is pushed; open the PR manually."
+            echo "::warning::To enable automatic PR creation: Settings → Actions → General → ✅ Allow GitHub Actions to create and approve pull requests"
+            exit 1
+          fi

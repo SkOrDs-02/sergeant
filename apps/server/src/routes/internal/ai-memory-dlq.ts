@@ -1,0 +1,205 @@
+/**
+ * `/api/internal/ai-memory-dlq/*` — DLQ replay endpoints.
+ *
+ * Architecture:
+ *
+ *   operator/CLI
+ *     POST /api/internal/ai-memory-dlq/list   (filter+paginate active rows)
+ *     POST /api/internal/ai-memory-dlq/replay (re-enqueue selected rows)
+ *
+ *   Replay flow:
+ *     1. SELECT … FROM ai_memory_ingest_failed WHERE replayed_at IS NULL …
+ *     2. For each row → enqueueMemoryIngest(payload_json) — повторно проходить
+ *        gating (per-source kill-switch, soft/hard Voyage budget).
+ *     3. UPDATE replayed_at = NOW(), replay_count++.
+ *
+ * Safety:
+ *   * `dryRun: true` за замовчуванням — operator має явно передати
+ *     `dryRun: false` (або CLI `--execute`).
+ *   * Bearer-token guard у `routes/internal/index.ts`.
+ *   * Per-call cap `limit ≤ 1000` — не дозволяємо massive single-batch replay
+ *     (Voyage rate-limit + budget burn).
+ *
+ * Mutually exclusive filters:
+ *   * `eventIds: number[]` — точкова вибірка (точно ті rows).
+ *   * `source: string` + `since: ISO datetime` — query-mode.
+ */
+
+import { Router } from "express";
+import type { Pool } from "pg";
+import { z } from "zod";
+
+import { parseBody } from "../../http/validate.js";
+import {
+  listDlqRows,
+  markDlqRowReplayedStrict,
+  type DlqRow,
+} from "../../modules/ai-memory/dlq.js";
+import { enqueueMemoryIngestStrict } from "../../modules/ai-memory/ingestQueue.js";
+import { logger, serializeError } from "../../obs/logger.js";
+
+const ReplayBody = z
+  .object({
+    eventIds: z.array(z.number().int().positive()).optional(),
+    source: z.string().min(1).max(64).optional(),
+    since: z.string().datetime().optional(),
+    limit: z.number().int().positive().max(1000).optional(),
+    dryRun: z.boolean().optional().default(true),
+  })
+  .strict()
+  .refine(
+    (val) =>
+      (val.eventIds && val.eventIds.length > 0) ||
+      val.source !== undefined ||
+      val.since !== undefined,
+    {
+      message: "Provide one of: eventIds[], source, since.",
+    },
+  );
+
+const ListBody = z
+  .object({
+    source: z.string().min(1).max(64).optional(),
+    since: z.string().datetime().optional(),
+    limit: z.number().int().positive().max(1000).optional(),
+    includeReplayed: z.boolean().optional().default(false),
+  })
+  .strict();
+
+function serializeDlqRow(row: DlqRow): {
+  id: number;
+  userId: string;
+  source: string;
+  sourceRef: string | null;
+  errorMsg: string;
+  attempts: number;
+  lastAttemptAt: string;
+  replayedAt: string | null;
+  replayCount: number;
+} {
+  return {
+    id: row.id,
+    userId: row.userId,
+    source: row.source,
+    sourceRef: row.sourceRef,
+    errorMsg: row.errorMsg,
+    attempts: row.attempts,
+    lastAttemptAt: row.lastAttemptAt.toISOString(),
+    replayedAt: row.replayedAt ? row.replayedAt.toISOString() : null,
+    replayCount: row.replayCount,
+  };
+}
+
+// Pool є у `createInternalRouter` лише для DI parity з іншими routes; DLQ
+// модуль використовує shared `query()` із `db.ts`, тож pool тут — placeholder.
+export function createAiMemoryDlqInternalRouter(_: { pool: Pool }): Router {
+  const r = Router();
+
+  /**
+   * POST /api/internal/ai-memory-dlq/list
+   * Body: { source?, since?, limit?, includeReplayed? }
+   * Returns: { ok, rows: DlqRowSerialized[] }
+   */
+  r.post("/api/internal/ai-memory-dlq/list", async (req, res) => {
+    const parsed = parseBody(ListBody, req);
+
+    const rows = await listDlqRows({
+      ...(parsed.source !== undefined ? { source: parsed.source } : {}),
+      ...(parsed.since !== undefined ? { since: new Date(parsed.since) } : {}),
+      limit: parsed.limit ?? 100,
+      includeReplayed: parsed.includeReplayed,
+    });
+
+    res.json({
+      ok: true,
+      rows: rows.map(serializeDlqRow),
+    });
+  });
+
+  /**
+   * POST /api/internal/ai-memory-dlq/replay
+   * Body: { eventIds? | source? + since?, limit?, dryRun? }
+   * Returns: { ok, dryRun, attempted, replayed, skipped, errors[] }
+   */
+  r.post("/api/internal/ai-memory-dlq/replay", async (req, res) => {
+    const parsed = parseBody(ReplayBody, req);
+
+    const data = parsed;
+    const dryRun = data.dryRun;
+
+    const rows = await listDlqRows({
+      ...(data.eventIds && data.eventIds.length > 0
+        ? { ids: data.eventIds }
+        : {}),
+      ...(data.source !== undefined ? { source: data.source } : {}),
+      ...(data.since !== undefined ? { since: new Date(data.since) } : {}),
+      limit: data.limit ?? 100,
+      includeReplayed: false,
+    });
+
+    if (dryRun) {
+      res.json({
+        ok: true,
+        dryRun: true,
+        attempted: rows.length,
+        replayed: 0,
+        skipped: 0,
+        rows: rows.map(serializeDlqRow),
+        errors: [],
+      });
+      return;
+    }
+
+    let replayed = 0;
+    const errors: { id: number; error: string }[] = [];
+    for (const row of rows) {
+      try {
+        await enqueueMemoryIngestStrict({
+          userId: row.payloadJson.userId,
+          source: row.payloadJson.source,
+          sourceRef: row.payloadJson.sourceRef,
+          content: row.payloadJson.content,
+          ...(row.payloadJson.metadata !== undefined
+            ? { metadata: row.payloadJson.metadata }
+            : {}),
+          // PR-S3: прапорець health-даних мусить пережити DLQ-раунд. Тут
+          // payload перебирається ПОІМЕННО, тож пропущене поле відкрило б
+          // обхід гейта згоди через звичайний ретрай — запис, який гейт
+          // відхилив би на першому проході, ліг би на другому.
+          ...(row.payloadJson.healthData !== undefined
+            ? { healthData: row.payloadJson.healthData }
+            : {}),
+        });
+        await markDlqRowReplayedStrict(row.id);
+        replayed++;
+      } catch (err) {
+        // Strict-варіанти rethrow-ять реальні failure-и (Redis-enqueue та
+        // DB-mark-replayed). Row, який НЕ був фактично re-enqueue-нутий або
+        // НЕ позначений replayed, потрапляє у `errors[]` і НЕ інкрементує
+        // `replayed` — при цьому `replayed_at IS NULL` зберігається, тож
+        // наступний replay його підхопить (без свідомо-хибного ok:true).
+        logger.warn({
+          msg: "ai_memory_dlq_replay_row_failed",
+          id: row.id,
+          source: row.source,
+          err: serializeError(err, { includeStack: false }),
+        });
+        errors.push({
+          id: row.id,
+          error: err instanceof Error ? err.message : String(err),
+        });
+      }
+    }
+
+    res.json({
+      ok: errors.length === 0,
+      dryRun: false,
+      attempted: rows.length,
+      replayed,
+      skipped: rows.length - replayed - errors.length,
+      errors,
+    });
+  });
+
+  return r;
+}

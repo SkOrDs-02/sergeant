@@ -1,0 +1,300 @@
+// @vitest-environment jsdom
+import React from "react";
+import { describe, it, expect, vi, afterEach } from "vitest";
+import { render, screen, cleanup, fireEvent } from "@testing-library/react";
+
+// `VirtualList` needs ResizeObserver / a real layout to compute virtual items.
+// For the DataState routing test we only care which slot is rendered
+// (skeleton / empty / list) — a synchronous flat-render mock is enough.
+vi.mock("@shared/components/ui/VirtualList", () => ({
+  VirtualList: ({
+    items,
+    children,
+  }: {
+    items: unknown[];
+    children: (item: unknown, index: number) => React.ReactNode;
+  }) => (
+    <div data-testid="virtual-list">
+      {items.map((item, i) => (
+        <div key={i}>{children(item, i)}</div>
+      ))}
+    </div>
+  ),
+}));
+
+import { TransactionList } from "./TransactionList";
+import type { Transaction } from "@sergeant/finyk-domain/domain/types";
+
+/**
+ * Common no-op handlers + maps that every render needs but we don't
+ * exercise in DataState routing tests. Hoisted so each test stays
+ * focused on the props that change branch.
+ */
+const NOOP = (): void => undefined;
+const baseProps = {
+  groupedByDate: [] as { key: string; items: Transaction[] }[],
+  groupCounts: [] as number[],
+  flatItems: [] as Transaction[],
+  collapsedKeys: new Set<string>(),
+  daySummaries: {},
+  showBalance: true,
+  toggleDay: NOOP,
+  selectMode: false,
+  selectedIds: new Set<string>(),
+  hiddenTxIdSet: new Set<string>(),
+  excludedStatTxIdSet: new Set<string>(),
+  txCategories: {},
+  txSplits: {},
+  accounts: undefined,
+  customCategories: undefined,
+  onToggleSelect: NOOP,
+  onSwipeHideTx: NOOP,
+  onSwipeDeleteManual: NOOP,
+  onOpenTransaction: NOOP,
+};
+
+const SAMPLE_TX: Transaction = {
+  id: "tx-1",
+  date: "2026-05-04",
+  description: "Сільпо",
+  amount: -250,
+  account: "mono-1",
+} as unknown as Transaction;
+
+describe("TransactionList — DataState routing", () => {
+  // The shared web vitest setup (`src/test/setup.ts`) does not auto-run
+  // `cleanup()` between tests — it stays focused on MSW lifecycle.
+  // Each render here mounts the same scrollable shell, so without
+  // explicit cleanup test N leaks DOM into test N+1 and the assertions
+  // matching by text/testid see duplicates from the previous case.
+  afterEach(() => cleanup());
+
+  it("renders the skeleton slot when first-paint loading and activeTx is empty", () => {
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={true}
+        activeTx={[]}
+        filtered={[]}
+      />,
+    );
+
+    // The skeleton block is the only rendered branch — the live region
+    // we attach is the most stable assertion target.
+    const skeletons = document.querySelectorAll('[aria-busy="true"]');
+    expect(skeletons.length).toBeGreaterThan(0);
+
+    // The empty-state title and the virtualized list must NOT be
+    // rendered while skeleton is on.
+    expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
+  });
+
+  it("renders the empty slot when not loading and filtered list is empty (with activeTx present)", () => {
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX]}
+        filtered={[]}
+      />,
+    );
+
+    expect(screen.getByText("Немає транзакцій")).toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
+  });
+
+  it("renders the list-scoped no-data-at-all state when not loading and activeTx itself is empty (first-run)", () => {
+    // When the user lands on Transactions with no rows anywhere, this must
+    // NOT repeat Overview's tier-1 `ModuleEmptyState` hero verbatim
+    // (founder-UX audit round 2, F1) — Transactions gets its own,
+    // list-scoped copy instead.
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[]}
+        filtered={[]}
+      />,
+    );
+
+    expect(screen.getByText("Записів ще немає")).toBeInTheDocument();
+    // Must NOT repeat Overview's hero title verbatim.
+    expect(
+      screen.queryByText("Куди йдуть твої гроші?"),
+    ).not.toBeInTheDocument();
+    // The filter-empty copy must NOT also render at the same time.
+    expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
+    expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
+  });
+
+  // Regression: founder report 2026-07-31 — «Зникли транзакції, хоч пише що
+  // токен підключений». On 1 серпня the month genuinely had no rows yet, but
+  // the tab greeted a bank-connected user with a full history by showing the
+  // first-run hero («Додай першу витрату… Підключи Monobank»), which reads as
+  // data loss rather than "цей місяць ще порожній".
+  describe("month-empty vs first-run empty", () => {
+    it("shows the month-scoped state when other months still have data", () => {
+      render(
+        <TransactionList
+          {...baseProps}
+          loading={false}
+          activeTx={[]}
+          filtered={[]}
+          hasTransactionsOutsideMonth
+          monthLabel="серпень 2026"
+        />,
+      );
+
+      expect(screen.getByText("Цей місяць ще порожній")).toBeInTheDocument();
+      expect(
+        screen.getByText(/За серпень 2026 операцій поки немає/),
+      ).toBeInTheDocument();
+      // The first-run onboarding hero must NOT claim this user has no data.
+      expect(
+        screen.queryByText("Куди йдуть твої гроші?"),
+      ).not.toBeInTheDocument();
+    });
+
+    it("offers a jump back to the previous month", () => {
+      const onGoPreviousMonth = vi.fn();
+      render(
+        <TransactionList
+          {...baseProps}
+          loading={false}
+          activeTx={[]}
+          filtered={[]}
+          hasTransactionsOutsideMonth
+          monthLabel="серпень 2026"
+          onGoPreviousMonth={onGoPreviousMonth}
+        />,
+      );
+
+      fireEvent.click(
+        screen.getByRole("button", { name: "Попередній місяць" }),
+      );
+      expect(onGoPreviousMonth).toHaveBeenCalledTimes(1);
+    });
+
+    it("still shows the list-scoped no-data state when there is no data anywhere", () => {
+      render(
+        <TransactionList
+          {...baseProps}
+          loading={false}
+          activeTx={[]}
+          filtered={[]}
+          hasTransactionsOutsideMonth={false}
+          monthLabel="серпень 2026"
+        />,
+      );
+
+      expect(screen.getByText("Записів ще немає")).toBeInTheDocument();
+    });
+  });
+
+  it("renders the virtualized list when filtered has rows", () => {
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX]}
+        filtered={[SAMPLE_TX]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX] }]}
+        groupCounts={[1]}
+        flatItems={[SAMPLE_TX]}
+      />,
+    );
+
+    expect(screen.getByTestId("virtual-list")).toBeInTheDocument();
+    expect(screen.queryByText("Немає транзакцій")).not.toBeInTheDocument();
+  });
+
+  // PR-F4 (founder-UX audit wave 6, «Чесність показників»): the row-level
+  // «не в статистиці» marker was wired ONLY to internal transfers —
+  // `excludedStatTxIdSet` never reached the row, so a single or batch
+  // "Не враховувати" action changed Overview/Analytics totals with zero
+  // visible trace in the list itself.
+  it("shows the «не в статистиці» marker for a row in excludedStatTxIdSet", () => {
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX]}
+        filtered={[SAMPLE_TX]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX] }]}
+        groupCounts={[1]}
+        flatItems={[SAMPLE_TX]}
+        excludedStatTxIdSet={new Set([SAMPLE_TX.id])}
+      />,
+    );
+
+    expect(screen.getByText("не в статистиці")).toBeInTheDocument();
+  });
+
+  it("omits the «не в статистиці» marker once the transaction leaves excludedStatTxIdSet", () => {
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[SAMPLE_TX]}
+        filtered={[SAMPLE_TX]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX] }]}
+        groupCounts={[1]}
+        flatItems={[SAMPLE_TX]}
+        excludedStatTxIdSet={new Set<string>()}
+      />,
+    );
+
+    expect(screen.queryByText("не в статистиці")).not.toBeInTheDocument();
+  });
+
+  it("keeps the list visible during a background refetch (loading=true with prior activeTx)", () => {
+    // Stale-revalidate: a refetch is in flight but we already have a
+    // payload from the previous tick. The list must NOT collapse to
+    // the skeleton slot — that's the core of the DataState contract
+    // (`data` stays defined while `isLoading` is true).
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={true}
+        activeTx={[SAMPLE_TX]}
+        filtered={[SAMPLE_TX]}
+        groupedByDate={[{ key: "2026-05-04", items: [SAMPLE_TX] }]}
+        groupCounts={[1]}
+        flatItems={[SAMPLE_TX]}
+      />,
+    );
+
+    expect(screen.getByTestId("virtual-list")).toBeInTheDocument();
+    expect(document.querySelectorAll('[aria-busy="true"]')).toHaveLength(0);
+  });
+
+  it("routes a manual row tap to the canonical transaction editor", () => {
+    const onOpenTransaction = vi.fn();
+    const manualTx = {
+      ...SAMPLE_TX,
+      id: "manual-1",
+      _manual: true,
+      _manualId: "manual-1",
+    } as unknown as Transaction;
+
+    render(
+      <TransactionList
+        {...baseProps}
+        loading={false}
+        activeTx={[manualTx]}
+        filtered={[manualTx]}
+        groupedByDate={[{ key: "2026-05-04", items: [manualTx] }]}
+        groupCounts={[1]}
+        flatItems={[manualTx]}
+        onOpenTransaction={onOpenTransaction}
+      />,
+    );
+
+    fireEvent.click(screen.getByText("Сільпо"));
+    expect(onOpenTransaction).toHaveBeenCalledWith(manualTx);
+    expect(
+      screen.queryByRole("button", { name: "Розподілити транзакцію" }),
+    ).not.toBeInTheDocument();
+  });
+});

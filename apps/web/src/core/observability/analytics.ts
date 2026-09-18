@@ -1,0 +1,180 @@
+/**
+ * @status Active
+ * @owner @Skords-01
+ */
+// Lightweight product analytics sink.
+//
+// Подвійний transport:
+//   1. Локальний ring-buffer (`hub_analytics_log_v1` у localStorage,
+//      max 200 подій) + `console.log("[analytics]", …)` — devtools
+//      і Sentry console-breadcrumbs. Працює завжди.
+//   2. PostHog — якщо виставлений `VITE_POSTHOG_KEY`. Fire-and-forget
+//      через `posthog.ts` (lazy dynamic import), буферизує події до
+//      завершення init.
+//
+// Contract:
+//   - `trackEvent(name, payload?)` is fire-and-forget. It never throws
+//     and never returns a Promise that callers need to await.
+//   - Payload is expected to be a small plain object with NO sensitive
+//     data (no tokens, emails, amounts linked to a real identity, etc.).
+
+/** @typedef {{ eventName: string, payload: object, timestamp: string }} AnalyticsEvent */
+
+import { ANALYTICS_EVENTS, scrubPII } from "@sergeant/shared";
+import { capturePostHogEvent } from "./posthog";
+import { containsPII } from "./containsPII";
+import { safeReadLS, safeWriteLS } from "@shared/lib/storage/storage";
+
+export { ANALYTICS_EVENTS };
+export { initPostHog, identifyPostHogUser, resetPostHog } from "./posthog";
+
+const LOG_KEY = "hub_analytics_log_v1";
+const MAX_LOG = 200;
+const FLUSH_DEBOUNCE_MS = 500;
+
+// Audit 2026-05-13 §F27: the `window.__hubAnalytics` ring-buffer is a
+// debugging affordance, not a product surface. Exposing it globally in a
+// real production deploy is a free XSS amplifier — a single content-injection
+// bug elsewhere can read every analytics event payload. We therefore mount it
+// only when NOT in a real-telemetry production environment:
+//   - `import.meta.env.DEV` → dev server + vitest (devtools / unit reads);
+//   - PostHog key unset → the smoke `vite preview` build (a prod-mode build
+//     with no `VITE_POSTHOG_KEY`), whose Playwright harness reads the buffer
+//     as its deterministic event signal.
+// In the deployed app `VITE_POSTHOG_KEY` is set, so the global is withheld and
+// the XSS blast radius shrinks. PostHog remains the production analytics sink.
+const EXPOSE_RING_BUFFER =
+  import.meta.env.DEV || !import.meta.env["VITE_POSTHOG_KEY"];
+
+// Audit 2026-05-13 §F14: in-memory ring-buffer — джерело правди під час
+// сесії. У localStorage зливаємо batch-ами (debounce 500 мс) або
+// синхронно на `visibilitychange`/`pagehide`, щоб не блокувати
+// main-thread на кожен `trackEvent`. Патерн дзеркалить `webVitals.ts`.
+let memoryLog: unknown[] = (() => {
+  const parsed = safeReadLS<unknown[]>(LOG_KEY);
+  return Array.isArray(parsed) ? parsed.slice(-MAX_LOG) : [];
+})();
+let flushTimer: ReturnType<typeof setTimeout> | null = null;
+let flushListenersAttached = false;
+
+function clonePayload(
+  payload: Record<string, unknown>,
+): Record<string, unknown> {
+  try {
+    return structuredClone(payload) as Record<string, unknown>;
+  } catch {
+    try {
+      return JSON.parse(JSON.stringify(payload)) as Record<string, unknown>;
+    } catch {
+      return {};
+    }
+  }
+}
+
+function flushLogToStorage(): void {
+  if (flushTimer !== null) {
+    clearTimeout(flushTimer);
+    flushTimer = null;
+  }
+  safeWriteLS(LOG_KEY, memoryLog);
+}
+
+function ensureFlushListeners(): void {
+  if (flushListenersAttached) return;
+  if (typeof document === "undefined" || typeof window === "undefined") return;
+  flushListenersAttached = true;
+  document.addEventListener("visibilitychange", () => {
+    if (document.visibilityState === "hidden") flushLogToStorage();
+  });
+  window.addEventListener("pagehide", flushLogToStorage);
+}
+
+function scheduleFlush(): void {
+  ensureFlushListeners();
+  if (flushTimer !== null) return;
+  flushTimer = setTimeout(() => {
+    flushTimer = null;
+    safeWriteLS(LOG_KEY, memoryLog);
+  }, FLUSH_DEBOUNCE_MS);
+}
+
+function appendEvent(event: unknown): void {
+  memoryLog.push(event);
+  if (memoryLog.length > MAX_LOG) {
+    memoryLog = memoryLog.slice(-MAX_LOG);
+  }
+  scheduleFlush();
+}
+
+/**
+ * Record a product event. Fire-and-forget — safe to call from any UI
+ * handler without awaiting.
+ *
+ * @param {string} eventName - Canonical event name, see `ANALYTICS_EVENTS`.
+ * @param {object} [payload] - Minimal, non-sensitive metadata.
+ */
+export function trackEvent(
+  eventName: string,
+  payload: Record<string, unknown> = {},
+) {
+  if (!eventName || typeof eventName !== "string") return;
+  const safePayload =
+    payload && typeof payload === "object" ? clonePayload(payload) : {};
+  scrubPII(safePayload);
+  const event = {
+    eventName,
+    payload: safePayload,
+    timestamp: new Date().toISOString(),
+  };
+  try {
+    // Контракт-документація вище забороняє передавати PII у payload, але
+    // captured-handler-и можуть зрегресити (audit S2 — захист у глибину).
+    // `console.log` ходить у:
+    //   - DevTools console (видно під час screen-share / paired support);
+    //   - Sentry breadcrumb-и (`@sentry/react` `console` integration on
+    //     by default);
+    //   - PostHog session-replay / Logpipe browser extensions.
+    // Тож логуємо клон з вирізаними PII-значеннями. Оригінальний `event`
+    // лишається незачепленим — він іде у localStorage ring-buffer і у
+    // PostHog як було.
+    // У prod console.log приглушений (Rule #21 — Sentry breadcrumb-и не
+    // повинні містити аналітичних payload-ів). LS-запис через batched
+    // ring-buffer, щоб серія кліків не била по main-thread (audit F14).
+    // S8 guard: gate console.log behind DEBUG_ANALYTICS runtime flag AND a
+    // containsPII check.  `scrubPII` has already replaced known key names
+    // with `[redacted]`, but this value-level check catches structural
+    // regressions where PII lands under an unrecognised key or inside a
+    // nested blob.  If PII is detected the line is silently skipped — no
+    // error, no fallback — keeping the fire-and-forget contract intact.
+    // `DEBUG_ANALYTICS` is a runtime window global (set in DevTools console:
+    // `window.DEBUG_ANALYTICS = true`) so it is never compiled into prod
+    // bundles and never appears in Sentry breadcrumbs.
+    const debugFlag =
+      typeof window !== "undefined" &&
+      !!(window as Window & { DEBUG_ANALYTICS?: boolean }).DEBUG_ANALYTICS;
+    if (import.meta.env.DEV && debugFlag && !containsPII(event)) {
+      // eslint-disable-next-line no-console -- навмисна transport-фіча ring-buffer-у: DevTools/Sentry/PostHog тапи (docs §7)
+      console.log("[analytics]", event);
+    }
+    appendEvent(event);
+    if (EXPOSE_RING_BUFFER) {
+      const analyticsWindow = window as Window & {
+        __hubAnalytics?: unknown[];
+      };
+      analyticsWindow.__hubAnalytics = memoryLog;
+    }
+  } catch {}
+  // Окремий try/catch — `trackEvent` контракт каже "ніколи не кидає"
+  // (див. шапку файлу). `capturePostHogEvent` сам по собі захищений
+  // від throw усередині `posthog.capture`, але `enqueue` /
+  // `import.meta.env` шляхи теоретично можуть зловити edge-кейс — щит
+  // тримаємо у викликача, бо ~10 call-sites покладаються на
+  // fire-and-forget (див. Devin Review on #972).
+  try {
+    capturePostHogEvent(eventName, event.payload as Record<string, unknown>);
+  } catch {
+    /* PostHog transport never breaks trackEvent callers */
+  }
+  // PostHog → AI memory дзеркало (PR-24) знято 2026-08-29: продуктові
+  // івенти в ролі «фактів про людину» лише займали місце в RAG top-K.
+}

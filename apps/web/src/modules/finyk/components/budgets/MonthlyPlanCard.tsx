@@ -1,0 +1,455 @@
+/**
+ * Last validated: 2026-05-14
+ * Status: Active
+ */
+import { memo, useId, useState } from "react";
+import type { Dispatch, SetStateAction } from "react";
+import { cn } from "@shared/lib/ui/cn";
+import { Icon } from "@shared/components/ui/Icon";
+import { MoneyInput } from "@shared/components/ui/MoneyInput";
+import { Label } from "@shared/components/ui/FormField";
+import { Money } from "@shared/components/ui/Money";
+import { FirstRunHintBanner } from "../../../../core/onboarding/FirstRunHintBanner";
+
+// Mirrors `useStorage`'s MonthlyPlan: required income/expense/savings,
+// each persisted as the canonical dot-form value (string while editing,
+// number once committed). Defined inline here so the card stays free of a
+// hook import; if a third file ever needs the type, hoist it to a shared
+// module.
+
+/**
+ * Одне з трьох полів плану.
+ *
+ * Кома тут обовʼязкова так само, як у КБЖВ: «40 000,50» під `type="number"`
+ * доїжджало обробнику порожнім рядком. Порожнє поле лишається порожнім
+ * рядком, а не нулем, інакше план неможливо очистити. Розряди групує
+ * `MoneyInput` — саме на цьому екрані тестер і попросив пробіли.
+ */
+function PlanAmountField({
+  id,
+  label,
+  placeholder,
+  value,
+  onCommit,
+}: {
+  id: string;
+  label: string;
+  placeholder: string;
+  value: number | string;
+  onCommit: (next: string) => void;
+}) {
+  return (
+    <div>
+      <Label htmlFor={id}>{label}</Label>
+      <MoneyInput
+        id={id}
+        placeholder={placeholder}
+        value={value}
+        onValueChange={(next) => onCommit(next == null ? "" : String(next))}
+      />
+    </div>
+  );
+}
+
+export type MonthlyPlan = {
+  income: number | string;
+  expense: number | string;
+  savings: number | string;
+};
+
+interface MonthlyPlanCardProps {
+  monthlyPlan: MonthlyPlan | null | undefined;
+  onChangeMonthlyPlan: Dispatch<SetStateAction<MonthlyPlan>>;
+  /**
+   * «Приховати суми» (PR-F3 founder-UX audit 2026-09-13): доти цей проп
+   * приходив у `Budgets`, але картка його не приймала й малювала суми
+   * завжди — свайп на Планування залишав приховані на Огляді числа
+   * відкритими. Маскує лише РОЗРАХОВАНІ суми (згорнута шапка, таблиця
+   * План/Факт/Δ, safe-to-spend); поля редагування плану лишаються
+   * видимими — людина саме зараз їх вводить.
+   */
+  showBalance?: boolean;
+  planIncome: number;
+  planExpense: number;
+  planSavings: number;
+  totalExpenseFact: number;
+  factIncome: number;
+  factSavings: number;
+  remaining: number;
+  safePerDay: number;
+  pctExpense: number;
+  isOver: boolean;
+  daysLeft: number;
+  /**
+   * When true, the card auto-opens and auto-enters the edit form on
+   * mount and renders a `<FirstRunHintBanner />` framing the inputs as
+   * the canonical «домівка» for the user's monthly plan. Set on the
+   * user's first Finyk entry by `FinykApp` via `useModuleFirstRun`.
+   */
+  firstRunHint?: boolean | undefined;
+  /** Dismiss callback for the first-run hint banner. */
+  onDismissFirstRunHint?: (() => void) | undefined;
+}
+
+// Unified monthly-plan block: Plan/Fact/Δ table for income, expense and
+// savings, progress bar + safe-to-spend hint and an inline edit mode for
+// the three inputs. Replaces the separate `PlanFactCard` that previously
+// duplicated the same plan/fact numbers below this card. Collapsible —
+// default closed so the Планування page opens with stats-strip + limit
+// cards in view; header surfaces pct + remaining at a glance.
+function MonthlyPlanCardComponent({
+  monthlyPlan,
+  onChangeMonthlyPlan,
+  showBalance = true,
+  planIncome,
+  planExpense,
+  planSavings,
+  totalExpenseFact,
+  factIncome,
+  factSavings,
+  remaining,
+  safePerDay,
+  pctExpense,
+  isOver,
+  daysLeft,
+  firstRunHint,
+  onDismissFirstRunHint,
+}: MonthlyPlanCardProps) {
+  // First-run path force-opens both the card body and the inline
+  // editor so the user lands directly on the inputs they need to fill
+  // in. Defaults are read once via the `useState` lazy initializer so
+  // re-renders after the parent's `firstRunHint` prop flips back to
+  // false do not yank the editor closed mid-edit.
+  const [open, setOpen] = useState<boolean>(() => firstRunHint === true);
+  const [editing, setEditing] = useState<boolean>(() => firstRunHint === true);
+  const hasPlan = planIncome > 0 || planExpense > 0 || planSavings > 0;
+
+  const fieldId = useId();
+  const incomeId = `${fieldId}-income`;
+  const expenseId = `${fieldId}-expense`;
+  const savingsId = `${fieldId}-savings`;
+
+  const incomeDelta = factIncome - planIncome;
+  const expenseDelta = totalExpenseFact - planExpense;
+  const savingsDelta = factSavings - planSavings;
+
+  return (
+    <div
+      className={cn(
+        "bg-panel border rounded-2xl shadow-card overflow-hidden",
+        isOver ? "border-danger/40" : "border-line",
+      )}
+    >
+      <button
+        type="button"
+        onClick={() => setOpen((v) => !v)}
+        aria-expanded={open}
+        className="w-full flex items-center justify-between gap-3 px-5 py-3 text-left hover:bg-panelHi transition-colors"
+      >
+        <div className="flex items-center gap-2 min-w-0">
+          <span className="text-muted" aria-hidden>
+            <Icon name="calendar" size="md" />
+          </span>
+          <span className="text-style-label text-text">Фінплан на місяць</span>
+        </div>
+        <div className="flex items-center gap-2 shrink-0">
+          {hasPlan && !open && (
+            <span
+              className={cn(
+                // Роль + `font-semibold` на одному вузлі — це безпечно:
+                // вага виграє в каскаді (замір і межі застосовності — у
+                // `tailwind-preset.js`, блок «Роль + font-* на ОДНОМУ
+                // вузлі»). Перевитрата лишається важчою за норму, як і
+                // задумано: це єдине число, видне на згорнутій картці.
+                "text-style-caption tabular-nums",
+                isOver
+                  ? "text-danger-strong dark:text-danger font-semibold"
+                  : "text-muted",
+              )}
+            >
+              {!showBalance ? (
+                "••••"
+              ) : isOver ? (
+                <Money amount={planExpense - totalExpenseFact} tone="inherit" />
+              ) : planExpense > 0 ? (
+                <>
+                  {pctExpense}% · <Money amount={remaining} />
+                </>
+              ) : (
+                <Money amount={planIncome} signed />
+              )}
+            </span>
+          )}
+          {!hasPlan && !open && (
+            <span className="text-style-caption text-subtle">Не заданий</span>
+          )}
+          <Icon
+            name="chevron-down"
+            size="sm"
+            className={cn(
+              "transition-transform text-muted",
+              open ? "rotate-180" : "",
+            )}
+          />
+        </div>
+      </button>
+
+      {open && (
+        <div className="px-5 pb-5 pt-1 space-y-3">
+          {hasPlan ? (
+            /*
+              AI-CONTEXT: у стовпці Δ стоїть `Money signed`, а НЕ `Delta` —
+              попри те, що `Delta` існує рівно під дельти. Причина в тоні.
+              `Delta` знає два кольори: успіх і небезпека. Тут же недобір
+              доходу навмисно позначений `text-warning`, а не `text-danger`
+              — не дотягнути до плану це не аварія, і продукт про це
+              говорить рівно (той самий вибір, що «констатація, не докір» у
+              борді рекордів Фізрука). Перевести на `Delta` означало б
+              зробити недобір доходу червоним заодно з перевитратою.
+
+              Тож поверхня лишає свою семантику кольору, а від П4 бере те,
+              заради чого він і є — тири суми. `tone="inherit"` віддає
+              знаку, копійкам і символу колір комірки: інакше приглушений
+              сірий тир поруч із зеленим числом розповзається на два тони.
+            */
+            <div className="grid grid-cols-[auto_1fr_1fr_1fr] gap-x-3 gap-y-1.5 text-sm tabular-nums items-baseline">
+              <div />
+              <div className="text-style-caption text-subtle text-right">
+                План
+              </div>
+              <div className="text-style-caption text-subtle text-right">
+                Факт
+              </div>
+              <div className="text-style-caption text-subtle text-right">Δ</div>
+
+              <div className="text-style-caption text-muted">Дохід</div>
+              <div className="text-right text-muted">
+                {!showBalance ? (
+                  "••••"
+                ) : planIncome > 0 ? (
+                  <Money amount={planIncome} />
+                ) : (
+                  "—"
+                )}
+              </div>
+              <div className="text-right text-success-strong dark:text-success">
+                {!showBalance ? (
+                  "••••"
+                ) : factIncome > 0 ? (
+                  <Money amount={factIncome} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
+              </div>
+              <div
+                className={cn(
+                  "text-right text-style-caption",
+                  planIncome === 0
+                    ? "text-subtle"
+                    : incomeDelta >= 0
+                      ? "text-success-strong dark:text-success"
+                      : "text-warning-strong dark:text-warning",
+                )}
+              >
+                {!showBalance ? (
+                  "••••"
+                ) : planIncome > 0 ? (
+                  <Money amount={incomeDelta} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
+              </div>
+
+              <div className="text-style-caption text-muted">Витрати</div>
+              <div className="text-right text-muted">
+                {!showBalance ? (
+                  "••••"
+                ) : planExpense > 0 ? (
+                  <Money amount={planExpense} />
+                ) : (
+                  "—"
+                )}
+              </div>
+              <div
+                className={cn(
+                  "text-right",
+                  isOver
+                    ? "text-danger-strong dark:text-danger font-semibold"
+                    : "text-danger-strong dark:text-danger",
+                )}
+              >
+                {!showBalance ? (
+                  "••••"
+                ) : totalExpenseFact > 0 ? (
+                  <Money amount={-totalExpenseFact} tone="inherit" />
+                ) : (
+                  "—"
+                )}
+              </div>
+              <div
+                className={cn(
+                  "text-right text-style-caption",
+                  planExpense === 0
+                    ? "text-subtle"
+                    : expenseDelta > 0
+                      ? "text-danger-strong dark:text-danger"
+                      : "text-success-strong dark:text-success",
+                )}
+              >
+                {!showBalance ? (
+                  "••••"
+                ) : planExpense > 0 ? (
+                  <Money amount={expenseDelta} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
+              </div>
+
+              <div className="text-style-caption text-muted">Накопич.</div>
+              <div className="text-right text-muted">
+                {!showBalance ? (
+                  "••••"
+                ) : planSavings > 0 ? (
+                  <Money amount={planSavings} />
+                ) : (
+                  "—"
+                )}
+              </div>
+              <div
+                className={cn(
+                  "text-right",
+                  factSavings >= 0
+                    ? "text-success-strong dark:text-success"
+                    : "text-danger-strong dark:text-danger",
+                )}
+              >
+                {!showBalance ? (
+                  "••••"
+                ) : planSavings > 0 || factSavings !== 0 ? (
+                  <Money amount={factSavings} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
+              </div>
+              <div
+                className={cn(
+                  "text-right text-style-caption",
+                  planSavings === 0 && factSavings === 0
+                    ? "text-subtle"
+                    : savingsDelta >= 0
+                      ? "text-success-strong dark:text-success"
+                      : "text-danger-strong dark:text-danger",
+                )}
+              >
+                {!showBalance ? (
+                  "••••"
+                ) : planSavings > 0 || factSavings !== 0 ? (
+                  <Money amount={savingsDelta} signed tone="inherit" />
+                ) : (
+                  "—"
+                )}
+              </div>
+            </div>
+          ) : (
+            <div className="text-style-label text-subtle">
+              Постав план, і побачиш скільки безпечно витрачати на день.
+            </div>
+          )}
+
+          {hasPlan && planExpense > 0 && (
+            <div className="space-y-1">
+              <div className="flex justify-between text-style-caption text-subtle">
+                <span>{pctExpense}% витрачено</span>
+                {safePerDay > 0 && daysLeft > 0 && !isOver && (
+                  <span className="tabular-nums">
+                    {showBalance ? <Money amount={safePerDay} /> : "••••"}
+                    /день · {daysLeft} дн.
+                  </span>
+                )}
+                {isOver && (
+                  <span className="text-danger-strong dark:text-danger font-semibold tabular-nums">
+                    {showBalance ? (
+                      <Money
+                        amount={planExpense - totalExpenseFact}
+                        tone="inherit"
+                      />
+                    ) : (
+                      "••••"
+                    )}
+                  </span>
+                )}
+              </div>
+              <div className="h-2 bg-bg rounded-full overflow-hidden">
+                <div
+                  className={cn(
+                    "h-full rounded-full transition-[width,background-color]",
+                    isOver
+                      ? "bg-danger"
+                      : pctExpense >= 85
+                        ? "bg-warning"
+                        : "bg-success",
+                  )}
+                  style={{ width: `${Math.min(100, pctExpense)}%` }}
+                />
+              </div>
+            </div>
+          )}
+
+          <div className="flex items-center justify-end pt-1">
+            <button
+              type="button"
+              onClick={() => setEditing((v) => !v)}
+              aria-expanded={editing}
+              className="text-style-caption text-muted hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-xl hover:bg-panelHi transition-colors"
+            >
+              <Icon name="edit" size="xs" />
+              {editing ? "Згорнути" : hasPlan ? "Редагувати" : "Задати план"}
+            </button>
+          </div>
+
+          {editing && (
+            <div className="space-y-2 border-t border-line pt-3">
+              {firstRunHint && (
+                <FirstRunHintBanner
+                  variant="finyk"
+                  title="Орієнтовний фінплан, постав і поправиш"
+                  description="Це чорновик: вкажи орієнтовний дохід, витрати і накопичення на місяць. Сюди ти зможеш повернутись будь-коли, щоб перерахувати."
+                  onDismiss={onDismissFirstRunHint ?? (() => {})}
+                />
+              )}
+              <PlanAmountField
+                id={incomeId}
+                label="План доходу"
+                placeholder="Напр. 40 000 ₴"
+                value={monthlyPlan?.income ?? ""}
+                onCommit={(income) =>
+                  onChangeMonthlyPlan((p) => ({ ...p, income }))
+                }
+              />
+              <PlanAmountField
+                id={expenseId}
+                label="План витрат"
+                placeholder="Напр. 25 000 ₴"
+                value={monthlyPlan?.expense ?? ""}
+                onCommit={(expense) =>
+                  onChangeMonthlyPlan((p) => ({ ...p, expense }))
+                }
+              />
+              <PlanAmountField
+                id={savingsId}
+                label="План накопичень"
+                placeholder="Напр. 10 000 ₴"
+                value={monthlyPlan?.savings ?? ""}
+                onCommit={(savings) =>
+                  onChangeMonthlyPlan((p) => ({ ...p, savings }))
+                }
+              />
+            </div>
+          )}
+        </div>
+      )}
+    </div>
+  );
+}
+
+export const MonthlyPlanCard = memo(MonthlyPlanCardComponent);

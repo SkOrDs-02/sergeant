@@ -1,0 +1,237 @@
+import { useCallback, useEffect, useMemo, useRef } from "react";
+import { createPortal } from "react-dom";
+import { shouldShowOnboarding as sharedShouldShowOnboarding } from "./onboardingGate";
+import { WelcomeOneScreen } from "./WelcomeOneScreen";
+import { GoalFirstScreen } from "./GoalFirstScreen";
+import { useOnboardingWizardState } from "./useOnboardingWizardState";
+import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
+
+// Re-exported so `App.tsx` and any legacy call-site keep importing
+// `shouldShowOnboarding` straight from this file.
+export function shouldShowOnboarding() {
+  return sharedShouldShowOnboarding();
+}
+
+// ---------------------------------------------------------------------------
+// Main wizard
+// ---------------------------------------------------------------------------
+
+/**
+ * One-screen onboarding (v3).
+ *
+ * Hero + 4 module checkboxes (all on by default) + primary CTA. Tap
+ * once → hub. Goal questions moved to per-module first-run sheets;
+ * push permission asked just-in-time when the user enables a reminder
+ * inside a module.
+ *
+ * Renders as a modal overlay (default) or inline card (`fullPage`
+ * variant) inside the `/welcome` route.
+ *
+ * State, A/B variants and FTUX analytics live in
+ * `useOnboardingWizardState`; the presentational tree is owned by
+ * `WelcomeOneScreen` + `ModuleRow` siblings. This file is the
+ * composition root + modal/fullPage chrome (focus trap, Escape, focus
+ * restoration) only.
+ */
+export function OnboardingWizard({
+  onDone,
+  variant = "modal",
+  onSecondaryAction,
+}: {
+  onDone: (
+    startModuleId: string | null,
+    opts?: { intent: string; picks: string[] },
+  ) => void;
+  variant?: "modal" | "fullPage";
+  /**
+   * Host-owned secondary handler. Serves two purposes:
+   *
+   *   1. PR-05 demo-mode CTA. The «Подивитись приклад» button
+   *      rendered inside the splash card invokes this when the
+   *      `/welcome` host (`fullPage` variant) wires demo seeding.
+   *   2. Soft-pause Escape handler for the modal variant. Modals call
+   *      this when Escape is pressed inside the dialog, so the host can
+   *      hide the wizard without firing onboarding analytics or touching
+   *      the `hub_onboarding_done_v1` gate. Picks are already persisted
+   *      on every state change, so reopening the wizard restores the
+   *      in-progress selection exactly.
+   */
+  onSecondaryAction?: () => void;
+}) {
+  const {
+    picks,
+    togglePick,
+    expanded,
+    toggleExpanded,
+    heroCopy,
+    ctaDisabled,
+    emptyPicksHint,
+    finish,
+    submitting,
+    goalFirstVariant,
+    pickGoal,
+    skipGoalFirst,
+    goalFirstSkipped,
+  } = useOnboardingWizardState({ onDone });
+
+  // PR-13: render the outcome-first screen for users assigned to the
+  // `goal_first` arm until they either pick an outcome (the hook
+  // routes to the hub) or skip back to the legacy module welcome.
+  // Tour replay always sees `control` so the screenshot stays stable.
+  const showGoalFirst = goalFirstVariant === "goal_first" && !goalFirstSkipped;
+
+  // Refs for the modal-variant focus contract. `panelRef` is the
+  // scope passed to `useDialogFocusTrap` (Tab cycle + Escape).
+  // `headingRef` is the `<h2>` that receives initial focus so screen
+  // readers announce the new context (WCAG 2.4.3) instead of
+  // stranding the user on `<body>`.
+  const panelRef = useRef<HTMLDivElement>(null);
+  const headingRef = useRef<HTMLHeadingElement>(null);
+
+  // Move initial focus into the dialog so keyboard / screen-reader
+  // users land on a sensible anchor instead of `<body>`. The heading
+  // is the safest target — the primary CTA may be disabled (S6.1
+  // empty-picks state) and focusing a disabled control would push
+  // focus right back out. `preventScroll: true` keeps the page from
+  // jumping when the wizard mounts mid-scroll. Fires once per mount;
+  // `headingRef.current` becomes available after the first paint.
+  useEffect(() => {
+    if (variant !== "modal") return;
+    const heading = headingRef.current;
+    if (!heading) return;
+    try {
+      heading.focus({ preventScroll: true });
+    } catch {
+      /* heading is detached or non-focusable — nothing to recover */
+    }
+  }, [variant]);
+
+  // Escape closes the modal variant. Strategy = **soft-pause**: picks
+  // are persisted on every state change, so dismissing the modal
+  // mid-flow drops the user back wherever the host renders the
+  // wizard and a fresh mount restores the in-progress selection
+  // exactly. No `<ConfirmDialog>` step because nothing destructive
+  // happens — we just hide the overlay.
+  //
+  // Escape forwards to `onSecondaryAction` so the host owns the «where
+  // did the user end up» decision (close modal, route to `/welcome`,
+  // seed demo, etc.) without the wizard having to model the dismissal
+  // lifecycle itself. The focus-trap hook also gives us a Tab cycle
+  // inside the panel and restores focus to whatever triggered the wizard.
+  const handleEscape = useCallback(() => {
+    onSecondaryAction?.();
+  }, [onSecondaryAction]);
+  useDialogFocusTrap(variant === "modal", panelRef, {
+    onEscape: handleEscape,
+    inertBackground: true,
+  });
+
+  const content = useMemo(
+    () =>
+      showGoalFirst ? (
+        <GoalFirstScreen
+          onChoose={(outcomeId) => pickGoal(outcomeId)}
+          onSkip={skipGoalFirst}
+          busy={submitting}
+          headingRef={headingRef}
+        />
+      ) : (
+        <WelcomeOneScreen
+          picks={picks}
+          togglePick={togglePick}
+          onOpen={finish}
+          expanded={expanded}
+          onToggleExpanded={toggleExpanded}
+          copy={heroCopy}
+          ctaDisabled={ctaDisabled}
+          emptyPicksHint={emptyPicksHint}
+          headingRef={headingRef}
+          ctaBusy={submitting}
+        />
+      ),
+    [
+      showGoalFirst,
+      pickGoal,
+      skipGoalFirst,
+      picks,
+      togglePick,
+      finish,
+      expanded,
+      toggleExpanded,
+      heroCopy,
+      ctaDisabled,
+      emptyPicksHint,
+      submitting,
+    ],
+  );
+
+  if (variant === "fullPage") {
+    return (
+      // 2026-05-19 — full-page variant rendered transparent (no
+      // `bg-panel`/border/shadow/p-6). The mesh gradient lives on
+      // the WelcomeScreen page wrapper now; the previous card chrome
+      // produced a visible white frame around the gradient (bug
+      // 2026-05-19, PR-#3022). The modal variant below keeps its
+      // card chrome — it sits over a translucent backdrop.
+      <div
+        ref={panelRef}
+        className="relative w-full max-w-sm animate-onboarding-enter"
+        aria-label="Вітальний екран"
+      >
+        {content}
+      </div>
+    );
+  }
+
+  // Виделена структура: окремий fixed-backdrop + окремий scroll-контейнер.
+  // До 2026-05-08 dialog-обгортка була `fixed inset-0 ... flex items-end
+  // sm:items-center` без `overflow-y-auto`, а внутрішня картка — без
+  // `max-h`. Коли користувач у Settings → «Подивитись tour» розгортав
+  // модулі через «Що це за розділи?», картка ставала вищою за viewport
+  // і обрізалась і зверху (логотип), і знизу — без можливості прокрутки
+  // дістатись до тогл-кнопки «Згорнути» (issue 2026-05-08).
+  //
+  // Backdrop тепер `fixed inset-0` (живе у viewport, не скролиться),
+  // а scroll-шар — окремий wrapper з `min-h-full flex ...` усередині
+  // зовнішнього `overflow-y-auto`, тож:
+  //   - коли контент вміщується — картка центрується як раніше;
+  //   - коли overflow — зовнішній шар прокручується, відкриваючи і
+  //     верх (логотип), і низ (CTA + «Згорнути»). `overscroll-contain`
+  //     гасить body-bounce на iOS.
+  //
+  // 2026-06-30 — modal-варіант порталиться у `document.body`. Tour-replay
+  // (Settings → «Екскурсія») рендериться всередині `SettingsGroup`, а та —
+  // `Card prominence="glass"` із `backdrop-blur-md` + `overflow-hidden`.
+  // `backdrop-filter` робить картку containing-block-ом для `position:fixed`
+  // нащадків (CSS spec), тож `fixed inset-0` бекдроп замикався в межах
+  // glass-картки і обрізався `overflow-hidden` — модалка відкривалась
+  // маленьким заблюреним віконцем усередині налаштувань (user report
+  // 2026-06-30). Портал у body виводить overlay з-під трансформованого/
+  // backdrop-filter предка — той самий патерн, що `Modal`/`ConfirmDialog`/
+  // `CommandPalette` уже використовують.
+  const overlay = (
+    <div
+      className="fixed inset-0 z-500 overflow-y-auto overscroll-contain"
+      role="dialog"
+      aria-modal="true"
+      aria-label="Вітальний екран"
+    >
+      <div
+        className="fixed inset-0 bg-bg/80 backdrop-blur-md"
+        aria-hidden="true"
+      />
+      <div className="relative min-h-full flex items-end sm:items-center justify-center p-4 pb-safe">
+        <div
+          ref={panelRef}
+          className="relative w-full max-w-sm bg-panel border border-line rounded-3xl shadow-float p-6 animate-onboarding-enter"
+        >
+          {content}
+        </div>
+      </div>
+    </div>
+  );
+
+  return typeof document === "undefined"
+    ? overlay
+    : createPortal(overlay, document.body);
+}

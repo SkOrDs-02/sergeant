@@ -1,0 +1,243 @@
+import { useState, useRef, useCallback, useEffect } from "react";
+
+export interface PullToRefreshState {
+  /** Whether currently pulling down */
+  isPulling: boolean;
+  /** Whether refresh is in progress */
+  isRefreshing: boolean;
+  /** Pull distance in pixels (0 to pullThreshold) */
+  pullDistance: number;
+  /** Pull progress (0 to 1) */
+  pullProgress: number;
+  /** Whether pull threshold has been exceeded (ready to refresh) */
+  canRefresh: boolean;
+}
+
+export interface UsePullToRefreshOptions {
+  /** Callback when refresh is triggered */
+  onRefresh: () => Promise<void>;
+  /** Called when onRefresh throws. Use to show error UI (e.g. a toast). */
+  onError?: ((err: unknown) => void) | undefined;
+  /** Pull distance required to trigger refresh (default: 80px) */
+  pullThreshold?: number | undefined;
+  /** Maximum pull distance (default: 120px) */
+  maxPullDistance?: number | undefined;
+  /** Resistance factor for pulling past threshold (default: 0.4) */
+  resistance?: number | undefined;
+  /** Whether pull-to-refresh is enabled (default: true) */
+  enabled?: boolean | undefined;
+  /**
+   * Failsafe: force-reset the spinner after this many ms even if `onRefresh`
+   * never settles (default: 15000). A consumer whose `onRefresh` promise hangs
+   * — e.g. `invalidateQueries` awaiting a refetch that stalls on a dead
+   * network — would otherwise leave the indicator spinning forever.
+   */
+  refreshFailsafeMs?: number | undefined;
+  /** Ref to scrollable container (required) */
+  scrollRef: React.RefObject<HTMLElement>;
+}
+
+/**
+ * Hook for native-like pull-to-refresh gesture.
+ * Only activates when at top of scroll container.
+ *
+ * Returns state for building custom pull-to-refresh UI:
+ * - isPulling: actively pulling
+ * - isRefreshing: refresh in progress
+ * - pullDistance: current pull distance
+ * - pullProgress: 0-1 progress toward threshold
+ * - canRefresh: threshold exceeded, will refresh on release
+ */
+/** Fully-reset gesture state — shared by every "stop pulling" path. */
+const IDLE_STATE: PullToRefreshState = {
+  isPulling: false,
+  isRefreshing: false,
+  pullDistance: 0,
+  pullProgress: 0,
+  canRefresh: false,
+};
+
+export function usePullToRefresh(
+  options: UsePullToRefreshOptions,
+): PullToRefreshState {
+  const {
+    onRefresh,
+    onError,
+    pullThreshold = 80,
+    maxPullDistance = 120,
+    resistance = 0.4,
+    enabled = true,
+    refreshFailsafeMs = 15000,
+    scrollRef,
+  } = options;
+
+  const [state, setState] = useState<PullToRefreshState>(IDLE_STATE);
+
+  const touchStartY = useRef<number | null>(null);
+  const touchStartScrollTop = useRef<number>(0);
+
+  const handleTouchStart = useCallback(
+    (e: TouchEvent) => {
+      if (!enabled || state.isRefreshing) return;
+
+      const scrollElement = scrollRef.current;
+      if (!scrollElement) return;
+
+      // Only activate if at top of scroll
+      const touch = e.touches[0];
+      if (touch && scrollElement.scrollTop <= 0) {
+        touchStartY.current = touch.clientY;
+        touchStartScrollTop.current = scrollElement.scrollTop;
+      }
+    },
+    [enabled, state.isRefreshing, scrollRef],
+  );
+
+  const handleTouchMove = useCallback(
+    (e: TouchEvent) => {
+      if (!enabled || state.isRefreshing || touchStartY.current === null)
+        return;
+
+      const scrollElement = scrollRef.current;
+      if (!scrollElement) return;
+
+      const touch = e.touches[0];
+      if (!touch) return;
+      const currentY = touch.clientY;
+      const deltaY = currentY - touchStartY.current;
+
+      // Only handle pull-down when at top
+      if (deltaY > 0 && scrollElement.scrollTop <= 0) {
+        // Apply resistance after threshold
+        let adjustedDelta = deltaY;
+        if (deltaY > pullThreshold) {
+          const overpull = deltaY - pullThreshold;
+          adjustedDelta = pullThreshold + overpull * resistance;
+        }
+
+        const pullDistance = Math.min(adjustedDelta, maxPullDistance);
+        const pullProgress = Math.min(pullDistance / pullThreshold, 1);
+        const canRefresh = pullDistance >= pullThreshold;
+
+        setState((prev) => ({
+          ...prev,
+          isPulling: true,
+          pullDistance,
+          pullProgress,
+          canRefresh,
+        }));
+
+        // Prevent scroll while pulling
+        if (pullDistance > 0) {
+          e.preventDefault();
+        }
+      }
+    },
+    [
+      enabled,
+      state.isRefreshing,
+      scrollRef,
+      pullThreshold,
+      maxPullDistance,
+      resistance,
+    ],
+  );
+
+  // Cancel resets the gesture WITHOUT refreshing. Browsers fire
+  // `touchcancel` (not `touchend`) whenever they take the touch sequence
+  // over for their own scrolling — iOS rubber-band overscroll, Chrome
+  // Android's native pull-to-refresh, the PWA shell. Without this handler
+  // the state stayed frozen on its last `touchmove` value, so the spinner
+  // hung mid-pull forever and never refreshed (it only ever reset on a
+  // clean `touchend`, which a cancelled gesture never delivers).
+  const handleTouchCancel = useCallback(() => {
+    if (touchStartY.current === null) return;
+    touchStartY.current = null;
+    setState(IDLE_STATE);
+  }, []);
+
+  const handleTouchEnd = useCallback(async () => {
+    if (!enabled || touchStartY.current === null) return;
+
+    touchStartY.current = null;
+
+    if (state.canRefresh && !state.isRefreshing) {
+      setState((prev) => ({
+        ...prev,
+        isPulling: false,
+        isRefreshing: true,
+        pullDistance: pullThreshold * 0.6, // Keep indicator visible
+        pullProgress: 0.6,
+        canRefresh: false,
+      }));
+
+      // Race the refresh against a failsafe timeout so a consumer whose
+      // promise never settles (a stalled `invalidateQueries` refetch, a
+      // dropped network) can't leave the spinner hung forever. Whoever wins,
+      // the `finally` resets the gesture.
+      const refreshPromise = Promise.resolve().then(onRefresh);
+      // Swallow a late rejection: if the failsafe wins the race, the still-
+      // pending refresh must not surface as an unhandled rejection.
+      refreshPromise.catch(() => {});
+
+      try {
+        await Promise.race([
+          refreshPromise,
+          new Promise<void>((resolve) => {
+            window.setTimeout(resolve, refreshFailsafeMs);
+          }),
+        ]);
+      } catch (err) {
+        onError?.(err);
+      } finally {
+        // Animate out
+        setState(IDLE_STATE);
+      }
+    } else {
+      // Reset without refresh
+      setState(IDLE_STATE);
+    }
+  }, [
+    enabled,
+    state.canRefresh,
+    state.isRefreshing,
+    pullThreshold,
+    onRefresh,
+    onError,
+    refreshFailsafeMs,
+  ]);
+
+  useEffect(() => {
+    const scrollElement = scrollRef.current;
+    if (!scrollElement || !enabled) return;
+
+    scrollElement.addEventListener("touchstart", handleTouchStart, {
+      passive: true,
+    });
+    scrollElement.addEventListener("touchmove", handleTouchMove, {
+      passive: false,
+    });
+    scrollElement.addEventListener("touchend", handleTouchEnd, {
+      passive: true,
+    });
+    scrollElement.addEventListener("touchcancel", handleTouchCancel, {
+      passive: true,
+    });
+
+    return () => {
+      scrollElement.removeEventListener("touchstart", handleTouchStart);
+      scrollElement.removeEventListener("touchmove", handleTouchMove);
+      scrollElement.removeEventListener("touchend", handleTouchEnd);
+      scrollElement.removeEventListener("touchcancel", handleTouchCancel);
+    };
+  }, [
+    scrollRef,
+    enabled,
+    handleTouchStart,
+    handleTouchMove,
+    handleTouchEnd,
+    handleTouchCancel,
+  ]);
+
+  return state;
+}

@@ -1,0 +1,566 @@
+/**
+ * Stage 8 PR #057n-tombstone — `load*` / `persist*` no longer read from
+ * (or write to) `localStorage`. Reads come from the SQLite warm cache
+ * (`apps/web/src/modules/nutrition/lib/sqliteReader.ts`) and writes go
+ * through `triggerNutritionDualWrite`. These tests exercise the new
+ * surface using `__setNutritionSqliteCacheForTests` and a
+ * `vi.mock` of the dual-write trigger.
+ */
+import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+const triggerSpy = vi.fn();
+let dualWriteRegistered = true;
+
+vi.mock("./sqliteWriter/index", async () => {
+  const actual = await vi.importActual<typeof import("./sqliteWriter/index")>(
+    "./sqliteWriter/index",
+  );
+  return {
+    ...actual,
+    triggerNutritionDualWrite: (...args: unknown[]) => triggerSpy(...args),
+    isNutritionDualWriteRegistered: () => dualWriteRegistered,
+  };
+});
+
+import {
+  NUTRITION_ACTIVE_PANTRY_KEY,
+  NUTRITION_LOG_KEY,
+  NUTRITION_PANTRIES_KEY,
+  NUTRITION_PREFS_KEY,
+  __resetNutritionPantryBackfillForTests,
+  appendNutritionPantryEvent,
+  backfillNutritionPantryCheckpoints,
+  defaultNutritionPrefs,
+  loadActivePantryId,
+  loadNutritionLog,
+  loadNutritionPrefs,
+  loadPantries,
+  normalizeNutritionLog,
+  normalizePantries,
+  persistNutritionLog,
+  persistNutritionPrefs,
+  persistNutritionShoppingList,
+  persistNutritionWaterLog,
+  persistPantries,
+  type Pantry,
+} from "./nutritionStorage";
+import {
+  __setNutritionSqliteCacheForTests,
+  clearNutritionSqliteCache,
+} from "./sqliteReader";
+
+function createLocalStorageMock() {
+  const store = new Map<string, string>();
+  return {
+    getItem: (k: string): string | null =>
+      store.has(String(k)) ? (store.get(String(k)) ?? null) : null,
+    setItem: (k: string, v: string): void =>
+      void store.set(String(k), String(v)),
+    removeItem: (k: string): void => void store.delete(String(k)),
+    clear: (): void => void store.clear(),
+    _dump: (): Record<string, string> => Object.fromEntries(store.entries()),
+  };
+}
+
+beforeEach(() => {
+  globalThis.localStorage = createLocalStorageMock() as unknown as Storage;
+  clearNutritionSqliteCache();
+  triggerSpy.mockReset();
+  dualWriteRegistered = true;
+});
+
+afterEach(() => {
+  clearNutritionSqliteCache();
+});
+
+// -------------------------------------------------------------------------
+// Reads — backed by SQLite warm cache.
+// -------------------------------------------------------------------------
+
+describe("loadActivePantryId — cache-backed", () => {
+  it("returns home when cache has no active pantry", () => {
+    expect(loadActivePantryId(NUTRITION_ACTIVE_PANTRY_KEY)).toBe("home");
+  });
+
+  it("returns the cache value once set", () => {
+    __setNutritionSqliteCacheForTests({ activePantryId: "kitchen" });
+    expect(loadActivePantryId(NUTRITION_ACTIVE_PANTRY_KEY)).toBe("kitchen");
+  });
+});
+
+describe("loadPantries — cache-backed", () => {
+  it("returns the default pantry when cache is empty", () => {
+    const pantries = loadPantries(
+      NUTRITION_PANTRIES_KEY,
+      NUTRITION_ACTIVE_PANTRY_KEY,
+    );
+    expect(pantries).toHaveLength(1);
+    expect(pantries[0]!.id).toBe("home");
+  });
+
+  it("returns cached pantries when present", () => {
+    const pantries: Pantry[] = [
+      { id: "home", name: "Дім", items: [], text: "x" },
+      { id: "work", name: "Робота", items: [], text: "" },
+    ];
+    __setNutritionSqliteCacheForTests({ pantries });
+    const out = loadPantries(
+      NUTRITION_PANTRIES_KEY,
+      NUTRITION_ACTIVE_PANTRY_KEY,
+    );
+    expect(out).toHaveLength(2);
+    expect(out[0]!.text).toBe("x");
+  });
+});
+
+describe("loadNutritionLog — cache-backed", () => {
+  it("returns empty object when cache is empty", () => {
+    expect(loadNutritionLog(NUTRITION_LOG_KEY)).toEqual({});
+  });
+
+  it("normalizes the cached log", () => {
+    __setNutritionSqliteCacheForTests({
+      log: {
+        "2026-03-03": {
+          meals: [
+            {
+              id: "m1",
+              name: "Тест",
+              label: "Сніданок",
+              macros: { kcal: 1, protein_g: null, fat_g: null, carbs_g: null },
+              time: "08:00",
+              mealType: "breakfast",
+              source: "manual",
+              macroSource: "manual",
+              amount_g: null,
+              foodId: null,
+            },
+          ],
+        },
+      },
+    });
+    const log = loadNutritionLog(NUTRITION_LOG_KEY);
+    expect(log["2026-03-03"]!.meals[0]!.mealType).toBe("breakfast");
+  });
+});
+
+describe("loadNutritionPrefs — cache-backed defaults", () => {
+  it("returns defaults when cache has no prefs", () => {
+    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY)).toEqual(
+      defaultNutritionPrefs(),
+    );
+  });
+
+  it("returns the cached prefs when set", () => {
+    __setNutritionSqliteCacheForTests({
+      prefs: { ...defaultNutritionPrefs(), goal: "lean", servings: 3 },
+    });
+    const prefs = loadNutritionPrefs(NUTRITION_PREFS_KEY);
+    expect(prefs.goal).toBe("lean");
+    expect(prefs.servings).toBe(3);
+    // default fields preserved by normalize
+    expect(prefs.timeMinutes).toBe(25);
+    expect(prefs.waterGoalMl).toBe(2000);
+  });
+
+  it("clamps reminderHour into [0,23]", () => {
+    __setNutritionSqliteCacheForTests({
+      prefs: {
+        ...defaultNutritionPrefs(),
+        reminderHour: 99 as unknown as number,
+      },
+    });
+    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY).reminderHour).toBe(23);
+
+    __setNutritionSqliteCacheForTests({
+      prefs: {
+        ...defaultNutritionPrefs(),
+        reminderHour: -5 as unknown as number,
+      },
+    });
+    expect(loadNutritionPrefs(NUTRITION_PREFS_KEY).reminderHour).toBe(0);
+  });
+});
+
+// -------------------------------------------------------------------------
+// Writes — fire dual-write only, never touch localStorage.
+// -------------------------------------------------------------------------
+
+describe("persistPantries — dual-write only (no LS write)", () => {
+  it("does not touch localStorage", () => {
+    persistPantries(
+      NUTRITION_PANTRIES_KEY,
+      NUTRITION_ACTIVE_PANTRY_KEY,
+      [{ id: "a", name: "A", items: [], text: "" }],
+      "a",
+    );
+    expect(globalThis.localStorage.getItem(NUTRITION_PANTRIES_KEY)).toBeNull();
+    expect(
+      globalThis.localStorage.getItem(NUTRITION_ACTIVE_PANTRY_KEY),
+    ).toBeNull();
+  });
+
+  it("triggers dual-write when context is registered", () => {
+    persistPantries(
+      NUTRITION_PANTRIES_KEY,
+      NUTRITION_ACTIVE_PANTRY_KEY,
+      [{ id: "a", name: "A", items: [], text: "" }],
+      "a",
+    );
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("serializes pantry items into stable dual-write item snapshots", () => {
+    persistPantries(
+      NUTRITION_PANTRIES_KEY,
+      NUTRITION_ACTIVE_PANTRY_KEY,
+      [
+        {
+          id: "home",
+          name: "Дім",
+          text: "молоко 1л",
+          items: [{ name: "Молоко", qty: 1, unit: "л", notes: "тепле" }],
+        },
+      ],
+      "home",
+    );
+
+    const [, next] = triggerSpy.mock.calls[0]!;
+    expect(next).toMatchObject({
+      pantries: [
+        {
+          id: "home",
+          items: [
+            {
+              id: "home::0::Молоко",
+              name: "Молоко",
+              qty: 1,
+              unit: "л",
+              notes: "тепле",
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("no-ops silently when dual-write context is not registered", () => {
+    dualWriteRegistered = false;
+    persistPantries(
+      NUTRITION_PANTRIES_KEY,
+      NUTRITION_ACTIVE_PANTRY_KEY,
+      [{ id: "a", name: "A", items: [], text: "" }],
+      "a",
+    );
+    expect(triggerSpy).not.toHaveBeenCalled();
+    expect(globalThis.localStorage.getItem(NUTRITION_PANTRIES_KEY)).toBeNull();
+  });
+});
+
+describe("persistNutritionLog — dual-write only", () => {
+  it("does not touch localStorage", () => {
+    persistNutritionLog({}, NUTRITION_LOG_KEY);
+    expect(globalThis.localStorage.getItem(NUTRITION_LOG_KEY)).toBeNull();
+  });
+
+  it("triggers dual-write when context is registered and a log is provided", () => {
+    persistNutritionLog(
+      {
+        "2026-04-04": {
+          meals: [
+            {
+              id: "m1",
+              name: "Хліб",
+              time: "10:00",
+              mealType: "snack",
+              label: "",
+              macros: { kcal: 10, protein_g: 0, fat_g: 0, carbs_g: 2 },
+              source: "manual",
+              macroSource: "manual",
+              amount_g: null,
+              foodId: null,
+            },
+          ],
+        },
+      },
+      NUTRITION_LOG_KEY,
+    );
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("persistNutritionPrefs — dual-write only", () => {
+  it("does not write to localStorage", () => {
+    persistNutritionPrefs(
+      { ...defaultNutritionPrefs(), reminderHour: 8 },
+      NUTRITION_PREFS_KEY,
+    );
+    expect(globalThis.localStorage.getItem(NUTRITION_PREFS_KEY)).toBeNull();
+  });
+
+  it("triggers dual-write when context is registered", () => {
+    persistNutritionPrefs(
+      { ...defaultNutritionPrefs(), reminderHour: 8 },
+      NUTRITION_PREFS_KEY,
+    );
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+});
+
+describe("persistNutritionWaterLog — dual-write only", () => {
+  it("sanitizes the water log and sends it through dual-write", () => {
+    persistNutritionWaterLog({
+      "2026-07-01": 750.6,
+      "2026-07-02": -10,
+      "2026-07-03": Number.NaN,
+      "2026-07-04": 0,
+    });
+
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+    const [prev, next] = triggerSpy.mock.calls[0]!;
+    expect(prev).toMatchObject({ waterLog: {} });
+    expect(next).toMatchObject({
+      waterLog: { "2026-07-01": 751, "2026-07-04": 0 },
+    });
+  });
+
+  it("no-ops before the dual-write context is registered", () => {
+    dualWriteRegistered = false;
+
+    expect(persistNutritionWaterLog({ "2026-07-01": 500 })).toBe(true);
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("persistNutritionShoppingList — dual-write only", () => {
+  it("normalizes the shopping-list document and sends it through dual-write", () => {
+    persistNutritionShoppingList({
+      categories: [
+        {
+          name: "Овочі",
+          items: [
+            {
+              id: "i1",
+              name: " Огірок ",
+              quantity: "2 шт",
+              note: "",
+              checked: false,
+            },
+            {
+              id: "i2",
+              name: "",
+              quantity: "skip",
+              note: "",
+              checked: false,
+            },
+          ],
+        },
+      ],
+    });
+
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+    const [, next] = triggerSpy.mock.calls[0]!;
+    const shoppingList = JSON.parse(
+      next.shoppingList.dataJson as string,
+    ) as unknown;
+    expect(shoppingList).toEqual({
+      categories: [
+        {
+          name: "Овочі",
+          items: [
+            {
+              id: "i1",
+              name: "Огірок",
+              quantity: "2 шт",
+              note: "",
+              checked: false,
+            },
+          ],
+        },
+      ],
+    });
+  });
+
+  it("no-ops before the dual-write context is registered", () => {
+    dualWriteRegistered = false;
+
+    expect(persistNutritionShoppingList({ categories: [] })).toBe(true);
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("appendNutritionPantryEvent — W1-PANTRY-APPEND стадія 2", () => {
+  it("triggers dual-write with the event appended to pantryEvents", () => {
+    appendNutritionPantryEvent({
+      id: null,
+      pantryId: "home",
+      itemId: null,
+      itemKey: "рис",
+      kind: "consume",
+      deltaQty: -120,
+      absQty: null,
+      unit: "г",
+      source: "meal_log",
+      mealId: null,
+    });
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+    const [prev, next] = triggerSpy.mock.calls[0]!;
+    expect(prev.pantryEvents).toEqual([]);
+    expect(next.pantryEvents).toHaveLength(1);
+    expect(next.pantryEvents[0]).toMatchObject({
+      kind: "consume",
+      deltaQty: -120,
+    });
+  });
+
+  it("no-ops before the dual-write context is registered", () => {
+    dualWriteRegistered = false;
+    appendNutritionPantryEvent({
+      id: null,
+      pantryId: "home",
+      itemId: null,
+      itemKey: "рис",
+      kind: "consume",
+      deltaQty: -1,
+      absQty: null,
+      unit: "г",
+      source: "meal_log",
+      mealId: null,
+    });
+    expect(triggerSpy).not.toHaveBeenCalled();
+  });
+});
+
+describe("backfillNutritionPantryCheckpoints — один чекпойнт на позицію", () => {
+  beforeEach(() => {
+    __resetNutritionPantryBackfillForTests();
+  });
+
+  it("емітить 'initial' лише для позицій із відомою qty", () => {
+    __setNutritionSqliteCacheForTests({
+      pantries: [
+        {
+          id: "home",
+          name: "Дім",
+          text: "",
+          items: [
+            { name: "Рис", qty: 500, unit: "г", notes: null },
+            { name: "Сіль", qty: null, unit: null, notes: null },
+          ],
+        },
+      ],
+    });
+    backfillNutritionPantryCheckpoints();
+
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+    const [, next] = triggerSpy.mock.calls[0]!;
+    expect(next.pantryEvents).toHaveLength(1);
+    expect(next.pantryEvents[0]).toMatchObject({
+      kind: "initial",
+      absQty: 500,
+      source: "backfill",
+    });
+  });
+
+  it("повторний виклик у тій самій сесії — no-op (не дублює чекпойнт)", () => {
+    __setNutritionSqliteCacheForTests({
+      pantries: [
+        {
+          id: "home",
+          name: "Дім",
+          text: "",
+          items: [{ name: "Рис", qty: 500, unit: "г", notes: null }],
+        },
+      ],
+    });
+    backfillNutritionPantryCheckpoints();
+    backfillNutritionPantryCheckpoints();
+    expect(triggerSpy).toHaveBeenCalledTimes(1);
+  });
+
+  it("однакова позиція → однаковий детермінований id (клієнт/сервер сходяться)", () => {
+    __setNutritionSqliteCacheForTests({
+      pantries: [
+        {
+          id: "home",
+          name: "Дім",
+          text: "",
+          items: [{ name: "Рис", qty: 500, unit: "г", notes: null }],
+        },
+      ],
+    });
+    backfillNutritionPantryCheckpoints();
+    const idFirst = triggerSpy.mock.calls[0]![1].pantryEvents[0].id as string;
+
+    __resetNutritionPantryBackfillForTests();
+    triggerSpy.mockClear();
+    backfillNutritionPantryCheckpoints();
+    const idSecond = triggerSpy.mock.calls[0]![1].pantryEvents[0].id as string;
+
+    expect(idFirst).toBe(idSecond);
+  });
+});
+
+// -------------------------------------------------------------------------
+// Pure helpers (unchanged by tombstone — kept for regression coverage).
+// -------------------------------------------------------------------------
+
+describe("normalizeNutritionLog", () => {
+  it("infers mealType from Ukrainian label", () => {
+    const raw = {
+      "2026-01-01": {
+        meals: [{ id: "x", name: "Суп", label: "Обід", macros: { kcal: 100 } }],
+      },
+    };
+    const out = normalizeNutritionLog(raw);
+    expect(out["2026-01-01"]!.meals[0]!.mealType).toBe("lunch");
+    expect(out["2026-01-01"]!.meals[0]!.macros.kcal).toBe(100);
+  });
+
+  it("keeps mealType when valid", () => {
+    const out = normalizeNutritionLog({
+      "2026-02-02": {
+        meals: [
+          {
+            id: "a",
+            name: "x",
+            mealType: "dinner",
+            label: "Вечеря",
+            macros: {},
+          },
+        ],
+      },
+    });
+    expect(out["2026-02-02"]!.meals[0]!.mealType).toBe("dinner");
+  });
+});
+
+describe("normalizePantries", () => {
+  it("filters non-object entries and invalid items", () => {
+    const out = normalizePantries([
+      null,
+      "oops",
+      { id: "a", name: "A", items: [null, { name: "" }, { name: "Хліб" }] },
+      { items: [{ name: "Сир" }] },
+    ]);
+    expect(out).toHaveLength(2);
+    expect(out[0]!.items.map((i) => i.name)).toEqual(["Хліб"]);
+    expect(out[1]!.name).toBe("Комора");
+    expect(out[1]!.id).toBeTruthy();
+  });
+
+  it("deduplicates pantry ids (re-assigns colliding ones)", () => {
+    const out = normalizePantries([
+      { id: "same", name: "A", items: [] },
+      { id: "same", name: "B", items: [] },
+    ]);
+    expect(out).toHaveLength(2);
+    expect(out[0]!.id).not.toBe(out[1]!.id);
+  });
+
+  it("returns empty array for non-array input", () => {
+    expect(normalizePantries(null)).toEqual([]);
+    expect(normalizePantries({})).toEqual([]);
+    expect(normalizePantries("x")).toEqual([]);
+  });
+});

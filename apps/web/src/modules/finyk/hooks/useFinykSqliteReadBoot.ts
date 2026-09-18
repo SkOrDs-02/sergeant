@@ -1,0 +1,43 @@
+/**
+ * React hook that boots the SQLite read path for Finyk.
+ *
+ * PR #037 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. When the
+ * `feature.finyk.sqlite_v2.read_sqlite` flag is on, this hook runs
+ * `bootFinykSqliteReadPath()` once after mount so subsequent reads
+ * in the finyk slot bundle (`useFinykStorageSlots`) overlay from the
+ * local `finyk_*` SQLite tables instead of LS.
+ *
+ * Fire-and-forget — boot failures fall back to LS silently (console
+ * warning only). The caller does NOT need to gate rendering on the
+ * boot promise.
+ *
+ * Mirrors `apps/web/src/modules/nutrition/hooks/useNutritionSqliteReadBoot.ts`
+ * and `apps/web/src/modules/fizruk/hooks/useFizrukSqliteReadBoot.ts`.
+ */
+
+import { useEffect, useRef } from "react";
+import { useLocalUserId } from "../../../core/auth/useLocalUserId";
+import { bootFinykSqliteReadPath } from "../lib/sqliteReadBoot";
+import { notifyFinykSqliteCacheRefresh } from "../lib/sqliteReadGate";
+
+export function useFinykSqliteReadBoot(): void {
+  // AI-CONTEXT: this used to gate on a real account id, so neither the
+  // demo payload nor an anonymous visitor's writes were ever read back
+  // — the sibling modules already had the demo half of this fallback.
+  // `useLocalUserId` is the single resolver both boots share.
+  const userId = useLocalUserId();
+  const didBoot = useRef(false);
+
+  useEffect(() => {
+    if (didBoot.current || !userId) return;
+    didBoot.current = true;
+
+    void bootFinykSqliteReadPath(userId).then((activated) => {
+      if (activated) {
+        // Notify consumers (`useFinykStorageSlots` overlay) that the
+        // cache is fresh so they re-render with the SQLite overlay.
+        notifyFinykSqliteCacheRefresh();
+      }
+    });
+  }, [userId]);
+}
