@@ -83,29 +83,51 @@ self-посилання, а помічає це лише мережевий ге
 Кожна — окремий PR (різні класи боргу не змішуємо, `sergeant-tech-debt`
 § «Separate PRs»). Порядок — за спаданням цінності.
 
-### PR-1 — `lint:repo-slug`: один слуг, звірений з `git remote` · Agent-ready
+### PR-1 — `lint:repo-slug`: один слуг, звірений з `git remote` · ✅ ЗРОБЛЕНО 2026-09-19
 
 **Чому.** Чотири переїзди, три незалежні зашиті константи, 1757 згадок у
-п'яти написаннях. Наступний переїзд повторить аварію 1-в-1.
+п'яти написаннях. Наступний переїзд повторив би аварію 1-в-1.
 
-1. `scripts/docs/repo-identity.mjs`: експортує `currentSlug()` —
-   `git remote get-url origin` → `owner/repo`; фолбек на
-   `docs/governance/governance/repo-identity.json`
-   (`{ "current": "<owner/repo>", "previous": [...] }`) для середовищ без
-   remote (CI-checkout із `--depth`, песочниці).
-2. `scripts/check-repo-slug.mjs`: FAIL, якщо markdown-посилання на
-   `github.com/<owner>/<repo>` вказує на слуг, якого немає ні в `current`,
-   ні в `previous`. Мета — ловити **новий невідомий** слуг, не історію.
-3. Перевести `LEGACY_PR_BASE` (`update-pr-backlinks.mjs:77`) і
-   `LEGACY_REPO_SLUG` (`generate-status.mjs:67`) на резолвер; записи леджера
-   без поля `repo` трактувати як `previous[0]`, як зараз.
-4. Юніт-тест поруч (`scripts/__tests__/check-repo-slug.test.mjs`): відомий
-   історичний слуг → pass; вигаданий новий → fail; слуг із `git remote` → pass.
-5. Додати `"lint:repo-slug": "node scripts/check-repo-slug.mjs"` і вставити
-   `node scripts/check-repo-slug.mjs` у `&&`-ланцюжок `pnpm lint`.
+Що приземлилось:
 
-**Готово, коли:** `pnpm lint:repo-slug` зелений; тест ловить вигаданий слуг;
-`pnpm docs:check-status` і `pnpm docs:check-pr-ledger` лишаються зеленими.
+- [`scripts/docs/repo-identity.mjs`](../../../scripts/docs/repo-identity.mjs) —
+  резолвер: `GITHUB_REPOSITORY` → `git remote get-url origin` → `current` із
+  реєстру. Плюс `knownSlugs()`, `prBaseForEntry()`, `slugForEntry()`.
+- [`docs/governance/governance/repo-identity.json`](../../governance/governance/repo-identity.json) —
+  реєстр домівок (`current` + `previous` + `legacyPrSlug`).
+- [`scripts/check-repo-slug.mjs`](../../../scripts/check-repo-slug.mjs) — гейт
+  із двома перевірками: реєстр проти живого `origin`, і кожне markdown-посилання
+  на власне репо проти реєстру. Чужі репо не чіпає.
+- [`scripts/__tests__/check-repo-slug.test.mjs`](../../../scripts/__tests__/check-repo-slug.test.mjs) — 20 тестів.
+- Обидва споживачі (`update-pr-backlinks.mjs`, `generate-status.mjs`) тепер
+  беруть слуг з резолвера; зашитих копій не лишилось.
+- `lint:repo-slug` у `&&`-ланцюжку `pnpm lint` поруч із `check-canonical-hosts`
+  (той самий клас — ідентичність проєкту), через `node …`, не `pnpm …`.
+
+**Відхилення від початкового плану, обидва на краще.** По-перше, резолвер не
+писався з нуля: робочий `currentRepoSlug()` уже жив в `update-pr-backlinks.mjs`
+— його винесено й розширено, а не продубльовано втретє. По-друге, порівняння
+слугів зроблено **регістронезалежним**: доки пишуть і `SkOrDs-02/sergeant`, і
+`SkOrDs-02/Sergeant`, а GitHub регістр власника не розрізняє — реєстр на
+кожне написання був би тим самим дублюванням, від якого ця задача й лікує.
+
+**Перша знахідка гейта — власний текст цієї спеки.** Приклад
+«вставити посилання на неіснуючого власника» з § Верифікація був цілим URL,
+і скан `.md` його, звісно, знайшов. URL розбито на частини. Урок ширший за
+випадок: гейт, що сканує всі доки, сканує й доку, яка його описує.
+
+**Чого гейт свідомо не робить:** не вимагає переписати історичні посилання.
+Це підтвердилось фактом того ж дня — перший PR у `klas149` отримав номер
+**18**, тоді як у `zaebal-beep` номери йшли до 100. Нумерація нового дому
+починається спочатку, тож заміна власника дала б брехливе посилання замість
+мертвого. Відкрите питання «чи збереглися номери» з § Ризики — закрите: ні.
+
+**Доказ:**
+
+```
+pnpm lint:repo-slug   → ✅ 4 відомих домівок, origin → klas149/Sergeant; 20/20 тестів
+pnpm docs:check-status, docs:check-pr-ledger, docs:check-links, lint:governance-sync → OK
+```
 
 ### PR-2 — один хендл maintainer-а · **needs-decision**
 
@@ -226,9 +248,11 @@ pnpm lint:specs                                                 # ця спек�
 **Після PR-1:**
 
 1. `pnpm lint:repo-slug` → exit 0 на чистому дереві.
-2. Вставити в будь-який док посилання на
-   `https://github.com/nonexistent-owner/Sergeant/pull/1` → гейт FAIL із
-   назвою файла й рядка. Прибрати → знову зелений.
+2. Вставити в будь-який док посилання на `https://` + `github.com` +
+   `/<вигаданий-власник>/Sergeant/pull/1` → гейт FAIL із назвою файла й
+   рядка. Прибрати → знову зелений. (URL тут навмисно розбитий: гейт
+   сканує всі `.md`, включно з цією спекою, і на цілому прикладі падав би
+   на власному тексті — перша його знахідка була саме тут.)
 3. `node --test scripts/__tests__/check-repo-slug.test.mjs` — три кейси
    (історичний слуг / вигаданий новий / слуг із `git remote`).
 4. `pnpm docs:gen-status` на дереві з підміненим `origin` → посилання в
@@ -248,6 +272,8 @@ pnpm lint:specs                                                 # ця спек�
 - **Ратчет PR-4 можна перетягнути.** Опускати бюджет треба з запасом
   (~5 %), інакше отримаємо ту саму «стелю вибрано на 100 %», яку цей PR і
   лікує.
-- **Чи збереглися номери PR після переїздів** — не перевірено: GitHub MCP у
-  цій сесії віддає `Bad credentials`, анонімний HEAD дає 404 на всі домівки.
-  Від цієї відповіді залежить, чи «поза скоупом» масове переписування.
+- ~~**Чи збереглися номери PR після переїздів**~~ — **закрито 2026-09-19:
+  ні.** Перший PR у `klas149` отримав номер 18, тоді як у `zaebal-beep`
+  номери йшли до 100. Нумерація нового дому починається спочатку, тож масове
+  переписування лишається поза скоупом остаточно: воно дало б брехливі
+  посилання замість мертвих.
