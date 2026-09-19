@@ -37,6 +37,7 @@ const RE_TRIGGER_LINE = /^\s*\*\*Trigger:\*\*\s*(.+?)\s*$/m;
 const RE_H1 = /^#\s+(?:Playbook:\s*)?(.+?)\s*$/m;
 const RE_DECISION_TREE_MARK = /🌳/;
 const RE_DEPRECATED_STATUS = /^>\s*\*\*Status:\*\*\s*Deprecated\b/im;
+const RE_RUNTIME_SPECIFIC_YES = /^>\s*\*\*Runtime-specific:\*\*\s*yes\b/im;
 
 // ── Pure helpers (exported for tests) ────────────────────────────────────────
 
@@ -159,6 +160,8 @@ export function collectEntries(dir = PLAYBOOKS_DIR) {
     .filter((f) => !SKIP_FILES.has(f));
 
   const out = [];
+  const runtimeOnly = [];
+  const missingTrigger = [];
   for (const file of files) {
     const content = readFileSync(join(dir, file), "utf8");
     if (RE_DEPRECATED_STATUS.test(content)) {
@@ -166,13 +169,46 @@ export function collectEntries(dir = PLAYBOOKS_DIR) {
     }
     const meta = extractPlaybookMeta(content);
     if (!meta) {
-      console.warn(
-        `[WARN] No **Trigger:** line in docs/start/instructions/${file} — skipped`,
-      );
+      // Runtime-runbook без Trigger — це НЕ дрейф, а зафіксований 2026-09-17
+      // виняток (README § Стандарт): такі процедури відкривають за подією чи
+      // розкладом, не за фразою, тож маршрут до них — README, не цей індекс.
+      // Раніше вони сипались сюди як `[WARN] … skipped` разом із реальними
+      // помилками, тобто попередження, яке завжди є, і яке через те ніхто не
+      // читає. Тепер вони рахуються окремо, а FAIL лишається для випадку,
+      // який справді є дрейфом: НЕ-runtime плейбук без Trigger.
+      if (RE_RUNTIME_SPECIFIC_YES.test(content)) {
+        runtimeOnly.push(file);
+      } else {
+        missingTrigger.push(file);
+      }
       continue;
     }
     out.push({ file, ...meta });
   }
+
+  if (missingTrigger.length > 0) {
+    console.error(
+      `\n❌ ${missingTrigger.length} плейбук(и) без \`**Trigger:**\` і без ` +
+        "`Runtime-specific: yes` — вони невидимі для роутингу:",
+    );
+    for (const f of missingTrigger) {
+      console.error(`   docs/start/instructions/${f}`);
+    }
+    console.error(
+      "\n   Додай рядок `**Trigger:**` (README § Стандарт) або, якщо це\n" +
+        "   справді runtime-процедура, познач `> **Runtime-specific:** yes`.\n",
+    );
+    process.exitCode = 1;
+  }
+
+  if (runtimeOnly.length > 0) {
+    console.log(
+      `[runtime] ${runtimeOnly.length} runtime-runbook(ів) поза індексом за ` +
+        "винятком 2026-09-17 (маршрут — README § Runtime-процедури): " +
+        runtimeOnly.join(", "),
+    );
+  }
+
   return out;
 }
 

@@ -267,13 +267,20 @@ jobs:
         # file as void.
         run: bash scripts/check-security-txt-expiry.sh
 
-      - name: Lifecycle marker coverage (Hard Rule #10 — non-blocking)
-        # Theme 4 (consolidated audit 2026-05-13): checks that apps/web/src/**/*.{ts,tsx}
-        # files carry a lifecycle marker (/** @status Active */ or equivalent).
-        # Non-blocking during burn-down (exits 0 even with violations); promoted
-        # to --fail-on-violations once coverage reaches 100%.
-        # See docs/work/specs/audits/archive/2026-05-13-consolidated-page-audit.md § Theme 4 and
-        # docs/governance/governance/rules/10-lifecycle-markers.md.
+      - name: Lifecycle marker coverage (Hard Rule #10 — інформаційно)
+        # Рахує, скільки файлів `apps/web/src/**/*.{ts,tsx}` несуть ЯВНИЙ
+        # lifecycle-маркер. Це спостереження, не список порушень: правило #10
+        # прямо каже, що файл без маркера вважається `Active`, тобто це
+        # дозволений стан; маркер обов'язковий лише для НЕ-Active статусів.
+        #
+        # Звірка 2026-09-19 (PR-3 спеки docs-code-drift-2026-09-19): тут доти
+        # стояло «promoted to --fail-on-violations once coverage reaches 100%»,
+        # а скрипт друкував «Burn-down target: 2026-Q3». Ані ціль, ані дата не
+        # значились у жодному канонічному документі — ні в правилі, ні в
+        # hard-rules.json. Промоутити гейт можна лише ПІСЛЯ зміни самого
+        # правила, інакше він валитиме код, який правилу відповідає.
+        #
+        # Канон: docs/governance/governance/rules/10-lifecycle-markers.md.
         run: node scripts/docs/check-lifecycle-markers.mjs
         continue-on-error: true
 
@@ -1247,6 +1254,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # `pull-requests: read` — БЕЗ нього джоба падає на кожному PR, і падає
+      # не знахідкою, а крахом: на `pull_request` gitleaks-action просить
+      # `GET /repos/{owner}/{repo}/pulls/{n}/commits`, щоб знати, які коміти
+      # сканувати, дістає 403 «Resource not accessible by integration» і
+      # вивалюється необробленим винятком ДО того, як щось просканує.
+      #
+      # Чому це не бачили раніше: на `push` у `main` цей виклик не робиться,
+      # тож на головній гілці джоба зелена (звірка 2026-09-19: run на
+      # `9dea9af` — success), а червона рівно там, де сканувати й треба —
+      # на PR. Тобто секрет-гейт був фактично вимкнений на всіх PR-ах,
+      # показуючи при цьому впевнений зелений на `main`.
+      pull-requests: read
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -1305,6 +1324,16 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      # `actions: read` — той самий дефект, що й у `secret-scan` вище, тільки
+      # на іншому ендпоінті. `pipeline-duration-p95.mjs` читає історію
+      # прогонів (`GET /repos/{owner}/{repo}/actions/workflows/{id}/runs`,
+      # `…/actions/runs/{id}/jobs`), а це скоуп `actions`, якого в блоці не
+      # було: API віддавав `403 Forbidden`, скрипт кидав виняток і джоба
+      # червоніла на КОЖНОМУ прогоні, нічого не змірявши.
+      #
+      # Знайдено звіркою 2026-09-19 одразу після фіксу gitleaks — третій
+      # випадок класу «джоба кличе GitHub API, якого їй не дозволили».
+      actions: read
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd

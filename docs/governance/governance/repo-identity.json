@@ -1,0 +1,10 @@
+{
+  "_comment": "Єдине джерело слуга GitHub-репо. `current` звіряється з `git remote get-url origin` (або GITHUB_REPOSITORY у Actions) гейтом `pnpm lint:repo-slug`; `previous` — домівки, з яких репо переїхало: посилання на них у доках лишаються історією і НЕ переписуються, бо PR-нумерація кожного дому своя. Переїхали — додайте старий слуг у `previous` і оновіть `current`.",
+  "current": "klas149/Sergeant",
+  "previous": [
+    "zaebal-beep/Sergeant",
+    "SkOrDs-02/sergeant",
+    "Skords-01/Sergeant"
+  ],
+  "legacyPrSlug": "Skords-01/Sergeant"
+}

@@ -33,6 +33,10 @@ import {
 import { resolve, dirname, join, relative, sep } from "node:path";
 import { fileURLToPath } from "node:url";
 import { execFileSync } from "node:child_process";
+import {
+  currentSlug as currentRepoSlug,
+  prBaseForEntry as prBaseFor,
+} from "../docs/repo-identity.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -55,7 +59,7 @@ const RE_BLOCK_END = /^[ \t]*<!-- AUTO-GENERATED: PR-BACKLINKS-END -->[ \t]*$/m;
 
 // База посилання на PR.
 //
-// `LEGACY_PR_BASE` — старе репо `Skords-01/Sergeant`, звідки прийшли 20 із 37
+// `legacyPrSlug` у реєстрі — старе репо `Skords-01/Sergeant`, звідки прийшли 20 із 37
 // записів леджера. Їхні номери (2876, 3611, …) у поточному репо не існують,
 // тож переписати всі посилання на новий хост означало б наробити 544 битих
 // лінки замість робочих.
@@ -74,33 +78,14 @@ const RE_BLOCK_END = /^[ \t]*<!-- AUTO-GENERATED: PR-BACKLINKS-END -->[ \t]*$/m;
 // «поточний» слуг знову дав мертві лінки — цього разу на 22 дозаповнені
 // записи. Тому база тепер береться з самого поля `repo` (яке репо записано,
 // на те й лінк), а зашитим лишається лише легасі-фолбек для записів без поля.
-const LEGACY_PR_BASE = "https://github.com/Skords-01/Sergeant/pull";
-
-/**
- * Слуг поточного репо для НОВИХ записів: у GitHub Actions — `GITHUB_REPOSITORY`,
- * локально — з `origin`. Не зашивається, бо репо вже тричі змінювало дім.
- */
-export function currentRepoSlug(env = process.env) {
-  const fromEnv = env.GITHUB_REPOSITORY;
-  if (typeof fromEnv === "string" && fromEnv.includes("/")) return fromEnv;
-  try {
-    const url = execFileSync("git", ["remote", "get-url", "origin"], {
-      encoding: "utf8",
-    }).trim();
-    const m = /github\.com[:/]([^/]+\/[^/]+?)(?:\.git)?$/u.exec(url);
-    if (m) return m[1];
-  } catch {
-    // немає origin — лишаємо undefined, рендер візьме легасі-базу
-  }
-  return undefined;
-}
-
-/** База для конкретного запису: явне поле `repo` → його слуг, інакше легасі. */
-function prBaseFor(pr) {
-  return typeof pr.repo === "string" && pr.repo.includes("/")
-    ? `https://github.com/${pr.repo}/pull`
-    : LEGACY_PR_BASE;
-}
+//
+// 2026-09-19: переїзд ЧЕТВЕРТИЙ (`klas149/Sergeant`), і стало видно, що
+// зашитий легасі-слуг тут — одна з ТРЬОХ незалежних копій тієї самої
+// величини (друга — у `scripts/docs/generate-status.mjs`, третя — поле
+// `repo` кожного запису леджера). Копії розійшлись, і 93 посилання стали
+// мертвими. Слуг тепер живе в `scripts/docs/repo-identity.mjs` + реєстрі
+// `docs/governance/governance/repo-identity.json`, а розбіжність реєстру з
+// фактичним `origin` ловить `pnpm lint:repo-slug`.
 
 // ── Canonical doc whitelist ─────────────────────────────────────────────────
 

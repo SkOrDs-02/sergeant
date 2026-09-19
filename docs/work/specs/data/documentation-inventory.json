@@ -1,10 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "baseline_revision": "6987af148248a88fcb4754ff3ae2f4b8bfabd738",
-  "baseline_files": 637,
-  "current_files": 637,
-  "total_entries": 637,
+  "tracked_files": 638,
+  "total_entries": 638,
   "target_collisions": [],
   "entries": [
     {
@@ -3621,7 +3619,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/hard-rules.json",
-      "inbound_count": 28,
+      "inbound_count": 29,
       "inbound_sources": [
         "docs/engineering/architecture/state-write-paths.md",
         "docs/governance/adr/0045-hard-rules-taxonomy.md",
@@ -3649,6 +3647,7 @@
         "docs/start/agents/onboarding.md",
         "docs/start/agents/skills-evolution-roadmap.md",
         "docs/start/instructions/add-hard-rule.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/initiatives/README.md",
         "docs/work/specs/planning/harness-engineering-v1.md"
       ]
@@ -3760,6 +3759,15 @@
         "docs/start/instructions/deploy-config-change.md",
         "docs/start/instructions/release.md"
       ]
+    },
+    {
+      "old_path": "docs/governance/governance/repo-identity.json",
+      "new_path": "docs/governance/governance/repo-identity.json",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/governance/governance/repo-identity.json",
+      "inbound_count": 1,
+      "inbound_sources": ["docs/work/specs/docs-code-drift-2026-09-19.md"]
     },
     {
       "old_path": "docs/governance/governance/repo-map.auto.json",
@@ -3904,12 +3912,13 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/governance/rules/10-lifecycle-markers.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/governance/governance/rules/README.md",
         "docs/work/specs/audits/2026-08-08-profile-settings-deep-audit.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/initiatives/0015-docs-automation-daily-ops.md"
       ]
     },
@@ -6760,14 +6769,13 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/INDEX.md",
-      "inbound_count": 6,
+      "inbound_count": 5,
       "inbound_sources": [
         "docs/governance/governance/doc-freshness.md",
         "docs/governance/governance/hard-rules-matrix.md",
         "docs/governance/governance/hard-rules.json",
         "docs/governance/governance/rules/25-auto-generated-marker.md",
-        "docs/start/instructions/README.md",
-        "docs/work/specs/docs-code-drift-2026-09-19.md"
+        "docs/start/instructions/README.md"
       ]
     },
     {
@@ -6892,7 +6900,7 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/playbook-catalog.md",
-      "inbound_count": 9,
+      "inbound_count": 8,
       "inbound_sources": [
         "docs/README.md",
         "docs/governance/governance/freshness-dashboard.html",
@@ -6901,8 +6909,7 @@
         "docs/operations/README.md",
         "docs/start/instructions/README.md",
         "docs/start/instructions/modify-n8n-workflow.md",
-        "docs/start/instructions/rotate-openclaw-credentials.md",
-        "docs/work/specs/docs-code-drift-2026-09-19.md"
+        "docs/start/instructions/rotate-openclaw-credentials.md"
       ]
     },
     {
@@ -6976,7 +6983,7 @@
       "action": "keep",
       "genre": "instruction",
       "canonical_owner": "docs/start/instructions/README.md",
-      "inbound_count": 10,
+      "inbound_count": 11,
       "inbound_sources": [
         "docs/README.md",
         "docs/STATUS.md",
@@ -6987,7 +6994,8 @@
         "docs/start/agents/onboarding.md",
         "docs/start/glossary.md",
         "docs/start/instructions/operations-runbook.md",
-        "docs/work/specs/beta-launch/README.md"
+        "docs/work/specs/beta-launch/README.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md"
       ]
     },
     {
@@ -8642,13 +8650,14 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/beta-launch/README.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/README.md",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/work/README.md",
         "docs/work/specs/beta-launch/beta-browser-run.md",
-        "docs/work/specs/beta-launch/run-beta-wave.md"
+        "docs/work/specs/beta-launch/run-beta-wave.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md"
       ]
     },
     {
@@ -8785,7 +8794,7 @@
         "docs/governance/governance/external-link-allowlist.json",
         "docs/governance/governance/freshness-dashboard.html",
         "docs/open-work.md",
-        "docs/today.md"
+        "docs/work/specs/audits/product-knowledge-nutrition.md"
       ]
     },
     {
@@ -9508,7 +9517,7 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/planning/product-knowledge-backlog.md",
-      "inbound_count": 12,
+      "inbound_count": 14,
       "inbound_sources": [
         "docs/governance/adr/0077-pantry-append-only-ledger.md",
         "docs/governance/adr/0083-injury-model-zone-level.md",
@@ -9520,6 +9529,8 @@
         "docs/product/model/product-overview.md",
         "docs/work/research/2026-09-01-competitor-research-modules.md",
         "docs/work/specs/audits/README.md",
+        "docs/work/specs/audits/product-knowledge-nutrition.md",
+        "docs/work/specs/docs-code-drift-2026-09-19.md",
         "docs/work/specs/planning/README.md",
         "docs/work/specs/tech-debt/frontend.md"
       ]

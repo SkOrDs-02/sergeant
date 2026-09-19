@@ -643,8 +643,8 @@ export function run({
           `   є на \`${baseRef}\`, не чіпають: раннер трекає міграції за іменем,`,
           `   тож перейменування виконає його SQL у проді вдруге (див. 2c).`,
           ``,
-          `   Ref: docs/work/specs/initiatives/0011-foundation-adoption-and-process-discipline.md`,
-          `        (Phase 1 PR 1.2 — closes PR #1652 type-incident)`,
+          `   Ref: docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md`,
+          `        (ініціативу 0011 закрито й заархівовано — розбір у git history)`,
         ].join("\n"),
       );
     }

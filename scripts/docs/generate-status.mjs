@@ -37,6 +37,7 @@ import { fileURLToPath } from "node:url";
 import { collectOpenWork, TRACKERS } from "./generate-open-work.mjs";
 import { pickPriorityItems } from "./generate-today.mjs";
 import { isStaleIgnoringDateStamp } from "./freshness-stamp.mjs";
+import { prBaseForEntry } from "./repo-identity.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -51,20 +52,20 @@ const PR_LEDGER_PATH = resolve(
   "docs/governance/pr-ledger/index.json",
 );
 
-// Дві бази, як у `scripts/ci/update-pr-backlinks.mjs`, і з тієї ж причини:
-// леджер тримає записи ДВОХ репозиторіїв. 20 записів із номерами 2876–3665
-// злиті у старому `Skords-01/Sergeant` (2026-05-15 … 06-20), 18 із номерами
-// 74–1134 — у поточному (2026-06-30 і далі). Розділення чисте, без перетину
-// ні за номером, ні за датою; #74 звірено з GitHub API напряму.
+// Слуг репо НЕ зашивається тут. Леджер тримає записи кількох репозиторіїв
+// (репо переїжджало чотири рази), тож база береться з поля `repo` запису, а
+// фолбек для записів без поля — `legacyPrSlug` з реєстру
+// `docs/governance/governance/repo-identity.json`.
 //
-// Раніше тут стояв один зашитий слуг старого репо, тож КОЖНЕ посилання на
-// PR поточного репо в `STATUS.md` вело на неіснуючу сторінку — сімнадцять
-// мертвих лінків. Знайдено рев'ю на PR #1137: я полагодив базу в
-// `update-pr-backlinks.mjs` і не помітив, що генераторів два.
-// 2026-09-17: третій переїзд репо (`zaebal-beep/Sergeant`) показав, що
-// зашитий «поточний» слуг застаріває разом із репо. Тепер слуг береться з
-// поля `repo` запису як є; зашитим лишається лише легасі-фолбек.
-const LEGACY_REPO_SLUG = "Skords-01/Sergeant";
+// Історія, заради якої це винесено. Спершу тут стояв ОДИН зашитий слуг
+// старого репо, тож кожне посилання на PR поточного репо в `STATUS.md` вело
+// на неіснуючу сторінку — сімнадцять мертвих лінків; знайдено рев'ю на
+// PR #1137 (полагодив базу в `update-pr-backlinks.mjs` і не помітив, що
+// генераторів два). 2026-09-17 третій переїзд показав, що зашитий
+// «поточний» слуг застаріває разом із репо. 2026-09-19 четвертий переїзд
+// показав головне: копій величини було ТРИ, вони розійшлись, і 93 посилання
+// стали мертвими — `--strict-external` падав на кожному PR. Тепер копія
+// одна, і `pnpm lint:repo-slug` звіряє її з фактичним `origin`.
 
 const args = new Set(process.argv.slice(2));
 const CHECK_MODE = args.has("--check");
@@ -147,13 +148,9 @@ export function loadShipped(ledgerPath = PR_LEDGER_PATH, limit = SHIPPED_N) {
 
 function fmtShipped(pr) {
   const date = String(pr.merged_at ?? "").slice(0, 10);
-  // Слуг береться з поля `repo` запису — того самого, що читає
-  // `update-pr-backlinks.mjs`. Немає поля — легасі-репо.
-  const slug =
-    typeof pr.repo === "string" && pr.repo.includes("/")
-      ? pr.repo
-      : LEGACY_REPO_SLUG;
-  const url = `https://github.com/${slug}/pull/${pr.number}`;
+  // Слуг береться з поля `repo` запису — тим самим хелпером, що й у
+  // `update-pr-backlinks.mjs`. Немає поля — легасі-репо з реєстру.
+  const url = `${prBaseForEntry(pr)}/${pr.number}`;
   const title = pr.title ?? `PR #${pr.number}`;
   return `- [#${pr.number}](${url}) — ${title}${date ? ` _(${date})_` : ""}`;
 }

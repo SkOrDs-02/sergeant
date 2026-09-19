@@ -207,8 +207,7 @@ export function evaluate({ changedFiles, getDiff, labelsJson }) {
       `  edge-served config — humans must.`,
       ``,
       `See: docs/start/instructions/deploy-config-change.md`,
-      `See: docs/work/specs/initiatives/0011-foundation-adoption-and-process-discipline.md`,
-      `       §Фаза 1 → PR 1.3 (Phase 1 PR 1.3)`,
+      `       (ініціативу 0011 закрито й заархівовано — розбір у git history)`,
     ].join("\n"),
   );
 
