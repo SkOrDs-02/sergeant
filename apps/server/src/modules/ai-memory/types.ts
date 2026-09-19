@@ -19,21 +19,25 @@
  *  1. PR що бампить ALLOWED_SOURCES + relax-ить CHECK-constraint.
  *  2. PR що додає ingestion-hook для нового source-у.
  *
- * Звужено ініціативою 0024 (PR-1, 2026-09-03): `chat`, `finyk`, `fizruk`,
- * `nutrition`, `routine`, `journal` прибрані — жоден із них ніколи не мав
- * продюсера в дереві (замір: `docs/work/specs/initiatives/0024-ai-memory-
- * source-coverage.md` § Перезамір 2026-09-03). CHECK-constraint у БД поки
- * що дозволяє старі значення — це фаза 1 двофазного звуження; фаза 2
- * (DROP + двофазний CHECK) — PR-3 тієї ж ініціативи. Зворотний шлях (якщо
- * колись знадобиться `chat` як окреме джерело) — той самий двофазний
- * процес у зворотному напрямку: спершу розширити ALLOWED_MEMORY_SOURCES +
- * CHECK, потім додати продюсер.
+ * Звужено ініціативою 0024: PR-1 (2026-09-03) прибрав `chat`, `finyk`,
+ * `fizruk`, `nutrition`, `routine`, `journal` із TS-рівня — жоден із них
+ * ніколи не мав продюсера в дереві (замір: `docs/work/specs/initiatives/
+ * 0024-ai-memory-source-coverage.md` § Перезамір 2026-09-03). PR-3
+ * (міграція 144, 2026-09-19) звузив і CHECK-constraint у БД до тих самих
+ * чотирьох значень — двофазне звуження завершене, `RETIRED_MEMORY_SOURCES`
+ * нижче порожній. Зворотний шлях (якщо колись знадобиться `chat` як
+ * окреме джерело) — той самий двофазний процес у зворотному напрямку:
+ * спершу розширити ALLOWED_MEMORY_SOURCES + CHECK, потім додати продюсер.
  *
  * `cofounder` і `product` лишаються в списку, хоч їхні продюсери
  * (`backfill.ts`, `eventSync.ts`) видалені PR #928 (2026-08-29) — вони не
  * входять у цю чистку, бо в БД можуть лишатись legacy-рядки, які мають
  * читатись/видалятись через UI (список у `RESERVED_SOURCES` нижче,
- * `sources.test.ts` це охороняє).
+ * `sources.test.ts` це охороняє). **Відкрите питання до власника** (замір
+ * на проді 2026-09-19, § «Замір на проді» ініціативи 0024): `cofounder`
+ * має нуль рядків, `product` — 26, тож підстава тримати `cofounder`
+ * саме через legacy-рядки відпала; чи звужувати склад далі до
+ * `digest`+`profile`, вирішує власник — агент цей список сам не звужує.
  */
 export const ALLOWED_MEMORY_SOURCES = [
   "digest",
@@ -61,27 +65,28 @@ export const ALLOWED_MEMORY_SOURCES = [
 ] as const;
 
 /**
- * Джерела, зняті з `ALLOWED_MEMORY_SOURCES` ініціативою 0024 (PR-1), але
- * ще дозволені CHECK-констрейнтом `ai_memories_source_check` (міграція
- * 118). Це фаза 1 двофазного звуження: запис із таким `source` API вже не
- * приймає, а рядок у БД ще може існувати. Фаза 2 (PR-3 тієї ж ініціативи)
- * прибирає їх із CHECK разом із чисткою даних — тоді цей список стає
- * порожнім і зникає.
+ * Джерела, зняті з `ALLOWED_MEMORY_SOURCES` ініціативою 0024. Порожній з
+ * PR-3 (міграція 144, 2026-09-19): фаза 1 (PR-1, 2026-09-03) прибрала
+ * `chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal` з
+ * TS-рівня, лишивши їх у CHECK-констрейнті `ai_memories_source_check`
+ * для legacy-рядків; фаза 2 (PR-3) звузила CHECK до тих самих чотирьох
+ * значень — на проді для цих шести не було жодного рядка (замір
+ * 2026-09-19, § «Замір на проді» ініціативи 0024), тож DELETE не мав
+ * ефекту.
+ *
+ * Список лишається як точка розширення: додавання нового мертвого
+ * source-у до звуження CHECK повторює ту саму двофазну процедуру — сюди
+ * ж піде наступний кандидат на зняття, якщо колись зʼявиться.
  *
  * Споживачі: parity-тест SQL CHECK ↔ TS
- * (`migrations/__tests__/ai-memories-source-check-parity.test.ts`) і
- * схема корпусу RAG-евалу (`lib/ragEval/corpus.ts`, `golden.ts`) — корпус
- * імітує рядки, які ВЖЕ лежать у БД, тому валідується проти
- * `STORED_MEMORY_SOURCES`, не проти `ALLOWED_MEMORY_SOURCES`.
+ * (`migrations/__tests__/ai-memories-source-check-parity.test.ts`), який
+ * при порожньому списку зводиться до ALLOWED ↔ SQL. RAG-евал (`lib/
+ * ragEval/corpus.ts`, `golden.ts`) більше НЕ читає цю константу — його
+ * domain-словник розчеплений від `ai_memories.source` (`CORPUS_DOMAINS`
+ * у `corpus.ts`), бо перепризначення source-ів у фікстурі зробило б
+ * кешовані ембеддинги непридатними без платного перегенерування.
  */
-export const RETIRED_MEMORY_SOURCES = [
-  "chat",
-  "finyk",
-  "fizruk",
-  "nutrition",
-  "routine",
-  "journal",
-] as const;
+export const RETIRED_MEMORY_SOURCES = [] as const;
 
 /**
  * Усі значення `source`, які може мати рядок `ai_memories` у поточній

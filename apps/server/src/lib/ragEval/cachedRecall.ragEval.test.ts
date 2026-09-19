@@ -104,11 +104,16 @@ beforeAll(async () => {
     if (!embedding) throw new Error(`Немає вектора для ${doc.id}`);
     return {
       userId: USER_ID,
-      // Корпус несе й RETIRED-джерела (legacy-рядки, що CHECK ще дозволяє);
-      // тут ми пишемо просто у стор, минаючи API-валідацію, тому звуження
-      // типу безпечне — див. `STORED_MEMORY_SOURCES` у types.ts.
-      source: doc.source as MemorySource,
-      sourceRef: doc.sourceRef,
+      // `doc.source` — домен власного словника евалу (`CORPUS_DOMAINS` у
+      // `corpus.ts`), розчепленого від `ai_memories.source` ініціативою
+      // 0024 PR-3: після звуження CHECK (міграція 144) значення на кшталт
+      // `chat`/`finyk` реальний INSERT відхилить. Тому в живий стор пишемо
+      // завжди `source: "digest"` (єдине живе значення, під яким мають
+      // сенс довільні документи), а `sourceRef` беремо як `doc.id` — він
+      // унікальний по всьому корпусу (`parseCorpusSet` це гарантує), тож
+      // видача порівнюється по `sourceRef`, не по `${source}:${sourceRef}`.
+      source: "digest" as MemorySource,
+      sourceRef: doc.id,
       content: doc.content,
       embedding,
       embeddingMeta: {
@@ -134,7 +139,9 @@ beforeAll(async () => {
       embedding,
       topK: golden.topK,
     });
-    const retrieved = results.map((r) => `${r.source}:${r.sourceRef}`);
+    // Порівнюємо по `sourceRef` (= `doc.id`), не по `${source}:${sourceRef}`
+    // — усі рядки вставлені під `source: "digest"` (див. коментар вище).
+    const retrieved = results.map((r) => r.sourceRef ?? "");
     retrievedByQuery[query.id] = retrieved;
     perQuery[query.id] = {
       recall: recallAtK(retrieved, query.expected_memory_ids, golden.topK),
@@ -252,7 +259,7 @@ describe("rag-eval cached recall", () => {
         embedding,
         topK: golden.topK,
       });
-      expect(again.map((r) => `${r.source}:${r.sourceRef}`)).toEqual(
+      expect(again.map((r) => r.sourceRef ?? "")).toEqual(
         retrievedByQuery[query.id],
       );
     }

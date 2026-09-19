@@ -1,7 +1,7 @@
 # 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться
 
-> **Last touched:** 2026-09-16 by @claude (PR-2 landed — kill-switch перецілений на `digest`). **Next review:** 2027-03-12.
-> **Status:** In progress — PR-1 змержено 2026-09-03, PR-2 змержено 2026-09-16 (§ План змін). PR-3 (міграція звуження CHECK) чекає операторського заміру на проді між PR-2 і PR-3 — не робити без нього.
+> **Last touched:** 2026-09-19 by @claude (PR-3 виконано — CHECK-констрейнт звужений міграцією 144). **Next review:** 2027-03-12.
+> **Status:** Done — PR-1 змержено 2026-09-03, PR-2 змержено 2026-09-16, PR-3 виконано 2026-09-19 (§ План змін). Відкрите питання до власника: чи звужувати `ALLOWED_MEMORY_SOURCES`/CHECK далі до `digest`+`profile`, лишається — див. § Прогрес.
 > **Agent-ready:** yes
 > **Priority:** P2 (не блокер launch-у [0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md); псує якість AI-шару і вводить в оману ops-документи)
 > **Owner:** `@SkOrDs-02`
@@ -16,6 +16,7 @@
 
 - **2026-09-03** — PR-1 змержено ([#1068](https://github.com/SkOrDs-02/sergeant/pull/1068), [#1071](https://github.com/SkOrDs-02/sergeant/pull/1071)): `ALLOWED_MEMORY_SOURCES` звужено до чотирьох живих, клієнт-driven ingest-ендпоінт видалено, `sources.test.ts` — гейт від рецидиву.
 - **2026-09-16** — PR-2 виконано: kill-switch (env-флаг `MONO_AI_MEMORY_INGEST_ENABLED` → `DIGEST_AI_MEMORY_INGEST_ENABLED`, runtime kill-switch `mono_ai_memory_ingest` → `digest_ai_memory_ingest`) перецілений з мертвого `finyk` на `digest` — деталі в § План змін, PR-2. Операторський крок «перевірити поточне значення флага на Coolify перед деплоєм» ще НЕ виконаний — власник має підтвердити перед мержем/деплоєм цього PR. PR-3 не стартує без заміру `GROUP BY source` на проді (§ «Замір на проді»).
+- **2026-09-19** — Замір на проді (власник): `product` 26, `profile` 22, `digest` 6; по всіх шести мертвих джерелах — нуль рядків, `cofounder` теж нуль. PR-3 виконано: [міграція 144](../../../../apps/server/src/migrations/144_ai_memories_prune_dead_sources.sql) звузила CHECK до `digest`/`cofounder`/`product`/`profile` (DELETE не мав ефекту — нуль рядків); `RETIRED_MEMORY_SOURCES` спорожнів; корпус/golden-set RAG-евалу розчеплені від `ai_memories.source` через нову `CORPUS_DOMAINS` (`lib/ragEval/corpus.ts`) без перегенерування ембеддингів; `RECALL_MEMORY_SOURCES` у `packages/shared/src/schemas/api.ts` звужено до чотирьох, OpenAPI перегенеровано. **Відкрите питання до власника**: замір показав нуль рядків і для `cofounder` — підстава тримати його саме через legacy-рядки відпала; чи звужувати `ALLOWED_MEMORY_SOURCES`/CHECK далі до `digest`+`profile`, вирішує власник окремо (агент цей список сам не звужував).
 
 ## TL;DR
 
@@ -165,28 +166,41 @@ grep -rn "enqueueMemoryIngest" apps/server/src/modules/mono/*.ts | grep -v "\.te
 5. ✅ [`obs/metrics.ts`](../../../../apps/server/src/obs/metrics.ts), [`obs/metrics/jobs.ts`](../../../../apps/server/src/obs/metrics/jobs.ts) — коментарі з назвою switch-а/флага оновлені.
 6. ✅ Доки: [`runbook.md`](../../../operations/observability/runbook.md) (§ «RagQualityGateKillSwitch» + суміжні згадки флага/switch-а в § «AI memory activation & Day-30»), [`feature-flags.md` (engineering)](../../../engineering/architecture/feature-flags.md), [`feature-flags.md` (governance)](../../../governance/governance/feature-flags.md), [`env-vars.md`](../../../engineering/integrations/env-vars.md), [`rag-eval.md`](../../../engineering/architecture/rag-eval.md), [`voyage-pgvector.md`](../../../engineering/integrations/voyage-pgvector.md) (producer-таблиця й діаграма заразом приведені у відповідність до PR-1: `mono/webhook.ts` і client-driven рядки прибрані). `ops/n8n-workflows/manifest.json` не існує в дереві (n8n decommissioned, ADR-0090) — нема чого правити. `scripts/ai-memory-backfill.mjs` видалено PR #928 — те саме. Додатково приведені у відповідність (виявлено при виконанні): [`ai-memory.md`](../../../engineering/architecture/ai-memory.md), [`ai-memory-activation.md`](../launch/tech/ai-memory-activation.md) — обидва вже форвард-посилались на PR-2, тепер описують здійснений стан.
 
-### Замір на проді (між PR-2 і PR-3, операторський крок)
+### Замір на проді (між PR-2 і PR-3, операторський крок) — ВИКОНАНО 2026-09-19
 
 ```sql
 SELECT source, count(*) FROM ai_memories GROUP BY 1 ORDER BY 2 DESC;
 ```
 
-Результат вклеїти в PR-3. Він визначає, скільки рядків видалить міграція; нулі по всіх шести — теж валідний результат, який треба зафіксувати.
+Результат (власник, 2026-09-19):
 
-### PR-3 — Міграція: DELETE + звуження CHECK (`feat(migrations)`)
+```
+ source  | count
+---------+-------
+ product |    26
+ profile |    22
+ digest  |     6
+(3 rows)
+```
+
+По всіх шести мертвих джерелах (`chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal`) — нуль рядків: вони не присутні в результаті взагалі (рахуються лише source-и, що є в таблиці). `cofounder` — теж нуль. DELETE у міграції 144 не мав ефекту; бекап/батчинг не знадобились.
+
+### PR-3 — Міграція: DELETE + звуження CHECK (`feat(migrations)`) — ВИКОНАНО 2026-09-19
 
 Номер міграції бери ФАКТИЧНИЙ на момент виконання: `ls apps/server/src/migrations | tail -1` + 1. Не покладайся на число з цього документа — воно протухає щотижня (станом на 2026-09-16 голова вже 138, а 128 давно зайнято `128_backfill_manual_expense_sync_ops.sql`). Обовʼязково з `.down.sql`.
 
-`NNN_ai_memories_prune_dead_sources.sql`:
+[`144_ai_memories_prune_dead_sources.sql`](../../../../apps/server/src/migrations/144_ai_memories_prune_dead_sources.sql) (+ `.down.sql`):
 
-1. `DELETE FROM ai_memories` для шести мертвих значень `source`.
-2. `ALTER TABLE ai_memories DROP CONSTRAINT IF EXISTS ai_memories_source_check;` → `ADD CONSTRAINT ai_memories_source_check CHECK (source IN ('digest','cofounder','product','profile'));`
-3. `COMMENT ON CONSTRAINT` — дописати рядок історії: «NNN -> звужено до чотирьох джерел, що мають продюсера (ініціатива 0024, рішення founder-а 2026-08-26)».
-4. У `modules/ai-memory/types.ts` спорожнити `RETIRED_MEMORY_SOURCES` (parity-тест знову зведеться до ALLOWED ↔ SQL) **і** перевести корпус/golden-set RAG-евалу на живі домени з перегенеруванням кешованих ембеддингів — див. PR-1, п. 9. Без цього `RAG eval gate` червоніє в тому ж PR.
+1. ✅ `DELETE FROM ai_memories` для шести мертвих значень `source` — 0 рядків, замір вище.
+2. ✅ `ALTER TABLE ai_memories DROP CONSTRAINT IF EXISTS ai_memories_source_check;` → `ADD CONSTRAINT ai_memories_source_check CHECK (source IN ('digest','cofounder','product','profile'));`
+3. ✅ `COMMENT ON CONSTRAINT` — дописано рядок історії: «144 -> звужено до чотирьох джерел, що мають продюсера (ініціатива 0024, рішення founder-а 2026-08-26)».
+4. ✅ У `modules/ai-memory/types.ts` `RETIRED_MEMORY_SOURCES` спорожнено; parity-тест зводиться до ALLOWED ↔ SQL.
+
+   **Відхилення від початкового плану:** пункт 4 планував «перевести корпус/golden-set RAG-евалу на живі домени з перегенеруванням кешованих ембеддингів». Виконано інакше — корпус/golden-set і далі несуть домени `chat`/`finyk`/`fizruk`/`nutrition`/`routine`/`journal`/`cofounder`/`digest`, але валідуються проти нової, розчепленої від `ai_memories.source` константи `CORPUS_DOMAINS` (`apps/server/src/lib/ragEval/corpus.ts`), а не проти `STORED_MEMORY_SOURCES`. Причина: перепризначення source-ів у фікстурі змінило б `id` документів (`id = "<source>:<sourceRef>"`) і знецінило б кешовані ембеддинги (`__fixtures__/rag-eval/embeddings-v1.*`) без платного перегенерування (Voyage) — обмін, якого це PR навмисно уникнув. Живі INSERT-и в testcontainers-тестах (`cachedRecall.ragEval.test.ts`, `scripts/ragEvalLive.ts`) пишуть реальний `source: "digest"` + `sourceRef: doc.id`, тож CHECK у БД про фікстурний словник нічого не знає — розбір у `docs/engineering/architecture/rag-eval.md` § «50 queries — domain breakdown».
 
 Партиційний caveat уже перевірений у міграції 118 і лишається чинним: `ai_memories` HASH-партиційована на 32 партиції, `DROP`/`ADD CONSTRAINT` на батьківській таблиці каскадиться в партиції автоматично — `ALTER TABLE ai_memories` достатньо.
 
-`NNN_ai_memories_prune_dead_sources.down.sql` повертає широкий CHECK (усі 10 значень). Видалені рядки down-міграція **не** повертає — це задокументована однобічність, як у `forgetSource()`.
+[`144_ai_memories_prune_dead_sources.down.sql`](../../../../apps/server/src/migrations/144_ai_memories_prune_dead_sources.down.sql) повертає широкий CHECK (усі 10 значень). Видалені рядки down-міграція **не** повертає — це задокументована однобічність, як у `forgetSource()` (не актуально на практиці — DELETE не мав ефекту, замір показав нуль рядків).
 
 ## Верифікація
 
@@ -279,7 +293,7 @@ psql "$DATABASE_URL" -c "INSERT INTO ai_memories (user_id, source, content) VALU
 - [x] `sources.test.ts` падає, якщо додати значення без продюсера і без запису в `RESERVED_SOURCES` (синтетичне дерево-тест у самому файлі).
 - [x] `POST /api/ai-memory/ingest` не існує; жодного посилання на нього в коді й доках (PR-1).
 - [x] Kill-switch націлений на `digest`, авто-фліп у `eval-rag.ts` працює, runbook описує актуальну назву. — PR-2, 2026-09-16.
-- [ ] CHECK-констрейнт на проді звужений; замір `GROUP BY source` до міграції зафіксований у PR-3. — PR-3.
+- [x] CHECK-констрейнт на проді звужений; замір `GROUP BY source` до міграції зафіксований у PR-3. — PR-3, 2026-09-19: `product` 26, `profile` 22, `digest` 6, решта (включно з `cofounder`) — нуль.
 - [x] Жоден UI-підпис, архітектурний опис чи ops-runbook не описує поведінки, якої немає в коді (PR-1: `ai-memory.md`, `ai-memory-activation.md`, `AiMemoryList.tsx`).
 - [x] Число `implicit remember: N/M` зафіксоване (§ «Замір 2026-08-27» вище — 18/18 на прод-моделі), і на його основі заведено окремий таск (промптова правка визнана непотрібною; таск на решту дірки — окремий, поза цією ініціативою).
 - [x] `pnpm check` зелений (PR-1 — verification нижче).

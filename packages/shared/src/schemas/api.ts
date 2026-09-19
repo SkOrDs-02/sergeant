@@ -493,14 +493,13 @@ export type ChatUsageResponse = z.infer<typeof ChatUsageResponseSchema>;
  * `ALLOWED_MEMORY_SOURCES` у server-side `types.ts`. Тримаємо строкові
  * літерали тут (а не enum-import з server-only модуля), щоб
  * `@sergeant/shared` лишився edge-runtime-friendly без deps на Postgres.
+ *
+ * Звужено до чотирьох живих значень ініціативою 0024, PR-3 (2026-09-19):
+ * `chat`, `finyk`, `fizruk`, `nutrition`, `routine`, `journal` — шість
+ * джерел без жодного продюсера в дереві — прибрані звідси разом зі
+ * звуженням CHECK-констрейнта `ai_memories_source_check` (міграція 144).
  */
 const RECALL_MEMORY_SOURCES = [
-  "chat",
-  "finyk",
-  "fizruk",
-  "nutrition",
-  "routine",
-  "journal",
   "digest",
   "cofounder",
   // Migration 068 historically used `product` for PostHog → AI-memory sync.

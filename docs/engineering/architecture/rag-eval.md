@@ -1,6 +1,6 @@
 # RAG eval harness — golden-set, metrics, baseline comparison
 
-> **Last touched:** 2026-09-17 by @claude (домени golden-set ≠ `ALLOWED_MEMORY_SOURCES` — пояснено). **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-19 by @claude (PR-3 ініціативи 0024 — домени golden-set/корпусу розчеплені від `ai_memories.source` у власну константу `CORPUS_DOMAINS`; жива запись у testcontainers-тестах іде під `source: "digest"`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Canonical reference for the RAG quality-eval pipeline shipped as **PR-20**
@@ -86,7 +86,7 @@ recall@4 < 0.4 → kill module (set `AI_MEMORY_ENABLED=false` у Coolify app `se
   "queries": [
     {
       "id": "finyk-001", // <domain>-NNN (стабільний)
-      "domain": "finyk", // ALLOWED_MEMORY_SOURCES enum
+      "domain": "finyk", // CORPUS_DOMAINS enum (lib/ragEval/corpus.ts)
       "query": "Скільки я витратив на каву минулого тижня?",
       "expected_memory_ids": [
         // <source>:<sourceRef>
@@ -108,12 +108,21 @@ business-level reference (наприклад, `finyk:tx-coffee-w17-001` →
 
 ### 50 queries — domain breakdown
 
-Distribution по 8 доменах. **Ці домени — власний словник golden-set-у, а не
-`ALLOWED_MEMORY_SOURCES`** (уточнено 2026-09-17): з 2026-09-03 enum у
-`apps/server/src/modules/ai-memory/types.ts` містить лише `digest`, `cofounder`,
-`product`, `profile`; `finyk`/`fizruk`/`nutrition`/`routine`/`journal`/`chat`
-зняті ініціативою 0024 PR-1 і живуть тут лише як мітки сценаріїв у
-`golden.json` (значення `source` у fixture-рядках, які eval сідає сам):
+Distribution по 8 доменах. **Ці домени — власний, ЗАМОРОЖЕНИЙ словник
+`CORPUS_DOMAINS`** (`apps/server/src/lib/ragEval/corpus.ts`), розчеплений
+від `ai_memories.source` ініціативою 0024 PR-3 (2026-09-19): з 2026-09-03
+`ALLOWED_MEMORY_SOURCES` у `apps/server/src/modules/ai-memory/types.ts`
+містить лише `digest`, `cofounder`, `product`, `profile`, а PR-3 (2026-09-19)
+звузив до тих самих чотирьох і CHECK-констрейнт у БД (міграція 144).
+`finyk`/`fizruk`/`nutrition`/`routine`/`journal`/`chat` живуть тут лише як
+мітки сценаріїв у `golden.json`/`corpus.json` (значення `source`/`domain` у
+фікстурах) — перепризначати їх на живі джерела свідомо НЕ стали: це змінило
+б `id` документів (`id = "<source>:<sourceRef>"`) і зробило б кешовані
+ембеддинги (`__fixtures__/rag-eval/embeddings-v1.*`) непридатними без
+платного перегенерування. Живий INSERT у testcontainers-тестах
+(`cachedRecall.ragEval.test.ts`, `scripts/ragEvalLive.ts`) пише реальний
+`source: "digest"` і `sourceRef: doc.id` незалежно від цього домену — CHECK
+у БД про фікстурний словник нічого не знає:
 
 | Domain      | Count | Сценарії (паралель до Telegram-патернів founder-а)                                                |
 | ----------- | ----- | ------------------------------------------------------------------------------------------------- |
@@ -133,7 +142,7 @@ expected refs. Empty `expected_memory_ids` заборонене Zod-validation-�
 
 ### Як додати нову query
 
-1. Вибери domain із `ALLOWED_MEMORY_SOURCES`.
+1. Вибери domain із `CORPUS_DOMAINS` (`apps/server/src/lib/ragEval/corpus.ts`) — НЕ з `ALLOWED_MEMORY_SOURCES`, вони розчеплені з PR-3.
 2. Згенеруй stable id: `<domain>-NNN` (sequential — глянь max NNN у файлі).
 3. Згенеруй stable expected refs: `<domain>:<sourceRef>` де `sourceRef` —
    business-level identifier (transaction ref, digest period, journal day).
