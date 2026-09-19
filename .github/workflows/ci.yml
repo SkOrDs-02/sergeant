@@ -1324,6 +1324,16 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      # `actions: read` — той самий дефект, що й у `secret-scan` вище, тільки
+      # на іншому ендпоінті. `pipeline-duration-p95.mjs` читає історію
+      # прогонів (`GET /repos/{owner}/{repo}/actions/workflows/{id}/runs`,
+      # `…/actions/runs/{id}/jobs`), а це скоуп `actions`, якого в блоці не
+      # було: API віддавав `403 Forbidden`, скрипт кидав виняток і джоба
+      # червоніла на КОЖНОМУ прогоні, нічого не змірявши.
+      #
+      # Знайдено звіркою 2026-09-19 одразу після фіксу gitleaks — третій
+      # випадок класу «джоба кличе GitHub API, якого їй не дозволили».
+      actions: read
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
