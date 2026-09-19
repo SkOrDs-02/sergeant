@@ -182,6 +182,63 @@ type PrivatApiResponse = {
 } & Record<string, unknown>;
 
 /**
+ * AI-DANGER: конверт відповіді Привата НЕ підтверджений живим заміром.
+ *
+ * Оголошені типи (`packages/api-client/src/endpoints/privat.ts`) кажуть
+ * `{ balances }` і `{ transactions }`, а цей хук читає
+ * `StatementsResponse.data` / `data`. Ані `balances`, ані `transactions` не
+ * читаються ЖОДНОГО разу. Сервер (`apps/server/src/modules/mono/privat.ts`)
+ * — прозорий passthrough, тобто форму диктує Приват, а не ми, тож який із
+ * двох артефактів правий, визначає лише жива відповідь. Борг і розбір —
+ * `docs/work/specs/tech-debt/frontend.md` § «Privat24: баланси рахунків
+ * завжди 0».
+ *
+ * Поки замір не зроблено, цей хелпер робить рівно одне, чого бракувало:
+ * **відрізняє «конверт упізнано, всередині порожньо» від «жоден конверт не
+ * підійшов»**. Різниця не косметична — вона й ховала поломку. Ланцюг
+ * `a || b || []` цього не бачив: порожній масив у JS ІСТИННИЙ, тож
+ * `{ StatementsResponse: { data: [] } }` коротко замикається на першій
+ * гілці й дає `[]` законно. А коли відповідь має форму `{ balances: [...] }`,
+ * промахуються всі три гілки — і фінальний `[]` виглядає точно так само.
+ * Інтеграція мовчки віддавала порожнечу: без помилки, без `syncState:
+ * "error"`, з нулями в загальному капіталі.
+ *
+ * Тому тут НЕ вгадується правильний конверт (це закріпило б баг у типах) —
+ * тільки повертається `matched`, за яким caller вирішує, що робити з
+ * підозрілою порожнечею.
+ */
+function readPrivatEnvelope(data: PrivatApiResponse | undefined): {
+  rows: unknown[];
+  /** `true` — конверт упізнано (навіть якщо всередині нуль записів). */
+  matched: boolean;
+} {
+  const nested = data?.StatementsResponse?.data;
+  if (Array.isArray(nested)) return { rows: nested, matched: true };
+  if (Array.isArray(data?.data)) return { rows: data.data, matched: true };
+  if (Array.isArray(data)) return { rows: data as unknown[], matched: true };
+  return { rows: [], matched: false };
+}
+
+/**
+ * Каже вголос, що відповідь непорожня, але жоден відомий конверт не підійшов.
+ * Ключі логуються, значення — ні (Hard Rule #21: у відповіді банку лежать
+ * поля рахунку й операцій). Самих ключів досить, щоб назвати справжню форму
+ * і закрити борг одним заміром.
+ */
+function warnOnUnknownEnvelope(
+  scope: string,
+  data: PrivatApiResponse | undefined,
+): void {
+  const keys = data && typeof data === "object" ? Object.keys(data) : [];
+  if (keys.length === 0) return;
+  logger.warn(
+    `[privat] ${scope}: відповідь непорожня, але жоден відомий конверт не підійшов — ` +
+      `віддаю порожній список. Ключі верхнього рівня: ${keys.join(", ")}. ` +
+      `Розбір: docs/work/specs/tech-debt/frontend.md § Privat24.`,
+  );
+}
+
+/**
  * Креденшелів у сигнатурі більше немає: сервер бере їх із
  * `privat_connection` за сесією (спека beta-security-readiness, F1).
  */
@@ -248,10 +305,9 @@ export function usePrivatbank(enabled = true) {
             limit: "500",
           });
 
-          const rows: unknown[] =
-            data?.StatementsResponse?.data ||
-            data?.data ||
-            (Array.isArray(data) ? (data as unknown[]) : []);
+          const envelope = readPrivatEnvelope(data);
+          if (!envelope.matched) warnOnUnknownEnvelope("transactions", data);
+          const rows: unknown[] = envelope.rows;
 
           const normalized = rows.map((r) =>
             normalizePrivatTransaction(
@@ -328,14 +384,17 @@ export function usePrivatbank(enabled = true) {
       country: "UA",
       showRest: "true",
     });
-    const rawAccs: unknown[] =
-      data?.StatementsResponse?.data ||
-      data?.data ||
-      (Array.isArray(data) ? (data as unknown[]) : []);
-    const accs = rawAccs.map((r) =>
+    const envelope = readPrivatEnvelope(data);
+    if (!envelope.matched) warnOnUnknownEnvelope("balance/final", data);
+    const accs = envelope.rows.map((r) =>
       normalizeAccount(r as Record<string, unknown>),
     );
-    saveBalanceCache(accs);
+    // Підозрілу порожнечу НЕ кешуємо. Інакше один промах конверта робить
+    // стан липким: `loadBalanceCache` віддає `[]` наступним разам, і людина
+    // бачить порожній список рахунків навіть тоді, коли Приват відповідає
+    // нормально. Законна порожнеча (конверт упізнано, рахунків нуль)
+    // кешується як і раніше.
+    if (envelope.matched) saveBalanceCache(accs);
     return accs;
   };
 

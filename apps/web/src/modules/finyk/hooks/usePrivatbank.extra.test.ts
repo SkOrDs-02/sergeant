@@ -24,7 +24,8 @@ vi.mock("@shared/api", async () => {
 });
 
 import { privatApi, ApiError } from "@shared/api";
-import { removeItem, writeJSON } from "../lib/finykStorage";
+import { logger } from "@shared/lib";
+import { readJSON, removeItem, writeJSON } from "../lib/finykStorage";
 import { usePrivatbank } from "./usePrivatbank";
 
 const PRIVAT_KEYS = [
@@ -567,5 +568,59 @@ describe("usePrivatbank (extra) — loadBalanceCache TTL expired", () => {
       ([path]) => path.includes("/balance/final"),
     );
     expect(balanceCalls.length).toBeGreaterThan(0);
+  });
+});
+
+// ── невпізнаний конверт: борг «Privat24 — баланси завжди 0» ─────────────────
+
+describe("usePrivatbank (extra) — невпізнаний конверт відповіді", () => {
+  it("каже вголос і НЕ кешує, коли жоден відомий конверт не підійшов", async () => {
+    // Рівно та форма, яку оголошують типи `@sergeant/api-client`
+    // (`{ balances }`) і яку код НЕ читає. До цієї правки хук мовчки
+    // віддавав `[]` і ще й клав порожнечу в кеш, тож стан ставав липким.
+    const warn = vi.spyOn(logger, "warn").mockImplementation(() => {});
+    mockedRequest.mockImplementation(async (path: string): Promise<unknown> => {
+      if (path.includes("/balance/final"))
+        return { balances: [{ acc: "UA123", balanceOut: "500.00" }] };
+      return { data: [] };
+    });
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid", "tok");
+    });
+
+    expect(result.current.accounts).toHaveLength(0);
+    expect(warn).toHaveBeenCalled();
+    const said = warn.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(said).toContain("balance/final");
+    // Ключі верхнього рівня — так замір закриє борг; ЗНАЧЕНЬ там бути не
+    // може (Hard Rule #21: у відповіді банку лежать поля рахунку).
+    expect(said).toContain("balances");
+    expect(said).not.toContain("500.00");
+    expect(said).not.toContain("UA123");
+    // Липкої порожнечі в кеші немає.
+    expect(readJSON("finyk_privat_balance_cache", null)).toBe(null);
+    warn.mockRestore();
+  });
+
+  it("мовчить, коли конверт упізнано, а рахунків просто нуль", async () => {
+    // Порожній масив у JS ІСТИННИЙ, тож ця форма — законна порожнеча, і
+    // відрізняти її від промаху конверта й було суттю правки.
+    const warn = vi.spyOn(logger, "warn").mockImplementation(() => {});
+    mockedRequest.mockImplementation(async (path: string): Promise<unknown> => {
+      if (path.includes("/balance/final"))
+        return { StatementsResponse: { data: [] } };
+      return { data: [] };
+    });
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid", "tok");
+    });
+
+    const said = warn.mock.calls.map((c) => String(c[0])).join("\n");
+    expect(said).not.toContain("жоден відомий конверт");
+    warn.mockRestore();
   });
 });
