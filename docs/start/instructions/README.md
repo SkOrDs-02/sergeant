@@ -33,7 +33,7 @@ Each playbook must include:
 - when not to use this playbook
 - related playbooks / related skills
 
-> **Виняток (зафіксовано 2026-09-17):** runtime-runbook-и з § Runtime-процедури нижче (усі `Runtime-specific: yes`) не мають `**Trigger:**` — їх відкривають за подією чи розкладом, не за фразою. Тому їх немає в генерованому [INDEX.md](./INDEX.md) і в [playbook-catalog.md](./playbook-catalog.md); маршрут до них — лише цей README. Не додавай їм Trigger масово заради індексу.
+> **Виняток (зафіксовано 2026-09-17):** runtime-runbook-и з § Runtime-процедури нижче (усі `Runtime-specific: yes`) не мають `**Trigger:**` — їх відкривають за подією чи розкладом, не за фразою. Тому їх немає в генерованому [INDEX.md](./INDEX.md) і в [playbook-catalog.md](./playbook-catalog.md); маршрут до них — лише цей README. Не додавай їм Trigger масово заради індексу. **Виняток машинно закріплений із 2026-09-19:** `generate-playbook-index.mjs` рахує такі файли окремим рядком `[runtime] N runbook(ів)`, а FAIL лишає для плейбука без Trigger, який НЕ позначений `Runtime-specific: yes` — тобто для справжнього випадіння з роутингу. Доти обидва випадки йшли одним `[WARN]`, і реальний дрейф тонув серед дев'яти очікуваних.
 
 Кожен виконуваний файл також має `> **Runtime-specific:** yes|no`. Значення
 `yes` вимагає перед виконанням звірити фактичний hosting/runtime; `no` означає,
