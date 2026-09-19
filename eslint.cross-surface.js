@@ -151,13 +151,13 @@ export const crossSurfaceBlocks = [
           selector:
             "CallExpression[callee.property.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]",
           message:
-            "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/M11-eslint-plugin-security.md.",
+            "Templated `pool.query(`…${…}…`)` is risky — use parameterised `pool.query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/README.md — картка M11.",
         },
         {
           selector:
             "CallExpression[callee.type='Identifier'][callee.name='query'][arguments.0.type='TemplateLiteral'][arguments.0.expressions.length>0]",
           message:
-            "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/M11-eslint-plugin-security.md.",
+            "Templated `query(`…${…}…`)` is risky — use parameterised `query('… $1 …', [value])` instead. See docs/work/specs/security-hardening/README.md — картка M11.",
         },
       ],
     },
@@ -503,7 +503,8 @@ export const crossSurfaceBlocks = [
             "boundaries stay anchored to Europe/Kyiv. If you genuinely need a " +
             "UTC-anchored wall-clock instant (e.g. `updatedAt` timestamp), add " +
             "an `eslint-disable-next-line no-restricted-syntax` with a WHY comment. " +
-            "See docs/work/specs/audits/2026-05-13-consolidated-page-audit.md § Theme 1.",
+            "Розбір, чому це правило існує, — у git history аудиту\n" +
+            "2026-05-13-consolidated-page-audit § Theme 1.",
         },
         // Inherit the legacy palette selectors from the top-level block so this
         // scoped override doesn't accidentally drop them — flat-config merges

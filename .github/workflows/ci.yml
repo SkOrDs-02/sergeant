@@ -267,13 +267,20 @@ jobs:
         # file as void.
         run: bash scripts/check-security-txt-expiry.sh
 
-      - name: Lifecycle marker coverage (Hard Rule #10 — non-blocking)
-        # Theme 4 (consolidated audit 2026-05-13): checks that apps/web/src/**/*.{ts,tsx}
-        # files carry a lifecycle marker (/** @status Active */ or equivalent).
-        # Non-blocking during burn-down (exits 0 even with violations); promoted
-        # to --fail-on-violations once coverage reaches 100%.
-        # See docs/work/specs/audits/archive/2026-05-13-consolidated-page-audit.md § Theme 4 and
-        # docs/governance/governance/rules/10-lifecycle-markers.md.
+      - name: Lifecycle marker coverage (Hard Rule #10 — інформаційно)
+        # Рахує, скільки файлів `apps/web/src/**/*.{ts,tsx}` несуть ЯВНИЙ
+        # lifecycle-маркер. Це спостереження, не список порушень: правило #10
+        # прямо каже, що файл без маркера вважається `Active`, тобто це
+        # дозволений стан; маркер обов'язковий лише для НЕ-Active статусів.
+        #
+        # Звірка 2026-09-19 (PR-3 спеки docs-code-drift-2026-09-19): тут доти
+        # стояло «promoted to --fail-on-violations once coverage reaches 100%»,
+        # а скрипт друкував «Burn-down target: 2026-Q3». Ані ціль, ані дата не
+        # значились у жодному канонічному документі — ні в правилі, ні в
+        # hard-rules.json. Промоутити гейт можна лише ПІСЛЯ зміни самого
+        # правила, інакше він валитиме код, який правилу відповідає.
+        #
+        # Канон: docs/governance/governance/rules/10-lifecycle-markers.md.
         run: node scripts/docs/check-lifecycle-markers.mjs
         continue-on-error: true
 
