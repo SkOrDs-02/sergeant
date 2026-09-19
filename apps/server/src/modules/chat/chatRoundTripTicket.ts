@@ -51,7 +51,7 @@ interface TicketRecord {
 }
 
 /**
- * 2 хвилини — запас понад `CHAT_TOOL_TIMEOUT_MS` (30s, `chat.ts`) на
+ * 2 хвилини — запас понад `CHAT_TOTAL_TIMEOUT_MS` (30s, `chat.ts`) на
  * клієнтське виконання tool-викликів (sync-запис, IndexedDB) і мережеву
  * затримку до другого запиту. Довше не потрібно: continuation приходить
  * практично одразу після першої відповіді.
