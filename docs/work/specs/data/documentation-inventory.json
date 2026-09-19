@@ -1,10 +1,8 @@
 {
   "_generated": true,
   "generated_by": "scripts/docs/generate-documentation-inventory.mjs",
-  "baseline_revision": "6987af148248a88fcb4754ff3ae2f4b8bfabd738",
-  "baseline_files": 637,
-  "current_files": 637,
-  "total_entries": 637,
+  "tracked_files": 638,
+  "total_entries": 638,
   "target_collisions": [],
   "entries": [
     {
@@ -3760,6 +3758,15 @@
         "docs/start/instructions/deploy-config-change.md",
         "docs/start/instructions/release.md"
       ]
+    },
+    {
+      "old_path": "docs/governance/governance/repo-identity.json",
+      "new_path": "docs/governance/governance/repo-identity.json",
+      "action": "keep",
+      "genre": "reference",
+      "canonical_owner": "docs/governance/governance/repo-identity.json",
+      "inbound_count": 1,
+      "inbound_sources": ["docs/work/specs/docs-code-drift-2026-09-19.md"]
     },
     {
       "old_path": "docs/governance/governance/repo-map.auto.json",
