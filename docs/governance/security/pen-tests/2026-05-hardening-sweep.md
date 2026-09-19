@@ -1,6 +1,6 @@
 # Hardening pen-test sweep — 2026-05 (H5/H6/H8/H9)
 
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-11-20.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-11-23.
 > **Status:** Reference
 
 | Field        | Value                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                      |
@@ -486,7 +486,7 @@ this initiative adds a real-Postgres e2e to close that gap.
 ## Follow-ups
 
 - [ ] Re-run the sweep against the **production** Railway service (this run
-      used a staging Postgres). Owner: `@Skords-01`. Target: pre-launch
+      used a staging Postgres). Owner: `@klas149`. Target: pre-launch
       `2026-Q3` window (post-0010 launch).
       _Примітка 2026-09-16: ціль минула, Railway виведено (ADR-0074) — повтор має бути проти Coolify-проду. Чекбокс не закрито: підтвердження, що re-run відбувся, у репо немає, а `docs/open-work.md` цей Reference-док не сканує. Рішення власника — перенести в живий трекер із новою ціллю або закрити._
 - [ ] Pair this transcript with an external pen-tester engagement before

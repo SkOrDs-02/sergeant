@@ -140,7 +140,7 @@ Workflow YAML (дзеркало [`.github/workflows/pact-drift.yml`](../../../.g
 ```yaml
 name: Pact contract drift (daily cron)
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created `contract-drift` issue
 #         з коментарем; reopen якщо повторюється > 2x за тиждень. Full runbook:
 #         `docs/engineering/testing/pact-drift-runbook.md`.

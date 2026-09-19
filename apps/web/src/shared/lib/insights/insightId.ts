@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-07-25
  * Status: Active
- * Owner: @Skords-01
+ * Owner: @klas149
  *
  * Розбір стабільного `InsightId` на телеметрійну пару `{ module, kind }`.
  *

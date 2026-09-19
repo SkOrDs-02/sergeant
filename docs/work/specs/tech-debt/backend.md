@@ -811,7 +811,7 @@ two-phase DROP цього класу змін не покриває.
 | 3    | Persist diff (без значень — лише keys + hash + timestamp) для governance/SOC2-evidence.                                       | Migration + admin endpoint                              |
 | 4    | Hard-rule/lint: новий `*_DISABLE` / `*_BYPASS` / `*_OVERRIDE` у `EnvSchema` MUST мати entry у `secret-ownership-register.md`. | Розширити hard-rules категорією `security-flag-sunset`. |
 
-**Owner:** `@Skords-01`. **Trigger** — новий env-var-related incident або плановий SOC2-audit.
+**Owner:** `@klas149`. **Trigger** — новий env-var-related incident або плановий SOC2-audit.
 
 ## **Альтернативи розглянуті і відкинуті:** Vault/Doppler overengineering; повна заборона runtime security-knobs (частково вже в `access-policy.md`).
 

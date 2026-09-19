@@ -417,7 +417,7 @@ Status-code mapping:
 
 ## AI memory activation & Day-30 decision-point
 
-> **Owner:** `@Skords-01`. **Scope:** server. **Last validated:** 2026-05-13 by Devin (PR-19). **Related:** [`docs/work/specs/launch/tech/ai-memory-activation.md`](../../work/specs/launch/tech/ai-memory-activation.md), [`docs/engineering/architecture/feature-flags.md`](../../engineering/architecture/feature-flags.md), [ADR-0028](../../governance/adr/0028-pgvector-ai-memory.md).
+> **Owner:** `@klas149`. **Scope:** server. **Last validated:** 2026-05-13 by Devin (PR-19). **Related:** [`docs/work/specs/launch/tech/ai-memory-activation.md`](../../work/specs/launch/tech/ai-memory-activation.md), [`docs/engineering/architecture/feature-flags.md`](../../engineering/architecture/feature-flags.md), [ADR-0028](../../governance/adr/0028-pgvector-ai-memory.md).
 > **Canonical split:** current AI memory behavior lives in [`docs/engineering/architecture/ai-memory.md`](../../engineering/architecture/ai-memory.md); this section is operational response/activation only.
 
 ### Контекст
@@ -496,7 +496,7 @@ WHERE inserted_at >= now() - interval '7 days';
 
 > ⚠️ **Історична секція.** n8n виведено з репо ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)); workflow-JSON — у permalink-снапшоті, кроки activation/kill нижче виконувати нема чим. Digest-функція як така не має заміни у сервері (відкритий follow-up).
 
-> **Owner:** `@Skords-01` (manifest owner `ops`). **Scope:** n8n workflow (server-side flag-canonical у `env.ts`). **Last validated:** 2026-05-13 by Devin (PR-21). **Related:** [`ops/n8n-workflows/30-ai-memory-daily-digest.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/30-ai-memory-daily-digest.json), [`docs/engineering/integrations/env-vars.md § MONO_AI_MEMORY_DIGEST_ENABLED`](../../engineering/integrations/env-vars.md#mono_ai_memory_digest_enabled-optional-default-false--prod-required), [PR-19 AI memory ingest](#ai-memory-activation--day-30-decision-point).
+> **Owner:** `@klas149` (manifest owner `ops`). **Scope:** n8n workflow (server-side flag-canonical у `env.ts`). **Last validated:** 2026-05-13 by Devin (PR-21). **Related:** [`ops/n8n-workflows/30-ai-memory-daily-digest.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/30-ai-memory-daily-digest.json), [`docs/engineering/integrations/env-vars.md § MONO_AI_MEMORY_DIGEST_ENABLED`](../../engineering/integrations/env-vars.md#mono_ai_memory_digest_enabled-optional-default-false--prod-required), [PR-19 AI memory ingest](#ai-memory-activation--day-30-decision-point).
 
 ### Контекст
 

@@ -1,6 +1,6 @@
 name: Mobile flaky-tests verification (20-run)
 
-# Owner: @zaebal-beep (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 #
 # Scope: T7 з `docs/work/specs/planning/sprint-roadmap-q2q3-2026.md` § 1.1 — Tech-борг.

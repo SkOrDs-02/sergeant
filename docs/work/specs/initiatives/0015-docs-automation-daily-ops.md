@@ -110,7 +110,7 @@ Sergeant має ~250 trackable документів, **4 numbered active/propose
 
 ## Власник / ETA
 
-- **Owner:** @Skords-01
+- **Owner:** @klas149
 - **Implementation agent:** Claude Code (current session)
 - **ETA Phase 1:** 2026-05-31 (≈ 2 тижні після старту)
 - **ETA Phase 2:** 2026-06-30 (після 2 тижнів daily-usage feedback)
