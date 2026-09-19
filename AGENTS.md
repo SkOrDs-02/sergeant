@@ -109,14 +109,14 @@ Surface-scoped quick references (commands, gotchas, specialist skill pointer) li
 
 Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-04). Deep per-path map (test stack, RQ keys factory, conventions) lives in [`docs/engineering/architecture/module-ownership.md`](./docs/engineering/architecture/module-ownership.md).
 
-| Path                                     | Owner        | Secondary ¹             | Deep map                                                                                                 |
-| ---------------------------------------- | ------------ | ----------------------- | -------------------------------------------------------------------------------------------------------- |
-| `apps/web/**`                            | `@SkOrDs-02` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
-| `apps/landing/**`                        | `@SkOrDs-02` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
-| `apps/server/**`                         | `@SkOrDs-02` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
-| `apps/mobile/**`, `apps/mobile-shell/**` | `@SkOrDs-02` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
-| `packages/**`                            | `@SkOrDs-02` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/engineering/architecture/module-ownership.md#packages)         |
-| `ops/**`, `tools/**`, `scripts/**`       | `@SkOrDs-02` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/engineering/architecture/module-ownership.md#ops-surfaces) |
+| Path                                     | Owner      | Secondary ¹             | Deep map                                                                                                 |
+| ---------------------------------------- | ---------- | ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `apps/web/**`                            | `@klas149` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
+| `apps/landing/**`                        | `@klas149` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
+| `apps/server/**`                         | `@klas149` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
+| `apps/mobile/**`, `apps/mobile-shell/**` | `@klas149` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
+| `packages/**`                            | `@klas149` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/engineering/architecture/module-ownership.md#packages)         |
+| `ops/**`, `tools/**`, `scripts/**`       | `@klas149` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/engineering/architecture/module-ownership.md#ops-surfaces) |
 
 > ¹ Secondary is the bus-factor backup reviewer (real GitHub handle preferred; `TBD (<role>)` placeholders are accepted while delegation is in flight). L2 escalation when owner is unreachable: [`docs/start/instructions/operational-continuity.md`](./docs/start/instructions/operational-continuity.md).
 

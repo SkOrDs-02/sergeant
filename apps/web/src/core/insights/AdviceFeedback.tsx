@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-09-01
  * Status: Active
- * Owner: @Skords-01
+ * Owner: @klas149
  *
  * Оцінка AI-поради — «корисно / ні». Спільна для `AssistantAdviceCard`
  * (коуч) і `WeeklyDigestCard` (тижневий дайджест).

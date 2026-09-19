@@ -1,6 +1,6 @@
 name: Docs daily brief
 
-# Owner: @zaebal-beep (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Purpose: regenerate the daily-ops artifacts (open-work / today / trust badge)
 # from a manual run, then push the refreshed copy back to `main` if any of
 # them drifted since the last refresh. Without this workflow the artifacts would

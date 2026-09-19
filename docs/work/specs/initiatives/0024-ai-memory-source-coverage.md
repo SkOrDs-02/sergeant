@@ -4,7 +4,7 @@
 > **Status:** Done — PR-1 змержено 2026-09-03, PR-2 змержено 2026-09-16, PR-3 виконано 2026-09-19 (§ План змін). Відкрите питання до власника: чи звужувати `ALLOWED_MEMORY_SOURCES`/CHECK далі до `digest`+`profile`, лишається — див. § Прогрес.
 > **Agent-ready:** yes
 > **Priority:** P2 (не блокер launch-у [0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md); псує якість AI-шару і вводить в оману ops-документи)
-> **Owner:** `@SkOrDs-02`
+> **Owner:** `@klas149`
 > **ETA:** PR-1 ≈ 0.5 спринту, PR-2 ≈ 0.2, PR-3 ≈ 0.2 + операторський замір між PR-2 і PR-3
 > **Sources:**
 >
