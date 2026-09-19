@@ -67,6 +67,26 @@ export interface AnthropicCallOptions {
    * per-call UUID (Фаза 1 поведінка).
    */
   traceId?: string | undefined;
+  /**
+   * Дозволити ОДИН ретрай після власного таймауту спроби. За замовчуванням
+   * `false` — історична поведінка «на явний timeout не допалюємо запити».
+   *
+   * AI-CONTEXT: вмикати варто лише там, де розподіл латентності БІМОДАЛЬНИЙ,
+   * тобто виклик або відповідає швидко, або висне назовсім. Прод-замір
+   * першого ходу чату 2026-09-17 (PostHog, `$ai_generation`): успіхи
+   * `gemini-3.7-flash` — 5.2/5.3/5.3/7.2/7.8/8.0 с, збої — 30.015/30.005/
+   * 30.004/30.002 с, тобто рівно стеля, нуль токенів і без HTTP-статусу.
+   * Між групами немає НІЧОГО. За такого розподілу друга спроба — не
+   * «допалювання» повільного апстріму, а вихід із зависання: висне
+   * зʼєднання, а не модель.
+   *
+   * Якщо розподіл одномодальний (апстрім просто повільний) — НЕ вмикай:
+   * там ретрай подвоює навантаження й нічого не рятує.
+   *
+   * Зовнішній abort (клієнт закрив вкладку) не ретраїться НІКОЛИ, незалежно
+   * від цього прапорця: на такий запит уже ніхто не чекає.
+   */
+  retryOnTimeout?: boolean | undefined;
 }
 
 /**
@@ -416,6 +436,7 @@ async function anthropicMessagesInner(
     allowOpenRouter,
     maxTotalMs: maxTotalMsOpt,
     traceId,
+    retryOnTimeout = false,
   }: AnthropicCallOptions,
   model: string,
 ): Promise<AnthropicMessagesResult> {
@@ -541,8 +562,20 @@ async function anthropicMessagesInner(
       }
       return { response, data };
     } catch (e: unknown) {
-      // На явний timeout (AbortError) краще не "допалювати" запити.
-      if (isAbortError(e) || attempt >= maxAttempts) {
+      // На явний timeout (AbortError) за замовчуванням не "допалюємо" запити.
+      // Виняток — `retryOnTimeout` (див. докстрінг опції): для бімодального
+      // розподілу зависання це єдиний спосіб не віддати людині помилку після
+      // повного очікування стелі.
+      //
+      // Зовнішній abort ретраїти не можна НІКОЛИ: `composeSignal` зшиває наш
+      // таймер спроби з `externalSignal`, тож сюди приходить той самий
+      // `AbortError` в обох випадках, і відрізнити їх можна лише перевіркою
+      // самого сигналу. Без неї ретрай ішов би на запит, який людина вже
+      // закрила.
+      const externallyAborted = externalSignal?.aborted === true;
+      const timeoutIsRetryable =
+        isAbortError(e) && retryOnTimeout && !externallyAborted;
+      if ((isAbortError(e) && !timeoutIsRetryable) || attempt >= maxAttempts) {
         const ms = Number(process.hrtime.bigint() - overallStart) / 1e6;
         recordOutcome(isAbortError(e) ? "timeout" : "error", {
           model,
