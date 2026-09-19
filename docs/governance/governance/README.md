@@ -1,6 +1,6 @@
 # Governance
 
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2026-12-22.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-30.
 > **Status:** Active
 
 Governance у Sergeant навмисно розділено на людино-читану політику і машинно-читане enforcement: текст пояснює «чому», JSON-реєстри й генератори дають CI те, що можна перевірити.

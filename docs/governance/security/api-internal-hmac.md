@@ -1,6 +1,6 @@
 # `/api/internal/*` HMAC signing — rollout playbook
 
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-09-29.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-10-02.
 > **Status:** Active (enforced by default since 2026-09-16).
 
 > ⚠️ **n8n виведено з репо ([ADR-0090](../adr/0090-n8n-decommissioned.md), 2026-09-02).** Server-side middleware і env-тріо чинні; n8n-side кроки (Function-node template, manifest `hmacSigned`, validator) — історичні, файли — у permalink-снапшоті, а **§ Rollout нижче — історичний n8n-плейбук**, виконувати його нема на чому. **Рішення ухвалене 2026-09-16 (власник): `WEBHOOK_HMAC_REQUIRED` тепер `true` за замовчуванням** (`apps/server/src/env/env.ts`). Grace-режим обґрунтовувався поетапною міграцією 25 n8n-воркфлоу; після ADR-0090 єдині внутрішні caller-и — CI/admin-тулінг, який ми контролюємо, тож вікно лишилось без предмета. **Застереження, важливіше за сам прапорець:** він нічого не вмикає без `WEBHOOK_HMAC_SECRET` — верифікатор виходить із `ok`, коли секрет порожній. Таку конфігурацію тепер видно: `assertStartupEnv` пише при старті `WEBHOOK_HMAC_REQUIRED=true but WEBHOOK_HMAC_SECRET is empty`.

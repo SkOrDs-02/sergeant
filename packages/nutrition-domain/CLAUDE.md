@@ -1,6 +1,6 @@
 # Пакет nutrition-domain
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-30.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-01.
 > **Status:** Active
 
 Продуктовий контекст модуля: `Read .agents/skills/sergeant-module-nutrition/SKILL.md` → канон `docs/product/modules/nutrition.md`.

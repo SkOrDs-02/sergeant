@@ -1,6 +1,6 @@
 # Feature Flags Registry
 
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-07.
 > **Status:** Deprecated — реєстр переїхав у [`docs/engineering/architecture/feature-flags.md`](../../engineering/architecture/feature-flags.md).
 
 Цей файл був операційним реєстром прапорців на пʼять записів (`app-lock-enabled`, `hub_command_palette`, `ftux_outcome_card_v1`, `AI_MEMORY_ENABLED`, `DIGEST_AI_MEMORY_INGEST_ENABLED`), доки [`AGENTS.md § See also`](../../../AGENTS.md#see-also) не назвав канонічним реєстром **усіх** тумблерів архітектурний документ. Той покриває всі чотири системи (build-time `VITE_*`, серверні env, користувацький `FLAG_REGISTRY`, in-memory kill-switch), дефолти, що ламається при протилежному значенні, і умову зняття; усі пʼять записів звідси там уже є. Два реєстри поруч розходились мовчки — тут не було `STRIPE_ENABLED`, `LIQPAY_ENABLED`, `PLATA_ENABLED`, `ACCESS_ALLOWLIST_USER_IDS` і жодного `VITE_*`.

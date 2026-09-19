@@ -1,6 +1,6 @@
 # Playbook: Retire Feature Flag
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-01-07.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-09.
 > **Status:** Active
 > **Runtime-specific:** no
 

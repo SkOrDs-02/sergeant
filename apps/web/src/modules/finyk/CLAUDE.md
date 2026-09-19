@@ -1,6 +1,6 @@
 # Модуль Finyk (web)
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-25.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-27.
 > **Status:** Active
 
 Продуктовий контекст: `Read .agents/skills/sergeant-module-finyk/SKILL.md` → канон `docs/product/modules/finyk.md` (§ Журнал рішень — уже ухвалені рішення, не перепитуй).

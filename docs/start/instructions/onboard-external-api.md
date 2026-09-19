@@ -1,6 +1,6 @@
 # Playbook: Onboard External API
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-01-04.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-06.
 > **Status:** Active
 > **Runtime-specific:** no
 

@@ -1,6 +1,6 @@
 # Security Events — Операційний Playbook
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-29.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-31.
 > **Status:** Active
 > **Runtime-specific:** yes
 

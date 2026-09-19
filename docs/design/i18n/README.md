@@ -1,6 +1,6 @@
 # Internationalisation (i18n)
 
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-03-16.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-07.
 > **Status:** Active
 
 Продукт **UA-first**: український каталог — джерело правди для кожного

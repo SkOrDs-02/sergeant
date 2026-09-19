@@ -1,6 +1,6 @@
 # Регресії Hub, onboarding та AI-чату
 
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-05-07.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-05-15.
 > **Status:** Shipped — усі діагнози нижче вже є виправленим станом коду (звірено 2026-09-16): `#root { height: 100dvh }` + standalone `100vh` у `styles/base.css` з `base.viewport.test.ts`; «фартух» `bottom-nav-shell::after` знято, панель docked (`ModuleBottomNav.tsx`); `hub:open-settings` в `shared/lib/modules/hubNav.ts`; `SuspenseWithMinDelay` у `HubChatOverlay` / `HubChatPage`; регресійні тести `WelcomeScreen`, `StandaloneRoutes.extra`, `HubChatBody`, `HubSettingsPage`.
 
 ## Мета

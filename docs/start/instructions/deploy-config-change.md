@@ -1,6 +1,6 @@
 # Playbook: Зміна deploy-конфігу (vercel / Dockerfile / Coolify)
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-18.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-20.
 > **Status:** Active
 > **Runtime-specific:** no
 

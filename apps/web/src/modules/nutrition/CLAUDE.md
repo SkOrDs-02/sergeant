@@ -1,6 +1,6 @@
 # Модуль Nutrition (web)
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-24.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-26.
 > **Status:** Active
 
 Продуктовий контекст: `Read .agents/skills/sergeant-module-nutrition/SKILL.md` → канон `docs/product/modules/nutrition.md` (§ Журнал рішень — уже ухвалені рішення, не перепитуй).

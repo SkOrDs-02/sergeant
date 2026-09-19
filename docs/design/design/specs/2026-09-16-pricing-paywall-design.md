@@ -2,7 +2,7 @@
 
 # Дизайн-контракт: тарифи й paywall
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-04-03.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-05.
 > **Status:** Active — контракт as-built: описує `PricingPage.tsx`, `core/billing/PaywallModal.tsx`, `useFeatureGate.ts`, `core/access/featureAccess.ts`, `core/settings/PlanSection.tsx` станом на 2026-09-16 (рішення власника по аудиту дизайн-доків, пункт 4, варіант A: повні контракти для pricing/paywall і onboarding). Усі розбіжності з кодом, які контракт вимагав закрити, закриті 2026-09-16; 2026-09-17 знайдено один новий **[борг]** — копі `PlanSection.tsx` (див. § Копі).
 
 Поверхня, на якій продукт просить гроші: `/pricing` (окремий маршрут поза

@@ -1,6 +1,6 @@
 # Playbook: Прибирання dead code
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-01-13.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-15.
 > **Status:** Active
 > **Runtime-specific:** no
 
