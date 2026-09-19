@@ -1254,6 +1254,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # `pull-requests: read` — БЕЗ нього джоба падає на кожному PR, і падає
+      # не знахідкою, а крахом: на `pull_request` gitleaks-action просить
+      # `GET /repos/{owner}/{repo}/pulls/{n}/commits`, щоб знати, які коміти
+      # сканувати, дістає 403 «Resource not accessible by integration» і
+      # вивалюється необробленим винятком ДО того, як щось просканує.
+      #
+      # Чому це не бачили раніше: на `push` у `main` цей виклик не робиться,
+      # тож на головній гілці джоба зелена (звірка 2026-09-19: run на
+      # `9dea9af` — success), а червона рівно там, де сканувати й треба —
+      # на PR. Тобто секрет-гейт був фактично вимкнений на всіх PR-ах,
+      # показуючи при цьому впевнений зелений на `main`.
+      pull-requests: read
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
