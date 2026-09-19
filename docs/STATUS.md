@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-17 by docs:gen-status. **Next review:** 2026-09-24.
+> **Last touched:** 2026-09-19 by docs:gen-status. **Next review:** 2026-09-26.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -32,11 +32,11 @@
 - [#67](https://github.com/zaebal-beep/sergeant/pull/67) — feat(server): перецілити kill-switch пам'яті ШІ з finyk на digest (0024, PR-2) _(2026-09-16)_
 - [#69](https://github.com/zaebal-beep/sergeant/pull/69) — docs(docs): quote the expired 0589 todo as history so lint:todo-freshness stops firing _(2026-09-16)_
 
-## 🔵 В роботі — 65 відкритих документів
+## 🔵 В роботі — 66 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 65       |
+| Активні спеки | 66       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -54,6 +54,7 @@
 Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pending` маркером — `blocked` першими.
 
 - [`work/specs/anonymous-local-first-persistence.md`](./work/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Активні спеки)_
+- [`work/specs/docs-code-drift-2026-09-19.md`](./work/specs/docs-code-drift-2026-09-19.md) — SPEC: звірка `docs/` з кодом — закрити дрейф і поставити гейт на слуг репо → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0024-ai-memory-source-coverage.md`](./work/specs/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0025-posthog-ai-observability.md`](./work/specs/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Активні спеки)_
 

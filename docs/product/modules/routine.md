@@ -644,8 +644,10 @@ web-PWA достатній; окремий натив не критичний.
 > **реальні екрани** (`pages/Calendar`, `pages/Heatmap/HeatmapPage`,
 > `pages/Habits/HabitsPage`) з dual-write + SQLite-boot + expo-нагадуваннями;
 > заголовок файлу — «Mobile port of apps/web/.../RoutineApp.tsx (728 LOC)».
-> `RoutineTabPlaceholder.tsx` існує, але **не використовується шеллом**
-> (мертвий). Доки теж стверджують паритет (`platforms.md:44,100`). Тобто це
+> `RoutineTabPlaceholder.tsx` уже **видалено з репозиторію** (звірка
+> 2026-09-19: `find apps -iname "*RoutineTabPlaceholder*"` порожній; доти
+> канон описував його як «існує, але мертвий»). Доки теж стверджують паритет
+> (`platforms.md:44,100`). Тобто це
 > **first-cut, але робочий Expo-порт**, не заглушка — застаріле припущення,
 > зафіксоване як [знахідка diff-звіту](../../work/specs/audits/product-knowledge-routine.md).
 

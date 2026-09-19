@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-01-11.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-13.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -103,7 +103,7 @@ Reports drop у `apps/web/.lighthouseci/` (gitignored).
 
 ## E2E smoke (Playwright)
 
-Critical-flow E2E lane runs per-PR via `.github/workflows/ci.yml` job `critical-flow` (line ~539): `playwright test -c playwright.smoke.config.ts --grep @critical`. Boot sequence — `docker compose up -d postgres` → `pnpm db:migrate:dev` → `@sergeant/server dev` (:3000) → `@sergeant/web build` → `vite preview` (:4173). Driver: `apps/web/tests/smoke/start-smoke-webserver.mjs`. Tests under `apps/web/tests/smoke/`.
+Critical-flow E2E lane runs per-PR via `.github/workflows/ci.yml` job `critical-flow` (line ~539): `playwright test -c playwright.smoke.config.ts --grep @critical`. Boot sequence — `docker compose up -d postgres` → `pnpm --filter @sergeant/server db:migrate:dev` → `@sergeant/server dev` (:3000) → `@sergeant/web build` → `vite preview` (:4173). Driver: `apps/web/tests/smoke/start-smoke-webserver.mjs`. Tests under `apps/web/tests/smoke/`.
 
 ```bash
 pnpm --filter @sergeant/web e2e                  # → playwright --grep @critical
