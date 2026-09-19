@@ -70,6 +70,15 @@ export const FIXTURES = [
     cwd: "apps/server",
   },
   { surface: "web", path: "apps/web/src/main.tsx", cwd: "apps/web" },
+  // Лендінг дістав власний блок 2026-09-14 (`eslint.landing.js`,
+  // `ukrainian-copy`). До того він був єдиною поверхнею без блоку — і,
+  // відповідно, без точки в цьому списку: гейт не мовчав про дрейф, він
+  // просто не дивився туди. Знімеш блок — цей снапшот почервоніє.
+  {
+    surface: "landing",
+    path: "apps/landing/src/main.tsx",
+    cwd: "apps/landing",
+  },
   {
     surface: "mobile",
     path: "apps/mobile/app/(tabs)/index.tsx",
