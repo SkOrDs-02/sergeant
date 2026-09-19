@@ -258,4 +258,22 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     expect(pastDue).toHaveTextContent(/платіжному порталі/i);
     expect(screen.getByTestId("plan-manage-button")).toBeInTheDocument();
   });
+
+  it("не стверджує «Free» і не пропонує апгрейд, поки статус ще вантажиться", async () => {
+    // Регресія WF-19 (аудит 2026-09-16): `usePlan` повертає `plan: "free"`
+    // як ДЕФОЛТ під час запиту, тож платний користувач до відповіді
+    // сервера бачив бейдж «Free», абзац «Ти на безкоштовному тарифі…» і
+    // кнопку «Перейти на Premium», яка вела його на /pricing.
+    statusMock.mockImplementation(() => new Promise(() => {}));
+    renderSection();
+    await openSection();
+
+    const badge = await screen.findByTestId("plan-badge");
+    expect(badge).not.toHaveTextContent("Free");
+    expect(screen.getByText("Завантаження…")).toBeInTheDocument();
+    expect(screen.queryByTestId("plan-upgrade-button")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText(/Ти на безкоштовному тарифі/),
+    ).not.toBeInTheDocument();
+  });
 });

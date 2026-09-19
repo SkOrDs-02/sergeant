@@ -804,6 +804,178 @@ describe("applyPullOp", () => {
     expect(owner[0]?.deleted_at ?? null).toBeNull();
   });
 
+  it("воскрешає локальний tombstone новішим op (generic-шлях, чистий LWW)", async () => {
+    // Сервер живе за чистим LWW (`guardUuidPkApply`, регресія SERGEANT-WEB-T),
+    // а клієнт тримав власний tombstone-guard — і розʼїзд моделей давав тишу:
+    // «Скасувати» в тості повертало рядок, сервер його приймав, а другий
+    // пристрій скіпав оп і просував курсор. Далі скіпалися й УСІ наступні
+    // правки, бо `deleted_at` локально вже не скидався.
+    const userId = "u-resurrect";
+    const rowId = "habit-resurrect";
+
+    await applyPullOp(
+      client,
+      {
+        id: 40,
+        table: "routine_habits",
+        op: "insert",
+        row: { id: rowId, user_id: userId, name: "Бюджет" },
+        client_ts: "2026-07-10T08:00:00.000Z",
+        server_ts: "2026-07-10T08:00:00.000Z",
+        origin_device_id: "device-b",
+      },
+      userId,
+      "device-a",
+    );
+
+    // T1 — видалення на пристрої A доїхало сюди.
+    expect(
+      await applyPullOp(
+        client,
+        {
+          id: 41,
+          table: "routine_habits",
+          op: "delete",
+          row: { id: rowId, user_id: userId },
+          client_ts: "2026-07-10T09:00:00.000Z",
+          server_ts: "2026-07-10T09:00:00.000Z",
+          origin_device_id: "device-b",
+        },
+        userId,
+        "device-a",
+      ),
+    ).toBe("applied");
+
+    // T2 > T1 — «Скасувати» в тості: той самий id, `deleted_at: null`.
+    expect(
+      await applyPullOp(
+        client,
+        {
+          id: 42,
+          table: "routine_habits",
+          op: "insert",
+          row: {
+            id: rowId,
+            user_id: userId,
+            name: "Бюджет",
+            deleted_at: null,
+          },
+          client_ts: "2026-07-10T10:00:00.000Z",
+          server_ts: "2026-07-10T10:00:00.000Z",
+          origin_device_id: "device-b",
+        },
+        userId,
+        "device-a",
+      ),
+    ).toBe("applied");
+
+    const revived = await client.all<{
+      name: string;
+      deleted_at: string | null;
+    }>(
+      `SELECT name, deleted_at FROM routine_habits WHERE id = ? AND user_id = ?`,
+      [rowId, userId],
+    );
+    expect(revived[0]).toMatchObject({ name: "Бюджет", deleted_at: null });
+
+    // І наступна правка того ж рядка теж доїжджає — саме це ламалось
+    // найдовше, бо локальний `deleted_at` не скидався ніколи.
+    expect(
+      await applyPullOp(
+        client,
+        {
+          id: 43,
+          table: "routine_habits",
+          op: "update",
+          row: {
+            id: rowId,
+            user_id: userId,
+            name: "Бюджет на їжу",
+            deleted_at: null,
+          },
+          client_ts: "2026-07-10T11:00:00.000Z",
+          server_ts: "2026-07-10T11:00:00.000Z",
+          origin_device_id: "device-b",
+        },
+        userId,
+        "device-a",
+      ),
+    ).toBe("applied");
+    const renamed = await client.all<{ name: string }>(
+      `SELECT name FROM routine_habits WHERE id = ? AND user_id = ?`,
+      [rowId, userId],
+    );
+    expect(renamed[0]?.name).toBe("Бюджет на їжу");
+  });
+
+  it("контр-кейс: правка СТАРІША за локальний tombstone і далі скіпається", async () => {
+    // Захист від stale-правки лишається на `isStaleLocal` — той самий
+    // аргумент, що й у серверному `guardUuidPkApply`.
+    const userId = "u-resurrect-stale";
+    const rowId = "habit-resurrect-stale";
+
+    await applyPullOp(
+      client,
+      {
+        id: 50,
+        table: "routine_habits",
+        op: "insert",
+        row: { id: rowId, user_id: userId, name: "Бюджет" },
+        client_ts: "2026-07-10T08:00:00.000Z",
+        server_ts: "2026-07-10T08:00:00.000Z",
+        origin_device_id: "device-b",
+      },
+      userId,
+      "device-a",
+    );
+    await applyPullOp(
+      client,
+      {
+        id: 51,
+        table: "routine_habits",
+        op: "delete",
+        row: { id: rowId, user_id: userId },
+        client_ts: "2026-07-10T09:00:00.000Z",
+        server_ts: "2026-07-10T09:00:00.000Z",
+        origin_device_id: "device-b",
+      },
+      userId,
+      "device-a",
+    );
+
+    expect(
+      await applyPullOp(
+        client,
+        {
+          id: 52,
+          table: "routine_habits",
+          op: "update",
+          row: {
+            id: rowId,
+            user_id: userId,
+            name: "Stale revive",
+            deleted_at: null,
+          },
+          client_ts: "2026-07-10T08:30:00.000Z",
+          server_ts: "2026-07-10T08:30:00.000Z",
+          origin_device_id: "device-b",
+        },
+        userId,
+        "device-a",
+      ),
+    ).toBe("skipped");
+
+    const stillDeleted = await client.all<{
+      name: string;
+      deleted_at: string | null;
+    }>(
+      `SELECT name, deleted_at FROM routine_habits WHERE id = ? AND user_id = ?`,
+      [rowId, userId],
+    );
+    expect(stillDeleted[0]?.name).toBe("Бюджет");
+    expect(stillDeleted[0]?.deleted_at).not.toBeNull();
+  });
+
   it("rejects generic delete on tables without deleted_at and reuses pragma caches", async () => {
     const userId = "u-prefs";
 

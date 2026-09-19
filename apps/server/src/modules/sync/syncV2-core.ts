@@ -336,8 +336,38 @@ export function parseOptionalTzOffsetMin(
 }
 
 /**
+ * Bound check for `fizruk_workout_sets.weight_kg` / `.reps` (W4 — server
+ * observability/boundary audit). Сусідні заміри тіла (`fizruk_measurements`,
+ * `applyMisc.ts` → `MEASUREMENT_BOUNDS`) уже отримали межі в pre-beta
+ * input-boundaries audit; сети тренування лишались на необмежених
+ * `parseOptionalNumber`/`parseOptionalInt` — `curl` міг записати
+ * `weight_kg: -500` чи `reps: 999999999` без жодного захисту.
+ *
+ * Числа дзеркалять клієнтську стелю форми підходу
+ * (`apps/web/src/modules/fizruk/lib/numericBounds.ts` →
+ * `MAX_WEIGHT_KG`/`MAX_REPS` = 1000/1000) — НЕ плутати з
+ * `MEASUREMENT_BOUNDS.weightKg` (20–400): те поле — вага ТІЛА людини,
+ * а тут — вага СНАРЯДУ/тренажера на одному підході, яка фізично може бути
+ * набагато більшою (жим ногами, станова тяга на тренажері). Мінімум `0` —
+ * від'ємна вага чи кількість повторень позбавлена сенсу.
+ *
+ * Оголошено тут (не в `@sergeant/shared`, поруч із `MEASUREMENT_BOUNDS`),
+ * бо задача, яка це виправляла, свідомо обмежена `apps/server/**` — якщо
+ * колись знадобиться той самий канон і клієнту, перенеси разом з
+ * `MEASUREMENT_BOUNDS`-патерном, не дублюй числа окремо вдруге.
+ */
+export const WORKOUT_SET_WEIGHT_KG_BOUNDS: { min: number; max: number } = {
+  min: 0,
+  max: 1000,
+};
+export const WORKOUT_SET_REPS_BOUNDS: { min: number; max: number } = {
+  min: 0,
+  max: 1000,
+};
+
+/**
  * Bound check for user-supplied name/label/note/text fields (pre-beta
- * input-boundaries audit, `docs/90-work/planning/specs/beta-input-
+ * input-boundaries audit, `docs/work/specs/beta-input-
  * boundaries.md` Фаза 3 — сервер). Client-side bounds
  * (`apps/web/src/shared/lib/text/limits.ts`) are trivially bypassed via
  * `curl`, so every per-table applier must re-check server-side. Callers

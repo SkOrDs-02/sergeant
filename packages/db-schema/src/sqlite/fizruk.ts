@@ -16,7 +16,7 @@ import { sql } from "drizzle-orm";
  * on SQLite for both surfaces — web (sqlite-wasm via OPFS-SAH) and mobile
  * (`expo-sqlite`).
  *
- * Stage 4 / PR #027 of `docs/planning/storage-roadmap.md`.
+ * Stage 4 / PR #027 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Differences from Postgres:
  * - `id` is TEXT (UUID stored as a string — SQLite has no native UUID).
@@ -236,7 +236,7 @@ export const fizrukMeasurements = sqliteTable(
  * `safeWriteLS(STORAGE_KEYS.FIZRUK_DAILY_LOG, ...)` in
  * `apps/{web,mobile}/src/modules/fizruk/hooks/useDailyLog.ts`.
  *
- * Stage 12 / PR #070f-schema of `docs/planning/storage-roadmap.md`.
+ * Stage 12 / PR #070f-schema of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Differences from `fizruk_measurements` (the closest existing slot):
  *  - `daily_log` rows are user-edited diary entries with the full
@@ -449,25 +449,4 @@ export const fizrukInjuries = sqliteTable(
       .on(table.userId, sql`${table.startedAt} DESC`)
       .where(sql`${table.deletedAt} IS NULL`),
   ],
-);
-
-/**
- * SQLite schema for the `fizruk_pushups` table.
- *
- * Перенос власності pushup-даних routine → fizruk (канон `routine.md` §10,
- * рішення 2026-08-30). Дзеркалить `routine_pushups` за формою: один рядок
- * на (user, day) з лічильником повторів; day key — device-local
- * `YYYY-MM-DD` (ADR-0078). Міграція `004_fizruk_pushups.sql`.
- */
-export const fizrukPushups = sqliteTable(
-  "fizruk_pushups",
-  {
-    userId: text("user_id").notNull(),
-    dateKey: text("date_key").notNull(),
-    reps: integer().notNull().default(0),
-    updatedAt: text("updated_at")
-      .notNull()
-      .default(sql`(datetime('now'))`),
-  },
-  (table) => [primaryKey({ columns: [table.userId, table.dateKey] })],
 );

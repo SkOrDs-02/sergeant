@@ -148,7 +148,7 @@ function MonthlyPlanCardComponent({
       >
         <div className="flex items-center gap-2 min-w-0">
           <span className="text-muted" aria-hidden>
-            <Icon name="calendar" size={16} />
+            <Icon name="calendar" size="md" />
           </span>
           <span className="text-style-label text-text">Фінплан на місяць</span>
         </div>
@@ -185,7 +185,7 @@ function MonthlyPlanCardComponent({
           )}
           <Icon
             name="chevron-down"
-            size={14}
+            size="sm"
             className={cn(
               "transition-transform text-muted",
               open ? "rotate-180" : "",
@@ -402,7 +402,7 @@ function MonthlyPlanCardComponent({
               aria-expanded={editing}
               className="text-style-caption text-muted hover:text-text inline-flex items-center gap-1 px-2 py-1 rounded-xl hover:bg-panelHi transition-colors"
             >
-              <Icon name="edit" size={12} />
+              <Icon name="edit" size="xs" />
               {editing ? "Згорнути" : hasPlan ? "Редагувати" : "Задати план"}
             </button>
           </div>

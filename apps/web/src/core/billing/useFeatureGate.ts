@@ -1,6 +1,11 @@
 import { useCallback, useState } from "react";
 import { usePlan } from "./usePlan";
 import type { PaywallSurface } from "./PaywallModal";
+import {
+  FEATURE_TO_SURFACE,
+  PREMIUM_FEATURE_IDS,
+  type PremiumFeatureId,
+} from "./premiumFeatures";
 
 /**
  * Premium feature gate (initiative Phase 7 D2 / `docs/design/redesign-v2/
@@ -21,20 +26,12 @@ import type { PaywallSurface } from "./PaywallModal";
 // AI-NOTE: `"multi-currency"` прибрано 2026-08-05 (B3 браузерного аудиту) —
 // гейт не викликався з жодного call-site, а функції, яку він нібито
 // захищав, у застосунку немає: у формі активу валюта статична («UAH»)
-// однаково для Free і Premium. Копія `paywall["multi-currency"]` у
-// каталогах i18n лишилася сиротою — прибирати її окремим проходом.
-export type PremiumFeatureId = "ai-photo-analysis" | "analytics-export-pdf";
-
-/**
- * Maps a `PremiumFeatureId` to the existing `PaywallSurface` analytics
- * label so `paywall_viewed` continues to bucket cleanly. New surfaces
- * are added to `PaywallModal.PaywallSurface` rather than re-using
- * unrelated ones.
- */
-const FEATURE_TO_SURFACE: Record<PremiumFeatureId, PaywallSurface> = {
-  "ai-photo-analysis": "unlimited_ai_photo",
-  "analytics-export-pdf": "csv_export",
-};
+// однаково для Free і Premium. Осиротілу копію `paywall["multi-currency"]`
+// прибрано з `uk.ts` і `en.ts` 2026-09-16 (борг дизайн-контракту тарифів),
+// а сам реєстр гейтів переїхав у leaf-модуль `premiumFeatures.ts`, щоб
+// контрактний тест каталогів деривував список, а не тримав його копію.
+export type { PremiumFeatureId };
+export { PREMIUM_FEATURE_IDS };
 
 export interface UseFeatureGateResult {
   /** True when the user is on Pro and the gated feature is unlocked. */

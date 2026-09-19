@@ -283,8 +283,9 @@ describe("Dashboard extended coverage", () => {
 
     render(<Dashboard {...defaultProps} />);
 
-    // The Quick-start card is labelled "Швидкий старт"
-    expect(screen.getByLabelText("Швидкий старт")).toBeInTheDocument();
+    // Картка шаблонів. Була «Швидкий старт» — так само називалась кнопка на
+    // вкладці «Тренування», яка робила інше (власник 2026-09-16).
+    expect(screen.getByLabelText("Шаблони")).toBeInTheDocument();
     const tplButton = screen.getByText("Жим лежачи A").closest("button");
     expect(tplButton).toBeInTheDocument();
     // Raw `<button>` template row — must carry the canonical

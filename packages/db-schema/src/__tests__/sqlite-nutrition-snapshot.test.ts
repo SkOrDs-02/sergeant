@@ -21,7 +21,7 @@ import {
  * mirroring the structural lock-down that `pg-nutrition-snapshot.test.ts`
  * applies to the Postgres source-of-truth.
  *
- * Stage 4 / PR #031 of `docs/planning/storage-roadmap.md`. Same rationale
+ * Stage 4 / PR #031 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Same rationale
  * as the routine and fizruk snapshot tests — PG↔SQLite schemas must stay
  * aligned so push/pull round-trips are symmetric.
  */

@@ -105,6 +105,42 @@ describe("routineDueNow", () => {
     const due = routine([a, b]);
     expect(due.map((d) => d.userId)).toEqual(["u1", "u2"]);
   });
+
+  describe("гнучка звичка («N разів на тиждень»)", () => {
+    // DAY = 2026-08-03, понеділок; той самий тиждень триває до 2026-08-09.
+    const THURSDAY = "2026-08-06";
+
+    it("мовчить, коли тижнева норма вже добрана", () => {
+      // Ціль за замовчуванням — 3; пн/вт/ср (03-05) її добирають, тож у
+      // четвер `habitScheduledOnDate` без `weekDoneCount` віддав би
+      // безпечний дефолт `true` — рівно той розрив, який закриває клас А
+      // спеки `routine-flexible-weekly-frequency.md`.
+      const due = routine([habitRow({ recurrence: "flexible" })], "08:00", {
+        dayKey: THURSDAY,
+        weekCompletionsByHabitId: new Map([
+          ["hab_1", ["2026-08-03", "2026-08-04", "2026-08-05"]],
+        ]),
+      });
+      expect(due).toHaveLength(0);
+    });
+
+    it("нагадує, доки тижнева норма не добрана", () => {
+      const due = routine([habitRow({ recurrence: "flexible" })], "08:00", {
+        dayKey: THURSDAY,
+        weekCompletionsByHabitId: new Map([
+          ["hab_1", ["2026-08-03", "2026-08-04"]],
+        ]),
+      });
+      expect(due).toHaveLength(1);
+    });
+
+    it("без переданих тижневих відміток лишається безпечним дефолтом (нагадує)", () => {
+      const due = routine([habitRow({ recurrence: "flexible" })], "08:00", {
+        dayKey: THURSDAY,
+      });
+      expect(due).toHaveLength(1);
+    });
+  });
 });
 
 describe("fizrukDueNow", () => {

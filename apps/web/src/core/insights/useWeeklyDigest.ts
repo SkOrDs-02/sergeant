@@ -39,7 +39,7 @@ import {
   averageKcalGoalForDays,
   calcNutritionPeriodAverages,
 } from "@sergeant/nutrition-domain";
-import { workoutTonnageKg } from "@sergeant/fizruk-domain";
+import { itemTonnageKg, workoutTonnageKg } from "@sergeant/fizruk-domain";
 import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
 import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
 
@@ -264,11 +264,12 @@ export function aggregateFizruk(weekKey: string): FizrukAggregate | null {
 
   for (const w of weekWorkouts) {
     for (const item of w.items) {
+      // Гейт саме по ТИПУ, не по нулю: силова вправа без підходів має
+      // лишити запис із нулем, як було до зведення на канон. `vol === 0`
+      // тут виглядав рівнозначним, але мовчки викидав такий запис із
+      // `exerciseVolumes`, а отже й із топ-3 дайджесту.
       if (item.type !== "strength") continue;
-      const vol = (item.sets ?? []).reduce(
-        (s, set) => s + set.weightKg * set.reps,
-        0,
-      );
+      const vol = itemTonnageKg(item);
       if (item.nameUk) {
         exerciseVolumes[item.nameUk] =
           (exerciseVolumes[item.nameUk] ?? 0) + vol;

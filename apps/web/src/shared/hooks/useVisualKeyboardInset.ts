@@ -16,7 +16,7 @@
  * `vv.offsetTop` from the gap and recompute on every such event, so
  * the reported inset jittered in lockstep with that pan — the sheet's
  * `marginBottom` visibly "jumped" under the user's finger and hit
- * targets moved mid-tap (spec `docs/90-work/planning/specs/keyboard-and-scroll.md`
+ * targets moved mid-tap (spec `docs/work/specs/keyboard-and-scroll.md`
  * § H1). The keyboard's on-screen height is stable for the whole time
  * it's open — only `resize` (the layout-viewport/visual-viewport
  * height delta actually changing) should ever move the reported inset.

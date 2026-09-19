@@ -44,12 +44,12 @@ export function FeedbackSection() {
         </p>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           className="h-10 w-full justify-center gap-2"
           onClick={handleOpen}
         >
-          <Icon name="message-circle" size={16} />
+          <Icon name="message-circle" size="md" />
           {messages.feedback.openButton}
         </Button>
       </SettingsSubGroup>

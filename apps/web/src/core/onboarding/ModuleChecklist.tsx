@@ -263,7 +263,7 @@ export function ModuleChecklist({
               styles.accent,
             )}
           >
-            <Icon name="list-checks" size={16} strokeWidth={2} />
+            <Icon name="list-checks" size="md" strokeWidth={2} />
           </div>
           <div className="min-w-0 text-left">
             <h3 className="text-style-title text-text truncate">
@@ -313,7 +313,7 @@ export function ModuleChecklist({
 
           <Icon
             name="chevron-down"
-            size={16}
+            size="md"
             className={cn(
               "text-muted transition-transform duration-base",
               isCollapsed && "-rotate-90",
@@ -371,7 +371,7 @@ export function ModuleChecklist({
                 {interactive && (
                   <Icon
                     name="chevron-right"
-                    size={14}
+                    size="sm"
                     className="text-muted shrink-0"
                     aria-hidden
                   />

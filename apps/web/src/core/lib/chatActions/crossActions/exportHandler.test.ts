@@ -12,6 +12,7 @@ vi.mock("../../../../modules/nutrition/lib/nutritionStorage", () => ({
 }));
 vi.mock("../fizrukActions/shared", () => ({
   readFizrukWorkouts: vi.fn(),
+  readFizrukDailyLog: vi.fn(() => []),
 }));
 vi.mock("../../../../modules/finyk/lib/monoMirrorReader", () => ({
   getCachedFinykMonoMirrorState: vi.fn(),

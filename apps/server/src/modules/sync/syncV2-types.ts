@@ -152,6 +152,16 @@ export const ENGINE_REJECT_REASONS = [
   "apply_failed",
   "duplicate",
   "op_not_supported",
+  /**
+   * Сам apply пройшов (або й не потрібен був), а запис рядка в `sync_op_log`
+   * упав. Окрема причина, а не спільна з `apply_failed`: та каже «хендлер
+   * таблиці не зміг», а ця — «журнал не прийняв», і лікуються вони в різних
+   * місцях. Реальний тригер — `U+0000` у рядковому полі `row`: zod його
+   * пропускає, Postgres `jsonb` ні. Доти така помилка йшла в зовнішній catch
+   * і робила ROLLBACK УСЬОГО батча (500 на сотню рядків через один оп); тепер
+   * вона локальна — див. savepoint `op_log_write` у `syncV2.ts`.
+   */
+  "oplog_write_failed",
 ] as const;
 
 export type EngineRejectReason = (typeof ENGINE_REJECT_REASONS)[number];

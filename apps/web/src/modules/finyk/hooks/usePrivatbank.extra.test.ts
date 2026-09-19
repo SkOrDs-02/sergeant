@@ -209,7 +209,7 @@ describe("usePrivatbank (extra) — fetchTransactions AuthError", () => {
     await act(async () => {
       await result.current.connect("mid", "tok");
     });
-    expect(result.current.error).toContain("Невірні credentials");
+    expect(result.current.error).toContain("Неправильні credentials");
   });
 });
 
@@ -322,7 +322,7 @@ describe("usePrivatbank (extra) — data.data response format", () => {
 // ── connect — outer catch: AuthError from balance fetch ──────────────────────
 
 describe("usePrivatbank (extra) — connect outer catch: AuthError from balance", () => {
-  it("sets 'Невірні credentials' error when balance API returns 401", async () => {
+  it("sets 'Неправильні credentials' error when balance API returns 401", async () => {
     // No cached balance → apiFetch is called, throws AuthError
     const { ApiError } = await import("@shared/api");
     const authErr = new ApiError({
@@ -341,7 +341,7 @@ describe("usePrivatbank (extra) — connect outer catch: AuthError from balance"
       await result.current.connect("mid-auth-fail", "tok-auth-fail");
     });
 
-    expect(result.current.error).toContain("Невірні credentials");
+    expect(result.current.error).toContain("Неправильні credentials");
     // `connected` лишається true: сервер уже прийняв і зберіг креденшели у
     // `privat_connection`, а впав саме дозавантаж даних. Показати тут
     // «не підключено» означало б суперечити стану сервера — користувач

@@ -1,3 +1,4 @@
+import type { ModuleOpenSource } from "@sergeant/shared";
 import { useEffect } from "react";
 import type { NavigateFunction } from "react-router-dom";
 import { onHubBus } from "@shared/lib/modules/hubBus";
@@ -114,7 +115,7 @@ export function useAppEffects(deps: AppEffectsDeps): void {
   useEffect(() => {
     const onMessage = (event: MessageEvent) => {
       if (event.data?.type === "OPEN_MODULE") {
-        openModule(event.data.module);
+        openModule(event.data.module, { source: "pwa_shortcut" });
       }
     };
     if ("serviceWorker" in navigator) {
@@ -179,17 +180,6 @@ export function useAppEffects(deps: AppEffectsDeps): void {
     [openChat],
   );
 
-  // Global signal to open HubSearch from any surface (used by hint
-  // toasts). Mirrors the typed `openChat` contract on the same bus.
-  const setSearchOpenStable = ui.setSearchOpen;
-  useEffect(
-    () =>
-      onHubBus("openSearch", () => {
-        setSearchOpenStable(true);
-      }),
-    [setSearchOpenStable],
-  );
-
   useEffect(() => {
     const onHubOpen = (ev: Event) => {
       const detail =
@@ -198,14 +188,18 @@ export function useAppEffects(deps: AppEffectsDeps): void {
             module?: string;
             hash?: string;
             action?: PwaAction;
+            source?: ModuleOpenSource;
           }>
         ).detail || {};
-      const { module, hash, action } = detail;
+      const { module, hash, action, source } = detail;
       if (action && validActions.has(action)) {
         safeWriteLS(PWA_ACTION_KEY, action);
         setPwaAction(action);
       }
-      openModule(module, hash ? { hash } : undefined);
+      openModule(module, {
+        ...(hash ? { hash } : {}),
+        source: source ?? "other",
+      });
     };
     window.addEventListener(HUB_OPEN_MODULE_EVENT, onHubOpen);
     return () => window.removeEventListener(HUB_OPEN_MODULE_EVENT, onHubOpen);

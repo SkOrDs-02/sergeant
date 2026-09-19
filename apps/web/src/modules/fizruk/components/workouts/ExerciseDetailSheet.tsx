@@ -263,7 +263,8 @@ export function ExerciseDetailSheet({
       {isCustom && (
         <div className="mt-4">
           <Button
-            variant="danger"
+            variant="soft"
+            tone="danger"
             className="w-full h-12"
             onClick={onDeleteRequest}
           >
@@ -315,12 +316,12 @@ export function ExerciseDetailSheet({
       <div
         className={`mt-5 grid gap-2 ${onNavigate ? "grid-cols-2" : "grid-cols-1"}`}
       >
-        <Button variant="secondary" className="h-12" onClick={onClose}>
+        <Button variant="outline" className="h-12" onClick={onClose}>
           Закрити
         </Button>
         {onNavigate && (
           <Button
-            variant="secondary"
+            variant="outline"
             className="h-12"
             onClick={() => {
               onNavigate(`exercise/${selected.id}`);

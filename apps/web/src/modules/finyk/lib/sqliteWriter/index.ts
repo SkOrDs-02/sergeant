@@ -29,7 +29,7 @@ import { probeFinykParity } from "./parity.js";
 /**
  * Orchestrator for the Finyk SQLite writer layer (formerly dual-write).
  *
- * Stage 4 PR #036 of `docs/planning/storage-roadmap.md`. Mirrors the
+ * Stage 4 PR #036 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirrors the
  * nutrition SQLite-writer orchestrator pattern from PR #032.
  *
  * Glues together:
@@ -362,11 +362,24 @@ export async function applyFinykDualWriteOpsViaContext(
     return { status: "skipped", reason: "sqlite-unavailable" };
   }
 
-  const result = await applyFinykDualWriteOps(client, ops, {
-    userId,
-    clientTs: nextMonotonicClientTs(ctx),
-    logger: ctx.logger,
-  });
+  let result: ApplyDualWriteResult;
+  try {
+    result = await applyFinykDualWriteOps(client, ops, {
+      userId,
+      clientTs: nextMonotonicClientTs(ctx),
+      logger: ctx.logger,
+    });
+  } catch (err) {
+    // Log before re-throwing: this `await` has no local fallback (unlike
+    // the `getMigrationClient()` guard above), so without this the
+    // failure would surface only as a bare unhandled rejection at the
+    // fire-and-forget call sites — see the `.catch` handlers below.
+    logSafe(ctx, "warn", "dual-write apply failed", {
+      ops: ops.length,
+      error: err instanceof Error ? err.message : String(err),
+    });
+    throw err;
+  }
   const outcome: DualWriteOutcome = { status: "applied", result };
   recordDualWriteOutcome("finyk", outcome);
   return outcome;
@@ -396,13 +409,21 @@ export interface ManualExpenseMirrorEntry {
 export function triggerManualExpenseSqliteMirror(
   expense: ManualExpenseMirrorEntry,
 ): void {
-  if (!registeredContext || !expense?.id) return;
+  const ctx = registeredContext;
+  if (!ctx || !expense?.id) return;
   const op: FinykDualWriteOp = {
     kind: "blob-upsert",
     table: "finyk_manual_expenses",
     entry: { id: expense.id, dataJson: JSON.stringify(expense) },
   };
-  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext([op]));
+  void Promise.resolve()
+    .then(() => applyFinykDualWriteOpsViaContext([op]))
+    .catch((err) => {
+      logSafe(ctx, "warn", "manual-expense sqlite mirror failed", {
+        id: expense.id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 }
 
 /**
@@ -411,13 +432,21 @@ export function triggerManualExpenseSqliteMirror(
  * the create mirror and the row stops showing up in the overlay read.
  */
 export function triggerManualExpenseDeleteSqliteMirror(id: string): void {
-  if (!registeredContext || !id) return;
+  const ctx = registeredContext;
+  if (!ctx || !id) return;
   const op: FinykDualWriteOp = {
     kind: "blob-delete",
     table: "finyk_manual_expenses",
     id,
   };
-  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext([op]));
+  void Promise.resolve()
+    .then(() => applyFinykDualWriteOpsViaContext([op]))
+    .catch((err) => {
+      logSafe(ctx, "warn", "manual-expense sqlite delete mirror failed", {
+        id,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 }
 
 /**
@@ -429,7 +458,8 @@ export function triggerManualExpenseDeleteSqliteMirror(id: string): void {
 export function triggerTxCategorySqliteMirror(
   entries: ReadonlyArray<{ transactionId: string; categoryId: string }>,
 ): void {
-  if (!registeredContext) return;
+  const ctx = registeredContext;
+  if (!ctx) return;
   const ops: FinykDualWriteOp[] = [];
   for (const e of entries) {
     if (!e.transactionId || !e.categoryId) continue;
@@ -439,7 +469,14 @@ export function triggerTxCategorySqliteMirror(
     });
   }
   if (ops.length === 0) return;
-  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext(ops));
+  void Promise.resolve()
+    .then(() => applyFinykDualWriteOpsViaContext(ops))
+    .catch((err) => {
+      logSafe(ctx, "warn", "tx-category sqlite mirror failed", {
+        ops: ops.length,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 }
 
 /**
@@ -448,13 +485,21 @@ export function triggerTxCategorySqliteMirror(
  * agrees with the migrated hidden-tx read.
  */
 export function triggerHiddenTransactionSqliteMirror(txId: string): void {
-  if (!registeredContext || !txId) return;
+  const ctx = registeredContext;
+  if (!ctx || !txId) return;
   const op: FinykDualWriteOp = {
     kind: "id-upsert",
     table: "finyk_hidden_transactions",
     entry: { id: txId },
   };
-  void Promise.resolve().then(() => applyFinykDualWriteOpsViaContext([op]));
+  void Promise.resolve()
+    .then(() => applyFinykDualWriteOpsViaContext([op]))
+    .catch((err) => {
+      logSafe(ctx, "warn", "hidden-transaction sqlite mirror failed", {
+        id: txId,
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 }
 
 function logSafe(

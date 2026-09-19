@@ -95,7 +95,50 @@ function isNavigationRace(error: unknown) {
   );
 }
 
+/**
+ * Дочекатись, поки доїдуть entry-анімації, і лише тоді знімати кольори.
+ *
+ * axe міряє контраст по computed-стилях у момент виклику, а `opacity`
+ * предка домножує foreground на альфу. Блоки хаба заїжджають через
+ * `stagger-in` (`StaggerChild`, 320 ms, opacity 0 → 1), lazy-контент —
+ * через `SuspenseWithMinDelay` (`animate-fade-in`, 220 ms). Скан, що
+ * потрапив у хвіст такої анімації, бачить «розбавлений» текст: на #72
+ * (run 35117972018, 2026-09-16) заголовок «Модулі» дав 3.75:1 із
+ * foreground `#6e756f` — це `--c-muted` #535c56 при opacity ≈0.83 на столі
+ * хаба, а підказки карток — 4.49:1 із `#79736d` замість `--c-subtle`
+ * #605a54. Той самий коміт на другому прогоні зелений: різниця лише в
+ * тому, коли мережа затихла відносно маунту сітки.
+ *
+ * Чекаємо лише СКІНЧЕННІ анімації (лупи shimmer/pulse ніколи не
+ * закінчуються) і кількома проходами, бо stagger-діти стартують із
+ * затримкою до 150 ms, а Suspense-контент може змонтуватись після першого
+ * проходу. Стеля — 3 с: анімація, яку хтось поставив на паузу, не має
+ * вішати тест. Та сама схема, що в `tests/mobile/audit.ts` (там rect-и,
+ * тут кольори — мотив один: міряти кадр, який уже приземлився).
+ */
+async function settleAnimations(page: Page) {
+  await page.evaluate(async () => {
+    const deadline = performance.now() + 3_000;
+    for (let pass = 0; pass < 5; pass++) {
+      const pending = document
+        .getAnimations()
+        .filter(
+          (a) =>
+            a.playState !== "finished" &&
+            a.effect?.getComputedTiming().iterations !== Infinity,
+        );
+      const budget = deadline - performance.now();
+      if (pending.length === 0 || budget <= 0) return;
+      await Promise.race([
+        Promise.all(pending.map((a) => a.finished.catch(() => undefined))),
+        new Promise((resolve) => setTimeout(resolve, budget)),
+      ]);
+    }
+  });
+}
+
 async function analyzeA11y(page: Page) {
+  await settleAnimations(page);
   try {
     return await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
   } catch (error) {
@@ -106,6 +149,8 @@ async function analyzeA11y(page: Page) {
     await page.waitForLoadState("networkidle", { timeout: 5_000 }).catch(() => {
       /* allow-through: some surfaces keep long-polling connections open */
     });
+    // Навігація перезапустила entry-анімації — дочекатись їх ще раз.
+    await settleAnimations(page);
     return await new AxeBuilder({ page }).withTags(AXE_TAGS).analyze();
   }
 }
@@ -219,6 +264,37 @@ for (const { name, path, seed } of SURFACES) {
       });
     }
 
+    // `incomplete` — не «все гаразд», а «axe не зміг вирішити». Для
+    // `color-contrast` це рівно випадок градієнтного фону: правило не
+    // вміє визначити колір тла під текстом і мовчки здається, а фільтр
+    // вище дивиться ЛИШЕ на `violations`. Саме так провалений контраст
+    // `text-hero-ink/70` на геро-градієнті Premium проїхав повз цей
+    // лейн непоміченим (аудит шуму 2026-09-16, WF-23).
+    //
+    // Не робимо блокуючим навмисно: `incomplete` за визначенням не є
+    // доказом порушення, і перевести його в red означало б зачервонити
+    // кожен градієнт у продукті. Але воно перестає бути НЕВИДИМИМ —
+    // тепер його видно в звіті з назвою поверхні й кількістю вузлів,
+    // тобто є з чого почати ручний замір. Числову перевірку альфи на
+    // геро-чорнилі несе `packages/design-tokens/contrast.test.js`, а
+    // лічильник call-site-ів — метрика `heroInkAlpha` у храповику.
+    const undecidedContrast = results.incomplete.filter(
+      (r) => r.id === "color-contrast",
+    );
+    if (undecidedContrast.length > 0) {
+      const nodes = undecidedContrast.reduce(
+        (sum, r) => sum + r.nodes.length,
+        0,
+      );
+      test.info().annotations.push({
+        type: "axe-contrast-undecided",
+        description:
+          `${nodes} вузл(ів) на ${path}, де axe НЕ ЗМІГ порахувати контраст ` +
+          `(типово — текст на градієнті). Це не порушення і не гарантія: ` +
+          `міряй вручну, якщо поверхня геройська.`,
+      });
+    }
+
     expect(
       consoleErrors.filter(
         (e) =>
@@ -250,6 +326,11 @@ const THEMED_SURFACES: Array<{
     { name: "design-showcase", path: "/design" },
     { name: "fizruk-dashboard", path: "/?module=fizruk" },
     { name: "settings", path: "/settings" },
+    // `/pricing` доданий 2026-09-17: Premium-картка рендериться
+    // `prominence="hero"`, тобто несе саме той градієнт, на якому
+    // провалився контраст (WF-23), а темна й HC-теми мають ВЛАСНІ
+    // геро-токени (`--hero-ink-*`), тож світлого прогону для них замало.
+    { name: "pricing", path: "/pricing" },
   ] as const
 ).flatMap(({ name, path }) =>
   (["dark", "hc"] as const).map((theme) => ({

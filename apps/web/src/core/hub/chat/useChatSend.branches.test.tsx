@@ -225,7 +225,7 @@ describe("useChatSend — guard branches", () => {
   // онбординг упирався в paywall посеред інтервʼю — тижневе preset-відро
   // й лишається окремим бюджетом незалежно від цього; історично лічба
   // виходила з подвійного списання за tool-хід, яке AI-5 рішення 1
-  // (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) закрило —
+  // (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) закрило —
   // тепер хід з дією коштує один запит, не два.
   it("preset-хід не блокується пейволом на вичерпаній денній квоті", async () => {
     flags.isPro = false;

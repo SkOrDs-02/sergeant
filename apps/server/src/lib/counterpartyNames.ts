@@ -29,6 +29,25 @@ import { logger } from "../obs/logger.js";
  */
 const CACHE_TTL_MS = 5 * 60 * 1000;
 
+/**
+ * Стеля на кількість користувачів у кеші.
+ *
+ * AI-DANGER: TTL сам собою НЕ звільняє пам'ять. Запис із простроченим
+ * `expiresAt` лежить у `Map` доти, доки той самий `userId` не прийде знову й
+ * не перезапише його — sweep-у тут немає і не буде (він потребував би
+ * власного таймера на гарячому шляху). Отже без цієї стелі кеш росте
+ * монотонно з кожним новим користувачем чату: до 1000 імен на людину, і на
+ * 4 ГБ VPS це закінчується OOM, а не деградацією.
+ *
+ * Витіснення — найстаріший за порядком вставки (`Map` його зберігає), той
+ * самий прийом, що в `modules/nutrition/barcode.ts`. Це не справжній LRU:
+ * читання порядок не оновлює. Для нашого профілю цього досить — запис живе
+ * 5 хвилин, тож «найстаріший вставлений» і «найдавніше потрібний»
+ * практично збігаються, а зайвий `delete`/`set` на КОЖНОМУ читанні коштував
+ * би дорожче за рідкий промах.
+ */
+const CACHE_MAX_SIZE = 500;
+
 const SQL_COUNTERPARTY_NAMES = `SELECT DISTINCT counter_name
      FROM mono_transaction
     WHERE user_id = $1
@@ -49,6 +68,26 @@ export function __resetCounterpartyNamesCache(): void {
   cache.clear();
 }
 
+/** Розмір кешу — для тестів, які перевіряють саме стелю. */
+export function __counterpartyNamesCacheSize(): number {
+  return cache.size;
+}
+
+/**
+ * Покласти запис і дотримати стелю. Перед вставкою знімаємо наявний ключ,
+ * щоб оновлення переїхало в кінець черги вставки — інакше «свіжий» запис
+ * витіснявся б першим саме тому, що його колись уже клали.
+ */
+function cacheSet(userId: string, values: string[], now: number): void {
+  if (cache.has(userId)) cache.delete(userId);
+  cache.set(userId, { values, expiresAt: now + CACHE_TTL_MS });
+  while (cache.size > CACHE_MAX_SIZE) {
+    const oldest = cache.keys().next().value;
+    if (oldest === undefined) break;
+    cache.delete(oldest);
+  }
+}
+
 /**
  * Повертає нормалізований список імен контрагентів-фізосіб.
  *
@@ -63,7 +102,13 @@ export async function getCounterpartyNames(
   if (!userId) return [];
   const now = Date.now();
   const hit = cache.get(userId);
-  if (hit && hit.expiresAt > now) return hit.values;
+  if (hit) {
+    if (hit.expiresAt > now) return hit.values;
+    // Протермінований запис знімаємо одразу: інакше він займає місце під
+    // стелею до наступного успішного `cacheSet` цього ж користувача, а при
+    // недоступній базі (fail-open нижче) — і довше.
+    cache.delete(userId);
+  }
 
   try {
     const { rows } = await pool.query<{ counter_name: string | null }>(
@@ -71,7 +116,7 @@ export async function getCounterpartyNames(
       [userId],
     );
     const values = normalizeKnownValues(rows.map((r) => r.counter_name));
-    cache.set(userId, { values, expiresAt: now + CACHE_TTL_MS });
+    cacheSet(userId, values, now);
     return values;
   } catch (e) {
     logger.warn({

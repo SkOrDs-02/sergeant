@@ -76,7 +76,9 @@ describe("useHubStorageBump", () => {
     const { result } = renderHook(() => useHubStorageBump());
 
     act(() => {
-      emitHubBus("openSearch", undefined);
+      // Навмисно `openChat`: хук реагує саме на `storageUpdated`, тож
+      // «неспорідненою» подією може бути лише інший канал.
+      emitHubBus("openChat", { message: "x" });
     });
 
     expect(result.current).toBe(0);

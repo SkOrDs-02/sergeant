@@ -1,6 +1,6 @@
 # Toast policy
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-22.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-03-30.
 > **Status:** Active.
 
 Канонічна довідка для агентів і розробників: коли який toast, скільки
@@ -83,7 +83,7 @@ toast.error("Не вдалося синхронізувати дані. Пере
 | Anti-pattern                                                                                    | Чому погано                                                                                                    | Що замість                                                                                                               |
 | ----------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------ |
 | `toast.error("Не вдалося синхронізувати")` без `action`                                         | Користувач у тупику — не знає, чи буде нова спроба, треба перезавантажити сторінку чи ні.                      | Додай `{ label: "Повторити", onClick: retry }` — інакше падає `require-toast-error-action`.                              |
-| `toast.error("Не вдалося", 0, …)` (нескінченне `duration`)                                      | Користувач не зможе закрити тост клавіатурою / автоматично — `aria-live=assertive` блокує screen-reader queue. | Default 5000 ms або явне число; user може hover/focus pause-ити.                                                         |
+| `toast.error("Не вдалося", null, …)` (`null` = persistent-контракт, нескінченний `duration`)    | Користувач не зможе закрити тост клавіатурою / автоматично — `aria-live=assertive` блокує screen-reader queue. | Default 5000 ms або явне число; user може hover/focus pause-ити. (`0` — не «нескінченно», а нульовий таймер.)            |
 | `toast.success("Видалено")` без undo                                                            | Випадкове видалення → нема як відновити; doc стерто з cloud після 200 ms.                                      | `showUndoToast(...)` із 5-сек вікном. Див. [`undoToast.tsx`](../../../apps/web/src/shared/lib/ui/undoToast.tsx).         |
 | Дубль тоста і `announce()` на ту саму подію                                                     | Тост уже несе `aria-live`; незряча людина чує про одне збереження двічі, різними словами.                      | `announce()` — лише коли тоста НЕМА (модалка, аркуш), як у `WorkoutJournalSection`.                                      |
 | `toast.error(error.message)` де `error.message` — це stack-trace або сервер-internal            | Користувач бачить "TypeError: Cannot read property 'data' of undefined" — лякає, не допомагає.                 | Покажи human copy (`Не вдалося оновити аватар`) + `console.error(error)` для дев-консолі.                                |
@@ -128,8 +128,21 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
 `<ToastContainer>` живе у `apps/web/src/core/app/Providers.tsx` як root-portal.
 
 - Bottom-центрований стак, `w-[min(92vw,24rem)]`.
-- Нижній відступ = `max(safe-area, --sgt-bottom-nav-inset, --sgt-workout-banner-inset) + 0.75rem`.
-  **AI-DANGER:** обидві `--sgt-*` змінні ставить хук
+- **Трей завжди внизу — і над футером відкритого аркуша.** Внизу він
+  стояв рівно там, де футер `Sheet` з його CTA, а наведення ставить
+  авто-закриття на паузу, тож на десктопі тост під завмерлим курсором не
+  зникав і робив «Пропустити» недосяжним (PR #64). PR #73 лікував це
+  переносом трею вгору на час будь-якого модального діалогу; **власник
+  2026-09-16 обрав інше** (варіант A з трьох): край не змінюється, трей
+  лишається знизу, де «Повернути» під великим пальцем, а піднімається на
+  висоту футера. `Sheet` публікує її у `--sgt-sheet-footer-inset` тим самим
+  `useBottomInsetVar`, що й навігація, лише поки відкритий і має `footer`.
+  Наслідок для авторів аркушів: **CTA живе у слоті `footer`**, а не
+  останнім рядком тіла — тіло змінну не публікує, і тост його нижній край
+  накриє. `useModalDialogOpen()` з `useDialogFocusTrap` лишається (його
+  тримають тести), але трей його більше не читає.
+- Нижній відступ = `max(safe-area, --sgt-bottom-nav-inset, --sgt-workout-banner-inset, --sgt-sheet-footer-inset) + 0.75rem`.
+  **AI-DANGER:** усі три `--sgt-*` змінні ставить хук
   [`useBottomInsetVar`](../../../apps/web/src/shared/hooks/useBottomInsetVar.ts)
   на `<html>`. Локальна `--bottom-nav-height` (утиліта
   `bottom-nav-height-var`) сюди **не доходить**: вона живе на корені
@@ -145,13 +158,20 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
   «прибери з очей», а не «підтверджую видалення», тож випадковий рух
   пальцем під час скролу більше не спалює вікно undo мовчки.
 - Hover / focus / touch-drag → `pause()`; mouseleave / blur / touchend
-  → `resume()`. Реалізовано в [`useToast.tsx:118-140`](../../../apps/web/src/shared/hooks/useToast.tsx).
+  → `resume()`. Реалізовано в [`useToast.tsx`](../../../apps/web/src/shared/hooks/useToast.tsx) (`pause` / `resume`).
+- Z-tier: трей стоїть на `z-toast` (300) за
+  [`03 § Elevation`](../design/design-system/03-spacing-elevation-theming.md);
+  до 2026-09-16 стояв на `z-9999` поза шкалою. Тест у `Toast.test.tsx`
+  тримає клас. Поза шкалою лишається `CelebrationModal` (`z-9999`) — окремий
+  борг, бо його поверхня свідомо перекриває все, включно з тостами.
 - Countdown bar анімація → `[animation-play-state:paused]` коли paused.
 
 ## Гейт на recovery-дію
 
 `sergeant-design/require-toast-error-action` (увімкнено в
-[`eslint.web.js`](../../../eslint.web.js) для `apps/web/src/**`) вимагає
+[`eslint.cross-surface.js`](../../../eslint.cross-surface.js) для
+`apps/web/src/**` **і** `apps/mobile/{src,app}/**` — блок переїхав з
+`eslint.web.js` 2026-09-13; дзеркало для mobile — `eslint.mobile.js`) вимагає
 третій аргумент `{ label, onClick }` на кожному `toast.error(...)`.
 
 **Чому воно повернулось.** Однойменне правило retired за
@@ -178,7 +198,9 @@ WCAG 4.1.3 (Status Messages, Level AA) вимагає, що повідомлен
 Змінна чи spread на місці третього аргументу пропускається — форму
 статично не прочитати, тож довіряємо авторові.
 
-**Легітимні причини потрапити в allowlist** (усі чотири вже там):
+**Легітимні причини потрапити в allowlist** (шість записів на 2026-09-16):
 rate-limit, де копія сама каже, коли вертатись; помилка розбору файлу в
 хуку, який не володіє файловим input-ом; провалений undo, де повтор
-небезпечніший за бездіяльність; docstring-приклад у JSDoc.
+небезпечніший за бездіяльність (web і mobile `showUndoToast`);
+docstring-приклад у JSDoc; маппер `mapApiErrorToUserCopy.ts`, який
+повертає копію, а дію додає call-site.

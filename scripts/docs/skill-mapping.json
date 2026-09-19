@@ -323,10 +323,6 @@
       ]
     },
     {
-      "playbook": "modify-console-agent.md",
-      "keywords": ["console agent", "console-agent", "telegram bot agent"]
-    },
-    {
       "playbook": "bump-dep-safely.md",
       "keywords": [
         "bump dep",
@@ -354,6 +350,58 @@
         "open-work",
         "freshness",
         "reconcile"
+      ]
+    },
+    {
+      "playbook": "fix-red-bundle-budget.md",
+      "keywords": [
+        "size-limit",
+        "бандл",
+        "bundle budget",
+        "eager",
+        "критичний шлях",
+        "перф-бюджет"
+      ]
+    },
+    {
+      "playbook": "audit-ci-gates.md",
+      "keywords": [
+        "мовчазний гейт",
+        "ci gate",
+        "skipped step",
+        "гейт не спрацював",
+        "always()"
+      ]
+    },
+    {
+      "playbook": "unify-ui-to-canon.md",
+      "keywords": [
+        "канон",
+        "уніфікація",
+        "дублікати компонентів",
+        "храповик",
+        "ratchet",
+        "легасі api"
+      ]
+    },
+    {
+      "playbook": "verify-site-claims.md",
+      "keywords": [
+        "лендінг",
+        "site drift",
+        "твердження сайту",
+        "landing claims",
+        "дрейф сайту"
+      ]
+    },
+    {
+      "playbook": "migrate-client-storage.md",
+      "keywords": [
+        "opfs",
+        "клієнтське сховище",
+        "перенос даних",
+        "анонімні дані",
+        "sqlite worker"
       ]
     }
   ]

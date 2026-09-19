@@ -64,6 +64,7 @@ export function ModuleShell({
       </Tag>
       <HubModals
         searchOpen={ui.searchOpen}
+        searchQuery={ui.searchQuery}
         onCloseSearch={ui.closeSearch}
         onOpenModule={openModule}
       />

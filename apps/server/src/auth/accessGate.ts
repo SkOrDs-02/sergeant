@@ -5,7 +5,7 @@ import { env } from "../env/env.js";
  * `userId`.
  *
  * AI-LEGACY: expires 2026-11-30 — тимчасова заміна справжньому гейту
- * запрошень. Знімається разом із виходом на magic-link із Telegram-бота
+ * запрошень; прибирання — docs/work/specs/beta-launch/README.md § Що прибрати. Знімається разом із виходом на magic-link із Telegram-бота
  * (черга вже живе в `telegram_waitlist`, але вона знає `chat_id`, не пошту).
  *
  * AI-CONTEXT: чому список `userId`, а не пошт. Гейт вмикається тоді, коли

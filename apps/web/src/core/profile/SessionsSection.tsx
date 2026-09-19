@@ -289,7 +289,8 @@ export function SessionsSection({ online }: { online: boolean }) {
                       )}
                     </div>
                     <Button
-                      variant="danger"
+                      variant="soft"
+                      tone="danger"
                       size="xs"
                       disabled={revoking === s.id || currentLookupFailed}
                       loading={revoking === s.id}

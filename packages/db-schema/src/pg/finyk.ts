@@ -14,7 +14,7 @@ import { sql } from "drizzle-orm";
  * Postgres Drizzle schemas for the Finyk module's normalized cloud-sync
  * target tables.
  *
- * Stage 4 / PR #035 of `docs/planning/storage-roadmap.md` — mirrors
+ * Stage 4 / PR #035 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — mirrors
  * `apps/server/src/migrations/039_finyk_tables.sql` byte-for-byte
  * (column ordering, types, defaults, indexes). Snapshot tests under
  * `packages/db-schema/src/__tests__/pg-finyk-snapshot.test.ts` lock

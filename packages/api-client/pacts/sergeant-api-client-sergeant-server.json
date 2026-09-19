@@ -3308,7 +3308,8 @@
               "idempotency_key": "01HZ000000000000000000000B",
               "status": "applied"
             }
-          ]
+          ],
+          "server_now": "2026-05-12T09:30:01.000Z"
         },
         "headers": {
           "Content-Type": "application/json",

@@ -46,7 +46,7 @@ function MonoStalenessBannerComponent({
       {onReconnect && (
         <Button
           size="sm"
-          variant="secondary"
+          variant="outline"
           className="mt-3"
           onClick={onReconnect}
         >

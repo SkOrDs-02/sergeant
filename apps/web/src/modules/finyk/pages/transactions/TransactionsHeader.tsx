@@ -125,7 +125,7 @@ export function TransactionsHeader({
                 title={`Вивантажити ${exportCount} у CSV`}
                 aria-label={`Вивантажити операції у CSV: ${exportCount}`}
               >
-                <Icon name="download" size={16} aria-hidden />
+                <Icon name="download" size="md" aria-hidden />
               </button>
             )}
             <button

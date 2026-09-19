@@ -4,6 +4,7 @@ import { Card } from "@shared/components/ui/Card";
 import type { TxAccount } from "./Transactions";
 import { Money } from "@shared/components/ui/Money";
 import { messages } from "@shared/i18n/uk";
+import { formatDateShort, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
 
 interface TransferSuggestionCardProps {
   suggestion: InternalTransferSuggestion;
@@ -81,11 +82,7 @@ export function TransferSuggestionCard({
         : seconds * 1000
       : 0;
     if (!instant) return "";
-    return new Date(instant).toLocaleDateString("uk-UA", {
-      timeZone: "Europe/Kyiv",
-      day: "numeric",
-      month: "short",
-    });
+    return formatDateShort(new Date(instant), { timeZone: KYIV_TIME_ZONE });
   };
   const legs = [
     { key: "outgoing", tx: suggestion.outgoing, accountId: fromId, sign: -1 },

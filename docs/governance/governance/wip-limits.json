@@ -1,5 +1,5 @@
 {
-  "$schema": "Per-tracker WIP (work-in-progress) limits for in-flight documents. Counts the same set that generate-open-work.mjs surfaces (Status: Active / Draft / In progress / Scaffolded / Open / Planned / Phase *). 'soft' issues a warning; 'hard' fails CI. Increase only when the human maintainer can demonstrably absorb more parallel work — agents are fast, but reviewer attention is the bottleneck.",
+  "_comment": "Per-tracker WIP (work-in-progress) limits for in-flight documents. Counts the same set that generate-open-work.mjs surfaces (Status: Active / Draft / In progress / Scaffolded / Open / Planned / Phase *). 'soft' issues a warning; 'hard' fails CI. Increase only when the human maintainer can demonstrably absorb more parallel work — agents are fast, but reviewer attention is the bottleneck.",
   "limits": {
     "initiatives": { "soft": 25, "hard": 30 },
     "planning": { "soft": 28, "hard": 35 },

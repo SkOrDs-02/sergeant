@@ -483,11 +483,14 @@ export function Dashboard({
                 as="section"
                 prominence="glass"
                 radius="lg"
-                aria-label="Швидкий старт"
+                aria-label="Шаблони"
               >
                 <div className="flex items-center justify-between gap-2 mb-3">
+                  {/* Була «Швидкий старт» — так само називалась кнопка на
+                      вкладці «Тренування», яка робила інше. Одна назва на
+                      дві різні речі (власник 2026-09-16). */}
                   <SectionHeading as="h2" size="xs" variant="fizruk">
-                    Швидкий старт
+                    Шаблони
                   </SectionHeading>
                   <span className="text-style-caption text-muted">
                     {recentlyUsed.length > 0
@@ -570,14 +573,16 @@ export function Dashboard({
         footer={
           <div className="flex gap-2">
             <Button
-              variant="secondary"
+              variant="outline"
               className="flex-1 h-12 min-h-[44px]"
               onClick={closePlanConfirm}
             >
               Скасувати
             </Button>
             <Button
-              module="fizruk"
+              variant="solid"
+              tone="fizruk"
+
               className="flex-1 h-12 min-h-[44px]"
               onClick={() => {
                 const picks = pendingPicks ?? [];
@@ -607,21 +612,24 @@ export function Dashboard({
         footer={
           <div className="flex flex-col gap-2">
             <Button
-              module="fizruk"
+              variant="solid"
+              tone="fizruk"
+
               className="w-full h-12"
               onClick={() => resolveStartConflict("finish")}
             >
               Завершити старе й почати нове
             </Button>
             <Button
-              variant="destructive"
+              variant="solid"
+              tone="danger"
               className="w-full h-12"
               onClick={() => resolveStartConflict("discard")}
             >
               Викинути старе й почати нове
             </Button>
             <Button
-              variant="secondary"
+              variant="outline"
               className="w-full h-12"
               onClick={() => setStartConflict(null)}
             >

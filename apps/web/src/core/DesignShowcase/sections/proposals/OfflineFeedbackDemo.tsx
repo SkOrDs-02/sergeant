@@ -35,7 +35,7 @@ export function OfflineFeedbackDemo() {
         <MiniPhone dim>
           <div className="px-3 pt-1 pb-2">
             <div className="flex items-center gap-2 rounded-xl bg-warning/10 border border-warning/30 px-2.5 py-1.5">
-              <Icon name="wifi-off" size={14} className="text-warning" />
+              <Icon name="wifi-off" size="sm" className="text-warning" />
               <span className="text-style-caption text-warning">
                 Немає мережі
               </span>
@@ -68,7 +68,7 @@ export function OfflineFeedbackDemo() {
         <MiniPhone>
           <div className="px-3 pt-1 pb-2">
             <div className="flex items-center gap-2 rounded-xl bg-warning/10 border border-warning/30 px-2.5 py-1.5">
-              <Icon name="wifi-off" size={14} className="text-warning" />
+              <Icon name="wifi-off" size="sm" className="text-warning" />
               <span className="text-style-caption text-warning">
                 Офлайн · синхронізую пізніше
               </span>

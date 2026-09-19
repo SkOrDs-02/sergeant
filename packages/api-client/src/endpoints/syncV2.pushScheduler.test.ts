@@ -24,7 +24,7 @@ import {
   type SyncEngineSetIntervalFn,
 } from "./syncV2.pushScheduler";
 
-// Stage 5 PR #042e-scheduler (`docs/planning/storage-roadmap.md`).
+// Stage 5 PR #042e-scheduler (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 //
 // The scheduler is the next composable layer above
 // `runSyncEnginePushOnce` (PR #042e-pushloop): it owns timer state,

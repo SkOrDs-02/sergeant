@@ -9,7 +9,7 @@ import type {
  * the list of operations the dual-write layer must mirror to local
  * SQLite.
  *
- * Stage 4 PR #024 of `docs/planning/storage-roadmap.md`. Mirrors
+ * Stage 4 PR #024 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirrors
  * `apps/web/src/modules/routine/lib/sqliteWriter/diff.ts` byte-for-byte
  * — kept duplicated until Stage 5 promotes the dual-write helpers
  * into a workspace package alongside the SPIKE library.

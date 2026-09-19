@@ -162,6 +162,44 @@ describe("searchSources.performSearch (audit 03 F22 — scoring)", () => {
     expect(hit!.title).toContain("Жим лежачи");
   });
 
+  // Українська плюралізація — три форми (one/few/many), не бінарна
+  // «N vs many». 11 і 21 ловлять класичну помилку: 11 бере "many"
+  // ("вправ"), 21 повертається до "one" ("вправа").
+  it.each([
+    [1, "вправа"],
+    [2, "вправи"],
+    [5, "вправ"],
+    [11, "вправ"],
+    [21, "вправа"],
+  ])(
+    "uses the correct plural form for a workout subtitle with N=%i (%s)",
+    (n, form) => {
+      // Unique id per iteration — `storageSnapshot()` fingerprints the
+      // Fizruk cache by workout id, not by item count, so a repeated
+      // "w1" across `it.each` runs would hit the LRU (searchCache.ts)
+      // and silently return the previous iteration's result.
+      seedFizruk({
+        workouts: [
+          {
+            id: `w-${n}`,
+            startedAt: "2026-06-14T10:00:00.000Z",
+            endedAt: "2026-06-14T11:00:00.000Z",
+            items: Array.from({ length: n }, () => ({
+              nameUk: "Присідання",
+            })),
+            note: "",
+          },
+        ],
+      });
+      const results = performSearch("присідання");
+      const hit = results.find(
+        (r) => r.module === "fizruk" && r.id.startsWith("fizruk_w_"),
+      );
+      expect(hit).toBeDefined();
+      expect(hit!.subtitle).toContain(`${n} ${form} ·`);
+    },
+  );
+
   it("matches a Fizruk custom exercise by name (canonical SQLite cache)", () => {
     seedFizruk({
       customExercises: [

@@ -1,7 +1,7 @@
 # Дрейф «сайт ↔ код»: аудит свіжості лендінга проти факту в коді
 
 > **Status:** Active
-> **Last validated:** 2026-09-14
+> **Last touched:** 2026-09-17 by @claude (п. 4 § «Не виправлено»: гейт закрито 2026-09-16, реєстр оновлено 2026-09-17). **Next review:** 2026-12-16.
 > **Next review:** 2026-12-14
 > **Spec-lint:** skip — реєстр знахідок аудиту, не затверджена специфікація реалізації.
 
@@ -153,6 +153,11 @@ apps/server/src/modules/me/dataRights.ts:236-240, 324
 `api.anthropic.com`, `api.voyageai.com`, `anthropicMessages(` — і не бачить
 ні OpenRouter, ні Groq. Це governance-правка окремим PR: документ канонічний,
 і міняти його разом із копією лендінга неправильно.
+
+> ✅ гейт закрито 2026-09-16 — маркери `api.groq.com` і `openrouter.ai` додано
+> в `EXIT_MARKERS` (`llmRedactionCoverage.test.ts`); реєстр
+> `llm-subprocessors.md` оновлено 2026-09-17 (OpenRouter → вендор моделі,
+> Groq для аудіо).
 
 ### 5. Два мовчазні гейти
 

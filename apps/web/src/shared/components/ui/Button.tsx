@@ -133,6 +133,18 @@ const variants: Record<ButtonVariantLegacy, string> = {
   // `shadow-sm` — that is the "white button on white card" regression.
   secondary:
     "bg-panel text-text border border-border-strong shadow-e1 hover:bg-panelHi hover:border-brand-200 hover:shadow-e2 active:scale-[0.98]",
+  // AI-CONTEXT: `ghost` — НЕ «стриманий secondary». Без бордера й заливки
+  // його межу мусить давати РАМКА контейнера, в якому він стоїть. Сусідство
+  // з гучною кнопкою межі не замінює — рішення власника 2026-09-15 після
+  // заміру «Скасувати» (10 із 11 уже були `secondary`): поки погляд не
+  // дійшов до сусіда, тиха кнопка читається як підпис. Кнопка на всю
+  // ширину блока рамки не має і читається як голий текст
+  // на фоні — знахідка власника 2026-09-15 («кнопки як то оновити чеки
+  // голі лежать на фоні»), десять викликів у Налаштуваннях. Для дії-блока
+  // бери `secondary`; домальовувати `border border-line` поверх `ghost` не
+  // треба — це і є `secondary`, зібраний вручну. Таблиця вибору варіанта —
+  // `docs/design/design/design-system/04-components.md` § Button; гейт на
+  // Налаштування — `core/settings/settingsActionButtonVariants.test.ts`.
   ghost:
     "bg-transparent text-muted hover:bg-panelHi hover:text-text active:bg-line/50",
   danger:

@@ -248,7 +248,7 @@ export function InsightCard({
           "bg-celebration/20 text-celebration",
         )}
       >
-        <Icon name="sergeant" size={16} strokeWidth={2} />
+        <Icon name="sergeant" size="md" strokeWidth={2} />
       </span>
 
       {/* Activate button — title + subtitle. Takes the remaining width. */}
@@ -308,7 +308,7 @@ export function InsightCard({
               : "bg-brand-soft text-brand-soft-fg hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
           )}
         >
-          <Icon name="sergeant" size={14} strokeWidth={2} aria-hidden />
+          <Icon name="sergeant" size="sm" strokeWidth={2} aria-hidden />
         </button>
       )}
 
@@ -327,7 +327,7 @@ export function InsightCard({
         {/* SLOP-1 (аудит 2026-09): без явної мітки тут стояв текстовий гліф
             «→» — «гліф у слоті іконки» з анти-слоп стратегії §3.2. Тепер
             дефолт — справжня іконка; рядок лишається для кастомних міток. */}
-        {ctaLabel ?? <Icon name="close" size={16} aria-hidden />}
+        {ctaLabel ?? <Icon name="close" size="md" aria-hidden />}
       </button>
     </div>
   );

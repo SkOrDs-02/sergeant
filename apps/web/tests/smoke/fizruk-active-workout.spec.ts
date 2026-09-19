@@ -1,7 +1,12 @@
 import { test, expect, type Page } from "@playwright/test";
 
 import { seedFTUX } from "../utils/seedFTUX";
-import { collectPageErrors, waitForInitialSqliteRefresh } from "./smokeHelpers";
+import {
+  collectPageErrors,
+  settleToasts,
+  startWorkoutWithFirstExercise,
+  waitForInitialSqliteRefresh,
+} from "./smokeHelpers";
 
 /**
  * Ключ дзеркала подій аналітики у `sessionStorage`.
@@ -75,7 +80,7 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
 
   await page.goto("/fizruk/workouts", { waitUntil: "domcontentloaded" });
   await waitForInitialSqliteRefresh(page, "fizruk");
-  await page.getByRole("button", { name: "Швидкий старт" }).click();
+  await startWorkoutWithFirstExercise(page);
   await expect(page).toHaveURL(/\/fizruk\/workout\/[^/]+$/);
 
   // Аркуш готовності (спека `fizruk-readiness-check`) зʼявляється один раз на
@@ -85,6 +90,9 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
   // поводиться рівно так, як до появи фічі.
   const readiness = page.getByRole("dialog", { name: "Як ти сьогодні?" });
   await expect(readiness).toBeVisible();
+  // «Пропустити» — у футері аркуша, рівно там, де стоїть трей тостів; див.
+  // `settleToasts` про те, чому тост під курсором не зникає сам.
+  await settleToasts(page);
   await readiness.getByRole("button", { name: "Пропустити" }).click();
   await expect(readiness).toBeHidden();
 
@@ -121,8 +129,13 @@ test("@critical fizruk: start → set → refresh → resume → finish", async 
 
   // Список → вправа: підходи живуть на власному екрані вправи
   // (`workout/<id>/<itemId>`), тап по рядку списку відкриває його.
+  // `.last()`, бо після 2026-09-16 тренування вже не порожнє: хелпер старту
+  // бере ПЕРШУ вправу каталогу, і це той самий жим лежачи, тож у списку їх
+  // дві — і strict-mode локатор без `.last()` падав на «resolved to 2
+  // elements». Далі сценарій працює з тим записом, який щойно додав сам.
   await page
     .getByRole("button", { name: /Відкрити вправу: Жим штанги лежачи/ })
+    .last()
     .click();
   await expect(page).toHaveURL(/\/fizruk\/workout\/[^/]+\/[^/]+$/);
 

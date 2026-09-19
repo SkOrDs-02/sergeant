@@ -1,5 +1,9 @@
 import { FizrukData } from "@sergeant/fizruk-domain";
-import { formatMoney, formatMoneyFromKopecks } from "@sergeant/shared";
+import {
+  formatMoney,
+  formatMoneyFromKopecks,
+  pluralExercises,
+} from "@sergeant/shared";
 import { safeReadStringLS } from "@shared/lib/storage/storage";
 import { loadRoutineState } from "@routine/lib/routineStorage";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
@@ -166,7 +170,7 @@ function searchFizruk(tokens: string[]): Hit[] {
         subtitle:
           dateLabel +
           (itemsRaw.length
-            ? ` · ${itemsRaw.length} вправ · ${fullTokensText}`
+            ? ` · ${itemsRaw.length} ${pluralExercises(itemsRaw.length)} · ${fullTokensText}`
             : ""),
         icon: "dumbbell",
         target: { kind: "module", moduleId: "fizruk" },

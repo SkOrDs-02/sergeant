@@ -87,7 +87,7 @@ export function ReceiptReviewItemRow({
           aria-label={`Видалити позицію ${index + 1}`}
           className="shrink-0 touch-target flex items-center justify-center rounded-xl text-danger-strong dark:text-danger hover:bg-danger/10 transition-colors"
         >
-          <Icon name="trash" size={14} aria-hidden />
+          <Icon name="trash" size="sm" aria-hidden />
         </button>
       </div>
       <div className="mt-1.5 grid grid-cols-3 gap-1.5">

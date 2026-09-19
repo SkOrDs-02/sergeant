@@ -1,6 +1,7 @@
 import type { Request, RequestHandler, Response } from "express";
 import type { Pool } from "pg";
-import { logger } from "../obs/logger.js";
+import { logger, serializeError } from "../obs/logger.js";
+import { toPublicErrorCode } from "../obs/errorCode.js";
 import { getRedisStats, pingRedis } from "../lib/redis.js";
 import { getPoolStats } from "../db.js";
 import { anthropicCircuitBreaker } from "../lib/circuitBreaker.js";
@@ -116,9 +117,15 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
       };
     } catch (e) {
       overallHealthy = false;
+      // `/healthz` анонімний і без rate-limit (щоб probe платформи не
+      // голодували), а `e.message` від `pg` носить внутрішній хост, порт і
+      // імʼя DB-користувача — `password authentication failed for user
+      // "sergeant_app"`. Назовні йде лише клас помилки, повний текст —
+      // у лог, де його читає ops. Контракт: `obs/errorCode.ts`.
+      logger.error({ msg: "healthz_db_check_failed", err: serializeError(e) });
       checks["database"] = {
         status: "unhealthy",
-        details: { error: e instanceof Error ? e.message : String(e) },
+        details: { errorCode: toPublicErrorCode(e) },
       };
     }
 
@@ -136,12 +143,17 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
       // Незастосовані міграції = гарантовані 500 на роутах, що читають нові
       // колонки. Це не degraded, це зламано — навіть якщо `SELECT 1` зелений.
       overallHealthy = false;
+      // `pendingCount`, а не список імен: імена міграцій — це карта стану
+      // схеми прода (що саме зараз їде) плюс точне вікно неузгодженості, і
+      // віддавати її анонімові немає за що. Кількості вистачає і дашборду,
+      // і алерту «схема відстала»; самі імена вже є в лозі
+      // `readyz_schema_drift_block` і у відповіді `migrate.mjs`.
       checks["schema"] = {
         status: "unhealthy",
         details: {
           applied: drift.applied,
           shipped: drift.shipped,
-          pending: drift.pending,
+          pendingCount: drift.pending.length,
         },
       };
     }
@@ -190,7 +202,13 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
  * Контракт відповіді: `{status, timestamp, workers:{aiMemoryIngest,
  * monoEnrichment, gdprCleanup}}`. Не включає `version`/`commit`/`sha`
  * (L7 audit `docs/security/hardening/L7-health-endpoint-info-leak.md` —
- * ті самі invariants, що й для `/healthz`).
+ * ті самі invariants, що й для `/healthz`), і **не включає текст помилки
+ * воркера**: на фейлі sample-функції поле зветься `errorCode` і несе лише
+ * клас (`ECONNREFUSED`, `28P01`). Роут анонімний і без rate-limit, а
+ * `pg`/`ioredis` кладуть у `message` внутрішній хост, порт і імʼя
+ * DB-користувача — повний текст лишається в логах воркера
+ * (`obs/errorCode.ts`). Регресію стереже `routes/health.infoleak.test.ts`,
+ * де `error` стоїть у `FORBIDDEN_KEYS`.
  *
  * Status code:
  *   - 200 — всі sub-worker-и відповіли (можуть бути fallbackMode/disabled,
@@ -207,10 +225,10 @@ export function createWorkersHealthHandler(pool: Pool): RequestHandler {
       getGdprCleanupWorkerStatus(pool),
     ]);
     // Worker вважається "responsive": його sample-функція не повернула
-    // `error`. Disabled / fallback — все ще responsive.
-    const memoryIngestResponsive = memoryIngest.error === undefined;
-    const monoEnrichmentResponsive = monoEnrichment.error === undefined;
-    const gdprCleanupResponsive = gdprCleanup.error === undefined;
+    // `errorCode`. Disabled / fallback — все ще responsive.
+    const memoryIngestResponsive = memoryIngest.errorCode === undefined;
+    const monoEnrichmentResponsive = monoEnrichment.errorCode === undefined;
+    const gdprCleanupResponsive = gdprCleanup.errorCode === undefined;
     const allResponsive =
       memoryIngestResponsive &&
       monoEnrichmentResponsive &&

@@ -1,9 +1,11 @@
 # Міграція на React Native (Expo)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-11.
+> **Last touched:** 2026-09-17 by @claude (банер ADR-0094, v1 sync 410 → 404, зняті `read_sqlite`-флаги, writer-runtime узгоджено). **Next review:** 2026-12-16.
 > **Status:** Active
 
-> **Стратегічний контекст:** за [ADR-0052](../../governance/adr/0052-mobile-strategy-capacitor-primary.md)
+> **⚠️ Мобільний контур на паузі з 2026-08-25 — [ADR-0094](../../governance/adr/0094-mobile-web-first-freeze.md)** (web-first; superseded ADR-0052). Обидва мобільні стеки (`apps/mobile`, `apps/mobile-shell`) — актив, не sunset: `typecheck`/Jest далі гейтять `main`, баг-фікси дозволені, але продуктовий розвиток і фази нижче не плануються без рішення власника. Контекст ADR-0052 у наступному абзаці — історичний.
+>
+> **Стратегічний контекст (до 2026-08-25):** за [ADR-0052](../../governance/adr/0052-mobile-strategy-capacitor-primary.md)
 > **Capacitor — primary** mobile-шлях; нативний Expo/RN-клієнт нижче — це
 > **паралельна** робота (не основна), з decision-gate після Capacitor
 > production-rollout. Цей документ трекає саме той паралельний RN-трек.
@@ -179,8 +181,8 @@ NativeWind + RN-core. Поверх — додаткові примітиви в 
 
 **Sync (`apps/mobile/src/sync/*`)** — Phase 3:
 
-- **CloudSync v1 — викошений.** Сервер віддає `410 Gone`
-  ([ADR-0047](../../governance/adr/0047-cloudsync-v1-410-gone.md)), `module_data` колонку
+- **CloudSync v1 — викошений.** Сервер під час deprecation-вікна віддавав `410 Gone`
+  ([ADR-0047](../../governance/adr/0047-cloudsync-v1-410-gone.md)); після Initiative 0003 Phase 7 v1-роути видалено остаточно — тепер голий `404` (`apps/server/src/routes/sync.ts`). `module_data` колонку
   та v1-handlers видалено ([`75dcdd5`](https://github.com/Skords-01/Sergeant/commit/75dcdd5c));
   web-клієнт стабнув ентрі-пойнт у фінальному cut-over-і ([#2010](https://github.com/Skords-01/Sergeant/pull/2010));
   mobile-engine видалено ([`20793ad`](https://github.com/Skords-01/Sergeant/commit/20793adb)).
@@ -338,8 +340,9 @@ sergeant/
    `localStorage`/MMKV, доменні дані — у локальному SQLite через
    `@sergeant/db-schema` (web — sqlite-wasm на OPFS, mobile —
    `expo-sqlite`). Для модулів routine/fizruk/nutrition/finyk SQLite
-   уже cut-over для read-path за фіче-флагом
-   `feature.<m>.sqlite_v2.read_sqlite` (Q11/Q12/Q13). Деталі — §6,
+   read-path — безумовний після boot: флаги
+   `feature.<m>.sqlite_v2.read_sqlite` (Q11/Q12/Q13) зняті Stage 8
+   (PR #057\*, див. [`frontend-overview.md`](../architecture/frontend-overview.md)). Деталі — §6,
    первинний source-of-truth — [`docs/work/specs/planning/storage-roadmap.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md).
 
 ## 4. Фазований план
@@ -554,14 +557,15 @@ op-log v2 через `/v2/sync/{push,pull}` + SSE pull (Q13), не
 - **Доменні дані** (routine / fizruk / nutrition / finyk) — локальний
   SQLite через `@sergeant/db-schema` (TEXT-uuid, JSON-as-TEXT, `_lite`
   суфікс на індексах). Per-module cut-over reads виконано за фіче-флагом
-  `feature.<m>.sqlite_v2.read_sqlite` (storage-roadmap Stage 4); templates
+  `feature.<m>.sqlite_v2.read_sqlite` (storage-roadmap Stage 4), самі флаги
+  зняті Stage 8 — read тепер безумовний; templates
   / saved recipes / weekPlan ще на legacy LS/MMKV-слоті.
 - **Офлайн-черга** — `syncOpOutbox*` у локальному SQLite через
   `@sergeant/db-schema`, не MMKV. Writer-loop орхеструє
   `syncV2 pushLoop` + `syncEnginePushScheduler`
   (`@sergeant/api-client`); NetInfo-flush — через
   `syncEngineFlushOnReconnect`. Mobile writer-runtime у boot-pipeline
-  ще не змонтований (див. §2.4 + writer-wiring plan).
+  **змонтований** (`apps/mobile/src/core/syncEngine/*`, див. §3 «Sync» вище; рядок «ще не змонтований» тут був застарілим — узгоджено 2026-09-17).
 - **CRDT.** Streaks-лічильники — PN-counter (op `increment`); решта —
   per-row apply-fns на сервері з ідемпотентністю по `idempotency-key`
   (Q13).

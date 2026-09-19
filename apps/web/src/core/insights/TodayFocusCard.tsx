@@ -11,11 +11,16 @@ import {
 } from "@shared/lib/modules/hubNav";
 import { getModulePrimaryAction } from "@shared/lib/modules/moduleQuickActions";
 import { generateRecommendations } from "../lib/recommendationEngine";
+import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
+import { coreMessages } from "@shared/i18n/uk.core";
 
 // Reuse the same dismissed-map key HubRecommendations used so user
-// dismissals remain stable across the redesign.
-const DISMISSED_KEY = "hub_recs_dismissed_v1";
+// dismissals remain stable across the redesign. Експортується для
+// `core/hub/now/useNowItems.ts`: об'єднаний список «Зараз» пише dismiss у
+// ТЕ САМЕ сховище, а не заводить третє (спека `hub-action-axis.md`).
+export const HUB_RECS_DISMISSED_KEY = "hub_recs_dismissed_v1";
+const DISMISSED_KEY = HUB_RECS_DISMISSED_KEY;
 
 const MODULE_ACCENT = {
   finyk: "bg-finyk",
@@ -103,12 +108,12 @@ export function useDashboardFocus() {
 interface FocusRec {
   id: string;
   module: keyof typeof MODULE_ACCENT;
-  severity?: StatusColor;
+  severity?: StatusColor | undefined;
   title: string;
-  body?: string;
-  icon?: string;
+  body?: string | undefined;
+  icon?: string | undefined;
   action: string;
-  pwaAction?: HubModuleAction;
+  pwaAction?: HubModuleAction | undefined;
 }
 
 /**
@@ -125,10 +130,26 @@ export function TodayFocusCard({
   focus,
   onAction,
   onDismiss,
+  onAskAi,
+  askAiDisabled = false,
+  kicker = true,
 }: {
   focus: FocusRec | null;
   onAction: (module: string) => void;
   onDismiss: (id: string) => void;
+  /**
+   * Чип «AI» — відкриває HubChat із префілом. З'являється лише під віссю
+   * дії (`NowPile`), коли hero має `Insight`-джерело з `askAiPrompt`
+   * (рішення власника: «дія з Rec + чип AI з Insight»). Стара головна
+   * пропа не передає — і не бачить чипа.
+   */
+  onAskAi?: (() => void) | undefined;
+  askAiDisabled?: boolean | undefined;
+  /**
+   * Кікер «Зараз» над заголовком. Під віссю дії його вже несе заголовок
+   * купи (`NowPile`), і другий «Зараз» на тому ж екрані — дубль.
+   */
+  kicker?: boolean | undefined;
 }) {
   if (!focus) {
     return null;
@@ -142,21 +163,38 @@ export function TodayFocusCard({
     severityTone?.accent || MODULE_ACCENT[focus.module] || "bg-primary";
   const wash = severityTone?.wash || MODULE_WASH[focus.module] || "bg-panelHi";
 
+  // Базова лінія перед віссю дії хабу (P3): «CTA у TodayFocusCard» — третя
+  // з трьох подій, без яких перехід на A1 не починається. `rec_id` — ключ
+  // дедупу з `recommendationEngine`, не PII.
+  const trackCta = (kind: "primary" | "secondary") =>
+    trackEvent(ANALYTICS_EVENTS.TODAY_FOCUS_CTA_CLICKED, {
+      rec_id: focus.id,
+      module: focus.module,
+      kind,
+      has_pwa_action: Boolean(focus.pwaAction),
+    });
+
   const primary = focus.pwaAction
     ? (() => {
         const quick = getModulePrimaryAction(focus.module);
         return {
           label: quick?.label || MODULE_OPEN_CTA[focus.module] || "Відкрити",
-          run: () =>
+          run: () => {
+            trackCta("primary");
             openHubModuleWithAction(
               focus.module as HubModuleId,
               focus.pwaAction as HubModuleAction,
-            ),
+              "today_focus_cta",
+            );
+          },
         };
       })()
     : {
         label: MODULE_OPEN_CTA[focus.module] || "Відкрити",
-        run: () => onAction(focus.action),
+        run: () => {
+          trackCta("primary");
+          onAction(focus.action);
+        },
       };
 
   // Fallback: коли primary був імперативним, додаємо текстовий линк
@@ -169,7 +207,10 @@ export function TodayFocusCard({
           // "Відкрити Рутину") instead of stitching "Відкрити " + a nominative
           // label ("Відкрити Їжа" read wrong for the renamed module).
           label: MODULE_OPEN_CTA[focus.module] || "Відкрити",
-          run: () => onAction(focus.action),
+          run: () => {
+            trackCta("secondary");
+            onAction(focus.action);
+          },
         }
       : null;
 
@@ -204,24 +245,26 @@ export function TodayFocusCard({
             "absolute top-2.5 right-2.5",
             "w-7 h-7 touch-target flex items-center justify-center rounded-xl",
             "text-muted hover:text-text hover:bg-black/5 dark:hover:bg-white/10",
-            "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
+            "transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
         >
-          <Icon name="close" size={14} strokeWidth={2.5} />
+          <Icon name="close" size="sm" strokeWidth={2.5} />
         </button>
       )}
 
       <div className="pl-3 pr-6">
-        <div className="flex items-center gap-3 mb-1">
-          <SectionHeading
-            as="span"
-            size="xs"
-            variant="muted"
-            className={severityTone?.eyebrow}
-          >
-            Зараз
-          </SectionHeading>
-        </div>
+        {kicker && (
+          <div className="flex items-center gap-3 mb-1">
+            <SectionHeading
+              as="span"
+              size="xs"
+              variant="muted"
+              className={severityTone?.eyebrow}
+            >
+              Зараз
+            </SectionHeading>
+          </div>
+        )}
 
         <h2 className="text-style-title font-bold text-text leading-snug text-balance">
           {/* `icon` рекомендації — імʼя гліфа з каталогу `Icon`. До
@@ -234,7 +277,7 @@ export function TodayFocusCard({
           {focus.icon && ICON_NAMES.includes(focus.icon) && (
             <Icon
               name={focus.icon}
-              size={16}
+              size="md"
               className="inline-block mr-1.5 align-middle text-muted"
               aria-hidden
             />
@@ -259,8 +302,28 @@ export function TodayFocusCard({
             )}
           >
             {primary.label}
-            <Icon name="chevron-right" size={14} strokeWidth={2.5} />
+            <Icon name="chevron-right" size="sm" strokeWidth={2.5} />
           </button>
+          {onAskAi && (
+            <button
+              type="button"
+              onClick={onAskAi}
+              disabled={askAiDisabled}
+              aria-label={
+                askAiDisabled
+                  ? coreMessages.hub.nowPile.askAiLimit
+                  : coreMessages.hub.nowPile.askAi
+              }
+              className={cn(
+                "touch-target inline-flex items-center gap-1 px-2.5 rounded-xl text-style-caption font-semibold focus-ring",
+                askAiDisabled
+                  ? "bg-panelHi text-muted cursor-not-allowed"
+                  : "bg-brand-soft text-brand-soft-fg hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
+              )}
+            >
+              {coreMessages.hub.nowPile.askAiChip}
+            </button>
+          )}
           {secondary && (
             <button
               type="button"

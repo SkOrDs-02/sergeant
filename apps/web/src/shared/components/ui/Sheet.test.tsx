@@ -112,6 +112,36 @@ describe("Sheet", () => {
     expect(document.body.style.overflow).toBe(prev);
   });
 
+  it("публікує смугу футера у --sgt-sheet-footer-inset лише коли footer заданий", () => {
+    const root = document.documentElement;
+    const { unmount } = render(
+      <Sheet open onClose={() => {}} title="Без футера">
+        body
+      </Sheet>,
+    );
+    expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe("");
+    unmount();
+
+    const withFooter = render(
+      <Sheet
+        open
+        onClose={() => {}}
+        title="З футером"
+        footer={<button type="button">Зберегти</button>}
+      >
+        body
+      </Sheet>,
+    );
+    expect(
+      withFooter.container.ownerDocument.querySelector("[data-sheet-footer]"),
+    ).not.toBeNull();
+    expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toMatch(
+      /^\d+px$/,
+    );
+    withFooter.unmount();
+    expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe("");
+  });
+
   it("applies a slide-up animation class on the panel", () => {
     const { getByRole } = render(
       <Sheet open onClose={() => {}} title="T">
@@ -168,7 +198,11 @@ describe("Sheet", () => {
     expect(dialog.style.maxHeight).toContain("100dvh - 320px");
   });
 
-  it("keeps the bottom-nav inset inside the panel, so the sheet reaches the viewport edge", () => {
+  // Звіт власника 2026-09-15: під футером аркуша лишалась смуга порожнього
+  // `bg-panel` — місце, зарезервоване під нижню навігацію, яку той самий
+  // аркуш накриває скримом. Резервуємо тільки safe-area; `marginBottom`
+  // лишається порожнім, інакше панель відривається від низу (2026-09-08).
+  it("reserves only the safe-area at the bottom, not the covered bottom nav", () => {
     const { getByRole } = render(
       <Sheet open onClose={() => {}} title="T">
         body
@@ -177,7 +211,12 @@ describe("Sheet", () => {
 
     const dialog = getByRole("dialog");
     expect(dialog.style.marginBottom).toBe("");
-    expect(dialog.style.paddingBottom).toContain("--sgt-bottom-nav-inset");
+    expect(dialog.getAttribute("style") ?? "").not.toContain(
+      "--sgt-bottom-nav-inset",
+    );
+    expect(dialog.getAttribute("style") ?? "").not.toContain(
+      "--bottom-nav-height",
+    );
   });
 
   it("резервує у скрол-контейнері запас на висоту клавіатури", () => {

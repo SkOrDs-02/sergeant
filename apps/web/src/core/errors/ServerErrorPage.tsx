@@ -46,10 +46,14 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
         eyebrow="500"
         illustration={<ServerErrorIllustration size={200} />}
         title="Щось пішло не так"
+        // The empty state is the entire `/500` surface, so it has to carry
+        // the page heading — otherwise this route ships with no heading at
+        // all (same reasoning as `NotFoundPage`).
+        titleAs="h1"
         description="Сервер тимчасово не зміг обробити запит. Спробуй оновити сторінку, зазвичай це допомагає."
         primaryAction={
-          <Button type="button" variant="primary" size="lg" onClick={reload}>
-            <Icon name="refresh-cw" size={16} />
+          <Button type="button" variant="solid" size="lg" onClick={reload}>
+            <Icon name="refresh-cw" size="md" />
             Оновити сторінку
           </Button>
         }

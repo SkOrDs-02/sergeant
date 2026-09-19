@@ -552,4 +552,85 @@ describe("push handlers", () => {
     });
     expect(res.body).toEqual(summary);
   });
+
+  // Регресія: `push_subscriptions.endpoint` глобально UNIQUE, тож арбітр
+  // конфлікту НЕ містить `user_id`, і беззастережний `DO UPDATE SET
+  // user_id` віддавав чужий рядок тому, хто останнім покликав register —
+  // жертва мовчки переставала отримувати свої сповіщення. Native-гілка
+  // (`push_devices`) цей guard мала від початку, web-таблиця лишалась
+  // відкритою. Endpoint своєї підписки людина бачить у власному
+  // GDPR-експорті, тож «його ніхто не знає» захистом не було.
+  //
+  // Guard навмисно ширший за `user_id = $1`: web-push endpoint належить
+  // БРАУЗЕРУ, і на спільному компʼютері `pushManager.subscribe()` віддає
+  // новому користувачу ТУ САМУ підписку — той самий endpoint і ті самі
+  // ключі. Тому збіг ключів теж дозволяє зміну власника; розбіжність при
+  // тому самому endpoint — ні.
+  for (const handler of ["register", "subscribe"] as const) {
+    it(`${handler}: не дозволяє забрати чужий endpoint, коли ключі не збігаються`, async () => {
+      const mocks = await loadHandlerMocks();
+      // rowCount = 0 → WHERE-гілка upsert-а не пропустила зміну власника.
+      mocks.db.query.mockResolvedValue({ rows: [], rowCount: 0 });
+      const handlers = await import("./push.js");
+      const res = makeRes();
+
+      const body =
+        handler === "register"
+          ? {
+              platform: "web" as const,
+              token: "https://push.example/victim",
+              keys: { p256dh: "attacker", auth: "attacker" },
+            }
+          : {
+              endpoint: "https://push.example/victim",
+              keys: { p256dh: "attacker", auth: "attacker" },
+            };
+
+      await expect(
+        handlers[handler](
+          { user: { id: "attacker" }, body } as never,
+          res as never,
+        ),
+      ).rejects.toMatchObject({
+        status: 409,
+        code: "PUSH_SUBSCRIPTION_OWNED",
+      });
+
+      // Хендлер не пише у відповідь узагалі — тіло складе errorHandler.
+      expect(res.body).toBeNull();
+    });
+
+    it(`${handler}: SQL несе guard на власника і на збіг ключів`, async () => {
+      const mocks = await loadHandlerMocks();
+      mocks.db.query.mockResolvedValue({ rows: [], rowCount: 1 });
+      const handlers = await import("./push.js");
+
+      const body =
+        handler === "register"
+          ? {
+              platform: "web" as const,
+              token: "https://push.example/own",
+              keys: { p256dh: "p256", auth: "auth" },
+            }
+          : {
+              endpoint: "https://push.example/own",
+              keys: { p256dh: "p256", auth: "auth" },
+            };
+
+      await handlers[handler](
+        { user: { id: "u1" }, body } as never,
+        makeRes() as never,
+      );
+
+      const upsert = mocks.db.query.mock.calls
+        .map((c) => String(c[0]))
+        .find((sql) => sql.includes("INSERT INTO push_subscriptions"));
+      expect(upsert).toBeDefined();
+      expect(upsert).toMatch(/push_subscriptions\.user_id = \$1/);
+      expect(upsert).toMatch(/push_subscriptions\.deleted_at IS NOT NULL/);
+      expect(upsert).toMatch(
+        /push_subscriptions\.p256dh = \$3 AND push_subscriptions\.auth = \$4/,
+      );
+    });
+  }
 });

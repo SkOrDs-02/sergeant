@@ -8,10 +8,10 @@ import { describe, expect, it, vi } from "vitest";
 import { MealStrip, type MealStripSegment } from "./MealStrip";
 
 const FOUR_SEGMENTS: MealStripSegment[] = [
-  { type: "breakfast", label: "Сніданок", kcal: 0 },
-  { type: "lunch", label: "Обід", kcal: 0 },
-  { type: "dinner", label: "Вечеря", kcal: 0 },
-  { type: "snack", label: "Перекус", kcal: 0 },
+  { type: "breakfast", label: "Сніданок", kcal: 0, count: 0 },
+  { type: "lunch", label: "Обід", kcal: 0, count: 0 },
+  { type: "dinner", label: "Вечеря", kcal: 0, count: 0 },
+  { type: "snack", label: "Перекус", kcal: 0, count: 0 },
 ];
 
 const MACROS = [
@@ -40,10 +40,10 @@ describe("MealStrip", () => {
 
   it("proportions segment width to kcal when a goal is set", () => {
     const segments: MealStripSegment[] = [
-      { type: "breakfast", label: "Сніданок", kcal: 500 },
-      { type: "lunch", label: "Обід", kcal: 500 },
-      { type: "dinner", label: "Вечеря", kcal: 0 },
-      { type: "snack", label: "Перекус", kcal: 0 },
+      { type: "breakfast", label: "Сніданок", kcal: 500, count: 1 },
+      { type: "lunch", label: "Обід", kcal: 500, count: 1 },
+      { type: "dinner", label: "Вечеря", kcal: 0, count: 0 },
+      { type: "snack", label: "Перекус", kcal: 0, count: 0 },
     ];
     const { container } = render(
       <MealStrip
@@ -66,10 +66,10 @@ describe("MealStrip", () => {
 
   it("proportions the strip to 100% of eaten kcal when there is no goal", () => {
     const segments: MealStripSegment[] = [
-      { type: "breakfast", label: "Сніданок", kcal: 300 },
-      { type: "lunch", label: "Обід", kcal: 100 },
-      { type: "dinner", label: "Вечеря", kcal: 0 },
-      { type: "snack", label: "Перекус", kcal: 0 },
+      { type: "breakfast", label: "Сніданок", kcal: 300, count: 1 },
+      { type: "lunch", label: "Обід", kcal: 100, count: 1 },
+      { type: "dinner", label: "Вечеря", kcal: 0, count: 0 },
+      { type: "snack", label: "Перекус", kcal: 0, count: 0 },
     ];
     const { container } = render(
       <MealStrip
@@ -110,10 +110,10 @@ describe("MealStrip", () => {
 
   it("accents only the segment that crosses the norm boundary", () => {
     const segments: MealStripSegment[] = [
-      { type: "breakfast", label: "Сніданок", kcal: 500 },
-      { type: "lunch", label: "Обід", kcal: 700 },
-      { type: "dinner", label: "Вечеря", kcal: 900 },
-      { type: "snack", label: "Перекус", kcal: 200 },
+      { type: "breakfast", label: "Сніданок", kcal: 500, count: 1 },
+      { type: "lunch", label: "Обід", kcal: 700, count: 1 },
+      { type: "dinner", label: "Вечеря", kcal: 900, count: 1 },
+      { type: "snack", label: "Перекус", kcal: 200, count: 1 },
     ];
     const { container } = render(
       <MealStrip
@@ -167,10 +167,10 @@ describe("MealStrip", () => {
 
   it("does not render the CTA when a goal is set", () => {
     const segments: MealStripSegment[] = [
-      { type: "breakfast", label: "Сніданок", kcal: 500 },
-      { type: "lunch", label: "Обід", kcal: 0 },
-      { type: "dinner", label: "Вечеря", kcal: 0 },
-      { type: "snack", label: "Перекус", kcal: 0 },
+      { type: "breakfast", label: "Сніданок", kcal: 500, count: 1 },
+      { type: "lunch", label: "Обід", kcal: 0, count: 0 },
+      { type: "dinner", label: "Вечеря", kcal: 0, count: 0 },
+      { type: "snack", label: "Перекус", kcal: 0, count: 0 },
     ];
     render(
       <MealStrip
@@ -192,10 +192,10 @@ describe("MealStrip", () => {
     // тепер несе доступна назва його кнопки, і дублювати ті самі слова в
     // мітці картинки означало б диктувати їх двічі.
     const segments: MealStripSegment[] = [
-      { type: "breakfast", label: "Сніданок", kcal: 520 },
-      { type: "lunch", label: "Обід", kcal: 720 },
-      { type: "dinner", label: "Вечеря", kcal: 0 },
-      { type: "snack", label: "Перекус", kcal: 0 },
+      { type: "breakfast", label: "Сніданок", kcal: 520, count: 1 },
+      { type: "lunch", label: "Обід", kcal: 720, count: 1 },
+      { type: "dinner", label: "Вечеря", kcal: 0, count: 0 },
+      { type: "snack", label: "Перекус", kcal: 0, count: 0 },
     ];
     render(
       <MealStrip
@@ -206,9 +206,11 @@ describe("MealStrip", () => {
         macros={MACROS}
       />,
     );
+    // Дія у другому реченні різна, бо різна й поведінка (2026-09-15):
+    // записаний прийом розгортається аркушем, порожній веде у форму.
     expect(
       screen.getByRole("button", {
-        name: "Сніданок, 520 ккал. Додати в сніданок",
+        name: "Сніданок, 520 ккал. Показати записи сніданку",
       }),
     ).toBeInTheDocument();
     expect(
@@ -224,7 +226,8 @@ describe("MealStrip", () => {
   it("opens the meal type the tapped segment stands for", () => {
     // Корінь знахідки власника: hero був індикатором, з якого нічого не
     // зробиш. Єдиною дією лишався FAB, а він відкриває аркуш БЕЗ типу —
-    // тип угадував годинник (`mealTypeByNow`).
+    // тип угадував годинник (`mealTypeByNow`). Що саме відкриється —
+    // рядки прийому чи форма — вирішує викликач; стрічка лише називає тип.
     const onPickMeal = vi.fn();
     render(
       <MealStrip
@@ -239,12 +242,41 @@ describe("MealStrip", () => {
     expect(onPickMeal).toHaveBeenCalledWith("lunch");
   });
 
+  it("вважає прийом записаним за кількістю рядків, а не за калоріями", () => {
+    // Запис без макросів (фото, яке не розпізналось) дає нуль ккал, але
+    // існує. За `kcal` сегмент читався б як «не записано», а тап відкривав
+    // би аркуш із рядками — дві поверхні суперечили б одна одній.
+    const segments: MealStripSegment[] = [
+      { type: "breakfast", label: "Сніданок", kcal: 0, count: 1 },
+      { type: "lunch", label: "Обід", kcal: 0, count: 0 },
+      { type: "dinner", label: "Вечеря", kcal: 0, count: 0 },
+      { type: "snack", label: "Перекус", kcal: 0, count: 0 },
+    ];
+    render(
+      <MealStrip
+        onPickMeal={vi.fn()}
+        segments={segments}
+        goalKcal={2000}
+        remainingLabel="лишилось сьогодні"
+        macros={MACROS}
+      />,
+    );
+    expect(
+      screen.getByRole("button", {
+        name: "Сніданок, 0 ккал. Показати записи сніданку",
+      }),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: "Обід не записаний. Додати в обід" }),
+    ).toBeInTheDocument();
+  });
+
   it("shows the overshoot headline honestly when consumption exceeds the goal", () => {
     const segments: MealStripSegment[] = [
-      { type: "breakfast", label: "Сніданок", kcal: 800 },
-      { type: "lunch", label: "Обід", kcal: 800 },
-      { type: "dinner", label: "Вечеря", kcal: 700 },
-      { type: "snack", label: "Перекус", kcal: 0 },
+      { type: "breakfast", label: "Сніданок", kcal: 800, count: 1 },
+      { type: "lunch", label: "Обід", kcal: 800, count: 1 },
+      { type: "dinner", label: "Вечеря", kcal: 700, count: 1 },
+      { type: "snack", label: "Перекус", kcal: 0, count: 0 },
     ];
     render(
       <MealStrip
@@ -263,10 +295,10 @@ describe("MealStrip", () => {
 
   it("renders the incomplete-day note only when passed", () => {
     const segments: MealStripSegment[] = [
-      { type: "breakfast", label: "Сніданок", kcal: 400 },
-      { type: "lunch", label: "Обід", kcal: 0 },
-      { type: "dinner", label: "Вечеря", kcal: 0 },
-      { type: "snack", label: "Перекус", kcal: 0 },
+      { type: "breakfast", label: "Сніданок", kcal: 400, count: 1 },
+      { type: "lunch", label: "Обід", kcal: 0, count: 0 },
+      { type: "dinner", label: "Вечеря", kcal: 0, count: 0 },
+      { type: "snack", label: "Перекус", kcal: 0, count: 0 },
     ];
     render(
       <MealStrip

@@ -14,19 +14,19 @@ describe("hubBus", () => {
     expect(handler).toHaveBeenCalledWith({ message: "hi", autoSend: true });
   });
 
-  it("delivers void openSearch event to subscribers", () => {
+  it("delivers void storageUpdated event to subscribers", () => {
     const handler = vi.fn();
-    onHubBus("openSearch", handler);
-    emitHubBus("openSearch", undefined);
+    onHubBus("storageUpdated", handler);
+    emitHubBus("storageUpdated", undefined);
     expect(handler).toHaveBeenCalledTimes(1);
   });
 
   it("supports multiple subscribers per event in registration order", () => {
     const order: number[] = [];
-    onHubBus("openSearch", () => order.push(1));
-    onHubBus("openSearch", () => order.push(2));
-    onHubBus("openSearch", () => order.push(3));
-    emitHubBus("openSearch", undefined);
+    onHubBus("storageUpdated", () => order.push(1));
+    onHubBus("storageUpdated", () => order.push(2));
+    onHubBus("storageUpdated", () => order.push(3));
+    emitHubBus("storageUpdated", undefined);
     expect(order).toEqual([1, 2, 3]);
   });
 
@@ -43,7 +43,7 @@ describe("hubBus", () => {
     const chatHandler = vi.fn();
     const searchHandler = vi.fn();
     onHubBus("openChat", chatHandler);
-    onHubBus("openSearch", searchHandler);
+    onHubBus("storageUpdated", searchHandler);
     emitHubBus("openChat", { message: "x" });
     expect(chatHandler).toHaveBeenCalledTimes(1);
     expect(searchHandler).not.toHaveBeenCalled();
@@ -70,11 +70,11 @@ describe("hubBus", () => {
   it("a throwing handler does not break other handlers", () => {
     vi.useFakeTimers();
     const good = vi.fn();
-    onHubBus("openSearch", () => {
+    onHubBus("storageUpdated", () => {
       throw new Error("boom");
     });
-    onHubBus("openSearch", good);
-    expect(() => emitHubBus("openSearch", undefined)).not.toThrow();
+    onHubBus("storageUpdated", good);
+    expect(() => emitHubBus("storageUpdated", undefined)).not.toThrow();
     expect(good).toHaveBeenCalledTimes(1);
     // The error is re-thrown asynchronously via setTimeout(0) so the
     // publishing site stays clean. Drop the queued throw before the

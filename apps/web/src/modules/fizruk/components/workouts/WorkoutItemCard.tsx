@@ -276,6 +276,14 @@ export function WorkoutItemCard({
                 next[idx] = { ...current, reps };
                 updateItem(activeWorkout.id, it.id, { sets: next });
               }}
+              rpe={typeof s["rpe"] === "number" ? (s["rpe"] as number) : null}
+              onChangeRpe={(rpe) => {
+                const next = [...(it.sets || [])];
+                const current = next[idx];
+                if (!current) return;
+                next[idx] = { ...current, rpe };
+                updateItem(activeWorkout.id, it.id, { sets: next });
+              }}
               onApplyGhost={() => {
                 const ghost = lastFilteredSets[idx];
                 if (!ghost) return;
@@ -306,7 +314,7 @@ export function WorkoutItemCard({
           {!isReadOnly && (
             <div className="flex gap-2 pt-1">
               <Button
-                variant="secondary"
+                variant="outline"
                 className="flex-1 h-11 min-h-[44px]"
                 type="button"
                 onClick={() => {

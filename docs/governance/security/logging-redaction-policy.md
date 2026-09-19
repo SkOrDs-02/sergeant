@@ -1,6 +1,6 @@
 # Pino logging redaction policy
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-15.
+> **Last touched:** 2026-09-16 by @claude (W4 — hash-censor для явного `userId`/`user_id`). **Next review:** 2027-11-15.
 > **Status:** Active.
 > **Hard rule:** [#21 — Pino redaction policy enforced](../../../AGENTS.md#hard-rules-do-not-break).
 > **Stack-pulse initiative:** [PR-16](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-16-pino-redaction-policy.md).
@@ -10,7 +10,7 @@
 
 Sergeant-сервер використовує Pino для всіх structured-логів. Логи течуть у три незалежних консьюмери:
 
-1. **Railway stdout** → Loki retention (14 днів).
+1. **Container stdout під Coolify** → container-логи Coolify; далі `pino-loki` має шипити їх у Grafana Loki (retention 14 днів), але за останнім заміром у [`SLO.md`](../../operations/observability/SLO.md) § «Зламано» транспорт мовчки не доставляє. Політика редакції від цього не залежить — стосується рядка на виході з Pino, куди б він далі не їхав.
 2. **Sentry breadcrumbs** через `apps/server/src/obs/logger.ts → sentryStream` (90 днів).
 3. **Local pretty-print** у dev (`LOG_PRETTY=1`).
 
@@ -96,6 +96,10 @@ logger.warn({ traceId: ctx.traceId }, "ok");
 5. **Розшир `apps/server/src/obs/logger.test.ts`** — додай тест-сценарій з фейковим payload-ом, де поле виставлене, і перевір, що `[redacted]` присутнє у логах.
 6. **Якщо потрібен новий receiver-name** для logger-у (наприклад, `myAppLogger.info(...)`) — розшир `PINO_LOGGER_RECEIVER_RE` у [`packages/eslint-plugin-sergeant-design/index.js`](../../../packages/eslint-plugin-sergeant-design/index.js). Це окремий PR із обґрунтуванням, чому не використати канонічний `logger`.
 
+### Виняток: поля, яким потрібен хеш, а не `"[redacted]"`
+
+Крок 2 вище — канон для полів з ОДНИМ фіксованим censor-ом (`"[redacted]"`), спільним для Pino й Sentry-скрабера. `userId`/`user_id` — навмисний виняток: `REDACT_KEY_NAMES` цього поля **не містить**. `mixin()` у [`apps/server/src/obs/logger.ts`](../../../apps/server/src/obs/logger.ts) вже хешує ALS-контекстний `userId` в `userIdHash` (16-hex sha256-префікс, `apps/server/src/lib/userIdHash.ts`, L10), і той самий хеш-censor тепер покриває явні `logger.x({ userId })` / `{ user_id })` виклики — окремим блоком `USER_ID_REDACT_KEYS` у `redactKeysRecursively`, локально в server-логері (не в shared `pii.ts`, бо `hashUserId` — server-only helper, і Sentry-шлях `event.user.id` через `Sentry.setUser()` свідомо лишається поза цим правилом — задокументований L10-компроміс, доступ до Sentry обмежений). Якщо колись знадобиться ще одне поле з хеш-, а не redact-censor-ом — дублюй цей патерн (окремий `Set` перед generic `REDACT_KEY_SET`-чеком), а не намагайся розширити `pii.ts` кастомним censor-параметром.
+
 ## Як перевірити локально
 
 ```bash
@@ -113,7 +117,7 @@ CI ганяє `pnpm lint` + `pnpm typecheck` + `pnpm test` на кожен push,
 
 ## Що ця policy НЕ покриває
 
-- **Зовнішні sub-processors поза Sentry/Loki/Railway.** Якщо новий downstream (наприклад, Datadog, Honeycomb) додається — окрема ревізія цієї policy + DPA-апдейт.
+- **Зовнішні sub-processors поза Sentry/Loki/Coolify.** Якщо новий downstream (наприклад, Datadog, Honeycomb) додається — окрема ревізія цієї policy + DPA-апдейт.
 - **Frontend / mobile log-buffers.** Окремий контракт у [`docs/operations/observability/frontend.md`](../../operations/observability/frontend.md). Цей файл — про Pino-stack у `apps/server/`.
 - **`console.*` callsite-и** у server-коді. Заборонені окремим базовим конфігом (`no-console` у `apps/server/**`); PII-payload через `console.log(req)` блокується тим правилом, не цим. На фронтенді (`apps/web/**`), де `console.*` дозволений, PII / secret-shaped аргументи у `console.{log,error,warn,info}` ловить окреме ESLint-правило [`sergeant-design/no-console-pii`](../../../packages/eslint-plugin-sergeant-design/index.js) (severity `error`, S2) — Sentry `console`-breadcrumb-и, DevTools screen-share і browser-екстеншни тапляться у той самий канал.
 - **Body-логування через middleware** (наприклад, `morgan`, `pino-http` request-serializer). `pino-http` стандартний request-serializer (`pinoHttp({ serializers: { req: …}})`) — окрема поверхня; зміни у ньому ревьюються через owner-у `apps/server/src/obs/`.
@@ -135,3 +139,4 @@ CI ганяє `pnpm lint` + `pnpm typecheck` + `pnpm test` на кожен push,
 
 - **2026-05-06** — Створено разом із PR-16 (stack-pulse 2026-05): доданий ESLint rule `no-raw-req-in-pino-log` + Hard Rule #21.
 - **2026-06-02** — S2: cross-link на нове frontend-правило `sergeant-design/no-console-pii` (блок PII / secret-shaped аргументів у `console.{log,error,warn,info}` в `apps/web/**`).
+- **2026-09-16 (W4)** — явні `logger.x({ userId })` / `{ user_id })` (~11 файлів: push/send.ts, ai-memory/\*, mono/\*, syncV2Stream.ts, ftuxDrip.ts тощо) обходили `mixin()`-хешування і йшли сирими в container-логи Coolify / Loki. Додано хеш-censor `USER_ID_REDACT_KEYS` у `redactKeysRecursively` — окремий виняток від generic `"[redacted]"`, див. § «Виняток: поля, яким потрібен хеш».

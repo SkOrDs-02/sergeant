@@ -4,20 +4,22 @@ import { env } from "../env.js";
 import { logger } from "../obs/logger.js";
 
 /**
- * PostHog AI Observability — `$ai_generation` з центрального AI-клієнта
- * (ініціатива 0025, Фаза 1).
+ * PostHog AI Observability — `$ai_generation` (Фаза 1) і `$ai_span` (Фаза 2)
+ * з центрального AI-клієнта (ініціатива 0025).
  *
  * Навіщо окремий модуль від `posthogCapture.ts`: той шле продуктові події
  * одиночним `fetch` на `/capture/` і читає `POSTHOG_PROJECT_API_KEY`. AI-івенти
- * ідуть потоком (кожен виклик моделі = подія), тож тут SDK `posthog-node` з
- * батчингом і власним тумблером `POSTHOG_AI_OBSERVABILITY_KEY` — щоб AI-шар
- * можна було вмикати/вимикати незалежно від решти серверної аналітики.
+ * ідуть потоком (кожен виклик моделі / tool-виклик = подія), тож тут SDK
+ * `posthog-node` з батчингом і власним тумблером `POSTHOG_AI_OBSERVABILITY_KEY`
+ * — щоб AI-шар можна було вмикати/вимикати незалежно від решти серверної
+ * аналітики.
  *
  * Privacy-first ЗА КОНСТРУКЦІЄЮ (§ «Контракт даних» ініціативи, Hard Rule #21):
- * `captureAiGeneration` приймає лише типізований allowlist-обʼєкт і збирає
- * властивості явним перелічуванням полів — без spread. Невідомий ключ (у т.ч.
- * `$ai_input`, `$ai_output_choices`, аргументи tool-ів, суми користувача) не
- * має шляху в подію, навіть якщо caller його підсунув через `as`.
+ * `captureAiGeneration`/`captureAiSpan` приймають лише типізований
+ * allowlist-обʼєкт і збирають властивості явним перелічуванням полів — без
+ * spread. Невідомий ключ (у т.ч. `$ai_input`, `$ai_output_choices`, аргументи
+ * tool-ів, суми користувача) не має шляху в подію, навіть якщо caller його
+ * підсунув через `as`.
  *
  * Fail-open, як у ledger `anthropicUsageStore.ts`: жодна помилка SDK не
  * доходить до caller-а — `logger.warn` і далі. Capture стоїть ПІСЛЯ відповіді
@@ -73,7 +75,42 @@ export interface AiGenerationProperties {
   SYSTEM_PROMPT_VERSION?: string;
 }
 
+/**
+ * Вичерпний allowlist властивостей `$ai_span` (ініціатива 0025, Фаза 2).
+ * Один спан = один tool-виклик у chat tool-loop. `spanName` — ІМʼЯ tool-а
+ * з реєстру (`toolMetrics.ts::safeName`), не аргументи й не результат:
+ * `$ai_input_state`/`$ai_output_state` лишаються НЕЗАПОВНЕНИМИ, доки
+ * власник не затвердить санітизований піднабір (§ Контракт даних).
+ */
+export interface AiSpanEvent {
+  /** Better Auth opaque userId; без нього — системний `server`. */
+  userId?: string | null | undefined;
+  /** Той самий `$ai_trace_id`, що йде в генерацію(ї) цього ходу. */
+  traceId: string;
+  /** Ідентифікатор батьківської генерації/спана, якщо відомий. */
+  parentId?: string | undefined;
+  /** Імʼя tool-а з `TOOLS`-реєстру; поза whitelist — `"unknown"`. */
+  spanName: string;
+  isError?: boolean | undefined;
+  /**
+   * Сервер не виконує tool-и (клієнт виконує локально), тож це latency
+   * ВСЬОГО round-trip-у tool-ходу (мережа + клієнтське виконання), не
+   * окремого tool-виклику — див. `chatToolSpanTiming.ts`.
+   */
+  latencyMs?: number | null | undefined;
+}
+
+/** Плоскі властивості `$ai_span` у форматі PostHog AI Observability. */
+export interface AiSpanProperties {
+  $ai_trace_id: string;
+  $ai_span_name: string;
+  $ai_is_error: boolean;
+  $ai_parent_id?: string;
+  $ai_latency?: number;
+}
+
 export const AI_GENERATION_EVENT = "$ai_generation";
+export const AI_SPAN_EVENT = "$ai_span";
 export const AI_SYSTEM_DISTINCT_ID = "server";
 const DEFAULT_HOST = "https://eu.i.posthog.com";
 
@@ -112,6 +149,22 @@ export function buildAiGenerationProperties(
   const status = finiteOrUndefined(input.httpStatus);
   if (status !== undefined) props.$ai_http_status = status;
   if (input.promptVersion) props.SYSTEM_PROMPT_VERSION = input.promptVersion;
+  return props;
+}
+
+/**
+ * Чиста функція allowlist → properties для `$ai_span`. Той самий принцип, що
+ * `buildAiGenerationProperties`: явне перелічування полів, без spread.
+ */
+export function buildAiSpanProperties(input: AiSpanEvent): AiSpanProperties {
+  const props: AiSpanProperties = {
+    $ai_trace_id: input.traceId,
+    $ai_span_name: input.spanName || "unknown",
+    $ai_is_error: input.isError === true,
+  };
+  if (input.parentId) props.$ai_parent_id = input.parentId;
+  const latencyMs = finiteOrUndefined(input.latencyMs);
+  if (latencyMs !== undefined) props.$ai_latency = latencyMs / 1000;
   return props;
 }
 
@@ -186,6 +239,30 @@ export function captureAiGeneration(input: AiGenerationEvent): boolean {
   } catch (e: unknown) {
     logger.warn({
       msg: "posthog_ai_capture_failed",
+      error: e instanceof Error ? e.message : String(e),
+    });
+    return false;
+  }
+}
+
+/**
+ * Єдина точка відправки `$ai_span` (Фаза 2). Ніколи не кидає. Повертає
+ * `true`, якщо подію передано SDK.
+ */
+export function captureAiSpan(input: AiSpanEvent): boolean {
+  try {
+    const ph = getPostHogAiClient();
+    if (!ph) return false;
+    ph.capture({
+      distinctId: input.userId || AI_SYSTEM_DISTINCT_ID,
+      event: AI_SPAN_EVENT,
+      properties: buildAiSpanProperties(input),
+      disableGeoip: true,
+    });
+    return true;
+  } catch (e: unknown) {
+    logger.warn({
+      msg: "posthog_ai_span_capture_failed",
       error: e instanceof Error ? e.message : String(e),
     });
     return false;

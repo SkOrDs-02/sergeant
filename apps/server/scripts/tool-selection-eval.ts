@@ -38,10 +38,19 @@
  * ланцюга памʼяті (`profileMirror` → `ai_memories`) працює лише тоді, коли
  * модель узагалі викликала `remember`, тож це його вхідна точка.
  *
+ * ХВІСТ І ЗАВИСАННЯ. Стенд має власний таймаут спроби (`--timeout`, дефолт
+ * 30 000 мс) і рахує зависання окремою колонкою `Timeouts`. Доти таймауту не
+ * було взагалі: зависання ставало великим числом латентності, невідрізнимим
+ * від повільної моделі, а зведення друкувало саму медіану — тобто рівно те,
+ * що в бімодальному розподілі не змінюється. Тепер друкуються p50/p95/max по
+ * УСПІШНИХ спробах, а цензуровані (обрізані таймаутом) у перцентилі не
+ * входять — розбір у `toolEval/latency.ts`.
+ *
  * Usage:
  *   OPENROUTER_API_KEY=... pnpm eval:tools
  *   OPENROUTER_API_KEY=... pnpm eval:tools --record
  *   OPENROUTER_API_KEY=... pnpm eval:tools --models=anthropic/claude-haiku-4.5
+ *   OPENROUTER_API_KEY=... pnpm eval:tools --repeat=5 --timeout=45000
  */
 
 import { parseArgs } from "node:util";
@@ -55,6 +64,7 @@ import {
   type ToolCase,
 } from "../src/modules/chat/toolSelectionCases/index.js";
 import { DATA_BLOCK } from "../src/modules/chat/toolEval/dataBlock.js";
+import { summarizeLatency } from "../src/modules/chat/toolEval/latency.js";
 import { wrapAndScanToolResults } from "../src/modules/chat/toolOutputWrapping.js";
 import {
   buildManifest,
@@ -111,6 +121,30 @@ interface ChainResult {
   model: string;
   recorded: RecordedCase;
   latencyMs: number;
+  /**
+   * Зависання, обрізане нашим таймаутом. Тримається окремо від
+   * `recorded.error`, бо латентність такої спроби — ЦЕНЗУРОВАНЕ
+   * спостереження: вона дорівнює стелі, а не часу відповіді, і мішати її в
+   * перцентилі означало б занижувати хвіст рівно там, де він цікавий.
+   */
+  timedOut: boolean;
+}
+
+/**
+ * Позначка «це був наш таймаут», а не будь-яка інша мережева помилка.
+ * Без окремого прапорця зависання невідрізниме від 500-ки провайдера, а
+ * лікуються вони по-різному.
+ */
+class SkinTimeoutError extends Error {
+  readonly timedOut = true;
+  constructor(readonly timeoutMs: number) {
+    super(`TIMEOUT after ${timeoutMs}ms`);
+    this.name = "SkinTimeoutError";
+  }
+}
+
+function isTimeout(e: unknown): e is SkinTimeoutError {
+  return e instanceof SkinTimeoutError;
 }
 
 async function callSkin(
@@ -118,23 +152,34 @@ async function callSkin(
   model: string,
   system: string,
   messages: unknown[],
+  timeoutMs: number,
 ): Promise<SkinResponse & { httpError?: string }> {
-  const response = await fetch(SKIN_URL, {
-    method: "POST",
-    headers: {
-      "Content-Type": "application/json",
-      Authorization: `Bearer ${apiKey}`,
-      "HTTP-Referer": "https://sergeant.app",
-      "X-Title": "Sergeant tool-selection eval",
-    },
-    body: JSON.stringify({
-      model,
-      max_tokens: 1500,
-      system,
-      tools: TOOLS,
-      messages,
-    }),
-  });
+  let response: Response;
+  try {
+    response = await fetch(SKIN_URL, {
+      method: "POST",
+      signal: AbortSignal.timeout(timeoutMs),
+      headers: {
+        "Content-Type": "application/json",
+        Authorization: `Bearer ${apiKey}`,
+        "HTTP-Referer": "https://sergeant.app",
+        "X-Title": "Sergeant tool-selection eval",
+      },
+      body: JSON.stringify({
+        model,
+        max_tokens: 1500,
+        system,
+        tools: TOOLS,
+        messages,
+      }),
+    });
+  } catch (e: unknown) {
+    // `AbortSignal.timeout` кидає `TimeoutError`; решта — мережа/DNS/TLS.
+    if (e instanceof DOMException && e.name === "TimeoutError") {
+      throw new SkinTimeoutError(timeoutMs);
+    }
+    throw e;
+  }
   const data = (await response.json()) as SkinResponse;
   if (!response.ok) {
     return {
@@ -159,6 +204,7 @@ async function runChain(
   model: string,
   toolCase: ToolCase,
   withData: boolean,
+  timeoutMs: number,
 ): Promise<ChainResult> {
   const system = withData ? `${SYSTEM_PREFIX}${DATA_BLOCK}` : SYSTEM_PREFIX;
   const scenario = toolCase.turns ?? [];
@@ -170,7 +216,7 @@ async function runChain(
   for (let i = 0; i <= scenario.length; i += 1) {
     let data: SkinResponse & { httpError?: string };
     try {
-      data = await callSkin(apiKey, model, system, messages);
+      data = await callSkin(apiKey, model, system, messages, timeoutMs);
     } catch (e: unknown) {
       return {
         model,
@@ -180,6 +226,7 @@ async function runChain(
           error: e instanceof Error ? e.message : String(e),
         },
         latencyMs: Date.now() - t0,
+        timedOut: isTimeout(e),
       };
     }
     if (data.httpError) {
@@ -187,6 +234,7 @@ async function runChain(
         model,
         recorded: { name: toolCase.name, turns, error: data.httpError },
         latencyMs: Date.now() - t0,
+        timedOut: false,
       };
     }
 
@@ -225,6 +273,7 @@ async function runChain(
     model,
     recorded: { name: toolCase.name, turns },
     latencyMs: Date.now() - t0,
+    timedOut: false,
   };
 }
 
@@ -252,6 +301,7 @@ async function runInjections(
   apiKey: string,
   model: string,
   record: boolean,
+  timeoutMs: number,
 ): Promise<void> {
   console.log(
     `Адверсарний набір: ${INJECTION_CASES.length} інʼєкцій, модель ${model}${record ? ", режим: ЗАПИС КАСЕТИ" : ""}
@@ -270,7 +320,7 @@ async function runInjections(
       accept: injection.accept,
       turns: [{ result: injection.payload, accept: [] }],
     };
-    const chain = await runChain(apiKey, model, asCase, true);
+    const chain = await runChain(apiKey, model, asCase, true, timeoutMs);
     recorded.push(chain.recorded);
 
     const outcome = scoreInjection(injection, chain.recorded.turns);
@@ -329,6 +379,7 @@ async function main(): Promise<void> {
       record: { type: "boolean", default: false },
       injections: { type: "boolean", default: false },
       repeat: { type: "string" },
+      timeout: { type: "string" },
     },
   });
 
@@ -349,6 +400,15 @@ async function main(): Promise<void> {
     return;
   }
 
+  // Стеля однієї спроби. Дефолт 30 000 — стеля ЛОГІЧНОГО виклику в проді
+  // (`CHAT_TOTAL_TIMEOUT_MS`, chat.ts), а не бюджет спроби: стенд має
+  // бачити весь хвіст, який прод іще вважає прийнятним, і відрізати лише
+  // те, що зависло назовсім. Доти стенд таймауту не мав узагалі — зависання
+  // ставало великим числом латентності, невідрізнимим від повільної моделі,
+  // і саме так замір 2026-08-26 прочитав 30,6 с у deepseek як «модель
+  // повільна» (розбір — коментар `CHAT_ATTEMPT_TIMEOUT_MS` у chat.ts).
+  const timeoutMs = Math.max(1_000, Number(values.timeout ?? 30_000) || 30_000);
+
   if (values.injections) {
     await runInjections(
       apiKey,
@@ -356,6 +416,7 @@ async function main(): Promise<void> {
         .split(",")[0]
         ?.trim() ?? CHAT_MODEL_DEFAULTS.firstTurn.openrouter,
       values.record === true,
+      timeoutMs,
     );
     return;
   }
@@ -380,7 +441,12 @@ async function main(): Promise<void> {
   for (const model of models) {
     const replayed: ReplayedCase[] = [];
     const recorded: RecordedCase[] = [];
+    // Латентності лише УСПІШНИХ спроб. Таймаут дає число, що дорівнює стелі,
+    // тож у перцентилях він поводиться як швидка відповідь тим більше, чим
+    // нижча стеля — рівно навпаки до сенсу.
     const latencies: number[] = [];
+    let attempts = 0;
+    let timeouts = 0;
 
     for (const toolCase of ALL_CASES) {
       for (let i = 0; i < repeats; i += 1) {
@@ -389,10 +455,13 @@ async function main(): Promise<void> {
           model,
           toolCase,
           !values["no-data"],
+          timeoutMs,
         );
         const r = replayCase(toolCase, chain.recorded);
         replayed.push(r);
-        latencies.push(chain.latencyMs);
+        attempts += 1;
+        if (chain.timedOut) timeouts += 1;
+        else latencies.push(chain.latencyMs);
         if (i === 0) recorded.push(chain.recorded);
 
         const picked = r.pickedByTurn
@@ -402,7 +471,7 @@ async function main(): Promise<void> {
           )
           .join("  ");
         console.log(
-          `[${mark(r)}] ${model.padEnd(30)} ${toolCase.name.padEnd(28)} ${String(chain.latencyMs).padStart(6)}ms  ${r.error ?? picked}${r.shortCircuited ? "  ↦ коротке замикання" : ""}`,
+          `[${chain.timedOut ? "TIME" : mark(r)}] ${model.padEnd(30)} ${toolCase.name.padEnd(28)} ${String(chain.latencyMs).padStart(6)}ms  ${r.error ?? picked}${r.shortCircuited ? "  ↦ коротке замикання" : ""}`,
         );
         if (r.hallucinated.length)
           console.log(`        ↳ вигадані id: ${r.hallucinated.join(", ")}`);
@@ -414,14 +483,21 @@ async function main(): Promise<void> {
     }
 
     const summary = summarize(ALL_CASES, replayed);
-    const sorted = [...latencies].sort((a, b) => a - b);
+    const lat = summarizeLatency(latencies, attempts, timeouts);
     console.log(
-      "\n| Model | Correct | Invented ids | Errors | Median latency (ms) |",
+      "\n| Model | Correct | Invented ids | Errors | Timeouts | p50 (ms) | p95 (ms) | max (ms) |",
     );
-    console.log("| --- | --- | --- | --- | --- |");
+    console.log("| --- | --- | --- | --- | --- | --- | --- | --- |");
     console.log(
-      `| \`${model}\` | ${summary.correct}/${summary.total} | ${summary.invented}/${summary.total} | ${summary.errors} | ${sorted[Math.floor(sorted.length / 2)] ?? 0} |`,
+      `| \`${model}\` | ${summary.correct}/${summary.total} | ${summary.invented}/${summary.total} | ${summary.errors} | ${lat.timeouts}/${lat.attempts} | ${lat.p50} | ${lat.p95} | ${lat.max} |`,
     );
+    if (timeouts > 0) {
+      // Медіана хвоста не бачить, а саме хвіст і ламається — тож число
+      // таймаутів друкуємо ще й окремим рядком, а не лише колонкою.
+      console.log(
+        `⚠️  ${timeouts} із ${attempts} спроб не вклались у ${timeoutMs} мс і зараховані як зависання (у перцентилі вище НЕ входять).`,
+      );
+    }
     console.log(
       `Багатоходові кейси: ${summary.multiTurnCorrect}/${summary.multiTurnCases}`,
     );

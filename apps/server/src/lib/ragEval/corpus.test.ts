@@ -9,9 +9,12 @@
  */
 
 import { describe, it, expect } from "vitest";
-import { loadDefaultCorpusSet, parseCorpusSet } from "./corpus.js";
+import {
+  CORPUS_DOMAINS,
+  loadDefaultCorpusSet,
+  parseCorpusSet,
+} from "./corpus.js";
 import { loadDefaultGoldenSet } from "./golden.js";
-import { STORED_MEMORY_SOURCES } from "../../modules/ai-memory/types.js";
 
 const NEAR_MISS_PER_GOLDEN = 3;
 
@@ -35,9 +38,9 @@ describe("rag-eval corpus", () => {
     }
   });
 
-  it("кожен source входить у STORED_MEMORY_SOURCES (= CHECK у БД)", () => {
+  it("кожен source входить у CORPUS_DOMAINS (власний domain-словник евалу)", () => {
     for (const doc of corpus.docs) {
-      expect(STORED_MEMORY_SOURCES).toContain(doc.source);
+      expect(CORPUS_DOMAINS).toContain(doc.source);
     }
   });
 

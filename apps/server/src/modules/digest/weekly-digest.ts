@@ -20,6 +20,7 @@ import {
   type LLMProvider,
 } from "../../lib/llm/provider.js";
 import { logger } from "../../obs/logger.js";
+import { als } from "../../obs/requestContext.js";
 import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { getAiMemory } from "../ai-memory/bootstrap.js";
 
@@ -388,6 +389,11 @@ export function createWeeklyDigestHandler(
         endpoint: "internal/weekly-digest",
         timeoutMs: 45_000,
         userId: (req as WithSessionUser).user?.id,
+        // Ініціатива 0025, Фаза 2 — «id прогону». Digest — один Anthropic-виклик
+        // на HTTP-запит, тож переюзаємо вже наявний per-request W3C trace id
+        // (`traceMiddleware`, `obs/requestContext.ts`) замість того, щоб
+        // вигадувати новий: цей самий id уже йде в `X-Trace-Id` і Sentry.
+        traceId: als.getStore()?.traceId ?? undefined,
       },
       options.addBreadcrumb ? { addBreadcrumb: options.addBreadcrumb } : {},
     );

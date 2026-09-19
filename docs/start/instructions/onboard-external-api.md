@@ -1,6 +1,6 @@
 # Playbook: Onboard External API
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-31.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-06.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -115,8 +115,37 @@ server.use(
 - Timeout — API не відповідає протягом timeout.
 - Rate limit (429) — retry з backoff.
 - Server error (5xx) — retry, потім circuit breaker.
+- **Схема поїхала** — відповідь валідна як HTTP, але не збігається зі знімком контракту.
+- **Один битий рядок посеред сторінки** — решта сторінки має доїхати (див. § 7).
 
-### 7. Health check
+### 7. Дрейф контракту: вотчер, стійка пагінація, видима поломка
+
+Кроки 1-6 лікують **транспорт** — сервіс не відповів, відповів 429, відповів 5xx.
+Але зовнішній API ламається ще одним способом: він **відповідає успішно, а форма
+відповіді змінилась**. Це тихо, і саме тому дорого. Чотири речі, яких вимагає
+досвід інтеграції Сільпо:
+
+**7.1. Знімок контракту в репо.** Тримай очікуваний перелік операцій/полів як
+committed-снапшот і тест, що звіряє його з живою відповіддю. Без нього дрейф
+виявляється лише як `logger.warn` із zod-помилкою, яку хтось має помітити.
+
+**7.2. Стеля — з відповіді, не з константи.** Ліміти пагінації бери з того, що
+віддає сервіс; захардкоджена стеля розходиться з реальністю мовчки.
+
+**7.3. Битий рядок не обриває пагінацію.** Один непарсабельний елемент має бути
+пропущений із записом у лог, а не завалити весь прохід — інакше одна аномалія в
+даних постачальника коштує цілої синхронізації.
+
+**7.4. Поломка має бути ВИДИМОЮ, а не лише успіх.** Логувати «синк завершився» —
+недостатньо: тиша тоді означає і «все добре», і «poller не стартував», і їх не
+відрізнити. Зберігай останню помилку підключення в БД і показуй її **у картці
+інтеграції в налаштуваннях**, а не тільки в логах.
+
+> Це та сама хвороба, що й у [`audit-ci-gates.md`](./audit-ci-gates.md): відсутність
+> сигналу трактується як «все гаразд». Інтеграція, яка звітує лише про успіх,
+> структурно не вміє сказати, що вона зламана.
+
+### 8. Health check
 
 Додати перевірку зовнішнього сервісу у `/health` або окремий health-endpoint:
 
@@ -132,7 +161,7 @@ async function healthCheck() {
 }
 ```
 
-### 8. Створити PR
+### 9. Створити PR
 
 - Branch: `<harness>/feat-<service>-integration`
 - Commit: `feat(server): integrate <service> API`
@@ -148,7 +177,10 @@ async function healthCheck() {
 
 - [ ] `pnpm lint` — green
 - [ ] `pnpm typecheck` — green
-- [ ] Тести з MSW — green (happy path, timeout, rate-limit, 5xx)
+- [ ] Тести з MSW — green (happy path, timeout, rate-limit, 5xx, дрейф схеми, битий рядок)
+- [ ] Знімок контракту закомічений, тест на дрейф зелений
+- [ ] Ліміт пагінації читається з відповіді, не з константи
+- [ ] Поломка синку видима користувачу (картка інтеграції), не лише в логах
 - [ ] Timeout на всіх HTTP-запитах
 - [ ] Circuit breaker конфігурований
 - [ ] Prometheus metrics додано
@@ -177,8 +209,10 @@ async function healthCheck() {
 
 | PR                                                     | Title                                                                                                                   | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#57](https://github.com/zaebal-beep/sergeant/pull/57) | fix(root): закрити знахідки наскрізного аудиту — валідація AI-шару, метрика конфліктів синку, браузерні дефекти         | 2026-09-16 |
+| [#51](https://github.com/zaebal-beep/sergeant/pull/51) | docs(agents): пʼять нових playbook-ів під повторювані поломки і ревізія наявних                                         | 2026-09-15 |
 | [#508](https://github.com/SkOrDs-02/sergeant/pull/508) | fix(docs): reconcile canonical docs with current repo                                                                   | 2026-07-29 |
 | [#334](https://github.com/SkOrDs-02/sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

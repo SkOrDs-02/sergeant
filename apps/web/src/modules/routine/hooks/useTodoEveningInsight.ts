@@ -4,6 +4,7 @@ import {
   isFlexibleHabit,
   weekDoneCountExcludingDate,
 } from "@sergeant/routine-domain";
+import { pluralHabits } from "@sergeant/shared";
 import { anchoredTodayKey } from "../lib/dayAnchor";
 import type { RoutineState } from "../lib/types";
 import type { Insight } from "@shared/lib/insights/types";
@@ -56,7 +57,7 @@ export function useTodoEveningInsight(routine: RoutineState): Insight | null {
     return {
       id: "routine-todo-evening",
       module: "routine",
-      title: `${pendingNames.length} звичок чекають`,
+      title: `${pendingNames.length} ${pluralHabits(pendingNames.length)} чекають`,
       subtitle: "Закрити сьогоднішнє?",
       askAiPrompt: `Вечір, а зі звичок сьогодні не відмічені: ${pendingNames.join(", ")}. Допоможи вирішити, що з цього ще реально зробити, а що чесно перенести.`,
       action: { type: "navigate", path: "/routine/today" },

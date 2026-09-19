@@ -50,6 +50,25 @@ export const CLIENT_PULL_SUPPORTED_TABLES = new Set<string>([
   "finyk_prefs",
 ]);
 
+/**
+ * Той самий allowlist, але як ЗНАЧЕННЯ-літерали, а не як членство.
+ *
+ * Ім'я таблиці приїжджає з мережі (`op.table`) і їде в SQL через
+ * інтерполяцію — тут це неминуче, бо ідентифікатор не можна підставити
+ * плейсхолдером. Перевірка `CLIENT_PULL_SUPPORTED_TABLES.has(...)` захищає
+ * рантайм, але НЕ міняє походження рядка: у SQL усе одно летить те, що
+ * прийшло ззовні. Лукап у цій мапі повертає рівно літерал із неї, тож далі
+ * по коду — константа з нашого коду, а не значення з відповіді сервера.
+ *
+ * Той самий прийом на сервері: `OP_LOG_TABLE_REGISTRY` у `syncV2.ts`
+ * резолвиться в літерал, а не в прокинутий рядок.
+ */
+const SAFE_TABLE_SQL: Readonly<Record<string, string>> = Object.freeze(
+  Object.fromEntries(
+    [...CLIENT_PULL_SUPPORTED_TABLES].map((name) => [name, name]),
+  ),
+);
+
 const columnCache = new Map<string, string[]>();
 const pkCache = new Map<string, string[]>();
 
@@ -230,8 +249,13 @@ async function applyGenericRegistryRow(
   const row = op.row;
   if (row["user_id"] !== userId) return "rejected";
 
-  const columns = await getTableColumns(client, table);
-  const pkColumns = await getPrimaryKeyColumns(client, table);
+  // Далі в цій функції — тільки `safeTable`. `table` лишається для
+  // повідомлень і порівнянь, у SQL він не потрапляє (див. SAFE_TABLE_SQL).
+  const safeTable = SAFE_TABLE_SQL[table];
+  if (safeTable === undefined) return "rejected";
+
+  const columns = await getTableColumns(client, safeTable);
+  const pkColumns = await getPrimaryKeyColumns(client, safeTable);
   if (pkColumns.length === 0) return "rejected";
 
   const pkValues = pkColumns.map((col) => {
@@ -248,31 +272,36 @@ async function applyGenericRegistryRow(
   const hasDeletedAt = columns.includes("deleted_at");
 
   if (hasUpdatedAt) {
-    const existing = await client.all<{
-      updated_at: string;
-      deleted_at: string | null;
-    }>(
-      `SELECT updated_at${hasDeletedAt ? ", deleted_at" : ""}
-         FROM ${table}
-        WHERE ${whereClause}`,
+    // `deleted_at` тут більше не читається (див. AI-DANGER нижче), тож і не
+    // селектиться: у вибірці лишається рівно те, на чому стоїть рішення.
+    const existing = await client.all<{ updated_at: string }>(
+      `SELECT updated_at FROM ${safeTable} WHERE ${whereClause}`,
       pkValues,
     );
     const local = existing[0];
+    // AI-DANGER: тут НЕМАЄ і не має бути перевірки
+    // `deleted_at !== null && op.op !== "delete" → skipped`. Вона тут була і
+    // її знято свідомо — не «загублено» при рефакторингу. Не повертай.
+    //
+    // Це дзеркало серверного `guardUuidPkApply` (`applySync-helpers.ts`), де
+    // те саме правило знято після регресії `SERGEANT-WEB-T`, і дзеркало
+    // `apps/web/src/core/syncEngine/applyPullOp.ts`, де його знято разом із
+    // цим. Розʼїзд моделей давав рівно ту тишу, яку правило мало б
+    // запобігати: пристрій A видаляє запис (T1), людина тисне «Скасувати» в
+    // тості → рядок повертається з `updated_at = T2 > T1`, сервер приймає
+    // його за чистим LWW, пристрій B тягне оп — і скіпає. Курсор при цьому
+    // їде далі, тож другої спроби не буде ніколи, а `deleted_at` на B уже не
+    // скинеться, тож скіпаються і ВСІ наступні правки цього рядка.
+    //
+    // Захист від stale-правки дає `isStaleLocal` вище — той самий аргумент,
+    // що й на сервері.
     if (local && isStaleLocal(local.updated_at, incomingMs)) return "skipped";
-    if (
-      hasDeletedAt &&
-      local &&
-      local.deleted_at !== null &&
-      op.op !== "delete"
-    ) {
-      return "skipped";
-    }
   }
 
   if (op.op === "delete") {
     if (!hasDeletedAt) return "rejected";
     await client.run(
-      `UPDATE ${table}
+      `UPDATE ${safeTable}
           SET deleted_at = ?, updated_at = ?
         WHERE ${whereClause}`,
       [op.client_ts, op.client_ts, ...pkValues],
@@ -297,7 +326,7 @@ async function applyGenericRegistryRow(
   if (nonPkAssignments.length === 0) return "skipped";
 
   await client.run(
-    `INSERT INTO ${table} (${insertCols.join(", ")})
+    `INSERT INTO ${safeTable} (${insertCols.join(", ")})
      VALUES (${placeholders})
      ON CONFLICT(${pkColumns.join(", ")}) DO UPDATE SET ${nonPkAssignments}`,
     values,

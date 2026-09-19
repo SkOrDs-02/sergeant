@@ -1,6 +1,6 @@
 # pnpm Overrides Rationale
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-15.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-23.
 > **Status:** Active
 
 Документація кожного запису в `pnpm.overrides` кореневого `package.json`.
@@ -149,7 +149,7 @@ pull `protobufjs@8.0.0`. The selector-form override bumps only the vulnerable 8.
 **Drop when:** All transitive consumers declare `protobufjs >=8.0.2` in their own `package.json`,
 or the advisory is retracted.
 
-**Owner:** @Skords-01
+**Owner:** @klas149
 
 **Last reviewed:** 2026-06-05
 

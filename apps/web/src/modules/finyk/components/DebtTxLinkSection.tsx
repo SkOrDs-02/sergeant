@@ -62,6 +62,7 @@ import { Money } from "@shared/components/ui/Money";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { messages } from "@shared/i18n/uk";
 import { NAME_MAX_LEN } from "@shared/lib/text/limits";
+import { formatDateShort, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
 
 const shared = messages.finyk.debtLinkPrompt;
 // Той самий підпис «авто», що й у пікері `AssetsDebtTxPicker` — одна мітка
@@ -129,8 +130,8 @@ export function DebtTxLinkSection({
   const parsedDate = new Date(txDateIso);
   const dateLabel = Number.isNaN(parsedDate.getTime())
     ? null
-    : new Intl.DateTimeFormat("uk-UA", {
-        dateStyle: "medium",
+    : formatDateShort(parsedDate, {
+        withYear: true,
         // Київ, а не зона пристрою, і це не косметика. Ця секція живе
         // ВСЕРЕДИНІ `BankTransactionDetailsSheet`, який шапку тієї самої
         // транзакції форматує з `timeZone: "Europe/Kyiv"` — і сюди приходить
@@ -139,8 +140,8 @@ export function DebtTxLinkSection({
         // операція о 23:40 за Києвом читалась як «14 вер.» у шапці і
         // «13 вер.» тут (для UTC-1 і західніше — навпаки). Дата банківської
         // операції — фінансовий період, тож ADR-0078 віддає її Києву.
-        timeZone: "Europe/Kyiv",
-      }).format(parsedDate);
+        timeZone: KYIV_TIME_ZONE,
+      });
   const linkedDebt = manualDebts.find((d) =>
     (d.linkedTxIds || []).includes(txId),
   );
@@ -180,7 +181,7 @@ export function DebtTxLinkSection({
         </p>
         <Button
           variant="ghost"
-          module="finyk"
+
           size="xs"
           onClick={() => setLinkedTxRole(linkedDebt.id, txId, "debt", null)}
         >
@@ -208,8 +209,9 @@ export function DebtTxLinkSection({
       <div className="flex gap-2">
         {manualDebts.length > 0 && (
           <Button
-            variant="secondary"
-            module="finyk"
+            variant="soft"
+            tone="finyk"
+
             size="sm"
             className="flex-1"
             onClick={() => setShowPicker(true)}
@@ -219,8 +221,9 @@ export function DebtTxLinkSection({
         )}
         {!isPayment && (
           <Button
-            variant="secondary"
-            module="finyk"
+            variant="soft"
+            tone="finyk"
+
             size="sm"
             className="flex-1"
             onClick={() => setShowCreateForm(true)}
@@ -287,7 +290,7 @@ export function DebtTxLinkSection({
               <Button
                 className="flex-1"
                 size="sm"
-                variant="secondary"
+                variant="outline"
                 onClick={() => setShowCreateForm(false)}
               >
                 {shared.cancel}

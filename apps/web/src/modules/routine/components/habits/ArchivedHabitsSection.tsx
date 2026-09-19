@@ -50,7 +50,7 @@ export function ArchivedHabitsSection({
             <div className="flex flex-wrap gap-1.5">
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 size="sm"
                 className="h-9! px-3! text-xs!"
                 onClick={() =>
@@ -61,7 +61,8 @@ export function ArchivedHabitsSection({
               </Button>
               <Button
                 type="button"
-                variant="danger"
+                variant="soft"
+                tone="danger"
                 size="sm"
                 className="h-9! px-3! text-xs!"
                 onClick={() =>

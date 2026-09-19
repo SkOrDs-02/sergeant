@@ -55,6 +55,31 @@ describe("extractFocus", () => {
     assert.equal(extractFocus(file), "Цього тижня: paywall + sync v2 sunset.");
   });
 
+  it("skips markers quoted inline in the AUTO-GENERATED comment", () => {
+    // Реальна розкладка STATUS.md: службовий коментар під шапкою цитує обидва
+    // маркери в одному рядку. Наївний indexOf брав «` / `» між ними і кожна
+    // регенерація затирала ручний блок на «`/`».
+    const file = [
+      "# STATUS",
+      "",
+      "<!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй. -->",
+      "",
+      "## 🎯 Фокус зараз",
+      "",
+      "<!-- FOCUS:START -->",
+      "",
+      "- **Тиша замість шуму** — три хвилі фіксів злито.",
+      "",
+      "<!-- FOCUS:END -->",
+      "",
+      "## 🟢 Зроблено",
+    ].join("\n");
+    assert.equal(
+      extractFocus(file),
+      "- **Тиша замість шуму** — три хвилі фіксів злито.",
+    );
+  });
+
   it("falls back to default when the region is whitespace-only", () => {
     const file = "<!-- FOCUS:START -->\n\n   \n\n<!-- FOCUS:END -->";
     assert.match(extractFocus(file), /вручну/);

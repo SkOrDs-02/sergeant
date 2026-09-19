@@ -77,6 +77,29 @@ export function createMeRouter(): Router {
   r.get(
     "/api/me/export",
     requireFreshSession(),
+    // Найважчий запит у застосунку — і єдиний дорогий, що лишався зовсім
+    // без лімітера. `buildMeExport` пускає девʼять паралельних запитів,
+    // два з них `LIMIT 5000` (`mono_transaction` з `ORDER BY time DESC`,
+    // `ai_memories`), а `requireFreshSession()` зверху додає окремий
+    // лукап сесії в обхід cookie-кешу на КОЖЕН виклик. Тобто цикл із
+    // однією валідною сесією бив по базі сильніше, ніж будь-який
+    // AI-роут, які всі лімітовані.
+    //
+    // Порядок навмисний — лімітер ПІСЛЯ сесії, щоб `rateLimitSubject`
+    // дав `u:<id>`, а не `ip:<addr>` (та сама конвенція, що в
+    // `PUT /api/me/profile` нижче, і її стереже
+    // `scripts/check-auth-before-rate-limit.mjs`).
+    //
+    // 5/год на людину: експорт — дія «раз на кілька місяців», навіть
+    // найактивніша легітимна поведінка (перевірити, перезавантажити,
+    // повторити) у стелю не впирається. `ipLimit` — вторинний бакет під
+    // спільний NAT.
+    rateLimitExpress({
+      key: "api:me:export",
+      limit: 5,
+      windowMs: 60 * 60_000,
+      ipLimit: 20,
+    }),
     async (req: Request, res: Response) => {
       const user = serializeMeUser(
         (req as Request & { user: AuthedUser }).user,

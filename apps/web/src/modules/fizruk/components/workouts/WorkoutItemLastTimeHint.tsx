@@ -4,6 +4,7 @@
  */
 import type { WorkoutItem, WorkoutSet } from "@sergeant/fizruk-domain";
 import { messages } from "@shared/i18n/uk";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 import { calcCardioMetrics } from "./activeWorkoutLib";
 
 export type LastByExerciseEntry = WorkoutItem & { _startedAt?: string };
@@ -57,9 +58,7 @@ export function WorkoutItemLastTimeHint({
   return (
     <div className="text-style-caption text-subtle mb-1">
       {messages.fizruk.lastTimeHint.label}{" "}
-      {last._startedAt
-        ? `(${new Date(last._startedAt).toLocaleDateString("uk-UA", { month: "short", day: "numeric" })})`
-        : ""}
+      {last._startedAt ? `(${formatDateShort(new Date(last._startedAt))})` : ""}
       : {text}
     </div>
   );

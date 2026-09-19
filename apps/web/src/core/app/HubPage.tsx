@@ -59,9 +59,23 @@ export function HubPage() {
     navigate("/", { replace: true });
   }, [navigate]);
 
+  // Стрілка «Назад» у каталогах (`/assistant`, `/capabilities`).
+  //
+  // Було безумовне `navigate("/")`, тобто на хаб — незалежно від того,
+  // звідки прийшли. Але каталог відкривають із трьох різних місць:
+  // «?» у композері чату, Налаштування → «Що вміє Сержант» і глибокий
+  // лінк. У перших двох хаб — не та сторінка, яку людина лишила, і
+  // свайп-назад (той самий `history.back()`) поводився інакше за
+  // стрілку. Тепер обидва жести роблять одне й те саме: крок назад по
+  // історії, а `/` лишається запасним виходом рівно для входу, що
+  // історії не має (`location.key === "default"` — прямий лінк).
   const onAssistantClose = useCallback(() => {
-    navigate("/");
-  }, [navigate]);
+    if (location.key !== "default") {
+      navigate(-1);
+      return;
+    }
+    navigate("/", { replace: true });
+  }, [navigate, location.key]);
 
   // 1. Legacy `?module=X` → path-based redirect.
   //    Preserves hash so module-level compat shims can handle it.

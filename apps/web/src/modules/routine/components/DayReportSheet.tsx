@@ -85,7 +85,7 @@ export function DayReportSheet({
                   className={cn("shrink-0 rounded-xl border font-bold", C.done)}
                   aria-label="Скасувати виконання"
                 >
-                  <Icon name="check" size={14} aria-hidden />
+                  <Icon name="check" size="sm" aria-hidden />
                 </IconButton>
                 <span className="text-style-label text-text flex items-center gap-1.5 truncate">
                   <HabitGlyph value={h.emoji} size="sm" />
@@ -115,7 +115,7 @@ export function DayReportSheet({
                   className="shrink-0 rounded-xl border border-line font-bold text-muted"
                   aria-label="Відмітити як виконано"
                 >
-                  <Icon name="circle-outline" size={14} aria-hidden />
+                  <Icon name="circle-outline" size="sm" aria-hidden />
                 </IconButton>
                 <span className="text-style-label text-muted flex items-center gap-1.5 truncate">
                   <HabitGlyph value={h.emoji} size="sm" />

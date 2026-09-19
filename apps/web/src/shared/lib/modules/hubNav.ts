@@ -11,7 +11,11 @@
  */
 
 import type { ModuleAccent } from "@sergeant/design-tokens";
-import { CHECKLIST_ACTIONS, type ChecklistAction } from "@sergeant/shared";
+import {
+  CHECKLIST_ACTIONS,
+  type ChecklistAction,
+  type ModuleOpenSource,
+} from "@sergeant/shared";
 import { VISIBLE_SETTINGS_SECTIONS } from "../../../core/hub/settingsSectionsCatalog";
 import { logger } from "../log/logger";
 
@@ -49,6 +53,12 @@ export interface HubOpenModuleDetail {
   module: HubModuleId;
   hash: string;
   action?: HubModuleAction;
+  /**
+   * Звідки людина відкрила модуль — для події `MODULE_OPENED` (базова
+   * лінія перед віссю дії хабу, P3). Опційне: колер, якому джерело не
+   * варте окремого значення, нічого не передає й потрапляє в `other`.
+   */
+  source?: ModuleOpenSource;
 }
 
 export const HUB_MODULE_IDS = [
@@ -67,12 +77,20 @@ export function isHubModuleId(value: unknown): value is HubModuleId {
 /**
  * Перемкнути активний модуль Hub (з опційним hash для вкладки всередині).
  */
-export function openHubModule(moduleId: HubModuleId, hash?: string): void {
+export function openHubModule(
+  moduleId: HubModuleId,
+  hash?: string,
+  source?: ModuleOpenSource,
+): void {
   if (!VALID_HUB_MODULES.has(moduleId)) return;
   try {
     window.dispatchEvent(
       new CustomEvent<HubOpenModuleDetail>(HUB_OPEN_MODULE_EVENT, {
-        detail: { module: moduleId, hash: hash || "" },
+        detail: {
+          module: moduleId,
+          hash: hash || "",
+          ...(source ? { source } : {}),
+        },
       }),
     );
   } catch {
@@ -92,6 +110,7 @@ const VALID_HUB_ACTIONS: ReadonlySet<HubModuleAction> = new Set([
 export function openHubModuleWithAction(
   moduleId: HubModuleId,
   action: HubModuleAction,
+  source?: ModuleOpenSource,
 ): void {
   if (!VALID_HUB_MODULES.has(moduleId)) return;
   if (!VALID_HUB_ACTIONS.has(action)) {
@@ -117,11 +136,44 @@ export function openHubModuleWithAction(
   try {
     window.dispatchEvent(
       new CustomEvent<HubOpenModuleDetail>(HUB_OPEN_MODULE_EVENT, {
-        detail: { module: moduleId, hash: "", action },
+        detail: {
+          module: moduleId,
+          hash: "",
+          action,
+          ...(source ? { source } : {}),
+        },
       }),
     );
   } catch {
     /* noop */
+  }
+}
+
+export const HUB_OPEN_SEARCH_EVENT = "hub:open-search";
+
+export interface HubOpenSearchDetail {
+  /** Початковий запит для пошуку хаба; порожній — просто відкрити. */
+  query: string;
+}
+
+/**
+ * Відкрити глобальний пошук хаба з (необов'язковим) готовим запитом.
+ *
+ * Слухач — `RootLayout`: він робить те саме, що й `Cmd+K` без палітри
+ * (з модуля спершу вертає на хаб). Канал потрібен палітрі команд: з
+ * увімкненим `hub_command_palette` пошук хаба — один із її режимів
+ * (рішення власника 2026-09-16), і рядок «Шукати „…“ у Sergeant» передає
+ * набраний текст сюди, не знаючи нічого про стан хаба.
+ */
+export function openHubSearch(query: string = ""): void {
+  try {
+    window.dispatchEvent(
+      new CustomEvent<HubOpenSearchDetail>(HUB_OPEN_SEARCH_EVENT, {
+        detail: { query },
+      }),
+    );
+  } catch {
+    /* noop — SSR / disabled CustomEvent */
   }
 }
 

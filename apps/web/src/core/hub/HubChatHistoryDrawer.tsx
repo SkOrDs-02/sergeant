@@ -179,7 +179,7 @@ function HistoryPanel({
               className="w-9 h-9 rounded-xl bg-brand-500/10 flex items-center justify-center shrink-0"
               aria-hidden
             >
-              <Icon name="sergeant" size={16} className="text-brand-500" />
+              <Icon name="sergeant" size="md" className="text-brand-500" />
             </div>
             <div className="min-w-0">
               <div className="text-style-title font-bold text-text leading-tight">
@@ -302,7 +302,7 @@ function HistoryPanel({
                           title="Видалити"
                           className="absolute right-1.5 top-1/2 -translate-y-1/2 text-subtle sm:opacity-0 sm:group-hover:opacity-100 sm:focus-visible:opacity-100 hover:text-danger hover:bg-danger/10"
                         >
-                          <Icon name="trash" size={14} />
+                          <Icon name="trash" size="sm" />
                         </Button>
                       </li>
                     );

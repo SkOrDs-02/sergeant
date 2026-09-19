@@ -23,6 +23,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { formatReceiptQty } from "@shared/lib/format/receiptQty";
+import { formatDateNumeric, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
 import {
   useSilpoPantryReplenish,
   type SilpoReplenishRow,
@@ -119,7 +120,7 @@ function ReceiptItemRow({
             видати здогад за факт. */}
         <Icon
           name={row.foodIconName as IconName}
-          size={16}
+          size="md"
           className={cn("shrink-0 text-subtle", !row.checked && "opacity-50")}
           aria-hidden
         />
@@ -203,7 +204,7 @@ export function SilpoPantryReplenishSheet({
         <div className="flex gap-2 p-4">
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             className="flex-1 h-12"
             onClick={onClose}
             disabled={busy}
@@ -212,7 +213,8 @@ export function SilpoPantryReplenishSheet({
           </Button>
           <Button
             type="button"
-            variant="nutrition"
+            variant="solid"
+            tone="nutrition"
             className="flex-1 h-12 shadow-none hover:shadow-none dark:shadow-none"
             disabled={busy || checkedCount === 0}
             onClick={handleConfirm}
@@ -234,7 +236,7 @@ export function SilpoPantryReplenishSheet({
             <EmptyState
               size="sm"
               module="nutrition"
-              icon={<Icon name="shopping-cart" size={20} />}
+              icon={<Icon name="shopping-cart" size="lg" />}
               title={COPY.receiptsEmptyTitle}
               description={COPY.receiptsEmptyHint}
             />
@@ -256,8 +258,8 @@ export function SilpoPantryReplenishSheet({
                     <span className="min-w-0 text-style-label text-text truncate">
                       {/* Фінансовий запис → Kyiv-час (domain invariants):
                           день чека не має плавати за TZ пристрою. */}
-                      {new Date(r.purchasedAt).toLocaleDateString("uk-UA", {
-                        timeZone: "Europe/Kyiv",
+                      {formatDateNumeric(new Date(r.purchasedAt), {
+                        timeZone: KYIV_TIME_ZONE,
                       })}
                     </span>
                     <span className="shrink-0 tabular-nums text-style-caption text-subtle">

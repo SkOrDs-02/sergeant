@@ -12,7 +12,10 @@
  */
 import { describe, expect, it } from "vitest";
 
-import { ASSISTANT_CAPABILITIES } from "./assistantCatalogue";
+import {
+  ASSISTANT_CAPABILITIES,
+  getCapabilityServerTool,
+} from "./assistantCatalogue";
 import {
   RISKY_TOOL_IDS,
   TOOL_RISK,
@@ -91,9 +94,49 @@ describe("TOOL_RISK ↔ каталог здібностей", () => {
     }
   });
 
-  it("нериковий інструмент не проходить жоден із гейтів", () => {
+  it("нериковий інструмент із каталогу не проходить жоден із гейтів", () => {
     expect(isRiskyTool("create_transaction")).toBe(false);
     expect(requiresConfirmation("create_transaction")).toBe(false);
-    expect(requiresConfirmation("невідомий_інструмент")).toBe(false);
+    // Кожен серверний тул каталогу без запису в TOOL_RISK — без діалогу.
+    for (const c of ASSISTANT_CAPABILITIES) {
+      const tool = getCapabilityServerTool(c);
+      if (tool === null || tool in TOOL_RISK) continue;
+      expect(requiresConfirmation(tool), tool).toBe(false);
+    }
+  });
+
+  it("інструмент поза каталогом вимагає підтвердження — гейт зачиняється, а не відчиняється", () => {
+    // Аудит 2026-09-15 § 1: раніше `false`, тобто новий деструктивний тул без
+    // реєстрації в TOOL_RISK виконувався мовчки. Тепер — зайве питання людині.
+    expect(requiresConfirmation("невідомий_інструмент")).toBe(true);
+    expect(isRiskyTool("невідомий_інструмент")).toBe(false);
+  });
+
+  it("risky-можливість, яка шлеться ОДРАЗУ, справді впирається в підтвердження", () => {
+    // Картка можливості (`CapabilityDetailModal`) саме в цій гілці —
+    // `requiresInput: false` плюс `risky` — обіцяє людині: «перед самою
+    // зміною чат ще раз перепитає». Обіцянка тримається на ДВОХ окремих
+    // реєстрах: прапорці `risky` в каталозі і класифікації `TOOL_RISK`.
+    // Вони можуть розійтись, і нова risky-можливість без вводу, чий тул
+    // забули класифікувати деструктивним, зробила б підказку брехнею
+    // (аудит шуму 2026-09-16, WF-22).
+    //
+    // Умова НАВМИСНО вужча за «будь-яка risky»: ширший інваріант не
+    // тримається і не мусить. `change_category` має `risky: true`, але
+    // `requiresInput: true` — заготовка лягає в поле, людина шле її сама,
+    // і картка їй жодного підтвердження не обіцяє. Там роль `risky` —
+    // попереджувальний блок «Критична дія», не гейт.
+    const riskyAutoSend = ASSISTANT_CAPABILITIES.filter(
+      (c) => c.risky && !c.requiresInput,
+    );
+    expect(riskyAutoSend.length).toBeGreaterThan(0);
+    for (const c of riskyAutoSend) {
+      const tool = getCapabilityServerTool(c);
+      expect(
+        tool,
+        `${c.id}: risky-можливість без серверного тула`,
+      ).not.toBeNull();
+      expect(requiresConfirmation(tool!), c.id).toBe(true);
+    }
   });
 });

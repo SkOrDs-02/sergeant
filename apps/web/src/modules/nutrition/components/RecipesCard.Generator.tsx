@@ -204,7 +204,7 @@ export function GeneratorCard({
                   <div className="flex gap-2 flex-wrap basis-full sm:basis-auto">
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={() => onSave(r)}
                       disabled={busy}
@@ -213,7 +213,7 @@ export function GeneratorCard({
                     </Button>
                     <Button
                       type="button"
-                      variant="secondary"
+                      variant="outline"
                       size="sm"
                       onClick={() =>
                         onAddToLog(r, r.id || r.title || String(idx))

@@ -45,25 +45,55 @@ export function connectRedis(): void {
     // Connection timeouts
     connectTimeout: 5_000,
     commandTimeout: 3_000,
-    // Reconnection strategy with exponential backoff
+    // Reconnection strategy with exponential backoff.
+    //
+    // AI-DANGER: НІКОЛИ не повертай звідси `null`.
+    //
+    // До 2026-09-16 тут стояло `if (times > REDIS_MAX_RETRIES) return null`.
+    // `null` для ioredis означає не «почекай довше», а «здавайся НАЗАВЖДИ»:
+    // клієнт більше не перепідключається ніколи, тільки рестарт процесу.
+    // При дефолтних 10 спробах це наставало приблизно за 19 секунд.
+    //
+    // Наслідок був тихий і довгий. Рестарт Redis у Coolify (звичайна
+    // операція, секунди недоступності) назавжди садив rate-limit на
+    // in-memory fallback — тобто ліміти переставали бути спільними між
+    // репліками. `/healthz` при цьому рапортує лише "degraded" і віддає
+    // 200, тож Coolify контейнер не перезапускає, і стан живе до
+    // наступного деплою.
+    //
+    // Тепер затримка КЛАМПИТЬСЯ і ретраї тривають вічно — рівно так, як це
+    // вже працює для BullMQ-конекшна (`lib/jobs/connection.ts`): там
+    // власного `retryStrategy` немає, тож діє дефолт ioredis, який теж
+    // ретраїть без кінця. Асиметрія між двома нашими клієнтами була
+    // ненавмисною: обидва дивляться в один і той самий Redis.
+    //
+    // `REDIS_MAX_RETRIES` лишається — але тепер це поріг ГУЧНОСТІ, а не
+    // здавання: до нього логуємо кожну спробу, після — раз на спробу
+    // ескалюємо рівень, щоб лог не перетворився на суцільний шум.
     retryStrategy(times: number) {
       _reconnectAttempts = times;
-
-      if (times > env.REDIS_MAX_RETRIES) {
-        logger.error({
-          msg: "redis_max_retries_exceeded",
-          attempts: times,
-          maxRetries: env.REDIS_MAX_RETRIES,
-        });
-        // Return null to stop retrying
-        return null;
-      }
 
       // Exponential backoff: 100ms, 200ms, 400ms, ... up to max
       const delay = Math.min(
         env.REDIS_RECONNECT_DELAY_MS * Math.pow(2, times - 1),
         env.REDIS_MAX_RECONNECT_DELAY_MS,
       );
+
+      if (times > env.REDIS_MAX_RETRIES) {
+        // Порогове повідомлення шлемо РІВНО один раз: далі ретраї йдуть із
+        // максимальною затримкою, і писати error на кожен — це залити лог
+        // при багатогодинному простої Redis.
+        if (times === env.REDIS_MAX_RETRIES + 1) {
+          logger.error({
+            msg: "redis_max_retries_exceeded",
+            attempts: times,
+            maxRetries: env.REDIS_MAX_RETRIES,
+            delayMs: delay,
+            note: "reconnect triggers continue with clamped delay",
+          });
+        }
+        return delay;
+      }
 
       logger.info({
         msg: "redis_reconnecting",

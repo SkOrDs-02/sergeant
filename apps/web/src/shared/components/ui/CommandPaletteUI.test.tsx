@@ -113,7 +113,10 @@ describe("CommandPaletteUI", () => {
     }
   });
 
-  it("shows an empty-state message when nothing matches", () => {
+  // Рішення власника 2026-09-16: пошук хаба — режим палітри, тож набраний
+  // текст ніколи не впирається в «нічого не знайдено» — останнім рядком
+  // завжди стоїть «Шукати „…“ у Sergeant», який передає запит у пошук.
+  it("offers a hub-search fallback row for any query, even when no command matches", () => {
     vi.useFakeTimers();
     try {
       render(<Harness commands={cmds()} />);
@@ -122,7 +125,19 @@ describe("CommandPaletteUI", () => {
       act(() => {
         vi.advanceTimersByTime(100);
       });
-      expect(screen.getByText("Нічого не знайдено")).toBeInTheDocument();
+      expect(screen.queryByText("Нічого не знайдено")).toBeNull();
+      const fallback = screen.getByRole("option", {
+        name: /Шукати «zzzznope» у Sergeant/,
+      });
+      const listener = vi.fn();
+      window.addEventListener("hub:open-search", listener);
+      fireEvent.click(fallback);
+      expect(listener).toHaveBeenCalledTimes(1);
+      expect(
+        (listener.mock.calls[0]?.[0] as CustomEvent<{ query: string }>).detail
+          .query,
+      ).toBe("zzzznope");
+      window.removeEventListener("hub:open-search", listener);
     } finally {
       vi.useRealTimers();
     }

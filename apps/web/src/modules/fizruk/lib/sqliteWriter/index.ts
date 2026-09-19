@@ -27,7 +27,7 @@ import { probeFizrukParity } from "./parity.js";
 /**
  * Orchestrator for the Fizruk dual-write layer.
  *
- * Stage 4 PR #028 of `docs/planning/storage-roadmap.md`. Mirrors the
+ * Stage 4 PR #028 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirrors the
  * routine dual-write orchestrator pattern from PR #024.
  *
  * Glues together:

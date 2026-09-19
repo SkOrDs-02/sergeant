@@ -48,7 +48,7 @@ export function SilpoPrivacyPromise({
       <summary className="touch-target flex cursor-pointer items-center gap-2 text-style-label text-text marker:content-none focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-finyk">
         <Icon
           name="shield"
-          size={16}
+          size="md"
           className="text-muted shrink-0"
           aria-hidden
         />

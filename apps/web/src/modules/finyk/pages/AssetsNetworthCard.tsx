@@ -67,7 +67,7 @@ export function AssetsNetworthCard({
           )}
         </div>
         <p className="text-style-label text-muted mt-1 inline-flex items-center gap-1.5">
-          <Icon name="wallet" size={14} aria-hidden />
+          <Icon name="wallet" size="sm" aria-hidden />
           Загальний капітал
         </p>
         {showBalance ? (

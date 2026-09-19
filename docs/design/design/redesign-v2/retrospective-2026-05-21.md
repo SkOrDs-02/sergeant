@@ -1,10 +1,10 @@
 # Sergeant v2 — Retrospective
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-08.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-16.
 > **Author:** @Skords-01 (with Claude Code agent assistance)
 > **Date:** 2026-05-21
 > **Scope:** Phases 0–6 of redesign-v2 (2026-05-15 → 2026-05-21, ~7 days wall-clock)
-> **Status:** Active
+> **Status:** Reference — ретроспектива закритого редизайну (2026-05-21); уроки перенесено в [`anti-slop-strategy.md`](../anti-slop-strategy.md) і [`design-system.md`](../design-system.md).
 > **Companion docs:** [`execution-status.md`](./execution-status.md) · [`execution-plan.md`](./execution-plan.md) · [`backlog.md`](./backlog.md) · [`alignment-audit-2026-05-18.md`](./alignment-audit-2026-05-18.md)
 
 ## TL;DR

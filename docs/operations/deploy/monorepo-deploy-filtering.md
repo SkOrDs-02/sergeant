@@ -1,6 +1,6 @@
 # Monorepo deploy filtering — Vercel ignoreCommand + GitHub Actions path filters
 
-> **Last touched:** 2026-09-14 by @claude. **Next review:** 2026-12-14.
+> **Last touched:** 2026-09-17 by @claude (path filter synced with `deploy-api.yml`: routine-domain, tabular-import). **Next review:** 2026-12-16.
 > **Status:** Active
 >
 > **⚠️ Бекенд-тригер переписано ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)):** `apps/server` більше **не** деплоїться через Railway `watchPatterns`/GraphQL — тепер це GitHub Actions [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) з `on.push.paths`, що білдить образ → `ghcr.io` → Coolify webhook. Файли `railway*.toml` видалено з репо 2026-07-19. OpenClaw Gateway ніде не задеплоєний (див. [`service-catalog.md`](../../engineering/architecture/service-catalog.md)). Vercel-секція нижче чинна без змін.
@@ -136,13 +136,15 @@ packages/shared/**
 packages/config/**
 packages/db-schema/**
 packages/finyk-domain/**
+packages/routine-domain/**
+packages/tabular-import/**
 .github/workflows/deploy-api.yml
 ```
 
 Rationale:
 
 - `apps/server` is the unit being deployed.
-- The package list is the **transitive closure of `apps/server/package.json`'s `@sergeant/*` deps**: `apps/server` → `{config, db-schema, finyk-domain, shared}`. If a new direct or transitive `@sergeant/*` dep is added, **append it here** (and to `container-scan.yml`, which mirrors this surface).
+- The package list is the **transitive closure of `apps/server/package.json`'s `@sergeant/*` deps**: `apps/server` → `{config, db-schema, finyk-domain, routine-domain, shared, tabular-import}`. `routine-domain` (server reads the habit-schedule predicate, #592) and `tabular-import` (shared statement-import layer, #1001) were appended after a change confined to one of them shipped no deploy and prod kept the old build. If a new direct or transitive `@sergeant/*` dep is added, **append it here** (and to `container-scan.yml`, which mirrors this surface).
 - `Dockerfile.api`, `.dockerignore`, root manifest files (`package.json`, `pnpm-lock.yaml`, `pnpm-workspace.yaml`), `patches/**` — anything that affects the built image but lives at repo root.
 - The workflow lists **itself** so that changes to the deploy pipeline redeploy on merge.
 

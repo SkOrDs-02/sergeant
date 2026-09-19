@@ -1,6 +1,6 @@
 import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
-import { parseOptionalDate } from "../syncV2-core.js";
+import { parseOptionalDate, parseOptionalTzOffsetMin } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 
 /**
@@ -26,7 +26,9 @@ import type { AppliedStatus } from "../syncV2-types.js";
  * генерує `id` детерміновано (`buildCompletionEventId`), тож повторна
  * доставка того самого toggle-а — тихий no-op, а не дубль. Повертаємо
  * `applied` і в цьому разі: для клієнта важливо, що рядок у черзі можна
- * прибрати, а не чи саме цей push його створив.
+ * прибрати, а не чи саме цей push його створив — але ЛИШЕ якщо рядок,
+ * на який спрацював конфлікт, належить тому самому користувачу (див.
+ * owner-guard після INSERT-а).
  *
  * AI-CONTEXT: `id` тут — TEXT, а НЕ UUID. Це свідомий обхід пастки
  * `routine_entries.id UUID` (`026_routine_tables.sql`), через яку реальний
@@ -84,18 +86,24 @@ export async function applyRoutineCompletionEvents(
     return { status: "rejected", reason: "invalid_created_at" };
   }
 
-  const tzOffsetMin =
-    typeof row["tz_offset_min"] === "number" &&
-    Number.isInteger(row["tz_offset_min"])
-      ? row["tz_offset_min"]
-      : null;
+  // `tz_offset_min` (міграція 085) — опційне: старі клієнти його не шлють,
+  // тоді лишається NULL (ADR-0078 device-local day boundary). Поза реальним
+  // діапазоном UTC-офсетів — reject, а не мовчазний запис: колонка в 085 без
+  // CHECK, а журнал існує рівно для того, щоб колись перерахувати день-ключ
+  // із сирих `occurred_at` + `tz_offset_min`. Сире `Number.isInteger` без
+  // меж пускало сюди `999999`, і це отруювало б саме той перерахунок.
+  // Дзеркалимо сусідів — `applyPantryEvents.ts`, `applySyncGoals.ts`.
+  const tzOffsetMin = parseOptionalTzOffsetMin(row["tz_offset_min"]);
+  if (tzOffsetMin === "invalid") {
+    return { status: "rejected", reason: "invalid_tz_offset_min" };
+  }
   const dayAnchor =
     typeof row["day_anchor"] === "string" ? row["day_anchor"] : "unknown";
   const source = typeof row["source"] === "string" ? row["source"] : "ui";
   const deviceId =
     typeof row["device_id"] === "string" ? row["device_id"] : null;
 
-  await client.query(
+  const res = await client.query(
     `INSERT INTO routine_completion_events
        (id, user_id, habit_id, date_key, state, occurred_at,
         tz_offset_min, day_anchor, source, device_id, created_at)
@@ -115,5 +123,25 @@ export async function applyRoutineCompletionEvents(
       createdAt ?? clientTs,
     ],
   );
+
+  // `DO NOTHING` мовчазний за визначенням, і сам по собі він не розрізняє
+  // «мій повтор» від «чужий рядок із таким самим id». Перевірка `row.user_id`
+  // вище цього не закриває: вона звіряє payload із сесією, а не з тим, ХТО
+  // вже володіє рядком у таблиці. Підібраний `id` (він тут TEXT і будується
+  // клієнтом детерміновано, тобто вгадуваний) давав no-op і чесний `applied`
+  // — тобто відмітка мовчки не доїжджала, і виглядало це як успіх. Owner-guard
+  // дзеркалить сусідів (`applyPantryEvents.ts`, `applySyncGoals.ts`), тільки
+  // там він стоїть на ретракції, а тут — на вставці, бо іншої мутації немає.
+  if (res.rowCount === 0) {
+    const existing = await client.query<{ user_id: string }>(
+      `SELECT user_id FROM routine_completion_events WHERE id = $1`,
+      [id],
+    );
+    // Рядок зник між INSERT-ом і SELECT-ом — таблиця append-only, тож це
+    // неможливо штатно; трактуємо як не-наш рядок, а не як успіх.
+    if (existing.rows.length === 0 || existing.rows[0]!.user_id !== userId) {
+      return { status: "rejected", reason: "fk_violation" };
+    }
+  }
   return { status: "applied" };
 }

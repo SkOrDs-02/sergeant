@@ -163,7 +163,8 @@ describe("ftux drip mail dispatcher", () => {
         rows: [{ id: "u_1", email: "fresh@example.com", name: null }],
       })
       .mockResolvedValueOnce({ rows: [] })
-      .mockResolvedValueOnce({ rows: [{ id: "55" }] });
+      .mockResolvedValueOnce({ rows: [{ id: "55" }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
     fetchMock.mockResolvedValueOnce(new Response("down", { status: 503 }));
 
     mail.configureFtuxDripDispatcher({ pool: { query } as never });
@@ -171,6 +172,57 @@ describe("ftux drip mail dispatcher", () => {
     await expect(jobs.processFtuxDripJob(job())).rejects.toThrow(
       /Resend HTTP 503/,
     );
+    // Чотири запити, а не три: user → opt-out → claim → ВІДКОТ claim-у.
+    expect(query).toHaveBeenCalledTimes(4);
+  });
+
+  it("releases the claim on a non-2xx Resend reply so the retry re-sends", async () => {
+    const { jobs, mail } = await loadHarness();
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({
+        rows: [{ id: "u_1", email: "fresh@example.com", name: null }],
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: "55" }] })
+      .mockResolvedValueOnce({ rows: [], rowCount: 1 });
+    fetchMock.mockResolvedValueOnce(new Response("down", { status: 503 }));
+
+    mail.configureFtuxDripDispatcher({ pool: { query } as never });
+    await expect(jobs.processFtuxDripJob(job())).rejects.toThrow(
+      /Resend HTTP 503/,
+    );
+
+    // Регресія: до фіксу claim лишався, і КОЖЕН із 5 ретраїв BullMQ бачив
+    // `isNew === false` → закривав job як `skipped_already_sent`. Лист не
+    // приходив ніколи, а в логах це виглядало як штатний скіп дубля.
+    const release = query.mock.calls.at(-1) as [string, unknown[]];
+    expect(release[0]).toMatch(/DELETE FROM email_campaigns_log/);
+    // Запобіжник: рядок із уже відомим id апстріму не видаляємо ніколи.
+    expect(release[0]).toMatch(/provider_message_id IS NULL/);
+    expect(release[1]).toEqual([55]);
+  });
+
+  it("keeps the claim when the transport fails without a reply", async () => {
+    const { jobs, mail } = await loadHarness();
+    const query = vi
+      .fn()
+      .mockResolvedValueOnce({
+        rows: [{ id: "u_1", email: "fresh@example.com", name: null }],
+      })
+      .mockResolvedValueOnce({ rows: [] })
+      .mockResolvedValueOnce({ rows: [{ id: "55" }] });
+    // Обрив/таймаут: Resend НЕ відповів, тож ми не знаємо, чи прийнято лист.
+    fetchMock.mockRejectedValueOnce(new Error("socket hang up"));
+
+    mail.configureFtuxDripDispatcher({ pool: { query } as never });
+    await expect(jobs.processFtuxDripJob(job())).rejects.toThrow(
+      /socket hang up/,
+    );
+
+    // Три запити, без четвертого: claim свідомо ЛИШАЄТЬСЯ. Відкотити його
+    // тут означало б ризик другого листа тій самій людині — а дубль гірший
+    // за рідкісний втрачений лист.
     expect(query).toHaveBeenCalledTimes(3);
   });
 

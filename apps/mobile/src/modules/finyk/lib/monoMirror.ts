@@ -4,7 +4,7 @@
  * Mirrors `apps/web/src/modules/finyk/lib/monoMirror.ts` exactly —
  * the upsert SQL is identical because the schema is identical.
  *
- * Stage 4 PR #038 of `docs/planning/storage-roadmap.md`.
+ * Stage 4 PR #038 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Mono is the external source-of-truth — write-ordering follows the
  * API's own `time` field (Unix seconds) rather than the local clock.

@@ -2,7 +2,7 @@ import {
   resolveOriginDeviceId,
   sweepStaleTerminalOutbox,
 } from "@sergeant/shared";
-import type { RecoverDeadLetterSelector } from "@sergeant/db-schema/sqlite";
+import type { RecoverDeadLetterTarget } from "@sergeant/db-schema/sqlite";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
 
 import { webKVStore } from "@shared/lib/storage/storage";
@@ -14,6 +14,7 @@ import { webKVStore } from "@shared/lib/storage/storage";
 // валило весь рендер у проді.
 import { getSession } from "../auth/authClient";
 
+import { type ClockSkewReport, createClockSkewMonitor } from "./clockSkew";
 import { classifyOutboxBootOutcome } from "./outboxBoot";
 import { emitSyncOutboxChanged } from "./outboxChanged";
 import { setOutboxEnqueueNudge } from "./outboxNudge";
@@ -43,7 +44,7 @@ const BENIGN_REJECT_REASONS: ReadonlySet<string> = new Set(["lww_conflict"]);
  * Саме через це розлад типів PK у Рутині (`hab_<uuid>` проти `uuid`-колонки)
  * прожив від 2026-07-24 до 2026-08-01: сервер сумлінно писав
  * `sync_v2_apply_failed` і крутив `sync_op_log_apply_total`, а на клієнті
- * ніхто нічого не бачив. Див. `docs/90-work/audits/web-qa-pre-beta.md`.
+ * ніхто нічого не бачив. Див. `docs/work/specs/audits/web-qa-pre-beta.md`.
  *
  * `syncV2.pushLoop` навмисно лишається без обсервабіліті (це переносний
  * примітив), тож звітуємо тут — у місці, де рантайм збирається для вебу.
@@ -52,8 +53,12 @@ function reportTerminalRejection(
   id: number,
   reason: string,
   meta?: { readonly table: string; readonly op: string },
+  clock?: { readonly skewMs: number | null },
 ): void {
-  if (BENIGN_REJECT_REASONS.has(reason)) return;
+  // `lww_conflict` benign лише доки годинник пристрою в нормі: при
+  // виміряному зсуві це вже не «сервер мав свіжіше», а «цей пристрій
+  // програє все» — див. `clockSkew.ts`.
+  if (BENIGN_REJECT_REASONS.has(reason) && clock === undefined) return;
   void (async () => {
     try {
       const { logger } = await import("@shared/lib");
@@ -62,6 +67,7 @@ function reportTerminalRejection(
         reason,
         table: meta?.table,
         op: meta?.op,
+        clockSkewMs: clock?.skewMs,
       });
       const { captureException } = await import("../observability/sentry");
       // Таблиця й тип операції — в ЗАГОЛОВОК помилки, не лише в теги:
@@ -504,8 +510,37 @@ async function createSyncSharedContext(): Promise<SyncSharedContext> {
   };
 }
 
+/**
+ * Один звіт за сесію на кожен сигнал `clockSkew.ts`: warn у лог + Sentry
+ * issue з передметом у заголовку (за тим самим правилом групування, що й у
+ * `reportTerminalRejection`). Payload-ів тут немає — лише числа.
+ */
+function reportClockSkew(report: ClockSkewReport): void {
+  void (async () => {
+    try {
+      const { logger } = await import("@shared/lib");
+      logger.warn("[sync] device clock skew signal", {
+        kind: report.kind,
+        skewMs: report.skewMs,
+        streak: report.streak,
+      });
+      const { captureException } = await import("../observability/sentry");
+      const subject =
+        report.kind === "skew"
+          ? `device clock skew ${Math.round((report.skewMs ?? 0) / 60_000)} min`
+          : `lww_conflict streak ${report.streak}`;
+      captureException(new Error(`sync clock: ${subject}`), {
+        tags: { area: "sync", reason: report.kind },
+      });
+    } catch {
+      /* observability must never break sync */
+    }
+  })();
+}
+
 async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
   const shared = await createSyncSharedContext();
+  const clock = createClockSkewMonitor({ report: reportClockSkew });
 
   return createSyncEngineWriterRuntime({
     pushDeps: {
@@ -518,13 +553,28 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
           onQuarantine: shared.onOutboxQuarantine,
         });
       },
-      push: (ops, options) => shared.apiClient.syncV2.pushV2(ops, options),
-      markSuccess: async (id) =>
-        shared.dbSchema.markOutboxSuccess(await shared.resolveClient(), id),
+      push: async (ops, options) => {
+        const response = await shared.apiClient.syncV2.pushV2(ops, options);
+        clock.noteServerNow(response.server_now);
+        return response;
+      },
+      markSuccess: async (id) => {
+        clock.noteOutcome(null);
+        return shared.dbSchema.markOutboxSuccess(
+          await shared.resolveClient(),
+          id,
+        );
+      },
       markRetry: async (id, plan) =>
         shared.dbSchema.markOutboxRetry(await shared.resolveClient(), id, plan),
       markRejected: async (id, reason, meta) => {
-        reportTerminalRejection(id, reason, meta);
+        clock.noteOutcome(reason);
+        reportTerminalRejection(
+          id,
+          reason,
+          meta,
+          clock.isSkewed() ? { skewMs: clock.skewMs() } : undefined,
+        );
         return shared.dbSchema.markOutboxRejected(
           await shared.resolveClient(),
           id,
@@ -559,8 +609,22 @@ async function createDefaultRuntime(): Promise<SyncEngineWriterRuntime> {
       shared.dbSchema.listRejectedOutbox(await shared.resolveClient(), {
         excludeReasons: [...BENIGN_REJECT_REASONS],
       }),
-    recoverDeadLetter: async (selector: RecoverDeadLetterSelector) =>
-      shared.dbSchema.recoverDeadLetter(await shared.resolveClient(), selector),
+    // Скоуп власника домішуємо тут, бо тільки цей шар знає сесію. Без
+    // нього `{ all: true }` оживляв dead-letter-рядки ВСІХ локальних
+    // акаунтів: на kvvfs-фолбеку партиції ділять один фізичний файл.
+    // Немає користувача — немає чого оживляти (той самий контракт, що в
+    // `drain` вище).
+    recoverDeadLetter: async (target: RecoverDeadLetterTarget) => {
+      const userId = await shared.resolveUserId();
+      if (!userId) return { recovered: [], skipped: [] };
+      const client = await shared.resolveClient();
+      return shared.dbSchema.recoverDeadLetter(
+        client,
+        target.all === true
+          ? { all: true, userId }
+          : { ids: target.ids, userId },
+      );
+    },
     addBreadcrumb: shared.addBreadcrumb,
     captureException: shared.captureException,
     intervalMs: shared.writerIntervalMs,

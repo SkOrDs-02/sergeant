@@ -9,6 +9,7 @@
 import { calcDebtRemaining, calcReceivableRemaining } from "../utils";
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 import type {
   Debt as EngineDebt,
   Receivable as EngineReceivable,
@@ -65,6 +66,15 @@ export function parseLocalDate(isoDate: string | undefined | null): Date {
     !Number.isFinite(d) ||
     (y as number) < 1970
   ) {
+    // Device-local тут НАВМИСНО. Щаслива гілка нижче будує дату з явних
+    // компонентів (`new Date(y, m-1, d)`), тобто повертає опівніч ЗА
+    // ГОДИННИКОМ ПРИСТРОЮ, і викликачі порівнюють результат саме з локальним
+    // `todayStart` (`formatRelativeDue`). Київський якір у фолбеку зробив би
+    // його неузгодженим із 99% шляху тієї самої функції — на невалідному вводі
+    // дата стрибала б на кілька годин відносно сусідніх. Київ у цьому файлі
+    // застосований там, де він і потрібен: `getNextBillingDate` рахує цикл
+    // списання через `getKyivDateParts`, щоб подорож не зрушила день списання.
+    // eslint-disable-next-line no-restricted-syntax -- див. коментар вище
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     return today;
@@ -91,7 +101,7 @@ export function getNextBillingDate(billingDay: number, now: Date): Date {
 }
 
 export function formatShortDate(d: Date): string {
-  return d.toLocaleDateString("uk-UA", { day: "numeric", month: "short" });
+  return formatDateShort(d);
 }
 
 export function formatRelativeDue(dueDate: Date, todayStart: Date): string {

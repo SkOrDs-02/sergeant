@@ -41,6 +41,13 @@ export interface HubHeroBlockProps {
   activeModules: readonly string[];
   goals: ReturnType<typeof getOnboardingGoals>;
   hasValueBar: boolean;
+  /**
+   * Вісь дії (спека `hub-action-axis.md`): замість однієї картки «Зараз»
+   * hero-слот займає ціла купа «Зараз» (`NowPile`). Резолвер одного hero
+   * не змінюється — FirstAction / SoftAuth / re-engagement перемагають так
+   * само; купа стає лише на місце `TodayFocusCard`.
+   */
+  nowPile?: React.ReactNode | undefined;
 }
 
 export function HubHeroBlock({
@@ -62,6 +69,7 @@ export function HubHeroBlock({
   activeModules,
   goals,
   hasValueBar,
+  nowPile,
 }: HubHeroBlockProps) {
   const reengagementIsHero = reengagement.show;
   const outcomeCardEnabled = useFlag("ftux_outcome_card_v1");
@@ -80,6 +88,8 @@ export function HubHeroBlock({
         sessionDays={sessionDays}
       />
     );
+  } else if (nowPile) {
+    hero = nowPile;
   } else {
     hero = (
       <TodayFocusCard

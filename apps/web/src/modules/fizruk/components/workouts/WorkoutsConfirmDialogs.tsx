@@ -78,21 +78,24 @@ export function WorkoutsConfirmDialogs({
         footer={
           <div className="flex flex-col gap-2">
             <Button
-              module="fizruk"
+              variant="solid"
+              tone="fizruk"
+
               className="w-full h-12"
               onClick={onFinishActiveAndContinue}
             >
               {conflictCopy.finish}
             </Button>
             <Button
-              variant="destructive"
+              variant="solid"
+              tone="danger"
               className="w-full h-12"
               onClick={onDiscardActiveAndContinue}
             >
               {conflictCopy.discard}
             </Button>
             <Button
-              variant="secondary"
+              variant="outline"
               className="w-full h-12"
               onClick={onCancelActiveConflict}
             >

@@ -72,7 +72,7 @@ export function PWASection() {
       <div className="flex gap-2">
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           size="sm"
           className="h-10 flex-1"
           disabled={swBusy || !("serviceWorker" in navigator)}
@@ -84,7 +84,8 @@ export function PWASection() {
         </Button>
         <Button
           type="button"
-          variant="danger"
+          variant="soft"
+          tone="danger"
           size="sm"
           className="h-10 flex-1"
           disabled={swBusy || !("serviceWorker" in navigator)}

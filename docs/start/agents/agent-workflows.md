@@ -1,6 +1,6 @@
 # Sergeant Agent Workflows
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-07.
+> **Last touched:** 2026-09-17 by @claude (§6 → рядок `sergeant-module-ai` каталогу; §9 без лічильника пакетів). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Стислі decision trees для найважливіших агентних сценаріїв у Sergeant.
@@ -66,7 +66,7 @@
 
 ## 6. OpenClaw Gateway Change _(historical — decommissioned ADR-0075)_
 
-OpenClaw runtime прибрано з репо (2026-07-20). Якщо задача стосується **HubChat** (web-асистент) — див. § HubChat у `agent-skills-catalog.md` → `sergeant-module-ai`. Якщо задача про **Hard Rule #20 PAT guard** — `sergeant-security-audit`.
+OpenClaw runtime прибрано з репо (2026-07-20). Якщо задача стосується **HubChat** (web-асистент) — див. рядок `sergeant-module-ai` у § Active Skills [`agent-skills-catalog.md`](./agent-skills-catalog.md#active-skills). Якщо задача про **Hard Rule #20 PAT guard** — `sergeant-security-audit`.
 
 ## 7. Squad Review (PR touches 3+ governed surfaces)
 
@@ -94,7 +94,7 @@ OpenClaw runtime прибрано з репо (2026-07-20). Якщо задач�
 
 1. Start with `sergeant-start-here`.
 2. Load `sergeant-qa-squad`.
-3. Create Agent Team with 4 teammates: `qa-server`, `qa-web` (covers `apps/web` **and** `apps/landing`), `qa-mobile` (mobile + mobile-shell), `qa-packages` (the 11 `packages/*` workspaces, incl. the `api-client` contract tests that evidence Hard Rule #3).
+3. Create Agent Team with 4 teammates: `qa-server`, `qa-web` (covers `apps/web` **and** `apps/landing`), `qa-mobile` (mobile + mobile-shell), `qa-packages` (every `packages/*` workspace — `ls packages/` for the current set — incl. the `api-client` contract tests that evidence Hard Rule #3).
 4. All 4 run independently in parallel.
 5. Wait for all 4 reports before synthesizing.
 6. Synthesize: overall status + per-surface table + failure details. If `qa-packages` is red, check first whether it explains app-surface failures — shared/`*-domain` is upstream of web and mobile.

@@ -4,7 +4,7 @@
  * categories / manual expenses, per-tx category / splits / mono-debt
  * mappings, networth history, prefs).
  *
- * Stage 4 PR #037 of `docs/planning/storage-roadmap.md`. When the
+ * Stage 4 PR #037 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. When the
  * `feature.finyk.sqlite_v2.read_sqlite` flag is on, the public storage
  * hook (`useStorage` via `useFinykStorageSlots`) overlays its slot
  * values from this cache instead of the LS bundle. LS writes still

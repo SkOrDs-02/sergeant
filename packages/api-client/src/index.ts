@@ -84,6 +84,7 @@ export {
   runSyncEnginePushOnce,
   mapDrainedRowToSyncV2PushOp,
   describePushError,
+  isTerminalPushFailure,
   type DrainSyncOpOutboxFn,
   type DrainedOutboxRowShape,
   type MarkOutboxRejectedFn,

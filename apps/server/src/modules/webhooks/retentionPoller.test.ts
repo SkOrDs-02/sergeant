@@ -162,4 +162,32 @@ describe("WebhookEventsRetentionPoller", () => {
     await stopPromise;
     expect(pool.query).toHaveBeenCalledTimes(1);
   });
+
+  it("stop() gives up at its ceiling instead of hanging on a stuck tick", async () => {
+    // Регресія (аудит 2026-09-16): раніше `stop()` крутив
+    // `while (this.running) await sleep(20)` БЕЗ верхньої межі. Tick ходить
+    // у Postgres, тож зависла БД означала, що `stop()` не повернеться
+    // ніколи — і graceful shutdown не існував саме в тому випадку, заради
+    // якого його писали.
+    const pool = {
+      // Запит, що не завершується ніколи.
+      query: vi.fn().mockImplementation(() => new Promise(() => {})),
+    } as unknown as Pool;
+    const poller = new WebhookEventsRetentionPoller({
+      pool,
+      retentionDays: 30,
+      intervalMs: 0,
+    });
+
+    void poller.runOnce();
+    // Дати tick дійсно стартувати, щоб `running` став true.
+    await new Promise((r) => setTimeout(r, 10));
+
+    const started = Date.now();
+    await poller.stop();
+    const elapsed = Date.now() - started;
+
+    // Головне: ми взагалі повернулись, і в межах стелі (2 с) із запасом.
+    expect(elapsed).toBeLessThan(4_000);
+  }, 10_000);
 });

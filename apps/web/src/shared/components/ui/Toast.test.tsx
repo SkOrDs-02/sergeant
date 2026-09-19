@@ -426,3 +426,49 @@ describe("Toast — стек і черга", () => {
     expect(document.querySelectorAll("[data-toast-id]")).toHaveLength(0);
   });
 });
+
+describe("Toast — трей над футером відкритого аркуша", () => {
+  function Harness({ open }: { open: boolean }) {
+    return (
+      <ToastProvider>
+        <ToastContainer />
+        <Sheet
+          open={open}
+          onClose={vi.fn()}
+          title="Як ти сьогодні?"
+          footer={<button type="button">Пропустити</button>}
+        >
+          Вміст
+        </Sheet>
+      </ToastProvider>
+    );
+  }
+
+  it("лишається внизу і читає --sgt-sheet-footer-inset, яку аркуш ставить лише поки відкритий", () => {
+    const root = document.documentElement;
+    const { rerender } = render(<Harness open={false} />);
+    const tray = screen.getByTestId("toast-tray");
+    // Рішення власника 2026-09-16 (варіант A): край не змінюється — трей
+    // завжди внизу, «Повернути» лишається під великим пальцем.
+    expect(tray.getAttribute("data-anchor")).toBe("bottom");
+    expect(tray.style.top).toBe("");
+    expect(tray.style.bottom).toContain("--sgt-sheet-footer-inset");
+    expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe("");
+
+    rerender(<Harness open />);
+    expect(tray.getAttribute("data-anchor")).toBe("bottom");
+    expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toMatch(
+      /^\d+px$/,
+    );
+
+    rerender(<Harness open={false} />);
+    expect(root.style.getPropertyValue("--sgt-sheet-footer-inset")).toBe("");
+  });
+
+  it("стоїть на токен-тірі z-toast, а не поза шкалою", () => {
+    render(<Harness open={false} />);
+    const tray = screen.getByTestId("toast-tray");
+    expect(tray).toHaveClass("z-toast");
+    expect(tray.className).not.toMatch(/z-9999|z-\[9999\]/);
+  });
+});

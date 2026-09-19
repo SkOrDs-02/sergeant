@@ -35,7 +35,7 @@ export function MealTypePicker({ mealType, setForm }: MealTypePickerProps) {
                 : "bg-panelHi text-muted border-line hover:border-nutrition/50",
             )}
           >
-            <Icon name={mt.iconName as IconName} size={14} aria-hidden />
+            <Icon name={mt.iconName as IconName} size="sm" aria-hidden />
             {mt.label}
           </button>
         ))}

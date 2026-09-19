@@ -16,6 +16,8 @@
     "eslint.per-package.js",
     "eslint.server.js",
     "eslint.shell.js",
+    "eslint.type-aware.js",
+    "eslint.floating-promises-baseline.js",
     "eslint.web.js",
     ".prettierrc.json",
     ".prettierignore",

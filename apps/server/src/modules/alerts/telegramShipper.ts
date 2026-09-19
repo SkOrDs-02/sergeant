@@ -125,6 +125,17 @@ export interface TelegramApiClient {
 }
 
 /**
+ * Стеля часу на один виклик Bot API.
+ *
+ * AI-DANGER: без `signal` undici бере власний `headersTimeout` у 300 с.
+ * Це шлях доставки АЛЕРТІВ — зависання тут означає, що повідомлення про
+ * інцидент не приходить п'ять хвилин, тобто рівно тоді, коли воно потрібне.
+ * 10 с — та сама стеля, що й на решті зовнішніх викликів
+ * (`modules/mono/historyFetch.ts`, `lib/webpushSend.ts`).
+ */
+const TELEGRAM_API_TIMEOUT_MS = 10_000;
+
+/**
  * Default fetch-based Telegram client. Читає `botToken` зі звала, бо в
  * нашому проекті є кілька botів (`SERGEANT_ALERT_BOT_TOKEN`,
  * `OPENCLAW_BOT_TOKEN` тощо) — caller свідомо вибирає, від чийого
@@ -151,6 +162,7 @@ export function createTelegramApiClient(botToken: string): TelegramApiClient {
               reply_markup: input.replyMarkup,
             }),
           }),
+          signal: AbortSignal.timeout(TELEGRAM_API_TIMEOUT_MS),
         },
       );
       const body = (await res.json().catch(() => null)) as {
@@ -180,6 +192,7 @@ export function createTelegramApiClient(botToken: string): TelegramApiClient {
             message_id: input.messageId,
             text: input.text,
           }),
+          signal: AbortSignal.timeout(TELEGRAM_API_TIMEOUT_MS),
         },
       );
       const body = (await res.json().catch(() => null)) as {
@@ -210,6 +223,7 @@ export function createTelegramApiClient(botToken: string): TelegramApiClient {
               show_alert: input.showAlert,
             }),
           }),
+          signal: AbortSignal.timeout(TELEGRAM_API_TIMEOUT_MS),
         },
       );
       // Відповідь Telegram тут нас не цікавить деталями: єдина дія на

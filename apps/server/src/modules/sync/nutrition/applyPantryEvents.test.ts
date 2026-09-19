@@ -40,7 +40,13 @@ class FakeClient {
     this.queries.push({ sql, params });
     const next = this.responses.shift();
     const rows = (next?.rows ?? []) as T[];
-    return { rows, rowCount: next?.rowCount ?? rows.length };
+    if (next?.rowCount !== undefined) return { rows, rowCount: next.rowCount };
+    // Дефолт мусить розрізняти SELECT і мутацію. `rows.length` для INSERT-а
+    // дає 0, а 0 у реальному `pg` означає «ON CONFLICT DO NOTHING не вставив
+    // нічого» — тобто owner-guard. Успішна вставка завжди повертає 1, і
+    // фейк має моделювати саме її, інакше кожен тест без явного `enqueue`
+    // мовчки їхав би конфліктною гілкою.
+    return { rows, rowCount: /^\s*SELECT/i.test(sql) ? rows.length : 1 };
   }
 }
 
@@ -486,5 +492,56 @@ describe("applyNutritionPantryEvents — E-7 (конкурентні прист�
     // Дедуплікацію робить БД через ON CONFLICT — обидва запити однакові.
     expect(fake.queries[0]!.params[0]).toBe(fake.queries[1]!.params[0]);
     expect(fake.queries[1]!.sql).toContain("ON CONFLICT (id) DO NOTHING");
+  });
+
+  // `id` тут будується клієнтом детерміновано з pantry/item/kind/часу
+  // (див. `validRow`), тобто вгадуваний. До owner-guard-а конфлікт по
+  // такому id давав no-op і чесний `applied` — подія мовчки не доїжджала,
+  // а виглядало це як успіх.
+  it("на конфлікті id звіряє власника: чужий рядок → fk_violation", async () => {
+    const fake = new FakeClient();
+    fake.enqueue({ rows: [], rowCount: 0 }); // ON CONFLICT DO NOTHING
+    fake.enqueue({ rows: [{ user_id: "someone-else" }] }); // owner-guard
+
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow()),
+      USER,
+      CLIENT_TS,
+    );
+
+    expect(res).toEqual({ status: "rejected", reason: "fk_violation" });
+    expect(fake.queries).toHaveLength(2);
+    expect(fake.queries[1]!.sql).toContain("SELECT user_id");
+  });
+
+  it("на конфлікті id зі СВОЇМ рядком лишається ідемпотентним applied", async () => {
+    const fake = new FakeClient();
+    fake.enqueue({ rows: [], rowCount: 0 });
+    fake.enqueue({ rows: [{ user_id: USER }] });
+
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow()),
+      USER,
+      CLIENT_TS,
+    );
+
+    expect(res).toEqual({ status: "applied" });
+  });
+
+  it("конфлікт без рядка (append-only таблиця) не вважається успіхом", async () => {
+    const fake = new FakeClient();
+    fake.enqueue({ rows: [], rowCount: 0 });
+    fake.enqueue({ rows: [] });
+
+    const res = await applyNutritionPantryEvents(
+      asClient(fake),
+      op(validRow()),
+      USER,
+      CLIENT_TS,
+    );
+
+    expect(res).toEqual({ status: "rejected", reason: "fk_violation" });
   });
 });

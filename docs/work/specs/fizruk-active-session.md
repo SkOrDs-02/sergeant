@@ -1,7 +1,7 @@
 # SPEC: fizruk — активне тренування як сесія «список → вправа»
 
-> **Last validated:** 2026-09-11 by @claude. **Next review:** 2026-12-11.
-> **Status:** Implemented — реалізовано в PR гілки `claude/training-page-review-l83t74`.
+> **Last touched:** 2026-09-17 by @claude (доказ у Status замінено з гілки на файли в коді). **Next review:** 2026-12-16.
+> **Status:** Implemented — доказ у коді: `apps/web/src/modules/fizruk/components/session/SessionView.tsx`, `SessionExerciseList.tsx`, `SessionExerciseFocus.tsx`, `SessionDock.tsx`, `SessionTopBar.tsx`, `sessionLib.ts` (+ тести поруч: `SessionView.test.tsx`, `SessionExerciseList.test.tsx`, `sessionLib.test.ts`). Історично: реалізовано в гілці `claude/training-page-review-l83t74` (номер PR у snapshot-імпорті репо недоступний).
 > Контекст-джерела: UX-огляд 2026-09-03 (артефакт «Активне тренування Фізрука»), мокапи «Активне тренування — мокапи» (сторінка «Список → вправа»), [аудит 2026-08-07 § 4](./audits/2026-08-07-fizruk-deep-audit.md), [канон fizruk](../../product/modules/fizruk.md).
 
 ## Проблема

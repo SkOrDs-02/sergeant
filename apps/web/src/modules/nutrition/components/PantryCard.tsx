@@ -41,7 +41,7 @@ function ChevronIcon({ open }: { open: boolean }) {
   return (
     <Icon
       name="chevron-right"
-      size={14}
+      size="sm"
       className={cn("transition-transform shrink-0", open && "rotate-90")}
     />
   );
@@ -154,7 +154,7 @@ function ItemRow({
           </span>
           {isPantryItemLowStock(item) && (
             <span className="inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning shrink-0">
-              <Icon name="trending-down" size={12} aria-hidden />
+              <Icon name="trending-down" size="xs" aria-hidden />
               {messages.nutrition.pantryLowStock.badge}
             </span>
           )}
@@ -207,7 +207,7 @@ function CategorySection({
           <ChevronIcon open={open} />
           <Icon
             name={cat.iconName as IconName}
-            size={16}
+            size="md"
             className="text-nutrition shrink-0"
             aria-hidden
           />
@@ -287,7 +287,7 @@ function InventoryCard({
         <EmptyState
           size="sm"
           module="nutrition"
-          icon={<Icon name="package" size={20} />}
+          icon={<Icon name="package" size="lg" />}
           title={messages.nutrition.pantryEmpty.title}
           description={messages.nutrition.pantryEmpty.description}
           examplePreview={
@@ -448,6 +448,12 @@ export function PantryCard({
                   setNewItemName("");
                 }
               }}
+              // Placeholder не є доступною назвою: він зникає з першим
+              // символом і не читається як мітка. Видиму мітку не ставимо —
+              // поле живе в одному рядку з кнопкою «Додати», і заголовок
+              // картки вже каже, що це комора (підтверджено живим прогоном
+              // 2026-09-16: поле було єдиним на екрані без назви).
+              aria-label="Назва продукту"
               placeholder="напр. лосось 300г"
               maxLength={NAME_MAX_LEN}
               disabled={busy}
@@ -464,6 +470,10 @@ export function PantryCard({
                 // 44px-флору; px-флор під coarse pointer, як у `Button`/`Input`.
                 "text-style-label px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl shrink-0",
                 "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+                // Канонічна утиліта, а не рукописний `focus-visible:ring-2`:
+                // останній рахує храповик `check-ui-canon-ratchet.mjs`, і
+                // його стелю можна лише опускати (аудит 2026-09-16).
+                "focus-ring",
               )}
             >
               Додати
@@ -474,6 +484,12 @@ export function PantryCard({
             <textarea
               value={pantryText}
               onChange={(e) => setPantryText(e.target.value)}
+              // Назва — з тієї ж причини, що й у `Input` режиму «По одному»
+              // вище: видимої мітки в блоці немає, а плейсхолдер зникає з
+              // першим символом (аудит 2026-09-16, WF-15). Формулювання
+              // навмисно не містить слів «Додати»/«Прибрати»/«Редагувати» —
+              // сусідні тести шукають саме їх підрядком через `getByLabelText`.
+              aria-label="Список продуктів"
               placeholder={'напр. "2 яйця, курка 500г, рис, огірки, сир"'}
               className="input-focus-nutrition flex-1 min-h-[96px] rounded-2xl bg-panel border border-line px-4 py-3 text-sm text-text placeholder:text-subtle"
               maxLength={NOTE_MAX_LEN}
@@ -489,6 +505,7 @@ export function PantryCard({
                 // з тим самим дефектом (ревʼю CodeRabbit 2026-08-26).
                 "text-style-label shrink-0 px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl mt-0.5",
                 "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+                "focus-ring",
               )}
             >
               Розібрати

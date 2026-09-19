@@ -11,14 +11,9 @@ import { renderHook, waitFor } from "@testing-library/react";
 const useAuthMock = vi.fn();
 const bootMock = vi.fn();
 const notifyMock = vi.fn();
-const isDemoActiveMock = vi.fn();
 
 vi.mock("../../../core/auth/AuthContext", () => ({
   useAuth: () => useAuthMock(),
-}));
-vi.mock("../../../core/onboarding/onboardingGate", () => ({
-  DEMO_LOCAL_USER_ID: "demo-local-user",
-  isDemoActive: () => isDemoActiveMock(),
 }));
 vi.mock("../lib/sqliteReadBoot", () => ({
   bootFizrukSqliteReadPath: (...a: unknown[]) => bootMock(...a),
@@ -31,20 +26,9 @@ import { useFizrukSqliteReadBoot } from "./useFizrukSqliteReadBoot";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  isDemoActiveMock.mockReturnValue(false);
 });
 
 describe("useFizrukSqliteReadBoot", () => {
-  it("boots under the anonymous id without an authenticated user or demo", async () => {
-    useAuthMock.mockReturnValue({ user: null, status: "unauthenticated" });
-    isDemoActiveMock.mockReturnValue(false);
-    bootMock.mockResolvedValue(true);
-    renderHook(() => useFizrukSqliteReadBoot());
-    await waitFor(() => {
-      expect(bootMock).toHaveBeenCalledWith("local-anon");
-    });
-  });
-
   it("does not boot while the session is still resolving", () => {
     useAuthMock.mockReturnValue({ user: null, status: "loading" });
     renderHook(() => useFizrukSqliteReadBoot());
@@ -77,16 +61,5 @@ describe("useFizrukSqliteReadBoot", () => {
       expect(bootMock).toHaveBeenCalledWith("u2");
     });
     expect(notifyMock).not.toHaveBeenCalled();
-  });
-
-  it("falls back to the synthetic demo user id when demo mode is active and there's no auth user", async () => {
-    useAuthMock.mockReturnValue({ user: null });
-    isDemoActiveMock.mockReturnValue(true);
-    bootMock.mockResolvedValue(false);
-
-    renderHook(() => useFizrukSqliteReadBoot());
-    await waitFor(() => {
-      expect(bootMock).toHaveBeenCalledWith("demo-local-user");
-    });
   });
 });

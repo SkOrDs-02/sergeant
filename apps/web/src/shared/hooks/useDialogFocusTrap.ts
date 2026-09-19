@@ -1,4 +1,4 @@
-import { useEffect, useRef, type RefObject } from "react";
+import { useEffect, useRef, useSyncExternalStore, type RefObject } from "react";
 
 export interface DialogFocusTrapOptions {
   onEscape?: (() => void) | undefined;
@@ -246,6 +246,51 @@ export function useDialogFocusTrap(
 const inertRoots = new Set<HTMLElement>();
 const managedEls = new Map<Element, { inert: boolean; ariaHidden: boolean }>();
 
+/* ------------------------------------------------------------------ *
+ * Modal presence
+ *
+ * Хто ще, крім самих діалогів, має знати, що на екрані модальний діалог:
+ * глобальний трей тостів (`ToastContainer`) якориться вгорі, поки відкритий
+ * аркуш чи модалка, бо внизу він накривав би футер аркуша з його CTA.
+ * Джерело правди те саме, що й для inert, — набір зареєстрованих
+ * roots, тож «модальний» тут означає рівно `inertBackground: true`.
+ * ------------------------------------------------------------------ */
+const presenceListeners = new Set<() => void>();
+
+function emitModalPresence(): void {
+  for (const listener of presenceListeners) {
+    try {
+      listener();
+    } catch {
+      /* noop — слухач не має ламати реєстрацію діалогу */
+    }
+  }
+}
+
+function subscribeModalPresence(listener: () => void): () => void {
+  presenceListeners.add(listener);
+  return () => {
+    presenceListeners.delete(listener);
+  };
+}
+
+function readModalPresence(): boolean {
+  return inertRoots.size > 0;
+}
+
+/**
+ * `true`, поки відкритий бодай один діалог із `inertBackground` (Sheet,
+ * Modal, ConfirmDialog, InputDialog, CommandPalette…). Немодальні
+ * поверхні (Popover, radial menu) сюди не потрапляють — навмисно.
+ */
+export function useModalDialogOpen(): boolean {
+  return useSyncExternalStore(
+    subscribeModalPresence,
+    readModalPresence,
+    () => false,
+  );
+}
+
 /**
  * The element to keep interactive is the dialog's overlay, not the inner
  * panel: the scrim/backdrop is usually a *sibling* of the panel inside a
@@ -274,11 +319,13 @@ function getDialogRoot(panel: HTMLElement): HTMLElement {
 function registerInertRoot(root: HTMLElement): void {
   inertRoots.add(root);
   syncInert();
+  emitModalPresence();
 }
 
 function unregisterInertRoot(root: HTMLElement): void {
   inertRoots.delete(root);
   syncInert();
+  emitModalPresence();
 }
 
 function syncInert(): void {
@@ -366,4 +413,5 @@ export function __resetDialogInertForTests(): void {
   managedEls.clear();
   inertRoots.clear();
   keyboardStack.length = 0;
+  emitModalPresence();
 }

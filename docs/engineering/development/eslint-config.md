@@ -1,6 +1,6 @@
 # ESLint config — структура та roadmap split
 
-> **Last touched:** 2026-05-13 by Devin. **Next review:** 2026-11-24.
+> **Last touched:** 2026-09-17 by @claude (шапка під зміст 2026-09; DoD phase 2 відмічено за фактом). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Sergeant використовує ESLint flat-config (v9+). Цей документ описує:
@@ -22,6 +22,8 @@ eslint.openclaw.js            (removed — tools/openclaw decommissioned ADR-007
 eslint.packages.js            (eslint-plugin-sergeant-design self-lint blocks)
 eslint.cross-surface.js       (blocks spanning 2+ surfaces — server+web,
                                web+mobile; historical server+openclaw block removed)
+eslint.type-aware.js          (apps/** — ЄДИНИЙ блок, що питає типи в TS)
+eslint.floating-promises-baseline.js  (борговий allowlist під той блок)
 apps/web/eslint.i18n-allowlist.json
 packages/eslint-plugin-sergeant-design/index.js
 ```
@@ -101,13 +103,15 @@ cross-surface security-правила для server живуть у `eslint.serv
 
 ### Acceptance criteria (DoD) для phase 2
 
-- [ ] Root `eslint.config.js` < 300 рядків.
-- [ ] Кожен app/package має власний `eslint.config.js`.
-- [ ] `pnpm lint` все ще зелений на all PR-target files.
-- [ ] CI час `pnpm lint` зменшено (target: <30s через Turbo parallelism).
-- [ ] Diff-test: для 7+ fixture-файлів pre-extraction vs post-extraction
-      `eslint --print-config` produce byte-identical output — phase 2
-      введе цей гард (планований script `scripts/eslint-print-config-diff` (`.mjs`)).
+> Відмічено 2026-09-17 за фактом (phase 2a/2b DONE вище): `wc -l eslint.config.js` = 37; `ls apps/*/eslint.config.* packages/*/eslint.config.*` — кожен linted-пакет; гард `pnpm lint:eslint-config-diff` — крок CI у джобі `check`.
+
+- [x] Root `eslint.config.js` < 300 рядків.
+- [x] Кожен app/package має власний `eslint.config.js`.
+- [x] `pnpm lint` все ще зелений на all PR-target files.
+- [ ] CI час `pnpm lint` зменшено (target: <30s через Turbo parallelism) — не заміряно окремо; кеш лінту на двох рівнях описано в [ADR-0093](../../governance/adr/0093-eslint-kept-lint-pipeline-cached.md).
+- [x] Diff-test: для 7+ fixture-файлів pre-extraction vs post-extraction
+      `eslint --print-config` produce byte-identical output —
+      [`scripts/eslint-print-config-diff.mjs`](../../../scripts/eslint-print-config-diff.mjs) (`pnpm lint:eslint-config-diff`).
 
 ### Why phase 1 first
 
@@ -124,6 +128,44 @@ Phase 1 ships the scaffolding (baseline file + this doc + the
 print-config fixture pattern in `/tmp/pr31-baseline/` під час dev) без
 per-surface ризику.
 
+## Type-aware зріз (`eslint.type-aware.js`)
+
+Усі блоки вище читають лише AST. `eslint.type-aware.js` — виняток: він
+вмикає `parserOptions.projectService`, тобто парсер будує TS-програму і
+правила бачать типи. Наразі там одне правило —
+`@typescript-eslint/no-floating-promises`, увімкнене 2026-09-16 рішенням
+власника на `apps/**` (не на `packages/**`).
+
+**Навіщо.** Це рівно той клас багів, який PR #82 лагодив руками: чотири
+дзеркалення в SQLite на мобільному запускались без `.catch`, і невдалий
+запис зникав без логу, без Sentry і без видимого симптому. AST-лінтер такого
+не бачить — треба знати, що вираз має тип `Promise`.
+
+**Ціна** (замір 2026-09-16, `apps/web/src`, 2752 файли):
+
+| Прогін                       | Було | Стало |
+| ---------------------------- | ---- | ----- |
+| холодний (`--no-cache`)      | 84 с | 139 с |
+| теплий (`--cache`, без змін) | —    | 6 с   |
+
+Тобто CI платить один холодний прохід на воркспейс (turbo кешує), а
+щоденний локальний лінт — ні.
+
+**Сліпі зони.** Type-aware лінт потребує tsconfig, який МІСТИТЬ файл; інакше
+парсер валить файл цілком (`was not found by the project service`). Тому блок
+має список `PROJECT_SERVICE_BLIND_SPOTS` — і кожен запис там це справжній
+пробіл, не смак. Найбільший: `apps/web/tests/**` (Playwright-специ, 51 файл)
+поза `include: src/**/*`. Закривати їх — окрема робота, бо розширення
+tsconfig тягне за собою і `typecheck`.
+
+**Борг.** `eslint.floating-promises-baseline.js` тримає 83 файли (198 знахідок
+станом на 2026-09-16), для яких правило вимкнене. Це храповик: список може
+меншати, не рости. Виправив файл — прожени
+`node scripts/ci/check-floating-promises-baseline.mjs --bump`. Гейт
+`pnpm lint:floating-promises` (у ланцюжку `pnpm lint`) падає, коли запис у
+baseline більше не потрібен: інакше виправлений файл тихо лишався б без
+правила, і регресія в ньому пройшла б лінт.
+
 ## Як додавати нове правило
 
 1. **Якщо правило застосовується до всіх файлів** (TS, JSX, server, web,
@@ -135,6 +177,9 @@ per-surface ризику.
 3. **Якщо правило для `packages/eslint-plugin-sergeant-design`-custom rule**
    → додай саме правило у `packages/eslint-plugin-sergeant-design/rules/`,
    реєструй у `index.js`, enable в baseline/root по scope.
+4. **Якщо правилу потрібні типи** (`no-floating-promises`, `no-misused-promises`,
+   `await-thenable`, …) → додай у `eslint.type-aware.js`. Не вмикай type-aware
+   парсер у решті блоків: один зріз тримає всю ціну TS-програми в одному місці.
 
 Завжди:
 
@@ -143,6 +188,11 @@ per-surface ризику.
 - Якщо rule severity `warn` тимчасово, додай `TODO(<initiative>):
 <ETA>` коментар поряд.
 - Запусти `pnpm lint` локально перед commit.
+- **Створив новий кореневий `eslint.*.js` — додай його в `turbo.json` →
+  `globalDependencies`.** Інакше зміна правила в ньому не інвалідує кеш, і
+  `turbo run lint` рапортує `cached` на дереві, яке `--force` валить. З
+  2026-09-16 це перевіряє тест у
+  `scripts/ci/__tests__/check-floating-promises-baseline.test.mjs`.
 
 ## Pre-existing failures
 

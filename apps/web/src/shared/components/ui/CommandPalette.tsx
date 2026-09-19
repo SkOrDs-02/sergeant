@@ -11,8 +11,11 @@
  * Wire-up:
  *   1. Mount `<CommandPaletteProvider>` once near the app root.
  *   2. Render `<CommandPalette />` somewhere inside the provider.
- *   3. Bind global ⌘K / Ctrl+K with `useCommandPaletteHotkey()` —
- *      gated behind the `hub_command_palette` feature flag.
+ *   3. `Cmd/Ctrl+K` належить оболонці: `RootLayout` → `useHubKeyboardShortcuts`
+ *      відкриває палітру через `useCommandPaletteControls().open` з
+ *      увімкненим `hub_command_palette`, інакше — пошук хаба. Власного
+ *      слухача клавіші тут більше немає (рішення власника 2026-09-16:
+ *      два власники відкривали обидві поверхні разом).
  *   4. Register commands from any descendant via `useRegisterCommand`.
  *
  * Status: Active. Last validated: 2026-05-13 by @Skords-01 / Devin.
@@ -214,38 +217,6 @@ export function useRegisterCommand(
   }, [register, unregister, registrationId, commandsRevision, commands.length]);
 }
 
-/**
- * Bind global ⌘K / Ctrl+K to open the palette. Wire this once in the app
- * shell, behind any feature flag the host needs. Ignores keypresses
- * inside editable fields so users typing in inputs keep their browser's
- * select-line shortcut.
- */
-export function useCommandPaletteHotkey(enabled: boolean = true): void {
-  const ctx = useContext(CommandPaletteContext);
-  // See `useRegisterCommand` — depend on the stable `togglePalette`
-  // callback, not the whole `ctx` object, so unrelated state ticks on
-  // the provider (revision/open/recents) don't churn the keydown
-  // listener attach/detach.
-  const togglePalette = ctx?.togglePalette;
-  useEffect(() => {
-    if (!enabled || !togglePalette) return;
-    const handler = (event: KeyboardEvent) => {
-      const mod = event.metaKey || event.ctrlKey;
-      if (!mod) return;
-      if (event.key.toLowerCase() !== "k") return;
-      const target = event.target as HTMLElement | null;
-      // Allow ⌘K to fire from any context, including inputs — the palette
-      // overlays everything and inputs typically don't own Cmd+K natively
-      // beyond `select line`. Other shortcuts (like Cmd+S) remain free.
-      if (target?.isContentEditable && event.altKey) return;
-      event.preventDefault();
-      togglePalette();
-    };
-    window.addEventListener("keydown", handler);
-    return () => window.removeEventListener("keydown", handler);
-  }, [enabled, togglePalette]);
-}
-
 // ─── UI ──────────────────────────────────────────────────────────────────
 
 /**
@@ -253,7 +224,7 @@ export function useCommandPaletteHotkey(enabled: boolean = true): void {
  * gates the heavy, portal-mounted body behind the `open` state: while
  * closed it renders nothing and the lazy chunk is never requested, so
  * the body stays out of the entry bundle. The hotkey hook
- * (`useCommandPaletteHotkey`) flips `open` to `true` eagerly on first
+ * (`useHubKeyboardShortcuts` у `RootLayout`) flips `open` to `true` eagerly on first
  * keypress; this mount then resolves `CommandPaletteUI` through the
  * `<Suspense>` boundary. The Provider above still wraps everything, so the
  * lazy body reads the same context (open state, command registry, recents).

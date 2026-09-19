@@ -1,7 +1,7 @@
 import { randomUUID } from "node:crypto";
 
 /**
- * AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`,
+ * AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`,
  * founder-рішення 2026-09-01) — «хід з дією коштує ОДИН запит».
  *
  * Tool-хід чату — це два HTTP-запити до `/api/chat`: перший пропонує
@@ -51,7 +51,7 @@ interface TicketRecord {
 }
 
 /**
- * 2 хвилини — запас понад `CHAT_TOOL_TIMEOUT_MS` (30s, `chat.ts`) на
+ * 2 хвилини — запас понад `CHAT_TOTAL_TIMEOUT_MS` (30s, `chat.ts`) на
  * клієнтське виконання tool-викликів (sync-запис, IndexedDB) і мережеву
  * затримку до другого запиту. Довше не потрібно: continuation приходить
  * практично одразу після першої відповіді.
@@ -70,11 +70,23 @@ function pruneExpired(now: number): void {
  * Видає новий квиток для щойно оплаченого першого туру, який модель
  * продовжила `tool_use`-блоком. Викликається лише з `chat.ts`, лише коли
  * `ledgerUserId` відомий (анонім сюди не доходить — `requireSession()`).
+ *
+ * `input.id` (ініціатива 0025, Фаза 2) — опційний caller-supplied id
+ * замість власного `randomUUID()`. `chat.ts` передає сюди той самий
+ * `$ai_trace_id`, який уже пішов у PostHog для генерації першого туру —
+ * так квиток, що клієнт echo-ить назад у другому запиті, одночасно є
+ * стабільним trace id для tool-спанів і синтезної генерації (§ План змін,
+ * Фаза 2). Ентропія та сама (`randomUUID()`), лише точка виклику
+ * переїхала на один кадр вище — security-властивості квитка (одноразовий,
+ * прив'язаний до `userId`, короткоживучий) не змінюються.
  */
-export function issueRoundTripTicket(input: { userId: string }): string {
+export function issueRoundTripTicket(input: {
+  userId: string;
+  id?: string | undefined;
+}): string {
   const now = Date.now();
   pruneExpired(now);
-  const id = randomUUID();
+  const id = input.id || randomUUID();
   store.set(id, { userId: input.userId, expiresAt: now + TICKET_TTL_MS });
   return id;
 }

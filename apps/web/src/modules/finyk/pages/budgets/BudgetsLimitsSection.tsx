@@ -86,7 +86,7 @@ export function BudgetsLimitsSection({
       >
         <span className="flex items-center gap-2 min-w-0">
           <span className="text-muted" aria-hidden>
-            <Icon name="calendar" size={16} />
+            <Icon name="calendar" size="md" />
           </span>
           <SectionHeading
             as="span"
@@ -117,7 +117,7 @@ export function BudgetsLimitsSection({
         </span>
         <Icon
           name="chevron-down"
-          size={14}
+          size="sm"
           className={cn(
             "transition-transform text-muted shrink-0",
             limitsOpen ? "rotate-180" : "",

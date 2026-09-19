@@ -138,6 +138,16 @@ describe("PantryCard add modes", () => {
     expect(setPantryText).toHaveBeenCalledWith("банани, молоко");
   });
 
+  it("дає полю режиму «Списком» доступну назву, а не лише плейсхолдер", () => {
+    // Регресія WF-15 (аудит 2026-09-16): сирий `<textarea>` без мітки —
+    // плейсхолдер зникає з першим символом, тож поле лишалось безіменним.
+    // Сусідній `Input` режиму «По одному» мітку вже мав.
+    render(<Card {...baseProps()} />);
+    fireEvent.click(screen.getByText("Списком"));
+    const field = screen.getByLabelText("Список продуктів");
+    expect(field.tagName).toBe("TEXTAREA");
+  });
+
   it("renders the barcode scan affordance when handler provided", () => {
     const onScanBarcode = vi.fn();
     render(<Card {...baseProps({ onScanBarcode })} />);

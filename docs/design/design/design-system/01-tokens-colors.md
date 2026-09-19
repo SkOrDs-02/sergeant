@@ -1,6 +1,6 @@
 # Design System — Принципи та Кольорові токени
 
-> **Last validated:** 2026-08-04 by @claude (принципи §1 переведено на convention-wording per ADR-0081). **Next review:** 2027-02-26.
+> **Last validated:** 2026-09-16 by @claude (звірено з `tokens.js` / `theme.css`: стіл і зона, ink-тири статусів і акцентів, chartPalette, v2 namespace → Reference). **Next review:** 2027-02-26.
 > **Status:** Active (v2 redesign foundation merged 2026-05; brand palette → stone via 2026-07 M1)
 
 Цей документ охоплює базові принципи дизайн-системи, кольорові токени та WCAG AA контраст.
@@ -54,6 +54,12 @@
 | `border-strong`  | Сильніший дільник (інпути, таблиці) | `#ddd3c5` | `#595350` |
 
 Back-compat: старі токени `panel` / `panelHi` / `line` продовжують працювати.
+
+Фон сторінки під `bg` у модулі — **стіл** `--module-desk-rgb` (hue модуля,
+хрома ≤5%), шапка й таби — **зона** `--module-zone-rgb` (з 2026-09-03;
+джерело `moduleSurfaces` у `tokens.js`, класи `.bg-mesh` / `.bg-zone` /
+`.zone-chip`). Хаб нейтральний. Розбір —
+[`03-spacing-elevation-theming.md § 8.5`](./03-spacing-elevation-theming.md#85-стіл-і-зона-фон-у-hue-модуля).
 
 > **Оновлено 2026-09-12.** Обидві колонки були на генерацію позаду: таблиця
 > несла `#fdf9f3 / #201c19` — світлу базу до рішення власника Б1 (2026-08-07)
@@ -132,6 +138,26 @@ Back-compat: старі токени `panel` / `panelHi` / `line` продовж
 `-soft` токени адаптуються під темну тему автоматично — не пиши
 `bg-red-50 dark:bg-danger/15`, пиши `bg-danger-soft`.
 
+**Текст статусу і акценту — окремий тир на тему** (`tokens.js`):
+
+| Тир                       | Світла (`-800`, заливка під `text-white` і текст)                                                          | Темна — ink-текст (`-400`, `--c-{x}-ink`)                                                                                  |
+| ------------------------- | ---------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------- |
+| статуси `statusStrongHex` | success `#065f46` · warning `#92400e` · danger `#991b1b` · info `#075985`                                  | `statusInkHex`: success `#34d399` · warning `#fbbf24` · danger `#f87171` · info `#38bdf8`                                  |
+| акценти `accentStrongHex` | brand `#292524` (stone-800) · finyk `#115e59` · fizruk `#155e75` · routine `#8d4256` · nutrition `#466212` | `accentInkHex`: brand `#d6d3d1` (stone-300) · finyk `#2dd4bf` · fizruk `#22d3ee` · routine `#f68da4` · nutrition `#b0e636` |
+
+`text-{status}-strong` / `text-{accent}-strong` у темній темі резолвляться в
+ink-тир через CSS-змінну, а не через ручні `dark:`-пари (2026-08-21 для
+статусів, 2026-09-02 для акцентів — ручні пари мовчки пропускали третину
+місць). Найтісніша пара — `danger`-ink на `surfaceHi` (4.64:1) — саме вона
+тримає стелю глибини темної теми.
+
+Окрема п'ята родина — **кольори категорій витрат Фініка** `categoryColors`
+(18 ключів у `tokens.js`, включно з `other` і спільним `income`), свідомо
+розведена по hue з модульними акцентами; гейт
+`categoryColors.contract.test.js`, правити через
+`packages/design-tokens/categoryColors.gen.js`. Таблиця — у
+[`DESIGN.md`](../../../../DESIGN.md) (AUTOGEN-блок `palette`).
+
 ### 2.5 Data-viz (графіки)
 
 Канонічний набір у `apps/web/src/shared/charts/chartTheme.ts`:
@@ -143,7 +169,8 @@ Back-compat: старі токени `panel` / `panelHi` / `line` продовж
   для осей, сітки, тіків.
 - `chartGradients.finyk` тощо — пари stop'ів для area-fill градієнтів.
 
-> Не імпортуй hex із chartPalette.js напряму в компонент — бери через
+> Не імпортуй hex із `chartPalette` (`packages/design-tokens/tokens.js`,
+> окремого `chartPalette.js` немає) напряму в компонент — бери через
 > `chartTheme.ts`, аби міграція палітри в майбутньому вимагала одного
 > файлу.
 
@@ -153,11 +180,11 @@ Sergeant пережив дві brand-міграції. Легасі-докуме
 можуть посилатися на старіші назви — **завжди довіряй поточному рядку таблиці
 нижче**, а не історичним згадкам emerald.
 
-| Ера                              | Що змінилось                                                                                                                                                                                                                                  | Стан                                    |
-| -------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | --------------------------------------- |
-| **v1 — emerald** (до 2026-05)    | Один `brand` = emerald `#10b981`; він же focus ring, CTA і акцент finyk. Модулі ще не мали окремих hue — усе «зелене».                                                                                                                        | Superseded                              |
-| **v2 namespace** (2026-05)       | Parallel v2 token namespace (glass, mesh, ink-strong, Manrope). Введено окремий **fizruk = cyan-700** (розчепив fizruk від teal). Legacy `--c-*` лишились активні.                                                                            | Active (rollout)                        |
-| **M1 — stone rebrand** (2026-07) | `brand` decoupled від teal → нейтральний **stone** (hub — тихий батько). `finyk` перейшов emerald → **teal-700**. Focus ring лишився teal через окремий `--c-ring`. Чотири модулі: finyk teal · fizruk cyan · routine coral · nutrition lime. | Superseded (routine → rose, 2026-08-07) |
+| Ера                              | Що змінилось                                                                                                                                                                                                                                                                                                                                                | Стан                                             |
+| -------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- | ------------------------------------------------ |
+| **v1 — emerald** (до 2026-05)    | Один `brand` = emerald `#10b981`; він же focus ring, CTA і акцент finyk. Модулі ще не мали окремих hue — усе «зелене».                                                                                                                                                                                                                                      | Superseded                                       |
+| **v2 namespace** (2026-05)       | Parallel v2 token namespace (glass, mesh, ink-strong, Manrope). Введено окремий **fizruk = cyan-700** (розчепив fizruk від teal). Legacy `--c-*` лишились активні. Redesign-v2 закрито 2026-05-21; `--surface-*-glass` — back-compat аліаси на непрозору ink-поверхню (`theme.css`, `.dark`), `.bg-mesh` малює плоский стіл — свічення прибрано 2026-09-03. | Reference (deprecated; Manrope і cyan-700 чинні) |
+| **M1 — stone rebrand** (2026-07) | `brand` decoupled від teal → нейтральний **stone** (hub — тихий батько). `finyk` перейшов emerald → **teal-700**. Focus ring лишився teal через окремий `--c-ring`. Чотири модулі: finyk teal · fizruk cyan · routine coral · nutrition lime.                                                                                                               | Superseded (routine → rose, 2026-08-07)          |
 
 **Практичний висновок для контриб'ютора:**
 

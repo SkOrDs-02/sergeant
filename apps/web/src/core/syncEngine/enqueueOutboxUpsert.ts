@@ -76,7 +76,7 @@ export interface EnqueueOutboxUpsertResult {
  * pending row (not any older one) keeps rapid, genuinely different writes to
  * the same op-shape (e.g. toggling a preference on/off/on again before the
  * first push drains) from being coalesced into a stale earlier op — see
- * `docs/90-work/planning/specs/beta-input-boundaries.md` § «Ризики».
+ * `docs/work/specs/beta-input-boundaries.md` § «Ризики».
  *
  * Ops belonging to a synthetic local user id (anonymous / demo) are NOT
  * written: `drainSyncOpOutbox` scopes on the Better Auth session id, so

@@ -191,7 +191,9 @@ export function WorkoutTemplatesSection({
 
       {!editingId && (
         <Button
-          module="fizruk"
+          variant="solid"
+          tone="fizruk"
+
           className="w-full h-12 min-h-[44px]"
           onClick={startNew}
         >
@@ -299,7 +301,7 @@ export function WorkoutTemplatesSection({
                       setGroupSelected(new Set());
                     }}
                   >
-                    <Icon name="close" size={14} aria-hidden />
+                    <Icon name="close" size="sm" aria-hidden />
                   </button>
                 </div>
               )}
@@ -402,7 +404,9 @@ export function WorkoutTemplatesSection({
 
           <div className="flex gap-2">
             <Button
-              module="fizruk"
+              variant="solid"
+              tone="fizruk"
+
               className="flex-1 h-12 min-h-[44px]"
               onClick={save}
               disabled={!orderIds.length}
@@ -410,7 +414,7 @@ export function WorkoutTemplatesSection({
               Зберегти
             </Button>
             <Button
-              variant="secondary"
+              variant="outline"
               className="flex-1 h-12 min-h-[44px]"
               onClick={() => {
                 setEditingId(null);
@@ -435,7 +439,7 @@ export function WorkoutTemplatesSection({
           <EmptyState
             compact
             module="fizruk"
-            icon={<Icon name="dumbbell" size={20} />}
+            icon={<Icon name="dumbbell" size="lg" />}
             title="Поки немає шаблонів"
             description="Створи свій перший, кнопка вище."
           />
@@ -473,7 +477,7 @@ export function WorkoutTemplatesSection({
                 )}
                 <Button
                   size="sm"
-                  variant="secondary"
+                  variant="outline"
                   className="h-10 min-w-[44px] px-3"
                   onClick={() => startEdit(t)}
                 >
@@ -481,7 +485,8 @@ export function WorkoutTemplatesSection({
                 </Button>
                 <Button
                   size="sm"
-                  variant="danger"
+                  variant="soft"
+                  tone="danger"
                   aria-label={`Видалити шаблон ${t.name}`}
                   className="h-10 min-w-[44px] px-3"
                   onClick={() => setConfirmDeleteId(t.id)}

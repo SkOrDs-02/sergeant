@@ -21,6 +21,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 const mockRegister = vi.fn();
 const mockGetSqliteDb = vi.fn();
+const mockMigrate = vi.fn(async (..._args: unknown[]) => undefined);
 const mockMigrationClient = { __label: "migration-client" };
 
 vi.mock("../sqliteWriter/index.js", () => ({
@@ -31,11 +32,20 @@ vi.mock("../../../../core/db/sqlite.js", () => ({
   getSqliteDb: () => mockGetSqliteDb(),
 }));
 
-import { bootRoutineDualWrite } from "../dualWriteBoot.js";
+vi.mock("../clientMigrate.js", () => ({
+  migrateRoutine: (...args: unknown[]) => mockMigrate(...args),
+}));
+
+import {
+  bootRoutineDualWrite,
+  __resetRoutineDualWriteBootForTests,
+} from "../dualWriteBoot.js";
 
 beforeEach(() => {
   mockRegister.mockReset();
   mockGetSqliteDb.mockReset();
+  mockMigrate.mockClear();
+  __resetRoutineDualWriteBootForTests();
 });
 
 afterEach(() => {
@@ -72,7 +82,12 @@ describe("bootRoutineDualWrite (web)", () => {
     expect(ctx).not.toHaveProperty("isFlagEnabled");
   });
 
-  it("getMigrationClient resolves via getSqliteDb().migrationClient()", async () => {
+  // Раніше цей тест лише перевіряв, що клієнт доїжджає з `getSqliteDb()`.
+  // Цього виявилось замало: клієнт — це З'ЄДНАННЯ, а не готова схема. Таблиці
+  // створює асинхронний read-boot, і з базою в OPFS перший запис почав його
+  // випереджати (`no such table: routine_habits`, `applied: 0, errored: 2`). Тепер гейт саме на
+  // порядок: міграції прогнано ДО того, як клієнта віддали на запис.
+  it("прогонить міграції ПЕРЕД тим, як віддати клієнта на перший запис", async () => {
     mockRegister.mockReturnValue(() => {});
     mockGetSqliteDb.mockResolvedValue({
       migrationClient: () => mockMigrationClient,
@@ -86,7 +101,24 @@ describe("bootRoutineDualWrite (web)", () => {
       getMigrationClient(): Promise<unknown>;
     };
     await expect(ctx.getMigrationClient()).resolves.toBe(mockMigrationClient);
+    expect(mockMigrate).toHaveBeenCalledWith(mockMigrationClient);
     expect(mockGetSqliteDb).toHaveBeenCalledTimes(1);
+  });
+
+  it("прогонить міграції рівно раз на кілька записів", async () => {
+    mockRegister.mockReturnValue(() => {});
+    mockGetSqliteDb.mockResolvedValue({
+      migrationClient: () => mockMigrationClient,
+    });
+
+    bootRoutineDualWrite({ getUserId: () => "u" });
+    const ctx = mockRegister.mock.calls[0]![0] as {
+      getMigrationClient(): Promise<unknown>;
+    };
+    await ctx.getMigrationClient();
+    await ctx.getMigrationClient();
+
+    expect(mockMigrate).toHaveBeenCalledTimes(1);
   });
 
   it("getNow returns a fresh ISO timestamp", () => {

@@ -33,6 +33,7 @@ import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
 import { useKeyboardAwareOverlay } from "@shared/hooks/useKeyboardAwareOverlay";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 import { keyboardOverlayStyles } from "@shared/lib/ui/keyboardOverlay";
+import { openHubSearch } from "@shared/lib/modules/hubNav";
 import { Icon } from "./Icon";
 import { SectionHeading } from "./SectionHeading";
 import {
@@ -41,6 +42,25 @@ import {
 } from "./CommandPalette.context";
 
 const SEARCH_DEBOUNCE_MS = 80;
+
+/**
+ * Синтетична команда-хвіст: поки в полі є текст, останнім рядком стоїть
+ * «Шукати „…“ у Sergeant», який передає запит у пошук хаба. Так пошук стає
+ * режимом палітри, а не її конкурентом за `Cmd+K` (рішення власника
+ * 2026-09-16). Не з реєстру, тож у «Нещодавні» не потрапляє.
+ */
+export const SEARCH_FALLBACK_COMMAND_ID = "search.query";
+
+function searchFallbackCommand(query: string): PaletteCommand {
+  return {
+    id: SEARCH_FALLBACK_COMMAND_ID,
+    title: `Шукати «${query}» у Sergeant`,
+    description: "Записи всіх модулів, налаштування, AI-підказки",
+    group: "Пошук",
+    keywords: [],
+    run: () => openHubSearch(query),
+  };
+}
 
 export function CommandPaletteUI() {
   // eslint-disable-next-line @typescript-eslint/no-non-null-assertion -- CommandPaletteUI is always rendered inside CommandPalette provider
@@ -112,7 +132,7 @@ export function CommandPaletteUI() {
   const activate = useCallback(
     (command: PaletteCommand) => {
       if (command.disabled) return;
-      markRecent(command.id);
+      if (command.id !== SEARCH_FALLBACK_COMMAND_ID) markRecent(command.id);
       // Close before invoking so `command.run` can dispatch focus moves
       // (e.g. navigate to a route) without fighting the trap.
       closePalette();
@@ -237,7 +257,7 @@ export function CommandPaletteUI() {
         >
           {flat.length === 0 ? (
             <div className="px-4 py-8 text-center text-style-body text-muted">
-              Нічого не знайдено
+              Команд поки немає
             </div>
           ) : (
             groups.map((group) => (
@@ -304,6 +324,13 @@ function buildGroups(
     for (const [label, commands] of byGroup) {
       out.push({ id: `g-${label}`, label, commands });
     }
+    // Хвіст завжди, не лише коли команд не знайшлось: набране слово може
+    // збігтись із командою і водночас бути записом, який шукали.
+    out.push({
+      id: "g-search",
+      label: "Пошук",
+      commands: [searchFallbackCommand(query)],
+    });
     return out;
   }
 

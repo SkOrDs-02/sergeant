@@ -491,9 +491,10 @@ describe("ProfilePage", () => {
         name: "Є незбережені записи",
       });
       // `^`-анкор — щоб `pending=3` не міг випадково збігтися з рядком, де
-      // "3" є суфіксом іншого числа (напр. "13 записів").
+      // "3" є суфіксом іншого числа (напр. "13 записів"). pending=3 бере
+      // форму "few" ("записи"), не бінарну англійську "записів".
       expect(
-        within(dialog).getByText(/^3 записів ще не збережено на сервері\./),
+        within(dialog).getByText(/^3 записи ще не збережено на сервері\./),
       ).toBeInTheDocument();
 
       fireEvent.click(
@@ -537,6 +538,30 @@ describe("ProfilePage", () => {
       // Кнопка "Вийти" повертається в звичайний стан — не залипає у
       // loading, ніби вихід досі триває.
       expect(screen.getByRole("button", { name: "Вийти" })).not.toBeDisabled();
+    });
+
+    // Українська плюралізація — три форми (one/few/many), не бінарна
+    // «1 vs N». 11 і 21 ловлять класичну помилку: 11 бере "many" ("записів"),
+    // 21 повертається до "one" ("запис").
+    it.each([
+      [1, "запис"],
+      [2, "записи"],
+      [5, "записів"],
+      [11, "записів"],
+      [21, "запис"],
+    ])("uses the correct plural form for N=%i (%s)", async (n, form) => {
+      mockLogoutAsksForConfirmation(n);
+      renderPage();
+      await tapLogoutAndConfirm();
+
+      const dialog = await screen.findByRole("alertdialog", {
+        name: "Є незбережені записи",
+      });
+      expect(
+        within(dialog).getByText(
+          new RegExp(`^${n} ${form} ще не збережено на сервері\\.`),
+        ),
+      ).toBeInTheDocument();
     });
   });
 

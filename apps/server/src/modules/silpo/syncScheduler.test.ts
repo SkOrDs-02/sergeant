@@ -66,6 +66,22 @@ describe("SilpoSyncPoller", () => {
     await poller.stop();
   });
 
+  it("дефолтний поріг — 8 год, тобто ~3 синки на добу, не один", async () => {
+    // Пін на константу, а не на «щось передається». Двадцять годин давали
+    // один синк на добу, і вечірня покупка в той самий вечір не
+    // підхоплювалась ніколи — скарга власника 2026-09-17. Підіймати це
+    // число назад = повертати той самий провал, тож нехай тест назве
+    // причину замість коміту, який «просто підкрутив константу».
+    const run = vi.fn().mockResolvedValue(EMPTY);
+    const poller = new SilpoSyncPoller({ enabled: true, run, startDelayMs: 0 });
+
+    poller.start();
+    await vi.waitFor(() => expect(run).toHaveBeenCalled());
+
+    expect(run).toHaveBeenCalledWith({ minAgeHours: 8 });
+    await poller.stop();
+  });
+
   it("tick не накладається сам на себе", async () => {
     let release: (() => void) | undefined;
     const run = vi.fn().mockImplementation(

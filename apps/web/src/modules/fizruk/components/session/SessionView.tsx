@@ -16,6 +16,7 @@ import type { DropdownMenuItem } from "@shared/components/ui/DropdownMenu";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { messages } from "@shared/i18n/uk";
+import { formatTimeHm } from "@shared/lib/time/formatDate";
 import { useRestSettings } from "../../hooks/useRestSettings";
 import { useRestTimer } from "../../context/RestTimerContext";
 import {
@@ -267,7 +268,7 @@ export function SessionView({
             type: "item",
             id: "group",
             label: ss.groupIntoSuperset,
-            icon: <Icon name="repeat" size={16} aria-hidden />,
+            icon: <Icon name="repeat" size="md" aria-hidden />,
             onSelect: enterSelectMode,
           },
         ]
@@ -326,12 +327,7 @@ export function SessionView({
         ) : (
           <>
             <div className="text-style-caption text-subtle tabular-nums">
-              {ss.startedAt}{" "}
-              {new Date(activeWorkout.startedAt).toLocaleTimeString("uk-UA", {
-                hour: "2-digit",
-                minute: "2-digit",
-              })}{" "}
-              ·{" "}
+              {ss.startedAt} {formatTimeHm(new Date(activeWorkout.startedAt))} ·{" "}
               <span className="font-semibold text-text">
                 {progress.exercisesDone} {ss.of} {progress.exercisesTotal}
               </span>{" "}
@@ -405,7 +401,7 @@ export function SessionView({
           </>
         ) : isReadOnly ? (
           <Button
-            variant="secondary"
+            variant="outline"
             className="h-11 flex-1"
             onClick={onCollapse}
           >
@@ -424,7 +420,7 @@ export function SessionView({
               onClick={onAddExercise}
               aria-label={ss.addExerciseAria}
             >
-              <Icon name="plus" size={16} aria-hidden />
+              <Icon name="plus" size="md" aria-hidden />
               {ss.addExercise}
             </Button>
           )

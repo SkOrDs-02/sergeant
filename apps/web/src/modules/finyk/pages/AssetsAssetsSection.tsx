@@ -261,7 +261,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 className="text-subtle hover:text-text transition-colors"
                 aria-label={`Редагувати актив ${a.name}`}
               >
-                <Icon name="edit" size={16} aria-hidden />
+                <Icon name="edit" size="md" aria-hidden />
               </button>
               <button
                 type="button"
@@ -284,7 +284,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 className="text-subtle hover:text-danger transition-colors"
                 aria-label={`Видалити актив ${a.name}`}
               >
-                <Icon name="trash" size={16} aria-hidden />
+                <Icon name="trash" size="md" aria-hidden />
               </button>
             </div>
           </div>

@@ -58,7 +58,8 @@ describe("shared/lib/date – toKyivISODate", () => {
 
 // AI-LEGACY: expires 2026-11-07 — цей describe-блок покриває сам
 // deprecated-аліас (Hard Rule: перейменування без зміни поведінки); видалити
-// разом з `toLocalISODate` у date.ts.
+// разом з `toLocalISODate` у date.ts — трекер
+// docs/work/specs/audits/unification-modules.md.
 describe("shared/lib/date – toLocalISODate (deprecated alias)", () => {
   it("is the same function reference as toKyivISODate", () => {
     expect(toLocalISODate).toBe(toKyivISODate);

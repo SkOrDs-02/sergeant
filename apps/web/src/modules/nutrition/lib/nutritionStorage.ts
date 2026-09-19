@@ -3,7 +3,7 @@
  * Status: Active
  * Web I/O-адаптер для модуля Харчування: prefs, pantries, log.
  *
- * Stage 8 PR #057n-tombstone (`docs/planning/storage-roadmap.md`): the
+ * Stage 8 PR #057n-tombstone (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`): the
  * `load*` / `persist*` helpers below no longer touch `localStorage`.
  * The SQLite-WASM `nutrition_*` tables are the source of truth — reads
  * pull from the in-process cache populated by

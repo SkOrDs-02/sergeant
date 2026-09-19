@@ -13,7 +13,6 @@ import { cn } from "@shared/lib/ui/cn";
 import { useDailyLog } from "../hooks/useDailyLog";
 import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useMeasurements } from "../hooks/useMeasurements";
-import { usePushupActivity } from "../hooks/usePushupActivity";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { MiniLineChart } from "../components/MiniLineChart";
 import { WellbeingChart } from "../components/WellbeingChart";
@@ -39,6 +38,7 @@ import { buildMuscleWeekMatrix } from "../lib/muscleWeekMatrix";
 // Одна локаль на модуль: «Тіло» друкувало «82,5 кг», а «Прогрес» —
 // «82.5 кг» для того самого зважування (браузерне QA 2026-08-23).
 import { fmt, fmtLoose } from "../lib/numberFmt";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 
 interface ProgressProps {
   onNavigate: (target: FizrukPage | string) => void;
@@ -58,7 +58,6 @@ export function Progress({ onNavigate }: ProgressProps) {
   // тому зважування з екрана «Тіло» (daily_log) сюди не потрапляли.
   const { entries: dailyLogEntries } = useDailyLog();
   const { exercises, musclesUk, primaryGroupsUk } = useExerciseCatalog();
-  const { stats: pushupStats, logReps: logPushupReps } = usePushupActivity();
 
   const meas = useMemo(() => {
     const latest = entries?.[0] || null;
@@ -102,10 +101,7 @@ export function Progress({ onNavigate }: ProgressProps) {
       .slice(-8)
       .map((e) => ({
         value: e["bodyFatPct"] != null ? Number(e["bodyFatPct"]) : null,
-        label: new Date(e.at).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        }),
+        label: formatDateShort(new Date(e.at)),
       }));
   }, [entries]);
 
@@ -217,10 +213,7 @@ export function Progress({ onNavigate }: ProgressProps) {
       return Number.isFinite(ts) ? Math.max(mx, ts) : mx;
     }, 0);
     const latestWorkoutAt = latestTs
-      ? new Date(latestTs).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        })
+      ? formatDateShort(new Date(latestTs))
       : "—";
     return {
       doneCount: done.length,
@@ -241,10 +234,7 @@ export function Progress({ onNavigate }: ProgressProps) {
       .slice(0, 14)
       .reverse()
       .map((w) => ({
-        label: new Date(w.startedAt).toLocaleDateString("uk-UA", {
-          day: "numeric",
-          month: "short",
-        }),
+        label: formatDateShort(new Date(w.startedAt)),
         energy: w.wellbeing?.energy ?? null,
         mood: w.wellbeing?.mood ?? null,
       }));
@@ -365,7 +355,8 @@ export function Progress({ onNavigate }: ProgressProps) {
                 description={messages.fizruk.progress.emptyDescription}
                 primaryAction={
                   <Button
-                    variant="fizruk"
+                    variant="solid"
+                    tone="fizruk"
                     size="sm"
                     onClick={() => onNavigate("workouts")}
                   >
@@ -375,74 +366,17 @@ export function Progress({ onNavigate }: ProgressProps) {
               />
             )}
 
-            {/* Легка активність — fizruk-власний лічильник віджимань
-                (перенос власності routine → fizruk, канон routine.md §10,
-                2026-08-30). Поза гейтом `hasAny` навмисно: лог-кнопки і є
-                вхідною точкою на порожньому профілі. */}
-            {loaded && (
-              <Card radius="lg">
-                <SectionHeading size="xs" className="mb-3" variant="fizruk">
-                  {messages.fizruk.progress.lightActivityHeading}
-                </SectionHeading>
-                <div className="flex items-center gap-3 mb-3">
-                  <div className="w-9 h-9 rounded-xl bg-fizruk/10 text-fizruk-strong dark:text-fizruk flex items-center justify-center shrink-0">
-                    <Icon name="dumbbell" size={18} aria-hidden />
-                  </div>
-                  <div className="min-w-0 flex-1">
-                    <div className="text-style-label text-text">
-                      {messages.fizruk.progress.pushups}
-                    </div>
-                    <div className="text-style-caption text-subtle">
-                      {messages.fizruk.progress.pushupsSource}
-                    </div>
-                  </div>
-                </div>
-                <div className="grid grid-cols-3 gap-2">
-                  <div className="bg-bg border border-line rounded-xl p-2.5">
-                    <Stat
-                      label={messages.period.today}
-                      value={pushupStats.todayCount}
-                      size="sm"
-                      align="center"
-                    />
-                  </div>
-                  <div className="bg-bg border border-line rounded-xl p-2.5">
-                    <Stat
-                      label={messages.period.week}
-                      value={pushupStats.week}
-                      size="sm"
-                      align="center"
-                    />
-                  </div>
-                  <div className="bg-bg border border-line rounded-xl p-2.5">
-                    <Stat
-                      label={messages.period.month}
-                      value={pushupStats.month}
-                      size="sm"
-                      align="center"
-                    />
-                  </div>
-                </div>
-                <div
-                  className="mt-3 flex gap-2"
-                  role="group"
-                  aria-label={messages.fizruk.progress.pushupsQuickAddLabel}
-                >
-                  {[10, 20, 30].map((n) => (
-                    <Button
-                      key={n}
-                      type="button"
-                      variant="secondary"
-                      size="sm"
-                      className="flex-1 tabular-nums"
-                      onClick={() => logPushupReps(n)}
-                    >
-                      +{n}
-                    </Button>
-                  ))}
-                </div>
-              </Card>
-            )}
+            {/*
+              Картки «Легка активність» тут БІЛЬШЕ НЕМАЄ — знято свідомо
+              (рішення власника 2026-09-15). Лічильник відтискань жив
+              окремим островом: не `Workout`, тож стрік, відновлення,
+              калорії й історія його не бачили, а модуль уже мав короткий
+              вхід у журнал. Тепер це режим «Швидкий запис» у формі
+              «Записати проведене» (`QuickLogForm`), а історія лічильника
+              перенесена в журнал
+              SQL-міграціями обох сховищ (серверна 140, клієнтська fizruk 007)
+              і рахується тут як усі тренування.
+            */}
 
             {hasAny && (
               <>

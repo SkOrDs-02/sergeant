@@ -23,14 +23,6 @@ vi.mock("@shared/components/ui/WheelPicker", () => ({
   },
 }));
 
-vi.mock("./MacroChip", () => ({
-  MacroChip: ({ label, value }: { label: string; value: number | null }) => (
-    <div data-testid="macro-chip">
-      {label}:{value ?? "—"}
-    </div>
-  ),
-}));
-
 import { PickedFoodCard } from "./PickedFoodCard";
 import type { PickedFood } from "./FoodPickerSection";
 import type { MealFormState } from "./mealFormUtils";
@@ -61,7 +53,6 @@ const picked: PickedFood = {
 
 function baseProps(overrides: Partial<CardProps> = {}): CardProps {
   return {
-    form: form(),
     setForm: vi.fn(),
     pickedFood: picked,
     pickedGrams: "100",
@@ -75,10 +66,20 @@ afterEach(() => vi.clearAllMocks());
 
 describe("PickedFoodCard", () => {
   it("renders the picked-food card with per-100 macros", () => {
-    render(<PickedFoodCard {...baseProps({ form: form({ kcal: "110" }) })} />);
+    render(<PickedFoodCard {...baseProps()} />);
     expect(screen.getByText(/Курка · Наша Ряба/)).toBeInTheDocument();
     expect(screen.getByText(/\/ 100 г/)).toBeInTheDocument();
-    expect(screen.getAllByTestId("macro-chip").length).toBe(4);
+  });
+
+  // Звіт власника 2026-09-15: КБЖВ порції стояли двічі — плашками в
+  // картці й полями `MacrosEditor` під нею, з того самого `form`.
+  // Картка більше форму не читає; єдина поверхня цих чисел — поля.
+  it("не показує КБЖВ порції — їх показує MacrosEditor під карткою", () => {
+    render(<PickedFoodCard {...baseProps()} />);
+    // Підпис «на 100 г» лишається: це етикетка продукту, не підсумок порції.
+    expect(screen.getByText(/\/ 100 г/)).toBeInTheDocument();
+    expect(screen.queryByText("Вуглев.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Білки")).not.toBeInTheDocument();
   });
 
   it("recalculates form macros from picked food and comma grams", () => {
@@ -169,8 +170,8 @@ describe("PickedFoodCard", () => {
   it("не перераховує КБЖВ, поки поле ваги порожнє", () => {
     const setForm = vi.fn();
     render(<PickedFoodCard {...baseProps({ pickedGrams: "", setForm })} />);
-    // Порожнє поле не має підставляти `defaultGrams`: плашки внизу
-    // інакше показували б КБЖВ на 100 г під порожнім інпутом.
+    // Порожнє поле не має підставляти `defaultGrams`: поля КБЖВ під
+    // карткою інакше показували б розрахунок на 100 г під порожньою вагою.
     expect(setForm).not.toHaveBeenCalled();
   });
 
@@ -201,7 +202,7 @@ describe("PickedFoodCard", () => {
 
   it("не перераховує КБЖВ під нульову вагу", () => {
     // «0» набирається так само легко, як порожнє поле, і доти відкочував
-    // розрахунок на `defaultGrams`: у полі 0, а плашки — на 100 г.
+    // розрахунок на `defaultGrams`: у полі ваги 0, а КБЖВ — на 100 г.
     const setForm = vi.fn();
     render(<PickedFoodCard {...baseProps({ pickedGrams: "0", setForm })} />);
     expect(setForm).not.toHaveBeenCalled();
@@ -243,7 +244,6 @@ describe("PickedFoodCard", () => {
       render(
         <PickedFoodCard
           {...baseProps({
-            form: form({ kcal: "999", protein_g: "1" }),
             pickedGrams: "150",
             setForm,
             skipInitialRescale: true,
@@ -258,7 +258,6 @@ describe("PickedFoodCard", () => {
       const { rerender } = render(
         <PickedFoodCard
           {...baseProps({
-            form: form({ kcal: "999" }),
             pickedGrams: "150",
             setForm,
             skipInitialRescale: true,
@@ -270,7 +269,6 @@ describe("PickedFoodCard", () => {
       rerender(
         <PickedFoodCard
           {...baseProps({
-            form: form({ kcal: "999" }),
             pickedGrams: "200",
             setForm,
             skipInitialRescale: true,

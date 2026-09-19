@@ -4,7 +4,19 @@ import { EXPORT_CLAIM } from "../content/exportClaim";
 import UpdatedOn from "../components/UpdatedOn";
 
 export default function TermsPage() {
-  usePageMeta(ROUTE_META["/terms"]);
+  usePageMeta({
+    ...ROUTE_META["/terms"],
+    // Та сама `WebPage`-форма, що й на /privacy (див. коментар там).
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: ROUTE_META["/terms"].title,
+      description: ROUTE_META["/terms"].description,
+      inLanguage: "uk",
+      dateModified: ROUTE_META["/terms"].lastmod,
+      publisher: { "@type": "Organization", name: "Sergeant" },
+    },
+  });
 
   const h2 =
     "mt-9 font-display text-lg font-extrabold uppercase tracking-tight text-foreground-strong";
@@ -35,8 +47,9 @@ export default function TermsPage() {
       <h2 className={h2}>Що обіцяю</h2>
       <p className={p}>
         Ядро – модулі, ручний трекінг і підключення банку – безкоштовне
-        назавжди. Твої дані належать тобі. {EXPORT_CLAIM} Якщо бета закриється,
-        даних це не стосується: забереш усе.
+        назавжди. Твої дані належать тобі. {EXPORT_CLAIM} Якщо продукт
+        зупинятиметься, попереджу щонайменше за 30 днів, і весь цей час експорт
+        працюватиме: забереш усе.
       </p>
 
       <h2 className={h2}>Що не варто робити</h2>

@@ -10,11 +10,10 @@ const VISIBLE = {
   inFtuxSession: false,
   hasUser: false,
   authStatus: "unauthenticated" as string | undefined,
-  isDemo: false,
 };
 
 describe("isLocalOnlyBannerVisible", () => {
-  it("видно аноніму поза FTUX, коли сесія резолвлена і демо вимкнене", () => {
+  it("видно аноніму поза FTUX, коли сесія резолвлена", () => {
     expect(isLocalOnlyBannerVisible(VISIBLE)).toBe(true);
   });
 
@@ -36,11 +35,6 @@ describe("isLocalOnlyBannerVisible", () => {
 
   it("не видно автентифікованому — його дані синкаються", () => {
     expect(isLocalOnlyBannerVisible({ ...VISIBLE, hasUser: true })).toBe(false);
-  });
-
-  // PR-H5 тієї ж хвилі: у демо попереджати про втрату вигаданих даних нема про що.
-  it("не видно в демо", () => {
-    expect(isLocalOnlyBannerVisible({ ...VISIBLE, isDemo: true })).toBe(false);
   });
 
   // Рендер поза `AuthProvider` (так змонтовані власні тести

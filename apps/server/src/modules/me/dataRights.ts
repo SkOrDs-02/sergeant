@@ -84,6 +84,32 @@ function rowArray(
   return rows.map((row) => ({ ...row }));
 }
 
+/**
+ * Рядок `ai_usage_daily` для GDPR-експорту.
+ *
+ * Чому окремий серіалізатор, а не спільний `rowArray`. Глобальний парсер
+ * `lib/pgInt8.ts` знімає Hard Rule #1 лише з `int8` (OID 20) — NUMERIC
+ * (OID 1700) він не покриває, і навмисно: NUMERIC у Postgres має ширшу
+ * точність, ніж JS `number`, тож мовчазна коерсія ВСІХ таких колонок
+ * непомітно псувала б суми. Наслідок для цього експорту був дрібний на
+ * вигляд і незручний на практиці: `request_count` приїжджав числом, а
+ * сусідній `est_cost_usd` — РЯДКОМ, у тому самому обʼєкті.
+ *
+ * `est_cost_usd` — це `NUMERIC(12,6)`, тобто щонайбільше $1M із шістьма
+ * знаками після коми; така величина вміщується в `number` із запасом, і
+ * коерсія тут безпечна саме тому, що межа відома з CHECK-констрейнта
+ * (`migrations/059_ai_usage_daily_est_cost_usd.sql`), а не «зазвичай мале».
+ */
+function serializeAiUsageDailyRow(
+  row: Record<string, unknown>,
+): Record<string, unknown> {
+  const cost = row["est_cost_usd"];
+  return {
+    ...row,
+    est_cost_usd: cost === null || cost === undefined ? cost : Number(cost),
+  };
+}
+
 function serializePreferences(
   row: Record<string, unknown> | undefined,
 ): UserPreferences {
@@ -299,7 +325,13 @@ export async function buildMeExport(
       [user.id],
     ),
     db.query<Record<string, unknown>>(
-      `SELECT usage_day, bucket, request_count, est_cost_usd, deleted_at
+      // `usage_day::text` — колонка типу DATE, і node-pg парсить її у JS
+      // `Date`, тобто в експорт вона лягала як `"2026-09-16T00:00:00.000Z"`:
+      // день перетворювався на мить, ще й у чужій таймзоні. День-ключ у
+      // цьому репо — рядок `YYYY-MM-DD`, тож беремо його з бази вже текстом,
+      // а не намагаємось відновити з `Date` на віддачі.
+      `SELECT usage_day::text AS usage_day, bucket, request_count,
+              est_cost_usd, deleted_at
          FROM ai_usage_daily
         WHERE subject_key = $1
         ORDER BY usage_day DESC`,
@@ -337,7 +369,7 @@ export async function buildMeExport(
         devices: rowArray(pushDevices.rows),
       },
       ai: {
-        usageDaily: rowArray(aiUsageDaily.rows),
+        usageDaily: aiUsageDaily.rows.map(serializeAiUsageDailyRow),
         memories: rowArray(aiMemories.rows),
       },
     },

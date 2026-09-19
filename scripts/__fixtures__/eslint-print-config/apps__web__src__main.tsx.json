@@ -1210,7 +1210,9 @@
       "ecmaFeatures": {
         "jsx": true
       },
-      "jsxPragma": null
+      "jsxPragma": null,
+      "projectService": true,
+      "tsconfigRootDir": "<repo>"
     },
     "sourceType": "module"
   },
@@ -1825,6 +1827,9 @@
       0
     ],
     "@typescript-eslint/no-extra-semi": [
+      0
+    ],
+    "@typescript-eslint/no-floating-promises": [
       0
     ],
     "@typescript-eslint/no-misused-new": [
@@ -2511,7 +2516,7 @@
             "name": "better-auth/react"
           },
           {
-            "message": "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle. See `docs/work/specs/audits/2026-05-07-app-audit.md` §1.",
+            "message": "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path` and breaks Vite's browser bundle.",
             "name": "@sergeant/db-schema/migrate"
           }
         ]
@@ -2992,7 +2997,6 @@
           "apps/web/src/core/insights/WeeklyDigestCard.tsx",
           "apps/web/src/core/onboarding/DailyNudge.tsx",
           "apps/web/src/core/onboarding/DemoModeBanner.tsx",
-          "apps/web/src/core/onboarding/FirstActionSheet.tsx",
           "apps/web/src/core/onboarding/OnboardingProgress.tsx",
           "apps/web/src/core/onboarding/OnboardingWizard.tsx",
           "apps/web/src/core/onboarding/ReEngagementCard.tsx",
@@ -3221,6 +3225,7 @@
           "apps/web/src/modules/nutrition/hooks/useNutritionLog.ts",
           "apps/web/src/modules/finyk/hooks/useFinykBackupSync.ts",
           "apps/web/src/shared/lib/ui/undoToast.tsx",
+          "apps/mobile/src/lib/showUndoToast.ts",
           "apps/web/src/shared/lib/api/mapApiErrorToUserCopy.ts"
         ]
       }

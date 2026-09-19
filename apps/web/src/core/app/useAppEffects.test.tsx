@@ -19,6 +19,8 @@ function makeDeps(over: Partial<AppEffectsDeps> = {}): AppEffectsDeps {
       setHubView: vi.fn(),
       setSearchOpen: vi.fn(),
       closeSearch: vi.fn(),
+      searchQuery: "",
+      openSearch: vi.fn(),
     },
     openModule: vi.fn(),
     navigate: vi.fn() as unknown as AppEffectsDeps["navigate"],
@@ -40,6 +42,8 @@ describe("useAppEffects — profile bounce on auth state", () => {
         setHubView,
         setSearchOpen: vi.fn(),
         closeSearch: vi.fn(),
+        searchQuery: "",
+        openSearch: vi.fn(),
       },
     });
     renderHook(() => useAppEffects(deps));
@@ -57,6 +61,8 @@ describe("useAppEffects — profile bounce on auth state", () => {
         setHubView,
         setSearchOpen: vi.fn(),
         closeSearch: vi.fn(),
+        searchQuery: "",
+        openSearch: vi.fn(),
       },
     });
     renderHook(() => useAppEffects(deps));
@@ -81,6 +87,8 @@ describe("useAppEffects — profile bounce on auth state", () => {
         setHubView,
         setSearchOpen: vi.fn(),
         closeSearch: vi.fn(),
+        searchQuery: "",
+        openSearch: vi.fn(),
       },
     });
     renderHook(() => useAppEffects(deps));
@@ -98,6 +106,8 @@ describe("useAppEffects — profile bounce on auth state", () => {
         setHubView,
         setSearchOpen: vi.fn(),
         closeSearch: vi.fn(),
+        searchQuery: "",
+        openSearch: vi.fn(),
       },
     });
     const { rerender } = renderHook(

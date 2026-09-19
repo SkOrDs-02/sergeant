@@ -57,6 +57,36 @@ export interface AnthropicCallOptions {
    * `retry-after` міг розтягнути «20-секундний» виклик на дві хвилини.
    */
   maxTotalMs?: number | undefined;
+  /**
+   * `$ai_trace_id` для PostHog AI Observability (ініціатива 0025, Фаза 2).
+   * Стабільний per-call id, щоб caller міг звʼязати кілька подій в одне
+   * дерево: chat передає round-trip-квиток (`chatRoundTripTicket.ts`) для
+   * tool-ходів, digest/vision — серверний `traceId` з ALS
+   * (`obs/requestContext.ts`, той самий W3C trace, що вже йде в
+   * `X-Trace-Id`). Без нього — `captureAiGeneration` генерує випадковий
+   * per-call UUID (Фаза 1 поведінка).
+   */
+  traceId?: string | undefined;
+  /**
+   * Дозволити ОДИН ретрай після власного таймауту спроби. За замовчуванням
+   * `false` — історична поведінка «на явний timeout не допалюємо запити».
+   *
+   * AI-CONTEXT: вмикати варто лише там, де розподіл латентності БІМОДАЛЬНИЙ,
+   * тобто виклик або відповідає швидко, або висне назовсім. Прод-замір
+   * першого ходу чату 2026-09-17 (PostHog, `$ai_generation`): успіхи
+   * `gemini-3.7-flash` — 5.2/5.3/5.3/7.2/7.8/8.0 с, збої — 30.015/30.005/
+   * 30.004/30.002 с, тобто рівно стеля, нуль токенів і без HTTP-статусу.
+   * Між групами немає НІЧОГО. За такого розподілу друга спроба — не
+   * «допалювання» повільного апстріму, а вихід із зависання: висне
+   * зʼєднання, а не модель.
+   *
+   * Якщо розподіл одномодальний (апстрім просто повільний) — НЕ вмикай:
+   * там ретрай подвоює навантаження й нічого не рятує.
+   *
+   * Зовнішній abort (клієнт закрив вкладку) не ретраїться НІКОЛИ, незалежно
+   * від цього прапорця: на такий запит уже ніхто не чекає.
+   */
+  retryOnTimeout?: boolean | undefined;
 }
 
 /**
@@ -152,6 +182,8 @@ export interface AnthropicUsageMeta {
   provider?: AiProvider | undefined;
   latencyMs?: number | null | undefined;
   httpStatus?: number | undefined;
+  /** `$ai_trace_id` — див. `AnthropicCallOptions.traceId` (ініціатива 0025, Фаза 2). */
+  traceId?: string | undefined;
 }
 
 interface RecordOutcomeMeta {
@@ -172,6 +204,7 @@ function recordAiError(
   provider: AiProvider,
   userId: string | undefined,
   httpStatus?: number,
+  traceId?: string,
 ): void {
   captureAiGeneration({
     userId,
@@ -181,6 +214,7 @@ function recordAiError(
     latencyMs: ms,
     isError: true,
     httpStatus,
+    traceId,
   });
 }
 
@@ -371,6 +405,7 @@ function recordUsage(
       latencyMs: meta?.latencyMs,
       httpStatus: meta?.httpStatus,
       promptVersion,
+      traceId: meta?.traceId,
     });
   } catch {
     /* ignore */
@@ -400,6 +435,8 @@ async function anthropicMessagesInner(
     userId,
     allowOpenRouter,
     maxTotalMs: maxTotalMsOpt,
+    traceId,
+    retryOnTimeout = false,
   }: AnthropicCallOptions,
   model: string,
 ): Promise<AnthropicMessagesResult> {
@@ -438,7 +475,15 @@ async function anthropicMessagesInner(
     if (externalSignal?.aborted) {
       const ms = Number(process.hrtime.bigint() - overallStart) / 1e6;
       recordOutcome("timeout", { model, endpoint, ms });
-      recordAiError(model, endpoint, ms, transport.provider, userId);
+      recordAiError(
+        model,
+        endpoint,
+        ms,
+        transport.provider,
+        userId,
+        undefined,
+        traceId,
+      );
       throw new DOMException("client disconnected", "AbortError");
     }
     // Сон ПЕРЕД тим, як озброїти таймер спроби. Доти таймер стартував
@@ -497,6 +542,7 @@ async function anthropicMessagesInner(
           provider: transport.provider,
           latencyMs: ms,
           httpStatus: response.status,
+          traceId,
         });
       } else {
         recordOutcome(response.status === 429 ? "rate_limited" : "error", {
@@ -511,19 +557,40 @@ async function anthropicMessagesInner(
           transport.provider,
           userId,
           response.status,
+          traceId,
         );
       }
       return { response, data };
     } catch (e: unknown) {
-      // На явний timeout (AbortError) краще не "допалювати" запити.
-      if (isAbortError(e) || attempt >= maxAttempts) {
+      // На явний timeout (AbortError) за замовчуванням не "допалюємо" запити.
+      // Виняток — `retryOnTimeout` (див. докстрінг опції): для бімодального
+      // розподілу зависання це єдиний спосіб не віддати людині помилку після
+      // повного очікування стелі.
+      //
+      // Зовнішній abort ретраїти не можна НІКОЛИ: `composeSignal` зшиває наш
+      // таймер спроби з `externalSignal`, тож сюди приходить той самий
+      // `AbortError` в обох випадках, і відрізнити їх можна лише перевіркою
+      // самого сигналу. Без неї ретрай ішов би на запит, який людина вже
+      // закрила.
+      const externallyAborted = externalSignal?.aborted === true;
+      const timeoutIsRetryable =
+        isAbortError(e) && retryOnTimeout && !externallyAborted;
+      if ((isAbortError(e) && !timeoutIsRetryable) || attempt >= maxAttempts) {
         const ms = Number(process.hrtime.bigint() - overallStart) / 1e6;
         recordOutcome(isAbortError(e) ? "timeout" : "error", {
           model,
           endpoint,
           ms,
         });
-        recordAiError(model, endpoint, ms, transport.provider, userId);
+        recordAiError(
+          model,
+          endpoint,
+          ms,
+          transport.provider,
+          userId,
+          undefined,
+          traceId,
+        );
         throw e;
       }
       continue;
@@ -564,6 +631,7 @@ async function anthropicMessagesStreamInner(
     signal: externalSignal,
     allowOpenRouter,
     userId,
+    traceId,
   }: AnthropicCallOptions,
   model: string,
 ): Promise<AnthropicStreamResult> {
@@ -590,7 +658,15 @@ async function anthropicMessagesStreamInner(
       endpoint,
       ms,
     });
-    recordAiError(model, endpoint, ms, transport.provider, userId);
+    recordAiError(
+      model,
+      endpoint,
+      ms,
+      transport.provider,
+      userId,
+      undefined,
+      traceId,
+    );
     throw e;
   }
 
@@ -609,6 +685,7 @@ async function anthropicMessagesStreamInner(
       transport.provider,
       userId,
       response.status,
+      traceId,
     );
     return {
       response,

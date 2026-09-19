@@ -4,7 +4,7 @@
  * Status: Active
  *
  * Аркуш «З чого списати?» — рішення 11 спеки
- * `docs/90-work/planning/specs/pantry-generic-names.md`.
+ * `docs/work/specs/pantry-generic-names.md`.
  *
  * Найважливіше тут не рендер, а ДВІ речі, які роблять діалог безпечним у
  * швидкому сценарії: він не існує без вибору (`choice === null`), і будь-яке

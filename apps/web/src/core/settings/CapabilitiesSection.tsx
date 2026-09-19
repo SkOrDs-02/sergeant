@@ -87,7 +87,7 @@ export function CapabilitiesSection() {
               </span>
               <Icon
                 name="chevron-right"
-                size={16}
+                size="md"
                 className="mt-1 shrink-0 text-muted"
                 aria-hidden
               />

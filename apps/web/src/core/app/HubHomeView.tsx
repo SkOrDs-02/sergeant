@@ -1,4 +1,4 @@
-import { Suspense } from "react";
+import { Suspense, useCallback } from "react";
 import { type User } from "@sergeant/shared";
 import { MeshBackground } from "@shared/components/layout/MeshBackground";
 import { ActiveWorkoutBanner } from "./ActiveWorkoutBanner";
@@ -10,10 +10,7 @@ import { HubModals } from "./HubModals";
 import { OfflineBanner } from "./OfflineBanner";
 import { hasAnyRealEntry } from "../onboarding/firstRealEntry";
 import { isFirstRealEntryDone } from "../onboarding/vibePicks";
-import {
-  shouldShowOnboarding,
-  isDemoActive,
-} from "../onboarding/onboardingGate";
+import { shouldShowOnboarding } from "../onboarding/onboardingGate";
 import { useWhatsNew } from "../whatsNew";
 import { lazyImport } from "../lib/lazyImport";
 import type { HubNavigation } from "../hooks/useHubNavigation";
@@ -81,6 +78,21 @@ export function HubHomeView(props: HubHomeViewProps) {
     onCloseShortcuts,
   } = props;
 
+  // Базова лінія перед віссю дії хабу (P3): `MODULE_OPENED` стріляє в
+  // самому `openModule`, а джерело їде опцією. Прямий проп із головної
+  // (плитка, secondary-лінк hero, картка результату FTUX) — `hub_dashboard`;
+  // саму плитку всередині нього видно окремо по `HUB_MODULE_TILE_CLICKED`.
+  // Пошук через модалку — `search`. Решта входів іде шиною і несе джерело
+  // в деталях події.
+  const openFromDashboard = useCallback<HubNavigation["openModule"]>(
+    (id, opts) => openModule(id, { ...opts, source: "hub_dashboard" }),
+    [openModule],
+  );
+  const openFromSearch = useCallback<HubNavigation["openModule"]>(
+    (id, opts) => openModule(id, { ...opts, source: "search" }),
+    [openModule],
+  );
+
   // FTUX session = the window between the splash and the user's first
   // real (non-demo) entry. During this window we intentionally
   // suppress PWA install / iOS install / SW update banners and other
@@ -115,8 +127,7 @@ export function HubHomeView(props: HubHomeViewProps) {
   // `shownRef` усередині хука одноразовий, тож приїзд `createdAt` після
   // відкриття вже нічого не змінив би (ревʼю PR #1053).
   const whatsNew = useWhatsNew({
-    enabled:
-      !authLoading && hasFirstRealEntry && !inFtuxSession && !isDemoActive(),
+    enabled: !authLoading && hasFirstRealEntry && !inFtuxSession,
     accountCreatedAt: user?.createdAt ?? null,
   });
 
@@ -179,7 +190,7 @@ export function HubHomeView(props: HubHomeViewProps) {
       />
 
       <HubMainContent
-        onOpenModule={openModule}
+        onOpenModule={openFromDashboard}
         iosVisible={iosVisible}
         onDismissIosForever={onDismissIosForever}
         onSnoozeIos={onSnoozeIos}
@@ -210,8 +221,9 @@ export function HubHomeView(props: HubHomeViewProps) {
 
       <HubModals
         searchOpen={ui.searchOpen}
+        searchQuery={ui.searchQuery}
         onCloseSearch={ui.closeSearch}
-        onOpenModule={openModule}
+        onOpenModule={openFromSearch}
       />
       {shortcutsOpen && (
         <Suspense fallback={null}>

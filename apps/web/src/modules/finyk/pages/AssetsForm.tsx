@@ -95,7 +95,7 @@ export function SubscriptionForm({
         />
       </div>
       <p className="text-style-body text-subtle">
-        Якщо не вибрати транзакцію вручну, знайдемо найновішу витрату, опис якої
+        Якщо не вибрати транзакцію вручну, знайду найновішу витрату, опис якої
         містить цей текст. Пошук не залежить від регістру.
       </p>
       {newSub.keyword.trim() && (
@@ -166,7 +166,7 @@ export function SubscriptionForm({
         <Button
           className="flex-1"
           size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={() => setShowSubForm(false)}
         >
           Скасувати
@@ -291,7 +291,7 @@ export function ReceivableForm({
         <Button
           className="flex-1"
           size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={() => setShowRecvForm(false)}
         >
           Скасувати
@@ -423,7 +423,7 @@ export function AssetForm({
           <Button
             className="flex-1"
             size="sm"
-            variant="secondary"
+            variant="outline"
             onClick={() => setShowAssetForm(false)}
           >
             Скасувати
@@ -626,7 +626,7 @@ export function DebtForm({
         <Button
           className="flex-1"
           size="sm"
-          variant="secondary"
+          variant="outline"
           onClick={() => setShowDebtForm(false)}
         >
           Скасувати

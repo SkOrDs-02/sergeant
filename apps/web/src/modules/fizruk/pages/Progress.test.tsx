@@ -23,7 +23,6 @@ const useWorkouts = vi.fn();
 const useMeasurements = vi.fn();
 const useDailyLog = vi.fn();
 const useExerciseCatalog = vi.fn();
-const usePushupActivity = vi.fn();
 
 vi.mock("../hooks/useWorkouts", () => ({
   useWorkouts: () => useWorkouts(),
@@ -36,9 +35,6 @@ vi.mock("../hooks/useDailyLog", () => ({
 }));
 vi.mock("../hooks/useExerciseCatalog", () => ({
   useExerciseCatalog: () => useExerciseCatalog(),
-}));
-vi.mock("../hooks/usePushupActivity", () => ({
-  usePushupActivity: () => usePushupActivity(),
 }));
 
 // Isolate the chart leaf components — they render SVG that is irrelevant to
@@ -63,7 +59,6 @@ function setHooks(opts: {
   exercises?: unknown[];
   musclesUk?: Record<string, string>;
   primaryGroupsUk?: Record<string, string>;
-  pushup?: { stats: unknown; hasData: boolean };
   dailyLog?: unknown[];
   /** Defaults to `true` — most tests exercise the post-cache-warm page. */
   loaded?: boolean;
@@ -81,12 +76,6 @@ function setHooks(opts: {
     // бейдж групи читають саме її (QA 2026-08-23).
     primaryGroupsUk: opts.primaryGroupsUk ?? opts.musclesUk ?? {},
   });
-  usePushupActivity.mockReturnValue(
-    opts.pushup ?? {
-      stats: { todayCount: 0, week: 0, month: 0 },
-      hasData: false,
-    },
-  );
 }
 
 afterEach(() => {
@@ -245,16 +234,5 @@ describe("Progress page", () => {
     render(<Progress onNavigate={onNavigate} />);
     expect(screen.getByText("Присідання зі штангою")).toBeInTheDocument();
     expect(screen.queryByText("squat")).not.toBeInTheDocument();
-  });
-
-  it("renders the pushup cross-module card only when data exists", () => {
-    setHooks({
-      pushup: {
-        stats: { todayCount: 20, week: 80, month: 300 },
-        hasData: true,
-      },
-    });
-    render(<Progress onNavigate={onNavigate} />);
-    expect(screen.getByText("Відтискання")).toBeInTheDocument();
   });
 });

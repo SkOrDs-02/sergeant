@@ -1,16 +1,23 @@
 # Sergeant Design System
 
-> **Last validated:** 2026-07-27 by @v0 (brand palette synced to M1 stone rebrand). **Next review:** 2027-01-25.
-> **Status:** Active (v2 redesign foundation merged 2026-05; brand → stone via 2026-07 M1; backlog of per-page polish — див. [`redesign-v2/backlog.md`](./redesign-v2/backlog.md))
+> **Last validated:** 2026-09-16 by @claude (індекс і п'ять частин звірено з `packages/design-tokens` і `apps/web/src/styles`; v2-блок переведено в історію, showcase — `/design`). **Next review:** 2027-01-25.
+> **Status:** Active (brand → stone via 2026-07 M1; канон кнопки `(variant, tone)` з 2026-09-16; редизайн v2 закрито 2026-05-21)
 
 Єдина візуальна мова для хаба з 4 модулями: **ФІНІК**, **ФІЗРУК**, **Рутина**,
 **Харчування**. Документ — контракт між дизайном і кодом; будь-який новий
-екран має користуватися цим набором токенів і примітивів.
+екран має користуватися цим набором токенів і примітивів. При розбіжності
+з [`packages/design-tokens`](../../../packages/design-tokens/README.md)
+перемагають токени; портативне дзеркало для агентів — [`DESIGN.md`](../../../DESIGN.md).
 
-> **v2 redesign awareness.** Sergeant v2 (травень 2026) додав parallel v2
-> token namespace (glass surfaces, mesh background, ink-strong, нові radii)
-> поряд з legacy `--c-*` трітриплет-токенами які лишилися активні. Якщо ти
-> пишеш новий компонент — дивися [`redesign-v2/migration.md`](./redesign-v2/migration.md) для BEFORE/AFTER патернів. Для governance — [`redesign-v2/governance.md`](./redesign-v2/governance.md). Цей design-system.md лишається canonical довідник для shared контракту; v2-specific deviations документовані окремо.
+> **Про v2 (травень 2026) — історія, не інструкція.** Редизайн v2 додав
+> паралельний namespace (glass surfaces, mesh background, ink-strong, `rounded-r-*`)
+> поверх `--c-*` токенів. Станом на 2026-09-16 з нього чинні Manrope,
+> ink-типографіка і три теми; glass-токени — back-compat-аліаси з непрозорою
+> заливкою, mesh-свічення зняті 2026-09-03 (фон — «стіл» у hue модуля, див.
+> [`03 § 8`](./design-system/03-spacing-elevation-theming.md)), `rounded-r-*`
+> видалено в аудиті 2026-07. **Не бери BEFORE/AFTER з
+> [`redesign-v2/migration.md`](./redesign-v2/migration.md) як канон** — кластер
+> `Reference`; канон — цей документ і його частини.
 
 > **Brand palette — stone, не emerald (2026-07 M1).** `brand` — нейтральний
 > warm-stone (hub — тихий батько); `finyk` — teal, `fizruk` — cyan, focus ring —
@@ -45,31 +52,37 @@
 
 Дзеркало цього контракту — навігабельний styleguide
 [`apps/web/src/core/DesignShowcase`](../../../apps/web/src/core/DesignShowcase).
-Сторінка `/design-showcase` (dev / preview-only) має sticky-сайдбар на 11
-розділів, тогли theme / density / direction / reduced-motion, у кожному
-розділі: live demo, copy-paste snippet, do/don't пари, badge-list із
-Hard Rules + ESLint rules.
+Сторінка **`/design`** (`DESIGN_PATH`; dev / preview-only, поза `DEV` — 404)
+має sticky-сайдбар на 18 розділів (`_shared/nav.ts`), тогли theme /
+density / direction / reduced-motion, у кожному розділі: live demo,
+copy-paste snippet, do/don't пари.
 
-Якорі та maturity на 2026-05-13:
+Якорі та maturity на 2026-09-16 (джерело — `NAV_SECTIONS` у `nav.ts`; повна
+таблиця з гейтами — [`README.md § Maturity matrix`](./README.md#maturity-matrix-primitives)):
 
-| Розділ         | Якір          | Maturity   | Що демонструє                                       |
-| -------------- | ------------- | ---------- | --------------------------------------------------- |
-| Кольори        | `#colors`     | **stable** | semantic surfaces, brand, statuses, data-viz, alpha |
-| Типографіка    | `#typography` | **stable** | `text-style-*` шкала, eyebrow рамки, ellipsis       |
-| Spacing        | `#spacing`    | **stable** | spacing scale + canonical radii                     |
-| Elevation      | `#elevation`  | **stable** | shadows, card variants, hero accent, z-layers       |
-| Motion         | `#motion`     | **stable** | Ambient / Response / Celebrate бюджети              |
-| Форми          | `#forms`      | **stable** | Button, Input, FormField, Select, Switch matrix     |
-| Фідбек         | `#feedback`   | **stable** | Badge, Spinner, Skeleton, Avatar, ProgressRing      |
-| Overlays       | `#overlays`   | **stable** | Modal, Sheet, ConfirmDialog                         |
-| Theming        | `#theming`    | **beta**   | Light / Dark / HC матриця + поточний switcher       |
-| A11y           | `#a11y`       | **stable** | focus-visible, touch targets, contrast, motion      |
-| Module accents | `#accents`    | **stable** | finyk / fizruk / routine / nutrition tokens         |
+| Розділ            | Якір            | Maturity         | Що демонструє                                                              |
+| ----------------- | --------------- | ---------------- | -------------------------------------------------------------------------- |
+| Кольори           | `#colors`       | **stable**       | semantic surfaces, brand, statuses, data-viz, alpha                        |
+| Типографіка       | `#typography`   | **stable**       | 8 ролей `text-style-*`, ellipsis                                           |
+| Spacing           | `#spacing`      | **stable**       | spacing scale + canonical radii                                            |
+| Elevation         | `#elevation`    | **stable**       | shadows, card variants, hero accent, z-layers                              |
+| Motion            | `#motion`       | **stable**       | Ambient / Response / Celebrate бюджети                                     |
+| Форми             | `#forms`        | **stable**       | Button `(variant, tone)`, Input, FormField, Select, Switch                 |
+| Фідбек            | `#feedback`     | **stable**       | Badge, Spinner, Skeleton, Avatar, ProgressRing                             |
+| Overlays          | `#overlays`     | **stable**       | Modal, Sheet, ConfirmDialog                                                |
+| Theming           | `#theming`      | **stable** API   | `useTheme`: light / dark / hc (розділ showcase звірено з хуком 2026-09-16) |
+| A11y              | `#a11y`         | **stable**       | focus-visible, touch targets, contrast, motion                             |
+| A11y / States     | `#a11y-states`  | **beta**         | semantic a11y-токени: ring, selection, caret, dividers                     |
+| Module accents    | `#accents`      | **stable**       | finyk / fizruk / routine / nutrition tokens, стіл/зона                     |
+| Menus             | `#menus`        | **stable**       | DropdownMenu, CommandPalette                                               |
+| Tooltip & Popover | `#primitives`   | **stable**       | Tooltip, Popover                                                           |
+| EmptyState        | `#empty-states` | **stable**       | три tier-и порожніх станів                                                 |
+| Proposals ×3      | `#proposals-*`  | **experimental** | пропозиції UI / UX / visual — не контракт                                  |
 
 > Maturity:
-> **stable** — API публічний, lint-захищений, безпечний для нового UI.
-> **beta** — API може ще зрушити (theming switcher і HC-режим у міграції).
-> **experimental** — поки що нічого; зарезервовано під майбутні density tokens.
+> **stable** — API публічний, захищений гейтом або контрактним тестом, безпечний для нового UI.
+> **beta** — API може ще зрушити.
+> **experimental** — пропозиції; у продуктовий код не брати.
 
 ---
 
@@ -97,8 +110,8 @@ Hard Rules + ESLint rules.
 
 - [§3 Типографічна шкала](./design-system/02-typography.md#3-типографічна-шкала)
 - [text-style-\* tier-1](./design-system/02-typography.md#семантичні-text-style--ютиліті-tier-1-fluid)
-- [Канонічна text-\* шкала tier-2](./design-system/02-typography.md#канонічна-text--шкала-tier-2--окремі-утиліти)
-- [Prose](./design-system/02-typography.md#prose--sharedcomponentsuiprose)
+- [Legacy text-\* шкала tier-2 — видалена](./design-system/02-typography.md#legacy-text--шкала-tier-2--видалена)
+- [Довгий текст](./design-system/02-typography.md#довгий-текст)
 
 ### Spacing, Elevation та Theming
 

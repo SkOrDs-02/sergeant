@@ -49,14 +49,14 @@ export function ChatAuthGate() {
           </p>
           <p className="text-style-body text-muted leading-snug">
             Він відповідає на твоїх даних, тому без акаунта відповідати немає на
-            чому. Вхід займе хвилину, і повернемось до розмови.
+            чому. Вхід займе хвилину, і я повернусь до розмови.
           </p>
         </div>
       </div>
       <a
         href={SIGN_IN_PATH}
         data-testid="chat-auth-gate-signin"
-        className="flex items-center justify-center gap-2 w-full min-h-[44px] rounded-2xl bg-primary text-bg font-semibold text-style-label transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 focus-visible:ring-offset-2"
+        className="flex items-center justify-center gap-2 w-full min-h-[44px] rounded-2xl bg-primary text-bg font-semibold text-style-label transition-colors hover:bg-primary/90 focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2"
       >
         Увійти в акаунт
       </a>

@@ -1,6 +1,6 @@
 # Lighthouse CI — perf-budget gate
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-18.
+> **Last touched:** 2026-09-17 by @claude (назва джоби → `Lighthouse CI`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 ## Призначення
@@ -36,7 +36,7 @@ Reports падають у `apps/web/.lighthouseci/` (gitignored).
 
 ## Як читати результати в CI
 
-1. Job `Lighthouse CI (perf budgets)` у PR-таб CI.
+1. Job `Lighthouse CI` (status check з тією ж назвою; `name:` у [`lighthouse-ci.yml`](../../../.github/workflows/lighthouse-ci.yml)) у PR-таб CI.
 2. У кроці `Run Lighthouse CI` LHCI друкує `Open the report at <url>` — клік відкриває HTML-репорт на `storage.googleapis.com` (по одному URL на маршрут).
 3. Або завантаж artifact `lighthouse-reports` (retention 14 днів) — `.lighthouseci/lhr-*.html` + `manifest.json`.
 4. `NO_FCP` / server-start flake після retry — job soft-pass-ить з GitHub warning; деталі у `lhci-attempt.log`.

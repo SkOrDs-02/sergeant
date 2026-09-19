@@ -9,31 +9,38 @@ import { expect, type Page } from "@playwright/test";
 // Minimal API mock — the app renders fully client-side once `/me` returns a
 // user, so no backend is required. Mirrors playwright.ledger.config.ts.
 export async function mockApi(page: Page) {
-  await page.route("**/api/**", async (route) => {
-    const path = new URL(route.request().url()).pathname;
-    const method = route.request().method();
-    if (path.includes("/me")) {
+  // Лише реальний API (`/api/...` на будь-якому origin). Глоб `**/api/**`
+  // ловив ще й вихідники застосунку — `src/shared/lib/api/…` під dev-сервером
+  // і будь-який чанк зі сегментом `api` у шляху — і віддавав їм `{ ok: true }`
+  // замість модуля (аудит 2026-09-15, §8): аудит тоді міряв порожню сторінку.
+  await page.route(
+    (url) => url.pathname === "/api" || url.pathname.startsWith("/api/"),
+    async (route) => {
+      const path = new URL(route.request().url()).pathname;
+      const method = route.request().method();
+      if (path.includes("/me")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify({
+            ok: true,
+            user: {
+              id: "qa-user",
+              name: "QA User",
+              email: "qa@example.com",
+              emailVerified: true,
+            },
+          }),
+        });
+        return;
+      }
       await route.fulfill({
-        status: 200,
+        status: method === "POST" ? 204 : 200,
         contentType: "application/json",
-        body: JSON.stringify({
-          ok: true,
-          user: {
-            id: "qa-user",
-            name: "QA User",
-            email: "qa@example.com",
-            emailVerified: true,
-          },
-        }),
+        body: method === "POST" ? "" : JSON.stringify({ ok: true }),
       });
-      return;
-    }
-    await route.fulfill({
-      status: method === "POST" ? 204 : 200,
-      contentType: "application/json",
-      body: method === "POST" ? "" : JSON.stringify({ ok: true }),
-    });
-  });
+    },
+  );
 }
 
 // Controls that mobile.css raises to a 44×44 floor under `pointer: coarse`.

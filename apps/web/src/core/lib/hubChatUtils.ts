@@ -74,7 +74,7 @@ export function getActiveModule(): ActiveModule | null {
  * 2026-08-23). Текст називає вихід; кнопку входу дає `ChatAuthGate`.
  */
 export const CHAT_AUTH_REQUIRED_TEXT =
-  "Асистент працює після входу в акаунт. Увійди, і повернемось до розмови.";
+  "Асистент працює після входу в акаунт. Увійди, і я повернусь до розмови.";
 
 /**
  * Потік відповіді перевищив стелю (`MAX_SSE_TOTAL_BYTES` /

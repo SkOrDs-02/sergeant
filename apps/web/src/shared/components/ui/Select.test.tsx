@@ -35,11 +35,17 @@ describe("Select", () => {
     expect(getByRole("combobox").className).toContain("hover:bg-panelHi");
   });
 
+  // Число `/45` звірене з каноном (`Button.tsx:400`), а не з тим, що рендерив
+  // компонент. До 2026-09-15 тут стояло `/30` — значення, яке дрейфонуло разом
+  // із кодом і суперечило докстрінгу самого `Select`, де заявлено дзеркалення
+  // `Input` і `Button`. Предмет тесту від цього не змінився: він сторожить, що
+  // бренд-сімейство кільця не змішується з модульним (`input-focus-*`), а не
+  // конкретний рівень непрозорості.
   it("keeps the brand focus ring when accent is omitted (default stays brand)", () => {
     const { getByRole } = render(<Select />);
     const cls = getByRole("combobox").className;
     expect(cls).toContain("focus-visible:border-brand-400");
-    expect(cls).toContain("focus-visible:ring-focus/30");
+    expect(cls).toContain("focus-visible:ring-focus/45");
     expect(cls).not.toContain("input-focus-");
   });
 
@@ -50,7 +56,7 @@ describe("Select", () => {
       const cls = getByRole("combobox").className;
       expect(cls).toContain(`input-focus-${accent}`);
       expect(cls).not.toContain("focus-visible:border-brand-400");
-      expect(cls).not.toContain("focus-visible:ring-focus/30");
+      expect(cls).not.toContain("focus-visible:ring-focus/45");
     },
   );
 

@@ -1,6 +1,7 @@
-import { describe, it, expect, beforeEach } from "vitest";
+import { describe, it, expect, beforeEach, vi } from "vitest";
 import type { Request, Response } from "express";
 import cspReportHandler from "./csp-report.js";
+import { logger } from "../../obs/logger.js";
 import { register, cspViolationTotal } from "../../obs/metrics.js";
 
 interface TestRes {
@@ -172,5 +173,84 @@ describe("cspReportHandler", () => {
     const res = makeRes();
     cspReportHandler(asReq(req), res);
     expect(res.statusCode).toBe(204);
+  });
+
+  describe("редакція URL-полів у sample-лозі", () => {
+    /**
+     * Sample-лог має 5% шанс на викид — форсимо `Math.random() === 0`, щоб
+     * тест був детермінованим, і перехоплюємо `logger.info`, щоб дивитись на
+     * той самий обʼєкт, що пішов би в Pino.
+     */
+    function captureLoggedReport(reportBody: Record<string, unknown>) {
+      const infoSpy = vi.spyOn(logger, "info").mockImplementation(() => {});
+      const randomSpy = vi.spyOn(Math, "random").mockReturnValue(0);
+      try {
+        const res = makeRes();
+        cspReportHandler(
+          asReq({ method: "POST", body: { "csp-report": reportBody } }),
+          res,
+        );
+        expect(res.statusCode).toBe(204);
+        expect(infoSpy).toHaveBeenCalledTimes(1);
+        return infoSpy.mock.calls[0]![0] as Record<string, unknown>;
+      } finally {
+        infoSpy.mockRestore();
+        randomSpy.mockRestore();
+      }
+    }
+
+    it("маскує токен скидання пароля в document-uri", () => {
+      const logged = captureLoggedReport({
+        "violated-directive": "style-src-elem",
+        "document-uri":
+          "https://app.example.com/reset-password?token=live-secret-abc123&utm=mail",
+        "blocked-uri": "inline",
+      });
+
+      expect(logged["documentUri"]).toBe(
+        "https://app.example.com/reset-password?token=[redacted]&utm=mail",
+      );
+      // Живий токен не має лишитись у лог-рядку в жодному вигляді.
+      expect(JSON.stringify(logged)).not.toContain("live-secret-abc123");
+    });
+
+    it("маскує чутливі query-ключі в blocked-uri і source-file теж", () => {
+      const logged = captureLoggedReport({
+        "violated-directive": "connect-src",
+        "blocked-uri": "https://evil.example.com/exfil?access_token=zzz999",
+        "source-file": "https://app.example.com/verify?otp=424242",
+      });
+
+      expect(logged["blockedUri"]).toBe(
+        "https://evil.example.com/exfil?access_token=[redacted]",
+      );
+      expect(logged["sourceFile"]).toBe(
+        "https://app.example.com/verify?otp=[redacted]",
+      );
+    });
+
+    it("обрізає атакер-контрольований URL до стелі логування", () => {
+      const huge = `https://app.example.com/${"a".repeat(16_000)}`;
+      const logged = captureLoggedReport({
+        "violated-directive": "img-src",
+        "blocked-uri": huge,
+      });
+
+      const blockedUri = logged["blockedUri"] as string;
+      // 512 символів + маркер обрізання — далеко від 16 KB, які пропускає
+      // body-parser цього роуту.
+      expect(blockedUri.length).toBeLessThan(600);
+      expect(blockedUri.endsWith("…[truncated]")).toBe(true);
+    });
+
+    it("нормалізує відсутні URL-поля в null, а не в undefined-рядок", () => {
+      const logged = captureLoggedReport({
+        "violated-directive": "script-src",
+      });
+
+      expect(logged["documentUri"]).toBeNull();
+      expect(logged["blockedUri"]).toBeNull();
+      expect(logged["sourceFile"]).toBeNull();
+    });
   });
 });

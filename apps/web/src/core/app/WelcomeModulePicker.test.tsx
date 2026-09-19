@@ -67,21 +67,4 @@ describe("WelcomeModulePicker — preset grid shell", () => {
     );
     expect(onOpenAuth).toHaveBeenCalledTimes(1);
   });
-
-  it("renders the demo secondary CTA when onSecondaryAction is provided", async () => {
-    const user = userEvent.setup();
-    const onSecondaryAction = vi.fn();
-    render(
-      <WelcomeModulePicker
-        onComplete={vi.fn()}
-        onOpenAuth={vi.fn()}
-        onSecondaryAction={onSecondaryAction}
-      />,
-    );
-    const demoBtn = screen.getByRole("button", {
-      name: messages.welcomeModulePicker.demoCta,
-    });
-    await user.click(demoBtn);
-    expect(onSecondaryAction).toHaveBeenCalledTimes(1);
-  });
 });

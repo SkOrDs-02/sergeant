@@ -195,7 +195,8 @@ function GoalBudgetCardComponent({
               <Button
                 className="flex-1"
                 size="sm"
-                variant="danger"
+                variant="soft"
+                tone="danger"
                 onClick={onDelete}
               >
                 Видалити
@@ -206,7 +207,7 @@ function GoalBudgetCardComponent({
           <>
             <div className="flex justify-between items-center mb-2">
               <span className="text-style-label">
-                <Icon name="target" size={16} aria-hidden /> {budget.name}
+                <Icon name="target" size="md" aria-hidden /> {budget.name}
               </span>
               <div className="flex items-center gap-2">
                 <span className="text-style-caption text-muted">
@@ -225,7 +226,7 @@ function GoalBudgetCardComponent({
                   className="text-subtle hover:text-text transition-colors"
                   aria-label="Редагувати ціль"
                 >
-                  <Icon name="edit" size={16} aria-hidden />
+                  <Icon name="edit" size="md" aria-hidden />
                 </button>
               </div>
             </div>
@@ -264,7 +265,7 @@ function GoalBudgetCardComponent({
             <div className="mt-3 flex items-center gap-3">
               <Button
                 size="sm"
-                variant="secondary"
+                variant="outline"
                 onClick={() => setAddingContribution((v) => !v)}
               >
                 + Поповнити
@@ -279,7 +280,7 @@ function GoalBudgetCardComponent({
                   Історія ({contributions.length})
                   <Icon
                     name="chevron-down"
-                    size={12}
+                    size="xs"
                     aria-hidden
                     className={cn(
                       "transition-transform",
@@ -325,7 +326,7 @@ function GoalBudgetCardComponent({
                   <Button
                     className="flex-1"
                     size="sm"
-                    variant="secondary"
+                    variant="outline"
                     onClick={() => setAddingContribution(false)}
                   >
                     Скасувати
@@ -352,7 +353,7 @@ function GoalBudgetCardComponent({
                         aria-label={`Видалити поповнення ${formatMoney(c.amountUah)} від ${c.date}`}
                         className="text-subtle hover:text-danger-strong dark:hover:text-danger transition-colors"
                       >
-                        <Icon name="trash" size={14} aria-hidden />
+                        <Icon name="trash" size="sm" aria-hidden />
                       </button>
                     </span>
                   </li>

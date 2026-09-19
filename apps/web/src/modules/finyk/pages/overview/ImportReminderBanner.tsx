@@ -67,7 +67,7 @@ function ImportReminderBannerComponent({
         {`${copy.rhythmPrefix} ${expectedIntervalDays} ${dayWord(expectedIntervalDays)}`}
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
-        <Button size="sm" variant="secondary" onClick={onAddDocuments}>
+        <Button size="sm" variant="outline" onClick={onAddDocuments}>
           {copy.cta}
         </Button>
         <Button size="sm" variant="ghost" onClick={onSnooze}>
@@ -92,7 +92,7 @@ function ImportReminderBannerComponent({
               type="button"
               aria-label={copy.moreActionsAriaLabel}
             >
-              <Icon name="more-horizontal" size={16} aria-hidden />
+              <Icon name="more-horizontal" size="md" aria-hidden />
             </Button>
           }
         />

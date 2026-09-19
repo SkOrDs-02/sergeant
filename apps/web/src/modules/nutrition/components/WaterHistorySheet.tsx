@@ -20,6 +20,7 @@ import { Stat } from "@shared/components/ui/Stat";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 import { fmt } from "./WaterTrackerCard";
 
 const WEEKDAYS_UK = ["Нд", "Пн", "Вт", "Ср", "Чт", "Пт", "Сб"];
@@ -43,9 +44,7 @@ function dayListLabel(dayKey: string, todayKey: string, yesterdayKey: string) {
   if (dayKey === todayKey) return "Сьогодні";
   if (dayKey === yesterdayKey) return "Вчора";
   const [y = 1970, m = 1, d = 1] = dayKey.split("-").map(Number);
-  return new Date(Date.UTC(y, m - 1, d)).toLocaleDateString("uk-UA", {
-    day: "numeric",
-    month: "short",
+  return formatDateShort(new Date(Date.UTC(y, m - 1, d)), {
     timeZone: "UTC",
   });
 }

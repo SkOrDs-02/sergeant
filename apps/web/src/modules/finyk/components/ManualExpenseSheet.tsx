@@ -322,12 +322,6 @@ export function ManualExpenseSheet({
     null,
   );
 
-  // showDateField — UI-only, не частина zod-схеми. Раніше жило в
-  // form-state, але то був лиш toggle для видимості поля — без валідації
-  // чи подачі на сервер. Тримаємо окремо, щоб схема лишалася
-  // чистою (description/amount/category/date).
-  const [showDateField, setShowDateField] = useState(false);
-
   // UI-only toggle, який скидається в reset-ефекті нижче. Оголошений тут
   // (перед ефектом), щоб його сеттер був доступний у момент виклику.
   const [descFocused, setDescFocused] = useState(false);
@@ -438,7 +432,6 @@ export function ManualExpenseSheet({
         });
       }
       setDescFocused(false);
-      setShowDateField(false);
       setAiAppliedCategory(null);
     });
   }, [
@@ -736,9 +729,7 @@ export function ManualExpenseSheet({
           date={date}
           dateError={dateError}
           dateWarning={dateWarning}
-          showDateField={showDateField}
           isSubmitting={isSubmitting}
-          onReveal={() => setShowDateField(true)}
           onDateChange={(iso) =>
             setValue("date", iso, { shouldDirty: true, shouldValidate: false })
           }

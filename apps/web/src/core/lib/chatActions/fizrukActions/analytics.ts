@@ -11,6 +11,7 @@ import type {
   WeightChartAction,
   ChatActionResult,
 } from "../types";
+import { itemTonnageKg } from "@sergeant/fizruk-domain/lib/workoutStats";
 
 export function suggestWorkout(action: SuggestWorkoutAction): ChatActionResult {
   const { focus } = action.input || {};
@@ -115,15 +116,7 @@ export function compareProgress(
         total +
         w.items
           .filter(matchItem)
-          .reduce(
-            (s, item) =>
-              s +
-              (item.sets ?? []).reduce(
-                (ss, set) => ss + set.weightKg * set.reps,
-                0,
-              ),
-            0,
-          ),
+          .reduce((s, item) => s + itemTonnageKg(item), 0),
       0,
     );
   const calcMaxWeight = (ws: Workout[]): number =>

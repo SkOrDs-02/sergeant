@@ -35,10 +35,31 @@ import {
   readFizrukWorkouts,
 } from "./fizrukActions/shared";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+  type CachedDailyLogEntry,
+} from "../../../modules/fizruk/lib/sqliteReader";
 import type { ChatAction } from "./types";
+
+/** Журнал у SQLite-кеші (не LS — ключ tombstoned): дефолти для полів, яких тест не задає. */
+function seedJournal(
+  rows: Array<Partial<CachedDailyLogEntry> & { at: string }>,
+): CachedDailyLogEntry[] {
+  return rows.map((row, i) => ({
+    id: row.id ?? `dl_seed_${i}`,
+    weightKg: null,
+    sleepHours: null,
+    energyLevel: null,
+    moodScore: null,
+    note: "",
+    ...row,
+  }));
+}
 
 beforeEach(() => {
   localStorage.clear();
+  clearFizrukSqliteCache();
   mem.workouts = [];
   vi.clearAllMocks();
   vi.useFakeTimers();
@@ -522,13 +543,12 @@ describe("compare_progress", () => {
 // ---------------------------------------------------------------------------
 describe("weight_chart", () => {
   it("happy: returns chart when entries exist", () => {
-    localStorage.setItem(
-      "fizruk_daily_log_v1",
-      JSON.stringify([
+    __setFizrukSqliteCacheForTests({
+      dailyLog: seedJournal([
         { at: "2026-04-20T08:00:00.000Z", weightKg: 82 },
         { at: "2026-04-21T08:00:00.000Z", weightKg: 81.5 },
       ]),
-    );
+    });
     const out = call({ name: "weight_chart", input: {} });
     expect(typeof out).toBe("string");
     expect(out).toContain("Вага");
@@ -542,10 +562,9 @@ describe("weight_chart", () => {
   });
 
   it("shape: result is a non-empty string", () => {
-    localStorage.setItem(
-      "fizruk_daily_log_v1",
-      JSON.stringify([{ at: "2026-04-22T08:00:00.000Z", weightKg: 80 }]),
-    );
+    __setFizrukSqliteCacheForTests({
+      dailyLog: seedJournal([{ at: "2026-04-22T08:00:00.000Z", weightKg: 80 }]),
+    });
     const out = call({ name: "weight_chart", input: { period_days: 7 } });
     expect(typeof out).toBe("string");
     expect(out.length).toBeGreaterThan(0);
@@ -607,15 +626,17 @@ describe("log_wellbeing · undo", () => {
     if (typeof out === "string" || out == null)
       throw new Error("expected object");
 
-    const before = JSON.parse(
-      localStorage.getItem("fizruk_daily_log_v1") || "[]",
-    );
-    expect(before).toHaveLength(1);
+    // Запис іде в dual-write (LS-ключ tombstoned): перший виклик додає
+    // рівно один запис, undo — прибирає його з `next`, тримаючи в `prev`.
+    const calls = vi.mocked(triggerFizrukDualWrite).mock.calls;
+    expect(calls).toHaveLength(1);
+    const added = calls[0]![1].dailyLog;
+    expect(added).toHaveLength(1);
 
     out.undo?.();
-    const after = JSON.parse(
-      localStorage.getItem("fizruk_daily_log_v1") || "[]",
-    );
-    expect(after).toHaveLength(0);
+    expect(calls).toHaveLength(2);
+    const [undoPrev, undoNext] = calls[1]!;
+    expect(undoPrev.dailyLog.map((e) => e.id)).toEqual([added[0]!.id]);
+    expect(undoNext.dailyLog).toHaveLength(0);
   });
 });

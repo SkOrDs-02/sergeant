@@ -448,4 +448,97 @@ describe("applyPullOp (mobile)", () => {
     );
     expect(rows[0]).toMatchObject({ name: "Gone", deleted_at: deletedTs });
   });
+
+  // Два тести вище ганяють `routine_entries` — а це СПЕЦХЕНДЛЕР, у якого
+  // tombstone-guard-а не було від початку. Дірка ж сиділа в ГЕНЕРИЧНІЙ
+  // гілці, і на неї тестів не було взагалі. `routine_habits` іде саме нею,
+  // тож таблицю створюємо тут: клієнтські міграції (`ROUTINE_CLIENT_*`)
+  // її не везуть.
+  describe("генерична гілка: локальний tombstone не блокує новіший оп", () => {
+    const userId = "u1";
+    const habitId = "hab-tomb";
+    const deletedTs = "2026-07-10T09:00:00.000Z";
+
+    beforeEach(() => {
+      client.exec(`
+        CREATE TABLE IF NOT EXISTS routine_habits (
+          id         TEXT PRIMARY KEY,
+          user_id    TEXT NOT NULL,
+          name       TEXT NOT NULL,
+          created_at TEXT NOT NULL,
+          updated_at TEXT NOT NULL,
+          deleted_at TEXT
+        )
+      `);
+      client.run(
+        `INSERT INTO routine_habits
+           (id, user_id, name, created_at, updated_at, deleted_at)
+         VALUES (?, ?, ?, ?, ?, ?)`,
+        [habitId, userId, "Gone", deletedTs, deletedTs, deletedTs],
+      );
+    });
+
+    async function pull(
+      opId: number,
+      name: string,
+      ts: string,
+    ): Promise<string> {
+      return applyPullOp(
+        client,
+        {
+          id: opId,
+          table: "routine_habits",
+          op: "update",
+          row: {
+            id: habitId,
+            user_id: userId,
+            name,
+            created_at: deletedTs,
+            updated_at: ts,
+            deleted_at: null,
+          },
+          client_ts: ts,
+          server_ts: ts,
+          origin_device_id: "device-b",
+        },
+        userId,
+        "device-a",
+      );
+    }
+
+    it("воскрешає рядок і НЕ блокує наступні правки", async () => {
+      // Скасування видалення на іншому пристрої: T2 > T1.
+      expect(await pull(10, "Revived", "2026-07-10T10:00:00.000Z")).toBe(
+        "applied",
+      );
+      let rows = await client.all<{ name: string; deleted_at: string | null }>(
+        `SELECT name, deleted_at FROM routine_habits WHERE id = ?`,
+        [habitId],
+      );
+      expect(rows[0]).toMatchObject({ name: "Revived", deleted_at: null });
+
+      // Саме це й ламалось найдовше: до фікса `deleted_at` на цьому
+      // пристрої не скидався ніколи, тож скіпались і ВСІ наступні правки.
+      expect(await pull(11, "Renamed", "2026-07-10T11:00:00.000Z")).toBe(
+        "applied",
+      );
+      rows = await client.all<{ name: string; deleted_at: string | null }>(
+        `SELECT name, deleted_at FROM routine_habits WHERE id = ?`,
+        [habitId],
+      );
+      expect(rows[0]).toMatchObject({ name: "Renamed", deleted_at: null });
+    });
+
+    it("stale-оп проти tombstone-у і далі скіпається", async () => {
+      // Правка, старіша за видалення, — відсіює `isStaleLocal`, не guard.
+      expect(await pull(9, "Stale", "2026-07-10T08:00:00.000Z")).toBe(
+        "skipped",
+      );
+      const rows = await client.all<{
+        name: string;
+        deleted_at: string | null;
+      }>(`SELECT name, deleted_at FROM routine_habits WHERE id = ?`, [habitId]);
+      expect(rows[0]).toMatchObject({ name: "Gone", deleted_at: deletedTs });
+    });
+  });
 });

@@ -1,23 +1,39 @@
 /**
- * Last validated: 2026-09-12
+ * Last validated: 2026-09-15
  * Status: Active
  *
- * Поле дати для {@link ManualExpenseSheet}. Винесено окремо, щоб аркуш
- * лишався під Hard Rule #18 (`max-lines: 600`).
+ * Поле дати для {@link ManualExpenseSheet} — однакове для витрати і для
+ * надходження. Винесено окремо, щоб аркуш лишався під Hard Rule #18
+ * (`max-lines: 600`).
  *
- * Дата — «сьогодні» у 95%+ випадків, тож завжди відкритий пікер змушував
- * вийти в нативну шторку лише щоб підтвердити вже правдиве. Тому поле
- * згорнуте за чіпом і розкривається, коли людина явно каже «не сьогодні»
- * або коли редагується давніший запис, де дата вже не сьогоднішня.
+ * **Один дефолт замість трьох варіацій.** Доти поле мало три стани: чіп
+ * «Не сьогодні? Змінити дату», під ним стрічка днів, а під нею ще й
+ * розкривний нативний пікер. Два з трьох були про одне й те саме — дійти
+ * до стрічки, — тож чіп лише додавав крок перед тим, що й так стоїть
+ * першим варіантом у списку. Тепер стрічка видима завжди (сьогодні —
+ * правий край, під пальцем), а нативний пікер лишається одним фолбеком
+ * «Інша дата» для дат, старіших за вікно стрічки.
  *
- * UI-12: замість OS-шторки — горизонтальний скрабер днів для частого
- * випадку «нещодавня дата». Прихований нативний `input` лишається, бо
- * він тримає реєстрацію в react-hook-form і покриває вибір дати
- * старішої за вікно скрабера (фолбек «Інша дата»).
+ * Прихований у `<details>` `input` тримає реєстрацію в react-hook-form і
+ * покриває саме цей фолбек. Коли редагований запис має дату ПОЗА вікном
+ * стрічки, деталі розкриті одразу: у стрічці такого дня немає, і згорнутий
+ * фолбек лишив би людину зі стрічкою без жодного вибраного чіпа.
+ *
+ * **Нативний `input[type=date]` малюємо через `DateField`, не через сирий
+ * `Input`.** У нативного контрола власний intrinsic inline-size, і в
+ * flex/grid-контейнері з дефолтним `min-width: auto` комірка слухняно під
+ * нього розширюється — поле стає ширшим за екран. `DateField` несе контракт
+ * проти цього (`min-w-0` + явний `inline-size: 100%`). Той самий баг уже
+ * ловили у формах Фініка і в `LogPastWorkoutSheet`; рецепт —
+ * `docs/start/instructions/fix-mobile-horizontal-overflow.md`.
  */
+import { useState } from "react";
 import type { UseFormRegister } from "react-hook-form";
-import { DateScrubber } from "@shared/components/ui/DateScrubber";
-import { Input } from "@shared/components/ui/Input";
+import {
+  DateScrubber,
+  isWithinDateScrubberWindow,
+} from "@shared/components/ui/DateScrubber";
+import { DateField } from "@shared/components/ui/DateField";
 import { Label } from "@shared/components/ui/FormField";
 import { toLocalISODate } from "@sergeant/shared";
 import {
@@ -35,9 +51,7 @@ export interface ManualExpenseDateSectionProps {
   dateError: string | undefined;
   /** Мʼяке вікно: зберігати дозволено, але рік варто перечитати. */
   dateWarning: string | null;
-  showDateField: boolean;
   isSubmitting: boolean;
-  onReveal: () => void;
   onDateChange: (iso: string) => void;
   register: UseFormRegister<ExpenseFormValues>;
 }
@@ -47,40 +61,50 @@ export function ManualExpenseDateSection({
   date,
   dateError,
   dateWarning,
-  showDateField,
   isSubmitting,
-  onReveal,
   onDateChange,
   register,
 }: ManualExpenseDateSectionProps) {
-  if (date === toLocalISODate() && !showDateField) {
-    return (
-      <button
-        type="button"
-        onClick={onReveal}
-        className="text-style-caption text-muted hover:text-text underline decoration-dotted underline-offset-2 transition-colors"
-      >
-        {copy.dateReveal}
-      </button>
-    );
-  }
+  const value = date || toLocalISODate();
+  const outOfWindow = !isWithinDateScrubberWindow(value);
+
+  // `null` — «людина ще не чіпала деталі», тож рішення лишається за датою.
+  // Явний перемикач людини важливіший і перекриває його. Тримаємо саме
+  // override, а не синхронізуючий ефект: аркуш заповнює форму в мікротаску
+  // ПІСЛЯ монтування, тож стан, ініціалізований один раз, не побачив би
+  // дату редагованого запису.
+  const [otherOpenOverride, setOtherOpenOverride] = useState<boolean | null>(
+    null,
+  );
+  const otherOpen = otherOpenOverride ?? outOfWindow;
 
   return (
     <div>
       <Label htmlFor={dateId}>{copy.dateLabel}</Label>
       <DateScrubber
         aria-label={copy.dateScrubberLabel}
-        value={date || toLocalISODate()}
+        value={value}
         onChange={onDateChange}
       />
-      <details className="mt-2">
+      <details
+        className="mt-2"
+        open={otherOpen}
+        onToggle={(event) => setOtherOpenOverride(event.currentTarget.open)}
+      >
         <summary className="text-style-caption text-muted hover:text-text cursor-pointer list-none underline decoration-dotted underline-offset-2">
           {copy.dateOther}
         </summary>
-        <Input
+        <DateField
           id={dateId}
-          type="date"
           className="mt-2"
+          // Мітка секції вище стоїть над стрічкою, а не над цим полем, тож
+          // власне імʼя контролу задаємо явно — інакше `DateField` підставив
+          // би службове «Обери дату».
+          aria-label={copy.dateLabel}
+          value={value}
+          // Аркуш рахує і помилку, і мʼяке попередження сам (`dateWarning`
+          // нижче) — вбудована звірка меж дублювала б їх.
+          bounded={false}
           min={HARD_MIN_DAY_KEY}
           max={HARD_MAX_DAY_KEY}
           error={!!dateError}

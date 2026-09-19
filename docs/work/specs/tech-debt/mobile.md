@@ -1,7 +1,23 @@
 # Mobile Tech Debt — Sergeant Mobile (Expo + Capacitor)
 
-> **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-11-08.
+> **Last touched:** 2026-09-17 by @claude (звірка всіх відкритих пунктів реєстру з HEAD; раніше того ж дня — згадку `packages/openclaw-plugin` знято, пакета немає, ADR-0075). **Next review:** 2026-12-16.
 > **Status:** Active
+
+> **Оновлено 2026-09-17 (звірка реєстру з HEAD).** Переміряно кожне число цього файлу. Заморозка з 2026-08-25 нижче лишається чинним рішенням — звірка її не скасовує, а лише оновлює лічильники.
+>
+> | Твердження                                                                                                                  | Факт на HEAD (2026-09-17)                                                                                                                                                               |
+> | --------------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | Jest test-файлів **148**                                                                                                    | **187** (`find apps/mobile -name '*.test.ts*'` без `node_modules`) — +39 за два місяці попри заморозку гейтів                                                                           |
+> | `apps/mobile-shell` — **11** test-файлів                                                                                    | **11** ✅                                                                                                                                                                               |
+> | Raw >600 monitor: 3 файли (`routine/…/adapter.ts` 735, `nutrition/…/adapter.ts` 636, `core/dashboard/HubDashboard.tsx` 604) | **2 файли**: `routine/lib/sqliteWriter/adapter.ts` **711**, `nutrition/lib/sqliteWriter/adapter.ts` **649**. `HubDashboard.tsx` вийшов зі списку — **під 600 raw**, рядок прибрано      |
+> | production `: any` / `as unknown as` / `@ts-ignore` = 0                                                                     | **0** ✅ — усі 13 grep-збігів у `apps/mobile/src` це JSDoc-згадки («any thrown error», «without unsafe `as unknown as` double-casts»), не код                                           |
+> | 13 Detox-сьютів                                                                                                             | **13** ✅ (`apps/mobile/e2e/*.e2e.ts`)                                                                                                                                                  |
+> | Expo **52** / RN **0.76.9** / TS `~6.0.3`                                                                                   | **✅ усі три** (`apps/mobile/package.json`) — M9 лишається `dep-blocked`                                                                                                                |
+> | coverage floor `apps/mobile` = 30, поза CI-виміром                                                                          | **✅** — `coverage-thresholds.json` → `"apps/mobile": 30`, і сам файл коментарем фіксує «CI тимчасово пропускає apps/mobile (web-focus phase)»                                          |
+> | три live TODO (hub Phase 8, HubReports billing/H4, expo-print)                                                              | **✅ усі три живі**, і всі вже несуть дату: `useChatSend.ts:13,180`, `HubReports.tsx:45,123,163`, `reports/exportReport.ts:10` — `TODO(mobile-*): 2027-03-31`. `FIXME`/`HACK`/`XXX` — 0 |
+> | `eslint-disable react-hooks/exhaustive-deps`                                                                                | **10** production-сайтів (+1 у `Toast.test.tsx`) — число з `frontend.md` §5 підтверджено                                                                                                |
+>
+> **Не переміряно свідомо:** 12px-floor (17 `text-2xs` + 137 `text-[<12px]`, `.text-style-*` = 0) трекається в [`frontend.md` п.8](./frontend.md) — дублювати лічильник у двох реєстрах означає гарантувати розбіжність.
 
 > **Оновлено 2026-08-25 (mobile quality gates — ЗАМОРОЖЕНО, web-first).** Продуктове рішення власника: мобільні застосунки запускаємо **лише** якщо web доведе, що продукт потрібен. До цього моменту весь mobile-контур свідомо тримається на паузі — і це стосується тестових гейтів теж. **Що саме заморожено:** (1) Detox E2E — 13 сьютів у `apps/mobile/e2e/*.e2e.ts` лишаються в репо, але гейтом не є взагалі: **з 2026-09-14 обидва лейни знято з `pull_request:` і лишено тільки `workflow_dispatch`** (рішення founder-а, знахідка PR-M1 продуктового огляду), а разом із тригером прибрано `continue-on-error`/`exit 0` — прогін руками тепер каже правду. Доти було гірше за відсутність гейта: лейн ганявся на кожен mobile-PR і ЗАВЖДИ був зелений (Android ковтав фейл через `|| { warning }` + `exit 0` під `continue-on-error`, а iOS-крок «Run Detox iOS suite» сьюту не запускав узагалі — друкував warning і робив `exit 0`), тобто зелена галочка в списку перевірок не мовчала, а стверджувала неправду. Nightly `schedule:` прибрано ще на web-focus фазі; (2) coverage floor `apps/mobile` = **30** без CI-виміру — `test:coverage:ci` виключає `@sergeant/mobile` (`--filter=!@sergeant/mobile`), а `scripts/ci/coverage-ratchet.mjs` тримає його в `FLOOR_SKIPPED_WORKSPACES`; (3) parity-тести LS↔SQLite для mobile sqliteWriter (web має по 4–5 файлів на модуль, mobile — лише SQL-снапшот). **Це НЕ забутий борг, а рішення.** Аудит покриття 2026-08-04 ранжував «декоративний Detox» як діру №1 — під web-first фокусом ця рекомендація свідомо **не виконується**, щоб кожен наступний аудит і кожен агент не витрачали увагу на повторне «відкриття» тієї самої знахідки. **Чому не видаляємо сьюти:** 13 Detox-сьютів (`routine-full.e2e.ts` — зразковий) — актив на момент розморозки; переписувати їх з нуля дорожче, ніж тримати. **Maestro** як альтернативний E2E-фреймворк розглянутий і відхилений: його єдина перевага була саме в mobile-ніші (обхід instrumentation через black-box YAML-flow), під заморозкою питання знімається; чинним лишається рішення Q8 у [`react-native-migration.md`](../../../engineering/mobile/react-native-migration.md). **Умова розморозки** (виконувати В ЦЬОМУ порядку, коли web підтвердить продукт): прогнати обидва лейни руками (`workflow_dispatch`) і полагодити те, що впаде — instrumentation readiness на Android і busy-loop на iOS досі не розібрані, їх просто більше ніхто не ховає → повернути `pull_request:`-блок в обидва Detox-workflow (`continue-on-error`/`exit 0` уже прибрано 2026-09-14, цей крок виконаний) → повернути nightly `schedule:` → під'єднати `@sergeant/mobile` до coverage-лейна → ратчетити floor 30 вгору до факту → додати parity-тести sqliteWriter.
 >
@@ -80,10 +96,10 @@
 | `: any` types у production               | ~~Високий~~ → **OK**    | ✅ [PR #1461](https://github.com/Skords-01/Sergeant/pull/1461). 0 production-файлів з `: any`.                                                                      |
 | Storage migration                        | **OK** (guardrail-only) | RN не має `localStorage`; усі persist через MMKV adapter.                                                                                                           |
 | Cloud-sync invariants                    | **OK**                  | `no-raw-tracked-storage` OK.                                                                                                                                        |
-| Великі файли (>600 LOC)                  | **Низький / monitor**   | **0** files >600 **effective** LOC. Raw>600 monitor: sqliteWriter adapters + HubDashboard (див. §5).                                                                |
+| Великі файли (>600 LOC)                  | **Низький / monitor**   | **0** files >600 **effective** LOC. Raw>600 monitor: два sqliteWriter-адаптери (`HubDashboard` вийшов зі списку 2026-09-17 — див. §5).                              |
 | TODO/FIXME маркери                       | **Низький**             | Settings Phase 6 + RoutineSection **closed**; ~4 live blocked (hub Phase 8, HubReports billing/H4, expo-print).                                                     |
 | Observability (Sentry RN)                | **Середній**            | Code ready; DSN provisioning — M7 `external-infra`.                                                                                                                 |
-| Tests — Jest                             | **OK**                  | **148** test-файлів. Skipped/`xit` — 0. Coverage floor lines **30**.                                                                                                |
+| Tests — Jest                             | **OK**                  | **187** test-файлів (переміряно 2026-09-17; було 148). Skipped/`xit` — 0. Coverage floor lines **30**.                                                              |
 | Capacitor coverage                       | **OK**                  | **11** test-файлів у `apps/mobile-shell` (boundary + native bridge supplements).                                                                                    |
 | TypeScript-version drift                 | **OK**                  | `~6.0.3` aligned. Expo SDK 52→53 — M9 `dep-blocked`.                                                                                                                |
 
@@ -149,15 +165,16 @@ allowlist на 1 файл (`useSyncedStorage.ts` сам), 0 інших пору�
 
 ## Великі файли (>600 LOC)
 
-**0** production-файлів >600 **effective** LOC у `apps/mobile/` (re-audit 2026-07-20).
+**0** production-файлів >600 **effective** LOC у `apps/mobile/` (re-audit 2026-07-20;
+звірено 2026-09-17 — raw >600 лишилось **два** файли, обидва нижче).
 `max-lines` Hard Rule #18 на mobile **не** enforced (web/server only); inventory —
 для visibility. Raw >600 monitor:
 
-| Файл                                            | raw / eff  | Нотатка               |
-| ----------------------------------------------- | ---------- | --------------------- |
-| `modules/routine/lib/sqliteWriter/adapter.ts`   | 735 / ~597 | Monitor (headroom ~3) |
-| `modules/nutrition/lib/sqliteWriter/adapter.ts` | 636 / ~533 | Monitor               |
-| `core/dashboard/HubDashboard.tsx`               | 604 / ~481 | Monitor               |
+| Файл                                            | raw (2026-09-17)   | Нотатка                                   |
+| ----------------------------------------------- | ------------------ | ----------------------------------------- |
+| `modules/routine/lib/sqliteWriter/adapter.ts`   | **711** (було 735) | Monitor                                   |
+| `modules/nutrition/lib/sqliteWriter/adapter.ts` | **649** (було 636) | Monitor                                   |
+| ~~`core/dashboard/HubDashboard.tsx`~~           | **< 600**          | Вийшов зі списку — зі спостереження знято |
 
 Історично закриті: `adapter.ts` / `PlanCalendar` (#3363), `diff.ts` → `diff/`,
 `Calendar.tsx` → `pages/Calendar/` (#2780), `TransactionsPage` (#1453),
@@ -282,15 +299,14 @@ never-resolving Promise).
 
 ## TypeScript-version drift
 
-| App / Package              | TypeScript version |
-| -------------------------- | ------------------ |
-| `apps/web`                 | `^6.0.3`           |
-| `apps/server`              | `^6.0.3`           |
-| `apps/mobile`              | `~6.0.3`           |
-| `packages/openclaw-plugin` | `^6.0.3` (inherit) |
-| `apps/mobile-shell`        | (наслідує root)    |
+| App / Package       | TypeScript version |
+| ------------------- | ------------------ |
+| `apps/web`          | `^6.0.3`           |
+| `apps/server`       | `^6.0.3`           |
+| `apps/mobile`       | `~6.0.3`           |
+| `apps/mobile-shell` | (наслідує root)    |
 
-Monorepo на TS 6.x (Hard Rule #19). Historical `tools/openclaw` workspace видалено — OpenClaw surface = external gateway + `packages/openclaw-plugin` (ADR-0055).
+Monorepo на TS 6.x (Hard Rule #19). Historical `tools/openclaw` workspace і `packages/openclaw-plugin` видалено — OpenClaw повністю декомісовано ([ADR-0075](../../../governance/adr/0075-openclaw-gateway-decommissioned.md); ADR-0055 — історія). Рядок `packages/openclaw-plugin` з таблиці знято 2026-09-17: пакета в `packages/` немає.
 
 Залишковий platform drift — **Expo SDK 52 → 53** (не TypeScript): див. ADR-0063 і roadmap M9 нижче.
 

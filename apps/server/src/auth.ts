@@ -352,7 +352,7 @@ export const auth = betterAuth({
      *   - Поточний email підтверджений → лист-підтвердження йде на СТАРУ
      *     адресу; лише після кліку летить верифікація на нову. Це захист
      *     від тихого перепривʼязування вкраденої сесії — саме той вектор,
-     *     який описує H6 (`docs/04-governance/security/hardening/archive/
+     *     який описує H6 (`docs/work/specs/security-hardening/archive/
      *     H6-email-verification.md`).
      *
      * Обидва листи йдуть у ту саму durable-чергу `auth-mail`, що й
@@ -480,7 +480,8 @@ export const auth = betterAuth({
     user: {
       create: {
         before: async (data) => {
-          // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу.
+          // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу;
+          // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
           // Стоїть саме тут, а не на формі реєстрації: `user.create`
           // спрацьовує однаково для email+пароля, Google і Apple, тож
           // соцвхід не обходить гейт створенням користувача в колбеку.
@@ -584,7 +585,8 @@ export const auth = betterAuth({
     session: {
       create: {
         before: async (data) => {
-          // AI-LEGACY: expires 2026-11-30 — друга половина рубильника.
+          // AI-LEGACY: expires 2026-11-30 — друга половина рубильника;
+          // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
           // Блокування `user.create` зупиняє лише НОВИХ; сесію ж отримує
           // і той, хто зареєструвався під час бети. Перевірка тут ловить
           // кожен логін незалежно від провайдера. Уже видані сесії живуть

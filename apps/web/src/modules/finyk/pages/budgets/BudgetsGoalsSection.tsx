@@ -88,7 +88,7 @@ export function BudgetsGoalsSection({
       >
         <span className="flex items-center gap-2 min-w-0">
           <span className="text-muted" aria-hidden>
-            <Icon name="target" size={16} />
+            <Icon name="target" size="md" />
           </span>
           <SectionHeading
             as="span"
@@ -106,7 +106,7 @@ export function BudgetsGoalsSection({
         </span>
         <Icon
           name="chevron-down"
-          size={14}
+          size="sm"
           className={cn(
             "transition-transform text-muted shrink-0",
             goalsOpen ? "rotate-180" : "",

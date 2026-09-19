@@ -8,6 +8,7 @@ vi.mock("../../../profile/biometrics", () => ({
 vi.mock("./shared", () => ({
   persistFizrukDailyLog: vi.fn(),
   readFizrukDailyLog: vi.fn(() => []),
+  deleteFizrukDailyLogEntry: vi.fn(),
 }));
 
 function makeAction(input: LogWellbeingAction["input"]): LogWellbeingAction {
@@ -104,5 +105,57 @@ describe("logWellbeing", () => {
     });
     expect((result as { result: string }).result).toContain("сон 8");
     expect((result as { result: string }).result).toContain("настрій 4/5");
+  });
+
+  // Канонічна межа MEASUREMENT_BOUNDS.weightKg = {20, 400} (ADR-0080) —
+  // fizruk дзеркалить вагу в профіль через `recordBodyWeight`, тож без
+  // цієї межі биті числа з голосового вводу тихо псували TDEE-цілі.
+  describe("weight_kg canonical bound (MEASUREMENT_BOUNDS.weightKg)", () => {
+    it("rejects weight just under the lower bound", () => {
+      const result = logWellbeing(makeAction({ weight_kg: 19 }));
+      expect(result).toBe(
+        "Вага має бути від 20 до 400 кг. Перевір число і спробуй ще раз.",
+      );
+    });
+
+    it("rejects weight just above the upper bound", () => {
+      const result = logWellbeing(makeAction({ weight_kg: 401 }));
+      expect(result).toBe(
+        "Вага має бути від 20 до 400 кг. Перевір число і спробуй ще раз.",
+      );
+    });
+
+    it("accepts weight exactly at the lower boundary", () => {
+      const result = logWellbeing(makeAction({ weight_kg: 20 }));
+      expect(result).toMatchObject({
+        result: expect.stringContaining("вага 20"),
+      });
+    });
+
+    it("accepts weight exactly at the upper boundary", () => {
+      const result = logWellbeing(makeAction({ weight_kg: 400 }));
+      expect(result).toMatchObject({
+        result: expect.stringContaining("вага 400"),
+      });
+    });
+
+    it("out-of-bound weight blocks the whole entry, even with other valid fields", () => {
+      const result = logWellbeing(
+        makeAction({ weight_kg: 900, sleep_hours: 8 }),
+      );
+      expect(result).toBe(
+        "Вага має бути від 20 до 400 кг. Перевір число і спробуй ще раз.",
+      );
+    });
+
+    it("still rejects NaN weight via the existing finite check (no bound message)", () => {
+      const result = logWellbeing(makeAction({ weight_kg: NaN }));
+      expect(result).toBe("Немає жодного валідного поля для самопочуття.");
+    });
+
+    it("still rejects negative weight via the existing positivity check (no bound message)", () => {
+      const result = logWellbeing(makeAction({ weight_kg: -5 }));
+      expect(result).toBe("Немає жодного валідного поля для самопочуття.");
+    });
   });
 });

@@ -134,7 +134,7 @@ export function LoginForm({ onForgotPassword, showForgot }: LoginFormProps) {
 
       <Button
         type="submit"
-        variant="primary"
+        variant="solid"
         size="lg"
         loading={isSubmitting}
         className="w-full"

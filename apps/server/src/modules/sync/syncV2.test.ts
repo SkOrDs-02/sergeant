@@ -31,6 +31,7 @@ import {
   syncV2Push,
 } from "./syncV2.js";
 import { notifySyncV2OpsApplied as _notify } from "./syncV2Stream.js";
+import { syncConflictsTotal } from "../../obs/metrics.js";
 
 interface PoolStub {
   connect: Mock;
@@ -133,6 +134,7 @@ describe("APPLY_REJECT_REASONS / ENGINE_REJECT_REASONS — frozen contract", () 
         "apply_failed",
         "duplicate",
         "op_not_supported",
+        "oplog_write_failed",
       ]),
     );
   });
@@ -253,9 +255,12 @@ describe("syncV2Push · idempotency replay (duplicate-only)", () => {
       accepted: number;
       last_op_id: number;
       results: Array<{ status: string; reason?: string }>;
+      server_now: string;
     };
     expect(body.accepted).toBe(1); // одна applied-replay
     expect(body.last_op_id).toBe(12); // bigint→number coerce
+    // Замір зсуву годинника на клієнті: ISO-мітка сервера в кожній відповіді.
+    expect(Number.isNaN(Date.parse(body.server_now))).toBe(false);
     expect(body.results).toEqual([
       { idempotency_key: "k_a", status: "applied" },
       {
@@ -338,11 +343,13 @@ describe("syncV2Push · new-op apply path", () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
       .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
-      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({
         rows: [{ id: insertedId, server_ts: serverTs }],
       })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
   }
 
@@ -367,6 +374,7 @@ describe("syncV2Push · new-op apply path", () => {
     expect(res.body).toEqual({
       accepted: 1,
       last_op_id: 41,
+      server_now: expect.any(String),
       results: [{ idempotency_key: "new-applied", status: "applied" }],
     });
     expect(notify).toHaveBeenCalledWith("u_1", [
@@ -387,7 +395,9 @@ describe("syncV2Push · new-op apply path", () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
       .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [{ id: "42", server_ts: serverTs }] })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
     const req = makeReq({
@@ -407,6 +417,7 @@ describe("syncV2Push · new-op apply path", () => {
     expect(res.body).toEqual({
       accepted: 0,
       last_op_id: 42,
+      server_now: expect.any(String),
       results: [
         {
           idempotency_key: "unknown-table",
@@ -422,7 +433,9 @@ describe("syncV2Push · new-op apply path", () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
       .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [{ id: "43", server_ts: serverTs }] })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
     const req = makeReq({
@@ -482,12 +495,14 @@ describe("syncV2Push · new-op apply path", () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
       .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
-      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT
-      .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({
         rows: [{ id: "45", server_ts: new Date("2026-01-01T00:00:05.000Z") }],
       })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
     const req = makeReq({ body: { ops: [op("apply-throws")] } });
@@ -507,6 +522,291 @@ describe("syncV2Push · new-op apply path", () => {
         },
       ],
     });
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// Запис в оп-лог під savepoint-ом. Доти INSERT стояв голим у зовнішній
+// транзакції, тож його помилка робила ROLLBACK УСЬОГО батча (500 на сотню
+// рядків через один оп), а клієнт палив спробу всім ста.
+// ────────────────────────────────────────────────────────────────────────────
+
+describe("syncV2Push · op-log write під savepoint", () => {
+  function op(
+    idempotency_key: string,
+    overrides: Record<string, unknown> = {},
+  ) {
+    return {
+      table: "routine_entries",
+      op: "insert" as const,
+      row: { id: "entry-1", title: "Morning" },
+      client_ts: "2026-01-01T00:00:00.000Z",
+      idempotency_key,
+      ...overrides,
+    };
+  }
+
+  it("тригер (б): помилка запису журналу відхиляє ОДИН оп і не валить батч", async () => {
+    // Реальний тригер — `U+0000` у рядковому полі `row`: zod пропускає,
+    // Postgres `jsonb` ні. Тут його імітує відмова самого INSERT-а.
+    const serverTs = new Date("2026-01-01T00:00:05.000Z");
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      // --- оп 1: журнал падає ---
+      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockRejectedValueOnce(
+        new Error(
+          "unsupported Unicode escape sequence: \\u0000 cannot be converted to text",
+        ),
+      )
+      .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      // --- оп 2: цілком здоровий сусід ---
+      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [{ id: "77", server_ts: serverTs }] })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const req = makeReq({
+      body: { ops: [op("poison-pill"), op("healthy-neighbour")] },
+    });
+    const res = makeRes();
+
+    await syncV2Push(req, res);
+
+    // Головне: сусід доїхав, а не згорів разом з отруйним опом.
+    expect(res.body).toMatchObject({
+      accepted: 1,
+      last_op_id: 77,
+      results: [
+        {
+          idempotency_key: "poison-pill",
+          status: "rejected",
+          reason: "oplog_write_failed",
+        },
+        { idempotency_key: "healthy-neighbour", status: "applied" },
+      ],
+    });
+    // Локальний відкат — так, глобального ROLLBACK — ні.
+    expect(client.query).toHaveBeenCalledWith(
+      "ROLLBACK TO SAVEPOINT op_log_write",
+    );
+    expect(
+      client.query.mock.calls.filter((c) => c[0] === "ROLLBACK"),
+    ).toHaveLength(0);
+    expect(client.query).toHaveBeenCalledWith("COMMIT");
+  });
+
+  it("тригер (а): гонка вкладок деградує у штатний duplicate, а не в 500", async () => {
+    // Клієнтський гард «один тік за раз» живе per-runtime, тобто per-tab:
+    // дві вкладки одного акаунта дренять ті самі рядки й б'ються об
+    // унікальний `sync_op_log_user_idem_key`.
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT — ще порожньо
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // INSERT … DO NOTHING → нічого
+      .mockResolvedValueOnce({
+        rows: [{ id: "88", status: "applied", reject_reason: null }],
+      }) // SELECT рядка переможця гонки
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const req = makeReq({ body: { ops: [op("raced-by-second-tab")] } });
+    const res = makeRes();
+
+    await syncV2Push(req, res);
+
+    expect(res.body).toMatchObject({
+      accepted: 1,
+      last_op_id: 88,
+      results: [{ idempotency_key: "raced-by-second-tab", status: "applied" }],
+    });
+    expect(
+      client.query.mock.calls.filter((c) => c[0] === "ROLLBACK"),
+    ).toHaveLength(0);
+  });
+
+  it("гонка з відхиленим рядком переможця віддає його reason, а не свій", async () => {
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // INSERT … DO NOTHING
+      .mockResolvedValueOnce({
+        rows: [{ id: "89", status: "rejected", reject_reason: "lww_conflict" }],
+      })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const res = makeRes();
+    await syncV2Push(makeReq({ body: { ops: [op("raced-rejected")] } }), res);
+
+    expect(res.body).toMatchObject({
+      accepted: 0,
+      results: [
+        {
+          idempotency_key: "raced-rejected",
+          status: "rejected",
+          reason: "lww_conflict",
+        },
+      ],
+    });
+  });
+
+  it("конфлікт без рядка — oplog_write_failed, а не мовчазний applied", async () => {
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // INSERT … DO NOTHING
+      .mockResolvedValueOnce({ rows: [] }) // SELECT — і рядка немає
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const res = makeRes();
+    await syncV2Push(makeReq({ body: { ops: [op("phantom-conflict")] } }), res);
+
+    expect(res.body).toMatchObject({
+      accepted: 0,
+      results: [
+        {
+          idempotency_key: "phantom-conflict",
+          status: "rejected",
+          reason: "oplog_write_failed",
+        },
+      ],
+    });
+  });
+
+  it("INSERT несе ON CONFLICT (user_id, idempotency_key) DO NOTHING RETURNING", async () => {
+    const serverTs = new Date("2026-01-01T00:00:05.000Z");
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [{ id: "90", server_ts: serverTs }] })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    await syncV2Push(
+      makeReq({ body: { ops: [op("shape-check")] } }),
+      makeRes(),
+    );
+
+    const insertCall = client.query.mock.calls.find(
+      (c) => typeof c[0] === "string" && /INSERT INTO sync_op_log/.test(c[0]),
+    );
+    expect(insertCall).toBeDefined();
+    expect(insertCall![0]).toMatch(
+      /ON CONFLICT \(user_id, idempotency_key\) DO NOTHING/,
+    );
+    expect(insertCall![0]).toMatch(/RETURNING id, server_ts/);
+  });
+});
+
+// ────────────────────────────────────────────────────────────────────────────
+// `sync_conflicts_total` (W4) — до цієї правки лічильник був оголошений у
+// `obs/metrics/domain.ts`, але жоден код його не інкрементив, тож
+// `sum by (module) (rate(sync_conflicts_total[1h]))` з runbook-у
+// (`SyncConflictSpike`) завжди повертав порожній результат. Тести нижче
+// доводять, що конфлікт реально росте лічильник — не просто повертає
+// правильний HTTP-reason.
+// ────────────────────────────────────────────────────────────────────────────
+
+describe("syncV2Push · sync_conflicts_total observability (W4)", () => {
+  function validOp(idempotency_key: string, table = "routine_entries") {
+    return {
+      table,
+      op: "insert" as const,
+      row: { id: "entry-1", title: "Morning" },
+      client_ts: "2026-01-01T00:00:00.000Z",
+      idempotency_key,
+    };
+  }
+
+  async function conflictCount(module: string): Promise<number> {
+    const metric = await syncConflictsTotal.get();
+    const sample = metric.values.find((v) => v.labels["module"] === module);
+    return sample?.value ?? 0;
+  }
+
+  function mockInsertPath(insertedId: string, serverTs: Date) {
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
+      .mockResolvedValueOnce({
+        rows: [{ id: insertedId, server_ts: serverTs }],
+      })
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+  }
+
+  it("зростає на 1 з label {module:'routine'}, коли apply-функція повертає lww_conflict", async () => {
+    const before = await conflictCount("routine");
+
+    applyRoutineEntries.mockResolvedValueOnce({
+      status: "rejected",
+      reason: "lww_conflict",
+    });
+    mockInsertPath("100", new Date("2026-01-01T00:00:05.000Z"));
+
+    const req = makeReq({ body: { ops: [validOp("conflict-1")] } });
+    await syncV2Push(req, makeRes());
+
+    expect(await conflictCount("routine")).toBe(before + 1);
+  });
+
+  it("НЕ зростає для інших reject-причин (fk_violation)", async () => {
+    const before = await conflictCount("routine");
+
+    applyRoutineEntries.mockResolvedValueOnce({
+      status: "rejected",
+      reason: "fk_violation",
+    });
+    mockInsertPath("101", new Date("2026-01-01T00:00:05.000Z"));
+
+    const req = makeReq({ body: { ops: [validOp("not-a-conflict")] } });
+    await syncV2Push(req, makeRes());
+
+    expect(await conflictCount("routine")).toBe(before);
+  });
+
+  it("НЕ подвоюється на duplicate-replay того самого lww_conflict-у", async () => {
+    const before = await conflictCount("routine");
+
+    // Реплей: idempotency_key вже є в sync_op_log зі status='rejected',
+    // reject_reason='lww_conflict' — це шлях `dup.rows.length > 0`, не
+    // свіжий виклик apply-функції.
+    client.query
+      .mockResolvedValueOnce({ rows: [] }) // BEGIN
+      .mockResolvedValueOnce({
+        rows: [{ id: "99", status: "rejected", reject_reason: "lww_conflict" }],
+      })
+      .mockResolvedValueOnce({ rows: [] }); // COMMIT
+
+    const req = makeReq({ body: { ops: [validOp("replay-of-conflict")] } });
+    await syncV2Push(req, makeRes());
+
+    expect(applyRoutineEntries).not.toHaveBeenCalled();
+    expect(await conflictCount("routine")).toBe(before);
   });
 });
 

@@ -12,7 +12,7 @@ import {
 /**
  * Composable consumer-side helper that ties together the three already-
  * landed building blocks of the PN-counter `op='increment'` pipeline
- * (`docs/planning/storage-roadmap.md` Stage 5):
+ * (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` Stage 5):
  *
  * 1. {@link buildSyncV2IncrementOp} (PR #042c) — typed envelope builder
  *    with bit-for-bit server-mirrored validation.
@@ -43,7 +43,7 @@ import {
  * recordOutboxEnqueued({ id: result.id, inserted: result.inserted });
  * ```
  *
- * Stage 5 PR #042e of `docs/planning/storage-roadmap.md`. The full
+ * Stage 5 PR #042e of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. The full
  * sync-engine writer (push-loop refactor that drains
  * `sync_op_outbox` against `/api/v2/sync/push`) is the next step on
  * top of this helper. This PR ships the composable surface so future

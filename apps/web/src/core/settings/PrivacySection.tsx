@@ -233,7 +233,7 @@ export function PrivacySection() {
             </p>
             <Button
               type="button"
-              variant="ghost"
+              variant="outline"
               size="sm"
               onClick={() => {
                 setPreferencesError(null);

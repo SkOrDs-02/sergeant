@@ -7,7 +7,7 @@
  * `NutritionLog` / `Pantry` / `WaterLog` / `ShoppingList` / `Prefs`
  * semantics — one domain change, both platforms updated.
  *
- * Stage 8 PR #057n-tombstone-mobile (`docs/planning/storage-roadmap.md`):
+ * Stage 8 PR #057n-tombstone-mobile (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`):
  * the `load*` / `save*` helpers no longer touch MMKV. The SQLite
  * `nutrition_*` tables (including `nutrition_water_log` and
  * `nutrition_shopping_list` from Stage 11) are the source of truth —

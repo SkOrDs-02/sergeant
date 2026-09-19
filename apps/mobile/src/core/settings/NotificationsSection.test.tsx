@@ -26,7 +26,7 @@ import { _getMMKVInstance } from "@/lib/storage";
 // `saveNutritionPrefs` writes through `triggerNutritionDualWrite` —
 // the SQLite-backed sync trigger that replaced the legacy MMKV
 // `nutrition_prefs_v1` writer in Stage 8 PR #073
-// (`docs/planning/storage-roadmap.md`). The trigger ends in a write to
+// (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). The trigger ends in a write to
 // the `nutrition_prefs` SQLite table; we mock the trigger itself so
 // the assertion stays scoped to the component contract ("toggle drives
 // a prefs write with the new shape") instead of booting the entire

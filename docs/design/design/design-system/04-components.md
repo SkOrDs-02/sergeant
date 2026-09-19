@@ -1,6 +1,6 @@
 # Design System — Примітиви UI, Focus, A11y та Gestures
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2027-03-26.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-01.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює UI-примітиви, focus/disabled/loading контракт, правила кодування, міграційні патерни, нові компоненти та хуки, gestures/a11y, та keyboard-first overlays (DropdownMenu, CommandPalette).
@@ -39,21 +39,134 @@ import {
 } from "@shared/components/ui";
 ```
 
+> **Реєстр примітивів ширший за цей документ.** Барель
+> [`@shared/components/ui/index.ts`](../../../../apps/web/src/shared/components/ui/index.ts)
+> експортує ~70 компонентів; окремі розділи нижче мають лише ті, у яких є
+> нетривіальний контракт. Без розділу тут, але з власними stories і
+> докстрінгом у коді: `Avatar`, `Toast` (політика —
+> [`toast-policy.md`](../../ui/toast-policy.md)), `ThemeSwitcher`
+> ([`03 § 8`](./03-spacing-elevation-theming.md)), `InsightCard`,
+> `DataState`, `DataTable`, `DateField` / `TimeField` / `WheelPicker`,
+> `Money` / `MoneyInput` / `MaskedAmount` / `AnimatedNumber`,
+> `HeroValueLine` / `KpiRowCompact` / `DeltaChip`, `FloatingActionButton`,
+> `CollapsibleSection`, `PullToRefresh`, `SwipeToAction`, `VirtualList`,
+> `CommandPaletteUI` / `KeyboardShortcutsModal`, `SectionErrorBoundary`,
+> `SuspenseWithMinDelay`, `StreakFlame`, `VoiceMicButton`, `OptimizedImage`.
+> Перед тим як писати «ще одну картку», подивись у барель і в Storybook
+> ([`storybook.md`](../storybook.md)).
+
 ### Button
 
-Базовий контракт для всіх кнопок.
+Базовий контракт для всіх кнопок. **Канонічний API — дві незалежні осі**,
+як у `Badge` (`variant` × `tone`) і `Card` (`module` × `prominence`):
 
-- **Variants**: `primary` · `secondary` · `ghost` · `danger` · `success`
-  - модульні (`finyk` / `fizruk` / `routine` / `nutrition` з soft-версіями).
+- **`variant`** — гучність / форма: `solid` · `soft` · `outline` · `ghost`.
+- **`tone`** — колірна родина: `neutral` · `finyk` · `fizruk` · `routine` ·
+  `nutrition` · `danger` · `success` · `ink`.
+
+Підтримані клітинки (решта мовчки падає в `solid` + `neutral`):
+
+| `variant` | `tone`                                       | Що це                                                                                        |
+| --------- | -------------------------------------------- | -------------------------------------------------------------------------------------------- |
+| `solid`   | `neutral`                                    | Нейтральна головна дія — stone «чорнило на папері». Хаб і дії у формах модулів               |
+| `solid`   | `finyk` / `fizruk` / `routine` / `nutrition` | Модульна CTA: `-strong` заливка + `text-white` у світлій, tier-400 акцент + чорнило в темній |
+| `solid`   | `danger`                                     | Деструктивна CTA із заливкою («Видалити акаунт»)                                             |
+| `solid`   | `ink`                                        | Інвертована near-black primary (v2, `bg-ink-strong`)                                         |
+| `soft`    | `finyk` / `fizruk` / `routine` / `nutrition` | Модульна другорядна дія: `-soft` фон + `-soft-fg` текст + `-ring/50` межа                    |
+| `soft`    | `danger`                                     | Мʼяка деструктивна (soft-заливка + межа) — «Видалити» у рядку                                |
+| `soft`    | `success`                                    | Підтвердження / успіх                                                                        |
+| `outline` | `neutral`                                    | Нейтральна кнопка з власною межею: `bg-panel` + `border-border-strong` + `shadow-e1`         |
+| `ghost`   | будь-який (ігнорується)                      | Без межі й заливки, `text-muted`; один нейтральний варіант                                   |
+
+```tsx
+<Button variant="solid" tone="finyk">Додати</Button>      // модульна CTA
+<Button variant="soft" tone="finyk">Скасувати</Button>    // модульна другорядна
+<Button variant="solid" tone="danger">Видалити</Button>   // деструктивна CTA
+<Button variant="outline" tone="neutral">Назад</Button>   // нейтральна з межею
+```
+
+**Легасі-імена заборонені храповиком.** Плоскі варіанти `primary` /
+`secondary` / `danger` / `destructive` / `success` / `finyk…nutrition` /
+`*-soft` / `primary-ink` і проп `module=` лишаються тонкими аліасами з
+байт-у-байт тим самим виводом (`@removeBy 2026-12-01`), але у `apps/web/src`
+їх **нуль від 2026-09-16**: codemod PR [#38](https://github.com/zaebal-beep/Sergeant/pull/38)
+перевів 255 тегів, а гейт `pnpm lint:ui-canon`
+([`scripts/check-ui-canon-ratchet.mjs`](../../../../scripts/check-ui-canon-ratchet.mjs),
+бюджет `legacyButton: 0`) не пускає їх назад. Читаєш старий код або доку —
+ось мапа: `primary` = `solid`+`neutral`, `secondary` = `outline`+`neutral`,
+`danger` = `soft`+`danger`, `destructive` = `solid`+`danger`, `success` =
+`soft`+`success`, `finyk` = `solid`+`finyk`, `finyk-soft` = `soft`+`finyk`,
+`primary-ink` = `solid`+`ink`. Спека хвилі —
+[`c-section-consistency-migration.md`](../../../work/specs/c-section-consistency-migration.md),
+рецепт для наступних таких хвиль —
+[`unify-ui-to-canon.md`](../../../start/instructions/unify-ui-to-canon.md).
+
 - **Sizes**: `xs` (h-8) · `sm` (h-9) · `md` (h-11) · `lg` (h-12) · `xl` (h-14).
-  Усі `md+` задовольняють touch-target 44×44.
+  Усі `md+` задовольняють touch-target 44×44; `xs` / `sm` / `iconOnly`
+  добирають `min 44×44` лише під `@media (pointer: coarse)`.
 - **States**:
   - `loading` — автоматично додає `Spinner`, ставить `aria-busy`.
   - `disabled` — `opacity-50 cursor-not-allowed`, блокує pointer-events.
-  - `focus-visible` — `ring-2 ring-brand-500/45 ring-offset-2`.
+  - `focus-visible` — `ring-2 ring-focus/45 ring-offset-2` (семантичний
+    токен, не `ring-brand-500`; `/45` — єдина канонічна непрозорість, гейт
+    `offCanonRingOpacity: 0`).
   - `active:scale-[0.98]` для press feedback.
 - **`iconOnly`** — прибирає px-padding і робить квадратну геометрію.
   Альтернатива: `IconButton` (див. нижче).
+
+#### Який варіант брати (знахідка власника 2026-09-15)
+
+Вісь `variant` — це **гучність**, і обирається вона не за смаком, а за тим,
+**чи є в кнопки власна межа й чи потрібна вона їй**. Вісь `tone` — окреме
+питання «чий це колір», і відповідь на нього майже завжди `neutral`.
+
+| Роль дії                                                  | Клітинка                                                                 |
+| --------------------------------------------------------- | ------------------------------------------------------------------------ |
+| Головна дія блока / екрана                                | `solid` + `neutral` (модульний `tone` — лише для CTA модуля, див. нижче) |
+| Звичайна дія, яка тримає весь рядок блока                 | `outline` + `neutral`                                                    |
+| Незворотна дія (видалити, очистити, відключити)           | `soft` + `danger` у рядку · `solid` + `danger` як CTA                    |
+| Скасування / відмова в парі з дією                        | `outline` + `neutral`                                                    |
+| Дія ВСЕРЕДИНІ вже обмеженої коробки (рядок «лейбл — дія») | `ghost`                                                                  |
+| Іконка без підпису в рядку списку                         | `ghost`                                                                  |
+
+**Модульний тон — на CTA модуля, не на кнопках форм — рішення власника
+2026-09-15 (PR-C1 огляду 2026-09-13).** «Зберегти» / «Скасувати» у формах
+нейтральні і в Хабі, і всередині модулів: модульний акцент лишається на
+заголовках, іконках і картках, а Хаб і модулі говорять однією мовою кнопок.
+`solid` + `tone="<module>"` бере головна дія модуля («Додати» на першому
+екрані, «Почати тренування»), `soft` + `tone="<module>"` — її тиха пара.
+
+**`ghost` не є «стриманим outline».** Це `bg-transparent text-muted` без
+бордера: фон секції видно наскрізь, і єдине, що відрізняє таку кнопку від
+абзаца поруч, — підпис у `text-muted`, тобто **тихіший за звичайний текст**.
+Це працює рівно доти, доки межу дає рамка контейнера, в якому кнопка
+стоїть. Дія-блок на всю ширину такої рамки не має і читається як голий
+текст на фоні.
+
+Найгірше це видно в парах: «Оновити чеки» (`ghost`) поруч із «Відключити»
+(`soft` + `danger`, з фоном і бордером) — рядок читався як ОДНА кнопка і
+підпис біля неї. Та сама пара стояла в Monobank-вебхуці та в PWA-секції.
+
+**Скасування теж несе межу — рішення власника 2026-09-15.** Перша редакція
+цієї таблиці віддавала тихій половині пари `ghost`, і це розійшлося з
+кодом: із 11 кнопок «Скасувати» десять уже були з межею (`outline`), ghost
+лишався рівно один. Тобто правило описувало не продукт, а припущення його
+автора. Канон вирівняно на факт: сусідство з гучною кнопкою НЕ замінює
+власну межу, бо поки погляд не дійшов до сусіда, скасування читається як
+підпис. Ghost лишається лише там, де межу дає РАМКА, не сусід.
+
+**Не домальовуй межу руками.** `variant="ghost" className="border border-line"`
+— це `outline`, зібраний вручну і гіршою копією: справжній `outline`
+відділяється не заливкою (його `bg-panel` навмисно той самий токен, що й
+поверхня під ним), а парою `border-border-strong` + `shadow-e1`, яка працює
+і на білій картці, і на темній панелі. Деталі — AI-CONTEXT у
+[`Button.tsx`](../../../../apps/web/src/shared/components/ui/Button.tsx).
+
+Гейт на секції Налаштувань —
+[`settingsActionButtonVariants.test.ts`](../../../../apps/web/src/core/settings/settingsActionButtonVariants.test.ts):
+повноширинна `ghost`-кнопка там валить тест із точним `file:line`. Скоуп
+навмисно вузький — у футерах аркушів повноширинний `ghost` («Закрити»,
+«Скасувати») законний.
 
 ### IconButton
 
@@ -229,7 +342,7 @@ Home/End, `role="tablist"`.
 import { Tooltip } from "@shared/components/ui";
 
 <Tooltip content="Зберегти зміни (Ctrl+S)" placement="top">
-  <Button variant="primary" iconOnly aria-label="Зберегти">
+  <Button variant="solid" tone="neutral" iconOnly aria-label="Зберегти">
     <Icon name="save" />
   </Button>
 </Tooltip>;
@@ -364,7 +477,7 @@ import { Popover, PopoverItem, PopoverDivider } from "@shared/components/ui";
 - `title` — короткий заголовок (масштабується розміром).
 - `description` — повний абзац підтримки.
 - `primaryAction` / `secondaryAction` — два слоти для CTA-кнопок
-  (зазвичай `<Button variant="primary">` + `<Button variant="secondary">`).
+  (зазвичай `solid` + `neutral` і `outline` + `neutral`).
 - `tertiaryLink` — текстовий link під CTA (наприклад, "докладніше у
   довідці").
 - `hint` — підказка-tip із lightbulb-іконкою (тон `text-subtle`).
@@ -413,7 +526,7 @@ import { Popover, PopoverItem, PopoverDivider } from "@shared/components/ui";
 // In-card порожній стан (sm)
 <EmptyState
   size="sm"
-  icon={<Icon name="receipt" size={20} />}
+  icon={<Icon name="receipt" size="lg" />}
   title="Транзакцій немає"
   description="Підключи картку або додай вручну."
   primaryAction={<Button size="sm">Додати</Button>}
@@ -428,8 +541,8 @@ import { Popover, PopoverItem, PopoverDivider } from "@shared/components/ui";
   title="Щось пішло не так"
   description="Сервер тимчасово не зміг обробити запит."
   primaryAction={
-    <Button variant="primary" size="lg" onClick={reload}>
-      <Icon name="refresh-cw" size={16} />
+    <Button variant="solid" tone="neutral" size="lg" onClick={reload}>
+      <Icon name="refresh-cw" size="md" />
       Оновити сторінку
     </Button>
   }
@@ -586,13 +699,13 @@ stroke-dasharray; indeterminate — чверть-дуга, яка обертає
 
 ## 6. Focus, disabled, loading — єдиний контракт
 
-| Стан             | Поведінка                                                                                                       |
-| ---------------- | --------------------------------------------------------------------------------------------------------------- |
-| `:focus-visible` | `ring-2 ring-focus/45 ring-offset-2 ring-offset-bg` на кнопках, `ring-focus/30` на інпутах (без offset)         |
-| `:disabled`      | `opacity-50`, `cursor-not-allowed`, `pointer-events-none`                                                       |
-| `loading`        | Показує `Spinner`, встановлює `aria-busy="true"`, disables pointer events                                       |
-| `:active`        | `active:scale-[0.98]` для прес-feedback                                                                         |
-| `:hover`         | Тільки там, де `hover:` реально працює (не-touch); на `interactive` картках — `translate-y-[-2px] shadow-float` |
+| Стан             | Поведінка                                                                                                               |
+| ---------------- | ----------------------------------------------------------------------------------------------------------------------- |
+| `:focus-visible` | `ring-2 ring-focus/45 ring-offset-2 ring-offset-bg` на кнопках; примітив `Input` — той самий `ring-focus/45` без offset |
+| `:disabled`      | `opacity-50`, `cursor-not-allowed`, `pointer-events-none`                                                               |
+| `loading`        | Показує `Spinner`, встановлює `aria-busy="true"`, disables pointer events                                               |
+| `:active`        | `active:scale-[0.98]` для прес-feedback                                                                                 |
+| `:hover`         | Тільки там, де `hover:` реально працює (не-touch); на `interactive` картках — `translate-y-[-2px] shadow-float`         |
 
 ### 6.1 Semantic A11y / states tokens (Wave 2, 2026-05-13)
 
@@ -624,8 +737,11 @@ high-traffic shell (Hub headers, search, onboarding, auth) від raw
 className =
   "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg";
 
-// Інпут (без offset — краще всередині заповнення)
-className = "focus-visible:ring-2 focus-visible:ring-focus/30 caret-brand";
+// Інпут (без offset — краще всередині заповнення). Примітив `Input` уже
+// несе це сам; для сирого <input> поза примітивом — утиліта `.input-focus`
+// (utilities.css), єдине законне місце з `/30`: кільце БЕЗ офсету — інша
+// роль, тому храповик `offCanonRingOpacity` CSS не сканує.
+className = "input-focus caret-brand";
 
 // Hero / busy surface — solid ring для extra-punch
 className =
@@ -766,7 +882,9 @@ Native-like pull-to-refresh для PWA.
 ```tsx
 import { usePullToRefresh } from "@shared/hooks/usePullToRefresh";
 
-const { state, PullIndicator } = usePullToRefresh({
+// Хук повертає стан (`isPulling` / `isRefreshing` / `pullDistance` /
+// `pullProgress` / `canRefresh`), індикатор — окремий компонент.
+const state = usePullToRefresh({
   onRefresh: async () => {
     await refetch();
   },
@@ -988,7 +1106,7 @@ const items: DropdownMenuEntry[] = [
   ariaLabel="Дії з елементом"
   items={items}
   trigger={
-    <Button variant="secondary">
+    <Button variant="outline" tone="neutral">
       Меню <Icon name="chevron-down" />
     </Button>
   }
@@ -1023,11 +1141,7 @@ const items: DropdownMenuEntry[] = [
 
 ```tsx
 // 1. У app shell — раз:
-import {
-  CommandPalette,
-  CommandPaletteProvider,
-  useCommandPaletteHotkey,
-} from "@shared/components/ui";
+import { CommandPalette, CommandPaletteProvider } from "@shared/components/ui";
 
 <CommandPaletteProvider>
   <CommandPalette />
@@ -1047,9 +1161,13 @@ useRegisterCommand("hub.nav", [
 ]);
 ```
 
-⌘K / Ctrl+K привʼязується через `useCommandPaletteHotkey(enabled)` — у
-Sergeant це гейтнуте feature-flag-ом `hub_command_palette`, тож існуючий
-Hub-search ⌘K не зламається до моменту увімкнення.
+⌘K / Ctrl+K палітра **не слухає сама** (2026-09-16, рішення власника):
+клавішу тримає `useHubKeyboardShortcuts` у `RootLayout`, який з увімкненим
+`hub_command_palette` кличе `useCommandPaletteControls().open()`, а без
+нього відкриває пошук хаба. Пошук хаба з палітрою — її режим: команда
+«Глобальний пошук» і рядок «Шукати „…“ у Sergeant» у хвості будь-якого
+запиту (`openHubSearch(query)` з `hubNav.ts`). Реєстр клавіш —
+[`ui/shortcuts.md`](../../ui/shortcuts.md).
 
 **Клавіатура у відкритій палітрі:** `ArrowUp/Down` — навігація по
 плоскому списку (через групи), `Home/End` — перший / останній,
@@ -1085,9 +1203,20 @@ PR-ами per-модуль. `console.log` + toast «WIP» — навмисна �
 
 ## 19. Що далі
 
-- Догнати всі модулі (ФІНІК / ФІЗРУК / Рутина / Харчування) під єдині
-  примітиви — окремими PR'ами, по модулю.
-- Додати Storybook-подібну сторінку `/design` з живими прикладами.
-- Розширити WCAG-audit автотестом (axe) у CI.
-- Додати більше haptic feedback у key interactions.
-- Profile page з avatar upload.
+Стан на 2026-09-16 — старий список цього розділу закрито:
+
+- ~~Storybook-подібна сторінка з живими прикладами~~ — є два: Storybook 10
+  ([`storybook.md`](../storybook.md)) і `/design-showcase` (dev / preview).
+- ~~WCAG-audit автотестом (axe) у CI~~ — `pnpm --filter @sergeant/web test:a11y`
+  (Playwright + axe) плюс блокуючий job `Mobile UI audit (44px touch targets)`.
+- ~~Догнати модулі під єдині примітиви~~ — хвиля C-секції 2026-09-15/16
+  (PR [#38](https://github.com/zaebal-beep/Sergeant/pull/38),
+  [#41](https://github.com/zaebal-beep/Sergeant/pull/41)): один API кнопки,
+  один модуль дат, канонічна непрозорість фокус-кільця, токени розмірів
+  іконок — усе під храповиком `pnpm lint:ui-canon`.
+
+Відкрите — у реєстрі знахідок огляду
+[`2026-09-13-product-full-review.md`](../../../work/specs/audits/2026-09-13-product-full-review.md)
+(§ «8. Система»): рукописні фокус-кільця (стеля `handRolledFocusRing`, не
+борг на міграцію), PR-C5 (три механізми табів — частково), PR-C9 (зашитий
+гліф «+»).

@@ -17,7 +17,12 @@ import {
 import { resolveEffectiveGoal } from "@sergeant/nutrition-domain";
 import { calcFinykPeriodAggregate } from "@sergeant/finyk-domain/lib/spending";
 import { readFinykStatsContext } from "@finyk/lib/lsStats";
-import { formatNumberUk, pluralDays, pluralUa } from "@sergeant/shared";
+import {
+  formatNumberUk,
+  pluralDays,
+  pluralHabits,
+  pluralUa,
+} from "@sergeant/shared";
 import { dateKeyFromDate } from "@sergeant/routine-domain";
 import { wholeDaysSince } from "@shared/lib/time/wholeDaysSince";
 import {
@@ -340,7 +345,7 @@ function buildRoutineRecs(): Rec[] {
       module: "routine",
       priority: 65,
       icon: "check",
-      title: `${remaining} звичок ще не виконано сьогодні`,
+      title: `${remaining} ${pluralHabits(remaining)} ще не виконано сьогодні`,
       body: "Вечір, ще не пізно закрити всі звички.",
       action: "routine",
     });
@@ -355,7 +360,7 @@ function buildRoutineRecs(): Rec[] {
       priority: 95,
       icon: "alert",
       title: `Серія ${streak} днів під загрозою!`,
-      body: `Залишилось ${remaining} ${remaining === 1 ? "звичка" : "звичок"}, не дай рекорду згоріти.`,
+      body: `Залишилось ${remaining} ${pluralHabits(remaining)}, не дай рекорду згоріти.`,
       action: "routine",
     });
   }
