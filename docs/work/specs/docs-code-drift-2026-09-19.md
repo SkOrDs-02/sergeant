@@ -8,7 +8,7 @@
 
 ## Проблема
 
-Звірка `docs/` з кодом 2026-09-19 знайшла один **блокуючий** дефект і сім
+Звірка `docs/` з кодом 2026-09-19 знайшла один **блокуючий** дефект і вісім
 відкритих боргів. Блокуючий: репо переїхало вчетверте (`Skords-01/Sergeant` →
 `SkOrDs-02/sergeant` → `zaebal-beep/Sergeant` → `klas149/Sergeant`), і
 `--strict-external` у джобі `markdown-links` воркфлоу
@@ -177,6 +177,24 @@ non-fatal (це плани, не поточний стан), але серед �
 `apps/web/tailwind-preset.js` (переїхав у `packages/design-tokens/`),
 `apps/web/src/modules/nutrition/pages/NutritionDashboard.tsx`,
 `apps/web/public/sw.js`. Розділити «плановане» і «переїхало», друге полагодити.
+
+### PR-9 — `docs:check-inventory` не може бути зеленим за побудовою · Agent-ready
+
+[`generate-documentation-inventory.mjs:199`](../../../scripts/docs/generate-documentation-inventory.mjs)
+пише в артефакт `baseline_revision: SHA`, де `SHA` — `git rev-parse HEAD` на
+момент генерації, а `--check` (рядок 212) вимагає **побайтової** рівності.
+Тобто щойно згенерований файл потрапляє в коміт — HEAD змінюється, і артефакт
+миттєво «застарілий». Зійтися він не може ніколи, і `--amend` цього не лікує.
+
+Друга половина: гейт **нікуди не підключений** — `docs:check-inventory` немає
+ні в `&&`-ланцюжку `pnpm lint`, ні в жодному воркфлоу, ні в
+`pre-commit-derived-artifacts.mjs`. Саме тому файл і був простроченим на
+початок цієї звірки: єдиний його сторож — людина, яка згадає запустити.
+
+Лікування: прибрати `baseline_revision` із порівнюваної частини (лишити як
+інформаційне поле поза `--check`, або писати SHA **попереднього** коміту, що
+торкався `docs/`), а вже тоді підключити гейт у ланцюжок `pnpm lint`. Підключати
+раніше означає зробити `pnpm lint` завжди червоним.
 
 ## Поза скоупом
 
