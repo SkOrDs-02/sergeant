@@ -1,6 +1,6 @@
 # Сьогодні в роботі
 
-> **Last touched:** 2026-09-17 by docs:gen-today. **Next review:** 2026-09-24.
+> **Last touched:** 2026-09-19 by docs:gen-today. **Next review:** 2026-09-26.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED FILE. Do not edit by hand. Regenerate via `pnpm docs:gen-today`. -->
@@ -12,6 +12,7 @@ Daily brief — згенеровано з [`open-work.md`](./open-work.md) + fre
 Sorted: `blocked` items first, далі явні `agent-ready`, потім за `mtime` desc (свіже = warm context).
 
 - [`work/specs/anonymous-local-first-persistence.md`](./work/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Активні спеки)_
+- [`work/specs/docs-code-drift-2026-09-19.md`](./work/specs/docs-code-drift-2026-09-19.md) — SPEC: звірка `docs/` з кодом — закрити дрейф і поставити гейт на слуг репо → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0024-ai-memory-source-coverage.md`](./work/specs/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0025-posthog-ai-observability.md`](./work/specs/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Активні спеки)_
 

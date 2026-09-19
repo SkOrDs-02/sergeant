@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-01-02.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-05.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -176,7 +176,7 @@ Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys
 
 ## Performance budgets
 
-CI gates fail on regression. Numbers come from `apps/web/package.json` → `"size-limit"` and the `Bundle size guard` workflow ([#740](https://github.com/Skords-01/Sergeant/pull/740)). Lighthouse CI runs on every `pull_request` to `main` (+ `workflow_dispatch`) via [`.github/workflows/lighthouse-ci.yml`](./.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) using [`apps/web/lighthouserc.json`](./apps/web/lighthouserc.json); локальний прогон — `pnpm --filter @sergeant/web lighthouse`. LCP уже `error`-gated на 3000 ms (median); FCP/TBT лишаються `warn`-only.
+CI gates fail on regression. Numbers come from `apps/web/package.json` → `"size-limit"` and the CI job `bundle-budgets` («Bundle budgets (size-limit + eager)») у [`ci.yml`](./.github/workflows/ci.yml) — окремого workflow `Bundle size guard`, під яким гейт жив до виносу 2026-09-11 ([#740](https://github.com/Skords-01/Sergeant/pull/740), PR #1105), більше немає; згадки цієї назви нижче в історичних записах стосуються тієї, знятої конструкції. Lighthouse CI runs on every `pull_request` to `main` (+ `workflow_dispatch`) via [`.github/workflows/lighthouse-ci.yml`](./.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) using [`apps/web/lighthouserc.json`](./apps/web/lighthouserc.json); локальний прогон — `pnpm --filter @sergeant/web lighthouse`. LCP уже `error`-gated на 3000 ms (median); FCP/TBT лишаються `warn`-only.
 
 | Metric                                           | Budget                              | Where enforced                                                                                                                                                                                                          |
 | ------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

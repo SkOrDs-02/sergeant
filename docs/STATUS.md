@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-17 by docs:gen-status. **Next review:** 2026-09-24.
+> **Last touched:** 2026-09-19 by docs:gen-status. **Next review:** 2026-09-26.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -11,9 +11,11 @@
 
 <!-- FOCUS:START -->
 
-- **Тиша замість шуму** — UX-аудит шуму й навігації по всьому продукту: три хвилі фіксів злито (#96, #97, #100), лишились рішення власника — [`2026-09-16-product-noise-and-navigation.md`](./work/specs/audits/2026-09-16-product-noise-and-navigation.md).
-- **Сервер, БД, синк** — знахідки аудиту серверного шару закриті (#95, #101); далі — операторський замір для 0024 PR-3.
-- **Документація як істина** — дизайн-контракти для всіх поверхонь (#94, #99) і повна звірка `docs/` з кодом; генератори (`docs:gen-*`) і гейти мають лишатись зеленими на кожному злитті.
+- **Документація як істина — звірка 2026-09-19 пройдена.** Продуктові канони всіх п'яти модулів звірено з кодом: finyk і hub-coach чисті (включно з числовими константами), у nutrition / fizruk / routine знайдено й полагоджено по одній розбіжності. Відкриті борги — [`docs-code-drift-2026-09-19.md`](./work/specs/docs-code-drift-2026-09-19.md), дев'ять готових до виконання PR-ів.
+- **Гейт посилань був червоний на кожному PR — полагоджено.** Четвертий переїзд репо зробив 93 self-посилання мертвими, і `--strict-external` у `docs-automation` падав незалежно від змісту PR. Структурне лікування (`lint:repo-slug`, слуг із `git remote`) — PR-1 тієї ж спеки.
+- **Що спливає:** burn-down Hard Rule #10 заявлений на 2026-Q3 при покритті 40.9 %, бюджет `lint:dead-doc-links` вибрано на 100 %, а `docs:check-inventory` не може стати зеленим за побудовою і нікуди не підключений. Три ратчети, які вже не ловлять регресії.
+- **Тиша замість шуму** — три хвилі фіксів злито (#96, #97, #100), лишились рішення власника — [`2026-09-16-product-noise-and-navigation.md`](./work/specs/audits/2026-09-16-product-noise-and-navigation.md).
+- **Сервер, БД, синк** — знахідки аудиту закриті (#95, #101); далі — операторський замір для 0024 PR-3.
 
 <!-- FOCUS:END -->
 
@@ -32,11 +34,11 @@
 - [#67](https://github.com/zaebal-beep/sergeant/pull/67) — feat(server): перецілити kill-switch пам'яті ШІ з finyk на digest (0024, PR-2) _(2026-09-16)_
 - [#69](https://github.com/zaebal-beep/sergeant/pull/69) — docs(docs): quote the expired 0589 todo as history so lint:todo-freshness stops firing _(2026-09-16)_
 
-## 🔵 В роботі — 65 відкритих документів
+## 🔵 В роботі — 66 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 65       |
+| Активні спеки | 66       |
 
 **Найактивніше (8, за останніми PR):**
 
@@ -54,6 +56,7 @@
 Items із `Agent-ready: yes` або явним `Phase/Stage X next|blocked|pending` маркером — `blocked` першими.
 
 - [`work/specs/anonymous-local-first-persistence.md`](./work/specs/anonymous-local-first-persistence.md) — Спека: персистентність даних незалогіненого користувача → **agent-ready** _(Активні спеки)_
+- [`work/specs/docs-code-drift-2026-09-19.md`](./work/specs/docs-code-drift-2026-09-19.md) — SPEC: звірка `docs/` з кодом — закрити дрейф і поставити гейт на слуг репо → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0024-ai-memory-source-coverage.md`](./work/specs/initiatives/0024-ai-memory-source-coverage.md) — 0024 — Памʼять ШІ: звузити список джерел до тих, що справді пишуться → **agent-ready** _(Активні спеки)_
 - [`work/specs/initiatives/0025-posthog-ai-observability.md`](./work/specs/initiatives/0025-posthog-ai-observability.md) — 0025 — PostHog AI Observability для AI-шару (traces + evals) → **agent-ready** _(Активні спеки)_
 
