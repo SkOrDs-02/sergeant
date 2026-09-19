@@ -22,7 +22,8 @@ export function toKyivISODate(d: Date | number | string = new Date()): string {
  * викликів по монорепо — прибрати після міграції call-сайтів.
  *
  * AI-LEGACY: expires 2026-11-07 — прибрати цей аліас і перевести залишкові
- * виклики на `toKyivISODate` напряму.
+ * виклики на `toKyivISODate` напряму; перелік call-сайтів і розбір розходжень
+ * — docs/work/specs/audits/unification-modules.md.
  */
 export const toLocalISODate = toKyivISODate;
 

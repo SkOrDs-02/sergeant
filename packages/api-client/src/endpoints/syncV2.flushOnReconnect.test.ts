@@ -11,7 +11,7 @@ import type { SyncEnginePushScheduler } from "./syncV2.pushScheduler";
 
 /**
  * Tests for the DOM-event → scheduler bridge `createSyncEngineFlushOnReconnect`
- * (PR #042e-flush of `docs/planning/storage-roadmap.md`). Eight test
+ * (PR #042e-flush of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Eight test
  * groups pin the subscription contract, the de-duplication invariant
  * delegated to the scheduler, the error-swallow policy, the
  * visibility-edge filter, and the dispose lifecycle.

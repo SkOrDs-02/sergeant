@@ -818,7 +818,7 @@ describe("generateRecommendations", () => {
     const recs = generateRecommendations();
     const eveningRec = recs.find((r) => r.id === "routine_evening_reminder");
     expect(eveningRec).toBeDefined();
-    expect(eveningRec!.title).toContain("1 звичок ще не виконано");
+    expect(eveningRec!.title).toContain("1 звичка ще не виконано");
     expect(eveningRec!.priority).toBe(65);
   });
 
@@ -906,9 +906,67 @@ describe("generateRecommendations", () => {
     const recs = generateRecommendations();
     const atRisk = recs.find((r) => r.id === "routine_streak_at_risk");
     expect(atRisk).toBeDefined();
-    // remaining === 3 → "звичок" (plural)
-    expect(atRisk!.body).toContain("3 звичок");
+    // remaining === 3 → "few" ("звички"), не бінарна англійська "звичок"
+    expect(atRisk!.body).toContain("3 звички");
   });
+
+  // Українська плюралізація — три форми (one/few/many), не бінарна «1 vs
+  // N». 11 і 21 ловлять класичну помилку: 11 бере "many" ("звичок"), 21
+  // повертається до "one" ("звичка").
+  it.each([
+    [1, "звичка"],
+    [2, "звички"],
+    [5, "звичок"],
+    [11, "звичок"],
+    [21, "звичка"],
+  ])(
+    "routine_evening_reminder uses the correct plural form for N=%i (%s)",
+    (n, form) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(localClock(2026, 4, 27, 19));
+
+      const habits = Array.from({ length: n }, (_, i) => ({ id: `h${i}` }));
+      setLS("hub_routine_v1", { habits, completions: {} });
+
+      const recs = generateRecommendations();
+      const eveningRec = recs.find((r) => r.id === "routine_evening_reminder");
+      expect(eveningRec).toBeDefined();
+      expect(eveningRec!.title).toBe(`${n} ${form} ще не виконано сьогодні`);
+    },
+  );
+
+  it.each([
+    [1, "звичка"],
+    [2, "звички"],
+    [5, "звичок"],
+    [11, "звичок"],
+    [21, "звичка"],
+  ])(
+    "routine_streak_at_risk uses the correct plural form for N=%i (%s)",
+    (n, form) => {
+      vi.useFakeTimers();
+      vi.setSystemTime(localClock(2026, 4, 27, 22));
+
+      const habits = Array.from({ length: n }, (_, i) => ({ id: `h${i}` }));
+      const completions: Record<string, string[]> = {};
+      for (const h of habits) {
+        completions[h.id] = [];
+        for (let i = 1; i <= 7; i++) {
+          const d = localClock(2026, 4, 27, 22);
+          d.setDate(d.getDate() - i);
+          const dk = `${d.getFullYear()}-${String(d.getMonth() + 1).padStart(2, "0")}-${String(d.getDate()).padStart(2, "0")}`;
+          completions[h.id]!.push(dk);
+        }
+      }
+
+      setLS("hub_routine_v1", { habits, completions });
+
+      const recs = generateRecommendations();
+      const atRisk = recs.find((r) => r.id === "routine_streak_at_risk");
+      expect(atRisk).toBeDefined();
+      expect(atRisk!.body).toContain(`${n} ${form}`);
+    },
+  );
 
   it("НЕ генерує streak_at_risk якщо серія < 7 днів", () => {
     vi.useFakeTimers();

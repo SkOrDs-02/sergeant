@@ -428,6 +428,8 @@ describe("GET /api/silpo/sync-state", () => {
       status: "disconnected",
       accessTokenExpiresAt: null,
       lastSyncAt: null,
+      lastFailedAt: null,
+      lastErrorCode: null,
       receiptsCount: 0,
     });
   });
@@ -440,6 +442,8 @@ describe("GET /api/silpo/sync-state", () => {
             status: "connected",
             access_token_expires_at: "2026-08-17T10:00:00.000Z",
             last_sync_at: "2026-08-17T09:00:00.000Z",
+            last_failed_at: null,
+            last_error_code: null,
           },
         ],
         rowCount: 1,
@@ -458,7 +462,41 @@ describe("GET /api/silpo/sync-state", () => {
       status: "connected",
       accessTokenExpiresAt: "2026-08-17T10:00:00.000Z",
       lastSyncAt: "2026-08-17T09:00:00.000Z",
+      lastFailedAt: null,
+      lastErrorCode: null,
       receiptsCount: 5,
+    });
+  });
+
+  // Головний кейс усієї правки: доти сервер не мав ЧИМ розповісти про
+  // поломку, і зламаний синк був на вигляд не відрізнити від «нових чеків
+  // не було». Тепер провал приїжджає окремими полями.
+  it("віддає слід останнього провалу, коли синк зламаний", async () => {
+    mocks.queryMock
+      .mockResolvedValueOnce({
+        rows: [
+          {
+            status: "connected",
+            access_token_expires_at: "2026-09-14T10:00:00.000Z",
+            last_sync_at: "2026-08-31T09:00:00.000Z",
+            last_failed_at: "2026-09-14T08:00:00.000Z",
+            last_error_code: "SILPO_TOOL_ERROR",
+          },
+        ],
+        rowCount: 1,
+      })
+      .mockResolvedValueOnce({ rows: [{ count: "12" }], rowCount: 1 });
+
+    const res = await request(appWith())
+      .get("/api/silpo/sync-state")
+      .set("x-test-user-id", "user-1");
+
+    expect(res.status).toBe(200);
+    expect(res.body).toMatchObject({
+      status: "connected",
+      lastSyncAt: "2026-08-31T09:00:00.000Z",
+      lastFailedAt: "2026-09-14T08:00:00.000Z",
+      lastErrorCode: "SILPO_TOOL_ERROR",
     });
   });
 });

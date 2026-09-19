@@ -1,7 +1,7 @@
 /**
  * Проактивні підштовхування Сержанта — раз на добу.
  *
- * Спека: docs/90-work/planning/specs/sergeant-persona-and-proactive-push.md
+ * Спека: docs/work/specs/sergeant-persona-and-proactive-push.md
  *
  * ── Чому це серверний прохід, а не side-effect у хендлері ────────────────
  *

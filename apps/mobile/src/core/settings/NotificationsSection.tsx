@@ -251,7 +251,7 @@ export function NotificationsSection() {
       <SettingsSubGroup title="Фізрук (тренування)">
         <ToggleRow
           label="Нагадування про тренування"
-          description="Надсилається о вказаній годині, якщо на сьогодні призначено тренування. Якщо push-дозвіл ще не виданий, спершу попросимо його."
+          description="Надсилається о вказаній годині, якщо на сьогодні призначено тренування. Якщо push-дозвіл ще не виданий, спершу попрошу дозвіл."
           checked={fizrukReminderEnabled}
           onChange={(next) => {
             void handleFizrukToggle(next);
@@ -296,7 +296,7 @@ export function NotificationsSection() {
       <SettingsSubGroup title="Харчування">
         <ToggleRow
           label="Нагадування про їжу"
-          description="Зберігає щоденне нагадування у nutrition prefs: toggle + година, як у web settings. Якщо push-дозвіл ще не виданий, спершу попросимо його."
+          description="Зберігає щоденне нагадування у nutrition prefs: toggle + година, як у web settings. Якщо push-дозвіл ще не виданий, спершу попрошу дозвіл."
           checked={nutritionReminderEnabled}
           onChange={(next) => {
             void handleNutritionToggle(next);

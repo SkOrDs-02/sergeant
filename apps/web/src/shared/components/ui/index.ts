@@ -306,7 +306,6 @@ export {
   CommandPaletteProvider,
   useCommandPalette,
   useCommandPaletteControls,
-  useCommandPaletteHotkey,
   useRegisterCommand,
 } from "./CommandPalette";
 export type { PaletteCommand } from "./CommandPalette";

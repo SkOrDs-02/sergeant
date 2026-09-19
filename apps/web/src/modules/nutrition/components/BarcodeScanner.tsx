@@ -219,7 +219,7 @@ function WebBarcodeScanner({
               {onManualEntry && (
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   className="w-full min-h-[44px]"
                   onClick={() => {
                     setActive(false);

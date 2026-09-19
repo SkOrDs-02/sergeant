@@ -1,6 +1,6 @@
 # Observability-runbook
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-11-25.
+> **Last touched:** 2026-09-17 by @claude (env-и `PG_POOL_SIZE`; зняті `RATE_LIMIT_BAN_IPS`/`SERVER_MODE`; SBOM → attestation образу; feature-flags → канонічний реєстр). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Update 2026-07-21:** API/server logs — **Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). Посилання на «n8n Railway env» нижче — legacy n8n hosting (migrate TBD). OpenClaw WF-103 env — historical ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)).
@@ -18,7 +18,7 @@
 
 Загальне:
 
-- Прод entry point — `apps/server/src/index.ts` (компілюється у `apps/server/dist-server/` build-артефакти; режим вибирається `SERVER_MODE`, який образ під Coolify бейкає у build-стадії). Хостинг — Hetzner CX23 + Coolify (образ `ghcr.io/.../sergeant-api`, ADR-0074).
+- Прод entry point — `apps/server/src/index.ts` (компілюється у `apps/server/dist-server/` build-артефакти; історичний `SERVER_MODE` з Railway-епохи ([ADR-0009](../../governance/adr/0009-hosting-split-railway-vercel.md)) у коді більше не існує — образ `Dockerfile.api` має один режим). Хостинг — Hetzner CX23 + Coolify (образ `ghcr.io/.../sergeant-api`, ADR-0074).
 - Метрики за bearer-токен: `GET /metrics` з `Authorization: Bearer $METRICS_TOKEN`.
 - Логи — Pino JSON у stdout, з ALS-контекстом `{requestId, userId, module}`.
 - Sentry ловить fatal/error (включно з `err.cause` чейном).
@@ -154,6 +154,12 @@ latency вже достатньо висока, щоб rolling deploy / cold sta
 Не SLO-порушення, але варто дивитись.
 
 1. `sum by (module) (rate(sync_conflicts_total[1h]))` — хто конфліктить.
+   Поруч дивись клієнтський бік у Sentry (`area=sync`): issue «sync clock:
+   device clock skew N min» — годинник пристрою розійшовся із сервером понад
+   5 хв (замір по `server_now` у відповіді push), «sync clock: lww_conflict
+   streak N» — пʼять відхилень поспіль без жодного успіху з одного пристрою.
+   Обидва означають, що `lww_conflict` для цього пристрою — не штатний LWW, а
+   програш через годинник (`apps/web/src/core/syncEngine/clockSkew.ts`).
 2. Типово: два девайси одного user-а пишуть незалежно, `lastPulledAt`
    старий. Якщо вибух на одному module — регресія в логіці merge-у.
 3. Подивись чи не було недавнього деплою `apps/server/src/modules/sync/syncV2.ts`.
@@ -177,7 +183,7 @@ latency вже достатньо висока, щоб rolling deploy / cold sta
 1. `histogram_quantile(0.95, sum by (le) (rate(auth_session_lookup_duration_ms_bucket[5m])))` підтверджує.
 2. Перевір `db_pool_waiting > 0` — pool saturate є найчастіший root cause.
 3. Перевір розмір `sessions` таблиці й індекси (`EXPLAIN ANALYZE` на query).
-4. Як тимчасовий фікс — більший pool (`DATABASE_POOL_MAX`).
+4. Як тимчасовий фікс — більший pool (`PG_POOL_SIZE`, [`env/pgEnv.ts`](../../../apps/server/src/env/pgEnv.ts); sizing — [`pg-pool-sizing.md`](./pg-pool-sizing.md)).
 
 ## AuthRateLimitSpike
 
@@ -185,7 +191,9 @@ latency вже достатньо висока, щоб rolling deploy / cold sta
 
 1. `rate(rate_limit_hits_total{key="api:auth:sensitive",outcome="blocked"}[5m])` — обсяг.
 2. Подивись Pino logs з `module=auth` — корелюй `req.ip`. Якщо
-   однакова IP — бан через Cloudflare або `RATE_LIMIT_BAN_IPS`.
+   однакова IP — бан на edge (Cloudflare / Hetzner firewall). Env-перемикача
+   для IP-бану в сервері немає (`RATE_LIMIT_BAN_IPS` ніколи не існував у
+   `apps/server/src`); limiter-и — лише per-key ліміти в [`http/rateLimit.ts`](../../../apps/server/src/http/rateLimit.ts).
 3. Якщо це клієнт-реагує на 401 ретраями без backoff — зафіксуй issue.
 
 ## AiErrorBudgetBurn
@@ -244,7 +252,7 @@ session-check чекає слот.
 
 `db_pool_waiting > 0` 10m → connection contention.
 
-1. Миттєво: збільш `DATABASE_POOL_MAX` (Coolify env → redeploy).
+1. Миттєво: збільш `PG_POOL_SIZE` (Coolify env → redeploy; дефолт 20, [`env/pgEnv.ts`](../../../apps/server/src/env/pgEnv.ts)).
 2. Дослідь: `db_slow_queries_total{op}` — які operations довше `DB_SLOW_MS`.
 3. Знайди потенційні long-running transactions у логах
    (`level=info` з `module=db, msg="slow query"`).
@@ -328,7 +336,7 @@ session-check чекає слот.
    - `failMode: "closed"` (як у `api:auth:sensitive`) → при degraded Redis+PG limiter повертає 503 + `Retry-After: 5`. Алерт горить, але кредитстаффінг **не** прискорюється.
    - `failMode: "open"` → при degraded limiter пропускає трафік. Очікується підвищений rate; перевір `rate_limit_degraded_total{mode=inmem}` — якщо росте, deps degraded, не атака.
 4. **Відрізнити атаку від retry-storm:**
-   - Атака → широкий range `req.ip`, рівномірний rate-pattern. Бан через Cloudflare або `RATE_LIMIT_BAN_IPS` env-var.
+   - Атака → широкий range `req.ip`, рівномірний rate-pattern. Бан на edge (Cloudflare / Hetzner firewall) — серверного env-перемикача для IP-бану немає.
    - Retry-storm → `req.ip` концентрується на 1-3 джерелах (web/mobile/console). Це bug у клієнті, що ігнорує `Retry-After`. Відкривай issue на surface, патч у наступному релізі.
 
 ## Що робити, якщо `/health/readiness` FAIL у production
@@ -349,7 +357,7 @@ session-check чекає слот.
    Response має `checks: [{ name: "pg", status: "fulfilled" | "rejected" }, { name: "redis", ... }]`. Точно покаже, що саме не так.
 3. **Якщо PG degraded:**
    - Coolify → Postgres-контейнер stats + connection-pool. Якщо `db_pool_waiting > 0` 5m — корелюй з `DbPoolWaitingSustained` runbook вище.
-   - Швидкий патч: збільш `DATABASE_POOL_MAX` (Coolify env → redeploy).
+   - Швидкий патч: збільш `PG_POOL_SIZE` (Coolify env → redeploy).
 4. **Якщо Redis degraded:**
    - Перевір `rate_limit_degraded_total{mode=closed}` — якщо росте, всі auth-роути серверу будуть 503. Залежить від `failMode: "closed"` policy.
    - Швидкий патч (не для prod): `RATE_LIMIT_FAIL_CLOSED_AUTH=false` env-var → revert до open-mode без redeploy. **УВАГА:** це послабляє credential-stuffing захист, тримай не довше за hour.
@@ -409,7 +417,7 @@ Status-code mapping:
 
 ## AI memory activation & Day-30 decision-point
 
-> **Owner:** `@Skords-01`. **Scope:** server. **Last validated:** 2026-05-13 by Devin (PR-19). **Related:** [`docs/work/specs/launch/tech/ai-memory-activation.md`](../../work/specs/launch/tech/ai-memory-activation.md), [`docs/governance/governance/feature-flags.md`](../../governance/governance/feature-flags.md), [ADR-0028](../../governance/adr/0028-pgvector-ai-memory.md).
+> **Owner:** `@klas149`. **Scope:** server. **Last validated:** 2026-05-13 by Devin (PR-19). **Related:** [`docs/work/specs/launch/tech/ai-memory-activation.md`](../../work/specs/launch/tech/ai-memory-activation.md), [`docs/engineering/architecture/feature-flags.md`](../../engineering/architecture/feature-flags.md), [ADR-0028](../../governance/adr/0028-pgvector-ai-memory.md).
 > **Canonical split:** current AI memory behavior lives in [`docs/engineering/architecture/ai-memory.md`](../../engineering/architecture/ai-memory.md); this section is operational response/activation only.
 
 ### Контекст
@@ -418,12 +426,12 @@ AI memory (pgvector + Voyage embeddings) — Phase 2 feature з kill-switch-ом
 
 ### Стейн прапорців (production)
 
-| Flag                            | Default (code) | Activation                      | Назначення                                                                              |
-| ------------------------------- | -------------- | ------------------------------- | --------------------------------------------------------------------------------------- |
-| `AI_MEMORY_ENABLED`             | `false`        | Coolify env → `true`            | Master kill-switch для всього модуля (remember/recall/RAG/ingestion).                   |
-| `MONO_AI_MEMORY_INGEST_ENABLED` | `true`         | Без дії — стартує з master-flag | Per-source гейт для `finyk` source. Виставити `false` тільки як selective kill (PR-19). |
+| Flag                              | Default (code) | Activation                      | Назначення                                                                                                                                                                       |
+| --------------------------------- | -------------- | ------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `AI_MEMORY_ENABLED`               | `false`        | Coolify env → `true`            | Master kill-switch для всього модуля (remember/recall/RAG/ingestion).                                                                                                            |
+| `DIGEST_AI_MEMORY_INGEST_ENABLED` | `true`         | Без дії — стартує з master-flag | Per-source гейт для `digest` source (rename ініціативою 0024, PR-2 — до PR-1 гейтив `finyk`, у якого продюсера вже не було). Виставити `false` тільки як selective kill (PR-19). |
 
-Subordinate-логіка: `MONO_AI_MEMORY_INGEST_ENABLED` має значення лише при `AI_MEMORY_ENABLED=true`. Master `false` → всі source-и no-op (`mode="disabled"` метрика), per-source-flag ігнорується.
+Subordinate-логіка: `DIGEST_AI_MEMORY_INGEST_ENABLED` має значення лише при `AI_MEMORY_ENABLED=true`. Master `false` → всі source-и no-op (`mode="disabled"` метрика), per-source-flag ігнорується.
 
 ### Activation procedure
 
@@ -431,7 +439,7 @@ Subordinate-логіка: `MONO_AI_MEMORY_INGEST_ENABLED` має значенн�
 
 1. **Pre-flight (Coolify):** `VOYAGE_API_KEY` provisioned, БД-міграція 025 застосована, `pgvector` extension доступний.
 2. **Step 2** — `AI_MEMORY_ENABLED=true` у Coolify → redeploy.
-3. **Step 3** — finyk-ingest вмикається автоматично (sub-flag default `true`). Перші writes у `ai_memories` мають зʼявитись протягом ~5–30s після першого mono-webhook.
+3. **Step 3** — digest-ingest (weekly cron) вмикається автоматично (sub-flag default `true`, ініціатива 0024 PR-2). Перші writes у `ai_memories` мають зʼявитись після першого weekly-digest cron-run-у.
 4. **Step 4** — end-to-end smoke test через HubChat (див. activation runbook).
 
 ### Що моніторити (T+0 ... T+30 днів)
@@ -439,7 +447,7 @@ Subordinate-логіка: `MONO_AI_MEMORY_INGEST_ENABLED` має значенн�
 | Сигнал                                                                           | Норма                | Action при відхиленні                                                                                                                         |
 | -------------------------------------------------------------------------------- | -------------------- | --------------------------------------------------------------------------------------------------------------------------------------------- |
 | `ai_memory_ingest_enqueued_total{mode="queued"}` rate                            | > 0 при mono-traffic | Якщо =0 при non-zero mono-traffic → master або per-source flag вимкнений; перевір Coolify env.                                                |
-| `ai_memory_ingest_enqueued_total{mode="source_disabled"}` rate                   | 0                    | > 0 означає `MONO_AI_MEMORY_INGEST_ENABLED=false` у Coolify env; підтвердь, що це навмисний kill, інакше реверт.                              |
+| `ai_memory_ingest_enqueued_total{mode="source_disabled"}` rate                   | 0                    | > 0 означає `DIGEST_AI_MEMORY_INGEST_ENABLED=false` у Coolify env; підтвердь, що це навмисний kill, інакше реверт.                            |
 | `ai_memory_ingest_processed_total{outcome="ok"}` rate                            | ≈ enqueue rate       | `outcome="retry"`/`permanent_fail` spike → Voyage/pgvector incident, дивись [`docs/work/specs/launch/tech/ai-memory-activation.md` § Outage]. |
 | `ai_memory_ingest_queue_depth`                                                   | < 100 jobs steady    | Росте → Voyage rate-limit; знизити `AI_MEMORY_INGEST_CONCURRENCY` 4 → 2.                                                                      |
 | `SELECT count(*) FROM ai_memories WHERE inserted_at > now() - interval '7 days'` | ≥ 100 на T+30        | **< 100 на Day 30 → kill module** (див. нижче).                                                                                               |
@@ -475,7 +483,7 @@ WHERE inserted_at >= now() - interval '7 days';
 
 1. **Швидкий kill (≤30s):** `AI_MEMORY_ENABLED=false` у Coolify → redeploy. `recall_memory` tool, RAG-injection і ingest все no-op-ять; existing data у `ai_memories` залишається.
 2. **Видалення коду:** окремий PR `revert(server): rollback AI memory module (PR-19 Day-30 decision)`. Drop migrations НЕ робити одразу — лишити schema на місці ≥30 днів на випадок реверсу рішення.
-3. **Документація:** позначити `AI_MEMORY_ENABLED` і `MONO_AI_MEMORY_INGEST_ENABLED` як `Killed YYYY-MM-DD` у [`docs/governance/governance/feature-flags.md`](../../governance/governance/feature-flags.md); додати Outcome і merge evidence до activation runbook, потім прибрати його з checkout та перевести потрібні inbound references на immutable Git permalink.
+3. **Документація:** позначити `AI_MEMORY_ENABLED` і `DIGEST_AI_MEMORY_INGEST_ENABLED` як `Killed YYYY-MM-DD` у [`docs/engineering/architecture/feature-flags.md`](../../engineering/architecture/feature-flags.md); додати Outcome і merge evidence до activation runbook, потім прибрати його з checkout та перевести потрібні inbound references на immutable Git permalink.
 4. **Постмортем:** короткий `docs/learnings/ai-memory-kill-postmortem.md` із сигналами (`rows_7d` timeline, Voyage USD spend, top reasons for low adoption).
 
 ### Edge cases
@@ -488,7 +496,7 @@ WHERE inserted_at >= now() - interval '7 days';
 
 > ⚠️ **Історична секція.** n8n виведено з репо ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)); workflow-JSON — у permalink-снапшоті, кроки activation/kill нижче виконувати нема чим. Digest-функція як така не має заміни у сервері (відкритий follow-up).
 
-> **Owner:** `@Skords-01` (manifest owner `ops`). **Scope:** n8n workflow (server-side flag-canonical у `env.ts`). **Last validated:** 2026-05-13 by Devin (PR-21). **Related:** [`ops/n8n-workflows/30-ai-memory-daily-digest.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/30-ai-memory-daily-digest.json), [`docs/engineering/integrations/env-vars.md § MONO_AI_MEMORY_DIGEST_ENABLED`](../../engineering/integrations/env-vars.md#mono_ai_memory_digest_enabled-optional-default-false--prod-required), [PR-19 AI memory ingest](#ai-memory-activation--day-30-decision-point).
+> **Owner:** `@klas149` (manifest owner `ops`). **Scope:** n8n workflow (server-side flag-canonical у `env.ts`). **Last validated:** 2026-05-13 by Devin (PR-21). **Related:** [`ops/n8n-workflows/30-ai-memory-daily-digest.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/30-ai-memory-daily-digest.json), [`docs/engineering/integrations/env-vars.md § MONO_AI_MEMORY_DIGEST_ENABLED`](../../engineering/integrations/env-vars.md#mono_ai_memory_digest_enabled-optional-default-false--prod-required), [PR-19 AI memory ingest](#ai-memory-activation--day-30-decision-point).
 
 ### Контекст
 
@@ -496,7 +504,7 @@ WF-30 — щоденний 09:05 Kyiv n8n workflow, що SELECT-ить агре�
 
 ### Activation procedure
 
-1. **Pre-flight:** `AI_MEMORY_ENABLED=true` (master) і `MONO_AI_MEMORY_INGEST_ENABLED=true` (PR-19) уже виставлені у Coolify. Без цього `ai_memories` порожня → digest буде слати «За добу нічого не записано».
+1. **Pre-flight:** `AI_MEMORY_ENABLED=true` (master) і `DIGEST_AI_MEMORY_INGEST_ENABLED=true` (PR-19) уже виставлені у Coolify. Без цього `ai_memories` порожня → digest буде слати «За добу нічого не записано».
 2. **n8n Railway env:** виставити `MONO_AI_MEMORY_DIGEST_ENABLED=true` у self-hosted n8n service (Settings → Environment Variables). Це canonical-toggle (parsed у `apps/server/src/env/env.ts` для парності з ingest-flag-ом).
 3. **n8n UI:** flip toggle workflow `30 — AI Memory Daily Digest` в active. Hard-rule [`validate-n8n-workflows.mjs`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/scripts/n8n/validate-n8n-workflows.mjs) тримає JSON `active=false` у git, тож активація — manual у UI.
 4. **Verification (T+24h):** наступний ранок о 09:05 Kyiv → перевір канал Telegram `#digest`, має зʼявитись повідомлення `🧠 AI Memory — <дата>`.
@@ -543,24 +551,23 @@ Per [ADR-0044](../../governance/adr/0044-renovate-vs-dependabot.md), Renovate �
 
 ## Що таке SBOM і де його шукати на release
 
-SBOM (Software Bill of Materials) — це machine-readable список **всіх** runtime-залежностей релізу, з версіями і integrity-хешами. З [Initiative 0008 Phase 4](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0008-platform-hardening.md) на кожен release ми генеруємо два формати:
+SBOM (Software Bill of Materials) — це machine-readable список **всіх** runtime-залежностей релізу, з версіями і integrity-хешами.
 
-- **SPDX-JSON** (`sergeant-<tag>.spdx.json`) — NTIA-compliant, стандарт індустрії, читається `trivy sbom`, `grype`, `syft`.
-- **CycloneDX-JSON** (`sergeant-<tag>.cdx.json`) — OWASP-стандарт, читається OWASP-Dependency-Track, JFrog Xray.
+> **Стан на 2026-09-17.** Окремого workflow «Release SBOM» з `*.spdx.json` / `*.cdx.json` як assets на GitHub Release, який планувала [Initiative 0008 Phase 4](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0008-platform-hardening.md), у `.github/workflows/` **немає** і не було задеплоєно. Єдиний фактичний SBOM — attestation образу `sergeant-api`: [`deploy-api.yml`](../../../.github/workflows/deploy-api.yml) передає `sbom: true` + `provenance: true` у `docker/build-push-action`, і BuildKit прикріплює SBOM/provenance до образу в `ghcr.io`. Опис нижче — фактичний механізм; старий (release-assets) лишається як не реалізований план.
 
-**Де знайти SBOM:**
+**Де знайти SBOM (образ у `ghcr.io`):**
 
-1. **На GitHub Release page**: <https://github.com/Skords-01/Sergeant/releases/tag/v*>. Файли `*.spdx.json` і `*.cdx.json` прикріплені як assets.
-2. **В Actions storage** (90 днів retention): Actions tab → workflow «Release SBOM» → run for the tag → Artifacts section.
-3. **Регенерація для попереднього тегу**: Actions → Release SBOM → "Run workflow" → input `ref=v0.5.0` → Run. SBOM з'явиться як artifact (не attach-иться до Release якщо тригер manual).
+1. **Attestation образу**: `docker buildx imagetools inspect ghcr.io/<owner>/sergeant-api:<tag> --format '{{ json .SBOM }}'` — SPDX-JSON, згенерований BuildKit під час збірки в `deploy-api.yml`. Тег = `sha-<git sha>` / `latest` (див. крок `tags` у workflow).
+2. **Регенерація локально**: `syft ghcr.io/<owner>/sergeant-api:<tag> -o spdx-json` або `trivy image --format spdx-json` — той самий образ, той самий склад.
+3. **Release-assets** (`sergeant-<tag>.spdx.json` / `.cdx.json` на GitHub Release, workflow «Release SBOM») — **не реалізовано**; якщо буде потрібно для compliance, це окрема ініціатива.
 
 **Як використовувати при CVE-disclosure:**
 
-1. Завантаж SBOM з релізу що зараз у проді.
-2. Запусти `trivy sbom sergeant-v<tag>.spdx.json` — отримуєш список CVE проти цього SBOM-snapshot-а.
+1. Дістань SBOM образу, що зараз у проді (п. 1 вище; digest — у Coolify або `docker inspect` на хості).
+2. Запусти `trivy sbom <file>.spdx.json` — отримуєш список CVE проти цього SBOM-snapshot-а. Нічний [`container-scan.yml`](../../../.github/workflows/container-scan.yml) робить те саме проти свіжого образу (Trivy, CRITICAL/HIGH; винятки з `exp:` — у [`.trivyignore`](../../../.trivyignore), політика — [`docker-image-policy.md`](../ops/docker-image-policy.md)).
 3. Це **швидше** за full re-scan і відповідає на питання "is prod affected by this CVE" без redeploy.
 
-**Compliance use-case:** аудитор просить SBOM → надсилаєш SPDX-файл з GitHub Release. Sigstore-signing буде Phase 3 ([I3-sbom-generation.md](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/I3-sbom-generation.md) Phase 3 Open).
+**Compliance use-case:** аудитор просить SBOM → експортуй SPDX з attestation образу (п. 1). Sigstore-signing лишається відкритим ([I3-sbom-generation.md](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/I3-sbom-generation.md) Phase 3 Open).
 
 ## RagQualityGateDegraded
 
@@ -659,13 +666,13 @@ https://<server>/health/workers` — `ai-memory-ingest` має бути `stopped
 > сценарій нижче спрацює лише за ручного POST на endpoint.
 
 **Що горить**: eval-summary запостили на `POST /api/internal/eval/rag-weekly`,
-і endpoint **авто-активував in-memory kill-switch `mono_ai_memory_ingest`**
+і endpoint **авто-активував in-memory kill-switch `digest_ai_memory_ingest`**
 (recall@4 < `kill_threshold`, default `0.4`). Це доповнює `RagQualityGateKillSwitch` (manual env-flip
-у Coolify) автоматичним runtime-захистом, що блокує finyk-ingestion
+у Coolify) автоматичним runtime-захистом, що блокує digest-ingestion
 негайно до моменту permanent fix.
 
 **Рівень**: critical — RAG-injection у chat вже може повертати stale
-context, але новий Mono-webhook payload вже **НЕ** йде в ingestion-queue
+context, але новий weekly-digest payload вже **НЕ** йде в ingestion-queue
 (in-memory гард у `apps/server/src/modules/ai-memory/ingestQueue.ts`).
 
 **Як перевірити kill-switch state**:
@@ -690,7 +697,7 @@ WHERE workflow_id='rag-eval-weekly' ORDER BY created_at DESC LIMIT 1`
    містить повний JSON-summary (з `metrics`, `perDomain`).
 3. **Промисловий kill-switch (Coolify env)** — runtime-гард переживає лише
    до process-restart. Якщо incident триває >1h:
-   - Set `MONO_AI_MEMORY_INGEST_ENABLED=false` у Coolify app env;
+   - Set `DIGEST_AI_MEMORY_INGEST_ENABLED=false` у Coolify app env;
    - Redeploy → kill-switch стає permanent до зворотного flip-у;
    - In-memory kill-switch після redeploy auto-clear-иться (Map reset),
      і це **очікувано** — env-flag тепер є source-of-truth.
@@ -701,8 +708,8 @@ WHERE workflow_id='rag-eval-weekly' ORDER BY created_at DESC LIMIT 1`
    - Kill-switch **не deactivate-ситься автоматично** навіть після
      зеленого eval. Це навмисно — deactivation — operator decision.
 6. Deactivation: рестарт серверу (Coolify redeploy після env-flip
-   `MONO_AI_MEMORY_INGEST_ENABLED=true`) очищає in-memory kill-switch.
-   Альтернативно майбутній `POST /api/internal/feature-flags/clear?switch=mono_ai_memory_ingest`
+   `DIGEST_AI_MEMORY_INGEST_ENABLED=true`) очищає in-memory kill-switch.
+   Альтернативно майбутній `POST /api/internal/feature-flags/clear?switch=digest_ai_memory_ingest`
    (не реалізовано — backlog).
 
 **Multi-instance ВИКРАСТУП**: kill-switch — in-memory у single Node-process.

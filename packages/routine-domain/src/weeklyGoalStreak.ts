@@ -1,15 +1,12 @@
 import {
   computeWeeklyStreakBreakdownFromInstants,
-  kyivWeekStartKey,
   type WeeklyStreakBreakdown,
 } from "@sergeant/shared";
 
 import type { Habit } from "./types.js";
-import { weeklyTargetForDate } from "./weeklyTarget.js";
+import { weekEndKeyForDateKey, weeklyTargetForDate } from "./weeklyTarget.js";
 
 export type WeeklyGoalStreakBreakdown = WeeklyStreakBreakdown;
-
-const MS_PER_DAY = 24 * 60 * 60 * 1000;
 
 function dateKeyToNoonUtc(dateKey: string): string {
   return `${dateKey}T12:00:00.000Z`;
@@ -26,11 +23,18 @@ export function weeklyGoalStreakBreakdown(
   return computeWeeklyStreakBreakdownFromInstants(done.map(dateKeyToNoonUtc), {
     now: new Date(dateKeyToNoonUtc(todayKey)),
     targetPerWeek: weeklyTargetForDate(habit, todayKey),
-    targetForWeek: (weekStartKey) => {
-      const weekMs = Date.parse(dateKeyToNoonUtc(weekStartKey));
-      const weekEndKey = kyivWeekStartKey(weekMs + 6 * MS_PER_DAY);
-      return weeklyTargetForDate(habit, weekEndKey);
-    },
+    // Ціль тижня береться станом на його КІНЕЦЬ (неділю), а не на старт:
+    // піднята в середу ціль стосується всього тижня цілком. Інакше той самий
+    // тиждень на одному екрані «закритий ✓», а на іншому «2/3» — обидва числа
+    // з одного сховища.
+    //
+    // Доти тут стояв `kyivWeekStartKey(weekMs + 6 днів)`, і це був no-op:
+    // хелпер повертає понеділок тижня, що містить інстант, а понеділок+6 днів
+    // — неділя ТОГО Ж тижня, тож `weekEndKey === weekStartKey`. Канонічний
+    // хелпер у репо — `weekEndKeyForDateKey`; ним же міряють тиждень
+    // `streaks.ts` і `periodCompletion.ts`.
+    targetForWeek: (weekStartKey) =>
+      weeklyTargetForDate(habit, weekEndKeyForDateKey(weekStartKey)),
   });
 }
 

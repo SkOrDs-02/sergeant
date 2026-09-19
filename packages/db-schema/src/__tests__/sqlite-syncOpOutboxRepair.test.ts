@@ -216,6 +216,7 @@ describe("repairPartialOutboxMigration", () => {
       "008_anonymous_profile_migration.sql",
       "009_routine_habit_skips.sql",
       "010_routine_weekly_target_history.sql",
+      "011_routine_drop_pushups.sql",
     ]);
     expect(rerun.skipped).toEqual(["001_routine_spike.sql"]);
 

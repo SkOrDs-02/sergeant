@@ -3,7 +3,7 @@
  * (mood, energy, sleep, recovery notes).
  *
  * Stage 12.5 / PR #057f2-tombstone-mobile-stage12-5 of
- * `docs/planning/storage-roadmap.md`. Reads from the SQLite warm cache
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Reads from the SQLite warm cache
  * (`getCachedFizrukSqliteState`) and persists exclusively through the
  * dual-write pipeline (`triggerFizrukDualWrite`). The legacy MMKV slot
  * `STORAGE_KEYS.FIZRUK_WELLBEING` is drained on first boot via

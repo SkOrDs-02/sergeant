@@ -1,6 +1,6 @@
 # Data exchange & storage audit
 
-> **Last touched:** 2026-07-22 by @Skords-01 (finyk-аудит: §4.1 узгоджено з `sync-client-wiring.md`). **Next review:** 2026-11-08.
+> **Last touched:** 2026-09-17 by @claude (v1 sync → 404, ingest знято, діапазон міграцій → вказівник, OpenClaw-таблиця → legacy). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Зріз поточного стану: як у Sergeant рухаються і зберігаються дані, де слабкі місця, і який практичний напрям розвитку варто тримати.
@@ -11,7 +11,7 @@ Sergeant зараз має **v2-first data-архітектуру**:
 
 - **Server-first для централізованих і чутливих речей:** Better Auth, Monobank, AI usage, push devices, sync audit, AI memory, normalized domain tables (`routine_entries`, `routine_streaks`, `fizruk_workouts` і т.д.), `coach_memory`, `subscriptions` (m056; legacy `billing_subscriptions` m047 dropped in m083), `tg_topic_archive` — зберігаються у PostgreSQL.
 - **Local-first для продуктового стану модулів:** web пише у SQLite-WASM (OPFS / kvvfs), mobile — у MMKV; cloud sync переносить операції через `sync_op_outbox` → `/api/v2/sync/*`.
-- **CloudSync v1 повністю знятий (ADR-0047):** старі `/api/sync/*` endpoints повертають `410 Gone`. v1 engine (`dirtyMap`, `collectQueued`, `offlineQueue`, `resolver`) видалений з web і mobile кодових баз. `module_data` blob-таблиця дропнута міграцією 046.
+- **CloudSync v1 повністю знятий (ADR-0047):** старі `/api/sync/*` endpoints віддавали `410 Gone` протягом 90-денного deprecation-вікна; після Initiative 0003 Phase 7 handler-и видалено, тепер це голий `404` (див. коментар у `apps/server/src/routes/sync.ts`). v1 engine (`dirtyMap`, `collectQueued`, `offlineQueue`, `resolver`) видалений з web і mobile кодових баз. `module_data` blob-таблиця дропнута міграцією 046.
 - **v2 op-log sync — єдиний sync-шлях для всіх доменів:** `routine`, `fizruk`, `finyk`, `nutrition`, `profile` — усі через `sync_op_outbox` (web SQLite outbox) → `/api/v2/sync/push` → Postgres per-row tables.
 - **Кеші окремо від source-of-truth:** React Query cache на web персиститься в IndexedDB, mobile — в MMKV; Service Worker кешує навігацію та частину GET `/api/*`, але не sync/auth.
 
@@ -30,7 +30,7 @@ v1 cloud sync повністю видалений (ADR-0047, web phase PR #053a,
 
 - **Web:** `cloudSync/engine/`, `cloudSync/queue/`, `cloudSync/conflict/`, `storagePatch.ts`, `enqueue.ts` — всі видалені. `cloudSync/` тепер — мінімальний barrel, що експортує лише `useSyncStatus` (статус поточного v2 sync cycle).
 - **Mobile:** `sync/config.ts`, `sync/api.ts`, `sync/useSyncedStorage.ts`, та вся v1 mobile engine tree — видалені у PR #052c/053c.
-- **Server:** `POST /api/sync` і `GET /api/sync` routes тепер повертають `410 Gone` через `respondV1Gone` middleware (PR #2003). `module_data` table дропнута міграцією 046 (Stage 7 cleanup).
+- **Server:** `POST /api/sync` і `GET /api/sync` routes під час deprecation-вікна повертали `410 Gone` через `respondV1Gone` middleware (PR #2003); після Phase 7 middleware знято — тепер голий `404`, лишається лише read-only `GET /api/sync/audit`. `module_data` table дропнута міграцією 046 (Stage 7 cleanup).
 - **`SYNC_MODULES` registry** (`packages/shared/src/sync/modules.ts`) — практично видалений: усі продуктові модулі знято з v1 в окремих PRs (Routine → PR #026, Fizruk → PR #030, Nutrition → PR #034, Finyk → PR #039, Coach → PR #053a + міграція 045). Реєстр тримає лише `profile` entry (`USER_PROFILE`, `HUB_BIOMETRICS`) як test-fixture для ESLint parity-check `no-raw-tracked-storage`. Decision-pending tombstone: див. [storage-roadmap §Stage 13 → B6](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md). `MAX_OFFLINE_QUEUE` / `MAX_QUEUE_ATTEMPTS` константи з того ж файла теж лишилися як test-fixture, runtime-споживачів немає (v2 outbox у SQLite не cap-нутий цією константою).
 
 ### 2.3. Sync v2 / operation log — primary sync шлях
@@ -59,7 +59,7 @@ Monobank винесений із client-side proxy в server-side webhook flow:
 
 ### 2.5. AI memory та черги
 
-- `/api/ai-memory/ingest` і `/api/ai-memory/recall` захищені session auth і rate-limit 30 req / 5 min / IP (`apps/server/src/routes/ai-memory.ts`).
+- `/api/ai-memory/recall` (+ `list`/`{id}`) захищені session auth і rate-limit 30 req / 5 min / IP (`apps/server/src/routes/ai-memory.ts`). Клієнт-driven `POST /api/ai-memory/ingest` знято ініціативою 0024 (PR-1, 2026-09-03) — продюсери памʼяті тепер лише серверні (digest/cofounder/product/profile, див. `modules/ai-memory/types.ts`).
 - Service facade робить `remember()` / `recall()` через embedding provider + vector store; при `AI_MEMORY_ENABLED=false` це no-op (`apps/server/src/modules/ai-memory/service.ts`).
 - Store — PostgreSQL + pgvector `HALFVEC(1024)`, hash partition by `user_id` на 32 partitions, HNSW index (`apps/server/src/migrations/025_ai_memories_pgvector.sql`).
 - BullMQ queue `ai-memory-ingest` — async embedding у тому самому процесі, що й Express.
@@ -94,7 +94,9 @@ Monobank винесений із client-side proxy в server-side webhook flow:
 
 ## 3. Як зараз зберігаються дані
 
-### 3.1. PostgreSQL (migrations 001–080)
+### 3.1. PostgreSQL
+
+Міграції — послідовні, без прогалин (Hard Rule #4); поточна остання — `ls apps/server/src/migrations | tail -1` (номер тут не дублюємо, він росте щотижня). Нижче — таблиці, зафіксовані аудитом на зрізі до міграції 080; пізніші (receipt-scan, silpo, sync-опи finyk тощо) шукай у самих `.sql`.
 
 Основні таблиці:
 
@@ -111,7 +113,7 @@ Monobank винесений із client-side proxy в server-side webhook flow:
 - Push audit: `push_send_audit` (041).
 - Email: `email_unsubscribes` (043/044).
 - Nutrition: `created_at` на `nutrition_water_log` та related tables (079, nullable backfill).
-- OpenClaw: `openclaw_approval_nonce` — single-use write approval nonces (080).
+- OpenClaw (legacy): `openclaw_approval_nonce` — single-use write approval nonces (080). OpenClaw/Gateway виведено з експлуатації ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)); таблиця лишається як історія без продюсера, drop — окремим two-phase PR.
 
 > **`module_data` — видалена.** Дропнута міграцією 046 (`CASCADE` → всі partitions + helper function). Дані `module='profile'` списані свідомо (pre-launch); `module='coach'` мігровані в `coach_memory` (045).
 

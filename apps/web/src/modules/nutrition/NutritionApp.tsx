@@ -4,7 +4,8 @@
  */
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
 import type { Meal, MealTypeId } from "@sergeant/nutrition-domain";
-import { matchFoodName } from "@sergeant/nutrition-domain";
+import { matchFoodName, todayISODate } from "@sergeant/nutrition-domain";
+import { mealsByTypeForDay } from "./lib/nutritionStats";
 import { useQuickAddMealFromChip } from "./hooks/useQuickAddMealFromChip";
 import {
   SkeletonMealCard,
@@ -296,6 +297,13 @@ export default function NutritionApp({
 
   useNutritionReminders(prefs);
 
+  // Відкритий аркуш прийому hero-стрічки: `null` — закритий. Тримаємо
+  // тип, а не самі рядки, щоб аркуш перемальовувався за журналом —
+  // видалення свайпом усередині нього має зникати з нього ж.
+  const [openMealTypeSheet, setOpenMealTypeSheet] = useState<MealTypeId | null>(
+    null,
+  );
+
   // FAB (fab-and-manual-income spec §5): єдина точка входу для «додати
   // прийом їжі», уніфікована з рештою модулів. Скидає edit-стан, щоб
   // sheet завжди відкривався у create-режимі.
@@ -306,9 +314,8 @@ export default function NutritionApp({
     log.setAddMealSheetOpen(true);
   }, [log, setEditingMeal]);
 
-  // Тап по сегменту hero-стрічки. Той самий аркуш і той самий крок
-  // «Джерело» — різниця рівно в тому, що тип прийому вже обраний. FAB
-  // лишається входом «щось нове», сегмент — входом «у цей прийом».
+  // Форма додавання з уже обраним типом прийому. Той самий аркуш і той
+  // самий крок «Джерело», що й у FAB, — різниця рівно в обраному типі.
   const handleOpenAddMealForType = useCallback(
     (type: MealTypeId) => {
       setEditingMeal(null);
@@ -317,6 +324,26 @@ export default function NutritionApp({
       log.setAddMealSheetOpen(true);
     },
     [log, setEditingMeal],
+  );
+
+  // Тап по сегменту hero-стрічки (рішення власника 2026-09-15).
+  //
+  // Сегмент несе факт («Вечеря, 520 ккал»), тож тап його РОЗГОРТАЄ:
+  // відкривається `MealTypeSheet` із рядками цього прийому. Порожній
+  // прийом розгортати нічим, тож для нього лишається попередня поведінка —
+  // форма з обраним типом; інакше тап по порожньому сегменту вів би в
+  // порожній аркуш, тобто в глухий кут. Аркуш власної кнопки «Додати» не
+  // має навмисно — вхід «щось нове» в модулі один, FAB.
+  const handlePickMealSegment = useCallback(
+    (type: MealTypeId) => {
+      const meals = mealsByTypeForDay(log.nutritionLog, todayISODate())[type];
+      if (meals.length === 0) {
+        handleOpenAddMealForType(type);
+        return;
+      }
+      setOpenMealTypeSheet(type);
+    },
+    [log.nutritionLog, handleOpenAddMealForType],
   );
 
   // «Дати фото» ззовні модуля (PWA-шорткат `add_meal_photo`, hub
@@ -422,6 +449,7 @@ export default function NutritionApp({
         // «Скасувати», як quick-chip нижче (бета-фідбек 2026-08-07).
         toast.success("Страву додано.", undefined, {
           label: "Скасувати",
+          kind: "undo",
           onClick: () => {
             log.handleRemoveMeal(dateForLog, meal.id);
           },
@@ -549,7 +577,7 @@ export default function NutritionApp({
                     type="button"
                     onClick={() => setErr("")}
                     aria-label="Закрити повідомлення про помилку"
-                    className="min-h-11 min-w-11 shrink-0 rounded-xl text-lg leading-none hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+                    className="min-h-11 min-w-11 shrink-0 rounded-xl text-lg leading-none hover:bg-danger/10 focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
                   >
                     ×
                   </button>
@@ -575,7 +603,7 @@ export default function NutritionApp({
                     log={log}
                     prefs={prefs}
                     setActivePageAndHash={setActivePageAndHash}
-                    onPickMeal={handleOpenAddMealForType}
+                    onPickMeal={handlePickMealSegment}
                   />
                 )}
 
@@ -695,6 +723,9 @@ export default function NutritionApp({
           addMealInitialStep={addMealInitialStep}
           addMealInitialMealType={addMealInitialMealType}
           onQuickAddMeal={handleQuickAddMealFromChip}
+          openMealTypeSheet={openMealTypeSheet}
+          onCloseMealTypeSheet={() => setOpenMealTypeSheet(null)}
+          toast={toast}
         />
       </MeshBackground>
     </ModuleAccentProvider>

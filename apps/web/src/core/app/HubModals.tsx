@@ -26,6 +26,8 @@ function CloseOnError({ onClose }: { onClose: () => void }) {
 
 export interface HubModalsProps {
   searchOpen: boolean;
+  /** Готовий запит для пошуку (палітра команд → «Шукати „…“»). */
+  searchQuery?: string;
   onCloseSearch: () => void;
   onOpenModule: (
     id: string | null | undefined,
@@ -35,6 +37,7 @@ export interface HubModalsProps {
 
 export function HubModals({
   searchOpen,
+  searchQuery = "",
   onCloseSearch,
   onOpenModule,
 }: HubModalsProps) {
@@ -43,7 +46,11 @@ export function HubModals({
       {searchOpen && (
         <ErrorBoundary fallback={<CloseOnError onClose={onCloseSearch} />}>
           <Suspense fallback={null}>
-            <HubSearch onClose={onCloseSearch} onOpenModule={onOpenModule} />
+            <HubSearch
+              onClose={onCloseSearch}
+              onOpenModule={onOpenModule}
+              initialQuery={searchQuery}
+            />
           </Suspense>
         </ErrorBoundary>
       )}

@@ -4,6 +4,7 @@ import { Button } from "@shared/components/ui/Button";
 import { Badge } from "@shared/components/ui/Badge";
 import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
+import { formatDateFull } from "@shared/lib/time/formatDate";
 import type {
   WhatsNewItem,
   WhatsNewItemKind,
@@ -89,15 +90,9 @@ export function WhatsNewModal({
   };
 
   const formattedDate = (() => {
-    try {
-      return new Intl.DateTimeFormat("uk-UA", {
-        year: "numeric",
-        month: "long",
-        day: "numeric",
-      }).format(new Date(release.date));
-    } catch {
-      return release.date;
-    }
+    const parsed = new Date(release.date);
+    if (Number.isNaN(parsed.getTime())) return release.date;
+    return formatDateFull(parsed);
   })();
 
   return (
@@ -126,7 +121,7 @@ export function WhatsNewModal({
             {messages.whatsNew.dismiss}
           </Button>
           {cta && (
-            <Button variant="primary" onClick={handleCtaClick}>
+            <Button variant="solid" onClick={handleCtaClick}>
               {cta.label}
             </Button>
           )}

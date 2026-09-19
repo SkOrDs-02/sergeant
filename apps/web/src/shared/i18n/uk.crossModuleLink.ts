@@ -1,7 +1,7 @@
 /** @status Active */
 
 /**
- * Копія `CrossModuleLinkCard` (P2 анти-слоп плану, `docs/05-design/design/
+ * Копія `CrossModuleLinkCard` (P2 анти-слоп плану, `docs/design/design/
  * anti-slop-strategy.md` §5) — форма крос-модульного звʼязку.
  *
  * AI-CONTEXT: винесено одразу в окремий файл 2026-08-05, а не додано в

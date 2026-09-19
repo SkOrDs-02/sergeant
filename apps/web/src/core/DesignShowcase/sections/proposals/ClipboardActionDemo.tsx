@@ -48,7 +48,7 @@ export function ClipboardActionDemo() {
                 className="mb-2 flex items-center gap-2 rounded-xl border border-accent/40 bg-accent/10 px-3 py-2 text-left active:scale-[0.99] transition-transform"
               >
                 <span className="shrink-0 h-7 w-7 rounded-full bg-accent/15 flex items-center justify-center">
-                  <Icon name="clipboard" size={14} className="text-accent" />
+                  <Icon name="clipboard" size="sm" className="text-accent" />
                 </span>
                 <span className="min-w-0 flex-1">
                   <span className="block text-style-caption text-text">
@@ -58,7 +58,7 @@ export function ClipboardActionDemo() {
                     Вставити як витрату?
                   </span>
                 </span>
-                <Icon name="plus" size={16} className="text-accent shrink-0" />
+                <Icon name="plus" size="md" className="text-accent shrink-0" />
               </button>
             )}
 

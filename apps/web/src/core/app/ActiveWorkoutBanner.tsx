@@ -93,7 +93,7 @@ function ActiveWorkoutBannerTimer({ activeId }: { activeId: string }) {
           className="relative flex w-8 h-8 items-center justify-center rounded-full bg-white/15"
           aria-hidden
         >
-          <Icon name="dumbbell" size={16} strokeWidth={2.25} />
+          <Icon name="dumbbell" size="md" strokeWidth={2.25} />
           <span className="absolute -top-0.5 -right-0.5 w-2.5 h-2.5 rounded-full bg-success ring-2 ring-fizruk-strong motion-safe:animate-pulse" />
         </span>
         <span className="text-style-label whitespace-nowrap">{label}</span>

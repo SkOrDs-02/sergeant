@@ -102,7 +102,7 @@ export function DeleteAccountDialog({
         <div className="flex gap-2 mt-5">
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="md"
             className="flex-1"
             onClick={onCancel}
@@ -111,7 +111,8 @@ export function DeleteAccountDialog({
           </Button>
           <Button
             type="button"
-            variant="destructive"
+            variant="solid"
+            tone="danger"
             size="md"
             className="flex-1"
             disabled={deleting || !password}

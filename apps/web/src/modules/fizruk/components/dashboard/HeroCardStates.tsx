@@ -18,6 +18,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { useAnnounce } from "@shared/components/ui/ScreenReaderAnnouncer";
 import { HeroRecoveryBars } from "./HeroRecoveryBars";
 import type { HeroCardState } from "./HeroCard";
+import { formatDayMonth } from "@shared/lib/time/formatDate";
 
 /**
  * Phase 2.3 v2 redesign (C4): chrome тепер через `<Card prominence="hero"
@@ -54,7 +55,29 @@ function HeroShell({
           opacity: 0.08,
         }}
       />
-      <div className="relative p-6">{children}</div>
+      {/* Перший рядок героя мусить лишити місце під `cornerSlot`, інакше
+          довгий kicker їде ПІД пілюлю: замір 2026-09-16 на 393px дав
+          накладання 114px («Четвер, 17 вересня · серія 0 тижн. · 2
+          тренування» проти «PR · Станова · 100 кг»), причому текст навіть
+          не обрізався — просто малювався під нею.
+
+          Чому 10rem, а не «на око»: ширина пілюлі має стелю. Назва вправи
+          різиться до 10 символів (`PrBadge.shortExerciseName`), тож
+          найдовший можливий рядок — «PR · <10 символів> · <вага> кг» ≈
+          139px; плюс власний відступ слота `right-3` (12px). 160px
+          покриває обидва з запасом. Ростиме межа в `PrBadge` — рости й
+          тут, інакше накладання повернеться.
+
+          Резервуємо саме на першому нащадку, бо всі чотири стани героя
+          рендерять `HeroKicker` першим, а сам слот позиціює себе сам
+          (контракт `cornerSlot` у `HeroCard`). */}
+      <div
+        className={
+          cornerSlot ? "relative p-6 [&>*:first-child]:pe-40" : "relative p-6"
+        }
+      >
+        {children}
+      </div>
       {cornerSlot}
     </Card>
   );
@@ -115,14 +138,18 @@ function useElapsedSec(startedAtIso: string): number {
   return sec;
 }
 
-function formatDateShort(dateKey: string): string {
-  try {
-    const d = new Date(`${dateKey}T12:00:00`);
-    if (Number.isNaN(d.getTime())) return dateKey;
-    return d.toLocaleDateString("uk-UA", { day: "numeric", month: "long" });
-  } catch {
-    return dateKey;
-  }
+/**
+ * День-ключ → «13 вересня». Раніше ця функція звалась `formatDateShort` — тобто
+ * ІМЕНЕМ канонічного експорту, але з іншою семантикою (`month:"long"` без
+ * року проти `month:"short"`). Канонічний імпорт у цей файл затінився б нею
+ * мовчки, тож ім'я змінено на те, що описує фактичний формат.
+ *
+ * Обгортка лишається заради фолбеку на сирий ключ: на невалідній даті
+ * `formatDayMonth` дає порожній рядок, а тут потрібен хоч якийсь підпис.
+ */
+function formatDayMonthFromKey(dateKey: string): string {
+  const d = new Date(`${dateKey}T12:00:00`);
+  return formatDayMonth(d) || dateKey;
 }
 
 function formatDaysAway(days: number): string {
@@ -362,7 +389,7 @@ export function UpcomingState({
   const metaParts: string[] = [
     state.label,
     formatDaysAway(state.daysFromNow),
-    formatDateShort(state.dateKey),
+    formatDayMonthFromKey(state.dateKey),
   ];
   if (state.exerciseCount != null && state.exerciseCount > 0) {
     metaParts.push(
@@ -382,7 +409,8 @@ export function UpcomingState({
       />
       <div className="mt-6">
         <Button
-          variant="fizruk-soft"
+          variant="soft"
+          tone="fizruk"
           className="w-full h-12 min-h-[44px]"
           onClick={onOpenPlan}
           aria-label="Відкрити план тренувань"
@@ -466,7 +494,8 @@ export function EmptyState({
           </button>
         ) : null}
         <Button
-          variant="fizruk-soft"
+          variant="soft"
+          tone="fizruk"
           className="w-full h-12 min-h-[44px]"
           onClick={onOpenPrograms}
         >

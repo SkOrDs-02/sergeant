@@ -100,7 +100,7 @@ export function CategoriesSection({
           <>
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               className="min-h-[44px] min-w-0 sm:min-w-28"
               onClick={() => {
                 // PR-058 (web): пара до reducer-level dedupe в
@@ -135,7 +135,7 @@ export function CategoriesSection({
             </Button>
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               className="min-h-[44px] min-w-0"
               onClick={() => {
                 setEditingCatId(null);
@@ -148,7 +148,7 @@ export function CategoriesSection({
         ) : (
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             className="min-h-[44px] w-full min-w-0 sm:w-auto sm:min-w-28"
             onClick={() => {
               // PR-058 (web): дзеркало TagsSection. Reducer-level dedupe
@@ -221,7 +221,7 @@ export function CategoriesSection({
                     }}
                     aria-label={`Змінити ${c.name}`}
                   >
-                    <Icon name="edit" size={14} aria-hidden />
+                    <Icon name="edit" size="sm" aria-hidden />
                   </IconButton>
                   <IconButton
                     size="xs"
@@ -252,7 +252,7 @@ export function CategoriesSection({
                     }}
                     aria-label={`Видалити ${c.name}`}
                   >
-                    <Icon name="close" size={14} aria-hidden />
+                    <Icon name="close" size="sm" aria-hidden />
                   </IconButton>
                 </div>
               </li>

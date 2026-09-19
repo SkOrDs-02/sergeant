@@ -1,7 +1,7 @@
 # Sergeant v2 Redesign
 
 > **Last validated:** 2026-05-17 by @Skords-01 (PR-0..PR-8 foundation shipped; post-foundation polish tracked у `execution-plan.md` + `execution-status.md`). **Next review:** 2027-01-09.
-> **Status:** Active (foundation PR-0..PR-8 ✅ shipped; post-foundation Phase 0+1 ✅ shipped — see `execution-status.md`)
+> **Status:** Reference — контракт rollout-у виконано (foundation PR-0..PR-8 ✅, post-foundation фази ✅ — див. `execution-status.md`); кластер закрито 2026-05-21. Чинні правила поверхонь живуть у [`../design-system.md`](../design-system.md), не тут.
 
 ## Контекст
 

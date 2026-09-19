@@ -178,6 +178,17 @@ describe("WaitlistForm — submit flow", () => {
   });
 });
 
+describe("WaitlistForm — tier label layout", () => {
+  it("лейбл тіра має `relative` — інакше sr-only radio-інпут (position: absolute) прив'язується до initial containing block і від'їжджає далеко вниз по документу (Tab виводить фокус за межі екрана)", () => {
+    render(<WaitlistForm source="pricing_page" />);
+
+    const label = screen.getByLabelText(/Premium · AI-чат/, {
+      selector: "label",
+    }) as HTMLLabelElement;
+    expect(label.className.split(/\s+/)).toContain("relative");
+  });
+});
+
 describe("WaitlistForm — server error mapping", () => {
   it("429 (rate-limit): toast.error + банер не показується", async () => {
     submitMock.mockRejectedValue(
@@ -232,5 +243,18 @@ describe("WaitlistForm — server error mapping", () => {
     // top-level банер не повинен зʼявитись (`bound > 0 && topLevel === null`
     // у `applyServerError`).
     expect(screen.queryByTestId("waitlist-server-error")).toBeNull();
+  });
+
+  it("дає sr-only радіо видиме кільце фокуса через peer-обгортку", () => {
+    // Регресія WF-24 (аудит 2026-09-16): справжній `<input type="radio">`
+    // має `peer sr-only`, тобто нативне кільце невидиме, а замінника на
+    // лейблі не було — клавіатурний фокус по групі не читався взагалі.
+    render(<WaitlistForm source="pricing_page" />);
+    const label = screen.getByLabelText(/Premium · AI-чат/, {
+      selector: "label",
+    });
+    const classes = label.className.split(/\s+/);
+    expect(classes).toContain("peer-focus-visible:ring-2");
+    expect(classes).toContain("peer-focus-visible:ring-focus/45");
   });
 });

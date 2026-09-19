@@ -163,7 +163,7 @@ export function AssistantCataloguePage({
             onClick={onClose}
             aria-label="Назад"
           >
-            <Icon name="chevron-left" size={20} />
+            <Icon name="chevron-left" size="lg" />
           </Button>
         </div>
 
@@ -173,7 +173,7 @@ export function AssistantCataloguePage({
               aria-hidden
               className="shrink-0 w-11 h-11 rounded-2xl bg-brand/10 text-brand-strong flex items-center justify-center dark:bg-brand/15"
             >
-              <Icon name="sergeant" size={20} />
+              <Icon name="sergeant" size="lg" />
             </span>
             <div className="flex-1 min-w-0">
               <h1 className="text-style-title text-text leading-tight">
@@ -199,7 +199,7 @@ export function AssistantCataloguePage({
             aria-hidden
             className="absolute left-3 top-1/2 -translate-y-1/2 text-subtle"
           >
-            <Icon name="search" size={16} />
+            <Icon name="search" size="md" />
           </span>
           <input
             type="search"
@@ -207,7 +207,7 @@ export function AssistantCataloguePage({
             value={query}
             onChange={(e) => setQuery(e.target.value)}
             placeholder="Пошук, наприклад, «витрата», «звичка», «1RM»…"
-            className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/30 shadow-card"
+            className="w-full bg-panel border border-line rounded-2xl pl-9 pr-3 py-3 text-style-body text-text placeholder:text-subtle focus:outline-none focus-visible:border-brand-500/50 focus-visible:ring-2 focus-visible:ring-focus/45 shadow-card"
             aria-label="Пошук можливостей"
           />
         </div>
@@ -226,7 +226,7 @@ export function AssistantCataloguePage({
             >
               <Icon
                 name={allCollapsed ? "chevron-down" : "chevron-up"}
-                size={12}
+                size="xs"
                 aria-hidden
               />
               {allCollapsed ? "Розгорнути все" : "Згорнути все"}
@@ -332,7 +332,7 @@ function ModuleGroup({
         </span>
         <Icon
           name="chevron-down"
-          size={16}
+          size="md"
           aria-hidden
           className={cn(
             "shrink-0 text-muted transition-transform",
@@ -389,7 +389,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
         aria-hidden
         className="shrink-0 w-9 h-9 rounded-xl bg-bg border border-line flex items-center justify-center text-text"
       >
-        <Icon name={capability.icon} size={16} />
+        <Icon name={capability.icon} size="md" />
       </span>
       <span className="flex-1 min-w-0">
         <span className="flex items-center gap-2 flex-wrap">
@@ -426,7 +426,7 @@ function CapabilityRow({ capability, onActivate }: CapabilityRowProps) {
       <span aria-hidden className="shrink-0 text-subtle pt-1">
         <Icon
           name={capability.requiresInput ? "chevron-right" : "send"}
-          size={14}
+          size="sm"
         />
       </span>
     </button>

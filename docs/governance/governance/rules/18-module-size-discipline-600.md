@@ -2,8 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last validated:** 2026-09-02 by @Skords-01 і @claude (звірено з `eslint.web.js` / `eslint.server.js`)
-> **Next review:** 2026-12-01
+> **Last touched:** 2026-09-17 by @claude (мертві `archive/`-шляхи → permalink; звірка з `eslint.web.js` / `eslint.server.js` від 2026-09-02 чинна). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #18. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -16,7 +15,7 @@
 ## Enforced by
 
 - **convention** — max-lines: [error, { max: 600, skipBlankLines: true, skipComments: true }] (scoped to `apps/web/src/**/*.{ts,tsx}` and `apps/server/src/**/*.{js,ts}`; tests, `__tests__/**` exempt). Блоки живуть у `eslint.web.js` і `eslint.server.js`, які `eslint.config.js` збирає докупи — не в самому `eslint.config.js` (звірка 2026-09-02).
-- **doc** — docs/work/specs/initiatives/archive/\_0001-module-decomposition.md (decomposition queue — closed)
+- **doc** — [initiative 0001 — module decomposition](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md) (decomposition queue — closed; знято з чекауту за Rule #23, permalink)
 
 ## Why / What is enforced
 
@@ -80,5 +79,5 @@
 
 ## Related
 
-- **doc** — docs/work/specs/initiatives/archive/\_0001-module-decomposition.md
+- **doc** — [initiative 0001 — module decomposition](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0001-module-decomposition.md) (permalink — файл знято з чекауту)
 - **agents** — #18

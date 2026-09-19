@@ -31,7 +31,7 @@ export interface StaleActiveWorkoutCleanupOptions {
   /**
    * True when the caller is a route that owns a specific workout id
    * (`/fizruk/workout/<id>` — `Workouts.tsx` rendered with `workoutId`).
-   * Disables the two "home" behaviours that don't make sense once the
+   * Disables the "home" behaviours that don't make sense once the
    * URL has already picked a workout:
    *  - auto-adopting the single unfinished workout into `activeWorkoutId`
    *    when none is selected;
@@ -41,8 +41,21 @@ export interface StaleActiveWorkoutCleanupOptions {
    * self-clear right after «Завершити» (the effect ran, saw `endedAt`,
    * and nulled the id) — the route then rendered a generic
    * "not found" dead-end instead of the read-only summary (02-A).
-   * A genuinely missing workout (deleted, bad id) still clears — that
-   * branch does not check this flag.
+   *
+   * Прапорець знімає і ТРЕТЮ поведінку — очищення id, якого ще немає у
+   * списку. «Ще немає» і «немає взагалі» на цьому місці не розрізнити:
+   * `workoutsLoaded` каже лише, що кеш SQLite бодай раз прогрівся, а не
+   * що він уже містить щойно створену сесію. З базою в OPFS прогрів іде
+   * через воркер і встигає ПІСЛЯ монтування маршруту — ефект бачив
+   * `loaded && !selected`, занулював id, і сесія, яка через мить
+   * приїжджала в кеш, уже не мала кому належати: гілка авто-підхоплення
+   * під цим самим прапорцем виходить одразу. Наслідок для людини —
+   * «Почати тренування» веде в «Тренування не знайдено» назавжди
+   * (Playwright `fizruk-active-workout`, 2026-09-15).
+   *
+   * Очищення тут нічого не давало й на вигляд: сторінка малює ту саму
+   * картку «не знайдено» з `activeWorkout === null`, тож видалена сесія
+   * читається так само — тільки тепер оборотно.
    */
   routeOwnsWorkoutId?: boolean;
 }
@@ -69,7 +82,9 @@ export function useStaleActiveWorkoutCleanup(
     }
     const selected = workouts.find((workout) => workout.id === activeWorkoutId);
     if (!selected) {
-      setActiveWorkoutId(null);
+      // Маршрут володіє id — не забираємо його в кеша, який міг просто не
+      // встигнути. Див. `routeOwnsWorkoutId` вище.
+      if (!routeOwnsWorkoutId) setActiveWorkoutId(null);
       return;
     }
     if (selected.endedAt && !routeOwnsWorkoutId) {

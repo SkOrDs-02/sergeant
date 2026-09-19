@@ -247,10 +247,11 @@ describe("server entrypoint", () => {
       MCC_BATCH_HOURLY_ENABLED: true,
     });
     const closeMock = vi.fn((cb: (err?: Error) => void) => cb());
+    const closeIdleConnections = vi.fn();
     indexMocks.listen.mockImplementation(
       (_port: number, _host: string, cb: () => void) => {
         cb();
-        return { close: closeMock };
+        return { close: closeMock, closeIdleConnections };
       },
     );
     indexMocks.createApp.mockReturnValue({ listen: indexMocks.listen });
@@ -298,7 +299,59 @@ describe("server entrypoint", () => {
     expect(indexMocks.anthropicBudgetGuardStop).toHaveBeenCalledOnce();
     expect(indexMocks.endPoolWithAbortTimeout).toHaveBeenCalledOnce();
     expect(indexMocks.disconnectRedis).toHaveBeenCalledOnce();
-    expect(indexMocks.sentryFlush).toHaveBeenCalledWith(2000);
+    // Бюджет flush-у телеметрії тепер рахується від спільного дедлайну
+    // shutdown-у, а не фіксованих 2000 мс: раніше сума фаз (GRACE + GRACE/2
+    // + 2000 + 2000) перевищувала hard-таймаут, тож hard-таймер був штатним
+    // шляхом, а не запасним виходом.
+    expect(indexMocks.sentryFlush).toHaveBeenCalledOnce();
+    const sentryBudget = (
+      indexMocks.sentryFlush.mock.calls as unknown as number[][]
+    )[0]?.[0] as number;
+    expect(sentryBudget).toBeGreaterThan(0);
+    expect(sentryBudget).toBeLessThanOrEqual(750);
+
+    // Штатний SIGTERM мусить лишати exit 0. Регресія, яку це стереже:
+    // у hard-timeout-гілці стояло `exitCode || 1`, і `0 || 1` давало 1 —
+    // кожен звичайний деплой рапортував платформі аварійний вихід.
+    expect(exitSpy).not.toHaveBeenCalledWith(1);
+
+    // `server.close()` НЕ рве idle keep-alive сокети — він на них чекає.
+    // Без явного `closeIdleConnections()` grace вигоряв повністю на кожному
+    // деплої, хоча жодного in-flight запиту не лишалось.
+    expect(closeIdleConnections).toHaveBeenCalled();
+  });
+
+  it("pins keep-alive above the proxy idle timeout", async () => {
+    const closeMock = vi.fn((cb: (err?: Error) => void) => cb());
+    const server: Record<string, unknown> = {
+      close: closeMock,
+      closeIdleConnections: vi.fn(),
+      closeAllConnections: vi.fn(),
+    };
+    indexMocks.listen.mockImplementation(
+      (_port: number, _host: string, cb: () => void) => {
+        cb();
+        return server;
+      },
+    );
+    indexMocks.createApp.mockReturnValue({ listen: indexMocks.listen });
+    vi.spyOn(process, "exit").mockImplementation((() => undefined) as never);
+    vi.spyOn(process, "on").mockImplementation((event, listener) => {
+      indexMocks.processOn(event, listener);
+      return process;
+    });
+
+    await import("./index.js");
+
+    // Node за замовчуванням тримає keep-alive-сокет 5 с — менше за idle
+    // таймаут будь-якого проксі, тож проксі шле запит у сокет, який Node
+    // саме закриває, і клієнт отримує 502 без сліду в логах застосунку.
+    expect(server["keepAliveTimeout"]).toBe(65_000);
+    // `headersTimeout` мусить бути СТРОГО більшим, інакше Node відраховує
+    // headers-таймаут на щойно переюзаному сокеті.
+    expect(server["headersTimeout"]).toBeGreaterThan(
+      server["keepAliveTimeout"] as number,
+    );
   });
 
   it("records process-level unhandled rejection and uncaught exception handlers", async () => {

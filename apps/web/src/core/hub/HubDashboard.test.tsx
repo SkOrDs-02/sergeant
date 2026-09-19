@@ -15,6 +15,7 @@ import {
 } from "@sergeant/shared";
 import { ToastProvider } from "@shared/hooks/useToast";
 import { expandSingleCollapsedSection } from "../../test/helpers/collapsibleSection";
+import { resetFlags, setFlag } from "../lib/featureFlags";
 
 type TestRec = Rec & { actionHash?: string };
 
@@ -76,6 +77,9 @@ vi.mock("@shared/lib/modules/hubNav", async (importOriginal) => ({
 }));
 
 vi.mock("../insights/TodayFocusCard", () => ({
+  // `useNowItems` (вісь дії) імпортує ключ сховища звідси — без нього
+  // мок кидає на імпорті.
+  HUB_RECS_DISMISSED_KEY: "hub_recs_dismissed_v1",
   useDashboardFocus: () => mocks.dashboardFocus,
   TodayFocusCard: ({
     focus,
@@ -305,6 +309,11 @@ describe("HubDashboard", () => {
     // `ModuleChecklist`, whose «Фінік: Перші кроки» heading would
     // collide with the bento «Фінік» button under `getByRole`.
     localStorage.setItem("hub_first_real_entry_done_v1", "1");
+    // Вісь дії (`hub_action_axis_v1`) увімкнена дефолтом; ці тести
+    // описують СТАРУ головну (сітка + hero + акордеон), яка лишається за
+    // kill-switch-ем до PR 3. Гілку осі покриває `describe` нижче.
+    resetFlags();
+    setFlag("hub_action_axis_v1", false);
     mocks.dashboardFocus.focus = null;
     mocks.dashboardFocus.rest = [];
     mocks.dashboardFocus.dismiss.mockClear();
@@ -318,6 +327,7 @@ describe("HubDashboard", () => {
 
   afterEach(() => {
     cleanup();
+    resetFlags();
     localStorage.clear();
     vi.useRealTimers();
   });
@@ -656,5 +666,87 @@ describe("HubDashboard", () => {
     renderDashboard();
 
     expect(mocks.coachInsightCalls[0]?.enabled).toBe(true);
+  });
+});
+
+// Вісь дії — спека `docs/work/specs/hub-action-axis.md`. Купи РЕАЛЬНІ (храповик
+// `vi.mock` цього файлу вже на межі): на порожніх кешах «Зараз» показує
+// порожній рядок, «Закрито» не рендериться. Їхню логіку покривають власні
+// тести (`now/*.test.ts*`), тут — розкладка.
+describe("HubDashboard — вісь дії (hub_action_axis_v1)", () => {
+  beforeEach(() => {
+    vi.useFakeTimers();
+    vi.setSystemTime(new Date("2026-04-29T09:00:00+03:00"));
+    localStorage.clear();
+    localStorage.setItem("hub_first_real_entry_done_v1", "1");
+    localStorage.setItem(
+      VIBE_PICKS_KEY,
+      JSON.stringify(["finyk", "fizruk", "routine", "nutrition"]),
+    );
+    resetFlags(); // дефолт — увімкнено
+    mocks.dashboardFocus.focus = null;
+    mocks.dashboardFocus.rest = [];
+    mocks.openHubModule.mockClear();
+  });
+  afterEach(() => {
+    cleanup();
+    resetFlags();
+    localStorage.clear();
+    vi.useRealTimers();
+  });
+
+  it("з реальним записом: рейок, купа «Зараз», купа «Закрито»; сітки немає", () => {
+    renderDashboard();
+    expect(screen.getByTestId("module-rail")).toBeInTheDocument();
+    expect(screen.getByRole("heading", { name: "Зараз" })).toBeInTheDocument();
+    expect(screen.getByTestId("now-empty")).toBeInTheDocument();
+    expect(screen.queryByTestId("native-sortable-grid")).toBeNull();
+    expect(screen.queryByTestId("today-focus-card")).toBeNull();
+    // Акордеон під віссю — лише порада й звіт.
+    expect(screen.getByText("Порада й звіт тижня")).toBeInTheDocument();
+  });
+
+  it("тап по комірці рейка відкриває модуль із джерелом module_rail", () => {
+    renderDashboard();
+    fireEvent.click(screen.getByRole("tab", { name: /Фізрук/ }));
+    expect(mocks.openHubModule).toHaveBeenCalledWith(
+      "fizruk",
+      undefined,
+      "module_rail",
+    );
+  });
+
+  it("новачок без запису: FTUX-hero і рейок, куп немає", () => {
+    localStorage.removeItem(FIRST_REAL_ENTRY_KEY);
+    localStorage.removeItem("hub_first_real_entry_done_v1");
+    renderDashboard();
+    expect(screen.getByTestId("module-rail")).toBeInTheDocument();
+    expect(screen.queryByRole("heading", { name: "Зараз" })).toBeNull();
+    expect(screen.queryByTestId("now-empty")).toBeNull();
+    expect(screen.queryByTestId("native-sortable-grid")).toBeNull();
+  });
+
+  it("«Чистий режим» під віссю не діє: порада й звіт лишаються", () => {
+    localStorage.setItem(
+      STORAGE_KEYS.HUB_PREFS,
+      JSON.stringify({ calmMode: true }),
+    );
+    renderDashboard();
+    expect(screen.getByTestId("now-empty")).toBeInTheDocument();
+    expect(screen.getByText("Порада й звіт тижня")).toBeInTheDocument();
+  });
+
+  it("kill-switch: вимкнений прапорець повертає сітку і картку «Зараз»", () => {
+    setFlag("hub_action_axis_v1", false);
+    mocks.dashboardFocus.focus = rec({
+      id: "f",
+      module: "finyk",
+      action: "finyk",
+    });
+    renderDashboard();
+    expect(screen.getByTestId("native-sortable-grid")).toBeInTheDocument();
+    expect(screen.getByTestId("today-focus-card")).toBeInTheDocument();
+    expect(screen.queryByTestId("module-rail")).toBeNull();
+    expect(screen.queryByTestId("now-empty")).toBeNull();
   });
 });

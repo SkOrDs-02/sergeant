@@ -1,12 +1,12 @@
 -- 040: extend sync_op_log.op CHECK constraint with 'increment' — Stage 5
--- / PR #042a of `docs/planning/storage-roadmap.md` (foundation for PR
+-- / PR #042a of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` (foundation for PR
 -- #042b PN-counter for `routine_streaks`).
 --
 -- Context. The v2 op-log currently restricts `op` to insert / update /
 -- delete (migration 027). PR #042 introduces a fourth kind, `increment`,
 -- carrying a numeric `delta` payload — it is the protocol primitive for
 -- the PN-counter CRDT documented in
--- `docs/planning/storage-roadmap.md` § Stage 5 / PR #042. Two devices
+-- `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` § Stage 5 / PR #042. Two devices
 -- toggling the same habit between syncs each emit `op='increment'`
 -- with `delta=±1`; the apply-fn lands those as an atomic
 -- `UPDATE … SET counter = counter + delta` so neither side overwrites

@@ -1,5 +1,6 @@
 import { useInRouterContext, useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
+import { useFlag } from "../lib/featureFlags";
 import { usePlan } from "./usePlan";
 
 /**
@@ -75,13 +76,16 @@ function pluralizeDays(days: number): string {
  */
 export function TrialBanner(props: TrialBannerProps = {}) {
   const inRouter = useInRouterContext();
-  if (!inRouter) {
+  // AI-CONTEXT: рішення D3 (2026-05-22) — один платний план без
+  // trial-таймера, і `/pricing` так і каже. Банер лишено за сплячим
+  // прапорцем `billing_trial_banner` (дефолт false, тумблера в UI немає) на
+  // випадок плану Б з D3; умова зняття — у `featureFlags.ts`. Гейт стоїть
+  // тут, а не в `TrialBannerInner`, щоб вимкнений банер не викликав
+  // `usePlan()` і не смикав `/api/billing/status`.
+  const enabled = useFlag("billing_trial_banner");
+  if (!inRouter || !enabled) {
     return null;
   }
-  // Beta: the banner exists only to push a trial towards checkout, and its CTA
-  // lands on a `/pricing` that 404s while commerce is hidden. Bailing out here
-  // rather than inside `TrialBannerInner` also skips `usePlan()`, so a hidden
-  // build never fires the `/api/billing/status` request at all.
   return <TrialBannerInner {...props} />;
 }
 
@@ -134,7 +138,7 @@ function TrialBannerInner({ now = Date.now }: TrialBannerProps) {
           <p className="text-style-caption opacity-80">{COPY.body}</p>
         </div>
         <Button
-          variant="primary"
+          variant="solid"
           size="sm"
           onClick={handleCta}
           className="shrink-0 font-semibold"

@@ -16,8 +16,14 @@
  *
  * Mobile shell deep-links still go through `HUB_OPEN_MODULE_EVENT` on
  * `window` — that's a deliberate cross-realm bridge between the WebView
- * and the React app. This bus only replaces the in-app `hub:openChat` /
- * `hub:openSearch` signalling.
+ * and the React app. This bus only replaces the in-app `hub:openChat`
+ * signalling.
+
+ * Канал `openSearch` знято 2026-09-15 (знахідка PR-M3): він був оголошений,
+ * мав слухача в `useAppEffects`, і НУЛЬ продуктових емітерів — `emitHubBus`
+ * для нього викликався лише з тестів. Коментар над слухачем при цьому
+ * стверджував «used by hint toasts», тобто описував споживача, якого не
+ * існувало. Глобальний пошук лишається на Cmd/Ctrl+K і тач-опенері в Хабі.
  *
  * The implementation is intentionally tiny (~30 LOC of hot path) and
  * dependency-free; React subscriptions are exposed via `useHubBus` so
@@ -48,8 +54,6 @@ export interface HubBusEvents {
      */
     preset?: ChatPreset;
   };
-  /** Open the global Hub search overlay (⌘K equivalent). */
-  openSearch: void;
   /**
    * A module (Routine, Fizruk, Nutrition, Finyk) persisted new data to its
    * storage layer in the **same tab**. Hub consumers that aggregate

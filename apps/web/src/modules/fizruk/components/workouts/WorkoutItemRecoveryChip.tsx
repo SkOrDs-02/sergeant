@@ -93,7 +93,7 @@ export function WorkoutItemRecoveryChip({
               : "border-warning/40 bg-warning/10 text-warning-strong dark:text-warning",
           )}
         >
-          <Icon name="alert-triangle" size={12} aria-hidden />
+          <Icon name="alert-triangle" size="xs" aria-hidden />
           <span className="truncate">{summary.label}</span>
         </span>
       }

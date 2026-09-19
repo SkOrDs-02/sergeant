@@ -2,7 +2,7 @@
 //
 // Consumer contract: `GET /api/v1/mono/jars` — Monobank "банки" (jars).
 // **finyk persona** — goal-progress auto-sync
-// (docs/90-work/planning/specs/goal-progress-auto.md) reads a linked jar's
+// (docs/work/specs/goal-progress-auto.md) reads a linked jar's
 // `balance` to compute a goal's saved amount, and `goal` as the default
 // target amount when creating a goal from a jar.
 //

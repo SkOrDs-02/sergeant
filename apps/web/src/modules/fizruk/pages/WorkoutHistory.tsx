@@ -6,7 +6,7 @@
  * on the Workouts home opened a second, URL-invisible "Журнал" view on
  * the same `/fizruk/workouts` path (`view === "log"` in `Workouts.tsx`)
  * with its own "+ Нове" / "Шаблони" start-CTAs — a second start path
- * parallel to the home's "Швидкий старт" / "Із шаблону", and one whose
+ * parallel to the home's «Почати тренування», and one whose
  * state (an in-memory `view`, not the URL) did not survive a refresh.
  * This page owns its own URL, and carries no start-CTA at all — starting
  * a session lives only on `WorkoutsHome`.

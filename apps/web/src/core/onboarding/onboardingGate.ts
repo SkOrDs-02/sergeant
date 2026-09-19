@@ -18,12 +18,9 @@ import {
 } from "@sergeant/shared";
 import {
   safeReadStringLSDurable,
-  safeReadStringLS,
   safeWriteStringLSDurable,
-  safeRemoveLS,
   webKVStore,
 } from "@shared/lib/storage/storage";
-import { DEMO_FLAG_KEY } from "./seedDemoData/keys";
 
 /**
  * True when the onboarding splash should render on this cold start.
@@ -65,55 +62,5 @@ export function markOnboardingCompletedFired(): void {
 export function isOnboardingCompletedFired(): boolean {
   return sharedIsOnboardingCompletedFired(webKVStore);
 }
-
-/**
- * True when the local store currently holds a seeded demo payload.
- *
- * Light synchronous flag read (`DEMO_FLAG_KEY` lives in the
- * constants-only `seedDemoData/keys` module) so call-sites on the hub
- * critical path can gate demo-only behaviour without pulling the heavy
- * seeding bundle into the entry chunk — mirrors `maybeRunOnboarding`'s
- * cheap `inDemo` probe. Used to suppress returning-user chrome (e.g. the
- * "What's new" modal) while the visitor is just exploring the example.
- */
-export function isDemoActive(): boolean {
-  return safeReadStringLS(DEMO_FLAG_KEY) === "1";
-}
-
-/**
- * Drop the demo flag so the app is never simultaneously in demo mode AND
- * authenticated. Called on sign-in / sign-up success: a visitor who opens
- * the auth surface from inside the demo would otherwise stay flagged as
- * demo, which leaves the post-logout transition wedged in the demo render
- * path and hangs the "Виходжу…" spinner (QA D-004). Light flag-only remove
- * (no heavy seeder import) — leftover seeded LS is purged by the logout
- * `purgeAppOwnedLocalData` sweep; clearing the flag is enough to unmix the
- * demo+auth state.
- */
-export function clearDemoFlag(): void {
-  safeRemoveLS(DEMO_FLAG_KEY);
-}
-
-/**
- * Synthetic user id used to scope SQLite rows for a demo session.
- *
- * Demo mode bypasses auth, so `useAuth().user?.id` is `null`. The
- * per-module SQLite read-boot hooks are `userId`-gated, so without a
- * stand-in id the demo payload `seedDemoData()` writes to LS never
- * reaches the SQLite cache the migrated modules read — the modules
- * render empty while the hub cards show the seeded quick-stats.
- * Isolated from any real account id (real users read under their own
- * id and never see these rows).
- *
- * ⚠️ Раніше тут писало, що LS→SQLite доносить «residual import». Той
- * дренаж прибрали 2026-08 як legacy, і разом із ним тихо помер демо-
- * режим — саме ту регресію зафіксував аудит L-8 (2026-08-07). Тепер
- * місток явний і демо-специфічний: `demoSeedImport.ts` у КОЖНОМУ з
- * чотирьох модулів (`modules/{fizruk,routine,nutrition,finyk}/lib/`),
- * викликаний із read-boot модуля під прапорцем демо. Фіньок має ще
- * другий місток для банківських транзакцій — у `monoMirrorBoot.ts`.
- * Додаєш пʼятий модуль із SQLite-читанням — йому потрібен свій.
- */
-export const DEMO_LOCAL_USER_ID = "demo-local";
 
 export { sharedBuildFinalPicks as buildFinalPicks };

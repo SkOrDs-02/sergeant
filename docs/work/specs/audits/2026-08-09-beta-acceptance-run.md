@@ -2,8 +2,8 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-10-15.
-> **Status:** Active
+> **Last touched:** 2026-09-17 by @claude (Active → Reference: звіт датованого прогону, відкриті знахідки — у реєстрі верифікації). **Next review:** 2026-12-16.
+> **Status:** Reference — звіт прогону 2026-08-09; чинні статуси знахідок — [`verification/findings.json`](./verification/findings.json)
 
 > **Статуси після 2026-09-05:** новий власник поточного стану відкритих знахідок — [`verification/findings.json`](./verification/findings.json); цей файл лишається історичним джерелом доказів.
 

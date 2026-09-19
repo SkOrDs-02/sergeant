@@ -245,7 +245,7 @@ export function AssetsDebtTxPicker({
                   редагувати. Тобто хардкод емодзі, а не вибір людини. */}
               <Icon
                 name={isDebt ? "credit-card" : "user"}
-                size={14}
+                size="sm"
                 aria-hidden
               />
               {item.name}

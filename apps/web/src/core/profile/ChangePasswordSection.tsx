@@ -81,7 +81,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
           іконка лишилась — тут немає власної мета-інформації (лічильника
           чи статусу), яку варто було б винести на її місце. */}
       <div className="px-4 py-3.5 flex items-center gap-2 border-b border-line">
-        <Icon name="lock" size={16} className="text-muted" />
+        <Icon name="lock" size="md" className="text-muted" />
       </div>
 
       <form onSubmit={submit} noValidate className="px-4 py-4 space-y-3">
@@ -182,7 +182,7 @@ export function ChangePasswordSection({ online }: { online: boolean }) {
 
         <Button
           type="submit"
-          variant="primary"
+          variant="solid"
           size="sm"
           className="w-full mt-1"
           disabled={disabled}

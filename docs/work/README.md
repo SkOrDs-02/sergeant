@@ -1,6 +1,6 @@
 # Work — активні спеки та докази
 
-> **Last validated:** 2026-07-20 by @cursoragent (post fast-forward archive). **Next review:** 2027-02-15.
+> **Last touched:** 2026-09-17 by @claude (точка входу для оцінки обсягу → `open-work.md` + продуктовий аудит 2026-09). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Update 2026-07-10:** pricing canon — [ADR-0068](../governance/adr/0068-pricing-v4-uah-reverse-trial.md). Billing scaffold shipped; `tools/openclaw` removed (ADR-0055 external gateway). Product/governance doc passes: #220, #221.
@@ -10,9 +10,12 @@
 **work** (`Active → Closed`), а завершена історія живе в Git або ADR. Зведений
 дашборд усього відкритого — [`open-work.md`](../open-work.md).
 
-Починай оцінку обсягу й готовності з
-[`product-readiness-2026-07-18.md`](./product-readiness-2026-07-18.md). Він відділяє
-ready-now роботу від зовнішніх блокерів, owner-рішень і reference-матеріалів.
+Починай оцінку обсягу й готовності з [`open-work.md`](../open-work.md)
+(усе відкрите одним списком) і синтезу продуктового аудиту
+[`audits/2026-09-01-product-audit/report.md`](./specs/audits/2026-09-01-product-audit/report.md)
+(блокери, хвилі фіксів, рішення власника).
+[`product-readiness-2026-07-18.md`](./product-readiness-2026-07-18.md) — Reference-зріз
+липня, що сам переадресовує туди ж.
 
 | Розділ                                                              | Що тут                                                                                                                                                                                                  |
 | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |

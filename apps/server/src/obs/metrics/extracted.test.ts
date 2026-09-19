@@ -113,8 +113,10 @@ describe("metrics extracted modules", () => {
     clearInterval(handle);
   });
 
-  it("maps register.metrics failures to a plain-text 500 response", async () => {
-    vi.spyOn(register, "metrics").mockRejectedValueOnce(new Error("boom"));
+  it("maps register.metrics failures to a plain-text 500 без тексту помилки", async () => {
+    vi.spyOn(register, "metrics").mockRejectedValueOnce(
+      new Error('connection to server at "10.0.0.12", port 5432 failed'),
+    );
     const sendMock = vi.fn();
     const typeMock = vi.fn(() => ({ send: sendMock }));
     const statusMock = vi.fn(() => ({ type: typeMock }));
@@ -131,7 +133,12 @@ describe("metrics extracted modules", () => {
 
     expect(statusMock).toHaveBeenCalledWith(500);
     expect(typeMock).toHaveBeenCalledWith("text/plain");
-    expect(sendMock).toHaveBeenCalledWith("metrics_error: boom");
+    // Голий маркер: текст від `prom-client` цитує внутрішні імена й може
+    // тягнути причину з драйвера БД. Деталі — у `metrics_render_failed`.
+    expect(sendMock).toHaveBeenCalledWith("metrics_error");
+    expect(sendMock).not.toHaveBeenCalledWith(
+      expect.stringContaining("10.0.0.12"),
+    );
   });
 
   it("exports and updates HTTP, DB, domain, sync, job, and billing metric families", async () => {

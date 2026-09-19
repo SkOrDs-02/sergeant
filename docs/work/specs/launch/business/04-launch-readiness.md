@@ -1,6 +1,6 @@
 # 04. Launch readiness: legal, ops, edge cases, метрики, чеклист
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-28.
+> **Last touched:** 2026-09-17 by @claude (§1.1: обіцянка 30-денного grace у Privacy Policy ще не реалізована в коді). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Update 2026-07-10:** billing UI (`PaywallModal`, `PricingPage`, `PlanSection`, `usePlan()`) і server routes (`/api/billing/*`, `stripeWebhook.ts`) shipped. Edge-case таблиця §2 оновлена: «scaffold shipped» vs «prod rollout pending». Pre-launch checklist §7 розділяє code shipped / prod config.
@@ -38,6 +38,8 @@
 - [ ] **Представник у ЄС.** Privacy Policy прямо каже: «наш представник буде зазначений у цьому розділі перед public launch». _Owner:_ Founder + юрист.
 
 **Що вже покрито в текстах** (перевірено проти чекліста нижче): категорії даних, правові підстави, спеціальні категорії (health), перелік субпроцесорів із регіонами, права суб'єкта даних, міжнародні трансфери через SCC, retention-періоди (30 днів grace → hard-delete, бекапи 90 днів, білінг 5 років, логи 12 міс), breach-повідомлення за 72 години, вікове обмеження 18+, посилання між документами.
+
+> **Звірка 2026-09-17:** обіцянка «30 днів grace → hard-delete» у Privacy Policy **ще не реалізована в коді** — `DELETE /api/me` видаляє акаунт негайно; спека [`user-deletion-grace-window.md`](../../user-deletion-grace-window.md) має статус `Scaffolded`. До public launch або реалізувати вікно, або привести текст політики до фактичної поведінки.
 
 > **Розбіжність, яку варто знати.** Юридичний пак називає платіжним провайдером **LiqPay (АТ КБ «ПриватБанк»)** і хостинг-провайдером **Hetzner (ЄС, Німеччина)**. Решта цього документа (§2, §4.3) писалась під Stripe і Railway. У коді реалізовані **три** білінг-провайдери — `stripe.ts`, `liqpay.ts`, `plata.ts` (`apps/server/src/modules/billing/`). Перед public launch треба зафіксувати, який із них є користувацьким за замовчуванням, і привести §2 у відповідність — зараз джерелом істини для юзера є текст оферти, тобто LiqPay.
 

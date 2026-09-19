@@ -78,6 +78,26 @@ const REDACT_KEY_SET: ReadonlySet<string> = new Set(
 );
 
 /**
+ * W4 (2026-09-16) — `userId`/`user_id` доповнення до редакції. `mixin()`
+ * нижче вже хешує `userId` з ALS-контексту в `userIdHash`, але явні виклики
+ * `logger.info({ userId })` / `{ user_id }` (знайдено у ~11 файлах —
+ * push-делівері, ai-memory, mono, sync-стрім, ftux-drip) обходять `mixin()`
+ * повністю і йдуть у Loki/Railway сирими — власна політика репо вимагає
+ * `userIdHash` завжди.
+ *
+ * Свідомо НЕ додано у `@sergeant/shared` → `REDACT_KEY_NAMES`: той канон
+ * має ОДИН фіксований censor (`"[redacted]"`) на всі поля, а тут потрібен
+ * ДЕТЕРМІНОВАНИЙ хеш (`hashUserId` — той самий sha256-16hex-префікс, що й
+ * `mixin()`), щоб лишити можливість грепати всі події одного користувача
+ * без сирого ID. Тому виняток живе локально, у server-only `logger.ts`
+ * (`hashUserId` не DOM-free-safe для web/mobile-пакетів), і торкається
+ * лише pino/Loki-шляху — Sentry (`event.user.id` через `Sentry.setUser()`)
+ * свідомо лишається поза цим правилом, це вже задокументований L10-компроміс
+ * (`apps/server/src/lib/userIdHash.ts`).
+ */
+const USER_ID_REDACT_KEYS: ReadonlySet<string> = new Set(["userid", "user_id"]);
+
+/**
  * S4 (audit `docs/audits/2026-05-13-security-observability-roast.md`) —
  * рекурсивний non-mutating редактор, що ходить по всіх рівнях лог-обʼєкта
  * і маскує значення ключів з `REDACT_KEY_NAMES` за іменем (case-insensitive).
@@ -132,7 +152,18 @@ export function redactKeysRecursively(
   const next: Record<string, unknown> = {};
   for (const key of Object.keys(src)) {
     const v = src[key];
-    if (REDACT_KEY_SET.has(key.toLowerCase())) {
+    const lowerKey = key.toLowerCase();
+    if (USER_ID_REDACT_KEYS.has(lowerKey)) {
+      // Hash-censor, не `"[redacted]"` — див. doc-comment на
+      // `USER_ID_REDACT_KEYS` вище: кореляція подій одного юзера має
+      // лишитись можливою, а сирий ID — ні.
+      const hashed = typeof v === "string" ? hashUserId(v) : null;
+      next[key] =
+        hashed ?? (v != null && typeof v === "object" ? null : "[redacted]");
+      mutated = true;
+      continue;
+    }
+    if (REDACT_KEY_SET.has(lowerKey)) {
       next[key] = v != null && typeof v === "object" ? null : "[redacted]";
       mutated = true;
       continue;

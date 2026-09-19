@@ -1,7 +1,7 @@
 /**
  * Unit tests for `apps/mobile/src/modules/routine/lib/residualImport.ts`.
  *
- * Stage 8 PR #057r-tombstone-mobile of `docs/planning/storage-roadmap.md`.
+ * Stage 8 PR #057r-tombstone-mobile of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * Mirror coverage of the web `residualImport` test slice — exercises:
  *
  *  - early-return when the MMKV key is absent (no SQLite calls);

@@ -1,6 +1,6 @@
 # Sergeant — Launch & Monetization Docs
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-28.
+> **Last touched:** 2026-09-17 by @claude (roadmap/quick wins: LiqPay/Plata замість Stripe, legal пак закрито). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Канон ціни (2026-07-10):** [ADR-0068](../../../governance/adr/0068-pricing-v4-uah-reverse-trial.md) — **₴199/міс / ₴1490/рік**, reverse trial 7 днів; Free AI **5 msg/day** ([ADR-0085](../../../governance/adr/0085-free-ai-quota-five-per-day.md)); анонім AI не отримує зовсім ([ADR-0086](../../../governance/adr/0086-no-anonymous-ai-sign-in-required.md)). У старих блоках нижче ₴99/₴799 і «15 msg/day» — historical context.
@@ -75,21 +75,21 @@ Soft metered paywall — всі модулі базово безкоштовно
 
 ## Roadmap
 
-| Місяць | Ціль                                                  |
-| ------ | ----------------------------------------------------- |
-| 1      | MVP paywall (Stripe), Free + Pro, landing, TG-канал   |
-| 2      | Closed beta 100-200 юзерів, referral, NPS             |
-| 3      | Public launch — Product Hunt, DOU, Founder's Lifetime |
-| 4-6    | Google Play, SEO, paid ads тест, B2B-пілот            |
-| 7-12   | App Store, Польща, партнерство Mono, ₴100K MRR        |
+| Місяць | Ціль                                                                      |
+| ------ | ------------------------------------------------------------------------- |
+| 1      | MVP paywall (LiqPay/Plata; Stripe dormant), Free + Pro, landing, TG-канал |
+| 2      | Closed beta 100-200 юзерів, referral, NPS                                 |
+| 3      | Public launch — Product Hunt, DOU, Founder's Lifetime                     |
+| 4-6    | Google Play, SEO, paid ads тест, B2B-пілот                                |
+| 7-12   | App Store, Польща, партнерство Mono, ₴100K MRR                            |
 
 ## Quick wins (можна починати зараз)
 
-| Дія                        | Деталі                                                                                                                                                       |
-| -------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------ |
-| Share-картки               | OG-зображення з результатами тижня → [вірусні петлі](./business/02-go-to-market.md#54-вірусні-петлі-viral-loops)                                             |
-| Telegram-канал             | Збирати аудиторію до запуску → [pre-launch](./business/02-go-to-market.md#2-фаза-0--pre-launch)                                                              |
-| Founder's story на DOU     | Безкоштовний PR → [українські канали](./business/02-go-to-market.md#42-українські-канали)                                                                    |
-| Billing scaffold (shipped) | `PaywallModal`, `PricingPage`, `usePlan()`, `/api/billing/*` → [06 — Архітектура](./business/06-monetization-architecture.md); open: prod Stripe env + legal |
-| In-app landing (shipped)   | `LandingPage` на `/` + `WaitlistForm` → [phases §5](./phases/README.md#5-рішення-про-лендінг); open: standalone `sergeant.com.ua`                            |
-| PWA install optimization   | Піднімати % установок → [PWA install rate](./business/05-operations-and-automation.md#зона-1--product)                                                       |
+| Дія                        | Деталі                                                                                                                                                                                                                                                                                                                                                                        |
+| -------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| Share-картки               | OG-зображення з результатами тижня → [вірусні петлі](./business/02-go-to-market.md#54-вірусні-петлі-viral-loops)                                                                                                                                                                                                                                                              |
+| Telegram-канал             | Збирати аудиторію до запуску → [pre-launch](./business/02-go-to-market.md#2-фаза-0--pre-launch)                                                                                                                                                                                                                                                                               |
+| Founder's story на DOU     | Безкоштовний PR → [українські канали](./business/02-go-to-market.md#42-українські-канали)                                                                                                                                                                                                                                                                                     |
+| Billing scaffold (shipped) | `PaywallModal`, `PricingPage`, `usePlan()`, `/api/billing/*` → [06 — Архітектура](./business/06-monetization-architecture.md); open (звірка 2026-09-17): prod env LiqPay/Plata (Stripe dormant, `modules/billing/provider.ts`) + реквізити ФОП і представник у ЄС — legal пак опубліковано 12.07.2026 ([04 § 1.1](./business/04-launch-readiness.md#11-обовязкові-документи)) |
+| In-app landing (shipped)   | `LandingPage` на `/` + `WaitlistForm` → [phases §5](./phases/README.md#5-рішення-про-лендінг); open: standalone `sergeant.com.ua`                                                                                                                                                                                                                                             |
+| PWA install optimization   | Піднімати % установок → [PWA install rate](./business/05-operations-and-automation.md#зона-1--product)                                                                                                                                                                                                                                                                        |

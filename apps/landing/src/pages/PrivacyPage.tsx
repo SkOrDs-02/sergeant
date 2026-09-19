@@ -5,12 +5,26 @@ import UpdatedOn from "../components/UpdatedOn";
 
 /**
  * Політика приватності сайту. Коротка, бо сайт справді збирає мінімум:
- * cookieless-аналітика з трьома явними подіями і Telegram-естафета без
+ * cookieless-аналітика з чотирма явними подіями і Telegram-естафета без
  * персистентних ідентифікаторів (див. lib/analytics.ts і
  * @sergeant/shared landingAttribution).
  */
 export default function PrivacyPage() {
-  usePageMeta(ROUTE_META["/privacy"]);
+  usePageMeta({
+    ...ROUTE_META["/privacy"],
+    // До 2026-09-17 — одна з чотирьох сторінок без розмітки: для краулера
+    // текст без типу й дати. `WebPage`, а не `Article`: це документ сайту,
+    // не авторський матеріал, тож author тут не ставиться.
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: ROUTE_META["/privacy"].title,
+      description: ROUTE_META["/privacy"].description,
+      inLanguage: "uk",
+      dateModified: ROUTE_META["/privacy"].lastmod,
+      publisher: { "@type": "Organization", name: "Sergeant" },
+    },
+  });
 
   const h2 =
     "mt-9 font-display text-lg font-extrabold uppercase tracking-tight text-foreground-strong";

@@ -230,6 +230,16 @@ describe("GET /api/me/export — GDPR data export", () => {
     expect(Array.isArray(res.body.data.ai.usageDaily)).toBe(true);
     expect(res.body.data.ai.usageDaily.length).toBeGreaterThan(0);
 
+    // Типи в експорті — проти РЕАЛЬНОГО Postgres, не проти моку: рівно тут
+    // видно те, чого юніт із фікстурою показати не може. `est_cost_usd` —
+    // NUMERIC (OID 1700), тож глобальний int8-парсер його не чіпає й
+    // node-pg віддає рядок; `usage_day` — DATE, і без `::text` драйвер
+    // робить із дня мить у чужій таймзоні.
+    const usageRow = res.body.data.ai.usageDaily[0];
+    expect(typeof usageRow.est_cost_usd).toBe("number");
+    expect(usageRow.usage_day).toMatch(/^\d{4}-\d{2}-\d{2}$/);
+    expect(String(usageRow.usage_day)).not.toContain("T");
+
     const mono = res.body.data.mono;
     expect(mono.connection).toBeNull();
     expect(Array.isArray(mono.accounts)).toBe(true);

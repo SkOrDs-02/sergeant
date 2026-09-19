@@ -111,10 +111,13 @@ export async function connectHandler(
       fingerprint: tokenFingerprint(token),
       err: err instanceof Error ? err.message : String(err),
     });
-    throw new AppError("Monobank API не відповідає. Спробуйте пізніше.", {
-      status: 504,
-      code: "MONO_TIMEOUT",
-    });
+    throw new AppError(
+      "Monobank API не відповідає. Спробуй за кілька хвилин.",
+      {
+        status: 504,
+        code: "MONO_TIMEOUT",
+      },
+    );
   }
   if (!clientInfoRes.ok) {
     // Upstream body може містити внутрішні деталі Monobank (стек/чужі
@@ -166,10 +169,13 @@ export async function connectHandler(
       fingerprint: tokenFingerprint(token),
       err: err instanceof Error ? err.message : String(err),
     });
-    throw new AppError("Monobank API не відповідає. Спробуйте пізніше.", {
-      status: 504,
-      code: "MONO_TIMEOUT",
-    });
+    throw new AppError(
+      "Monobank API не відповідає. Спробуй за кілька хвилин.",
+      {
+        status: 504,
+        code: "MONO_TIMEOUT",
+      },
+    );
   }
 
   if (!registerRes.ok) {
@@ -256,7 +262,7 @@ export async function connectHandler(
 
   // Jars ("банки") come back on the same client-info call as accounts —
   // persist them now instead of dropping `clientInfo.jars` on the floor, so
-  // goal-progress auto-sync (docs/90-work/planning/specs/goal-progress-auto.md)
+  // goal-progress auto-sync (docs/work/specs/goal-progress-auto.md)
   // has a linkable balance from the moment of connect.
   await upsertJars(userId, clientInfo.jars ?? []);
 

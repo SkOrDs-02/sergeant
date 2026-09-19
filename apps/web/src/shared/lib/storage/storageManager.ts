@@ -240,4 +240,5 @@ storageManager.register({
 // Легасі-міграція `routine_001_migrate_fizruk_pushups` ("fizruk_pushups_v1" →
 // pushupsByDate) видалена у Phase B переносу власності pushup-даних
 // routine → fizruk (канон routine.md §10): цільового поля більше не існує,
-// а серверна міграція 131 уже скопіювала дані у `fizruk_pushups`.
+// а серверна міграція 131 скопіювала дані у `fizruk_pushups`, яку 140 своєю
+// чергою конвертувала у звичайні `fizruk_workouts` і зняла.

@@ -5,7 +5,7 @@
  *
  * Groups and representative tables:
  *   routine-meta      → routine_habits
- *   routine-tracking  → routine_pushups
+ *   routine-tracking  → routine_habit_order
  *   fizruk-planning   → fizruk_monthly_plan
  *   fizruk-templates  → fizruk_wellbeing
  *   fizruk-safety     → fizruk_injuries
@@ -211,40 +211,9 @@ describe("syncV2 table-coverage smoke (PR-5)", () => {
     INTEGRATION_TIMEOUT_MS,
   );
 
-  // Group: routine-tracking — routine_pushups, routine_habit_order, routine_completion_notes
-  it(
-    "routine-tracking: routine_pushups insert → pull",
-    async (ctx) => {
-      await smokePushPull(ctx, {
-        table: "routine_pushups",
-        userId: "u-smoke-rp",
-        row: {
-          date_key: "2026-07-10",
-          reps: 25,
-        },
-        key: "smoke-routine-pushups",
-      });
-    },
-    INTEGRATION_TIMEOUT_MS,
-  );
-
-  // Перенос власності pushup-даних routine → fizruk (2026-08-30):
-  // fizruk-власна таблиця тієї самої форми, що й routine_pushups вище.
-  it(
-    "fizruk-tracking: fizruk_pushups insert → pull",
-    async (ctx) => {
-      await smokePushPull(ctx, {
-        table: "fizruk_pushups",
-        userId: "u-smoke-fp",
-        row: {
-          date_key: "2026-07-10",
-          reps: 25,
-        },
-        key: "smoke-fizruk-pushups",
-      });
-    },
-    INTEGRATION_TIMEOUT_MS,
-  );
+  // Group: routine-tracking — routine_habit_order, routine_completion_notes
+  // (`routine_pushups` і `fizruk_pushups` зняті міграціями 139/140:
+  // віджимання — звичайні fizruk_workouts).
 
   // Group: fizruk-planning — fizruk_daily_log, fizruk_monthly_plan, fizruk_plan_templates, fizruk_programs
   it(

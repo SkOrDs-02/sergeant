@@ -16,6 +16,13 @@ const DAY = "2026-08-03";
 interface FakeRows {
   routineHabits?: Record<string, unknown>[];
   completions?: { user_id: string; habit_id: string; state: string }[];
+  /** Відповідь батч-запиту тижневих відміток гнучких звичок (`loadWeekCompletions`). */
+  weekCompletions?: {
+    user_id: string;
+    habit_id: string;
+    date_key: string;
+    state: string;
+  }[];
   skips?: { user_id: string; skip_key: string }[];
   fizruk?: { user_id: string; data: unknown }[];
   nutrition?: { user_id: string; prefs_json: unknown }[];
@@ -58,6 +65,15 @@ function fakePool(
     }
     if (sql.includes("FROM routine_habits")) {
       return { rows: rows.routineHabits ?? [], rowCount: 0 };
+    }
+    // Перевіряємо специфічний запит `loadWeekCompletions` ПЕРШИМ — обидва
+    // запити читають `FROM routine_completion_events`, а різнить їх лише
+    // додаткова умова по діапазону дат.
+    if (
+      sql.includes("FROM routine_completion_events") &&
+      sql.includes("date_key >=")
+    ) {
+      return { rows: rows.weekCompletions ?? [], rowCount: 0 };
     }
     if (sql.includes("FROM routine_completion_events")) {
       return { rows: rows.completions ?? [], rowCount: 0 };
@@ -230,6 +246,66 @@ describe("runReminderSweep", () => {
   });
 });
 
+describe("гнучка звичка («N разів на тиждень») у sweep-і", () => {
+  beforeEach(() => sendToUserQuietly.mockClear());
+
+  // 2026-08-06 (четвер) 08:00 за Києвом = 05:00 UTC; той самий тиждень, що
+  // й у решти тестів файлу (понеділок 2026-08-03).
+  const THURSDAY = new Date("2026-08-06T05:00:00Z");
+
+  it("мовчить, коли батч-запит тижневих відміток показує добрану норму", async () => {
+    // Ціль за замовчуванням — 3; пн/вт/ср добирають її ще до четверга.
+    const { pool, claims } = fakePool({
+      routineHabits: [habitDbRow({ recurrence: "flexible" })],
+      weekCompletions: [
+        {
+          user_id: "u1",
+          habit_id: "hab_1",
+          date_key: "2026-08-03",
+          state: "done",
+        },
+        {
+          user_id: "u1",
+          habit_id: "hab_1",
+          date_key: "2026-08-04",
+          state: "done",
+        },
+        {
+          user_id: "u1",
+          habit_id: "hab_1",
+          date_key: "2026-08-05",
+          state: "done",
+        },
+      ],
+    });
+
+    const result = await runReminderSweep(pool, THURSDAY);
+
+    expect(result).toMatchObject({ due: 0, sent: 0 });
+    expect(claims).toHaveLength(0);
+    expect(sendToUserQuietly).not.toHaveBeenCalled();
+  });
+
+  it("нагадує, доки тижнева норма не добрана", async () => {
+    const { pool, claims } = fakePool({
+      routineHabits: [habitDbRow({ recurrence: "flexible" })],
+      weekCompletions: [
+        {
+          user_id: "u1",
+          habit_id: "hab_1",
+          date_key: "2026-08-03",
+          state: "done",
+        },
+      ],
+    });
+
+    const result = await runReminderSweep(pool, THURSDAY);
+
+    expect(result).toMatchObject({ due: 1, sent: 1 });
+    expect(claims).toHaveLength(1);
+  });
+});
+
 describe("pruneReminderLog", () => {
   it("deletes rows older than the retention window", async () => {
     const { pool, deletes } = fakePool();
@@ -239,5 +315,80 @@ describe("pruneReminderLog", () => {
     expect(removed).toBe(7);
     // 45 діб до 2026-08-03.
     expect(deletes).toEqual(["2026-06-19"]);
+  });
+});
+
+// ───────────────────── Bounded fan-out (аудит 2026-09-16) ────────────────
+/**
+ * Регресія стійкості: раніше цикл робив `void sendToUserQuietly(...)` без
+ * обмеження паралелізму, а кожен виклик усередині сам віялом б'є по ВСІХ
+ * пристроях користувача (`Promise.all` у `push/send.ts`). У слот нагадувань
+ * (09:00/12:00/20:00) це давало лавину одночасних сокетів до APNs/FCM/web,
+ * яка на 4 ГБ VPS закінчувалась не деградацією, а падінням процесу.
+ *
+ * Друга властивість, не менш важлива: fire-and-forget неможливо дочекатись.
+ * `stop()` планувальника тепер дочікується на shutdown-і, а дочекатись можна
+ * лише того, на що ми справді чекаємо.
+ */
+describe("runReminderSweep fan-out", () => {
+  beforeEach(() => sendToUserQuietly.mockClear());
+
+  /** 25 користувачів з тією самою звичкою на 08:00 — тобто 25 due-нагадувань. */
+  function manyUsers(n: number): Record<string, unknown>[] {
+    return Array.from({ length: n }, (_, i) =>
+      habitDbRow({ user_id: `u${i}`, id: `hab_${i}` }),
+    );
+  }
+
+  it("never runs more than the concurrency cap at once", async () => {
+    const TOTAL = 25;
+    let inFlight = 0;
+    let peak = 0;
+    sendToUserQuietly.mockImplementation(async () => {
+      inFlight++;
+      peak = Math.max(peak, inFlight);
+      await new Promise((r) => setTimeout(r, 5));
+      inFlight--;
+    });
+
+    const { pool } = fakePool({ routineHabits: manyUsers(TOTAL) });
+    const result = await runReminderSweep(pool, NOW);
+
+    expect(result.sent).toBe(TOTAL);
+    expect(sendToUserQuietly).toHaveBeenCalledTimes(TOTAL);
+    // Суть фіксу: пік паралельності обмежений, а не дорівнює TOTAL.
+    expect(peak).toBeLessThanOrEqual(10);
+    expect(peak).toBeGreaterThan(1); // і це не послідовний цикл по одному
+  });
+
+  it("awaits every send before returning", async () => {
+    let finished = 0;
+    sendToUserQuietly.mockImplementation(async () => {
+      await new Promise((r) => setTimeout(r, 5));
+      finished++;
+    });
+
+    const { pool } = fakePool({ routineHabits: manyUsers(12) });
+    await runReminderSweep(pool, NOW);
+
+    // Раніше тут було б 0: прохід повертався, поки пуші ще летіли, і
+    // shutdown закривав pg-пул під ними. Наслідок бачила лише людина —
+    // рядок дедупу в `push_reminder_log` є, а пуш не пішов, тож
+    // нагадування не приходило ВЗАГАЛІ.
+    expect(finished).toBe(12);
+  });
+
+  it("claims every reminder before the first send goes out", async () => {
+    const claimsAtFirstSend: number[] = [];
+    const { pool, claims } = fakePool({ routineHabits: manyUsers(15) });
+    sendToUserQuietly.mockImplementation(async () => {
+      claimsAtFirstSend.push(claims.length);
+    });
+
+    await runReminderSweep(pool, NOW);
+
+    // Claim лишається послідовним і повністю передує відправкам: дедуп у
+    // Postgres — єдине, що тримає «рівно один раз» між репліками.
+    expect(claimsAtFirstSend[0]).toBe(15);
   });
 });

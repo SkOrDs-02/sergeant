@@ -153,15 +153,33 @@ describe("GET /health/workers — degraded paths", () => {
     vi.resetModules();
   });
 
-  it("returns 503 + queueDepth=null when Postgres rejects mono-enrichment query", async () => {
+  it("returns 503 + queueDepth=null, і НЕ віддає текст помилки БД", async () => {
+    // Раніше тут очікувався `error: /ECONNREFUSED/` — тобто тест закріплював
+    // витік: `/health/workers` змонтований без auth і без rate-limit, а
+    // `pg`/`ioredis` кладуть у `err.message` внутрішній хост, порт і імʼя
+    // DB-користувача (`password authentication failed for user
+    // "sergeant_app"`). Анонім отримував внутрішню топологію.
+    //
+    // Тепер клієнту йде лише КЛАС помилки (`errorCode`, allowlist
+    // `^[A-Za-z0-9_]{1,40}$` — див. `obs/errorCode.ts`), а повний текст
+    // лишається в `logger.error`. Перевіряємо обидві половини: код є, а
+    // подробиць немає.
     queryMock.mockRejectedValue(new Error("ECONNREFUSED 127.0.0.1:5432"));
     const app = createApp();
     const res = await request(app).get("/health/workers");
     expect(res.status).toBe(503);
     expect(res.body.status).toBe("unhealthy");
     expect(res.body.workers.monoEnrichment.queueDepth).toBeNull();
-    expect(res.body.workers.monoEnrichment.error).toMatch(/ECONNREFUSED/);
-    // Без stack trace в response body — лише `message`. Це L7 invariant
+    expect(res.body.workers.monoEnrichment.errorCode).toBeTruthy();
+    expect(res.body.workers.monoEnrichment).not.toHaveProperty("error");
+
+    // Ні хоста, ні порту, ні тексту драйвера в тілі відповіді.
+    const body = JSON.stringify(res.body);
+    expect(body).not.toContain("ECONNREFUSED");
+    expect(body).not.toContain("127.0.0.1");
+    expect(body).not.toContain("5432");
+
+    // Без stack trace в response body. Це L7 invariant
     // (не leak-аємо file paths / dependency versions через error string).
     expect(res.body.workers.monoEnrichment).not.toHaveProperty("stack");
   });

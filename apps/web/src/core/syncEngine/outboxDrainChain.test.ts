@@ -8,7 +8,7 @@
  * `syncRoundTrip.test.ts` доводить `enqueue → pull apply` (обидва боки —
  * локальні), а smoke-тест `deep-module-crud` перевіряє локальний стан.
  * Жоден із них не міг помітити, що черга не дренажиться: саме так
- * знахідка з `docs/90-work/tech-debt/frontend.md § Критичне` прожила
+ * знахідка з `docs/work/specs/tech-debt/frontend.md § Критичне` прожила
  * повний зелений прогін. Тут зібрано РЕАЛЬНИЙ продакшн-граф —
  * справжній SQLite, справжні `enqueueOutboxUpsert` / `drainSyncOpOutbox` /
  * lifecycle-хелпери, справжні scheduler і writer-runtime. Підроблений

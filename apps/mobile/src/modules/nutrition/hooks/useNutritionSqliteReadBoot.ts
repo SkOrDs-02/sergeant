@@ -1,7 +1,7 @@
 /**
  * React hook that boots the SQLite read path for mobile Харчування.
  *
- * PR #033 of `docs/planning/storage-roadmap.md` (mobile parity for
+ * PR #033 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` (mobile parity for
  * web PR #033). When the `feature.nutrition.sqlite_v2.read_sqlite` flag
  * is on, this hook runs `bootNutritionSqliteReadPath()` once after mount
  * so subsequent reads in `useNutritionLog` / `useNutritionPantries` /

@@ -23,8 +23,8 @@ import { describe, expect, it } from "vitest";
 
 /**
  * Поверхні, які рендеряться до першого роуту (тост, лоадер, помилка роуту,
- * замок, онбординг-бейдж, оверлей чату, каталог секцій налаштувань,
- * міграція анонімних даних, auth-контекст).
+ * замок, оверлей чату, каталог секцій налаштувань, міграція анонімних
+ * даних, auth-контекст).
  */
 const EAGER_SURFACES = [
   "../../core/app/PageLoader.tsx",
@@ -32,8 +32,13 @@ const EAGER_SURFACES = [
   "../../core/auth/AuthContext.tsx",
   "../../core/durability/AnonymousDataMigrationProvider.tsx",
   "../../core/hub/HubChatOverlay.tsx",
+  // Вісь дії (спека `hub-action-axis.md`): головна eager, а з нею рейок
+  // модулів і обидві купи.
+  "../../core/hub/HubDashboard.tsx",
+  "../../core/hub/now/NowPile.tsx",
+  "../../core/hub/now/ClosedTodayPile.tsx",
+  "../components/layout/ModuleRail.tsx",
   "../../core/hub/settingsSectionsCatalog.ts",
-  "../../core/onboarding/DemoModeBadge.tsx",
   "../../core/security/AppLock.tsx",
   "../components/ui/Toast.tsx",
 ] as const;

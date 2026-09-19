@@ -1,7 +1,7 @@
 /**
  * Unit tests for the `sergeant-design/no-finyk-token-in-storage` rule.
  *
- * The rule guards Stage 0 PR #002 from `docs/planning/storage-roadmap.md`:
+ * The rule guards Stage 0 PR #002 from `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`:
  * the Monobank PAT must live only in `mono_connection.token_ciphertext`
  * server-side. Persisting it on the client through any storage primitive
  * (localStorage, sessionStorage, MMKV via safeWriteLS, useLocalStorage,

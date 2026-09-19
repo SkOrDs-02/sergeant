@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-10-29.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-11-06.
 > **Status:** Active
 
 > **Governing skill:** `sergeant-tech-debt` · **Playbook:** [`cleanup-dead-code.md`](../../../start/instructions/cleanup-dead-code.md).
@@ -233,7 +233,7 @@ if (relPath.startsWith("docs/work/specs/audits/archive/")) return true;
 
 ### 4г. Scaffolded-барелі з `knip.json` ignore — 8/8 досі без споживачів + дрейф маркерів
 
-Дисципліна Hard Rule #10 загалом працює (усі 8 із `@scaffolded`+`@nextStep`; `injuryRepository` отримав `TODO(0589-injury-repo): 2026-09-15` у день мержа). Але виріс **дрейф другого порядку**:
+Дисципліна Hard Rule #10 загалом працює (усі 8 із `@scaffolded`+`@nextStep`; `injuryRepository` отримав `TODO(0589-injury-repo)` з дедлайном 2026-09-15 у день мержа). Але виріс **дрейф другого порядку**:
 
 | Барель / файл                                       | Стан                                                  | Проблема                                                                                                                                                                                            |
 | --------------------------------------------------- | ----------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
@@ -495,3 +495,14 @@ Vite + React (не Next), 17 файлів, повністю підключени
 - Динамічні виклики через string-конкатенацію шукались, але гарантії повноти нема (для таблиць — перевірено, конкатенацій не знайдено).
 - `packages/*` внутрішні експорти глибоко не тріажились (лише knip-зріз і споживання пакетів як цілого).
 - Дати старші за ~2026-07-27 — з хедерів/PR-номерів/GitHub API (shallow clone).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                                  | Merged     |
+| ------------------------------------------------------ | -------------------------------------------------------------------------------------- | ---------- |
+| [#69](https://github.com/zaebal-beep/sergeant/pull/69) | docs(docs): quote the expired 0589 todo as history so lint:todo-freshness stops firing | 2026-09-16 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

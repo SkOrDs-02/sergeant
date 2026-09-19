@@ -14,7 +14,7 @@ import {
 
 /**
  * Автосідер насиченого акаунта Q3 продуктового аудиту
- * (`docs/90-work/audits/2026-09-01-product-audit/accounts.md` § heavy).
+ * (`docs/work/specs/audits/2026-09-01-product-audit/accounts.md` § heavy).
  * Відновлений і розширений спадкоємець бета-сідера `tests/beta/seed-rich.spec.ts`
  * (видалений разом із бета-лейном, #946): проживає N «днів» одним
  * «пристроєм» — один signup, `storageState` між днями, тікаючий бек-дейт

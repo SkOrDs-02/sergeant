@@ -168,7 +168,7 @@ function DefaultErrorFallback<TError>({
       description={message}
       ariaLive="polite"
       primaryAction={
-        <Button variant="secondary" size="sm" onClick={onRetry}>
+        <Button variant="outline" size="sm" onClick={onRetry}>
           {messages.sync.retryCta}
         </Button>
       }

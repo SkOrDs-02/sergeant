@@ -119,7 +119,7 @@ function AccentCard({
           color,
         }}
       >
-        <Icon name={mod.icon} size={20} />
+        <Icon name={mod.icon} size="lg" />
       </span>
       <span
         className={cn(

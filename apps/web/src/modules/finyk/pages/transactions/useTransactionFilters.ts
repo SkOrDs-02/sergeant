@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from "react";
-import { ucFirst } from "@shared/lib/ui/ucFirst";
+import { formatMonthYear } from "@shared/lib/time/formatDate";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
 import type {
@@ -226,11 +226,9 @@ export function useTransactionFilters({
 
   // TXT-7 (аудит 2026-09): велика літера в коді, не CSS `capitalize` —
   // інакше «р.» стає «Р.».
-  const monthLabel = ucFirst(
-    new Date(selMonth.year, selMonth.month, 1).toLocaleDateString("uk-UA", {
-      month: "long",
-      year: "numeric",
-    }),
+  const monthLabel = formatMonthYear(
+    new Date(selMonth.year, selMonth.month, 1),
+    { capitalize: true },
   );
 
   const creditAccIds = useMemo(() => {

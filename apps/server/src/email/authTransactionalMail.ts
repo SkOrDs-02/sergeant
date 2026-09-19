@@ -11,6 +11,12 @@ import { isDeployedProduction } from "../env/env.js";
 import { logger } from "../obs/logger.js";
 
 /**
+ * Стеля часу на один виклик Resend API. 10 с — та сама, що й на решті
+ * зовнішніх викликів; повторні спроби робить BullMQ, не цей код.
+ */
+const RESEND_TIMEOUT_MS = 10_000;
+
+/**
  * Observability: без `RESEND_API_KEY` у проді транзакційні листи
  * (verify-email / reset / change-email) мовчки НЕ надсилаються, а
  * викликаючий Better Auth endpoint усе одно віддає `200` — founder не має
@@ -110,6 +116,10 @@ async function dispatchAuthTransactionalEmail(
       text: args.text,
       ...(args.html ? { html: args.html } : {}),
     }),
+    // Без `signal` undici чекає на заголовки до 300 с. Тут це лист
+    // підтвердження/скидання пароля: людина сидить перед формою і бачить
+    // спінер, а BullMQ-job тим часом тримає воркер зайнятим п'ять хвилин.
+    signal: AbortSignal.timeout(RESEND_TIMEOUT_MS),
   });
 
   if (!res.ok) {

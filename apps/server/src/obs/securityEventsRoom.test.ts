@@ -89,8 +89,12 @@ describe("pingSecurityRoom — I7 boot reachability heartbeat", () => {
     const result = await pingSecurityRoom();
 
     expect(result).toEqual({ ok: true });
+    // Ping виконується на СТАРТІ процесу, тож він теж під стелею часу:
+    // без неї недоступний api.telegram.org затримував би boot на хвилини, а
+    // health-probe платформи встигає за цей час відкотити справний деплой.
     expect(fetchMock).toHaveBeenCalledWith(
       "https://api.telegram.org/bottest-token/getMe",
+      expect.objectContaining({ signal: expect.any(AbortSignal) }),
     );
     expect(incMock).not.toHaveBeenCalled();
   });

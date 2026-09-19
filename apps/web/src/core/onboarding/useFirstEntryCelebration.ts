@@ -39,7 +39,7 @@ export function useFirstEntryCelebration(
    * first entry by the boolean alone. The count tells them apart: a real
    * "first entry" transition has a small count (normally 1); an account
    * whose history just arrived over sync has many. See
-   * `docs/90-work/audits/2026-09-01-product-audit/findings.md` § LOG-8.
+   * `docs/work/specs/audits/2026-09-01-product-audit/findings.md` § LOG-8.
    */
   realEntryCount: number,
 ): CelebrationState {

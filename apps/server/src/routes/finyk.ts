@@ -23,12 +23,14 @@ import getRecentImportsHandler from "../modules/finyk/import/recent.js";
  * реєстрації. Реєструвати тут напряму `/api/v1/...` НЕ можна — після
  * rewrite такий шлях ніколи не зматчиться.
  *
- * Спільний guard-ланцюг (як у `coach`/`nutrition`):
+ * Спільний guard-ланцюг (як у `coach`/`nutrition`) — порядок значущий:
  *   - `setModule("finyk")` — логер/метрики
- *   - broad rate-limit ("api:finyk")
+ *   - pre-auth IP-лімітер ("api:finyk:ip", 600/хв) — ПЕРЕД сесією
  *   - `requireSession()` — лише авторизовані; кладе `req.user.id`
  *     (Better Auth opaque string), на який скоупиться запис. `user_id`
  *     ніколи не приймається з body.
+ *   - per-user лімітер ("api:finyk", 120/хв) — ПІСЛЯ сесії, інакше
+ *     `rateLimitSubject` не бачить `req.user` і бакет мовчки стає per-IP.
  *
  * `POST /manual-expenses` замінює клієнтський `safeWriteLS`-bypass для
  * ручних витрат (state-write-paths doctrine) — це precondition для
@@ -75,11 +77,32 @@ const DPS_DAILY_GLOBAL_SUBJECT = "dps-token-daily";
 export function createFinykRouter(): Router {
   const r = Router();
   r.use("/api/finyk", setModule("finyk"));
+  // Pre-auth IP-лімітер — ПЕРЕД requireSession() навмисно. `requireSession()`
+  // на невдачі шле 401 і не кличе `next()`, тобто без цього рівня анонімний
+  // флуд бив би по session-store без жодного ліміту. Окремий `key` (суфікс
+  // `:ip`) — інакше лічильник ділився б із per-user бакетом `api:finyk` і
+  // зіпсував би обидва. 600/хв = 5× per-user 120/хв, як у `nutrition.ts`.
+  r.use(
+    "/api/finyk",
+    rateLimitExpress({ key: "api:finyk:ip", limit: 600, windowMs: 60_000 }),
+  );
+  // requireSession() йде ПЕРЕД per-user rateLimitExpress навмисно (рецидив
+  // знахідки B31, PR-A3 у `docs/work/specs/audits/2026-09-13-product-full-review.md`):
+  // `rateLimitSubject` (`http/rateLimit.ts`) читає `req.user.id` і
+  // фолбечиться на `ip:<addr>` лише коли сесії немає. Якщо лімітер стоїть ДО
+  // requireSession, `req.user` завжди unset у момент перевірки — бакет
+  // завжди per-IP. Див. еталон у `chat.ts`.
+  //
+  // Фінік був ЧЕТВЕРТИМ рецидивом цього дефекту і єдиним, якого не побачив
+  // наскрізний огляд 2026-09-13: він перевіряв шість названих роутів, а цей
+  // до списку не входив. Знайшов його гейт `check-auth-before-rate-limit.mjs`
+  // на першому ж прогоні — тобто саме та механічна перевірка, відсутність
+  // якої PR-A3 називала єдиною незакритою частиною.
+  r.use("/api/finyk", requireSession());
   r.use(
     "/api/finyk",
     rateLimitExpress({ key: "api:finyk", limit: 120, windowMs: 60_000 }),
   );
-  r.use("/api/finyk", requireSession());
 
   r.post(
     "/api/finyk/manual-expenses",

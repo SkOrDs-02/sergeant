@@ -1,6 +1,6 @@
 name: Post-deploy smoke
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: if this job fails, an issue tagged `smoke-test-fail` is auto-opened
 #         (idempotent — same pattern as pact-drift / db-backup-verify). Runbook:
 #         `docs/engineering/testing/smoke-tests.md`.
@@ -192,7 +192,7 @@ jobs:
               '',
               '</details>',
               '',
-              'cc @SkOrDs-02',
+              'cc @zaebal-beep',
             ].join('\n');
 
             const { data: issues } = await github.rest.issues.listForRepo({

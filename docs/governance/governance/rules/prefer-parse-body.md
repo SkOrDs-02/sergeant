@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `warn` (rollout → `error` after migration complete)
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-18.
+> **Last touched:** 2026-09-17 by @claude (мертвий `planning/archive` шлях → permalink). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > ESLint convention enforced by `sergeant-design/prefer-parse-body-over-validate-body` in `packages/eslint-plugin-sergeant-design`. Not a numbered Hard Rule in `hard-rules.json` — this file is the canonical doc body referenced from the plugin and server handler comments.
@@ -39,5 +39,5 @@ const body = parseBody(MySchema, req);
 
 ## Related
 
-- **initiative** — `docs/work/specs/planning/archive/pr-plan-backend-perf-2026-05.md` (PR-09, PR-10, PR-11)
+- **initiative** — [`pr-plan-backend-perf-2026-05.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/pr-plan-backend-perf-2026-05.md) (PR-09, PR-10, PR-11; permalink — файл знято з чекауту за Rule #23)
 - **eslint** — `packages/eslint-plugin-sergeant-design/index.js` (`prefer-parse-body-over-validate-body`)

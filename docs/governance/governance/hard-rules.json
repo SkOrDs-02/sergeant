@@ -107,7 +107,7 @@
       "enforced_by": [
         {
           "kind": "ci",
-          "ref": "Workflow lint (commitlint)"
+          "ref": "ci.yml job `Commit messages (commitlint)`"
         },
         {
           "kind": "hook",
@@ -271,11 +271,7 @@
     {
       "id": 20,
       "title": "No OpenClaw PATs in production",
-      "scope": [
-        "apps/server/src/env.ts",
-        "apps/server/src/env/env.ts",
-        "apps/server/src/modules/openclaw/**"
-      ],
+      "scope": ["apps/server/src/env.ts", "apps/server/src/env/env.ts"],
       "severity": "blocker",
       "category": "blocker-invariant",
       "enforced_by": [
@@ -414,7 +410,8 @@
         "docs/governance/adr/*.md",
         "docs/work/specs/initiatives/*.md",
         "docs/start/instructions/*.md",
-        "docs/governance/governance/rules/*.md"
+        "docs/governance/governance/rules/*.md",
+        "docs/work/specs/audits/*.md"
       ],
       "severity": "blocker",
       "category": "lint-enforced-convention",

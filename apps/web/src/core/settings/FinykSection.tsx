@@ -99,8 +99,11 @@ export function FinykSection() {
               <Button
                 key={kind}
                 type="button"
-                variant={newCategoryKind === kind ? "primary" : "secondary"}
-                module="finyk"
+                // Легасі-шлях давав `finyk` / `finyk-soft` через
+                // MODULE_LEGACY_OVERRIDE; канонічний еквівалент — та сама
+                // пара emphasis-ів при спільному tone.
+                variant={newCategoryKind === kind ? "solid" : "soft"}
+                tone="finyk"
                 onClick={() => setNewCategoryKind(kind)}
               >
                 {kind === "expense" ? "Витрата" : "Надходження"}
@@ -160,7 +163,7 @@ export function FinykSection() {
             <EmptyState
               compact
               module="finyk"
-              icon={<Icon name="tag" size={20} />}
+              icon={<Icon name="tag" size="lg" />}
               title="Поки немає власних категорій"
               description="Додай першу категорію вище, вона зʼявиться у списку транзакцій, сплітів і лімітів."
             />

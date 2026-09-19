@@ -97,6 +97,36 @@ export interface BillingProvider {
   cancelSubscription(pool: Pool, userId: string): Promise<void>;
 }
 
+/**
+ * Чи білінг узагалі увімкнено — тобто чи приймає гроші бодай один провайдер.
+ *
+ * Навмисно НЕ прив'язано до жодного конкретного прапорця. Гейт платних
+ * поверхонь (`requirePlan`) раніше читав лише `STRIPE_ENABLED`, а в проді
+ * Stripe dormant (гроші йдуть через LiqPay і Plata) — тож усі чотири
+ * Pro-роути (`ai-memory`, `transcribe`, `nutrition` x2) віддавались
+ * безкоштовно кожному залогіненому користувачу. Прапорець одного провайдера
+ * ніколи не є відповіддю на питання «чи ми продаємо Pro».
+ *
+ * Усі три вимкнені = білінг ще не запущено (локально / preview) → гейт
+ * пропускає, як і раніше.
+ */
+export interface BillingEnforcementOptions {
+  /** Override `env.STRIPE_ENABLED` (для тестів). */
+  stripeEnabled?: boolean;
+  /** Override `env.LIQPAY_ENABLED`. */
+  liqpayEnabled?: boolean;
+  /** Override `env.PLATA_ENABLED`. */
+  plataEnabled?: boolean;
+}
+
+export function isBillingEnforced({
+  stripeEnabled = env.STRIPE_ENABLED,
+  liqpayEnabled = env.LIQPAY_ENABLED,
+  plataEnabled = env.PLATA_ENABLED,
+}: BillingEnforcementOptions = {}): boolean {
+  return stripeEnabled || liqpayEnabled || plataEnabled;
+}
+
 export interface EnabledProvidersOptions {
   /** ISO-3166 alpha-2 країна користувача (наприклад `"UA"`, `"US"`). */
   country?: string | null;

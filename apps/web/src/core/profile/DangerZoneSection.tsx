@@ -87,7 +87,8 @@ export function DangerZoneSection({
             сервера.
           </p>
           <Button
-            variant="destructive"
+            variant="solid"
+            tone="danger"
             size="sm"
             className="w-full"
             disabled={!online}

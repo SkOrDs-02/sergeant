@@ -1,11 +1,19 @@
 # Monthly policy review
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-19.
-> **Status:** Active
+> **Last touched:** 2026-09-17 by @claude (Status → Reference: щомісячний огляд фактично не ведеться, каталогу `reviews/` немає). **Next review:** 2026-12-16.
+> **Status:** Reference
 
 > **Шаблон щомісячного огляду «hard rules» AGENTS.md.**
 > Ціль: тримати enforcement здоровим — рано помічати дрейф, фіксувати винятки і
 > запускати в роботу нові кандидати на автоматизацію.
+>
+> **Стан процесу (2026-09-17):** жодного заповненого огляду за шаблоном не
+> створено — каталогу `docs/governance/governance/reviews/` у репо немає. Функцію
+> огляду де-факто виконують механічні гейти (`pnpm lint:hard-rules-registry`,
+> `pnpm lint:ai-legacy`, `audit-exceptions.mjs`, `lint:overrides`) і разові
+> аудити в `docs/work/specs/audits/`. Шаблон лишається як Reference на випадок,
+> коли власник вирішить запустити ручний огляд; Status повернути в `Active`
+> лише разом із першим реальним файлом у `reviews/`.
 
 ---
 
@@ -143,7 +151,7 @@ playbook-у. Один рядок на кандидата.
 
 ## Посилання
 
-- `AGENTS.md` — джерело hard rules (`#1`–`#9` на момент створення цього шаблону).
+- `AGENTS.md` — джерело hard rules (`#1`–`#9` на момент створення цього шаблону; чинний перелік і кількість — у [`hard-rules.json`](./hard-rules.json) / [`hard-rules-matrix.md`](./hard-rules-matrix.md), частину правил retired ADR-0081).
 - `docs/governance/security/audit-exceptions.md` — формат запису `audit-exception`.
 - `docs/work/specs/tech-debt/frontend.md` / `docs/work/specs/tech-debt/backend.md` — burn-down lists.
 - `packages/eslint-plugin-sergeant-design/README.md` — каталог наявних кастомних

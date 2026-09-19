@@ -39,14 +39,6 @@ export interface UseOnboardingWizardStateArgs {
     startModuleId: string | null,
     opts?: { intent: string; picks: string[] },
   ) => void;
-  /**
-   * PR-05 — demo mode as first-class CTA. Optional handler for the
-   * "Подивитись приклад" button rendered inside the splash card. Only
-   * passed by the `/welcome` host (`fullPage` variant); modal mode
-   * leaves the secondary CTA hidden so demo seeding never happens by
-   * accident from in-app surfaces.
-   */
-  onSecondaryAction?: (() => void) | undefined;
 }
 
 export interface UseOnboardingWizardStateReturn {
@@ -65,7 +57,6 @@ export interface UseOnboardingWizardStateReturn {
    * idempotent — see {@link finish}).
    */
   submitting: boolean;
-  secondaryAction?: (() => void) | undefined;
   /**
    * Resolved PR-13 goal-first A/B variant. `control` keeps the legacy
    * module-checklist welcome; `goal_first` swaps in `GoalFirstScreen`
@@ -116,7 +107,6 @@ export interface UseOnboardingWizardStateReturn {
 // without a hard reset of the wizard state.
 export function useOnboardingWizardState({
   onDone,
-  onSecondaryAction,
 }: UseOnboardingWizardStateArgs): UseOnboardingWizardStateReturn {
   // Default-picks A/B (S6.1). Assignment is deterministic per device
   // fingerprint and persists across renders, so the user always sees
@@ -379,8 +369,6 @@ export function useOnboardingWizardState({
   // S6.1: only the `none` arm disables the CTA on empty picks.
   const ctaDisabled = defaultPicksVariant === "none" && picks.length === 0;
 
-  const secondaryAction = onSecondaryAction;
-
   return {
     picks,
     togglePick,
@@ -391,7 +379,6 @@ export function useOnboardingWizardState({
     emptyPicksHint: "Обери хоч один розділ",
     finish,
     submitting,
-    secondaryAction,
     goalFirstVariant,
     pickGoal,
     skipGoalFirst,

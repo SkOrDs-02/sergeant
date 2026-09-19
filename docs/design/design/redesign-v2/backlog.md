@@ -1,7 +1,9 @@
 # Sergeant v2 — Полірувальний backlog (PR-8 follow-ups)
 
 > **Last validated:** 2026-05-21 by @Skords-01 (v2 close-out batch merged — 5 items ticked: Popover, AssistantAdviceCard+TodayFocusCard, CrossModulePreview, 6.4 AI-source tag, W6 StreakFlame; Fizruk dashboard P2.7 also closed via #3056). **Next review:** v2 retrospective.
-> **Status:** Active
+> **Status:** Reference — кластер закрито 2026-05-21; звірка з кодом 2026-09-16 показала, що щонайменше 15 невідмічених пунктів уже приземлились або посилаються на видалений код, тож як to-do цей список більше не працює (деталі — блок нижче). Живі дизайн-борги ведуться в [`tech-debt/frontend.md`](../../../work/specs/tech-debt/frontend.md) і реєстрі знахідок [`2026-09-13-product-full-review.md`](../../../work/specs/audits/2026-09-13-product-full-review.md).
+
+> **Звірка з кодом 2026-09-16 (що вже не відкрите).** Усі девʼять insight-тригерів (§ Phase 5) — реалізовані: id у `shared/lib/insights/insightId.ts`, хуки `useCoffeeLimitInsight`, `useBudgetOverrunInsight`, `useStreakRecordPendingInsight`, `useTodoEveningInsight`, агрегатор `useAllInsights`. `InsightCard` має споживача (`core/hub/HubInsightsBlock.tsx`). `ChatSheet` modal-route — це `HubChatOverlay`. OCR / фото чека — `useReceiptQrScanner`, `ReceiptScanSheet`, `BulkImportSheet` (спека `receipt-scan.md`). `ManualExpenseSheet` hero-сума — `ManualExpenseAmountSection`. FTUX module picker — `core/app/WelcomeModulePicker.tsx`. `QuickActionsMenu` видалено, не «підключено». Усі посилання на `mockups/product/*` — мертві (дерева в репо немає, див. [`mockups-backlog.md`](../mockups-backlog.md)). **Рішення «ModuleBottomNav → `mx-3 mb-3 rounded-r-2xl` glass» скасовано кодом:** `ModuleBottomNav.tsx` документує протилежне — docked edge-to-edge без бічних відступів (звіт про щілину 2026-06-05). Справді відкриті: `Skeleton` glass-tint, per-page glass-міграції (низька впевненість — сусідні пункти виявились закритими), coach-marks (відкладено власником).
 
 ## Контекст
 

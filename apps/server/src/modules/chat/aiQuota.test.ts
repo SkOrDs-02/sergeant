@@ -630,7 +630,7 @@ describe("atomic consumeQuota — concurrent increments", () => {
   });
 });
 
-// AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+// AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
 // — «хід з дією коштує ОДИН запит». `chat.ts` видає `round_trip_ticket`
 // лише коли перший тур повертає `tool_calls`; тут перевіряється сама
 // перевірка квитка всередині `assertAiQuota`, незалежно від HTTP-шару.

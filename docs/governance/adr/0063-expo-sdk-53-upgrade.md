@@ -2,7 +2,7 @@
 
 > **Last touched:** 2026-09-06 by @Skords-01. **Next review:** 2026-12-22.
 
-- **Status:** Accepted <!-- Proposed | Accepted | Deprecated | Superseded by ADR-NNNN -->
+- **Status:** Accepted
 - **Date:** 2026-06-06
 - **Deciders:** @Skords-01
 - **Supersedes:** — <!-- pre-flight only; no prior ADR replaced -->
@@ -122,3 +122,14 @@ A pre-flight ADR de-risks a single-maintainer mobile bump by converting an explo
 - [`docs/work/specs/initiatives/stack-pulse-2026-05/pr-22-mobile-expo-sdk-53.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-22-mobile-expo-sdk-53.md) — source plan + acceptance criteria
 - [Expo SDK release roadmap](https://docs.expo.dev/versions/latest/)
 - [React Native release notes](https://github.com/facebook/react-native/releases)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                     | Title                                                                              | Merged     |
+| ------------------------------------------------------ | ---------------------------------------------------------------------------------- | ---------- |
+| [#61](https://github.com/zaebal-beep/sergeant/pull/61) | docs(docs): governance — прибрати застаріле з ADR-індексу, governance/ і security/ | 2026-09-16 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

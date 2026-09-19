@@ -371,7 +371,7 @@ export function PricingPage() {
               onClick={() => navigate(-1)}
               aria-label={t.backLabel}
             >
-              <Icon name="chevron-left" size={20} />
+              <Icon name="chevron-left" size="lg" />
             </Button>
             <h1 className="text-style-title text-text">{t.pageTitle}</h1>
           </header>
@@ -454,8 +454,20 @@ export function PricingPage() {
               // so ink tone must branch on `isPremium` rather than using
               // a fixed text-* class.
               const headingTone = isPremium ? "text-hero-ink" : "text-text";
-              const mutedTone = isPremium ? "text-hero-ink/70" : "text-muted";
-              const subtleTone = isPremium ? "text-hero-ink/60" : "text-subtle";
+              // Альфа на hero-ink — це той самий механізм, що вже полагодили
+              // для бейджа нижче (див. коментар про 15% ink-washу): чим
+              // прозоріше чорнило, тим ближче воно до teal-фону. Заміряно
+              // `#fdf9f3` на обох кінцях градієнта (`--hero-grad-finyk`
+              // teal-800 → teal-700; сходинка teal-700 — вузьке місце):
+              //   /100 → 5.22:1   /95 → 4.88:1   /90 → 4.55:1
+              //   /80  → 3.95:1   /70 → 3.40:1   /60 → 2.90:1
+              // Текст тут 12-14px, тобто поріг AA — 4.5:1, не 3:1. Колишні
+              // /70 і /60 давали 3.40 і 2.90, тобто провал на світлому кінці
+              // в усіх темах для /60 (аудит 2026-09-16, WF-23).
+              // Лінт цього не ловив: `no-opacity-on-text-token` не знає
+              // токена `hero-ink`, а контрастний гейт міряє лише 100%-пари.
+              const mutedTone = isPremium ? "text-hero-ink/95" : "text-muted";
+              const subtleTone = isPremium ? "text-hero-ink/90" : "text-subtle";
               const checkTone = isPremium
                 ? "text-hero-ink"
                 : "text-brand-strong";
@@ -540,13 +552,20 @@ export function PricingPage() {
                         >
                           <Icon
                             name={excluded ? "close" : "check"}
-                            size={16}
+                            size="md"
                             className={cn(
                               "mt-0.5 shrink-0",
                               excluded ? subtleTone : checkTone,
                             )}
                           />
                           <span className="min-w-0">
+                            {/* Іконка декоративна (`Icon` без `title` йде
+                                `aria-hidden`), тож стан рядка озвучує текст. */}
+                            <span className="sr-only">
+                              {excluded
+                                ? t.features.excludedSr
+                                : t.features.includedSr}{" "}
+                            </span>
                             <span>{f.label}</span>
                             {f.limit ? (
                               <span
@@ -569,7 +588,7 @@ export function PricingPage() {
                       {enabledProviders.map((p) => (
                         <Button
                           key={p}
-                          variant="primary"
+                          variant="solid"
                           size="md"
                           onClick={() => void handlePremiumCta(p)}
                           disabled={checkoutLoading}
@@ -582,7 +601,13 @@ export function PricingPage() {
                     </div>
                   ) : (
                     <Button
-                      variant={isPremium ? "primary" : "secondary"}
+                      // Канон `(variant, tone)`: `solid`/`outline` при
+                      // нейтральному тоні — це рівно те, що давали легасі
+                      // `primary`/`secondary` (мапа `EMPHASIS_TONE_MAP` у
+                      // `Button.tsx`), тобто вигляд не змінився. Храповик
+                      // `legacyButton` тернарного виразу не бачить, тож цей
+                      // рядок дожив до боргу дизайн-контракту тарифів.
+                      variant={isPremium ? "solid" : "outline"}
                       size="md"
                       onClick={
                         isPremium

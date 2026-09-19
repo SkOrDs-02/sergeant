@@ -273,7 +273,13 @@ describe("useSearchEngine", () => {
         }),
       ),
     );
-    expect(openHubModuleWithAction).toHaveBeenCalledWith("finyk", "add");
+    // Третій аргумент — джерело для `MODULE_OPENED` (базова лінія перед
+    // віссю дії хабу, P3): пошук названий явно, а не падає в `other`.
+    expect(openHubModuleWithAction).toHaveBeenCalledWith(
+      "finyk",
+      "add",
+      "search",
+    );
   });
 
   it("escalateToChat resets the rail, closes and emits openChat", () => {

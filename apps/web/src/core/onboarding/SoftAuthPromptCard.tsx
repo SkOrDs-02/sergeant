@@ -94,7 +94,7 @@ export function SoftAuthPromptCard({
     >
       <div className="flex items-start gap-3">
         <div className="w-10 h-10 shrink-0 rounded-2xl bg-brand-500/15 text-brand-strong flex items-center justify-center">
-          <Icon name="cloud-check" size={20} aria-hidden />
+          <Icon name="cloud-check" size="lg" aria-hidden />
         </div>
         <div className="min-w-0 flex-1">
           <p className="text-style-label text-text">{copy.title}</p>
@@ -105,7 +105,7 @@ export function SoftAuthPromptCard({
             <Button
               type="button"
               onClick={handleOpenAuth}
-              variant="primary"
+              variant="solid"
               size="sm"
             >
               {messages.auth.createAccount}

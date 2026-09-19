@@ -11,7 +11,7 @@ import {
  * the list of operations the dual-write layer must mirror to local
  * SQLite.
  *
- * Stage 4 PR #024 of `docs/planning/storage-roadmap.md`. The
+ * Stage 4 PR #024 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. The
  * orchestrator in `./index.ts` calls this on every successful
  * localStorage write whenever a dual-write context is registered.
  * Stage 8 PR #056r dropped the `feature.routine.sqlite_v2.dual_write`

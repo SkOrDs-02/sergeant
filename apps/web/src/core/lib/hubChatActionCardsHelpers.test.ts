@@ -1,6 +1,6 @@
 // @vitest-environment jsdom
 //
-// AI-4 / AI-6 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+// AI-4 / AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
 // `habitNameFor` reads `loadRoutineState()`, which touches `localStorage` /
 // the SQLite warm-cache — hence `jsdom`, mirroring
 // `chatActions/routineActions.test.ts`.
@@ -329,7 +329,7 @@ describe("titleFor", () => {
   });
 });
 
-// AI-4 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — card
+// AI-4 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) — card
 // subtitles must show the habit's name, not the raw `hab_<uuid>` id.
 describe("habitNameFor", () => {
   beforeEach(() => {

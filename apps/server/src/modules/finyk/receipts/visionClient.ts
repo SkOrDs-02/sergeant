@@ -3,6 +3,7 @@ import {
   extractAnthropicText,
 } from "../../../lib/anthropic.js";
 import { makeAiProviderError } from "../../../obs/errors.js";
+import { als } from "../../../obs/requestContext.js";
 import { env } from "../../../env.js";
 import {
   receiptVisionModel,
@@ -88,6 +89,10 @@ export async function callReceiptVision(
     timeoutMs: 20_000,
     endpoint: "finyk-receipts-analyze",
     allowOpenRouter: receiptVisionViaOpenRouter(),
+    // Ініціатива 0025, Фаза 2 — «id обробки чека». Один виклик на HTTP-запит,
+    // тож переюзаємо наявний per-request W3C trace id (`traceMiddleware`),
+    // не вигадуємо новий.
+    traceId: als.getStore()?.traceId ?? undefined,
     ...(input.userId ? { userId: input.userId } : {}),
   });
   if (!response || !response.ok) {

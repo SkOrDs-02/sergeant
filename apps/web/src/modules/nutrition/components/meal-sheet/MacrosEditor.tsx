@@ -197,7 +197,7 @@ export function MacrosEditor({
           <div className="flex gap-2 pt-1">
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               size="sm"
               className="flex-1"
               onClick={cancelUnlink}
@@ -206,8 +206,9 @@ export function MacrosEditor({
             </Button>
             <Button
               type="button"
-              variant="primary"
-              module="nutrition"
+              variant="solid"
+              tone="nutrition"
+
               size="sm"
               className="flex-1"
               onClick={confirmUnlink}

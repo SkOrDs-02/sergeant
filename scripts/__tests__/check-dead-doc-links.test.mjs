@@ -77,6 +77,40 @@ test("новий мертвий шлях валить гейт", () => {
   assert.equal(run().code, 0, "стан не відновлено");
 });
 
+test("закріплений blob/<sha> URL не рахується мертвим шляхом", () => {
+  // Дзеркало попереднього тесту: та сама приманка, але всередині
+  // закріпленого GitHub-URL. Це форма, якою Hard Rule #23 велить цитувати
+  // заархівовані доки (локальних архівних дерев у репо немає), тож гейт
+  // мусить лишитись зеленим. Sha — 40 hex, інакше пропуск не спрацює.
+  const victim = join(ROOT, "scripts/check-dead-doc-links.mjs");
+  const orig = readFileSync(victim, "utf8");
+  const sha = "d068c73a2f21881d5c1305544fe99f3ea8be81f4";
+  try {
+    writeFileSync(
+      victim,
+      orig +
+        `\n// https://github.com/x/y/blob/${sha}/docs/definitely-not-here/pinned-${Date.now()}.md\n`,
+    );
+    const { code, out } = run(["--json"]);
+    assert.equal(code, 0, "закріплений URL помилково визнано мертвим");
+    assert.deepEqual(JSON.parse(out).appeared, []);
+  } finally {
+    writeFileSync(victim, orig);
+  }
+  // А от `blob/main/…` ротиться разом із гілкою — його пропускати не можна.
+  try {
+    writeFileSync(
+      victim,
+      orig +
+        `\n// https://github.com/x/y/blob/main/docs/definitely-not-here/branch-${Date.now()}.md\n`,
+    );
+    assert.equal(run().code, 1, "URL на гілку мав лишитись під наглядом");
+  } finally {
+    writeFileSync(victim, orig);
+  }
+  assert.equal(run().code, 0, "стан не відновлено");
+});
+
 test("--update відмовляється піднімати бюджет", () => {
   // Ключовий інваріант: baseline рухається лише вниз. Тимчасово занижуємо
   // число і переконуємось, що `--update` НЕ погоджується його підняти назад.

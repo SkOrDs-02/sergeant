@@ -26,13 +26,13 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
         className="w-10 h-10 shrink-0 rounded-2xl bg-finyk/15 flex items-center justify-center"
         aria-hidden
       >
-        <Icon name="lightbulb" size={20} aria-hidden />
+        <Icon name="lightbulb" size="lg" aria-hidden />
       </div>
       <div className="min-w-0 flex-1">
         <div className="text-style-label text-text">
           Ось куди йдуть твої гроші
         </div>
-        <div className="text-style-caption text-muted mt-0.5">
+        <div className="text-style-body text-muted mt-0.5">
           Хочеш поставити бюджет, і бачити, коли починаєш виходити за рамки?
         </div>
         <div className="flex gap-2 mt-3">
@@ -60,7 +60,7 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
         aria-label="Закрити підказку"
         className="shrink-0 -mr-1 text-muted hover:text-text"
       >
-        <Icon name="close" size={16} />
+        <Icon name="close" size="md" />
       </Button>
     </div>
   );

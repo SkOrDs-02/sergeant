@@ -106,7 +106,7 @@ export function BatchEntryDemo() {
                 }}
                 className="w-full h-10 rounded-xl bg-accent text-bg flex items-center justify-center gap-1.5 text-style-label font-semibold active:scale-[0.98] transition-transform"
               >
-                <Icon name="plus" size={16} />
+                <Icon name="plus" size="md" />
                 Додати ще
               </button>
             </div>

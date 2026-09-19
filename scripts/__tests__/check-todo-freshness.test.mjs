@@ -65,6 +65,29 @@ describe("checkFile", () => {
     assert.deepEqual(checkFile(p), []);
   });
 
+  it("treats a backticked dated TODO as a quote of the format, not debt", () => {
+    // Цитата дедлайну в доках чи в коментарі до коду — текст ПРО TODO.
+    // До 2026-09-16 датована форма винятку не мала, і чотири такі цитати
+    // стали простроченими TODO наступного дня після дедлайну.
+    const md = write(
+      "audit.md",
+      `Маркер \`${T}(0589-injury-repo): 2020-01-01\` пішов разом із файлом.\n`,
+    );
+    assert.deepEqual(checkFile(md), []);
+    const ts = write(
+      "a.ts",
+      `// формат: \`${T}(slug): 2020-01-01\` — дата обовʼязкова\n`,
+    );
+    assert.deepEqual(checkFile(ts), []);
+  });
+
+  it("still flags an expired dated TODO in markdown when it is not quoted", () => {
+    const p = write("plan.md", `- ${T}(cleanup-plan): 2020-01-01 — прибрати\n`);
+    const issues = checkFile(p);
+    assert.equal(issues.length, 1);
+    assert.equal(issues[0].type, "expired");
+  });
+
   it("does not police tagged TODOs in markdown", () => {
     const p = write("notes.md", `${T}(later) — це документ, не код\n`);
     assert.deepEqual(checkFile(p), []);

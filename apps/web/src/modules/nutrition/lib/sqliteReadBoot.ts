@@ -9,8 +9,6 @@
  * available:
  *
  *  1. Runs the nutrition SQLite migrations so the tables exist.
- *  1.5. Under the demo flag, fills the SQLite tables from the demo
- *       seed's LS payload — see `importNutritionDemoSeed()` below.
  *  2. Performs the initial `refreshNutritionSqliteState()` so the cache
  *     is warm before the first overlay read.
  *
@@ -27,21 +25,15 @@
  * with pre-SQLite LS data to migrate — see git history for the prior
  * implementation.
  *
- * ⚠️ Те видалення забрало з собою й ДЕМО-режим: демо-сід пише payload у
- * ті самі LS-ключі, і саме residual-дренаж доносив його до SQLite (це
- * прямим текстом стоїть у докблоці `DEMO_LOCAL_USER_ID`). Без нього
- * демо малювало порожній модуль Харчування (аудит L-8, 2026-08-07).
- * Крок 1.5 нижче — `importNutritionDemoSeed()` — закриває саме цей
- * розрив і працює ЛИШЕ під демо-прапорцем; це не повернення legacy-
- * міграції.
+ * Між 2026-08 і 2026-09 тут стояв ще один крок — місток демо-сіду
+ * (`importNutritionDemoSeed`), який під демо-прапорцем доносив засіяний
+ * LS-payload до SQLite. Демо-режим знято 2026-09-17 разом із ним.
  */
 
 import { logger } from "@shared/lib";
 import { recordReadFallback } from "../../../core/observability/dualWriteTelemetry.js";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
-import { isDemoActive } from "../../../core/onboarding/onboardingGate.js";
 import { migrateNutrition } from "./clientMigrate.js";
-import { importNutritionDemoSeed } from "./demoSeedImport.js";
 import { registerRealEntryCounter } from "../../../core/onboarding/realEntryProbe.js";
 import {
   getCachedNutritionSqliteState,
@@ -80,29 +72,6 @@ export async function bootNutritionSqliteReadPath(
     const handle = await getSqliteDb();
     const client = handle.migrationClient();
     await migrateNutrition(client);
-
-    // Демо: залити засіяний payload із LS у SQLite ДО першого читання,
-    // інакше модуль намалює порожньо (аудит L-8). Гейт на демо
-    // обовʼязковий — див. AI-DANGER у `demoSeedImport.ts`. Порядок теж
-    // важливий: нижче йде `refreshNutritionSqliteState`, який гріє кеш, з
-    // якого рендериться модуль.
-    if (isDemoActive()) {
-      // `new Date()` тут — wall-clock `clientTs` для LWW-гварда, не
-      // день-ключ; nutrition не входить у files-скоуп
-      // `no-restricted-syntax` new-Date()-guard-а в eslint.cross-surface.js
-      // (Theme 1 покриває лише finyk/fizruk/routine), тож disable-коментар
-      // не потрібен — той самий випадок, що й `adapter.goalPeriods.ts`.
-      const applied = await importNutritionDemoSeed({
-        client,
-        userId,
-        nowIso: new Date().toISOString(),
-      });
-      if (applied > 0) {
-        logger.debug("[nutrition.demoSeed] демо-дані залито в SQLite", {
-          applied,
-        });
-      }
-    }
 
     await refreshNutritionSqliteState(client, userId);
 

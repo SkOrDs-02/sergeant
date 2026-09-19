@@ -3,6 +3,7 @@ import {
   formatLandingStartPayload,
   newLandingRef,
   parseLandingStartPayload,
+  resolveLandingPlacement,
 } from "./landingAttribution";
 
 /**
@@ -61,5 +62,37 @@ describe("formatLandingStartPayload / parseLandingStartPayload", () => {
 
   it("відкидає токен із символами поза алфавітом", () => {
     expect(parseLandingStartPayload("hero_AAAAAAAAAAAAAAAA")).toBeNull();
+  });
+});
+
+/**
+ * `resolveLandingPlacement` відповідає на інше питання, ніж парсер вище:
+ * не «чи можна зшити половини воронки» (там токен обовʼязковий), а «звідки
+ * людина прийшла». Споживач — звіт каналів у `/stats` бота.
+ */
+describe("resolveLandingPlacement", () => {
+  it("читає місце кнопки з контрактного payload-а", () => {
+    expect(resolveLandingPlacement(`beta_${newLandingRef()}`)).toBe("beta");
+  });
+
+  // Головна причина існування функції: дотокенні рядки в базі несуть ту
+  // саму відповідь про канал, і вважати їх невідомими означало б показати
+  // провал каналу там, де просто старіший формат.
+  it.each(["hero", "footer", "beta"] as const)(
+    "читає дотокенний payload %j",
+    (payload) => {
+      expect(resolveLandingPlacement(payload)).toBe(payload);
+    },
+  );
+
+  it.each([null, undefined, "", "junk", "sidebar", "hero_SHORT"])(
+    "повертає null на %j",
+    (payload) => {
+      expect(resolveLandingPlacement(payload)).toBeNull();
+    },
+  );
+
+  it("не приймає невідоме місце кнопки навіть із валідним токеном", () => {
+    expect(resolveLandingPlacement(`sidebar_${newLandingRef()}`)).toBeNull();
   });
 });

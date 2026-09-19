@@ -312,14 +312,19 @@ describe("makeProxyDriver — get mode via Drizzle .get()", () => {
     const mc = handle.migrationClient();
 
     // exec — no return value expected for DDL
-    mc.exec("CREATE TABLE IF NOT EXISTS t (id INTEGER, val TEXT)");
+    await mc.exec("CREATE TABLE IF NOT EXISTS t (id INTEGER, val TEXT)");
 
     // run — INSERT
-    mc.run("INSERT INTO t VALUES (?, ?)", [1, "hello"]);
-    mc.run("INSERT INTO t VALUES (?, ?)", [2, "world"]);
+    await mc.run("INSERT INTO t VALUES (?, ?)", [1, "hello"]);
+    await mc.run("INSERT INTO t VALUES (?, ?)", [2, "world"]);
 
-    // all — SELECT should return accumulated rows
-    const rows = mc.all<{ id: number; val: string }>(
+    // all — SELECT should return accumulated rows.
+    //
+    // `await` тут не косметика: від стадії 1 спеки `sqlite-opfs-worker.md`
+    // клієнт міграцій асинхронний, бо та сама поверхня обслуговує ще й базу
+    // у воркері. Контракт `SqliteMigrationClient` це допускав завжди
+    // (`R[] | Promise<R[]>`) — тест просто фіксував синхронний варіант.
+    const rows = await mc.all<{ id: number; val: string }>(
       "SELECT id, val FROM t",
       [],
     );

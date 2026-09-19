@@ -306,7 +306,7 @@ export async function assertAiQuota(
   // Founder / internal-team users are never quota-blocked (plan-agnostic).
   if (sessionUser && isFounderUser(sessionUser.id)) return true;
 
-  // AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+  // AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
   // — «хід з дією коштує ОДИН запит». Якщо цей запит несе валідний
   // round-trip-квиток для ЦЬОГО юзера (`chatRoundTripTicket.ts`), він —
   // другий HTTP-запит уже оплаченого першого туру (tool-хід), а не новий
@@ -402,7 +402,7 @@ export async function assertAiQuota(
       // `apps/web/src/core/lib/hubChatUtils.ts`), не за текстом.
       //
       // «ЗАПИТІВ», а не «повідомлень». Лічильник інкрементиться раз на
-      // HTTP-запит до AI-роута. AI-5 рішення 1 (`docs/90-work/audits/
+      // HTTP-запит до AI-роута. AI-5 рішення 1 (`docs/work/specs/audits/
       // 2026-09-01-product-audit/findings.md`) зробило хід з дією рівно
       // одним списанням (round-trip-квиток пропускає другий запит того
       // самого ходу, `chatRoundTripTicket.ts`), тож «запитів» тепер

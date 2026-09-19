@@ -178,7 +178,7 @@ export function BulkReviewTable({
           </Select>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="sm"
             disabled={disabled || !bulkCategory || selectedExpenseCount === 0}
             onClick={() => {

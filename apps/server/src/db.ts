@@ -1,3 +1,4 @@
+import { createHash } from "crypto";
 import fs from "fs/promises";
 import path from "path";
 import { fileURLToPath } from "url";
@@ -55,6 +56,17 @@ const pool = new pg.Pool({
   connectionTimeoutMillis: env.PG_CONNECTION_TIMEOUT_MS,
   // Set statement_timeout on each connection to prevent runaway queries
   statement_timeout: env.PG_STATEMENT_TIMEOUT_MS,
+  // Три стелі, не одна — вони ловлять різні відмови, і наявність
+  // `statement_timeout` не закриває дві інші:
+  //   - statement_timeout            — запит ВИКОНУЄТЬСЯ задовго;
+  //   - lock_timeout                 — запит ЧЕКАЄ на блокування задовго
+  //     (без нього ALTER TABLE за довгим читачем блокує всю таблицю);
+  //   - idle_in_transaction_session_timeout — транзакція відкрита й
+  //     заснула, тримаючи зʼєднання і локи безстроково.
+  // `migrate.mjs` перевизначає перші дві для release-stage: там довга
+  // міграція — норма, а чекання на лок — ні.
+  lock_timeout: env.PG_LOCK_TIMEOUT_MS,
+  idle_in_transaction_session_timeout: env.PG_IDLE_IN_TRANSACTION_TIMEOUT_MS,
 });
 
 if (POOL_VIA_PGBOUNCER) {
@@ -391,26 +403,65 @@ async function runPendingSqlMigrations(client: PoolClient): Promise<void> {
     )
   `);
 
+  // Леджер ключиться ІМЕНЕМ файлу, тож редагування вже застосованої
+  // міграції не детектується ніколи: раннер бачить знайоме імʼя і тихо
+  // пропускає файл. Наслідок — дві бази з ідентичним леджером і різною
+  // схемою, причому розбіжність не видно ні в логах, ні в `/healthz`
+  // (`schemaDrift.ts` теж порівнює лише імена).
+  //
+  // Колонка адитивна й nullable: рядки, застосовані до цієї зміни,
+  // лишаються з NULL і на першому ж прогоні дописують свій хеш.
+  await client.query(
+    `ALTER TABLE schema_migrations ADD COLUMN IF NOT EXISTS checksum TEXT`,
+  );
+
   const migrationsDir = MIGRATIONS_DIR;
   const sqlFiles = await listShippedMigrations();
   for (const file of sqlFiles) {
-    const { rows } = await client.query(
-      "SELECT 1 AS ok FROM schema_migrations WHERE name = $1",
-      [file],
-    );
-    if (rows.length > 0) continue;
+    const { rows } = await client.query<{
+      checksum: string | null;
+    }>("SELECT checksum FROM schema_migrations WHERE name = $1", [file]);
 
     const fullPath = path.join(migrationsDir, file);
     // eslint-disable-next-line security/detect-non-literal-fs-filename -- `file` comes from `fs.readdir(migrationsDir)`, not user input; path is server-controlled.
     const sql = (await fs.readFile(fullPath, "utf8")).trim();
+    const checksum = createHash("sha256").update(sql).digest("hex");
+
+    if (rows.length > 0) {
+      const recorded = rows[0]!.checksum;
+      if (recorded === null) {
+        // Backfill: міграція застосована до появи колонки. Записуємо
+        // теперішній вміст як базу для майбутніх звірок.
+        await client.query(
+          "UPDATE schema_migrations SET checksum = $2 WHERE name = $1",
+          [file, checksum],
+        );
+      } else if (recorded !== checksum) {
+        // СВІДОМО warn, а не throw. Розбіжність означає, що історію вже
+        // відредаговано, і зупиняти деплой тут — значить перетворити
+        // діагностичний сигнал на аварію прода, яку нікому не видно до
+        // релізу. Наша мета — зробити дрейф ВИДИМИМ; лікується він
+        // новою міграцією, а не падінням цієї.
+        logger.warn({
+          msg: "migration_checksum_mismatch",
+          file,
+          recorded,
+          actual: checksum,
+          hint: "Вже застосовану міграцію відредаговано. Схема цієї бази може розходитись зі схемою з іншого середовища — звір і виправ новою міграцією, не правкою старої.",
+        });
+      }
+      continue;
+    }
+
     if (!sql) continue;
 
     await client.query("BEGIN");
     try {
       await client.query(sql);
-      await client.query("INSERT INTO schema_migrations (name) VALUES ($1)", [
-        file,
-      ]);
+      await client.query(
+        "INSERT INTO schema_migrations (name, checksum) VALUES ($1, $2)",
+        [file, checksum],
+      );
       await client.query("COMMIT");
       logger.info({ msg: "migration_applied", file });
     } catch (e) {

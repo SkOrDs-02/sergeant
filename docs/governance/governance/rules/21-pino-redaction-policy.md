@@ -2,7 +2,7 @@
 
 > **Category:** `blocker-invariant`
 > **Severity:** `blocker`
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-26.
+> **Last touched:** 2026-09-17 by @claude (Railway → Coolify; мертвий `stack-pulse` шлях → permalink). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #21. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -21,7 +21,7 @@
 
 ## Why / What is enforced
 
-> Why a hard rule? Pino-логи Sergeant-сервера течуть у Railway-stdout, Sentry breadcrumbs (через `obs/logger.ts → sentryStream`) і у локальні pretty-print devtools. Все, що потрапляє у `logger.x(...)` як raw-об'єкт, виходить плоским JSON-payload-ом до 3-х незалежних консьюмерів. Якщо хтось пише `logger.info(req)`, у payload летить `Authorization`-header, `Cookie` (з Better Auth session-token-ом), `req.body` для Telegram webhook-ів (де всередині bot-API-tokens), `req.signedCookies`, custom proxy-headers, які `redact-paths` не знають за іменем. Inцидент-ризик — повна сесія у Sentry breadcrumbs за 1 строчку коду, без миттєвих візуальних маркерів у diff.
+> Why a hard rule? Pino-логи Sergeant-сервера течуть у container-stdout під Coolify (до ADR-0074 — Railway; далі `pino-loki` → Grafana Loki, див. [`logging-redaction-policy.md`](../../security/logging-redaction-policy.md)), Sentry breadcrumbs (через `obs/logger.ts → sentryStream`) і у локальні pretty-print devtools. Все, що потрапляє у `logger.x(...)` як raw-об'єкт, виходить плоским JSON-payload-ом до 3-х незалежних консьюмерів. Якщо хтось пише `logger.info(req)`, у payload летить `Authorization`-header, `Cookie` (з Better Auth session-token-ом), `req.body` для Telegram webhook-ів (де всередині bot-API-tokens), `req.signedCookies`, custom proxy-headers, які `redact-paths` не знають за іменем. Inцидент-ризик — повна сесія у Sentry breadcrumbs за 1 строчку коду, без миттєвих візуальних маркерів у diff.
 >
 > Pino `redact: { paths: [...] }` (зараз ~50 шляхів у [`apps/server/src/obs/logger.ts`](../../../../apps/server/src/obs/logger.ts)) ловить **відомі** sensitive-ключі за іменем, але контракт «що логуємо» лишається неявним: ревьюер бачить `logger.info(req, "ok")` і не може швидко перевірити, які саме поля підуть у JSON. Hard-rule перетворює контракт на видимий destructure — будь-який новий sensitive-field з'являється у diff, а не тихо ллється у Sentry.
 
@@ -62,5 +62,5 @@ Procedure / посилання: [`docs/governance/security/logging-redaction-pol
 
 ## Related
 
-- **doc** — docs/work/specs/initiatives/stack-pulse-2026-05/archive/pr-16-pino-redaction-policy.md
+- **doc** — [stack-pulse-2026-05 PR-16 — Pino redaction policy](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-16-pino-redaction-policy.md) (permalink — файл знято з чекауту)
 - **agents** — #21

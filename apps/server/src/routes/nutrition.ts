@@ -43,7 +43,13 @@ import shoppingList from "../modules/nutrition/shopping-list.js";
  * `effectiveLimits.aiRequestsPerDay`), що збігається з клієнтським
  * `useFeatureGate("ai-photo-analysis")` та ADR-0051. `requirePlan` стоїть
  * ПЕРЕД `requireAnthropicKey`/`requireAiQuota`, щоб free-юзер отримав 402 до
- * витрати денної квоти; при `STRIPE_ENABLED=false` middleware — no-op.
+ * витрати денної квоти.
+ *
+ * Байпас гейта тепер прив'язаний до `isBillingEnforced()`, а не до
+ * `STRIPE_ENABLED`. Стара умова робила middleware no-op-ом у проді, де
+ * Stripe вимкнений, а продають LiqPay і Plata — тобто ці два vision-роути
+ * були відкриті безкоштовно. No-op лишився лише для середовищ, де не
+ * ввімкнено жодного провайдера.
  */
 export function createNutritionRouter({ pool }: { pool: Pool }): Router {
   const r = Router();

@@ -1,8 +1,7 @@
 # Розбір зауважень власника: мобільний UX Sergeant
 
-> **Status:** Active
-> **Last validated:** 2026-09-06
-> **Next review:** 2026-10-06
+> **Status:** Reference — superseded by [`2026-09-11-founder-ux-review-round2.md`](./2026-09-11-founder-ux-review-round2.md): хвиля 2 звірила кожне «Виконано» звідси з деревом (таблиця «Заявлено ↔ Фактично») і веде відкриті залишки; цей документ як трекер більше не ведеться.
+> **Last touched:** 2026-09-17 by @claude (Active → Reference, спожитий round2). **Next review:** 2026-12-16.
 > **Spec-lint:** skip — пакет розвідки, варіантів і питань; не затверджена специфікація реалізації.
 
 ## Як використовувати

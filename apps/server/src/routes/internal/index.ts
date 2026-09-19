@@ -33,12 +33,13 @@ import { createGdprInternalRouter } from "./gdpr.js";
  *
  *   2. `verifyWebhookSignature()` — runs ONLY when
  *      `WEBHOOK_HMAC_SECRET` is set. Checks `X-Signature` (HMAC-SHA256
- *      hex) and `X-Timestamp` (UNIX-seconds, 5-min replay window). Grace
- *      mode (`WEBHOOK_HMAC_REQUIRED=false`, the default) warn-logs
- *      mismatches but passes through, so n8n workflows can roll out one
- *      at a time; flip `WEBHOOK_HMAC_REQUIRED=true` after every wired
- *      workflow signs (`manifest.json: hmac_signed: true`). See
- *      `docs/observability/security.md` for the rollout playbook.
+ *      hex) and `X-Timestamp` (UNIX-seconds, 5-min replay window).
+ *      `WEBHOOK_HMAC_REQUIRED` defaults to `true` since 2026-09-16, so a
+ *      missing or invalid signature is a 401; set it to `false` only as a
+ *      deliberate, temporary opt-out while a new internal caller learns to
+ *      sign. Note the layer is skipped entirely when the secret is empty —
+ *      `assertStartupEnv` warns about that combination at boot. See
+ *      `docs/governance/security/api-internal-hmac.md`.
  *
  * These routes are intentionally NOT session-auth — they are machine-to-machine.
  * They must NEVER be exposed to end-users or third-party services.

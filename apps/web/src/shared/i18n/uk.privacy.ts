@@ -30,7 +30,7 @@ export const privacyMessages = {
     unlockTitle: "Введи PIN",
     unlockSubtitle: "Введи PIN, щоб розблокувати",
     pinMismatch: "PIN-коди не збігаються. Спробуй ще раз.",
-    pinWrong: "Невірний PIN. Спробуй ще раз.",
+    pinWrong: "Неправильний PIN. Спробуй ще раз.",
     pinTooShort: "PIN має містити від 4 до 6 цифр.",
     lockNow: "Заблокувати зараз",
     changePin: "Змінити PIN",

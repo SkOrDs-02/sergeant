@@ -70,7 +70,7 @@ export const mobileBlocks = [
             {
               name: "@sergeant/db-schema/migrate",
               message:
-                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path`. See `docs/work/specs/audits/2026-05-07-app-audit.md` §1.",
+                "Import the runner from `@sergeant/db-schema/migrate/runner` (or the dialect-specific sub-segment `…/migrate/sqlite` / `…/migrate/pg`). The umbrella `…/migrate` re-exports `loadMigrationFiles` from `./files.js`, which top-level imports `node:fs`/`node:path`.",
             },
           ],
         },

@@ -13,7 +13,7 @@ import {
 
 /**
  * Schema-roundtrip smoke for the Stage 3 SPIKE bundled migrations
- * (PR #022 of `docs/planning/storage-roadmap.md`).
+ * (PR #022 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *
  * Locks down four invariants that the web/mobile clients depend on:
  *
@@ -76,6 +76,7 @@ describe("ROUTINE_CLIENT_MIGRATIONS", () => {
       "008_anonymous_profile_migration.sql",
       "009_routine_habit_skips.sql",
       "010_routine_weekly_target_history.sql",
+      "011_routine_drop_pushups.sql",
     ]);
     expect(result.skipped).toEqual([]);
 
@@ -97,7 +98,6 @@ describe("ROUTINE_CLIENT_MIGRATIONS", () => {
       "routine_habit_skips",
       "routine_habits",
       "routine_prefs",
-      "routine_pushups",
       "routine_streaks",
       "routine_tags",
       "sync_op_cursor",
@@ -191,12 +191,8 @@ describe("ROUTINE_CLIENT_MIGRATIONS", () => {
       .all() as { name: string }[];
     expect(prefsPk.map((r) => r.name)).toEqual(["user_id"]);
 
-    const pushupsPk = db
-      .prepare(
-        "SELECT name FROM pragma_table_info('routine_pushups') WHERE pk != 0",
-      )
-      .all() as { name: string }[];
-    expect(pushupsPk.map((r) => r.name)).toEqual(["user_id", "date_key"]);
+    // `routine_pushups` (004) знята міграцією 011 — таблиці в кінцевій
+    // схемі бути не повинно (перевірено списком таблиць вище).
 
     const orderPk = db
       .prepare(
@@ -237,6 +233,7 @@ describe("ROUTINE_CLIENT_MIGRATIONS", () => {
       "008_anonymous_profile_migration.sql",
       "009_routine_habit_skips.sql",
       "010_routine_weekly_target_history.sql",
+      "011_routine_drop_pushups.sql",
     ]);
   });
 

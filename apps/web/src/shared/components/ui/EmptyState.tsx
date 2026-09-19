@@ -591,7 +591,7 @@ export function ModuleEmptyState({
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-panel",
           )}
         >
-          <Icon name="x" size={16} aria-hidden="true" />
+          <Icon name="close" size="md" aria-hidden="true" />
         </button>
       )}
       <EmptyState
@@ -627,7 +627,7 @@ export function ModuleEmptyState({
         action={
           onAction && (
             <Button
-              variant="primary"
+              variant="solid"
               size={compact ? "sm" : "md"}
               onClick={onAction}
             >

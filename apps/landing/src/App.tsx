@@ -11,6 +11,7 @@ import YizhaPage from "./pages/YizhaPage";
 import ZvychkyPage from "./pages/ZvychkyPage";
 import TrenuvanniaPage from "./pages/TrenuvanniaPage";
 import ZvyazkyPage from "./pages/ZvyazkyPage";
+import PomichnykPage from "./pages/PomichnykPage";
 import StanPage from "./pages/StanPage";
 import ObitsyankyPage from "./pages/ObitsyankyPage";
 import PytannyaPage from "./pages/PytannyaPage";
@@ -20,9 +21,12 @@ import GuideChekyPage from "./pages/GuideChekyPage";
 import GuideFotoKaloriiPage from "./pages/GuideFotoKaloriiPage";
 import GuideBankBezpekaPage from "./pages/GuideBankBezpekaPage";
 import GuideKilkaBankivPage from "./pages/GuideKilkaBankivPage";
+import GuidePryvat24Page from "./pages/GuidePryvat24Page";
+import GuideSilpoPage from "./pages/GuideSilpoPage";
 import GuidePauzaPropuskPage from "./pages/GuidePauzaPropuskPage";
 import GuideOhlyadDnyaPage from "./pages/GuideOhlyadDnyaPage";
 import GuideTyzhnevyiPidsumokPage from "./pages/GuideTyzhnevyiPidsumokPage";
+import GuideZamistTrekerivPage from "./pages/GuideZamistTrekerivPage";
 import PrivacyPage from "./pages/PrivacyPage";
 import TermsPage from "./pages/TermsPage";
 import NotFoundPage from "./pages/NotFoundPage";
@@ -47,6 +51,7 @@ export const ROUTES: Record<string, ComponentType> = {
   "/vyhid": VyhidPage,
   "/guides": GuidesPage,
   "/zvyazky": ZvyazkyPage,
+  "/pomichnyk": PomichnykPage,
   "/stan": StanPage,
   "/obitsyanky": ObitsyankyPage,
   "/pytannya": PytannyaPage,
@@ -56,9 +61,12 @@ export const ROUTES: Record<string, ComponentType> = {
   "/guides/foto-kalorii": GuideFotoKaloriiPage,
   "/guides/bank-bezpeka": GuideBankBezpekaPage,
   "/guides/kilka-bankiv": GuideKilkaBankivPage,
+  "/guides/pryvat24": GuidePryvat24Page,
+  "/guides/silpo": GuideSilpoPage,
   "/guides/pauza-i-propusk": GuidePauzaPropuskPage,
   "/guides/ohlyad-dnya": GuideOhlyadDnyaPage,
   "/guides/tyzhnevyi-pidsumok": GuideTyzhnevyiPidsumokPage,
+  "/guides/zamist-chotyryokh-trekeriv": GuideZamistTrekerivPage,
   "/privacy": PrivacyPage,
   "/terms": TermsPage,
   // Свій маршрут, щоб prerender поклав у dist/404/index.html тіло цієї

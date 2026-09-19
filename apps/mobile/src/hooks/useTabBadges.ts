@@ -18,6 +18,11 @@
  */
 
 import { useEffect, useState, useMemo } from "react";
+import {
+  deviceDayKey,
+  deviceMondayStart,
+  toKyivISODate,
+} from "@sergeant/shared";
 import { safeReadLS } from "@/lib/storage";
 
 // Storage keys for each module
@@ -29,16 +34,29 @@ const FIZRUK_WORKOUTS_KEY = "fizruk_workouts_v1";
 const FIZRUK_SCHEDULE_KEY = "fizruk_schedule_v1";
 const NUTRITION_MEALS_KEY = "nutrition_meals_v1";
 
-function getTodayKey(): string {
-  return new Date().toISOString().slice(0, 10); // "YYYY-MM-DD"
+/**
+ * День-ключ за годинником ПРИСТРОЮ (ADR-0078): звички, страви й тренування —
+ * особисті сутності. До 2026-09-16 тут стояло `toISOString().slice(0, 10)`,
+ * тобто UTC: для UTC+2/+3 із півночі до 02:00–03:00 бейджі показували
+ * ВЧОРАШНІЙ день (аудит 2026-09-15 § 2) — патерн, який репо забороняє
+ * коментарями ще в чотирьох місцях (`kyivClock.ts`). Експортовано лише для
+ * тестів; `now` — для детермінованих кейсів.
+ */
+export function getTodayKey(now: Date = new Date()): string {
+  return deviceDayKey(now);
 }
 
-function getWeekStart(): string {
-  const now = new Date();
-  const dayOfWeek = now.getDay();
-  const diff = now.getDate() - dayOfWeek + (dayOfWeek === 0 ? -6 : 1);
-  const monday = new Date(now.setDate(diff));
-  return monday.toISOString().slice(0, 10);
+/** Понеділок поточного тижня за пристроєм — та сама межа, що й для тренувань. */
+export function getWeekStart(now: Date = new Date()): string {
+  return deviceDayKey(deviceMondayStart(now));
+}
+
+/**
+ * Фінансовий період — за Києвом (ADR-0078: бюджети й звіти, на відміну від
+ * особистих сутностей, живуть у київській добі). Раніше й тут був UTC-зріз.
+ */
+export function getBudgetMonthKey(now: Date = new Date()): string {
+  return toKyivISODate(now).slice(0, 7);
 }
 
 /**
@@ -78,7 +96,7 @@ function countOverBudgetCategories(): number {
 
     if (!Array.isArray(budgetsRaw) || !Array.isArray(transactionsRaw)) return 0;
 
-    const thisMonth = getTodayKey().slice(0, 7); // "YYYY-MM"
+    const thisMonth = getBudgetMonthKey(); // "YYYY-MM", київська доба
 
     // Calculate spending per category for this month
     const categorySpending: Record<string, number> = {};

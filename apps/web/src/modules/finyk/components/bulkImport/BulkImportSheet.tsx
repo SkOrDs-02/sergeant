@@ -378,8 +378,10 @@ export function BulkImportSheet({
       footer={
         stage === "bulk-review" ? (
           <Button
+            variant="solid"
+            tone="finyk"
             className="w-full"
-            module="finyk"
+
             loading={commit.isPending}
             disabled={reviewRows.every((r) => !r.selected)}
             onClick={() => void handleCommit()}
@@ -436,19 +438,21 @@ export function BulkImportSheet({
       {stage === "choose" && (
         <div className="space-y-3">
           <Button
+            variant="solid"
+            tone="finyk"
             className="w-full"
-            module="finyk"
+
             onClick={() => screenshotInputRef.current?.click()}
           >
-            <Icon name="upload" size={16} aria-hidden />
+            <Icon name="upload" size="md" aria-hidden />
             Скрін банкінгу
           </Button>
           <Button
-            variant="secondary"
+            variant="outline"
             className="w-full"
             onClick={() => csvInputRef.current?.click()}
           >
-            <Icon name="file-text" size={16} aria-hidden />
+            <Icon name="file-text" size="md" aria-hidden />
             Виписка файлом
           </Button>
           {/* Не «CSV, XLS або XLSX»: сервер читає CSV, XLSX і HTML-таблицю,

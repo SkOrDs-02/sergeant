@@ -2,7 +2,7 @@
 /**
  * `pnpm eval:models` — стенд порівняння моделей по AI-шляхах застосунку.
  *
- * Що змінилось у v2 (спека `docs/90-work/planning/specs/ai-eval-harness-v2.md`):
+ * Що змінилось у v2 (спека `docs/work/specs/ai-eval-harness-v2.md`):
  *
  *  * **Реальні промпти.** Кожен пайплайн імпортує системний промпт із
  *    продового білдера (`buildCategorizePrompt`, `buildWeeklyDigestPrompt`,
@@ -153,7 +153,7 @@ async function main(): Promise<void> {
   );
   const outPath =
     values.out ??
-    `docs/90-work/planning/model-eval-${generatedAt.slice(0, 10)}.md`;
+    `docs/work/specs/planning/model-eval-${generatedAt.slice(0, 10)}.md`;
   const absOutPath = resolve(repoRoot, outPath);
   mkdirSync(dirname(absOutPath), { recursive: true });
   writeFileSync(absOutPath, markdown, "utf-8");

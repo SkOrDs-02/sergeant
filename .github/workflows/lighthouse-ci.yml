@@ -1,6 +1,6 @@
 name: Lighthouse CI
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Closes T5 у `docs/work/specs/planning/sprint-roadmap-q2q3-2026.md` § 1.1 Тех-борг
 # та P1.2 у `docs/work/specs/audits/archive/2026-05-13-dead-code-hard-rules-roast.md` —
 # previously planned-only workflow. Runs `@lhci/cli` autorun against the

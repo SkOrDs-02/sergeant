@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { TimeField } from "@shared/components/ui/TimeField";
 import { useToast } from "@shared/hooks/useToast";
 import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
 import { usePushNotifications } from "@shared/hooks/usePushNotifications";
@@ -239,18 +240,32 @@ export function NotificationsSection() {
           onChange={handleFizrukToggle}
         />
         {monthlyPlan.reminderEnabled && (
-          <label className="flex items-center gap-2 text-style-label">
-            <span className="text-subtle">Час</span>
-            <input
-              type="time"
-              className="bg-bg border border-line rounded-xl px-3 py-2 text-style-body text-text touch-target"
-              value={`${String(monthlyPlan.reminderHour).padStart(2, "0")}:${String(monthlyPlan.reminderMinute).padStart(2, "0")}`}
-              onChange={(e) => {
-                const [h, m] = e.target.value.split(":").map(Number);
-                monthlyPlan.setReminder(h || 0, m || 0);
-              }}
-            />
-          </label>
+          // Сирий `<input type="time">` тут стояв у flex-рядку без жодного
+          // контракту ширини: нативний контрол має власний intrinsic
+          // inline-size від локалі, а flex-комірка з дефолтним
+          // `min-width: auto` під нього розширюється. `TimeField` несе цей
+          // контракт (`min-w-0` + явний `inline-size: 100%`); обгортка
+          // з фіксованою шириною потрібна тому, що корінь примітива — `w-full`
+          // (у flex-рядку він тягнувся б на всю ширину), а ширина задана
+          // явно, щоб трек не мав внеску від intrinsic-розміру контрола
+          // взагалі. 9rem, а не «на око»: нативний time-контрол рендериться
+          // під локаль ПРИСТРОЮ, не застосунку, і в en-US це `08:30 AM` —
+          // 142px заміром у Chromium. Вужчий трек обрізав би суфікс саме тим
+          // людям, у яких раніше поле було без обмеження взагалі.
+          // Рецепт: docs/start/instructions/fix-mobile-horizontal-overflow.md
+          <div className="flex items-center gap-2 text-style-label">
+            <span className="shrink-0 text-subtle">Час</span>
+            <div className="w-[9rem] shrink-0">
+              <TimeField
+                aria-label="Час"
+                value={`${String(monthlyPlan.reminderHour).padStart(2, "0")}:${String(monthlyPlan.reminderMinute).padStart(2, "0")}`}
+                onChange={(e) => {
+                  const [h, m] = e.target.value.split(":").map(Number);
+                  monthlyPlan.setReminder(h || 0, m || 0);
+                }}
+              />
+            </div>
+          </div>
         )}
       </SettingsSubGroup>
 

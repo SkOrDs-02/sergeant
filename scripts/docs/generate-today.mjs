@@ -291,7 +291,7 @@ function render({ priority, overdue, wipRows }) {
   lines.push("## Quick links");
   lines.push("");
   lines.push(
-    "- [`open-work.md`](./open-work.md) — повний rollup усіх 7 trackers",
+    `- [\`open-work.md\`](./open-work.md) — повний rollup усіх ${TRACKERS.length} tracker${TRACKERS.length === 1 ? "" : "s"}`,
   );
   lines.push(
     "- [`governance/freshness-dashboard.html`](./governance/governance/freshness-dashboard.html) — повний freshness огляд",

@@ -3,6 +3,7 @@ import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import { FAQ_ITEMS } from "../content/faqItems";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "../lib/analytics";
 import TelegramCta from "../components/TelegramCta";
+import UpdatedOn from "../components/UpdatedOn";
 
 export default function PytannyaPage() {
   usePageMeta({
@@ -11,6 +12,7 @@ export default function PytannyaPage() {
       "@context": "https://schema.org",
       "@type": "FAQPage",
       inLanguage: "uk",
+      dateModified: ROUTE_META["/pytannya"].lastmod,
       mainEntity: FAQ_ITEMS.map((item) => ({
         "@type": "Question",
         name: item.q,
@@ -27,6 +29,13 @@ export default function PytannyaPage() {
       <p className="mt-5 max-w-xl leading-relaxed text-muted">
         Коротко про те, що питають найчастіше. Якщо твого питання тут немає –
         напиши в Telegram, і воно тут зʼявиться.
+      </p>
+      <p className="mt-3 text-sm text-subtle">
+        Оновлено{" "}
+        <UpdatedOn
+          iso={ROUTE_META["/pytannya"].lastmod}
+          className="font-semibold"
+        />
       </p>
 
       <div className="mt-10 grid gap-x-12 sm:grid-cols-2">

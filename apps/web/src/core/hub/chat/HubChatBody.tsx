@@ -152,7 +152,7 @@ export function HubChatBody({
               className="inline-flex items-center gap-1.5 min-h-[44px] px-2.5 rounded-full bg-panelHi hover:bg-line/40 text-muted hover:text-text text-style-caption font-medium transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
               aria-label="Скасувати поточний запит"
             >
-              <Icon name="close" size={12} />
+              <Icon name="close" size="xs" />
               Скасувати
             </button>
           </Tooltip>

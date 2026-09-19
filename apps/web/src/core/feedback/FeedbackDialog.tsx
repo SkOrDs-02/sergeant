@@ -142,7 +142,7 @@ export function FeedbackDialog({ open, onClose }: FeedbackDialogProps) {
       footer={
         <Button
           type="button"
-          variant="primary"
+          variant="solid"
           className="w-full justify-center"
           loading={sending}
           onClick={() => {

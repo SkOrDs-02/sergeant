@@ -164,7 +164,7 @@ export function AssistantAdviceCard({
           </div>
           <Icon
             name={collapsed ? "chevron-down" : "chevron-up"}
-            size={14}
+            size="sm"
             className="text-muted"
           />
         </button>
@@ -276,7 +276,7 @@ export function AssistantAdviceCard({
                       "opacity-40 cursor-not-allowed motion-safe:animate-spin",
                   )}
                 >
-                  <Icon name="refresh-cw" size={14} />
+                  <Icon name="refresh-cw" size="sm" />
                 </button>
                 {/* Оцінка — праворуч, окремо від дій над порадою: «зроби
                     щось із цим» і «чи це взагалі було варте показу» — різні

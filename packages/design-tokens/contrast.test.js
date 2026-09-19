@@ -477,4 +477,66 @@ describe("@sergeant/design-tokens — «Чорнило» light pair (spec § 5)"
       ).toBeGreaterThanOrEqual(weakestModule - 0.5);
     }
   });
+
+  /**
+   * Альфа на `hero-ink` — знахідка WF-23 (аудит шуму 2026-09-16).
+   *
+   * Пари вище міряють РІВНО 100%-чорнило, і саме тому дефект прожив довго:
+   * `text-hero-ink/70` у коді композитно підмішує колір градієнта, а гейт
+   * цього не бачив. Тест нижче міряє те, чим воно стає на екрані.
+   *
+   * Лічильник call-site-ів живе окремо — метрика `heroInkAlpha` у
+   * `scripts/check-ui-canon-ratchet.mjs` (стеля над боргом, 20 місць).
+   * Тут закріплені ЧИСЛА: якщо хтось освітлить геро-градієнт, впаде саме
+   * цей тест і назве модуль.
+   */
+  describe("«Чорнило» на геро-градієнті — альфа", () => {
+    const HERO_INK = "#fdf9f3";
+    // Світлий (гірший) кінець кожного геро-градієнта зі `theme.css`.
+    const heroLightEnds = {
+      finyk: brandColors.teal[700],
+      fizruk: brandColors.cyan[700],
+      routine: brandColors.rose[700],
+      nutrition: brandColors.lime[700],
+    };
+
+    /** sRGB-композит чорнила з альфою поверх непрозорого фону. */
+    function compositeHex(fgHex, bgHex, alpha) {
+      const mix = (i) => {
+        const fg = parseInt(fgHex.slice(1 + i * 2, 3 + i * 2), 16);
+        const bg = parseInt(bgHex.slice(1 + i * 2, 3 + i * 2), 16);
+        return Math.round(fg * alpha + bg * (1 - alpha));
+      };
+      return (
+        "#" +
+        [0, 1, 2].map((i) => mix(i).toString(16).padStart(2, "0")).join("")
+      );
+    }
+
+    for (const [name, bg] of Object.entries(heroLightEnds)) {
+      it(`${name}: повна непрозорість тримає AA на світлому кінці`, () => {
+        expect(contrastRatio(HERO_INK, bg)).toBeGreaterThanOrEqual(4.5);
+      });
+
+      it(`${name}: /80 і нижче AA НЕ тримає — задокументовано, не випадковість`, () => {
+        // Негативне твердження навмисне: воно фіксує, ЧОМУ метрика
+        // `heroInkAlpha` існує. Якщо градієнт колись потемнішає настільки,
+        // що /80 почне проходити, цей тест впаде і змусить перечитати
+        // рішення, а не мовчки лишить стелю над неіснуючим боргом.
+        expect(contrastRatio(compositeHex(HERO_INK, bg, 0.8), bg)).toBeLessThan(
+          4.5,
+        );
+      });
+    }
+
+    it("nutrition — найтісніший модуль: навіть /95 не тримає AA", () => {
+      // Саме цей замір робить «просто підняти альфу» непрацюючим рецептом:
+      // на lime-700 прохідна лише повна непрозорість (4.67 проти порога
+      // 4.5), тож будь-який крок прозорості вже провал.
+      const bg = brandColors.lime[700];
+      expect(contrastRatio(compositeHex(HERO_INK, bg, 0.95), bg)).toBeLessThan(
+        4.5,
+      );
+    });
+  });
 });

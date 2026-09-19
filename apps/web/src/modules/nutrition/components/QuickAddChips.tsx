@@ -69,7 +69,7 @@ export function QuickAddChips({ chips, onTap }: QuickAddChipsProps) {
           aria-label={LABELS.chip(chip.label, chip.grams)}
           className="shrink-0 border-nutrition/40"
         >
-          <Icon name="plus" size={12} aria-hidden />
+          <Icon name="plus" size="xs" aria-hidden />
           <span className="whitespace-nowrap">{chip.label}</span>
           <span className="text-style-caption text-muted whitespace-nowrap">
             · {chip.macros.kcal} {messages.nutrition.kcalUnit}

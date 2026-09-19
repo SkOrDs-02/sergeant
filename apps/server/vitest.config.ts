@@ -66,7 +66,7 @@ export default defineConfig({
         //    docs/work/specs/tech-debt/backend.md § "Tests coverage map"
         //    reconciled the same day.
         //  - 2026-08-04 actual: lines 92.95 / branches 82.75 / fns 92.05
-        //    (coverage-depth audit, docs/90-work/audits/
+        //    (coverage-depth audit, docs/work/specs/audits/
         //    2026-08-04-test-coverage-depth-audit.md). Floors ratcheted to
         //    fact − 5пп: the old 60/48/63 safety net sat ~30пп below fact —
         //    a legal degradation corridor no gate would flag. The repo-root

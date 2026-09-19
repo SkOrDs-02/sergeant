@@ -1,6 +1,6 @@
 -- 029: fizruk_workouts + fizruk_workout_items + fizruk_workout_sets +
 -- fizruk_custom_exercises + fizruk_measurements — normalized target shape for
--- the Fizruk module (Stage 4 / PR #027 of `docs/planning/storage-roadmap.md`).
+-- the Fizruk module (Stage 4 / PR #027 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 --
 -- Context. Until now the Fizruk state lived as a JSON blob inside
 -- `module_data` with `module='fizruk'`: workouts, sets, custom exercises,

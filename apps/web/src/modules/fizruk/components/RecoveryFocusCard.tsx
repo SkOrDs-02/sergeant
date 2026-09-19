@@ -100,7 +100,8 @@ export function RecoveryFocusCard({
           </button>
         </h2>
         <Button
-          variant="fizruk-soft"
+          variant="soft"
+          tone="fizruk"
           size="sm"
           // AI-DANGER: розмір контрола на `Button`, не текст — див.
           // той самий випадок у WorkoutCatalogSection.
@@ -141,7 +142,7 @@ export function RecoveryFocusCard({
             <div className="mb-3 px-3 py-2 rounded-xl bg-warning/10 border border-warning/25 flex items-start gap-2">
               <Icon
                 name="moon"
-                size={16}
+                size="md"
                 className="shrink-0 text-warning-strong dark:text-warning"
                 aria-hidden
               />

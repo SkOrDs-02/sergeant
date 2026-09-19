@@ -97,7 +97,7 @@ const SUMMARY_REGISTRY: Record<string, SummaryFn> = {
         : undefined,
     ]),
 
-  // AI-4 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // AI-4 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
   // `habitNameFor` резолвить `hab_<uuid>` у назву звички з локального
   // стану Рутини; raw id — fallback, коли звички вже немає локально
   // (видалена / ще не синхронізована), а не типовий шлях.

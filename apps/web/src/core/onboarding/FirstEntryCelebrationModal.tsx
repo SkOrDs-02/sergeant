@@ -94,7 +94,7 @@ export function FirstEntryCelebrationModal({
         aria-label={messages.actions.close}
         className="touch-target shrink-0 rounded-lg text-muted focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
       >
-        <Icon name="x" size="sm" aria-hidden />
+        <Icon name="close" size="sm" aria-hidden />
       </button>
     </div>
   );

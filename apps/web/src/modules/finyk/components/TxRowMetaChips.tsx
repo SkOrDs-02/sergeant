@@ -125,7 +125,7 @@ export function TxRowMetaChips({
               className="inline-flex items-center"
               title="Категорію визначив Сержант за описом і MCC"
             >
-              <Icon name="sergeant" size={12} aria-hidden />
+              <Icon name="sergeant" size="xs" aria-hidden />
               <span className="sr-only">
                 Категорію визначив Сержант за описом і MCC
               </span>
@@ -137,7 +137,7 @@ export function TxRowMetaChips({
               {/* §2: рахунок завжди нейтральний — «кредитна» позначає
                   іконка, не колір. Червоне лишається боргам/активам. */}
               {isCreditCard && (
-                <Icon name="credit-card" size={12} aria-hidden />
+                <Icon name="credit-card" size="xs" aria-hidden />
               )}
               {accountName}
             </span>
@@ -159,7 +159,7 @@ export function TxRowMetaChips({
         >
           <Icon
             name="file-text"
-            size={12}
+            size="xs"
             title="Є прикріплений чек, відкрий транзакцію, щоб побачити позиції"
           />
         </span>

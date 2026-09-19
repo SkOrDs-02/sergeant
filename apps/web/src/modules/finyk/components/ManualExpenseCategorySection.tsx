@@ -70,7 +70,7 @@ export function ManualExpenseCategorySection({
             size="sm"
             className="inline-flex items-center gap-1.5"
           >
-            <Icon name="sergeant" size={12} aria-hidden />
+            <Icon name="sergeant" size="xs" aria-hidden />
             AI ·{" "}
             {categoryDisplay[aiAppliedCategory]?.label ?? aiAppliedCategory}
             <button

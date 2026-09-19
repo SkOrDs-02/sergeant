@@ -68,13 +68,39 @@ describe("useStaleActiveWorkoutCleanup", () => {
       expect(setId).not.toHaveBeenCalled();
     });
 
-    it("still clears the id when the routed workout genuinely does not exist", () => {
+    // Було «still clears the id when the routed workout genuinely does not
+    // exist». Виявилось, що «взагалі немає» і «ще не приїхало» тут одне й те
+    // саме: `workoutsLoaded` каже про факт прогріву кеша, не про його вміст.
+    // З базою в OPFS прогрів встигає після монтування маршруту, і занулення
+    // ховало щойно створену сесію назавжди — авто-підхоплення під тим самим
+    // прапорцем вимкнене. Картку «не знайдено» малює `activeWorkout === null`,
+    // тож видалена сесія читається так само; різниця лише в оборотності.
+    it("не забирає id маршруту, якщо сесії ще немає у списку", () => {
       const setId = vi.fn();
       renderHook(() =>
         useStaleActiveWorkoutCleanup(true, [], "ghost", setId, {
           routeOwnsWorkoutId: true,
         }),
       );
+      expect(setId).not.toHaveBeenCalled();
+    });
+
+    it("id маршруту доживає до появи сесії у кеші", () => {
+      const setId = vi.fn();
+      const { rerender } = renderHook(
+        ({ workouts }: { workouts: Workout[] }) =>
+          useStaleActiveWorkoutCleanup(true, workouts, "w1", setId, {
+            routeOwnsWorkoutId: true,
+          }),
+        { initialProps: { workouts: [] as Workout[] } },
+      );
+      rerender({ workouts: [{ id: "w1", endedAt: null } as Workout] });
+      expect(setId).not.toHaveBeenCalled();
+    });
+
+    it("без прапорця неіснуючий id досі чиститься", () => {
+      const setId = vi.fn();
+      renderHook(() => useStaleActiveWorkoutCleanup(true, [], "ghost", setId));
       expect(setId).toHaveBeenCalledWith(null);
     });
 

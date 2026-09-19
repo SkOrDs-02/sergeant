@@ -93,7 +93,7 @@ export const aiMemoryIngestEnqueuedTotal = new client.Counter({
   //   fallback        — Redis unavailable; in-process direct dispatch
   //   enqueue_error   — Redis push failed (network / serialization / invalid source)
   //   disabled        — master AI_MEMORY_ENABLED=false (kills all sources)
-  //   source_disabled — per-source flag off (e.g. MONO_AI_MEMORY_INGEST_ENABLED=false)
+  //   source_disabled — per-source flag off (e.g. DIGEST_AI_MEMORY_INGEST_ENABLED=false)
   labelNames: ["mode", "source"],
   registers: [register],
 });

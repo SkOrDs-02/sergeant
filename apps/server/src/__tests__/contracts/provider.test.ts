@@ -274,7 +274,7 @@ afterAll(() => {
 const pact = loadPact();
 
 describe("Pact provider replay — consumer=sergeant-api-client, provider=sergeant-server", () => {
-  it("pact file has 79 expected consumer interactions across 50 routes", () => {
+  it("pact file has 81 expected consumer interactions across 50 routes", () => {
     expect(pact.consumer.name).toBe("sergeant-api-client");
     expect(pact.provider.name).toBe("sergeant-server");
     // 75, не 73: +2 інтеракції 2026-08-25 на ВЖЕ покритих маршрутах
@@ -286,7 +286,15 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     // покритому `GET /api/v1/me/preferences` — дзеркально до трьох, які
     // свого часу додав `activeModules`. Маршрут той самий, тож
     // `expectedRoutes` не росте: змінилась лише кількість інтеракцій.
-    expect(pact.interactions).toHaveLength(79);
+    // 80, не 79: +1 інтеракція на вже покритому
+    // `GET /api/v1/silpo/sync-state` — третій стан, якого контракт доти не
+    // знав узагалі: підключено, але синк ПАДАЄ. Саме його відсутність на
+    // дроті й робила два тижні мертвого синку невидимими (міграція 138).
+    // Маршрут той самий, тож `expectedRoutes` не росте.
+    // 81, не 80: ще одна на тому ж маршруті — відповідь СТАРОГО сервера,
+    // без полів провалу. Web і server деплояться окремо, тож це не
+    // гіпотетичний випадок, а вікно між двома деплоями.
+    expect(pact.interactions).toHaveLength(81);
     const expectedRoutes = new Set([
       // PR-42 baseline (5)
       "GET /api/v1/me",

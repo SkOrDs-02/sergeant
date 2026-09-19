@@ -65,6 +65,14 @@ const COPY = {
   connected: "Сільпо звʼязано",
   receipts: "чеків",
   lastSync: "Востаннє оновлено",
+  // Плашка провалу. Існує тому, що доти зламаний синк виглядав рівно як
+  // «ти не ходив у магазин»: рухався лише `lastSyncAt`, і той стояв на
+  // місці в обох випадках. Два тижні мертвого синку 2026-09-14 помітили
+  // не тут, а в Sentry — і лише коли власник сам натиснув «Оновити чеки».
+  failedTitle: "Чеки не оновлюються",
+  failedSince: "Остання спроба",
+  failedAction:
+    "Натисни «Оновити чеки». Якщо помилка повториться, збій на боці Сільпо: чеки доїдуть, щойно він мине.",
   neverSynced: "Ще не синхронізовано",
   sync: "Оновити чеки",
   syncing: "Оновлюю…",
@@ -229,17 +237,43 @@ export function SilpoIntegrationSection({
               {COPY.checkFailed}
             </p>
             <Button
-              variant="ghost"
+              variant="outline"
               className="w-full h-11"
               onClick={() => void refetch()}
               disabled={isFetching}
             >
-              <Icon name="refresh-cw" size={16} aria-hidden />
+              <Icon name="refresh-cw" size="md" aria-hidden />
               {isFetching ? COPY.checking : COPY.retryCheck}
             </Button>
           </div>
         ) : status === "connected" ? (
           <div className="space-y-3">
+            {syncState?.lastFailedAt ? (
+              <div
+                className="flex items-start gap-3 p-3 rounded-xl border border-warning/40 bg-warning/15"
+                role="status"
+              >
+                <Icon
+                  name="alert-triangle"
+                  size="md"
+                  className="shrink-0 mt-0.5 text-warning-strong dark:text-warning"
+                  aria-hidden
+                />
+                <div className="flex-1 min-w-0">
+                  <div className="text-style-label">{COPY.failedTitle}</div>
+                  <div className="text-style-caption text-subtle mt-0.5">
+                    {COPY.failedSince}{" "}
+                    {formatKyivDateTime(syncState.lastFailedAt)}
+                    {syncState.lastErrorCode
+                      ? ` · ${syncState.lastErrorCode}`
+                      : ""}
+                  </div>
+                  <div className="text-style-caption text-subtle mt-1">
+                    {COPY.failedAction}
+                  </div>
+                </div>
+              </div>
+            ) : null}
             <div className="flex items-center gap-3 p-3 rounded-xl border border-success/30 bg-bg">
               <div className="w-2.5 h-2.5 rounded-full shrink-0 bg-success" />
               <div className="flex-1 min-w-0">
@@ -255,16 +289,17 @@ export function SilpoIntegrationSection({
             </div>
             <div className="flex gap-2">
               <Button
-                variant="ghost"
+                variant="outline"
                 className="flex-1 h-11"
                 onClick={runSync}
                 disabled={syncMutation.isPending}
               >
-                <Icon name="refresh-cw" size={16} aria-hidden />
+                <Icon name="refresh-cw" size="md" aria-hidden />
                 {syncMutation.isPending ? COPY.syncing : COPY.sync}
               </Button>
               <Button
-                variant="danger"
+                variant="soft"
+                tone="danger"
                 className="flex-1 h-11"
                 onClick={() => setConfirmKind("disconnect")}
                 disabled={destructivePending}
@@ -298,7 +333,7 @@ export function SilpoIntegrationSection({
               </div>
             </div>
             <Button
-              variant="secondary"
+              variant="outline"
               className="w-full h-11"
               onClick={goToSilpoConnect}
             >
@@ -311,11 +346,11 @@ export function SilpoIntegrationSection({
                 (гейт №2 спеки). */}
             <SilpoPrivacyPromise copy={COPY} variant="inline" />
             <Button
-              variant="secondary"
+              variant="outline"
               className="w-full h-11"
               onClick={goToSilpoConnect}
             >
-              <Icon name="shopping-cart" size={16} aria-hidden />
+              <Icon name="shopping-cart" size="md" aria-hidden />
               {COPY.connect}
             </Button>
           </div>
@@ -327,12 +362,13 @@ export function SilpoIntegrationSection({
         (syncState?.receiptsCount ?? 0) > 0) && (
         <SettingsSubGroup title={COPY.dangerTitle}>
           <Button
-            variant="danger"
+            variant="soft"
+            tone="danger"
             className="w-full h-11"
             onClick={() => setConfirmKind("wipe")}
             disabled={destructivePending}
           >
-            <Icon name="trash" size={16} aria-hidden />
+            <Icon name="trash" size="md" aria-hidden />
             {COPY.wipeCta}
           </Button>
         </SettingsSubGroup>

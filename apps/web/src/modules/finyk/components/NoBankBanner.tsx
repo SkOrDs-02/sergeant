@@ -19,7 +19,7 @@ export interface NoBankBannerProps {
  * expenses + budgets cover the empty-state happy path on their own.
  *
  * The banner offers both actions side-by-side without blocking the
- * underlying Finyk UI, matching S4.4 of `docs/01-product/launch/product-os/ftux-sprint-plan.md`.
+ * underlying Finyk UI, matching S4.4 of `docs/work/specs/launch/product-os/ftux-sprint-plan.md`.
  */
 export function NoBankBanner({
   onConnect,
@@ -45,7 +45,7 @@ export function NoBankBanner({
               рівень тут ламав би структуру заголовків. Як лендмарк він уже
               підписаний через `role="region"` + `aria-label` вище. */}
           <p className="text-style-label text-text">Без банку?</p>
-          <p className="text-style-caption text-muted mt-1 leading-snug">
+          <p className="text-style-body text-muted mt-1 leading-snug">
             Записуй витрати вручну, або підключи Monobank, щоб транзакції
             підтягувались автоматично. Підключити можна пізніше з Налаштувань.
           </p>
@@ -54,8 +54,9 @@ export function NoBankBanner({
       <div className="mt-3 flex flex-col gap-2 sm:flex-row">
         <Button
           type="button"
-          variant="primary"
-          module="finyk"
+          variant="solid"
+          tone="finyk"
+
           size="sm"
           className="flex-1 min-h-[40px]"
           onClick={onConnect}
@@ -64,7 +65,7 @@ export function NoBankBanner({
         </Button>
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           size="sm"
           className="flex-1 min-h-[40px]"
           onClick={onContinueManually}

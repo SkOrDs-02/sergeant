@@ -93,11 +93,7 @@ export function ActiveHabitsSection({
           module="routine"
           action={
             typeof onOpenCalendar === "function" ? (
-              <Button
-                type="button"
-                variant="secondary"
-                onClick={onOpenCalendar}
-              >
+              <Button type="button" variant="outline" onClick={onOpenCalendar}>
                 Перейти до календаря
               </Button>
             ) : undefined
@@ -119,7 +115,7 @@ export function ActiveHabitsSection({
           action={
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               onClick={() => setHabitListQuery("")}
             >
               Скинути пошук

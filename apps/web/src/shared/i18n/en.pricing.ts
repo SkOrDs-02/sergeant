@@ -37,6 +37,8 @@ export const pricingEn: MessageGroupShape<(typeof ukMessages)["pricing"]> = {
     pdfExport: "PDF report export",
     monoAutoSync: "Monobank auto-sync",
     cloudSync: "Cross-device CloudSync",
+    includedSr: "included:",
+    excludedSr: "not included:",
   },
   limits: {
     perMonth: " / month",

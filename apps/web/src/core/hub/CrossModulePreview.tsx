@@ -92,9 +92,9 @@ export function CrossModulePreview({
         type="button"
         onClick={handleDismiss}
         aria-label={copy.dismissAriaLabel}
-        className="absolute top-2 right-2 p-1 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60"
+        className="absolute top-2 right-2 p-1 rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
       >
-        <Icon name="close" size={16} />
+        <Icon name="close" size="md" />
       </button>
 
       <div className="flex items-start gap-3 pr-6">
@@ -109,7 +109,7 @@ export function CrossModulePreview({
             </p>
           </div>
           <div className="flex">
-            <Button variant="secondary" size="sm" onClick={handleClick}>
+            <Button variant="outline" size="sm" onClick={handleClick}>
               {copy.ctaLabel}
             </Button>
           </div>

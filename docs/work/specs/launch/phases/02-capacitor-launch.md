@@ -1,7 +1,7 @@
 # Phase 2 — Capacitor launch roadmap with users
 
-> **Last validated:** 2026-05-13 by Devin (Phase 2 child session of `andrijvigrav@gmail.com`). **Next review:** 2027-05-24.
-> **Status:** Active — research deliverable for the parent launch program.
+> **Last touched:** 2026-09-17 by @claude (Status → Reference: мобільний контур на паузі, ADR-0094). **Next review:** 2026-12-16.
+> **Status:** Reference — мобільний контур на паузі з 2026-08-25 ([ADR-0094](../../../../governance/adr/0094-mobile-web-first-freeze.md), web-first); документ лишається готовим планом на момент розморозки, а не вказівкою починати. Історично: `Active` research deliverable, написаний 2026-05-13 агентом Devin (harness retired — [ADR-0088](../../../../governance/adr/0088-devin-kilo-harness-retirement.md)).
 > **Owner surface:** `apps/mobile-shell` (Capacitor 7 shell over `apps/web`).
 > **Strategy anchor:** [ADR-0052 — Capacitor primary, Expo parallel](../../../../governance/adr/0052-mobile-strategy-capacitor-primary.md).
 > **Sibling phases:** Phase 1 — Web (`01-web-launch-with-users.md`), Phase 0 — audit (`00-readiness-audit.md`). Phase 3 (Native Expo) — conditional decision gate, описаний inline у [`README.md § Phase 3`](./README.md#phase-3--native-expo--conditional).

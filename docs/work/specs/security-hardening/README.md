@@ -1,6 +1,6 @@
 # Security Hardening Backlog
 
-> **Last validated:** 2026-07-20 by @cursoragent (post fast-forward archive). **Next review:** 2027-11-04.
+> **Last touched:** 2026-09-17 by @claude (клітинка C2 звірена з карткою: Phase 2 enforce rolled out, лишилось зняти Report-Only). **Next review:** 2026-12-16.
 > **Status:** Active — жива картка: [`C2-frontend-csp.md`](./C2-frontend-csp.md). Closed-картки й sprint-overview доступні через immutable Git links нижче.
 
 Беклог посилення безпеки (security hardening) — структурований список знахідок із внутрішнього security-review від 2026-05-03. Кожна знахідка живе у власному файлі-картці (`<id>-<slug>.md`), згрупована у спринти за пріоритетом усунення.
@@ -42,10 +42,10 @@
 
 ### Critical
 
-| ID                                                                                                                                                                       | Title                                       | Status                               | Sprint                                                                                                                                                    |
-| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- | ------------------------------------ | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| [C1](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/C1-mono-webhook-secret-in-url.md) | Monobank webhook secret leaks via URL path  | Closed (2026-06-01, mitigated-final) | [Sprint 1](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/sprint-1.md) |
-| [C2](./C2-frontend-csp.md)                                                                                                                                               | Frontend SPA не має Content-Security-Policy | In progress (Phase 1 shipped 05-04)  | [Sprint 1](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/sprint-1.md) |
+| ID                                                                                                                                                                       | Title                                       | Status                                                                                                               | Sprint                                                                                                                                                    |
+| ------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------------------------------------------- | -------------------------------------------------------------------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| [C1](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/C1-mono-webhook-secret-in-url.md) | Monobank webhook secret leaks via URL path  | Closed (2026-06-01, mitigated-final)                                                                                 | [Sprint 1](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/sprint-1.md) |
+| [C2](./C2-frontend-csp.md)                                                                                                                                               | Frontend SPA не має Content-Security-Policy | In progress (Phase 2 enforce rolled out 2026-05-24; лишилось зняти Report-Only — досі віддається, звірка 2026-09-17) | [Sprint 1](https://github.com/Skords-01/Sergeant/blob/d1a37e0bed4e403477376eae9ee9a078e4179da8/docs/04-governance/security/hardening/archive/sprint-1.md) |
 
 ### High
 

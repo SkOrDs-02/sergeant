@@ -353,7 +353,7 @@ function AuthenticatedMigrationGate({
                   <Button onClick={retry}>
                     {messages.sync.anonymousMigrationRetry}
                   </Button>
-                  <Button variant="secondary" onClick={defer}>
+                  <Button variant="outline" onClick={defer}>
                     {messages.sync.anonymousMigrationDefer}
                   </Button>
                 </div>

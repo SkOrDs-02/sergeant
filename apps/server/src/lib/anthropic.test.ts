@@ -399,6 +399,88 @@ describe("anthropicMessages", () => {
     );
   });
 
+  it("за замовчуванням таймаут не ретраїться — історична поведінка", async () => {
+    // Дефолт лишається `false` навмисно: `anthropic.ts` спільний для digest,
+    // vision, nutrition і mono, і вмикати їм другу спробу «за аналогією» не
+    // можна — ретрай виправданий лише для бімодального розподілу (див.
+    // докстрінг `retryOnTimeout`).
+    const abortError = new DOMException("aborted", "AbortError");
+    const fetchMock = vi.fn().mockRejectedValue(abortError);
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      anthropicMessages(
+        "sk-test",
+        { model: "claude-3-5-haiku-20241022" },
+        { endpoint: "timeout-default", timeoutMs: 5_000 },
+      ),
+    ).rejects.toMatchObject({ name: "AbortError" });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("retryOnTimeout дає рівно одну другу спробу, і вона може врятувати виклик", async () => {
+    // Прод-замір 2026-09-17: успіхи 5.2-8.0 с, збої — рівно стеля з нулем
+    // токенів. За такого розподілу друга спроба потрапляє в купку успіхів,
+    // тож вона не «допалювання», а єдиний спосіб не віддати людині помилку.
+    const abortError = new DOMException("aborted", "AbortError");
+    const fetchMock = vi
+      .fn()
+      .mockRejectedValueOnce(abortError)
+      .mockResolvedValue(
+        new Response(
+          JSON.stringify({ content: [{ type: "text", text: "ok" }] }),
+          { status: 200 },
+        ),
+      );
+    vi.stubGlobal("fetch", fetchMock);
+
+    const result = await anthropicMessages(
+      "sk-test",
+      { model: "claude-3-5-haiku-20241022" },
+      {
+        endpoint: "timeout-retry",
+        timeoutMs: 5_000,
+        maxTotalMs: 30_000,
+        retryOnTimeout: true,
+      },
+    );
+
+    expect(fetchMock).toHaveBeenCalledTimes(2);
+    expect(extractAnthropicText(result.data)).toBe("ok");
+  });
+
+  it("retryOnTimeout НЕ ретраїть, коли abort прийшов від клієнта", async () => {
+    // Вирішальний випадок: `composeSignal` зшиває наш таймер спроби з
+    // сигналом клієнта, тож в обидвох випадках сюди прилітає той самий
+    // `AbortError`. Без перевірки самого сигналу друга спроба пішла б на
+    // запит, який людина вже закрила — тобто прапорець ретраю почав би
+    // палити квоту провайдера рівно там, де чекати вже нікому.
+    const controller = new AbortController();
+    const abortError = new DOMException("aborted", "AbortError");
+    const fetchMock = vi.fn().mockImplementation(() => {
+      controller.abort();
+      return Promise.reject(abortError);
+    });
+    vi.stubGlobal("fetch", fetchMock);
+
+    await expect(
+      anthropicMessages(
+        "sk-test",
+        { model: "claude-3-5-haiku-20241022" },
+        {
+          endpoint: "timeout-client-abort",
+          timeoutMs: 5_000,
+          maxTotalMs: 30_000,
+          retryOnTimeout: true,
+          signal: controller.signal,
+        },
+      ),
+    ).rejects.toMatchObject({ name: "AbortError" });
+
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
   it("does not retry an already aborted caller signal", async () => {
     const controller = new AbortController();
     controller.abort();

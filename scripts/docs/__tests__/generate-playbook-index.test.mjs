@@ -137,3 +137,55 @@ describe("normaliseForCompare", () => {
     assert.notEqual(normaliseForCompare(a), normaliseForCompare(b));
   });
 });
+
+// ── Дві категорії «без Trigger» ──────────────────────────────────────────────
+//
+// До 2026-09-19 генератор сипав `[WARN] … skipped` на кожен плейбук без
+// `**Trigger:**`, і серед них 9 були зафіксованим винятком (runtime-runbook-и,
+// рішення 2026-09-17, README § Стандарт). Попередження, яке є завжди, ніхто не
+// читає — тож реальний дрейф у тій самій купі був би невидимий. Тепер це дві
+// різні категорії, і тест закріплює саме розрізнення.
+describe("collectEntries — runtime-виняток проти реального дрейфу", () => {
+  const RUNTIME_RUNBOOK = [
+    "# Database backup / restore — runbook",
+    "",
+    "> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-24.",
+    "> **Status:** Active",
+    "> **Runtime-specific:** yes",
+    "",
+    "Операторські кроки.",
+  ].join("\n");
+
+  const DRIFTED_PLAYBOOK = [
+    "# Playbook: Щось нове",
+    "",
+    "> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-24.",
+    "> **Status:** Active",
+    "> **Runtime-specific:** no",
+    "",
+    "Тіло без Trigger.",
+  ].join("\n");
+
+  it("runtime-runbook без Trigger не дає meta — він поза індексом за винятком", () => {
+    assert.equal(extractPlaybookMeta(RUNTIME_RUNBOOK), null);
+    assert.match(RUNTIME_RUNBOOK, /^>\s*\*\*Runtime-specific:\*\*\s*yes\b/im);
+  });
+
+  it("НЕ-runtime плейбук без Trigger теж не дає meta, але не має runtime-маркера", () => {
+    assert.equal(extractPlaybookMeta(DRIFTED_PLAYBOOK), null);
+    assert.doesNotMatch(
+      DRIFTED_PLAYBOOK,
+      /^>\s*\*\*Runtime-specific:\*\*\s*yes\b/im,
+    );
+  });
+
+  it("плейбук із Trigger дає meta незалежно від runtime-маркера", () => {
+    const withTrigger = RUNTIME_RUNBOOK.replace(
+      "Операторські кроки.",
+      "**Trigger:** «Треба відновити БД із бекапа».",
+    );
+    const meta = extractPlaybookMeta(withTrigger);
+    assert.ok(meta);
+    assert.match(meta.trigger, /відновити БД/u);
+  });
+});

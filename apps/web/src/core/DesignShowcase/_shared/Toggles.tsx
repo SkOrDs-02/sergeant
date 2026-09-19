@@ -109,7 +109,7 @@ function ToggleGroup<T extends string>({
             >
               {opt.icon ? (
                 <span className="inline-flex items-center gap-1">
-                  <Icon name={opt.icon} size={12} />
+                  <Icon name={opt.icon} size="xs" />
                   {opt.label}
                 </span>
               ) : (

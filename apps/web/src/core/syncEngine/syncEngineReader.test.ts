@@ -280,6 +280,160 @@ describe("createSyncEngineReaderRuntime", () => {
     restoreOnLine();
   });
 
+  // Фікс 3: `rejected` на pull-шляху не читає ЖОДЕН споживач `pullOnce`,
+  // а курсор їде далі — тобто оп, який не застосувався, більше не
+  // повернеться. Саме так мовчки не доїжджали `fizruk_custom_activities` і
+  // `fizruk_injuries` (коментарі в `applyPullOp.ts`). Обрано гучний звіт, а
+  // не притримування курсора — обґрунтування в `reportPullRejection`.
+  it("репортить КОЖНЕ термінальне відхилення опа з table/op", async () => {
+    const captureException = vi.fn();
+    applyPullOpMock.mockResolvedValue("rejected");
+    const pull = vi.fn().mockResolvedValue({
+      ops: [
+        {
+          id: 7,
+          table: "fizruk_injuries",
+          op: "insert",
+          row: { id: "x", user_id: "u1" },
+          client_ts: "2026-07-10T08:00:00.000Z",
+          server_ts: "2026-07-10T08:00:00.000Z",
+          origin_device_id: "device-b",
+        },
+        {
+          id: 8,
+          table: "fizruk_custom_activities",
+          op: "update",
+          row: { id: "y", user_id: "u1" },
+          client_ts: "2026-07-10T08:00:01.000Z",
+          server_ts: "2026-07-10T08:00:01.000Z",
+          origin_device_id: "device-b",
+        },
+      ],
+      next_cursor: null,
+    });
+
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, captureException }),
+    );
+    const result = await runtime.pullOnce();
+
+    expect(result.rejected).toBe(2);
+    expect(captureException).toHaveBeenCalledTimes(2);
+    // Предмет — у ЗАГОЛОВКУ помилки: Sentry групує за текстом, тож інакше
+    // різні сутності злиплися б в одну issue без предмета.
+    expect(captureException).toHaveBeenNthCalledWith(
+      1,
+      expect.objectContaining({
+        message: "sync pull op rejected: fizruk_injuries.insert",
+      }),
+      expect.objectContaining({
+        scope: "sync-v2-pull-apply",
+        opId: 7,
+        tags: {
+          area: "sync",
+          sync_direction: "pull",
+          sync_table: "fizruk_injuries",
+          sync_op: "insert",
+        },
+      }),
+    );
+    expect(captureException).toHaveBeenNthCalledWith(
+      2,
+      expect.objectContaining({
+        message: "sync pull op rejected: fizruk_custom_activities.update",
+      }),
+      expect.objectContaining({ opId: 8 }),
+    );
+  });
+
+  it("не репортить нічого на applied / skipped", async () => {
+    const captureException = vi.fn();
+    applyPullOpMock.mockResolvedValueOnce("applied");
+    applyPullOpMock.mockResolvedValueOnce("skipped");
+    const pull = vi.fn().mockResolvedValue({
+      ops: [
+        {
+          id: 1,
+          table: "routine_habits",
+          op: "insert",
+          row: { id: "a", user_id: "u1" },
+          client_ts: "2026-07-10T08:00:00.000Z",
+          server_ts: "2026-07-10T08:00:00.000Z",
+          origin_device_id: "device-b",
+        },
+        {
+          id: 2,
+          table: "routine_habits",
+          op: "update",
+          row: { id: "a", user_id: "u1" },
+          client_ts: "2026-07-10T08:00:01.000Z",
+          server_ts: "2026-07-10T08:00:01.000Z",
+          origin_device_id: "device-b",
+        },
+      ],
+      next_cursor: null,
+    });
+
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, captureException }),
+    );
+    const result = await runtime.pullOnce();
+
+    expect(result).toMatchObject({ applied: 1, skipped: 1, rejected: 0 });
+    expect(captureException).not.toHaveBeenCalled();
+  });
+
+  it("курсор і далі просувається поверх rejected — інакше черга стане назавжди", async () => {
+    // Свідомий компроміс варіанта (б): `rejected` найчастіше означає
+    // таблицю, якої немає в ЦЬОМУ білді клієнта. Притримати курсор на ній =
+    // зупинити синк пристрою цілком, а не врятувати один оп.
+    const captureException = vi.fn();
+    applyPullOpMock.mockResolvedValue("rejected");
+    const pull = vi.fn().mockResolvedValue({
+      ops: [
+        {
+          id: 99,
+          table: "table_from_the_future",
+          op: "insert",
+          row: { id: "z", user_id: "u1" },
+          client_ts: "2026-07-10T08:00:00.000Z",
+          server_ts: "2026-07-10T08:00:00.000Z",
+          origin_device_id: "device-b",
+        },
+      ],
+      next_cursor: null,
+    });
+
+    const runtime = createSyncEngineReaderRuntime(
+      makeDeps({ pull, captureException }),
+    );
+    const result = await runtime.pullOnce();
+
+    expect(result.lastOpId).toBe(99);
+    expect(captureException).toHaveBeenCalledTimes(1);
+  });
+
+  it("відсутній captureException не ламає тік", async () => {
+    applyPullOpMock.mockResolvedValue("rejected");
+    const pull = vi.fn().mockResolvedValue({
+      ops: [
+        {
+          id: 5,
+          table: "unknown_table",
+          op: "insert",
+          row: { id: "q", user_id: "u1" },
+          client_ts: "2026-07-10T08:00:00.000Z",
+          server_ts: "2026-07-10T08:00:00.000Z",
+          origin_device_id: "device-b",
+        },
+      ],
+      next_cursor: null,
+    });
+
+    const runtime = createSyncEngineReaderRuntime(makeDeps({ pull }));
+    await expect(runtime.pullOnce()).resolves.toMatchObject({ rejected: 1 });
+  });
+
   it("start/stop wires interval, visibility listener, and is idempotent", async () => {
     const intervalHandle = { id: 1 };
     const setInterval = vi.fn(() => intervalHandle);

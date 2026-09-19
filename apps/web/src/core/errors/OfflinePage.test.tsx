@@ -110,6 +110,14 @@ describe("OfflinePage", () => {
     ).toBeInTheDocument();
   });
 
+  it("carries an <h1> — the empty state is the whole page, so it must own the heading", () => {
+    mockUseOnlineStatus.mockReturnValue(false);
+    render(<OfflinePage />);
+    expect(
+      screen.getByRole("heading", { level: 1, name: "Немає зʼєднання" }),
+    ).toBeInTheDocument();
+  });
+
   it("clicking the reload CTA while online does not throw (window.location.reload path)", () => {
     // window.location.reload is not redefinable in jsdom (see
     // ServerErrorPage.test.tsx) — assert the click handler runs to

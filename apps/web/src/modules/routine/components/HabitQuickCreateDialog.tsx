@@ -195,7 +195,7 @@ export function HabitQuickCreateDialog({
       {editingId && (
         <Button
           type="button"
-          variant="secondary"
+          variant="outline"
           className="flex-1"
           onClick={onClose}
         >
@@ -204,7 +204,8 @@ export function HabitQuickCreateDialog({
       )}
       <Button
         type="button"
-        variant="routine"
+        variant="solid"
+        tone="routine"
         className="w-full"
         onClick={handleSave}
       >

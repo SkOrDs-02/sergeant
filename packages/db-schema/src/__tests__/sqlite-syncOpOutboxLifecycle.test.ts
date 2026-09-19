@@ -22,7 +22,7 @@ import { planRetry } from "../sqlite/syncOpRetry.js";
 /**
  * Integration tests for the write-side lifecycle helpers
  * (`markOutboxSuccess` / `markOutboxRetry` / `markOutboxRejected`,
- * PR #042e-lifecycle of `docs/planning/storage-roadmap.md`). Runs the
+ * PR #042e-lifecycle of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`). Runs the
  * full SPIKE + PR #040 + PR #042d-prep migration stack against a
  * fresh `:memory:` engine and exercises every contract:
  *

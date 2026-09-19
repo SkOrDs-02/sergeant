@@ -1,6 +1,7 @@
 /**
  * Data Export Utilities — CSV & PDF generation for reports.
  */
+import { formatDateNumeric } from "@shared/lib/time/formatDate";
 
 export interface ExportColumn<T> {
   key: keyof T | string;
@@ -253,7 +254,7 @@ export function generatePDFReport(options: PDFReportOptions): string {
         .join("")}
 
       <div class="footer">
-        ${footerText || `Згенеровано ${new Date().toLocaleDateString("uk-UA")} о ${new Date().toLocaleTimeString("uk-UA")}`}
+        ${footerText || `Згенеровано ${formatDateNumeric(new Date())} о ${new Date().toLocaleTimeString("uk-UA")}`}
       </div>
     </body>
     </html>

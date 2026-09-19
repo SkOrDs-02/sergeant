@@ -19,3 +19,10 @@ const BOT =
 export function telegramStartLink(payload: string): string {
   return `https://t.me/${BOT}?start=${payload}`;
 }
+
+/**
+ * Публічний профіль у Threads. Одне джерело для футера, /about і `sameAs`
+ * в Organization-розмітці: до цього футер і /about тримали дві різні
+ * адреси (threads.com / threads.net) одного й того самого акаунта.
+ */
+export const THREADS_URL = "https://www.threads.com/@sergeant.app";

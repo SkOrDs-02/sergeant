@@ -1,6 +1,6 @@
 # Docker image policy
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-01-06.
+> **Last touched:** 2026-09-17 by @claude (stage map → `nodejs22-debian13`; політика `.trivyignore` з `exp:`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Update 2026-07-21:** Backend на Coolify ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)). `Dockerfile.openclaw` видалено з репо ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)). Trivy gate лишається лише для `Dockerfile.api`.
@@ -53,7 +53,7 @@ Builder + deps stage-и залишаються на `node:22.16.0-alpine` — ї
 | --------- | --------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------- |
 | `builder` | `node:22.16.0-alpine`                         | `pnpm install` (dev+prod), `pnpm --filter @sergeant/db-schema build`, `pnpm build` (esbuild → `dist-server/index.js`). |
 | `deps`    | `node:22.16.0-alpine`                         | `pnpm install --prod --filter @sergeant/server...`. Cleanup CVE-noisy peers через `find … -prune`.                     |
-| `runtime` | `gcr.io/distroless/nodejs20-debian12:nonroot` | Тільки `node_modules` (з deps) + `dist-server/` (з builder) + `docs/<read_strategy_docs allowlist>/`. NO HEALTHCHECK.  |
+| `runtime` | `gcr.io/distroless/nodejs22-debian13:nonroot` | Тільки `node_modules` (з deps) + `dist-server/` (з builder) + `docs/<read_strategy_docs allowlist>/`. NO HEALTHCHECK.  |
 
 ~~`Dockerfile.openclaw`~~ — removed ADR-0075 (historical Trivy job `trivy-image-openclaw` теж знято).
 
@@ -78,7 +78,7 @@ CI workflow [`.github/workflows/container-scan.yml`](../../../.github/workflows/
 
 - `Dockerfile.api` (job `trivy-image`): 0 HIGH/CRITICAL; SARIF category `trivy-image`.
 
-**`.trivyignore`** — не використовуємо. Якщо в майбутньому з'явиться false-positive на known-good vendor package, рішення: (a) додати у `.trivyignore` з obligatory inline comment-justification і audit-trail, (b) preferred — upgrade-нути dep до patched версії.
+**`.trivyignore`** — існує в корені репо і підключений у [`container-scan.yml`](../../../.github/workflows/container-scan.yml) (`trivyignores: ./.trivyignore`), але це escape hatch лише для CRITICAL/HIGH upstream-lag кейсів (MEDIUM/LOW і unfixed уже відсікає `ignore-unfixed: true` + `severity: CRITICAL,HIGH`). Контракт запису: обов'язковий `exp:YYYY-MM-DD` (Trivy після дати перестає глушити CVE — self-cleaning) + коментар-причина, чому fix зараз не actionable. Станом на 2026-09 активних записів немає (libssl3-серію знято міграцією на `nodejs22-debian13`, 2026-06-05). Preferred шлях і далі — upgrade dep / base image до patched версії; suppression — коли upstream відстає.
 
 ## CVE-noisy peer cleanup (deps stage)
 

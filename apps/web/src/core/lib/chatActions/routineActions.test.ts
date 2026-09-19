@@ -709,7 +709,7 @@ describe("habit_stats", () => {
     expect(out).toContain("серія");
   });
 
-  // LOG-1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // LOG-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
   // `habit_stats` рахує серію тим самим гнучким алгоритмом
   // (`flexibleStreakBreakdown`), що й UI, а не жорсткою реалізацією, яка
   // обнуляла серію на першому дні без completion незалежно від skip.
@@ -923,7 +923,7 @@ describe("mark_habit_done · undo", () => {
     expect(after.completions["h1"]).not.toContain("2026-04-20");
   });
 
-  // LOG-2 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+  // LOG-2 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
   // раніше `mark_habit_done` писав completion незалежно від розкладу
   // звички (жодного `habitScheduledOnDate`-гейту, той самий пропуск, що
   // `applyToggleHabitCompletion` закриває). Дата ДО `startDate` звички —

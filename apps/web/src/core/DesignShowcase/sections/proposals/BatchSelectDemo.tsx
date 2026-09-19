@@ -86,7 +86,7 @@ export function BatchSelectDemo() {
                           : "border-line text-transparent",
                       )}
                     >
-                      <Icon name="check-circle" size={14} />
+                      <Icon name="check-circle" size="sm" />
                     </span>
                     <span className="text-style-caption text-text">
                       {it.name}
@@ -109,8 +109,8 @@ export function BatchSelectDemo() {
                 Обрано {selected.size}
               </span>
               <span className="flex items-center gap-3">
-                <Icon name="arrow-up-right" size={16} />
-                <Icon name="x-circle" size={16} />
+                <Icon name="arrow-up-right" size="md" />
+                <Icon name="x-circle" size="md" />
               </span>
             </div>
           </div>

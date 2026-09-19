@@ -4,6 +4,7 @@ import {
   topMeals,
   mealTypeBreakdown,
   mealTypeKcalForDay,
+  mealsByTypeForDay,
   getRowsForRange,
 } from "./nutritionStats";
 import type { DaySummary, NutritionLog } from "./nutritionStorage";
@@ -306,5 +307,45 @@ describe("nutrition/getRowsForRange", () => {
     const rows = getRowsForRange({} as never, "2026-01-10", 2);
     expect(rows.length).toBe(2);
     expect(rows.every((r) => r.kcal === 0)).toBe(true);
+  });
+});
+
+// ─── mealsByTypeForDay ────────────────────────────────────────────────────────
+
+describe("nutrition/mealsByTypeForDay", () => {
+  const log = {
+    "2026-01-10": {
+      meals: [
+        { id: "a", mealType: "breakfast", macros: { kcal: 400 } },
+        { id: "b", mealType: "lunch", macros: { kcal: 600 } },
+        { id: "c", mealType: "lunch", macros: { kcal: 150 } },
+        // Легасі-запис без валідного `mealType` — тип читається з `label`.
+        { id: "d", label: "Вечеря", macros: { kcal: 500 } },
+        // Запис без макросів узагалі: нуль ккал, але він ІСНУЄ.
+        { id: "e", mealType: "snack" },
+      ],
+    },
+  } as unknown as NutritionLog;
+
+  it("розкладає записи дня за типом прийому", () => {
+    const result = mealsByTypeForDay(log, "2026-01-10");
+    expect(result.breakfast.map((m) => m.id)).toEqual(["a"]);
+    expect(result.lunch.map((m) => m.id)).toEqual(["b", "c"]);
+    expect(result.dinner.map((m) => m.id)).toEqual(["d"]);
+  });
+
+  it("лічить запис без макросів — саме цим він відрізняється від ккал", () => {
+    // Сегмент hero вирішує «порожній чи ні» за цією кількістю, а не за
+    // сумою калорій: інакше нерозпізнане фото читалось би як «не записано»,
+    // а тап однаково відкривав би аркуш із рядком.
+    const result = mealsByTypeForDay(log, "2026-01-10");
+    expect(result.snack.length).toBe(1);
+    expect(mealTypeKcalForDay(log, "2026-01-10").snack).toBe(0);
+  });
+
+  it("повертає чотири порожні списки для відсутнього дня і для null", () => {
+    const empty = { breakfast: [], lunch: [], dinner: [], snack: [] };
+    expect(mealsByTypeForDay(log, "2026-01-09")).toEqual(empty);
+    expect(mealsByTypeForDay(null, "2026-01-10")).toEqual(empty);
   });
 });

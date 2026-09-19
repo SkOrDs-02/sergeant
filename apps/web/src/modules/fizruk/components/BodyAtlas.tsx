@@ -186,7 +186,7 @@ function SilhouetteTap({
       type="button"
       onClick={onOpenFull}
       aria-label={t.openFullLabel}
-      className="block w-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus"
+      className="block w-full rounded-2xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
     >
       {children}
     </button>
@@ -538,7 +538,21 @@ export function BodyAtlas({
                   const elbow = isL ? -6 : 106;
                   const isSel = selected === slot.id;
                   return (
-                    <g key={slot.id} aria-hidden="true">
+                    // `pointer-events: none` — шар суто декоративний
+                    // (виноски й підписи), але малюється ОСТАННІМ, тобто
+                    // лежить над обома шарами мʼязів. Без цього `<circle>`
+                    // у центроїді кожної групи забирав тап рівно там, де в
+                    // неї цілиться палець: клік у центр грудей не обирав
+                    // нічого (замір браузерного свіпу 2026-09-16 —
+                    // `elementFromPoint` у центрі bbox повертав `circle`,
+                    // а не групу). Виноска й підпис у полі так само були
+                    // клікабельними, але інертними.
+                    //
+                    // AI-NOTE: `aria-hidden` ховає шар лише від AT; на
+                    // hit-testing воно не впливає. Симптом «видно, але не
+                    // клікається» діагностують `document.elementsFromPoint`,
+                    // а не z-index — див. apps/web/AGENTS.md.
+                    <g key={slot.id} aria-hidden="true" pointerEvents="none">
                       <polyline
                         points={`${isL ? tx + 22 : tx - 22} ${slot.y} ${elbow} ${slot.y} ${c[0]} ${c[1]}`}
                         className="fill-none stroke-line"

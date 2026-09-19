@@ -1,16 +1,20 @@
 # 0025 — PostHog AI Observability для AI-шару (traces + evals)
 
-> **Last touched:** 2026-09-03 by @claude (Фаза 1 реалізована — `posthogAi.ts`, тумблер `POSTHOG_AI_OBSERVABILITY_KEY`). **Next review:** 2027-03-14.
-> **Status:** In progress (2026-09-03) — Фаза 1 у коді (див. § Прогрес), Фаза 2 не почата. Фази 1–2 виконуються без рішень власника; Фаза 3 (LLM-judge evals) чекає рішень — див. § Відкриті рішення.
+> **Last touched:** 2026-09-19 by @claude (ключ виставлено власником; телеметрія перевірена на живих подіях — три критерії DONE закрито фактом, і вона одразу дала знахідку про таймаути). **Next review:** 2027-03-14.
+> **Status:** In progress (2026-09-19) — Фази 1–2 **працюють у проді й
+> перевірені на живих подіях** (§ Перевірка на живих подіях). Лишились дві
+> операторські дії поза репо: дашборд cost/latency і щонайменше один anomaly
+> alert. Фаза 3 (LLM-judge) — **рішення власника 2026-09-19: відкладено**
+> (§ Відкриті рішення). Фаза 4 (session replay) — так само відкладено.
 > **Agent-ready:** yes
 > **Priority:** P2 (не блокер launch-у [0010](https://github.com/SkOrDs-02/sergeant/blob/625921e85c7e961883d4cca64d9f6a177dbba823/docs/90-work/initiatives/0010-revenue-first-launch.md); без цього AI-шар лишається чорною скринькою на рівні розмов — дебаг скарг і контроль якості коуча зараз неможливі)
-> **Owner:** `@SkOrDs-02`
+> **Owner:** `@klas149`
 > **ETA:** Фаза 1 ≈ 0.5 спринту; Фаза 2 ≈ 0.5 спринту; Фаза 3 — після рішень власника
 > **Sources:**
 >
 > - Розвідка екосистеми 2026-08-25 (ця сесія): PostHog перейменував LLM Analytics на AI Observability, додав evals на live-трафіку (LLM-as-a-judge / Hog / sentiment), anomaly alerts і кластеризацію трейсів; перші 100k AI-івентів/міс безкоштовні, окремий білінг від product analytics.
 > - Доки: [AI Observability](https://posthog.com/docs/ai-observability), [manual capture](https://posthog.com/docs/ai-observability/installation/manual-capture), [privacy mode](https://posthog.com/docs/ai-observability/privacy-mode), [AI Evals](https://posthog.com/docs/ai-evals).
-> - Код: [`apps/server/src/lib/anthropic.ts`](../../../../apps/server/src/lib/anthropic.ts) (центральний fetch-клієнт, `recordUsage`/`recordStreamUsage`), [`apps/server/src/lib/anthropicUsageStore.ts`](../../../../apps/server/src/lib/anthropicUsageStore.ts) (DB-ledger `ai_usage_daily`, ініціатива 0019), [`apps/server/src/lib/llm/provider.ts`](../../../../apps/server/src/lib/llm/provider.ts), [`apps/server/src/modules/chat/chatStream.ts`](../../../../apps/server/src/modules/chat/chatStream.ts).
+> - Код: [`apps/server/src/lib/anthropic.ts`](../../../../apps/server/src/lib/anthropic.ts) (центральний fetch-клієнт, `recordUsage`/`recordStreamUsage`), [`apps/server/src/lib/anthropicUsageStore.ts`](../../../../apps/server/src/lib/anthropicUsageStore.ts) (DB-ledger `ai_usage_daily`, ініціатива 0019), [`apps/server/src/lib/llm/provider.ts`](../../../../apps/server/src/lib/llm/provider.ts), [`apps/server/src/modules/chat/chatStream.ts`](../../../../apps/server/src/modules/chat/chatStream.ts), [`apps/server/src/modules/chat/chat.ts`](../../../../apps/server/src/modules/chat/chat.ts) (tool-loop, `$ai_span`, Фаза 2), [`apps/server/src/modules/chat/chatToolSpanTiming.ts`](../../../../apps/server/src/modules/chat/chatToolSpanTiming.ts) (best-effort tool-span latency, Фаза 2), [`apps/server/src/modules/chat/chatRoundTripTicket.ts`](../../../../apps/server/src/modules/chat/chatRoundTripTicket.ts) (traceId = round-trip-квиток, Фаза 2), [`apps/server/src/obs/requestContext.ts`](../../../../apps/server/src/obs/requestContext.ts) (ALS `traceId` — reuse для digest/vision, Фаза 2).
 
 ## TL;DR
 
@@ -46,11 +50,11 @@ AI-шар (HubChat, weekly digest, vision-аналіз чеків і їжі) с�
 
 **Ідентичність.** `distinctId` = Better Auth opaque userId — **свідомий** лінк «людина ↔ AI-використання»: той самий проєкт PostHog уже повʼязує цього ж userId з продуктовими подіями, тож нового класу лінкування не зʼявляється; без userId (системні джоби) — константний `server`. AI-івенти підпадають під наявний GDPR-шлях видалення користувача (модуль `gdpr`) так само, як решта PostHog-подій цього distinctId.
 
-**Allowlist властивостей** (вичерпний; нове поле = правка цієї секції у тому ж PR): `$ai_model`, `$ai_provider`, лічильники токенів (input/output/cache_read/cache_creation), кост USD з `estimateAnthropicCostUsd`, `$ai_latency`, `$ai_is_error`/`$ai_http_status`, `$ai_trace_id`/`$ai_span_id`/`$ai_parent_id`, `$ai_span_name` = **імʼя** tool-а з реєстру (не аргументи), `feature` = значення `endpoint`, `job` для batch-джоб, `SYSTEM_PROMPT_VERSION`.
+**Allowlist властивостей** (вичерпний; нове поле = правка цієї секції у тому ж PR): `$ai_model`, `$ai_provider`, лічильники токенів (input/output/cache_read/cache_creation), кост USD з `estimateAnthropicCostUsd`, `$ai_latency`, `$ai_is_error`/`$ai_http_status`, `$ai_trace_id`/`$ai_parent_id`, `$ai_span_name` = **імʼя** tool-а з реєстру (не аргументи), `feature` = значення `endpoint`, `job` для batch-джоб, `SYSTEM_PROMPT_VERSION`. `$ai_span_id` лишається у форматі PostHog (генерується SDK на capture), ми його явно не заповнюємо.
 
 **Deny-list** (не потрапляє ніколи, незалежно від флагів): текст повідомлень і відповідей (`$ai_input`, `$ai_output_choices`), аргументи й результати tool-викликів (`$ai_input_state`/`$ai_output_state` лишаються порожніми у Фазі 2 — доки власник явно не затвердить санітизований піднабір), **бізнес**-суми/баланси/валюти користувача (єдине дозволене фінансове поле — телеметрійний кост виклику в USD з `estimateAnthropicCostUsd` з allowlist-у вище; грошові дані самого користувача — ніколи), назви контрагентів і мерчантів, назви страв і нутрієнти, OCR-текст і зображення чеків, email/імена. Канонічний перелік чутливих полів — той самий, що в pino-redaction (Hard Rule #21, `llmRedaction.ts`): розширення redaction-списку = перевірка цієї секції.
 
-**Enforcement.** Капчур іде через єдиний хелпер у `anthropic.ts`, який приймає лише поля allowlist-у (типізований обʼєкт, без spread довільних властивостей) — щоб deny-list тримався конструкцією, а не дисципліною; unit-тест фіксує, що хелпер відкидає невідомі ключі.
+**Enforcement.** Капчур іде через два типізовані хелпери в [`lib/posthogAi.ts`](../../../../apps/server/src/lib/posthogAi.ts) — `captureAiGeneration` (`$ai_generation`) і `captureAiSpan` (`$ai_span`, Фаза 2) — кожен приймає лише поля свого allowlist-у (явний обʼєкт, без spread довільних властивостей), щоб deny-list тримався конструкцією, а не дисципліною. Unit-тести (`posthogAi.test.ts`) фіксують, що обидва хелпери відкидають невідомі ключі.
 
 ## План змін
 
@@ -80,6 +84,17 @@ AI-шар (HubChat, weekly digest, vision-аналіз чеків і їжі) с�
 - У tool-execution loop чату — `$ai_span` на кожен tool-виклик (`$ai_span_name` = імʼя tool-а, latency, is_error; `$ai_input_state`/`$ai_output_state` — **тільки санітизовані** метадані або нічого).
 - Дашборд у PostHog: cost/latency/error-rate за `feature` і моделлю; anomaly alerts на спайки cost/latency/errors.
 
+#### Прогрес Фази 2 (2026-09-17)
+
+- [x] `traceId` в `AnthropicCallOptions`/`AnthropicUsageMeta`/`LLMGenerateOpts` — прокинуто через `anthropicMessages`/`anthropicMessagesStream` (non-stream і stream шлях, включно з continuation-циклом) і обидва `LLMProvider`-и (`AnthropicProvider`, `OpenRouterProvider`) у `$ai_generation` (success і error шляхи).
+- [x] **Chat** — `traceId` = round-trip-квиток (`chatRoundTripTicket.ts`). `chat.ts` генерує `chatTraceId` (`randomUUID()`) ДО першого live-виклику (і на cache-hit-шляху, де генерації взагалі не було), передає його як `$ai_trace_id` турa 1, і той самий id стає ЗНАЧЕННЯМ `round_trip_ticket` (`issueRoundTripTicket({ ..., id: traceId })` — квиток прийняв опційний caller-supplied id, security-властивості не змінились: той самий `randomUUID()`, лише виклик переїхав на кадр вище). Клієнт echo-ить квиток у другому запиті → `chat.ts` бере його як `toolTraceId` для tool-спанів і для `$ai_trace_id` `chat-tool-result`-генерації (stream і non-stream). Без ticket-а (старий клієнт, plain-текст перший тур) — фолбек `randomUUID()`, як і в Фазі 1.
+- [x] **Digest і vision** — НЕ вигадано нового id: обидва шляхи один Anthropic-виклик на HTTP-запит, тож переюзаний наявний per-request W3C trace id з ALS (`obs/requestContext.ts` → `traceMiddleware`, той самий, що йде в заголовок `X-Trace-Id`). Підключено у `weekly-digest.ts`, `finyk/receipts/visionClient.ts`, `finyk/import/visionClient.ts`, `nutrition/analyze-photo.ts`, `nutrition/refine-photo.ts`. `coach.ts` (endpoint `coach-insight`) — поза скоупом Фази 2 (не згаданий у плані), лишається на Фаза-1 фолбеку.
+- [x] `$ai_span` на кожен `tool_result` у другому HTTP-запиті chat tool-loop (`chat.ts`, поруч із наявним `recordToolExecutions`): `$ai_span_name` = імʼя tool-а з `buildToolUseIdToNameMap` (`toolMetrics.ts`, той самий whitelist-маппер, що вже стоїть за метрикою `chat_tool_invocations_total`); `$ai_is_error` = `true`, коли `tool_use_id` не змапився на відомий tool (провенанс-помилка — той самий сигнал, що outcome `unknown_tool`); `$ai_input_state`/`$ai_output_state` НЕ заповнюються (аргументи/результат tool-а лишаються поза подією).
+  - **Latency — задокументований компроміс, не точний вимір.** Сервер не виконує chat-tool-и (клієнт виконує локально, HubChat-архітектура), тож єдина latency, яку сервер взагалі бачить — час МІЖ видачею tool_use-пропозиції і надходженням `tool_results`, тобто latency ВСЬОГО round-trip-у (мережа + усі tool-и клієнта разом), не окремого tool-виклику. Виміряно окремим best-effort in-memory модулем [`chatToolSpanTiming.ts`](../../../../apps/server/src/modules/chat/chatToolSpanTiming.ts) (той самий TTL/multi-instance-компроміс, що `chatRoundTripTicket.ts`/`chatResponseCache.ts`), **не** через security-квиток (той видаляється мідлваром `assertAiQuota` ДО того, як `chat.ts` отримує керування). Усі спани одного round-trip-у несуть ОДНАКОВЕ число. Per-tool гранулярність вимагала б нового поля в клієнтському `ToolResult`-контракті — за межами Фази 2.
+- [x] Enforcement § «Контракт даних»: `captureAiSpan`/`buildAiSpanProperties` (`posthogAi.ts`) — той самий allowlist-за-конструкцією принцип, що `captureAiGeneration`; unit-тести фіксують відкидання невідомих ключів. Fail-open на всіх шляхах.
+- [ ] Дашборд cost/latency/error-rate у PostHog UI + anomaly alerts — **операторська дія поза репо**, не зроблено цим PR.
+- [ ] LLM-judge / dashboard-based live-перевірка «trace-дерево читається одним деревом у PostHog UI» — потребує деплою з живим `POSTHOG_AI_OBSERVABILITY_KEY` (той самий критерій DONE #3, що лишився відкритим із Фази 1).
+
 ### Фаза 3 — Evals (потребує власника)
 
 - Sentiment eval на chat-трафіку (100%, безкоштовно, локальна модель) + Hog-перевірки формату — вмикаються одразу після Фази 1, без ключів.
@@ -90,21 +105,97 @@ AI-шар (HubChat, weekly digest, vision-аналіз чеків і їжі) с�
 
 `posthog-js` на фронті вже є: прокинути `$session_id` у запит `/api/chat` → у `posthogProperties`. Дає перехід «трейс розмови → відеозапис сесії». Окремий маленький PR, коли Фази 1–2 доведені.
 
+## Перевірка на живих подіях (2026-09-19)
+
+Власник виставив `POSTHOG_AI_OBSERVABILITY_KEY` у Coolify. Замір через
+PostHog MCP, вікно 30 днів:
+
+| Подія                    | Кількість | Період     |
+| ------------------------ | --------- | ---------- |
+| `$ai_generation`         | 19        | 2026-09-17 |
+| `$ai_generation_summary` | 21        | 2026-09-17 |
+| `$ai_trace_summary`      | 15        | 2026-09-17 |
+| `$ai_span`               | 4         | 2026-09-17 |
+
+Три критерії DONE закрито фактом, а не припущенням: події доходять із
+моделлю/латентністю/костом, трейс-дерево будується (спани звуться `log_water`,
+`query_habits`, `create_receivable`), і **privacy-інваріант тримається** —
+`input`, `output_choices`, `tools` у `posthog.ai_events` порожні для всіх
+записів.
+
+### Знахідка, заради якої це й робилось
+
+Перший же живий замір показав те, чого не бачив жоден тест і жоден лог:
+
+| Модель                         | Викликів | Помилок | Латентність                             |
+| ------------------------------ | -------- | ------- | --------------------------------------- |
+| `google/gemini-3.7-flash`      | 14       | **4**   | успіхи 5,2-8,0 с; збої **рівно 30,0 с** |
+| `google/gemini-2.5-flash-lite` | 5        | 0       | 2,0-3,5 с                               |
+| `z-ai/glm-5.2`                 | 4        | 0       | 0,7-2,6 с                               |
+
+Чотири збої — 30.015, 30.005, 30.004, 30.002 с, нуль токенів, без
+HTTP-статусу. Це не помилка моделі, а **таймаут на зависанні зʼєднання**, і
+кожен має власний `trace_id`, тобто це чотири різні розмови, а не ретраї
+одного запиту. Людина чекала ~30 с і отримувала помилку, бо на таймаут
+клієнт за задумом не пробував нічого.
+
+**Чому це не видно було інакше.** Ретрай робила сама людина, і він
+спрацьовував за 5-8 с — у логах усе виглядало як успішна розмова. Саме цей
+клас поломки спостережуваність і мала ловити.
+
+Лікування — `CHAT_ATTEMPT_TIMEOUT_MS` 12 с + один ретрай на таймаут
+(`chat.ts`, `anthropic.ts`); розбір у докстрінгах обох констант.
+
+**Причина зависань лишається невідомою.** Перезамір на стенді 2026-09-19
+(243 живі виклики, три моделі) дав **нуль таймаутів** — тобто вони не
+відтворюються на довільному трафіку й не є властивістю моделі. Умова лежить
+поза моделлю; телеметрія тепер працює й накопичить дані сама.
+
 ## Критерії DONE
 
-- [ ] Кожен Anthropic/OpenRouter-виклик сервера видно в PostHog як `$ai_generation` з моделлю, токенами (вкл. cache), костом, латентністю і `feature`; помилки — з `$ai_is_error`.
-- [ ] Розмова HubChat читається одним trace-деревом (generation + tool-спани); digest-прогін — одним трейсом.
-- [ ] У жодному AI-івенті немає контенту промптів/відповідей/чеків — перевірено на живих подіях у PostHog.
-- [ ] Дашборд cost/latency per feature існує; щонайменше один anomaly alert увімкнено.
-- [ ] Sentiment + щонайменше один Hog-eval активні; по LLM-judge зафіксоване рішення власника (увімкнено на семплі / відкладено).
+> **Замір 2026-09-17 через PostHog MCP (проєкт `sergeant-prod`, id 167740): жодної
+> AI-події не існує.** `$ai_generation`, `$ai_span` і `$ai_trace` у таксономії
+> проєкту позначені «not seen in the last 30 days», а прямий запит по подіях за
+> 365 днів повертає **нуль рядків** — PostHog навіть не знає цих імен у цьому
+> проєкті («Event '$ai_generation' was not found in this project taxonomy»).
+>
+> Отже Фаза 1, змержена 2026-09-03, **у проді не працює вже два тижні**, і
+> причина одна: серверний env `POSTHOG_AI_OBSERVABILITY_KEY` не виставлений у
+> Coolify (тумблер за конструкцією fail-open — без ключа клієнт мовчки не
+> шле нічого, саме тому це не було видно ні з логів, ні з CI).
+>
+> Практичний наслідок для Фази 2: код trace-дерева приземлився, але міряти
+> йому нічого. **Наступна дія рівно одна — виставити ключ у Coolify;** доти
+> дашборд і anomaly alerts будувати нема на чому (тайли на нулі подій не
+> перевіряють ані форму властивостей, ані privacy-інваріант).
+>
+> Це заразом закриває питання, чому критерій #3 (відсутність контенту) не
+> можна було відмітити: перевіряти на живих подіях, яких немає, неможливо.
+
+- [x] Кожен Anthropic/OpenRouter-виклик сервера видно в PostHog як `$ai_generation` з моделлю, токенами (вкл. cache), костом, латентністю і `feature`; помилки — з `$ai_is_error`. **Підтверджено на живих подіях 2026-09-19** (§ Перевірка на живих подіях): 19 `$ai_generation`, модель/латентність/кост/`$ai_is_error` на місці.
+- [x] Розмова HubChat читається одним trace-деревом (generation + tool-спани); digest-прогін — одним трейсом. **Підтверджено на живих подіях 2026-09-19:** 4 `$ai_span` з іменами реальних інструментів (`log_water`, `query_habits`, `create_receivable`), звʼязані `$ai_trace_id` зі своїми генераціями.
+- [x] У жодному AI-івенті немає контенту промптів/відповідей/чеків — **перевірено на живих подіях 2026-09-19**: `input`, `output_choices` і `tools` у `posthog.ai_events` порожні для ВСІХ записів. Це найдорожчий критерій зі списку: allowlist-за-конструкцією тепер підтверджений фактом, а не лише юніт-тестом.
+- [ ] Дашборд cost/latency per feature існує; щонайменше один anomaly alert увімкнено. **Операторська дія поза репо.** Заблоковано тим самим відсутнім ключем — див. замір 2026-09-17 вище.
+- [ ] Sentiment + щонайменше один Hog-eval активні. По **LLM-judge рішення власника зафіксоване 2026-09-19: ВІДКЛАДЕНО** (§ Відкриті рішення №1) — judge вимагає вимкнути privacy-режим на семплі, тобто випустити тексти розмов назовні, а перша ж жива телеметрія показала, що болить не якість відповідей, а зависання, яких judge не бачить у принципі.
 - [ ] Ledger `ai_usage_daily` і Prometheus-метрики не змінені (PostHog — додатковий sink, не заміна).
 - [ ] `pnpm check` зелений.
 
 ## Відкриті рішення (потрібен власник)
 
-1. **LLM-judge і контент.** Privacy-режим ховає input/output від judge. Варіанти: (а) залишити тільки sentiment+Hog (нуль контенту назовні); (б) дозволити контент для вузького семплу не-фінансових флоу (напр. small-talk чату) — тоді потрібен окремий judge-ключ і фіксація семплу; (в) відкласти.
-2. **Session replay зв'язка (Фаза 4)** — вмикати чи ні: це додає видимість поведінки користувача навколо розмови, але й новий шлях даних фронт→бек.
-3. **Квота подій.** На free tier 100k/міс; якщо vision-шляхи (чеки Silpo батчами) почнуть генерувати великі обсяги — вирішити, чи семплити `$ai_generation` для vision.
+1. **LLM-judge і контент — ВИРІШЕНО 2026-09-19: відкласти (варіант «в»).**
+   Privacy-режим ховає input/output від judge, тож щоб judge працював, треба
+   вимкнути його на семплі — тобто випустити тексти реальних розмов до
+   зовнішнього оцінювача і завести для цього окремий Anthropic-ключ у PostHog
+   Settings. Рішення власника: обмін не вартий того ЗАРАЗ, бо перша ж жива
+   телеметрія показала, що болить не якість відповідей, а 30-секундні
+   зависання — а їх judge не побачить у принципі, він оцінює текст, а не час.
+   Переглянути після того, як таймаути закриті й накопичаться дані.
+2. **Session replay зв'язка (Фаза 4) — ВИРІШЕНО 2026-09-19: відкласти.**
+   Додає новий шлях даних фронт→бек заради видимості, яка зараз не закриває
+   жодного відкритого питання.
+3. **Квота подій — питання знято замiром 2026-09-19.** 40 подій за місяць
+   при ліміті 100k на free tier. Семплити нічого не треба; повернутись до
+   цього, лише якщо vision-шляхи (чеки Silpo батчами) почнуть давати обсяг.
 
 ## Ризики
 

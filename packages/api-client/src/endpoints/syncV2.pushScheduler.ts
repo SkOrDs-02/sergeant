@@ -10,7 +10,7 @@ import {
  * push-loop ({@link runSyncEnginePushOnce}, PR #042e-pushloop) into a
  * long-running daemon with `start` / `stop` / `flushNow` semantics.
  *
- * Stage 5 PR #042e-scheduler of `docs/planning/storage-roadmap.md`.
+ * Stage 5 PR #042e-scheduler of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * Pairs with PR #042e-pushloop (the one-tick orchestrator), which
  * itself sits on top of PR #042e-drain + PR #042e-lifecycle. This
  * module is the next composable layer up; it owns timer state and

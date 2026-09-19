@@ -107,19 +107,32 @@ export function loadNotifiedKeys(): Promise<void> {
   return notifiedKeysLoadPromise;
 }
 
+/** Matches the trailing `YYYY-MM-DD` day-key every notify-storageKey ends with. */
+const DAY_KEY_SUFFIX_RE = /(\d{4}-\d{2}-\d{2})$/;
+
 export function recordNotified(key: string): void {
   if (!key) return;
   notifiedKeys.add(key);
   idbPutKey(key).catch(() => {
     /* best-effort persistence */
   });
+  // AI-CONTEXT: this is the only call site that ever adds to `notifiedKeys`
+  // (from `sw/messages.ts`'s `ROUTINE_NOTIFICATION_SENT` handler), so it is
+  // also the natural place to prune. Before this, `pruneOldNotifiedKeys` was
+  // defined but never invoked anywhere in the repo — the dedup set grew
+  // without bound for the entire SW lifetime, contradicting the doc-comment
+  // above. The just-recorded `key` already carries today's day-key as its
+  // trailing suffix, so no extra `Date`/Kyiv-time import is needed here.
+  const dk = DAY_KEY_SUFFIX_RE.exec(key)?.[1];
+  if (dk) pruneOldNotifiedKeys(dk);
 }
 
 /**
  * Drop dedup keys tied to past days so the Set does not grow without
  * bound across the SW lifetime. All keys end with a `YYYY-MM-DD` suffix
  * (see the three `*_notify_*_<dk>` emit sites in `reminders.ts`), so we
- * keep only entries ending in the current `dk`.
+ * keep only entries ending in the current `dk`. Called from
+ * {@link recordNotified} on every new key; exported for direct use by tests.
  */
 export function pruneOldNotifiedKeys(currentDk: string): void {
   if (lastPrunedDk === currentDk) return;
@@ -137,4 +150,11 @@ export function pruneOldNotifiedKeys(currentDk: string): void {
       /* best-effort */
     });
   }
+}
+
+/** Test-only escape hatch — clears the in-memory set and the prune guard. */
+export function __resetNotifiedKeysForTests(): void {
+  notifiedKeys.clear();
+  lastPrunedDk = null;
+  notifiedKeysLoadPromise = null;
 }

@@ -256,5 +256,5 @@ severity: high finding адресований у тому самому PR») tri
 - [`pr-10-better-auth-security-review`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-10-better-auth-security-review.md)
 - [Better Auth changelog](https://better-auth.com/changelog)
 - [Safari ITP cookie policy](https://webkit.org/tracking-prevention/)
-- [OWASP ASVS authentication chapter](https://owasp.org/www-project-application-security-verification-standard/)
+- [OWASP ASVS authentication chapter](https://github.com/OWASP/ASVS)
 - [NIST SP 800-38D — GCM](https://csrc.nist.gov/publications/detail/sp/800-38d/final)

@@ -16,8 +16,32 @@ Canonical docs that receive PR backlinks (whitelist enforced by [`scripts/ci/upd
 - `docs/work/specs/initiatives/*.md` (excluding `archive/`, `follow-ups.md`, `README.md`)
 - `docs/start/instructions/*.md` (excluding `INDEX.md`, `README.md`, `_TEMPLATE-*`)
 - `docs/governance/governance/rules/*.md` (excluding `README.md`)
+- `docs/work/specs/audits/*.md` (excluding `README.md`) — **додано 2026-09-15**
 
-`docs/work/specs/audits/` and `docs/engineering/architecture/` are intentionally excluded — audits are snapshot-natured, architecture is already covered by Phase 3 drift-detectors.
+`docs/engineering/architecture/` лишається excluded — architecture is already covered by Phase 3 drift-detectors.
+
+### Чому аудити повернули в скоуп (2026-09-15)
+
+Первісне рішення виключало `docs/work/specs/audits/` з формулюванням «audits are
+snapshot-natured» — зріз стану на дату, а не живий канон. Аргумент був
+розумний, але практика його спростувала.
+
+За один робочий день реєстр наскрізного огляду 2026-09-13 правився **шість
+разів** (PR #38, #43, #45 закривали знахідки C2/C3/C4/C10 і переписували їхні
+статуси), і **чотири рази** виявлялось, що записане в ньому розходиться з
+кодом: хибне число 579 у C2, застарілий рецепт C4, неточний опис розмірів у
+C10 і неіснуючий дефект PDF-експорту в M3. Кожна розбіжність коштувала часу на
+з'ясування, чи це баг.
+
+Тобто аудит тут поводиться не як знімок, а як **живий робочий документ** — той
+самий жанр, що ініціативи. А саме для таких PR-беклінки й існують: питання
+«які PR-и міняли статуси знахідок цього огляду?» було рівно тією git-log
+археологією, проти якої писалося правило.
+
+Виняток лишається чинним для аудитів, які справді є знімками й після публікації
+не змінюються. Механізм це розрізняє сам: доки без записів у реєстрі блока не
+отримують (`applyBlock`: `blockText == null and no existing block → no change`),
+тож 36 наявних файлів лишаються недоторканими, доки їх не торкнеться PR.
 
 ## Enforced by
 
@@ -64,7 +88,7 @@ See [ADR-0061](../../adr/0061-pr-backlink-storage.md) for the storage rationale 
 
 **Що свідомо НЕ добрано:** #1021 і #1081. Перший додав усі ADR як нові файли
 (артефакт пересіву історії репо), другий — чисте перейменування дерева доків
-(`docs/04-governance/…` → `docs/governance/…`). Разом це 291 «дотик», жоден
+(`docs/04-governance` → `docs/governance`). Разом це 291 «дотик», жоден
 із яких не змінив жодного рішення. Леджер індексує зміст, а не рухи файлів:
 запис про масовий переїзд витіснив би з блоку `Recent PRs` у кожному
 документі саме ті PR-и, заради яких блок існує.
@@ -90,10 +114,11 @@ Requires `gh` CLI on PATH. Commit the resulting `docs/governance/pr-ledger/index
 
 ## Recent PRs
 
-| PR                                                       | Title                                                              | Merged     |
-| -------------------------------------------------------- | ------------------------------------------------------------------ | ---------- |
-| [#508](https://github.com/SkOrDs-02/sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo              | 2026-07-29 |
-| [#2900](https://github.com/Skords-01/Sergeant/pull/2900) | docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up) | 2026-05-15 |
+| PR                                                       | Title                                                                            | Merged     |
+| -------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------- |
+| [#50](https://github.com/zaebal-beep/sergeant/pull/50)   | fix(ci): повернути аудити в скоуп Hard Rule #26 і загейтити дрейф чотирьох копій | 2026-09-15 |
+| [#508](https://github.com/SkOrDs-02/sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                            | 2026-07-29 |
+| [#2900](https://github.com/Skords-01/Sergeant/pull/2900) | docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up)               | 2026-05-15 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

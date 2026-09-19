@@ -1,6 +1,6 @@
 # Database backup / restore — runbook (PR #049)
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-20.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-26.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -259,7 +259,7 @@ job is the automated smoke, not a replacement for operator practice.
 
 ## 7. Escalation
 
-- Restore не вдається через corruption у dump-і → перейти на попередній денний snapshot; повідомити Skords-01 у Telegram + [postmortem.md](./write-postmortem.md).
+- Restore не вдається через corruption у dump-і → перейти на попередній денний snapshot; повідомити @zaebal-beep у Telegram + [postmortem.md](./write-postmortem.md).
 - Усі Coolify-бекапи в retention-вікні corrupted → catastrophic event; перейти на manual reconstitute з op-log реплеїв клієнтських БД (best-effort, ≤ 24h data loss expected).
 - pgvector extension не доступний на restore-target → restore-image має бути `pgvector/pgvector:pg18` (мажорна версія збігається з проду per [ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)), не stock `postgres:18-alpine`.
 
@@ -277,7 +277,9 @@ job is the automated smoke, not a replacement for operator practice.
 
 | PR                                                     | Title                                                                                                                   | Merged     |
 | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------- | ---------- |
+| [#57](https://github.com/zaebal-beep/sergeant/pull/57) | fix(root): закрити знахідки наскрізного аудиту — валідація AI-шару, метрика конфліктів синку, браузерні дефекти         | 2026-09-16 |
+| [#51](https://github.com/zaebal-beep/sergeant/pull/51) | docs(agents): пʼять нових playbook-ів під повторювані поломки і ревізія наявних                                         | 2026-09-15 |
 | [#334](https://github.com/SkOrDs-02/sergeant/pull/334) | docs(root): reconcile docs with code after 2026-07-20 audit (Railway->Coolify, CI gates, dual-write, domain invariants) | 2026-07-21 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

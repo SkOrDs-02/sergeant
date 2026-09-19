@@ -458,7 +458,7 @@ export const CelebrationModal = memo(function CelebrationModal({
 
           {/* Action button */}
           <Button
-            variant="primary"
+            variant="solid"
             size="lg"
             onClick={handleAction}
             className={cn(
@@ -665,7 +665,7 @@ export const MiniSuccess = memo(function MiniSuccess({
         <span className="flex items-center justify-center w-5 h-5 rounded-full bg-white/20 animate-success-ring">
           <Icon
             name="check"
-            size={12}
+            size="xs"
             strokeWidth={3}
             className="animate-check-draw"
           />

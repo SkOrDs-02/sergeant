@@ -90,12 +90,12 @@ export function ExercisePhotoViewer({
       {canAlternate && (
         <div className="mt-4">
           <Button
-            variant="secondary"
+            variant="outline"
             className="h-11 w-full"
             onClick={() => setPlaying((p) => !p)}
             aria-pressed={playing}
           >
-            <Icon name={playing ? "pause" : "play"} size={16} aria-hidden />
+            <Icon name={playing ? "pause" : "play"} size="md" aria-hidden />
             {playing ? t.stopLabel : t.playLabel}
           </Button>
         </div>

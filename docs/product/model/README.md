@@ -1,7 +1,6 @@
 # Продуктові канони Sergeant
 
-> **Last validated:** 2026-07-24 by @Skords-01 (product-knowledge-конвеєр завершено).
-> **Next review:** 2026-10-22.
+> **Last touched:** 2026-09-17 by @claude («наступний крок — беклог» замінено посиланням на вже наявний `product-knowledge-backlog.md`; product-knowledge-конвеєр завершено 2026-07-24 by @Skords-01). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Канонічні продуктові моделі Sergeant — джерело істини про те, для кого продукт,
@@ -43,5 +42,7 @@
 - [`product-brainstorm-2026-07.md`](../../work/specs/planning/product-brainstorm-2026-07.md) — 16 продуктових рішень.
 - Спека парасольки: [`product-knowledge-audit-overview.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/specs/product-knowledge-audit-overview.md).
 
-**Наступний крок конвеєра — беклог** (окрема сесія): зведення всіх «фіксів»
-шести diff-звітів + брейншторму в пріоритезовану чергу.
+**Беклог конвеєра вже існує** — [`product-knowledge-backlog.md`](../../work/specs/planning/product-knowledge-backlog.md):
+зведення всіх «фіксів» шести diff-звітів + брейншторму в пріоритезовану чергу
+(звірка з `main` — у його шапці). Формулювання «наступний крок — окрема сесія»
+було чинним на 2026-07-24; беклог зроблено, звірено 2026-09-17.

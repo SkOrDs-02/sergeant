@@ -42,7 +42,7 @@ import {
   parseLimitCeilingFromRefusal,
   pullAndSyncReceipts,
   silpoErrorToAppError,
-  __resetSilpoSchemaDriftAlert,
+  __resetSilpoAlerts,
   __test__,
   type SilpoTransactionRunner,
 } from "./receipts.js";
@@ -233,12 +233,22 @@ describe("silpoErrorToAppError", () => {
   });
 
   it("a tool refusal does not ring the schema-drift alert", () => {
-    __resetSilpoSchemaDriftAlert();
+    // Намір тесту незмінний: відмова тули НЕ є дрейфом контракту й не сміє
+    // підписуватись як він — інакше «Сільпо змінили формат» переставало б
+    // означати те, що означає. Змінилось інше: з 2026-09-17 така відмова
+    // сигналить під ВЛАСНИМ видом, а не мовчить (раніше про неї знала лише
+    // колонка `last_error_code`).
+    __resetSilpoAlerts();
     vi.mocked(Sentry.captureException).mockClear();
 
     silpoErrorToAppError({ kind: "tool_error", message: "Rate limit" });
 
-    expect(Sentry.captureException).not.toHaveBeenCalled();
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    const [captured, opts] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+    expect((opts as { tags: { kind: string } }).tags.kind).toBe("tool_error");
+    expect((captured as Error).message).not.toContain("schema drift");
+    // І текст відмови Сільпо в подію не потрапляє (Hard Rule #21).
+    expect((captured as Error).message).not.toContain("Rate limit");
   });
 });
 
@@ -312,6 +322,13 @@ function makeFakeDb(
         inserted++;
       }
       return { rows: [], rowCount: inserted };
+    }
+    if (text.includes("COUNT(*)::int AS n")) {
+      // Скільки позицій уже лежить у цього чека — гейт доливки в
+      // `upsertReceipt`.
+      const [, receiptId] = values as [string, string];
+      const n = items.filter((i) => i.receiptId === receiptId).length;
+      return { rows: [{ n }], rowCount: 1 };
     }
     if (text.includes("r.receipt_id, r.total_kop, r.purchased_at")) {
       const rows = [...receipts.values()]
@@ -766,6 +783,71 @@ describe("upsertReceipt (receipt + items atomicity)", () => {
     expect(calls).not.toContain("COMMIT");
     expect(client.release).toHaveBeenCalledTimes(1);
   });
+
+  // Щілина, через яку вечірній чек лишався вічно порожнім: Сільпо віддає
+  // голову офлайн-чека раніше, ніж до неї доїжджають `products[]`.
+  it("доливає позиції в уже збережений чек, у якого їх нуль", async () => {
+    const db = makeFakeDb();
+    const headOnly = { ...RECEIPT, items: [] };
+
+    const first = await __test__.upsertReceipt(
+      "user-1",
+      "offline",
+      headOnly,
+      db.withTransaction,
+    );
+    expect(first).toEqual({ inserted: true, itemsInserted: 0 });
+    expect(db.items).toHaveLength(0);
+
+    const second = await __test__.upsertReceipt(
+      "user-1",
+      "offline",
+      RECEIPT,
+      db.withTransaction,
+    );
+    // `inserted: false` — це ТОЙ САМИЙ чек, новим він не рахується; але
+    // позиції тепер на місці.
+    expect(second).toEqual({ inserted: false, itemsInserted: 1 });
+    expect(db.items).toEqual([
+      { receiptId: "r1", name: "Хліб", priceKop: 3000 },
+    ]);
+  });
+
+  it("не перезаписує позиції чека, у якого вони вже є", async () => {
+    const db = makeFakeDb();
+    await __test__.upsertReceipt(
+      "user-1",
+      "offline",
+      RECEIPT,
+      db.withTransaction,
+    );
+    expect(db.items).toHaveLength(1);
+
+    // Другий синк того самого чека з ІНШИМИ позиціями — снапшот
+    // незмінний, дублів немає.
+    const again = await __test__.upsertReceipt(
+      "user-1",
+      "offline",
+      {
+        ...RECEIPT,
+        items: [
+          {
+            name: "Підмінене",
+            qty: null,
+            unit: null,
+            priceKop: 1,
+            categorySlug: null,
+            barcode: null,
+          },
+        ],
+      },
+      db.withTransaction,
+    );
+    expect(again).toEqual({ inserted: false, itemsInserted: 0 });
+    expect(db.items).toEqual([
+      { receiptId: "r1", name: "Хліб", priceKop: 3000 },
+    ]);
+  });
 });
 
 describe("listReceipts", () => {
@@ -845,7 +927,7 @@ describe("listReceipts", () => {
 // чеки» кожного юзера створював би окрему подію).
 describe("silpoErrorToAppError → Sentry на schema_drift", () => {
   beforeEach(() => {
-    __resetSilpoSchemaDriftAlert();
+    __resetSilpoAlerts();
     vi.clearAllMocks();
   });
 
@@ -870,11 +952,91 @@ describe("silpoErrorToAppError → Sentry на schema_drift", () => {
     expect(Sentry.captureException).toHaveBeenCalledTimes(1);
   });
 
-  it("не шле подію на інші види помилок", () => {
+  it("не шле подію на очікувані стани користувача", () => {
+    // Це не поломки інтеграції, а стани, які інтерфейс і так показує:
+    // не підключено, треба перепідключитись, забагато запитів. Алерт на них
+    // означав би постійний червоний, тобто вимкнений гейт.
     silpoErrorToAppError({ kind: "rate_limited", message: "429" });
-    silpoErrorToAppError({ kind: "upstream_unavailable", message: "503" });
     silpoErrorToAppError({ kind: "not_connected", message: "no row" });
+    silpoErrorToAppError({ kind: "reauth_required", message: "reauth" });
+    silpoErrorToAppError({ kind: "auth_required", message: "auth" });
+    silpoErrorToAppError({ kind: "config_missing", message: "no env" });
     expect(Sentry.captureException).not.toHaveBeenCalled();
+  });
+});
+
+// До 2026-09-17 у Sentry летів РІВНО ОДИН вид збою з чотирьох: `schema_drift`.
+// Три інші (`tool_error`, `protocol_error`, `upstream_unavailable`) писались
+// у `silpo_connection.last_error_code` і нікуди не сигналили — тобто про
+// зламаний синк дізнавались із того, що чеки перестали приходити, а не з
+// дашборда. Ці тести тримають рівно цю властивість.
+describe("silpoErrorToAppError → Sentry на решті збоїв інтеграції", () => {
+  beforeEach(() => {
+    __resetSilpoAlerts();
+    vi.clearAllMocks();
+  });
+
+  it.each([
+    ["tool_error", "SILPO_TOOL_ERROR"],
+    ["protocol_error", "SILPO_UPSTREAM_ERROR"],
+    ["upstream_unavailable", "SILPO_UPSTREAM_ERROR"],
+  ] as const)("сигналить про %s", (kind, code) => {
+    const err = silpoErrorToAppError({ kind, message: "щось пішло не так" });
+    expect(err.code).toBe(code);
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+    const [, opts] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+    expect(opts).toMatchObject({ tags: { integration: "silpo", kind } });
+  });
+
+  it.each(["tool_error", "protocol_error", "upstream_unavailable"] as const)(
+    "не кладе текст відмови Сільпо в подію (%s)",
+    (kind) => {
+      // Hard Rule #21: чужий текст може нести поля покупки. Вид збою — наш,
+      // текст — ні, тож у подію йде тільки вид.
+      silpoErrorToAppError({ kind, message: "чек №42 на 317,50 грн" });
+      const [captured] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+      expect((captured as Error).message).not.toContain("317,50");
+      expect((captured as Error).message).not.toContain("чек №42");
+      expect((captured as Error).message).toContain(kind);
+    },
+  );
+
+  it("дедупає повтор того самого виду в межах вікна", () => {
+    silpoErrorToAppError({ kind: "upstream_unavailable", message: "503" });
+    silpoErrorToAppError({ kind: "upstream_unavailable", message: "503" });
+    silpoErrorToAppError({ kind: "upstream_unavailable", message: "503" });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(1);
+  });
+
+  it("веде вікно ОКРЕМО по кожному виду", () => {
+    // Спільний лічильник зробив би алерти взаємно глушними: найгучніший вид
+    // ховав би найрідший і найважливіший (`schema_drift` вимагає правки коду).
+    silpoErrorToAppError({ kind: "upstream_unavailable", message: "503" });
+    silpoErrorToAppError({ kind: "tool_error", message: "refused" });
+    silpoErrorToAppError({ kind: "protocol_error", message: "bad frame" });
+    silpoErrorToAppError({ kind: "schema_drift", message: "orders[0] зникло" });
+    expect(Sentry.captureException).toHaveBeenCalledTimes(4);
+    const kinds = vi
+      .mocked(Sentry.captureException)
+      .mock.calls.map(
+        ([, opts]) => (opts as { tags: { kind: string } }).tags.kind,
+      );
+    expect(new Set(kinds)).toEqual(
+      new Set([
+        "upstream_unavailable",
+        "tool_error",
+        "protocol_error",
+        "schema_drift",
+      ]),
+    );
+  });
+
+  it("зберігає заголовок дрейфу дослівно — щоб повтор перевідкрив ту саму issue", () => {
+    silpoErrorToAppError({ kind: "schema_drift", message: "orders[0] зникло" });
+    const [captured] = vi.mocked(Sentry.captureException).mock.calls[0]!;
+    expect((captured as Error).message).toBe(
+      "Silpo MCP schema drift: orders[0] зникло",
+    );
   });
 });
 

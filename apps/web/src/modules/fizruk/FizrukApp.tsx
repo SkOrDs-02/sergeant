@@ -145,8 +145,16 @@ export default function FizrukApp({
     start();
   };
 
+  // `start_workout` (PWA-ярлик, чекліст, `N` на клавіатурі) відкриває
+  // аркуш «Почати тренування», а не лише веде на сторінку: стан аркуша
+  // живе у `Workouts`, тож сюди йде лічильник-запит, а не boolean —
+  // повторний інтент має відкрити аркуш і після того, як його закрили.
+  const [quickStartRequest, setQuickStartRequest] = useState(0);
   usePwaAction(pwaAction, onPwaActionConsumed, {
-    start_workout: () => navigate("workouts"),
+    start_workout: () => {
+      navigate("workouts");
+      setQuickStartRequest((n) => n + 1);
+    },
   });
 
   // First-run flag bookkeeping. Fizruk's Dashboard already surfaces an
@@ -271,6 +279,7 @@ export default function FizrukApp({
             activateProgram={activateProgram}
             deactivateProgram={deactivateProgram}
             todaySession={todaySession}
+            quickStartRequest={quickStartRequest}
             onNavigate={(target) => navigate(target)}
             onStartProgramWorkout={(session) =>
               handleStartProgramWorkout(session)
@@ -288,21 +297,24 @@ export default function FizrukApp({
           footer={
             <div className="flex flex-col gap-2">
               <Button
-                module="fizruk"
+                variant="solid"
+                tone="fizruk"
+
                 className="w-full h-12"
                 onClick={() => resolveProgramStartConflict("finish")}
               >
                 {conflictCopy.finish}
               </Button>
               <Button
-                variant="destructive"
+                variant="solid"
+                tone="danger"
                 className="w-full h-12"
                 onClick={() => resolveProgramStartConflict("discard")}
               >
                 {conflictCopy.discard}
               </Button>
               <Button
-                variant="secondary"
+                variant="outline"
                 className="w-full h-12"
                 onClick={() => setPendingProgramStart(null)}
               >

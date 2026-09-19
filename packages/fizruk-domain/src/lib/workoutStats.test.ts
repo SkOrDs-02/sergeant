@@ -9,6 +9,7 @@ import {
   epley1rm,
   formatCompactKg,
   getExercisePR,
+  itemTonnageKg,
   personalRecordsExerciseCount,
   suggestNextSet,
   targetRepRange,
@@ -748,5 +749,67 @@ describe("countConsecutiveEasings", () => {
     expect(
       countConsecutiveEasings([wk("2026-09-01T10:00:00.000Z", "easier")], ""),
     ).toBe(0);
+  });
+});
+
+/**
+ * Регресія на аудит `unification-modules.md` §1.4 (перезамір 2026-09-15).
+ *
+ * Пʼять місць рахували тоннаж по вправі власним циклом, і ТРИ з них
+ * загубили фільтр `type === "strength"`: чатова аналітика (там фільтр був
+ * по назві й мʼязу, тип не перевірявся зовсім) і обидва мобільні дашборди.
+ *
+ * Тест фіксує саме те, що губилось: вправа типу `distance`/`time` може
+ * нести `sets` — поле необовʼязкове, але НЕ звужене за `type`, — і копія
+ * без фільтра тихо додавала їх до тоннажу.
+ */
+describe("itemTonnageKg — канон тоннажу по вправі", () => {
+  it("рахує силову вправу як добуток ваги на повторення", () => {
+    expect(
+      itemTonnageKg({
+        type: "strength",
+        sets: [
+          { weightKg: 80, reps: 5 },
+          { weightKg: 60, reps: 10 },
+        ],
+      }),
+    ).toBe(80 * 5 + 60 * 10);
+  });
+
+  it("віддає 0 для не-силової вправи, навіть якщо в неї є підходи", () => {
+    for (const type of ["distance", "time"] as const) {
+      expect(itemTonnageKg({ type, sets: [{ weightKg: 80, reps: 5 }] })).toBe(
+        0,
+      );
+    }
+  });
+
+  it("коерсить рядкові числа з бази і не дає NaN", () => {
+    expect(
+      itemTonnageKg({
+        type: "strength",
+        sets: [
+          {
+            weightKg: "80" as unknown as number,
+            reps: "5" as unknown as number,
+          },
+          { weightKg: null as unknown as number, reps: 5 },
+        ],
+      }),
+    ).toBe(400);
+  });
+
+  it("тоннаж тренування = сума по вправах", () => {
+    const w = {
+      items: [
+        { type: "strength" as const, sets: [{ weightKg: 100, reps: 3 }] },
+        { type: "distance" as const, sets: [{ weightKg: 999, reps: 999 }] },
+        { type: "strength" as const, sets: [{ weightKg: 50, reps: 4 }] },
+      ],
+    };
+    expect(workoutTonnageKg(w)).toBe(300 + 200);
+    expect(workoutTonnageKg(w)).toBe(
+      w.items.reduce((s, it) => s + itemTonnageKg(it), 0),
+    );
   });
 });

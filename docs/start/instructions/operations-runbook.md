@@ -2,7 +2,7 @@
 
 > **Update 2026-07-21:** Backend на **Hetzner/Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)); OpenClaw decommissioned ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)). Railway CLI/дашборд нижче — **historical**, де не позначено Coolify.
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-24.
+> **Last touched:** 2026-09-17 by @claude (`pnpm db:backup` → кроки database-backup-restore.md). **Next review:** 2026-12-16.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -88,7 +88,7 @@ Surface-і та їх deploy targets:
 Тижневий ритуал:
 
 - **Вівторок** — Renovate PR-batch. [`docs/operations/observability/runbook.md §«Як обробити Renovate PR»`](../../operations/observability/runbook.md). Auto-merge label `automerge-eligible` для green CI; manual review для groups з ADR-0044.
-- **Четвер** — `pnpm db:backup` smoke-test (на staging БД, не production). [`./database-backup-restore.md`](./database-backup-restore.md).
+- **Четвер** — backup smoke-test (на staging БД, не production): `pg_dump`-snapshot і restore-репетиція за кроками [`./database-backup-restore.md`](./database-backup-restore.md) § 1 «Pre-migration snapshot» і § 6 «Validation». _(Скрипта `pnpm db:backup` у репо немає — 2026-09-17.)_
 - **Неділя** — pre-week governance pass: `pnpm lint`, `pnpm docs:check-links`. Лежать у repo, не в CI.
 
 ## 4. Як задеплоїти hot-fix без `@Skords-01`

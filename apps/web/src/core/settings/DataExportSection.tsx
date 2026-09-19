@@ -122,7 +122,7 @@ export function DataExportSection() {
           <div className="flex flex-wrap gap-2">
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => void handleServerExport("json")}
               disabled={serverExportBusy || signedIn === false}
@@ -131,7 +131,7 @@ export function DataExportSection() {
             </Button>
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               size="sm"
               onClick={() => void handleServerExport("csv")}
               disabled={serverExportBusy || signedIn === false}

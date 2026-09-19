@@ -24,6 +24,7 @@ import {
   workoutTonnageKg,
 } from "../../lib/workoutStats.js";
 
+import { isFullWorkout } from "../workouts/activityWeight.js";
 import { computeWeeklyStreakBreakdown } from "./weeklyStreak.js";
 
 import type {
@@ -83,6 +84,9 @@ export function computeStreakDays(
   const daysWithWorkouts = new Set<string>();
   for (const w of list) {
     if (!isCompletedWorkout(w)) continue;
+    // Одиниця серії — повноцінне тренування (канон §8), як і в тижневому
+    // стріку: легкий запис на дні є, але день ним не «закритий».
+    if (!isFullWorkout(w)) continue;
     const ms = Date.parse(w.endedAt);
     if (!Number.isFinite(ms)) continue;
     daysWithWorkouts.add(localYmdKey(ms));

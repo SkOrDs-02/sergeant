@@ -18,7 +18,7 @@ type WithSessionUser = Request & { user?: { id: string } };
 // Колонки `import_batches`, потрібні серіалізатору (`serialize.ts::
 // ImportBatchRow`). Виписані буквально в КОЖНОМУ з трьох SQL нижче (а не
 // через спільний template-interpolated constant) навмисно: `no-restricted-
-// syntax` (docs/04-governance/security/hardening/M11-eslint-plugin-security.md)
+// syntax` (docs/work/specs/security-hardening/M11-eslint-plugin-security.md)
 // застерігає проти templated `query(...)` з `${...}` — інтерполяція тут
 // була б статичною (не user input), але лишати її дешевше усунути, ніж
 // пояснювати щоразу (той самий підхід, що `receipts/save.ts`).

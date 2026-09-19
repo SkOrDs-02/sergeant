@@ -41,12 +41,37 @@ export const SilpoSyncStateSchema = z.object({
   /** `silpo_connection.access_token_expires_at`, ISO-8601 or null. */
   accessTokenExpiresAt: z.string().nullable(),
   /**
-   * `MAX(silpo_receipts.created_at)` for the user — best-effort "last
-   * synced" signal since `silpo_connection` has no dedicated timestamp
-   * column (no webhooks in this integration, sync is on-demand/polling —
-   * see spec § Ізоляція збою). `null` when nothing has been pulled yet.
+   * `silpo_connection.last_sync_at` — момент останнього УСПІШНОГО
+   * `pullAndSyncReceipts`. Не `MAX(created_at)` по чеках: синк, який не
+   * привіз нових чеків, теж є оновленням. `null`, поки жодного успіху не
+   * було.
    */
   lastSyncAt: z.string().nullable(),
+  /**
+   * Момент останнього НЕВДАЛОГО синку, або `null`, якщо зараз усе гаразд
+   * (успіх гасить це поле).
+   *
+   * Існує тому, що без нього поломку не було видно взагалі: `lastSyncAt`
+   * просто переставав рухатись, а це виглядає точно так само, як «людина
+   * не ходила в магазин». Саме так синк простояв два тижні мертвим при
+   * 304 подіях у Sentry (2026-09-14).
+   */
+  /**
+   * `.default(null)`, а не просто `.nullable()` — web і server деплояться
+   * ОКРЕМО, тож клієнт нової версії цілком може питати сервер старої. Без
+   * дефолту `parse` кинув би на відповіді без цих полів, і зламалась би вся
+   * картка налаштувань — через поле, яке лише повідомляє про поломку.
+   * Відсутнє поле читається як «провалів не записано», і це чесно: старий
+   * сервер їх справді не записував.
+   */
+  lastFailedAt: z.string().nullable().default(null),
+  /**
+   * НАШ код помилки останнього провалу (`SILPO_TOOL_ERROR`,
+   * `SILPO_SCHEMA_DRIFT`, `SILPO_REAUTH_REQUIRED`, …) — не текст відповіді
+   * Сільпо: чужий текст може нести поля покупки (Hard Rule #21). Клієнту
+   * потрібен саме код: за ним обирається копія плашки.
+   */
+  lastErrorCode: z.string().nullable().default(null),
   receiptsCount: z.number().int().nonnegative(),
 });
 export type SilpoSyncState = z.infer<typeof SilpoSyncStateSchema>;

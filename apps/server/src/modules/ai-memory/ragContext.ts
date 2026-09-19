@@ -28,6 +28,7 @@
 import { setTimeout as setTimeoutP } from "node:timers/promises";
 
 import { env } from "../../env.js";
+import { toKyivISODate } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
 import { getAiMemory } from "./bootstrap.js";
 
@@ -99,7 +100,12 @@ function formatRagBlock(
   ];
   for (const m of memories) {
     const sourceLabel = SOURCE_LABEL_UK[m.source] ?? m.source;
-    const date = m.createdAt.toISOString().slice(0, 10);
+    // Київська доба, не UTC-нарізка. Запис, зроблений о 00:30 за Києвом,
+    // при `toISOString().slice(0,10)` підписувався ВЧОРАШНЬОЮ датою — і
+    // модель, читаючи цей блок, казала людині «вчора» про те, що сталось
+    // сьогодні. Той самий заборонений патерн описано в
+    // `modules/finyk/receipts/kyivClock.ts`.
+    const date = toKyivISODate(m.createdAt);
     const content =
       m.content.length > MEMORY_TRUNCATE_LEN
         ? `${m.content.slice(0, MEMORY_TRUNCATE_LEN)}\u2026`

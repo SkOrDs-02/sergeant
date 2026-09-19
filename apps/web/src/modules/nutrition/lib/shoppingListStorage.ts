@@ -25,15 +25,19 @@ import { getCachedNutritionSqliteState } from "./sqliteReader.js";
 
 export {
   SHOPPING_LIST_KEY,
+  addManualShoppingItem,
   getCheckedItems,
   getTotalCount,
+  mergeGeneratedShoppingList,
   normalizeShoppingList,
   removeCheckedItems,
   toggleShoppingItem,
 } from "@sergeant/nutrition-domain";
 export type {
+  AddShoppingItemInput,
   ShoppingCategory,
   ShoppingItem,
+  ShoppingItemSource,
   ShoppingList,
   ShoppingListLike,
 } from "@sergeant/nutrition-domain";

@@ -8,8 +8,9 @@ import {
 } from "../_shared/primitives";
 import { useShowcaseSettings } from "../_shared/context";
 
-const SAMPLE_USAGE = `// Toggle theme via classList: tokens cascade for free
-document.documentElement.classList.toggle("dark");
+const SAMPLE_USAGE = `// Three explicit choices, one owner of the <html> classes
+const { choice, setChoice, isDark, isHighContrast } = useTheme();
+setChoice("dark"); // "light" | "dark" | "hc" — no schedule, no "system"
 
 // In Tailwind classes, use semantic tokens — they swap automatically
 <div className="bg-panel text-text border border-line">…</div>
@@ -70,7 +71,7 @@ export function ThemingSection() {
           </span>
           <span className="text-subtle">
             (перемикається у топ-барі або вручну через{" "}
-            <code>useDarkMode()</code>)
+            <code>useTheme().setChoice()</code>)
           </span>
         </div>
       </Group>
@@ -98,19 +99,23 @@ export function ThemingSection() {
         </div>
       </Group>
 
-      <Group label="Schedule modes (useDarkMode)">
+      <Group label="Три режими (useTheme)">
         <div className="space-y-2 text-style-caption text-muted">
           <p>
-            <code className="text-text">manual</code>: вручну через{" "}
-            <code>toggle()</code>. localStorage: <code>hub_dark_mode_v1</code>.
+            <code className="text-text">light</code> /{" "}
+            <code className="text-text">dark</code> /{" "}
+            <code className="text-text">hc</code>: явний вибір користувача, один
+            власник класів <code>dark</code> і <code>hc</code> на{" "}
+            <code>&lt;html&gt;</code>. Режиму «за розкладом» і «як у системі»
+            немає: колишній <code>useDarkMode</code> із manual / system / sunset
+            знято, а збережене <code>system</code> мігрується в одноразовий
+            знімок <code>prefers-color-scheme</code>.
           </p>
           <p>
-            <code className="text-text">system</code>: слухаємо{" "}
-            <code>prefers-color-scheme</code>.
-          </p>
-          <p>
-            <code className="text-text">sunset</code>: Kyiv-широта (~50N),
-            apparent sunrise / sunset з cosine-апроксимацією.
+            Вибір переживає перезавантаження, синхронізується між вкладками і
+            перевстановлюється після bfcache на iOS PWA (<code>pageshow</code>
+            ). Лейбли й іконки для перемикачів беруться з{" "}
+            <code>THEME_CHOICE_LABELS</code> / <code>THEME_CHOICE_ICONS</code>.
           </p>
         </div>
       </Group>
@@ -128,14 +133,16 @@ export function ThemingSection() {
               bad: <code>bg-white dark:bg-stone-900</code>,
             },
             {
-              label: "Theme toggle",
-              good: <code>useDarkMode().toggle()</code>,
+              label: "Theme switch",
+              good: <code>useTheme().setChoice(&quot;dark&quot;)</code>,
               bad: <code>localStorage.setItem(&quot;theme&quot;, …)</code>,
             },
             {
-              label: "Schedule",
-              good: <code>setSchedule(&quot;sunset&quot;)</code>,
-              bad: <code>setTimeout(toggle, msUntilSunset)</code>,
+              label: "Dark class",
+              good: <code>useTheme()</code>,
+              bad: (
+                <code>documentElement.classList.toggle(&quot;dark&quot;)</code>
+              ),
             },
           ]}
         />

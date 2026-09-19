@@ -44,26 +44,26 @@ export function NotFoundPage({ homePath = "/" }: NotFoundPageProps) {
         primaryAction={
           <Button
             type="button"
-            variant="primary"
+            variant="solid"
             size="lg"
             onClick={() => {
               navigate(homePath, { replace: true });
             }}
           >
-            <Icon name="home" size={16} />
+            <Icon name="home" size="md" />
             На головну
           </Button>
         }
         secondaryAction={
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="lg"
             onClick={() => {
               navigate(-1);
             }}
           >
-            <Icon name="chevron-left" size={16} />
+            <Icon name="chevron-left" size="md" />
             Назад
           </Button>
         }

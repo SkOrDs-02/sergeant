@@ -3,7 +3,7 @@
  * the list of operations the dual-write layer must mirror to local
  * SQLite.
  *
- * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. Mirrors
+ * Stage 4 PR #032 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirrors
  * `apps/web/src/modules/nutrition/lib/sqliteWriter/diff.ts` — kept duplicated
  * until Stage 5 promotes the dual-write helpers into a workspace package.
  *
@@ -120,7 +120,8 @@ export interface RecipeDeleteOp {
 
 /**
  * Stage 11 / PR #070n-mobile-dualwrite — water-log per-(user, dateKey)
- * row. Mirrors `fizruk_pushups`: a row stores a single integer counter
+ * row. A row stores a single integer counter (the shape the retired
+ * pushup counter used to have)
  * keyed by date. There is no soft-delete — `volume_ml = 0` is a valid
  * "reset for that day" state and the diff still emits the op so
  * cross-device LWW resolution converges.

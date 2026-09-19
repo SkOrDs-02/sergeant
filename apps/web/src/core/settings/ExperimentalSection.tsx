@@ -72,7 +72,7 @@ export function ExperimentalSection() {
       >
         <Icon
           name="alert-triangle"
-          size={16}
+          size="md"
           className="text-warning-strong dark:text-warning shrink-0 mt-0.5"
           aria-hidden
         />

@@ -6,7 +6,7 @@ import {
 } from "./syncV2.increment.submit";
 import type { OutboxIncrementInputShape } from "./syncV2.increment.outboxEnqueue";
 
-// Stage 5 PR #042e (`docs/planning/storage-roadmap.md`).
+// Stage 5 PR #042e (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 //
 // `submitSyncV2IncrementOp` composes three already-landed building
 // blocks:

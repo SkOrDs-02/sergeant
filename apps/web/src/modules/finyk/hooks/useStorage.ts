@@ -59,8 +59,8 @@ export function useStorage({
   // Mirror every slot mutation into SQLite (best-effort). `FinykBootGate`
   // in `RootLayout` installs the same context app-wide so the hub AI
   // assistant can mirror chat-action writes even when the Finyk screen
-  // isn't mounted — but that gate is `user || isDemoActive()`, so for an
-  // anonymous visitor it renders nothing and `useFinykDualWriteSync`
+  // isn't mounted — але той гейт історично вимагав сесію, тож для
+  // анонімного відвідувача він рендерив нічого і `useFinykDualWriteSync`
   // stays a permanent no-op (`triggerFinykDualWrite` short-circuits on
   // an unregistered context). Booting here too is what Routine
   // (`useRoutineAppState`), Fizruk (`FizrukApp`) and Nutrition

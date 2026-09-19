@@ -20,12 +20,13 @@ export const fizrukPageMessages = {
   // through this prompt. Shared by the Workouts dialogs and the program
   // start flow in the module shell — same wording in both, one source.
   /**
-   * «Внести проведене заняття» — тренування заднім числом.
-   * Копія свідомо не каже «почати»: заняття вже відбулось, тут його
-   * лише записують. Обґрунтування — докблок `LogPastWorkoutSheet`.
+   * «Записати проведене» — усе, що вже відбулось: заняття за часом, вправи
+   * по підходах, швидкий запис. Копія свідомо не каже «почати»: тут лише
+   * записують. Без «заняття» з 2026-09-16, бо форма тепер тримає й
+   * швидкий запис однієї вправи. Обґрунтування — докблок `LogPastWorkoutSheet`.
    */
   logPast: {
-    cta: "Записати проведене заняття",
+    cta: "Записати проведене",
     title: "Записати заняття",
     date: "Дата",
     start: "Початок",
@@ -39,6 +40,8 @@ export const fizrukPageMessages = {
     modeLabel: "Як записати",
     modeActivity: "Заняття й час",
     modeManual: "Вправи по підходах",
+    /** Третій режим — поля з `quickLog` нижче (рішення власника 2026-09-16). */
+    modeQuick: "Швидкий запис",
     activityNew: "+ Своє заняття",
     /** Вкладений аркуш вибору: ~55 позицій, без пошуку їх гортали. */
     pickerTitle: "Обери заняття",
@@ -79,6 +82,26 @@ export const fizrukPageMessages = {
     implausiblyLong:
       "Завершення раніше за початок. Якщо сесія не тривала через північ, виправ час.",
     submit: "Записати",
+  },
+  /**
+   * Швидкий запис — «+20 відтискань» як справжній `Workout`
+   * (`components/workouts/QuickLogForm.tsx`, рішення власника 2026-09-15).
+   * Замінив лічильник «Легка активність» на Прогресі, який жив окремим
+   * островом поза стріком, відновленням і журналом. З 2026-09-16 — режим
+   * форми «Записати проведене» (`logPast.modeQuick`), не окремий аркуш.
+   */
+  quickLog: {
+    description:
+      "Одна вправа, одне число, і запис у журналі. Серію тренувань не рухає, але на дні видно.",
+    exercise: "Вправа",
+    reps: "Повторень",
+    repsPresetsLabel: "Швидкі значення",
+    kcalPreview: "Приблизно",
+    kcalUnit: "ккал",
+    submit: "Записати",
+    /** `{n}` — число повторень, `{exercise}` — назва вправи. */
+    savedToast: "Записано: {n} · {exercise}",
+    invalidReps: "Введи число від 1 до 1000.",
   },
   activeWorkoutConflict: {
     title: "Уже є активне тренування",
@@ -271,6 +294,16 @@ export const fizrukPageMessages = {
     repsPlaceholder: "повт.",
     weightAriaLabel: "Вага в кілограмах",
     repsAriaLabel: "Кількість повторень",
+    // RPE (Borg 1..10) picker (`WorkoutSetRpeMenu.tsx`) — strictly
+    // optional per-set input, closes the drift audit item where the
+    // landing page promised "оцінка зусилля за Боргом" but the word
+    // "Борг" and the field itself did not exist anywhere in the app.
+    rpeAriaLabel: "оцінка зусилля",
+    rpeNotSetAriaLabel: "не вказано",
+    rpeTriggerTitle: "Оцінка зусилля (RPE)",
+    rpeMenuHeading: "Зусилля (RPE)",
+    rpeMenuHint: "Шкала Борга, 1–10, необовʼязково",
+    rpeClear: "Прибрати",
   },
   // "Тип" segmented control, moved out of `WorkoutItemCard` into
   // `ExerciseDetailSheet` (`WorkoutItemTypeSwitcher.tsx`), redesign
@@ -341,10 +374,6 @@ export const fizrukPageMessages = {
     emptyTitle: "Даних ще немає",
     emptyDescription: "Додай тренування або заміри, і тут зʼявиться аналітика",
     crossModuleHeading: "Активність з інших модулів",
-    lightActivityHeading: "Легка активність",
-    pushups: "Відтискання",
-    pushupsSource: "щоденний лічильник повторень",
-    pushupsQuickAddLabel: "Додати повторення",
     weight: "Вага",
     noComparison: "Немає порівняння",
     bodyFat: "% жиру",
@@ -444,7 +473,7 @@ export const fizrukPageMessages = {
     last: "Останній",
     fields: "Полів",
     addHeading: "Додати замір",
-    invalidValue: "Невірне значення",
+    invalidValue: "Неправильне значення",
     submit: "Зберегти замір",
     lastEntry: "Останній замір",
     history: "Історія",
@@ -634,6 +663,9 @@ export const fizrukPageMessages = {
     itemsLabel: "Вправ",
     setsLabel: "Підходів",
     volumeLabel: "Обʼєм",
+    // Per-set effort rating, shown inline next to "80×8" ONLY when the set
+    // carries one — RPE stays optional end-to-end (`WorkoutSetRpeMenu`).
+    rpeLabel: "RPE",
     // PR-Z3 (аудит 2026-09-13, хвиля 6): це `computeWorkoutTonnageKg` —
     // сума `вага_кг × повторення`, не маса в кілограмах. Було "кг", що
     // читалось як реальна вага; канонічний варіант — "кг×повт", уже
@@ -676,6 +708,12 @@ export const fizrukPageMessages = {
     emptyDescription: "Заверши перше тренування, воно зʼявиться тут.",
     endedBadge: "Завершене",
     activeBadge: "Активне",
+    /**
+     * Легка активність (канон §8, 2026-09-15): запис коротший за 20 хв і
+     * менш ніж на три підходи — на дні є, серію не рухає. Позначка існує,
+     * щоб два різні стани не виглядали однаково в історії.
+     */
+    lightBadge: "легке",
     deletedToast: "Тренування видалено",
   },
 

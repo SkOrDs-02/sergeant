@@ -11,13 +11,16 @@ import type {
 import { Card } from "@shared/components/ui/Card";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Button } from "@shared/components/ui/Button";
+import { Input } from "@shared/components/ui/Input";
 import { cn } from "@shared/lib/ui/cn";
 import { openHubModule } from "@shared/lib/modules/hubNav";
 import { messages } from "@shared/i18n/uk";
+import { NAME_MAX_LEN } from "@shared/lib/text/limits";
 import { getTotalCount } from "../lib/shoppingListStorage";
 import { useShoppingListPantryMath } from "../hooks/useShoppingListPantryMath";
 import { SilpoCartEntry } from "./SilpoCartEntry";
 import type {
+  AddShoppingItemInput,
   PantryItem,
   ShoppingItem,
   ShoppingList,
@@ -58,6 +61,7 @@ function getCategoryIcon(name: string): IconName {
 }
 
 const pm = messages.nutrition.shoppingListPantryMath;
+const ma = messages.nutrition.shoppingListManualAdd;
 
 interface ShoppingItemRowProps {
   item: ShoppingItemWithCalc;
@@ -83,7 +87,7 @@ function ShoppingItemRow({
         <div className="min-w-0 flex-1">
           <span className="text-style-label text-subtle">{item.name}</span>
           <span className="ml-1.5 inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning">
-            <Icon name="trending-down" size={12} aria-hidden />
+            <Icon name="trending-down" size="xs" aria-hidden />
             {pm.lowStockBadge}
           </span>
         </div>
@@ -92,8 +96,15 @@ function ShoppingItemRow({
   }
 
   return (
+    // `aria-pressed` — стан «куплено». Доти він жив ЛИШЕ у візуалі:
+    // коло-індикатор нижче має `aria-hidden`, а `opacity-50` і
+    // `line-through` скрінрідер не озвучує, тож куплений і некуплений
+    // пункт звучали однаково (аудит 2026-09-16, WF-17). `aria-pressed`
+    // на кнопці, а не `role="checkbox"`: роль лишається тією самою, тож
+    // наявні локатори тестів не зсуваються.
     <button
       type="button"
+      aria-pressed={item.checked}
       onClick={() => onToggleItem(categoryName, item.id)}
       className={cn(
         "w-full px-3 py-2.5 flex items-start gap-3 text-left transition-colors min-h-[44px]",
@@ -200,7 +211,7 @@ function AtHomeSection({ items }: AtHomeSectionProps) {
               >
                 <Icon
                   name="check-circle"
-                  size={12}
+                  size="xs"
                   className="text-nutrition"
                   aria-hidden
                 />
@@ -232,6 +243,7 @@ interface ShoppingListCardProps {
   onClearChecked: () => void;
   onClearAll: () => void;
   onAddCheckedToPantry: () => void | Promise<void>;
+  onAddItem: (input: AddShoppingItemInput) => void;
   checkedItems: ShoppingItem[];
 }
 
@@ -246,9 +258,17 @@ export function ShoppingListCard({
   onClearChecked,
   onClearAll,
   onAddCheckedToPantry,
+  onAddItem,
   checkedItems,
 }: ShoppingListCardProps) {
   const [source, setSource] = useState("recipes");
+  const [manualItemName, setManualItemName] = useState("");
+  const trimmedManualName = manualItemName.trim();
+  const handleAddManualItem = () => {
+    if (!trimmedManualName) return;
+    onAddItem({ name: manualItemName });
+    setManualItemName("");
+  };
   const { total, checked } = getTotalCount(shoppingList);
   const pantryMath = useShoppingListPantryMath(shoppingList, pantryItems);
   const { calculated } = pantryMath;
@@ -275,6 +295,35 @@ export function ShoppingListCard({
       </div>
 
       <div className="mt-4 space-y-3">
+        <div className="flex gap-2 items-center">
+          <Input
+            value={manualItemName}
+            onChange={(e) => setManualItemName(e.target.value)}
+            onKeyDown={(e) => {
+              if (e.key === "Enter" && trimmedManualName) {
+                handleAddManualItem();
+              }
+            }}
+            placeholder={ma.placeholder}
+            aria-label={ma.inputLabel}
+            maxLength={NAME_MAX_LEN}
+          />
+          <button
+            type="button"
+            onClick={handleAddManualItem}
+            disabled={!trimmedManualName}
+            className={cn(
+              // `h-11` = 2.75rem; на 320px корінний шрифт 15px дає ~41.25px і
+              // провалює 44px-флор, тож pointer-coarse-варіант тримає його
+              // явно — той самий патерн, що й «Додати» у `PantryCard`.
+              "text-style-label px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl shrink-0",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+            )}
+          >
+            {ma.addCta}
+          </button>
+        </div>
+
         <div>
           <div className="text-style-caption text-muted mb-2">
             Джерело для списку
@@ -350,7 +399,7 @@ export function ShoppingListCard({
                 {checkedItems.length > 0 && (
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     onClick={onAddCheckedToPantry}
                   >
@@ -360,7 +409,7 @@ export function ShoppingListCard({
                 {checked > 0 && (
                   <Button
                     type="button"
-                    variant="secondary"
+                    variant="outline"
                     size="sm"
                     onClick={onClearChecked}
                   >
@@ -369,7 +418,7 @@ export function ShoppingListCard({
                 )}
                 <Button
                   type="button"
-                  variant="secondary"
+                  variant="outline"
                   size="sm"
                   onClick={onClearAll}
                 >
@@ -464,7 +513,7 @@ export function ShoppingListCard({
           <EmptyState
             compact
             module="nutrition"
-            icon={<Icon name="shopping-cart" size={20} />}
+            icon={<Icon name="shopping-cart" size="lg" />}
             title="Список покупок порожній"
             description="Вибери джерело і натисни кнопку генерації."
           />

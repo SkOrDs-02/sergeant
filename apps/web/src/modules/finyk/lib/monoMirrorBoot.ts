@@ -15,21 +15,15 @@
  *
  * Idempotent — calling it twice is a no-op.
  *
- * ⚠️ Демо-режим: 23 засіяні mono-транзакції (`seedFinyk.ts`) раніше
- * жили в `finyk_tx_cache` LS і читались напряму — найбільша частина
- * демо Фінька. Продакшн-читачі перейшли на цей мірор, LS-ключ більше
- * не читає ніхто, тож без явного містка транзакції демо мертві (той
- * самий root cause, що й у решти демо-регресій — аудит L-8,
- * 2026-08-07; докладний AI-CONTEXT — у `./demoSeedImport.ts`). Крок
- * 1.5 нижче — `importFinykDemoMonoTransactions()` — закриває саме цей
- * розрив, ЛИШЕ під демо-прапорцем.
+ * Між 2026-08 і 2026-09 тут стояв ще один крок — місток демо-сіду
+ * (`importFinykDemoMonoTransactions`), який під демо-прапорцем доносив
+ * засіяні mono-транзакції до цього мірора. Демо-режим знято 2026-09-17
+ * разом із ним.
  */
 
 import { logger } from "@shared/lib";
 import { getSqliteDb } from "../../../core/db/sqlite.js";
-import { isDemoActive } from "../../../core/onboarding/onboardingGate.js";
 import { migrateFinyk } from "./clientMigrate.js";
-import { importFinykDemoMonoTransactions } from "./demoSeedImport.js";
 import { refreshFinykMonoMirrorState } from "./monoMirrorReader.js";
 
 let booted = false;
@@ -51,24 +45,6 @@ export async function bootFinykMonoMirror(
     const handle = await getSqliteDb();
     const client = handle.migrationClient();
     await migrateFinyk(client);
-
-    // Демо: залити засіяні mono-транзакції ДО першого читання мірора,
-    // інакше банківський стрім (найбільша частина демо Фінька)
-    // намалює порожньо. Гейт на демо обовʼязковий — див. AI-DANGER у
-    // `demoSeedImport.ts`. Порядок теж важливий: нижче йде
-    // `refreshFinykMonoMirrorState`, який гріє кеш, з якого рендериться
-    // модуль.
-    if (isDemoActive()) {
-      const applied = await importFinykDemoMonoTransactions({
-        client,
-        userId,
-      });
-      if (applied > 0) {
-        logger.debug("[finyk.monoMirror] демо-транзакції залито в мірор", {
-          applied,
-        });
-      }
-    }
 
     await refreshFinykMonoMirrorState(client, userId);
 

@@ -487,7 +487,7 @@ export function HabitForm({
           {editingId && (
             <Button
               type="button"
-              variant="secondary"
+              variant="outline"
               className="w-full min-w-0 sm:flex-1"
               onClick={onCancel}
             >
@@ -496,7 +496,8 @@ export function HabitForm({
           )}
           <Button
             type="button"
-            variant="routine"
+            variant="solid"
+            tone="routine"
             className="w-full min-w-0 sm:flex-1"
             onClick={onSave}
           >

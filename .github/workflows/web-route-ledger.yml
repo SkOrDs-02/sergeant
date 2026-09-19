@@ -1,6 +1,6 @@
 name: Web route ledger
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Що це: 49 route-кейсів у `apps/web/tests/ledger/user-story-ledger.spec.ts`
 #        (`playwright.ledger.config.ts`) — кожен web-маршрут відкривається на
 #        прод-білді з повністю замоканим `**/api/**`, і перевіряється, що
@@ -168,7 +168,7 @@ jobs:
               '4. НЕ гаси лейн фільтром помилок і не звужуй список маршрутів,',
               '   щоб зробити джобу зеленою — це рішення власника, не хотфікс.',
               '',
-              'cc @SkOrDs-02',
+              'cc @zaebal-beep',
             ].join('\n');
 
             // Ідемпотентно: оновлюємо наявну відкриту issue замість того, щоб
