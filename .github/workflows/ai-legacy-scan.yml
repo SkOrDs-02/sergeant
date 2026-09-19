@@ -67,7 +67,11 @@ jobs:
         # weekly cron exists — to file issues for them). Running --check there
         # would make GitHub Actions skip the issue/dashboard steps below.
         if: github.event_name == 'pull_request'
-        run: node scripts/check-ai-legacy.mjs --check
+        # `--require-issue` з 2026-09-19: маркер мусить називати власника —
+        # issue АБО трекер у `docs/` (PR-5 спеки docs-code-drift-2026-09-19).
+        # Доти прапорець існував, але не вмикався, і звіт показував
+        # `no-issue-ref: 9` на кожному прогоні — попередження, яке є завжди.
+        run: node scripts/check-ai-legacy.mjs --check --require-issue
 
       - name: Open GitHub issues for expired markers
         # Issue creation is skipped on pull_request because forks cannot write.

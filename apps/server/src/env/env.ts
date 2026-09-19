@@ -183,7 +183,8 @@ const envSchema = z.object({
 
   AI_QUOTA_FOUNDER_IDS: z.string().optional(),
 
-  // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу після бети.
+  // AI-LEGACY: expires 2026-11-30 — рубильник закритого доступу після бети;
+  // прибирання — docs/work/specs/beta-launch/README.md § Що прибрати.
   // Кома-розділений список `userId`, яким дозволено входити; порожнє
   // значення лишає продукт відкритим. Логіка — `auth/accessGate.ts`.
   ACCESS_ALLOWLIST_USER_IDS: z.string().optional(),

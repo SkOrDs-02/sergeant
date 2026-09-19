@@ -143,7 +143,7 @@
     "docs:freshness-dashboard": "node scripts/docs/generate-freshness-dashboard.mjs",
     "docs:check-freshness-dashboard": "node scripts/docs/generate-freshness-dashboard.mjs --check",
     "docs:check-readme-scripts": "node scripts/docs/check-workspace-readme-scripts.mjs",
-    "lint:ai-legacy": "node scripts/check-ai-legacy.mjs --check",
+    "lint:ai-legacy": "node scripts/check-ai-legacy.mjs --check --require-issue",
     "ai-legacy:dashboard": "node scripts/check-ai-legacy.mjs --dashboard dist/ai-legacy-dashboard.html",
     "lint:patches": "node scripts/check-patches-doc.mjs",
     "lint:html-sri": "node scripts/lint-html-sri.mjs",
