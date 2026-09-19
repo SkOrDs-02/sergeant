@@ -1,7 +1,7 @@
 # Спека: персистентність даних незалогіненого користувача
 
-> **Last touched:** 2026-09-16 by @claude (E2E-приймання «анонімно → reload» додано — `anonymous-persistence.spec.ts`; раніше 2026-09-03: звірка з `origin/main`, § Стан імплементації приведено до коду). **Next review:** 2027-11-11.
-> **Status:** Active — Р1, Р2(а) і durable-write правило для СТАРТ-блоку змерджені (гасимо блок лише після підтвердженого запису; банер локальності піднято в хаб). E2E-приймання «створив анонімно → reload → запис на місці» є з 2026-09-16 — [`anonymous-persistence.spec.ts`](../../../apps/web/tests/smoke/anonymous-persistence.spec.ts) у critical-flow смузі. Відкритими лишаються пункти DoD про юніт-тест на кожен із чотирьох модулів і про прогін під логіном / на rate-limit.
+> **Last touched:** 2026-09-19 by @claude (юніт-приймання «anon durable write» додано на всі чотири модулі; звірено обмеження прогону під rate-limit і статус R2a-тесту). **Next review:** 2027-11-11.
+> **Status:** Active — Р1, Р2(а) і durable-write правило для СТАРТ-блоку змерджені (гасимо блок лише після підтвердженого запису; банер локальності піднято в хаб). E2E-приймання «створив анонімно → reload → запис на місці» є з 2026-09-16 — [`anonymous-persistence.spec.ts`](../../../apps/web/tests/smoke/anonymous-persistence.spec.ts) у critical-flow смузі. Юніт-приймання «анонімний запис долітає до durable SQLite» є з 2026-09-19 на всі чотири модулі (§ Definition of done, пункт 2). Відкритим лишається (а) виділений інтеграційний тест «анонімно створив → залогінився → дані на місці» (Р2а) — не написаний, причина й обсяг роботи задокументовані нижче — і (б) живий прогін під логіном / на чистому rate-limit, для якого в цьому середовищі немає docker/Postgres.
 > **Agent-ready:** yes — residual має зафіксований контракт і не потребує нового продуктового рішення.
 
 ## Проблема
@@ -132,6 +132,67 @@ Checkpoint 008 і детерміновані idempotency keys роблять п�
 > в `PresetSheet.tsx`, і PR #419/#420 через історію комітів уже не простежити —
 > звірка тут за кодом `main`, не за історією.
 
+**Юніт-приймання «anon durable write» на всі чотири модулі (§ Definition of
+done, пункт 2) — зроблено 2026-09-19.** До цієї дати `useXDualWriteBoot.test.tsx`
+доводив лише, що `useLocalUserId()` резолвиться в `local-anon` і хук передає
+цей id у `boot<Module>DualWrite` — сам `./lib/dualWriteBoot.js` там
+замокано цілком, тож чи щось реально доїжджає до SQLite, не перевірялось.
+Симетрично `dualWriteBoot.test.ts` (лібовий шар) замокав
+`./sqliteWriter/index.js` цілком і перевіряв лише реєстрацію контексту під
+довільним `userId` — не під `local-anon`, і без запису.
+
+Новий тест на кожен модуль —
+[`finyk/lib/dualWriteBoot.anonymousDurableWrite.test.ts`](../../../apps/web/src/modules/finyk/lib/dualWriteBoot.anonymousDurableWrite.test.ts),
+[`fizruk/…`](../../../apps/web/src/modules/fizruk/lib/dualWriteBoot.anonymousDurableWrite.test.ts),
+[`nutrition/…`](../../../apps/web/src/modules/nutrition/lib/dualWriteBoot.anonymousDurableWrite.test.ts),
+[`routine/…`](../../../apps/web/src/modules/routine/lib/dualWriteBoot.anonymousDurableWrite.test.ts) —
+лишає РЕАЛЬНИМ увесь ланцюжок від `boot<Module>DualWrite` до
+`client.run(...)`: оркестратор (`sqliteWriter/index.ts`), diff і SQL-адаптер
+не замоковані. Підмінено лише вихід у справжній SQLite-WASM (`getSqliteDb`,
+`migrate<Module>`) фейковим клієнтом `{ run, all }`, що записує виклики.
+Тест реєструє контекст з `getUserId: () => LOCAL_ANON_USER_ID`, тригерить
+запис через `trigger<Module>DualWrite(prev, next)` і доводить, що
+`client.run` реально викликаний із `"local-anon"` серед SQL-параметрів —
+тобто анонімний запис не гине на `if (!userId) return`, а доходить до
+адаптера й генерує реальний SQL з правильним user-scoping.
+
+**Розбір межі для Рутини** (спека вище прямо каже: лічильник
+`__sergeantSqliteRefreshCounts`, на якому стоїть E2E-барʼєр, Рутина не
+публікує). На юніт-рівні це не проблема: барʼєр тут інший і детермінований
+без гонки — очікування на конкретний виклик фейкового `client.run`, а не на
+UI-рефреш. Тобто «чесний юніт-барʼєр» для Рутини існує, просто інший, ніж
+для трьох інших модулів.
+
+**Відкрито знахідкою: виділеного інтеграційного тесту «анонімно створив →
+залогінився → дані на місці» (Р2а) немає**, і побудувати його чесно —
+істотно більша робота, ніж решта цього проходу. `migrateAnonymousDataToProfile`
+(`core/durability/anonymousDataMigration.ts`) усередині:
+
+1. перемикає активну SQLite-партицію (`switchSqliteUser`) і читає РЕАЛЬНУ
+   схему через `PRAGMA table_info` / `sqlite_master` (`tableExists`,
+   `primaryKeyColumns`) — фейковий клієнт `{ run, all }` з іншими тестами
+   тут не підходить, бо ці функції виконують справжній SQL проти справжньої
+   схеми, а не просто передають виклик далі;
+2. запускає реальні міграції всіх чотирьох модулів (`migrateModuleSchemas`);
+3. піднімає sync-engine reader/writer і чекає, поки сервер підтвердить
+   кожен рядок (`assertServerAcknowledged`) — тобто фінальний крок міграції
+   за конструкцією залежить від живого сервера чи від дуже точної імітації
+   його ack-протоколу в `sync_op_outbox`.
+
+`anonymousDataMigration.test.ts` уже покриває окремі інваріанти цього шляху
+(стабільність idempotency-ключа, перекей спільних локальних id, поведінка
+backoff-у чергі, класифікація «зависла черга» — 20 тестів), але жоден із
+них не проганяє `migrateAnonymousDataToProfile` end-to-end з фактичною
+перевіркою «рядок під `local-anon` зник, той самий рядок під `userId`
+з'явився». Чесний варіант такого тесту вимагає або (а) живого backend-а —
+тобто Playwright E2E за зразком `anonymous-persistence.spec.ts`, або
+(б) нової тестової інфраструктури: реального embedded SQLite-клієнта
+(наприклад `better-sqlite3`, вже devDependency `@sergeant/db-schema` й
+використаний так у `packages/db-schema/src/__tests__/migrate.sqlite.test.ts`,
+але не доданий як залежність `apps/web`) плюс фейкового sync-writer, що сам
+позначає рядки outbox прийнятими. Обидва варіанти — окрема одиниця роботи,
+не побудована в цьому проході; лишається борг.
+
 ### Технічні знахідки, які змінюють ціну Р2(а)
 
 1. **Анонімна партиція SQLite вже існувала.**
@@ -197,16 +258,43 @@ Checkpoint 008 і детерміновані idempotency keys роблять п�
 
 ## Definition of done
 
-- Р1–Р3 ухвалені й записані сюди.
-- Анонімний запис переживає reload у всіх чотирьох модулях (тест на кожен).
+- Р1–Р3 ухвалені й записані сюди. — ✅
+- Анонімний запис переживає reload у всіх чотирьох модулях (тест на кожен). —
+  ✅ юніт-приймання 2026-09-19: `finyk`, `fizruk`, `nutrition`, `routine` —
+  кожен свій `dualWriteBoot.anonymousDurableWrite.test.ts` доводить, що
+  запис під `local-anon` доходить до `client.run(...)` реального (не
+  замокованого) SQL-адаптера. Розбір бар'єра для Рутини (де немає
+  лічильника `__sergeantSqliteRefreshCounts`, на якому стоїть E2E) — у
+  § Стан імплементації вище.
 - E2E-регресія: створити запис анонімно → reload → запис на місці — ✅
   [`anonymous-persistence.spec.ts`](../../../apps/web/tests/smoke/anonymous-persistence.spec.ts)
   (2026-09-16, витрата Фініка).
 - Якщо обрано міграцію (Р2а) — окремий тест «анонімно створив → залогінився →
-  дані на місці».
+  дані на місці». — ❌ **не написано.** `migrateAnonymousDataToProfile`
+  всередині виконує реальний SQL проти реальної схеми (`PRAGMA table_info`,
+  `sqlite_master`) і залежить від підтвердження живим сервером
+  (`assertServerAcknowledged`), тож фейковий `{ run, all }` клієнт з решти
+  тестів цього проходу тут недостатній — потрібен або живий backend
+  (Playwright E2E), або нова інфраструктура (embedded SQLite +
+  фейк sync-writer). Розбір обсягу — § Стан імплементації вище. Наявні 20
+  тестів у `anonymousDataMigration.test.ts` покривають окремі інваріанти
+  шляху (idempotency-ключ, перекей спільних id, backoff черги), не
+  end-to-end факт «дані перенеслись».
 - Прогін під логіном і на чистому rate-limit (у вимірі 2026-07-22 консоль
   віддавала 401×2/429/503 — це фон анонімної сесії, не причина дефекту, але
-  межі варто підтвердити).
+  межі варто підтвердити). — ⚠️ **не підтверджено живим прогоном у цьому
+  проході.** У середовищі виконання немає Docker-демона (`docker ps` →
+  `no such file or directory` на `/var/run/docker.sock`), тож
+  `pnpm dev:db` / `pnpm dev:server` підняти неможливо, а `anonymous-persistence.spec.ts`
+  вимагає саме цього стеку (`start-smoke-webserver.mjs`). Те, що вдалось
+  підтвердити статично: сам E2E-тест уже фіксує один законний 401
+  (`GET /api/me` для анонімної сесії — очікуваний, саме з нього
+  `AuthContext` виводить `unauthenticated`) і проходить критичний-флоу
+  гейт у CI на кожен PR. Джерело решти кодів (другий 401, 429, 503) із
+  виміру 2026-07-22 в цьому проході код-ревʼю не підтверджено — лишається
+  операторським кроком: підняти стек локально (`docker`, `pnpm dev:db`,
+  `pnpm dev:server`), відкрити DevTools на анонімній сесії `/welcome` і
+  звірити журнал мережі з тим виміром.
 
 ## Звідки це
 
