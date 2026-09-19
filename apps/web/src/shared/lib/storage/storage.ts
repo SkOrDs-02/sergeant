@@ -9,7 +9,7 @@
  * Implementation: every read/write is routed through {@link webKVStore} (a
  * `KVStore` adapter from `@sergeant/shared`).
  *
- * Stage 9 / PR #064 of `docs/planning/storage-roadmap.md` dropped the
+ * Stage 9 / PR #064 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` dropped the
  * dual-write LS mirror that PR #063 introduced for the 4-week canary.
  * {@link resolveStore} now uses a two-rung ladder:
  *

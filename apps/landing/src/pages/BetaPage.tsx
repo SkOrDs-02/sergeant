@@ -15,7 +15,7 @@ const ASK =
 const MINI_FAQ = [
   {
     q: "Коли відкриється?",
-    a: "Хвилями, без публічної дати: не хочу називати число, яке можу зірвати. Першими заходять ті, хто став у чергу раніше; коли твоя хвиля відкриється, бот напише одне повідомлення.",
+    a: "Хвилями, без публічної дати: не хочу називати число, яке можу зірвати. Першими заходять ті, хто став у чергу раніше; коли твоя хвиля відкриється, бот напише.",
   },
   {
     q: "Що зараз зламано?",
@@ -30,7 +30,21 @@ const MINI_FAQ = [
 export default function BetaPage() {
   // Гейт бети не має конкурувати в індексі з головною до відкриття CTA-фази
   // (noindex живе в routeMeta.json).
-  usePageMeta(ROUTE_META["/beta"]);
+  usePageMeta({
+    ...ROUTE_META["/beta"],
+    // Сторінка noindex, тож розмітка тут не для ранжування, а для
+    // краулерів із виконанням JS і ШІ-агентів (`llms.txt` веде і сюди):
+    // вони читають тип і дату незалежно від robots.
+    jsonLd: {
+      "@context": "https://schema.org",
+      "@type": "WebPage",
+      name: ROUTE_META["/beta"].title,
+      description: ROUTE_META["/beta"].description,
+      inLanguage: "uk",
+      dateModified: ROUTE_META["/beta"].lastmod,
+      publisher: { "@type": "Organization", name: "Sergeant" },
+    },
+  });
 
   return (
     <SiteLayout>
@@ -42,8 +56,8 @@ export default function BetaPage() {
           Бета відкривається хвилями
         </h1>
         <p className="mt-6 max-w-xl text-lg leading-relaxed text-pretty text-muted">
-          Sergeant вчиться на реальних даних, тому я відкриваю доступ поступово,
-          щоб встигати говорити з кожним, хто зайшов.
+          Відкриваю доступ частинами, щоб встигати говорити з кожним, хто
+          зайшов.
         </p>
       </section>
 
@@ -83,8 +97,8 @@ export default function BetaPage() {
             Черга в бету
           </h2>
           <p className="mt-4 max-w-lg leading-relaxed text-ink-muted">
-            Черга живе в Telegram: натисни кнопку, бот запамʼятає тебе і напише
-            одне повідомлення, коли відкриється твоя хвиля. Без пошти і спаму.
+            Черга живе в Telegram: натисни кнопку, бот запамʼятає тебе і напише,
+            коли відкриється твоя хвиля. Без пошти і спаму.
           </p>
           <div className="mt-7">
             <TelegramCta

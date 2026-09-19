@@ -2,7 +2,7 @@
  * Last validated: 2026-08-08
  * Status: Active
  *
- * V-7 audit finding (2026-08-08, `docs/90-work/audits/2026-08-08-profile-
+ * V-7 audit finding (2026-08-08, `docs/work/specs/audits/2026-08-08-profile-
  * settings-deep-audit.md`): `SETTINGS_SECTIONS_CATALOG`'s `title` feeds the
  * ⌘K palette, but three sections drew their OWN `<SettingsGroup
  * title="…">` from a hardcoded string that nothing compared against the

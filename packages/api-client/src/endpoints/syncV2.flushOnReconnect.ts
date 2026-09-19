@@ -3,7 +3,7 @@ import type { SyncEnginePushScheduler } from "./syncV2.pushScheduler";
 
 /**
  * DOM-event → scheduler bridge for the client-side sync engine
- * (`docs/planning/storage-roadmap.md` Stage 5 / PR #042e-flush).
+ * (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` Stage 5 / PR #042e-flush).
  *
  * Wraps a {@link SyncEnginePushScheduler} (PR #042e-scheduler) so a
  * DOM-event source — typically `window` — calls `scheduler.flushNow()`

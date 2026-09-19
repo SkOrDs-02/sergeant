@@ -1,8 +1,7 @@
 # Конкурентний ресьорч по модулях: finyk, nutrition, fizruk, routine, hub-coach
 
-> **Last validated:** 2026-09-01 by @claude (research)
-> **Next review:** 2026-12-01.
-> **Status:** Active — дослідження під рішення, не рішення
+> **Last touched:** 2026-09-17 by @claude (Active → Reference: research-док без трекера). **Next review:** 2026-12-16.
+> **Status:** Reference — дослідження під рішення, не рішення; рішення власника по шортлисту § 7 очікує
 
 **Навіщо цей файл.** Founder-запит 2026-09-01: «масовий ресьорч по
 конкурентам на кожен з модулів — де ми краще, де гірше, що запозичити, на яких

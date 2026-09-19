@@ -240,6 +240,34 @@ describe("useNutritionRemoteActions — addMealFromPlan branches", () => {
     );
   });
 
+  it("повертає, КУДИ ліг запис — без цього «Скасувати» нічим зняти", () => {
+    // PR-N1 (залишок). Тост живе на рівні `NutritionApp`, а id генерує сам
+    // хук, тож без повернення `{id, dateKey}` сторінка не мала б чим
+    // скасувати запис — і цей шлях лишався б єдиним із трьох, що пише в
+    // журнал мовчки.
+    const handleAddMeal = vi.fn();
+    const { result } = makeHarness({
+      log: {
+        nutritionLog: {},
+        selectedDate: "2026-03-07",
+        handleAddMeal,
+      },
+    });
+
+    let out: { id: string; dateKey: string } | undefined;
+    act(() => {
+      out = result.current.addMealFromPlan({ name: "Каша", type: "breakfast" });
+    });
+
+    expect(out?.dateKey).toBe("2026-03-07");
+    // Саме той id, який пішов у журнал — інакше «Скасувати» зняло б чужий
+    // запис або нічого.
+    expect(handleAddMeal).toHaveBeenCalledWith(
+      expect.objectContaining({ id: out?.id }),
+    );
+    expect(out?.id).toBeTruthy();
+  });
+
   it("falls back to snack label when meal type is unknown", () => {
     const handleAddMeal = vi.fn();
     const { result } = makeHarness({

@@ -18,7 +18,7 @@ import {
 /**
  * Snapshot tests for the per-device `kv_store` SQLite schema and the
  * single bundled migration that creates it. Stage 9 / PR #060 of
- * `docs/planning/storage-roadmap.md`.
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Coverage:
  *   - column ordering, names, dataType + nullability + hasDefault on

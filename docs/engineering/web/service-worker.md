@@ -1,9 +1,9 @@
 # Service Worker (apps/web)
 
-> **Last touched:** 2026-05-14 by Devin. **Next review:** 2026-11-16.
+> **Last touched:** 2026-09-17 by @claude (шапка під зміст 2026-08; build-id cascade `RAILWAY_GIT_COMMIT_SHA` → `GIT_SHA`). **Next review:** 2026-12-16.
 > **Status:** Active
 
-Внутрішня документація стратегії оновлення Service Worker-а у `apps/web`. Базовий entry-point — [`apps/web/src/sw.ts`](../../../apps/web/src/sw.ts) (через `vite-plugin-pwa`). Build-id інжектиться у клієнт через `import.meta.env.VITE_BUILD_ID` (Vite `define`-pattern), а на сервері — через cascade `SENTRY_RELEASE → RAILWAY_GIT_COMMIT_SHA → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID`.
+Внутрішня документація стратегії оновлення Service Worker-а у `apps/web`. Базовий entry-point — [`apps/web/src/sw.ts`](../../../apps/web/src/sw.ts) (через `vite-plugin-pwa`). Build-id інжектиться у клієнт через `import.meta.env.VITE_BUILD_ID` (Vite `define`-pattern), а на сервері — через cascade `SENTRY_RELEASE → GIT_SHA → VERCEL_GIT_COMMIT_SHA → GITHUB_SHA → BUILD_ID` ([`apps/server/src/http/buildIdHeader.ts`](../../../apps/server/src/http/buildIdHeader.ts); `GIT_SHA` запікає `Dockerfile.api` для Coolify/ghcr — `RAILWAY_GIT_COMMIT_SHA` знято разом із Railway, ADR-0074).
 
 ## Update strategy: prompt + idle-auto + hard-floor
 

@@ -65,6 +65,27 @@ function renderHubAtEntry(entry = "/") {
   );
 }
 
+/**
+ * Рендер із НЕПОРОЖНЬОЮ історією: перший запис отримує `key === "default"`,
+ * решта — власні ключі, і саме за цим `onAssistantClose` відрізняє прихід
+ * із застосунку від прямого лінка.
+ */
+function renderHubWithHistory(entries: string[]) {
+  return render(
+    <MemoryRouter initialEntries={entries} initialIndex={entries.length - 1}>
+      <HubPage />
+    </MemoryRouter>,
+  );
+}
+
+/** `onAssistantClose`, переданий у реєстр standalone-маршрутів. */
+function assistantClose(): () => void {
+  const args = mockRenderStandaloneRoute.mock.calls.at(-1)?.[0] as {
+    onAssistantClose: () => void;
+  };
+  return args.onAssistantClose;
+}
+
 function renderHubAtRoot() {
   return renderHubAtEntry("/");
 }
@@ -176,5 +197,26 @@ describe("<HubPage /> — onboarding-redirect cold-boot gate", () => {
       expect.objectContaining({ pathname: "/pricing" }),
     );
     expect(mockShouldShowOnboarding).not.toHaveBeenCalled();
+  });
+
+  // Звіт власника 2026-09-15: стрілка «Назад» у каталозі вела на хаб
+  // незалежно від того, звідки прийшли, — тобто робила не те саме, що
+  // свайп назад тим самим жестом історії.
+  describe("onAssistantClose — крок назад, а не завжди хаб", () => {
+    it("робить крок назад по історії, коли є куди", () => {
+      renderHubWithHistory(["/", "/assistant"]);
+
+      act(() => assistantClose()());
+
+      expect(mockNavigate).toHaveBeenCalledWith(-1);
+    });
+
+    it("веде на хаб лише з прямого лінка, у якого історії немає", () => {
+      renderHubAtEntry("/assistant");
+
+      act(() => assistantClose()());
+
+      expect(mockNavigate).toHaveBeenCalledWith("/", { replace: true });
+    });
   });
 });

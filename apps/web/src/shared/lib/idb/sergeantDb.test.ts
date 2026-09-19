@@ -1,7 +1,7 @@
 // @vitest-environment jsdom
 /**
  * Unit tests for the shared `sergeant-db` connection introduced in
- * Stage 1 PR #010 (`docs/planning/storage-roadmap.md`).
+ * Stage 1 PR #010 (`https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *
  * The suite covers two orthogonal contracts:
  *

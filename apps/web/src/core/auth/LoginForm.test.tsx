@@ -75,7 +75,7 @@ describe("LoginForm", () => {
 
   it("renders authError alert when login fails", async () => {
     loginMock.mockResolvedValue(false);
-    authErrorState = "Невірний пароль";
+    authErrorState = "Неправильний пароль";
     render(<LoginForm onForgotPassword={vi.fn()} showForgot={false} />);
 
     fireEvent.change(screen.getByLabelText("Email"), {
@@ -90,7 +90,9 @@ describe("LoginForm", () => {
       expect(loginMock).toHaveBeenCalled();
     });
     expect(toastSuccessMock).not.toHaveBeenCalled();
-    expect(screen.getByRole("alert").textContent).toContain("Невірний пароль");
+    expect(screen.getByRole("alert").textContent).toContain(
+      "Неправильний пароль",
+    );
   });
 
   it("hides authError while forgot panel is open", () => {

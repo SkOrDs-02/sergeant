@@ -157,7 +157,7 @@ describe("summaryFor", () => {
   });
 
   it("set_budget_limit / update_budget", () => {
-    // AI-6 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+    // AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
     // `category_id` — канонічний id з `MCC_CATEGORIES`, картка показує
     // людський label ("Продукти"), не сирий id ("food").
     expect(

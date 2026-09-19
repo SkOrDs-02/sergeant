@@ -86,6 +86,8 @@ describe("useDemoCommands", () => {
       "nav.hub",
       "nav.finyk",
       "nav.fizruk",
+      "nav.routine",
+      "nav.nutrition",
       "settings.toggle-dark",
       "settings.open",
       "session.sign-out",
@@ -98,9 +100,24 @@ describe("useDemoCommands", () => {
     byId["nav.hub"]!.run();
     byId["nav.finyk"]!.run();
     byId["nav.fizruk"]!.run();
+    byId["nav.routine"]!.run();
+    byId["nav.nutrition"]!.run();
     expect(navigateMock).toHaveBeenNthCalledWith(1, "/");
     expect(navigateMock).toHaveBeenNthCalledWith(2, "/finyk");
     expect(navigateMock).toHaveBeenNthCalledWith(3, "/fizruk");
+    expect(navigateMock).toHaveBeenNthCalledWith(4, "/routine");
+    expect(navigateMock).toHaveBeenNthCalledWith(5, "/nutrition");
+  });
+
+  // Рішення власника 2026-09-16: з увімкненою палітрою `Cmd+K` веде в неї,
+  // тож пошук хаба мусить бути досяжним ізсередини — першою командою.
+  it("exposes hub search as the first command when the shell hands in openSearch", () => {
+    const openSearch = vi.fn();
+    renderHook(() => useDemoCommands({ openSearch }));
+    const commands = getCommands();
+    expect(commands[0]?.id).toBe("search.open");
+    commands[0]!.run();
+    expect(openSearch).toHaveBeenCalledTimes(1);
   });
 
   it("toggles to dark when currently light", () => {

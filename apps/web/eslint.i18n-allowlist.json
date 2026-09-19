@@ -111,7 +111,6 @@
   "apps/web/src/core/insights/WeeklyDigestCard.tsx",
   "apps/web/src/core/onboarding/DailyNudge.tsx",
   "apps/web/src/core/onboarding/DemoModeBanner.tsx",
-  "apps/web/src/core/onboarding/FirstActionSheet.tsx",
   "apps/web/src/core/onboarding/OnboardingProgress.tsx",
   "apps/web/src/core/onboarding/OnboardingWizard.tsx",
   "apps/web/src/core/onboarding/ReEngagementCard.tsx",

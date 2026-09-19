@@ -16,10 +16,8 @@ import type { DashboardModuleId } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { hapticTap } from "@shared/lib/adapters/haptic";
-import {
-  openHubModuleWithAction,
-  openHubSettingsSection,
-} from "@shared/lib/modules/hubNav";
+import { ANALYTICS_EVENTS, trackEvent } from "../../observability/analytics";
+import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 import {
   getModulePrefetchProps,
   type ModuleIntentProps,
@@ -36,6 +34,7 @@ import {
   handleNativeSortableKeyDown,
   type NativeSortableHandlers,
 } from "./nativeSortable";
+import { BentoCardPeek } from "./BentoCardPeek";
 import { useHubStorageBump } from "../useHubStorageBump";
 
 // ─── #18 Long-press peek ──────────────────────────────────────────────────
@@ -219,7 +218,7 @@ export const BentoCard = memo(function BentoCard({
           "p-3.5 pointer-coarse:p-4",
           "min-h-[120px] pointer-coarse:min-h-[132px]",
           "shadow-card transition-interactive text-left",
-          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 focus-visible:ring-offset-2",
+          "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2",
           // Hover effect for desktop - lift and glow
           "pointer-fine:hover:shadow-float pointer-fine:hover:-translate-y-0.5",
           "pointer-fine:hover:border-brand-200/50 dark:pointer-fine:hover:border-line/80",
@@ -297,7 +296,7 @@ export const BentoCard = memo(function BentoCard({
           >
             <Icon
               name="sergeant"
-              size={12}
+              size="xs"
               className="shrink-0 mt-px"
               aria-hidden
             />
@@ -456,7 +455,7 @@ export const BentoCard = memo(function BentoCard({
             "rounded-xl flex items-center justify-center",
             "text-muted bg-panel/90 hover:text-text hover:bg-panelHi",
             "transition-colors cursor-grab active:cursor-grabbing touch-none select-none",
-            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60 focus-visible:ring-offset-1",
+            "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-1",
           )}
         >
           <Icon name="grip-vertical" size="sm" strokeWidth={2} />
@@ -465,99 +464,6 @@ export const BentoCard = memo(function BentoCard({
     </div>
   );
 });
-
-/* ─── #18 BentoCardPeek sheet ───────────────────────────────────────────── */
-
-/**
- * Compact action sheet that appears on long-press of a BentoCard.
- * Renders as a floating panel anchored below the card's bottom edge with a
- * subtle scale-in animation. Dismissed on backdrop tap, Escape, or after an
- * action is fired.
- */
-function BentoCardPeek({
-  config,
-  moduleId,
-  onDismiss,
-}: {
-  config: ModuleConfig;
-  moduleId: string;
-  onDismiss: () => void;
-}) {
-  const actions = config.quickActions;
-  if (!actions || actions.length === 0) return null;
-
-  return (
-    // Outer dialog wrapper provides the required modal semantics.
-    <div
-      role="dialog"
-      aria-modal="true"
-      aria-label={`Швидкі дії: ${config.label}`}
-    >
-      {/* Invisible backdrop — tap anywhere outside to dismiss.
-          jsx-a11y permits onClick/onKeyDown on role="presentation" elements. */}
-      <div
-        role="presentation"
-        aria-hidden="true"
-        className="fixed inset-0 z-40 cursor-default"
-        onClick={onDismiss}
-        onKeyDown={(e) => e.key === "Escape" && onDismiss()}
-      />
-
-      {/* Peek sheet */}
-      <div
-        className={cn(
-          "absolute bottom-0 inset-x-0 z-50 mx-2 mb-2",
-          "rounded-2xl border border-line bg-panel shadow-float",
-          "p-2 flex flex-col gap-0.5",
-          "motion-safe:animate-in motion-safe:fade-in motion-safe:zoom-in-95",
-          "motion-safe:slide-in-from-bottom-2 motion-safe:duration-fast",
-        )}
-      >
-        {/* Drag handle pill for visual affordance */}
-        <div
-          aria-hidden
-          className="mx-auto mb-1 w-8 h-1 rounded-full bg-line"
-        />
-        <p className="px-2 pb-1 text-style-caption font-semibold text-muted">
-          {config.label}
-        </p>
-        {actions.map((qa) => (
-          <button
-            key={qa.action}
-            type="button"
-            className={cn(
-              "flex items-center gap-3 px-3 py-2.5 rounded-xl",
-              "text-style-label font-medium text-text text-left",
-              "hover:bg-panelHi active:bg-panelHi/80",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/60",
-              "transition-colors",
-            )}
-            onClick={() => {
-              openHubModuleWithAction(
-                moduleId as Parameters<typeof openHubModuleWithAction>[0],
-                qa.action,
-              );
-              onDismiss();
-            }}
-          >
-            {/* F1/F5: гліф без тонованого квадрата — той самий ink, що й
-                число тайла; контейнером лишається сам рядок дії. */}
-            <span
-              className={cn(
-                "inline-flex w-5 items-center justify-center shrink-0",
-                config.inkClass,
-              )}
-              aria-hidden
-            >
-              <Icon name={qa.icon} size={16} strokeWidth={2} />
-            </span>
-            {qa.label}
-          </button>
-        ))}
-      </div>
-    </div>
-  );
-}
 
 /* ─── #10 Ghost preview helpers ──────────────────────────────────────────── */
 
@@ -695,6 +601,15 @@ export const SortableCard = memo(function SortableCard({
   );
 
   const handleClick = useCallback(() => {
+    // Базова лінія перед віссю дії хабу (P3): плитка виконує дві роботи
+    // одразу — показує число і є дверима. Ця подія міряє саме двері:
+    // скільки входів у модуль головна втратить без сітки. Стріляє і для
+    // неактивної плитки (вона веде в Налаштування) — з прапорцем, щоб у
+    // звіті ці два шляхи не злипались.
+    trackEvent(ANALYTICS_EVENTS.HUB_MODULE_TILE_CLICKED, {
+      module: id,
+      inactive: Boolean(inactive),
+    });
     if (inactive) {
       openHubSettingsSection("dashboard");
       return;

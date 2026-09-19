@@ -23,6 +23,7 @@ import { landingBlocks } from "./eslint.landing.js";
 import { shellBlocks } from "./eslint.shell.js";
 import { packageBlocks } from "./eslint.packages.js";
 import { crossSurfaceBlocks } from "./eslint.cross-surface.js";
+import { typeAwareBlocks } from "./eslint.type-aware.js";
 
 export default [
   ...baseline,
@@ -33,5 +34,6 @@ export default [
   ...shellBlocks,
   ...packageBlocks,
   ...crossSurfaceBlocks,
+  ...typeAwareBlocks,
   eslintConfigPrettier,
 ];

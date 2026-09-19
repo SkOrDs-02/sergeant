@@ -163,7 +163,7 @@ export function PrBoard({
                   <div className="flex items-center gap-2 min-w-0">
                     {podiumRank && (
                       <span className="shrink-0 inline-flex items-center gap-1 text-style-caption text-warning-strong dark:text-warning">
-                        <Icon name="award" size={14} aria-hidden />
+                        <Icon name="award" size="sm" aria-hidden />
                         {podiumRank}
                       </span>
                     )}

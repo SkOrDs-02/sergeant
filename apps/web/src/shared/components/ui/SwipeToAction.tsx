@@ -202,7 +202,7 @@ function SwipeToActionImpl({
         >
           <Icon
             name="arrow-left"
-            size={12}
+            size="xs"
             className="motion-safe:animate-pulse"
           />
           <span>{hintText || defaultHintText}</span>

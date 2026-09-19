@@ -94,11 +94,25 @@ export default function RoutineApp({
       {/* `bottom-nav-height-var` — див. FinykApp: навігацію малює модуль,
           тож і змінну висоти для `Sheet` виставляє він. */}
       <MeshBackground className="bottom-nav-height-var">
-        <RoutineHeader
-          onBackToHub={onBackToHub}
-          onGoToHub={onGoToHub}
-          onOpenSettings={onOpenSettings}
-        />
+        {/* `<header>` тут, бо саме Рутина — єдиний модуль, чия шапка
+            лежить поза будь-яким landmark-ом. `ModuleShell` загортає
+            модуль у `<main>`, АЛЕ для routine свідомо підставляє `<div>`
+            (Рутина рендерить власний `<main id="routine-main">` нижче, і
+            два `<main>` були б порушенням). Наслідок: у фініка, фізрука й
+            їжі шапка потрапляє всередину `<main>`, а тут — нікуди, тож
+            «Рутина» і «Звички й події» висіли поза landmark-ами на всіх
+            трьох сторінках модуля (axe `region`, свіп 2026-09-16).
+
+            `<header>` не вкладений у main/article/section, тож дає роль
+            `banner` — єдиний banner на сторінці (перевірено: ані
+            `RootLayout`, ані `ModuleShell` свого не мають). */}
+        <header>
+          <RoutineHeader
+            onBackToHub={onBackToHub}
+            onGoToHub={onGoToHub}
+            onOpenSettings={onOpenSettings}
+          />
+        </header>
 
         <SwipePages
           ids={ROUTINE_TAB_IDS}

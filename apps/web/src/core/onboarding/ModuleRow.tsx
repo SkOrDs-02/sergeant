@@ -92,7 +92,7 @@ export function ModuleRow({
         )}
         aria-hidden
       >
-        <Icon name="check" size={12} strokeWidth={3} />
+        <Icon name="check" size="xs" strokeWidth={3} />
       </span>
       <div className="flex items-center gap-3">
         <span

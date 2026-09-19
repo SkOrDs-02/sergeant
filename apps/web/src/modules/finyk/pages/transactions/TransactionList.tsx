@@ -363,7 +363,7 @@ export function TransactionList({
           module="finyk"
           action={
             onGoPreviousMonth ? (
-              <Button variant="secondary" onClick={onGoPreviousMonth}>
+              <Button variant="outline" onClick={onGoPreviousMonth}>
                 Попередній місяць
               </Button>
             ) : undefined

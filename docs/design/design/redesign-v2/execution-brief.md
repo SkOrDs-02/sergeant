@@ -1,8 +1,8 @@
 # Sergeant v2 — Execution Brief (orchestration contract)
 
-> **Last validated:** 2026-05-17 by @Skords-01.
-> **Next review:** updated after Phase 7 close-out.
-> **Status:** Active.
+> **Last validated:** 2026-09-16 by @claude (статус вирівняно з кластером: redesign-v2 закрито 2026-05-21).
+> **Next review:** не планується — історичний документ.
+> **Status:** Reference — бриф виконання від 2026-05-17; результат і відхилення — [`execution-status.md`](./execution-status.md).
 > **Companion docs:** [`execution-plan.md`](./execution-plan.md) (what to do) · [`execution-status.md`](./execution-status.md) (what's done) · [`governance.md`](./governance.md) (governance) · [`migration.md`](./migration.md) (BEFORE/AFTER patterns).
 
 ## What this doc is

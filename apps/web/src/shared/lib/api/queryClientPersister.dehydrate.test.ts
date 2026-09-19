@@ -5,7 +5,7 @@
  * silent regression here (e.g. a new sensitive feed is added but
  * nobody updates the block-list) leaks data verbatim to disk.
  *
- * See PR #004 in `docs/planning/storage-roadmap.md`.
+ * See PR #004 in `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  */
 import { describe, it, expect } from "vitest";
 import { QueryClient, dehydrate, type Query } from "@tanstack/react-query";

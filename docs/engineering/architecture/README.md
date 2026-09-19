@@ -1,6 +1,6 @@
 # 🏗️ Architecture
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-17 by @claude (колонку «Last updated» прибрано — дати живуть у шапках самих доків; лінк Deployment & CI → ADR-0074). **Next review:** 2026-12-16.
 > **Status:** Active
 
 System architecture and runtime surface inventory for Sergeant.
@@ -11,46 +11,46 @@ System architecture and runtime surface inventory for Sergeant.
 
 ### Огляд і топологія
 
-| Document                                         | Purpose                                                                        | Last updated  |
-| ------------------------------------------------ | ------------------------------------------------------------------------------ | ------------- |
-| [`service-catalog.md`](./service-catalog.md)     | Runtime inventory: owners, targets, dependencies, healthchecks, rollback paths | 2026-05-15 ✅ |
-| [`platforms.md`](./platforms.md)                 | Web / RN mobile / Capacitor shell — статус, feature-parity матриця (ADR-0052)  | 2026-07-10 ✅ |
-| [`hosting-evolution.md`](./hosting-evolution.md) | Hosting evolution, infra phases, migration triggers                            | 2026-05-13 ✅ |
+| Document                                         | Purpose                                                                        |
+| ------------------------------------------------ | ------------------------------------------------------------------------------ |
+| [`service-catalog.md`](./service-catalog.md)     | Runtime inventory: owners, targets, dependencies, healthchecks, rollback paths |
+| [`platforms.md`](./platforms.md)                 | Web / RN mobile / Capacitor shell — статус, feature-parity матриця (ADR-0052)  |
+| [`hosting-evolution.md`](./hosting-evolution.md) | Hosting evolution, infra phases, migration triggers                            |
 
 ### Архітектурні діаграми та потоки
 
-| Document                                                             | Purpose                                                                              | Last updated  |
-| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ | ------------- |
-| [`diagrams/`](./diagrams/README.md)                                  | C4 model (System → Containers → Components) + sequence flows (Mermaid)               | 2026-05-13 ✅ |
-| [`diagrams/c1-system-context.md`](./diagrams/c1-system-context.md)   | User ↔ Sergeant Web / Mobile / Shell ↔ external systems                              | 2026-05-05    |
-| [`diagrams/c2-containers.md`](./diagrams/c2-containers.md)           | Deployment topology: apps/web (Vercel), apps/server (Hetzner + Coolify), apps/mobile | 2026-05-05    |
-| [`diagrams/c3-cloudsync.md`](./diagrams/c3-cloudsync.md)             | Internal sync engine v2 (op-log outbox → `/api/v2/sync/push`); v1 retired            | 2026-06-09    |
-| [`diagrams/c3-chat-tool-use.md`](./diagrams/c3-chat-tool-use.md)     | HubChat tool-use loop with Anthropic streaming                                       | 2026-05-05    |
-| [`diagrams/flow-signin.md`](./diagrams/flow-signin.md)               | Better Auth sign-in flow (email + password)                                          | 2026-05-05    |
-| [`diagrams/flow-cloudsync.md`](./diagrams/flow-cloudsync.md)         | Sync v2 push/pull: web ↔ `/api/v2/sync/push` ↔ Postgres; v1 → 410 Gone               | 2026-06-09    |
-| [`diagrams/flow-chat-tool-use.md`](./diagrams/flow-chat-tool-use.md) | Runtime tool-use cycle within a chat session                                         | 2026-05-05    |
-| [`diagrams/flow-reminder-fire.md`](./diagrams/flow-reminder-fire.md) | cron → server push → APNs/FCM → device (історично n8n; ADR-0090)                     | 2026-05-05    |
+| Document                                                             | Purpose                                                                              |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------ |
+| [`diagrams/`](./diagrams/README.md)                                  | C4 model (System → Containers → Components) + sequence flows (Mermaid)               |
+| [`diagrams/c1-system-context.md`](./diagrams/c1-system-context.md)   | User ↔ Sergeant Web / Mobile / Shell ↔ external systems                              |
+| [`diagrams/c2-containers.md`](./diagrams/c2-containers.md)           | Deployment topology: apps/web (Vercel), apps/server (Hetzner + Coolify), apps/mobile |
+| [`diagrams/c3-cloudsync.md`](./diagrams/c3-cloudsync.md)             | Internal sync engine v2 (op-log outbox → `/api/v2/sync/push`); v1 retired            |
+| [`diagrams/c3-chat-tool-use.md`](./diagrams/c3-chat-tool-use.md)     | HubChat tool-use loop with Anthropic streaming                                       |
+| [`diagrams/flow-signin.md`](./diagrams/flow-signin.md)               | Better Auth sign-in flow (email + password)                                          |
+| [`diagrams/flow-cloudsync.md`](./diagrams/flow-cloudsync.md)         | Sync v2 push/pull: web ↔ `/api/v2/sync/push` ↔ Postgres; v1 знято (тепер 404)        |
+| [`diagrams/flow-chat-tool-use.md`](./diagrams/flow-chat-tool-use.md) | Runtime tool-use cycle within a chat session                                         |
+| [`diagrams/flow-reminder-fire.md`](./diagrams/flow-reminder-fire.md) | cron → server push → APNs/FCM → device (історично n8n; ADR-0090)                     |
 
 ### API, модулі, дані
 
-| Document                                                             | Purpose                                                                                            | Last updated |
-| -------------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ------------ |
-| [`api-v1.md`](./api-v1.md)                                           | REST API v1 contract overview, versioning strategy                                                 | 2026-04-28   |
-| [`api-contracts.md`](./api-contracts.md)                             | Pact-based runtime consumer-driven contract testing: `api-client ↔ server` (доповнює Hard Rule #3) | 2026-06-02   |
-| [`module-structure.md`](./module-structure.md)                       | Canonical layout of `apps/{web,mobile}/src/modules/<domain>/` + deviations                         | 2026-05-03   |
-| [`module-ownership.md`](./module-ownership.md)                       | Per-path ownership, test-стек, RQ-фабрика та конвенції; детальна таблиця до AGENTS.md              | 2026-06-02   |
-| [`repo-map.md`](./repo-map.md)                                       | Повна матриця apps + packages: стек, призначення, деплой-вихід; compact summary — в AGENTS.md      | 2026-06-02   |
-| [`domain-invariants.md`](./domain-invariants.md)                     | Глибокий розбір інваріантів (час/гроші/ID); compact pointer — в AGENTS.md                          | 2026-06-02   |
-| [`state-write-paths.md`](./state-write-paths.md)                     | Дві writer-доріжки web-стану (`useMutation` vs HubChat tool-call) і де живуть інваріанти           | 2026-06-02   |
-| [`notifications.md`](./notifications.md)                             | Канали пушів, серверний прохід нагадувань, дедуп через спільний `Notification.tag`, форма payload  | 2026-08-02   |
-| [`metric-registry.md`](./metric-registry.md)                         | Реєстр «метрика → канонічна функція → де рахується сьогодні → чи збігається» + план переведення    | 2026-07-25   |
-| [`ai-memory.md`](./ai-memory.md)                                     | Серверний episodic-memory store (`ai_memories`, migration 025): ingestion, recall, backfill        | 2026-06-02   |
-| [`rag-eval.md`](./rag-eval.md)                                       | RAG eval pipeline: golden-set, P@1/MRR, weekly quality gate та auto-disable (PR-20/PR-22)          | 2026-06-02   |
-| [`frontend-overview.md`](./frontend-overview.md)                     | React 18 + Vite frontend architecture                                                              | 2026-05-05   |
-| [`data-exchange-storage-audit.md`](./data-exchange-storage-audit.md) | Current data exchange, storage, weak points, and roadmap                                           | 2026-05-03   |
-| [`apps-status-matrix.md`](./apps-status-matrix.md)                   | Status matrix for apps and packages (active/stabilize/migration/legacy)                            | 2026-05-04   |
-| [`apps-web-exhaustive-deps.md`](./apps-web-exhaustive-deps.md)       | Web hooks dependency guidance (production disables = 0)                                            | 2026-07-20   |
-| [`apps-mobile-exhaustive-deps.md`](./apps-mobile-exhaustive-deps.md) | Mobile live `exhaustive-deps` disable catalog (9 sites)                                            | 2026-07-20   |
+| Document                                                             | Purpose                                                                                                       |
+| -------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------- |
+| [`api-v1.md`](./api-v1.md)                                           | REST API v1 contract overview, versioning strategy                                                            |
+| [`api-contracts.md`](./api-contracts.md)                             | Pact-based runtime consumer-driven contract testing: `api-client ↔ server` (доповнює Hard Rule #3)            |
+| [`module-structure.md`](./module-structure.md)                       | Canonical layout of `apps/{web,mobile}/src/modules/<domain>/` + deviations                                    |
+| [`module-ownership.md`](./module-ownership.md)                       | Per-path ownership, test-стек, RQ-фабрика та конвенції; детальна таблиця до AGENTS.md                         |
+| [`repo-map.md`](./repo-map.md)                                       | Повна матриця apps + packages: стек, призначення, деплой-вихід; compact summary — в AGENTS.md                 |
+| [`domain-invariants.md`](./domain-invariants.md)                     | Глибокий розбір інваріантів (час/гроші/ID); compact pointer — в AGENTS.md                                     |
+| [`state-write-paths.md`](./state-write-paths.md)                     | Дві writer-доріжки web-стану (`useMutation` vs HubChat tool-call) і де живуть інваріанти                      |
+| [`notifications.md`](./notifications.md)                             | Канали пушів, серверний прохід нагадувань, дедуп через спільний `Notification.tag`, форма payload             |
+| [`metric-registry.md`](./metric-registry.md)                         | Реєстр «метрика → канонічна функція → де рахується сьогодні → чи збігається» + план переведення               |
+| [`ai-memory.md`](./ai-memory.md)                                     | Серверний episodic-memory store (`ai_memories`, migration 025): ingestion, recall (backfill знято 2026-08-29) |
+| [`rag-eval.md`](./rag-eval.md)                                       | RAG eval pipeline: golden-set, P@1/MRR, weekly quality gate та auto-disable (PR-20/PR-22)                     |
+| [`frontend-overview.md`](./frontend-overview.md)                     | React 18 + Vite frontend architecture                                                                         |
+| [`data-exchange-storage-audit.md`](./data-exchange-storage-audit.md) | Current data exchange, storage, weak points, and roadmap                                                      |
+| [`apps-status-matrix.md`](./apps-status-matrix.md)                   | Status matrix for apps and packages (active/stabilize/migration/legacy)                                       |
+| [`apps-web-exhaustive-deps.md`](./apps-web-exhaustive-deps.md)       | Web: навмисні винятки `exhaustive-deps` (лічильник — `rg` у самому доку)                                      |
+| [`apps-mobile-exhaustive-deps.md`](./apps-mobile-exhaustive-deps.md) | Mobile: навмисні винятки `exhaustive-deps` (лічильник — `rg` у самому доку)                                   |
 
 ---
 
@@ -85,8 +85,7 @@ System architecture and runtime surface inventory for Sergeant.
 
 ## 📊 Легенда статусів
 
-- ✅ **Last validated дата ≤ 30 днів** — документ свіжий, довіряй йому
-- ⚠️ **Last validated > 30 днів назад** — потребує ревалідації до наступного PR-а
+- Свіжість (`Last touched` / `Next review`) — у шапці кожного доку; зведення — [`freshness-dashboard.html`](../../governance/governance/freshness-dashboard.html) (гейт `pnpm docs:check-freshness-cadence`). Колонку дат у таблицях вище прибрано 2026-09-17 — вона дублювала шапки й застарівала.
 - 🔄 **Status = Active** — часто змінюється, перевіри з основним branch
 - 🟡 **Status = Stabilize** — контракт більш-менш заморожений
 - 📦 **Status = Migration** — в процесі переносу, очікується deadline
@@ -114,5 +113,5 @@ System architecture and runtime surface inventory for Sergeant.
 - **Development процес:** [`docs/governance/adr/`](../../governance/adr) — architectural decision records
 - **Operations & alerting:** [`docs/operations/observability/`](../../operations/observability) — SLO, metrics, runbooks
 - **Product roadmap:** [`docs/work/specs/initiatives/`](../../work/specs/initiatives) — фази, блокери, timeline
-- **Deployment & CI:** [`docs/operations/deploy/`](../../operations/deploy), [`docs/engineering/integrations/railway-vercel.md`](../integrations/railway-vercel.md)
+- **Deployment & CI:** [`docs/operations/deploy/`](../../operations/deploy), [ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md) (Hetzner + Coolify; Railway виведено). Vercel-частина — [`integrations/railway-vercel.md`](../integrations/railway-vercel.md).
 - **Tech debt & planning:** [`docs/work/specs/planning/`](../../work/specs/planning), [`docs/work/specs/tech-debt/`](../../work/specs/tech-debt)

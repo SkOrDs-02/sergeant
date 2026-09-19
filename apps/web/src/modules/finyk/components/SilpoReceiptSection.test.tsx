@@ -416,7 +416,9 @@ describe("SilpoReceiptSection", () => {
   });
 
   describe("«Це не той чек» — розлінк хибної пари", () => {
-    async function renderConnectedWithReceipt() {
+    async function renderConnectedWithReceipt(
+      overrides: Partial<Parameters<typeof SilpoReceiptSection>[0]> = {},
+    ) {
       mockedSyncState.mockResolvedValue({
         status: "connected",
         accessTokenExpiresAt: "2026-08-24T10:00:00.000Z",
@@ -441,7 +443,7 @@ describe("SilpoReceiptSection", () => {
           },
         ],
       });
-      const utils = renderSection();
+      const utils = renderSection(overrides);
       await screen.findByText("Чек із Сільпо");
       return utils;
     }
@@ -469,26 +471,70 @@ describe("SilpoReceiptSection", () => {
       ).toBeEnabled();
     });
 
-    it("після відчеплення пропонує «Повернути» і ставить пару назад", async () => {
-      // Головне тут — що афорданс переживає зникнення чека: після
-      // інвалідації `summary` порожній, і без локального стану секція
-      // просто зникла б разом із можливістю скасувати.
+    it("після відчеплення лишається ОДНА дія — «Прикріпити чек»", async () => {
+      // Рішення власника 2026-09-17: «дві кнопки це шум». Доти тут стояла
+      // окрема панель із «Повернути» + «Обрати інший»; тепер один стан, і
+      // саме той, що вже зустрічає людину на операції без чека.
+      //
+      // Головне, що перевіряє цей тест, — афорданс переживає зникнення
+      // чека: після інвалідації `summary` порожній, і без локального
+      // прапорця секція зникла б разом із будь-яким виходом далі.
       mockedUnlink.mockResolvedValue({ ok: true, receiptId: "r1" });
       mockedRelink.mockResolvedValue({ ok: true });
       await renderConnectedWithReceipt();
-      // Після інвалідації сервер уже не віддасть цей чек для транзакції —
-      // саме той стан, у якому афорданс має вижити.
+      // Сервер уже не віддає цей чек для транзакції, але сам чек тепер без
+      // пари — тобто лежить у пікері й доступний для повернення тим самим
+      // жестом, що й виправлення.
+      mockedReceipts.mockImplementation((params?: { transactionId?: string }) =>
+        Promise.resolve(
+          params?.transactionId
+            ? { data: [], nextCursor: null }
+            : {
+                data: [{ ...RECEIPT_SUMMARY, transactionId: null }],
+                nextCursor: null,
+              },
+        ),
+      );
+
+      fireEvent.click(screen.getByRole("button", { name: "Це не той чек" }));
+      await waitFor(() => expect(mockedUnlink).toHaveBeenCalled());
+
+      const attach = await screen.findByRole("button", {
+        name: "Прикріпити чек",
+      });
+      expect(
+        screen.queryByRole("button", { name: "Повернути" }),
+      ).not.toBeInTheDocument();
+      expect(
+        screen.queryByRole("button", { name: "Обрати інший" }),
+      ).not.toBeInTheDocument();
+
+      fireEvent.click(attach);
+      fireEvent.click(await screen.findByRole("button", { name: /390,00/ }));
+
+      await waitFor(() =>
+        expect(mockedRelink).toHaveBeenCalledWith("bank-1", "r1"),
+      );
+    });
+
+    it("після відчеплення дає прикріпити навіть коли опис не схожий на Сільпо", async () => {
+      // Евристика по банківському опису потрібна лише для discoverability
+      // на порожньому місці. Тут факт чека Сільпо ДОВЕДЕНИЙ — він щойно був
+      // привʼязаний, — тож гейт по опису обходиться. Без цього людина,
+      // відвʼязавши хибний чек на операції з описом «FOP PRODUCTY»,
+      // лишалась би ні з чим.
+      mockedUnlink.mockResolvedValue({ ok: true, receiptId: "r1" });
+      await renderConnectedWithReceipt({
+        transactionDescription: "FOP PRODUCTY",
+      });
       mockedReceipts.mockResolvedValue({ data: [], nextCursor: null });
 
       fireEvent.click(screen.getByRole("button", { name: "Це не той чек" }));
       await waitFor(() => expect(mockedUnlink).toHaveBeenCalled());
 
-      const undo = await screen.findByRole("button", { name: "Повернути" });
-      fireEvent.click(undo);
-
-      await waitFor(() =>
-        expect(mockedRelink).toHaveBeenCalledWith("bank-1", "r1"),
-      );
+      expect(
+        await screen.findByRole("button", { name: "Прикріпити чек" }),
+      ).toBeInTheDocument();
     });
   });
 

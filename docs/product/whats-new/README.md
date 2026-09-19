@@ -1,6 +1,6 @@
 # What's New — release notes content
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-09-18.
+> **Last touched:** 2026-09-17 by @claude (що саме перевіряє drift-гейт, ключ `lastSeenId.v1`, гейт за віком акаунта). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Це **джерело істини** для in-product «Що нового» модала
@@ -25,7 +25,10 @@ App-side **не парсить markdown** — він читає типізова
 [`apps/web/src/core/whatsNew/releases.ts`](../../../apps/web/src/core/whatsNew/releases.ts).
 Markdown-файли тут — це довша версія з контекстом для команди / changelog
 для зовнішніх читачів. Дві сторони мають збігатися (id, дата, заголовок,
-list-of-items) — drift ловиться у tests `releases.test.ts`.
+list-of-items), але механічно `releases.test.ts` перевіряє лише **наявність**
+`docs/product/whats-new/<id>.md` і згадку `id` у ньому; текст items, дата й
+заголовок звіряються вручну, джерело правди при розбіжності — `releases.ts`.
+Тон стрічки (жодного формального «Ви») окремо гейтить `releases.tone.test.ts`.
 
 ## Як додати новий реліз
 
@@ -50,11 +53,16 @@ list-of-items) — drift ловиться у tests `releases.test.ts`.
    ];
    ```
    `id` — це **сортовний** ключ; modal показує найсвіжіший запис, якого
-   юзер ще не бачив (`localStorage["sergeant.whatsNew.lastSeenId"]`).
+   юзер ще не бачив (`localStorage["sergeant.whatsNew.lastSeenId.v1"]`,
+   `storage.ts`). З 2026-09-03 `pickRelease` додатково гейтить за віком
+   акаунта: якщо `lastSeenId` порожній, а реліз вийшов **до** дня реєстрації
+   (київський день-ключ), модал не показується — ноти написані для того,
+   хто вже був тут, а не для новачка.
 3. **Запусти tests** — `releases.test.ts` валідовує:
    - `id` унікальні + парсяться як ISO date,
    - кожен item у `items[]` має `kind` ∈ `feature | fix | improvement`,
-   - markdown-файл `docs/product/whats-new/{id}.md` існує (drift gate),
+   - markdown-файл `docs/product/whats-new/{id}.md` існує і згадує `id`
+     (drift gate — лише наявність, не текст),
    - `RELEASES` відсортовано від нового до старого.
 4. **Не редагуй старі записи.** Користувачі вже їх бачили — зміна `title` /
    `items[]` створює дискрепанс «modal vs PostHog event payload». Замість

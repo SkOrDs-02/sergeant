@@ -1,7 +1,17 @@
 # Hub tabs perf — RUM baseline
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-22.
-> **Status:** Active — Sprint 0 instrumentation merged 2026-05-20, baseline data collection in progress, dashboard manifest committed 2026-05-25 (ready for import on 2026-05-27 baseline pull).
+> **Last touched:** 2026-09-17 by @claude (Status → Reference: baseline так і не знято; sampling-гейт не реалізовано). **Next review:** 2026-12-16.
+> **Status:** Reference — Sprint 0 instrumentation merged 2026-05-20, dashboard manifest committed 2026-05-25; Initiative 0017 закрита code-complete 2026-06-02 (див. [`tech-debt/frontend.md`](../../work/specs/tech-debt/frontend.md)), але baseline pull так і не зроблено
+
+> **Звірка 2026-09-17.** Таблиця «Baseline» нижче лишилась `TBD` через чотири
+> місяці після запланованого pull-у 2026-05-27 — інструментація живе
+> (`HUB_TAB_SWITCH_PERF` шлеться, 100 % sampling), але цифри з PostHog ніхто не
+> зняв. Обіцяний нижче перехід на 10 % sampling **не реалізовано**: у
+> [`hubPerf.ts`](../../../apps/web/src/core/lib/hubPerf.ts) немає ні
+> `SAMPLE_RATE`, ні `Math.random()`-гейта, ні прапорця
+> `hub_perf_rum_sample_rate`. Документ лишається як опис контракту події й
+> інструментації; секції «Baseline pull procedure», «Sampling» і
+> «Що далі» — план 2026-05, не стан.
 
 Цей runbook описує RUM-інструмент, який запровадив Sprint 0 [Initiative 0017 — Hub Settings & Reports mount perf](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0017-hub-tabs-mount-perf.md). Сам файл — **жива сторінка**: коли назбирається ≥ 1 тиждень даних з прода, заповнюємо таблицю «Baseline», і кожен наступний Sprint оновлює свій рядок.
 
@@ -123,7 +133,7 @@ Sprint 0 merged 2026-05-20 з 100% sampling. На 2026-05-27 буде ≥ 7 дн
 ## Sampling
 
 - **Перші 30 днів після merge**: 100% sampling — нам потрібна максимальна щільність даних щоб піймати hard-to-reproduce жлоби (slow-3G, low-end mobile, multi-tab race).
-- **Після 30 днів**: 10% — стандартний RUM rate. Гейт прописати у [`apps/web/src/core/lib/hubPerf.ts`](../../../apps/web/src/core/lib/hubPerf.ts) через `Math.random() < SAMPLE_RATE`, перемикач — feature flag `hub_perf_rum_sample_rate`.
+- **Після 30 днів**: 10% — стандартний RUM rate. Гейт планувалось прописати у [`apps/web/src/core/lib/hubPerf.ts`](../../../apps/web/src/core/lib/hubPerf.ts) через `Math.random() < SAMPLE_RATE` з feature flag `hub_perf_rum_sample_rate` — **не зроблено** (станом на 2026-09-17 sampling досі 100 %; якщо реалізовувати — реєструй прапорець за [`feature-flags.md`](../../engineering/architecture/feature-flags.md)).
 - **Завжди-on**: dev mode (`import.meta.env.DEV`) — щоб локально бачити events без зайвих кроків.
 
 ## Що далі (carry-over)

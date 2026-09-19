@@ -1,7 +1,7 @@
 # SPEC: адаптивна ціль калорій (виміряний TDEE)
 
-> **Last touched:** 2026-09-13 by @claude (звірка з кодом — фіча виявилась зробленою). **Next review:** 2027-03-26.
-> **Status:** Active
+> **Last touched:** 2026-09-17 by @claude (Status → Implemented; residual п.2 — рішення власника). **Next review:** 2026-12-16.
+> **Status:** Implemented — фіча в `main` з коміту `2f0c49a` (2026-09-06); доказ у коді: `packages/nutrition-domain/src/adaptiveTdee.ts`, `apps/web/src/modules/nutrition/hooks/useAdaptiveNutritionGoal.ts` (+ `.test.tsx`), `apps/web/src/modules/nutrition/components/AdaptiveGoalCard.tsx`. Пункти 1 і 3 § «Що лишилось насправді» закриті 2026-09-13. **Residual (owner-decision):** п.2 — рядок `countWorkoutsHint` у профілі про подвійний облік тренувань; формулювання потребує founder-а, поведінка коду не змінюється.
 
 > ## ⚠️ Ця спека описувала як відкрите те, що вже лежить у `main`
 >

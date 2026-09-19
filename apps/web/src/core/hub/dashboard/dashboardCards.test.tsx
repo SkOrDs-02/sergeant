@@ -65,7 +65,7 @@ describe("MotivationalFooter — same-tab storage refresh (F10)", () => {
       emitHubBus("storageUpdated", undefined);
     });
 
-    expect(screen.getByText("Вже 2 записів, продовжуй!")).toBeInTheDocument();
+    expect(screen.getByText("Вже 2 записи, продовжуй!")).toBeInTheDocument();
   });
 
   it("re-counts after native window storage event fires (cross-tab path)", () => {
@@ -91,7 +91,34 @@ describe("MotivationalFooter — same-tab storage refresh (F10)", () => {
       );
     });
 
-    expect(screen.getByText("Вже 2 записів, продовжуй!")).toBeInTheDocument();
+    expect(screen.getByText("Вже 2 записи, продовжуй!")).toBeInTheDocument();
+  });
+
+  // Українська плюралізація — три форми (one/few/many), не бінарна
+  // «1 vs N». 11 і 21 ловлять класичну помилку: 11 бере "many" ("записів"),
+  // 21 повертається до "one" ("запис").
+  it.each([
+    [1, "запис"],
+    [2, "записи"],
+    [5, "записів"],
+    [11, "записів"],
+    [21, "запис"],
+  ])("uses the correct plural form for N=%i (%s)", (n, form) => {
+    localStorage.setItem(
+      "fizruk_workouts_v1",
+      JSON.stringify(
+        Array.from({ length: n }, (_, i) => ({
+          id: `w${i}`,
+          startedAt: "2026-06-01T10:00:00.000Z",
+        })),
+      ),
+    );
+
+    render(<MotivationalFooter />);
+
+    expect(
+      screen.getByText(`Вже ${n} ${form}, продовжуй!`),
+    ).toBeInTheDocument();
   });
 });
 

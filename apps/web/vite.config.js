@@ -14,6 +14,50 @@ import { fileURLToPath } from "url";
 // portable across both worlds.
 const __dirname = dirname(fileURLToPath(import.meta.url));
 
+/**
+ * Викидає з бандла воркер `sqlite3-worker1`, якого Sergeant не викликає.
+ *
+ * `@sqlite.org/sqlite-wasm/dist/index.mjs` містить `sqlite3Worker1Promiser`
+ * — альтернативний API, де база живе у воркері бібліотеки. Ми ним не
+ * користуємось (свій воркер — `apps/web/src/core/db/sqliteWorker.ts`), але
+ * всередині промайзера стоїть `new Worker(new URL("sqlite3-worker1.mjs", …))`,
+ * а плагін воркерів Vite перетворює такий вираз НА ЕТАПІ ТРАНСФОРМУ, до
+ * будь-якого tree-shaking. Тобто чанк емітився завжди й ніколи не
+ * завантажувався: 209 kB сирих, **54.5 kB brotli**, які `size-limit` чесно
+ * рахував (замір 2026-09-14).
+ *
+ * AI-DANGER: якщо після оновлення пакета цей трансформ не знайде свій
+ * шаблон — білд ПАДАЄ, і це навмисно. Мовчазний пропуск повернув би
+ * 54.5 kB у бандл рівно так само тихо, як вони там опинились.
+ *
+ * Заміна тієї самої довжини, що й оригінал, щоб не зсувати сорсмапу.
+ */
+function dropUnusedSqliteWorker1() {
+  const needle =
+    'new Worker(new URL("sqlite3-worker1.mjs", import.meta.url), { type: "module" })';
+  const stub = '(()=>{throw new Error("sqlite3-worker1 is not bundled")})()';
+  return {
+    name: "sergeant:drop-unused-sqlite-worker1",
+    enforce: "pre",
+    apply: "build",
+    transform(code, id) {
+      if (!id.includes("@sqlite.org/sqlite-wasm")) return null;
+      if (!id.endsWith("index.mjs")) return null;
+      if (!code.includes(needle)) {
+        throw new Error(
+          "[sergeant] sqlite3Worker1Promiser worker-spawn pattern not found in " +
+            "@sqlite.org/sqlite-wasm. Перевір, чи пакет не змінив форму, і " +
+            "онови шаблон у vite.config.js (див. коментар над цим плагіном).",
+        );
+      }
+      return {
+        code: code.replace(needle, stub.padEnd(needle.length, " ")),
+        map: null,
+      };
+    },
+  };
+}
+
 export default defineConfig(({ mode }) => {
   const env = loadEnv(mode, process.cwd(), "");
   const apiProxyTarget = (
@@ -99,6 +143,7 @@ export default defineConfig(({ mode }) => {
       "import.meta.env.VITE_BUILD_ID": JSON.stringify(buildId),
     },
     plugins: [
+      dropUnusedSqliteWorker1(),
       tailwindcss(),
       react(),
       !isCapacitorBuild &&
@@ -275,6 +320,16 @@ export default defineConfig(({ mode }) => {
         telemetry: false,
       }),
     ].filter(Boolean),
+    // AI-DANGER: воркери збираються ОКРЕМИМ Rollup-білдом із власним
+    // конвеєром плагінів — плагіни з `plugins` вище туди НЕ потрапляють.
+    // Без цього блоку `sqliteWorker.ts` тягнув за собою ту саму мертву
+    // копію `sqlite3-worker1` (54.5 kB brotli), яку плагін щойно вирізав
+    // із головного графа: замір 2026-09-14 показав стуб у `vendor-sqlite`
+    // і незайманий виклик у воркерному чанку.
+    worker: {
+      format: "es",
+      plugins: () => [dropUnusedSqliteWorker1()],
+    },
     build: {
       outDir,
       emptyOutDir: true,

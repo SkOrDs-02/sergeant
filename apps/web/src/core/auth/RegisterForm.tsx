@@ -140,7 +140,7 @@ export function RegisterForm({ onAlreadyRegistered }: RegisterFormProps) {
 
       <Button
         type="submit"
-        variant="primary"
+        variant="solid"
         size="lg"
         loading={isSubmitting}
         className="w-full"

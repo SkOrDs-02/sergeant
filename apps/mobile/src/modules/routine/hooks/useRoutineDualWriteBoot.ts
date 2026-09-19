@@ -1,7 +1,7 @@
 /**
  * React hook that installs the mobile routine dual-write context.
  *
- * PR #024 follow-up of `docs/planning/storage-roadmap.md`. Mirrors
+ * PR #024 follow-up of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Mirrors
  * `apps/web/src/modules/routine/hooks/useRoutineDualWriteBoot.ts`.
  *
  * Stage 8 PR #056r dropped the `feature.routine.sqlite_v2.dual_write`

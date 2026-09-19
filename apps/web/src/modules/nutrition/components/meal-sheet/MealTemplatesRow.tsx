@@ -119,7 +119,7 @@ export function MealTemplatesRow({
                       onSelected?.();
                     }}
                   >
-                    <Icon name="edit" size={13} aria-hidden />
+                    <Icon name="edit" size="sm" aria-hidden />
                   </IconButton>
                   <IconButton
                     aria-label={`Видалити швидкий прийом ${t.name}`}
@@ -144,6 +144,7 @@ export function MealTemplatesRow({
       <ConfirmDialog
         open={confirmDeleteId != null}
         title={messages.nutrition.deleteTemplateTitle}
+        confirmLabel={messages.actions.delete}
         description={
           confirmTarget
             ? `«${confirmTarget.name}». Натисни «Повернути» у тості, якщо це випадково.`

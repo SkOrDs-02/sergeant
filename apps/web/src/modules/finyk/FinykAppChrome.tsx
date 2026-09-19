@@ -116,7 +116,7 @@ export function AuthErrorBanner({
           className="touch-target focus-ring rounded-xl text-muted hover:text-text transition-colors shrink-0"
           aria-label="Закрити"
         >
-          <Icon name="close" size={16} aria-hidden />
+          <Icon name="close" size="md" aria-hidden />
         </button>
       </div>
     </div>

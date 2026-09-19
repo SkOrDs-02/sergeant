@@ -472,7 +472,7 @@ events:
   # ─────────────────────────────────────────────────────────────────────
   # VALUE LOOPS (NEW — Хвиля 2: «сигнал показано → дію зроблено»)
   #
-  # Джерело: docs/90-work/planning/product-knowledge-backlog.md § Хвиля 2.
+  # Джерело: docs/work/specs/planning/product-knowledge-backlog.md § Хвиля 2.
   # Стан: імена ЗАМОРОЖЕНІ в packages/shared/src/lib/analyticsEvents.valueLoops.ts
   # і пінуються verbatim у analyticsEvents.test.ts. Реєстрація тут навмисно
   # випередила інструментування (щоб audit-прогін не позначив ці події як

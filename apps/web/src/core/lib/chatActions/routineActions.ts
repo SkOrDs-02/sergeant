@@ -80,7 +80,7 @@ export function handleRoutineAction(
       if (alreadyDone) {
         return { result, confirm: persistRoutineState(routineState) };
       }
-      // LOG-2 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) —
+      // LOG-2 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) —
       // домен-редʼюсер, а не ручний запис у `completions`:
       // `applyToggleHabitCompletion` (1) не пише незаплановий день (той
       // самий `habitScheduledOnDate`-гейт, що чекбокс в UI) і (2) знімає
@@ -561,7 +561,7 @@ export function handleRoutineAction(
       const state = loadRoutineState();
       const habit = state.habits.find((h) => h.id === id);
       if (!habit) return `Звичку ${id} не знайдено.`;
-      // LOG-1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+      // LOG-1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
       // — той самий гнучкий стрік і той самий per-habit rate, що рахує UI
       // (`flexStreak.ts`/`streaks.ts`), а не третя жорстка реалізація, яка
       // обнуляла серію на першому пропущеному дні незалежно від паузи,

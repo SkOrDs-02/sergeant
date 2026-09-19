@@ -126,11 +126,11 @@ export function buildFizrukFullBackupPayload() {
  */
 export function applyFizrukFullBackupPayload(parsed: unknown) {
   if (!parsed || typeof parsed !== "object") {
-    throw new Error("Невірний формат файлу");
+    throw new Error("Неправильний формат файлу");
   }
   const d = (parsed as { data?: unknown }).data;
   if (!d || typeof d !== "object" || Array.isArray(d)) {
-    throw new Error("Невірний формат файлу");
+    throw new Error("Неправильний формат файлу");
   }
   const dataObj = d as Record<string, unknown>;
   for (const k of FIZRUK_FULL_BACKUP_KEYS) {

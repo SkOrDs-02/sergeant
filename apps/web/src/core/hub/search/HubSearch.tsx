@@ -9,6 +9,8 @@ import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 export interface HubSearchProps {
   onClose: () => void;
   onOpenModule: (moduleId: string) => void;
+  /** Готовий запит (палітра команд → «Шукати „…“ у Sergeant»). */
+  initialQuery?: string | undefined;
 }
 
 /**
@@ -29,7 +31,11 @@ export interface HubSearchProps {
  * with `useSearchEngine`'s document-level handler — passing `onEscape`
  * here would call `onClose` twice on every Esc.
  */
-export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
+export function HubSearch({
+  onClose,
+  onOpenModule,
+  initialQuery,
+}: HubSearchProps) {
   const {
     inputRef,
     listRef,
@@ -46,7 +52,7 @@ export function HubSearch({ onClose, onOpenModule }: HubSearchProps) {
     commitQuery,
     inlineAi,
     escalateToChat,
-  } = useSearchEngine({ onClose, onOpenModule });
+  } = useSearchEngine({ onClose, onOpenModule, initialQuery });
   const panelRef = useRef<HTMLDivElement | null>(null);
 
   useDialogFocusTrap(true, panelRef, { inertBackground: true });

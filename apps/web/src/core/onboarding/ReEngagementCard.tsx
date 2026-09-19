@@ -46,7 +46,7 @@ export function ReEngagementCard({
     >
       <div className="flex flex-col items-center text-center space-y-3">
         <div className="w-12 h-12 rounded-2xl bg-brand-500/10 text-brand-strong flex items-center justify-center">
-          <Icon name="hand-wave" size={24} />
+          <Icon name="hand-wave" size="xl" />
         </div>
         <div className="space-y-1">
           <h3 className="text-style-title text-text">Давно не бачились!</h3>
@@ -56,9 +56,9 @@ export function ReEngagementCard({
           </p>
         </div>
         <div className="flex items-center gap-2">
-          <Button variant="primary" size="sm" onClick={handleContinue}>
+          <Button variant="solid" size="sm" onClick={handleContinue}>
             Продовжити
-            <Icon name="chevron-right" size={14} />
+            <Icon name="chevron-right" size="sm" />
           </Button>
           <Button type="button" variant="ghost" size="sm" onClick={onDismiss}>
             Пізніше

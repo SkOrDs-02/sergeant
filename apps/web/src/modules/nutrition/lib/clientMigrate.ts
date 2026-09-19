@@ -15,7 +15,7 @@ import {
  * Run the Nutrition SQLite client migrations. Idempotent via the
  * runner's `__nutrition_migrations` ledger contract.
  *
- * Stage 4 PR #031 of `docs/planning/storage-roadmap.md` — schema-only.
+ * Stage 4 PR #031 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — schema-only.
  * The seam this exports is wired into the write paths by PR #032
  * (dual-write); PR #031 itself only ships the runner so PR #032 has
  * the same shape as the fizruk dual-write entry-point.

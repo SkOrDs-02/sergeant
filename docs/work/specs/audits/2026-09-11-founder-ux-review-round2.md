@@ -1476,7 +1476,7 @@ Unsplash — лише як **майбутній opt-in picker** з атрибу�
 
 Не з твого списку, але це прямий наслідок роботи Codex і знайшлось під час звірки.
 
-Рефакторинг документації ([PR #1081](https://github.com/SkOrDs-02/sergeant/pull/1081), `codex/documentation-refactor`) перейменував теки: `docs/01-product/` → `docs/product/`, `docs/02-engineering/` → `docs/engineering/` і так далі. Самі доки переїхали, а **посилання на них у коді — ні**:
+Рефакторинг документації ([PR #1081](https://github.com/SkOrDs-02/sergeant/pull/1081), `codex/documentation-refactor`) перейменував теки: `docs/01-product` → `docs/product`, `docs/02-engineering` → `docs/engineering` і так далі. Самі доки переїхали, а **посилання на них у коді — ні**:
 
 ```
 $ grep -rn "docs/0[1-9]-" apps/ packages/ .agents/ | wc -l
@@ -1487,17 +1487,17 @@ $ ls -d docs/01-product
 ls: cannot access 'docs/01-product': No such file or directory
 ```
 
-Серед них є і звичайні згадки в JSDoc (`Реєстр: docs/02-engineering/architecture/metric-registry.md` — `modules/finyk/lib/lsStats.ts:151`), і **справжні markdown-лінки з відносними шляхами**, які ведуть у нікуди:
+Серед них є і звичайні згадки в JSDoc (`Реєстр: docs/engineering/architecture/metric-registry.md` — `modules/finyk/lib/lsStats.ts:151`), і **справжні markdown-лінки з відносними шляхами**, які ведуть у нікуди:
 
-- `modules/finyk/pages/transactions/exportTransactionsCsv.ts:33` → `../../../../../../docs/01-product/model/finyk.md`
-- `modules/fizruk/components/workouts/LogPastWorkoutSheet.tsx:32` → `../../../../../../docs/01-product/model/fizruk.md`
+- `modules/finyk/pages/transactions/exportTransactionsCsv.ts:33` → `../../../../../../docs/product/modules/finyk.md`
+- `modules/fizruk/components/workouts/LogPastWorkoutSheet.tsx:32` → `../../../../../../docs/product/modules/fizruk.md`
 - `apps/web/src/modules/{finyk,routine}/CLAUDE.md:6` — канон модуля за старим шляхом, тобто **агент, що заходить у subtree, отримує биту вказівку на продуктовий канон**
 
 Останнє найгірше: `CLAUDE.md` у підтеках — це те, що читає наступний агент при вході в модуль. Він іде за посиланням, не знаходить канону і працює без продуктового контексту.
 
 **Чому лінт цього не спіймав:** markdown-link-checker (`docs-automation.yml`) перевіряє посилання **всередині `.md`**, а тут вони живуть у `.ts`/`.tsx`-коментарях; для CLAUDE.md шлях записаний як текст у backticks, не як markdown-лінк.
 
-**Рішення:** механічна заміна (`docs/01-product/` → `docs/product/` тощо) плюс перевірка, що кожен шлях існує. Це один скрипт і один PR; варто додати гейт, який валідує `docs/...`-шляхи в коментарях коду, інакше наступний переїзд доків повторить це рівно так само.
+**Рішення:** механічна заміна (`docs/01-product` → `docs/product` тощо) плюс перевірка, що кожен шлях існує. Це один скрипт і один PR; варто додати гейт, який валідує `docs/...`-шляхи в коментарях коду, інакше наступний переїзд доків повторить це рівно так само.
 
 ---
 
@@ -1707,7 +1707,7 @@ ls: cannot access 'docs/01-product': No such file or directory
 3. Для кожної хвилі — module-owner скіл + surface-скіл, і продуктовий канон із журналом рішень. Для цілей їжі продовжувати наявні спеки `nutrition-goal-journal-cutover.md` і `nutrition-adaptive-goal.md`, не створювати паралельних.
 4. **Не змішувати** в одному PR: runtime-фікси запису їжі, глобальну зміну темних токенів і нові нутрієнти. Контрактні зміни рухають server serializer, `api-client` і contract-тест разом.
 5. Перед закриттям кожного дефекту **повторити оригінальний сценарій**. Для пікера, FAB і навбару потрібен мобільний браузер; для голосу — реальний аудіо-шлях. Зміна коду і зелений unit-тест не доводять усунення симптома — саме на цьому спіткнувся попередній прохід (N2 заявлено стабілізованим, цикл живий).
-6. Побічні знахідки, не з початкового списку, варті окремих дрібних задач: стейл-посилання `docs/02-engineering/...` у `resolveVoiceProvider.ts`, розбіжність §12 канону їжі («цілі статичні») з журналом рішень того ж файлу, коментарі-лічильники в каталозі можливостей, док-коментар про «3-button row» в `AssetsBars.tsx`, мертвий `actionLabel` у `MODULE_EMPTY_CONFIG.finyk`, `.animate-confetti-fall` без споживачів, а також `scripts/docs/generate-open-work.mjs`, який читав будь-який `#NNNN` як номер PR.
+6. Побічні знахідки, не з початкового списку, варті окремих дрібних задач: стейл-посилання `docs/engineering/...` у `resolveVoiceProvider.ts`, розбіжність §12 канону їжі («цілі статичні») з журналом рішень того ж файлу, коментарі-лічильники в каталозі можливостей, док-коментар про «3-button row» в `AssetsBars.tsx`, мертвий `actionLabel` у `MODULE_EMPTY_CONFIG.finyk`, `.animate-confetti-fall` без споживачів, а також `scripts/docs/generate-open-work.mjs`, який читав будь-який `#NNNN` як номер PR.
 
 ### Покриття списку
 

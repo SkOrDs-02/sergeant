@@ -4,6 +4,7 @@ import { renderHook } from "@testing-library/react";
 import { createRef } from "react";
 import {
   useDialogFocusTrap,
+  useModalDialogOpen,
   __resetDialogInertForTests,
 } from "./useDialogFocusTrap";
 
@@ -534,5 +535,52 @@ describe("useDialogFocusTrap — стос діалогів", () => {
     // Пастка нижнього діалогу мусить мовчати: фокус поза її панеллю —
     // це нормальний стан, коли зверху відкритий інший діалог.
     expect(stolen).not.toHaveBeenCalled();
+  });
+});
+
+describe("useModalDialogOpen — присутність модального діалогу", () => {
+  afterEach(() => {
+    __resetDialogInertForTests();
+    document.body.innerHTML = "";
+  });
+
+  function mountFixedPanel(): {
+    ref: ReturnType<typeof createRef<HTMLDivElement>>;
+  } {
+    const overlay = document.createElement("div");
+    overlay.className = "fixed";
+    const panel = document.createElement("div");
+    const inner = document.createElement("button");
+    inner.textContent = "Inside";
+    panel.appendChild(inner);
+    overlay.appendChild(panel);
+    document.body.appendChild(overlay);
+    const ref = createRef<HTMLDivElement>();
+    Object.defineProperty(ref, "current", { value: panel, writable: true });
+    return { ref };
+  }
+
+  it("true лише поки відкритий діалог із inertBackground", () => {
+    const presence = renderHook(() => useModalDialogOpen());
+    expect(presence.result.current).toBe(false);
+
+    const { ref } = mountFixedPanel();
+    const trap = renderHook(
+      ({ open }) => useDialogFocusTrap(open, ref, { inertBackground: true }),
+      { initialProps: { open: true } },
+    );
+    expect(presence.result.current).toBe(true);
+
+    trap.rerender({ open: false });
+    expect(presence.result.current).toBe(false);
+    trap.unmount();
+  });
+
+  it("немодальна пастка (без inertBackground) присутності не дає", () => {
+    const presence = renderHook(() => useModalDialogOpen());
+    const { ref } = mountFixedPanel();
+    const trap = renderHook(() => useDialogFocusTrap(true, ref));
+    expect(presence.result.current).toBe(false);
+    trap.unmount();
   });
 });

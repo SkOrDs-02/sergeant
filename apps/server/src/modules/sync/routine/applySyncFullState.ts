@@ -11,7 +11,6 @@ import {
   readBoolField,
   readJsonbField,
   softDeleteById,
-  toNonNegativeInt,
 } from "../applySync-helpers.js";
 
 export async function applyRoutineHabits(
@@ -274,41 +273,6 @@ export async function applyRoutinePrefs(
      ON CONFLICT (user_id) DO UPDATE
        SET data = EXCLUDED.data, updated_at = EXCLUDED.updated_at`,
     [userId, dataJson, clientTs],
-  );
-  return { status: "applied" };
-}
-
-export async function applyRoutinePushups(
-  client: PoolClient,
-  op: SyncV2Op,
-  userId: string,
-  clientTs: Date,
-): Promise<AppliedStatus> {
-  if (op.op === "delete") {
-    return { status: "rejected", reason: "delete_not_supported" };
-  }
-  const row = op.row;
-  const userReject = assertRowUserId(row, userId);
-  if (userReject) return userReject;
-
-  const dateKey = typeof row["date_key"] === "string" ? row["date_key"] : null;
-  if (!dateKey) return { status: "rejected", reason: "missing_date_key" };
-
-  const existing = await queryOne<{ user_id: string; updated_at: Date }>(
-    client,
-    `SELECT user_id, updated_at FROM routine_pushups WHERE user_id = $1 AND date_key = $2`,
-    [userId, dateKey],
-  );
-  const guard = guardUserPkLww(existing, clientTs);
-  if (guard) return guard;
-
-  const reps = toNonNegativeInt(row["reps"]) ?? 0;
-  await client.query(
-    `INSERT INTO routine_pushups (user_id, date_key, reps, updated_at)
-     VALUES ($1, $2, $3, $4)
-     ON CONFLICT (user_id, date_key) DO UPDATE
-       SET reps = EXCLUDED.reps, updated_at = EXCLUDED.updated_at`,
-    [userId, dateKey, reps, clientTs],
   );
   return { status: "applied" };
 }

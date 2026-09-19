@@ -279,7 +279,7 @@ export function createMmkvKVStore(
 
 // ─── createSqliteKVStore ─────────────────────────────────────────────
 //
-// Stage 9 / PR #061 of `docs/planning/storage-roadmap.md`. Backs the
+// Stage 9 / PR #061 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Backs the
 // SQLite swap of the `webKVStore` primitive (and its MMKV mobile
 // counterpart) onto the per-device `kv_store` table introduced in
 // PR #060. Sync read/write contract preserved by holding a warm

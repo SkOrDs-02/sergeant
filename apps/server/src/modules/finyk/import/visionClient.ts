@@ -3,6 +3,7 @@ import {
   extractAnthropicText,
 } from "../../../lib/anthropic.js";
 import { makeAiProviderError } from "../../../obs/errors.js";
+import { als } from "../../../obs/requestContext.js";
 import { kyivDateString } from "../receipts/kyivClock.js";
 import { env } from "../../../env.js";
 import {
@@ -132,6 +133,9 @@ export async function callImportScreenshotVision(
     timeoutMs: 45_000,
     endpoint: "finyk-import-screenshot-analyze",
     allowOpenRouter: receiptVisionViaOpenRouter(),
+    // Ініціатива 0025, Фаза 2 — «id обробки чека» (скрін банкінгу — той самий
+    // vision-клас). Переюзаємо наявний per-request W3C trace id.
+    traceId: als.getStore()?.traceId ?? undefined,
     ...(input.userId ? { userId: input.userId } : {}),
   });
   if (!response || !response.ok) {

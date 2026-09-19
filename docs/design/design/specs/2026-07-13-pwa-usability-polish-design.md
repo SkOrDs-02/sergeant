@@ -2,10 +2,10 @@
 
 # PWA usability polish: перша перемога, довіра до дій та Routine
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-05-06.
-> **Status:** Active
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-05-14.
+> **Status:** Shipped — ~90 % пунктів P0/P1 у коді (звірено 2026-09-16): `FirstActionSheet`, `PdfPreviewModal` замість `window.open`, `/help` у `useChatSend`, «Заповнити профіль / вручну» у `MemoryBankSection`, контекст фідбеку з origin-маршруту (`feedback/pageContext.ts`), clean mode у `DashboardSection`, heatmap today-first, `DateField`, термін «Комора», сканер у модулі. Лишилось: чип «Тільки ти» (`uk.privacy.ts`) досі є — спека просила зняти або перевести в рядок статусу приватності.
 
-> **Статус:** Draft — спостереження з ручного тестування PWA на телефоні; реалізація не почата.
+> **Статус на старті (2026-07-13):** Draft — спостереження з ручного тестування PWA на телефоні; реалізація тоді не була почата.
 > **Дата:** 2026-07-13
 > **Джерело:** сім скриншотів і фідбек засновника під час тестового проходження.
 

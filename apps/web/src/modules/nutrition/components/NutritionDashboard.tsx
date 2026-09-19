@@ -31,7 +31,7 @@ import {
   getDaySummary,
   getMacrosForDateRange,
 } from "../lib/nutritionStorage";
-import { mealTypeKcalForDay } from "../lib/nutritionStats";
+import { mealsByTypeForDay, mealTypeKcalForDay } from "../lib/nutritionStats";
 import { nextMealLabel } from "../lib/nextMealLabel";
 import { WaterTrackerCard } from "./WaterTrackerCard";
 import { WeekKcalCard } from "./WeekKcalCard";
@@ -127,14 +127,22 @@ export function NutritionDashboard({
     () => mealTypeKcalForDay(log, today),
     [log, today],
   );
+  // Кількість записів поруч із калоріями: саме вона вирішує, порожній
+  // сегмент чи ні (див. `MealStripSegment.count`), бо запис без макросів
+  // існує, але дає нуль ккал.
+  const mealsByType = useMemo(
+    () => mealsByTypeForDay(log, today),
+    [log, today],
+  );
   const segments: MealStripSegment[] = useMemo(
     () =>
       MEAL_ORDER.map((type) => ({
         type,
         label: MEAL_META[type].label,
         kcal: kcalByType[type],
+        count: mealsByType[type].length,
       })),
-    [kcalByType],
+    [kcalByType, mealsByType],
   );
   const remainingLabel = useMemo(() => nextMealLabel(kcalByType), [kcalByType]);
 

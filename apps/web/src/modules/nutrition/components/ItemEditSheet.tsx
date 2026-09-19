@@ -204,7 +204,7 @@ export function ItemEditSheet({
         </Button>
         <Button
           type="button"
-          variant="ghost"
+          variant="outline"
           className="h-12 min-h-[44px]"
           onClick={onClose}
         >

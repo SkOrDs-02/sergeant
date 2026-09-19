@@ -181,10 +181,26 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     ]);
   });
 
-  it("reveals the date field via 'Не сьогодні'", () => {
+  // Дата — один дефолт: стрічка днів видима одразу, без кроку «Не сьогодні?».
+  it("показує стрічку днів і фолбек «Інша дата» без додаткового кроку", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
-    fireEvent.click(screen.getByText(/Не сьогодні/));
+    expect(
+      screen.getByRole("radiogroup", { name: "Дата запису" }),
+    ).toBeInTheDocument();
+    expect(screen.getByText("Інша дата")).toBeInTheDocument();
     expect(screen.getByLabelText("Дата")).toBeInTheDocument();
+  });
+
+  it("тримає поле дати в межах аркуша — жодного intrinsic-розпирання", () => {
+    // Той самий клас багів, що й у `LogPastWorkoutSheet`: нативний
+    // `input[type=date]` має власний intrinsic inline-size, і поле ставало
+    // ширшим за екран. Пін на спільний примітив `DateField`, який цей
+    // контракт несе; сирий `<Input type="date">` його НЕ дає.
+    // Рецепт — docs/start/instructions/fix-mobile-horizontal-overflow.md.
+    render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
+    expect(screen.getByLabelText("Дата").className).toContain(
+      "[min-inline-size:0]",
+    );
   });
 
   it("orders categories by frequency for frequent-category stats", () => {
@@ -233,8 +249,12 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
       expect(
         screen.getByRole("button", { name: "Зберегти" }),
       ).toBeInTheDocument();
-      // edited entry has a non-today date → the date field is visible
+      // Дата запису (2026-05-20) лежить поза вікном стрічки, тож фолбек
+      // «Інша дата» розкритий одразу — інакше стрічка стояла б без вибору.
       expect(screen.getByLabelText("Дата")).toBeInTheDocument();
+      expect(screen.getByText("Інша дата").closest("details")).toHaveAttribute(
+        "open",
+      );
     });
 
     it("deletes immediately via onDelete + closes (undo lives in the toast)", async () => {

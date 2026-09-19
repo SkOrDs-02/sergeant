@@ -18,6 +18,9 @@ export const messagesEn: Partial<{
   [K in keyof typeof ukMessages]: MessageGroupShape<(typeof ukMessages)[K]>;
 }> = {
   auth: {
+    /** Apple sign-in button label. */
+    signInWithApple: "Sign in with Apple",
+
     // Generic fallback — used when the specific cause cannot be determined.
     genericFailure: "Sign-in failed. Please try again.",
 
@@ -136,6 +139,7 @@ export const messagesEn: Partial<{
     done: "Done",
     doneLowercase: "done",
     hiddenValuePrefix: "Hidden",
+    streakPrefix: "Streak",
   },
 
   period: {
@@ -212,6 +216,7 @@ export const messagesEn: Partial<{
         "This section crashed, but the rest of the module is working.",
       moduleFailed: "Module error",
       backToModulePicker: "Back to module picker",
+      imageFailed: "Image failed to load",
       copyRequestId: "Copy",
       copyRequestIdAria: "Copy requestId",
     },
@@ -280,6 +285,21 @@ export const messagesEn: Partial<{
       cancel: "Cancel",
     },
     otherTips: "More tips",
+    nowPile: {
+      heading: "Now",
+      empty: "Everything is closed for today, nothing needs your attention.",
+      more: "more",
+      doIt: "Do it",
+      open: "Open",
+      askAiChip: "AI",
+      askAi: "Ask Sergeant about this",
+      askAiLimit: "Daily limit of Sergeant requests reached",
+      dismiss: "Dismiss tip",
+    },
+    closedPile: {
+      heading: "Closed today",
+    },
+    moduleRail: "Modules",
     chatQuickActions: "Quick scenarios",
     valueProgressAria: "Progress toward your goals",
     crossModulePreviewAria: "What Sergeant will show next",
@@ -327,10 +347,6 @@ export const messagesEn: Partial<{
     goalFirstAriaLabel: "Onboarding goals",
 
     presetSaveFailed: "Could not save. Try again.",
-    demoBadgeText: "Demo",
-    demoBadgeExit: "Exit",
-    demoBadgeLabel: "Demo data: tap to exit and create your own profile",
-    demoBadgeTitle: "Demo. Tap to exit and start from a clean slate.",
   },
 
   welcomeModulePicker: {
@@ -341,7 +357,6 @@ export const messagesEn: Partial<{
     cta: "Get started",
     emptyHint: "Select at least one module to continue.",
     lateHint: "You can add more later in settings.",
-    demoCta: "See an example",
     haveAccount: "I already have an account",
     taglines: {
       finyk: "Expenses, budgets and trends",
@@ -589,12 +604,6 @@ export const messagesEn: Partial<{
       title: "AI photo analysis: Premium",
       description:
         "AI estimates calories, protein, carbs and fat from a meal photo. Available on Premium.",
-    },
-    "multi-currency": {
-      name: "Multi-currency assets",
-      title: "Multi-currency: Premium",
-      description:
-        "Hold assets in USD or EUR. I show them separately for now, I don't fold them into your UAH net worth.",
     },
     "analytics-export-pdf": {
       name: "PDF export",

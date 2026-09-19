@@ -59,14 +59,11 @@ export interface OnboardingHeroCopy {
   /** Primary CTA label. Always action-orientated. ≤ 32 chars. */
   primaryCta: string;
   /**
-   * Secondary CTA label (PR-05 — demo mode as first-class). Rendered
-   * directly inside the splash card under the primary CTA so the
-   * "просто подивитись" cohort doesn't have to scan past the wizard
-   * card to reach the demo entry point. Same string for every variant
-   * — copy stays canonical ("Подивитись приклад") so the demo entry
-   * is recognisable across A/B arms and the share-of-traffic SLO
-   * (`DEMO_STARTED { source: "welcome" } / ONBOARDING_STARTED ≥ 15%`)
-   * isn't biased by per-arm copy drift.
+   * Другорядний CTA під основним у splash-картці. До 2026-09-17 ним був
+   * вхід у демо-режим («Подивитись приклад»); режим знято, і поверхні
+   * цей рядок більше не рендерять. Поле лишається в типі, бо його
+   * заповнюють усі варіанти копірайту — прибирати його треба разом із
+   * ревізією A/B-арок, а не мимохідь.
    */
   secondaryCta: string;
 }

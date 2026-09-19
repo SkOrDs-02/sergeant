@@ -232,13 +232,13 @@ describe("POST /api/ai-memory/recall — happy path", () => {
     const res = await request(app)
       .post("/api/ai-memory/recall")
       .set("X-Requested-With", "XMLHttpRequest")
-      .send({ query: "test", sources: ["chat", "fizruk"] });
+      .send({ query: "test", sources: ["digest", "cofounder"] });
     expect(res.status).toBe(200);
     expect(recallMock).toHaveBeenCalledWith({
       userId: "u1",
       query: "test",
       topK: undefined,
-      sources: ["chat", "fizruk"],
+      sources: ["digest", "cofounder"],
       caller: "explicit-recall",
     });
   });

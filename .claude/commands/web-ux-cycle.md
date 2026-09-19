@@ -93,14 +93,11 @@ Capture **evidence** per item: a screenshot and the clean-console confirmation. 
 - **No `--no-verify`, no destructive git, no auto-commit/push/PR.** Per workspace CLAUDE.md hard nopes.
 - **Evidence required.** Each fix needs a live-browser observation (clean console + screenshot / passing flow), not an assertion.
 
-## Demo-mode live-verification recipe (kvvfs reseed)
+## Live-verification recipe (write-flows over SQLite-WASM)
 
-Live-verifying a **demo write-flow** (`?demo=1`) is historically flaky because a hard reload deterministically wipes edits. This recipe is validated (2026-07-11, `mcp__Claude_Browser__*` MCP) and survives the race by **avoiding** it, not by beating it. Any agent-driven browser MCP works (`@playwright/mcp`, chrome-devtools, `mcp__Claude_Browser__*`).
+Live-verifying a **write-flow** is historically flaky, і причина не в таймінгу: записи сесії живуть у **in-memory SQLite-WASM**, а сторінки `kvvfs-local-*` у localStorage флашаться **ліниво й недетерміновано** (унікальний текстовий маркер був відсутній у LS ще за хвилини після запису). Тобто hard reload губить стан, а перевірка по LS бреше. Рецепт валідований 2026-07-11 і виживає, **уникаючи** гонки, а не перемагаючи її. Годиться будь-який агентний браузерний MCP (`@playwright/mcp`, chrome-devtools, `mcp__Claude_Browser__*`).
 
-### Why demo edits vanish (root cause — not a timing bug)
-
-- `?demo=1` seeds the store then **reloads onto `/`**. On every later cold-start `maybeRunOnboarding` sees `DEMO_FLAG_KEY==="1"` with no `?demo` in the URL and calls `reseedDemoData()` — **restore canonical sample over whatever was edited** ([apps/web/src/core/onboarding/index.ts:28-33](../../apps/web/src/core/onboarding/index.ts)). Demo is editable **only within a session, by design.**
-- Within-session edits live in **in-memory SQLite-WASM**; the `kvvfs-local-*` localStorage pages flush **lazily and non-deterministically** (a unique text marker was still absent from LS minutes after write). So a hard reload loses in-memory state, and reseed overwrites LS anyway.
+> До 2026-09-17 тут стояв варіант цього ж рецепту для демо-режиму (`?demo=1`, `reseedDemoData()` на кожному cold-start). Демо-режим знято — [ADR-0095](../../docs/governance/adr/0095-demo-mode-removed.md); механіка нижче від того не залежить.
 
 ### The recipe (do this)
 
@@ -109,15 +106,15 @@ Live-verifying a **demo write-flow** (`?demo=1`) is historically flaky because a
    - `pnpm --filter @sergeant/db-schema build` **before** vite, or `@sergeant/db-schema/sqlite` fails to resolve → kvvfs never boots → **blank page**.
    - `.npmrc` is `node-linker=hoisted`: vite lives in **root** `node_modules/.bin`, and `pnpm --filter @sergeant/web dev` may not put it on PATH ("vite is not recognized"). Run the root bin directly: `cd apps/web && ../../node_modules/.bin/vite --port 5173 --host 127.0.0.1`.
    - After building a workspace package vite depends on, **clear `node_modules/.vite` and restart** — vite caches the failed resolve.
-2. **Seed once, then never hard-reload.** `navigate` to `?demo=1` exactly once. Confirm render (e.g. hub shows `Фінік: 450 ₴`). After that, move **only via in-app SPA navigation** — never `navigate`/reload, which trigger cold-start reseed.
+2. **Navigate once, then never hard-reload.** `navigate` до потрібного маршруту рівно раз, підтверди рендер, далі рухайся **лише in-app SPA-навігацією** — кожен `navigate`/reload це cold-start, який губить in-memory стан (див. вступ секції).
 3. **Navigate by semantic click, not pixels.** Hub module cards are dnd-kit draggables — a coordinate `left_click` or `Enter` is swallowed by the pointer-sensor and does **not** route. Replan to a semantic click: `[...document.querySelectorAll('button')].find(b => /Фінік:/.test(b.getAttribute('aria-label'))).click()` via `javascript_tool`. Plain buttons (e.g. "Додати витрату") take a normal MCP click.
 4. **Number/text inputs need real keystrokes.** Focus the field, then `computer{action:"type"}` — **not** `.fill()`/`form_input` (react-hook-form + zod validation ignore programmatic value sets). Verify `input.value` before submit.
 5. **Assert on in-memory / DOM signals — never on `kvvfs-local-*` localStorage.** Preferred, deterministic: the `window.__hubAnalytics` ring-buffer (e.g. `expense_added {source:"manual"}` fires synchronously in-memory). Second choice: a reactive DOM aggregate via `innerText`/`getComputedStyle`. LS kvvfs pages are a lazily-flushed implementation detail — asserting on them is the #1 source of flake. **Screenshots are unreliable here** (timeout/fail) — use `read_page` / `javascript_tool` instead.
 6. **Replan loop.** When a click or assertion doesn't produce the expected state, re-`read_page`, switch strategy (pixel→semantic, `.fill`→keystrokes, LS→in-memory), and only then retry — do not repeat the identical failing step.
 
-### Verdict on the demo-race
+### Verdict
 
-MCP-replan **does** make demo write-flows reliably verifiable — by staying within one session (SPA-nav) and asserting on in-memory/DOM, not persisted LS. It is strictly better than a fixed `.spec`, which flakes because it `goto`/reloads between steps (cold-start reseed) and asserts on lazily-flushed persisted state. The reseed itself is **unbeatable for hard-reload scenarios** (deliberate `reseedDemoData()` + in-memory SQLite loss) — but that is *out of scope* for within-session verification. **A vision fallback (Skyvern) is not warranted**: DOM reading via `read_page` is already reliable; the obstacle is the persistence model, which vision does not change.
+MCP-replan **does** make write-flows reliably verifiable — by staying within one session (SPA-nav) and asserting on in-memory/DOM, not persisted LS. It is strictly better than a fixed `.spec`, which flakes because it `goto`/reloads between steps and asserts on lazily-flushed persisted state. Hard-reload scenarios are a different problem (in-memory SQLite loss) and are *out of scope* for within-session verification. **A vision fallback (Skyvern) is not warranted**: DOM reading via `read_page` is already reliable; the obstacle is the persistence model, which vision does not change.
 
 ## Output style
 

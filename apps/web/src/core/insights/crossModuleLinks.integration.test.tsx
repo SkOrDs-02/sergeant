@@ -145,7 +145,7 @@ async function seedTestUser(): Promise<SeededDay[]> {
   }));
   __setFinykMonoMirrorCacheForTests({ transactions: txs as never[] });
 
-  // ── Фізрук: тренування (SQLite-кеш) + щоденник (LS) ────────────────────
+  // ── Фізрук: тренування + щоденник (SQLite-кеш) ─────────────────────────
   const { __setFizrukSqliteCacheForTests } =
     await import("../../modules/fizruk/lib/sqliteReader");
   const workouts = plan
@@ -162,17 +162,18 @@ async function seedTestUser(): Promise<SeededDay[]> {
         },
       ],
     }));
-  __setFizrukSqliteCacheForTests({ workouts: workouts as never[] });
-  localStorage.setItem(
-    "fizruk_daily_log_v1",
-    JSON.stringify(
-      plan.map((d) => ({
-        at: `${d.key}T20:00:00.000Z`,
-        weightKg: d.weight,
-        moodScore: d.wellbeing,
-      })),
-    ),
-  );
+  // Щоденник теж живе в SQLite-кеші: LS-ключ `fizruk_daily_log_v1`
+  // tombstoned із DCRUD-007, і `readFizrukDailyLog` його більше не читає.
+  const dailyLog = plan.map((d, i) => ({
+    id: `dl-${i}`,
+    at: `${d.key}T20:00:00.000Z`,
+    weightKg: d.weight,
+    moodScore: d.wellbeing,
+  }));
+  __setFizrukSqliteCacheForTests({
+    workouts: workouts as never[],
+    dailyLog: dailyLog as never[],
+  });
 
   // ── Їжа: лог прийомів + вода (SQLite-кеш) ──────────────────────────────
   const { __setNutritionSqliteCacheForTests } =

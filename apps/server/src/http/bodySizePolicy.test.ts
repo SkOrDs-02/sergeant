@@ -127,6 +127,33 @@ describe("applyBodySizePolicy — payload acceptance", () => {
     expect(res.status).toBe(413);
   });
 
+  /**
+   * Регресія: два тести вище ганяють `/api/sync/push` — шлях, на якому вже
+   * НЕМАЄ живого роуту (v1-push знято, під `/api/sync` лишився тільки
+   * `/api/sync/audit`). Тобто ліміт перевірявся на мертвому префіксі, а
+   * єдиний живий push — `/api/v2/sync/push` — не перевіряв ніхто і жив під
+   * дефолтними 128kb. Ці два тести закривають саме живий шлях.
+   */
+  it("/api/v2/sync (ЖИВИЙ push) приймає 300KB — понад дефолтні 128KB", async () => {
+    const app = makeApp();
+    const big = buildJsonPayload(300 * 1024);
+    const res = await request(app)
+      .post("/api/v2/sync/push")
+      .set("Content-Type", "application/json")
+      .send(big);
+    expect(res.status).toBe(200);
+  });
+
+  it("/api/v2/sync приймає 5.5MB (під лімітом 6MB)", async () => {
+    const app = makeApp();
+    const big = buildJsonPayload(5.5 * 1024 * 1024);
+    const res = await request(app)
+      .post("/api/v2/sync/push")
+      .set("Content-Type", "application/json")
+      .send(big);
+    expect(res.status).toBe(200);
+  });
+
   it("/api/chat приймає до ~900KB (під лімітом 1MB)", async () => {
     const app = makeApp();
     const big = buildJsonPayload(900 * 1024);

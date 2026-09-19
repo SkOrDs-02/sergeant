@@ -5,12 +5,31 @@ import { seedFTUX } from "../utils/seedFTUX";
 
 const AXE_TAGS = ["wcag2a", "wcag2aa", "wcag21a", "wcag21aa", "best-practice"];
 
+// Дірки, які закрив масовий браузерний свіп 2026-09-16. До нього цей лейн
+// плюс `axe.spec.ts` не бачили жодної з поверхонь нижче, і саме там сиділи
+// три дефекти: `/status` білів екраном, `/fizruk/programs` мав контраст
+// 1.83:1, `/finyk` і `/fizruk/measurements` не мали `<h1>` взагалі.
+//
+// Кожен доданий маршрут заміряний свіпом як чистий ПІСЛЯ фіксів — лейн
+// розширено на доведено зелених, а не навмання.
+//
+// Увага: `axe.spec.ts` має кейс з іменем `finyk-transactions`, але його
+// шлях — `/finyk` (це Огляд). Справжні Транзакції доти не покривались.
 const ROUTES: ReadonlyArray<{ name: string; path: string }> = [
   { name: "assistant-catalogue", path: "/assistant" },
   { name: "finyk-budgets", path: "/finyk/budgets" },
   { name: "finyk-assets", path: "/finyk/assets" },
   { name: "fizruk-workouts", path: "/fizruk/workouts" },
   { name: "routine-stats", path: "/routine/stats" },
+  { name: "status-public", path: "/status" },
+  { name: "finyk-transactions-page", path: "/finyk/transactions" },
+  { name: "finyk-analytics", path: "/finyk/analytics" },
+  { name: "fizruk-programs", path: "/fizruk/programs" },
+  { name: "fizruk-measurements", path: "/fizruk/measurements" },
+  { name: "fizruk-atlas", path: "/fizruk/atlas" },
+  { name: "nutrition-pantry", path: "/nutrition/pantry" },
+  { name: "nutrition-log", path: "/nutrition/log" },
+  { name: "routine-habits", path: "/routine/habits" },
 ];
 
 async function waitForAppShell(page: import("@playwright/test").Page) {

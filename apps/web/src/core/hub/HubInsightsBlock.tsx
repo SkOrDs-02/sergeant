@@ -68,6 +68,12 @@ export interface HubInsightsBlockProps {
   digestExpanded: boolean;
   setDigestExpanded: (v: boolean) => void;
   showDigestFooter: boolean;
+  /**
+   * Вісь дії (спека `hub-action-axis.md`): інсайти модулів і решта
+   * рекомендацій уже живуть у купі «Зараз», тож блок лишає собі лише
+   * пораду коуча, nudge і звіт тижня — і називається відповідно.
+   */
+  axis?: boolean | undefined;
 }
 
 export function HubInsightsBlock({
@@ -90,6 +96,7 @@ export function HubInsightsBlock({
   digestExpanded,
   setDigestExpanded,
   showDigestFooter,
+  axis = false,
 }: HubInsightsBlockProps) {
   const navigate = useNavigate();
   const moduleInsights = useAllInsights({ surface: "hub", cap: 3 });
@@ -124,7 +131,7 @@ export function HubInsightsBlock({
       storageKey={HUB_INSIGHTS_OPEN_STORAGE_KEY}
       defaultOpen={insightsDefaultOpen}
       onOpenChange={onInsightsOpenChange}
-      title="Що зараз важливо"
+      title={axis ? "Порада й звіт тижня" : "Що зараз важливо"}
       collapsedIcon="sergeant"
       collapsedSubtitle={
         coachLoading
@@ -133,10 +140,13 @@ export function HubInsightsBlock({
             ? // AI-порада недоступна (anon/quota/мережа). Не лякаємо
               // «збоєм» — показуємо реальні інсайти, якщо є, інакше
               // спокійний нейтральний підпис.
-              (rest[0]?.title ?? "Порада Сержанта зараз недоступна")
+              ((axis ? undefined : rest[0]?.title) ??
+              "Порада Сержанта зараз недоступна")
             : // Show first actionable insight title verbatim so the collapsed
-              // pill carries real value instead of a generic count.
-              (rest[0]?.title ??
+              // pill carries real value instead of a generic count. Під
+              // віссю рекомендації живуть у «Зараз», тож підпис — про те,
+              // що всередині.
+              ((axis ? undefined : rest[0]?.title) ??
               (digestFresh
                 ? "Порада Сержанта + свіжий дайджест"
                 : activeNudge && !reengagementShow
@@ -144,7 +154,7 @@ export function HubInsightsBlock({
                   : "Порада Сержанта на день"))
       }
     >
-      {moduleInsights.length > 0 && (
+      {!axis && moduleInsights.length > 0 && (
         <div className="space-y-1.5">
           {moduleInsights.map((insight) => (
             <InsightCard
@@ -178,11 +188,13 @@ export function HubInsightsBlock({
           onDismiss={dismissNudge}
         />
       )}
-      <HubInsightsPanel
-        items={rest as Rec[]}
-        onOpenModule={openInsightTarget}
-        onDismiss={dismiss}
-      />
+      {!axis && (
+        <HubInsightsPanel
+          items={rest as Rec[]}
+          onOpenModule={openInsightTarget}
+          onDismiss={dismiss}
+        />
+      )}
       {digestExpanded ? (
         <WeeklyDigestCard
           onCollapse={() => setDigestExpanded(false)}

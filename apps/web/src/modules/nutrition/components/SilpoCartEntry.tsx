@@ -36,9 +36,10 @@ export function SilpoCartEntry({ shoppingList }: SilpoCartEntryProps) {
     <>
       <Button
         type="button"
-        variant="secondary"
+        variant="soft"
+        tone="nutrition"
         size="sm"
-        module="nutrition"
+
         className="min-h-[44px]"
         onClick={() => setOpen(true)}
       >

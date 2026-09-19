@@ -64,6 +64,23 @@ describe("HabitHeatmap", () => {
     expect(getByText("1 з 1 запланованих виконано")).toBeInTheDocument();
   });
 
+  it("показує ключ колірної шкали ОДНОЧАСНО з деталями дня, а не замість них", () => {
+    // Регресія WF-10 (аудит 2026-09-16): легенда стояла else-гілкою поряд із
+    // деталями клітинки, а `detailCell` = `selectedCell ?? todayCell` ніколи
+    // не буває null — сітка завжди містить сьогодні. Тобто else не
+    // виконувався жодного разу, і пʼять рівнів заповнення лишались без
+    // пояснення. Якщо легенду знову зроблять умовною, цей тест упаде.
+    const { getByRole, getByText } = render(
+      <HabitHeatmap habits={habits} completions={completions} />,
+    );
+    const legend = getByRole("group", { name: "Легенда заповнення" });
+    expect(legend).toBeInTheDocument();
+    expect(legend).toHaveTextContent("менше");
+    expect(legend).toHaveTextContent("більше");
+    // Деталі сьогоднішнього дня нікуди не зникли.
+    expect(getByText("1 з 1 запланованих виконано")).toBeInTheDocument();
+  });
+
   it("keeps real historical dates a year back on the oldest cells (does not rewrite history)", () => {
     const { container } = render(
       <HabitHeatmap habits={habits} completions={completions} />,

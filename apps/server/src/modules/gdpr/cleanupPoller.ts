@@ -35,7 +35,9 @@
 
 import type { Pool } from "pg";
 import { env } from "../../env/env.js";
-import { logger } from "../../obs/logger.js";
+import { logger, serializeError } from "../../obs/logger.js";
+import { waitUntilIdle } from "../../lib/pollerDrain.js";
+import { toPublicErrorCode } from "../../obs/errorCode.js";
 import { gdprCleanupQueueDepth } from "../../obs/metrics.js";
 import {
   processGdprCleanupQueueBatch,
@@ -118,10 +120,20 @@ export class GdprCleanupPoller {
       clearInterval(this.timer);
       this.timer = null;
     }
-    while (this.running) {
-      await new Promise((r) => setTimeout(r, 20));
-    }
+    // Стеля замість безкінечного busy-wait-у: tick ходить у Postgres (а в
+    // частині полерів — і в зовнішній API), тож «чекати, поки завершиться»
+    // без межі означало б, що зависла залежність тримає весь shutdown.
+    // Після спливу лишаємо tick дограти у фоні — він ідемпотентний, а пул
+    // йому вже може й не відповісти; це кращий зі станів, ніж SIGKILL
+    // посеред graceful-шляху.
+    const drain = await waitUntilIdle(() => this.running);
     this.stopping = false;
+    if (!drain.idle) {
+      logger.warn({
+        msg: "gdpr_cleanup_poller_stop_timeout",
+        waitedMs: drain.waitedMs,
+      });
+    }
     logger.info({ msg: "gdpr_cleanup_poller_stopped" });
   }
 
@@ -187,8 +199,13 @@ async function sampleGdprCleanupQueueDepth(
 /**
  * Snapshot стану `gdpr_cleanup_queue` для `/health/workers` — та сама роль,
  * що `getMonoEnrichmentWorkerStatus` (`modules/mono/enrichmentWorker.ts`).
- * Один дешевий SQL; на фейлі — `queueDepth: null` + `error`, без throw
+ * Один дешевий SQL; на фейлі — `queueDepth: null` + `errorCode`, без throw
  * (health-endpoint має лишатись reachable у DB-incident).
+ *
+ * Чому код, а не текст помилки: `/health/workers` змонтований без auth і без
+ * rate-limit, а `pg` кладе у `message` імʼя DB-користувача
+ * (`password authentication failed for user "sergeant_app"`) та внутрішній
+ * хост. Повний текст лишається в `logger.error` — див. `obs/errorCode.ts`.
  */
 export interface GdprCleanupWorkerStatus {
   enabled: boolean;
@@ -202,7 +219,8 @@ export interface GdprCleanupWorkerStatus {
     completed: number;
     total: number;
   } | null;
-  error?: string;
+  /** Клас помилки для публічної відповіді; повний текст — лише в логу. */
+  errorCode?: string;
 }
 
 export async function getGdprCleanupWorkerStatus(
@@ -238,12 +256,16 @@ export async function getGdprCleanupWorkerStatus(
       },
     };
   } catch (err) {
+    logger.error({
+      msg: "gdpr_cleanup_queue_depth_failed",
+      err: serializeError(err),
+    });
     return {
       enabled,
       intervalMs,
       lastRunAt: lastRunAtIso,
       queueDepth: null,
-      error: err instanceof Error ? err.message : String(err),
+      errorCode: toPublicErrorCode(err),
     };
   }
 }

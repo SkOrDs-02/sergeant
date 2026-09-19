@@ -19,6 +19,7 @@ vi.mock("@shared/api", () => ({
 }));
 
 import { TrialBanner } from "./TrialBanner";
+import { resetFlags, setFlag } from "../lib/featureFlags";
 
 function LocationProbe({ onChange }: { onChange: (path: string) => void }) {
   const location = useLocation();
@@ -77,10 +78,28 @@ function trialingResponse(daysFromNow: number): BillingStatusResponse {
 describe("TrialBanner (audit P1-9)", () => {
   beforeEach(() => {
     statusMock.mockReset();
+    // Решта кейсів описує поведінку УВІМКНЕНОГО банера; дефолт прапорця —
+    // false (рішення D3), і це перевіряє окремий кейс нижче.
+    setFlag("billing_trial_banner", true);
   });
   afterEach(() => {
     cleanup();
+    resetFlags();
     vi.restoreAllMocks();
+  });
+
+  it("renders nothing and never asks billing status while billing_trial_banner is off (D3 default)", async () => {
+    resetFlags();
+    statusMock.mockResolvedValue(trialingResponse(3));
+    const { container, findByText } = render(
+      <Wrapper>
+        <TrialBanner now={fixedNow} />
+        <p>placeholder</p>
+      </Wrapper>,
+    );
+    await findByText("placeholder");
+    expect(container.querySelector('[role="status"]')).toBeNull();
+    expect(statusMock).not.toHaveBeenCalled();
   });
 
   it("renders nothing while the billing status query is in flight", () => {

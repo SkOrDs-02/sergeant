@@ -95,6 +95,37 @@ describe("WorkoutSummaryView", () => {
     expect(screen.getByText("40×8, 45×6")).toBeInTheDocument();
   });
 
+  // RPE is optional end-to-end (`WorkoutSetRpeMenu`) — a set without it
+  // must read as a plain "80×8", never "RPE 0" or any other synthesized
+  // value (canon `fizruk.md` §3: "опц. `rpe` (Borg 1..10)").
+  it("shows RPE next to a set only when it was recorded, omitting it otherwise", () => {
+    const workout = makeWorkout({
+      items: [
+        {
+          id: "i1",
+          exerciseId: "bench",
+          nameUk: "Жим лежачи",
+          primaryGroup: "chest",
+          musclesPrimary: [],
+          musclesSecondary: [],
+          type: "strength",
+          sets: [
+            { weightKg: 80, reps: 8, rpe: 7 },
+            { weightKg: 80, reps: 6 },
+          ],
+        },
+      ],
+    });
+    render(
+      <WorkoutSummaryView
+        workout={workout}
+        onRepeat={vi.fn()}
+        onClose={vi.fn()}
+      />,
+    );
+    expect(screen.getByText("80×8 · RPE 7, 80×6")).toBeInTheDocument();
+  });
+
   it("shows the wellbeing row only when energy or mood was recorded", () => {
     const { rerender } = render(
       <WorkoutSummaryView

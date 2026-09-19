@@ -62,7 +62,7 @@ export function SmartSuggestDemo() {
                     type="button"
                     className="w-full h-11 rounded-xl border border-accent/40 bg-accent/10 flex items-center gap-2 px-3"
                   >
-                    <Icon name={s.icon} size={16} className="text-accent" />
+                    <Icon name={s.icon} size="md" className="text-accent" />
                     <span className="text-style-caption text-text">
                       {s.label}
                     </span>

@@ -211,7 +211,7 @@ export function WorkoutFinishSheets({
             </div>
             <div className="flex gap-2">
               <Button
-                variant="secondary"
+                variant="outline"
                 className="flex-1 h-12 min-h-[44px]"
                 type="button"
                 onClick={() =>
@@ -221,7 +221,9 @@ export function WorkoutFinishSheets({
                 Пропустити
               </Button>
               <Button
-                module="fizruk"
+                variant="solid"
+                tone="fizruk"
+
                 className="flex-1 h-12 min-h-[44px]"
                 type="button"
                 onClick={() => {
@@ -380,7 +382,7 @@ export function WorkoutFinishSheets({
             */}
             <div className="sticky -bottom-4 -mx-4 -mb-4 px-4 pt-3 pb-4 bg-panel border-t border-line flex gap-2">
               <Button
-                variant="secondary"
+                variant="outline"
                 className="flex-1 h-12"
                 disabled={savingInjuries}
                 onClick={() =>
@@ -392,7 +394,9 @@ export function WorkoutFinishSheets({
                 {injuryCopy.skip}
               </Button>
               <Button
-                module="fizruk"
+                variant="solid"
+                tone="fizruk"
+
                 className="flex-1 h-12"
                 disabled={
                   savingInjuries || finishFlash.injurySites.length === 0
@@ -456,7 +460,7 @@ export function WorkoutFinishSheets({
                 </div>
                 <button
                   type="button"
-                  // `text-lg` прибрано: єдиний вміст кнопки — `<Icon size={16}>`,
+                  // `text-lg` прибрано: єдиний вміст кнопки — `<Icon size="md">`,
                   // тобто SVG із власним розміром, на який шкала шрифта не
                   // впливає. Клас нічого не робив, лише тягнув за собою
                   // попередження про сиру шкалу.
@@ -464,7 +468,7 @@ export function WorkoutFinishSheets({
                   aria-label="Закрити"
                   onClick={closeFinish}
                 >
-                  <Icon name="close" size={16} aria-hidden />
+                  <Icon name="close" size="md" aria-hidden />
                 </button>
               </div>
               <div className="grid grid-cols-3 gap-2 mt-3">
@@ -538,7 +542,7 @@ export function WorkoutFinishSheets({
               )}
               <div className="flex gap-2">
                 <Button
-                  variant="secondary"
+                  variant="outline"
                   className="flex-1 h-12 min-h-[44px] rounded-full"
                   type="button"
                   onClick={() =>

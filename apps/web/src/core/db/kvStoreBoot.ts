@@ -1,7 +1,7 @@
 /**
  * Bootstrap wiring for the SQLite-backed `kv_store` warm-cache.
  *
- * Stage 9 / PR #062 of `docs/planning/storage-roadmap.md`. PR #060
+ * Stage 9 / PR #062 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. PR #060
  * landed the per-device `kv_store` SQLite table + bundled migration;
  * PR #061 landed the platform-agnostic `createSqliteKVStore` factory
  * with the warm-cache adapter pattern. This module is the web-side

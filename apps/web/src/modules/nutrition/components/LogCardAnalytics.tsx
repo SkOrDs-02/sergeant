@@ -99,7 +99,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
         <EmptyState
           compact
           module="nutrition"
-          icon={<Icon name="trending-up" size={20} />}
+          icon={<Icon name="trending-up" size="lg" />}
           title="Ще немає трендів"
           description="Залогуй кілька прийомів їжі, і тут зʼявляться середні калорії, макро та графік за днями."
         />
@@ -237,7 +237,7 @@ export function LogCardAnalytics({ log, selectedDate }: LogCardAnalyticsProps) {
                           {MEAL_META[t] && (
                             <Icon
                               name={MEAL_META[t].iconName as IconName}
-                              size={14}
+                              size="sm"
                               className="text-muted"
                               aria-hidden
                             />

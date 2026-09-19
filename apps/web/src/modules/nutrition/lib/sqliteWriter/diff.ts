@@ -3,7 +3,7 @@
  * the list of operations the dual-write layer must mirror to local
  * SQLite.
  *
- * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. The
+ * Stage 4 PR #032 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. The
  * orchestrator in `./index.ts` calls this on every successful
  * localStorage write. Stage 8 PR #056n dropped the
  * `feature.nutrition.sqlite_v2.dual_write` gate — the SQLite mirror is
@@ -35,7 +35,7 @@
  *
  *   5. **Water log** — `Record<dateKey, volume_ml>` persisted under
  *      `WATER_LOG_KEY`. One row per (user, dateKey) in
- *      `nutrition_water_log`; mirrors the `fizruk_pushups` shape.
+ *      `nutrition_water_log`; a per-(user, date) integer counter.
  *      Stage 11 / PR #070n-dualwrite.
  *
  *   6. **Shopping list** — singleton `ShoppingList` blob persisted under
@@ -182,7 +182,8 @@ export interface RecipeDeleteOp {
 
 /**
  * Stage 11 / PR #070n-dualwrite — water-log per-(user, dateKey) row.
- * Mirrors `fizruk_pushups`: a row stores a single integer counter
+ * A row stores a single integer counter (the shape the retired pushup
+ * counter used to have)
  * keyed by date. There is no soft-delete — `volume_ml = 0` is a valid
  * "reset for that day" state and the diff still emits the op so
  * cross-device LWW resolution converges.

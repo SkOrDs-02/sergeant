@@ -36,7 +36,13 @@
 
 import type { Pool } from "pg";
 
-import { habitSkipKey, type Habit } from "@sergeant/routine-domain";
+import {
+  habitSkipKey,
+  isFlexibleHabit,
+  weekEndKeyForDateKey,
+  weekStartKeyForDateKey,
+  type Habit,
+} from "@sergeant/routine-domain";
 
 import { logger, serializeError } from "../../obs/logger.js";
 import { sendToUserQuietly } from "../../push/send.js";
@@ -53,6 +59,23 @@ import { kyivDayKey, kyivDayKeyMinusDays, kyivHm } from "./time.js";
 
 /** Скільки діб тримаємо журнал відправок. */
 const LOG_RETENTION_DAYS = 45;
+
+/**
+ * Скільки користувачів обслуговуємо одночасно у fan-out-і.
+ *
+ * Це стеля НЕ на кількість HTTP-запитів, а на кількість користувачів: кожен
+ * `sendToUserQuietly` всередині сам віялом б'є по всіх пристроях цієї
+ * людини. Тобто реальна паралельність — приблизно
+ * `SEND_CONCURRENCY × (пристроїв на людину)`, і 10 тут дає десятки сокетів,
+ * а не сотні.
+ *
+ * Чому не більше: слот нагадувань має вкластись у хвилину до наступного
+ * проходу, і при таймауті FCM 10 с (`PUSH_FCM_TIMEOUT_MS`) один чанк у
+ * найгіршому разі коштує ~10 с — тобто за хвилину проходить ~60
+ * користувачів навіть при повністю мертвому апстрімі. Піднімати це число
+ * варто разом із заміром пам'яті на VPS, а не «про запас».
+ */
+const SEND_CONCURRENCY = 10;
 
 export interface ReminderSweepResult {
   dayKey: string;
@@ -224,6 +247,55 @@ async function loadSkipped(
   return out;
 }
 
+/**
+ * Відмітки гнучких звичок (`recurrence: "flexible"`) усередині тижня
+ * `[fromKey, toKey]` — вхід для `weekDoneCountExcludingDate`
+ * (`routineDueNow`).
+ *
+ * Один запит на весь sweep, не по одній звичці: набір користувачів і
+ * гнучких звичок цієї хвилини вже відомий з `loadRoutineCandidates`, тож
+ * усі відмітки тижня тягнемо разом, як і `loadCompleted`/`loadSkipped`
+ * поруч. `habitIds` тут — лише гнучкі звички (клас А спеки
+ * `routine-flexible-weekly-frequency.md`); для решти розкладів
+ * `weekDoneCount` не читається взагалі, тож запитувати їхні відмітки
+ * немає сенсу.
+ */
+async function loadWeekCompletions(
+  pool: Pool,
+  userIds: string[],
+  habitIds: string[],
+  fromKey: string,
+  toKey: string,
+): Promise<Map<string, Map<string, string[]>>> {
+  const out = new Map<string, Map<string, string[]>>();
+  if (userIds.length === 0 || habitIds.length === 0) return out;
+  const { rows } = await pool.query<{
+    user_id: string;
+    habit_id: string;
+    date_key: string;
+    state: string;
+  }>(
+    `SELECT DISTINCT ON (user_id, habit_id, date_key)
+            user_id, habit_id, date_key, state
+       FROM routine_completion_events
+      WHERE user_id = ANY($1) AND habit_id = ANY($2)
+        AND date_key >= $3 AND date_key <= $4
+      ORDER BY user_id, habit_id, date_key, occurred_at DESC`,
+    [userIds, habitIds, fromKey, toKey],
+  );
+  for (const row of rows) {
+    // Той самий фолд, що й `loadCompleted`: рахує лише останню подію дня,
+    // і `undone` виключає день з відміток, а не залишає стару 'done'.
+    if (row.state === "undone") continue;
+    let byHabit = out.get(row.user_id);
+    if (!byHabit) out.set(row.user_id, (byHabit = new Map()));
+    const list = byHabit.get(row.habit_id);
+    if (list) list.push(row.date_key);
+    else byHabit.set(row.habit_id, [row.date_key]);
+  }
+  return out;
+}
+
 /** Плани Фізрука з увімкненим нагадуванням і тренуванням на сьогодні. */
 async function loadFizrukCandidates(
   pool: Pool,
@@ -330,10 +402,28 @@ export async function runReminderSweep(
 
   const routineUserIds = [...new Set(routineRows.map((r) => r.userId))];
   const routineHabitIds = [...new Set(routineRows.map((r) => r.habit.id))];
-  const [completedByUser, skippedByUser] = await Promise.all([
-    loadCompleted(pool, routineUserIds, dayKey),
-    loadSkipped(pool, routineUserIds, routineHabitIds, dayKey),
-  ]);
+  // Лише гнучкі звички читають `weekDoneCount` (`routineDueNow`) — решта
+  // розкладів предикат не питає, тож звужуємо запит тижневих відміток до
+  // них одразу тут, а не всередині `loadWeekCompletions`.
+  const routineFlexibleHabitIds = [
+    ...new Set(
+      routineRows
+        .filter((r) => isFlexibleHabit(r.habit))
+        .map((r) => r.habit.id),
+    ),
+  ];
+  const [completedByUser, skippedByUser, weekCompletionsByUser] =
+    await Promise.all([
+      loadCompleted(pool, routineUserIds, dayKey),
+      loadSkipped(pool, routineUserIds, routineHabitIds, dayKey),
+      loadWeekCompletions(
+        pool,
+        routineUserIds,
+        routineFlexibleHabitIds,
+        weekStartKeyForDateKey(dayKey),
+        weekEndKeyForDateKey(dayKey),
+      ),
+    ]);
 
   // Групуємо по користувачу один раз: `completedHabitIds` / `skippedHabitIds`
   // — множини одного користувача, тож змішувати рядки різних людей в один
@@ -347,6 +437,8 @@ export async function runReminderSweep(
   }
 
   const empty: ReadonlySet<string> = new Set();
+  const emptyWeekCompletions: ReadonlyMap<string, readonly string[]> =
+    new Map();
   const due: DueReminder[] = [
     ...[...byUser.entries()].flatMap(([userId, rows]) =>
       routineDueNow({
@@ -355,6 +447,8 @@ export async function runReminderSweep(
         hm,
         completedHabitIds: completedByUser.get(userId) ?? empty,
         skippedHabitIds: skippedByUser.get(userId) ?? empty,
+        weekCompletionsByHabitId:
+          weekCompletionsByUser.get(userId) ?? emptyWeekCompletions,
       }),
     ),
     ...fizrukDueNow(fizrukRows, dayKey, hm),
@@ -363,6 +457,11 @@ export async function runReminderSweep(
 
   let sent = 0;
   let deduped = 0;
+  // Спершу застовплюємо ВСЕ, що виграло дедуп, і лише потім шлемо — чанками.
+  // Claim має лишатись послідовним: це один `INSERT` на нагадування, він
+  // дешевий, а розпаралелювання тут лише забирало б з'єднання з пулу у
+  // самих відправок.
+  const claimed: DueReminder[] = [];
   for (const reminder of due) {
     let won = false;
     try {
@@ -382,20 +481,42 @@ export async function runReminderSweep(
       deduped++;
       continue;
     }
+    claimed.push(reminder);
+  }
+
+  // Fan-out чанками по `SEND_CONCURRENCY` з `await` між чанками.
+  //
+  // AI-DANGER: не повертай сюди `void sendToUserQuietly(...)` у циклі.
+  // Кожен виклик усередині сам робить `Promise.all` по ВСІХ пристроях
+  // користувача (`push/send.ts`), тож без стелі тут кількість одночасних
+  // сокетів до APNs/FCM/web дорівнює «усі пристрої всіх, кому настав час».
+  // Нагадування приходять слотами (09:00/12:00/20:00), тобто це не
+  // теоретичний максимум, а звичайний робочий день — і на 4 ГБ VPS така
+  // лавина з'їдала пам'ять швидше, ніж апстріми встигали відповідати.
+  //
+  // `await` між чанками ще й тримає прохід у межах хвилини: `stop()`
+  // планувальника тепер дочікується на shutdown-і, а дочекатись можна лише
+  // того, на що ми справді чекаємо — fire-and-forget не дочекаєшся ніяк.
+  for (let i = 0; i < claimed.length; i += SEND_CONCURRENCY) {
+    const batch = claimed.slice(i, i + SEND_CONCURRENCY);
     // `sendToUserQuietly` ковтає помилки транспорту й логує їх сам — падіння
     // однієї відправки не має зупиняти решту черги цієї хвилини.
-    void sendToUserQuietly(
-      reminder.userId,
-      {
-        title: reminder.title,
-        body: reminder.body,
-        tag: reminder.dedupKey,
-        url: reminder.url,
-        data: { module: reminder.module },
-      },
-      { module: reminder.module },
+    await Promise.all(
+      batch.map((reminder) =>
+        sendToUserQuietly(
+          reminder.userId,
+          {
+            title: reminder.title,
+            body: reminder.body,
+            tag: reminder.dedupKey,
+            url: reminder.url,
+            data: { module: reminder.module },
+          },
+          { module: reminder.module },
+        ),
+      ),
     );
-    sent++;
+    sent += batch.length;
   }
 
   if (due.length > 0) {

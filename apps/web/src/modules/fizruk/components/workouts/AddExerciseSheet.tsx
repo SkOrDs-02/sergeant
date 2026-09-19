@@ -270,13 +270,15 @@ export function AddExerciseSheet({
 
       <div className="mt-5 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button
-          module="fizruk"
+          variant="solid"
+          tone="fizruk"
+
           className="h-12 min-h-[44px]"
           onClick={() => {
             const nameUk = (form.nameUk || "").trim();
             if (!nameUk) {
               setNameError(
-                "Вкажи назву українською, без неї вправу не збережемо.",
+                "Вкажи назву українською, без неї вправу не збережу.",
               );
               return;
             }
@@ -315,7 +317,7 @@ export function AddExerciseSheet({
           Зберегти
         </Button>
         <Button
-          variant="secondary"
+          variant="outline"
           className="h-12 min-h-[44px]"
           onClick={handleClose}
         >

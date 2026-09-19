@@ -35,7 +35,6 @@ export function WelcomeOneScreen({
   copy,
   ctaDisabled,
   emptyPicksHint,
-  onSecondaryAction,
   headingRef,
   ctaBusy,
 }: {
@@ -57,17 +56,6 @@ export function WelcomeOneScreen({
    * is true. Tells the user why the button is inactive.
    */
   emptyPicksHint?: string | undefined;
-  /**
-   * PR-05 — demo mode as first-class CTA. Optional handler for the
-   * secondary "Подивитись приклад" button rendered inside the splash
-   * card under the primary CTA. When omitted (modal mode, tour
-   * replay) the secondary CTA is not rendered. Hosts (`/welcome`)
-   * pass `seedDemoData()` so the demo entry sits in the same visual
-   * card as the primary onboarding CTA, satisfying the share-of-
-   * traffic ≥ 15% target without forcing the user to scan past the
-   * card.
-   */
-  onSecondaryAction?: (() => void) | undefined;
   /**
    * Ref to the splash heading. Set by the wizard so the modal variant
    * can move focus there on mount (WCAG 2.4.3 — focus must land
@@ -106,15 +94,15 @@ export function WelcomeOneScreen({
 
       <div className="flex items-center gap-3 text-style-caption text-muted">
         <span className="flex items-center gap-1">
-          <Icon name="lock" size={14} aria-hidden />
+          <Icon name="lock" size="sm" aria-hidden />
           {copy.badges[0]}
         </span>
         <span className="flex items-center gap-1">
-          <Icon name="cloud-off" size={14} aria-hidden />
+          <Icon name="cloud-off" size="sm" aria-hidden />
           {copy.badges[1]}
         </span>
         <span className="flex items-center gap-1">
-          <Icon name="eye-off" size={14} aria-hidden />
+          <Icon name="eye-off" size="sm" aria-hidden />
           {copy.badges[2]}
         </span>
       </div>
@@ -157,14 +145,14 @@ export function WelcomeOneScreen({
       <Button
         type="button"
         onClick={onOpen}
-        variant="primary"
+        variant="solid"
         size="lg"
         className="w-full"
         disabled={ctaDisabled || ctaBusy}
         loading={ctaBusy}
       >
         {copy.primaryCta}
-        <Icon name="chevron-right" size={16} />
+        <Icon name="chevron-right" size="md" />
       </Button>
 
       {ctaDisabled && emptyPicksHint ? (
@@ -177,19 +165,6 @@ export function WelcomeOneScreen({
         </p>
       ) : null}
 
-      {onSecondaryAction ? (
-        <Button
-          type="button"
-          onClick={onSecondaryAction}
-          variant="secondary"
-          size="md"
-          className="w-full border-brand-500/50 bg-brand-500/10 text-brand-strong hover:bg-brand-500/15 hover:border-brand-500/60"
-        >
-          <Icon name="sergeant" size={16} strokeWidth={2} aria-hidden />
-          <span>{copy.secondaryCta}</span>
-        </Button>
-      ) : null}
-
       <button
         type="button"
         onClick={onToggleExpanded}
@@ -198,7 +173,7 @@ export function WelcomeOneScreen({
       >
         <Icon
           name={expanded ? "chevron-up" : "chevron-down"}
-          size={12}
+          size="xs"
           aria-hidden
         />
         {expanded ? "Згорнути" : "Що це за розділи?"}

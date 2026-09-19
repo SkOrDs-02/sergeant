@@ -28,4 +28,19 @@ describe("LogCardWeeklyTable", () => {
     fireEvent.click(screen.getByRole("button", { name: /Журнал за тиждень/ }));
     expect(screen.getByRole("table")).toBeInTheDocument();
   });
+
+  it("повідомляє про згорнуту/розгорнуту таблицю через aria-expanded", () => {
+    // Регресія WF-13 (аудит 2026-09-16): тогл керував таблицею, але
+    // єдиним натяком був шеврон, а він декоративний.
+    render(<LogCardWeeklyTable log={LOG} selectedDate="2026-07-09" />);
+    const toggle = screen.getByRole("button", { name: /Журнал за тиждень/ });
+    expect(toggle).toHaveAttribute("aria-expanded", "false");
+    const controls = toggle.getAttribute("aria-controls");
+    expect(controls).toBeTruthy();
+    fireEvent.click(toggle);
+    expect(toggle).toHaveAttribute("aria-expanded", "true");
+    // `aria-controls` мусить вказувати на РЕАЛЬНИЙ вузол, інакше це
+    // обіцянка без адресата.
+    expect(document.getElementById(controls!)).not.toBeNull();
+  });
 });

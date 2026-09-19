@@ -15,11 +15,16 @@
  * тієї самої частки»). Той компонент лишається недоторканим у
  * `DayLogSheet`; `MealStrip` — окрема форма для hero.
  *
- * **Сегменти клікабельні (рішення власника 2026-09-11).** Тап по «Обід»
- * відкриває аркуш прийому з уже обраним `mealType`. До того hero був
+ * **Сегменти клікабельні (рішення власника 2026-09-11).** До того hero був
  * індикатором, з якого не зробиш нічого: єдиною дією лишався FAB, а він
  * відкриває аркуш БЕЗ типу — тип угадував годинник (`mealTypeByNow`).
- * Тепер FAB — вхід «щось нове», сегмент — вхід «у цей прийом».
+ *
+ * **Куди веде тап — уточнено 2026-09-15.** Спершу сегмент відкривав форму
+ * додавання з уже обраним типом; власник заперечив: сегмент НЕСЕ факт
+ * («Вечеря, 520 ккал»), тож тап має цей факт розгорнути, а не почати новий
+ * запис. Тепер записаний прийом відкриває `MealTypeSheet` зі своїми
+ * рядками, а порожній — і далі форму, бо показувати в ньому нічого. Вхід
+ * «щось нове» лишається один — FAB.
  *
  * **Один рядок замість двох.** Було: пропорційні бари зверху й колонки з
  * назвою та ккал знизу — два ряди, що кодують те саме число. Стало: чотири
@@ -45,6 +50,14 @@ export interface MealStripSegment {
   type: MealTypeId;
   label: string;
   kcal: number;
+  /**
+   * Скільки записів у цьому прийомі — і саме воно, а не `kcal`, вирішує,
+   * порожній сегмент чи ні. Запис без макросів (фото, яке не розпізналось;
+   * страва, для якої КБЖВ ще не проставили) дає нуль калорій, але існує:
+   * за калоріями сегмент читався б як «не записано», а тап відкривав би
+   * аркуш із рядками — дві поверхні суперечили б одна одній.
+   */
+  count: number;
 }
 
 export interface MealStripMacro {
@@ -72,8 +85,14 @@ export interface MealStripProps {
   /**
    * Тап по сегменту. Обовʼязковий навмисно: без нього сегменти лишались
    * би `aria-hidden`-картинкою, і hero знову став би індикатором, з якого
-   * нічого не зробиш — саме тим, на що скаржився власник. FAB лишається
-   * для «щось нове», сегмент — для «в цей прийом».
+   * нічого не зробиш — саме тим, на що скаржився власник.
+   *
+   * Що саме відкривається, вирішує викликач, і воно різне (рішення
+   * власника 2026-09-15): записаний прийом розгортається аркушем
+   * `MealTypeSheet` («що в мене у вечері»), порожній — формою додавання з
+   * уже обраним типом, бо показувати там нічого. Стрічка про цю розвилку
+   * знає рівно стільки, скільки потрібно для чесного підпису кнопки, —
+   * через `segment.count`.
    */
   onPickMeal: (type: MealTypeId) => void;
   /**
@@ -94,7 +113,12 @@ const ARIA_NOT_RECORDED: Record<MealTypeId, string> = {
 
 const REMAINING_ON_PREFIX = "лишилось на ";
 
-/** Дія кнопки сегмента — другим реченням доступної назви. */
+/**
+ * Дія кнопки сегмента — другим реченням доступної назви. Пар дві, бо дія
+ * різна: порожній прийом веде у форму додавання, записаний — в аркуш із
+ * його рядками. Обіцяти «Додати» там, де відкриється список, означало б
+ * для AT-користувача збрехати про наслідок натискання.
+ */
 const ADD_TO_MEAL: Record<MealTypeId, string> = {
   breakfast: "Додати в сніданок",
   lunch: "Додати в обід",
@@ -102,9 +126,16 @@ const ADD_TO_MEAL: Record<MealTypeId, string> = {
   snack: "Додати в перекус",
 };
 
+const SHOW_MEAL: Record<MealTypeId, string> = {
+  breakfast: "Показати записи сніданку",
+  lunch: "Показати записи обіду",
+  dinner: "Показати записи вечері",
+  snack: "Показати записи перекусу",
+};
+
 /** Факт прийому — першим реченням доступної назви кнопки. */
 function segmentAriaFact(seg: MealStripSegment): string {
-  if (seg.kcal <= 0) {
+  if (seg.count <= 0) {
     const notRecorded = ARIA_NOT_RECORDED[seg.type];
     return notRecorded.charAt(0).toUpperCase() + notRecorded.slice(1);
   }
@@ -182,7 +213,7 @@ export function MealStrip({
       */}
       <ul data-testid="meal-strip-bars" className="grid grid-cols-4 gap-1">
         {segments.map((seg, i) => {
-          const isEmpty = seg.kcal <= 0;
+          const isEmpty = seg.count <= 0;
           const isAccent = accentIndex === i;
           const share = total > 0 ? (seg.kcal / total) * 100 : 0;
           const body = (
@@ -209,7 +240,9 @@ export function MealStrip({
               <button
                 type="button"
                 onClick={() => onPickMeal(seg.type)}
-                aria-label={`${segmentAriaFact(seg)}. ${ADD_TO_MEAL[seg.type]}`}
+                aria-label={`${segmentAriaFact(seg)}. ${
+                  isEmpty ? ADD_TO_MEAL[seg.type] : SHOW_MEAL[seg.type]
+                }`}
                 className={cn(
                   "relative isolate flex w-full flex-col items-center justify-center",
                   "overflow-hidden rounded-lg border border-hero-ink/20 px-1 py-1.5",
@@ -269,7 +302,12 @@ export function MealStrip({
 
       {goalKcal == null && onSetGoal && (
         <div className="flex justify-center">
-          <Button variant="nutrition" size="md" onClick={onSetGoal}>
+          <Button
+            variant="solid"
+            tone="nutrition"
+            size="md"
+            onClick={onSetGoal}
+          >
             {messages.nutrition.heroStrip.ctaSetGoal}
           </Button>
         </div>

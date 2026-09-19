@@ -118,7 +118,7 @@ export function WeekKcalCard({
           className="inline-flex items-center gap-0.5 text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
         >
           {t.logLink}
-          <Icon name="chevron-right" size={14} aria-hidden />
+          <Icon name="chevron-right" size="sm" aria-hidden />
         </button>
       </div>
 

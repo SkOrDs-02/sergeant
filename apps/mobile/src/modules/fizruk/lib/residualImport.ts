@@ -5,7 +5,7 @@
  * measurements), Stage 12 PR #057f-tombstone-mobile-stage12 (daily-log /
  * monthly-plan / workout-templates), and Stage 12.5 PR
  * #057f2-tombstone-mobile-stage12-5 (programs / plan-template /
- * wellbeing) of `docs/planning/storage-roadmap.md`.
+ * wellbeing) of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  *
  * Reads any leftover values from the now-deprecated MMKV keys,
  * imports them into the local `fizruk_*` SQLite tables (idempotent +

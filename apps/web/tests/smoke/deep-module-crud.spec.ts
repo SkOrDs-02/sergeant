@@ -1,6 +1,8 @@
 import { expect, test, type Page } from "@playwright/test";
 
 import { seedFTUX } from "../utils/seedFTUX";
+import { waitForServiceWorkerActivated } from "../utils/serviceWorker";
+import { settleToasts } from "./smokeHelpers";
 
 async function collectPageErrors(page: Page): Promise<string[]> {
   const errors: string[] = [];
@@ -97,7 +99,17 @@ async function expandTodayAndExpect(
       (await toggle.textContent()) ??
       "";
     if (name.includes("Розгорнути")) await toggle.dispatchEvent("click");
-    await expect(page.getByText(text)).toBeVisible({ timeout: 1500 });
+    // `exact` — не косметика. «DCRUD кава» є ПРЕФІКСОМ «DCRUD кава
+    // оновлено», яке цей же тест створює нижче, а `getByText` без `exact`
+    // збігається підрядком. У чистому прогоні колізії немає (на момент
+    // першої перевірки відредагованого запису ще не існує), але retry
+    // стартує на СПІЛЬНОМУ серверному стані від попередньої спроби: там
+    // уже лежить «DCRUD кава оновлено», і локатор резолвиться у два
+    // вузли — strict mode падає. Так одна перервана навігація у спробі 1
+    // перетворилась на жорстке падіння всієї джоби (PR #100, 2026-09-17).
+    await expect(page.getByText(text, { exact: true })).toBeVisible({
+      timeout: 1500,
+    });
   }).toPass({ timeout: timeoutMs });
 }
 
@@ -147,7 +159,8 @@ test.describe("@critical deep module CRUD browser loop", () => {
     // лише коли група справді згорнута, тому працює для обох станів.
     await expandTodayAndExpect(page, "DCRUD кава");
 
-    await page.getByText("DCRUD кава").click();
+    // Той самий підрядковий капкан, що й у `expandTodayAndExpect` вище.
+    await page.getByText("DCRUD кава", { exact: true }).click();
     await expect(
       page.getByRole("dialog", { name: "Редагувати витрату" }),
     ).toBeVisible();
@@ -155,11 +168,23 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await waitForSqliteRefreshAfter(page, "finyk", async () => {
       await page.getByRole("button", { name: "Зберегти" }).click();
     });
-    await expect(page.getByText("DCRUD кава оновлено")).toBeVisible();
+    // `.first()` — та сама причина, що й `exact` у `expandTodayAndExpect`:
+    // retry стартує на СПІЛЬНОМУ серверному стані, де «DCRUD кава оновлено»
+    // від попередньої спроби вже лежить, тож після редагування рядків два і
+    // strict mode падає (PR #107, 2026-09-17). Тут достатньо, що хоч один
+    // видимий: ідентичність запису далі перевіряє delete → undo.
+    await expect(
+      page.getByText("DCRUD кава оновлено", { exact: true }).first(),
+    ).toBeVisible();
     // Dual-write: дочекатися flush у sync-queue ПЕРЕД full reload,
     // інакше cold SQLite boot підтягне stale server snapshot без edit.
     await waitForSyncQueueIdle(page);
 
+    // Повторний `goto` — гонка з сервіс-воркером (`apps/web/AGENTS.md`
+    // § E2E smoke, п. 7): перехід `installing → activated` посеред навігації
+    // абортить її (`net::ERR_ABORTED`, PR #107). Барʼєр прибирає третій
+    // стан, а не «чекає трохи».
+    await waitForServiceWorkerActivated(page);
     await page.goto("/finyk/transactions", { waitUntil: "domcontentloaded" });
     // Harness correction: після full reload лічильник refresh-ів
     // обнуляється, а список рендериться лише після SQLite boot+refresh —
@@ -458,6 +483,16 @@ test.describe("@critical deep module CRUD browser loop", () => {
     await expect(page.getByText("DCRUD body note")).toHaveCount(0);
 
     await page.getByRole("button", { name: "Повернути" }).click();
+    // Undo-тост після кліку ще виходить з екрана анімацією і стоїть над
+    // списком — без паузи клік по відновленому запису прилітає в тост
+    // («subtree intercepts pointer events» від `role="alert"`). Див.
+    // `settleToasts` про те, чому тост під курсором не зникає сам.
+    // Пауза ще й знімає гонку тесту з продуктом: «Повернути» тут клікається,
+    // поки delete ще в черзі dual-write, і запис, що «відчіплювався від
+    // DOM», насправді стирав refresh після delete — diff у `useDailyLog`
+    // бачив «[E] → [E]» і не писав restore. Виправлено в хуку
+    // (`useDailyLog.undoRace.test.tsx`); цей крок тепер стереже фікс.
+    await settleToasts(page);
     // Harness correction (mirrors DCRUD-001): після restore картка
     // журналу ре-рендериться згорнутою — нотатка видима лише в
     // розгорнутому стані, тож спершу розгортаємо відновлений запис.
@@ -467,7 +502,19 @@ test.describe("@critical deep module CRUD browser loop", () => {
       name: /81,2 кг.*7,5 год/,
     });
     await expect(restoredEntry).toBeVisible();
+    await expect(restoredEntry).toHaveAttribute("aria-expanded", "false");
+    // Розгорнута картка прибирає підсумок «81,2 кг · 7,5 год» із кнопки
+    // (`JournalEntryCard` показує його лише згорнутим), тож після кліку та
+    // сама кнопка вже не матчить імʼя — тримаємо її за `aria-controls`.
+    const restoredContentId = await restoredEntry.getAttribute("aria-controls");
+    expect(restoredContentId).toBeTruthy();
+    const restoredToggle = page.locator(
+      `button[aria-controls="${restoredContentId}"]`,
+    );
     await restoredEntry.click();
+    // Клік, що влучив у ще старий вузол, лишає свіжий згорнутим — тоді це
+    // видно тут, а не як «нотатки немає» пʼятьма секундами пізніше.
+    await expect(restoredToggle).toHaveAttribute("aria-expanded", "true");
     await expect(page.getByText("DCRUD body note")).toBeVisible();
 
     expect(errors, "Uncaught page errors during Fizruk body CRUD").toEqual([]);

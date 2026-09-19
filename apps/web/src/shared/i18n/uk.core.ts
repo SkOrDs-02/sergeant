@@ -60,6 +60,11 @@ export const coreMessages = {
     // дасть скрінрідеру «Прихована підсумок дня». Або тримай `label`
     // жіночим, або спершу перероби це на повний рядок із підстановкою.
     hiddenValuePrefix: "Прихована",
+    // `StreakFlame` / `StreakBadge`: sr-only-підпис полумʼя серії. Число і
+    // форма «день/дні/днів» підставляються компонентом через `pluralDays`.
+    // До 2026-09-17 рядок був англійським літералом «Streak: N days» і жив
+    // поза каталогом, тож лінт на кирилицю його не бачив.
+    streakPrefix: "Серія",
   },
 
   actions: {
@@ -126,6 +131,9 @@ export const coreMessages = {
       backToModulePicker: "До вибору модуля",
       copyRequestId: "Копіювати",
       copyRequestIdAria: "Скопіювати requestId",
+      // `OptimizedImage`: aria-label заглушки, коли картинка не завантажилась
+      // і `alt` порожній. До 2026-09-17 — англійський літерал поза каталогом.
+      imageFailed: "Зображення не завантажилось",
     },
   },
 
@@ -181,6 +189,24 @@ export const coreMessages = {
     // Не «Інсайти»: так називалась і батьківська секція, і секція на
     // «Звʼязках», яка рахує зовсім інше й за інше вікно.
     otherTips: "Інші підказки",
+    // Вісь дії (спека `hub-action-axis.md`): дві купи головної. У ядрі
+    // каталогу, бо `HubDashboard` — eager-поверхня.
+    nowPile: {
+      heading: "Зараз",
+      empty: "Сьогодні все закрито, нічого не просить уваги.",
+      more: "ще",
+      doIt: "Зробити",
+      open: "Відкрити",
+      askAiChip: "AI",
+      askAi: "Спитати Сержанта про це",
+      askAiLimit: "Ліміт запитів до Сержанта на сьогодні",
+      dismiss: "Закрити підказку",
+    },
+    closedPile: {
+      heading: "Закрито сьогодні",
+    },
+    // Рейок модулів (`ModuleRail`) — eager і на хабі, і в шапках модулів.
+    moduleRail: "Модулі",
     overlayTitle: "AI-асистент",
     closeChat: "Закрити чат",
     chatQuickActions: "Швидкі сценарії",
@@ -228,7 +254,7 @@ export const coreMessages = {
     // (no Cyrillic-string placeholders needed for plain digits).
     // Одиниця — ЗАПИТ до AI, не повідомлення. Копія «5 повідомлень» обіцяла
     // людині більше, ніж дає ліміт (browser QA 2026-08-23), тож клієнт
-    // говорить тією ж мовою, що сервер. AI-5 рішення 1 (`docs/90-work/
+    // говорить тією ж мовою, що сервер. AI-5 рішення 1 (`docs/work/
     // audits/2026-09-01-product-audit/findings.md`, 2026-09-01) зробило хід
     // з дією (tool-round-trip) рівно одним запитом (раніше — 2), тож тепер
     // «запитів» буквально дорівнює «діям», без застережень.
@@ -311,29 +337,22 @@ export const coreMessages = {
       "Обери головне, Sergeant підбере розділ, з якого почати.",
     goalFirstSkipLabel: "Подивитись усе",
     goalFirstAriaLabel: "Цілі онбордингу",
-
-    // Persistent demo-mode badge (DemoModeBadge) — a global, always-on
-    // marker + exit, rendered on every route while the store holds a
-    // demo payload. Clicking runs the same action as DemoModeBanner's
-    // «Створити свій», so it's the always-available way out of demo.
-    demoBadgeText: "Демо",
-    demoBadgeExit: "Вийти",
-    demoBadgeLabel:
-      "Демонстраційні дані: натисни, щоб вийти і створити свій профіль",
-    demoBadgeTitle: "Демо. Натисни, щоб вийти й почати з чистого аркуша.",
   },
   auth: {
+    /** Підпис кнопки входу через Apple. */
+    signInWithApple: "Увійти через Apple",
+
     // Generic fallback — використовується, коли не вдалося визначити
     // конкретну причину помилки.
     genericFailure: "Не вдалося завершити вхід. Спробуй ще раз.",
 
     // Better Auth canonical error-codes:
-    invalidEmailOrPassword: "Невірний email або пароль.",
+    invalidEmailOrPassword: "Неправильний email або пароль.",
     invalidToken:
       "Посилання для скидання пароля невалідне або вже використане. Запроси новий лист на сторінці входу.",
     userAlreadyExists: "Цей email вже зареєстровано. Спробуй увійти.",
-    invalidEmail: "Невірний формат email.",
-    invalidPassword: "Невірний пароль.",
+    invalidEmail: "Неправильний формат email.",
+    invalidPassword: "Неправильний пароль.",
     passwordTooShort: "Пароль занадто короткий.",
     passwordTooLong: "Пароль занадто довгий.",
     emailNotVerified: "Email ще не підтверджено. Перевір пошту.",

@@ -24,7 +24,17 @@ export interface InputDialogProps {
   placeholder?: string;
   defaultValue?: string;
   type?: HTMLInputTypeAttribute;
-  confirmLabel?: string;
+  /**
+   * Підпис кнопки підтвердження. ОБОВʼЯЗКОВИЙ навмисно (знахідка PR-C10,
+   * рішення власника 2026-09-15) — симетрично з `ConfirmDialog`.
+   *
+   * Тут дефолтом стояло «ОК», і воно не брехало, як деструктивне «Видалити»
+   * у `ConfirmDialog`, — воно просто нічого не казало. Ціна виявилась
+   * конкретною: єдиний продуктовий call-site обслуговує ДВІ різні дії
+   * (зашифрувати бекап і розшифрувати його), і під спільним «ОК» вони
+   * виглядали однаково. Обовʼязковий проп змусив їх назвати.
+   */
+  confirmLabel: string;
   cancelLabel?: string;
   onConfirm?: (value: string) => void;
   onCancel?: () => void;
@@ -59,7 +69,7 @@ export function InputDialog({
   placeholder = "",
   defaultValue = "",
   type = "text",
-  confirmLabel = "ОК",
+  confirmLabel,
   cancelLabel = "Скасувати",
   onConfirm,
   onCancel,
@@ -177,7 +187,7 @@ export function InputDialog({
             "w-full h-12 rounded-xl bg-bg border border-line px-4 text-style-body text-text placeholder:text-subtle mb-4",
             "transition-colors",
             "focus:outline-none",
-            "focus-visible:outline-none focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/30",
+            "focus-visible:outline-none focus-visible:border-brand-400 focus-visible:ring-2 focus-visible:ring-focus/45",
           )}
           autoComplete="off"
         />

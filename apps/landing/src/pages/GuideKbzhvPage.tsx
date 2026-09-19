@@ -2,6 +2,8 @@ import SiteLayout from "../components/SiteLayout";
 import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
+import TelegramCta from "../components/TelegramCta";
+import { AUTHOR_NAME } from "../content/author";
 
 const SITUATIONS = [
   {
@@ -67,8 +69,8 @@ export default function GuideKbzhvPage() {
             Як рахувати КБЖВ, коли в базі немає українських продуктів
           </h1>
           <p className="mt-4 text-sm text-subtle">
-            Оновлено <UpdatedOn iso={ROUTE_META["/guides/kbzhv"].lastmod} /> ·
-            автор Sergeant
+            Оновлено <UpdatedOn iso={ROUTE_META["/guides/kbzhv"].lastmod} /> ·{" "}
+            {AUTHOR_NAME}
           </p>
           <GuideHomeModule href="/yizha" label="Їжа" />
         </div>
@@ -103,9 +105,8 @@ export default function GuideKbzhvPage() {
             ))}
           </div>
           <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
-            Помітно, що жоден рядок не вимагає ідеальної бази даних. Вимагає він
-            одного: щоб продукти, які ти їси щотижня, були заведені акуратно, а
-            решта заповнювалася приблизно.
+            Ідеальної бази не потребує жоден рядок: досить акуратно завести те,
+            що їси щотижня, і заповнювати решту приблизно.
           </p>
         </section>
 
@@ -130,41 +131,40 @@ export default function GuideKbzhvPage() {
           <h2 className={h2}>Скільки похибки можна собі дозволити</h2>
           <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
             Похибка, яка стабільна, майже не заважає. Якщо ти щоразу занижуєш
-            олію на однакову величину, тренд лишається чесним, бо ти порівнюєш
-            тиждень із тижнем. Псує справу похибка, що стрибає: пів тижня
+            олію на однакову величину, ти все одно порівнюєш тиждень із тижнем,
+            і тренд не бреше. Псує справу похибка, що стрибає: пів тижня
             зважуєш, пів тижня оцінюєш на око, і два числа поруч уже про різні
             речі.
           </p>
           <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
-            Друге правило простіше. Якщо один запис займає більше 20 секунд, на
-            третьому тижні ти його не зробиш. Швидкість тут важливіша за
-            точність: повний тиждень приблизних записів дає кращу картину, ніж
-            три бездоганні дні і тиша до наступного понеділка.
+            Якщо один запис займає більше 20 секунд, на третьому тижні ти його
+            не зробиш. Швидкість тут важливіша за точність: повний тиждень
+            приблизних записів дає кращу картину, ніж три бездоганні дні і тиша
+            до наступного понеділка.
           </p>
           <p className="mt-4 max-w-2xl leading-relaxed text-foreground">
             І про очікування. Перші кілька днів цифри виглядають хаотично, бо ти
-            ще калібруєш і себе, і базу. Сенс зʼявляється на дистанції в кілька
-            тижнів, коли видно не окремий обід, а звичну структуру тижня: де
-            насправді сидять калорії і що з цього ти навіть не помічав.
+            ще калібруєш і себе, і базу. Сенс зʼявляється за кілька тижнів, коли
+            за окремими обідами проступає звична структура тижня: де насправді
+            сидять калорії і що з цього ти навіть не помічав.
           </p>
         </section>
 
-        <div className="flex flex-col gap-2.5 border-t border-cardline pt-6">
-          <p className="text-sm leading-relaxed text-muted">
-            У Харчуванні типовий запис займає кілька секунд: штрихкод для
-            магазинного товару, фото страви, українська база продуктів. Поруч у
-            тому самому просторі живуть фінанси, тренування і звички, тому
-            тижневий підсумок може показати звʼязок між ними. Кожне
-            спостереження там підписане рівнем впевненості, а поки даних замало,
-            підсумок чесно мовчить.
+        <section>
+          <p className="text-sm text-subtle">
+            Як влаштоване Харчування –{" "}
+            <a
+              href="/yizha"
+              className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+            >
+              на сторінці модуля
+            </a>
+            .
           </p>
-          <a
-            href="/beta"
-            className="text-sm font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-          >
-            Стати в чергу
-          </a>
-        </div>
+          <div className="mt-6">
+            <TelegramCta placement="footer" label="Стати в чергу" />
+          </div>
+        </section>
       </article>
     </SiteLayout>
   );

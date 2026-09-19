@@ -18,7 +18,7 @@ import { buildCompletionRowId, type RoutineDualWriteOp } from "./diff";
 /**
  * Async SQLite-side adapter for the routine dual-write layer.
  *
- * Stage 4 PR #024 of `docs/planning/storage-roadmap.md`. Migrated onto
+ * Stage 4 PR #024 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Migrated onto
  * `@sergeant/dualwrite-core` in ADR-0073 крок 8 (mobile mirror of web крок 3):
  * the op-loop is now `createApplyOps` (best-effort) and every standard-shape
  * table's upsert SQL is emitted by the shared `buildLwwUpsert` builder.

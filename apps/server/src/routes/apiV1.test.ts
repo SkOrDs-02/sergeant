@@ -720,13 +720,12 @@ describe("H8: Cross-Origin-Resource-Policy per-route", () => {
 /**
  * H6 — sensitive-action gate `/api/mono/connect`.
  *
- * AI-LEGACY: expires 2026-11-07 — бета-виняток. Email-верифікаційний гейт
- * на підключення банку тимчасово знято (`mono-webhook.ts`), поки не
- * налагоджено доставку верифікаційних листів: бета-юзер не міг би
- * підтвердити пошту й узагалі підʼєднати Mono. Тому нижче більше НЕ
- * очікуємо `403 EMAIL_VERIFICATION_REQUIRED` для неверифікованого — цей
- * тест разом із гейтом треба відновити (unverified → 403) щойно листи
- * запрацюють. `requireSession()` (401 для анонів) лишається чинним.
+ * Гейт відновлено 2026-09-16 разом із беточним винятком у `mono-webhook.ts`:
+ * `RESEND_API_KEY` тепер обовʼязковий для старту прода (`betterAuthEnv.ts`),
+ * `RESEND_FROM` і верифікований домен налаштовані, тож передумова «листи не
+ * доходять» більше не діє. Неверифікований користувач знову отримує
+ * `403 EMAIL_VERIFICATION_REQUIRED`; `requireSession()` (401 для анонів)
+ * лишається чинним і не має downgrade-итись у 403.
  */
 describe("H6: /api/mono/connect gate on email verification", () => {
   // `MONO_WEBHOOK_ENABLED` за замовчуванням false у тест-env, тож для
@@ -753,7 +752,7 @@ describe("H6: /api/mono/connect gate on email verification", () => {
     }
   });
 
-  it("бета-виняток: unverified user проходить email-гейт (НЕ 403 EMAIL_VERIFICATION_REQUIRED)", async () => {
+  it("unverified user → 403 EMAIL_VERIFICATION_REQUIRED", async () => {
     getSessionUserMock.mockResolvedValueOnce({
       id: "u-unverified",
       email: "squat@victim.com",
@@ -762,20 +761,38 @@ describe("H6: /api/mono/connect gate on email verification", () => {
       emailVerified: false,
     });
     const app = createApp();
-    // Короткий токен: `connectHandler` відсік би його ще ДО мережевого fetch
-    // до Mono-API. Нам важливо лише, що запит ПРОЙШОВ email-гейт і дійшов до
-    // handler-ланцюга — тобто верифікація email більше не блокує (бета).
+    // Токен навмисно короткий: якби гейт пропустив, запит дійшов би до
+    // `connectHandler` і впав уже на його перевірці — тобто з іншим кодом.
+    // Саме тому тут звіряється КОД, а не лише статус: 403 без
+    // `EMAIL_VERIFICATION_REQUIRED` означав би, що відмову дав хтось інший.
     const res = await request(app)
       .post("/api/mono/connect")
       .set("X-Requested-With", "XMLHttpRequest")
       .set("Authorization", "Bearer x")
       .set("Content-Type", "application/json")
       .send({ token: "short" });
-    // AI-LEGACY: expires 2026-11-07 — відновити на `403` +
-    // `code: EMAIL_VERIFICATION_REQUIRED`, коли гейт повернеться. Зараз
-    // рефекшн приходить від handler-а (webhook-disabled / token-check у
-    // тест-env), а НЕ від email-гейта — ключове, що це не 403 EMAIL_*.
-    expect(res.status).not.toBe(403);
+    expect(res.status).toBe(403);
+    expect(res.body?.code).toBe("EMAIL_VERIFICATION_REQUIRED");
+  });
+
+  it("verified user проходить email-гейт (відмова, якщо є, приходить не від нього)", async () => {
+    getSessionUserMock.mockResolvedValueOnce({
+      id: "u-verified",
+      email: "owner@example.com",
+      name: "Owner",
+      image: null,
+      emailVerified: true,
+    });
+    const app = createApp();
+    const res = await request(app)
+      .post("/api/mono/connect")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .set("Authorization", "Bearer x")
+      .set("Content-Type", "application/json")
+      .send({ token: "short" });
+    // Контрольний бік гейта: підтверджена пошта не має отримувати
+    // `EMAIL_VERIFICATION_REQUIRED` за жодних обставин. Без цього тесту
+    // гейт, який реджектить ВСІХ, виглядав би так само зелено.
     expect(res.body?.code).not.toBe("EMAIL_VERIFICATION_REQUIRED");
   });
 

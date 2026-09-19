@@ -120,14 +120,14 @@ function ItemRow({
             ) : isDone ? (
               <Icon
                 name="check-circle"
-                size={16}
+                size="md"
                 className="text-success-strong dark:text-success"
                 aria-hidden
               />
             ) : isError ? (
               <Icon
                 name="x-circle"
-                size={16}
+                size="md"
                 className="text-danger-strong dark:text-danger"
                 aria-hidden
               />
@@ -239,8 +239,10 @@ export function BulkReceiptsProgress({
 
       {!allSettled ? (
         <Button
+          variant="solid"
+          tone="finyk"
           className="w-full"
-          module="finyk"
+
           loading={isSaving}
           disabled={isProcessing || readyCount === 0}
           onClick={onSaveAll}

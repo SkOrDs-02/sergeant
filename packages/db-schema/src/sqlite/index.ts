@@ -9,7 +9,6 @@ export {
   routineTags,
   routineCategories,
   routinePrefs,
-  routinePushups,
   routineHabitOrder,
   routineCompletionNotes,
   routineHabitSkips,
@@ -61,6 +60,7 @@ export {
   recoverDeadLetter,
   type RecoverDeadLetterResult,
   type RecoverDeadLetterSelector,
+  type RecoverDeadLetterTarget,
 } from "./syncOpOutboxRecover.js";
 export {
   repairPartialOutboxMigration,
@@ -102,7 +102,6 @@ export {
   fizrukWellbeing,
   fizrukWorkoutTemplates,
   fizrukInjuries,
-  fizrukPushups,
 } from "./fizruk.js";
 export {
   nutritionMeals,

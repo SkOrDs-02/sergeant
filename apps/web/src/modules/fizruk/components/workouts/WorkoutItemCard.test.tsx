@@ -239,6 +239,64 @@ describe("WorkoutItemCard — strength set rows", () => {
   });
 });
 
+// RPE (Borg 1..10) — optional per-set effort rating (`WorkoutSetRpeMenu`).
+// Closes the drift where the landing page promised "оцінка зусилля за
+// Боргом" but neither the field nor the word existed in the app.
+describe("WorkoutItemCard — RPE (Borg 1..10)", () => {
+  it("shows a dash trigger when the set has no RPE yet", () => {
+    renderCard();
+    const trigger = screen.getByRole("button", {
+      name: "Підхід 1: оцінка зусилля, не вказано",
+    });
+    expect(trigger).toHaveTextContent("–");
+  });
+
+  it("picking a value from the picker writes it onto that set only", () => {
+    renderCard({
+      it: makeItem({
+        sets: [
+          { weightKg: 50, reps: 8 },
+          { weightKg: 60, reps: 5 },
+        ],
+      }),
+    });
+    fireEvent.click(
+      screen.getByRole("button", {
+        name: "Підхід 2: оцінка зусилля, не вказано",
+      }),
+    );
+    fireEvent.click(screen.getByRole("button", { name: "RPE 8" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [
+        { weightKg: 50, reps: 8 },
+        { weightKg: 60, reps: 5, rpe: 8 },
+      ],
+    });
+  });
+
+  it("shows the saved value on the trigger and clears it back to null via 'Прибрати'", () => {
+    renderCard({ it: makeItem({ sets: [{ weightKg: 50, reps: 8, rpe: 6 }] }) });
+    const trigger = screen.getByRole("button", {
+      name: "Підхід 1: оцінка зусилля 6",
+    });
+    expect(trigger).toHaveTextContent("6");
+    fireEvent.click(trigger);
+    fireEvent.click(screen.getByRole("button", { name: "Прибрати" }));
+    expect(updateItem).toHaveBeenCalledWith("w1", "it-1", {
+      sets: [{ weightKg: 50, reps: 8, rpe: null }],
+    });
+  });
+
+  it("hides the interactive picker (static badge only) once the workout is read-only", () => {
+    renderCard({
+      it: makeItem({ sets: [{ weightKg: 50, reps: 8, rpe: 6 }] }),
+      isReadOnly: true,
+    });
+    expect(screen.queryByRole("button", { name: /оцінка зусилля/ })).toBeNull();
+    expect(screen.getByText("6")).toBeInTheDocument();
+  });
+});
+
 describe("WorkoutItemCard — superset rest rule", () => {
   const group: WorkoutGroup = {
     id: "g1",

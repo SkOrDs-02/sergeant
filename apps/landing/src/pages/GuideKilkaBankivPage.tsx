@@ -3,6 +3,7 @@ import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
+import { AUTHOR_NAME, AUTHOR_JSON_LD } from "../content/author";
 
 /**
  * Питання, яке досі жило одним підрядком у FAQ. Автосинк є лише з
@@ -19,7 +20,7 @@ export default function GuideKilkaBankivPage() {
       headline: "Як звести витрати докупи, якщо карти в кількох банках",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/kilka-bankiv"].lastmod,
-      author: { "@type": "Person", name: "Автор Sergeant" },
+      author: AUTHOR_JSON_LD,
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
   });
@@ -39,8 +40,8 @@ export default function GuideKilkaBankivPage() {
           </h1>
           <p className="mt-4 text-sm text-subtle">
             Оновлено{" "}
-            <UpdatedOn iso={ROUTE_META["/guides/kilka-bankiv"].lastmod} /> ·
-            автор Sergeant
+            <UpdatedOn iso={ROUTE_META["/guides/kilka-bankiv"].lastmod} /> ·{" "}
+            {AUTHOR_NAME}
           </p>
           <GuideHomeModule href="/hroshi" label="Гроші" />
         </div>
@@ -66,8 +67,7 @@ export default function GuideKilkaBankivPage() {
             сам його відкликаєш. Інших банківських підключень у Фініку немає.
           </p>
           <p className="mt-4 leading-relaxed text-muted">
-            Це не означає, що другу карту доведеться забивати руками. Означає
-            лише, що вона потрапляє в облік іншим шляхом.
+            Другу карту не доведеться забивати руками: вона заходить випискою.
           </p>
         </section>
 
@@ -90,7 +90,7 @@ export default function GuideKilkaBankivPage() {
               <p className="mt-1.5 text-sm leading-relaxed text-muted">
                 Зручний ритм – раз на місяць, коли банк уже сформував повний
                 період. Читаються CSV і XLSX, а також файл, який банк віддає під
-                іменем .xls, а всередині тримає HTML-таблицю. PDF-виписку Фінік
+                іменем .xls, хоча всередині там HTML-таблиця. PDF-виписку Фінік
                 не читає: візьми в банку той самий період у CSV або XLSX.
               </p>
             </li>
@@ -102,7 +102,7 @@ export default function GuideKilkaBankivPage() {
                 Рядки приїжджають із підказкою категорії, а ті, що схожі на вже
                 записані, отримують бейдж і зняту галочку. Нічого не
                 зберігається без твого підтвердження, і весь імпорт можна
-                відкотити одним батчем.
+                скасувати однією дією.
               </p>
             </li>
           </ol>
@@ -113,9 +113,9 @@ export default function GuideKilkaBankivPage() {
           <p className="mt-4 leading-relaxed text-muted">
             Готівку закриває фото чека. Переказ між власними картками –
             найчастіша причина подвійного рахунку: одна й та сама сума виходить
-            з однієї карти і заходить на іншу, а виглядає як витрата плюс дохід.
-            Фінік намагається впізнати такі пари сам, але остаточне рішення
-            лишається за тобою в таблиці перевірки.
+            з однієї карти і заходить на іншу, але виглядає як витрата плюс
+            дохід. Фінік намагається впізнати такі пари сам, але остаточне
+            рішення лишається за тобою в таблиці перевірки.
           </p>
         </section>
 
@@ -123,7 +123,7 @@ export default function GuideKilkaBankivPage() {
           <h2 className={h2}>Чого цей спосіб не дає</h2>
           <ul className="mt-5 flex flex-col gap-3">
             {[
-              "Балансу другої карти в реальному часі: виписка – це знімок періоду, а не живий рахунок.",
+              "Балансу другої карти в реальному часі: виписка показує період, що минув.",
               "Категорій там, де опис нічого не каже: якщо у виписці немає ні категорії, ні коду операції, а в описі лише набір цифр, підказки не буде.",
             ].map((item) => (
               <li

@@ -1,6 +1,6 @@
 name: CI
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: див. https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/_0009-agent-os-hardening.md § Phase 4 (PR 4.3 audit).
 
@@ -135,6 +135,44 @@ jobs:
         # навмисно: він парсить YAML і не потребує білда.
         run: node --test scripts/__tests__/ci-bundle-budget-gates.test.mjs
 
+      - name: CI TODO-freshness gate shape regression test
+        # Третій випадок того самого класу (2026-09-16): гейт свіжості TODO
+        # стояв кроком у `check` після «Format, lint, test, build» і мовчав,
+        # поки той був червоний. Тест стереже: гейт у власній джобі без
+        # `needs:`, не fail-open, і не повернувся в `check`.
+        run: node --test scripts/__tests__/ci-todo-freshness-gate.test.mjs
+
+      - name: Script unit tests (whole glob, not a hand-kept list)
+        # ГЛОБ, а не перелік — і це вся суть кроку.
+        #
+        # Досі CI викликав тести `scripts/**` адресно, файл за файлом, тож
+        # тест, якого немає в жодному переліку, не виконував НІХТО. Аудит
+        # осиротілого коду вже називав це «написані й покинуті тести, що
+        # створюють ілюзію покриття» (2026-08-05, ~30 файлів). Перший
+        # прогін усього глоба (2026-09-17) дав п'ять падінь на чистому
+        # `main`, і жодне з них не було свіжим:
+        #   - `ai-memory-backfill.test.mjs` імпортував скрипт, видалений
+        #     PR #928 ще 2026-08-29 — тест-сирота;
+        #   - два в `check-harness-version-freshness` писали фікстуру в
+        #     `docs/work/planning/`, хоча скрипт давно читає
+        #     `docs/work/specs/planning/` — тобто перевіряли неіснуючий файл;
+        #   - `check-kvstore-deep-imports` вимагав виклику через
+        #     `pnpm lint:…`, хоча ланцюжок свідомо перевели на прямий
+        #     `node …` заради 22 с;
+        #   - `eval-rag-recall` чекав англомовну заглушку «not implemented»,
+        #     якої немає відколи живий режим переїхав у TypeScript.
+        #
+        # Тобто всі п'ять — тести, що відстали від коду на тижні й місяці,
+        # і мовчали рівно тому, що їх не запускали. Перелік замість глоба
+        # і є тим самим «мовчазним гейтом», яким у цьому файлі вже двічі
+        # обґрунтовано виніс бандл-бюджетів в окрему джобу.
+        #
+        # Підкаталоги (`scripts/ci/`, `scripts/docs/`, `scripts/posthog/`,
+        # `scripts/verification/`) лишаються на своїх адресних викликах у
+        # ланцюжку `pnpm lint` — цей крок закриває саме кореневий
+        # `scripts/__tests__`, де діра й була.
+        run: node --test "scripts/__tests__/*.test.mjs"
+
       - name: Deploy-verification gate shape regression test
         # Той самий прийом для гейта в `deploy-api.yml`. Він стереже крок,
         # що дочікується РЕЗУЛЬТАТУ деплою: hook відповідає 2xx на
@@ -229,13 +267,20 @@ jobs:
         # file as void.
         run: bash scripts/check-security-txt-expiry.sh
 
-      - name: Lifecycle marker coverage (Hard Rule #10 — non-blocking)
-        # Theme 4 (consolidated audit 2026-05-13): checks that apps/web/src/**/*.{ts,tsx}
-        # files carry a lifecycle marker (/** @status Active */ or equivalent).
-        # Non-blocking during burn-down (exits 0 even with violations); promoted
-        # to --fail-on-violations once coverage reaches 100%.
-        # See docs/work/specs/audits/archive/2026-05-13-consolidated-page-audit.md § Theme 4 and
-        # docs/governance/governance/rules/10-lifecycle-markers.md.
+      - name: Lifecycle marker coverage (Hard Rule #10 — інформаційно)
+        # Рахує, скільки файлів `apps/web/src/**/*.{ts,tsx}` несуть ЯВНИЙ
+        # lifecycle-маркер. Це спостереження, не список порушень: правило #10
+        # прямо каже, що файл без маркера вважається `Active`, тобто це
+        # дозволений стан; маркер обов'язковий лише для НЕ-Active статусів.
+        #
+        # Звірка 2026-09-19 (PR-3 спеки docs-code-drift-2026-09-19): тут доти
+        # стояло «promoted to --fail-on-violations once coverage reaches 100%»,
+        # а скрипт друкував «Burn-down target: 2026-Q3». Ані ціль, ані дата не
+        # значились у жодному канонічному документі — ні в правилі, ні в
+        # hard-rules.json. Промоутити гейт можна лише ПІСЛЯ зміни самого
+        # правила, інакше він валитиме код, який правилу відповідає.
+        #
+        # Канон: docs/governance/governance/rules/10-lifecycle-markers.md.
         run: node scripts/docs/check-lifecycle-markers.mjs
         continue-on-error: true
 
@@ -277,14 +322,6 @@ jobs:
           fi
           echo "OK: no Node-only imports detected in apps/web bundle."
 
-      - name: TODO freshness gate
-        # Fails CI if any TODO/FIXME/HACK/XXX comments have expired deadlines
-        # or are missing deadlines for tech-debt items. Format example
-        # (keep the sample date ≥ today so this comment itself is not gated):
-        # TODO(T5-feature): 2099-01-01 — description
-        # See scripts/check-todo-freshness.mjs for implementation details.
-        run: pnpm lint:todo-freshness
-
       - name: PWA precache 1st-party gate (PR-38 / L11)
         # Reads `apps/server/dist/sw.js` (produced by the build step
         # above) and fails CI if any non-1st-party URL ended up in the
@@ -293,6 +330,38 @@ jobs:
         # Cache-poisoning + CSP-bypass + GDPR risk all in one go;
         # see https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/pr-38-pwa-precache-first-party.md.
         run: pnpm lint:pwa-precache
+
+  todo-freshness:
+    name: TODO freshness gate
+    # Винесено з `check` 2026-09-16 — той самий клас, що й `bundle-budgets`
+    # нижче (див. коментар там): крок стояв ПІСЛЯ «Format, lint, test,
+    # build», тож щойно той червонів, гейт не виконувався взагалі — і в
+    # логах це тиша, а не «прострочено». Так чотири прострочені цитати
+    # `TODO(0589-…)` (#69) спливли лише тоді, коли `check` знову позеленів,
+    # і одразу на трьох непричетних PR-ах. Це чистий статичний лінт без
+    # артефактів білда, тож окрема джоба коштує кілька секунд на прогін.
+    # Без `needs:` — з тієї ж причини, що й `critical-flow`: залежність від
+    # `check` повернула б рівно те мовчання, заради зняття якого джоба існує.
+    # Форму стереже `scripts/__tests__/ci-todo-freshness-gate.test.mjs`.
+    runs-on: ubuntu-latest
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+
+      - name: TODO freshness gate
+        # Fails CI if any TODO/FIXME/HACK/XXX comments have expired deadlines
+        # or are missing deadlines for tech-debt items. Format example
+        # (keep the sample date ≥ today so this comment itself is not gated):
+        # TODO(T5-feature): 2099-01-01 — description
+        # Скрипт — лише node built-ins, тому без `pnpm install`; те саме, що
+        # `pnpm lint:todo-freshness`, але без обгортки (див. AGENTS.md
+        # § Verification before PR про ціну `pnpm`-виклику).
+        run: node scripts/check-todo-freshness.mjs
 
   bundle-budgets:
     name: Bundle budgets (size-limit + eager)
@@ -917,6 +986,66 @@ jobs:
           if-no-files-found: ignore
           retention-days: 7
 
+  landing-quality:
+    name: Landing quality (axe + Lighthouse)
+    runs-on: ubuntu-latest
+    # Лендінг до 2026-09-15 не покривав ЖОДЕН гейт якості: `test:a11y` і
+    # Lighthouse ганялись лише по `apps/web`. Для сайту, чий єдиний канал —
+    # пошук, це найдорожча дірка: зламана семантика б'є одночасно по читачу
+    # з екранним диктором і по краулеру, який читає ту саму розмітку.
+    #
+    # Без `needs:` — з тієї ж причини, що й у `critical-flow` та
+    # `mobile-ui-audit`: залежність від `check` глушить джобу і коли той
+    # червоний, і коли його скасував новий пуш, а в звіті обидва випадки
+    # виглядають як невинний `0s`. Лейн збирає лендінг сам.
+    steps:
+      # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
+
+      # pnpm/action-setup v6.0.3 (SHA-pinned for supply-chain hardening)
+      - uses: pnpm/action-setup@0e279bb959325dab635dd2c09392533439d90093
+
+      # actions/setup-node v6.4.0 (SHA-pinned for supply-chain hardening)
+      - uses: actions/setup-node@48b55a011bda9f5d6aeb4c2d9c7362e8dae4041e
+        with:
+          node-version: "22"
+          cache: pnpm
+
+      - name: Install dependencies
+        run: pnpm install --frozen-lockfile
+
+      - name: Install Playwright Chromium
+        run: pnpm --filter @sergeant/landing exec playwright install --with-deps chromium
+
+      - name: Axe over every landing route
+        # webServer у apps/landing/playwright.config.ts сам робить
+        # `pnpm run build && vite preview --port 4174`, тож окремого
+        # білд-кроку тут нема. Скануються всі маршрути з routeMeta.json.
+        run: pnpm --filter @sergeant/landing test:a11y
+        env:
+          CI: "true"
+
+      - name: Lighthouse budgets
+        # `always()` — урок бандл-гейтів (див. AGENTS.md § Performance
+        # budgets): крок, що стоїть після потенційно червоного, не є гейтом.
+        # Падіння axe не має ховати число Lighthouse.
+        if: always()
+        run: |
+          pnpm --filter @sergeant/landing build
+          pnpm --filter @sergeant/landing lighthouse
+
+      - name: Upload reports
+        if: always()
+        # actions/upload-artifact v7.0.0 (SHA-pinned)
+        uses: actions/upload-artifact@043fb46d1a93c77aae656e7c1c64a875d1fc6a0a
+        with:
+          name: landing-quality-reports
+          path: |
+            apps/landing/playwright-report
+            apps/landing/.lighthouseci
+          if-no-files-found: ignore
+          retention-days: 7
+
   server-integration:
     name: Server integration tests (Testcontainers)
     runs-on: ubuntu-latest
@@ -1125,6 +1254,18 @@ jobs:
     runs-on: ubuntu-latest
     permissions:
       contents: read
+      # `pull-requests: read` — БЕЗ нього джоба падає на кожному PR, і падає
+      # не знахідкою, а крахом: на `pull_request` gitleaks-action просить
+      # `GET /repos/{owner}/{repo}/pulls/{n}/commits`, щоб знати, які коміти
+      # сканувати, дістає 403 «Resource not accessible by integration» і
+      # вивалюється необробленим винятком ДО того, як щось просканує.
+      #
+      # Чому це не бачили раніше: на `push` у `main` цей виклик не робиться,
+      # тож на головній гілці джоба зелена (звірка 2026-09-19: run на
+      # `9dea9af` — success), а червона рівно там, де сканувати й треба —
+      # на PR. Тобто секрет-гейт був фактично вимкнений на всіх PR-ах,
+      # показуючи при цьому впевнений зелений на `main`.
+      pull-requests: read
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd
@@ -1183,6 +1324,16 @@ jobs:
     permissions:
       contents: read
       pull-requests: write
+      # `actions: read` — той самий дефект, що й у `secret-scan` вище, тільки
+      # на іншому ендпоінті. `pipeline-duration-p95.mjs` читає історію
+      # прогонів (`GET /repos/{owner}/{repo}/actions/workflows/{id}/runs`,
+      # `…/actions/runs/{id}/jobs`), а це скоуп `actions`, якого в блоці не
+      # було: API віддавав `403 Forbidden`, скрипт кидав виняток і джоба
+      # червоніла на КОЖНОМУ прогоні, нічого не змірявши.
+      #
+      # Знайдено звіркою 2026-09-19 одразу після фіксу gitleaks — третій
+      # випадок класу «джоба кличе GitHub API, якого їй не дозволили».
+      actions: read
     steps:
       # actions/checkout v6.0.2 (SHA-pinned for supply-chain hardening)
       - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd

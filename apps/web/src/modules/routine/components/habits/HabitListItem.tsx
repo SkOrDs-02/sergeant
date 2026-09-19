@@ -10,6 +10,7 @@ import { Icon } from "@shared/components/ui/Icon";
 import { RECURRENCE_OPTIONS } from "../../lib/routineConstants";
 import type { Habit } from "../../lib/types";
 import { HabitGlyph } from "../HabitGlyph";
+import { ROUTINE_OUTLINE_ICON_BUTTON } from "../routineIconButton";
 
 export interface HabitListItemProps {
   habit: Habit;
@@ -84,7 +85,7 @@ export const HabitListItem = memo(function HabitListItem({
             <IconButton
               size="sm"
               variant="ghost"
-              className="rounded-xl border border-line text-muted"
+              className={ROUTINE_OUTLINE_ICON_BUTTON}
               onClick={onMoveUp}
               aria-label="Вгору в списку"
             >
@@ -93,7 +94,7 @@ export const HabitListItem = memo(function HabitListItem({
             <IconButton
               size="sm"
               variant="ghost"
-              className="rounded-xl border border-line text-muted"
+              className={ROUTINE_OUTLINE_ICON_BUTTON}
               onClick={onMoveDown}
               aria-label="Вниз в списку"
             >
@@ -102,7 +103,7 @@ export const HabitListItem = memo(function HabitListItem({
           </div>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="sm"
             className="h-9! px-3! text-xs! bg-routine-surface/40 dark:bg-routine-surface-dark/10"
             onClick={onOpenDetails}
@@ -111,7 +112,7 @@ export const HabitListItem = memo(function HabitListItem({
           </Button>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="sm"
             className="h-9! px-3! text-xs!"
             onClick={onStartEdit}
@@ -120,7 +121,7 @@ export const HabitListItem = memo(function HabitListItem({
           </Button>
           <Button
             type="button"
-            variant="secondary"
+            variant="outline"
             size="sm"
             className="h-9! px-3! text-xs!"
             onClick={onArchive}
@@ -129,7 +130,8 @@ export const HabitListItem = memo(function HabitListItem({
           </Button>
           <Button
             type="button"
-            variant="danger"
+            variant="soft"
+            tone="danger"
             size="sm"
             className="h-9! px-3! text-xs!"
             onClick={onRequestDelete}

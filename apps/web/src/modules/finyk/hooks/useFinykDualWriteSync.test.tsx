@@ -85,7 +85,7 @@ describe("useFinykDualWriteSync", () => {
   });
 
   it("SYNC-3: does not re-push a change that arrived via a SQLite cache-overlay tick (pull echo)", () => {
-    // Regression: `docs/90-work/audits/2026-09-01-product-audit/findings.md`
+    // Regression: `docs/work/specs/audits/2026-09-01-product-audit/findings.md`
     // § SYNC-3. `useFinykStorageSlots` overlays every slot from
     // `getCachedFinykSqliteState()` whenever the read-tick bumps — both
     // for a genuine remote pull AND for the echo of this device's own

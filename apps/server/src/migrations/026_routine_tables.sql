@@ -1,5 +1,5 @@
 -- 026: routine_entries + routine_streaks — normalized target shape for the
--- Routine module (Stage 2 / PR #020 із `docs/planning/storage-roadmap.md`).
+-- Routine module (Stage 2 / PR #020 із `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
 --
 -- Контекст. До цього моменту весь стан Routine жив одним JSONB-блобом у
 -- `module_data` з `module='routine'`: габіти, виконання, серії, теги — все

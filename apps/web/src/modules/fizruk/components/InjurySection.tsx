@@ -91,8 +91,9 @@ export function InjurySection({ onOpenBody }: InjurySectionProps = {}) {
         <div className="mt-3">
           <Button
             size="sm"
-            variant="secondary"
-            module="fizruk"
+            variant="soft"
+            tone="fizruk"
+
             onClick={onOpenBody}
           >
             {t.markOnBodyCta}

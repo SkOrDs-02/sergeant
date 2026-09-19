@@ -23,7 +23,7 @@ export interface ChatRequestPayload {
    */
   preset?: ChatPreset;
   /**
-   * AI-5 рішення 1 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`)
+   * AI-5 рішення 1 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`)
    * — echo назад значення `ChatResponse.round_trip_ticket` з першого-турового
    * `tool_calls`-виклику. Дозволяє серверу впізнати цей запит як другий
    * (tool-result-синтезний) HTTP-виклик того самого ходу і не списувати

@@ -19,14 +19,23 @@ vi.mock("./getUserPlan.js", async () => {
 });
 
 /**
- * `requirePlan` читає `env.STRIPE_ENABLED` із Zod-схеми (audit 2026-06-11
+ * `requirePlan` читає прапорці провайдерів із Zod-схеми (audit 2026-06-11
  * ws-08), а `env/env.ts` парсить `process.env` один раз при імпорті — тому
  * кожен кейс стабить env і пере-імпортує модуль з чистого реєстру
  * (паттерн `env/__tests__/assertStartupEnv.test.ts`).
  */
-async function loadRequirePlan(stripeEnabled?: string) {
+async function loadRequirePlan(
+  stripeEnabled?: string,
+  others: { liqpay?: string; plata?: string } = {},
+) {
   if (stripeEnabled !== undefined) {
     vi.stubEnv("STRIPE_ENABLED", stripeEnabled);
+  }
+  if (others.liqpay !== undefined) {
+    vi.stubEnv("LIQPAY_ENABLED", others.liqpay);
+  }
+  if (others.plata !== undefined) {
+    vi.stubEnv("PLATA_ENABLED", others.plata);
   }
   vi.resetModules();
   const mod = await import("./requirePlan.js");
@@ -158,6 +167,77 @@ describe("requirePlan middleware", () => {
     const res = makeRes();
     await requirePlan(pool, "pro")(makeReq("user_1"), res, next);
     expect(res.status).toHaveBeenCalledWith(402);
+  });
+
+  /**
+   * Прод-конфігурація на 2026-09: Stripe dormant, гроші приймають LiqPay і
+   * Plata. Доки гейт читав лише `STRIPE_ENABLED`, ці кейси проходили через
+   * `next()` — тобто весь Pro-функціонал віддавався безкоштовно.
+   */
+  it("enforces the paywall with Stripe OFF and LiqPay ON (live prod shape)", async () => {
+    const requirePlan = await loadRequirePlan("false", { liqpay: "true" });
+    const next = vi.fn() as unknown as NextFunction;
+    getUserPlanMock.mockResolvedValue({
+      plan: "free",
+      status: "active",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+    });
+    const res = makeRes();
+    await requirePlan(pool, "pro")(makeReq("user_1"), res, next);
+    expect(getUserPlanMock).toHaveBeenCalledTimes(1);
+    expect(res.status).toHaveBeenCalledWith(402);
+    expect(next).not.toHaveBeenCalled();
+  });
+
+  it("enforces the paywall with Stripe OFF and Plata ON", async () => {
+    const requirePlan = await loadRequirePlan("false", { plata: "true" });
+    const next = vi.fn() as unknown as NextFunction;
+    getUserPlanMock.mockResolvedValue({
+      plan: "free",
+      status: "active",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+    });
+    const res = makeRes();
+    await requirePlan(pool, "pro")(makeReq("user_1"), res, next);
+    expect(res.status).toHaveBeenCalledWith(402);
+  });
+
+  it("still lets an active Pro user through when only LiqPay is enabled", async () => {
+    const requirePlan = await loadRequirePlan("false", { liqpay: "true" });
+    const next = vi.fn() as unknown as NextFunction;
+    getUserPlanMock.mockResolvedValue({
+      plan: "pro",
+      status: "active",
+      currentPeriodEnd: null,
+      cancelAtPeriodEnd: false,
+    });
+    const res = makeRes();
+    await requirePlan(pool, "pro")(makeReq("user_1"), res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(res.status).not.toHaveBeenCalled();
+  });
+
+  it("keeps the founder bypass when the enabled provider is LiqPay", async () => {
+    vi.stubEnv("AI_QUOTA_FOUNDER_IDS", "founder_1");
+    const requirePlan = await loadRequirePlan("false", { liqpay: "true" });
+    const next = vi.fn() as unknown as NextFunction;
+    const res = makeRes();
+    await requirePlan(pool, "pro")(makeReq("founder_1"), res, next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(getUserPlanMock).not.toHaveBeenCalled();
+  });
+
+  it("bypasses only when every provider flag is off (billing not launched)", async () => {
+    const requirePlan = await loadRequirePlan("false", {
+      liqpay: "false",
+      plata: "false",
+    });
+    const next = vi.fn() as unknown as NextFunction;
+    await requirePlan(pool, "pro")(makeReq("user_1"), makeRes(), next);
+    expect(next).toHaveBeenCalledTimes(1);
+    expect(getUserPlanMock).not.toHaveBeenCalled();
   });
 
   it("env module refuses to parse garbage STRIPE_ENABLED (strict flag)", async () => {

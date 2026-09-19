@@ -1,9 +1,9 @@
 # Sergeant v2 Phase 7 — Product Decisions (2026-05-22)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-26.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-03.
 > **Author:** @Skords-01 (decisions) + Claude Code (recording)
 > **Date:** 2026-05-22
-> **Status:** Active — these are locked product calls that unblock Phase 7 implementation
+> **Status:** Reference — рішення D1–D5 реалізовано, D6 (RN parity відкладено) тримається (звірено з кодом 2026-09-16): D1 — `AuthPage` / `VerifyEmailPage` / `ResetPasswordPage` на `MeshBackground`, флоу без змін; D2 — `useFeatureGate` + `PaywallModal` (`PaywallSurface`) + `featureAccess.ts`; D3 — один платний тир (`usePlan`: `free | pro`, `PricingPage`); `core/billing/TrialBanner.tsx` існував всупереч «без free-trial gate» — рішенням власника 2026-09-16 схований за сплячим прапорцем `billing_trial_banner` (дефолт false, без тумблера; умова зняття в [`feature-flags.md`](../../../engineering/architecture/feature-flags.md)); D4 — `WelcomeModulePicker` + `PresetSheet` + `presetApply.ts`; D5 — `HubChatOverlay` з `/chat` як deep-link. Мобільна пауза після цього закріплена окремо — [ADR-0094](../../../governance/adr/0094-mobile-web-first-freeze.md).
 > **Companion docs:** [`execution-plan.md`](./execution-plan.md) Phase 7 deferred bucket · [`retrospective-2026-05-21.md`](./retrospective-2026-05-21.md) · [`backlog.md`](./backlog.md)
 
 ## TL;DR

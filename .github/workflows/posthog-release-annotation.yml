@@ -1,6 +1,6 @@
 name: PostHog release annotation
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: джоб fail-open — без секрету або з помилкою API він зелений і
 # лише друкує причину. Якщо анотації перестали зʼявлятися на дашбордах —
 # дивись лог кроку "Post annotation" на предмет `::warning::`.

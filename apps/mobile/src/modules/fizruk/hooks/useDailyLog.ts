@@ -3,7 +3,7 @@
  * (weight, sleep, energy, mood).
  *
  * Stage 12 / PR #057f-tombstone-mobile-stage12 of
- * `docs/planning/storage-roadmap.md` (mobile parity for Stage 8
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` (mobile parity for Stage 8
  * `#057f-tombstone` extended to the new Stage 12 daily-log slot).
  * Reads from the SQLite warm cache (`getCachedFizrukSqliteState`)
  * and persists exclusively through the dual-write pipeline

@@ -607,7 +607,7 @@ describe("add_program_day", () => {
 });
 
 describe("log_wellbeing", () => {
-  it("записує самопочуття у fizruk_daily_log_v1", () => {
+  it("записує самопочуття через dual-write у журнал тіла", () => {
     const msg = executeAction({
       name: "log_wellbeing",
       input: {
@@ -619,17 +619,14 @@ describe("log_wellbeing", () => {
     });
     expect(msg).toContain("вага 78");
     expect(msg).toContain("сон 7.5");
-    const arr = readLS<
-      Array<{
-        weightKg: number | null;
-        sleepHours: number | null;
-        energyLevel: number | null;
-      }>
-    >("fizruk_daily_log_v1", []);
-    expect(arr).toHaveLength(1);
-    expect(arr[0]!.weightKg).toBe(78);
-    expect(arr[0]!.sleepHours).toBe(7.5);
-    expect(arr[0]!.energyLevel).toBe(4);
+    // LS-ключ `fizruk_daily_log_v1` tombstoned: журнал їде лише в SQLite
+    // через dual-write, тож перевіряємо `next.dailyLog`, а не localStorage.
+    const next = vi.mocked(triggerFizrukDualWrite).mock.calls.at(-1)?.[1];
+    expect(next?.dailyLog).toHaveLength(1);
+    expect(next?.dailyLog[0]!.weightKg).toBe(78);
+    expect(next?.dailyLog[0]!.sleepHours).toBe(7.5);
+    expect(next?.dailyLog[0]!.energyLevel).toBe(4);
+    expect(localStorage.getItem("fizruk_daily_log_v1")).toBeNull();
   });
 
   it("відмовляє якщо немає жодного поля", () => {
@@ -1014,15 +1011,16 @@ describe("set_daily_plan", () => {
 });
 
 describe("log_weight", () => {
-  it("пише вагу у fizruk_daily_log_v1", () => {
+  it("пише вагу через dual-write у журнал тіла", () => {
     const msg = executeAction({
       name: "log_weight",
       input: { weight_kg: 77.3 },
     });
     expect(msg).toContain("77.3");
-    const arr = readLS<Array<{ weightKg: number }>>("fizruk_daily_log_v1", []);
-    expect(arr).toHaveLength(1);
-    expect(arr[0]!.weightKg).toBe(77.3);
+    const next = vi.mocked(triggerFizrukDualWrite).mock.calls.at(-1)?.[1];
+    expect(next?.dailyLog).toHaveLength(1);
+    expect(next?.dailyLog[0]!.weightKg).toBe(77.3);
+    expect(localStorage.getItem("fizruk_daily_log_v1")).toBeNull();
   });
 
   it("відмовляє на 0/неч.", () => {

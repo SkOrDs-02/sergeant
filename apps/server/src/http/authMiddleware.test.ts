@@ -98,8 +98,11 @@ describe("authMetricsMiddleware structured auth_event log", () => {
       outcome: "bad_credentials",
       status: 401,
       emailHash: expectedEmailHash("user@example.com"),
+      // Невдала спроба — security event: точна адреса потрібна, щоб бан
+      // не зачепив сусідів по /24 (див. `networkOriginFor`).
       ip: "1.2.3.4",
-      ua: "vitest/1.0",
+      ipPrefix: "1.2.3.0/24",
+      ua_family: "unknown",
     });
     expect(logger.info).not.toHaveBeenCalled();
     expect(logger.error).not.toHaveBeenCalled();
@@ -157,6 +160,69 @@ describe("authMetricsMiddleware structured auth_event log", () => {
     expect(logger.error).toHaveBeenCalledWith(
       expect.objectContaining({ outcome: "error", status: 503 }),
     );
+  });
+
+  it("успішний вхід не несе повного IP — лише /24-префікс", () => {
+    const { req, res } = makeReqRes({
+      url: "/api/auth/sign-in/email",
+      body: { email: "user@example.com" },
+      ip: "203.0.113.42",
+      ua: "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/121.0.0.0 Safari/537.36",
+    });
+    authMetricsMiddleware(req, res, () => {});
+    res._finish(200);
+
+    const logged = loggerMocks.info.mock.calls[0]![0] as Record<
+      string,
+      unknown
+    >;
+    expect(logged["outcome"]).toBe("ok");
+    // Політика Class C (`docs/governance/security/pii-handling.md`): IP —
+    // identifier за GDPR Art. 4(1), «логуємо для security events, уникаємо
+    // у звичайних info». Успішний вхід — звичайний info.
+    expect(logged["ip"]).toBeUndefined();
+    expect(logged["ipPrefix"]).toBe("203.0.113.0/24");
+    expect(JSON.stringify(logged)).not.toContain("203.0.113.42");
+    // UA — канонічна форма, не сирий header (знахідка M12).
+    expect(logged["ua_family"]).toBe("chrome 121");
+    expect(JSON.stringify(logged)).not.toContain("AppleWebKit");
+  });
+
+  it("rate_limited і invalid лишаються з повним IP (це security events)", () => {
+    for (const [status, outcome] of [
+      [429, "rate_limited"],
+      [400, "invalid"],
+    ] as const) {
+      vi.clearAllMocks();
+      const { req, res } = makeReqRes({ ip: "198.51.100.7" });
+      authMetricsMiddleware(req, res, () => {});
+      res._finish(status);
+
+      const logged = loggerMocks.warn.mock.calls[0]![0] as Record<
+        string,
+        unknown
+      >;
+      expect(logged["outcome"]).toBe(outcome);
+      expect(logged["ip"]).toBe("198.51.100.7");
+      expect(logged["ipPrefix"]).toBe("198.51.100.0/24");
+    }
+  });
+
+  it("IPv6 успішного входу згортається до /64", () => {
+    const { req, res } = makeReqRes({
+      url: "/api/auth/sign-out",
+      ip: "2001:db8:1234:5678:abcd::1",
+    });
+    authMetricsMiddleware(req, res, () => {});
+    res._finish(200);
+
+    const logged = loggerMocks.info.mock.calls[0]![0] as Record<
+      string,
+      unknown
+    >;
+    expect(logged["ip"]).toBeUndefined();
+    expect(logged["ipPrefix"]).toBe("2001:db8:1234:5678::/64");
+    expect(JSON.stringify(logged)).not.toContain("abcd");
   });
 
   it("skips (no op match) for non-auth URLs and GET requests", () => {

@@ -1,6 +1,6 @@
 # Renovate maintainer runbook
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-20.
+> **Last touched:** 2026-09-17 by @claude (Vercel Preview знято з чек-листа; Dependabot security-PR — ручний merge). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Operational runbook для maintainer-а Sergeant. Описує **щотижневу рутину**, **триаж duplicate-PR-ів** з Dependabot (per [ADR-0044](../../governance/adr/0044-renovate-vs-dependabot.md)), **escalation-шлях** на випадок Mend Renovate downtime, і **monthly hygiene**. Контриб'юторам потрібна дочірня дока [`docs/engineering/integrations/renovate-usage.md`](../../engineering/integrations/renovate-usage.md) — вона про «що приходитиме і як я review-ю». Ця — про «коли і чому щось не приходить».
@@ -24,7 +24,7 @@ Operational runbook для maintainer-а Sergeant. Описує **щотижне
    - `chore(deps): refresh pnpm-lock.yaml` — lockfile maintenance, мерджиться сам після CI;
    - `chore(deps): update <group> to <version>` — групові bumps, читаєш changelog;
    - `chore(deps): update <single-pkg>` — non-grouped, переважно major.
-3. Перевір що CI зелений (Vercel Preview Comments + `check` + `Test coverage` + `Critical-flow E2E`). Якщо CI ще йде — повертайся через 30 хв.
+3. Перевір що CI зелений (`check` + `Test coverage` + `Critical-flow E2E`). Vercel-превʼю на PR-гілках вимкнено з 2026-09-14 (`ignoreCommand`, див. [`monorepo-deploy-filtering.md`](../deploy/monorepo-deploy-filtering.md#превʼю-на-pr-гілках-вимкнено-2026-09-14)) — Vercel-коментаря на Renovate-PR не буде, це норма. Якщо CI ще йде — повертайся через 30 хв.
 4. Auto-merge dev-only patches проходить сам — нічого робити не треба, якщо `Allow auto-merge` ввімкнено в `Settings → General → Pull Requests`.
 5. **Production-deps + minors + majors** — review вручну (див. cheatsheet в `renovate-usage.md` § Як ревʼюїти).
 6. Якщо PR-ів немає взагалі (понеділок, після 7:00) → див. § Mend Renovate downtime.
@@ -110,7 +110,7 @@ LOG_LEVEL=debug npx --package=renovate renovate \
 
 Per ADR-0044, Dependabot піднімає security-PR-и daily. Окремого auto-merge-воркфлоу в репо немає — усі security-PR-и проходять ручне review (історичний `dependabot-automerge.yml` прибрано).
 
-1. **Patch-only direct production** → нічого не робити, auto-merge впорається після зеленого CI;
+1. **Patch-only direct production** → після зеленого CI мерджити вручну (`renovate.json` `automerge` стосується лише Renovate-PR-ів; на Dependabot-PR ані Renovate, ані окремий workflow auto-merge не вмикають);
 2. **Minor/major security** → читай advisory (`Dependabot fetched: GHSA-...` лінк у тілі PR), оцінюй breaking-ризик, якщо OK — merge;
 3. **Indirect production** (наприклад, transitive `@types/node`) → переконайся, що pin у `package.json` overrides (якщо є) не блокує fix, merge або пін;
 4. **MTTR target:** ≤ 24 години від `disclosed_at` advisory до merged-PR. Якщо більше — додай рядок у `docs/governance/security/nightly-audit.md` з причиною затримки.

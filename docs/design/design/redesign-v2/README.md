@@ -4,10 +4,13 @@
 > **Next review:** оновлюється з кожним phase-wrap (див. `execution-status.md`).
 > **Status:** Reference — Redesign-v2 закрито 2026-05-21 (див. [`execution-status.md`](./execution-status.md) і [`retrospective-2026-05-21.md`](./retrospective-2026-05-21.md)). Phase 7+ лишився out of scope per scope boundaries section.
 
-Sergeant v2 редизайн (foundation merged 2026-05) ввів parallel v2 token namespace
-поверх legacy `--c-*` токенів: glass surfaces, mesh background, ink-strong типографія
-(Manrope display + Inter body), 22 нові Lucide icons, AIPill / InsightCard surfaces.
-Legacy токени лишаються активні — нічого не зламано. Міграція — поступова.
+На момент злиття у травні 2026 v2-редизайн ввів parallel v2 token namespace поверх legacy
+`--c-*` токенів: glass surfaces, mesh background, ink-strong типографія на Manrope (display і
+body — Inter у стеку не було), нові іконки у власному `<Icon>` (hand-authored path-и в
+`Icon.paths.*.tsx`, без lucide) і `InsightCard` (компонента `AIPill` не існує — ім'я лишилось у
+коментарях). Станом на 2026-09-16 `--surface-glass*` — deprecated аліаси на непрозорі заливки
+(`theme.css`), mesh-свічення зняті 2026-09-03 («стіл і зона»; `MeshBackground.tsx` тримає лише
+клас `.bg-mesh`). Legacy `--c-*` активні; кластер нижче — історія переходу.
 
 ## Документи кластера
 

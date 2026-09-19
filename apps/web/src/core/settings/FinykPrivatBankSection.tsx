@@ -154,7 +154,8 @@ export function FinykPrivatBankSection({
             </div>
           </div>
           <Button
-            variant="danger"
+            variant="soft"
+            tone="danger"
             className="w-full h-11"
             onClick={() => setConfirmDisconnectPrivat(true)}
           >
@@ -209,7 +210,7 @@ export function FinykPrivatBankSection({
               >
                 <Icon
                   name={showPrivatToken ? "eye-off" : "eye"}
-                  size={16}
+                  size="md"
                   aria-hidden
                 />
               </button>

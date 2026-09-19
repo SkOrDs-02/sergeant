@@ -276,6 +276,65 @@ describe("buildMeExport — contract fixture (Hard Rule #3)", () => {
     });
   });
 
+  it("ai.usageDaily: est_cost_usd — число, usage_day — YYYY-MM-DD", async () => {
+    // Форма рядка рівно така, як її віддає node-pg: NUMERIC (OID 1700) не
+    // покритий глобальним int8-парсером, тож приїжджає РЯДКОМ, а
+    // `usage_day` після `::text` у SELECT-і — уже готовий день-ключ.
+    const usageRow = {
+      usage_day: "2026-09-16",
+      bucket: "anthropic:claude-3-5-haiku",
+      request_count: 3,
+      est_cost_usd: "0.001350",
+      deleted_at: null,
+    };
+    const db = {
+      query: vi.fn().mockImplementation((sql: string) => {
+        if (typeof sql === "string" && sql.includes("FROM ai_usage_daily")) {
+          return Promise.resolve({ rows: [usageRow] });
+        }
+        return Promise.resolve({ rows: [] });
+      }),
+    };
+
+    const result = await buildMeExport(db, ME_USER);
+    const row = result.data.ai.usageDaily[0] as Record<string, unknown>;
+
+    // Обидва числові поля — числа. Раніше сусіди в одному обʼєкті мали
+    // різні типи: `request_count` число, `est_cost_usd` рядок.
+    expect(typeof row["request_count"]).toBe("number");
+    expect(row["est_cost_usd"]).toBe(0.00135);
+    expect(typeof row["est_cost_usd"]).toBe("number");
+
+    // День лишається днем, а не миттю в чужій таймзоні.
+    expect(row["usage_day"]).toBe("2026-09-16");
+    expect(String(row["usage_day"])).not.toContain("T");
+
+    // SELECT мусить брати день уже текстом — інакше node-pg віддасть `Date`
+    // і коерсія на віддачі знову гадатиме про таймзону.
+    const usageSql = db.query.mock.calls
+      .map((call: unknown[]) => String(call[0]))
+      .find((sql: string) => sql.includes("FROM ai_usage_daily"));
+    expect(usageSql).toContain("usage_day::text");
+  });
+
+  it("ai.usageDaily: NULL у est_cost_usd лишається NULL, а не 0", async () => {
+    const db = {
+      query: vi.fn().mockImplementation((sql: string) => {
+        if (typeof sql === "string" && sql.includes("FROM ai_usage_daily")) {
+          return Promise.resolve({
+            rows: [{ usage_day: "2026-09-16", est_cost_usd: null }],
+          });
+        }
+        return Promise.resolve({ rows: [] });
+      }),
+    };
+    const result = await buildMeExport(db, ME_USER);
+    const row = result.data.ai.usageDaily[0] as Record<string, unknown>;
+    // `Number(null)` це 0 — саме та тиха підміна, через яку експорт
+    // стверджував би витрату там, де її просто не записано.
+    expect(row["est_cost_usd"]).toBeNull();
+  });
+
   it("mono.connection is null when no connection row", async () => {
     const db = mockDb([]);
     const result = await buildMeExport(db, ME_USER);

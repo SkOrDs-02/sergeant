@@ -1,9 +1,30 @@
 # Tech-debt assessment 2026-07-01 — групи, інструкції до фіксу, burndown-план
 
-> **Last touched:** 2026-07-20 by @cursoragent (post-waves sync). **Next review:** 2026-11-08.
+> **Last touched:** 2026-09-17 by @claude (звірка відкритих пунктів із HEAD). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Методологія (оригінал 2026-07-01):** повний прогін механічних гейтів + воркфло з підагентів. **Re-audit 2026-07-20:** повторне вимірювання на `main` — потім **agent waves** закрили actionable P1 (див. нижче). Цей файл = живий burndown після хвиль.
+
+> **Оновлено 2026-09-17 (звірка з HEAD).** Переміряно три відкриті пункти backlog-у нижче; два з трьох чисел розійшлися.
+>
+> | Пункт backlog-у                               | Було записано                                             | Факт на HEAD (2026-09-17)                                                                                                                           |
+> | --------------------------------------------- | --------------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------- |
+> | 1. Mobile coverage floor 30 → ratchet (TC-03) | «немає вимірювання взагалі», `--filter=!@sergeant/mobile` | **підтверджено без змін** — `coverage-thresholds.json` сам це коментує; діагноз чинний                                                              |
+> | 2. Production-`eslint-disable`                | **158** рядків                                            | **219** (web 176 + server 25 + mobile 18; без тестів / `__tests__` / stories). Тобто число не «зрізалось хвилями», а виросло на 39% за шість тижнів |
+> | 3. Mobile 12px-floor                          | **156** (17 `text-2xs` + 139 `text-[<12px]`)              | **154** (17 + **137**), `.text-style-*` = 0 — gate і далі owner-gated                                                                               |
+>
+> Розподіл «трьох by-design правил» із Групи 3 теж переміряний і теж застарів:
+> `prefer-kyiv-time` **49**, `no-raw-storage-key` **15**, `no-cyrillic-jsx-literal` **9**
+> (разом **73**) — у `README.md § C` стояло 6 + 11 + 6. Це не регрес якості: усі три
+> правила by-design глушаться з каталогом, і саме тому «ціль <100» лишається
+> нереалістичною. Але цифра, якою це обґрунтовують, мусить бути справжньою.
+>
+> **Група 1 (server max-lines) — спосіб перевірки уточнено.** Рядок «allowlist = `[]`»
+> тепер невірний буквально: файла `apps/server/eslint.server-maxlines-allowlist.json`
+> більше немає взагалі (`eslint.server.js:140` фіксує «reached zero and was removed»).
+> Чинний доказ закриття — не наявність порожнього allowlist-у і не `wc -l`, а прогін
+> `npx eslint "apps/server/src/**/*.ts" "apps/web/src/**/*.{ts,tsx}"` → **0 errors,
+> 8 warnings, жодного `max-lines`** (2026-09-17).
 
 ## Executive summary
 
@@ -23,8 +44,8 @@
 **Відкритий actionable backlog (переміряно 2026-08-07):**
 
 1. Mobile coverage floor 30 → ratchet (P3). **Уточнення 2026-08-07: це не «чекає headroom», а не має вимірювання взагалі.** `test:coverage:ci` запускається з `--filter=!@sergeant/mobile`, тобто mobile-покриття в CI не рахується — ратчетити нема від чого. Спершу треба завести mobile у coverage-лейн (або окремим job-ом), і лише потім піднімати floor.
-2. Подальший `!` / eslint burndown — опційно, P3. **Скоуп зменшився:** `AccentColorPicker` видалено як компонент-сироту ще 2026-08-04, тож із трійки лишились barcode і server sync. Загальна кількість production-`eslint-disable` — **158** рядків (у Групі 3 нижче записано ~195).
-3. **Mobile 12px-floor — новий запис.** `apps/mobile/src`: 156 порушень (17 `text-2xs` + 139 `text-[<12px]`) при нулі `.text-style-*`. Gated на створення семантичної шкали для NativeWind (owner-decision) — деталі у `frontend.md` п.8.
+2. Подальший `!` / eslint burndown — опційно, P3. **Скоуп зменшився:** `AccentColorPicker` видалено як компонент-сироту ще 2026-08-04, тож із трійки лишились barcode і server sync. Загальна кількість production-`eslint-disable` — **158** рядків (у Групі 3 нижче записано ~195). **Переміряно 2026-09-17: 219.**
+3. **Mobile 12px-floor — новий запис.** `apps/mobile/src`: 156 порушень (17 `text-2xs` + 139 `text-[<12px]`) при нулі `.text-style-*` — **переміряно 2026-09-17: 154** (17 + 137), `.text-style-*` і далі 0. Gated на створення семантичної шкали для NativeWind (owner-decision) — деталі у `frontend.md` п.8.
 
 **Закрито цим проходом (2026-08-07):**
 
@@ -40,7 +61,7 @@
 
 ## Група 1 — Server max-lines burndown (Hard Rule #18) — ✅ DONE (2026-07-10)
 
-**Верифіковано 2026-07-10 / підтверджено 2026-07-20:** `apps/server/eslint.server-maxlines-allowlist.json` = `[]`.
+**Верифіковано 2026-07-10 / підтверджено 2026-07-20:** `apps/server/eslint.server-maxlines-allowlist.json` = `[]`. **Звірено 2026-09-17:** файла більше немає (allowlist прибрано, `eslint.server.js:140`); закриття підтверджує прогін ESLint із нулем `max-lines`, а не порожній JSON.
 
 | Файл                               | raw (до → після / now) | Результат                                   |
 | ---------------------------------- | ---------------------- | ------------------------------------------- |
@@ -73,16 +94,16 @@
 
 ## Група 3 — eslint-disable burndown — частково Closed у waves
 
-Виміряно **~195** production-рядків з `eslint-disable` (web+server+mobile+packages, без тестів); ціль «<100» нереалістична — більшість by-design. **Переміряно 2026-08-07: 158** — хвилі та видалення мертвих компонентів зрізали ще ~37, окремої кампанії не потрібно.
+Виміряно **~195** production-рядків з `eslint-disable` (web+server+mobile+packages, без тестів); ціль «<100» нереалістична — більшість by-design. **Переміряно 2026-08-07: 158** — хвилі та видалення мертвих компонентів зрізали ще ~37, окремої кампанії не потрібно. **Переміряно 2026-09-17: 219** (web 176 / server 25 / mobile 18; у `packages/*/src` — 0). Висновок про кампанію не змінився, але напрямок руху змінився на протилежний: за шість тижнів +61 рядок, тобто «opportunistic burndown» не встигає за темпом появи нових директив.
 
-| Ціль                                                      | Статус                                                                                                                             |
-| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------- |
-| `no-raw-storage-key` / `no-restricted-syntax` WHY         | ✅ [#351](https://github.com/SkOrDs-02/Sergeant/pull/351)                                                                          |
-| `@typescript-eslint/no-non-null-assertion` (перша хвиля)  | ✅ [#353](https://github.com/SkOrDs-02/Sergeant/pull/353)                                                                          |
-| `!` low-risk web batch                                    | ✅ (Avatar / FocusTrap / AnimatedList / KeyboardAccessory / accountVisual / DailyPlanMealRow / LogCardAnalytics / cleanupDemoData) |
-| Mobile exhaustive-deps catalog                            | ✅ [#349](https://github.com/SkOrDs-02/Sergeant/pull/349)                                                                          |
-| Подальший security-pass / `!` / FS (barcode, server sync) | Відкрито, P3 — opportunistic. `AccentColorPicker` відпав: компонент видалено 2026-08-04 як сироту                                  |
-| Web exhaustive-deps catalog                               | ✅ Done (web=0)                                                                                                                    |
+| Ціль                                                      | Статус                                                                                                                                                                                                                                                                                               |
+| --------------------------------------------------------- | ---------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `no-raw-storage-key` / `no-restricted-syntax` WHY         | ✅ [#351](https://github.com/SkOrDs-02/Sergeant/pull/351)                                                                                                                                                                                                                                            |
+| `@typescript-eslint/no-non-null-assertion` (перша хвиля)  | ✅ [#353](https://github.com/SkOrDs-02/Sergeant/pull/353)                                                                                                                                                                                                                                            |
+| `!` low-risk web batch                                    | ✅ (Avatar / FocusTrap / AnimatedList / KeyboardAccessory / accountVisual / DailyPlanMealRow / LogCardAnalytics / cleanupDemoData)                                                                                                                                                                   |
+| Mobile exhaustive-deps catalog                            | ✅ [#349](https://github.com/SkOrDs-02/Sergeant/pull/349)                                                                                                                                                                                                                                            |
+| Подальший security-pass / `!` / FS (barcode, server sync) | Відкрито, P3 — opportunistic. `AccentColorPicker` відпав: компонент видалено 2026-08-04 як сироту. **Переміряно 2026-09-17:** `!` лишилось **3** (`useBarcodeScanner.ts:127,128`, `nutritionCloudBackup.ts:11`) — server sync уже на нулі; FS-warning один (`apps/server/src/routes/frontend.ts:27`) |
+| Web exhaustive-deps catalog                               | ✅ Done (web=0)                                                                                                                                                                                                                                                                                      |
 
 ## Група 4 — Рекласифіковано: dualWrite/residualImport — НЕ дублікати
 

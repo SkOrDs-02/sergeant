@@ -4,6 +4,7 @@
    assertion is pre-existing. */
 import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
+import { validatePositiveAmount } from "./amountValidation";
 import type {
   CreateDebtAction,
   CreateReceivableAction,
@@ -15,11 +16,14 @@ import type {
 
 export function createDebt(action: CreateDebtAction): ChatActionResult {
   const { name, amount, due_date, emoji } = action.input;
+  const amountCheck = validatePositiveAmount(amount, "amount");
+  if (!amountCheck.ok) return amountCheck.message;
+  const amountN = amountCheck.value;
   const debts = ls<Debt[]>("finyk_debts", []);
   const newDebt: Debt = {
     id: `d_${Date.now()}`,
     name,
-    totalAmount: Number(amount),
+    totalAmount: amountN,
     dueDate: due_date || "",
     emoji: emoji || "",
     linkedTxIds: [],
@@ -28,7 +32,7 @@ export function createDebt(action: CreateDebtAction): ChatActionResult {
   finykChatWrite("finyk_debts", debts);
   const debtId = newDebt.id;
   return {
-    result: `Борг "${name}" на ${amount} грн створено (id:${debtId})`,
+    result: `Борг "${name}" на ${amountN} грн створено (id:${debtId})`,
     undo: () => {
       const cur = ls<Debt[]>("finyk_debts", []);
       const next = cur.filter((d) => d.id !== debtId);
@@ -41,18 +45,21 @@ export function createReceivable(
   action: CreateReceivableAction,
 ): ChatActionResult {
   const { name, amount } = action.input;
+  const amountCheck = validatePositiveAmount(amount, "amount");
+  if (!amountCheck.ok) return amountCheck.message;
+  const amountN = amountCheck.value;
   const recv = ls<Receivable[]>("finyk_recv", []);
   const newRecv: Receivable = {
     id: `r_${Date.now()}`,
     name,
-    amount: Number(amount),
+    amount: amountN,
     linkedTxIds: [],
   };
   recv.push(newRecv);
   finykChatWrite("finyk_recv", recv);
   const recvId = newRecv.id;
   return {
-    result: `Дебіторку "${name}" на ${amount} грн додано (id:${recvId})`,
+    result: `Дебіторку "${name}" на ${amountN} грн додано (id:${recvId})`,
     undo: () => {
       const cur = ls<Receivable[]>("finyk_recv", []);
       const next = cur.filter((r) => r.id !== recvId);

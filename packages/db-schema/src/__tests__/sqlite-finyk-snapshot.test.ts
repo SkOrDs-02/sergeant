@@ -30,7 +30,7 @@ import {
  * mirroring the structural lock-down that `pg-finyk-snapshot.test.ts`
  * applies to the Postgres source-of-truth.
  *
- * Stage 4 / PR #035 of `docs/planning/storage-roadmap.md`. PG↔SQLite
+ * Stage 4 / PR #035 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. PG↔SQLite
  * schemas must stay aligned so push/pull round-trips are symmetric.
  *
  * The five-group structure (composite-PK tombstone, per-row+JSONB,

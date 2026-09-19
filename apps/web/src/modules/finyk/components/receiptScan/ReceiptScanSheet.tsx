@@ -291,7 +291,7 @@ export function ReceiptScanSheet({
             )}
             <div className="flex gap-3">
               <Button
-                variant="secondary"
+                variant="outline"
                 className="flex-1"
                 onClick={onClose}
                 disabled={isSaving}
@@ -299,8 +299,10 @@ export function ReceiptScanSheet({
                 Скасувати
               </Button>
               <Button
+                variant="solid"
+                tone="finyk"
                 className="flex-1"
-                module="finyk"
+
                 onClick={() => void handleSave()}
                 loading={isSaving}
               >
@@ -310,8 +312,10 @@ export function ReceiptScanSheet({
           </div>
         ) : editingItem ? (
           <Button
+            variant="solid"
+            tone="finyk"
             className="w-full"
-            module="finyk"
+
             onClick={() => setEditingItemId(null)}
           >
             Готово
@@ -346,24 +350,29 @@ export function ReceiptScanSheet({
           )}
           {DPS_QR_SCAN_ENABLED && (
             <Button
+              variant="solid"
+              tone="finyk"
               className="w-full"
-              module="finyk"
+
               onClick={() => {
                 setFlowError(null);
                 setStage("camera");
               }}
             >
-              <Icon name="scanner" size={16} aria-hidden />
+              <Icon name="scanner" size="md" aria-hidden />
               Скан QR камерою
             </Button>
           )}
           <Button
-            variant={DPS_QR_SCAN_ENABLED ? "secondary" : "primary"}
-            module={DPS_QR_SCAN_ENABLED ? undefined : "finyk"}
+            // Під прапорцем — нейтральна другорядна (легасі `secondary` без
+            // module); без нього — суцільна модульна (легасі `primary` +
+            // module -> `finyk`). Обидві гілки збережені один в один.
+            variant={DPS_QR_SCAN_ENABLED ? "outline" : "solid"}
+            tone={DPS_QR_SCAN_ENABLED ? undefined : "finyk"}
             className="w-full"
             onClick={() => fileInputRef.current?.click()}
           >
-            <Icon name="camera" size={16} aria-hidden />
+            <Icon name="camera" size="md" aria-hidden />
             Завантажити фото
           </Button>
           {/* AI-NOTE: кегль тут навмисний — це підказка ПІД контролом, один
@@ -448,7 +457,7 @@ export function ReceiptScanSheet({
             onDetected={(rawText) => void handleQrDetected(rawText)}
           />
           <Button
-            variant="secondary"
+            variant="outline"
             className="w-full"
             onClick={() => fileInputRef.current?.click()}
           >

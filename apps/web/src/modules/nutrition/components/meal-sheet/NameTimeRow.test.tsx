@@ -81,6 +81,25 @@ describe("NameTimeRow", () => {
     expect(screen.getByLabelText("Час")).toBeInTheDocument();
   });
 
+  // Пін на контракт ширини нативного контрола. `[min-inline-size:0]` дає
+  // лише спільний примітив (`DateField` / `TimeField`); сирий `Input` його
+  // НЕ має, і саме так поле ставало ширшим за екран на iOS. Playwright тут
+  // не помічник — Chromium цей дефект не відтворює (заміряно 2026-09-15,
+  // див. docs/start/instructions/fix-mobile-horizontal-overflow.md § 3).
+  it("тримає поле часу в межах рядка — жодного intrinsic-розпирання", () => {
+    const field = vi.fn(() => vi.fn());
+    render(
+      <NameTimeRow
+        form={makeForm({ time: "08:15" })}
+        field={field}
+        setForm={vi.fn()}
+      />,
+    );
+    expect(screen.getByLabelText("Час").className).toContain(
+      "[min-inline-size:0]",
+    );
+  });
+
   it("routes name input changes through the field setter", () => {
     const setName = vi.fn();
     const field = vi.fn((key: string) => (key === "name" ? setName : vi.fn()));

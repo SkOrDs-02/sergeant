@@ -5,8 +5,12 @@ import {
   parseRequiredDate,
   parseOptionalNumber,
   parseOptionalInt,
+  parseOptionalBoundedNumber,
+  parseOptionalBoundedInt,
   toNonNegativeInt,
   toJsonbParam,
+  WORKOUT_SET_REPS_BOUNDS,
+  WORKOUT_SET_WEIGHT_KG_BOUNDS,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 
@@ -359,11 +363,16 @@ export async function applyFizrukSets(
   if (!workoutItemId) {
     return { status: "rejected", reason: "missing_workout_item_id" };
   }
-  const weightKg = parseOptionalNumber(row["weight_kg"]);
+  // W4 — межі, не голий "це скінченне число?" (curl могла записати
+  // `weight_kg: -500` чи `reps: 999999999`); канон меж — `syncV2-core.ts`.
+  const weightKg = parseOptionalBoundedNumber(
+    row["weight_kg"],
+    WORKOUT_SET_WEIGHT_KG_BOUNDS,
+  );
   if (weightKg === "invalid") {
     return { status: "rejected", reason: "invalid_weight_kg" };
   }
-  const reps = parseOptionalInt(row["reps"]);
+  const reps = parseOptionalBoundedInt(row["reps"], WORKOUT_SET_REPS_BOUNDS);
   if (reps === "invalid") {
     return { status: "rejected", reason: "invalid_reps" };
   }

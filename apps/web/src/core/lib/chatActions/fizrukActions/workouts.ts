@@ -5,6 +5,7 @@ import {
   getKyivDayKey,
   parseKyivDate,
 } from "@shared/lib/time/kyivTime";
+import { MAX_REPS, MAX_WEIGHT_KG } from "@fizruk/lib/numericBounds";
 import { readFizrukWorkouts, persistFizrukWorkouts } from "./shared";
 import type { Workout, WorkoutItem, WorkoutSet } from "@sergeant/fizruk-domain";
 import type {
@@ -117,8 +118,14 @@ export function logSet(action: LogSetAction): ChatActionResult {
   if (!Number.isFinite(repsN) || repsN <= 0) {
     return "Некоректна кількість повторень.";
   }
+  if (repsN > MAX_REPS) {
+    return `Забагато повторень у підході (максимум ${MAX_REPS}). Перевір число і спробуй ще раз.`;
+  }
   const weightN = Number(weight_kg);
   const weightKg = Number.isFinite(weightN) && weightN >= 0 ? weightN : 0;
+  if (weightKg > MAX_WEIGHT_KG) {
+    return `Вага підходу занадто велика (максимум ${MAX_WEIGHT_KG} кг). Перевір число і спробуй ще раз.`;
+  }
   const setsN = Math.max(1, Math.min(20, Number(sets) || 1));
   const newSets: WorkoutSet[] = Array.from({ length: setsN }, () => ({
     weightKg,

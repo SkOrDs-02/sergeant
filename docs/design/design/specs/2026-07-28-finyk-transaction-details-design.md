@@ -2,8 +2,8 @@
 
 # Канонічні деталі операції та глобальний FAB Фініка
 
-> **Last touched:** 2026-07-28 by Codex. **Next review:** 2027-01-27.
-> **Status:** Active — implementation ready, PR pending
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-05-04.
+> **Status:** Shipped — `BankTransactionDetailsSheet.tsx` (канонічний редактор: банківські факти read-only, overlay-и категорія / нотатка / split / видимість в одному місці), глобальний FAB на весь модуль (`FinykScanEntryPoints.tsx` з `FinykApp`), івент `finyk_tx_categorized` збережено.
 
 ## Мета
 

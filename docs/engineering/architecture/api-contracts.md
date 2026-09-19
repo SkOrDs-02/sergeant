@@ -1,9 +1,9 @@
 # API contracts — runtime consumer-driven contract testing (Pact)
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-14.
+> **Last touched:** 2026-09-17 by @claude (лічильники інтеракцій → вказівник на header `provider.test.ts`). **Next review:** 2026-12-16.
 > **Status:** Active
 >
-> **v2 (persona-extend) coverage:** 22 consumer interactions → 14 unique routes; 8+ provider replays у `provider.test.ts` (решта — `it.todo` або auth-stubbed). Див. header comment у `apps/server/src/__tests__/contracts/provider.test.ts`.
+> **Coverage:** актуальні числа (consumer interactions / unique routes / provider replays) живуть у header-коментарі `apps/server/src/__tests__/contracts/provider.test.ts` і в самому pact-файлі — тут не дублюються, бо старіють із кожним `*.contract.test.ts` (їх перелік: `ls packages/api-client/src/__tests__/contracts/`). Знімок v2 persona-extend (2026-07) казав «22 interactions → 14 routes» — це історія.
 
 Pact-based **runtime** contract verification for `@sergeant/api-client ↔ @sergeant/server`. Доповнює, а не замінює, **type-level** sync через Hard Rule #3 ([`03-api-contract-server-client-test.md`](../../governance/governance/rules/03-api-contract-server-client-test.md)) + `pnpm api:check-openapi`.
 
@@ -136,7 +136,9 @@ jobs:
 4. **Запусти locally:** `pnpm --filter @sergeant/server test -- src/__tests__/contracts/provider.test.ts`.
 5. **Pre-PR:** `pnpm check` (включно з `format:check`, `lint`, `typecheck`, `test`, `build`).
 
-## 🚧 Coverage map (v2 — persona-extend)
+## 🚧 Coverage map (знімок v2 — persona-extend, 2026-07)
+
+> Таблиця нижче — історичний зріз перших десяти endpoint-ів. Повний і актуальний список замінених interactions та provider-replay-ів — header-коментар у `apps/server/src/__tests__/contracts/provider.test.ts` (він оновлюється разом із кожним розширенням: billing/privat/finyk, preferences/profile, receipt-scan + bulk-import, other-bank-statement). Тут таблицю не розширюємо.
 
 | Persona / endpoint                                | Consumer pact | Provider replay | Notes                                                                                                           |
 | ------------------------------------------------- | :-----------: | :-------------: | --------------------------------------------------------------------------------------------------------------- |

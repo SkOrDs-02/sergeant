@@ -185,6 +185,21 @@ describe("NotificationsSection", () => {
     expect(monthlyPlanState.setReminder).toHaveBeenCalledWith(10, 15);
   });
 
+  // Пін на контракт ширини нативного контрола. `[min-inline-size:0]` дає
+  // лише спільний примітив (`TimeField`); сирий `<input type="time">` у
+  // flex-рядку його НЕ мав, і нативний intrinsic inline-size розпирав
+  // рядок. Chromium цього не відтворює (заміряно 2026-09-15), тож юніт —
+  // єдиний гейт: docs/start/instructions/fix-mobile-horizontal-overflow.md
+  it("тримає поле часу в межах рядка — жодного intrinsic-розпирання", () => {
+    stubNotification("granted");
+    monthlyPlanState.reminderEnabled = true;
+    renderSettingsSection(<NotificationsSection />);
+    const timeInput = document.querySelector(
+      'input[type="time"]',
+    ) as HTMLInputElement;
+    expect(timeInput.className).toContain("[min-inline-size:0]");
+  });
+
   it("persists nutrition reminder pref on toggle", async () => {
     stubNotification("granted");
     renderSettingsSection(<NotificationsSection />);

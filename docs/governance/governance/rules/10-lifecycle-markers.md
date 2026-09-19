@@ -20,6 +20,19 @@
 - **ci** — pnpm lint:ai-legacy
 - **ci** — pnpm dead-code:files (honours @scaffolded markers)
 
+> **Не гейт, а лічильник:** `pnpm lint:lifecycle-markers`
+> ([`check-lifecycle-markers.mjs`](../../../../scripts/docs/check-lifecycle-markers.mjs))
+> рахує частку файлів `apps/web/src/**` з ЯВНИМ маркером. Це спостереження, а
+> не enforcement цього правила — див. наступний абзац: файл без маркера
+> правилу **відповідає**.
+>
+> Звірка 2026-09-19 знайшла, що і скрипт, і крок CI обіцяли «burn-down до
+> 2026-Q3» і промоут у блокуючий гейт «при 100 % покриття». Ні тієї дати, ні
+> тієї вимоги немає ні тут, ні в [`hard-rules.json`](../hard-rules.json) —
+> вони жили лише в коментарях коду. Формулювання приведено до правила; щоб
+> зробити явний маркер обов'язковим для ВСІХ файлів, треба спершу змінити
+> саме це правило, а не вмикати прапорець.
+
 ## Why / What is enforced
 
 > Why a hard rule? Because PR [#1143](https://github.com/Skords-01/Sergeant/pull/1143) silently merged a "dead-code cleanup" that deleted scaffolded-but-not-yet-wired components (`PullToRefreshIndicator`, `usePullToRefresh`, `EmptyStateIllustrations`, `OptimizedImage`). They were dropped in by a `feat(web)` commit ahead of integration and `pnpm knip` correctly reported "no importers" — but cleaning them up was wrong, because they were the next-step UI scaffolding, not legacy. We need a way to tell intentional-zero-importers apart from real dead code.

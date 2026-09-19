@@ -1,6 +1,6 @@
 name: Deploy landing (Vercel CLI)
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 #
 # Чому цей воркфлоу існує. Лендінг їхав у прод ВИКЛЮЧНО через нативну
 # Git-інтеграцію Vercel, і коли вона відвалилась, деплої просто перестали

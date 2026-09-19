@@ -10,10 +10,14 @@ import { logger } from "@shared/lib";
 import { isSyncableUserId } from "../syncEngine/syncableUserId.js";
 import { CLIENT_PULL_SUPPORTED_TABLES } from "../syncEngine/applyPullOp.js";
 import { noteActiveSqliteVfs } from "./storageBackendState.js";
+import {
+  makeLocalConnection,
+  type SqliteConnection,
+} from "./sqliteConnection.js";
 
 /**
  * Lazy-loaded SQLite-WASM client for `apps/web` (PR #015 in
- * `docs/planning/storage-roadmap.md`).
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`).
  *
  * Why this lives outside the main bundle:
  *
@@ -28,14 +32,20 @@ import { noteActiveSqliteVfs } from "./storageBackendState.js";
  *
  * VFS selection (best → worst):
  *
- * 1. **OPFS-SAH Pool** — persistent, durable, no COOP/COEP needed
- *    (`installOpfsSAHPoolVfs()`). Available in Chrome 86+, Firefox 111+,
- *    Safari 17+ on the main thread.
- * 2. **kvvfs (`localStorage`)** — persistent fallback for older Safari /
- *    iOS < 16.4 where `FileSystemSyncAccessHandle` is missing. Capped at
- *    ~5 MB by the browser; sufficient as a stop-gap until a true IDB-VFS
- *    lands.
- * 3. **`:memory:`** — last resort so the contract still resolves; data
+ * 1. **OPFS-SAH Pool у ВОРКЕРІ** ({@link openWorkerBackedDb}) — основний
+ *    шлях від стадії 3 спеки `sqlite-opfs-worker.md`. Файл на акаунт,
+ *    стеля — частка вільного місця пристрою.
+ * 2. **OPFS-SAH Pool на головному потоці** — історична гілка, яка на
+ *    практиці не спрацьовує НІКОЛИ: `installOpfsSAHPoolVfs()` вимагає
+ *    `FileSystemSyncAccessHandle`, доступний лише у воркері, тож виклик
+ *    кидає `Missing required OPFS APIs`. Саме через це kvvfs-фолбек
+ *    «для старого iOS» був основним шляхом для всіх до стадії 1.
+ *    Лишена свідомо: вона нічого не коштує, поки воркер живий, і є
+ *    останнім шансом на OPFS, якщо воркер не піднявся.
+ * 3. **kvvfs (`localStorage`)** — фолбек, коли воркер не піднявся.
+ *    Стеля ~5 МБ; продукт на такому пристрої лишається робочим, але
+ *    переростає її так само, як переріс до переїзду.
+ * 4. **`:memory:`** — last resort so the contract still resolves; data
  *    does not survive a reload.
  *
  * Concurrency: every caller awaits the same in-flight init promise — see
@@ -45,10 +55,6 @@ import { noteActiveSqliteVfs } from "./storageBackendState.js";
 
 type SqliteWasmModule = typeof import("@sqlite.org/sqlite-wasm");
 type Sqlite3Static = Awaited<ReturnType<SqliteWasmModule["default"]>>;
-type Sqlite3Database = InstanceType<Sqlite3Static["oo1"]["DB"]>;
-type ExecOptionsArg = Parameters<Sqlite3Database["exec"]>[0];
-type ExecOptions = Exclude<ExecOptionsArg, string | readonly string[]>;
-type BindArg = ExecOptions["bind"];
 
 /** Names the runtime VFS the DB was opened against. */
 export type SqliteVfs = "opfs-sahpool" | "kvvfs" | "memory";
@@ -293,26 +299,13 @@ async function initSqliteDb(
   // `apps/web/vite.config.js`). Note: `sqlite3InitModule()` deliberately
   // takes no arguments — the upstream type definition omits the
   // Emscripten options (see sqlite-wasm PR #129).
-  // Stale-deploy recovery. Обидва кроки нижче тягнуть версійовані асети:
-  // `loadSqliteWasm()` — JS-чанк, `sqlite3InitModule()` — сам `sqlite3.wasm`
-  // власним `fetch()` усередині emscripten-glue. Після деплою старий
-  // `index.html` у відкритій вкладці посилається на хеші, яких уже немає, і
-  // другий крок падає `RuntimeError: Aborted(...)`. Глобальні слухачі в
-  // `installChunkLoadRecover` сюди не дістають: помилка ловиться вище по
-  // стеку storage-бутом і йде в Sentry як `handled`, тож вкладка лишається
-  // живою, але без локальної БД. Ловимо на місці й віддаємо у той самий
-  // one-shot-reload, що й решта чанків (guard-и cooldown/лічильника — там).
-  let sqlite3: Sqlite3Static;
-  try {
-    const sqlite3InitModule = await loadSqliteWasm();
-    sqlite3 = await sqlite3InitModule();
-  } catch (err) {
-    if (isChunkLoadError(err)) reloadOnceForChunkError();
-    throw err;
-  }
-
-  const driver = await openDb(sqlite3, userKey);
-  const proxy = makeProxyDriver(driver.db);
+  // Спершу воркер, і лише потім головний потік: під увімкненим прапорцем
+  // важкий модуль на головному потоці не потрібен узагалі, тож і не
+  // вантажиться. Фолбек тут тихий і повний — якщо воркер не піднявся,
+  // застосунок працює рівно як до стадії 1.
+  const driver =
+    (await openWorkerBackedDb(userKey)) ?? (await openMainThreadDb(userKey));
+  const proxy = makeProxyDriver(driver.conn);
   const drizzleDb = drizzle<SqliteSchema>(proxy, { schema: sqliteSchema });
 
   // AI-DANGER: рівно ОДИН клієнт на хендл, а не новий на кожен виклик.
@@ -322,7 +315,7 @@ async function initSqliteDb(
   // nutrition) ділять цей `oo1.DB` і без спільного ключа знову
   // перетинали б `BEGIN`, валячи бут із «cannot start a transaction
   // within a transaction».
-  const sharedMigrationClient = makeMigrationClient(driver.db);
+  const sharedMigrationClient = makeMigrationClient(driver.conn);
 
   // Який VFS реально дістався пристрою — тег на всю сесію.
   //
@@ -347,10 +340,125 @@ async function initSqliteDb(
     vfs: driver.vfs,
     crossOriginIsolated: coi,
     async close() {
-      driver.db.close();
+      await driver.conn.close();
     },
   };
   return { handle, open: driver };
+}
+
+/**
+ * Відкриває базу у фоновому воркері, або віддає `null`, якщо не судилось.
+ *
+ * `null`, а не виняток: рішення «куди падати» ухвалюється тут, вище по
+ * стеку про існування воркера знати не треба. Будь-яка невдача — відсутній
+ * `Worker`, OPFS, що не піднявся, впале перелиття — веде в наявний
+ * головнопотоковий шлях.
+ *
+ * AI-DANGER: під цим прапорцем база ІНША — окремий файл в OPFS, а не
+ * спільний localStorage-блоб. Від стадії 2 дані переїжджають разом із
+ * двигуном: при першому відкритті стара база копіюється сюди цілком
+ * (`kvvfsHandoff`). Старе сховище при цьому НЕ чіпається, тому вимикання
+ * прапорця повертає все як було — але записи, зроблені під увімкненим,
+ * лишаються тут.
+ *
+ * Від стадії 3 це БЕЗУМОВНИЙ основний шлях: прапорця більше немає.
+ *
+ * AI-DANGER: не повертай сюди тумблер. Його прибрано за рішенням власника
+ * саме тому, що ручне вимикання розщеплює дані — записи, зроблені в OPFS,
+ * у старе сховище не повертаються, і людина лишається з двома половинами
+ * історії, не знаючи про це. Відкат тепер один і чесний: ревертнути
+ * коміт. Автоматичний фолбек від цього не постраждав — він нижче і
+ * спрацьовує на будь-якій невдачі воркера.
+ */
+async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
+  try {
+    const { openSqliteInWorker } = await import("./sqliteWorkerClient.js");
+    const handoff = await import("./kvvfsHandoff.js");
+    const dbName = `sergeant-${userKey}.db`;
+    // Стадія 2: перелиття старої бази. Байти читаються ЛИШЕ доки немає
+    // позначки — після переїзду цей шлях більше не виконується і важкий
+    // модуль на головний потік не потрапляє.
+    const needsHandoff = !handoff.isHandoffDone(userKey);
+    const importBytes = needsHandoff
+      ? await handoff.readKvvfsSnapshotBytes()
+      : null;
+    const conn = await openSqliteInWorker(dbName, {
+      directory: SAH_POOL_DIRECTORY,
+      initialCapacity: SAH_POOL_INITIAL_CAPACITY,
+      minFreeSlots: SAH_POOL_MIN_FREE_SLOTS,
+      importBytes,
+    });
+    if (needsHandoff) {
+      // Підчищаємо ЗАВЖДИ, а не лише після свіжого імпорту: попередня
+      // спроба могла впасти саме між імпортом і підчищанням, і тоді файл
+      // уже існує, але містить чужі партиції. На чистій базі це no-op.
+      const prunedTables = await handoff.pruneForeignPartitionRows(
+        conn,
+        activeUserId,
+      );
+      // Позначка ставиться ОСТАННЬОЮ. Доки її немає, перелиття вважається
+      // таким, що не відбулось, і наступний запуск доробить його.
+      handoff.markHandoffDone(userKey);
+      addSentryBreadcrumb({
+        category: "storage",
+        level: "info",
+        message: "sqlite: kvvfs handoff completed",
+        data: { imported: conn.imported, prunedTables },
+      });
+    }
+    lastWorkerDiagnostics = await conn.diagnostics();
+    addSentryBreadcrumb({
+      category: "storage",
+      level: "info",
+      message: "sqlite: opened in worker",
+      data: { grewBy: conn.grewBy, ...lastWorkerDiagnostics },
+    });
+    return {
+      conn,
+      vfs: "opfs-sahpool",
+      dbName,
+      // Файл на акаунт — видаляється цілком, як і в головнопотоковій
+      // OPFS-гілці. `userId` тут не потрібен: чужих рядків у файлі немає.
+      wipe: () => conn.wipe(),
+    };
+  } catch (err) {
+    if (isChunkLoadError(err)) reloadOnceForChunkError();
+    addSentryBreadcrumb({
+      category: "storage",
+      level: "warning",
+      message: "sqlite: worker backend unavailable, falling back",
+      data: { error: err instanceof Error ? err.message : String(err) },
+    });
+    return null;
+  }
+}
+
+/**
+ * Наявний шлях: WASM і база на головному потоці.
+ *
+ * Stale-deploy recovery. Обидва кроки нижче тягнуть версійовані асети:
+ * `loadSqliteWasm()` — JS-чанк, `sqlite3InitModule()` — сам `sqlite3.wasm`
+ * власним `fetch()` усередині emscripten-glue. Після деплою старий
+ * `index.html` у відкритій вкладці посилається на хеші, яких уже немає, і
+ * другий крок падає `RuntimeError: Aborted(...)`. Глобальні слухачі в
+ * `installChunkLoadRecover` сюди не дістають: помилка ловиться вище по
+ * стеку storage-бутом і йде в Sentry як `handled`, тож вкладка лишається
+ * живою, але без локальної БД. Ловимо на місці й віддаємо у той самий
+ * one-shot-reload, що й решта чанків (guard-и cooldown/лічильника — там).
+ *
+ * Той самий one-shot-reload стоїть і на динамічному імпорті клієнта
+ * воркера: його чанк версійований так само.
+ */
+async function openMainThreadDb(userKey: string): Promise<OpenedDb> {
+  let sqlite3: Sqlite3Static;
+  try {
+    const sqlite3InitModule = await loadSqliteWasm();
+    sqlite3 = await sqlite3InitModule();
+  } catch (err) {
+    if (isChunkLoadError(err)) reloadOnceForChunkError();
+    throw err;
+  }
+  return openDb(sqlite3, userKey);
 }
 
 /**
@@ -363,7 +471,7 @@ async function initSqliteDb(
  * available.
  *
  * COOP/COEP wiring itself is tracked separately as PR #016 in
- * `docs/planning/storage-roadmap.md`.
+ * `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  */
 function warnIfNotCrossOriginIsolated(): boolean {
   const isolated =
@@ -397,31 +505,24 @@ function warnIfNotCrossOriginIsolated(): boolean {
  * Wrap an `oo1.DB` so it satisfies the cross-platform
  * {@link SqliteMigrationClient} contract — the same `{exec, run, all}`
  * surface the migration runner and the routine SPIKE repo are written
- * against. Each method calls `db.exec(...)` with the explicit object
- * form so we never hit sqlite-wasm's string-first legacy overload.
+ * against. Від стадії 1 спеки `sqlite-opfs-worker.md` методи асинхронні
+ * (контракт це допускав завжди: `void | Promise<void>` / `R[] | Promise<R[]>`),
+ * бо та сама поверхня обслуговує і базу на головному потоці, і базу у воркері.
  */
-function makeMigrationClient(db: Sqlite3Database): SqliteMigrationClient {
+function makeMigrationClient(conn: SqliteConnection): SqliteMigrationClient {
   return {
     exec(sql) {
-      db.exec({ sql });
+      return conn.exec(sql);
     },
     run(sql, params) {
-      const bindVal = params as BindArg;
-      db.exec(bindVal !== undefined ? { sql, bind: bindVal } : { sql });
+      return conn.run(sql, params ?? []);
     },
-    all<R extends Record<string, unknown> = Record<string, unknown>>(
+    async all<R extends Record<string, unknown> = Record<string, unknown>>(
       sql: string,
       params?: readonly unknown[],
-    ): R[] {
-      const bindVal = (params ?? []) as BindArg;
-      const rows = db.exec(
-        bindVal !== undefined
-          ? { sql, bind: bindVal, rowMode: "object", returnValue: "resultRows" }
-          : { sql, rowMode: "object", returnValue: "resultRows" },
-      );
-      return Array.isArray(rows)
-        ? (Array.from(rows as Record<string, unknown>[]) as R[])
-        : [];
+    ): Promise<R[]> {
+      const rows = await conn.all(sql, params ?? [], "object");
+      return rows as R[];
     },
   };
 }
@@ -433,7 +534,7 @@ async function loadSqliteWasm(): Promise<SqliteWasmModule["default"]> {
 }
 
 interface OpenedDb {
-  readonly db: Sqlite3Database;
+  readonly conn: SqliteConnection;
   readonly vfs: SqliteVfs;
   /** Name of the underlying store (OPFS filename / kvvfs slot / `:memory:`). */
   readonly dbName: string;
@@ -488,6 +589,27 @@ const SAH_POOL_INITIAL_CAPACITY = 24;
  */
 const SAH_POOL_MIN_FREE_SLOTS = 8;
 
+/** Тека пулу в OPFS. Однакова для обох бекендів — файли ті самі. */
+const SAH_POOL_DIRECTORY = "/sergeant/sqlite";
+
+/**
+ * Прапорець стадії 1: тримати базу у фоновому воркері.
+ *
+ * Це рішення ПРИСТРОЮ, а не деплою, тому живе в користувацькому реєстрі —
+ * власник вмикає його в Налаштуваннях на своєму айфоні й одразу бачить
+ * результат, а відкат не потребує редеплою. Дефолт — вимкнено: стадія 1
+ * має зливатись без зміни поведінки.
+ */
+
+/**
+ * Заповненість пулу, як її повідомив воркер на відкритті.
+ *
+ * `readSqliteStorageDiagnostics()` синхронний (його кличе рядок діагностики
+ * збою переносу), а воркер відповідає лише промісом. Тому тримаємо останнє
+ * відоме значення: на момент відкриття воно точне, далі — орієнтир.
+ */
+let lastWorkerDiagnostics: SqliteStorageDiagnostics | null = null;
+
 /**
  * Останній встановлений SAH-пул — лише для діагностики.
  *
@@ -526,7 +648,7 @@ export function readActiveSqliteVfs(): SqliteVfs | null {
  * Ніколи не кидає: це діагностика, а не робочий шлях.
  */
 export function readSqliteStorageDiagnostics(): SqliteStorageDiagnostics | null {
-  if (!lastSahPool) return null;
+  if (!lastSahPool) return lastWorkerDiagnostics;
   try {
     return {
       capacity: lastSahPool.getCapacity(),
@@ -578,7 +700,7 @@ async function openDb(
   if (hasOpfsSupport()) {
     try {
       const pool = await sqlite3.installOpfsSAHPoolVfs({
-        directory: "/sergeant/sqlite",
+        directory: SAH_POOL_DIRECTORY,
         initialCapacity: SAH_POOL_INITIAL_CAPACITY,
       });
       lastSahPool = pool;
@@ -587,7 +709,7 @@ async function openDb(
       // (page-audit-10 F17).
       const dbName = `sergeant-${userKey}.db`;
       return {
-        db: new pool.OpfsSAHPoolDb(dbName),
+        conn: makeLocalConnection(new pool.OpfsSAHPoolDb(dbName)),
         vfs: "opfs-sahpool",
         dbName,
         async wipe() {
@@ -616,9 +738,9 @@ async function openDb(
   //    `wipe()` clearing it on logout rather than on the filename key.
   if (hasLocalStorage()) {
     try {
-      const db = new sqlite3.oo1.JsStorageDb("local");
+      const conn = makeLocalConnection(new sqlite3.oo1.JsStorageDb("local"));
       return {
-        db,
+        conn,
         vfs: "kvvfs",
         dbName: "local",
         async wipe(userId) {
@@ -631,7 +753,7 @@ async function openDb(
           // partition on the device — this call site (`wipeSqliteDb` from
           // `AuthContext.logout`) only ever wipes a real authenticated user.
           if (userId !== null && isSyncableUserId(userId)) {
-            wipeKvvfsUserRows(db, userId);
+            await wipeKvvfsUserRows(conn, userId);
           }
         },
       };
@@ -653,7 +775,7 @@ async function openDb(
       "Data will not survive a reload.",
   );
   return {
-    db: new sqlite3.oo1.DB(":memory:", "ct"),
+    conn: makeLocalConnection(new sqlite3.oo1.DB(":memory:", "ct")),
     vfs: "memory",
     dbName: ":memory:",
     wipe: async () => {},
@@ -672,13 +794,13 @@ async function openDb(
  * table that hasn't been created yet on this device (e.g. a module the user
  * never opened) must not abort the sweep for the rest.
  */
-function wipeKvvfsUserRows(db: Sqlite3Database, userId: string): void {
+async function wipeKvvfsUserRows(
+  conn: SqliteConnection,
+  userId: string,
+): Promise<void> {
   for (const table of CLIENT_PULL_SUPPORTED_TABLES) {
     try {
-      db.exec({
-        sql: `DELETE FROM ${table} WHERE user_id = ?`,
-        bind: [userId],
-      });
+      await conn.run(`DELETE FROM ${table} WHERE user_id = ?`, [userId]);
     } catch (err) {
       // Most common cause: table doesn't exist yet on this device. Any
       // other failure is logged but must not stop the remaining tables —
@@ -738,33 +860,21 @@ type ProxyCallback = (
  * - `get` — same as `all` but takes only the first row.
  * - `run` — `INSERT/UPDATE/DELETE` — no rows; returns an empty list.
  */
-function makeProxyDriver(db: Sqlite3Database): ProxyCallback {
+function makeProxyDriver(conn: SqliteConnection): ProxyCallback {
   return async (sql, params, method) => {
     const bind = toBind(params);
-    const bindOpts = bind !== undefined ? { bind } : {};
     switch (method) {
       case "run": {
-        db.exec({ sql, ...bindOpts });
+        await conn.run(sql, bind);
         return { rows: [] };
       }
       case "all":
       case "values": {
-        const rows = db.exec({
-          sql,
-          ...bindOpts,
-          rowMode: "array",
-          returnValue: "resultRows",
-        });
-        return { rows: rows ?? [] };
+        return { rows: await conn.all(sql, bind, "array") };
       }
       case "get": {
-        const rows = db.exec({
-          sql,
-          ...bindOpts,
-          rowMode: "array",
-          returnValue: "resultRows",
-        });
-        return { rows: rows && rows.length > 0 ? [rows[0]] : [] };
+        const rows = await conn.all(sql, bind, "array");
+        return { rows: rows.length > 0 ? [rows[0]] : [] };
       }
       default: {
         const exhaustive: never = method;
@@ -782,7 +892,7 @@ function makeProxyDriver(db: Sqlite3Database): ProxyCallback {
  * (Date → ISO string, JSON → string, etc.) by the time they reach this
  * proxy, so we only need to forward the primitives sqlite-wasm understands.
  */
-function toBind(params: unknown[]): BindArg {
+function toBind(params: unknown[]): unknown[] {
   return params.map((p) => {
     if (p === null || p === undefined) return null;
     if (typeof p === "string") return p;

@@ -85,3 +85,26 @@ export function parseLandingStartPayload(
     ref: match[2] as string,
   };
 }
+
+/**
+ * Місце кнопки без вимоги, щоб токен був на місці.
+ *
+ * Існує окремо від `parseLandingStartPayload`, бо в них різні запитання.
+ * Той відповідає «чи можна ЗШИТИ ці дві половини воронки», і для цього
+ * токен обовʼязковий. Цей відповідає «звідки людина прийшла», і тут
+ * історичний payload без токена (`hero`, `footer` — форма до цього
+ * контракту, у базі таких рядків лишилась частина) несе рівно ту саму
+ * відповідь.
+ *
+ * Практичний наслідок: без цієї функції звіт каналів у `/stats` зарахував
+ * би всі дотокенні старти в «інше» — тобто показав би провал каналу там,
+ * де насправді просто старіший формат рядка.
+ */
+export function resolveLandingPlacement(
+  payload: string | null | undefined,
+): LandingPlacement | null {
+  if (!payload) return null;
+  const parsed = parseLandingStartPayload(payload);
+  if (parsed) return parsed.placement;
+  return PLACEMENTS.find((p) => p === payload) ?? null;
+}

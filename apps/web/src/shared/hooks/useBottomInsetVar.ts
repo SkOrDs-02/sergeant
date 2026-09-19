@@ -69,3 +69,11 @@ export const BOTTOM_NAV_INSET_VAR = "--sgt-bottom-nav-inset";
 
 /** Плаваюча плашка «Тренування триває». */
 export const WORKOUT_BANNER_INSET_VAR = "--sgt-workout-banner-inset";
+
+/**
+ * Футер відкритого `Sheet` (слот `footer` з CTA). Публікує сам аркуш, доки
+ * відкритий і має футер; трей тостів через цю змінну стає НАД футером, а не
+ * на ньому (рішення власника 2026-09-16, варіант A: трей лишається внизу).
+ * Аркуш без футера змінну не ставить — його тіло не є CTA-смугою.
+ */
+export const SHEET_FOOTER_INSET_VAR = "--sgt-sheet-footer-inset";

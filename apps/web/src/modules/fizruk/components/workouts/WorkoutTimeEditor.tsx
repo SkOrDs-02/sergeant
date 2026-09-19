@@ -5,6 +5,7 @@
 import { useId } from "react";
 import type { Workout } from "@sergeant/fizruk-domain";
 import { Icon } from "@shared/components/ui/Icon";
+import { formatDateTimeShort, formatTimeHm } from "@shared/lib/time/formatDate";
 import {
   isoToDatetimeLocalValue,
   datetimeLocalValueToIso,
@@ -48,7 +49,7 @@ const INPUT_CLASS =
 function formatTime(iso: string): string {
   const d = new Date(iso);
   if (Number.isNaN(d.getTime())) return "";
-  return d.toLocaleTimeString("uk-UA", { hour: "2-digit", minute: "2-digit" });
+  return formatTimeHm(d);
 }
 
 /**
@@ -70,14 +71,7 @@ function formatEndStamp(startIso: string, endIso: string): string {
     start.getMonth() === end.getMonth() &&
     start.getDate() === end.getDate();
   /* eslint-enable sergeant-design/prefer-kyiv-time */
-  return sameDay
-    ? formatTime(endIso)
-    : end.toLocaleString("uk-UA", {
-        month: "short",
-        day: "numeric",
-        hour: "2-digit",
-        minute: "2-digit",
-      });
+  return sameDay ? formatTime(endIso) : formatDateTimeShort(end);
 }
 
 export function WorkoutTimeEditor({
@@ -121,7 +115,7 @@ export function WorkoutTimeEditor({
         </span>
         <Icon
           name="chevron-down"
-          size={16}
+          size="md"
           className="shrink-0 text-subtle transition-transform group-open:rotate-180"
           aria-hidden
         />

@@ -1,6 +1,6 @@
 # Encryption key rotation — runbook
 
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2026-12-21.
+> **Last touched:** 2026-09-17 by @claude (`pnpm db:psql` → `psql "$DATABASE_URL"`). **Next review:** 2026-12-16.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -158,7 +158,7 @@ sum(rate(auth_token_lazy_reencrypt_total{row_version="1"}[5m])) by (field)
 плато і не почне спадати (старі рядки гасяться, або з re-encrypt, або з
 revoke / user delete).
 
-Прогнати `pnpm db:psql` з production connection string:
+Прогнати `psql "$DATABASE_URL"` з production connection string (скрипта `pnpm db:psql` у репо немає — 2026-09-17):
 
 ```sql
 SELECT

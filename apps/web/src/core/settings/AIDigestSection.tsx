@@ -6,6 +6,7 @@ import { useHubPref, HUB_PREF_MONDAY_AUTO } from "./hubPrefs";
 import { settingsSectionTitle } from "../hub/settingsSectionsCatalog";
 import { useWeeklyDigest } from "../insights/useWeeklyDigest";
 import { SettingsGroup, ToggleRow } from "./SettingsPrimitives";
+import { formatDateTimeShort } from "@shared/lib/time/formatDate";
 
 export function AIDigestSection() {
   const { digest, weekRange } = useWeeklyDigest();
@@ -25,12 +26,14 @@ export function AIDigestSection() {
   };
 
   const generatedAt = digest?.generatedAt
-    ? new Date(digest.generatedAt).toLocaleDateString("uk-UA", {
-        day: "numeric",
-        month: "long",
-        hour: "2-digit",
-        minute: "2-digit",
-      })
+    ? // Видимий текст тут ЗМІНЕНО навмисно: було «13 вересня о 14:30»
+      // (`month:"long"` із часом дає в uk-UA прийменник, не кому), стало
+      // «13 вер., 14:30». Це єдиний носій прийменникової форми на весь
+      // застосунок, і власного імені вона не отримала — інакше форм дати з
+      // часом було б три замість двох. Рішення на одне слово: якщо
+      // милозвучність тут важливіша, форма повертається окремою функцією, а
+      // не сирим `Intl` у call-site.
+      formatDateTimeShort(new Date(digest.generatedAt))
     : null;
 
   // UX-feedback 2026-05-08: видалили кнопку «Згенерувати звіт зараз» —

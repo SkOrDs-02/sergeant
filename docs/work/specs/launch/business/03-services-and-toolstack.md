@@ -1,7 +1,9 @@
 # 03. Сервіси та тулстек
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-25.
+> **Last touched:** 2026-09-17 by @claude (OpenClaw/n8n/Railway позначено retired, Stripe → dormant, LiqPay/Plata → live). **Next review:** 2026-12-16.
 > **Status:** Active
+>
+> **Звірка 2026-09-17:** три сервіси нижче виведені з експлуатації і лишаються в таблицях лише як історія — **OpenClaw** ([ADR-0075](../../../../governance/adr/0075-openclaw-gateway-decommissioned.md)), **n8n** (репо-шар декомісовано, `ops/n8n-workflows/` у дереві немає — [ADR-0090](../../../../governance/adr/0090-n8n-decommissioned.md); періодична робота живе на серверних субстратах ADR-0089), **Railway** ([ADR-0074](../../../../governance/adr/0074-hosting-hetzner-coolify.md)). Платіжний провайдер: **LiqPay / Plata — live UA-провайдери**, Stripe — dormant за флагом (`apps/server/src/modules/billing/provider.ts`); рядки «Stripe … prod config pending» нижче описують стан на 2026-05.
 
 > Повний аудит зовнішніх сервісів, інфраструктури, dev-інструментів: що є, що додати, що змінити.
 > Кожен запис — з офіційним посиланням, фактичною ціною (Date checked: 2026-04), статусом у Sergeant.
@@ -46,11 +48,11 @@
               +-------------------+             +---------------------+
               | Telegram Bot API  |
               | waitlist via API  |             CI / CD
-              | alerts via n8n    |             +-------------------+
+              | alerts via server |             +-------------------+
               |                   |             | GitHub Actions    |
               +-------------------+             | Turborepo cache   |
-              | n8n (26 workflows |             | Husky + lint-stgd |
-              |   in ops/n8n-…/)  |             | Storybook+Argos CI|
+              | n8n — retired     |             | Husky + lint-stgd |
+              |   (ADR-0090)      |             | Storybook+Argos CI|
               +-------------------+             | Detox (Android+iOS)|
               | Grafana + Alloy + |             +-------------------+
               | Prometheus scrape |
@@ -59,51 +61,52 @@
 
 ### Верифікація стеку проти кодової бази
 
-| Сервіс / бібліотека                | Де в коді                                                                                                                 | Статус                       |
-| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | ---------------------------- |
-| Vite + React 18 SPA                | `apps/web/package.json` → `vite`, `react ^18`                                                                             | in use                       |
-| Express + Node 22                  | `apps/server/package.json` → `express ^4.22`; root `package.json` → Node 22.x (Volta 22.19.0)                             | in use                       |
-| PostgreSQL (pg + pgvector)         | `apps/server/package.json` → `pg ^8.20`; `docker-compose.yml` → `pgvector/pgvector:pg17`                                  | in use                       |
-| Redis (ioredis)                    | `apps/server/src/lib/redis.ts`, `ioredis ^5.6`                                                                            | in use                       |
-| Better Auth                        | `apps/server/package.json` → `better-auth ^1.6`                                                                           | in use                       |
-| Anthropic Claude                   | `apps/server/src/lib/anthropic.ts`                                                                                        | in use                       |
-| **Voyage AI (embeddings)**         | env `VOYAGE_API_KEY`; `apps/server/src/modules/ai-memory/**` (pgvector + RAG)                                             | in use                       |
-| Sentry (web + server)              | `@sentry/react ^8.55`, `@sentry/node ^8.55`                                                                               | in use                       |
-| **PostHog (web + server)**         | `posthog-js ^1.372`; `apps/server/src/lib/posthog.ts`; `apps/web/src/core/observability/posthog.ts`                       | in use                       |
-| **PostHog (mobile)**               | `apps/mobile/src/observability/posthog.ts` (env `EXPO_PUBLIC_POSTHOG_KEY`)                                                | in use                       |
-| Vercel Analytics                   | `@vercel/analytics ^2.0` у `apps/web`                                                                                     | in use                       |
-| **OpenTelemetry**                  | `@opentelemetry/sdk-node ^0.57`; `apps/server/src/obs/tracing.ts`                                                         | in use                       |
-| Web Push (VAPID)                   | `apps/server/package.json` → `web-push ^3.6`                                                                              | in use                       |
-| APNs                               | `@parse/node-apn ^8.1`                                                                                                    | in use                       |
-| FCM                                | `google-auth-library ^10.6`                                                                                               | in use                       |
-| Prometheus                         | `prom-client ^15.1`; `ops/prometheus/`                                                                                    | in use                       |
-| Pino                               | `pino ^10.3`, `pino-http ^11.0`                                                                                           | in use                       |
-| Helmet                             | `helmet ^8.1`                                                                                                             | in use                       |
-| Resend                             | env `RESEND_API_KEY`; `authTransactionalMail.ts`                                                                          | in use                       |
-| Monobank webhook                   | env `MONO_WEBHOOK_ENABLED`; `bankProxy.ts`                                                                                | in use                       |
-| USDA / OpenFoodFacts               | `apps/server/src/lib/nutritionResponse.ts`                                                                                | in use                       |
-| PWA (vite-plugin-pwa)              | `apps/web/vite.config.js`                                                                                                 | in use                       |
-| Vercel (Hobby)                     | `apps/web/vercel.json` + `apps/landing/vercel.json` (separate projects)                                                   | in use                       |
-| Hetzner + Coolify (Dockerfile.api) | `deploy-api.yml` → `ghcr.io` → Coolify (ADR-0074; Railway виведено 2026-07)                                               | in use                       |
-| Turborepo                          | root `package.json` → `turbo ^2.9`                                                                                        | in use                       |
-| TanStack Query                     | `@tanstack/react-query ^5.99`                                                                                             | in use                       |
-| Expo 52 + React Native 0.76        | `apps/mobile/package.json`                                                                                                | in use                       |
-| Capacitor (mobile-shell)           | `apps/mobile-shell/`                                                                                                      | in use                       |
-| **BullMQ**                         | `apps/server/package.json` → `bullmq ^5.0`; `apps/server/src/lib/jobs/**` (authMail, ftuxDrip, ai-memory ingest)          | in use                       |
-| **Telegram Bot API**               | `apps/server/src/modules/telegram/**` + `/api/telegram/webhook` (waitlist); n8n WF-03 (alerts)                            | in use                       |
-| **n8n workflows**                  | `ops/n8n-workflows/` — 26 workflow-ів (manifest.json) ; ADR-0026                                                          | in use                       |
-| **Grafana + Alloy**                | `ops/grafana/dashboards/**`, `ops/grafana-alloy/` (Prometheus → Grafana Cloud scrape)                                     | in use                       |
-| **Storybook + Argos**              | `apps/web` → `storybook ^10.3`, `@argos-ci/playwright ^6.6` (visual regression)                                           | in use                       |
-| **Detox E2E**                      | `.github/workflows/detox-{android,ios}.yml`                                                                               | in use                       |
-| **Drizzle ORM**                    | `packages/db-schema` → `drizzle-orm ^0.45`                                                                                | in use                       |
-| Stripe                             | `apps/server/src/modules/billing/**`, `apps/server/src/routes/billing.ts`, `packages/api-client/src/endpoints/billing.ts` | in use / prod config pending |
-| React Email                        | _немає в коді_                                                                                                            | to add                       |
-| Loops (drip)                       | _немає в коді_                                                                                                            | to add                       |
-| Crisp                              | _немає в коді_                                                                                                            | to add                       |
-| Tally                              | _немає в коді_                                                                                                            | to add                       |
-| UptimeRobot                        | _не налаштовано_ (згадано в ops-доках)                                                                                    | to add                       |
-| Termly / CookieYes                 | _не використовується_                                                                                                     | to add                       |
-| Cloudflare R2                      | _немає в коді_                                                                                                            | evaluated                    |
+| Сервіс / бібліотека                | Де в коді                                                                                                                 | Статус                      |
+| ---------------------------------- | ------------------------------------------------------------------------------------------------------------------------- | --------------------------- |
+| Vite + React 18 SPA                | `apps/web/package.json` → `vite`, `react ^18`                                                                             | in use                      |
+| Express + Node 22                  | `apps/server/package.json` → `express ^4.22`; root `package.json` → Node 22.x (Volta 22.19.0)                             | in use                      |
+| PostgreSQL (pg + pgvector)         | `apps/server/package.json` → `pg ^8.20`; `docker-compose.yml` → `pgvector/pgvector:pg17`                                  | in use                      |
+| Redis (ioredis)                    | `apps/server/src/lib/redis.ts`, `ioredis ^5.6`                                                                            | in use                      |
+| Better Auth                        | `apps/server/package.json` → `better-auth ^1.6`                                                                           | in use                      |
+| Anthropic Claude                   | `apps/server/src/lib/anthropic.ts`                                                                                        | in use                      |
+| **Voyage AI (embeddings)**         | env `VOYAGE_API_KEY`; `apps/server/src/modules/ai-memory/**` (pgvector + RAG)                                             | in use                      |
+| Sentry (web + server)              | `@sentry/react ^8.55`, `@sentry/node ^8.55`                                                                               | in use                      |
+| **PostHog (web + server)**         | `posthog-js ^1.372`; `apps/server/src/lib/posthog.ts`; `apps/web/src/core/observability/posthog.ts`                       | in use                      |
+| **PostHog (mobile)**               | `apps/mobile/src/observability/posthog.ts` (env `EXPO_PUBLIC_POSTHOG_KEY`)                                                | in use                      |
+| Vercel Analytics                   | `@vercel/analytics ^2.0` у `apps/web`                                                                                     | in use                      |
+| **OpenTelemetry**                  | `@opentelemetry/sdk-node ^0.57`; `apps/server/src/obs/tracing.ts`                                                         | in use                      |
+| Web Push (VAPID)                   | `apps/server/package.json` → `web-push ^3.6`                                                                              | in use                      |
+| APNs                               | `@parse/node-apn ^8.1`                                                                                                    | in use                      |
+| FCM                                | `google-auth-library ^10.6`                                                                                               | in use                      |
+| Prometheus                         | `prom-client ^15.1`; `ops/prometheus/`                                                                                    | in use                      |
+| Pino                               | `pino ^10.3`, `pino-http ^11.0`                                                                                           | in use                      |
+| Helmet                             | `helmet ^8.1`                                                                                                             | in use                      |
+| Resend                             | env `RESEND_API_KEY`; `authTransactionalMail.ts`                                                                          | in use                      |
+| Monobank webhook                   | env `MONO_WEBHOOK_ENABLED`; `bankProxy.ts`                                                                                | in use                      |
+| USDA / OpenFoodFacts               | `apps/server/src/lib/nutritionResponse.ts`                                                                                | in use                      |
+| PWA (vite-plugin-pwa)              | `apps/web/vite.config.js`                                                                                                 | in use                      |
+| Vercel (Hobby)                     | `apps/web/vercel.json` + `apps/landing/vercel.json` (separate projects)                                                   | in use                      |
+| Hetzner + Coolify (Dockerfile.api) | `deploy-api.yml` → `ghcr.io` → Coolify (ADR-0074; Railway виведено 2026-07)                                               | in use                      |
+| Turborepo                          | root `package.json` → `turbo ^2.9`                                                                                        | in use                      |
+| TanStack Query                     | `@tanstack/react-query ^5.99`                                                                                             | in use                      |
+| Expo 52 + React Native 0.76        | `apps/mobile/package.json`                                                                                                | in use                      |
+| Capacitor (mobile-shell)           | `apps/mobile-shell/`                                                                                                      | in use                      |
+| **BullMQ**                         | `apps/server/package.json` → `bullmq ^5.0`; `apps/server/src/lib/jobs/**` (authMail, ftuxDrip, ai-memory ingest)          | in use                      |
+| **Telegram Bot API**               | `apps/server/src/modules/telegram/**` + `/api/telegram/webhook` (waitlist); n8n WF-03 (alerts)                            | in use                      |
+| **n8n workflows**                  | історично `ops/n8n-workflows/` (ADR-0026); репо-шар декомісовано ADR-0090, теки в дереві немає                            | retired (2026-09-02)        |
+| **Grafana + Alloy**                | `ops/grafana/dashboards/**`, `ops/grafana-alloy/` (Prometheus → Grafana Cloud scrape)                                     | in use                      |
+| **Storybook + Argos**              | `apps/web` → `storybook ^10.3`, `@argos-ci/playwright ^6.6` (visual regression)                                           | in use                      |
+| **Detox E2E**                      | `.github/workflows/detox-{android,ios}.yml`                                                                               | in use                      |
+| **Drizzle ORM**                    | `packages/db-schema` → `drizzle-orm ^0.45`                                                                                | in use                      |
+| Stripe                             | `apps/server/src/modules/billing/**`, `apps/server/src/routes/billing.ts`, `packages/api-client/src/endpoints/billing.ts` | dormant (за флагом)         |
+| **LiqPay / Plata**                 | `apps/server/src/modules/billing/{liqpay,plata}.ts`, resolver `provider.ts` (`LIQPAY_*` / `PLATA_*` env)                  | in use (live UA-провайдери) |
+| React Email                        | _немає в коді_                                                                                                            | to add                      |
+| Loops (drip)                       | _немає в коді_                                                                                                            | to add                      |
+| Crisp                              | _немає в коді_                                                                                                            | to add                      |
+| Tally                              | _немає в коді_                                                                                                            | to add                      |
+| UptimeRobot                        | _не налаштовано_ (згадано в ops-доках)                                                                                    | to add                      |
+| Termly / CookieYes                 | _не використовується_                                                                                                     | to add                      |
+| Cloudflare R2                      | _немає в коді_                                                                                                            | evaluated                   |
 
 ---
 
@@ -216,16 +219,16 @@
 
 ### 2.12 Cron / Scheduled jobs / workflow automation
 
-| Сервіс           | Сайт                                                                                 | Free tier                        | Paid tier          | Date checked | Why this / Why not                                                                                                                                                                                                                                                                               | Status  |
-| ---------------- | ------------------------------------------------------------------------------------ | -------------------------------- | ------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
-| **BullMQ**       | [docs.bullmq.io](https://docs.bullmq.io/)                                            | Open-source, $0 (потребує Redis) | N/A                | 2026-05      | Інтегровано (`bullmq ^5.0`). Черги: `auth-mail`, `ftux-drip`, `ai-memory-ingest`. Worker — у тому ж процесі сервера, fallback на in-process direct dispatch якщо `REDIS_URL` не заданий. Mono-enrichment — НЕ BullMQ, а Postgres-outbox (`mono_ai_enrichment_queue` + polling-worker, ADR-0089). | in use  |
-| **n8n**          | [n8n.io](https://n8n.io)                                                             | Self-hosted, $0                  | Cloud: from $20/mo | 2026-05      | 26 workflow-ів у `ops/n8n-workflows/` (billing, failed-payment, sentry routing, backup verification, daily metrics, growth funnel snapshot, etc.). Source-of-truth — git (ADR-0026). Секрет: `n8n_API`.                                                                                          | in use  |
-| **Railway Cron** | [docs.railway.app/reference/cron-jobs](https://docs.railway.app/reference/cron-jobs) | Включено в Hobby                 | Включено в Pro     | 2026-07      | Railway виведено (ADR-0074) — не застосовно. Cron-задачі покриваються BullMQ repeatable jobs / n8n schedule trigger.                                                                                                                                                                             | retired |
+| Сервіс           | Сайт                                                                                 | Free tier                        | Paid tier          | Date checked | Why this / Why not                                                                                                                                                                                                                                                                                                       | Status  |
+| ---------------- | ------------------------------------------------------------------------------------ | -------------------------------- | ------------------ | ------------ | ------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------ | ------- |
+| **BullMQ**       | [docs.bullmq.io](https://docs.bullmq.io/)                                            | Open-source, $0 (потребує Redis) | N/A                | 2026-05      | Інтегровано (`bullmq ^5.0`). Черги: `auth-mail`, `ftux-drip`, `ai-memory-ingest`. Worker — у тому ж процесі сервера, fallback на in-process direct dispatch якщо `REDIS_URL` не заданий. Mono-enrichment — НЕ BullMQ, а Postgres-outbox (`mono_ai_enrichment_queue` + polling-worker, ADR-0089).                         | in use  |
+| **n8n**          | [n8n.io](https://n8n.io)                                                             | Self-hosted, $0                  | Cloud: from $20/mo | 2026-09      | **Retired 2026-09-02 (ADR-0090):** репо-шар n8n декомісовано, `ops/n8n-workflows/` у дереві немає. Історично — workflow-и billing / failed-payment / sentry routing / backup verification / daily metrics (ADR-0026). Періодична робота — на серверних субстратах ADR-0089; нові scheduling-потреби n8n-ом не закривати. | retired |
+| **Railway Cron** | [docs.railway.app/reference/cron-jobs](https://docs.railway.app/reference/cron-jobs) | Включено в Hobby                 | Включено в Pro     | 2026-07      | Railway виведено (ADR-0074) — не застосовно. Cron-задачі покриваються BullMQ repeatable jobs / n8n schedule trigger.                                                                                                                                                                                                     | retired |
 
 > **Розподіл відповідальності:**
 >
 > - **BullMQ** — internal background jobs всередині сервера (auth email, FTUX drip, AI-memory embedding ingest). Mono-AI enrichment живе на Postgres-outbox (enqueue атомарний із webhook-транзакцією), не в BullMQ — критерій вибору субстрату: ADR-0089.
-> - **n8n** — cross-system workflow automation (Stripe webhook → DB + Telegram, Sentry alerts → Telegram, daily/weekly digests, GitHub PR stale alerts, security audit).
+> - **n8n** — історично cross-system workflow automation (Stripe webhook → DB + Telegram, Sentry alerts → Telegram, daily/weekly digests, GitHub PR stale alerts, security audit); декомісовано ADR-0090.
 >
 > Деталі автоматизації — див. [05-operations-and-automation.md](./05-operations-and-automation.md#зона-6--automation-мета-зона) і [`ops/n8n-workflows/manifest.json`](https://github.com/SkOrDs-02/sergeant/blob/ffdf694cb60dcfeebc2c1de14887c5a8a1d71e6b/ops/n8n-workflows/manifest.json).
 
@@ -416,18 +419,15 @@ POSTHOG_API_KEY=                 # server-side (для GDPR delete-person)
 POSTHOG_PROJECT_ID=              # для release-annotation workflow
 POSTHOG_HOST=                    # server host
 
-# OpenClaw (Telegram cofounder bot)
-OPENCLAW_FOUNDER_USER_ID=
-OPENCLAW_DAILY_USD_BUDGET=5
-OPENCLAW_GITHUB_APP_ID=           # GitHub App для decision PR-ів
-OPENCLAW_GITHUB_APP_PRIVATE_KEY=
-OPENCLAW_GITHUB_APP_INSTALLATION_ID=
+# OpenClaw (Telegram cofounder bot) — ІСТОРИЧНО: декомісовано ADR-0075,
+# змінні OPENCLAW_* у проді не задаються (Hard Rule #20).
 ```
 
 ### Додати під монетизацію
 
 ```env
-# Payments (Stripe) — integrated; prod env pending
+# Payments — live UA-провайдери LiqPay (`LIQPAY_ENABLED`, `LIQPAY_PUBLIC_KEY`, `LIQPAY_PRIVATE_KEY`)
+# і Plata (`PLATA_ENABLED`, `PLATA_TOKEN`, `PLATA_MODE`); Stripe нижче — dormant за флагом
 STRIPE_SECRET_KEY=               # sk_live_...
 STRIPE_WEBHOOK_SECRET=           # whsec_...
 STRIPE_PRICE_ID_PRO_MONTHLY=     # price_...
@@ -535,15 +535,16 @@ WEEK 4: Legal + polish + E2E
 CATEGORY         SERVICE                  COST           STATUS
 -----------      --------------------     -----------    ----------
 Dev              Vercel + Hetzner + GH    ~$7-14/mo      in use
-                 Actions + Turborepo + n8n
-Payments         Stripe                   % per tx       prod cfg
+                 Actions + Turborepo
+Payments         LiqPay / Plata           % per tx       in use
+                 + Stripe                 —              dormant
 Analytics        PostHog free tier        $0             in use
                  + Vercel Analytics       $0             in use
 Email            Resend                   $0             in use
                  + Loops free             $0             to add
 Marketing        Telegram + X + Buffer    $0             to add
 Support          Telegram bot (grammy)    $0             in use
-                 + OpenClaw cofounder     $0             in use
+                 + OpenClaw cofounder     $0             retired
                  + Crisp free webchat     $0             to add
 AI               Anthropic Claude         $10-50/mo      in use
                  + Voyage AI (embed)      $0-5/mo        in use
@@ -554,7 +555,7 @@ Monitoring       Sentry                   $0             in use
                  + UptimeRobot free       $0             to add
 QA               Storybook + Argos        $0             in use
                  + Detox E2E              $0             in use
-Workflow auto    n8n (26 workflows)       $0 (self-host) in use
+Workflow auto    n8n (ADR-0090)           $0 (self-host) retired
                  + BullMQ                 $0 (self-host) in use
 Legal            Termly free              $0             to add
 Feedback         Tally + PostHog replay   $0             to add

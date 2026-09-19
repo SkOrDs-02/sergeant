@@ -210,7 +210,7 @@ function HubBottomNavTab({
       >
         <Icon
           name={iconName}
-          size={20}
+          size="lg"
           strokeWidth={active ? 2.5 : 2}
           className="shrink-0"
         />

@@ -68,7 +68,7 @@ export function IOSInstallBanner({
           aria-label="Закрити, нагадати пізніше"
           className="shrink-0 -mt-1 -mr-1 text-muted hover:text-text"
         >
-          <Icon name="close" size={16} />
+          <Icon name="close" size="md" />
         </Button>
       </Card>
     </div>

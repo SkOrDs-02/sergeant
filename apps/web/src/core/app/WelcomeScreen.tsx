@@ -9,7 +9,6 @@ import {
   markFirstActionStartedAt,
   saveVibePicks,
 } from "../onboarding/vibePicks";
-import { seedDemoData } from "../onboarding/seedDemoData";
 import { pushActiveModules } from "../hub/activeModulesSync";
 import {
   isOnboardingCompletedFired,
@@ -109,9 +108,7 @@ function PeekBackdrop() {
           the card), so this caption was floating over an empty cream
           background and reading as a broken promise («це приклад» —
           where?). On `sm+` the card centres and the bento is visible
-          on either side, so the disclaimer keeps making sense. The
-          demo entry point on mobile is the secondary CTA inside the
-          splash card («Подивитись приклад»). */}
+          on either side, so the disclaimer keeps making sense. */}
       <div
         className={cn(
           "absolute inset-x-0",
@@ -182,7 +179,7 @@ function PeekBackdrop() {
                 >
                   <Icon
                     name={card.icon}
-                    size={16}
+                    size="md"
                     strokeWidth={2}
                     aria-hidden
                   />
@@ -229,27 +226,11 @@ interface WelcomeScreenProps {
  * `getActiveModules` observe the same
  * downstream state regardless of which welcome surface ran.
  *
- * PR-05 promoted the demo entry to a first-class CTA *inside* the
- * splash card — the picker keeps that contract via
- * `onSecondaryAction` so the "просто подивитись" cohort still
- * lands on the same demo seeder without scanning past the card.
+ * До 2026-09-17 картка несла ще й другорядний CTA «Подивитись
+ * приклад», що сіяв демо-payload. Демо-режим знято — лишається один
+ * шлях: обрати модулі або увійти в наявний акаунт.
  */
 export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
-  // S4.1 + PR-05 demo handler. Seeds a synthetic hub payload across
-  // all four modules and reloads onto `/` so the demo state is
-  // visible immediately. Tracking is fired before the redirect so the
-  // `demo_started` event lands even if the new page mounts before the
-  // old PostHog buffer flushes (the SDK persists pending events).
-  const startDemoAndGoHome = useCallback(() => {
-    trackEvent(ANALYTICS_EVENTS.DEMO_STARTED, { source: "welcome" });
-    seedDemoData();
-    try {
-      window.location.assign("/");
-    } catch {
-      /* noop */
-    }
-  }, []);
-
   // "У мене вже є акаунт" — just navigates to `/sign-in`. Does NOT mark
   // onboarding done here (PR-H7, design-audit 2026-09-13): a mistaken tap
   // followed by "Поки що пропустити" on `/sign-in` used to leave the local
@@ -340,7 +321,6 @@ export function WelcomeScreen({ onDone, onOpenAuth }: WelcomeScreenProps) {
           <WelcomeModulePicker
             onComplete={handlePicksComplete}
             onOpenAuth={handleOpenAuth}
-            onSecondaryAction={startDemoAndGoHome}
           />
         </div>
       </div>

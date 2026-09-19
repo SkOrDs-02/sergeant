@@ -4,12 +4,12 @@
 #     -f Dockerfile.api -t hub-api .
 #
 # `--platform=linux/amd64` піниться явно на FROM-рівні (closes hardening
-# card L13 — `docs/04-governance/security/hardening/L13-docker-platform-pin.md`). Hetzner/Coolify
+# card L13 — `docs/work/specs/security-hardening/L13-docker-platform-pin.md`). Hetzner/Coolify
 # runtime це amd64, і dev-машина на Apple Silicon (arm64) без явного pin-у
 # зібрала б arm64-image, який локально проходить smoke, але на сервері
 # падає з "exec format error".
 #
-# Stage map (PR-30 — `docs/90-work/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
+# Stage map (PR-30 — `docs/work/specs/initiatives/stack-pulse-2026-05/pr-30-dockerfile-cleanup-cve.md`):
 #
 #   1. `builder`  — node:alpine + full dev deps + `pnpm build` (esbuild
 #      бандл у `dist-server/index.js` + копія `migrations/*.sql`).
@@ -252,7 +252,7 @@ ENV GIT_SHA=${GIT_SHA}
 # ЗАЛИШОК OpenClaw (ADR-0075): рантайм `read_strategy_docs` видалено, цей
 # ENV і COPY docs нижче ніщо не читає. Лишаються навмисно: зняття — non-comment
 # зміна deploy-конфігу, яка вимагає лейбла `verified-on-staging` за
-# `docs/00-start/playbooks/deploy-config-change.md` (§3, Coolify prod-деплой).
+# `docs/start/instructions/deploy-config-change.md` (§3, Coolify prod-деплой).
 # Зняти окремим PR після спостереження одного деплой-циклу.
 ENV OPENCLAW_REPO_ROOT=/app
 

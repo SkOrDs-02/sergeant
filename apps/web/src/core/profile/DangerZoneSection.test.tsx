@@ -150,7 +150,7 @@ describe("DangerZoneSection", () => {
     fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
 
     expect(
-      await screen.findByText("Невірний поточний пароль."),
+      await screen.findByText("Неправильний поточний пароль."),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("dialog", { name: "Видалити акаунт назавжди?" }),

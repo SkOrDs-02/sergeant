@@ -246,7 +246,7 @@ export function PersonalInfoSection({
             aria-label="Змінити аватар"
             className={cn(
               "relative w-20 h-20 rounded-3xl overflow-hidden",
-              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/50 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
+              "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             )}
           >
             {user.image ? (
@@ -270,7 +270,7 @@ export function PersonalInfoSection({
             >
               {uploadingAvatar ? (
                 <span className="motion-safe:animate-spin">
-                  <Icon name="refresh-cw" size={20} className="text-white" />
+                  <Icon name="refresh-cw" size="lg" className="text-white" />
                 </span>
               ) : (
                 <Icon name="upload" size={18} className="text-white" />
@@ -388,7 +388,7 @@ export function PersonalInfoSection({
               {...nameForm.register("name")}
             />
             <Button
-              variant="primary"
+              variant="solid"
               size="sm"
               type="button"
               disabled={
@@ -451,7 +451,7 @@ export function PersonalInfoSection({
                   {...emailForm.register("email")}
                 />
                 <Button
-                  variant="primary"
+                  variant="solid"
                   size="sm"
                   type="button"
                   disabled={

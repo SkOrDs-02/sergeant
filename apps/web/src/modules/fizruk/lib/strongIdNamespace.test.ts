@@ -1,6 +1,5 @@
 import { describe, it, expect } from "vitest";
 import { LOCAL_ANON_USER_ID } from "../../../core/auth/localIdentity";
-import { DEMO_LOCAL_USER_ID } from "../../../core/onboarding/onboardingGate";
 import { resolveStrongIdNamespace } from "./strongIdNamespace";
 
 describe("resolveStrongIdNamespace", () => {
@@ -12,12 +11,12 @@ describe("resolveStrongIdNamespace", () => {
     expect(resolveStrongIdNamespace(null)).toBeNull();
   });
 
-  // Ядро фікса: `LOCAL_ANON_USER_ID` і `DEMO_LOCAL_USER_ID` — спільні
+  // Ядро фікса: `LOCAL_ANON_USER_ID` і `demo-local` — спільні
   // константи, тож солити ними означало б видавати однакові id різним людям.
   // Оскільки анонімна міграція переносить рядки в акаунт, НЕ перегенеровуючи
   // id, така колізія дожила б до сервера і з'їла б чужу історію.
   it("falls back to the per-install device id for shared local identities", () => {
-    for (const shared of [LOCAL_ANON_USER_ID, DEMO_LOCAL_USER_ID]) {
+    for (const shared of [LOCAL_ANON_USER_ID, "demo-local"]) {
       const a = resolveStrongIdNamespace(shared, {
         deviceId: () => "device-aaa",
       });

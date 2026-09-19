@@ -167,6 +167,45 @@ describe("SilpoIntegrationSection", () => {
     expect(screen.getByText("Видалити всі дані Сільпо")).toBeInTheDocument();
   });
 
+  // Дві перевірки нижче — про те, чого бракувало два тижні: зламаний синк
+  // виглядав рівно як «людина не ходила в магазин». Обидві сторони важать
+  // однаково: без першої поломку не видно, без другої плашка висіла б і
+  // після того, як усе полагодилось, і сигнал знецінився б.
+  it("показує плашку, коли останній синк провалився", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-09-20T10:00:00.000Z",
+      lastSyncAt: "2026-08-31T09:15:00.000Z",
+      lastFailedAt: "2026-09-14T08:00:00.000Z",
+      lastErrorCode: "SILPO_TOOL_ERROR",
+      receiptsCount: 12,
+    });
+
+    renderSection();
+
+    expect(await screen.findByText("Чеки не оновлюються")).toBeInTheDocument();
+    expect(screen.getByText(/SILPO_TOOL_ERROR/)).toBeInTheDocument();
+    // Копія називає дію, а не лише факт (style-guide: помилка закривається
+    // підказкою до дії).
+    expect(screen.getByText(/Натисни «Оновити чеки»/)).toBeInTheDocument();
+  });
+
+  it("не показує плашку, коли провалів немає", async () => {
+    mockedSyncState.mockResolvedValue({
+      status: "connected",
+      accessTokenExpiresAt: "2026-09-20T10:00:00.000Z",
+      lastSyncAt: "2026-09-14T09:15:00.000Z",
+      lastFailedAt: null,
+      lastErrorCode: null,
+      receiptsCount: 12,
+    });
+
+    renderSection();
+
+    expect(await screen.findByText("Сільпо звʼязано")).toBeInTheDocument();
+    expect(screen.queryByText("Чеки не оновлюються")).not.toBeInTheDocument();
+  });
+
   it("keeps the privacy-promise text reachable via a collapsed details when connected (gate #2)", async () => {
     mockedSyncState.mockResolvedValue({
       status: "connected",

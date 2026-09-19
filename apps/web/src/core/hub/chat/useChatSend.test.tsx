@@ -291,7 +291,7 @@ describe("useChatSend (audit 03 F22 — SSE + tool-calls)", () => {
   });
 });
 
-// AI-6 (`docs/90-work/audits/2026-09-01-product-audit/findings.md`) — коли
+// AI-6 (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`) — коли
 // синтез (другий тур) падає, картка інструмента вже побудована з результату
 // ВИКОНАННЯ на клієнті. Клас інструмента (`getToolOutcomeClass`) вирішує,
 // як картка про це каже.

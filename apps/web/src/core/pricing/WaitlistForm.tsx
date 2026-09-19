@@ -229,7 +229,13 @@ export function WaitlistForm({
                   htmlFor={inputId}
                   aria-label={`${opt.label} · ${opt.hint}`}
                   className={
-                    "flex min-h-[56px] items-start gap-3 rounded-2xl border p-3 cursor-pointer transition-colors " +
+                    // Справжнє радіо нижче — `peer sr-only`, тобто нативне
+                    // кільце фокуса невидиме, а замінника не було: клавіатурний
+                    // фокус по групі не читався взагалі (аудит 2026-09-16,
+                    // WF-24). Peer-кільце на обгортці — той самий патерн, що в
+                    // `Switch.tsx:200`, з канонічною непрозорістю `/45`.
+                    "relative flex min-h-[56px] items-start gap-3 rounded-2xl border p-3 cursor-pointer transition-colors " +
+                    "peer-focus-visible:ring-2 peer-focus-visible:ring-focus/45 peer-focus-visible:ring-offset-2 peer-focus-visible:ring-offset-bg " +
                     (checked
                       ? "border-brand-500 bg-brand/10 dark:bg-brand/15"
                       : "border-line bg-panel hover:bg-panelHi")
@@ -283,17 +289,15 @@ export function WaitlistForm({
           </p>
         )}
 
-        <Button
-          type="submit"
-          variant="primary"
-          size="lg"
-          loading={isSubmitting}
-        >
+        <Button type="submit" variant="solid" size="lg" loading={isSubmitting}>
           Підписатись на waitlist
         </Button>
 
+        {/* AI-NOTE: дисклеймер під кнопкою відправки — названий виняток
+            `no-sentence-in-caption`. Він свідомо тихіший за саму дію, бо
+            читається один раз і не конкурує з CTA. */}
         <p className="text-style-caption text-muted">
-          Без спаму. Один лист, коли Premium запуститься. Ціну оголосимо на
+          Без спаму. Один лист, коли Premium запуститься. Ціна зʼявиться на
           запуску.
         </p>
       </div>

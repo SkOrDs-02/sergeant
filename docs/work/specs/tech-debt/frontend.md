@@ -1,7 +1,35 @@
 # Frontend Tech Debt — Sergeant Web
 
-> **Last validated:** 2026-07-20 by @cursoragent (full reconcile vs HEAD). **Next review:** 2026-09-23.
+> **Last validated:** 2026-09-17 by @claude (звірка всіх відкритих пунктів реєстру з HEAD). **Next review:** 2026-12-16.
 > **Status:** Active
+
+> **Оновлено 2026-09-17 (звірка реєстру з HEAD).** Переміряно кожне число, яке цей файл наводить. Головне: **жоден лічильник із записаних не збігся з фактом**, і половина розійшлась у бік зростання, тобто реєстр систематично відстає.
+>
+> | Пункт                                             | Було в реєстрі                                         | Факт на HEAD (2026-09-17)                                                                                                                 |
+> | ------------------------------------------------- | ------------------------------------------------------ | ----------------------------------------------------------------------------------------------------------------------------------------- |
+> | production sources / test-файли (`apps/web/src`)  | 999 / 875                                              | **1387 / 1220**                                                                                                                           |
+> | `eslint-disable no-eyebrow-drift` (§8)            | 27 web + 10 mobile                                     | **0 / 0** — правила немає в плагіні (ретайрнуте ADR-0081); у коді лишились дві **згадки в коментарях** `SectionHeading.tsx`, не директиви |
+> | `eslint-disable react-hooks/exhaustive-deps` (§5) | web 5, mobile 10                                       | **web 15, mobile 10** (production; +1 web і +1 mobile у тестах)                                                                           |
+> | `@ts-expect-error` (§10)                          | 2 рядки, `hubNav.test.ts:28,59`                        | **11 рядків у 8 файлах**, усі в тестах; у `hubNav.test.ts` тепер рядки 54, 92, 102                                                        |
+> | `console.*` у production (§7)                     | 3 виклики у 3 файлах                                   | **3** ✅ — `perf.ts:35`, `sw/debug.ts:25`, `analytics.ts:157` (номери рядків у §7 застаріли, самі call-site-и ті самі)                    |
+> | сира типографіка (п.9 нижче)                      | 111 `text-xs` + 84 `text-sm` проти 2011 `text-style-*` | **89 + 85 проти 2485** — ратчет продовжує відпрацьовувати                                                                                 |
+> | розподіл ролей (§ Типографіка тексту)             | caption 882 + label 436 проти title 84 / headline 44   | **caption 1378, label 555, title 94, headline 54** — перекіс у дрібні ролі не зменшився                                                   |
+> | hand-roll `role="dialog"` (п.4 нижче)             | 25 файлів, 9 без `useBodyScrollLock`                   | **24 production-файли, 14 без `useBodyScrollLock`** — список нижче переписано                                                             |
+> | DesignShowcase (п.6 нижче)                        | 132 `text-2xs` + `text-[9-10px]`, stale `#fdf9f3`      | **5 `text-2xs`, 0 `text-[9-10px]`, `#fdf9f3` у showcase немає**; сам каталог живе в `core/DesignShowcase/` (71 не-тестовий `.tsx`)        |
+> | `CardVariant` call-sites (§14)                    | ~68 `<Card variant="…">`                               | **30**                                                                                                                                    |
+> | tombstone-ключі в `storageKeys.ts` (§14)          | 5                                                      | **30** ключів з `@removeBy 2026-12-01`                                                                                                    |
+> | `MONTHLY_PLAN_STORAGE_KEY` (§14)                  | ~29 живих згадок                                       | **31**                                                                                                                                    |
+> | mobile 12px-floor (п.8 нижче)                     | 156 (17 `text-2xs` + 139 `text-[<12px]`)               | **154** (17 + 137), `.text-style-*` і далі **0**                                                                                          |
+>
+> **Закрито цим проходом** (з доказом, не «для чистоти»):
+>
+> - **§8 `no-eyebrow-drift`** — правило ретайрнуте, директив нуль. Пункт закрито; заголовок «27 + 10» був найстарішим невірним числом у файлі.
+> - **§ «Чотири копії локального `Delta`»** — копій більше немає: `ExpensesCard`, `FitnessCard`, `NutritionCard`, `RoutineCard` усі імпортують спільний `@shared/components/ui/DeltaChip` (рядки 11/11/10/10) і передають той самий `higherIsBetter`. `grep -rn "function Delta" apps/web/src/core/hub` → 0.
+> - **§ «Залишки Спринту 10», п.2 (i18n)** — уже позначений закритим у тілі; звірено, що передумови тримаються: `docs/governance/adr/0056*` немає, `i18next` у `pnpm-lock.yaml` — **0** входжень.
+>
+> **Підтверджено відкритими** (перевірено на HEAD, не чіпати): Privat24 — `normalizeAccount` (`usePrivatbank.ts:156-168`) і далі читає `r.balance`/`r.creditLimit`, яких у `PrivatBalanceRecord` (`packages/api-client/src/endpoints/privat.ts:29-48`) немає — там `balanceOut`/`balanceOutEq`; конверт `data?.StatementsResponse?.data` живий на рядках 252 і 332, `balances`/`transactions` не читаються жодного разу. S10-R1: `core/app/router.tsx:51` — верхній маршрут усе ще `/`, не `/app`. Mobile-паритет кольорів категорій: сирий `#94a3b8` живий, але переїхав у `apps/mobile/src/modules/finyk/pages/Analytics/CategoryDonut.tsx:139`. `SubTabs` і далі в `modules/nutrition`. Прострочених `@removeBy` у коді немає — §14 чинний.
+>
+> **Hard Rule #18 (п.4):** перевірено **лінтом**, не `wc -l`. `npx eslint "apps/web/src/**/*.{ts,tsx}" "apps/server/src/**/*.ts"` → **0 errors, 8 warnings, жодного `max-lines`**. Сирих `>600` у `apps/web/src` при цьому **37** файлів — тобто monitor-таблиця нижче описує не борг, а власну застарілість; перезаписано.
 
 > **Закрито 2026-09-03.** `SyncStatusSheet` отримав рядок «Не прийнято сервером» і
 > список `SyncRejectedList` (модуль + людська причина, технічний код у `title`);
@@ -89,8 +117,9 @@
 >    `<ProgressBar>` (додано `variant="neutral"` для ink-філла); MacroRings
 >    (circular, `ProgressRing`) лишився bespoke — інша сімʼя компонента.
 > 4. **Shared OverlayShell/Drawer.** ~14 файлів hand-roll `role="dialog"`
->    chrome — **переміряно 2026-08-07: 25** файлів, тобто борг ріс, поки його
->    трекали. Сама консолідація лишається P4 (ризик фокусних/візуальних
+>    chrome — **переміряно 2026-08-07: 25** файлів, **переміряно 2026-09-17:
+>    24** production-файли (`grep -rl 'role="dialog"\|role="alertdialog"'`
+>    без тестів і stories) — тобто зростання спинилось, борг стабілізувався. Сама консолідація лишається P4 (ризик фокусних/візуальних
 >    регресій по всьому застосунку, потрібен design-review зі скрінами).
 >    **Два іменовані під-пункти закриті 2026-08-07** — це були не «стиль», а
 >    справжні дефекти скрол-локу:
@@ -103,19 +132,35 @@
 >      під фіксованим оверлеєм) і який не має refcount-у → замінено спільним
 >      хуком.
 >
->    **Залишок для наступного проходу** (повноекранні `fixed inset-0` з
->    `role="dialog"` без `useBodyScrollLock`, 9 файлів — кожен потребує
->    рішення «модалка над сторінкою» vs «full-page takeover», тому sweep-ом
->    не закривається): `FinykApp.tsx`, `BarcodeScanner.tsx`,
->    `PdfPreviewModal.tsx`, `HubSearch.tsx`, `HubChatHistoryDrawer.tsx`,
->    `BentoCard.tsx`, `OnboardingWizard.tsx`, `FirstEntryCelebrationModal.tsx`,
->    `AppLock.tsx`.
+>    **Залишок для наступного проходу** (`role="dialog"` без
+>    `useBodyScrollLock` — кожен потребує рішення «модалка над сторінкою» vs
+>    «full-page takeover», тому sweep-ом не закривається). **Список
+>    переміряний 2026-09-17: 14 файлів, не 9.** Із попереднього переліку
+>    `FirstEntryCelebrationModal.tsx` відпав (більше не має `role="dialog"`), а
+>    `BentoCard.tsx` переїхав у `BentoCardPeek.tsx`; додались шість, яких у
+>    записі не було: `HabitGlyphPicker.tsx`, `WorkoutItemRecoveryChip.tsx`,
+>    `WorkoutFinishSheets.tsx`, `MacrosEditor.tsx`, `Popover.tsx`,
+>    `voice/PendingVoiceChip.tsx`. Чинний список: `FinykApp.tsx`,
+>    `BarcodeScanner.tsx`, `MacrosEditor.tsx`, `HabitGlyphPicker.tsx`,
+>    `WorkoutItemRecoveryChip.tsx`, `WorkoutFinishSheets.tsx`, `Popover.tsx`,
+>    `voice/PendingVoiceChip.tsx`, `PdfPreviewModal.tsx`, `HubSearch.tsx`,
+>    `HubChatHistoryDrawer.tsx`, `BentoCardPeek.tsx`, `OnboardingWizard.tsx`,
+>    `AppLock.tsx`. **NB:** `Popover.tsx` і `PendingVoiceChip.tsx` — не модалки,
+>    а позиційовані поповери; для них «немає скрол-локу» майже напевно
+>    правильна поведінка, тож рішення для них — не «підключити хук», а
+>    зафіксувати виняток.
 >
 > 5. **SubTabs → shared** як `bar`-варіант Segmented (зараз застряг у
 >    modules/nutrition, активний таб 40px).
 > 6. **DesignShowcase.** Покриває ~25/60 компонентів; proposal-демо — форки
->    шипнутих компонентів; 132 `text-2xs` + text-[9-10px] у showcase;
->    DynamicThemeColorDemo/ProposalsVisual — stale #fdf9f3.
+>    шипнутих компонентів; ~~132 `text-2xs` + text-[9-10px] у showcase;
+>    DynamicThemeColorDemo/ProposalsVisual — stale #fdf9f3~~. **Переміряно
+>    2026-09-17 (каталог живе в `apps/web/src/core/DesignShowcase/`, 71
+>    не-тестовий `.tsx`):** `text-2xs` — **5**, `text-[9px]`/`text-[10px]` —
+>    **0**, `#fdf9f3` у showcase немає взагалі (два збіги по репо — коментарі в
+>    `styles/theme.css:1337` і `core/PricingPage.tsx:460`). Тобто три з
+>    чотирьох під-пунктів закриті; відкритим лишається саме покриття
+>    компонентів і форки proposal-демо.
 > 7. ~~**44px-аудит у CI.**~~ — **закрито 2026-08-07.** Твердження «не
 >    виконується жодним workflow» було неточним: лейн жив у nightly
 >    `extended-e2e.yml`. Тепер це блокуючий job `Mobile UI audit (44px touch
@@ -134,9 +179,16 @@ targets)` у `ci.yml`; сам status check у branch protection вмикаєть
 >    `.text-style-*` — тобто `check-design-conventions.mjs` не можна
 >    розширити на mobile, бо мігрувати немає куди. Порядок робіт: спершу
 >    шкала (owner-decision — які саме ролі й розміри), потім burndown, і лише
->    тоді `apps/mobile/src` у `SCAN_DIRS`.
+>    тоді `apps/mobile/src` у `SCAN_DIRS`. **Переміряно 2026-09-17: 154**
+>    (17 `text-2xs` + **137** `text-[<12px]`), `.text-style-*` і далі **0** —
+>    діагноз «мігрувати немає куди» не змінився. 🚫 **Blocked-reason:
+>    owner-decision** — токен додано 2026-09-17: пункт словами описує owner-gate
+>    («спершу шкала — owner-decision»), але канонічного токена не мав, тож
+>    `grep -rn "Blocked-reason" docs/work/specs/tech-debt/` показував його як
+>    actionable.
 > 9. **Сира типографіка ratchet** — цифри переміряні 2026-08-07: **111
->    text-xs + 84 text-sm проти 2011 text-style-\*** (записано було 389/108
+>    text-xs + 84 text-sm проти 2011 text-style-\*** (переміряно 2026-09-17:
+>    **89 + 85 проти 2485**) (записано було 389/108
 >    проти 1316). Ратчет фактично відпрацював; nutrition-старт із 41 сайту
 >    розібраний до ~20. Правило лишається «торкнувся файлу — мігруй», але
 >    сліпий sweep заборонений: два легітимні випадки сирого розміру
@@ -145,7 +197,11 @@ targets)` у `ci.yml`; сам status check у branch protection вмикаєть
 > 10. **Дрібне.** ~~`no-legacy-telegram-parse-mode` — dead-weight правило
 >     плагіна~~ (видалено 2026-08-06 разом із `sri-on-third-party-script`,
 >     обидва enabled ніде); storybook.md VRT-згадки ADR-0034 (пост-0082 stale); native
->     `title=` ×24 на interactive елементах (інертні на touch); finyk
+>     `title=` на interactive елементах (інертні на touch) — **переміряно
+>     2026-09-17: 416** входжень `title="` у `apps/web/src/**/*.tsx`, тобто
+>     запис «×24» був занижений більш ніж у 17 разів (частина з них — `title`
+>     на `<svg>`/іконках, де це не hover-only, тож перед чисткою потрібен
+>     точніший зріз, а не sweep); finyk
 >     `--c-finyk-accent`-старт hero тепер на tier-800 — звірити з
 >     «start stop matches accent» коментарем при наступному ретюні.
 
@@ -210,6 +266,20 @@ targets)` у `ci.yml`; сам status check у branch protection вмикаєть
 ---
 
 ## 🔴 Критичне
+
+### Privat24: баланси рахунків завжди 0, і конверт відповіді читається не той
+
+**Заведено 2026-09-16** під час аудиту бекенду (знахідка суміжна, лежить у вебі). Не виправлено свідомо: фікс залежить від того, яку форму Приват віддає НАСПРАВДІ, а це треба звірити з живою відповіддю, не вгадувати. Обидві половини — доведені суперечності **всередині репо**, не здогади.
+
+**Половина перша: читається поле, якого немає в контракті.** `normalizeAccount` (`apps/web/src/modules/finyk/hooks/usePrivatbank.ts:~168`) бере `r.balance` і `r.creditLimit`. В оголошеному `PrivatBalanceRecord` (`packages/api-client/src/endpoints/privat.ts:~29`) полів `balance`/`creditLimit` **немає взагалі** — гроші там у `balanceOut` / `balanceOutEq`.
+
+Помилка не кидається, бо її гасить `|| 0`: `parseFloat(String(undefined))` → `NaN` → `|| 0` → `0` → `Math.round(0 * 100)` → **`0`**. Поле типізоване як `number`, TS мовчить, тест мовчить, рахунок просто показує 0 ₴. Гірше: `useUnifiedFinanceData` кладе ці рахунки в `getMonoTotals` разом із моно-рахунками, тож нуль тече в загальний капітал і борг.
+
+**Половина друга: конверт.** Той самий хук читає `data?.StatementsResponse?.data || data?.data || (Array.isArray(data) ? data : [])` (рядки ~331 і ~251). Оголошені типи кажуть `{ balances: PrivatBalanceRecord[] }` і `{ transactions: PrivatStatementEntry[] }` — і ані `balances`, ані `transactions` не читаються **жодного разу**. Якщо правий тип, усі три гілки `||` промахуються і дають `[]`; далі `loadTransactions` ітерує порожній масив, тож транзакції теж не вантажаться, і `saveBalanceCache([])` це ще й кешує. Інтеграція мовчки віддає порожнечу — без помилки і без `syncState: "error"`.
+
+**Чому не полагоджено тут.** Сервер (`apps/server/src/modules/mono/privat.ts:~162`) — прозорий passthrough (`res.status(200).json(data)`), тобто форму диктує Приват, а не ми. Правити треба ОДИН із двох артефактів, і який саме — визначає жива відповідь `/statements/balance/final`. Вгадати навпіл тут гірше, ніж лишити як є: обидва варіанти виглядають правдоподібно, і невірний закріпить баг у типах.
+
+**Що зробити.** Зняти живу відповідь, лишити один конверт, прибрати `||`-гілки (вони маскують промах як порожній список), типізувати `normalizeAccount(raw: PrivatBalanceRecord)` замість `Record<string, unknown>` — тоді TS упіймає перше сам. Мінімум на зараз: `logger.warn`, коли всі гілки дали `[]`, а `data` непорожній.
 
 ### ~~Черга синку finyk не дренажиться~~ — діагностовано і закрито (2026-07-25)
 
@@ -479,7 +549,7 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
 
 1. **S10-R1 — Hub не перенесено на `/app/`.** У [`core/app/router.tsx`](../../../../apps/web/src/core/app/router.tsx) верхній маршрут лишається `/`, під ним `finyk/*`, `fizruk/*`, `nutrition/*`, `routine/*`, `insights/*`, `settings/*`, `onboarding/*`. Auth-гейт тримається на conditional render у корені, а не на межі роуту. Решта S10-R1 (LandingPage, `LANDING_VIEWED`/`LANDING_EMAIL_CAPTURED`, WaitlistForm, OpenGraph/Twitter-мета в PR #505) відвантажена — лишився рівно цей шматок.
 
-2. **S10-R2 — кастомний i18n as-built, контракт не ратифікований.** Живе рішення: `apps/web/src/shared/i18n/` + `en.ts` + `useLocale` + `?lang=en`. Original acceptance із плану **не приземлився і не спростований**: ADR-0056 у `docs/governance/adr/` немає, `i18next` у `pnpm-lock.yaml` немає, скрипта `lint:i18n-parity` немає. Це **needs-decision, не робота**: власник має або ратифікувати кастомне рішення окремим ADR, або дотягнути original acceptance. Поки рішення немає, EN-локаль не має механічної перевірки паритету — тобто розходження каталогів ніхто не ловить.
+2. **S10-R2 — кастомний i18n as-built, контракт не ратифікований.** Живе рішення: `apps/web/src/shared/i18n/` + `en.ts` + `useLocale` + `?lang=en`. Original acceptance із плану **не приземлився і не спростований**: ADR-0056 у `docs/governance/adr/` немає, `i18next` у `pnpm-lock.yaml` немає, скрипта `lint:i18n-parity` немає. Це було **needs-decision, не робота**. **Рішення власника 2026-09-16 (аудит дизайн-доків, варіант B): EN заморожено як фундамент** — паритет не гейтиться, переклад не доробляється, `?lang=en` лишається прихованим; натомість allowlist `no-cyrillic-jsx-literal` тримає храповик `cyrillicJsxAllowlist = 300` у `check-ui-canon-ratchet.mjs`, щоб каталог не розмивався. Пункт закрито; ADR не потрібен, рішення зафіксоване в [`docs/design/i18n/README.md`](../../../design/i18n/README.md).
 
 ### Хвіст після кольорів категорій: доки дизайн-системи і паритет мобілки
 
@@ -499,8 +569,10 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
    пари, які зливаються — див. п.3).
 2. **Мобілка лишилась на старих кольорах.** `apps/mobile` бере
    `getCatColor()` (тобто вже нові `solid` — це приїхало безкоштовно), але
-   чипів `tint`/`ink` там немає, а `CategoryDonut.tsx:138` досі має сирий
-   `#94a3b8` під «Інше» замість `categoryColors.other.solid`. Паритет форми
+   чипів `tint`/`ink` там немає, а сирий `#94a3b8` під «Інше» замість
+   `categoryColors.other.solid` живий досі — звірено 2026-09-17, файл
+   переїхав: `apps/mobile/src/modules/finyk/pages/Analytics/CategoryDonut.tsx:139`
+   (у записі стояв `CategoryDonut.tsx:138` без каталогу). Паритет форми
    — окремим проходом під `sergeant-mobile-expo`.
 3. **Сусідні hue зливаються, і це не баг, а ціна.** Після вирізання смуг
    teal/cyan/rose/lime і статус-червоного лишається ~232° дуги на 15
@@ -635,7 +707,18 @@ dark:text-brand` — пара-нуль, обидва класи віддають
 величина, яку рахують, а не оцінюють оком, і саме око пропустило ті 33
 пари під час першого підрахунку.
 
-### Чотири копії локального `Delta` у картках Хабу
+### ~~Чотири копії локального `Delta` у картках Хабу~~ — закрито 2026-09-17
+
+**Закрито 2026-09-17.** Копій більше немає: усі чотири картки імпортують
+спільний `@shared/components/ui/DeltaChip` — `ExpensesCard.tsx:11`,
+`FitnessCard.tsx:11`, `NutritionCard.tsx:10`, `RoutineCard.tsx:10`, і кожна
+передає в нього той самий `higherIsBetter` (`false` у витратах, `true` у
+решті). `grep -rn "function Delta" apps/web/src/core/hub` → **0**. Рішення,
+якого пункт вимагав («відсоток-зі-стрілкою як окрема роль»), фактично
+ухвалене на користь окремого компонента — `DeltaChip` має власний тест
+(`DeltaChip.test.tsx`) і не змішаний зі спільним `Delta` з `Money`.
+
+<details><summary>Історичний запис (2026-08-06)</summary>
 
 **Знайдено 2026-08-06** під час проходу П4 по Хабу.
 
@@ -656,6 +739,8 @@ dark:text-brand` — пара-нуль, обидва класи віддають
 **Ціна відкладання** — будь-яка зміна семантики дельти в Хабі потребує
 чотирьох однакових правок, і розсихання між картками нічим не ловиться.
 
+</details>
+
 ### Типографіка тексту: кікери й поширення на решту екранів
 
 **Заведено 2026-08-05** після PR «типографіка тексту» (Фінік → Огляд). Правила
@@ -667,6 +752,11 @@ dark:text-brand` — пара-нуль, обидва класи віддають
 користується: **84% усього тексту в `apps/web` набрано двома найдрібнішими
 ролями** (`caption` 882 вживання + `label` 436 проти 84 у `title` і 44 у
 `headline`), плюс 574 сирих `text-xs` / `text-sm` в обхід семантичної шкали.
+**Переміряно 2026-09-17:** `caption` **1378**, `label` **555**, `title` **94**,
+`headline` **54** — абсолютні числа виросли, а перекіс не зменшився (дві дрібні
+ролі — 93% від суми чотирьох). Сирих розмірів натомість **174** (89 `text-xs` +
+85 `text-sm`) проти 574 — тобто ратчет «торкнувся файлу — мігруй» працює саме
+там, де його увімкнули, і не працює на розподілі ролей.
 `caption` і `text-xs` при цьому дають однакові 12px — дві паралельні шкали, які
 в одному місці означають те саме, і за такою «ієрархією» не може стежити лінт.
 Коли все третього рівня, першого немає — це §3.2/5 «однорідна густина» в
@@ -938,9 +1028,126 @@ habit_rate`, але це обхід симптому, а не причини.
 
 </details>
 
-### Eager-бюджет пробито на 6.0 kB — весь UA-каталог їде першим екраном
+### ~~Стек аркуша (`Sheet`) на критичному шляху — ~2.8 kB~~ — закрито 2026-09-16
 
-**Статус: відкрито 2026-09-11, гейт ЧЕРВОНИЙ.** Заміри того дня:
+**ЗАКРИТО ТОГО Ж ДНЯ: 268.0 → 264.5 kB, 76 → 72 preload-чанки, стеля
+ратчетнута назад 271 → 268** (`DEFAULT_LIMIT_BYTES` у
+[`check-eager-bundle.mjs`](../../../../scripts/ci/check-eager-bundle.mjs)).
+
+**Ребро було одне, і не там, де підказував перший скан.** `OfflineBanner` →
+`SyncStatusSheet` → `Sheet` виглядав очевидним підозрюваним, але сам
+`OfflineBanner` у preload не входить. Справжнім ребром був
+`RootLayout` → `HubChatOverlay` → `Sheet`: оверлей чату мусить бути
+змонтований **завжди**, бо тримає намір повернення з каталогу і ефект
+маршруту, тож усе, що він імпортував статично, лежало на критичному шляху.
+
+**Лікування — розділити компонент по межі «потрібне закритому чату».** Хуки,
+рефи й ефекти лишились у `HubChatOverlay` (eager, рендерить `null` коли
+закрито); `Sheet` + лінивий `HubChat` переїхали у
+[`HubChatSheet.tsx`](../../../../apps/web/src/core/hub/HubChatSheet.tsx), який
+оверлей тягне через `lazyDefault` і монтує лише коли чат відкритий. Поведінка
+не змінилась: намір повернення з каталогу живе там само, де жив.
+
+**Що пішло з preload:** `Sheet`, `useSwipeToDismiss`, `useBodyScrollLock`,
+`useKeyboardAwareOverlay`. Лишився самий `useVisualKeyboardInset` (66 B) — його
+тягне інший, не аркушевий шлях, і він того не вартий.
+
+**Ціна — +2.1 kB до брутто-суми `size-limit` (1 458.7 → 1 460.8 kB), і стелю
+JS довелось підняти 1.46 → 1.48 MB.** Новий чанк несе власний boilerplate,
+а `size-limit` сумує всі 395 чанків, включно з тими, які більшість людей
+ніколи не завантажить. Це не регресія, а рівно той обмін, задля якого eager
+і міряють окремо з 2026-08-02: −3.5 kB там, де користувач їх відчуває,
++2.1 kB там, де ні. Запас на `main` при цьому був уже 1 335 B (0.09%), тож
+гейт однаково червонів би на наступному PR — розбір у root
+[`AGENTS.md § Performance budgets`](../../../../AGENTS.md#performance-budgets).
+
+**Урок на майбутнє (третій за формою, після `posthog-js` і `vendor-sqlite`):**
+eager росте не від «важких фіч», а від ОДНОГО статичного ребра з оболонки в
+компонент, який видно лише за дією користувача. Шукай його серед
+завжди-змонтованих сусідів `RootLayout`, а не серед великих чанків.
+
+<details>
+<summary>Історія до закриття (замір 2026-09-16, PR #90)</summary>
+
+Заведено під час ратчету eager 268 → 271 kB як **важіль, знайдений заміром і
+свідомо не смикнутий там**: він не був про ту гілку і розширив би її.
+
+У preload-наборі (76 чанків) сидів увесь стек bottom-sheet-а:
+
+| Чанк                      | brotli      |
+| ------------------------- | ----------- |
+| `Sheet`                   | 1.9 kB      |
+| `useSwipeToDismiss`       | 0.5 kB      |
+| `useBodyScrollLock`       | 0.3 kB      |
+| `useKeyboardAwareOverlay` | +           |
+| `useVisualKeyboardInset`  | 0.07 kB     |
+| **разом**                 | **~2.8 kB** |
+
+**Жодна поверхня першого кадру аркуша не рендерить.** Очевидний підозрюваний —
+`OfflineBanner` (він статично тягне `SyncStatusSheet` → `Sheet`) — у preload **не
+входить**, тобто ребро не звідти. За `grep -l` по зібраному `dist` на `Sheet-*.js`
+посилаються, серед eager-чанків, entry `index-*` і груповий чанк `core/lib`
+(`longTaskMonitor-*`). Тобто це радше артефакт групування `manualChunks`, ніж
+свідомий імпорт, і саме тому потребує заміру, а не здогаду.
+
+**Чому варте роботи:** 2.8 kB — це більше за весь внесок PR #90 (1.4 kB), тож
+зняття цього ребра дозволяє повернути стелю з 271 назад до 268 і нижче.
+
+**Як робити** — за рецептом [`fix-red-bundle-budget.md`](../../../start/instructions/fix-red-bundle-budget.md):
+знайти ОСТАННЄ eager-ребро (грепати обидві форми шляху — аліас і відносну),
+зняти, переміряти. Частковий винос дає нуль або мінус: `manualChunks` вирішує
+складання першим.
+
+</details>
+
+**Верифікація:** `pnpm --filter @sergeant/web build && pnpm --filter @sergeant/web size:eager`
+— факт після закриття **264.5 kB** локально при стелі 268.0 (CI стабільно дає
+~0.6 kB більше).
+
+### ~~Eager-бюджет пробито на 6.0 kB — весь UA-каталог їде першим екраном~~ — закрито 2026-09-12
+
+**ЗАКРИТО 2026-09-12: 260.8 kB, ліміт ратчетнуто 280 → 268** (`DEFAULT_LIMIT_BYTES`
+у [`scripts/ci/check-eager-bundle.mjs`](../../../../scripts/ci/check-eager-bundle.mjs)).
+UA-каталог пішов із критичного шляху: вузьке ядро
+[`uk.core.ts`](../../../../apps/web/src/shared/i18n/uk.core.ts) (вісім груп + `auth`),
+девʼять eager-поверхонь переведені на нього, `messages` розкладає ядро назад спредом,
+тож жоден інший call-site не змінився. Разом із каталогом із preload-графа пішла й
+англійська копія, яка доти їхала до першого екрана українським користувачам.
+
+**Останнє ребро знайшлося не відразу** — після переводу восьми поверхонь замір давав
+280.6 kB і гейт лишався червоним. Девʼятим був `AuthContext.tsx` із **відносним**
+шляхом імпорту, якого не бачив грep по аліасу. Знявши його, число впало 280.6 → 260.8.
+Урок зафіксовано в [`fix-red-bundle-budget.md`](../../../start/instructions/fix-red-bundle-budget.md):
+грепаєш eager-ребра — грепай обидві форми шляху, і виграш дає зняття **останнього**
+ребра, не частини.
+
+**Ранній сигнал на місці:**
+[`uk.core.eagerImports.test.ts`](../../../../apps/web/src/shared/i18n/uk.core.eagerImports.test.ts)
+падає на етапі юнітів і називає точний файл. Список поверхонь ручний — додаєш eager-поверхню,
+додавай і туди; справжній гейт і далі `check-eager-bundle.mjs`, бо лише він міряє факт.
+
+**Правила, що лишаються чинними після закриття:**
+
+- **Не піднімай eager-ліміт без заміру.** Він ратчетнутий УНИЗ тричі
+  (470 → 430 → 280 → 268), і щоразу важіль знаходився заміром, а не здогадом.
+  Єдиний підйом — 268 → 271 (2026-09-16, PR #90) — прожив кілька годин: він
+  був зроблений за тим самим правилом (спершу доведено, що перевищення не
+  сміття, потім названо конкретний важіль), і щойно важіль смикнули, стеля
+  повернулась на 268. Підйом без обох цих кроків — це комфортна зона, проти
+  якої стоїть увесь цей розділ.
+- **Переміряй після кожного кроку.** У закритому борзі `vendor-sqlite` нижче двічі
+  поспіль стояв хибний діагноз, і одна зі спроб дала −2.2 kB У МІНУС. `manualChunks`
+  вирішує складання ПЕРШИМ, тож самого динамічного імпорту може не вистачити.
+- **Наступна ціль інша:** загальновживаний орієнтир ≤170 kB не взятий, і кандидати
+  тепер у кістяку (react, router, спільний `vendor`, react-query, zod), а не в одному
+  важкому пакеті. Наступний крок коштуватиме дорожче за цей.
+
+**Верифікація:** `pnpm --filter @sergeant/web build && pnpm --filter @sergeant/web size:eager`.
+
+<details>
+<summary>Історія до закриття (заміри 2026-09-11)</summary>
+
+Заміри того дня:
 
 | Дерево                          | eager        | проти ліміту 280.0 |
 | ------------------------------- | ------------ | ------------------ |
@@ -985,7 +1192,7 @@ habit_rate`, але це обхід симптому, а не причини.
 назад роботу 2026-08-07 і зробити це першим ратчетом угору для метрики, яку
 відчуває користувач.
 
-**Верифікація:** `pnpm --filter @sergeant/web build && pnpm --filter @sergeant/web size:eager`.
+</details>
 
 ### ~~Винести `vendor-sqlite` з критичного шляху~~ — виконано 2026-08-07 (eager-бюджет)
 
@@ -1252,23 +1459,42 @@ Codemod ідемпотентний: повторний запуск дасть `
 > `openapi/routes.ts` 837), server (`modules/chat/chat.ts` 783) — трекаються окремо
 > (mobile tracker — `docs/work/specs/tech-debt/mobile.md`).
 
-| Рядків (raw / effective) | Файл                                                  | Категорія                                                                                          |
-| ------------------------ | ----------------------------------------------------- | -------------------------------------------------------------------------------------------------- |
-| **~416 / ≤600**          | `modules/finyk/components/ManualExpenseSheet.tsx`     | **Closed** [#348](https://github.com/SkOrDs-02/Sergeant/pull/348) — sections + model extracted     |
-| **~270 / ≤600**          | `modules/finyk/components/TxRow.tsx`                  | **Closed** [#350](https://github.com/SkOrDs-02/Sergeant/pull/350) — menu / edit / format extracted |
-| 675 / ~568               | `modules/nutrition/NutritionApp.tsx`                  | Monitor (passes rule)                                                                              |
-| 655 / ~598               | `modules/fizruk/pages/Body.tsx`                       | Monitor (headroom ~2)                                                                              |
-| 646 / ~550               | `modules/nutrition/lib/sqliteWriter/adapter.ts`       | Monitor                                                                                            |
-| 638 / ~525               | `shared/components/ui/CelebrationModal.tsx`           | Monitor                                                                                            |
-| 634 / ~512               | `shared/components/layout/ModuleHeader.tsx`           | Monitor                                                                                            |
-| 623 / ~586               | `modules/routine/components/RoutineCalendarPanel.tsx` | Monitor                                                                                            |
-| 615 / ~558               | `modules/finyk/FinykApp.tsx`                          | Monitor                                                                                            |
-| 606 / ~474               | `shared/components/ui/EmptyState.tsx`                 | Monitor                                                                                            |
-| 912 / ~593               | `shared/i18n/uk.ts`                                   | Monitor (i18n catalog — не feature-моноліт)                                                        |
-| 653 / ~551               | `shared/i18n/en.ts`                                   | Monitor                                                                                            |
+**Таблиця перезаписана 2026-09-17.** Попередня версія перелічувала 12 рядків і
+двічі промахувалась: `Body.tsx` там стояв «655 raw», а насправді **331** (його
+декомпозували, рядок не оновили), `ModuleHeader.tsx` — «634», насправді **518**.
+Тобто таблиця слідкувала за файлами, які вже вийшли зі спостереження, і не
+бачила тих, що зайшли.
+
+Головне про метод: **сирий `wc -l` >600 сам собою не є порушенням.** Правило
+рахує з `skipBlankLines` + `skipComments`, allowlist-ів немає ні в
+`eslint.web.js`, ні в `eslint.server.js`. Тому єдиний чинний доказ —
+`npx eslint "apps/web/src/**/*.{ts,tsx}"` → **0 `max-lines`** (прогін
+2026-09-17, разом із сервером: 0 errors / 8 warnings). Список нижче — саме
+monitor, не борг.
+
+| Рядків (raw) | Файл                                              | Категорія                                                                                                |
+| ------------ | ------------------------------------------------- | -------------------------------------------------------------------------------------------------------- |
+| **~754**     | `modules/finyk/components/ManualExpenseSheet.tsx` | Знову в monitor-і: [#348](https://github.com/SkOrDs-02/Sergeant/pull/348) зрізав до ~416, відтоді відріс |
+| **~270**     | `modules/finyk/components/TxRow.tsx`              | **Closed** [#350](https://github.com/SkOrDs-02/Sergeant/pull/350) — уже не в списку raw>600              |
+| 910          | `core/db/sqlite.ts`                               | Monitor (новий у списку)                                                                                 |
+| 893          | `core/durability/anonymousDataMigration.ts`       | Monitor (новий)                                                                                          |
+| 888          | `core/hub/chat/useChatSend.ts`                    | Monitor (новий)                                                                                          |
+| 849          | `shared/i18n/uk.ts`                               | Monitor (i18n catalog — не feature-моноліт)                                                              |
+| 827          | `modules/nutrition/components/AddMealSheet.tsx`   | Monitor (новий)                                                                                          |
+| 822          | `core/auth/AuthContext.tsx`                       | Monitor (новий)                                                                                          |
+| 811          | `modules/nutrition/hooks/useNutritionPantries.ts` | Monitor (новий)                                                                                          |
+| 797          | `shared/i18n/uk.fizruk.ts`                        | Monitor (i18n catalog)                                                                                   |
+| 794          | `core/hub/HubSettingsPage.tsx`                    | Monitor (новий)                                                                                          |
+| 733          | `modules/nutrition/NutritionApp.tsx`              | Monitor (було 675)                                                                                       |
+| 710          | `core/insights/WeeklyDigestCard.tsx`              | Monitor (новий)                                                                                          |
+
+Повний зріз — **37** файлів raw >600 у `apps/web/src` (було 12 у таблиці).
+Вийшли зі списку: `modules/fizruk/pages/Body.tsx` (331), `shared/components/layout/ModuleHeader.tsx` (518),
+`modules/routine/components/RoutineCalendarPanel.tsx` (598).
 
 **Імпакт (для monitor-ряду):** повільніший code review біля порогу 600;
-Hard Rule #18 leakers з re-audit **закриті** (#348 / #350).
+Hard Rule #18 leakers з re-audit **закриті** (#348 / #350), і жоден із 37
+raw-файлів не перетинає **effective** 600 — інакше ESLint дав би `max-lines`.
 
 **Fix (якщо знову >600):** поступовий split — sub-components / hooks / utils;
 окремі PR без feature-міксу.
@@ -1276,25 +1502,36 @@ Hard Rule #18 leakers з re-audit **закриті** (#348 / #350).
 ---
 
 <details>
-<summary>5. ~~`eslint-disable react-hooks/exhaustive-deps`~~ — Виконано (розгорнути)</summary>
+<summary>5. `eslint-disable react-hooks/exhaustive-deps` — web 15 / mobile 10 (розгорнути)</summary>
 
-### 5. ~~`eslint-disable react-hooks/exhaustive-deps`~~ — Виконано (документація)
+### 5. `eslint-disable react-hooks/exhaustive-deps` — знову відкрито (переміряно 2026-09-17: web 15, mobile 10)
 
-Web production disables знято (wave 4 → **0**); історія патернів —
+Web production disables було знято повністю (wave 4 → 0), але це **більше не так**:
+`grep -rn "eslint-disable.*exhaustive-deps" apps/web/src` дає **15**
+production-сайтів на 2026-09-17 (маркер 2026-08-07 фіксував 5 — тобто за
+шість тижнів додалось десять). Історія патернів —
 [`apps-web-exhaustive-deps.md`](../../../engineering/architecture/apps-web-exhaustive-deps.md).
-Живі **9** сайтів — у mobile:
+У mobile — **10** production-сайтів (запис «9» застарів ще 2026-08-07):
 [`apps-mobile-exhaustive-deps.md`](../../../engineering/architecture/apps-mobile-exhaustive-deps.md).
+Більшість нових web-директив несуть inline-WHY (`ReceiptScanSheet.tsx:156`,
+`usePrivatbank.ts:484`, `useTweenedValues.ts:71`, `AppLockSettings.tsx:75`), але
+чотири — без нього: `RestTimerOverlay.tsx:58`, `PhotoStep.tsx:114` і `:139`,
+`CrossModuleLinksSection.tsx:116`. Це і є actionable-залишок пункту: не «звести
+до нуля», а дописати WHY і рядок у каталозі.
 Новий disable без WHY-коментаря / без рядка в каталозі — рев'ю блокує.
 
 </details>
 
 ---
 
-### 6. Тестове покриття — 875 test файлів на 999 source; lines floor **89**
+### 6. Тестове покриття — 1220 test-файлів на 1387 source; lines floor **89**
 
 Coverage floor (`coverage-thresholds.json` → `apps/web`): **89** lines
 (+ branches 75 / functions 82 / statements 87 у `vitest.config.js`).
-Кількість test-файлів виросла органічно (re-audit 2026-07-20: 875 vs 999 source).
+Кількість test-файлів виросла органічно (re-audit 2026-07-20: 875 vs 999 source;
+**переміряно 2026-09-17: 1220 тестів на 1387 production-файлів** — `find apps/web/src`
+з виключенням `*.test.*` / `*.spec.*` / `__tests__` / `*.stories.*`). Floor у
+`coverage-thresholds.json` за той самий час не рухався — лишається **89**.
 Критичні модулі без тестів / з тонким покриттям (історичний backlog — більшість закрита):
 
 - ~~`HubReports.tsx` (608 → **261 LOC** після 0017 Sprint 2 per-card decomposition; важка агрегація винесена в per-card chunks) — покриття shell-у тонке~~ — 6 тестів додано (2026-06-01)
@@ -1339,16 +1576,19 @@ Cloud-sync v2 engine (`syncEngineWriter`, `singleton`, `outboxBoot`, `useSyncSta
 
 ### 7. `console.*` у production коді — 3 DEV-only / documented (purge 2026-05-13)
 
-**Re-audit 2026-05-13 (post-purge).** Скан `apps/web/src/**` (без тестів і
-`__tests__/`) дає **3 виклики у 3 файлах**, усі — DEV-gated або
-physically-documented:
+**Re-audit 2026-05-13 (post-purge); переміряно 2026-09-17 — число тримається.**
+Скан `apps/web/src/**` (без тестів і `__tests__/`) дає **3 виклики у 3 файлах**,
+усі — DEV-gated або physically-documented (решта 12 grep-збігів — згадки
+`console.*` у докстрінгах `logger.ts`, `posthog.ts`, `analytics.ts`,
+`containsPII.ts`, `hubNav.ts`, не виклики). Номери рядків нижче звірені на
+2026-09-17:
 
 - `shared/lib/ui/perf.ts:35` — `console.debug` під `if (import.meta.env?.DEV)`,
   додатково сховано за `hub_perf=1` LS-toggle (опціональна dev-діагностика).
-- `sw/debug.ts:30` — `console.log` під `if (debugEnabled && import.meta.env?.DEV)`;
+- `sw/debug.ts:25` (було :30) — `console.log` під `if (debugEnabled && import.meta.env?.DEV)`;
   канонічний production-шлях для SW-snapshot — `buildSwSnapshot()` (postMessage
   → `PWASection`).
-- `core/observability/analytics.ts:56` — `console.log("[analytics]", event)` —
+- `core/observability/analytics.ts:157` (було :56) — `console.log("[analytics]", event)` —
   навмисна transport-фіча analytics-ring-buffer-у; описана в docstring
   (`devtools` taps + PostHog).
 
@@ -1370,9 +1610,22 @@ ESLint-правило `no-console` з allowlist на ці три рядки (т�
 
 ---
 
-### 8. `eslint-disable no-eyebrow-drift` — 27 рядків у `apps/web/src` + 10 у `apps/mobile/src`
+### 8. ~~`eslint-disable no-eyebrow-drift` — 27 рядків у `apps/web/src` + 10 у `apps/mobile/src`~~ — закрито 2026-09-17
 
-Custom DS-rule пригнічується **27** разів у `apps/web/src` і **10** у `apps/mobile/src`
+**Закрито 2026-09-17.** Правила `no-eyebrow-drift` у
+`packages/eslint-plugin-sergeant-design` більше немає (ретайрнуте
+[ADR-0081](../../../governance/adr/0081-repository-simplification.md)), і в коді
+не лишилось жодної директиви:
+`grep -rn "eslint-disable.*no-eyebrow-drift" apps/web/src apps/mobile/src` → **0**.
+Два входження рядка `no-eyebrow-drift`, які ще дає широкий grep, — це **згадки в
+коментарях** `SectionHeading.tsx` (історія API-слотів), не suppression-и.
+Заголовок «27 + 10» тримався від 2026-07-20 і був найстарішим невірним числом у
+цьому файлі — маркер 2026-08-07 вище вже фіксував 0/0, але сам пункт не
+переписали.
+
+<details><summary>Історичний запис (2026-07-20)</summary>
+
+Custom DS-rule пригнічувався **27** разів у `apps/web/src` і **10** у `apps/mobile/src`
 (re-audit 2026-07-20; стабільно з 2026-07-01). Усі з обґрунтуваннями в коментарях
 (кастомні hero kickers, calendar headers, pill-overlay typography, marketing eyebrow).
 
@@ -1381,6 +1634,8 @@ Custom DS-rule пригнічується **27** разів у `apps/web/src` і
 `renderEyebrow`) і виведено 7 disable-сайтів з mobile primitive-owners + ключові
 hub/settings/dashboard кейси (mobile 17 → 10). Залишок — legitimate overrides або
 кандидати на нові slot-и в наступному API-розширенні.
+
+</details>
 
 ---
 
@@ -1421,10 +1676,26 @@ hub/settings/dashboard кейси (mobile 17 → 10). Залишок — legitim
 
 ---
 
-### 10. `@ts-expect-error` — 2 рядки (тільки в тестах)
+### 10. `@ts-expect-error` — 11 рядків у 8 файлах (тільки в тестах)
 
-`hubNav.test.ts:28,59` — тестування runtime guard з навмисно невалідним
-вводом. Обґрунтоване.
+**Переміряно 2026-09-17** (`grep -rn "@ts-expect-error" apps/web/src`): **11**
+рядків, усі в `*.test.ts(x)` — запис «2 рядки, `hubNav.test.ts:28,59`» від
+попереднього проходу застарів і за кількістю, і за рядками.
+
+| Файл                                        | Рядки                                             |
+| ------------------------------------------- | ------------------------------------------------- |
+| `shared/lib/modules/hubNav.test.ts`         | 54, 92, 102 (runtime guard з невалідною дією)     |
+| `core/lib/hubChatUtils.test.ts`             | 353, 365 (test override)                          |
+| `modules/routine/lib/routineRouter.test.ts` | 66 (simulate SSR)                                 |
+| `modules/finyk/lib/finykRouter.test.ts`     | 130 (simulate SSR)                                |
+| `core/profile/profileWriteThrough.test.ts`  | 781 (навмисно зіпсований payload під depth-probe) |
+| `core/lib/chatActions/crossActions.test.ts` | 217 (невідомий module id)                         |
+| `core/lib/hubChatSpeech.test.ts`            | 50 (test global)                                  |
+| `core/onboarding/presetApply.test.ts`       | 35 (невалідний module id)                         |
+
+Production-коду серед них немає, тож це не борг, а інвентар: `sergeant-design/no-strict-bypass`
+дає тестам повний opt-out (§ `no-strict-bypass` нижче). Рядок реєстру тримаємо
+саме щоб число не «росло тихо».
 
 ---
 
@@ -1883,10 +2154,10 @@ legacy-проп `danger` у `apps/mobile` `ConfirmDialog` (2 call-site-и → `v
 
 | Маркер                                                                            | Чому не знято 2026-09-03                                                                                                                                      | Що розблокує                                                   |
 | --------------------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- | -------------------------------------------------------------- |
-| `CardVariant` / `Card.variant` (`shared/components/ui/Card.tsx`)                  | ~68 call-site-ів `<Card variant="…">` у `apps/web/src` — це окремий механічний codemod-PR, а не хвіст                                                         | codemod `variant` → `module` + `prominence`, один PR           |
+| `CardVariant` / `Card.variant` (`shared/components/ui/Card.tsx`)                  | **30** call-site-ів `<Card variant="…">` у `apps/web/src` (переміряно 2026-09-17; було записано ~68 — codemod подешевшав удвічі, але все одно окремий PR)     | codemod `variant` → `module` + `prominence`, один PR           |
 | 5 tombstone-ключів у `packages/shared/src/lib/storageKeys.ts`                     | tombstone тримає residual-import drain у SQLite на boot; зняти — значить вирішити, що застарілі localStorage-дані бета-тестерів вже нікому не треба підбирати | рішення власника про долю legacy LS-даних                      |
-| `MONTHLY_PLAN_STORAGE_KEY` (`packages/fizruk-domain/src/constants.ts`)            | той самий клас tombstone-ів, ~29 живих згадок (drain + backup-ключі + тести)                                                                                  | те саме рішення                                                |
-| `pushApi.subscribe` / `unsubscribe` (`packages/api-client/src/endpoints/push.ts`) | методи ще експортують `react/hooks.ts` і пінить `push.test.ts`; серверний proxy `/api/push/subscribe` живий                                                   | PR під `sergeant-module-push`: клієнт + хуки + серверний proxy |
+| `MONTHLY_PLAN_STORAGE_KEY` (`packages/fizruk-domain/src/constants.ts`)            | той самий клас tombstone-ів, **31** жива згадка (переміряно 2026-09-17; було ~29) — drain + backup-ключі + тести                                              | те саме рішення                                                |
+| `pushApi.subscribe` / `unsubscribe` (`packages/api-client/src/endpoints/push.ts`) | звірено 2026-09-17 — усе ще так: `packages/api-client/src/endpoints/push.ts:91,99,137-140`, серверний proxy живий (`apps/server/src/routes/push.ts:78,85`)    | PR під `sergeant-module-push`: клієнт + хуки + серверний proxy |
 
 Урок для наступного разу той самий, що й у `_runner-report.md` (червень): маркер
 із датою без власника перетворюється на «September crunch». Перенесені дати тут
@@ -1975,7 +2246,12 @@ test-file glob-ів — правило `sergeant-design/no-strict-bypass` теп
 1. ~~**Декомпозиція Hard Rule #18 leakers**~~ — **Done** [#348](https://github.com/SkOrDs-02/Sergeant/pull/348) / [#350](https://github.com/SkOrDs-02/Sergeant/pull/350).
 2. ~~**Storage-key / restricted-syntax WHY**~~ — **Done** [#351](https://github.com/SkOrDs-02/Sergeant/pull/351).
 3. ~~**`no-non-null-assertion` burndown (перша хвиля)**~~ — **Done** [#353](https://github.com/SkOrDs-02/Sergeant/pull/353).
-4. ~~**`!` burndown batch (web low-risk)**~~ — **Done** (Avatar, FocusTrap, AnimatedList, KeyboardAccessory, accountVisual, DailyPlanMealRow, LogCardAnalytics, cleanupDemoData + prefer-kyiv-time WHY). Подальший — opportunistic; AccentColorPicker / barcode / server sync — окремі PR.
+4. ~~**`!` burndown batch (web low-risk)**~~ — **Done** (Avatar, FocusTrap, AnimatedList, KeyboardAccessory, accountVisual, DailyPlanMealRow, LogCardAnalytics, cleanupDemoData + prefer-kyiv-time WHY). Подальший — opportunistic. **Переміряно 2026-09-17:** у
+   `apps/web/src` + `apps/server/src` лишилось **3** warning-и
+   `@typescript-eslint/no-non-null-assertion` — `useBarcodeScanner.ts:127` і
+   `:128` плюс `nutritionCloudBackup.ts:11`. Тобто «server sync» із запису вже
+   закритий (сервер = 0), а `AccentColorPicker` відпав ще 2026-08-04 разом із
+   компонентом; фактичний залишок — самий barcode плюс один nutrition-хелпер.
 5. ~~**Overlay positioning (P4 Phase 1)**~~ — **Done**: shared `useFloatingPanelPosition` for Popover / Tooltip / DropdownMenu (geometry in `floatingPosition.ts`; no Radix — size-limit).
 6. ~~**Overlay shell (P4 Phase 2)**~~ — **Done**: `ConfirmDialog` / `InputDialog` — `bg-black/40` scrim, `useBodyScrollLock`, InputDialog portaled; kept `alertdialog` / form semantics.
 7. **Coverage ratchet (опційно)** — floor уже **89**; наступний крок лише після headroom у CI.

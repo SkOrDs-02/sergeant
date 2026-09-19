@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last touched:** 2026-09-06 by Codex. **Next review:** 2027-03-06.
+> **Last touched:** 2026-09-17 by @claude (мертві посилання на секції `CONTRIBUTING.md`/`CLAUDE.md` → актуальні). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #15. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -48,11 +48,11 @@ Documentation is part of the change set, not a follow-up. Treat any of the follo
 | ------------------------------------------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
 | New / changed JSON response shape                 | `packages/api-client/**` types **+** the matching contract test (Hard Rule #3). If the response is documented in `docs/engineering/api/*.md`, update there too.                                           |
 | New SQL migration                                 | `docs/engineering/architecture/data-exchange-storage-audit.md` (DB-level invariants), and any ER-diagram in `docs/engineering/architecture/`.                                                             |
-| New / removed npm script                          | `CONTRIBUTING.md § Everyday Commands`, `CLAUDE.md § Quick commands`.                                                                                                                                      |
+| New / removed npm script                          | `AGENTS.md § Quick commands`, `CONTRIBUTING.md § Щоденний цикл` (and the surface `apps/*/AGENTS.md § Quick commands` if the script is surface-scoped).                                                    |
 | New Hard Rule, lint rule, or convention           | `AGENTS.md` § Hard Rules (the canonical entry) **+** mirror summary in `CONTRIBUTING.md § Hard rules`. PR template's "AGENTS.md updated?" checkbox **must** be ticked.                                    |
 | New design token, palette, or component           | `docs/design/design/design-system.md`, `docs/design/design/brandbook.md`, and the relevant audit (`docs/work/specs/audits/*-audit-*.md`) if it changes status.                                            |
 | Deprecating a behaviour                           | Add `@deprecated` JSDoc with `@removeBy YYYY-MM-DD` (Hard Rule #10) **+** update the consuming doc to mark the section `> **Status:** Deprecated`.                                                        |
-| New playbook trigger or HubChat tool              | `docs/start/instructions/<name>.md` (or update the existing playbook). Cross-link from `CLAUDE.md § Before you write code` if it's a frequent trigger.                                                    |
+| New playbook trigger or HubChat tool              | `docs/start/instructions/<name>.md` (or update the existing playbook). Cross-link from `docs/start/instructions/playbook-catalog.md` / `AGENTS.md § Agent operating system` if it's a frequent trigger.   |
 | Anything that invalidates an existing doc's claim | Update the doc in the same PR. If it is a completed frozen snapshot, record Outcome and merge evidence, remove it from checkout, and replace required inbound references with an immutable Git permalink. |
 
 In every doc you touch, also bump the freshness header:

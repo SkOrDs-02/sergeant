@@ -61,7 +61,7 @@ function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
           {rec.icon && ICON_NAMES.includes(rec.icon) && (
             <Icon
               name={rec.icon}
-              size={14}
+              size="sm"
               className="inline-block mr-1 align-middle"
               aria-hidden
             />
@@ -80,7 +80,7 @@ function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
             className="mt-1.5 inline-flex items-center gap-1 text-style-label font-semibold text-text hover:text-primary transition-colors"
           >
             {messages.actions.open}
-            <Icon name="chevron-right" size={12} strokeWidth={2.5} />
+            <Icon name="chevron-right" size="xs" strokeWidth={2.5} />
           </button>
         )}
       </div>
@@ -94,7 +94,7 @@ function RecRow({ rec, onAction, onDismiss }: RecRowProps) {
           title={messages.actions.remove}
           className="shrink-0 -mr-1 -mt-1 text-muted hover:text-text"
         >
-          <Icon name="close" size={14} />
+          <Icon name="close" size="sm" />
         </Button>
       )}
     </div>

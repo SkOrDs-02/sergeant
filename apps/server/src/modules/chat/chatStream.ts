@@ -273,6 +273,13 @@ export async function streamAnthropicToSse(
   abortSignal?: AbortSignal,
   promptVersion?: string,
   userId?: string,
+  /**
+   * `$ai_trace_id` для PostHog AI Observability (ініціатива 0025, Фаза 2) —
+   * той самий round-trip-квиток, що звʼязує turn-1 tool-пропозицію,
+   * `$ai_span`-и виконаних tool-ів і цей (tool-result) turn-2 в одне
+   * дерево. Див. `AnthropicCallOptions.traceId`.
+   */
+  traceId?: string,
 ): Promise<void> {
   let firstStream: AnthropicStreamResult;
   try {
@@ -282,6 +289,7 @@ export async function streamAnthropicToSse(
       signal: abortSignal,
       allowOpenRouter: chatViaOpenRouter(),
       userId,
+      traceId,
     });
   } catch (e) {
     await refundQuotaOnUpstreamFailure(req);
@@ -416,6 +424,7 @@ export async function streamAnthropicToSse(
               typeof currentElapsedMs === "function"
                 ? currentElapsedMs()
                 : undefined,
+            traceId,
           },
         );
       }
@@ -448,6 +457,7 @@ export async function streamAnthropicToSse(
             signal: abortSignal,
             allowOpenRouter: chatViaOpenRouter(),
             userId,
+            traceId,
           },
         );
         const nextResponse = nextStream.response;

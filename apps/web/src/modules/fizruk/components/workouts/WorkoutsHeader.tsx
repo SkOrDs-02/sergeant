@@ -67,7 +67,9 @@ export function WorkoutsHeader({
       </div>
       {view === "catalog" ? (
         <Button
-          module="fizruk"
+          variant="solid"
+          tone="fizruk"
+
           size="sm"
           className="h-9 px-4"
           onClick={onAddCatalog}

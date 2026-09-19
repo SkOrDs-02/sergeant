@@ -103,6 +103,7 @@ function makeShopping(
     clearChecked: vi.fn(),
     clearAll: vi.fn(),
     setGeneratedList: vi.fn(),
+    addItem: vi.fn(),
     checkedItems: [],
     ...override,
   } as ReturnType<typeof useShoppingList>;

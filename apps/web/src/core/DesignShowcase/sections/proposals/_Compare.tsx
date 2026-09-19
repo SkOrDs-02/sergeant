@@ -59,8 +59,8 @@ export function ComparePair({
     <div className="flex flex-col md:flex-row items-stretch gap-4">
       <CompareColumn kind="before">{before}</CompareColumn>
       <div className="flex md:flex-col items-center justify-center text-muted shrink-0">
-        <Icon name="chevron-right" size={20} className="hidden md:block" />
-        <Icon name="chevron-down" size={20} className="md:hidden" />
+        <Icon name="chevron-right" size="lg" className="hidden md:block" />
+        <Icon name="chevron-down" size="lg" className="md:hidden" />
       </div>
       <CompareColumn kind="after">{after}</CompareColumn>
     </div>

@@ -1,6 +1,6 @@
 # 00 · Start — точка входу
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-25.
+> **Last touched:** 2026-09-17 by @claude (label `playbooks/` → `instructions/`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Звідси починають і люди, і агенти: онбординг, маршрутизація в skill-и,
@@ -9,11 +9,11 @@
 Карта цільового дерева документації та правила вибору canonical home —
 [`documentation-architecture.md`](./documentation-architecture.md).
 
-| Розділ                                   | Що тут                                                                  |
-| ---------------------------------------- | ----------------------------------------------------------------------- |
-| [`agents/`](./agents/README.md)          | Agent OS: routing-каталог skill-ів, workflow-дерева, онбординг агентів. |
-| [`playbooks/`](./instructions/README.md) | Канонічні execution-рецепти для повторюваних задач (з тригерами).       |
-| [`glossary.md`](./glossary.md)           | Доменні й платформні терміни (Finyk, Fizruk, HubChat, syncV2, …).       |
+| Розділ                                      | Що тут                                                                                |
+| ------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [`agents/`](./agents/README.md)             | Agent OS: routing-каталог skill-ів, workflow-дерева, онбординг агентів.               |
+| [`instructions/`](./instructions/README.md) | Канонічні execution-рецепти для повторюваних задач (з тригерами) і runtime-runbook-и. |
+| [`glossary.md`](./glossary.md)              | Доменні й платформні терміни (Finyk, Fizruk, HubChat, syncV2, …).                     |
 
 ## Контракт жанрів
 

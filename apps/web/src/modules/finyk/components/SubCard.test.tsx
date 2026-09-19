@@ -85,7 +85,7 @@ describe("SubCard", () => {
     );
     fireEvent.click(screen.getByLabelText("Редагувати підписку"));
     expect(
-      screen.getByText(/для суми підписки знайдемо найновішу витратну/),
+      screen.getByText(/для суми підписки знайду найновішу витратну/),
     ).toBeInTheDocument();
     // Now in edit mode — change the name and save.
     const nameInput = screen.getByPlaceholderText("Назва");

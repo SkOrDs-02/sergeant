@@ -12,7 +12,6 @@ import {
   fizrukPrograms,
   fizrukWellbeing,
   fizrukWorkoutTemplates,
-  fizrukPushups,
 } from "../sqlite/fizruk.js";
 import {
   FIZRUK_CLIENT_MIGRATIONS,
@@ -24,7 +23,7 @@ import {
  * mirroring the structural lock-down that `pg-fizruk-snapshot.test.ts`
  * applies to the Postgres source-of-truth.
  *
- * Stage 4 / PR #027 of `docs/planning/storage-roadmap.md`. Same rationale
+ * Stage 4 / PR #027 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. Same rationale
  * as the routine snapshot tests — PG↔SQLite schemas must stay aligned so
  * push/pull round-trips are symmetric.
  */
@@ -578,35 +577,9 @@ describe("sqlite/fizrukWorkoutTemplates schema snapshot", () => {
   });
 });
 
-describe("sqlite/fizrukPushups schema snapshot", () => {
-  const config = getTableConfig(fizrukPushups);
-
-  it("has the canonical table name", () => {
-    expect(config.name).toBe("fizruk_pushups");
-  });
-
-  it("declares all expected columns (mirror of routine_pushups)", () => {
-    const columnNames = config.columns.map((c) => c.name);
-    expect(columnNames).toEqual(["user_id", "date_key", "reps", "updated_at"]);
-  });
-
-  it("declares column types matching migration 004", () => {
-    const columnMap = Object.fromEntries(
-      config.columns.map((c) => [c.name, c]),
-    );
-    expect(columnMap["user_id"]!.notNull).toBe(true);
-    expect(columnMap["date_key"]!.notNull).toBe(true);
-    expect(columnMap["reps"]!.dataType).toBe("number");
-    expect(columnMap["reps"]!.notNull).toBe(true);
-    expect(columnMap["reps"]!.hasDefault).toBe(true);
-    expect(columnMap["updated_at"]!.dataType).toBe("string");
-    expect(columnMap["updated_at"]!.notNull).toBe(true);
-  });
-});
-
 describe("sqlite/fizruk migrations exports", () => {
-  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities + 006 chosen-variant migration", () => {
-    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(6);
+  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities + 006 chosen-variant + 007 pushups→workouts migration", () => {
+    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(7);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workouts/,
@@ -683,6 +656,27 @@ describe("sqlite/fizruk migrations exports", () => {
     // не переживає перезавантаження, а лічильник полегшень завжди нуль.
     expect(FIZRUK_CLIENT_MIGRATIONS[5]!.sql).toMatch(
       /ALTER TABLE fizruk_workout_items ADD COLUMN chosen_variant TEXT/,
+    );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[6]!.name).toBe(
+      "007_fizruk_pushups_to_workouts.sql",
+    );
+    // Конверсія йде ПЕРЕД DROP і в порядку сети → позиції → тренування:
+    // predicate «уже перенесено» дивиться на fizruk_workouts, тож
+    // тренування мусять вставлятись останніми.
+    const sql007 = FIZRUK_CLIENT_MIGRATIONS[6]!.sql;
+    expect(sql007.indexOf("INTO fizruk_workout_sets")).toBeLessThan(
+      sql007.indexOf("INTO fizruk_workout_items"),
+    );
+    expect(sql007.indexOf("INTO fizruk_workout_items")).toBeLessThan(
+      sql007.indexOf("INTO fizruk_workouts"),
+    );
+    expect(sql007.indexOf("INTO fizruk_workouts")).toBeLessThan(
+      sql007.indexOf("DROP TABLE IF EXISTS fizruk_pushups"),
+    );
+    // User-scoped id — той самий, що ставить серверна 140.
+    expect(sql007).toMatch(
+      /'pushups:' \|\| p\.user_id \|\| ':' \|\| p\.date_key/,
     );
   });
 

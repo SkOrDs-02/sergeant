@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { STORED_MEMORY_SOURCES } from "../../modules/ai-memory/types.js";
+import { CORPUS_DOMAINS } from "./corpus.js";
 import { loadDefaultGoldenSet, parseGoldenSet } from "./golden.js";
 
 describe("loadDefaultGoldenSet (canonical fixture)", () => {
@@ -25,9 +25,9 @@ describe("loadDefaultGoldenSet (canonical fixture)", () => {
     }
   });
 
-  it("кожна query має валідний domain з STORED_MEMORY_SOURCES", () => {
+  it("кожна query має валідний domain з CORPUS_DOMAINS", () => {
     for (const q of set.queries) {
-      expect(STORED_MEMORY_SOURCES).toContain(q.domain);
+      expect(CORPUS_DOMAINS).toContain(q.domain);
     }
   });
 

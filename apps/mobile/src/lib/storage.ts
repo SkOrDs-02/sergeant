@@ -5,7 +5,7 @@
  * `apps/web/src/shared/lib/storage/createModuleStorage.ts` so that hooks and modules
  * ported from the web can consume the same named exports on native.
  *
- * Stage 9 / PR #065 of `docs/planning/storage-roadmap.md` introduced a
+ * Stage 9 / PR #065 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` introduced a
  * two-rung priority ladder in {@link resolveStore}:
  *
  *   1. **SQLite warm-cache + MMKV mirror** — once

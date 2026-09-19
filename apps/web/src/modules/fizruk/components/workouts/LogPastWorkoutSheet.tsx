@@ -59,10 +59,9 @@ import { Input } from "@shared/components/ui/Input";
 import { Segmented } from "@shared/components/ui/Segmented";
 import { Select } from "@shared/components/ui/Select";
 import { Icon } from "@shared/components/ui/Icon";
-import { searchFieldProps } from "@shared/lib/ui/searchFieldProps";
-import { cn } from "@shared/lib/ui/cn";
 import { Sheet } from "@shared/components/ui/Sheet";
 import { TimeField } from "@shared/components/ui/TimeField";
+import { cn } from "@shared/lib/ui/cn";
 import { messages } from "@shared/i18n/uk";
 import { computeKcalBurned } from "@sergeant/fizruk-domain";
 import {
@@ -82,6 +81,16 @@ import {
   defaultPastWorkoutTimes,
   todayLocalDateString,
 } from "../../pages/Workouts.helpers";
+import {
+  QuickLogFields,
+  useQuickLogForm,
+  type QuickLogPayload,
+} from "./QuickLogForm";
+import {
+  ActivityPickerSheet,
+  CATEGORY_ORDER,
+  NEW_ACTIVITY_VALUE,
+} from "./LogPastActivityPicker";
 
 /** Короткий запис: усе, що потрібно, аби зібрати завершену сесію з одним item-ом. */
 export interface LogPastWorkoutActivity {
@@ -115,6 +124,13 @@ export interface LogPastWorkoutSheetProps {
   activities?: ActivityDef[] | undefined;
   /** Зберегти щойно заведене своє заняття. Без нього опція не показується. */
   onCreateActivity?: ((activity: ActivityDef) => void) | undefined;
+  /**
+   * Третій режим — «Швидкий запис»: вправа з власною вагою плюс число
+   * повторень, завершений `Workout` «щойно» (рішення власника 2026-09-16 —
+   * зібрати всі способи ЗАПИСАТИ в одну форму). Без нього режиму в
+   * перемикачі немає, форма поводиться як до 2026-09-16.
+   */
+  onQuickLog?: ((payload: QuickLogPayload) => void) | undefined;
 }
 
 const DEFAULT_DURATION_MIN = "45";
@@ -130,13 +146,6 @@ const EVENING_END_FALLBACK = "19:00";
 const DURATION_PRESETS: string[] = ["15", "30", "45", "60"];
 
 /**
- * Службове значення селекта: «завести своє заняття». Живе поруч зі
- * справжніми id, бо це той самий вибір з погляду людини - просто його ще
- * нема в списку.
- */
-const NEW_ACTIVITY_VALUE = "__new__";
-
-/**
  * MET за рівнем навантаження. Питати число в людини безглуздо: MET знає
  * той, хто його вже знає, а решта побачить порожнє поле й кине форму.
  * Числа - опорні точки Compendium: спокійне ~ходьба, помірне ~силове
@@ -148,13 +157,6 @@ const CUSTOM_ACTIVITY_MET: Record<string, number> = {
   moderate: DEFAULT_CUSTOM_ACTIVITY_MET,
   intense: 8.5,
 };
-
-const CATEGORY_ORDER: ActivityCategory[] = [
-  "strength",
-  "cardio",
-  "group",
-  "flexibility",
-];
 
 const ZONE_ITEMS = (
   Object.keys(ACTIVITY_MUSCLE_ZONES_UK) as ActivityMuscleZone[]
@@ -170,108 +172,6 @@ const INTENSITY_ITEMS = (
   Object.keys(ACTIVITY_INTENSITIES_UK) as ActivityIntensity[]
 ).map((value) => ({ value, label: ACTIVITY_INTENSITIES_UK[value] }));
 
-/** Заняття збігається з запитом по назві без урахування регістру. */
-function matchesActivityQuery(a: ActivityDef, q: string): boolean {
-  return a.nameUk.toLocaleLowerCase("uk").includes(q);
-}
-
-function ActivityPickerSheet({
-  open,
-  onClose,
-  activities,
-  justCreated,
-  value,
-  canCreate,
-  onPick,
-}: {
-  open: boolean;
-  onClose: () => void;
-  activities: ActivityDef[];
-  justCreated: ActivityDef | null;
-  value: string;
-  canCreate: boolean;
-  onPick: (id: string) => void;
-}) {
-  const t = messages.fizruk.logPast;
-  const [q, setQ] = useState("");
-  const query = q.trim().toLocaleLowerCase("uk");
-  const all =
-    justCreated && !activities.some((a) => a.id === justCreated.id)
-      ? [...activities, justCreated]
-      : activities;
-  const groups = CATEGORY_ORDER.map((category) => ({
-    category,
-    items: all.filter(
-      (a) => a.category === category && matchesActivityQuery(a, query),
-    ),
-  })).filter((g) => g.items.length > 0);
-
-  const optionClass = (active: boolean) =>
-    cn(
-      "focus-ring flex min-h-[44px] w-full items-center gap-3 rounded-xl px-2 text-left text-style-body",
-      active ? "bg-fizruk-surface text-fizruk-soft-fg" : "text-text",
-    );
-
-  return (
-    <Sheet
-      open={open}
-      onClose={onClose}
-      title={t.pickerTitle}
-      zIndex={90}
-      panelClassName="fizruk-sheet"
-    >
-      <div className="sticky top-0 z-10 -mx-1 bg-panel px-1 pb-2">
-        <Input
-          {...searchFieldProps("log-past-activity-search")}
-          placeholder={t.pickerSearch}
-          value={q}
-          onChange={(e) => setQ(e.target.value)}
-        />
-      </div>
-      <div role="listbox" aria-label={t.activity} className="space-y-3">
-        {groups.map(({ category, items }) => (
-          <div key={category}>
-            <div className="mb-1 px-2 text-style-caption font-semibold text-subtle">
-              {ACTIVITY_CATEGORIES_UK[category]}
-            </div>
-            {items.map((a) => (
-              <button
-                key={a.id}
-                type="button"
-                role="option"
-                aria-selected={value === a.id}
-                className={optionClass(value === a.id)}
-                onClick={() => onPick(a.id)}
-              >
-                {a.nameUk}
-              </button>
-            ))}
-          </div>
-        ))}
-        {groups.length === 0 && (
-          <p className="px-2 py-4 text-style-caption text-subtle">
-            {t.pickerEmpty}
-          </p>
-        )}
-        {canCreate && (
-          <button
-            type="button"
-            role="option"
-            aria-selected={value === NEW_ACTIVITY_VALUE}
-            className={cn(
-              optionClass(value === NEW_ACTIVITY_VALUE),
-              "font-semibold",
-            )}
-            onClick={() => onPick(NEW_ACTIVITY_VALUE)}
-          >
-            {t.activityNew}
-          </button>
-        )}
-      </div>
-    </Sheet>
-  );
-}
-
 export function LogPastWorkoutSheet({
   open,
   onClose,
@@ -280,6 +180,7 @@ export function LogPastWorkoutSheet({
   onRecordWeight,
   activities = ACTIVITIES,
   onCreateActivity,
+  onQuickLog,
 }: LogPastWorkoutSheetProps) {
   const fieldsId = useId();
   const dateId = `${fieldsId}-date`;
@@ -307,7 +208,8 @@ export function LogPastWorkoutSheet({
   const [start, setStart] = useState(EVENING_START_FALLBACK);
   const [end, setEnd] = useState(EVENING_END_FALLBACK);
   const [activity, setActivity] = useState("");
-  const [mode, setMode] = useState<"activity" | "manual">("activity");
+  const [mode, setMode] = useState<"activity" | "manual" | "quick">("activity");
+  const quick = useQuickLogForm({ open, weightKg });
   const [pickerOpen, setPickerOpen] = useState(false);
   const [durationMin, setDurationMin] = useState(DEFAULT_DURATION_MIN);
   const [zone, setZone] = useState<ActivityMuscleZone>("full");
@@ -403,7 +305,23 @@ export function LogPastWorkoutSheet({
     setNewName("");
   };
 
+  const submitDisabled = mode === "quick" ? quick.payload === null : blocked;
+
+  // Режим «Швидкий запис» є лише там, де є кому віддати запис: домашня
+  // тренувань передає `onQuickLog`, інші хости форми — ні.
+  const modeItems: { value: typeof mode; label: string }[] = [
+    { value: "activity", label: t.modeActivity },
+    { value: "manual", label: t.modeManual },
+    ...(onQuickLog ? [{ value: "quick" as const, label: t.modeQuick }] : []),
+  ];
+
   const handleSubmit = () => {
+    if (mode === "quick") {
+      // Швидкий запис не має ні міток часу, ні заняття: свій payload, свій
+      // консюмер. Дата не питається навмисно — запис «щойно».
+      if (quick.payload && onQuickLog) onQuickLog(quick.payload);
+      return;
+    }
     // Та сама умова, що й `disabled` - кнопка не єдиний шлях сюди
     // (Enter, автоклік, тест), і розʼїхатись цим двом не можна.
     if (blocked || !times) return;
@@ -437,9 +355,11 @@ export function LogPastWorkoutSheet({
       closeLabel={messages.actions.close}
       footer={
         <Button
-          module="fizruk"
+          variant="solid"
+          tone="fizruk"
+
           className="w-full h-11"
-          disabled={blocked}
+          disabled={submitDisabled}
           onClick={handleSubmit}
         >
           {t.submit}
@@ -455,10 +375,7 @@ export function LogPastWorkoutSheet({
             variant="fizruk"
             layout="bar"
             ariaLabel={t.modeLabel}
-            items={[
-              { value: "activity", label: t.modeActivity },
-              { value: "manual", label: t.modeManual },
-            ]}
+            items={modeItems}
             value={mode}
             onChange={(next) => {
               setMode(next);
@@ -470,264 +387,281 @@ export function LogPastWorkoutSheet({
               {t.activityNoneHint}
             </p>
           ) : null}
-        </div>
-
-        {mode === "activity" ? (
-          <div className="min-w-0">
-            <label
-              htmlFor={activityId}
-              className="text-style-label text-text leading-snug"
-            >
-              {t.activity}
-            </label>
-            {/* Кнопка замість нативного <select>: у каталозі ~55 занять, і
-                колесо iOS змушувало гортати їх усі. Вкладений аркуш дає пошук. */}
-            <button
-              id={activityId}
-              type="button"
-              onClick={() => setPickerOpen(true)}
-              aria-haspopup="dialog"
-              className="input-focus-fizruk mt-1 flex h-11 w-full min-w-0 max-w-full items-center justify-between gap-2 rounded-2xl border border-line bg-panelHi pl-4 pr-3 text-left text-style-body text-text"
-            >
-              <span
-                className={cn(
-                  "min-w-0 truncate",
-                  !selectedActivity && !creatingActivity && "text-subtle",
-                )}
-              >
-                {creatingActivity
-                  ? t.activityNew
-                  : (selectedActivity?.nameUk ?? t.pickerTitle)}
-              </span>
-              <Icon
-                name="chevron-down"
-                size={16}
-                className="shrink-0 text-subtle"
-                aria-hidden
-              />
-            </button>
-            <ActivityPickerSheet
-              open={pickerOpen}
-              onClose={() => setPickerOpen(false)}
-              activities={activities}
-              justCreated={justCreated}
-              value={activity}
-              canCreate={Boolean(onCreateActivity)}
-              onPick={(id) => {
-                setActivity(id);
-                setPickerOpen(false);
-              }}
-            />
-          </div>
-        ) : null}
-
-        {creatingActivity ? (
-          /* Заводимо просто тут, а не окремим екраном: людина вже посеред
-             запису, і відправити її в довідник означало б загубити введені
-             дату й час. MET не питаємо числом - лише рівень навантаження. */
-          <div className="min-w-0 space-y-2 rounded-2xl border border-line bg-panelHi p-3">
-            <div className="min-w-0">
-              <label
-                htmlFor={newNameId}
-                className="text-style-label text-text leading-snug"
-              >
-                {t.newActivityName}
-              </label>
-              <Input
-                id={newNameId}
-                value={newName}
-                onChange={(e) => setNewName(e.target.value)}
-                placeholder={t.newActivityNamePlaceholder}
-                maxLength={60}
-                className="mt-1 min-w-0 max-w-full"
-              />
-            </div>
-            <div className="min-w-0">
-              <label
-                htmlFor={newCategoryId}
-                className="text-style-label text-text leading-snug"
-              >
-                {t.newActivityCategory}
-              </label>
-              <Select
-                id={newCategoryId}
-                accent="fizruk"
-                value={newCategory}
-                onChange={(e) =>
-                  setNewCategory(e.target.value as ActivityCategory)
-                }
-                className="mt-1 min-w-0 max-w-full"
-              >
-                {CATEGORY_ORDER.map((category) => (
-                  <option key={category} value={category}>
-                    {ACTIVITY_CATEGORIES_UK[category]}
-                  </option>
-                ))}
-              </Select>
-            </div>
-            <div className="min-w-0 space-y-2">
-              <span className="text-style-label text-text leading-snug block">
-                {t.newActivityEffort}
-              </span>
-              <Segmented
-                variant="fizruk"
-                ariaLabel={t.newActivityEffort}
-                items={EFFORT_ITEMS}
-                value={newEffort}
-                onChange={setNewEffort}
-              />
-              <p className="text-style-caption text-subtle">
-                {t.newActivityEffortHint}
-              </p>
-            </div>
-            <Button
-              variant="secondary"
-              className="w-full h-11"
-              disabled={!canSaveNewActivity}
-              onClick={handleCreateActivity}
-            >
-              {t.newActivitySave}
-            </Button>
-          </div>
-        ) : null}
-
-        {/* `min-w-0` на КОЖНІЙ комірці, не лише на самих полях: без нього
-            grid-трек росте під intrinsic-ширину нативного пікера, і картка
-            їде за екран навіть тоді, коли поле всередині поводиться чемно. */}
-        <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-3 sm:grid-cols-3">
-          <div className="min-w-0">
-            <DateField
-              id={dateId}
-              label={t.date}
-              // Відсікає майбутні ДНІ в самому пікері. Майбутній ЧАС у межах
-              // сьогодні цим не ловиться - це робить `times.inFuture` нижче.
-              max={today}
-              value={date}
-              onChange={(e) => setDate(e.target.value)}
-            />
-          </div>
-          <div className="min-w-0">
-            <TimeField
-              id={startId}
-              label={t.start}
-              value={start}
-              onChange={(e) => setStart(e.target.value)}
-            />
-          </div>
-          {mode === "manual" ? (
-            <div className="min-w-0">
-              <TimeField
-                id={endId}
-                label={t.end}
-                value={end}
-                onChange={(e) => setEnd(e.target.value)}
-              />
-            </div>
+          {mode === "quick" ? (
+            <p className="text-style-caption text-subtle">
+              {messages.fizruk.quickLog.description}
+            </p>
           ) : null}
         </div>
 
-        {selectedActivity ? (
+        {mode === "quick" ? (
+          <QuickLogFields state={quick} onSubmit={handleSubmit} />
+        ) : null}
+
+        {mode === "quick" ? null : (
           <>
-            <div className="min-w-0 space-y-2">
-              <label
-                htmlFor={durationId}
-                className="text-style-label text-text leading-snug"
-              >
-                {t.duration}
-              </label>
-              <Segmented
-                variant="fizruk"
-                ariaLabel={t.duration}
-                items={DURATION_PRESETS.map((value) => ({
-                  value,
-                  label: `${value} ${t.durationUnit}`,
-                }))}
-                value={
-                  DURATION_PRESETS.includes(durationMin) ? durationMin : ""
-                }
-                onChange={setDurationMin}
-              />
-              <Input
-                id={durationId}
-                type="number"
-                inputMode="numeric"
-                min={1}
-                max={600}
-                value={durationMin}
-                onChange={(e) => setDurationMin(e.target.value)}
-                className="min-w-0 max-w-full"
-              />
-            </div>
-
-            <div className="min-w-0 space-y-2">
-              <span className="text-style-label text-text leading-snug block">
-                {t.zone}
-              </span>
-              <Segmented
-                variant="fizruk"
-                ariaLabel={t.zone}
-                items={ZONE_ITEMS}
-                value={zone}
-                onChange={setZone}
-              />
-            </div>
-
-            <div className="min-w-0 space-y-2">
-              <span className="text-style-label text-text leading-snug block">
-                {t.intensity}
-              </span>
-              <Segmented
-                variant="fizruk"
-                ariaLabel={t.intensity}
-                items={INTENSITY_ITEMS}
-                value={intensity}
-                onChange={setIntensity}
-              />
-            </div>
-
-            {weightKg == null ? (
+            {mode === "activity" ? (
               <div className="min-w-0">
                 <label
-                  htmlFor={weightId}
+                  htmlFor={activityId}
                   className="text-style-label text-text leading-snug"
                 >
-                  {t.weight}
+                  {t.activity}
                 </label>
-                <Input
-                  id={weightId}
-                  type="number"
-                  inputMode="decimal"
-                  min={20}
-                  max={400}
-                  step={0.1}
-                  value={weightInput}
-                  onChange={(e) => setWeightInput(e.target.value)}
-                  placeholder="75.5"
-                  helperText={t.weightHint}
-                  className="mt-1 min-w-0 max-w-full"
+                {/* Кнопка замість нативного <select>: у каталозі ~55 занять, і
+                колесо iOS змушувало гортати їх усі. Вкладений аркуш дає пошук. */}
+                <button
+                  id={activityId}
+                  type="button"
+                  onClick={() => setPickerOpen(true)}
+                  aria-haspopup="dialog"
+                  className="input-focus-fizruk mt-1 flex h-11 w-full min-w-0 max-w-full items-center justify-between gap-2 rounded-2xl border border-line bg-panelHi pl-4 pr-3 text-left text-style-body text-text"
+                >
+                  <span
+                    className={cn(
+                      "min-w-0 truncate",
+                      !selectedActivity && !creatingActivity && "text-subtle",
+                    )}
+                  >
+                    {creatingActivity
+                      ? t.activityNew
+                      : (selectedActivity?.nameUk ?? t.pickerTitle)}
+                  </span>
+                  <Icon
+                    name="chevron-down"
+                    size="md"
+                    className="shrink-0 text-subtle"
+                    aria-hidden
+                  />
+                </button>
+                <ActivityPickerSheet
+                  open={pickerOpen}
+                  onClose={() => setPickerOpen(false)}
+                  activities={activities}
+                  justCreated={justCreated}
+                  value={activity}
+                  canCreate={Boolean(onCreateActivity)}
+                  onPick={(id) => {
+                    setActivity(id);
+                    setPickerOpen(false);
+                  }}
                 />
               </div>
             ) : null}
 
-            {kcal !== null ? (
-              <p className="text-style-caption text-fizruk-strong">
-                {t.kcalPreview} {kcal} {t.kcalUnit}
-              </p>
+            {creatingActivity ? (
+              /* Заводимо просто тут, а не окремим екраном: людина вже посеред
+             запису, і відправити її в довідник означало б загубити введені
+             дату й час. MET не питаємо числом - лише рівень навантаження. */
+              <div className="min-w-0 space-y-2 rounded-2xl border border-line bg-panelHi p-3">
+                <div className="min-w-0">
+                  <label
+                    htmlFor={newNameId}
+                    className="text-style-label text-text leading-snug"
+                  >
+                    {t.newActivityName}
+                  </label>
+                  <Input
+                    id={newNameId}
+                    value={newName}
+                    onChange={(e) => setNewName(e.target.value)}
+                    placeholder={t.newActivityNamePlaceholder}
+                    maxLength={60}
+                    className="mt-1 min-w-0 max-w-full"
+                  />
+                </div>
+                <div className="min-w-0">
+                  <label
+                    htmlFor={newCategoryId}
+                    className="text-style-label text-text leading-snug"
+                  >
+                    {t.newActivityCategory}
+                  </label>
+                  <Select
+                    id={newCategoryId}
+                    accent="fizruk"
+                    value={newCategory}
+                    onChange={(e) =>
+                      setNewCategory(e.target.value as ActivityCategory)
+                    }
+                    className="mt-1 min-w-0 max-w-full"
+                  >
+                    {CATEGORY_ORDER.map((category) => (
+                      <option key={category} value={category}>
+                        {ACTIVITY_CATEGORIES_UK[category]}
+                      </option>
+                    ))}
+                  </Select>
+                </div>
+                <div className="min-w-0 space-y-2">
+                  <span className="text-style-label text-text leading-snug block">
+                    {t.newActivityEffort}
+                  </span>
+                  <Segmented
+                    variant="fizruk"
+                    ariaLabel={t.newActivityEffort}
+                    items={EFFORT_ITEMS}
+                    value={newEffort}
+                    onChange={setNewEffort}
+                  />
+                  <p className="text-style-caption text-subtle">
+                    {t.newActivityEffortHint}
+                  </p>
+                </div>
+                <Button
+                  variant="outline"
+                  className="w-full h-11"
+                  disabled={!canSaveNewActivity}
+                  onClick={handleCreateActivity}
+                >
+                  {t.newActivitySave}
+                </Button>
+              </div>
             ) : null}
-          </>
-        ) : null}
 
-        {/* Один підпис за раз, у порядку «причина → наслідок». Описка в часі
+            {/* `min-w-0` на КОЖНІЙ комірці, не лише на самих полях: без нього
+            grid-трек росте під intrinsic-ширину нативного пікера, і картка
+            їде за екран навіть тоді, коли поле всередині поводиться чемно. */}
+            <div className="grid w-full min-w-0 max-w-full grid-cols-1 gap-3 sm:grid-cols-3">
+              <div className="min-w-0">
+                <DateField
+                  id={dateId}
+                  label={t.date}
+                  // Відсікає майбутні ДНІ в самому пікері. Майбутній ЧАС у межах
+                  // сьогодні цим не ловиться - це робить `times.inFuture` нижче.
+                  max={today}
+                  value={date}
+                  onChange={(e) => setDate(e.target.value)}
+                />
+              </div>
+              <div className="min-w-0">
+                <TimeField
+                  id={startId}
+                  label={t.start}
+                  value={start}
+                  onChange={(e) => setStart(e.target.value)}
+                />
+              </div>
+              {mode === "manual" ? (
+                <div className="min-w-0">
+                  <TimeField
+                    id={endId}
+                    label={t.end}
+                    value={end}
+                    onChange={(e) => setEnd(e.target.value)}
+                  />
+                </div>
+              ) : null}
+            </div>
+
+            {selectedActivity ? (
+              <>
+                <div className="min-w-0 space-y-2">
+                  <label
+                    htmlFor={durationId}
+                    className="text-style-label text-text leading-snug"
+                  >
+                    {t.duration}
+                  </label>
+                  <Segmented
+                    variant="fizruk"
+                    ariaLabel={t.duration}
+                    items={DURATION_PRESETS.map((value) => ({
+                      value,
+                      label: `${value} ${t.durationUnit}`,
+                    }))}
+                    value={
+                      DURATION_PRESETS.includes(durationMin) ? durationMin : ""
+                    }
+                    onChange={setDurationMin}
+                  />
+                  <Input
+                    id={durationId}
+                    type="number"
+                    inputMode="numeric"
+                    min={1}
+                    max={600}
+                    value={durationMin}
+                    onChange={(e) => setDurationMin(e.target.value)}
+                    className="min-w-0 max-w-full"
+                  />
+                </div>
+
+                <div className="min-w-0 space-y-2">
+                  <span className="text-style-label text-text leading-snug block">
+                    {t.zone}
+                  </span>
+                  <Segmented
+                    variant="fizruk"
+                    ariaLabel={t.zone}
+                    items={ZONE_ITEMS}
+                    value={zone}
+                    onChange={setZone}
+                  />
+                </div>
+
+                <div className="min-w-0 space-y-2">
+                  <span className="text-style-label text-text leading-snug block">
+                    {t.intensity}
+                  </span>
+                  <Segmented
+                    variant="fizruk"
+                    ariaLabel={t.intensity}
+                    items={INTENSITY_ITEMS}
+                    value={intensity}
+                    onChange={setIntensity}
+                  />
+                </div>
+
+                {weightKg == null ? (
+                  <div className="min-w-0">
+                    <label
+                      htmlFor={weightId}
+                      className="text-style-label text-text leading-snug"
+                    >
+                      {t.weight}
+                    </label>
+                    <Input
+                      id={weightId}
+                      type="number"
+                      inputMode="decimal"
+                      min={20}
+                      max={400}
+                      step={0.1}
+                      value={weightInput}
+                      onChange={(e) => setWeightInput(e.target.value)}
+                      placeholder="75.5"
+                      helperText={t.weightHint}
+                      className="mt-1 min-w-0 max-w-full"
+                    />
+                  </div>
+                ) : null}
+
+                {kcal !== null ? (
+                  <p className="text-style-caption text-fizruk-strong">
+                    {t.kcalPreview} {kcal} {t.kcalUnit}
+                  </p>
+                ) : null}
+              </>
+            ) : null}
+
+            {/* Один підпис за раз, у порядку «причина → наслідок». Описка в часі
             («18:00 → 16:00») на сьогоднішній даті дає ОБИДВА стани, бо
             перенесений кінець їде в завтра; показати тут «завершення ще не
             настало» означало б пояснити наслідок і сховати причину. */}
-        {times?.implausiblyLong ? (
-          <p className="text-style-caption text-subtle">{t.implausiblyLong}</p>
-        ) : times?.inFuture ? (
-          <p className="text-style-caption text-subtle">{t.inFuture}</p>
-        ) : times?.crossesMidnight ? (
-          <p className="text-style-caption text-subtle">{t.crossesMidnight}</p>
-        ) : null}
+            {times?.implausiblyLong ? (
+              <p className="text-style-caption text-subtle">
+                {t.implausiblyLong}
+              </p>
+            ) : times?.inFuture ? (
+              <p className="text-style-caption text-subtle">{t.inFuture}</p>
+            ) : times?.crossesMidnight ? (
+              <p className="text-style-caption text-subtle">
+                {t.crossesMidnight}
+              </p>
+            ) : null}
+          </>
+        )}
       </div>
     </Sheet>
   );

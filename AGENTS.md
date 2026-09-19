@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-14 by @claude. **Next review:** 2026-12-31.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-05.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -109,14 +109,14 @@ Surface-scoped quick references (commands, gotchas, specialist skill pointer) li
 
 Per-app owner + secondary reviewer for the bus-factor contract (Stack-pulse PR-04). Deep per-path map (test stack, RQ keys factory, conventions) lives in [`docs/engineering/architecture/module-ownership.md`](./docs/engineering/architecture/module-ownership.md).
 
-| Path                                     | Owner        | Secondary ¹             | Deep map                                                                                                 |
-| ---------------------------------------- | ------------ | ----------------------- | -------------------------------------------------------------------------------------------------------- |
-| `apps/web/**`                            | `@SkOrDs-02` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
-| `apps/landing/**`                        | `@SkOrDs-02` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
-| `apps/server/**`                         | `@SkOrDs-02` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
-| `apps/mobile/**`, `apps/mobile-shell/**` | `@SkOrDs-02` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
-| `packages/**`                            | `@SkOrDs-02` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/engineering/architecture/module-ownership.md#packages)         |
-| `ops/**`, `tools/**`, `scripts/**`       | `@SkOrDs-02` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/engineering/architecture/module-ownership.md#ops-surfaces) |
+| Path                                     | Owner      | Secondary ¹             | Deep map                                                                                                 |
+| ---------------------------------------- | ---------- | ----------------------- | -------------------------------------------------------------------------------------------------------- |
+| `apps/web/**`                            | `@klas149` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
+| `apps/landing/**`                        | `@klas149` | TBD (frontend-engineer) | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
+| `apps/server/**`                         | `@klas149` | TBD (backend-engineer)  | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
+| `apps/mobile/**`, `apps/mobile-shell/**` | `@klas149` | TBD (mobile-engineer)   | [`module-ownership.md § Apps`](./docs/engineering/architecture/module-ownership.md#apps)                 |
+| `packages/**`                            | `@klas149` | TBD (any-engineer)      | [`module-ownership.md § Packages`](./docs/engineering/architecture/module-ownership.md#packages)         |
+| `ops/**`, `tools/**`, `scripts/**`       | `@klas149` | TBD (any-engineer)      | [`module-ownership.md § Ops surfaces`](./docs/engineering/architecture/module-ownership.md#ops-surfaces) |
 
 > ¹ Secondary is the bus-factor backup reviewer (real GitHub handle preferred; `TBD (<role>)` placeholders are accepted while delegation is in flight). L2 escalation when owner is unreachable: [`docs/start/instructions/operational-continuity.md`](./docs/start/instructions/operational-continuity.md).
 
@@ -172,15 +172,15 @@ Single source of truth: **Europe/Kyiv** for time **display, server-side reports 
 
 ## RQ keys factory
 
-Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys`, `nutritionKeys`, `hubKeys`, `coachKeys`, `chatKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`, `aiMemoryKeys`. Hard Rule #2 — full text + BAD/GOOD examples in [`02-rq-keys-via-centralized-factories.md`](./docs/governance/governance/rules/02-rq-keys-via-centralized-factories.md).
+Single source: `apps/web/src/shared/lib/api/queryKeys.ts`. Factories: `finykKeys`, `nutritionKeys`, `silpoKeys`, `hubKeys`, `coachKeys`, `chatKeys`, `digestKeys`, `pushKeys`, `syncKeys`, `strategicKeys`, `billingKeys`, `aiMemoryKeys`. Hard Rule #2 — full text + BAD/GOOD examples in [`02-rq-keys-via-centralized-factories.md`](./docs/governance/governance/rules/02-rq-keys-via-centralized-factories.md).
 
 ## Performance budgets
 
-CI gates fail on regression. Numbers come from `apps/web/package.json` → `"size-limit"` and the `Bundle size guard` workflow ([#740](https://github.com/Skords-01/Sergeant/pull/740)). Lighthouse CI runs on every `pull_request` to `main` (+ `workflow_dispatch`) via [`.github/workflows/lighthouse-ci.yml`](./.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) using [`apps/web/lighthouserc.json`](./apps/web/lighthouserc.json); локальний прогон — `pnpm --filter @sergeant/web lighthouse`. LCP уже `error`-gated на 3000 ms (median); FCP/TBT лишаються `warn`-only.
+CI gates fail on regression. Numbers come from `apps/web/package.json` → `"size-limit"` and the CI job `bundle-budgets` («Bundle budgets (size-limit + eager)») у [`ci.yml`](./.github/workflows/ci.yml) — окремого workflow `Bundle size guard`, під яким гейт жив до виносу 2026-09-11 ([#740](https://github.com/Skords-01/Sergeant/pull/740), PR #1105), більше немає; згадки цієї назви нижче в історичних записах стосуються тієї, знятої конструкції. Lighthouse CI runs on every `pull_request` to `main` (+ `workflow_dispatch`) via [`.github/workflows/lighthouse-ci.yml`](./.github/workflows/lighthouse-ci.yml) (status check `Lighthouse CI`) using [`apps/web/lighthouserc.json`](./apps/web/lighthouserc.json); локальний прогон — `pnpm --filter @sergeant/web lighthouse`. LCP уже `error`-gated на 3000 ms (median); FCP/TBT лишаються `warn`-only.
 
 | Metric                                           | Budget                              | Where enforced                                                                                                                                                                                                          |
 | ------------------------------------------------ | ----------------------------------- | ----------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `apps/web` JS total (brotli)                     | **≤ 1.46 MB**                       | `pnpm --filter @sergeant/web exec size-limit` (CI job `bundle-budgets`)                                                                                                                                                 |
+| `apps/web` JS total (brotli)                     | **≤ 1.48 MB**                       | `pnpm --filter @sergeant/web exec size-limit` (CI job `bundle-budgets`)                                                                                                                                                 |
 | `apps/web` CSS (brotli)                          | **≤ 40 kB**                         | same                                                                                                                                                                                                                    |
 | `apps/web` **eager** JS (критичний шлях, brotli) | **≤ 268 kB**                        | `node scripts/ci/check-eager-bundle.mjs` (CI job `bundle-budgets`); локально `pnpm --filter @sergeant/web size:eager`                                                                                                   |
 | `apps/web` LCP (median, 4 LHCI routes)           | **≤ 3000 ms** (`error` — fail-stop) | `apps/web/lighthouserc.json` + `.github/workflows/lighthouse-ci.yml` (status `Lighthouse CI`); local: `pnpm --filter @sergeant/web lighthouse`                                                                          |
@@ -189,6 +189,30 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 | Backend `/health` p95                            | < 100 ms                            | Formalized in [`docs/operations/observability/SLO.md §2.1`](./docs/operations/observability/SLO.md#21-health-endpoint-p95); alert-правило `BackendHealthP95High` — design-only, не wired (див. SLO.md § Статус wiring). |
 | `/api/chat` **перший хід** p95 повної відповіді  | **< 15 s** (стеля-детектор)         | `chat_first_turn_phase_ms{phase="total"}` (Prometheus → Grafana Cloud). Факт 2026-09-01: медіана ≈6,7 с, max 13,7 с. Перший хід не стрімиться, тож SLO про перший токен тут не має предмета — знахідка AI-2.            |
 | `/api/chat` **тур синтезу** p95 first token      | < 1.5 s                             | `ai_first_token_ms` (той самий скрейп). Моделезалежно: flash-lite 365 мс, haiku-4.5 954 мс, sonnet-5 5 586 мс.                                                                                                          |
+
+**Ратчет 2026-09-16 (JS 1.46 → 1.48 MB) — і це перший раз, коли стелю рухає не накопичення, а свідомий обмін.**
+
+Два заміри локально, той самий `size-limit --json`:
+
+| Дерево                   | JS (brotli)   | Стан при ліміті 1 460 000 B |
+| ------------------------ | ------------- | --------------------------- |
+| `main` (`160cd53`)       | **1 458 665** | зелено, запас **1 335 B**   |
+| гілка виносу аркуша чату | **1 460 791** | червоно, перевищення 791 B  |
+
+Внесок гілки — **2 126 B**, запасу на `main` лишалось 1 335, тобто **99.91% стелі вибрано**. Сам по собі це той самий стан, яким обґрунтовані ратчети 2026-08-02, 2026-09-11 і 2026-09-13: гейт, у якого 0.09% слаку, червонітиме на будь-якому наступному PR незалежно від змісту.
+
+**Але цього разу є ще й друга причина, і вона важливіша.** Ті 2.1 kB — плата за винос `Sheet` із критичного шляху: `HubChatOverlay` розділено на eager-оболонку (наміри й ефект маршруту, які мусять жити при ЗАКРИТОМУ чаті) та лінивий `HubChatSheet.tsx`. Розділення додає чанк із власним boilerplate, тож брутто-сума росте — а eager, який корелює з відчутною швидкістю завантаження, падає:
+
+| Метрика        | До                   | Після                   | Δ           |
+| -------------- | -------------------- | ----------------------- | ----------- |
+| eager (brotli) | 268.0 kB / 76 чанків | **264.5 kB / 72 чанки** | **−3.5 kB** |
+| JS усього      | 1 458.7 kB           | **1 460.8 kB**          | +2.1 kB     |
+
+Це рівно той обмін, який описує сама ця секція з 2026-08-02: `size-limit` сумує ВСІ 395 чанків, включно з тими, які більшість людей ніколи не завантажить, тож lazy-split його не покращує — а буває, як тут, і трохи погіршує. Тому ратчет eager **назад униз 271 → 268** їде цим самим PR, і це головне число.
+
+**Перевірено те, чого вимагає урок 2026-09-01:** перевищення не є сміттям, яке код і так вважає виключеним. `DesignShowcase` у прод-бандлі немає; уся верхня дюжина з 395 чанків — навмисні важкі фічі у власних `manualChunk` (`vendor-zxing`, `vendor-sentry`, `NutritionApp`, `vendor-sqlite`, `vendor-posthog`, `sqliteWorker`). Дешевого важеля немає.
+
+Нове число дає ~1.3% запасу над фактом — у межах практики попередніх ратчетів (1-2%). **Це не дозвіл рости далі:** стеля піднята вп'яте за пів року (1.25 → 1.35 → 1.38 → 1.42 → 1.44 → 1.46 → 1.48). Борг на скорочення лишається в [`frontend.md`](./docs/work/specs/tech-debt/frontend.md).
 
 **Ратчет 2026-09-13 (JS 1.44 → 1.46 MB) — стеля була вичерпана на `main`, не пробита фічею.**
 
@@ -242,6 +266,34 @@ CI gates fail on regression. Numbers come from `apps/web/package.json` → `"siz
 **Ратчет 2026-08-18 (JS 1.35 → 1.38 MB) — і урок про мовчазний гейт.** Заміряно локально на `origin/main` (`59b8e164`): **1 351.4 kB**, тобто ліміт пробито на 1.4 kB ще ДО правки, яка це виявила (її власний внесок — 296 B). Виріс бандл на Фазі 2 чек-скану: нові аркуші імпорту, bulk-review, дедуп-превʼю. Нове число дає ~2% запасу над фактом — навмисно тісніше за 5% попереднього ратчету, бо тут не новий важкий vendor, а накопичення.
 
 Головне не число, а чому його не побачили вчасно. `size-limit` — це КРОК усередині джоби `check`, і він стоїть ПІСЛЯ кроку «Format, lint, test, build». Коли той крок падає, GitHub Actions пропускає всі наступні, тож бандл-гейт просто не виконується — і в логах це виглядає не як «бюджет перевищено», а як тиша. Кілька мержів поспіль (#823, #825, #827) пішли в `main` до завершення CI, `format:check` там був червоний, і гейт мовчав, поки борг ріс. **Висновок на майбутнє: гейт, що стоїть у кроках після потенційно червоного кроку, не є гейтом.** Або виносити в окрему джобу, або лікувати причину — не мерджити до завершення `check`.
+
+**Ратчет 2026-09-16, частина 2 (eager 271 → 268 kB) — підйом скасовано того ж дня, бо важіль виявився робочим.**
+
+`RootLayout` статично імпортував `HubChatOverlay`, а той — `Sheet`. Оверлей мусить бути змонтований завжди (тримає намір повернення з каталогу і ефект маршруту), тож увесь стек аркуша їхав до першого екрана. Розділено: хуки, рефи й ефекти лишились у `HubChatOverlay` (eager), `Sheet` + лінивий `HubChat` переїхали у `HubChatSheet.tsx`, який монтується лише коли чат відкритий.
+
+| Дерево                       | eager     | preload-чанків |
+| ---------------------------- | --------- | -------------- |
+| після підйому стелі (PR #90) | **268.0** | 76             |
+| після зняття ребра           | **264.5** | 72             |
+
+Мінус 3.5 kB і чотири чанки: з preload пішли `Sheet`, `useSwipeToDismiss`, `useBodyScrollLock`, `useKeyboardAwareOverlay`. Лишився самий `useVisualKeyboardInset` (66 B) — його тягне інший, не аркушевий шлях. Стеля повертається рівно туди, де стояла до PR #90, тобто підйом і повернення разом дають нуль.
+
+**Урок, той самий за формою, що й `posthog-js` та `vendor-sqlite`:** eager росте не від «важких фіч», а від ОДНОГО статичного ребра з оболонки в компонент, який видно лише за дією користувача. Шукай його не серед великих чанків, а серед завжди-змонтованих сусідів `RootLayout`.
+
+**Ратчет 2026-09-16, частина 1 (eager 268 → 271 kB) — причина: стелю вибрали на `main`, а не пробила фіча.**
+
+Обидва числа з CI, той самий крок джоби `bundle-budgets`:
+
+| Дерево                 | eager     | preload-чанків | запас до 268.0 |
+| ---------------------- | --------- | -------------- | -------------- |
+| `main` (PR #88, 19:31) | **267.2** | 75             | 0.8 kB (0.3%)  |
+| гілка рішень (PR #90)  | **268.6** | 76             | −0.6 kB        |
+
+Стеля, поставлена 2026-09-12 з фактом 260.8 і запасом 7.2 kB, за **чотири дні** звичайної продуктової роботи з'їла 6.4 kB з тих 7.2 — і жоден PR цього не помітив, бо гейт лишався зеленим до останнього байта. Внесок гілки — 1.4 kB глобальних клавіатурних обробників (`N`, `Cmd+Z`, один власник `Cmd+K`), які за визначенням живуть в оболонці: мусять працювати на будь-якому маршруті з першого кадру.
+
+**Перевірено те, чого вимагає урок 2026-09-01:** перевищення не є сміттям, яке код і так вважає виключеним. У preload-наборі (76 чанків) немає ані `DesignShowcase`, ані `vendor-posthog` / `vendor-sqlite` / `vendor-zxing` / `vendor-sentry`; верхівка — рівно інфраструктура (`vendor-react` 37.5, оболонка `src` 27.9, `vendor-router` 27.2, `vendor` 24.6, `vendor-react-query` 17.8, `vendor-zod` 17.5, entry 16.6).
+
+**Важіль тоді знайдено, але не смикнуто в тому ж PR** (він не був про ту гілку і розширив би її): на критичному шляху сидів увесь стек аркуша — `Sheet` 1.9 kB + `useSwipeToDismiss` 0.5 + `useBodyScrollLock` 0.3 + `useKeyboardAwareOverlay` + `useVisualKeyboardInset`, разом **~2.8 kB**, хоча жодна поверхня першого кадру аркуша не рендерить. Смикнуто того ж дня наступним PR — див. частину 2 вище.
 
 **Ратчет 2026-09-12 (eager 280 → 268 kB) — третій униз, і цього разу гейт був червоний на `main`.** UA-каталог інтерфейсу пішов із критичного шляху: **286.7 → 260.8 kB**.
 

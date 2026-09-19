@@ -5,7 +5,7 @@
  * Exercises the full stack: Testcontainers → createApp() →
  * authSensitiveRateLimit → rateLimitExpress (Postgres path, Redis disabled).
  *
- * Closes audit `docs/90-work/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`
+ * Closes audit `docs/work/specs/audits/2026-05-03-web-deep-dive/04-security-observability-testing-devx.md`
  * §7.2 (rate-limit hit → 429 with Retry-After).
  *
  * CI: fails loudly when Docker is unavailable.

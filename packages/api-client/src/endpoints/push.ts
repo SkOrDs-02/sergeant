@@ -84,7 +84,7 @@ export interface PushEndpoints {
    * Термін перенесено 2026-09-03 з 2026-09-01: метод ще експортують
    * `react/hooks.ts` (`usePushSubscribe`/`usePushUnsubscribe`) і пінить
    * `push.test.ts`; зняття — один PR під `sergeant-module-push` разом із
-   * серверним proxy-роутом (реєстр: `docs/90-work/tech-debt/frontend.md`
+   * серверним proxy-роутом (реєстр: `docs/work/specs/tech-debt/frontend.md`
    * § «Прострочені `@removeBy` 2026-09-01»).
    * @removeBy 2026-12-01
    */

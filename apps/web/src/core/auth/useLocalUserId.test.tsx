@@ -7,21 +7,15 @@ import { beforeEach, describe, expect, it, vi } from "vitest";
 import { renderHook } from "@testing-library/react";
 
 const useAuthMock = vi.fn();
-const isDemoActiveMock = vi.fn();
 
 vi.mock("./AuthContext", () => ({
   useAuth: () => useAuthMock(),
-}));
-vi.mock("../onboarding/onboardingGate", () => ({
-  DEMO_LOCAL_USER_ID: "demo-local",
-  isDemoActive: () => isDemoActiveMock(),
 }));
 
 import { LOCAL_ANON_USER_ID, useLocalUserId } from "./useLocalUserId";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  isDemoActiveMock.mockReturnValue(false);
 });
 
 describe("useLocalUserId", () => {
@@ -53,28 +47,5 @@ describe("useLocalUserId", () => {
     const { result } = renderHook(() => useLocalUserId());
 
     expect(result.current).toBeNull();
-  });
-
-  it("prefers the demo id over the anonymous id in demo mode", () => {
-    useAuthMock.mockReturnValue({ user: null, status: "unauthenticated" });
-    isDemoActiveMock.mockReturnValue(true);
-
-    const { result } = renderHook(() => useLocalUserId());
-
-    expect(result.current).toBe("demo-local");
-  });
-
-  it("keeps the account id even when the demo flag is still set", () => {
-    // Signing in from inside the demo must not scope real writes to
-    // the seeded demo rows.
-    useAuthMock.mockReturnValue({
-      user: { id: "acct-2" },
-      status: "authenticated",
-    });
-    isDemoActiveMock.mockReturnValue(true);
-
-    const { result } = renderHook(() => useLocalUserId());
-
-    expect(result.current).toBe("acct-2");
   });
 });

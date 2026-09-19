@@ -3,6 +3,7 @@ import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { formatDateShort } from "@shared/lib/time/formatDate";
 
 function formatDueDate(dueDate: string | null | undefined) {
   if (!dueDate) return null;
@@ -28,7 +29,7 @@ function formatDueDateValue(dueDate: string | null | undefined) {
   const y = parts[0] ?? 0;
   const m = parts[1] ?? 1;
   const d = parts[2] ?? 1;
-  return new Date(y, m - 1, d).toLocaleDateString("uk-UA");
+  return formatDateShort(new Date(y, m - 1, d), { withYear: true });
 }
 
 interface DebtCardProps {
@@ -102,7 +103,7 @@ function DebtCardComponent({
               className="text-subtle hover:text-text"
               aria-label={`Редагувати ${name}`}
             >
-              <Icon name="edit" size={16} aria-hidden />
+              <Icon name="edit" size="md" aria-hidden />
             </button>
           )}
           {onDelete && (
@@ -112,7 +113,7 @@ function DebtCardComponent({
               className="text-subtle hover:text-danger transition-colors"
               aria-label={`Видалити ${name}`}
             >
-              <Icon name="trash" size={16} aria-hidden />
+              <Icon name="trash" size="md" aria-hidden />
             </button>
           )}
         </div>
@@ -153,7 +154,7 @@ function DebtCardComponent({
           onClick={onLink}
           className="mt-3 w-full text-style-caption text-muted border border-dashed border-line rounded-xl py-2 hover:border-primary hover:text-primary transition-colors"
         >
-          <Icon name="link" size={14} aria-hidden /> Привʼязати транзакції (
+          <Icon name="link" size="sm" aria-hidden /> Привʼязати транзакції (
           {linkedCount || 0})
         </button>
       )}

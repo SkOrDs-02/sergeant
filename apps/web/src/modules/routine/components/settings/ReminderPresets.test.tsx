@@ -52,6 +52,18 @@ describe("ReminderPresets", () => {
     expect(screen.getByDisplayValue("09:30")).toBeInTheDocument();
   });
 
+  // Пін на контракт ширини нативного контрола. `[min-inline-size:0]` дає
+  // лише спільний примітив (`DateField` / `TimeField`); сирий `Input` його
+  // НЕ має, і саме так поле ставало ширшим за екран на iOS. Playwright тут
+  // не помічник — Chromium цей дефект не відтворює (заміряно 2026-09-15,
+  // див. docs/start/instructions/fix-mobile-horizontal-overflow.md § 3).
+  it("тримає поля часу в межах рядка — жодного intrinsic-розпирання", () => {
+    render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
+    expect(screen.getByDisplayValue("08:00").className).toContain(
+      "[min-inline-size:0]",
+    );
+  });
+
   it("adds another reminder time while under the limit", () => {
     render(<Harness initial={{ reminderTimes: ["08:00"] }} />);
 

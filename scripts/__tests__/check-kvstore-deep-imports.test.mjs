@@ -38,9 +38,19 @@ test("kvStore deep-import guard is wired into lint", () => {
     readFileSync(resolve(repoRoot, "package.json"), "utf8"),
   );
 
+  // Іменований скрипт лишається для окремого запуску…
   assert.equal(
     packageJson.scripts["lint:kvstore-deep-imports"],
     "node scripts/check-kvstore-deep-imports.mjs",
   );
-  assert.match(packageJson.scripts.lint, /\bpnpm lint:kvstore-deep-imports\b/);
+  // …а в ЛАНЦЮЖКУ `pnpm lint` виклик іде напряму `node …`, не через
+  // обгортку `pnpm lint:…`: за AGENTS.md § «Verification before PR»
+  // обгортка коштувала ~760 мс на виклик, 22 с на 29 викликів, і
+  // ланцюжок свідомо перевели на прямі виклики. Тест перевіряв стару
+  // форму, тобто вимагав повернути знятий борг, — і цього ніхто не
+  // бачив, бо глоб `scripts/__tests__` у CI не виконувався.
+  assert.match(
+    packageJson.scripts.lint,
+    /\bnode scripts\/check-kvstore-deep-imports\.mjs\b/,
+  );
 });

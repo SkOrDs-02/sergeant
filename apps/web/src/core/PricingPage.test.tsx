@@ -546,4 +546,44 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
       ).toBeNull();
     });
   });
+
+  it("озвучує виключену функцію текстом, а не лише формою іконки", () => {
+    // Регресія WF-25 (аудит 2026-09-16): `Icon` без `title` рендериться
+    // `aria-hidden`, тож «PDF-експорт звітів» (не входить) і «AI-чат»
+    // (входить) звучали для скрінрідера ІДЕНТИЧНО — різницю несли лише
+    // гліф і приглушений колір (WCAG 1.4.1, «сенс лише кольором»).
+    renderPricing();
+    // Назва фічі трапляється двічі (картка тарифу + порівняльний блок) —
+    // беремо ті входження, що живуть у списку фіч картки.
+    const excludedRows = screen
+      .getAllByText("PDF-експорт звітів")
+      .map((n) => n.closest("li"))
+      .filter((li): li is HTMLLIElement => li !== null);
+    expect(excludedRows.length).toBeGreaterThan(0);
+    expect(
+      excludedRows.some((li) => li.textContent?.includes("не входить:")),
+    ).toBe(true);
+
+    const includedRows = screen
+      .getAllByText("Ручний трекінг без числових лімітів")
+      .map((n) => n.closest("li"))
+      .filter((li): li is HTMLLIElement => li !== null);
+    expect(
+      includedRows.some(
+        (li) =>
+          li.textContent?.includes("входить:") &&
+          !li.textContent.includes("не входить:"),
+      ),
+    ).toBe(true);
+  });
+
+  it("тримає розведене чорнило Premium-героя над порогом AA", () => {
+    // Регресія WF-23: `text-hero-ink/70` і `/60` давали 3.40:1 і 2.90:1 на
+    // світлому кінці градієнта (teal-700) при 12-14px тексті, де поріг
+    // 4.5:1. Лінт цього не бачить — `no-opacity-on-text-token` не знає
+    // токена `hero-ink`, а контрастний гейт міряє лише 100%-пари.
+    const { container } = renderPricing();
+    expect(container.querySelector('[class*="text-hero-ink/70"]')).toBeNull();
+    expect(container.querySelector('[class*="text-hero-ink/60"]')).toBeNull();
+  });
 });

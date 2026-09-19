@@ -9,8 +9,16 @@ import {
 import { Outlet, useLocation, useNavigate } from "react-router-dom";
 import { useTheme } from "@shared/hooks/useTheme";
 import { useKeyboardShortcutsModal } from "@shared/components/ui/KeyboardShortcutsModal";
-import { useCommandPaletteHotkey } from "@shared/components/ui/CommandPalette";
+import { useCommandPaletteControls } from "@shared/components/ui/CommandPalette";
 import { SkipLink } from "@shared/components/ui/SkipLink";
+import { useToast } from "@shared/hooks/useToast";
+import { useModalDialogOpen } from "@shared/hooks/useDialogFocusTrap";
+import {
+  HUB_OPEN_SEARCH_EVENT,
+  openHubModuleWithAction,
+  type HubOpenSearchDetail,
+} from "@shared/lib/modules/hubNav";
+import { MODULE_PRIMARY_ACTION } from "@shared/lib/modules/moduleQuickActions";
 import { useAuth } from "../auth/AuthContext";
 import { useOpenSignIn } from "../auth/useOpenSignIn";
 import { useActivationV2Boot } from "../activation";
@@ -20,7 +28,6 @@ import { useAppLockContext } from "../security/AppLockContext";
 import { setFlag, useFlag } from "../lib/featureFlags";
 import { useDemoCommands } from "./useDemoCommands";
 import { HubChatOverlay } from "../hub/HubChatOverlay";
-import { DemoModeBadge } from "../onboarding/DemoModeBadge";
 import {
   HubChatOverlayProvider,
   useHubChatOverlay,
@@ -43,7 +50,7 @@ import { useSWUpdate } from "./useSWUpdate";
 // `core/db/sqlite.ts` і `@sergeant/db-schema/sqlite`, а ті імпортують
 // `drizzle-orm` — який `manualChunks` склеює в ОДИН чанк `vendor-sqlite`.
 // Через це рівно одне eager-ребро звідси клало ~69 kB brotli на критичний
-// шлях. Розбір: `docs/90-work/tech-debt/frontend.md` § eager-бюджет.
+// шлях. Розбір: `docs/work/specs/tech-debt/frontend.md` § eager-бюджет.
 const NutritionBootCluster = lazy(
   () => import("../../modules/nutrition/hooks/NutritionBootCluster"),
 );
@@ -84,11 +91,10 @@ import { ErrorBoundary } from "../ErrorBoundary";
 // only costs that module its warm cache, not all four.
 // Гейта по auth тут свідомо НЕМАЄ, і це не недогляд.
 //
-// Донедавна стояло `if (!user && !isDemoActive()) return null` — точне
-// дзеркало того, що `useLocalUserId` умів на момент написання: auth-id або
-// синтетичний `demo-local`. Спека `anonymous-local-first-persistence.md`
-// додала третій випадок, `LOCAL_ANON_USER_ID`, оновила резолвер — і лишила
-// дзеркало. Два місця з одним предикатом розійшлись, як і мали.
+// Донедавна тут стояло власне дзеркало того, що `useLocalUserId` умів на
+// момент написання. Спека `anonymous-local-first-persistence.md` додала
+// `LOCAL_ANON_USER_ID`, оновила резолвер — і лишила дзеркало. Два місця з
+// одним предикатом розійшлись, як і мали.
 //
 // Ціна розходження: анонімний відвідувач не монтував жодного boot-хука, тож
 // dual-write контекст не реєструвався, і FTUX-пресет на хабі («Яку звичку
@@ -181,7 +187,6 @@ function AppShell({ children }: { children: React.ReactNode }) {
         <RoutineBootCluster />
       </BootGate>
       <NpsSurveyGate />
-      <DemoModeBadge />
       {children}
       <HubChatOverlay />
     </>
@@ -301,14 +306,32 @@ function RootLayoutInner() {
   const openAuth = useOpenSignIn();
 
   // Keyboard shortcuts (work on all routes — hub + modules)
-  const openSearchFromShortcut = useCallback(() => {
-    if (activeModule) {
-      goToHub();
-      requestAnimationFrame(() => ui.setSearchOpen(true));
-      return;
-    }
-    ui.setSearchOpen(true);
-  }, [activeModule, goToHub, ui]);
+  const { openSearch: openHubSearchUI } = ui;
+  const openSearchFromShortcut = useCallback(
+    (query: string = "") => {
+      if (activeModule) {
+        goToHub();
+        requestAnimationFrame(() => openHubSearchUI(query));
+        return;
+      }
+      openHubSearchUI(query);
+    },
+    [activeModule, goToHub, openHubSearchUI],
+  );
+
+  // Палітра команд просить відкрити пошук хаба з готовим запитом через
+  // подієвий канал (`openHubSearch`), бо сама живе у shared і про стан хаба
+  // не знає. Слухач тут, а не в `useAppEffects`, бо робить рівно те, що й
+  // `Cmd+K` без палітри — з модуля спершу повертає на хаб.
+  useEffect(() => {
+    const onOpenSearch = (ev: Event) => {
+      const detail = (ev as CustomEvent<HubOpenSearchDetail>).detail;
+      openSearchFromShortcut(detail?.query ?? "");
+    };
+    window.addEventListener(HUB_OPEN_SEARCH_EVENT, onOpenSearch);
+    return () =>
+      window.removeEventListener(HUB_OPEN_SEARCH_EVENT, onOpenSearch);
+  }, [openSearchFromShortcut]);
 
   const handleNavigateChord = useCallback(
     (target: import("../hooks/useHubKeyboardShortcuts").NavChordTarget) => {
@@ -321,17 +344,69 @@ function RootLayoutInner() {
     [goToHub, openModule],
   );
 
+  // AI-CONTEXT: `Cmd+K` має рівно одного власника — цей хук (рішення
+  // власника 2026-09-16, варіант A). До того `useCommandPaletteHotkey` вішав
+  // другий слухач на `window`, і з увімкненим `hub_command_palette` одна
+  // клавіша відкривала і пошук хаба, і палітру. Тепер прапорець лише
+  // перемикає, ЩО відкривається; пошук хаба з увімкненою палітрою — один із
+  // її режимів (команда «Глобальний пошук» + рядок «Шукати „…“»).
+  const paletteEnabled = useFlag("hub_command_palette");
+  const palette = useCommandPaletteControls();
+  const { open: openPalette } = palette;
+  const handleOpenSearchShortcut = useCallback(() => {
+    if (paletteEnabled) {
+      openPalette();
+      return;
+    }
+    openSearchFromShortcut();
+  }, [paletteEnabled, openPalette, openSearchFromShortcut]);
+
+  // `N` — «створити» в поточному контексті: первинна дія модуля через той
+  // самий PWA-інтент, що й FAB / чекліст / PWA-ярлик; на хабі — пошук із
+  // порожнім запитом, який і є швидким додаванням (чотири дії зверху).
+  // Поверх відкритого діалогу не спрацьовує: другий аркуш поверх першого
+  // ніхто не просив.
+  const modalOpen = useModalDialogOpen();
+  const handleCreateShortcut = useCallback(() => {
+    if (modalOpen) return;
+    if (activeModule) {
+      openHubModuleWithAction(
+        activeModule,
+        MODULE_PRIMARY_ACTION[activeModule].action,
+      );
+      return;
+    }
+    openHubSearchUI("");
+  }, [activeModule, modalOpen, openHubSearchUI]);
+
+  // `Cmd+Z` — «Повернути» з наймолодшого видимого undo-тоста. Стеку немає
+  // навмисно: вікно скасування у продукті і є тост (5 с, поки видно), і
+  // клавіша лише повторює його кнопку. Нічого скасовувати — повертаємо
+  // false, і браузер робить свій undo (у полях вводу ми сюди не доходимо).
+  const { toasts, dismiss: dismissToast } = useToast();
+  const handleUndoShortcut = useCallback((): boolean => {
+    const target = [...toasts]
+      .reverse()
+      .find((t) => !t.leaving && t.action?.kind === "undo");
+    if (!target?.action) return false;
+    try {
+      target.action.onClick();
+    } finally {
+      dismissToast(target.id);
+    }
+    return true;
+  }, [toasts, dismissToast]);
+
   useHubKeyboardShortcuts({
-    onOpenSearch: openSearchFromShortcut,
+    onOpenSearch: handleOpenSearchShortcut,
     onOpenShortcuts: () => setShortcutsOpen(true),
     onOpenAssistant: openAssistantChat,
     onNavigate: handleNavigateChord,
+    onCreate: handleCreateShortcut,
+    onUndo: handleUndoShortcut,
   });
 
-  // Command palette (⌘K)
-  const paletteEnabled = useFlag("hub_command_palette");
-  useCommandPaletteHotkey(paletteEnabled);
-  useDemoCommands();
+  useDemoCommands({ openSearch: openSearchFromShortcut });
 
   // Build the context value for child routes
   const hubShellValue: HubShellValue = {

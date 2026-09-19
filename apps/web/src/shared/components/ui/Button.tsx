@@ -1,5 +1,6 @@
 import { forwardRef, type ButtonHTMLAttributes, type ReactNode } from "react";
 import type { ModuleAccent } from "@sergeant/design-tokens";
+import { useModuleAccent } from "../layout/ModuleAccentProvider";
 import { cn } from "../../lib/ui/cn";
 
 /**
@@ -132,6 +133,18 @@ const variants: Record<ButtonVariantLegacy, string> = {
   // `shadow-sm` — that is the "white button on white card" regression.
   secondary:
     "bg-panel text-text border border-border-strong shadow-e1 hover:bg-panelHi hover:border-brand-200 hover:shadow-e2 active:scale-[0.98]",
+  // AI-CONTEXT: `ghost` — НЕ «стриманий secondary». Без бордера й заливки
+  // його межу мусить давати РАМКА контейнера, в якому він стоїть. Сусідство
+  // з гучною кнопкою межі не замінює — рішення власника 2026-09-15 після
+  // заміру «Скасувати» (10 із 11 уже були `secondary`): поки погляд не
+  // дійшов до сусіда, тиха кнопка читається як підпис. Кнопка на всю
+  // ширину блока рамки не має і читається як голий текст
+  // на фоні — знахідка власника 2026-09-15 («кнопки як то оновити чеки
+  // голі лежать на фоні»), десять викликів у Налаштуваннях. Для дії-блока
+  // бери `secondary`; домальовувати `border border-line` поверх `ghost` не
+  // треба — це і є `secondary`, зібраний вручну. Таблиця вибору варіанта —
+  // `docs/design/design/design-system/04-components.md` § Button; гейт на
+  // Налаштування — `core/settings/settingsActionButtonVariants.test.ts`.
   ghost:
     "bg-transparent text-muted hover:bg-panelHi hover:text-text active:bg-line/50",
   danger:
@@ -350,10 +363,27 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     },
     ref,
   ) {
+    // Акцент модуля, у якому стоїть кнопка. Явний проп `module` виграє —
+    // контекст лише закриває випадок «проп забули», який доти давав
+    // генеричний синій усередині брендованого модуля (PR-C1, рішення
+    // власника 2026-09-14; замір: 105 кнопок у модулях + до 117 спільних,
+    // коли ті рендеряться всередині модуля).
+    //
+    // AI-DANGER: жодна кнопка не має змінити ФОРМУ від цього. Тримається
+    // це на тому, що всі беспропні виклики йдуть ЛЕГАСІ-гілкою
+    // `resolveStyleKey`, де `MODULE_LEGACY_OVERRIDE` мапить лише
+    // `primary`/`secondary`, а `ghost`/`danger`/`destructive` проходять
+    // наскрізь. Канонічна гілка такої гарантії НЕ дає: клітинок
+    // `outline × модуль` і `ghost × модуль` у `EMPHASIS_TONE_MAP` немає,
+    // тож там був би фолбек у суцільний `primary`. Пін —
+    // `Button.moduleContext.test.tsx`.
+    const contextAccent = useModuleAccent();
+    const effectiveModule = module ?? contextAccent ?? undefined;
+
     const isDisabled = disabled || loading;
     const hasProgress = typeof progress === "number" && progress >= 0;
     const needsCoarseMinTarget = iconOnly || size === "xs" || size === "sm";
-    const resolvedVariant = resolveStyleKey(variant, tone, module);
+    const resolvedVariant = resolveStyleKey(variant, tone, effectiveModule);
 
     return (
       <button

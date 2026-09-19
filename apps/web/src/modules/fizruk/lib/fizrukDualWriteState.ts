@@ -2,7 +2,7 @@
  * Snapshot extraction + cache peek helpers for the Fizruk dual-write
  * pipeline.
  *
- * Stage 8 PR #057f-tombstone of `docs/planning/storage-roadmap.md`.
+ * Stage 8 PR #057f-tombstone of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`.
  * The hooks (`useWorkouts`, `useExerciseCatalog`, `useMeasurements`)
  * and the residual-import boot helper share these helpers so the
  * dual-write payloads are computed in exactly one place.
@@ -96,7 +96,6 @@ export const EMPTY_FIZRUK_DUAL_WRITE_STATE: FizrukDualWriteState = {
   monthlyPlan: null,
   workoutTemplates: [],
   injuries: [],
-  pushups: {},
   customActivities: [],
 };
 
@@ -119,7 +118,6 @@ export function peekFizrukDualWriteState(): FizrukDualWriteState | null {
         cache.workoutTemplates ?? [],
       ),
       injuries: extractInjurySnapshots(cache.injuries ?? []),
-      pushups: cache.pushupsByDate ?? {},
       customActivities: extractCustomActivitySnapshots(
         cache.customActivities ?? [],
       ),

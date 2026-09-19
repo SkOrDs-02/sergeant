@@ -115,6 +115,8 @@ async function mockSilpo(page: Page) {
         status: "connected",
         accessTokenExpiresAt: null,
         lastSyncAt: "2026-08-28T10:00:00.000Z",
+        lastFailedAt: null,
+        lastErrorCode: null,
         receiptsCount: 2,
       }),
     }),
@@ -228,7 +230,12 @@ test("@critical pantry: назва з чека згортається до ро�
   // 9. Перейменування позиції не втрачає варіантів — друга страховка
   // проти помилки евристики.
   await page.getByRole("button", { name: /^Редагувати Молоко$/ }).click();
-  const nameField = page.getByLabel("Назва");
+  // `exact: true` обовʼязковий: `getByLabel` за замовчуванням матчить
+  // ПІДРЯДКОМ, а на цьому ж екрані живе поле додавання продукту з
+  // доступною назвою «Назва продукту» (`PantryCard`). Без `exact` локатор
+  // ловить обидва і падає на strict-mode violation — саме це й сталось,
+  // щойно тому полю додали `aria-label` замість самого placeholder.
+  const nameField = page.getByLabel("Назва", { exact: true });
   await nameField.fill("Молочко");
   await page.getByRole("button", { name: "Зберегти" }).click();
 

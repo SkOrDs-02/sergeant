@@ -37,6 +37,7 @@ import { fileURLToPath } from "node:url";
 import { collectOpenWork, TRACKERS } from "./generate-open-work.mjs";
 import { pickPriorityItems } from "./generate-today.mjs";
 import { isStaleIgnoringDateStamp } from "./freshness-stamp.mjs";
+import { prBaseForEntry } from "./repo-identity.mjs";
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = dirname(__filename);
@@ -51,18 +52,20 @@ const PR_LEDGER_PATH = resolve(
   "docs/governance/pr-ledger/index.json",
 );
 
-// Дві бази, як у `scripts/ci/update-pr-backlinks.mjs`, і з тієї ж причини:
-// леджер тримає записи ДВОХ репозиторіїв. 20 записів із номерами 2876–3665
-// злиті у старому `Skords-01/Sergeant` (2026-05-15 … 06-20), 18 із номерами
-// 74–1134 — у поточному (2026-06-30 і далі). Розділення чисте, без перетину
-// ні за номером, ні за датою; #74 звірено з GitHub API напряму.
+// Слуг репо НЕ зашивається тут. Леджер тримає записи кількох репозиторіїв
+// (репо переїжджало чотири рази), тож база береться з поля `repo` запису, а
+// фолбек для записів без поля — `legacyPrSlug` з реєстру
+// `docs/governance/governance/repo-identity.json`.
 //
-// Раніше тут стояв один зашитий слуг старого репо, тож КОЖНЕ посилання на
-// PR поточного репо в `STATUS.md` вело на неіснуючу сторінку — сімнадцять
-// мертвих лінків. Знайдено рев'ю на PR #1137: я полагодив базу в
-// `update-pr-backlinks.mjs` і не помітив, що генераторів два.
-const LEGACY_REPO_SLUG = "Skords-01/Sergeant";
-const CURRENT_REPO_SLUG = "SkOrDs-02/sergeant";
+// Історія, заради якої це винесено. Спершу тут стояв ОДИН зашитий слуг
+// старого репо, тож кожне посилання на PR поточного репо в `STATUS.md` вело
+// на неіснуючу сторінку — сімнадцять мертвих лінків; знайдено рев'ю на
+// PR #1137 (полагодив базу в `update-pr-backlinks.mjs` і не помітив, що
+// генераторів два). 2026-09-17 третій переїзд показав, що зашитий
+// «поточний» слуг застаріває разом із репо. 2026-09-19 четвертий переїзд
+// показав головне: копій величини було ТРИ, вони розійшлись, і 93 посилання
+// стали мертвими — `--strict-external` падав на кожному PR. Тепер копія
+// одна, і `pnpm lint:repo-slug` звіряє її з фактичним `origin`.
 
 const args = new Set(process.argv.slice(2));
 const CHECK_MODE = args.has("--check");
@@ -98,10 +101,22 @@ const DEFAULT_FOCUS = [
  */
 export function extractFocus(existing) {
   if (!existing) return DEFAULT_FOCUS;
-  const i = existing.indexOf(FOCUS_START);
-  const j = existing.indexOf(FOCUS_END);
-  if (i === -1 || j === -1 || j < i) return DEFAULT_FOCUS;
-  const inner = existing.slice(i + FOCUS_START.length, j).trim();
+  // Маркери шукаються як ОКРЕМІ рядки. Простий `indexOf` знаходив перший
+  // збіг у службовому коментарі під шапкою («Редагуй лише між
+  // `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`»), брав текст між ними —
+  // «` / `» — і кожна регенерація тихо затирала ручний блок на «`/`».
+  // Так FOCUS стояв порожнім з першого коміту цієї історії (знайдено
+  // аудитом 2026-09-17).
+  const startRe = new RegExp(`^[ \\t]*${FOCUS_START}[ \\t]*$`, "m");
+  const endRe = new RegExp(`^[ \\t]*${FOCUS_END}[ \\t]*$`, "m");
+  const startMatch = startRe.exec(existing);
+  if (!startMatch) return DEFAULT_FOCUS;
+  const from = startMatch.index + startMatch[0].length;
+  endRe.lastIndex = 0;
+  const rest = existing.slice(from);
+  const endMatch = endRe.exec(rest);
+  if (!endMatch) return DEFAULT_FOCUS;
+  const inner = rest.slice(0, endMatch.index).trim();
   return inner.length > 0 ? inner : DEFAULT_FOCUS;
 }
 
@@ -133,11 +148,9 @@ export function loadShipped(ledgerPath = PR_LEDGER_PATH, limit = SHIPPED_N) {
 
 function fmtShipped(pr) {
   const date = String(pr.merged_at ?? "").slice(0, 10);
-  // Слуг береться з поля `repo` запису — того самого, що читає
-  // `update-pr-backlinks.mjs`. Немає поля — легасі-репо.
-  const slug =
-    pr.repo === CURRENT_REPO_SLUG ? CURRENT_REPO_SLUG : LEGACY_REPO_SLUG;
-  const url = `https://github.com/${slug}/pull/${pr.number}`;
+  // Слуг береться з поля `repo` запису — тим самим хелпером, що й у
+  // `update-pr-backlinks.mjs`. Немає поля — легасі-репо з реєстру.
+  const url = `${prBaseForEntry(pr)}/${pr.number}`;
   const title = pr.title ?? `PR #${pr.number}`;
   return `- [#${pr.number}](${url}) — ${title}${date ? ` _(${date})_` : ""}`;
 }

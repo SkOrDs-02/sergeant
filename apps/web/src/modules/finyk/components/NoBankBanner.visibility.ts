@@ -19,19 +19,16 @@
  * недосяжним, тож тест «у демо банер не показується» був би зеленим
  * незалежно від умови — порожній пін, який виглядає як захист.
  *
- * `inDemo` тут несучий (PR-F5, рішення власника 2026-09-14). Доти банер у
- * демо глушив запис `FINYK_MANUAL_ONLY_KEY` із демо-сідера — прапорець
- * персистентний, скидання не має ніде, тож демо робило за людину вибір
- * «без банку» НАЗАВЖДИ. Тепер демо ховає банер умовою, яка живе рівно
- * стільки, скільки демо.
+ * Третім прапорцем тут був `inDemo` (PR-F5, 2026-09-14): демо-сідер писав
+ * `FINYK_MANUAL_ONLY_KEY`, тобто робив за людину вибір «без банку»
+ * назавжди, і банер доводилось ховати окремою умовою. Демо-режим знято
+ * 2026-09-17 — умова пішла разом із ним.
  */
 export function shouldShowNoBankBanner(params: {
   hasConnectedProvider: boolean;
   manualOnly: boolean;
-  inDemo: boolean;
 }): boolean {
   if (params.hasConnectedProvider) return false;
   if (params.manualOnly) return false;
-  if (params.inDemo) return false;
   return true;
 }

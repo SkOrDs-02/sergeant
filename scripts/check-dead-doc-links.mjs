@@ -6,7 +6,7 @@
 // **Проблема, якої не бачив ніхто.** `pnpm docs:check-links` за задумом ходить
 // по `*.md` — посилання з коментарів коду не покриті жодною перевіркою. Тому
 // при кожному переїзді теки вони ротяться мовчки: реорганізація доків
-// (`docs/01-product/…` → `docs/product/…`, `docs/90-work/…` → `docs/work/…`
+// (`docs/product/…` → `docs/product/…`, `docs/work/…` → `docs/work/…`
 // тощо) залишила по собі 294 мертві шляхи у ~920 згадках. Знахідка PR-T9,
 // аудит 2026-09-13.
 //
@@ -70,6 +70,21 @@ const SKIP_DIRS = new Set([
   ".vite",
   ".next",
 ]);
+
+/**
+ * Префікси build-директорій, які треба пропускати НЕ за точним іменем.
+ *
+ * `dist` у `SKIP_DIRS` не ловив `apps/server/dist-server/` — а там лежить
+ * зібраний бандл із вкомпільованими коментарями, тобто з покажчиками на
+ * доки, які вже давно переїхали. Наслідок: варто комусь локально прогнати
+ * `pnpm build`, і `pnpm lint` червонів трьома «новими мертвими
+ * посиланнями», яких у джерелах немає. Гейт звинувачував автора у зміні,
+ * якої той не робив — рівно той клас дефекту, який цей скрипт має ловити.
+ *
+ * Префікс, а не ще одне точне ім'я: наступний `dist-ssr` чи `dist-worker`
+ * не має повертати ту саму проблему.
+ */
+const SKIP_DIR_PREFIXES = ["dist-"];
 const CODE_EXT = /\.(?:tsx?|jsx?|mjs|cjs)$/;
 
 /**
@@ -101,6 +116,25 @@ const FIXTURE_DIR = `${sep}__tests__${sep}`;
 const DOC_REF = /docs\/[A-Za-z0-9._/-]{0,200}\.md/g;
 
 /**
+ * Закріплений GitHub-URL (`blob/<40-hex sha>/…`) — не мертвий шлях за
+ * визначенням, і сканер його не бачить.
+ *
+ * Hard Rule #23 забороняє локальні архівні дерева, тож заархівований док
+ * лишається доступним лише так: URL на конкретний коміт попереднього репо.
+ * Саме цією формою доки вже цитують, скажімо, `storage-roadmap.md`
+ * (13-етапну карту сховища, повністю виконану й заархівовану). Без цього
+ * пропуску `DOC_REF` витягав би `docs/work/…/storage-roadmap.md` ЗСЕРЕДИНИ
+ * URL, `existsSync` казав би «немає» — і покажчик, який людина реально може
+ * відкрити, рахувався б мертвим нарівні з тим, що веде в нікуди.
+ *
+ * Рівно 40 hex — навмисно: sha незмінний, тож посилання резолвиться за
+ * побудовою. `blob/main/…` чи `blob/<гілка>/…` сюди НЕ потрапляють — вони
+ * ротяться разом із гілкою і мають лишатися під наглядом.
+ */
+const PINNED_BLOB_URL =
+  /https?:\/\/github\.com\/[^\s/]+\/[^\s/]+\/blob\/[0-9a-f]{40}\/\S+/g;
+
+/**
  * Чи лишається шлях усередині репо.
  *
  * Клас символів у `DOC_REF` пропускає `..`, тож збіг на кшталт
@@ -117,6 +151,7 @@ function insideRepo(rel) {
 function walk(dir, out = []) {
   for (const entry of readdirSync(dir)) {
     if (SKIP_DIRS.has(entry)) continue;
+    if (SKIP_DIR_PREFIXES.some((p) => entry.startsWith(p))) continue;
     const full = join(dir, entry);
     let st;
     try {
@@ -144,7 +179,10 @@ for (const file of walk(ROOT)) {
   } catch {
     continue;
   }
-  for (const ref of new Set(src.match(DOC_REF) ?? [])) {
+  // Спершу прибираємо закріплені URL, і лише потім шукаємо шляхи — інакше
+  // `DOC_REF` збігається з хвостом URL і резолвний покажчик стає «мертвим».
+  const scannable = src.replace(PINNED_BLOB_URL, "");
+  for (const ref of new Set(scannable.match(DOC_REF) ?? [])) {
     if (!byPath.has(ref)) byPath.set(ref, new Set());
     byPath.get(ref).add(relative(ROOT, file));
   }

@@ -84,7 +84,7 @@ function ModuleLink({ module }: { module: ChatActionCardModule }) {
       )}
     >
       {target.label}
-      <Icon name="chevron-right" size={12} />
+      <Icon name="chevron-right" size="xs" />
     </Link>
   );
 }
@@ -122,7 +122,7 @@ function ActionCard({ card }: { card: ChatActionCard }) {
         )}
         aria-hidden
       >
-        <Icon name={card.icon || (failed ? "alert" : "check")} size={14} />
+        <Icon name={card.icon || (failed ? "alert" : "check")} size="sm" />
       </span>
 
       <div className="min-w-0 flex-1">

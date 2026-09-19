@@ -141,169 +141,200 @@ export function Overview({
   };
 
   return (
-    <DataState
-      query={overviewQuery}
-      skeleton={overviewLoadingSkeleton}
-      className="flex-1 flex flex-col min-h-0"
-    >
-      {() => (
-        <div className="flex-1 overflow-y-auto overscroll-contain">
-          <div className="px-4 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
-            <h1 className="sr-only">{messages.nav.finykOverview}</h1>
-            {(d.clientInfo ||
-              d.syncState?.status === "error" ||
-              d.syncState?.status === "loading" ||
-              d.monoError) && (
-              <SyncStatusBadge
-                syncState={d.syncState}
-                lastUpdated={d.lastUpdated}
-                error={d.monoError}
-                onRetry={d.monoRefresh}
-                loading={d.loadingTx}
-              />
-            )}
+    <>
+      {/* `<h1>` СТОЇТЬ ПОЗА `DataState` навмисно. Доки він жив усередині
+          `children`, сторінка мала заголовок лише в одному стані з
+          чотирьох: `DEFAULT_EMPTY` рахує `[]` порожнім, тож у скелетоні,
+          порожньому стані й помилці h1 не рендерився взагалі — а це рівно
+          те, що бачить новий користувач без жодної транзакції. axe
+          `page-has-heading-one` на `/finyk`, замір браузерного свіпу
+          2026-09-16.
 
-            {/* Канон §6.2 — durability. Банер сам вирішує, чи показуватись:
+          Видимий, а не `sr-only` (рішення власника 2026-09-17). Стиль —
+          `text-style-title text-text`, єдиний у репо зразок видимого
+          сторінкового заголовка (`fizruk/pages/Programs.tsx`,
+          `fizruk/components/workouts/WorkoutsHeader.tsx`).
+
+          Назва модуля в шапці при цьому лишається `<p>` (#527) — цей h1
+          її не дублює: шапка каже «Фінік», заголовок — «Огляд».
+
+          Відступи: власний `pt-4` тут і `pt-4` у контейнерах нижче дають
+          16px між заголовком і першою карткою — однаково для скелетона й
+          для завантаженого стану, бо обидва лежать під цим блоком.
+          `shrink-0`, щоб flex-колонка не стискала рядок. */}
+      <div className="shrink-0 w-full max-w-4xl mx-auto px-4 pt-4">
+        <h1 className="text-style-title text-text">
+          {messages.nav.finykOverview}
+        </h1>
+      </div>
+      <DataState
+        query={overviewQuery}
+        skeleton={overviewLoadingSkeleton}
+        className="flex-1 flex flex-col min-h-0"
+      >
+        {() => (
+          <div className="flex-1 overflow-y-auto overscroll-contain">
+            <div className="px-4 pt-4 page-tabbar-pad space-y-4 max-w-4xl mx-auto">
+              {(d.clientInfo ||
+                d.syncState?.status === "error" ||
+                d.syncState?.status === "loading" ||
+                d.monoError) && (
+                <SyncStatusBadge
+                  syncState={d.syncState}
+                  lastUpdated={d.lastUpdated}
+                  error={d.monoError}
+                  onRetry={d.monoRefresh}
+                  loading={d.loadingTx}
+                />
+              )}
+
+              {/* Канон §6.2 — durability. Банер сам вирішує, чи показуватись:
                 лише коли поточний id несинхронізований (той самий предикат,
                 що вимикає запис у outbox). Ставимо ВИЩЕ staleness-банера:
                 «твої дані можуть зникнути назавжди» важливіше за «дані
                 банку не оновлювались N днів». */}
-            <LocalOnlyDataBanner onSignIn={onOpenAuth} />
+              <LocalOnlyDataBanner onSignIn={onOpenAuth} />
 
-            {showStalenessBanner && monoStaleness.days !== null && (
-              <MonoStalenessBanner
-                days={monoStaleness.days}
-                onReconnect={onOpenSettings}
-              />
-            )}
+              {showStalenessBanner && monoStaleness.days !== null && (
+                <MonoStalenessBanner
+                  days={monoStaleness.days}
+                  onReconnect={onOpenSettings}
+                />
+              )}
 
-            {showImportReminder && importReminder.reminder && (
-              <ImportReminderBanner
-                source={importReminder.reminder.source}
-                daysSince={importReminder.reminder.daysSince}
-                expectedIntervalDays={
-                  importReminder.reminder.expectedIntervalDays
-                }
-                onAddDocuments={() => {
-                  trackEvent(ANALYTICS_EVENTS.FINYK_IMPORT_REMINDER_CLICKED, {
-                    source: importReminder.reminder?.source,
-                    daysSince: importReminder.reminder?.daysSince,
-                  });
-                  onOpenBulkImport?.();
-                }}
-                onSnooze={importReminder.snooze}
-                onMute={importReminder.mute}
-              />
-            )}
-
-            {d.showFirstInsight && d.hasAnyData && (
-              <FirstInsightBanner
-                onSetBudget={d.handleSetBudgetFromInsight}
-                onDismiss={d.dismissFirstInsight}
-              />
-            )}
-
-            {!d.hasAnyData ? (
-              // Рішення founder-а 2026-07-25: перший вхід у finyk — порожній
-              // екран із ненавʼязливими підказками. До цього новачок бачив
-              // стіну карток по ₴0 (нетворт, пульс місяця, алерти бюджетів,
-              // планові потоки) — усі порожні, всі однаково безмовні.
-              // Інлайн-CTA тут свідомо НЕМА: глобальний FAB «+ Додати
-              // витрату» вже висить на цьому екрані, а дублювати його
-              // всередині empty-state — антипатерн із docs/design/
-              // empty-states.md (той самий коментар у TransactionList).
-              <ModuleEmptyState module="finyk" goalContext={onboardingGoals} />
-            ) : (
-              <>
-                <HeroCard
-                  networth={d.networth}
-                  monoTotal={d.monoTotal}
-                  totalDebt={d.totalDebt}
-                  daysInMonth={d.daysInMonth}
-                  daysPassed={d.daysPassed}
-                  dayBudget={d.dayBudget}
-                  todayRemaining={d.todayRemaining}
-                  todaySpent={d.todaySpent}
-                  dailySpend={d.dailySpend}
-                  todayKey={d.todayKey}
-                  spent={d.spent}
-                  planExpense={d.planExpense}
-                  hasExpensePlan={d.hasExpensePlan}
-                  spendPlanRatio={d.spendPlanRatio}
-                  showBalance={showBalance}
-                  onSetPlan={
-                    onNavigate ? () => onNavigate("budgets") : undefined
+              {showImportReminder && importReminder.reminder && (
+                <ImportReminderBanner
+                  source={importReminder.reminder.source}
+                  daysSince={importReminder.reminder.daysSince}
+                  expectedIntervalDays={
+                    importReminder.reminder.expectedIntervalDays
                   }
-                  onOpenDay={(dayKey) =>
-                    navigate(`/finyk/transactions?date=${dayKey}`)
-                  }
+                  onAddDocuments={() => {
+                    trackEvent(ANALYTICS_EVENTS.FINYK_IMPORT_REMINDER_CLICKED, {
+                      source: importReminder.reminder?.source,
+                      daysSince: importReminder.reminder?.daysSince,
+                    });
+                    onOpenBulkImport?.();
+                  }}
+                  onSnooze={importReminder.snooze}
+                  onMute={importReminder.mute}
                 />
+              )}
 
-                <OverviewTextRows
-                  todaySpent={d.todaySpent}
-                  todayIncome={d.todayIncome}
-                  income={d.income}
-                  showMonthForecast={d.showMonthForecast && showBalance}
-                  projectedSpend={d.projectedSpend}
-                  projectedSpendCapped={d.projectedSpendCapped}
-                  hasExpensePlan={d.hasExpensePlan}
-                  recurringOutThisMonth={d.recurringOutThisMonth}
-                  recurringInThisMonth={d.recurringInThisMonth}
-                  unknownOutCount={d.unknownOutCount}
-                  showBalance={showBalance}
-                  onOpenToday={() => navigate("/finyk/transactions?date=today")}
+              {d.showFirstInsight && d.hasAnyData && (
+                <FirstInsightBanner
+                  onSetBudget={d.handleSetBudgetFromInsight}
+                  onDismiss={d.dismissFirstInsight}
                 />
+              )}
 
-                <FinykInsightsBlock
-                  transactions={d.insightTx}
-                  budgets={storage.budgets}
-                  subscriptions={storage.subscriptions}
-                  dismissedRecurring={storage.dismissedRecurring}
-                  txCategories={d.txCategories}
-                  txSplits={d.txSplits}
-                  customCategories={d.customCategories}
-                  excludedTxIds={storage.excludedTxIds}
+              {!d.hasAnyData ? (
+                // Рішення founder-а 2026-07-25: перший вхід у finyk — порожній
+                // екран із ненавʼязливими підказками. До цього новачок бачив
+                // стіну карток по ₴0 (нетворт, пульс місяця, алерти бюджетів,
+                // планові потоки) — усі порожні, всі однаково безмовні.
+                // Інлайн-CTA тут свідомо НЕМА: глобальний FAB «+ Додати
+                // витрату» вже висить на цьому екрані, а дублювати його
+                // всередині empty-state — антипатерн із docs/design/
+                // empty-states.md (той самий коментар у TransactionList).
+                <ModuleEmptyState
+                  module="finyk"
+                  goalContext={onboardingGoals}
                 />
+              ) : (
+                <>
+                  <HeroCard
+                    networth={d.networth}
+                    monoTotal={d.monoTotal}
+                    totalDebt={d.totalDebt}
+                    daysInMonth={d.daysInMonth}
+                    daysPassed={d.daysPassed}
+                    dayBudget={d.dayBudget}
+                    todayRemaining={d.todayRemaining}
+                    todaySpent={d.todaySpent}
+                    dailySpend={d.dailySpend}
+                    todayKey={d.todayKey}
+                    spent={d.spent}
+                    planExpense={d.planExpense}
+                    hasExpensePlan={d.hasExpensePlan}
+                    spendPlanRatio={d.spendPlanRatio}
+                    showBalance={showBalance}
+                    onSetPlan={
+                      onNavigate ? () => onNavigate("budgets") : undefined
+                    }
+                    onOpenDay={(dayKey) =>
+                      navigate(`/finyk/transactions?date=${dayKey}`)
+                    }
+                  />
 
-                <NetworthSection networthHistory={d.networthHistory} />
+                  <OverviewTextRows
+                    todaySpent={d.todaySpent}
+                    todayIncome={d.todayIncome}
+                    income={d.income}
+                    showMonthForecast={d.showMonthForecast && showBalance}
+                    projectedSpend={d.projectedSpend}
+                    projectedSpendCapped={d.projectedSpendCapped}
+                    hasExpensePlan={d.hasExpensePlan}
+                    recurringOutThisMonth={d.recurringOutThisMonth}
+                    recurringInThisMonth={d.recurringInThisMonth}
+                    unknownOutCount={d.unknownOutCount}
+                    showBalance={showBalance}
+                    onOpenToday={() =>
+                      navigate("/finyk/transactions?date=today")
+                    }
+                  />
 
-                {d.nonUahManualAssetCount > 0 && (
-                  <div className="rounded-2xl px-4 py-3 border bg-warning/8 border-warning/20">
-                    <span className="text-style-caption text-warning-strong dark:text-warning">
-                      {d.nonUahManualAssetCount}{" "}
-                      {pluralize(
-                        d.nonUahManualAssetCount,
-                        messages.finyk.nonUahAssetsExcluded.one,
-                        messages.finyk.nonUahAssetsExcluded.few,
-                        messages.finyk.nonUahAssetsExcluded.many,
-                      )}
-                    </span>
-                  </div>
-                )}
+                  <FinykInsightsBlock
+                    transactions={d.insightTx}
+                    budgets={storage.budgets}
+                    subscriptions={storage.subscriptions}
+                    dismissedRecurring={storage.dismissedRecurring}
+                    txCategories={d.txCategories}
+                    txSplits={d.txSplits}
+                    customCategories={d.customCategories}
+                    excludedTxIds={storage.excludedTxIds}
+                  />
 
-                <BudgetAlertsList
-                  budgetAlerts={d.budgetAlerts}
-                  statTx={d.statTx}
-                  txCategories={d.txCategories}
-                  txSplits={d.txSplits}
-                  customCategories={d.customCategories}
-                  onOpenLimit={(categoryId) =>
-                    navigate(
-                      `/finyk/budgets?cat=${encodeURIComponent(categoryId)}`,
-                    )
-                  }
-                />
-              </>
-            )}
+                  <NetworthSection networthHistory={d.networthHistory} />
 
-            {d.loadingTx && (
-              <p className="text-center text-style-caption text-subtle py-4">
-                {messages.status.updating}
-              </p>
-            )}
+                  {d.nonUahManualAssetCount > 0 && (
+                    <div className="rounded-2xl px-4 py-3 border bg-warning/8 border-warning/20">
+                      <span className="text-style-caption text-warning-strong dark:text-warning">
+                        {d.nonUahManualAssetCount}{" "}
+                        {pluralize(
+                          d.nonUahManualAssetCount,
+                          messages.finyk.nonUahAssetsExcluded.one,
+                          messages.finyk.nonUahAssetsExcluded.few,
+                          messages.finyk.nonUahAssetsExcluded.many,
+                        )}
+                      </span>
+                    </div>
+                  )}
+
+                  <BudgetAlertsList
+                    budgetAlerts={d.budgetAlerts}
+                    statTx={d.statTx}
+                    txCategories={d.txCategories}
+                    txSplits={d.txSplits}
+                    customCategories={d.customCategories}
+                    onOpenLimit={(categoryId) =>
+                      navigate(
+                        `/finyk/budgets?cat=${encodeURIComponent(categoryId)}`,
+                      )
+                    }
+                  />
+                </>
+              )}
+
+              {d.loadingTx && (
+                <p className="text-center text-style-caption text-subtle py-4">
+                  {messages.status.updating}
+                </p>
+              )}
+            </div>
           </div>
-        </div>
-      )}
-    </DataState>
+        )}
+      </DataState>
+    </>
   );
 }

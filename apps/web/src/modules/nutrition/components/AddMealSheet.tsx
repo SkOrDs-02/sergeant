@@ -714,7 +714,6 @@ export function AddMealSheet({
 
             {pickedFood ? (
               <PickedFoodCard
-                form={form}
                 setForm={setForm}
                 pickedFood={pickedFood}
                 pickedGrams={pickedGrams}
@@ -803,7 +802,7 @@ export function AddMealSheet({
               </Button>
               <Button
                 type="button"
-                variant="secondary"
+                variant="outline"
                 className="h-12 min-h-[44px]"
                 onClick={onClose}
               >

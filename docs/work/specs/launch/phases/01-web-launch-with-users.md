@@ -1,6 +1,6 @@
 # Phase 1 — Web launch with users
 
-> **Last touched:** 2026-09-14 by @claude. **Next review:** 2027-11-17.
+> **Last touched:** 2026-09-17 by @claude (handoff на Phase 2 переформульовано: Devin retired). **Next review:** 2026-12-16.
 > **Status:** Active — roadmap for first user-facing launch фази.
 
 > Цей документ описує **першу з трьох послідовних фаз запуску** Sergeant з реальними юзерами. Phase 1 покриває web-only (PWA на Vercel), 15 тижнів від `W-4` до `W10`. Phase 2 (Capacitor) і Phase 3 (Native RN) описані в окремих файлах цього піддерева.
@@ -930,6 +930,6 @@ Reasonable budget. Lemma: «якщо $50/міс рятує мене 2 годин
 
 Цей doc — **гайд, не контракт**. Якщо тиждень не пройшов як заплановано, **повтори тиждень**, не йди далі. Acceptance gates існують саме для цього.
 
-Ownership Phase 1 — `@Skords-01`. Cross-session handoff на Phase 2 — через `docs/work/specs/launch/phases/02-capacitor-launch.md` (інша Devin-сесія).
+Ownership Phase 1 — `@Skords-01`. Cross-session handoff на Phase 2 — через `docs/work/specs/launch/phases/02-capacitor-launch.md` (окрема агентська сесія — Claude Code / Codex; історично Devin, retired [ADR-0088](../../../../governance/adr/0088-devin-kilo-harness-retirement.md); сама Phase 2 на паузі за ADR-0094).
 
 > _Доповнення / зміни — через PR з conventional commit `docs(launch): …` і `Signed-off-by: <author>`. Не редагуй inline у production runs без owner-approval._

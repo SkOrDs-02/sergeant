@@ -15,11 +15,11 @@ import { useCallback, useMemo } from "react";
 import { useSqliteTickOverlay } from "@shared/hooks/useSqliteTickOverlay";
 import { FizrukData } from "@sergeant/fizruk-domain";
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractCustomActivitySnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractCustomActivitySnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
@@ -51,22 +51,23 @@ export function useCustomActivities(): UseCustomActivitiesResult {
     },
   );
 
+  const intended = useFizrukIntendedSlice<"customActivities">(sqliteCacheTick);
+
   const persist = useCallback(
     (next: ActivityDef[]) => {
       setCustomActivities(next);
-      const prevDualWrite =
-        peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-      const nextDualWrite = {
-        ...prevDualWrite,
-        customActivities: extractCustomActivitySnapshots(next),
-      };
+      const transition = fizrukDualWriteTransition(
+        "customActivities",
+        intended,
+        extractCustomActivitySnapshots(next),
+      );
       try {
-        triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+        triggerFizrukDualWrite(transition.prev, transition.next);
       } catch {
         /* trigger is fire-and-forget - never propagate */
       }
     },
-    [setCustomActivities],
+    [intended, setCustomActivities],
   );
 
   const addActivity = useCallback(

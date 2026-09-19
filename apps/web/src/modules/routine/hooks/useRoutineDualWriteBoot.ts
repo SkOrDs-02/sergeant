@@ -1,7 +1,7 @@
 /**
  * React hook that installs the routine dual-write context.
  *
- * PR #024 follow-up of `docs/planning/storage-roadmap.md` — wires
+ * PR #024 follow-up of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — wires
  * `bootRoutineDualWrite()` into the module root so the dual-write
  * pipeline is no longer dormant in production. Mirrors the shape of
  * `useSqliteReadBoot` (PR #025 boot wiring) so both stages share the
@@ -44,7 +44,7 @@ export function useRoutineDualWriteBoot(): void {
     // (→ `sqliteWriter/adapter.ts` → `@sergeant/db-schema/sqlite` →
     // `drizzle-orm`) не потрапляв у eager-граф.
     // Статичний імпорт тут тягнув би весь чанк `vendor-sqlite` у
-    // критичний шлях — див. `docs/90-work/tech-debt/frontend.md`.
+    // критичний шлях — див. `docs/work/specs/tech-debt/frontend.md`.
     let teardown: (() => void) | undefined;
     let cancelled = false;
     void import("../lib/dualWriteBoot.js")

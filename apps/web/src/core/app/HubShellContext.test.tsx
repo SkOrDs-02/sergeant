@@ -23,6 +23,8 @@ function makeShellValue(over: Partial<HubShellValue> = {}): HubShellValue {
       setHubView: () => {},
       setSearchOpen: () => {},
       closeSearch: () => {},
+      searchQuery: "",
+      openSearch: () => {},
     },
     pwaAction: null,
     clearPwaAction: () => {},

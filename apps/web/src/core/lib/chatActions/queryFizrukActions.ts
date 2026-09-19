@@ -4,6 +4,7 @@ import { clamp, clampDays, normalizeText, round } from "./queryArgs";
 import type { Workout, WorkoutItem } from "@sergeant/fizruk-domain";
 import { workoutTonnageKg } from "@sergeant/fizruk-domain";
 import type { ChatAction, ChatActionResult } from "./types";
+import { itemTonnageKg } from "@sergeant/fizruk-domain/lib/workoutStats";
 
 /**
  * Read-only "talk to your data" виконавці для Фізрука (PR2 talk-to-your-data).
@@ -45,8 +46,7 @@ function startedTs(w: Workout): number {
 }
 
 function itemVolume(item: WorkoutItem): number {
-  if (item.type !== "strength") return 0;
-  return (item.sets ?? []).reduce((s, set) => s + set.weightKg * set.reps, 0);
+  return itemTonnageKg(item);
 }
 
 function workoutVolume(w: Workout): number {

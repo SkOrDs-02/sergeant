@@ -82,7 +82,7 @@ export function FormsSection() {
           <FormField
             label="Email"
             htmlFor="email"
-            error="Невірний формат email"
+            error="Неправильний формат email"
           >
             <Input id="email" placeholder="hi@example.com" error />
           </FormField>

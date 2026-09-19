@@ -1,3 +1,4 @@
+import { HUB_AXIS_ANALYTICS_EVENTS } from "./analyticsEvents.hubAxis";
 import { VALUE_LOOP_ANALYTICS_EVENTS } from "./analyticsEvents.valueLoops";
 
 /**
@@ -19,7 +20,7 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // Onboarding replay (Settings → "Подивитись tour" — read-only mode).
   // Distinguished from `ONBOARDING_STARTED` / `ONBOARDING_COMPLETED` so
   // re-runs do not inflate the FTUX funnel — see S4.5 in
-  // `docs/01-product/launch/ftux-sprint-plan.md`.
+  // `docs/work/specs/launch/ftux-sprint-plan.md`.
   ONBOARDING_REPLAY_VIEWED: "onboarding_replay_viewed",
   ONBOARDING_REPLAY_DISMISSED: "onboarding_replay_dismissed",
 
@@ -309,37 +310,45 @@ export const ANALYTICS_EVENTS = Object.freeze({
 
   // Landing page (initiative 0010 Phase 6.1). Fired from the in-app public
   // surfaces (`/`, `/pricing`) and from the standalone marketing site
-  // `apps/landing` (`/`, `/thanks`, `/privacy`, `/404`). Payload contracts:
+  // `apps/landing` (every route in its `App.tsx` `ROUTES`, unknown paths
+  // collapse to `/404`). Payload contract:
   //
-  //   LANDING_VIEWED          { path: "/" | "/pricing" | "/thanks"
-  //                                   | "/privacy" | "/404",
+  //   LANDING_VIEWED          { path: string,   // маршрут із ROUTES або "/404"
   //                             referrer?: string,
   //                             locale: "uk" | "en" }
-  //   LANDING_EMAIL_CAPTURED  { source: "hero" | "footer" | "sticky",
-  //                             locale: "uk" | "en" }
   //
-  // `apps/landing` шле лише ці дві події плюс `WAITLIST_SUBMITTED`, без
-  // autocapture і pageview-хуків: єдине поле вводу там — email, і жодна
-  // подія не має права його нести. Перелік продубльовано користувачу
-  // в політиці приватності лендінга.
+  // `apps/landing` шле рівно чотири події — `LANDING_VIEWED`,
+  // `LANDING_TELEGRAM_CLICKED`, `LANDING_WIDGET_CHANGED`, `LANDING_FAQ_OPENED`
+  // (усі нижче) — без autocapture і pageview-хуків. Полів вводу на сайті
+  // немає; кожна подія несе лише стан контрола. Перелік продубльовано
+  // користувачу в політиці приватності лендінга і в `apps/landing/README.md`.
+  //
+  // `LANDING_EMAIL_CAPTURED` прибрано 2026-09-17: подія була задекларована
+  // 2026-05-13 під email-форму, яку лендінг так і не отримав — 2026-07-26
+  // конверсію переведено на Telegram-вейтліст (#487). Жодного call site і
+  // жодної події в PostHog за нею не було, тож дашборди не постраждали
+  // (аудит `docs/work/specs/audits/2026-08-05-orphaned-code-audit.md` § 9а).
   //
   // `locale` is the served locale at capture time — used to split funnel
   // metrics between UA-organic and EN-paid acquisition tracks.
   LANDING_VIEWED: "landing_viewed",
-  LANDING_EMAIL_CAPTURED: "landing_email_captured",
 
-  // Telegram-вейтліст (спека `docs/90-work/planning/specs/telegram-waitlist.md`).
+  // Telegram-вейтліст (спека `docs/work/specs/telegram-waitlist.md`).
   // Маркетинговий лендінг перевів конверсію з email на deep link бота, бо
   // розсилка поштою заблокована відсутністю верифікованого домену, а бета-група
   // і так живе в Telegram. Payload:
   //
-  //   LANDING_TELEGRAM_CLICKED { source: "hero" | "footer" | "thanks",
+  //   LANDING_TELEGRAM_CLICKED { source: "hero" | "footer" | "beta",
   //                              locale: "uk" | "en",
   //                              ref: string,
   //                              path?: string }
   //   LANDING_TELEGRAM_STARTED { placement: "hero" | "footer",
   //                              ref: string,
   //                              first_start: boolean }
+  //
+  // `source` — це `LandingPlacement` з `landingAttribution.ts`; до
+  // 2026-09-17 тут стояло застаріле `"thanks"`, маршруту `/thanks` у
+  // лендінга немає.
   //
   // `path` (додано 2026-08-28, аудит воронки): сторінка, з якої зроблено
   // клік. `source` кодує лише місце кнопки (hero/footer/beta), тож без
@@ -428,19 +437,11 @@ export const ANALYTICS_EVENTS = Object.freeze({
   PERMISSIONS_SETTINGS_OPENED: "permissions_settings_opened",
   PERMISSION_STATUS_CHANGED: "permission_status_changed",
 
-  // Demo mode (S4.1 of `docs/01-product/launch/ftux-sprint-plan.md`). The welcome
-  // screen ships a "Подивитись приклад" CTA that seeds a fake hub
-  // payload in localStorage; once the user lands inside the hub, a
-  // banner offers them a one-tap path back to the real onboarding
-  // wizard. Events are kept off the FTUX funnel so demo browsing
-  // doesn't inflate `onboarding_started` cohorts. Expected payloads:
-  //
-  //   DEMO_STARTED                { source: "welcome" | "deeplink" }
-  //   DEMO_DISMISSED              {}  // banner X
-  //   DEMO_TO_WIZARD_CONFIRMED    {}  // banner CTA → /welcome
-  DEMO_STARTED: "demo_started",
-  DEMO_DISMISSED: "demo_dismissed",
-  DEMO_TO_WIZARD_CONFIRMED: "demo_to_wizard_confirmed",
+  // Demo mode (S4.1) стояв тут із трьома подіями — `demo_started`,
+  // `demo_dismissed`, `demo_to_wizard_confirmed`. Режим знято
+  // 2026-09-17: за 4,5 місяця в демо зайшли 13 людей, а повернувся
+  // наступного дня один. Історичні події лишаються в PostHog; нових
+  // джерел для них у коді немає.
 
   // PWA install prompt (Wave 1 PR-07 — `docs/work/specs/launch/product-os/ftux-master-tracker.md`).
   // Funnel:
@@ -612,6 +613,11 @@ export const ANALYTICS_EVENTS = Object.freeze({
   // `ANALYTICS_EVENTS.VALUE_SIGNAL_SHOWN` тощо. Payload-контракти —
   // у `analyticsEvents.valueLoops.ts`.
   ...VALUE_LOOP_ANALYTICS_EVENTS,
+
+  // Базова лінія перед віссю дії хабу (P3): три події, без яких перехід
+  // на A1 не починається за рішенням власника 2026-08-07. Контракти й
+  // тип джерела — у `analyticsEvents.hubAxis.ts`.
+  ...HUB_AXIS_ANALYTICS_EVENTS,
 } as const);
 
 export type AnalyticsEventName =

@@ -4,11 +4,11 @@ import { safeReadLS } from "@shared/lib/storage/storage";
 import { STORAGE_KEYS } from "@sergeant/shared";
 
 import { triggerFizrukDualWrite } from "../lib/sqliteWriter/index";
+import { extractWorkoutTemplateSnapshots } from "../lib/fizrukDualWriteState";
 import {
-  EMPTY_FIZRUK_DUAL_WRITE_STATE,
-  extractWorkoutTemplateSnapshots,
-  peekFizrukDualWriteState,
-} from "../lib/fizrukDualWriteState";
+  fizrukDualWriteTransition,
+  useFizrukIntendedSlice,
+} from "../lib/fizrukDualWriteIntent";
 import { getCachedFizrukSqliteState } from "../lib/sqliteReader";
 import { useFizrukSqliteReadTick } from "../lib/sqliteReadGate";
 
@@ -57,6 +57,8 @@ export function useWorkoutTemplates() {
   // Функціональний updater через setTemplates, щоб уникнути stale closure:
   // колбеки в undo-toast можуть викликатись після того, як state оновився
   // (див. AGENTS.md §5.11).
+  const intended = useFizrukIntendedSlice<"workoutTemplates">(sqliteCacheTick);
+
   const persist = useCallback(
     (updater: TemplatesUpdater) => {
       setTemplates((prev) => {
@@ -64,21 +66,20 @@ export function useWorkoutTemplates() {
         // Teardown Phase 3 — SQLite-only write via the dual-write pipeline;
         // the LS mirror was removed. Fire-and-forget; the trigger is a no-op
         // when no dual-write context is registered.
-        const prevDualWrite =
-          peekFizrukDualWriteState() ?? EMPTY_FIZRUK_DUAL_WRITE_STATE;
-        const nextDualWrite = {
-          ...prevDualWrite,
-          workoutTemplates: extractWorkoutTemplateSnapshots(next),
-        };
+        const transition = fizrukDualWriteTransition(
+          "workoutTemplates",
+          intended,
+          extractWorkoutTemplateSnapshots(next),
+        );
         try {
-          triggerFizrukDualWrite(prevDualWrite, nextDualWrite);
+          triggerFizrukDualWrite(transition.prev, transition.next);
         } catch {
           /* trigger is fire-and-forget — never propagate */
         }
         return next;
       });
     },
-    [setTemplates],
+    [intended, setTemplates],
   );
 
   const addTemplate = useCallback(

@@ -14,7 +14,7 @@ import { SYNC_OP_LOG_OPS, SYNC_OP_LOG_STATUSES } from "../shared/index.js";
  * Postgres schema for `sync_op_log` table.
  * Mirrors migration 027_sync_op_log.sql.
  *
- * Stage 2 / PR #021 із `docs/planning/storage-roadmap.md` — per-row
+ * Stage 2 / PR #021 із `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md` — per-row
  * операційний лог для v2 sync. Append-only. Кожен `applied` рядок
  * є authoritative-операцією; `duplicate` — sentinel-replay (cached
  * відповідь на повтор того самого `idempotency_key`); `rejected` —

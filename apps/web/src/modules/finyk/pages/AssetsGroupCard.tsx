@@ -43,11 +43,11 @@ export function AssetsGroupCard({
       >
         <SectionHeading as="span" size="xs" variant="finyk">
           <span className="inline-flex items-center gap-1.5">
-            <Icon name={iconName} size={14} className={iconClassName} />
+            <Icon name={iconName} size="sm" className={iconClassName} />
             {title}
           </span>
         </SectionHeading>
-        <Icon name={open ? "chevron-up" : "chevron-down"} size={16} />
+        <Icon name={open ? "chevron-up" : "chevron-down"} size="md" />
       </button>
       <div hidden={!open} className="space-y-2">
         {children}

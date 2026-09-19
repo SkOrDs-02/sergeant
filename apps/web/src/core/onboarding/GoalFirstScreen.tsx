@@ -174,7 +174,7 @@ export function GoalFirstScreen({
                       accent.icon,
                     )}
                   >
-                    <Icon name={iconName} size={20} aria-hidden />
+                    <Icon name={iconName} size="lg" aria-hidden />
                   </span>
                   <div className="min-w-0">
                     <div className="text-style-label text-text">

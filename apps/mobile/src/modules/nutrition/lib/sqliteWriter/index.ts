@@ -16,7 +16,7 @@ import {
  * Orchestrator for the Nutrition dual-write layer (mobile mirror of
  * `apps/web/src/modules/nutrition/lib/sqliteWriter/index.ts`).
  *
- * Stage 4 PR #032 of `docs/planning/storage-roadmap.md`. The MMKV
+ * Stage 4 PR #032 of `https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/storage-roadmap.md`. The MMKV
  * write layer fires `triggerNutritionDualWrite(prev, next)` after every
  * successful MMKV write; this module decides whether to mirror to the
  * local expo-sqlite database based on the registered context.
@@ -115,7 +115,19 @@ export function triggerNutritionDualWrite(
   next: NutritionDualWriteState,
 ): void {
   if (!registeredContext) return;
-  void Promise.resolve().then(() => dualWriteNutritionState(prev, next));
+  // `.catch` обовʼязковий: без нього відхилення дзеркалення — це unhandled
+  // rejection, який у RN не видно ніде, а людина бачить підтвердження в UI,
+  // тоді як SQLite рядка не отримав (аудит 2026-09-15 § 2; веб-писачі
+  // ловлять це з 2026-09). `no-floating-promises` у репо не ввімкнено, тож
+  // цю форму тримає лише огляд.
+  const ctx = registeredContext;
+  void Promise.resolve()
+    .then(() => dualWriteNutritionState(prev, next))
+    .catch((err) => {
+      logSafe(ctx, "warn", "dual-write mirror failed", {
+        error: err instanceof Error ? err.message : String(err),
+      });
+    });
 }
 
 export type DualWriteOutcome =

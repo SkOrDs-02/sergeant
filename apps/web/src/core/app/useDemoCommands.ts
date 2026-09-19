@@ -23,7 +23,18 @@ import { openHubSettingsSection } from "@shared/lib/modules/hubNav";
 import { SIGN_IN_PATH } from "./appPaths";
 import { useAuth } from "../auth/AuthContext";
 
-export function useDemoCommands(): void {
+export interface DemoCommandsOptions {
+  /**
+   * Відкрити глобальний пошук хаба. Із увімкненою палітрою `Cmd+K` веде в
+   * палітру, тож пошук має бути досяжним ізсередини — командою тут і
+   * рядком «Шукати „…“» у `CommandPaletteUI` (рішення власника 2026-09-16).
+   */
+  openSearch?: (() => void) | undefined;
+}
+
+export function useDemoCommands({
+  openSearch,
+}: DemoCommandsOptions = {}): void {
   const navigate = useNavigate();
   const toast = useToast();
   const { logout } = useAuth();
@@ -65,6 +76,18 @@ export function useDemoCommands(): void {
 
   const commands = useMemo<PaletteCommand[]>(
     () => [
+      ...(openSearch
+        ? [
+            {
+              id: "search.open",
+              title: "Глобальний пошук",
+              description: "Записи всіх модулів, налаштування, AI-підказки",
+              group: "Навігація",
+              keywords: ["search", "find", "пошук", "знайти"],
+              run: () => openSearch(),
+            } satisfies PaletteCommand,
+          ]
+        : []),
       {
         id: "nav.hub",
         title: "Перейти на головну",
@@ -88,6 +111,22 @@ export function useDemoCommands(): void {
         group: "Навігація",
         keywords: ["fizruk", "тренування", "спорт"],
         run: () => navigate("/fizruk"),
+      },
+      {
+        id: "nav.routine",
+        title: "Відкрити РУТИНУ",
+        description: "Звички, серії днів, нагадування",
+        group: "Навігація",
+        keywords: ["routine", "звички", "рутина"],
+        run: () => navigate("/routine"),
+      },
+      {
+        id: "nav.nutrition",
+        title: "Відкрити ХАРЧУВАННЯ",
+        description: "Щоденник їжі, комора, план",
+        group: "Навігація",
+        keywords: ["nutrition", "їжа", "калорії", "харчування"],
+        run: () => navigate("/nutrition"),
       },
       {
         id: "settings.toggle-dark",
@@ -121,7 +160,7 @@ export function useDemoCommands(): void {
         },
       },
     ],
-    [isDark, navigate, signOutFromPalette, toggleDark],
+    [isDark, navigate, openSearch, signOutFromPalette, toggleDark],
   );
 
   useRegisterCommand("core.demo", commands);

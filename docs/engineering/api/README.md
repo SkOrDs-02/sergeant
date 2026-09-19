@@ -1,6 +1,6 @@
 # Sergeant API — OpenAPI-специфікація
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-17.
+> **Last touched:** 2026-09-17 by @claude (лічильники → вказівник на `openapi.json`, probe-и вже у spec'і, ingest знято). **Next review:** 2026-12-16.
 > **Status:** Active
 
 [`openapi.json`](./openapi.json) — згенерований OpenAPI 3.1 specification. Single source of truth — zod-схеми у [`packages/shared/src/schemas/api.ts`](../../../packages/shared/src/schemas/api.ts) + route-каталог у [`packages/shared/src/openapi/routes.ts`](../../../packages/shared/src/openapi/routes.ts). Автогенерований TS-клієнт (`packages/api-client/src/generated/`) виведено з експлуатації ponytail-аудитом (#679) разом зі скриптами генерації та звіркою `api:check-openapi-types`; типи `api-client` тепер пишуться вручну під контрактні тести (Hard Rule #3).
@@ -43,27 +43,33 @@ npx @redocly/cli preview-docs docs/engineering/api/openapi.json
 
 ## Що зараз покрито
 
-Поточний знімок (auto-перевірено через `node -e` над `openapi.json`): **47 операцій / 45 path-ів + 40 named-схем**. Базова Phase 1 (PR-4.D) починалася з 36 endpoint-ів + 26 schemas; з того часу додано mono-webhook, growth/marketing tables, governance audit, n8n failure events, AI memory і додаткові response-схеми. Реальні цифри живуть у [`docs/engineering/api/openapi.json`](./openapi.json) — оновлюються через `pnpm api:generate-openapi` (CI-гейт `pnpm api:check-openapi`). Якщо ці числа розходяться з фактом — спершу перегенеруй spec, потім онови цей абзац.
+Лічильники (операції / path-и / named-схеми) тут не дублюються — вони похідні й швидко старіють (знімок 2026-09-11 казав «47 операцій / 45 path-ів + 40 схем», на 2026-09-17 факт уже інший). Єдине джерело — [`docs/engineering/api/openapi.json`](./openapi.json), оновлюється через `pnpm api:generate-openapi` (CI-гейт `pnpm api:check-openapi`). Поточні числа зніми командою:
+
+```bash
+node -e 'const s=require("./docs/engineering/api/openapi.json");console.log(Object.keys(s.paths).length,"paths",Object.values(s.paths).reduce((a,b)=>a+Object.keys(b).length,0),"ops",Object.keys(s.components.schemas).length,"schemas")'
+```
+
+Базова Phase 1 (PR-4.D) починалася з 36 endpoint-ів + 26 schemas; з того часу додано mono-webhook, growth/marketing tables, governance audit, AI memory, billing/LiqPay, receipt-scan, sync v2 і додаткові response-схеми (n8n failure events — історія, n8n виведено з експлуатації [ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)).
 
 - **Request-схеми** — повне покриття для всіх endpoint-ів з `validateBody(...)`.
 - **Response-схеми** — точно описано: `MeResponse`, `PushSendSummary`, `PushTestResponse`, mono-webhook events, growth/marketing payloads. Решта endpoint-ів задокументована як generic `application/json` (Phase 2 додасть точні response-схеми для всіх).
 - **Auth**: `cookieAuth` (web — better-auth session cookie), `bearerAuth` (mobile — Expo bearer token).
 
-### Свідомо НЕ у spec'і (operational / probes)
+### Probe-и та operational endpoint-и
+
+Секція «Health / metrics» у `routes.ts` описує **три** канонічні operational path-и — `/livez`, `/readyz`, `/metrics` (до 2026-09-11 цей README казав, що вони свідомо поза spec'ом; це вже не так). Решта probe-ів лишається поза spec'ом навмисно:
 
 | Path                                                       | Чому                                                                             |
 | ---------------------------------------------------------- | -------------------------------------------------------------------------------- |
-| `/livez`, `/readyz`, `/startupz`, `/health`, `/healthz`    | Оркестратор/uptime probes (Coolify Traefik + external); не product API.          |
+| `/startupz`, `/health`, `/healthz`                         | Оркестратор/uptime probes (Coolify + external); дублюють `/livez` / `/readyz`.   |
 | `/health/liveness`, `/health/readiness`, `/health/startup` | Альтернативні шляхи тих самих probe-ів. Семантично дублюються з `*z`-варіантами. |
 | `/health/workers`                                          | Внутрішня діагностика воркерів. Не для клієнтів.                                 |
-| `/metrics`                                                 | Prom-scrape endpoint. Не JSON, не для клієнтів.                                  |
 
 ### Відомі прогалини (треба додати у `packages/shared/src/openapi/routes.ts` і перегенерувати spec)
 
-- `POST /api/ai-memory/ingest` — є у `apps/server/src/routes/ai-memory.ts:47`, нема у spec.
-- `GET /api/status` — є у `apps/server/src/routes/status.ts:15`, нема у spec (це product-facing status snapshot, не infra probe).
+- `GET /api/status` — є у `apps/server/src/routes/status.ts`, нема у spec (це product-facing status snapshot, не infra probe).
 
-Після того як ці три рядки додадуть у `routes.ts`, лічильники в абзаці вище треба пересипати.
+`POST /api/ai-memory/ingest`, що стояв тут раніше, знято разом із клієнт-driven ingestion (initiative 0024 PR-1, 2026-09) — прогалини більше немає, див. коментар у `apps/server/src/routes/ai-memory.ts`.
 
 ## Phase 3 — типізований клієнт (retired 2026-08-06)
 

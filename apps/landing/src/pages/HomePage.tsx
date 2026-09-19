@@ -11,6 +11,7 @@ import {
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "../lib/analytics";
 import { CONFIDENCE } from "../content/confidenceLevels";
+import { THREADS_URL } from "../lib/links";
 
 /**
  * Сценарії «живого звʼязку» в hero: скільки тренувань – стільки доставки.
@@ -131,7 +132,7 @@ function HeroCollage() {
           «{scenario.note}»
         </blockquote>
         <figcaption className="text-xs text-subtle">
-          записав Sergeant · {HERO_META} · ілюстративний приклад
+          ілюстративний приклад · записав Sergeant · {HERO_META}
         </figcaption>
       </figure>
     </div>
@@ -171,6 +172,9 @@ export default function HomePage() {
         name: "Sergeant",
         url: "/",
         logo: "/apple-touch-icon.png",
+        // Єдиний публічний профіль поза сайтом. Без sameAs модель бачить
+        // організацію лише за назвою, і «хто це робить» лишається без опори.
+        sameAs: [THREADS_URL],
       },
     },
   });
@@ -185,14 +189,20 @@ export default function HomePage() {
             без крику
           </h1>
           <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted">
-            Sergeant – приватний застосунок, що тримає гроші, тренування, звички
-            і їжу разом і показує, як вони тягнуть одне одного. Сержант на
-            твоєму боці: рахує, а не читає лекцій.
+            Гроші, тренування, звички і їжа в одному приватному застосунку.
+            Sergeant помічає, як тиждень без тренувань відгукується в доставці,
+            і мовчить, поки даних замало. Рахує, а не читає лекцій.
           </p>
           <div className="flex flex-col gap-2.5">
             <TelegramCta placement="hero" label="Стати в чергу" />
             <p className="text-sm text-subtle">
-              черга живе в Telegram · ядро безкоштовне назавжди
+              ядро безкоштовне назавжди · дані твої,{" "}
+              <a
+                href="/vyhid"
+                className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
+              >
+                забрати можна будь-коли
+              </a>
             </p>
           </div>
         </div>
@@ -202,18 +212,6 @@ export default function HomePage() {
 
       <ModulesSection />
       <ConnectionsSection />
-
-      <section className="mx-auto flex w-full max-w-6xl flex-wrap items-center gap-x-6 gap-y-3 px-5 pb-16 sm:px-8">
-        <a
-          href="/beta"
-          className="inline-flex min-h-12 items-center bg-foreground-strong px-8 py-4 font-display text-sm font-bold uppercase tracking-[0.08em] text-background transition hover:bg-ink-hi focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
-        >
-          Стати в чергу
-        </a>
-        <p className="text-sm text-subtle">
-          черга живе в Telegram · одне повідомлення, коли відкриється твоя хвиля
-        </p>
-      </section>
 
       <FounderSection />
       <StatusBridge />

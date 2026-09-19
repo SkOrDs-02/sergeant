@@ -2,7 +2,7 @@
 
 > **Category:** `blocker-invariant`
 > **Severity:** `blocker`
-> **Last touched:** 2026-09-13 by @claude. **Next review:** 2027-04-15.
+> **Last touched:** 2026-09-17 by @claude (прибрано застарілий діапазон номерів — джерело `ls apps/server/src/migrations`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #4. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -17,7 +17,7 @@
 
 ## Why / What is enforced
 
-Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (currently 001–127, sequential, no gaps; єдиний історичний дубль — `091`, див. § «Перейменування вже застосованої міграції»). Pre-deploy: Coolify `pre_deployment_command = node dist-server/migrate.js` (compiled from `apps/server/migrate.mjs`; requires `MIGRATE_DATABASE_URL`), per [ADR-0074](../../adr/0074-hosting-hetzner-coolify.md) — раніше це був Railway `[deploy].preDeployCommand`. Локально — `pnpm db:migrate`. The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
+Files in `apps/server/src/migrations/` use the pattern `NNN_description.sql` (sequential from `001`, no gaps — поточний максимум дивись через `ls apps/server/src/migrations | grep -v down | tail -1`, не в цьому файлі; єдиний історичний дубль — `091`, див. § «Перейменування вже застосованої міграції»). Pre-deploy: Coolify `pre_deployment_command = node dist-server/migrate.js` (compiled from `apps/server/migrate.mjs`; requires `MIGRATE_DATABASE_URL`), per [ADR-0074](../../adr/0074-hosting-hetzner-coolify.md) — раніше це був Railway `[deploy].preDeployCommand`. Локально — `pnpm db:migrate`. The build step copies them via `apps/server/build.mjs` (fixed in [#704](https://github.com/Skords-01/Sergeant/issues/704)).
 
 > **Local Postgres image:** `docker-compose.yml` uses `pgvector/pgvector:pg17`, not stock `postgres:17-alpine`. Migration `025_ai_memories_pgvector.sql` runs `CREATE EXTENSION IF NOT EXISTS vector;` and the alpine image does not ship the extension — `pnpm db:up` would fail at migrate-time. CI workflows (`ci.yml`, `extended-e2e.yml`, `db-backup-verify.yml`) already pin the same image.
 
@@ -34,7 +34,7 @@ UPDATE transactions SET amount_minor = (amount * 100)::BIGINT;
 ALTER TABLE transactions DROP COLUMN amount;
 ```
 
-Never drop a column in the same release as the code that stops writing to it — Railway pre-deploy migrates before the new app starts, so the old version (briefly serving traffic) will crash.
+Never drop a column in the same release as the code that stops writing to it — the Coolify pre-deploy command (historically Railway pre-deploy) migrates before the new app starts, so the old version (briefly serving traffic) will crash.
 
 A `down.sql` companion (e.g. `008_mono_integration.down.sql`) is for local rollbacks. Production never runs `down.sql`, but the file is still required: it documents how to revert the schema during incident recovery or local development.
 

@@ -1,8 +1,266 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-09-13",
+  "generated_at": "2026-09-17",
   "prs": [
+    {
+      "number": 100,
+      "title": "fix(web): аудит шуму, хвиля 3 — 12 виправлених дефектів",
+      "merged_at": "2026-09-17T09:24:23Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md"
+      ]
+    },
+    {
+      "number": 97,
+      "title": "feat(web): одна зупинка табуляції у смузі місяця, пульт Рутини лише зі звичками",
+      "merged_at": "2026-09-17T08:10:00Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md"
+      ]
+    },
+    {
+      "number": 96,
+      "title": "feat(web): аудит шуму й маршрутів + три виправлені дефекти",
+      "merged_at": "2026-09-17T07:08:18Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md"
+      ]
+    },
+    {
+      "number": 95,
+      "title": "fix(server): закрити знахідки аудиту серверного шару, БД і синку",
+      "merged_at": "2026-09-17T07:08:09Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/governance/adr/0016-user-deletion-and-pii-handling.md"
+      ]
+    },
+    {
+      "number": 91,
+      "title": "ci(ci): restore the daily cron on the docs brief workflow",
+      "merged_at": "2026-09-16T21:12:13Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/start/instructions/run-weekly-operator-digest.md",
+        "docs/work/specs/initiatives/0015-docs-automation-daily-ops.md"
+      ]
+    },
+    {
+      "number": 77,
+      "title": "ci(ci): run the TODO freshness gate as its own job instead of a step after the build",
+      "merged_at": "2026-09-16T19:31:32Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": ["docs/start/instructions/audit-ci-gates.md"]
+    },
+    {
+      "number": 70,
+      "title": "fix(root): treat a backticked dated TODO as a quote in the todo-freshness gate",
+      "merged_at": "2026-09-16T18:02:55Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-09-13-product-full-review.md"
+      ]
+    },
+    {
+      "number": 68,
+      "title": "test(web): e2e-приймання анонімної персистентності + закриття хендофу OPFS-регресії",
+      "merged_at": "2026-09-16T18:02:47Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-09-15-sqlite-opfs-regression.md"
+      ]
+    },
+    {
+      "number": 67,
+      "title": "feat(server): перецілити kill-switch пам'яті ШІ з finyk на digest (0024, PR-2)",
+      "merged_at": "2026-09-16T18:02:38Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md"
+      ]
+    },
+    {
+      "number": 69,
+      "title": "docs(docs): quote the expired 0589 todo as history so lint:todo-freshness stops firing",
+      "merged_at": "2026-09-16T15:28:06Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-08-05-orphaned-code-audit.md",
+        "docs/work/specs/audits/2026-09-13-product-full-review.md"
+      ]
+    },
+    {
+      "number": 61,
+      "title": "docs(docs): governance — прибрати застаріле з ADR-індексу, governance/ і security/",
+      "merged_at": "2026-09-16T12:34:41Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/governance/adr/0002-tool-lifecycle.md",
+        "docs/governance/adr/0045-hard-rules-taxonomy.md",
+        "docs/governance/adr/0063-expo-sdk-53-upgrade.md",
+        "docs/governance/governance/rules/20-no-openclaw-pats-in-production.md",
+        "docs/start/instructions/add-feature-flag.md",
+        "docs/start/instructions/cleanup-dead-code.md",
+        "docs/start/instructions/retire-feature-flag.md",
+        "docs/start/instructions/run-weekly-operator-digest.md"
+      ]
+    },
+    {
+      "number": 57,
+      "title": "fix(root): закрити знахідки наскрізного аудиту — валідація AI-шару, метрика конфліктів синку, браузерні дефекти",
+      "merged_at": "2026-09-16T07:35:15Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/start/instructions/audit-ci-gates.md",
+        "docs/start/instructions/cleanup-dead-code.md",
+        "docs/start/instructions/database-backup-restore.md",
+        "docs/start/instructions/deploy-config-change.md",
+        "docs/start/instructions/enable-silpo-integration.md",
+        "docs/start/instructions/fix-failing-ci.md",
+        "docs/start/instructions/fix-mobile-horizontal-overflow.md",
+        "docs/start/instructions/fix-red-bundle-budget.md",
+        "docs/start/instructions/migrate-client-storage.md",
+        "docs/start/instructions/onboard-external-api.md",
+        "docs/start/instructions/operational-continuity.md",
+        "docs/start/instructions/security-events.md",
+        "docs/start/instructions/unify-ui-to-canon.md",
+        "docs/start/instructions/verify-site-claims.md",
+        "docs/work/specs/initiatives/0024-ai-memory-source-coverage.md"
+      ]
+    },
+    {
+      "number": 51,
+      "title": "docs(agents): пʼять нових playbook-ів під повторювані поломки і ревізія наявних",
+      "merged_at": "2026-09-15T23:36:09Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/start/instructions/audit-ci-gates.md",
+        "docs/start/instructions/cleanup-dead-code.md",
+        "docs/start/instructions/database-backup-restore.md",
+        "docs/start/instructions/db-index-audit-template.md",
+        "docs/start/instructions/deploy-config-change.md",
+        "docs/start/instructions/enable-silpo-integration.md",
+        "docs/start/instructions/fix-failing-ci.md",
+        "docs/start/instructions/fix-red-bundle-budget.md",
+        "docs/start/instructions/migrate-client-storage.md",
+        "docs/start/instructions/onboard-external-api.md",
+        "docs/start/instructions/operational-continuity.md",
+        "docs/start/instructions/playbook-catalog.md",
+        "docs/start/instructions/security-events.md",
+        "docs/start/instructions/unify-ui-to-canon.md",
+        "docs/start/instructions/verify-site-claims.md"
+      ]
+    },
+    {
+      "number": 50,
+      "title": "fix(ci): повернути аудити в скоуп Hard Rule #26 і загейтити дрейф чотирьох копій",
+      "merged_at": "2026-09-15T23:22:53Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
+        "docs/start/instructions/fix-mobile-horizontal-overflow.md",
+        "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/audits/2026-09-15-sqlite-opfs-regression.md"
+      ]
+    },
+    {
+      "number": 52,
+      "title": "fix(web): звести поля дати й часу на спільні примітиви",
+      "merged_at": "2026-09-15T22:15:12Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/start/instructions/fix-mobile-horizontal-overflow.md"
+      ]
+    },
+    {
+      "number": 49,
+      "title": "feat(web): звести дату ручного запису Фініка до одного дефолту",
+      "merged_at": "2026-09-15T21:45:01Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/start/instructions/fix-mobile-horizontal-overflow.md",
+        "docs/start/instructions/playbook-catalog.md"
+      ]
+    },
+    {
+      "number": 45,
+      "title": "refactor(web): закрити PR-C10 — іконки-близнюки, розміри на токени, обовʼязковий підпис діалогу",
+      "merged_at": "2026-09-15T20:50:40Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-09-13-product-full-review.md"
+      ]
+    },
+    {
+      "number": 43,
+      "title": "refactor(web): домігрувати C-секцію — дати на іменовані формати, фокус-кільце на один рівень",
+      "merged_at": "2026-09-15T19:44:33Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-09-13-product-full-review.md"
+      ]
+    },
+    {
+      "number": 39,
+      "title": "fix(web): уніфікація кнопок Рутини, канон «Скасувати»/«Зберегти» і перезамір аудиту",
+      "merged_at": "2026-09-15T12:43:21Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": ["docs/work/specs/audits/unification-modules.md"]
+    },
+    {
+      "number": 32,
+      "title": "chore(mobile): видалити 15 мертвих файлів, які оголив звужений knip",
+      "merged_at": "2026-09-15T09:05:56Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-09-13-product-full-review.md"
+      ]
+    },
+    {
+      "number": 31,
+      "title": "fix(root): гейт порядку middleware і knip, що нарешті бачить мобайл",
+      "merged_at": "2026-09-15T08:28:40Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-09-13-product-full-review.md"
+      ]
+    },
+    {
+      "number": 29,
+      "title": "fix(root): актуалізувати наскрізний огляд 2026-09-13 і закрити чотири його хвости",
+      "merged_at": "2026-09-15T07:48:00Z",
+      "author": "@zaebal-beep",
+      "repo": "zaebal-beep/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-09-13-product-full-review.md",
+        "docs/work/specs/audits/product-knowledge-fizruk.md"
+      ]
+    },
     {
       "number": 1134,
       "title": "ci(root): повернути apps/mobile у CI і формалізувати web-first паузу окремим ADR",

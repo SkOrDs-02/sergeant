@@ -1,6 +1,11 @@
 // @vitest-environment jsdom
 import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
 import {
+  __setFizrukSqliteCacheForTests,
+  clearFizrukSqliteCache,
+  type CachedDailyLogEntry,
+} from "../../../../modules/fizruk/lib/sqliteReader";
+import {
   buildDailySeries,
   computePairwiseCorrelations,
   formatDailySeries,
@@ -18,6 +23,21 @@ function series(
     (_, i) => `2026-01-${String(i + 1).padStart(2, "0")}`,
   );
   return { from: days[0]!, to: days[n - 1]!, days, raw, metrics };
+}
+
+/** Журнал у SQLite-кеші (не LS — ключ tombstoned): дефолти для полів, яких тест не задає. */
+function seedJournal(
+  rows: Array<Partial<CachedDailyLogEntry> & { at: string }>,
+): CachedDailyLogEntry[] {
+  return rows.map((row, i) => ({
+    id: row.id ?? `dl_seed_${i}`,
+    weightKg: null,
+    sleepHours: null,
+    energyLevel: null,
+    moodScore: null,
+    note: "",
+    ...row,
+  }));
 }
 
 describe("computePairwiseCorrelations", () => {
@@ -107,6 +127,7 @@ describe("formatDailySeries — fill semantics", () => {
 describe("getDailySeries — executor", () => {
   beforeEach(async () => {
     localStorage.clear();
+    clearFizrukSqliteCache();
     const { clearFinykMonoMirrorCache } =
       await import("../../../../modules/finyk/lib/monoMirrorReader");
     clearFinykMonoMirrorCache();
@@ -115,6 +136,7 @@ describe("getDailySeries — executor", () => {
   });
   afterEach(async () => {
     localStorage.clear();
+    clearFizrukSqliteCache();
     const { clearFinykMonoMirrorCache } =
       await import("../../../../modules/finyk/lib/monoMirrorReader");
     clearFinykMonoMirrorCache();
@@ -291,13 +313,12 @@ describe("buildDailySeries — структурні нулі", () => {
   });
 
   it("weight: пропуск лишається пропуском — це не «важив 0 кг»", () => {
-    localStorage.setItem(
-      "fizruk_daily_log_v1",
-      JSON.stringify([
+    __setFizrukSqliteCacheForTests({
+      dailyLog: seedJournal([
         { at: "2026-04-19T09:00:00.000Z", weightKg: 80 },
         { at: "2026-04-21T09:00:00.000Z", weightKg: 79 },
       ]),
-    );
+    });
     const s = buildDailySeries(["weight"], {
       from: "2026-04-19",
       to: "2026-04-22",
@@ -327,15 +348,14 @@ describe("buildDailySeries — структурні нулі", () => {
 
   it("нулі входять У статистику: пара набирає спільні дні, яких без них не було", async () => {
     await seedDailyHabit(["2026-04-19", "2026-04-21"]);
-    localStorage.setItem(
-      "fizruk_daily_log_v1",
-      JSON.stringify([
+    __setFizrukSqliteCacheForTests({
+      dailyLog: seedJournal([
         { at: "2026-04-19T09:00:00.000Z", moodScore: 5 },
         { at: "2026-04-20T09:00:00.000Z", moodScore: 2 },
         { at: "2026-04-21T09:00:00.000Z", moodScore: 5 },
         { at: "2026-04-22T09:00:00.000Z", moodScore: 2 },
       ]),
-    );
+    });
     const s = buildDailySeries(["habit_rate", "wellbeing"], {
       from: "2026-04-19",
       to: "2026-04-22",

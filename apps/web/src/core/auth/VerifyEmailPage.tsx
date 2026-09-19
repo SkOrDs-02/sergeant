@@ -20,7 +20,7 @@ import { refreshSessionCookieCache } from "./authClient";
  * `@better-auth/core/error`; сюди реально доїжджають лише ці чотири.
  *
  * Свій мапер, а не `translateAuthError`: там `USER_NOT_FOUND` мапиться на
- * «Невірний email або пароль» — правильно для форми входу і безглуздо для
+ * «Неправильний email або пароль» — правильно для форми входу і безглуздо для
  * кліку з листа.
  */
 const ERROR_COPY: Readonly<Record<string, string>> = {

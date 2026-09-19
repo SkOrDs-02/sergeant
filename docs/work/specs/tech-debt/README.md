@@ -1,9 +1,16 @@
 # Технічний борг
 
-> **Last validated:** 2026-07-20 by @cursoragent (post-waves docs sync). **Next review:** 2026-11-12.
+> **Last validated:** 2026-09-17 by @claude (звірка реєстрів із HEAD). **Next review:** 2026-12-16.
 > **Status:** Active — legacy compatibility-реєстри: `backend.md` / `frontend.md` / `mobile.md` / `tech-debt-assessment-2026-07-01.md`. Нові борги оформлюються як спеки; локальний `archive/` не розширюється.
 
 > **Оновлено 2026-07-20 (post-waves).** Після reconcile [#345](https://github.com/SkOrDs-02/Sergeant/pull/345) агентські хвилі закрили: ManualExpenseSheet [#348](https://github.com/SkOrDs-02/Sergeant/pull/348), TxRow [#350](https://github.com/SkOrDs-02/Sergeant/pull/350), mobile exhaustive-deps catalog [#349](https://github.com/SkOrDs-02/Sergeant/pull/349), Privat body scrub [#347](https://github.com/SkOrDs-02/Sergeant/pull/347), storage-key WHY [#351](https://github.com/SkOrDs-02/Sergeant/pull/351), NotificationsSection Phase 6 [#352](https://github.com/SkOrDs-02/Sergeant/pull/352), non-null burndown [#353](https://github.com/SkOrDs-02/Sergeant/pull/353). Живі реєстри синхронізовано з `main`. Blocked — нижче § «Blocked простими словами».
+
+> **Оновлено 2026-09-17 (звірка реєстрів із HEAD).** Прохід по всіх відкритих пунктах чотирьох реєстрів. Два процесні наслідки, які стосуються саме цього файлу:
+>
+> 1. **Два blocked-пункти не мали канонічного токена, тож grep-рецепт нижче їх не бачив.** Обидва описували блок словами і обидва отримали токен цим проходом: `routine_streaks` rename (`backend.md` § Routine — `owner-decision`: ім'я PG-таблиці + ім'я SQLite-таблиці у ВЖЕ встановлених клієнтах + wire-protocol ключ increment-опів, тобто потрібен координований web+mobile rollout з EAS-лагом) і mobile 12px-floor (`frontend.md` п.8 — `owner-decision`: спершу семантична шкала для NativeWind). Урок: «пункт пояснює свій блок абзацом» ≠ «пункт знайдеться grep-ом».
+> 2. **Числа в § C нижче застаріли.** Переміряно на HEAD: production-`eslint-disable` — **219** (записано 158), а трійка by-design правил — `prefer-kyiv-time` **49** + `no-raw-storage-key` **15** + `no-cyrillic-jsx-literal` **9** = **73** (записано 6 + 11 + 6). Висновок § C не змінюється (більшість disables by-design, «звести до нуля» — погана ціль), але обґрунтування мусить спиратись на справжню цифру.
+>
+> Повні таблиці «було → факт» — у шапках [`frontend.md`](./frontend.md), [`backend.md`](./backend.md), [`mobile.md`](./mobile.md) і [`tech-debt-assessment-2026-07-01.md`](./tech-debt-assessment-2026-07-01.md).
 
 Living-реєстри технічного боргу.
 
@@ -125,6 +132,22 @@ grep -rn "Blocked-reason" docs/work/specs/tech-debt/
 - **Що треба:** окремий PR: додати `expo-print`, згенерувати PDF, зберегти interim HTML path як fallback.
 - **Варіанти:** лишити HTML share; додати print лише коли PDF стане продуктовою вимогою.
 
+### 10. Перейменування `routine_streaks` → `routine_completion_counter`
+
+- **У чому суть:** таблиця називається «стріки», а всередині — net-лічильник кліків «відмітив/зняв» по всіх звичках разом. Документаційну фазу закрито 2026-07-24 (`COMMENT ON TABLE` у міграції `084`, JSDoc у `packages/db-schema`), сам rename — ні.
+- **Який блок:** `owner-decision`. Рядок `routine_streaks` — одночасно ім'я PG-таблиці, ім'я SQLite-таблиці всередині **вже встановлених** web/mobile-клієнтів і wire-protocol ключ increment-опів з outbox. Two-phase DROP за Hard Rule #4 цього класу змін не покриває.
+- **Що треба:** координований web+mobile rollout з app-store лагом (EAS) — тобто рішення власника, а не міграція.
+- **Варіанти:** лишити ім'я і жити з коментарями (поточний стан); перейменувати під час найближчого мажорного клієнтського релізу; або звузити скоуп до PG-таблиці й лишити wire-ключ як є (сумісність ціною розбіжності імен).
+- **Токен додано 2026-09-17** — доти пункт описував блок абзацом, але `grep -rn "Blocked-reason"` його не знаходив.
+
+### 11. Mobile 12px-floor і семантична шкала типографіки
+
+- **У чому суть:** `apps/mobile/src` дає **154** порушення 12px-floor (17 `text-2xs` + 137 `text-[<12px]`) при **нулі** вживань `.text-style-*`. Web-гейт `scripts/check-design-conventions.mjs` на mobile не розширюють не тому, що порушень багато, а тому, що **мігрувати немає куди**: у NativeWind-пресеті немає ролей, еквівалентних web-івським.
+- **Який блок:** `owner-decision` — які саме ролі й розміри має мати mobile-шкала.
+- **Що треба:** (1) шкала, (2) burndown 154 сайтів, (3) `apps/mobile/src` у `SCAN_DIRS`. Саме в цьому порядку.
+- **Варіанти:** портувати вісім web-ролей один-до-одного; зробити вужчий mobile-набір; лишити як є, поки mobile на паузі ([ADR-0094](../../../governance/adr/0094-mobile-web-first-freeze.md)).
+- **Токен додано 2026-09-17** — з тієї ж причини, що й у п.10.
+
 ### Soft / не blocked, але великі (не плутати з Blocked)
 
 Ці три пункти **можна робити в коді будь-коли** — немає секрету Apple, немає «чекай Expo 53». Вони великі або довгі, тому їх не плутають з P1 і не ганяють агентами «на швидку».
@@ -157,12 +180,12 @@ grep -rn "Blocked-reason" docs/work/specs/tech-debt/
 
 #### C. Подальший burndown `!` і `eslint-disable`
 
-- **У чому суть простими словами:** у коді лишаються місця, де TypeScript «обманюють» знаком `!` («я знаю, що тут не null») або рядок `eslint-disable…` вимикає правило на один рядок/файл. Перша хвиля вже прибрала очевидне без WHY ([#353](https://github.com/SkOrDs-02/Sergeant/pull/353)) і дописала WHY на storage-key ([#351](https://github.com/SkOrDs-02/Sergeant/pull/351)). **Залишок** — багато таких рядків (~195 production `eslint-disable` по монорепо); більшість **навмисні** (час Kyiv, сирий storage у легасі). **Переміряно 2026-08-07: 158**, не ~195. NB: `no-eyebrow-drift` як приклад більше не валідний — такого правила в плагіні немає (ретайрнуте ADR-0081), і жодного `eslint-disable` на нього в коді не лишилось.
+- **У чому суть простими словами:** у коді лишаються місця, де TypeScript «обманюють» знаком `!` («я знаю, що тут не null») або рядок `eslint-disable…` вимикає правило на один рядок/файл. Перша хвиля вже прибрала очевидне без WHY ([#353](https://github.com/SkOrDs-02/Sergeant/pull/353)) і дописала WHY на storage-key ([#351](https://github.com/SkOrDs-02/Sergeant/pull/351)). **Залишок** — багато таких рядків (~195 production `eslint-disable` по монорепо); більшість **навмисні** (час Kyiv, сирий storage у легасі). **Переміряно 2026-08-07: 158**, не ~195. **Переміряно 2026-09-17: 219** (web 176 / server 25 / mobile 18) — за шість тижнів +61, тобто напрямок руху протилежний до записаного «зрізали ще ~37». NB: `no-eyebrow-drift` як приклад більше не валідний — такого правила в плагіні немає (ретайрнуте ADR-0081), і жодного `eslint-disable` на нього в коді не лишилось.
 - **Чому ціль «звести до нуля» погана:** багато disables — правильні й документовані. Ганяти «прибери всі» зламає легасі або додасть гірший код.
 - **Чому не blocked / чому «велике»:** робити можна завжди, але це **довга серія дрібних PR**, не один епік. Краще opportunistic: зайшов у файл через фічу → прибрав 1–2 `!` поруч.
 - **Що ще має сенс чіпати:**
   1. `!` / `no-non-null-assertion` без WHY → `if` / `?.` / early return.
   2. Security-pass / FS / restricted-syntax disables без коментаря → виправити або WHY одним рядком.
-  3. **Не чіпати** by-design disables з каталогом / Hard Rule (`prefer-kyiv-time`, `no-raw-storage-key`, `no-cyrillic-jsx-literal` — це рівно ті три `sergeant-design`-правила, що реально глушаться в коді: 6 + 11 + 6 рядків).
+  3. **Не чіпати** by-design disables з каталогом / Hard Rule (`prefer-kyiv-time`, `no-raw-storage-key`, `no-cyrillic-jsx-literal` — це рівно ті три `sergeant-design`-правила, що реально глушаться в коді: ~~6 + 11 + 6 рядків~~ **переміряно 2026-09-17: 49 + 15 + 9 = 73 рядки**, тобто саме вони і дають третину всього залишку).
 - **Варіанти:** (а) окремий «lint hygiene» PR раз на місяць; (б) тільки разом із фічами в тих файлах; (в) лишити як є після хвиль — P1 уже знято.
 - **Де в реєстрі:** assessment Група 3; `frontend.md` next steps п.3.

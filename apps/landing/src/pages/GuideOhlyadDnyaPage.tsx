@@ -3,6 +3,7 @@ import GuideHomeModule from "../components/GuideHomeModule";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import UpdatedOn from "../components/UpdatedOn";
 import TelegramCta from "../components/TelegramCta";
+import { AUTHOR_NAME, AUTHOR_JSON_LD } from "../content/author";
 
 /**
  * Гайд пояснює перегляд, не механіку: календар Рутини лише показує
@@ -18,13 +19,13 @@ const SOURCES = [
   },
   {
     title: "Планові платежі Фініка",
-    body: "Майбутні списання за підписками з Фініка – ті, для яких у модулі задана регулярність.",
+    body: "Майбутні списання за підписками з Фініка, для яких у модулі задана регулярність.",
   },
 ];
 
 const LIMITS = [
-  "Календар не редагує чужі дані, окрім одного: тренування дня можна запланувати не виходячи з Рутини – відкриється аркуш Фізрука. Решту тренування міняють у Фізруку, платіж – тільки у Фініку.",
-  "Тумблер вимикає показ у календарі Рутини, а не саму подію – тренування чи платіж нікуди не зникають зі свого модуля.",
+  "Календар не редагує чужі дані, окрім одного: тренування дня можна запланувати не виходячи з Рутини, відкриється аркуш Фізрука. Решту тренування міняють у Фізруку, платіж тільки у Фініку.",
+  "Тумблер вимикає лише показ у календарі Рутини: тренування чи платіж нікуди не зникають зі свого модуля.",
 ];
 
 export default function GuideOhlyadDnyaPage() {
@@ -36,7 +37,7 @@ export default function GuideOhlyadDnyaPage() {
       name: "Як бачити тренування і планові платежі поруч зі звичками",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/ohlyad-dnya"].lastmod,
-      author: { "@type": "Person", name: "Автор Sergeant" },
+      author: AUTHOR_JSON_LD,
       publisher: { "@type": "Organization", name: "Sergeant" },
     },
   });
@@ -56,8 +57,8 @@ export default function GuideOhlyadDnyaPage() {
           </h1>
           <p className="mt-4 text-sm text-subtle">
             Оновлено{" "}
-            <UpdatedOn iso={ROUTE_META["/guides/ohlyad-dnya"].lastmod} /> ·
-            автор Sergeant
+            <UpdatedOn iso={ROUTE_META["/guides/ohlyad-dnya"].lastmod} /> ·{" "}
+            {AUTHOR_NAME}
           </p>
           <GuideHomeModule href="/zvychky" label="Звички" />
         </div>
@@ -70,8 +71,8 @@ export default function GuideOhlyadDnyaPage() {
             Календар модуля Звички показує не лише звички: поряд із ними в
             місячній сітці й у стрічці дня зʼявляються заплановані тренування з
             Фізрука і планові платежі підписок з Фініка. Обидва джерела можна
-            окремо вимкнути в налаштуваннях – це саме перегляд, зміни вносяться
-            у своєму модулі.
+            окремо вимкнути в налаштуваннях. Це перегляд: зміни вносяться у
+            своєму модулі.
           </p>
         </div>
 
@@ -112,7 +113,7 @@ export default function GuideOhlyadDnyaPage() {
               </h3>
               <p className="mt-1.5 text-sm leading-relaxed text-muted">
                 Чип «Фізрук» лишає в стрічці тільки тренування, чип «Підписки
-                Фініка» – тільки платежі. Обидва вимикаються так само, як тег чи
+                Фініка» тільки платежі. Обидва вимикаються так само, як тег чи
                 категорія.
               </p>
             </li>
@@ -147,9 +148,9 @@ export default function GuideOhlyadDnyaPage() {
             ))}
           </ul>
           <p className="mt-5 leading-relaxed text-muted">
-            Натискання на картку тренування чи платежу відкриває деталі в своєму
-            модулі – Фізруку або Фініку. Календар Рутини туди лише веде, сам
-            нічого не зберігає.
+            Натискання на картку тренування чи платежу відкриває деталі у
+            Фізруку або Фініку. Календар Рутини туди лише веде, сам нічого не
+            зберігає.
           </p>
         </section>
 

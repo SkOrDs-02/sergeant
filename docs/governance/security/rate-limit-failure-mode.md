@@ -1,7 +1,7 @@
 # Rate-limit failure mode
 
 > **Status:** Active
-> **Last touched:** 2026-05-13 by Devin. **Next review:** 2027-07-17.
+> **Last touched:** 2026-09-17 by @claude (limit 20 → 5 via `AUTH_RATE_LIMIT_MAX`, Railway → Coolify, config moved to `config/rateLimit.ts`). **Next review:** 2026-12-16.
 
 ## TL;DR
 
@@ -18,7 +18,7 @@ Both transitions are recorded on the `rate_limit_degraded_total{key,mode}` Prome
 
 ## Why fail-closed for `/api/auth/*`
 
-The current sensitive-auth limit is **20 hits / 60 s**. On a 3-replica Railway deploy, an in-memory fallback means each replica counts independently → effective `60 hits / 60 s`. For credential-stuffing or password-reset abuse this is a 3× acceleration that lasts as long as Redis stays down.
+The current sensitive-auth limit is **5 hits / 60 s per IP** (`AUTH_RATE_LIMIT_MAX` / `AUTH_RATE_LIMIT_WINDOW_SEC` in `apps/server/src/env/env.ts`; lowered from 20 by [`better-auth-audit-2026-05.md`](./better-auth-audit-2026-05.md) F3), plus a per-account bucket on top. On an `N`-replica deploy, an in-memory fallback means each replica counts independently → effective `N × 5 hits / 60 s`. For credential-stuffing or password-reset abuse this is an `N×` acceleration that lasts as long as Redis stays down. (The original 2026-05 wording assumed a 3-replica Railway deploy; Railway is retired and the API now runs on one Hetzner VPS under Coolify — [ADR-0074](../adr/0074-hosting-hetzner-coolify.md). The fail-closed stance stays regardless of the current replica count, because a horizontal scale-out must not silently re-open the window.)
 
 Fail-closed is the canonical OWASP ASVS 2.2.1 stance:
 
@@ -40,13 +40,20 @@ Public read APIs (`/api/health`, `/api/env`, food/barcode lookups, AI quota chec
 RATE_LIMIT_FAIL_CLOSED_AUTH=true
 ```
 
-The flag is wired in `apps/server/src/http/authMiddleware.ts`:
+The limit itself lives in `apps/server/src/config/rateLimit.ts` (`AUTH_SENSITIVE_RATE_LIMIT`, `failMode: "closed"` as the safe default); the kill-switch is applied in `apps/server/src/http/authMiddleware.ts`:
 
 ```ts
-rateLimitExpress({
+// config/rateLimit.ts
+export const AUTH_SENSITIVE_RATE_LIMIT: RateLimitOptions = {
   key: "api:auth:sensitive",
-  limit: 20,
-  windowMs: 60_000,
+  limit: env.AUTH_RATE_LIMIT_MAX, // default 5
+  windowMs: env.AUTH_RATE_LIMIT_WINDOW_SEC * 1000, // default 60 s
+  failMode: "closed",
+};
+
+// http/authMiddleware.ts
+rateLimitExpress({
+  ...AUTH_SENSITIVE_RATE_LIMIT,
   failMode: env.RATE_LIMIT_FAIL_CLOSED_AUTH ? "closed" : "open",
 })(req, res, next);
 ```

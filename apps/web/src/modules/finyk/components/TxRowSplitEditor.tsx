@@ -154,7 +154,7 @@ export function TxRowSplitEditor({
                 >
                   <Icon
                     name={CATEGORY_ICON_MAP[category.id] ?? "tag"}
-                    size={16}
+                    size="md"
                     aria-hidden
                   />
                   {stripLeadingEmoji(category.label)}
@@ -179,7 +179,7 @@ export function TxRowSplitEditor({
               }
               className="text-danger-strong dark:text-danger hover:text-danger shrink-0"
             >
-              <Icon name="trash" size={14} aria-hidden />
+              <Icon name="trash" size="sm" aria-hidden />
             </button>
           )}
         </div>
@@ -216,8 +216,9 @@ export function TxRowSplitEditor({
       </button>
       <div className="flex gap-2 pt-1">
         <Button
-          variant="primary"
-          module="finyk"
+          variant="solid"
+          tone="finyk"
+
           size="xs"
           onClick={onSave}
           disabled={Math.abs(remaining) >= 0.01}
@@ -239,7 +240,7 @@ export function TxRowSplitEditor({
           onClick={onClose}
           className="py-2 px-3 rounded-xl border border-line text-subtle hover:text-text transition-colors"
         >
-          <Icon name="close" size={14} aria-hidden />
+          <Icon name="close" size="sm" aria-hidden />
         </button>
       </div>
     </div>

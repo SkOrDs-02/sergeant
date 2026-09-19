@@ -286,7 +286,7 @@ export function usePrivatbank(enabled = true) {
       const err = e as { name?: string; message?: string };
       if (err.name === "AuthError") {
         setError(
-          "Невірні credentials PrivatBank. Перевір Merchant ID та токен.",
+          "Неправильні credentials PrivatBank. Перевір Merchant ID та токен.",
         );
         setSyncState((s) => ({
           ...s,
@@ -386,12 +386,12 @@ export function usePrivatbank(enabled = true) {
       const err = e as { name?: string; message?: string };
       if (err.name === "AuthError") {
         setError(
-          "Невірні credentials PrivatBank. Перевір Merchant ID та токен.",
+          "Неправильні credentials PrivatBank. Перевір Merchant ID та токен.",
         );
       } else if (isApiError(e) && e.kind === "http") {
         setError(
           e.status === 401 || e.status === 403
-            ? "Невірні credentials PrivatBank. Перевір Merchant ID та токен."
+            ? "Неправильні credentials PrivatBank. Перевір Merchant ID та токен."
             : e.serverMessage || `Помилка ${e.status}`,
         );
       } else {

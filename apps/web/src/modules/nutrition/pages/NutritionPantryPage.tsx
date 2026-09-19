@@ -147,6 +147,7 @@ export function NutritionPantryPage({
             onClearChecked={shopping.clearChecked}
             onClearAll={shopping.clearAll}
             onAddCheckedToPantry={addCheckedItemsToPantry}
+            onAddItem={shopping.addItem}
             checkedItems={shopping.checkedItems}
           />
         )}
