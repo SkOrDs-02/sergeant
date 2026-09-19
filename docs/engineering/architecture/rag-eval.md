@@ -120,7 +120,7 @@ Distribution по 8 доменах. **Ці домени — власний, ЗА
 б `id` документів (`id = "<source>:<sourceRef>"`) і зробило б кешовані
 ембеддинги (`__fixtures__/rag-eval/embeddings-v1.*`) непридатними без
 платного перегенерування. Живий INSERT у testcontainers-тестах
-(`cachedRecall.ragEval.test.ts`, `scripts/ragEvalLive.ts`) пише реальний
+(`cachedRecall.ragEval.test.ts`, `apps/server/src/scripts/ragEvalLive.ts`) пише реальний
 `source: "digest"` і `sourceRef: doc.id` незалежно від цього домену — CHECK
 у БД про фікстурний словник нічого не знає:
 
