@@ -22,7 +22,11 @@ vi.mock("../lib/sqliteReadGate", () => ({
   notifyFizrukSqliteCacheRefresh: () => notifyMock(),
 }));
 
-import { useFizrukSqliteReadBoot } from "./useFizrukSqliteReadBoot";
+import { logger } from "@shared/lib";
+import {
+  useFizrukSqliteReadBoot,
+  isFizrukReadBootInFlight,
+} from "./useFizrukSqliteReadBoot";
 
 beforeEach(() => {
   vi.clearAllMocks();
@@ -52,7 +56,15 @@ describe("useFizrukSqliteReadBoot", () => {
     expect(bootMock).toHaveBeenCalledTimes(1);
   });
 
-  it("does not notify when boot returns false", async () => {
+  // Контракт ІНВЕРТОВАНО 2026-09-14, і це навмисно. Тест раніше вимагав
+  // «не повідомляти, коли бут повернув false» — тобто мовчати саме тоді,
+  // коли щось пішло не так. Поки на сигнал підписувались лише споживачі
+  // кешу, мовчання було правильним: оновлювати нічого. Але скелетон
+  // дашборда Фізрука тепер тримається на «бут у польоті», і без сигналу
+  // про невдачу людина лишалась би дивитись на нього до перезавантаження
+  // (знахідка PR-Z9, домір 2026-09-14). Ціна інверсії — один зайвий
+  // ре-рендер споживачів на порожньому кеші.
+  it("повідомляє НАВІТЬ коли бут повернув false — інакше скелетон вічний", async () => {
     useAuthMock.mockReturnValue({ user: { id: "u2" } });
     bootMock.mockResolvedValue(false);
 
@@ -60,6 +72,32 @@ describe("useFizrukSqliteReadBoot", () => {
     await waitFor(() => {
       expect(bootMock).toHaveBeenCalledWith("u2");
     });
-    expect(notifyMock).not.toHaveBeenCalled();
+    await waitFor(() => {
+      expect(notifyMock).toHaveBeenCalled();
+    });
+  });
+
+  it("політ завершується і при провалі бута", async () => {
+    // Парний до попереднього і важливіший за нього: саме цей прапорець
+    // гасить скелетон. Якби `settle()` стояв у `.then()` замість
+    // `.finally()`, відхилення промісу лишило б його піднятим назавжди.
+    useAuthMock.mockReturnValue({ user: { id: "u3" } });
+    bootMock.mockRejectedValue(new Error("sqlite недоступний"));
+    // Стежимо за `logger.warn`, а не за `console.warn`: логер у проді йде
+    // в breadcrumb і консолі не торкається взагалі, тож перевірка через
+    // консоль пінила б лише dev-гілку транспорту.
+    const warn = vi.spyOn(logger, "warn").mockImplementation(() => {});
+
+    renderHook(() => useFizrukSqliteReadBoot());
+    await waitFor(() => {
+      expect(isFizrukReadBootInFlight()).toBe(false);
+    });
+
+    // І відхилення має бути ОПРАЦЬОВАНЕ, а не просто пережите: `.finally`
+    // його не гасить, тож без `catch` браузер отримував би
+    // `unhandledrejection` (і подію в Sentry) на кожному провалі бута.
+    // Цей рядок падав би, хоч прапорець і скидався правильно.
+    expect(warn).toHaveBeenCalled();
+    warn.mockRestore();
   });
 });

@@ -194,8 +194,8 @@ vi.mock("../components/dashboard/PrBadge", () => ({
 // ── Imports under test ───────────────────────────────────────────────────────
 import React from "react";
 import { Dashboard } from "./Dashboard";
-import { useAuth } from "../../../core/auth/AuthContext";
 import { useWorkouts } from "../hooks/useWorkouts";
+import { __setFizrukReadBootInFlightForTests } from "../hooks/useFizrukSqliteReadBoot";
 import { useWorkoutTemplates } from "../hooks/useWorkoutTemplates";
 import { useRestDayOverdueInsight } from "../hooks/useRestDayOverdueInsight";
 import { usePrPendingInsight } from "../hooks/usePrPendingInsight";
@@ -216,6 +216,9 @@ const defaultProps = {
 afterEach(() => {
   cleanup();
   vi.clearAllMocks();
+  // Прапорець польоту — модульний, тож без скидання він протік би в
+  // наступну специфікацію і намалював би скелетон там, де його не чекають.
+  __setFizrukReadBootInFlightForTests(false);
 });
 
 beforeEach(() => {
@@ -228,10 +231,13 @@ afterEach(() => {
 });
 
 describe("Dashboard extended coverage", () => {
-  it("renders a loading skeleton when signed-in user data is not yet loaded", () => {
-    vi.mocked(useAuth).mockReturnValueOnce({ user: { id: "u1" } } as ReturnType<
-      typeof useAuth
-    >);
+  // Контракт змінено 2026-09-14 (PR-Z9): скелетон прив'язаний не до
+  // «залогінений і дані не приїхали», а до «бут ЗАРАЗ їх везе». Старий
+  // варіант не мав виходу, якщо бут упав або не стартував — розбір у
+  // застережному блоці всередині `useFizrukSqliteReadBoot`. Тому тести
+  // тепер позначають політ явно, замість підміняти його наявністю сесії.
+  it("малює скелетон, поки бут читання ще в польоті", () => {
+    __setFizrukReadBootInFlightForTests(true);
     vi.mocked(useWorkouts).mockReturnValueOnce({
       workouts: [],
       loaded: false,
@@ -247,10 +253,8 @@ describe("Dashboard extended coverage", () => {
     expect(screen.queryByTestId("hero-card")).not.toBeInTheDocument();
   });
 
-  it("renders skeleton when templates are still loading for signed-in user", () => {
-    vi.mocked(useAuth).mockReturnValueOnce({ user: { id: "u1" } } as ReturnType<
-      typeof useAuth
-    >);
+  it("малює скелетон, поки шаблони ще вантажаться, а бут у польоті", () => {
+    __setFizrukReadBootInFlightForTests(true);
     vi.mocked(useWorkoutTemplates).mockReturnValueOnce({
       templates: [],
       loaded: false,
@@ -644,10 +648,16 @@ describe("Dashboard — navigation callbacks", () => {
     expect(mockNavigate).toHaveBeenCalledWith("workouts");
   });
 
-  it("calls onNavigate('workouts') via openTemplates (hero-open-templates)", () => {
+  it("веде на КАНОНІЧНИЙ маршрут шаблонів, а не на 'workouts' із прапорцем", () => {
+    // PR-Z8. Раніше цей шлях писав `fizruk_workouts_mode=templates` у
+    // sessionStorage і навігував на `workouts`: на екрані були «Шаблони»,
+    // а в адресі — `/fizruk/workouts`. Наслідки бачила людина, не код:
+    // браузерне «назад» виходило з модуля, а перезавантаження давало інший
+    // екран, бо прапорець споживався на читанні.
     render(<Dashboard {...defaultProps} />);
     fireEvent.click(screen.getByTestId("hero-open-templates"));
-    expect(mockNavigate).toHaveBeenCalledWith("workouts");
+    expect(mockNavigate).toHaveBeenCalledWith("templates");
+    expect(mockNavigate).not.toHaveBeenCalledWith("workouts");
   });
 });
 

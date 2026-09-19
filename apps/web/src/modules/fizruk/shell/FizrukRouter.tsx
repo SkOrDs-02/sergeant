@@ -91,6 +91,7 @@ export interface FizrukRouterProps {
    * deep-link without reaching into `window.location.hash`.
    */
   onNavigate: (target: FizrukPage | string) => void;
+  onQuickStart: () => void;
   onStartProgramWorkout: (
     session: ProgramSessionDef,
     program: TrainingProgramDef,
@@ -114,6 +115,7 @@ function renderPage(props: FizrukRouterProps) {
     quickStartRequest,
     onNavigate,
     onStartProgramWorkout,
+    onQuickStart,
     onOpenModule,
   } = props;
   switch (page) {
@@ -124,6 +126,7 @@ function renderPage(props: FizrukRouterProps) {
           activeProgram={activeProgram}
           todaySession={todaySession}
           onStartProgramWorkout={onStartProgramWorkout}
+          onQuickStart={onQuickStart}
           onNavigate={onNavigate}
         />
       );

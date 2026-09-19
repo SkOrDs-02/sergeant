@@ -103,6 +103,7 @@ function baseProps(over: Partial<FizrukRouterProps> = {}): FizrukRouterProps {
     todaySession: null,
     onNavigate: vi.fn(),
     onStartProgramWorkout: vi.fn(),
+    onQuickStart: vi.fn(),
     onOpenModule: undefined,
     ...over,
   };
