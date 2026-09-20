@@ -57,7 +57,7 @@ export function CrossModuleLinkRow(props: CrossModuleLinkCardProps) {
         "w-full rounded-2xl border border-line bg-panel px-4 py-3 text-left",
         // `panel-hi` — зареєстрований токен «трохи піднятої» панелі
         // (`tailwind-preset.js` → `panelHi`). `panel-hover` у токенах немає.
-        "transition-colors hover:bg-panel-hi",
+        "transition-colors hover:bg-panelHi",
         "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-accent",
       )}
     >

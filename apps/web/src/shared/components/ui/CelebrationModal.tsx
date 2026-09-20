@@ -321,7 +321,7 @@ export const CelebrationModal = memo(function CelebrationModal({
 
     return (
       <div className="w-full max-w-[200px] mx-auto">
-        <div className="h-3 bg-panel-hi rounded-full overflow-hidden">
+        <div className="h-3 bg-panelHi rounded-full overflow-hidden">
           <div
             className={cn(
               "h-full rounded-full transition-all duration-slowest ease-standard",
@@ -351,7 +351,7 @@ export const CelebrationModal = memo(function CelebrationModal({
             key={idx}
             className={cn(
               "flex items-center gap-1.5 px-3 py-1.5 rounded-full",
-              "bg-panel-hi border border-line",
+              "bg-panelHi border border-line",
               "animate-module-card",
             )}
             style={{ animationDelay: `${idx * 100 + 200}ms` }}
