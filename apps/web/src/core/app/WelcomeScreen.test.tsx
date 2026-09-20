@@ -141,6 +141,27 @@ describe("WelcomeScreen — handlePicksComplete side-effects", () => {
     markOnboardingCompletedFiredMock.mockClear();
   });
 
+  it("превʼю дашборда не показує жодного вигаданого числа", () => {
+    // Знахідка ради скептиків § G: картки малювали `−320 ₴`, `5 трен.`,
+    // `7 днів`, `420 ккал`, а підпис «Це приклад» мав `hidden sm:flex` —
+    // тобто на телефоні, основній платформі, новачок бачив чужі числа
+    // без жодної ознаки, що вони несправжні.
+    const { container } = render(
+      <WelcomeScreen onDone={() => {}} onOpenAuth={() => {}} />,
+    );
+
+    const backdrop = container.querySelector('[role="presentation"]');
+    expect(backdrop).not.toBeNull();
+    const text = backdrop!.textContent ?? "";
+
+    // Валюта, калорії, тренування, дні — усе, що читається як показник.
+    expect(text).not.toMatch(/\d+\s*(₴|ккал|трен|дн)/i);
+    // Узагалі жодної цифри: форму дашборда тримають скелетон-риски.
+    expect(text).not.toMatch(/\d/);
+    // А отже й дисклеймер більше не потрібен — нічого не вдає за дані.
+    expect(text).not.toContain("Це приклад");
+  });
+
   it("seeds the first-action timer and pending gate on submit", () => {
     const onDone = vi.fn();
     render(<WelcomeScreen onDone={onDone} onOpenAuth={() => {}} />);
