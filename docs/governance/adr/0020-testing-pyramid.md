@@ -164,7 +164,7 @@ thresholds: {
 
 Drop coverage нижче floor-у → CI-job `coverage` fail-ить. Нижчий floor — окремий PR з обгрунтуванням (зазвичай — велика legacy-частина переміщена з web → packages).
 
-`scripts/strict-coverage.mjs` (PR-6.F, [#872](https://github.com/Skords-01/Sergeant/pull/872)) додатково публікує `$GITHUB_STEP_SUMMARY` із coverage % per package — для visualization у PR.
+`scripts/strict-coverage.mjs` <!-- removed --> (PR-6.F, [#872](https://github.com/Skords-01/Sergeant/pull/872)) свого часу додатково публікував `$GITHUB_STEP_SUMMARY` із coverage % per package. Джоба зникла раніше, скрипт прибрано 2026-09-19.
 
 ### Consequences
 
@@ -226,7 +226,6 @@ accepted.
 - ✅ Playwright a11y (`apps/web/playwright.config.ts`).
 - ✅ Playwright smoke (`apps/web/playwright.smoke.config.ts`).
 - ✅ ESLint-plugin тести через `node --test` (`packages/eslint-plugin-sergeant-design/__tests__/*.test.mjs`).
-- ✅ `scripts/strict-coverage.mjs` для $GITHUB_STEP_SUMMARY.
 - ✅ AGENTS.md module ownership map → "Test stack" колонка.
 - ⏳ Flaky-test triage (`PR-7.E`) — 3 mobile тести.
 - ⏳ Weekly flaky-tests dashboard (`PR-7.D`) — пropose в audit doc.

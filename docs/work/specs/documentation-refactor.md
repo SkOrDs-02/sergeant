@@ -1,6 +1,6 @@
 # SPEC: Рефакторинг системи документації
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-10.
+> **Last touched:** 2026-09-20 by @Skords-01. **Next review:** 2027-01-01.
 > **Status:** Closed
 
 ## Проблема
@@ -55,7 +55,7 @@
 - `pnpm docs:check-inventory` — 705 matrix entries, 701 baseline-файл,
   0 target collisions;
 - `pnpm docs:check-links` — 11 021 внутрішнє посилання, 0 broken;
-- `pnpm docs:check-paths` і `pnpm docs:check-repair-links` — 0 pending rewrite;
+- `pnpm docs:check-paths` і `pnpm docs:check-repair-links` <!-- removed --> — 0 pending rewrite (скрипти переїзду доків видалено 2026-09-20, робота завершена);
 - `pnpm lint:specs` — 26 спек і 22 shape-тести пройшли;
 - freshness coverage — усі tracked Markdown мають header, 558 файлів мають
   рівно один marker;

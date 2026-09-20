@@ -43,7 +43,6 @@ export * from "./reducers.js";
 // паралельно зі старим станом; читачів (fold) у цій стадії немає.
 export * from "./completionEvents.js";
 export * from "./foldCompletionEvents.js";
-export * from "./reducersWithEvents.js";
 export * from "./calendarEvents.js";
 export * from "./calendarGrid.js";
 export * from "./reminders.js";

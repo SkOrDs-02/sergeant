@@ -2042,9 +2042,9 @@ undefined-guard. Без `!` non-null assertions.
 має entries для `apps/web` та `apps/server` з `expires: 2026-09-30`.
 Гайд блокує будь-який нерегламентований regress override.
 
-[`scripts/strict-coverage.mjs`](../../../../scripts/strict-coverage.mjs)
-розширено: новий column `noUncheckedIndexedAccess` + summary `Phase 6a:
-N / 13 packages` у markdown-output (видно у `$GITHUB_STEP_SUMMARY`).
+`scripts/strict-coverage.mjs` <!-- removed --> тоді розширили: новий column
+`noUncheckedIndexedAccess` + summary `Phase 6a: N / 13 packages`. Скрипт
+прибрано 2026-09-19 - див. пункт 12 нижче.
 
 **Per-module rollout план (решта PR-ів — 2 апи):**
 
@@ -2086,20 +2086,15 @@ apps/web + apps/server) і фіксить помилки. Guard заблокує
 
 ### 12. Strict TS coverage tracking (CI)
 
-**Скрипт:** [`scripts/strict-coverage.mjs`](../../../../scripts/strict-coverage.mjs) —
-сканує всі `tsconfig.json` у `apps/*/` та `packages/*/`, резолвить `extends`
-ланцюги, виводить markdown-таблицю з прапорами `strict`, `strictNullChecks`,
-`noImplicitAny`, `noUncheckedIndexedAccess`, `allowJs` для кожного пакету
+**Закрито 2026-09-19 видаленням.** `scripts/strict-coverage.mjs` <!-- removed --> сканував усі
+`tsconfig.json` у `apps/*/` і `packages/*/` та друкував markdown-таблицю прапорів
+у `$GITHUB_STEP_SUMMARY`. Джоба `strict-coverage` у `.github/workflows/ci.yml`
+зникла раніше цього запису, тож скрипт лишився ручним звітом без жодного
+виклику - ні в CI, ні в `pnpm lint`, ні в хуках.
 
-- summary-row `Phase 6a: N / 13 packages have noUncheckedIndexedAccess: true`.
-
-**CI:** job `strict-coverage` у `.github/workflows/ci.yml` — інформативний
-(не блокує CI), пише результат у `$GITHUB_STEP_SUMMARY`. Видно на вкладці
-Summary кожного workflow run.
-
-**Локально:** `pnpm strict:coverage` або `node scripts/strict-coverage.mjs --json`.
-
-**Тести:** `node --test scripts/__tests__/strict-coverage.test.mjs`.
+Предмета звіту теж більше немає: усі фази 6a-6f закриті на 12 / 12 пакетів, а
+regress ловить `tools/tsconfig-guard/check.mjs` (блокуючий, у ланцюжку `pnpm lint`).
+Скрипт, тест і аліас `pnpm strict:coverage` прибрані.
 
 Ref: PR-6.F (sergeant-audit-devin.md).
 

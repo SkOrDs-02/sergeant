@@ -29,7 +29,7 @@
 
 CI запускає `node tools/tsconfig-guard/check.mjs` (через `pnpm lint`). Будь-який неавторизований override ламає білд. Allowlist-entries без активної ініціативи — скоро `expires`, після чого CI знов падає.
 
-**Coverage tracking.** [`scripts/strict-coverage.mjs`](../../../../scripts/strict-coverage.mjs) пише markdown-таблицю в `$GITHUB_STEP_SUMMARY` з per-flag-coverage статистикою (12 / 12 = 100% — мета). Status: усі 10 strict-family прапорів = 12 / 12 = 100% (residual `apps/web` для `exactOptionalPropertyTypes` / `noPropertyAccessFromIndexSignature` знятий; `allowlist.json` = `[]`).
+**Coverage tracking.** Окремого скрипта більше немає: `scripts/strict-coverage.mjs` <!-- removed --> прибрано 2026-09-19 разом із CI-джобою, яка його друкувала, - вона зникла раніше, і скрипт лишався ручним звітом, який ніхто не запускав. Покриття тепер стереже сам `tsconfig-guard` (падає на неавторизованому override), а не звіт поруч із ним. Status: усі 10 strict-family прапорів = 12 / 12 = 100% (residual `apps/web` для `exactOptionalPropertyTypes` / `noPropertyAccessFromIndexSignature` знятий; `allowlist.json` = `[]`).
 
 **Що блокує:**
 

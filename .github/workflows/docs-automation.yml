@@ -325,7 +325,6 @@ jobs:
             scripts/docs/__tests__/check-freshness.test.mjs \
             scripts/docs/__tests__/check-freshness-single-marker.test.mjs \
             scripts/docs/__tests__/freshness-config.test.mjs \
-            scripts/docs/__tests__/restamp-next-review.test.mjs \
             scripts/docs/__tests__/bump-last-validated-integration.test.mjs \
             scripts/docs/__tests__/check-playbook-3way-sync.test.mjs \
             scripts/docs/__tests__/freshness-stamp.test.mjs \

@@ -48,8 +48,9 @@ fallback, `<50 KB` cap. Інтегровано в `sergeant-start-here` як §0
 bumper `scripts/ci-bump-harness-version.mjs`
 з auto-detect `patch`/`minor`/`major` за diff від `origin/main`,
 weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix
-`[main, experimental/loop-detect]` (прибрано ADR-0082 §4; A/B-прогони ручні). Bench-step активний: `pnpm harness:bench`
-проти `docs/start/agents/harness-golden-tasks.json` (12 tasks).
+`[main, experimental/loop-detect]` (прибрано ADR-0082 §4; A/B-прогони ручні). Bench-step
+знято 2026-09-19 разом зі скриптом `scripts/harness-bench.mjs` <!-- removed -->: після прибирання
+workflow його не викликав ніхто, а ручного прогону не було жодного.
 
 **Entropy Janitors (PR #74, ADR-0070; retired ADR-0081).** Історичний workspace-wrapper і weekly issue workflow прибрано. Сигнали запускаються напряму через Knip, docs checks і ESLint `import/no-cycle`; доменний `pnpm check:dualwrite-residue` лишився standalone.
 
@@ -80,10 +81,10 @@ weekly A/B workflow `.github/workflows/harness-a-b.yml` з matrix
 ### ✅ Закрито (harness follow-ups 2026-07-20)
 
 - **Golden-task suite для A/B harness benchmark.** `docs/start/agents/harness-golden-tasks.json`
-  (schemaVersion 1, 12 tasks) + `scripts/harness-bench.mjs` + `pnpm harness:bench`.
-  `.github/workflows/harness-a-b.yml` bench-step тепер активний (без `if: false`),
-  weekly schedule Sun 00:00 UTC додано (workflow згодом прибрано ADR-0082 §4;
-  `pnpm harness:bench` лишається ручним). Тести: `scripts/__tests__/harness-bench.test.mjs`.
+  (schemaVersion 1, 12 tasks) + `scripts/harness-bench.mjs` <!-- removed --> + `pnpm harness:bench`.
+  `.github/workflows/harness-a-b.yml` bench-step тоді став активний (без `if: false`),
+  weekly schedule Sun 00:00 UTC додано. Workflow прибрано ADR-0082 §4, а скрипт,
+  npm-аліас і його тест — 2026-09-19: ручний режим, який ніхто не запускав.
 - **`lint:harness-version-freshness` janitor.** `scripts/check-harness-version-freshness.mjs`
   - `pnpm lint:harness-version-freshness` wired в aggregate `pnpm lint`.
     Перевіряє: schemaVersion=1, current у versions map, releasedAt присутній,

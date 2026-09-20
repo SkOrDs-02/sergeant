@@ -88,16 +88,21 @@ const SKIP_DIR_PREFIXES = ["dist-"];
 const CODE_EXT = /\.(?:tsx?|jsx?|mjs|cjs)$/;
 
 /**
+ * Repo-відносний шлях завжди через `/`, бо на Windows `relative()` дає `\`.
+ * Без цього `SKIP_FILES.has()` нижче не збігався ЖОДНОГО разу на Windows:
+ * ключі записані через `/`, а порівнювалося з `scripts\docs\…`. Наслідок -
+ * список винятків мовчки не діяв, і гейт видавав фальшиві «мертві
+ * посилання» на чистому дереві.
+ */
+const relPosix = (p) => relative(ROOT, p).split(sep).join("/");
+
+/**
  * Файли, де `docs/…md` — дані, а не покажчик (розбір — у шапці).
  *
  * Рядок сюди додають РАЗОМ із причиною: без неї список стає тихим способом
  * сховати мертвий покажчик замість того, щоб його полагодити.
  */
 const SKIP_FILES = new Map([
-  [
-    "scripts/docs/rewrite-documentation-paths.mjs",
-    "таблиця переїзду доків: ліва колонка — історична назва за визначенням",
-  ],
   [
     "scripts/docs/generate-documentation-inventory.mjs",
     "`finalPathFor()` резолвить історичні шляхи в чинні — ті самі пари",
@@ -165,7 +170,7 @@ function walk(dir, out = []) {
     }
     if (!CODE_EXT.test(entry)) continue;
     if (full.includes(FIXTURE_DIR)) continue;
-    if (SKIP_FILES.has(relative(ROOT, full))) continue;
+    if (SKIP_FILES.has(relPosix(full))) continue;
     out.push(full);
   }
   return out;
@@ -184,7 +189,7 @@ for (const file of walk(ROOT)) {
   const scannable = src.replace(PINNED_BLOB_URL, "");
   for (const ref of new Set(scannable.match(DOC_REF) ?? [])) {
     if (!byPath.has(ref)) byPath.set(ref, new Set());
-    byPath.get(ref).add(relative(ROOT, file));
+    byPath.get(ref).add(relPosix(file));
   }
 }
 

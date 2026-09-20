@@ -67,13 +67,9 @@ artifacts/
 .agents/snapshot.cache.json
 
 # Pre-commit timing log (P1-5 from 2026-05-13-testing-devx-roast.md).
-# Local dev signal only — never a CI gate. Aggregate via
-# `pnpm pre-commit:timings`.
+# Local dev signal only — never a CI gate. Читається руками: агрегатор
+# і мок-ранер прибрано 2026-09-19 як скрипти, яких ніхто не запускав.
 .husky/.pre-commit-timings.log
-
-# Mock-runner workspace for `pnpm precommit:bench` (D-1 follow-up).
-# Created/cleaned by `scripts/precommit-bench.mjs`. Never committed.
-.husky/.bench-tmp/
 
 # Claude Code agent worktrees (temporary, auto-cleaned)
 .claude/worktrees/

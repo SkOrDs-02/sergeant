@@ -31,8 +31,6 @@ const envSchema = z.object({
 
   TRUST_PROXY: z.string().optional(),
 
-  HOST: stringWithDefault("0.0.0.0"),
-
   REQUEST_TIMEOUT_MS: intFromEnv(120_000),
 
   COMPRESSION_ENABLED: boolFromEnv(true),
@@ -137,10 +135,6 @@ const envSchema = z.object({
 
   CHAT_RESPONSE_CACHE_MAX_ENTRIES: intFromEnv(500),
 
-  AI_TIMEOUT_MS: intFromEnv(180_000),
-
-  AI_MAX_RETRIES: intFromEnv(2),
-
   CHAT_MAX_TEXT_CONTINUATIONS: intFromEnv(3),
 
   AI_CIRCUIT_BREAKER_THRESHOLD: intFromEnv(5),
@@ -166,8 +160,6 @@ const envSchema = z.object({
     .enum(["true", "false", "1", "0", ""])
     .default("false")
     .transform((v) => v === "true" || v === "1"),
-
-  AI_DAILY_USER_LIMIT: coerceInt.nonnegative().optional(),
 
   // `AI_DAILY_ANON_LIMIT` прибрано: анонімної гілки квоти більше немає —
   // `/api/chat` та решта AI-роутів стоять за `requireSession()` (A1,
@@ -477,8 +469,6 @@ const envSchema = z.object({
 
   WEBHOOK_HMAC_TS_TOLERANCE_SEC: intFromEnv(300),
 
-  MONO_TOKEN: stringWithDefault(""),
-
   /**
    * Персональний токен ДПС (Електронний кабінет → «Токени публічної
    * частини») для `GET /ws/api_public/rro/chkAll` — чек-скан v1, QR/ДПС-шлях
@@ -488,10 +478,6 @@ const envSchema = z.object({
    * людським повідомленням; vision-шлях (`/analyze`) від цього не залежить.
    */
   DPS_API_TOKEN: stringWithDefault(""),
-
-  RATE_LIMIT_MAX: intFromEnv(100),
-
-  RATE_LIMIT_WINDOW_SEC: intFromEnv(60),
 
   AUTH_RATE_LIMIT_MAX: intFromEnv(5),
 
@@ -506,8 +492,6 @@ const envSchema = z.object({
   AUTH_ACCOUNT_RATE_LIMIT_MAX: intFromEnv(10),
 
   AUTH_ACCOUNT_RATE_LIMIT_WINDOW_SEC: intFromEnv(900),
-
-  RATE_LIMIT_IP_MAX: intFromEnv(200),
 
   SYNC_AUDIT_ADMIN_USER_IDS: stringWithDefault(""),
 
