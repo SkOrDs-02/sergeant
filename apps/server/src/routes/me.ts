@@ -65,6 +65,13 @@ function toIsoOrNull(value: Date | string | undefined): string | null {
  * але обрізаний до публічних полів — не повертаємо internal timestamps
  * чи id сесії.
  */
+/**
+ * `user.id` тих, чий експорт зараз збирається. Живе на модулі, а не в
+ * замиканні роутера: роутер створюється один раз на процес, тож різниці
+ * в поведінці немає, зате стан видно тестам.
+ */
+const exportsInFlight = new Set<string>();
+
 export function createMeRouter(): Router {
   const r = Router();
   r.use("/api/me", setModule("me"));
@@ -104,10 +111,31 @@ export function createMeRouter(): Router {
       const user = serializeMeUser(
         (req as Request & { user: AuthedUser }).user,
       );
-      const payload = MeExportResponseSchema.parse(
-        await buildMeExport(pool, user),
-      );
-      res.json(payload);
+      // Один активний експорт на людину, поверх годинного лімітера вище.
+      // Відколи файл віддає всі таблиці чотирьох модулів без `LIMIT`, два
+      // паралельні виклики того самого акаунта тримають два повні набори
+      // рядків у памʼяті процесу одночасно — а це найважчий запит у
+      // застосунку.
+      //
+      // ponytail: замок у памʼяті процесу, тобто на один інстанс. Якщо
+      // бекенд колись поїде в кілька реплік, це місце міняється на
+      // `pg_try_advisory_lock` по `user.id` — семантика та сама.
+      if (exportsInFlight.has(user.id)) {
+        res.status(409).json({
+          error: "export_in_flight",
+          message: "Твій експорт уже готується. Дочекайся файлу і спробуй ще.",
+        });
+        return;
+      }
+      exportsInFlight.add(user.id);
+      try {
+        const payload = MeExportResponseSchema.parse(
+          await buildMeExport(pool, user),
+        );
+        res.json(payload);
+      } finally {
+        exportsInFlight.delete(user.id);
+      }
     },
   );
 

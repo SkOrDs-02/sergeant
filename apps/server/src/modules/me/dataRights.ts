@@ -84,32 +84,6 @@ function rowArray(
   return rows.map((row) => ({ ...row }));
 }
 
-/**
- * Рядок `ai_usage_daily` для GDPR-експорту.
- *
- * Чому окремий серіалізатор, а не спільний `rowArray`. Глобальний парсер
- * `lib/pgInt8.ts` знімає Hard Rule #1 лише з `int8` (OID 20) — NUMERIC
- * (OID 1700) він не покриває, і навмисно: NUMERIC у Postgres має ширшу
- * точність, ніж JS `number`, тож мовчазна коерсія ВСІХ таких колонок
- * непомітно псувала б суми. Наслідок для цього експорту був дрібний на
- * вигляд і незручний на практиці: `request_count` приїжджав числом, а
- * сусідній `est_cost_usd` — РЯДКОМ, у тому самому обʼєкті.
- *
- * `est_cost_usd` — це `NUMERIC(12,6)`, тобто щонайбільше $1M із шістьма
- * знаками після коми; така величина вміщується в `number` із запасом, і
- * коерсія тут безпечна саме тому, що межа відома з CHECK-констрейнта
- * (`migrations/059_ai_usage_daily_est_cost_usd.sql`), а не «зазвичай мале».
- */
-function serializeAiUsageDailyRow(
-  row: Record<string, unknown>,
-): Record<string, unknown> {
-  const cost = row["est_cost_usd"];
-  return {
-    ...row,
-    est_cost_usd: cost === null || cost === undefined ? cost : Number(cost),
-  };
-}
-
 function serializePreferences(
   row: Record<string, unknown> | undefined,
 ): UserPreferences {
@@ -255,6 +229,154 @@ export async function upsertUserPreferences(
   return serializePreferences(result.rows[0]);
 }
 
+/**
+ * Таблиці чотирьох продуктових модулів, які їдуть в експорт.
+ *
+ * AI-CONTEXT: до 2026-09-20 експорт про них не знав узагалі — віддавав
+ * `moduleData: []` від таблиці `module_data`, дропнутої міграцією 046, і
+ * людина забирала файл без жодного свого запису з модулів (рада скептиків
+ * § A, спека `docs/work/specs/honest-export-and-first-screen.md`).
+ *
+ * Список статичний, а не `information_schema`-скан, навмисно: експорт —
+ * найчутливіший файл у продукті, і те, що в нього потрапляє, має читатись
+ * очима в ревʼю. Гейт від дрейфу — тест `dataRights.test.ts`
+ * («перелік таблиць збігається з живими міграціями»).
+ *
+ * Мертві таблиці сюди не входять: `routine_pushups` знято міграцією 139,
+ * `fizruk_pushups` — 140 (історія віджимань конвертована у звичайні
+ * `fizruk_workouts`, щоб не мати трьох джерел однієї цифри).
+ */
+export const MODULE_EXPORT_TABLES = {
+  finyk: [
+    "finyk_assets",
+    "finyk_budgets",
+    "finyk_custom_categories",
+    "finyk_debts",
+    "finyk_hidden_accounts",
+    "finyk_hidden_transactions",
+    "finyk_manual_expenses",
+    "finyk_mono_debt_links",
+    "finyk_networth_history",
+    "finyk_prefs",
+    "finyk_receivables",
+    "finyk_subscriptions",
+    "finyk_tx_categories",
+    "finyk_tx_filters",
+    "finyk_tx_splits",
+  ],
+  fizruk: [
+    "fizruk_custom_activities",
+    "fizruk_custom_exercises",
+    "fizruk_daily_log",
+    "fizruk_injuries",
+    "fizruk_measurements",
+    "fizruk_monthly_plan",
+    "fizruk_plan_templates",
+    "fizruk_programs",
+    "fizruk_wellbeing",
+    "fizruk_workout_items",
+    "fizruk_workout_sets",
+    "fizruk_workout_templates",
+    "fizruk_workouts",
+  ],
+  nutrition: [
+    "nutrition_goal_periods",
+    "nutrition_meals",
+    "nutrition_pantries",
+    "nutrition_pantry_events",
+    "nutrition_pantry_items",
+    "nutrition_prefs",
+    "nutrition_recipes",
+    "nutrition_shopping_list",
+    "nutrition_water_log",
+  ],
+  routine: [
+    "routine_categories",
+    "routine_completion_events",
+    "routine_completion_notes",
+    "routine_entries",
+    "routine_habit_order",
+    "routine_habit_skips",
+    "routine_habits",
+    "routine_prefs",
+    "routine_streaks",
+    "routine_tags",
+  ],
+} as const satisfies Record<string, readonly string[]>;
+
+export type ExportModuleId = keyof typeof MODULE_EXPORT_TABLES;
+
+/**
+ * `finyk_tx_receipt_links` — єдина модульна таблиця без власного
+ * `user_id`: вона привʼязана до `receipts(id)`, і людина в ній визначена
+ * через чек (міграція 121). Тому окремий запит із join, а не спільний
+ * шлях нижче.
+ */
+const FINYK_RECEIPT_LINKS_SQL = `SELECT l.*
+     FROM finyk_tx_receipt_links l
+     JOIN receipts r ON r.id = l.receipt_id
+    WHERE r.user_id = $1`;
+
+/**
+ * Що НЕ їде в експорт і чому. Секція публічна всередині файлу навмисно:
+ * людина має бачити межу того, що забрала, а не здогадуватись про неї
+ * (рішення власника, spec-інтервʼю 2026-09-20, раунд 3).
+ */
+const EXPORT_EXCLUSIONS: ReadonlyArray<{
+  group: string;
+  tables: readonly string[];
+  reason: string;
+}> = [
+  {
+    group: "syncLog",
+    tables: ["sync_op_log", "sync_audit_log"],
+    reason:
+      "Технічний журнал синхронізації між пристроями, не твої записи: та сама зміна лежить у власній таблиці модуля.",
+  },
+  {
+    group: "nutritionBackups",
+    tables: ["nutrition_backups"],
+    reason:
+      "Знімки стану модуля харчування, а не первинні записи: страви, комора й вода їдуть у секції nutrition.",
+  },
+  {
+    group: "aiMemories",
+    tables: ["ai_memories"],
+    reason:
+      "Памʼять асистента. Переглянути й стерти її можна в налаштуваннях, у розділі «Згода та дані».",
+  },
+  {
+    group: "aiUsage",
+    tables: ["ai_usage_daily"],
+    reason:
+      "Службовий лічильник звернень до моделі й вартості, не дані про тебе.",
+  },
+];
+
+async function fetchModuleTables(
+  db: Queryable,
+  userId: string,
+  tables: readonly string[],
+): Promise<Record<string, Record<string, unknown>[]>> {
+  const allowed = new Set<string>(Object.values(MODULE_EXPORT_TABLES).flat());
+  const results = await Promise.all(
+    tables.map(async (table) => {
+      // Другий рубіж під інтерполяцією нижче: якщо список колись почне
+      // приходити не з константи, запит не піде взагалі.
+      if (!allowed.has(table)) {
+        throw new Error(`export: таблиця «${table}» не в allowlist-і`);
+      }
+      // eslint-disable-next-line no-restricted-syntax -- інтерполюється ЛИШЕ імʼя таблиці з замороженого `MODULE_EXPORT_TABLES` (перевірено рядком нижче); `userId` іде $-параметром. Той самий "allowlisted identifier" case, що alerts/store.ts.
+      const { rows } = await db.query<Record<string, unknown>>(
+        `SELECT * FROM ${table} WHERE user_id = $1`,
+        [userId],
+      );
+      return [table, rowArray(rows)] as const;
+    }),
+  );
+  return Object.fromEntries(results);
+}
+
 export async function buildMeExport(
   db: Queryable,
   user: MeResponse["user"],
@@ -264,6 +386,11 @@ export async function buildMeExport(
   // coach moved to coach_memory in migration 045). moduleData is kept in
   // the export schema for backward-compat with any client that expects the
   // key; it is always [] since the underlying table no longer exists.
+  //
+  // Справжні дані модулів їдуть у власних секціях `finyk` / `fizruk` /
+  // `nutrition` / `routine` нижче. Старий ключ навмисно НЕ наповнюється:
+  // споживач, який памʼятає його семантику (одна таблиця `module_data`),
+  // прочитав би новий вміст неправильно (рішення власника, раунд 3).
   const [
     preferences,
     monoConnection,
@@ -272,8 +399,11 @@ export async function buildMeExport(
     subscriptions,
     pushSubscriptions,
     pushDevices,
-    aiUsageDaily,
-    aiMemories,
+    finyk,
+    fizruk,
+    nutrition,
+    routine,
+    finykReceiptLinks,
   ] = await Promise.all([
     getUserPreferences(db, user.id),
     db.query<Record<string, unknown>>(
@@ -298,8 +428,7 @@ export async function buildMeExport(
               counter_edrpou, counter_iban, counter_name, raw, source, received_at
          FROM mono_transaction
         WHERE user_id = $1 AND deleted_at IS NULL
-        ORDER BY time DESC
-        LIMIT 5000`,
+        ORDER BY time DESC`,
       [user.id],
     ),
     db.query<Record<string, unknown>>(
@@ -324,28 +453,11 @@ export async function buildMeExport(
         ORDER BY updated_at DESC`,
       [user.id],
     ),
-    db.query<Record<string, unknown>>(
-      // `usage_day::text` — колонка типу DATE, і node-pg парсить її у JS
-      // `Date`, тобто в експорт вона лягала як `"2026-09-16T00:00:00.000Z"`:
-      // день перетворювався на мить, ще й у чужій таймзоні. День-ключ у
-      // цьому репо — рядок `YYYY-MM-DD`, тож беремо його з бази вже текстом,
-      // а не намагаємось відновити з `Date` на віддачі.
-      `SELECT usage_day::text AS usage_day, bucket, request_count,
-              est_cost_usd, deleted_at
-         FROM ai_usage_daily
-        WHERE subject_key = $1
-        ORDER BY usage_day DESC`,
-      [`u:${user.id}`],
-    ),
-    db.query<Record<string, unknown>>(
-      `SELECT id, source, source_ref, content, metadata, created_at,
-              updated_at, deleted_at
-         FROM ai_memories
-        WHERE user_id = $1
-        ORDER BY created_at DESC
-        LIMIT 5000`,
-      [user.id],
-    ),
+    fetchModuleTables(db, user.id, MODULE_EXPORT_TABLES.finyk),
+    fetchModuleTables(db, user.id, MODULE_EXPORT_TABLES.fizruk),
+    fetchModuleTables(db, user.id, MODULE_EXPORT_TABLES.nutrition),
+    fetchModuleTables(db, user.id, MODULE_EXPORT_TABLES.routine),
+    db.query<Record<string, unknown>>(FINYK_RECEIPT_LINKS_SQL, [user.id]),
   ]);
 
   return {
@@ -368,10 +480,17 @@ export async function buildMeExport(
         webSubscriptions: rowArray(pushSubscriptions.rows),
         devices: rowArray(pushDevices.rows),
       },
-      ai: {
-        usageDaily: aiUsageDaily.rows.map(serializeAiUsageDailyRow),
-        memories: rowArray(aiMemories.rows),
+      finyk: {
+        ...finyk,
+        finyk_tx_receipt_links: rowArray(finykReceiptLinks.rows),
       },
+      fizruk,
+      nutrition,
+      routine,
+      excluded: EXPORT_EXCLUSIONS.map((item) => ({
+        ...item,
+        tables: [...item.tables],
+      })),
     },
   };
 }
