@@ -1,6 +1,6 @@
 # SPEC: RLS на таблицях AI-шару + гейт крос-юзер ізоляції
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-05-03.
+> **Last touched:** 2026-09-20 by @Skords-01. **Next review:** 2027-05-12.
 > **Status:** Scaffolded
 
 <!-- Спека самодостатня: виконавець у свіжій сесії реалізує зміну, читаючи лише
@@ -244,7 +244,7 @@ allowlist із коментарем-причиною.
    можна злити окремо.
 3. **A4 bypass у фонових задачах і внутрішніх роутах.** Теж no-op без політик.
 4. **A1-A3 міграція з політиками.** Наступний вільний номер після
-   `134_fizruk_item_chosen_variant.sql` - перевір `ls apps/server/src/migrations/`
+   `144_ai_memories_prune_dead_sources.sql` - перевір `ls apps/server/src/migrations/`
    на момент роботи. Обов'язковий парний `.down.sql`, який знімає політики й
    вимикає RLS (Hard Rule #4).
 
