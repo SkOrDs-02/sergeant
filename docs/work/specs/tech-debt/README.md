@@ -23,6 +23,46 @@ Living-реєстри технічного боргу.
 | [`mobile.md`](./mobile.md)                                                   | Mobile (`apps/mobile` Expo + `apps/mobile-shell`) |
 | [`tech-debt-assessment-2026-07-01.md`](./tech-debt-assessment-2026-07-01.md) | Актуальний burndown / assessment                  |
 
+## Knip: чотири категорії заглушені, 130 знахідок за ними
+
+`knip.json` має `"exclude": ["exports", "types", "duplicates", "unresolved"]`,
+тож `pnpm knip` зелений не тому, що мертвого коду немає, а тому, що йому
+заборонено дивитися саме туди. Вимір 2026-09-20:
+
+```
+npx knip --no-progress --include exports,types
+```
+
+**104 мертві експорти + 26 типів.** Розподіл: `apps/mobile` 75, `apps/web` 31,
+`apps/server` 17, `packages/shared` 1.
+
+**Не вмикай категорії без попередньої чистки** - гейт стане червоним одразу,
+і повернеться стан «червоний завжди = вимкнений», яким уже обґрунтовано
+чотири ратчети бандл-бюджетів.
+
+**І не ріж за списком: він не механічний.** Перевірка всіх 17 server-знахідок
+дала щонайменше три роди false positive, кожен з яких виглядає як мертвий код:
+
+- **динамічний імпорт із деструктуризацією.** `DEFAULT_JUDGE_MODEL` і
+  `JUDGE_SYSTEM` живі через `const { … } = await import(…)` у
+  `apps/server/src/scripts/toolEvalJudge.ts:51`; knip такої форми не бачить;
+- **named export при default-імпорті.** `getRecentImportsHandler` числиться
+  невживаним, хоча `routes/finyk.ts:15` бере той самий символ як default;
+- **ре-експорт із барелю.** `CorpusDoc` і `GoldenQuery` виходять через
+  `lib/ragEval/index.ts`, тобто є публічним API модуля.
+
+Окремо: `StatementSourceKind` у коді справді мертвий, але на нього посилається
+коментар у `csvProfiles.ts:66` - різати треба разом із коментарем.
+
+75 знахідок у `apps/mobile` чіпати не варто, доки контур заморожений
+([ADR-0094](../../../governance/adr/0094-mobile-web-first-freeze.md)): код там
+названо активом, а чистка дає ризик без користі.
+
+Реалістичний скоуп однієї сесії - `apps/web` (31) або `apps/server` (17), з
+грепом кожного символу окремо. Спроба зрізати цілими файлами вже коштувала
+відкату: файл містив і мертві, і живі експорти (розбір - у git history цієї
+чистки, гілка `claude/ponytail-audit-cleanup`).
+
 ## Legacy archive
 
 Історичні оцінки доступні через immutable Git links нижче. Нові
