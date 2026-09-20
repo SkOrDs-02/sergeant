@@ -20,14 +20,22 @@ import request from "supertest";
  * `requireSession*` від нього і залежить.
  */
 
-const { getSessionUserMock, getFreshSessionUserMock } = vi.hoisted(() => ({
-  getSessionUserMock: vi.fn(),
-  getFreshSessionUserMock: vi.fn(),
-}));
+const { getSessionUserMock, getFreshSessionUserMock, deletionStatusMock } =
+  vi.hoisted(() => ({
+    getSessionUserMock: vi.fn(),
+    getFreshSessionUserMock: vi.fn(),
+    deletionStatusMock: vi.fn(),
+  }));
 
 vi.mock("../auth.js", () => ({
   getSessionUser: getSessionUserMock,
   getFreshSessionUser: getFreshSessionUserMock,
+}));
+
+// Гейт вікна видалення ходить у БД за міткою; сам пул тут не потрібен.
+vi.mock("../db.js", () => ({ pool: {} }));
+vi.mock("../modules/me/dataRights.js", () => ({
+  getAccountDeletionStatus: deletionStatusMock,
 }));
 
 import {
@@ -63,6 +71,9 @@ function makeApp(handler: express.RequestHandler) {
 beforeEach(() => {
   getSessionUserMock.mockReset();
   getFreshSessionUserMock.mockReset();
+  deletionStatusMock.mockReset();
+  // Дефолт для всіх наявних кейсів: акаунт активний, гейт прозорий.
+  deletionStatusMock.mockResolvedValue({ pending: false });
   __testingResetSoftFailureCounter();
 });
 
@@ -232,5 +243,85 @@ describe("M13: requireSessionSoft() ескалюється з 401 у 503 на pe
       expect(res.status).toBe(401);
       expect(res.body.code).toBe("UNAUTHORIZED");
     }
+  });
+});
+
+// ─── Гейт вікна видалення (спека user-deletion-grace-window, рішення 3) ──────
+//
+// Найнебезпечніший стан, названий у § Ризики спеки — позначений акаунт із
+// живим доступом: людина місяць вносила б дані в акаунт, який потім зникне
+// разом із ними. Тому дефолт закритий, а виняток точковий і явний.
+
+const PENDING = {
+  pending: true as const,
+  requestedAt: "2026-09-20T10:00:00.000Z",
+  scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+};
+
+describe("гейт вікна видалення", () => {
+  it("requireSession(): позначений акаунт → 403 account_pending_deletion із датою", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    deletionStatusMock.mockResolvedValue(PENDING);
+    const app = makeApp(requireSession());
+
+    const res = await request(app).get("/protected");
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("account_pending_deletion");
+    expect(res.body.scheduledPurgeAt).toBe(PENDING.scheduledPurgeAt);
+  });
+
+  it("requireSession(): активний акаунт проходить як і раніше", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    const app = makeApp(requireSession());
+
+    const res = await request(app).get("/protected");
+
+    expect(res.status).toBe(200);
+  });
+
+  it("allowPendingDeletion: true пропускає позначений акаунт (restore / deletion-status)", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    deletionStatusMock.mockResolvedValue(PENDING);
+    const app = makeApp(requireSession({ allowPendingDeletion: true }));
+
+    const res = await request(app).get("/protected");
+
+    expect(res.status).toBe(200);
+    // Роут із винятком не має навіть питати статус — він і так пускає.
+    expect(deletionStatusMock).not.toHaveBeenCalled();
+  });
+
+  it("requireFreshSession(): той самий гейт", async () => {
+    getFreshSessionUserMock.mockResolvedValue({ id: "u1" });
+    deletionStatusMock.mockResolvedValue(PENDING);
+    const app = makeApp(requireFreshSession());
+
+    const res = await request(app).get("/protected");
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("account_pending_deletion");
+  });
+
+  it("requireSessionSoft(): push-роути теж закриті, інакше це дірка в гейті", async () => {
+    getSessionUserMock.mockResolvedValue({ id: "u1" });
+    deletionStatusMock.mockResolvedValue(PENDING);
+    const app = makeApp(requireSessionSoft());
+
+    const res = await request(app).get("/protected");
+
+    expect(res.status).toBe(403);
+    expect(res.body.code).toBe("account_pending_deletion");
+  });
+
+  it("гейт не спрацьовує без сесії — 401 лишається 401", async () => {
+    getSessionUserMock.mockResolvedValue(null);
+    deletionStatusMock.mockResolvedValue(PENDING);
+    const app = makeApp(requireSession());
+
+    const res = await request(app).get("/protected");
+
+    expect(res.status).toBe(401);
+    expect(deletionStatusMock).not.toHaveBeenCalled();
   });
 });

@@ -22,7 +22,13 @@ const updateUserMock =
 const changePasswordMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
 const listSessionsMock = vi.fn<() => Promise<{ data: unknown[] }>>();
 const revokeSessionMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
-const deleteUserMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
+// DangerZoneSection тепер видаляє акаунт через `DELETE /api/me`
+// (`meApi.deleteAccount`), а не через Better Auth: лише власний роут уміє
+// 30-денне вікно на скасування.
+const deleteAccountMock = vi.fn<(d: unknown) => Promise<unknown>>();
+vi.mock("@shared/api", () => ({
+  meApi: { deleteAccount: (data: unknown) => deleteAccountMock(data) },
+}));
 const signOutMock = vi.fn<() => Promise<void>>();
 const sendVerificationEmailMock =
   vi.fn<(d: unknown) => Promise<{ error: null }>>();
@@ -32,7 +38,11 @@ updateUserMock.mockResolvedValue({ error: null });
 changePasswordMock.mockResolvedValue({ error: null });
 listSessionsMock.mockResolvedValue({ data: [] });
 revokeSessionMock.mockResolvedValue({ error: null });
-deleteUserMock.mockResolvedValue({ error: null });
+deleteAccountMock.mockResolvedValue({
+  ok: true,
+  deletedAt: "2026-09-20T10:00:00.000Z",
+  scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+});
 signOutMock.mockResolvedValue(undefined);
 sendVerificationEmailMock.mockResolvedValue({ error: null });
 changeEmailMock.mockResolvedValue({ error: null });
@@ -42,7 +52,6 @@ vi.mock("../auth/authClient.js", () => ({
   changePassword: (data: unknown) => changePasswordMock(data),
   listSessions: () => listSessionsMock(),
   revokeSession: (data: unknown) => revokeSessionMock(data),
-  deleteUser: (data: unknown) => deleteUserMock(data),
   signOut: () => signOutMock(),
   sendVerificationEmail: (data: unknown) => sendVerificationEmailMock(data),
   changeEmail: (data: unknown) => changeEmailMock(data),
@@ -149,7 +158,11 @@ describe("ProfilePage", () => {
     changePasswordMock.mockResolvedValue({ error: null });
     listSessionsMock.mockResolvedValue({ data: [] });
     revokeSessionMock.mockResolvedValue({ error: null });
-    deleteUserMock.mockResolvedValue({ error: null });
+    deleteAccountMock.mockResolvedValue({
+      ok: true,
+      deletedAt: "2026-09-20T10:00:00.000Z",
+      scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+    });
     signOutMock.mockResolvedValue(undefined);
     sendVerificationEmailMock.mockResolvedValue({ error: null });
     changeEmailMock.mockResolvedValue({ error: null });

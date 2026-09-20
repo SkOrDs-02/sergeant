@@ -1,6 +1,9 @@
 import type { Request, RequestHandler, Response } from "express";
+import { ACCOUNT_PENDING_DELETION_CODE } from "@sergeant/shared";
 import { getFreshSessionUser, getSessionUser } from "../auth.js";
+import { pool } from "../db.js";
 import { touchLastSeen } from "../lib/lastSeen.js";
+import { getAccountDeletionStatus } from "../modules/me/dataRights.js";
 import { logger } from "../obs/logger.js";
 import { authSessionLookupFailureTotal } from "../obs/metrics.js";
 
@@ -67,8 +70,24 @@ export const __testingResetSoftFailureCounter = (): void => {
  * embedding-атаки з cross-origin (закриває hardening-карту H8,
  * `docs/security/hardening/H8-corp-per-route.md`).
  */
-export function requireSession(): RequestHandler {
-  return buildRequireSession((req) => getSessionUser(req), "require");
+export interface RequireSessionOptions {
+  /**
+   * Пропустити роут повз гейт вікна видалення. Ставиться рівно двом
+   * роутам: `POST /api/me/restore` і `GET /api/me/deletion-status`, бо
+   * інакше вони заблокували б самі себе і людина не змогла б ані побачити
+   * дату, ані скасувати видалення.
+   */
+  allowPendingDeletion?: boolean;
+}
+
+export function requireSession(
+  options: RequireSessionOptions = {},
+): RequestHandler {
+  return buildRequireSession(
+    (req) => getSessionUser(req),
+    "require",
+    options.allowPendingDeletion ?? false,
+  );
 }
 
 /**
@@ -86,10 +105,13 @@ export function requireSession(): RequestHandler {
  * БД — `401 UNAUTHORIZED` (навіть якщо cookie-кеш ще «живий»); lookup
  * впав — `next(err)` → 500. CORP=same-origin ставиться так само (H8).
  */
-export function requireFreshSession(): RequestHandler {
+export function requireFreshSession(
+  options: RequireSessionOptions = {},
+): RequestHandler {
   return buildRequireSession(
     (req) => getFreshSessionUser(req),
     "require_fresh",
+    options.allowPendingDeletion ?? false,
   );
 }
 
@@ -104,6 +126,7 @@ export function requireFreshSession(): RequestHandler {
 function buildRequireSession(
   resolve: (req: Request) => Promise<SessionUser>,
   variant: "require" | "require_fresh",
+  allowPendingDeletion: boolean,
 ): RequestHandler {
   return async (req, res, next) => {
     setSameOriginCorp(res);
@@ -117,6 +140,29 @@ function buildRequireSession(
         });
         return;
       }
+
+      // Гейт вікна видалення (спека user-deletion-grace-window, рішення 3).
+      // Позначений акаунт не пускається у застосунок ЗОВСІМ: інакше людина
+      // місяць вносила б дані в акаунт, приречений на видалення, а sync
+      // возив би їх на сервер. Замість банера — 403 і екран-блокер.
+      //
+      // Ціна — один PK-lookup на автентифікований запит. Свідомо: поки
+      // профілювання не покаже, що це помітно, це дешевше за перенесення
+      // колонки в `user.additionalFields` Better Auth, яке потягло б за
+      // собою Drizzle-схему auth-таблиць.
+      if (!allowPendingDeletion) {
+        const status = await getAccountDeletionStatus(pool, user.id);
+        if (status.pending) {
+          res.status(403).json({
+            error: "Акаунт у процесі видалення",
+            message: "Акаунт у процесі видалення",
+            code: ACCOUNT_PENDING_DELETION_CODE,
+            scheduledPurgeAt: status.scheduledPurgeAt,
+          });
+          return;
+        }
+      }
+
       (req as AuthedRequest).user = user;
       // Throttled fire-and-forget — див. `lib/lastSeen.ts`. Стоїть тут, а не
       // в кожному хендлері, бо «візит» = будь-який автентифікований запит.
@@ -161,6 +207,19 @@ export function requireSessionSoft(): RequestHandler {
 
     if (user) {
       consecutiveSoftFailures = 0;
+      // Той самий гейт вікна видалення, що й у `requireSession`. Без нього
+      // push-роути лишились би єдиною діркою, крізь яку позначений акаунт
+      // ще щось робить на сервері.
+      const status = await getAccountDeletionStatus(pool, user.id);
+      if (status.pending) {
+        res.status(403).json({
+          error: "Акаунт у процесі видалення",
+          message: "Акаунт у процесі видалення",
+          code: ACCOUNT_PENDING_DELETION_CODE,
+          scheduledPurgeAt: status.scheduledPurgeAt,
+        });
+        return;
+      }
       (req as AuthedRequest).user = user;
       touchLastSeen(user.id);
       next();

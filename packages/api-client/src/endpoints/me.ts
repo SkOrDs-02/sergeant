@@ -1,5 +1,8 @@
 import {
+  MeDeleteBodySchema,
   MeDeleteResponseSchema,
+  MeDeletionStatusResponseSchema,
+  MeRestoreResponseSchema,
   AiMemoryClearResponseSchema,
   AiMemoryDeleteResponseSchema,
   AiMemoryListResponseSchema,
@@ -9,7 +12,10 @@ import {
   UserPreferencesSchema,
   UserProfilePutBodySchema,
   UserProfileResponseSchema,
+  type MeDeleteBody,
   type MeDeleteResponse,
+  type MeDeletionStatusResponse,
+  type MeRestoreResponse,
   type AiMemoryClearResponse,
   type AiMemoryDeleteResponse,
   type AiMemoryListItem,
@@ -61,9 +67,27 @@ export interface MeEndpoints {
     profile: UserProfilePayload,
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<UserProfileResponse>;
+  /**
+   * `DELETE /api/me` — прохання видалити акаунт. НЕ видаляє одразу:
+   * ставить мітку, гасить сесії на всіх пристроях і повертає
+   * `scheduledPurgeAt`, після якого акаунт зникне (30 днів,
+   * `ACCOUNT_DELETION_GRACE_DAYS`).
+   */
   deleteAccount: (
+    body?: MeDeleteBody,
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<MeDeleteResponse>;
+  /** `GET /api/me/deletion-status` — чим малює себе екран-блокер. */
+  deletionStatus: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<MeDeletionStatusResponse>;
+  /**
+   * `POST /api/me/restore` — скасування прохання. 404, якщо активного
+   * прохання немає. Підписку не повертає: її скасували в день прохання.
+   */
+  restoreAccount: (
+    opts?: Pick<RequestOptions, "signal">,
+  ) => Promise<MeRestoreResponse>;
   clearAiMemory: (
     opts?: Pick<RequestOptions, "signal">,
   ) => Promise<AiMemoryClearResponse>;
@@ -119,9 +143,25 @@ export function createMeEndpoints(http: HttpClient): MeEndpoints {
       });
       return UserProfileResponseSchema.parse(raw);
     },
-    deleteAccount: async ({ signal } = {}) => {
-      const raw = await http.del<unknown>("/api/me", undefined, { signal });
+    deleteAccount: async (body = {}, { signal } = {}) => {
+      const raw = await http.del<unknown>(
+        "/api/me",
+        MeDeleteBodySchema.parse(body),
+        { signal },
+      );
       return MeDeleteResponseSchema.parse(raw);
+    },
+    deletionStatus: async ({ signal } = {}) => {
+      const raw = await http.get<unknown>("/api/me/deletion-status", {
+        signal,
+      });
+      return MeDeletionStatusResponseSchema.parse(raw);
+    },
+    restoreAccount: async ({ signal } = {}) => {
+      const raw = await http.post<unknown>("/api/me/restore", undefined, {
+        signal,
+      });
+      return MeRestoreResponseSchema.parse(raw);
     },
     clearAiMemory: async ({ signal } = {}) => {
       const raw = await http.del<unknown>("/api/ai-memory", undefined, {

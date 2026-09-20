@@ -209,11 +209,57 @@ export const MeExportResponseSchema = z.object({
 });
 export type MeExportResponse = z.infer<typeof MeExportResponseSchema>;
 
+/**
+ * Тіло `DELETE /api/me`. Пароль обовʼязковий для акаунтів із
+ * credential-входом і безпредметний для тих, хто заходить лише через
+ * OAuth (`modules/me/verifyAccountPassword.ts` робить цю розвилку).
+ * До появи 30-денного вікна цю перевірку тримав Better Auth на
+ * `POST /api/auth/delete-user`.
+ */
+export const MeDeleteBodySchema = z.object({
+  password: z.string().min(1).max(128).optional(),
+});
+export type MeDeleteBody = z.infer<typeof MeDeleteBodySchema>;
+
+/**
+ * `DELETE /api/me` більше не видаляє одразу: воно ПОЗНАЧАЄ акаунт, і
+ * незворотне видалення виконує добивач через `ACCOUNT_DELETION_GRACE_DAYS`
+ * днів (спека docs/work/specs/user-deletion-grace-window.md, ADR-0016
+ * § ADR-6.1).
+ *
+ * `deletedAt` лишається під старим імʼям і старим змістом «коли сервер
+ * прийняв прохання» — його читає наявний UI. Нове поле `scheduledPurgeAt`
+ * несе дату, після якої акаунт зникне; саме його показує екран-блокер.
+ */
 export const MeDeleteResponseSchema = z.object({
   ok: z.literal(true),
   deletedAt: z.string().datetime({ offset: true }),
+  scheduledPurgeAt: z.string().datetime({ offset: true }),
 });
 export type MeDeleteResponse = z.infer<typeof MeDeleteResponseSchema>;
+
+/**
+ * `GET /api/me/deletion-status` — те, чим екран-блокер малює себе.
+ * `pending: false` означає активний акаунт, і тоді дат немає.
+ */
+export const MeDeletionStatusResponseSchema = z.discriminatedUnion("pending", [
+  z.object({ pending: z.literal(false) }),
+  z.object({
+    pending: z.literal(true),
+    requestedAt: z.string().datetime({ offset: true }),
+    scheduledPurgeAt: z.string().datetime({ offset: true }),
+  }),
+]);
+export type MeDeletionStatusResponse = z.infer<
+  typeof MeDeletionStatusResponseSchema
+>;
+
+/** `POST /api/me/restore` — скасування прохання, акаунт знову активний. */
+export const MeRestoreResponseSchema = z.object({
+  ok: z.literal(true),
+  restoredAt: z.string().datetime({ offset: true }),
+});
+export type MeRestoreResponse = z.infer<typeof MeRestoreResponseSchema>;
 
 // ────────────────────── Profile write-through (/api/me/profile) ───────────
 
