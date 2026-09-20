@@ -52,7 +52,7 @@
 
 **B-4. Захист від вигаданого числа про гроші й здоров'я це прохання до моделі.**
 
-`NUMBER_SANITY_RULE` ([systemPrompt.ts:223](../../../../apps/server/src/modules/chat/systemPrompt.ts)) просить модель звірити числа. Код не верифікує жодного числа у відповіді. Файл сам пише: «промпт це прохання, не контракт» ([systemPrompt.ts:242-244](../../../../apps/server/src/modules/chat/systemPrompt.ts)), і фіксує, що 8 з 11 моделей переказали два різні числа, не помітивши різниці в 3490 ₴ ([systemPrompt.ts:215](../../../../apps/server/src/modules/chat/systemPrompt.ts)). У fizruk, єдиному модулі, де порада може завдати фізичної шкоди, окремого запобіжника немає: `ADVICE_BOUNDARY_RULE` закриває дози й діагнози, але «загальні рекомендації з навантаження» дозволені явно.
+`NUMBER_SANITY_RULE` ([systemPrompt.ts:223](../../../../apps/server/src/modules/chat/toolDefs/systemPrompt.ts)) просить модель звірити числа. Код не верифікує жодного числа у відповіді. Файл сам пише: «промпт це прохання, не контракт» ([systemPrompt.ts:242-244](../../../../apps/server/src/modules/chat/toolDefs/systemPrompt.ts)), і фіксує, що 8 з 11 моделей переказали два різні числа, не помітивши різниці в 3490 ₴ ([systemPrompt.ts:215](../../../../apps/server/src/modules/chat/toolDefs/systemPrompt.ts)). У fizruk, єдиному модулі, де порада може завдати фізичної шкоди, окремого запобіжника немає: `ADVICE_BOUNDARY_RULE` закриває дози й діагнози, але «загальні рекомендації з навантаження» дозволені явно.
 
 ## C. Юніт-економіка з інвертованим знаком
 
