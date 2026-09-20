@@ -37,14 +37,6 @@ export type SentrySamplingRule = {
 export const SENTRY_SAMPLING_RULES: readonly SentrySamplingRule[] = [
   // Order is intentional: longest path first so /api/auth/sign-up does not
   // accidentally fall through to /api/health (longest-prefix-first).
-  // Specific /api/internal/openclaw/write/ must precede the broader
-  // /api/internal/ rule so its rate is not overridden.
-  {
-    match: "/api/internal/openclaw/write/",
-    rate: 1.0,
-    reason:
-      "OpenClaw write-tool mutations (ADR-0036 §3) — every founder-approved side-effect captured for audit reconstruction. Low-volume, high blast radius.",
-  },
   {
     match: "/api/internal/",
     rate: 1.0,

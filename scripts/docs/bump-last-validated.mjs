@@ -245,9 +245,8 @@ export function bumpFiles({
   for (const raw of paths) {
     // lint-staged передає АБСОЛЮТНІ шляхи. Exclude-глоби, каденція і
     // `reviewJitterDays` рахуються від repo-relative шляху (як у
-    // `check-freshness` і `restamp-next-review`), тож без нормалізації
-    // бампер писав іншу дату перегляду, ніж очікує `docs:restamp-check`,
-    // і не бачив exclude-глобів.
+    // `check-freshness`), тож без нормалізації бампер писав іншу дату
+    // перегляду, ніж очікує гейт свіжості, і не бачив exclude-глобів.
     const rel = isAbsolute(raw) ? relative(rootDir, raw) : raw;
     if (matchesAnyGlob(rel, config.excludeGlobs)) {
       log(`  skip (excluded): ${rel}`);

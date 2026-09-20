@@ -24,14 +24,6 @@ export const SYNC_V2_MODULE = "v2";
 export type SyncV2OpKind = "v2_push" | "v2_pull";
 
 /**
- * Maximum tolerated forward clock skew. Клієнти, що надсилають
- * `client_ts > server_ts + 1h`, відхиляються — інакше їхній
- * "майбутній" timestamp перевертатиме LWW і ламатиме реплікацію
- * для нормальних пристроїв.
- */
-export const CLOCK_SKEW_FORWARD_MS = 60 * 60 * 1000;
-
-/**
  * Maximum allowed |delta| in a single `op='increment'` payload. PN-counter
  * primitive is built for ±1 toggles (one habit-completion per emit), so
  * a hard cap at 1000 keeps a malformed/malicious client from corrupting

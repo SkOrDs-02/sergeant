@@ -95,10 +95,6 @@ const CODE_EXT = /\.(?:tsx?|jsx?|mjs|cjs)$/;
  */
 const SKIP_FILES = new Map([
   [
-    "scripts/docs/rewrite-documentation-paths.mjs",
-    "таблиця переїзду доків: ліва колонка — історична назва за визначенням",
-  ],
-  [
     "scripts/docs/generate-documentation-inventory.mjs",
     "`finalPathFor()` резолвить історичні шляхи в чинні — ті самі пари",
   ],
@@ -271,3 +267,5 @@ if (cleared.length > 0 && !failed) {
 }
 
 process.exit(failed ? 1 : 0);
+
+// docs/definitely-not-here/probe-1789855324106.md

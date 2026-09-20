@@ -689,7 +689,7 @@ for (const sig of ["SIGTERM", "SIGINT"]) {
 // а схема ще не звірена, і платформа встигає завести трафік.
 markSchemaDriftCheckStarted();
 
-httpServer = app.listen(config.port, "0.0.0.0", () => {
+httpServer = app.listen(config.port, env.HOST, () => {
   // Сигнал для `/startupz` (a.k.a. `/health/startup`): процес завершив
   // env-assert, Sentry-init і привʼязку до порту, тож платформа може
   // переключитися з startup-probe на readiness/liveness. Idempotent.
