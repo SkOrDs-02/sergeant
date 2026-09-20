@@ -689,7 +689,11 @@ for (const sig of ["SIGTERM", "SIGINT"]) {
 // а схема ще не звірена, і платформа встигає завести трафік.
 markSchemaDriftCheckStarted();
 
-httpServer = app.listen(config.port, env.HOST, () => {
+// Бінд навмисно літеральний: контейнер має слухати всі інтерфейси, інакше
+// зовнішній healthcheck Coolify не достукається. Поле `HOST` зі схеми env
+// прибрано разом із цим рішенням — воно роками не читалось, і підключити
+// його означало б дати змінній оточення тихо зламати деплой.
+httpServer = app.listen(config.port, "0.0.0.0", () => {
   // Сигнал для `/startupz` (a.k.a. `/health/startup`): процес завершив
   // env-assert, Sentry-init і привʼязку до порту, тож платформа може
   // переключитися з startup-probe на readiness/liveness. Idempotent.

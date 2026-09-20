@@ -31,8 +31,6 @@ const envSchema = z.object({
 
   TRUST_PROXY: z.string().optional(),
 
-  HOST: stringWithDefault("0.0.0.0"),
-
   REQUEST_TIMEOUT_MS: intFromEnv(120_000),
 
   COMPRESSION_ENABLED: boolFromEnv(true),

@@ -144,7 +144,7 @@ playbook-у. Один рядок на кандидата.
 | `// AI-LEGACY` маркери                          |     |     |     |     |
 | `// @ts-expect-error` / `as any` (allowlist)    |     |     |     |     |
 | `no-raw-local-storage` allowlist (файлів)       |     |     |     |     |
-| Strict TS coverage % (з `pnpm strict:coverage`) |     |     |     |     |
+| Strict-дрейф (`tools/tsconfig-guard/check.mjs`) |     |     |     |     |
 | Файлів >600 LOC у `apps/web/src`                |     |     |     |     |
 
 ---
