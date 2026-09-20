@@ -25,8 +25,14 @@
     {
       "source": "/(.*)",
       "headers": [
-        { "key": "X-Content-Type-Options", "value": "nosniff" },
-        { "key": "X-Frame-Options", "value": "DENY" },
+        {
+          "key": "X-Content-Type-Options",
+          "value": "nosniff"
+        },
+        {
+          "key": "X-Frame-Options",
+          "value": "DENY"
+        },
         {
           "key": "Referrer-Policy",
           "value": "strict-origin-when-cross-origin"
@@ -48,6 +54,50 @@
           "value": "default-src 'self'; script-src 'self' https://*.posthog.com; style-src 'self' 'unsafe-inline'; img-src 'self' data:; font-src 'self' data:; connect-src 'self' https://*.posthog.com; base-uri 'self'; form-action 'self'; frame-ancestors 'none'; object-src 'none'; report-uri https://api.sergeant.com.ua/api/csp-report; report-to csp-endpoint"
         }
       ]
+    },
+    {
+      "source": "/((?!assets/).*)",
+      "headers": [
+        {
+          "key": "Vary",
+          "value": "Accept"
+        }
+      ]
+    }
+  ],
+  "rewrites": [
+    {
+      "source": "/",
+      "has": [
+        {
+          "type": "header",
+          "key": "accept",
+          "value": ".*text/markdown.*"
+        }
+      ],
+      "destination": "/index.md"
+    },
+    {
+      "source": "/:a([^./]+)",
+      "has": [
+        {
+          "type": "header",
+          "key": "accept",
+          "value": ".*text/markdown.*"
+        }
+      ],
+      "destination": "/:a/index.md"
+    },
+    {
+      "source": "/:a([^./]+)/:b([^./]+)",
+      "has": [
+        {
+          "type": "header",
+          "key": "accept",
+          "value": ".*text/markdown.*"
+        }
+      ],
+      "destination": "/:a/:b/index.md"
     }
   ]
 }

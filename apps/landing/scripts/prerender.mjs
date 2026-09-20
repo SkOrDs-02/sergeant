@@ -51,6 +51,33 @@ function pageText(pageHtml) {
     .trim();
 }
 
+/**
+ * Markdown-тіло сторінки для Accept-переговорів (acceptmarkdown.com).
+ *
+ * Навіщо: агент, що просить `text/markdown`, досі отримував ту саму HTML-
+ * сторінку і мусив її парсити. Той самий текст, що йде в llms-full.txt, але
+ * пер-маршрутно і з канонічною адресою в тілі, щоб цитата не загубила
+ * джерело. Нижче в білді ці файли лягають як `<route>/index.md`, а
+ * `vercel.json` віддає їх лише на запит із `Accept: text/markdown`.
+ */
+function pageMarkdown(route, meta, pageHtml, site) {
+  const url = `${site}${route === "/" ? "/" : route}`;
+  return [
+    `# ${meta.title}`,
+    "",
+    `> ${meta.description}`,
+    "",
+    `Канонічна адреса: ${url}`,
+    "",
+    pageText(pageHtml),
+    "",
+    "---",
+    "",
+    "Карта сайту: /sitemap.xml · Орієнтир для агентів: /llms.txt · Повний текст сайту: /llms-full.txt",
+    "",
+  ].join("\n");
+}
+
 const fullText = [];
 let written = 0;
 for (const route of Object.keys(routes)) {
@@ -76,6 +103,11 @@ for (const route of Object.keys(routes)) {
   }
 
   writeFileSync(file, html, "utf8");
+  writeFileSync(
+    file.replace(/index\.html$/, "index.md"),
+    pageMarkdown(route, routes[route], page.html, site),
+    "utf8",
+  );
   written += 1;
 
   // /beta має noindex, /404 — технічна сторінка: обидві поза картою для
@@ -100,6 +132,9 @@ writeFileSync(
 // віддавав 200 і пререндер ГОЛОВНОЇ на кожен битий URL (soft-404, знахідка
 // GEO-аудиту 2026-08-27). Тіло те саме, що й у маршруту /404.
 copyFileSync(path.join(DIST, "404", "index.html"), path.join(DIST, "404.html"));
+copyFileSync(path.join(DIST, "404", "index.md"), path.join(DIST, "404.md"));
 
 rmSync(SSR_DIR, { recursive: true, force: true });
-console.log(`prerender: ${written} сторінок із повним HTML, 404.html`);
+console.log(
+  `prerender: ${written} сторінок із повним HTML і markdown, 404.html, 404.md`,
+);

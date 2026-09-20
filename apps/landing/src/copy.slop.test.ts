@@ -46,6 +46,7 @@ const PAGES: Record<string, { files: string[]; words: number }> = {
     files: ["pages/PytannyaPage.tsx", "content/faqItems.ts"],
     words: 400,
   },
+  "/contact": { files: ["pages/ContactPage.tsx"], words: 400 },
   "/guides/monobank": { files: ["pages/GuideMonobankPage.tsx"], words: 550 },
   "/guides/kbzhv": { files: ["pages/GuideKbzhvPage.tsx"], words: 550 },
   "/guides/cheky": { files: ["pages/GuideChekyPage.tsx"], words: 550 },
