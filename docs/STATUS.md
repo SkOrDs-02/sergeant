@@ -34,11 +34,11 @@
 - [#67](https://github.com/zaebal-beep/sergeant/pull/67) — feat(server): перецілити kill-switch пам'яті ШІ з finyk на digest (0024, PR-2) _(2026-09-16)_
 - [#69](https://github.com/zaebal-beep/sergeant/pull/69) — docs(docs): quote the expired 0589 todo as history so lint:todo-freshness stops firing _(2026-09-16)_
 
-## 🔵 В роботі — 70 відкритих документів
+## 🔵 В роботі — 71 відкритий документ
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 70       |
+| Активні спеки | 71       |
 
 **Найактивніше (8, за останніми PR):**
 
