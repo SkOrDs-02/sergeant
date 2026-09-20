@@ -60,9 +60,10 @@
   `setInterval` + `unref()`, ідемпотентні `start`/`stop`, overlap-guard.
   Запускається в `apps/server/src/index.ts:222`. Новий добивач копіює цей
   клас, а не винаходить шедулер.
-- Останній номер міграції на момент написання -
-  `134_fizruk_item_chosen_variant.sql`; перевір `ls apps/server/src/migrations/`
-  перед створенням нової.
+- Міграція вікна вже створена: `145_user_deletion_grace_window.sql` і парний
+  `.down.sql`. На момент написання спеки останньою була `134_fizruk_item_
+chosen_variant.sql`; для будь-якої наступної перевіряй
+  `ls apps/server/src/migrations/`, а не це число.
 - Субстрат періодичних задач за
   [ADR-0089](../../governance/adr/0089-job-substrates-outbox-broker-timer.md):
   періодичний ідемпотентний скан із дедупом у Postgres - це in-process timer,
