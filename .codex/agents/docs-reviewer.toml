@@ -45,6 +45,16 @@ If a diff touches one of those but `docs/governance/pr-ledger/index.json` is abs
 
 A PR that changes **product behavior** inside a module (diff touches `apps/web/src/modules/<m>/`, `apps/server/src/modules/<m>/`, or `packages/<m>-domain/` beyond pure refactor/tests) must update that module's canon in the same PR — `docs/product/modules/<m>.md`, usually a row in its `§ Журнал рішень` (AGENTS.md § See also; AI layer maps to `hub-coach.md`, infra modules keep the journal inside their `sergeant-module-*` SKILL.md). Flag as WARNING: behavior-changing module diff with no matching canon/journal change. Do not flag refactors, test-only, or infra-only diffs.
 
+## Anchor check — confirm every `file:line` before it leaves this agent
+
+A finding that points at the wrong line wastes the reviewer's trust faster than a missed one. For each finding, before writing it up:
+
+1. Re-read the cited file at that line **in the diff under review**, not from memory of an earlier read.
+2. Confirm the quoted snippet is present there verbatim. Diffs shift line numbers — if it moved, re-anchor to where it actually is.
+3. Confirm the file is in this diff at all. A real issue in an untouched file is out of scope here; hand it to the lead as context, not as a PR finding.
+
+If you cannot confirm the anchor, drop the finding rather than guessing a line. State in the report that it was dropped and why.
+
 ## Report format
 
 Group by Hard Rule number. Each finding: `file:line`, what's missing/wrong, severity (BLOCKER only for missing #26 ledger entry; WARNING otherwise). "✅ None" under clean rules. Send findings to the lead.

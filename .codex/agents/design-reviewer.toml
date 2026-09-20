@@ -79,6 +79,16 @@ Quote the line, name the test, and ask the summary question against that surface
 
 The table above lists **signals seen so far**, not the closed set. A search bounded by a literal list closes that list, not the defect — that failure is on record: a glyph sweep enumerated `▾ ▴ ▲ ▼ ▸ ○ ⓘ ⊕ ⊗ ← ↑ ↓ ↻ ↺ ↶`, called itself complete, and left 18 `‹ ›` untouched because guillemets were not on the list. When a diff shows a structure that threatens one of the three tests but matches no row here, report it anyway and say which test it threatens.
 
+## Anchor check — confirm every `file:line` before it leaves this agent
+
+A finding that points at the wrong line wastes the reviewer's trust faster than a missed one. For each finding, before writing it up:
+
+1. Re-read the cited file at that line **in the diff under review**, not from memory of an earlier read.
+2. Confirm the quoted class or snippet is present there verbatim. Diffs shift line numbers — if it moved, re-anchor to where it actually is.
+3. Confirm the file is in this diff at all. A real issue in an untouched file is out of scope here; hand it to the lead as context, not as a PR finding.
+
+If you cannot confirm the anchor, drop the finding rather than guessing a line. State in the report that it was dropped and why. This applies to `QUESTION` items too: a slop signal is still anchored to a specific structure in a specific file.
+
 ## Report format
 
 Group by convention name. Each finding: `file:line`, the offending class, the convention violated, severity (BLOCKER / WARNING / QUESTION). "✅ None" under clean conventions.
