@@ -1,6 +1,6 @@
 # Contributing to Sergeant
 
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-01-10.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-13.
 > **Status:** Active
 
 `CONTRIBUTING.md` - канонічний manual для людей. Repo policy і hard rules описані в [AGENTS.md](./AGENTS.md), а repeatable execution recipes - у [docs/start/instructions/README.md](./docs/start/instructions/README.md).

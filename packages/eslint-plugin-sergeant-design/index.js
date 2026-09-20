@@ -2974,7 +2974,19 @@ function findFirstPersonPlural(text) {
     if (m[3] === undefined) return m; // гілка «ми …» — allowlist не стосується
     let start = m.index;
     while (start > 0 && RX_UA_LETTER.test(text[start - 1])) start -= 1;
-    let end = m.index + m[0].length;
+    // `m[0]` тягне ще й завершальний символ межі (група 5 — пробіл або
+    // розділовий знак), тож відлік уперед мусить починатися ПЕРЕД ним.
+    // Без цього віднімання межа-пробіл «зʼїдалась», крок уперед бачив
+    // першу літеру НАСТУПНОГО слова і склеював два слова в одне: рядок
+    // «Окремо є ручне…» давав `окремоє`, якого в allowlist немає й бути
+    // не може. Наслідок — allowlist мовчки не працював для найчастішого
+    // випадку «слово + пробіл + слово», тобто майже завжди; спрацьовував
+    // лише тоді, коли за словом ішов розділовий знак у кінці рядка.
+    // Знайдено 2026-09-19 першим живим прогоном правила на лендінгу:
+    // чотири законні «окремо» (HroshiPage, TrenuvanniaPage ×2, DataPage)
+    // репортувались як 1-а особа множини.
+    const trailingBoundary = m[5] ?? "";
+    let end = m.index + m[0].length - trailingBoundary.length;
     while (end < text.length && RX_UA_LETTER.test(text[end])) end += 1;
     const word = text
       .slice(start, end)

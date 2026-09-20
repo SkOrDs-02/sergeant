@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-09-01
  * Status: Active
- * Owner: @Skords-01
+ * Owner: @klas149
  *
  * Телеметрія тертя запису — «від кнопки до збереженого»
  * (контракт: `packages/shared/src/lib/analyticsEvents.valueLoops.ts` §6).

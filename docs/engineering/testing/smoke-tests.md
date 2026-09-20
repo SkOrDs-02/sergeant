@@ -179,7 +179,7 @@ Workflow YAML (дзеркало [`.github/workflows/post-deploy-smoke.yml`](../.
 ```yaml
 name: Post-deploy smoke
 
-# Owner: @SkOrDs-02 (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: if this job fails, an issue tagged `smoke-test-fail` is auto-opened
 #         (idempotent — same pattern as pact-drift / db-backup-verify). Runbook:
 #         `docs/engineering/testing/smoke-tests.md`.

@@ -1,6 +1,6 @@
 # i18n readiness — Sergeant web
 
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-04-19.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-27.
 > **Status:** Active
 
 > **Стан на 2026-09-16 — читай перед фазами нижче.** Фази 1–3 описані

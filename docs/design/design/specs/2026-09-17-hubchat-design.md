@@ -2,7 +2,7 @@
 
 # Дизайн-контракт: HubChat
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-03-17.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-12.
 > **Status:** Active — контракт as-built: описує `core/hub/HubChatOverlay.tsx`, `HubChatSheet.tsx`, `HubChat.tsx`, `useHubChatOverlay.ts`, `core/hub/chat/{HubChatHeader,HubChatBody,HubChatComposer,ChatEmpty,ChatUsageCounter,ChatAuthGate,DestructiveConfirmModal}.tsx`, `chat/{useChatSessions,useChatSend,useDestructiveConfirm}.ts`, `HubChatHistoryDrawer.tsx`, `core/components/{ChatInput,ChatQuickActions,ChatMessage}.tsx`, `chat/components/DataResultCard.tsx` і `shared/components/ui/Sheet.tsx` станом на 2026-09-17 (README дизайн-папки 2026-09-16: HubChat серед поверхонь «без контракту, пишуться за потребою»). Розбіжності з каноном код НЕ виправляє — вони позначені **[борг]** із файлом і рядком; відкритих боргів дванадцять.
 
 Поверхня, на якій продукт розмовляє: аркуш AI-чату над будь-яким

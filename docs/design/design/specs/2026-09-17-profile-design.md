@@ -2,7 +2,7 @@
 
 # Дизайн-контракт: профіль
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-03-17.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-05-10.
 > **Status:** Active — контракт as-built: описує `core/profile/{ProfilePage,PersonalInfoSection,ChangePasswordSection,SessionsSection,BiometricsSection,MemoryBankSection,AiMemorySection,DangerZoneSection,DeleteAccountDialog}.tsx`, `avatar.ts`, `biometrics.ts`, `useBiometrics.ts`, `recordBodyWeight.ts`, `useLatestBodyWeight.ts` і `core/security/AppLockSettings.tsx` (як гостя групи «Безпека») станом на 2026-09-17. Код не правився: кожна розбіжність із каноном позначена **[борг]** із файлом і рядком. Відкритих боргів — 5 (перелік у підсумку внизу).
 
 Профіль — вкладка хаба (`/?tab=profile`), де людина керує собою, а не

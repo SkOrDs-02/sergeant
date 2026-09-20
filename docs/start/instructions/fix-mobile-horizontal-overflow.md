@@ -1,6 +1,6 @@
 # Playbook: Поле або блок ширші за екран (горизонтальний overflow)
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-19.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-21.
 > **Status:** Active
 > **Runtime-specific:** no
 

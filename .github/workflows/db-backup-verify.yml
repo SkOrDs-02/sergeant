@@ -1,6 +1,6 @@
 name: Weekly DB backup verify
 
-# Owner: @zaebal-beep (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: false-positive runs → close the auto-created issue з коментарем; reopen якщо повторюється > 2x за тиждень.
 # Schedule rationale: storage-roadmap.md PR #049b — weekly rehearsal of Postgres
 # restore + smoke-test schema integrity. Backend moved Railway → Hetzner +

@@ -1,6 +1,6 @@
 # AI-шар: ai-memory
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-01-06.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-08.
 > **Status:** Active
 
 Контекст шару: `Read .agents/skills/sergeant-module-ai/SKILL.md` → канон `docs/product/modules/hub-coach.md` (§ Журнал рішень).

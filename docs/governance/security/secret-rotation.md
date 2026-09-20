@@ -1,4 +1,4 @@
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-09-18.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-09-21.
 > **Status:** Reference — звіт аудиту секретів 2026-06-03 і vendor-by-vendor кроки на ту дату. Канонічна процедура ротації — [`rotate-secrets.md`](../../start/instructions/rotate-secrets.md); власники, каденс і blast radius — [`secret-ownership-register.md`](./secret-ownership-register.md). Vendor-кроки нижче лишаються корисною шпаргалкою, але рішення «що і коли ротувати» береться з тих двох документів.
 
 # Ротація Production Secrets

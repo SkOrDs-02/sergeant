@@ -1,6 +1,6 @@
 name: Deploy API image (ghcr.io)
 
-# Owner: @zaebal-beep (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 #
 # Будує Hub API-образ з `Dockerfile.api` і пушить у GitHub Container
 # Registry (`ghcr.io/<owner>/sergeant-api`). Coolify на Hetzner VPS тягне

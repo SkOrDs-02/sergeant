@@ -189,6 +189,7 @@ export function Workouts({
             onBack={() =>
               section ? onNavigate?.("workouts") : o.setView("home")
             }
+            routeOwnsBack={Boolean(section)}
             onAddCatalog={() => o.setAddOpen(true)}
           />
         )}

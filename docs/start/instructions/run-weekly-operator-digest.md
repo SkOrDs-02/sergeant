@@ -1,6 +1,6 @@
 # Playbook: Тижневий operator-дайджест
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-01-05.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-07.
 > **Status:** Active
 > **Runtime-specific:** no
 

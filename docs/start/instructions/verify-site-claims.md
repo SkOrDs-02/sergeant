@@ -1,6 +1,6 @@
 # Playbook: Звірити твердження лендінга з кодом (дрейф «сайт ↔ код»)
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-20.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-22.
 > **Status:** Active
 > **Runtime-specific:** no
 

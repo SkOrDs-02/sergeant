@@ -1,6 +1,6 @@
 name: Web route ledger
 
-# Owner: @zaebal-beep (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Що це: 49 route-кейсів у `apps/web/tests/ledger/user-story-ledger.spec.ts`
 #        (`playwright.ledger.config.ts`) — кожен web-маршрут відкривається на
 #        прод-білді з повністю замоканим `**/api/**`, і перевіряється, що

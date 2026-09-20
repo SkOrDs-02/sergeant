@@ -60,11 +60,34 @@ import { pool } from "../../db.js";
 type WithAnthropicKey = Request & { anthropicKey?: string };
 
 /**
- * Timeout budget for Anthropic chat tool-result + chat completion calls.
- * Aligned with the longest expected tool-aided round-trip; covers both the
- * `chat-tool-result` continuation and the main `chat` endpoint.
+ * Бюджет ОДНІЄЇ спроби upstream-виклику чату. Покриває і `chat` (перший хід),
+ * і `chat-tool-result` (синтез після інструментів).
+ *
+ * AI-CONTEXT: до 2026-09-19 тут стояло 30 000 без ретраю, і це давало найгіршу
+ * з можливих поведінок — людина чекала повні 30 с і отримувала помилку, бо на
+ * таймаут `anthropic.ts` нічого не пробував (ні другої спроби, ні іншого
+ * транспорту), хоча бюджет `maxTotalMs` лишався невитраченим.
+ *
+ * Прод-замір (PostHog `$ai_generation`, 2026-09-17) показав бімодальність:
+ * успіхи `gemini-3.7-flash` 5.2-8.0 с, збої — рівно 30.0 с з нулем токенів і
+ * без HTTP-статусу, тобто зависання зʼєднання, а не повільна модель. Стенд
+ * `eval:tools` дає тій самій моделі медіану 3.8-4.1 с і максимум 8.5 с.
+ *
+ * Звідси 12 с: ~40% запасу над спостережуваним максимумом успіху, і при цьому
+ * достатньо низько, щоб зависання коштувало одну спробу, а не все очікування.
+ * Стеля на весь логічний виклик лишається 30 с, тобто для людини гірше не
+ * стало: у найгіршому разі це ті самі 30 с, але з двома спробами замість
+ * однієї. Синтез (`glm-5.2`) у тому ж замірі — 0.7-2.6 с, тож 12 с вистачає
+ * обом шляхам.
  */
-const CHAT_TOOL_TIMEOUT_MS = 30_000;
+const CHAT_ATTEMPT_TIMEOUT_MS = 12_000;
+
+/**
+ * Стеля на ОДИН логічний виклик чату разом зі сном між спробами — те саме
+ * число, що раніше було таймаутом однієї спроби. Задається явно, бо дефолт
+ * `timeoutMs * 2` дав би 24 с і мовчки звузив наявний бюджет.
+ */
+const CHAT_TOTAL_TIMEOUT_MS = 30_000;
 
 // Anthropic prompt-caching хелпери (buildSystem / buildToolsPayload /
 // applyMessagesCacheBreakpoint) винесені в `./promptCache.ts` — три cache
@@ -148,6 +171,10 @@ async function callAnthropicWithContinuation(
     userId?: string;
     /** `$ai_trace_id` — ініціатива 0025, Фаза 2 (`AnthropicCallOptions.traceId`). */
     traceId?: string;
+    /** Стеля на весь логічний виклик — див. `AnthropicCallOptions.maxTotalMs`. */
+    maxTotalMs?: number;
+    /** Один ретрай після таймауту — див. `AnthropicCallOptions.retryOnTimeout`. */
+    retryOnTimeout?: boolean;
   },
 ): Promise<{
   response: FetchResponse | null;
@@ -632,7 +659,9 @@ export default async function handler(
         apiKey,
         payload,
         {
-          timeoutMs: CHAT_TOOL_TIMEOUT_MS,
+          timeoutMs: CHAT_ATTEMPT_TIMEOUT_MS,
+          maxTotalMs: CHAT_TOTAL_TIMEOUT_MS,
+          retryOnTimeout: true,
           endpoint: "chat-tool-result",
           signal: clientAbort.signal,
           promptVersion: SYSTEM_PROMPT_VERSION,
@@ -776,7 +805,9 @@ export default async function handler(
         messages: applyMessagesCacheBreakpoint(cleaned),
       },
       {
-        timeoutMs: CHAT_TOOL_TIMEOUT_MS,
+        timeoutMs: CHAT_ATTEMPT_TIMEOUT_MS,
+        maxTotalMs: CHAT_TOTAL_TIMEOUT_MS,
+        retryOnTimeout: true,
         endpoint: "chat",
         signal: clientAbort.signal,
         promptVersion: SYSTEM_PROMPT_VERSION,
@@ -789,7 +820,7 @@ export default async function handler(
     throw e;
   } finally {
     // `finally`, а не рядок після виклику: провал upstream — це найдовше
-    // очікування, яке людина взагалі бачить (таймаут `CHAT_TOOL_TIMEOUT_MS`),
+    // очікування, яке людина взагалі бачить (стеля `CHAT_TOTAL_TIMEOUT_MS`),
     // і викинути саме його з розподілу означало б міряти лише щасливий шлях.
     phaseMs.set("upstream", Date.now() - upstreamStartedAt);
     flushFirstTurnPhases();

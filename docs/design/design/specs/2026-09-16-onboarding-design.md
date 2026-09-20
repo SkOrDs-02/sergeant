@@ -2,7 +2,7 @@
 
 # Дизайн-контракт: онбординг
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-04-17.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-19.
 > **Status:** Active — контракт as-built: описує `/welcome` (`WelcomeScreen.tsx` + `WelcomeModulePicker.tsx`), `core/onboarding/{PresetSheet,FirstActionSheet,FirstRunHintBanner,ModuleChecklist,DailyNudge,SoftAuthPromptCard}.tsx`, `presetApply.ts`, `useModuleFirstRun.ts` станом на 2026-09-16 (рішення власника по аудиту дизайн-доків, пункт 4, варіант A). Усі розбіжності з кодом, які контракт вимагав закрити, закриті 2026-09-16; відкритих боргів немає.
 
 Онбординг — перше враження: `/welcome` з вибором модулів, перший вхід у

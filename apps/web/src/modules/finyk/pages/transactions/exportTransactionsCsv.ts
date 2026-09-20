@@ -1,7 +1,7 @@
 /**
  * Last validated: 2026-09-01
  * Status: Active
- * Owner: @Skords-01
+ * Owner: @klas149
  *
  * CSV-експорт операцій Фініка — «забрати свої дані у таблицю».
  *

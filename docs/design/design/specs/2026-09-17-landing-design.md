@@ -2,7 +2,7 @@
 
 # Дизайн-контракт: лендінг
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-03-17.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-03-29.
 > **Status:** Active — контракт as-built: описує `apps/landing/src/index.css` (`@theme`), `index.html`, `App.tsx`, `components/{SiteLayout,SiteHeader,SiteFooter,TelegramCta,Wordmark,HomeSections,MonoAccessTable,UpdatedOn,GuideHomeModule}.tsx`, `pages/{HomePage,BetaPage,PytannyaPage,NotFoundPage,PrivacyPage}.tsx` (решта 26 сторінок успадковують ті самі класи), `lib/{analytics,links,pageMeta,routeMeta.json}`, `content/*`, тести `tokens.drift.test.ts`, `copy.consistency.test.ts`, `copy.slop.test.ts` (з 2026-09-17), `routeRegistry.test.ts`, гейти `tests/a11y/axe.spec.ts`, `lighthouserc.json` і CI-джобу `Landing quality (axe + Lighthouse)` станом на 2026-09-17. Код не змінювався; розбіжності з каноном позначені **[борг]** із файлом і рядком — їх 11, усі в коментарях, доках і межах гейтів, жодного в рантаймі.
 
 Публічний маркетинговий сайт `apps/landing` (31 маршрут із `routeMeta.json`,

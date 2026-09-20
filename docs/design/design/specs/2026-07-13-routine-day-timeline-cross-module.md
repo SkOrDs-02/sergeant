@@ -2,7 +2,7 @@
 
 # Routine — timeline дня та кросмодульний календар
 
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-04-03.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-11.
 > **Status:** Active — реалізовано частково (~5 з 11 критеріїв MVP, звірено 2026-09-16). Є: агрегація таймлайну (`lib/hubCalendarAggregate.ts`, `lib/finykSubscriptionCalendar.ts`), `calendar` як дефолтна сторінка (`lib/routineRouter.ts`), чипи джерел (`RoutineFilterChips`), швидке виконання з рядка (`RoutineCalendarPanel`), тумблери джерел у `core/settings/RoutineSection.tsx`, deep-link назад — лише у Фінік. Немає: онбордингу джерел (дефолти `showFizrukInCalendar` / `showFinykSubscriptionsInCalendar` = `true` в `routine-domain/storage.ts` суперечать вимозі «жодне джерело без вибору»), блоку «Без часу», згортання завершених подій, deep-link у Фізрук.
 
 > **Статус на старті (2026-07-13):** Draft — product interview complete, implementation not started.

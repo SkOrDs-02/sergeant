@@ -4,7 +4,7 @@ lang: en
 
 # Playbook: Operational continuity
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-28.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-30.
 > **Status:** Active
 > **Runtime-specific:** no
 > **Context:** Stack-pulse PR-04 bus-factor fix. This document answers: «що робити, якщо @zaebal-beep недоступний тиждень / місяць / 6 місяців?»

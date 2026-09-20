@@ -1,6 +1,6 @@
 # Playbook: Аудит CI-гейтів — чи кожен гейт реально виконався
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-22.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-24.
 > **Status:** Active
 > **Runtime-specific:** no
 

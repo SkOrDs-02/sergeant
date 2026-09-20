@@ -2,7 +2,7 @@
 
 # Дизайн-контракт: Налаштування
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-03-17.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-05-02.
 > **Status:** Active — контракт as-built: описує `core/hub/HubSettingsPage.tsx`, `core/hub/settingsSectionsCatalog.ts`, `core/hub/hubSettingsUrlParams.ts`, `core/settings/SettingsPrimitives.tsx` і 14 секцій (`core/settings/{Dashboard,Notifications,AIDigest,Capabilities,Routine,Fizruk,Finyk,Nutrition,Privacy,PWA,DataExport,Experimental}Section.tsx`, `core/feedback/FeedbackSection.tsx`, `core/settings/PlanSection.tsx`), їхні підсекції (`FinykWebhookServiceSection`, `SilpoIntegrationSection`, `SilpoUnmatchedReceipts`, `SilpoPrivacyPromise`, `FinykPrivatBankSection`, `MonoTokenInlineForm`, `core/hub/HubBackupPanel.tsx`, `core/components/PushNotificationToggle.tsx`, `shared/components/ui/ThemeSwitcher.tsx`), реєстр `core/lib/featureFlags.ts` і `core/settings/route.tsx` станом на 2026-09-17. Кожне правило нижче або вже так у коді, або позначене **[борг]** із файлом і рядком; код цим документом не правився. Відкритих боргів — 10, перелік у § «Чого не робити» і в кожній таблиці.
 
 Налаштування — вкладка хаба (`/?tab=settings`), де людина крутить вигляд

@@ -2,7 +2,7 @@
 
 # Дизайн-контракт: юридичні сторінки
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2027-03-17.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-08.
 > **Status:** Active — контракт as-built: описує `core/legal/{LegalPage,LegalDocumentView,LegalLinks}.tsx`, `legalShared.ts`, `legalDocumentTypes.ts`, чотири документи `{privacy,terms,cookies,offer}Document.ts`, маршрути `/legal/*` у `core/app/StandaloneRoutes.tsx` і копі `messages.legal` у `shared/i18n/uk.ts` станом на 2026-09-17. Код не правився: кожна розбіжність із каноном позначена **[борг]** із файлом і рядком; відкритих боргів дизайну — 8 (перелік у підсумку внизу). Юридичні знахідки аудиту 2026-07-31 (реквізити, explicit consent, opt-in) — не в цьому контракті, вони в [реєстрі верифікації](../../../work/specs/audits/verification/findings.json) під `LEGAL-20260731-*`, усі десять зі статусом `open`.
 
 Поверхня, де продукт говорить не голосом коуча, а голосом сторони

@@ -459,7 +459,7 @@ posthog.get_distinct_id(); // current distinct_id
 
 ## 10. Owner + ескалація
 
-- **Owner:** @Skords-01
+- **Owner:** @klas149
 - **Backup reviewer:** TBD (frontend-engineer secondary з [`AGENTS.md § Module ownership map`](../../../AGENTS.md#module-ownership-map))
 - **PostHog admin:** @Skords-01 (Cloud EU project)
 - **Sentry admin:** @Skords-01

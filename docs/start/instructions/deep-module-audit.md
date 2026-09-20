@@ -1,6 +1,6 @@
 # Playbook: Глибокий аудит модуля (логіка + фло + візуал)
 
-> **Last touched:** 2026-09-17 by @claude. **Next review:** 2026-12-26.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-28.
 > **Status:** Active
 > **Runtime-specific:** no
 

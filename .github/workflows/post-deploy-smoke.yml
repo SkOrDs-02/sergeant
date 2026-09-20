@@ -1,6 +1,6 @@
 name: Post-deploy smoke
 
-# Owner: @zaebal-beep (solo maintainer).
+# Owner: @klas149 (solo maintainer).
 # Triage: if this job fails, an issue tagged `smoke-test-fail` is auto-opened
 #         (idempotent — same pattern as pact-drift / db-backup-verify). Runbook:
 #         `docs/engineering/testing/smoke-tests.md`.

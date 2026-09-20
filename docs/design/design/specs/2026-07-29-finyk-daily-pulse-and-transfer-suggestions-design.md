@@ -2,7 +2,7 @@
 
 # Денний пульс і підказки внутрішніх переказів у Фініку
 
-> **Last touched:** 2026-09-16 by @claude. **Next review:** 2027-02-12.
+> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-21.
 > **Status:** Shipped — детермінований матчер `finyk-domain/src/domain/transferMatching.ts` (взаємно найкраща пара, маркер, вікно 6 год), `TransferSuggestionCard` («Це переказ» / «Не зараз»), фільтр `?date=today` в `Overview.tsx`, блок «сьогодні» (`todaySpent` / `todayIncome` / `todayRemaining`), другий рядок картки хаба у `shared/lib/quickStats.ts`.
 
 ## Мета

@@ -92,10 +92,15 @@ async function main(): Promise<void> {
 
     const writes: MemoryWrite[] = corpus.docs.map((doc, i) => ({
       userId: USER_ID,
-      // Корпус несе й RETIRED-джерела (legacy-рядки, CHECK їх ще дозволяє);
-      // пишемо просто у стор, минаючи API-валідацію — див. STORED_MEMORY_SOURCES.
-      source: doc.source as MemorySource,
-      sourceRef: doc.sourceRef,
+      // `doc.source` — домен власного словника евалу (`CORPUS_DOMAINS` у
+      // `corpus.ts`), розчепленого від `ai_memories.source` ініціативою
+      // 0024 PR-3: після звуження CHECK (міграція 144) значення на кшталт
+      // `chat`/`finyk` реальний INSERT відхилить. Пишемо завжди
+      // `source: "digest"`, а `sourceRef` — `doc.id` (унікальний по
+      // всьому корпусу) — видача звіряється по `sourceRef`, не по
+      // `${source}:${sourceRef}`.
+      source: "digest" as MemorySource,
+      sourceRef: doc.id,
       content: doc.content,
       embedding: vectors[i]!,
       embeddingMeta: provider.meta,
@@ -112,7 +117,9 @@ async function main(): Promise<void> {
         embedding: vectors[corpus.docs.length + i]!,
         topK: golden.topK,
       });
-      const retrieved = results.map((r) => `${r.source}:${r.sourceRef}`);
+      // Порівнюємо по `sourceRef` (= `doc.id`) — усі рядки вставлені під
+      // `source: "digest"` (див. коментар у циклі writes вище).
+      const retrieved = results.map((r) => r.sourceRef ?? "");
       perQuery.push({
         recall: recallAtK(retrieved, query.expected_memory_ids, golden.topK),
         precisionAt1: precisionAt1(retrieved, query.expected_memory_ids),
