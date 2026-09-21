@@ -26,9 +26,19 @@ const revokeSessionMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
 // (`meApi.deleteAccount`), а не через Better Auth: лише власний роут уміє
 // 30-денне вікно на скасування.
 const deleteAccountMock = vi.fn<(d: unknown) => Promise<unknown>>();
-vi.mock("@shared/api", () => ({
-  meApi: { deleteAccount: (data: unknown) => deleteAccountMock(data) },
-}));
+// Часткова підміна, а не весь модуль: `@shared/api` віддає ще з десяток
+// api-груп, якими користується решта профілю, і повний мок затирав їх —
+// сусідній тест про зміну імені падав саме через це.
+vi.mock("@shared/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@shared/api")>();
+  return {
+    ...actual,
+    meApi: {
+      ...actual.meApi,
+      deleteAccount: (data: unknown) => deleteAccountMock(data),
+    },
+  };
+});
 const signOutMock = vi.fn<() => Promise<void>>();
 const sendVerificationEmailMock =
   vi.fn<(d: unknown) => Promise<{ error: null }>>();
@@ -390,7 +400,7 @@ describe("ProfilePage", () => {
       fireEvent.click(screen.getByRole("button", { name: "Видалити акаунт" }));
 
       const dialog = screen.getByRole("dialog", {
-        name: "Видалити акаунт назавжди?",
+        name: "Видалити акаунт?",
       });
       expect(dialog).toHaveAttribute("aria-modal", "true");
       expect(within(dialog).getByLabelText("Пароль")).toBeInTheDocument();

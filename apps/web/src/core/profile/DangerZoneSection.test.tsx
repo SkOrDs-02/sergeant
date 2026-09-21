@@ -63,7 +63,7 @@ function renderSection(
 
 function openDialog(): HTMLElement {
   fireEvent.click(screen.getByRole("button", { name: "Видалити акаунт" }));
-  return screen.getByRole("dialog", { name: "Видалити акаунт назавжди?" });
+  return screen.getByRole("dialog", { name: "Видалити акаунт?" });
 }
 
 beforeEach(() => {
@@ -163,7 +163,7 @@ describe("DangerZoneSection", () => {
       await screen.findByText("Неправильний поточний пароль."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("dialog", { name: "Видалити акаунт назавжди?" }),
+      screen.getByRole("dialog", { name: "Видалити акаунт?" }),
     ).toBeInTheDocument();
     expect(signOutMock).not.toHaveBeenCalled();
     expect(onLogout).not.toHaveBeenCalled();
@@ -183,7 +183,7 @@ describe("DangerZoneSection", () => {
       await screen.findByText("Не вдалося видалити акаунт"),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("dialog", { name: "Видалити акаунт назавжди?" }),
+      screen.getByRole("dialog", { name: "Видалити акаунт?" }),
     ).toBeInTheDocument();
   });
 });

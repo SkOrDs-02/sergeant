@@ -31,6 +31,25 @@ const MeResponse = schemas.MeResponseSchema.meta({
   id: "MeResponse",
   description: "Відповідь на GET /api/me.",
 });
+const MeDeleteBody = schemas.MeDeleteBodySchema.meta({
+  id: "MeDeleteBody",
+  description:
+    "Тіло DELETE /api/me. Пароль обовʼязковий для акаунтів із credential-входом і безпредметний для OAuth-акаунтів.",
+});
+const MeDeleteResponse = schemas.MeDeleteResponseSchema.meta({
+  id: "MeDeleteResponse",
+  description:
+    "Відповідь DELETE /api/me. `deletedAt` — коли сервер прийняв прохання; `scheduledPurgeAt` — коли акаунт зникне (30 днів).",
+});
+const MeDeletionStatusResponse = schemas.MeDeletionStatusResponseSchema.meta({
+  id: "MeDeletionStatusResponse",
+  description:
+    "Відповідь GET /api/me/deletion-status. `pending: false` — акаунт активний, дат немає.",
+});
+const MeRestoreResponse = schemas.MeRestoreResponseSchema.meta({
+  id: "MeRestoreResponse",
+  description: "Відповідь POST /api/me/restore — прохання скасоване.",
+});
 const UserProfilePutBody = schemas.UserProfilePutBodySchema.meta({
   id: "UserProfilePutBody",
   description:
@@ -495,6 +514,10 @@ const ApiError = z
 export const namedSchemas = {
   User,
   MeResponse,
+  MeDeleteBody,
+  MeDeleteResponse,
+  MeDeletionStatusResponse,
+  MeRestoreResponse,
   UserProfilePutBody,
   UserProfileResponse,
   ChatRequest,
