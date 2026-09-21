@@ -1,4 +1,5 @@
 import { next, rewrite } from "@vercel/edge";
+import ROUTE_META from "./src/lib/routeMeta.json";
 
 /**
  * Markdown-переговори (acceptmarkdown.com) на тих самих адресах.
@@ -22,12 +23,44 @@ export const config = {
   matcher: ["/((?!assets/|.*\\.).*)"],
 };
 
+/**
+ * Тіло 404 для агента. Статус лишається справжнім 404 – саме він каже
+ * агенту, що шлях не існує; markdown-тіло лише пояснює це словами і дає
+ * куди піти далі. Короткий текст навмисно тут, а не читанням `404.md`:
+ * middleware не має доступу до файлів білда.
+ */
+const NOT_FOUND_MD = [
+  "# Такої сторінки немає",
+  "",
+  "Посилання застаріло або сторінки ніколи не було на sergeant.com.ua.",
+  "",
+  "- Карта сайту: https://sergeant.com.ua/sitemap.xml",
+  "- Орієнтир для агентів: https://sergeant.com.ua/llms.txt",
+  "- Повний текст сайту: https://sergeant.com.ua/llms-full.txt",
+  "",
+].join("\n");
+
 export default function middleware(request: Request): Response {
   const accept = request.headers.get("accept") ?? "";
   if (!accept.toLowerCase().includes("text/markdown")) return next();
 
   const url = new URL(request.url);
+  const route = url.pathname.replace(/\/$/, "") || "/";
+
+  // Реєстр маршрутів тут же, бо middleware не бачить файлової системи:
+  // без цієї перевірки невідомий шлях переписався б у неіснуючий .md і
+  // впав у HTML-тіло 404, тобто агент отримав би розмітку замість тексту.
+  if (!(route in ROUTE_META)) {
+    return new Response(NOT_FOUND_MD, {
+      status: 404,
+      headers: {
+        "content-type": "text/markdown; charset=utf-8",
+        vary: "Accept",
+      },
+    });
+  }
+
   // `/` → `/index.md`, `/guides/monobank` → `/guides/monobank/index.md`.
-  url.pathname = `${url.pathname.replace(/\/$/, "")}/index.md`;
+  url.pathname = `${route === "/" ? "" : route}/index.md`;
   return rewrite(url);
 }

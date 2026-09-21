@@ -55,6 +55,16 @@ describe("markdown-переговори", () => {
     expect(matcher).toContain(String.raw`.*\\.`);
   });
 
+  it("невідомий шлях дає 404 з markdown-тілом, а не HTML", () => {
+    // Essential-пункт скорера: статус мусить лишитись справжнім 404, а
+    // тіло – поясненням із покажчиками. Переписування в неіснуючий .md
+    // дало б HTML-сторінку 404, тобто розмітку замість тексту.
+    expect(mw).toContain("routeMeta.json");
+    expect(mw).toMatch(/status:\s*404/);
+    expect(mw).toMatch(/text\/markdown; charset=utf-8/);
+    expect(mw).toMatch(/sitemap\.xml[\s\S]{0,200}llms\.txt/);
+  });
+
   it("HTML лишається дефолтом", () => {
     // Без цієї перевірки легко зробити middleware, що переписує все підряд.
     expect(mw).toMatch(/if \(!accept[\s\S]{0,80}return next\(\)/);
