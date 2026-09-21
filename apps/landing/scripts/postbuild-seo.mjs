@@ -4,7 +4,7 @@
 // title/description/og/canonical (на Vercel статичні файли мають пріоритет
 // над catch-all rewrite) і dist/sitemap.xml. Джерело мети одне з рантаймом:
 // src/lib/routeMeta.json. Запуск: частина `pnpm build`.
-import { mkdirSync, readFileSync, writeFileSync } from "node:fs";
+import { mkdirSync, readFileSync, readdirSync, writeFileSync } from "node:fs";
 import path from "node:path";
 import { fileURLToPath } from "node:url";
 import { resolveSiteUrl } from "./site-url.mjs";
@@ -35,6 +35,43 @@ const tag = (marker) =>
   new RegExp(
     `<(?:meta|link)(?:(?!/?>)[\\s\\S])*?${marker}(?:(?!/?>)[\\s\\S])*?/?>`,
   );
+
+/**
+ * Preload двох шрифтів першого екрана.
+ *
+ * Навіщо: шрифти імпортуються всередині бандла, тож браузер дізнається про
+ * них лише розібравши JS – замір на проді 2026-09-21 дав старт завантаження
+ * на 1.7 с при повному завантаженні сторінки за 2.5 с. Preload піднімає їх
+ * у початок черги, і текст перестає перемальовуватись системним шрифтом.
+ *
+ * Рівно два файли, не всі девʼять: `manrope-cyrillic` несе основний текст,
+ * `unbounded-cyrillic-800` – заголовок першого екрана. Решта підмножин
+ * (латиниця, латиниця-розширена під ₴) доїжджають своєю чергою і чекати на
+ * них перший кадр не мусить.
+ */
+function preloadLinks() {
+  const dir = path.join(DIST, "assets");
+  const files = readdirSync(dir);
+  const pick = (needle) =>
+    files.find((f) => f.startsWith(needle) && f.endsWith(".woff2"));
+  const critical = [
+    pick("manrope-cyrillic-wght-normal"),
+    pick("unbounded-cyrillic-800-normal"),
+  ].filter(Boolean);
+  if (critical.length !== 2) {
+    throw new Error(
+      `postbuild-seo: не знайдено критичних шрифтів у dist/assets (знайдено ${critical.length} із 2)`,
+    );
+  }
+  return critical
+    .map(
+      (file) =>
+        `<link rel="preload" href="/assets/${file}" as="font" type="font/woff2" crossorigin />`,
+    )
+    .join("\n    ");
+}
+
+const PRELOAD = preloadLinks();
 
 function pageHtml(route, meta) {
   const url = `${site}${route === "/" ? "/" : route}`;
@@ -84,6 +121,8 @@ function pageHtml(route, meta) {
       html = html.replace("</head>", `  ${ogImage}\n    ${twImage}\n  </head>`);
     }
   }
+
+  html = html.replace("</head>", `  ${PRELOAD}\n  </head>`);
 
   if (meta.noindex) {
     html = html.replace(
