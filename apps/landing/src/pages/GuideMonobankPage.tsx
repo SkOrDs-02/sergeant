@@ -20,13 +20,21 @@ export default function GuideMonobankPage() {
     ...ROUTE_META["/guides/monobank"],
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "Article",
-      headline:
-        "Як підʼєднати Monobank до трекера витрат – і що він реально бачить",
+      // HowTo, а не Article: сторінка веде людину по кроках, і саме кроки
+      // мають бути машинно-читабельними. Розширених сніпетів Google для
+      // HowTo більше не малює (зняв у вересні 2023), тож адресат тут –
+      // AI-споживачі, ті самі, заради яких у нас llms.txt і markdown.
+      "@type": "HowTo",
+      name: "Як підʼєднати Monobank до трекера витрат – і що він реально бачить",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/monobank"].lastmod,
       author: AUTHOR_JSON_LD,
       publisher: { "@type": "Organization", name: "Sergeant" },
+      step: STEPS.map((text, i) => ({
+        "@type": "HowToStep",
+        position: i + 1,
+        text,
+      })),
     },
   });
 
