@@ -96,15 +96,21 @@ export function DeleteAccountDialog({
         <p id={descriptionId} className="text-style-body text-muted mt-2">
           Дані зникнуть {purgeDate}, через {ACCOUNT_DELETION_GRACE_DAYS} днів.
           До того дня можна передумати: увійди і натисни «Відновити акаунт».
-          Підписка скасовується одразу, і відновлення її не поверне. Введи
-          пароль для підтвердження.
+          Підписка скасовується одразу, і відновлення її не поверне.
         </p>
+        {/*
+          Поле не обовʼязкове, і кнопка ним НЕ гейтиться: акаунт, заведений
+          через Google, пароля не має взагалі, і з обовʼязковим полем його
+          не можна було б видалити з інтерфейсу зовсім. Сервер робить ту саму
+          розвилку (`modules/me/verifyAccountPassword.ts`): є credential-вхід —
+          пароль звіряється, немає — пропускає.
+        */}
         <div className="mt-4 space-y-2">
           <label
             htmlFor={passwordId}
             className="block text-style-caption text-muted"
           >
-            Пароль
+            {messages.accountDeletion.passwordLabel}
           </label>
           <Input
             id={passwordId}
@@ -131,7 +137,7 @@ export function DeleteAccountDialog({
             tone="danger"
             size="md"
             className="flex-1"
-            disabled={deleting || !password}
+            disabled={deleting}
             loading={deleting}
             onClick={onConfirm}
           >

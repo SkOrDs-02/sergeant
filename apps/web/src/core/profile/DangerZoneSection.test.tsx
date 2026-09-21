@@ -92,17 +92,23 @@ describe("DangerZoneSection", () => {
   });
 
   // §6 п.1, гейт підтвердження: не можна видалити акаунт без пароля.
-  it("gates the confirm button behind a non-empty password field", () => {
+  // Порожнє поле більше не блокує кнопку: акаунт лише з OAuth-входом
+  // пароля не має, і сервер робить цю розвилку сам
+  // (`modules/me/verifyAccountPassword.ts`).
+  it("keeps the confirm button usable with and without a password", () => {
     renderSection();
     const dialog = openDialog();
     const confirmBtn = within(dialog).getByRole("button", {
       name: "Видалити",
     });
-    expect(confirmBtn).toBeDisabled();
+    expect(confirmBtn).not.toBeDisabled();
 
-    fireEvent.change(within(dialog).getByLabelText("Пароль"), {
-      target: { value: "secret123" },
-    });
+    fireEvent.change(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      {
+        target: { value: "secret123" },
+      },
+    );
     expect(confirmBtn).not.toBeDisabled();
   });
 
@@ -110,9 +116,12 @@ describe("DangerZoneSection", () => {
   it("does NOT call deleteAccount when the dialog is cancelled", () => {
     renderSection();
     const dialog = openDialog();
-    fireEvent.change(within(dialog).getByLabelText("Пароль"), {
-      target: { value: "secret123" },
-    });
+    fireEvent.change(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      {
+        target: { value: "secret123" },
+      },
+    );
     fireEvent.click(within(dialog).getByRole("button", { name: "Скасувати" }));
 
     expect(deleteAccountMock).not.toHaveBeenCalled();
@@ -126,9 +135,12 @@ describe("DangerZoneSection", () => {
     const onLogout = vi.fn(async () => undefined);
     renderSection(onLogout);
     const dialog = openDialog();
-    fireEvent.change(within(dialog).getByLabelText("Пароль"), {
-      target: { value: "secret123" },
-    });
+    fireEvent.change(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      {
+        target: { value: "secret123" },
+      },
+    );
     fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
 
     await waitFor(() =>
@@ -154,9 +166,12 @@ describe("DangerZoneSection", () => {
     const onLogout = vi.fn(async () => undefined);
     renderSection(onLogout);
     const dialog = openDialog();
-    fireEvent.change(within(dialog).getByLabelText("Пароль"), {
-      target: { value: "wrong-pass" },
-    });
+    fireEvent.change(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      {
+        target: { value: "wrong-pass" },
+      },
+    );
     fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
 
     expect(
@@ -174,9 +189,12 @@ describe("DangerZoneSection", () => {
     deleteAccountMock.mockRejectedValueOnce({});
     renderSection();
     const dialog = openDialog();
-    fireEvent.change(within(dialog).getByLabelText("Пароль"), {
-      target: { value: "secret123" },
-    });
+    fireEvent.change(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      {
+        target: { value: "secret123" },
+      },
+    );
     fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
 
     expect(
