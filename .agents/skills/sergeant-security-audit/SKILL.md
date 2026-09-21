@@ -71,6 +71,42 @@ pnpm audit --json | jq '.vulnerabilities | to_entries[]
 - MMKV keys holding sensitive data (tokens, PII) must not store plaintext; verify encryption configuration.
 - Deep links wired via `apps/mobile/app.config.ts` (`scheme: "sergeant"` + Android `intentFilters`) and routed through expo-router under `apps/mobile/app/`: ensure unknown scheme parameters are sanitized before use in routing.
 
+## Adversarial pass — try to disprove every finding before reporting it
+
+A finding nobody argued against is a claim, not a result. Run this pass as a **separate step after** collecting findings, with the hunting context set aside: re-read the code the finding points at and argue the opposite case.
+
+For each finding, answer all four. Any "no" drops it out of the report body.
+
+1. **Reachability.** Is there a concrete path from untrusted input to this code? Name the entry route in `apps/server/src/routes/` or the UI surface. "An attacker could call this internal helper" is not a path.
+2. **Existing gate.** Is it already blocked upstream? Check the Zod schema, `requireSession`, `REDACT_KEY_NAMES`, and the ESLint rules in `packages/eslint-plugin-sergeant-design` before claiming the surface is unguarded.
+3. **Citation.** Open the file at the exact line you cite and confirm the quoted code is there, in the version under review. A finding that quotes code that no longer exists is worse than no finding.
+4. **Remediation.** Does the fix change behavior an existing test asserts? If yes, say so in the finding — a "fix" that breaks a green test is a design decision, not a patch.
+
+Record the verdict per finding:
+
+| Verdict | Meaning | Where it goes |
+|---|---|---|
+| `confirmed` | All four answered yes | Report body, with severity |
+| `needs_validation` | Reachability plausible but unproven | Report appendix, phrased as a question |
+| `rejected` | Failed any check | Listed with the reason it was dropped |
+
+Report rejected findings too, one line each. A reviewer who sees "checked and dropped: X because Zod schema already rejects it" knows that area was covered; silence looks identical to never having looked.
+
+## Coverage ledger — say what you did NOT check
+
+Before reporting, list the trust boundaries in scope and mark each one. An audit that names five findings and stays silent about mobile deep links reads as "mobile is clean" when it may mean "mobile was never opened".
+
+| Boundary | Checked | Note |
+|---|---|---|
+| Server routes (auth + Zod) | yes/no | which modules |
+| SQL — raw `pg` and Drizzle, incl. `queryReplica()` | yes/no | |
+| Pino redaction on new log paths | yes/no | |
+| Client storage (`TypedStore`, MMKV) | yes/no | |
+| Deps (`pnpm audit`) | yes/no | |
+| Skill bodies (`pnpm lint:skills`) | yes/no | only if `.agents/skills/**` changed |
+
+Unchecked is a legitimate answer when the diff does not touch that boundary. Say it explicitly rather than omitting the row.
+
 ## Severity triage
 
 | Level | Action |

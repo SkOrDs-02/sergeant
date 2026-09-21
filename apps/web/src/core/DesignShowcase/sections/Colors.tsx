@@ -11,7 +11,7 @@ const SAMPLE_USAGE = `// Tokens: light / dark / hc cascade for free
 <div className="bg-panel text-text border border-line">…</div>
 
 // Saturated brand fill behind text-white needs the -strong companion
-<button className="bg-accent-strong text-white">Submit</button>`;
+<button className="bg-brand-strong text-white">Submit</button>`;
 
 export function ColorsSection() {
   return (
@@ -99,7 +99,7 @@ export function ColorsSection() {
             },
             {
               label: "Saturated fill + text-white",
-              good: <code>bg-accent-strong text-white</code>,
+              good: <code>bg-brand-strong text-white</code>,
               bad: <code>bg-accent text-white</code>,
             },
             {

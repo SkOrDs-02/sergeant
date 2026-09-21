@@ -236,8 +236,8 @@ export const HabitCheckbox = memo(function HabitCheckbox({
     <label
       className={cn(
         "flex items-center gap-3 px-4 py-3 rounded-2xl transition-colors",
-        "hover:bg-panel-hi/50 cursor-pointer",
-        checked && "bg-panel-hi/30",
+        "hover:bg-panelHi/50 cursor-pointer",
+        checked && "bg-panelHi/30",
       )}
     >
       <AnimatedCheckbox

@@ -406,8 +406,8 @@ describe("/api/v1/me data rights", () => {
       mono: { connection: null, accounts: [], transactions: [] },
       billing: { subscriptions: [] },
       push: { webSubscriptions: [], devices: [] },
-      ai: { usageDaily: [], memories: [] },
     });
+    expect(res.body.data.routine).toHaveProperty("routine_habits");
     const sql = queryMock.mock.calls.map((call) => String(call[0])).join("\n");
     expect(sql).not.toMatch(/token_ciphertext|webhook_secret|token_hash/);
   });

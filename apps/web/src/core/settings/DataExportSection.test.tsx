@@ -107,7 +107,11 @@ describe("DataExportSection", () => {
         mono: { connection: null, accounts: [], transactions: [] },
         billing: { subscriptions: [] },
         push: { webSubscriptions: [], devices: [] },
-        ai: { usageDaily: [], memories: [] },
+        finyk: {},
+        fizruk: {},
+        nutrition: {},
+        routine: { routine_habits: [{ name: "Вода" }] },
+        excluded: [],
       },
     });
     render(<DataExportSection />);
@@ -121,6 +125,10 @@ describe("DataExportSection", () => {
       /^sergeant-account-export-\d{4}-\d{2}-\d{2}\.csv$/,
     );
     expect(content).toContain("# Дані модулів");
+    // Модульні секції їдуть у CSV імʼям таблиці — без них файл знову
+    // «повний» лише на вигляд.
+    expect(content).toContain("# routine_habits");
+    expect(content).toContain("Вода");
     expect(content).toContain("значення");
     // Порожні секції лишаються видимими: «підписок немає» і «рядка про
     // підписки немає» — різні повідомлення про повноту експорту.

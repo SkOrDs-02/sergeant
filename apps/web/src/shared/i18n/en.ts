@@ -272,8 +272,7 @@ export const messagesEn: Partial<{
       monoConnection: "Monobank connection",
       subscriptions: "Subscriptions",
       pushDevices: "Notification devices",
-      aiUsage: "AI usage by day",
-      aiMemories: "AI memory",
+      excluded: "Not included in this file",
     },
   },
 

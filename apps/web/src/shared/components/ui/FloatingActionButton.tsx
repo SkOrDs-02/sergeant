@@ -287,7 +287,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
                 className={cn(
                   "flex items-center gap-3 pl-4 pr-5 py-2.5 rounded-full w-60",
                   "bg-panel border border-line shadow-float",
-                  "hover:bg-panel-hi active:scale-95",
+                  "hover:bg-panelHi active:scale-95",
                   "transition-[transform,background-color,color,border-color] duration-base",
                   "motion-safe:animate-fab-item",
                 )}
