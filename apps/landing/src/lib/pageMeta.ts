@@ -1,6 +1,6 @@
 import { useEffect } from "react";
 import ROUTE_META_JSON from "./routeMeta.json";
-import { absolutizeJsonLd } from "./jsonLd";
+import { absolutizeJsonLd, withBreadcrumb } from "./jsonLd";
 import { reportSsgJsonLd } from "./ssgJsonLd";
 
 /**
@@ -61,7 +61,10 @@ export function usePageMeta({ title, description, noindex, jsonLd }: PageMeta) {
       // Той самий прохід, що й у SSG: url і logo пишуться відносними, а в
       // розмітку мають потрапити абсолютними.
       script.textContent = JSON.stringify(
-        absolutizeJsonLd(jsonLd, window.location.origin),
+        absolutizeJsonLd(
+          withBreadcrumb(jsonLd, window.location.pathname),
+          window.location.origin,
+        ),
       );
       document.head.appendChild(script);
       return () => {

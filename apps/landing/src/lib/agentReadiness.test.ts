@@ -78,6 +78,24 @@ describe("markdown-переговори", () => {
   });
 });
 
+describe("крихти гайдів", () => {
+  it("додаються централізовано, не в кожному гайді руками", () => {
+    // Доданий маршрут інакше тихо лишається без крихт, і помітить це вже
+    // видача. Обидва шляхи рендера кличуть один хелпер.
+    expect(read("src/lib/jsonLd.ts")).toContain("withBreadcrumb");
+    expect(read("src/entry-server.tsx")).toContain("withBreadcrumb");
+    expect(read("src/lib/pageMeta.ts")).toContain("withBreadcrumb");
+  });
+
+  it("адреси кроків абсолютні", () => {
+    // Google вимагає для BreadcrumbList абсолютні адреси; ключ `item` мусить
+    // бути в наборі, який абсолютизує розмітку.
+    const src = read("src/lib/jsonLd.ts");
+    const keys = src.match(/const URL_KEYS[^;]+;/)?.[0] ?? "";
+    expect(keys).toContain('"item"');
+  });
+});
+
 describe("llms.txt як інструкція для агента", () => {
   const llms = read("public/llms.txt");
 
