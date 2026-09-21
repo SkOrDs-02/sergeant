@@ -217,6 +217,26 @@ export const messages = {
   dataDisclosure: dataDisclosureMessages,
   dataExport: dataExportMessages,
 
+  // Вікно на скасування видалення акаунта (спека
+  // docs/work/specs/user-deletion-grace-window.md). Тексти діалогу
+  // підтвердження і екрана-блокера, який бачить людина, що вже попросила
+  // видалення і зайшла знову.
+  accountDeletion: {
+    dialogTitle: "Видалити акаунт?",
+    blockerTitle: "Акаунт готується до видалення",
+    // Рядок рендериться як `${blockerBodyPrefix} ${date}. ${blockerBodyTail}`,
+    // щоб каталог лишався плоскими рядками (см. `MessageCatalog` constraint).
+    blockerBodyPrefix: "Дані зникнуть",
+    blockerBodyTail: "До того дня їх можна повернути.",
+    blockerSubscription:
+      "Підписку вже скасовано, і відновлення її не поверне: якщо передумаєш, оформ її знову.",
+    restore: "Відновити акаунт",
+    leave: "Вийти",
+    restored: "Акаунт відновлено",
+    restoreFailed: "Не вдалося відновити акаунт",
+    retry: "Повторити",
+  },
+
   // Оцінка AI-поради (`AdviceFeedback`). Підписи — для скрінрідера:
   // самі кнопки несуть лише гліфи, і без `aria-label` пара пальців була б
   // двома безіменними кнопками поспіль.

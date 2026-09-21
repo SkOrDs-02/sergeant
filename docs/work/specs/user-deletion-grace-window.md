@@ -1,7 +1,15 @@
 # SPEC: 30-денне вікно на скасування видалення акаунта
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-03-31.
-> **Status:** Scaffolded
+> **Last touched:** 2026-09-21 by @claude (усі чотири кроки реалізовані). **Next review:** 2027-03-31.
+> **Status:** Implemented. Усі чотири кроки § Порядку робіт: міграція 145
+> (`deletion_requested_at` + частковий індекс), `requestAccountDeletion` /
+> `restoreAccount` / `getAccountDeletionStatus` / `purgeUserData` у
+> `modules/me/dataRights.ts`, два роути й гейт у `http/requireSession.ts`,
+> добивач `modules/me/deletionPoller.ts` із видимістю в `/health/workers`,
+> екран-блокер `core/profile/PendingDeletionScreen.tsx` і переписаний текст
+> `DeleteAccountDialog.tsx`. **Residual:** живий прохід § Верифікації
+> п. 3-5 і ручний прогін `.down.sql` (у середовищі виконання не було
+> Postgres), статус ADR-0016 окремим PR.
 
 <!-- Спека самодостатня: виконавець у свіжій сесії реалізує фічу, читаючи лише
 цей файл, AGENTS.md і названий тут код. Контексту попередньої сесії немає. -->
@@ -53,9 +61,10 @@
   `setInterval` + `unref()`, ідемпотентні `start`/`stop`, overlap-guard.
   Запускається в `apps/server/src/index.ts:222`. Новий добивач копіює цей
   клас, а не винаходить шедулер.
-- Останній номер міграції на момент написання -
-  `134_fizruk_item_chosen_variant.sql`; перевір `ls apps/server/src/migrations/`
-  перед створенням нової.
+- Міграція вікна вже створена: `145_user_deletion_grace_window.sql` і парний
+  `.down.sql`. На момент написання спеки останньою була `134_fizruk_item_
+chosen_variant.sql`; для будь-якої наступної перевіряй
+  `ls apps/server/src/migrations/`, а не це число.
 - Субстрат періодичних задач за
   [ADR-0089](../../governance/adr/0089-job-substrates-outbox-broker-timer.md):
   періодичний ідемпотентний скан із дедупом у Postgres - це in-process timer,
@@ -209,6 +218,69 @@ Stripe, Sentry, PostHog і Resend нічого не чіпається, тож �
   тим самим `DELETE FROM session`, тож пристрій просто розлогінюється -
   окремого екрана в цій спеці немає.
 - Ретеншн логів у Loki/Sentry (ADR-0016 § ADR-6.4).
+
+## Стан виконання
+
+**Зроблено (кроки 1-3 § Порядку робіт).**
+
+- Міграція `145_user_deletion_grace_window.sql` і парний `.down.sql`:
+  nullable `deletion_requested_at` плюс частковий індекс по заповнених
+  мітках (їх одиниці на всю таблицю, повний індекс коштував би обсягом
+  усієї таблиці).
+- `modules/me/dataRights.ts`: `deleteUserData` розділено на
+  `requestAccountDeletion` (позначка, гасіння сесій, скасування підписки)
+  і `purgeUserData` (незворотна частина, без змін по суті). Додані
+  `restoreAccount` і `getAccountDeletionStatus`.
+- Контракт: `MeDeleteResponse` віддає ще й `scheduledPurgeAt`, додані
+  `MeDeletionStatusResponse`, `MeRestoreResponse` і `MeDeleteBody`;
+  `packages/api-client` отримав `deletionStatus` і `restoreAccount`.
+  Тривалість вікна живе однією константою `ACCOUNT_DELETION_GRACE_DAYS`
+  у `packages/shared`, як вимагає § Ризики.
+- Гейт у `http/requireSession.ts` для всіх трьох варіантів (`require`,
+  `require_fresh`, `soft`), з точковим винятком `allowPendingDeletion`
+  для двох роутів вікна.
+- Добивач `modules/me/deletionPoller.ts` (`FOR UPDATE SKIP LOCKED`,
+  overlap-guard, година за замовчуванням) + `accountDeletion` у
+  `/health/workers` із розділенням `waiting` / `overdue`.
+
+**Відхилення від спеки, знайдене під час виконання.** Спека описує
+`DELETE /api/me` як шлях видалення, але живим шляхом був
+`POST /api/auth/delete-user` Better Auth: веб кликав саме його, а
+`beforeDelete` викликав `deleteUserData`. Вікно на тому хуку нездійсненне,
+бо Better Auth після `beforeDelete` БЕЗУМОВНО виконує власний
+`internalAdapter.deleteUser`. Рішення власника 2026-09-21: вимкнути
+`user.deleteUser` у Better Auth, перевести веб на `DELETE /api/me` і
+перенести туди ж перевірку пароля, яку Better Auth тримав
+(`modules/me/verifyAccountPassword.ts`, та сама механіка, що в його
+`checkPassword`). Без цього кроку фіча була б мертвою на єдиному шляху,
+яким користуються люди.
+
+**Зроблено (крок 4).**
+
+- `core/profile/PendingDeletionScreen.tsx`: повноекранний блокер із датою
+  видалення, кнопками «Відновити акаунт» і «Вийти», попередженням про
+  підписку. Монтується в `AppShell` ПЕРЕД boot-кластерами і контентом, бо
+  позначений акаунт не має ані писати локально, ані синхронізуватись.
+- `core/profile/usePendingDeletion.ts`: один запит стану на старті сесії.
+  Читати 403 з випадкового роута було б ненадійно: екран, який свого 403
+  не обробляє, пустив би людину в застосунок.
+- `DeleteAccountDialog.tsx`: текст називає дату, тривалість вікна, спосіб
+  відновлення і те, що підписка не повернеться. Дата рахується тією самою
+  константою `ACCOUNT_DELETION_GRACE_DAYS`, що й дедлайн на сервері.
+- OpenAPI: `DELETE /api/me` (якого там не було й до вікна),
+  `GET /api/me/deletion-status`, `POST /api/me/restore`.
+
+**Відкрите.**
+
+- Живий прохід § Верифікації п. 3-5 і ручний прогін `.down.sql`: у
+  середовищі виконання не було Postgres, тож обидва лишаються за
+  власником або за CI.
+- Статус ADR-0016 (`Proposed` → далі) лишається поза скоупом, як і
+  записано нижче.
+- Кнопка підтвердження досі вимагає пароль (`disabled={!password}`), тож
+  акаунт лише з OAuth-входом видалити з UI не може. Це поведінка, що
+  існувала до вікна; сервер такий акаунт пропускає (пароля в нього немає),
+  лагодиться окремо.
 
 ## Верифікація
 

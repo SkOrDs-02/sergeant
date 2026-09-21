@@ -4,7 +4,7 @@
  * 2026-08-08: «найнебезпечніші дії без тестів»). Це чиста презентаційна
  * компонента — уся мережева логіка живе в `DangerZoneSection` (окремий
  * файл), тут перевіряємо лише контракт: що бачить і чим керує людина, поки
- * відповідає на «Видалити акаунт назавжди?».
+ * відповідає на «Видалити акаунт?».
  *
  * Ключовий кейс — гейт підтвердження (§6 п.1, останній буллет завдання):
  * кнопка «Видалити» вимкнена, доки поле пароля порожнє. Без цього гейта
@@ -56,7 +56,7 @@ describe("DeleteAccountDialog", () => {
   it("renders the confirmation dialog with an accessible name and a password field when open", () => {
     renderDialog();
     const dialog = screen.getByRole("dialog", {
-      name: "Видалити акаунт назавжди?",
+      name: "Видалити акаунт?",
     });
     expect(dialog).toHaveAttribute("aria-modal", "true");
     expect(within(dialog).getByLabelText("Пароль")).toBeInTheDocument();

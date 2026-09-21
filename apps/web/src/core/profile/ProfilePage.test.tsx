@@ -22,7 +22,23 @@ const updateUserMock =
 const changePasswordMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
 const listSessionsMock = vi.fn<() => Promise<{ data: unknown[] }>>();
 const revokeSessionMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
-const deleteUserMock = vi.fn<(d: unknown) => Promise<{ error: null }>>();
+// DangerZoneSection тепер видаляє акаунт через `DELETE /api/me`
+// (`meApi.deleteAccount`), а не через Better Auth: лише власний роут уміє
+// 30-денне вікно на скасування.
+const deleteAccountMock = vi.fn<(d: unknown) => Promise<unknown>>();
+// Часткова підміна, а не весь модуль: `@shared/api` віддає ще з десяток
+// api-груп, якими користується решта профілю, і повний мок затирав їх —
+// сусідній тест про зміну імені падав саме через це.
+vi.mock("@shared/api", async (importOriginal) => {
+  const actual = await importOriginal<typeof import("@shared/api")>();
+  return {
+    ...actual,
+    meApi: {
+      ...actual.meApi,
+      deleteAccount: (data: unknown) => deleteAccountMock(data),
+    },
+  };
+});
 const signOutMock = vi.fn<() => Promise<void>>();
 const sendVerificationEmailMock =
   vi.fn<(d: unknown) => Promise<{ error: null }>>();
@@ -32,7 +48,11 @@ updateUserMock.mockResolvedValue({ error: null });
 changePasswordMock.mockResolvedValue({ error: null });
 listSessionsMock.mockResolvedValue({ data: [] });
 revokeSessionMock.mockResolvedValue({ error: null });
-deleteUserMock.mockResolvedValue({ error: null });
+deleteAccountMock.mockResolvedValue({
+  ok: true,
+  deletedAt: "2026-09-20T10:00:00.000Z",
+  scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+});
 signOutMock.mockResolvedValue(undefined);
 sendVerificationEmailMock.mockResolvedValue({ error: null });
 changeEmailMock.mockResolvedValue({ error: null });
@@ -42,7 +62,6 @@ vi.mock("../auth/authClient.js", () => ({
   changePassword: (data: unknown) => changePasswordMock(data),
   listSessions: () => listSessionsMock(),
   revokeSession: (data: unknown) => revokeSessionMock(data),
-  deleteUser: (data: unknown) => deleteUserMock(data),
   signOut: () => signOutMock(),
   sendVerificationEmail: (data: unknown) => sendVerificationEmailMock(data),
   changeEmail: (data: unknown) => changeEmailMock(data),
@@ -149,7 +168,11 @@ describe("ProfilePage", () => {
     changePasswordMock.mockResolvedValue({ error: null });
     listSessionsMock.mockResolvedValue({ data: [] });
     revokeSessionMock.mockResolvedValue({ error: null });
-    deleteUserMock.mockResolvedValue({ error: null });
+    deleteAccountMock.mockResolvedValue({
+      ok: true,
+      deletedAt: "2026-09-20T10:00:00.000Z",
+      scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+    });
     signOutMock.mockResolvedValue(undefined);
     sendVerificationEmailMock.mockResolvedValue({ error: null });
     changeEmailMock.mockResolvedValue({ error: null });
@@ -377,7 +400,7 @@ describe("ProfilePage", () => {
       fireEvent.click(screen.getByRole("button", { name: "Видалити акаунт" }));
 
       const dialog = screen.getByRole("dialog", {
-        name: "Видалити акаунт назавжди?",
+        name: "Видалити акаунт?",
       });
       expect(dialog).toHaveAttribute("aria-modal", "true");
       expect(within(dialog).getByLabelText("Пароль")).toBeInTheDocument();

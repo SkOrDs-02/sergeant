@@ -24,6 +24,7 @@ import { useOpenSignIn } from "../auth/useOpenSignIn";
 import { useActivationV2Boot } from "../activation";
 import { NpsSurveyGate } from "../feedback/useNpsSurveyTrigger";
 import { AppLock } from "../security/AppLock";
+import { usePendingDeletion } from "../profile/usePendingDeletion";
 import { useAppLockContext } from "../security/AppLockContext";
 import { setFlag, useFlag } from "../lib/featureFlags";
 import { useDemoCommands } from "./useDemoCommands";
@@ -132,8 +133,27 @@ function BootGate({ children }: { children: ReactNode }) {
  * state is shared with `RootLayout`'s own consumers — see that component's
  * docstring.
  */
+/**
+ * Ліниво: екран-блокер вікна видалення потрібен рідкісному стану, а
+ * `RootLayout` сидить на критичному шляху, стеля якого гейтиться окремо
+ * (`size:eager`). Статичний імпорт звідси затягнув би його до першого
+ * кадру всім.
+ */
+const PendingDeletionScreen = lazy(() =>
+  import("../profile/PendingDeletionScreen").then((mod) => ({
+    default: mod.PendingDeletionScreen,
+  })),
+);
+
 function AppShell({ children }: { children: React.ReactNode }) {
   const appLock = useAppLockContext();
+  // Вікно на скасування видалення (рішення 3 спеки
+  // docs/work/specs/user-deletion-grace-window.md). Стоїть ПЕРЕД
+  // boot-кластерами і контентом: позначений акаунт не має ані писати
+  // локально, ані синхронізуватись, бо сервер для нього однаково закритий
+  // гейтом `requireSession` (403 `account_pending_deletion`).
+  const pendingDeletion = usePendingDeletion();
+  const { logout } = useAuth();
   // Write-through reconcile for `hub_biometrics_v1` ↔ `/api/me/profile`.
   // Self-gating: власний `useQuery` стоїть `enabled: false`, поки сесії
   // немає, тож хук монтується беззастережно — демо- й анонімним сесіям
@@ -152,6 +172,18 @@ function AppShell({ children }: { children: React.ReactNode }) {
   // PR-S13: налаштування вигляду хаба їдуть між пристроями тим самим
   // write-through каналом, що й вибір модулів рядком вище.
   useHubPrefsSync();
+
+  if (pendingDeletion.isPending && pendingDeletion.scheduledPurgeAt) {
+    return (
+      <Suspense fallback={null}>
+        <PendingDeletionScreen
+          scheduledPurgeAt={pendingDeletion.scheduledPurgeAt}
+          onLogout={() => logout()}
+        />
+      </Suspense>
+    );
+  }
+
   return (
     <>
       {/* Single app-wide skip-link — first focusable on EVERY route

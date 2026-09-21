@@ -4,12 +4,14 @@ import { logger, serializeError } from "../obs/logger.js";
 import { toPublicErrorCode } from "../obs/errorCode.js";
 import { getRedisStats, pingRedis } from "../lib/redis.js";
 import { getPoolStats } from "../db.js";
+import { env } from "../env/env.js";
 import { anthropicCircuitBreaker } from "../lib/circuitBreaker.js";
 import { elapsedMs } from "../lib/timing.js";
 import { appState } from "../lib/appState.js";
 import { getMemoryIngestWorkerStats } from "../modules/ai-memory/ingestQueue.js";
 import { getMonoEnrichmentWorkerStatus } from "../modules/mono/enrichmentWorker.js";
 import { getGdprCleanupWorkerStatus } from "../modules/gdpr/cleanupPoller.js";
+import { getAccountDeletionWorkerStatus } from "../modules/me/deletionPoller.js";
 import {
   driftBlocksReadiness,
   getLastSchemaDriftReport,
@@ -219,20 +221,27 @@ export function createHealthzHandler(pool: DbPool): RequestHandler {
  */
 export function createWorkersHealthHandler(pool: Pool): RequestHandler {
   return async (_req, res) => {
-    const [memoryIngest, monoEnrichment, gdprCleanup] = await Promise.all([
-      getMemoryIngestWorkerStats(),
-      getMonoEnrichmentWorkerStatus(pool),
-      getGdprCleanupWorkerStatus(pool),
-    ]);
+    const [memoryIngest, monoEnrichment, gdprCleanup, accountDeletion] =
+      await Promise.all([
+        getMemoryIngestWorkerStats(),
+        getMonoEnrichmentWorkerStatus(pool),
+        getGdprCleanupWorkerStatus(pool),
+        getAccountDeletionWorkerStatus(
+          pool,
+          env.ACCOUNT_DELETION_POLL_INTERVAL_MS,
+        ),
+      ]);
     // Worker вважається "responsive": його sample-функція не повернула
     // `errorCode`. Disabled / fallback — все ще responsive.
     const memoryIngestResponsive = memoryIngest.errorCode === undefined;
     const monoEnrichmentResponsive = monoEnrichment.errorCode === undefined;
     const gdprCleanupResponsive = gdprCleanup.errorCode === undefined;
+    const accountDeletionResponsive = accountDeletion.errorCode === undefined;
     const allResponsive =
       memoryIngestResponsive &&
       monoEnrichmentResponsive &&
-      gdprCleanupResponsive;
+      gdprCleanupResponsive &&
+      accountDeletionResponsive;
 
     res.status(allResponsive ? 200 : 503).json({
       status: allResponsive ? "healthy" : "unhealthy",
@@ -241,6 +250,7 @@ export function createWorkersHealthHandler(pool: Pool): RequestHandler {
         aiMemoryIngest: memoryIngest,
         monoEnrichment,
         gdprCleanup,
+        accountDeletion,
       },
     });
   };

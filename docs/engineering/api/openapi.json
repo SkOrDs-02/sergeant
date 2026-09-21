@@ -50,6 +50,137 @@
             }
           }
         }
+      },
+      "delete": {
+        "summary": "Попросити видалити акаунт (30-денне вікно на скасування)",
+        "description": "НЕ видаляє одразу: позначає акаунт, гасить сесії на всіх пристроях і скасовує підписку. Незворотне видалення виконує добивач через 30 днів; до того дня працює POST /api/me/restore. Повторний виклик ідемпотентний і не зсуває дату.",
+        "tags": ["auth"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "requestBody": {
+          "required": false,
+          "content": {
+            "application/json": {
+              "schema": {
+                "$ref": "#/components/schemas/MeDeleteBody"
+              }
+            }
+          }
+        },
+        "responses": {
+          "200": {
+            "description": "Прохання прийняте; `scheduledPurgeAt` — дата видалення.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeDeleteResponse"
+                }
+              }
+            }
+          },
+          "400": {
+            "description": "Bad request — payload не пройшов zod-валідацію.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/deletion-status": {
+      "get": {
+        "summary": "Стан вікна на скасування видалення",
+        "tags": ["auth"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Стан акаунта; `pending: false` — активний.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeDeletionStatusResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          }
+        }
+      }
+    },
+    "/api/me/restore": {
+      "post": {
+        "summary": "Скасувати прохання видалити акаунт",
+        "description": "Знімає позначку, поки вікно не закрилось. Підписку не повертає: її скасовано в день прохання, і потрібне нове оформлення.",
+        "tags": ["auth"],
+        "security": [
+          {
+            "cookieAuth": []
+          },
+          {
+            "bearerAuth": []
+          }
+        ],
+        "responses": {
+          "200": {
+            "description": "Прохання скасоване, акаунт знову активний.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/MeRestoreResponse"
+                }
+              }
+            }
+          },
+          "401": {
+            "description": "Unauthorized — потрібна активна сесія.",
+            "content": {
+              "application/json": {
+                "schema": {
+                  "$ref": "#/components/schemas/ApiError"
+                }
+              }
+            }
+          },
+          "404": {
+            "description": "Активного прохання видалити акаунт немає."
+          }
+        }
       }
     },
     "/api/me/profile": {
@@ -4385,6 +4516,17 @@
   },
   "components": {
     "schemas": {
+      "MeDeleteBody": {
+        "type": "object",
+        "properties": {
+          "password": {
+            "type": "string",
+            "minLength": 1,
+            "maxLength": 128
+          }
+        },
+        "description": "Тіло DELETE /api/me. Пароль обовʼязковий для акаунтів із credential-входом і безпредметний для OAuth-акаунтів."
+      },
       "UserProfilePutBody": {
         "type": "object",
         "properties": {
@@ -6696,6 +6838,83 @@
         "required": ["error", "message", "code"],
         "additionalProperties": false,
         "description": "Канонічна shape body-помилки від `errorHandler` (4xx/5xx через AppError-ієрархію)."
+      },
+      "MeDeleteResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "deletedAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          },
+          "scheduledPurgeAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": ["ok", "deletedAt", "scheduledPurgeAt"],
+        "additionalProperties": false,
+        "description": "Відповідь DELETE /api/me. `deletedAt` — коли сервер прийняв прохання; `scheduledPurgeAt` — коли акаунт зникне (30 днів)."
+      },
+      "MeDeletionStatusResponse": {
+        "oneOf": [
+          {
+            "type": "object",
+            "properties": {
+              "pending": {
+                "type": "boolean",
+                "const": false
+              }
+            },
+            "required": ["pending"],
+            "additionalProperties": false
+          },
+          {
+            "type": "object",
+            "properties": {
+              "pending": {
+                "type": "boolean",
+                "const": true
+              },
+              "requestedAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              },
+              "scheduledPurgeAt": {
+                "type": "string",
+                "format": "date-time",
+                "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+              }
+            },
+            "required": ["pending", "requestedAt", "scheduledPurgeAt"],
+            "additionalProperties": false
+          }
+        ],
+        "description": "Відповідь GET /api/me/deletion-status. `pending: false` — акаунт активний, дат немає.",
+        "type": "object"
+      },
+      "MeRestoreResponse": {
+        "type": "object",
+        "properties": {
+          "ok": {
+            "type": "boolean",
+            "const": true
+          },
+          "restoredAt": {
+            "type": "string",
+            "format": "date-time",
+            "pattern": "^(?:(?:\\d\\d[2468][048]|\\d\\d[13579][26]|\\d\\d0[48]|[02468][048]00|[13579][26]00)-02-29|\\d{4}-(?:(?:0[13578]|1[02])-(?:0[1-9]|[12]\\d|3[01])|(?:0[469]|11)-(?:0[1-9]|[12]\\d|30)|(?:02)-(?:0[1-9]|1\\d|2[0-8])))T(?:(?:[01]\\d|2[0-3]):[0-5]\\d(?::[0-5]\\d(?:\\.\\d+)?)?(?:Z|([+-](?:[01]\\d|2[0-3]):[0-5]\\d)))$"
+          }
+        },
+        "required": ["ok", "restoredAt"],
+        "additionalProperties": false,
+        "description": "Відповідь POST /api/me/restore — прохання скасоване."
       },
       "UserProfileResponse": {
         "type": "object",

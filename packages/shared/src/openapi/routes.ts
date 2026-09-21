@@ -68,6 +68,75 @@ export const paths: ZodOpenApiPathsObject = {
         "401": unauthorized,
       },
     },
+    delete: {
+      summary: "Попросити видалити акаунт (30-денне вікно на скасування)",
+      description:
+        "НЕ видаляє одразу: позначає акаунт, гасить сесії на всіх пристроях і скасовує підписку. Незворотне видалення виконує добивач через 30 днів; до того дня працює POST /api/me/restore. Повторний виклик ідемпотентний і не зсуває дату.",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      requestBody: {
+        required: false,
+        content: {
+          "application/json": { schema: namedSchemas.MeDeleteBody },
+        },
+      },
+      responses: {
+        "200": {
+          description:
+            "Прохання прийняте; `scheduledPurgeAt` — дата видалення.",
+          content: {
+            "application/json": { schema: namedSchemas.MeDeleteResponse },
+          },
+        },
+        "400": validationError,
+        "401": unauthorized,
+      },
+    },
+  },
+
+  // ────────────────────── /api/me/deletion-status ──────────────────────
+  // Проходить повз гейт вікна: інакше екран-блокер не мав би чим
+  // намалювати себе.
+  "/api/me/deletion-status": {
+    get: {
+      summary: "Стан вікна на скасування видалення",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Стан акаунта; `pending: false` — активний.",
+          content: {
+            "application/json": {
+              schema: namedSchemas.MeDeletionStatusResponse,
+            },
+          },
+        },
+        "401": unauthorized,
+      },
+    },
+  },
+
+  // ────────────────────── /api/me/restore ──────────────────────
+  "/api/me/restore": {
+    post: {
+      summary: "Скасувати прохання видалити акаунт",
+      description:
+        "Знімає позначку, поки вікно не закрилось. Підписку не повертає: її скасовано в день прохання, і потрібне нове оформлення.",
+      tags: ["auth"],
+      security: cookieOrBearer,
+      responses: {
+        "200": {
+          description: "Прохання скасоване, акаунт знову активний.",
+          content: {
+            "application/json": { schema: namedSchemas.MeRestoreResponse },
+          },
+        },
+        "401": unauthorized,
+        "404": {
+          description: "Активного прохання видалити акаунт немає.",
+        },
+      },
+    },
   },
 
   // ────────────────────── /api/me/profile ──────────────────────

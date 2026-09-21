@@ -586,6 +586,12 @@ const envSchema = z.object({
   // дренується взагалі (Railway/n8n cron-и мертві — ADR-0074).
   GDPR_CLEANUP_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
 
+  // Добивач акаунтів, у яких минуло вікно на скасування видалення
+  // (modules/me/deletionPoller.ts). Default година, 0 означає off.
+  // Увімкнено за замовчуванням: без добивача позначені акаунти висять
+  // вічно, тобто ми не дотримуємо власної обіцянки видалити дані.
+  ACCOUNT_DELETION_POLL_INTERVAL_MS: intFromEnv(60 * 60 * 1000),
+
   LOG_ARCHIVE_ENABLED: boolFromEnv(false),
 
   LOG_RETENTION_DAYS: intFromEnv(30),
