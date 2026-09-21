@@ -39,7 +39,6 @@ export const dataExportMessages = {
     monoConnection: "Підключення Monobank",
     subscriptions: "Підписки",
     pushDevices: "Пристрої для сповіщень",
-    aiUsage: "Використання AI по днях",
-    aiMemories: "Памʼять AI",
+    excluded: "Що не входить у файл",
   },
 };

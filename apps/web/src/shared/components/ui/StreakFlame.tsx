@@ -215,7 +215,7 @@ export const StreakBadge = memo(function StreakBadge({
     <span
       className={cn(
         "inline-flex items-center gap-1.5 px-2.5 py-1 rounded-full",
-        "bg-panel-hi border border-line",
+        "bg-panelHi border border-line",
         "text-style-label",
         intensity.color,
         className,

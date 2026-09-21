@@ -8,6 +8,7 @@ import {
   UserPreferencesSchema,
 } from "@sergeant/shared";
 import {
+  MODULE_EXPORT_TABLES,
   buildMeExport,
   getAccountDeletionStatus,
   getUserPreferences,
@@ -277,67 +278,88 @@ describe("buildMeExport — contract fixture (Hard Rule #3)", () => {
       mono: { connection: null, accounts: [], transactions: [] },
       billing: { subscriptions: [] },
       push: { webSubscriptions: [], devices: [] },
-      ai: { usageDaily: [], memories: [] },
     });
+    expect(Object.keys(result.data)).toEqual(
+      expect.arrayContaining(["finyk", "fizruk", "nutrition", "routine"]),
+    );
   });
 
-  it("ai.usageDaily: est_cost_usd — число, usage_day — YYYY-MM-DD", async () => {
-    // Форма рядка рівно така, як її віддає node-pg: NUMERIC (OID 1700) не
-    // покритий глобальним int8-парсером, тож приїжджає РЯДКОМ, а
-    // `usage_day` після `::text` у SELECT-і — уже готовий день-ключ.
-    const usageRow = {
-      usage_day: "2026-09-16",
-      bucket: "anthropic:claude-3-5-haiku",
-      request_count: 3,
-      est_cost_usd: "0.001350",
-      deleted_at: null,
-    };
+  it("кожна модульна секція наповнюється зі своїх таблиць", async () => {
+    // Мок віддає рядок лише на один SELECT — так видно, що секція справді
+    // читає ту таблицю, а не отримує спільну заглушку.
     const db = {
       query: vi.fn().mockImplementation((sql: string) => {
-        if (typeof sql === "string" && sql.includes("FROM ai_usage_daily")) {
-          return Promise.resolve({ rows: [usageRow] });
+        const text = String(sql);
+        if (text.includes("FROM routine_habits")) {
+          return Promise.resolve({ rows: [{ id: "h-1", name: "Вода" }] });
+        }
+        if (text.includes("FROM fizruk_workouts")) {
+          return Promise.resolve({ rows: [{ id: "w-1" }, { id: "w-2" }] });
         }
         return Promise.resolve({ rows: [] });
       }),
     };
 
     const result = await buildMeExport(db, ME_USER);
-    const row = result.data.ai.usageDaily[0] as Record<string, unknown>;
 
-    // Обидва числові поля — числа. Раніше сусіди в одному обʼєкті мали
-    // різні типи: `request_count` число, `est_cost_usd` рядок.
-    expect(typeof row["request_count"]).toBe("number");
-    expect(row["est_cost_usd"]).toBe(0.00135);
-    expect(typeof row["est_cost_usd"]).toBe("number");
+    expect(result.data.routine["routine_habits"]).toEqual([
+      { id: "h-1", name: "Вода" },
+    ]);
+    expect(result.data.fizruk["fizruk_workouts"]).toHaveLength(2);
+    // Решта таблиць присутні ключами з порожнім масивом: споживач бачить,
+    // що таблиця існує і в ній нічого немає.
+    expect(result.data.nutrition["nutrition_meals"]).toEqual([]);
+    expect(() => MeExportResponseSchema.parse(result)).not.toThrow();
+  });
 
-    // День лишається днем, а не миттю в чужій таймзоні.
-    expect(row["usage_day"]).toBe("2026-09-16");
-    expect(String(row["usage_day"])).not.toContain("T");
+  it("усі живі таблиці чотирьох модулів є в експорті", async () => {
+    const db = mockDb([]);
+    const result = await buildMeExport(db, ME_USER);
 
-    // SELECT мусить брати день уже текстом — інакше node-pg віддасть `Date`
-    // і коерсія на віддачі знову гадатиме про таймзону.
-    const usageSql = db.query.mock.calls
+    for (const [moduleId, tables] of Object.entries(MODULE_EXPORT_TABLES)) {
+      const section = result.data[
+        moduleId as keyof typeof MODULE_EXPORT_TABLES
+      ] as Record<string, unknown>;
+      for (const table of tables) {
+        expect(section).toHaveProperty(table);
+      }
+    }
+    // Таблиця без власного `user_id` — через join на `receipts`.
+    expect(result.data.finyk).toHaveProperty("finyk_tx_receipt_links");
+    // Мертві таблиці віджимань (міграції 139 і 140) не воскресають.
+    expect(result.data.routine).not.toHaveProperty("routine_pushups");
+    expect(result.data.fizruk).not.toHaveProperty("fizruk_pushups");
+  });
+
+  it("жодна вибірка даних людини не обрізана LIMIT-ом", async () => {
+    // Головна регресія, заради якої фіча існує: `mono_transaction` мала
+    // `LIMIT 5000` без пагінації і без ознаки обрізання в payload, тож
+    // людина з довгою історією забирала неповний файл і не знала цього.
+    const db = mockDb([]);
+    await buildMeExport(db, ME_USER);
+
+    const limited = db.query.mock.calls
       .map((call: unknown[]) => String(call[0]))
-      .find((sql: string) => sql.includes("FROM ai_usage_daily"));
-    expect(usageSql).toContain("usage_day::text");
+      .filter((sql: string) => /\bLIMIT\b/i.test(sql));
+    expect(limited).toEqual([]);
   });
 
-  it("ai.usageDaily: NULL у est_cost_usd лишається NULL, а не 0", async () => {
-    const db = {
-      query: vi.fn().mockImplementation((sql: string) => {
-        if (typeof sql === "string" && sql.includes("FROM ai_usage_daily")) {
-          return Promise.resolve({
-            rows: [{ usage_day: "2026-09-16", est_cost_usd: null }],
-          });
-        }
-        return Promise.resolve({ rows: [] });
-      }),
-    };
+  it("excluded перелічує рівно чотири групи з причиною кожної", async () => {
+    const db = mockDb([]);
     const result = await buildMeExport(db, ME_USER);
-    const row = result.data.ai.usageDaily[0] as Record<string, unknown>;
-    // `Number(null)` це 0 — саме та тиха підміна, через яку експорт
-    // стверджував би витрату там, де її просто не записано.
-    expect(row["est_cost_usd"]).toBeNull();
+
+    expect(result.data.excluded.map((item) => item.group)).toEqual([
+      "syncLog",
+      "nutritionBackups",
+      "aiMemories",
+      "aiUsage",
+    ]);
+    for (const item of result.data.excluded) {
+      expect(item.reason.length).toBeGreaterThan(0);
+      expect(item.tables.length).toBeGreaterThan(0);
+    }
+    // Виключене не має протікати в секції модулів.
+    expect(result.data.nutrition).not.toHaveProperty("nutrition_backups");
   });
 
   it("mono.connection is null when no connection row", async () => {

@@ -11,7 +11,7 @@ import {
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import { ANALYTICS_EVENTS, LANDING_LOCALE, track } from "../lib/analytics";
 import { CONFIDENCE } from "../content/confidenceLevels";
-import { THREADS_URL } from "../lib/links";
+import { THREADS_URL, TELEGRAM_BOT_URL } from "../lib/links";
 
 /**
  * Сценарії «живого звʼязку» в hero: скільки тренувань – стільки доставки.
@@ -175,6 +175,19 @@ export default function HomePage() {
         // Єдиний публічний профіль поза сайтом. Без sameAs модель бачить
         // організацію лише за назвою, і «хто це робить» лишається без опори.
         sameAs: [THREADS_URL],
+        // Канал звʼязку машинним текстом: агент, що зважує «кому писати»,
+        // інакше не має жодної адреси, крім кнопки в футері. Пошти й
+        // телефону тут немає навмисно — їх у продукту публічно немає, а
+        // вигадані реквізити читає саме той, хто перевіряє легітимність.
+        contactPoint: [
+          {
+            "@type": "ContactPoint",
+            contactType: "customer support",
+            url: TELEGRAM_BOT_URL,
+            availableLanguage: ["uk"],
+            areaServed: "UA",
+          },
+        ],
       },
     },
   });

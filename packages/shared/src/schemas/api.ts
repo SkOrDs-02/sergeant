@@ -183,12 +183,35 @@ export type UserPreferencesPatch = z.infer<typeof UserPreferencesPatchSchema>;
 
 const ExportRecordSchema = z.record(z.string(), z.unknown());
 
+/** Таблиці одного продуктового модуля: ключ — імʼя таблиці як у базі. */
+const ExportModuleSectionSchema = z.record(
+  z.string(),
+  z.array(ExportRecordSchema),
+);
+
+/** Що свідомо не потрапило у файл, із причиною для людини. */
+const ExportExclusionSchema = z.object({
+  group: z.string(),
+  tables: z.array(z.string()),
+  reason: z.string(),
+});
+
 export const MeExportResponseSchema = z.object({
   generatedAt: z.string().datetime({ offset: true }),
   user: UserSchema,
   preferences: UserPreferencesSchema,
   data: z.object({
+    /**
+     * @deprecated Завжди `[]`. Ключ лишається від таблиці `module_data`,
+     * дропнутої міграцією 046; справжні дані модулів — у секціях `finyk`,
+     * `fizruk`, `nutrition`, `routine` нижче. Не наповнюється навмисно,
+     * щоб старий споживач не прочитав новий вміст за старою семантикою.
+     */
     moduleData: z.array(ExportRecordSchema),
+    finyk: ExportModuleSectionSchema,
+    fizruk: ExportModuleSectionSchema,
+    nutrition: ExportModuleSectionSchema,
+    routine: ExportModuleSectionSchema,
     mono: z.object({
       connection: ExportRecordSchema.nullable(),
       accounts: z.array(ExportRecordSchema),
@@ -201,10 +224,7 @@ export const MeExportResponseSchema = z.object({
       webSubscriptions: z.array(ExportRecordSchema),
       devices: z.array(ExportRecordSchema),
     }),
-    ai: z.object({
-      usageDaily: z.array(ExportRecordSchema),
-      memories: z.array(ExportRecordSchema),
-    }),
+    excluded: z.array(ExportExclusionSchema),
   }),
 });
 export type MeExportResponse = z.infer<typeof MeExportResponseSchema>;
