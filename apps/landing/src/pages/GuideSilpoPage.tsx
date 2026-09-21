@@ -63,12 +63,22 @@ export default function GuideSilpoPage() {
     ...ROUTE_META[ROUTE],
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "Article",
-      headline: ROUTE_META[ROUTE].title,
+      // HowTo, а не Article: сторінка веде людину по кроках, і саме кроки
+      // мають бути машинно-читабельними. Розширених сніпетів Google для
+      // HowTo більше не малює (зняв у вересні 2023), тож адресат тут –
+      // AI-споживачі, ті самі, заради яких у нас llms.txt і markdown.
+      "@type": "HowTo",
+      name: ROUTE_META[ROUTE].title,
       inLanguage: "uk",
       dateModified: ROUTE_META[ROUTE].lastmod,
       author: AUTHOR_JSON_LD,
       publisher: { "@type": "Organization", name: "Sergeant" },
+      step: STEPS.map((item, i) => ({
+        "@type": "HowToStep",
+        position: i + 1,
+        name: item.title,
+        text: item.text,
+      })),
     },
   });
 
