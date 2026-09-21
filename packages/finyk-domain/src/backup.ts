@@ -35,6 +35,8 @@ export interface FinykBackup {
   version?: number;
   budgets?: unknown[];
   subscriptions?: unknown[];
+  /** Ручні операції. Див. `FINYK_BACKUP_STORAGE_KEYS.manualExpenses`. */
+  manualExpenses?: unknown[];
   manualAssets?: unknown[];
   manualDebts?: unknown[];
   receivables?: unknown[];
@@ -96,6 +98,7 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
   const ARRAY_FIELDS = [
     "budgets",
     "subscriptions",
+    "manualExpenses",
     "manualAssets",
     "manualDebts",
     "receivables",
@@ -194,6 +197,7 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
     has("version") ||
     has("budgets") ||
     has("subscriptions") ||
+    has("manualExpenses") ||
     has("manualAssets") ||
     has("manualDebts") ||
     has("receivables") ||
