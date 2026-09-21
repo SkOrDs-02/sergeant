@@ -371,66 +371,117 @@ async function initSqliteDb(
  * спрацьовує на будь-якій невдачі воркера.
  */
 async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
-  try {
-    const { openSqliteInWorker } = await import("./sqliteWorkerClient.js");
-    const handoff = await import("./kvvfsHandoff.js");
-    const dbName = `sergeant-${userKey}.db`;
-    // Стадія 2: перелиття старої бази. Байти читаються ЛИШЕ доки немає
-    // позначки — після переїзду цей шлях більше не виконується і важкий
-    // модуль на головний потік не потрапляє.
-    const needsHandoff = !handoff.isHandoffDone(userKey);
-    const importBytes = needsHandoff
-      ? await handoff.readKvvfsSnapshotBytes()
-      : null;
-    const conn = await openSqliteInWorker(dbName, {
-      directory: SAH_POOL_DIRECTORY,
-      initialCapacity: SAH_POOL_INITIAL_CAPACITY,
-      minFreeSlots: SAH_POOL_MIN_FREE_SLOTS,
-      importBytes,
-    });
-    if (needsHandoff) {
-      // Підчищаємо ЗАВЖДИ, а не лише після свіжого імпорту: попередня
-      // спроба могла впасти саме між імпортом і підчищанням, і тоді файл
-      // уже існує, але містить чужі партиції. На чистій базі це no-op.
-      const prunedTables = await handoff.pruneForeignPartitionRows(
-        conn,
-        activeUserId,
-      );
-      // Позначка ставиться ОСТАННЬОЮ. Доки її немає, перелиття вважається
-      // таким, що не відбулось, і наступний запуск доробить його.
-      handoff.markHandoffDone(userKey);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await attemptWorkerBackedDb(userKey);
+    } catch (err) {
+      const delayMs = OPFS_LOCK_RETRY_DELAYS_MS[attempt];
+      if (delayMs !== undefined && isOpfsLockContention(err)) {
+        addSentryBreadcrumb({
+          category: "storage",
+          level: "info",
+          message: "sqlite: opfs pool busy, retrying",
+          data: { attempt: attempt + 1, delayMs },
+        });
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+      if (isChunkLoadError(err)) reloadOnceForChunkError();
       addSentryBreadcrumb({
         category: "storage",
-        level: "info",
-        message: "sqlite: kvvfs handoff completed",
-        data: { imported: conn.imported, prunedTables },
+        level: "warning",
+        message: "sqlite: worker backend unavailable, falling back",
+        data: { error: err instanceof Error ? err.message : String(err) },
       });
+      return null;
     }
-    lastWorkerDiagnostics = await conn.diagnostics();
+  }
+}
+
+/**
+ * Паузи між спробами взяти SAH-пул. Дві, і обидві короткі.
+ *
+ * AI-CONTEXT: пул захоплює `FileSystemSyncAccessHandle` на СВОЇ файли в
+ * `SAH_POOL_DIRECTORY`, а не на одну базу, тож два власники пулу в одному
+ * origin виключають один одного незалежно від імені бази. Найчастіший
+ * власник-конкурент — воркер ПОПЕРЕДНЬОГО завантаження цієї ж сторінки:
+ * браузер звільняє його хендли, лише коли добиває потік, і нове
+ * завантаження встигає постукати раніше. Прод 2026-09-21 (Chrome 151,
+ * Android): `createSyncAccessHandle` кидав «Access Handles cannot be
+ * created…» через 70 мс після старту сторінки, і через одну-єдину
+ * спробу вся сесія лишалась на kvvfs зі стелею ~5 МБ.
+ *
+ * Чому саме перечекати, а не закривати пул на `pagehide`: закриття їде у
+ * воркер повідомленням, тобто асинхронно, і сторінка, яку вивантажують,
+ * відповіді не дочекається. Гонку виграє той, хто готовий почекати.
+ */
+const OPFS_LOCK_RETRY_DELAYS_MS = [150, 400] as const;
+
+/**
+ * Чи це саме «пул зайнятий», а не чесна відмова середовища.
+ *
+ * Розрізняти обов'язково: на пристрої без OPFS (`Missing required OPFS
+ * APIs`) ретраї лише додали б півсекунди до кожного холодного старту, так
+ * нічого й не змінивши.
+ */
+function isOpfsLockContention(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  if (err.name === "NoModificationAllowedError") return true;
+  return /createSyncAccessHandle|Access Handles cannot be created/i.test(
+    err.message,
+  );
+}
+
+async function attemptWorkerBackedDb(userKey: string): Promise<OpenedDb> {
+  const { openSqliteInWorker } = await import("./sqliteWorkerClient.js");
+  const handoff = await import("./kvvfsHandoff.js");
+  const dbName = `sergeant-${userKey}.db`;
+  // Стадія 2: перелиття старої бази. Байти читаються ЛИШЕ доки немає
+  // позначки — після переїзду цей шлях більше не виконується і важкий
+  // модуль на головний потік не потрапляє.
+  const needsHandoff = !handoff.isHandoffDone(userKey);
+  const importBytes = needsHandoff
+    ? await handoff.readKvvfsSnapshotBytes()
+    : null;
+  const conn = await openSqliteInWorker(dbName, {
+    directory: SAH_POOL_DIRECTORY,
+    initialCapacity: SAH_POOL_INITIAL_CAPACITY,
+    minFreeSlots: SAH_POOL_MIN_FREE_SLOTS,
+    importBytes,
+  });
+  if (needsHandoff) {
+    // Підчищаємо ЗАВЖДИ, а не лише після свіжого імпорту: попередня
+    // спроба могла впасти саме між імпортом і підчищанням, і тоді файл
+    // уже існує, але містить чужі партиції. На чистій базі це no-op.
+    const prunedTables = await handoff.pruneForeignPartitionRows(
+      conn,
+      activeUserId,
+    );
+    // Позначка ставиться ОСТАННЬОЮ. Доки її немає, перелиття вважається
+    // таким, що не відбулось, і наступний запуск доробить його.
+    handoff.markHandoffDone(userKey);
     addSentryBreadcrumb({
       category: "storage",
       level: "info",
-      message: "sqlite: opened in worker",
-      data: { grewBy: conn.grewBy, ...lastWorkerDiagnostics },
+      message: "sqlite: kvvfs handoff completed",
+      data: { imported: conn.imported, prunedTables },
     });
-    return {
-      conn,
-      vfs: "opfs-sahpool",
-      dbName,
-      // Файл на акаунт — видаляється цілком, як і в головнопотоковій
-      // OPFS-гілці. `userId` тут не потрібен: чужих рядків у файлі немає.
-      wipe: () => conn.wipe(),
-    };
-  } catch (err) {
-    if (isChunkLoadError(err)) reloadOnceForChunkError();
-    addSentryBreadcrumb({
-      category: "storage",
-      level: "warning",
-      message: "sqlite: worker backend unavailable, falling back",
-      data: { error: err instanceof Error ? err.message : String(err) },
-    });
-    return null;
   }
+  lastWorkerDiagnostics = await conn.diagnostics();
+  addSentryBreadcrumb({
+    category: "storage",
+    level: "info",
+    message: "sqlite: opened in worker",
+    data: { grewBy: conn.grewBy, ...lastWorkerDiagnostics },
+  });
+  return {
+    conn,
+    vfs: "opfs-sahpool",
+    dbName,
+    // Файл на акаунт — видаляється цілком, як і в головнопотоковій
+    // OPFS-гілці. `userId` тут не потрібен: чужих рядків у файлі немає.
+    wipe: () => conn.wipe(),
+  };
 }
 
 /**
