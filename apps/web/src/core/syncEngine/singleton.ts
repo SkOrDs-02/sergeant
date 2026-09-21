@@ -1,6 +1,7 @@
 import {
   resolveOriginDeviceId,
   sweepStaleTerminalOutbox,
+  SYNC_V2_PULL_MAX_LIMIT,
 } from "@sergeant/shared";
 import type { RecoverDeadLetterTarget } from "@sergeant/db-schema/sqlite";
 import type { SqliteMigrationClient } from "@sergeant/db-schema/migrate/sqlite";
@@ -209,7 +210,17 @@ async function createDefaultReaderRuntime(): Promise<SyncEngineReaderRuntime> {
     clearInterval: (handle) => window.clearInterval(handle as number),
     eventTarget: window,
     intervalMs: pullIntervalMs,
-    limit: 100,
+    // Стеля роуту (`SYNC_V2_PULL_MAX_LIMIT`), а не дефолт схеми.
+    //
+    // AI-CONTEXT: на сотні по 100 догін порожнього курсора коштує стільки
+    // запитів, скільки в акаунті операцій, поділити на сто. Прод
+    // 2026-09-21: `sync_op_log` на 46 тисяч рядків = ~460 запитів проти
+    // бюджету 60/хв, тобто 429 гарантовано — і крок `pull-before`
+    // анонімної міграції падав щоразу. Пʼятсот дає ~92 запити на той
+    // самий догін. Рейт-ліміт це не скасовує (`rateLimitWaitMs` у
+    // `syncEngineReader.ts` доводить прохід до кінця), але вкорочує його
+    // вп'ятеро.
+    limit: SYNC_V2_PULL_MAX_LIMIT,
     captureException: shared.captureException,
   });
 }
