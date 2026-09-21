@@ -59,13 +59,19 @@ describe("DeleteAccountDialog", () => {
       name: "Видалити акаунт?",
     });
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(within(dialog).getByLabelText("Пароль")).toBeInTheDocument();
+    expect(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+    ).toBeInTheDocument();
   });
 
-  // §6 п.1: гейт підтвердження — без пароля видалити неможливо.
-  it("disables the confirm button while the password field is empty", () => {
+  // Порожнє поле більше НЕ блокує підтвердження: акаунт, заведений через
+  // Google, пароля не має взагалі, і з гейтом на `!password` його не можна
+  // було б видалити з інтерфейсу зовсім. Розвилку робить сервер
+  // (`modules/me/verifyAccountPassword.ts`): є credential-вхід — пароль
+  // звіряється і невірний дає 400; немає — пропускає.
+  it("allows confirming with an empty password (OAuth-only accounts have none)", () => {
     renderDialog({ password: "" });
-    expect(screen.getByRole("button", { name: "Видалити" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Видалити" })).not.toBeDisabled();
   });
 
   it("enables the confirm button once a password is entered", () => {
@@ -86,7 +92,7 @@ describe("DeleteAccountDialog", () => {
   it("forwards typed input to onPasswordChange", () => {
     const onPasswordChange = vi.fn();
     renderDialog({ onPasswordChange });
-    fireEvent.change(screen.getByLabelText("Пароль"), {
+    fireEvent.change(screen.getByLabelText("Пароль, якщо входиш паролем"), {
       target: { value: "abc" },
     });
     expect(onPasswordChange).toHaveBeenCalledWith("abc");

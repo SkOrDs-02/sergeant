@@ -223,6 +223,9 @@ export const messages = {
   // видалення і зайшла знову.
   accountDeletion: {
     dialogTitle: "Видалити акаунт?",
+    // «Якщо входиш паролем» — бо акаунт через Google пароля не має, і
+    // порожнє поле для нього нормальний стан, а не пропущений крок.
+    passwordLabel: "Пароль, якщо входиш паролем",
     blockerTitle: "Акаунт готується до видалення",
     // Рядок рендериться як `${blockerBodyPrefix} ${date}. ${blockerBodyTail}`,
     // щоб каталог лишався плоскими рядками (см. `MessageCatalog` constraint).

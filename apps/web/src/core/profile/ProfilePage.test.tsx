@@ -403,7 +403,9 @@ describe("ProfilePage", () => {
         name: "Видалити акаунт?",
       });
       expect(dialog).toHaveAttribute("aria-modal", "true");
-      expect(within(dialog).getByLabelText("Пароль")).toBeInTheDocument();
+      expect(
+        within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      ).toBeInTheDocument();
 
       fireEvent.keyDown(document, { key: "Escape" });
       expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
