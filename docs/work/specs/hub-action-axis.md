@@ -1,7 +1,7 @@
 # SPEC: вісь дії для хабу (A1 «дві купи»)
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-26.
-> **Status:** Active
+> **Last touched:** 2026-09-20 by @claude (статус зведено з кодом: PR 1 і PR 2 в `main`). **Next review:** 2027-04-26.
+> **Status:** Active. PR 1 і PR 2 з § Нарізки в `main`: [`HubDashboard.tsx`](../../../apps/web/src/core/hub/HubDashboard.tsx) рендерить `NowPile`/`ClosedTodayPile`/`ModuleRail` за віссю, `ModuleSwitcher` уніфікований над `ModuleRail`, прапорець `hub_action_axis_v1` увімкнений за замовчуванням. **Відкритий рівно PR 3**: прибрати стару сітку, `calmMode`, `density` і сам прапорець після циклу kill-switch.
 
 <!-- Спека несе ПРОДУКТОВІ рішення, ухвалені власником в інтерв'ю 2026-09-17
 (три раунди по чотири питання, кожне — вибір з наслідком), поверх рішень
