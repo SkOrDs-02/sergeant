@@ -122,7 +122,14 @@ function pageHtml(route, meta) {
     }
   }
 
-  html = html.replace("</head>", `  ${PRELOAD}\n  </head>`);
+  // На початок `<head>`, а не перед `</head>`: у кінці preload опиняється
+  // після тегів JS і CSS, і шрифт стає в чергу за ними. Замір на проді
+  // 2026-09-21 показав старт на 1170 мс саме через це.
+  html = html.replace(
+    "<head>",
+    `<head>
+    ${PRELOAD}`,
+  );
 
   if (meta.noindex) {
     html = html.replace(
