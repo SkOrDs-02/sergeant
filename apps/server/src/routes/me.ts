@@ -1,8 +1,11 @@
 import { Router } from "express";
 import type { Request, Response } from "express";
 import {
+  MeDeleteBodySchema,
   MeDeleteResponseSchema,
+  MeDeletionStatusResponseSchema,
   MeExportResponseSchema,
+  MeRestoreResponseSchema,
   MeResponseSchema,
   UserPreferencesPatchSchema,
   UserPreferencesSchema,
@@ -20,11 +23,14 @@ import {
 import { pool } from "../db.js";
 import {
   buildMeExport,
-  deleteUserData,
+  getAccountDeletionStatus,
   getUserPreferences,
+  requestAccountDeletion,
+  restoreAccount,
   upsertUserPreferences,
 } from "../modules/me/dataRights.js";
 import { getUserProfile, upsertUserProfile } from "../modules/me/profile.js";
+import { verifyAccountPassword } from "../modules/me/verifyAccountPassword.js";
 import { mirrorProfileMemoryEntries } from "../modules/ai-memory/profileMirror.js";
 
 type AuthedUser = {
@@ -243,18 +249,80 @@ export function createMeRouter(): Router {
     },
   );
 
-  // Живий веб-шлях видалення — `POST /api/auth/delete-user` (Better Auth,
-  // `DangerZoneSection.tsx`), який через `user.deleteUser.beforeDelete` у
-  // `auth.ts` кличе той самий `deleteUserData`. Цей роут — API-контракт
-  // для клієнтів без Better Auth SDK; обидва шляхи виконують одну функцію.
+  // Прохання видалити акаунт. НЕ видаляє: ставить мітку, гасить сесії,
+  // зупиняє списання; незворотну частину через
+  // `ACCOUNT_DELETION_GRACE_DAYS` днів виконує `AccountDeletionPoller`
+  // (спека docs/work/specs/user-deletion-grace-window.md, ADR-0016
+  // § ADR-6.1). Живий веб-шлях — `POST /api/auth/delete-user` (Better
+  // Auth, `DangerZoneSection.tsx`), який через `user.deleteUser.
+  // beforeDelete` у `auth.ts` кличе ту саму функцію.
   r.delete(
     "/api/me",
     requireFreshSession(),
     async (req: Request, res: Response) => {
       const user = (req as Request & { user: AuthedUser }).user;
+
+      // Пароль звіряємо ТУТ, бо живий шлях переїхав сюди з вимкненого
+      // `POST /api/auth/delete-user` (див. `user.deleteUser` в `auth.ts`).
+      // Без цього кроку планка впала б зі «знає пароль» до «має живу
+      // сесію», і вкрадена сесія могла б запустити 30-денний відлік.
+      const body = MeDeleteBodySchema.parse(req.body ?? {});
+      const check = await verifyAccountPassword(user.id, body.password);
+      if (!check.ok) {
+        res.status(400).json({
+          error: "Невірний пароль",
+          message: "Невірний пароль",
+          code: "INVALID_PASSWORD",
+        });
+        return;
+      }
+
       const payload = MeDeleteResponseSchema.parse(
-        await deleteUserData(pool, user.id),
+        await requestAccountDeletion(pool, user.id),
       );
+      res.json(payload);
+    },
+  );
+
+  // Два роути нижче свідомо проходять повз гейт вікна: інакше вони
+  // заблокували б самі себе, і людина у вікні не змогла б ані побачити
+  // дату, ані скасувати видалення (рішення 4 спеки).
+  r.get(
+    "/api/me/deletion-status",
+    requireSession({ allowPendingDeletion: true }),
+    async (req: Request, res: Response) => {
+      const user = (req as Request & { user: AuthedUser }).user;
+      const payload = MeDeletionStatusResponseSchema.parse(
+        await getAccountDeletionStatus(pool, user.id),
+      );
+      res.json(payload);
+    },
+  );
+
+  // `requireFreshSession`, а не звичайна: скасування видалення — це та сама
+  // висока планка, що й саме видалення, і сесія мусить бути перевірена в
+  // БД, а не взята з 5-хвилинного cookie-кешу.
+  r.post(
+    "/api/me/restore",
+    requireFreshSession({ allowPendingDeletion: true }),
+    async (req: Request, res: Response) => {
+      const user = (req as Request & { user: AuthedUser }).user;
+      const restored = await restoreAccount(pool, user.id);
+      if (!restored) {
+        // Скасовувати не було чого. 404, а не 200: «відновив активний
+        // акаунт» не є успіхом, і клієнт має відрізнити це від реального
+        // скасування.
+        res.status(404).json({
+          error: "Немає активного прохання видалити акаунт",
+          message: "Немає активного прохання видалити акаунт",
+          code: "NO_PENDING_DELETION",
+        });
+        return;
+      }
+      const payload = MeRestoreResponseSchema.parse({
+        ok: true as const,
+        restoredAt: new Date().toISOString(),
+      });
       res.json(payload);
     },
   );

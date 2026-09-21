@@ -2,12 +2,16 @@ import type { Pool, PoolClient } from "pg";
 import type {
   DashboardModuleId,
   MeDeleteResponse,
+  MeDeletionStatusResponse,
   MeExportResponse,
   MeResponse,
   UserPreferences,
   UserPreferencesPatch,
 } from "@sergeant/shared";
-import { DASHBOARD_MODULE_IDS } from "@sergeant/shared";
+import {
+  DASHBOARD_MODULE_IDS,
+  accountDeletionDeadline,
+} from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
 import { providerRegistry, type ProviderId } from "../billing/index.js";
 import { enqueueGdprCleanup } from "../gdpr/cleanupQueue.js";
@@ -495,16 +499,133 @@ export async function buildMeExport(
   };
 }
 
-export async function deleteUserData(
+/**
+ * Прохання видалити акаунт. НЕ видаляє нічого незворотного: ставить мітку
+ * `deletion_requested_at`, гасить сесії на всіх пристроях і зупиняє
+ * списання. Незворотну частину через `ACCOUNT_DELETION_GRACE_DAYS` днів
+ * виконує `purgeUserData` з добивача (`deletionPoller.ts`).
+ *
+ * Ідемпотентно: `AND deletion_requested_at IS NULL` не дає повторному
+ * виклику зсунути дедлайн уперед, тобто нескінченно подовжити вікно.
+ * Спека: docs/work/specs/user-deletion-grace-window.md, ADR-0016 § ADR-6.1.
+ */
+export async function requestAccountDeletion(
   pool: Pool,
   userId: string,
 ): Promise<MeDeleteResponse> {
-  // Best-effort provider-cancel ПЕРЕД транзакцією (робить зовнішні HTTP —
-  // не місце в DB-txn). plata.cancelSubscription сам скасовує підписку в
-  // monobank (subscription/edit); DELETE FROM "user" нижче каскадно
-  // прибирає plata_subscription-рядок юзера.
+  // Підписка зупиняється в день прохання, а не в день добивання: людина не
+  // платить за акаунт, який просила видалити (рішення 5 спеки). Наслідок,
+  // про який UI попереджає ДО натискання: відновлення підписку не повертає.
   await notifyProvidersCancel(pool, userId);
 
+  const client = await pool.connect();
+  try {
+    await client.query("BEGIN");
+
+    const marked = await client.query<{ deletion_requested_at: Date }>(
+      `UPDATE "user"
+          SET deletion_requested_at = NOW()
+        WHERE id = $1
+          AND deletion_requested_at IS NULL
+        RETURNING deletion_requested_at`,
+      [userId],
+    );
+
+    // Порожній RETURNING = або акаунт уже позначений, або рядка немає.
+    // Перший випадок — очікуваний повтор, і тоді треба віддати ПЕРШУ
+    // мітку, а не сьогоднішню дату, інакше відповідь показала б людині
+    // зсунутий дедлайн, якого сервер не дотримається.
+    let requestedAt = marked.rows[0]?.deletion_requested_at ?? null;
+    if (!requestedAt) {
+      const existing = await client.query<{
+        deletion_requested_at: Date | null;
+      }>(`SELECT deletion_requested_at FROM "user" WHERE id = $1`, [userId]);
+      requestedAt = existing.rows[0]?.deletion_requested_at ?? null;
+    }
+
+    // Гасимо сесії на всіх пристроях: далі в акаунт можна лише ввійти
+    // заново, і вхід упреться в гейт `requireSession` (рішення 3 спеки).
+    await client.query(`DELETE FROM session WHERE user_id = $1`, [userId]);
+
+    await client.query(
+      `UPDATE subscriptions
+          SET status = 'canceled',
+              cancel_at_period_end = TRUE,
+              updated_at = NOW()
+        WHERE user_id = $1
+          AND status IN ('active', 'trialing', 'past_due', 'incomplete')`,
+      [userId],
+    );
+
+    await client.query("COMMIT");
+
+    // Рядка користувача немає (видалений раніше, або тестові дані) —
+    // відповідь лишається успішною та ідемпотентною, дедлайн рахуємо від
+    // цього моменту, добивати вже нічого.
+    const requested = requestedAt ?? new Date();
+    return {
+      ok: true,
+      deletedAt: iso(requested),
+      scheduledPurgeAt: iso(accountDeletionDeadline(requested)),
+    };
+  } catch (err) {
+    await client.query("ROLLBACK");
+    throw err;
+  } finally {
+    client.release();
+  }
+}
+
+/**
+ * Скасування прохання. Повертає `false`, якщо скасовувати не було чого
+ * (акаунт активний або рядка немає) — хендлер мапить це у 404, щоб
+ * «відновив неіснуюче» не виглядало як успіх.
+ *
+ * Підписку не відновлюємо навмисно (рішення 5 спеки): її скасували в день
+ * прохання, і повернути її може лише нове оформлення.
+ */
+export async function restoreAccount(
+  pool: Pool,
+  userId: string,
+): Promise<boolean> {
+  const { rowCount } = await pool.query(
+    `UPDATE "user"
+        SET deletion_requested_at = NULL
+      WHERE id = $1
+        AND deletion_requested_at IS NOT NULL`,
+    [userId],
+  );
+  return (rowCount ?? 0) > 0;
+}
+
+/** Стан вікна для екрана-блокера. */
+export async function getAccountDeletionStatus(
+  pool: Queryable,
+  userId: string,
+): Promise<MeDeletionStatusResponse> {
+  const { rows } = await pool.query<{ deletion_requested_at: Date | null }>(
+    `SELECT deletion_requested_at FROM "user" WHERE id = $1`,
+    [userId],
+  );
+  const requestedAt = rows[0]?.deletion_requested_at ?? null;
+  if (!requestedAt) return { pending: false };
+  return {
+    pending: true,
+    requestedAt: iso(requestedAt),
+    scheduledPurgeAt: iso(accountDeletionDeadline(new Date(requestedAt))),
+  };
+}
+
+/**
+ * Незворотна частина: рівно те, що `DELETE /api/me` робив синхронно до
+ * появи вікна. Тепер її кличе лише добивач після кінця вікна, тож
+ * `notifyProvidersCancel` тут немає — провайдерам сказали зупинитись ще в
+ * день прохання.
+ */
+export async function purgeUserData(
+  pool: Pool,
+  userId: string,
+): Promise<MeDeleteResponse> {
   const client = await pool.connect();
   try {
     await client.query("BEGIN");
@@ -569,7 +690,14 @@ export async function deleteUserData(
       [userId],
     );
     await client.query("COMMIT");
-    return { ok: true, deletedAt: iso(new Date()) };
+    const purgedAt = new Date();
+    // Акаунта вже немає, тож «заплановане» і «фактичне» збігаються — поле
+    // лишається в контракті, щоб відповідь мала одну форму на обох шляхах.
+    return {
+      ok: true,
+      deletedAt: iso(purgedAt),
+      scheduledPurgeAt: iso(purgedAt),
+    };
   } catch (err) {
     await client.query("ROLLBACK");
     throw err;
