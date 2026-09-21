@@ -23,40 +23,41 @@ function read(rel: string): string {
   return readFileSync(path.join(LANDING, rel), "utf8");
 }
 
-describe("markdown-переговори у vercel.json", () => {
+describe("markdown-переговори", () => {
+  const mw = read("middleware.ts");
   const cfg = JSON.parse(read("vercel.json")) as {
-    rewrites?: {
-      source: string;
-      has?: { key: string; value: string }[];
-      destination: string;
-    }[];
+    rewrites?: unknown[];
     headers: { source: string; headers: { key: string; value: string }[] }[];
   };
 
-  it("кожне правило переписування спрацьовує лише на Accept: text/markdown", () => {
-    expect(cfg.rewrites?.length).toBeGreaterThan(0);
-    for (const rule of cfg.rewrites ?? []) {
-      const accept = rule.has?.find((h) => h.key === "accept");
-      expect(accept, `правило ${rule.source} без умови accept`).toBeDefined();
-      expect(accept?.value).toContain("text/markdown");
-      expect(rule.destination).toMatch(/\.md$/);
-    }
+  it("живуть у middleware, а не в rewrites", () => {
+    // Знахідка проду 2026-09-21: Vercel перевіряє файлову систему ДО
+    // rewrites, тож правило з умовою Accept на `/` не виконувалось ніколи –
+    // запит знаходив готовий index.html. Middleware працює перед нею.
+    expect(mw).toContain("@vercel/edge");
+    expect(mw).toMatch(/text\/markdown/);
+    expect(mw).toContain("rewrite(");
+    expect(cfg.rewrites, "мертві rewrites повернулись").toBeUndefined();
   });
 
-  it("покриває головну, один і два сегменти шляху", () => {
-    const sources = (cfg.rewrites ?? []).map((r) => r.source);
-    expect(sources).toContain("/");
-    // Два сегменти потрібні гайдам: /guides/monobank.
-    expect(sources.some((s) => s.split("/").length === 3)).toBe(true);
+  it("веде на .md того самого маршруту", () => {
+    expect(mw).toMatch(/index\.md/);
   });
 
-  it("не підміняє файли з розширенням і ассети", () => {
+  it("не чіпає файли з розширенням і ассети", () => {
     // /llms.txt, /sitemap.xml і /assets/*.js мусять лишатись собою навіть
     // для агента, що просить markdown: інакше карта сайту стає 404.
-    for (const rule of cfg.rewrites ?? []) {
-      if (rule.source === "/") continue;
-      expect(rule.source).toContain("[^./]+");
-    }
+    const matcher = mw.match(/matcher:\s*\[([^\]]+)\]/)?.[1] ?? "";
+    expect(matcher).toContain("assets/");
+    // Саме екранована крапка. Неекранована – це «будь-який символ», і
+    // виключення файлів мовчки перестає працювати (спіймано лінтом
+    // 2026-09-21, тест тоді лишався зеленим).
+    expect(matcher).toContain(String.raw`.*\\.`);
+  });
+
+  it("HTML лишається дефолтом", () => {
+    // Без цієї перевірки легко зробити middleware, що переписує все підряд.
+    expect(mw).toMatch(/if \(!accept[\s\S]{0,80}return next\(\)/);
   });
 
   it("віддає Vary: Accept, інакше кеш отруїть відповідь", () => {

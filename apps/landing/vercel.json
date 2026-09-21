@@ -64,40 +64,5 @@
         }
       ]
     }
-  ],
-  "rewrites": [
-    {
-      "source": "/",
-      "has": [
-        {
-          "type": "header",
-          "key": "accept",
-          "value": ".*text/markdown.*"
-        }
-      ],
-      "destination": "/index.md"
-    },
-    {
-      "source": "/:a([^./]+)",
-      "has": [
-        {
-          "type": "header",
-          "key": "accept",
-          "value": ".*text/markdown.*"
-        }
-      ],
-      "destination": "/:a/index.md"
-    },
-    {
-      "source": "/:a([^./]+)/:b([^./]+)",
-      "has": [
-        {
-          "type": "header",
-          "key": "accept",
-          "value": ".*text/markdown.*"
-        }
-      ],
-      "destination": "/:a/:b/index.md"
-    }
   ]
 }
