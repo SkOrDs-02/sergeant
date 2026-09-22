@@ -164,16 +164,7 @@ export async function applyHubBackupPayload(parsed: unknown): Promise<void> {
     await routineDualWriteIdle();
   }
   if (parsed.fizruk) {
-    // AI-DANGER: секція Фізрука наскрізь НЕ працює, і тут її не
-    // полагоджено. `buildFizrukFullBackupPayload` читає шість
-    // `fizruk_*` LS-ключів, а `applyFizrukFullBackupPayload` пише в
-    // них — але живі дані Фізрука від Stage 8 живуть у SQLite
-    // (`useWorkouts` та решта хуків читають `getCachedFizrukSqliteState`),
-    // і в ті LS-ключі не пише більше НІХТО. Тобто експорт вивозить
-    // порожньо, а імпорт кладе в глухий кут. Потрібен окремий PR:
-    // переписати обидві функції на `fizrukDualWriteState` + drain,
-    // як тут зроблено для Фініка.
-    applyFizrukFullBackupPayload(parsed.fizruk);
+    await applyFizrukFullBackupPayload(parsed.fizruk);
   }
   if (parsed.nutrition) {
     applyNutritionBackupPayload(parsed.nutrition);
