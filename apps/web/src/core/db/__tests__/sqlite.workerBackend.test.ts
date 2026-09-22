@@ -144,7 +144,8 @@ describe("бекенд бази у воркері", () => {
     expect(pruneForeignPartitionRows).not.toHaveBeenCalled();
   });
 
-  it("невдача воркера тихо повертає застосунок на наявний шлях", async () => {
+  it("невдача воркера повертає на kvvfs, поки партиція не перелита", async () => {
+    vi.mocked(isHandoffDone).mockReturnValue(false);
     vi.mocked(openSqliteInWorker).mockRejectedValue(
       new Error("Missing required OPFS APIs."),
     );
@@ -152,5 +153,16 @@ describe("бекенд бази у воркері", () => {
     const handle = await getSqliteDb();
 
     expect(handle.vfs).toBe("kvvfs");
+  });
+
+  it("після перелиття невдача воркера веде в памʼять, а не в старий стор", async () => {
+    vi.mocked(isHandoffDone).mockReturnValue(true);
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("Missing required OPFS APIs."),
+    );
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("memory");
   });
 });

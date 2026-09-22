@@ -9,7 +9,11 @@ import {
 import { logger } from "@shared/lib";
 import { isSyncableUserId } from "../syncEngine/syncableUserId.js";
 import { CLIENT_PULL_SUPPORTED_TABLES } from "../syncEngine/applyPullOp.js";
-import { noteActiveSqliteVfs } from "./storageBackendState.js";
+import {
+  noteActiveSqliteVfs,
+  noteSqliteVfsFallbackReason,
+} from "./storageBackendState.js";
+import { isHandoffDone } from "./kvvfsHandoff.js";
 import {
   makeLocalConnection,
   type SqliteConnection,
@@ -423,14 +427,36 @@ async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
     };
   } catch (err) {
     if (isChunkLoadError(err)) reloadOnceForChunkError();
+    const busy = isPoolHeldElsewhere(err);
+    if (busy) noteSqliteVfsFallbackReason("pool-busy");
     addSentryBreadcrumb({
       category: "storage",
       level: "warning",
       message: "sqlite: worker backend unavailable, falling back",
-      data: { error: err instanceof Error ? err.message : String(err) },
+      data: {
+        error: err instanceof Error ? err.message : String(err),
+        poolBusy: busy,
+      },
     });
     return null;
   }
+}
+
+/**
+ * Чи впав пул саме тому, що його каталог тримає інша вкладка.
+ *
+ * Пул бере sync-хендли на ВЕСЬ каталог одразу, тож другий претендент
+ * дістає `NoModificationAllowedError` (Chromium) або той самий текст про
+ * зайнятий access-handle. Відрізняти це від «пристрій не вміє OPFS»
+ * обовʼязково: перше людина усуває сама, друге — ні.
+ */
+function isPoolHeldElsewhere(err: unknown): boolean {
+  const name = err instanceof Error ? err.name : "";
+  const text = err instanceof Error ? err.message : String(err);
+  return (
+    name === "NoModificationAllowedError" ||
+    /another open Access Handle|NoModificationAllowedError/i.test(text)
+  );
 }
 
 /**
@@ -736,7 +762,19 @@ async function openDb(
   //    kvvfs is the closest persistent fallback. kvvfs is a single wholesale
   //    store (no per-user filename), so cross-user isolation here relies on
   //    `wipe()` clearing it on logout rather than on the filename key.
-  if (hasLocalStorage()) {
+  //
+  // AI-DANGER: після перелиття (стадія 2) цей шлях ЗАБОРОНЕНИЙ. Старе
+  // сховище навмисно не чистять (див. `kvvfsHandoff.ts`), тож воно живе на
+  // пристрої як знімок бази на момент переїзду. Відкрити його після
+  // позначки означає показати людині старі дані замість її власних і
+  // прийняти нові записи в мертвий стор, звідки їх ніхто не забере. Саме
+  // так помирали дані анонімної сесії: OPFS-пул бере хендли на ВЕСЬ
+  // каталог, тому друга вкладка того самого профілю пулу не дістає, падала
+  // сюди — і тихо відкривала торішній знімок поруч із живою базою першої
+  // вкладки. Заміряно на Xiaomi Pad 6 2026-09-22: одна вкладка — OPFS і
+  // нуль росту `kvvfs-local-*`; щойно відкривається друга — +1 ключ і
+  // +4.4 kB у тому самому localStorage.
+  if (hasLocalStorage() && !isHandoffDone(userKey)) {
     try {
       const conn = makeLocalConnection(new sqlite3.oo1.JsStorageDb("local"));
       return {

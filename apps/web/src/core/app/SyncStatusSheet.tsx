@@ -22,6 +22,7 @@ import {
 // § Performance budgets, історія `vendor-sqlite`).
 import {
   readActiveSqliteVfs,
+  readSqliteVfsFallbackReason,
   type SqliteVfsName,
 } from "../db/storageBackendState";
 import { probeOpfsInWorker } from "../db/opfsProbe";
@@ -53,6 +54,8 @@ const COPY = {
   storageOpfs: "OPFS, файли",
   storageLocalStorage: "localStorage, ліміт ~5 МБ",
   storageMemory: "Лише памʼять, до перезапуску",
+  storageOtherTab:
+    "База відкрита в іншій вкладці. Закрий зайві вкладки Sergeant і онови цю.",
   opfsWorker: "OPFS у фоні",
   opfsWorkerChecking: "Перевіряю…",
   opfsWorkerOk: "Доступний",
@@ -111,6 +114,10 @@ function describeVfs(vfs: SqliteVfsName | null): {
   tone: RowTone;
 } {
   if (vfs === "opfs-sahpool") return { value: COPY.storageOpfs, tone: "ok" };
+  // Причина йде поперед назви сховища: «Лише памʼять» описує наслідок, а
+  // діяти можна лише знаючи причину — і саме цю причину людина усуває сама.
+  if (readSqliteVfsFallbackReason() === "pool-busy")
+    return { value: COPY.storageOtherTab, tone: "err" };
   if (vfs === "kvvfs") return { value: COPY.storageLocalStorage, tone: "warn" };
   if (vfs === "memory") return { value: COPY.storageMemory, tone: "err" };
   return { value: COPY.storageUnknown, tone: "ok" };

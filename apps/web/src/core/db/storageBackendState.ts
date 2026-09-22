@@ -24,6 +24,31 @@ export function noteActiveSqliteVfs(vfs: SqliteVfsName): void {
   activeVfs = vfs;
 }
 
+/**
+ * Чому база НЕ дісталась OPFS, коли не дісталась.
+ *
+ * `pool-busy` — каталог пулу вже тримає інша вкладка того самого профілю:
+ * SAH-пул бере sync-хендли на ВЕСЬ каталог, не на один файл, тож друга
+ * вкладка не дістає жодного слота. Це єдина причина, яку людина може
+ * усунути сама, тому вона й доїжджає до аркуша «Синхронізація» окремим
+ * рядком замість глухого «Лише памʼять».
+ */
+export type SqliteVfsFallbackReason = "pool-busy";
+
+let fallbackReason: SqliteVfsFallbackReason | null = null;
+
+/** Викликає `sqlite.ts`, коли OPFS не дістався з відомої причини. */
+export function noteSqliteVfsFallbackReason(
+  reason: SqliteVfsFallbackReason,
+): void {
+  fallbackReason = reason;
+}
+
+/** Причина фолбеку, або `null`. */
+export function readSqliteVfsFallbackReason(): SqliteVfsFallbackReason | null {
+  return fallbackReason;
+}
+
 /** VFS відкритої бази, або `null` доки її не відкривали. */
 export function readActiveSqliteVfs(): SqliteVfsName | null {
   return activeVfs;
@@ -32,4 +57,5 @@ export function readActiveSqliteVfs(): SqliteVfsName | null {
 /** Test-only. */
 export function __resetActiveSqliteVfsForTests(): void {
   activeVfs = null;
+  fallbackReason = null;
 }
