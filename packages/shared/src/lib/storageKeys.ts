@@ -338,6 +338,19 @@ export const STORAGE_KEYS = {
   // картка носить бейдж, поки цей ключ не збігається з поточним тижнем.
   WEEKLY_DIGEST_LAST_SEEN: "hub_weekly_digest_last_seen_v1",
 
+  // ─── Cross-module links ───────────────────────────────────────────────
+  /**
+   * Історія тижневих перевірок крос-модульних пар: `{ "a|b": [weekKey, …] }`,
+   * найсвіжіші першими. Другий і третій ступені впевненості
+   * (`crossModuleLinkTiers.ts`) вимагають дві перевірки поспіль, тож
+   * потрібне саме сховище, а не похідна від поточного вікна.
+   *
+   * Локально й без синку навмисно (ADR-0097): на новому пристрої ступені
+   * заробляють час заново, і це деградація ВНИЗ, до першого ступеня. Синк
+   * підняв би довіру, якої на цьому пристрої ніхто не перевіряв.
+   */
+  CROSS_MODULE_LINK_HISTORY: "hub_cross_module_link_history_v1",
+
   // ─── Mobile: cloud sync metadata ──────────────────────────────────────
   // 6 mobile sync-metadata keys dropped in Stage 13 PR #077.
   // Historically: MOBILE_SYNC_VERSIONS ("mobile:sync_versions"),

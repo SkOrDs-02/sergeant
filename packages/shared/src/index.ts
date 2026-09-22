@@ -17,6 +17,7 @@ export * from "./types";
 
 // Shared, DOM-free constants (storage keys, etc.)
 export * from "./lib/storageKeys";
+export * from "./lib/correlationStandard";
 export * from "./lib/nutritionPantryMode";
 
 // Stable per-install origin-device-id resolver used by the web and
