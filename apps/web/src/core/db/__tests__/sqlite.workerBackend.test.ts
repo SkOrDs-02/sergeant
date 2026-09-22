@@ -153,4 +153,34 @@ describe("бекенд бази у воркері", () => {
 
     expect(handle.vfs).toBe("kvvfs");
   });
+
+  it("перечікує зайнятий SAH-пул замість того, щоб осісти на kvvfs", async () => {
+    // Прод 2026-09-21 (Chrome 151, Android): воркер попереднього
+    // завантаження ще тримав хендли, перша спроба падала за 70 мс після
+    // старту — і сесія лишалась на localStorage зі стелею ~5 МБ.
+    const busy = new Error(
+      "Failed to execute 'createSyncAccessHandle' on 'FileSystemFileHandle': " +
+        "Access Handles cannot be created if there is another open Access Handle",
+    );
+    vi.mocked(openSqliteInWorker)
+      .mockRejectedValueOnce(busy)
+      .mockResolvedValue(fakeWorkerConnection());
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("opfs-sahpool");
+    expect(openSqliteInWorker).toHaveBeenCalledTimes(2);
+  });
+
+  it("не ретраїть там, де середовище відмовило чесно", async () => {
+    // Пристрій без OPFS не подобрішає від очікування: зайві спроби лише
+    // додали б півсекунди до кожного холодного старту.
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("Missing required OPFS APIs."),
+    );
+
+    await getSqliteDb();
+
+    expect(openSqliteInWorker).toHaveBeenCalledTimes(1);
+  });
 });

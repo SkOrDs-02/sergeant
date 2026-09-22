@@ -249,11 +249,18 @@ const STRIP_HINT_DISMISSED_SLOT = "finyk_month_strip_hint_dismissed_v1";
  * Показується, доки людина її не закриє; після цього стрічка вже знайома,
  * і постійна легенда стала б шумом у hero.
  */
-export function MonthStripHint({ hasPlan }: { hasPlan: boolean }) {
+export function MonthStripHint({
+  hasPlan,
+  suppressed = false,
+}: {
+  hasPlan: boolean;
+  /** N-3 (аудит 2026-09-16): одна навчальна картка на екран - заглушується, поки видимий `FirstInsightBanner`. */
+  suppressed?: boolean;
+}) {
   const [dismissed, setDismissed] = useState<boolean>(
     () => safeReadLS<boolean>(STRIP_HINT_DISMISSED_SLOT, false) ?? false,
   );
-  if (dismissed) return null;
+  if (dismissed || suppressed) return null;
   const m = messages.finyk.monthStrip;
   return (
     <div

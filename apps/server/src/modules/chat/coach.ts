@@ -1,4 +1,5 @@
 import type { Request, Response } from "express";
+import { CORRELATION_MIN_N, CORRELATION_NOTABLE_R } from "@sergeant/shared";
 import pool from "../../db.js";
 import { getLLMProvider, invokeLLM } from "../../lib/llm/provider.js";
 import { env } from "../../env/env.js";
@@ -301,7 +302,12 @@ export async function getCoachCorrelationsBlock(
     const asOf = latest.weekRange || latest.weekKey;
     return [
       "",
-      `ПОМІЧЕНІ ЗАКОНОМІРНОСТІ (станом на ${asOf}, з тижневого дайджесту):`,
+      // Джерело й стандарт стоять у самому тексті блоку (спека
+      // `link-evidence-standard.md`): поруч у промпті може лежати живий
+      // розрахунок тула `get_daily_series` у такому ж форматі, і без
+      // підпису обидва читались би як однаково свіжі й однаково доведені.
+      // Тут дані НЕ свіжі - це зріз останнього дайджесту.
+      `ПОМІЧЕНІ ЗАКОНОМІРНОСТІ (джерело: тижневий дайджест, зріз станом на ${asOf}; поріг той самий, що й у тула: n ≥ ${CORRELATION_MIN_N} спільних днів, |r| ≥ ${CORRELATION_NOTABLE_R}; рахував код, не модель):`,
       ...picked.map((c) => `- ${c}`),
     ].join("\n");
   } catch (err) {

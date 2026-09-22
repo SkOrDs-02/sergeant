@@ -40,11 +40,11 @@ import {
  */
 export function CrossModuleLinkRow(props: CrossModuleLinkCardProps) {
   const [open, setOpen] = useState(false);
-  const { poleA, poleB, observations, strength, phrase } = props;
+  const { poleA, poleB, observations, strength, phrase, checks } = props;
 
   // Той самий градієнт, що і в картці. Якщо звʼязку не видно, ступеня немає
   // — рядок тоді не стверджує нічого, крім самої пари.
-  const tier = gradeCrossModuleLink(observations, strength);
+  const tier = gradeCrossModuleLink(observations, strength, checks);
 
   if (open) return <CrossModuleLinkCard {...props} />;
 

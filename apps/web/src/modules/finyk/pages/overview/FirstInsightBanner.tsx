@@ -3,7 +3,6 @@
  * Status: Active
  */
 import { memo } from "react";
-import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 
 interface FirstInsightBannerProps {
@@ -52,16 +51,6 @@ const FirstInsightBannerImpl = function FirstInsightBanner({
           </button>
         </div>
       </div>
-      <Button
-        variant="ghost"
-        size="xs"
-        iconOnly
-        onClick={onDismiss}
-        aria-label="Закрити підказку"
-        className="shrink-0 -mr-1 text-muted hover:text-text"
-      >
-        <Icon name="close" size="md" />
-      </Button>
     </div>
   );
 };

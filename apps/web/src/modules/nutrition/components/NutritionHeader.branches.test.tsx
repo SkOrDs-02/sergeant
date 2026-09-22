@@ -37,4 +37,11 @@ describe("NutritionHeader", () => {
     fireEvent.click(screen.getByLabelText("Налаштування модуля"));
     expect(onSettings).toHaveBeenCalled();
   });
+
+  // N-12 (аудит 2026-09-16): підзаголовок шапки - це мітка активної вкладки
+  // нижньої навігації, передана викликачем, а не статичний текст.
+  it("renders the subtitle passed by the caller", () => {
+    render(<NutritionHeader subtitle="Меню" />);
+    expect(screen.getByText("Меню")).toBeInTheDocument();
+  });
 });

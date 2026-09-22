@@ -15,7 +15,12 @@ import {
   safeWriteLS,
 } from "@shared/lib/storage/storage";
 import { loadDigest as sharedLoadDigest } from "@shared/lib/storage/weeklyDigestStorage";
-import { buildDigestCorrelations } from "./digestCorrelations";
+import {
+  buildCrossModuleSeries,
+  correlationsFromPairs,
+  notablePairsFromSeries,
+} from "./digestCorrelations";
+import { recordWeeklyChecks } from "./crossModuleLinkHistory";
 import { coachKeys, digestKeys } from "@shared/lib/api/queryKeys";
 import { formatApiError } from "@shared/lib/api/apiErrorFormat";
 import { trackAdviceFailed } from "../observability/adviceTelemetry";
@@ -546,7 +551,14 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
       try {
         // Кореляції рахуються кодом (не LLM) з локальних даних усіх модулів —
         // коуч отримує «помічені звʼязки» без окремого виклику моделі (WP3).
-        const correlations = buildDigestCorrelations();
+        const series = buildCrossModuleSeries();
+        const pairs = notablePairsFromSeries(series);
+        // Генерація звіту - теж тижнева перевірка пар. Без цього рядка
+        // серію накопичував би лише візит на `/insights`, і той, кому звіт
+        // приходить автоматом по понеділках, ніколи не дійшов би до
+        // другого ступеня (`crossModuleLinkHistory.ts`).
+        recordWeeklyChecks(pairs);
+        const correlations = correlationsFromPairs(pairs);
         coachApi
           .postMemory({
             weeklyDigest: {

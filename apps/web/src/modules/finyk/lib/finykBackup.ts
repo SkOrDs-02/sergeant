@@ -12,7 +12,7 @@
  * писав у ключі, яких уже ніхто не читає, тоді як `FinykBootCluster`
  * гріє кеш на кожному маршруті, тож `readFinykBackupFromStorage`
  * завжди бачить теплу гілку — імпортоване не зʼявлялось НІКОЛИ.
- * Тому `persistFinykNormalizedToSqlite` тут обов`язковий, і виклик
+ * Тому `persistFinykNormalizedToSqlite` тут обовʼязковий, і виклик
  * треба **чекати**: `HubBackupPanel` одразу після імпорту робить
  * `window.location.reload()`, який убʼє fire-and-forget запис.
  *
@@ -78,6 +78,9 @@ export function readFinykBackupFromStorage() {
     subscriptions: warm
       ? cache.subscriptions
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.subscriptions, []),
+    manualExpenses: warm
+      ? cache.manualExpenses
+      : readJSON(FINYK_FIELD_TO_STORAGE_KEY.manualExpenses, []),
     manualAssets: warm
       ? cache.manualAssets
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.manualAssets, []),
@@ -122,9 +125,6 @@ export function readFinykBackupFromStorage() {
       warm && cache.dismissedRecurring !== null
         ? cache.dismissedRecurring
         : readJSON(FINYK_FIELD_TO_STORAGE_KEY.dismissedRecurring, []),
-    manualExpenses: warm
-      ? cache.manualExpenses
-      : readJSON(FINYK_FIELD_TO_STORAGE_KEY.manualExpenses, []),
   };
 }
 

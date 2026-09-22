@@ -35,6 +35,8 @@ export interface FinykBackup {
   version?: number;
   budgets?: unknown[];
   subscriptions?: unknown[];
+  /** Ручні операції. Див. `FINYK_BACKUP_STORAGE_KEYS.manualExpenses`. */
+  manualExpenses?: unknown[];
   manualAssets?: unknown[];
   manualDebts?: unknown[];
   receivables?: unknown[];
@@ -48,12 +50,6 @@ export interface FinykBackup {
   networthHistory?: unknown[];
   customCategories?: unknown[];
   dismissedRecurring?: unknown[];
-  /**
-   * Ручні витрати/доходи (`finyk_manual_expenses_v1`). Найпізніше
-   * поле конверта: доти воно було єдиною доменною таблицею Фініка поза
-   * бекапом, тож експорт вивозив усе, крім самих операцій.
-   */
-  manualExpenses?: unknown[];
 }
 
 /**
@@ -102,13 +98,13 @@ export function normalizeFinykBackup(parsed: unknown): FinykBackup {
   const ARRAY_FIELDS = [
     "budgets",
     "subscriptions",
+    "manualExpenses",
     "manualAssets",
     "manualDebts",
     "receivables",
     "hiddenAccounts",
     "hiddenTxIds",
     "excludedStatTxIds",
-    "manualExpenses",
   ] as const;
   for (const field of ARRAY_FIELDS) {
     const v = needArr(obj[field], field);
@@ -201,6 +197,7 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
     has("version") ||
     has("budgets") ||
     has("subscriptions") ||
+    has("manualExpenses") ||
     has("manualAssets") ||
     has("manualDebts") ||
     has("receivables") ||
@@ -213,8 +210,7 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
     has("monoDebtLinkedTxIds") ||
     has("networthHistory") ||
     has("customCategories") ||
-    has("dismissedRecurring") ||
-    has("manualExpenses");
+    has("dismissedRecurring");
 
   if (looksLikeFullBackup) {
     const withVer = has("version") ? d : { ...d, version: 1 };

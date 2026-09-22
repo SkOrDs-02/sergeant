@@ -183,6 +183,37 @@ describe("readFinykBackupFromStorage", () => {
     expect(snapshot.dismissedRecurring).toEqual([]);
   });
 
+  // Файл власника від 2026-09-21: 2 417 Б при дев'яти ручних операціях на
+  // 39 308,60 ₴ у базі. В експорті були `hiddenTxIds`, `txCategories`,
+  // `txSplits` — надбудови НАД операціями — і жодної самої операції, бо
+  // ключа просто не було в наборі бекапу.
+  it("кладе в експорт самі ручні операції, а не лише надбудови над ними", () => {
+    fakeCache.value = warmCache({
+      manualExpenses: [
+        { id: "me-1", amount: 39308.6 } as never,
+        { id: "me-2", amount: 120 } as never,
+      ],
+    });
+
+    const snapshot = readFinykBackupFromStorage();
+
+    expect(snapshot.manualExpenses).toEqual([
+      { id: "me-1", amount: 39308.6 },
+      { id: "me-2", amount: 120 },
+    ]);
+  });
+
+  it("проносить ручні операції через нормалізацію без втрат", () => {
+    const rows = [{ id: "me-1", amount: 39308.6 }];
+
+    expect(
+      normalizeFinykBackup({
+        version: FINYK_BACKUP_VERSION,
+        manualExpenses: rows,
+      }),
+    ).toEqual({ manualExpenses: rows });
+  });
+
   it("reads persisted LS values instead of defaults when cold and LS has data", () => {
     localStorage.setItem("finyk_budgets", JSON.stringify([{ id: "ls-b1" }]));
     localStorage.setItem(

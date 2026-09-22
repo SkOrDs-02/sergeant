@@ -14,6 +14,7 @@
 import { describe, it, expect } from "vitest";
 import {
   brandColors,
+  chartHex,
   moduleColors,
   inkTheme,
   moduleAccentRgb,
@@ -190,24 +191,18 @@ const PAIRS = [
     brandColors.teal[800],
     true,
   ],
-  // Макро-шкала (бриф «Папір» §3). Сегменти несуть `text-white`, тому
-  // тир обирався за AA, а не за яскравістю: -600 із пропозиції аудиту
-  // фейлить (пари нижче фіксують і це), -700 проходить.
-  ["macro protein — white on cyan-700", "#ffffff", brandColors.cyan[700], true],
-  ["macro fat — white on rose-700", "#ffffff", brandColors.rose[700], true],
-  ["macro carbs — white on lime-700", "#ffffff", brandColors.lime[700], true],
+  // Макро-шкала (бриф «Папір» §3; родина переглянута N-13, продуктовий
+  // аудит 2026-09-16 - власна палітра замість cyan/rose/lime, що
+  // збігались з акцентами Фізрука/Рутини/Їжі). Сегменти несуть
+  // `text-white`, звідси перевірка тут, а не лише в `chartHex.contract.test.js`.
   [
-    "macro protein — white on cyan-600 (відхилений тир)",
+    "macro protein - white on chartHex.protein",
     "#ffffff",
-    brandColors.cyan[600],
-    false,
+    chartHex.protein,
+    true,
   ],
-  [
-    "macro carbs — white on lime-600 (відхилений тир)",
-    "#ffffff",
-    brandColors.lime[600],
-    false,
-  ],
+  ["macro fat - white on chartHex.fat", "#ffffff", chartHex.fat, true],
+  ["macro carbs - white on chartHex.carbs", "#ffffff", chartHex.carbs, true],
 ];
 
 describe("@sergeant/design-tokens — WCAG AA contrast", () => {

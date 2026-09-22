@@ -1,6 +1,6 @@
 # Database connection pooling — runbook (PR #046)
 
-> **Last touched:** 2026-09-21 by @Skords-01. **Next review:** 2026-12-30.
+> **Last touched:** 2026-09-22 by @Skords-01. **Next review:** 2026-12-31.
 > **Status:** Active
 > **Runtime-specific:** yes
 

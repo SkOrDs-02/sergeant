@@ -265,6 +265,7 @@ export function Overview({
                     onOpenDay={(dayKey) =>
                       navigate(`/finyk/transactions?date=${dayKey}`)
                     }
+                    suppressMonthStripHint={d.showFirstInsight}
                   />
 
                   <OverviewTextRows

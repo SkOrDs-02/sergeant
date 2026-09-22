@@ -21,6 +21,7 @@ import {
   buildFinykSpendingUniverse,
   calcCategorySpent,
 } from "@sergeant/finyk-domain";
+import { CORRELATION_MIN_N } from "@sergeant/shared";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
@@ -128,7 +129,23 @@ const DAY_MS = 86_400_000;
 const DEFAULT_PERIOD_DAYS = 60;
 const MAX_PERIOD_DAYS = 365;
 const MAX_METRICS = 6;
-const MIN_CORRELATION_POINTS = 4;
+/**
+ * Поріг мовчання. Саме число живе у спільному пакеті
+ * (`packages/shared/src/lib/correlationStandard.ts`), бо його підписує ще й
+ * сервер у промпті коуча; тут лишається локальне імʼя, під яким його знає
+ * решта веб-коду.
+ *
+ * AI-DANGER: ре-експорт стоїть у ЦЬОМУ файлі, а не в `digestCorrelations.ts`,
+ * рівно тому, що `digestCorrelations` імпортує звідси
+ * `computePairwiseCorrelations` - зворотний імпорт замкнув би цикл модулів.
+ *
+ * До 2026-09-22 тут стояло власне число 4, тобто окремий, мʼякший стандарт:
+ * чат-тул заговорював на чотирьох спільних днях там, де дайджест мовчав до
+ * десяти. У системний промпт при цьому лягали ОБИДВА джерела кореляцій,
+ * однаково відформатовані, тож модель не мала як розрізнити, що одне з них
+ * стоїть на вчетверо слабшому доказі.
+ */
+export const MIN_N = CORRELATION_MIN_N;
 const MAX_TABLE_ROWS = 90;
 
 // ─── Утиліти діапазону/парсингу ──────────────────────────────────────────────
@@ -517,7 +534,7 @@ export interface PairCorrelation {
 
 /**
  * Для кожної пари метрик рахує Pearson + Spearman на днях, де ОБИДВІ метрики
- * мають реальне значення (pairwise-complete). Пари з < `MIN_CORRELATION_POINTS`
+ * мають реальне значення (pairwise-complete). Пари з < `MIN_N`
  * спільних точок пропускаються — на малій вибірці кореляція шумова.
  */
 export function computePairwiseCorrelations(
@@ -541,7 +558,7 @@ export function computePairwiseCorrelations(
           ys.push(vb);
         }
       }
-      if (xs.length < MIN_CORRELATION_POINTS) continue;
+      if (xs.length < MIN_N) continue;
       out.push({
         a,
         b,
@@ -604,10 +621,17 @@ export function formatDailySeries(
   if (metrics.length >= 2) {
     if (correlations.length === 0) {
       lines.push(
-        `Кореляції: недостатньо спільних днів (потрібно ≥${MIN_CORRELATION_POINTS} з обома метриками).`,
+        `Кореляції: недостатньо спільних днів (потрібно ≥${MIN_N} з обома метриками).`,
       );
     } else {
-      lines.push("Кореляції (Pearson r; на спільних днях):");
+      // Джерело й поріг називаються В САМОМУ тексті блоку навмисно
+      // (спека `link-evidence-standard.md`): у системний промпт потрапляють
+      // ДВА однаково відформатованих джерела кореляцій - цей живий
+      // розрахунок і гейтнутий блок із памʼяті коуча. Без підпису модель не
+      // мала як їх розрізнити й зважити.
+      lines.push(
+        `Кореляції (джерело: розрахунок цього тула просто зараз; поріг: n ≥ ${MIN_N} спільних днів, Pearson r):`,
+      );
       for (const c of correlations) {
         lines.push(
           `  ${c.a} ↔ ${c.b}: r=${c.pearson.toFixed(2)} (Spearman ${c.spearman.toFixed(2)}, n=${c.n}): ${strength(c.pearson)}`,
