@@ -43,11 +43,14 @@ name: Mobile Shell (Android, Release AAB + APK)
 #   4. (optional) decode keystore + export SERGEANT_RELEASE_* env vars
 #   5. ./gradlew :app:bundleRelease :app:assembleRelease → *.aab + *.apk
 
+# Store-реліз заморожений (ADR-0094, web-first pause - пауза, не sunset):
+# тег-тригер звужено на власний префікс, щоб цей реліз-лейн не стартував на
+# кожному `v*`-тезі репозиторію. Ручний запуск лишається.
 on:
   workflow_dispatch:
   push:
     tags:
-      - "v*"
+      - "mobile-shell-v*"
 
 permissions:
   contents: read
