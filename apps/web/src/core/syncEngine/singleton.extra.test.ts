@@ -124,6 +124,9 @@ describe("bootSyncEngineReader", () => {
 
     const p1 = bootSyncEngineReader({ createRuntime });
     const p2 = bootSyncEngineReader({ createRuntime });
+    // Фабрика тепер викликається ПІСЛЯ того, як розвʼязалось лідерство над
+    // локальною базою, тож розвʼязувати її проміс одразу немає чого.
+    await vi.waitFor(() => expect(createRuntime).toHaveBeenCalled());
     resolveCreate(reader);
     const [r1, r2] = await Promise.all([p1, p2]);
 
