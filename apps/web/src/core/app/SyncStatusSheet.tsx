@@ -115,7 +115,7 @@ function describeVfs(vfs: SqliteVfsName | null): {
 } {
   if (vfs === "opfs-sahpool") return { value: COPY.storageOpfs, tone: "ok" };
   // Причина йде поперед назви сховища: «Лише памʼять» описує наслідок, а
-  // діяти можна лише знаючи причину — і саме цю причину людина усуває сама.
+  // діяти можна лише знаючи причину - і саме цю причину людина усуває сама.
   if (readSqliteVfsFallbackReason() === "pool-busy")
     return { value: COPY.storageOtherTab, tone: "err" };
   if (vfs === "kvvfs") return { value: COPY.storageLocalStorage, tone: "warn" };

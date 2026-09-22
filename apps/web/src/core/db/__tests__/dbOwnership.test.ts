@@ -28,7 +28,7 @@ function installLocks(): { held: Set<string>; requests: string[] } {
     requests.push(name);
     if (held.has(name)) {
       // Зайнятий лок: `ifAvailable` дає відмову одразу, блокувальний запит
-      // лишається в черзі — рівно як у справжніх Web Locks.
+      // лишається в черзі - рівно як у справжніх Web Locks.
       return options.ifAvailable
         ? Promise.resolve(cb(null))
         : new Promise<void>(() => {});
@@ -71,7 +71,7 @@ describe("власність локальної бази", () => {
   });
 
   // Без `navigator.locks` (старий рушій) застосунок мусить поводитись рівно
-  // як до цієї зміни — інакше ремонт обернувся б відмовою відкривати базу.
+  // як до цієї зміни - інакше ремонт обернувся б відмовою відкривати базу.
   it("без Web Locks лишається лідером", async () => {
     Object.defineProperty(globalThis.navigator, "locks", {
       value: undefined,

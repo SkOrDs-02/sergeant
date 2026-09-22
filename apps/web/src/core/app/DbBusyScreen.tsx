@@ -15,7 +15,7 @@ import {
  *
  * Чому екран, а не тихий фолбек. OPFS-пул замикає каталог цілком, тож друга
  * вкладка персистентного сховища не отримає ніколи. Раніше вона мовчки
- * відкривала власне сховище поруч — і показувала інші дані на тому самому
+ * відкривала власне сховище поруч - і показувала інші дані на тому самому
  * акаунті. Порожній застосунок замість даних не кращий: людина прочитає це
  * як «усе зникло». Тому стан називається вголос, а дія рівно одна.
  */
@@ -30,7 +30,10 @@ export function DbBusyScreen() {
   const [pending, setPending] = useState(false);
 
   return (
-    <div className="flex-1 flex flex-col items-center justify-center gap-4 px-6 py-10 text-center safe-area-pt-pb">
+    // `min-h`, а не `flex-1`: `AppShell` - фрагмент, а не флекс-контейнер,
+    // тож розтягуватись тут нема від чого, і екран прилипав до верху
+    // (знято з планшета 2026-09-22).
+    <div className="min-h-[70dvh] flex flex-col items-center justify-center gap-4 px-6 py-10 text-center safe-area-pt-pb">
       <h1 className="text-style-title text-balance">{COPY.title}</h1>
       <p className="max-w-sm text-style-body text-muted-foreground">
         {COPY.body}
