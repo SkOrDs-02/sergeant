@@ -29,6 +29,7 @@ export {
   chatToolIterationCapHitTotal,
   nutritionPhotoRejectedTotal,
   chatPromptInjectionAttemptTotal,
+  chatPromptInjectionShadowTotal,
   aiQuotaBlocksTotal,
   aiCostConsumedTotal,
   aiQuotaFailOpenTotal,

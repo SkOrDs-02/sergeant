@@ -161,6 +161,21 @@ export const chatPromptInjectionAttemptTotal = new client.Counter({
   registers: [register],
 });
 
+/**
+ * Тіньове порівняння детекторів інʼєкцій у `tool_result`: regex
+ * `PROMPT_INJECTION_PATTERNS` проти Jev. Інкрементиться лише при
+ * `CHAT_INJECTION_JEV_SHADOW=true`. Цікавий зріз - `regex="miss", jev="hit"`.
+ * Кардинальність: tool (~78) × 2 × 3.
+ *
+ * See `docs/work/specs/planning/jev-injection-shadow.md`.
+ */
+export const chatPromptInjectionShadowTotal = new client.Counter({
+  name: "chat_prompt_injection_shadow_total",
+  help: "Shadow comparison of tool_result injection detectors; metric only, nothing is blocked.",
+  labelNames: ["tool", "regex", "jev"],
+  registers: [register],
+});
+
 export const aiQuotaBlocksTotal = new client.Counter({
   name: "ai_quota_blocks_total",
   help: "AI quota refusals",
