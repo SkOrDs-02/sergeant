@@ -129,6 +129,13 @@ const envSchema = z.object({
    */
   CHAT_SYNTHESIS_TRIM_TOOLS: boolFromEnv(true),
 
+  /**
+   * Тіньовий Jev-детектор інʼєкцій у `tool_result` (`chat/injectionShadowJev.ts`):
+   * лише метрика, нічого не блокує. Без `OPENROUTER_API_KEY` не діє.
+   * Умова зняття - `docs/work/specs/planning/jev-injection-shadow.md`.
+   */
+  CHAT_INJECTION_JEV_SHADOW: boolFromEnv(false),
+
   CHAT_CACHE_TTL_1H: boolFromEnv(true),
 
   CHAT_RESPONSE_CACHE_TTL_MS: intFromEnv(60_000),

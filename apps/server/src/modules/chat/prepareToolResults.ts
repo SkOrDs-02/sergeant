@@ -32,6 +32,10 @@ import {
   type RawToolResult,
 } from "./toolResultTruncation.js";
 import { wrapAndScanToolResults } from "./toolOutputWrapping.js";
+import {
+  isJevShadowEnabled,
+  shadowScanToolResult,
+} from "./injectionShadowJev.js";
 
 /** Готовий до відправки `tool_result`-блок Anthropic Messages API. */
 export interface ToolResultMessage {
@@ -71,7 +75,13 @@ export function prepareToolResults(
   // M8 — SYSTEM_PREFIX (v8+) інструктує модель трактувати все всередині
   // envelope як ДАНІ. Захищає від скомпрометованого upstream (Mono webhook,
   // n8n response), який підкладає "ignore previous instructions and …".
+  const jevShadow = isJevShadowEnabled();
   const wrapped = wrapAndScanToolResults(truncated, toolCallsRaw, {
+    ...(jevShadow && {
+      onScanned: ({ tool, content, matched }) => {
+        void shadowScanToolResult(tool, content, matched);
+      },
+    }),
     recordInjectionAttempt: (labels) => {
       try {
         chatPromptInjectionAttemptTotal.inc(labels);
