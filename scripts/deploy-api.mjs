@@ -42,8 +42,10 @@ async function json(url, init) {
   return res.json();
 }
 
+// Саме POST. GET віддає 405 «This endpoint has changed to a POST request»:
+// у старих версіях Coolify цей ендпоінт був GET, і приклади в мережі досі такі.
 const started = await json(`${base}/api/v1/deploy?uuid=${APP_UUID}`, {
-  method: "GET",
+  method: "POST",
 });
 const queued = started.deployments?.[0];
 console.log(
