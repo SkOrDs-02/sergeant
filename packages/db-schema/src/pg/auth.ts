@@ -26,6 +26,28 @@ export const user = pgTable("user", {
   image: text(),
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
+  /**
+   * Мітка прохання видалити акаунт (ADR-0016 § ADR-6.1, міграція 145).
+   * `NULL` = акаунт активний; заповнена — акаунт у 30-денному вікні, і
+   * `modules/me/deletionPoller.ts` добиває його після
+   * `ACCOUNT_DELETION_GRACE_DAYS`.
+   *
+   * Імʼя колонки задане ЯВНО і в snake_case, на відміну від сусідів: решта
+   * полів цієї таблиці — quoted camelCase із baseline-міграції 003
+   * (легасі-стиль Better Auth), а 145 писала вже в загальному для репо
+   * snake_case. Не «вирівнюй» це під сусідів — розійдеться з реальною
+   * колонкою.
+   *
+   * Поле оголошене тут не тому, що ним користується drizzle: увесь код
+   * ходить до нього сирим SQL (`dataRights.ts`, `deletionPoller.ts`). Воно
+   * потрібне, щоб гейт `pnpm --filter @sergeant/db-schema test` →
+   * `drift.test.ts` бачив паритет схеми з міграціями. Колонка НАША, не
+   * Better-Auth-ова, тож whitelist у `scripts/check-schema-drift.mjs`
+   * (де лежать легасі-розбіжності auth) тут був би приховуванням.
+   */
+  deletionRequestedAt: timestamp("deletion_requested_at", {
+    withTimezone: true,
+  }),
 });
 
 export const session = pgTable("session", {

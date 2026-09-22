@@ -494,11 +494,13 @@ describe("applyFizrukMeasurements", () => {
     );
 
     const insert = lastQuery(fake);
-    // params order: id, user_id, measured_at, weight_kg, waist_cm, chest_cm,
-    // hips_cm, bicep_cm, sleep_hours, energy_level, mood, created_at,
-    // updated_at, deleted_at
-    expect(insert.params[9]).toBe(4);
-    expect(insert.params[10]).toBe(2);
+    // params order (міграція 146): id, user_id, measured_at, weight_kg,
+    // body_fat_pct, neck_cm, waist_cm, chest_cm, hips_cm, bicep_cm,
+    // bicep_l_cm, bicep_r_cm, forearm_l_cm, forearm_r_cm, thigh_l_cm,
+    // thigh_r_cm, calf_l_cm, calf_r_cm, sleep_hours, energy_level, mood,
+    // created_at, updated_at, deleted_at
+    expect(insert.params[19]).toBe(4);
+    expect(insert.params[20]).toBe(2);
   });
 
   it("stores an absent optional measurement as null, not zero", async () => {
@@ -620,7 +622,7 @@ describe("applyFizrukMeasurements", () => {
       ),
     ).resolves.toEqual({ status: "applied" });
 
-    expect(lastQuery(fake).params[9]).toBe(5);
+    expect(lastQuery(fake).params[19]).toBe(5);
   });
 
   it("inserts a new measurement with the full param set in order", async () => {
@@ -642,10 +644,22 @@ describe("applyFizrukMeasurements", () => {
       "user-1",
       new Date("2026-07-21T06:00:00.000Z"),
       72.5,
+      // Решта полів веб-форми (міграція 146). `validRow` їх не несе, тож
+      // тут null — але місце в порядку параметрів у них є.
+      null, // body_fat_pct
+      null, // neck_cm
       80,
       100,
       95,
       35,
+      null, // bicep_l_cm
+      null, // bicep_r_cm
+      null, // forearm_l_cm
+      null, // forearm_r_cm
+      null, // thigh_l_cm
+      null, // thigh_r_cm
+      null, // calf_l_cm
+      null, // calf_r_cm
       7.5,
       4,
       3,
@@ -786,6 +800,77 @@ describe("applyFizrukMeasurements", () => {
     expect(update.params).toEqual([clientTs, "measure-1", "user-1"]);
   });
 
+  it("пише решту полів веб-форми, а не лише вісім доменних", async () => {
+    // Регресія (знайдено 2026-09-22): колонок під жир, шию, передпліччя,
+    // стегно, литку і РІЗНІ сторони біцепса не було, тож sync їх мовчки
+    // губив — користувач їх вводив, а на сервер не доїжджало нічого.
+    const fake = new FakeClient();
+
+    await expect(
+      applyFizrukMeasurements(
+        asClient(fake),
+        syncOp(
+          "fizruk_measurements",
+          "insert",
+          validRow({
+            body_fat_pct: 18.5,
+            neck_cm: 39.5,
+            bicep_l_cm: 36.5,
+            bicep_r_cm: 37.5,
+            forearm_l_cm: 29.5,
+            forearm_r_cm: 30.5,
+            thigh_l_cm: 58.5,
+            thigh_r_cm: 59.5,
+            calf_l_cm: 38.5,
+            calf_r_cm: 39.5,
+          }),
+        ),
+        "user-1",
+        clientTs,
+      ),
+    ).resolves.toEqual({ status: "applied" });
+
+    const insert = lastQuery(fake);
+    for (const column of [
+      "body_fat_pct",
+      "neck_cm",
+      "bicep_l_cm",
+      "bicep_r_cm",
+      "forearm_l_cm",
+      "forearm_r_cm",
+      "thigh_l_cm",
+      "thigh_r_cm",
+      "calf_l_cm",
+      "calf_r_cm",
+    ]) {
+      expect(insert.sql).toContain(column);
+    }
+    // Дробові значення доходять без округлення, а сторони лишаються різними.
+    expect(insert.params).toContain(18.5);
+    expect(insert.params).toContain(36.5);
+    expect(insert.params).toContain(37.5);
+  });
+
+  it("санітарить нові поля тими самими межами, що й старі", async () => {
+    const fake = new FakeClient();
+
+    await expect(
+      applyFizrukMeasurements(
+        asClient(fake),
+        syncOp(
+          "fizruk_measurements",
+          "insert",
+          validRow({ body_fat_pct: 250 }),
+        ),
+        "user-1",
+        clientTs,
+      ),
+    ).resolves.toEqual({
+      status: "rejected",
+      reason: "invalid_body_fat_pct",
+    });
+  });
+
   it("updates an existing measurement, keeping the same field order in params", async () => {
     const fake = new FakeClient();
     fake.queueRows([
@@ -810,10 +895,20 @@ describe("applyFizrukMeasurements", () => {
     expect(update.params).toEqual([
       new Date("2026-07-21T06:00:00.000Z"),
       71.2,
+      null, // body_fat_pct
+      null, // neck_cm
       80,
       100,
       95,
       35,
+      null, // bicep_l_cm
+      null, // bicep_r_cm
+      null, // forearm_l_cm
+      null, // forearm_r_cm
+      null, // thigh_l_cm
+      null, // thigh_r_cm
+      null, // calf_l_cm
+      null, // calf_r_cm
       7.5,
       4,
       3,
