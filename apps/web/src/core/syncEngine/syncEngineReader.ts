@@ -114,6 +114,50 @@ function reportPullRejection(
   }
 }
 
+/**
+ * Скільки разів один `pullOnce` згоден перечекати рейт-ліміт.
+ *
+ * AI-CONTEXT: догін порожнього курсора йде сторінками через увесь
+ * `sync_op_log` акаунта, і на дорослому акаунті це сотні запитів підряд
+ * проти бюджету `api:v2:sync` (60/хв, `apps/server/src/routes/sync.ts`).
+ * Прод 2026-09-21: 107 запитів за 1 хв 33 с, далі 429 — і крок
+ * `pull-before` анонімної міграції падав, замикаючи людину на блокуючому
+ * екрані. Курсор пишеться після КОЖНОЇ сторінки, тож прогрес не губиться
+ * і без цих пауз; вони потрібні, щоб один прохід ДОХОДИВ до кінця, а не
+ * віддавав помилку тому, хто на нього чекає.
+ *
+ * Стеля скінченна навмисно: заклинити тік на невизначений час гірше, ніж
+ * віддати помилку — наступний тік продовжить із збереженого курсора.
+ */
+const MAX_RATE_LIMIT_WAITS = 3;
+
+/** Скільки чекати найдовше, хай що каже `Retry-After`. */
+const MAX_RATE_LIMIT_WAIT_MS = 60_000;
+
+/** Дефолт, коли сервер сказав 429, але заголовка не дав. */
+const DEFAULT_RATE_LIMIT_WAIT_MS = 5_000;
+
+/**
+ * Пауза, яку просить рейт-ліміт, або `null`, якщо помилка не про це.
+ *
+ * Перевірка структурна: reader не тягне `ApiError` як значення (він тут
+ * лише в `import type`), а форма поля стабільна — `retryAfterMs` існує
+ * саме для такого targeted backoff.
+ */
+function rateLimitWaitMs(error: unknown): number | null {
+  if (typeof error !== "object" || error === null) return null;
+  const { status, retryAfterMs } = error as {
+    status?: unknown;
+    retryAfterMs?: unknown;
+  };
+  if (status !== 429 && status !== 503) return null;
+  const requested =
+    typeof retryAfterMs === "number" && retryAfterMs > 0
+      ? retryAfterMs
+      : DEFAULT_RATE_LIMIT_WAIT_MS;
+  return Math.min(requested, MAX_RATE_LIMIT_WAIT_MS);
+}
+
 export function createSyncEngineReaderRuntime(
   deps: SyncEngineReaderDeps,
 ): SyncEngineReaderRuntime {
@@ -145,11 +189,23 @@ export function createSyncEngineReaderRuntime(
       let maxOpId = since;
       const affectedTables = new Set<string>();
 
+      let rateLimitWaits = 0;
+
       for (;;) {
-        const page = await deps.pull(since, {
-          limit: deps.limit,
-          originDeviceId: deps.originDeviceId,
-        });
+        let page: SyncV2PullResponse;
+        try {
+          page = await deps.pull(since, {
+            limit: deps.limit,
+            originDeviceId: deps.originDeviceId,
+          });
+        } catch (error) {
+          const waitMs = rateLimitWaitMs(error);
+          if (waitMs === null || rateLimitWaits >= MAX_RATE_LIMIT_WAITS)
+            throw error;
+          rateLimitWaits += 1;
+          await new Promise((resolve) => setTimeout(resolve, waitMs));
+          continue;
+        }
 
         for (const op of page.ops) {
           pulled += 1;

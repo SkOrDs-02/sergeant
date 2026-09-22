@@ -152,6 +152,51 @@ describe("createSyncEngineReaderRuntime", () => {
     expect(pullCalls).toBe(1);
   });
 
+  // Прод 2026-09-21: догін порожнього курсора на акаунті з 46 тисячами
+  // операцій — сотні сторінок проти бюджету 60/хв. Перший 429 валив увесь
+  // `pullOnce`, а разом із ним крок `pull-before` анонімної міграції, що
+  // замикало людину на блокуючому екрані одразу після входу.
+  it("перечікує 429 і доводить пагінацію до кінця", async () => {
+    const rateLimited = Object.assign(new Error("Забагато запитів."), {
+      name: "ApiError",
+      status: 429,
+      retryAfterMs: 5,
+    });
+    const pull = vi
+      .fn()
+      .mockResolvedValueOnce({
+        ops: [{ id: 1, table: "routine_entries", op: "insert", row: {} }],
+        next_cursor: 1,
+      })
+      .mockRejectedValueOnce(rateLimited)
+      .mockResolvedValueOnce({
+        ops: [{ id: 2, table: "routine_entries", op: "insert", row: {} }],
+        next_cursor: null,
+      });
+
+    const runtime = createSyncEngineReaderRuntime(makeDeps({ pull }));
+    const result = await runtime.pullOnce();
+
+    expect(result.pulled).toBe(2);
+    expect(pull).toHaveBeenCalledTimes(3);
+  });
+
+  it("здається після стелі пауз, а не крутить рейт-ліміт вічно", async () => {
+    const rateLimited = Object.assign(new Error("Забагато запитів."), {
+      name: "ApiError",
+      status: 429,
+      retryAfterMs: 5,
+    });
+    const pull = vi.fn().mockRejectedValue(rateLimited);
+
+    const runtime = createSyncEngineReaderRuntime(makeDeps({ pull }));
+
+    await expect(runtime.pullOnce()).rejects.toThrow("Забагато запитів.");
+    // Перша спроба плюс три перечікування — далі помилка йде нагору, і
+    // наступний тік продовжить із збереженого курсора.
+    expect(pull).toHaveBeenCalledTimes(4);
+  });
+
   it("counts skipped and rejected outcomes and refreshes caches after applies", async () => {
     applyPullOpMock
       .mockResolvedValueOnce("skipped")

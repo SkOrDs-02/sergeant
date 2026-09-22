@@ -51,6 +51,7 @@ vi.mock("@shared/hooks/useToast", () => ({
 
 import {
   AnonymousDataMigrationProvider,
+  PROBE_GRACE_MS,
   __resetAnonymousMigrationSingleFlightForTests,
 } from "./AnonymousDataMigrationProvider";
 
@@ -140,8 +141,18 @@ describe("AnonymousDataMigrationProvider", () => {
     renderAt("/", <div>module content</div>);
 
     expect(screen.queryByRole("status")).not.toBeInTheDocument();
-    // `findBy*` чекає до 1 с — довше за 500 мс grace-вікна гейта.
-    expect(await screen.findByRole("status")).toBeInTheDocument();
+    // Чекаємо сам таймер, а не вікно опитування. `findBy*` тут програвав
+    // перегони на завантаженій машині: коли цикл подій блокується довше за
+    // секунду, grace-таймер гейта й 1-секундний тайм-аут `waitFor`
+    // стають готові в одній і тій самій фазі. `setProbeGraceElapsed` відпрацьовує
+    // першим, але рендер React йде окремим завданням через MessageChannel,
+    // тож тайм-аут встигає спрацювати раніше, ніж панель потрапить у DOM.
+    // Власний таймер з пізнішим терміном такого порядку не має: він
+    // гарантовано йде після grace-таймера, а `act` дочекується рендеру.
+    await act(async () => {
+      await new Promise((resolve) => setTimeout(resolve, PROBE_GRACE_MS + 50));
+    });
+    expect(screen.getByRole("status")).toBeInTheDocument();
   });
 
   // Обидві діри з browser QA 2026-08-04 (Obs-009). Синк-runtime-и раніше
@@ -295,19 +306,29 @@ describe("AnonymousDataMigrationProvider", () => {
   });
 
   // Звіт власника прийшов трьома скріншотами одного й того самого тексту —
-  // діагностувати не було чим. Код кроку має бути В КАДРІ, бо людина шле
-  // фото екрана, а не заглядає в Sentry.
-  it("показує технічний код збою на самому екрані", async () => {
-    migrate.mockRejectedValue(
-      new Error("anon-migration/apply-rejected: finyk_tx_splits (insert)"),
+  // діагностувати не було чим. Причина має бути В КАДРІ, бо людина шле фото
+  // екрана, а не заглядає в Sentry. Але саме причина: службовий префікс
+  // кроку і `[vfs=… disk=…]` адресовані нам і лишаються в Sentry-повідомленні
+  // (другий звіт власника, 2026-09-21).
+  it("показує причину збою на екрані, без службового префікса і vfs", async () => {
+    const error = Object.assign(
+      new Error(
+        "anon-migration/pull-before: Забагато запитів. Спробуй через 17 секунд. " +
+          "[vfs=kvvfs disk=14/10254MB]",
+      ),
+      {
+        name: "AnonymousMigrationStepError",
+        detail: "Забагато запитів. Спробуй через 17 секунд.",
+      },
     );
+    migrate.mockRejectedValue(error);
     renderAt("/", <div>module content</div>);
 
     expect(
-      await screen.findByText(
-        "anon-migration/apply-rejected: finyk_tx_splits (insert)",
-      ),
+      await screen.findByText("Забагато запитів. Спробуй через 17 секунд."),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/anon-migration\//)).not.toBeInTheDocument();
+    expect(screen.queryByText(/vfs=/)).not.toBeInTheDocument();
   });
 
   // Зворотний бік: чужа помилка (не з нашого кроку) не має малювати на
