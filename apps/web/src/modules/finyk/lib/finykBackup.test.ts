@@ -67,6 +67,7 @@ function warmCache(
     monoDebtLinkedTxIds: { "tx-1": ["d1"] },
     networthHistory: [{ date: "2026-07-01", value: 100 } as never],
     customCategories: [{ id: "c1" } as never],
+    manualExpenses: [{ id: "me-1", amount: 42 } as never],
     dismissedRecurring: ["rec-1"],
     ...overrides,
   };
@@ -171,6 +172,7 @@ describe("readFinykBackupFromStorage", () => {
     expect(snapshot.monoDebtLinkedTxIds).toEqual({});
     expect(snapshot.networthHistory).toEqual([]);
     expect(snapshot.customCategories).toEqual([]);
+    expect(snapshot.manualExpenses).toEqual([]);
     // monthlyPlan and dismissedRecurring have their own null-guarded
     // defaults distinct from the generic readJSON([]) fallback.
     expect(snapshot.monthlyPlan).toEqual({
@@ -258,6 +260,9 @@ describe("readFinykBackupFromStorage", () => {
       { date: "2026-07-01", value: 100 },
     ]);
     expect(snapshot.customCategories).toEqual([{ id: "c1" }]);
+    // Ручні витрати — єдина доменна таблиця, якої в конверті не було:
+    // експорт вивозив усе, крім самих операцій.
+    expect(snapshot.manualExpenses).toEqual([{ id: "me-1", amount: 42 }]);
     expect(snapshot.dismissedRecurring).toEqual(["rec-1"]);
   });
 

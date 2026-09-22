@@ -237,6 +237,7 @@ export function normalizeFinykSyncPayload(data: unknown): FinykBackup {
   if (has("nh")) full.networthHistory = d["nh"] as unknown[];
   if (has("cc")) full.customCategories = d["cc"] as unknown[];
   if (has("dr")) full.dismissedRecurring = d["dr"] as unknown[];
+  if (has("me")) full.manualExpenses = d["me"] as unknown[];
 
   return normalizeFinykBackup(full);
 }

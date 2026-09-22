@@ -147,12 +147,14 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
     r.readAsText(f);
   };
 
-  const confirmImport = () => {
+  const confirmImport = async () => {
     if (!pendingImport) return;
     const { data } = pendingImport;
     setPendingImport(null);
     try {
-      applyHubBackupPayload(data);
+      // await — не косметика: Фінік пише в SQLite асинхронно, а reload
+      // нижче обірве fire-and-forget запис на півдорозі.
+      await applyHubBackupPayload(data);
       window.location.reload();
     } catch (err) {
       showParseError(err);
@@ -250,7 +252,7 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         confirmLabel="Перезаписати"
         cancelLabel="Скасувати"
         danger
-        onConfirm={confirmImport}
+        onConfirm={() => void confirmImport()}
         onCancel={cancelImport}
       />
     </div>
