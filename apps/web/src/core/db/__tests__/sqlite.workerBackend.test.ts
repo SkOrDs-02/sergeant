@@ -156,7 +156,13 @@ describe("бекенд бази у воркері", () => {
           _name: string,
           options: { ifAvailable?: boolean },
           cb: (lock: object | null) => unknown,
-        ) => Promise.resolve(cb(options.ifAvailable ? null : {})),
+        ) =>
+          // `ifAvailable` — одразу відмова (лок тримає «інша вкладка»);
+          // блокувальний запит просто стоїть у черзі й не розвʼязується,
+          // інакше послідовник негайно перезавантажив би сторінку.
+          options.ifAvailable
+            ? Promise.resolve(cb(null))
+            : new Promise<void>(() => {}),
       },
       configurable: true,
     });

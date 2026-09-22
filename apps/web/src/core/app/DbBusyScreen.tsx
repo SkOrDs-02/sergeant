@@ -43,7 +43,7 @@ export function DbBusyScreen() {
           setPending(true);
           // Перезавантаження робить сама `takeOverDbOwnership`, щойно лок
           // звільниться, тож `pending` навмисно не скидається.
-          void takeOverDbOwnership();
+          takeOverDbOwnership();
         }}
       >
         {pending ? COPY.pending : COPY.action}

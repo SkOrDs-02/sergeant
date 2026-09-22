@@ -43,12 +43,13 @@ export type DbOwnership = "unknown" | "leader" | "follower";
 const LOCK_NAME = "sergeant-sqlite-db";
 const CHANNEL_NAME = "sergeant-db-ownership";
 
-type Msg = { type: "claim" } | { type: "released" };
+type Msg = { type: "claim" };
 
 let ownership: DbOwnership = "unknown";
 let releaseLock: (() => void) | null = null;
 let channel: BroadcastChannel | null = null;
 let claimPromise: Promise<DbOwnership> | null = null;
+let waiting = false;
 let yieldHandler: (() => Promise<void>) | null = null;
 const listeners = new Set<() => void>();
 
@@ -132,8 +133,38 @@ async function doClaim(): Promise<DbOwnership> {
       });
   });
   setOwnership(granted ? "leader" : "follower");
-  if (granted) installReleaseOnUnload();
+  if (!granted) waitForOwnership();
   return ownership;
+}
+
+/**
+ * Стати в чергу за локом і НЕ виходити з неї.
+ *
+ * Це єдиний надійний сигнал «лідер пішов». Перша версія слухала власну
+ * розсилку по `BroadcastChannel` з `pagehide` — і на живій перевірці 2026-09-22
+ * повідомлення при закритті вкладки не долітало: лок звільнявся коректно
+ * (`navigator.locks.query()` показував порожньо), а послідовник так і сидів на
+ * екрані «відкрито в іншій вкладці». Черга локів переживає і закриття, і краш,
+ * і падіння рушія — саме тому вона тут, а не подія вивантаження.
+ *
+ * Перезавантаження — і є переініціалізація: половина застосунку вже тримає
+ * памʼятєву базу, і підмінити її під ними на живу означало б показати два
+ * різні набори даних на одному екрані. Лок навмисно НЕ відпускається до
+ * вивантаження сторінки, інакше його встигне перехопити сусід, і ця вкладка
+ * перезавантажиться в той самий стан послідовника.
+ */
+function waitForOwnership(): void {
+  if (waiting || !hasLocks()) return;
+  waiting = true;
+  void navigator.locks
+    .request(LOCK_NAME, () => {
+      window.location.reload();
+      return new Promise<void>(() => {});
+    })
+    .catch((err: unknown) => {
+      waiting = false;
+      logger.warn("[db-ownership] waiting for the lock failed", err);
+    });
 }
 
 function installChannelListener(): void {
@@ -141,35 +172,8 @@ function installChannelListener(): void {
   if (!ch) return;
   ch.onmessage = (event: MessageEvent<Msg>) => {
     const msg = event.data;
-    if (msg?.type === "claim" && ownership === "leader") {
-      void yieldOwnership();
-      return;
-    }
-    // Лідер пішов. Вкладка, що чекала, піднімає базу — але лише після
-    // перезавантаження: половина застосунку вже тримає памʼятєву базу, і
-    // підмінити її під ними на живу означало б показати два різні набори
-    // даних на одному екрані.
-    if (msg?.type === "released" && ownership === "follower") {
-      window.location.reload();
-    }
+    if (msg?.type === "claim" && ownership === "leader") void yieldOwnership();
   };
-}
-
-/**
- * Повідомити сусідів, що база звільнилась.
- *
- * `pagehide` замість `beforeunload`: другий не спрацьовує на мобільних, коли
- * вкладку вивантажує сам рушій.
- */
-function installReleaseOnUnload(): void {
-  if (typeof window === "undefined") return;
-  window.addEventListener(
-    "pagehide",
-    () => {
-      getChannel()?.postMessage({ type: "released" } satisfies Msg);
-    },
-    { once: true },
-  );
 }
 
 /** Закрити базу й віддати лок. Після цього вкладка — послідовник. */
@@ -182,30 +186,37 @@ async function yieldOwnership(): Promise<void> {
   setOwnership("follower");
   releaseLock?.();
   releaseLock = null;
-  getChannel()?.postMessage({ type: "released" } satisfies Msg);
+  // У чергу назад НЕ стаємо, і це навмисно. Людина щойно свідомо перенесла
+  // роботу в іншу вкладку; забрати базу назад при першій нагоді означало б
+  // скасувати її рішення. Технічно це ще й знімає зайве перезавантаження:
+  // новий лідер відпускає лок на власному релоуді, і waiter тут спіймав би
+  // саме цю мить (заміряно 2026-09-22 — вкладка, що віддала базу,
+  // перезавантажувалась услід за тією, що її забрала). Повернутись можна
+  // тією самою кнопкою.
 }
 
 /**
- * «Працювати тут»: забрати базу в тієї вкладки, що її тримає.
+ * «Працювати тут»: попросити вкладку-лідера віддати базу.
  *
- * Черга `navigator.locks` — FIFO, тож той, хто натиснув, стане в неї першим і
- * отримає лок, щойно лідер його відпустить. Перезавантаження робиться вже
- * після цього: воно і є переініціалізацією застосунку на живу базу.
+ * Тут лише прохання, і це навмисно. Послідовник стоїть у черзі за локом від
+ * самого буту ({@link waitForOwnership}), тож усе інше — відпускання, чергу і
+ * перезавантаження — робить той самий механізм, яким вкладка відновлюється
+ * після звичайного закриття лідера. Двох різних шляхів до одного стану тут
+ * не потрібно.
  */
-export async function takeOverDbOwnership(): Promise<void> {
-  if (!hasLocks()) return;
+export function takeOverDbOwnership(): void {
   getChannel()?.postMessage({ type: "claim" } satisfies Msg);
-  await navigator.locks.request(LOCK_NAME, () => {
-    // Лок відпускається разом із поверненням із колбека — і одразу ж
-    // перехоплюється наново вже на новому завантаженні сторінки.
-    window.location.reload();
-  });
+  // Стати в чергу тут, а не лише на буті: цю саму кнопку тисне й вкладка,
+  // яка колись віддала базу сама і з черги вийшла. Без цього рядка для неї
+  // кнопка була б декорацією.
+  waitForOwnership();
 }
 
 /** Test-only. */
 export function __resetDbOwnershipForTests(): void {
   ownership = "unknown";
   releaseLock = null;
+  waiting = false;
   claimPromise = null;
   yieldHandler = null;
   channel?.close();

@@ -26,7 +26,13 @@ function installLocks(): { held: Set<string>; requests: string[] } {
     const options = typeof optionsOrCb === "function" ? {} : optionsOrCb;
     const cb = typeof optionsOrCb === "function" ? optionsOrCb : maybeCb!;
     requests.push(name);
-    if (options.ifAvailable && held.has(name)) return Promise.resolve(cb(null));
+    if (held.has(name)) {
+      // Зайнятий лок: `ifAvailable` дає відмову одразу, блокувальний запит
+      // лишається в черзі — рівно як у справжніх Web Locks.
+      return options.ifAvailable
+        ? Promise.resolve(cb(null))
+        : new Promise<void>(() => {});
+    }
     held.add(name);
     return Promise.resolve(cb({}));
   };
