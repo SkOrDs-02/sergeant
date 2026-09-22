@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-05.
+> **Last touched:** 2026-09-22 by @Skords-01. **Next review:** 2027-01-08.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -362,6 +362,20 @@ Example commit subjects (= squash-merge PR titles):
 - `docs(agents): add subproject AGENTS.md for apps/*`
 
 PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMPLATE.md): Summary → Governing Skill → Playbook → Verification → Docs and Governance → Risk and Rollout → Hard Rule #15 acknowledgement. Do **not** force-push to `main`/`master` (Hard Rule #6) and do **not** skip Husky pre-commit hooks (Hard Rule #7).
+
+### Де живе код
+
+Актуальний хостинг коду - **Bitbucket**: `git@bitbucket.org:skords01/sergeant.git` (workspace `skords01`, приватне репо, з 2026-09-23). `origin` читає звідти, а пушить одразу в дві адреси: Bitbucket і bare-дзеркало `root@167.233.98.92:/srv/git/sergeant.git`, з якого Coolify збирає бекенд. Тобто звичайний `git push origin` тримає обидва синхронними, і окремий пуш у `hetzner` заради деплою більше не потрібен.
+
+GitHub лишається, але тільки як архів. Remote `oldgh` і `deadgh-zaebal` навмисно не видалені, і численні посилання виду `github.com/Skords-01/Sergeant/pull/NNN` у цьому файлі та в доках читаються як історія рішень, а не як робочий процес. Усі чотири акаунти заблоковані з вересня 2026, проте блокування можуть зняти, тож адреси лишаються на місці. Два практичні наслідки: не шукай там CI і **не видаляй ці remote** - у них лежать refs, яких немає більше ніде, включно з локальним `oldgh` на 731 ref.
+
+**`gh` CLI з Bitbucket не працює**, тож PR створюється через API репозиторним токеном (`BITBUCKET_TOKEN` у `.env` власника, поза репо):
+
+```bash
+curl -sS -X POST -H "Authorization: Bearer $BITBUCKET_TOKEN" -H 'Content-Type: application/json' https://api.bitbucket.org/2.0/repositories/skords01/sergeant/pullrequests -d '{"title":"feat(web): …","description":"…","source":{"branch":{"name":"<гілка>"}},"destination":{"branch":{"name":"main"}}}'
+```
+
+Структура тіла PR (`description`) лишається тією самою, що описана вище.
 
 ## Verification before PR
 
