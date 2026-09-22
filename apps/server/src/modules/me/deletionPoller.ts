@@ -7,8 +7,8 @@
  * ставить `deletion_requested_at` (`dataRights.ts::requestAccountDeletion`,
  * міграція 145). Незворотну частину `purgeUserData` після кінця вікна має
  * покликати хтось, і це той хтось. Без нього позначені акаунти висіли б
- * вічно, тобто ми порушили б власну обіцянку видалити дані (ADR-0016
- * § ADR-6.1, GDPR Art. 17).
+ * вічно, тобто ми порушили б власну обіцянку видалити дані (ADR-0098,
+ * GDPR Art. 17).
  *
  * Патерн дзеркалить `modules/gdpr/cleanupPoller.ts`: `setInterval` +
  * `unref()`, ідемпотентні `start`/`stop`, overlap-guard, помилка тику

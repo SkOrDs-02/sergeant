@@ -286,6 +286,16 @@ describe("sqlite/fizrukMeasurements schema snapshot", () => {
       "chest_cm",
       "hips_cm",
       "bicep_cm",
+      "body_fat_pct",
+      "neck_cm",
+      "bicep_l_cm",
+      "bicep_r_cm",
+      "forearm_l_cm",
+      "forearm_r_cm",
+      "thigh_l_cm",
+      "thigh_r_cm",
+      "calf_l_cm",
+      "calf_r_cm",
       "sleep_hours",
       "energy_level",
       "mood",
@@ -578,8 +588,8 @@ describe("sqlite/fizrukWorkoutTemplates schema snapshot", () => {
 });
 
 describe("sqlite/fizruk migrations exports", () => {
-  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities + 006 chosen-variant + 007 pushups→workouts migration", () => {
-    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(7);
+  it("exports the 001 baseline + 002 full-state + 003 injuries + 004 pushups + 005 kcal/activities + 006 chosen-variant + 007 pushups→workouts + 008 measurement-fields migration", () => {
+    expect(FIZRUK_CLIENT_MIGRATIONS).toHaveLength(8);
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.name).toBe("001_fizruk_tables.sql");
     expect(FIZRUK_CLIENT_MIGRATIONS[0]!.sql).toMatch(
       /CREATE TABLE IF NOT EXISTS fizruk_workouts/,
@@ -678,6 +688,30 @@ describe("sqlite/fizruk migrations exports", () => {
     expect(sql007).toMatch(
       /'pushups:' \|\| p\.user_id \|\| ':' \|\| p\.date_key/,
     );
+
+    expect(FIZRUK_CLIENT_MIGRATIONS[7]!.name).toBe(
+      "008_fizruk_measurement_fields.sql",
+    );
+    // Дзеркалить серверну 146. Тільки ADD COLUMN: `bicep_cm` лишається
+    // (поле доменного/мобільного реєстру), тож двофазний DROP не потрібен.
+    const sql008 = FIZRUK_CLIENT_MIGRATIONS[7]!.sql;
+    for (const column of [
+      "body_fat_pct",
+      "neck_cm",
+      "bicep_l_cm",
+      "bicep_r_cm",
+      "forearm_l_cm",
+      "forearm_r_cm",
+      "thigh_l_cm",
+      "thigh_r_cm",
+      "calf_l_cm",
+      "calf_r_cm",
+    ]) {
+      expect(sql008).toContain(
+        `ALTER TABLE fizruk_measurements ADD COLUMN ${column} REAL;`,
+      );
+    }
+    expect(sql008).not.toMatch(/DROP/);
   });
 
   it("uses a separate `__fizruk_migrations` ledger table", () => {

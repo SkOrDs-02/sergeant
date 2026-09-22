@@ -1,10 +1,16 @@
 # ADR-0016: Видалення користувача та поводження з PII
 
-- **Status:** Accepted
+- **Status:** Superseded by ADR-0098
 - **Date:** 2026-04-27
 - **Last validated:** 2026-09-04 by Codex against the codebase graph. **Next review:** 2026-12-20.
 - **Supersedes:** —
 - **Related:** [ADR-0001](./0001-monetization-architecture.md), [`dataRights.ts`](../../../apps/server/src/modules/me/dataRights.ts), [`cleanupQueue.ts`](../../../apps/server/src/modules/gdpr/cleanupQueue.ts).
+
+> **Superseded by [ADR-0098](./0098-account-deletion-grace-window.md) — але ЧАСТКОВО, і різницю варто прочитати перед тим, як спиратись на цей документ.**
+>
+> Замінено лише **момент і незворотність** видалення: з 2026-09-21 `DELETE /api/me` не видаляє, а ставить мітку `deletion_requested_at`, і незворотну частину через 30 днів виконує добивач. Твердження «Реалізований потік — негайний hard delete» і «Видалення в застосунку незворотне» нижче — історичний запис станом на 2026-04-27, а не поточна поведінка. Better-Auth-хук з пункту 1 вимкнений.
+>
+> **Механіка самого очищення лишається чинною і живе тут** — ADR-0098 на неї посилається, а не переписує: вміст незворотної транзакції (пункт 3), каскад і інваріант «немає таблиці з `user_id` без FK» (пункт 4 з усіма доповненнями), черга зовнішнього очищення (пункт 5). Правки цих пунктів ідуть сюди.
 
 ## Контекст
 
@@ -26,7 +32,7 @@
 
 ## Наслідки
 
-- Видалення в застосунку незворотне: немає реалізованих 30-денного soft-delete, restore-потоку чи hard-delete cron.
+- Видалення в застосунку незворотне: немає реалізованих 30-денного soft-delete, restore-потоку чи hard-delete cron. **Більше не так — див. [ADR-0098](./0098-account-deletion-grace-window.md).**
 - Зовнішній cleanup асинхронний і retryable. Успішний local delete не доводить, що кожен vendor уже стер дані.
 - Повторний delete безпечний: якщо `user` уже немає, новий snapshot для external cleanup не створюється.
 
@@ -34,7 +40,7 @@
 
 - Retention для логів, backups і даних кожного external vendor лишається policy/operations роботою. Цей ADR не заявляє конкретний GDPR або український юридичний дедлайн.
 - Ownership алертів, ескалація stuck-записів і production-доказ, що vendor credentials можуть виконати видалення, потребують окремої операційної перевірки.
-- Майбутня політика soft-delete чи restore вимагатиме нового рішення та відповідної семантики авторизації/сесій.
+- Майбутня політика soft-delete чи restore вимагатиме нового рішення та відповідної семантики авторизації/сесій. **Це рішення ухвалено — [ADR-0098](./0098-account-deletion-grace-window.md).**
 
 <!-- AUTO-GENERATED: PR-BACKLINKS-START -->
 

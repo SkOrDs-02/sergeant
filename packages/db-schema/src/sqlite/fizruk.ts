@@ -194,6 +194,11 @@ export const fizrukCustomActivities = sqliteTable(
  *
  * Body measurements and wellbeing scores. One row per measurement session.
  * All numeric fields nullable — the user picks which to fill.
+ *
+ * Міграція 008 додала решту полів веб-форми (жир, шия, передпліччя,
+ * стегно, литка, розділені біцепси) — до того вони не мали куди писатись
+ * і зникали після перезавантаження. `bicepCm` лишається як зведене
+ * значення доменного/мобільного реєстру.
  */
 export const fizrukMeasurements = sqliteTable(
   "fizruk_measurements",
@@ -209,6 +214,16 @@ export const fizrukMeasurements = sqliteTable(
     chestCm: real("chest_cm"),
     hipsCm: real("hips_cm"),
     bicepCm: real("bicep_cm"),
+    bodyFatPct: real("body_fat_pct"),
+    neckCm: real("neck_cm"),
+    bicepLCm: real("bicep_l_cm"),
+    bicepRCm: real("bicep_r_cm"),
+    forearmLCm: real("forearm_l_cm"),
+    forearmRCm: real("forearm_r_cm"),
+    thighLCm: real("thigh_l_cm"),
+    thighRCm: real("thigh_r_cm"),
+    calfLCm: real("calf_l_cm"),
+    calfRCm: real("calf_r_cm"),
     sleepHours: real("sleep_hours"),
     energyLevel: integer("energy_level"),
     mood: integer(),

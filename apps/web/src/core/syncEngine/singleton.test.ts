@@ -10,6 +10,27 @@ vi.mock("../auth/authClient", () => ({
   getSession: vi.fn(async () => ({ data: null, error: null })),
 }));
 
+// Власність локальної бази - зовнішній стан для цього модуля: у node-env
+// `navigator.locks` немає, тож без мока кожна вкладка вважалась би лідером
+// і гілку послідовника ніхто б не перевірив.
+const ownership = vi.hoisted(() => ({
+  value: "leader" as "leader" | "follower",
+  listeners: new Set<() => void>(),
+}));
+vi.mock("../db/dbOwnership", () => ({
+  claimDbOwnership: () => Promise.resolve(ownership.value),
+  readDbOwnership: () => ownership.value,
+  subscribeDbOwnership: (fn: () => void) => {
+    ownership.listeners.add(fn);
+    return () => ownership.listeners.delete(fn);
+  },
+}));
+
+function becomeFollower(): void {
+  ownership.value = "follower";
+  for (const fn of [...ownership.listeners]) fn();
+}
+
 import {
   __resetSyncEngineWriterForTests,
   bootSyncEngineWriter,
@@ -29,6 +50,8 @@ function makeRuntime(): SyncEngineWriterRuntime {
 
 beforeEach(() => {
   __resetSyncEngineWriterForTests();
+  ownership.value = "leader";
+  ownership.listeners.clear();
 });
 
 describe("bootSyncEngineWriter", () => {
@@ -60,12 +83,39 @@ describe("bootSyncEngineWriter", () => {
 
     const p1 = bootSyncEngineWriter({ createRuntime });
     const p2 = bootSyncEngineWriter({ createRuntime });
+    // Фабрика тепер викликається ПІСЛЯ того, як розвʼязалось лідерство, тож
+    // розвʼязувати її проміс одразу немає чого - його ще не створили.
+    await vi.waitFor(() => expect(createRuntime).toHaveBeenCalled());
     resolveCreate(runtime);
     const [r1, r2] = await Promise.all([p1, p2]);
 
     expect(r1).toBe(runtime);
     expect(r2).toBe(runtime);
     expect(createRuntime).toHaveBeenCalledTimes(1);
+  });
+
+  // Прод 2026-09-22 (SERGEANT-WEB-1A): вкладка-послідовник тягнула операції
+  // в памʼятєву базу й відхиляла їх усі - 12 подій за 4 секунди.
+  it("не піднімає рантайм у вкладці-послідовнику", async () => {
+    ownership.value = "follower";
+    const createRuntime = vi.fn().mockResolvedValue(makeRuntime());
+
+    await expect(bootSyncEngineWriter({ createRuntime })).resolves.toBeNull();
+
+    expect(createRuntime).not.toHaveBeenCalled();
+    expect(getSyncEngineWriter()).toBeNull();
+  });
+
+  it("зупиняє рантайм, коли базу забрала інша вкладка", async () => {
+    const runtime = makeRuntime();
+    const createRuntime = vi.fn().mockResolvedValue(runtime);
+    await bootSyncEngineWriter({ createRuntime });
+    expect(runtime.start).toHaveBeenCalledTimes(1);
+
+    becomeFollower();
+
+    expect(runtime.stop).toHaveBeenCalledTimes(1);
+    expect(getSyncEngineWriter()).toBeNull();
   });
 
   it("does not throw when boot dependencies are unavailable", async () => {

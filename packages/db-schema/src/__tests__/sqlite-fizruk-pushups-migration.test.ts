@@ -87,7 +87,12 @@ describe("007_fizruk_pushups_to_workouts", () => {
       files: FIZRUK_CLIENT_MIGRATIONS,
       tableName: FIZRUK_MIGRATIONS_TABLE,
     });
-    expect(result.applied).toEqual(["007_fizruk_pushups_to_workouts.sql"]);
+    // Фікстура доводить журнал до 006, тож раннер докатує 007 і все, що
+    // з'явилось після нього.
+    expect(result.applied).toEqual([
+      "007_fizruk_pushups_to_workouts.sql",
+      "008_fizruk_measurement_fields.sql",
+    ]);
 
     const tables = db
       .prepare(

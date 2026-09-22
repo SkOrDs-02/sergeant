@@ -1,4 +1,4 @@
-import { beforeEach, describe, it, expect, vi } from "vitest";
+import { describe, it, expect, vi } from "vitest";
 
 /**
  * Auth-конфіг не потребує реального Postgres для цього тесту — ми
@@ -6,8 +6,7 @@ import { beforeEach, describe, it, expect, vi } from "vitest";
  * emailAndPassword). DB-pool мокається на рівні модуля, тож
  * `betterAuth({ database: pool })` отримує stub без мережі.
  */
-const { deleteUserDataMock, loggerMock } = vi.hoisted(() => ({
-  deleteUserDataMock: vi.fn(),
+const { loggerMock } = vi.hoisted(() => ({
   loggerMock: {
     info: vi.fn(),
     warn: vi.fn(),
@@ -29,14 +28,9 @@ vi.mock("./db.js", () => {
   return { default: pool, pool, query: pool.query, ensureSchema: vi.fn() };
 });
 
-vi.mock("./modules/me/dataRights.js", () => ({
-  deleteUserData: deleteUserDataMock,
-}));
-
 vi.mock("./obs/logger.js", () => ({ logger: loggerMock }));
 
 const { auth } = await import("./auth.js");
-const { pool: mockedPool } = await import("./db.js");
 
 type DeleteUserHooks = {
   options: {
@@ -53,67 +47,41 @@ type DeleteUserHooks = {
 };
 
 /**
- * Аудит 2026-08-05 § 3 п. 1 / § 12 п. 2: живий шлях видалення акаунта
- * (`POST /api/auth/delete-user`) до цього хука робив лише `DELETE FROM
- * "user"` — best-effort скасування підписки у провайдера (`deleteUserData →
- * notifyProvidersCancel`) не виконувалось ніколи, і видалений акаунт
- * продовжував оплачуватись. Хук має (а) існувати, (б) кликати саме
- * `deleteUserData` з пулом і `user.id`, (в) на збої — логувати через pino і
- * кидати, щоб Better Auth не дійшов до власного DELETE (акаунт лишається
- * цілим, не напіввидаленим мовчки).
+ * `POST /api/auth/delete-user` мусить лишатись ЗАКРИТИМ.
+ *
+ * До появи 30-денного вікна (спека
+ * `docs/work/specs/user-deletion-grace-window.md`) цей ендпоінт БУВ живим
+ * шляхом видалення: хук `beforeDelete` кликав `deleteUserData`, і акаунт
+ * зникав одразу. З вікном шлях переїхав у `DELETE /api/me`
+ * (`routes/me.ts`) — той лише СТАВИТЬ мітку `deletion_requested_at`, а
+ * незворотну частину через `ACCOUNT_DELETION_GRACE_DAYS` днів виконує
+ * `AccountDeletionPoller`.
+ *
+ * Пін на `enabled: false` — не «тест під код». Доки ендпоінт Better Auth
+ * відкритий, він видаляє акаунт НЕГАЙНО і повз вікно, тобто тихо скасовує
+ * всю фічу: людина, яка передумала, не мала б куди повертатись.
+ *
+ * Другий пін — що хука немає ВЗАГАЛІ. Хук тут не рятує: Better Auth після
+ * `beforeDelete` БЕЗУМОВНО виконує власний `internalAdapter.deleteUser`
+ * (`dist/api/routes/update-user.mjs`), тож єдиним способом зупинити
+ * видалення було б кинути помилку на успішному шляху. Без цього піна
+ * наступний «полагодить» вікно, повернувши хук назад.
+ *
+ * Де перевіряється те, що тримає планку ТЕПЕР (тут не дублюємо):
+ * пароль і свіжість сесії — `routes/me.route.test.ts`
+ * (§ «DELETE /api/me»); мітка й скасування — `modules/me/dataRights.test.ts`;
+ * добивання після вікна — `modules/me/deletionPoller.test.ts`.
  */
-describe("auth config — user.deleteUser.beforeDelete кличе deleteUserData", () => {
+describe("auth config — user.deleteUser закритий на користь вікна скасування", () => {
   const hooks = () =>
     (auth as unknown as DeleteUserHooks).options.user?.deleteUser;
 
-  beforeEach(() => {
-    deleteUserDataMock.mockReset();
-    loggerMock.error.mockReset();
+  it("deleteUser вимкнений, тож негайного видалення повз вікно немає", () => {
+    expect(hooks()?.enabled).toBe(false);
   });
 
-  it("deleteUser увімкнений і має beforeDelete", () => {
-    expect(hooks()?.enabled).toBe(true);
-    expect(typeof hooks()?.beforeDelete).toBe("function");
-  });
-
-  it("beforeDelete → deleteUserData(pool, user.id) і резолвиться", async () => {
-    deleteUserDataMock.mockResolvedValueOnce({
-      ok: true,
-      deletedAt: "2026-09-03T00:00:00.000Z",
-    });
-
-    await expect(
-      hooks()!.beforeDelete!({ id: "user_del", email: "d@example.com" }),
-    ).resolves.toBeUndefined();
-
-    expect(deleteUserDataMock).toHaveBeenCalledTimes(1);
-    expect(deleteUserDataMock).toHaveBeenCalledWith(mockedPool, "user_del");
-    expect(loggerMock.error).not.toHaveBeenCalled();
-  });
-
-  it("deleteUserData кидає → error-лог без PII і APIError ACCOUNT_DELETE_FAILED (fail-safe)", async () => {
-    deleteUserDataMock.mockRejectedValueOnce(new Error("db unavailable"));
-
-    await expect(
-      hooks()!.beforeDelete!({ id: "user_del", email: "d@example.com" }),
-    ).rejects.toMatchObject({
-      body: expect.objectContaining({ code: "ACCOUNT_DELETE_FAILED" }),
-    });
-
-    expect(loggerMock.error).toHaveBeenCalledTimes(1);
-    const [fields, msg] = loggerMock.error.mock.calls[0] as [
-      Record<string, unknown>,
-      string,
-    ];
-    expect(fields).toMatchObject({
-      event: "auth.user.delete.before_hook_failed",
-      err: "db unavailable",
-    });
-    // Hard Rule #21: у лог іде hash, а не сирий id / email.
-    expect(fields["user_id_hash"]).toBeDefined();
-    expect(fields["user_id_hash"]).not.toBe("user_del");
-    expect(JSON.stringify(fields)).not.toContain("d@example.com");
-    expect(msg).toMatch(/account left intact/);
+  it("beforeDelete-хука немає — він не здатен зупинити видалення", () => {
+    expect(hooks()?.beforeDelete).toBeUndefined();
   });
 });
 

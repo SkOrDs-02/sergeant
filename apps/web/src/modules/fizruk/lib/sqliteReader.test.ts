@@ -307,6 +307,66 @@ describe("refreshFizrukSqliteState", () => {
     expect(cache.measurements[0]!.id).toBe("m-1");
   });
 
+  it("доносить УСІ чотирнадцять полів заміру, а не вісім", async () => {
+    // Регресія (знайдено 2026-09-22): таблиця несла вісім числових колонок
+    // — рівно ті, що доменний реєстр звузив для мобільного, — а веб-форма
+    // (`MEASURE_FIELDS`) збирає чотирнадцять. Жир, шия, передпліччя,
+    // стегно, литка і РІЗНІ ліва/права сторони не мали куди писатись, тож
+    // користувач їх вводив, а після перезавантаження вони зникали.
+    // Міграція 008 / серверна 146 додала колонки.
+    const full = {
+      id: "m-full",
+      at: "2026-05-01T08:00:00.000Z",
+      weightKg: 81.4,
+      bodyFatPct: 18.5,
+      neckCm: 39.5,
+      chestCm: 104.5,
+      waistCm: 82.5,
+      hipsCm: 98.5,
+      bicepLCm: 36.5,
+      bicepRCm: 37.5,
+      forearmLCm: 29.5,
+      forearmRCm: 30.5,
+      thighLCm: 58.5,
+      thighRCm: 59.5,
+      calfLCm: 38.5,
+      calfRCm: 39.5,
+    };
+    await applyFizrukDualWriteOps(
+      handle.client,
+      [{ kind: "measurement-upsert", measurement: full }],
+      { userId: UID, clientTs: TS, logger: silentLogger },
+    );
+
+    const cache = await refreshFizrukSqliteState(handle.client, UID);
+    expect(cache.measurements).toEqual([full]);
+    // Дробові значення не округлюються — колонки REAL, а сторони
+    // лишаються різними (раніше єдиний `bicep_cm` зводив їх в одне).
+    expect(cache.measurements[0]!["bicepLCm"]).toBe(36.5);
+    expect(cache.measurements[0]!["bicepRCm"]).toBe(37.5);
+  });
+
+  it("для рядка, записаного до міграції 008, зводить біцепс із bicep_cm", async () => {
+    // Історія на пристрої, який щойно оновився: нові колонки в старих
+    // рядках NULL, і без фолбеку біцепс показувався б порожнім.
+    await handle.client.run(
+      `INSERT INTO fizruk_measurements
+         (id, user_id, measured_at, bicep_cm, created_at, updated_at)
+       VALUES (?, ?, ?, ?, ?, ?)`,
+      ["m-legacy", UID, "2026-04-01T08:00:00.000Z", 35.5, TS, TS],
+    );
+
+    const cache = await refreshFizrukSqliteState(handle.client, UID);
+    expect(cache.measurements).toEqual([
+      {
+        id: "m-legacy",
+        at: "2026-04-01T08:00:00.000Z",
+        bicepLCm: 35.5,
+        bicepRCm: 35.5,
+      },
+    ]);
+  });
+
   it("hydrates daily-log entries with their timestamp intact", async () => {
     // Regression: the table column is `entry_at` while the cached shape is
     // `at` — without the SQL alias the timestamp silently became undefined.

@@ -200,9 +200,12 @@ export const fizrukCustomActivities = pgTable(
 
 /**
  * Postgres schema for `fizruk_measurements` table.
- * Mirrors migration 029_fizruk_tables.sql.
+ * Mirrors migrations 029_fizruk_tables.sql + 146_fizruk_measurement_fields.sql.
  *
  * Body measurements and wellbeing scores. One row per measurement session.
+ * 146 додала решту полів веб-форми (жир, шия, передпліччя, стегно, литка,
+ * розділені біцепси); `bicepCm` лишається як зведене значення доменного /
+ * мобільного реєстру.
  */
 export const fizrukMeasurements = pgTable(
   "fizruk_measurements",
@@ -217,6 +220,16 @@ export const fizrukMeasurements = pgTable(
     chestCm: real("chest_cm"),
     hipsCm: real("hips_cm"),
     bicepCm: real("bicep_cm"),
+    bodyFatPct: real("body_fat_pct"),
+    neckCm: real("neck_cm"),
+    bicepLCm: real("bicep_l_cm"),
+    bicepRCm: real("bicep_r_cm"),
+    forearmLCm: real("forearm_l_cm"),
+    forearmRCm: real("forearm_r_cm"),
+    thighLCm: real("thigh_l_cm"),
+    thighRCm: real("thigh_r_cm"),
+    calfLCm: real("calf_l_cm"),
+    calfRCm: real("calf_r_cm"),
     sleepHours: real("sleep_hours"),
     energyLevel: integer("energy_level"),
     mood: integer(),

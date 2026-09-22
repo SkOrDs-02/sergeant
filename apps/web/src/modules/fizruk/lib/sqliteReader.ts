@@ -193,6 +193,16 @@ interface MeasurementRow {
   chest_cm: number | null;
   hips_cm: number | null;
   bicep_cm: number | null;
+  body_fat_pct: number | null;
+  neck_cm: number | null;
+  bicep_l_cm: number | null;
+  bicep_r_cm: number | null;
+  forearm_l_cm: number | null;
+  forearm_r_cm: number | null;
+  thigh_l_cm: number | null;
+  thigh_r_cm: number | null;
+  calf_l_cm: number | null;
+  calf_r_cm: number | null;
   sleep_hours: number | null;
   energy_level: number | null;
   mood: number | null;
@@ -291,15 +301,25 @@ function rowToCustomActivity(row: CustomActivityRow): ActivityDef | null {
 function rowToMeasurement(row: MeasurementRow): MeasurementEntry {
   const entry: MeasurementEntry = { id: row.id, at: row.measured_at };
   if (row.weight_kg != null) entry["weightKg"] = row.weight_kg;
+  if (row.body_fat_pct != null) entry["bodyFatPct"] = row.body_fat_pct;
+  if (row.neck_cm != null) entry["neckCm"] = row.neck_cm;
   if (row.waist_cm != null) entry["waistCm"] = row.waist_cm;
   if (row.chest_cm != null) entry["chestCm"] = row.chest_cm;
   if (row.hips_cm != null) entry["hipsCm"] = row.hips_cm;
-  if (row.bicep_cm != null) {
-    // bicep_cm is the only side-agnostic column; surface to both
-    // legacy fields used by the UI hook.
-    entry["bicepLCm"] = row.bicep_cm;
-    entry["bicepRCm"] = row.bicep_cm;
-  }
+  // Сторони мають власні колонки з міграції 008. `bicep_cm` лишається
+  // зведеним значенням доменного/мобільного реєстру і працює фолбеком для
+  // рядків, записаних ДО 008 (нові колонки там NULL) — інакше історія
+  // замірів на пристрої, який щойно оновився, показала б порожній біцепс.
+  if (row.bicep_l_cm != null) entry["bicepLCm"] = row.bicep_l_cm;
+  else if (row.bicep_cm != null) entry["bicepLCm"] = row.bicep_cm;
+  if (row.bicep_r_cm != null) entry["bicepRCm"] = row.bicep_r_cm;
+  else if (row.bicep_cm != null) entry["bicepRCm"] = row.bicep_cm;
+  if (row.forearm_l_cm != null) entry["forearmLCm"] = row.forearm_l_cm;
+  if (row.forearm_r_cm != null) entry["forearmRCm"] = row.forearm_r_cm;
+  if (row.thigh_l_cm != null) entry["thighLCm"] = row.thigh_l_cm;
+  if (row.thigh_r_cm != null) entry["thighRCm"] = row.thigh_r_cm;
+  if (row.calf_l_cm != null) entry["calfLCm"] = row.calf_l_cm;
+  if (row.calf_r_cm != null) entry["calfRCm"] = row.calf_r_cm;
   if (row.sleep_hours != null) entry["sleepHours"] = row.sleep_hours;
   if (row.energy_level != null) entry["energyLevel"] = row.energy_level;
   if (row.mood != null) entry["mood"] = row.mood;
@@ -462,7 +482,9 @@ export async function refreshFizrukSqliteState(
     ),
     client.all<MeasurementRow>(
       `SELECT id, measured_at, weight_kg, waist_cm, chest_cm, hips_cm,
-              bicep_cm, sleep_hours, energy_level, mood
+              bicep_cm, body_fat_pct, neck_cm, bicep_l_cm, bicep_r_cm,
+              forearm_l_cm, forearm_r_cm, thigh_l_cm, thigh_r_cm,
+              calf_l_cm, calf_r_cm, sleep_hours, energy_level, mood
          FROM fizruk_measurements
         WHERE user_id = ? AND deleted_at IS NULL
         ORDER BY measured_at DESC`,
