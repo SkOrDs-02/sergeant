@@ -1108,6 +1108,34 @@ DROP TABLE IF EXISTS fizruk_pushups;
  * `003_fizruk_injuries.sql` adds the injury-mark table behind the "не можна"
  * model (ADR-0083); it mirrors server migration `097_fizruk_injuries.sql`.
  */
+/**
+ * 008 — решта полів заміру тіла (дзеркало серверної 146).
+ *
+ * `fizruk_measurements` несла вісім колонок — рівно ті, що доменний реєстр
+ * `MEASUREMENT_FIELDS` навмисно звузив для мобільного порту. Веб-форма
+ * (`MEASURE_FIELDS` у `useMeasurements.ts`) при цьому збирає чотирнадцять
+ * полів, тож жир, шия, передпліччя, стегно, литка і розділені ліва/права
+ * біцепси не мали куди писатись: користувач їх вводив, а після
+ * перезавантаження вони зникали, бо читання йде з цієї таблиці.
+ *
+ * `bicep_cm` НЕ прибираємо: це поле доменного/мобільного реєстру, і
+ * двофазний DROP (Hard Rule #4) тут не потрібен, бо нічого не зникає —
+ * лише додаються колонки. Веб пише і його (зведене значення), і пару
+ * L/R, тож старі читачі лишаються робочими.
+ */
+const FIZRUK_008_MEASUREMENT_FIELDS_SQL = `
+ALTER TABLE fizruk_measurements ADD COLUMN body_fat_pct REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN neck_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN bicep_l_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN bicep_r_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN forearm_l_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN forearm_r_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN thigh_l_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN thigh_r_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN calf_l_cm REAL;
+ALTER TABLE fizruk_measurements ADD COLUMN calf_r_cm REAL;
+`;
+
 export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   { name: "001_fizruk_tables.sql", sql: FIZRUK_001_SQL },
   {
@@ -1133,6 +1161,10 @@ export const FIZRUK_CLIENT_MIGRATIONS: readonly MigrationFile[] = [
   {
     name: "007_fizruk_pushups_to_workouts.sql",
     sql: FIZRUK_007_PUSHUPS_TO_WORKOUTS_SQL,
+  },
+  {
+    name: "008_fizruk_measurement_fields.sql",
+    sql: FIZRUK_008_MEASUREMENT_FIELDS_SQL,
   },
 ] as const;
 

@@ -161,7 +161,10 @@ describe("metrics registry — v2 sync op-log RED metrics (PR #048)", () => {
     // Фікс «оп-лог поза savepoint»: +1 engine-level `oplog_write_failed` —
     // запис рядка в `sync_op_log` під власним savepoint-ом, тож його
     // помилка відхиляє ОДИН оп замість ROLLBACK-у всього батча.
-    expect(APPLY_REJECT_REASONS.length).toBe(65);
+    // Міграція 146: +10 `invalid_*` на решту полів веб-форми заміру тіла
+    // (жир, шия, передпліччя, стегно, литка, ліва/права сторони біцепса) —
+    // колонок під них не було, тож уведене користувачем зникало.
+    expect(APPLY_REJECT_REASONS.length).toBe(75);
     expect(ENGINE_REJECT_REASONS.length).toBe(6);
 
     // Ключові CRDT-інваріанти, на які привʼязаний sync health alerting,

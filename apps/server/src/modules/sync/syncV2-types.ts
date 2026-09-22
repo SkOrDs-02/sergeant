@@ -71,6 +71,17 @@ export const APPLY_REJECT_REASONS = [
   "invalid_chest_cm",
   "invalid_hips_cm",
   "invalid_bicep_cm",
+  // Міграція 146: решта полів веб-форми заміру.
+  "invalid_body_fat_pct",
+  "invalid_neck_cm",
+  "invalid_bicep_l_cm",
+  "invalid_bicep_r_cm",
+  "invalid_forearm_l_cm",
+  "invalid_forearm_r_cm",
+  "invalid_thigh_l_cm",
+  "invalid_thigh_r_cm",
+  "invalid_calf_l_cm",
+  "invalid_calf_r_cm",
   "invalid_sleep_hours",
   "invalid_networth",
   // Field validation — nutrition
