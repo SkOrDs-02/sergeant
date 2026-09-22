@@ -14,6 +14,11 @@ import { webKVStore } from "@shared/lib/storage/storage";
 // entry — у Vercel-збірці це падало TDZ-крахом (`r is not a function`) і
 // валило весь рендер у проді.
 import { getSession } from "../auth/authClient";
+import {
+  claimDbOwnership,
+  readDbOwnership,
+  subscribeDbOwnership,
+} from "../db/dbOwnership";
 
 import { type ClockSkewReport, createClockSkewMonitor } from "./clockSkew";
 import { classifyOutboxBootOutcome } from "./outboxBoot";
@@ -121,10 +126,22 @@ export function bootSyncEngineWriter(
   const createRuntime = options.createRuntime ?? createDefaultRuntime;
   const captureException = options.captureException;
 
-  inFlight = createRuntime()
+  // Синк у вкладці-послідовнику не має куди писати: персистентний стор
+  // тримає лідер, а тут база памʼятєва й одноразова. Заміряно в проді
+  // 2026-09-22 (SERGEANT-WEB-1A): така вкладка тягнула операції з сервера
+  // й відхиляла їх усі - 12 подій за 4 секунди, 77 за добу, усі з тегом
+  // `sqlite.vfs: memory`. Дані від цього не псувались (`markRejected`
+  // пише лише в локальну базу), але це чистий шум, трафік і батарея.
+  inFlight = claimDbOwnership()
+    .then((owner) => (owner === "follower" ? null : createRuntime()))
     .then((created) => {
+      if (!created) return null;
       runtime = created;
       runtime.start();
+      // Лідерство можна віддати кнопкою «Працювати тут» уже після старту.
+      // Тоді база закривається під рантаймом, тож його треба зупинити, а не
+      // лишати тікати в порожнечу.
+      stopWhenFollower(created);
       // Аутбокс-нудж: свіжий enqueue штовхає push негайно замість
       // очікування ~30-секундного тіку. Реєструємо ПІСЛЯ `start()`, щоб
       // нудж ніколи не прилетів у неармований scheduler.
@@ -140,6 +157,17 @@ export function bootSyncEngineWriter(
     });
 
   return inFlight;
+}
+
+/** Зупиняє рантайм, щойно ця вкладка перестала бути власником бази. */
+function stopWhenFollower(created: SyncEngineWriterRuntime): void {
+  const unsubscribe = subscribeDbOwnership(() => {
+    if (readDbOwnership() !== "follower") return;
+    unsubscribe();
+    runtime = null;
+    setOutboxEnqueueNudge(null);
+    created.stop();
+  });
 }
 
 export function __resetSyncEngineWriterForTests(): void {
