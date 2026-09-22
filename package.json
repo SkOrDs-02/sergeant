@@ -22,6 +22,8 @@
     "dev:all": "turbo run dev --parallel",
     "dev:web": "pnpm --filter @sergeant/web dev",
     "dev:server": "pnpm --filter @sergeant/server dev",
+    "deploy:web": "node scripts/deploy-vercel.mjs web",
+    "deploy:landing": "node scripts/deploy-vercel.mjs landing",
     "start": "pnpm --filter @sergeant/server start",
     "build": "turbo run build",
     "build:web": "pnpm --filter @sergeant/web build",
