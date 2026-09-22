@@ -14,6 +14,7 @@ import {
   noteSqliteVfsFallbackReason,
 } from "./storageBackendState.js";
 import { isHandoffDone } from "./kvvfsHandoff.js";
+import { claimDbOwnership, onYieldRequested } from "./dbOwnership.js";
 import {
   makeLocalConnection,
   type SqliteConnection,
@@ -293,6 +294,23 @@ export function __resetSqliteDbForTests(): void {
   activeUserId = null;
 }
 
+/**
+ * Віддати базу вкладці, яка натиснула «Працювати тут».
+ *
+ * Сингълтон скидається СИНХРОННО, до `close()`: доки він скинутий, будь-який
+ * паралельний `getSqliteDb()` відкриє нову (вже памʼятєву) базу замість того,
+ * щоб дочекатись хендла, який зараз закривається.
+ */
+onYieldRequested(async () => {
+  const stale = resolved;
+  resolved = null;
+  resolvedKey = null;
+  inFlight = null;
+  inFlightKey = null;
+  currentOpen = null;
+  if (stale) await stale.close();
+});
+
 async function initSqliteDb(
   userKey: string,
 ): Promise<{ handle: SqliteDbHandle; open: OpenedDb }> {
@@ -307,8 +325,17 @@ async function initSqliteDb(
   // важкий модуль на головному потоці не потрібен узагалі, тож і не
   // вантажиться. Фолбек тут тихий і повний — якщо воркер не піднявся,
   // застосунок працює рівно як до стадії 1.
-  const driver =
-    (await openWorkerBackedDb(userKey)) ?? (await openMainThreadDb(userKey));
+  // Персистентний стор відкриває ЛИШЕ лідер — див. `dbOwnership.ts`. Пул
+  // замикає каталог цілком, тож друга вкладка все одно його не дістане; без
+  // цієї гілки вона з'їжджала б у власне сховище поруч із живою базою першої
+  // і показувала б інший набір даних на тому самому акаунті.
+  const owner = await claimDbOwnership();
+  const persistent = owner === "leader";
+  if (!persistent) noteSqliteVfsFallbackReason("pool-busy");
+  const driver = persistent
+    ? ((await openWorkerBackedDb(userKey)) ??
+      (await openMainThreadDb(userKey, true)))
+    : await openMainThreadDb(userKey, false);
   const proxy = makeProxyDriver(driver.conn);
   const drizzleDb = drizzle<SqliteSchema>(proxy, { schema: sqliteSchema });
 
@@ -475,7 +502,10 @@ function isPoolHeldElsewhere(err: unknown): boolean {
  * Той самий one-shot-reload стоїть і на динамічному імпорті клієнта
  * воркера: його чанк версійований так само.
  */
-async function openMainThreadDb(userKey: string): Promise<OpenedDb> {
+async function openMainThreadDb(
+  userKey: string,
+  persistent: boolean,
+): Promise<OpenedDb> {
   let sqlite3: Sqlite3Static;
   try {
     const sqlite3InitModule = await loadSqliteWasm();
@@ -484,7 +514,7 @@ async function openMainThreadDb(userKey: string): Promise<OpenedDb> {
     if (isChunkLoadError(err)) reloadOnceForChunkError();
     throw err;
   }
-  return openDb(sqlite3, userKey);
+  return openDb(sqlite3, userKey, persistent);
 }
 
 /**
@@ -719,11 +749,12 @@ async function ensureSahPoolHeadroom(pool: SahPoolLike): Promise<void> {
 async function openDb(
   sqlite3: Sqlite3Static,
   userKey: string,
+  persistent: boolean,
 ): Promise<OpenedDb> {
   // 1) Persistent: OPFS SyncAccessHandle Pool VFS — main-thread friendly,
   //    does not need COOP/COEP. Skip on environments without OPFS at all
   //    (jsdom, very old Safari) so we don't wait on a timeout.
-  if (hasOpfsSupport()) {
+  if (persistent && hasOpfsSupport()) {
     try {
       const pool = await sqlite3.installOpfsSAHPoolVfs({
         directory: SAH_POOL_DIRECTORY,
@@ -774,7 +805,7 @@ async function openDb(
   // вкладки. Заміряно на Xiaomi Pad 6 2026-09-22: одна вкладка — OPFS і
   // нуль росту `kvvfs-local-*`; щойно відкривається друга — +1 ключ і
   // +4.4 kB у тому самому localStorage.
-  if (hasLocalStorage() && !isHandoffDone(userKey)) {
+  if (persistent && hasLocalStorage() && !isHandoffDone(userKey)) {
     try {
       const conn = makeLocalConnection(new sqlite3.oo1.JsStorageDb("local"));
       return {

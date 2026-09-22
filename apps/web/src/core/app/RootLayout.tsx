@@ -40,6 +40,7 @@ import { useHubNavigation } from "../hooks/useHubNavigation";
 import { useHubUIState } from "../hooks/useHubUIState";
 import { usePwaActions } from "../hooks/usePwaActions";
 import { useAppEffects } from "./useAppEffects";
+import { DbBusyScreen, useDbIsBusyElsewhere } from "./DbBusyScreen";
 import { useIosInstallBanner } from "./useIosInstallBanner";
 import { usePwaInstall } from "./usePwaInstall";
 import { useSWUpdate } from "./useSWUpdate";
@@ -290,6 +291,10 @@ function RootLayoutInner() {
   const { user, isLoading: authLoading } = useAuth();
 
   // App-level effects (idle prefetch, SW messages, hub bus, etc.)
+  // Оболонка лишається на місці навмисно: навігація і шапка мають працювати,
+  // щоб людина дійшла до аркуша «Синхронізація» й побачила, що сталось.
+  const dbBusyElsewhere = useDbIsBusyElsewhere();
+
   useAppEffects({
     user,
     authLoading,
@@ -437,9 +442,7 @@ function RootLayoutInner() {
 
   return (
     <HubShellProvider value={hubShellValue}>
-      <AppShell>
-        <Outlet />
-      </AppShell>
+      <AppShell>{dbBusyElsewhere ? <DbBusyScreen /> : <Outlet />}</AppShell>
     </HubShellProvider>
   );
 }

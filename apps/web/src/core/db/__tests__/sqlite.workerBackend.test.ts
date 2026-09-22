@@ -14,6 +14,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { __resetSqliteDbForTests, getSqliteDb } from "../sqlite";
+import { __resetDbOwnershipForTests } from "../dbOwnership";
 import { sqlite3InitModuleMock } from "./sqlite-wasm-fake";
 
 vi.mock("@sqlite.org/sqlite-wasm", () => import("./sqlite-wasm-fake"));
@@ -55,6 +56,7 @@ function fakeWorkerConnection() {
 
 beforeEach(() => {
   __resetSqliteDbForTests();
+  __resetDbOwnershipForTests();
   vi.mocked(openSqliteInWorker).mockReset();
   vi.mocked(isHandoffDone).mockReturnValue(true);
   vi.mocked(markHandoffDone).mockClear();
@@ -142,6 +144,33 @@ describe("бекенд бази у воркері", () => {
     // щоразу заради байтів, які вже перелито.
     expect(readKvvfsSnapshotBytes).not.toHaveBeenCalled();
     expect(pruneForeignPartitionRows).not.toHaveBeenCalled();
+  });
+
+  // Вкладка, якій не дісталось лідерство, НЕ має відкрити персистентне
+  // сховище жодного роду: два стори на один акаунт — це два різні набори
+  // даних, а не резервна копія.
+  it("послідовник не відкриває персистентного сховища навіть із робочим воркером", async () => {
+    Object.defineProperty(globalThis.navigator, "locks", {
+      value: {
+        request: (
+          _name: string,
+          options: { ifAvailable?: boolean },
+          cb: (lock: object | null) => unknown,
+        ) => Promise.resolve(cb(options.ifAvailable ? null : {})),
+      },
+      configurable: true,
+    });
+    vi.mocked(isHandoffDone).mockReturnValue(false);
+    vi.mocked(openSqliteInWorker).mockResolvedValue(fakeWorkerConnection());
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("memory");
+    expect(openSqliteInWorker).not.toHaveBeenCalled();
+    Object.defineProperty(globalThis.navigator, "locks", {
+      value: undefined,
+      configurable: true,
+    });
   });
 
   it("невдача воркера повертає на kvvfs, поки партиція не перелита", async () => {
