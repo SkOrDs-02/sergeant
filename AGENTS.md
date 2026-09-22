@@ -397,6 +397,22 @@ curl -sS -X POST -H "Authorization: Bearer $(grep -m1 '^BITBUCKET_TOKEN=' /d/Ser
 - **Backend:** Hetzner CX23 VPS під Coolify (self-hosted PaaS) via `Dockerfile.api` — образ білдить GitHub Actions (`deploy-api.yml`) → `ghcr.io`, Coolify тягне й деплоїть. Pre-deploy: `node dist-server/migrate.js` (Coolify `pre_deployment_command`). Health endpoint: `/health`. Міграції потребують `MIGRATE_DATABASE_URL`. Топологія та rationale — [ADR-0074](./docs/governance/adr/0074-hosting-hetzner-coolify.md) (superseded ADR-0009 у частині бекенду). Railway виведено з експлуатації.
 - **Test users:** primary test-user ID живе поза репо (Coolify env vars / локальний `.env`-нотатник власника) — репо публічне, не комітьте реальні user ID чи фінансову топологію.
 
+### Прод не оновлюється сам
+
+Автодеплой вимкнений **навмисно**: міграції їдуть в ENTRYPOINT образу, тож кожен деплой застосовує схему з нового коду на живій базі, а CI, який міг би це прикрити, не існує. Merge в `main` нічого не викочує.
+
+Натомість розрив вимірюється явно:
+
+```bash
+pnpm deploy:status
+```
+
+Вердикт окремо по бекенду, фронту і лендингу. По бекенду він **точний** (Coolify зберігає коміт деплою), по фронту це **оцінка за часом**: Vercel їде локальним CLI без Git-інтеграції, тож коміт там не зберігається взагалі.
+
+**Агент, який мерджив зміни в `main`, проганяє `pnpm deploy:status` перед завершенням сесії.** Якщо відстає поверхня, якої торкалась робота, викочує: `pnpm deploy:api` для бекенда, далі `pnpm deploy:web` або `pnpm deploy:landing`. Порядок саме такий, інакше свіжий фронт деякий час говоритиме зі старим API.
+
+Межа автономії одна, і вона важлива. **Деплой викочує `main` цілком, а не твою зміну.** Якщо `deploy:status` показує більше комітів, ніж зробила ця сесія, разом із твоїм поїде й чужа робота, можливо незавершена. У такому разі не викочуй мовчки: назви власнику, скільки комітів і по яких поверхнях поїде, і дочекайся рішення. Сам деплой роби лише тоді, коли розрив це саме твої зміни і верифікація зелена.
+
 ## Повторювані верифікації
 
 Для тестового прогону, повторної перевірки фіксу або передачі QA між сесіями спершу читай [`docs/engineering/testing/verification/README.md`](docs/engineering/testing/verification/README.md). Обери сценарії через `pnpm verification list`, створи JSON-прогін, записуй докази кожної спроби та порівнюй повтор із baseline. Реєстр відкритих знахідок і handoff — [`docs/work/specs/audits/verification/`](docs/work/specs/audits/verification/README.md). Не коміть секрети акаунтів; «новий пристрій» sync = свіжий логін, не Playwright `storageState`.
