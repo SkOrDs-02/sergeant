@@ -659,57 +659,57 @@ describe("formatDailySeries — single metric branch", () => {
 
 describe("formatDailySeries — correlation strength labels", () => {
   it("labels r ≈ 0.5 as помірний прямий", () => {
+    // Both columns are permutations of 1..10 (no ties), so Pearson reduces to
+    // Spearman's exact formula: r = 1 - 6·Σd²/(n³-n) = 1 - 360/990 ≈ 0.636.
     const s = {
       from: "2026-01-01",
-      to: "2026-01-08",
-      days: ["1", "2", "3", "4", "5", "6", "7", "8"],
+      to: "2026-01-10",
+      days: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
       raw: {
-        spending: [1, 2, 3, 4, 5, 6, 7, 8],
-        income: [2, 1, 4, 3, 6, 5, 8, 7],
+        spending: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        income: [1, 3, 5, 7, 9, 2, 4, 6, 8, 10],
       } as Record<string, (number | undefined)[]>,
       metrics: ["spending", "income"] as import("./dailySeries").DailyMetric[],
     };
     const corr = computePairwiseCorrelations(s);
     const out = formatDailySeries(s, corr, "zero");
-    // Pearson for this interleaved pattern is around 0.8+, so it may be "сильний".
-    // Just check the label is one of the expected labels.
-    expect(out).toMatch(/сильний|помірний|слабкий|майже відсутній/u);
+    expect(out).toContain("помірний прямий");
   });
 
   it("absent correlation: r near 0 → майже відсутній", () => {
-    // Orthogonal-ish values to get r ≈ 0.
+    // Derangement of 1..10 tuned so Σd² ≈ n(n²-1)/6, putting r ≈ -0.03.
     const s = {
       from: "2026-01-01",
-      to: "2026-01-08",
-      days: ["1", "2", "3", "4", "5", "6", "7", "8"],
+      to: "2026-01-10",
+      days: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
       raw: {
-        spending: [1, 3, 2, 4, 3, 5, 4, 6],
-        income: [5, 1, 6, 2, 5, 1, 6, 2],
+        spending: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        income: [4, 9, 2, 7, 10, 1, 6, 3, 8, 5],
       } as Record<string, (number | undefined)[]>,
       metrics: ["spending", "income"] as import("./dailySeries").DailyMetric[],
     };
     const corr = computePairwiseCorrelations(s);
-    // r is close to 0 — either майже відсутній or слабкий.
     const out = formatDailySeries(s, corr, "zero");
-    expect(out).toMatch(/майже відсутній|слабкий|помірний/u);
+    expect(out).toContain("майже відсутній");
   });
 
   it("moderate negative r → помірний зворотній", () => {
-    // x ascending, y partially descending → moderate negative.
+    // Mirror of the moderate-positive permutation (y → 11-y) flips the sign
+    // of Pearson r without changing its magnitude: r ≈ -0.636.
     const s = {
       from: "2026-01-01",
-      to: "2026-01-08",
-      days: ["1", "2", "3", "4", "5", "6", "7", "8"],
+      to: "2026-01-10",
+      days: ["1", "2", "3", "4", "5", "6", "7", "8", "9", "10"],
       raw: {
-        spending: [1, 2, 3, 4, 5, 6, 7, 8],
-        income: [5, 3, 6, 2, 4, 3, 5, 1],
+        spending: [1, 2, 3, 4, 5, 6, 7, 8, 9, 10],
+        income: [10, 8, 6, 4, 2, 9, 7, 5, 3, 1],
       } as Record<string, (number | undefined)[]>,
       metrics: ["spending", "income"] as import("./dailySeries").DailyMetric[],
     };
     const corr = computePairwiseCorrelations(s);
     expect(corr.length).toBeGreaterThan(0);
     const out = formatDailySeries(s, corr, "zero");
-    expect(out).toMatch(/прямий|зворотній|майже відсутній/u);
+    expect(out).toContain("помірний зворотній");
   });
 });
 

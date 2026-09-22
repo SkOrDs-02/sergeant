@@ -30,13 +30,18 @@ import { CrossModuleLinkRow } from "./CrossModuleLinkRow";
 import {
   buildCrossModuleSeries,
   notablePairsFromSeries,
+  MIN_N,
   type NotablePair,
 } from "./digestCorrelations";
 import {
   linkFromPair,
   closestCrossModulePair,
   silentPoles,
+  bestSingleMetric,
+  singleMetricPole,
 } from "./crossModuleLinkData";
+import { MODULE_TEXT_CLASS } from "./CrossModuleLinkCard";
+import { pairHistoryKey, recordAndCountChecks } from "./crossModuleLinkHistory";
 
 const MAX_CARDS = 3;
 
@@ -92,22 +97,61 @@ export default function CrossModuleLinksSection() {
   // Один прохід по рядах на весь рендер: `buildCrossModuleSeries` читає
   // 60 днів × 10 метрик зі сховища, тож і картки, і стан мовчання беруть
   // дані з ОДНОГО обчислення, а не з двох незалежних.
-  const { links, silent } = useMemo(() => {
+  const { links, silent, smallData } = useMemo(() => {
     const series = buildCrossModuleSeries();
+    const pairs = notablePairsFromSeries(series);
+
+    // Запис перевірки живе саме ТУТ, у тілі мемо, а не в ефекті. Ступінь
+    // читається синхронно під час рендера, тож із ефектом перший показ
+    // тижня рахував би поточну перевірку відсутньою й рівно раз на тиждень
+    // показував би ступінь нижчий за справжній. Виклик ідемпотентний у
+    // межах тижня, тож повторний прогін мемо нічого не додає.
+    const checksByPair = recordAndCountChecks(pairs);
+
     const found: { key: string; link: CrossModuleLinkCardProps }[] = [];
-    for (const pair of notablePairsFromSeries(series)) {
+    for (const pair of pairs) {
       const link = linkFromPair(series, pair);
-      if (link) found.push({ key: linkKey(pair), link });
+      if (link) {
+        found.push({
+          key: linkKey(pair),
+          link: {
+            ...link,
+            checks: checksByPair.get(pairHistoryKey(pair.a, pair.b)) ?? 0,
+          },
+        });
+      }
       if (found.length >= MAX_CARDS) break;
     }
-    if (found.length > 0) return { links: found, silent: null };
+    if (found.length > 0) {
+      return { links: found, silent: null, smallData: null };
+    }
 
     const closest = closestCrossModulePair(series);
+
+    // Малі дані - окремий стан, а не мʼякший варіант мовчання: доки спільних
+    // днів менше за поріг, картка з ДВОМА полюсами вже називала б пару, про
+    // яку нічого не доведено (ADR-0097).
+    if (closest === null || closest.n < MIN_N) {
+      const single = bestSingleMetric(series);
+      return {
+        links: found,
+        silent: null,
+        smallData: single
+          ? {
+              pole: singleMetricPole(single.metric, single.mean),
+              observations: single.n,
+            }
+          : { pole: null, observations: 0 },
+      };
+    }
+
     return {
       links: found,
-      silent: closest
-        ? { ...silentPoles(closest.a, closest.b), observations: closest.n }
-        : null,
+      silent: {
+        ...silentPoles(closest.a, closest.b),
+        observations: closest.n,
+      },
+      smallData: null,
     };
     // deps нижче — це КЛЮЧІ ІНВАЛІДАЦІЇ, а не значення, які читає тіло:
     // `buildCrossModuleSeries` бере дані з модульних кешів і сховища, тобто
@@ -142,6 +186,25 @@ export default function CrossModuleLinksSection() {
               <CrossModuleLinkRow key={key} {...link} />
             ),
           )}
+        </div>
+      ) : smallData ? (
+        <div className="space-y-2 rounded-2xl border border-dashed border-line bg-panel p-4">
+          <p className="text-style-label font-bold text-text">
+            {messages.crossModuleLink.smallDataTitle}
+          </p>
+          <p className="text-style-body leading-relaxed text-muted">
+            {smallData.pole
+              ? messages.crossModuleLink.smallDataBody
+              : messages.crossModuleLink.smallDataEmpty}
+          </p>
+          {smallData.pole ? (
+            <p className="text-style-body text-text">
+              <span className={MODULE_TEXT_CLASS[smallData.pole.module]}>
+                {smallData.pole.label}
+              </span>
+              {` · ${smallData.pole.value} ${smallData.pole.unit} · ${smallData.observations} ${messages.crossModuleLink.smallDataDaysNote}`}
+            </p>
+          ) : null}
         </div>
       ) : silent ? (
         // `strength: 0` нижче — не заглушка, а точне твердження: сили звʼязку

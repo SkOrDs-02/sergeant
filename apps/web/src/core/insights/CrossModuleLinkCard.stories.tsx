@@ -1,6 +1,12 @@
 import type { Meta, StoryObj } from "@storybook/react-vite";
 import { CrossModuleLinkCard } from "./CrossModuleLinkCard";
 
+import { REQUIRED_CONSECUTIVE_CHECKS } from "./crossModuleLinkHistory";
+
+// Сторібук показує драбину СИЛИ, тож серія перевірок дається явно - інакше
+// кожна історія малювала б перший ступінь незалежно від `strength`.
+const REPEATED = REQUIRED_CONSECUTIVE_CHECKS;
+
 /**
  * `CrossModuleLinkCard` — форма крос-модульного звʼязку (анти-слоп P2).
  * Дві осі + місток, що несе впевненість товщиною й суцільністю ліній, три
@@ -31,6 +37,7 @@ const meta: Meta<typeof CrossModuleLinkCard> = {
     },
     observations: 23,
     strength: 0.62,
+    checks: REPEATED,
   },
 };
 export default meta;
@@ -50,6 +57,7 @@ export const Stable: Story = {
   args: {
     observations: 34,
     strength: 0.74,
+    checks: REPEATED,
     weeks: 9,
     phrase: "У дні тренувань ти витрачаєш менше",
   },
@@ -72,6 +80,7 @@ export const Repeating: Story = {
     },
     observations: 14,
     strength: 0.48,
+    checks: REPEATED,
     weeks: 4,
   },
 };
@@ -93,6 +102,7 @@ export const Emerging: Story = {
     },
     observations: 11,
     strength: 0.44,
+    checks: REPEATED,
     weeks: 2,
   },
 };
@@ -102,6 +112,7 @@ export const WithoutWeeks: Story = {
   args: {
     observations: 12,
     strength: 0.55,
+    checks: REPEATED,
   },
 };
 
@@ -110,6 +121,7 @@ export const NotEnoughData: Story = {
   args: {
     observations: 2,
     strength: 0.8,
+    checks: REPEATED,
   },
 };
 
@@ -118,5 +130,6 @@ export const NoPatternFound: Story = {
   args: {
     observations: 40,
     strength: 0.08,
+    checks: REPEATED,
   },
 };

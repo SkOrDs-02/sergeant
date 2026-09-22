@@ -40,6 +40,12 @@ import {
   pairwiseDays,
 } from "./crossModuleLinkData";
 import { gradeCrossModuleLink, STABLE_N } from "./crossModuleLinkTiers";
+import { REQUIRED_CONSECUTIVE_CHECKS } from "./crossModuleLinkHistory";
+
+// Ці два кейси міряють драбину СИЛИ на однаковому `n`, тож серія перевірок
+// дається явно. Повторюваність як окрему умову ступеня перевіряє
+// `crossModuleLinkHistory.test.ts`.
+const REPEATED = REQUIRED_CONSECUTIVE_CHECKS;
 import CrossModuleLinksSection from "./CrossModuleLinksSection";
 import { formatNumberUk } from "@sergeant/shared";
 
@@ -351,9 +357,9 @@ describe("крос-модульні звʼязки — синтетичний к
     for (const p of pairs) expect(p.n).toBe(n);
 
     // І при цьому ступінь тепер рухається разом із силою, а не з днями.
-    expect(gradeCrossModuleLink(n, NOTABLE_R + 0.01)).toBe(1);
-    expect(gradeCrossModuleLink(n, 0.6)).toBe(2);
-    expect(gradeCrossModuleLink(n, 0.9)).toBe(3);
+    expect(gradeCrossModuleLink(n, NOTABLE_R + 0.01, REPEATED)).toBe(1);
+    expect(gradeCrossModuleLink(n, 0.6, REPEATED)).toBe(2);
+    expect(gradeCrossModuleLink(n, 0.9, REPEATED)).toBe(3);
   });
 
   it("закладені сильні звʼязки доходять до третього ступеня", () => {
@@ -362,7 +368,7 @@ describe("крос-модульні звʼязки — синтетичний к
     // проходять обидві умови — це та рідкість, заради якої слово лишили.
     for (const p of notablePairsFromSeries(series)) {
       expect(Math.abs(p.pearson)).toBeGreaterThanOrEqual(0.8);
-      expect(gradeCrossModuleLink(p.n, p.pearson)).toBe(3);
+      expect(gradeCrossModuleLink(p.n, p.pearson, REPEATED)).toBe(3);
     }
   });
 
