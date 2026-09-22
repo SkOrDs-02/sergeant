@@ -287,7 +287,7 @@ export const auth = betterAuth({
        * ВИМКНЕНО свідомо, і це не відкат безпеки, а перенесення шляху.
        *
        * З появою 30-денного вікна на скасування (спека
-       * docs/work/specs/user-deletion-grace-window.md, ADR-0016 § ADR-6.1)
+       * docs/work/specs/user-deletion-grace-window.md, ADR-0098)
        * видалення перестало бути одномоментним: `DELETE /api/me` лише
        * ПОЗНАЧАЄ акаунт, а незворотну частину через місяць виконує
        * `modules/me/deletionPoller.ts`. На цьому ж хуку вікно нездійсненне:

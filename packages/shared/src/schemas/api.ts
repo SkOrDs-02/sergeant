@@ -244,8 +244,7 @@ export type MeDeleteBody = z.infer<typeof MeDeleteBodySchema>;
 /**
  * `DELETE /api/me` більше не видаляє одразу: воно ПОЗНАЧАЄ акаунт, і
  * незворотне видалення виконує добивач через `ACCOUNT_DELETION_GRACE_DAYS`
- * днів (спека docs/work/specs/user-deletion-grace-window.md, ADR-0016
- * § ADR-6.1).
+ * днів (спека docs/work/specs/user-deletion-grace-window.md, ADR-0098).
  *
  * `deletedAt` лишається під старим імʼям і старим змістом «коли сервер
  * прийняв прохання» — його читає наявний UI. Нове поле `scheduledPurgeAt`
