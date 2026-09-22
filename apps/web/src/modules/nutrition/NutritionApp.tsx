@@ -15,7 +15,10 @@ import {
 import type { DataStateQueryLike } from "@shared/components/ui/DataState";
 import type { NutritionDayPlan } from "./hooks/useNutritionUiState";
 import { NutritionHeader } from "./components/NutritionHeader";
-import { NutritionBottomNav } from "./components/NutritionBottomNav";
+import {
+  NutritionBottomNav,
+  NUTRITION_NAV_LABELS,
+} from "./components/NutritionBottomNav";
 import { NutritionOverlays } from "./components/NutritionOverlays";
 import { NutritionStartPage } from "./pages/NutritionStartPage";
 import { NutritionPantryPage } from "./pages/NutritionPantryPage";
@@ -539,6 +542,7 @@ export default function NutritionApp({
           onBackToHub={onBackToHub}
           onGoToHub={onGoToHub}
           onOpenSettings={onOpenSettings}
+          subtitle={NUTRITION_NAV_LABELS[activePage]}
         />
 
         <SwipePages

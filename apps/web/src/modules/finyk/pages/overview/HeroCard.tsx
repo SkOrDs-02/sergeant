@@ -47,6 +47,8 @@ interface HeroCardProps {
   onSetPlan?: (() => void) | undefined;
   /** Тап по клітинці стрічки → `/finyk/transactions?date=YYYY-MM-DD`. */
   onOpenDay?: ((dayKey: string) => void) | undefined;
+  /** N-3 (аудит 2026-09-16): один слот навчання на екран - ховає підказку стрічки, поки видимий `FirstInsightBanner`. */
+  suppressMonthStripHint?: boolean;
 }
 
 /**
@@ -83,6 +85,7 @@ const HeroCardImpl = function HeroCard({
   showBalance = true,
   onSetPlan,
   onOpenDay,
+  suppressMonthStripHint = false,
 }: HeroCardProps) {
   const { statusText } = computePulseStyle({
     hasExpensePlan,
@@ -254,7 +257,10 @@ const HeroCardImpl = function HeroCard({
               showBalance={showBalance}
               onOpenDay={(dayKey) => onOpenDay?.(dayKey)}
             />
-            <MonthStripHint hasPlan={dayBudget !== null} />
+            <MonthStripHint
+              hasPlan={dayBudget !== null}
+              suppressed={suppressMonthStripHint}
+            />
           </div>
         )}
 

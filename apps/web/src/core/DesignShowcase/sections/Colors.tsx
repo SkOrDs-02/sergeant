@@ -1,3 +1,4 @@
+import { categoryColors } from "@sergeant/design-tokens";
 import {
   CodeBlock,
   DoDont,
@@ -82,6 +83,33 @@ export function ColorsSection() {
           <div className="bg-brand-strong text-white rounded-xl px-3 py-2 text-style-code">
             bg-brand-strong · text-white (WCAG AA, recommended)
           </div>
+        </div>
+      </Group>
+
+      <Group
+        label="Пʼята родина: categoryColors (категорії витрат Фініка)"
+        description={
+          <>
+            Свідомо розведена по hue з модульними акцентами - не фарбуй
+            категорію бренд-тиром. Джерело - <code>tokens.js</code>, гейт{" "}
+            <code>categoryColors.contract.test.js</code>. У JSX бери через{" "}
+            <code>catChipVars()</code> + класи <code>.cat-chip</code> /{" "}
+            <code>.cat-dot</code>, не хардкодь hex.
+          </>
+        }
+      >
+        <div className="flex flex-wrap gap-4">
+          {Object.entries(categoryColors).map(([id, c]) => (
+            <div key={id} className="flex flex-col items-center gap-1.5">
+              <div
+                className="w-14 h-14 rounded-2xl border border-line shadow-card"
+                style={{ backgroundColor: c.solid }}
+              />
+              <span className="text-style-code text-subtle text-center">
+                {id}
+              </span>
+            </div>
+          ))}
         </div>
       </Group>
 

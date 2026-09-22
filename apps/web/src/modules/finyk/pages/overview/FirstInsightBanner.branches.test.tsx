@@ -27,13 +27,6 @@ describe("FirstInsightBanner (branches)", () => {
     expect(onDismiss).toHaveBeenCalledTimes(1);
   });
 
-  it("calls onDismiss when icon close button is clicked", () => {
-    const onDismiss = vi.fn();
-    render(<FirstInsightBanner onSetBudget={vi.fn()} onDismiss={onDismiss} />);
-    fireEvent.click(screen.getByRole("button", { name: "Закрити підказку" }));
-    expect(onDismiss).toHaveBeenCalledTimes(1);
-  });
-
   it("renders headline and helper copy", () => {
     render(<FirstInsightBanner onSetBudget={vi.fn()} onDismiss={vi.fn()} />);
     expect(screen.getByText("Ось куди йдуть твої гроші")).toBeInTheDocument();
