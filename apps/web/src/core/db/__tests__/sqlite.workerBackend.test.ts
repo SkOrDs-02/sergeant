@@ -14,6 +14,7 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 
 import { __resetSqliteDbForTests, getSqliteDb } from "../sqlite";
+import { __resetDbOwnershipForTests } from "../dbOwnership";
 import { sqlite3InitModuleMock } from "./sqlite-wasm-fake";
 
 vi.mock("@sqlite.org/sqlite-wasm", () => import("./sqlite-wasm-fake"));
@@ -55,6 +56,7 @@ function fakeWorkerConnection() {
 
 beforeEach(() => {
   __resetSqliteDbForTests();
+  __resetDbOwnershipForTests();
   vi.mocked(openSqliteInWorker).mockReset();
   vi.mocked(isHandoffDone).mockReturnValue(true);
   vi.mocked(markHandoffDone).mockClear();
@@ -144,7 +146,8 @@ describe("бекенд бази у воркері", () => {
     expect(pruneForeignPartitionRows).not.toHaveBeenCalled();
   });
 
-  it("невдача воркера тихо повертає застосунок на наявний шлях", async () => {
+  it("невдача воркера повертає на kvvfs, поки партиція не перелита", async () => {
+    vi.mocked(isHandoffDone).mockReturnValue(false);
     vi.mocked(openSqliteInWorker).mockRejectedValue(
       new Error("Missing required OPFS APIs."),
     );
@@ -152,6 +155,51 @@ describe("бекенд бази у воркері", () => {
     const handle = await getSqliteDb();
 
     expect(handle.vfs).toBe("kvvfs");
+  });
+
+  // Після перелиття старе сховище лишається на пристрої як знімок на момент
+  // переїзду (`kvvfsHandoff.ts` навмисно його не чистить). Відкрити його
+  // вдруге означає показати торішні дані поруч із живою базою іншої вкладки.
+  it("після перелиття невдача воркера веде в памʼять, а не в старий стор", async () => {
+    vi.mocked(isHandoffDone).mockReturnValue(true);
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("Missing required OPFS APIs."),
+    );
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("memory");
+  });
+
+  // Вкладка, якій не дісталось лідерство, НЕ має відкрити персистентного
+  // сховища жодного роду: два стори на один акаунт — це два різні набори
+  // даних, а не резервна копія. Ретраї вище тут не допоможуть — сусідня
+  // вкладка тримає пул скільки завгодно довго.
+  it("послідовник не відкриває персистентного сховища навіть із робочим воркером", async () => {
+    Object.defineProperty(globalThis.navigator, "locks", {
+      value: {
+        request: (
+          _name: string,
+          options: { ifAvailable?: boolean },
+          cb: (lock: object | null) => unknown,
+        ) =>
+          options.ifAvailable
+            ? Promise.resolve(cb(null))
+            : new Promise<void>(() => {}),
+      },
+      configurable: true,
+    });
+    vi.mocked(isHandoffDone).mockReturnValue(false);
+    vi.mocked(openSqliteInWorker).mockResolvedValue(fakeWorkerConnection());
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("memory");
+    expect(openSqliteInWorker).not.toHaveBeenCalled();
+    Object.defineProperty(globalThis.navigator, "locks", {
+      value: undefined,
+      configurable: true,
+    });
   });
 
   it("перечікує зайнятий SAH-пул замість того, щоб осісти на kvvfs", async () => {
