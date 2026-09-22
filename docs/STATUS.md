@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-20 by docs:gen-status. **Next review:** 2026-09-27.
+> **Last touched:** 2026-09-22 by docs:gen-status. **Next review:** 2026-09-29.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -34,11 +34,11 @@
 - [#67](https://github.com/zaebal-beep/sergeant/pull/67) — feat(server): перецілити kill-switch пам'яті ШІ з finyk на digest (0024, PR-2) _(2026-09-16)_
 - [#69](https://github.com/zaebal-beep/sergeant/pull/69) — docs(docs): quote the expired 0589 todo as history so lint:todo-freshness stops firing _(2026-09-16)_
 
-## 🔵 В роботі — 71 відкритий документ
+## 🔵 В роботі — 72 відкриті документи
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 71       |
+| Активні спеки | 72       |
 
 **Найактивніше (8, за останніми PR):**
 
