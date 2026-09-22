@@ -56,6 +56,7 @@ export const FINYK_BACKUP_STORAGE_KEYS = Object.freeze({
   networthHistory: "finyk_networth_history",
   customCategories: "finyk_custom_cats_v1",
   dismissedRecurring: "finyk_rec_dismissed",
+  manualExpenses: "finyk_manual_expenses_v1",
 } as const);
 
 /**

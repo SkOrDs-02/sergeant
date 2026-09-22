@@ -224,6 +224,27 @@ async function runDualWriteRoutineState(
   return { status: "applied", result };
 }
 
+// Розписка про всі запущені записи. Навмисно `allSettled`, а не
+// послідовна черга як у finyk/nutrition: тут завдання стартує одразу,
+// планування не змінюється — змінна лише дає чим дочекатись їх усіх.
+let inFlight: Promise<unknown> = Promise.resolve();
+
+/**
+ * Resolves once every dual-write started so far has settled.
+ *
+ * `triggerRoutineDualWrite` is fire-and-forget, so a caller that
+ * reloads the page right after it loses the write — which is exactly
+ * what the Hub-backup import did (`core/hub/hubBackup.ts` →
+ * `window.location.reload()`).
+ */
+export async function routineDualWriteIdle(): Promise<void> {
+  let awaited: Promise<unknown> | null = null;
+  while (awaited !== inFlight) {
+    awaited = inFlight;
+    await awaited;
+  }
+}
+
 /**
  * Fire-and-forget entry point used by `routineStorage.ts` /
  * `routineStore.ts`. Resolves immediately so the LS-write call site
@@ -241,7 +262,7 @@ export function triggerRoutineDualWrite(
   beginRoutineLocalWrite();
   // Schedule on a microtask so a synchronous LS-side caller gets
   // control back before any async work begins.
-  void Promise.resolve()
+  const task = Promise.resolve()
     .then(() => dualWriteRoutineState(prev, next))
     .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {
@@ -254,6 +275,7 @@ export function triggerRoutineDualWrite(
     .finally(() => {
       endRoutineLocalWrite();
     });
+  inFlight = Promise.allSettled([inFlight, task]);
 }
 
 function logSafe(

@@ -256,6 +256,24 @@ export function triggerNutritionDualWrite(
     });
 }
 
+/**
+ * Resolves once every dual-write enqueued so far has settled.
+ *
+ * `triggerNutritionDualWrite` parks its work behind a `setTimeout(0)`,
+ * so a caller that navigates or reloads right after the trigger loses
+ * the write before the first statement runs — which is exactly what
+ * the Hub-backup import did (`core/hub/hubBackup.ts` →
+ * `window.location.reload()`). Re-reads the queue after each await so
+ * a write enqueued while we were waiting is covered too.
+ */
+export async function nutritionDualWriteIdle(): Promise<void> {
+  let awaited: Promise<unknown> | null = null;
+  while (awaited !== dualWriteQueue) {
+    awaited = dualWriteQueue;
+    await awaited;
+  }
+}
+
 function logSafe(
   ctx: NutritionDualWriteContext,
   level: "warn" | "info",
