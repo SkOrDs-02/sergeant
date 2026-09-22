@@ -27,7 +27,7 @@ export const user = pgTable("user", {
   createdAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   updatedAt: timestamp({ withTimezone: true }).notNull().defaultNow(),
   /**
-   * Мітка прохання видалити акаунт (ADR-0016 § ADR-6.1, міграція 145).
+   * Мітка прохання видалити акаунт (ADR-0098, міграція 145).
    * `NULL` = акаунт активний; заповнена — акаунт у 30-денному вікні, і
    * `modules/me/deletionPoller.ts` добиває його після
    * `ACCOUNT_DELETION_GRACE_DAYS`.

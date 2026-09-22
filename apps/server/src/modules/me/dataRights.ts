@@ -507,7 +507,7 @@ export async function buildMeExport(
  *
  * Ідемпотентно: `AND deletion_requested_at IS NULL` не дає повторному
  * виклику зсунути дедлайн уперед, тобто нескінченно подовжити вікно.
- * Спека: docs/work/specs/user-deletion-grace-window.md, ADR-0016 § ADR-6.1.
+ * Спека: docs/work/specs/user-deletion-grace-window.md, ADR-0098.
  */
 export async function requestAccountDeletion(
   pool: Pool,
