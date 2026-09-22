@@ -1,6 +1,6 @@
 # Backend Tech Debt Inventory
 
-> **Last touched:** 2026-09-17 by @claude (звірка всіх відкритих пунктів реєстру з HEAD + Railway-згадки в `security.ts`). **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-22 by @claude (`.env.example` синхронізовано з `aiQuota.ts`; system-промпт тижневого дайджесту винесено у файл). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > **Оновлено 2026-09-17 (звірка реєстру з HEAD).** Прохід по всіх відкритих пунктах цього файлу; нижче — лише те, що розійшлося з кодом.
@@ -180,7 +180,7 @@
 ### `modules/digest/weekly-digest.ts`
 
 - **OK** — **`validateBody(WeeklyDigestSchema, …)`** + `ExternalServiceError` / `ValidationError`.
-- **Середній** — довгий system prompt inline → винести в `prompts/` за бажанням.
+- ~~**Середній** — довгий system prompt inline → винести в `prompts/` за бажанням.~~ **Закрито 2026-09-22.** Винесено у `apps/server/src/modules/digest/weeklyDigestPrompt.ts` (`buildWeeklyDigestPrompt`); `weekly-digest.ts` імпортує й ре-експортує функцію, зовнішні імпорти не зачеплені, логіка не змінена.
 
 ### `modules/nutrition/*`
 
@@ -715,7 +715,9 @@ two-phase DROP цього класу змін не покриває.
 ### `.env.example` — аудит
 
 - Перевірити, чи всі env з `config.js` + `auth.js` + `aiQuota.js` + `rateLimit.js` + `sentry.js` + `anthropic.js` + `db.js` задокументовані.
-- У PR E зробити оновлення + додати `BANK_FETCH_TIMEOUT_MS`, `BANK_CACHE_TTL_MS`, `AI_DAILY_TOOL_LIMIT`, `AI_TOOL_COST`.
+- ~~У PR E зробити оновлення + додати `BANK_FETCH_TIMEOUT_MS`, `BANK_CACHE_TTL_MS`, `AI_DAILY_TOOL_LIMIT`, `AI_TOOL_COST`.~~
+
+**Закрито 2026-09-22.** Файл лежить у КОРЕНІ репо (`.env.example`), не в `apps/server/`. `BANK_FETCH_TIMEOUT_MS` і `BANK_CACHE_TTL_MS` уже були коректні. `AI_DAILY_TOOL_LIMIT` / `AI_TOOL_COST` з попереднього формулювання (і з запису PR E у status log) виявились застарілими назвами - код (`apps/server/src/modules/chat/aiQuota.ts`) читає `AI_QUOTA_TOOL_COST` (default 3), `AI_QUOTA_TOOL_LIMITS`, `AI_QUOTA_TOOL_DEFAULT_LIMIT`. `AI_DAILY_USER_LIMIT` мертвий (ліміт тепер із плану, `billing/effectiveLimits.ts`, ADR-0085) - видалений із файлу. Додано `AI_PRO_PREMIUM_DAILY_LIMIT` / `AI_PRO_STANDARD_DAILY_LIMIT` (default 20/80), які код читає, а файл не згадував.
 
 ---
 

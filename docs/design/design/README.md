@@ -107,6 +107,13 @@ showcase, story і відповідну частину `design-system/`.
 | Menus          | **stable**       | `#menus`       | `DropdownMenu` / `CommandPalette` keyboard contract                                                   |
 | Proposals ×3   | **experimental** | `#proposals-*` | пропозиції UI / UX / visual — не контракт                                                             |
 
+`#colors` показує пʼять родин, не чотири: семантичні поверхні/текст,
+brand & status, `-strong` тир і окрему пʼяту - **`categoryColors`**
+(кольори категорій витрат Фініка, 18 ключів, свідомо розведені по hue з
+модульними акцентами). Деталі й таблиця - [`design-system/01-tokens-colors.md`
+§ 2.4](./design-system/01-tokens-colors.md#24-статуси) і
+[`DESIGN.md`](../../../DESIGN.md) (AUTOGEN-блок `palette`).
+
 ## Enforcement status
 
 Після ADR-0081 частина конвенцій знову має **механічний гейт**:
