@@ -369,13 +369,19 @@ PR body follows [`.github/PULL_REQUEST_TEMPLATE.md`](./.github/PULL_REQUEST_TEMP
 
 GitHub лишається, але тільки як архів. Remote `oldgh` і `deadgh-zaebal` навмисно не видалені, і численні посилання виду `github.com/Skords-01/Sergeant/pull/NNN` у цьому файлі та в доках читаються як історія рішень, а не як робочий процес. Усі чотири акаунти заблоковані з вересня 2026, проте блокування можуть зняти, тож адреси лишаються на місці. Два практичні наслідки: не шукай там CI і **не видаляй ці remote** - у них лежать refs, яких немає більше ніде, включно з локальним `oldgh` на 731 ref.
 
-**`gh` CLI з Bitbucket не працює**, тож PR створюється через API репозиторним токеном (`BITBUCKET_TOKEN` у `.env` власника, поза репо):
+**`gh` CLI з Bitbucket не працює**, тож PR створюється через API.
+
+Токен береться з **`D:\Sergeant\.env`, змінна `BITBUCKET_TOKEN`** - це файл у корені ОСНОВНОГО клону, а не в worktree, де ти, найпевніше, зараз сидиш. Значення не друкувати.
+
+**Не бери токен з `~/.git-credentials`.** Там лежить обліковка для git-over-HTTPS, і API її відхиляє з 401 що на Basic, що на Bearer. На цьому вже спіткнулася одна сесія. Ознака, що ти взяв не той токен: пуш працює, а будь-який виклик `api.bitbucket.org` дає 401 або 404.
 
 ```bash
-curl -sS -X POST -H "Authorization: Bearer $BITBUCKET_TOKEN" -H 'Content-Type: application/json' https://api.bitbucket.org/2.0/repositories/skords01/sergeant/pullrequests -d '{"title":"feat(web): …","description":"…","source":{"branch":{"name":"<гілка>"}},"destination":{"branch":{"name":"main"}}}'
+curl -sS -X POST -H "Authorization: Bearer $(grep -m1 '^BITBUCKET_TOKEN=' /d/Sergeant/.env | cut -d= -f2-)" -H 'Content-Type: application/json' https://api.bitbucket.org/2.0/repositories/skords01/sergeant/pullrequests -d '{"title":"feat(web): …","description":"…","source":{"branch":{"name":"<гілка>"}},"destination":{"branch":{"name":"main"}}}'
 ```
 
-Структура тіла PR (`description`) лишається тією самою, що описана вище.
+Якщо тіло PR містить кирилицю, шли його через файл (`-d @body.json`) або з PowerShell, кодуючи в UTF-8: інакше опис приїде спотвореним.
+
+Структура тіла PR (`description`) лишається тією самою, що описана вище. Зайвий клік не потрібен: правил «потрібні N апрувів» на `main` немає, тож PR мерджиться одразу, а захист гілки забороняє лише force-push і видалення.
 
 ## Verification before PR
 
