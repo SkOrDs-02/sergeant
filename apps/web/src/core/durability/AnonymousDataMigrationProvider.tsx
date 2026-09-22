@@ -18,7 +18,10 @@ import { useToast } from "@shared/hooks/useToast";
 // AI-DANGER: `@shared/i18n` (index) тягне uk-каталог І en-копію — а це
 // eager-поверхня. Беремо вузьке ядро; гейт — `uk.core.eagerImports.test.ts`.
 import { coreMessages as messages } from "@shared/i18n/uk.core";
-import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
+import {
+  safeReadStringLSDurable,
+  safeWriteStringLSDurable,
+} from "@shared/lib/storage/storage";
 
 import { captureException } from "../observability/sentry";
 import {
@@ -89,13 +92,38 @@ const GATE_EXEMPT_PATHS: ReadonlySet<string> = new Set([
 /**
  * Рішення «перенесу пізніше» переживає перезавантаження — інакше кожен старт
  * застосунку знову замикав би користувача тим самим екраном.
+ *
+ * AI-DANGER: саме `*LSDurable`, не `safeWriteLS`. Звичайний шлях після
+ * `bootstrapKvStore()` резолвиться у SQLite-кеш, а запис назад у базу —
+ * fire-and-forget; людина, яка тисне «перенесу пізніше» і одразу йде далі,
+ * перезавантажує сторінку швидше, ніж той upsert долітає. Прод 2026-09-21:
+ * рішення не переживало жодного переходу, і користувач із впалим переносом
+ * упирався в блокуючий екран знову й знову — тобто НЕ МІГ користуватись
+ * застосунком, щойно залогінившись. Durable-пара синхронно дзеркалить
+ * значення в localStorage, звідки бут його й перечитує.
  */
 function deferralKey(userId: string): string {
   return `hub_anon_migration_deferred_v1:${userId}`;
 }
 
+/**
+ * Частина збою, адресована людині: `AnonymousMigrationStepError.detail`.
+ *
+ * Перевірка структурна, а не `instanceof`: помилку кидає модуль, який
+ * приїжджає окремим чанком, а тести підміняють його цілком — на такій межі
+ * порівняння конструкторів ламається тихо й віддає `null` там, де діагноз
+ * якраз і потрібен. Повний `message` (крок + `[vfs=… disk=…]`) від цього не
+ * страждає: він їде в Sentry незалежно.
+ */
+function migrationFailureDetail(error: unknown): string | null {
+  if (!(error instanceof Error)) return null;
+  if (error.name !== "AnonymousMigrationStepError") return null;
+  const { detail } = error as Error & { detail?: unknown };
+  return typeof detail === "string" ? detail.slice(0, 240) : null;
+}
+
 function readDeferred(userId: string): boolean {
-  return safeReadStringLS(deferralKey(userId)) === "1";
+  return safeReadStringLSDurable(deferralKey(userId)) === "1";
 }
 
 /**
@@ -220,8 +248,10 @@ function AuthenticatedMigrationGate({
    * AI-CONTEXT: звіт власника 2026-09-13 прийшов трьома скріншотами ОДНОГО
    * й того самого тексту. Sentry тут не заміна: людина фотографує екран і
    * шле фото, а не лізе в дашборд, тож діагноз має бути в кадрі. Сюди йде
-   * лише крок і назва таблиці (див. `AnonymousMigrationStepError`) — ані
-   * вмісту рядків, ані ідентифікаторів користувача.
+   * `detail` — сама причина, без службового префікса кроку й без
+   * `[vfs=… disk=…]`: те й те адресоване нам, не людині, і в Sentry їде
+   * повним `message` (звіт власника 2026-09-21). Ані вмісту рядків, ані
+   * ідентифікаторів користувача тут немає й не має бути.
    */
   const [failureCode, setFailureCode] = useState<string | null>(null);
   const [deferred, setDeferred] = useState(() => readDeferred(userId));
@@ -255,11 +285,7 @@ function AuthenticatedMigrationGate({
           online,
         );
         setFailureKind(verdict.report ? "generic" : "offline");
-        setFailureCode(
-          error instanceof Error && error.message.startsWith("anon-migration/")
-            ? error.message.slice(0, 240)
-            : null,
-        );
+        setFailureCode(migrationFailureDetail(error));
         if (verdict.report) {
           captureException(error, { extra: verdict.context });
         }
@@ -295,7 +321,7 @@ function AuthenticatedMigrationGate({
   }, [kickoff]);
 
   const defer = useCallback(() => {
-    safeWriteLS(deferralKey(userId), "1");
+    safeWriteStringLSDurable(deferralKey(userId), "1");
     setDeferred(true);
     warning(messages.sync.anonymousMigrationDeferredToast);
   }, [userId, warning]);

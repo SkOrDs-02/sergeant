@@ -295,19 +295,29 @@ describe("AnonymousDataMigrationProvider", () => {
   });
 
   // Звіт власника прийшов трьома скріншотами одного й того самого тексту —
-  // діагностувати не було чим. Код кроку має бути В КАДРІ, бо людина шле
-  // фото екрана, а не заглядає в Sentry.
-  it("показує технічний код збою на самому екрані", async () => {
-    migrate.mockRejectedValue(
-      new Error("anon-migration/apply-rejected: finyk_tx_splits (insert)"),
+  // діагностувати не було чим. Причина має бути В КАДРІ, бо людина шле фото
+  // екрана, а не заглядає в Sentry. Але саме причина: службовий префікс
+  // кроку і `[vfs=… disk=…]` адресовані нам і лишаються в Sentry-повідомленні
+  // (другий звіт власника, 2026-09-21).
+  it("показує причину збою на екрані, без службового префікса і vfs", async () => {
+    const error = Object.assign(
+      new Error(
+        "anon-migration/pull-before: Забагато запитів. Спробуй через 17 секунд. " +
+          "[vfs=kvvfs disk=14/10254MB]",
+      ),
+      {
+        name: "AnonymousMigrationStepError",
+        detail: "Забагато запитів. Спробуй через 17 секунд.",
+      },
     );
+    migrate.mockRejectedValue(error);
     renderAt("/", <div>module content</div>);
 
     expect(
-      await screen.findByText(
-        "anon-migration/apply-rejected: finyk_tx_splits (insert)",
-      ),
+      await screen.findByText("Забагато запитів. Спробуй через 17 секунд."),
     ).toBeInTheDocument();
+    expect(screen.queryByText(/anon-migration\//)).not.toBeInTheDocument();
+    expect(screen.queryByText(/vfs=/)).not.toBeInTheDocument();
   });
 
   // Зворотний бік: чужа помилка (не з нашого кроку) не має малювати на

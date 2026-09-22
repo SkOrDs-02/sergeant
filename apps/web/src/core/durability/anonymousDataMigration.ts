@@ -704,12 +704,25 @@ async function deleteSourceRows(
  */
 export class AnonymousMigrationStepError extends Error {
   readonly step: string;
+  /**
+   * Сама причина, без службового префікса кроку й без діагностики сховища.
+   *
+   * AI-CONTEXT: рівно це показується на екрані збою, тоді як повний
+   * `message` (з кроком і `[vfs=… disk=…]`) їде в Sentry. Розведено після
+   * звіту власника 2026-09-21: у кадрі стояло
+   * `anon-migration/pull-before: Забагато запитів… [vfs=kvvfs disk=14/10254MB]`,
+   * де людині адресоване лише середнє речення. Групування подій у Sentry
+   * тримається на `message`, тож звужувати ТАМ не можна — саме тому поля
+   * два, а не одне.
+   */
+  readonly detail: string;
   constructor(step: string, cause: unknown, storage?: string) {
     const detail =
       cause instanceof Error ? cause.message : String(cause ?? "unknown");
     super(`anon-migration/${step}: ${detail}${storage ? ` [${storage}]` : ""}`);
     this.name = "AnonymousMigrationStepError";
     this.step = step;
+    this.detail = detail;
     this.cause = cause;
   }
 }

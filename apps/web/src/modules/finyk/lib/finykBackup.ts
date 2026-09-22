@@ -4,9 +4,16 @@
  * Stage 8 PR #057k-tombstone: reads now prefer the SQLite cache
  * (`getCachedFinykSqliteState()`) over LS. LS writes in
  * `persistFinykNormalizedToStorage` are retained for the Hub-backup
- * import path (non-React context) — the residual-import helper in
- * `sqliteReadBoot.ts` picks them up on next boot and drains them into
- * SQLite.
+ * import path (non-React context).
+ *
+ * AI-DANGER: цей опис колись закінчувався обіцянкою, що residual-import
+ * у `sqliteReadBoot.ts` підбере LS-ключі на наступному буті й переллє їх
+ * у SQLite. Того хелпера НЕМАЄ з 2026-08 (`residualImport.ts` видалено,
+ * див. шапку `sqliteReadBoot.ts`), тож імпорт бекапу Фініка сьогодні
+ * кладе значення в KV-сховище, а теплий кеш читає доменні таблиці —
+ * тобто імпортованого не видно. Знайдено 2026-09-22 під час розбору
+ * порожнього експорту; лікування шляху запису — окрема робота, і поки
+ * її нема, не покладайся на цей шлях як на робочий.
  *
  * The pure normalize / version / payload-shape logic lives in
  * `@sergeant/finyk-domain/backup` so the mobile app can reuse it
@@ -54,6 +61,9 @@ export function readFinykBackupFromStorage() {
     subscriptions: warm
       ? cache.subscriptions
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.subscriptions, []),
+    manualExpenses: warm
+      ? cache.manualExpenses
+      : readJSON(FINYK_FIELD_TO_STORAGE_KEY.manualExpenses, []),
     manualAssets: warm
       ? cache.manualAssets
       : readJSON(FINYK_FIELD_TO_STORAGE_KEY.manualAssets, []),
