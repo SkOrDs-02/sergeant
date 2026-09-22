@@ -252,10 +252,13 @@ export function createMeRouter(): Router {
   // Прохання видалити акаунт. НЕ видаляє: ставить мітку, гасить сесії,
   // зупиняє списання; незворотну частину через
   // `ACCOUNT_DELETION_GRACE_DAYS` днів виконує `AccountDeletionPoller`
-  // (спека docs/work/specs/user-deletion-grace-window.md, ADR-0016
-  // § ADR-6.1). Живий веб-шлях — `POST /api/auth/delete-user` (Better
-  // Auth, `DangerZoneSection.tsx`), який через `user.deleteUser.
-  // beforeDelete` у `auth.ts` кличе ту саму функцію.
+  // (спека docs/work/specs/user-deletion-grace-window.md).
+  //
+  // Це ЄДИНИЙ живий шлях видалення. `POST /api/auth/delete-user` (Better
+  // Auth) вимкнений — `user.deleteUser.enabled: false` в `auth.ts`, бо на
+  // його хуку вікно нездійсненне; пін на це стоїть у `auth.test.ts`. Гварди
+  // цього роуту (пароль + свіжа сесія) закріплені в
+  // `routes/me.route.test.ts`.
   r.delete(
     "/api/me",
     requireFreshSession(),
