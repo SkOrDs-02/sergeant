@@ -9,20 +9,34 @@
  *     під час виконання,
  *   - затримку readiness-проба пропорційну часу міграції.
  *
- * Правильна модель — Release-stage: цей скрипт запускається окремим job-ом
- * (на Coolify — `pre_deployment_command`, ADR-0074; локально — вручну), перед тим як нові
- * інстанси server-а почнуть приймати трафік. Web-процес на старті більше
- * НЕ виконує міграції.
+ * Правильна модель — окремий процес перед стартом веб-сервера. Web-процес на
+ * старті міграції НЕ виконує: йому потрібен `statement_timeout`, пулер і
+ * швидка readiness, а release-stage — рівно протилежне (див. три налаштування
+ * нижче). Спільний процес не може дати обидва набори.
+ *
+ * Запускається з ENTRYPOINT образу:
+ * `sh -c "node dist-server/migrate.js && exec node dist-server/index.js"`
+ * (`Dockerfile.api`, форму стереже
+ * `scripts/__tests__/dockerfile-api-migrate-entrypoint.test.mjs`). Локально —
+ * вручну через `pnpm db:migrate`.
+ *
+ * Чому НЕ Coolify `pre_deployment_command` (так було до 2026-09-21): Coolify
+ * виконує його через `docker exec` у контейнері, що ЩЕ ПРАЦЮЄ на попередньому
+ * образі. Цей скрипт тоді читає СТАРІ `.sql`, нової міграції не бачить і
+ * чесно рапортує `migrate_ok` — тобто кожна міграція застосовувалась на один
+ * деплой пізніше за код, який на неї розраховує (знахідка 2026-08-28). На
+ * Railway та сама модель була справною: `preDeployCommand` піднімав свіжий
+ * контейнер з нового образу, тож поле перенесли за іменем, а не за поведінкою.
  *
  * Вибір URL-а:
  *   `MIGRATE_DATABASE_URL` (якщо виставлений) має пріоритет над `DATABASE_URL`.
- *   Сенс: pre-deploy контейнер може не бути в runtime-мережі (так було на
- *   Railway з internal DNS; на Coolify `pre_deployment_command` теж виконується
- *   до того, як новий контейнер стане healthy), тому runtime-значення
- *   `DATABASE_URL` там не завжди придатне. `MIGRATE_DATABASE_URL` задається у
- *   Coolify env і вказує на доступний з pre-deploy URL Postgres, а web-процес
- *   продовжує ходити в БД через `DATABASE_URL`. На docker-compose, CI/local —
- *   достатньо одного `DATABASE_URL`.
+ *   Історично це був спадок Railway, де pre-deploy виконувався ПОЗА runtime-
+ *   мережею й потребував публічного URL. Відколи міграції їдуть з ENTRYPOINT
+ *   того самого контейнера, обидва URL показують на одну базу, і на Coolify
+ *   це буквально одне значення. Змінна лишається як шов: дає розвести
+ *   міграційне й рантаймове підключення (окремий користувач з DDL-правами,
+ *   інший хост) не чіпаючи код. На docker-compose, CI/local достатньо
+ *   одного `DATABASE_URL`.
  *
  * Вихідні коди: 0 — все ок, 1 — будь-яка помилка (URL відсутній, міграція
  * впала, pg недоступний тощо).
@@ -48,8 +62,9 @@ if (migrateUrl) {
 //    міграції їдуть через пулер у transaction-mode. Там
 //    `pg_advisory_lock` не тримається між запитами, отже захист від двох
 //    одночасних деплоїв зникає рівно тоді, коли він потрібен найбільше.
-//    Coolify роздає один набір env і pre-deploy-контейнеру, і рантайму,
-//    тож розраховувати на «там його не буде» не можна.
+//    Міграції тепер їдуть у тому самому контейнері, що й рантайм, тобто з
+//    тим самим набором env — розраховувати на «там його не буде» не можна
+//    тим паче.
 //    Раннбук `docs/start/instructions/database-connection-pooling.md`
 //    обіцяє саме таку поведінку — цей рядок робить обіцянку правдою.
 //
@@ -76,7 +91,7 @@ if (!process.env.DATABASE_URL) {
     JSON.stringify({
       level: "error",
       msg: "migrate_database_url_missing",
-      hint: "Set MIGRATE_DATABASE_URL (Coolify pre_deployment_command; Postgres URL reachable from the pre-deploy container) or DATABASE_URL.",
+      hint: "Set DATABASE_URL (or MIGRATE_DATABASE_URL to route migrations at a separate Postgres user/host). Container ENTRYPOINT runs this before the web server, so an unset URL stops the boot.",
     }),
   );
   process.exit(1);

@@ -4,7 +4,7 @@
  * 2026-08-08: «найнебезпечніші дії без тестів»). Це чиста презентаційна
  * компонента — уся мережева логіка живе в `DangerZoneSection` (окремий
  * файл), тут перевіряємо лише контракт: що бачить і чим керує людина, поки
- * відповідає на «Видалити акаунт назавжди?».
+ * відповідає на «Видалити акаунт?».
  *
  * Ключовий кейс — гейт підтвердження (§6 п.1, останній буллет завдання):
  * кнопка «Видалити» вимкнена, доки поле пароля порожнє. Без цього гейта
@@ -56,16 +56,22 @@ describe("DeleteAccountDialog", () => {
   it("renders the confirmation dialog with an accessible name and a password field when open", () => {
     renderDialog();
     const dialog = screen.getByRole("dialog", {
-      name: "Видалити акаунт назавжди?",
+      name: "Видалити акаунт?",
     });
     expect(dialog).toHaveAttribute("aria-modal", "true");
-    expect(within(dialog).getByLabelText("Пароль")).toBeInTheDocument();
+    expect(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+    ).toBeInTheDocument();
   });
 
-  // §6 п.1: гейт підтвердження — без пароля видалити неможливо.
-  it("disables the confirm button while the password field is empty", () => {
+  // Порожнє поле більше НЕ блокує підтвердження: акаунт, заведений через
+  // Google, пароля не має взагалі, і з гейтом на `!password` його не можна
+  // було б видалити з інтерфейсу зовсім. Розвилку робить сервер
+  // (`modules/me/verifyAccountPassword.ts`): є credential-вхід — пароль
+  // звіряється і невірний дає 400; немає — пропускає.
+  it("allows confirming with an empty password (OAuth-only accounts have none)", () => {
     renderDialog({ password: "" });
-    expect(screen.getByRole("button", { name: "Видалити" })).toBeDisabled();
+    expect(screen.getByRole("button", { name: "Видалити" })).not.toBeDisabled();
   });
 
   it("enables the confirm button once a password is entered", () => {
@@ -86,7 +92,7 @@ describe("DeleteAccountDialog", () => {
   it("forwards typed input to onPasswordChange", () => {
     const onPasswordChange = vi.fn();
     renderDialog({ onPasswordChange });
-    fireEvent.change(screen.getByLabelText("Пароль"), {
+    fireEvent.change(screen.getByLabelText("Пароль, якщо входиш паролем"), {
       target: { value: "abc" },
     });
     expect(onPasswordChange).toHaveBeenCalledWith("abc");

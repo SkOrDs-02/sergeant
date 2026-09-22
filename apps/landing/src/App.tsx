@@ -15,6 +15,7 @@ import PomichnykPage from "./pages/PomichnykPage";
 import StanPage from "./pages/StanPage";
 import ObitsyankyPage from "./pages/ObitsyankyPage";
 import PytannyaPage from "./pages/PytannyaPage";
+import ContactPage from "./pages/ContactPage";
 import GuideMonobankPage from "./pages/GuideMonobankPage";
 import GuideKbzhvPage from "./pages/GuideKbzhvPage";
 import GuideChekyPage from "./pages/GuideChekyPage";
@@ -55,6 +56,7 @@ export const ROUTES: Record<string, ComponentType> = {
   "/stan": StanPage,
   "/obitsyanky": ObitsyankyPage,
   "/pytannya": PytannyaPage,
+  "/contact": ContactPage,
   "/guides/monobank": GuideMonobankPage,
   "/guides/kbzhv": GuideKbzhvPage,
   "/guides/cheky": GuideChekyPage,

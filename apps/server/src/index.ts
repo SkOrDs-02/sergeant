@@ -80,6 +80,7 @@ import { LogArchivePoller } from "./modules/logRetention/archivePoller.js";
 import { WebhookEventsRetentionPoller } from "./modules/webhooks/retentionPoller.js";
 import { PlataSyncPoller } from "./modules/billing/plataSync.js";
 import { GdprCleanupPoller } from "./modules/gdpr/cleanupPoller.js";
+import { AccountDeletionPoller } from "./modules/me/deletionPoller.js";
 import { SilpoSyncPoller } from "./modules/silpo/syncScheduler.js";
 import { Sentry } from "./sentry.js";
 
@@ -228,6 +229,16 @@ const gdprCleanupPoller = new GdprCleanupPoller({
   intervalMs: env.GDPR_CLEANUP_POLL_INTERVAL_MS,
 });
 gdprCleanupPoller.start();
+
+// Добивач акаунтів, у яких минуло 30-денне вікно на скасування видалення
+// (спека docs/work/specs/user-deletion-grace-window.md, ADR-0016
+// § ADR-6.1). Без нього `DELETE /api/me` лише позначає акаунт, і ніхто
+// ніколи не доводить видалення до кінця. 0 означає off.
+const accountDeletionPoller = new AccountDeletionPoller({
+  pool,
+  intervalMs: env.ACCOUNT_DELETION_POLL_INTERVAL_MS,
+});
+accountDeletionPoller.start();
 
 // Log-retention archive cron — opt-in (`LOG_ARCHIVE_ENABLED=true`).
 // Streams `openclaw_invocations` / `tg_alert_acks` / `n8n_webhook_events`
@@ -567,6 +578,9 @@ async function shutdown(reason: string, exitCode: number): Promise<void> {
     );
     await runBackgroundStop("gdpr_cleanup_poller", () =>
       gdprCleanupPoller.stop(),
+    );
+    await runBackgroundStop("account_deletion_poller", () =>
+      accountDeletionPoller.stop(),
     );
     await runBackgroundStop("log_archive_poller", () =>
       logArchivePoller.stop(),

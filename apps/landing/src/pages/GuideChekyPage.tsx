@@ -29,13 +29,21 @@ export default function GuideChekyPage() {
     ...ROUTE_META["/guides/cheky"],
     jsonLd: {
       "@context": "https://schema.org",
-      "@type": "Article",
-      headline:
-        "Як перетворити паперовий чек на облік витрат, коли QR не сканується",
+      // HowTo, а не Article: сторінка веде людину по кроках, і саме кроки
+      // мають бути машинно-читабельними. Розширених сніпетів Google для
+      // HowTo більше не малює (зняв у вересні 2023), тож адресат тут –
+      // AI-споживачі, ті самі, заради яких у нас llms.txt і markdown.
+      "@type": "HowTo",
+      name: "Як перетворити паперовий чек на облік витрат, коли QR не сканується",
       inLanguage: "uk",
       dateModified: ROUTE_META["/guides/cheky"].lastmod,
       author: AUTHOR_JSON_LD,
       publisher: { "@type": "Organization", name: "Sergeant" },
+      step: STEPS.map((text, i) => ({
+        "@type": "HowToStep",
+        position: i + 1,
+        text,
+      })),
     },
   });
 

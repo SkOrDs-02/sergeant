@@ -146,9 +146,35 @@ describe("бекенд бази у воркері", () => {
     expect(pruneForeignPartitionRows).not.toHaveBeenCalled();
   });
 
-  // Вкладка, якій не дісталось лідерство, НЕ має відкрити персистентне
-  // сховище жодного роду: два стори на один акаунт — це два різні набори
-  // даних, а не резервна копія.
+  it("невдача воркера повертає на kvvfs, поки партиція не перелита", async () => {
+    vi.mocked(isHandoffDone).mockReturnValue(false);
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("Missing required OPFS APIs."),
+    );
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("kvvfs");
+  });
+
+  // Після перелиття старе сховище лишається на пристрої як знімок на момент
+  // переїзду (`kvvfsHandoff.ts` навмисно його не чистить). Відкрити його
+  // вдруге означає показати торішні дані поруч із живою базою іншої вкладки.
+  it("після перелиття невдача воркера веде в памʼять, а не в старий стор", async () => {
+    vi.mocked(isHandoffDone).mockReturnValue(true);
+    vi.mocked(openSqliteInWorker).mockRejectedValue(
+      new Error("Missing required OPFS APIs."),
+    );
+
+    const handle = await getSqliteDb();
+
+    expect(handle.vfs).toBe("memory");
+  });
+
+  // Вкладка, якій не дісталось лідерство, НЕ має відкрити персистентного
+  // сховища жодного роду: два стори на один акаунт — це два різні набори
+  // даних, а не резервна копія. Ретраї вище тут не допоможуть — сусідня
+  // вкладка тримає пул скільки завгодно довго.
   it("послідовник не відкриває персистентного сховища навіть із робочим воркером", async () => {
     Object.defineProperty(globalThis.navigator, "locks", {
       value: {
@@ -157,9 +183,6 @@ describe("бекенд бази у воркері", () => {
           options: { ifAvailable?: boolean },
           cb: (lock: object | null) => unknown,
         ) =>
-          // `ifAvailable` — одразу відмова (лок тримає «інша вкладка»);
-          // блокувальний запит просто стоїть у черзі й не розвʼязується,
-          // інакше послідовник негайно перезавантажив би сторінку.
           options.ifAvailable
             ? Promise.resolve(cb(null))
             : new Promise<void>(() => {}),
@@ -179,25 +202,33 @@ describe("бекенд бази у воркері", () => {
     });
   });
 
-  it("невдача воркера повертає на kvvfs, поки партиція не перелита", async () => {
-    vi.mocked(isHandoffDone).mockReturnValue(false);
-    vi.mocked(openSqliteInWorker).mockRejectedValue(
-      new Error("Missing required OPFS APIs."),
+  it("перечікує зайнятий SAH-пул замість того, щоб осісти на kvvfs", async () => {
+    // Прод 2026-09-21 (Chrome 151, Android): воркер попереднього
+    // завантаження ще тримав хендли, перша спроба падала за 70 мс після
+    // старту — і сесія лишалась на localStorage зі стелею ~5 МБ.
+    const busy = new Error(
+      "Failed to execute 'createSyncAccessHandle' on 'FileSystemFileHandle': " +
+        "Access Handles cannot be created if there is another open Access Handle",
     );
+    vi.mocked(openSqliteInWorker)
+      .mockRejectedValueOnce(busy)
+      .mockResolvedValue(fakeWorkerConnection());
 
     const handle = await getSqliteDb();
 
-    expect(handle.vfs).toBe("kvvfs");
+    expect(handle.vfs).toBe("opfs-sahpool");
+    expect(openSqliteInWorker).toHaveBeenCalledTimes(2);
   });
 
-  it("після перелиття невдача воркера веде в памʼять, а не в старий стор", async () => {
-    vi.mocked(isHandoffDone).mockReturnValue(true);
+  it("не ретраїть там, де середовище відмовило чесно", async () => {
+    // Пристрій без OPFS не подобрішає від очікування: зайві спроби лише
+    // додали б півсекунди до кожного холодного старту.
     vi.mocked(openSqliteInWorker).mockRejectedValue(
       new Error("Missing required OPFS APIs."),
     );
 
-    const handle = await getSqliteDb();
+    await getSqliteDb();
 
-    expect(handle.vfs).toBe("memory");
+    expect(openSqliteInWorker).toHaveBeenCalledTimes(1);
   });
 });

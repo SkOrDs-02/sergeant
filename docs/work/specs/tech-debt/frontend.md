@@ -575,10 +575,15 @@ UPDATE` у `kv_store`; cross-tab `onChange` через `BroadcastChannel("kv-sto
    бренд-тиром — тобто рівно те, від чого пішли. Треба: секція в
    `README.md` + сторінка в showcase зі свотчами всіх 16 (звідти ж видно
    пари, які зливаються — див. п.3).
+   **Закрито 2026-09-22.** У `docs/design/design/README.md` зʼявився
+   абзац-покажчик на пʼяту родину (канонічний опис уже був у
+   `design-system/01-tokens-colors.md § 2.4`, README на нього не вказував),
+   у `core/DesignShowcase/sections/Colors.tsx` - секція зі свотчами всіх 18
+   значень.
 2. **Мобілка лишилась на старих кольорах.** `apps/mobile` бере
    `getCatColor()` (тобто вже нові `solid` — це приїхало безкоштовно), але
-   чипів `tint`/`ink` там немає, а сирий `#94a3b8` під «Інше» замість
-   `categoryColors.other.solid` живий досі — звірено 2026-09-17, файл
+   чипів `tint`/`ink` там немає; сирий `#94a3b8` під «Інше» **закрито
+   2026-09-22** заміною на `categoryColors.other.solid`; звірено 2026-09-17, файл
    переїхав: `apps/mobile/src/modules/finyk/pages/Analytics/CategoryDonut.tsx:139`
    (у записі стояв `CategoryDonut.tsx:138` без каталогу). Паритет форми
    — окремим проходом під `sergeant-mobile-expo`.
@@ -1523,9 +1528,22 @@ production-сайтів на 2026-09-17 (маркер 2026-08-07 фіксува�
 [`apps-mobile-exhaustive-deps.md`](../../../engineering/architecture/apps-mobile-exhaustive-deps.md).
 Більшість нових web-директив несуть inline-WHY (`ReceiptScanSheet.tsx:156`,
 `usePrivatbank.ts:484`, `useTweenedValues.ts:71`, `AppLockSettings.tsx:75`), але
-чотири — без нього: `RestTimerOverlay.tsx:58`, `PhotoStep.tsx:114` і `:139`,
-`CrossModuleLinksSection.tsx:116`. Це і є actionable-залишок пункту: не «звести
-до нуля», а дописати WHY і рядок у каталозі.
+чотири нібито без нього: `RestTimerOverlay.tsx:58`, `PhotoStep.tsx:114` і
+`:139`, `CrossModuleLinksSection.tsx:116`.
+
+**Переміряно 2026-09-22: цих чотирьох у списку «без WHY» більше немає, і не
+було вже на момент запису.** Усі чотири директиви несуть inline-пояснення
+ПРИЧИНИ, а не переказ коду, і всі чотири коміти давніші за 2026-09-17:
+`RestTimerOverlay` пояснює, чому ефект кийований лише на `isActive` (щоб
+±15/±30 не перезапускали оголошення), `PhotoStep` - нестабільність identity
+`analyzePhoto` і mount-only природу піккера, `CrossModuleLinksSection` -
+що deps там є ключами інвалідації зовнішнього сховища. Дописувати до них
+ще один коментар означало б додати WHAT-шум. Actionable-залишок пункту -
+тільки рядки в каталозі, не код.
+
+**Урок ширший за цей пункт:** запис «без WHY» виводився з `grep` по самій
+директиві, не з читання рядків над нею. Так само, як задача «підняти
+стелю бандла» раніше виводилась із виводу гейта, не звіреного з правилом.
 Новий disable без WHY-коментаря / без рядка в каталозі — рев'ю блокує.
 
 </details>
@@ -2255,6 +2273,12 @@ test-file glob-ів — правило `sergeant-design/no-strict-bypass` теп
    `:128` плюс `nutritionCloudBackup.ts:11`. Тобто «server sync» із запису вже
    закритий (сервер = 0), а `AccentColorPicker` відпав ще 2026-08-04 разом із
    компонентом; фактичний залишок — самий barcode плюс один nutrition-хелпер.
+   **Закрито 2026-09-22, залишок нуль.** `useBarcodeScanner.ts` отримав явний
+   guard перед `decodeFromStream` замість двох `!` (обидва call-site-и вже
+   мають try/catch, тож помилка чесно спливає у наявний статус «Сканер не
+   підтримується», а не глушиться). У `nutritionCloudBackup.ts` assertion був
+   зайвий структурно: індексний цикл замінено на `for...of`, індексації там
+   більше немає.
 5. ~~**Overlay positioning (P4 Phase 1)**~~ — **Done**: shared `useFloatingPanelPosition` for Popover / Tooltip / DropdownMenu (geometry in `floatingPosition.ts`; no Radix — size-limit).
 6. ~~**Overlay shell (P4 Phase 2)**~~ — **Done**: `ConfirmDialog` / `InputDialog` — `bg-black/40` scrim, `useBodyScrollLock`, InputDialog portaled; kept `alertdialog` / form semantics.
 7. **Coverage ratchet (опційно)** — floor уже **89**; наступний крок лише після headroom у CI.

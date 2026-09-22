@@ -37,7 +37,7 @@
 Owner-скіл за routing-таблицею `AGENTS.md`: **`sergeant-security-audit`**; дотичні `sergeant-module-fizruk` і `sergeant-module-ai`.
 
 - `apps/server/src/modules/mono/crypto.ts` — винести узагальнений хелпер або переекспортувати; модуль перестає бути «монобанківським» за змістом.
-- `apps/server/src/modules/fizruk/` — запис і читання `injuries.note`.
+- `apps/server/src/modules/sync/fizruk/applyInjuries.ts` — запис і читання `injuries.note` (окремої теки `modules/fizruk/` на сервері немає, Фізрук пише через синк).
 - `apps/server/src/modules/ai-memory/` — запис і читання `content`; **окремо перевірити пошук**, бо RAG-індекс по зашифрованому полю не працює (див. § Ризики).
 - Міграція `NNN_*.sql` і `.down.sql` — колонки під версію шифрування поруч зі значенням, за формою, яку вже використовує `mono` (лише `ADD`, двофазний DROP не потрібен).
 - `apps/server/src/modules/me/dataRights.ts` — експорт віддає **розшифрований** текст: людина забирає свої дані, а не шифротекст.
@@ -53,7 +53,7 @@ Owner-скіл за routing-таблицею `AGENTS.md`: **`sergeant-security-a
 ## Верифікація (обовʼязково)
 
 ```bash
-pnpm --filter @sergeant/server exec vitest run src/modules/fizruk src/modules/ai-memory src/modules/mono/crypto
+pnpm --filter @sergeant/server exec vitest run src/modules/sync/fizruk src/modules/ai-memory src/modules/mono/crypto
 pnpm --filter @sergeant/server exec vitest run src/modules/me/dataRights
 pnpm check
 ```

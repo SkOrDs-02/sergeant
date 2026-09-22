@@ -64,6 +64,48 @@ test("12px і більше — не порушення (це і є floor, а н�
   assert.deepEqual(rulesOf(`const a = "text-[12px] text-[14px]";`), []);
 });
 
+// ── Невідоме імʼя кольору з нашої родини токенів ────────────────────────────
+
+test("ловить одрук у токені: родина наша, повного імені в пресеті немає", () => {
+  // Реальний випадок із репо (2026-09-20): токен зветься `panelHi`, тож
+  // `bg-panel-hi` Tailwind не генерує і елемент лишається без фону.
+  assert.deepEqual(rulesOf(`const a = "bg-panel-hi";`), ["unknownTokenColor"]);
+  assert.deepEqual(rulesOf(`const a = "bg-fizruk-strng";`), [
+    "unknownTokenColor",
+  ]);
+});
+
+test("валідне імʼя з пресета мовчить, разом з варіантами й opacity", () => {
+  assert.deepEqual(rulesOf(`const a = "bg-panelHi";`), []);
+  assert.deepEqual(rulesOf(`const a = "dark:hover:bg-panelHi/40";`), []);
+  assert.deepEqual(rulesOf(`const a = "text-brand-strong ring-focus";`), []);
+});
+
+test("чужі утиліти не зачіпаються — родина не наша", () => {
+  // Найважливіший контракт правила: воно перевіряє ТІЛЬКИ наші родини,
+  // тож стандартний Tailwind і не-кольорові утиліти проходять вільно.
+  assert.deepEqual(
+    rulesOf(`const a = "text-sm bg-cover ring-2 border-2 bg-red-500";`),
+    [],
+  );
+});
+
+test("утиліти, що читають не `colors`, валідні: boxShadow і backgroundImage", () => {
+  assert.deepEqual(
+    rulesOf(`const a = "shadow-hero-finyk bg-hero-grad-finyk";`),
+    [],
+  );
+});
+
+test("ручні CSS-утиліти з apps/web/src/styles валідні", () => {
+  // `.bg-routine-heat-l1` оголошено руками в module-surfaces.css, не в пресеті.
+  assert.deepEqual(rulesOf(`const a = "bg-routine-heat-l1";`), []);
+});
+
+test("семантична типографіка не є кольором і правилом не чіпається", () => {
+  assert.deepEqual(rulesOf(`const a = "text-style-caption";`), []);
+});
+
 // ── Anti-false-positive контракт ────────────────────────────────────────────
 
 test("JSX-текст не сканується — Do/Don't демо в showcase не фейлить гейт", () => {

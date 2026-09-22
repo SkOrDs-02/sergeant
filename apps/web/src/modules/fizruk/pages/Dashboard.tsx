@@ -511,8 +511,17 @@ export function Dashboard({
 
         {templates.length > 0 &&
           (() => {
-            const quickTemplates =
-              recentlyUsed.length > 0 ? recentlyUsed : templates.slice(0, 3);
+            // N-10 (аудит 2026-09-16): герой і цей список не повторюють
+            // одну й ту саму пропозицію старту - коли герой уже показує
+            // конкретний шаблон, прибираємо його рядок звідси.
+            const heroTemplateId =
+              heroState.kind === "today" && primaryAction?.kind === "template"
+                ? primaryAction.templateId
+                : null;
+            const quickTemplates = (
+              recentlyUsed.length > 0 ? recentlyUsed : templates.slice(0, 3)
+            ).filter((tpl) => tpl.id !== heroTemplateId);
+            if (quickTemplates.length === 0) return null;
             return (
               <Card
                 as="section"

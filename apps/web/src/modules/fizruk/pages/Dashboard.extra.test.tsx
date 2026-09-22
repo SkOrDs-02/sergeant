@@ -340,6 +340,84 @@ describe("Dashboard extended coverage", () => {
     expect(screen.getByText("Останні шаблони")).toBeInTheDocument();
   });
 
+  // N-10 (аудит 2026-09-16): герой і список шаблонів не пропонують одне й
+  // те саме тренування двічі - коли герой уже показує конкретний шаблон,
+  // рядок цього шаблону зникає зі списку нижче.
+  it("hides the recently-used template row that the hero already recommends", () => {
+    vi.mocked(useExerciseCatalog).mockReturnValueOnce({
+      exercises: [
+        {
+          id: "bench",
+          name: { uk: "Жим лежачи", en: "Bench press" },
+          primaryGroup: "chest",
+          muscles: { primary: ["pec"], secondary: [] },
+        },
+      ],
+      musclesUk: { pec: "Груди" },
+    } as unknown as ReturnType<typeof useExerciseCatalog>);
+    vi.mocked(useWorkoutTemplates).mockReturnValueOnce({
+      templates: [
+        { id: "tpl1", name: "Грудні", exerciseIds: ["bench"] },
+        { id: "tpl2", name: "Спина", exerciseIds: ["bench"] },
+      ] as unknown as ReturnType<typeof useWorkoutTemplates>["templates"],
+      loaded: true,
+      recentlyUsed: [
+        { id: "tpl1", name: "Грудні", exerciseIds: ["bench"] },
+        { id: "tpl2", name: "Спина", exerciseIds: ["bench"] },
+      ] as unknown as ReturnType<typeof useWorkoutTemplates>["recentlyUsed"],
+      markTemplateUsed: vi.fn(),
+      addTemplate: vi.fn(),
+      updateTemplate: vi.fn(),
+      removeTemplate: vi.fn(),
+      restoreTemplate: vi.fn(),
+    } as unknown as ReturnType<typeof useWorkoutTemplates>);
+
+    render(<Dashboard {...defaultProps} />);
+
+    // `HeroCard` у цьому файлі замокано і власного `label` не рендерить, тож
+    // судити про дубль по кількості входжень назви тут не можна - тест
+    // дивиться на СПИСОК: рядок героя зник, сусідній лишився.
+    expect(screen.getByTestId("hero-card")).toHaveAttribute(
+      "data-hero-kind",
+      "today",
+    );
+    expect(screen.getByText("Нещодавно використані")).toBeInTheDocument();
+    expect(screen.queryByText("Грудні")).not.toBeInTheDocument();
+    expect(screen.getByText("Спина")).toBeInTheDocument();
+  });
+
+  it("drops the whole template card when the hero row was its only row", () => {
+    vi.mocked(useExerciseCatalog).mockReturnValueOnce({
+      exercises: [
+        {
+          id: "bench",
+          name: { uk: "Жим лежачи", en: "Bench press" },
+          primaryGroup: "chest",
+          muscles: { primary: ["pec"], secondary: [] },
+        },
+      ],
+      musclesUk: { pec: "Груди" },
+    } as unknown as ReturnType<typeof useExerciseCatalog>);
+    vi.mocked(useWorkoutTemplates).mockReturnValueOnce({
+      templates: [
+        { id: "tpl1", name: "Грудні", exerciseIds: ["bench"] },
+      ] as unknown as ReturnType<typeof useWorkoutTemplates>["templates"],
+      loaded: true,
+      recentlyUsed: [
+        { id: "tpl1", name: "Грудні", exerciseIds: ["bench"] },
+      ] as unknown as ReturnType<typeof useWorkoutTemplates>["recentlyUsed"],
+      markTemplateUsed: vi.fn(),
+      addTemplate: vi.fn(),
+      updateTemplate: vi.fn(),
+      removeTemplate: vi.fn(),
+      restoreTemplate: vi.fn(),
+    } as unknown as ReturnType<typeof useWorkoutTemplates>);
+
+    render(<Dashboard {...defaultProps} />);
+
+    expect(screen.queryByText("Нещодавно використані")).not.toBeInTheDocument();
+  });
+
   it("renders the RecentWorkoutsSection when completed workouts exist", () => {
     vi.mocked(useWorkouts).mockReturnValueOnce({
       workouts: [
@@ -462,7 +540,11 @@ describe("Dashboard extended coverage", () => {
     } as unknown as ReturnType<typeof useExerciseCatalog>);
     vi.mocked(useWorkoutTemplates).mockReturnValueOnce({
       templates: [
+        // Два шаблони навмисно: перший стає пропозицією героя, і після N-10
+        // його рядок зі списку зникає. Тест тут про аркуш підтвердження, а
+        // не про дедуп, тож клікати треба саме ДРУГИЙ рядок.
         { id: "tpl1", name: "Грудні", exerciseIds: ["bench"] },
+        { id: "tpl2", name: "Спина", exerciseIds: ["bench"] },
       ] as unknown as ReturnType<typeof useWorkoutTemplates>["templates"],
       loaded: true,
       recentlyUsed: [],
@@ -504,7 +586,7 @@ describe("Dashboard extended coverage", () => {
     render(<Dashboard {...defaultProps} />);
 
     // Click the template button — recovery conflict → plan confirm sheet opens
-    fireEvent.click(screen.getByText("Грудні"));
+    fireEvent.click(screen.getByText("Спина"));
 
     // Sheet title "Увага" should appear
     expect(screen.getByText("Увага")).toBeInTheDocument();
@@ -582,7 +664,11 @@ describe("Dashboard — navigation callbacks", () => {
     } as unknown as ReturnType<typeof useExerciseCatalog>);
     vi.mocked(useWorkoutTemplates).mockReturnValueOnce({
       templates: [
+        // Два шаблони навмисно: перший стає пропозицією героя, і після N-10
+        // його рядок зі списку зникає. Тест тут про аркуш підтвердження, а
+        // не про дедуп, тож клікати треба саме ДРУГИЙ рядок.
         { id: "tpl1", name: "Грудні", exerciseIds: ["bench"] },
+        { id: "tpl2", name: "Спина", exerciseIds: ["bench"] },
       ] as unknown as ReturnType<typeof useWorkoutTemplates>["templates"],
       loaded: true,
       recentlyUsed: [],
@@ -621,7 +707,7 @@ describe("Dashboard — navigation callbacks", () => {
     } as ReturnType<typeof useRecovery>);
 
     render(<Dashboard {...defaultProps} />);
-    fireEvent.click(screen.getByText("Грудні"));
+    fireEvent.click(screen.getByText("Спина"));
     // Sheet is now open
     expect(screen.getByText("Увага")).toBeInTheDocument();
     // Click Скасувати to dismiss
@@ -676,7 +762,10 @@ describe("Dashboard — Продовжити confirm flow", () => {
     } as unknown as ReturnType<typeof useExerciseCatalog>);
     vi.mocked(useWorkoutTemplates).mockReturnValueOnce({
       templates: [
+        // Другий шаблон - з тієї ж причини, що вище: перший забирає герой,
+        // і після N-10 його рядок зі списку зникає.
         { id: "leg-day", name: "Ноги", exerciseIds: ["squat"] },
+        { id: "arm-day", name: "Руки", exerciseIds: ["squat"] },
       ] as unknown as ReturnType<typeof useWorkoutTemplates>["templates"],
       loaded: true,
       recentlyUsed: [],
@@ -730,7 +819,7 @@ describe("Dashboard — Продовжити confirm flow", () => {
     setupRecoveryConflict();
 
     render(<Dashboard {...defaultProps} />);
-    fireEvent.click(screen.getByText("Ноги"));
+    fireEvent.click(screen.getByText("Руки"));
     expect(screen.getByText("Увага")).toBeInTheDocument();
 
     fireEvent.click(screen.getByText("Продовжити"));

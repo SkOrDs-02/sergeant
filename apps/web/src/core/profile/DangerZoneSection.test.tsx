@@ -31,13 +31,18 @@ vi.mock("react-router-dom", async () => {
   return { ...actual, useNavigate: () => navigateMock };
 });
 
-type DeleteUserResult =
-  { error: null } | { error: { code?: string; message?: string } };
-
-const deleteUserMock = vi.fn<(d: unknown) => Promise<DeleteUserResult>>();
+/**
+ * Шлях видалення переїхав із Better Auth (`POST /api/auth/delete-user`) на
+ * власний `DELETE /api/me`, бо лише він уміє 30-денне вікно на скасування
+ * (спека docs/work/specs/user-deletion-grace-window.md). Змінилась і форма
+ * помилки: api-client КИДАЄ `ApiError`, а не повертає `{ error }`.
+ */
+const deleteAccountMock = vi.fn<(d: unknown) => Promise<unknown>>();
 const signOutMock = vi.fn<() => Promise<void>>();
+vi.mock("@shared/api", () => ({
+  meApi: { deleteAccount: (data: unknown) => deleteAccountMock(data) },
+}));
 vi.mock("../auth/authClient", () => ({
-  deleteUser: (data: unknown) => deleteUserMock(data),
   signOut: () => signOutMock(),
 }));
 
@@ -58,11 +63,15 @@ function renderSection(
 
 function openDialog(): HTMLElement {
   fireEvent.click(screen.getByRole("button", { name: "Видалити акаунт" }));
-  return screen.getByRole("dialog", { name: "Видалити акаунт назавжди?" });
+  return screen.getByRole("dialog", { name: "Видалити акаунт?" });
 }
 
 beforeEach(() => {
-  deleteUserMock.mockReset().mockResolvedValue({ error: null });
+  deleteAccountMock.mockReset().mockResolvedValue({
+    ok: true,
+    deletedAt: "2026-09-20T10:00:00.000Z",
+    scheduledPurgeAt: "2026-10-20T10:00:00.000Z",
+  });
   signOutMock.mockReset().mockResolvedValue(undefined);
   navigateMock.mockReset();
 });
@@ -83,47 +92,59 @@ describe("DangerZoneSection", () => {
   });
 
   // §6 п.1, гейт підтвердження: не можна видалити акаунт без пароля.
-  it("gates the confirm button behind a non-empty password field", () => {
+  // Порожнє поле більше не блокує кнопку: акаунт лише з OAuth-входом
+  // пароля не має, і сервер робить цю розвилку сам
+  // (`modules/me/verifyAccountPassword.ts`).
+  it("keeps the confirm button usable with and without a password", () => {
     renderSection();
     const dialog = openDialog();
     const confirmBtn = within(dialog).getByRole("button", {
       name: "Видалити",
     });
-    expect(confirmBtn).toBeDisabled();
+    expect(confirmBtn).not.toBeDisabled();
 
-    fireEvent.change(within(dialog).getByLabelText("Пароль"), {
-      target: { value: "secret123" },
-    });
+    fireEvent.change(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      {
+        target: { value: "secret123" },
+      },
+    );
     expect(confirmBtn).not.toBeDisabled();
   });
 
   // §6 п.1, скасування: deleteUser НЕ викликається.
-  it("does NOT call deleteUser when the dialog is cancelled", () => {
+  it("does NOT call deleteAccount when the dialog is cancelled", () => {
     renderSection();
     const dialog = openDialog();
-    fireEvent.change(within(dialog).getByLabelText("Пароль"), {
-      target: { value: "secret123" },
-    });
+    fireEvent.change(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      {
+        target: { value: "secret123" },
+      },
+    );
     fireEvent.click(within(dialog).getByRole("button", { name: "Скасувати" }));
 
-    expect(deleteUserMock).not.toHaveBeenCalled();
+    expect(deleteAccountMock).not.toHaveBeenCalled();
     expect(screen.queryByRole("dialog")).not.toBeInTheDocument();
   });
 
-  // §6 п.1, щасливий шлях: підтвердження → deleteUser викликано → сесія
+  // §6 п.1, щасливий шлях: підтвердження → deleteAccount викликано → сесія
   // закривається (signOut + onLogout) → редирект на "/". Фактична
   // поведінка запінена дослівно з `DangerZoneSection.tsx:32-64`.
   it("happy path: confirming with a password deletes the account, signs out, tears down the session and redirects to /", async () => {
     const onLogout = vi.fn(async () => undefined);
     renderSection(onLogout);
     const dialog = openDialog();
-    fireEvent.change(within(dialog).getByLabelText("Пароль"), {
-      target: { value: "secret123" },
-    });
+    fireEvent.change(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      {
+        target: { value: "secret123" },
+      },
+    );
     fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
 
     await waitFor(() =>
-      expect(deleteUserMock).toHaveBeenCalledWith({ password: "secret123" }),
+      expect(deleteAccountMock).toHaveBeenCalledWith({ password: "secret123" }),
     );
     expect(await screen.findByText("Акаунт видалено")).toBeInTheDocument();
     await waitFor(() => expect(signOutMock).toHaveBeenCalledTimes(1));
@@ -138,22 +159,26 @@ describe("DangerZoneSection", () => {
   // діалог лишається відкритим (з уже введеним паролем), і сесія НЕ
   // закривається.
   it("server error: shows a human-readable error toast, keeps the dialog open, and does not sign out or redirect", async () => {
-    deleteUserMock.mockResolvedValueOnce({
-      error: { code: "INVALID_PASSWORD" },
+    deleteAccountMock.mockRejectedValueOnce({
+      status: 400,
+      body: { code: "INVALID_PASSWORD" },
     });
     const onLogout = vi.fn(async () => undefined);
     renderSection(onLogout);
     const dialog = openDialog();
-    fireEvent.change(within(dialog).getByLabelText("Пароль"), {
-      target: { value: "wrong-pass" },
-    });
+    fireEvent.change(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      {
+        target: { value: "wrong-pass" },
+      },
+    );
     fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
 
     expect(
       await screen.findByText("Неправильний поточний пароль."),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("dialog", { name: "Видалити акаунт назавжди?" }),
+      screen.getByRole("dialog", { name: "Видалити акаунт?" }),
     ).toBeInTheDocument();
     expect(signOutMock).not.toHaveBeenCalled();
     expect(onLogout).not.toHaveBeenCalled();
@@ -161,19 +186,22 @@ describe("DangerZoneSection", () => {
   });
 
   it("server error without a mappable code falls back to the generic delete-failure copy", async () => {
-    deleteUserMock.mockResolvedValueOnce({ error: {} });
+    deleteAccountMock.mockRejectedValueOnce({});
     renderSection();
     const dialog = openDialog();
-    fireEvent.change(within(dialog).getByLabelText("Пароль"), {
-      target: { value: "secret123" },
-    });
+    fireEvent.change(
+      within(dialog).getByLabelText("Пароль, якщо входиш паролем"),
+      {
+        target: { value: "secret123" },
+      },
+    );
     fireEvent.click(within(dialog).getByRole("button", { name: "Видалити" }));
 
     expect(
       await screen.findByText("Не вдалося видалити акаунт"),
     ).toBeInTheDocument();
     expect(
-      screen.getByRole("dialog", { name: "Видалити акаунт назавжди?" }),
+      screen.getByRole("dialog", { name: "Видалити акаунт?" }),
     ).toBeInTheDocument();
   });
 });

@@ -326,7 +326,17 @@ describe("createMeEndpoints", () => {
         mono: { connection: null, accounts: [], transactions: [] },
         billing: { subscriptions: [] },
         push: { webSubscriptions: [], devices: [] },
-        ai: { usageDaily: [], memories: [] },
+        finyk: { finyk_assets: [] },
+        fizruk: { fizruk_workouts: [] },
+        nutrition: { nutrition_meals: [] },
+        routine: { routine_habits: [{ id: "h-1", name: "Вода" }] },
+        excluded: [
+          {
+            group: "aiMemories",
+            tables: ["ai_memories"],
+            reason: "Памʼять асистента.",
+          },
+        ],
       },
     };
     mockFetchOnce(payload);
@@ -358,6 +368,46 @@ describe("createMeEndpoints", () => {
     const [url, init] = firstCall(fetchMock);
     expect(String(url)).toMatch(/\/api(?:\/v1)?\/ai-memory$/);
     expect((init as RequestInit).method).toBe("DELETE");
+  });
+
+  // Hard Rule #3 — контрактна трійка для `/api/me/export`. Сервер віддає
+  // секції чотирьох модулів (`dataRights.ts`), схема з `@sergeant/shared`
+  // їх вимагає, а цей тест ловить сервер, який відкотився до старої форми.
+  it("GET /api/me/export відхиляє відповідь без секцій модулів", async () => {
+    // Рівно та форма, яку сервер віддавав до 2026-09-20: `moduleData: []`
+    // і жодного запису людини з модулів. Мовчки прийняти її означало б
+    // віддати людині неповний файл із виглядом повного.
+    mockFetchOnce({
+      generatedAt: "2026-06-06T10:10:00.000Z",
+      user: {
+        id: "user-123",
+        email: "test@example.com",
+        name: null,
+        image: null,
+        emailVerified: true,
+        createdAt: "2026-01-15T08:30:00.000Z",
+      },
+      preferences: {
+        analytics: true,
+        aiMemory: true,
+        pushNotifications: false,
+        sergeantNudges: false,
+        healthDataConsent: false,
+        activeModules: null,
+        hubPrefs: null,
+        updatedAt: null,
+      },
+      data: {
+        moduleData: [],
+        mono: { connection: null, accounts: [], transactions: [] },
+        billing: { subscriptions: [] },
+        push: { webSubscriptions: [], devices: [] },
+        ai: { usageDaily: [], memories: [] },
+      },
+    });
+    const me = createMeEndpoints(createHttpClient());
+
+    await expect(me.exportData()).rejects.toThrow();
   });
 
   // Hard Rule #3 — контрактна трійка для `/api/ai-memory/list` і

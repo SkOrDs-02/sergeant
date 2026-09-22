@@ -17,6 +17,7 @@ export * from "./types";
 
 // Shared, DOM-free constants (storage keys, etc.)
 export * from "./lib/storageKeys";
+export * from "./lib/correlationStandard";
 export * from "./lib/nutritionPantryMode";
 
 // Stable per-install origin-device-id resolver used by the web and
@@ -88,6 +89,7 @@ export * from "./lib/activeModules";
 
 // Defaults shared by web/mobile undo-toast helpers.
 export * from "./lib/undoToast";
+export * from "./lib/accountDeletion";
 
 // Onboarding gate helpers (first-launch detection, done flag, splash taxonomy).
 export * from "./lib/onboarding";

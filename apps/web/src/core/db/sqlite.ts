@@ -326,7 +326,9 @@ async function initSqliteDb(
   // вантажиться. Фолбек тут тихий і повний — якщо воркер не піднявся,
   // застосунок працює рівно як до стадії 1.
   // Персистентний стор відкриває ЛИШЕ лідер — див. `dbOwnership.ts`. Пул
-  // замикає каталог цілком, тож друга вкладка все одно його не дістане; без
+  // замикає каталог цілком, тож друга вкладка все одно його не дістане: ретраї
+  // нижче виграють гонку з воркером ПОПЕРЕДНЬОГО завантаження цієї ж сторінки,
+  // але не з сусідньою вкладкою, яка тримає пул скільки завгодно довго. Без
   // цієї гілки вона з'їжджала б у власне сховище поруч із живою базою першої
   // і показувала б інший набір даних на тому самому акаунті.
   const owner = await claimDbOwnership();
@@ -402,88 +404,125 @@ async function initSqliteDb(
  * спрацьовує на будь-якій невдачі воркера.
  */
 async function openWorkerBackedDb(userKey: string): Promise<OpenedDb | null> {
-  try {
-    const { openSqliteInWorker } = await import("./sqliteWorkerClient.js");
-    const handoff = await import("./kvvfsHandoff.js");
-    const dbName = `sergeant-${userKey}.db`;
-    // Стадія 2: перелиття старої бази. Байти читаються ЛИШЕ доки немає
-    // позначки — після переїзду цей шлях більше не виконується і важкий
-    // модуль на головний потік не потрапляє.
-    const needsHandoff = !handoff.isHandoffDone(userKey);
-    const importBytes = needsHandoff
-      ? await handoff.readKvvfsSnapshotBytes()
-      : null;
-    const conn = await openSqliteInWorker(dbName, {
-      directory: SAH_POOL_DIRECTORY,
-      initialCapacity: SAH_POOL_INITIAL_CAPACITY,
-      minFreeSlots: SAH_POOL_MIN_FREE_SLOTS,
-      importBytes,
-    });
-    if (needsHandoff) {
-      // Підчищаємо ЗАВЖДИ, а не лише після свіжого імпорту: попередня
-      // спроба могла впасти саме між імпортом і підчищанням, і тоді файл
-      // уже існує, але містить чужі партиції. На чистій базі це no-op.
-      const prunedTables = await handoff.pruneForeignPartitionRows(
-        conn,
-        activeUserId,
-      );
-      // Позначка ставиться ОСТАННЬОЮ. Доки її немає, перелиття вважається
-      // таким, що не відбулось, і наступний запуск доробить його.
-      handoff.markHandoffDone(userKey);
+  for (let attempt = 0; ; attempt++) {
+    try {
+      return await attemptWorkerBackedDb(userKey);
+    } catch (err) {
+      const delayMs = OPFS_LOCK_RETRY_DELAYS_MS[attempt];
+      if (delayMs !== undefined && isOpfsLockContention(err)) {
+        addSentryBreadcrumb({
+          category: "storage",
+          level: "info",
+          message: "sqlite: opfs pool busy, retrying",
+          data: { attempt: attempt + 1, delayMs },
+        });
+        await new Promise((resolve) => setTimeout(resolve, delayMs));
+        continue;
+      }
+      if (isChunkLoadError(err)) reloadOnceForChunkError();
+      // Ретраї вичерпано, а пул усе ще зайнятий — отже тримає його не наш
+      // попередній воркер, а щось довговічніше. Причина доїжджає до аркуша
+      // «Синхронізація» окремим рядком: її людина усуває сама.
+      const busy = isOpfsLockContention(err);
+      if (busy) noteSqliteVfsFallbackReason("pool-busy");
       addSentryBreadcrumb({
         category: "storage",
-        level: "info",
-        message: "sqlite: kvvfs handoff completed",
-        data: { imported: conn.imported, prunedTables },
+        level: "warning",
+        message: "sqlite: worker backend unavailable, falling back",
+        data: {
+          error: err instanceof Error ? err.message : String(err),
+          poolBusy: busy,
+        },
       });
+      return null;
     }
-    lastWorkerDiagnostics = await conn.diagnostics();
-    addSentryBreadcrumb({
-      category: "storage",
-      level: "info",
-      message: "sqlite: opened in worker",
-      data: { grewBy: conn.grewBy, ...lastWorkerDiagnostics },
-    });
-    return {
-      conn,
-      vfs: "opfs-sahpool",
-      dbName,
-      // Файл на акаунт — видаляється цілком, як і в головнопотоковій
-      // OPFS-гілці. `userId` тут не потрібен: чужих рядків у файлі немає.
-      wipe: () => conn.wipe(),
-    };
-  } catch (err) {
-    if (isChunkLoadError(err)) reloadOnceForChunkError();
-    const busy = isPoolHeldElsewhere(err);
-    if (busy) noteSqliteVfsFallbackReason("pool-busy");
-    addSentryBreadcrumb({
-      category: "storage",
-      level: "warning",
-      message: "sqlite: worker backend unavailable, falling back",
-      data: {
-        error: err instanceof Error ? err.message : String(err),
-        poolBusy: busy,
-      },
-    });
-    return null;
   }
 }
 
 /**
- * Чи впав пул саме тому, що його каталог тримає інша вкладка.
+ * Паузи між спробами взяти SAH-пул. Дві, і обидві короткі.
  *
- * Пул бере sync-хендли на ВЕСЬ каталог одразу, тож другий претендент
- * дістає `NoModificationAllowedError` (Chromium) або той самий текст про
- * зайнятий access-handle. Відрізняти це від «пристрій не вміє OPFS»
- * обовʼязково: перше людина усуває сама, друге — ні.
+ * AI-CONTEXT: пул захоплює `FileSystemSyncAccessHandle` на СВОЇ файли в
+ * `SAH_POOL_DIRECTORY`, а не на одну базу, тож два власники пулу в одному
+ * origin виключають один одного незалежно від імені бази. Найчастіший
+ * власник-конкурент — воркер ПОПЕРЕДНЬОГО завантаження цієї ж сторінки:
+ * браузер звільняє його хендли, лише коли добиває потік, і нове
+ * завантаження встигає постукати раніше. Прод 2026-09-21 (Chrome 151,
+ * Android): `createSyncAccessHandle` кидав «Access Handles cannot be
+ * created…» через 70 мс після старту сторінки, і через одну-єдину
+ * спробу вся сесія лишалась на kvvfs зі стелею ~5 МБ.
+ *
+ * Чому саме перечекати, а не закривати пул на `pagehide`: закриття їде у
+ * воркер повідомленням, тобто асинхронно, і сторінка, яку вивантажують,
+ * відповіді не дочекається. Гонку виграє той, хто готовий почекати.
  */
-function isPoolHeldElsewhere(err: unknown): boolean {
-  const name = err instanceof Error ? err.name : "";
-  const text = err instanceof Error ? err.message : String(err);
-  return (
-    name === "NoModificationAllowedError" ||
-    /another open Access Handle|NoModificationAllowedError/i.test(text)
+const OPFS_LOCK_RETRY_DELAYS_MS = [150, 400] as const;
+
+/**
+ * Чи це саме «пул зайнятий», а не чесна відмова середовища.
+ *
+ * Розрізняти обов'язково: на пристрої без OPFS (`Missing required OPFS
+ * APIs`) ретраї лише додали б півсекунди до кожного холодного старту, так
+ * нічого й не змінивши.
+ */
+function isOpfsLockContention(err: unknown): boolean {
+  if (!(err instanceof Error)) return false;
+  if (err.name === "NoModificationAllowedError") return true;
+  return /createSyncAccessHandle|Access Handles cannot be created/i.test(
+    err.message,
   );
+}
+
+async function attemptWorkerBackedDb(userKey: string): Promise<OpenedDb> {
+  const { openSqliteInWorker } = await import("./sqliteWorkerClient.js");
+  const handoff = await import("./kvvfsHandoff.js");
+  const dbName = `sergeant-${userKey}.db`;
+  // Стадія 2: перелиття старої бази. Байти читаються ЛИШЕ доки немає
+  // позначки — після переїзду цей шлях більше не виконується і важкий
+  // модуль на головний потік не потрапляє.
+  const needsHandoff = !handoff.isHandoffDone(userKey);
+  const importBytes = needsHandoff
+    ? await handoff.readKvvfsSnapshotBytes()
+    : null;
+  const conn = await openSqliteInWorker(dbName, {
+    directory: SAH_POOL_DIRECTORY,
+    initialCapacity: SAH_POOL_INITIAL_CAPACITY,
+    minFreeSlots: SAH_POOL_MIN_FREE_SLOTS,
+    importBytes,
+  });
+  if (needsHandoff) {
+    // Підчищаємо ЗАВЖДИ, а не лише після свіжого імпорту: попередня
+    // спроба могла впасти саме між імпортом і підчищанням, і тоді файл
+    // уже існує, але містить чужі партиції. На чистій базі це no-op.
+    const prunedTables = await handoff.pruneForeignPartitionRows(
+      conn,
+      activeUserId,
+    );
+    // Позначка ставиться ОСТАННЬОЮ. Доки її немає, перелиття вважається
+    // таким, що не відбулось, і наступний запуск доробить його.
+    handoff.markHandoffDone(userKey);
+    addSentryBreadcrumb({
+      category: "storage",
+      level: "info",
+      message: "sqlite: kvvfs handoff completed",
+      data: { imported: conn.imported, prunedTables },
+    });
+  }
+  lastWorkerDiagnostics = await conn.diagnostics();
+  addSentryBreadcrumb({
+    category: "storage",
+    level: "info",
+    message: "sqlite: opened in worker",
+    data: { grewBy: conn.grewBy, ...lastWorkerDiagnostics },
+  });
+  return {
+    conn,
+    vfs: "opfs-sahpool",
+    dbName,
+    // Файл на акаунт — видаляється цілком, як і в головнопотоковій
+    // OPFS-гілці. `userId` тут не потрібен: чужих рядків у файлі немає.
+    wipe: () => conn.wipe(),
+  };
 }
 
 /**
@@ -798,13 +837,10 @@ async function openDb(
   // сховище навмисно не чистять (див. `kvvfsHandoff.ts`), тож воно живе на
   // пристрої як знімок бази на момент переїзду. Відкрити його після
   // позначки означає показати людині старі дані замість її власних і
-  // прийняти нові записи в мертвий стор, звідки їх ніхто не забере. Саме
-  // так помирали дані анонімної сесії: OPFS-пул бере хендли на ВЕСЬ
-  // каталог, тому друга вкладка того самого профілю пулу не дістає, падала
-  // сюди — і тихо відкривала торішній знімок поруч із живою базою першої
-  // вкладки. Заміряно на Xiaomi Pad 6 2026-09-22: одна вкладка — OPFS і
-  // нуль росту `kvvfs-local-*`; щойно відкривається друга — +1 ключ і
-  // +4.4 kB у тому самому localStorage.
+  // прийняти нові записи в мертвий стор, звідки їх ніхто не забере.
+  // Заміряно на Xiaomi Pad 6 2026-09-22: одна вкладка — OPFS і нуль росту
+  // `kvvfs-local-*`; щойно відкривається друга — +1 ключ і +4.4 kB у тому
+  // самому localStorage.
   if (persistent && hasLocalStorage() && !isHandoffDone(userKey)) {
     try {
       const conn = makeLocalConnection(new sqlite3.oo1.JsStorageDb("local"));

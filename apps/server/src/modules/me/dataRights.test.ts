@@ -1,14 +1,20 @@
 import { describe, expect, it, vi } from "vitest";
 import type { Pool } from "pg";
 import {
+  ACCOUNT_DELETION_GRACE_DAYS,
   MeDeleteResponseSchema,
+  MeDeletionStatusResponseSchema,
   MeExportResponseSchema,
   UserPreferencesSchema,
 } from "@sergeant/shared";
 import {
+  MODULE_EXPORT_TABLES,
   buildMeExport,
-  deleteUserData,
+  getAccountDeletionStatus,
   getUserPreferences,
+  purgeUserData,
+  requestAccountDeletion,
+  restoreAccount,
   upsertUserPreferences,
 } from "./dataRights.js";
 
@@ -272,67 +278,88 @@ describe("buildMeExport — contract fixture (Hard Rule #3)", () => {
       mono: { connection: null, accounts: [], transactions: [] },
       billing: { subscriptions: [] },
       push: { webSubscriptions: [], devices: [] },
-      ai: { usageDaily: [], memories: [] },
     });
+    expect(Object.keys(result.data)).toEqual(
+      expect.arrayContaining(["finyk", "fizruk", "nutrition", "routine"]),
+    );
   });
 
-  it("ai.usageDaily: est_cost_usd — число, usage_day — YYYY-MM-DD", async () => {
-    // Форма рядка рівно така, як її віддає node-pg: NUMERIC (OID 1700) не
-    // покритий глобальним int8-парсером, тож приїжджає РЯДКОМ, а
-    // `usage_day` після `::text` у SELECT-і — уже готовий день-ключ.
-    const usageRow = {
-      usage_day: "2026-09-16",
-      bucket: "anthropic:claude-3-5-haiku",
-      request_count: 3,
-      est_cost_usd: "0.001350",
-      deleted_at: null,
-    };
+  it("кожна модульна секція наповнюється зі своїх таблиць", async () => {
+    // Мок віддає рядок лише на один SELECT — так видно, що секція справді
+    // читає ту таблицю, а не отримує спільну заглушку.
     const db = {
       query: vi.fn().mockImplementation((sql: string) => {
-        if (typeof sql === "string" && sql.includes("FROM ai_usage_daily")) {
-          return Promise.resolve({ rows: [usageRow] });
+        const text = String(sql);
+        if (text.includes("FROM routine_habits")) {
+          return Promise.resolve({ rows: [{ id: "h-1", name: "Вода" }] });
+        }
+        if (text.includes("FROM fizruk_workouts")) {
+          return Promise.resolve({ rows: [{ id: "w-1" }, { id: "w-2" }] });
         }
         return Promise.resolve({ rows: [] });
       }),
     };
 
     const result = await buildMeExport(db, ME_USER);
-    const row = result.data.ai.usageDaily[0] as Record<string, unknown>;
 
-    // Обидва числові поля — числа. Раніше сусіди в одному обʼєкті мали
-    // різні типи: `request_count` число, `est_cost_usd` рядок.
-    expect(typeof row["request_count"]).toBe("number");
-    expect(row["est_cost_usd"]).toBe(0.00135);
-    expect(typeof row["est_cost_usd"]).toBe("number");
+    expect(result.data.routine["routine_habits"]).toEqual([
+      { id: "h-1", name: "Вода" },
+    ]);
+    expect(result.data.fizruk["fizruk_workouts"]).toHaveLength(2);
+    // Решта таблиць присутні ключами з порожнім масивом: споживач бачить,
+    // що таблиця існує і в ній нічого немає.
+    expect(result.data.nutrition["nutrition_meals"]).toEqual([]);
+    expect(() => MeExportResponseSchema.parse(result)).not.toThrow();
+  });
 
-    // День лишається днем, а не миттю в чужій таймзоні.
-    expect(row["usage_day"]).toBe("2026-09-16");
-    expect(String(row["usage_day"])).not.toContain("T");
+  it("усі живі таблиці чотирьох модулів є в експорті", async () => {
+    const db = mockDb([]);
+    const result = await buildMeExport(db, ME_USER);
 
-    // SELECT мусить брати день уже текстом — інакше node-pg віддасть `Date`
-    // і коерсія на віддачі знову гадатиме про таймзону.
-    const usageSql = db.query.mock.calls
+    for (const [moduleId, tables] of Object.entries(MODULE_EXPORT_TABLES)) {
+      const section = result.data[
+        moduleId as keyof typeof MODULE_EXPORT_TABLES
+      ] as Record<string, unknown>;
+      for (const table of tables) {
+        expect(section).toHaveProperty(table);
+      }
+    }
+    // Таблиця без власного `user_id` — через join на `receipts`.
+    expect(result.data.finyk).toHaveProperty("finyk_tx_receipt_links");
+    // Мертві таблиці віджимань (міграції 139 і 140) не воскресають.
+    expect(result.data.routine).not.toHaveProperty("routine_pushups");
+    expect(result.data.fizruk).not.toHaveProperty("fizruk_pushups");
+  });
+
+  it("жодна вибірка даних людини не обрізана LIMIT-ом", async () => {
+    // Головна регресія, заради якої фіча існує: `mono_transaction` мала
+    // `LIMIT 5000` без пагінації і без ознаки обрізання в payload, тож
+    // людина з довгою історією забирала неповний файл і не знала цього.
+    const db = mockDb([]);
+    await buildMeExport(db, ME_USER);
+
+    const limited = db.query.mock.calls
       .map((call: unknown[]) => String(call[0]))
-      .find((sql: string) => sql.includes("FROM ai_usage_daily"));
-    expect(usageSql).toContain("usage_day::text");
+      .filter((sql: string) => /\bLIMIT\b/i.test(sql));
+    expect(limited).toEqual([]);
   });
 
-  it("ai.usageDaily: NULL у est_cost_usd лишається NULL, а не 0", async () => {
-    const db = {
-      query: vi.fn().mockImplementation((sql: string) => {
-        if (typeof sql === "string" && sql.includes("FROM ai_usage_daily")) {
-          return Promise.resolve({
-            rows: [{ usage_day: "2026-09-16", est_cost_usd: null }],
-          });
-        }
-        return Promise.resolve({ rows: [] });
-      }),
-    };
+  it("excluded перелічує рівно чотири групи з причиною кожної", async () => {
+    const db = mockDb([]);
     const result = await buildMeExport(db, ME_USER);
-    const row = result.data.ai.usageDaily[0] as Record<string, unknown>;
-    // `Number(null)` це 0 — саме та тиха підміна, через яку експорт
-    // стверджував би витрату там, де її просто не записано.
-    expect(row["est_cost_usd"]).toBeNull();
+
+    expect(result.data.excluded.map((item) => item.group)).toEqual([
+      "syncLog",
+      "nutritionBackups",
+      "aiMemories",
+      "aiUsage",
+    ]);
+    for (const item of result.data.excluded) {
+      expect(item.reason.length).toBeGreaterThan(0);
+      expect(item.tables.length).toBeGreaterThan(0);
+    }
+    // Виключене не має протікати в секції модулів.
+    expect(result.data.nutrition).not.toHaveProperty("nutrition_backups");
   });
 
   it("mono.connection is null when no connection row", async () => {
@@ -364,25 +391,25 @@ describe("buildMeExport — contract fixture (Hard Rule #3)", () => {
   });
 });
 
-// ─── deleteUserData ───────────────────────────────────────────────────────────
+// ─── purgeUserData (незворотна частина; кличе добивач) ─────────────────────────────────────────────────────────
 
-describe("deleteUserData — contract fixture (Hard Rule #3)", () => {
+describe("purgeUserData — contract fixture (Hard Rule #3)", () => {
   it("returns { ok: true, deletedAt: <ISO string> }", async () => {
     const pool = mockPoolWithTransaction();
-    const result = await deleteUserData(pool, "user-1");
+    const result = await purgeUserData(pool, "user-1");
     expect(result.ok).toBe(true);
     expect(result.deletedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
   it("output passes MeDeleteResponseSchema — contract triplet anchor", async () => {
     const pool = mockPoolWithTransaction();
-    const result = await deleteUserData(pool, "user-1");
+    const result = await purgeUserData(pool, "user-1");
     expect(() => MeDeleteResponseSchema.parse(result)).not.toThrow();
   });
 
   it("runs BEGIN/COMMIT transaction and releases the client", async () => {
     const pool = mockPoolWithTransaction();
-    await deleteUserData(pool, "user-1");
+    await purgeUserData(pool, "user-1");
 
     const client = await (pool.connect as ReturnType<typeof vi.fn>).mock
       .results[0]?.value;
@@ -407,7 +434,7 @@ describe("deleteUserData — contract fixture (Hard Rule #3)", () => {
       connect: vi.fn().mockResolvedValue(client),
     } as unknown as Pool;
 
-    await expect(deleteUserData(pool, "user-1")).rejects.toThrow("db error");
+    await expect(purgeUserData(pool, "user-1")).rejects.toThrow("db error");
 
     const queryArgs = (client.query as ReturnType<typeof vi.fn>).mock.calls.map(
       (c: unknown[]) => c[0],
@@ -432,7 +459,7 @@ describe("deleteUserData — contract fixture (Hard Rule #3)", () => {
       connect: vi.fn().mockResolvedValue(client),
     } as unknown as Pool;
 
-    const result = await deleteUserData(pool, "user-1");
+    const result = await purgeUserData(pool, "user-1");
 
     expect(result.ok).toBe(true);
     // Транзакція видалення все одно виконалась (BEGIN … COMMIT через client).
@@ -448,7 +475,7 @@ describe("deleteUserData — contract fixture (Hard Rule #3)", () => {
   // an explicit purge is required (ADR-0016 § ADR-6.2).
   it("purges ai_usage_daily rows for the deleted user's subject_key", async () => {
     const pool = mockPoolWithTransaction();
-    await deleteUserData(pool, "user-1");
+    await purgeUserData(pool, "user-1");
 
     const client = await (pool.connect as ReturnType<typeof vi.fn>).mock
       .results[0]?.value;
@@ -470,7 +497,7 @@ describe("deleteUserData — contract fixture (Hard Rule #3)", () => {
   // no-op write.
   it("does NOT soft-delete ai_memories separately (hard-delete cascade only)", async () => {
     const pool = mockPoolWithTransaction();
-    await deleteUserData(pool, "user-1");
+    await purgeUserData(pool, "user-1");
 
     const client = await (pool.connect as ReturnType<typeof vi.fn>).mock
       .results[0]?.value;
@@ -504,7 +531,7 @@ describe("deleteUserData — contract fixture (Hard Rule #3)", () => {
       connect: vi.fn().mockResolvedValue(client),
     } as unknown as Pool;
 
-    await deleteUserData(pool, "user-1");
+    await purgeUserData(pool, "user-1");
 
     const calls = (client.query as ReturnType<typeof vi.fn>).mock.calls;
     const enqueueCalls = calls.filter(
@@ -553,7 +580,7 @@ describe("deleteUserData — contract fixture (Hard Rule #3)", () => {
       connect: vi.fn().mockResolvedValue(client),
     } as unknown as Pool;
 
-    await deleteUserData(pool, "user-1");
+    await purgeUserData(pool, "user-1");
 
     const calls = (client.query as ReturnType<typeof vi.fn>).mock.calls;
     const enqueueCalls = calls.filter(
@@ -574,7 +601,7 @@ describe("deleteUserData — contract fixture (Hard Rule #3)", () => {
     // `{ rows: [] }` — including the SELECT email snapshot, simulating a
     // second delete() call after the user row is already removed.
     const pool = mockPoolWithTransaction();
-    await deleteUserData(pool, "user-1");
+    await purgeUserData(pool, "user-1");
 
     const client = await (pool.connect as ReturnType<typeof vi.fn>).mock
       .results[0]?.value;
@@ -585,5 +612,188 @@ describe("deleteUserData — contract fixture (Hard Rule #3)", () => {
         (c[0] as string).includes("INSERT INTO gdpr_cleanup_queue"),
     );
     expect(enqueueCall).toBeUndefined();
+  });
+});
+
+// ─── requestAccountDeletion (вікно на скасування) ─────────────────────────────
+
+/**
+ * Pool-мок, у якому `UPDATE "user" … RETURNING deletion_requested_at`
+ * повертає задану мітку, а решта запитів порожні. Саме ця форма відрізняє
+ * «щойно позначили» від «уже було позначено».
+ */
+function mockPoolMarking(markedAt: Date | null): {
+  pool: Pool;
+  client: {
+    query: ReturnType<typeof vi.fn>;
+    release: ReturnType<typeof vi.fn>;
+  };
+} {
+  const client = {
+    query: vi.fn().mockImplementation((sql: string) => {
+      if (
+        typeof sql === "string" &&
+        sql.includes("SET deletion_requested_at = NOW()")
+      ) {
+        return Promise.resolve({
+          rows: markedAt ? [{ deletion_requested_at: markedAt }] : [],
+        });
+      }
+      if (
+        typeof sql === "string" &&
+        sql.includes("SELECT deletion_requested_at")
+      ) {
+        return Promise.resolve({
+          rows: markedAt ? [{ deletion_requested_at: markedAt }] : [],
+        });
+      }
+      return Promise.resolve({ rows: [] });
+    }),
+    release: vi.fn(),
+  };
+  const pool = {
+    query: vi.fn().mockResolvedValue({ rows: [] }),
+    connect: vi.fn().mockResolvedValue(client),
+  } as unknown as Pool;
+  return { pool, client };
+}
+
+function sqlCalls(client: { query: ReturnType<typeof vi.fn> }): string[] {
+  return client.query.mock.calls
+    .map((c: unknown[]) => c[0])
+    .filter((sql): sql is string => typeof sql === "string");
+}
+
+describe("requestAccountDeletion — позначає, а не видаляє", () => {
+  it('ставить мітку і НЕ виконує DELETE FROM "user"', async () => {
+    const markedAt = new Date("2026-09-20T10:00:00.000Z");
+    const { pool, client } = mockPoolMarking(markedAt);
+
+    await requestAccountDeletion(pool, "user-1");
+
+    const sql = sqlCalls(client);
+    expect(
+      sql.some((q) => q.includes("SET deletion_requested_at = NOW()")),
+    ).toBe(true);
+    expect(sql.some((q) => q.includes('DELETE FROM "user"'))).toBe(false);
+  });
+
+  it("гасить усі сесії користувача", async () => {
+    const { pool, client } = mockPoolMarking(new Date());
+
+    await requestAccountDeletion(pool, "user-1");
+
+    const killed = client.query.mock.calls.find(
+      (c: unknown[]) =>
+        typeof c[0] === "string" &&
+        (c[0] as string).includes("DELETE FROM session"),
+    );
+    expect(killed).toBeDefined();
+    expect(killed![1]).toEqual(["user-1"]);
+  });
+
+  it("не наповнює чергу очищення зовнішніх сервісів (це робота добивача)", async () => {
+    const { pool, client } = mockPoolMarking(new Date());
+
+    await requestAccountDeletion(pool, "user-1");
+
+    expect(
+      sqlCalls(client).some((q) =>
+        q.includes("INSERT INTO gdpr_cleanup_queue"),
+      ),
+    ).toBe(false);
+  });
+
+  it("повертає дедлайн рівно через ACCOUNT_DELETION_GRACE_DAYS днів", async () => {
+    const markedAt = new Date("2026-09-20T10:00:00.000Z");
+    const { pool } = mockPoolMarking(markedAt);
+
+    const result = await requestAccountDeletion(pool, "user-1");
+
+    expect(() => MeDeleteResponseSchema.parse(result)).not.toThrow();
+    const deltaDays =
+      (new Date(result.scheduledPurgeAt).getTime() -
+        new Date(result.deletedAt).getTime()) /
+      (24 * 60 * 60 * 1000);
+    expect(deltaDays).toBe(ACCOUNT_DELETION_GRACE_DAYS);
+  });
+
+  it("повторний виклик не зсуває дату вперед, а віддає першу мітку", async () => {
+    const firstMark = new Date("2026-09-01T08:00:00.000Z");
+    // `UPDATE … WHERE deletion_requested_at IS NULL` не зачепив жодного
+    // рядка (RETURNING порожній) — функція мусить дочитати наявну мітку.
+    const client = {
+      query: vi.fn().mockImplementation((sql: string) => {
+        if (
+          typeof sql === "string" &&
+          sql.includes("SET deletion_requested_at = NOW()")
+        ) {
+          return Promise.resolve({ rows: [] });
+        }
+        if (
+          typeof sql === "string" &&
+          sql.includes("SELECT deletion_requested_at")
+        ) {
+          return Promise.resolve({
+            rows: [{ deletion_requested_at: firstMark }],
+          });
+        }
+        return Promise.resolve({ rows: [] });
+      }),
+      release: vi.fn(),
+    };
+    const pool = {
+      query: vi.fn().mockResolvedValue({ rows: [] }),
+      connect: vi.fn().mockResolvedValue(client),
+    } as unknown as Pool;
+
+    const result = await requestAccountDeletion(pool, "user-1");
+
+    expect(result.deletedAt).toBe(firstMark.toISOString());
+  });
+});
+
+describe("restoreAccount", () => {
+  it("скидає мітку і повідомляє про успіх", async () => {
+    const pool = {
+      query: vi.fn().mockResolvedValue({ rowCount: 1, rows: [] }),
+    } as unknown as Pool;
+
+    await expect(restoreAccount(pool, "user-1")).resolves.toBe(true);
+  });
+
+  it("повертає false, коли активного прохання не було", async () => {
+    const pool = {
+      query: vi.fn().mockResolvedValue({ rowCount: 0, rows: [] }),
+    } as unknown as Pool;
+
+    await expect(restoreAccount(pool, "user-1")).resolves.toBe(false);
+  });
+});
+
+describe("getAccountDeletionStatus", () => {
+  it("активний акаунт — pending: false і жодних дат", async () => {
+    const status = await getAccountDeletionStatus(
+      mockDb([{ deletion_requested_at: null }]),
+      "user-1",
+    );
+    expect(status).toEqual({ pending: false });
+    expect(() => MeDeletionStatusResponseSchema.parse(status)).not.toThrow();
+  });
+
+  it("позначений акаунт — pending: true з обома датами", async () => {
+    const markedAt = new Date("2026-09-20T10:00:00.000Z");
+    const status = await getAccountDeletionStatus(
+      mockDb([{ deletion_requested_at: markedAt }]),
+      "user-1",
+    );
+    expect(status.pending).toBe(true);
+    expect(() => MeDeletionStatusResponseSchema.parse(status)).not.toThrow();
+    if (status.pending) {
+      expect(status.requestedAt).toBe(markedAt.toISOString());
+      expect(new Date(status.scheduledPurgeAt).getTime()).toBe(
+        markedAt.getTime() + ACCOUNT_DELETION_GRACE_DAYS * 24 * 60 * 60 * 1000,
+      );
+    }
   });
 });

@@ -107,6 +107,13 @@ showcase, story і відповідну частину `design-system/`.
 | Menus          | **stable**       | `#menus`       | `DropdownMenu` / `CommandPalette` keyboard contract                                                   |
 | Proposals ×3   | **experimental** | `#proposals-*` | пропозиції UI / UX / visual — не контракт                                                             |
 
+`#colors` показує пʼять родин, не чотири: семантичні поверхні/текст,
+brand & status, `-strong` тир і окрему пʼяту - **`categoryColors`**
+(кольори категорій витрат Фініка, 18 ключів, свідомо розведені по hue з
+модульними акцентами). Деталі й таблиця - [`design-system/01-tokens-colors.md`
+§ 2.4](./design-system/01-tokens-colors.md#24-статуси) і
+[`DESIGN.md`](../../../DESIGN.md) (AUTOGEN-блок `palette`).
+
 ## Enforcement status
 
 Після ADR-0081 частина конвенцій знову має **механічний гейт**:
@@ -114,8 +121,18 @@ showcase, story і відповідну частину `design-system/`.
 - [`scripts/check-design-conventions.mjs`](../../../scripts/check-design-conventions.mjs)
   (`pnpm lint:design-conventions`, у ланцюжку `pnpm lint` і CI `check`): no raw
   hex у className, `focus-visible:` замість `focus:`, 12px floor (`text-2xs` і
-  `text-[<12px]` лише з allowlist у самому скрипті). Скоуп — `apps/web/src`,
-  `apps/landing/src`, `apps/mobile-shell/src`.
+  `text-[<12px]` лише з allowlist у самому скрипті) і невідоме імʼя кольору з
+  нашої родини токенів. Скоуп — `apps/web/src`, `apps/landing/src`,
+  `apps/mobile-shell/src`.
+  Останнє правило стоїть окремо від решти: воно не про смак, а про клас, який
+  Tailwind не згенерує. Джерело істини — сам пресет (`colors`, `textColor`,
+  `boxShadow`, `backgroundImage`) плюс ручні утиліти з
+  `apps/web/src/styles/*.css`, тож нове імʼя стає валідним автоматично.
+  Перевіряються ТІЛЬКИ наші родини, тому `text-sm`, `bg-cover` і стандартні
+  палітри правило не зачіпає. Введення (2026-09-20) одразу знайшло сім місць
+  із `bg-panel-hi` при токені `panelHi`: CSS-змінна зветься `--c-panel-hi`, а
+  Tailwind-ключ `panelHi`, і плутанина між ними лишала елемент без фону мовчки.
+  `apps/landing/src` у allowlist — у нього власний `@theme`, не цей пресет.
 - [`scripts/check-ui-canon-ratchet.mjs`](../../../scripts/check-ui-canon-ratchet.mjs)
   (`pnpm lint:ui-canon`, бюджет `.tech-debt/ui-canon-budget.json`): легасі-кнопки
   0, неканонічна непрозорість `ring-focus` 0, числові розміри `<Icon>` 0,
