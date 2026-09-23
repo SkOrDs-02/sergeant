@@ -1,4 +1,3 @@
-import { createDocument } from "zod-openapi";
 import { z } from "zod";
 
 import * as schemas from "../schemas/api";
@@ -605,5 +604,3 @@ export const namedSchemas = {
   ImportBatchUndoResponse,
   ApiError,
 } as const;
-
-export { createDocument };
