@@ -271,14 +271,18 @@ describe("Button", () => {
       expect(getByRole("button").className).toContain("bg-ink-strong");
     });
 
-    it("unsupported (variant, tone) cell falls back to solid/neutral primary", () => {
-      // e.g. outline + a module tone has no dedicated cell → safe neutral.
+    it("unsupported (variant, tone) cell keeps the emphasis and drops the tone", () => {
+      // outline + a module tone has no dedicated cell → neutral outline,
+      // never a solid fill: the emphasis is the caller's intent, the tone
+      // is only colour.
       const { getByRole } = render(
         <Button variant="outline" tone="nutrition">
           X
         </Button>,
       );
-      expect(getByRole("button").className).toContain("bg-brand-strong");
+      const cls = getByRole("button").className;
+      expect(cls).toContain("border-border-strong");
+      expect(cls).not.toContain("bg-brand-strong");
     });
 
     it("ghost is tone-agnostic (same treatment regardless of tone)", () => {
