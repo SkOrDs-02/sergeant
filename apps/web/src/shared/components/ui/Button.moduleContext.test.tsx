@@ -8,13 +8,12 @@
  * важливіше, на межу цього правила.
  *
  * Найцінніші тут НЕ кейси «колір змінився», а кейси «форма НЕ змінилась».
- * Гарантія тримається на одному факті: усі беспропні виклики в репо йдуть
- * ЛЕГАСІ-гілкою `resolveStyleKey`, де `MODULE_LEGACY_OVERRIDE` мапить лише
- * `primary`/`secondary`. Канонічна гілка такої гарантії не дає — клітинок
- * `outline × модуль` і `ghost × модуль` у `EMPHASIS_TONE_MAP` немає, тож
- * там стався б фолбек у суцільний `primary`. Якщо колись слово `ghost`
- * приберуть із легасі-набору, 33 кнопки модулів мовчки стануть суцільними
- * синіми — саме це й ловлять кейси нижче.
+ * Легасі-гілка `resolveStyleKey` тримає форму тим, що `MODULE_LEGACY_OVERRIDE`
+ * мапить лише `primary`/`secondary`. Канонічна гілка тримає її фолбеком:
+ * клітинок `outline × модуль` і `ghost × модуль` у `EMPHASIS_TONE_MAP` немає,
+ * і замість суцільного `primary` вона скидає тон до нейтрального в межах тієї
+ * ж емфази. До цього фолбеку неактивні фільтри Операцій Фініка стояли
+ * чорними (критика екранів 2026-09-23): саме це й ловлять кейси нижче.
  */
 import { describe, it, expect } from "vitest";
 import { render, screen } from "@testing-library/react";
@@ -65,6 +64,28 @@ describe("Button × ModuleAccentProvider", () => {
     expect(c).not.toContain("finyk");
     // Ghost прозорий: у нього немає заливки бренд-кольором.
     expect(c).not.toContain("bg-brand");
+  });
+
+  it("outline усередині модуля лишається outline, а не стає суцільним", () => {
+    // `outline` НЕ в легасі-наборі, тож іде канонічною гілкою, де контекст
+    // модуля підміняє нейтральний тон на модульний. Клітинки
+    // `outline × модуль` немає, і доти фолбек вів у суцільний `primary`:
+    // неактивні фільтри Операцій Фініка стояли чорними, важчими за
+    // активний (критика екранів 2026-09-23). Фолбек мусить лишати
+    // ЕМФАЗУ і скидати лише тон.
+    render(
+      <ModuleAccentProvider module="finyk">
+        <Button variant="outline">Витрати</Button>
+        <Button variant="outline" tone="neutral">
+          Доходи
+        </Button>
+      </ModuleAccentProvider>,
+    );
+    for (const name of ["Витрати", "Доходи"]) {
+      const c = cls(name);
+      expect(c).toContain("border-border-strong");
+      expect(c).not.toContain("bg-brand-strong");
+    }
   });
 
   it("danger усередині модуля лишається небезпечним, а не модульним", () => {

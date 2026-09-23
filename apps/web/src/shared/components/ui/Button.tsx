@@ -342,7 +342,12 @@ function resolveStyleKey(
   const emphasis = variant as ButtonEmphasis;
   const effectiveTone: ButtonTone =
     (!tone || tone === "neutral") && module ? module : (tone ?? "neutral");
-  return EMPHASIS_TONE_MAP[emphasis][effectiveTone] ?? "primary";
+  // Клітинки немає: скидаємо ТОН, не емфазу. `outline` усередині модуля
+  // (контекст підміняє нейтральний тон модульним) має лишатись контурним,
+  // а не ставати суцільним `primary`. Саме так неактивні фільтри Операцій
+  // Фініка виходили чорними, важчими за активний.
+  const cells = EMPHASIS_TONE_MAP[emphasis];
+  return cells[effectiveTone] ?? cells.neutral ?? "primary";
 }
 
 export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
@@ -373,9 +378,9 @@ export const Button = forwardRef<HTMLButtonElement, ButtonProps>(
     // це на тому, що всі беспропні виклики йдуть ЛЕГАСІ-гілкою
     // `resolveStyleKey`, де `MODULE_LEGACY_OVERRIDE` мапить лише
     // `primary`/`secondary`, а `ghost`/`danger`/`destructive` проходять
-    // наскрізь. Канонічна гілка такої гарантії НЕ дає: клітинок
-    // `outline × модуль` і `ghost × модуль` у `EMPHASIS_TONE_MAP` немає,
-    // тож там був би фолбек у суцільний `primary`. Пін —
+    // наскрізь. У канонічній гілці клітинок `outline × модуль` і
+    // `ghost × модуль` у `EMPHASIS_TONE_MAP` немає, тож `resolveStyleKey`
+    // скидає тон до нейтрального в межах тієї ж емфази. Пін:
     // `Button.moduleContext.test.tsx`.
     const contextAccent = useModuleAccent();
     const effectiveModule = module ?? contextAccent ?? undefined;
