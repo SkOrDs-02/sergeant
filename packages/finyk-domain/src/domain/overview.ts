@@ -42,7 +42,7 @@ export type ReceivableLike = EngineReceivable & {
 
 /**
  * Canonical Sergeant status hexes used by planned-flow rows. Inlined here
- * (rather than importing `@shared/lib/themeHex`) to keep the package
+ * (rather than importing from the web app) to keep the package
  * workspace-agnostic and DOM-free.
  */
 export const OVERVIEW_FLOW_COLOR = {

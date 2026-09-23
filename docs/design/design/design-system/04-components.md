@@ -1,6 +1,6 @@
 # Design System — Примітиви UI, Focus, A11y та Gestures
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-04-01.
+> **Last touched:** 2026-09-23 by @Skords-01. **Next review:** 2027-04-05.
 > **Status:** Active (v2 redesign foundation merged 2026-05)
 
 Цей документ охоплює UI-примітиви, focus/disabled/loading контракт, правила кодування, міграційні патерни, нові компоненти та хуки, gestures/a11y, та keyboard-first overlays (DropdownMenu, CommandPalette).
@@ -28,7 +28,7 @@ import {
   IconButton,
   Icon,
   Input,
-  SectionHeader,
+  SectionHeading,
   Segmented,
   Select,
   Skeleton,
@@ -283,15 +283,15 @@ Home/End, `role="tablist"`.
 > вкладками не є. Так уже зроблено у `BodyAtlasSegGroup` і
 > `PantrySourceTabs`, обидва з коментарем чому.
 
-### SectionHeader
+### SectionHeading
 
 Єдиний стиль для eyebrow-лейблів («ПРОГРЕС», «ВИТРАТИ»). Замінює
 розкидані `text-2xs font-bold text-subtle uppercase tracking-widest`.
 
 ```tsx
-<SectionHeader size="xs" action={<Button size="xs">Всі</Button>}>
+<SectionHeading size="xs" action={<Button size="xs">Всі</Button>}>
   Нещодавні витрати
-</SectionHeader>
+</SectionHeading>
 ```
 
 **Розмір (`size`) vs колір (`variant`)** — окремі осі:
@@ -822,7 +822,7 @@ Tabs/SubTabs з module variant (`finyk`, `fizruk`, `routine`, `nutrition`)
 
 | Знайди                                                                | Заміни на                                            |
 | --------------------------------------------------------------------- | ---------------------------------------------------- |
-| `text-2xs font-bold text-subtle uppercase tracking-widest`            | `<SectionHeader size="xs">`                          |
+| `text-2xs font-bold text-subtle uppercase tracking-widest`            | `<SectionHeading size="xs">`                         |
 | `<button className="h-9 w-9 rounded-full ...">...</button>`           | `<IconButton aria-label="…">...</IconButton>`        |
 | `bg-white dark:bg-stone-900 border border-stone-200`                  | `bg-surface border border-border`                    |
 | `bg-red-50 text-red-600 border border-red-200 dark:bg-red-900/20 ...` | `bg-danger-soft text-danger border border-danger/30` |
