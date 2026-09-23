@@ -66,6 +66,17 @@ describe("Measurements page", () => {
     expect(() => render(<Measurements />)).not.toThrow();
   });
 
+  it("кнопка гайду стоїть в акценті модуля, а не в success", () => {
+    // Довідка про заміри не є «успіхом»: зелений усередині cyan-модуля
+    // ламає module-accent containment (критика екранів 2026-09-23).
+    render(<Measurements />);
+    const trigger = screen.getByRole("button", {
+      name: /Як правильно робити заміри/,
+    });
+    expect(trigger.querySelector('[class*="success"]')).toBeNull();
+    expect(trigger.querySelector('[class*="fizruk"]')).not.toBeNull();
+  });
+
   it("opens the internal measurement guide with primary-source links", () => {
     render(<Measurements />);
     fireEvent.click(
