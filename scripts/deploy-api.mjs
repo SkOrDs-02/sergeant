@@ -12,6 +12,7 @@
 // Токен читається з .env, а не передається аргументом: у командному рядку його
 // бути не повинно, і гейт дозволів у сесіях ріже команди, що згадують імена токенів.
 
+import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const ENV_PATH = "D:\\Sergeant\\.env";
@@ -33,6 +34,46 @@ const base = readEnv("COOLIFY_URL").replace(/\/$/, "");
 const token = readEnv("COOLIFY_TOKEN");
 const auth = { Authorization: `Bearer ${token}` };
 
+function git(args) {
+  return execFileSync("git", args, { encoding: "utf8" }).trim();
+}
+
+// Привести дзеркало Hetzner до стану main на Bitbucket. Свідомо БЕЗ force:
+// якщо пуш відхилено, дзеркало має коміти, яких немає на Bitbucket (так буває,
+// коли сесія не змогла створити PR і запушила роботу прямо в нього). Затирати
+// їх не можна - їх треба звести злиттям, і скрипт зупиняється, щоб це зробили.
+function syncMirror() {
+  git(["fetch", "origin", "--quiet"]);
+  git(["fetch", "hetzner", "--quiet"]);
+
+  const behind = Number(
+    git(["rev-list", "--count", "hetzner/main..origin/main"]),
+  );
+  const ahead = Number(
+    git(["rev-list", "--count", "origin/main..hetzner/main"]),
+  );
+
+  if (ahead > 0) {
+    console.error(`Дзеркало має ${ahead} комітів, яких немає на Bitbucket:`);
+    console.error(git(["log", "--oneline", "origin/main..hetzner/main"]));
+    console.error(
+      "\nЦе чиясь робота, що не доїхала в PR. Зведи її злиттям, не затирай:",
+    );
+    console.error(
+      "  git checkout -b <гілка> origin/main && git merge hetzner/main",
+    );
+    process.exit(1);
+  }
+
+  if (behind === 0) {
+    console.log("Дзеркало вже збігається з main.");
+    return;
+  }
+
+  console.log(`Дзеркало відстає на ${behind} комітів, підтягую.`);
+  git(["push", "hetzner", "origin/main:main"]);
+}
+
 async function json(url, init) {
   const res = await fetch(url, {
     ...init,
@@ -40,6 +81,20 @@ async function json(url, init) {
   });
   if (!res.ok) throw new Error(`${res.status} ${await res.text()}`);
   return res.json();
+}
+
+// Coolify тягне НЕ з Bitbucket, а з bare-репо на Hetzner, і саме тут ховається
+// найпідступніша пастка цього ланцюга. Merge PR відбувається на сервері Bitbucket,
+// тож merge-коміти `main` існують ТІЛЬКИ там: `origin` з двома push-адресами
+// реплікує гілки, але не результат злиття. Без цього кроку Coolify збирає
+// попередній стан, чесно рапортує "finished" за 17 секунд, і виглядає це як
+// успішний деплой. 2026-09-23 так було двічі поспіль, поки не звірили дзеркало.
+syncMirror();
+
+// `--sync-only` існує, щоб синхронізацію можна було перевірити, не викочуючи прод.
+if (process.argv[2] === "--sync-only") {
+  console.log("Зупиняюсь: --sync-only.");
+  process.exit(0);
 }
 
 // Саме POST. GET віддає 405 «This endpoint has changed to a POST request»:
