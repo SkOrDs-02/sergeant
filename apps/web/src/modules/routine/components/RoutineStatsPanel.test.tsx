@@ -92,6 +92,28 @@ describe("RoutineStatsPanel", () => {
   //
   // Слово «найкраща» взяте з `RoutineCalendarHero`, де ту саму величину вже
   // виправили раніше — дві поверхні мусять називати її однаково.
+  it("показує тире замість «0%» і «0/0», коли в зрізі нічого не заплановано", () => {
+    // Відсотка від нуля не буває: «0%» при «0/0» подає порожній зріз як
+    // провал (критика екранів 2026-09-23).
+    completionRateForRange.mockReturnValue({
+      completed: 0,
+      scheduled: 0,
+      rate: 0,
+    });
+    try {
+      render(<RoutineStatsPanel routine={makeRoutine()} currentStreak={0} />);
+      expect(screen.queryByText("0/0")).toBeNull();
+      expect(screen.queryByText(/^0\s*%$/)).toBeNull();
+      expect(screen.getByText("–")).toBeInTheDocument();
+    } finally {
+      completionRateForRange.mockReturnValue({
+        completed: 3,
+        scheduled: 7,
+        rate: 0.43,
+      });
+    }
+  });
+
   it("labels the streak row as a best-across-habits aggregate, not a personal run", () => {
     render(<RoutineStatsPanel routine={makeRoutine()} currentStreak={7} />);
     expect(screen.getByText("7")).toBeInTheDocument();

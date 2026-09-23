@@ -19,9 +19,15 @@ describe("DayProgressRing", () => {
     expect(onClick).toHaveBeenCalledTimes(1);
   });
 
-  it("handles zero scheduled habits without division errors", () => {
+  it("показує тире замість «0/0», коли нічого не заплановано", () => {
+    // «0/0» подає порожній день як результат (критика екранів 2026-09-23).
+    // Без запланованих звичок кільцю нема що лічити.
     render(<DayProgressRing completed={0} scheduled={0} />);
-    expect(screen.getByText("0/0")).toBeInTheDocument();
+    expect(screen.queryByText("0/0")).toBeNull();
+    expect(screen.getByText("–")).toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /нічого не заплановано/i }),
+    ).toBeInTheDocument();
   });
 
   // Просвіт кільця 82px, робочий — 78 (`SIZE − 2×STROKE − 4`). `fitRingFontPx`

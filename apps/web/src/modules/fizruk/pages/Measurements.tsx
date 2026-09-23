@@ -263,32 +263,38 @@ export function Measurements() {
           </div>
         </button>
 
-        <div className="grid grid-cols-3 gap-2">
-          <Card radius="lg" padding="sm">
-            <Stat
-              label={messages.fizruk.measurements.records}
-              value={stats.total}
-              size="sm"
-              align="center"
-            />
-          </Card>
-          <Card radius="lg" padding="sm">
-            <Stat
-              label={messages.fizruk.measurements.last}
-              value={<span className="text-style-label">{stats.latestAt}</span>}
-              size="sm"
-              align="center"
-            />
-          </Card>
-          <Card radius="lg" padding="sm">
-            <Stat
-              label={messages.fizruk.measurements.fields}
-              value={stats.filledLatest}
-              size="sm"
-              align="center"
-            />
-          </Card>
-        </div>
+        {/* До першого запису плиткам нема що казати: «0 / – / 0» подає
+            порожній стан як результат. */}
+        {latest && (
+          <div className="grid grid-cols-3 gap-2">
+            <Card radius="lg" padding="sm">
+              <Stat
+                label={messages.fizruk.measurements.records}
+                value={stats.total}
+                size="sm"
+                align="center"
+              />
+            </Card>
+            <Card radius="lg" padding="sm">
+              <Stat
+                label={messages.fizruk.measurements.last}
+                value={
+                  <span className="text-style-label">{stats.latestAt}</span>
+                }
+                size="sm"
+                align="center"
+              />
+            </Card>
+            <Card radius="lg" padding="sm">
+              <Stat
+                label={messages.fizruk.measurements.fields}
+                value={stats.filledLatest}
+                size="sm"
+                align="center"
+              />
+            </Card>
+          </div>
+        )}
 
         <AddMeasurementForm addEntry={addEntry} />
 

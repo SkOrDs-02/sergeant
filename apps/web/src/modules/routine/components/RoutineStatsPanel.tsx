@@ -117,12 +117,22 @@ export function RoutineStatsPanel({
             несли ще й `statCardHighlight` зі світлою заливкою, яка в
             «Чорнилі» читалась як витік світлої теми (браузерна перевірка
             2026-08-17) — боксів нема, нема й проблеми. */}
+        {/* Відсотка від нуля не буває: коли в зрізі нічого не заплановано,
+            «0%» при «0/0» читався б як провал. */}
         <Stat
           label="Виконано"
           value={
-            <Measure value={Math.round(summary.rate.rate * 100)} unit="%" />
+            summary.rate.scheduled > 0 ? (
+              <Measure value={Math.round(summary.rate.rate * 100)} unit="%" />
+            ) : (
+              "–"
+            )
           }
-          sublabel={`${summary.rate.completed}/${summary.rate.scheduled}`}
+          sublabel={
+            summary.rate.scheduled > 0
+              ? `${summary.rate.completed}/${summary.rate.scheduled}`
+              : undefined
+          }
           size="md"
         />
         {/* Обидва числа — крос-звичкові МАКСИМУМИ, не «тримаю все N днів»:

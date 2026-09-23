@@ -69,7 +69,11 @@ export function DayProgressRing({
       type="button"
       onClick={onClick}
       className="flex flex-col items-center gap-1.5 group cursor-pointer shrink-0"
-      aria-label={`Прогрес дня: ${completed} з ${scheduled}. Тапни для денного звіту`}
+      aria-label={
+        scheduled > 0
+          ? `Прогрес дня: ${completed} з ${scheduled}. Тапни для денного звіту`
+          : messages.routine.dayProgressEmptyAria
+      }
     >
       <div className="relative" style={{ width: SIZE, height: SIZE }}>
         <svg
@@ -152,7 +156,9 @@ export function DayProgressRing({
                 : {}),
             }}
           >
-            {completed}/{scheduled}
+            {/* Без запланованих звичок «0/0» подає порожній день як
+                результат, тож замість дробу стоїть тире. */}
+            {scheduled > 0 ? `${completed}/${scheduled}` : "–"}
           </span>
         </div>
       </div>
