@@ -22,16 +22,16 @@
 
 Слабке місце одне, але системне. **Переїзд на Bitbucket 2026-09-22/23 прибрав шар enforcement, а документація про це не знає.** `bitbucket-pipelines.yml` немає, 33 воркфлоу в `.github/workflows/` не виконуються ніде, і `AGENTS.md` у рядку 376 сам це визнає («не шукай там CI»). Водночас той самий файл, `hard-rules.json`, ADR-0082, `release-policy.md` і скіли далі описують ці воркфлоу як блокуючі гейти. Наслідки вже видно: три Hard Rules (#4, #6, #26) не мають жодного робочого механізму, п'ять гейтів червоні на `main` (розділ 3), а найсвіжіші рішення (хостинг, деплой, міграції) живуть лише прозою в `AGENTS.md`, без ADR.
 
-## 3. Механічні гейти: 41 зелений, 5 червоних
+## 3. Механічні гейти: 41 зелений, 5 червоних (з них 1 хибний)
 
-| Гейт                                    | Результат | Причина                                                                                                                        |
-| --------------------------------------- | --------- | ------------------------------------------------------------------------------------------------------------------------------ |
-| `lint:codex-agents`                     | ❌        | 11 файлів `.codex/agents/*.toml` застаріли відносно `.claude/agents` (council-\*, migration, qa-\*, server, web)               |
-| `design:check-md`                       | ❌        | `DESIGN.md` не регенеровано після зміни `packages/design-tokens/tokens.js` (коміт 2026-09-22 «розвести кольори макросів»)      |
-| `docs:check-links`                      | ❌        | `docs/work/specs/planning/product-knowledge-backlog.md:1752` посилається на `apps/web/src/core/db/sqlite.ts:33`, якого немає   |
-| `docs:check-inventory`                  | ❌        | `docs/work/specs/data/documentation-inventory.json` не регенеровано                                                            |
-| `lint:skills` (статична частина)        | ❌        | застарілий `computedHash` для `sergeant-security-audit` у `skills-lock.json` (скіл змінено 2026-09-20 без `pnpm skills:lock`)  |
-| решта 41 (реєстри, ADR-граф, freshness) | ✅        | `lint:hard-rules-registry`, `lint:governance-sync`, `lint:agent-graph`, `docs:check-adr-graph`, `docs:check-pr-ledger` та інші |
+| Гейт                                    | Результат   | Причина                                                                                                                        |
+| --------------------------------------- | ----------- | ------------------------------------------------------------------------------------------------------------------------------ |
+| `lint:codex-agents`                     | ❌ (хибний) | CRLF у робочій копії 11 файлів `.claude/agents/*.md`, у git вони LF; див. поправку в кінці § 11                                |
+| `design:check-md`                       | ❌          | `DESIGN.md` не регенеровано після зміни `packages/design-tokens/tokens.js` (коміт 2026-09-22 «розвести кольори макросів»)      |
+| `docs:check-links`                      | ❌          | `docs/work/specs/planning/product-knowledge-backlog.md:1752` посилається на `apps/web/src/core/db/sqlite.ts:33`, якого немає   |
+| `docs:check-inventory`                  | ❌          | `docs/work/specs/data/documentation-inventory.json` не регенеровано                                                            |
+| `lint:skills` (статична частина)        | ❌          | застарілий `computedHash` для `sergeant-security-audit` у `skills-lock.json` (скіл змінено 2026-09-20 без `pnpm skills:lock`)  |
+| решта 41 (реєстри, ADR-граф, freshness) | ✅          | `lint:hard-rules-registry`, `lint:governance-sync`, `lint:agent-graph`, `docs:check-adr-graph`, `docs:check-pr-ledger` та інші |
 
 Усі п'ять червоних з'явились 20-22 вересня, тобто вже після блокування GitHub. Кожен із цих гейтів стоїть у CI або в `pnpm lint`, а локальний Husky їх не запускає. Це прямий доказ до DG-1: дрейф потрапляє в `main`, бо його нікому зловити.
 
@@ -330,3 +330,5 @@
 - `check-floating-promises-baseline`: на Windows падає з `ERR_UNSUPPORTED_ESM_URL_SCHEME` (імпорт абсолютного шляху без `file://`), тож на машині власника ланцюжок `pnpm lint` червоний завжди.
 
 Решта 60 кроків ланцюжка зелені, включно з трьома новими.
+
+**Поправка до розділу 3.** Червоний `lint:codex-agents` виявився артефактом робочої копії, а не дрейфом репо. 11 файлів `.claude/agents/*.md` у цьому worktree мали CRLF, хоча blob-и в git і `.gitattributes` (`eol=lf`) - LF. Після зняття CR у робочій копії гейт зелений без жодного коміту. Реальних червоних гейтів на `main` у початковому прогоні було чотири, не п'ять.
