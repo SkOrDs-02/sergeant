@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-23 by @claude (аудит DG: відсутній CI, фактичний деплой, журнал ратчетів винесено). **Next review:** 2027-01-08.
+> **Last touched:** 2026-09-23 by @claude (аудит DG: відсутній CI, фактичний деплой, журнал ратчетів винесено). **Next review:** 2027-01-09.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -243,9 +243,13 @@ curl -sS -X POST -H "Authorization: Bearer $(grep -m1 '^BITBUCKET_TOKEN=' /d/Ser
 
 Структура тіла PR (`description`) лишається тією самою, що описана вище. Зайвий клік не потрібен: правил «потрібні N апрувів» на `main` немає, тож PR мерджиться одразу, а захист гілки забороняє лише force-push і видалення.
 
+**Власник мерджить швидко, часто поки сесія ще працює.** Тому перед тим, як дописати щось у свою гілку, звіряй її стан: якщо PR уже змерджено, коміт доїде в гілку, але в `main` не потрапить, а `git push` при цьому скаже `ok`. Механічний захист від цього ставить `pre-push` хук ([`scripts/pre-push-merged-pr.mjs`](./scripts/pre-push-merged-pr.mjs)): він питає Bitbucket про PR для гілки і зупиняє пуш, коли той MERGED, із підказкою зробити нову гілку від свіжого `main`. Офлайн або без токена хук мовчки пропускає, щоб не зривати роботу.
+
+Той самий хук на кожному вдалому пуші освіжає `main` у **трунку** `D:\Sergeant`. Уся робота йде через worktree, тож у трунк не заходять місяцями, а залежить від нього більше, ніж здається: `core.hooksPath` указує на `.husky/_` саме трунку, тобто застарілий трунк означає застарілі хуки в усіх worktree. Оновлення йде через `git fetch origin main:main`, тобто рухає ref без checkout і не чіпає робоче дерево трунку, навіть якщо там сидить чужа сесія.
+
 ## Verification before PR
 
-> **CI відсутній з 2026-09-23.** Bitbucket не має pipelines (`bitbucket-pipelines.yml` у репо немає), а `.github/workflows/*` лишились архівом і ніде не виконуються. Автоматично не гейтиться ні PR, ні `main`: працюють лише локальні Husky-хуки (`pre-commit`, `commit-msg`) і те, що автор запускає сам (`pnpm check`, ручні перевірки нижче). Рішення про заміну CI відкрите (аудит DG-1, [`2026-09-23-docs-governance-audit.md`](./docs/work/specs/audits/2026-09-23-docs-governance-audit.md)).
+> **CI відсутній з 2026-09-23.** Bitbucket не має pipelines (`bitbucket-pipelines.yml` у репо немає), а `.github/workflows/*` лишились архівом і ніде не виконуються. Автоматично не гейтиться ні PR, ні `main`: працюють лише локальні Husky-хуки (`pre-commit`, `commit-msg`, а з 2026-09-23 ще й `pre-push` проти пуша в змерджену гілку) і те, що автор запускає сам (`pnpm check`, ручні перевірки нижче). Рішення про заміну CI відкрите (аудит DG-1, [`2026-09-23-docs-governance-audit.md`](./docs/work/specs/audits/2026-09-23-docs-governance-audit.md)).
 
 `pnpm format:check && pnpm lint && pnpm check:typecheck-and-test && pnpm build` (= `pnpm check`; `check:typecheck-and-test` = `turbo run typecheck test --concurrency=2`, який запускає обидва pipelines паралельно без перепідписування вкладених test worker-ів). When changing UI: attach a screenshot. When shipping a heavy import: `pnpm --filter @sergeant/web size` (вручну, у `pnpm check` не входить; див. § Performance budgets). Колишня CI-матриця описана в [`docs/governance/governance/release-policy.md`](./docs/governance/governance/release-policy.md) і `.github/workflows/`, але не виконується. Markdown link checker (`node scripts/docs/check-markdown-links.mjs`, до 2026-09-23 у `docs-automation.yml`) з `--strict-external` звіряє зовнішні посилання з [`docs/governance/governance/external-link-allowlist.json`](./docs/governance/governance/external-link-allowlist.json); у `pnpm lint` його немає, запускай вручну.
 
