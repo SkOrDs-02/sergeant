@@ -249,27 +249,14 @@ export function Measurements() {
           onClick={() => setGuideOpen(true)}
           className="focus-ring flex items-center gap-3 bg-panel border border-line rounded-2xl p-4 shadow-card"
         >
-          <div className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success">
-            <svg
-              aria-hidden
-              width="20"
-              height="20"
-              viewBox="0 0 24 24"
-              fill="none"
-              stroke="currentColor"
-              strokeWidth="1.7"
-              strokeLinecap="round"
-              strokeLinejoin="round"
-            >
-              <circle cx="12" cy="12" r="10" />
-              <path d="M12 8v4M12 16h.01" />
-            </svg>
+          <div className="shrink-0 w-10 h-10 rounded-xl bg-fizruk/10 flex items-center justify-center text-fizruk-strong dark:text-fizruk">
+            <Icon name="info" size="md" />
           </div>
           <div className="min-w-0">
             <SectionHeading as="div" size="xs" variant="fizruk">
               {messages.fizruk.measurements.manual}
             </SectionHeading>
-            <div className="text-style-label text-success-strong dark:text-success mt-0.5 inline-flex items-center gap-0.5">
+            <div className="text-style-label text-fizruk-strong dark:text-fizruk mt-0.5 inline-flex items-center gap-0.5">
               {messages.fizruk.measurements.manualLink}
               <Icon name="chevron-right" size="sm" />
             </div>
