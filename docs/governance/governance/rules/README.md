@@ -1,6 +1,6 @@
 # Hard Rules — per-rule canonical files
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-04-17.
+> **Last touched:** 2026-09-23 by @Skords-01. **Next review:** 2027-04-29.
 > **Status:** Active
 
 > One file per Hard Rule (full prose + BAD/GOOD examples). Compact summary table in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break). Registry: [`hard-rules.json`](../hard-rules.json). Matrix: [`hard-rules-matrix.md`](../hard-rules-matrix.md). Sync gate: `pnpm lint:hard-rules-registry`.
@@ -25,7 +25,7 @@
 | 25  | Auto-generated docs marker                                                            | [`25-auto-generated-marker.md`](./25-auto-generated-marker.md)                             |
 | 26  | PR ledger update on merge                                                             | [`26-pr-ledger-update-on-merge.md`](./26-pr-ledger-update-on-merge.md)                     |
 
-Номери #8, #9, #11–#14, #16, #17 і #24 retired за [ADR-0081](../../adr/0081-repository-simplification.md) та не перевикористовуються.
+Номери #8, #9, #11–#14, #16, #17 і #24 retired за [ADR-0081](../../adr/0081-repository-simplification.md) та не перевикористовуються; що саме знято і чим замінено - [ADR-0099](../../adr/0099-retired-hard-rules-registry.md).
 
 ## Ненумеровані ESLint-конвенції
 

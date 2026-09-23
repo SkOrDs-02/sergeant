@@ -12,11 +12,26 @@
 // Токен читається з .env, а не передається аргументом: у командному рядку його
 // бути не повинно, і гейт дозволів у сесіях ріже команди, що згадують імена токенів.
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
 const ENV_PATH = "D:\\Sergeant\\.env";
 const APP_UUID = "hlyvmjeoqa31w6mewpfg9qgc";
+
+// Pre-flight: ENTRYPOINT прожене ці міграції на живій БД (див. AI-DANGER
+// вище) - деплой з порушенням нумерації чи без two-phase DROP тут не
+// зупинити пізніше, тож ловимо його до POST-у в Coolify.
+const migrationsLint = spawnSync(
+  process.execPath,
+  ["scripts/lint-migrations.mjs"],
+  { stdio: "inherit" },
+);
+if (migrationsLint.status !== 0) {
+  console.error(
+    "\nДеплой скасовано: lint-migrations.mjs червоний. Виправ міграції перед деплоєм.",
+  );
+  process.exit(1);
+}
 
 // Білд на сервері ~225 с (двоядерна машина, потребує swap). Стеля з запасом.
 const TIMEOUT_MS = 15 * 60 * 1000;

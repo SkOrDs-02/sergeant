@@ -49,7 +49,7 @@
     "sergeant-deploy-and-observability": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "f97d57adafa5e96b0399477058e6d922fb0155d3907df61cc8d321478c56e174"
+      "computedHash": "9816460b08d729c8eec0e6b223365343c05a126dc3400d83928de82b76cd001b"
     },
     "sergeant-e2e-testing": {
       "source": "local",
@@ -134,12 +134,12 @@
     "sergeant-qa-squad": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "95f5aa4168949c698a748ef652a836aaeee9108cd58001fdd15f69b6b8077cd8"
+      "computedHash": "a309f76cc97546b4fe4a1a38b665a13b336ebe78d1d571c7f5961ae93805889a"
     },
     "sergeant-review-and-merge": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "20908c12aecfffb9ed62c242bd4d87b476934766014bce4b6ad52f66c28062a0"
+      "computedHash": "9db6c437abb245fbfd0092c5754bebdfdfdac4b9ce2187fd69425c005d1f232f"
     },
     "sergeant-review-squad": {
       "source": "local",
@@ -149,7 +149,7 @@
     "sergeant-security-audit": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "e36ce8976541eae54834c7d35d72523eeea1d75e928cb59a4089b72eeb1d419d"
+      "computedHash": "caef70b07b903fd55aae0f906ed1fa52cb57a424bbc004773c221f27fcde7e4a"
     },
     "sergeant-server-api": {
       "source": "local",
@@ -164,7 +164,7 @@
     "sergeant-start-here": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "b74f29675b6839b5110ec4b0a31ff460d58d3f32e3c26897f8890bda4c084f86"
+      "computedHash": "fe60fc1af0106ee586c79599265d7e8d7cd6ec23aa246226b6dc532ece7ae0e6"
     },
     "sergeant-tech-debt": {
       "source": "local",

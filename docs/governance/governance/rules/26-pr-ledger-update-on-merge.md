@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last validated:** 2026-08-16 by @claude
+> **Last validated:** 2026-09-23 by @claude
 > **Next review:** 2027-04-12
 > **Status:** Active
 
@@ -45,8 +45,23 @@ C10 і неіснуючий дефект PDF-експорту в M3. Кожна 
 
 ## Enforced by
 
-- **ci** — [`.github/workflows/pr-backlinks.yml`](../../../../.github/workflows/pr-backlinks.yml) — `pull_request_target: closed` + `merged == true` trigger. After merge, the workflow runs `scripts/ci/update-pr-backlinks.mjs --pr <NUMBER>` and opens a follow-up PR `docs/pr-backlinks-<NNNN>` with the ledger + in-doc block updates. Loop-guarded against follow-up PRs (`head_ref` starting with `docs/pr-backlinks-` is skipped).
-- **ci** — `pnpm docs:check-pr-ledger` (wired in `pnpm lint`) — verifies that the ledger ↔ in-doc blocks ↔ JSON schema are in sync. Exit 1 on any drift.
+- **hook** — `pre-push` ([`scripts/pre-push-merged-pr.mjs`](../../../../scripts/pre-push-merged-pr.mjs)) після вдалого пуша питає Bitbucket, скільки змерджених PR ще не в реєстрі, і називає команду. Це попередження, а не блок: запис у реєстр змінює файли, які треба комітити окремо, тож робити це посеред чужого пуша означало б лишати брудне дерево. Мовчить офлайн і без токена.
+- **convention** — `pnpm docs:sync-pr-ledger` дочитує метадані змерджених PR з Bitbucket API і перебудовує блоки.
+- **ci** — `pnpm docs:check-pr-ledger` (крок `pnpm lint`) звіряє реєстр ↔ блоки ↔ схему. Exit 1 на будь-якому дрейфі.
+
+### Чому механізм змінився (2026-09-23)
+
+До переїзду на Bitbucket правило тримали дві речі, і обидві померли одночасно: воркфлоу [`pr-backlinks.yml`](../../../../.github/workflows/pr-backlinks.yml) (`pull_request_target: closed` + `merged == true`), який після мержу відкривав follow-up PR, і `gh pr view` усередині писача. GitHub-акаунти заблоковані, Bitbucket pipelines немає, `gh` з Bitbucket не працює.
+
+Реєстр тихо став на 2026-09-17: за наступний тиждень 27 комітів торкнулись канонічних доків, і жоден не записався. **Гейт при цьому лишався зеленим**, бо `--check` звіряє форму (реєстр ↔ блоки ↔ схема), а не повноту. Це та сама вада, що двічі глушила правило раніше, тільки з третього боку: перевірка, яка не може побачити пропущений запис, не відрізняє повний реєстр від порожнього.
+
+Тому тепер повноту стереже окремий механізм (`pre-push` → `--stale`), а не той самий `--check`. Розбір — аудит [`2026-09-23-docs-governance-audit.md`](../../../work/specs/audits/2026-09-23-docs-governance-audit.md) § DG-3.
+
+### Ключ запису: host + repo + number
+
+Номер PR сам по собі не унікальний. Bitbucket почав нумерацію заново з одиниці, а в реєстрі вже лежать номери 29..3665 із трьох різних GitHub-репо. Коли Bitbucket дійде до #29, ключ по самому номеру почав би вважати два різні PR одним і мовчки перезаписав би старіший запис. Тому запис ідентифікується трійкою `host` + `repo` + `number`; обидва перші поля опційні, і їх відсутність читається як `github` + легасі-репо, щоб 60 наявних записів лишились валідними без переписування.
+
+Автор у Bitbucket-записах — слуг робочого простору (`@skords01`), а не `display_name`: Bitbucket віддає в ньому справжнє імʼя власника, а поле `author` ніде не рендериться, тож PII у трекованому файлі не дало б жодної користі.
 
 ## Why / What is enforced
 

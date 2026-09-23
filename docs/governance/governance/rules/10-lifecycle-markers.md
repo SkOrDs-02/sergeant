@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last validated:** 2026-09-06 by Codex. **Next review:** 2027-03-06.
+> **Last validated:** 2026-09-06 by Codex. **Last touched:** 2026-09-23 by @claude (enforced_by: CI-only записи позначено SUSPENDED - CI на Bitbucket не запускається). **Next review:** 2027-03-06.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #10. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -17,8 +17,8 @@
 ## Enforced by
 
 - **eslint-rule** — sergeant-design/ai-marker-syntax (error)
-- **ci** — pnpm lint:ai-legacy
-- **ci** — pnpm dead-code:files (honours @scaffolded markers)
+- **ci** - SUSPENDED з 2026-09-23 (CI на Bitbucket не запускається, а `--require-issue` потребує `GITHUB_TOKEN`): pnpm lint:ai-legacy - локальної заміни немає
+- **ci** - SUSPENDED з 2026-09-23 (CI на Bitbucket не запускається, не в `pnpm lint`/`pnpm check`): pnpm dead-code:files (honours @scaffolded markers) - локальної заміни немає
 
 > **Не гейт, а лічильник:** `pnpm lint:lifecycle-markers`
 > ([`check-lifecycle-markers.mjs`](../../../../scripts/docs/check-lifecycle-markers.mjs))

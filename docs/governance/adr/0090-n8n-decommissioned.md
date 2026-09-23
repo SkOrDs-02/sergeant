@@ -5,7 +5,7 @@
 - **Last validated:** 2026-09-04 by @codex
 - **Next review:** 2027-03-04
 - **Deciders:** @Skords-01
-- **Supersedes:** [ADR-0026](./0026-n8n-workflow-source-of-truth.md)
+- **Supersedes:** [ADR-0026](./0026-n8n-workflow-source-of-truth.md), [ADR-0030](./0030-telegram-reporting-channel-structure.md)
 - **Related:** [ADR-0074](./0074-hosting-hetzner-coolify.md), [ADR-0075](./0075-openclaw-gateway-decommissioned.md), [ADR-0081](./0081-repository-simplification.md), [ADR-0089](./0089-job-substrates-outbox-broker-timer.md)
 
 ## Decision

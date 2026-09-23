@@ -84,7 +84,15 @@
       "enforced_by": [
         {
           "kind": "ci",
-          "ref": "pnpm lint:migrations"
+          "ref": "pnpm lint (node scripts/lint-migrations.mjs step, since 2026-09-23)"
+        },
+        {
+          "kind": "hook",
+          "ref": "lint-staged: apps/server/src/migrations/** runs lint-migrations.mjs, since 2026-09-23"
+        },
+        {
+          "kind": "hook",
+          "ref": "scripts/deploy-api.mjs pre-flight refuses to deploy if lint-migrations.mjs fails, since 2026-09-23"
         }
       ],
       "links": [
@@ -107,7 +115,7 @@
       "enforced_by": [
         {
           "kind": "ci",
-          "ref": "ci.yml job `Commit messages (commitlint)`"
+          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket): ci.yml job `Commit messages (commitlint)` does not run"
         },
         {
           "kind": "hook",
@@ -130,7 +138,7 @@
       "enforced_by": [
         {
           "kind": "branch-protection",
-          "ref": "GitHub branch protection: 'Allow force pushes' = off on main"
+          "ref": "SUSPENDED since 2026-09-23 (repo moved to Bitbucket, GitHub accounts blocked): the old GitHub branch protection is dead. AGENTS.md claims a Bitbucket branch restriction, unverified from this repo; protection on the Hetzner mirror (origin's second pushurl) is also unverified"
         }
       ],
       "links": [
@@ -177,11 +185,11 @@
         },
         {
           "kind": "ci",
-          "ref": "pnpm lint:ai-legacy"
+          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket, and lint:ai-legacy --require-issue needs GITHUB_TOKEN): pnpm lint:ai-legacy - no local replacement"
         },
         {
           "kind": "ci",
-          "ref": "pnpm dead-code:files (honours @scaffolded markers)"
+          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket, not in pnpm lint/check): pnpm dead-code:files (honours @scaffolded markers) - no local replacement"
         }
       ],
       "links": [
@@ -200,15 +208,15 @@
       "enforced_by": [
         {
           "kind": "ci",
-          "ref": "pnpm lint:governance-sync (errors on dangling apps/packages/scripts refs in non-aspirational docs)"
+          "ref": "pnpm lint (node scripts/check-governance-sync.mjs step, since 2026-09-23; errors on dangling apps/packages/scripts refs in non-aspirational docs)"
         },
         {
           "kind": "ci",
-          "ref": "pnpm docs:check-freshness-coverage"
+          "ref": "SUSPENDED since 2026-09-23 (no CI on Bitbucket, not in pnpm lint/check): pnpm docs:check-freshness-coverage - no local replacement"
         },
         {
           "kind": "ci",
-          "ref": "pnpm lint:hard-rules-registry (this rule's own enforcer)"
+          "ref": "pnpm lint (node scripts/check-hard-rules-registry.mjs step, since 2026-09-23; this rule's own enforcer)"
         },
         {
           "kind": "pr-template",
@@ -417,12 +425,16 @@
       "category": "lint-enforced-convention",
       "enforced_by": [
         {
-          "kind": "ci",
-          "ref": ".github/workflows/pr-backlinks.yml (post-merge follow-up PR)"
+          "kind": "hook",
+          "ref": "pre-push (scripts/pre-push-merged-pr.mjs) - після пуша повідомляє, скільки змерджених PR бракує в реєстрі, і радить `pnpm docs:sync-pr-ledger`. Попередження, не блок: запис у реєстр треба комітити окремо"
+        },
+        {
+          "kind": "convention",
+          "ref": "pnpm docs:sync-pr-ledger - дочитує метадані змерджених PR з Bitbucket API (з 2026-09-23; до того це робив .github/workflows/pr-backlinks.yml через `gh`, обидва мертві)"
         },
         {
           "kind": "ci",
-          "ref": "pnpm docs:check-pr-ledger"
+          "ref": "pnpm docs:check-pr-ledger (крок pnpm lint) - звіряє реєстр ↔ блоки ↔ схему. Перевіряє ФОРМУ, не повноту: за повнотою стежить pre-push"
         }
       ],
       "links": [

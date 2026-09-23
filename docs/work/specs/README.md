@@ -1,6 +1,6 @@
 # Активні спеки
 
-> **Last touched:** 2026-09-17 by @claude (правило життєвого циклу: Implemented-спеки лишаються як as-built доказ). **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-23 by @claude (проіндексовано `site-ia/` і `data/`). **Next review:** 2026-12-16.
 > **Status:** Active
 > **Spec-lint:** skip — каталог-індекс, а не фічева спека.
 
@@ -22,3 +22,8 @@ active checkout лише покинуті або superseded спеки (`Depreca
 
 Під час міграції сюди перенесено активні матеріали з колишніх
 `work/specs`, а legacy archive-дерева не розширюються.
+
+## Допоміжні піддиректорії
+
+- [`site-ia/`](./site-ia/README.md) — структура сайту Sergeant (лендінг → багатосторінковий сайт): карта маршрутів і по одному файлу на сторінку (`page-*.md`). Спека `Status: Done`, нового впровадження не потребує.
+- `data/` — сирі дані, які читають доки й лінтери, не спека: `documentation-inventory.json` (генерується `scripts/docs/generate-documentation-inventory.mjs`), `pantry-categorization-batch-842.json` і `pantry-categorization-seed-other.json` (корпус категоризації комори для finyk/nutrition).

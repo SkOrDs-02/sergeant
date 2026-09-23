@@ -73,6 +73,20 @@ describe("slugFromRemoteUrl", () => {
     assert.equal(slugFromRemoteUrl(""), undefined);
     assert.equal(slugFromRemoteUrl(undefined), undefined);
   });
+
+  it("розбирає Bitbucket ssh-форму (origin з 2026-09-23)", () => {
+    assert.equal(
+      slugFromRemoteUrl("git@bitbucket.org:skords01/sergeant.git"),
+      "skords01/sergeant",
+    );
+  });
+
+  it("розбирає Bitbucket https-форму", () => {
+    assert.equal(
+      slugFromRemoteUrl("https://bitbucket.org/skords01/sergeant.git"),
+      "skords01/sergeant",
+    );
+  });
 });
 
 describe("slugFromEnvironment", () => {

@@ -76,8 +76,50 @@ for (const branch of branches) {
   }
 }
 
+/**
+ * Нагадати, що реєстр PR відстав від змерджених PR (Hard Rule #26).
+ *
+ * Чому саме тут. Мерж відбувається на сервері Bitbucket, локального
+ * post-merge хука не існує, а CI, який раніше дописував реєстр, помер разом
+ * із GitHub. Пуш - єдина мить, коли ми і так уже говоримо з Bitbucket API і
+ * маємо токен під рукою. Реєстр тихо стояв від 2026-09-17 саме тому, що такої
+ * миті ніхто не використовував (аудит DG-3).
+ *
+ * Чому попередження, а не блок. Запис у реєстр - це зміна файлів, яку треба
+ * закомітити; робити її посеред чужого пуша означало б лишити брудне дерево
+ * після успішного `git push`. І тим паче не привід зривати пуш: бухгалтерія
+ * доків не важливіша за доставку коду.
+ */
+async function warnIfLedgerStale() {
+  try {
+    const { execFileSync } = await import("node:child_process");
+    const { fileURLToPath } = await import("node:url");
+    // Шлях від самого файлу, а не від cwd: хук запускається з кореня того
+    // дерева, звідки пушать, і відносний шлях там не завжди той самий.
+    const writer = fileURLToPath(
+      new URL("./ci/update-pr-backlinks.mjs", import.meta.url),
+    );
+    const out = execFileSync(process.execPath, [writer, "--stale"], {
+      encoding: "utf8",
+      timeout: 60_000,
+      stdio: ["ignore", "pipe", "ignore"],
+    });
+    const missing = Number(out.trim().split("\n").pop());
+    if (!Number.isInteger(missing) || missing < 1) return;
+    console.error("");
+    console.error(
+      `Реєстр PR відстав: ${missing} змерджених PR ще не в docs/governance/pr-ledger/index.json (Hard Rule #26).`,
+    );
+    console.error("Дописати і закомітити окремо:");
+    console.error("  pnpm docs:sync-pr-ledger");
+  } catch {
+    // Немає мережі, токена чи самого скрипта: мовчимо, це лише нагадування
+  }
+}
+
 if (blocked.length === 0) {
   refreshTrunkMain();
+  await warnIfLedgerStale();
   process.exit(0);
 }
 

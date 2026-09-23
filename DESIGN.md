@@ -1,6 +1,6 @@
 # DESIGN.md — Sergeant
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-28.
+> **Last touched:** 2026-09-23 by @Skords-01. **Next review:** 2027-01-01.
 > **Status:** Active. **Призначення:** портативний конфіг візуальної системи для AI-агентів (Hallmark, frontend-design, Superdesign, будь-який SKILL.md-сумісний тул). Агент читає цей файл ПЕРЕД стилізацією і НЕ вигадує власну систему.
 > **Джерело правди:** `packages/design-tokens/tokens.js` + `tailwind-preset.js`. Цей файл — дзеркало для агентів; при розбіжності перемагають токени. Механічний enforcement: `eslint-plugin-sergeant-design` — лише runtime-, security-, storage-, API- і domain-інваріанти. Естетичні AST-правила retired [ADR-0081](./docs/governance/adr/0081-repository-simplification.md); візуальні конвенції тримають design tokens, Storybook і design-review.
 
@@ -27,7 +27,7 @@
 
 **Статуси:** success `#10b981` · warning `#f59e0b` · danger `#ef4444` · info `#0ea5e9`. Семантичний колір ≠ акцент модуля.
 
-**Charts:** 8-колірна органічна палітра (`chartPalette` у tokens.js); макро-кільця nutrition: protein `#0e7490`, fat `#ac4c64`, carbs `#567c0f` (kcal бере статус-hue).
+**Charts:** 8-колірна органічна палітра (`chartPalette` у tokens.js); макро-кільця nutrition: protein `#436cc8`, fat `#af5504`, carbs `#784784` (kcal бере статус-hue).
 
 **Ink-акценти (dark):** finyk `#2dd4bf` · fizruk `#22d3ee` · routine `#f68da4` · nutrition `#b0e636` — tier-400 модуля; текст поверх акцент-філу завжди ink, ніколи білий.
 

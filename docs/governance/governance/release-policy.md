@@ -1,9 +1,11 @@
 # Release Policy
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-24.
+> **Last touched:** 2026-09-23 by @claude (note: CI absent since 2026-09-23, "required checks" = local `AGENTS.md § Verification before PR` commands). **Next review:** 2026-12-24.
 > **Status:** Active
 
 Canonical release policy for Sergeant. This document defines when a normal merge is enough and when a change must be treated as an explicit release event with extra coordination.
+
+> **2026-09-23:** CI does not run (no `bitbucket-pipelines.yml`, `.github/workflows/*` idle since the Bitbucket migration). Every "CI" / "required checks" reference below means the local commands in [`AGENTS.md § Verification before PR`](../../../AGENTS.md#verification-before-pr) (`pnpm check` and the size/Lighthouse budgets), run and confirmed by the person merging. This note does not change the release classes or blockers themselves — it only names the mechanism that currently enforces them.
 
 ## Release classes
 

@@ -4,7 +4,7 @@
 - **Last validated:** 2026-07-30 by @SkOrDs-02. **Next review:** 2026-10-28.
 - **Date:** 2026-07-30
 - **Reviewers:** @SkOrDs-02
-- **Supersedes:** ADR-0034, ADR-0069
+- **Supersedes:** ADR-0034, ADR-0069, ADR-0046
 - **Related:**
   - [ADR-0081](./0081-repository-simplification.md) — попередній крок спрощення (committed indexes, entropy-wrapper, visual-taste ESLint).
   - [ADR-0072](./0072-harness-versioning.md) — harness versioning лишається; прибрано лише A/B eval workflow.

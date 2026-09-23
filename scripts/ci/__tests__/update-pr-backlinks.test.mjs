@@ -12,6 +12,7 @@ import { readFileSync } from "node:fs";
 import {
   assertCompleteFileList,
   CANONICAL_DOC_ROOTS,
+  entryKey,
 } from "../update-pr-backlinks.mjs";
 
 test("повний список проходить мовчки", () => {
@@ -22,7 +23,7 @@ test("повний список проходить мовчки", () => {
 test("обрізаний список — помилка, а не тихий нуль", () => {
   assert.throws(
     () => assertCompleteFileList(100, 956, 1081),
-    /fetched 100 changed file\(s\) but GitHub reports 956/,
+    /fetched 100 changed file\(s\) but the API reports 956/,
   );
 });
 
@@ -41,6 +42,35 @@ test("невідома кількість (поле відсутнє) не ва�
   // і гейт не має падати на самій лише відсутності поля.
   assert.doesNotThrow(() => assertCompleteFileList(5, undefined, 1));
   assert.doesNotThrow(() => assertCompleteFileList(5, null, 1));
+});
+
+/**
+ * Ключ запису. Номер PR сам по собі НЕ унікальний: Bitbucket почав нумерацію
+ * заново з одиниці, а в реєстрі вже лежать номери 29..3665 із трьох GitHub-репо.
+ * Коли Bitbucket дійде до #29, ключ по самому номеру почав би вважати два різні
+ * PR одним і мовчки перезаписав би старіший запис.
+ */
+test("ключ розрізняє однакові номери з різних хостів", () => {
+  const bb = entryKey({
+    number: 29,
+    host: "bitbucket",
+    repo: "skords01/sergeant",
+  });
+  const gh = entryKey({ number: 29, repo: "zaebal-beep/sergeant" });
+  assert.notEqual(bb, gh);
+});
+
+test("відсутній host читається як github, відсутній repo — як легасі", () => {
+  assert.equal(
+    entryKey({ number: 7 }),
+    entryKey({ number: 7, host: "github" }),
+  );
+  assert.match(entryKey({ number: 7 }), /^github:/);
+});
+
+test("той самий PR дає той самий ключ", () => {
+  const e = { number: 6, host: "bitbucket", repo: "skords01/sergeant" };
+  assert.equal(entryKey(e), entryKey({ ...e, title: "інший заголовок" }));
 });
 
 /**

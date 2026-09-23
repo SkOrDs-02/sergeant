@@ -1,6 +1,6 @@
 # Claude in Sergeant
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2026-12-12.
+> **Last touched:** 2026-09-23 by @claude (заборону для глобальних агентів перенесено в AGENTS.md, повний список bridge-ів). **Next review:** 2026-12-12.
 > **Status:** Active
 
 > **Single source of truth → [AGENTS.md](./AGENTS.md).** Тонкий wrapper; repo policy приходить нижче через `@import` — не дублюй її тут.
@@ -21,7 +21,7 @@ Kilo Code і Devin виведені з експлуатації ([ADR-0088](./do
 
 ## Sub-tree CLAUDE.md
 
-Root вантажиться при старті; вкладені `CLAUDE.md` — ліниво при вході в subtree. Bridge-и: `apps/{web,server,mobile,mobile-shell}/CLAUDE.md` (→ surface `AGENTS.md`), `packages/{db-schema,api-client}/CLAUDE.md` (pointer+інваріант+skill).
+Root вантажиться при старті; вкладені `CLAUDE.md` — ліниво при вході в subtree. Bridge-и: `apps/{web,server,mobile,mobile-shell}/CLAUDE.md` (→ surface `AGENTS.md`), `packages/{api-client,db-schema,dualwrite-core,finyk-domain,fizruk-domain,nutrition-domain,routine-domain}/CLAUDE.md` (pointer+інваріант+skill).
 
 ## Notes
 
@@ -29,4 +29,4 @@ Root вантажиться при старті; вкладені `CLAUDE.md` �
 - Топологія агентного шару (вузли skill/agent/workspace + дозволені переходи) — [`.agents/agent-graph.json`](./.agents/agent-graph.json), гейт `pnpm lint:agent-graph`. Додав скіл чи агента — додай вузол, інакше лінт червоніє.
 - SKILL.md зміни: спершу `sergeant-writing-skills`, потім `pnpm lint:skills && pnpm skills:lock`. Heavy local commands — лише за потреби чи на прохання.
 - Глобальні `~/.claude/agents/` subagent-и через `Agent` — для self-contained задач (ad copy, generic review, research), коли немає specialist skill-у.
-- Глобальні engineering-агенти (Frontend Developer, Mobile App Builder, Backend Architect, Database Optimizer, Code Reviewer тощо) ЗАБОРОНЕНІ для кодових правок у `apps/**` і `packages/**` — вони не знають Hard Rules (RQ-фабрики, дизайн-лінти, bigint-коерція, 44px touch targets). Для коду в цих директоріях — тільки репо-агенти (`.claude/agents/`) і specialist-скіли з `AGENTS.md`.
+- Глобальні engineering-агенти (Frontend Developer, Backend Architect, Code Reviewer тощо) не правлять код у `apps/**` і `packages/**`: правило в [AGENTS.md § Agent harnesses & routing](./AGENTS.md#agent-harnesses--routing), пункт «Загальні агенти без контексту репо».

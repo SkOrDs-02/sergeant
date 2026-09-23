@@ -11,19 +11,21 @@ Production-facing зміни в Sergeant не вважаються заверш�
 
 ## Що покриває
 
-- `Dockerfile.api` (root) + `.github/workflows/deploy-api.yml`; Vercel-конфіги живуть per-app — `apps/web/vercel.json` і `apps/landing/vercel.json`, не в корені; deploy-доки, health-endpoints
+- `Dockerfile.api` (root); Vercel-конфіги живуть per-app — `apps/web/vercel.json` і `apps/landing/vercel.json`, не в корені; deploy-доки, health-endpoints
 - env-зміни через web/server
 - Sentry, readiness/liveness, маршрутизація алертів, release-верифікація
 - operator-facing доки для деплою або реакції на інцидент
 
-## Deploy targets (актуально — ADR-0074)
+## Deploy targets (актуально — AGENTS.md § «Де живе код» і § «Прод не оновлюється сам»)
 
-Бекенд-стек (API + Postgres + Redis) з 2026-07 живе на **Hetzner CX23 VPS під Coolify** (ADR-0074, superseded ADR-0009 у частині бекенду). Railway виведено повністю (config-файли `railway*.toml` видалено з репо):
+CI немає (Bitbucket без pipelines, GitHub Actions не виконуються — код на GitHub заблоковано). Автодеплою на merge в `main` немає навмисно: деплой ручний, однією командою на поверхню.
 
 | Target | Repo source | Notes |
 |---|---|---|
-| Coolify app `sergeant-api` (Hetzner) | `apps/server` via `Dockerfile.api` | Образ білдить GitHub Actions (`deploy-api.yml`) → `ghcr.io`; Coolify тягне й деплоїть. Pre-deploy: `node dist-server/migrate.js` (потребує `MIGRATE_DATABASE_URL`). Health: `/health`. |
-| Vercel | `apps/web` | Frontend + edge-proxy `/api/*` — auto-deploy on push. Same-origin cookie топологія з ADR-0009 не змінилась. |
+| Coolify app `sergeant-api-v2` (Hetzner) | `apps/server` via `Dockerfile.api` | `pnpm deploy:api` тригерить Coolify API; образ білдиться на сервері, джерело з 2026-09-23 — Bitbucket напряму (`main`, read-only access key), без GHCR. Дзеркало Hetzner виведене з ланцюга і лишається резервною копією. Міграції їдуть в ENTRYPOINT (`migrate.js && exec index.js`), не в Coolify `pre_deployment_command`. Health: `/health`. |
+| Vercel (`apps/web`, `apps/landing`) | `pnpm deploy:web` / `pnpm deploy:landing` | Локальний Vercel CLI без Git-інтеграції (Bitbucket-репозиторії на Hobby-тарифі не підтримуються) — pull env → build локально → deploy `--prebuilt`. Прев'ю немає, кожен запуск викочує прод. |
+
+Дрейф main↔prod міряй через `pnpm deploy:status` (по бекенду точний, по фронту — оцінка за часом: Vercel CLI не зберігає коміт). Деплой викочує весь `main`, не тільки свою зміну — якщо розрив більший за свої коміти, спитай власника перед деплоєм.
 
 OpenClaw Gateway decommissioned ([ADR-0075](../../../docs/governance/adr/0075-openclaw-gateway-decommissioned.md)) — прибрано з репо повністю, немає deploy-таргета.
 
