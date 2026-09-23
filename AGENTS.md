@@ -1,6 +1,6 @@
 # Agents in Sergeant
 
-> **Last touched:** 2026-09-22 by @Skords-01. **Next review:** 2027-01-08.
+> **Last touched:** 2026-09-23 by @Skords-01. **Next review:** 2027-01-09.
 > **Status:** Active
 
 > **If you are an agent:** start with `.agents/skills/sergeant-start-here/SKILL.md`, then load one owner skill for the primary touched surface. Load extra workflow/squad/helper skills only when `docs/start/agents/agent-workflows.md` or the routing catalog explicitly says to. The routing catalog lives in `docs/start/agents/agent-skills-catalog.md`.
@@ -382,6 +382,10 @@ curl -sS -X POST -H "Authorization: Bearer $(grep -m1 '^BITBUCKET_TOKEN=' /d/Ser
 Якщо тіло PR містить кирилицю, шли його через файл (`-d @body.json`) або з PowerShell, кодуючи в UTF-8: інакше опис приїде спотвореним.
 
 Структура тіла PR (`description`) лишається тією самою, що описана вище. Зайвий клік не потрібен: правил «потрібні N апрувів» на `main` немає, тож PR мерджиться одразу, а захист гілки забороняє лише force-push і видалення.
+
+**Власник мерджить швидко, часто поки сесія ще працює.** Тому перед тим, як дописати щось у свою гілку, звіряй її стан: якщо PR уже змерджено, коміт доїде в гілку, але в `main` не потрапить, а `git push` при цьому скаже `ok`. Механічний захист від цього ставить `pre-push` хук ([`scripts/pre-push-merged-pr.mjs`](./scripts/pre-push-merged-pr.mjs)): він питає Bitbucket про PR для гілки і зупиняє пуш, коли той MERGED, із підказкою зробити нову гілку від свіжого `main`. Офлайн або без токена хук мовчки пропускає, щоб не зривати роботу.
+
+Той самий хук на кожному вдалому пуші освіжає `main` у **трунку** `D:\Sergeant`. Уся робота йде через worktree, тож у трунк не заходять місяцями, а залежить від нього більше, ніж здається: `core.hooksPath` указує на `.husky/_` саме трунку, тобто застарілий трунк означає застарілі хуки в усіх worktree. Оновлення йде через `git fetch origin main:main`, тобто рухає ref без checkout і не чіпає робоче дерево трунку, навіть якщо там сидить чужа сесія.
 
 ## Verification before PR
 
