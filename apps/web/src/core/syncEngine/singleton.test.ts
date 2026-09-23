@@ -33,7 +33,9 @@ function becomeFollower(): void {
 
 import {
   __resetSyncEngineWriterForTests,
+  bootSyncEngineReader,
   bootSyncEngineWriter,
+  getSyncEngineReader,
   getSyncEngineWriter,
 } from "./singleton";
 
@@ -116,6 +118,33 @@ describe("bootSyncEngineWriter", () => {
 
     expect(runtime.stop).toHaveBeenCalledTimes(1);
     expect(getSyncEngineWriter()).toBeNull();
+  });
+
+  // Догін курсора робить саме reader: 51 запит /api/v2/sync/pull за 80 с із
+  // вкладки-послідовника, заміряно на планшеті 2026-09-23.
+  it("не піднімає reader у вкладці-послідовнику", async () => {
+    ownership.value = "follower";
+    const createRuntime = vi
+      .fn()
+      .mockResolvedValue({ start: vi.fn(), stop: vi.fn(), pullOnce: vi.fn() });
+
+    await expect(bootSyncEngineReader({ createRuntime })).resolves.toBeNull();
+
+    expect(createRuntime).not.toHaveBeenCalled();
+    expect(getSyncEngineReader()).toBeNull();
+  });
+
+  it("зупиняє reader, коли базу забрала інша вкладка", async () => {
+    const reader = { start: vi.fn(), stop: vi.fn(), pullOnce: vi.fn() };
+    await bootSyncEngineReader({
+      createRuntime: vi.fn().mockResolvedValue(reader),
+    });
+    expect(reader.start).toHaveBeenCalledTimes(1);
+
+    becomeFollower();
+
+    expect(reader.stop).toHaveBeenCalledTimes(1);
+    expect(getSyncEngineReader()).toBeNull();
   });
 
   it("does not throw when boot dependencies are unavailable", async () => {
