@@ -35,7 +35,7 @@ describe("TransactionSyncPill", () => {
         lastUpdated={null}
       />,
     );
-    expect(screen.getByText("помилка")).toBeInTheDocument();
+    expect(screen.getByText("не синхронізовано")).toBeInTheDocument();
     expect(screen.getByText("кеш")).toBeInTheDocument();
   });
 

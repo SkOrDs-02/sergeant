@@ -23,6 +23,7 @@ export const messagesEn: Partial<{
 
     // Generic fallback — used when the specific cause cannot be determined.
     genericFailure: "Sign-in failed. Please try again.",
+    registerFailure: "Sign-up failed. Please try again.",
 
     // Better Auth canonical error-codes:
     invalidEmailOrPassword: "Incorrect email or password.",
@@ -208,6 +209,10 @@ export const messagesEn: Partial<{
       retry: "Try again",
       timeout: "Request timed out. Try again.",
       unknown: "Something went wrong. Try again.",
+      failed: "Could not {what}. {action}",
+      retryAction: "Try again.",
+      storageSaveFailed:
+        "Could not save data. Free up browser storage or save a backup.",
 
       title: "Error",
       somethingWrong: "Something went wrong",

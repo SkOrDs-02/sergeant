@@ -143,7 +143,7 @@ describe("useMonobankWebhook — extra callbacks", () => {
     expect(result.current.error).toBe("");
   });
 
-  it("backfill surfaces the error message on failure", async () => {
+  it("backfill shows the catalog copy instead of the raw error message", async () => {
     mockedSyncState.mockResolvedValue(ACTIVE_STATE);
     mockedBackfill.mockRejectedValue(new Error("backfill boom"));
     const { result } = renderHook(() => useMonobankWebhook(), {
@@ -155,7 +155,9 @@ describe("useMonobankWebhook — extra callbacks", () => {
     await act(async () => {
       await result.current.backfill();
     });
-    expect(result.current.error).toBe("backfill boom");
+    expect(result.current.error).toBe(
+      "Не вдалося довантажити історію транзакцій. Спробуй ще раз.",
+    );
   });
 
   it("backfill falls back to a generic message for non-Error throws", async () => {
@@ -170,7 +172,9 @@ describe("useMonobankWebhook — extra callbacks", () => {
     await act(async () => {
       await result.current.backfill();
     });
-    expect(result.current.error).toBe("Помилка backfill");
+    expect(result.current.error).toBe(
+      "Не вдалося довантажити історію транзакцій. Спробуй ще раз.",
+    );
   });
 
   it("clearTxCache invalidates the finyk preview query and clears the error", async () => {
@@ -266,7 +270,7 @@ describe("useMonobankWebhook — syncState status mapping", () => {
     await waitFor(() => {
       expect(result.current.syncState.status).toBe("error");
     });
-    expect(result.current.syncState.lastError).toMatch(/invalid/i);
+    expect(result.current.syncState.lastError).toMatch(/недійсне/);
   });
 });
 

@@ -595,7 +595,7 @@ export function formatStatsReply(s: WaitlistStats): string {
 
   if (s.byChannel.length > 0) {
     lines.push("", "Канали:");
-    for (const c of s.byChannel) lines.push(`  ${c.channel} — ${c.count}`);
+    for (const c of s.byChannel) lines.push(`  ${c.channel}: ${c.count}`);
   }
 
   if (s.lastSignupAt) {

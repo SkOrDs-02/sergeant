@@ -5,6 +5,7 @@ import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { readRaw, removeItem, readJSON, writeJSON } from "../lib/finykStorage";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 // Сирий рядок із PrivatBank Statements API. PrivatBank віддає скорочений
 // payload із багатьма опційними полями, тому всі поля мітимо optional, а
@@ -342,7 +343,7 @@ export function usePrivatbank(enabled = true) {
       const err = e as { name?: string; message?: string };
       if (err.name === "AuthError") {
         setError(
-          "Неправильні credentials PrivatBank. Перевір Merchant ID та токен.",
+          "Неправильні дані входу PrivatBank. Перевір Merchant ID і токен.",
         );
         setSyncState((s) => ({
           ...s,
@@ -369,7 +370,7 @@ export function usePrivatbank(enabled = true) {
           lastError: err.message ?? "",
         }));
       }
-      setError(err.message || "Помилка завантаження транзакцій PrivatBank");
+      setError(failedCopy("завантажити транзакції PrivatBank"));
     } finally {
       setLoadingTx(false);
     }
@@ -445,16 +446,16 @@ export function usePrivatbank(enabled = true) {
       const err = e as { name?: string; message?: string };
       if (err.name === "AuthError") {
         setError(
-          "Неправильні credentials PrivatBank. Перевір Merchant ID та токен.",
+          "Неправильні дані входу PrivatBank. Перевір Merchant ID і токен.",
         );
       } else if (isApiError(e) && e.kind === "http") {
         setError(
           e.status === 401 || e.status === 403
-            ? "Неправильні credentials PrivatBank. Перевір Merchant ID та токен."
-            : e.serverMessage || `Помилка ${e.status}`,
+            ? "Неправильні дані входу PrivatBank. Перевір Merchant ID і токен."
+            : e.serverMessage || failedCopy("підключити PrivatBank"),
         );
       } else {
-        setError(err.message || "Помилка підключення до PrivatBank");
+        setError(failedCopy("підключити PrivatBank"));
       }
     } finally {
       setConnecting(false);
@@ -468,9 +469,8 @@ export function usePrivatbank(enabled = true) {
       const accs = await loadAccounts();
       setAccounts(accs);
       await fetchTransactions(accs);
-    } catch (e) {
-      const err = e as { message?: string };
-      setError(err.message || "Помилка оновлення PrivatBank");
+    } catch {
+      setError(failedCopy("оновити дані PrivatBank"));
     }
   };
 

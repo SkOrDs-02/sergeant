@@ -81,13 +81,14 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
     ? `Завантаження виписки · ${progress.accountsProcessed}/${progress.accountsTotal} рах.`
     : isCompleted
       ? "Завершено"
-      : "Помилка backfill";
+      : "Не вдалося довантажити виписку";
 
   const detail = isRunning
     ? `${formatNumberUk(progress.transactionsProcessed)} тр.`
     : isCompleted
       ? `${formatNumberUk(progress.transactionsProcessed)} ${pluralUa(progress.transactionsProcessed, TRANSACTION_FORMS)}`
-      : (progress.lastError ?? "невідома помилка");
+      : (progress.lastError ??
+        "Спробуй ще раз через «Синхронізувати історію».");
 
   return (
     <div

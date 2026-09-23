@@ -23,7 +23,10 @@ describe("readStatementFile", () => {
 
   it("відхиляє порожній файл", async () => {
     const result = await readStatementFile(new File([], "empty.xlsx"));
-    expect(result).toEqual({ ok: false, error: "Порожній файл." });
+    expect(result).toEqual({
+      ok: false,
+      error: "Порожній файл. Вибери інший.",
+    });
   });
 
   it("відхиляє файл понад 5 МБ до відправки", async () => {
@@ -34,7 +37,7 @@ describe("readStatementFile", () => {
     const result = await readStatementFile(oversized);
     expect(result).toEqual({
       ok: false,
-      error: "Файл завеликий (максимум 5 МБ).",
+      error: "Файл завеликий (максимум 5 МБ). Вибери менший.",
     });
   });
 

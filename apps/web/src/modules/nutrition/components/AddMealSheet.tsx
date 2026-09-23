@@ -360,7 +360,10 @@ export function AddMealSheet({
       ["kcal", "protein_g", "fat_g", "carbs_g"] as const
     ).map((key) => (form[key] === "" ? null : parseDecimalInput(form[key])));
     if (macroInputs.some((m) => m != null && !m.ok)) {
-      setForm((s) => ({ ...s, err: "Некоректне значення КБЖВ." }));
+      setForm((s) => ({
+        ...s,
+        err: "Некоректне значення КБЖВ. Впиши число, наприклад 12,5.",
+      }));
       return;
     }
     const [kcal, protein_g, fat_g, carbs_g] = macroInputs.map((m) =>
@@ -369,7 +372,7 @@ export function AddMealSheet({
     if (kcal != null && kcal > MAX_KCAL_PER_MEAL) {
       setForm((s) => ({
         ...s,
-        err: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом.`,
+        err: `Забагато калорій: максимум ${MAX_KCAL_PER_MEAL} ккал на прийом. Зменш значення або розбий на кілька прийомів.`,
       }));
       return;
     }
@@ -378,7 +381,7 @@ export function AddMealSheet({
     ) {
       setForm((s) => ({
         ...s,
-        err: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом.`,
+        err: `Забагато БЖВ: максимум ${MAX_MACRO_GRAMS} г на прийом. Зменш значення.`,
       }));
       return;
     }

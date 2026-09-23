@@ -123,11 +123,11 @@ export function TxRowMetaChips({
           {showAiMark && (
             <span
               className="inline-flex items-center"
-              title="Категорію визначив Сержант за описом і MCC"
+              title="Категорію визначив Сержант за описом і типом магазину"
             >
               <Icon name="sergeant" size="xs" aria-hidden />
               <span className="sr-only">
-                Категорію визначив Сержант за описом і MCC
+                Категорію визначив Сержант за описом і типом магазину
               </span>
             </span>
           )}

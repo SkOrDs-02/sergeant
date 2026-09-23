@@ -12,7 +12,7 @@ describe("getSyncTone", () => {
 
   it("returns the error tone for status=error", () => {
     const tone = getSyncTone({ status: "error" });
-    expect(tone.text).toBe("помилка");
+    expect(tone.text).toBe("не синхронізовано");
     expect(tone.dot).toBe("bg-danger");
     expect(tone.icon).toBe("alert-circle");
   });

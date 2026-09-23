@@ -131,9 +131,11 @@ export class ErrorBoundary extends Component<
           <p className="text-style-body text-muted mb-4 text-center max-w-xs">
             Виникла непередбачена помилка. Спробуй перезавантажити сторінку.
           </p>
-          <pre className="text-style-code text-danger-strong dark:text-danger mb-4 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word bg-panel rounded-xl p-3 border border-line">
-            {error.message}
-          </pre>
+          {import.meta.env.DEV && (
+            <pre className="text-style-code text-danger-strong dark:text-danger mb-4 max-w-lg w-full overflow-auto whitespace-pre-wrap wrap-break-word bg-panel rounded-xl p-3 border border-line">
+              {error.message}
+            </pre>
+          )}
           {showRequestId && (
             <div
               className="mb-6 max-w-lg w-full bg-panel rounded-xl p-3 border border-line flex items-center gap-2"

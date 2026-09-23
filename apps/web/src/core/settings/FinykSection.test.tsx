@@ -166,7 +166,7 @@ describe("FinykSection", () => {
     renderWithProviders();
 
     await waitFor(() => {
-      expect(screen.getByText("Webhook активний")).toBeTruthy();
+      expect(screen.getByText("Синхронізація активна")).toBeTruthy();
     });
     expect(screen.getByText(/3 рахунків/)).toBeTruthy();
     expect(screen.getByText("Синхронізувати історію")).toBeTruthy();

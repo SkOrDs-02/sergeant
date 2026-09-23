@@ -97,7 +97,10 @@ describe("RoutineTimeline", () => {
       />,
     );
 
-    expect(screen.getByRole("alert")).toHaveTextContent("quota exceeded");
+    expect(screen.getByRole("alert")).toHaveTextContent(
+      "Не вдалося зберегти дані",
+    );
+    expect(screen.getByRole("alert")).not.toHaveTextContent("quota exceeded");
     fireEvent.click(
       screen.getByRole("button", { name: "Закрити повідомлення" }),
     );

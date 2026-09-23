@@ -130,7 +130,7 @@ export function FinykLoginScreen({
               id="finyk-mono-token"
               className="pr-20"
               type={showTokenVisible ? "text" : "password"}
-              placeholder="Вставте токен Mono API"
+              placeholder="Встав токен Mono API"
               autoComplete="off"
               aria-invalid={!!formState.errors.token}
               aria-describedby={
@@ -245,7 +245,7 @@ export function FinykLoginScreen({
               </p>
               <p className="text-style-caption text-muted">{authError}</p>
               <p className="text-style-caption text-muted">
-                Отримайте новий токен: Monobank → Налаштування → API
+                Отримай новий токен: Monobank → Налаштування → API
               </p>
             </div>
           )}

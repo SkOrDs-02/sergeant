@@ -291,7 +291,7 @@ export function useWorkoutsOrchestrator(
       }
       if (!activeWorkoutId) {
         toast.warning(
-          "Спочатку натисни «+ Нове» у блоці нижче, щоб зʼявилось активне тренування.",
+          "Спочатку натисни «Почати тренування», щоб зʼявилось активне тренування.",
         );
         return;
       }

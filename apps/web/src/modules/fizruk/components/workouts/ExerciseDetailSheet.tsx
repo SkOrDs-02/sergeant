@@ -291,7 +291,7 @@ export function ExerciseDetailSheet({
           className="w-full h-12 mt-5 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90"
           onClick={() => {
             if (!activeWorkoutId) {
-              toast?.warning?.("Спочатку натисни «+ Нове» у блоці вище.");
+              toast?.warning?.("Спочатку натисни «Почати тренування».");
               return;
             }
             if (activeWorkout?.endedAt) {

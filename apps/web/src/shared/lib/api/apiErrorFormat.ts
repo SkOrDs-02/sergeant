@@ -53,18 +53,19 @@ export function formatApiError(
         const base = "Немає підключення до інтернету. Спробуй пізніше.";
         return base;
       }
-      const base = err.message || "Не вдалося зʼєднатися із сервером.";
-      return base;
+      // `err.message` тут технічний («Failed to fetch»), людині його не
+      // показуємо (аудит копі 2026-09-23 §2.5).
+      return "Не вдалося зʼєднатися із сервером. Перевір зʼєднання і спробуй ще раз.";
     }
     if (err.kind === "parse") {
       // Типовий кейс на Vercel: rewrite перехоплює `/api/*` і повертає index.html.
       if (/<!doctype html/i.test(err.bodyText || "")) {
         const base =
-          "API повернув HTML замість JSON (ймовірно, rewrite перехоплює /api/*).";
+          "Сервер відповів сторінкою замість даних. Онови сторінку, а якщо не допоможе, спробуй пізніше.";
         return base;
       }
-      const base = err.message || err.bodyText || fallback;
-      return base;
+      // «Unexpected token <» і сире тіло відповіді людині ні про що.
+      return fallback;
     }
     // kind === "http"
     const httpMsg = mapHttp(err.status, err.serverMessage);

@@ -425,14 +425,21 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const result = await signIn.email({ email, password });
         if (result?.error) {
-          setAuthError(translateAuthError(result.error, "Помилка входу"));
+          setAuthError(
+            translateAuthError(result.error, messages.auth.genericFailure),
+          );
           return false;
         }
         setSignedOut(false);
         await invalidateMe();
         return true;
       } catch (err) {
-        setAuthError(translateAuthError(asAuthErrorLike(err), "Помилка входу"));
+        setAuthError(
+          translateAuthError(
+            asAuthErrorLike(err),
+            messages.auth.genericFailure,
+          ),
+        );
         return false;
       }
     },
@@ -511,7 +518,9 @@ export function AuthProvider({ children }: AuthProviderProps) {
       try {
         const result = await signUp.email({ email, password, name });
         if (result?.error) {
-          setAuthError(translateAuthError(result.error, "Помилка реєстрації"));
+          setAuthError(
+            translateAuthError(result.error, messages.auth.registerFailure),
+          );
           const code = (result.error as { code?: string }).code;
           return code === "USER_ALREADY_EXISTS" ||
             code === "USER_ALREADY_EXISTS_USE_ANOTHER_EMAIL"
@@ -528,7 +537,10 @@ export function AuthProvider({ children }: AuthProviderProps) {
         return true;
       } catch (err) {
         setAuthError(
-          translateAuthError(asAuthErrorLike(err), "Помилка реєстрації"),
+          translateAuthError(
+            asAuthErrorLike(err),
+            messages.auth.registerFailure,
+          ),
         );
         return false;
       }

@@ -244,9 +244,7 @@ export function useGroqVoiceInput({
       cleanup();
       if (chunks.length === 0) return;
       if (duration < GROQ_MIN_DURATION_MS) {
-        onError?.(
-          "Запис занадто короткий, затисніть і говоріть кілька секунд.",
-        );
+        onError?.("Запис занадто короткий, затисни й говори кілька секунд.");
         return;
       }
       const blob = new Blob(chunks, { type: finalMime });

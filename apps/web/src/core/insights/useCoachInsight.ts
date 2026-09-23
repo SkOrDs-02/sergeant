@@ -25,6 +25,7 @@ import {
 import { workoutTonnageKg } from "@sergeant/fizruk-domain";
 import { averageKcalGoalForDays } from "@sergeant/nutrition-domain";
 import { newAdviceId } from "../observability/adviceTelemetry";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 /* eslint-disable sergeant-design/prefer-kyiv-time, @typescript-eslint/no-non-null-assertion --
    prefer-kyiv-time: the "today" / week-window math intentionally reads
@@ -543,8 +544,8 @@ export function useCoachInsight(
     loading: query.isPending || query.isFetching,
     error: query.error
       ? isApiError(query.error) && query.error.kind === "http"
-        ? query.error.serverMessage || "Помилка генерації інсайту"
-        : (query.error as Error).message || "Помилка завантаження"
+        ? query.error.serverMessage || failedCopy("скласти пораду")
+        : failedCopy("завантажити пораду")
       : null,
     refresh,
   };

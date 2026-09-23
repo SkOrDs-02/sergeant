@@ -51,12 +51,12 @@ const COPY = {
   rejectedEmpty: "Немає",
   storage: "Сховище",
   storageUnknown: "Ще не відкривали",
-  storageOpfs: "OPFS, файли",
-  storageLocalStorage: "localStorage, ліміт ~5 МБ",
+  storageOpfs: "Файлове сховище браузера",
+  storageLocalStorage: "Просте сховище браузера, ліміт ~5 МБ",
   storageMemory: "Лише памʼять, до перезапуску",
   storageOtherTab:
     "База відкрита в іншій вкладці. Закрий зайві вкладки Sergeant і онови цю.",
-  opfsWorker: "OPFS у фоні",
+  opfsWorker: "Файлове сховище у фоні",
   opfsWorkerChecking: "Перевіряю…",
   opfsWorkerOk: "Доступний",
   retry: "Повторити синхронізацію",
@@ -83,7 +83,7 @@ function purgeNoticeBody(purged: number, purgedAtIso: string): string {
   const dateLabel = formatDayMonth(new Date(purgedAtIso));
   return (
     `${purged} ${noun} синхронізації видалено ${dateLabel} (старіші за 30 днів)` +
-    ` — сервер їх так і не отримав, ці зміни втрачено.`
+    `: сервер їх так і не отримав, ці зміни втрачено.`
   );
 }
 

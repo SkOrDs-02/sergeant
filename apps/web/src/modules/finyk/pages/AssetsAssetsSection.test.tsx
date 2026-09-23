@@ -180,7 +180,7 @@ describe("AssetsAssetsSection", () => {
     });
     fireEvent.click(receivablesToggle);
     expect(receivablesToggle).toHaveAttribute("aria-expanded", "false");
-    expect(screen.queryByText(/Зберігайте облік боргів/)).not.toBeVisible();
+    expect(screen.queryByText(/Зберігай облік боргів/)).not.toBeVisible();
 
     const assetsToggle = screen.getByRole("button", { name: /Інші активи/ });
     fireEvent.click(assetsToggle);
@@ -191,7 +191,7 @@ describe("AssetsAssetsSection", () => {
   it("shows the empty-state placeholder for receivables", () => {
     render(wrap(<AssetsAssetsSection state={makeState()} />));
     expect(
-      screen.getByText(/Зберігайте облік боргів і дат повернення/),
+      screen.getByText(/Зберігай облік боргів і дат повернення/),
     ).toBeInTheDocument();
   });
 
@@ -215,7 +215,7 @@ describe("AssetsAssetsSection", () => {
       wrap(<AssetsAssetsSection state={makeState()} />),
     );
     fireEvent.click(screen.getByRole("button", { name: /Мені винні/ }));
-    expect(screen.queryByText(/Зберігайте облік боргів/)).not.toBeVisible();
+    expect(screen.queryByText(/Зберігай облік боргів/)).not.toBeVisible();
 
     // Quick-action «+ Актив → Мені винні» ставить showRecvForm — група має
     // розгорнутись сама, інакше форма лишиться невидимою.
