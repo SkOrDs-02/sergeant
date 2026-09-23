@@ -176,6 +176,20 @@ describe("HubMainContent iOS install banner", () => {
     expect(screen.getByTestId("local-only-banner")).toBeInTheDocument();
   });
 
+  it("ставить банер про локальні дані ПІСЛЯ дашборда, а не над ним", () => {
+    // Бурштинове попередження стояло першим, над модулями й «Зараз», тож
+    // новачок першим читав загрозу втрати даних, а не свій наступний крок
+    // (критика екранів 2026-09-23). Банер лишається на хабі (канон finyk
+    // §6.2), але під тим, заради чого людина прийшла.
+    renderWithClient(<HubMainContent {...props()} />);
+    const dashboard = screen.getByTestId("hub-dashboard");
+    const banner = screen.getByTestId("local-only-banner");
+    expect(
+      dashboard.compareDocumentPosition(banner) &
+        Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+  });
+
   it("shows the iOS install banner outside FTUX when iosVisible is set", () => {
     renderWithClient(<HubMainContent {...props({ iosVisible: true })} />);
 

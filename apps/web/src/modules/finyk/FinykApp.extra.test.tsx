@@ -818,6 +818,10 @@ describe("FinykApp (extra) — page routing", () => {
 
 describe("FinykApp (extra) — auto-close login overlay when clientInfo arrives", () => {
   it("closes the overlay when clientInfo becomes non-null after opening", () => {
+    // Банер «підключити банк» живе лише на Огляді, а попередній describe
+    // лишає в моці маршруту постійне значення (`clearAllMocks` його не
+    // скидає), тож сторінку задаємо явно.
+    vi.mocked(useFinykRoute).mockReturnValue(["overview", navigateMock]);
     const { rerender } = render(<FinykApp onOpenAuth={NOOP_AUTH} />);
     fireEvent.click(screen.getByText("Підключити"));
     expect(screen.getByTestId("finyk-login-screen")).toBeInTheDocument();

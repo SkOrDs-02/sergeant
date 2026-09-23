@@ -15,11 +15,21 @@ import { shouldShowNoBankBanner } from "./NoBankBanner.visibility";
 const BASE = {
   hasConnectedProvider: false,
   manualOnly: false,
+  page: "overview",
 };
 
 describe("shouldShowNoBankBanner", () => {
   it("без банку і без вибору «без банку» — показується", () => {
     expect(shouldShowNoBankBanner(BASE)).toBe(true);
+  });
+
+  it("показується лише на Огляді, не на решті вкладок", () => {
+    // На mobile банер займав ~37% першого екрана КОЖНОЇ вкладки Фініка, а
+    // порожній стан вкладки опинявся під згином (критика екранів
+    // 2026-09-23). Вибір «банк чи вручну» робиться один раз.
+    for (const page of ["transactions", "budgets", "analytics", "assets"]) {
+      expect(shouldShowNoBankBanner({ ...BASE, page })).toBe(false);
+    }
   });
 
   it("банк підключено — не показується", () => {
