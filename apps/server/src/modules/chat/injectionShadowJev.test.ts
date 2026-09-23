@@ -81,7 +81,19 @@ describe("injectionShadowJev", () => {
     ]);
   });
 
-  it("без прапорця prepareToolResults у мережу не ходить", () => {
+  it("незадана змінна вмикає детектор: змінна лише аварійний вимикач", async () => {
+    vi.stubEnv("CHAT_INJECTION_JEV_SHADOW", undefined);
+    vi.resetModules();
+    try {
+      const fresh = await import("../../env/env.js");
+      expect(fresh.env.CHAT_INJECTION_JEV_SHADOW).toBe(true);
+    } finally {
+      vi.unstubAllEnvs();
+      vi.resetModules();
+    }
+  });
+
+  it("з вимикачем false prepareToolResults у мережу не ходить", () => {
     const fetchSpy = vi.spyOn(globalThis, "fetch");
     expect(env.CHAT_INJECTION_JEV_SHADOW).toBe(false);
     expect(isJevShadowEnabled()).toBe(false);

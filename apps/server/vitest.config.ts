@@ -23,7 +23,13 @@ export default defineConfig({
     // тести мокають пул чергою `mockResolvedValueOnce`, і позаплановий
     // UPDATE зʼїдає чужу відповідь. Сама поведінка покрита в
     // `src/lib/lastSeen.test.ts`, де прапорець вмикається явно.
-    env: { LAST_SEEN_TRACKING_ENABLED: "false" },
+    // Тіньовий Jev-детектор увімкнений за замовчуванням і ходить у мережу з
+    // кожного `prepareToolResults`; у юнітах вимкнений з тієї ж причини, а
+    // вмикається явно в `chat/injectionShadowJev.test.ts`.
+    env: {
+      LAST_SEEN_TRACKING_ENABLED: "false",
+      CHAT_INJECTION_JEV_SHADOW: "false",
+    },
     include: ["src/**/*.test.ts"],
     exclude: ["src/**/*.integration.test.ts", "src/**/*.e2e.test.ts"],
     passWithNoTests: true,
