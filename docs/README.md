@@ -1,6 +1,6 @@
 # Sergeant Documentation
 
-> **Last touched:** 2026-09-17 by @claude (індекс звірено з деревом: міграція завершена, додано modules/loops/research/assets, знято legacy-archive секцію). **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-23 by @claude (мітки секцій → реальні шляхи, злито дубль playbooks/instructions). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Main documentation index for Sergeant.
@@ -32,7 +32,7 @@ Main documentation index for Sergeant.
 | **Чи документи свіжі?**            | [`governance/freshness-dashboard.html`](./governance/governance/freshness-dashboard.html) — `Last validated` / `Next review` по всьому tracked-set.                                        |
 | **Що шипнули у whats-new?**        | [`whats-new/`](./product/whats-new/README.md) — markdown side; canonical source = `apps/web/src/core/whatsNew/releases.ts` (drift caught by `releases.test.ts`).                           |
 
-> Чому довіряти: `open-work.md` парсить `> **Status:**` headers (Rule #10) програмно — будь-який drift падає в CI через `pnpm docs:check-open-work`. Якщо документ показується тут зі статусом `Active`, значить його джерело справді у такому стані.
+> Чому довіряти: `open-work.md` парсить `> **Status:**` headers (Rule #10) програмно — будь-який drift ловить `pnpm docs:check-open-work` (локальний ручний прогін; CI не виконується з 2026-09-23). Якщо документ показується тут зі статусом `Active`, значить його джерело справді у такому стані.
 
 ## Quick start
 
@@ -60,36 +60,35 @@ rules are in
 
 ### Informational (reference / architecture / policy)
 
-| Section                                                  | Purpose                                                                               |
-| -------------------------------------------------------- | ------------------------------------------------------------------------------------- |
-| [`adr/`](./governance/adr/README.md)                     | Architectural decisions and tradeoffs                                                 |
-| [`agents/`](./start/agents/README.md)                    | Agent operating system, routing catalog, workflows                                    |
-| [`api/`](./engineering/api/README.md)                    | OpenAPI, API contracts, generated artifacts                                           |
-| [`architecture/`](./engineering/architecture/README.md)  | Repo map, runtime surfaces, platform architecture                                     |
-| [`copy/`](./product/copy/README.md)                      | UA-copy tone-of-voice rules; reference for every Cyrillic JSX literal                 |
-| [`deploy/`](./operations/deploy/README.md)               | Deploy walkthroughs (Hetzner/Coolify, Vercel; OpenClaw — archived, ADR-0075)          |
-| [`design/`](./design/design/README.md)                   | Design system, brand, accents, dark mode, UI patterns                                 |
-| [`development/`](./engineering/development/README.md)    | Local dev-loop how-tos (ESLint config, local Postgres, pre-commit timing)             |
-| [`governance/`](./governance/governance/README.md)       | Hard rules registry, policy docs, feature-flag registry, link-check allowlist         |
-| [`i18n/`](./design/i18n/README.md)                       | i18n readiness foundation (UA-only today; lightweight scaffolding for future locales) |
-| [`integrations/`](./engineering/integrations/README.md)  | Third-party integrations (Monobank, Voyage, Renovate, …)                              |
-| [`loops/`](./engineering/loops/tech-debt-ratchet.md)     | Engineering loops (tech-debt ratchet)                                                 |
-| [`marketing/`](./product/marketing/README.md)            | Pre-launch GTM execution plans (reference; reconciled against shipped landing)        |
-| [`mobile/`](./engineering/mobile/README.md)              | Expo/mobile strategy and migration docs                                               |
-| [`notes/`](./engineering/notes/README.md)                | Design spikes and exploratory engineering notes                                       |
-| [`observability/`](./operations/observability/README.md) | Alerts, SLOs, logs, engineering metrics                                               |
-| [`ops/`](./operations/ops/README.md)                     | Recurring ops runbooks (Renovate maintainer workflow, dependency hygiene)             |
-| [`playbooks/`](./start/instructions/README.md)           | Canonical execution recipes for repeatable tasks                                      |
-| [`postmortems/`](./operations/postmortems/README.md)     | Incident reviews and follow-up memory                                                 |
-| [`instructions/`](./start/instructions/README.md)        | Єдина бібліотека playbook і runtime-runbook процедур                                  |
-| [`security/`](./governance/security/README.md)           | Security policy, access governance, recovery, and audit docs                          |
-| [`testing/`](./engineering/testing/README.md)            | Testing strategy meta-docs (mutation testing, layer matrix, threshold-is)             |
-| [`ui/`](./design/ui/README.md)                           | Cross-cutting UI behaviour policy (keyboard shortcuts registry, toast policy)         |
-| [`web/`](./engineering/web/README.md)                    | `apps/web` platform deep-dives (Service Worker update strategy)                       |
-| [`model/`](./product/model/README.md)                    | Продуктова модель: огляд продукту, конституція, шар знань                             |
-| [`modules/`](./product/modules/finyk.md)                 | Продуктові канони модулів (finyk, nutrition, fizruk, routine, hub-coach) з журналами  |
-| [`pr-ledger/`](./governance/pr-ledger/README.md)         | Реєстр змерджених PR-ів по канонічних доках (Hard Rule #26)                           |
-| [`assets/`](./assets/README.md)                          | Зображення для README/лендінга (наразі лише реєстр відсутніх assets)                  |
+| Section                                                             | Purpose                                                                               |
+| ------------------------------------------------------------------- | ------------------------------------------------------------------------------------- |
+| [`governance/adr/`](./governance/adr/README.md)                     | Architectural decisions and tradeoffs                                                 |
+| [`start/agents/`](./start/agents/README.md)                         | Agent operating system, routing catalog, workflows                                    |
+| [`engineering/api/`](./engineering/api/README.md)                   | OpenAPI, API contracts, generated artifacts                                           |
+| [`engineering/architecture/`](./engineering/architecture/README.md) | Repo map, runtime surfaces, platform architecture                                     |
+| [`product/copy/`](./product/copy/README.md)                         | UA-copy tone-of-voice rules; reference for every Cyrillic JSX literal                 |
+| [`operations/deploy/`](./operations/deploy/README.md)               | Deploy walkthroughs (Hetzner/Coolify, Vercel; OpenClaw — archived, ADR-0075)          |
+| [`design/design/`](./design/design/README.md)                       | Design system, brand, accents, dark mode, UI patterns                                 |
+| [`engineering/development/`](./engineering/development/README.md)   | Local dev-loop how-tos (ESLint config, local Postgres, pre-commit timing)             |
+| [`governance/governance/`](./governance/governance/README.md)       | Hard rules registry, policy docs, feature-flag registry, link-check allowlist         |
+| [`design/i18n/`](./design/i18n/README.md)                           | i18n readiness foundation (UA-only today; lightweight scaffolding for future locales) |
+| [`engineering/integrations/`](./engineering/integrations/README.md) | Third-party integrations (Monobank, Voyage, Renovate, …)                              |
+| [`engineering/loops/`](./engineering/loops/tech-debt-ratchet.md)    | Engineering loops (tech-debt ratchet)                                                 |
+| [`product/marketing/`](./product/marketing/README.md)               | Pre-launch GTM execution plans (reference; reconciled against shipped landing)        |
+| [`engineering/mobile/`](./engineering/mobile/README.md)             | Expo/mobile strategy and migration docs                                               |
+| [`engineering/notes/`](./engineering/notes/README.md)               | Design spikes and exploratory engineering notes                                       |
+| [`operations/observability/`](./operations/observability/README.md) | Alerts, SLOs, logs, engineering metrics                                               |
+| [`operations/ops/`](./operations/ops/README.md)                     | Recurring ops runbooks (Renovate maintainer workflow, dependency hygiene)             |
+| [`start/instructions/`](./start/instructions/README.md)             | Єдина бібліотека playbook і runtime-runbook процедур (canonical execution recipes)    |
+| [`operations/postmortems/`](./operations/postmortems/README.md)     | Incident reviews and follow-up memory                                                 |
+| [`governance/security/`](./governance/security/README.md)           | Security policy, access governance, recovery, and audit docs                          |
+| [`engineering/testing/`](./engineering/testing/README.md)           | Testing strategy meta-docs (mutation testing, layer matrix, threshold-is)             |
+| [`design/ui/`](./design/ui/README.md)                               | Cross-cutting UI behaviour policy (keyboard shortcuts registry, toast policy)         |
+| [`engineering/web/`](./engineering/web/README.md)                   | `apps/web` platform deep-dives (Service Worker update strategy)                       |
+| [`product/model/`](./product/model/README.md)                       | Продуктова модель: огляд продукту, конституція, шар знань                             |
+| [`product/modules/`](./product/modules/finyk.md)                    | Продуктові канони модулів (finyk, nutrition, fizruk, routine, hub-coach) з журналами  |
+| [`governance/pr-ledger/`](./governance/pr-ledger/README.md)         | Реєстр змерджених PR-ів по канонічних доках (Hard Rule #26)                           |
+| [`assets/`](./assets/README.md)                                     | Зображення для README/лендінга (наразі лише реєстр відсутніх assets)                  |
 
 ### Активна робота
 

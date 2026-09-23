@@ -2,7 +2,7 @@
 
 > **Historical (2026-05-11).** `tools/console` видалено; OpenClaw stack decommissioned ([ADR-0075](./0075-openclaw-gateway-decommissioned.md)). Рішення про bump SDK лишається записом на момент ухвалення.
 
-- **Status:** Accepted
+- **Status:** Deprecated <!-- 2026-09-23: `tools/console` видалено, OpenClaw decommissioned за ADR-0075; див. банер Historical вище -->
 - **Date:** 2026-05-11
 - **Last validated:** 2026-07-21 by @cursoragent. **Next review:** 2026-10-18.
 - **Deciders:** @Skords-01

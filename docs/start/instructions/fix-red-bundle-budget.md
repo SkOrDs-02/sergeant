@@ -1,10 +1,10 @@
 # Playbook: Червоний бандл-бюджет (size-limit / eager)
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-14.
+> **Last touched:** 2026-09-23 by @Skords-01. **Next review:** 2027-01-14.
 > **Status:** Active
 > **Runtime-specific:** no
 
-**Trigger:** джоба `Bundle budgets (size-limit + eager)` червона · `pnpm --filter @sergeant/web size` або `size:eager` падає локально · зʼявилась спокуса підняти стелю в `apps/web/package.json` чи `check-eager-bundle.mjs`.
+**Trigger:** `pnpm --filter @sergeant/web size` або `size:eager` падає локально (CI-джоби `bundle-budgets` з 2026-09-23 немає) · зʼявилась спокуса підняти стелю в `apps/web/package.json` чи `check-eager-bundle.mjs`.
 
 ## Owner surface
 
@@ -12,7 +12,7 @@
 - Coupled surface: `.github/workflows/ci.yml` (джоба `bundle-budgets`), `apps/web/vite.config.js`
 - Governing skill: `sergeant-web-ui`
 - Coupled skill: `sergeant-deploy-and-observability` (якщо правиш саму джобу)
-- Обовʼязково прочитати перед кроком 5: [`AGENTS.md § Performance budgets`](../../../AGENTS.md#performance-budgets) — там журнал усіх ратчетів із числами.
+- Обовʼязково прочитати перед кроком 5: [`AGENTS.md § Performance budgets`](../../../AGENTS.md#performance-budgets) (ліміти й уроки) і [журнал ратчетів](../../work/specs/tech-debt/bundle-budget-ratchet-log.md) з усіма замірами.
 
 ---
 
@@ -20,7 +20,7 @@
 
 | Метрика                  | Що міряє                                                                | Ліміт       | Команда                                       |
 | ------------------------ | ----------------------------------------------------------------------- | ----------- | --------------------------------------------- |
-| `size-limit` (JS усього) | **суму всіх** емітованих чанків `apps/server/dist/assets/*.js` (brotli) | **1.46 MB** | `pnpm --filter @sergeant/web exec size-limit` |
+| `size-limit` (JS усього) | **суму всіх** емітованих чанків `apps/server/dist/assets/*.js` (brotli) | **1.48 MB** | `pnpm --filter @sergeant/web exec size-limit` |
 | `size-limit` (CSS)       | `apps/server/dist/assets/*.css` (brotli)                                | **40 kB**   | те саме                                       |
 | **eager**                | лише те, що Vite вписав у `index.html` як `modulepreload`/`script src`  | **268 kB**  | `node scripts/ci/check-eager-bundle.mjs`      |
 
@@ -89,7 +89,7 @@ pnpm --filter @sergeant/web build:analyze   # ANALYZE=1 → apps/web/dist/bundle
 - `size-limit` — число в `apps/web/package.json` → секція `"size-limit"`.
 - eager — `DEFAULT_LIMIT_BYTES` у `scripts/ci/check-eager-bundle.mjs`.
 - Запас: **1-2% над фактом** (практика всіх попередніх ратчетів). Більше — запрошення в «комфортну зону», менше — гейт червонітиме щотижня.
-- У тому ж PR: рядок у таблиці `AGENTS.md § Performance budgets` + абзац «чому підняли, а не різали» з обома замірами (`main` і гілка).
+- У тому ж PR: рядок у таблиці `AGENTS.md § Performance budgets` + запис на початок [журналу ратчетів](../../work/specs/tech-debt/bundle-budget-ratchet-log.md) «чому підняли, а не різали» з обома замірами (`main` і гілка).
 - Борг на скорочення — у [`docs/work/specs/tech-debt/frontend.md`](../../work/specs/tech-debt/frontend.md).
 
 **Для eager дефолт протилежний: не підіймай.** Він ратчетнутий униз тричі, і щоразу важіль знаходився заміром. Підняти його — віддати назад роботу 2026-08-07 і 2026-09-12 по метриці, яку користувач відчуває.
@@ -136,7 +136,7 @@ pnpm --filter @sergeant/web build:analyze   # ANALYZE=1 → apps/web/dist/bundle
 
 ## Не чіпай форму джоби
 
-Обидва гейти живуть у власній джобі `bundle-budgets` із власним прод-білдом — саме тому, що кроками в `check` вони мовчали тижнями (див. [`audit-ci-gates.md`](./audit-ci-gates.md)). Форму стереже [`scripts/__tests__/ci-bundle-budget-gates.test.mjs`](../../../scripts/__tests__/ci-bundle-budget-gates.test.mjs):
+З 2026-09-23 CI відсутній і ця джоба не виконується; форма важлива на випадок, якщо CI повернуть. Обидва гейти живуть у власній джобі `bundle-budgets` із власним прод-білдом — саме тому, що кроками в `check` вони мовчали тижнями (див. [`audit-ci-gates.md`](./audit-ci-gates.md)). Форму стереже [`scripts/__tests__/ci-bundle-budget-gates.test.mjs`](../../../scripts/__tests__/ci-bundle-budget-gates.test.mjs):
 
 - обидва гейти — рівно по одному кроку, у джобі `bundle-budgets`, після кроку білда;
 - у `check` їх немає;
@@ -153,7 +153,7 @@ pnpm --filter @sergeant/web build:analyze   # ANALYZE=1 → apps/web/dist/bundle
 - [ ] `node scripts/ci/check-eager-bundle.mjs` — зелено (запущено з кореня репо)
 - [ ] Заміряно `origin/main` окремо; у PR названо внесок гілки в байтах
 - [ ] Крок 3 пройдено: у найважчій дюжині немає чужого чанка
-- [ ] Якщо був ратчет — число піднято в тому ж PR, `AGENTS.md § Performance budgets` оновлено, борг записано у `frontend.md`
+- [ ] Якщо був ратчет — число піднято в тому ж PR, `AGENTS.md § Performance budgets` і журнал ратчетів оновлено, борг записано у `frontend.md`
 - [ ] `node --test scripts/__tests__/ci-bundle-budget-gates.test.mjs` — зелено (якщо чіпав `ci.yml`)
 - [ ] `pnpm --filter @sergeant/web test` — зелено (якщо додавав eager-поверхню в `EAGER_SURFACES`)
 
@@ -166,7 +166,8 @@ pnpm --filter @sergeant/web build:analyze   # ANALYZE=1 → apps/web/dist/bundle
 
 ## See also
 
-- [`AGENTS.md § Performance budgets`](../../../AGENTS.md#performance-budgets) — журнал усіх ратчетів із замірами
+- [`AGENTS.md § Performance budgets`](../../../AGENTS.md#performance-budgets) - ліміти й уроки ратчетів
+- [`bundle-budget-ratchet-log.md`](../../work/specs/tech-debt/bundle-budget-ratchet-log.md) - журнал усіх ратчетів із замірами
 - [`audit-ci-gates.md`](./audit-ci-gates.md) — гейт, який мовчить замість того, щоб падати
 - [`fix-failing-ci.md`](./fix-failing-ci.md) — загальний тріаж червоного CI
 - [`cleanup-dead-code.md`](./cleanup-dead-code.md) — коли важіль виявився мертвим кодом

@@ -1,6 +1,6 @@
 # Перші 30 хвилин агента в Sergeant
 
-> **Last touched:** 2026-09-17 by @claude (`add-playbook.md` → `pnpm gen new-playbook`; hubchat → ai). **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-23 by @claude (deploy-опис приведено до реального потоку: без GitHub Actions/`ghcr.io`). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Стартова шпаргалка для AI-агентів (Claude Code, Codex, локальні моделі) і нових контриб'юторів. Мета — за 30 хвилин довести середовище до стану «можна писати код, не порушуючи hard rules і не падаючи на pre-commit». Для повної repo policy джерело правди — [`AGENTS.md`](../../../AGENTS.md). Цей файл — навігація і `quickstart`, не паралельний source-of-truth.
@@ -63,7 +63,7 @@ CI hard-rules ловляться різними механізмами. Стар
 
 ## 4.5. Інфраструктура (оновлено 2026-07-21)
 
-**Backend (ADR-0074):** API + Postgres + Redis на **Hetzner CX23 під Coolify**. Образ API — `ghcr.io` через `deploy-api.yml`; pre-deploy migrate — `node dist-server/migrate.js`. Railway виведено ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)).
+**Backend (ADR-0074):** API + Postgres + Redis на **Hetzner CX23 під Coolify**. GitHub Actions і `ghcr.io` більше не задіяні — Coolify білдить образ на сервері й деплоїться вручну через `pnpm deploy:api`; міграції їдуть в ENTRYPOINT образу (`node dist-server/migrate.js && exec node dist-server/index.js`), не в Coolify `pre_deployment_command`. Автодеплою на merge немає — розрив між `main` і продом виміряй через `pnpm deploy:status`. Railway виведено ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)); деталі — [`AGENTS.md § Де живе код`](../../../AGENTS.md) і `§ Прод не оновлюється сам`.
 
 **OpenClaw (ADR-0075):** повністю **decommissioned** 2026-07-20 — `tools/openclaw`, gateway, `packages/openclaw-plugin`, `ops/openclaw` прибрано з репо. Hard Rule #20 лишається (fail-closed guard проти `OPENCLAW_GITHUB_PAT` у prod). Для Telegram ops — server-side alert bot, не OpenClaw (n8n теж виведено — [ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)).
 

@@ -1,6 +1,6 @@
 # Agents in apps/web
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2027-01-13.
+> **Last touched:** 2026-09-23 by @claude (deploy-рядок і «CI gate» формулювання приведено до реального стану: CI не виконується). **Next review:** 2027-01-13.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють лише в `apps/web/`. Не дублюй repo policy: hard rules, ownership map, performance budgets і CI matrix живуть у корені.
@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-React 18 + Vite 8 + Tailwind 4 + TanStack Query + Better Auth (cookie sessions) + Service Worker (`src/sw.ts`). Deploy: Vercel preview per PR + production on merge to `main`. Tests: Vitest + MSW + React Testing Library; a11y/E2E: Playwright + axe.
+React 18 + Vite 8 + Tailwind 4 + TanStack Query + Better Auth (cookie sessions) + Service Worker (`src/sw.ts`). Deploy: ручний `pnpm deploy:web` (локальний Vercel CLI, прямо в прод) — прев'ю на PR немає, Git-інтеграція на Bitbucket не працює; автодеплою на merge теж немає. Деталі — [`AGENTS.md § Де живе код`](../../AGENTS.md). Tests: Vitest + MSW + React Testing Library; a11y/E2E: Playwright + axe.
 
 ## Quick commands
 
@@ -24,7 +24,7 @@ pnpm --filter @sergeant/web test               # Vitest
 pnpm --filter @sergeant/web test:a11y          # Playwright + axe
 pnpm --filter @sergeant/web test:coverage      # Vitest with coverage
 pnpm --filter @sergeant/web typecheck
-pnpm --filter @sergeant/web size               # size-limit (CI gate)
+pnpm --filter @sergeant/web size               # size-limit (локальний обов'язковий гейт — CI не виконується)
 pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gate)
 ```
 
@@ -51,7 +51,7 @@ pnpm --filter @sergeant/web lighthouse          # Lighthouse CI (perf-budget gat
 
 ## Bundle budget
 
-CI gate via `size-limit`. Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
+Локальний обов'язковий гейт через `size-limit` — CI, який раніше це перевіряв, не виконується з переїзду на Bitbucket (2026-09-23). Canonical numbers: root [`AGENTS.md § Performance budgets`](../../AGENTS.md#performance-budgets) and `apps/web/package.json` → `"size-limit"` (`../server/dist/assets/*` after Vite output is copied for unified-mode serving).
 
 **Lazy-by-default policy:** dynamic-import (через `lazyImport` / `lazyDefault`) для всіх great-effort surface-ів — onboarding splash (`WelcomeScreen` + `OnboardingWizard`), кожен route-shell-модуль (`finyk`, `fizruk`, `routine`, `nutrition`), settings-page-и, marketing (`PricingPage`), barcode scanner (`vendor-zxing`). Тонкі еagerly-доступні гейти (як `shouldShowOnboarding()` у `App.tsx`/`HubHomeView.tsx`) імпортуємо з legkih helper-файлів (`onboarding/onboardingGate.ts`), а не з важких component-модулів — інакше Rollup тягне весь стек у entry chunk.
 

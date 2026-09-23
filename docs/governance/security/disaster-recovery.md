@@ -1,6 +1,6 @@
 # Disaster Recovery
 
-> **Last touched:** 2026-09-17 by @claude (перевалідовано після Codex 2026-05-13: рядок «Console / automation surfaces» → background jobs під Coolify, console/n8n — історія ADR-0075/0090). **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-23 by @claude (додано примітку: щотижнева автоперевірка бекапу зупинилась із GitHub). **Next review:** 2026-12-16.
 > **Status:** Active
 
 Disaster recovery defines how Sergeant recovers from catastrophic runtime or data loss events. This document keeps the expectations lightweight but explicit for a Founder+1 operating model.
@@ -28,6 +28,8 @@ Disaster recovery defines how Sergeant recovers from catastrophic runtime or dat
 - One documented rollback path for each runtime in [service-catalog.md](../../engineering/architecture/service-catalog.md).
 - Secret rotation procedure ready for auth and provider keys.
 - Backup restore drill performed on a regular cadence, not only after incidents.
+
+> **2026-09-23:** the weekly automated restore verification (`.github/workflows/db-backup-verify.yml`, Sunday 04:00 UTC) stopped running when GitHub Actions went dark with the Bitbucket migration — no equivalent runs on Bitbucket today. The manual drill in [test-backup-restore.md](../../start/instructions/test-backup-restore.md) is the only check left; treat its 6-month cadence (§ Drill cadence below) as the sole freshness signal until an automated replacement exists.
 
 ## Recovery ownership
 

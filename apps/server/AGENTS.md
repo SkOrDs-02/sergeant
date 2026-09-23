@@ -1,6 +1,6 @@
 # Agents in apps/server
 
-> **Last touched:** 2026-09-22 by @Skords-01. **Next review:** 2027-01-17.
+> **Last touched:** 2026-09-23 by @claude (деплой-рядок: без GitHub Actions/`ghcr.io`, `pnpm deploy:api`). **Next review:** 2027-01-17.
 > **Status:** Active
 
 > **Single source of truth → root [`AGENTS.md`](../../AGENTS.md).** Цей файл — sub-tree quick reference для агентів, що працюють у `apps/server/`. Не дублюй repo policy: hard rules і CI matrix живуть у корені.
@@ -11,7 +11,7 @@
 
 ## Stack snapshot
 
-Node 22 + Express + PostgreSQL 18 (pgvector, `pg`) + Better Auth (cookie + bearer) + Anthropic Claude (tool-use, streaming) + Voyage embeddings (AI memory). Деплой: Hetzner CX23 + Coolify — образ `ghcr.io/.../sergeant-api` (GitHub Actions [`deploy-api.yml`](../../.github/workflows/deploy-api.yml)); [`Dockerfile.api`](../../Dockerfile.api) без змін. Rationale: [ADR-0074](../../docs/governance/adr/0074-hosting-hetzner-coolify.md). Тести: Vitest unit + Testcontainers (real Postgres) інтеграційні.
+Node 22 + Express + PostgreSQL 18 (pgvector, `pg`) + Better Auth (cookie + bearer) + Anthropic Claude (tool-use, streaming) + Voyage embeddings (AI memory). Деплой: Hetzner CX23 + Coolify, білд на сервері (GitHub Actions/`ghcr.io` не задіяні з переїзду на Bitbucket) — викотити вручну `pnpm deploy:api` (`scripts/deploy-api.mjs`, тригерить Coolify API); [`Dockerfile.api`](../../Dockerfile.api) без змін. Автодеплою на merge немає, розрив від `main` читай через `pnpm deploy:status`. Rationale: [ADR-0074](../../docs/governance/adr/0074-hosting-hetzner-coolify.md); поточний потік — [`AGENTS.md § Де живе код`](../../AGENTS.md). Тести: Vitest unit + Testcontainers (real Postgres) інтеграційні.
 
 ## Quick commands
 

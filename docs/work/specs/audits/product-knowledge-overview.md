@@ -7,7 +7,7 @@
 > «founder ↔ документація ↔ код» для **Sergeant як одного продукту** (не модуля).
 > Предмет: ідентичність, конституція крос-модульних правил, деградаційні
 > контракти. Канон, який цей звіт супроводжує —
-> [`docs/product/modules/product-overview.md`](../../../product/model/product-overview.md).
+> [`docs/product/model/product-overview.md`](../../../product/model/product-overview.md).
 > Спека прогону — [`product-knowledge-audit-overview.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/planning/archive/specs/product-knowledge-audit-overview.md).
 >
 > **Метод.** 23 питання банку (§3 спеки) поставлено трьом незалежним колонкам:

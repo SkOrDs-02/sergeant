@@ -2,7 +2,7 @@
 
 > **Update 2026-07-21:** Backend на **Hetzner/Coolify** ([ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)); OpenClaw decommissioned ([ADR-0075](../../governance/adr/0075-openclaw-gateway-decommissioned.md)). Railway CLI/дашборд нижче — **historical**, де не позначено Coolify.
 
-> **Last touched:** 2026-09-17 by @claude (`pnpm db:backup` → кроки database-backup-restore.md). **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-23 by @claude (deploy/rollback приведено до реального потоку: без GHCR, `pnpm deploy:api`/`deploy:web`). **Next review:** 2026-12-16.
 > **Status:** Active
 > **Runtime-specific:** yes
 
@@ -32,20 +32,19 @@
 
 Перш ніж брати on-call, новий оператор повинен мати:
 
-| Доступ                        | Куди                                                 | Що дає                                                                                                                                                                                                                                                   |
-| ----------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| **GitHub repo write**         | `Skords-01/Sergeant`                                 | PR / merge / branch protection bypass для hotfix-у. Required reviewer лишається `@Skords-01`, тому emergency-merge через admin-override (GitHub repo → Settings → Branches → відключити protection на час hotfix-у) — тільки за direct запит у Telegram. |
-| **Coolify (Hetzner VPS)**     | CX23 VPS + Coolify UI                                | API deploy, env-vars, Postgres/Redis, logs, pre-deploy migrate. ADR → [0074](../../governance/adr/0074-hosting-hetzner-coolify.md).                                                                                                                      |
-| **GitHub Container Registry** | `ghcr.io` (via `deploy-api.yml`)                     | API image source for Coolify pulls.                                                                                                                                                                                                                      |
-| ~~**Railway workspace**~~     | _(decommissioned 2026-07)_                           | Historical — API/OpenClaw/n8n раніше тут. n8n виведено ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)).                                                                                                                                    |
-| **Vercel team**               | `skords-01` team                                     | Деплой / env-vars `apps/web`. Edge proxy `/api/*` → Coolify backend (`BACKEND_URL`).                                                                                                                                                                     |
-| **Sentry org**                | `sergeant-ops`                                       | Errors / replay для web + server + console. Alert-routing через server-side shipper (`/api/internal/alerts/send`).                                                                                                                                       |
-| **PostHog project**           | `Sergeant`                                           | Product analytics. Канонічні events — у [`packages/shared/src/lib/analyticsEvents.ts`](../../../packages/shared/src/lib/analyticsEvents.ts).                                                                                                             |
-| **Telegram bot tokens**       | 1Password vault `sergeant-bots`                      | `TELEGRAM_ALERT_BOT_TOKEN` (Sergeant_alert_bot для server-side alert shipper). ~~`OPENCLAW_BOT_TOKEN`~~ — removed (ADR-0075).                                                                                                                            |
-| **Monobank API token**        | 1Password vault `sergeant-monobank`                  | Webhook-rotation. Не для daily ops — тільки setup нових юзерів finyk.                                                                                                                                                                                    |
-| **Anthropic API key**         | Coolify app env (API service)                        | HubChat + server AI paths. Quota — у [Anthropic console](https://console.anthropic.com/).                                                                                                                                                                |
-| **Voyage API key**            | Coolify app env (API service)                        | AI memory embeddings. Quota — у Voyage dashboard ([voyageai.com](https://www.voyageai.com/) → sign-in).                                                                                                                                                  |
-| **PostgreSQL prod DSN**       | Coolify Postgres service (`DATABASE_URL` on API app) | НЕ для daily ops — тільки для emergency `psql`-investigation. Звичайні запити йдуть через `apps/server` API.                                                                                                                                             |
+| Доступ                    | Куди                                                 | Що дає                                                                                                                                                                                                                                                   |
+| ------------------------- | ---------------------------------------------------- | -------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| **GitHub repo write**     | `Skords-01/Sergeant`                                 | PR / merge / branch protection bypass для hotfix-у. Required reviewer лишається `@Skords-01`, тому emergency-merge через admin-override (GitHub repo → Settings → Branches → відключити protection на час hotfix-у) — тільки за direct запит у Telegram. |
+| **Coolify (Hetzner VPS)** | CX23 VPS + Coolify UI                                | API deploy (server-side build, `pnpm deploy:api`), env-vars, Postgres/Redis, logs. Міграції — ENTRYPOINT образу, не Coolify pre-deploy. ADR → [0074](../../governance/adr/0074-hosting-hetzner-coolify.md).                                              |
+| ~~**Railway workspace**~~ | _(decommissioned 2026-07)_                           | Historical — API/OpenClaw/n8n раніше тут. n8n виведено ([ADR-0090](../../governance/adr/0090-n8n-decommissioned.md)).                                                                                                                                    |
+| **Vercel team**           | `skords-01` team                                     | Деплой / env-vars `apps/web`. Edge proxy `/api/*` → Coolify backend (`BACKEND_URL`).                                                                                                                                                                     |
+| **Sentry org**            | `sergeant-ops`                                       | Errors / replay для web + server + console. Alert-routing через server-side shipper (`/api/internal/alerts/send`).                                                                                                                                       |
+| **PostHog project**       | `Sergeant`                                           | Product analytics. Канонічні events — у [`packages/shared/src/lib/analyticsEvents.ts`](../../../packages/shared/src/lib/analyticsEvents.ts).                                                                                                             |
+| **Telegram bot tokens**   | 1Password vault `sergeant-bots`                      | `TELEGRAM_ALERT_BOT_TOKEN` (Sergeant_alert_bot для server-side alert shipper). ~~`OPENCLAW_BOT_TOKEN`~~ — removed (ADR-0075).                                                                                                                            |
+| **Monobank API token**    | 1Password vault `sergeant-monobank`                  | Webhook-rotation. Не для daily ops — тільки setup нових юзерів finyk.                                                                                                                                                                                    |
+| **Anthropic API key**     | Coolify app env (API service)                        | HubChat + server AI paths. Quota — у [Anthropic console](https://console.anthropic.com/).                                                                                                                                                                |
+| **Voyage API key**        | Coolify app env (API service)                        | AI memory embeddings. Quota — у Voyage dashboard ([voyageai.com](https://www.voyageai.com/) → sign-in).                                                                                                                                                  |
+| **PostgreSQL prod DSN**   | Coolify Postgres service (`DATABASE_URL` on API app) | НЕ для daily ops — тільки для emergency `psql`-investigation. Звичайні запити йдуть через `apps/server` API.                                                                                                                                             |
 
 > **Hard rule:** Ніколи не commit-ити жодного з токенів вище в репо.
 > `.env.production` НЕ існує в git. Локальний `.env` має `.env.example` як
@@ -60,15 +59,17 @@
 └─────────────────────────────────────────────────────────────────────┘
 
 Vercel ──── apps/web (PWA)          Hetzner CX23 + Coolify
-            ↓                       ┌─ apps/server (API, ghcr.io)
+            ↓                       ┌─ apps/server (API, білд на сервері)
             HTTPS /api/* proxy ──── ├─ Postgres pgvector:pg18
                                     └─ Redis 7.2
 ```
 
+Автодеплою на merge немає (ні для web, ні для API) — обидва деплоя вручну, `pnpm deploy:api` / `pnpm deploy:web`; розрив від `main` виміряй через `pnpm deploy:status`. Деталі — [`AGENTS.md § Прод не оновлюється сам`](../../../AGENTS.md).
+
 Surface-і та їх deploy targets:
 
-- `apps/web` → Vercel — [`docs/operations/deploy/vercel.md`](../../operations/deploy/vercel.md)
-- `apps/server` → Coolify Docker app (image from `deploy-api.yml`) — [ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)
+- `apps/web` → Vercel, ручний `pnpm deploy:web` (без Git-інтеграції, без прев'ю) — [`docs/operations/deploy/vercel.md`](../../operations/deploy/vercel.md)
+- `apps/server` → Coolify Docker app, білд на сервері з `Dockerfile.api`, ручний `pnpm deploy:api` — [ADR-0074](../../governance/adr/0074-hosting-hetzner-coolify.md)
 - ~~`tools/openclaw`~~ → removed (ADR-0075)
 - `apps/mobile` → Expo / TestFlight — [`release.md` § Expo](./release.md#3-expo)
 - `apps/mobile-shell` → App Store / Play Store wrap — [`release.md` § Mobile shell](./release.md#2-mobile-shell-capacitor)
@@ -109,9 +110,9 @@ gh pr create --base main --title "fix(<scope>): <subject>" --body-file <(cat .gi
 #    - АБО merge through admin-bypass і одразу post у Telegram з посиланням на PR
 #    - повний flow → docs/start/instructions/hotfix-prod-regression.md
 
-# 3. Auto-deploy:
-#    - apps/server → Coolify redeploy after ghcr.io push (~2-3min after merge)
-#    - apps/web → Vercel preview-merge ~1-2min, production promote auto-on-main
+# 3. Автодеплою немає — викотити вручну після merge (AGENTS.md § Прод не оновлюється сам):
+pnpm deploy:api   # server-side build на Coolify, ~4 хв
+pnpm deploy:web   # локальний Vercel CLI, прямо в прод, без прев'ю
 
 # 4. Smoke-verify:
 curl https://api.sergeant/healthz | jq '.status'         # "healthy"
@@ -127,12 +128,12 @@ hard-rule-ом #15). Виправ root-cause; якщо нема часу — з�
 
 ## 5. Як зробити rollback
 
-| Surface           | Швидкий rollback                                                                                                         | Тривалість  |
-| ----------------- | ------------------------------------------------------------------------------------------------------------------------ | ----------- |
-| **`apps/web`**    | Vercel UI → Deployments → попередній зелений → «Promote to Production». Або revert PR + auto-deploy.                     | ~30 сек     |
-| **`apps/server`** | Coolify UI → app `sergeant-api` → Deployments → попередній образ → «Redeploy». Або revert PR → `deploy-api.yml` rebuild. | ~1-2 хв     |
-| **DB schema**     | НЕ запускати `down.sql` у production. Compensating migration → див. AGENTS.md hard-rule #4 (two-phase DROP).             | години-доба |
-| **Feature flag**  | Coolify app env → toggle → Redeploy (no code change). Окрема `flags.ts` змінна.                                          | ~2 хв       |
+| Surface           | Швидкий rollback                                                                                                                                          | Тривалість  |
+| ----------------- | --------------------------------------------------------------------------------------------------------------------------------------------------------- | ----------- |
+| **`apps/web`**    | Vercel UI → Deployments → попередній зелений → «Promote to Production». Або revert PR + auto-deploy.                                                      | ~30 сек     |
+| **`apps/server`** | Coolify UI → app `sergeant-api-v2` → Deployments → попередній деплой → «Redeploy». Або revert коміт у `main` + `pnpm deploy:api` (новий білд на сервері). | ~1-2 хв     |
+| **DB schema**     | НЕ запускати `down.sql` у production. Compensating migration → див. AGENTS.md hard-rule #4 (two-phase DROP).                                              | години-доба |
+| **Feature flag**  | Coolify app env → toggle → Redeploy (no code change). Окрема `flags.ts` змінна.                                                                           | ~2 хв       |
 
 Загальне правило: **rollback — single-step операція; recovery — багато-step**.
 Якщо incident активний, спочатку rollback, потім root-cause-investigate.
@@ -143,7 +144,7 @@ n8n-шар виведено з репо ([ADR-0090](../../governance/adr/0090-n8
 
 1. **Субстрат:** серверні таймери / outbox за таблицею вибору в [ADR-0089](../../governance/adr/0089-job-substrates-outbox-broker-timer.md).
 2. **Алерти:** server-side shipper `/api/internal/alerts/send` → Telegram ([`alert-bot-routing.md`](../../operations/observability/alert-bot-routing.md)).
-3. **Деплой змін:** звичайний PR у `apps/server` → `deploy-api.yml`.
+3. **Деплой змін:** звичайний PR у `apps/server` → merge у `main` → вручну `pnpm deploy:api` (автодеплою немає).
 
 ## 7. Куди дивитися першим
 
@@ -170,7 +171,7 @@ Decision-tree коли щось «не працює»:
 
 - **Sentry:** `https://sergeant-ops.sentry.io/issues/?project=<id>` — окремі projects per surface (web, server).
 - **PostHog:** `https://app.posthog.com/project/<id>/events` — funnel breakdown за подіями з `analyticsEvents.ts`.
-- **Coolify logs:** Coolify UI → app `sergeant-api` → Logs (або SSH на VPS → `docker logs`). Historical: `railway logs` більше не актуальний для API.
+- **Coolify logs:** Coolify UI → app `sergeant-api-v2` → Logs (або SSH на VPS → `docker logs`). Historical: `railway logs` більше не актуальний для API.
 - **Prometheus / Grafana:** **є.** Сервер експонує `GET /metrics` (bearer `METRICS_TOKEN`), `grafana-alloy` під Coolify скрейпить його і шле у **Grafana Cloud**; alert-rules з [`prometheus/alert_rules.yml`](../../operations/observability/prometheus/alert_rules.yml) залиті в Mimir і оцінюються в реальному часі, сигнал іде в Telegram. Дашборди й конфіг — у [`ops/`](../../../ops). Канон стека — [ADR-0015](../../governance/adr/0015-observability-stack.md); поточний зріз wiring-у — [`SLO.md § Статус wiring`](../../operations/observability/SLO.md#статус-wiring-чесний-зріз-2026-07-26), сценарії розслідування — [`observability/runbook.md`](../../operations/observability/runbook.md). Додаткові сигнали: Sentry + PostHog + Coolify healthchecks + n8n executions.
 - **Postgres shell:** Coolify → Postgres resource → connection string (internal). **НЕ** використовуй для writes без compensating migration.
 

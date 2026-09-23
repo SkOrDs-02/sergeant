@@ -6,7 +6,7 @@
 - **Next review:** 2027-03-04
 - **Deciders:** @Skords-01
 - **Supersedes:** ADR-0058, ADR-0059, ADR-0060, ADR-0066, ADR-0070
-- **Related:** [`AGENTS.md`](../../../AGENTS.md), [ADR-0071](./0071-dynamic-agent-snapshot.md), [ADR-0084](./0084-agent-graph-topology.md), [`scripts/dualwrite-residue.ts`](../../../scripts/dualwrite-residue.ts)
+- **Related:** [`AGENTS.md`](../../../AGENTS.md), [ADR-0071](./0071-dynamic-agent-snapshot.md), [ADR-0084](./0084-agent-graph-topology.md), [`scripts/dualwrite-residue.ts`](../../../scripts/dualwrite-residue.ts), [ADR-0099](./0099-retired-hard-rules-registry.md) (реєстр знятих Hard Rules)
 
 ## Decision
 
