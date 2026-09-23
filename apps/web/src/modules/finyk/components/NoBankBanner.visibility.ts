@@ -27,8 +27,13 @@
 export function shouldShowNoBankBanner(params: {
   hasConnectedProvider: boolean;
   manualOnly: boolean;
+  /** Активна вкладка Фініка (`NAV_IDS` у `FinykApp`). */
+  page: string;
 }): boolean {
   if (params.hasConnectedProvider) return false;
   if (params.manualOnly) return false;
-  return true;
+  // Лише Огляд: на mobile банер займав ~37% першого екрана кожної вкладки,
+  // і порожній стан вкладки опинявся під згином (критика екранів
+  // 2026-09-23). Вибір «банк чи вручну» робиться один раз.
+  return params.page === "overview";
 }
