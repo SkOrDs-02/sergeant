@@ -1,5 +1,6 @@
 #!/usr/bin/env node
-// Чи відстає прод від main. Читає, нічого не змінює.
+// Чи відстає прод від main. Нічого не деплоїть; єдина побічна дія - рухає ref
+// `main` у трунку (див. refreshTrunkMain нижче), робочих дерев не чіпає.
 //
 // AI-CONTEXT: автодеплою тут немає навмисно (міграції їдуть в ENTRYPOINT образу,
 // тож кожен деплой одразу змінює схему живої бази, а CI, який міг би це прикрити,
@@ -18,6 +19,8 @@
 
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
+
+import { refreshTrunkMain } from "./lib/refresh-trunk-main.mjs";
 
 const ENV_PATH = "D:\\Sergeant\\.env";
 const COOLIFY_APP_UUID = "hlyvmjeoqa31w6mewpfg9qgc";
@@ -133,6 +136,23 @@ async function vercelStatus(label, projectId, paths) {
 }
 
 git(["fetch", "origin", "--quiet"]);
+
+// Те саме робить pre-push хук, але покладатися лише на нього не можна: він лежить
+// у робочому дереві ТРУНКУ, тож коли трунк застарів, файла там немає і хук не
+// виконується взагалі. Замкнене коло розривається саме тут, бо цей скрипт
+// запускається з worktree і від Husky не залежить.
+const trunk = refreshTrunkMain();
+
+// Мовчазна операція, яку ніхто не бачить, з часом перестає працювати непомітно -
+// саме так сталося з хуком. Тому результат називається вголос.
+const TRUNK_NOTE = {
+  "ff-merged": "трунк: підтягнутий разом із файлами (хуки свіжі)",
+  "ref-updated":
+    "трунк: оновлено ref main, але файли старі, тож хуки звідти не діють",
+  dirty: "трунк: є незакомічені зміни, не чіпав",
+  skipped: "трунк: оновити не вдалось",
+};
+console.log(TRUNK_NOTE[trunk] ?? `трунк: ${trunk}`);
 
 const results = [];
 for (const task of [

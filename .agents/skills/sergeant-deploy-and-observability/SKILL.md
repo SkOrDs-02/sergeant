@@ -22,7 +22,7 @@ CI немає (Bitbucket без pipelines, GitHub Actions не виконуют�
 
 | Target | Repo source | Notes |
 |---|---|---|
-| Coolify app `sergeant-api-v2` (Hetzner) | `apps/server` via `Dockerfile.api` | `pnpm deploy:api` тригерить Coolify API; образ білдиться на сервері з bare-дзеркала, без GHCR. Міграції їдуть в ENTRYPOINT (`migrate.js && exec index.js`), не в Coolify `pre_deployment_command`. Health: `/health`. |
+| Coolify app `sergeant-api-v2` (Hetzner) | `apps/server` via `Dockerfile.api` | `pnpm deploy:api` тригерить Coolify API; образ білдиться на сервері, джерело з 2026-09-23 — Bitbucket напряму (`main`, read-only access key), без GHCR. Дзеркало Hetzner виведене з ланцюга і лишається резервною копією. Міграції їдуть в ENTRYPOINT (`migrate.js && exec index.js`), не в Coolify `pre_deployment_command`. Health: `/health`. |
 | Vercel (`apps/web`, `apps/landing`) | `pnpm deploy:web` / `pnpm deploy:landing` | Локальний Vercel CLI без Git-інтеграції (Bitbucket-репозиторії на Hobby-тарифі не підтримуються) — pull env → build локально → deploy `--prebuilt`. Прев'ю немає, кожен запуск викочує прод. |
 
 Дрейф main↔prod міряй через `pnpm deploy:status` (по бекенду точний, по фронту — оцінка за часом: Vercel CLI не зберігає коміт). Деплой викочує весь `main`, не тільки свою зміну — якщо розрив більший за свої коміти, спитай власника перед деплоєм.
