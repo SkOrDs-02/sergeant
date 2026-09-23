@@ -20,6 +20,8 @@
 import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
+import { refreshTrunkMain } from "./lib/refresh-trunk-main.mjs";
+
 const ENV_PATH = "D:\\Sergeant\\.env";
 const COOLIFY_APP_UUID = "hlyvmjeoqa31w6mewpfg9qgc";
 const VERCEL_TEAM = "team_A96p26fl8eTxCK74fXAWybql";
@@ -133,33 +135,24 @@ async function vercelStatus(label, projectId, paths) {
   };
 }
 
-// Освіжити `main` у трунку. Те саме робить pre-push хук, але покладатися лише на
-// нього не можна, і це не теорія: хук лежить у робочому дереві ТРУНКУ
-// (`core.hooksPath` указує на його `.husky/_`), тож коли трунк сидить на чужій
-// гілці або просто застарів, файла там немає і хук не виконується взагалі.
-// Виходить замкнене коло - механізм оновлення трунку не стартує, бо трунк старий.
-// Тут воно розривається: скрипт запускається з worktree і від Husky не залежить.
-//
-// `fetch origin main:main` рухає ref БЕЗ checkout, тож робоче дерево трунку не
-// чіпається, навіть якщо там працює інша сесія. Якщо `main` там зачекінений,
-// git відмовить, і ми мовчки йдемо далі.
-function refreshTrunkMain() {
-  try {
-    execFileSync(
-      "git",
-      ["-C", "D:\\Sergeant", "fetch", "origin", "main:main"],
-      {
-        stdio: "ignore",
-        timeout: 30_000,
-      },
-    );
-  } catch {
-    // нічого страшного: це зручність, а не частина вимірювання
-  }
-}
-
 git(["fetch", "origin", "--quiet"]);
-refreshTrunkMain();
+
+// Те саме робить pre-push хук, але покладатися лише на нього не можна: він лежить
+// у робочому дереві ТРУНКУ, тож коли трунк застарів, файла там немає і хук не
+// виконується взагалі. Замкнене коло розривається саме тут, бо цей скрипт
+// запускається з worktree і від Husky не залежить.
+const trunk = refreshTrunkMain();
+
+// Мовчазна операція, яку ніхто не бачить, з часом перестає працювати непомітно -
+// саме так сталося з хуком. Тому результат називається вголос.
+const TRUNK_NOTE = {
+  "ff-merged": "трунк: підтягнутий разом із файлами (хуки свіжі)",
+  "ref-updated":
+    "трунк: оновлено ref main, але файли старі, тож хуки звідти не діють",
+  dirty: "трунк: є незакомічені зміни, не чіпав",
+  skipped: "трунк: оновити не вдалось",
+};
+console.log(TRUNK_NOTE[trunk] ?? `трунк: ${trunk}`);
 
 const results = [];
 for (const task of [
