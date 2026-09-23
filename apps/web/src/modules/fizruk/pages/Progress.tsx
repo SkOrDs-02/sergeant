@@ -269,16 +269,19 @@ export function Progress({ onNavigate }: ProgressProps) {
                 : "Аналітика тренувань"}
             </p>
           </div>
-          <div className="text-center">
-            <div className="text-style-caption text-subtle">PR</div>
-            {loaded ? (
-              <div className="text-base font-extrabold text-text tabular-nums">
-                {quickStats.prsCount}
-              </div>
-            ) : (
-              <Skeleton className="h-5 w-6 mx-auto mt-0.5" module="fizruk" />
-            )}
-          </div>
+          {/* «PR 0» до першого рекорду подає порожній стан як результат. */}
+          {(!loaded || quickStats.prsCount > 0) && (
+            <div className="text-center">
+              <div className="text-style-caption text-subtle">PR</div>
+              {loaded ? (
+                <div className="text-base font-extrabold text-text tabular-nums">
+                  {quickStats.prsCount}
+                </div>
+              ) : (
+                <Skeleton className="h-5 w-6 mx-auto mt-0.5" module="fizruk" />
+              )}
+            </div>
+          )}
         </div>
 
         {!loaded ? (

@@ -18,6 +18,7 @@ import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Skeleton } from "@shared/components/ui/Skeleton";
 import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Money, Delta } from "@shared/components/ui/Money";
+import { cn } from "@shared/lib/ui/cn";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { filterToKyivMonth } from "../lib/monthWindow";
 import { isMonoNotConnectedError } from "../lib/monoBankErrors";
@@ -490,11 +491,19 @@ export function Analytics({
                 <div className="text-style-caption text-subtle mb-1">
                   Витрати
                 </div>
+                {/* Нуль не є ні витратою, ні доходом: статус-колір лише на
+                    справжній сумі, інакше порожній місяць читається як
+                    результат. */}
                 {showBalance ? (
                   <Money
                     amount={summary.spent}
                     tone="inherit"
-                    className="block text-style-label text-danger-strong dark:text-danger"
+                    className={cn(
+                      "block text-style-label",
+                      summary.spent === 0
+                        ? "text-text"
+                        : "text-danger-strong dark:text-danger",
+                    )}
                   />
                 ) : (
                   <span className="block text-style-label text-danger-strong dark:text-danger">
@@ -508,7 +517,12 @@ export function Analytics({
                   <Money
                     amount={summary.income}
                     tone="inherit"
-                    className="block text-style-label text-success-strong dark:text-success"
+                    className={cn(
+                      "block text-style-label",
+                      summary.income === 0
+                        ? "text-text"
+                        : "text-success-strong dark:text-success",
+                    )}
                   />
                 ) : (
                   <span className="block text-style-label text-success-strong dark:text-success">
@@ -567,7 +581,7 @@ export function Analytics({
               compact
               module="finyk"
               title="Поки немає витрат"
-              description="За цей місяць транзакцій не знайдено, обери інший період зверху."
+              description="Цього місяця витрат ще немає. Додай першу або підключи Monobank."
             />
           ) : (
             <Suspense fallback={<ChartFallback className="h-40" />}>
