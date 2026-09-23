@@ -21,6 +21,7 @@ import { removeItem as removeFinykStorageItem } from "@finyk/lib/finykStorage";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { SettingsSubGroup } from "./SettingsPrimitives";
 import { MonoTokenInlineForm } from "./MonoTokenInlineForm";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 type ConfirmKind = "cache" | "disconnect" | null;
 
@@ -160,11 +161,7 @@ export function FinykWebhookServiceSection({
       } else if (isApiError(error) && error.kind === "aborted") {
         setWebhookError("Monobank API не відповідає. Спробуй пізніше.");
       } else {
-        setWebhookError(
-          error instanceof Error && error.message
-            ? error.message
-            : "Помилка підключення",
-        );
+        setWebhookError(failedCopy("підключити Monobank"));
       }
     } finally {
       setWebhookConnecting(false);
@@ -199,12 +196,8 @@ export function FinykWebhookServiceSection({
           queryKey: finykKeys.monoBackfillProgress,
         }),
       ]);
-    } catch (error) {
-      setWebhookError(
-        error instanceof Error && error.message
-          ? error.message
-          : "Помилка re-sync",
-      );
+    } catch {
+      setWebhookError(failedCopy("повторити синхронізацію"));
     }
   };
 
@@ -278,10 +271,10 @@ export function FinykWebhookServiceSection({
               <div className="flex-1 min-w-0">
                 <div className="text-style-label">
                   {webhookSyncState.status === "active"
-                    ? "Webhook активний"
+                    ? "Синхронізація активна"
                     : webhookSyncState.status === "pending"
-                      ? "Webhook очікує"
-                      : "Помилка webhook"}
+                      ? "Синхронізація очікує"
+                      : "Синхронізація не працює"}
                 </div>
                 <div className="text-style-caption text-subtle mt-0.5">
                   {webhookSyncState.accountsCount} {COPY.accounts}

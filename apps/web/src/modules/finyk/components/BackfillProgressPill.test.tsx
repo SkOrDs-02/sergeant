@@ -93,7 +93,9 @@ describe("BackfillProgressPill", () => {
       <BackfillProgressPill {...(Failed.args as BackfillProgressPillProps)} />,
     );
 
-    expect(screen.getByText("Помилка backfill")).toBeInTheDocument();
+    expect(
+      screen.getByText("Не вдалося довантажити виписку"),
+    ).toBeInTheDocument();
     expect(
       screen.getByText("Mono API: 429 Too Many Requests"),
     ).toBeInTheDocument();
@@ -140,8 +142,12 @@ describe("BackfillProgressPill", () => {
       },
     });
 
-    expect(screen.getByText("Помилка backfill")).toBeInTheDocument();
-    expect(screen.getByText("невідома помилка")).toBeInTheDocument();
+    expect(
+      screen.getByText("Не вдалося довантажити виписку"),
+    ).toBeInTheDocument();
+    expect(
+      screen.getByText("Спробуй ще раз через «Синхронізувати історію»."),
+    ).toBeInTheDocument();
   });
 
   it("hides idle and transient completed snapshots", () => {

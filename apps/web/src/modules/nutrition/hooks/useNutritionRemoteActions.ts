@@ -33,6 +33,7 @@ import type {
   NutritionWeekPlan as UiNutritionWeekPlan,
 } from "./useNutritionUiState";
 import type { ShoppingCategory } from "../lib/shoppingListStorage";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 type AnySetter<T = unknown> =
   Dispatch<SetStateAction<T>> | ((value: T) => void);
@@ -308,7 +309,7 @@ export function useNutritionRemoteActions({
       setBusy,
       setErr,
       setStatusText,
-      fallbackError: "Помилка рекомендацій",
+      fallbackError: failedCopy("підібрати рецепти"),
       onMutateSideEffects: {
         statusText: "Генерую рецепти…",
         run: () => {
@@ -373,7 +374,7 @@ export function useNutritionRemoteActions({
         setWeekPlan(ctx.prevWeekPlan);
         setWeekPlanRaw(ctx.prevWeekPlanRaw);
       }
-      setErr(formatNutritionError(err, "Помилка плану"));
+      setErr(formatNutritionError(err, failedCopy("скласти план на тиждень")));
     },
     onSettled: () => {
       setWeekPlanBusy(false);
@@ -476,7 +477,7 @@ export function useNutritionRemoteActions({
       if (ctx && "prevDayPlan" in ctx && ctx.prevDayPlan !== undefined) {
         setDayPlan(ctx.prevDayPlan);
       }
-      setErr(formatNutritionError(err, "Помилка генерації плану"));
+      setErr(formatNutritionError(err, failedCopy("скласти план на день")));
     },
     onSettled: () => {
       setDayPlanBusy(false);
@@ -597,7 +598,7 @@ export function useNutritionRemoteActions({
       hapticSuccess();
     },
     onError: (err) => {
-      setErr(formatNutritionError(err, "Помилка генерації списку покупок"));
+      setErr(formatNutritionError(err, failedCopy("скласти список покупок")));
     },
     onSettled: () => {
       setShoppingBusy(false);

@@ -11,6 +11,7 @@ import { messages } from "@shared/i18n/uk";
 // портальний `ConfirmDialog` — причина в `FinykWebhookServiceSection.tsx`.
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { SettingsSubGroup } from "./SettingsPrimitives";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 interface FinykPrivatBankSectionProps {
   enabled: boolean;
@@ -96,14 +97,12 @@ export function FinykPrivatBankSection({
       window.location.reload();
     } catch (error) {
       if (isApiError(error) && error.kind === "http") {
-        setPrivatError(error.serverMessage || `Помилка ${error.status}`);
+        setPrivatError(
+          error.serverMessage || failedCopy("підключити PrivatBank"),
+        );
         return;
       }
-      setPrivatError(
-        error instanceof Error && error.message
-          ? error.message
-          : "Помилка підключення",
-      );
+      setPrivatError(failedCopy("підключити PrivatBank"));
     } finally {
       setPrivatConnecting(false);
     }

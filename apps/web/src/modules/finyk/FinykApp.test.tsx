@@ -301,7 +301,7 @@ describe("FinykApp — connect / manual-only flows (real NoBankBanner + FinykLog
     });
     // Real `FinykLoginScreen` inside the overlay.
     expect(
-      within(dialog).getByPlaceholderText("Вставте токен Mono API"),
+      within(dialog).getByPlaceholderText("Встав токен Mono API"),
     ).toBeInTheDocument();
   });
 
@@ -444,7 +444,7 @@ describe("FinykApp — a rejected Mono token surfaces the real authError banner"
       name: "Підключення Monobank",
     });
     await userEvent.type(
-      within(dialog).getByPlaceholderText("Вставте токен Mono API"),
+      within(dialog).getByPlaceholderText("Встав токен Mono API"),
       "bad-token",
     );
     await userEvent.click(

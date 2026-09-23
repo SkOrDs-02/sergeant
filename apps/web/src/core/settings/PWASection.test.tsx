@@ -54,14 +54,16 @@ describe("PWASection", () => {
 
   it("renders both SW action buttons", () => {
     render(<PWASection />);
-    expect(screen.getByText("Діагностика SW")).toBeInTheDocument();
+    expect(screen.getByText("Технічна діагностика")).toBeInTheDocument();
     expect(screen.getByText("Скинути кеш PWA")).toBeInTheDocument();
   });
 
   it("disables buttons when serviceWorker is unavailable", () => {
     ensureServiceWorker(false);
     render(<PWASection />);
-    expect(screen.getByText("Діагностика SW").closest("button")).toBeDisabled();
+    expect(
+      screen.getByText("Технічна діагностика").closest("button"),
+    ).toBeDisabled();
     expect(
       screen.getByText("Скинути кеш PWA").closest("button"),
     ).toBeDisabled();
@@ -72,7 +74,7 @@ describe("PWASection", () => {
     swMocks.swGetDebugSnapshot.mockResolvedValue({ caches: [] });
     render(<PWASection />);
 
-    fireEvent.click(screen.getByText("Діагностика SW"));
+    fireEvent.click(screen.getByText("Технічна діагностика"));
 
     await waitFor(() => {
       expect(swMocks.swSetDebug).toHaveBeenCalledWith(true);
@@ -87,7 +89,7 @@ describe("PWASection", () => {
     swMocks.swSetDebug.mockRejectedValue(new Error("boom"));
     render(<PWASection />);
 
-    fireEvent.click(screen.getByText("Діагностика SW"));
+    fireEvent.click(screen.getByText("Технічна діагностика"));
 
     await waitFor(() => {
       expect(toastMocks.error).toHaveBeenCalledWith(

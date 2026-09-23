@@ -637,7 +637,7 @@ describe("formatStatsReply", () => {
       byChannel: [{ channel: "Лендінг, головний екран", count: 2 }],
     });
     expect(out).toMatch(/Вейтліст: 2/);
-    expect(out).toMatch(/Лендінг, головний екран — 2/);
+    expect(out).toMatch(/Лендінг, головний екран: 2/);
     // 07:30 UTC = 10:30 Kyiv. Без явної зони власник читав би час назад.
     expect(out).toMatch(/10:30/);
   });

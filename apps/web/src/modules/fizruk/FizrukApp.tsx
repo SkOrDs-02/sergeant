@@ -239,12 +239,7 @@ export default function FizrukApp({
           )
         }
         banner={
-          <StorageErrorBanner
-            eventName={FIZRUK_WORKOUTS_STORAGE_ERROR}
-            formatMessage={(reason) =>
-              `Не вдалося зберегти тренування (${reason}). Можливо, браузер переповнив сховище, експортуй бекап або звільни місце.`
-            }
-          />
+          <StorageErrorBanner eventName={FIZRUK_WORKOUTS_STORAGE_ERROR} />
         }
         nav={
           sessionMode ? undefined : (

@@ -167,7 +167,9 @@ export function useReceiptQrScanner({
 
     const run = async () => {
       if (!navigator?.mediaDevices?.getUserMedia) {
-        setStatus("Камера недоступна в цьому браузері.");
+        setStatus(
+          "Камера недоступна в цьому браузері. Вибери фото чека з галереї.",
+        );
         return;
       }
 

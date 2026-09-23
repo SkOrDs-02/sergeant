@@ -31,8 +31,9 @@ interface StorageErrorEventDetail {
   message?: string;
 }
 
-const DEFAULT_FORMAT = (reason: string) =>
-  `Не вдалося зберегти дані (${reason}). Можливо, браузер переповнив сховище, експортуй бекап або звільни місце.`;
+// Причина (`reason`) лишається в події для телеметрії; людині один рядок
+// каталогу без технічного хвоста (аудит копі 2026-09-23 §2.5).
+const DEFAULT_FORMAT = () => messages.errors.generic.storageSaveFailed;
 
 export function StorageErrorBanner({
   eventName,

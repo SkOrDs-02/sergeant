@@ -114,6 +114,15 @@ export const coreMessages = {
       retry: "Спробуй ще раз",
       timeout: "Перевищено час очікування. Спробуй ще раз.",
       unknown: "Щось пішло не так. Спробуй ще раз.",
+      // Аудит копі 2026-09-23 §2.6: один шаблон на всі фолбеки збою за
+      // каноном §3 «що сталось + що зробити». Підставляє `failedCopy()` з
+      // `./failedCopy`; `what` в інфінітиві («скласти план»).
+      failed: "Не вдалося {what}. {action}",
+      retryAction: "Спробуй ще раз.",
+      // Аудит копі 2026-09-23 §2.5: сира причина (`QuotaExceededError`,
+      // «quota exceeded») лишається в події й телеметрії, людині один рядок.
+      storageSaveFailed:
+        "Не вдалося зберегти дані. Звільни місце в сховищі браузера або збережи резервну копію.",
 
       // Round 16 — short error labels та section-failure messages.
       // `title` — bare "Помилка" як заголовок банера/тулбара.
@@ -179,7 +188,7 @@ export const coreMessages = {
     destructiveConfirm: {
       title: "Підтверди незворотну дію",
       body: "Асистент хоче виконати те, що не вийде скасувати:",
-      confirm: "Так, виконати",
+      confirm: "Виконати",
       cancel: "Скасувати",
     },
     // Round 16 — Hub-shell-specific copy (ні header, ні bottom-nav). Сюди
@@ -345,6 +354,7 @@ export const coreMessages = {
     // Generic fallback — використовується, коли не вдалося визначити
     // конкретну причину помилки.
     genericFailure: "Не вдалося завершити вхід. Спробуй ще раз.",
+    registerFailure: "Не вдалося зареєструватись. Спробуй ще раз.",
 
     // Better Auth canonical error-codes:
     invalidEmailOrPassword: "Неправильний email або пароль.",

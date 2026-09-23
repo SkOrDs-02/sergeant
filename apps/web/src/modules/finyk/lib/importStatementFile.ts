@@ -61,18 +61,23 @@ export type ReadStatementFileResult =
 export async function readStatementFile(
   file: File,
 ): Promise<ReadStatementFileResult> {
-  if (file.size === 0) return { ok: false, error: "Порожній файл." };
+  if (file.size === 0)
+    return { ok: false, error: "Порожній файл. Вибери інший." };
   if (file.size > IMPORT_STATEMENT_MAX_FILE_BYTES) {
-    return { ok: false, error: "Файл завеликий (максимум 5 МБ)." };
+    return {
+      ok: false,
+      error: "Файл завеликий (максимум 5 МБ). Вибери менший.",
+    };
   }
   try {
     const base64 = bytesToBase64(new Uint8Array(await file.arrayBuffer()));
-    if (!base64) return { ok: false, error: "Не вдалося прочитати файл." };
+    if (!base64)
+      return { ok: false, error: "Не вдалося прочитати файл. Спробуй інший." };
     return {
       ok: true,
       payload: { file_base64: base64, file_name: file.name.slice(0, 255) },
     };
   } catch {
-    return { ok: false, error: "Не вдалося прочитати файл." };
+    return { ok: false, error: "Не вдалося прочитати файл. Спробуй інший." };
   }
 }

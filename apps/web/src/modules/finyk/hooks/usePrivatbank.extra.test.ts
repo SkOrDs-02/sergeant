@@ -127,7 +127,7 @@ describe("usePrivatbank (extra) — refresh()", () => {
     expect(balanceCalls.length).toBeGreaterThanOrEqual(2);
   });
 
-  it("sets error message on refresh failure", async () => {
+  it("sets the catalog copy on refresh failure", async () => {
     mockedStatus.mockResolvedValue({ connected: true, merchantId: "mid" });
     const { result } = renderHook(() => usePrivatbank());
     await waitFor(() => expect(result.current.connected).toBe(true));
@@ -136,7 +136,9 @@ describe("usePrivatbank (extra) — refresh()", () => {
     await act(async () => {
       await result.current.refresh();
     });
-    expect(result.current.error).toBe("network down");
+    expect(result.current.error).toBe(
+      "Не вдалося оновити дані PrivatBank. Спробуй ще раз.",
+    );
   });
 });
 
@@ -210,7 +212,7 @@ describe("usePrivatbank (extra) — fetchTransactions AuthError", () => {
     await act(async () => {
       await result.current.connect("mid", "tok");
     });
-    expect(result.current.error).toContain("Неправильні credentials");
+    expect(result.current.error).toContain("Неправильні дані входу");
   });
 });
 
@@ -323,7 +325,7 @@ describe("usePrivatbank (extra) — data.data response format", () => {
 // ── connect — outer catch: AuthError from balance fetch ──────────────────────
 
 describe("usePrivatbank (extra) — connect outer catch: AuthError from balance", () => {
-  it("sets 'Неправильні credentials' error when balance API returns 401", async () => {
+  it("sets 'Неправильні дані входу' error when balance API returns 401", async () => {
     // No cached balance → apiFetch is called, throws AuthError
     const { ApiError } = await import("@shared/api");
     const authErr = new ApiError({
@@ -342,7 +344,7 @@ describe("usePrivatbank (extra) — connect outer catch: AuthError from balance"
       await result.current.connect("mid-auth-fail", "tok-auth-fail");
     });
 
-    expect(result.current.error).toContain("Неправильні credentials");
+    expect(result.current.error).toContain("Неправильні дані входу");
     // `connected` лишається true: сервер уже прийняв і зберіг креденшели у
     // `privat_connection`, а впав саме дозавантаж даних. Показати тут
     // «не підключено» означало б суперечити стану сервера — користувач
@@ -354,7 +356,7 @@ describe("usePrivatbank (extra) — connect outer catch: AuthError from balance"
 // ── connect — outer catch: generic non-AuthError from balance fetch ──────────
 
 describe("usePrivatbank (extra) — connect outer catch: generic error from balance", () => {
-  it("sets error.message when balance API throws a generic Error", async () => {
+  it("sets the catalog copy when balance API throws a generic Error", async () => {
     mockedRequest.mockImplementation(async (path: string): Promise<unknown> => {
       if (path.includes("/balance/final")) throw new Error("Мережева помилка");
       return { data: [] };
@@ -365,7 +367,9 @@ describe("usePrivatbank (extra) — connect outer catch: generic error from bala
       await result.current.connect("mid-net", "tok-net");
     });
 
-    expect(result.current.error).toBe("Мережева помилка");
+    expect(result.current.error).toBe(
+      "Не вдалося підключити PrivatBank. Спробуй ще раз.",
+    );
     // Див. коментар вище: підключення існує на сервері, впало завантаження.
     expect(result.current.connected).toBe(true);
   });
@@ -381,7 +385,9 @@ describe("usePrivatbank (extra) — connect outer catch: generic error from bala
       await result.current.connect("mid-empty", "tok-empty");
     });
 
-    expect(result.current.error).toBe("Помилка підключення до PrivatBank");
+    expect(result.current.error).toBe(
+      "Не вдалося підключити PrivatBank. Спробуй ще раз.",
+    );
   });
 });
 

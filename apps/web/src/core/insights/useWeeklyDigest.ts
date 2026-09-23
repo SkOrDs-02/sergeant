@@ -47,6 +47,7 @@ import {
 import { itemTonnageKg, workoutTonnageKg } from "@sergeant/fizruk-domain";
 import { formatDayRangeUk } from "@shared/lib/time/dayKeyLabel";
 import type { MonthlyPlan } from "@finyk/hooks/useStorage.types";
+import { failedCopy } from "@shared/i18n/failedCopy";
 
 const DIGEST_PREFIX = STORAGE_KEYS.WEEKLY_DIGEST_PREFIX;
 
@@ -620,7 +621,7 @@ export function useWeeklyDigest(selectedWeekKey?: string) {
     error:
       mutation.error && !insufficientData
         ? formatApiError(mutation.error, {
-            fallback: "Помилка генерації звіту",
+            fallback: failedCopy("скласти звіт"),
           })
         : null,
     insufficientData,

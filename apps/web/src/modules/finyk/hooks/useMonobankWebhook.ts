@@ -28,6 +28,7 @@ import type { MeResponse } from "@sergeant/api-client";
 import { getSqliteDb } from "../../../core/db/sqlite";
 import { migrateFinyk } from "../lib/clientMigrate";
 import { MonoNotConnectedError } from "../lib/monoBankErrors";
+import { failedCopy } from "@shared/i18n/failedCopy";
 import {
   writeMonoTransactions,
   writeMonoAccounts,
@@ -309,7 +310,7 @@ export function useMonobankWebhook({
       lastSuccess: lastUpdated,
       lastError:
         syncStateData.status === "invalid"
-          ? "Webhook connection is invalid. Please reconnect."
+          ? "Підключення Monobank недійсне. Підключи банк ще раз."
           : "",
       accountsTotal: syncStateData.accountsCount,
       accountsOk:
@@ -479,10 +480,8 @@ export function useMonobankWebhook({
           queryKey: finykKeys.monoBackfillProgress,
         }),
       ]);
-    } catch (e) {
-      const msg =
-        e instanceof Error && e.message ? e.message : "Помилка backfill";
-      setError(msg);
+    } catch {
+      setError(failedCopy("довантажити історію транзакцій"));
     }
   }, [queryClient]);
 

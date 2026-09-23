@@ -81,7 +81,9 @@ describe("SyncStatusSheet", () => {
       />,
     );
 
-    expect(await screen.findByText(/localStorage/)).toBeInTheDocument();
+    expect(
+      await screen.findByText(/Просте сховище браузера/),
+    ).toBeInTheDocument();
   });
 
   it("показує відповідь розвідки OPFS, а не ховає її", async () => {

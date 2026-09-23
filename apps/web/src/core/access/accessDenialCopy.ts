@@ -80,7 +80,7 @@ export function accessDenialCopy(denial: AccessDenial): AccessDenialCopy {
     case "provider-down":
       return {
         title: "Сервіс тимчасово не відповідає",
-        body: "Це не в тебе, це на нашому боці. Спробуй за кілька хвилин, дані нікуди не зникнуть.",
+        body: "Збій на боці сервера. Спробуй за кілька хвилин, дані нікуди не зникнуть.",
         actionLabel: null,
         short: "Сервіс тимчасово не відповідає, спробуй за кілька хвилин.",
       };

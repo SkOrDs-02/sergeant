@@ -184,7 +184,10 @@ export function ItemEditSheet({
                 (qty as number) < 0 ||
                 (qty as number) > MAX_ITEM_QTY)
             ) {
-              setItemEdit((s) => ({ ...s, err: "Некоректна кількість." }));
+              setItemEdit((s) => ({
+                ...s,
+                err: "Некоректна кількість. Впиши число, наприклад 2 або 0,5.",
+              }));
               return;
             }
             const unit = unitStr === "" ? null : normalizeUnit(unitStr);

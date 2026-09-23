@@ -58,7 +58,7 @@ describe("friendlyApiError", () => {
         "AI-помічник тимчасово недоступний. Спробуй пізніше.",
         "ANTHROPIC_KEY_MISSING",
       ),
-    ).toBe("Чат на сервері не налаштовано (немає ключа AI).");
+    ).toBe("Чат на сервері не налаштовано. Повідом у підтримку.");
   });
   it("without the code a 503 with a body stays the server's own text", () => {
     // Той самий статус без маркера — це звичайний збій upstream-у, і

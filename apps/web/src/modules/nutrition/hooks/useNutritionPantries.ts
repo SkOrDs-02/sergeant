@@ -11,7 +11,7 @@ import { useMutation } from "@tanstack/react-query";
 import { nutritionApi } from "@shared/api";
 import type { AccessDenial } from "@shared/lib/api/accessDenial";
 import { useAccessGuard } from "../../../core/access/useCanUse";
-import { formatNutritionError } from "../lib/nutritionErrors";
+import { formatNutritionError, PARSE_FAILED } from "../lib/nutritionErrors";
 import {
   appendNutritionPantryEvent,
   backfillNutritionPantryCheckpoints,
@@ -671,12 +671,12 @@ export function useNutritionPantries({
     },
     onSuccess: ({ data, pantryId, text }) => {
       if (!applyParseResult(pantryId, text, data?.items)) {
-        setErr("Не вдалось розібрати список. Спробуй перефразувати.");
+        setErr(PARSE_FAILED);
       }
     },
     onError: (err, { pantryId, text }) => {
       if (!applyParseResult(pantryId, text, null)) {
-        setErr(formatNutritionError(err, "Помилка розбору списку"));
+        setErr(formatNutritionError(err, PARSE_FAILED));
       }
     },
     onSettled: () => {
