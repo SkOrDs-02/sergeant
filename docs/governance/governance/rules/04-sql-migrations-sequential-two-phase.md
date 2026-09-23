@@ -2,7 +2,7 @@
 
 > **Category:** `blocker-invariant`
 > **Severity:** `blocker`
-> **Last touched:** 2026-09-17 by @claude (прибрано застарілий діапазон номерів — джерело `ls apps/server/src/migrations`). **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-23 by @claude (enforced_by: lint-migrations.mjs тепер у `pnpm lint`, lint-staged і deploy-api.mjs pre-flight). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #4. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -13,7 +13,9 @@
 
 ## Enforced by
 
-- **ci** — pnpm lint:migrations
+- **ci** - `pnpm lint` (крок `node scripts/lint-migrations.mjs`, з 2026-09-23)
+- **hook** - lint-staged: `apps/server/src/migrations/**` запускає `lint-migrations.mjs` (з 2026-09-23)
+- **hook** - `scripts/deploy-api.mjs` pre-flight відмовляє в деплої, якщо `lint-migrations.mjs` червоний (з 2026-09-23)
 
 ## Why / What is enforced
 

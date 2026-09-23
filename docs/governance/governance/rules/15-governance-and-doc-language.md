@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last touched:** 2026-09-17 by @claude (мертві посилання на секції `CONTRIBUTING.md`/`CLAUDE.md` → актуальні). **Next review:** 2026-12-16.
+> **Last touched:** 2026-09-23 by @claude (enforced_by: governance-sync і hard-rules-registry тепер у `pnpm lint`; docs:check-freshness-coverage позначено SUSPENDED). **Next review:** 2026-12-16.
 > **Status:** Active
 
 > Per-rule canonical body for Hard Rule #15. Compact summary lives in [`AGENTS.md § Hard rules`](../../../../AGENTS.md#hard-rules-do-not-break) (rendered as a table). The machine-readable registry lives in [`docs/governance/governance/hard-rules.json`](../hard-rules.json). The 3-way sync (AGENTS.md ↔ JSON ↔ this file) is enforced by `pnpm lint:hard-rules-registry`.
@@ -13,10 +13,10 @@
 
 ## Enforced by
 
-- **ci** — pnpm lint:governance-sync (errors on dangling apps/packages/scripts refs in non-aspirational docs)
-- **ci** — pnpm docs:check-freshness-coverage
-- **ci** — pnpm lint:hard-rules-registry (this rule's own enforcer)
-- **pr-template** — .github/PULL_REQUEST_TEMPLATE.md (Hard Rule #15 checkboxes)
+- **ci** - `pnpm lint` (крок `node scripts/check-governance-sync.mjs`, з 2026-09-23; errors on dangling apps/packages/scripts refs in non-aspirational docs)
+- **ci** - SUSPENDED з 2026-09-23 (CI на Bitbucket не запускається, не в `pnpm lint`/`pnpm check`): pnpm docs:check-freshness-coverage - локальної заміни немає
+- **ci** - `pnpm lint` (крок `node scripts/check-hard-rules-registry.mjs`, з 2026-09-23; enforcer цього ж правила)
+- **pr-template** - .github/PULL_REQUEST_TEMPLATE.md (Hard Rule #15 checkboxes) - Bitbucket цей шаблон не підставляє автоматично (DG-30, рішення власника не прийняте)
 
 ## Why / What is enforced
 

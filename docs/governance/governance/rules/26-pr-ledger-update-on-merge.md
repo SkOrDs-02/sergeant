@@ -2,7 +2,7 @@
 
 > **Category:** `lint-enforced-convention`
 > **Severity:** `blocker`
-> **Last validated:** 2026-08-16 by @claude
+> **Last validated:** 2026-09-23 by @claude
 > **Next review:** 2027-04-12
 > **Status:** Active
 
@@ -45,7 +45,7 @@ C10 і неіснуючий дефект PDF-експорту в M3. Кожна 
 
 ## Enforced by
 
-- **ci** — [`.github/workflows/pr-backlinks.yml`](../../../../.github/workflows/pr-backlinks.yml) — `pull_request_target: closed` + `merged == true` trigger. After merge, the workflow runs `scripts/ci/update-pr-backlinks.mjs --pr <NUMBER>` and opens a follow-up PR `docs/pr-backlinks-<NNNN>` with the ledger + in-doc block updates. Loop-guarded against follow-up PRs (`head_ref` starting with `docs/pr-backlinks-` is skipped).
+- **ci** - SUSPENDED з 2026-09-23 (CI на Bitbucket не запускається): [`.github/workflows/pr-backlinks.yml`](../../../../.github/workflows/pr-backlinks.yml) - `pull_request_target: closed` + `merged == true` trigger. Раніше після мержу workflow викликав `scripts/ci/update-pr-backlinks.mjs --pr <NUMBER>` і відкривав follow-up PR `docs/pr-backlinks-<NNNN>` з оновленням ledger + in-doc блоків. Локальної заміни немає (DG-3, рішення власника не прийняте).
 - **ci** — `pnpm docs:check-pr-ledger` (wired in `pnpm lint`) — verifies that the ledger ↔ in-doc blocks ↔ JSON schema are in sync. Exit 1 on any drift.
 
 ## Why / What is enforced

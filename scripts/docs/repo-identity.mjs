@@ -30,12 +30,19 @@ export const IDENTITY_PATH = join(
   "docs/governance/governance/repo-identity.json",
 );
 
-/** Витягує `owner/repo` з будь-якої форми GitHub-URL (ssh, https, з `.git` і без). */
+/**
+ * Витягує `owner/repo` з будь-якої форми GitHub- або Bitbucket-URL (ssh,
+ * https, з `.git` і без). Bitbucket додано 2026-09-23: `origin` переїхав
+ * туди, а до цього парсер бачив лише `github.com` і мовчки повертав
+ * `undefined` на живому `bitbucket.org`-remote - гейт `check-repo-slug`
+ * тому не ловив сам переїзд (DG-10).
+ */
 export function slugFromRemoteUrl(url) {
   if (typeof url !== "string") return undefined;
-  const m = /github\.com[:/]([^/\s]+\/[^/\s]+?)(?:\.git)?\/?$/u.exec(
-    url.trim(),
-  );
+  const m =
+    /(?:github\.com|bitbucket\.org)[:/]([^/\s]+\/[^/\s]+?)(?:\.git)?\/?$/u.exec(
+      url.trim(),
+    );
   return m ? m[1] : undefined;
 }
 
