@@ -23,31 +23,12 @@
 // прямим запуском: `echo "refs/heads/<гілка> <sha> refs/heads/<гілка> <sha>" |
 // node scripts/pre-push-merged-pr.mjs origin git@bitbucket.org:skords01/sergeant.git`.
 
-import { execFileSync } from "node:child_process";
 import { readFileSync } from "node:fs";
 
-const ENV_PATH = "D:\\Sergeant\\.env";
-const TRUNK = "D:\\Sergeant";
-const REPO = "skords01/sergeant";
+import { refreshTrunkMain } from "./lib/refresh-trunk-main.mjs";
 
-// Оновити `main` у трунку. Уся робота йде через worktree, тож у трунк ніхто не
-// заходить місяцями, а від нього залежить більше, ніж здається: `core.hooksPath`
-// указує на `.husky/_` саме трунку, тобто застарілий трунк означає застарілі хуки
-// в УСІХ worktree. 2026-09-23 він відставав на 31 коміт.
-//
-// `fetch origin main:main` оновлює ref БЕЗ checkout, тож робоче дерево трунку не
-// чіпається і чужа сесія в ньому нічого не помітить. Якщо `main` там зачекінений,
-// git відмовить - і це правильно, мовчки пропускаємо.
-function refreshTrunkMain() {
-  try {
-    execFileSync("git", ["-C", TRUNK, "fetch", "origin", "main:main"], {
-      stdio: "ignore",
-      timeout: 30_000,
-    });
-  } catch {
-    // main зачекінений у трунку, немає мережі або трунку: не привід зривати пуш
-  }
-}
+const ENV_PATH = "D:\\Sergeant\\.env";
+const REPO = "skords01/sergeant";
 
 const remoteUrl = process.argv[3] ?? "";
 if (!remoteUrl.includes("bitbucket.org")) process.exit(0);
