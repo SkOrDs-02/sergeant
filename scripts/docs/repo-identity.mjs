@@ -103,9 +103,19 @@ export function knownSlugs({ env = process.env, path = IDENTITY_PATH } = {}) {
   return new Set(all.map((s) => s.toLowerCase()));
 }
 
-/** База PR-посилань для запису леджера: явне поле `repo` → воно, інакше легасі. */
+/**
+ * База PR-посилань для запису леджера: явне поле `repo` → воно, інакше легасі.
+ *
+ * Хост береться з поля `host`, і воно теж опційне: відсутність означає GitHub,
+ * бо всі 60 записів до 2026-09-23 прийшли звідти. Bitbucket має інший шлях
+ * (`/pull-requests/` замість `/pull/`), тож без розрізнення хоста кожен новий
+ * запис давав би мертве посилання - рівно та вада, через яку це поле й існує.
+ */
 export function prBaseForEntry(entry, { path = IDENTITY_PATH } = {}) {
-  return `https://github.com/${slugForEntry(entry, { path })}/pull`;
+  const slug = slugForEntry(entry, { path });
+  return entry?.host === "bitbucket"
+    ? `https://bitbucket.org/${slug}/pull-requests`
+    : `https://github.com/${slug}/pull`;
 }
 
 /** Слуг для запису леджера: явне поле `repo` → воно, інакше легасі-фолбек. */

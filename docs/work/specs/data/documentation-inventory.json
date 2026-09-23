@@ -4260,7 +4260,7 @@
       "action": "keep",
       "genre": "reference",
       "canonical_owner": "docs/governance/pr-ledger/index.json",
-      "inbound_count": 87,
+      "inbound_count": 88,
       "inbound_sources": [
         "docs/STATUS.md",
         "docs/governance/adr/0002-tool-lifecycle.md",
@@ -4338,6 +4338,7 @@
         "docs/work/specs/audits/2026-09-13-product-full-review.md",
         "docs/work/specs/audits/2026-09-15-sqlite-opfs-regression.md",
         "docs/work/specs/audits/2026-09-16-product-noise-and-navigation.md",
+        "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
         "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
         "docs/work/specs/audits/product-knowledge-fizruk.md",
         "docs/work/specs/audits/unification-modules.md",
@@ -8394,9 +8395,10 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
-      "inbound_count": 3,
+      "inbound_count": 4,
       "inbound_sources": [
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/pr-ledger/index.json",
         "docs/open-work.md",
         "docs/work/specs/audits/README.md"
       ]
@@ -8419,10 +8421,11 @@
       "action": "keep",
       "genre": "active-work",
       "canonical_owner": "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
-      "inbound_count": 5,
+      "inbound_count": 6,
       "inbound_sources": [
         "docs/governance/adr/0099-retired-hard-rules-registry.md",
         "docs/governance/governance/freshness-dashboard.html",
+        "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
         "docs/open-work.md",
         "docs/start/agents/decisions.md",
         "docs/work/specs/audits/README.md"

@@ -1,6 +1,6 @@
 # Аудит мертвих GitHub-remote · 2026-09-23
 
-> **Last touched:** 2026-09-22 by @Skords-01. **Next review:** 2027-09-24.
+> **Last touched:** 2026-09-23 by @Skords-01. **Next review:** 2027-09-25.
 > **Status:** Active - архівний пуш не зроблено, чекає рішення власника.
 
 - **Питання:** що саме лежить у локальних remote `oldgh` і `deadgh-zaebal`, чи є там робота, якої немає більше ніде, і чи безпечно їх чіпати.
@@ -120,3 +120,14 @@ for ((i=0; i<${#specs[@]}; i+=100)); do git push bitbucket "${specs[@]:i:100}"; 
 Після пушу звірити `git ls-remote bitbucket 'refs/heads/archive/*' | wc -l` з очікуваним числом. **До цього моменту `git gc --prune` не запускати**: саме remote-refs утримують ці об'єкти від збирання сміття.
 
 Видалення самих remote лишається забороненим (`AGENTS.md § Де живе код`) незалежно від архівації.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                            | Title                                                             | Merged     |
+| ------------------------------------------------------------- | ----------------------------------------------------------------- | ---------- |
+| [#6](https://bitbucket.org/skords01/sergeant/pull-requests/6) | docs(docs): аудит мертвих GitHub-remote і вартість повного архіву | 2026-09-22 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

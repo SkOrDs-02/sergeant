@@ -1,8 +1,19 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-09-17",
+  "generated_at": "2026-09-23",
   "prs": [
+    {
+      "number": 6,
+      "title": "docs(docs): аудит мертвих GitHub-remote і вартість повного архіву",
+      "merged_at": "2026-09-22T23:46:43Z",
+      "author": "@skords01",
+      "host": "bitbucket",
+      "repo": "skords01/sergeant",
+      "touchedDocs": [
+        "docs/work/specs/audits/2026-09-23-dead-github-remotes.md"
+      ]
+    },
     {
       "number": 100,
       "title": "fix(web): аудит шуму, хвиля 3 — 12 виправлених дефектів",
@@ -741,5 +752,8 @@
         "docs/work/specs/initiatives/0014-knowledge-graph-and-catalogs.md"
       ]
     }
-  ]
+  ],
+  "examined": {
+    "bitbucket": [1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12]
+  }
 }

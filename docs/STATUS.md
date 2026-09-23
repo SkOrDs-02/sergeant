@@ -28,6 +28,7 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
+- [#6](https://bitbucket.org/skords01/sergeant/pull-requests/6) — docs(docs): аудит мертвих GitHub-remote і вартість повного архіву _(2026-09-22)_
 - [#100](https://github.com/zaebal-beep/sergeant/pull/100) — fix(web): аудит шуму, хвиля 3 — 12 виправлених дефектів _(2026-09-17)_
 - [#97](https://github.com/zaebal-beep/sergeant/pull/97) — feat(web): одна зупинка табуляції у смузі місяця, пульт Рутини лише зі звичками _(2026-09-17)_
 - [#96](https://github.com/zaebal-beep/sergeant/pull/96) — feat(web): аудит шуму й маршрутів + три виправлені дефекти _(2026-09-17)_
@@ -37,7 +38,6 @@
 - [#70](https://github.com/zaebal-beep/sergeant/pull/70) — fix(root): treat a backticked dated TODO as a quote in the todo-freshness gate _(2026-09-16)_
 - [#68](https://github.com/zaebal-beep/sergeant/pull/68) — test(web): e2e-приймання анонімної персистентності + закриття хендофу OPFS-регресії _(2026-09-16)_
 - [#67](https://github.com/zaebal-beep/sergeant/pull/67) — feat(server): перецілити kill-switch пам'яті ШІ з finyk на digest (0024, PR-2) _(2026-09-16)_
-- [#69](https://github.com/zaebal-beep/sergeant/pull/69) — docs(docs): quote the expired 0589 todo as history so lint:todo-freshness stops firing _(2026-09-16)_
 
 ## 🔵 В роботі — 73 відкриті документи
 

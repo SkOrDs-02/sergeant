@@ -125,6 +125,7 @@
     "docs:gen-service-catalog": "node scripts/docs/generate-service-catalog.mjs",
     "docs:check-service-catalog": "node scripts/docs/generate-service-catalog.mjs --check",
     "docs:gen-pr-backlinks": "node scripts/ci/update-pr-backlinks.mjs --rebuild-blocks",
+    "docs:sync-pr-ledger": "node scripts/ci/update-pr-backlinks.mjs --sync",
     "docs:check-pr-ledger": "node scripts/ci/update-pr-backlinks.mjs --check",
     "docs:check-playbook-schema": "node scripts/docs/check-playbook-schema.mjs",
     "docs:check-freshness-coverage": "node scripts/docs/check-freshness.mjs --check-coverage",
