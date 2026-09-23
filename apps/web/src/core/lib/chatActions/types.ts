@@ -163,8 +163,6 @@ export type {
   SetHabitScheduleAction,
   PauseHabitAction,
   HabitTrendAction,
-  // Domain entities
-  HabitState,
 } from "./types.routine";
 
 export type {

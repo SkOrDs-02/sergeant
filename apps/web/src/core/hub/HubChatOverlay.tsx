@@ -139,5 +139,3 @@ export function HubChatOverlay() {
     </Suspense>
   );
 }
-
-export default HubChatOverlay;

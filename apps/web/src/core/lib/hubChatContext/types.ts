@@ -27,16 +27,6 @@ export interface Account {
   creditLimit?: number;
 }
 
-export interface InfoCache {
-  accounts?: Account[];
-  name?: string;
-}
-
-export interface TxCache {
-  txs?: Transaction[];
-  timestamp?: number;
-}
-
 export interface Debt {
   id: string;
   name: string;
@@ -93,16 +83,6 @@ export interface AllData {
   excludedIds: Set<string>;
 }
 
-export interface HabitState {
-  habits?: Array<{
-    id: string;
-    name?: string;
-    emoji?: string;
-    archived?: boolean;
-  }>;
-  completions?: Record<string, string[]>;
-}
-
 export interface NutritionMeal {
   name?: string;
   macros?: {
@@ -111,16 +91,6 @@ export interface NutritionMeal {
     fat_g?: number;
     carbs_g?: number;
   };
-}
-
-export interface NutritionDay {
-  meals?: NutritionMeal[];
-}
-
-export interface NutritionPrefs {
-  dailyTargetKcal?: number;
-  dailyTargetProtein_g?: number;
-  dailyTargetProtein?: number;
 }
 
 export interface CategoryDef {

@@ -417,22 +417,3 @@ export function ModuleChecklist({
     </div>
   );
 }
-
-/**
- * Hook to check if a module checklist should be visible.
- * Useful for conditional rendering in parent components.
- *
- * Resolves against the same real-data signals the card itself uses, so
- * a caller never reserves space for a checklist the data has already
- * retired.
- */
-export function useModuleChecklistVisible(
-  moduleId: DashboardModuleId,
-  accountCreatedAt: string | null = null,
-): boolean {
-  const signals = useChecklistSignals(moduleId);
-  return isChecklistVisible(localStorageStore, moduleId, {
-    signals,
-    accountCreatedAt,
-  });
-}
