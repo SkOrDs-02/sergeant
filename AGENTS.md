@@ -397,9 +397,10 @@ curl -sS -X POST -H "Authorization: Bearer $(grep -m1 '^BITBUCKET_TOKEN=' /d/Ser
 
 ## Deployment & test users
 
-- **Frontend:** Vercel (preview deploy on each PR; free tier may rate-limit).
-- **Backend:** Hetzner CX23 VPS під Coolify (self-hosted PaaS) via `Dockerfile.api` — образ білдить GitHub Actions (`deploy-api.yml`) → `ghcr.io`, Coolify тягне й деплоїть. Pre-deploy: `node dist-server/migrate.js` (Coolify `pre_deployment_command`). Health endpoint: `/health`. Міграції потребують `MIGRATE_DATABASE_URL`. Топологія та rationale — [ADR-0074](./docs/governance/adr/0074-hosting-hetzner-coolify.md) (superseded ADR-0009 у частині бекенду). Railway виведено з експлуатації.
-- **Test users:** primary test-user ID живе поза репо (Coolify env vars / локальний `.env`-нотатник власника) — репо публічне, не комітьте реальні user ID чи фінансову топологію.
+- **Frontend:** Vercel, але **без Git-інтеграції**: `pnpm deploy:web` і `pnpm deploy:landing` (локальний CLI, [`scripts/deploy-vercel.mjs`](./scripts/deploy-vercel.mjs)). Preview-деплоїв на PR немає і не буде на безкоштовному тарифі: Hobby відмовляє репозиторіям, що належать workspace, а на Bitbucket усі репозиторії належать workspace. Це рішення, не тимчасовий стан, не витрачай сесію на спроби підключити.
+- **Backend:** Hetzner CX23 VPS під Coolify (self-hosted PaaS), застосунок `sergeant-api-v2`, білд із `Dockerfile.api` **на самому сервері**. Джерело з 2026-09-23 — `git@bitbucket.org:skords01/sergeant.git`, гілка `main`, read-only access key. GitHub Actions і `ghcr.io` у ланцюгу **більше не беруть участі** (акаунти заблоковані), дзеркало Hetzner теж виведене з ланцюга і лишається резервною копією. Викочує `pnpm deploy:api`. Health endpoint: `/health`, і він віддає просто `"ok"` — версії не повідомляє, тож доказом свіжості служить коміт у Coolify, а не health. Топологія та rationale — [ADR-0074](./docs/governance/adr/0074-hosting-hetzner-coolify.md) (superseded ADR-0009 у частині бекенду). Railway виведено з експлуатації.
+- **Міграції їдуть в ENTRYPOINT образу** (`node dist-server/migrate.js && exec node dist-server/index.js`), тобто застосовуються з нового коду ще до старту сервера. `pre_deployment_command` у Coolify порожній і має таким лишатись: він виконувався через `docker exec` у СТАРОМУ контейнері, через що міграція відставала на один деплой.
+- **Test users:** primary test-user ID живе поза репо (Coolify env vars / локальний `.env`-нотатник власника). Репо приватне з 2026-09-23, але це не привід послаблювати гігієну: історія лишається публічною в архівних GitHub-копіях, тож реальні user ID і фінансову топологію не комітьте.
 
 ### Прод не оновлюється сам
 
