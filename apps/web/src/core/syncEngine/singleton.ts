@@ -159,6 +159,16 @@ export function bootSyncEngineWriter(
   return inFlight;
 }
 
+/** Те саме для reader-а: він тримає власний інтервал догону. */
+function stopReaderWhenFollower(created: SyncEngineReaderRuntime): void {
+  const unsubscribe = subscribeDbOwnership(() => {
+    if (readDbOwnership() !== "follower") return;
+    unsubscribe();
+    readerRuntime = null;
+    created.stop();
+  });
+}
+
 /** Зупиняє рантайм, щойно ця вкладка перестала бути власником бази. */
 function stopWhenFollower(created: SyncEngineWriterRuntime): void {
   const unsubscribe = subscribeDbOwnership(() => {
@@ -204,10 +214,17 @@ export function bootSyncEngineReader(
   const createRuntime = options.createRuntime ?? createDefaultReaderRuntime;
   const captureException = options.captureException;
 
-  readerInFlight = createRuntime()
+  // Та сама причина, що й для writer-а нижче: у вкладці-послідовнику база
+  // памʼятєва, і догін курсора тягне туди весь оп-лог, щоб усе відхилити.
+  // Саме reader робить `/api/v2/sync/pull` - заміряно 2026-09-23 на
+  // планшеті: 51 запит за 80 секунд із вкладки, яка нічого не показує.
+  readerInFlight = claimDbOwnership()
+    .then((owner) => (owner === "follower" ? null : createRuntime()))
     .then((created) => {
+      if (!created) return null;
       readerRuntime = created;
       readerRuntime.start();
+      stopReaderWhenFollower(created);
       return readerRuntime;
     })
     .catch((error: unknown) => {
