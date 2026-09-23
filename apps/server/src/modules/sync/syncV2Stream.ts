@@ -262,6 +262,7 @@ export async function syncV2Stream(req: Request, res: Response): Promise<void> {
           AND id > $2
           AND status = 'applied'
           AND origin_device_id IS DISTINCT FROM $3
+          AND (tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))
         ORDER BY id ASC
         LIMIT $4`,
       [user.id, since, originDeviceId, SYNC_V2_STREAM_REPLAY_LIMIT],

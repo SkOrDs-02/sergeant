@@ -31,6 +31,7 @@ import {
   syncV2Push,
 } from "./syncV2.js";
 import { notifySyncV2OpsApplied as _notify } from "./syncV2Stream.js";
+import { SYNC_OP_LOG_COMMITTED_WATERMARK_SQL } from "./syncV2-core.js";
 import { syncConflictsTotal } from "../../obs/metrics.js";
 
 interface PoolStub {
@@ -851,6 +852,10 @@ describe("syncV2Pull · happy-path", () => {
     expect(args[1]).toBe(0); // default since
     expect(args[2]).toBeNull(); // origin device id missing
     expect(args[3]).toBe(100); // default limit
+    // Без вотермарку курсор перескакує оп-и довгої транзакції (міграція 147).
+    expect(pool.query.mock.calls[0]![0]).toContain(
+      SYNC_OP_LOG_COMMITTED_WATERMARK_SQL,
+    );
   });
 
   it("BIGINT id → number; ISO для timestamps; X-Origin-Device-Id як 3-й параметр", async () => {
