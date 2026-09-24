@@ -37,7 +37,7 @@ function buildAiContribution(saved: number): GoalContribution[] {
       amountUah: saved,
 
       date: toLocalISODate(new Date()),
-      note: "Через AI-асистента",
+      note: "Через Сержанта",
     },
   ];
 }

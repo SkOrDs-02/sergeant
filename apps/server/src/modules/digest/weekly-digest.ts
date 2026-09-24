@@ -221,7 +221,7 @@ export function createWeeklyDigestHandler(
     // `!sections.length`, яка через завжди-truthy `finyk` ніколи не спрацьовувала.
     if (countDigestSignalModules(parsed) < MIN_SIGNAL_MODULES) {
       throw new ValidationError(
-        "Замало даних за цей тиждень для звіту. Додай транзакцію, тренування, прийом їжі чи звичку — і спробуй ще раз.",
+        "Замало даних за цей тиждень для звіту. Додай транзакцію, тренування, прийом їжі чи звичку і спробуй ще раз.",
         { code: "INSUFFICIENT_DATA" },
       );
     }

@@ -188,6 +188,8 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
 
   const formattedCurrent = formatNumberUk(cur.count);
   const formattedPrev = formatNumberUk(prev.count);
+  // Нуль тренувань в обох вікнах: предмета звіту ще немає.
+  const empty = cur.count === 0 && prev.count === 0;
 
   return (
     <ReportSheet collapsed={collapsed}>
@@ -216,13 +218,15 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
             <span className="text-style-body font-bold text-text">
-              {formattedCurrent} трен.
+              {empty ? "–" : `${formattedCurrent} трен.`}
             </span>
-            <DeltaChip
-              cur={cur.count}
-              prev={prev.count}
-              higherIsBetter={true}
-            />
+            {!empty && (
+              <DeltaChip
+                cur={cur.count}
+                prev={prev.count}
+                higherIsBetter={true}
+              />
+            )}
           </span>
         )}
         <svg
@@ -243,7 +247,12 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {!collapsed && (
+      {!collapsed && empty && (
+        <p className="text-style-body text-muted">
+          {messages.hub.reportEmptyWorkouts}
+        </p>
+      )}
+      {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
             <span className="text-style-headline text-text">

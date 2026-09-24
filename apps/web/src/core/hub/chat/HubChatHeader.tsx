@@ -61,7 +61,7 @@ export function HubChatHeader({
         className="min-w-[280px]! p-1.5"
         trigger={
           <span
-            aria-label="Деталі асистента"
+            aria-label="Деталі Сержанта"
             className="flex items-center gap-2.5 min-w-0 w-full px-1.5 py-1 -mx-1.5 rounded-xl hover:bg-panelHi transition-colors cursor-pointer select-none"
           >
             <span
@@ -94,7 +94,7 @@ export function HubChatHeader({
                 id="hub-chat-title"
                 className="text-style-title font-bold text-text leading-snug whitespace-nowrap"
               >
-                Асистент
+                Сержант
               </span>
               <Icon
                 name="chevron-down"
@@ -178,7 +178,7 @@ export function HubChatHeader({
           type="button"
           onClick={onClose}
           className="w-9 h-9 min-h-[44px] min-w-[44px] shrink-0 flex items-center justify-center rounded-xl text-muted hover:text-text hover:bg-panelHi transition-colors"
-          aria-label="Закрити асистента"
+          aria-label="Закрити чат"
         >
           <Icon name="close" size="md" />
         </button>

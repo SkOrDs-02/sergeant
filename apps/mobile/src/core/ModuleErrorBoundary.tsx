@@ -213,7 +213,7 @@ function ErrorFallbackUI({
 
         {/* Support hint */}
         <Text className="text-xs text-fg-subtle text-center mt-4">
-          Якщо проблема повторюється, зверніться до підтримки
+          Якщо проблема повторюється, звернись до підтримки
         </Text>
       </Animated.View>
     </View>

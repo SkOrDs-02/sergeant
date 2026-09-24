@@ -168,7 +168,7 @@ export function NutritionDashboard({
 
     toastFiredRef.current = true;
     safeWriteLS(LS_KEY, today);
-    toast.success("Денну норму виконано");
+    toast.success("Денну ціль виконано");
   }, [kcalConsumed, kcalGoal, hasGoal, today, toast]);
 
   const protein = {

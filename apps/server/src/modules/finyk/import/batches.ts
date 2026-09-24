@@ -144,7 +144,7 @@ export async function deleteImportBatchHandler(
     const updated = updatedRows[0];
     if (!updated) {
       throw new Error(
-        "import_batches UPDATE ... RETURNING повернув 0 рядків — драйвер-аномалія (рядок існував у SELECT FOR UPDATE щойно вище)",
+        "import_batches UPDATE ... RETURNING повернув 0 рядків – драйвер-аномалія (рядок існував у SELECT FOR UPDATE щойно вище)",
       );
     }
 

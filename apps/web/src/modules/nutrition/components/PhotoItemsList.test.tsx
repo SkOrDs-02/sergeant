@@ -44,7 +44,7 @@ describe("PhotoItemsList", () => {
       />,
     );
     // Рівно одна позначка — інакше «низька впевненість» перестає виділяти.
-    expect(screen.getAllByText(/ШІ невпевнений/)).toHaveLength(1);
+    expect(screen.getAllByText(/AI невпевнений/)).toHaveLength(1);
   });
 
   it("прибирає позицію за індексом", () => {

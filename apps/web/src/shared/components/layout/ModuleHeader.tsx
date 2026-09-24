@@ -270,7 +270,7 @@ export interface ModuleHeaderAssistantButtonProps {
  * `HubChatOverlay.tsx` for the rationale.
  */
 export function ModuleHeaderAssistantButton({
-  ariaLabel = "Відкрити AI-асистента",
+  ariaLabel = "Відкрити Сержанта",
   title,
   className,
 }: ModuleHeaderAssistantButtonProps = {}) {

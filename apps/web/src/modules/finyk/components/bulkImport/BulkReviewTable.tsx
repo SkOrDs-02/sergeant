@@ -247,7 +247,7 @@ export function BulkReviewTable({
                       tone="soft"
                       size="xs"
                     >
-                      {row.direction === "income" ? "дохід" : "витрата"}
+                      {row.direction === "income" ? "надходження" : "витрата"}
                     </Badge>
                     {/* Бейджі — підозра, а не вирок: щойно людина сама
                         поставила галочку «імпортувати», підозра знята, і

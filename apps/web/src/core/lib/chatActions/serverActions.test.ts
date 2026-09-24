@@ -230,7 +230,7 @@ describe("handleAsyncChatAction — recall_memory error paths", () => {
       input: { query: "test" },
     } as unknown as ChatAction;
     const out = await handleAsyncChatAction(action);
-    expect(out).toBe("Потрібна авторизація для пошуку памʼяті.");
+    expect(out).toBe("Увійди, щоб шукати в памʼяті.");
   });
 
   it("→ 503 EMBEDDING_PROVIDER_UNAVAILABLE → 'тимчасово недоступна'", async () => {

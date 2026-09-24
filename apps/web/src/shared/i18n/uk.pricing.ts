@@ -10,9 +10,9 @@
  * тож переїзд механічний.
  */
 export const pricingMessages = {
-  pageTitle: "Тарифи",
+  pageTitle: "Плани",
   backLabel: "Назад",
-  plansAriaLabel: "Тарифні плани",
+  plansAriaLabel: "Плани",
   hero: {
     headlineLine1: "Sergeant безкоштовний для базового користування.",
     headlineLine2: "Premium, коли треба все одразу.",

@@ -114,7 +114,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
                 const removed = r;
                 setReceivables((rs) => rs.filter((x) => x.id !== removed.id));
                 showUndoToast(toast, {
-                  msg: `Видалено борг «${removed.name}»`,
+                  msg: `Видалено «${removed.name}» зі списку «Мені винні»`,
                   onUndo: () => setReceivables((rs) => [...rs, removed]),
                 });
               }}

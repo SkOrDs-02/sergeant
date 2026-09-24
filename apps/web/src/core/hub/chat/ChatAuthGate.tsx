@@ -45,7 +45,7 @@ export function ChatAuthGate() {
         />
         <div className="space-y-1">
           <p className="text-style-label font-semibold text-text">
-            Асистент працює після входу
+            Сержант працює після входу
           </p>
           <p className="text-style-body text-muted leading-snug">
             Він відповідає на твоїх даних, тому без акаунта відповідати немає на

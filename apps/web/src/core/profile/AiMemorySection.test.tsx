@@ -107,7 +107,7 @@ describe("AiMemorySection — clear AI memory", () => {
     await openSection();
 
     fireEvent.click(
-      await screen.findByRole("button", { name: "Очистити памʼять ШІ" }),
+      await screen.findByRole("button", { name: "Очистити памʼять AI" }),
     );
 
     const confirmButton = await screen.findByRole("button", {
@@ -119,7 +119,7 @@ describe("AiMemorySection — clear AI memory", () => {
     fireEvent.click(confirmButton);
 
     await waitFor(() => expect(meApi.clearAiMemory).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText("Памʼять ШІ очищено.")).toBeInTheDocument();
+    expect(await screen.findByText("Памʼять AI очищено.")).toBeInTheDocument();
     expect(confirmSpy).not.toHaveBeenCalled();
   });
 
@@ -135,7 +135,7 @@ describe("AiMemorySection — clear AI memory", () => {
     await openSection();
 
     const trigger = await screen.findByRole("button", {
-      name: "Очистити памʼять ШІ",
+      name: "Очистити памʼять AI",
     });
     trigger.focus();
     expect(trigger).toHaveFocus();
@@ -160,7 +160,7 @@ describe("AiMemorySection — clear AI memory", () => {
     await openSection();
 
     fireEvent.click(
-      await screen.findByRole("button", { name: "Очистити памʼять ШІ" }),
+      await screen.findByRole("button", { name: "Очистити памʼять AI" }),
     );
     fireEvent.click(
       await screen.findByRole("button", { name: "Очистити назавжди" }),
@@ -193,7 +193,7 @@ describe("AiMemorySection — clear AI memory", () => {
     await openSection();
 
     fireEvent.click(
-      await screen.findByRole("button", { name: "Очистити памʼять ШІ" }),
+      await screen.findByRole("button", { name: "Очистити памʼять AI" }),
     );
     fireEvent.click(
       await screen.findByRole("button", { name: "Очистити назавжди" }),
@@ -202,14 +202,14 @@ describe("AiMemorySection — clear AI memory", () => {
     await waitFor(() => expect(meApi.clearAiMemory).toHaveBeenCalledTimes(1));
     expect(
       await screen.findByText(
-        "Памʼять ШІ очищено на сервері, але локальну копію стерти не вдалося.",
+        "Памʼять AI очищено на сервері, але локальну копію стерти не вдалося.",
       ),
     ).toBeInTheDocument();
     // Ні текст повного успіху, ні текст повного провалу не мають зʼявитись
     // — це саме третій, окремий стан, а не переперевикористання іншого.
-    expect(screen.queryByText("Памʼять ШІ очищено.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Памʼять AI очищено.")).not.toBeInTheDocument();
     expect(
-      screen.queryByText("Не вдалося очистити памʼять ШІ."),
+      screen.queryByText("Не вдалося очистити памʼять AI."),
     ).not.toBeInTheDocument();
     expect(invalidateSpy).toHaveBeenCalledWith({ queryKey: aiMemoryKeys.all });
   });
@@ -223,14 +223,14 @@ describe("AiMemorySection — clear AI memory", () => {
     await openSection();
 
     fireEvent.click(
-      await screen.findByRole("button", { name: "Очистити памʼять ШІ" }),
+      await screen.findByRole("button", { name: "Очистити памʼять AI" }),
     );
     fireEvent.click(
       await screen.findByRole("button", { name: "Очистити назавжди" }),
     );
 
     expect(
-      await screen.findByText("Не вдалося очистити памʼять ШІ."),
+      await screen.findByText("Не вдалося очистити памʼять AI."),
     ).toBeInTheDocument();
     expect(invalidateSpy).not.toHaveBeenCalledWith({
       queryKey: aiMemoryKeys.all,
@@ -253,16 +253,16 @@ describe("AiMemorySection — clear AI memory", () => {
     await openSection();
 
     fireEvent.click(
-      await screen.findByRole("button", { name: "Очистити памʼять ШІ" }),
+      await screen.findByRole("button", { name: "Очистити памʼять AI" }),
     );
     fireEvent.click(
       await screen.findByRole("button", { name: "Очистити назавжди" }),
     );
 
     await waitFor(() => expect(meApi.clearAiMemory).toHaveBeenCalledTimes(1));
-    expect(await screen.findByText("Памʼять ШІ очищено.")).toBeInTheDocument();
+    expect(await screen.findByText("Памʼять AI очищено.")).toBeInTheDocument();
     expect(
-      screen.getByRole("button", { name: "Очистити памʼять ШІ" }),
+      screen.getByRole("button", { name: "Очистити памʼять AI" }),
     ).toBeInTheDocument();
   });
 });

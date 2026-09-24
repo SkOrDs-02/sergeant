@@ -292,7 +292,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                   <Measure value={best.bestSet.reps ?? 0} unit="повт." />
                 </>
               ) : (
-                "Немає силових сетів"
+                "Немає силових підходів"
               )}
             </div>
             {best.bestSet?.at && (
@@ -327,7 +327,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                   × <Measure value={suggestedNext.reps} unit="повт." />
                 </>
               ) : (
-                "Заповни сети, щоб зʼявилась рекомендація"
+                "Заповни підходи, щоб зʼявилась рекомендація"
               )}
             </div>
             {/* Обидва поля в гейті, а не одне: `altReps` теж необовʼязкове,
@@ -428,7 +428,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
 
         <Card radius="lg" padding="lg">
           <SectionHeading as="h2" size="xs" className="mb-3" variant="fizruk">
-            Історія сетів
+            Історія підходів
           </SectionHeading>
           {history.length === 0 ? (
             <EmptyState

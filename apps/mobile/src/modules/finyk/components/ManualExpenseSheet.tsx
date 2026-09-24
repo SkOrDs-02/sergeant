@@ -183,7 +183,7 @@ export function ManualExpenseSheet({
   const handleSubmit = () => {
     const amt = parseFloat(amount.replace(",", "."));
     if (!amount || Number.isNaN(amt) || amt <= 0) {
-      setError("Вкажіть суму більше 0");
+      setError("Вкажи суму більше 0");
       return;
     }
     const trimmedDesc = description.trim();

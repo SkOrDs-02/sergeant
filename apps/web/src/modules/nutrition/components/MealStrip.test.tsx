@@ -144,7 +144,7 @@ describe("MealStrip", () => {
         onSetGoal={onSetGoal}
       />,
     );
-    fireEvent.click(screen.getByRole("button", { name: "Задати норму" }));
+    fireEvent.click(screen.getByRole("button", { name: "Задати ціль" }));
     expect(onSetGoal).toHaveBeenCalledTimes(1);
   });
 
@@ -161,7 +161,7 @@ describe("MealStrip", () => {
       />,
     );
     expect(
-      screen.queryByRole("button", { name: "Задати норму" }),
+      screen.queryByRole("button", { name: "Задати ціль" }),
     ).not.toBeInTheDocument();
   });
 
@@ -182,7 +182,7 @@ describe("MealStrip", () => {
       />,
     );
     expect(
-      screen.queryByRole("button", { name: "Задати норму" }),
+      screen.queryByRole("button", { name: "Задати ціль" }),
     ).not.toBeInTheDocument();
   });
 
@@ -288,7 +288,7 @@ describe("MealStrip", () => {
       />,
     );
     expect(screen.getByText("−300")).toBeInTheDocument();
-    expect(screen.getByText("ккал понад норму")).toBeInTheDocument();
+    expect(screen.getByText("ккал понад ціль")).toBeInTheDocument();
     // the "on-track" remaining caption must not also render
     expect(screen.queryByText("лишилось на перекус")).not.toBeInTheDocument();
   });
