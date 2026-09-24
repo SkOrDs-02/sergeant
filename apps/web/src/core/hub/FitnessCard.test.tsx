@@ -8,6 +8,7 @@ vi.mock("@fizruk/lib/sqliteReader", () => ({
 }));
 
 import FitnessCard from "./FitnessCard";
+import { messages } from "@shared/i18n/uk";
 import {
   __resetFizrukSqliteReadGateForTests,
   notifyFizrukSqliteCacheRefresh,
@@ -58,7 +59,9 @@ describe("FitnessCard", () => {
     getCachedFizrukSqliteState.mockReturnValue(emptyWarmCache);
     render(<FitnessCard period="week" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Тренування/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(messages.hub.reportEmptyWorkouts),
+    ).toBeInTheDocument();
   });
 
   it("treats a cold cache (refreshedAt null) as no data", () => {
@@ -68,7 +71,9 @@ describe("FitnessCard", () => {
     });
     render(<FitnessCard period="month" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Тренування/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(messages.hub.reportEmptyWorkouts),
+    ).toBeInTheDocument();
   });
 
   it("renders the bar chart with workout data", () => {
@@ -88,13 +93,15 @@ describe("FitnessCard", () => {
     });
     render(<FitnessCard period="week" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Тренування/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(messages.hub.reportEmptyWorkouts),
+    ).toBeInTheDocument();
 
     getCachedFizrukSqliteState.mockReturnValue(cacheWithWorkout());
     act(() => {
       notifyFizrukSqliteCacheRefresh();
     });
-    expect(screen.queryByText(/Немає даних/i)).toBeNull();
+    expect(screen.queryByText(messages.hub.reportEmptyWorkouts)).toBeNull();
     expect(screen.getAllByText(/трен\./i).length).toBeGreaterThan(0);
   });
 });
