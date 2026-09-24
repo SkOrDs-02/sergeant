@@ -441,7 +441,7 @@ describe("TodayFocusCard", () => {
     const focus = {
       id: "routine_streak_7",
       module: "routine" as const,
-      title: "7 днів поспіль! Вогонь!",
+      title: "7 днів поспіль",
       body: "Неймовірна серія!",
       icon: "flame",
       action: "routine",

@@ -92,7 +92,7 @@ export const pricingMessages = {
       "Не вдалося відкрити керування підпискою. Перевір звʼязок і спробуй ще раз.",
   },
   toast: {
-    subscriptionActive: "Підписку активовано, ласкаво просимо в Premium!",
+    subscriptionActive: "Підписку активовано, Premium уже діє.",
     subscriptionActiveCta: "Перейти у налаштування",
     paymentCanceled: "Оплату скасовано. Підписка не оформлена.",
   },

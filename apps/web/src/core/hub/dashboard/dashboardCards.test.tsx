@@ -39,7 +39,7 @@ describe("MotivationalFooter — same-tab storage refresh (F10)", () => {
 
     render(<MotivationalFooter />);
 
-    expect(screen.getByText("Вже 1 запис, продовжуй!")).toBeInTheDocument();
+    expect(screen.getByText("Вже 1 запис")).toBeInTheDocument();
   });
 
   it("re-counts after storageUpdated signal fires with new LS data", () => {
@@ -50,7 +50,7 @@ describe("MotivationalFooter — same-tab storage refresh (F10)", () => {
     );
 
     render(<MotivationalFooter />);
-    expect(screen.getByText("Вже 1 запис, продовжуй!")).toBeInTheDocument();
+    expect(screen.getByText("Вже 1 запис")).toBeInTheDocument();
 
     // Add a second workout directly to LS (simulating a same-tab write),
     // then fire the storageUpdated signal.
@@ -65,7 +65,7 @@ describe("MotivationalFooter — same-tab storage refresh (F10)", () => {
       emitHubBus("storageUpdated", undefined);
     });
 
-    expect(screen.getByText("Вже 2 записи, продовжуй!")).toBeInTheDocument();
+    expect(screen.getByText("Вже 2 записи")).toBeInTheDocument();
   });
 
   it("re-counts after native window storage event fires (cross-tab path)", () => {
@@ -75,7 +75,7 @@ describe("MotivationalFooter — same-tab storage refresh (F10)", () => {
     );
 
     render(<MotivationalFooter />);
-    expect(screen.getByText("Вже 1 запис, продовжуй!")).toBeInTheDocument();
+    expect(screen.getByText("Вже 1 запис")).toBeInTheDocument();
 
     act(() => {
       localStorage.setItem(
@@ -91,7 +91,7 @@ describe("MotivationalFooter — same-tab storage refresh (F10)", () => {
       );
     });
 
-    expect(screen.getByText("Вже 2 записи, продовжуй!")).toBeInTheDocument();
+    expect(screen.getByText("Вже 2 записи")).toBeInTheDocument();
   });
 
   // Українська плюралізація — три форми (one/few/many), не бінарна
@@ -116,9 +116,7 @@ describe("MotivationalFooter — same-tab storage refresh (F10)", () => {
 
     render(<MotivationalFooter />);
 
-    expect(
-      screen.getByText(`Вже ${n} ${form}, продовжуй!`),
-    ).toBeInTheDocument();
+    expect(screen.getByText(`Вже ${n} ${form}`)).toBeInTheDocument();
   });
 });
 

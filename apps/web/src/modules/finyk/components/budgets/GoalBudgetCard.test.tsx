@@ -305,8 +305,8 @@ describe("GoalBudgetCard", () => {
         onDelete={vi.fn()}
       />,
     );
-    // The celebration modal renders its "Ціль досягнуто!" description.
-    expect(screen.getByText(/Ціль досягнуто/)).toBeInTheDocument();
+    // The celebration modal renders its "Ціль закрито" description.
+    expect(screen.getByText(/Ціль закрито/)).toBeInTheDocument();
   });
 
   it("does not repeat a completed-goal celebration after the card remounts", () => {
@@ -322,10 +322,10 @@ describe("GoalBudgetCard", () => {
     };
     const firstRender = render(<GoalBudgetCard {...props} />);
 
-    expect(screen.getByText(/Ціль досягнуто/)).toBeInTheDocument();
+    expect(screen.getByText(/Ціль закрито/)).toBeInTheDocument();
     firstRender.unmount();
     render(<GoalBudgetCard {...props} />);
 
-    expect(screen.queryByText(/Ціль досягнуто/)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Ціль закрито/)).not.toBeInTheDocument();
   });
 });

@@ -1,6 +1,7 @@
 import { useSyncExternalStore } from "react";
 import { z } from "zod";
 import { messages } from "@shared/i18n/uk";
+import { Banner } from "@shared/components/ui/Banner";
 import { Icon } from "@shared/components/ui/Icon";
 import { createTypedStore } from "../../shared/lib/storage/typedStore";
 import { FLAG_REGISTRY, setFlag, useAllFlags } from "../lib/featureFlags";
@@ -62,14 +63,7 @@ export function ExperimentalSection() {
     // `messages.experimentalSection.title` (uk.ts/en.ts) для узгодженості.
     <SettingsGroup title={settingsSectionTitle("experimental")} icon="tool">
       <p className="text-style-body text-subtle leading-snug">{copy.intro}</p>
-      <div
-        role="note"
-        // V-5: `warn` не існує у дизайн-системі (реальний токен — `warning`,
-        // див. packages/design-tokens/tailwind-preset.js) — банер рендерився
-        // без кольору/бордера. Патерн border/bg відповідає іншим
-        // warning-банерам (FinykManualExpenseConflictBanner).
-        className="flex items-start gap-3 rounded-xl border border-warning/40 bg-warning/10 px-3 py-2.5"
-      >
+      <Banner variant="warning" role="note" className="flex items-start gap-3">
         <Icon
           name="alert-triangle"
           size="md"
@@ -79,7 +73,7 @@ export function ExperimentalSection() {
         <p className="text-style-caption text-text leading-snug">
           {copy.warningBanner}
         </p>
-      </div>
+      </Banner>
       {!acknowledged && (
         <div className="flex items-start gap-3 text-text">
           <input

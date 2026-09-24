@@ -14,6 +14,7 @@
  */
 import { useState } from "react";
 import { silpoConnectUrl } from "@shared/api";
+import { Banner } from "@shared/components/ui/Banner";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
@@ -317,9 +318,10 @@ export function SilpoIntegrationSection({
           </div>
         ) : status === "reauth_required" ? (
           <div className="space-y-3">
-            <div
-              className="flex items-start gap-3 p-3 rounded-xl border border-warning/40 bg-warning/10"
+            <Banner
+              variant="warning"
               role="alert"
+              className="flex items-start gap-3"
             >
               <span
                 className="w-2.5 h-2.5 mt-1.5 rounded-full shrink-0 bg-warning"
@@ -331,7 +333,7 @@ export function SilpoIntegrationSection({
                   {COPY.reauthBody}
                 </p>
               </div>
-            </div>
+            </Banner>
             <Button
               variant="outline"
               className="w-full h-11"

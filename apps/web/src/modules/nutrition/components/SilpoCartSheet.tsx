@@ -17,6 +17,7 @@
 import { useState } from "react";
 import { formatMoneyFromKopecks } from "@sergeant/shared";
 import { Sheet } from "@shared/components/ui/Sheet";
+import { Banner } from "@shared/components/ui/Banner";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
@@ -65,10 +66,11 @@ function ErrorBanner({
   const text = errorCopy(kind);
   if (!text) return null;
   return (
-    <div
+    <Banner
+      variant="warning"
       role="alert"
       aria-live="assertive"
-      className="flex items-start gap-2.5 rounded-xl border border-warning/40 bg-warning/10 p-3"
+      className="flex items-start gap-2.5"
     >
       <Icon
         name="alert-triangle"
@@ -91,7 +93,7 @@ function ErrorBanner({
           </button>
         )}
       </div>
-    </div>
+    </Banner>
   );
 }
 
