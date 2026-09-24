@@ -19,10 +19,12 @@ import { fileURLToPath } from "node:url";
  *   - слово «Помилка» саме по собі;
  *   - префікс «Помилка: …» поверх іншого тексту.
  *
- * Форма «Помилка <що саме>» («Помилка синхронізації») НЕ ловиться навмисно:
- * §7 забороняє голе слово, а не назву того, що впало. Такі рядки часто
- * живуть у бейджах і пігулках, де другому реченню фізично немає місця; їхня
- * §3-проблема реальна, але окрема, і одним регексом не лікується.
+ * Форма «Помилка <що саме>» («Помилка синхронізації») до 2026-09-24 не
+ * ловилась навмисно: §7 забороняє голе слово, а не назву того, що впало.
+ * Хвиля A аудиту копі 2026-09-23 прибрала 19 таких фолбеків через
+ * `failedCopy()` («Не вдалося {what}. {action}»), і з того дня форма без
+ * наступного кроку ловиться теж (`BARE_NOUN` нижче); з дією після крапки
+ * вона лишається дозволеною.
  */
 
 const HERE = dirname(fileURLToPath(import.meta.url));
@@ -32,6 +34,15 @@ const WEB_SRC = resolve(HERE, "../..");
 const EXACT = /^Помилка$/;
 /** «Помилка: …» — префікс поверх чужого повідомлення. */
 const PREFIX = /^Помилка\s*:/;
+/**
+ * «Помилка <що саме>» без наступного кроку («Помилка синхронізації»,
+ * «Помилка backfill»). До 2026-09-24 ця форма навмисно не ловилась (див.
+ * абзац в історії вище), але аудит копі 2026-09-23 (§2.6) нарахував 19 таких
+ * фолбеків у хуках і компонентах, і всі вони показувались людині рівно тоді,
+ * коли сервер не дав власного тексту. Ловиться лише форма БЕЗ другого
+ * речення: «Помилка сервера. Спробуй ще раз пізніше.» має дію і проходить.
+ */
+const BARE_NOUN = /^Помилка(?: [а-яіїєґА-ЯІЇЄҐʼ-]+)+[.!]?$/;
 
 /**
  * Єдиний дозволений випадок, і він не є повідомленням.
@@ -44,7 +55,14 @@ const PREFIX = /^Помилка\s*:/;
  * повторює заголовок під собою, — але це вже питання композиції
  * `EmptyState`, не заборонена конструкція.
  */
-const ALLOWED = new Set(["shared/i18n/uk.core.ts"]);
+const ALLOWED = new Set([
+  "shared/i18n/uk.core.ts",
+  // `STATUS_LABEL.error` «Помилка асистента» — власний ЗАГОЛОВОК рейки з
+  // `role="alert"` над текстом збою, а не саме повідомлення: дію і причину
+  // несе тіло під ним (розбір у `hubChatUtils.test.ts`, коментар до
+  // `friendlyChatError`).
+  "core/hub/search/InlineAiRail.tsx",
+]);
 
 function collectSourceFiles(dir: string, out: string[] = []): string[] {
   for (const entry of readdirSync(dir)) {
@@ -81,7 +99,9 @@ interface Offender {
 function findOffenders(): Offender[] {
   const offenders: Offender[] = [];
   for (const file of collectSourceFiles(WEB_SRC)) {
-    const rel = relative(WEB_SRC, file);
+    // Windows дає зворотні слеші, а `ALLOWED` записаний прямими: без
+    // нормалізації виняток мовчки не діяв на цій платформі.
+    const rel = relative(WEB_SRC, file).replace(/\\/g, "/");
     if (ALLOWED.has(rel)) continue;
     const src = readFileSync(file, "utf8");
     const clean = stripComments(src);
@@ -90,7 +110,8 @@ function findOffenders(): Offender[] {
     )) {
       const value = match[1] ?? match[2] ?? match[3];
       if (value == null) continue;
-      if (!EXACT.test(value) && !PREFIX.test(value)) continue;
+      if (!EXACT.test(value) && !PREFIX.test(value) && !BARE_NOUN.test(value))
+        continue;
       offenders.push({
         file: rel,
         line: clean.slice(0, match.index).split("\n").length,
@@ -99,11 +120,13 @@ function findOffenders(): Offender[] {
     }
     // Шаблонний рядок з підстановкою: `Помилка: ${msg}` — саме та форма,
     // яку `friendlyChatError` віддавав до PR-X3.
-    for (const match of clean.matchAll(/`Помилка\s*:/g)) {
+    for (const match of clean.matchAll(
+      /`Помилка(?: [а-яіїєґА-ЯІЇЄҐʼ-]+)*\s*:/g,
+    )) {
       offenders.push({
         file: rel,
         line: clean.slice(0, match.index).split("\n").length,
-        text: "`Помилка: ${…}`",
+        text: "`Помилка …: ${…}`",
       });
     }
   }
@@ -117,7 +140,7 @@ describe("«Помилка» як standalone (§7 гайду копірайти�
     expect(collectSourceFiles(WEB_SRC).length).toBeGreaterThan(500);
   });
 
-  it("не вживається ні голим словом, ні префіксом «Помилка: »", () => {
+  it("не вживається голим словом, префіксом «Помилка: » чи «Помилка <що>» без дії", () => {
     expect(
       findOffenders().map((o) => `${o.file}:${o.line} — ${o.text}`),
     ).toEqual([]);

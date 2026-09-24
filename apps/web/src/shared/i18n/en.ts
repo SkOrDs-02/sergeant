@@ -50,7 +50,6 @@ export const messagesEn: Partial<{
     errorNetwork: "Sync failed, check your connection.",
     errorServerRetryable: "The server is temporarily unresponsive. Try again.",
     errorServerNonRetryable: "Sync error. Check your input.",
-    errorGeneric: "Sync error.",
     retryCta: "Try again",
 
     conflictResolved: "Conflict resolved automatically.",

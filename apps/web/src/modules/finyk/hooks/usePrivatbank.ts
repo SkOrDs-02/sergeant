@@ -233,7 +233,7 @@ function warnOnUnknownEnvelope(
   const keys = data && typeof data === "object" ? Object.keys(data) : [];
   if (keys.length === 0) return;
   logger.warn(
-    `[privat] ${scope}: відповідь непорожня, але жоден відомий конверт не підійшов — ` +
+    `[privat] ${scope}: відповідь непорожня, але жоден відомий конверт не підійшов, ` +
       `віддаю порожній список. Ключі верхнього рівня: ${keys.join(", ")}. ` +
       `Розбір: docs/work/specs/tech-debt/frontend.md § Privat24.`,
   );

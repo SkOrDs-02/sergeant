@@ -99,7 +99,7 @@ export function useVoiceInput({
       } else if (e.error === "no-speech") {
         onError?.("Не вдалося розпізнати мову. Спробуй ще раз.");
       } else if (e.error !== "aborted") {
-        onError?.(`Помилка розпізнавання: ${e.error}`);
+        onError?.("Не вдалося розпізнати мову. Спробуй ще раз.");
       }
     };
 

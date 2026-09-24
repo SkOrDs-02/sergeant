@@ -170,7 +170,6 @@ export const coreMessages = {
     errorNetwork: "Не вдалось синхронізувати, перевір зʼєднання.",
     errorServerRetryable: "Сервер тимчасово не відповідає. Спробуй ще раз.",
     errorServerNonRetryable: "Помилка синхронізації. Передивись введення.",
-    errorGeneric: "Помилка синхронізації.",
     retryCta: "Спробувати ще",
 
     // Reserved для майбутніх migration-round-ів — narrative-strings, які

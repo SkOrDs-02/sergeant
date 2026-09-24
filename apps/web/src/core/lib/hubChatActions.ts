@@ -136,9 +136,9 @@ function dispatch(action: ChatAction): ExecutedAction & { ok: boolean } {
       return { result: `Невідома дія: ${action.name}`, ok: false };
     }
     return { ...handled, ok: true };
-  } catch (e) {
+  } catch {
     return {
-      result: `Помилка виконання: ${e instanceof Error ? e.message : String(e)}`,
+      result: "Не вдалося виконати дію. Спробуй ще раз.",
       ok: false,
     };
   }
@@ -161,7 +161,7 @@ function dispatch(action: ChatAction): ExecutedAction & { ok: boolean } {
  */
 export function executeAction(action: ChatAction): string {
   if (ASYNC_CHAT_ACTION_NAMES.has(action.name)) {
-    return `Tool ${action.name} вимагає async виконання, викличте executeActions().`;
+    return `Tool ${action.name} вимагає async виконання: виклич executeActions().`;
   }
   return dispatch(action).result;
 }
@@ -213,10 +213,10 @@ export async function executeActions(
             result: `Невідома дія: ${action.name}`,
             ok: false,
           });
-        } catch (e) {
+        } catch {
           return withLatency({
             name: action.name,
-            result: `Помилка виконання: ${e instanceof Error ? e.message : String(e)}`,
+            result: "Не вдалося виконати дію. Спробуй ще раз.",
             ok: false,
           });
         }

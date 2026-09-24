@@ -152,10 +152,13 @@ export async function subscribe(req: Request, res: Response): Promise<void> {
     keys.auth,
   ]);
   if (upsert.rowCount === 0) {
-    throw new AppError("Цей пристрій уже зареєстровано на інший акаунт.", {
-      status: 409,
-      code: "PUSH_SUBSCRIPTION_OWNED",
-    });
+    throw new AppError(
+      "Цей пристрій уже зареєстровано на інший акаунт. Вийди з того акаунта на цьому пристрої й увімкни сповіщення знову.",
+      {
+        status: 409,
+        code: "PUSH_SUBSCRIPTION_OWNED",
+      },
+    );
   }
   res.json({ ok: true });
 }
@@ -190,10 +193,13 @@ export async function register(req: Request, res: Response): Promise<void> {
       data.keys.auth,
     ]);
     if (upsert.rowCount === 0) {
-      throw new AppError("Цей пристрій уже зареєстровано на інший акаунт.", {
-        status: 409,
-        code: "PUSH_SUBSCRIPTION_OWNED",
-      });
+      throw new AppError(
+        "Цей пристрій уже зареєстровано на інший акаунт. Вийди з того акаунта на цьому пристрої й увімкни сповіщення знову.",
+        {
+          status: 409,
+          code: "PUSH_SUBSCRIPTION_OWNED",
+        },
+      );
     }
     res.json({ ok: true, platform: "web" });
     return;
@@ -215,10 +221,13 @@ export async function register(req: Request, res: Response): Promise<void> {
     [user.id, data.platform, data.token],
   );
   if (upsert.rowCount === 0) {
-    throw new AppError("Цей пристрій уже зареєстровано на інший акаунт.", {
-      status: 409,
-      code: "PUSH_DEVICE_OWNED",
-    });
+    throw new AppError(
+      "Цей пристрій уже зареєстровано на інший акаунт. Вийди з того акаунта на цьому пристрої й увімкни сповіщення знову.",
+      {
+        status: 409,
+        code: "PUSH_DEVICE_OWNED",
+      },
+    );
   }
   res.json({ ok: true, platform: data.platform });
 }

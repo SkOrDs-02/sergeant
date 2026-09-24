@@ -25,7 +25,9 @@ export function requireApiSecret(envVarName: string): RequestHandler {
     const gotStr =
       typeof got === "string" ? got : Array.isArray(got) ? got[0] : undefined;
     if (!safeStringEqual(gotStr, expected)) {
-      res.status(401).json({ error: "Невірний секрет", code: "UNAUTHORIZED" });
+      res
+        .status(401)
+        .json({ error: "Неправильний секрет", code: "UNAUTHORIZED" });
       return;
     }
     next();

@@ -74,7 +74,7 @@ describe("ManualExpenseSheet", () => {
 
     expect(onSave).not.toHaveBeenCalled();
     expect(onClose).not.toHaveBeenCalled();
-    expect(screen.getByText("Вкажіть суму більше 0")).toBeTruthy();
+    expect(screen.getByText("Вкажи суму більше 0")).toBeTruthy();
   });
 
   it("submits the normalised payload and closes the sheet on save", () => {

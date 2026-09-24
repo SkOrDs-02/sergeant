@@ -61,7 +61,7 @@ function SyncStatusBadgeComponent({
   const label = isLoading
     ? "Синхронізація…"
     : isError
-      ? "Помилка синхронізації"
+      ? "Не вдалося синхронізувати"
       : isPartial
         ? "Часткова синхронізація"
         : isSuccess

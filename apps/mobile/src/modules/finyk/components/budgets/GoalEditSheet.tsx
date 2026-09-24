@@ -58,11 +58,11 @@ export function GoalEditSheet({
     const t = Number(target);
     const s = Number(saved || 0);
     if (!name.trim()) {
-      setError("Вкажіть назву цілі");
+      setError("Вкажи назву цілі");
       return;
     }
     if (!target || Number.isNaN(t) || t <= 0) {
-      setError("Вкажіть суму цілі більше 0");
+      setError("Вкажи суму цілі більше 0");
       return;
     }
     if (s < 0) {
