@@ -222,7 +222,7 @@ export function WorkoutTemplatesSection({
             </SectionHeading>
             <Input
               {...searchFieldProps("template-exercise-search")}
-              placeholder="Пошук…"
+              placeholder="Пошук"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               aria-label="Пошук вправи для шаблону"

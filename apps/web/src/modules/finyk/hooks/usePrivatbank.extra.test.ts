@@ -23,8 +23,16 @@ vi.mock("@shared/api", async () => {
   };
 });
 
+vi.mock("../../../core/observability/sentry", async () => {
+  const actual = await vi.importActual<
+    typeof import("../../../core/observability/sentry")
+  >("../../../core/observability/sentry");
+  return { ...actual, captureException: vi.fn() };
+});
+
 import { privatApi, ApiError } from "@shared/api";
 import { logger } from "@shared/lib";
+import { captureException } from "../../../core/observability/sentry";
 import { readJSON, removeItem, writeJSON } from "../lib/finykStorage";
 import { usePrivatbank } from "./usePrivatbank";
 
@@ -607,7 +615,52 @@ describe("usePrivatbank (extra) — невпізнаний конверт від
     expect(said).not.toContain("UA123");
     // Липкої порожнечі в кеші немає.
     expect(readJSON("finyk_privat_balance_cache", null)).toBe(null);
+    // І окрема подія в Sentry: warn у проді — лише breadcrumb, його не видно.
+    expect(captureException).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("balance/final"),
+      }),
+      expect.objectContaining({
+        level: "warning",
+        extra: { keys: ["balances"] },
+      }),
+    );
+    expect(JSON.stringify(vi.mocked(captureException).mock.calls)).not.toMatch(
+      /500\.00|UA123/,
+    );
     warn.mockRestore();
+  });
+
+  it("шле в Sentry назви полів, коли конверт упізнано, а `balance` у записі немає", async () => {
+    // Перша половина боргу: оголошений тип має `balanceOut`, код читає
+    // `balance`, і `|| 0` перетворює промах на 0 ₴ без жодного сліду.
+    mockedRequest.mockImplementation(async (path: string): Promise<unknown> => {
+      if (path.includes("/balance/final"))
+        return {
+          StatementsResponse: {
+            data: [{ acc: "UA777", balanceOut: "700.00", currency: "UAH" }],
+          },
+        };
+      return { data: [] };
+    });
+
+    const { result } = renderHook(() => usePrivatbank());
+    await act(async () => {
+      await result.current.connect("mid", "tok");
+    });
+
+    expect(captureException).toHaveBeenCalledWith(
+      expect.objectContaining({
+        message: expect.stringContaining("balance-record"),
+      }),
+      expect.objectContaining({
+        level: "warning",
+        extra: { keys: ["acc", "balanceOut", "currency"] },
+      }),
+    );
+    expect(JSON.stringify(vi.mocked(captureException).mock.calls)).not.toMatch(
+      /700\.00|UA777/,
+    );
   });
 
   it("мовчить, коли конверт упізнано, а рахунків просто нуль", async () => {
@@ -627,6 +680,7 @@ describe("usePrivatbank (extra) — невпізнаний конверт від
 
     const said = warn.mock.calls.map((c) => String(c[0])).join("\n");
     expect(said).not.toContain("жоден відомий конверт");
+    expect(captureException).not.toHaveBeenCalled();
     warn.mockRestore();
   });
 });

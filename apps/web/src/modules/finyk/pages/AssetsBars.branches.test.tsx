@@ -63,7 +63,7 @@ describe("AssetsBars (branches)", () => {
           onToggle={vi.fn()}
         />,
       );
-      expect(screen.getByText("Розкласти")).toBeInTheDocument();
+      expect(screen.getByText("Розгорнути")).toBeInTheDocument();
       expect(screen.getByRole("button")).toHaveAttribute(
         "aria-expanded",
         "false",

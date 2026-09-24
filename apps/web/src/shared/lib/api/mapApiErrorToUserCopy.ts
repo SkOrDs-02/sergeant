@@ -38,7 +38,7 @@ export interface ApiErrorLike {
   statusText?: string | undefined;
 }
 
-const DEFAULT_FALLBACK = "Не вдалося виконати запит";
+const DEFAULT_FALLBACK = "Не вдалося виконати запит.";
 
 /**
  * Канонічна мапа `code` → UA-копія. Лишаємо мінімально необхідний набір

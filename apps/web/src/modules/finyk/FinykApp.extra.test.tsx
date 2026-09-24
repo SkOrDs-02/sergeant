@@ -451,7 +451,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
     fireEvent.click(screen.getByTestId("fab-action-expense"));
     fireEvent.click(screen.getByTestId("delete-exp"));
     expect(storageMock.removeManualExpense).toHaveBeenCalledWith("exp-1");
-    expect(toastMock.success).toHaveBeenCalledWith("Видалив витрату");
+    expect(toastMock.success).toHaveBeenCalledWith("Витрату видалено");
     expect(showUndoToast).not.toHaveBeenCalled();
   });
 
@@ -463,7 +463,7 @@ describe("FinykApp (extra) — ManualExpenseSheet onDelete", () => {
     expect(storageMock.removeManualExpense).toHaveBeenCalledWith("exp-1");
     expect(showUndoToast).toHaveBeenCalledWith(
       toastMock,
-      expect.objectContaining({ msg: "Видалив витрату" }),
+      expect.objectContaining({ msg: "Витрату видалено" }),
     );
   });
 });

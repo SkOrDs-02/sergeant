@@ -144,7 +144,7 @@ export function RecurringSuggestions({
           </div>
         </div>
         <span className="inline-flex items-center gap-1 text-style-caption text-muted shrink-0 ml-2">
-          {open ? "Згорнути" : "Розкласти"}
+          {open ? "Згорнути" : "Розгорнути"}
           <Icon name={open ? "chevron-up" : "chevron-down"} size="sm" />
         </span>
       </button>

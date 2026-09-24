@@ -161,7 +161,7 @@ describe("WorkoutsHome", () => {
     expect(scheduleBtn.closest("button")).toHaveClass("focus-visible:ring-2");
   });
 
-  it("shows the empty-journal placeholder and hides the 'Всі →' link when recentWorkouts is empty", () => {
+  it("shows the empty-journal placeholder and hides the 'Всі' link when recentWorkouts is empty", () => {
     const handlers = baseHandlers();
     render(
       <WorkoutsHome
@@ -173,10 +173,10 @@ describe("WorkoutsHome", () => {
     );
 
     expect(screen.getByText(/тут зʼявляться останні/)).toBeInTheDocument();
-    expect(screen.queryByText("Всі →")).not.toBeInTheDocument();
+    expect(screen.queryByText("Всі")).not.toBeInTheDocument();
   });
 
-  it("renders the recent-workouts list and the 'Всі →' link, wiring both to onOpenJournal", () => {
+  it("renders the recent-workouts list and the 'Всі' link, wiring both to onOpenJournal", () => {
     const handlers = baseHandlers();
     render(
       <WorkoutsHome
@@ -190,7 +190,7 @@ describe("WorkoutsHome", () => {
       />,
     );
 
-    const allLink = screen.getByText("Всі →");
+    const allLink = screen.getByText("Всі");
     fireEvent.click(allLink);
     expect(handlers.onOpenJournal).toHaveBeenCalledTimes(1);
     // Raw `<button>` — must carry the canonical focus-visible ring, not
@@ -232,7 +232,7 @@ describe("WorkoutsHome", () => {
     expect(handlers.onOpenJournal).not.toHaveBeenCalled();
 
     // «Всі →» лишається загальним журналом — це інша дія, не та сама.
-    fireEvent.click(screen.getByText("Всі →"));
+    fireEvent.click(screen.getByText("Всі"));
     expect(handlers.onOpenJournal).toHaveBeenCalledTimes(1);
   });
 

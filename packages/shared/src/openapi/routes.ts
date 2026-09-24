@@ -624,38 +624,6 @@ export const paths: ZodOpenApiPathsObject = {
       },
     },
   },
-  "/api/push/subscribe": {
-    post: {
-      summary: "Web-push subscribe (legacy alias для /push/register web)",
-      tags: ["push"],
-      security: cookieOrBearer,
-      requestBody: {
-        content: {
-          "application/json": { schema: namedSchemas.PushSubscribe },
-        },
-      },
-      responses: {
-        "200": okEmpty,
-        "400": validationError,
-        "401": unauthorized,
-      },
-    },
-    delete: {
-      summary: "Web-push unsubscribe (legacy alias для /push/unregister web)",
-      tags: ["push"],
-      security: cookieOrBearer,
-      requestBody: {
-        content: {
-          "application/json": { schema: namedSchemas.PushUnsubscribe },
-        },
-      },
-      responses: {
-        "200": okEmpty,
-        "400": validationError,
-        "401": unauthorized,
-      },
-    },
-  },
   "/api/push/send": {
     post: {
       summary: "Internal-only fan-out push (worker → cron job)",

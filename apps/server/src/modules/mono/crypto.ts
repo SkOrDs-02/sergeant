@@ -67,15 +67,6 @@ function getKey(hexKey: string): Buffer {
   return Buffer.from(hexKey, "hex");
 }
 
-function ringFromHexKey(hexKey: string): KeyRing {
-  const buf = getKey(hexKey);
-  return {
-    current: { version: LEGACY_KEY_VERSION, key: buf },
-    byVersion: new Map<number, Buffer>([[LEGACY_KEY_VERSION, buf]]),
-    versions: [LEGACY_KEY_VERSION],
-  };
-}
-
 function encryptWithKey(
   plaintext: string,
   key: Buffer,
@@ -153,9 +144,6 @@ export function decryptTokenWithRing(
   const key = getKeyForVersion(ring, version);
   return decryptWithKey(enc, key);
 }
-
-// re-exported for tests
-export const __test__ = { ringFromHexKey };
 
 export function tokenFingerprint(token: string): string {
   return crypto.createHash("sha256").update(token).digest("hex");

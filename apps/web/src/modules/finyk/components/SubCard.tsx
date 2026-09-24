@@ -217,12 +217,8 @@ function SubCardComponent({
               size={13}
               aria-hidden
             />{" "}
-            {veryClose
-              ? "Завтра"
-              : soon
-                ? `Через ${days} дні`
-                : `Через ${days} ${pluralDays(days)}`}{" "}
-            · {sub.billingDay}-го
+            {veryClose ? "Завтра" : `Через ${days} ${pluralDays(days)}`} ·{" "}
+            {sub.billingDay}-го
           </div>
           {sub.linkedTxId && lastTx && (
             <div className="text-style-caption text-finyk mt-0.5">

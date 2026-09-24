@@ -9,6 +9,7 @@
 import { calcDebtRemaining, calcReceivableRemaining } from "../utils";
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { pluralDays } from "@sergeant/shared";
 import { formatDateShort } from "@shared/lib/time/formatDate";
 import type {
   Debt as EngineDebt,
@@ -108,7 +109,7 @@ export function formatRelativeDue(dueDate: Date, todayStart: Date): string {
   const days = Math.ceil((dueDate.getTime() - todayStart.getTime()) / 86400000);
   if (days <= 0) return "сьогодні";
   if (days === 1) return "завтра";
-  if (days <= 7) return `через ${days} дн`;
+  if (days <= 7) return `через ${days} ${pluralDays(days)}`;
   return formatShortDate(dueDate);
 }
 

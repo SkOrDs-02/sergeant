@@ -1212,15 +1212,6 @@ const PushKeys = z.object({
   auth: z.string().min(1).max(256),
 });
 
-export const PushSubscribeSchema = z.object({
-  endpoint: z.string().url().max(2048),
-  keys: PushKeys,
-});
-
-export const PushUnsubscribeSchema = z.object({
-  endpoint: z.string().url().max(2048),
-});
-
 /**
  * `/api/v1/push/register` — уніфікована реєстрація push-пристрою.
  *

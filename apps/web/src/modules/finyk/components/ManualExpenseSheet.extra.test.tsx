@@ -66,9 +66,9 @@ describe("ManualExpenseSheet — interactive surfaces", () => {
     render(<ManualExpenseSheet open onClose={() => {}} onSave={() => {}} />);
     fireEvent.click(screen.getByRole("tab", { name: "Надходження" }));
     expect(
-      screen.getByPlaceholderText("Зарплата, повернення боргу, підробіток…"),
+      screen.getByPlaceholderText("Зарплата, повернення боргу, підробіток"),
     ).toBeInTheDocument();
-    expect(screen.queryByPlaceholderText("Кава, продукти, таксі…")).toBeNull();
+    expect(screen.queryByPlaceholderText("Кава, продукти, таксі")).toBeNull();
   });
 
   it("renders the amount hero preview when an amount is set", () => {
