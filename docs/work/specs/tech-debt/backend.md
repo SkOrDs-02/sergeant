@@ -946,18 +946,15 @@ curl -X POST https://<server>/api/v1/push/test \
 env-набір не підхопився; переглянь Coolify logs на `apns_disabled_log` /
 `fcm_init_failed` на boot-і.
 
-### Legacy web-push HTTP (`/api/push/subscribe`) — прибрати після метрик
+### ~~Legacy web-push HTTP (`/api/push/subscribe`)~~ — закрито 2026-09-23
 
-Поки `POST`/`DELETE /api/push/subscribe` лишаються proxy для старих вкладок
-(див. `apps/server/src/modules/push/push.ts`, лог `push_deprecation`). **Після того,
-як у логах не буде викликів за розумне вікно:**
-
-1. Видалити legacy-роути та handlers (`apps/server/src/routes/push.ts`,
-   `apps/server/src/modules/push/push.ts`).
-2. Прибрати `subscribe` / `unsubscribe` з
-   `packages/api-client/src/endpoints/push.ts` та оновити
-   `apps/web/src/shared/hooks/usePushNotifications.test.tsx`.
-3. Перевірити README / `docs/engineering/architecture/api-v1.md` на згадки legacy-шляху.
+Роут і handler видалені без очікування нульової метрики: власник вирішив
+не чекати, бо лог `push_deprecation` ішов лише в pino і ніколи не
+доїжджав до Sentry, тобто умову «у логах не буде викликів за розумне
+вікно» неможливо було виміряти. Веб-клієнт до цього шляху вже не ходив.
+Старі PWA-вкладки, що досі тримають цей код у service worker, тепер
+отримають 404 і перереєструються через `/api/v1/push/register` при
+наступному завантаженні сторінки.
 
 ### Rotation
 
