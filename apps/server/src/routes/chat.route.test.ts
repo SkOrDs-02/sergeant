@@ -1,4 +1,12 @@
-import { describe, it, expect, beforeEach, afterEach, vi } from "vitest";
+import {
+  describe,
+  it,
+  expect,
+  beforeAll,
+  beforeEach,
+  afterEach,
+  vi,
+} from "vitest";
 import request from "supertest";
 
 // Cold dynamic imports of the full Express app are slow on Windows when this
@@ -119,6 +127,14 @@ function makeUpstreamSse(events: Array<Record<string, unknown>>): Response {
     headers: { "content-type": "text/event-stream" },
   });
 }
+
+// Холодний імпорт усього застосунку на слабкій машині триває десятки
+// секунд. Без прогріву перший тест файлу впирався у свої 60 с, а його
+// недороблений імпорт добігав уже під час наступного тесту і з'їдав його
+// `mockResolvedValueOnce`: звідси каскад «випадкових» падінь.
+beforeAll(async () => {
+  await import("./../app.js");
+}, 300_000);
 
 async function loadCreateApp(): Promise<
   (typeof import("./../app.js"))["createApp"]
