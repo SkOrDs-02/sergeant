@@ -57,7 +57,7 @@ export function SubscriptionEditSheet({
 
   const handleSubmit = () => {
     if (!form.name.trim()) {
-      setError("Вкажіть назву підписки");
+      setError("Вкажи назву підписки");
       return;
     }
     const day = Number(form.billingDay);
