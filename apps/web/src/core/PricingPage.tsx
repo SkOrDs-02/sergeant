@@ -448,41 +448,47 @@ export function PricingPage() {
               // checkout). Один/нуль → звичайна одна CTA (server-default).
               const showProviderChoice =
                 isPremium && !isPremiumActive && enabledProviders.length > 1;
-              // «Чорнило» v3.1 § 3 — Premium renders `prominence="hero"`
-              // (the new saturated finyk gradient); Free stays the
-              // neutral default card. Same JSX block serves both tiers,
-              // so ink tone must branch on `isPremium` rather than using
-              // a fixed text-* class.
-              const headingTone = isPremium ? "text-hero-ink" : "text-text";
-              // Альфа на hero-ink — це той самий механізм, що вже полагодили
-              // для бейджа нижче (див. коментар про 15% ink-washу): чим
-              // прозоріше чорнило, тим ближче воно до teal-фону. Заміряно
-              // `#fdf9f3` на обох кінцях градієнта (`--hero-grad-finyk`
-              // teal-800 → teal-700; сходинка teal-700 — вузьке місце):
-              //   /100 → 5.22:1   /95 → 4.88:1   /90 → 4.55:1
-              //   /80  → 3.95:1   /70 → 3.40:1   /60 → 2.90:1
-              // Текст тут 12-14px, тобто поріг AA — 4.5:1, не 3:1. Колишні
-              // /70 і /60 давали 3.40 і 2.90, тобто провал на світлому кінці
-              // в усіх темах для /60 (аудит 2026-09-16, WF-23).
-              // Лінт цього не ловив: `no-opacity-on-text-token` не знає
-              // токена `hero-ink`, а контрастний гейт міряє лише 100%-пари.
-              const mutedTone = isPremium ? "text-hero-ink/95" : "text-muted";
-              const subtleTone = isPremium ? "text-hero-ink/90" : "text-subtle";
-              const checkTone = isPremium
-                ? "text-hero-ink"
-                : "text-brand-strong";
+              // Premium — «чорнило хаба», не hero-градієнт Фініка. До
+              // 2026-09-24 картка рендерилась `module="finyk"
+              // prominence="hero"` («Чорнило» v3.1 § 3), але Тарифи живуть
+              // на нейтральному хабі, а Premium відкриває всі чотири модулі,
+              // тож teal читався як чужий акцент (критика екранів
+              // 2026-09-23; рішення власника 2026-09-24 після порівняння
+              // двох живих кадрів). Заливка та сама, що в primary-кнопки
+              // хаба: stone-800 у світлій темі, інвертована світла плитка з
+              // темним чорнилом у «Чорнилі». Same JSX block serves both
+              // tiers, so ink tone must branch on `isPremium`.
+              const inkTone = "text-hero-ink dark:text-brand-900";
+              const headingTone = isPremium ? inkTone : "text-text";
+              // Альфа на hero-ink: `#fdf9f3` на stone-800 дає ~13:1, тож
+              // /95 і /90 тут з великим запасом (на колишньому teal-700
+              // вони давали 4.88:1 і 4.55:1, і саме тому нижче за /90 не
+              // спускались, аудит 2026-09-16, WF-23). Лінт цього не ловить:
+              // `no-opacity-on-text-token` не знає токена `hero-ink`.
+              const mutedTone = isPremium
+                ? "text-hero-ink/95 dark:text-brand-900/95"
+                : "text-muted";
+              const subtleTone = isPremium
+                ? "text-hero-ink/90 dark:text-brand-900/90"
+                : "text-subtle";
+              const checkTone = isPremium ? inkTone : "text-brand-strong";
+              // Solid-кнопка має ту саму заливку, що й чорнильна картка
+              // (stone-800 / світла плитка в «Чорнилі»), тож на Premium
+              // вона зливалась із фоном. Інверсія: світла плитка на
+              // чорнилі, чорнило на світлій плитці, з тими самими hover.
+              const premiumCtaInverse =
+                "bg-brand-100 text-brand-900 hover:bg-brand-200 active:bg-brand-200 dark:bg-brand-strong dark:text-white dark:hover:bg-brand-900";
 
               return (
                 <Card
                   key={tier.id}
                   as="article"
-                  module={isPremium ? "finyk" : undefined}
-                  prominence={isPremium ? "hero" : "default"}
                   radius="xl"
                   padding="lg"
                   className={cn(
                     "flex flex-col gap-4 motion-safe:animate-stagger-in",
-                    isPremium && "ring-1 ring-brand-200/40",
+                    isPremium &&
+                      "bg-brand-strong border-transparent dark:bg-brand-100",
                   )}
                   // Hard Rule #17: між дітьми стагеру максимум 30 мс,
                   // сумарна затримка ≤150 мс — канонічна форма
@@ -513,7 +519,8 @@ export function PricingPage() {
                           size="sm"
                           className={cn(
                             "shrink-0",
-                            isPremium && "text-hero-ink border-hero-ink/40",
+                            isPremium &&
+                              "text-hero-ink border-hero-ink/40 dark:text-brand-900 dark:border-brand-900/40",
                           )}
                         >
                           {t.cta.currentPlan}
@@ -525,10 +532,14 @@ export function PricingPage() {
                     </p>
                   </header>
 
+                  {/* `text-style-display` має line-height 1, тож нижні
+                      виноси «Скоро» (р, у) впирались у рядок каденції під
+                      ним (зауваження власника 2026-09-24). Запас під
+                      виноси дає сам рядок, а не відступ між блоками. */}
                   <div className="space-y-1">
                     <span
                       className={cn(
-                        "text-style-display tabular-nums",
+                        "block text-style-display tabular-nums leading-[1.15]",
                         headingTone,
                       )}
                     >
@@ -590,6 +601,7 @@ export function PricingPage() {
                           key={p}
                           variant="solid"
                           size="md"
+                          className={premiumCtaInverse}
                           onClick={() => void handlePremiumCta(p)}
                           disabled={checkoutLoading}
                         >
@@ -609,6 +621,7 @@ export function PricingPage() {
                       // рядок дожив до боргу дизайн-контракту тарифів.
                       variant={isPremium ? "solid" : "outline"}
                       size="md"
+                      className={isPremium ? premiumCtaInverse : undefined}
                       onClick={
                         isPremium
                           ? onPremiumClick
