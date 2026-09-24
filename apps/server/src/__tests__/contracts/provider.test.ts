@@ -531,9 +531,21 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     };
 
     getSessionUserMock.mockResolvedValue({ id: "user-pact-003" });
-    queryMock.mockResolvedValueOnce({
-      rows: [{ payload: expected.profile, updated_at: expected.updatedAt }],
-    });
+    // `upsertUserProfile` пише в транзакції (LWW-гард `memoryBank`):
+    // BEGIN, SELECT … FOR UPDATE, INSERT … RETURNING, COMMIT на клієнті пулу.
+    const client = {
+      query: vi.fn(async (sql: string) =>
+        String(sql).includes("RETURNING payload")
+          ? {
+              rows: [
+                { payload: expected.profile, updated_at: expected.updatedAt },
+              ],
+            }
+          : { rows: [] },
+      ),
+      release: vi.fn(),
+    };
+    mockPool.connect.mockResolvedValueOnce(client);
 
     const app = createApp();
     const res = await request(app)
