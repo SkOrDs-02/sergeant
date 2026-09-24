@@ -590,7 +590,7 @@ export function silpoErrorToAppError(
       // Sentry він теж не йде (може нести поля покупки, Hard Rule #21).
       captureSilpoFailure("tool_error");
       return new ExternalServiceError(
-        "Сільпо не віддав чеки — спробуй пізніше",
+        "Сільпо не віддав чеки, спробуй пізніше",
         { code: "SILPO_TOOL_ERROR" },
       );
     case "schema_drift":
@@ -602,7 +602,7 @@ export function silpoErrorToAppError(
       // не читає. Звідси прямий виклик тут.
       captureSilpoFailure("schema_drift", error.message);
       return new ExternalServiceError(
-        "Сільпо змінили формат відповіді — оновлення тимчасово недоступне",
+        "Сільпо змінили формат відповіді, оновлення тимчасово недоступне",
         { code: "SILPO_SCHEMA_DRIFT" },
       );
     case "protocol_error":
