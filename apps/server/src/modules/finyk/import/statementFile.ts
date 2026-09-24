@@ -8,11 +8,9 @@ import {
   TabularImportError,
   type TabularGrid,
   type TabularImportErrorCode,
-  type TabularSourceKind,
 } from "@sergeant/tabular-import";
 import { ValidationError } from "../../../obs/errors.js";
 
-export type StatementSourceKind = TabularSourceKind;
 export type StatementGrid = TabularGrid;
 
 export const STATEMENT_MAX_FILE_BYTES = TABULAR_MAX_FILE_BYTES;
