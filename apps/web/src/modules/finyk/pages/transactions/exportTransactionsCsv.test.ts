@@ -27,7 +27,8 @@ function tx(partial: Partial<Transaction>): Transaction {
     categoryId: "food",
     type: "expense",
     source: "mono",
-    time: Date.UTC(2026, 8, 1, 9, 30),
+    // Секунди, як у домені: `dayKeyFromTx` і `txTimeMs` множать на 1000.
+    time: Math.floor(Date.UTC(2026, 8, 1, 9, 30) / 1000),
     description: "Сільпо",
     mcc: 5411,
     accountId: "acc-1",
@@ -83,6 +84,30 @@ describe("exportTransactionsCsv", () => {
     const rows = toCsvRows([tx({ time: 0 })], () => cat("Їжа"));
 
     expect(rows).toHaveLength(1);
+    expect(rows[0]?.time).toBe("");
+  });
+
+  // Р6 спеки аналітики v2. Сліпий замір бачив «20:17» у кожному рядку:
+  // секунди читались як мілісекунди.
+  it("стовпець «Час» — час запису за Києвом із секундної мітки", () => {
+    const kyiv0412 = Math.floor(Date.parse("2026-09-24T01:12:00Z") / 1000);
+    const rows = toCsvRows(
+      [tx({ time: kyiv0412, manual: true }), tx({ id: "t2" })],
+      () => cat("Їжа"),
+    );
+
+    expect(rows[0]?.date).toBe("2026-09-24");
+    expect(rows[0]?.time).toBe("04:12");
+    expect(rows[1]?.time).toBe("12:30");
+  });
+
+  it("ручний запис лише з днем (плейсхолдер полудня UTC) лишає «Час» порожнім", () => {
+    const noon = Math.floor(Date.parse("2026-09-23T12:00:00.000Z") / 1000);
+    const rows = toCsvRows([tx({ time: noon, manual: true })], () =>
+      cat("Їжа"),
+    );
+
+    expect(rows[0]?.date).toBe("2026-09-23");
     expect(rows[0]?.time).toBe("");
   });
 

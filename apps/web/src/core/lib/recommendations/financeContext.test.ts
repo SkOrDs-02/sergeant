@@ -1,5 +1,9 @@
 // @vitest-environment jsdom
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+import {
+  __setFinykSqliteStateCacheForTests,
+  clearFinykSqliteCache,
+} from "../../../modules/finyk/lib/sqliteReader";
 import { buildFinanceContext } from "./financeContext";
 
 // Fixed clock so monthStart is deterministic across runs.
@@ -36,11 +40,20 @@ function setMirrorTxs(txs: Array<Record<string, unknown>>) {
   mockMirrorTransactions.push(...txs);
 }
 
+// Ручні записи й бюджети живуть у SQLite (`finyk_manual_expenses_v1` і
+// `finyk_budgets` у LS tombstoned і дренаються на буті), тож сіються в
+// теплий кеш, а не в localStorage. Решта prefs у цих тестах порожня.
+type SqliteSeed = Parameters<typeof __setFinykSqliteStateCacheForTests>[0];
+function seedSqlite(partial: Record<string, unknown>) {
+  __setFinykSqliteStateCacheForTests(partial as SqliteSeed);
+}
+
 // ────────────────────────────────────────────────────────────────────────────
 
 beforeEach(() => {
   localStorage.clear();
   mockMirrorTransactions.length = 0;
+  clearFinykSqliteCache();
   vi.useFakeTimers();
   vi.setSystemTime(FIXED_NOW);
 });
@@ -49,6 +62,7 @@ afterEach(() => {
   vi.useRealTimers();
   localStorage.clear();
   mockMirrorTransactions.length = 0;
+  clearFinykSqliteCache();
 });
 
 describe("buildFinanceContext — defaults", () => {
@@ -72,7 +86,7 @@ describe("buildFinanceContext — defaults", () => {
     expect(ctx.hiddenTxIds.size).toBe(0);
     expect(ctx.transferIds.size).toBe(0);
     expect(ctx.thisMonthTx).toEqual([]);
-    expect(ctx.categorySpend).toEqual({});
+    expect(ctx.limitUsage).toEqual([]);
     expect(ctx.canonicalMonthSpend.size).toBe(0);
     expect(ctx.canonicalTotalCount.size).toBe(0);
   });
@@ -119,7 +133,7 @@ describe("buildFinanceContext — thisMonthTx filtering", () => {
       { id: "hidden", amount: -200, time: FIXED_NOW.getTime() },
     ];
     setMirrorTxs(txs);
-    localStorage.setItem("finyk_hidden_txs", JSON.stringify(["hidden"]));
+    seedSqlite({ hiddenTransactions: ["hidden"] });
     const ctx = buildFinanceContext();
     expect(ctx.thisMonthTx.map((t) => t.id)).toEqual(["visible"]);
     expect(ctx.hiddenTxIds.has("hidden")).toBe(true);
@@ -131,10 +145,7 @@ describe("buildFinanceContext — thisMonthTx filtering", () => {
       { id: "transfer", amount: -1000, time: FIXED_NOW.getTime() },
     ];
     setMirrorTxs(txs);
-    localStorage.setItem(
-      "finyk_tx_cats",
-      JSON.stringify({ transfer: "internal_transfer" }),
-    );
+    seedSqlite({ txCategories: { transfer: "internal_transfer" } });
     const ctx = buildFinanceContext();
     expect(ctx.thisMonthTx.map((t) => t.id)).toEqual(["spend"]);
     expect(ctx.transferIds.has("transfer")).toBe(true);
@@ -148,84 +159,82 @@ describe("buildFinanceContext — thisMonthTx filtering", () => {
     const ctx = buildFinanceContext();
     expect(ctx.thisMonthTx.map((t) => t.id)).toEqual(["in"]);
   });
-});
 
-describe("buildFinanceContext — categorySpend (legacy)", () => {
-  it("aggregates negative-amount transactions by override category", () => {
+  it("falls back to the LS prefs keys while the SQLite cache is still cold", () => {
     const txs = [
-      { id: "t1", amount: -10000, time: FIXED_NOW.getTime() }, // 100 UAH
-      { id: "t2", amount: -5000, time: FIXED_NOW.getTime() }, // 50 UAH
-      { id: "income", amount: 30000, time: FIXED_NOW.getTime() }, // ignored (positive)
+      { id: "visible", amount: -100, time: FIXED_NOW.getTime() },
+      { id: "hidden", amount: -200, time: FIXED_NOW.getTime() },
     ];
     setMirrorTxs(txs);
-    localStorage.setItem(
-      "finyk_tx_cats",
-      JSON.stringify({ t1: "food", t2: "food" }),
-    );
+    localStorage.setItem("finyk_hidden_txs", JSON.stringify(["hidden"]));
     const ctx = buildFinanceContext();
-    expect(ctx.categorySpend["food"]).toBe(150);
+    expect(ctx.thisMonthTx.map((t) => t.id)).toEqual(["visible"]);
+  });
+});
+
+describe("buildFinanceContext — limitUsage (Р5: одне джерело стану ліміту)", () => {
+  it("scores a limit against bank spend with the same numbers as the Planning card", () => {
+    const seconds = Math.floor(FIXED_NOW.getTime() / 1000);
+    setMirrorTxs([{ id: "t1", amount: -100_000, time: seconds }]);
+    seedSqlite({
+      budgets: [{ id: "b1", type: "limit", categoryId: "food", limit: 500 }],
+      txCategories: { t1: "food" },
+    });
+    const [usage] = buildFinanceContext().limitUsage;
+    expect(usage).toMatchObject({
+      key: "food",
+      spent: 1000,
+      limit: 500,
+      pctRaw: 200,
+      overLimit: true,
+    });
   });
 
-  it("falls back to category 'other' when no override exists", () => {
-    const txs = [{ id: "t1", amount: -10000, time: FIXED_NOW.getTime() }];
-    setMirrorTxs(txs);
-    const ctx = buildFinanceContext();
-    expect(ctx.categorySpend["other"]).toBe(100);
+  it("sees manual (cash) expenses from the SQLite cache and keeps the exact amount", () => {
+    // Сліпий замір 2026-09-24: 247,50 + 560 «Продукти» проти ліміту 500.
+    // Ручна таксономія `groceries` лягає в кошик MCC-категорії `food`.
+    seedSqlite({
+      budgets: [{ id: "b1", type: "limit", categoryId: "food", limit: 500 }],
+      manualExpenses: [
+        { id: "m1", amount: 247.5, date: "2026-04-10", category: "groceries" },
+        { id: "m2", amount: 560, date: "2026-04-11", category: "groceries" },
+      ],
+    });
+    const [usage] = buildFinanceContext().limitUsage;
+    expect(usage?.spent).toBe(807.5);
+    expect(usage?.pctRaw).toBeCloseTo(161.5, 5);
+    expect(usage?.overLimit).toBe(true);
   });
 
-  it("uses txSplits to distribute amounts across split categoryIds", () => {
-    const txs = [{ id: "t1", amount: -20000, time: FIXED_NOW.getTime() }];
-    setMirrorTxs(txs);
-    localStorage.setItem(
-      "finyk_tx_splits",
-      JSON.stringify({
-        t1: [
-          { categoryId: "food", amount: 80 },
-          { categoryId: "shopping", amount: 120 },
-        ],
-      }),
-    );
-    const ctx = buildFinanceContext();
-    expect(ctx.categorySpend["food"]).toBe(80);
-    expect(ctx.categorySpend["shopping"]).toBe(120);
+  it("does not count rows the user excluded from statistics", () => {
+    const seconds = Math.floor(FIXED_NOW.getTime() / 1000);
+    setMirrorTxs([
+      { id: "t1", amount: -60_000, time: seconds },
+      { id: "t2", amount: -60_000, time: seconds },
+    ]);
+    seedSqlite({
+      budgets: [{ id: "b1", type: "limit", categoryId: "food", limit: 500 }],
+      txCategories: { t1: "food", t2: "food" },
+      excludedStatTxIds: ["t2"],
+    });
+    const [usage] = buildFinanceContext().limitUsage;
+    expect(usage?.spent).toBe(600);
+    expect(usage?.overLimit).toBe(true);
   });
 
-  it("ignores split entries marked as internal_transfer", () => {
-    const txs = [{ id: "t1", amount: -20000, time: FIXED_NOW.getTime() }];
-    setMirrorTxs(txs);
+  it("reads budgets from the warm SQLite cache, not from the tombstoned LS key", () => {
     localStorage.setItem(
-      "finyk_tx_splits",
-      JSON.stringify({
-        t1: [
-          { categoryId: "food", amount: 100 },
-          { categoryId: "internal_transfer", amount: 100 },
-        ],
-      }),
-    );
-    const ctx = buildFinanceContext();
-    expect(ctx.categorySpend["food"]).toBe(100);
-    expect(ctx.categorySpend["internal_transfer"]).toBeUndefined();
-  });
-
-  it("adds manual expenses inside current month to categorySpend", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
+      "finyk_budgets",
       JSON.stringify([
-        { id: "m1", amount: 25, date: "2026-04-10", category: "food" },
-        { id: "m2", amount: 99, date: "2026-03-28", category: "food" },
+        { id: "stale", type: "limit", categoryId: "food", limit: 1 },
       ]),
     );
+    seedSqlite({
+      budgets: [{ id: "fresh", type: "limit", categoryId: "food", limit: 500 }],
+    });
     const ctx = buildFinanceContext();
-    expect(ctx.categorySpend["food"]).toBe(25);
-  });
-
-  it("manual expense without category falls back to 'other'", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([{ id: "m1", amount: 40, date: "2026-04-10" }]),
-    );
-    const ctx = buildFinanceContext();
-    expect(ctx.categorySpend["other"]).toBe(40);
+    expect(ctx.budgets.map((b) => b.id)).toEqual(["fresh"]);
+    expect(ctx.limitUsage.map((u) => u.budget.id)).toEqual(["fresh"]);
   });
 });
 
@@ -270,28 +279,37 @@ describe("buildFinanceContext — canonical aggregations", () => {
   });
 
   it("includes manual expenses in canonicalTotalCount via Ukrainian label mapping", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([
+    seedSqlite({
+      manualExpenses: [
         { id: "m1", amount: 10, date: "2026-04-10", category: "їжа" },
-      ]),
-    );
+      ],
+    });
     const ctx = buildFinanceContext();
     expect(ctx.canonicalTotalCount.get("food")).toBe(1);
   });
 
+  it("adds manual expenses inside the current month to canonicalMonthSpend", () => {
+    seedSqlite({
+      manualExpenses: [
+        { id: "m1", amount: 25, date: "2026-04-10", category: "food" },
+        { id: "m2", amount: 99, date: "2026-03-28", category: "food" },
+      ],
+    });
+    const ctx = buildFinanceContext();
+    expect(ctx.canonicalMonthSpend.get("food")).toBe(25);
+  });
+
   it("excludes manual transfers from canonicalTotalCount", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([
+    seedSqlite({
+      manualExpenses: [
         {
           id: "m1",
           amount: 10,
           date: "2026-04-10",
           category: "internal_transfer",
         },
-      ]),
-    );
+      ],
+    });
     const ctx = buildFinanceContext();
     // "internal_transfer" maps to itself (no entry in MANUAL_CATEGORY_ID_MAP),
     // and the rule below skips internal_transfer keys explicitly.
@@ -301,17 +319,27 @@ describe("buildFinanceContext — canonical aggregations", () => {
 
 describe("buildFinanceContext — budgets", () => {
   it("filters limits from the full budgets list", () => {
+    seedSqlite({
+      budgets: [
+        { id: "b1", type: "limit", categoryId: "food", limit: 500 },
+        { id: "b2", type: "goal", categoryId: "savings", limit: 1000 },
+        { id: "b3", type: "limit", categoryId: "transport", limit: 200 },
+      ],
+    });
+    const ctx = buildFinanceContext();
+    expect(ctx.budgets).toHaveLength(3);
+    expect(ctx.limits.map((b) => b.id)).toEqual(["b1", "b3"]);
+  });
+
+  it("falls back to the LS budgets key only while the cache is cold", () => {
     localStorage.setItem(
       "finyk_budgets",
       JSON.stringify([
         { id: "b1", type: "limit", categoryId: "food", limit: 500 },
-        { id: "b2", type: "goal", categoryId: "savings", limit: 1000 },
-        { id: "b3", type: "limit", categoryId: "transport", limit: 200 },
       ]),
     );
     const ctx = buildFinanceContext();
-    expect(ctx.budgets).toHaveLength(3);
-    expect(ctx.limits.map((b) => b.id)).toEqual(["b1", "b3"]);
+    expect(ctx.limits.map((b) => b.id)).toEqual(["b1"]);
   });
 
   it("returns empty arrays when budgets LS is malformed", () => {
@@ -326,13 +354,11 @@ describe("buildFinanceContext — manual income excluded from spend (fab-and-man
   // `@sergeant/insights` treats every `ctx.manualExpenses` row as spend
   // (dailyVsWeeklyPace, spendingVelocity, noTxRecent rules all add `amount`
   // straight to their totals). The manual-income feature writes income rows
-  // into the same `finyk_manual_expenses_v1` array — without this filter a
-  // salary entry would trip budget-limit / spending-velocity AI advice as
-  // if the user overspent.
+  // into the same table — without this filter a salary entry would trip
+  // budget-limit / spending-velocity AI advice as if the user overspent.
   it("drops kind: income entries from ctx.manualExpenses entirely", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([
+    seedSqlite({
+      manualExpenses: [
         { id: "m1", amount: 25, date: "2026-04-10", category: "food" },
         {
           id: "m2",
@@ -341,22 +367,21 @@ describe("buildFinanceContext — manual income excluded from spend (fab-and-man
           category: "salary",
           kind: "income",
         },
-      ]),
-    );
+      ],
+    });
     const ctx = buildFinanceContext();
     expect(ctx.manualExpenses.map((e) => e.id)).toEqual(["m1"]);
   });
 
   it("legacy type: income rows (HubChat, pre-kind) are also excluded", () => {
-    localStorage.setItem(
-      "finyk_manual_expenses_v1",
-      JSON.stringify([
+    seedSqlite({
+      manualExpenses: [
         { id: "m1", amount: 5000, date: "2026-04-10", type: "income" },
-      ]),
-    );
+      ],
+    });
     const ctx = buildFinanceContext();
     expect(ctx.manualExpenses).toEqual([]);
-    expect(ctx.categorySpend).toEqual({});
+    expect(ctx.canonicalMonthSpend.size).toBe(0);
     expect(ctx.canonicalTotalCount.size).toBe(0);
   });
 });

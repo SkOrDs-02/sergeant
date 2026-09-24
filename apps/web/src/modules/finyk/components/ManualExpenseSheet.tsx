@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-12
+ * Last validated: 2026-09-24
  * Status: Active
  *
  * Manual expense add/edit sheet. Orchestrates form state and delegates
@@ -261,9 +261,13 @@ export function ManualExpenseSheet({
           amount: expenseAmountHryvnia(values.amount),
           // Write path: always emit slug (Era 3).
           category: slug,
-          // "YYYY-MM-DD" як local date може зʼїхати при toISOString() в UTC.
-          // Ставимо полудень, щоб стабільно зберігати правильний день.
-          date: toExpenseInstant(values.date || toLocalISODate()),
+          // Редагування без зміни дня лишає записану мить: інакше кожне
+          // виправлення суми переставляло б час запису на час правки.
+          date:
+            initialExpense?.date &&
+            toLocalISODate(initialExpense.date) === values.date
+              ? initialExpense.date
+              : toExpenseInstant(values.date || toLocalISODate()),
           kind,
         });
 
