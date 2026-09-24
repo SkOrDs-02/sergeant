@@ -244,7 +244,15 @@ export function createMeRouter(): Router {
       // не кидає (Voyage down / circuit open / AI_MEMORY_ENABLED=false /
       // вимкнений консент усі no-op-ляться всередині), тож профіль уже
       // збережено і відповідь 200 не залежить від результату дзеркалення.
-      await mirrorProfileMemoryEntries(pool, user.id, body.profile);
+      //
+      // `payload.profile` - ЗБЕРЕЖЕНИЙ (можливо, LWW-мерджений
+      // `upsertUserProfile`) стан, НЕ `body.profile`. Рішення власника
+      // 2026-09-23: коли памʼятковий LWW-guard лишає збережену секцію
+      // `memoryBank` замість застарілого тіла запиту, дзеркалення мусить
+      // бачити те саме, що щойно збережено в `user_profile`, інакше
+      // застарілий пристрій, чий пуш сервер відхилив, усе одно
+      // воскрешав би вже видалений факт у `ai_memories`.
+      await mirrorProfileMemoryEntries(pool, user.id, payload.profile);
       res.json(payload);
     },
   );
