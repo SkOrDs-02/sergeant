@@ -150,7 +150,7 @@ export function buildTemplateReport(
       ? {
           summary: `Витрати ${finyk.totalSpent ?? 0} грн, надходження ${finyk.totalIncome ?? 0} грн, ${finyk.txCount ?? 0} транзакцій.`,
           comment:
-            "Шаблонний звіт без AI-аналізу (Anthropic недоступний або вимкнено). Числа взяті напряму з тижневих даних — інтерпретація буде доступна, коли AI-сервіс відновиться.",
+            "Шаблонний звіт без AI-аналізу (Anthropic недоступний або вимкнено). Числа взяті напряму з тижневих даних. Інтерпретація буде доступна, коли AI-сервіс відновиться.",
           recommendations: [],
         }
       : null,
@@ -160,7 +160,7 @@ export function buildTemplateReport(
             fizruk.recoveryLabel ? `, стан: ${fizruk.recoveryLabel}` : ""
           }.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Покажемо детальний коментар, коли AI-сервіс відновиться.",
+            "Шаблонний звіт без AI-аналізу. Детальний коментар зʼявиться, коли AI-сервіс відновиться.",
           recommendations: [],
         }
       : null,
@@ -220,7 +220,7 @@ export function createWeeklyDigestHandler(
     // `!sections.length`, яка через завжди-truthy `finyk` ніколи не спрацьовувала.
     if (countDigestSignalModules(parsed) < MIN_SIGNAL_MODULES) {
       throw new ValidationError(
-        "Замало даних за цей тиждень для звіту. Додай транзакцію, тренування, прийом їжі чи звичку — і спробуй ще раз.",
+        "Замало даних за цей тиждень для звіту. Додай транзакцію, тренування, прийом їжі чи звичку і спробуй ще раз.",
         { code: "INSUFFICIENT_DATA" },
       );
     }

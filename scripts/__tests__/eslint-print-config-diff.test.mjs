@@ -132,6 +132,8 @@ describe("FIXTURES — coverage invariants", () => {
     const expected = [
       "server",
       "server-copy",
+      "server-modules-copy",
+      "server-routes-copy",
       "web",
       "landing",
       "mobile",

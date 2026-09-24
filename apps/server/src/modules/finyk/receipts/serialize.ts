@@ -108,7 +108,7 @@ function toSafeIntegerOrThrow(v: unknown, field: string): number {
   const n = typeof v === "number" ? v : Number(v);
   if (!Number.isSafeInteger(n)) {
     throw new Error(
-      `serializeReceipt: поле "${field}" (${String(v)}) поза Number.MAX_SAFE_INTEGER — bigint мовчки округлився б`,
+      `serializeReceipt: поле "${field}" (${String(v)}) поза Number.MAX_SAFE_INTEGER – bigint мовчки округлився б`,
     );
   }
   return n;

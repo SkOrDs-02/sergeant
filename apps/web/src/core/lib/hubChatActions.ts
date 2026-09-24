@@ -161,7 +161,7 @@ function dispatch(action: ChatAction): ExecutedAction & { ok: boolean } {
  */
 export function executeAction(action: ChatAction): string {
   if (ASYNC_CHAT_ACTION_NAMES.has(action.name)) {
-    return `Tool ${action.name} вимагає async виконання, викличте executeActions().`;
+    return `Tool ${action.name} вимагає async виконання, виклич executeActions().`;
   }
   return dispatch(action).result;
 }
