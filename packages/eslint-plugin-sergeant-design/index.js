@@ -2877,9 +2877,10 @@ const noRawTypeSize = {
 // Три перевірки, усі — про рядки, які бачить людина:
 //   1. EM_DASH — довге тире «—» у копії. §1.9: воно читається як «це писала
 //      машина». Виняток — самотнє «—» як плейсхолдер порожнього значення,
-//      бо там це символ, а не текст.
-//   2. FORMAL_VY — «Ви/Вас/Вам/Ваш» та імператив множини («Спробуйте»).
-//      §1.1: звертання лише на «ти».
+//      бо там це символ, а не текст. Сусід літерала (інтерполяція, операнд
+//      `+`, сусідній JSX-вузол) рахується як текст.
+//   2. FORMAL_VY — «Ви/Вас/Вам/Ваш» та імператив множини за закінченням
+//      («Спробуйте», «Введіть»). §1.1: звертання лише на «ти».
 //   3. FIRST_PERSON_PLURAL — «ми» у голосі продукту. §2.
 //
 // Що НЕ ловить: коментарі (ESLint не віддає їх як вузли), рядки без
@@ -2917,8 +2918,58 @@ const UKRAINIAN_COPY_MESSAGES = {
 const RX_EM_DASH_IN_COPY = /\S\s*—\s*\S/;
 const RX_FORMAL_PRONOUN =
   /(^|[\s"'`>(«])(Ви|Вас|Вам|Ваш[а-яіїєґ]*)([\s,.!?»]|$)/;
+// Імператив 2-ї множини ловиться за ЗАКІНЧЕННЯМ, не за списком (аудит копії
+// вебу 2026-09-23 §2.1). Список із 21 дієслова пропускав «Вставте»,
+// «Отримайте», «Зберігайте», «привʼязуйте», «затисніть», «використайте»:
+// сім живих порушень §1.1 у вебі, і жодне не екзотика. Форма стійка:
+// приголосна (разом із «й» та «ь») + «те» («спробуйте», «перевірте»,
+// «будьте») або «іть» («введіть», «натисніть»), необовʼязково зворотне
+// «-ся/-сь» («поверніться», «хвилюйтесь»). Голосна перед «те» навмисно НЕ
+// ловиться: це дієприкметники й порядкові середнього роду («відкрите»,
+// «закрите», «пʼяте») та 2-а множини теперішнього («маєте»), яку тримає
+// гілка «Ви». Щонайменше дві літери перед закінченням, щоб «те» й «оте»
+// не ловились. 3-я особа однини безпечна сама собою: вона закінчується на
+// «-ить/-їть» («стоїть», «говорить»), не на «-іть».
 const RX_IMPERATIVE_PLURAL =
-  /(^|[\s"'`>(«])(с|С)проб(уй|ій)те|(п|П)еревірте|(в|В)ведіть|(н|Н)атисніть|(о|О)беріть|(в|В)иберіть|(д|Д)одайте|(с|С)творіть|(з|З)ачекайте|(о|О)новіть|(з|З)аповніть|(у|У)війдіть|(о|О)чистіть|(з|З)мініть|(в|В)идаліть|(з|З)бережіть|(п|П)очніть|(в|В)імкніть|(в|В)имкніть|(п|П)оверніться|(х|Х)вилюйтесь/;
+  /(^|[\s"'`>(«])([А-ЯІЇЄҐа-яіїєґ][а-яіїєґʼ’']+(?:[бвгґджзйклмнпрстфхцчшщь]те|іть)(?:ся|сь)?)(?=[\s,.!?»…:;)"'`]|$)/;
+
+// Не-імперативи з тим самим хвостом. Замір 2026-09-23 по web, landing і
+// server дав рівно два живих: «навіть» (23 рядки) і «росте» з префіксами
+// («зросте», «виросте»; 4 рядки). Решта того самого класу, якого в копії
+// ще нема, але який нею буде: прикметники й дієприкметники середнього роду
+// з приголосною перед «те» і порядкові «четверте», «шосте».
+const IMPERATIVE_PLURAL_STOPLIST = new Set([
+  "навіть",
+  "просте",
+  "чисте",
+  "пусте",
+  "густе",
+  "часте",
+  "товсте",
+  "жовте",
+  "відверте",
+  "уперте",
+  "потерте",
+  "стерте",
+  "затерте",
+  "четверте",
+  "шосте",
+]);
+const RX_IMPERATIVE_PLURAL_STOP = /^[а-яіїєґ]{0,4}росте$/;
+
+/** Перше слово в наказовій формі множини поза стоп-списком, або null. */
+function findImperativePlural(text) {
+  const re = new RegExp(RX_IMPERATIVE_PLURAL.source, "g");
+  let m;
+  while ((m = re.exec(text)) !== null) {
+    const word = m[2];
+    const key = word.replace(/[ʼ’']/g, "").toLowerCase();
+    if (IMPERATIVE_PLURAL_STOPLIST.has(key)) continue;
+    if (RX_IMPERATIVE_PLURAL_STOP.test(key)) continue;
+    return word;
+  }
+  return null;
+}
 
 // «Ми» як займенник + характерні закінчення 1-ї особи множини теперішнього
 // й майбутнього часу. Коментарі сюди не потрапляють — правило ходить лише
@@ -3008,6 +3059,53 @@ function findFirstPersonPlural(text) {
 // зламав би збіг. Тому дві версії рядка, а не одна.
 const UA_EXPR_SENTINEL = "\u0001";
 
+// Той самий сентинел на КРАЯХ літерала, коли текст триває поза ним:
+// сусідній операнд `+` або сусід у JSX (аудит копії вебу 2026-09-23 §2.2).
+// `"…напишу сюди першим — " + "нічого робити не треба"`, `` `…` + ` — сервер
+// їх так і не отримав` ``, `{list}{" — витрати рахуватимуться…"}`: тире
+// стоїть на межі літерала, і `\S\s*—\s*\S` не бачить сусіда, бо той живе в
+// іншому вузлі. Ланцюжок `+` проходиться до кінця, тож `a + " — " + b` теж
+// рахується. Порожній JSXText (самі пробіли й переноси між елементами)
+// сусідом не вважається: JSX його не рендерить. Елемент масиву й аргумент
+// виклику сусідів не мають, це свідома межа: там склейка не гарантована.
+function edgeNeighbours(node) {
+  let left = false;
+  let right = false;
+  let child = node;
+  let parent = node.parent;
+  while (
+    parent &&
+    parent.type === "BinaryExpression" &&
+    parent.operator === "+"
+  ) {
+    if (parent.left === child) right = true;
+    else left = true;
+    child = parent;
+    parent = parent.parent;
+  }
+  if (parent && parent.type === "JSXExpressionContainer") {
+    child = parent;
+    parent = parent.parent;
+  }
+  if (
+    parent &&
+    (parent.type === "JSXElement" || parent.type === "JSXFragment")
+  ) {
+    const isContent = (n) => n.type !== "JSXText" || n.value.trim() !== "";
+    const i = parent.children.indexOf(child);
+    left = left || parent.children.slice(0, i).some(isContent);
+    right = right || parent.children.slice(i + 1).some(isContent);
+  }
+  return { left, right };
+}
+
+function withEdgeSentinels(node, text) {
+  const { left, right } = edgeNeighbours(node);
+  return (
+    (left ? UA_EXPR_SENTINEL : "") + text + (right ? UA_EXPR_SENTINEL : "")
+  );
+}
+
 // SQL у шаблонному літералі — не копія, і правило мусить це знати.
 //
 // Докстрінг вище обіцяє «що НЕ ловить: коментарі (ESLint не віддає їх як
@@ -3037,9 +3135,8 @@ function ukrainianCopyViolations(text, emDashText = text) {
   if (pronoun) {
     out.push({ messageId: "formalVy", data: { found: pronoun[2] } });
   } else {
-    const verb = RX_IMPERATIVE_PLURAL.exec(text);
-    if (verb)
-      out.push({ messageId: "formalVy", data: { found: verb[0].trim() } });
+    const verb = findImperativePlural(text);
+    if (verb) out.push({ messageId: "formalVy", data: { found: verb } });
   }
   const apostrophe = RX_APOSTROPHE.exec(text);
   if (apostrophe) {
@@ -3109,10 +3206,11 @@ const ukrainianCopy = {
     };
     return {
       Literal(node) {
-        if (typeof node.value === "string") report(node, node.value);
+        if (typeof node.value === "string")
+          report(node, node.value, withEdgeSentinels(node, node.value));
       },
       JSXText(node) {
-        report(node, node.value);
+        report(node, node.value, withEdgeSentinels(node, node.value));
       },
       // Літерал перевіряємо ЦІЛИМ, а не поквазі: тире часто стоїть саме
       // на межі інтерполяції, і поквазі там не збігається нічого.
@@ -3132,7 +3230,11 @@ const ukrainianCopy = {
       TemplateLiteral(node) {
         const parts = node.quasis.map((q) => q.value.cooked ?? q.value.raw);
         if (RX_SQL_STATEMENT_START.test(parts[0] ?? "")) return;
-        report(node, parts.join(" "), parts.join(UA_EXPR_SENTINEL));
+        report(
+          node,
+          parts.join(" "),
+          withEdgeSentinels(node, parts.join(UA_EXPR_SENTINEL)),
+        );
       },
     };
   },

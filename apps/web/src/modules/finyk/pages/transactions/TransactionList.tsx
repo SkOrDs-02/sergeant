@@ -374,8 +374,8 @@ export function TransactionList({
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
         <EmptyState
           illustration={<FinykEmptyIllustration size={80} />}
-          title="Записів ще немає"
-          description="Додай перший запис вручну, підключи Monobank або імпортуй виписку: вони покажуться тут."
+          title="Операцій ще немає"
+          description="Додай першу операцію вручну, підключи Monobank або імпортуй виписку: вони покажуться тут."
           module="finyk"
         />
       </div>
@@ -383,7 +383,7 @@ export function TransactionList({
       <div className="rounded-2xl border border-dashed border-line bg-panelHi/40">
         <EmptyState
           illustration={<FinykEmptyIllustration size={80} />}
-          title="Немає транзакцій"
+          title="Немає операцій"
           description="Зміни місяць, фільтр або переключи «приховані», якщо вони є."
           module="finyk"
         />

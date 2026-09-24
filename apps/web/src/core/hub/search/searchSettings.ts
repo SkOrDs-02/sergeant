@@ -34,7 +34,7 @@ const SETTINGS_PRESENTATION: Readonly<
     icon: "grid",
   },
   plan: {
-    description: "Тариф, оплата, портал підписки",
+    description: "План, оплата, портал підписки",
     icon: "wallet",
   },
   notifications: {

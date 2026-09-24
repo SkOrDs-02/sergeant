@@ -112,7 +112,7 @@ describe("HubChatBody", () => {
       loading: true,
     });
     expect(screen.getByRole("status")).toHaveTextContent(
-      /^Асистент відповідає…$/,
+      /^Сержант відповідає…$/,
     );
   });
 
@@ -183,7 +183,7 @@ describe("HubChatBody", () => {
   it("has aria-live polite region for screen reader announcements", () => {
     const { container } = renderBody({ loading: true });
     const liveRegion = container.querySelector('[role="status"]');
-    expect(liveRegion).toHaveTextContent("Асистент відповідає…");
+    expect(liveRegion).toHaveTextContent("Сержант відповідає…");
     const scrollContainer = container.querySelector('[aria-busy="true"]');
     expect(scrollContainer).not.toHaveAttribute("aria-live");
   });

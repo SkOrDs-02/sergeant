@@ -45,7 +45,7 @@ export function LimitEditSheet({
   const handleSubmit = () => {
     const v = Number(limit);
     if (!limit || Number.isNaN(v) || v <= 0) {
-      setError("Вкажіть ліміт більше 0");
+      setError("Вкажи ліміт більше 0");
       return;
     }
     onSubmit({ ...budget, limit: v });

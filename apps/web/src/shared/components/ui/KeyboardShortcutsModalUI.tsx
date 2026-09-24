@@ -35,7 +35,7 @@ const DEFAULT_SHORTCUTS: KeyboardShortcut[] = [
   },
   {
     keys: ["Cmd", "/"],
-    description: "Відкрити AI-асистента",
+    description: "Відкрити Сержанта",
     category: "Загальні",
   },
 

@@ -84,7 +84,7 @@ export function TxRowMetaChips({
   if (isTransfer || isExcludedFromStats) statuses.push("не в статистиці");
   if (overrideCatId && !isTransfer) statuses.push("змін.");
   if (tx._source === "privatbank") statuses.push("П24");
-  if (existingSplitsCount > 0) statuses.push("спліт");
+  if (existingSplitsCount > 0) statuses.push("розбито");
 
   const showAccountName = showAccount && account && accountName;
   const showAiMark =

@@ -195,7 +195,9 @@ describe("SilpoReceiptSection", () => {
     expect(screen.getByText("Здоровʼя")).toBeInTheDocument();
     expect(screen.getByText("Покупки")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByRole("button", { name: "Підтвердити спліт" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Підтвердити розбиття" }),
+    );
 
     expect(onSplitChange).toHaveBeenCalledTimes(1);
     const [txId, splits] = onSplitChange.mock.calls[0] as [
@@ -237,7 +239,7 @@ describe("SilpoReceiptSection", () => {
 
     expect(
       screen.getByText(
-        "У транзакції вже є ручний спліт, підтвердження замінить його.",
+        "У транзакції вже є ручне розбиття, підтвердження замінить його.",
       ),
     ).toBeInTheDocument();
   });
@@ -269,7 +271,7 @@ describe("SilpoReceiptSection", () => {
     });
     expect(splitCta).toBeDisabled();
     expect(
-      screen.getByText("Усе – продукти, спліт не потрібен."),
+      screen.getByText("Усе – продукти, розбивати не треба."),
     ).toBeInTheDocument();
   });
 
@@ -297,7 +299,9 @@ describe("SilpoReceiptSection", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: /Розбити за чеком/ }),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Підтвердити спліт" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Підтвердити розбиття" }),
+    );
 
     expect(onSplitChange).toHaveBeenCalledTimes(1);
     const [, splits] = onSplitChange.mock.calls[0] as [
@@ -339,7 +343,9 @@ describe("SilpoReceiptSection", () => {
     fireEvent.click(
       await screen.findByRole("button", { name: /Розбити за чеком/ }),
     );
-    fireEvent.click(screen.getByRole("button", { name: "Підтвердити спліт" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Підтвердити розбиття" }),
+    );
 
     expect(onSplitChange).toHaveBeenCalledTimes(1);
     const [, splits] = onSplitChange.mock.calls[0] as [
@@ -410,7 +416,7 @@ describe("SilpoReceiptSection", () => {
     expect(splitCta).toBeDisabled();
     fireEvent.click(splitCta);
     expect(
-      screen.queryByRole("button", { name: "Підтвердити спліт" }),
+      screen.queryByRole("button", { name: "Підтвердити розбиття" }),
     ).not.toBeInTheDocument();
     expect(onSplitChange).not.toHaveBeenCalled();
   });

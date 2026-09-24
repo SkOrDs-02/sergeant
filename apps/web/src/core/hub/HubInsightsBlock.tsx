@@ -148,7 +148,7 @@ export function HubInsightsBlock({
               // що всередині.
               ((axis ? undefined : rest[0]?.title) ??
               (digestFresh
-                ? "Порада Сержанта + свіжий дайджест"
+                ? "Порада Сержанта + свіжий звіт тижня"
                 : activeNudge && !reengagementShow
                   ? "Порада Сержанта + нагадування"
                   : "Порада Сержанта на день"))

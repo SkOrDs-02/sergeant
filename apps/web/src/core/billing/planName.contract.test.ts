@@ -53,7 +53,7 @@ function walk(dir: string, out: string[] = []): string[] {
   return out;
 }
 
-describe("канонічна назва тарифу", () => {
+describe("канонічна назва плану", () => {
   it("у копії для людини немає слова Pro — тільки Premium", () => {
     const offenders: string[] = [];
     for (const file of walk(WEB_SRC)) {
