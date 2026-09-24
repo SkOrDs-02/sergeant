@@ -264,6 +264,14 @@ vi.mock("./components/NutritionHeader", () => ({
 
 vi.mock("./components/NutritionBottomNav", () => ({
   NutritionBottomNav: () => <nav data-testid="nutrition-bottom-nav" />,
+  // `NutritionApp` бере підзаголовок шапки з цього ж модуля (N-12), тож
+  // мок без цього експорту валив кожен рендер.
+  NUTRITION_NAV_LABELS: {
+    start: "Огляд",
+    pantry: "Комора",
+    log: "Журнал",
+    menu: "Меню",
+  },
 }));
 
 vi.mock("./components/NutritionPantrySelector", () => ({
