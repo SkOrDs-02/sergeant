@@ -196,6 +196,8 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
 
   const formattedCurrent = formatNumberUk(cur.avg);
   const formattedPrev = formatNumberUk(prev.avg);
+  // Нуль ккал в обох вікнах означає, що прийомів їжі ще не записували.
+  const empty = cur.avg === 0 && prev.avg === 0;
 
   return (
     <ReportSheet collapsed={collapsed}>
@@ -224,9 +226,13 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
             <span className="text-style-body font-bold text-text">
-              {formattedCurrent} {messages.nutrition.kcalUnit}
+              {empty
+                ? "–"
+                : `${formattedCurrent} ${messages.nutrition.kcalUnit}`}
             </span>
-            <DeltaChip cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
+            {!empty && (
+              <DeltaChip cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
+            )}
           </span>
         )}
         <svg
@@ -247,7 +253,12 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {!collapsed && (
+      {!collapsed && empty && (
+        <p className="text-style-body text-muted">
+          {messages.hub.reportEmptyMeals}
+        </p>
+      )}
+      {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
             <span className="text-style-headline text-text">

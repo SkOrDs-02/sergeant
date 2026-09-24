@@ -127,6 +127,18 @@ describe("ExpensesCard", () => {
     vi.clearAllMocks();
   });
 
+  it("без жодної витрати показує порожній стан, а не «0 ₴»", () => {
+    // Нуль в обох вікнах не результат, а відсутність предмета (критика
+    // екранів 2026-09-23): у шапці тире, розгорнуто текст із дією.
+    render(<ExpensesCard period="week" offset={0} />);
+    expect(screen.queryByText(/0\s*₴/)).toBeNull();
+    expect(screen.getByText("–")).toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
+    expect(screen.getByText(/Витрат ще не записано/)).toBeInTheDocument();
+    expect(screen.queryByText(/Минулий/i)).toBeNull();
+  });
+
   it("renders collapsed by default with a hryvnia summary and toggles open", () => {
     localStorage.setItem("finyk_tx_cache", JSON.stringify(txCacheToday()));
     render(<ExpensesCard period="week" offset={0} />);
@@ -171,10 +183,10 @@ describe("ExpensesCard", () => {
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
   });
 
-  it("renders the no-data placeholder when the tx cache is empty", () => {
+  it("renders the empty state when the tx cache is empty", () => {
     render(<ExpensesCard period="week" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    expect(screen.getByText(/Витрат ще не записано/)).toBeInTheDocument();
   });
 
   it("accepts a bare array tx cache shape", () => {
@@ -221,7 +233,7 @@ describe("ExpensesCard", () => {
     // this is the deep-link `/?tab=reports` state before the sync pull lands.
     render(<ExpensesCard period="week" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    expect(screen.getByText(/Витрат ще не записано/)).toBeInTheDocument();
 
     // The pull lands: SQLite cache warms with a manual expense dated
     // today, refreshCachesAfterPull calls `notifyFinykSqliteCacheRefresh`
@@ -250,7 +262,7 @@ describe("ExpensesCard", () => {
     // (the `Money` component splits "500" / "₴" into separate spans, so
     // assert on the bar-chart tooltip's `aria-label`, which renders the
     // full "<date>: <amount> ₴" string as one accessible string).
-    expect(screen.queryByText(/Немає даних/i)).not.toBeInTheDocument();
+    expect(screen.queryByText(/Витрат ще не записано/)).not.toBeInTheDocument();
     const todayKey = now
       .toISOString()
       .slice(5, 10)

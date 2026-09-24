@@ -156,6 +156,10 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
 
   const formattedCurrent = formatNumberUk(cur.pct);
   const formattedPrev = formatNumberUk(prev.pct);
+  // `aggregateHabits` віддає порожній `daily`, коли звичок нема взагалі;
+  // «0%» у такому разі не результат, а відсутність предмета.
+  const empty =
+    Object.keys(cur.daily).length === 0 && Object.keys(prev.daily).length === 0;
 
   return (
     <ReportSheet collapsed={collapsed}>
@@ -184,9 +188,11 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
             <span className="text-style-body font-bold text-text">
-              {formattedCurrent}%
+              {empty ? "–" : `${formattedCurrent}%`}
             </span>
-            <DeltaChip cur={cur.pct} prev={prev.pct} higherIsBetter={true} />
+            {!empty && (
+              <DeltaChip cur={cur.pct} prev={prev.pct} higherIsBetter={true} />
+            )}
           </span>
         )}
         <svg
@@ -207,7 +213,12 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {!collapsed && (
+      {!collapsed && empty && (
+        <p className="text-style-body text-muted">
+          {messages.hub.reportEmptyHabits}
+        </p>
+      )}
+      {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
             <span className="text-style-headline text-text">
