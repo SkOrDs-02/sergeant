@@ -1,6 +1,6 @@
 # Аудит мертвих GitHub-remote · 2026-09-23
 
-> **Last touched:** 2026-09-23 by @Skords-01. **Next review:** 2027-09-25.
+> **Last touched:** 2026-09-24 by @Skords-01. **Next review:** 2027-09-26.
 > **Status:** Active - архівний пуш не зроблено, чекає рішення власника.
 
 - **Питання:** що саме лежить у локальних remote `oldgh` і `deadgh-zaebal`, чи є там робота, якої немає більше ніде, і чи безпечно їх чіпати.
@@ -125,9 +125,10 @@ for ((i=0; i<${#specs[@]}; i+=100)); do git push bitbucket "${specs[@]:i:100}"; 
 
 ## Recent PRs
 
-| PR                                                            | Title                                                             | Merged     |
-| ------------------------------------------------------------- | ----------------------------------------------------------------- | ---------- |
-| [#6](https://bitbucket.org/skords01/sergeant/pull-requests/6) | docs(docs): аудит мертвих GitHub-remote і вартість повного архіву | 2026-09-22 |
+| PR                                                              | Title                                                                   | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket | 2026-09-23 |
+| [#6](https://bitbucket.org/skords01/sergeant/pull-requests/6)   | docs(docs): аудит мертвих GitHub-remote і вартість повного архіву       | 2026-09-22 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

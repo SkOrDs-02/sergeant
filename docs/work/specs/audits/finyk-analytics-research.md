@@ -56,3 +56,14 @@ Copilot: [zenfinanceai](https://zenfinanceai.com/ynab-vs-copilot-ai/), [moneypat
 - «Що цінують юзери» — з HN/агрегаторів; прямий Reddit недоступний для фетчу — вибірка зміщена в бік технічної аудиторії.
 - Verified-набір першого прогону активно спростував 5 тверджень про YNAB — позитивних фактів про його аналітику НЕ підтверджено, тому YNAB у таблиці відсутній.
 - Фічі конкурентів дрейфують; дати перевірки — липень 2026.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                               | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
+| [#25](https://bitbucket.org/skords01/sergeant/pull-requests/25) | docs(docs): матриця конкурентів на 20 рядках і шортліст аналітики з hands-on заміру | 2026-09-24 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
