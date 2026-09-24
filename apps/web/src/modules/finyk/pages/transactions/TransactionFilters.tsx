@@ -62,7 +62,7 @@ export function TransactionFilters({
   const filters = [
     { id: "all", label: "Всі" },
     { id: "expense", label: "Витрати" },
-    { id: "income", label: "Доходи" },
+    { id: "income", label: "Надходження" },
     ...(hasCreditAccounts ? [{ id: "credit", label: "Кредитна" }] : []),
   ];
 

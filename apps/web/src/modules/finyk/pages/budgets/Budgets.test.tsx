@@ -279,7 +279,7 @@ describe("Budgets page", () => {
     });
     // The Plan/Fact table (with the "Дохід" row) only renders once the
     // collapsed "Фінплан на місяць" card is expanded.
-    fireEvent.click(screen.getByRole("button", { name: /Фінплан на місяць/ }));
+    fireEvent.click(screen.getByRole("button", { name: /План на місяць/ }));
     // `\s` already covers U+00A0 (non-breaking space) per the JS spec.
     const flatText = (container.textContent ?? "").replace(/\s/g, "");
     expect(flatText).toContain("4321");
@@ -350,7 +350,7 @@ describe("Budgets page", () => {
       focusLimitCategoryId: "food",
     });
     // Expand the monthly-plan card to reach its Plan/Fact/Δ grid.
-    fireEvent.click(screen.getByRole("button", { name: /Фінплан на місяць/ }));
+    fireEvent.click(screen.getByRole("button", { name: /План на місяць/ }));
 
     const flatText = (container.textContent ?? "").replace(/\s/g, "");
     // Default `monthlyPlan` from `buildStorage` — income 30000 / expense
@@ -379,7 +379,7 @@ describe("Budgets page", () => {
       storage: buildStorage({ budgets }),
       focusLimitCategoryId: "food",
     });
-    fireEvent.click(screen.getByRole("button", { name: /Фінплан на місяць/ }));
+    fireEvent.click(screen.getByRole("button", { name: /План на місяць/ }));
     const flatText = (container.textContent ?? "").replace(/\s/g, "");
     expect(flatText).toContain("30000");
     expect(screen.queryByText("••••")).not.toBeInTheDocument();

@@ -197,7 +197,7 @@ describe("MonthlyPlanCard", () => {
   it("opens the plan body, toggles edit mode, and updates each plan input", () => {
     const { onChangeMonthlyPlan } = renderMonthlyPlan();
 
-    fireEvent.click(screen.getByRole("button", { name: /Фінплан на місяць/ }));
+    fireEvent.click(screen.getByRole("button", { name: /План на місяць/ }));
     expect(screen.getByText("План")).toBeInTheDocument();
     // `Money` розкладає суму на тири (знак / гривні / копійки / символ),
     // тож текст розбитий між вузлами і рядковий матчер його не бачить.
@@ -280,7 +280,7 @@ describe("MonthlyPlanCard", () => {
   // Plan/Fact/Δ grid stayed visible after «Приховати суми» on Overview.
   it("masks the Plan/Fact/Δ grid and safe-per-day line when showBalance=false", () => {
     renderMonthlyPlan({ showBalance: false });
-    fireEvent.click(screen.getByRole("button", { name: /Фінплан на місяць/ }));
+    fireEvent.click(screen.getByRole("button", { name: /План на місяць/ }));
     // The safe-per-day hint ("500 ₴/день") must not leak.
     expect(
       screen.queryByText((_, el) => el?.textContent === "500 ₴/день · 12 дн.", {

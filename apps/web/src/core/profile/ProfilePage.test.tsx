@@ -618,7 +618,7 @@ describe("ProfilePage", () => {
       expect(screen.getAllByText("Пароль")).toHaveLength(1);
       // MemoryBankSection мала близький, а не дослівний дублікат —
       // «Памʼять ШІ» замість «Памʼять» — цей текст мав зникнути повністю.
-      expect(screen.queryByText("Памʼять ШІ")).not.toBeInTheDocument();
+      expect(screen.queryByText("Памʼять AI")).not.toBeInTheDocument();
     });
 
     it("raises the outer section heading to text-style-label so it is never smaller than its inner card header (V-4)", () => {

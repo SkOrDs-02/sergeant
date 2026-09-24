@@ -273,7 +273,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
     expect(screen.getByText("Завантаження…")).toBeInTheDocument();
     expect(screen.queryByTestId("plan-upgrade-button")).not.toBeInTheDocument();
     expect(
-      screen.queryByText(/Ти на безкоштовному тарифі/),
+      screen.queryByText(/Ти на безкоштовному плані/),
     ).not.toBeInTheDocument();
   });
 });

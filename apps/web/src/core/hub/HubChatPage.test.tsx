@@ -94,7 +94,7 @@ describe("HubChatPage", () => {
     );
     expect(screen.getByRole("main")).toBeTruthy();
     expect(
-      screen.getByRole("heading", { level: 1, name: "Чат з асистентом" }),
+      screen.getByRole("heading", { level: 1, name: "Чат із Сержантом" }),
     ).toBeTruthy();
   });
 

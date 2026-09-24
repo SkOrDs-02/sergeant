@@ -154,7 +154,7 @@ function buildRemainingAriaLabel(
 ): string {
   const sentence =
     remaining < 0
-      ? `${Math.round(Math.abs(remaining))} ккал понад норму`
+      ? `${Math.round(Math.abs(remaining))} ккал понад ціль`
       : remainingLabel === REMAINING_TODAY_LABEL
         ? `лишилось ${Math.round(remaining)} ккал сьогодні`
         : remainingLabel.startsWith(REMAINING_ON_PREFIX)
