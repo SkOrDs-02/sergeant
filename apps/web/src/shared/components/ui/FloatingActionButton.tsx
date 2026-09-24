@@ -12,6 +12,10 @@ import { hapticTap } from "../../lib/adapters/haptic";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import {
+  FAB_INSET_VAR,
+  useBottomInsetVar,
+} from "@shared/hooks/useBottomInsetVar";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 
 /**
@@ -140,6 +144,10 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   // menuRef is the expanded action list; focus trap lives here so Tab
   // cycles through action items only, and Escape closes the popover.
   const menuRef = useRef<HTMLDivElement>(null);
+  // Сама кнопка, не обгортка: розкритий список дій росте вгору і не має
+  // розсувати контент під собою.
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  useBottomInsetVar(buttonRef, FAB_INSET_VAR, !hidden);
 
   const hasActions = actions && actions.length > 0;
 
@@ -225,6 +233,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
     >
       {/* Main FAB button */}
       <button
+        ref={buttonRef}
         type="button"
         onClick={handleClick}
         onContextMenu={(event) => event.preventDefault()}

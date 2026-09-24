@@ -325,6 +325,10 @@ export const messagesEn: Partial<{
     reportNoData: "No data",
     reportChartAria: "Chart",
     reportPrevious: "Previous:",
+    reportEmptyWorkouts: "No workouts yet. Log the first one in Fizruk.",
+    reportEmptyHabits: "No habits yet. Add the first one in Routine.",
+    reportEmptyExpenses: "No expenses yet. Add the first one in Finyk.",
+    reportEmptyMeals: "No meals logged yet. Add the first one in Nutrition.",
     reportDeltaFlat: "no change",
 
     overlayTitle: "AI assistant",

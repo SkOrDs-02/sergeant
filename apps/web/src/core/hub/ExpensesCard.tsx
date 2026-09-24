@@ -202,6 +202,9 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
     };
   }, [period, offset, bump, mirrorTick, sqliteCacheTick]);
 
+  // Нуль в обох вікнах: витрат ще не записували, «0 ₴» тут не результат.
+  const empty = cur.total === 0 && prev.total === 0;
+
   return (
     <ReportSheet collapsed={collapsed}>
       <button
@@ -228,15 +231,21 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
         </SectionHeading>
         {collapsed && (
           <span className="flex items-baseline gap-2 shrink-0">
-            <Money
-              amount={cur.total}
-              className="text-style-body font-bold text-text"
-            />
-            <DeltaChip
-              cur={cur.total}
-              prev={prev.total}
-              higherIsBetter={false}
-            />
+            {empty ? (
+              <span className="text-style-body font-bold text-text">–</span>
+            ) : (
+              <>
+                <Money
+                  amount={cur.total}
+                  className="text-style-body font-bold text-text"
+                />
+                <DeltaChip
+                  cur={cur.total}
+                  prev={prev.total}
+                  higherIsBetter={false}
+                />
+              </>
+            )}
           </span>
         )}
         <svg
@@ -257,7 +266,12 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
           <path d="M6 9l6 6 6-6" />
         </svg>
       </button>
-      {!collapsed && (
+      {!collapsed && empty && (
+        <p className="text-style-body text-muted">
+          {messages.hub.reportEmptyExpenses}
+        </p>
+      )}
+      {!collapsed && !empty && (
         <>
           <div className="flex items-baseline gap-2">
             <Money
