@@ -62,6 +62,15 @@ const KNOWN_EXITS: Record<string, string> = {
   "modules/ai-memory/embeddings.ts": "маскує сам (callVoyage)",
   "modules/chat/chat.ts": "маскує context / messages / tool_results",
   "modules/chat/chatStream.ts": "отримує вже замаскований payload із chat.ts",
+  // Тіньовий детектор інʼєкцій (Jev через OpenRouter, субпроцесор TypeSafe,
+  // погоджений власником за умови ZDR + data_collection=deny). Сам не
+  // маскує, бо отримує вже замаскований текст: `prepareToolResults`
+  // проганяє `maskMachineText` і усічення ДО `wrapAndScanToolResults`, чий
+  // `onScanned` і кличе детектор. Тобто Jev бачить те саме, що модель чату.
+  "modules/chat/injectionShadowJev.ts":
+    "отримує вже замаскований tool_result із prepareToolResults (maskMachineText + усічення); ZDR, data_collection=deny",
+  "modules/chat/toolEval/jev.ts":
+    "стенд евалу eval:tools:jev на синтетичних кейсах (toolSelectionCases, injectionCases); реальних даних користувачів не бачить",
   "modules/nutrition/analyze-photo.ts":
     "неможливо — фото; замість маски попередження в UI",
   "modules/nutrition/refine-photo.ts":

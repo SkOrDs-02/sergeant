@@ -27,7 +27,7 @@ const MODULES_DIR = join(import.meta.dirname, "..", "modules");
 const ADVICE_PROMPTS = new Set([
   "chat/toolDefs/systemPrompt.ts",
   "chat/coach.ts",
-  "digest/weekly-digest.ts",
+  "digest/weeklyDigestPrompt.ts",
   "nutrition/day-plan.ts",
   "nutrition/week-plan.ts",
   "nutrition/recommend-recipes.ts",
@@ -64,6 +64,10 @@ const EXTRACTION_PROMPTS = new Map([
  * через той промпт, який вони споживають.
  */
 const PROMPT_CONSUMERS = new Map([
+  [
+    "digest/weekly-digest.ts",
+    "передає buildWeeklyDigestPrompt() з weeklyDigestPrompt.ts у system, сам тексту не визначає",
+  ],
   ["chat/chat.ts", "кличе buildSystem() — межа приходить із SYSTEM_PREFIX"],
   [
     "chat/chatResponseCache.ts",
