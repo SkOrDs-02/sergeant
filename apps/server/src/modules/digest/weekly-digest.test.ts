@@ -92,6 +92,16 @@ const validReport = {
   overallRecommendations: ["Підвищ дисципліну сну"],
 };
 
+// Модель відповіла з довгим тире в `comment`; до клієнта воно доходить
+// коротким (фільтр `replaceLongDash`, аудит анти-слопу P2-3).
+const deliveredReport = {
+  ...validReport,
+  finyk: {
+    ...validReport.finyk,
+    comment: "Топ-категорія – продукти, але без різких аномалій.",
+  },
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -517,7 +527,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
 
     expect(res.statusCode).toBe(200);
     const body = res.body as { report: unknown; generatedAt: string };
-    expect(body.report).toEqual(validReport);
+    expect(body.report).toEqual(deliveredReport);
     expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
@@ -1367,7 +1377,7 @@ describe("weekly-digest · prod regression — provider failure must not return 
 
     expect(res.statusCode).toBe(200);
     const body = res.body as { report: unknown; generatedAt: string };
-    expect(body.report).toEqual(validReport);
+    expect(body.report).toEqual(deliveredReport);
     expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 });

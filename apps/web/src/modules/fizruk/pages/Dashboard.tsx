@@ -555,10 +555,7 @@ export function Dashboard({
                         onClick={() => tryStartPlan(picks, tpl.id)}
                         disabled={!picks.length}
                       >
-                        <div
-                          className="w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success shrink-0"
-                          aria-hidden
-                        >
+                        <span className="text-success shrink-0" aria-hidden>
                           <svg
                             width="20"
                             height="20"
@@ -567,7 +564,7 @@ export function Dashboard({
                           >
                             <path d="M8 5v14l11-7z" />
                           </svg>
-                        </div>
+                        </span>
                         <div className="min-w-0 flex-1">
                           <div className="text-style-label text-text truncate">
                             {tpl.name}

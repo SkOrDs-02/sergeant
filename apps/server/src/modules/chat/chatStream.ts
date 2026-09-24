@@ -8,6 +8,7 @@ import {
 } from "../../lib/anthropic.js";
 import type { AiProvider } from "../../lib/posthogAi.js";
 import { makeAiProviderError } from "../../obs/errors.js";
+import { replaceLongDash } from "../../lib/modelText.js";
 import { logger } from "../../obs/logger.js";
 import { aiFirstTokenMs } from "../../obs/metrics.js";
 import {
@@ -197,9 +198,10 @@ async function streamOneIterationToSse(
           // рахує метрику лише для ПЕРШОЇ ітерації — continuation-и
           // стартують з уже теплого зʼєднання і межу SLO не характеризують.
           if (firstTextAtMs === null) firstTextAtMs = Date.now();
-          accumulatedText += ev.delta.text;
+          const delta = replaceLongDash(ev.delta.text);
+          accumulatedText += delta;
           if (!res.writableEnded) {
-            res.write(`data: ${JSON.stringify({ t: ev.delta.text })}\n\n`);
+            res.write(`data: ${JSON.stringify({ t: delta })}\n\n`);
           }
         } else if (ev.type === "message_delta") {
           if (ev.delta?.stop_reason) {

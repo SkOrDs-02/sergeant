@@ -234,7 +234,7 @@ export function StaggerChild({
 
 /**
  * Bottom-of-dashboard small-talk: counts real entries (across all modules)
- * and shows a "Вже N записів — продовжуй!" line once the user has at
+ * and shows a "Вже N записів" line once the user has at
  * least one real entry across any module. Returns `null` until then —
  * до першого real entry юзер бачить онбординг-нагадування / FirstAction
  * вгорі дашборду, і pre-emptive «Sergeant працює офлайн» внизу плутав

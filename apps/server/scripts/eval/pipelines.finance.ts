@@ -15,6 +15,7 @@
  */
 
 import { env } from "../../src/env/env.js";
+import { chatViaOpenRouter } from "../../src/env/chatModels.js";
 import { SYSTEM_PREFIX } from "../../src/modules/chat/toolDefs/systemPrompt.js";
 import { buildCategorizePrompt } from "../../src/routes/internal/categorize.js";
 import { buildWeeklyDigestPrompt } from "../../src/modules/digest/weekly-digest.js";
@@ -41,6 +42,8 @@ import type { JudgeVerdict, Pipeline } from "./types.js";
 // Прод спершу резолвить MCC детерміністично (`lookupMccCategory`), і до
 // моделі доїжджають ЛИШЕ невідомі коди. Тому всі MCC у кейсах нижче свідомо
 // ВІДСУТНІ в `mccMap.ts` — інакше стенд міряв би шлях, якого в проді немає.
+
+const CHAT_PROVIDER = chatViaOpenRouter() ? "openrouter" : "anthropic";
 const classifyCase = (
   name: string,
   trap: string,
@@ -593,19 +596,22 @@ const chatPipeline: Pipeline = {
       judge: mentions(/трену|достав|їж/i, "звʼязок між модулями"),
     },
   ],
+  // Транспорт той самий, що в проді: з `CHAT_VIA_OPENROUTER` моделі тарифів
+  // мають OpenRouter-ID, і жорсткий "anthropic" тут давав 18/18 транспортних
+  // відмов замість заміру (стенд 2026-09-24).
   candidates: [
     {
-      provider: "anthropic",
+      provider: CHAT_PROVIDER,
       model: env.CHAT_MODEL_SYNTHESIS,
       label: "current default (premium tier)",
     },
     {
-      provider: "anthropic",
+      provider: CHAT_PROVIDER,
       model: env.AI_PRO_STANDARD_CHAT_MODEL,
       label: "current standard tier",
     },
     {
-      provider: "anthropic",
+      provider: CHAT_PROVIDER,
       model: env.AI_PRO_FLOOR_CHAT_MODEL,
       label: "current floor tier",
     },

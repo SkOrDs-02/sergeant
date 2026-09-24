@@ -70,6 +70,10 @@ const PROMPT_CONSUMERS = new Map([
   ],
   ["chat/chat.ts", "кличе buildSystem() — межа приходить із SYSTEM_PREFIX"],
   [
+    "digest/weekly-digest.ts",
+    "кличе buildWeeklyDigestPrompt(): межа приходить із weeklyDigestPrompt.ts",
+  ],
+  [
     "chat/chatResponseCache.ts",
     "`system: unknown` — поле ключа кешу, не промпт",
   ],

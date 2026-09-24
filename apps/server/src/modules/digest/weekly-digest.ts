@@ -24,6 +24,7 @@ import { als } from "../../obs/requestContext.js";
 import { enqueueMemoryIngest } from "../ai-memory/ingestQueue.js";
 import { getAiMemory } from "../ai-memory/bootstrap.js";
 import { buildWeeklyDigestPrompt } from "./weeklyDigestPrompt.js";
+import { replaceLongDash } from "../../lib/modelText.js";
 import { countModuleSignals, MIN_SIGNAL_MODULES } from "@sergeant/shared";
 
 export { buildWeeklyDigestPrompt };
@@ -150,7 +151,7 @@ export function buildTemplateReport(
       ? {
           summary: `Витрати ${finyk.totalSpent ?? 0} грн, надходження ${finyk.totalIncome ?? 0} грн, ${finyk.txCount ?? 0} транзакцій.`,
           comment:
-            "Шаблонний звіт без AI-аналізу (Anthropic недоступний або вимкнено). Числа взяті напряму з тижневих даних. Інтерпретація буде доступна, коли AI-сервіс відновиться.",
+            "Це лише числа з тижневих даних: розбір зараз недоступний. Висновки додам, щойно зможу.",
           recommendations: [],
         }
       : null,
@@ -160,7 +161,7 @@ export function buildTemplateReport(
             fizruk.recoveryLabel ? `, стан: ${fizruk.recoveryLabel}` : ""
           }.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Детальний коментар зʼявиться, коли AI-сервіс відновиться.",
+            "Це лише числа з тижневих даних: розбір тренувань додам, щойно зможу.",
           recommendations: [],
         }
       : null,
@@ -168,7 +169,7 @@ export function buildTemplateReport(
       ? {
           summary: `Середньодобово ${nutrition.avgKcal ?? 0} ккал з ${nutrition.daysLogged ?? 0}/7 днів записів.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Деталі (макроси, тенденції) зʼявляться після відновлення AI-сервісу.",
+            "Це лише числа з тижневих даних: макроси й тенденції розберу, щойно зможу.",
           recommendations: [],
         }
       : null,
@@ -176,7 +177,7 @@ export function buildTemplateReport(
       ? {
           summary: `${routine.habitCount ?? 0} звичок, загальний відсоток ${routine.overallRate ?? 0}%.`,
           comment:
-            "Шаблонний звіт без AI-аналізу. Розширений аналіз стане доступним після відновлення AI-сервісу.",
+            "Це лише числа з тижневих даних: розбір звичок додам, щойно зможу.",
           recommendations: [],
         }
       : null,
@@ -282,7 +283,9 @@ export function createWeeklyDigestHandler(
       report = templateReport;
       usedFallback = true;
     } else {
-      const rawReport = extractJsonObject(llmResult.text);
+      // Довге тире в JSON буває лише всередині рядків, тож заміна по сирому
+      // тексту дорівнює заміні в кожному текстовому полі звіту (аудит P2-3).
+      const rawReport = extractJsonObject(replaceLongDash(llmResult.text));
       if (!rawReport) {
         if (!fallbackOnError) {
           throw new ExternalServiceError("Не вдалося розпарсити відповідь AI", {

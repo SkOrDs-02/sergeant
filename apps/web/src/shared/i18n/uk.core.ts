@@ -105,6 +105,15 @@ export const coreMessages = {
     send: "Надіслати",
   },
 
+  celebration: {
+    // `CelebrationModal` / `useCelebration`: факт замість вигуку (аудит
+    // anti-slop round2, P1-3): жодних знаків оклику й похвали персонажа
+    // («легенда», «стаєш сильнішим»), число вже несе емоцію.
+    goalReached: "Ціль закрито",
+    levelUp: "Рівень {level}",
+    streakDays: "{days} днів поспіль",
+  },
+
   errors: {
     generic: {
       // Phase 2 — generic-помилки, що рендеряться у банері/toast-і коли

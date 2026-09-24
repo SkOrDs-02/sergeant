@@ -522,7 +522,7 @@ describe("FinykApp (extra) — URL sync effect", () => {
     storageMock.loadFromUrl.mockReturnValue(true);
     render(<FinykApp onOpenAuth={NOOP_AUTH} />);
     expect(toastMock.success).toHaveBeenCalledWith(
-      "Налаштування синхронізовано!",
+      "Налаштування синхронізовано.",
     );
   });
 

@@ -151,7 +151,7 @@ export default function App({
     if (window.location.search.includes("sync=")) {
       const loadSync = () => {
         if (storage.loadFromUrl()) {
-          toast.success("Налаштування синхронізовано!");
+          toast.success("Налаштування синхронізовано.");
           return;
         }
         // Читання з URL чисте — повтор безпечний. Без кнопки користувач,

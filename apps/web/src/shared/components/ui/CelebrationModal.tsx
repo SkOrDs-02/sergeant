@@ -112,7 +112,7 @@ export const CelebrationModal = memo(function CelebrationModal({
   icon,
   progress,
   rewards,
-  actionLabel = "Чудово!",
+  actionLabel = messages.actions.done,
   onAction,
   autoCloseMs,
   confettiIntensity = "medium",
@@ -529,7 +529,7 @@ export function useCelebration() {
         value,
         unit,
         theme,
-        description: "Ціль досягнуто!",
+        description: messages.celebration.goalReached,
         autoCloseMs: 5500,
       });
     },
@@ -544,8 +544,7 @@ export function useCelebration() {
     ) => {
       celebrate({
         type: "levelUp",
-        title: `Рівень ${level}!`,
-        description: "Ти стаєш сильнішим!",
+        title: messages.celebration.levelUp.replace("{level}", String(level)),
         value: level,
         unit: "рівень",
         progress,
@@ -560,10 +559,11 @@ export function useCelebration() {
     (days: number, message?: string) => {
       celebrate({
         type: "streak",
-        title: message || `${days} днів поспіль!`,
+        title:
+          message ||
+          messages.celebration.streakDays.replace("{days}", String(days)),
         value: days,
         unit: "днів",
-        description: days >= 30 ? "Ти справжня легенда!" : "Так тримати!",
         autoCloseMs: 5000,
       });
     },
@@ -619,7 +619,7 @@ export interface MiniSuccessProps {
 
 export const MiniSuccess = memo(function MiniSuccess({
   show,
-  message = "Готово!",
+  message = messages.actions.done,
   onComplete,
   duration = 2000,
 }: MiniSuccessProps) {

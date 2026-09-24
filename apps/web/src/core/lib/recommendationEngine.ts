@@ -284,7 +284,7 @@ function buildFizrukRecs(): Rec[] {
       priority: 70,
       icon: "calendar",
       title: "Цього тижня ще немає тренувань",
-      body: "Тиждень вже в розпалі, час запланувати тренування!",
+      body: "Середина тижня. Заплануй хоча б одне тренування.",
       action: "fizruk",
       pwaAction: "start_workout",
     });

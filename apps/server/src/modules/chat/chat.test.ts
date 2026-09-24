@@ -1135,8 +1135,8 @@ describe("chat handler — system payload (prompt caching)", () => {
       type: "ephemeral",
       ttl: "1h",
     });
-    // SYSTEM_PREFIX починається з "Ти персональний асистент…"
-    expect(payload!.system[0]!.text).toMatch(/^Ти персональний асистент/);
+    // SYSTEM_PREFIX починається з PERSONA_RULE: "Ти Сержант…"
+    expect(payload!.system[0]!.text).toMatch(/^Ти Сержант/);
     expect(payload!.system[1]!.type).toBe("text");
     expect(payload!.system[1]!.text).toContain("Алергія на горіхи");
     // context-блок НЕ кешується — інакше Anthropic зробить окремий cache slot
@@ -1371,7 +1371,7 @@ describe("chat handler — system payload (prompt caching)", () => {
         type: "ephemeral",
         ttl: "1h",
       });
-      expect(payload!.system[0]!.text).toMatch(/^Ти персональний асистент/);
+      expect(payload!.system[0]!.text).toMatch(/^Ти Сержант/);
       const marked = payload.tools.filter((t) => t.cache_control !== undefined);
       expect(marked).toHaveLength(1);
       expect(marked[0]!.cache_control).toEqual({
@@ -1420,7 +1420,7 @@ describe("chat handler — auto-continuation на stop_reason=max_tokens", () =>
 
     expect(anthropicMessages).toHaveBeenCalledTimes(2);
     expect(asRec(res.body)["text"]).toBe(
-      "Перша частина брифінгу… друга частина — кінець.",
+      "Перша частина брифінгу… друга частина – кінець.",
     );
 
     // Continuation-виклик отримує partial-text як останнє assistant-повідомлення.

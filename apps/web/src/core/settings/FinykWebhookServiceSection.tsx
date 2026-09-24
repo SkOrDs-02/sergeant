@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isApiError, monoWebhookApi, type MonoSyncState } from "@shared/api";
+import { Banner } from "@shared/components/ui/Banner";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
@@ -320,9 +321,10 @@ export function FinykWebhookServiceSection({
           </div>
         ) : webhookNeedsReconnect ? (
           <div className="space-y-3">
-            <div
-              className="flex items-start gap-3 p-3 rounded-xl border border-warning/40 bg-warning/10"
+            <Banner
+              variant="warning"
               role="alert"
+              className="flex items-start gap-3"
             >
               <span
                 className="w-2.5 h-2.5 mt-1.5 rounded-full shrink-0 bg-warning"
@@ -334,7 +336,7 @@ export function FinykWebhookServiceSection({
                   {COPY.reconnectBody}
                 </p>
               </div>
-            </div>
+            </Banner>
             <MonoTokenInlineForm
               value={webhookTokenInput}
               onChange={setWebhookTokenInput}
