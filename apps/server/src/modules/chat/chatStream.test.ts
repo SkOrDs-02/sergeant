@@ -168,6 +168,32 @@ describe("streamAnthropicToSse — basic SSE framing", () => {
     expect(res.writableEnded).toBe(true);
   });
 
+  it("replaces the long dash in every streamed delta", async () => {
+    anthropicMessagesStream.mockResolvedValueOnce({
+      response: makeUpstreamSse([
+        {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: "Витрати — 540 грн" },
+        },
+        {
+          type: "content_block_delta",
+          delta: { type: "text_delta", text: " —" },
+        },
+        { type: "message_delta", delta: { stop_reason: "end_turn" } },
+      ]),
+      recordStreamEnd: vi.fn(),
+    });
+
+    const res = makeSseRes();
+    await streamAnthropicToSse(makeReq(), res, "sk-test", PAYLOAD);
+
+    expect(dataPayloads(res.writes)).toEqual([
+      JSON.stringify({ t: "Витрати – 540 грн" }),
+      JSON.stringify({ t: " –" }),
+      "[DONE]",
+    ]);
+  });
+
   it("calls recordStreamEnd(outcome) once per upstream iteration", async () => {
     const recordStreamEnd = vi.fn();
     anthropicMessagesStream.mockResolvedValueOnce({

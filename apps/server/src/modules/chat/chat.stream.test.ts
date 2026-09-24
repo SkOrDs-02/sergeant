@@ -368,7 +368,7 @@ describe("chat handler — SSE auto-continuation на stop_reason=max_tokens", (
     // continuation.
     expect(dataPayloads(res.writes)).toEqual([
       JSON.stringify({ t: "Перша частина… " }),
-      JSON.stringify({ t: "друга частина — кінець." }),
+      JSON.stringify({ t: "друга частина – кінець." }),
       "[DONE]",
     ]);
   });

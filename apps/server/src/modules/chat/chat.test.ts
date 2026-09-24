@@ -1420,7 +1420,7 @@ describe("chat handler — auto-continuation на stop_reason=max_tokens", () =>
 
     expect(anthropicMessages).toHaveBeenCalledTimes(2);
     expect(asRec(res.body)["text"]).toBe(
-      "Перша частина брифінгу… друга частина — кінець.",
+      "Перша частина брифінгу… друга частина – кінець.",
     );
 
     // Continuation-виклик отримує partial-text як останнє assistant-повідомлення.
