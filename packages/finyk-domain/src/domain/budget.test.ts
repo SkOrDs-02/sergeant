@@ -3,6 +3,7 @@ import {
   BUDGET_ALERT_THRESHOLD,
   BUDGET_WARN_THRESHOLD,
   buildAtRiskKey,
+  calcLimitUsages,
   calculateGoalProgress,
   calculateGoalSavedAmount,
   calculateLimitUsage,
@@ -149,6 +150,53 @@ describe("budget: limit usage", () => {
     expect(calculateSafeToSpendPerDay(1000, 0)).toBe(0);
     expect(calculateSafeToSpendPerDay(1000, -3)).toBe(0);
     expect(calculateSafeToSpendPerDay(1000, 4)).toBe(250);
+  });
+
+  // Р5 спеки аналітики v2: один прохід для картки ліміту, хаб-картки і
+  // рекомендації `budget_over_*`. Факт лишається точним (807,50, не 808).
+  it("calcLimitUsages: вікно періоду, кошик категорії, точний факт, ключ набору", () => {
+    const now = new Date("2026-06-15T09:00:00Z");
+    const june = Math.floor(Date.UTC(2026, 5, 10, 9) / 1000);
+    const may = Math.floor(Date.UTC(2026, 4, 10, 9) / 1000);
+    const tx = (id: string, amountMinor: number, time: number) => ({
+      id,
+      amount: amountMinor,
+      time,
+      description: "",
+      mcc: 0,
+      manual: true,
+      categoryId: "groceries",
+    });
+    const [usage, ...rest] = calcLimitUsages(
+      [
+        { id: "b1", type: "limit", categoryId: "food", limit: 500 },
+        { id: "b2", type: "limit", categoryId: "", limit: 500 },
+        { id: "b3", type: "limit", categoryId: "transport", limit: 0 },
+        {
+          id: "g1",
+          type: "goal",
+          name: "Подушка",
+          targetAmount: 1000,
+          savedAmount: 0,
+          contributions: [],
+        },
+      ],
+      // Ручна таксономія `groceries` лягає в кошик `food`; травневий запис
+      // поза вікном місячного ліміту.
+      [tx("a", -24_750, june), tx("b", -56_000, june), tx("c", -99_900, may)],
+      { now },
+    );
+
+    expect(rest).toEqual([]);
+    expect(usage).toMatchObject({
+      key: "food",
+      categoryIds: ["food"],
+      spent: 807.5,
+      limit: 500,
+      overLimit: true,
+    });
+    expect(usage?.pctRaw).toBeCloseTo(161.5, 5);
+    expect(usage?.budget.id).toBe("b1");
   });
 });
 

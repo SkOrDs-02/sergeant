@@ -9,7 +9,14 @@ import {
   toLocalISODate,
   formatNumberUk,
 } from "@sergeant/shared";
-import { getTxStatAmount, calcMonthlyNeeded } from "../utils";
+import {
+  getTxStatAmount,
+  calcMonthlyNeeded,
+  type SpendingTxLike,
+  type TxCategoriesLike,
+  type TxSplitsLike,
+} from "../utils";
+import { calcLimitCategorySpent } from "../lib/limitCategorySpend.js";
 import type {
   Budget,
   GoalBudget,
@@ -191,7 +198,7 @@ export function getLimitPeriodRange(
 }
 
 export function filterTransactionsForLimitPeriod<
-  T extends { time?: number; date?: string },
+  T extends { time?: number | undefined; date?: string | undefined },
 >(
   transactions: readonly T[],
   budget: Pick<LimitBudget, "period" | "createdAt">,
@@ -253,6 +260,64 @@ export function calculateLimitUsage(
     overLimit,
     warnLimit,
   };
+}
+
+export type LimitUsage = ReturnType<typeof calculateLimitUsage>;
+
+export interface LimitUsageEntry extends LimitUsage {
+  budget: LimitBudget;
+  categoryIds: string[];
+  /** Набір категорій через `+`, як в id рекомендації `budget_over_<key>`. */
+  key: string;
+}
+
+export interface LimitUsagesOptions {
+  txCategories?: TxCategoriesLike | undefined;
+  txSplits?: TxSplitsLike | undefined;
+  customCategories?: readonly unknown[] | undefined;
+  now?: Date | undefined;
+}
+
+/**
+ * Стан кожного ліміту з одного проходу: вікно періоду, кошики категорій
+ * і відсоток рахуються тут і лише тут. Картка ліміту в Плануванні,
+ * хаб-картка перевищення і рекомендація `budget_over_*` читають цей
+ * результат, тож «162 %» і «перевищень немає» не можуть стояти поруч
+ * (Р5 спеки аналітики v2). `transactions` вже без прихованих і виключених
+ * зі статистики; вікно періоду накладається тут, тож передавай історію
+ * цілком, а не місячний зріз (тижневий і разовий ліміт мають власне вікно).
+ */
+export function calcLimitUsages<
+  T extends SpendingTxLike & {
+    time?: number | undefined;
+    date?: string | undefined;
+  },
+>(
+  budgets: readonly Budget[] | null | undefined,
+  transactions: readonly T[],
+  opts: LimitUsagesOptions = {},
+): LimitUsageEntry[] {
+  const { txCategories = {}, txSplits = {}, customCategories = [], now } = opts;
+  const at = now ?? new Date();
+  const out: LimitUsageEntry[] = [];
+  for (const budget of getLimitBudgets(budgets)) {
+    const categoryIds = limitBudgetCategoryIds(budget);
+    if (categoryIds.length === 0 || !(Number(budget.limit) > 0)) continue;
+    const spent = calcLimitCategorySpent(
+      filterTransactionsForLimitPeriod(transactions, budget, at),
+      categoryIds,
+      txCategories,
+      txSplits,
+      customCategories,
+    );
+    out.push({
+      ...calculateLimitUsage(budget, spent),
+      budget,
+      categoryIds,
+      key: categoryIds.join("+"),
+    });
+  }
+  return out;
 }
 
 // Правило для блоку Overview «бюджети під загрозою» — саме воно визначає,

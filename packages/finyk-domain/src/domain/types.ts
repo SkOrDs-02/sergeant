@@ -166,7 +166,9 @@ export interface SelectorOptions {
  * Агрегат витрат/доходів за місяць — основний результат analytics-селекторів.
  */
 export interface AnalyticsResult {
+  /** Гривні, округлені для показу. Похідні числа рахуй з `spentMinor`. */
   spent: number;
+  /** Гривні, округлені для показу. Похідні числа рахуй з `incomeMinor`. */
   income: number;
   balance: number;
   txCount: number;
@@ -174,6 +176,16 @@ export interface AnalyticsResult {
   totalExpense: number;
   /** Публічна назва `income` (контракт селекторів). */
   totalIncome: number;
+  /** Точна сума витрат у копійках, без округлення. */
+  spentMinor: number;
+  /** Точна сума надходжень у копійках, без округлення. */
+  incomeMinor: number;
+}
+
+/** Дельта двох сум у копійках; `pct` лише коли попередня сума є базою. */
+export interface AmountDelta {
+  diffMinor: number;
+  pct: number | null;
 }
 
 /** Alias: результат getMonthlySummary. */
@@ -199,11 +211,14 @@ export interface TrendComparison {
   currentSpent: number;
   prevSpent: number;
   diff: number;
+  /** Відсоток з точних сум, не округлений; `null` за правилом `compareAmounts`. */
   diffPct: number | null;
   currentIncome: number;
   prevIncome: number;
   incomeDiff: number;
   incomeDiffPct: number | null;
+  /** 0 = попереднього місяця немає зовсім, порівнювати нема з чим. */
+  prevTxCount: number;
 }
 
 /**
