@@ -240,19 +240,19 @@ describe("nutrition analyze-photo — правила промпта", () => {
   const { system } = buildAnalyzePhotoPrompt({ locale: "uk-UA" });
 
   it("забороняє нуль замість «не знаю»", () => {
-    expect(system).toMatch(/Нуль і «не знаю» — різні речі/);
+    expect(system).toMatch(/Нуль і «не знаю» – різні речі/);
     expect(system).toMatch(/"null" лишай ТІЛЬКИ/);
   });
 
   it("вчить читати етикетку: назва, вага в грамах, таблиця на 100 г", () => {
-    expect(system).toMatch(/Етикетка, цінник чи упаковка продукту — це ЇЖА/);
+    expect(system).toMatch(/Етикетка, цінник чи упаковка продукту – це ЇЖА/);
     expect(system).toMatch(/portion\.gramsApprox/);
     expect(system).toMatch(/вага порції \/ 100/);
   });
 
   it("вимагає оцінку за назвою, коли таблиці харчової цінності немає", () => {
     expect(system).toMatch(
-      /таблиці немає — назва страви вже достатня підстава/,
+      /таблиці немає – назва страви вже достатня підстава/,
     );
   });
 

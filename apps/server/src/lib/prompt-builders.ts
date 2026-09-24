@@ -111,3 +111,12 @@ export function pantryPromptSection({
 export function resolvePantryMode(mode: PantryMode = "prefer"): PantryMode {
   return mode;
 }
+
+/**
+ * Стиль вільних текстових полів у JSON-відповідях нутриції (описи, нотатки).
+ *
+ * AI-CONTEXT (аудит анти-слопу 2026-09-23, P3-3): поля короткі, тож одного
+ * рядка досить; спільна константа, щоб сім промптів не розійшлись.
+ */
+export const JSON_TEXT_STYLE_RULE =
+  "У текстових полях не став довге тире («—») і знаки оклику.";
