@@ -43,7 +43,7 @@ export function JournalEntryCard({
   // on screen at once.
   const summaryParts: string[] = [];
   if (entry.weightKg != null)
-    summaryParts.push(`${fmtLoose(entry.weightKg)} кг`);
+    summaryParts.push(`${fmtLoose(entry.weightKg)}\u202Fкг`);
   if (entry.sleepHours != null)
     summaryParts.push(`${fmtLoose(entry.sleepHours)} год`);
   const summary = summaryParts.join(" · ");

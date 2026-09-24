@@ -274,9 +274,7 @@ export function WorkoutJournalSection({
               // `role="status" aria-live="polite"` зі своїм текстом, і
               // дубль означав би, що незряча людина чує про одне
               // збереження двічі, різними словами.
-              toast.success(
-                "Тренування завершено! Відмінна робота, сесія збережена.",
-              );
+              toast.success("Тренування завершено, сесію збережено.");
             } else {
               // Empty or template-only workout: fall back to a plain toast
               // so the save is still acknowledged without a jarring modal.

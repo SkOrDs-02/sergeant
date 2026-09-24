@@ -66,7 +66,7 @@ describe("setBudgetLimit", () => {
       input: { category_id: "food", limit: 5000 },
     });
     assertUndoable(out);
-    expect(out.result).toContain("5000 грн");
+    expect(out.result).toContain("5000\u202F₴");
     expect(finykChatWrite).toHaveBeenCalledWith(
       "finyk_budgets",
       expect.any(Array),
@@ -316,7 +316,7 @@ describe("updateBudget", () => {
       ub({ scope: "limit", category_id: "transport", limit: 1500 }),
     );
     assertUndoable(out);
-    expect(out.result).toContain("1500 грн");
+    expect(out.result).toContain("1500\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       categoryId: string;
       limit: number;
@@ -355,7 +355,7 @@ describe("updateBudget", () => {
     );
     assertUndoable(out);
     expect(out.result).toContain('"Авто"');
-    expect(out.result).toContain("0/100000 грн");
+    expect(out.result).toContain("0/100000\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       type: string;
       name: string;
@@ -390,7 +390,7 @@ describe("updateBudget", () => {
       }),
     );
     assertUndoable(out);
-    expect(out.result).toContain("20000/80000 грн");
+    expect(out.result).toContain("20000/80000\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       targetAmount: number;
       contributions: Array<{ amountUah: number; note?: string }>;

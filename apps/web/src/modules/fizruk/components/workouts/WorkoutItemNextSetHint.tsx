@@ -141,7 +141,7 @@ export function WorkoutItemNextSetHint({
         onClick={() => onApply(suggestion.weightKg, suggestion.reps, "planned")}
         className="focus-ring min-h-[44px] rounded-full border border-fizruk-ring bg-fizruk-surface px-3 text-style-caption text-fizruk-soft-fg font-semibold transition-colors hover:bg-fizruk-surface/80 dark:border-fizruk-border-dark/40 dark:bg-fizruk-surface-dark/15"
       >
-        {`${t.prefix} ${fmt(suggestion.weightKg, 1)} ${t.kgUnit} × ${suggestion.reps}`}
+        {`${t.prefix} ${fmt(suggestion.weightKg, 1)}\u202F${t.kgUnit} × ${suggestion.reps}`}
       </button>
       {second && (
         <button

@@ -64,7 +64,6 @@ export function ServerErrorPage({ onReset }: ServerErrorPageProps) {
         // будь-яку 500-ку, включно з тією, якої ніхто ще не бачив, тобто
         // обіцянка без підстав (browser-QA 2026-09-02). Лишається те, що
         // справді залежить від нас, і воно настає ПІСЛЯ повідомлення.
-        // eslint-disable-next-line sergeant-design/ukrainian-copy -- голос команди, не продукту
         hint="Якщо помилка повторюється, напиши нам, і ми розберемось."
       />
     </main>

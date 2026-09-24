@@ -50,10 +50,10 @@ export function WorkoutItemLastTimeHint({
       ? (() => {
           const m = calcCardioMetrics(last.distanceM, last.durationSec);
           return m
-            ? `${last.distanceM ?? 0}м · ${m.pace}`
-            : `${last.distanceM ?? 0}м за ${last.durationSec ?? 0}с`;
+            ? `${last.distanceM ?? 0}\u202Fм · ${m.pace}`
+            : `${last.distanceM ?? 0}\u202Fм за ${last.durationSec ?? 0}\u202Fс`;
         })()
-      : `${last.durationSec ?? 0}с`;
+      : `${last.durationSec ?? 0}\u202Fс`;
   if (!text) return null;
   return (
     <div className="text-style-caption text-subtle mb-1">

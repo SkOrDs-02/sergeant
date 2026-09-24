@@ -46,10 +46,10 @@ function formatDuration(sec: number): string {
   // чесніше «< 1 хв» тут дало б розбіжність у двох місцях замість нуля в
   // одному.
   const mins = Math.max(1, Math.round(sec / 60));
-  if (mins < 60) return `${mins} хв`;
+  if (mins < 60) return `${mins}\u202Fхв`;
   const h = Math.floor(mins / 60);
   const m = mins % 60;
-  return m === 0 ? `${h} год` : `${h} год ${m} хв`;
+  return m === 0 ? `${h}\u202Fгод` : `${h}\u202Fгод ${m}\u202Fхв`;
 }
 
 /**

@@ -118,7 +118,7 @@ export function FoodPickerSection({
       <Input
         value={foodQuery}
         onChange={(e) => setFoodQuery(e.target.value)}
-        placeholder="Курка, Activia, вівсянка, Lays…"
+        placeholder="Курка, Activia, вівсянка, Lays"
         // Межа сервера, не загальна межа назви: `FoodSearchQuerySchema`
         // приймає рівно стільки, і довший запит повертався 400-ю, яку екран
         // показував як «нічого не знайдено».

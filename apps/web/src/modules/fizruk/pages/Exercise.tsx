@@ -482,7 +482,7 @@ export function Exercise({ exerciseId, onNavigate }: ExerciseProps) {
                                   ps = 0;
                                 }
                                 const speed = fmt(distKm / (dur / 3600), 1);
-                                return `${base} · ${pm}:${String(ps).padStart(2, "0")} хв/км · ${speed} км/год`;
+                                return `${base} · ${pm}:${String(ps).padStart(2, "0")}\u202Fхв/км · ${speed}\u202Fкм/год`;
                               }
                               return base;
                             })()

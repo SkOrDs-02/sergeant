@@ -74,7 +74,7 @@ export function ActiveHabitsSection({
       <Input
         className="routine-touch-field w-full max-w-md"
         {...searchFieldProps("habit-list-search")}
-        placeholder="Пошук у списку звичок…"
+        placeholder="Пошук у списку звичок"
         value={habitListQuery}
         onChange={(e) => setHabitListQuery(e.target.value)}
         aria-label="Пошук звичок у списку"
