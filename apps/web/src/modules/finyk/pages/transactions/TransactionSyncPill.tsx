@@ -62,7 +62,7 @@ export function TransactionSyncPill({
         : syncState?.status === "partial"
           ? "частково"
           : syncState?.status === "error"
-            ? "помилка"
+            ? "не синхронізовано"
             : "";
   const sourceLabel =
     syncState?.source === "network"

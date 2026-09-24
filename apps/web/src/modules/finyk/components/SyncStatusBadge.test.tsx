@@ -29,7 +29,7 @@ describe("SyncStatusBadge", () => {
     render(
       <SyncStatusBadge syncState={{ status: "error" }} onRetry={onRetry} />,
     );
-    expect(screen.getByText("Помилка синхронізації")).toBeInTheDocument();
+    expect(screen.getByText("Не вдалося синхронізувати")).toBeInTheDocument();
     const btn = screen.getByRole("button");
     fireEvent.click(btn);
     expect(onRetry).toHaveBeenCalledTimes(1);

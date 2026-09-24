@@ -71,7 +71,7 @@ export async function privatConnectHandler(
   });
 
   if (probe.status === 401 || probe.status === 403) {
-    throw new AppError("Невірні credentials PrivatBank", {
+    throw new AppError("Неправильні дані входу PrivatBank", {
       status: probe.status,
       code: "PRIVAT_CREDENTIALS_INVALID",
     });

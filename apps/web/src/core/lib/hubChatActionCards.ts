@@ -153,13 +153,13 @@ interface CardInput {
   /** Текстовий результат `executeAction` — fallback summary. */
   result: string;
   /**
-   * Ознака помилки: якщо result починається з «Помилка» / «Невідома дія»
-   * — статус failed.
+   * Ознака помилки: якщо result починається з «Помилка» / «Не вдалося» /
+   * «Невідома дія» — статус failed.
    */
   failed?: boolean;
 }
 
-const FAILURE_RE = /^(Помилка|Невідома дія)/;
+const FAILURE_RE = /^(Помилка|Не вдалося|Невідома дія)/;
 
 function deriveStatus(
   result: string,

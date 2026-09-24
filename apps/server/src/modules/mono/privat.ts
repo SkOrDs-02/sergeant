@@ -138,7 +138,7 @@ export default async function handler(
         .json(
           clientErrorPayload(
             req,
-            "Невірні credentials PrivatBank",
+            "Неправильні дані входу PrivatBank",
             "PRIVAT_CREDENTIALS_INVALID",
           ),
         );

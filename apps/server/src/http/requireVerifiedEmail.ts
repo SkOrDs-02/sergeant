@@ -45,7 +45,7 @@ export function requireVerifiedEmail(): RequestHandler {
     if (user.emailVerified !== true) {
       res.status(403).json({
         error:
-          "Підтвердьте email, щоб виконати цю дію. Лист надіслано на адресу при реєстрації.",
+          "Підтверди email, щоб виконати цю дію. Лист надіслано на адресу з реєстрації.",
         code: "EMAIL_VERIFICATION_REQUIRED",
       });
       return;

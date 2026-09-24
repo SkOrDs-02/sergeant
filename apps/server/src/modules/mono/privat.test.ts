@@ -226,7 +226,7 @@ describe("privat handler — upstream delegation", () => {
       await handler(makeReq(), res);
       expect(res.statusCode).toBe(status);
       expect(res.body).toEqual({
-        error: "Невірні credentials PrivatBank",
+        error: "Неправильні дані входу PrivatBank",
         code: "PRIVAT_CREDENTIALS_INVALID",
       });
       expect(JSON.stringify(res.body)).not.toContain("token dump");

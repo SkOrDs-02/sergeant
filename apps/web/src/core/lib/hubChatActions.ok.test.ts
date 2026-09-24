@@ -64,7 +64,11 @@ describe("executeActions — ok як структурний сигнал", () =>
     });
     const r = await runProbe();
     expect(r?.ok).toBe(false);
-    expect(r?.result).toContain("boom");
+    // Сирий e.message не показується людині (аудит копі 2026-09-23 §2.5):
+    // картка отримує загальний текст із дією, а причина лишається в
+    // телеметрії.
+    expect(r?.result).not.toContain("boom");
+    expect(r?.result).toContain("Не вдалося виконати дію");
   });
 
   it("запис не долетів до локальної бази → ok: false, хоч хендлер не кинув", async () => {

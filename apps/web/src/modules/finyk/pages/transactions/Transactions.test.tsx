@@ -575,7 +575,7 @@ describe("Transactions page shell", () => {
       />,
     );
     expect(screen.queryByText("синхронізовано")).not.toBeInTheDocument();
-    expect(screen.queryByText("помилка")).not.toBeInTheDocument();
+    expect(screen.queryByText("не синхронізовано")).not.toBeInTheDocument();
     expect(screen.queryByText(/оновлено ·/)).not.toBeInTheDocument();
 
     rerender(

@@ -84,7 +84,13 @@ function inMessagePosition(clean: string, index: number): boolean {
  * повторює заголовок під собою, — але це вже питання композиції
  * `EmptyState`, не заборонена конструкція.
  */
-const ALLOWED = new Set(["shared/i18n/uk.core.ts"]);
+const ALLOWED = new Set([
+  "shared/i18n/uk.core.ts",
+  // `Помилка ${status}` тут не копія, а сентинел: `formatApiError` упізнає
+  // форму `^Помилка d+$` як «мапер не мав чого сказати» і підставляє
+  // caller-специфічний фолбек (див. AI-DANGER у самому файлі).
+  "shared/lib/api/friendlyApiError.ts",
+]);
 
 interface Offender {
   file: string;

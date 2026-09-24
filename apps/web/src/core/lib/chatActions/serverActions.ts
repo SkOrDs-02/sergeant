@@ -120,7 +120,9 @@ async function callRecallApi(
       return { error: "Увійди, щоб шукати в памʼяті." };
     }
     if (!res.ok) {
-      return { error: `Помилка серверу при recall (HTTP ${res.status}).` };
+      return {
+        error: "Не вдалося отримати памʼять асистента. Спробуй ще раз.",
+      };
     }
     return (await res.json()) as RecallMemoryResponse;
   } catch (err) {

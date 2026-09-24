@@ -279,7 +279,7 @@ describe("handleAsyncChatAction — recall_memory error paths", () => {
     expect(out).toContain("тимчасово недоступна");
   });
 
-  it("→ 500 → загальне HTTP-повідомлення", async () => {
+  it("→ 500 → загальний текст без коду статусу (§3 канону)", async () => {
     fetchMock.mockResolvedValueOnce(
       makeJsonResponse({ code: "RECALL_FAILED" }, { status: 500 }),
     );
@@ -288,7 +288,8 @@ describe("handleAsyncChatAction — recall_memory error paths", () => {
       input: { query: "test" },
     } as unknown as ChatAction;
     const out = (await handleAsyncChatAction(action)) as string;
-    expect(out).toContain("HTTP 500");
+    expect(out).toContain("Не вдалося отримати памʼять асистента");
+    expect(out).not.toContain("HTTP");
   });
 
   it("→ AbortError → 'Recall таймаут'", async () => {

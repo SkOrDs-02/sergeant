@@ -281,8 +281,8 @@ export function createMeRouter(): Router {
       const check = await verifyAccountPassword(user.id, body.password);
       if (!check.ok) {
         res.status(400).json({
-          error: "Невірний пароль",
-          message: "Невірний пароль",
+          error: "Неправильний пароль",
+          message: "Неправильний пароль",
           code: "INVALID_PASSWORD",
         });
         return;
