@@ -665,7 +665,7 @@ export default function NutritionApp({
                       // ліг запис, бо id він генерує сам (PR-N1).
                       const { id, dateKey } = addMealFromPlan(meal);
                       showUndoToast(toast, {
-                        msg: "Страву додано в журнал",
+                        msg: "Страву додано.",
                         onUndo: () => log.handleRemoveMeal(dateKey, id),
                       });
                     }}

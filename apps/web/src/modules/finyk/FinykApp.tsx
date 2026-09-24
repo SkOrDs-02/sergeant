@@ -565,11 +565,11 @@ export default function App({
             setEditingManualExpenseId(null);
             if (snapshot) {
               showUndoToast(toast, {
-                msg: isIncome ? "Видалив надходження" : "Видалив витрату",
+                msg: isIncome ? "Надходження видалено" : "Витрату видалено",
                 onUndo: () => storage.restoreManualExpense(snapshot),
               });
             } else {
-              toast.success("Видалив витрату");
+              toast.success("Витрату видалено");
             }
           }}
         />

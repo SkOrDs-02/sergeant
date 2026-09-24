@@ -516,7 +516,7 @@ describe("DebtForm", () => {
       />,
     );
 
-    fireEvent.change(screen.getByLabelText("Назва пасиву (кредит, борг…)"), {
+    fireEvent.change(screen.getByLabelText("Назва пасиву (кредит, борг)"), {
       target: { value: "Розстрочка" },
     });
     fireEvent.change(screen.getByLabelText("Початкова сума боргу у гривнях"), {

@@ -72,31 +72,8 @@ export type PushUnregisterResponse = z.infer<
 >;
 
 export interface PushEndpoints {
-  /** Legacy web-push: VAPID public key для `PushManager.subscribe`. */
+  /** VAPID public key для `PushManager.subscribe` (web-push). */
   getVapidPublic: () => Promise<{ publicKey: string }>;
-  /**
-   * Legacy web-push: зберегти `PushSubscription.toJSON()` на бекенді.
-   *
-   * @deprecated Використовуй `register({ platform: "web", token, keys })`.
-   * Серверний `/api/push/subscribe` залишено proxy-адаптером (див.
-   * `apps/server/src/modules/push/push.ts`) на період rollout.
-   *
-   * Термін перенесено 2026-09-03 з 2026-09-01: метод ще експортують
-   * `react/hooks.ts` (`usePushSubscribe`/`usePushUnsubscribe`) і пінить
-   * `push.test.ts`; зняття — один PR під `sergeant-module-push` разом із
-   * серверним proxy-роутом (реєстр: `docs/work/specs/tech-debt/frontend.md`
-   * § «Прострочені `@removeBy` 2026-09-01»).
-   * @removeBy 2026-12-01
-   */
-  subscribe: (subscription: PushSubscriptionJSON) => Promise<unknown>;
-  /**
-   * Legacy web-push: видалити підписку за `endpoint`.
-   *
-   * @deprecated Використовуй `unregister({ platform: "web", endpoint })`.
-   * Термін перенесено разом із `subscribe` вище.
-   * @removeBy 2026-12-01
-   */
-  unsubscribe: (endpoint: string) => Promise<unknown>;
   /**
    * `POST /api/push/register` — уніфікована реєстрація push-пристрою
    * (web / iOS / Android). Шлях автоматично перетворюється в
@@ -134,10 +111,6 @@ export function createPushEndpoints(http: HttpClient): PushEndpoints {
   return {
     getVapidPublic: () =>
       http.get<{ publicKey: string }>("/api/push/vapid-public"),
-    subscribe: (subscription) =>
-      http.post<unknown>("/api/push/subscribe", subscription),
-    unsubscribe: (endpoint) =>
-      http.del<unknown>("/api/push/subscribe", { endpoint }),
     register: async (body, { signal } = {}) => {
       const raw = await http.post<unknown>("/api/push/register", body, {
         signal,

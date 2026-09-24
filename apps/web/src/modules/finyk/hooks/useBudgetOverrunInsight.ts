@@ -33,7 +33,7 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import type { Budget } from "@sergeant/finyk-domain/domain/types";
-import { formatNumberUk } from "@sergeant/shared";
+import { formatNumberUk, pluralDays } from "@sergeant/shared";
 
 // Tunable threshold — export so tests can override.
 /** Ratio above which the insight fires (1.10 = 110% of budget). */
@@ -114,8 +114,8 @@ export function useBudgetOverrunInsight({
       id: `finyk-budget-overrun-${budget.categoryId}`,
       module: "finyk",
       title: `${catLabel}: використано ${pct}% ліміту`,
-      subtitle: `+${formatNumberUk(overage)} грн. Залишилось ${daysLeft} дн. Подивитись?`,
-      askAiPrompt: `У Фініку категорія "${catLabel}" вже ${formatNumberUk(Math.round(spent))} грн із бюджету ${formatNumberUk(Math.round(limit))} грн (+${pct - 100}%). Це разовий сплеск чи тренд? Що підрізати?`,
+      subtitle: `+${formatNumberUk(overage)}\u202F₴. Залишилось ${daysLeft} ${pluralDays(daysLeft)}. Подивитись?`,
+      askAiPrompt: `У Фініку категорія "${catLabel}" вже ${formatNumberUk(Math.round(spent))}\u202F₴ із бюджету ${formatNumberUk(Math.round(limit))}\u202F₴ (+${pct - 100}%). Це разовий сплеск чи тренд? Що підрізати?`,
       action: {
         type: "navigate",
         path: `/finyk/budgets?cat=${budget.categoryId}`,

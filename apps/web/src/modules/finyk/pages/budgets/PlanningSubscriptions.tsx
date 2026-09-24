@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useEffect, useRef, useState } from "react";
+import { pluralUa } from "@sergeant/shared";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
 import { messages } from "@shared/i18n/uk";
 import { RecurringSuggestions } from "../../components/RecurringSuggestions";
@@ -146,9 +147,11 @@ export function PlanningSubscriptions({
           title={t.subscriptionsTitle}
           iconName="refresh-cw"
           iconTone="finyk"
-          summary={`${subscriptions.length} ${
-            subscriptions.length === 1 ? t.activeOne : t.activeMany
-          }`}
+          summary={`${subscriptions.length} ${pluralUa(subscriptions.length, {
+            one: t.activeOne,
+            few: t.activeFew,
+            many: t.activeMany,
+          })}`}
           open={open.subscriptions}
           onToggle={() =>
             setOpen((v) => ({ ...v, subscriptions: !v.subscriptions }))

@@ -132,7 +132,7 @@ describe("WaitlistForm — submit flow", () => {
     });
     await waitFor(() => {
       expect(toastSuccessMock).toHaveBeenCalledWith(
-        "Дякую! Повідомлю, щойно Premium буде готовий.",
+        "Email збережено. Напишу, щойно Premium буде готовий.",
       );
     });
     expect(onSuccess).toHaveBeenCalledWith(true);
@@ -169,9 +169,7 @@ describe("WaitlistForm — submit flow", () => {
     fireEvent.click(screen.getByRole("button", { name: /Підписатись/ }));
 
     await waitFor(() => {
-      expect(toastInfoMock).toHaveBeenCalledWith(
-        "Вже памʼятаю твій інтерес, жодних дублікатів.",
-      );
+      expect(toastInfoMock).toHaveBeenCalledWith("Цей email уже в списку.");
     });
     expect(toastSuccessMock).not.toHaveBeenCalled();
     expect(onSuccess).toHaveBeenCalledWith(false);

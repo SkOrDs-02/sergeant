@@ -50,7 +50,7 @@ export function LogCardSearch({
       <Input
         value={searchQuery}
         onChange={(e) => setSearchQuery(e.target.value)}
-        placeholder="Назва страви…"
+        placeholder="Назва страви"
         aria-label="Пошук по журналу"
         // Без `type="search"`, тож автоматичний guard з `Input` сюди не
         // дістає — спред обовʼязковий. Розбір, чому Chrome інакше пропонує

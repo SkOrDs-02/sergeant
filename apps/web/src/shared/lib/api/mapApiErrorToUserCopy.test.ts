@@ -70,7 +70,7 @@ describe("mapApiErrorToUserCopy", () => {
         message: "TypeError: Cannot read property 'data' of undefined",
         status: 400,
       }),
-    ).toBe("Не вдалося виконати запит");
+    ).toBe("Не вдалося виконати запит.");
   });
 
   it("без code → status fallback (401 → текст `friendlyApiError`)", () => {
@@ -112,7 +112,7 @@ describe("mapApiErrorToUserCopy", () => {
   });
 
   it("без аргумента fallback → дефолтний generic-string", () => {
-    expect(mapApiErrorToUserCopy(null)).toBe("Не вдалося виконати запит");
+    expect(mapApiErrorToUserCopy(null)).toBe("Не вдалося виконати запит.");
   });
 
   // ── @sergeant/api-client canonical lowercase codes ──────────────────

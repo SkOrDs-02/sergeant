@@ -1,4 +1,3 @@
-import { createDocument } from "zod-openapi";
 import { z } from "zod";
 
 import * as schemas from "../schemas/api";
@@ -152,14 +151,6 @@ const CoachMemoryPost = schemas.CoachMemoryPostSchema.meta({
 const PrivatQuery = schemas.PrivatQuerySchema.meta({
   id: "PrivatQuery",
   description: "Query для GET /api/privat.",
-});
-const PushSubscribe = schemas.PushSubscribeSchema.meta({
-  id: "PushSubscribe",
-  description: "Web-push subscribe (legacy).",
-});
-const PushUnsubscribe = schemas.PushUnsubscribeSchema.meta({
-  id: "PushUnsubscribe",
-  description: "Web-push unsubscribe (legacy).",
 });
 const PushRegister = schemas.PushRegisterSchema.meta({
   id: "PushRegister",
@@ -540,8 +531,6 @@ export const namedSchemas = {
   CoachInsight,
   CoachMemoryPost,
   PrivatQuery,
-  PushSubscribe,
-  PushUnsubscribe,
   PushRegister,
   PushUnregister,
   PushSend,
@@ -605,5 +594,3 @@ export const namedSchemas = {
   ImportBatchUndoResponse,
   ApiError,
 } as const;
-
-export { createDocument };

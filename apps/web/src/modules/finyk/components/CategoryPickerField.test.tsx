@@ -30,7 +30,7 @@ describe("CategoryPickerField", () => {
     expect(screen.getAllByRole("button")).toHaveLength(1);
     fireEvent.click(screen.getByRole("button", { name: /Категорія 1/ }));
     const dialog = screen.getByRole("dialog", { name: "Категорія" });
-    fireEvent.change(within(dialog).getByLabelText("Знайти категорію"), {
+    fireEvent.change(within(dialog).getByLabelText("Знайди категорію"), {
       target: { value: "Категорія 73" },
     });
     expect(
@@ -62,7 +62,7 @@ describe("CategoryPickerField", () => {
     const dialog = screen.getByRole("dialog", { name: "Категорія" });
     expect(within(dialog).queryByText("Часті")).toBeNull();
     expect(
-      within(dialog).getByLabelText("Знайти категорію"),
+      within(dialog).getByLabelText("Знайди категорію"),
     ).toBeInTheDocument();
     expect(within(dialog).getByText("Усі категорії")).toBeInTheDocument();
   });
@@ -158,7 +158,7 @@ describe("CategoryPickerField", () => {
 
     fireEvent.click(screen.getByRole("button", { name: /Категорія 1/ }));
     const dialog = screen.getByRole("dialog", { name: "Категорія" });
-    fireEvent.change(within(dialog).getByLabelText("Знайти категорію"), {
+    fireEvent.change(within(dialog).getByLabelText("Знайди категорію"), {
       target: { value: "такої категорії немає" },
     });
 

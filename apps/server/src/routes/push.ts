@@ -4,7 +4,6 @@ import {
   rateLimitExpress,
   requireApiSecret,
   requireSession,
-  requireSessionSoft,
   setModule,
 } from "../http/index.js";
 import { requireInternalIp } from "../http/requireInternalIp.js";
@@ -13,9 +12,7 @@ import {
   pushTest,
   register as pushRegister,
   sendPush,
-  subscribe as pushSubscribe,
   unregister as pushUnregister,
-  unsubscribe as pushUnsubscribe,
   vapidPublic,
 } from "../modules/push/push.js";
 
@@ -23,17 +20,16 @@ import {
  * `/api/push/vapid-public` свідомо поза rate-limiter-ом: його смикає фронт
  * під час реєстрації сервіс-воркера і він має бути швидким/дешевим.
  *
- * Решта захищених endpoint-ів
- * (subscribe/unsubscribe/register/unregister/test) мають трирівневий гейт,
- * і порядок навмисний:
+ * Решта захищених endpoint-ів (register/unregister/test) мають
+ * трирівневий гейт, і порядок навмисний:
  *   1. Pre-auth IP-лімітер (`api:push:ip`, 150/хв, окремий `preAuthIpRateLimit`)
- *      — ПЕРЕД `requireSession()`/`requireSessionSoft()`. Обидва варіанти
- *      сесії на невдачі шлють 401/503 і НЕ кличуть `next()`, тож без цього
- *      гейта безсесійний флуд (відсутня/підроблена кука) взагалі не
- *      діставався б до per-user бакета нижче — а `getSessionUser` усе одно
- *      робить lookup у session-store на кожен такий запит. Окремий `key`
- *      (суфікс `:ip`), ліміт 150/хв = 5× per-user 30/хв.
- *   2. `requireSession()` / `requireSessionSoft()` — резолвить сесію.
+ *      — ПЕРЕД `requireSession()`. Сесія на невдачі шле 401 і НЕ кличе
+ *      `next()`, тож без цього гейта безсесійний флуд (відсутня/підроблена
+ *      кука) взагалі не діставався б до per-user бакета нижче — а
+ *      `getSessionUser` усе одно робить lookup у session-store на кожен
+ *      такий запит. Окремий `key` (суфікс `:ip`), ліміт 150/хв = 5×
+ *      per-user 30/хв.
+ *   2. `requireSession()` — резолвить сесію.
  *   3. Спільний per-user бакет `api:push` (30/хв, `broadRateLimit`),
  *      застосований ПІСЛЯ сесії навмисно (рецидив знахідки B31, PR-A3 у
  *      `docs/work/specs/audits/2026-09-13-product-full-review.md`):
@@ -48,15 +44,7 @@ import {
  * і так рахується per-IP і окремого pre-auth гейта не потребує.
  * `test` виняток НЕ становить: те, що `requireSession()` стоїть там першим,
  * — це і є та сама діра, а не її відсутність, тож pre-auth гейт у нього
- * такий самий, як у решти чотирьох.
- *
- * subscribe/unsubscribe використовують `requireSessionSoft`, а не
- * `requireSession`: service worker смикає ці endpoint-и у фоні, і
- * історично handler трактував будь-яку невдачу `getSessionUser` як 401
- * (а не 500), щоб тимчасовий збій БД не перетворювався на notification
- * "server error" на фронті. Обидва варіанти сесії кладуть `req.user`
- * ПЕРЕД викликом `next()`, тож `rateLimitSubject` бачить `req.user.id` і
- * після `requireSessionSoft()` так само, як після `requireSession()`.
+ * такий самий, як у решти.
  */
 export function createPushRouter(): Router {
   const r = Router();
@@ -74,20 +62,6 @@ export function createPushRouter(): Router {
     limit: 150,
     windowMs: 60_000,
   });
-  r.post(
-    "/api/push/subscribe",
-    preAuthIpRateLimit,
-    requireSessionSoft(),
-    broadRateLimit,
-    pushSubscribe,
-  );
-  r.delete(
-    "/api/push/subscribe",
-    preAuthIpRateLimit,
-    requireSessionSoft(),
-    broadRateLimit,
-    pushUnsubscribe,
-  );
   // `/api/push/register` — уніфікований mobile+web endpoint. Свідомо йде
   // через `requireSession()` (жорсткий 401), а не `requireSessionSoft`:
   // mobile-клієнт має прозорий сигнал "токен протух, треба перелогінитись",

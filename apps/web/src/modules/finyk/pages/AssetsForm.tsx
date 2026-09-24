@@ -494,9 +494,9 @@ export function DebtForm({
       <div className="flex gap-2">
         <Input
           ref={debtNameInputRef as React.Ref<HTMLInputElement>}
-          aria-label="Назва пасиву (кредит, борг…)"
+          aria-label="Назва пасиву (кредит, борг)"
           className="flex-1"
-          placeholder="Назва пасиву (кредит, борг…)"
+          placeholder="Назва пасиву (кредит, борг)"
           maxLength={NAME_MAX_LEN}
           showCharCount={false}
           value={newDebt.name}

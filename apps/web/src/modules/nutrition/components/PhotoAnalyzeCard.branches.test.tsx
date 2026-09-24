@@ -382,7 +382,7 @@ describe("PhotoAnalyzeCard", () => {
     });
     expect(setPortionGrams).toHaveBeenCalledWith("450");
 
-    fireEvent.change(screen.getAllByPlaceholderText("твоя відповідь…")[0]!, {
+    fireEvent.change(screen.getAllByPlaceholderText("Твоя відповідь")[0]!, {
       target: { value: "велика тарілка" },
     });
     expect(currentAnswers).toMatchObject({

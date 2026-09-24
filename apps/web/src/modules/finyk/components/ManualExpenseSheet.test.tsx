@@ -471,7 +471,7 @@ describe("ManualExpenseSheet — межові значення (beta-input-bound
 
     await waitFor(() => {
       expect(
-        screen.getByText("Незвична дата, перевір, чи не помилка в році"),
+        screen.getByText("Незвична дата, перевір, чи не помилка в році."),
       ).toBeInTheDocument();
     });
     fireEvent.click(screen.getByRole("button", { name: "Додати витрату" }));
@@ -488,7 +488,7 @@ describe("ManualExpenseSheet — межові значення (beta-input-bound
 
     await waitFor(() => {
       expect(
-        screen.getByText("Дата поза допустимим діапазоном"),
+        screen.getByText("Дата поза допустимим діапазоном."),
       ).toBeInTheDocument();
     });
     expect(onSave).not.toHaveBeenCalled();

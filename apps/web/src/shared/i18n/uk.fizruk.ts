@@ -45,7 +45,7 @@ export const fizrukPageMessages = {
     activityNew: "+ Своє заняття",
     /** Вкладений аркуш вибору: ~55 позицій, без пошуку їх гортали. */
     pickerTitle: "Обери заняття",
-    pickerSearch: "Пошук (біг, йога, силове…)",
+    pickerSearch: "Пошук (біг, йога, силове)",
     pickerEmpty:
       "Нічого не знайшли. Спробуй інше слово або заведи своє заняття.",
     newActivityName: "Назва заняття",

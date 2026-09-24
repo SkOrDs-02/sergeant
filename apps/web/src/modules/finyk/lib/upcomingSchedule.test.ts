@@ -58,8 +58,8 @@ describe("formatRelativeDue", () => {
     expect(formatRelativeDue(new Date(2025, 5, 16), today)).toBe("завтра");
   });
 
-  it("'через N дн' якщо до 7 днів", () => {
-    expect(formatRelativeDue(new Date(2025, 5, 18), today)).toBe("через 3 дн");
+  it("'через N днів' у відмінку якщо до 7 днів", () => {
+    expect(formatRelativeDue(new Date(2025, 5, 18), today)).toBe("через 3 дні");
   });
 
   it("коротка дата якщо більше тижня", () => {
