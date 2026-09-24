@@ -82,7 +82,7 @@ export async function pickResizeAndReadBase64Jpeg(): Promise<PickImageJpegResult
   if (!perm.granted) {
     return buildPermissionDeniedResult(
       perm.canAskAgain,
-      "Потрібен доступ до фото. Дозволь застосунку доступ до фотогалереї в налаштуваннях.",
+      "Потрібен доступ до фото. Дозволь додатку відкрити фотогалерею у налаштуваннях.",
       "Доступ до фото",
     );
   }
@@ -113,7 +113,7 @@ export async function captureResizeAndReadBase64Jpeg(): Promise<PickImageJpegRes
   if (!perm.granted) {
     return buildPermissionDeniedResult(
       perm.canAskAgain,
-      "Потрібен доступ до камери. Дозволь застосунку доступ до камери в налаштуваннях.",
+      "Потрібен доступ до камери. Дозволь додатку використовувати камеру у налаштуваннях.",
       "Доступ до камери",
     );
   }

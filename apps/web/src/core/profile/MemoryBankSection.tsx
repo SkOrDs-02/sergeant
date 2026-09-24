@@ -237,7 +237,7 @@ export function MemoryBankSection() {
     <Card radius="lg" padding="none" className="overflow-hidden">
       {/* V-4 (deep-module-audit 2026-08-08, § «Профіль і Налаштування»):
           цей `<div>` раніше малював власний текстовий заголовок
-          «Памʼять ШІ» поверх `text-style-label` — БІЛЬШИМ за зовнішній
+          «Памʼять AI» поверх `text-style-label` — БІЛЬШИМ за зовнішній
           `CollapsibleSection`-заголовок «Памʼять» (`SectionHeading
           size="xs"` у `ProfilePage.tsx`), тобто інверсія ієрархії:
           дрібніший зовнішній рівень над більшим вкладеним. Заголовок-текст
@@ -270,7 +270,7 @@ export function MemoryBankSection() {
                 <Icon name="sergeant" size={22} className="text-brand-500" />
               }
               title="Банк памʼяті порожній"
-              description="ШІ поставить кілька запитань, щоб дізнатися про твої алергії, цілі, уподобання та рівень активності"
+              description="AI поставить кілька запитань, щоб дізнатися про твої алергії, цілі, уподобання та рівень активності"
               action={
                 <Button
                   variant="solid"

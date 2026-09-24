@@ -951,7 +951,7 @@ describe("POST /api/silpo/sync — причина в тексті помилки
   // ходити тим самим типом, яким кидає `silpoErrorToAppError`.
   function driftError(): ExternalServiceError {
     return new ExternalServiceError(
-      "Сільпо змінили формат відповіді — оновлення тимчасово недоступне",
+      "Сільпо змінили формат відповіді, оновлення тимчасово недоступне",
       { code: "SILPO_SCHEMA_DRIFT" },
     );
   }
@@ -1056,7 +1056,7 @@ describe("POST /api/silpo/sync — причина в тексті помилки
         .set("x-test-user-id", "user-1");
 
       expect(res.body.error).not.toBe(
-        "Сільпо змінили формат відповіді — оновлення тимчасово недоступне",
+        "Сільпо змінили формат відповіді, оновлення тимчасово недоступне",
       );
     },
   );

@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-23 by docs:gen-status. **Next review:** 2026-09-30.
+> **Last touched:** 2026-09-24 by docs:gen-status. **Next review:** 2026-10-01.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -39,11 +39,11 @@
 - [#68](https://github.com/zaebal-beep/sergeant/pull/68) — test(web): e2e-приймання анонімної персистентності + закриття хендофу OPFS-регресії _(2026-09-16)_
 - [#67](https://github.com/zaebal-beep/sergeant/pull/67) — feat(server): перецілити kill-switch пам'яті ШІ з finyk на digest (0024, PR-2) _(2026-09-16)_
 
-## 🔵 В роботі — 74 відкриті документи
+## 🔵 В роботі — 76 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 74       |
+| Активні спеки | 76       |
 
 **Найактивніше (8, за останніми PR):**
 

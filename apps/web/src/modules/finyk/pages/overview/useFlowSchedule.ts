@@ -139,7 +139,7 @@ export function useFlowSchedule({
           );
           return {
             id: `debt-${d.id}`,
-            title: d.name || "Борг",
+            title: d.name || "Пасив",
             amount: d.remaining,
             sign: "-",
             daysLeft,
@@ -166,7 +166,7 @@ export function useFlowSchedule({
           );
           return {
             id: `recv-${r.id}`,
-            title: r.name || "Дебіторка",
+            title: r.name || "Мені винні",
             amount: r.remaining,
             sign: "+",
             daysLeft,

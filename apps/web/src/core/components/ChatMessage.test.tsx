@@ -282,7 +282,7 @@ describe("TypingIndicator", () => {
   it("renders with correct aria-label", () => {
     renderInRouter(<TypingIndicator />);
     expect(
-      screen.getByRole("status", { name: "Асистент набирає відповідь" }),
+      screen.getByRole("status", { name: "Сержант набирає відповідь" }),
     ).toBeInTheDocument();
   });
 });

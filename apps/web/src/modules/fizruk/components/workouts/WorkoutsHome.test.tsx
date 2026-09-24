@@ -352,7 +352,7 @@ describe("RecentWorkoutSummary", () => {
     expect(screen.queryByText("Чернетка")).not.toBeInTheDocument();
   });
 
-  it("відмінює одиничний підхід як «1 сет», не «1 сетів»", () => {
+  it("відмінює одиничний підхід як «1 підхід», не «1 підходів»", () => {
     render(
       <RecentWorkoutSummary
         workout={{
@@ -366,7 +366,7 @@ describe("RecentWorkoutSummary", () => {
     // Повний рядок, а не регекс із `\b`: у JS межа слова визначена через
     // ASCII-\w, тож між «т» і пробілом її немає, і /1 сет\b/ не збігається
     // з кирилицею взагалі.
-    expect(screen.getByText("1 вправа · 1 сет · 20 хв")).toBeInTheDocument();
+    expect(screen.getByText("1 вправа · 1 підхід · 20 хв")).toBeInTheDocument();
   });
 
   it("omits the Чернетка badge and builds a joined subtitle for a finished workout with items/sets/duration", () => {
@@ -392,10 +392,10 @@ describe("RecentWorkoutSummary", () => {
     );
     expect(screen.queryByText("Чернетка")).not.toBeInTheDocument();
     expect(screen.getByText(/1 вправ/)).toBeInTheDocument();
-    // «2 сети», не «2 сетів» — суфікс відмінюється через `pluralSets`
+    // «2 сети», не «2 сетів» — суфікс відмінюється через `setsCountLabel`
     // (аудит L-10, 2026-08-07). Раніше тут стояв зашитий рядок «сетів»,
     // і картка після одного підходу писала «1 сетів».
-    expect(screen.getByText(/2 сети/)).toBeInTheDocument();
+    expect(screen.getByText(/2 підходи/)).toBeInTheDocument();
     expect(screen.getByText(/45 хв/)).toBeInTheDocument();
   });
 });

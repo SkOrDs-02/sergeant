@@ -25,9 +25,9 @@ export interface InlineAiRailProps {
 const STATUS_LABEL: Record<InlineAiState["status"], string> = {
   idle: "",
   loading: "AI шукає відповідь",
-  success: "Відповідь асистента",
+  success: "Відповідь Сержанта",
   aborted: "Запит скасовано",
-  error: "Помилка асистента",
+  error: "Сержант не відповів",
 };
 
 /**
@@ -91,7 +91,7 @@ export function InlineAiRail({
     <div
       className="px-3 sm:px-4 pt-2"
       role="region"
-      aria-label="Inline-відповідь асистента"
+      aria-label="Швидка відповідь Сержанта"
       onFocusCapture={() => {
         focusWithinRef.current = true;
       }}

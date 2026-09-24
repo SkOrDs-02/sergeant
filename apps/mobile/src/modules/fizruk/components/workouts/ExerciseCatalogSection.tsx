@@ -196,7 +196,7 @@ function ExerciseRow({
       accessibilityRole="button"
       accessibilityLabel={`Додати ${title}`}
       accessibilityHint={
-        onLongPress ? "Утримуй, щоб відкрити деталі вправи" : undefined
+        onLongPress ? "Утримай, щоб відкрити деталі вправи" : undefined
       }
       onPress={onPress}
       onLongPress={onLongPress}

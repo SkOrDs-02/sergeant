@@ -265,7 +265,7 @@ describe("FinykApp — real page routing via the bottom nav", () => {
     await userEvent.click(navButton("Операції"));
     // No mono/manual data at all → the list-scoped no-data state, not
     // Overview's `ModuleEmptyState` hero (founder-UX audit round 2, F1).
-    expect(await screen.findByText("Записів ще немає")).toBeInTheDocument();
+    expect(await screen.findByText("Операцій ще немає")).toBeInTheDocument();
   });
 
   it("navigates to the real Analytics page on tab click", async () => {

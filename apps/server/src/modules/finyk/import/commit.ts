@@ -187,7 +187,7 @@ export default async function commitImportHandler(
     // рахувався б «дублем» — мовчазна втрата даних замість помилки.
     if (!id) {
       throw new Error(
-        "assignImportRowIds повернув менше id, ніж рядків — інваріант порушено",
+        "assignImportRowIds повернув менше id, ніж рядків – інваріант порушено",
       );
     }
     return { row, id };
@@ -256,7 +256,7 @@ export default async function commitImportHandler(
     const batchRow = batchRows[0];
     if (!batchRow) {
       throw new Error(
-        "import_batches INSERT ... RETURNING повернув 0 рядків — драйвер-аномалія",
+        "import_batches INSERT ... RETURNING повернув 0 рядків – драйвер-аномалія",
       );
     }
 

@@ -93,7 +93,7 @@ describe("InlineAiRail — error state", () => {
       question: "кава",
       message: "Сервер недоступний",
     });
-    expect(screen.getByText("Помилка асистента")).toBeInTheDocument();
+    expect(screen.getByText("Сержант не відповів")).toBeInTheDocument();
     expect(screen.getByText("Сервер недоступний")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: /Повторити/ }));
     expect(onRetry).toHaveBeenCalledWith("кава");

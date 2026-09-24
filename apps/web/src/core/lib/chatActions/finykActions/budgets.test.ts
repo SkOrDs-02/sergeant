@@ -402,7 +402,7 @@ describe("updateBudget", () => {
     expect(saved[0]!.contributions).toHaveLength(1);
     expect(saved[0]!.contributions[0]).toMatchObject({
       amountUah: 20000,
-      note: "Через AI-асистента",
+      note: "Через Сержанта",
     });
   });
 

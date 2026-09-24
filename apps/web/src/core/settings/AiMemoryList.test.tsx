@@ -86,7 +86,7 @@ describe("AiMemoryList", () => {
   it("порожня памʼять → пояснення, а не порожнеча", async () => {
     listAiMemory.mockResolvedValue(page([]));
     renderList();
-    expect(await screen.findByText(/Поки що ШІ нічого/)).toBeTruthy();
+    expect(await screen.findByText(/Поки що AI нічого/)).toBeTruthy();
   });
 
   it("порожня памʼять малює спільний <EmptyState> (role=status), не голий <p> (V-14, аудит 2026-08-08)", async () => {
@@ -94,7 +94,7 @@ describe("AiMemoryList", () => {
     // теж має `role="status"`, і `findByRole` підхопив би саме його.
     listAiMemory.mockResolvedValue(page([]));
     renderList();
-    const text = await screen.findByText(/Поки що ШІ нічого/);
+    const text = await screen.findByText(/Поки що AI нічого/);
     expect(text.closest('[role="status"]')).toBeTruthy();
   });
 
@@ -350,7 +350,7 @@ describe("AiMemoryList", () => {
       renderList();
       // Не `findByRole("status")`: під час завантаження той самий role
       // носить «Завантажую памʼять…», і запит зловив би його першим.
-      const text = await screen.findByText(/Памʼять ШІ живе в акаунті/);
+      const text = await screen.findByText(/Памʼять AI живе в акаунті/);
       expect(text.textContent).toMatch(/Увійди/);
       expect(text.closest('[role="status"]')).not.toBeNull();
       expect(screen.queryByRole("alert")).toBeNull();

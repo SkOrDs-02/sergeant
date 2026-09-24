@@ -150,7 +150,7 @@ function MonthlyPlanCardComponent({
           <span className="text-muted" aria-hidden>
             <Icon name="calendar" size="md" />
           </span>
-          <span className="text-style-label text-text">Фінплан на місяць</span>
+          <span className="text-style-label text-text">План на місяць</span>
         </div>
         <div className="flex items-center gap-2 shrink-0">
           {hasPlan && !open && (

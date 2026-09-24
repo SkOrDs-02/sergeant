@@ -123,7 +123,7 @@ describe("HubChatComposer", () => {
     );
 
     expect(screen.getByRole("status")).toHaveTextContent(
-      "Асистент недоступний без інтернету.",
+      "Сержант недоступний без інтернету.",
     );
     expect(screen.getByTestId("quick-actions")).toHaveAttribute(
       "data-online",

@@ -142,7 +142,7 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
             const removed = d;
             setManualDebts((ds) => ds.filter((x) => x.id !== removed.id));
             showUndoToast(toast, {
-              msg: `Видалено борг «${removed.name}»`,
+              msg: `Видалено пасив «${removed.name}»`,
               onUndo: () => setManualDebts((ds) => [...ds, removed]),
             });
           }}

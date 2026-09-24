@@ -155,7 +155,7 @@ describe("NutritionDashboard", () => {
         onGoToDailyPlan={onGoToDailyPlan}
       />,
     );
-    const cta = screen.getByRole("button", { name: "Задати норму" });
+    const cta = screen.getByRole("button", { name: "Задати ціль" });
     expect(cta).toBeInTheDocument();
     fireEvent.click(cta);
     expect(onGoToDailyPlan).toHaveBeenCalledTimes(1);
@@ -183,7 +183,7 @@ describe("NutritionDashboard", () => {
         prefs={GOAL_PREFS}
       />,
     );
-    expect(toastSuccess).toHaveBeenCalledWith("Денну норму виконано");
+    expect(toastSuccess).toHaveBeenCalledWith("Денну ціль виконано");
   });
 
   it("shows an honest 'записано N із 4' note on an incomplete day (canon §5.2)", () => {

@@ -69,6 +69,21 @@ export const FIXTURES = [
     path: "apps/server/src/email/ftuxDripCopy.ts",
     cwd: "apps/server",
   },
+  // Розширення того ж блоку на `modules/**` і `routes/**` (2026-09-23,
+  // аудит копії вебу §2.4). `--print-config` віддає резолвлені правила, а
+  // не глоби, тож `ftuxDripCopy.ts` про нові теки мовчить. Дві точки, бо
+  // глоби два: одна не помітила б, як зникає інший. Обидва файли названі
+  // в аудиті.
+  {
+    surface: "server-modules-copy",
+    path: "apps/server/src/modules/push/push.ts",
+    cwd: "apps/server",
+  },
+  {
+    surface: "server-routes-copy",
+    path: "apps/server/src/routes/me.ts",
+    cwd: "apps/server",
+  },
   { surface: "web", path: "apps/web/src/main.tsx", cwd: "apps/web" },
   // Лендінг дістав власний блок 2026-09-14 (`eslint.landing.js`,
   // `ukrainian-copy`). До того він був єдиною поверхнею без блоку — і,

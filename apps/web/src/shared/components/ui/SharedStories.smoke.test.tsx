@@ -46,7 +46,7 @@ describe("shared UI stories", () => {
 
     const empty = render(renderStory(DataStateStories.Empty));
     expect(
-      screen.getByText("Немає транзакцій за вибраний період."),
+      screen.getByText("Немає операцій за вибраний період."),
     ).toBeInTheDocument();
     empty.unmount();
 
@@ -173,8 +173,6 @@ describe("shared UI stories", () => {
     vi.spyOn(console, "log").mockImplementation(() => {});
     render(renderStory(CommandPaletteStories.InitiallyOpen));
 
-    expect(
-      await screen.findByText("Запитати AI-асистента"),
-    ).toBeInTheDocument();
+    expect(await screen.findByText("Запитати Сержанта")).toBeInTheDocument();
   });
 });
