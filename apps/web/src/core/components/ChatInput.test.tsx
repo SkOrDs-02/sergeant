@@ -101,7 +101,7 @@ describe("ChatInput", () => {
   it("renders the input and send button", () => {
     render(<TestWrapper />);
     expect(
-      screen.getByRole("textbox", { name: "Повідомлення асистенту" }),
+      screen.getByRole("textbox", { name: "Повідомлення Сержанту" }),
     ).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Надіслати" }),
@@ -139,7 +139,7 @@ describe("ChatInput", () => {
     const onSend = vi.fn();
     render(<TestWrapper input="test" onSend={onSend} online={true} />);
     const input = screen.getByRole("textbox", {
-      name: "Повідомлення асистенту",
+      name: "Повідомлення Сержанту",
     });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(onSend).toHaveBeenCalledTimes(1);
@@ -149,7 +149,7 @@ describe("ChatInput", () => {
     const onSend = vi.fn();
     render(<TestWrapper input="test" onSend={onSend} online={false} />);
     const input = screen.getByRole("textbox", {
-      name: "Повідомлення асистенту",
+      name: "Повідомлення Сержанту",
     });
     fireEvent.keyDown(input, { key: "Enter" });
     expect(onSend).not.toHaveBeenCalled();
@@ -209,7 +209,7 @@ describe("ChatInput", () => {
   it("input is disabled when offline", () => {
     render(<TestWrapper online={false} />);
     const input = screen.getByRole("textbox", {
-      name: "Повідомлення асистенту",
+      name: "Повідомлення Сержанту",
     });
     expect(input).toBeDisabled();
   });
@@ -217,11 +217,11 @@ describe("ChatInput", () => {
   it("shows offline placeholder when offline", () => {
     render(<TestWrapper online={false} />);
     const input = screen.getByRole("textbox", {
-      name: "Повідомлення асистенту",
+      name: "Повідомлення Сержанту",
     });
     expect(input).toHaveAttribute(
       "placeholder",
-      "Немає зʼєднання, асистент офлайн",
+      "Немає зʼєднання, Сержант офлайн",
     );
   });
 });

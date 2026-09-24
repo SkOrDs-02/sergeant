@@ -86,9 +86,7 @@ describe("HubHeader", () => {
 
   it("opens the assistant chat via the hub bus", () => {
     render(<HubHeader {...baseProps()} />);
-    fireEvent.click(
-      screen.getByRole("button", { name: "Відкрити AI-асистента" }),
-    );
+    fireEvent.click(screen.getByRole("button", { name: "Відкрити Сержанта" }));
     expect(emitHubBus).toHaveBeenCalledWith("openChat", {
       message: null,
       autoSend: false,

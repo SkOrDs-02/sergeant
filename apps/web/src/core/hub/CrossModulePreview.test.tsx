@@ -27,7 +27,7 @@ describe("CrossModulePreview — single-primary affordance (S6.4 audit-guard)", 
   it("renders module-specific copy without falling back to a generic example", () => {
     render(<CrossModulePreview sourceModule="finyk" onClose={() => {}} />);
     // Body must contain the × pairing AND the forward-looking framing.
-    const card = screen.getByLabelText("Що Sergeant покаже далі");
+    const card = screen.getByLabelText("Що Сержант покаже далі");
     expect(card.textContent ?? "").toMatch(/гроші\s*×\s*їжа/i);
     expect(card.textContent ?? "").toMatch(/коли додаси ще/i);
   });

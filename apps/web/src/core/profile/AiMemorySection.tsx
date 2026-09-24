@@ -43,7 +43,7 @@ export function AiMemorySection() {
     try {
       await meApi.clearAiMemory();
     } catch {
-      setMemoryClearStatus("Не вдалося очистити памʼять ШІ.");
+      setMemoryClearStatus("Не вдалося очистити памʼять AI.");
       setClearingMemory(false);
       return;
     }
@@ -58,8 +58,8 @@ export function AiMemorySection() {
     void queryClient.invalidateQueries({ queryKey: aiMemoryKeys.all });
     setMemoryClearStatus(
       localWriteFailed
-        ? "Памʼять ШІ очищено на сервері, але локальну копію стерти не вдалося."
-        : "Памʼять ШІ очищено.",
+        ? "Памʼять AI очищено на сервері, але локальну копію стерти не вдалося."
+        : "Памʼять AI очищено.",
     );
     setClearingMemory(false);
   };

@@ -440,7 +440,6 @@ export const messagesEn: Partial<{
     bannerCta: "Set up",
 
     lock: {
-      sectionTitle: "Privacy",
       enableLabel: "App lock",
       enableDescription:
         "Protect your data with a PIN. The app locks when you switch away or after 5 minutes of inactivity.",

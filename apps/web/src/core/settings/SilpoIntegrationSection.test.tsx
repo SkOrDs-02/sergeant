@@ -237,7 +237,7 @@ describe("SilpoIntegrationSection", () => {
     renderSection();
 
     expect(
-      await screen.findByText("Сільпо просить повторну авторизацію"),
+      await screen.findByText("Сільпо просить увійти ще раз"),
     ).toBeInTheDocument();
     expect(screen.getByText("Підключити повторно")).toBeInTheDocument();
   });
@@ -258,7 +258,7 @@ describe("SilpoIntegrationSection", () => {
     const dialog = await screen.findByRole("alertdialog");
     expect(dialog.textContent).toContain("Видалити всі дані Сільпо?");
     // Explicit wording: splits/pantry survive, only Silpo-owned rows go.
-    expect(dialog.textContent).toContain("Підтверджені спліти категорій");
+    expect(dialog.textContent).toContain("Підтверджені розбиття категорій");
     expect(dialog.textContent).toContain("НЕ видаляються");
 
     // Wipe must not fire before the user confirms.

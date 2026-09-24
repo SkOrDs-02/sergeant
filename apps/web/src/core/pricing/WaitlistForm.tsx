@@ -217,7 +217,7 @@ export function WaitlistForm({
 
         <fieldset>
           <legend className="text-style-label text-text mb-2">
-            Який тариф цікавить найбільше?
+            Який план цікавить найбільше?
           </legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {TIER_OPTIONS.map((opt) => {

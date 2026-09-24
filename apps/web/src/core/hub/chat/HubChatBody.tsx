@@ -96,7 +96,7 @@ export function HubChatBody({
           screen readers without disrupting the message list region above.
 
           AI-DANGER: тут оголошується і САМА ВІДПОВІДЬ, не лише статус. Доти
-          область казала тільки «Асистент відповідає…», а стрічка повідомлень
+          область казала тільки «Сержант відповідає…», а стрічка повідомлень
           лежить у статичному `role="region"` (`HubChat.tsx`), тож незрячий
           користувач чув, що асистент відповідає, і не чув ЩО (browser-QA
           2026-09-02).
@@ -111,7 +111,7 @@ export function HubChatBody({
         aria-atomic="true"
         className="sr-only"
       >
-        {loading ? "Асистент відповідає…" : announcedReply}
+        {loading ? "Сержант відповідає…" : announcedReply}
       </span>
       {/*
         AI-DANGER: розкриття «це AI» (EU AI Act ст. 50(1), чинна з 2026-08-02)
