@@ -335,3 +335,14 @@
    пріоритет «перша за вагою» - моя оцінка наслідків, не частота.
 
 Джерело: `verdicts/*.yaml` на коміті a3be976.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                               | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
+| [#25](https://bitbucket.org/skords01/sergeant/pull-requests/25) | docs(docs): матриця конкурентів на 20 рядках і шортліст аналітики з hands-on заміру | 2026-09-24 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

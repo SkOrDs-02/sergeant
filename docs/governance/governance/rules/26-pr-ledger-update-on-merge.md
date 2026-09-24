@@ -129,11 +129,12 @@ Requires `gh` CLI on PATH. Commit the resulting `docs/governance/pr-ledger/index
 
 ## Recent PRs
 
-| PR                                                       | Title                                                                            | Merged     |
-| -------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------- |
-| [#50](https://github.com/zaebal-beep/sergeant/pull/50)   | fix(ci): повернути аудити в скоуп Hard Rule #26 і загейтити дрейф чотирьох копій | 2026-09-15 |
-| [#508](https://github.com/SkOrDs-02/sergeant/pull/508)   | fix(docs): reconcile canonical docs with current repo                            | 2026-07-29 |
-| [#2900](https://github.com/Skords-01/Sergeant/pull/2900) | docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up)               | 2026-05-15 |
+| PR                                                              | Title                                                                            | Merged     |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------- |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket          | 2026-09-23 |
+| [#50](https://github.com/zaebal-beep/sergeant/pull/50)          | fix(ci): повернути аудити в скоуп Hard Rule #26 і загейтити дрейф чотирьох копій | 2026-09-15 |
+| [#508](https://github.com/SkOrDs-02/sergeant/pull/508)          | fix(docs): reconcile canonical docs with current repo                            | 2026-07-29 |
+| [#2900](https://github.com/Skords-01/Sergeant/pull/2900)        | docs(docs): hard rules 24/25/26 for Initiative 0014 (HR follow-up)               | 2026-05-15 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

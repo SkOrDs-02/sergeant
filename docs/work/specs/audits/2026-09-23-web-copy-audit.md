@@ -357,3 +357,17 @@ Legal (`core/legal/**`) і `uk.dataDisclosure.ts` тримають винято�
 - [`2026-09-01-anti-slop-audit.md`](./2026-09-01-anti-slop-audit.md), візуальний слоп; цей документ покриває текстовий.
 - [`docs/design/i18n/readiness.md`](../../../design/i18n/readiness.md), стан каталогу і allowlist на 299 файлів.
 - `packages/eslint-plugin-sergeant-design/index.js`, правило `ukrainian-copy`, межі якого описані в §1 і §2.1–2.4.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                                              | Merged     |
+| --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------- |
+| [#24](https://bitbucket.org/skords01/sergeant/pull-requests/24) | fix(web): гейти копі: серверні тексти помилок, кнопка «X» існує, картки без сирого e.message       | 2026-09-24 |
+| [#30](https://bitbucket.org/skords01/sergeant/pull-requests/30) | fix(web): полірування копі за аудитом: плейсхолдери, плюрали, ₴ і одиниці, тости, legal під лінтом | 2026-09-24 |
+| [#28](https://bitbucket.org/skords01/sergeant/pull-requests/28) | fix(web): термінологія копі за рішеннями §6 аудиту: AI, Сержант, план, підхід, ціль, операція      | 2026-09-24 |
+| [#19](https://bitbucket.org/skords01/sergeant/pull-requests/19) | fix(web): хвиля A аудиту UX-копі: збої з дією, без сирого error.message і жаргону                  | 2026-09-23 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -2,7 +2,10 @@
 // читає `localStorage` і тому залишається у `apps/web`; сюди винесені
 // лише платформо-незалежні типи + маленький helper `txTimeMs`.
 
-import { limitBudgetCategoryIds } from "@sergeant/finyk-domain/domain/budget";
+import {
+  limitBudgetCategoryIds,
+  type LimitUsageEntry,
+} from "@sergeant/finyk-domain/domain/budget";
 import type { TxSplitsLike } from "@sergeant/finyk-domain/lib/transactions";
 
 export interface Transaction {
@@ -60,8 +63,12 @@ export interface FinanceContext {
   /** Спліт-мапа транзакцій (id → частини за категоріями), для getTxStatAmount/calcFinykPeriodAggregate. */
   txSplits?: TxSplitsLike;
   thisMonthTx: Transaction[];
-  /** Суми витрат за цей місяць, ключ — сирий override/label (legacy формат). */
-  categorySpend: Record<string, number>;
+  /**
+   * Стан кожного ліміту з `calcLimitUsages` (finyk-domain): той самий
+   * результат, що й на картці ліміту в Плануванні та в хаб-картці
+   * перевищення. Правило `budget_limits` читає лише його.
+   */
+  limitUsage: readonly LimitUsageEntry[];
   /** Суми за canonical id — для нових правил. */
   canonicalMonthSpend: Map<string, number>;
   /** Лічильник транзакцій за весь період, canonical id → count. */
