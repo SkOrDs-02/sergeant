@@ -3073,17 +3073,29 @@ const ukrainianCopy = {
             description:
               "Project-relative file paths (forward-slash) that are exempt.",
           },
+          allowFirstPersonPlural: {
+            type: "array",
+            items: { type: "string" },
+            description:
+              "Paths (file or directory) where only the «ми» check is skipped: " +
+              "legal texts, data disclosure and support appeals speak for the team (канон §2).",
+          },
         },
         additionalProperties: false,
       },
     ],
   },
   create(context) {
-    const { allowlist = [] } = context.options[0] ?? {};
+    const { allowlist = [], allowFirstPersonPlural = [] } =
+      context.options[0] ?? {};
     const filename = (context.filename ?? context.getFilename() ?? "").replace(
       /\\/g,
       "/",
     );
+    // Запис — або конкретний файл (`endsWith`), або каталог (`.../<p>/...`).
+    // Без другої гілки виняток на теку мовчки не діяв би.
+    const matchesPath = (p) =>
+      filename.endsWith(p) || filename.includes(`${p}/`);
     if (
       /\.(test|spec)\.[jt]sx?$/.test(filename) ||
       filename.includes("/__tests__/") ||
@@ -3096,14 +3108,17 @@ const ukrainianCopy = {
       // не називаються.
       filename.includes("/tests/") ||
       /\.stories\.[jt]sx?$/.test(filename) ||
-      // Запис allowlist — або конкретний файл (`endsWith`), або каталог
-      // (`.../<p>/...`). Без другої гілки виняток на теку мовчки не діяв би.
-      allowlist.some((p) => filename.endsWith(p) || filename.includes(`${p}/`))
+      allowlist.some(matchesPath)
     ) {
       return {};
     }
+    // Legal, розкриття даних і звернення в підтримку говорять від «ми»
+    // (канон §2): там вимикається лише ця перевірка, решта діє.
+    const skipFirstPersonPlural = allowFirstPersonPlural.some(matchesPath);
     const report = (node, text, emDashText = text) => {
       for (const v of ukrainianCopyViolations(text, emDashText)) {
+        if (skipFirstPersonPlural && v.messageId === "firstPersonPlural")
+          continue;
         context.report({ node, messageId: v.messageId, data: v.data });
       }
     };

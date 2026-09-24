@@ -39,6 +39,23 @@ function lint(code, filename = abs("apps/web/src/Foo.tsx")) {
   );
 }
 
+function lintWith(code, options, filename = abs("apps/web/src/Foo.tsx")) {
+  return linter.verify(
+    code,
+    {
+      files: ["**/*.{js,mjs,cjs,jsx,ts,tsx}"],
+      plugins: { "sergeant-design": plugin },
+      rules: { [RULE_ID]: ["error", options] },
+      languageOptions: {
+        ecmaVersion: "latest",
+        sourceType: "module",
+        parserOptions: { ecmaFeatures: { jsx: true } },
+      },
+    },
+    { filename },
+  );
+}
+
 const ids = (msgs) => msgs.map((m) => m.messageId).sort();
 
 describe("ukrainian-copy — формальне «Ви» (§1.1)", () => {
@@ -181,6 +198,30 @@ describe("ukrainian-copy — 1-а особа множини (§2)", () => {
     assert.deepEqual(ids(lint('const a = "Завантажуємо…";')), [
       "firstPersonPlural",
     ]);
+  });
+
+  it("allowFirstPersonPlural вимикає лише перевірку «ми», решта діє (аудит копі 2026-09-23 §6.6, §6.7)", () => {
+    const opts = { allowFirstPersonPlural: ["src/core/legal"] };
+    const legal = abs("apps/web/src/core/legal/privacyDocument.ts");
+    assert.deepEqual(
+      lintWith('const a = "Ми не продаємо твій контент.";', opts, legal),
+      [],
+    );
+    assert.deepEqual(
+      ids(
+        lintWith(
+          'const a = "Ми — сторона договору, і Ви це знаєте.";',
+          opts,
+          legal,
+        ),
+      ),
+      ["emDash", "formalVy"],
+    );
+    // Поза переліком «ми» ловиться, як і раніше.
+    assert.deepEqual(
+      ids(lintWith('const a = "Ми не продаємо твій контент.";', opts)),
+      ["firstPersonPlural"],
+    );
   });
 
   it("ловить -емо / -имо / -їмо та зворотні -мось / -мося (дірка з аудиту 2026-09-15)", () => {

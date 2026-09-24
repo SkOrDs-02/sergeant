@@ -84,7 +84,7 @@ describe("CommandPaletteUI", () => {
   it("renders the dialog with search input and all commands grouped", () => {
     render(<Harness commands={cmds()} />);
     expect(screen.getByRole("dialog")).toBeInTheDocument();
-    expect(screen.getByPlaceholderText("Знайди команду…")).toBeInTheDocument();
+    expect(screen.getByPlaceholderText("Знайди команду")).toBeInTheDocument();
     expect(
       screen.getByRole("option", { name: /Додати витрату/ }),
     ).toBeInTheDocument();
@@ -96,7 +96,7 @@ describe("CommandPaletteUI", () => {
     vi.useFakeTimers();
     try {
       render(<Harness commands={cmds()} />);
-      const input = screen.getByPlaceholderText("Знайди команду…");
+      const input = screen.getByPlaceholderText("Знайди команду");
       fireEvent.change(input, { target: { value: "scan" } });
       act(() => {
         vi.advanceTimersByTime(100);
@@ -120,7 +120,7 @@ describe("CommandPaletteUI", () => {
     vi.useFakeTimers();
     try {
       render(<Harness commands={cmds()} />);
-      const input = screen.getByPlaceholderText("Знайди команду…");
+      const input = screen.getByPlaceholderText("Знайди команду");
       fireEvent.change(input, { target: { value: "zzzznope" } });
       act(() => {
         vi.advanceTimersByTime(100);
@@ -151,7 +151,7 @@ describe("CommandPaletteUI", () => {
   it("ArrowDown moves selection and Enter activates the highlighted command", () => {
     const list = cmds();
     render(<Harness commands={list} />);
-    const input = screen.getByPlaceholderText("Знайди команду…");
+    const input = screen.getByPlaceholderText("Знайди команду");
 
     // First option starts active.
     const first = screen.getByRole("option", { name: /Додати витрату/ });
@@ -169,7 +169,7 @@ describe("CommandPaletteUI", () => {
   it("ArrowUp wraps to the last command", () => {
     const list = cmds();
     render(<Harness commands={list} />);
-    const input = screen.getByPlaceholderText("Знайди команду…");
+    const input = screen.getByPlaceholderText("Знайди команду");
     fireEvent.keyDown(input, { key: "ArrowUp" });
     const last = screen.getByRole("option", { name: /Відкрити налаштування/ });
     expect(last.getAttribute("aria-selected")).toBe("true");
@@ -177,7 +177,7 @@ describe("CommandPaletteUI", () => {
 
   it("Home/End jump to first/last command", () => {
     render(<Harness commands={cmds()} />);
-    const input = screen.getByPlaceholderText("Знайди команду…");
+    const input = screen.getByPlaceholderText("Знайди команду");
     fireEvent.keyDown(input, { key: "End" });
     expect(
       screen
@@ -230,7 +230,7 @@ describe("CommandPaletteUI", () => {
 
   it("Escape closes the palette via the focus-trap handler", () => {
     render(<Harness commands={cmds()} />);
-    const input = screen.getByPlaceholderText("Знайди команду…");
+    const input = screen.getByPlaceholderText("Знайди команду");
     fireEvent.keyDown(input, { key: "Escape" });
     expect(screen.queryByRole("dialog")).toBeNull();
   });

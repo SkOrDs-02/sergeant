@@ -96,6 +96,7 @@ export const finykPageMessages = {
     subscriptionsTitle: "Підписки",
     addSubscription: "Підписка",
     activeOne: "активна",
+    activeFew: "активні",
     activeMany: "активних",
     amountUnknown: "сума невідома",
     /**
@@ -192,7 +193,7 @@ export const finykPageMessages = {
     noDebtsHint: "Спершу створи пасив в Активах.",
     createNew: "Створити новий пасив",
     createTitle: "Новий пасив із цієї операції",
-    namePlaceholder: "Назва пасиву (кредит, борг…)",
+    namePlaceholder: "Назва пасиву (кредит, борг)",
     create: "Створити",
     cancel: "Скасувати",
     pickTitle: "Який це пасив?",

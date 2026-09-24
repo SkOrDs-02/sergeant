@@ -50,8 +50,8 @@ export function ManualExpenseDescriptionSection({
         id={descId}
         placeholder={
           isIncome
-            ? "Зарплата, повернення боргу, підробіток…"
-            : "Кава, продукти, таксі…"
+            ? "Зарплата, повернення боргу, підробіток"
+            : "Кава, продукти, таксі"
         }
         disabled={isSubmitting}
         maxLength={NAME_MAX_LEN}

@@ -11,6 +11,7 @@ import {
   STORAGE_KEYS,
   TRACKED_STREAK_MILESTONES,
   claimStreakMilestone,
+  pluralDays,
   pluralUa,
   type UaPluralForms,
 } from "@sergeant/shared";
@@ -190,7 +191,11 @@ export function StreakIndicator() {
   if (streak < 2) return null;
 
   return (
-    <StreakBadge streak={streak} label="днів поспіль" className="shadow-sm" />
+    <StreakBadge
+      streak={streak}
+      label={`${pluralDays(streak)} поспіль`}
+      className="shadow-sm"
+    />
   );
 }
 
@@ -248,7 +253,7 @@ export function MotivationalFooter() {
 
   if (entryCount === 0) return null;
 
-  const message = `Вже ${entryCount} ${pluralUa(entryCount, RECORD_FORMS)}, продовжуй!`;
+  const message = `Вже ${entryCount} ${pluralUa(entryCount, RECORD_FORMS)}. Продовжуй.`;
 
   return (
     <p className="text-style-caption text-subtle text-center py-8">{message}</p>

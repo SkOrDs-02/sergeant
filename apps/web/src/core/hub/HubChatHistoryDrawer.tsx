@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useCallback, useMemo, useRef, useState } from "react";
+import { pluralUa } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Button } from "@shared/components/ui/Button";
@@ -85,12 +86,9 @@ function dayGroup(ts: number, now: number): DayGroup {
   return "earlier";
 }
 
+const SESSION_FORMS = { one: "бесіда", few: "бесіди", many: "бесід" };
 function sessionsWord(n: number): string {
-  const mod10 = n % 10;
-  const mod100 = n % 100;
-  if (mod10 === 1 && mod100 !== 11) return "бесіда";
-  if (mod10 >= 2 && mod10 <= 4 && (mod100 < 12 || mod100 > 14)) return "бесіди";
-  return "бесід";
+  return pluralUa(n, SESSION_FORMS);
 }
 
 /**

@@ -123,7 +123,7 @@ export function TxRowCategoryPicker({
       {onNoteChange && (
         <Input
           size="sm"
-          placeholder="Нотатка…"
+          placeholder="Нотатка"
           value={draftNote}
           maxLength={NOTE_MAX_LENGTH}
           onChange={(e) => setDraftNote(e.target.value)}

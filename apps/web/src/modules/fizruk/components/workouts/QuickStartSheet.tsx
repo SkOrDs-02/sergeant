@@ -318,7 +318,7 @@ export function QuickStartSheet({
         <div className="sticky top-0 z-10 -mx-5 px-5 pt-1 pb-2 bg-panel">
           <Input
             {...searchFieldProps("quick-start-exercise-search")}
-            placeholder="Пошук вправи…"
+            placeholder="Пошук вправи"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             aria-label="Пошук вправи в каталозі"

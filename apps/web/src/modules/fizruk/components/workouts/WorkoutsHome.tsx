@@ -124,7 +124,7 @@ export function WorkoutsHome({
               className="h-11 px-4"
               onClick={onOpenSession}
             >
-              Відкрити →
+              Відкрити
             </Button>
           </div>
           {/* Ретро лишається доступним і під час живої сесії, хоч тепер воно
@@ -189,7 +189,7 @@ export function WorkoutsHome({
               className="text-style-caption text-fizruk-strong hover:underline active:opacity-70 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               onClick={onOpenJournal}
             >
-              Всі →
+              Всі
             </button>
           ) : null}
         </div>
@@ -341,7 +341,7 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
   const durMin = summary.durationSec
     ? Math.max(1, Math.round(summary.durationSec / 60))
     : null;
-  if (durMin !== null) parts.push(`${durMin} хв`);
+  if (durMin !== null) parts.push(`${durMin}\u202Fхв`);
   if (typeof workout.kcalBurned === "number" && workout.kcalBurned > 0) {
     parts.push(`${workout.kcalBurned} ккал`);
   }

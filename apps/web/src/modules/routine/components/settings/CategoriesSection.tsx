@@ -3,6 +3,7 @@
  * Status: Active
  */
 import { useState, type Dispatch, type SetStateAction } from "react";
+import { pluralUa } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
@@ -30,13 +31,9 @@ export interface CategoriesSectionProps {
 }
 
 /** Скільки звичок у категорії — з правильним UA-відмінком. */
+const HABIT_FORMS = { one: "звичка", few: "звички", many: "звичок" };
 function habitCountLabel(count: number): string {
-  const mod100 = count % 100;
-  if (mod100 >= 11 && mod100 <= 14) return "звичок";
-  const mod10 = count % 10;
-  if (mod10 === 1) return "звичка";
-  if (mod10 >= 2 && mod10 <= 4) return "звички";
-  return "звичок";
+  return pluralUa(count, HABIT_FORMS);
 }
 
 export function CategoriesSection({

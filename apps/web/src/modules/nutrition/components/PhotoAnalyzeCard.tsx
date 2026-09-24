@@ -416,7 +416,7 @@ export function PhotoAnalyzeCard({
                     onChange={(e) =>
                       setAnswers((a) => ({ ...a, [q]: e.target.value }))
                     }
-                    placeholder="твоя відповідь…"
+                    placeholder="Твоя відповідь"
                     disabled={busy}
                   />
                 </div>

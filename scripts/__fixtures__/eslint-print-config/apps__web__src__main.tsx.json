@@ -3236,9 +3236,14 @@
     "sergeant-design/ukrainian-copy": [
       2,
       {
+        "allowFirstPersonPlural": [
+          "src/core/legal",
+          "src/shared/i18n/uk.dataDisclosure.ts",
+          "src/core/errors/NotFoundPage.tsx",
+          "src/core/errors/ServerErrorPage.tsx"
+        ],
         "allowlist": [
-          "src/core/DesignShowcase",
-          "src/core/legal"
+          "src/core/DesignShowcase"
         ]
       }
     ],

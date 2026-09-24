@@ -223,7 +223,7 @@ export const coreMessages = {
     crossModulePreviewAria: "Що Сержант покаже далі",
     weeklyDigestTitle: "Щотижневий дайджест: сторіс",
     chatOfflineNotice:
-      "Сержант недоступний без інтернету. Дані модулів видно офлайн, але\n          AI-відповіді потребують підключення.",
+      "Сержант недоступний без інтернету. Дані модулів видно офлайн, але AI-відповіді потребують підключення.",
 
     // PR-26 / §A12 — empty-state placeholder в `/chat`. Коли користувач
     // тільки-но відкрив чат і ще нічого не написав, замість пустого
@@ -365,7 +365,8 @@ export const coreMessages = {
     passwordTooShort: "Пароль занадто короткий.",
     passwordTooLong: "Пароль занадто довгий.",
     emailNotVerified: "Email ще не підтверджено. Перевір пошту.",
-    providerNotFound: "Цей провайдер входу не налаштовано.",
+    providerNotFound:
+      "Цей провайдер входу не налаштовано. Спробуй інший спосіб входу.",
     sessionFailure: "Не вдалося завершити вхід. Спробуй ще раз.",
 
     // Серверні errors (rate-limiter, error handler):

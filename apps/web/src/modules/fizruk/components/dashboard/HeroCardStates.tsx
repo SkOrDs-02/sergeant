@@ -323,7 +323,7 @@ export function TodayState({
   const metaParts: string[] = [
     `${state.exerciseCount} ${pluralExercises(state.exerciseCount)}`,
   ];
-  if (state.estimatedMin) metaParts.push(`~${state.estimatedMin} хв`);
+  if (state.estimatedMin) metaParts.push(`~${state.estimatedMin}\u202Fхв`);
   if (state.hint) metaParts.push(state.hint);
   return (
     <HeroShell ariaLabel="Сьогоднішнє тренування" cornerSlot={cornerSlot}>
@@ -490,7 +490,7 @@ export function EmptyState({
             onClick={onOpenTemplates}
             className="focus-ring min-h-[44px] w-full rounded-xl text-style-caption font-semibold text-hero-ink underline-offset-4 hover:underline"
           >
-            {state.hasTemplates ? "або із шаблону →" : "або створити шаблон →"}
+            {state.hasTemplates ? "або із шаблону" : "або створити шаблон"}
           </button>
         ) : null}
         <Button
