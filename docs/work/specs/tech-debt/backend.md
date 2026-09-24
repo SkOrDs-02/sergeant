@@ -121,7 +121,7 @@
 
 - **OK** — `validate.ts`, `errorHandler.ts`, `jsonSafe.ts`, barrel `index.ts`. (`asyncHandler.ts` видалено в PR #134.)
 - **`schemas.ts` — OK (post-PR A):** `RefinePhotoSchema` та nutrition/sync/mono/privat схеми **використовуються** у відповідних handler-ах (`validateBody` / `validateQuery`); попередній аудит про розсинхрон — закритий.
-- **`rateLimit.ts` — середній:** in-memory fixed-window ×N при multi-instance (Redis — на майбутнє). `TODO(M9)` ASN-keying — dep-blocked.
+- **`rateLimit.ts`: OK (звірено 2026-09-23).** Лічильники вже в Redis (`getRedis`, `INCRBY`/`EXPIRE` у Lua) з деградацією на Postgres, плюс `ipLimit` і друге, `sustained`-вікно. Запис «in-memory ×N при multi-instance» застарів. Лишається `TODO(M9)` ASN-keying, dep-blocked.
 
 ### `obs/` + `lib/`
 
@@ -148,7 +148,7 @@
 
 ### `modules/chat/coach.ts` + `coach.test.ts`
 
-- **Середній** — `parseMemory` fallback на `raw` без warn; немає тестів на **`coachInsight`** / route-level AI.
+- **Середній** — немає тестів на **`coachInsight`** / route-level AI. (Частина про `parseMemory` без warn застаріла: `getMemory` пише `coach_memory_parse_fallback`, звірено 2026-09-23.)
 - **OK** — `validateBody` для memory POST.
 
 ### `modules/sync/sync.ts` + `sync.test.ts`
@@ -175,7 +175,7 @@
 
 ### `modules/nutrition/food-search.ts` + `food-search.test.ts`
 
-- **Високий / середній** — великий `UK_TO_EN` inline + дубль нормалізації з barcode; часткове покриття **`food-search.test.ts`**.
+- **Середній** — часткове покриття **`food-search.test.ts`**. (Вбудованої таблиці `UK_TO_EN` і дубля нормалізації з barcode вже немає: `food-search.ts` бере спільні `lib/normalizers`, звірено 2026-09-23.)
 
 ### `modules/digest/weekly-digest.ts`
 
@@ -744,8 +744,8 @@ two-phase DROP цього класу змін не покриває.
 
 ### Gaps → PR E
 
-- **Високий** — метрики відсутні на nutrition-handler-ах (лише загальна RED через Express-middleware; немає per-endpoint ms-histogram для AI-викликів з breakdown по endpoint/model/tokens).
-- **Середній** — немає `app_build_info` gauge (version/commit/release) — корисно для readiness-dashboard.
+- ~~**Високий** — метрики відсутні на nutrition-handler-ах~~ ✅ звірено 2026-09-23: AI-гістограми мають мітку `endpoint` (`obs/metrics/domain.ts`), і nutrition-хендлери її передають (`day-plan`, `analyze-photo`, `parse-pantry`, `recommend-recipes`, `refine-photo`).
+- ~~**Середній** — немає `app_build_info` gauge~~ ✅ звірено 2026-09-23: gauge є в `obs/metrics/registry.ts` (див. і пункт про `GIT_SHA` нижче).
 - **Середній** — per-route error-rate не має окремого шардингу на `route_pattern` (зараз `module` label — достатньо для топ-рівня).
 - **Низький** — ✅ закрито 2026-09-02: Sentry release / `app_build_info` беруть `GIT_SHA`, запечений у образ build-arg-ом із `deploy-api.yml`; `RAILWAY_GIT_COMMIT_SHA` знято з усіх каскадів (ADR-0074).
 
