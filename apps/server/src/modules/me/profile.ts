@@ -111,7 +111,7 @@ export async function getUserProfile(
  * Race-safe вибір: транзакція + `SELECT ... FOR UPDATE` на pooled client
  * (той самий ідіом, що `listRoute.ts::deleteMemoryHandler`), а не один
  * атомарний `INSERT ... ON CONFLICT DO UPDATE SET payload = CASE ...`.
- * Причина саме та, на яку вказує задача: порівняння міток часу лишається
+ * Причина: порівняння міток часу лишається
  * в JS (`Date.parse`, ніколи не кидає), а не в SQL-каст `::timestamptz`,
  * який на спотвореному збереженому рядку впав би помилкою просто на
  * звичайному записі профілю. `FOR UPDATE` блокує рядок на час транзакції,
