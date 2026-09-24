@@ -99,6 +99,13 @@ export const opLogEmitter = new SyncOpLogEmitter();
  * Викликається `syncV2Push` після успішного COMMIT-у. `applied` — лише
  * ops зі `status='applied'`, з фінальним `id`/`server_ts`. Rejected
  * рядки в стрім не йдуть, симетрично з `/pull` (status='applied').
+ *
+ * AI-DANGER: живі кадри НЕ проходять вотермарк `SYNC_OP_LOG_COMMITTED_WATERMARK_SQL`.
+ * Вони йдуть у порядку коміту з `op.id` як SSE event id, а серверні оп-и
+ * (`serverOpLog.ts`, імпорт виписки) сюди не потрапляють узагалі. Клієнт,
+ * що візьме `Last-Event-ID` як курсор pull, перескочить оп-и довгої
+ * транзакції назавжди. Споживач (Фаза 3, `sync-client-wiring.md`) мусить
+ * трактувати живий кадр як сигнал «зроби pull», а не як просування курсора.
  */
 export function notifySyncV2OpsApplied(
   userId: string,
