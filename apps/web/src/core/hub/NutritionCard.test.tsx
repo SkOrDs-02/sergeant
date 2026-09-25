@@ -13,6 +13,7 @@ import {
   notifyNutritionSqliteCacheRefresh,
 } from "@nutrition/lib/sqliteReadGate";
 import { localDateKey } from "./hubReports.aggregation";
+import { messages } from "@shared/i18n/uk";
 
 // Build a nutrition log keyed by day with meal kcal so the card has data
 // for the current week. `localDateKey` matches the aggregation day-keys.
@@ -53,7 +54,7 @@ describe("NutritionCard", () => {
     loadNutritionLog.mockReturnValue({});
     render(<NutritionCard period="week" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Калорії/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    expect(screen.getByText(messages.hub.reportEmptyMeals)).toBeInTheDocument();
   });
 
   it("renders the bar chart and supports selecting/deselecting a bar", () => {
@@ -86,13 +87,13 @@ describe("NutritionCard", () => {
     loadNutritionLog.mockReturnValue({});
     render(<NutritionCard period="week" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Калорії/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    expect(screen.getByText(messages.hub.reportEmptyMeals)).toBeInTheDocument();
 
     loadNutritionLog.mockReturnValue(logForToday(1800));
     act(() => {
       notifyNutritionSqliteCacheRefresh();
     });
-    expect(screen.queryByText(/Немає даних/i)).toBeNull();
+    expect(screen.queryByText(messages.hub.reportEmptyMeals)).toBeNull();
     expect(screen.getAllByText(/ккал/i).length).toBeGreaterThan(0);
   });
 });
