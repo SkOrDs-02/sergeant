@@ -26,10 +26,18 @@ import { useAnalytics } from "../hooks/useAnalytics";
 import { CategoryPieChart } from "../components/charts/lazy";
 import { ChartFallback } from "../components/charts/ChartFallback";
 import { MerchantList } from "../components/analytics/MerchantList";
+import { MonthlyTrendBars } from "../components/analytics/MonthlyTrendBars";
+import { CategoryDeltaTable } from "../components/analytics/CategoryDeltaTable";
+import { useMonthlyTrend } from "../hooks/useMonthlyTrend";
 import { getTrendComparison } from "@sergeant/finyk-domain/domain/selectors";
+import {
+  getCategoryDeltas,
+  getSavingsRate,
+} from "@sergeant/finyk-domain/domain/trends";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type {
+  Category,
   Transaction,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
@@ -39,6 +47,7 @@ import {
 } from "../../../core/observability/analytics";
 import { markFinykAnalyticsViewed } from "../../../core/onboarding/useChecklistSignals";
 import { formatMonthYear } from "@shared/lib/time/formatDate";
+import { NARROW_NBSP } from "@sergeant/shared";
 
 interface SectionProps {
   title: string;
@@ -73,6 +82,10 @@ export interface AnalyticsProps {
     excludedTxIds: Set<string> | Iterable<string>;
     txSplits: TxSplitsMap;
     manualExpenses?: ManualExpense[];
+    txCategories?: Record<string, string | undefined>;
+    customCategories?: Category[];
+    /** Фінплан: план накопичень ставиться поруч із фактом (Р15). */
+    monthlyPlan?: { savings?: string | number };
   };
   /**
    * Дрил-даун із кільця категорій у список операцій. Саме він робить
@@ -449,6 +462,32 @@ export function Analytics({
     storage.txSplits,
   ]);
 
+  const trend = useMonthlyTrend(storage);
+
+  const categoryDeltas = useMemo(
+    () =>
+      comparison && comparison.prevTxCount > 0
+        ? getCategoryDeltas(activeTx, prevTx, {
+            excludedTxIds: storage.excludedTxIds,
+            txSplits: storage.txSplits,
+            txCategories: storage.txCategories ?? {},
+            customCategories: storage.customCategories ?? [],
+          })
+        : [],
+    [
+      comparison,
+      activeTx,
+      prevTx,
+      storage.excludedTxIds,
+      storage.txSplits,
+      storage.txCategories,
+      storage.customCategories,
+    ],
+  );
+
+  const savingsRate = getSavingsRate(summary.incomeMinor, summary.spentMinor);
+  const plannedSavings = Number(storage.monthlyPlan?.savings) || 0;
+
   const pageLoading =
     (isCurrentMonth ? mono.loadingTx : loading) && activeTx.length === 0;
 
@@ -550,6 +589,24 @@ export function Analytics({
               </div>
             </div>
           )}
+          {/* Р15: при доході 0 рядка немає зовсім, «0 %» було б неправдою. */}
+          {!pageLoading && savingsRate !== null && (
+            <div className="mt-4 pt-3 border-t border-line text-sm text-muted space-y-0.5">
+              <p>
+                {savingsRate >= 0
+                  ? `Відкладено ${Math.round(savingsRate)}${NARROW_NBSP}% доходу`
+                  : `Витрати перевищили дохід на ${Math.round(-savingsRate)}${NARROW_NBSP}%`}
+              </p>
+              {plannedSavings > 0 && showBalance && (
+                <p>
+                  План відкласти <Money amount={plannedSavings} />, вийшло{" "}
+                  <Money
+                    amount={(summary.incomeMinor - summary.spentMinor) / 100}
+                  />
+                </p>
+              )}
+            </div>
+          )}
         </Section>
 
         {/* Comparison */}
@@ -602,6 +659,26 @@ export function Analytics({
             </Suspense>
           )}
         </Section>
+
+        {trend.points.length > 0 && (
+          <Section title="Витрати за місяцями">
+            <MonthlyTrendBars
+              points={trend.points}
+              averageMinor={trend.averageMinor}
+              perDayMinor={trend.perDayMinor}
+              showBalance={showBalance}
+            />
+          </Section>
+        )}
+
+        {categoryDeltas.length > 0 && (
+          <Section title="Категорії проти минулого місяця">
+            <CategoryDeltaTable
+              rows={categoryDeltas}
+              showBalance={showBalance}
+            />
+          </Section>
+        )}
 
         {/* Merchants */}
         <Section title="Топ продавці">

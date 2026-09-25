@@ -396,4 +396,24 @@ export const finykPageMessages = {
       "Найдовший проміжок без списань: {n} {unit}, з {from}-го по {to}-е.",
     incomeSpoken: "Регулярні надходження: {days} числа.",
   },
+  // Аналітика v2, фаза 2 (Р11-Р14): стовпці витрат за місяцями. Сума
+  // стоїть між префіксом і суфіксом як `<Money>`, тому рядок розрізаний.
+  monthlyTrend: {
+    listLabel: "Витрати за місяцями",
+    hiddenAmount: "суму приховано",
+    monthInProgress: "місяць ще триває",
+    shortHistory: "Ведеш з {month}: тренд стане корисним після трьох місяців",
+    averagePrefix: "У середньому",
+    averageSuffix: "на місяць",
+    perDayPrefix: "Цього місяця",
+    perDaySuffix: "на день",
+    categorySuffix: "за місяцями",
+  },
+  // Р12: таблиця «категорія · минулий · цей · зміна».
+  categoryDeltas: {
+    category: "Категорія",
+    previous: "Минулий",
+    current: "Цей",
+    change: "Зміна",
+  },
 } as const;
