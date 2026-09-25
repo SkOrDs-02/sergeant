@@ -147,8 +147,13 @@ const variants: Record<ButtonVariantLegacy, string> = {
   // Налаштування — `core/settings/settingsActionButtonVariants.test.ts`.
   ghost:
     "bg-transparent text-muted hover:bg-panelHi hover:text-text active:bg-line/50",
+  // Темна тема: `--c-danger-soft` там суцільний red-800 (його беруть і
+  // банери помилок), тож soft-кнопка ставала насиченим червоним блоком і
+  // «Видалити» важило більше за головну дію (критика екранів, хвиля 3).
+  // Заливку ведемо тією ж конвенцією, що й soft-варіанти модулів: акцент
+  // на низькій прозорості, текст лишається `danger-soft-fg`.
   danger:
-    "bg-danger-soft text-danger-soft-fg border border-danger/30 hover:bg-danger/15 hover:border-danger/50 active:scale-[0.98]",
+    "bg-danger-soft text-danger-soft-fg border border-danger/30 hover:bg-danger/15 hover:border-danger/50 active:scale-[0.98] dark:bg-danger/15 dark:border-danger/40 dark:hover:bg-danger/25",
   destructive:
     "bg-danger-strong text-white shadow-sm hover:brightness-110 hover:shadow-[0_0_0_3px_rgba(239,68,68,0.15)] active:scale-[0.98]",
   success:
