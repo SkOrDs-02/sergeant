@@ -233,7 +233,14 @@ export interface PeriodComparison extends TrendComparison {
 
 /** Елемент топу мерчантів. */
 export interface MerchantStat {
+  /** Ключ мерчанта (`normalizeMerchantKey`), за ним зводиться дельта. */
+  key: string;
   name: string;
   count: number;
+  /** Гривні, округлені для показу. */
   total: number;
+  /** Точна сума, копійки. */
+  totalMinor: number;
+  /** Дельта до минулого місяця (Р17); `null`, коли порівнювати нема з чим. */
+  delta?: AmountDelta | null;
 }
