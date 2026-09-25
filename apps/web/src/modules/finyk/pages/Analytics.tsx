@@ -439,6 +439,7 @@ export function Analytics({
     useAnalytics({
       mono: analyticsMono,
       storage,
+      prevTx: prevKey in monthCache ? prevTx : null,
     });
 
   const comparison = useMemo(() => {

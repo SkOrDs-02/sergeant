@@ -2,13 +2,13 @@ import { useMemo } from "react";
 import {
   getMonthlySummary,
   getMonthlySpendSeries,
-  getTopMerchants,
   getTrendComparison,
   computeCategorySpendIndex,
   selectTopCategoriesFromIndex,
   selectCategoryDistributionFromIndex,
   type MonthlyHistoryEntry,
 } from "@sergeant/finyk-domain/domain/selectors";
+import { getTopMerchantsWithDelta } from "@sergeant/finyk-domain/domain/trends";
 import type {
   Category,
   Transaction,
@@ -24,6 +24,8 @@ interface UseAnalyticsArgs {
     customCategories?: Category[];
   };
   monthlyHistory?: readonly MonthlyHistoryEntry[];
+  /** Попередній місяць для дельти мерчантів (Р17); `null`, доки не завантажений. */
+  prevTx?: readonly Transaction[] | null;
 }
 
 // Central analytics hook for Finyk. All derived views are memoized so a
@@ -33,6 +35,7 @@ export function useAnalytics({
   mono,
   storage,
   monthlyHistory = [],
+  prevTx = null,
 }: UseAnalyticsArgs) {
   const { realTx = [], loadingTx } = mono;
   const { excludedTxIds, txCategories, txSplits, customCategories } = storage;
@@ -97,14 +100,15 @@ export function useAnalytics({
   // Cache: top merchants by total spend. Depends on tx list + excludedTxIds
   // + txSplits — сплітовані транзакції (напр. оренда з поверненнями) вже
   // нормалізуються до чистої частки користувача, щоб цифри збігалися з
-  // "Підсумком місяця" та "Категоріями".
+  // "Підсумком місяця" та "Категоріями". Дельта до минулого місяця за
+  // ключем мерчанта (Р17).
   const topMerchants = useMemo(
     () =>
-      getTopMerchants(realTx, {
+      getTopMerchantsWithDelta(realTx, prevTx, {
         excludedTxIds: excludedTxIds ?? undefined,
         txSplits,
       }),
-    [realTx, excludedTxIds, txSplits],
+    [realTx, prevTx, excludedTxIds, txSplits],
   );
 
   // Cache: monthly spend/income series for sparkline-style charts.
