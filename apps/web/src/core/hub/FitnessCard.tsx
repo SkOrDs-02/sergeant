@@ -26,6 +26,7 @@ import {
 import { useHubStorageBump } from "./useHubStorageBump";
 import { useFizrukSqliteReadTick } from "../../modules/fizruk/lib/sqliteReadGate";
 import { formatNumberUk } from "@sergeant/shared";
+import { messages } from "@shared/i18n/uk";
 
 // ── Local sub-components (shared pattern, duplicated per card to keep
 //    each card's chunk self-contained — no cross-card coupling) ───────

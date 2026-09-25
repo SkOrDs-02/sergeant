@@ -77,3 +77,14 @@
 
 - Коміт `6d3810fdd` (2026-07-30), той самий вміст у `oldgh/codex/repository-simplification` як `e3d0f4fe9`.
 - Аудит документації 2026-09-23, знахідка DG-15: [`2026-09-23-docs-governance-audit.md`](../../work/specs/audits/2026-09-23-docs-governance-audit.md).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                   | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket | 2026-09-23 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-09-24
  * Status: Active
  */
 import {
@@ -55,7 +55,10 @@ interface MonthNavProps {
 interface ComparisonRowProps {
   label: string;
   current: number;
-  prev: number;
+  /** Абсолютна дельта в гривнях, з домену. */
+  diff: number;
+  /** Відсоток з точних сум або `null`, коли попередній місяць не база (Р4). */
+  pct: number | null;
   kind?: "expense" | "income";
   showBalance?: boolean;
 }
@@ -157,17 +160,17 @@ const MonthNav = memo(function MonthNav({
 // Рядок порівняння метрики з попереднім місяцем. Чиста функція від пропсів —
 // memo знімає перерендер при оновленнях сусідніх секцій Analytics.
 // `kind` визначає семантику знаку: для "expense" зростання — погано
-// (червоне), для "income" — добре (зелене).
+// (червоне), для "income" — добре (зелене). Формули тут немає: дельту й
+// відсоток дає `getTrendComparison` з точних копійок (Р4 спеки аналітики
+// v2); коли відсоток не має бази, показуємо абсолютну дельту в гривнях.
 const ComparisonRow = memo(function ComparisonRow({
   label,
   current,
-  prev,
+  diff,
+  pct,
   kind = "expense",
   showBalance = true,
 }: ComparisonRowProps) {
-  const diff = current - prev;
-  const pct = prev > 0 ? Math.round((diff / prev) * 100) : null;
-
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted">{label}</span>
@@ -177,13 +180,14 @@ const ComparisonRow = memo(function ComparisonRow({
         ) : (
           <span className="text-text font-medium">••••</span>
         )}
-        {showBalance && prev > 0 && pct !== null && (
+        {showBalance && (pct !== null || diff !== 0) && (
           /* Полярність задає `kind`, а не знак: зростання доходу — добре,
              зростання витрат — ні. Рівно те розділення, заради якого
-             `Delta` бере `polarity` окремим пропом. */
+             `Delta` бере `polarity` окремим пропом. Нуль проти нуля (дохід
+             у двох місяцях без записів) дельти не має, рядок мовчить. */
           <Delta
-            value={pct}
-            symbol="%"
+            value={pct === null ? diff : Math.round(pct)}
+            symbol={pct === null ? "₴" : "%"}
             polarity={kind === "income" ? "positive" : "negative"}
             className="text-style-caption font-normal"
           />
@@ -430,12 +434,9 @@ export function Analytics({
       excludedTxIds: storage.excludedTxIds,
       txSplits: storage.txSplits,
     });
-    if (
-      c.currentSpent === 0 &&
-      c.prevSpent === 0 &&
-      c.currentIncome === 0 &&
-      c.prevIncome === 0
-    ) {
+    // Обидва місяці порожні: порівнювати нема що і нема з чим. Коли записи
+    // є лише в поточному, секція каже «Немає з чим порівняти» (Р4).
+    if (c.prevTxCount === 0 && c.currentSpent === 0 && c.currentIncome === 0) {
       return null;
     }
     return c;
@@ -554,21 +555,27 @@ export function Analytics({
         {/* Comparison */}
         {comparison && (
           <Section title="Порівняння з попереднім місяцем">
-            <div className="space-y-2">
-              <ComparisonRow
-                label="Витрати"
-                current={comparison.currentSpent}
-                prev={comparison.prevSpent}
-                showBalance={showBalance}
-              />
-              <ComparisonRow
-                label="Дохід"
-                current={comparison.currentIncome}
-                prev={comparison.prevIncome}
-                kind="income"
-                showBalance={showBalance}
-              />
-            </div>
+            {comparison.prevTxCount === 0 ? (
+              <p className="text-sm text-muted">Немає з чим порівняти</p>
+            ) : (
+              <div className="space-y-2">
+                <ComparisonRow
+                  label="Витрати"
+                  current={comparison.currentSpent}
+                  diff={comparison.diff}
+                  pct={comparison.diffPct}
+                  showBalance={showBalance}
+                />
+                <ComparisonRow
+                  label="Дохід"
+                  current={comparison.currentIncome}
+                  diff={comparison.incomeDiff}
+                  pct={comparison.incomeDiffPct}
+                  kind="income"
+                  showBalance={showBalance}
+                />
+              </div>
+            )}
           </Section>
         )}
 

@@ -1,14 +1,16 @@
 /* eslint-disable sergeant-design/no-raw-storage-key --
    Cold-cache fallback читає retired finyk-ключі
    (finyk_hidden_txs / finyk_tx_cats / finyk_recv / finyk_excluded_stat_txs /
-   finyk_tx_splits / finyk_custom_cats_v1) напряму — це і є призначення
-   модуля: дашбордні агрегатори працюють поза mounted-хуком useStorage.
-   Канонічне джерело — SQLite (див. AI-CONTEXT нижче); LS лишається лише на
-   перший кадр, поки кеш холодний. Ключі в burn-down 2026-Q3. */
+   finyk_tx_splits / finyk_custom_cats_v1 / finyk_budgets) напряму — це і є
+   призначення модуля: дашбордні агрегатори працюють поза mounted-хуком
+   useStorage. Канонічне джерело — SQLite (див. AI-CONTEXT нижче); LS
+   лишається лише на перший кадр, поки кеш холодний. Ключі в burn-down
+   2026-Q3. */
 import {
   buildFinykExcludedTxIds,
   buildFinykSpendingUniverse,
 } from "@sergeant/finyk-domain";
+import type { Budget } from "@sergeant/finyk-domain/domain/types";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import { getVisibleFinykMonoMirrorState } from "./monoMirrorReader";
 import { getCachedFinykSqliteState } from "./sqliteReader";
@@ -42,6 +44,7 @@ interface FinykPrefsSources {
   excludedStatTxIds: string[];
   txSplits: Record<string, unknown>;
   customCategories: CategoryLike[];
+  budgets: Budget[];
 }
 
 function asObject<T extends object>(value: unknown, fallback: T): T {
@@ -66,6 +69,7 @@ function readFinykPrefsSources(): FinykPrefsSources {
       excludedStatTxIds: cache.excludedStatTxIds ?? [],
       txSplits: cache.txSplits as Record<string, unknown>,
       customCategories: cache.customCategories as CategoryLike[],
+      budgets: cache.budgets,
     };
   }
   return {
@@ -87,6 +91,7 @@ function readFinykPrefsSources(): FinykPrefsSources {
     customCategories: asArray<CategoryLike>(
       safeReadLS<CategoryLike[]>("finyk_custom_cats_v1", []),
     ),
+    budgets: asArray<Budget>(safeReadLS<Budget[]>("finyk_budgets", [])),
   };
 }
 
@@ -153,9 +158,12 @@ interface CategoryLike {
 export interface FinykStatsContext {
   txs: BankTxLike[];
   excludedTxIds: Set<string>;
+  /** Лише приховані користувачем; `excludedTxIds` вже містить їх. */
+  hiddenTxIds: string[];
   txSplits: Record<string, unknown>;
   txCategories: Record<string, string>;
   customCategories: CategoryLike[];
+  budgets: Budget[];
 }
 
 export function readFinykStatsContext(): FinykStatsContext {
@@ -179,8 +187,10 @@ export function readFinykStatsContext(): FinykStatsContext {
     // (`categoryId`/`type` === переказ) — саме тому він рахується з
     // `universe`, а не окремим викликом на самих лише ключах.
     excludedTxIds: universe.excludedTxIds,
+    hiddenTxIds: prefs.hiddenTxIds,
     txSplits: prefs.txSplits,
     txCategories: prefs.txCategories,
     customCategories: prefs.customCategories,
+    budgets: prefs.budgets,
   };
 }

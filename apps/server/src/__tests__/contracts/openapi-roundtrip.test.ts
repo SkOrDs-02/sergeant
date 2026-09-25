@@ -18,6 +18,14 @@ const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
   return { mockPool, queryMock, getSessionUserMock };
 });
 
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; тест його не мокає, тож без заглушки маршрут падав у 500 або
+// з'їдав чужі `mockResolvedValueOnce`.
+vi.mock("../../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
+}));
+
 vi.mock("../../db.js", () => ({
   default: mockPool,
   pool: mockPool,

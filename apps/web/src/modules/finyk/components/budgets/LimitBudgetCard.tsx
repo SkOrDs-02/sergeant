@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-21
+ * Last validated: 2026-09-24
  * Status: Active
  */
 import { memo, useId, useState } from "react";
@@ -120,7 +120,7 @@ function LimitBudgetCardComponent({
     <span className={cn("tabular-nums whitespace-nowrap", amountTone)}>
       {showBalance ? (
         <>
-          {formatNumberUk(spent)} / {formatNumberUk(budget.limit)}
+          {formatNumberUk(Math.round(spent))} / {formatNumberUk(budget.limit)}
           {NARROW_NBSP}₴
         </>
       ) : (
@@ -285,8 +285,11 @@ function LimitBudgetCardComponent({
             {!showBalance ? (
               "••••"
             ) : overLimit ? (
+              /* З копійками навмисно: суму перевищення людина звіряє з
+                 записами, це регістр звірки, а не аналітики (канон § 6.1,
+                 рішення 2026-09-24). */
               <>
-                Перевищено на <Money amount={spent - budget.limit} />
+                Перевищено на <Money amount={spent - budget.limit} kopecks />
               </>
             ) : (
               <>

@@ -77,6 +77,9 @@ for (const routeCase of ROUTES) {
   test(`sweep ${routeCase.id} ${routeCase.path}`, async ({
     page,
   }, testInfo) => {
+    // Сід наповненого акаунта сам по собі 25-60 с, а на холодному
+    // dev-сервері перший маршрут ще й трансформує всі модулі.
+    if (process.env["SWEEP_RICH"] === "1") test.setTimeout(180_000);
     const consoleErrors: string[] = [];
     const consoleWarnings: string[] = [];
     const pageErrors: string[] = [];
@@ -101,7 +104,20 @@ for (const routeCase of ROUTES) {
     });
 
     await mockApi(page);
-    await seedFTUX(page, routeCase.seed ?? "post-ftux");
+    await seedFTUX(page, routeCase.seed ?? "post-ftux", {
+      theme: process.env["SWEEP_THEME"] === "dark" ? "dark" : "light",
+    });
+    // Кнопка React Query Devtools живе лише в DEV, але на Pixel 5 лягає на
+    // першу вкладку таб-бару й потрапляє в кожен кадр як «частина продукту».
+    await page.addInitScript(() => {
+      const hide = () => {
+        const style = document.createElement("style");
+        style.textContent = ".tsqd-open-btn-container{display:none!important}";
+        document.head.append(style);
+      };
+      if (document.head) hide();
+      else document.addEventListener("DOMContentLoaded", hide, { once: true });
+    });
     // SWEEP_RICH=1: наповнений акаунт (хвиля 2 критики). Cold і pre-ftux
     // кадри лишаються порожніми: там сідити нічого.
     const richSeed =

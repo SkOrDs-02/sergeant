@@ -12,10 +12,7 @@ import type {
   Transaction,
   LimitBudget,
 } from "@sergeant/finyk-domain/domain/types";
-import {
-  useBudgetOverrunInsight,
-  OVERRUN_THRESHOLD,
-} from "./useBudgetOverrunInsight";
+import { useBudgetOverrunInsight } from "./useBudgetOverrunInsight";
 
 /**
  * Minimal transaction factory. `amount` is in kopecks (negative = expense).
@@ -88,10 +85,9 @@ describe("useBudgetOverrunInsight", () => {
     expect(result.current).toBeNull();
   });
 
-  it("returns null when spend is below the overrun threshold", () => {
-    // Limit 1000 UAH; spend exactly at threshold (110%) would fire, but
-    // we stay just below: 109% = 1090 UAH = 109 000 kopecks.
-    const tx = mkTx("t1", -109_000);
+  it("returns null while the limit is not exceeded", () => {
+    // Limit 1000 UAH; 99% = 990 UAH = 99 000 kopecks stays under `overLimit`.
+    const tx = mkTx("t1", -99_000);
     const { result } = renderHook(() =>
       useBudgetOverrunInsight({
         budgets: [mkBudget("b1", "food", 1000)],
@@ -100,8 +96,23 @@ describe("useBudgetOverrunInsight", () => {
         txSplits: {},
       }),
     );
-    // ratio = 1090 / 1000 = 1.09 < OVERRUN_THRESHOLD (1.1) → null
     expect(result.current).toBeNull();
+  });
+
+  it("fires from exactly 100%, the same `overLimit` the Planning card uses", () => {
+    // Р5 (spec finyk-analytics-v2): the former 110% margin let the Planning
+    // card say «Перевищено» while the hub stayed silent and «Закрито
+    // сьогодні» claimed «перевищень немає».
+    const tx = mkTx("t1", -100_000);
+    const { result } = renderHook(() =>
+      useBudgetOverrunInsight({
+        budgets: [mkBudget("b1", "food", 1000)],
+        transactions: [tx],
+        txCategories: { t1: "food" },
+        txSplits: {},
+      }),
+    );
+    expect(result.current!.title).toContain("використано 100% ліміту");
   });
 
   it("fires an insight when spend exceeds the overrun threshold", () => {
@@ -185,11 +196,5 @@ describe("useBudgetOverrunInsight", () => {
     // Only June's 1 200 UAH counts → 120% of the limit, not 620%.
     expect(result.current).not.toBeNull();
     expect(result.current!.title).toContain("використано 120% ліміту");
-  });
-
-  it("OVERRUN_THRESHOLD is exported and equals 1.1", () => {
-    // Guard the public constant so a refactor can't silently change the
-    // trigger level without updating this test.
-    expect(OVERRUN_THRESHOLD).toBe(1.1);
   });
 });
