@@ -126,6 +126,25 @@ describe("finyk/recurringDetect", () => {
       expect(detectRecurring([])).toEqual([]);
     });
 
+    // §7.1 спеки аналітики v2: два списання Netflix 199 з інтервалом 30
+    // днів уже дають кандидата «щомісяця» з сумою й днем останнього.
+    it("two Netflix 199 charges 30 days apart make a monthly candidate", () => {
+      const out = detectRecurring(
+        [
+          tx({ id: "n1", time: baseTwo }),
+          tx({ id: "n2", time: baseTwo + 30 * DAY }),
+        ],
+        { nowSec: now },
+      );
+      expect(out).toHaveLength(1);
+      expect(out[0]).toMatchObject({
+        key: "netflix",
+        cadence: "monthly",
+        avgAmount: 199,
+        billingDay: new Date((baseTwo + 30 * DAY) * 1000).getDate(),
+      });
+    });
+
     it("detects monthly cadence with stable amount (4 occurrences → high)", () => {
       const base = baseFour;
       const txs: RecurringTx[] = [
