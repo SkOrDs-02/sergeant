@@ -1,7 +1,7 @@
 import { getExpenseCategoryForTransaction } from "../utils";
 import { toLocalISODate } from "@sergeant/shared";
 import { INTERNAL_TRANSFER_ID } from "../constants";
-import { getCurrentMonthContext } from "../domain/budget";
+import { getCurrentMonthContext, projectMonthEndSpend } from "../domain/budget";
 import type { Category, TxCategoriesMap, TxSplitsMap } from "../domain/types";
 
 /** Мінімальний набір полів транзакції, потрібних прогнозу. */
@@ -122,17 +122,22 @@ export function calcForecast(
     const { categoryId, limit } = budget;
 
     // Sum actual spent per day for this category
-    let spent = 0;
+    let rawSpent = 0;
     const dailyActuals: Record<string, number> = {};
     for (const [dayKey, cats] of Object.entries(dailySpending)) {
       const amt = cats[categoryId] || 0;
       dailyActuals[dayKey] = amt;
-      spent += amt;
+      rawSpent += amt;
     }
-    spent = Math.round(spent);
+    const spent = Math.round(rawSpent);
 
-    const avgPerDay = spent / daysElapsed;
-    const forecast = Math.round(spent + avgPerDay * daysRemaining);
+    // Темп і прогноз — з точної суми (Р7 спеки аналітики v2), тією самою
+    // формулою, що й картки лімітів у web. Мобільний графік малює прогноз
+    // з першого дня, тож поріг дня тут 1, а не MIN_FORECAST_DAY.
+    const avgPerDay = rawSpent / daysElapsed;
+    const forecast = Math.round(
+      projectMonthEndSpend(rawSpent, daysElapsed, daysInMonth, 1) ?? rawSpent,
+    );
 
     const overLimit = limit > 0 && forecast > limit;
     const overPercent = overLimit
@@ -156,7 +161,9 @@ export function calcForecast(
           forecast: null,
         });
       } else {
-        const projectedCum = Math.round(spent + avgPerDay * (d - dayOfMonth));
+        const projectedCum = Math.round(
+          rawSpent + avgPerDay * (d - dayOfMonth),
+        );
         dailyData.push({
           day: d,
           dayKey,

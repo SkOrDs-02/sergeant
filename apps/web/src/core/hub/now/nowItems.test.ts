@@ -83,6 +83,7 @@ describe("mergeNowItems — близнюки", () => {
       "routine-todo-evening": 65,
       "fizruk-rest-day-overdue": 85,
       "finyk-budget-overrun-": 90,
+      "finyk-budget-pace-": 60,
     };
     for (const twin of REC_INSIGHT_TWINS) {
       expect(insightPriority(twin.insight + "x")).toBe(

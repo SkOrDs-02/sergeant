@@ -20,8 +20,9 @@
  *
  * Returns up to 3 Insight objects in priority order:
  *   1. budget-overrun  — actionable today
- *   2. coffee-limit    — MoM trend
- *   3. recurring       — discovery
+ *   2. budget-pace     — a limit the pace will break (other categories only)
+ *   3. coffee-limit    — MoM trend
+ *   4. recurring       — discovery
  *
  * `showOn` filtering uses the same condition as `useAllInsights` (its
  * only current reader). Defaults to `surface: "hub"`, the sole
@@ -35,6 +36,7 @@ import { useFinykMonoMirrorTick } from "../lib/monoMirrorGate";
 import { useFinykStorageSlots } from "./useFinykStorageSlots";
 import { useCoffeeLimitInsight } from "./useCoffeeLimitInsight";
 import { useBudgetOverrunInsight } from "./useBudgetOverrunInsight";
+import { useBudgetPaceInsight } from "./useBudgetPaceInsight";
 import { useRecurringDetectedInsight } from "./useRecurringDetectedInsight";
 import type { Insight } from "@shared/lib/insights/types";
 import {
@@ -111,6 +113,16 @@ export function useFinykInsights(
     customCategories: slots.customCategories,
   });
 
+  // Попередження до перевищення (Р9): той самий прохід `calcLimitUsages`,
+  // тож для однієї категорії ніколи не стоїть поруч із карткою перевищення.
+  const paceInsight = useBudgetPaceInsight({
+    budgets: slots.budgets,
+    transactions: statTransactions,
+    txCategories: slots.txCategories,
+    txSplits: slots.txSplits,
+    customCategories: slots.customCategories,
+  });
+
   const coffeeInsight = useCoffeeLimitInsight({
     transactions: statTransactions,
     txCategories: slots.txCategories,
@@ -128,6 +140,7 @@ export function useFinykInsights(
   return useMemo((): Insight[] => {
     const candidates: Array<Insight | null> = [
       overrunInsight,
+      paceInsight,
       coffeeInsight,
       recurringInsight,
     ];
@@ -137,5 +150,5 @@ export function useFinykInsights(
         surface === "hub" ? i.showOn !== "module" : i.showOn !== "hub",
       )
       .slice(0, MAX_VISIBLE);
-  }, [overrunInsight, coffeeInsight, recurringInsight, surface]);
+  }, [overrunInsight, paceInsight, coffeeInsight, recurringInsight, surface]);
 }

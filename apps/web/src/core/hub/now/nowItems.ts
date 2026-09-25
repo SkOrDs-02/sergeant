@@ -89,6 +89,8 @@ export const INSIGHT_PRIORITY: ReadonlyArray<
   ["nutrition-protein-low", 68],
   // = `routine_evening_reminder`.
   ["routine-todo-evening", 65],
+  // = `budget_warn_<cat>`: попередження про ліміт, ще не перевищений.
+  ["finyk-budget-pace-", 60],
   // Святкування тижня — може почекати; над `budget_warn_*` 60 не лізе.
   ["nutrition-streak-7-days-", 60],
   // Інформаційно, тренд місяця.
@@ -127,6 +129,9 @@ export const REC_INSIGHT_TWINS: ReadonlyArray<{
   { rec: "routine_evening_reminder", insight: "routine-todo-evening" },
   { rec: "fizruk_long_break", insight: "fizruk-rest-day-overdue" },
   { rec: "budget_over_", insight: "finyk-budget-overrun-", parametric: true },
+  // «Майже вичерпано» (≥90 %) і «за темпом перевищиш» про той самий ліміт —
+  // одне попередження, не два рядки поспіль.
+  { rec: "budget_warn_", insight: "finyk-budget-pace-", parametric: true },
 ];
 
 function isTwin(rec: Rec, insight: Insight): boolean {
