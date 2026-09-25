@@ -62,8 +62,8 @@ export default function PrivacyPage() {
         Це політика сайту. Про дані всередині застосунку коротко: токен Monobank
         – лише читання і зберігається зашифрованим; я не продаю і не передаю
         твої дані нікому. {EXPORT_CLAIM} Повна мапа доступів – що бачить
-        банківський токен, куди їдуть фото чеків, як працює AI-помічник –
-        зібрана на сторінці{" "}
+        банківський токен, куди їдуть фото чеків, як працює Сержант – зібрана на
+        сторінці{" "}
         <a
           href="/data"
           className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
