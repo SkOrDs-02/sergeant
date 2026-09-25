@@ -91,7 +91,7 @@ export function useMonoTokenMigration(isLoggedIn: boolean): void {
         });
 
         toast.success(
-          "Monobank перепідключено: нові транзакції приходитимуть самі",
+          "Monobank перепідключено: нові операції приходитимуть самі",
         );
       } catch {
         // Migration failed — keep legacy token, user can retry manually

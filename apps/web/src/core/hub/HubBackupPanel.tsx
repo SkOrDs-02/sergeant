@@ -177,8 +177,8 @@ export function HubBackupPanel({ className }: HubBackupPanelProps) {
         Резервна копія всього Hub (Фінік, Фізрук, Рутина, Їжа) у JSON-файл.
       </p>
       <p className="leading-relaxed text-style-body">
-        Токен Monobank і кеш транзакцій не входять у файл, після імпорту
-        підключи рахунок знову в Фініку.
+        Токен Monobank і кеш операцій не входять у файл, після імпорту підключи
+        рахунок знову в Фініку.
       </p>
       <p className="leading-relaxed text-style-body">
         Ідентифікатори акаунта прибираю автоматично, але файл усе одно містить

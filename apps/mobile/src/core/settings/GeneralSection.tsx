@@ -454,7 +454,7 @@ export function GeneralSection() {
         <Card variant="flat" radius="md" padding="md">
           <Text className="text-xs text-fg-muted leading-relaxed mb-3">
             Резервна копія всього Hub (Фінік, Фізрук, Рутина, Харчування). Токен
-            Monobank і кеш транзакцій не входять у файл.
+            Monobank і кеш операцій не входять у файл.
           </Text>
           <View className="flex-row flex-wrap gap-2">
             <Button

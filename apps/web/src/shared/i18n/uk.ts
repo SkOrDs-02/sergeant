@@ -166,7 +166,7 @@ export const messages = {
     // Цей каталог покриває inline-tier порожніх станів поза <EmptyState>.
     nothingYet: "Поки що порожньо",
     noDataYet: "Ще немає даних",
-    nothingFound: "Нічого не знайдено",
+    nothingFound: "Нічого не знайшов",
     listEmpty: "Список порожній",
     historyEmpty: "Історія порожня",
   },
@@ -302,7 +302,7 @@ export const messages = {
     connecting: "Підключаюсь…",
     // Module-/surface-specific варіації (поки що використовуються лише
     // в одному місці кожна, але живуть тут заради unified voice).
-    loadingTransactions: "Завантажую транзакції…",
+    loadingTransactions: "Завантажую операції…",
     loadingWorkouts: "Завантажую тренування",
   },
 

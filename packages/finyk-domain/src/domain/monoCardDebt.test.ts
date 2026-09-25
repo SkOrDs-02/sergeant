@@ -82,7 +82,7 @@ describe("sumMonoCardPaid", () => {
     expect(sumMonoCardPaid(transactions, [], CARD)).toBe(0);
   });
 
-  it("порожній набір транзакцій дає нуль, а не падіння", () => {
+  it("порожній набір операцій дає нуль, а не падіння", () => {
     expect(sumMonoCardPaid([], ["topup"], CARD)).toBe(0);
   });
 });

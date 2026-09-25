@@ -300,7 +300,7 @@ export function Analytics({
           // чесний «0 ₴».
           setFetchErrors((prev) => ({
             ...prev,
-            [key]: "Не вдалось завантажити транзакції",
+            [key]: "Не вдалось завантажити операції",
           }));
         })
         .finally(() => {

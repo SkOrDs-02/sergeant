@@ -44,7 +44,7 @@ describe("debtAutoLink — авто-привʼязка за ключовим с�
     expect(matches).toEqual(["tx2"]);
   });
 
-  it("anti-resurrection: відвʼязана транзакція не повертається матчером", () => {
+  it("anti-resurrection: відвʼязана операція не повертається матчером", () => {
     const debt = {
       autoLinkKeyword: "кредит",
       linkedTxIds: [] as string[],

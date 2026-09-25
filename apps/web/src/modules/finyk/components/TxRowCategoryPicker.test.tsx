@@ -175,7 +175,7 @@ describe("TxRowCategoryPicker — телеметрія категоризаці�
   });
 });
 
-describe("TxRowCategoryPicker — нотатка транзакції", () => {
+describe("TxRowCategoryPicker — нотатка операції", () => {
   beforeEach(() => {
     vi.clearAllMocks();
     resetSignalAttribution();
@@ -186,7 +186,7 @@ describe("TxRowCategoryPicker — нотатка транзакції", () => {
   it("зберігає нотатку на blur", () => {
     const { onNoteChange } = renderPicker();
 
-    const input = screen.getByLabelText("Нотатка до транзакції");
+    const input = screen.getByLabelText("Нотатка до операції");
     fireEvent.change(input, { target: { value: "Оплата за друга" } });
     fireEvent.blur(input);
 
@@ -196,7 +196,7 @@ describe("TxRowCategoryPicker — нотатка транзакції", () => {
   it("зберігає нотатку на Enter", () => {
     const { onNoteChange } = renderPicker();
 
-    const input = screen.getByLabelText("Нотатка до транзакції");
+    const input = screen.getByLabelText("Нотатка до операції");
     fireEvent.change(input, { target: { value: "Кава з колегою" } });
     fireEvent.keyDown(input, { key: "Enter" });
 
@@ -206,7 +206,7 @@ describe("TxRowCategoryPicker — нотатка транзакції", () => {
   it("не викликає onNoteChange, якщо текст не змінився", () => {
     const { onNoteChange } = renderPicker({ note: "Незмінна нотатка" });
 
-    const input = screen.getByLabelText("Нотатка до транзакції");
+    const input = screen.getByLabelText("Нотатка до операції");
     fireEvent.blur(input);
 
     expect(onNoteChange).not.toHaveBeenCalled();
@@ -215,7 +215,7 @@ describe("TxRowCategoryPicker — нотатка транзакції", () => {
   it("порожня нотатка на blur = видалення (null value)", () => {
     const { onNoteChange } = renderPicker({ note: "Стара нотатка" });
 
-    const input = screen.getByLabelText("Нотатка до транзакції");
+    const input = screen.getByLabelText("Нотатка до операції");
     fireEvent.change(input, { target: { value: "" } });
     fireEvent.blur(input);
 

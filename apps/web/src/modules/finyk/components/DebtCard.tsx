@@ -156,7 +156,7 @@ function DebtCardComponent({
           onClick={onLink}
           className="mt-3 w-full text-style-caption text-muted border border-dashed border-line rounded-xl py-2 hover:border-primary hover:text-primary transition-colors"
         >
-          <Icon name="link" size="sm" aria-hidden /> Привʼязати транзакції (
+          <Icon name="link" size="sm" aria-hidden /> Привʼязати операції (
           {linkedCount || 0})
         </button>
       )}

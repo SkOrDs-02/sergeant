@@ -250,7 +250,7 @@ describe("Transactions page shell", () => {
   it("renders the transaction filter toolbar", () => {
     renderTransactions();
     expect(
-      screen.getByRole("toolbar", { name: "Фільтр транзакцій" }),
+      screen.getByRole("toolbar", { name: "Фільтр операцій" }),
     ).toBeInTheDocument();
   });
 

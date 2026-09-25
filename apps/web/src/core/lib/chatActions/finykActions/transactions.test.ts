@@ -108,7 +108,7 @@ describe("createTransaction", () => {
       name: "create_transaction",
       input: { amount: "not-a-number" },
     });
-    expect(out).toBe("Некоректна сума транзакції.");
+    expect(out).toBe("Некоректна сума операції.");
     expect(mockWrite).not.toHaveBeenCalled();
   });
 
@@ -117,7 +117,7 @@ describe("createTransaction", () => {
       name: "create_transaction",
       input: { amount: 0 },
     });
-    expect(out).toBe("Некоректна сума транзакції.");
+    expect(out).toBe("Некоректна сума операції.");
   });
 
   it("returns error for negative amount", () => {
@@ -125,7 +125,7 @@ describe("createTransaction", () => {
       name: "create_transaction",
       input: { amount: -50 },
     });
-    expect(out).toBe("Некоректна сума транзакції.");
+    expect(out).toBe("Некоректна сума операції.");
   });
 
   it("defaults to expense type when type is not 'income'", () => {

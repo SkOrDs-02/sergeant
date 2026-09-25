@@ -37,7 +37,7 @@ describe("getVisibleFinykMonoMirrorState", () => {
     );
   });
 
-  it("фільтрує транзакції прихованих карток, лишаючи решту", () => {
+  it("фільтрує операції прихованих карток, лишаючи решту", () => {
     safeWriteLS(STORAGE_KEYS.FINYK_HIDDEN, ["acc1"]);
     __setFinykMonoMirrorCacheForTests({
       transactions: [tx("a", "acc1"), tx("b", "acc2"), tx("m", null)],

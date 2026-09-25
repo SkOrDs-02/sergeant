@@ -52,7 +52,7 @@ export function compareWeeks(action: CompareWeeksAction): string {
     lines.push("");
     lines.push("Фінік:");
     lines.push(`  ${diffLine("Витрати", aSpent, bSpent, "\u202F₴")}`);
-    lines.push(`  ${diffLine("Транзакцій", fa.txCount, fb.txCount, "")}`);
+    lines.push(`  ${diffLine("Операцій", fa.txCount, fb.txCount, "")}`);
     const topA = fa.topCategories[0];
     const topB = fb.topCategories[0];
     if (topA || topB) {

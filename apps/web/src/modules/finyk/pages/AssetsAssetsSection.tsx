@@ -82,7 +82,7 @@ export function AssetsAssetsSection({ state }: { state: State }) {
       >
         {receivables.length === 0 && !showRecvForm && (
           <p className="text-style-body text-muted px-1">
-            Зберігай облік боргів і дат повернення, привʼязуй вхідні транзакції,
+            Зберігай облік боргів і дат повернення, привʼязуй вхідні операції,
             щоб автоматично рахувати повернене.
           </p>
         )}

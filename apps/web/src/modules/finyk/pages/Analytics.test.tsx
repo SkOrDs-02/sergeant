@@ -186,7 +186,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => expect(fetchMonth).toHaveBeenCalled());
     expect(
-      screen.queryByText("Не вдалось завантажити транзакції"),
+      screen.queryByText("Не вдалось завантажити операції"),
     ).not.toBeInTheDocument();
   });
 
@@ -211,7 +211,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Не вдалось завантажити транзакції"),
+        screen.getByText("Не вдалось завантажити операції"),
       ).toBeInTheDocument();
     });
     const callsAfterFailure = fetchMonth.mock.calls.length;
@@ -243,7 +243,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Не вдалось завантажити транзакції"),
+        screen.getByText("Не вдалось завантажити операції"),
       ).toBeInTheDocument();
     });
     const before = fetchMonth.mock.calls.length;
@@ -256,7 +256,7 @@ describe("Analytics page", () => {
     );
     await waitFor(() => {
       expect(
-        screen.queryByText("Не вдалось завантажити транзакції"),
+        screen.queryByText("Не вдалось завантажити операції"),
       ).not.toBeInTheDocument();
     });
   });
@@ -279,7 +279,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => expect(fetchMonth).toHaveBeenCalled());
     expect(
-      screen.queryByText("Не вдалось завантажити транзакції"),
+      screen.queryByText("Не вдалось завантажити операції"),
     ).not.toBeInTheDocument();
     expect(screen.getByText("Поки немає витрат")).toBeInTheDocument();
     expect(screen.getByText("Поки немає продавців")).toBeInTheDocument();
@@ -367,7 +367,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Не вдалось завантажити транзакції"),
+        screen.getByText("Не вдалось завантажити операції"),
       ).toBeInTheDocument();
     });
     expect(screen.getByText("Повторити")).toBeInTheDocument();

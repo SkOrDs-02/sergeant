@@ -141,7 +141,7 @@ describe("QuickStartSheet — pick step", () => {
     // рукописної коробки на `<EmptyState compact>` (Tier 2 канону
     // `docs/design/design/empty-states.md`). Перевіряємо обидві частини:
     // сам факт стану і підказку, що з ним робити.
-    expect(screen.getByText("Нічого не знайдено")).toBeInTheDocument();
+    expect(screen.getByText("Нічого не знайшов")).toBeInTheDocument();
     expect(
       screen.getByText("Спробуй іншу назву або очисти пошук."),
     ).toBeInTheDocument();

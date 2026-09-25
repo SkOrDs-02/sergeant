@@ -36,7 +36,7 @@ describe("getDebtPaid (wrapper)", () => {
     expect(getDebtPaid(debt, transactions)).toBe(125);
   });
 
-  it("повертає 0 коли немає привʼязаних транзакцій", () => {
+  it("повертає 0 коли немає привʼязаних операцій", () => {
     expect(getDebtPaid({ id: "d", amount: 0 })).toBe(0);
   });
 
@@ -61,7 +61,7 @@ describe("getRecvPaid (wrapper)", () => {
     expect(getRecvPaid({ id: "r", amount: 0, linkedTxIds: ["x"] })).toBe(0);
   });
 
-  it("ігнорує id-и без відповідних транзакцій (findLinkedTx відфільтрує)", () => {
+  it("ігнорує id-и без відповідних операцій (findLinkedTx відфільтрує)", () => {
     const recv = { id: "r", amount: 0, linkedTxIds: ["missing", "a"] };
     expect(getRecvPaid(recv, [{ id: "a", amount: 40_00 }])).toBe(40);
   });

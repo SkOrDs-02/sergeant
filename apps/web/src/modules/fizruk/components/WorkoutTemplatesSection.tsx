@@ -240,7 +240,7 @@ export function WorkoutTemplatesSection({
               ))}
               {pickList.length === 0 && (
                 <div className="p-3 text-style-caption text-muted text-center">
-                  Нічого не знайдено
+                  Нічого не знайшов
                 </div>
               )}
             </div>

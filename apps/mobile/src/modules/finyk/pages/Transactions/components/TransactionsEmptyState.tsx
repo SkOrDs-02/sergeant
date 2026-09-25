@@ -26,7 +26,7 @@ export function TransactionsEmptyState({
       <Text className="text-base font-semibold text-fg mb-1 text-center">
         {hasActiveFilter
           ? "Нічого не знайдено"
-          : "Немає транзакцій за цей місяць"}
+          : "Немає операцій за цей місяць"}
       </Text>
       <Text className="text-sm text-fg-muted text-center mb-4">
         {hasActiveFilter

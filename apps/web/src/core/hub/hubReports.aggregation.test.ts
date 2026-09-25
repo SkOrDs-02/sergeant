@@ -282,7 +282,7 @@ describe("aggregateSpending", () => {
     });
   });
 
-  it("excludedTxIds вилучає транзакцію зі статистики", () => {
+  it("excludedTxIds вилучає операцію зі статистики", () => {
     const inputs = {
       txList: [
         tx("food", -250, new Date(2025, 3, 8, 12, 0).getTime()),

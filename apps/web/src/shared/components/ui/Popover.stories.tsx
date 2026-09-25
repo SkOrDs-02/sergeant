@@ -91,7 +91,7 @@ export const WithHeaderAndFooter: Story = {
     <Popover
       open
       trigger={<Button variant="ghost">Фільтри</Button>}
-      header="Фільтри транзакцій"
+      header="Фільтри операцій"
       footer={
         <div className="flex justify-end gap-2">
           <Button variant="ghost" size="sm">

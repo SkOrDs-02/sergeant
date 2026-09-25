@@ -152,7 +152,7 @@ export function SearchResults({
           <EmptyState
             icon={Search}
             title="Глобальний пошук"
-            description="Транзакції, тренування, звички, їжа. Все в одному місці."
+            description="Операції, тренування, звички, їжа. Все в одному місці."
           />
         ) : null
       }

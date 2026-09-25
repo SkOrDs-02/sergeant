@@ -131,7 +131,7 @@ describe("DebtCard", () => {
     );
     fireEvent.click(screen.getByRole("button", { name: "Видалити Кредит" }));
     expect(onDelete).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByText(/Прив.язати транзакції \(2\)/));
+    fireEvent.click(screen.getByText(/Прив.язати операції \(2\)/));
     expect(onLink).toHaveBeenCalledTimes(1);
   });
 });

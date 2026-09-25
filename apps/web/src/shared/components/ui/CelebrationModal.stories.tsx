@@ -46,7 +46,7 @@ type Story = StoryObj<typeof CelebrationModal>;
 export const Success: Story = {
   args: {
     type: "success",
-    title: "Транзакцію збережено",
+    title: "Операцію збережено",
     description: "Витрату успішно додано до бюджету.",
   },
 };

@@ -69,7 +69,7 @@ describe("SubCard", () => {
         onLinkTransactions={onLink}
       />,
     );
-    fireEvent.click(screen.getByText(/Привʼязати транзакцію/));
+    fireEvent.click(screen.getByText(/Привʼязати операцію/));
     expect(onLink).toHaveBeenCalledTimes(1);
   });
 

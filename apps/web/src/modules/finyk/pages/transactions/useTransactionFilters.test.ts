@@ -543,7 +543,7 @@ describe("useTransactionFilters", () => {
       expect(result.current.flatItems.map((t) => t.id)).toEqual(["manual_m1"]);
     });
 
-    it("розгортає день самої транзакції, а не сьогоднішній", () => {
+    it("розгортає день самої операції, а не сьогоднішній", () => {
       // Сьогодні (fake timers) — 2025-06-04; запис датований 2-м червня
       // через «Не сьогодні? Змінити дату».
       const today = mkTx("bank-today", -100, {
