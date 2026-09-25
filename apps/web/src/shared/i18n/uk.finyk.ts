@@ -416,4 +416,16 @@ export const finykPageMessages = {
     current: "Цей",
     change: "Зміна",
   },
+  // Р23: локальний звіт тижня на хабі, під AI-порадою. Плейсхолдери
+  // підставляє `useFinykWeekReport`.
+  weekReport: {
+    heading: "Тиждень у цифрах",
+    empty: "За останні 7 днів записів немає",
+    top: "Найбільше за тиждень: {category}, {amount}",
+    growth: "Виросло проти минулого тижня: {category}, {change}",
+    limitOver: "{category}: {spent} з {limit}, ліміт перевищено",
+    limitPace:
+      "{category}: {spent} з {limit}, за темпом перевищиш через {days} {unit}",
+    limitOk: "{category}: {spent} з {limit}, у межах ліміту",
+  },
 } as const;
