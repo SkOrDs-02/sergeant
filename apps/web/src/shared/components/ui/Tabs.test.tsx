@@ -8,7 +8,7 @@ afterEach(cleanup);
 
 const ITEMS = [
   { value: "overview", label: "Огляд" },
-  { value: "transactions", label: "Транзакції" },
+  { value: "transactions", label: "Операції" },
   { value: "categories", label: "Категорії" },
 ] as const;
 

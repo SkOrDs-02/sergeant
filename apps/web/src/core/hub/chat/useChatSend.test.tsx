@@ -408,7 +408,7 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
 
@@ -434,13 +434,13 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
 
     await waitFor(() =>
       expect(result.current.confirmDestructive.pending?.items).toEqual([
-        { name: "delete_transaction", summary: "транзакція m_42" },
+        { name: "delete_transaction", summary: "операція m_42" },
       ]),
     );
 
@@ -459,7 +459,7 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
     await waitFor(() =>
@@ -478,7 +478,7 @@ describe("useChatSend — підтвердження незворотних ді
   it("згода → інструмент виконується", async () => {
     destructiveResponse();
     executeActionsMock.mockResolvedValue([
-      { name: "delete_transaction", result: "Транзакцію m_42 видалено" },
+      { name: "delete_transaction", result: "Операцію m_42 видалено" },
     ]);
     streamMock.mockResolvedValue(
       new Response(JSON.stringify({ text: "Готово!" }), {
@@ -490,7 +490,7 @@ describe("useChatSend — підтвердження незворотних ді
 
     let sending!: Promise<void>;
     await act(async () => {
-      sending = result.current.send("видали транзакцію m_42");
+      sending = result.current.send("видали операцію m_42");
       await Promise.resolve();
     });
     await waitFor(() =>
@@ -527,7 +527,7 @@ describe("useChatSend — підтвердження незворотних ді
     const { result } = renderSend();
 
     await act(async () => {
-      await result.current.send("сховай транзакцію m_7");
+      await result.current.send("сховай операцію m_7");
     });
 
     expect(result.current.confirmDestructive.pending).toBeNull();

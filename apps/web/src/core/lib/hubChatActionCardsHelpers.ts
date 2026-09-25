@@ -308,17 +308,17 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
   switch (name) {
     // Finyk
     case "create_transaction":
-      return `Транзакцію записано${failedSuffix}`;
+      return `Операцію записано${failedSuffix}`;
     case "find_transaction":
-      return `Транзакції знайдено${failedSuffix}`;
+      return `Операції знайдено${failedSuffix}`;
     case "batch_categorize":
       return `Категорії оновлено${failedSuffix}`;
     case "change_category":
       return `Категорію змінено${failedSuffix}`;
     case "delete_transaction":
-      return `Транзакцію видалено${failedSuffix}`;
+      return `Операцію видалено${failedSuffix}`;
     case "hide_transaction":
-      return `Транзакцію приховано${failedSuffix}`;
+      return `Операцію приховано${failedSuffix}`;
     case "set_budget_limit":
     case "update_budget":
       return `Бюджет оновлено${failedSuffix}`;
@@ -333,7 +333,7 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
     case "add_asset":
       return `Актив додано${failedSuffix}`;
     case "split_transaction":
-      return `Транзакцію розділено${failedSuffix}`;
+      return `Операцію розділено${failedSuffix}`;
     case "recurring_expense":
       return `Періодичну витрату створено${failedSuffix}`;
     case "export_report":
@@ -451,7 +451,7 @@ export function titleFor(name: string, status: "completed" | "failed"): string {
       return `Спогад${failedSuffix}`;
     // Query / analytics ("talk to your data", PR1-3)
     case "query_transactions":
-      return `Транзакції за запитом${failedSuffix}`;
+      return `Операції за запитом${failedSuffix}`;
     case "aggregate_spending":
       return `Розбивка витрат${failedSuffix}`;
     case "compare_periods":

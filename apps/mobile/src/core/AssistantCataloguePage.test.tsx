@@ -124,7 +124,7 @@ describe("AssistantCataloguePage", () => {
       getByTestId("assistant-catalogue-search"),
       "zxqwerty12345",
     );
-    expect(getByText(/Нічого не знайдено/)).toBeTruthy();
+    expect(getByText(/Нічого не знайшов/)).toBeTruthy();
   });
 
   it("opens the detail sheet with the capability's examples on row tap", () => {

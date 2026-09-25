@@ -156,7 +156,7 @@ describe("useMonobankWebhook — extra callbacks", () => {
       await result.current.backfill();
     });
     expect(result.current.error).toBe(
-      "Не вдалося довантажити історію транзакцій. Спробуй ще раз.",
+      "Не вдалося довантажити історію операцій. Спробуй ще раз.",
     );
   });
 
@@ -173,7 +173,7 @@ describe("useMonobankWebhook — extra callbacks", () => {
       await result.current.backfill();
     });
     expect(result.current.error).toBe(
-      "Не вдалося довантажити історію транзакцій. Спробуй ще раз.",
+      "Не вдалося довантажити історію операцій. Спробуй ще раз.",
     );
   });
 

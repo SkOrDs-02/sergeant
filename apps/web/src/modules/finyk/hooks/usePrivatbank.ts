@@ -138,7 +138,7 @@ function normalizePrivatTransaction(
   const amountKopecks = Math.round(amountRaw * 100);
   const ts = toTimestamp(row.TRANDATE ?? "", row.TRANTIME ?? "");
   const description =
-    row.OSND || row.PRYZNACH || row.AUT_CNTR_NAM || "Транзакція";
+    row.OSND || row.PRYZNACH || row.AUT_CNTR_NAM || "Операція";
   const sourceId =
     row.REF || row.REFN || row.DOC_NUMBER || `${ts}_${amountKopecks}`;
 
@@ -397,7 +397,7 @@ export function usePrivatbank(enabled = true) {
           lastError: err.message ?? "",
         }));
       }
-      setError(failedCopy("завантажити транзакції PrivatBank"));
+      setError(failedCopy("завантажити операції PrivatBank"));
     } finally {
       setLoadingTx(false);
     }

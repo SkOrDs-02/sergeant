@@ -177,7 +177,7 @@ async function handleCreateTransaction(
   const { type, amount, category, description, date } = action.input;
   const amt = Number(amount);
   if (!Number.isFinite(amt) || amt <= 0) {
-    return "Некоректна сума транзакції.";
+    return "Некоректна сума операції.";
   }
   // Income сервер не приймає (manual-expenses — лише витрати) — пишемо локально.
   if (type === "income") {

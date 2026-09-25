@@ -237,7 +237,7 @@ describe("compare_periods", () => {
       },
     });
     expect(out).toContain("Кількість");
-    expect(out).toContain("транзакц.");
+    expect(out).toContain("операц.");
   });
 
   it("error: missing period bounds returns guidance", () => {
@@ -353,7 +353,7 @@ describe("канонічний excluded-set і спліти (стадія 2b)", 
     // Без фіксу було б 1900: спліт цілком (1000) + виключені (200 + 500 + 250)
     // + готівка (250). Кожен з чотирьох excluded-рядків мусить випасти, а
     // спліт — увійти лише не-переказною часткою.
-    expect(out).toContain("850 грн усього (2 транзакц.)");
+    expect(out).toContain("850 грн усього (2 операц.)");
   });
 
   it("compare_periods рахує по тому самому всесвіту", () => {
@@ -432,7 +432,7 @@ describe("CALC-1 — manual internal_transfer excluded from chat aggregation", (
       input: { date_from: "2026-04-01", date_to: "2026-04-30" },
     });
     // Без фіксу було б 1200 (200 + 1000 переказ, порахований витратою).
-    expect(out).toContain("200 грн усього (1 транзакц.)");
+    expect(out).toContain("200 грн усього (1 операц.)");
     expect(out).not.toMatch(/1200/);
   });
 

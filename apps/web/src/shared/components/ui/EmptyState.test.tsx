@@ -61,7 +61,7 @@ describe("EmptyState — a11y", () => {
             <rect width="120" height="120" />
           </svg>
         }
-        title="Жодної транзакції"
+        title="Жодної операції"
       />,
     );
     const illustrationWrapper = container.querySelector(
@@ -109,7 +109,7 @@ describe("EmptyState — a11y", () => {
     const { container } = render(
       <EmptyState
         compact
-        title="Нічого не знайдено"
+        title="Нічого не знайшов"
         description="Спробуй інший запит."
       />,
     );

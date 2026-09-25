@@ -162,7 +162,7 @@ describe("CategoryPickerField", () => {
       target: { value: "такої категорії немає" },
     });
 
-    expect(within(dialog).getByText("Нічого не знайдено")).toBeInTheDocument();
+    expect(within(dialog).getByText("Нічого не знайшов")).toBeInTheDocument();
     fireEvent.click(
       within(dialog).getByRole("button", {
         name: "Повернути автоматичну категорію",

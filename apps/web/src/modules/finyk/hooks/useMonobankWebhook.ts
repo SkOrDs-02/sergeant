@@ -481,7 +481,7 @@ export function useMonobankWebhook({
         }),
       ]);
     } catch {
-      setError(failedCopy("довантажити історію транзакцій"));
+      setError(failedCopy("довантажити історію операцій"));
     }
   }, [queryClient]);
 

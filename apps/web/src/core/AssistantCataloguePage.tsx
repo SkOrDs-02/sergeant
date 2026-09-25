@@ -237,7 +237,7 @@ export function AssistantCataloguePage({
         {filtered.length === 0 && (
           <Card variant="flat" radius="lg" padding="xl">
             <p className="text-center text-subtle text-style-body">
-              Нічого не знайдено за «{query}». Спробуй інший термін.
+              Нічого не знайшов за «{query}». Спробуй інший термін.
             </p>
           </Card>
         )}

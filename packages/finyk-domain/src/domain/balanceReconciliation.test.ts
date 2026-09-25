@@ -28,7 +28,7 @@ const tx = (
 });
 
 describe("reconcileAccount", () => {
-  it("баланс рахунку == balance найсвіжішої транзакції → ok", () => {
+  it("баланс рахунку == balance найсвіжішої операції → ok", () => {
     const res = reconcileAccount({
       accountBalance: 12_345,
       transactions: [
@@ -63,7 +63,7 @@ describe("reconcileAccount", () => {
     expect(res.diffMinor).toBe(-345);
   });
 
-  it("hold-транзакція НЕ береться за якір, навіть якщо найсвіжіша", () => {
+  it("hold-операція НЕ береться за якір, навіть якщо найсвіжіша", () => {
     // Сума в холді ще може змінитись. Звірка по ній дала б «розходження»,
     // яке зникне саме за пару днів — тобто банер, що бреше в половині
     // випадків. Беремо попередню фінальну.
@@ -78,7 +78,7 @@ describe("reconcileAccount", () => {
     expect(res.anchorTxId).toBe("final");
   });
 
-  it("транзакції без balance пропускаються, а не ламають звірку", () => {
+  it("операції без balance пропускаються, а не ламають звірку", () => {
     const res = reconcileAccount({
       accountBalance: 12_345,
       transactions: [
@@ -90,7 +90,7 @@ describe("reconcileAccount", () => {
     expect(res.anchorTxId).toBe("ok");
   });
 
-  it("немає транзакцій → unknown, НЕ mismatch", () => {
+  it("немає операцій → unknown, НЕ mismatch", () => {
     // Найважливіший асерт файлу. Свіжий рахунок і зламаний рахунок
     // виглядають однаково, і сказати «дані розходяться» на порожньому
     // рахунку означало б вигадати проблему. `unknown` — не помилка.
@@ -99,7 +99,7 @@ describe("reconcileAccount", () => {
     expect(res.diffMinor).toBeNull();
   });
 
-  it("усі транзакції без balance → unknown", () => {
+  it("усі операції без balance → unknown", () => {
     const res = reconcileAccount({
       accountBalance: 12_345,
       transactions: [tx("a", "2026-07-24T18:30:00Z", null)],
@@ -115,7 +115,7 @@ describe("reconcileAccount", () => {
     expect(res.status).toBe("unknown");
   });
 
-  it("зіпсований час не робить транзакцію якорем", () => {
+  it("зіпсований час не робить операцію якорем", () => {
     // Чесно про силу цього асерта: перевірка `Number.isFinite(t)` у коді
     // **захисна, а не несуча** — `NaN > -Infinity` і так false, тож без неї
     // результат не змінився б. Тест фіксує ПОВЕДІНКУ (зіпсований час не

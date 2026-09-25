@@ -160,7 +160,7 @@ describe("useChatSend — undo toast for tool actions", () => {
       tool_calls_raw: [{ id: "tc1" }],
     });
     executeActionsMock.mockResolvedValue([
-      { name: "create_transaction", result: "Транзакцію додано", undo: undoFn },
+      { name: "create_transaction", result: "Операцію додано", undo: undoFn },
     ]);
     streamMock.mockResolvedValue(
       new Response(JSON.stringify({ text: "Готово!" }), {
@@ -175,7 +175,7 @@ describe("useChatSend — undo toast for tool actions", () => {
     );
 
     await act(async () => {
-      await result.current.send("додай транзакцію 100 грн");
+      await result.current.send("додай операцію 100 грн");
     });
 
     expect(showUndoToastMock).toHaveBeenCalledTimes(1);
@@ -192,7 +192,7 @@ describe("useChatSend — undo toast for tool actions", () => {
       tool_calls_raw: [{ id: "tc1" }],
     });
     executeActionsMock.mockResolvedValue([
-      { name: "find_transaction", result: "Знайдено 3 транзакції" },
+      { name: "find_transaction", result: "Знайдено 3 операції" },
       // no `undo` field
     ]);
     streamMock.mockResolvedValue(
@@ -208,7 +208,7 @@ describe("useChatSend — undo toast for tool actions", () => {
     );
 
     await act(async () => {
-      await result.current.send("знайди транзакцію кава");
+      await result.current.send("знайди операцію кава");
     });
 
     expect(showUndoToastMock).not.toHaveBeenCalled();

@@ -78,7 +78,7 @@ describe("PickedFoodCard", () => {
     render(<PickedFoodCard {...baseProps()} />);
     // Підпис «на 100 г» лишається: це етикетка продукту, не підсумок порції.
     expect(screen.getByText(/\/ 100 г/)).toBeInTheDocument();
-    expect(screen.queryByText("Вуглев.")).not.toBeInTheDocument();
+    expect(screen.queryByText("Вугл")).not.toBeInTheDocument();
     expect(screen.queryByText("Білки")).not.toBeInTheDocument();
   });
 

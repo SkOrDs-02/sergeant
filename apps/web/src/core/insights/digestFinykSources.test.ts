@@ -124,7 +124,7 @@ describe("aggregateFinyk читає канонічний SQLite-стан, а н�
     });
   });
 
-  it("поважає hidden-транзакції з SQLite", () => {
+  it("поважає hidden-операції з SQLite", () => {
     const out = aggregateFinyk(WEEK_KEY);
 
     // 2 транзакції у вікні: t-food + t-unknown-mcc. Переказ і прихована —

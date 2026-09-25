@@ -112,9 +112,9 @@ function titleFor(name: string, status: ChatActionCardStatus): string {
   const failedSuffix = status === "failed" ? ", не вийшло" : "";
   switch (name) {
     case "create_transaction":
-      return `Транзакцію записано${failedSuffix}`;
+      return `Операцію записано${failedSuffix}`;
     case "find_transaction":
-      return `Транзакції знайдено${failedSuffix}`;
+      return `Операції знайдено${failedSuffix}`;
     case "batch_categorize":
       return `Категорії оновлено${failedSuffix}`;
     case "log_meal":

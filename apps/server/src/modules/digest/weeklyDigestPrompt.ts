@@ -40,7 +40,7 @@ export function buildWeeklyDigestPrompt(data: WeeklyDigestRequest): {
 ${budgetLine}
 Топ категорії витрат:
 ${topCats}
-Транзакцій: ${finyk.txCount ?? 0}`);
+Операцій: ${finyk.txCount ?? 0}`);
   }
 
   if (fizruk) {

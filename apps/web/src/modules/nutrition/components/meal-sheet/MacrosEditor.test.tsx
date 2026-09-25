@@ -53,7 +53,7 @@ describe("MacrosEditor", () => {
     expect(screen.getByLabelText("Ккал")).toBeInTheDocument();
     expect(screen.getByLabelText("Білки г")).toBeInTheDocument();
     expect(screen.getByLabelText("Жири г")).toBeInTheDocument();
-    expect(screen.getByLabelText("Вуглев. г")).toBeInTheDocument();
+    expect(screen.getByLabelText("Вугл г")).toBeInTheDocument();
   });
 
   it("routes free macro edits through the field setter when nothing is linked", () => {

@@ -62,7 +62,7 @@ export function CategoryPickerSheet({
       open={open}
       onClose={onClose}
       title="Обрати категорію"
-      description="Перевизначення зберігається тільки для цієї транзакції."
+      description="Перевизначення зберігається тільки для цієї операції."
     >
       <ScrollView
         contentContainerStyle={{ paddingBottom: 16, gap: 6 }}

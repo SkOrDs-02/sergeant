@@ -84,7 +84,7 @@ describe("buildExportCsv", () => {
     // на початку першої клітинки — тобто «полагодивши» кодування, ми б
     // його ж і зламали.
     const csv = buildExportCsv([
-      { name: "транзакції", rows: [{ опис: "Кава" }] },
+      { name: "операції", rows: [{ опис: "Кава" }] },
     ]);
     expect(csv.startsWith(CSV_BOM)).toBe(false);
     expect(csv).toContain("Кава");

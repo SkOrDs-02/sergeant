@@ -153,12 +153,12 @@ describe("ActiveHabitsSection", () => {
     fireEvent.change(screen.getByLabelText("Пошук звичок у списку"), {
       target: { value: "зззз" },
     });
-    expect(screen.getByText("Нічого не знайдено")).toBeInTheDocument();
+    expect(screen.getByText("Нічого не знайшов")).toBeInTheDocument();
     expect(screen.getByText(/«зззз»/)).toBeInTheDocument();
     expect(screen.queryByText(hasText("Вода"))).not.toBeInTheDocument();
 
     fireEvent.click(screen.getByRole("button", { name: "Скинути пошук" }));
-    expect(screen.queryByText("Нічого не знайдено")).not.toBeInTheDocument();
+    expect(screen.queryByText("Нічого не знайшов")).not.toBeInTheDocument();
     expect(screen.getByText(hasText("Вода"))).toBeInTheDocument();
     expect(screen.getByText(hasText("Біг"))).toBeInTheDocument();
   });
@@ -171,7 +171,7 @@ describe("ActiveHabitsSection", () => {
       target: { value: "будь-що" },
     });
     expect(screen.getByText("Поки порожньо")).toBeInTheDocument();
-    expect(screen.queryByText("Нічого не знайдено")).not.toBeInTheDocument();
+    expect(screen.queryByText("Нічого не знайшов")).not.toBeInTheDocument();
   });
 
   it("wires the Деталі button to onOpenDetails", () => {

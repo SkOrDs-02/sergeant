@@ -51,7 +51,7 @@ describe("exportReport", () => {
     expect(result).toContain("Дохід:");
     expect(result).toContain("Витрати:");
     expect(result).toContain("Баланс:");
-    expect(result).toContain("Транзакцій:");
+    expect(result).toContain("Операцій:");
   });
 
   it("reports 0 income/expense for empty cache", () => {
@@ -106,7 +106,7 @@ describe("exportReport", () => {
       name: "export_report",
       input: { period: "week" },
     }) as string;
-    expect(result).toContain("Транзакцій: 1");
+    expect(result).toContain("Операцій: 1");
   });
 
   it("uses current month range by default", () => {
@@ -123,7 +123,7 @@ describe("exportReport", () => {
     expect(result).toContain("Звіт за");
   });
 
-  it("shows correct counts in Транзакцій line", () => {
+  it("shows correct counts in Операцій line", () => {
     mockGetMirror.mockReturnValue({
       transactions: [
         { id: "t1", amount: -1000, time: TX_EPOCH_SEC },
@@ -136,6 +136,6 @@ describe("exportReport", () => {
       name: "export_report",
       input: { period: "week" },
     }) as string;
-    expect(result).toContain("Транзакцій: 2 (витрат: 1, доходів: 1)");
+    expect(result).toContain("Операцій: 2 (витрат: 1, доходів: 1)");
   });
 });

@@ -108,7 +108,7 @@ export function FinykSection() {
 
       <SettingsSubGroup title="Власні категорії витрат">
         <Text className="text-xs text-fg-muted leading-snug">
-          Додаються до списку категорій у транзакціях, сплітах і лімітах (можна
+          Додаються до списку категорій у операціях, сплітах і лімітах (можна
           вказати емодзі на початку назви).
         </Text>
         <View className="flex-row gap-2 items-stretch">
@@ -174,7 +174,7 @@ export function FinykSection() {
 
       <SettingsSubGroup title="Monobank">
         <DeferredNotice>
-          Підключення Monobank, статус підʼєднання та очистка кешу транзакцій
+          Підключення Monobank, статус підʼєднання та очистка кешу операцій
           підключаться з портом модуля Фінік (Phase 4+). На web вони живуть
           поверх OAuth-флоу, який на mobile ще не портований.
         </DeferredNotice>

@@ -109,7 +109,7 @@ function explainEmptyScreenshot(draft: ImportScreenshotDraft): string {
   if (draft.docType === "other") {
     return "Це не схоже на екран банківського застосунку. Відкрий список операцій у банку і зроби скрін звідти.";
   }
-  return "Не знайшов операцій на скріні. Переконайся, що на ньому видно список транзакцій із сумами.";
+  return "Не знайшов операцій на скріні. Переконайся, що на ньому видно список операцій із сумами.";
 }
 
 /** Українська трійка форм для лічильника (1 / 2-4 / 5+). */
@@ -245,7 +245,7 @@ export function BulkImportSheet({
       return;
     }
     setProcessing({
-      label: "Розпізнаю транзакції…",
+      label: "Розпізнаю операції…",
       hint: SCREENSHOT_SLOW_HINT,
     });
     try {

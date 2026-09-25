@@ -92,8 +92,8 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
         {query.trim().length >= 2 && results.length === 0 && (
           <EmptyState
             icon={<Icon name="search" size={22} strokeWidth={1.6} />}
-            title="Нічого не знайдено"
-            description={`За запитом «${query}» нічого не знайшлося. Спробуй іншу фразу.`}
+            title="Нічого не знайшов"
+            description={`За запитом «${query}» нічого не знайшов. Спробуй іншу фразу.`}
           />
         )}
 
@@ -145,7 +145,7 @@ export const SearchResults = forwardRef<HTMLDivElement, SearchResultsProps>(
           <EmptyState
             icon={<Icon name="search" size={22} strokeWidth={1.6} />}
             title="Глобальний пошук"
-            description={`Транзакції, тренування, звички, їжа. Все в одному місці. ${modK}, щоб відкрити звідусіль.`}
+            description={`Операції, тренування, звички, їжа. Все в одному місці. ${modK}, щоб відкрити звідусіль.`}
           />
         )}
 

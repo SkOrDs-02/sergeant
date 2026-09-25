@@ -317,7 +317,7 @@ describe("FinykSection interactions", () => {
   it("clears the transaction cache through the confirm modal", async () => {
     mockedSyncState.mockResolvedValue(DISCONNECTED);
     renderSection();
-    fireEvent.click(await screen.findByText("Очистити кеш транзакцій"));
+    fireEvent.click(await screen.findByText("Очистити кеш операцій"));
 
     const dialog = await screen.findByRole("alertdialog");
     fireEvent.click(within(dialog).getByText("Очистити"));

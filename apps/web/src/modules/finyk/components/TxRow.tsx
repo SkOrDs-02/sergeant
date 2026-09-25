@@ -105,7 +105,7 @@ function TxRowImpl({
     <>
       {highlighted ? (
         <span className="text-success shrink-0">
-          <Icon name="check-circle" size={22} title="Вибрана транзакція" />
+          <Icon name="check-circle" size={22} title="Вибрана операція" />
         </span>
       ) : (
         // Спільний чип — та сама іконка й той самий відтінок, що в
@@ -127,7 +127,7 @@ function TxRowImpl({
               ? isIncome
                 ? "Ручне надходження"
                 : "Ручна витрата"
-              : "Транзакція")}
+              : "Операція")}
         </div>
         <TxRowMetaChips
           tx={tx}
