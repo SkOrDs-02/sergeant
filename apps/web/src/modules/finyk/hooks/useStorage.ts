@@ -1,3 +1,4 @@
+import { useMemo } from "react";
 import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import { writeJSON } from "../lib/finykStorage";
@@ -124,10 +125,14 @@ export function useStorage({
   // гарантований результат привʼязки (знахідка 2026-09-11, звіт власника
   // про непорахований борг). MCC 4829 у цьому переліку стояв один день і
   // 2026-09-12 знятий — він означає «переказ», а не «борг».
-  const debtLinkedTxIds = new Set<string>([
-    ...manualDebts.flatMap((d) => d.linkedTxIds || []),
-    ...Object.values(monoDebtLinkedTxIds).flat(),
-  ]);
+  const debtLinkedTxIds = useMemo(
+    () =>
+      new Set<string>([
+        ...manualDebts.flatMap((d) => d.linkedTxIds || []),
+        ...Object.values(monoDebtLinkedTxIds).flat(),
+      ]),
+    [manualDebts, monoDebtLinkedTxIds],
+  );
 
   // Зі статистики виключаємо: приховані, внутрішні перекази, дебіторку (щоб
   // повернення боргу не рахувалось як дохід) та явно виключені.
@@ -136,13 +141,22 @@ export function useStorage({
   // несуть мітку переказу в самому записі (`category: "internal_transfer"`);
   // банківські транзакції позначаються через мапу `txCategories`. Без цього
   // аргументу ручний переказ рахувався витратою скрізь, крім дайджесту й коуча.
-  const excludedTxIds = buildFinykExcludedTxIds({
-    hiddenTxIds,
-    txCategories,
-    receivables,
-    excludedStatTxIds,
-    transactions: manualExpenses.map(manualExpenseToTransaction),
-  });
+  //
+  // Обидві множини мемоїзовані не для економії самого підрахунку: вони йдуть
+  // у залежності десятка `useMemo` Огляду й аналітики. Нова ідентичність на
+  // кожному рендері перераховувала всю статистику по всіх записах щоразу,
+  // коли будь-що перемальовувало Фінік.
+  const excludedTxIds = useMemo(
+    () =>
+      buildFinykExcludedTxIds({
+        hiddenTxIds,
+        txCategories,
+        receivables,
+        excludedStatTxIds,
+        transactions: manualExpenses.map(manualExpenseToTransaction),
+      }),
+    [hiddenTxIds, txCategories, receivables, excludedStatTxIds, manualExpenses],
+  );
 
   const saveNetworthSnapshot = (networth: number) => {
     const today = toLocalISODate();
