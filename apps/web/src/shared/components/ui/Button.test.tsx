@@ -249,6 +249,9 @@ describe("Button", () => {
       const cls = getByRole("button").className;
       expect(cls).toContain("bg-danger-soft");
       expect(cls).not.toContain("bg-danger-strong");
+      // У темній темі `--c-danger-soft` суцільний red-800; кнопка мусить
+      // перебити його прозорою заливкою, інакше «soft» стає солідом.
+      expect(cls).toContain("dark:bg-danger/15");
     });
 
     it("outline/neutral renders the secondary outline button", () => {
