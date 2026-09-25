@@ -31,7 +31,7 @@ export function MealTypePicker({ mealType, setForm }: MealTypePickerProps) {
               "text-style-label px-3 py-1.5 rounded-xl border transition-[background-color,border-color,color,opacity]",
               "inline-flex items-center gap-1.5",
               mealType === mt.id
-                ? "bg-nutrition-strong text-white border-nutrition"
+                ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
                 : "bg-panelHi text-muted border-line hover:border-nutrition/50",
             )}
           >

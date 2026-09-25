@@ -268,7 +268,7 @@ export function PickedFoodCard({
                 // контролом картки. 44×44 тут не опційні.
                 "pointer-coarse:min-h-[44px] pointer-coarse:min-w-[44px] inline-flex items-center justify-center",
                 Number(pickedGrams) === g
-                  ? "bg-nutrition-strong text-white border-nutrition"
+                  ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
                   : "bg-panelHi text-subtle border-line hover:border-nutrition/40",
               )}
             >

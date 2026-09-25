@@ -332,7 +332,7 @@ export function DailyPlanCard({
             disabled={busy || dayPlanBusy}
             className={cn(
               "text-style-label w-full h-11 rounded-2xl",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
               // Обидві CTA — сирі `<button>`, тож кільце фокуса не приходить
               // від `Button`. Без нього з клавіатури не видно, де ти стоїш
               // (підтверджено живим прогоном 2026-09-16). Канон — утиліта
