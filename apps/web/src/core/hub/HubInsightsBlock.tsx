@@ -135,7 +135,7 @@ export function HubInsightsBlock({
       collapsedIcon="sergeant"
       collapsedSubtitle={
         coachLoading
-          ? "Готую AI-пораду…"
+          ? "Готую пораду Сержанта…"
           : coachError
             ? // AI-порада недоступна (anon/quota/мережа). Не лякаємо
               // «збоєм» — показуємо реальні інсайти, якщо є, інакше

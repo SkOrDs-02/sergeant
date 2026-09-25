@@ -190,7 +190,7 @@ describe("AssistantAdviceCard — impression лише за фактичної в
       />,
     );
     fireEvent.click(
-      screen.getByRole("button", { name: /запитати ai про це/i }),
+      screen.getByRole("button", { name: /запитати сержанта про це/i }),
     );
     fireEvent.click(screen.getByRole("button", { name: /оновити пораду/i }));
 
@@ -224,10 +224,10 @@ describe("AssistantAdviceCard — реакції на наявних афорд�
     );
   }
 
-  it("«Запитати AI про це» → reaction: ask_ai", () => {
+  it("«Запитати Сержанта про це» → reaction: ask_ai", () => {
     renderCard();
     fireEvent.click(
-      screen.getByRole("button", { name: /запитати ai про це/i }),
+      screen.getByRole("button", { name: /запитати сержанта про це/i }),
     );
 
     expect(reacted()).toHaveLength(1);
@@ -249,7 +249,7 @@ describe("AssistantAdviceCard — реакції на наявних афорд�
   it("згортання/розгортання картки → collapse / expand (нових кнопок не додано)", () => {
     renderCard();
     // Персона зведена в одну — «Сержант» (`messages.sergeant.adviceCardTitle`).
-    const header = screen.getByRole("button", { name: /сержант/i });
+    const header = screen.getByRole("button", { name: /^сержант/i });
 
     fireEvent.click(header); // → collapse
     fireEvent.click(header); // → expand

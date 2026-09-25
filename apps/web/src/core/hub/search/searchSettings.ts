@@ -46,7 +46,7 @@ const SETTINGS_PRESENTATION: Readonly<
     icon: "sergeant",
   },
   capabilities: {
-    description: "Каталог AI-можливостей, онбординг",
+    description: "Каталог можливостей Сержанта, онбординг",
     icon: "compass",
   },
   feedback: {
@@ -163,7 +163,7 @@ export function searchAssistantTools(tokens: string[]): Hit[] {
       {
         id: `assistant_${cap.id}`,
         module: "assistant",
-        moduleLabel: "AI-можливості",
+        moduleLabel: "Можливості Сержанта",
         title: cap.label,
         // Subtitle містить опис + keywords + назву модуля — токени з
         // `keywords` беруть участь у scoring, але після сортування ми

@@ -12,9 +12,11 @@ import { Icon } from "@shared/components/ui/Icon";
 import type { SyncTone } from "./components/SyncIndicator";
 
 export function FinykHeaderIcon(): React.ReactElement {
+  // F1-style ink glyph (BentoCard): icon sits inline with the title row as
+  // a colored glyph, not boxed in a tinted square container.
   return (
-    <div
-      className="shrink-0 w-10 h-10 rounded-xl bg-success/10 flex items-center justify-center text-success-strong dark:text-success border border-success/15"
+    <span
+      className="shrink-0 text-success-strong dark:text-success"
       aria-hidden
     >
       <svg
@@ -30,7 +32,7 @@ export function FinykHeaderIcon(): React.ReactElement {
         <rect x="2" y="5" width="20" height="14" rx="2" />
         <line x1="2" y1="10" x2="22" y2="10" />
       </svg>
-    </div>
+    </span>
   );
 }
 

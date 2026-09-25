@@ -366,7 +366,7 @@ export function useHubDashboardState(props: {
   //
   // Згорнутий підпис від цього не біднішає: він поради не показує
   // (`HubInsightsBlock.tsx` — третя гілка `collapsedSubtitle` віддає
-  // `rest[0]?.title`), тож зникає лише блимання «Готую AI-пораду…».
+  // `rest[0]?.title`), тож зникає лише блимання «Готую пораду Сержанта…».
   const coachInsightEnabled = shouldFetchCoachInsight(
     hasRealEntry,
     calmMode,

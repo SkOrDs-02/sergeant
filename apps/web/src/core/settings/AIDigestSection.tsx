@@ -49,9 +49,9 @@ export function AIDigestSection() {
     <SettingsGroup title={settingsSectionTitle("ai")} icon="clipboard">
       <div className="space-y-3">
         <p className="text-style-body text-subtle leading-snug">
-          Тижневий AI-аналіз прогресу по всіх модулях: фінанси, тренування,
-          харчування та звички. Звіт збирається сам щопонеділка і чекає на
-          головній у блоці «Звіт тижня»; там же його можна оновити.
+          Тижневий аналіз прогресу від Сержанта по всіх модулях: фінанси,
+          тренування, харчування та звички. Звіт збирається сам щопонеділка і
+          чекає на головній у блоці «Звіт тижня»; там же його можна оновити.
         </p>
         <div className="p-3 rounded-xl bg-bg border border-line">
           <p className="text-style-label text-text">Поточний тиждень</p>
