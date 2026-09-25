@@ -24,14 +24,25 @@
  * назавжди, і банер доводилось ховати окремою умовою. Демо-режим знято
  * 2026-09-17 — умова пішла разом із ним.
  */
+// ponytail: фіксований поріг; якщо стане сигналом продукту, винести в канон.
+const MANUAL_ENOUGH = 5;
+
 export function shouldShowNoBankBanner(params: {
   hasConnectedProvider: boolean;
   manualOnly: boolean;
+  /**
+   * Скільки ручних витрат уже записано. Людина, що веде облік вручну,
+   * вибір «банк чи вручну» вже зробила ділом, навіть не натиснувши
+   * «Без банку»: після 106 записів банер питав те саме (критика екранів
+   * 2026-09-25).
+   */
+  manualExpenseCount: number;
   /** Активна вкладка Фініка (`NAV_IDS` у `FinykApp`). */
   page: string;
 }): boolean {
   if (params.hasConnectedProvider) return false;
   if (params.manualOnly) return false;
+  if (params.manualExpenseCount >= MANUAL_ENOUGH) return false;
   // Лише Огляд: на mobile банер займав ~37% першого екрана кожної вкладки,
   // і порожній стан вкладки опинявся під згином (критика екранів
   // 2026-09-23). Вибір «банк чи вручну» робиться один раз.

@@ -15,6 +15,7 @@ import { shouldShowNoBankBanner } from "./NoBankBanner.visibility";
 const BASE = {
   hasConnectedProvider: false,
   manualOnly: false,
+  manualExpenseCount: 0,
   page: "overview",
 };
 
@@ -36,6 +37,15 @@ describe("shouldShowNoBankBanner", () => {
     expect(
       shouldShowNoBankBanner({ ...BASE, hasConnectedProvider: true }),
     ).toBe(false);
+  });
+
+  it("кілька ручних записів уже є вибором «вручну» — не показується", () => {
+    expect(shouldShowNoBankBanner({ ...BASE, manualExpenseCount: 4 })).toBe(
+      true,
+    );
+    expect(shouldShowNoBankBanner({ ...BASE, manualExpenseCount: 5 })).toBe(
+      false,
+    );
   });
 
   it("людина обрала «без банку» — не показується", () => {

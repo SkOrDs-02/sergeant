@@ -239,9 +239,12 @@ export function useOverviewData({
 
   // First-insight banner
   const hasAnyData = manualExpenses.length > 0 || realTx.length > 0;
-  const [showFirstInsight, setShowFirstInsight] = useState(
+  const [firstInsightUnseen, setShowFirstInsight] = useState(
     () => safeReadStringLS("finyk_first_insight_seen_v1", null) === null,
   );
+  // Підказка веде ставити бюджет. Людині, у якої бюджети вже є, вона лише
+  // забирає місце над першою цифрою огляду (критика екранів 2026-09-25).
+  const showFirstInsight = firstInsightUnseen && budgets.length === 0;
   const insightFiredRef = useRef(false);
   useEffect(() => {
     if (insightFiredRef.current) return;
