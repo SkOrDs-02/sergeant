@@ -10,11 +10,13 @@ import {
   compareAmounts,
   computeCategorySpendIndex,
   getMonthlySummary,
+  getTopMerchants,
 } from "./selectors";
 import { getCatColor } from "./categories";
 import type {
   AmountDelta,
   Category,
+  MerchantStat,
   SelectorOptions,
   Transaction,
 } from "./types";
@@ -186,4 +188,36 @@ export function getCategoryDeltas(
   return rows.sort(
     (a, b) => b.currentMinor - a.currentMinor || b.prevMinor - a.prevMinor,
   );
+}
+
+/**
+ * Топ мерчантів місяця з дельтою до минулого (Р17). Дельта за ключем
+ * мерчанта і правилом Р4; `null`, коли в минулому місяці записів немає
+ * зовсім (тоді й секція порівняння каже «Немає з чим порівняти»).
+ */
+export function getTopMerchantsWithDelta(
+  currentMonthTx: readonly Transaction[] | null | undefined,
+  previousMonthTx: readonly Transaction[] | null | undefined,
+  opts: Pick<SelectorOptions, "excludedTxIds" | "txSplits"> = {},
+  limit = 10,
+): MerchantStat[] {
+  const top = getTopMerchants(currentMonthTx, { ...opts, limit });
+  const excluded =
+    opts.excludedTxIds instanceof Set
+      ? opts.excludedTxIds
+      : new Set(opts.excludedTxIds ?? []);
+  const hasPrev = (previousMonthTx ?? []).some(
+    (tx) => tx && !excluded.has(tx.id),
+  );
+  if (!hasPrev) return top.map((m) => ({ ...m, delta: null }));
+  const prev = new Map(
+    getTopMerchants(previousMonthTx, {
+      ...opts,
+      limit: Number.POSITIVE_INFINITY,
+    }).map((m) => [m.key, m.totalMinor]),
+  );
+  return top.map((m) => ({
+    ...m,
+    delta: compareAmounts(m.totalMinor, prev.get(m.key) ?? 0),
+  }));
 }

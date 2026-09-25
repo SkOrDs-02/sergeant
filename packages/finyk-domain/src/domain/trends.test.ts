@@ -4,7 +4,9 @@ import {
   getAverageMonthlySpendMinor,
   getCategoryDeltas,
   getSavingsRate,
+  getTopMerchantsWithDelta,
 } from "./trends";
+import { manualExpenseToTransaction } from "./transactions";
 import type { Transaction } from "./types";
 
 function tx(
@@ -143,5 +145,50 @@ describe("getCategoryDeltas", () => {
     );
     expect(rows).toHaveLength(1);
     expect(rows[0]).toMatchObject({ currentMinor: 0, prevMinor: 5_000 });
+  });
+});
+
+describe("getTopMerchantsWithDelta", () => {
+  const sep = new Date("2026-09-05T09:00:00Z");
+  const aug = new Date("2026-08-05T09:00:00Z");
+
+  it("зводить регістр, пробіли й номери терміналів, ручний запис з банком", () => {
+    const manual = manualExpenseToTransaction({
+      id: "m1",
+      date: "2026-09-06",
+      amount: 100,
+      description: "сільпо ",
+      category: "food",
+    });
+    const rows = getTopMerchantsWithDelta(
+      [
+        tx("b1", -20_000, sep, "Сільпо"),
+        tx("b2", -5_000, sep, "SILPO 12345"),
+        tx("b3", -2_500, sep, "silpo 777"),
+        manual,
+      ],
+      [],
+    );
+    expect(rows.map((r) => [r.key, r.count, r.totalMinor])).toEqual([
+      ["сільпо", 2, 30_000],
+      ["silpo", 2, 7_500],
+    ]);
+    expect(rows.every((r) => r.delta === null)).toBe(true);
+  });
+
+  it("дельта за ключем мерчанта і правилом Р4", () => {
+    const rows = getTopMerchantsWithDelta(
+      [tx("c1", -80_750, sep, "АТБ 12"), tx("c2", -30_000, sep, "Кава")],
+      [tx("p1", -24_750, aug, "атб 99")],
+    );
+    expect(rows.find((r) => r.key === "атб")?.delta?.pct).toBeCloseTo(
+      226.26,
+      2,
+    );
+    // Новий мерчант: бази немає, лише абсолютна дельта.
+    expect(rows.find((r) => r.key === "кава")?.delta).toEqual({
+      diffMinor: 30_000,
+      pct: null,
+    });
   });
 });
