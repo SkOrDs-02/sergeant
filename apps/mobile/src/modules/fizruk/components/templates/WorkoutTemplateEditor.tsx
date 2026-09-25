@@ -146,7 +146,7 @@ export function WorkoutTemplateEditor({
           >
             {pickList.length === 0 ? (
               <Text className="text-xs text-fg-muted text-center py-4">
-                Нічого не знайдено
+                Нічого не знайшов
               </Text>
             ) : (
               pickList.map((ex) => (

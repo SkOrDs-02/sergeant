@@ -315,7 +315,7 @@ export const ExerciseCatalogSection = memo(function ExerciseCatalogSection({
           testID={`${testID}-empty`}
         >
           <Text className="text-sm font-semibold text-fg">
-            Нічого не знайдено
+            Нічого не знайшов
           </Text>
           <Text className="text-xs text-fg-muted mt-1">
             Спробуй інший пошук або очисти фільтр по групі.
