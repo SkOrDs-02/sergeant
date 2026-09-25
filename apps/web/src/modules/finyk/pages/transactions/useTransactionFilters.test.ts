@@ -210,6 +210,17 @@ describe("useTransactionFilters", () => {
       expect(result.current.activeCategoryLabel).toBe("Продукти");
     });
 
+    // Регресія: підпис із кількох слів різався до першого пробілу, і чип
+    // та тренд категорії казали «та ресторани».
+    it("keeps multi-word category labels whole", () => {
+      const { result } = renderHook(() =>
+        useTransactionFilters(
+          buildDefaultParams({ categoryFilter: "restaurant" }),
+        ),
+      );
+      expect(result.current.activeCategoryLabel).toBe("Кафе та ресторани");
+    });
+
     it("has no category label for the base pills", () => {
       const { result } = renderHook(() =>
         useTransactionFilters(buildDefaultParams()),
