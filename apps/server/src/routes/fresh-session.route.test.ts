@@ -42,6 +42,25 @@ const { mockPool, queryMock, getSessionUserMock, getFreshSessionUserMock } =
     };
   });
 
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; тест його не мокає, тож без заглушки маршрут падав у 500 або
+// з'їдав чужі `mockResolvedValueOnce`.
+vi.mock("../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
+  requestAccountDeletion: vi.fn(async () => ({
+    ok: true,
+    deletedAt: "2026-09-23T10:00:00.000Z",
+    scheduledPurgeAt: "2026-10-23T10:00:00.000Z",
+  })),
+}));
+
+// Звірку пароля й саму мітку покривають `me.route.test.ts` і
+// `dataRights.test.ts`; тут перевіряється лише, що запит доходить до них.
+vi.mock("../modules/me/verifyAccountPassword.js", () => ({
+  verifyAccountPassword: vi.fn(async () => ({ ok: true })),
+}));
+
 vi.mock("./../db.js", () => ({
   default: mockPool,
   pool: mockPool,
@@ -166,23 +185,21 @@ describe("свіжа сесія підтверджена БД → чутливі
     });
   });
 
-  it("DELETE /api/me → 200 і deletion transaction (той самий deleteUserData, що й у beforeDelete)", async () => {
+  it("DELETE /api/me → 200: свіжа сесія пропускає до мітки вікна видалення", async () => {
+    // Від вікна видалення (2026-09-21) DELETE ставить мітку, а не запускає
+    // deletion transaction; тут перевіряється лише, що свіжа сесія пропускає.
     getFreshSessionUserMock.mockResolvedValue(CACHED_USER);
-    const client = {
-      query: vi.fn().mockResolvedValue({ rows: [], rowCount: 1 }),
-      release: vi.fn(),
-    };
-    mockPool.connect.mockResolvedValueOnce(client);
+    const { requestAccountDeletion } =
+      await import("../modules/me/dataRights.js");
     const app = createApp();
     const res = await request(app)
       .delete("/api/me")
       .set("X-Requested-With", "XMLHttpRequest")
-      .set("Authorization", "Bearer x");
+      .set("Authorization", "Bearer x")
+      .send({ password: "correct-horse" });
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
-    const sql = client.query.mock.calls.map((c) => String(c[0]));
-    expect(sql[0]).toBe("BEGIN");
-    expect(sql[sql.length - 1]).toBe("COMMIT");
+    expect(vi.mocked(requestAccountDeletion)).toHaveBeenCalledTimes(1);
   });
 });

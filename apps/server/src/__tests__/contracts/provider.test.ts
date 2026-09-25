@@ -105,6 +105,14 @@ const { mockPool, queryMock, getSessionUserMock, invokeLLMMock } = vi.hoisted(
   },
 );
 
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; тест його не мокає, тож без заглушки маршрут падав у 500 або
+// з'їдав чужі `mockResolvedValueOnce`.
+vi.mock("../../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
+}));
+
 vi.mock("./../../db.js", () => ({
   default: mockPool,
   pool: mockPool,
@@ -523,9 +531,21 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
     };
 
     getSessionUserMock.mockResolvedValue({ id: "user-pact-003" });
-    queryMock.mockResolvedValueOnce({
-      rows: [{ payload: expected.profile, updated_at: expected.updatedAt }],
-    });
+    // `upsertUserProfile` пише в транзакції (LWW-гард `memoryBank`):
+    // BEGIN, SELECT … FOR UPDATE, INSERT … RETURNING, COMMIT на клієнті пулу.
+    const client = {
+      query: vi.fn(async (sql: string) =>
+        String(sql).includes("RETURNING payload")
+          ? {
+              rows: [
+                { payload: expected.profile, updated_at: expected.updatedAt },
+              ],
+            }
+          : { rows: [] },
+      ),
+      release: vi.fn(),
+    };
+    mockPool.connect.mockResolvedValueOnce(client);
 
     const app = createApp();
     const res = await request(app)

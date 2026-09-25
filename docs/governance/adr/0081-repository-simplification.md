@@ -31,3 +31,14 @@ New tooling must not restore a second committed knowledge graph or a local
 archive hierarchy. A document that is removed from the working tree needs its
 inbound links changed to a verified permalink or a current canonical document;
 otherwise the link checker will correctly surface debt.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                   | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket | 2026-09-23 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

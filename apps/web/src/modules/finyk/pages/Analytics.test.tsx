@@ -440,4 +440,46 @@ describe("Analytics page", () => {
     });
     expect(screen.queryByText("••••")).not.toBeInTheDocument();
   });
+
+  // Р4 спеки аналітики v2 (сліпий замір 2026-09-24): «+946 %» проти
+  // місяця з одним записом на 75 ₴ читалось як дефект. Мізерна база дає
+  // абсолютну дельту, відсутній місяць — чесний рядок.
+  it("shows an absolute delta instead of a percent when the prior month is under 10% of this one", async () => {
+    const now = Math.floor(KYIV.getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    // 75 ₴ у травні проти 2 593 ₴ у червні.
+    const fetchMonth = vi.fn().mockResolvedValue([mkTx("prev", -7_500, mayTs)]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({ realTx: [mkTx("cur", -259_300, now)], fetchMonth })}
+          storage={buildStorage()}
+        />,
+      );
+    });
+    await waitFor(() => {
+      expect(
+        screen.getByText("Порівняння з попереднім місяцем"),
+      ).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+    expect(screen.getByText(/2\s?518/)).toBeInTheDocument();
+  });
+
+  it("says «Немає з чим порівняти» when the prior month has no records at all", async () => {
+    const now = Math.floor(KYIV.getTime() / 1000);
+    const fetchMonth = vi.fn().mockResolvedValue([]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({ realTx: [mkTx("cur", -10000, now)], fetchMonth })}
+          storage={buildStorage()}
+        />,
+      );
+    });
+    await waitFor(() => {
+      expect(screen.getByText("Немає з чим порівняти")).toBeInTheDocument();
+    });
+    expect(screen.queryByText(/%/)).not.toBeInTheDocument();
+  });
 });

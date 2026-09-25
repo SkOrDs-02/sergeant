@@ -112,3 +112,14 @@ Argos counts every screenshot toward the monthly quota and computes a diff for e
 - Sister ADR (hub-surface VRT): [ADR-0034](./0034-visual-regression-testing.md).
 - Storybook contributor guide: [`docs/design/design/storybook.md`](../../design/design/storybook.md).
 - Storybook deploy workflow: [`.github/workflows/storybook-deploy.yml`](../../../.github/workflows/storybook-deploy.yml).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                   | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket | 2026-09-23 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

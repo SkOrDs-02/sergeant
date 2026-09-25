@@ -151,3 +151,14 @@ quarterly review цього ADR.
 - [Anthropic SDK changelog](https://github.com/anthropics/anthropic-sdk-typescript/releases)
 - [Anthropic prompt caching docs](https://docs.anthropic.com/en/docs/build-with-claude/prompt-caching)
 - PR-39 spec: [`docs/work/specs/initiatives/stack-pulse-2026-05/pr-39-tools-console-anthropic-sdk.md`](https://github.com/Skords-01/Sergeant/blob/d068c73a2f21881d5c1305544fe99f3ea8be81f4/docs/90-work/initiatives/archive/stack-pulse-2026-05/archive/pr-39-tools-console-anthropic-sdk.md)
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                   | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket | 2026-09-23 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

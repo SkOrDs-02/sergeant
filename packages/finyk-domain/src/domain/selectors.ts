@@ -10,6 +10,7 @@ import {
 } from "../utils";
 import { INTERNAL_TRANSFER_ID } from "../constants";
 import type {
+  AmountDelta,
   AnalyticsResult,
   Category,
   CategorySpendIndex,
@@ -98,6 +99,10 @@ export function getMonthlySummary(
     else income += tx.amount / 100;
   }
 
+  // Точні копійки лишаються поруч із округленими гривнями: відсотки,
+  // дельти й середні рахуються з них, а не з того, що показано на екрані.
+  const spentMinor = Math.round(spent * 100);
+  const incomeMinor = Math.round(income * 100);
   spent = Math.round(spent);
   income = Math.round(income);
   // `spent`/`income` keep backwards compatibility with existing callers,
@@ -110,6 +115,8 @@ export function getMonthlySummary(
     txCount,
     totalExpense: spent,
     totalIncome: income,
+    spentMinor,
+    incomeMinor,
   };
 }
 
@@ -252,6 +259,50 @@ export function getCategoryDistribution(
   );
 }
 
+/**
+ * Частка попередньої суми від поточної, нижче якої відсоток не показуємо:
+ * «+946 %» проти місяця з одним записом на 75 ₴ читається як дефект, а не
+ * як зміна. Рішення Р4 спеки аналітики v2.
+ */
+export const MIN_PREV_SHARE_FOR_PCT = 0.1;
+
+/**
+ * Чесна дельта двох сум у копійках. Відсоток рахується лише з точних значень
+ * і лише коли попередня сума є базою, а не шумом; округлення для показу
+ * робить споживач. Єдине місце для цієї формули: Аналітика, звіти й
+ * асистент мають давати одне й те саме число.
+ */
+export function compareAmounts(
+  currentMinor: number,
+  prevMinor: number,
+): AmountDelta {
+  const diffMinor = currentMinor - prevMinor;
+  const pct =
+    prevMinor > 0 && prevMinor >= currentMinor * MIN_PREV_SHARE_FOR_PCT
+      ? (diffMinor / prevMinor) * 100
+      : null;
+  return { diffMinor, pct };
+}
+
+function toTrendComparison(
+  curr: AnalyticsResult,
+  prev: AnalyticsResult,
+): TrendComparison {
+  const spend = compareAmounts(curr.spentMinor, prev.spentMinor);
+  const income = compareAmounts(curr.incomeMinor, prev.incomeMinor);
+  return {
+    currentSpent: curr.spent,
+    prevSpent: prev.spent,
+    diff: Math.round(spend.diffMinor / 100),
+    diffPct: spend.pct,
+    currentIncome: curr.income,
+    prevIncome: prev.income,
+    incomeDiff: Math.round(income.diffMinor / 100),
+    incomeDiffPct: income.pct,
+    prevTxCount: prev.txCount,
+  };
+}
+
 // Compare two monthly summaries and return the absolute and percentage
 // delta for both spend and income.
 export function getTrendComparison(
@@ -269,22 +320,7 @@ export function getTrendComparison(
     excludedTxIds,
     txSplits,
   });
-  const diff = curr.spent - prev.spent;
-  const diffPct = prev.spent > 0 ? Math.round((diff / prev.spent) * 100) : null;
-  const incomeDiff = curr.income - prev.income;
-  const incomeDiffPct =
-    prev.income > 0 ? Math.round((incomeDiff / prev.income) * 100) : null;
-
-  return {
-    currentSpent: curr.spent,
-    prevSpent: prev.spent,
-    diff,
-    diffPct,
-    currentIncome: curr.income,
-    prevIncome: prev.income,
-    incomeDiff,
-    incomeDiffPct,
-  };
+  return toTrendComparison(curr, prev);
 }
 
 // Build a "YYYY-MM" tag for a calendar month. Safe for single-digit months
@@ -380,23 +416,11 @@ export function getCurrentVsPreviousComparison(
     txSplits,
     month: previousParsed,
   });
-  const diff = curr.spent - prev.spent;
-  const diffPct = prev.spent > 0 ? Math.round((diff / prev.spent) * 100) : null;
-  const incomeDiff = curr.income - prev.income;
-  const incomeDiffPct =
-    prev.income > 0 ? Math.round((incomeDiff / prev.income) * 100) : null;
 
   return {
     currentMonth: currKey,
     previousMonth: prevKey,
-    currentSpent: curr.spent,
-    prevSpent: prev.spent,
-    diff,
-    diffPct,
-    currentIncome: curr.income,
-    prevIncome: prev.income,
-    incomeDiff,
-    incomeDiffPct,
+    ...toTrendComparison(curr, prev),
   };
 }
 
@@ -451,7 +475,9 @@ export function formatComparisonSummary(
     maximumFractionDigits: 0,
   });
   const pctPart =
-    diffPct != null && diffPct !== 0 ? ` (${Math.abs(diffPct)}%)` : "";
+    diffPct != null && diffPct !== 0
+      ? ` (${Math.round(Math.abs(diffPct))}%)`
+      : "";
   if (diff > 0) {
     return {
       direction: "up",

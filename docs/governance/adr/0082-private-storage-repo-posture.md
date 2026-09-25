@@ -55,3 +55,14 @@
 Рішення №4 лишається чинним для решти шести (`harness-a-b`, `rag-quality-gate`,
 `visual-regression`, `typescript-next`, `shell-tax-report`, `flaky-tests-dashboard`) —
 вони не відновлюються цим amendment-ом.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                   | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket | 2026-09-23 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -1,6 +1,6 @@
 # Аналітика конкурентів руками: замір D5 і шортліст для Фініка (2026-09-24)
 
-> **Last touched:** 2026-09-24 by @Skords-01. **Next review:** 2027-03-24.
+> **Last touched:** 2026-09-25 by @Skords-01. **Next review:** 2027-12-13.
 > **Status:** Active - заміряно на планшеті за рубрикою D5 v2 (20 апок, 3 мілкі за стіною акаунта), кабінетно для Emma, Revolut, Copilot Money і PocketSmith (зі слів, не заміряно). Замінює [`finyk-analytics-research.md`](./finyk-analytics-research.md) (Deprecated, джерело гіпотез).
 
 Джерело правди - приватний репо `D:\competitor-research`: `verdicts/*.yaml` (вердикт і доказ у кожній клітинці), `dimensions/reports.md` (крос-апковий розбір D5 за шістьма полями), `desk/d5-analytics.md` (чотири апки поза планшетом, зі слів), `SYNTHESIS.md` (загальна картина), `SHORTLIST-2026-09-24.md` (цей шортліст). Матриця вердиктів - [`competitor-matrix.md`](../../research/competitor-matrix.md). Шляхи до доказів нижче вказують у приватний репо: скріншоти чужих апок у публічний не переносяться.
@@ -335,3 +335,14 @@
    пріоритет «перша за вагою» - моя оцінка наслідків, не частота.
 
 Джерело: `verdicts/*.yaml` на коміті a3be976.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                               | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
+| [#25](https://bitbucket.org/skords01/sergeant/pull-requests/25) | docs(docs): матриця конкурентів на 20 рядках і шортліст аналітики з hands-on заміру | 2026-09-24 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
