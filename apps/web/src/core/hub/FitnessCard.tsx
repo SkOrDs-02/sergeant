@@ -8,7 +8,6 @@ import { useMemo, useState } from "react";
 import { Icon } from "@shared/components/ui/Icon";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { cn } from "@shared/lib/ui/cn";
-import { messages } from "@shared/i18n/uk";
 import { DeltaChip } from "@shared/components/ui/DeltaChip";
 import { useLocalStorageState } from "@shared/hooks/useLocalStorageState";
 import { getCachedFizrukSqliteState } from "@fizruk/lib/sqliteReader";
