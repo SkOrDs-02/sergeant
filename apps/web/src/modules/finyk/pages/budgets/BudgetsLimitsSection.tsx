@@ -76,6 +76,11 @@ export function BudgetsLimitsSection({
   limitCardRefs,
   toast,
 }: BudgetsLimitsSectionProps) {
+  // Секція згорнута за замовчуванням, тож перевищення, яке вже бачить
+  // Головна хаба, мусить бути видно в самій шапці, а не лише всередині.
+  const overCount = limitBudgets.filter(
+    (b) => calculateLimitUsage(b, calcSpent(b)).overLimit,
+  ).length;
   return (
     <>
       <button
@@ -111,6 +116,11 @@ export function BudgetsLimitsSection({
             {limitBudgets.length > 0 && (
               <span className="ml-1 text-subtle font-normal">
                 ({limitBudgets.length})
+              </span>
+            )}
+            {overCount > 0 && (
+              <span className="ml-1 font-semibold text-danger-strong dark:text-danger">
+                · {overCount} перевищено
               </span>
             )}
           </SectionHeading>
