@@ -1346,7 +1346,7 @@ describe("generateRecommendations", () => {
     expect(Array.isArray(recs)).toBe(true);
   });
 
-  it("обробляє порожній масив транзакцій", () => {
+  it("обробляє порожній масив операцій", () => {
     setLS("finyk_tx_cache", { txs: [] });
     setLS("finyk_budgets", [
       { id: "b1", type: "limit", categoryId: "food", limit: 1000 },

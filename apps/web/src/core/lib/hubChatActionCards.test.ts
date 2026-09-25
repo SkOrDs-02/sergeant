@@ -17,7 +17,7 @@ describe("buildActionCard", () => {
     expect(card?.toolName).toBe("create_transaction");
     expect(card?.status).toBe("completed");
     expect(card?.module).toBe("finyk");
-    expect(card?.title).toContain("Транзакцію");
+    expect(card?.title).toContain("Операцію");
     expect(card?.summary).toContain("120");
     expect(card?.summary).toContain("кава");
   });
@@ -122,7 +122,7 @@ describe("buildActionCard", () => {
     const card = buildActionCard({
       name: "find_transaction",
       input: { query: "АТБ", amount: 450 },
-      result: "Знайдено 1 транзакц.",
+      result: "Знайдено 1 операц.",
     });
     expect(card?.module).toBe("finyk");
     expect(card?.title).toContain("знайдено");
@@ -135,7 +135,7 @@ describe("buildActionCard", () => {
     const card = buildActionCard({
       name: "batch_categorize",
       input: { pattern: "Сільпо", category_id: "food" },
-      result: "Категорію 2 транзакц. змінено на food",
+      result: "Категорію 2 операц. змінено на food",
     });
     expect(card?.module).toBe("finyk");
     expect(card?.title).toContain("Категорії");
@@ -376,7 +376,7 @@ describe("query / analytics tools (talk-to-your-data PR4)", () => {
   });
 
   it("query-картка не truncate-иться навіть для довгого результату", () => {
-    const long = "Знайдено 50 транзакц. ".repeat(20).trim();
+    const long = "Знайдено 50 операц. ".repeat(20).trim();
     const card = buildActionCard({
       name: "query_transactions",
       input: {},

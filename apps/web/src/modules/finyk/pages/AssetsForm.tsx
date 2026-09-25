@@ -75,11 +75,11 @@ export function SubscriptionForm({
       />
       <div className="space-y-1.5">
         <Label htmlFor="subscription-transaction-keyword" optional>
-          Пошук транзакції за описом
+          Пошук операції за описом
         </Label>
         <Input
           id="subscription-transaction-keyword"
-          aria-label="Пошук транзакції за описом"
+          aria-label="Пошук операції за описом"
           // Поле стоїть посеред форми з іншими текстовими інпутами, тож без
           // явних `name`/`autocomplete` менеджер паролів має всі підстави
           // прийняти його за логін (див. `searchFieldProps.ts`). Побічно
@@ -95,13 +95,13 @@ export function SubscriptionForm({
         />
       </div>
       <p className="text-style-body text-subtle">
-        Якщо не вибрати транзакцію вручну, знайду найновішу витрату, опис якої
+        Якщо не вибрати операцію вручну, знайду найновішу витрату, опис якої
         містить цей текст. Пошук не залежить від регістру.
       </p>
       {newSub.keyword.trim() && (
         <p className="text-style-caption text-subtle" role="status">
           {keywordMatch
-            ? `Знайдено: ${keywordMatch.description || "Транзакція"} · ${formatNumberUk(Math.abs(keywordMatch.amount / 100))} ₴`
+            ? `Знайдено: ${keywordMatch.description || "Операція"} · ${formatNumberUk(Math.abs(keywordMatch.amount / 100))} ₴`
             : "Збігів не знайдено"}
         </p>
       )}
@@ -538,7 +538,7 @@ export function DebtForm({
       {editingDebt && (
         <div className="rounded-xl border border-line bg-panel px-3 py-2.5 space-y-1.5">
           <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
-            <span>Виникнення за транзакціями</span>
+            <span>Виникнення за операціями</span>
             <Money amount={sourced} kopecks />
           </div>
           <div className="flex items-center justify-between gap-3 text-style-caption text-subtle">
@@ -555,8 +555,8 @@ export function DebtForm({
           </div>
           {sourced > enteredBase && (
             <p className="text-style-body text-subtle">
-              Підтверджені транзакції виникнення більші за введену початкову
-              суму, тому розрахунок бере їхню суму за базу.
+              Підтверджені операції виникнення більші за введену початкову суму,
+              тому розрахунок бере їхню суму за базу.
             </p>
           )}
         </div>

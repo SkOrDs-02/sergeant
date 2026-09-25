@@ -296,8 +296,14 @@ describe("finyk selectors", () => {
         },
       }),
     ).toEqual([
-      { name: "АТБ", count: 2, total: 250 },
-      { name: "Landlord", count: 1, total: 120 },
+      { key: "атб", name: "АТБ", count: 2, total: 250, totalMinor: 25_000 },
+      {
+        key: "landlord",
+        name: "Landlord",
+        count: 1,
+        total: 120,
+        totalMinor: 12_000,
+      },
     ]);
     expect(getTopMerchants(transactions, 1)).toHaveLength(1);
     expect(

@@ -313,7 +313,7 @@ export function RoutineCalendarPanel({
       <section className="space-y-4 pb-2">
         {listIsEmpty && hasListFilter && (
           <EmptyState
-            title="Нічого не знайдено"
+            title="Нічого не знайшов"
             description={`За цим фільтром подій немає${hasNoHabits ? " (і звичок ще немає)" : ""}.`}
             action={
               <Button

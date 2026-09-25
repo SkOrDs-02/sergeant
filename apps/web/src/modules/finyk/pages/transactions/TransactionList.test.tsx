@@ -294,7 +294,7 @@ describe("TransactionList — DataState routing", () => {
     fireEvent.click(screen.getByText("Сільпо"));
     expect(onOpenTransaction).toHaveBeenCalledWith(manualTx);
     expect(
-      screen.queryByRole("button", { name: "Розподілити транзакцію" }),
+      screen.queryByRole("button", { name: "Розподілити операцію" }),
     ).not.toBeInTheDocument();
   });
 });

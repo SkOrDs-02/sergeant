@@ -201,7 +201,7 @@ function DigestContent({
       <div className="px-4 pb-4">
         <p className="text-style-body text-muted mb-3 leading-relaxed">
           Замало даних за цей тиждень, AI-звіт вийшов би занадто загальним.
-          Запиши хоча б одну транзакцію, тренування, прийом їжі чи звичку і
+          Запиши хоча б одну операцію, тренування, прийом їжі чи звичку і
           спробуй ще раз.
         </p>
         {canGenerate && (

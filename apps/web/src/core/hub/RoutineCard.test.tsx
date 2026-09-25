@@ -9,6 +9,7 @@ vi.mock("@routine/lib/routineStorage", () => ({
 
 import RoutineCard from "./RoutineCard";
 import { localDateKey } from "./hubReports.aggregation";
+import { messages } from "@shared/i18n/uk";
 
 // A single habit completed today → non-zero pct for the current week.
 function stateWithCompletion(): Record<string, unknown> {
@@ -42,7 +43,9 @@ describe("RoutineCard", () => {
     loadRoutineState.mockReturnValue({ habits: [], completions: {} });
     render(<RoutineCard period="week" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Звички/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(messages.hub.reportEmptyHabits),
+    ).toBeInTheDocument();
   });
 
   it("renders the consistency heatmap with completion data", () => {
@@ -64,6 +67,8 @@ describe("RoutineCard", () => {
     });
     render(<RoutineCard period="month" offset={0} />);
     fireEvent.click(screen.getByRole("button", { name: /Звички/i }));
-    expect(screen.getByText(/Немає даних/i)).toBeInTheDocument();
+    expect(
+      screen.getByText(messages.hub.reportEmptyHabits),
+    ).toBeInTheDocument();
   });
 });

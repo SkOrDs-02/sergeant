@@ -493,6 +493,23 @@ describe("useOverviewData", () => {
       expect(result.current.showFirstInsight).toBe(true);
     });
 
+    it("showFirstInsight is false when budgets already exist", () => {
+      // Підказка кличе поставити бюджет; людині з бюджетами вона лише
+      // відсуває першу цифру огляду вниз.
+      localStorage.removeItem("finyk_first_insight_seen_v1");
+      const { result } = renderHook(() =>
+        useOverviewData({
+          mono: buildMono(),
+          storage: buildStorage({
+            budgets: [
+              { id: "b1", type: "limit", categoryId: "food", limit: 5000 },
+            ] as UseOverviewDataParams["storage"]["budgets"],
+          }),
+        }),
+      );
+      expect(result.current.showFirstInsight).toBe(false);
+    });
+
     it("showFirstInsight is false when the seen-key is present", () => {
       localStorage.setItem("finyk_first_insight_seen_v1", "1");
       const { result } = renderHook(() =>

@@ -97,7 +97,7 @@ describe("getCategory (expense)", () => {
     expect(getCategory("", 6011).id).not.toBe("debt");
   });
 
-  it("бере канонічний categoryId транзакції раніше за MCC/опис", () => {
+  it("бере канонічний categoryId операції раніше за MCC/опис", () => {
     const tx = {
       description: "Розваги",
       mcc: 0,
@@ -450,7 +450,7 @@ describe("calcCategorySpent", () => {
   it("сумує витрати для food через MCC+keyword", () => {
     expect(calcCategorySpent(txs, "food")).toBe(600);
   });
-  it("сумує через override для окремої транзакції", () => {
+  it("сумує через override для окремої операції", () => {
     expect(calcCategorySpent(txs, "transport", { 4: "transport" })).toBe(300);
   });
   it("використовує спліт коли він заданий", () => {

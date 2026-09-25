@@ -113,7 +113,7 @@ describe("spendingTrend", () => {
       refreshedAt: new Date().toISOString(),
     });
     const result = spendingTrend({ name: "spending_trend", input: {} });
-    expect(result).toContain("Транзакцій: 1");
+    expect(result).toContain("Операцій: 1");
   });
 });
 

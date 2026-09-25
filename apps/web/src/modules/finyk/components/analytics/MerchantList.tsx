@@ -4,13 +4,19 @@
  */
 import { memo } from "react";
 import { cn } from "@shared/lib/ui/cn";
-import { Money } from "@shared/components/ui/Money";
+import { Money, Delta } from "@shared/components/ui/Money";
 import { pluralTimes } from "@sergeant/shared";
+import type { AmountDelta } from "@sergeant/finyk-domain/domain/types";
 
 interface MerchantStat {
+  key?: string;
   name: string;
   total: number;
+  /** Точна сума в копійках; коли є, показ береться з неї, а не з `total`. */
+  totalMinor?: number;
   count: number;
+  /** Дельта до минулого місяця за правилом Р4 (Р17). */
+  delta?: AmountDelta | null;
 }
 
 interface MerchantListProps {
@@ -51,8 +57,11 @@ function MerchantListComponent({
     <div className={cn("space-y-2", className)}>
       {merchants.map((m, i) => {
         const barPct = Math.round((m.total / maxTotal) * 100);
+        const amount = m.totalMinor != null ? m.totalMinor / 100 : m.total;
+        const diff = m.delta ? Math.round(m.delta.diffMinor / 100) : 0;
+        const pct = m.delta?.pct ?? null;
         return (
-          <div key={m.name} className="flex items-center gap-3">
+          <div key={m.key ?? m.name} className="flex items-center gap-3">
             <span className="text-style-caption text-subtle w-4 shrink-0 text-right tabular-nums">
               {i + 1}
             </span>
@@ -63,8 +72,8 @@ function MerchantListComponent({
                 </span>
                 {showBalance ? (
                   <Money
-                    amount={m.total}
-                    kopecks={needsKopecks(m.total)}
+                    amount={amount}
+                    kopecks={needsKopecks(amount)}
                     className="text-style-label text-text shrink-0"
                   />
                 ) : (
@@ -83,6 +92,14 @@ function MerchantListComponent({
                 <span className="text-style-caption text-subtle shrink-0">
                   {m.count} {pluralTimes(m.count)}
                 </span>
+                {showBalance && m.delta && (pct !== null || diff !== 0) && (
+                  <Delta
+                    value={pct === null ? diff : Math.round(pct)}
+                    symbol={pct === null ? "₴" : "%"}
+                    polarity="negative"
+                    className="text-style-caption font-normal shrink-0"
+                  />
+                )}
               </div>
             </div>
           </div>

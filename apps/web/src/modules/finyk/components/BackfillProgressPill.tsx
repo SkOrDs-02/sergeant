@@ -11,9 +11,9 @@ import { formatNumberUk, pluralUa, type UaPluralForms } from "@sergeant/shared";
 
 /** «1 транзакція» / «2 транзакції» / «5 транзакцій» — не бінарна форма. */
 const TRANSACTION_FORMS: UaPluralForms = {
-  one: "транзакція",
-  few: "транзакції",
-  many: "транзакцій",
+  one: "операція",
+  few: "операції",
+  many: "операцій",
 };
 
 interface BackfillProgressPillProps {

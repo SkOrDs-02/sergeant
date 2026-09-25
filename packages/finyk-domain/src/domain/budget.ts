@@ -264,7 +264,70 @@ export function calculateLimitUsage(
 
 export type LimitUsage = ReturnType<typeof calculateLimitUsage>;
 
-export interface LimitUsageEntry extends LimitUsage {
+/**
+ * З якого дня місяця прогноз за темпом показується (Р8 спеки аналітики v2):
+ * на 1-2 день темп із однієї-двох витрат дає шум, а не прогноз, тож до
+ * третього дня людина бачить лише денну норму.
+ */
+export const MIN_FORECAST_DAY = 3;
+
+/**
+ * Прогноз витрат на кінець місяця за поточним темпом: витрачено за минулі
+ * дні (включно з сьогодні) / кількість цих днів × днів у місяці. Рахує з
+ * точної суми, округлює лише показ. `null` до `minDay`-го дня. Одна формула
+ * для картки ліміту, картки плану, хаб-попередження і `calcForecast`.
+ */
+export function projectMonthEndSpend(
+  spent: number,
+  daysPassed: number,
+  daysInMonth: number,
+  minDay: number = MIN_FORECAST_DAY,
+): number | null {
+  if (daysPassed < Math.max(1, minDay) || daysInMonth <= 0) return null;
+  return (spent / daysPassed) * daysInMonth;
+}
+
+export interface LimitPace {
+  /** Прогноз на кінець місяця, грн без округлення; `null` — прогнозу нема. */
+  forecast: number | null;
+  /** Прогноз вищий за ліміт, а факт ще ні: час попередити (Р9). */
+  forecastOverLimit: boolean;
+  /** Через скільки днів за поточним темпом факт перейде ліміт. */
+  daysUntilOver: number | null;
+}
+
+const NO_PACE: LimitPace = {
+  forecast: null,
+  forecastOverLimit: false,
+  daysUntilOver: null,
+};
+
+/**
+ * Темп ліміту в поточному місяці. Лише для місячного періоду: тижневий і
+ * разовий ліміти мають власне вікно, а спека v1 тримає місяць базою (Р3).
+ */
+export function calcLimitPace(
+  budget: { limit?: number | undefined; period?: LimitPeriod | undefined },
+  spent: number,
+  now: Date = new Date(),
+): LimitPace {
+  if ((budget?.period ?? "month") !== "month") return NO_PACE;
+  const limit = Number(budget?.limit) || 0;
+  const { daysPassed, daysInMonth } = getCurrentMonthContext(now);
+  const forecast = projectMonthEndSpend(spent, daysPassed, daysInMonth);
+  if (forecast === null) return NO_PACE;
+  const forecastOverLimit =
+    limit > 0 && spent > 0 && spent < limit && forecast > limit;
+  return {
+    forecast,
+    forecastOverLimit,
+    daysUntilOver: forecastOverLimit
+      ? Math.ceil((limit - spent) / (spent / daysPassed))
+      : null,
+  };
+}
+
+export interface LimitUsageEntry extends LimitUsage, LimitPace {
   budget: LimitBudget;
   categoryIds: string[];
   /** Набір категорій через `+`, як в id рекомендації `budget_over_<key>`. */
@@ -312,6 +375,7 @@ export function calcLimitUsages<
     );
     out.push({
       ...calculateLimitUsage(budget, spent),
+      ...calcLimitPace(budget, spent, at),
       budget,
       categoryIds,
       key: categoryIds.join("+"),

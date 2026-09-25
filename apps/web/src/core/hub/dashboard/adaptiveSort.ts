@@ -84,7 +84,7 @@ function timeOfDayMatch(module: ModuleId, hour: number): TimeMatch | null {
       // Mono webhooks land overnight; review next morning. End-of-day
       // budget check covers the late-evening "did I overspend?" itch.
       if (hour >= 8 && hour <= 10) {
-        return { score: 25, reason: "ранковий огляд транзакцій" };
+        return { score: 25, reason: "ранковий огляд операцій" };
       }
       if (hour >= 20 && hour <= 22) {
         return { score: 25, reason: "підбити день" };

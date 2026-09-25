@@ -286,7 +286,7 @@ export function PhotoAnalyzeCard({
                 value: `${fmtMacro(photoResult.macros?.fat_g)} г`,
               },
               {
-                label: "Вуглев.",
+                label: "Вугл",
                 value: `${fmtMacro(photoResult.macros?.carbs_g)} г`,
               },
             ].map((m) => (

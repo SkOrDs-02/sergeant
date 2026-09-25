@@ -748,7 +748,7 @@ describe("export_report", () => {
 // create_transaction · undo
 // ---------------------------------------------------------------------------
 describe("create_transaction · undo", () => {
-  it("повертає {undo} який видаляє щойно створену транзакцію", () => {
+  it("повертає {undo} який видаляє щойно створену операцію", () => {
     const out = handleFinykAction({
       name: "create_transaction",
       input: { amount: 250, description: "кава" },
@@ -770,7 +770,7 @@ describe("create_transaction · undo", () => {
     expect(after).toHaveLength(0);
   });
 
-  it("undo не зачіпає інші транзакції що зʼявились пізніше", () => {
+  it("undo не зачіпає інші операції що зʼявились пізніше", () => {
     const first = handleFinykAction({
       name: "create_transaction",
       input: { amount: 50, description: "перша" },

@@ -30,7 +30,7 @@ export function createTransaction(
   const { type, amount, category, description, date } = action.input;
   const amt = Number(amount);
   if (!Number.isFinite(amt) || amt <= 0) {
-    return "Некоректна сума транзакції.";
+    return "Некоректна сума операції.";
   }
   const txType = type === "income" ? "income" : "expense";
   const nowIso = new Date().toISOString();
@@ -104,7 +104,7 @@ export function hideTransaction(
   // Mirror into `finyk_hidden_transactions` — the hidden-tx read
   // (search / analytics / report) overlays from SQLite. Idempotent.
   triggerHiddenTransactionSqliteMirror(txId);
-  return `Транзакцію ${txId} приховано зі статистики`;
+  return `Операцію ${txId} приховано зі статистики`;
 }
 
 export function deleteTransaction(
@@ -114,16 +114,16 @@ export function deleteTransaction(
   const id = String(tx_id || "").trim();
   if (!id) return "Потрібен tx_id для видалення.";
   if (!id.startsWith("m_")) {
-    return `Транзакцію ${id} не видалено: можна видаляти лише ручні (m_…). Для монобанк-транзакцій використай hide_transaction.`;
+    return `Операцію ${id} не видалено: можна видаляти лише ручні (m_…). Для монобанк-операцій використай hide_transaction.`;
   }
   const list = ls<Array<{ id: string }>>("finyk_manual_expenses_v1", []);
   const idx = list.findIndex((t) => t.id === id);
-  if (idx < 0) return `Транзакцію ${id} не знайдено (вже видалена).`;
+  if (idx < 0) return `Операцію ${id} не знайдено (вже видалена).`;
   const next = list.slice();
   next.splice(idx, 1);
   finykChatWrite("finyk_manual_expenses_v1", next);
   triggerManualExpenseDeleteSqliteMirror(id);
-  return `Транзакцію ${id} видалено`;
+  return `Операцію ${id} видалено`;
 }
 
 export function splitTransaction(
@@ -153,5 +153,5 @@ export function splitTransaction(
       return `${cat?.label || s.categoryId}: ${s.amount} грн`;
     })
     .join(", ");
-  return `Транзакцію ${id} розділено на ${newSplits.length} частин: ${desc}`;
+  return `Операцію ${id} розділено на ${newSplits.length} частин: ${desc}`;
 }

@@ -36,7 +36,7 @@ const deps = vi.hoisted(() => ({
           title: sub.name ?? "Підписка",
           subtitle:
             amountMeta.amount === null
-              ? "сума з транзакції або вручну у Фініку"
+              ? "сума з операції або вручну у Фініку"
               : `~${amountMeta.amount} ${amountMeta.currency}`,
           tagLabels: [deps.groupLabel],
           finykSub: true,

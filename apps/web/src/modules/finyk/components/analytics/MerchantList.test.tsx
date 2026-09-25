@@ -69,6 +69,37 @@ describe("MerchantList", () => {
     expect(screen.getAllByText("••••").length).toBe(2);
   });
 
+  // Р17: дельта до минулого місяця, відсоток лише з базою (Р4).
+  it("shows a percent delta with a base and a hryvnia delta without one", () => {
+    const { container } = render(
+      <MerchantList
+        merchants={[
+          {
+            key: "атб",
+            name: "АТБ",
+            total: 808,
+            totalMinor: 80_750,
+            count: 3,
+            delta: { diffMinor: 56_000, pct: 226.26 },
+          },
+          {
+            key: "кава",
+            name: "Кава",
+            total: 300,
+            totalMinor: 30_000,
+            count: 1,
+            delta: { diffMinor: 30_000, pct: null },
+          },
+          { key: "сільпо", name: "Сільпо", total: 5, count: 1, delta: null },
+        ]}
+      />,
+    );
+    const text = (container.textContent ?? "").replace(/\s/gu, "");
+    expect(text).toContain("226%");
+    expect(text).toContain("300₴");
+    expect(text).toMatch(/Сільпо5₴1раз$/u);
+  });
+
   it("needsKopecks flags only totals that round away entirely", () => {
     expect(needsKopecks(0.01)).toBe(true);
     expect(needsKopecks(0.4)).toBe(true);

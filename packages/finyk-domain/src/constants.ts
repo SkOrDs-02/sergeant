@@ -427,7 +427,7 @@ export const DEFAULT_SUBSCRIPTIONS = [
 
 export const PAGES = [
   { id: "overview", label: "Огляд" },
-  { id: "transactions", label: "Транзакції" },
+  { id: "transactions", label: "Операції" },
   { id: "budgets", label: "Планування" },
   { id: "analytics", label: "Аналітика" },
   { id: "assets", label: "Активи та пасиви" },

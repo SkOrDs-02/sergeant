@@ -50,9 +50,9 @@ describe("TxRow", () => {
     expect(screen.getByText(/250/)).toBeInTheDocument();
   });
 
-  it("falls back to 'Транзакція' when description is empty", () => {
+  it("falls back to 'Операція' when description is empty", () => {
     render(<TxRow tx={mkTx({ description: "" })} />);
-    expect(screen.getByText("Транзакція")).toBeInTheDocument();
+    expect(screen.getByText("Операція")).toBeInTheDocument();
   });
 
   it("shows a manual transaction's canonical category and its category colour", () => {
@@ -324,7 +324,7 @@ describe("TxRow", () => {
   it("renders the highlighted check icon", () => {
     render(<TxRow tx={mkTx()} highlighted />);
     expect(
-      screen.getByRole("img", { name: "Вибрана транзакція" }),
+      screen.getByRole("img", { name: "Вибрана операція" }),
     ).toBeInTheDocument();
   });
 
@@ -353,9 +353,9 @@ describe("TxRow", () => {
       ],
     };
     render(<TxRow tx={mkTx()} txSplits={txSplits} />);
-    expect(screen.getByText(/спліт/)).toBeInTheDocument();
+    expect(screen.getByText(/розбито/)).toBeInTheDocument();
     expect(
-      screen.queryByLabelText("Розподілити транзакцію"),
+      screen.queryByLabelText("Розподілити операцію"),
     ).not.toBeInTheDocument();
   });
 

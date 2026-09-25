@@ -65,9 +65,7 @@ describe("shared UI stories", () => {
 
     fireEvent.click(screen.getByRole("button", { name: "Відкрити модал" }));
 
-    expect(screen.getByRole("dialog")).toHaveTextContent(
-      "Видалення транзакції",
-    );
+    expect(screen.getByRole("dialog")).toHaveTextContent("Видалення операції");
     fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
     modal.unmount();
 
@@ -125,7 +123,7 @@ describe("shared UI stories", () => {
     fireEvent.click(
       screen.getByRole("button", { name: "Error + retry action" }),
     );
-    expect(screen.getByText("Транзакцію додано.")).toBeInTheDocument();
+    expect(screen.getByText("Операцію додано.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
     expect(screen.getByText("Скасовано.")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Повторити" }));

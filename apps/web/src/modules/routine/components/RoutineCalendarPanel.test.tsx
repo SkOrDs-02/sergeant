@@ -378,7 +378,7 @@ describe("RoutineCalendarPanel", () => {
       baseData({ listIsEmpty: true, hasListFilter: true, hasNoHabits: false }),
     );
     render(<RoutineCalendarPanel />);
-    expect(screen.getByText("Нічого не знайдено")).toBeInTheDocument();
+    expect(screen.getByText("Нічого не знайшов")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Скинути фільтри" }));
     expect(setTagFilter).toHaveBeenCalledWith(null);
     expect(setListQuery).toHaveBeenCalledWith("");

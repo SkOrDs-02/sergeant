@@ -71,7 +71,7 @@ describe("debtEngine — борг (я винен)", () => {
     expect(calcDebtRemaining(debt, transactions)).toBe(800);
   });
 
-  it("сума береться зі знімка привʼязки, навіть коли транзакції немає у вікні", () => {
+  it("сума береться зі знімка привʼязки, навіть коли операції немає у вікні", () => {
     const debt = {
       totalAmount: 1000,
       linkedTxIds: ["pay1"],
@@ -206,7 +206,7 @@ describe("debtEngine — дебіторка (мені винні)", () => {
 });
 
 describe("debtEngine — ролі привʼязок", () => {
-  it("getLinkedTxRole повертає null для непривʼязаної транзакції", () => {
+  it("getLinkedTxRole повертає null для непривʼязаної операції", () => {
     const debt = { linkedTxIds: ["a"] } as never;
     expect(getLinkedTxRole(debt, "b", [])).toBeNull();
   });

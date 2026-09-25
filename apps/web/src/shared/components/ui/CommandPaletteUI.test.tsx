@@ -125,7 +125,7 @@ describe("CommandPaletteUI", () => {
       act(() => {
         vi.advanceTimersByTime(100);
       });
-      expect(screen.queryByText("Нічого не знайдено")).toBeNull();
+      expect(screen.queryByText("Нічого не знайшов")).toBeNull();
       const fallback = screen.getByRole("option", {
         name: /Шукати «zzzznope» у Sergeant/,
       });

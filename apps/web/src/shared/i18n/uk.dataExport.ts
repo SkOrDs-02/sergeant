@@ -35,7 +35,7 @@ export const dataExportMessages = {
   sections: {
     moduleData: "Дані модулів",
     monoAccounts: "Рахунки Monobank",
-    monoTransactions: "Транзакції Monobank",
+    monoTransactions: "Операції Monobank",
     monoConnection: "Підключення Monobank",
     subscriptions: "Підписки",
     pushDevices: "Пристрої для сповіщень",

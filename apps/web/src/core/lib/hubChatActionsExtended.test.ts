@@ -145,7 +145,7 @@ function readLS<T>(key: string, fallback: T): T {
 // ─── Фінік ────────────────────────────────────────────────────────────
 
 describe("find_transaction", () => {
-  it("шукає ручну транзакцію за описом і сумою", () => {
+  it("шукає ручну операцію за описом і сумою", () => {
     __setFinykSqliteStateCacheForTests({
       manualExpenses: [
         {
@@ -219,7 +219,7 @@ describe("batch_categorize", () => {
     expect(readLS<Record<string, string>>("finyk_tx_cats", {})).toEqual({});
   });
 
-  it("з dry_run=false записує категорію для matched транзакцій", () => {
+  it("з dry_run=false записує категорію для matched операцій", () => {
     __setFinykSqliteStateCacheForTests({
       manualExpenses: [
         { id: "m_silpo_1", amount: 300, description: "Сільпо центр" },
@@ -253,7 +253,7 @@ describe("batch_categorize", () => {
 });
 
 describe("delete_transaction", () => {
-  it("видаляє ручну транзакцію за id", () => {
+  it("видаляє ручну операцію за id", () => {
     localStorage.setItem(
       "finyk_manual_expenses_v1",
       JSON.stringify([
@@ -270,7 +270,7 @@ describe("delete_transaction", () => {
     expect(arr.map((t) => t.id)).toEqual(["m_keep"]);
   });
 
-  it("відмовляє для монобанк-транзакцій (не m_)", () => {
+  it("відмовляє для монобанк-операцій (не m_)", () => {
     const msg = executeAction({
       name: "delete_transaction",
       input: { tx_id: "mono_xyz" },
@@ -363,7 +363,7 @@ describe("update_budget", () => {
 });
 
 describe("mark_debt_paid", () => {
-  it("створює repayment-транзакцію і закриває борг при повній сумі", () => {
+  it("створює repayment-операцію і закриває борг при повній сумі", () => {
     localStorage.setItem(
       "finyk_debts",
       JSON.stringify([

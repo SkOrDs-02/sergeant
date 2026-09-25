@@ -266,7 +266,7 @@ describe("FinykSection branch gaps", () => {
     mockedSyncState.mockResolvedValue(ACTIVE);
     renderSection();
     expect(await screen.findByText("Завершено")).toBeInTheDocument();
-    expect(screen.getByText(/120 транзакцій/)).toBeInTheDocument();
+    expect(screen.getByText(/120 операцій/)).toBeInTheDocument();
   });
 
   it("renders BackfillProgressPill with error detail when backfill failed", async () => {

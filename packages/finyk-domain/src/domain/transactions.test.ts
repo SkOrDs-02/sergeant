@@ -319,7 +319,7 @@ describe("withManualExpenses", () => {
     expect(withManualExpenses(bank, null).map((t) => t.id)).toEqual(["bank-1"]);
   });
 
-  it("домержує ручні витрати як транзакції", () => {
+  it("домержує ручні витрати як операції", () => {
     const merged = withManualExpenses(bank, [
       { id: "cash-1", amount: 42, kind: "expense", category: "food" },
     ] as never[]);
@@ -335,7 +335,7 @@ describe("withManualExpenses", () => {
     expect(merged).toHaveLength(1);
   });
 
-  it("витримує null замість потоку транзакцій", () => {
+  it("витримує null замість потоку операцій", () => {
     expect(withManualExpenses(null, null)).toEqual([]);
   });
 });

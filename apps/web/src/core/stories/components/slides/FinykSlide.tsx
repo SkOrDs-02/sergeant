@@ -22,7 +22,7 @@ export function FinykSlide({ slide }: { slide: FinykSlideData }) {
           {fmtUah(agg?.totalSpent)}
         </div>
         <div className="mt-2 text-style-body text-white/80">
-          {agg?.txCount || 0} транзакцій · дохід {fmtUah(agg?.totalIncome)}
+          {agg?.txCount || 0} операцій · дохід {fmtUah(agg?.totalIncome)}
         </div>
       </div>
 

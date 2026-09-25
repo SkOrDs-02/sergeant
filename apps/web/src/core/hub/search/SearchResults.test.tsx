@@ -86,7 +86,7 @@ describe("SearchResults", () => {
 
   it("renders the no-results empty state for a long query with no hits", () => {
     renderResults({ query: "невідомо", results: [], recents: [] });
-    expect(screen.getByText("Нічого не знайдено")).toBeInTheDocument();
+    expect(screen.getByText("Нічого не знайшов")).toBeInTheDocument();
     expect(screen.getByText(/невідомо/)).toBeInTheDocument();
     // The prompt empty state must NOT be shown when query is long.
     expect(screen.queryByText("Глобальний пошук")).not.toBeInTheDocument();

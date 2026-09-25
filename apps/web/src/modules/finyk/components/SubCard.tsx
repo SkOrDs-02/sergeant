@@ -106,7 +106,7 @@ function SubCardComponent({
           onChange={(e) => setForm((f) => ({ ...f, name: e.target.value }))}
         />
         <Input
-          placeholder="Ключове слово з транзакції (якщо без ручної привʼязки)"
+          placeholder="Ключове слово з операції (якщо без ручної привʼязки)"
           value={form.keyword}
           onChange={(e) => setForm((f) => ({ ...f, keyword: e.target.value }))}
         />
@@ -114,7 +114,7 @@ function SubCardComponent({
             слово», а не текст для читання (density-hierarchy-spec §4). */}
         <p className="text-style-caption text-subtle">
           Якщо немає ручної привʼязки, для суми підписки знайду найновішу
-          витратну транзакцію, опис якої містить це слово.
+          витратну операцію, опис якої містить це слово.
         </p>
         <div className="flex gap-2">
           <div className="flex-1">
@@ -222,7 +222,7 @@ function SubCardComponent({
           </div>
           {sub.linkedTxId && lastTx && (
             <div className="text-style-caption text-finyk mt-0.5">
-              Привʼязано до транзакції · оновлює суму та дату
+              Привʼязано до операції · оновлює суму та дату
             </div>
           )}
           {lastTx && lastTx.time != null ? (
@@ -263,7 +263,7 @@ function SubCardComponent({
             className="px-1.5 h-auto py-0.5 text-xs text-primary hover:bg-transparent hover:underline hover:text-primary"
             onClick={onLinkTransactions}
           >
-            {sub.linkedTxId ? "Змінити транзакцію" : "Привʼязати транзакцію"}
+            {sub.linkedTxId ? "Змінити операцію" : "Привʼязати операцію"}
           </Button>
         )}
         {onEdit && (

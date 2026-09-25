@@ -43,8 +43,8 @@ export function AssetsLiabilitiesSection({ state }: { state: State }) {
         <div className="space-y-2 mb-3">
           <p className="text-style-body text-muted px-1">
             Кредити, розстрочки, позики, комунальні борги, додавай з датою
-            повернення, привʼязуй транзакції-платежі, і картка сама покаже
-            прогрес «Сплачено N з M».
+            повернення, привʼязуй операції-платежі, і картка сама покаже прогрес
+            «Сплачено N з M».
           </p>
           <div className="flex flex-wrap gap-1.5 px-1">
             {["Кредит", "Розстрочка", "Позика", "Комуналка"].map((chip) => (

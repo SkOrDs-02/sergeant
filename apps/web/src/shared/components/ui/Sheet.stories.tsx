@@ -19,7 +19,7 @@ const meta: Meta<typeof Sheet> = {
   args: {
     open: true,
     onClose: () => {},
-    title: "Нова транзакція",
+    title: "Нова операція",
     description: "Заповни форму, щоб додати витрату",
     children: (
       <div className="space-y-3 px-1">

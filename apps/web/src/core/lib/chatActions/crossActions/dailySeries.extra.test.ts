@@ -229,7 +229,7 @@ describe("buildDailySeries — hidden transactions excluded", () => {
 // ─── Ручні витрати у всесвіті витрат (F7, 2026-08-07) ────────────────────────
 
 describe("buildDailySeries — manual expenses included (F7)", () => {
-  it("spending: ручна витрата без жодної Mono-транзакції потрапляє в серію", () => {
+  it("spending: ручна витрата без жодної Mono-операції потрапляє в серію", () => {
     // Регресія F7 (репетиція бета-прогону): раніше читалось лише
     // Mono-дзеркало, і manual-only акаунт мав порожню серію spending.
     mockCachedFinyk.mockReturnValue({

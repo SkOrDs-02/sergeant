@@ -9,6 +9,7 @@ import {
   txTimeMs,
 } from "../utils";
 import { INTERNAL_TRANSFER_ID } from "../constants";
+import { normalizeMerchantKey } from "../lib/recurringDetect";
 import type {
   AmountDelta,
   AnalyticsResult,
@@ -494,13 +495,20 @@ interface TopMerchantsOptions extends SelectorOptions {
   limit?: number;
 }
 
-// Top merchants by aggregated expense. Deterministic, pure sort — useful
+// Top merchants by aggregated expense. Deterministic, pure sort, useful
 // both in the UI and in tests.
-// Ключ для групування мерчантів: нормалізовані пробіли + регістр, щоб
-// «АТБ», «атб», «АТБ  » зливалися в один запис. Для відображення
-// використовується перша зустрінута форма.
+// Ключ мерчанта (Р16 спеки аналітики v2) той самий, що в детекторі
+// регулярних платежів: регістр, пробіли, номери терміналів, тож «Сільпо»
+// і «сільпо 12» зводяться однаково, а ручний запис і банківська
+// транзакція з однаковою назвою стають одним рядком. Опис без жодного
+// слова (самі цифри) лишається окремим рядком за сирою назвою, щоб
+// витрата не зникла з топу. Для відображення береться перша зустрінута
+// форма.
 function merchantGroupKey(name: string): string {
-  return name.replace(/\s+/g, " ").trim().toLocaleLowerCase("uk-UA");
+  return (
+    normalizeMerchantKey(name) ||
+    name.replace(/\s+/g, " ").trim().toLocaleLowerCase("uk-UA")
+  );
 }
 
 export function getTopMerchants(
@@ -536,14 +544,20 @@ export function getTopMerchants(
     // рештою аналітики.
     const amount = getTxStatAmount(tx, txSplits);
     if (!(amount > 0)) continue;
-    if (!merchants[key]) merchants[key] = { name: raw, count: 0, total: 0 };
+    if (!merchants[key]) {
+      merchants[key] = { key, name: raw, count: 0, total: 0, totalMinor: 0 };
+    }
     merchants[key].count++;
     merchants[key].total += amount;
   }
 
   return Object.values(merchants)
-    .map((m) => ({ ...m, total: Math.round(m.total) }))
-    .sort((a, b) => b.total - a.total)
+    .map((m) => ({
+      ...m,
+      total: Math.round(m.total),
+      totalMinor: Math.round(m.total * 100),
+    }))
+    .sort((a, b) => b.totalMinor - a.totalMinor)
     .slice(0, limit);
 }
 

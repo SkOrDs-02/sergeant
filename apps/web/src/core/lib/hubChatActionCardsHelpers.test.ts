@@ -208,7 +208,7 @@ describe("iconFor", () => {
 describe("titleFor", () => {
   it("returns completed titles", () => {
     expect(titleFor("create_transaction", "completed")).toBe(
-      "Транзакцію записано",
+      "Операцію записано",
     );
     expect(titleFor("log_water", "completed")).toBe("Воду залоговано");
     expect(titleFor("start_workout", "completed")).toBe(
@@ -220,7 +220,7 @@ describe("titleFor", () => {
 
   it("appends failed suffix", () => {
     expect(titleFor("create_transaction", "failed")).toBe(
-      "Транзакцію записано, не вийшло",
+      "Операцію записано, не вийшло",
     );
     expect(titleFor("log_set", "failed")).toBe("Підхід записано, не вийшло");
   });
@@ -231,7 +231,7 @@ describe("titleFor", () => {
     expect(titleFor("calculate_1rm", "completed")).toBe("1RM розраховано");
     expect(titleFor("remember", "completed")).toBe("Памʼять оновлено");
     expect(titleFor("query_transactions", "completed")).toBe(
-      "Транзакції за запитом",
+      "Операції за запитом",
     );
     expect(titleFor("nutrition_averages", "completed")).toBe(
       "Середнє харчування",
