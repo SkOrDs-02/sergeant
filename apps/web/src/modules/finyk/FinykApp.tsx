@@ -244,6 +244,7 @@ export default function App({
   const showNoBankBanner = shouldShowNoBankBanner({
     hasConnectedProvider,
     manualOnly,
+    manualExpenseCount: (storage.manualExpenses || []).length,
     page,
   });
 
