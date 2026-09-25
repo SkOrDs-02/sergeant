@@ -18,8 +18,7 @@ import {
 } from "./reportChartLabels";
 import {
   aggregateWorkouts,
-  getPeriodRange,
-  datesInRange,
+  reportWindows,
   localDateKey,
   type Period,
 } from "./hubReports.aggregation";
@@ -159,7 +158,7 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
   // запису у сховище (та сама діра, що в ExpensesCard).
   const sqliteTick = useFizrukSqliteReadTick();
 
-  const { cur, prev, dates } = useMemo(() => {
+  const { cur, prev, prevAny, dates } = useMemo(() => {
     void bump; // storage-write tick
     void sqliteTick; // module SQLite cache tick (CALC-4) — forces re-read without calling getCached* inside deps
     // Canonical workouts live in the SQLite warm cache — `fizruk_workouts_v1`
@@ -176,21 +175,19 @@ export default function FitnessCard({ period, offset }: FitnessCardProps) {
               endedAt: w.endedAt ? Date.parse(w.endedAt) : null,
             })),
           );
-    const curRange = getPeriodRange(period, offset);
-    const prevRange = getPeriodRange(period, offset - 1);
-    const curDates = datesInRange(curRange.start, curRange.end);
-    const prevDates = datesInRange(prevRange.start, prevRange.end);
+    const w = reportWindows(period, offset);
     return {
-      cur: aggregateWorkouts(rawWorkouts, curDates),
-      prev: aggregateWorkouts(rawWorkouts, prevDates),
-      dates: curDates,
+      cur: aggregateWorkouts(rawWorkouts, w.cur),
+      prev: aggregateWorkouts(rawWorkouts, w.prev),
+      prevAny: aggregateWorkouts(rawWorkouts, w.prevAll).count > 0,
+      dates: w.dates,
     };
   }, [period, offset, bump, sqliteTick]);
 
   const formattedCurrent = formatNumberUk(cur.count);
   const formattedPrev = formatNumberUk(prev.count);
-  // Нуль тренувань в обох вікнах: предмета звіту ще немає.
-  const empty = cur.count === 0 && prev.count === 0;
+  // Нуль тренувань зараз і за весь попередній період: предмета звіту ще немає.
+  const empty = cur.count === 0 && !prevAny;
 
   return (
     <ReportSheet collapsed={collapsed}>

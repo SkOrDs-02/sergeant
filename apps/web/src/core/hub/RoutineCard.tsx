@@ -14,8 +14,7 @@ import { loadRoutineState } from "@routine/lib/routineStorage";
 import { formatChartTooltip } from "./reportChartLabels";
 import {
   aggregateHabits,
-  getPeriodRange,
-  datesInRange,
+  reportWindows,
   localDateKey,
   type Period,
 } from "./hubReports.aggregation";
@@ -122,7 +121,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
   // the native storage event fires (cross-tab). See useHubStorageBump.ts.
   const bump = useHubStorageBump();
 
-  const { cur, prev, dates } = useMemo(() => {
+  const { cur, prev, dates, partial } = useMemo(() => {
     void bump; // storage-write tick — forces re-read without calling load* inside deps
     // Canonical routine state from the SQLite warm cache — `hub_routine_v1`
     // is tombstoned (drained + deleted on boot), so a raw LS read is empty.
@@ -137,10 +136,7 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
       habits: routine.habits,
       completions: routine.completions,
     };
-    const curRange = getPeriodRange(period, offset);
-    const prevRange = getPeriodRange(period, offset - 1);
-    const curDates = datesInRange(curRange.start, curRange.end);
-    const prevDates = datesInRange(prevRange.start, prevRange.end);
+    const w = reportWindows(period, offset);
     // Заморозка минулого (ADR-0079 §2): картка показує й попередній період,
     // тож без `pausedFrom` пауза, поставлена сьогодні, переписала б обидва
     // числа заднім числом — включно з тим, проти якого рахується дельта.
@@ -148,9 +144,10 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
     // доби — окремий борг реєстру метрик (стадія 5г).
     const pausedFrom = localDateKey(new Date());
     return {
-      cur: aggregateHabits(routineState, curDates, { pausedFrom }),
-      prev: aggregateHabits(routineState, prevDates, { pausedFrom }),
-      dates: curDates,
+      cur: aggregateHabits(routineState, w.cur, { pausedFrom }),
+      prev: aggregateHabits(routineState, w.prev, { pausedFrom }),
+      dates: w.dates,
+      partial: w.partial,
     };
   }, [period, offset, bump]);
 
@@ -227,7 +224,10 @@ export default function RoutineCard({ period, offset }: RoutineCardProps) {
             <DeltaChip cur={cur.pct} prev={prev.pct} higherIsBetter={true} />
           </div>
           <p className="text-style-caption text-muted">
-            {messages.hub.reportPrevious} {formattedPrev}%
+            {partial
+              ? messages.hub.reportPreviousToDate
+              : messages.hub.reportPrevious}{" "}
+            {formattedPrev}%
           </p>
           <HabitHeatmap
             key={`${period}-${offset}`}

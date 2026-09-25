@@ -31,6 +31,7 @@ import {
   datesInRange,
   getPeriodRange,
   localDateKey,
+  reportWindows,
 } from "./hubReports.aggregation";
 import type { Habit } from "@sergeant/routine-domain/types";
 
@@ -574,22 +575,14 @@ describe("aggregateReport — cross-module snapshot", () => {
               "2025-04-07": 100,
               "2025-04-08": 50,
               "2025-04-09": 50,
-              "2025-04-10": 0,
-              "2025-04-11": 0,
-              "2025-04-12": 0,
-              "2025-04-13": 0,
             },
-            "pct": 29,
+            "pct": 67,
           },
           "prev": {
             "daily": {
               "2025-03-31": 0,
               "2025-04-01": 0,
               "2025-04-02": 0,
-              "2025-04-03": 0,
-              "2025-04-04": 0,
-              "2025-04-05": 0,
-              "2025-04-06": 0,
             },
             "pct": 0,
           },
@@ -639,7 +632,7 @@ describe("aggregateReport — cross-module snapshot", () => {
     `);
   });
 
-  it("прев-період має правильні (пн-нд минулого тижня) дати", () => {
+  it("прев-період бере ті ж дні минулого тижня (пн 03-31 і далі)", () => {
     const inputs = {
       rawFizrukWorkouts: JSON.stringify([
         // тренування у попередньому тижні
@@ -696,5 +689,64 @@ describe("aggregateReport — cross-module snapshot", () => {
     expect(report.period.dates).toHaveLength(30);
     expect(report.period.dates[0]).toBe("2025-04-01");
     expect(report.period.dates[29]).toBe("2025-04-30");
+  });
+});
+
+describe("reportWindows — дельта незавершеного періоду", () => {
+  it("середа: поточний тиждень до сьогодні, попередній за ті ж три дні", () => {
+    const w = reportWindows("week", 0, NOW_WED);
+    expect(w.dates).toHaveLength(7);
+    expect(w.cur).toEqual(["2025-04-07", "2025-04-08", "2025-04-09"]);
+    expect(w.prev).toEqual(["2025-03-31", "2025-04-01", "2025-04-02"]);
+    expect(w.partial).toBe(true);
+  });
+
+  it("завершений тиждень порівнюється з попереднім повністю", () => {
+    const w = reportWindows("week", -1, NOW_WED);
+    expect(w.cur).toEqual(w.dates);
+    expect(w.prev).toHaveLength(7);
+    expect(w.partial).toBe(false);
+  });
+
+  it("місяць: 9 днів квітня проти перших 9 днів березня", () => {
+    const w = reportWindows("month", 0, NOW_WED);
+    expect(w.cur).toHaveLength(9);
+    expect(w.prev[0]).toBe("2025-03-01");
+    expect(w.prev.at(-1)).toBe("2025-03-09");
+  });
+
+  it("завершений короткий місяць не обрізає довгий попередній", () => {
+    // Лютий 2025 (28 днів) проти січня (31): обидва завершені.
+    const w = reportWindows("month", -2, NOW_WED);
+    expect(w.cur).toHaveLength(28);
+    expect(w.prev).toHaveLength(31);
+    expect(w.partial).toBe(false);
+  });
+
+  it("сума за три дні проти повного тижня більше не дає фальшивий мінус", () => {
+    // Однаковий темп: по тренуванню в пн і вт обох тижнів.
+    const at = (m: number, d: number) => ({
+      startedAt: new Date(2025, m, d, 10).getTime(),
+      endedAt: new Date(2025, m, d, 11).getTime(),
+    });
+    const report = aggregateReport(
+      "week",
+      0,
+      {
+        rawFizrukWorkouts: JSON.stringify([
+          at(2, 31),
+          at(3, 1),
+          at(3, 4), // пт минулого тижня: після «тих самих днів»
+          at(3, 7),
+          at(3, 8),
+        ]),
+        finyk: { txList: [], excludedTxIds: [], txSplits: {} },
+        routineState: null,
+        nutritionLog: {},
+      },
+      NOW_WED,
+    );
+    expect(report.workouts.cur.count).toBe(2);
+    expect(report.workouts.prev.count).toBe(2);
   });
 });
