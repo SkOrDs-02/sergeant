@@ -127,6 +127,17 @@ describe("InsightCard", () => {
     const titleEl = getByText("t");
     expect(group.getAttribute("aria-labelledby")).toBe(titleEl.id);
   });
+
+  it("у темній темі не лишається білою плиткою ink-strong", () => {
+    const { container, getByText } = render(
+      <InsightCard id="x" title="t" subtitle="s" onActivate={() => {}} />,
+    );
+    const group = container.querySelector('[role="group"]')!;
+    expect(group.className).toContain("dark:bg-panelHi");
+    expect(group.className).toContain("dark:border-line");
+    expect(getByText("t").className).toContain("dark:text-text");
+    expect(getByText("s").className).toContain("dark:text-text");
+  });
 });
 
 // ── Телеметрія петель цінності (Хвиля 2) ──────────────────────────────

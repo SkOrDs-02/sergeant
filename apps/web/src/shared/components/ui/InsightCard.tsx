@@ -24,8 +24,9 @@
  * Handoff пропонував `bg-em-900/95` (raw em-palette + opacity modifier).
  * У Sergeant це violation #11. Замість того використовуємо `bg-ink-strong`
  * — semantic token що мапиться на emerald-900 в light / white в dark /
- * pure #000 в HC (via PR-1). Контрастний text-bg-base inverts через
- * theme. Amber icon уживає `bg-celebration/20` (2026-08: коментар раніше
+ * pure #000 в HC (via PR-1). У темній темі картку перевизначено на
+ * `bg-panelHi` з контуром: біла плитка ставала найяскравішою плямою екрана,
+ * яскравішою за hero й головну дію (критика екранів, хвиля 3). Amber icon уживає `bg-celebration/20` (2026-08: коментар раніше
  * помилково називав неіснуючий `bg-celebration-soft` token).
  *
  * ## Module context
@@ -229,11 +230,12 @@ export function InsightCard({
       role="group"
       aria-labelledby={titleId}
       className={cn(
-        // v2 push-card chrome — ink-strong solid in light, glass-tinted
-        // in dark (mirrors handoff `bg-em-900/95` intent without raw
-        // palette). Shadow uses elevation `shadow-e3` (overlay tier).
+        // Push-card chrome: ink-strong solid у світлій темі. У темній
+        // ink-strong стає білим, тож картку опускаємо на підняту панель із
+        // контуром; сигнал «від Сержанта» несуть бурштинові гліфи.
         "mx-3.5 mt-2 px-3 py-2.5 rounded-3xl",
         "bg-ink-strong text-bg-base",
+        "dark:bg-panelHi dark:text-text dark:border dark:border-line",
         "flex items-center gap-3 shadow-e3",
         className,
       )}
@@ -264,11 +266,11 @@ export function InsightCard({
       >
         <div
           id={titleId}
-          className="text-style-label font-extrabold truncate text-bg-base"
+          className="text-style-label font-extrabold truncate text-bg-base dark:text-text"
         >
           {title}
         </div>
-        <div className="text-style-caption opacity-70 truncate text-bg-base">
+        <div className="text-style-caption opacity-70 truncate text-bg-base dark:text-text">
           {subtitle}
         </div>
       </button>
@@ -304,7 +306,7 @@ export function InsightCard({
             "focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-soft-fg/45",
             "focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
             askAiDisabled
-              ? "bg-white/10 text-bg-base/40 cursor-not-allowed"
+              ? "bg-white/10 text-bg-base/40 dark:text-muted cursor-not-allowed"
               : "bg-brand-soft text-brand-soft-fg hover:brightness-105 active:scale-[0.98] transition-[filter,transform]",
           )}
         >
