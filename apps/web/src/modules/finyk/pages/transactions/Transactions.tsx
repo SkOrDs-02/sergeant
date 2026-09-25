@@ -7,6 +7,7 @@ import { TransactionsHeader } from "./TransactionsHeader";
 import { exportTransactionsCsv } from "./exportTransactionsCsv";
 import { TransactionsBatchToolbar } from "./TransactionsBatchToolbar";
 import { TransactionFilters } from "./TransactionFilters";
+import { CategoryTrend } from "./CategoryTrend";
 import { TransactionList } from "./TransactionList";
 import { TransactionSyncPill } from "./TransactionSyncPill";
 import { useTransactionFilters } from "./useTransactionFilters";
@@ -499,6 +500,20 @@ export function Transactions({
               hasCreditAccounts={filters.creditAccIds.size > 0}
               activeCategoryLabel={filters.activeCategoryLabel}
             />
+            {filters.activeCategoryLabel && (
+              <CategoryTrend
+                categoryId={filters.filter}
+                label={filters.activeCategoryLabel}
+                storage={{
+                  excludedTxIds,
+                  txSplits,
+                  manualExpenses,
+                  txCategories,
+                  customCategories,
+                }}
+                showBalance={showBalance}
+              />
+            )}
           </section>
         }
         trailing={
