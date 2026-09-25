@@ -68,3 +68,14 @@
 ## Джерела
 
 Внутрішні: [`2026-09-23-anti-slop-round2.md`](./2026-09-23-anti-slop-round2.md) · [`2026-09-17-site-copy-audit.md`](./2026-09-17-site-copy-audit.md) · [`2026-09-01-anti-slop-audit.md`](./2026-09-01-anti-slop-audit.md) · [`anti-slop-strategy.md`](../../../design/design/anti-slop-strategy.md). Зовнішні ті самі, що в раунді 2, § Джерела.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                 | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------- | ---------- |
+| [#27](https://bitbucket.org/skords01/sergeant/pull-requests/27) | docs(docs): анти-слоп аудит сайту за мірками раунду 2 | 2026-09-24 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

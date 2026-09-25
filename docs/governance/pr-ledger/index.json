@@ -1,8 +1,39 @@
 {
   "$schema": "../governance/schemas/pr-ledger.schema.json",
   "version": 1,
-  "generated_at": "2026-09-24",
+  "generated_at": "2026-09-25",
   "prs": [
+    {
+      "number": 42,
+      "title": "fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)",
+      "merged_at": "2026-09-24T22:44:24Z",
+      "author": "@skords01",
+      "host": "bitbucket",
+      "repo": "skords01/sergeant",
+      "touchedDocs": [
+        "docs/governance/adr/0030-telegram-reporting-channel-structure.md",
+        "docs/governance/adr/0046-storybook-vrt-scope.md",
+        "docs/governance/adr/0057-anthropic-sdk-v1-upgrade.md",
+        "docs/governance/adr/0081-repository-simplification.md",
+        "docs/governance/adr/0082-private-storage-repo-posture.md",
+        "docs/governance/adr/0090-n8n-decommissioned.md",
+        "docs/governance/adr/0099-retired-hard-rules-registry.md",
+        "docs/governance/governance/rules/04-sql-migrations-sequential-two-phase.md",
+        "docs/governance/governance/rules/05-conventional-commits-explicit-scope.md",
+        "docs/governance/governance/rules/06-no-force-push-to-main.md",
+        "docs/governance/governance/rules/10-lifecycle-markers.md",
+        "docs/governance/governance/rules/15-governance-and-doc-language.md",
+        "docs/governance/governance/rules/26-pr-ledger-update-on-merge.md",
+        "docs/start/instructions/fix-red-bundle-budget.md",
+        "docs/start/instructions/operations-runbook.md",
+        "docs/work/specs/audits/2026-09-23-dead-github-remotes.md",
+        "docs/work/specs/audits/2026-09-23-docs-governance-audit.md",
+        "docs/work/specs/audits/2026-09-23-web-copy-audit.md",
+        "docs/work/specs/audits/2026-09-24-finyk-analytics-handson.md",
+        "docs/work/specs/audits/finyk-analytics-research.md",
+        "docs/work/specs/audits/product-knowledge-overview.md"
+      ]
+    },
     {
       "number": 26,
       "title": "feat(server): анти-слоп раунд 2: Сержант у промптах, текст без окликів, гейти",
@@ -850,7 +881,7 @@
   "examined": {
     "bitbucket": [
       1, 2, 3, 4, 5, 7, 8, 9, 10, 11, 12, 14, 15, 16, 17, 18, 20, 21, 22, 23,
-      29, 31, 33, 34, 35, 36, 37, 38, 39, 40
+      29, 31, 33, 34, 35, 36, 37, 38, 39, 40, 41, 43, 44
     ]
   }
 }

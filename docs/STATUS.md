@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-24 by docs:gen-status. **Next review:** 2026-10-01.
+> **Last touched:** 2026-09-25 by docs:gen-status. **Next review:** 2026-10-02.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -28,6 +28,7 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
+- [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) — fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7) _(2026-09-24)_
 - [#26](https://bitbucket.org/skords01/sergeant/pull-requests/26) — feat(server): анти-слоп раунд 2: Сержант у промптах, текст без окликів, гейти _(2026-09-24)_
 - [#24](https://bitbucket.org/skords01/sergeant/pull-requests/24) — fix(web): гейти копі: серверні тексти помилок, кнопка «X» існує, картки без сирого e.message _(2026-09-24)_
 - [#30](https://bitbucket.org/skords01/sergeant/pull-requests/30) — fix(web): полірування копі за аудитом: плейсхолдери, плюрали, ₴ і одиниці, тости, legal під лінтом _(2026-09-24)_
@@ -37,7 +38,6 @@
 - [#19](https://bitbucket.org/skords01/sergeant/pull-requests/19) — fix(web): хвиля A аудиту UX-копі: збої з дією, без сирого error.message і жаргону _(2026-09-23)_
 - [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) — docs(agents): вирівняти governance з фактом після переїзду на Bitbucket _(2026-09-23)_
 - [#6](https://bitbucket.org/skords01/sergeant/pull-requests/6) — docs(docs): аудит мертвих GitHub-remote і вартість повного архіву _(2026-09-22)_
-- [#100](https://github.com/zaebal-beep/sergeant/pull/100) — fix(web): аудит шуму, хвиля 3 — 12 виправлених дефектів _(2026-09-17)_
 
 ## 🔵 В роботі — 78 відкритих документів
 

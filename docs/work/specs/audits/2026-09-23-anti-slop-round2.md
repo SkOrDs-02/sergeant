@@ -200,3 +200,14 @@ Q1: так. Q2: так. Q3: модалку лишити для всіх випа
 Лише з пошукових превʼю, не відкриті: треди Reddit про підлабузництво асистентів (r/ChatGPT, r/ClaudeAI), [developersdigest.tech, 16 patterns](https://www.developersdigest.tech/blog/ai-design-slop-and-how-to-spot-it), дані про відтік AI-застосунків (groovyweb.co, phys.org), [HN про обмеження Show HN](https://keydiscussions.com/2026/03/09/hacker-news-moves-toward-restricting-show-hn-posts-amid-the-ai-slop-wave/).
 
 Внутрішні: [`2026-09-01-anti-slop-audit.md`](./2026-09-01-anti-slop-audit.md) · [`2026-09-17-site-copy-audit.md`](./2026-09-17-site-copy-audit.md) · [`anti-slop-strategy.md`](../../../design/design/anti-slop-strategy.md) · [`style-guide.uk.md`](../../../product/copy/style-guide.uk.md) · [`hub-coach.md`](../../../product/modules/hub-coach.md).
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                                         | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| [#26](https://bitbucket.org/skords01/sergeant/pull-requests/26) | feat(server): анти-слоп раунд 2: Сержант у промптах, текст без окликів, гейти | 2026-09-24 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->
