@@ -139,6 +139,35 @@ describe("LimitBudgetCard", () => {
     expect(screen.getByText(/6\s?500 \/ 5\s?000 ₴/)).toBeInTheDocument();
   });
 
+  // Р8 спеки аналітики v2: прогноз за темпом під фактом, лише коли він є.
+  it("shows the pace forecast line only when a forecast exists", () => {
+    const props = {
+      budget: baseLimitBudget,
+      categoryLabel: "Продукти",
+      spent: 807.5,
+      pctRaw: 161.5,
+      pctRounded: 100,
+      remaining: 0,
+      isEditing: false,
+      showProactiveAdvice: false,
+      onBeginEdit: vi.fn(),
+      onSave: vi.fn(),
+      onDelete: vi.fn(),
+    };
+    const { unmount } = render(
+      <LimitBudgetCard {...props} forecast={1009.375} />,
+    );
+    expect(
+      screen.getByText(/За поточним темпом до кінця місяця/).textContent,
+    ).toMatch(/~1\s?009/);
+    unmount();
+
+    render(<LimitBudgetCard {...props} forecast={null} />);
+    expect(
+      screen.queryByText(/За поточним темпом до кінця місяця/),
+    ).not.toBeInTheDocument();
+  });
+
   // PR-F3 (founder-UX audit wave 6, «Чесність показників»): the card never
   // accepted `showBalance` at all, so «Приховати суми» on Overview left the
   // «витрачено / ліміт» line and «Перевищено на» text visible on Планування.
@@ -273,6 +302,14 @@ describe("MonthlyPlanCard", () => {
     expect(
       screen.getByRole("button", { name: "Згорнути" }),
     ).toBeInTheDocument();
+  });
+
+  it("shows the plan pace forecast under the progress bar", () => {
+    renderMonthlyPlan({ forecastExpense: 18750.4 });
+    fireEvent.click(screen.getByRole("button", { name: /План на місяць/ }));
+    expect(
+      screen.getByText(/За поточним темпом до кінця місяця/).textContent,
+    ).toMatch(/~18\s?750/);
   });
 
   // PR-F3 (founder-UX audit wave 6, «Чесність показників»): the card never

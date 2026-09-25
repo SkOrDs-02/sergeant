@@ -198,9 +198,10 @@ describe("useFinykInsights", () => {
     expect(overrun).toBeDefined();
     expect(overrun?.title).toContain("140%");
     // Префіл чипа «AI» бере ті самі числа, що й заголовок. Роздільник
-    // розрядів у `formatNumberUk` - нерозривний пробіл, не звичайний.
+    // розрядів у `formatNumberUk` - нерозривний пробіл, не звичайний, а перед «₴»
+    // вузький нерозривний (коміт 2278bbcd3, полірування копі).
     expect(overrun?.askAiPrompt).toMatch(
-      /4\u00a0200 грн із бюджету 3\u00a0000 грн/,
+      /4\u00a0200\u202f₴ із бюджету 3\u00a0000\u202f₴/,
     );
   });
 });

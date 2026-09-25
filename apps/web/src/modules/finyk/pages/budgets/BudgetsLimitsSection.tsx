@@ -4,6 +4,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import {
+  calcLimitPace,
   calculateLimitUsage,
   formatLimitBudgetLabel,
   limitBudgetCategoryIds,
@@ -26,6 +27,8 @@ export interface BudgetsLimitsSectionProps {
   limitsOpen: boolean;
   toggleLimits: () => void;
   monthStart: Date;
+  /** Той самий «зараз», що й у вікні лімітів: з нього рахується темп (Р8). */
+  now: Date;
   limitBudgets: LimitBudget[];
   budgets: Budget[];
   setBudgets: Dispatch<SetStateAction<Budget[]>>;
@@ -58,6 +61,7 @@ export function BudgetsLimitsSection({
   limitsOpen,
   toggleLimits,
   monthStart,
+  now,
   limitBudgets,
   budgets,
   setBudgets,
@@ -156,6 +160,7 @@ export function BudgetsLimitsSection({
           const categoryKey = limitBudgetCategoryKey(b);
           const bspent = calcSpent(b);
           const usage = calculateLimitUsage(b, bspent);
+          const pace = calcLimitPace(b, bspent, now);
           // `getLimitBudgets` normalizes limits into fresh objects, so
           // reference equality (`indexOf`) always returned -1 and made every
           // card enter edit mode at once. Budget ids are the stable identity.
@@ -224,6 +229,7 @@ export function BudgetsLimitsSection({
                 customCategories={customCategories ?? []}
                 showBalance={showBalance}
                 breakdown={breakdown}
+                forecast={pace.forecast}
                 spent={usage.spent}
                 pctRaw={usage.pctRaw}
                 pctRounded={usage.pctRounded}

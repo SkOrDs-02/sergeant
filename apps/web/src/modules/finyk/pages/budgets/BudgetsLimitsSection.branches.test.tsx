@@ -94,6 +94,7 @@ function buildProps(
     limitsOpen: false,
     toggleLimits: vi.fn(),
     monthStart: MONTH_START,
+    now: new Date("2026-06-15T09:00:00Z"),
     limitBudgets: [],
     budgets: [] as Budget[],
     setBudgets: vi.fn(),
