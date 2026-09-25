@@ -80,6 +80,13 @@ describe("FloatingActionButton — single action", () => {
     expect(btn.className).toContain("w-16");
   });
 
+  it("у темній темі бере акцент модуля, як solid-кнопка, а не -strong", () => {
+    render(<FloatingActionButton aria-label="R" variant="routine" />);
+    const btn = screen.getByRole("button", { name: "R" });
+    expect(btn.className).toContain("dark:bg-routine");
+    expect(btn.className).toContain("dark:text-bg");
+  });
+
   it("does not advertise a popup when there are no actions", () => {
     render(<FloatingActionButton aria-label="No menu" />);
     const btn = screen.getByRole("button", { name: "No menu" });
