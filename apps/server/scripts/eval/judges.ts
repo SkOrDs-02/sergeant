@@ -25,6 +25,12 @@ import {
 } from "../../src/lib/nutritionResponse.js";
 
 /**
+ * `plain` — текст без розмітки (коуч, `VOICE_RULE_PLAIN`); `chat` — чат із
+ * v19 `VOICE_RULE`, де дозволені **жирний** і перелік через «- ».
+ */
+export type VoiceMode = "plain" | "chat";
+
+/**
  * Судді на голос — окремо від `judge`, бо міряють іншу вісь: `judge` питає
  * «чи відповідь по суті», голос — «чи вона написана як наш продукт».
  * Правила дзеркалять `VOICE_RULE` із системного промпта (v14).
@@ -33,7 +39,12 @@ import {
  * «Витрати», «Виявив», «Вашингтон» — а це якраз ті слова, які модель пише
  * найчастіше. Лишай lookaround-и на `\p{L}` з обох боків.
  */
-const VOICE_RULES: ReadonlyArray<{ id: string; violation: RegExp }> = [
+const VOICE_RULES: ReadonlyArray<{
+  id: string;
+  violation: RegExp;
+  /** Мʼякша версія для `chat`; без неї правило однакове для обох режимів. */
+  chat?: RegExp;
+}> = [
   {
     id: "Ви",
     violation:
@@ -47,6 +58,9 @@ const VOICE_RULES: ReadonlyArray<{ id: string; violation: RegExp }> = [
     id: "markdown",
     violation:
       /\*\*|__|`|^\s*[-*+]\s|^\s*\d+\.\s|^\s*#{1,6}\s|\[[^\]]+\]\([^)]+\)/m,
+    // Чат (v19): жирний і «- »-перелік дозволені; заголовки, нумерація,
+    // посилання й код лишаються порушенням.
+    chat: /`|^\s*\d+\.\s|^\s*#{1,6}\s|\[[^\]]+\]\([^)]+\)/m,
   },
   {
     // `z-ai/glm-4.7-flash` видав «За цей місяць МІЙ баланс вийшов відʼємним» —
@@ -74,8 +88,10 @@ const VOICE_RULES: ReadonlyArray<{ id: string; violation: RegExp }> = [
 ];
 
 /** Порушені правила голосу; порожній масив = чисто. */
-export function voiceViolations(text: string): string[] {
-  return VOICE_RULES.filter((r) => r.violation.test(text)).map((r) => r.id);
+export function voiceViolations(text: string, mode: VoiceMode): string[] {
+  return VOICE_RULES.filter((r) =>
+    (mode === "chat" && r.chat ? r.chat : r.violation).test(text),
+  ).map((r) => r.id);
 }
 
 /**
@@ -115,6 +131,28 @@ export const noInventedAmounts = (text: string): boolean | string => {
   const withoutYears = text.replace(/(?<!\d)(19|20)\d{2}(?!\d)/g, "");
   const made = withoutYears.match(/\d{3,}/);
   return made === null || `вигадав суму ${made[0]} — даних у вході немає`;
+};
+
+/**
+ * Порожній вхід коуча: відповідь має визнати, що даних немає, і не
+ * вдавати спостереження. `noInventedAmounts` тут замало: «Бачу, що ти
+ * сьогодні недобираєш білка» (Flash Lite, стенд 2026-09-24) не містить
+ * жодного числа, але описує дані, яких модель не бачила.
+ */
+export const admitsNoData = (text: string): boolean | string => {
+  const amounts = noInventedAmounts(text);
+  if (amounts !== true) return amounts;
+  const claim = text.match(
+    /(?<!\p{L})(?<!не\s)(бачу|показують|недобира\p{L}*|перебира\p{L}*|минулого тижня)(?!\p{L})/iu,
+  );
+  if (claim) return `спостереження без даних: «${claim[0]}»`;
+  // ponytail: словникова евристика («не бачу» не рахується); промах словоформи
+  // видно в звіті рядком причини.
+  return (
+    /(?<!\p{L})(немає|нема|замало|ще не|поки що|бракує|не бачу)(?!\p{L})/iu.test(
+      text,
+    ) || "не визнав, що даних немає"
+  );
 };
 
 /**
