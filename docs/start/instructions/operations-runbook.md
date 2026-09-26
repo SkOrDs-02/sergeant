@@ -399,8 +399,9 @@ Auto-create / auto-drop indexes на основі stat-ів — anti-pattern:
 
 | PR                                                              | Title                                                                   | Merged     |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- |
+| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)            | 2026-09-24 |
 | [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket | 2026-09-23 |
 | [#1098](https://github.com/SkOrDs-02/sergeant/pull/1098)        | fix(root): повернути CI до зеленого і закрити хвилю 1 розбору власника  | 2026-09-11 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
