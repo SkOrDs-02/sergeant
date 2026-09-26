@@ -174,11 +174,12 @@ describe("ActiveHabitsSection", () => {
     expect(screen.queryByText("Нічого не знайшов")).not.toBeInTheDocument();
   });
 
-  it("wires the Деталі button to onOpenDetails", () => {
+  it("wires the Деталі menu item to onOpenDetails", () => {
     const onOpenDetails = vi.fn();
     const routine = makeRoutine([makeHabit("h1", "Вода", 0)]);
     render(<Harness initial={routine} onOpenDetails={onOpenDetails} />);
-    fireEvent.click(screen.getByRole("button", { name: "Деталі" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Ще дії зі звичкою/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Деталі" }));
     expect(onOpenDetails).toHaveBeenCalledWith("h1");
   });
 

@@ -30,9 +30,9 @@ export interface HabitListItemProps {
 }
 
 /**
- * Єдиний рядок у списку активних звичок: перетягування, «Деталі», «Змінити»
- * лишаються видимими кнопками. Перестановка ↑↓, «В архів» і «Видалити» живуть
- * у меню «⋯», щоб деструктивна дія не займала цілий вертикальний ряд на
+ * Єдиний рядок у списку активних звичок: на виду лише «Змінити» і меню «⋯»,
+ * щоб на телефоні рядок не загортався в кілька поверхів. «Деталі», «Вище»,
+ * «Нижче», «В архів» і «Видалити» живуть у меню «⋯», щоб деструктивна дія не займала цілий вертикальний ряд на
  * екрані з десятком звичок. Мемоізовано, щоб редагування іншої звички не
  * спричиняло re-render усіх рядків.
  */
@@ -88,15 +88,6 @@ export const HabitListItem = memo(function HabitListItem({
             type="button"
             variant="outline"
             size="sm"
-            className="h-9! px-3! text-xs! bg-routine-surface/40 dark:bg-routine-surface-dark/10"
-            onClick={onOpenDetails}
-          >
-            Деталі
-          </Button>
-          <Button
-            type="button"
-            variant="outline"
-            size="sm"
             className="h-9! px-3! text-xs!"
             onClick={onStartEdit}
           >
@@ -116,6 +107,13 @@ export const HabitListItem = memo(function HabitListItem({
               </IconButton>
             }
             items={[
+              {
+                type: "item",
+                id: "details",
+                label: "Деталі",
+                onSelect: onOpenDetails,
+              },
+              { type: "separator" },
               {
                 type: "item",
                 id: "move-up",

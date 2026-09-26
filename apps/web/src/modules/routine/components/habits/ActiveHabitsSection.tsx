@@ -67,9 +67,8 @@ export function ActiveHabitsSection({
         Активні звички
       </SectionHeading>
       <p className="text-style-body text-subtle leading-snug">
-        Порядок у списку = порядок у календарі. На десктопі можна перетягнути;
-        на телефоні: кнопки ↑↓. Для клавіатури та скрінрідерів зручніші кнопки
-        ↑↓.
+        Порядок у списку = порядок у календарі. На десктопі можна перетягнути,
+        на телефоні й з клавіатури: «Вище» і «Нижче» в меню «⋯».
       </p>
       <Input
         className="routine-touch-field w-full max-w-md"

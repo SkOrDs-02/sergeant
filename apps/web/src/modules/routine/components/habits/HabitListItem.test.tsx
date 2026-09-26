@@ -43,7 +43,8 @@ describe("HabitListItem", () => {
     );
 
     expect(screen.getByText(/Вода/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Деталі" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Ще дії зі звичкою/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Деталі" }));
     expect(onOpenDetails).toHaveBeenCalledTimes(1);
   });
 
