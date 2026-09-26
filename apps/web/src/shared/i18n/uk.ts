@@ -148,7 +148,7 @@ export const messages = {
     nutritionSections: "Розділи Їжі",
     openAssistant: "Відкрити Сержанта",
     globalSearch: "Глобальний пошук",
-    searchPlaceholder: "Пошук по всіх модулях…",
+    searchPlaceholder: "Пошук по всіх модулях",
     moduleSwitcher: "Перемикач модулів",
     closeSettings: "Закрити налаштування",
     closeMenu: "Закрити меню",
@@ -273,7 +273,7 @@ export const messages = {
       finyk: "Витрати, бюджети та тренди",
       fizruk: "Тренування, прогрес і заміри",
       routine: "Звички, серії днів і нагадування",
-      nutrition: "Калорії, AI-аналіз фото та план",
+      nutrition: "Калорії, аналіз фото Сержантом та план",
     },
   },
 
@@ -426,13 +426,13 @@ export const messages = {
       unitsFallback:
         "Без одиниці невелика кількість читається як «шт». Від 100 без одиниці спитаю, шт це чи г.",
       aiNote:
-        "Можна писати як завгодно: список розбирає AI, він переживе помилки, скорочення й відмінки («помідорів 3», «0.5л молока»).",
+        "Можна писати як завгодно: список розбирає Сержант, він переживе помилки, скорочення й відмінки («помідорів 3», «0.5л молока»).",
       confirmNote:
         "Розібране буде показано списком. Додасться лише те, що ти підтвердиш.",
     },
     pantryPreview: {
       parsedCount: "Розібрано",
-      localFallback: "AI недоступний, розібрано на пристрої",
+      localFallback: "Сержант недоступний, розібрано на пристрої",
       confirm: "Додати",
       dismiss: "Скасувати",
     },
@@ -803,7 +803,7 @@ export const messages = {
   paywallModal: {
     cta: "Перейти на Premium",
     dismiss: "Не зараз",
-    featureAi: "Безлімітний AI-чат + щоденні брифи",
+    featureAi: "Безлімітний чат із Сержантом + щоденні брифи",
     featureSync: "Авто-синхронізація Mono + CloudSync між пристроями",
     featureExport: "Експорт CSV/PDF + крос-модульні звіти",
 
@@ -814,12 +814,12 @@ export const messages = {
     // AI-5 (аудит 2026-09-01): round-trip-квиток зробив кожен хід рівно
     // одним запитом, тож застереження «може коштувати кілька» більше не
     // правда — не повертай його.
-    aiChatTitle: "Безлімітний AI-чат у Premium",
+    aiChatTitle: "Безлімітний чат із Сержантом у Premium",
     /** `{limit}` — денна квота Free-тарифу, коли сервер її назвав. */
     aiChatDescription:
-      "План Free має {limit} запитів до AI на день, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.",
+      "План Free має {limit} запитів до Сержанта на день, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.",
     aiChatDescriptionUnknownLimit:
-      "План Free має денний ліміт запитів до AI, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.",
+      "План Free має денний ліміт запитів до Сержанта, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.",
   },
 
   // Phase 7 D2 — paywall feature gates. Per-feature copy used by the
@@ -828,10 +828,10 @@ export const messages = {
   // into «Розблокувати {name}» (≤ 35 chars).
   paywall: {
     "ai-photo-analysis": {
-      name: "AI-аналіз фото їжі",
-      title: "AI-аналіз фото – у Premium",
+      name: "Аналіз фото їжі Сержантом",
+      title: "Аналіз фото Сержантом – у Premium",
       description:
-        "AI визначить КБЖВ та порцію за фото страви. Доступно в плані Premium.",
+        "Сержант визначить КБЖВ та порцію за фото страви. Доступно в плані Premium.",
     },
     "analytics-export-pdf": {
       name: "Експорт PDF",

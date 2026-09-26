@@ -95,7 +95,7 @@ export function PhotoAddItemPicker({
               disabled={busy}
               className={cn(
                 "touch-target text-style-label flex-1 rounded-xl px-4",
-                "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+                "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
                 "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45",
               )}
             >

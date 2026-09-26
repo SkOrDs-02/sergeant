@@ -187,6 +187,10 @@
          active:scale-[0.98];
 }
 
+.dark .fizruk-cta-accent {
+  @apply bg-fizruk text-bg hover:bg-fizruk/90;
+}
+
 .fizruk-cta-accent:hover {
   box-shadow: 0 0 0 3px rgba(14, 116, 144, 0.15);
 }

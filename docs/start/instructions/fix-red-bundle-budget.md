@@ -1,6 +1,6 @@
 # Playbook: Червоний бандл-бюджет (size-limit / eager)
 
-> **Last touched:** 2026-09-24 by @Skords-01. **Next review:** 2027-01-19.
+> **Last touched:** 2026-09-26 by @Skords-01. **Next review:** 2027-01-21.
 > **Status:** Active
 > **Runtime-specific:** no
 

@@ -63,7 +63,7 @@ export function SourceTabs({ active, onChange }: SourceTabsProps) {
               "transition-[background-color,color] focus-visible:outline-none",
               "focus-visible:ring-2 focus-visible:ring-nutrition/60",
               isActive
-                ? "bg-nutrition-strong text-white"
+                ? "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg"
                 : "text-muted hover:text-text",
             )}
           >

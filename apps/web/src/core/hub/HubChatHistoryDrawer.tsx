@@ -172,13 +172,13 @@ function HistoryPanel({
         className="relative flex flex-col w-[88%] max-w-sm h-full bg-bg border-r border-line shadow-float motion-safe:animate-fade-in"
       >
         <div className="flex items-center justify-between gap-3 px-4 pt-3 pb-2 shrink-0">
-          <div className="flex items-center gap-2.5 min-w-0">
-            <div
-              className="w-9 h-9 rounded-xl bg-brand-500/10 flex items-center justify-center shrink-0"
+          <div className="flex items-center gap-2 min-w-0">
+            <Icon
+              name="sergeant"
+              size="md"
+              className="text-brand-500 shrink-0"
               aria-hidden
-            >
-              <Icon name="sergeant" size="md" className="text-brand-500" />
-            </div>
+            />
             <div className="min-w-0">
               <div className="text-style-title font-bold text-text leading-tight">
                 Бесіди

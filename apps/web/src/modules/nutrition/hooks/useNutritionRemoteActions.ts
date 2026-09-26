@@ -220,8 +220,8 @@ function assertPantryModeAvailable(
  */
 function emptyDayPlanErrorMessage(mode: "prefer" | "only" | "ignore"): string {
   return mode === "only"
-    ? "AI не зміг скласти план тільки з наявних продуктів. Додай ще позицій у комору або зміни режим комори."
-    : "AI повернув порожній план харчування. Спробуй згенерувати ще раз.";
+    ? "Сержант не зміг скласти план тільки з наявних продуктів. Додай ще позицій у комору або зміни режим комори."
+    : "Сержант повернув порожній план харчування. Спробуй згенерувати ще раз.";
 }
 
 /** Coerce a possibly-numeric pref value to a number with a fallback. */
@@ -583,7 +583,7 @@ export function useNutritionRemoteActions({
         );
         if (categories.length === 0) {
           throw new Error(
-            "AI не повернув жодної покупки. Перевір джерело списку або склад комори й спробуй ще раз.",
+            "Сержант не повернув жодної покупки. Перевір джерело списку або склад комори й спробуй ще раз.",
           );
         }
         return categories;

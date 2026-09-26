@@ -162,7 +162,7 @@ export const messagesEn: Partial<{
     settings: "Settings",
     openAssistant: "Open AI assistant",
     globalSearch: "Global search",
-    searchPlaceholder: "Search across all modules…",
+    searchPlaceholder: "Search across all modules",
     moduleSwitcher: "Module switcher",
     closeSettings: "Close settings",
     closeMenu: "Close menu",

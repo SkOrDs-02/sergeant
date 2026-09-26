@@ -60,28 +60,28 @@ const MODULE_VISUALS: Record<
     bg: "bg-finyk/8",
     icon: "bg-finyk/15 text-finyk",
     ring: "ring-finyk/40",
-    check: "bg-finyk-strong",
+    check: "bg-finyk-strong dark:bg-finyk dark:text-bg",
   },
   fizruk: {
     border: "border-fizruk/60",
     bg: "bg-fizruk/8",
     icon: "bg-fizruk/15 text-fizruk",
     ring: "ring-fizruk/40",
-    check: "bg-fizruk-strong",
+    check: "bg-fizruk-strong dark:bg-fizruk dark:text-bg",
   },
   routine: {
     border: "border-routine/60",
     bg: "bg-routine/8",
     icon: "bg-routine/15 text-routine",
     ring: "ring-routine/40",
-    check: "bg-routine-strong",
+    check: "bg-routine-strong dark:bg-routine dark:text-bg",
   },
   nutrition: {
     border: "border-nutrition/60",
     bg: "bg-nutrition/8",
     icon: "bg-nutrition/15 text-nutrition",
     ring: "ring-nutrition/40",
-    check: "bg-nutrition-strong",
+    check: "bg-nutrition-strong dark:bg-nutrition dark:text-bg",
   },
 };
 

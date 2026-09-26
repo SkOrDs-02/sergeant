@@ -163,8 +163,9 @@ export function PlanSection() {
 
         {!isPro && !isLoading && status !== "canceled" && (
           <p className="text-style-body text-subtle leading-snug">
-            Ти на безкоштовному плані. {premiumName} відкриває безлімітний
-            AI-чат, CloudSync між пристроями, авто-Mono sync і експорт CSV/PDF.
+            Ти на безкоштовному плані. {premiumName} відкриває безлімітний чат
+            із Сержантом, CloudSync між пристроями, авто-Mono sync і експорт
+            CSV/PDF.
           </p>
         )}
 

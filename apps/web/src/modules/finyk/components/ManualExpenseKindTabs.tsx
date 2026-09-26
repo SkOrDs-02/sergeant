@@ -27,7 +27,7 @@ const tabClass = (active: boolean) =>
   cn(
     "touch-target rounded-md text-style-body font-medium transition-colors duration-fast",
     active
-      ? "bg-finyk-strong text-white shadow-sm"
+      ? "bg-finyk-strong text-white shadow-sm dark:bg-finyk dark:text-bg"
       : "text-muted hover:text-text",
   );
 

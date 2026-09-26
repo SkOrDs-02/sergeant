@@ -104,7 +104,9 @@ describe("PaywallModal", () => {
     expect(screen.queryByText(/trial/i)).toBeNull();
     expect(screen.queryByText(/привʼязки картки/i)).toBeNull();
     // Решта дефолтних булітів лишається на місці.
-    expect(screen.getByText(/Безлімітний AI-чат/)).toBeInTheDocument();
+    expect(
+      screen.getByText(/Безлімітний чат із Сержантом/),
+    ).toBeInTheDocument();
     expect(screen.getByText(/Експорт CSV\/PDF/)).toBeInTheDocument();
   });
 

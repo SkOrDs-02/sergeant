@@ -270,7 +270,7 @@ export function MemoryBankSection() {
                 <Icon name="sergeant" size={22} className="text-brand-500" />
               }
               title="Банк памʼяті порожній"
-              description="AI поставить кілька запитань, щоб дізнатися про твої алергії, цілі, уподобання та рівень активності"
+              description="Сержант поставить кілька запитань, щоб дізнатися про твої алергії, цілі, уподобання та рівень активності"
               action={
                 <Button
                   variant="solid"

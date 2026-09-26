@@ -15,7 +15,7 @@ export default function SiteFooter() {
               Sergeant
             </span>
           </p>
-          <p>© 2026 · Made in Ukraine</p>
+          <p>© 2026 · Зроблено в Україні</p>
         </div>
         <nav
           aria-label="Футер"
@@ -29,7 +29,7 @@ export default function SiteFooter() {
               Звʼязки
             </a>
             <a href="/pomichnyk" className={link}>
-              AI-помічник
+              Сержант
             </a>
             <a href="/guides" className={link}>
               Гайди

@@ -110,8 +110,11 @@ export const coreMessages = {
     // anti-slop round2, P1-3): жодних знаків оклику й похвали персонажа
     // («легенда», «стаєш сильнішим»), число вже несе емоцію.
     goalReached: "Ціль закрито",
-    levelUp: "Рівень {level}",
-    streakDays: "{days} днів поспіль",
+    // Число вже показане великим `value` над заголовком (`renderValue`),
+    // тож title не повторює його — інакше «5» + «Рівень 5» / «30 днів» +
+    // «30 днів поспіль» дублюють ту саму цифру двічі на екрані.
+    levelUp: "Новий рівень",
+    streakDays: "Днів поспіль",
   },
 
   errors: {
@@ -214,7 +217,7 @@ export const coreMessages = {
       more: "ще",
       doIt: "Зробити",
       open: "Відкрити",
-      askAiChip: "AI",
+      askAiChip: "Сержант",
       askAi: "Спитати Сержанта про це",
       askAiLimit: "Ліміт запитів до Сержанта на сьогодні",
       dismiss: "Закрити підказку",
@@ -231,7 +234,7 @@ export const coreMessages = {
     crossModulePreviewAria: "Що Сержант покаже далі",
     weeklyDigestTitle: "Щотижневий дайджест: сторіс",
     chatOfflineNotice:
-      "Сержант недоступний без інтернету. Дані модулів видно офлайн, але AI-відповіді потребують підключення.",
+      "Сержант недоступний без інтернету. Дані модулів видно офлайн, але відповіді Сержанта потребують підключення.",
 
     // PR-26 / §A12 — empty-state placeholder в `/chat`. Коли користувач
     // тільки-но відкрив чат і ще нічого не написав, замість пустого
@@ -284,8 +287,8 @@ export const coreMessages = {
     // «запитів» буквально дорівнює «діям», без застережень.
     chatUsageUnit: "запитів",
     chatUsageAriaPrefix: "Використано",
-    chatUsageAriaSuffix: "запитів до AI на сьогодні",
-    chatUsageExhausted: "Ліміт запитів до AI на сьогодні. Подивись плани",
+    chatUsageAriaSuffix: "запитів до Сержанта на сьогодні",
+    chatUsageExhausted: "Ліміт запитів до Сержанта на сьогодні. Подивись плани",
   },
 
   // Experimental section (PR-36 ux-roast 2026-Q2 / §9.3): banner + opt-in

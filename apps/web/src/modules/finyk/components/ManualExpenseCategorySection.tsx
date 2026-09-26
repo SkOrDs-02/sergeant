@@ -71,12 +71,12 @@ export function ManualExpenseCategorySection({
             className="inline-flex items-center gap-1.5"
           >
             <Icon name="sergeant" size="xs" aria-hidden />
-            AI ·{" "}
+            Сержант ·{" "}
             {categoryDisplay[aiAppliedCategory]?.label ?? aiAppliedCategory}
             <button
               type="button"
               onClick={() => setAiAppliedCategory(null)}
-              aria-label="Сховати AI-підказку"
+              aria-label="Сховати підказку Сержанта"
               className="ml-0.5 inline-flex h-4 w-4 items-center justify-center rounded-full hover:bg-finyk/20 transition-colors touch-target"
             >
               <Icon name="close" size={10} aria-hidden />

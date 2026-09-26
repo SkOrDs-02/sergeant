@@ -6,6 +6,15 @@
  */
 import { expect, type Page } from "@playwright/test";
 
+/** Форма `MonoSyncStateSchema` із `apps/server/src/modules/mono/connection.ts`. */
+export const MONO_DISCONNECTED = {
+  status: "disconnected",
+  webhookActive: false,
+  lastEventAt: null,
+  lastBackfillAt: null,
+  accountsCount: 0,
+} as const;
+
 // Minimal API mock — the app renders fully client-side once `/me` returns a
 // user, so no backend is required. Mirrors playwright.ledger.config.ts.
 export async function mockApi(page: Page) {
@@ -31,6 +40,18 @@ export async function mockApi(page: Page) {
               emailVerified: true,
             },
           }),
+        });
+        return;
+      }
+      // Реальна відповідь сервера для користувача без Monobank. Загальний
+      // `{ ok: true }` клієнт читає як «підключено» (немає `status:
+      // "disconnected"`), і Фінік чекав банківські операції, яких у стенді
+      // не існує.
+      if (path.endsWith("/mono/sync-state")) {
+        await route.fulfill({
+          status: 200,
+          contentType: "application/json",
+          body: JSON.stringify(MONO_DISCONNECTED),
         });
         return;
       }

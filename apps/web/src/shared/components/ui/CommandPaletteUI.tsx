@@ -55,7 +55,7 @@ function searchFallbackCommand(query: string): PaletteCommand {
   return {
     id: SEARCH_FALLBACK_COMMAND_ID,
     title: `Шукати «${query}» у Sergeant`,
-    description: "Записи всіх модулів, налаштування, AI-підказки",
+    description: "Записи всіх модулів, налаштування, підказки від Сержанта",
     group: "Пошук",
     keywords: [],
     run: () => openHubSearch(query),

@@ -168,7 +168,7 @@ export function GeneratorCard({
           disabled={busy}
           className={cn(
             "text-style-label w-full h-11 rounded-2xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50",
+            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
           )}
         >
           Запропонувати рецепти
