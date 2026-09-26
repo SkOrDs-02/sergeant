@@ -13,6 +13,8 @@ import {
 } from "../hooks/useMeasurements";
 import { Card } from "@shared/components/ui/Card";
 import { Stat } from "@shared/components/ui/Stat";
+import { Button } from "@shared/components/ui/Button";
+import { Sheet } from "@shared/components/ui/Sheet";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { AddMeasurementForm } from "./Measurements/AddMeasurementForm";
@@ -31,6 +33,7 @@ const HISTORY_ROW_FIELD_LIMIT = 4;
 
 export function Measurements() {
   const [guideOpen, setGuideOpen] = useState(false);
+  const [addOpen, setAddOpen] = useState(false);
   const { entries, addEntry, deleteEntry, restoreEntry } = useMeasurements();
   const toast = useToast();
   const handleDelete = useCallback(
@@ -110,11 +113,38 @@ export function Measurements() {
   const stats = useMemo(() => {
     const total = entries?.length || 0;
     const latestAt = latest?.at ? formatDateShort(new Date(latest.at)) : "—";
-    const filledLatest = latest
-      ? MEASURE_FIELDS.filter((f) => latest[f.id] != null).length
-      : 0;
-    return { total, latestAt, filledLatest };
+    return { total, latestAt };
   }, [entries, latest]);
+
+  const guideButton = (
+    <button
+      ref={guideTriggerRef}
+      type="button"
+      onClick={() => setGuideOpen(true)}
+      className="focus-ring flex items-center gap-3 bg-panel border border-line rounded-2xl p-4 shadow-card"
+    >
+      <div className="min-w-0">
+        <SectionHeading
+          as="div"
+          size="xs"
+          variant="fizruk"
+          className="inline-flex items-center gap-1.5"
+        >
+          <Icon
+            name="info"
+            size="sm"
+            className="shrink-0 text-fizruk-strong dark:text-fizruk"
+            aria-hidden
+          />
+          {messages.fizruk.measurements.manual}
+        </SectionHeading>
+        <div className="text-style-label text-fizruk-strong dark:text-fizruk mt-0.5 inline-flex items-center gap-0.5">
+          {messages.fizruk.measurements.manualLink}
+          <Icon name="chevron-right" size="sm" />
+        </div>
+      </div>
+    </button>
+  );
 
   if (guideOpen) {
     return (
@@ -235,46 +265,36 @@ export function Measurements() {
             Видимий заголовок за зразком сусідніх сторінок модуля
             (`Programs.tsx`, `components/workouts/WorkoutsHeader.tsx`) —
             той самий `text-style-title text-text` плюс підпис-caption. */}
-        <div>
-          <h1 className="text-style-title text-text">
-            {messages.fizruk.progress.measurementsTitle}
-          </h1>
-          <p className="text-style-caption text-subtle mt-0.5">
-            {messages.fizruk.progress.measurementsSubtitle}
-          </p>
-        </div>
-        <button
-          ref={guideTriggerRef}
-          type="button"
-          onClick={() => setGuideOpen(true)}
-          className="focus-ring flex items-center gap-3 bg-panel border border-line rounded-2xl p-4 shadow-card"
-        >
-          <div className="min-w-0">
-            <SectionHeading
-              as="div"
-              size="xs"
-              variant="fizruk"
-              className="inline-flex items-center gap-1.5"
-            >
-              <Icon
-                name="info"
-                size="sm"
-                className="shrink-0 text-fizruk-strong dark:text-fizruk"
-                aria-hidden
-              />
-              {messages.fizruk.measurements.manual}
-            </SectionHeading>
-            <div className="text-style-label text-fizruk-strong dark:text-fizruk mt-0.5 inline-flex items-center gap-0.5">
-              {messages.fizruk.measurements.manualLink}
-              <Icon name="chevron-right" size="sm" />
-            </div>
+        <div className="flex items-center gap-3">
+          <div className="flex-1">
+            <h1 className="text-style-title text-text">
+              {messages.fizruk.progress.measurementsTitle}
+            </h1>
+            <p className="text-style-caption text-subtle mt-0.5">
+              {messages.fizruk.progress.measurementsSubtitle}
+            </p>
           </div>
-        </button>
+          {latest && (
+            <Button
+              variant="solid"
+              tone="fizruk"
+              size="sm"
+              className="h-9 px-4"
+              onClick={() => setAddOpen(true)}
+              aria-label={messages.fizruk.measurements.addHeading}
+            >
+              {messages.fizruk.measurements.addButton}
+            </Button>
+          )}
+        </div>
+        {/* Коли записів немає, форма і є головний зміст екрана, тож гайд
+            стоїть над нею; з історією він з'їжджає під неї. */}
+        {!latest && guideButton}
 
         {/* До першого запису плиткам нема що казати: «0 / – / 0» подає
             порожній стан як результат. */}
         {latest && (
-          <div className="grid grid-cols-3 gap-2">
+          <div className="grid grid-cols-2 gap-2">
             <Card radius="lg" padding="sm">
               <Stat
                 label={messages.fizruk.measurements.records}
@@ -293,18 +313,10 @@ export function Measurements() {
                 align="center"
               />
             </Card>
-            <Card radius="lg" padding="sm">
-              <Stat
-                label={messages.fizruk.measurements.fields}
-                value={stats.filledLatest}
-                size="sm"
-                align="center"
-              />
-            </Card>
           </div>
         )}
 
-        <AddMeasurementForm addEntry={addEntry} />
+        {!latest && <AddMeasurementForm addEntry={addEntry} />}
 
         {/*
           П3 «край і зріз»: «Останній запис» і журнал «Історія» нижче
@@ -448,7 +460,22 @@ export function Measurements() {
             />
           )}
         </Card>
+
+        {latest && guideButton}
       </div>
+
+      <Sheet
+        open={addOpen}
+        onClose={() => setAddOpen(false)}
+        title={messages.fizruk.measurements.addHeading}
+        closeLabel={messages.actions.close}
+      >
+        <AddMeasurementForm
+          addEntry={addEntry}
+          inSheet
+          onSaved={() => setAddOpen(false)}
+        />
+      </Sheet>
     </div>
   );
 }

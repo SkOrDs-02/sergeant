@@ -471,7 +471,7 @@ export const fizrukPageMessages = {
     guideTechniqueHeader: "Як тримати стрічку",
     records: "Записів",
     last: "Останній",
-    fields: "Полів",
+    addButton: "+ Замір",
     addHeading: "Додати замір",
     invalidValue: "Неправильне значення",
     submit: "Зберегти замір",
