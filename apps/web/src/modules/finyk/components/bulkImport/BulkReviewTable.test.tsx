@@ -52,7 +52,7 @@ describe("BulkReviewTable", () => {
     );
     expect(screen.getByText("Обрано 1 з 2")).toBeInTheDocument();
     expect(screen.getByText("витрата")).toBeInTheDocument();
-    expect(screen.getByText("дохід")).toBeInTheDocument();
+    expect(screen.getByText("надходження")).toBeInTheDocument();
   });
 
   it("shows a low-confidence badge only under the threshold", () => {

@@ -52,6 +52,25 @@ describe("SubCard", () => {
     expect(screen.getByText("••••")).toBeInTheDocument();
   });
 
+  it("says «Сьогодні» on an unpaid billing day and moves on once today's charge is linked", () => {
+    const sub = { ...baseSub, billingDay: 10, linkedTxId: "tx-today" };
+    const { unmount } = render(
+      <SubCard sub={sub} transactions={[]} onDelete={vi.fn()} />,
+    );
+    expect(screen.getByText(/Сьогодні · 10-го/)).toBeInTheDocument();
+    unmount();
+
+    const paid = {
+      id: "tx-today",
+      amount: -29900,
+      time: new Date("2026-06-10T08:30:00+03:00").getTime() / 1000,
+      description: "netflix.com",
+      currencyCode: 980,
+    } as unknown as Transaction;
+    render(<SubCard sub={sub} transactions={[paid]} onDelete={vi.fn()} />);
+    expect(screen.getByText(/Через 30 днів · 10-го/)).toBeInTheDocument();
+  });
+
   it("fires onDelete from the trash button", () => {
     const onDelete = vi.fn();
     render(<SubCard sub={baseSub} transactions={[]} onDelete={onDelete} />);

@@ -165,6 +165,12 @@ export function useOverviewData({
       txSplits,
     });
   }, [txForStats, excludedTxIds, txSplits, todayKey]);
+  // Борг і підписку можна привʼязати й до ручного запису, тож залишки й
+  // суми рахуються з того самого набору, що й картки в Плануванні.
+  const linkableTx = useMemo(
+    () => withManualExpenses(transactions, manualExpenses),
+    [transactions, manualExpenses],
+  );
   const assetsSummary = useMemo(
     () =>
       computeAssetsSummary({
@@ -187,7 +193,7 @@ export function useOverviewData({
         })),
         manualDebts,
         receivables,
-        transactions,
+        transactions: linkableTx,
         jars,
       }),
     [
@@ -196,7 +202,7 @@ export function useOverviewData({
       manualAssets,
       manualDebts,
       receivables,
-      transactions,
+      linkableTx,
       jars,
     ],
   );
@@ -289,7 +295,7 @@ export function useOverviewData({
       subscriptions,
       manualDebts,
       receivables,
-      transactions,
+      transactions: linkableTx,
       kyivYear,
       kyivMonth,
       kyivDay,

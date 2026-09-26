@@ -6,6 +6,7 @@ import {
   formatShortDate,
   startOfToday,
   computeFinykSchedule,
+  getSubscriptionDueDate,
 } from "./upcomingSchedule";
 import { CURRENCY } from "@sergeant/finyk-domain/constants";
 
@@ -86,7 +87,7 @@ describe("computeFinykSchedule — paid current cycle", () => {
     const tx = {
       id: "tx-today",
       amount: -101694,
-      time: new Date(2026, 3, 26, 12, 37).getTime(),
+      time: new Date(2026, 3, 26, 12, 37).getTime() / 1000,
       currencyCode: CURRENCY.UAH,
     };
     const { nextCharge } = computeFinykSchedule({
@@ -105,7 +106,7 @@ describe("computeFinykSchedule — paid current cycle", () => {
     const tx = {
       id: "tx-prev",
       amount: -101694,
-      time: new Date(2026, 2, 26, 12, 0).getTime(), // 26 березня
+      time: new Date(2026, 2, 26, 12, 0).getTime() / 1000, // 26 березня
       currencyCode: CURRENCY.UAH,
     };
     const { nextCharge } = computeFinykSchedule({
@@ -117,6 +118,30 @@ describe("computeFinykSchedule — paid current cycle", () => {
     });
     expect(nextCharge?.dueDate.getMonth()).toBe(3); // квітень (сьогодні)
     expect(nextCharge?.dueDate.getDate()).toBe(26);
+  });
+});
+
+describe("getSubscriptionDueDate", () => {
+  const today = new Date(2026, 8, 26);
+  const sec = (d: Date) => d.getTime() / 1000;
+
+  it("у день списання без оплати - сьогодні", () => {
+    const d = getSubscriptionDueDate(26, today, null);
+    expect([d.getMonth(), d.getDate()]).toEqual([8, 26]);
+  });
+
+  it("списання, привʼязане сьогодні, переносить дату на наступний цикл", () => {
+    const d = getSubscriptionDueDate(
+      26,
+      today,
+      sec(new Date(2026, 8, 26, 20, 16)),
+    );
+    expect([d.getMonth(), d.getDate()]).toEqual([9, 26]);
+  });
+
+  it("списання минулого циклу дату не зсуває", () => {
+    const d = getSubscriptionDueDate(26, today, sec(new Date(2026, 7, 26, 10)));
+    expect([d.getMonth(), d.getDate()]).toEqual([8, 26]);
   });
 });
 
