@@ -43,11 +43,12 @@ describe("HabitListItem", () => {
     );
 
     expect(screen.getByText(/Вода/)).toBeInTheDocument();
-    fireEvent.click(screen.getByRole("button", { name: "Деталі" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Ще дії зі звичкою/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Деталі" }));
     expect(onOpenDetails).toHaveBeenCalledTimes(1);
   });
 
-  it("wires reorder and delete callbacks", () => {
+  it("wires reorder and delete callbacks through the overflow menu", () => {
     const onMoveUp = vi.fn();
     const onRequestDelete = vi.fn();
     render(
@@ -68,9 +69,40 @@ describe("HabitListItem", () => {
       />,
     );
 
-    fireEvent.click(screen.getByRole("button", { name: "Вгору в списку" }));
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ще дії зі звичкою Вода" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Вище" }));
     expect(onMoveUp).toHaveBeenCalledTimes(1);
-    fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
+
+    fireEvent.click(
+      screen.getByRole("button", { name: "Ще дії зі звичкою Вода" }),
+    );
+    fireEvent.click(screen.getByRole("menuitem", { name: "Видалити" }));
     expect(onRequestDelete).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not render a separate 'Видалити' button outside the overflow menu", () => {
+    render(
+      <HabitListItem
+        habit={makeHabit()}
+        editing={false}
+        dragging={false}
+        onDragStart={vi.fn()}
+        onDragEnd={vi.fn()}
+        onDragOver={vi.fn()}
+        onDrop={vi.fn()}
+        onMoveUp={vi.fn()}
+        onMoveDown={vi.fn()}
+        onOpenDetails={vi.fn()}
+        onStartEdit={vi.fn()}
+        onArchive={vi.fn()}
+        onRequestDelete={vi.fn()}
+      />,
+    );
+
+    expect(
+      screen.queryByRole("button", { name: "Видалити" }),
+    ).not.toBeInTheDocument();
   });
 });

@@ -174,11 +174,12 @@ describe("ActiveHabitsSection", () => {
     expect(screen.queryByText("Нічого не знайшов")).not.toBeInTheDocument();
   });
 
-  it("wires the Деталі button to onOpenDetails", () => {
+  it("wires the Деталі menu item to onOpenDetails", () => {
     const onOpenDetails = vi.fn();
     const routine = makeRoutine([makeHabit("h1", "Вода", 0)]);
     render(<Harness initial={routine} onOpenDetails={onOpenDetails} />);
-    fireEvent.click(screen.getByRole("button", { name: "Деталі" }));
+    fireEvent.click(screen.getByRole("button", { name: /^Ще дії зі звичкою/ }));
+    fireEvent.click(screen.getByRole("menuitem", { name: "Деталі" }));
     expect(onOpenDetails).toHaveBeenCalledWith("h1");
   });
 
@@ -191,11 +192,24 @@ describe("ActiveHabitsSection", () => {
     expect(onEdit.mock.calls[0]![0]).toMatchObject({ id: "h1" });
   });
 
+  // Перестановка ↑↓, «В архів» і «Видалити» живуть у меню «⋯» рядка
+  // (design-critique: сім видимих «Видалити» на екрані), тож тести спершу
+  // відкривають меню тим самим тригером і лише потім клікають пункт.
+  function openRowMenu(row: HTMLElement) {
+    fireEvent.click(
+      within(row).getByRole("button", { name: /^Ще дії зі звичкою/ }),
+    );
+  }
+
   it("wires Видалити to onRequestDelete with a pending payload", () => {
     const onRequestDelete = vi.fn();
     const routine = makeRoutine([makeHabit("h1", "Вода", 0)]);
     render(<Harness initial={routine} onRequestDelete={onRequestDelete} />);
-    fireEvent.click(screen.getByRole("button", { name: "Видалити" }));
+    const waterRow = screen
+      .getByText(hasText("Вода"))
+      .closest("li") as HTMLElement;
+    openRowMenu(waterRow);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Видалити" }));
     expect(onRequestDelete).toHaveBeenCalledWith({
       id: "h1",
       name: "Вода",
@@ -213,7 +227,8 @@ describe("ActiveHabitsSection", () => {
     const waterRow = screen
       .getByText(hasText("Вода"))
       .closest("li") as HTMLElement;
-    fireEvent.click(within(waterRow).getByRole("button", { name: "В архів" }));
+    openRowMenu(waterRow);
+    fireEvent.click(screen.getByRole("menuitem", { name: "В архів" }));
     await waitFor(() => {
       expect(screen.queryByText(hasText("Вода"))).not.toBeInTheDocument();
     });
@@ -221,7 +236,7 @@ describe("ActiveHabitsSection", () => {
     expect(screen.getByText(hasText("Біг"))).toBeInTheDocument();
   });
 
-  it("reorders habits with the move-up button", async () => {
+  it("reorders habits with the move-up menu item", async () => {
     const routine = makeRoutine([
       makeHabit("h1", "Вода", 0),
       makeHabit("h2", "Біг", 1),
@@ -233,9 +248,8 @@ describe("ActiveHabitsSection", () => {
     const bigRow = screen
       .getByText(hasText("Біг"))
       .closest("li") as HTMLElement;
-    fireEvent.click(
-      within(bigRow).getByRole("button", { name: "Вгору в списку" }),
-    );
+    openRowMenu(bigRow);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Вище" }));
 
     await waitFor(() => {
       expect(
@@ -244,7 +258,7 @@ describe("ActiveHabitsSection", () => {
     });
   });
 
-  it("reorders habits with the move-down button", async () => {
+  it("reorders habits with the move-down menu item", async () => {
     const routine = makeRoutine([
       makeHabit("h1", "Вода", 0),
       makeHabit("h2", "Біг", 1),
@@ -253,9 +267,8 @@ describe("ActiveHabitsSection", () => {
     const waterRow = screen
       .getByText(hasText("Вода"))
       .closest("li") as HTMLElement;
-    fireEvent.click(
-      within(waterRow).getByRole("button", { name: "Вниз в списку" }),
-    );
+    openRowMenu(waterRow);
+    fireEvent.click(screen.getByRole("menuitem", { name: "Нижче" }));
     await waitFor(() => {
       expect(
         within(screen.getAllByRole("listitem")[0]!).getByText(hasText("Біг")),
