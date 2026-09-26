@@ -95,10 +95,12 @@ export function RoutineFeedControls({
   return (
     <>
       <div className="flex flex-col gap-1.5">
+        {/* Без підпису голий ряд «Сьогодні / Завтра / Тиждень / Місяць»
+            читався як перемикач статистики, хоча фільтрує стрічку (репорт
+            тестера 2026-08-17). */}
         <SectionHeading as="p" size="xs" variant="routine">
           {M.heading}
         </SectionHeading>
-        <p className="text-style-body text-subtle">{M.hint}</p>
 
         <Segmented
           style="soft"

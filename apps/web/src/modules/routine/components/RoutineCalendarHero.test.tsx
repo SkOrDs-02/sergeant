@@ -32,7 +32,12 @@ describe("RoutineCalendarHero", () => {
 
     expect(screen.getByText(/10 липня/)).toBeInTheDocument();
     expect(screen.getByText("Сьогоднішні звички")).toBeInTheDocument();
-    expect(screen.getByText(/2 з 4 звичок виконано/)).toBeInTheDocument();
+    // Число прогресу живе лише в кільці: текстовий дубль «2 з 4 виконано»
+    // поруч із ним повторював ту саму цифру.
+    expect(screen.queryByText(/2 з 4 звичок виконано/)).not.toBeInTheDocument();
+    expect(
+      screen.getByRole("button", { name: /Прогрес дня: 2 з 4/ }),
+    ).toBeInTheDocument();
     expect(screen.queryByText("Подій")).not.toBeInTheDocument();
     expect(screen.queryByText("Виконання")).not.toBeInTheDocument();
   });
@@ -135,6 +140,6 @@ describe("RoutineCalendarHero", () => {
         onOpenDayReport={vi.fn()}
       />,
     );
-    expect(screen.getByText(/найкраща серія 12/)).toBeInTheDocument();
+    expect(screen.getByText(/Найкраща серія 12/)).toBeInTheDocument();
   });
 });

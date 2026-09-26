@@ -30,7 +30,7 @@ describe("DayProgressRing", () => {
     ).toBeInTheDocument();
   });
 
-  // Просвіт кільця 82px, робочий — 78 (`SIZE − 2×STROKE − 4`). `fitRingFontPx`
+  // Просвіт кільця 68px, робочий 64 (`SIZE − 2×STROKE − 4`). `fitRingFontPx`
   // тримає рядок у цій межі, поки кегль не впреться в підлогу 12px; далі
   // формула вже не рятує, і межу тримає кліпер. Обидві половини гейтяться
   // тут, бо jsdom не робить лейауту — перевіряємо контракт, не пікселі.
@@ -52,17 +52,17 @@ describe("DayProgressRing", () => {
     // продубльовані тут навмисно: саме вони роблять перевірку незалежною.
     const DIGIT_EM = 0.6;
     const SLASH_EM = 0.4131;
-    const APERTURE_PX = 78;
+    const APERTURE_PX = 64;
     const widthAt = (value: string, fontPx: number) =>
       ((value.length - 1) * DIGIT_EM + SLASH_EM) * fontPx;
 
-    // Округлення саме ВНИЗ: `Math.round` давав «1000/1000» 15.0px → 78.2px,
-    // тобто за кліпер, хоч значення вище підлоги й мало вміститись формулою.
+    // Округлення саме ВНИЗ: `Math.round` на межі давав рядок на соті частки
+    // ширший за кліпер, хоч значення вище підлоги й мало вміститись формулою.
     // Діапазонна перевірка («менше за стелю») цього не бачила.
     it.each([
-      [100, 100, "19.4px"],
-      [1000, 1000, "14.9px"],
-      [12345, 12345, "12.1px"],
+      [10, 12, "22.7px"],
+      [100, 100, "15.9px"],
+      [1000, 1000, "12.2px"],
     ])("«%s/%s» → %s, і ширина лишається під просвітом", (c, s, fontSize) => {
       const el = ringLabel(c, s);
       expect(el.style.fontSize).toBe(fontSize);
@@ -85,7 +85,7 @@ describe("DayProgressRing", () => {
       ] as const) {
         cleanup();
         const el = ringLabel(c, s);
-        expect(el.style.maxWidth).toBe("78px");
+        expect(el.style.maxWidth).toBe("64px");
         expect(el).toHaveClass("overflow-hidden");
       }
     });

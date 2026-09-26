@@ -84,11 +84,19 @@ export function RoutineCalendarHero({
   currentStreak,
   onOpenDayReport,
 }: RoutineCalendarHeroProps) {
-  const habitsGenitive = dayProgress.scheduled === 1 ? "звички" : "звичок";
-  const progressText =
-    dayProgress.scheduled > 0
-      ? `${dayProgress.completed} з ${dayProgress.scheduled} ${habitsGenitive} виконано`
-      : DAY_PROGRESS_EMPTY_LABEL[timeMode];
+  // «N з M виконано» тут не пишемо: те саме число вже стоїть у кільці поруч,
+  // а список звичок одразу під героєм. Текстом лишається лише порожній день,
+  // бо кільце тоді показує тире.
+  const streakText =
+    currentStreak > 0
+      ? `Найкраща серія ${currentStreak} ${pluralDays(currentStreak)}`
+      : "";
+  const metaText = [
+    dayProgress.scheduled > 0 ? "" : DAY_PROGRESS_EMPTY_LABEL[timeMode],
+    streakText,
+  ]
+    .filter(Boolean)
+    .join(" · ");
   const flame = useStreakFlame(currentStreak);
 
   // Експозиція стріку (Хвиля 2, `routine_streak_shown`).
@@ -147,7 +155,7 @@ export function RoutineCalendarHero({
           <StreakFlame streak={flame.count} size="sm" />
         </span>
       )}
-      <div className="flex flex-col gap-4 sm:flex-row sm:items-center sm:gap-6">
+      <div className="flex flex-row items-center gap-4 sm:gap-6">
         <div className="flex shrink-0 items-center justify-center">
           <DayProgressRing
             completed={dayProgress.completed}
@@ -162,22 +170,18 @@ export function RoutineCalendarHero({
           {/* Дата — ДРУГИЙ рівень: рішення власника 2026-09-12 (D1 крок 3).
               Перший віддано числу прогресу в кільці (`DayProgressRing`), бо
               предмет екрана — виконання дня, а календар — навігатор до нього.
-              На <640px кільце стоїть НАД датою, тож тримати обидва на
-              `headline` означало б два перші рівні один над одним — те, проти
-              чого правило 1 `density-hierarchy-spec.md`. */}
+              Кільце стоїть поруч із датою, тож тримати обидва на `headline`
+              означало б два перші рівні пліч-о-пліч, а це проти правила 1
+              `density-hierarchy-spec.md`. */}
           <p className="mt-1 text-style-title text-hero-ink">{headlineDate}</p>
-          <p className="mt-2 text-style-label text-hero-ink">
-            {progressText}
-            {/* `currentStreak` = `flexibleMaxActiveStreak` — максимум СЕРЕД
-                звичок, не «тримаю все N днів» (телеметрія чесно шле
-                `scope: "max_across_habits"`, підпис мовчав про це — аудит
-                2026-09, PR-R10). «Найкраща» називає це без імені звички
-                (founder-рішення 2026-08-30, `useStreakRecordPendingInsight`:
-                без підстановки назви). */}
-            {currentStreak > 0
-              ? ` · найкраща серія ${currentStreak} ${pluralDays(currentStreak)}`
-              : ""}
-          </p>
+          {/* `currentStreak` = `flexibleMaxActiveStreak`: максимум СЕРЕД
+              звичок, не «тримаю все N днів» (телеметрія чесно шле
+              `scope: "max_across_habits"`, аудит 2026-09, PR-R10). «Найкраща»
+              називає це без імені звички (founder-рішення 2026-08-30,
+              `useStreakRecordPendingInsight`: без підстановки назви). */}
+          {metaText && (
+            <p className="mt-1 text-style-label text-hero-ink">{metaText}</p>
+          )}
         </div>
       </div>
     </Card>

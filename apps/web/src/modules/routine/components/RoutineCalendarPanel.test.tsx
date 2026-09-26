@@ -395,6 +395,65 @@ describe("RoutineCalendarPanel", () => {
     expect(onBulkMarkDay).toHaveBeenCalledTimes(1);
   });
 
+  /**
+   * Критика екранів 2026-09: головний зміст (список звичок дня) стояв під
+   * згином, за героєм, банером, bulk-кнопкою, фільтрами й тижнем. Тепер
+   * список іде одразу за героєм, а весь пульт фільтрації після нього.
+   */
+  describe("список першим", () => {
+    const withHabits = () =>
+      baseData({
+        listIsEmpty: false,
+        hasNoHabits: false,
+        canBulkMark: true,
+        grouped: [["Звички дня", [makeEvent()]]],
+      });
+    const before = (a: Node, b: Node) =>
+      Boolean(a.compareDocumentPosition(b) & Node.DOCUMENT_POSITION_FOLLOWING);
+
+    it("рядок звички стоїть у DOM раніше за фільтри і тиждень", () => {
+      dataFixture.mockReturnValue(withHabits());
+      render(<RoutineCalendarPanel />);
+      const row = screen.getByText("Пити воду");
+      expect(before(row, screen.getByText("Показувати у стрічці"))).toBe(true);
+      expect(
+        before(row, screen.getByRole("tablist", { name: "Діапазон стрічки" })),
+      ).toBe(true);
+      expect(
+        before(row, screen.getByRole("button", { name: "Попередній тиждень" })),
+      ).toBe(true);
+    });
+
+    it("«Відмітити всі» стоїть над списком тихою дією, не великою кнопкою", () => {
+      dataFixture.mockReturnValue(withHabits());
+      render(<RoutineCalendarPanel />);
+      const bulk = screen.getByRole("button", {
+        name: "Відмітити всі звички на цей день",
+      });
+      expect(before(bulk, screen.getByText("Пити воду"))).toBe(true);
+      expect(bulk.className).not.toMatch(/w-full/);
+      fireEvent.click(bulk);
+      expect(onBulkMarkDay).toHaveBeenCalledTimes(1);
+    });
+
+    it("вечірній банер «N звичок чекають» тут не показується", () => {
+      eveningInsight = {
+        id: "todo-evening",
+        title: "3 звички чекають",
+        subtitle: "Закрити сьогоднішнє?",
+      };
+      dataFixture.mockReturnValue(withHabits());
+      render(<RoutineCalendarPanel />);
+      expect(screen.queryByText("3 звички чекають")).not.toBeInTheDocument();
+    });
+
+    it("пояснення фільтра прибрано", () => {
+      dataFixture.mockReturnValue(withHabits());
+      render(<RoutineCalendarPanel />);
+      expect(screen.queryByText(/Фільтр списку нижче/)).not.toBeInTheDocument();
+    });
+  });
+
   it("renders insight cards and activates the time mode on click", () => {
     streakInsight = {
       id: "streak-record",
@@ -672,34 +731,18 @@ describe("RoutineCalendarPanel", () => {
     );
   });
 
-  it("renders the evening insight card when eveningInsight is set", () => {
-    eveningInsight = {
-      id: "todo-evening",
-      title: "Вечірнє нагадування",
-      subtitle: "Перевір список",
-    };
-    render(<RoutineCalendarPanel />);
-    expect(screen.getByText("Вечірнє нагадування")).toBeInTheDocument();
-  });
-
-  it("activates both insight cards", () => {
+  it("activates the streak insight card", () => {
     streakInsight = {
       id: "streak-record",
       title: "Майже рекорд!",
       subtitle: "Ще один день",
     };
-    eveningInsight = {
-      id: "todo-evening",
-      title: "Вечірнє нагадування",
-      subtitle: "Перевір список",
-    };
 
     render(<RoutineCalendarPanel />);
     fireEvent.click(screen.getByText("Майже рекорд!"));
-    fireEvent.click(screen.getByText("Вечірнє нагадування"));
 
     expect(applyTimeMode).toHaveBeenCalledWith("today");
-    expect(applyTimeMode).toHaveBeenCalledTimes(2);
+    expect(applyTimeMode).toHaveBeenCalledTimes(1);
   });
 
   it("passes scheduled habits into the day report", () => {

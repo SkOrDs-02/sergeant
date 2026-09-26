@@ -36,7 +36,6 @@ import { InsightCard } from "@shared/components/ui/InsightCard";
 import { emitHubBus } from "@shared/lib/modules/hubBus";
 import { useAskAiQuotaExhausted } from "@shared/lib/insights/useAskAiQuota";
 import { useStreakRecordPendingInsight } from "../hooks/useStreakRecordPendingInsight";
-import { useTodoEveningInsight } from "../hooks/useTodoEveningInsight";
 import type { HubCalendarEvent } from "../lib/types";
 import { Icon } from "@shared/components/ui/Icon";
 import { formatUaWeekdayDate } from "@shared/lib/time/uaWeekdayDate";
@@ -96,7 +95,6 @@ export function RoutineCalendarPanel({
   } = useRoutineCalendarActions();
 
   const streakInsight = useStreakRecordPendingInsight(routine);
-  const eveningInsight = useTodoEveningInsight(routine);
   const askAiDisabled = useAskAiQuotaExhausted();
 
   const [listQueryDraft, setListQueryDraft] = useState(listQuery || "");
@@ -198,44 +196,6 @@ export function RoutineCalendarPanel({
         onOpenDayReport={() => setDayReportOpen(true)}
       />
 
-      {/* Phase 5c — routine insight triggers (streak-record-pending,
-          todo-evening). At most 2 simultaneously; each card is independently
-          dismissible via useInsightDismissal (localStorage-backed). */}
-      {(streakInsight ?? eveningInsight) && (
-        <div className="flex flex-col gap-1.5">
-          {streakInsight && (
-            <InsightCard
-              id={streakInsight.id}
-              title={streakInsight.title}
-              subtitle={streakInsight.subtitle}
-              onActivate={() => applyTimeMode("today")}
-              onAskAi={() =>
-                emitHubBus("openChat", {
-                  message: streakInsight.askAiPrompt,
-                  autoSend: false,
-                })
-              }
-              askAiDisabled={askAiDisabled}
-            />
-          )}
-          {eveningInsight && (
-            <InsightCard
-              id={eveningInsight.id}
-              title={eveningInsight.title}
-              subtitle={eveningInsight.subtitle}
-              onActivate={() => applyTimeMode("today")}
-              onAskAi={() =>
-                emitHubBus("openChat", {
-                  message: eveningInsight.askAiPrompt,
-                  autoSend: false,
-                })
-              }
-              askAiDisabled={askAiDisabled}
-            />
-          )}
-        </div>
-      )}
-
       <DayReportSheet
         open={dayReportOpen}
         onClose={() => setDayReportOpen(false)}
@@ -250,67 +210,22 @@ export function RoutineCalendarPanel({
         onClearSkip={(habitId) => onClearHabitSkip(habitId, progressDayKey)}
       />
 
-      {canBulkMark && (
-        <div className="flex justify-center">
-          <Button
-            type="button"
-            className={cn("w-full max-w-md font-bold", C.primary)}
-            onClick={onBulkMarkDay}
-          >
-            Відмітити всі звички на цей день
-          </Button>
-        </div>
-      )}
-
-      {/* Підпис над чипами — репорт тестера 2026-08-17: голий ряд
-          «Сьогодні / Завтра / Тиждень / Місяць» читався як перемикач
-          статистики, хоча він фільтрує список нижче (найпростіший доказ, що
-          це не звіт — чип «Завтра»). Копірайт розводить дві поверхні
-          словами; сама статистика живе на вкладці «Статистика». */}
-      {/* Пульт фільтрації живе окремо — див. `RoutineFeedControls`:
-          там і умова показу, і чому вона саме така. Предикат ТОЧНО той
-          самий, що й у порожнього стану «Почни з однієї звички» нижче:
-          пульт зникає рівно тоді, коли ми й так кажемо «додай першу». */}
-      {!(listIsEmpty && !hasListFilter && hasNoHabits) && (
-        <RoutineFeedControls
-          timeMode={timeMode}
-          applyTimeMode={applyTimeMode}
-          selectedDay={selectedDay}
-          todayKey={todayKey}
-          tomorrowKey={tomorrowKey}
-          shiftWeekStrip={shiftWeekStrip}
-          setSelectedDay={setSelectedDay}
-          setTimeMode={setTimeMode}
-          listQueryDraft={listQueryDraft}
-          setListQueryDraft={setListQueryDraft}
-          tagFilter={tagFilter}
-          setTagFilter={setTagFilter}
-          tagChips={tagChips}
-          showFizruk={routine.prefs.showFizrukInCalendar !== false}
-          showFinykSubs={
-            routine.prefs.showFinykSubscriptionsInCalendar !== false
-          }
-        />
-      )}
-
-      {timeMode === "month" && (
-        <RoutineCalendarMonthGrid
-          monthCursor={monthCursor}
-          monthTitle={monthTitle}
-          cells={cells}
-          dayCounts={dayCounts}
-          selectedDay={selectedDay}
-          goMonth={goMonth}
-          goToToday={goToToday}
-          onSelectDay={setSelectedDay}
-          showFizrukShortcut={routine.prefs.showFizrukInCalendar !== false}
-          onPlanFizruk={setFizrukPlanDateKey}
-          flatGroupedItems={flatGroupedItems}
-          onToggleHabit={onToggleHabit}
-        />
-      )}
-
+      {/* Список дня стоїть одразу під героєм, фільтри й тиждень під ним.
+          «Відмітити всі» тиха дія в шапці списку: великою кнопкою над
+          списком вона підштовхувала відмічати не глядя. */}
       <section className="space-y-4 pb-2">
+        {canBulkMark && (
+          <div className="flex justify-end">
+            <Button
+              type="button"
+              variant="ghost"
+              size="sm"
+              onClick={onBulkMarkDay}
+            >
+              Відмітити всі звички на цей день
+            </Button>
+          </div>
+        )}
         {listIsEmpty && hasListFilter && (
           <EmptyState
             title="Нічого не знайшов"
@@ -581,6 +496,70 @@ export function RoutineCalendarPanel({
           </div>
         )}
       </section>
+
+      {/* Інсайт майже-рекорду стоїть під списком, бо список дня головний
+          зміст екрана. Вечірню «N звичок чекають» тут не показуємо: список
+          прямо над нею показує ті самі звички (у хабі вона лишається через
+          `useRoutineInsights`). */}
+      {streakInsight && (
+        <InsightCard
+          id={streakInsight.id}
+          title={streakInsight.title}
+          subtitle={streakInsight.subtitle}
+          onActivate={() => applyTimeMode("today")}
+          onAskAi={() =>
+            emitHubBus("openChat", {
+              message: streakInsight.askAiPrompt,
+              autoSend: false,
+            })
+          }
+          askAiDisabled={askAiDisabled}
+        />
+      )}
+
+      {/* Пульт фільтрації живе окремо, див. `RoutineFeedControls`:
+          там і умова показу, і чому вона саме така. Предикат ТОЧНО той
+          самий, що й у порожнього стану «Почни з однієї звички» вище:
+          пульт зникає рівно тоді, коли ми й так кажемо «додай першу». */}
+      {!(listIsEmpty && !hasListFilter && hasNoHabits) && (
+        <RoutineFeedControls
+          timeMode={timeMode}
+          applyTimeMode={applyTimeMode}
+          selectedDay={selectedDay}
+          todayKey={todayKey}
+          tomorrowKey={tomorrowKey}
+          shiftWeekStrip={shiftWeekStrip}
+          setSelectedDay={setSelectedDay}
+          setTimeMode={setTimeMode}
+          listQueryDraft={listQueryDraft}
+          setListQueryDraft={setListQueryDraft}
+          tagFilter={tagFilter}
+          setTagFilter={setTagFilter}
+          tagChips={tagChips}
+          showFizruk={routine.prefs.showFizrukInCalendar !== false}
+          showFinykSubs={
+            routine.prefs.showFinykSubscriptionsInCalendar !== false
+          }
+        />
+      )}
+
+      {timeMode === "month" && (
+        <RoutineCalendarMonthGrid
+          monthCursor={monthCursor}
+          monthTitle={monthTitle}
+          cells={cells}
+          dayCounts={dayCounts}
+          selectedDay={selectedDay}
+          goMonth={goMonth}
+          goToToday={goToToday}
+          onSelectDay={setSelectedDay}
+          showFizrukShortcut={routine.prefs.showFizrukInCalendar !== false}
+          onPlanFizruk={setFizrukPlanDateKey}
+          flatGroupedItems={flatGroupedItems}
+          onToggleHabit={onToggleHabit}
+        />
+      )}
+
       {detailHabitId && (
         <HabitDetailSheet
           habitId={detailHabitId}

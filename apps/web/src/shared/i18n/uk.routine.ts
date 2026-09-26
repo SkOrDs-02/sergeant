@@ -15,7 +15,6 @@ export const routinePageMessages = {
   // фільтрувати).
   feedControls: {
     heading: "Показувати у стрічці",
-    hint: "Фільтр списку нижче. Підсумки – на вкладці «Статистика».",
     rangeAriaLabel: "Діапазон стрічки",
     weekHeading: "Тиждень",
     singleDayHint:
