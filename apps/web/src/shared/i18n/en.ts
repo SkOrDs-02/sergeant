@@ -324,6 +324,7 @@ export const messagesEn: Partial<{
     reportNoData: "No data",
     reportChartAria: "Chart",
     reportPrevious: "Previous:",
+    reportPreviousToDate: "Previous, same days:",
     reportEmptyWorkouts: "No workouts yet. Log the first one in Fizruk.",
     reportEmptyHabits: "No habits yet. Add the first one in Routine.",
     reportEmptyExpenses: "No expenses yet. Add the first one in Finyk.",

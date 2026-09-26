@@ -16,8 +16,7 @@ import { useFinykMonoMirrorTick } from "@finyk/lib/monoMirrorGate";
 import { useFinykSqliteReadTick } from "@finyk/lib/sqliteReadGate";
 import {
   aggregateSpending,
-  getPeriodRange,
-  datesInRange,
+  reportWindows,
   localDateKey,
   type Period,
   type SpendingInputs,
@@ -174,7 +173,7 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
   // warmed the same module-level cache before this card ever mounted.
   const sqliteCacheTick = useFinykSqliteReadTick();
 
-  const { cur, prev, dates } = useMemo(() => {
+  const { cur, prev, prevAny, dates, partial } = useMemo(() => {
     void bump; // storage-write tick
     void mirrorTick; // Mono mirror refresh tick
     void sqliteCacheTick; // Finyk SQLite cache-refresh tick (pull hydration)
@@ -191,19 +190,18 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
       txSplits: txSplits as Record<string, unknown[]>,
     };
 
-    const curRange = getPeriodRange(period, offset);
-    const prevRange = getPeriodRange(period, offset - 1);
-    const curDates = datesInRange(curRange.start, curRange.end);
-    const prevDates = datesInRange(prevRange.start, prevRange.end);
+    const w = reportWindows(period, offset);
     return {
-      cur: aggregateSpending(inputs, curDates),
-      prev: aggregateSpending(inputs, prevDates),
-      dates: curDates,
+      cur: aggregateSpending(inputs, w.cur),
+      prev: aggregateSpending(inputs, w.prev),
+      prevAny: aggregateSpending(inputs, w.prevAll).total > 0,
+      dates: w.dates,
+      partial: w.partial,
     };
   }, [period, offset, bump, mirrorTick, sqliteCacheTick]);
 
   // Нуль в обох вікнах: витрат ще не записували, «0 ₴» тут не результат.
-  const empty = cur.total === 0 && prev.total === 0;
+  const empty = cur.total === 0 && !prevAny;
 
   return (
     <ReportSheet collapsed={collapsed}>
@@ -285,7 +283,10 @@ export default function ExpensesCard({ period, offset }: ExpensesCardProps) {
             />
           </div>
           <p className="text-style-caption text-muted">
-            {messages.hub.reportPrevious} <Money amount={prev.total} />
+            {partial
+              ? messages.hub.reportPreviousToDate
+              : messages.hub.reportPrevious}{" "}
+            <Money amount={prev.total} />
           </p>
           <BarChart
             key={`${period}-${offset}`}
