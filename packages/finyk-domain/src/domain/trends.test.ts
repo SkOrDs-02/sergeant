@@ -152,6 +152,14 @@ describe("getTopMerchantsWithDelta", () => {
   const sep = new Date("2026-09-05T09:00:00Z");
   const aug = new Date("2026-08-05T09:00:00Z");
 
+  it("минулий місяць без витрат (лише дохід) не дає бази для дельти", () => {
+    const rows = getTopMerchantsWithDelta(
+      [tx("c1", -30_000, sep, "Кава")],
+      [tx("salary", 4_200_000, aug, "Зарплата")],
+    );
+    expect(rows[0]?.delta).toBeNull();
+  });
+
   it("зводить регістр, пробіли й номери терміналів, ручний запис з банком", () => {
     const manual = manualExpenseToTransaction({
       id: "m1",

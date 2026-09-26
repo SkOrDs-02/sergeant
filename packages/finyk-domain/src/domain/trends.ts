@@ -192,8 +192,8 @@ export function getCategoryDeltas(
 
 /**
  * Топ мерчантів місяця з дельтою до минулого (Р17). Дельта за ключем
- * мерчанта і правилом Р4; `null`, коли в минулому місяці записів немає
- * зовсім (тоді й секція порівняння каже «Немає з чим порівняти»).
+ * мерчанта і правилом Р4; `null`, коли в минулому місяці немає жодної
+ * витрати: місяць із самою зарплатою не робить кожного продавця «новим».
  */
 export function getTopMerchantsWithDelta(
   currentMonthTx: readonly Transaction[] | null | undefined,
@@ -207,7 +207,7 @@ export function getTopMerchantsWithDelta(
       ? opts.excludedTxIds
       : new Set(opts.excludedTxIds ?? []);
   const hasPrev = (previousMonthTx ?? []).some(
-    (tx) => tx && !excluded.has(tx.id),
+    (tx) => tx && tx.amount < 0 && !excluded.has(tx.id),
   );
   if (!hasPrev) return top.map((m) => ({ ...m, delta: null }));
   const prev = new Map(
