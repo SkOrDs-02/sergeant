@@ -132,7 +132,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   actions,
   variant = "default",
   size = "md",
-  hideOnScroll = false,
+  hideOnScroll = true,
   position = "bottom-right",
   label,
   "aria-label": ariaLabel,
@@ -147,7 +147,6 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   // once the pill it sits above is gone.
   const kbInsetPx = useVisualKeyboardInset(true);
   const hidden = isHidden || kbInsetPx > 0;
-  const lastScrollY = useRef(0);
   // outerRef wraps the whole FAB (button + expanded items) for positioning
   const outerRef = useRef<HTMLDivElement>(null);
   // menuRef is the expanded action list; focus trap lives here so Tab
@@ -156,7 +155,10 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   // Сама кнопка, не обгортка: розкритий список дій росте вгору і не має
   // розсувати контент під собою.
   const buttonRef = useRef<HTMLButtonElement>(null);
-  useBottomInsetVar(buttonRef, FAB_INSET_VAR, !hidden);
+  // Відступ знімається лише під клавіатурою. Сховавшись від прокрутки, кнопка
+  // повернеться на те саме місце, тож резерв під нею лишається: інакше висота
+  // контенту змінювалась би посеред прокрутки і сторінка стрибала.
+  useBottomInsetVar(buttonRef, FAB_INSET_VAR, kbInsetPx === 0);
 
   const hasActions = actions && actions.length > 0;
 
@@ -169,26 +171,42 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   // Body scroll lock while the full-screen backdrop is visible.
   useBodyScrollLock(isOpen && !!hasActions);
 
-  // Scroll-to-hide behavior
+  // Scroll-to-hide behavior. Модулі прокручують не лише вікно: Їжа, наприклад,
+  // гортає внутрішній контейнер сторінок, а подія `scroll` не спливає. Тому
+  // слухаємо ще й фазу захоплення на `document` і міряємо той елемент, що
+  // прокрутився.
   useEffect(() => {
     if (!hideOnScroll) return;
 
-    const handleScroll = () => {
-      const currentY = window.scrollY;
-      const delta = currentY - lastScrollY.current;
-
+    const lastByTarget = new WeakMap<EventTarget, number>();
+    const react = (target: EventTarget, currentY: number) => {
+      const delta = currentY - (lastByTarget.get(target) ?? 0);
       if (delta > 10 && currentY > 80) {
         setIsHidden(true);
         setIsOpen(false);
       } else if (delta < -10) {
         setIsHidden(false);
       }
-
-      lastScrollY.current = currentY;
+      lastByTarget.set(target, currentY);
     };
 
-    window.addEventListener("scroll", handleScroll, { passive: true });
-    return () => window.removeEventListener("scroll", handleScroll);
+    const handleWindowScroll = () => react(window, window.scrollY);
+    const handleElementScroll = (e: Event) => {
+      if (e.target instanceof Element) react(e.target, e.target.scrollTop);
+    };
+
+    lastByTarget.set(window, window.scrollY);
+    window.addEventListener("scroll", handleWindowScroll, { passive: true });
+    document.addEventListener("scroll", handleElementScroll, {
+      passive: true,
+      capture: true,
+    });
+    return () => {
+      window.removeEventListener("scroll", handleWindowScroll);
+      document.removeEventListener("scroll", handleElementScroll, {
+        capture: true,
+      });
+    };
   }, [hideOnScroll]);
 
   // Close on outside click (pointer events outside the outer FAB container).
