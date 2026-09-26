@@ -218,13 +218,21 @@ export function MealStrip({
           const share = total > 0 ? (seg.kcal / total) * 100 : 0;
           const body = (
             <>
+              {/*
+                Частка прийому смугою знизу, як макро-бари нижче. Заливка
+                на всю висоту колонки читалась як збій рендера, а не прогрес.
+              */}
+              <span
+                aria-hidden="true"
+                className="absolute inset-x-0 bottom-0 h-1 bg-hero-ink/15"
+              />
               <span
                 aria-hidden="true"
                 data-testid="meal-strip-fill"
                 style={{ width: `${share}%` }}
                 className={cn(
-                  "absolute inset-y-0 left-0 rounded-lg",
-                  isAccent ? "bg-nutrition" : "bg-hero-ink/30",
+                  "absolute bottom-0 left-0 h-1",
+                  isAccent ? "bg-nutrition" : "bg-hero-ink/60",
                 )}
               />
               <span className="relative text-style-caption text-hero-ink/90 truncate w-full">
