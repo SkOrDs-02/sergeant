@@ -50,7 +50,7 @@ const MOBILE_GROUPS = [
     label: "Дані і право",
     items: [
       { href: "/data", label: "Твої дані" },
-      { href: "/vyhid", label: "Забрати своє" },
+      { href: "/vyhid", label: "Забрати свої дані" },
       { href: "/privacy", label: "Приватність" },
       { href: "/terms", label: "Умови" },
     ],

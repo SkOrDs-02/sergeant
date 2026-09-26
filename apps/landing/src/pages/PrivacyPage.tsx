@@ -76,7 +76,7 @@ export default function PrivacyPage() {
       </p>
 
       <h2 className={h2}>Питання</h2>
-      <p className={p}>Напиши в Telegram-бот – відповідаю сам.</p>
+      <p className={p}>Напиши нам у Telegram-бот, відповімо.</p>
     </SiteLayout>
   );
 }

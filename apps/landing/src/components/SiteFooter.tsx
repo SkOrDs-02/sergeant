@@ -52,7 +52,7 @@ export default function SiteFooter() {
               Питання
             </a>
             <a href="/about" className={link}>
-              Про Sergeant
+              Про проєкт
             </a>
           </div>
           <div className="flex flex-col">

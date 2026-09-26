@@ -2824,7 +2824,13 @@
       2
     ],
     "sergeant-design/ukrainian-copy": [
-      2
+      2,
+      {
+        "allowFirstPersonPlural": [
+          "apps/landing/src/pages/TermsPage.tsx",
+          "apps/landing/src/pages/PrivacyPage.tsx"
+        ]
+      }
     ],
     "space-after-function-name": [
       0
