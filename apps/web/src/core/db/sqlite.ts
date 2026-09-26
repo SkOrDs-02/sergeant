@@ -15,6 +15,7 @@ import {
 } from "./storageBackendState.js";
 import { isHandoffDone } from "./kvvfsHandoff.js";
 import { claimDbOwnership, onYieldRequested } from "./dbOwnership.js";
+import { watchOpfsWipe } from "./opfsWipeGuard.js";
 import {
   makeLocalConnection,
   type SqliteConnection,
@@ -365,6 +366,7 @@ async function initSqliteDb(
   // за бекендом зберігання.
   lastVfs = driver.vfs;
   noteActiveSqliteVfs(driver.vfs);
+  if (driver.vfs === "opfs-sahpool") watchOpfsWipe(SAH_POOL_DIRECTORY);
   setSentryTag("sqlite.vfs", driver.vfs);
 
   const handle: SqliteDbHandle = {
