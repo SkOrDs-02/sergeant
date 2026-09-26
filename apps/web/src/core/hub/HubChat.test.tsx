@@ -253,7 +253,7 @@ describe("HubChat", () => {
       // (`docs/work/specs/audits/2026-09-01-product-audit/findings.md`,
       // 2026-09-01) зробило хід з дією рівно одним запитом (раніше було
       // «коштує кілька») — копія оновлена разом із механікою.
-      "План Free має 5 запитів до AI на день",
+      "План Free має 5 запитів до Сержанта на день",
     );
 
     fireEvent.click(screen.getByText("details"));

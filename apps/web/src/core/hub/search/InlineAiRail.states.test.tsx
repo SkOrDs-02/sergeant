@@ -29,7 +29,7 @@ afterEach(() => {
 describe("InlineAiRail — loading state", () => {
   it("shows the spinner label and cancels", () => {
     const { onCancel } = renderRail({ status: "loading", question: "кава" });
-    expect(screen.getByText("AI шукає відповідь")).toBeInTheDocument();
+    expect(screen.getByText("Сержант шукає відповідь")).toBeInTheDocument();
     expect(screen.getByText("Думаю…")).toBeInTheDocument();
     fireEvent.click(screen.getByRole("button", { name: "Скасувати" }));
     expect(onCancel).toHaveBeenCalledTimes(1);

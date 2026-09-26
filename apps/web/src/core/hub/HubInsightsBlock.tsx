@@ -76,6 +76,8 @@ export interface HubInsightsBlockProps {
    * пораду коуча, nudge і звіт тижня — і називається відповідно.
    */
   axis?: boolean | undefined;
+  /** Фінік серед активних модулів: без нього звіту тижня з грошей немає. */
+  finykActive?: boolean | undefined;
 }
 
 export function HubInsightsBlock({
@@ -99,14 +101,15 @@ export function HubInsightsBlock({
   setDigestExpanded,
   showDigestFooter,
   axis = false,
+  finykActive = true,
 }: HubInsightsBlockProps) {
   const navigate = useNavigate();
   const moduleInsights = useAllInsights({ surface: "hub", cap: 3 });
   const askAiDisabled = useAskAiQuotaExhausted();
   // Р23: звіт тижня з локальних даних. Він не чекає мережі, тож і підпис
   // згорнутого блоку, поки AI-порада вантажиться чи недоступна, говорить
-  // фактом, а не «Готую AI-пораду…».
-  const weekReport = useFinykWeekReport();
+  // фактом, а не «Готую пораду Сержанта…».
+  const weekReport = useFinykWeekReport(finykActive);
   const weekHeadline = weekReport[0];
   // Реальний стан розгорнутості секції тепер живе в `HubDashboard`.
   // `CollapsibleSection` тримає дітей у DOM і згорнутою, тож він потрібен

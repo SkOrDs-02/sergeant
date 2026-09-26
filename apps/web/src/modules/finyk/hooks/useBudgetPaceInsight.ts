@@ -28,6 +28,7 @@ import type {
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
 import { formatNumberUk, NARROW_NBSP, pluralDays } from "@sergeant/shared";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 
 interface UseBudgetPaceInsightArgs {
   budgets: readonly Budget[];
@@ -45,7 +46,11 @@ export function useBudgetPaceInsight({
   txSplits,
   customCategories = [],
 }: UseBudgetPaceInsightArgs): Insight | null {
+  // Темп залежить від дня місяця: без денного ключа в залежностях вкладка,
+  // відкрита через північ, показувала б учорашнє «через N днів».
+  const dayKey = getKyivDayKey();
   return useMemo(() => {
+    void dayKey;
     if (!budgets.length || !transactions.length) return null;
 
     let soonest: LimitUsageEntry | null = null;
@@ -87,5 +92,5 @@ export function useBudgetPaceInsight({
       },
       showOn: "hub",
     };
-  }, [budgets, transactions, txCategories, txSplits, customCategories]);
+  }, [dayKey, budgets, transactions, txCategories, txSplits, customCategories]);
 }

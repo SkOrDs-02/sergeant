@@ -6,6 +6,7 @@ import { messages } from "@shared/i18n/uk";
 import { MonthlyTrendBars } from "../../components/analytics/MonthlyTrendBars";
 import {
   useMonthlyTrend,
+  type FetchBankRange,
   type MonthlyTrendStorage,
 } from "../../hooks/useMonthlyTrend";
 
@@ -13,6 +14,7 @@ interface CategoryTrendProps {
   categoryId: string;
   label: string;
   storage: MonthlyTrendStorage;
+  fetchRange?: FetchBankRange | undefined;
   showBalance?: boolean;
 }
 
@@ -25,9 +27,10 @@ export function CategoryTrend({
   categoryId,
   label,
   storage,
+  fetchRange,
   showBalance = true,
 }: CategoryTrendProps) {
-  const trend = useMonthlyTrend(storage, categoryId);
+  const trend = useMonthlyTrend(storage, categoryId, fetchRange);
   if (trend.points.length === 0) return null;
   return (
     <div className="rounded-xl border border-line bg-panel px-3 py-3 space-y-2">
