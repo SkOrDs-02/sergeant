@@ -108,7 +108,7 @@ export function HubInsightsBlock({
   const askAiDisabled = useAskAiQuotaExhausted();
   // Р23: звіт тижня з локальних даних. Він не чекає мережі, тож і підпис
   // згорнутого блоку, поки AI-порада вантажиться чи недоступна, говорить
-  // фактом, а не «Готую AI-пораду…».
+  // фактом, а не «Готую пораду Сержанта…».
   const weekReport = useFinykWeekReport(finykActive);
   const weekHeadline = weekReport[0];
   // Реальний стан розгорнутості секції тепер живе в `HubDashboard`.

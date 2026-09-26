@@ -380,7 +380,7 @@ describe("HubInsightsBlock", () => {
       screen.queryByRole("region", { name: "Тиждень у цифрах" }),
     ).toBeNull();
     expect(screen.getByTestId("collapsed-subtitle")).toHaveTextContent(
-      "Готую AI-пораду…",
+      "Готую пораду Сержанта…",
     );
     weekReportState.lines = [];
   });
