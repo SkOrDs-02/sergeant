@@ -14,6 +14,8 @@ import { useExerciseCatalog } from "../hooks/useExerciseCatalog";
 import { useRecovery } from "../hooks/useRecovery";
 import { useReplicaFreshness } from "../hooks/useReplicaFreshness";
 import { RecoveryHonestyNotes } from "./RecoveryHonestyNotes";
+import { useAuthOptional } from "../../../core/auth/AuthContext";
+import { isSyncableUserId } from "../../../core/syncEngine/syncableUserId";
 
 export function RecoveryFocusCard({
   onOpenAtlas,
@@ -22,6 +24,7 @@ export function RecoveryFocusCard({
 }) {
   const rec = useRecovery();
   const freshness = useReplicaFreshness();
+  const syncEnabled = isSyncableUserId(useAuthOptional()?.user?.id ?? "");
   const { musclesUk } = useExerciseCatalog();
   // AI-CONTEXT: V-10 (fizruk deep audit, 2026-08-07) — «Відновлення й
   // фокус» is the module's canonical feature (canon fizruk §4), but it
@@ -88,15 +91,9 @@ export function RecoveryFocusCard({
             >
               <Icon name="chevron-down" size="md" />
             </span>
-            <div className="min-w-0 flex-1">
-              <span className="block text-style-title text-text">
-                Відновлення й фокус
-              </span>
-              <p className="text-style-body text-muted mt-1 leading-snug">
-                Колір на силуеті – готовність груп; чіпи – пріоритет після
-                відпочинку.
-              </p>
-            </div>
+            <span className="block min-w-0 flex-1 text-style-title text-text">
+              Відновлення й фокус
+            </span>
           </button>
         </h2>
         <Button
@@ -116,6 +113,19 @@ export function RecoveryFocusCard({
 
       {open && (
         <>
+          {/*
+            Клікабельний лише силует, і кнопку ставить сам `BodyAtlas`
+            (проп `onOpenFull`). Тут раніше стояла обгортка-`<button>`
+            навколо ВСЬОГО компонента, разом із перемикачем «Спереду/Ззаду»
+            всередині. Кнопка в кнопці: тап по «Ззаду» гортав бік, клік
+            спливав до обгортки, і людину одразу викидало на сторінку
+            Атласа, тобто гортати мініатюру на місці було неможливо
+            (скарга власника 2026-08-08).
+          */}
+          <div className="mt-3">
+            <BodyAtlas data={atlasData} compact onOpenFull={onOpenAtlas} />
+          </div>
+
           <div className="flex flex-wrap items-center gap-x-3 gap-y-1 text-style-caption text-subtle mb-3 mt-3">
             <span className="inline-flex items-center gap-1">
               <span className="w-2 h-2 rounded-full bg-success" /> готово
@@ -130,12 +140,14 @@ export function RecoveryFocusCard({
           </div>
 
           {/*
-            Межі поради йдуть ПЕРЕД самою порадою: якщо картина неповна,
-            людина має дізнатись про це до того, як прочитає «готово».
+            Карта першою: на mobile межі поради стояли над силуетом і
+            виштовхували його за перший екран. Жанр лишається видимим
+            одним рядком одразу під легендою, до чіпів «пріоритет».
           */}
           <RecoveryHonestyNotes
             freshness={freshness}
             wellbeing={rec.wellbeingSignal}
+            syncEnabled={syncEnabled}
           />
 
           {rec.wellbeingMult > 1.1 && (
@@ -154,17 +166,6 @@ export function RecoveryFocusCard({
               </p>
             </div>
           )}
-
-          {/*
-            Клікабельний лише силует, і кнопку ставить сам `BodyAtlas`
-            (проп `onOpenFull`). Тут раніше стояла обгортка-`<button>`
-            навколо ВСЬОГО компонента — разом із перемикачем «Спереду/Ззаду»
-            всередині. Кнопка в кнопці: тап по «Ззаду» гортав бік, клік
-            спливав до обгортки, і людину одразу викидало на сторінку
-            Атласа — тобто гортати мініатюру на місці було неможливо
-            (скарга власника 2026-08-08).
-          */}
-          <BodyAtlas data={atlasData} compact onOpenFull={onOpenAtlas} />
 
           <div className="mt-4 pt-3 border-t border-line">
             <SectionHeading as="p" size="xs" variant="fizruk" className="mb-2">
