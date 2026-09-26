@@ -169,7 +169,7 @@ export function Programs({
                     {!isActive ? (
                       <button
                         type="button"
-                        className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
+                        className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white dark:bg-fizruk dark:text-bg text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
                         onClick={() => activateProgram(prog.id)}
                       >
                         {messages.fizruk.programs.activate}
@@ -179,7 +179,7 @@ export function Programs({
                         {todaySession && onStartWorkout && (
                           <button
                             type="button"
-                            className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
+                            className="focus-ring flex-1 py-2.5 rounded-xl bg-fizruk-strong text-white dark:bg-fizruk dark:text-bg text-style-label transition-[background-color,opacity,transform] active:scale-[0.98]"
                             onClick={() => {
                               const session =
                                 prog.sessions[todaySession.sessionKey];

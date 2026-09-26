@@ -225,6 +225,11 @@ export function useAssetsState({
     networth,
     totalAssets,
   } = assetsSummary;
+  // Той самий предикат, що в `sumManualAssetsUAH`: у капітал іде лише
+  // `currency === "UAH"`, решту картка капіталу мусить назвати вголос.
+  const nonUahManualAssetCount = manualAssets.filter(
+    (a) => a.currency !== "UAH",
+  ).length;
   const monoDebtAccounts = filterVisibleAccounts(
     monoAccounts,
     hiddenAccounts,
@@ -350,6 +355,7 @@ export function useAssetsState({
     totalReceivable,
     manualAssetTotal,
     networth,
+    nonUahManualAssetCount,
     totalAssets,
     todayStart,
     urgentLiability,

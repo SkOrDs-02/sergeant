@@ -133,7 +133,7 @@ export function TxRowCategoryPicker({
             commitNote();
             e.currentTarget.blur();
           }}
-          aria-label="Нотатка до транзакції"
+          aria-label="Нотатка до операції"
         />
       )}
     </div>

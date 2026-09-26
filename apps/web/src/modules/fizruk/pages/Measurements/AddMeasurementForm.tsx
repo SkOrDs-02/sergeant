@@ -224,7 +224,7 @@ export function AddMeasurementForm({ addEntry }: AddMeasurementFormProps) {
           disabled={!hasAnyValue}
           aria-disabled={!hasAnyValue}
           // eslint-disable-next-line sergeant-design/no-raw-type-size -- розмір КОНТРОЛА: висота кнопки тримається на парі `text-base` + `py-4`; перенесено дослівно з `Measurements.tsx`.
-          className="focus-ring w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100"
+          className="focus-ring w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] disabled:opacity-50 disabled:cursor-not-allowed disabled:active:scale-100 dark:bg-fizruk dark:text-bg"
           onClick={handleSubmit}
         >
           {messages.fizruk.measurements.submit}

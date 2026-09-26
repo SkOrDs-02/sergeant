@@ -34,7 +34,7 @@ describe("useDebtAutoLink — Level 2 авто-привʼязка (2026-09-11)",
     );
   });
 
-  it("ідемпотентність: коли транзакцію вже привʼязано, повторний прохід нічого не пише", () => {
+  it("ідемпотентність: коли операцію вже привʼязано, повторний прохід нічого не пише", () => {
     const setLinkedTxRole = vi.fn();
     const transactions = [TX("tx1", -50000, "Кредит Приват")];
     const debtBefore: Debt = {
@@ -63,7 +63,7 @@ describe("useDebtAutoLink — Level 2 авто-привʼязка (2026-09-11)",
     expect(setLinkedTxRole).toHaveBeenCalledTimes(1);
   });
 
-  it("anti-resurrection: не привʼязує транзакцію, яку людина відвʼязала", () => {
+  it("anti-resurrection: не привʼязує операцію, яку людина відвʼязала", () => {
     const setLinkedTxRole = vi.fn();
     const debt: Debt = {
       id: "d1",
@@ -152,7 +152,7 @@ describe("useDebtAutoLink — Level 2 авто-привʼязка (2026-09-11)",
     expect(debt.linkedTxIds).toEqual([]);
   });
 
-  it("транзакція, що збігається з ключовими словами ДВОХ пасивів, не привʼязується до жодного (CodeRabbit finding #2)", () => {
+  it("операція, що збігається з ключовими словами ДВОХ пасивів, не привʼязується до жодного (CodeRabbit finding #2)", () => {
     const setLinkedTxRole = vi.fn();
     const debtA: Debt = {
       id: "d1",
@@ -176,7 +176,7 @@ describe("useDebtAutoLink — Level 2 авто-привʼязка (2026-09-11)",
     expect(setLinkedTxRole).not.toHaveBeenCalled();
   });
 
-  it("транзакція, уже привʼязана до ІНШОГО пасиву, не привʼязується вдруге", () => {
+  it("операція, уже привʼязана до ІНШОГО пасиву, не привʼязується вдруге", () => {
     const setLinkedTxRole = vi.fn();
     // Борг А тримає tx1 (напр. людина привʼязала руками), і ключового
     // слова не має взагалі. Борг Б збігається з описом tx1 — але одна

@@ -221,7 +221,7 @@ describe("useDebtPaymentSplitSync — рівень 3 (2026-09-11)", () => {
     expect(result.current.pendingUnlink).toBeNull();
   });
 
-  it("транзакція без привʼязки нічого не запускає", () => {
+  it("операція без привʼязки нічого не запускає", () => {
     const { result, setLinkedTxRole, toastSuccess } = setup([
       { id: "d1", amount: 5000, linkedTxIds: [] },
     ]);

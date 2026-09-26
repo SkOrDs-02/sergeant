@@ -50,7 +50,7 @@ describe("LogCardSearch", () => {
     render(<LogCardSearch log={log} setSelectedDate={vi.fn()} />);
     expect(screen.getByLabelText("Пошук по журналу")).toBeInTheDocument();
     // No results UL while query is empty.
-    expect(screen.queryByText("Нічого не знайдено")).not.toBeInTheDocument();
+    expect(screen.queryByText("Нічого не знайшов")).not.toBeInTheDocument();
   });
 
   it("debounces the query and shows the empty-state when no hits", () => {
@@ -64,7 +64,7 @@ describe("LogCardSearch", () => {
       vi.advanceTimersByTime(150);
     });
     expect(searchMock).toHaveBeenCalledWith(log, "піца");
-    expect(screen.getByText("Нічого не знайдено")).toBeInTheDocument();
+    expect(screen.getByText("Нічого не знайшов")).toBeInTheDocument();
   });
 
   it("renders hits and jumps to the date when a hit is clicked", () => {

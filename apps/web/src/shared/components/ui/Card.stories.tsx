@@ -40,7 +40,7 @@ const SampleContent = ({ hero = false }: { hero?: boolean }) => (
         hero ? "text-hero-ink/75 mt-1 text-sm" : "text-muted mt-1 text-sm"
       }
     >
-      ₴ 4 320 · 18 транзакцій · Mono + готівка
+      ₴ 4 320 · 18 операцій · Mono + готівка
     </p>
   </div>
 );

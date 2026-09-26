@@ -30,7 +30,7 @@ const MOBILE_GROUPS = [
       { href: "/zvychky", label: "Звички" },
       { href: "/trenuvannia", label: "Тренування" },
       { href: "/zvyazky", label: "Звʼязки" },
-      { href: "/pomichnyk", label: "AI-помічник" },
+      { href: "/pomichnyk", label: "Сержант" },
       { href: "/guides", label: "Гайди" },
     ],
   },

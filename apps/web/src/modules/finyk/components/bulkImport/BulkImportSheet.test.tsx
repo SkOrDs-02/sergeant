@@ -232,9 +232,7 @@ describe("BulkImportSheet — screenshot path", () => {
 
     // Друга фаза настає рівно тоді, коли фото пішло на сервер.
     await waitFor(() => expect(analyzeImportScreenshotMock).toHaveBeenCalled());
-    expect(screen.getByRole("status")).toHaveTextContent(
-      "Розпізнаю транзакції…",
-    );
+    expect(screen.getByRole("status")).toHaveTextContent("Розпізнаю операції…");
 
     await act(async () => {
       resolveAnalyze({
@@ -343,7 +341,7 @@ describe("BulkImportSheet — screenshot path", () => {
     );
   });
 
-  it("не-гривневі рядки пояснюються валютою, а не «не бачу транзакцій»", async () => {
+  it("не-гривневі рядки пояснюються валютою, а не «не бачу операцій»", async () => {
     analyzeImportScreenshotMock.mockResolvedValue({
       draft: {
         docType: "bank_screenshot",

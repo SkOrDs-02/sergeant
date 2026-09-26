@@ -53,6 +53,12 @@ interface LimitBudgetCardProps {
    * ліміту проп не передається.
    */
   breakdown?: readonly LimitBreakdownRow[] | undefined;
+  /**
+   * Прогноз витрат на кінець місяця за поточним темпом (`calcLimitPace`).
+   * `null`/відсутнє — прогнозу нема: перші два дні місяця, не місячний
+   * період або ще жодної витрати.
+   */
+  forecast?: number | null | undefined;
   spent: number;
   pctRaw: number;
   pctRounded: number;
@@ -78,6 +84,7 @@ function LimitBudgetCardComponent({
   customCategories = [],
   showBalance = true,
   breakdown,
+  forecast,
   spent,
   pctRaw,
   pctRounded,
@@ -297,6 +304,12 @@ function LimitBudgetCardComponent({
               </>
             )}
           </div>
+          {showBalance && forecast != null && forecast > 0 && (
+            <div className="text-style-caption text-subtle mt-1">
+              За поточним темпом до кінця місяця ~
+              <Money amount={Math.round(forecast)} />
+            </div>
+          )}
 
           {breakdown && breakdown.length > 1 && (
             // Розбивка факту комбо-ліміту: видно, ЩО саме зʼїло бюджет.

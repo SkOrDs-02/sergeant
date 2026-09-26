@@ -18,6 +18,7 @@ import { FINANCE_PIPELINES } from "../../scripts/eval/pipelines.finance.js";
 import { NUTRITION_PIPELINES } from "../../scripts/eval/pipelines.nutrition.js";
 import { VISION_PIPELINES } from "../../scripts/eval/vision.js";
 import type { Pipeline } from "../../scripts/eval/types.js";
+import { admitsNoData, voiceViolations } from "../../scripts/eval/judges.js";
 
 /**
  * `classify` і `mono` судяться одним структурним предикатом (`parseCategory`,
@@ -84,5 +85,27 @@ describe("кандидати пайплайнів не діляться маси
       );
       seen.add(p.candidates);
     }
+  });
+});
+
+describe("голос і порожній сеанс коуча", () => {
+  it("markdown: чат дозволяє жирний і «- », коуч ні", () => {
+    const text = "**Кава**\n- 960 грн за тиждень";
+    expect(voiceViolations(text, "chat")).toEqual([]);
+    expect(voiceViolations(text, "plain")).toEqual(["markdown"]);
+    expect(voiceViolations("## Підсумок", "chat")).toEqual(["markdown"]);
+  });
+
+  it("порожній сеанс: вимагає визнання й ловить вигадане спостереження", () => {
+    expect(admitsNoData("Даних ще немає. Запиши сьогодні витрати.")).toBe(true);
+    expect(admitsNoData("Поки не бачу даних, запиши сьогодні обід.")).toBe(
+      true,
+    );
+    expect(admitsNoData("Бачу, що ти сьогодні недобираєш білка.")).toBe(
+      "спостереження без даних: «Бачу»",
+    );
+    expect(admitsNoData("Запиши сьогодні обід.")).toBe(
+      "не визнав, що даних немає",
+    );
   });
 });

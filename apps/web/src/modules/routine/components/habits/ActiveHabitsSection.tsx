@@ -109,7 +109,7 @@ export function ActiveHabitsSection({
           скидає саме той фільтр, який сховав список. */}
       {hasActive && filteredActiveHabits.length === 0 && (
         <EmptyState
-          title="Нічого не знайдено"
+          title="Нічого не знайшов"
           description={`Серед активних звичок немає жодної за запитом «${habitListQuery.trim()}».`}
           module="routine"
           action={

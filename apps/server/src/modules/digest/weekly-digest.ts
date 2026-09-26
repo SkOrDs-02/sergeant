@@ -149,7 +149,7 @@ export function buildTemplateReport(
   return {
     finyk: finyk
       ? {
-          summary: `Витрати ${finyk.totalSpent ?? 0} грн, надходження ${finyk.totalIncome ?? 0} грн, ${finyk.txCount ?? 0} транзакцій.`,
+          summary: `Витрати ${finyk.totalSpent ?? 0} грн, надходження ${finyk.totalIncome ?? 0} грн, ${finyk.txCount ?? 0} операцій.`,
           comment:
             "Це лише числа з тижневих даних: розбір зараз недоступний. Висновки додам, щойно зможу.",
           recommendations: [],
@@ -221,7 +221,7 @@ export function createWeeklyDigestHandler(
     // `!sections.length`, яка через завжди-truthy `finyk` ніколи не спрацьовувала.
     if (countDigestSignalModules(parsed) < MIN_SIGNAL_MODULES) {
       throw new ValidationError(
-        "Замало даних за цей тиждень для звіту. Додай транзакцію, тренування, прийом їжі чи звичку і спробуй ще раз.",
+        "Замало даних за цей тиждень для звіту. Додай операцію, тренування, прийом їжі чи звичку і спробуй ще раз.",
         { code: "INSUFFICIENT_DATA" },
       );
     }

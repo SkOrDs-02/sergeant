@@ -81,6 +81,11 @@ interface MonthlyPlanCardProps {
   isOver: boolean;
   daysLeft: number;
   /**
+   * Прогноз витрат на кінець місяця за поточним темпом
+   * (`projectMonthEndSpend`); `null` у перші два дні місяця.
+   */
+  forecastExpense?: number | null | undefined;
+  /**
    * When true, the card auto-opens and auto-enters the edit form on
    * mount and renders a `<FirstRunHintBanner />` framing the inputs as
    * the canonical «домівка» for the user's monthly plan. Set on the
@@ -112,6 +117,7 @@ function MonthlyPlanCardComponent({
   pctExpense,
   isOver,
   daysLeft,
+  forecastExpense,
   firstRunHint,
   onDismissFirstRunHint,
 }: MonthlyPlanCardProps) {
@@ -392,6 +398,14 @@ function MonthlyPlanCardComponent({
                   style={{ width: `${Math.min(100, pctExpense)}%` }}
                 />
               </div>
+              {showBalance &&
+                forecastExpense != null &&
+                forecastExpense > 0 && (
+                  <div className="text-style-caption text-subtle">
+                    За поточним темпом до кінця місяця ~
+                    <Money amount={Math.round(forecastExpense)} />
+                  </div>
+                )}
             </div>
           )}
 

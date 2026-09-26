@@ -45,13 +45,13 @@ export function summarizeDestructiveToolInput(
       const pattern = typeof rawPattern === "string" ? rawPattern.trim() : "";
       const limit = clampBatchLimit(input["limit"]);
       return pattern
-        ? `патерн «${pattern}», до ${limit} транзакцій`
-        : `до ${limit} транзакцій`;
+        ? `патерн «${pattern}», до ${limit} операцій`
+        : `до ${limit} операцій`;
     }
     case "delete_transaction": {
       const rawTxId = input["tx_id"];
       const txId = typeof rawTxId === "string" ? rawTxId.trim() : "";
-      return txId ? `транзакція ${txId}` : undefined;
+      return txId ? `операція ${txId}` : undefined;
     }
     case "forget": {
       const rawFactId = input["fact_id"];

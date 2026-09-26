@@ -58,7 +58,7 @@ describe("FinykSection", () => {
     expect(getByText("Monobank")).toBeTruthy();
     expect(
       getByText(
-        /Підключення Monobank, статус підʼєднання та очистка кешу транзакцій/,
+        /Підключення Monobank, статус підʼєднання та очистка кешу операцій/,
       ),
     ).toBeTruthy();
     expect(getByText("Рахунки")).toBeTruthy();

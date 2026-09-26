@@ -27,6 +27,7 @@ import {
 } from "../../src/modules/nutrition/recommend-recipes.js";
 import { buildParsePantryPrompt } from "../../src/modules/nutrition/parse-pantry.js";
 import { asRecord, normalizeName, pantryItems, recipes } from "./judges.js";
+import { prodRoutedCandidates } from "./candidates.js";
 import type { JudgeVerdict, Pipeline } from "./types.js";
 
 /**
@@ -39,18 +40,11 @@ import type { JudgeVerdict, Pipeline } from "./types.js";
  * пайплайн — прогін вийшов у 6 разів довший і дорожчий, а таблиця показала
  * 204 запуски там, де мало бути 34. Не згортай копію назад у посилання.
  */
-const nutritionCandidates = [
-  {
-    provider: "anthropic" as const,
-    model: env.NUTRITION_MODEL,
-    label: "current default (Anthropic)",
-  },
-  {
-    provider: "openrouter" as const,
-    model: "google/gemini-2.5-flash-lite",
-    label: "OpenRouter Gemini Flash Lite",
-  },
-];
+const nutritionCandidates = prodRoutedCandidates(
+  env.LLM_NUTRITION_PROVIDER,
+  env.OPENROUTER_NUTRITION_MODEL,
+  env.NUTRITION_MODEL,
+);
 
 const PANTRY = [
   { name: "куряче філе", qty: 600, unit: "г" },

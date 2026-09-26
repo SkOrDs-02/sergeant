@@ -74,7 +74,7 @@ function SegmentButton({ seg }: { seg: Segment }) {
         "transition-colors disabled:opacity-50 focus-visible:outline-none",
         "focus-visible:ring-2 focus-visible:ring-nutrition/60",
         seg.active
-          ? "bg-nutrition-strong text-white"
+          ? "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg"
           : "text-subtle hover:text-text",
       )}
     >

@@ -56,7 +56,7 @@ export const DASHBOARD_MODULE_RENDER: Record<
     iconColor: "#7c3aed",
     iconBgClass: "bg-brand-100",
     accentClass: "bg-finyk",
-    description: "Транзакції та бюджети",
+    description: "Операції та бюджети",
   },
   fizruk: {
     label: "Фізрук",

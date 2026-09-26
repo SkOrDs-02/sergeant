@@ -1,5 +1,7 @@
+import { pluralUa } from "@sergeant/shared";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
+import { messages } from "@shared/i18n/uk";
 import { cn } from "@shared/lib/ui/cn";
 import { AssetsLiabilitiesBar } from "./AssetsBars";
 import type { useAssetsState } from "./useAssetsState";
@@ -11,7 +13,10 @@ export function AssetsNetworthCard({
   totalAssets,
   totalDebt,
   showBalance,
-}: Pick<State, "networth" | "totalAssets" | "totalDebt" | "showBalance">) {
+  nonUahManualAssetCount = 0,
+}: Pick<State, "networth" | "totalAssets" | "totalDebt" | "showBalance"> & {
+  nonUahManualAssetCount?: number;
+}) {
   const isNegative = networth < 0;
   return (
     <div
@@ -70,6 +75,15 @@ export function AssetsNetworthCard({
           <Icon name="wallet" size="sm" aria-hidden />
           Загальний капітал
         </p>
+        {nonUahManualAssetCount > 0 && (
+          <p className="text-style-caption text-warning-strong dark:text-warning mt-1">
+            {nonUahManualAssetCount}{" "}
+            {pluralUa(
+              nonUahManualAssetCount,
+              messages.finyk.nonUahAssetsExcluded,
+            )}
+          </p>
+        )}
         {showBalance ? (
           <div className="flex flex-wrap gap-x-4 gap-y-2 mt-4 pt-4 border-t border-finyk/20 text-sm">
             <div>

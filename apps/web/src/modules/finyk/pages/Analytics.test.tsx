@@ -18,6 +18,7 @@ import {
   fireEvent,
   waitFor,
   act,
+  within,
 } from "@testing-library/react";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { Analytics } from "./Analytics";
@@ -186,7 +187,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => expect(fetchMonth).toHaveBeenCalled());
     expect(
-      screen.queryByText("Не вдалось завантажити транзакції"),
+      screen.queryByText("Не вдалось завантажити операції"),
     ).not.toBeInTheDocument();
   });
 
@@ -211,7 +212,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Не вдалось завантажити транзакції"),
+        screen.getByText("Не вдалось завантажити операції"),
       ).toBeInTheDocument();
     });
     const callsAfterFailure = fetchMonth.mock.calls.length;
@@ -243,7 +244,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Не вдалось завантажити транзакції"),
+        screen.getByText("Не вдалось завантажити операції"),
       ).toBeInTheDocument();
     });
     const before = fetchMonth.mock.calls.length;
@@ -256,7 +257,7 @@ describe("Analytics page", () => {
     );
     await waitFor(() => {
       expect(
-        screen.queryByText("Не вдалось завантажити транзакції"),
+        screen.queryByText("Не вдалось завантажити операції"),
       ).not.toBeInTheDocument();
     });
   });
@@ -279,7 +280,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => expect(fetchMonth).toHaveBeenCalled());
     expect(
-      screen.queryByText("Не вдалось завантажити транзакції"),
+      screen.queryByText("Не вдалось завантажити операції"),
     ).not.toBeInTheDocument();
     expect(screen.getByText("Поки немає витрат")).toBeInTheDocument();
     expect(screen.getByText("Поки немає продавців")).toBeInTheDocument();
@@ -367,7 +368,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Не вдалось завантажити транзакції"),
+        screen.getByText("Не вдалось завантажити операції"),
       ).toBeInTheDocument();
     });
     expect(screen.getByText("Повторити")).toBeInTheDocument();
@@ -463,7 +464,51 @@ describe("Analytics page", () => {
       ).toBeInTheDocument();
     });
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
-    expect(screen.getByText(/2\s?518/)).toBeInTheDocument();
+    const comparisonCard = screen.getByText("Порівняння з попереднім місяцем")
+      .parentElement as HTMLElement;
+    expect(within(comparisonCard).getByText(/2\s?518/)).toBeInTheDocument();
+  });
+
+  // Р12: та сама дельта по категорії, з тим самим правилом Р4.
+  it("lists category deltas against the previous month", async () => {
+    const now = Math.floor(KYIV.getTime() / 1000);
+    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const fetchMonth = vi
+      .fn()
+      .mockResolvedValue([mkTx("prev", -20_000, mayTs)]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({ realTx: [mkTx("cur", -30_000, now)], fetchMonth })}
+          storage={buildStorage()}
+        />,
+      );
+    });
+    const table = await screen.findByRole("table");
+    expect(within(table).getByText("Цей")).toBeInTheDocument();
+    expect(within(table).getAllByRole("row")).toHaveLength(2);
+    expect(table).toHaveTextContent(/50/);
+    expect(table).toHaveTextContent("%");
+  });
+
+  // Р15: рівень заощаджень і план проти факту.
+  it("shows the savings rate and the savings plan next to the fact", async () => {
+    const now = Math.floor(KYIV.getTime() / 1000);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({
+            realTx: [mkTx("inc", 4_200_000, now), mkTx("exp", -284_040, now)],
+          })}
+          storage={{ ...buildStorage(), monthlyPlan: { savings: "30000" } }}
+        />,
+      );
+    });
+    expect(
+      await screen.findByText(/Відкладено 93\s?% доходу/),
+    ).toBeInTheDocument();
+    expect(screen.getByText(/План відкласти/)).toHaveTextContent(/30\s?000/);
+    expect(screen.getByText(/План відкласти/)).toHaveTextContent(/39\s?160/);
   });
 
   it("says «Немає з чим порівняти» when the prior month has no records at all", async () => {

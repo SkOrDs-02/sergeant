@@ -52,6 +52,16 @@ describe("useStorage composition root", () => {
     expect(dualWriteBootSpy).toHaveBeenCalled();
   });
 
+  it("тримає множини виключених і привʼязаних операцій стабільними між рендерами", () => {
+    // Вони в залежностях мемо Огляду: нова ідентичність на кожному рендері
+    // змушувала перераховувати всю статистику Фініка щоразу.
+    const { result, rerender } = renderHook(() => useStorage(), { wrapper });
+    const first = result.current;
+    rerender();
+    expect(result.current.excludedTxIds).toBe(first.excludedTxIds);
+    expect(result.current.debtTxIds).toBe(first.debtTxIds);
+  });
+
   it("exposes the flat public contract", () => {
     const { result } = renderHook(() => useStorage(), { wrapper });
     for (const key of [

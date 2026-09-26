@@ -66,7 +66,7 @@ export function spendingTrend(action: SpendingTrendAction): string {
     `Дохід: ${Math.round(curInc)} грн`,
     `Попередній період: ${Math.round(prevExp)} грн`,
     `Зміна: ${change >= 0 ? "+" : ""}${change}%`,
-    `Транзакцій: ${currentPeriod.length}`,
+    `Операцій: ${currentPeriod.length}`,
   ];
   return parts.join("\n");
 }
@@ -148,12 +148,11 @@ export function detectAnomalies(action: DetectAnomaliesAction): string {
     const ts = (t.time || 0) * 1000;
     return t.amount < 0 && ts >= cutoff;
   }) as typeof allTxsAnomaly;
-  if (expenses.length < 3)
-    return "Недостатньо транзакцій для аналізу аномалій.";
+  if (expenses.length < 3) return "Недостатньо операцій для аналізу аномалій.";
   const amounts = expenses
     .map((t) => getTxStatAmount(t, anomalySplits))
     .filter((a) => a > 0);
-  if (amounts.length < 3) return "Недостатньо транзакцій для аналізу аномалій.";
+  if (amounts.length < 3) return "Недостатньо операцій для аналізу аномалій.";
   const avg = amounts.reduce((a, b) => a + b, 0) / amounts.length;
   const anomalies = expenses
     .filter((t) => getTxStatAmount(t, anomalySplits) > avg * threshold)

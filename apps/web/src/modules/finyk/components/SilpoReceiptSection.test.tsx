@@ -239,7 +239,7 @@ describe("SilpoReceiptSection", () => {
 
     expect(
       screen.getByText(
-        "У транзакції вже є ручне розбиття, підтвердження замінить його.",
+        "У операції вже є ручне розбиття, підтвердження замінить його.",
       ),
     ).toBeInTheDocument();
   });
@@ -454,7 +454,7 @@ describe("SilpoReceiptSection", () => {
       return utils;
     }
 
-    it("шле id транзакції на сервер", async () => {
+    it("шле id операції на сервер", async () => {
       mockedUnlink.mockResolvedValue({ ok: true, receiptId: "r1" });
       await renderConnectedWithReceipt();
 

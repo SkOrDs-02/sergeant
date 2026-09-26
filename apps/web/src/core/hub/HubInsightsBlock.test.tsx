@@ -30,8 +30,14 @@ const insightsState = vi.hoisted(() => ({
   }>,
 }));
 
+const weekReportState = vi.hoisted(() => ({ lines: [] as string[] }));
+
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
+}));
+
+vi.mock("../../modules/finyk/hooks/useFinykWeekReport", () => ({
+  useFinykWeekReport: () => weekReportState.lines,
 }));
 
 vi.mock("@shared/lib/modules/hubBus", () => ({
@@ -328,5 +334,29 @@ describe("HubInsightsBlock", () => {
     const digest = screen.getByText("collapse digest");
     expect(digest.getAttribute("data-surface")).toBe("hub_dashboard");
     expect(digest.getAttribute("data-section-open")).toBe("true");
+  });
+
+  // Р23 спеки аналітики v2: локальний звіт тижня під AI-порадою, і підпис
+  // згорнутого блоку не чекає моделі.
+  it("renders the local week report below the AI advice and uses it as the loading subtitle", () => {
+    weekReportState.lines = [
+      "Найбільше за тиждень: Продукти, 807 ₴",
+      "Виросло проти минулого тижня: Кафе, +120 ₴",
+    ];
+    render(
+      <HubInsightsBlock
+        {...props({ coachLoading: true, coachInsightText: null, axis: true })}
+      />,
+    );
+    const report = screen.getByRole("region", { name: "Тиждень у цифрах" });
+    expect(within(report).getAllByRole("listitem")).toHaveLength(2);
+    const advice = screen.getByTestId("assistant-advice");
+    expect(
+      advice.compareDocumentPosition(report) & Node.DOCUMENT_POSITION_FOLLOWING,
+    ).toBeTruthy();
+    expect(screen.getByTestId("collapsed-subtitle")).toHaveTextContent(
+      "Найбільше за тиждень: Продукти, 807 ₴",
+    );
+    weekReportState.lines = [];
   });
 });

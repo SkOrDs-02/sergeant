@@ -249,11 +249,19 @@ export function Measurements() {
           onClick={() => setGuideOpen(true)}
           className="focus-ring flex items-center gap-3 bg-panel border border-line rounded-2xl p-4 shadow-card"
         >
-          <div className="shrink-0 w-10 h-10 rounded-xl bg-fizruk/10 flex items-center justify-center text-fizruk-strong dark:text-fizruk">
-            <Icon name="info" size="md" />
-          </div>
           <div className="min-w-0">
-            <SectionHeading as="div" size="xs" variant="fizruk">
+            <SectionHeading
+              as="div"
+              size="xs"
+              variant="fizruk"
+              className="inline-flex items-center gap-1.5"
+            >
+              <Icon
+                name="info"
+                size="sm"
+                className="shrink-0 text-fizruk-strong dark:text-fizruk"
+                aria-hidden
+              />
               {messages.fizruk.measurements.manual}
             </SectionHeading>
             <div className="text-style-label text-fizruk-strong dark:text-fizruk mt-0.5 inline-flex items-center gap-0.5">

@@ -486,7 +486,7 @@ describe("AssetsAssetsSection", () => {
     });
     expect(state.setShowRecvForm).toHaveBeenCalledWith(true);
 
-    fireEvent.click(screen.getByText(/Прив.язати транзакції \(1\)/));
+    fireEvent.click(screen.getByText(/Прив.язати операції \(1\)/));
     expect(state.setTxPicker).toHaveBeenCalledWith({
       id: "recv-1",
       type: "recv",

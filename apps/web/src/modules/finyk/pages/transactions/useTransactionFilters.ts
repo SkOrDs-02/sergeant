@@ -13,6 +13,7 @@ import type { TxAccount } from "./Transactions";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { mergeExpenseCategoryDefinitions } from "../../constants";
+import { stripLeadingEmoji } from "../../components/txRowHelpers";
 import {
   calcCategorySpent,
   getExpenseCategoryForTransaction,
@@ -296,10 +297,10 @@ export function useTransactionFilters({
       (c) => c.id === effectiveFilter,
     );
     if (!cat) return null;
-    // Емодзі на початку підпису прибираємо — те саме правило, що діяло
-    // для чипів категорій до їх зняття.
-    const space = cat.label.indexOf(" ");
-    return space > 0 ? cat.label.slice(space + 1) : cat.label;
+    // Прибираємо лише емодзі на початку: вбудовані підписи чисті від нього
+    // з 2026-08-21, і різання до першого пробілу робило з «Кафе та
+    // ресторани» «та ресторани».
+    return stripLeadingEmoji(cat.label);
   }, [effectiveFilter, customCategories]);
 
   const txsToShow = useMemo(

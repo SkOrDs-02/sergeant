@@ -4,6 +4,12 @@ interface Subscription {
   linkedTxId?: string | undefined;
   keyword?: string | undefined;
   currency?: string | undefined;
+  /**
+   * Очікувана сума в мінорних одиницях (Р20 спеки аналітики v2): середнє
+   * з історії списань, записане при підтвердженні пропозиції. Показується,
+   * поки немає зіставленої транзакції.
+   */
+  expectedAmount?: number | undefined;
 }
 
 interface Transaction {
@@ -46,8 +52,9 @@ export function getSubscriptionAmountMeta(
 ): AmountMeta {
   const lastTx = getLastTxForSubscription(sub, transactions);
   if (!lastTx) {
+    const expected = Number(sub.expectedAmount);
     return {
-      amount: null,
+      amount: expected > 0 ? expected / 100 : null,
       currency: sub.currency === "USD" ? "$" : "₴",
       lastTx: null,
     };

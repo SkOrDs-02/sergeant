@@ -344,7 +344,7 @@ export function queryTransactions(
     return withinRange(tx, from, to);
   });
 
-  if (matched.length === 0) return "Транзакцій за цими фільтрами не знайдено.";
+  if (matched.length === 0) return "Операцій за цими фільтрами не знайдено.";
 
   const total = matched.reduce((sum, tx) => sum + txAmountGrn(tx), 0);
   const shown = matched.slice(0, limit);
@@ -361,7 +361,7 @@ export function queryTransactions(
     matched.length > shown.length
       ? ` (показано ${shown.length} з ${matched.length})`
       : "";
-  return `Знайдено ${matched.length} транзакц. на суму ${roundGrn(total)} грн${more}: ${list}`;
+  return `Знайдено ${matched.length} операц. на суму ${roundGrn(total)} грн${more}: ${list}`;
 }
 
 export function aggregateSpending(
@@ -415,7 +415,7 @@ export function aggregateSpending(
 
   const dirTitle = direction === "income" ? "Дохід" : "Витрати";
   const more = groups.size > sorted.length ? ` з ${groups.size} груп` : "";
-  return `${dirTitle} за ${finykRange(from, to)}: ${roundGrn(total)} грн усього (${rows.length} транзакц.). Розбивка за ${groupLabel[groupBy]}${more}: ${sorted.join("; ")}`;
+  return `${dirTitle} за ${finykRange(from, to)}: ${roundGrn(total)} грн усього (${rows.length} операц.). Розбивка за ${groupLabel[groupBy]}${more}: ${sorted.join("; ")}`;
 }
 
 export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
@@ -444,7 +444,7 @@ export function comparePeriods(action: ComparePeriodsAction): ChatActionResult {
   const b = roundGrn(measure(bFrom, bTo));
   const delta = a - b;
   const pct = b !== 0 ? (delta / b) * 100 : a !== 0 ? 100 : 0;
-  const unit = metric === "count" ? "транзакц." : "грн";
+  const unit = metric === "count" ? "операц." : "грн";
   const metricTitle =
     metric === "count"
       ? "Кількість"

@@ -240,7 +240,7 @@ export function WorkoutTemplatesSection({
               ))}
               {pickList.length === 0 && (
                 <div className="p-3 text-style-caption text-muted text-center">
-                  Нічого не знайдено
+                  Нічого не знайшов
                 </div>
               )}
             </div>
@@ -468,7 +468,7 @@ export function WorkoutTemplatesSection({
                 {typeof onStartTemplate === "function" && (
                   <Button
                     size="sm"
-                    className="h-10 min-h-[44px] px-3 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90"
+                    className="h-10 min-h-[44px] px-3 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90 dark:bg-fizruk dark:text-bg dark:hover:bg-fizruk/90 dark:border-fizruk"
                     onClick={() => onStartTemplate(t)}
                     disabled={!(t.exerciseIds || []).length}
                   >

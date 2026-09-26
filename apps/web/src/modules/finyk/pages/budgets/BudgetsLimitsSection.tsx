@@ -4,6 +4,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Icon } from "@shared/components/ui/Icon";
 import { cn } from "@shared/lib/ui/cn";
 import {
+  calcLimitPace,
   calculateLimitUsage,
   formatLimitBudgetLabel,
   limitBudgetCategoryIds,
@@ -26,6 +27,8 @@ export interface BudgetsLimitsSectionProps {
   limitsOpen: boolean;
   toggleLimits: () => void;
   monthStart: Date;
+  /** Той самий «зараз», що й у вікні лімітів: з нього рахується темп (Р8). */
+  now: Date;
   limitBudgets: LimitBudget[];
   budgets: Budget[];
   setBudgets: Dispatch<SetStateAction<Budget[]>>;
@@ -58,6 +61,7 @@ export function BudgetsLimitsSection({
   limitsOpen,
   toggleLimits,
   monthStart,
+  now,
   limitBudgets,
   budgets,
   setBudgets,
@@ -76,6 +80,11 @@ export function BudgetsLimitsSection({
   limitCardRefs,
   toast,
 }: BudgetsLimitsSectionProps) {
+  // Секція згорнута за замовчуванням, тож перевищення, яке вже бачить
+  // Головна хаба, мусить бути видно в самій шапці, а не лише всередині.
+  const overCount = limitBudgets.filter(
+    (b) => calculateLimitUsage(b, calcSpent(b)).overLimit,
+  ).length;
   return (
     <>
       <button
@@ -99,7 +108,7 @@ export function BudgetsLimitsSection({
                 попереднього місяця. Форматування без `timeZone` бере таймзону
                 хоста, і на будь-якому пристрої західніше Києва (UTC включно)
                 заголовок показував попередній місяць — тимчасом як сусідні
-                «Транзакції» й «Аналітика» показували правильний. Це не глюк на
+                «Операції» й «Аналітика» показували правильний. Це не глюк на
                 межі доби: для таких пристроїв стан постійний. Фінансові періоди
                 рахуються в Києві (root AGENTS.md § Domain invariants), тож
                 форматувати треба в тій самій зоні, до якої прив'язаний інстант. */}
@@ -111,6 +120,11 @@ export function BudgetsLimitsSection({
             {limitBudgets.length > 0 && (
               <span className="ml-1 text-subtle font-normal">
                 ({limitBudgets.length})
+              </span>
+            )}
+            {overCount > 0 && (
+              <span className="ml-1 font-semibold text-danger-strong dark:text-danger">
+                · {overCount} перевищено
               </span>
             )}
           </SectionHeading>
@@ -156,6 +170,7 @@ export function BudgetsLimitsSection({
           const categoryKey = limitBudgetCategoryKey(b);
           const bspent = calcSpent(b);
           const usage = calculateLimitUsage(b, bspent);
+          const pace = calcLimitPace(b, bspent, now);
           // `getLimitBudgets` normalizes limits into fresh objects, so
           // reference equality (`indexOf`) always returned -1 and made every
           // card enter edit mode at once. Budget ids are the stable identity.
@@ -224,6 +239,7 @@ export function BudgetsLimitsSection({
                 customCategories={customCategories ?? []}
                 showBalance={showBalance}
                 breakdown={breakdown}
+                forecast={pace.forecast}
                 spent={usage.spent}
                 pctRaw={usage.pctRaw}
                 pctRounded={usage.pctRounded}

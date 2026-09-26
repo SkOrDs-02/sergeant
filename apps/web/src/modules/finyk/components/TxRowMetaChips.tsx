@@ -155,12 +155,12 @@ export function TxRowMetaChips({
       {hasReceipt && (
         <span
           className="shrink-0 inline-flex items-center text-muted"
-          title="Є прикріплений чек, відкрий транзакцію, щоб побачити позиції"
+          title="Є прикріплений чек, відкрий операцію, щоб побачити позиції"
         >
           <Icon
             name="file-text"
             size="xs"
-            title="Є прикріплений чек, відкрий транзакцію, щоб побачити позиції"
+            title="Є прикріплений чек, відкрий операцію, щоб побачити позиції"
           />
         </span>
       )}

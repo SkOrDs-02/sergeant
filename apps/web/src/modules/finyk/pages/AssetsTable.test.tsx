@@ -50,6 +50,32 @@ describe("AssetsNetworthCard", () => {
     expect(screen.getByText("Суми приховано")).toBeInTheDocument();
   });
 
+  it("каже вголос, скільки валютних активів не враховано в капіталі", () => {
+    const { rerender } = render(
+      <AssetsNetworthCard
+        networth={89300}
+        totalAssets={89300}
+        totalDebt={0}
+        showBalance={true}
+        nonUahManualAssetCount={1}
+      />,
+    );
+    expect(
+      screen.getByText(/1 актив в іноземній валюті не враховую/),
+    ).toBeInTheDocument();
+
+    rerender(
+      <AssetsNetworthCard
+        networth={89300}
+        totalAssets={89300}
+        totalDebt={0}
+        showBalance={true}
+        nonUahManualAssetCount={0}
+      />,
+    );
+    expect(screen.queryByText(/іноземній валюті/)).toBeNull();
+  });
+
   it("renders assets/liabilities bar when both > 0 and showBalance", () => {
     const { container } = render(
       <AssetsNetworthCard

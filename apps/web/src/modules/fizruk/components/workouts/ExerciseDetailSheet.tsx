@@ -288,7 +288,7 @@ export function ExerciseDetailSheet({
       {mode === "log" && (
         <Button
           type="button"
-          className="w-full h-12 mt-5 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90"
+          className="w-full h-12 mt-5 bg-fizruk-strong text-white border-fizruk-strong hover:bg-fizruk-strong/90 dark:bg-fizruk dark:text-bg dark:hover:bg-fizruk/90 dark:border-fizruk"
           onClick={() => {
             if (!activeWorkoutId) {
               toast?.warning?.("Спочатку натисни «Почати тренування».");

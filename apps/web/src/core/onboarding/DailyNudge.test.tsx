@@ -26,7 +26,7 @@ vi.mock("../observability/analytics", async () => {
 const NUDGE: NudgeDefinition = {
   id: "day3_chat",
   day: 3,
-  message: "3 дні з Sergeant! Спробуй AI-чат для плану на день.",
+  message: "3 дні з Sergeant! Спробуй чат із Сержантом для плану на день.",
 };
 
 describe("DailyNudge — single-primary affordance (S6.7 audit-guard)", () => {

@@ -43,7 +43,7 @@ export function ModulesSection() {
     <section id="modules" className="scroll-mt-16">
       <div className="mx-auto w-full max-w-6xl px-5 pb-9 pt-16 sm:px-8">
         <h2 className="font-display text-2xl font-extrabold uppercase tracking-tight text-balance text-foreground-strong sm:text-3xl">
-          Чотири модулі, один простір
+          Чотири модулі, які бачать одне одного
         </h2>
         <p className="mt-4 max-w-2xl leading-relaxed text-muted">
           Витрати приходять з Monobank і чеків, їжа – зі штрихкоду чи фото,
@@ -56,7 +56,7 @@ export function ModulesSection() {
           href="/hroshi"
           className="group flex flex-col gap-1 bg-finyk px-6 py-7 text-ink-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <p className={label}>01 · модуль Фінік</p>
+          <p className={label}>модуль Фінік</p>
           <h3 className={`${title} group-hover:underline`}>Гроші</h3>
           <p className={`${body} text-ink-text`}>
             Чотири входи витрат замість одного банку.
@@ -70,7 +70,7 @@ export function ModulesSection() {
           href="/trenuvannia"
           className="group flex flex-col gap-1 bg-fizruk px-6 py-7 text-ink-text focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <p className={label}>02 · модуль Фізрук</p>
+          <p className={label}>модуль Фізрук</p>
           <h3 className={`${title} group-hover:underline`}>Тренування</h3>
           <p className={`${body} text-ink-text`}>
             Щоденник тренувань і порада, коли відпочити.
@@ -84,7 +84,7 @@ export function ModulesSection() {
           href="/zvychky"
           className="group flex flex-col gap-1 bg-routine px-6 py-7 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <p className={label}>03 · модуль Рутина</p>
+          <p className={label}>модуль Рутина</p>
           <h3 className={`${title} group-hover:underline`}>Звички</h3>
           <p className={`${body} text-ink/90`}>
             Пропуск із причиною не обнуляє серію.
@@ -98,7 +98,7 @@ export function ModulesSection() {
           href="/yizha"
           className="group flex flex-col gap-1 bg-nutrition-glow px-6 py-7 text-ink focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
         >
-          <p className={label}>04 · модуль Харчування</p>
+          <p className={label}>модуль Харчування</p>
           <h3 className={`${title} group-hover:underline`}>Їжа</h3>
           <p className={`${body} text-ink/90`}>
             КБЖВ, коли половини продуктів немає в базах.

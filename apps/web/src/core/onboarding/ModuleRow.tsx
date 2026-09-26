@@ -20,25 +20,25 @@ const MODULE_ACTIVE_CLASSES: Record<
     border: "border-finyk/60",
     bg: "bg-finyk/8",
     icon: "bg-finyk/15 text-finyk",
-    check: "bg-finyk-strong",
+    check: "bg-finyk-strong dark:bg-finyk dark:text-bg",
   },
   fizruk: {
     border: "border-fizruk/60",
     bg: "bg-fizruk/8",
     icon: "bg-fizruk/15 text-fizruk",
-    check: "bg-fizruk-strong",
+    check: "bg-fizruk-strong dark:bg-fizruk dark:text-bg",
   },
   routine: {
     border: "border-routine/60",
     bg: "bg-routine/8",
     icon: "bg-routine/15 text-routine",
-    check: "bg-routine-strong",
+    check: "bg-routine-strong dark:bg-routine dark:text-bg",
   },
   nutrition: {
     border: "border-nutrition/60",
     bg: "bg-nutrition/8",
     icon: "bg-nutrition/15 text-nutrition",
-    check: "bg-nutrition-strong",
+    check: "bg-nutrition-strong dark:bg-nutrition dark:text-bg",
   },
 };
 

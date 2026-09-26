@@ -14,7 +14,7 @@ const FIELDS = [
   { key: "kcal" as const, label: "Ккал", placeholder: "350" },
   { key: "protein_g" as const, label: "Білки г", placeholder: "12" },
   { key: "fat_g" as const, label: "Жири г", placeholder: "6" },
-  { key: "carbs_g" as const, label: "Вуглев. г", placeholder: "60" },
+  { key: "carbs_g" as const, label: "Вугл г", placeholder: "60" },
 ];
 
 interface MacrosEditorProps {

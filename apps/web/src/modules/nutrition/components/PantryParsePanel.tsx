@@ -192,7 +192,7 @@ export function PantryParsePreview({
                       className={cn(
                         "text-style-caption px-2.5 py-1 min-h-[32px] rounded-xl border transition-colors",
                         resolvedUnit === unit
-                          ? "bg-nutrition-strong text-white border-nutrition-strong"
+                          ? "bg-nutrition-strong text-white border-nutrition-strong dark:bg-nutrition dark:text-bg dark:border-nutrition"
                           : "border-line text-subtle hover:text-text hover:border-nutrition/50",
                       )}
                     >
@@ -214,7 +214,7 @@ export function PantryParsePreview({
           disabled={busy || selected.length === 0}
           className={cn(
             "text-style-label px-4 h-11 rounded-2xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
           )}
         >
           {PREVIEW.confirm} {selected.length}

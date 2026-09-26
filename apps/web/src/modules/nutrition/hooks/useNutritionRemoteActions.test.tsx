@@ -329,7 +329,7 @@ describe("useNutritionRemoteActions", () => {
       });
       await waitFor(() =>
         expect(spies.setErr).toHaveBeenCalledWith(
-          "AI повернув порожній план харчування. Спробуй згенерувати ще раз.",
+          "Сержант повернув порожній план харчування. Спробуй згенерувати ще раз.",
         ),
       );
     });
@@ -349,7 +349,7 @@ describe("useNutritionRemoteActions", () => {
       });
       await waitFor(() =>
         expect(spies.setErr).toHaveBeenCalledWith(
-          "AI не зміг скласти план тільки з наявних продуктів. Додай ще позицій у комору або зміни режим комори.",
+          "Сержант не зміг скласти план тільки з наявних продуктів. Додай ще позицій у комору або зміни режим комори.",
         ),
       );
     });
@@ -593,7 +593,7 @@ describe("useNutritionRemoteActions", () => {
 
       await waitFor(() =>
         expect(spies.setErr).toHaveBeenCalledWith(
-          expect.stringContaining("AI не повернув жодної покупки"),
+          expect.stringContaining("Сержант не повернув жодної покупки"),
         ),
       );
       expect(spies.setGeneratedList).not.toHaveBeenCalled();

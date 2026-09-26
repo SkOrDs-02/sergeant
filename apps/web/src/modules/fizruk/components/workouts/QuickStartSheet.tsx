@@ -330,7 +330,7 @@ export function QuickStartSheet({
             compact
             module="fizruk"
             icon={<Icon name="dumbbell" size="lg" />}
-            title={q.trim() ? "Нічого не знайдено" : "Каталог поки що порожній"}
+            title={q.trim() ? "Нічого не знайшов" : "Каталог поки що порожній"}
             description={
               q.trim()
                 ? "Спробуй іншу назву або очисти пошук."
