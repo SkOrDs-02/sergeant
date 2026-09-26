@@ -101,6 +101,23 @@ export function getNextBillingDate(billingDay: number, now: Date): Date {
   return d;
 }
 
+/**
+ * Наступна дата списання підписки для всіх поверхонь Фініка (картка
+ * підписки, «Найближчі платежі», смуга статистики). Цикл вважається
+ * сплаченим, коли останнє привʼязане списання лежить у день списання або
+ * пізніше: тоді дата переходить на наступний цикл. `lastChargeSec` у
+ * секундах, як `Transaction.time`.
+ */
+export function getSubscriptionDueDate(
+  billingDay: number,
+  now: Date,
+  lastChargeSec?: number | null,
+): Date {
+  const due = getNextBillingDate(billingDay, now);
+  if (lastChargeSec == null || lastChargeSec * 1000 < due.getTime()) return due;
+  return getNextBillingDate(billingDay, new Date(due.getTime() + 86400000));
+}
+
 export function formatShortDate(d: Date): string {
   return formatDateShort(d);
 }
@@ -159,17 +176,11 @@ export function computeFinykSchedule({
     );
     if (!amount || currency !== "₴") continue;
     subsMonthly += amount;
-    // AI-NOTE: коли остання списана транзакція припадає на `dueDate`
-    // (тобто billingDay сьогодні і користувач уже привʼязав сьогоднішнє
-    // списання), цикл уже сплачено — переносимо `dueDate` на наступний
-    // billingDay, щоб тайл "Наступний платіж" не показував сплачений.
-    let dueDate = getNextBillingDate(Number(sub.billingDay), todayStart);
-    if (lastTx?.time && lastTx.time >= dueDate.getTime()) {
-      dueDate = getNextBillingDate(
-        Number(sub.billingDay),
-        new Date(dueDate.getTime() + 86400000),
-      );
-    }
+    const dueDate = getSubscriptionDueDate(
+      Number(sub.billingDay),
+      todayStart,
+      lastTx?.time,
+    );
     upcoming.push({
       label: sub.name ?? "Підписка",
       amount,

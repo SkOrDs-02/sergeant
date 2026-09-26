@@ -287,7 +287,7 @@ describe("useOverviewData", () => {
         {
           id: "tx-spotify",
           amount: -19900,
-          time: new Date(2026, 4, 10, 12, 0).getTime(),
+          time: new Date(2026, 4, 10, 12, 0).getTime() / 1000,
           date: "2026-05-10",
           description: "spotify premium",
           categoryId: "subscriptions",
@@ -424,7 +424,7 @@ describe("useOverviewData", () => {
               {
                 id: "tx-spotify",
                 amount: -19900,
-                time: new Date(2026, 4, 10, 12, 0).getTime(),
+                time: new Date(2026, 4, 10, 12, 0).getTime() / 1000,
                 date: "2026-05-10",
                 description: "spotify premium",
                 categoryId: "subscriptions",

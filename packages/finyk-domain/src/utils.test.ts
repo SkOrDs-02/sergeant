@@ -15,7 +15,6 @@ import {
   getAccountLabel,
   getMonoDebt,
   isMonoDebt,
-  daysUntil,
   getMonthStart,
   getTxStatAmount,
   calcCategorySpent,
@@ -390,20 +389,6 @@ describe("isMonoDebt", () => {
   });
   it("false коли ліміт вичерпано/погашено", () => {
     expect(isMonoDebt({ creditLimit: 500000, balance: 500000 })).toBe(false);
-  });
-});
-
-describe("daysUntil", () => {
-  beforeEach(() => {
-    vi.useFakeTimers();
-    vi.setSystemTime(new Date(2024, 5, 10, 12, 0, 0));
-  });
-  it("повертає додатну кількість днів до дати в поточному місяці", () => {
-    expect(daysUntil(20)).toBe(10);
-  });
-  it("переходить на наступний місяць коли день вже минув", () => {
-    expect(daysUntil(5)).toBeGreaterThan(20);
-    expect(daysUntil(5)).toBeLessThanOrEqual(31);
   });
 });
 

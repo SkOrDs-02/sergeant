@@ -81,10 +81,13 @@ export function deriveChecklistSignals(
       // `budgetLeft` is `null` unless a monthly plan expense exists, and
       // may legitimately be 0 or negative once the plan is overspent —
       // so presence, not truthiness, is what proves the plan was set.
+      // Бюджет у Фініку - це і місячний план витрат, і ліміт на категорію:
+      // людина, що поставила лише ліміт, крок теж виконала.
       const hasPlan = num(stats, "budgetLeft") !== null;
+      const hasLimit = (num(stats, "limitsCount") ?? 0) > 0;
       return {
         add_expense: hasEntry || num(stats, "todaySpent") !== null,
-        set_budget: hasPlan,
+        set_budget: hasPlan || hasLimit,
       };
     }
     case "fizruk": {

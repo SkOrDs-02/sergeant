@@ -2,6 +2,7 @@ import { useEffect } from "react";
 import { STORAGE_KEYS } from "@sergeant/shared";
 import { computeFinykQuickStats } from "@sergeant/finyk-domain/utils";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import { getLimitBudgets } from "@sergeant/finyk-domain/domain/budget";
 import type {
   Transaction,
   TxSplitsMap,
@@ -20,6 +21,8 @@ interface FinykQuickStatsSnapshotInput {
   excludedTxIds?: Set<string> | string[];
   txSplits?: TxSplitsMap;
   planExpense?: number;
+  /** Кількість лімітів на категорії: доказ кроку чекліста «Встановити бюджет». */
+  limitsCount?: number;
   nowMs?: number;
 }
 
@@ -53,11 +56,12 @@ export function writeFinykQuickStatsSnapshot({
   excludedTxIds = [],
   txSplits = {},
   planExpense = 0,
+  limitsCount = 0,
   nowMs = Date.now(),
 }: FinykQuickStatsSnapshotInput): string {
   const { todayStart, todayEnd, monthStart } = kyivWindows(nowMs);
-  const payload = JSON.stringify(
-    computeFinykQuickStats({
+  const payload = JSON.stringify({
+    ...computeFinykQuickStats({
       transactions,
       excludedTxIds,
       txSplits,
@@ -66,7 +70,8 @@ export function writeFinykQuickStatsSnapshot({
       todayEndMs: todayEnd,
       monthStartMs: monthStart,
     }),
-  );
+    ...(limitsCount > 0 ? { limitsCount } : {}),
+  });
 
   if (safeReadStringLS(STORAGE_KEYS.FINYK_QUICK_STATS) === payload) {
     return payload;
@@ -99,7 +104,8 @@ export function useFinykQuickStatsWriter({
   storage: StorageLike;
 }): void {
   const { realTx } = mono;
-  const { manualExpenses, excludedTxIds, txSplits, monthlyPlan } = storage;
+  const { manualExpenses, excludedTxIds, txSplits, monthlyPlan, budgets } =
+    storage;
 
   useEffect(() => {
     const manualTxs = manualExpenses.map((e) => manualExpenseToTransaction(e));
@@ -111,6 +117,7 @@ export function useFinykQuickStatsWriter({
       excludedTxIds,
       txSplits,
       planExpense: Number(monthlyPlan?.expense || 0),
+      limitsCount: getLimitBudgets(budgets).length,
     });
-  }, [realTx, manualExpenses, excludedTxIds, txSplits, monthlyPlan]);
+  }, [realTx, manualExpenses, excludedTxIds, txSplits, monthlyPlan, budgets]);
 }

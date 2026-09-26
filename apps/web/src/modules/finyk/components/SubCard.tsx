@@ -3,9 +3,10 @@
  * Status: Active
  */
 import { memo, useState } from "react";
-import { pluralDays } from "@sergeant/shared";
+import { kyivCalendarDaysBetween, pluralDays } from "@sergeant/shared";
 import { Money } from "@shared/components/ui/Money";
-import { daysUntil, fmtDate } from "../utils";
+import { fmtDate } from "../utils";
+import { getSubscriptionDueDate } from "../lib/upcomingSchedule";
 import { cn } from "@shared/lib/ui/cn";
 import { Card } from "@shared/components/ui/Card";
 import { Button } from "@shared/components/ui/Button";
@@ -67,7 +68,15 @@ function SubCardComponent({
   const { amount, currency } = getSubscriptionAmountMeta(sub, [
     ...transactions,
   ]);
-  const days = daysUntil(Number(sub.billingDay) || 1);
+  const [now] = useState(Date.now);
+  const days = kyivCalendarDaysBetween(
+    getSubscriptionDueDate(
+      Number(sub.billingDay) || 1,
+      new Date(now),
+      lastTx?.time,
+    ).getTime(),
+    now,
+  );
   const veryClose = days <= 1;
   const soon = days <= 3;
 
@@ -217,8 +226,12 @@ function SubCardComponent({
               size={13}
               aria-hidden
             />{" "}
-            {veryClose ? "Завтра" : `Через ${days} ${pluralDays(days)}`} ·{" "}
-            {sub.billingDay}-го
+            {days === 0
+              ? "Сьогодні"
+              : days === 1
+                ? "Завтра"
+                : `Через ${days} ${pluralDays(days)}`}{" "}
+            · {sub.billingDay}-го
           </div>
           {sub.linkedTxId && lastTx && (
             <div className="text-style-caption text-finyk mt-0.5">

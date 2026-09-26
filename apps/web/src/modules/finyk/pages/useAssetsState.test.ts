@@ -77,6 +77,35 @@ describe("useAssetsState", () => {
     ]);
   });
 
+  it("counts a subscription linked to a manual record in the monthly total", () => {
+    const { result } = renderHook(() =>
+      useAssetsState({
+        mono: makeMono(),
+        storage: makeStorage({
+          manualExpenses: [
+            {
+              id: "m-199",
+              amount: 199,
+              category: "subscriptions",
+              description: "Підписка",
+              date: "2026-09-26",
+            },
+          ],
+          subscriptions: [
+            {
+              id: "sub-1",
+              name: "Підписка",
+              billingDay: 26,
+              linkedTxId: "manual_m-199",
+              currency: "UAH",
+            },
+          ],
+        }),
+      }),
+    );
+    expect(result.current.subsMonthly).toBe(199);
+  });
+
   it("computes monoTotal from visible accounts", () => {
     const accounts = [
       { id: "acc1", balance: 500000, currencyCode: 980 },
