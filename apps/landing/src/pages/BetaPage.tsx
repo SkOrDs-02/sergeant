@@ -4,7 +4,7 @@ import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import { EXPORT_CLAIM } from "../content/exportClaim";
 
 const GIVE = [
-  "Повний доступ до всіх чотирьох модулів. Ядро безкоштовне назавжди, а на час бети відкрито й те, що потім стане платним: безлімітний AI, фото їжі, автосинхронізація.",
+  "Повний доступ до всіх чотирьох модулів. Ядро безкоштовне назавжди, а на час бети відкрито й те, що потім увійде в Premium.",
   "Прямий канал до автора: на питання відповідаю сам",
   "Вплив на те, які звʼязки зʼявляться першими",
 ];
@@ -103,7 +103,7 @@ export default function BetaPage() {
           <div className="mt-7">
             <TelegramCta
               placement="beta"
-              label="Стати в чергу в Telegram"
+              label="Стати в чергу"
               variant="inverse"
             />
           </div>

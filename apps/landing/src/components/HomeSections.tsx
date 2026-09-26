@@ -171,7 +171,7 @@ export function ConnectionExamples() {
           <span className="text-fizruk">Фізрук</span>
         </div>
         <blockquote className="text-lg font-medium leading-snug text-subtle">
-          «Закономірностей не помічено. Ще збираю дані»
+          «Поки рано порівнювати»
         </blockquote>
         <figcaption className="sr-only">
           Звʼязок між Фініком і Фізруком ще не підтверджено
@@ -191,7 +191,7 @@ export function ConnectionsSection() {
         Звʼязки, які він помічає
       </h2>
       <p className="mt-4 max-w-2xl leading-relaxed text-muted">
-        Окремі трекери показують цифри. Sergeant читає всі сфери разом і
+        Окремі трекери показують цифри. Застосунок читає всі сфери разом і
         показує, як вони впливають одна на одну. А коли даних замало, мовчить.
       </p>
 

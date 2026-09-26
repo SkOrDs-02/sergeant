@@ -132,7 +132,7 @@ function HeroCollage() {
           «{scenario.note}»
         </blockquote>
         <figcaption className="text-xs text-subtle">
-          ілюстративний приклад · записав Sergeant · {HERO_META}
+          ілюстративний приклад · записав Сержант · {HERO_META}
         </figcaption>
       </figure>
     </div>
@@ -202,9 +202,9 @@ export default function HomePage() {
             без крику
           </h1>
           <p className="max-w-lg text-lg leading-relaxed text-pretty text-muted">
-            Гроші, тренування, звички і їжа в одному приватному застосунку.
-            Sergeant помічає, як тиждень без тренувань відгукується в доставці,
-            і мовчить, поки даних замало. Рахує, а не читає лекцій.
+            Гроші, тренування, звички і їжа в одному приватному застосунку. Він
+            помічає, як тиждень без тренувань відгукується в доставці, і
+            мовчить, поки даних замало. Рахує, а не читає лекцій.
           </p>
           <div className="flex flex-col gap-2.5">
             <TelegramCta placement="hero" label="Стати в чергу" />

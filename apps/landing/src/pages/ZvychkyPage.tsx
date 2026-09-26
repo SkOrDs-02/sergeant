@@ -179,9 +179,7 @@ export default function ZvychkyPage() {
       <section className="mt-14 border-t-2 border-foreground-strong pt-8">
         <h2 className={h2}>Де це вже працює</h2>
         <p className={body}>
-          Усе описане вище стосується веб-версії. {MOBILE_CLAIM} Поки він не
-          переведений на цю логіку, він показує жорстку серію і нижчі відсотки
-          на тих самих даних.
+          Усе описане вище стосується веб-версії. {MOBILE_CLAIM}
         </p>
         <p className={body}>
           Ще одна межа всередині вебу: у календарі й у відсотку виконання день
