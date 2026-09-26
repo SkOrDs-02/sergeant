@@ -136,10 +136,19 @@ test.describe("mobile coarse-pointer UI audit", () => {
 
     const nameInput = page.getByPlaceholder("напр. лосось 300г");
     await nameInput.waitFor({ state: "visible", timeout: 15_000 });
-    for (const name of RECEIPT_PANTRY_ITEMS) {
+    for (const [i, name] of RECEIPT_PANTRY_ITEMS.entries()) {
+      // First item goes through the empty pantry's inline form; the rest go
+      // through the add sheet opened from the list header (it stays open).
+      if (i === 1) {
+        await page.getByRole("button", { name: "Додати продукти" }).click();
+      }
       await nameInput.fill(name);
       await page.getByRole("button", { name: "Додати", exact: true }).click();
     }
+    await page
+      .getByRole("dialog", { name: "Додати продукти" })
+      .getByRole("button", { name: "Закрити" })
+      .click();
     await expect(
       page.getByRole("button", { name: /^Редагувати / }),
     ).toHaveCount(RECEIPT_PANTRY_ITEMS.length);

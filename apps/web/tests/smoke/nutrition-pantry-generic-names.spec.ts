@@ -205,12 +205,18 @@ test("@critical pantry: назва з чека згортається до ро�
   await expect(page.getByText("Горіхи та насіння")).toBeVisible();
 
   // 3. Друге поповнення іншим брендом не створює другої позиції.
+  // Наповнена комора ховає форму додавання в аркуш за кнопкою шапки списку.
+  await page.getByRole("button", { name: "Додати продукти" }).click();
   await page.getByRole("button", { name: "З покупок Сільпо" }).click();
   await page.getByRole("button", { name: /21\.08\.2026/ }).click();
   await expect(
     page.getByRole("listitem").filter({ hasText: "Молоко Галичина" }),
   ).toBeVisible({ timeout: 15_000 });
   await page.getByRole("button", { name: /Додати в комору/ }).click();
+  await page
+    .getByRole("dialog", { name: "Додати продукти" })
+    .getByRole("button", { name: "Закрити" })
+    .click();
 
   await expect(
     page.getByRole("button", { name: /^Редагувати Молоко$/ }),
@@ -273,12 +279,18 @@ test("@critical pantry: списання з позиції на два варі�
     page.getByRole("button", { name: /^Редагувати Молоко$/ }),
   ).toBeVisible({ timeout: 20_000 });
 
+  // Наповнена комора ховає форму додавання в аркуш за кнопкою шапки списку.
+  await page.getByRole("button", { name: "Додати продукти" }).click();
   await page.getByRole("button", { name: "З покупок Сільпо" }).click();
   await page.getByRole("button", { name: /21\.08\.2026/ }).click();
   await expect(
     page.getByRole("listitem").filter({ hasText: "Молоко Галичина" }),
   ).toBeVisible({ timeout: 20_000 });
   await page.getByRole("button", { name: /Додати в комору/ }).click();
+  await page
+    .getByRole("dialog", { name: "Додати продукти" })
+    .getByRole("button", { name: "Закрити" })
+    .click();
   await expect(page.getByText(/1,87\s*л/)).toBeVisible({ timeout: 20_000 });
 
   // Перехід НАВІГАЦІЄЮ, не `page.goto`: у демо-режимі `vite preview`/dev
@@ -374,12 +386,18 @@ test("@critical pantry: картка продукту не ламає мобіл
     page.getByRole("button", { name: /^Редагувати Молоко$/ }),
   ).toBeVisible({ timeout: 30_000 });
 
+  // Наповнена комора ховає форму додавання в аркуш за кнопкою шапки списку.
+  await page.getByRole("button", { name: "Додати продукти" }).click();
   await page.getByRole("button", { name: "З покупок Сільпо" }).click();
   await page.getByRole("button", { name: /21\.08\.2026/ }).click();
   await expect(
     page.getByRole("listitem").filter({ hasText: "Молоко Галичина" }),
   ).toBeVisible({ timeout: 30_000 });
   await page.getByRole("button", { name: /Додати в комору/ }).click();
+  await page
+    .getByRole("dialog", { name: "Додати продукти" })
+    .getByRole("button", { name: "Закрити" })
+    .click();
 
   const expand = page.getByRole("button", { name: "Показати покупки" });
   await expect(expand).toBeVisible({ timeout: 30_000 });
