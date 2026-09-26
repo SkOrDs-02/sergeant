@@ -28,7 +28,7 @@ const TIER_OPTIONS: ReadonlyArray<{
   {
     value: "pro",
     label: "Premium",
-    hint: "AI-чат, авто-Mono, повні звіти, cloud sync",
+    hint: "Чат із Сержантом, авто-Mono, повні звіти, cloud sync",
   },
   {
     value: "free",

@@ -490,7 +490,7 @@ const MODULE_EMPTY_CONFIG: Record<
     icon: "utensils",
     title: "Що ти їси насправді?",
     description: "Залогай перший прийом їжі й отримай чесну картину.",
-    hint: "Порада: Сфоткай страву, AI порахує калорії",
+    hint: "Порада: Сфоткай страву, Сержант порахує калорії",
     actionLabel: "Додати їжу",
     accent: "text-nutrition bg-nutrition-soft dark:bg-nutrition/10",
     exampleLine1: "Сніданок",

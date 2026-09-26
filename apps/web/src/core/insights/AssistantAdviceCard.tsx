@@ -223,7 +223,7 @@ export function AssistantAdviceCard({
               <div className="mt-2.5 flex items-center gap-2">
                 {/* Actionable insight (UX-пропозиція 2026-07): порада була
                     суто текстовою — тепер із неї можна одразу перейти в
-                    дію. «Запитати AI про це» відкриває асистента із
+                    дію. «Запитати Сержанта про це» відкриває його із
                     засіяним контекстом поради (autoSend: false, щоб юзер
                     міг відредагувати питання перед відправкою). */}
                 {insight && (
@@ -258,7 +258,7 @@ export function AssistantAdviceCard({
                       strokeWidth={2}
                       aria-hidden
                     />
-                    Запитати AI про це
+                    Запитати Сержанта про це
                   </button>
                 )}
                 <button

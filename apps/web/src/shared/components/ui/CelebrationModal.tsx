@@ -544,7 +544,7 @@ export function useCelebration() {
     ) => {
       celebrate({
         type: "levelUp",
-        title: messages.celebration.levelUp.replace("{level}", String(level)),
+        title: messages.celebration.levelUp,
         value: level,
         unit: "рівень",
         progress,
@@ -559,9 +559,7 @@ export function useCelebration() {
     (days: number, message?: string) => {
       celebrate({
         type: "streak",
-        title:
-          message ||
-          messages.celebration.streakDays.replace("{days}", String(days)),
+        title: message || messages.celebration.streakDays,
         value: days,
         unit: "днів",
         autoCloseMs: 5000,

@@ -108,6 +108,8 @@ const TOMU_START = new RegExp(
 );
 const CHANGELOG = /Раніше|Тепер |До 2026|Доти /g;
 const CALLOUT = /border-l-2/g;
+/** Асистент називається «Сержант» у видимому тексті; «AI-помічник» лишається лише в routeMeta.json (title/description, §L1). */
+const AI_HELPER = /AI-помічник/g;
 
 function read(file: string): string {
   return readFileSync(path.join(SRC, file), "utf8");
@@ -210,6 +212,7 @@ describe("тон сайту в межах порогів аудиту копії
       );
       if (route !== "/stan")
         check("changelog-маркерів", count(text, CHANGELOG), 0);
+      check("«AI-помічник» у видимому тексті", count(text, AI_HELPER), 0);
       expect(problems, `${route}: ${page.files.join(", ")}`).toEqual([]);
     });
   }

@@ -26,7 +26,8 @@ export const pricingMessages = {
     freeName: "Free",
     freePrice: "0 ₴",
     freeCadence: "назавжди",
-    freeTagline: "Усі модулі, ручний трекінг без лімітів. AI: 5 запитів/день.",
+    freeTagline:
+      "Усі модулі, ручний трекінг без лімітів. Сержант: 5 запитів/день.",
     premiumName: "Premium",
     // B4: конкретна ціна («199 ₴ / місяць») знята до запуску — вона
     // суперечила waitlist-у «Один лист, коли Premium стартує».
@@ -37,11 +38,11 @@ export const pricingMessages = {
   features: {
     allModules: "Усі 4 модулі: повний функціонал",
     manualTracking: "Ручний трекінг без числових лімітів",
-    aiChat: "AI-чат",
+    aiChat: "Чат із Сержантом",
     cloudSync2Devices: "Cloud-sync на 2 пристрої",
     expensesFinyk: "Витрати у Фініку",
-    aiPhotoFood: "AI-фото їжі у Харчуванні",
-    aiPhotoFoodShort: "AI-фото їжі",
+    aiPhotoFood: "Фото їжі від Сержанта у Харчуванні",
+    aiPhotoFoodShort: "Фото їжі від Сержанта",
     manualMeals: "Ручні прийоми їжі",
     activeWorkoutTemplate: "Активний шаблон тренування",
     workoutTemplates: "Шаблони тренувань",

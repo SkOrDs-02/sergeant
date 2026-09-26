@@ -130,7 +130,7 @@ export function searchAiHandoff(query: string): Hit[] {
       id: "ai_handoff",
       module: "ai",
       moduleLabel: "Сержант",
-      title: `Запитати AI: «${trimmed}»`,
+      title: `Запитати Сержанта: «${trimmed}»`,
       subtitle: "Відкрити чат з готовим запитом",
       icon: "sergeant",
       target: { kind: "ai-handoff", query: trimmed },

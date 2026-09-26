@@ -112,7 +112,9 @@ describe("AssistantAdviceCard — loading vs loaded", () => {
       />,
     );
 
-    const cta = screen.getByRole("button", { name: /запитати ai про це/i });
+    const cta = screen.getByRole("button", {
+      name: /запитати сержанта про це/i,
+    });
     fireEvent.click(cta);
     off();
 
@@ -133,7 +135,7 @@ describe("AssistantAdviceCard — loading vs loaded", () => {
       />,
     );
     expect(
-      screen.queryByRole("button", { name: /запитати ai про це/i }),
+      screen.queryByRole("button", { name: /запитати сержанта про це/i }),
     ).toBeNull();
   });
 
