@@ -132,7 +132,7 @@ export function WorkoutTemplateEditor({
       <View className="gap-2">
         <SectionHeading size="xs">Додати вправу з каталогу</SectionHeading>
         <Input
-          placeholder="Пошук вправи…"
+          placeholder="Пошук вправи"
           value={query}
           onChangeText={setQuery}
           accessibilityLabel="Пошук вправи для шаблону"

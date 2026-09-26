@@ -173,7 +173,7 @@ export function AssistantCataloguePage({
           <TextInput
             value={query}
             onChangeText={setQuery}
-            placeholder="Пошук: «витрата», «звичка», «1RM»…"
+            placeholder="Пошук: «витрата», «звичка», «1RM»"
             placeholderTextColor="#a8a29e"
             className="flex-1 text-sm text-fg py-1"
             accessibilityLabel="Пошук можливостей"

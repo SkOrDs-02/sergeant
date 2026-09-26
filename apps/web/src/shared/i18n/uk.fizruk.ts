@@ -182,7 +182,7 @@ export const fizrukPageMessages = {
     note: "Нотатка",
     time: "Час",
     noteTitle: "Нотатки до тренування",
-    notePlaceholder: "Напр. Важко на присіданнях, болить коліно…",
+    notePlaceholder: "Напр. важко на присіданнях, болить коліно",
     noteHint: "необовʼязково",
     warmupAdd: "Додати",
     // Той самий родовий відмінок, що й `setsGenitive*`: «0 з 1 вправи»,
@@ -510,7 +510,7 @@ export const fizrukPageMessages = {
     energyShort: "Енергія",
     mood: "Настрій",
     note: "Нотатка",
-    notePlaceholder: "Як почуваєшся сьогодні…",
+    notePlaceholder: "Як почуваєшся сьогодні",
     trendsCollecting: "Тренди ще збираються",
     trendsCollectingDescription:
       "Додай ще один запис ваги, сну чи енергії, графіки зʼявляться після двох точок.",
