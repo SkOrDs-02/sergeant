@@ -43,6 +43,24 @@ export function checkDeployOutput(out) {
   return { ok: true, url };
 }
 
+/**
+ * Чи прийме Vercel коміт від цього автора.
+ *
+ * CLI бере автора HEAD із локального git. Merge-коміти Bitbucket пише бот
+ * (`…@bots.bitbucket.org`), він не учасник команди Vercel, і проєкт лендингу
+ * такий деплой відхиляє (лист «Failed CLI deployment … not a member of the
+ * team», 2026-09-26). CLI при цьому не падає, а висить. Web-проєкт того ж дня
+ * приймав ті самі коміти, тож для нього це лише попередження.
+ */
+export function botAuthorProblem(email) {
+  return /@bots\.bitbucket\.org$/i.test(email.trim())
+    ? `автор HEAD-коміта бот Bitbucket (${email.trim()}), не учасник команди Vercel`
+    : null;
+}
+
+// Крок deploy без ліміту висить, коли Vercel блокує деплой.
+const DEPLOY_TIMEOUT_MS = 15 * 60 * 1000;
+
 // ponytail: ID зашиті, бо вони не секрети і не змінюються; env-перевизначення
 // лишене на випадок, коли проєкт перестворять.
 const ORG_ID = process.env.VERCEL_ORG_ID || "team_A96p26fl8eTxCK74fXAWybql";
@@ -94,14 +112,38 @@ function main() {
       ...opts,
       stdio: ["inherit", "pipe", "pipe"],
       encoding: "utf8",
+      timeout: DEPLOY_TIMEOUT_MS,
     });
     process.stdout.write(r.stdout ?? "");
     process.stderr.write(r.stderr ?? "");
+    if (r.error?.code === "ETIMEDOUT") {
+      console.error(
+        `\nКрок deploy висів понад ${DEPLOY_TIMEOUT_MS / 60000} хв і зупинений. ` +
+          `Найчастіше Vercel заблокував деплой: перевір пошту від Vercel.`,
+      );
+      process.exit(1);
+    }
     if (r.status !== 0) {
       console.error(`\nКрок deploy завершився з кодом ${r.status}.`);
       process.exit(1);
     }
     return `${r.stdout ?? ""}\n${r.stderr ?? ""}`;
+  }
+
+  const author = execFileSync("git", ["log", "-1", "--format=%ae"], {
+    cwd: repoRoot,
+    encoding: "utf8",
+  });
+  const authorProblem = botAuthorProblem(author);
+  if (authorProblem) {
+    const hint =
+      "Зроби в detached-копії main порожній локальний коміт від себе " +
+      "(git commit --allow-empty, не пушити) і запусти деплой звідти.";
+    if (target === "landing") {
+      console.error(`Деплой лендингу зупинено: ${authorProblem}. ${hint}`);
+      process.exit(1);
+    }
+    console.warn(`Увага: ${authorProblem}. Якщо Vercel відхилить: ${hint}`);
   }
 
   console.log(`Деплой "${target}" у продакшн (project ${projectId}).`);

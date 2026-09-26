@@ -1,7 +1,7 @@
 /** @status Active */
 import { describe, it } from "node:test";
 import assert from "node:assert/strict";
-import { checkDeployOutput } from "../deploy-vercel.mjs";
+import { botAuthorProblem, checkDeployOutput } from "../deploy-vercel.mjs";
 
 // Скорочений реальний вивід `vercel deploy --prebuilt --prod` (54.9.1),
 // успішний прогін 2026-09-26.
@@ -39,5 +39,18 @@ describe("checkDeployOutput", () => {
     const r = checkDeployOutput(OK.replace('"production"', '"preview"'));
     assert.equal(r.ok, false);
     assert.match(r.reason, /production/);
+  });
+});
+
+describe("botAuthorProblem", () => {
+  it("бот Bitbucket, автор merge-комітів, не пройде", () => {
+    const r = botAuthorProblem(
+      "xqumb7c8r9ctnvfrt87m0jij79hi1z@bots.bitbucket.org\n",
+    );
+    assert.match(r, /бот Bitbucket/);
+  });
+
+  it("звичайний автор проходить", () => {
+    assert.equal(botAuthorProblem("someone@example.com"), null);
   });
 });
