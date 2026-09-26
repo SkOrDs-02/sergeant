@@ -13,7 +13,7 @@
  * в приховане поле (наприклад, розгорнув групу, щось ввів і клацнув
  * «Менше полів»), група лишається розкритою — інакше введене зникло б з очей
  * без жодного індикатора, а дані в стані форми лишились би, просто
- * невидимі. Це відрізняється від toggle «+N ще» в рядку історії нижче на
+ * невидимі. Це відрізняється від toggle «+N ще» в рядку історії на
  * сторінці (`Measurements.tsx`) — та кнопка ховає ЗБЕРЕЖЕНІ записи, ця —
  * порожні поля форми ДОДАВАННЯ.
  */
@@ -70,9 +70,16 @@ const SECONDARY_FIELDS = MEASURE_FIELDS.filter(
 
 interface AddMeasurementFormProps {
   addEntry: (entry: Partial<MeasurementEntry>) => MeasurementEntry;
+  /** В аркуші заголовок уже несе сам `Sheet`, тож картка й власний заголовок зайві. */
+  inSheet?: boolean;
+  onSaved?: () => void;
 }
 
-export function AddMeasurementForm({ addEntry }: AddMeasurementFormProps) {
+export function AddMeasurementForm({
+  addEntry,
+  inSheet = false,
+  onSaved,
+}: AddMeasurementFormProps) {
   const [form, setForm] = useState<Record<string, string>>(() =>
     Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])),
   );
@@ -180,13 +187,11 @@ export function AddMeasurementForm({ addEntry }: AddMeasurementFormProps) {
     addEntry(parsedPayload);
     setForm(Object.fromEntries(MEASURE_FIELDS.map((f) => [f.id, ""])));
     setSecondaryOpen(false);
+    onSaved?.();
   };
 
-  return (
-    <Card radius="lg">
-      <SectionHeading as="div" size="xs" className="mb-3" variant="fizruk">
-        {messages.fizruk.measurements.addHeading}
-      </SectionHeading>
+  const body = (
+    <>
       <div className="grid grid-cols-2 gap-2">
         {PRIMARY_FIELDS.map(renderField)}
       </div>
@@ -230,6 +235,17 @@ export function AddMeasurementForm({ addEntry }: AddMeasurementFormProps) {
           {messages.fizruk.measurements.submit}
         </button>
       </div>
+    </>
+  );
+
+  if (inSheet) return body;
+
+  return (
+    <Card radius="lg">
+      <SectionHeading as="div" size="xs" className="mb-3" variant="fizruk">
+        {messages.fizruk.measurements.addHeading}
+      </SectionHeading>
+      {body}
     </Card>
   );
 }
