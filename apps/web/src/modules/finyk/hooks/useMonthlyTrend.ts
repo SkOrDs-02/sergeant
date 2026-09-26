@@ -2,30 +2,24 @@
  * Last validated: 2026-09-25
  * Status: Active
  */
-import { useMemo } from "react";
+import { useEffect, useMemo } from "react";
 import { getCurrentMonthContext } from "@sergeant/finyk-domain/domain/budget";
 import { withManualExpenses } from "@sergeant/finyk-domain/domain/transactions";
 import {
   buildMonthlyTrend,
   getAverageMonthlySpendMinor,
+  TREND_MONTHS,
   type MonthlyTrendPoint,
 } from "@sergeant/finyk-domain/domain/trends";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type {
   Category,
+  Transaction,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
-import { getVisibleFinykMonoMirrorState } from "../lib/monoMirrorReader";
-import { useFinykMonoMirrorTick } from "../lib/monoMirrorGate";
-
-/** Банківська історія з SQLite-дзеркала, реактивна до його оновлень. */
-export function useFinykMirrorTransactions() {
-  const mirrorTick = useFinykMonoMirrorTick();
-  return useMemo(() => {
-    void mirrorTick; // mirror cache refresh tick
-    return getVisibleFinykMonoMirrorState().transactions;
-  }, [mirrorTick]);
-}
+import { getKyivDateParts, getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { kyivMonthRangeIso } from "../lib/monthWindow";
+import { useFinykMirrorTransactions } from "./useFinykStatTransactions";
 
 export interface MonthlyTrendStorage {
   excludedTxIds: Set<string> | Iterable<string>;
@@ -43,18 +37,46 @@ export interface MonthlyTrend {
   perDayMinor: number | null;
 }
 
+/** Завантажує банківський діапазон у дзеркало (`useMonobankWebhook.fetchRange`). */
+export type FetchBankRange = (from: string, to: string) => Promise<unknown>;
+
+/** Завершені місяці вікна тренду: від 11 місяців тому до кінця минулого. */
+function trendHistoryRange(): { from: string; to: string } {
+  const { year, month } = getKyivDateParts();
+  const idx = year * 12 + (month - 1);
+  const at = (i: number) => kyivMonthRangeIso(Math.floor(i / 12), (i % 12) + 1);
+  return {
+    from: at(idx - (TREND_MONTHS - 1)).from,
+    to: at(idx - 1).to,
+  };
+}
+
 /**
  * Тренд витрат за 12 місяців (Р11) або однієї категорії (Р13).
  *
- * Джерело не місячний fetch Аналітики, а повна історія: SQLite-дзеркало
- * банку плюс ручні витрати. Інакше графік знав би лише ті місяці, які
- * людина встигла відкрити стрілками.
+ * Джерело не місячний fetch Аналітики, а SQLite-дзеркало банку плюс ручні
+ * витрати. Дзеркало наповнюється помісячно (поточний місяць і відкриті
+ * стрілками), тож хук сам дотягує завершені місяці вікна одним запитом:
+ * без цього людина з роками історії бачила б «Ведеш з серпня».
  */
 export function useMonthlyTrend(
   storage: MonthlyTrendStorage,
   categoryId: string | null = null,
+  fetchRange?: FetchBankRange,
 ): MonthlyTrend {
-  const bank = useFinykMirrorTransactions();
+  const bank: readonly Transaction[] = useFinykMirrorTransactions();
+  // Денний ключ у залежностях: вкладка, відкрита через північ, отримує
+  // новий день і місяць на першому ж рендері, а не лише зі зміною даних.
+  const dayKey = getKyivDayKey();
+
+  useEffect(() => {
+    if (!fetchRange) return;
+    const { from, to } = trendHistoryRange();
+    // Без банку або без мережі тренд лишається з тим, що вже є в дзеркалі;
+    // помилку тут нема кому показати, а картка чесно каже, звідки веде.
+    fetchRange(from, to).catch(() => {});
+  }, [fetchRange]);
+
   const {
     excludedTxIds,
     txSplits,
@@ -63,6 +85,7 @@ export function useMonthlyTrend(
     customCategories,
   } = storage;
   return useMemo(() => {
+    void dayKey;
     const points = buildMonthlyTrend(withManualExpenses(bank, manualExpenses), {
       excludedTxIds,
       txSplits,
@@ -81,6 +104,7 @@ export function useMonthlyTrend(
           : null,
     };
   }, [
+    dayKey,
     bank,
     manualExpenses,
     excludedTxIds,

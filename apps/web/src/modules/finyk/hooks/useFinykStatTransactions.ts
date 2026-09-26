@@ -12,6 +12,15 @@ import {
 } from "@sergeant/finyk-domain/domain/transactions";
 import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain/utils";
 
+/** Банківська історія з SQLite-дзеркала, реактивна до його оновлень. */
+export function useFinykMirrorTransactions() {
+  const mirrorTick = useFinykMonoMirrorTick();
+  return useMemo(() => {
+    void mirrorTick; // mirror cache refresh tick
+    return getVisibleFinykMonoMirrorState().transactions;
+  }, [mirrorTick]);
+}
+
 /**
  * Транзакції, які рахує статистика поза модулем (хаб): SQLite-дзеркало
  * банку плюс ручні записи, без прихованих, переказів, дебіторки і явно
@@ -24,12 +33,7 @@ import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain/utils";
  * перевірки переказів.
  */
 export function useFinykStatTransactions() {
-  const mirrorTick = useFinykMonoMirrorTick();
-  const transactions = useMemo(() => {
-    void mirrorTick; // mirror cache refresh tick
-    return getVisibleFinykMonoMirrorState().transactions;
-  }, [mirrorTick]);
-
+  const transactions = useFinykMirrorTransactions();
   const slots = useFinykStorageSlots();
   // Дзеркало Mono несе тільки банк. Ручні витрати лежать у storage-слотах,
   // і без них хабова плашка мовчала б про готівку, яку модульний Огляд уже

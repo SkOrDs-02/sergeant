@@ -208,6 +208,7 @@ export function HubDashboard({
         <StaggerChild index={s.axis ? 3 : 2}>
           <HubInsightsBlock
             axis={s.axis}
+            finykActive={s.activeModules.includes("finyk")}
             insightsDefaultOpen={false}
             insightsOpen={insightsOpen}
             onInsightsOpenChange={setInsightsOpen}
