@@ -223,7 +223,8 @@ Q1: так. Q2: так. Q3: модалку лишити для всіх випа
 
 | PR                                                              | Title                                                                         | Merged     |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------- | ---------- |
+| [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) | fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд     | 2026-09-26 |
 | [#26](https://bitbucket.org/skords01/sergeant/pull-requests/26) | feat(server): анти-слоп раунд 2: Сержант у промптах, текст без окликів, гейти | 2026-09-24 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

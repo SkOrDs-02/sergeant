@@ -89,6 +89,52 @@ export function datesInRange(start: Date, end: Date): string[] {
 }
 /* eslint-enable sergeant-design/prefer-kyiv-time */
 
+export interface ReportWindows {
+  /** Усі дні поточного періоду: вісь графіка. */
+  dates: string[];
+  /** Дні поточного періоду, що вже настали (включно з сьогодні). */
+  cur: string[];
+  /** Дні попереднього періоду, з якими чесно порівнювати `cur`. */
+  prev: string[];
+  /**
+   * Попередній період повністю. Лише для питання «чи є дані взагалі»:
+   * порожній стан картки не має казати «ще не записано», коли записи
+   * минулого тижня просто лягли на дні після сьогоднішнього.
+   */
+  prevAll: string[];
+  /** Поточний період ще не скінчився, тож `prev` обрізано до тієї ж довжини. */
+  partial: boolean;
+}
+
+/**
+ * Вікна для дельти «поточний проти попереднього». Незавершений період не
+ * можна міряти повним попереднім: у середу тиждень має три прожиті дні, і
+ * сума за них проти суми за сім давала «−33 %» при незмінному темпі, а
+ * відсоток звичок ще й тягнув майбутні дні в знаменник. Тому поточний
+ * рахується до сьогодні, а попередній береться за стільки ж перших днів.
+ * Завершений період (offset < 0) порівнюється з попереднім повністю.
+ */
+export function reportWindows(
+  period: Period,
+  offset: number,
+  now: Date = new Date(),
+): ReportWindows {
+  const curRange = getPeriodRange(period, offset, now);
+  const prevRange = getPeriodRange(period, offset - 1, now);
+  const dates = datesInRange(curRange.start, curRange.end);
+  const prevDates = datesInRange(prevRange.start, prevRange.end);
+  const today = localDateKey(now);
+  const cur = dates.filter((d) => d <= today);
+  const partial = cur.length < dates.length;
+  return {
+    dates,
+    cur,
+    prev: partial ? prevDates.slice(0, cur.length) : prevDates,
+    prevAll: prevDates,
+    partial,
+  };
+}
+
 // ── Per-module aggregators ───────────────────────────────────────────────────
 
 export interface WorkoutsAggregate {
@@ -324,28 +370,26 @@ export function aggregateReport(
   inputs: ReportInputs,
   now: Date = new Date(),
 ): ReportData {
-  const cur = getPeriodRange(period, offset, now);
-  const prev = getPeriodRange(period, offset - 1, now);
-  const curDates = datesInRange(cur.start, cur.end);
-  const prevDates = datesInRange(prev.start, prev.end);
+  const range = getPeriodRange(period, offset, now);
+  const w = reportWindows(period, offset, now);
 
   return {
-    period: { start: cur.start, end: cur.end, dates: curDates },
+    period: { start: range.start, end: range.end, dates: w.dates },
     workouts: {
-      cur: aggregateWorkouts(inputs.rawFizrukWorkouts, curDates),
-      prev: aggregateWorkouts(inputs.rawFizrukWorkouts, prevDates),
+      cur: aggregateWorkouts(inputs.rawFizrukWorkouts, w.cur),
+      prev: aggregateWorkouts(inputs.rawFizrukWorkouts, w.prev),
     },
     spending: {
-      cur: aggregateSpending(inputs.finyk, curDates),
-      prev: aggregateSpending(inputs.finyk, prevDates),
+      cur: aggregateSpending(inputs.finyk, w.cur),
+      prev: aggregateSpending(inputs.finyk, w.prev),
     },
     habits: {
-      cur: aggregateHabits(inputs.routineState, curDates),
-      prev: aggregateHabits(inputs.routineState, prevDates),
+      cur: aggregateHabits(inputs.routineState, w.cur),
+      prev: aggregateHabits(inputs.routineState, w.prev),
     },
     kcal: {
-      cur: aggregateKcal(inputs.nutritionLog, curDates),
-      prev: aggregateKcal(inputs.nutritionLog, prevDates),
+      cur: aggregateKcal(inputs.nutritionLog, w.cur),
+      prev: aggregateKcal(inputs.nutritionLog, w.prev),
     },
   };
 }

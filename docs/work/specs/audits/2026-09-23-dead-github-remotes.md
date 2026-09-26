@@ -125,10 +125,12 @@ for ((i=0; i<${#specs[@]}; i+=100)); do git push bitbucket "${specs[@]:i:100}"; 
 
 ## Recent PRs
 
-| PR                                                              | Title                                                                   | Merged     |
-| --------------------------------------------------------------- | ----------------------------------------------------------------------- | ---------- |
-| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket | 2026-09-23 |
-| [#6](https://bitbucket.org/skords01/sergeant/pull-requests/6)   | docs(docs): аудит мертвих GitHub-remote і вартість повного архіву       | 2026-09-22 |
+| PR                                                              | Title                                                                     | Merged     |
+| --------------------------------------------------------------- | ------------------------------------------------------------------------- | ---------- |
+| [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) | fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд | 2026-09-26 |
+| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)              | 2026-09-24 |
+| [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket   | 2026-09-23 |
+| [#6](https://bitbucket.org/skords01/sergeant/pull-requests/6)   | docs(docs): аудит мертвих GitHub-remote і вартість повного архіву         | 2026-09-22 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
