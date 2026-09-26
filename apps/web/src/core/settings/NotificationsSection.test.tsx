@@ -12,6 +12,7 @@ const {
   loadNutritionPrefsMock,
   persistNutritionPrefsMock,
   pushState,
+  meApiMock,
 } = vi.hoisted(() => ({
   toastWarningMock: vi.fn(),
   requestPermMock: vi.fn(),
@@ -33,6 +34,16 @@ const {
   ),
   persistNutritionPrefsMock: vi.fn(),
   pushState: { subscribed: false },
+  meApiMock: {
+    getPreferences: vi.fn(async () => ({
+      sergeantNudges: false,
+      pushDailyCap: 2,
+    })),
+    updatePreferences: vi.fn(async (patch: { pushDailyCap?: number }) => ({
+      sergeantNudges: false,
+      pushDailyCap: patch.pushDailyCap ?? 2,
+    })),
+  },
 }));
 
 vi.mock("@shared/hooks/useToast", () => ({
@@ -62,6 +73,12 @@ vi.mock("../components/PushNotificationToggle", () => ({
 // застосунку тим, у кого пуш не увімкнено.
 vi.mock("@shared/hooks/usePushNotifications", () => ({
   usePushNotifications: () => pushState,
+}));
+// Серверні налаштування (Сержант і стеля нагадувань) читаються з
+// `/api/me/preferences`; решта `@shared/api` лишається справжньою.
+vi.mock("@shared/api", async (importOriginal) => ({
+  ...(await importOriginal<object>()),
+  meApi: meApiMock,
 }));
 
 import { NotificationsSection } from "./NotificationsSection";
@@ -277,6 +294,38 @@ describe("NotificationsSection", () => {
   // і це була неправда, бо нагадування вів локальний таймер, який помирав
   // разом із вкладкою. Тепер їх шле сервер, але тільки за наявності живої
   // push-підписки, тож обіцянка стала умовною.
+  it("зберігає стелю нагадувань на сервері", async () => {
+    stubNotification("granted");
+    renderSettingsSection(<NotificationsSection />);
+    await waitFor(() =>
+      expect(screen.getByRole("tab", { name: "2" })).toHaveAttribute(
+        "aria-selected",
+        "true",
+      ),
+    );
+    fireEvent.click(screen.getByRole("tab", { name: "1" }));
+    await waitFor(() =>
+      expect(meApiMock.updatePreferences).toHaveBeenCalledWith({
+        pushDailyCap: 1,
+      }),
+    );
+    expect(screen.getByRole("tab", { name: "1" })).toHaveAttribute(
+      "aria-selected",
+      "true",
+    );
+  });
+
+  it("на нулі прямо каже, що нагадувань не буде", async () => {
+    stubNotification("granted");
+    // Два хуки секції (Сержант і стеля) читають налаштування окремо.
+    const zero = { sergeantNudges: false, pushDailyCap: 0 };
+    meApiMock.getPreferences
+      .mockResolvedValueOnce(zero)
+      .mockResolvedValueOnce(zero);
+    renderSettingsSection(<NotificationsSection />);
+    expect(await screen.findByText(/Нагадування вимкнені/)).toBeInTheDocument();
+  });
+
   it("не обіцяє фонову доставку без push-підписки", () => {
     renderSettingsSection(<NotificationsSection />);
     expect(

@@ -1,6 +1,7 @@
 import { useEffect, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { Button } from "@shared/components/ui/Button";
+import { Segmented } from "@shared/components/ui/Segmented";
 import { TimeField } from "@shared/components/ui/TimeField";
 import { useToast } from "@shared/hooks/useToast";
 import { requestNotificationPermission } from "@shared/hooks/useModuleReminder";
@@ -15,6 +16,7 @@ import {
   type NutritionPrefs,
 } from "../../modules/nutrition/lib/nutritionStorage";
 import { messages } from "@shared/i18n/uk";
+import { PUSH_DAILY_CAP_DEFAULT, PUSH_DAILY_CAP_MAX } from "@sergeant/shared";
 import { PushNotificationToggle } from "../components/PushNotificationToggle";
 import {
   SettingsGroup,
@@ -24,6 +26,11 @@ import {
 import { useServerPreference } from "./useServerPreference";
 
 const sergeantCopy = messages.sergeant;
+
+const CAP_OPTIONS = Array.from({ length: PUSH_DAILY_CAP_MAX + 1 }, (_, n) => ({
+  value: String(n),
+  label: String(n),
+}));
 
 type PermStatus = NotificationPermission | "unsupported";
 
@@ -50,10 +57,25 @@ export function NotificationsSection() {
 
   // Живе на сервері, а не в localStorage: цей прапорець читає серверний
   // шедулер тоді, коли жодного клієнта не запущено.
-  const sergeantNudges = useServerPreference("sergeantNudges", {
-    saveError: sergeantCopy.nudgesSaveError,
-    authRequired: sergeantCopy.nudgesAuthRequired,
-  });
+  const sergeantNudges = useServerPreference(
+    "sergeantNudges",
+    {
+      saveError: sergeantCopy.nudgesSaveError,
+      authRequired: sergeantCopy.nudgesAuthRequired,
+    },
+    false,
+  );
+
+  // Стеля спільна для всіх модулів і Сержанта: сервер згортає приводи
+  // понад неї в одне сповіщення (`apps/server/src/lib/reminders/budget.ts`).
+  const pushDailyCap = useServerPreference(
+    "pushDailyCap",
+    {
+      saveError: sergeantCopy.nudgesSaveError,
+      authRequired: sergeantCopy.nudgesAuthRequired,
+    },
+    PUSH_DAILY_CAP_DEFAULT,
+  );
 
   const monthlyPlan = useMonthlyPlan();
 
@@ -187,6 +209,39 @@ export function NotificationsSection() {
       </div>
 
       <PushNotificationToggle className="py-2 border-b border-line/60" />
+
+      <SettingsSubGroup title="Скільки на день">
+        <div className="py-2">
+          <p className="text-style-label text-text">
+            Нагадувань на день, не більше
+          </p>
+          <p className="text-style-caption text-muted mt-0.5">
+            {pushDailyCap.value === 0
+              ? "Нагадування вимкнені: ні звички, ні тренування, ні Сержант не надсилатимуть сповіщень."
+              : "Якщо приводів більше, обʼєдную їх в одне сповіщення. Жоден не загубиться."}
+          </p>
+          <Segmented
+            className="mt-2"
+            size="md"
+            items={CAP_OPTIONS}
+            value={String(pushDailyCap.value)}
+            onChange={(next) => void pushDailyCap.set(Number(next))}
+            ariaLabel="Нагадувань на день, не більше"
+          />
+        </div>
+        {pushDailyCap.error && (
+          <p
+            className={
+              pushDailyCap.loaded
+                ? "text-style-caption text-danger-strong dark:text-danger"
+                : "text-style-caption text-muted"
+            }
+            role={pushDailyCap.loaded ? "alert" : "status"}
+          >
+            {pushDailyCap.error}
+          </p>
+        )}
+      </SettingsSubGroup>
 
       <SettingsSubGroup title={sergeantCopy.name}>
         <ToggleRow
