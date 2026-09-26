@@ -20,9 +20,28 @@
 // тож із apps/web шлях подвоюється і деплой падає. Тому cwd тут прибитий до
 // кореня і не залежить від того, звідки викликали.
 
-import { execFileSync } from "node:child_process";
+import { execFileSync, spawnSync } from "node:child_process";
 import { dirname, resolve } from "node:path";
-import { fileURLToPath } from "node:url";
+import { fileURLToPath, pathToFileURL } from "node:url";
+
+/**
+ * Чи підтверджує вивід `vercel deploy` готовий production-деплой.
+ *
+ * Код виходу CLI тут не доказ: 2026-09-26 при збої DNS до npm `deploy`
+ * надрукував лише «Retrieving project…», вийшов із 0, і скрипт звітував
+ * «Готово», хоча прод лишився старим. Тому успіх означає три факти з самого
+ * виводу: URL деплою, `readyState: READY` і `target: production`. Зміниться
+ * формат виводу CLI, і скрипт упаде голосно, а не збреше тихо.
+ */
+export function checkDeployOutput(out) {
+  const url = out.match(/"url":\s*"(https:\/\/[^"]+)"/)?.[1];
+  if (!url) return { ok: false, reason: "у виводі немає URL деплою" };
+  if (!/"readyState":\s*"READY"/.test(out))
+    return { ok: false, url, reason: "деплой не дійшов до стану READY" };
+  if (!/"target":\s*"production"/.test(out))
+    return { ok: false, url, reason: "деплой не має target=production" };
+  return { ok: true, url };
+}
 
 // ponytail: ID зашиті, бо вони не секрети і не змінюються; env-перевизначення
 // лишене на випадок, коли проєкт перестворять.
@@ -38,38 +57,65 @@ const TARGETS = {
 // опубліковані із залежністю undici@^7.27.1, якої в реєстрі немає.
 const CLI = "vercel@54.9.1";
 
-const target = process.argv[2];
-const projectId = TARGETS[target];
+const isMain = import.meta.url === pathToFileURL(process.argv[1] ?? "").href;
+if (isMain) main();
 
-if (!projectId) {
-  const known = Object.keys(TARGETS).join(" | ");
-  console.error(`Використання: node scripts/deploy-vercel.mjs <${known}>`);
-  console.error(`Отримано: ${target ?? "(нічого)"}`);
-  process.exit(1);
+function main() {
+  const target = process.argv[2];
+  const projectId = TARGETS[target];
+
+  if (!projectId) {
+    const known = Object.keys(TARGETS).join(" | ");
+    console.error(`Використання: node scripts/deploy-vercel.mjs <${known}>`);
+    console.error(`Отримано: ${target ?? "(нічого)"}`);
+    process.exit(1);
+  }
+
+  const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
+  const env = {
+    ...process.env,
+    VERCEL_ORG_ID: ORG_ID,
+    VERCEL_PROJECT_ID: projectId,
+  };
+
+  // npx на Windows це .cmd, без shell його не знаходить.
+  const opts = { cwd: repoRoot, env, shell: process.platform === "win32" };
+
+  function run(args) {
+    console.log(`\n> npx ${CLI} ${args.join(" ")}`);
+    execFileSync("npx", ["--yes", CLI, ...args], { ...opts, stdio: "inherit" });
+  }
+
+  // Вивід `deploy` потрібен рядком для перевірки, а CLI ділить його між
+  // stdout і stderr, тож перехоплюються обидва й дублюються в консоль.
+  function runCaptured(args) {
+    console.log(`\n> npx ${CLI} ${args.join(" ")}`);
+    const r = spawnSync("npx", ["--yes", CLI, ...args], {
+      ...opts,
+      stdio: ["inherit", "pipe", "pipe"],
+      encoding: "utf8",
+    });
+    process.stdout.write(r.stdout ?? "");
+    process.stderr.write(r.stderr ?? "");
+    if (r.status !== 0) {
+      console.error(`\nКрок deploy завершився з кодом ${r.status}.`);
+      process.exit(1);
+    }
+    return `${r.stdout ?? ""}\n${r.stderr ?? ""}`;
+  }
+
+  console.log(`Деплой "${target}" у продакшн (project ${projectId}).`);
+  run(["pull", "--yes", "--environment=production"]);
+  run(["build", "--prod"]);
+  const result = checkDeployOutput(
+    runCaptured(["deploy", "--prebuilt", "--prod"]),
+  );
+  if (!result.ok) {
+    console.error(
+      `\nДеплой НЕ підтверджено: ${result.reason}. Прод, найпевніше, лишився старим. ` +
+        `Перевір мережу й запусти ще раз; стан покаже pnpm deploy:status.`,
+    );
+    process.exit(1);
+  }
+  console.log(`\nГотово: ${result.url} (production, READY).`);
 }
-
-const repoRoot = resolve(dirname(fileURLToPath(import.meta.url)), "..");
-const env = {
-  ...process.env,
-  VERCEL_ORG_ID: ORG_ID,
-  VERCEL_PROJECT_ID: projectId,
-};
-
-function run(args) {
-  console.log(`\n> npx ${CLI} ${args.join(" ")}`);
-  execFileSync("npx", ["--yes", CLI, ...args], {
-    cwd: repoRoot,
-    env,
-    stdio: "inherit",
-    // npx на Windows це .cmd, без shell execFileSync його не знаходить.
-    shell: process.platform === "win32",
-  });
-}
-
-console.log(`Деплой "${target}" у продакшн (project ${projectId}).`);
-run(["pull", "--yes", "--environment=production"]);
-run(["build", "--prod"]);
-run(["deploy", "--prebuilt", "--prod"]);
-console.log(
-  `\nГотово. Перевір: npx ${CLI} inspect <url> має дати target=production і status=Ready.`,
-);

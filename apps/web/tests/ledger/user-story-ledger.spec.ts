@@ -1,4 +1,5 @@
 import { expect, test, type Page } from "@playwright/test";
+import { MONO_DISCONNECTED } from "../mobile/audit";
 
 const WARM_STORAGE: Record<string, string> = {
   hub_onboarding_done_v1: "1",
@@ -168,7 +169,7 @@ async function mockApi(page: Page, auth: AuthMode) {
       await route.fulfill({
         status: 200,
         contentType: "application/json",
-        body: JSON.stringify({ ok: true, connected: false, sync: null }),
+        body: JSON.stringify(MONO_DISCONNECTED),
       });
       return;
     }

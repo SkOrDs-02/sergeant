@@ -148,7 +148,7 @@ export const messages = {
     nutritionSections: "Розділи Їжі",
     openAssistant: "Відкрити Сержанта",
     globalSearch: "Глобальний пошук",
-    searchPlaceholder: "Пошук по всіх модулях…",
+    searchPlaceholder: "Пошук по всіх модулях",
     moduleSwitcher: "Перемикач модулів",
     closeSettings: "Закрити налаштування",
     closeMenu: "Закрити меню",

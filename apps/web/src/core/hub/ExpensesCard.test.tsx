@@ -149,7 +149,8 @@ describe("ExpensesCard", () => {
 
     fireEvent.click(toggle);
     expect(toggle).toHaveAttribute("aria-expanded", "true");
-    expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
+    // Середа: тиждень ще йде, тож порівняння з тими ж днями минулого.
+    expect(screen.getByText(/Минулий за ті ж дні/)).toBeInTheDocument();
   });
 
   /**
@@ -181,6 +182,22 @@ describe("ExpensesCard", () => {
     );
     expect(expanded.length).toBeGreaterThanOrEqual(2);
     expect(screen.getByText(/Минулий/i)).toBeInTheDocument();
+  });
+
+  it("не каже «ще не записано», коли минулого тижня витрати були пізніше ніж сьогодні", () => {
+    // Середа: «ті ж дні» минулого тижня (пн-ср) порожні, але в пʼятницю
+    // витрата була. Предмет звіту є, тож порожнього стану не має бути.
+    const lastFriday = Math.floor(
+      new Date("2026-07-31T09:00:00.000Z").getTime() / 1000,
+    );
+    localStorage.setItem(
+      "finyk_tx_cache",
+      JSON.stringify({ txs: [{ id: "t3", amount: -20000, time: lastFriday }] }),
+    );
+    render(<ExpensesCard period="week" offset={0} />);
+    fireEvent.click(screen.getByRole("button", { name: /Витрати/i }));
+    expect(screen.queryByText(/Витрат ще не записано/)).toBeNull();
+    expect(screen.getByText(/Минулий за ті ж дні/)).toBeInTheDocument();
   });
 
   it("renders the empty state when the tx cache is empty", () => {

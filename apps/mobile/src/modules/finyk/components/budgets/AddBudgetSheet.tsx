@@ -280,7 +280,7 @@ export function AddBudgetSheet({
             <Input
               value={form.name}
               onChangeText={(v) => setForm((f) => ({ ...f, name: v }))}
-              placeholder="Накопичити на…"
+              placeholder="Накопичити на"
               testID={testID ? `${testID}-name` : undefined}
             />
             <View className="h-2" />

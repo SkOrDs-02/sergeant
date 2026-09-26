@@ -137,7 +137,7 @@ describe("PantryPage", () => {
 
   it("adds a loose pantry line and clears the draft", () => {
     const { getByPlaceholderText, getByText } = renderPage();
-    const input = getByPlaceholderText("Продукт або список…");
+    const input = getByPlaceholderText("Продукт або список");
 
     fireEvent.changeText(input, "2 кг картоплі");
     fireEvent.press(getByText("Додати"));

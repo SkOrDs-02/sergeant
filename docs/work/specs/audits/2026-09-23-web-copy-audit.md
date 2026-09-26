@@ -364,10 +364,11 @@ Legal (`core/legal/**`) і `uk.dataDisclosure.ts` тримають винято�
 
 | PR                                                              | Title                                                                                              | Merged     |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------------------------------- | ---------- |
+| [#56](https://bitbucket.org/skords01/sergeant/pull-requests/56) | fix(web): «транзакція» → «операція» у видимій копії, хвости P3 аудиту копі                         | 2026-09-25 |
+| [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                                       | 2026-09-24 |
 | [#24](https://bitbucket.org/skords01/sergeant/pull-requests/24) | fix(web): гейти копі: серверні тексти помилок, кнопка «X» існує, картки без сирого e.message       | 2026-09-24 |
 | [#30](https://bitbucket.org/skords01/sergeant/pull-requests/30) | fix(web): полірування копі за аудитом: плейсхолдери, плюрали, ₴ і одиниці, тости, legal під лінтом | 2026-09-24 |
 | [#28](https://bitbucket.org/skords01/sergeant/pull-requests/28) | fix(web): термінологія копі за рішеннями §6 аудиту: AI, Сержант, план, підхід, ціль, операція      | 2026-09-24 |
-| [#19](https://bitbucket.org/skords01/sergeant/pull-requests/19) | fix(web): хвиля A аудиту UX-копі: збої з дією, без сирого error.message і жаргону                  | 2026-09-23 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 4 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -18,8 +18,7 @@ import {
 } from "./reportChartLabels";
 import {
   aggregateKcal,
-  getPeriodRange,
-  datesInRange,
+  reportWindows,
   localDateKey,
   type Period,
 } from "./hubReports.aggregation";
@@ -164,7 +163,7 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
   // запису у сховище (та сама діра, що в ExpensesCard).
   const sqliteTick = useNutritionSqliteReadTick();
 
-  const { cur, prev, dates } = useMemo(() => {
+  const { cur, prev, prevAny, dates, partial } = useMemo(() => {
     void bump; // storage-write tick
     void sqliteTick; // module SQLite cache tick (CALC-4) — forces re-read without calling load* inside deps
     // Canonical meal log from the SQLite warm cache — `nutrition_log_v1`
@@ -183,21 +182,20 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
         })),
       };
     }
-    const curRange = getPeriodRange(period, offset);
-    const prevRange = getPeriodRange(period, offset - 1);
-    const curDates = datesInRange(curRange.start, curRange.end);
-    const prevDates = datesInRange(prevRange.start, prevRange.end);
+    const w = reportWindows(period, offset);
     return {
-      cur: aggregateKcal(nutritionLog, curDates),
-      prev: aggregateKcal(nutritionLog, prevDates),
-      dates: curDates,
+      cur: aggregateKcal(nutritionLog, w.cur),
+      prev: aggregateKcal(nutritionLog, w.prev),
+      prevAny: aggregateKcal(nutritionLog, w.prevAll).avg > 0,
+      dates: w.dates,
+      partial: w.partial,
     };
   }, [period, offset, bump, sqliteTick]);
 
   const formattedCurrent = formatNumberUk(cur.avg);
   const formattedPrev = formatNumberUk(prev.avg);
   // Нуль ккал в обох вікнах означає, що прийомів їжі ще не записували.
-  const empty = cur.avg === 0 && prev.avg === 0;
+  const empty = cur.avg === 0 && !prevAny;
 
   return (
     <ReportSheet collapsed={collapsed}>
@@ -267,8 +265,10 @@ export default function NutritionCard({ period, offset }: NutritionCardProps) {
             <DeltaChip cur={cur.avg} prev={prev.avg} higherIsBetter={true} />
           </div>
           <p className="text-style-caption text-muted">
-            {messages.hub.reportPrevious} {formattedPrev}{" "}
-            {messages.nutrition.kcalUnit}
+            {partial
+              ? messages.hub.reportPreviousToDate
+              : messages.hub.reportPrevious}{" "}
+            {formattedPrev} {messages.nutrition.kcalUnit}
           </p>
           <BarChart
             key={`${period}-${offset}`}
