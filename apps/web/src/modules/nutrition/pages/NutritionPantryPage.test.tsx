@@ -1,5 +1,5 @@
 // @vitest-environment jsdom
-// Last validated: 2026-09-08
+// Last validated: 2026-09-26
 // Status: Active
 //
 // audit-08 F12 — NutritionPantryPage page-level test coverage.
@@ -11,7 +11,7 @@
 //   • wires undo-toast on removeItemAtOrByName
 //   • exposes scan-status text when pantryScanStatus is non-empty
 //   • opens the scanner on onScanBarcode
-import type { Dispatch, SetStateAction } from "react";
+import type { Dispatch, ReactNode, SetStateAction } from "react";
 import { describe, expect, it, vi, afterEach } from "vitest";
 import { cleanup, render, screen } from "@testing-library/react";
 import userEvent from "@testing-library/user-event";
@@ -28,11 +28,14 @@ vi.mock("../components/PantryCard", () => ({
   PantryCard: ({
     removeItemAtOrByName,
     onScanBarcode,
+    placeSelector,
   }: {
     removeItemAtOrByName: (idx: number, name?: string) => void;
     onScanBarcode: () => void;
+    placeSelector?: ReactNode;
   }) => (
     <div data-testid="pantry-card">
+      {placeSelector}
       <button onClick={() => removeItemAtOrByName(0, "Молоко")}>
         Видалити Молоко
       </button>
@@ -203,6 +206,21 @@ describe("NutritionPantryPage", () => {
     expect(screen.getByLabelText("Місце зберігання")).toBeTruthy();
     expect(screen.getByTestId("pantry-card")).toBeTruthy();
     expect(screen.queryByTestId("shopping-list-card")).toBeNull();
+  });
+
+  it("наповнена комора несе вибір місця в шапці списку, без окремої картки", () => {
+    renderPantryPage({ pantrySubTab: "items" });
+    expect(screen.getByTestId("pantry-card")).toContainElement(
+      screen.getByLabelText("Місце зберігання"),
+    );
+    expect(screen.queryByText("Місце перегляду")).toBeNull();
+  });
+
+  it("порожня комора лишає вибір місця окремою карткою над формою", () => {
+    renderPantryPage({ pantrySubTab: "items", pantry: { effectiveItems: [] } });
+    // Компактний варіант у шапці списку порожня `PantryCard` не рендерить
+    // (тут вона замокана), тож перевіряється лише окрема картка.
+    expect(screen.getByText("Місце перегляду")).toBeTruthy();
   });
 
   it("shows ShoppingListCard when pantrySubTab is 'shopping'", () => {
