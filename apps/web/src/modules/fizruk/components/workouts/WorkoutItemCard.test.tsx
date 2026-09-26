@@ -396,7 +396,7 @@ describe("WorkoutItemCard — time / distance", () => {
         },
       },
     });
-    expect(screen.getByText(/Минулого разу/)).toHaveTextContent("60с");
+    expect(screen.getByText(/Минулого разу/)).toHaveTextContent("60 с");
   });
 });
 
