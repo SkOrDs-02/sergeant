@@ -1,6 +1,7 @@
 import SiteLayout from "../components/SiteLayout";
 import { ROUTE_META, usePageMeta } from "../lib/pageMeta";
 import { EXPORT_CLAIM } from "../content/exportClaim";
+import { NO_SALE_CLAIM } from "../content/noSaleClaim";
 import UpdatedOn from "../components/UpdatedOn";
 
 /**
@@ -51,17 +52,18 @@ export default function PrivacyPage() {
 
       <h2 className={h2}>Черга в бету</h2>
       <p className={p}>
-        Черга живе в Telegram. Сайт не збирає пошту і не має форм: у deep link
-        передається лише місце кнопки та одноразовий випадковий токен, який
-        помирає разом із вкладкою. Далі спілкування відбувається в Telegram за
-        його правилами, і бот бачить тільки те, що ти сам йому напишеш.
+        Черга живе в Telegram. Сайт не збирає пошту і не має форм: у посиланні
+        на бота лише місце кнопки і випадковий код, що зникає із закриттям
+        вкладки. Далі спілкування відбувається в Telegram за його правилами, і
+        бот бачить тільки те, що ти сам йому напишеш.
       </p>
 
       <h2 className={h2}>Дані в застосунку</h2>
       <p className={p}>
         Це політика сайту. Про дані всередині застосунку коротко: токен Monobank
-        – лише читання і зберігається зашифрованим; я не продаю і не передаю
-        твої дані нікому. {EXPORT_CLAIM} Повна мапа доступів (що бачить
+        – лише читання і зберігається зашифрованим. {NO_SALE_CLAIM}. Виняток
+        один і він не про торгівлю: щоб працював Сержант, частина даних їде до
+        стороннього AI-провайдера. {EXPORT_CLAIM} Повна мапа доступів (що бачить
         банківський токен, куди їдуть фото чеків, як працює Сержант) зібрана на
         сторінці{" "}
         <a
@@ -74,9 +76,7 @@ export default function PrivacyPage() {
       </p>
 
       <h2 className={h2}>Питання</h2>
-      <p className={p}>
-        Напиши в Telegram-бот або у Threads @sergeant.app – відповідаю сам.
-      </p>
+      <p className={p}>Напиши в Telegram-бот – відповідаю сам.</p>
     </SiteLayout>
   );
 }

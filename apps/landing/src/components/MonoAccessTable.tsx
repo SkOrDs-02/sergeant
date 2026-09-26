@@ -5,8 +5,12 @@
  * /hroshi і /data кажуть одне речення і ведуть туди.
  */
 const ACCESS_TABLE = [
-  { data: "Суми і час транзакцій", access: "Бачить", ok: true },
-  { data: "Категорія покупки (MCC)", access: "Бачить", ok: true },
+  { data: "Суми і час операцій", access: "Бачить", ok: true },
+  {
+    data: "Категорія покупки (код категорії від банку)",
+    access: "Бачить",
+    ok: true,
+  },
   { data: "Баланс рахунку", access: "Бачить", ok: true },
   { data: "Повний номер картки, CVV", access: "Не бачить", ok: false },
   {

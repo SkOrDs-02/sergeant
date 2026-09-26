@@ -18,7 +18,7 @@ export default function SiteFooter() {
           <p>© 2026 · Зроблено в Україні</p>
         </div>
         <nav
-          aria-label="Футер"
+          aria-label="Посилання сайту"
           className="mt-2 grid gap-x-8 gap-y-1 text-sm text-muted sm:grid-cols-3"
         >
           <div className="flex flex-col">
