@@ -15,16 +15,13 @@ import type { Pool } from "pg";
  * нагадування не приходить ні зараз, ні наступною хвилиною.
  */
 
-const { runReminderSweep, pruneReminderLog, runSergeantNudgeSweep, logger } =
-  vi.hoisted(() => ({
-    runReminderSweep: vi.fn(),
-    pruneReminderLog: vi.fn(async () => 0),
-    runSergeantNudgeSweep: vi.fn(async () => undefined),
-    logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
-  }));
+const { runReminderSweep, pruneReminderLog, logger } = vi.hoisted(() => ({
+  runReminderSweep: vi.fn(),
+  pruneReminderLog: vi.fn(async () => 0),
+  logger: { info: vi.fn(), warn: vi.fn(), error: vi.fn() },
+}));
 
 vi.mock("./sweep.js", () => ({ runReminderSweep, pruneReminderLog }));
-vi.mock("./nudge.js", () => ({ runSergeantNudgeSweep }));
 vi.mock("../../obs/logger.js", () => ({
   logger,
   serializeError: (e: unknown) => ({

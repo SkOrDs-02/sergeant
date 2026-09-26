@@ -71,6 +71,14 @@ const HubPrefsBagSchema = z
     message: `hubPrefs: не більше ${HUB_PREFS_MAX_KEYS} ключів`,
   });
 
+/**
+ * Стеля нагадувань на київську добу (міграція 148). Спільна для сервера,
+ * який її застосовує, і клієнта, який малює перемикач: розбіжність тут
+ * означала б, що UI пропонує значення, яке CHECK у БД відкине.
+ */
+export const PUSH_DAILY_CAP_DEFAULT = 2;
+export const PUSH_DAILY_CAP_MAX = 4;
+
 export const UserPreferencesSchema = z.object({
   analytics: z.boolean(),
   aiMemory: z.boolean(),
@@ -89,6 +97,22 @@ export const UserPreferencesSchema = z.object({
    * тож «поля нема» і «поле false» означають рівно те саме.
    */
   sergeantNudges: z.boolean().default(false),
+  /**
+   * Скільки нагадувань на добу може надіслати сервер (спека
+   * `reward-loop-and-reminders.md`). Приводи понад стелю не губляться, а
+   * згортаються в одне сповіщення; `0` вимикає нагадування зовсім.
+   *
+   * `.default(...)` з тієї ж rolling-deploy причини, що й сусіди: новий
+   * клієнт може розмовляти зі старим сервером, який поля ще не віддає.
+   * Дефолт збігається з `DEFAULT` колонки, тож «поля нема» означає рівно
+   * те, що сервер і так застосує.
+   */
+  pushDailyCap: z
+    .number()
+    .int()
+    .min(0)
+    .max(PUSH_DAILY_CAP_MAX)
+    .default(PUSH_DAILY_CAP_DEFAULT),
   /**
    * Explicit consent for processing health-adjacent data (fizruk
    * workouts/wellbeing, nutrition logs) per GDPR Art. 9 — special category
@@ -150,6 +174,7 @@ export const UserPreferencesPatchSchema = z
     aiMemory: z.boolean().optional(),
     pushNotifications: z.boolean().optional(),
     sergeantNudges: z.boolean().optional(),
+    pushDailyCap: z.number().int().min(0).max(PUSH_DAILY_CAP_MAX).optional(),
     healthDataConsent: z.boolean().optional(),
     /**
      * Відсутнє поле = «не чіпай вибір»; `null` = «прибери серверний

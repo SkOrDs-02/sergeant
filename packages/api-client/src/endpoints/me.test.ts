@@ -129,6 +129,8 @@ describe("createMeEndpoints", () => {
       aiMemory: false,
       pushNotifications: true,
       sergeantNudges: true,
+      // Поля нема у відповіді: схема підставляє дефолт колонки (міграція 148).
+      pushDailyCap: 2,
       healthDataConsent: false,
       // Відповідь мока не містить `activeModules` (як і будь-який
       // сервер до міграції 116) — схема підставляє `null`, а не `[]`:
@@ -312,6 +314,7 @@ describe("createMeEndpoints", () => {
         aiMemory: true,
         pushNotifications: false,
         sergeantNudges: false,
+        pushDailyCap: 2,
         healthDataConsent: false,
         activeModules: ["finyk", "routine"],
         // PR-S13: серіалізатор ЗАВЖДИ віддає ключ (а схема має

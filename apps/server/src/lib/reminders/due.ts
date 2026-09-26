@@ -30,8 +30,12 @@ import {
   type Habit,
 } from "@sergeant/routine-domain";
 
-/** Модулі, які вміє нагадувати sweep. Значення їде у `data.module` пушу. */
-export type ReminderModule = "routine" | "fizruk" | "nutrition";
+/**
+ * Модулі, які вміє нагадувати sweep. Значення їде у `data.module` пушу.
+ * `sergeant` це проактивний нудж (`./nudge.ts`): він ділить з модулями
+ * спільну стелю, тож живе в тому самому плані дня (`./budget.ts`).
+ */
+export type ReminderModule = "routine" | "fizruk" | "nutrition" | "sergeant";
 
 /** Одне готове до відправки нагадування. */
 export interface DueReminder {
@@ -43,6 +47,14 @@ export interface DueReminder {
   body: string;
   /** Deep-link, який SW відкриє по тапу. */
   url: string;
+  /** Київський `HH:MM`, на який людина поставила цей привід. */
+  at: string;
+  /**
+   * Назва приводу в згорнутому сповіщенні (`collapseReminders`), коли
+   * кілька приводів ідуть одним пушем. У мінімальному режимі приватності
+   * назви звички тут немає, як і в заголовку.
+   */
+  label: string;
 }
 
 /** Рядок `routine_habits` після мапінгу в доменний тип. */
@@ -132,6 +144,8 @@ export function routineDueNow({
         ? "Час для запланованої звички"
         : "Нагадування про звичку",
       url: "/?module=routine",
+      at: hm,
+      label: privacyMinimal ? "звичка" : habit.name,
     });
   }
   return out;
@@ -145,6 +159,13 @@ export interface FizrukPlanRow {
   reminderMinute: number;
   /** Чи призначено на `dayKey` тренування (є `templateId`). */
   hasWorkoutToday: boolean;
+}
+
+/** Київський `HH:MM` нагадування про тренування для рядка плану. */
+export function fizrukReminderHm(row: FizrukPlanRow): string {
+  return `${String(row.reminderHour).padStart(2, "0")}:${String(
+    row.reminderMinute,
+  ).padStart(2, "0")}`;
 }
 
 /**
@@ -162,10 +183,7 @@ export function fizrukDueNow(
   for (const row of rows) {
     if (!row.reminderEnabled) continue;
     if (!row.hasWorkoutToday) continue;
-    const target = `${String(row.reminderHour).padStart(2, "0")}:${String(
-      row.reminderMinute,
-    ).padStart(2, "0")}`;
-    if (target !== hm) continue;
+    if (fizrukReminderHm(row) !== hm) continue;
     out.push({
       userId: row.userId,
       module: "fizruk",
@@ -173,6 +191,8 @@ export function fizrukDueNow(
       title: "Фізрук: тренування",
       body: "Заплановане тренування на сьогодні.",
       url: "/?module=fizruk",
+      at: hm,
+      label: "тренування",
     });
   }
   return out;
@@ -183,6 +203,11 @@ export interface NutritionPrefsRow {
   userId: string;
   reminderEnabled: boolean;
   reminderHour: number;
+}
+
+/** Київський `HH:MM` нагадування про їжу: хвилина завжди `:00`. */
+export function nutritionReminderHm(row: NutritionPrefsRow): string {
+  return `${String(row.reminderHour).padStart(2, "0")}:00`;
 }
 
 /**
@@ -197,7 +222,7 @@ export function nutritionDueNow(
   const out: DueReminder[] = [];
   for (const row of rows) {
     if (!row.reminderEnabled) continue;
-    if (`${String(row.reminderHour).padStart(2, "0")}:00` !== hm) continue;
+    if (nutritionReminderHm(row) !== hm) continue;
     out.push({
       userId: row.userId,
       module: "nutrition",
@@ -205,6 +230,8 @@ export function nutritionDueNow(
       title: "Їжа",
       body: "Час відмітити прийом їжі.",
       url: "/?module=nutrition",
+      at: hm,
+      label: "запис їжі",
     });
   }
   return out;

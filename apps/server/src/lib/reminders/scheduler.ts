@@ -19,7 +19,6 @@
 import type { Pool } from "pg";
 
 import { logger, serializeError } from "../../obs/logger.js";
-import { runSergeantNudgeSweep } from "./nudge.js";
 import { pruneReminderLog, runReminderSweep } from "./sweep.js";
 
 export interface StartedReminderScheduler {
@@ -38,15 +37,6 @@ export interface StartedReminderScheduler {
 
 /** Година за Києвом, коли робимо добове прибирання журналу. */
 const PRUNE_AT_HM = "03:07";
-
-/**
- * Слот проактивного підштовхування Сержанта, 09:00 Europe/Kyiv (спека D5).
- *
- * Той самий хвилинний таймер, що й нагадування: добова робота — це просто
- * умова на `hm` плюс памʼять про вже відпрацьовану добу. Окремої черги під
- * одну задачу на добу не заводимо (чому саме — див. шапку `./nudge.ts`).
- */
-const NUDGE_AT_HM = "09:00";
 
 /**
  * Стеля очікування поточного проходу в `stop()`. Один прохід — це кілька
@@ -71,7 +61,6 @@ export function startReminderScheduler(pool: Pool): StartedReminderScheduler {
   /** Поточний прохід, якщо він саме виконується. `null` між проходами. */
   let inFlight: Promise<void> | null = null;
   let lastPruneDayKey: string | null = null;
-  let lastNudgeDayKey: string | null = null;
 
   const tick = async (): Promise<void> => {
     if (stopped) return;
@@ -85,13 +74,6 @@ export function startReminderScheduler(pool: Pool): StartedReminderScheduler {
         if (removed > 0) {
           logger.info({ msg: "reminder_log_pruned", removed });
         }
-      }
-      // `lastNudgeDayKey` страхує від подвійного проходу в межах однієї
-      // хвилини (перезапуск процесу о 09:00). Дедуп у БД усе одно не дав би
-      // другого пуша, але зайвий скан таблиці ні до чого.
-      if (result.hm === NUDGE_AT_HM && lastNudgeDayKey !== result.dayKey) {
-        lastNudgeDayKey = result.dayKey;
-        await runSergeantNudgeSweep(pool);
       }
     } catch (err) {
       logger.warn({

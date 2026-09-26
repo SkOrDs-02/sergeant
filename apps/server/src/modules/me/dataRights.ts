@@ -11,6 +11,7 @@ import type {
 import {
   DASHBOARD_MODULE_IDS,
   accountDeletionDeadline,
+  PUSH_DAILY_CAP_DEFAULT,
 } from "@sergeant/shared";
 import { logger } from "../../obs/logger.js";
 import { providerRegistry, type ProviderId } from "../billing/index.js";
@@ -54,6 +55,7 @@ const DEFAULT_PREFERENCES: Omit<UserPreferences, "updatedAt"> = {
   aiMemory: true,
   pushNotifications: false,
   sergeantNudges: false,
+  pushDailyCap: PUSH_DAILY_CAP_DEFAULT,
   // GDPR Art. 9 — health-adjacent data (fizruk/nutrition) needs explicit
   // opt-in; DEFAULT FALSE matches the DB column (migration 111).
   healthDataConsent: false,
@@ -99,6 +101,12 @@ function serializePreferences(
     aiMemory: row["ai_memory"] === true,
     pushNotifications: row["push_notifications"] === true,
     sergeantNudges: row["sergeant_nudges"] === true,
+    // `SMALLINT` приходить із `pg` як number. Рядок без колонки (до
+    // міграції 148) читаємо дефолтом, а не `NaN`-ом.
+    pushDailyCap:
+      typeof row["push_daily_cap"] === "number"
+        ? row["push_daily_cap"]
+        : PUSH_DAILY_CAP_DEFAULT,
     healthDataConsent: row["health_data_consent"] === true,
     // `pg` round-trip-ить `text[]` як `string[]`, але shape-guard тут не
     // зайвий: до міграції 116 колонки не існувало, тож старий рядок (або
@@ -164,7 +172,8 @@ export async function getUserPreferences(
 ): Promise<UserPreferences> {
   const result = await db.query<Record<string, unknown>>(
     `SELECT analytics, ai_memory, push_notifications, sergeant_nudges,
-            health_data_consent, active_modules, hub_prefs, updated_at
+            push_daily_cap, health_data_consent, active_modules, hub_prefs,
+            updated_at
        FROM user_preferences
       WHERE user_id = $1`,
     [userId],
@@ -183,6 +192,7 @@ export async function upsertUserPreferences(
     aiMemory: patch.aiMemory ?? current.aiMemory,
     pushNotifications: patch.pushNotifications ?? current.pushNotifications,
     sergeantNudges: patch.sergeantNudges ?? current.sergeantNudges,
+    pushDailyCap: patch.pushDailyCap ?? current.pushDailyCap,
     healthDataConsent: patch.healthDataConsent ?? current.healthDataConsent,
     // AI-DANGER: тут `??` був би багом. Для булевих полів «поля нема в
     // патчі» і «поле = false» розрізняє сам `??`, бо `false` не nullish.
@@ -206,8 +216,9 @@ export async function upsertUserPreferences(
   const result = await db.query<Record<string, unknown>>(
     `INSERT INTO user_preferences
         (user_id, analytics, ai_memory, push_notifications, sergeant_nudges,
-         health_data_consent, active_modules, hub_prefs, updated_at)
-      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, NOW())
+         health_data_consent, active_modules, hub_prefs, push_daily_cap,
+         updated_at)
+      VALUES ($1, $2, $3, $4, $5, $6, $7, $8, $9, NOW())
       ON CONFLICT (user_id) DO UPDATE SET
         analytics = EXCLUDED.analytics,
         ai_memory = EXCLUDED.ai_memory,
@@ -216,9 +227,11 @@ export async function upsertUserPreferences(
         health_data_consent = EXCLUDED.health_data_consent,
         active_modules = EXCLUDED.active_modules,
         hub_prefs = EXCLUDED.hub_prefs,
+        push_daily_cap = EXCLUDED.push_daily_cap,
         updated_at = NOW()
       RETURNING analytics, ai_memory, push_notifications, sergeant_nudges,
-                health_data_consent, active_modules, hub_prefs, updated_at`,
+                push_daily_cap, health_data_consent, active_modules,
+                hub_prefs, updated_at`,
     [
       userId,
       next.analytics,
@@ -228,6 +241,7 @@ export async function upsertUserPreferences(
       next.healthDataConsent,
       next.activeModules,
       next.hubPrefs,
+      next.pushDailyCap,
     ],
   );
   return serializePreferences(result.rows[0]);

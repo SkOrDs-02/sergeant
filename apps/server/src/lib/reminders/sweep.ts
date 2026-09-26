@@ -39,22 +39,28 @@ import type { Pool } from "pg";
 import {
   habitSkipKey,
   isFlexibleHabit,
+  normalizeReminderTimes,
   weekEndKeyForDateKey,
   weekStartKeyForDateKey,
   type Habit,
 } from "@sergeant/routine-domain";
+import { PUSH_DAILY_CAP_DEFAULT } from "@sergeant/shared";
 
 import { logger, serializeError } from "../../obs/logger.js";
 import { sendToUserQuietly } from "../../push/send.js";
+import { budgetSlotKey, collapseReminders, planSends } from "./budget.js";
 import {
   fizrukDueNow,
+  fizrukReminderHm,
   nutritionDueNow,
+  nutritionReminderHm,
   routineDueNow,
   type DueReminder,
   type FizrukPlanRow,
   type NutritionPrefsRow,
   type RoutineHabitRow,
 } from "./due.js";
+import { nudgeReason, selectNudgeCandidates } from "./nudge.js";
 import { kyivDayKey, kyivDayKeyMinusDays, kyivHm } from "./time.js";
 
 /** Скільки діб тримаємо журнал відправок. */
@@ -80,11 +86,11 @@ const SEND_CONCURRENCY = 10;
 export interface ReminderSweepResult {
   dayKey: string;
   hm: string;
-  /** Скільки нагадувань логіка визнала актуальними на цю хвилину. */
+  /** Скільки приводів план дня відправляє саме цієї хвилини. */
   due: number;
-  /** Скільки з них цей процес застовпив і відправив. */
+  /** Скільки сповіщень цей процес відправив (кілька приводів = одне). */
   sent: number;
-  /** Скільки відсіяв дедуп (уже надіслано цим або іншим процесом). */
+  /** Скільки приводів відсіяв дедуп (уже надіслано цим або іншим процесом). */
   deduped: number;
 }
 
@@ -146,17 +152,18 @@ function toHabit(row: RoutineHabitDbRow): Habit {
 }
 
 /**
- * Звички, у яких на цю хвилину стоїть нагадування.
+ * Звички з будь-яким нагадуванням на добу.
  *
- * Попередній відсів робимо в SQL (`reminder_times @> '["08:00"]'` або
- * легасі-`time_of_day`), щоб не тягнути в Node усі звички всіх користувачів
- * щохвилини. Остаточне рішення — все одно за `routineDueNow`: там канонічний
- * предикат розкладу, який SQL не відтворює.
+ * Не лише ті, що припадають на цю хвилину: спільна стеля вимагає бачити
+ * весь день людини, щоб знати, які приводи згорнути разом (`./budget.ts`).
+ * Остаточне рішення про розклад усе одно за `routineDueNow`: там
+ * канонічний предикат, який SQL не відтворює.
+ *
+ * ponytail: щохвилини читаємо всі звички з нагадуваннями всіх людей. На
+ * десятках тисяч активних акаунтів план варто кешувати на добу й
+ * перераховувати лише на зміну налаштувань.
  */
-async function loadRoutineCandidates(
-  pool: Pool,
-  hm: string,
-): Promise<RoutineHabitRow[]> {
+async function loadRoutineCandidates(pool: Pool): Promise<RoutineHabitRow[]> {
   const { rows } = await pool.query<RoutineHabitDbRow>(
     `SELECT t.user_id, t.id, t.name, t.emoji, t.archived, t.paused,
             t.pause_intervals, t.recurrence, t.start_date, t.end_date,
@@ -167,14 +174,13 @@ async function loadRoutineCandidates(
       WHERE t.deleted_at IS NULL
         AND t.archived = false
         AND (p.data->>'routineRemindersEnabled') = 'true'
-        AND (t.reminder_times @> $1::jsonb OR t.time_of_day = $2)
+        AND (t.reminder_times <> '[]'::jsonb OR t.time_of_day IS NOT NULL)
         AND (
           EXISTS (SELECT 1 FROM push_subscriptions s
                    WHERE s.user_id = t.user_id AND s.deleted_at IS NULL)
           OR EXISTS (SELECT 1 FROM push_devices d
                       WHERE d.user_id = t.user_id AND d.deleted_at IS NULL)
         )`,
-    [JSON.stringify([hm]), hm],
   );
   return rows.map((row) => ({
     userId: row.user_id,
@@ -363,6 +369,26 @@ async function loadNutritionCandidates(
   });
 }
 
+/** Стеля нагадувань на добу для кожного з `userIds` (міграція 148). */
+async function loadCaps(
+  pool: Pool,
+  userIds: string[],
+): Promise<Map<string, number>> {
+  const out = new Map<string, number>();
+  if (userIds.length === 0) return out;
+  const { rows } = await pool.query<{
+    user_id: string;
+    push_daily_cap: number;
+  }>(
+    `SELECT user_id, push_daily_cap
+       FROM user_preferences
+      WHERE user_id = ANY($1)`,
+    [userIds],
+  );
+  for (const row of rows) out.set(row.user_id, row.push_daily_cap);
+  return out;
+}
+
 /**
  * Застовпити нагадування. `true` — цей процес виграв і має слати.
  *
@@ -384,8 +410,69 @@ async function claim(
 }
 
 /**
+ * Застовпити один із `cap` слотів бюджету доби. Повертає ключ слота або
+ * `null`, якщо всі слоти вже зайняті.
+ *
+ * Бюджет живе в тому самому журналі й тим самим `ON CONFLICT`, що й дедуп
+ * приводів, тож стелю не пробити ні перегонами реплік, ні зміною плану
+ * посеред доби (людина додала звичку чи змінила стелю): слотів рівно `cap`.
+ */
+async function claimBudgetSlot(
+  pool: Pool,
+  userId: string,
+  dayKey: string,
+  cap: number,
+): Promise<string | null> {
+  for (let k = 1; k <= cap; k++) {
+    const key = budgetSlotKey(dayKey, k);
+    const { rowCount } = await pool.query(
+      `INSERT INTO push_reminder_log (user_id, dedup_key, module, day_key)
+            VALUES ($1, $2, 'budget', $3)
+       ON CONFLICT (user_id, dedup_key) DO NOTHING`,
+      [userId, key, dayKey],
+    );
+    if ((rowCount ?? 0) > 0) return key;
+  }
+  return null;
+}
+
+/** Повернути слот, під який не лишилось жодного приводу. */
+async function releaseBudgetSlot(
+  pool: Pool,
+  userId: string,
+  key: string,
+): Promise<void> {
+  await pool.query(
+    `DELETE FROM push_reminder_log WHERE user_id = $1 AND dedup_key = $2`,
+    [userId, key],
+  );
+}
+
+function groupByUser(reminders: DueReminder[]): Map<string, DueReminder[]> {
+  const out = new Map<string, DueReminder[]>();
+  for (const r of reminders) {
+    const list = out.get(r.userId);
+    if (list) list.push(r);
+    else out.set(r.userId, [r]);
+  }
+  return out;
+}
+
+interface ClaimedPush {
+  userId: string;
+  payload: ReturnType<typeof collapseReminders>;
+}
+
+/**
  * Один прохід. Експортується окремо від таймера, щоб тести й майбутній
  * ручний тригер могли викликати його з фіксованим `now`.
+ *
+ * Три кроки. План: усі приводи дня кожної людини без огляду на те, що вже
+ * зроблено, розкладені на `cap` слотів (`planSends`); план не залежить від
+ * відміток, тож протягом доби він стабільний. Відбір: якщо на цю хвилину
+ * припадає слот, у нього йдуть лише ті приводи, що досі актуальні (звичку
+ * не відмічено, не поставлено «не зміг»). Відправка: одне сповіщення на
+ * слот, скільки б приводів у ньому не було.
  */
 export async function runReminderSweep(
   pool: Pool,
@@ -394,11 +481,13 @@ export async function runReminderSweep(
   const dayKey = kyivDayKey(now);
   const hm = kyivHm(now);
 
-  const [routineRows, fizrukRows, nutritionRows] = await Promise.all([
-    loadRoutineCandidates(pool, hm),
-    loadFizrukCandidates(pool, dayKey),
-    loadNutritionCandidates(pool),
-  ]);
+  const [routineRows, fizrukRows, nutritionRows, nudgeCandidates] =
+    await Promise.all([
+      loadRoutineCandidates(pool),
+      loadFizrukCandidates(pool, dayKey),
+      loadNutritionCandidates(pool),
+      selectNudgeCandidates(pool, now),
+    ]);
 
   const routineUserIds = [...new Set(routineRows.map((r) => r.userId))];
   const routineHabitIds = [...new Set(routineRows.map((r) => r.habit.id))];
@@ -429,31 +518,72 @@ export async function runReminderSweep(
   // — множини одного користувача, тож змішувати рядки різних людей в один
   // виклик не можна (звичка A користувача X «загасилась» би відміткою
   // однойменного id користувача Y).
-  const byUser = new Map<string, RoutineHabitRow[]>();
+  const routineByUser = new Map<string, RoutineHabitRow[]>();
   for (const row of routineRows) {
-    const list = byUser.get(row.userId);
+    const list = routineByUser.get(row.userId);
     if (list) list.push(row);
-    else byUser.set(row.userId, [row]);
+    else routineByUser.set(row.userId, [row]);
   }
+
+  const dayTimes = [
+    ...new Set([
+      ...routineRows.flatMap((r) => normalizeReminderTimes(r.habit)),
+      ...fizrukRows.map(fizrukReminderHm),
+      ...nutritionRows.map(nutritionReminderHm),
+    ]),
+  ];
+  const nudges = nudgeCandidates.map((c) => nudgeReason(c, dayKey, now));
 
   const empty: ReadonlySet<string> = new Set();
   const emptyWeekCompletions: ReadonlyMap<string, readonly string[]> =
     new Map();
-  const due: DueReminder[] = [
-    ...[...byUser.entries()].flatMap(([userId, rows]) =>
-      routineDueNow({
-        rows,
-        dayKey,
-        hm,
-        completedHabitIds: completedByUser.get(userId) ?? empty,
-        skippedHabitIds: skippedByUser.get(userId) ?? empty,
-        weekCompletionsByHabitId:
-          weekCompletionsByUser.get(userId) ?? emptyWeekCompletions,
-      }),
-    ),
-    ...fizrukDueNow(fizrukRows, dayKey, hm),
-    ...nutritionDueNow(nutritionRows, dayKey, hm),
+  const noneByUser = new Map<string, Set<string>>();
+  // ponytail: times × rows на кожну хвилину. На нинішній базі це дрібниця;
+  // коли стане помітно, індексувати рядки за часом, а не перебирати всі.
+  const reasonsOfDay = (
+    completed: Map<string, Set<string>>,
+    skipped: Map<string, Set<string>>,
+  ): DueReminder[] => [
+    ...dayTimes.flatMap((t) => [
+      ...[...routineByUser.entries()].flatMap(([userId, rows]) =>
+        routineDueNow({
+          rows,
+          dayKey,
+          hm: t,
+          completedHabitIds: completed.get(userId) ?? empty,
+          skippedHabitIds: skipped.get(userId) ?? empty,
+          weekCompletionsByHabitId:
+            weekCompletionsByUser.get(userId) ?? emptyWeekCompletions,
+        }),
+      ),
+      ...fizrukDueNow(fizrukRows, dayKey, t),
+      ...nutritionDueNow(nutritionRows, dayKey, t),
+    ]),
+    ...nudges,
   ];
+
+  const plannedByUser = groupByUser(reasonsOfDay(noneByUser, noneByUser));
+  const pendingByUser = groupByUser(
+    reasonsOfDay(completedByUser, skippedByUser),
+  );
+  const caps = await loadCaps(pool, [...plannedByUser.keys()]);
+
+  const firing: { userId: string; sendAt: string; reasons: DueReminder[] }[] =
+    [];
+  for (const [userId, planned] of plannedByUser) {
+    const cap = caps.get(userId) ?? PUSH_DAILY_CAP_DEFAULT;
+    const slot = planSends(
+      planned.map((r) => r.at),
+      cap,
+    ).find((s) => s.sendAt === hm);
+    if (!slot) continue;
+    const reasons = (pendingByUser.get(userId) ?? []).filter((r) =>
+      slot.times.includes(r.at),
+    );
+    if (reasons.length > 0) {
+      firing.push({ userId, sendAt: slot.sendAt, reasons });
+    }
+  }
 
   let sent = 0;
   let deduped = 0;
@@ -461,27 +591,39 @@ export async function runReminderSweep(
   // Claim має лишатись послідовним: це один `INSERT` на нагадування, він
   // дешевий, а розпаралелювання тут лише забирало б з'єднання з пулу у
   // самих відправок.
-  const claimed: DueReminder[] = [];
-  for (const reminder of due) {
-    let won = false;
+  //
+  // Порядок усередині слота: бюджет, потім приводи. Навпаки привід,
+  // застовплений без вільного слота, пропав би до кінця доби; а слот без
+  // жодного живого приводу повертаємо назад.
+  const claimed: ClaimedPush[] = [];
+  for (const { userId, sendAt, reasons } of firing) {
+    const cap = caps.get(userId) ?? PUSH_DAILY_CAP_DEFAULT;
+    const won: DueReminder[] = [];
     try {
-      won = await claim(pool, reminder, dayKey);
+      const slotKey = await claimBudgetSlot(pool, userId, dayKey, cap);
+      if (!slotKey) {
+        logger.info({ msg: "reminder_budget_exhausted", dayKey, hm });
+        continue;
+      }
+      for (const reminder of reasons) {
+        if (await claim(pool, reminder, dayKey)) won.push(reminder);
+        else deduped++;
+      }
+      if (won.length === 0) {
+        await releaseBudgetSlot(pool, userId, slotKey);
+        continue;
+      }
     } catch (err) {
       // Claim впав (наприклад, БД недоступна) — НЕ шлемо. Без застовпленого
       // рядка ми не можемо обіцяти «рівно один раз», а мовчання дешевше за
       // нескінченний потік дублів щохвилини.
       logger.warn({
         msg: "reminder_claim_failed",
-        module: reminder.module,
         err: serializeError(err, { includeStack: false }),
       });
       continue;
     }
-    if (!won) {
-      deduped++;
-      continue;
-    }
-    claimed.push(reminder);
+    claimed.push({ userId, payload: collapseReminders(won, dayKey, sendAt) });
   }
 
   // Fan-out чанками по `SEND_CONCURRENCY` з `await` між чанками.
@@ -502,35 +644,36 @@ export async function runReminderSweep(
     // `sendToUserQuietly` ковтає помилки транспорту й логує їх сам — падіння
     // однієї відправки не має зупиняти решту черги цієї хвилини.
     await Promise.all(
-      batch.map((reminder) =>
+      batch.map(({ userId, payload }) =>
         sendToUserQuietly(
-          reminder.userId,
+          userId,
           {
-            title: reminder.title,
-            body: reminder.body,
-            tag: reminder.dedupKey,
-            url: reminder.url,
-            data: { module: reminder.module },
+            title: payload.title,
+            body: payload.body,
+            tag: payload.tag,
+            url: payload.url,
+            data: { module: payload.module },
           },
-          { module: reminder.module },
+          { module: payload.module },
         ),
       ),
     );
     sent += batch.length;
   }
 
-  if (due.length > 0) {
+  const due = firing.reduce((n, f) => n + f.reasons.length, 0);
+  if (due > 0) {
     logger.info({
       msg: "reminder_sweep",
       dayKey,
       hm,
-      due: due.length,
+      due,
       sent,
       deduped,
     });
   }
 
-  return { dayKey, hm, due: due.length, sent, deduped };
+  return { dayKey, hm, due, sent, deduped };
 }
 
 /**

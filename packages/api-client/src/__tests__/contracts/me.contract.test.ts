@@ -98,6 +98,10 @@ describe(
             aiMemory: true,
             pushNotifications: true,
             sergeantNudges: false,
+            // Міграція 148: стеля нагадувань на добу. Не дефолтне значення
+            // навмисно, щоб реплей провайдера довів, що число їде з колонки,
+            // а не з фолбеку серіалізатора.
+            pushDailyCap: 3,
             healthDataConsent: true,
             // Явний `null`, а не відсутнє поле: після міграції 116
             // серіалізатор `dataRights.ts` ВЗАВЖДИ віддає ключ
@@ -121,6 +125,7 @@ describe(
           expect(out.healthDataConsent).toBe(true);
           expect(typeof out.healthDataConsent).toBe("boolean");
           expect(out.activeModules).toBeNull();
+          expect(out.pushDailyCap).toBe(3);
         });
     });
 
@@ -153,6 +158,8 @@ describe(
           const me = createMeEndpoints(http);
           const out = await me.getPreferences();
           expect(out.healthDataConsent).toBe(false);
+          // Той самий rolling-deploy захист для стелі (міграція 148).
+          expect(out.pushDailyCap).toBe(2);
         });
     });
 
