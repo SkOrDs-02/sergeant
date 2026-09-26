@@ -20,7 +20,7 @@ export const routinePageMessages = {
     weekHeading: "Тиждень",
     singleDayHint:
       "Обрано один день, натисни «Сьогодні» або «Тиждень», щоб повернути зріз",
-    searchPlaceholder: "Пошук у стрічці…",
+    searchPlaceholder: "Пошук у стрічці",
     searchAriaLabel: "Пошук подій",
   },
   addHabitFab: "Додати звичку",

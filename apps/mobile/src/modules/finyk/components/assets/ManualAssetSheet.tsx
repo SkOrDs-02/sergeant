@@ -150,7 +150,7 @@ export function ManualAssetSheet({
             Назва
           </Text>
           <Input
-            placeholder="Готівка, брокер, крипта…"
+            placeholder="Готівка, брокер, крипта"
             value={draft.name}
             onChangeText={(t) => setDraft((d) => ({ ...d, name: t }))}
             error={nameError}

@@ -125,7 +125,7 @@ export function GoalEditSheet({
           <Input
             value={name}
             onChangeText={setName}
-            placeholder="Накопичити на…"
+            placeholder="Накопичити на"
           />
         </View>
         <View className="mb-3">
