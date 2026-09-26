@@ -107,7 +107,7 @@ export function PrBoard({
             className={cn(
               "focus-ring shrink-0 px-3 min-h-[44px] rounded-full text-style-caption transition-colors border",
               prFilter === "all"
-                ? "bg-fizruk-strong text-white border-fizruk-strong"
+                ? "bg-fizruk-strong text-white border-fizruk-strong dark:bg-fizruk dark:text-bg dark:border-fizruk"
                 : "bg-panel border-line text-subtle hover:text-text",
             )}
           >
@@ -122,7 +122,7 @@ export function PrBoard({
               className={cn(
                 "focus-ring shrink-0 px-3 min-h-[44px] rounded-full text-style-caption transition-colors border whitespace-nowrap",
                 prFilter === g
-                  ? "bg-fizruk-strong text-white border-fizruk-strong"
+                  ? "bg-fizruk-strong text-white border-fizruk-strong dark:bg-fizruk dark:text-bg dark:border-fizruk"
                   : "bg-panel border-line text-subtle hover:text-text",
               )}
             >

@@ -81,7 +81,8 @@ export function useDemoCommands({
             {
               id: "search.open",
               title: "Глобальний пошук",
-              description: "Записи всіх модулів, налаштування, AI-підказки",
+              description:
+                "Записи всіх модулів, налаштування, підказки від Сержанта",
               group: "Навігація",
               keywords: ["search", "find", "пошук", "знайти"],
               run: () => openSearch(),

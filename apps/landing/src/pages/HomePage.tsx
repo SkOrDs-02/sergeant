@@ -209,7 +209,8 @@ export default function HomePage() {
           <div className="flex flex-col gap-2.5">
             <TelegramCta placement="hero" label="Стати в чергу" />
             <p className="text-sm text-subtle">
-              ядро безкоштовне назавжди · дані твої,{" "}
+              безкоштовно назавжди: чотири модулі й пʼять запитів до Сержанта
+              щодня · дані твої,{" "}
               <a
                 href="/vyhid"
                 className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"

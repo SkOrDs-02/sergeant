@@ -279,6 +279,27 @@ describe("useCelebration", () => {
     act(() => result.current.achievement("Win"));
     expect(result.current.CelebrationComponent).not.toBeNull();
   });
+
+  it("streak/levelUp title does not repeat the number shown as the big value", () => {
+    const { result } = renderHook(() => useCelebration());
+    act(() => result.current.streak(30));
+    const { unmount, getByText, queryByText } = render(
+      result.current.CelebrationComponent,
+    );
+    // Big value "30" + unit "днів" render once; the title must not spell
+    // the number out again ("30 днів поспіль" duplicated the digit twice).
+    expect(getByText("30")).toBeInTheDocument();
+    expect(queryByText(/30.*поспіль/)).not.toBeInTheDocument();
+    unmount();
+    act(() => result.current.dismiss());
+
+    act(() => result.current.levelUp(5, { current: 1, max: 2 }));
+    const { getByText: getByText2, queryByText: queryByText2 } = render(
+      result.current.CelebrationComponent,
+    );
+    expect(getByText2("5")).toBeInTheDocument();
+    expect(queryByText2(/рівень 5/i)).not.toBeInTheDocument();
+  });
 });
 
 describe("MiniSuccess", () => {

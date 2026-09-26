@@ -317,7 +317,7 @@ export function ShoppingListCard({
               // провалює 44px-флор, тож pointer-coarse-варіант тримає його
               // явно — той самий патерн, що й «Додати» у `PantryCard`.
               "text-style-label px-4 h-11 pointer-coarse:min-h-[44px] rounded-2xl shrink-0",
-              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+              "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
             )}
           >
             {ma.addCta}
@@ -336,7 +336,7 @@ export function ShoppingListCard({
               className={cn(
                 "flex-1 py-2 px-3 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
                 source === "recipes"
-                  ? "bg-nutrition-strong text-white border-nutrition"
+                  ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
                   : "border-line text-text hover:border-nutrition/50",
               )}
             >
@@ -352,7 +352,7 @@ export function ShoppingListCard({
               className={cn(
                 "flex-1 py-2 px-3 rounded-xl text-style-caption border transition-[background-color,border-color,color,opacity]",
                 source === "weekplan"
-                  ? "bg-nutrition-strong text-white border-nutrition"
+                  ? "bg-nutrition-strong text-white border-nutrition dark:bg-nutrition dark:text-bg"
                   : "border-line text-text hover:border-nutrition/50",
               )}
             >
@@ -382,7 +382,7 @@ export function ShoppingListCard({
           disabled={shoppingBusy || !canGenerate}
           className={cn(
             "text-style-label w-full h-11 rounded-2xl",
-            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors",
+            "bg-nutrition-strong text-white hover:bg-nutrition-hover disabled:opacity-50 transition-colors dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90",
           )}
         >
           {shoppingBusy ? "Генерую список…" : "Згенерувати список покупок"}

@@ -40,7 +40,7 @@ const VARIANT_CLASSES: Record<
 > = {
   nutrition: {
     wrap: "border-nutrition/30 bg-nutrition/10",
-    pill: "bg-nutrition-strong text-white",
+    pill: "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg",
     cta: "border-nutrition/40 text-nutrition-strong hover:bg-nutrition/15 dark:text-nutrition",
   },
   // AI-NOTE: варіант Фініка до 2026-09-16 фарбувався семантичним `success`
@@ -49,7 +49,7 @@ const VARIANT_CLASSES: Record<
   // МОДУЛЯ, а не семантику успіху (дизайн-контракт онбордингу § Палітра).
   finyk: {
     wrap: "border-finyk/30 bg-finyk/10",
-    pill: "bg-finyk-strong text-white",
+    pill: "bg-finyk-strong text-white dark:bg-finyk dark:text-bg",
     cta: "border-finyk/40 text-finyk-strong hover:bg-finyk/15 dark:text-finyk",
   },
 };
