@@ -255,10 +255,3 @@ export function SectionHeading({
     </Component>
   );
 }
-
-/**
- * Alias exported so that consumers can import `SectionHeader` alongside
- * `Card` / `Badge` / `Tabs` / etc. Both names resolve to the same
- * component — prefer `SectionHeader` in new code.
- */
-export const SectionHeader = SectionHeading;

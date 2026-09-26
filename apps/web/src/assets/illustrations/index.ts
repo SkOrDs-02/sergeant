@@ -21,14 +21,3 @@ export { OfflineIllustration } from "./OfflineIllustration";
 export { ServerErrorIllustration } from "./ServerErrorIllustration";
 export { NotFoundIllustration } from "./NotFoundIllustration";
 export { SuccessCelebrationIllustration } from "./SuccessCelebrationIllustration";
-
-export const ILLUSTRATION_NAMES = [
-  "empty-list",
-  "no-results",
-  "offline",
-  "server-error",
-  "not-found",
-  "success-celebration",
-] as const;
-
-export type IllustrationName = (typeof ILLUSTRATION_NAMES)[number];

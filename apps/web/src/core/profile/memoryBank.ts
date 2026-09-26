@@ -67,11 +67,6 @@ export function readMemoryBankMeta(): MemoryBankMeta {
   );
 }
 
-/** Дзеркало `readBiometricsOwnerId` — власник ОСТАННЬОГО запису в `PROFILE_KEY`. */
-export function readMemoryBankOwnerId(): string | null {
-  return readMemoryBankMeta().ownerId;
-}
-
 function writeMemoryBankMeta(updatedAt: string): void {
   safeWriteLS(MEMORY_BANK_META_KEY, {
     updatedAt,

@@ -752,7 +752,7 @@ export const celebrationColors = {
  * Tailwind `text-success` / `bg-danger` utilities (body-highlighter,
  * raw `<path stroke>` attrs, etc.). Same values as `statusColors`;
  * exposed under `statusHex` so web-only code uses one consistent name
- * across `@shared/lib/themeHex`, chart series and mobile status bar.
+ * across chart series and mobile status bar.
  */
 export const statusHex = {
   success: statusColors.success,

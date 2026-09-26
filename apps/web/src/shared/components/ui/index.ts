@@ -103,7 +103,7 @@ export type {
   TextareaProps,
 } from "./Input";
 
-export { SectionHeader, SectionHeading } from "./SectionHeading";
+export { SectionHeading } from "./SectionHeading";
 export type {
   SectionHeadingProps,
   SectionHeadingSize,

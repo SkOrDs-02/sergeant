@@ -266,5 +266,3 @@ export function PlanSection() {
     </SettingsGroup>
   );
 }
-
-export const __PLAN_SECTION_PORTAL_UNAVAILABLE = BILLING_PORTAL_UNAVAILABLE;

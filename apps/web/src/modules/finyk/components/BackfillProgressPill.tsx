@@ -111,5 +111,3 @@ export const BackfillProgressPill = memo(function BackfillProgressPill({
     </div>
   );
 });
-
-export default BackfillProgressPill;

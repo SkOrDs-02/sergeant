@@ -26,7 +26,6 @@ export const DASHBOARD_MODULE_LABELS = SHARED_DASHBOARD_MODULE_LABELS;
 export {
   loadDashboardOrder,
   saveDashboardOrder,
-  resetDashboardOrder,
 } from "./dashboard/dashboardStore";
 
 export function HubDashboard({

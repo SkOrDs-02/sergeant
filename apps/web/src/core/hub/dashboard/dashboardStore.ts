@@ -1,6 +1,5 @@
 import {
   safeReadLS,
-  safeRemoveLS,
   safeWriteLS,
   webKVStore,
 } from "@shared/lib/storage/storage";
@@ -27,8 +26,4 @@ export function loadDashboardOrder() {
 
 export function saveDashboardOrder(order: string[]) {
   safeWriteLS(DASHBOARD_ORDER_KEY, order);
-}
-
-export function resetDashboardOrder() {
-  safeRemoveLS(DASHBOARD_ORDER_KEY);
 }

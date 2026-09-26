@@ -10,7 +10,6 @@ import {
   useState,
   type KeyboardEvent as ReactKeyboardEvent,
   type PointerEvent as ReactPointerEvent,
-  type ReactNode,
 } from "react";
 import { cn } from "@shared/lib/ui/cn";
 import { clampToDomain } from "@shared/charts/chartMath";
@@ -476,9 +475,3 @@ export const Slider = forwardRef<HTMLDivElement, SliderProps>(
 );
 
 Slider.displayName = "Slider";
-
-export function SliderTicks({ children }: { children?: ReactNode }) {
-  // Reserved for future composition: a `<SliderTicks>` slot that
-  // consumers can render below the track for custom tick labels.
-  return <>{children}</>;
-}

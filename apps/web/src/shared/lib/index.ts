@@ -138,7 +138,7 @@ export type {
 // Sentry-backed runtime logger. DEV → `console.*`; PROD → Sentry
 // breadcrumb / captureException (lazy-loaded). See `./log/logger.ts`.
 // eslint-disable-next-line sergeant-design/no-flat-shared-lib -- log/ is a real subdir for runtime logging (sub-PR #2582 + #2583); allowed via this barrel.
-export { logger, type Logger } from "./log";
+export { logger } from "./log";
 
 // ─── ui/ ────────────────────────────────────────────────────────────────
 export { signedDeltaClass, transactionAmountClass } from "./ui/amountTone";
@@ -165,8 +165,6 @@ export { perfEnd, perfMark } from "./ui/perf";
 // (dead-code/hard-rules-2026-05) — 0 external consumers found by per-symbol
 // grep. Source file `./ui/perf.ts` remains on disk (knip follow-up DC-4b
 // will sweep if `pnpm knip` confirms).
-
-export { THEME_HEX } from "./ui/themeHex";
 
 export { showUndoToast } from "./ui/undoToast";
 export type { UndoToastOptions } from "./ui/undoToast";
