@@ -47,9 +47,11 @@ import type {
   Category,
   Transaction,
 } from "@sergeant/finyk-domain/domain/types";
+import { txTimeMs } from "@sergeant/finyk-domain/lib/transactions";
 import { exportToCSV, type ExportColumn } from "@shared/lib/ui/export";
 import { dayKeyFromTx } from "./transactionsLib";
 import { formatTimeHm, KYIV_TIME_ZONE } from "@shared/lib/time/formatDate";
+import { isExpenseDayPlaceholder } from "../../components/manualExpenseForm";
 
 /** Резолвер ефективної категорії — з `useTransactionFilters`. */
 export type EffectiveCategoryResolver = (tx: Transaction) => Category;
@@ -73,11 +75,20 @@ const COLUMNS: ExportColumn<CsvRow>[] = [
   { key: "category", header: "Категорія" },
 ];
 
-/** `HH:MM` київського часу; порожньо, якщо мітки немає. */
-function kyivTimeLabel(ts: number): string {
-  if (!Number.isFinite(ts) || ts <= 0) return "";
+/**
+ * `HH:MM` київського часу запису; порожньо, якщо запис несе лише день.
+ *
+ * `tx.time` тут у секундах, як усюди в домені (`dayKeyFromTx` множить на
+ * 1000). Сліпий замір 2026-09-24 бачив «20:17» у кожному рядку: секунди
+ * читались як мілісекунди, і кожен запис падав у січень 1970. Ручний запис
+ * із минулою датою має лише плейсхолдер дня, тож часу не вигадуємо (Р6).
+ */
+function kyivTimeLabel(ts: number, manual: boolean): string {
+  const ms = txTimeMs(ts);
+  if (!Number.isFinite(ms) || ms <= 0) return "";
+  if (manual && isExpenseDayPlaceholder(ms)) return "";
   try {
-    return formatTimeHm(new Date(ts), { timeZone: KYIV_TIME_ZONE });
+    return formatTimeHm(new Date(ms), { timeZone: KYIV_TIME_ZONE });
   } catch {
     return "";
   }
@@ -98,7 +109,7 @@ export function toCsvRows(
 ): CsvRow[] {
   return transactions.map((tx) => ({
     date: dayKeyFromTx(tx.time),
-    time: kyivTimeLabel(tx.time),
+    time: kyivTimeLabel(tx.time, Boolean(tx.manual)),
     description: typeof tx.description === "string" ? tx.description : "",
     amount: uahAmount(tx.amount),
     kind: tx.amount > 0 ? "дохід" : "витрата",

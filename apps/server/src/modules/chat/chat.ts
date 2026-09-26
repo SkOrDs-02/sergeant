@@ -52,6 +52,7 @@ import {
 import { emitSecurityEvent } from "../../obs/securityEvents.js";
 import { getCounterpartyNames } from "../../lib/counterpartyNames.js";
 import { maskMachineText, maskUserText } from "../../lib/llmRedaction.js";
+import { replaceLongDash } from "../../lib/modelText.js";
 import { buildRagContext } from "../ai-memory/ragContext.js";
 import { getCoachCorrelationsBlock } from "./coach.js";
 import { getUserPreferences } from "../me/dataRights.js";
@@ -682,7 +683,7 @@ export default async function handler(
       });
     }
 
-    const text = extractAnthropicText(data);
+    const text = replaceLongDash(extractAnthropicText(data));
     res.status(200).json({ text: text || "Готово." });
     return;
   }
@@ -836,10 +837,12 @@ export default async function handler(
 
   const content: AnthropicContentBlock[] = data?.content || [];
   const toolUses = content.filter((b) => b.type === "tool_use");
-  const textParts = content
-    .filter((b) => b.type === "text")
-    .map((b) => b.text ?? "")
-    .join("\n");
+  const textParts = replaceLongDash(
+    content
+      .filter((b) => b.type === "text")
+      .map((b) => b.text ?? "")
+      .join("\n"),
+  );
 
   // M7 — model-side cap. Anthropic може повернути довгий ланцюг tool-call-ів
   // без тексту: malicious / malfunctioning prompt здатен розкрутити

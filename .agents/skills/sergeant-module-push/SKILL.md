@@ -31,6 +31,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 | Дата       | Рішення                                              | Джерело/ADR                                                            |
 | ---------- | ----------------------------------------------------- | ---------------------------------------------------------------------- |
+| 2026-09-23 | Legacy `POST`/`DELETE /api/push/subscribe` видалено без метрики нульових викликів: `push_deprecation` логувався лише в pino і не доходив до Sentry, тож умову виміряти було неможливо | `docs/work/specs/tech-debt/backend.md` § «Legacy web-push HTTP» |
 | 2026-05-06 | APNs — через окрему provider-бібліотеку (Proposed)   | [ADR-0048](../../../docs/governance/adr/0048-apns-provider-library.md) |
 | 2026-04-27 | Push — server-driven fan-out на web + APNs + FCM     | [ADR-0019](../../../docs/governance/adr/0019-push-notifications.md) |
 

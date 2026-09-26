@@ -75,7 +75,9 @@ describe("JournalSection", () => {
   it("prints the collapsed summary with the Ukrainian decimal separator", () => {
     renderJournal();
 
-    const toggle = screen.getByRole("button", { name: /82,5 кг · 7,5 год/ });
+    const toggle = screen.getByRole("button", {
+      name: /82,5\u202Fкг · 7,5 год/,
+    });
     expect(toggle).toBeInTheDocument();
     expect(screen.queryByText(/82\.5 кг/)).not.toBeInTheDocument();
     expect(screen.queryByText(/7\.5 год/)).not.toBeInTheDocument();
@@ -111,7 +113,7 @@ describe("JournalSection", () => {
     const onDelete = vi.fn();
     renderJournal({ onDelete });
 
-    fireEvent.click(screen.getByRole("button", { name: /82.5 кг/ }));
+    fireEvent.click(screen.getByRole("button", { name: /82.5\u202Fкг/ }));
     expect(localStorage.getItem(`${JOURNAL_ENTRY_OPEN_PREFIX}entry-1`)).toBe(
       "1",
     );

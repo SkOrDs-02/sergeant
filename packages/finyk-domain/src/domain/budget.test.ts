@@ -3,6 +3,9 @@ import {
   BUDGET_ALERT_THRESHOLD,
   BUDGET_WARN_THRESHOLD,
   buildAtRiskKey,
+  calcLimitPace,
+  calcLimitUsages,
+  projectMonthEndSpend,
   calculateGoalProgress,
   calculateGoalSavedAmount,
   calculateLimitUsage,
@@ -149,6 +152,126 @@ describe("budget: limit usage", () => {
     expect(calculateSafeToSpendPerDay(1000, 0)).toBe(0);
     expect(calculateSafeToSpendPerDay(1000, -3)).toBe(0);
     expect(calculateSafeToSpendPerDay(1000, 4)).toBe(250);
+  });
+
+  // Р8-Р9 спеки аналітики v2: прогноз за темпом і попередження до
+  // перевищення. Вересень 2026 має 30 днів; 12:00 за Києвом = 09:00 UTC.
+  describe("темп ліміту", () => {
+    const sept = (day: number) =>
+      new Date(`2026-09-${String(day).padStart(2, "0")}T09:00:00Z`);
+
+    it("projectMonthEndSpend: 15 днів, 1 500 → 3 000; до третього дня прогнозу нема", () => {
+      expect(projectMonthEndSpend(1500, 15, 30)).toBe(3000);
+      expect(projectMonthEndSpend(100, 2, 30)).toBeNull();
+      expect(projectMonthEndSpend(100, 1, 30)).toBeNull();
+      expect(projectMonthEndSpend(100, 1, 30, 1)).toBe(3000);
+    });
+
+    it("рахує з точного факту: 247,50 за 10 днів → 742,50", () => {
+      expect(projectMonthEndSpend(247.5, 10, 30)).toBeCloseTo(742.5, 5);
+    });
+
+    it("попереджає, коли прогноз вищий за ліміт, а факт ще ні", () => {
+      // Сценарій клік-скрипта: «Транспорт» 150, витрачено 120 на 20-й день.
+      const pace = calcLimitPace({ limit: 150 }, 120, sept(20));
+      expect(pace.forecast).toBeCloseTo(180, 5);
+      expect(pace.forecastOverLimit).toBe(true);
+      // Темп 6 ₴/день, до ліміту 30 ₴ → 5 днів.
+      expect(pace.daysUntilOver).toBe(5);
+    });
+
+    it("після фактичного перевищення попередження зникає, прогноз лишається", () => {
+      const pace = calcLimitPace({ limit: 500 }, 807.5, sept(24));
+      expect(pace.forecast).toBeCloseTo(1009.375, 5);
+      expect(pace.forecastOverLimit).toBe(false);
+      expect(pace.daysUntilOver).toBeNull();
+    });
+
+    it("1-2 день, без витрат і не місячний період: попередження немає", () => {
+      expect(calcLimitPace({ limit: 100 }, 90, sept(2))).toEqual({
+        forecast: null,
+        forecastOverLimit: false,
+        daysUntilOver: null,
+      });
+      expect(calcLimitPace({ limit: 100 }, 0, sept(20))).toMatchObject({
+        forecast: 0,
+        forecastOverLimit: false,
+      });
+      expect(
+        calcLimitPace({ limit: 100, period: "week" }, 90, sept(20)).forecast,
+      ).toBeNull();
+    });
+
+    it("calcLimitUsages несе темп поряд зі станом", () => {
+      const [usage] = calcLimitUsages(
+        [{ id: "t", type: "limit", categoryId: "transport", limit: 150 }],
+        [
+          {
+            id: "a",
+            amount: -12_000,
+            time: Math.floor(Date.UTC(2026, 8, 10, 9) / 1000),
+            description: "",
+            mcc: 0,
+            manual: true,
+            categoryId: "transport",
+          },
+        ],
+        { now: sept(20) },
+      );
+      expect(usage).toMatchObject({
+        spent: 120,
+        overLimit: false,
+        forecastOverLimit: true,
+        daysUntilOver: 5,
+      });
+    });
+  });
+
+  // Р5 спеки аналітики v2: один прохід для картки ліміту, хаб-картки і
+  // рекомендації `budget_over_*`. Факт лишається точним (807,50, не 808).
+  it("calcLimitUsages: вікно періоду, кошик категорії, точний факт, ключ набору", () => {
+    const now = new Date("2026-06-15T09:00:00Z");
+    const june = Math.floor(Date.UTC(2026, 5, 10, 9) / 1000);
+    const may = Math.floor(Date.UTC(2026, 4, 10, 9) / 1000);
+    const tx = (id: string, amountMinor: number, time: number) => ({
+      id,
+      amount: amountMinor,
+      time,
+      description: "",
+      mcc: 0,
+      manual: true,
+      categoryId: "groceries",
+    });
+    const [usage, ...rest] = calcLimitUsages(
+      [
+        { id: "b1", type: "limit", categoryId: "food", limit: 500 },
+        { id: "b2", type: "limit", categoryId: "", limit: 500 },
+        { id: "b3", type: "limit", categoryId: "transport", limit: 0 },
+        {
+          id: "g1",
+          type: "goal",
+          name: "Подушка",
+          targetAmount: 1000,
+          savedAmount: 0,
+          contributions: [],
+        },
+      ],
+      // Ручна таксономія `groceries` лягає в кошик `food`; травневий запис
+      // поза вікном місячного ліміту.
+      [tx("a", -24_750, june), tx("b", -56_000, june), tx("c", -99_900, may)],
+      { now },
+    );
+
+    expect(rest).toEqual([]);
+    expect(usage).toMatchObject({
+      key: "food",
+      categoryIds: ["food"],
+      spent: 807.5,
+      limit: 500,
+      overLimit: true,
+    });
+    expect(usage?.pctRaw).toBeCloseTo(161.5, 5);
+    expect(usage?.budget.id).toBe("b1");
   });
 });
 

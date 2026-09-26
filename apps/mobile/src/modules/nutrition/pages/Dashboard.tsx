@@ -80,7 +80,7 @@ const MACRO_DEFS: readonly MacroDef[] = [
   },
   {
     key: "carbs_g",
-    label: "Вуглев.",
+    label: "Вугл",
     color: chartHex.carbs, // lime-700 #567c0f
     prefKey: "dailyTargetCarbs_g",
     unit: "г",

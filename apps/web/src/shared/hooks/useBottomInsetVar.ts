@@ -77,3 +77,12 @@ export const WORKOUT_BANNER_INSET_VAR = "--sgt-workout-banner-inset";
  * Аркуш без футера змінну не ставить — його тіло не є CTA-смугою.
  */
 export const SHEET_FOOTER_INSET_VAR = "--sgt-sheet-footer-inset";
+
+/**
+ * Плаваюча кнопка дії (`FloatingActionButton`). Публікує сама кнопка, доки
+ * видима; `page-tabbar-pad` додає різницю між нею і нижньою навігацією до
+ * відступу скрол-контейнера, щоб останній рядок контенту не лягав під FAB
+ * (критика екранів 2026-09-23: «+ Пасив», «Нд» у тижні ккал, порожній стан
+ * трендів Журналу).
+ */
+export const FAB_INSET_VAR = "--sgt-fab-inset";

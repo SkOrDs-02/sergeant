@@ -3,7 +3,8 @@
  * Status: Active
  */
 import { useMemo } from "react";
-import { pluralExercises, pluralSets } from "@sergeant/shared";
+import { pluralExercises } from "@sergeant/shared";
+import { setsCountLabel } from "../session/sessionLib";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { Card } from "@shared/components/ui/Card";
@@ -123,7 +124,7 @@ export function WorkoutsHome({
               className="h-11 px-4"
               onClick={onOpenSession}
             >
-              Відкрити →
+              Відкрити
             </Button>
           </div>
           {/* Ретро лишається доступним і під час живої сесії, хоч тепер воно
@@ -188,7 +189,7 @@ export function WorkoutsHome({
               className="text-style-caption text-fizruk-strong hover:underline active:opacity-70 rounded-xl focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
               onClick={onOpenJournal}
             >
-              Всі →
+              Всі
             </button>
           ) : null}
         </div>
@@ -336,12 +337,11 @@ export function RecentWorkoutSummary({ workout }: RecentWorkoutSummaryProps) {
   const parts: string[] = [];
   if (summary.itemCount > 0)
     parts.push(`${summary.itemCount} ${pluralExercises(summary.itemCount)}`);
-  if (summary.setCount > 0)
-    parts.push(`${summary.setCount} ${pluralSets(summary.setCount)}`);
+  if (summary.setCount > 0) parts.push(setsCountLabel(summary.setCount));
   const durMin = summary.durationSec
     ? Math.max(1, Math.round(summary.durationSec / 60))
     : null;
-  if (durMin !== null) parts.push(`${durMin} хв`);
+  if (durMin !== null) parts.push(`${durMin}\u202Fхв`);
   if (typeof workout.kcalBurned === "number" && workout.kcalBurned > 0) {
     parts.push(`${workout.kcalBurned} ккал`);
   }

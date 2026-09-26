@@ -17,7 +17,7 @@ const meta: Meta<typeof SectionHeading> = {
   },
   tags: ["autodocs"],
   args: {
-    children: "Транзакції за тиждень",
+    children: "Операції за тиждень",
     size: "xs",
   },
 };
@@ -74,7 +74,7 @@ export const WithAction: Story = {
         </button>
       }
     >
-      Останні транзакції
+      Останні операції
     </SectionHeading>
   ),
 };

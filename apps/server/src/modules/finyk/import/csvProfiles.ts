@@ -63,7 +63,6 @@ export interface ResolvedColumnMapping {
  * клітинок (XLSX): там дата й сума вже канонічні (`2026-08-16`,
  * `-1234.56`), і підказка «Privat24 друкує DD.MM.YYYY і кому» зробила б із
  * валідного рядка `unparsed_date` та зіпсувала б суму в 100 разів.
- * Див. `statementFile.ts` § `StatementSourceKind`.
  */
 export function withAutodetectedFormats(
   mapping: ResolvedColumnMapping,

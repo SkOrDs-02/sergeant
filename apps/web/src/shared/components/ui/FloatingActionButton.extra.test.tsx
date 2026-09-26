@@ -36,6 +36,19 @@ afterEach(() => {
 });
 
 describe("FloatingActionButton — single action", () => {
+  it("публікує свою нижню смугу в --sgt-fab-inset на <html>, доки видима", () => {
+    // `page-tabbar-pad` бере з цієї змінної запас під FAB, щоб останній
+    // рядок контенту не лягав під кнопку (критика екранів 2026-09-23).
+    const { unmount } = render(<FloatingActionButton onClick={() => {}} />);
+    expect(
+      document.documentElement.style.getPropertyValue("--sgt-fab-inset"),
+    ).toMatch(/^\d+px$/);
+    unmount();
+    expect(
+      document.documentElement.style.getPropertyValue("--sgt-fab-inset"),
+    ).toBe("");
+  });
+
   it("fires onClick when there are no actions", () => {
     const onClick = vi.fn();
     render(<FloatingActionButton onClick={onClick} aria-label="Додати" />);
@@ -65,6 +78,13 @@ describe("FloatingActionButton — single action", () => {
     expect(btn.className).toContain("bg-fizruk-strong");
     expect(btn.className).not.toContain("bg-gradient");
     expect(btn.className).toContain("w-16");
+  });
+
+  it("у темній темі бере акцент модуля, як solid-кнопка, а не -strong", () => {
+    render(<FloatingActionButton aria-label="R" variant="routine" />);
+    const btn = screen.getByRole("button", { name: "R" });
+    expect(btn.className).toContain("dark:bg-routine");
+    expect(btn.className).toContain("dark:text-bg");
   });
 
   it("does not advertise a popup when there are no actions", () => {

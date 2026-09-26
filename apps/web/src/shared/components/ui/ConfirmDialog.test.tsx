@@ -39,7 +39,7 @@ describe("ConfirmDialog", () => {
       <ConfirmDialog
         confirmLabel="Видалити"
         open
-        title="Видалити транзакцію?"
+        title="Видалити операцію?"
         description="Без можливості відновлення."
         onConfirm={() => {}}
         onCancel={() => {}}

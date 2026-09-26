@@ -15,7 +15,7 @@
  */
 import { useMemo } from "react";
 import { getSubscriptionAmountMeta } from "@sergeant/finyk-domain/domain/subscriptionUtils";
-import { kyivCalendarDaysBetween } from "@sergeant/shared";
+import { kyivCalendarDaysBetween, pluralDays } from "@sergeant/shared";
 import { getDaysInMonth } from "@shared/lib/time/kyivTime";
 import { calcDebtRemaining, calcReceivableRemaining } from "../../utils";
 import type { useStorage } from "../../hooks/useStorage";
@@ -41,8 +41,7 @@ const parseLocalDate = (isoDate: string | null | undefined): Date => {
 const formatDaysLeft = (days: number): string => {
   if (days === 0) return "сьогодні";
   if (days === 1) return "завтра";
-  if (days <= 3) return `через ${days} дн`;
-  return `через ${days} дн`;
+  return `через ${days} ${pluralDays(days)}`;
 };
 
 // `today` carries the Kyiv-anchored calendar parts of "now" (year, 0-based
@@ -139,7 +138,7 @@ export function useFlowSchedule({
           );
           return {
             id: `debt-${d.id}`,
-            title: d.name || "Борг",
+            title: d.name || "Пасив",
             amount: d.remaining,
             sign: "-",
             daysLeft,
@@ -166,7 +165,7 @@ export function useFlowSchedule({
           );
           return {
             id: `recv-${r.id}`,
-            title: r.name || "Дебіторка",
+            title: r.name || "Мені винні",
             amount: r.remaining,
             sign: "+",
             daysLeft,

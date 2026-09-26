@@ -1,6 +1,10 @@
 // Per-rule тести для модуля Finyk. Доводимо цінність реєстру: правило можна
 // юніт-тестити без LS-мокінгу цілого engine.
 import { describe, it, expect } from "vitest";
+import {
+  calculateLimitUsage,
+  type LimitUsageEntry,
+} from "@sergeant/finyk-domain/domain/budget";
 import { budgetLimitsRule } from "./budgetLimits.js";
 import { frequentNoBudgetRule } from "./frequentNoBudget.js";
 import { goalProgressRule } from "./goalProgress.js";
@@ -20,18 +24,38 @@ function baseCtx(overrides = {}) {
     hiddenTxIds: new Set<string>(),
     transferIds: new Set<string>(),
     thisMonthTx: [],
-    categorySpend: {},
+    limitUsage: [],
     canonicalMonthSpend: new Map(),
     canonicalTotalCount: new Map(),
     ...overrides,
   };
 }
 
+// Стан ліміту так, як його віддає `calcLimitUsages` у finyk-domain; правило
+// не рахує нічого саме, тож тест сіє готовий результат.
+function usage(
+  budget: {
+    id: string;
+    categoryId: string;
+    categoryIds?: string[];
+    label?: string;
+    limit: number;
+  },
+  spent: number,
+): LimitUsageEntry {
+  const categoryIds = budget.categoryIds ?? [budget.categoryId];
+  return {
+    ...calculateLimitUsage(budget, spent),
+    budget: { type: "limit", ...budget },
+    categoryIds,
+    key: categoryIds.join("+"),
+  };
+}
+
 describe("budgetLimitsRule", () => {
   it("генерує over при >=100% ліміту", () => {
     const ctx = baseCtx({
-      limits: [{ id: "b", type: "limit", categoryId: "food", limit: 500 }],
-      categorySpend: { food: 900 },
+      limitUsage: [usage({ id: "b", categoryId: "food", limit: 500 }, 900)],
     });
     const recs = budgetLimitsRule.evaluate(ctx);
     expect(recs[0]?.id).toBe("budget_over_food");
@@ -43,8 +67,7 @@ describe("budgetLimitsRule", () => {
 
   it("warn-стадія НЕ тягне pwaAction (review-only)", () => {
     const ctx = baseCtx({
-      limits: [{ id: "b", type: "limit", categoryId: "cafe", limit: 100 }],
-      categorySpend: { cafe: 95 },
+      limitUsage: [usage({ id: "b", categoryId: "cafe", limit: 100 }, 95)],
     });
     const recs = budgetLimitsRule.evaluate(ctx);
     expect(recs[0]?.id).toBe("budget_warn_cafe");
@@ -54,21 +77,15 @@ describe("budgetLimitsRule", () => {
 
   it("генерує warn при 90..99%", () => {
     const ctx = baseCtx({
-      limits: [{ id: "b", type: "limit", categoryId: "cafe", limit: 100 }],
-      categorySpend: { cafe: 95 },
+      limitUsage: [usage({ id: "b", categoryId: "cafe", limit: 100 }, 95)],
     });
     const recs = budgetLimitsRule.evaluate(ctx);
     expect(recs[0]?.id).toBe("budget_warn_cafe");
   });
 
-  it("використовує canonicalMonthSpend замість legacy categorySpend, коли він є", () => {
-    // Mono-транзакція з MCC цигарок без явного override → потрапляє у
-    // canonicalMonthSpend["smoking"], але не в legacy categorySpend.
-    // Інсайт повинен показувати ту саму суму, що й картка ліміту.
+  it("бере відсоток з `limitUsage`, того самого, що й картка ліміту", () => {
     const ctx = baseCtx({
-      limits: [{ id: "b", type: "limit", categoryId: "smoking", limit: 500 }],
-      categorySpend: {},
-      canonicalMonthSpend: new Map([["smoking", 590]]),
+      limitUsage: [usage({ id: "b", categoryId: "smoking", limit: 500 }, 590)],
     });
     const recs = budgetLimitsRule.evaluate(ctx);
     expect(recs[0]?.id).toBe("budget_over_smoking");
@@ -76,34 +93,41 @@ describe("budgetLimitsRule", () => {
     expect(recs[0]?.title).toContain("18%");
   });
 
-  it("мульти-категорійний ліміт: сумує spend по набору і ключує rec набором", () => {
+  it("не округлює факт до відсотка: 807,50 з 500 → перевищено на 62%", () => {
+    // Сліпий замір 2026-09-24: та сама сума, що й на картці «Перевищено на
+    // 307,50 ₴», без проміжного округлення до 808.
     const ctx = baseCtx({
-      limits: [
-        {
-          id: "b",
-          type: "limit",
-          categoryId: "food",
-          categoryIds: ["food", "restaurant"],
-          label: "Їжа",
-          limit: 1000,
-        },
+      limitUsage: [usage({ id: "b", categoryId: "food", limit: 500 }, 807.5)],
+    });
+    const rec = budgetLimitsRule.evaluate(ctx)[0];
+    expect(rec?.title).toContain("62%");
+    expect(rec?.body).toContain("808 ₴ з 500 ₴");
+  });
+
+  it("мульти-категорійний ліміт: ключує rec набором і показує власну назву", () => {
+    const ctx = baseCtx({
+      limitUsage: [
+        usage(
+          {
+            id: "b",
+            categoryId: "food",
+            categoryIds: ["food", "restaurant"],
+            label: "Їжа",
+            limit: 1000,
+          },
+          1100,
+        ),
       ],
-      canonicalMonthSpend: new Map([
-        ["food", 700],
-        ["restaurant", 400],
-      ]),
     });
     const recs = budgetLimitsRule.evaluate(ctx);
-    // 700 + 400 = 1100 > 1000 → over по всьому набору, з власною назвою.
     expect(recs[0]?.id).toBe("budget_over_food+restaurant");
     expect(recs[0]?.title).toContain('"Їжа"');
   });
 
   it("показує кастомний label у бюджетному ліміті", () => {
     const ctx = baseCtx({
-      limits: [{ id: "b", type: "limit", categoryId: "pets", limit: 100 }],
       customCategories: [{ id: "pets", label: "Песики" }],
-      canonicalMonthSpend: new Map([["pets", 95]]),
+      limitUsage: [usage({ id: "b", categoryId: "pets", limit: 100 }, 95)],
     });
 
     const rec = budgetLimitsRule.evaluate(ctx)[0];
@@ -113,8 +137,7 @@ describe("budgetLimitsRule", () => {
 
   it("додає actionHash з категорією для глибокого лінка на Планування", () => {
     const ctx = baseCtx({
-      limits: [{ id: "b", type: "limit", categoryId: "smoking", limit: 100 }],
-      canonicalMonthSpend: new Map([["smoking", 95]]),
+      limitUsage: [usage({ id: "b", categoryId: "smoking", limit: 100 }, 95)],
     });
     const rec = budgetLimitsRule.evaluate(ctx)[0];
     expect(rec?.actionHash).toBe("budgets?cat=smoking");
@@ -122,17 +145,6 @@ describe("budgetLimitsRule", () => {
 
   it("нічого не повертає при 0 лімітах", () => {
     expect(budgetLimitsRule.evaluate(baseCtx())).toEqual([]);
-  });
-
-  it("ігнорує ліміти без categoryId або <=0", () => {
-    const ctx = baseCtx({
-      limits: [
-        { id: "b1", type: "limit", categoryId: null, limit: 100 },
-        { id: "b2", type: "limit", categoryId: "food", limit: 0 },
-      ],
-      categorySpend: { food: 200 },
-    });
-    expect(budgetLimitsRule.evaluate(ctx)).toEqual([]);
   });
 });
 

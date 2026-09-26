@@ -1,4 +1,5 @@
 import { describe, expect, it, vi } from "vitest";
+import type { Pool } from "pg";
 import { UserProfileResponseSchema } from "@sergeant/shared";
 import {
   getUserProfile,
@@ -14,6 +15,41 @@ import {
 
 function mockDb(rows: unknown[] = []) {
   return { query: vi.fn().mockResolvedValue({ rows }) };
+}
+
+/**
+ * `upsertUserProfile` тепер керує власною транзакцією через `pool.connect()`
+ * (SELECT ... FOR UPDATE race-guard), тож фейкований `pool` мусить давати
+ * client з `.query`/`.release`. INSERT-гілка ЕХО-ить назад те, що реально
+ * пішло у SQL-параметрах (як справжній `RETURNING`), щоб тести перевіряли
+ * фактичний результат `resolveMemoryBankGuard`, а не заглушку.
+ */
+function mockPoolForUpsert(existingPayload?: unknown) {
+  const client = {
+    query: vi.fn((sql: string, params?: unknown[]) => {
+      if (/^(BEGIN|COMMIT|ROLLBACK)/.test(sql)) {
+        return Promise.resolve({ rows: [] });
+      }
+      if (/SELECT payload FROM user_profile/.test(sql)) {
+        return Promise.resolve({
+          rows:
+            existingPayload === undefined ? [] : [{ payload: existingPayload }],
+        });
+      }
+      if (/INSERT INTO user_profile/.test(sql)) {
+        const payload = JSON.parse((params ?? [])[1] as string);
+        return Promise.resolve({
+          rows: [{ payload, updated_at: new Date("2026-06-06T10:05:00.000Z") }],
+        });
+      }
+      throw new Error(`unexpected query: ${sql}`);
+    }),
+    release: vi.fn(),
+  };
+  const pool = {
+    connect: vi.fn().mockResolvedValue(client),
+  } as unknown as Pool;
+  return { pool, client };
 }
 
 describe("getUserProfile — contract fixture (Hard Rule #3)", () => {
@@ -54,29 +90,127 @@ describe("getUserProfile — contract fixture (Hard Rule #3)", () => {
 });
 
 describe("upsertUserProfile — contract fixture (Hard Rule #3)", () => {
-  it("upserts and returns the new payload + updatedAt", async () => {
-    const db = {
-      query: vi.fn().mockResolvedValue({
-        rows: [
-          {
-            payload: { name: "Ada" },
-            updated_at: new Date("2026-06-06T10:05:00.000Z"),
-          },
-        ],
-      }),
-    };
-    const result = await upsertUserProfile(db, "user-1", { name: "Ada" });
+  it("upserts and returns the new payload + updatedAt (no existing row)", async () => {
+    const { pool, client } = mockPoolForUpsert(undefined);
+    const result = await upsertUserProfile(pool, "user-1", { name: "Ada" });
     expect(result).toEqual({
       profile: { name: "Ada" },
       updatedAt: "2026-06-06T10:05:00.000Z",
     });
     expect(() => UserProfileResponseSchema.parse(result)).not.toThrow();
 
-    const [sql, params] = db.query.mock.calls[0]!;
-    expect(sql).toMatch(/INSERT INTO user_profile/);
+    const insertCall = client.query.mock.calls.find(([sql]) =>
+      /INSERT INTO user_profile/.test(sql as string),
+    )!;
+    const [sql, params] = insertCall;
+    const insertParams = params ?? [];
     expect(sql).toMatch(/ON CONFLICT \(user_id\) DO UPDATE/);
-    expect(params[0]).toBe("user-1");
-    expect(JSON.parse(params[1] as string)).toEqual({ name: "Ada" });
+    expect(insertParams[0]).toBe("user-1");
+    expect(JSON.parse(insertParams[1] as string)).toEqual({ name: "Ada" });
+  });
+
+  it("керує власною транзакцією: BEGIN першим, COMMIT останнім", async () => {
+    const { pool, client } = mockPoolForUpsert(undefined);
+    await upsertUserProfile(pool, "user-1", { name: "Ada" });
+    const sqls = client.query.mock.calls.map(([sql]) => sql as string);
+    expect(sqls[0]).toMatch(/^BEGIN/);
+    expect(sqls[sqls.length - 1]).toMatch(/^COMMIT/);
+    expect(client.release).toHaveBeenCalledTimes(1);
+    expect(client.release).toHaveBeenCalledWith();
+  });
+});
+
+/**
+ * L-8 памʼятковий LWW-guard (рішення власника 2026-09-23,
+ * docs/work/specs/tech-debt/backend.md). Область дії лише секція
+ * `memoryBank`; біометрія й усе інше лишаються сліпою заміною завжди.
+ */
+describe("upsertUserProfile - memoryBank LWW-guard (рішення власника 2026-09-23)", () => {
+  const STORED = {
+    heightCm: 170,
+    memoryBank: {
+      entries: [{ id: "fact-1", fact: "старий факт" }],
+      updatedAt: "2026-01-05T00:00:00.000Z",
+    },
+  };
+
+  it("застаріла вхідна memoryBank → збережена секція лишається, решта з вхідного", async () => {
+    const incoming = {
+      heightCm: 180,
+      memoryBank: {
+        entries: [{ id: "fact-2", fact: "воскреслий факт" }],
+        updatedAt: "2026-01-01T00:00:00.000Z", // старіша за STORED
+      },
+    };
+    const { pool } = mockPoolForUpsert(STORED);
+    const result = await upsertUserProfile(pool, "user-1", incoming);
+    expect(result.profile).toEqual({
+      heightCm: 180,
+      memoryBank: STORED.memoryBank,
+    });
+  });
+
+  it("новіша вхідна memoryBank → повністю замінює збережену", async () => {
+    const incoming = {
+      heightCm: 180,
+      memoryBank: {
+        entries: [{ id: "fact-2", fact: "новий факт" }],
+        updatedAt: "2026-01-10T00:00:00.000Z", // новіша за STORED
+      },
+    };
+    const { pool } = mockPoolForUpsert(STORED);
+    const result = await upsertUserProfile(pool, "user-1", incoming);
+    expect(result.profile).toEqual(incoming);
+  });
+
+  it("рівні мітки → вхідний виграє", async () => {
+    const incoming = {
+      heightCm: 180,
+      memoryBank: {
+        entries: [{ id: "fact-2", fact: "новий факт" }],
+        updatedAt: STORED.memoryBank.updatedAt,
+      },
+    };
+    const { pool } = mockPoolForUpsert(STORED);
+    const result = await upsertUserProfile(pool, "user-1", incoming);
+    expect(result.profile).toEqual(incoming);
+  });
+
+  it("у збереженого рядка немає секції memoryBank → вхідний виграє (зворотна сумісність)", async () => {
+    const incoming = {
+      heightCm: 180,
+      memoryBank: { entries: [], updatedAt: "2026-01-01T00:00:00.000Z" },
+    };
+    const { pool } = mockPoolForUpsert({ heightCm: 170 });
+    const result = await upsertUserProfile(pool, "user-1", incoming);
+    expect(result.profile).toEqual(incoming);
+  });
+
+  it("непарсна мітка часу у збереженого рядка → вхідний виграє", async () => {
+    const stored = {
+      heightCm: 170,
+      memoryBank: { entries: [], updatedAt: "not-a-date" },
+    };
+    const incoming = {
+      heightCm: 180,
+      memoryBank: {
+        entries: [{ id: "fact-2", fact: "новий факт" }],
+        updatedAt: "2026-01-01T00:00:00.000Z",
+      },
+    };
+    const { pool } = mockPoolForUpsert(stored);
+    const result = await upsertUserProfile(pool, "user-1", incoming);
+    expect(result.profile).toEqual(incoming);
+  });
+
+  it("непарсна/відсутня мітка часу у вхідного → вхідний виграє", async () => {
+    const incoming = {
+      heightCm: 180,
+      memoryBank: { entries: [{ id: "fact-2", fact: "новий факт" }] }, // без updatedAt
+    };
+    const { pool } = mockPoolForUpsert(STORED);
+    const result = await upsertUserProfile(pool, "user-1", incoming);
+    expect(result.profile).toEqual(incoming);
   });
 });
 

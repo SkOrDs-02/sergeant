@@ -586,4 +586,14 @@ describe("PricingPage (Phase 7 D3 — Free + Premium)", () => {
     expect(container.querySelector('[class*="text-hero-ink/70"]')).toBeNull();
     expect(container.querySelector('[class*="text-hero-ink/60"]')).toBeNull();
   });
+
+  it("малює Premium чорнилом хаба, а не hero-градієнтом Фініка", () => {
+    // Тарифи живуть на нейтральному хабі, а Premium відкриває всі модулі,
+    // тож teal тут читався як чужий акцент (рішення власника 2026-09-24).
+    const { container } = renderPricing();
+    expect(container.querySelector('[class*="bg-hero-grad-finyk"]')).toBeNull();
+    const premium = screen.getByText("Скоро").closest("article");
+    expect(premium?.className).toContain("bg-brand-strong");
+    expect(premium?.className).not.toContain("finyk");
+  });
 });

@@ -14,6 +14,7 @@
  */
 import { useState } from "react";
 import { silpoConnectUrl } from "@shared/api";
+import { Banner } from "@shared/components/ui/Banner";
 import { Button } from "@shared/components/ui/Button";
 import { ConfirmDialog } from "@shared/components/ui/ConfirmDialog";
 import { Icon } from "@shared/components/ui/Icon";
@@ -43,7 +44,7 @@ interface SilpoIntegrationSectionProps {
 
 const COPY = {
   title: "Сільпо (чеки)",
-  help: "Звʼяжи акаунт Сільпо, щоб покупки з чеків збагачували транзакції Monobank позиціями товарів. Дані обробляються на сервері, токен у браузер не потрапляє.",
+  help: "Звʼяжи акаунт Сільпо, щоб покупки з чеків збагачували операції Monobank позиціями товарів. Дані обробляються на сервері, токен у браузер не потрапляє.",
   // Обіцянка приватності Silpo-інтеграції — затверджена founder-ом
   // дослівно (гейт №2, спека silpo-mcp-integration.md § Відкриті гейти).
   // НЕ переписуй і не скорочуй суть, дозволене лише розбиття на абзаци.
@@ -81,7 +82,7 @@ const COPY = {
   disconnectBody:
     "Звʼязок буде розірвано: токен видаляється з сервера. Уже завантажені чеки лишаються і нікуди не діваються; щоб видалити й їх, скористайся окремою дією нижче.",
   disconnectConfirm: "Відключити",
-  reauthTitle: "Сільпо просить повторну авторизацію",
+  reauthTitle: "Сільпо просить увійти ще раз",
   reauthBody:
     "Доступ до акаунта Сільпо закінчився або був відкликаний. Підключи заново, щоб чеки продовжили оновлюватись.",
   reauthCta: "Підключити повторно",
@@ -89,7 +90,7 @@ const COPY = {
   wipeCta: "Видалити всі дані Сільпо",
   wipeTitle: "Видалити всі дані Сільпо?",
   wipeBody:
-    "Видалю всі завантажені чеки, позиції товарів і їх звʼязки з транзакціями Monobank. Підтверджені спліти категорій і записи комори, створені на основі покупок, НЕ видаляються: це вже твої дані, а не дані Сільпо.",
+    "Видалю всі завантажені чеки, позиції товарів і їх звʼязки з операціями Monobank. Підтверджені розбиття категорій і записи комори, створені на основі покупок, НЕ видаляються: це вже твої дані, а не дані Сільпо.",
   wipeConfirm: "Видалити назавжди",
 } as const;
 
@@ -143,7 +144,7 @@ export function SilpoIntegrationSection({
     try {
       const result = await syncMutation.mutateAsync();
       toast.success(
-        `Знайдено ${result.receiptsInserted} нових чеків, зіставлено ${result.matched} із транзакціями.`,
+        `Знайдено ${result.receiptsInserted} нових чеків, зіставлено ${result.matched} із операціями.`,
       );
     } catch (error) {
       toast.error(
@@ -317,9 +318,10 @@ export function SilpoIntegrationSection({
           </div>
         ) : status === "reauth_required" ? (
           <div className="space-y-3">
-            <div
-              className="flex items-start gap-3 p-3 rounded-xl border border-warning/40 bg-warning/10"
+            <Banner
+              variant="warning"
               role="alert"
+              className="flex items-start gap-3"
             >
               <span
                 className="w-2.5 h-2.5 mt-1.5 rounded-full shrink-0 bg-warning"
@@ -331,7 +333,7 @@ export function SilpoIntegrationSection({
                   {COPY.reauthBody}
                 </p>
               </div>
-            </div>
+            </Banner>
             <Button
               variant="outline"
               className="w-full h-11"

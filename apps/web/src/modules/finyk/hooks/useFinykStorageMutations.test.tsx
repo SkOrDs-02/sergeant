@@ -473,6 +473,19 @@ describe("addSubscriptionFromRecurring", () => {
     expect(state["dismissedRecurring"]).toEqual(["spotify"]);
     expect(notifyFinykRoutineCalendarSync).toHaveBeenCalled();
   });
+
+  // Р20: сума з історії одразу, у мінорних одиницях.
+  it("stores the average charge as expectedAmount in minor units", () => {
+    const { slots } = makeSlots();
+    const { result } = renderMutations(slots);
+    const sub = result.current.addSubscriptionFromRecurring({
+      key: "netflix",
+      displayName: "Netflix",
+      avgAmount: 199,
+      billingDay: 12,
+    } as never);
+    expect(sub).toMatchObject({ expectedAmount: 19_900, billingDay: 12 });
+  });
 });
 
 describe("updateSubscription", () => {

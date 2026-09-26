@@ -15,12 +15,12 @@ describe("PageSkeleton", () => {
     const { getByTestId } = render(
       <PageSkeleton
         testID="transactions-loading"
-        accessibilityLabel="Завантаження транзакцій"
+        accessibilityLabel="Завантаження операцій"
       />,
     );
 
     expect(getByTestId("transactions-loading").props.accessibilityLabel).toBe(
-      "Завантаження транзакцій",
+      "Завантаження операцій",
     );
   });
 });

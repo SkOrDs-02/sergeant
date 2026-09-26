@@ -121,7 +121,7 @@
 
 - **OK** — `validate.ts`, `errorHandler.ts`, `jsonSafe.ts`, barrel `index.ts`. (`asyncHandler.ts` видалено в PR #134.)
 - **`schemas.ts` — OK (post-PR A):** `RefinePhotoSchema` та nutrition/sync/mono/privat схеми **використовуються** у відповідних handler-ах (`validateBody` / `validateQuery`); попередній аудит про розсинхрон — закритий.
-- **`rateLimit.ts` — середній:** in-memory fixed-window ×N при multi-instance (Redis — на майбутнє). `TODO(M9)` ASN-keying — dep-blocked.
+- **`rateLimit.ts`: OK (звірено 2026-09-23).** Лічильники вже в Redis (`getRedis`, `INCRBY`/`EXPIRE` у Lua) з деградацією на Postgres, плюс `ipLimit` і друге, `sustained`-вікно. Запис «in-memory ×N при multi-instance» застарів. Лишається `TODO(M9)` ASN-keying, dep-blocked.
 
 ### `obs/` + `lib/`
 
@@ -148,7 +148,7 @@
 
 ### `modules/chat/coach.ts` + `coach.test.ts`
 
-- **Середній** — `parseMemory` fallback на `raw` без warn; немає тестів на **`coachInsight`** / route-level AI.
+- **Середній** — немає тестів на **`coachInsight`** / route-level AI. (Частина про `parseMemory` без warn застаріла: `getMemory` пише `coach_memory_parse_fallback`, звірено 2026-09-23.)
 - **OK** — `validateBody` для memory POST.
 
 ### `modules/sync/sync.ts` + `sync.test.ts`
@@ -175,7 +175,7 @@
 
 ### `modules/nutrition/food-search.ts` + `food-search.test.ts`
 
-- **Високий / середній** — великий `UK_TO_EN` inline + дубль нормалізації з barcode; часткове покриття **`food-search.test.ts`**.
+- **Середній** — часткове покриття **`food-search.test.ts`**. (Вбудованої таблиці `UK_TO_EN` і дубля нормалізації з barcode вже немає: `food-search.ts` бере спільні `lib/normalizers`, звірено 2026-09-23.)
 
 ### `modules/digest/weekly-digest.ts`
 
@@ -328,9 +328,15 @@ Webhook-based server-side integration added in PR2. Key components:
 
 ## Database & migrations review
 
-### Курсор pull покладається на порядок BIGSERIAL, а той не збігається з порядком коміту
+### ~~Курсор pull покладається на порядок BIGSERIAL, а той не збігається з порядком коміту~~ — закрито 2026-09-23 (міграція 147, вотермарк транзакцій)
 
 **Заведено 2026-09-16** під час аудиту серверного шару. Це єдина знахідка того аудиту, яку свідомо **не** виправлено патчем: діагноз твердий, а лікування зачіпає контракт синку, тож рішення за власником.
+
+**Закрито 2026-09-23, рішення власника: вотермарк по снапшоту.** Міграція `147_sync_op_log_tx_watermark.sql` додає `sync_op_log.tx_id xid8 DEFAULT pg_current_xact_id()` (nullable, дефолт окремим стейтментом, тож без переписування таблиці; старі рядки NULL і вважаються видимими). Обидва читачі курсором, `syncV2Pull` і replay `syncV2Stream`, несуть спільний предикат `SYNC_OP_LOG_COMMITTED_WATERMARK_SQL` з `syncV2-core.ts`: віддаються лише рядки з `tx_id < pg_snapshot_xmin(pg_current_snapshot())`. Поки довга транзакція відкрита, pull не віддає ні її оп-и, ні новіші за неї, тож курсор через неї не перескакує. `xid8` 64-бітний, отже проблема wraparound із варіанту «по `xmin` рядка» знята.
+
+Ціна, свідомо прийнята: свіжі оп-и **затримуються**, поки в кластері відкрита старіша транзакція запису. Зазвичай це мілісекунди, на час великого імпорту виписки секунди. Завислу транзакцію обриває `idle_in_transaction_session_timeout` з `db.ts`. Оп-и запізнюються, але не губляться. Read-only транзакції (зокрема `pg_dump`) xid не мають і вотермарк не тримають.
+
+Докази: інтеграційний тест `syncV2.integration.test.ts` § «вотермарк транзакцій» відтворює саме сценарій імпорт + push з телефона з клієнтом, що рухає курсор, і вимагає отримати обидва оп-и; юніт-тести обох хендлерів перевіряють, що предикат є в SQL. Живий канал `syncV2Stream` вотермарк НЕ покриває, і це свідомо: `notifySyncV2OpsApplied` кличеться після COMMIT push-а і шле кадри в порядку коміту з `op.id` як SSE event id, а серверні оп-и (імпорт виписки) у живий канал не потрапляють узагалі. Споживача в клієнтів поки немає (Фаза 3, `sync-client-wiring.md`). Коли він з'явиться, живий кадр мусить бути сигналом «зроби pull», а не просуванням курсора через `Last-Event-ID`, інакше повернеться цей самий баг.
 
 **Що не так.** `syncV2Pull` (`apps/server/src/modules/sync/syncV2.ts`) віддає `WHERE user_id = $1 AND id > $2 … ORDER BY id ASC`, а клієнт пише курсором максимальний побачений `id` (`apps/web/src/core/syncEngine/syncEngineReader.ts`). `id` — `BIGSERIAL`: номер видається на `INSERT`, а видимість настає на `COMMIT`, і порядок цих двох подій між паралельними транзакціями не збігається. Тобто рядок із **меншим** `id`, що закомітився **пізніше** за вже віддану сторінку, під `id > since` не потрапить ніколи.
 
@@ -346,21 +352,74 @@ Webhook-based server-side integration added in PR2. Key components:
 
 **Ознаки в проді, якщо вже трапилось:** запис є на пристрої-джерелі й на сервері, але відсутній на решті пристроїв, причому наступні правки того ж рядка теж не доїжджають. Це ЗБІГАЄТЬСЯ за симптомом із двома вже закритими дефектами клієнта (tombstone-guard і `rejected`-курсор), тож перед тим як лікувати цей пункт — переконайся, що йдеться саме про нього.
 
-### `user_profile.payload` не має серверного правила «чий запис новіший»
+### ~~`user_profile.payload` не має серверного правила «чий запис новіший»~~ - закрито 2026-09-23 (memoryBank)
 
-**Заведено 2026-08-09** під час ревʼю PR [#762](https://github.com/SkOrDs-02/sergeant/pull/762) (L-8 фаза 2). Знахідку підняв CodeRabbit, свою ж пропозицію відкликав після розбору — запис збережено саме тому, що правильний діагноз там прозвучав, а простий фікс до нього не підходить.
+**Закрито 2026-09-23 (рішення власника, лише секція `memoryBank`).**
+`upsertUserProfile` (`apps/server/src/modules/me/profile.ts`) тепер несе
+вузький LWW-guard: коли ОБИДВІ мітки `memoryBank.updatedAt` (збережена і
+вхідна) парсяться у валідну дату і вхідна старіша, сервер лишає збережену
+секцію `memoryBank`, а решту payload-а (біометрію, усе інше) бере з
+вхідного. У будь-якому іншому випадку (відсутня секція/мітка, непарсна
+мітка, рівні мітки, вхідна новіша) поведінка та сама, що й раніше: вхідне
+тіло повністю замінює збережене. **Біометрія й усі інші секції лишаються
+сліпою заміною навмисно**: по-секційний timestamp узгоджений як межа
+рішення, спільний для всього payload-а timestamp був би невірним, щойно
+біометрія й банк памʼяті редагуються на різних пристроях у різний час.
 
-**Що не так.** `upsertUserProfile` (`apps/server/src/modules/me/profile.ts`) робить сліпу заміну всього JSONB-payload-а. Клієнт шле **повний** знімок профілю після кожного локального редагування (`pushCombinedProfile` у `apps/web/src/core/profile/profileWriteThrough.ts`), тож пристрій, який давно не синхронізувався, може перезаписати свіже видалення факту з банку памʼяті — і `removeMemoryBankEntry`, і його бамп `memoryBank.updatedAt` цьому не завадять, бо сервер мітки часу **не порівнює**.
+Race-safety: транзакція з `SELECT ... FOR UPDATE` на pooled client (той
+самий ідіом, що `listRoute.ts::deleteMemoryHandler`), а не один атомарний
+`INSERT ... ON CONFLICT DO UPDATE SET payload = CASE ...`. Причина -
+порівняння міток лишається в JS (`Date.parse`, ніколи не кидає), а не в
+SQL-каст `::timestamptz`, який на спотвореному збереженому рядку впав би
+помилкою просто на звичайному записі профілю.
 
-**Чому не лікується блокуванням.** `SELECT … FOR UPDATE` на upsert-і серіалізує два записи, але пізніший усе одно робить сліпу заміну — застарілий знімок переможе просто в детермінованому порядку. Проблема не в гонці, а у **відсутності політики розвʼязання конфлікту**.
+Той самий PR полагодив і другу половину бага: `routes/me.ts` дзеркалив у
+`ai_memories` (`mirrorProfileMemoryEntries`) ТІЛО ЗАПИТУ, а не те, що
+`upsertUserProfile` фактично зберіг, тож застарілий пристрій, чий пуш
+guard відхиляв на рівні `user_profile`, усе одно воскрешав би видалений
+факт у `ai_memories`. Тепер дзеркалиться збережений (можливо, мерджений)
+payload.
 
-**Що потрібно насправді — і чому це рішення власника.** Серверний LWW або merge: порівнювати вхідний `memoryBank.updatedAt` зі збереженим і відхиляти/зливати старіший. Три причини, чому це не дрібна правка:
+**Відома межа (задокументована, не полагоджена, прийнято 2026-09-23).**
+`memoryBank.updatedAt` виставляє КЛІЄНТ на кожній локальній правці (єдиний
+виняток - серверний бамп у `removeMemoryBankEntry`), тож пристрій із
+суттєво відсталим годинником усе ще може програти свою СПРАВДІ новішу
+правку банку. Сценарій вузький (два пристрої редагують банк у вікні
+рішення guard-а, один із поламаним годинником), і невірний годинник -
+проблема, що існувала й до цієї зміни; guard лиш зупиняє ширший, тихий
+баг «будь-який запізнілий пуш перемагає».
+
+`PUT /api/me/profile` і далі повертає збережений payload у відповіді, але
+веб-клієнт (`pushCombinedProfile` у
+`apps/web/src/core/profile/profileWriteThrough.ts`) результат PUT не
+застосовує: застарілий пристрій просто мовчки пушить далі, доки не
+дійде до наступного `GET`-reconcile (`reconcileMemoryBankWithServerProfile`
+на боуті). Це прийнятно: пуш більше не воскрешає факт на СЕРВЕРІ, а
+локальний неузгоджений стан на самому застарілому пристрої й так був
+присутній до наступного reconcile.
+
+API-форма не змінилась (та сама `UserProfileResponse`), тож змін у
+`api-client`/контракті нема.
+
+<details><summary>Історичний запис (заведено 2026-08-09)</summary>
+
+**Заведено 2026-08-09** під час ревʼю PR [#762](https://github.com/SkOrDs-02/sergeant/pull/762) (L-8 фаза 2). Знахідку підняв CodeRabbit, свою ж пропозицію відкликав після розбору - запис збережено саме тому, що правильний діагноз там прозвучав, а простий фікс до нього не підходить.
+
+**Що не так.** `upsertUserProfile` (`apps/server/src/modules/me/profile.ts`) робить сліпу заміну всього JSONB-payload-а. Клієнт шле **повний** знімок профілю після кожного локального редагування (`pushCombinedProfile` у `apps/web/src/core/profile/profileWriteThrough.ts`), тож пристрій, який давно не синхронізувався, може перезаписати свіже видалення факту з банку памʼяті - і `removeMemoryBankEntry`, і його бамп `memoryBank.updatedAt` цьому не завадять, бо сервер мітки часу **не порівнює**.
+
+**Чому не лікується блокуванням.** `SELECT ... FOR UPDATE` на upsert-і серіалізує два записи, але пізніший усе одно робить сліпу заміну - застарілий знімок переможе просто в детермінованому порядку. Проблема не в гонці, а у **відсутності політики розвʼязання конфлікту**.
+
+**Що потрібно насправді і чому це рішення власника.** Серверний LWW або merge: порівнювати вхідний `memoryBank.updatedAt` зі збереженим і відхиляти/зливати старіший. Три причини, чому це не дрібна правка:
 
 - Докстрінг модуля прямо оголошує його **свідомо НЕ oplog-sync**: «no LWW-guard, no `sync_op_log` involvement». Додати LWW = змінити задекларований контракт.
-- `payload` накриває не лише `memoryBank`, а й біометрію — один спільний timestamp не годиться, потрібен по-секційний.
+- `payload` накриває не лише `memoryBank`, а й біометрію - один спільний timestamp не годиться, потрібен по-секційний.
 - Потрібне правило для перекосів годинників між пристроями (мітку ставить клієнт).
 
 **Ціна відкладання.** Сценарій вузький (видалення факту паралельно з пушем зі старого пристрою), але наслідок тихий: факт «воскресає» в UI і в RAG, а жоден лог цього не показує.
+
+</details>
+
+</details>
 
 ### Міграції (`apps/server/src/migrations/`)
 
@@ -691,8 +750,8 @@ two-phase DROP цього класу змін не покриває.
 
 ### Gaps → PR E
 
-- **Високий** — метрики відсутні на nutrition-handler-ах (лише загальна RED через Express-middleware; немає per-endpoint ms-histogram для AI-викликів з breakdown по endpoint/model/tokens).
-- **Середній** — немає `app_build_info` gauge (version/commit/release) — корисно для readiness-dashboard.
+- ~~**Високий** — метрики відсутні на nutrition-handler-ах~~ ✅ звірено 2026-09-23: AI-гістограми мають мітку `endpoint` (`obs/metrics/domain.ts`), і nutrition-хендлери її передають (`day-plan`, `analyze-photo`, `parse-pantry`, `recommend-recipes`, `refine-photo`).
+- ~~**Середній** — немає `app_build_info` gauge~~ ✅ звірено 2026-09-23: gauge є в `obs/metrics/registry.ts` (див. і пункт про `GIT_SHA` нижче).
 - **Середній** — per-route error-rate не має окремого шардингу на `route_pattern` (зараз `module` label — достатньо для топ-рівня).
 - **Низький** — ✅ закрито 2026-09-02: Sentry release / `app_build_info` беруть `GIT_SHA`, запечений у образ build-arg-ом із `deploy-api.yml`; `RAILWAY_GIT_COMMIT_SHA` знято з усіх каскадів (ADR-0074).
 
@@ -946,18 +1005,15 @@ curl -X POST https://<server>/api/v1/push/test \
 env-набір не підхопився; переглянь Coolify logs на `apns_disabled_log` /
 `fcm_init_failed` на boot-і.
 
-### Legacy web-push HTTP (`/api/push/subscribe`) — прибрати після метрик
+### ~~Legacy web-push HTTP (`/api/push/subscribe`)~~ — закрито 2026-09-23
 
-Поки `POST`/`DELETE /api/push/subscribe` лишаються proxy для старих вкладок
-(див. `apps/server/src/modules/push/push.ts`, лог `push_deprecation`). **Після того,
-як у логах не буде викликів за розумне вікно:**
-
-1. Видалити legacy-роути та handlers (`apps/server/src/routes/push.ts`,
-   `apps/server/src/modules/push/push.ts`).
-2. Прибрати `subscribe` / `unsubscribe` з
-   `packages/api-client/src/endpoints/push.ts` та оновити
-   `apps/web/src/shared/hooks/usePushNotifications.test.tsx`.
-3. Перевірити README / `docs/engineering/architecture/api-v1.md` на згадки legacy-шляху.
+Роут і handler видалені без очікування нульової метрики: власник вирішив
+не чекати, бо лог `push_deprecation` ішов лише в pino і ніколи не
+доїжджав до Sentry, тобто умову «у логах не буде викликів за розумне
+вікно» неможливо було виміряти. Веб-клієнт до цього шляху вже не ходив.
+Старі PWA-вкладки, що досі тримають цей код у service worker, тепер
+отримають 404 і перереєструються через `/api/v1/push/register` при
+наступному завантаженні сторінки.
 
 ### Rotation
 

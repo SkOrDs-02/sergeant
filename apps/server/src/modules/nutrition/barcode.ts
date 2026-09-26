@@ -414,7 +414,9 @@ export default async function handler(
     "",
   );
   if (!/^\d{8,14}$/.test(barcode)) {
-    res.status(400).json({ error: "Невірний штрихкод (8–14 цифр)" });
+    res
+      .status(400)
+      .json({ error: "Неправильний штрихкод: потрібно 8–14 цифр." });
     return;
   }
 

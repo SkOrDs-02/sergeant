@@ -5,6 +5,7 @@
 import { useState } from "react";
 import { useQuery, useQueryClient } from "@tanstack/react-query";
 import { isApiError, monoWebhookApi, type MonoSyncState } from "@shared/api";
+import { Banner } from "@shared/components/ui/Banner";
 import { Button } from "@shared/components/ui/Button";
 import { Icon } from "@shared/components/ui/Icon";
 import { finykKeys, hubKeys } from "@shared/lib/api/queryKeys";
@@ -33,7 +34,7 @@ const COPY = {
   clearCacheTitle: "Очистити кеш?",
   disconnectTitle: "Вийти з Monobank?",
   clearCacheBody:
-    "Буде видалено збережені транзакції в кеші. Потім дані підтягнуться з Monobank знову.",
+    "Буде видалено збережені операції в кеші. Потім дані підтягнуться з Monobank знову.",
   disconnectBody:
     "Webhook-зʼєднання буде відʼєднано. Щоб відновити, введи токен заново.",
   clear: "Очистити",
@@ -48,7 +49,7 @@ const COPY = {
     "Дані Monobank приходять автоматично через webhook та оновлюються при поверненні у вкладку. Якщо потрібно примусово перепитати сервер, натисни «Оновити дані». Якщо список операцій виглядає некоректно, очисти кеш і синхронізуй знову.",
   refreshing: "Оновлення…",
   refresh: "Оновити дані",
-  clearTransactions: "Очистити кеш транзакцій",
+  clearTransactions: "Очистити кеш операцій",
   // L-15: `GET /api/mono/sync-state` може впасти через мережу/5xx —
   // окремо від чесного "ще не підключено". Раніше обидва стани малювали
   // однакову форму вводу токена, тож юзер із живим підключенням бачив
@@ -65,7 +66,7 @@ const COPY = {
   // відкликала токен у Monobank, і це нормальна дія, а не поломка.
   reconnectTitle: "Monobank втратив звʼязок",
   reconnectBody:
-    "Monobank більше не приймає збережений токен, найчастіше так буває, якщо його відкликали в застосунку банку. Транзакції не оновлюються. Встав новий токен, щоб відновити: Mono → Налаштування → Інші → API.",
+    "Monobank більше не приймає збережений токен, найчастіше так буває, якщо його відкликали в застосунку банку. Операції не оновлюються. Встав новий токен, щоб відновити: Mono → Налаштування → Інші → API.",
   reconnect: "Підключити новий токен",
 } as const;
 
@@ -320,9 +321,10 @@ export function FinykWebhookServiceSection({
           </div>
         ) : webhookNeedsReconnect ? (
           <div className="space-y-3">
-            <div
-              className="flex items-start gap-3 p-3 rounded-xl border border-warning/40 bg-warning/10"
+            <Banner
+              variant="warning"
               role="alert"
+              className="flex items-start gap-3"
             >
               <span
                 className="w-2.5 h-2.5 mt-1.5 rounded-full shrink-0 bg-warning"
@@ -334,7 +336,7 @@ export function FinykWebhookServiceSection({
                   {COPY.reconnectBody}
                 </p>
               </div>
-            </div>
+            </Banner>
             <MonoTokenInlineForm
               value={webhookTokenInput}
               onChange={setWebhookTokenInput}

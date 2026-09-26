@@ -117,7 +117,7 @@ export const messages = {
     hubSections: "Розділи хабу",
     dashboard: "Головна",
     profile: "Профіль",
-    chat: "Чат з асистентом",
+    chat: "Чат із Сержантом",
     nutritionOverview: "Огляд",
     // Окремий ключ для фініка: Overview фініка позичав nutritionOverview —
     // семантичний copy-paste, який маскував модуль для скрінрідера
@@ -146,7 +146,7 @@ export const messages = {
     fizrukSections: "Розділи Фізрука",
     routineSections: "Розділи Рутини",
     nutritionSections: "Розділи Їжі",
-    openAssistant: "Відкрити AI-асистента",
+    openAssistant: "Відкрити Сержанта",
     globalSearch: "Глобальний пошук",
     searchPlaceholder: "Пошук по всіх модулях…",
     moduleSwitcher: "Перемикач модулів",
@@ -166,7 +166,7 @@ export const messages = {
     // Цей каталог покриває inline-tier порожніх станів поза <EmptyState>.
     nothingYet: "Поки що порожньо",
     noDataYet: "Ще немає даних",
-    nothingFound: "Нічого не знайдено",
+    nothingFound: "Нічого не знайшов",
     listEmpty: "Список порожній",
     historyEmpty: "Історія порожня",
   },
@@ -302,7 +302,7 @@ export const messages = {
     connecting: "Підключаюсь…",
     // Module-/surface-specific варіації (поки що використовуються лише
     // в одному місці кожна, але живуть тут заради unified voice).
-    loadingTransactions: "Завантажую транзакції…",
+    loadingTransactions: "Завантажую операції…",
     loadingWorkouts: "Завантажую тренування",
   },
 
@@ -342,7 +342,7 @@ export const messages = {
       emptyTitle: "Поки немає силових PR",
       emptyFilteredTitle: "Немає PR для цієї групи мʼязів",
       emptyDescription:
-        "Заверши сети з вагою, рекорди зʼявляться тут автоматично.",
+        "Заверши підходи з вагою, рекорди зʼявляться тут автоматично.",
       emptyFilteredDescription: "Спробуй іншу групу або скинь фільтр.",
       /** Канон §6: борд бачить не лише рух угору. */
       staleBadge: "давно не робив",
@@ -441,7 +441,7 @@ export const messages = {
       // над карткою, і дослівний повтор читався як збій рендеру.
       title: "Тут поки порожньо",
       description:
-        "Тут зʼявляться продукти, які є вдома, і Sergeant рахуватиме страви та список покупок з того, що вже маєш.",
+        "Тут зʼявляться продукти, які є вдома, і Сержант рахуватиме страви та список покупок з того, що вже маєш.",
       hint: "Додай перший продукт полем вище або надиктуй одразу весь список.",
     },
     // Частка photoAI-оцінок у денному агрегаті (аудит nutrition E-5) —
@@ -817,9 +817,9 @@ export const messages = {
     aiChatTitle: "Безлімітний AI-чат у Premium",
     /** `{limit}` — денна квота Free-тарифу, коли сервер її назвав. */
     aiChatDescription:
-      "Free-тариф має {limit} запитів до AI на день, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.",
+      "План Free має {limit} запитів до AI на день, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.",
     aiChatDescriptionUnknownLimit:
-      "Free-тариф має денний ліміт запитів до AI, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.",
+      "План Free має денний ліміт запитів до AI, кожен хід рахується один раз. Premium відкриває безлімітний чат, авто-Mono sync і CloudSync.",
   },
 
   // Phase 7 D2 — paywall feature gates. Per-feature copy used by the
@@ -831,7 +831,7 @@ export const messages = {
       name: "AI-аналіз фото їжі",
       title: "AI-аналіз фото – у Premium",
       description:
-        "ШІ визначить КБЖВ та порцію за фото страви. Доступно у Premium підписці.",
+        "AI визначить КБЖВ та порцію за фото страви. Доступно в плані Premium.",
     },
     "analytics-export-pdf": {
       name: "Експорт PDF",

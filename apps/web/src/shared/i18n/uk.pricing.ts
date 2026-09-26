@@ -10,9 +10,9 @@
  * тож переїзд механічний.
  */
 export const pricingMessages = {
-  pageTitle: "Тарифи",
+  pageTitle: "Плани",
   backLabel: "Назад",
-  plansAriaLabel: "Тарифні плани",
+  plansAriaLabel: "Плани",
   hero: {
     headlineLine1: "Sergeant безкоштовний для базового користування.",
     headlineLine2: "Premium, коли треба все одразу.",
@@ -92,7 +92,7 @@ export const pricingMessages = {
       "Не вдалося відкрити керування підпискою. Перевір звʼязок і спробуй ще раз.",
   },
   toast: {
-    subscriptionActive: "Підписку активовано, ласкаво просимо в Premium!",
+    subscriptionActive: "Підписку активовано, Premium уже діє.",
     subscriptionActiveCta: "Перейти у налаштування",
     paymentCanceled: "Оплату скасовано. Підписка не оформлена.",
   },

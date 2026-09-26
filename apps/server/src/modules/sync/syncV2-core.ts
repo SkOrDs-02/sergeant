@@ -24,6 +24,23 @@ export const SYNC_V2_MODULE = "v2";
 export type SyncV2OpKind = "v2_push" | "v2_pull";
 
 /**
+ * AI-DANGER: кожен читач `sync_op_log` курсором по `id` мусить нести цей
+ * предикат дослівно (зараз `syncV2Pull` і replay `syncV2Stream`). У SQL він
+ * вписаний текстом, а не через `${…}`: правило M11 (`no-restricted-syntax`)
+ * забороняє шаблонні `pool.query`. Цю константу юніт-тести обох хендлерів
+ * звіряють із текстом запиту, тож копії не розійдуться непомітно.
+ *
+ * `id` — BIGSERIAL, видається на INSERT, а видимим рядок стає на COMMIT.
+ * Без предиката коротка транзакція з більшим `id`, закомічена раніше за
+ * довгу (імпорт виписки), просуває курсор клієнта, і оп-и довгої після
+ * свого COMMIT під `id > курсор` вже не потрапляють ніколи. Предикат не
+ * віддає рядки, новіші за найстарішу активну транзакцію, тож курсор через
+ * неї не перескакує. NULL — рядки до міграції 147, давно закомічені.
+ */
+export const SYNC_OP_LOG_COMMITTED_WATERMARK_SQL =
+  "(tx_id IS NULL OR tx_id < pg_snapshot_xmin(pg_current_snapshot()))";
+
+/**
  * Maximum allowed |delta| in a single `op='increment'` payload. PN-counter
  * primitive is built for ±1 toggles (one habit-completion per emit), so
  * a hard cap at 1000 keeps a malformed/malicious client from corrupting

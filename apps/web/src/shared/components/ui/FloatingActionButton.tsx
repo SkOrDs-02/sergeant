@@ -12,6 +12,10 @@ import { hapticTap } from "../../lib/adapters/haptic";
 import { useDialogFocusTrap } from "@shared/hooks/useDialogFocusTrap";
 import { useOutsideClick } from "@shared/hooks/useOutsideClick";
 import { useBodyScrollLock } from "@shared/hooks/useBodyScrollLock";
+import {
+  FAB_INSET_VAR,
+  useBottomInsetVar,
+} from "@shared/hooks/useBottomInsetVar";
 import { useVisualKeyboardInset } from "@sergeant/shared";
 
 /**
@@ -73,21 +77,30 @@ export interface FABAction {
   color?: string;
 }
 
+// Темна тема: заливка як у модульної solid-кнопки (`Button.tsx`,
+// luminescent tier-400 + ink-текст), інакше FAB лишався на -strong світлої
+// теми й стояв поруч зі світлими CTA модуля другим, темнішим акцентом.
 const variantStyles: Record<FABVariant, string> = {
-  default: "bg-brand-strong text-white shadow-brand/30 hover:brightness-110",
-  finyk: "bg-finyk-strong text-white shadow-finyk/30 hover:brightness-110",
-  fizruk: "bg-fizruk-strong text-white shadow-fizruk/30 hover:brightness-110",
+  default:
+    "bg-brand-strong text-white shadow-brand/30 hover:brightness-110 dark:bg-brand-100 dark:text-brand-900",
+  finyk:
+    "bg-finyk-strong text-white shadow-finyk/30 hover:brightness-110 dark:bg-finyk dark:text-bg",
+  fizruk:
+    "bg-fizruk-strong text-white shadow-fizruk/30 hover:brightness-110 dark:bg-fizruk dark:text-bg",
   routine:
-    "bg-routine-strong text-white shadow-routine/30 hover:brightness-110",
+    "bg-routine-strong text-white shadow-routine/30 hover:brightness-110 dark:bg-routine dark:text-bg",
   nutrition:
-    "bg-nutrition-strong text-white shadow-nutrition/30 hover:brightness-110",
+    "bg-nutrition-strong text-white shadow-nutrition/30 hover:brightness-110 dark:bg-nutrition dark:text-bg",
   // v2 — плоский -strong + elevation e3 (без градієнта і свічення, див.
   // коментар у `FABVariant`). Hover підіймає яскравість, hue не змінює.
-  "v2-finyk": "bg-finyk-strong text-white shadow-e3 hover:brightness-110",
-  "v2-fizruk": "bg-fizruk-strong text-white shadow-e3 hover:brightness-110",
-  "v2-routine": "bg-routine-strong text-white shadow-e3 hover:brightness-110",
+  "v2-finyk":
+    "bg-finyk-strong text-white shadow-e3 hover:brightness-110 dark:bg-finyk dark:text-bg",
+  "v2-fizruk":
+    "bg-fizruk-strong text-white shadow-e3 hover:brightness-110 dark:bg-fizruk dark:text-bg",
+  "v2-routine":
+    "bg-routine-strong text-white shadow-e3 hover:brightness-110 dark:bg-routine dark:text-bg",
   "v2-nutrition":
-    "bg-nutrition-strong text-white shadow-e3 hover:brightness-110",
+    "bg-nutrition-strong text-white shadow-e3 hover:brightness-110 dark:bg-nutrition dark:text-bg",
 };
 
 const sizeStyles: Record<FABSize, { button: string; icon: number }> = {
@@ -140,6 +153,10 @@ export const FloatingActionButton = memo(function FloatingActionButton({
   // menuRef is the expanded action list; focus trap lives here so Tab
   // cycles through action items only, and Escape closes the popover.
   const menuRef = useRef<HTMLDivElement>(null);
+  // Сама кнопка, не обгортка: розкритий список дій росте вгору і не має
+  // розсувати контент під собою.
+  const buttonRef = useRef<HTMLButtonElement>(null);
+  useBottomInsetVar(buttonRef, FAB_INSET_VAR, !hidden);
 
   const hasActions = actions && actions.length > 0;
 
@@ -225,6 +242,7 @@ export const FloatingActionButton = memo(function FloatingActionButton({
     >
       {/* Main FAB button */}
       <button
+        ref={buttonRef}
         type="button"
         onClick={handleClick}
         onContextMenu={(event) => event.preventDefault()}

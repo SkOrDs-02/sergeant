@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-05-14
+ * Last validated: 2026-09-24
  * Status: Active
  */
 import {
@@ -26,10 +26,18 @@ import { useAnalytics } from "../hooks/useAnalytics";
 import { CategoryPieChart } from "../components/charts/lazy";
 import { ChartFallback } from "../components/charts/ChartFallback";
 import { MerchantList } from "../components/analytics/MerchantList";
+import { MonthlyTrendBars } from "../components/analytics/MonthlyTrendBars";
+import { CategoryDeltaTable } from "../components/analytics/CategoryDeltaTable";
+import { useMonthlyTrend } from "../hooks/useMonthlyTrend";
 import { getTrendComparison } from "@sergeant/finyk-domain/domain/selectors";
+import {
+  getCategoryDeltas,
+  getSavingsRate,
+} from "@sergeant/finyk-domain/domain/trends";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type { ManualExpense } from "@sergeant/finyk-domain/domain/personalization";
 import type {
+  Category,
   Transaction,
   TxSplitsMap,
 } from "@sergeant/finyk-domain/domain/types";
@@ -39,6 +47,7 @@ import {
 } from "../../../core/observability/analytics";
 import { markFinykAnalyticsViewed } from "../../../core/onboarding/useChecklistSignals";
 import { formatMonthYear } from "@shared/lib/time/formatDate";
+import { NARROW_NBSP } from "@sergeant/shared";
 
 interface SectionProps {
   title: string;
@@ -55,7 +64,10 @@ interface MonthNavProps {
 interface ComparisonRowProps {
   label: string;
   current: number;
-  prev: number;
+  /** Абсолютна дельта в гривнях, з домену. */
+  diff: number;
+  /** Відсоток з точних сум або `null`, коли попередній місяць не база (Р4). */
+  pct: number | null;
   kind?: "expense" | "income";
   showBalance?: boolean;
 }
@@ -70,6 +82,10 @@ export interface AnalyticsProps {
     excludedTxIds: Set<string> | Iterable<string>;
     txSplits: TxSplitsMap;
     manualExpenses?: ManualExpense[];
+    txCategories?: Record<string, string | undefined>;
+    customCategories?: Category[];
+    /** Фінплан: план накопичень ставиться поруч із фактом (Р15). */
+    monthlyPlan?: { savings?: string | number };
   };
   /**
    * Дрил-даун із кільця категорій у список операцій. Саме він робить
@@ -157,17 +173,17 @@ const MonthNav = memo(function MonthNav({
 // Рядок порівняння метрики з попереднім місяцем. Чиста функція від пропсів —
 // memo знімає перерендер при оновленнях сусідніх секцій Analytics.
 // `kind` визначає семантику знаку: для "expense" зростання — погано
-// (червоне), для "income" — добре (зелене).
+// (червоне), для "income" — добре (зелене). Формули тут немає: дельту й
+// відсоток дає `getTrendComparison` з точних копійок (Р4 спеки аналітики
+// v2); коли відсоток не має бази, показуємо абсолютну дельту в гривнях.
 const ComparisonRow = memo(function ComparisonRow({
   label,
   current,
-  prev,
+  diff,
+  pct,
   kind = "expense",
   showBalance = true,
 }: ComparisonRowProps) {
-  const diff = current - prev;
-  const pct = prev > 0 ? Math.round((diff / prev) * 100) : null;
-
   return (
     <div className="flex items-center justify-between text-sm">
       <span className="text-muted">{label}</span>
@@ -177,13 +193,14 @@ const ComparisonRow = memo(function ComparisonRow({
         ) : (
           <span className="text-text font-medium">••••</span>
         )}
-        {showBalance && prev > 0 && pct !== null && (
+        {showBalance && (pct !== null || diff !== 0) && (
           /* Полярність задає `kind`, а не знак: зростання доходу — добре,
              зростання витрат — ні. Рівно те розділення, заради якого
-             `Delta` бере `polarity` окремим пропом. */
+             `Delta` бере `polarity` окремим пропом. Нуль проти нуля (дохід
+             у двох місяцях без записів) дельти не має, рядок мовчить. */
           <Delta
-            value={pct}
-            symbol="%"
+            value={pct === null ? diff : Math.round(pct)}
+            symbol={pct === null ? "₴" : "%"}
             polarity={kind === "income" ? "positive" : "negative"}
             className="text-style-caption font-normal"
           />
@@ -300,7 +317,7 @@ export function Analytics({
           // чесний «0 ₴».
           setFetchErrors((prev) => ({
             ...prev,
-            [key]: "Не вдалось завантажити транзакції",
+            [key]: "Не вдалось завантажити операції",
           }));
         })
         .finally(() => {
@@ -422,6 +439,7 @@ export function Analytics({
     useAnalytics({
       mono: analyticsMono,
       storage,
+      prevTx: prevKey in monthCache ? prevTx : null,
     });
 
   const comparison = useMemo(() => {
@@ -430,12 +448,9 @@ export function Analytics({
       excludedTxIds: storage.excludedTxIds,
       txSplits: storage.txSplits,
     });
-    if (
-      c.currentSpent === 0 &&
-      c.prevSpent === 0 &&
-      c.currentIncome === 0 &&
-      c.prevIncome === 0
-    ) {
+    // Обидва місяці порожні: порівнювати нема що і нема з чим. Коли записи
+    // є лише в поточному, секція каже «Немає з чим порівняти» (Р4).
+    if (c.prevTxCount === 0 && c.currentSpent === 0 && c.currentIncome === 0) {
       return null;
     }
     return c;
@@ -447,6 +462,32 @@ export function Analytics({
     storage.excludedTxIds,
     storage.txSplits,
   ]);
+
+  const trend = useMonthlyTrend(storage);
+
+  const categoryDeltas = useMemo(
+    () =>
+      comparison && comparison.prevTxCount > 0
+        ? getCategoryDeltas(activeTx, prevTx, {
+            excludedTxIds: storage.excludedTxIds,
+            txSplits: storage.txSplits,
+            txCategories: storage.txCategories ?? {},
+            customCategories: storage.customCategories ?? [],
+          })
+        : [],
+    [
+      comparison,
+      activeTx,
+      prevTx,
+      storage.excludedTxIds,
+      storage.txSplits,
+      storage.txCategories,
+      storage.customCategories,
+    ],
+  );
+
+  const savingsRate = getSavingsRate(summary.incomeMinor, summary.spentMinor);
+  const plannedSavings = Number(storage.monthlyPlan?.savings) || 0;
 
   const pageLoading =
     (isCurrentMonth ? mono.loadingTx : loading) && activeTx.length === 0;
@@ -549,26 +590,50 @@ export function Analytics({
               </div>
             </div>
           )}
+          {/* Р15: при доході 0 рядка немає зовсім, «0 %» було б неправдою. */}
+          {!pageLoading && savingsRate !== null && (
+            <div className="mt-4 pt-3 border-t border-line text-sm text-muted space-y-0.5">
+              <p>
+                {savingsRate >= 0
+                  ? `Відкладено ${Math.round(savingsRate)}${NARROW_NBSP}% доходу`
+                  : `Витрати перевищили дохід на ${Math.round(-savingsRate)}${NARROW_NBSP}%`}
+              </p>
+              {plannedSavings > 0 && showBalance && (
+                <p>
+                  План відкласти <Money amount={plannedSavings} />, вийшло{" "}
+                  <Money
+                    amount={(summary.incomeMinor - summary.spentMinor) / 100}
+                  />
+                </p>
+              )}
+            </div>
+          )}
         </Section>
 
         {/* Comparison */}
         {comparison && (
           <Section title="Порівняння з попереднім місяцем">
-            <div className="space-y-2">
-              <ComparisonRow
-                label="Витрати"
-                current={comparison.currentSpent}
-                prev={comparison.prevSpent}
-                showBalance={showBalance}
-              />
-              <ComparisonRow
-                label="Дохід"
-                current={comparison.currentIncome}
-                prev={comparison.prevIncome}
-                kind="income"
-                showBalance={showBalance}
-              />
-            </div>
+            {comparison.prevTxCount === 0 ? (
+              <p className="text-sm text-muted">Немає з чим порівняти</p>
+            ) : (
+              <div className="space-y-2">
+                <ComparisonRow
+                  label="Витрати"
+                  current={comparison.currentSpent}
+                  diff={comparison.diff}
+                  pct={comparison.diffPct}
+                  showBalance={showBalance}
+                />
+                <ComparisonRow
+                  label="Дохід"
+                  current={comparison.currentIncome}
+                  diff={comparison.incomeDiff}
+                  pct={comparison.incomeDiffPct}
+                  kind="income"
+                  showBalance={showBalance}
+                />
+              </div>
+            )}
           </Section>
         )}
 
@@ -595,6 +660,26 @@ export function Analytics({
             </Suspense>
           )}
         </Section>
+
+        {trend.points.length > 0 && (
+          <Section title="Витрати за місяцями">
+            <MonthlyTrendBars
+              points={trend.points}
+              averageMinor={trend.averageMinor}
+              perDayMinor={trend.perDayMinor}
+              showBalance={showBalance}
+            />
+          </Section>
+        )}
+
+        {categoryDeltas.length > 0 && (
+          <Section title="Категорії проти минулого місяця">
+            <CategoryDeltaTable
+              rows={categoryDeltas}
+              showBalance={showBalance}
+            />
+          </Section>
+        )}
 
         {/* Merchants */}
         <Section title="Топ продавці">

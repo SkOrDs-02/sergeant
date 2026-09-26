@@ -45,7 +45,7 @@ describe("sumDebtSplitAmountUAH", () => {
 });
 
 describe("decideDebtPaymentAfterSplitChange", () => {
-  it("транзакція без привʼязки — нічого не робимо", () => {
+  it("операція без привʼязки — нічого не робимо", () => {
     expect(
       decideDebtPaymentAfterSplitChange({
         txId: TX_ID,

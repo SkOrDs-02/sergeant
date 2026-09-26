@@ -161,9 +161,7 @@ export function useGroqVoiceInput({
             onError?.("Браузер записав невідомий формат. Оновись і повтори.");
             return;
           case "error":
-            onError?.(
-              `Помилка розпізнавання (${result.status}). Спробуй ще раз.`,
-            );
+            onError?.("Не вдалося розпізнати запис. Спробуй ще раз.");
             return;
         }
       } catch (err) {
@@ -251,7 +249,7 @@ export function useGroqVoiceInput({
       void upload(blob, finalMime);
     });
     recorder.addEventListener("error", () => {
-      onError?.("Помилка запису аудіо.");
+      onError?.("Не вдалося записати аудіо. Перевір доступ до мікрофона.");
       cleanup();
       setListening(false);
     });

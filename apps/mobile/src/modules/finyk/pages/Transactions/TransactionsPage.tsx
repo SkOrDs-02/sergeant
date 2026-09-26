@@ -132,7 +132,7 @@ export function TransactionsPage({
         date: snapshot.date,
       };
       showUndoToast(toast, {
-        msg: `Транзакцію видалено`,
+        msg: `Операцію видалено`,
         onUndo: () => {
           addManualExpense(payload);
         },

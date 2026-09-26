@@ -35,7 +35,7 @@ const DEFAULT_SHORTCUTS: KeyboardShortcut[] = [
   },
   {
     keys: ["Cmd", "/"],
-    description: "Відкрити AI-асистента",
+    description: "Відкрити Сержанта",
     category: "Загальні",
   },
 
@@ -199,7 +199,7 @@ export function KeyboardShortcutsModal({
         {/* Footer hint */}
         <div className="p-4 border-t border-line text-center">
           <p className="text-style-caption text-muted">
-            Натисни <KeyBadge>?</KeyBadge> будь-де щоб відкрити цю довідку
+            Натисни <KeyBadge>?</KeyBadge> будь-де, щоб відкрити цю довідку.
           </p>
         </div>
       </div>

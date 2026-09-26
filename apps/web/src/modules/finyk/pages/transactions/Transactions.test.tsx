@@ -250,7 +250,7 @@ describe("Transactions page shell", () => {
   it("renders the transaction filter toolbar", () => {
     renderTransactions();
     expect(
-      screen.getByRole("toolbar", { name: "Фільтр транзакцій" }),
+      screen.getByRole("toolbar", { name: "Фільтр операцій" }),
     ).toBeInTheDocument();
   });
 
@@ -473,8 +473,8 @@ describe("Transactions page shell", () => {
     renderTransactions({
       mono: buildMono({ realTx: [SAMPLE_TX] }),
     });
-    fireEvent.click(screen.getByRole("button", { name: "Доходи" }));
-    expect(screen.getByText("Немає транзакцій")).toBeInTheDocument();
+    fireEvent.click(screen.getByRole("button", { name: "Надходження" }));
+    expect(screen.getByText("Немає операцій")).toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
@@ -484,7 +484,7 @@ describe("Transactions page shell", () => {
     });
     // F1: Транзакції більше НЕ повторюють герой Огляду. Порожній перший
     // вхід віддає власну list-scoped заглушку — див. `TransactionList.tsx`.
-    expect(screen.getByText("Записів ще немає")).toBeInTheDocument();
+    expect(screen.getByText("Операцій ще немає")).toBeInTheDocument();
     expect(screen.queryByTestId("virtual-list")).not.toBeInTheDocument();
   });
 
@@ -575,7 +575,7 @@ describe("Transactions page shell", () => {
       />,
     );
     expect(screen.queryByText("синхронізовано")).not.toBeInTheDocument();
-    expect(screen.queryByText("помилка")).not.toBeInTheDocument();
+    expect(screen.queryByText("не синхронізовано")).not.toBeInTheDocument();
     expect(screen.queryByText(/оновлено ·/)).not.toBeInTheDocument();
 
     rerender(

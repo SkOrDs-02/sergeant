@@ -118,7 +118,7 @@ export function LoadCalculator({
         ))}
       </div>
       <p className="text-style-caption text-muted mt-2 text-center">
-        Ваги округлені до найближчих 2,5 кг
+        Ваги округлені до найближчих 2,5{"\u202F"}кг
       </p>
     </Card>
   );

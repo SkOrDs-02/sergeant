@@ -210,7 +210,7 @@ export function ModuleChecklist({
   useEffect(() => {
     const isComplete = total > 0 && completed >= total;
     if (isComplete && !wasCompleteRef.current) {
-      toast.success(`${def.title}: перші кроки виконано!`, 4000);
+      toast.success(`${def.title}: перші кроки виконано`, 4000);
     }
     wasCompleteRef.current = isComplete;
   }, [completed, total, def.title, toast]);

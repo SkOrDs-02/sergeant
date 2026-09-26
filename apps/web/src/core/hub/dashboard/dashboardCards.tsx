@@ -11,6 +11,7 @@ import {
   STORAGE_KEYS,
   TRACKED_STREAK_MILESTONES,
   claimStreakMilestone,
+  pluralDays,
   pluralUa,
   type UaPluralForms,
 } from "@sergeant/shared";
@@ -190,7 +191,11 @@ export function StreakIndicator() {
   if (streak < 2) return null;
 
   return (
-    <StreakBadge streak={streak} label="днів поспіль" className="shadow-sm" />
+    <StreakBadge
+      streak={streak}
+      label={`${pluralDays(streak)} поспіль`}
+      className="shadow-sm"
+    />
   );
 }
 
@@ -229,7 +234,7 @@ export function StaggerChild({
 
 /**
  * Bottom-of-dashboard small-talk: counts real entries (across all modules)
- * and shows a "Вже N записів — продовжуй!" line once the user has at
+ * and shows a "Вже N записів" line once the user has at
  * least one real entry across any module. Returns `null` until then —
  * до першого real entry юзер бачить онбординг-нагадування / FirstAction
  * вгорі дашборду, і pre-emptive «Sergeant працює офлайн» внизу плутав
@@ -248,7 +253,7 @@ export function MotivationalFooter() {
 
   if (entryCount === 0) return null;
 
-  const message = `Вже ${entryCount} ${pluralUa(entryCount, RECORD_FORMS)}, продовжуй!`;
+  const message = `Вже ${entryCount} ${pluralUa(entryCount, RECORD_FORMS)}. Продовжуй.`;
 
   return (
     <p className="text-style-caption text-subtle text-center py-8">{message}</p>

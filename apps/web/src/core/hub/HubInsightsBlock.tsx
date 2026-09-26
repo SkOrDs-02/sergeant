@@ -15,6 +15,8 @@
 import { useNavigate } from "react-router-dom";
 import { CollapsibleSection } from "@shared/components/ui/CollapsibleSection";
 import { AssistantAdviceCard } from "../insights/AssistantAdviceCard";
+import { LocalWeekReport } from "./LocalWeekReport";
+import { useFinykWeekReport } from "../../modules/finyk/hooks/useFinykWeekReport";
 import { DailyNudge } from "../onboarding/DailyNudge";
 import { HubInsightsPanel } from "./HubInsightsPanel";
 import { WeeklyDigestCard } from "../insights/WeeklyDigestCard";
@@ -101,6 +103,11 @@ export function HubInsightsBlock({
   const navigate = useNavigate();
   const moduleInsights = useAllInsights({ surface: "hub", cap: 3 });
   const askAiDisabled = useAskAiQuotaExhausted();
+  // Р23: звіт тижня з локальних даних. Він не чекає мережі, тож і підпис
+  // згорнутого блоку, поки AI-порада вантажиться чи недоступна, говорить
+  // фактом, а не «Готую AI-пораду…».
+  const weekReport = useFinykWeekReport();
+  const weekHeadline = weekReport[0];
   // Реальний стан розгорнутості секції тепер живе в `HubDashboard`.
   // `CollapsibleSection` тримає дітей у DOM і згорнутою, тож він потрібен
   // тут, щоб AI-порада й дайджест не рахували показ, якого користувач не
@@ -135,12 +142,13 @@ export function HubInsightsBlock({
       collapsedIcon="sergeant"
       collapsedSubtitle={
         coachLoading
-          ? "Готую AI-пораду…"
+          ? (weekHeadline ?? "Готую AI-пораду…")
           : coachError
             ? // AI-порада недоступна (anon/quota/мережа). Не лякаємо
-              // «збоєм» — показуємо реальні інсайти, якщо є, інакше
-              // спокійний нейтральний підпис.
+              // «збоєм» — показуємо реальні інсайти, якщо є, далі звіт
+              // тижня, інакше спокійний нейтральний підпис.
               ((axis ? undefined : rest[0]?.title) ??
+              weekHeadline ??
               "Порада Сержанта зараз недоступна")
             : // Show first actionable insight title verbatim so the collapsed
               // pill carries real value instead of a generic count. Під
@@ -148,7 +156,7 @@ export function HubInsightsBlock({
               // що всередині.
               ((axis ? undefined : rest[0]?.title) ??
               (digestFresh
-                ? "Порада Сержанта + свіжий дайджест"
+                ? "Порада Сержанта + свіжий звіт тижня"
                 : activeNudge && !reengagementShow
                   ? "Порада Сержанта + нагадування"
                   : "Порада Сержанта на день"))
@@ -181,6 +189,8 @@ export function HubInsightsBlock({
         adviceId={coachAdviceId}
         sectionOpen={insightsOpen}
       />
+      {/* AI-порада над локальним звітом, не замість нього (Р23). */}
+      <LocalWeekReport lines={weekReport} />
       {activeNudge && !reengagementShow && (
         <DailyNudge
           nudge={activeNudge}

@@ -222,7 +222,7 @@ export function WorkoutTemplatesSection({
             </SectionHeading>
             <Input
               {...searchFieldProps("template-exercise-search")}
-              placeholder="Пошук…"
+              placeholder="Пошук"
               value={q}
               onChange={(e) => setQ(e.target.value)}
               aria-label="Пошук вправи для шаблону"
@@ -240,7 +240,7 @@ export function WorkoutTemplatesSection({
               ))}
               {pickList.length === 0 && (
                 <div className="p-3 text-style-caption text-muted text-center">
-                  Нічого не знайдено
+                  Нічого не знайшов
                 </div>
               )}
             </div>

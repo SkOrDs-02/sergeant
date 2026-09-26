@@ -45,7 +45,7 @@ export const fizrukPageMessages = {
     activityNew: "+ Своє заняття",
     /** Вкладений аркуш вибору: ~55 позицій, без пошуку їх гортали. */
     pickerTitle: "Обери заняття",
-    pickerSearch: "Пошук (біг, йога, силове…)",
+    pickerSearch: "Пошук (біг, йога, силове)",
     pickerEmpty:
       "Нічого не знайшли. Спробуй інше слово або заведи своє заняття.",
     newActivityName: "Назва заняття",
@@ -386,7 +386,7 @@ export const fizrukPageMessages = {
     // The bars plot `loadPoints`, an internal score — without this line a
     // raw "0.6" reads as a broken weight value.
     muscleVolumeUnitsHint:
-      "Умовні одиниці навантаження, не кілограми: тоннаж (кг×повт) ÷ 1000 + кількість сетів × 0.15.",
+      "Умовні одиниці навантаження, не кілограми: тоннаж (кг×повт) ÷ 1000 + кількість підходів × 0.15.",
     muscleVolumeEmptyDescription: "Немає даних за останні 4 тижні.",
     // Матриця «мʼяз × тиждень». Плейсхолдери підставляються на місці
     // виклику — та сама конвенція, що в гребені Фініка: `MessageCatalog`
@@ -405,7 +405,7 @@ export const fizrukPageMessages = {
     noPrTitle: "Поки немає силових PR",
     noPrGroupTitle: "Немає PR для цієї групи мʼязів",
     noPrDescription:
-      "Заверши сети з вагою, рекорди зʼявляться тут автоматично.",
+      "Заверши підходи з вагою, рекорди зʼявляться тут автоматично.",
     noPrGroupDescription: "Спробуй іншу групу або скинь фільтр.",
   },
 

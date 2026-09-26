@@ -111,13 +111,6 @@ const HOT = new Set(HOT_TOOL_NAMES);
 export type DeferrableTool = AnthropicTool & { defer_loading?: boolean };
 
 /**
- * Усе, що може лежати в `tools[]` payload-у: наші дефініції або серверний
- * tool-search (у нього немає ані `description`, ані `input_schema` — це
- * Anthropic-hosted tool, який ідентифікується самим `type`).
- */
-export type ChatPayloadTool = DeferrableTool | typeof TOOL_SEARCH_TOOL;
-
-/**
  * Розкладає `tools` у payload для tool search:
  * `[tool_search_tool, ...гарячі (без defer), ...решта (defer_loading: true)]`.
  *

@@ -23,9 +23,16 @@ const {
 } = vi.hoisted(() => {
   process.env["AI_MEMORY_ENABLED"] = "true";
   const queryMock = vi.fn();
+  // `upsertUserProfile` тепер відкриває власну транзакцію через
+  // `pool.connect()` (SELECT ... FOR UPDATE race-guard, L-8 памʼятковий
+  // LWW-guard 2026-09-23): client ділить ТОЙ САМИЙ `queryMock`, тож
+  // `scriptQueries` нижче однаково скриптує і pool-рівневі виклики
+  // (`profileMirror`'s SELECT ... FROM ai_memories), і client-рівневі
+  // (BEGIN/SELECT FOR UPDATE/INSERT/COMMIT).
+  const mockClient = { query: queryMock, release: vi.fn() };
   const mockPool = {
     query: queryMock,
-    connect: vi.fn(),
+    connect: vi.fn().mockResolvedValue(mockClient),
     on: vi.fn(),
     totalCount: 0,
     idleCount: 0,
@@ -121,22 +128,31 @@ const STORED_PROFILE = {
   },
 };
 
-/** `upsertUserProfile`'s INSERT ... RETURNING → `profileMirror`'s SELECT existing rows. */
+/**
+ * `upsertUserProfile`'s SELECT ... FOR UPDATE (existing row, default -
+ * none) → its INSERT ... RETURNING (ЕХО параметрів, як справжній
+ * `RETURNING`, щоб памʼятковий LWW-guard у `upsertUserProfile` перевірявся
+ * реальним мерджем, а не заглушкою) → `profileMirror`'s SELECT existing
+ * `ai_memories` rows.
+ */
 function scriptQueries(
   existingRows: Array<{ source_ref: string | null; content: string }> = [],
+  existingProfileRow: { payload: unknown } | null = null,
 ) {
-  queryMock.mockImplementation((sql: string) => {
-    if (typeof sql === "string" && sql.includes("INSERT INTO user_profile")) {
+  queryMock.mockImplementation((sql: string, params?: unknown[]) => {
+    if (typeof sql !== "string") return Promise.resolve({ rows: [] });
+    if (sql.includes("SELECT payload FROM user_profile")) {
       return Promise.resolve({
-        rows: [
-          {
-            payload: STORED_PROFILE,
-            updated_at: new Date("2026-08-09T10:00:00.000Z"),
-          },
-        ],
+        rows: existingProfileRow ? [existingProfileRow] : [],
       });
     }
-    if (typeof sql === "string" && sql.includes("FROM ai_memories")) {
+    if (sql.includes("INSERT INTO user_profile")) {
+      const payload = JSON.parse(params?.[1] as string);
+      return Promise.resolve({
+        rows: [{ payload, updated_at: new Date("2026-08-09T10:00:00.000Z") }],
+      });
+    }
+    if (sql.includes("FROM ai_memories")) {
       return Promise.resolve({ rows: existingRows });
     }
     return Promise.resolve({ rows: [] });
@@ -225,6 +241,58 @@ describe("PUT /api/me/profile — консент не ламає збереже�
     expect(res.status).toBe(200);
     expect(res.body.profile).toEqual(STORED_PROFILE);
     expect(enqueueMock).toHaveBeenCalledTimes(1);
+  });
+});
+
+/**
+ * L-8 памʼятковий LWW-guard (рішення власника 2026-09-23,
+ * docs/work/specs/tech-debt/backend.md). Регресія на баг, який ця зміна
+ * лагодить: до фіксу роут дзеркалив `body.profile` (тіло запиту) незалежно
+ * від того, що саме `upsertUserProfile` фактично зберіг, тож застарілий
+ * пристрій зі стертим на сервері фактом усе одно воскрешав би його в
+ * `ai_memories`, хоча `user_profile` уже коректно лишив збережену секцію.
+ */
+describe("PUT /api/me/profile - LWW-guard памʼяті: застарілий пристрій не воскрешає видалений факт", () => {
+  it("вхідна memoryBank старіша за збережену → дзеркалиться ЗБЕРЕЖЕНА секція, а не тіло запиту", async () => {
+    const storedProfile = {
+      heightCm: 175,
+      // Факт уже стертий на сервері (наприклад, через `DELETE
+      // /api/ai-memory/:id`) - банк порожній, і мітка новіша за те, що
+      // шле застарілий пристрій нижче.
+      memoryBank: { entries: [], updatedAt: "2026-01-05T00:00:00.000Z" },
+    };
+    const staleIncoming = {
+      heightCm: 180,
+      memoryBank: {
+        entries: [
+          {
+            id: "fact-1",
+            fact: "алергія на горіхи",
+            category: "allergy",
+            createdAt: "2026-01-01T00:00:00.000Z",
+          },
+        ],
+        updatedAt: "2026-01-01T00:00:00.000Z", // старіша за storedProfile
+      },
+    };
+    scriptQueries([], { payload: storedProfile });
+
+    const app = createApp();
+    const res = await request(app)
+      .put("/api/me/profile")
+      .set("X-Requested-With", "XMLHttpRequest")
+      .send({ profile: staleIncoming });
+
+    expect(res.status).toBe(200);
+    // Біометрія - з вхідного (новіша), memoryBank - зі збереженого
+    // (застарілий "факт" не повернувся).
+    expect(res.body.profile).toEqual({
+      heightCm: 180,
+      memoryBank: storedProfile.memoryBank,
+    });
+    // Дзеркалення отримало ЗБЕРЕЖЕНИЙ (порожній) банк: fact-1 не
+    // воскрешається в ai_memories, хоча він і був у тілі запиту.
+    expect(enqueueMock).not.toHaveBeenCalled();
   });
 });
 

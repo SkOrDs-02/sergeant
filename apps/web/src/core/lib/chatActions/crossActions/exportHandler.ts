@@ -34,7 +34,7 @@ export function exportModuleData(action: ExportModuleDataAction): string {
       // Свідомо СИРИЙ геттер (не visible-варіант): експорт — повний дамп
       // даних юзера, транзакції вимкнених карток теж мають потрапити сюди.
       parts.push(
-        exportValue(getCachedFinykMonoMirrorState().transactions, "Транзакції"),
+        exportValue(getCachedFinykMonoMirrorState().transactions, "Операції"),
       );
       return parts.join("\n");
     }

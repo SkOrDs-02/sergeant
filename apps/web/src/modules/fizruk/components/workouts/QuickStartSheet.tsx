@@ -318,7 +318,7 @@ export function QuickStartSheet({
         <div className="sticky top-0 z-10 -mx-5 px-5 pt-1 pb-2 bg-panel">
           <Input
             {...searchFieldProps("quick-start-exercise-search")}
-            placeholder="Пошук вправи…"
+            placeholder="Пошук вправи"
             value={q}
             onChange={(e) => setQ(e.target.value)}
             aria-label="Пошук вправи в каталозі"
@@ -330,7 +330,7 @@ export function QuickStartSheet({
             compact
             module="fizruk"
             icon={<Icon name="dumbbell" size="lg" />}
-            title={q.trim() ? "Нічого не знайдено" : "Каталог поки що порожній"}
+            title={q.trim() ? "Нічого не знайшов" : "Каталог поки що порожній"}
             description={
               q.trim()
                 ? "Спробуй іншу назву або очисти пошук."

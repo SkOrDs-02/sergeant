@@ -99,8 +99,6 @@ export const STORED_MEMORY_SOURCES = [
   ...RETIRED_MEMORY_SOURCES,
 ] as const;
 
-export type StoredMemorySource = (typeof STORED_MEMORY_SOURCES)[number];
-
 /**
  * Джерела без активного продюсера в дереві, залишені в
  * `ALLOWED_MEMORY_SOURCES` навмисно (не за недоглядом). `sources.test.ts`

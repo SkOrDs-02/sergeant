@@ -32,6 +32,25 @@ const { mockPool, queryMock, getSessionUserMock } = vi.hoisted(() => {
   return { mockPool, queryMock, getSessionUserMock };
 });
 
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; тест його не мокає, тож без заглушки маршрут падав у 500 або
+// з'їдав чужі `mockResolvedValueOnce`.
+vi.mock("../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
+  requestAccountDeletion: vi.fn(async () => ({
+    ok: true,
+    deletedAt: "2026-09-23T10:00:00.000Z",
+    scheduledPurgeAt: "2026-10-23T10:00:00.000Z",
+  })),
+}));
+
+// Звірку пароля й саму мітку покривають `me.route.test.ts` і
+// `dataRights.test.ts`; тут перевіряється лише, що запит доходить до них.
+vi.mock("../modules/me/verifyAccountPassword.js", () => ({
+  verifyAccountPassword: vi.fn(async () => ({ ok: true })),
+}));
+
 vi.mock("./../db.js", () => ({
   default: mockPool,
   pool: mockPool,
@@ -412,34 +431,26 @@ describe("/api/v1/me data rights", () => {
     expect(sql).not.toMatch(/token_ciphertext|webhook_secret|token_hash/);
   });
 
-  it("DELETE /api/v1/me запускає deletion transaction", async () => {
+  it("DELETE /api/v1/me доходить до вікна видалення: пароль звірено, мітку поставлено", async () => {
+    // Від вікна видалення (2026-09-21) DELETE лише ставить мітку і вимагає
+    // пароль; миттєвої deletion transaction більше немає. Тут перевіряється
+    // саме аліас /api/v1: запит проходить гварди й доходить до мітки.
     getSessionUserMock.mockResolvedValueOnce(user);
-    const client = {
-      query: vi.fn().mockResolvedValue({ rows: [], rowCount: 1 }),
-      release: vi.fn(),
-    };
-    mockPool.connect.mockResolvedValueOnce(client);
+    const { requestAccountDeletion } =
+      await import("../modules/me/dataRights.js");
     const app = createApp();
     const res = await request(app)
       .delete("/api/v1/me")
       .set("X-Requested-With", "XMLHttpRequest")
-      .set("Authorization", "Bearer x");
+      .set("Authorization", "Bearer x")
+      .send({ password: "correct-horse" });
 
     expect(res.status).toBe(200);
     expect(res.body.ok).toBe(true);
-    // Mock resolves `{ rows: [] }` for every query, so the `SELECT email`
-    // snapshot returns 0 rows → the gdpr_cleanup_queue enqueue is skipped
-    // (nothing to snapshot). No separate `UPDATE ai_memories` step: hard
-    // delete cascades (migration 025), see `dataRights.ts::deleteUserData`.
-    expect(client.query.mock.calls.map((call) => String(call[0]))).toEqual([
-      "BEGIN",
-      expect.stringMatching(/SELECT email FROM "user"/),
-      expect.stringMatching(/UPDATE subscriptions/),
-      expect.stringMatching(/DELETE FROM ai_usage_daily/),
-      expect.stringMatching(/DELETE FROM "user"/),
-      "COMMIT",
-    ]);
-    expect(client.release).toHaveBeenCalledTimes(1);
+    expect(vi.mocked(requestAccountDeletion)).toHaveBeenCalledWith(
+      expect.anything(),
+      user.id,
+    );
   });
 });
 

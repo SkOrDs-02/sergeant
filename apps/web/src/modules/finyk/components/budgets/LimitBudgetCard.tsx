@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-08-21
+ * Last validated: 2026-09-24
  * Status: Active
  */
 import { memo, useId, useState } from "react";
@@ -53,6 +53,12 @@ interface LimitBudgetCardProps {
    * ліміту проп не передається.
    */
   breakdown?: readonly LimitBreakdownRow[] | undefined;
+  /**
+   * Прогноз витрат на кінець місяця за поточним темпом (`calcLimitPace`).
+   * `null`/відсутнє — прогнозу нема: перші два дні місяця, не місячний
+   * період або ще жодної витрати.
+   */
+  forecast?: number | null | undefined;
   spent: number;
   pctRaw: number;
   pctRounded: number;
@@ -78,6 +84,7 @@ function LimitBudgetCardComponent({
   customCategories = [],
   showBalance = true,
   breakdown,
+  forecast,
   spent,
   pctRaw,
   pctRounded,
@@ -120,7 +127,7 @@ function LimitBudgetCardComponent({
     <span className={cn("tabular-nums whitespace-nowrap", amountTone)}>
       {showBalance ? (
         <>
-          {formatNumberUk(spent)} / {formatNumberUk(budget.limit)}
+          {formatNumberUk(Math.round(spent))} / {formatNumberUk(budget.limit)}
           {NARROW_NBSP}₴
         </>
       ) : (
@@ -285,8 +292,11 @@ function LimitBudgetCardComponent({
             {!showBalance ? (
               "••••"
             ) : overLimit ? (
+              /* З копійками навмисно: суму перевищення людина звіряє з
+                 записами, це регістр звірки, а не аналітики (канон § 6.1,
+                 рішення 2026-09-24). */
               <>
-                Перевищено на <Money amount={spent - budget.limit} />
+                Перевищено на <Money amount={spent - budget.limit} kopecks />
               </>
             ) : (
               <>
@@ -294,6 +304,12 @@ function LimitBudgetCardComponent({
               </>
             )}
           </div>
+          {showBalance && forecast != null && forecast > 0 && (
+            <div className="text-style-caption text-subtle mt-1">
+              За поточним темпом до кінця місяця ~
+              <Money amount={Math.round(forecast)} />
+            </div>
+          )}
 
           {breakdown && breakdown.length > 1 && (
             // Розбивка факту комбо-ліміту: видно, ЩО саме зʼїло бюджет.

@@ -86,7 +86,7 @@ describe("BackfillProgressPill", () => {
     );
 
     expect(screen.getByText("Завершено")).toBeInTheDocument();
-    expect(screen.getByText("3 120 транзакцій")).toBeInTheDocument();
+    expect(screen.getByText("3 120 операцій")).toBeInTheDocument();
     expect(screen.queryByRole("progressbar")).not.toBeInTheDocument();
 
     rerender(
@@ -106,11 +106,11 @@ describe("BackfillProgressPill", () => {
   // англійська «N vs many». 11 і 21 ловлять класичну помилку: 11 бере
   // "many" ("транзакцій"), 21 повертається до "one" ("транзакція").
   it.each([
-    [1, "транзакція"],
-    [2, "транзакції"],
-    [5, "транзакцій"],
-    [11, "транзакцій"],
-    [21, "транзакція"],
+    [1, "операція"],
+    [2, "операції"],
+    [5, "операцій"],
+    [11, "операцій"],
+    [21, "операція"],
   ])("uses the correct plural form for N=%i (%s)", (n, form) => {
     renderPill({
       progress: {

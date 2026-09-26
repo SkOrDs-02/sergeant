@@ -209,7 +209,7 @@ export function Analytics({ data, now, testID }: AnalyticsProps) {
 
       <Section title="Категорії">
         {distribution.length === 0 ? (
-          <EmptyRow message="Транзакцій за цей місяць не знайдено" />
+          <EmptyRow message="Операцій за цей місяць не знайдено" />
         ) : (
           <CategoryDonut data={distribution} />
         )}
@@ -217,7 +217,7 @@ export function Analytics({ data, now, testID }: AnalyticsProps) {
 
       <Section title="Топ мерчанти">
         {topMerchants.length === 0 ? (
-          <EmptyRow message="Транзакцій ще немає" />
+          <EmptyRow message="Операцій ще немає" />
         ) : (
           <MerchantList merchants={topMerchants} />
         )}

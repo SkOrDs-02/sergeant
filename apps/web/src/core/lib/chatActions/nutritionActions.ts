@@ -499,7 +499,7 @@ export function handleNutritionAction(
       }
       persistNutritionLog(nextLog);
       const totalKcal = copied.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
-      return `Скопійовано ${copied.length} прийом(ів) з ${source_date} (${Math.round(totalKcal)} ккал)`;
+      return `Скопійовано ${copied.length} ${pluralUa(copied.length, { one: "прийом", few: "прийоми", many: "прийомів" })} з ${source_date} (${Math.round(totalKcal)} ккал)`;
     }
     case "plan_meals_for_day": {
       const { target_kcal, meals_count, preferences } =

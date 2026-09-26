@@ -46,7 +46,7 @@ function searchFinyk(tokens: string[]): Hit[] {
         id: `finyk_tx_${tx.id || time}`,
         module: "finyk",
         moduleLabel: "Фінік",
-        title: tx.description || tx.note || "Транзакція",
+        title: tx.description || tx.note || "Операція",
         subtitle: `${formatMoney(amount, { signed: true, maxFractionDigits: 2 })} · ${time > 1e10 ? localDateKey(new Date(time)) : localDateKey(new Date(time * 1000))}`,
         icon: "💳",
         target: { kind: "module", moduleId: "finyk" },

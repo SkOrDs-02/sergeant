@@ -155,7 +155,7 @@ export const CROSS_MODULE_TOOLS: AnthropicTool[] = [
   {
     name: "detect_anomalies",
     description:
-      "Виявити аномальні витрати — транзакції, які значно відрізняються від середнього. 'Чи є підозрілі витрати?'",
+      "Виявити аномальні витрати — операції, які значно відрізняються від середнього. 'Чи є підозрілі витрати?'",
     input_schema: {
       type: "object",
       properties: {

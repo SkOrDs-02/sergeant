@@ -151,7 +151,7 @@ export default function App({
     if (window.location.search.includes("sync=")) {
       const loadSync = () => {
         if (storage.loadFromUrl()) {
-          toast.success("Налаштування синхронізовано!");
+          toast.success("Налаштування синхронізовано.");
           return;
         }
         // Читання з URL чисте — повтор безпечний. Без кнопки користувач,
@@ -244,6 +244,7 @@ export default function App({
   const showNoBankBanner = shouldShowNoBankBanner({
     hasConnectedProvider,
     manualOnly,
+    manualExpenseCount: (storage.manualExpenses || []).length,
     page,
   });
 
@@ -565,11 +566,11 @@ export default function App({
             setEditingManualExpenseId(null);
             if (snapshot) {
               showUndoToast(toast, {
-                msg: isIncome ? "Видалив надходження" : "Видалив витрату",
+                msg: isIncome ? "Надходження видалено" : "Витрату видалено",
                 onUndo: () => storage.restoreManualExpense(snapshot),
               });
             } else {
-              toast.success("Видалив витрату");
+              toast.success("Витрату видалено");
             }
           }}
         />

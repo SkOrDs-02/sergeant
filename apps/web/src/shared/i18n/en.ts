@@ -50,7 +50,6 @@ export const messagesEn: Partial<{
     errorNetwork: "Sync failed, check your connection.",
     errorServerRetryable: "The server is temporarily unresponsive. Try again.",
     errorServerNonRetryable: "Sync error. Check your input.",
-    errorGeneric: "Sync error.",
     retryCta: "Try again",
 
     conflictResolved: "Conflict resolved automatically.",
@@ -325,6 +324,10 @@ export const messagesEn: Partial<{
     reportNoData: "No data",
     reportChartAria: "Chart",
     reportPrevious: "Previous:",
+    reportEmptyWorkouts: "No workouts yet. Log the first one in Fizruk.",
+    reportEmptyHabits: "No habits yet. Add the first one in Routine.",
+    reportEmptyExpenses: "No expenses yet. Add the first one in Finyk.",
+    reportEmptyMeals: "No meals logged yet. Add the first one in Nutrition.",
     reportDeltaFlat: "no change",
 
     overlayTitle: "AI assistant",
@@ -436,7 +439,6 @@ export const messagesEn: Partial<{
     bannerCta: "Set up",
 
     lock: {
-      sectionTitle: "Privacy",
       enableLabel: "App lock",
       enableDescription:
         "Protect your data with a PIN. The app locks when you switch away or after 5 minutes of inactivity.",

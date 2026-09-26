@@ -25,8 +25,6 @@ import {
   usePushRegister,
   usePushTest,
   usePushUnregister,
-  useSubscribePushMutation,
-  useUnsubscribePushMutation,
   useUser,
   useVapidPublicKey,
   useWeeklyDigestMutation,
@@ -67,10 +65,8 @@ function createApiMock() {
     push: {
       getVapidPublic: vi.fn().mockResolvedValue({ publicKey: "vapid" }),
       register: vi.fn().mockResolvedValue({ ok: true }),
-      subscribe: vi.fn().mockResolvedValue({ ok: true }),
       test: vi.fn().mockResolvedValue({ ok: true }),
       unregister: vi.fn().mockResolvedValue({ ok: true }),
-      unsubscribe: vi.fn().mockResolvedValue({ ok: true }),
     },
     weeklyDigest: { generate: vi.fn().mockResolvedValue({ ok: true }) },
   };
@@ -141,12 +137,6 @@ describe("api-client react hooks", () => {
     expect(chat.retry).toBe(false);
     await chat.mutationFn({ message: "hi" });
 
-    useSubscribePushMutation();
-    await lastMutation().mutationFn({ endpoint: "https://push.example" });
-
-    useUnsubscribePushMutation();
-    await lastMutation().mutationFn("https://push.example");
-
     usePushRegister();
     const register = lastMutation();
     expect(register.mutationKey).toEqual(["push", "register"]);
@@ -169,6 +159,6 @@ describe("api-client react hooks", () => {
     expect(lastApi.weeklyDigest.generate).toHaveBeenCalledWith({
       userId: "user-1",
     });
-    expect(useMutationMock).toHaveBeenCalledTimes(8);
+    expect(useMutationMock).toHaveBeenCalledTimes(6);
   });
 });

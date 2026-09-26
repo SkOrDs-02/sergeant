@@ -28,7 +28,7 @@ describe("buildFinykExcludedTxIds", () => {
     ]);
   });
 
-  it("не виключає транзакцію лише за наявність категорії", () => {
+  it("не виключає операцію лише за наявність категорії", () => {
     const excluded = buildFinykExcludedTxIds({
       txCategories: { "food-1": "food" },
     });
@@ -52,7 +52,7 @@ describe("buildFinykExcludedTxIds", () => {
     expect(excluded.has("stat-1")).toBe(true);
   });
 
-  it("виключає переказ, позначений на самій транзакції (categoryId / type)", () => {
+  it("виключає переказ, позначений на самій операції (categoryId / type)", () => {
     // Мапа `finyk_tx_cats` ключується банківськими id — ручний запис або
     // імпорт несе мітку переказу в самій транзакції. Без цієї гілки такий
     // запис рахувався витратою в дайджесті й у коуча.
@@ -187,7 +187,7 @@ describe("buildFinykSpendingUniverse", () => {
     ).toEqual(["bank-1"]);
   });
 
-  it("повертає канонічний excluded-set поруч із транзакціями", () => {
+  it("повертає канонічний excluded-set поруч із операціями", () => {
     const { excludedTxIds } = buildFinykSpendingUniverse({
       bankTxs,
       manualExpenses,

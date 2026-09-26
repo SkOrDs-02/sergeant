@@ -181,7 +181,7 @@ describe("Transactions page (branches)", () => {
     renderTransactions({
       mono: { realTx: [SAMPLE_TX] },
     });
-    expect(screen.queryByText("Обери транзакції")).toBeNull();
+    expect(screen.queryByText("Обери операції")).toBeNull();
   });
 
   it("shows the empty-selection hint inline in the header after entering select mode", () => {
@@ -189,7 +189,7 @@ describe("Transactions page (branches)", () => {
       mono: { realTx: [SAMPLE_TX] },
     });
     fireEvent.click(screen.getByRole("button", { name: "Режим вибору" }));
-    expect(screen.getByText("Обери транзакції")).toBeInTheDocument();
+    expect(screen.getByText("Обери операції")).toBeInTheDocument();
     expect(
       screen.getByRole("button", { name: "Скасувати" }),
     ).toBeInTheDocument();

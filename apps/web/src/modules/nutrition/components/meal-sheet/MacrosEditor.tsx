@@ -23,7 +23,7 @@ const MACRO_FIELDS = [
   { key: "kcal", label: "Ккал", placeholder: "350" },
   { key: "protein_g", label: "Білки г", placeholder: "12" },
   { key: "fat_g", label: "Жири г", placeholder: "6" },
-  { key: "carbs_g", label: "Вуглев. г", placeholder: "60" },
+  { key: "carbs_g", label: "Вугл г", placeholder: "60" },
 ] as const satisfies readonly {
   key: MacroFieldKey;
   label: string;

@@ -94,6 +94,7 @@ function buildProps(
     limitsOpen: false,
     toggleLimits: vi.fn(),
     monthStart: MONTH_START,
+    now: new Date("2026-06-15T09:00:00Z"),
     limitBudgets: [],
     budgets: [] as Budget[],
     setBudgets: vi.fn(),
@@ -135,6 +136,27 @@ describe("BudgetsLimitsSection (branches)", () => {
     document
       .querySelectorAll('[data-testid="undo-limit-btn"]')
       .forEach((el) => el.remove());
+  });
+
+  it("згорнута шапка каже, скільки лімітів перевищено", () => {
+    const limits = [makeLimit("l1", "food"), makeLimit("l2", "cafe")];
+    const { rerender } = render(
+      <BudgetsLimitsSection
+        {...buildProps({
+          limitBudgets: limits,
+          calcSpent: (b) => (b.id === "l2" ? 5550 : 1200),
+        })}
+      />,
+    );
+    const btn = screen.getByRole("button", { name: /Ліміти/i });
+    expect(btn).toHaveTextContent("1 перевищено");
+
+    rerender(
+      <BudgetsLimitsSection
+        {...buildProps({ limitBudgets: limits, calcSpent: () => 1200 })}
+      />,
+    );
+    expect(screen.queryByText(/перевищено/)).toBeNull();
   });
 
   it("renders collapsed header with aria-expanded=false", () => {

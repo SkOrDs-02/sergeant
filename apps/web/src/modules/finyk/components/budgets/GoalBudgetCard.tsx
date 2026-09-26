@@ -122,7 +122,7 @@ function GoalBudgetCardComponent({
     const celebrationId = `finyk:goal-completed:${budget.id}`;
     if (isNudgeDismissed(webKVStore, celebrationId)) return;
     dismissNudge(webKVStore, celebrationId);
-    goalCompleted(budget.name ?? "Ціль досягнута!", saved, "₴", "finyk");
+    goalCompleted(budget.name ?? "Ціль закрито", saved, "₴", "finyk");
   }, [pct, budget.id, budget.name, saved, goalCompleted]);
 
   const contribAmountNum = Number(contribAmount);

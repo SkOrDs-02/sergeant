@@ -313,6 +313,7 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
       billingDay: number;
       currency: string;
       linkedTxId?: string;
+      expectedAmount?: number;
     } = {
       id,
       name: candidate.displayName || candidate.key,
@@ -323,6 +324,11 @@ export function useFinykStorageMutations(slots: FinykStorageSlots) {
     };
     if (candidate.sampleTxIds && candidate.sampleTxIds[0]) {
       sub.linkedTxId = candidate.sampleTxIds[0];
+    }
+    // Р20: сума відома з історії одразу, а не «сума невідома» до першого
+    // збігу транзакції.
+    if (candidate.avgAmount && candidate.avgAmount > 0) {
+      sub.expectedAmount = Math.round(candidate.avgAmount * 100);
     }
     setSubscriptions((prev) => [...prev, sub]);
     // Автоматично прибираємо з пропозицій — sub з таким keyword уже його покриває,

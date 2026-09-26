@@ -183,7 +183,7 @@ function WithActionDemo() {
       <Button
         variant="primary"
         onClick={() =>
-          t.success("Транзакцію додано.", undefined, {
+          t.success("Операцію додано.", undefined, {
             label: "Скасувати",
             onClick: () => t.info("Скасовано."),
           })

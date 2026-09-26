@@ -16,7 +16,7 @@ export const nutritionPageMessages = {
   // власника 2026-09-13). `{days}` підставляється на місці виклику;
   // множина не потрібна — усі три пороги (7/30/100) беруть форму «днів».
   streakMilestone: {
-    toast: "{days} днів у нормі калорій. Так тримати.",
+    toast: "{days} днів у нормі калорій.",
   },
 
   /**
@@ -81,9 +81,9 @@ export const nutritionPageMessages = {
    * розподіл калорій у `DayStrip.tsx`/`DayLogSheet`).
    */
   heroStrip: {
-    ctaSetGoal: "Задати норму",
+    ctaSetGoal: "Задати ціль",
     kcalUnit: "ккал",
-    overshootSuffix: "ккал понад норму",
+    overshootSuffix: "ккал понад ціль",
   },
 
   /** Аркуш одного прийому — те, що розгортає тап по сегменту hero. */
@@ -306,7 +306,7 @@ export const nutritionPageMessages = {
     cleared: "Кошик Сільпо порожній.",
     errorNotConnected: "Сільпо не звʼязано. Звʼяжи акаунт у Налаштуваннях.",
     errorReauthRequired:
-      "Сільпо просить повторну авторизацію. Підключи заново в Налаштуваннях.",
+      "Сільпо просить увійти ще раз. Підключи заново в Налаштуваннях.",
     errorUnavailable: "Сільпо зараз недоступне, спробуй пізніше.",
     errorUnknown: "Щось пішло не так. Спробуй ще раз.",
     retryCta: "Спробувати ще раз",
@@ -341,7 +341,7 @@ export const nutritionPageMessages = {
   photoItems: {
     heading: "Що на тарілці",
     removePrefix: "Прибрати",
-    lowConfidence: "Тут ШІ невпевнений, перевір або заміни",
+    lowConfidence: "Тут AI невпевнений, перевір або заміни",
     addCta: "+ Додати позицію з каталогу",
     kcalUnit: "ккал",
     gramsUnit: "г",

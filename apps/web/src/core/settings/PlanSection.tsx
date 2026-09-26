@@ -124,7 +124,7 @@ export function PlanSection() {
             <span className="text-style-label block">Пробний період</span>
             <p className="text-style-body text-text leading-snug">
               Закінчується {periodEnd}. Після цього підписка стане платною за
-              тарифом з чекауту, скасуй до цієї дати, якщо передумаєш.
+              планом з чекауту, скасуй до цієї дати, якщо передумаєш.
             </p>
           </div>
         )}
@@ -163,7 +163,7 @@ export function PlanSection() {
 
         {!isPro && !isLoading && status !== "canceled" && (
           <p className="text-style-body text-subtle leading-snug">
-            Ти на безкоштовному тарифі. {premiumName} відкриває безлімітний
+            Ти на безкоштовному плані. {premiumName} відкриває безлімітний
             AI-чат, CloudSync між пристроями, авто-Mono sync і експорт CSV/PDF.
           </p>
         )}

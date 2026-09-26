@@ -13,7 +13,7 @@ const MODULES: ReadonlyArray<{
     id: "finyk",
     icon: "wallet",
     title: "Побачити гроші без шуму",
-    body: "Додай першу витрату або підключи Mono, щоб Sergeant показав тижневий патерн.",
+    body: "Додай першу витрату або підключи Mono, щоб Сержант показав тижневий патерн.",
   },
   {
     id: "fizruk",

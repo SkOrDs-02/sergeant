@@ -92,6 +92,16 @@ const validReport = {
   overallRecommendations: ["Підвищ дисципліну сну"],
 };
 
+// Модель відповіла з довгим тире в `comment`; до клієнта воно доходить
+// коротким (фільтр `replaceLongDash`, аудит анти-слопу P2-3).
+const deliveredReport = {
+  ...validReport,
+  finyk: {
+    ...validReport.finyk,
+    comment: "Топ-категорія – продукти, але без різких аномалій.",
+  },
+};
+
 beforeEach(() => {
   vi.clearAllMocks();
 });
@@ -334,7 +344,7 @@ describe("weekly-digest handler · prompt assembly", () => {
     expect(opts.system).toContain("Витрати: 1200 грн");
     expect(opts.system).toContain("Місячний бюджет: 8000 грн");
     expect(opts.system).toContain("Продукти: 600 грн");
-    expect(opts.system).toContain("Транзакцій: 42");
+    expect(opts.system).toContain("Операцій: 42");
     expect(res.statusCode).toBe(200);
   });
 
@@ -483,7 +493,7 @@ describe("weekly-digest handler · prompt assembly", () => {
 
     const sys = provider.calls[0]!.system!;
     expect(sys).toContain("Витрати: 0 грн | Надходження: 0 грн");
-    expect(sys).toContain("Транзакцій: 0");
+    expect(sys).toContain("Операцій: 0");
     expect(sys).toContain("Тренувань завершено: 0");
     expect(sys).toContain("Загальний обʼєм: 0 кг");
     expect(sys).toContain("Стан відновлення: Немає даних");
@@ -517,7 +527,7 @@ describe("weekly-digest handler · response & errors (strict mode)", () => {
 
     expect(res.statusCode).toBe(200);
     const body = res.body as { report: unknown; generatedAt: string };
-    expect(body.report).toEqual(validReport);
+    expect(body.report).toEqual(deliveredReport);
     expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 
@@ -742,7 +752,7 @@ describe("weekly-digest handler · PR-25 stub mode + fallback-on-error", () => {
     const body = res.body as { report: { finyk: { summary: string } | null } };
     // Це template-report: специфічна фраза присутня саме у stub-summary.
     expect(body.report.finyk?.summary).toContain("Витрати 100 грн");
-    expect(body.report.finyk?.summary).toContain("3 транзакцій");
+    expect(body.report.finyk?.summary).toContain("3 операцій");
   });
 
   it("fallback-on-error: parse-error з fallbackOnError=true → 200 template-report", async () => {
@@ -1172,7 +1182,7 @@ describe("buildTemplateReport (PR-25)", () => {
     });
     expect(r.finyk).not.toBeNull();
     expect(r.finyk!.summary).toBe(
-      "Витрати 1500 грн, надходження 3000 грн, 12 транзакцій.",
+      "Витрати 1500 грн, надходження 3000 грн, 12 операцій.",
     );
     expect(r.finyk!.recommendations).toEqual([]);
   });
@@ -1215,7 +1225,7 @@ describe("buildTemplateReport (PR-25)", () => {
       routine: {},
     });
     expect(r.finyk!.summary).toBe(
-      "Витрати 0 грн, надходження 0 грн, 0 транзакцій.",
+      "Витрати 0 грн, надходження 0 грн, 0 операцій.",
     );
     expect(r.fizruk!.summary).toBe("0 тренувань, обсяг 0 кг.");
     expect(r.nutrition!.summary).toBe(
@@ -1367,7 +1377,7 @@ describe("weekly-digest · prod regression — provider failure must not return 
 
     expect(res.statusCode).toBe(200);
     const body = res.body as { report: unknown; generatedAt: string };
-    expect(body.report).toEqual(validReport);
+    expect(body.report).toEqual(deliveredReport);
     expect(body.generatedAt).toMatch(/^\d{4}-\d{2}-\d{2}T/);
   });
 });

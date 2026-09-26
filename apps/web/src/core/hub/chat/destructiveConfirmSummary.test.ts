@@ -19,7 +19,7 @@ describe("summarizeDestructiveToolInput", () => {
         category_id: "food",
         limit: 15,
       }),
-    ).toBe("патерн «Сільпо», до 15 транзакцій");
+    ).toBe("патерн «Сільпо», до 15 операцій");
   });
 
   it("batch_categorize: без limit падає на дефолт 20", () => {
@@ -27,7 +27,7 @@ describe("summarizeDestructiveToolInput", () => {
       summarizeDestructiveToolInput("batch_categorize", {
         pattern: "АЗС",
       }),
-    ).toBe("патерн «АЗС», до 20 транзакцій");
+    ).toBe("патерн «АЗС», до 20 операцій");
   });
 
   it("batch_categorize: limit понад стелю затискається до 50", () => {
@@ -36,19 +36,19 @@ describe("summarizeDestructiveToolInput", () => {
         pattern: "кафе",
         limit: 500,
       }),
-    ).toBe("патерн «кафе», до 50 транзакцій");
+    ).toBe("патерн «кафе», до 50 операцій");
   });
 
   it("batch_categorize: порожній pattern не ламає підсумок", () => {
     expect(
       summarizeDestructiveToolInput("batch_categorize", { limit: 5 }),
-    ).toBe("до 5 транзакцій");
+    ).toBe("до 5 операцій");
   });
 
   it("delete_transaction: показує tx_id", () => {
     expect(
       summarizeDestructiveToolInput("delete_transaction", { tx_id: "m_42" }),
-    ).toBe("транзакція m_42");
+    ).toBe("операція m_42");
   });
 
   it("forget: показує fact_id", () => {

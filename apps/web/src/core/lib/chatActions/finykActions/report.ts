@@ -56,6 +56,6 @@ export function exportReport(action: ExportReportAction): ChatActionResult {
     `Дохід: ${Math.round(totalIncome)} грн`,
     `Витрати: ${Math.round(totalExpense)} грн`,
     `Баланс: ${Math.round(totalIncome - totalExpense)} грн`,
-    `Транзакцій: ${filtered.length} (витрат: ${expenses.length}, доходів: ${income.length})`,
+    `Операцій: ${filtered.length} (витрат: ${expenses.length}, доходів: ${income.length})`,
   ].join("\n");
 }

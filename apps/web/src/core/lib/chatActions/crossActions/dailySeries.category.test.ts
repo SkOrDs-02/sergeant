@@ -106,7 +106,7 @@ describe("alcohol_spending — денні витрати за категоріє
     expect(s.raw["alcohol_spending"]).toEqual([300, 0, 200]);
   });
 
-  it("прихована транзакція не потрапляє в метрику", () => {
+  it("прихована операція не потрапляє в метрику", () => {
     mockCachedFinykMonoMirror.mockReturnValue({
       transactions: [
         { id: "tx-visible", amount: -1000 * 100, time: NOON_SEC },

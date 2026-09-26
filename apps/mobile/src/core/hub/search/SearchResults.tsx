@@ -110,7 +110,7 @@ export function SearchResults({
       <View className="flex-1 px-4 py-3" testID="hub-search-empty">
         <EmptyState
           icon={Search}
-          title="Нічого не знайдено"
+          title="Нічого не знайшов"
           description={`За запитом «${query}» нічого не знайшлося. Спробуй іншу фразу.`}
         />
       </View>
@@ -152,7 +152,7 @@ export function SearchResults({
           <EmptyState
             icon={Search}
             title="Глобальний пошук"
-            description="Транзакції, тренування, звички, їжа. Все в одному місці."
+            description="Операції, тренування, звички, їжа. Все в одному місці."
           />
         ) : null
       }

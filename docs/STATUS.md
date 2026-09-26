@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-23 by docs:gen-status. **Next review:** 2026-09-30.
+> **Last touched:** 2026-09-25 by docs:gen-status. **Next review:** 2026-10-02.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -28,22 +28,22 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
+- [#26](https://bitbucket.org/skords01/sergeant/pull-requests/26) — feat(server): анти-слоп раунд 2: Сержант у промптах, текст без окликів, гейти _(2026-09-24)_
+- [#24](https://bitbucket.org/skords01/sergeant/pull-requests/24) — fix(web): гейти копі: серверні тексти помилок, кнопка «X» існує, картки без сирого e.message _(2026-09-24)_
+- [#30](https://bitbucket.org/skords01/sergeant/pull-requests/30) — fix(web): полірування копі за аудитом: плейсхолдери, плюрали, ₴ і одиниці, тости, legal під лінтом _(2026-09-24)_
+- [#27](https://bitbucket.org/skords01/sergeant/pull-requests/27) — docs(docs): анти-слоп аудит сайту за мірками раунду 2 _(2026-09-24)_
+- [#28](https://bitbucket.org/skords01/sergeant/pull-requests/28) — fix(web): термінологія копі за рішеннями §6 аудиту: AI, Сержант, план, підхід, ціль, операція _(2026-09-24)_
+- [#25](https://bitbucket.org/skords01/sergeant/pull-requests/25) — docs(docs): матриця конкурентів на 20 рядках і шортліст аналітики з hands-on заміру _(2026-09-24)_
+- [#19](https://bitbucket.org/skords01/sergeant/pull-requests/19) — fix(web): хвиля A аудиту UX-копі: збої з дією, без сирого error.message і жаргону _(2026-09-23)_
+- [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) — docs(agents): вирівняти governance з фактом після переїзду на Bitbucket _(2026-09-23)_
 - [#6](https://bitbucket.org/skords01/sergeant/pull-requests/6) — docs(docs): аудит мертвих GitHub-remote і вартість повного архіву _(2026-09-22)_
 - [#100](https://github.com/zaebal-beep/sergeant/pull/100) — fix(web): аудит шуму, хвиля 3 — 12 виправлених дефектів _(2026-09-17)_
-- [#97](https://github.com/zaebal-beep/sergeant/pull/97) — feat(web): одна зупинка табуляції у смузі місяця, пульт Рутини лише зі звичками _(2026-09-17)_
-- [#96](https://github.com/zaebal-beep/sergeant/pull/96) — feat(web): аудит шуму й маршрутів + три виправлені дефекти _(2026-09-17)_
-- [#95](https://github.com/zaebal-beep/sergeant/pull/95) — fix(server): закрити знахідки аудиту серверного шару, БД і синку _(2026-09-17)_
-- [#91](https://github.com/zaebal-beep/sergeant/pull/91) — ci(ci): restore the daily cron on the docs brief workflow _(2026-09-16)_
-- [#77](https://github.com/zaebal-beep/sergeant/pull/77) — ci(ci): run the TODO freshness gate as its own job instead of a step after the build _(2026-09-16)_
-- [#70](https://github.com/zaebal-beep/sergeant/pull/70) — fix(root): treat a backticked dated TODO as a quote in the todo-freshness gate _(2026-09-16)_
-- [#68](https://github.com/zaebal-beep/sergeant/pull/68) — test(web): e2e-приймання анонімної персистентності + закриття хендофу OPFS-регресії _(2026-09-16)_
-- [#67](https://github.com/zaebal-beep/sergeant/pull/67) — feat(server): перецілити kill-switch пам'яті ШІ з finyk на digest (0024, PR-2) _(2026-09-16)_
 
-## 🔵 В роботі — 74 відкриті документи
+## 🔵 В роботі — 78 відкритих документів
 
 | Трекер        | Відкрито |
 | ------------- | -------- |
-| Активні спеки | 74       |
+| Активні спеки | 78       |
 
 **Найактивніше (8, за останніми PR):**
 

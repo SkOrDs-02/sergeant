@@ -71,7 +71,7 @@ export function serializeRecentImports(
   })) as ImportRecentSource[];
 }
 
-export async function getRecentImportsHandler(
+async function getRecentImportsHandler(
   req: Request,
   res: Response,
 ): Promise<void> {

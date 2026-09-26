@@ -74,7 +74,7 @@ export function TransactionsHeader({
           <>
             {selectedCount === 0 && (
               <span className="text-style-caption text-muted">
-                Обери транзакції
+                Обери операції
               </span>
             )}
             <button

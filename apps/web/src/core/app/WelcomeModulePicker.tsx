@@ -217,7 +217,6 @@ export function WelcomeModulePicker({
         disabled={ctaDisabled}
       >
         {copy.cta}
-        <Icon name="chevron-right" size="md" />
       </Button>
 
       <p

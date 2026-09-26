@@ -139,9 +139,9 @@ export function WaitlistForm({
         created: res.created,
       });
       if (res.created) {
-        toast.success("Дякую! Повідомлю, щойно Premium буде готовий.");
+        toast.success("Email збережено. Напишу, щойно Premium буде готовий.");
       } else {
-        toast.info("Вже памʼятаю твій інтерес, жодних дублікатів.");
+        toast.info("Цей email уже в списку.");
       }
       reset({ email: "", tier_interest: values.tier_interest });
       onSuccess?.(res.created);
@@ -217,7 +217,7 @@ export function WaitlistForm({
 
         <fieldset>
           <legend className="text-style-label text-text mb-2">
-            Який тариф цікавить найбільше?
+            Який план цікавить найбільше?
           </legend>
           <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
             {TIER_OPTIONS.map((opt) => {

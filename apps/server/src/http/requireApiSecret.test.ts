@@ -47,7 +47,7 @@ describe("requireApiSecret", () => {
     expect(missing.status).toBe(401);
     expect(wrong.status).toBe(401);
     expect(wrong.body).toEqual({
-      error: "Невірний секрет",
+      error: "Неправильний секрет",
       code: "UNAUTHORIZED",
     });
     expect(nextHandler).not.toHaveBeenCalled();

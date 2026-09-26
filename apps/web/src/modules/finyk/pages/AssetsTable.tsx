@@ -21,6 +21,7 @@ type State = ReturnType<typeof useAssetsState>;
 export function AssetsTable({ state }: { state: State }) {
   const {
     networth,
+    nonUahManualAssetCount,
     totalAssets,
     totalDebt,
     showBalance,
@@ -40,6 +41,7 @@ export function AssetsTable({ state }: { state: State }) {
         totalAssets={totalAssets}
         totalDebt={totalDebt}
         showBalance={showBalance}
+        nonUahManualAssetCount={nonUahManualAssetCount}
       />
 
       <FinykStatsStrip

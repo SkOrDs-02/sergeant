@@ -58,8 +58,8 @@ describe("formatRelativeDue", () => {
     expect(formatRelativeDue(new Date(2025, 5, 16), today)).toBe("завтра");
   });
 
-  it("'через N дн' якщо до 7 днів", () => {
-    expect(formatRelativeDue(new Date(2025, 5, 18), today)).toBe("через 3 дн");
+  it("'через N днів' у відмінку якщо до 7 днів", () => {
+    expect(formatRelativeDue(new Date(2025, 5, 18), today)).toBe("через 3 дні");
   });
 
   it("коротка дата якщо більше тижня", () => {
@@ -82,7 +82,7 @@ describe("computeFinykSchedule — paid current cycle", () => {
     };
   }
 
-  it("переносить `nextCharge` на наступний місяць, якщо привʼязана транзакція припадає на сьогодні", () => {
+  it("переносить `nextCharge` на наступний місяць, якщо привʼязана операція припадає на сьогодні", () => {
     const tx = {
       id: "tx-today",
       amount: -101694,
@@ -101,7 +101,7 @@ describe("computeFinykSchedule — paid current cycle", () => {
     expect(nextCharge?.dueDate.getDate()).toBe(26);
   });
 
-  it("не переносить, якщо остання транзакція з минулого циклу", () => {
+  it("не переносить, якщо остання операція з минулого циклу", () => {
     const tx = {
       id: "tx-prev",
       amount: -101694,

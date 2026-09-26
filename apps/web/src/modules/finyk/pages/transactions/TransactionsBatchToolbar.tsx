@@ -99,7 +99,7 @@ export function TransactionsBatchToolbar({
         open={batchCatPicker}
         onClose={onCloseCatPicker}
         title="Вибрати категорію"
-        description={`Застосується до ${selectedSize} транзакц${selectedSize === 1 ? "ії" : "ій"}`}
+        description={`Застосується до ${selectedSize} операц${selectedSize === 1 ? "ії" : "ій"}`}
         panelClassName="finyk-sheet"
         zIndex={70}
         bodyClassName="px-4 pb-6 flex flex-col gap-1"
@@ -122,7 +122,7 @@ export function TransactionsBatchToolbar({
                 мерджі, а каст приховував це від типів. Тобто рендерився
                 порожній flex-елемент, який через `gap-3` давав кожному рядку
                 12px відступу зліва ні за що. З 2026-08-21 слот заповнює
-                той самий чип, що й у рядку транзакції.
+                той самий чип, що й у рядку операції.
               */}
               <CategoryIconChip
                 categoryId={cat.id}

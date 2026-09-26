@@ -261,6 +261,25 @@ describe("finyk/forecastEngine", () => {
     expect(out[0]!.spent).toBe(0);
   });
 
+  it("прогноз з точного факту, не з округленого (Р7)", () => {
+    // 247,50 за 10 днів січня (31 день): 247,5 × 31 / 10 = 767,25 → 767.
+    // З округленого 248 вийшло б 768,8 → 769.
+    const today = new Date(2026, 0, 10, 12);
+    const txs = [
+      {
+        id: "t1",
+        time: Math.floor(new Date(2026, 0, 2, 12).getTime() / 1000),
+        amount: -24_750,
+        description: "A",
+      },
+    ];
+    const out = calcForecast(txs, [{ categoryId: "food", limit: 500 }], today, {
+      t1: "food",
+    });
+    expect(out[0]!.spent).toBe(248);
+    expect(out[0]!.forecast).toBe(767);
+  });
+
   it("returns an empty result set for empty categoryLimits", () => {
     const today = new Date(2026, 0, 10);
     expect(calcForecast([], [], today)).toEqual([]);

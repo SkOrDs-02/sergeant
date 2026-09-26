@@ -105,6 +105,15 @@ export const coreMessages = {
     send: "Надіслати",
   },
 
+  celebration: {
+    // `CelebrationModal` / `useCelebration`: факт замість вигуку (аудит
+    // anti-slop round2, P1-3): жодних знаків оклику й похвали персонажа
+    // («легенда», «стаєш сильнішим»), число вже несе емоцію.
+    goalReached: "Ціль закрито",
+    levelUp: "Рівень {level}",
+    streakDays: "{days} днів поспіль",
+  },
+
   errors: {
     generic: {
       // Phase 2 — generic-помилки, що рендеряться у банері/toast-і коли
@@ -170,7 +179,6 @@ export const coreMessages = {
     errorNetwork: "Не вдалось синхронізувати, перевір зʼєднання.",
     errorServerRetryable: "Сервер тимчасово не відповідає. Спробуй ще раз.",
     errorServerNonRetryable: "Помилка синхронізації. Передивись введення.",
-    errorGeneric: "Помилка синхронізації.",
     retryCta: "Спробувати ще",
 
     // Reserved для майбутніх migration-round-ів — narrative-strings, які
@@ -187,7 +195,7 @@ export const coreMessages = {
     // не є згодою.
     destructiveConfirm: {
       title: "Підтверди незворотну дію",
-      body: "Асистент хоче виконати те, що не вийде скасувати:",
+      body: "Сержант хоче виконати те, що не вийде скасувати:",
       confirm: "Виконати",
       cancel: "Скасувати",
     },
@@ -216,14 +224,14 @@ export const coreMessages = {
     },
     // Рейок модулів (`ModuleRail`) — eager і на хабі, і в шапках модулів.
     moduleRail: "Модулі",
-    overlayTitle: "AI-асистент",
+    overlayTitle: "Сержант",
     closeChat: "Закрити чат",
     chatQuickActions: "Швидкі сценарії",
     valueProgressAria: "Прогрес до твоїх цілей",
-    crossModulePreviewAria: "Що Sergeant покаже далі",
+    crossModulePreviewAria: "Що Сержант покаже далі",
     weeklyDigestTitle: "Щотижневий дайджест: сторіс",
     chatOfflineNotice:
-      "Асистент недоступний без інтернету. Дані модулів видно офлайн, але\n          AI-відповіді потребують підключення.",
+      "Сержант недоступний без інтернету. Дані модулів видно офлайн, але AI-відповіді потребують підключення.",
 
     // PR-26 / §A12 — empty-state placeholder в `/chat`. Коли користувач
     // тільки-но відкрив чат і ще нічого не написав, замість пустого
@@ -253,6 +261,13 @@ export const coreMessages = {
     reportNoData: "Немає даних",
     reportChartAria: "Графік",
     reportPrevious: "Минулий:",
+    // Порожній стан картки звіту, коли даних нема ні в поточному, ні в
+    // минулому вікні: що відсутнє + де це зробити (гайд копірайту §5).
+    // Нуль тут не результат, а старт (критика екранів 2026-09-23).
+    reportEmptyWorkouts: "Тренувань ще не було. Перше запиши у Фізруку.",
+    reportEmptyHabits: "Звичок ще немає. Додай першу в Рутині.",
+    reportEmptyExpenses: "Витрат ще не записано. Додай першу у Фініку.",
+    reportEmptyMeals: "Прийомів їжі ще не записано. Додай перший у Їжі.",
     // Нульова дельта до попереднього періоду — без стрілки (DeltaChip,
     // анти-слоп аудит 2026-09-01 F4).
     reportDeltaFlat: "без змін",
@@ -342,8 +357,7 @@ export const coreMessages = {
     // `goalFirstSkipLabel` is the tertiary escape hatch back to the
     // legacy module-checklist welcome.
     goalFirstHeading: "Що для тебе зараз важливо?",
-    goalFirstSubtitle:
-      "Обери головне, Sergeant підбере розділ, з якого почати.",
+    goalFirstSubtitle: "Обери головне, Сержант підбере розділ, з якого почати.",
     goalFirstSkipLabel: "Подивитись усе",
     goalFirstAriaLabel: "Цілі онбордингу",
   },
@@ -366,7 +380,8 @@ export const coreMessages = {
     passwordTooShort: "Пароль занадто короткий.",
     passwordTooLong: "Пароль занадто довгий.",
     emailNotVerified: "Email ще не підтверджено. Перевір пошту.",
-    providerNotFound: "Цей провайдер входу не налаштовано.",
+    providerNotFound:
+      "Цей провайдер входу не налаштовано. Спробуй інший спосіб входу.",
     sessionFailure: "Не вдалося завершити вхід. Спробуй ще раз.",
 
     // Серверні errors (rate-limiter, error handler):

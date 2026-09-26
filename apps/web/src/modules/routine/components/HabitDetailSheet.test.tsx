@@ -219,10 +219,12 @@ describe("HabitDetailSheet", () => {
         onClose={vi.fn()}
       />,
     );
-    const totalLabel = screen.getByText("Разів виконано");
-    // "Разів виконано" caption sits directly under its count <p> in the card.
-    const card = totalLabel.parentElement!;
-    expect(card.textContent).toContain("3");
+    // Stats card reworked to hero + text line (P2-4, анти-слоп аудит
+    // 2026-09-23): total completions live in the "Усього" text line, not a
+    // standalone tile.
+    const totalLabel = screen.getByText("Усього");
+    const line = totalLabel.parentElement!;
+    expect(line.textContent).toContain("3");
   });
 
   it("renders an em-dash when nothing is scheduled in the windows (all pct null)", () => {

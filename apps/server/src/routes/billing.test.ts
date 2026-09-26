@@ -33,6 +33,13 @@ vi.mock("../env/env.js", () => ({
   ),
 }));
 
+// Гейт вікна видалення в `requireSession` ходить у глобальний пул за
+// міткою; цей тест його не мокає, тож без заглушки маршрут падав у 500.
+vi.mock("../modules/me/dataRights.js", async (importOriginal) => ({
+  ...(await importOriginal<typeof import("../modules/me/dataRights.js")>()),
+  getAccountDeletionStatus: vi.fn(async () => ({ pending: false })),
+}));
+
 vi.mock("../http/rateLimit.js", async () => {
   const actual = await vi.importActual<typeof import("../http/rateLimit.js")>(
     "../http/rateLimit.js",

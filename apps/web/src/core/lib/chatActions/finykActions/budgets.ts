@@ -37,7 +37,7 @@ function buildAiContribution(saved: number): GoalContribution[] {
       amountUah: saved,
 
       date: toLocalISODate(new Date()),
-      note: "Через AI-асистента",
+      note: "Через Сержанта",
     },
   ];
 }
@@ -84,7 +84,7 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
       : period === "one_time"
         ? "одноразово"
         : "на місяць";
-  const result = `Ліміт ${cat?.label || categoryId} встановлено: ${limitN} грн ${periodLabel}`;
+  const result = `Ліміт ${cat?.label || categoryId} встановлено: ${limitN}\u202F₴ ${periodLabel}`;
   return {
     result,
     undo: () => finykChatWrite("finyk_budgets", prevBudgets),
@@ -116,7 +116,7 @@ export function setMonthlyPlan(action: SetMonthlyPlanAction): ChatActionResult {
     next[key] = String(check.value);
   }
   finykChatWrite("finyk_monthly_plan", next);
-  const result = `Фінплан місяця оновлено: дохід ${next.income ?? "—"} / витрати ${next.expense ?? "—"} / заощадження ${next.savings ?? "—"} грн/міс`;
+  const result = `План місяця оновлено: дохід ${next.income ?? "—"} / витрати ${next.expense ?? "—"} / заощадження ${next.savings ?? "—"}\u202F₴/міс`;
   return {
     result,
     undo: () => finykChatWrite("finyk_monthly_plan", prevPlan),
@@ -155,7 +155,7 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
     finykChatWrite("finyk_budgets", budgets);
     const customC = getCachedFinykSqliteState().customCategories;
     const cat = resolveExpenseCategoryMeta(categoryId, customC);
-    const result = `Ліміт ${cat?.label || categoryId} оновлено: ${limitN} грн`;
+    const result = `Ліміт ${cat?.label || categoryId} оновлено: ${limitN}\u202F₴`;
     return {
       result,
       undo: () => finykChatWrite("finyk_budgets", prevBudgets),
@@ -195,7 +195,7 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
       });
     }
     finykChatWrite("finyk_budgets", budgets);
-    const result = `Ціль "${goalName}" оновлено: ${saved}/${target} грн`;
+    const result = `Ціль "${goalName}" оновлено: ${saved}/${target}\u202F₴`;
     return {
       result,
       undo: () => finykChatWrite("finyk_budgets", prevBudgets),

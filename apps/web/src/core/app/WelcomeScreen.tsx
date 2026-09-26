@@ -27,7 +27,7 @@ import { messages } from "@shared/i18n/uk";
 // real dashboard layout new users are about to see.
 //
 // PR-06 — canonical Cyrillic without emoji. Module labels are bare brand
-// names (`Фінік / Фізрук / Рутина / Харчування`) — the colored module-icon
+// names (`Фінік / Фізрук / Рутина / Їжа`) — the colored module-icon
 // bubble already carries the visual association, so emoji prefixed to the
 // text was duplicative and broke uniformity vs the hub bottom-nav and
 // settings groups.

@@ -74,7 +74,7 @@ export function ActiveHabitsSection({
       <Input
         className="routine-touch-field w-full max-w-md"
         {...searchFieldProps("habit-list-search")}
-        placeholder="Пошук у списку звичок…"
+        placeholder="Пошук у списку звичок"
         value={habitListQuery}
         onChange={(e) => setHabitListQuery(e.target.value)}
         aria-label="Пошук звичок у списку"
@@ -109,7 +109,7 @@ export function ActiveHabitsSection({
           скидає саме той фільтр, який сховав список. */}
       {hasActive && filteredActiveHabits.length === 0 && (
         <EmptyState
-          title="Нічого не знайдено"
+          title="Нічого не знайшов"
           description={`Серед активних звичок немає жодної за запитом «${habitListQuery.trim()}».`}
           module="routine"
           action={

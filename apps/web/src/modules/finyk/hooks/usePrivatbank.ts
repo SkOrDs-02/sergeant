@@ -4,6 +4,7 @@ import { logger } from "@shared/lib";
 import { normalizeTransaction } from "@sergeant/finyk-domain/domain/transactions";
 import type { Transaction } from "@sergeant/finyk-domain/domain/types";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
+import { captureException } from "../../../core/observability/sentry";
 import { readRaw, removeItem, readJSON, writeJSON } from "../lib/finykStorage";
 import { failedCopy } from "@shared/i18n/failedCopy";
 
@@ -137,7 +138,7 @@ function normalizePrivatTransaction(
   const amountKopecks = Math.round(amountRaw * 100);
   const ts = toTimestamp(row.TRANDATE ?? "", row.TRANTIME ?? "");
   const description =
-    row.OSND || row.PRYZNACH || row.AUT_CNTR_NAM || "Транзакція";
+    row.OSND || row.PRYZNACH || row.AUT_CNTR_NAM || "Операція";
   const sourceId =
     row.REF || row.REFN || row.DOC_NUMBER || `${ts}_${amountKopecks}`;
 
@@ -164,6 +165,10 @@ function normalizeAccount(raw: Record<string, unknown>): PrivatAccount {
     currency?: string;
     alias?: string;
   };
+  // Друга половина боргу: конверт упізнано, але поля `balance` у записі
+  // немає, тож `|| 0` нижче тихо дає 0 ₴. Без цього сигналу замір бачив би
+  // лише промах конверта.
+  if (r.balance === undefined) reportPrivatShape("balance-record", raw);
   return {
     id: r.acc || r.id || r.AUT_MY_ACC || "",
     balance: Math.round((parseFloat(String(r.balance ?? "")) || 0) * 100),
@@ -233,10 +238,32 @@ function warnOnUnknownEnvelope(
   const keys = data && typeof data === "object" ? Object.keys(data) : [];
   if (keys.length === 0) return;
   logger.warn(
-    `[privat] ${scope}: відповідь непорожня, але жоден відомий конверт не підійшов — ` +
+    `[privat] ${scope}: відповідь непорожня, але жоден відомий конверт не підійшов – ` +
       `віддаю порожній список. Ключі верхнього рівня: ${keys.join(", ")}. ` +
       `Розбір: docs/work/specs/tech-debt/frontend.md § Privat24.`,
   );
+  reportPrivatShape(scope, data);
+}
+
+const reportedPrivatShapes = new Set<string>();
+
+/**
+ * Окрема Sentry-подія, а не лише `logger.warn`: у проді warn лишає тільки
+ * breadcrumb, а breadcrumb видно хіба що всередині чужої помилки тієї ж
+ * сесії, тож замір, на який чекає борг, фактично не доходив. Ключі — так,
+ * значення — ні (у відповіді банку лежать поля рахунку й операцій).
+ */
+function reportPrivatShape(scope: string, data: object | undefined): void {
+  const keys = data ? Object.keys(data) : [];
+  const shape = `${scope}:${keys.join(",")}`;
+  if (reportedPrivatShapes.has(shape)) return;
+  reportedPrivatShapes.add(shape);
+  captureException(new Error(`privat_unrecognized_shape: ${scope}`), {
+    level: "warning",
+    tags: { privat_shape_scope: scope },
+    extra: { keys },
+    fingerprint: ["privat_unrecognized_shape", scope],
+  });
 }
 
 /**
@@ -370,7 +397,7 @@ export function usePrivatbank(enabled = true) {
           lastError: err.message ?? "",
         }));
       }
-      setError(failedCopy("завантажити транзакції PrivatBank"));
+      setError(failedCopy("завантажити операції PrivatBank"));
     } finally {
       setLoadingTx(false);
     }

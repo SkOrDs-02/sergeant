@@ -43,9 +43,9 @@ interface CategoryPickerFieldProps {
 const copy = {
   all: "Усі категорії",
   frequent: "Часті",
-  noResults: "Нічого не знайдено",
+  noResults: "Нічого не знайшов",
   placeholder: "Обери категорію",
-  search: "Знайти категорію",
+  search: "Знайди категорію",
   title: "Категорія",
 } as const;
 

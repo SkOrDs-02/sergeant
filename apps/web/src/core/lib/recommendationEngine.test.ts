@@ -859,7 +859,7 @@ describe("generateRecommendations", () => {
     const atRisk = recs.find((r) => r.id === "routine_streak_at_risk");
     expect(atRisk).toBeDefined();
     expect(atRisk!.priority).toBe(95);
-    expect(atRisk!.title).toContain("під загрозою");
+    expect(atRisk!.title).toContain("може перерватись");
   });
 
   it("routine_streak_at_risk використовує правильну форму множини для 1 звички", () => {
@@ -1346,7 +1346,7 @@ describe("generateRecommendations", () => {
     expect(Array.isArray(recs)).toBe(true);
   });
 
-  it("обробляє порожній масив транзакцій", () => {
+  it("обробляє порожній масив операцій", () => {
     setLS("finyk_tx_cache", { txs: [] });
     setLS("finyk_budgets", [
       { id: "b1", type: "limit", categoryId: "food", limit: 1000 },

@@ -1,4 +1,5 @@
 import { memo } from "react";
+import { pluralDays } from "@sergeant/shared";
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { Money } from "@shared/components/ui/Money";
@@ -17,10 +18,11 @@ function formatDueDate(dueDate: string | null | undefined) {
   const todayParts = getKyivDateParts();
   const today = new Date(todayParts.year, todayParts.month - 1, todayParts.day);
   const days = Math.ceil((date.getTime() - today.getTime()) / 86400000);
-  if (days < 0) return `Прострочено на ${Math.abs(days)} дн`;
+  if (days < 0)
+    return `Прострочено на ${Math.abs(days)} ${pluralDays(Math.abs(days))}`;
   if (days === 0) return "Сьогодні";
   if (days === 1) return "Завтра";
-  return `Через ${days} дн`;
+  return `Через ${days} ${pluralDays(days)}`;
 }
 
 function formatDueDateValue(dueDate: string | null | undefined) {
@@ -154,7 +156,7 @@ function DebtCardComponent({
           onClick={onLink}
           className="mt-3 w-full text-style-caption text-muted border border-dashed border-line rounded-xl py-2 hover:border-primary hover:text-primary transition-colors"
         >
-          <Icon name="link" size="sm" aria-hidden /> Привʼязати транзакції (
+          <Icon name="link" size="sm" aria-hidden /> Привʼязати операції (
           {linkedCount || 0})
         </button>
       )}
