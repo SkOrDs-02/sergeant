@@ -164,7 +164,7 @@ export function ItemEditSheet({
       <div className="mt-4 grid grid-cols-1 sm:grid-cols-2 gap-2">
         <Button
           type="button"
-          className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover"
+          className="h-12 min-h-[44px] bg-nutrition-strong text-white hover:bg-nutrition-hover dark:bg-nutrition dark:text-bg dark:hover:bg-nutrition/90"
           onClick={() => {
             const nameStr = String(itemEdit.name || "").trim();
             if (!nameStr) {

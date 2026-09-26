@@ -132,25 +132,25 @@ const MODULE_RAIL_TOKENS: Record<
   { active: string; inactive: string; ring: string }
 > = {
   finyk: {
-    active: "bg-finyk-strong text-white",
+    active: "bg-finyk-strong text-white dark:bg-finyk dark:text-bg",
     inactive:
       "zone-chip text-finyk-strong dark:text-finyk hover:bg-finyk-soft hover:border-finyk-soft-border",
     ring: "focus-visible:ring-finyk",
   },
   fizruk: {
-    active: "bg-fizruk-strong text-white",
+    active: "bg-fizruk-strong text-white dark:bg-fizruk dark:text-bg",
     inactive:
       "zone-chip text-fizruk-strong dark:text-fizruk-300 hover:bg-fizruk-soft hover:border-fizruk-soft-border",
     ring: "focus-visible:ring-fizruk",
   },
   routine: {
-    active: "bg-routine-strong text-white",
+    active: "bg-routine-strong text-white dark:bg-routine dark:text-bg",
     inactive:
       "zone-chip text-routine-strong dark:text-routine hover:bg-routine-soft hover:border-routine-soft-border",
     ring: "focus-visible:ring-routine",
   },
   nutrition: {
-    active: "bg-nutrition-strong text-white",
+    active: "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg",
     inactive:
       "zone-chip text-nutrition-strong dark:text-nutrition hover:bg-nutrition-soft hover:border-nutrition-soft-border",
     ring: "focus-visible:ring-nutrition",

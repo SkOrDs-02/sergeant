@@ -42,10 +42,14 @@ const solidVariants: Record<BadgeVariant, string> = {
   warning: "bg-warning-strong text-white border-transparent",
   danger: "bg-danger-strong text-white border-transparent",
   info: "bg-info-strong text-white border-transparent",
-  finyk: "bg-finyk-strong text-white border-transparent",
-  fizruk: "bg-fizruk-strong text-white border-transparent",
-  routine: "bg-routine-strong text-white border-transparent",
-  nutrition: "bg-nutrition-strong text-white border-transparent",
+  finyk:
+    "bg-finyk-strong text-white border-transparent dark:bg-finyk dark:text-bg",
+  fizruk:
+    "bg-fizruk-strong text-white border-transparent dark:bg-fizruk dark:text-bg",
+  routine:
+    "bg-routine-strong text-white border-transparent dark:bg-routine dark:text-bg",
+  nutrition:
+    "bg-nutrition-strong text-white border-transparent dark:bg-nutrition dark:text-bg",
 };
 
 // Wave 1b: the soft-wash variants collapse onto preset-owned tokens

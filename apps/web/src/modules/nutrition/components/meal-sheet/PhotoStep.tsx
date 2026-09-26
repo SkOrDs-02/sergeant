@@ -193,7 +193,7 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
         <button
           type="button"
           onClick={openSignIn}
-          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-nutrition-strong px-4 text-style-label text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45"
+          className="mt-3 inline-flex min-h-11 items-center justify-center rounded-lg bg-nutrition-strong px-4 text-style-label text-white focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 dark:bg-nutrition dark:text-bg"
         >
           {messages.nutrition.photoAuth.signIn}
         </button>

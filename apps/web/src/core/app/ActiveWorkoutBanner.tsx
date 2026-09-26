@@ -86,7 +86,7 @@ function ActiveWorkoutBannerTimer({ activeId }: { activeId: string }) {
       <button
         type="button"
         onClick={() => openHubModule("fizruk", `#workout/${activeId}`)}
-        className="pointer-events-auto flex items-center gap-2.5 h-12 pl-3 pr-4 rounded-full bg-fizruk-strong text-white shadow-float hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+        className="pointer-events-auto flex items-center gap-2.5 h-12 pl-3 pr-4 rounded-full bg-fizruk-strong text-white shadow-float hover:brightness-110 transition-[filter,box-shadow,opacity] focus:outline-none focus-visible:ring-2 focus-visible:ring-fizruk/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg dark:bg-fizruk dark:text-bg"
         aria-label={messages.fizruk.returnToActiveWorkout}
       >
         <span

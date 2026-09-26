@@ -28,10 +28,22 @@ export type CheckboxSize = "sm" | "md" | "lg";
 
 const variantStyles: Record<CheckboxVariant, { ring: string; fill: string }> = {
   default: { ring: "ring-brand", fill: "bg-brand-strong text-white" },
-  finyk: { ring: "ring-finyk", fill: "bg-finyk-strong text-white" },
-  fizruk: { ring: "ring-fizruk", fill: "bg-fizruk-strong text-white" },
-  routine: { ring: "ring-routine", fill: "bg-routine-strong text-white" },
-  nutrition: { ring: "ring-nutrition", fill: "bg-nutrition-strong text-white" },
+  finyk: {
+    ring: "ring-finyk",
+    fill: "bg-finyk-strong text-white dark:bg-finyk dark:text-bg",
+  },
+  fizruk: {
+    ring: "ring-fizruk",
+    fill: "bg-fizruk-strong text-white dark:bg-fizruk dark:text-bg",
+  },
+  routine: {
+    ring: "ring-routine",
+    fill: "bg-routine-strong text-white dark:bg-routine dark:text-bg",
+  },
+  nutrition: {
+    ring: "ring-nutrition",
+    fill: "bg-nutrition-strong text-white dark:bg-nutrition dark:text-bg",
+  },
 };
 
 const sizeStyles: Record<CheckboxSize, { box: string; icon: number }> = {
