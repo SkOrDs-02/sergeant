@@ -90,7 +90,7 @@ function HeroCollage() {
             style={{ width: `${scenario.pct}%` }}
           />
         </div>
-        <p className="text-xs text-subtle">Фінік · синк із Monobank</p>
+        <p className="text-xs text-subtle">Фінік · синхронізація з Monobank</p>
       </div>
 
       <div
@@ -160,7 +160,7 @@ export default function HomePage() {
       operatingSystem: "Web",
       description: ROUTE_META["/"].description,
       featureList: [
-        "Гроші: чотири входи витрат – синк Monobank, фото чека, виписка файлом, ручна форма",
+        "Гроші: чотири входи витрат – синхронізація Monobank, фото чека, виписка файлом, ручна форма",
         "Тіло: щоденник тренувань, тоннаж і рекорди",
         "Звички: серія, яку не обнуляє пропуск із причиною",
         "Їжа: КБЖВ зі штрихкоду, фото страви та української бази продуктів",

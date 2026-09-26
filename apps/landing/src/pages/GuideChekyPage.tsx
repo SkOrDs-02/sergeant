@@ -8,7 +8,11 @@ import { AUTHOR_NAME, AUTHOR_JSON_LD } from "../content/author";
 const SOURCES = [
   { data: "Сума і час покупки", from: "Виписка банку", cheque: false },
   { data: "Назва магазину", from: "Виписка банку", cheque: false },
-  { data: "Груба категорія (MCC)", from: "Виписка банку", cheque: false },
+  {
+    data: "Груба категорія (код від банку)",
+    from: "Виписка банку",
+    cheque: false,
+  },
   { data: "Позиції: що саме куплено", from: "Тільки чек", cheque: true },
   { data: "Ціна за одиницю і кількість", from: "Тільки чек", cheque: true },
   { data: "Покупка за готівку", from: "Тільки чек", cheque: true },

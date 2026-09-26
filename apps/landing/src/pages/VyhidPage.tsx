@@ -50,7 +50,7 @@ export default function VyhidPage() {
       </p>
 
       <section className="mt-14">
-        <h2 className={h2}>Експорт живе двома поверхнями</h2>
+        <h2 className={h2}>Експорт живе двома файлами</h2>
         <p className={body}>Дані забираються двома частинами.</p>
         <div className="mt-8 grid gap-px bg-cardline-strong sm:grid-cols-2">
           <div className="bg-background p-6">
@@ -58,7 +58,7 @@ export default function VyhidPage() {
               Акаунтські дані
             </h3>
             <p className="mt-2 text-sm leading-relaxed text-muted">
-              Усе, що знає сервер: витрати й транзакції, тренування, звички,
+              Усе, що знає сервер: витрати й операції, тренування, звички,
               харчування, підключення банку, білінг. Одним файлом із профілю.
               Файл сам перелічує, чого в ньому немає і чому.
             </p>

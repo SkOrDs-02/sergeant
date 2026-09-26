@@ -76,7 +76,7 @@ export default function GuideKilkaBankivPage() {
           <ol className="mt-5 flex flex-col gap-4">
             <li className="border-t border-cardline pt-4">
               <h3 className="font-bold text-foreground-strong">
-                Основну карту підключаєш до автосинку
+                Основну карту підключаєш до автосинхронізації
               </h3>
               <p className="mt-1.5 text-sm leading-relaxed text-muted">
                 Ту, якою платиш найчастіше. Її операції приходять самі, і

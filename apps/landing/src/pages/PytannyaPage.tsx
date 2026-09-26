@@ -27,7 +27,7 @@ export default function PytannyaPage() {
         Питання
       </h1>
       <p className="mt-5 max-w-xl leading-relaxed text-muted">
-        Коротко про те, що питають найчастіше. Якщо твого питання тут немає –
+        Коротко про те, що питають найчастіше. Якщо твого питання тут немає,
         напиши в Telegram, і воно тут зʼявиться.
       </p>
       <p className="mt-3 text-sm text-subtle">
@@ -90,7 +90,7 @@ export default function PytannyaPage() {
           .
         </p>
         <div className="mt-6">
-          <TelegramCta placement="footer" label="Стати в чергу" />
+          <TelegramCta placement="footer" label="Написати в Telegram" />
         </div>
       </div>
     </SiteLayout>

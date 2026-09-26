@@ -84,9 +84,9 @@ export default function AboutPage() {
               Як я його роблю
             </h2>
             <p className="mt-4 leading-relaxed text-foreground">
-              Сам, щодня і на собі. Кожна фіча спершу мусить закрити мою власну
-              незручність, інакше вона не пишеться: у продукті без команди це
-              єдиний фільтр, який не дає розповзтись на всі боки.
+              Сам, щодня і на собі. Кожна можливість спершу мусить закрити мою
+              власну незручність, інакше вона не пишеться: у продукті без
+              команди це єдиний фільтр, який не дає розповзтись на всі боки.
             </p>
             <p className="mt-4 leading-relaxed text-foreground">
               {MOBILE_CLAIM} Обіцяти два повноцінні контури одночасно не буду.
@@ -133,7 +133,7 @@ export default function AboutPage() {
             Стеж за розробкою
           </h2>
           <p className="mt-4 max-w-lg leading-relaxed text-ink-muted">
-            Процес відкритий: реальні цифри, фейли і рішення. Обирай формат.
+            Процес відкритий: реальні цифри, помилки і рішення. Обирай формат.
           </p>
           <div className="mt-8 grid max-w-3xl gap-10 sm:grid-cols-2">
             <a
@@ -186,7 +186,7 @@ export default function AboutPage() {
                 </span>
               </span>
               <span className="mt-2 block text-sm leading-relaxed text-ink-muted">
-                Бот бети: найшвидший шлях у чергу й апдейти хвиль.
+                Бот бети: найшвидший шлях у чергу й новини хвиль.
               </span>
             </a>
           </div>

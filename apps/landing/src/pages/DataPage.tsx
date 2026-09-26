@@ -57,9 +57,9 @@ export default function DataPage() {
         <section className="max-w-3xl">
           <h2 className={h2}>Банк: токен лише читає</h2>
           <p className={p}>
-            Синк працює через персональний токен Monobank, який ти створюєш сам
-            на api.monobank.ua і можеш відкликати там само в один клік. Токен
-            зберігається зашифрованим.
+            Синхронізація працює через персональний токен Monobank, який ти
+            створюєш сам на api.monobank.ua і можеш відкликати там само в один
+            клік. Токен зберігається зашифрованим.
           </p>
           <p className="mt-4 text-sm leading-relaxed text-muted">
             Що саме бачить токен і чого не може, таблицею, і покроково про
@@ -122,9 +122,9 @@ export default function DataPage() {
           <h2 className={h2}>Забрати і стерти</h2>
           <p className={p}>
             Дані експортуються у відкритому форматі, акаунт видаляєш сам, без
-            листів у підтримку. Експорт сьогодні живе двома поверхнями:
-            акаунтські дані окремо від даних модулів. Як це працює і що буде,
-            якщо продукт зупиниться, розписано{" "}
+            листів у підтримку. Експорт сьогодні живе двома файлами: акаунтські
+            дані окремо від даних модулів. Як це працює і що буде, якщо продукт
+            зупиниться, розписано{" "}
             <a
               href="/vyhid"
               className="font-semibold text-foreground underline decoration-cardline-strong underline-offset-4 transition hover:decoration-current focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ink"
@@ -135,8 +135,7 @@ export default function DataPage() {
           </p>
           <p className={p}>
             {NO_SALE_CLAIM}; куди вони їдуть заради роботи AI, сказано вище.
-            Питання про свої дані став у Telegram-бот або у Threads
-            @sergeant.app, відповідаю сам.
+            Питання про свої дані став у Telegram-бот, відповідаю сам.
           </p>
         </section>
       </div>
