@@ -74,6 +74,37 @@ describe("LogCard", () => {
     expect(screen.getByTestId("virtual-meals")).toBeInTheDocument();
   });
 
+  it("ставить записи дня перед пошуком, тижнем і трендами", () => {
+    renderLog({
+      log: {
+        [today]: { meals: [{ id: "m1", name: "Обід", mealType: "lunch" }] },
+      } as never,
+    });
+    const meals = screen.getByTestId("virtual-meals");
+    for (const id of ["log-search", "log-weekly", "log-analytics"]) {
+      expect(
+        meals.compareDocumentPosition(screen.getByTestId(id)) &
+          Node.DOCUMENT_POSITION_FOLLOWING,
+      ).toBeTruthy();
+    }
+  });
+
+  it("ховає «Скопіювати з попереднього дня», коли в дні вже є записи", () => {
+    const yesterday = addDaysISODate(today, -1);
+    renderLog({
+      onDuplicateYesterday: vi.fn(),
+      log: {
+        [yesterday]: {
+          meals: [{ id: "y1", name: "Вчора", mealType: "lunch" }],
+        },
+        [today]: { meals: [{ id: "m1", name: "Обід", mealType: "lunch" }] },
+      } as never,
+    });
+    expect(
+      screen.queryByText(/Скопіювати з попереднього дня/),
+    ).not.toBeInTheDocument();
+  });
+
   it("formats yesterday, tomorrow, and custom dates", () => {
     renderLog({ selectedDate: addDaysISODate(today, -1) });
     expect(screen.getByText("Вчора")).toBeInTheDocument();
