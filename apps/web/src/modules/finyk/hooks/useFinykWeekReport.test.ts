@@ -46,6 +46,12 @@ describe("useFinykWeekReport", () => {
     expect(result.current).toEqual(["За останні 7 днів записів немає"]);
   });
 
+  it("мовчить зовсім, коли Фінік вимкнено", () => {
+    state.statTransactions = [tx("old", -10_000, 20)];
+    const { result } = renderHook(() => useFinykWeekReport(false));
+    expect(result.current).toEqual([]);
+  });
+
   it("дає рядки найбільшої категорії, зростання і ліміту", () => {
     state.statTransactions = [
       tx("f1", -80_000, 1, 5411),

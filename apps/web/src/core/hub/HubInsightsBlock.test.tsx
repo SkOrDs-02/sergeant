@@ -30,14 +30,20 @@ const insightsState = vi.hoisted(() => ({
   }>,
 }));
 
-const weekReportState = vi.hoisted(() => ({ lines: [] as string[] }));
+const weekReportState = vi.hoisted(() => ({
+  lines: [] as string[],
+  enabledArgs: [] as boolean[],
+}));
 
 vi.mock("react-router-dom", () => ({
   useNavigate: () => navigateMock,
 }));
 
 vi.mock("../../modules/finyk/hooks/useFinykWeekReport", () => ({
-  useFinykWeekReport: () => weekReportState.lines,
+  useFinykWeekReport: (enabled = true) => {
+    weekReportState.enabledArgs.push(enabled);
+    return enabled ? weekReportState.lines : [];
+  },
 }));
 
 vi.mock("@shared/lib/modules/hubBus", () => ({
@@ -356,6 +362,25 @@ describe("HubInsightsBlock", () => {
     ).toBeTruthy();
     expect(screen.getByTestId("collapsed-subtitle")).toHaveTextContent(
       "Найбільше за тиждень: Продукти, 807 ₴",
+    );
+    weekReportState.lines = [];
+  });
+
+  it("hides the money week report when Finyk is not an active module", () => {
+    weekReportState.lines = ["Найбільше за тиждень: Продукти, 807 ₴"];
+    weekReportState.enabledArgs = [];
+    render(
+      <HubInsightsBlock
+        {...props({ coachLoading: true, coachInsightText: null, axis: true })}
+        finykActive={false}
+      />,
+    );
+    expect(weekReportState.enabledArgs.at(-1)).toBe(false);
+    expect(
+      screen.queryByRole("region", { name: "Тиждень у цифрах" }),
+    ).toBeNull();
+    expect(screen.getByTestId("collapsed-subtitle")).toHaveTextContent(
+      "Готую AI-пораду…",
     );
     weekReportState.lines = [];
   });

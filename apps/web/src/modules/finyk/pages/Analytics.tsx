@@ -28,7 +28,7 @@ import { ChartFallback } from "../components/charts/ChartFallback";
 import { MerchantList } from "../components/analytics/MerchantList";
 import { MonthlyTrendBars } from "../components/analytics/MonthlyTrendBars";
 import { CategoryDeltaTable } from "../components/analytics/CategoryDeltaTable";
-import { useMonthlyTrend } from "../hooks/useMonthlyTrend";
+import { useMonthlyTrend, type FetchBankRange } from "../hooks/useMonthlyTrend";
 import { getTrendComparison } from "@sergeant/finyk-domain/domain/selectors";
 import {
   getCategoryDeltas,
@@ -77,6 +77,8 @@ export interface AnalyticsProps {
     realTx?: Transaction[];
     loadingTx?: boolean;
     fetchMonth: (year: number, month0Based: number) => Promise<Transaction[]>;
+    /** Діапазон у дзеркало для тренду (Р11); без банку відсутній. */
+    fetchRange?: FetchBankRange;
   };
   storage: {
     excludedTxIds: Set<string> | Iterable<string>;
@@ -463,7 +465,7 @@ export function Analytics({
     storage.txSplits,
   ]);
 
-  const trend = useMonthlyTrend(storage);
+  const trend = useMonthlyTrend(storage, null, mono.fetchRange);
 
   const categoryDeltas = useMemo(
     () =>
@@ -598,7 +600,9 @@ export function Analytics({
                   ? `Відкладено ${Math.round(savingsRate)}${NARROW_NBSP}% доходу`
                   : `Витрати перевищили дохід на ${Math.round(-savingsRate)}${NARROW_NBSP}%`}
               </p>
-              {plannedSavings > 0 && showBalance && (
+              {/* План фінплану діє лише на поточний місяць: для минулих
+                  місяців його тоді ще не було. */}
+              {isCurrentMonth && plannedSavings > 0 && showBalance && (
                 <p>
                   План відкласти <Money amount={plannedSavings} />, вийшло{" "}
                   <Money

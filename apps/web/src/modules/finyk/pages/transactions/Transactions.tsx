@@ -106,6 +106,7 @@ export interface TransactionsMonoSlice {
   syncState: MonoSyncState;
   accounts: ReadonlyArray<TxAccount> | undefined;
   fetchMonth: (year: number, month: number) => Promise<unknown>;
+  fetchRange?: (from: string, to: string) => Promise<unknown>;
   historyTx: Transaction[];
   loadingHistory: boolean;
   refresh: () => Promise<unknown>;
@@ -511,6 +512,7 @@ export function Transactions({
                   txCategories,
                   customCategories,
                 }}
+                fetchRange={mono.fetchRange}
                 showBalance={showBalance}
               />
             )}

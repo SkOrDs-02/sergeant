@@ -8,6 +8,7 @@ import { formatLimitBudgetLabel } from "@sergeant/finyk-domain/domain/budget";
 import { buildWeekReport } from "@sergeant/finyk-domain/domain/weekReport";
 import { resolveExpenseCategoryMeta } from "@sergeant/finyk-domain/utils";
 import { messages } from "@shared/i18n/uk";
+import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { useFinykStatTransactions } from "./useFinykStatTransactions";
 
 const copy = messages.finyk.weekReport;
@@ -19,12 +20,19 @@ const fill = (tpl: string, vars: Record<string, string | number>) =>
 /**
  * Три рядки звіту тижня з локальних даних (Р23): найбільша категорія за
  * 7 днів, найбільше зростання проти попередніх 7 днів, ліміт із найгіршим
- * темпом. Без записів за тиждень повертає один рядок про це.
+ * темпом. Без записів за тиждень повертає один рядок про це. Коли Фінік
+ * вимкнено, звіту немає зовсім: рядок «записів немає» людині, яка веде лише
+ * тренування, був би неправдою.
  */
-export function useFinykWeekReport(): string[] {
+export function useFinykWeekReport(enabled = true): string[] {
   const { statTransactions, slots } = useFinykStatTransactions();
   const { budgets, txCategories, txSplits, customCategories } = slots;
+  // Денний ключ у залежностях: вкладка хабу, відкрита через північ,
+  // зсуває вікно тижня на першому ж рендері, а не лише зі зміною даних.
+  const dayKey = getKyivDayKey();
   return useMemo(() => {
+    void dayKey;
+    if (!enabled) return [];
     const report = buildWeekReport(statTransactions, {
       budgets,
       txCategories,
@@ -82,5 +90,13 @@ export function useFinykWeekReport(): string[] {
       );
     }
     return lines;
-  }, [statTransactions, budgets, txCategories, txSplits, customCategories]);
+  }, [
+    dayKey,
+    enabled,
+    statTransactions,
+    budgets,
+    txCategories,
+    txSplits,
+    customCategories,
+  ]);
 }

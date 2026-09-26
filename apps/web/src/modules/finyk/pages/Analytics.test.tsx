@@ -511,6 +511,30 @@ describe("Analytics page", () => {
     expect(screen.getByText(/План відкласти/)).toHaveTextContent(/39\s?160/);
   });
 
+  // План фінплану діє лише на поточний місяць.
+  it("does not compare the current savings plan against a past month", async () => {
+    const mayTs = Math.floor(new Date("2026-05-10T09:00:00Z").getTime() / 1000);
+    const fetchMonth = vi
+      .fn()
+      .mockResolvedValue([
+        mkTx("inc", 4_200_000, mayTs),
+        mkTx("exp", -284_040, mayTs),
+      ]);
+    await act(async () => {
+      render(
+        <Analytics
+          mono={buildMono({ fetchMonth })}
+          storage={{ ...buildStorage(), monthlyPlan: { savings: "30000" } }}
+        />,
+      );
+    });
+    fireEvent.click(screen.getByRole("button", { name: "Попередній місяць" }));
+    expect(
+      await screen.findByText(/Відкладено 93\s?% доходу/),
+    ).toBeInTheDocument();
+    expect(screen.queryByText(/План відкласти/)).not.toBeInTheDocument();
+  });
+
   it("says «Немає з чим порівняти» when the prior month has no records at all", async () => {
     const now = Math.floor(KYIV.getTime() / 1000);
     const fetchMonth = vi.fn().mockResolvedValue([]);
