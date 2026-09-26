@@ -47,13 +47,6 @@ export function isMonoDebt(acc: MonoAccount): boolean {
   return balance < 0;
 }
 
-export function daysUntil(day: number): number {
-  const now = new Date();
-  const target = new Date(now.getFullYear(), now.getMonth(), day);
-  if (target <= now) target.setMonth(target.getMonth() + 1);
-  return Math.ceil((target.getTime() - now.getTime()) / 86400000);
-}
-
 export function getMonthStart(): Date {
   const now = new Date();
   return new Date(now.getFullYear(), now.getMonth(), 1);
