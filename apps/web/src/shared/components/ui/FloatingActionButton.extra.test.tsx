@@ -171,6 +171,37 @@ describe("FloatingActionButton — scroll-to-hide", () => {
     expect(outer.className).not.toContain("translate-y-24");
   });
 
+  it("ховається й від прокрутки внутрішнього контейнера, не лише вікна", () => {
+    // Їжа гортає власний контейнер сторінок, а `scroll` не спливає до window.
+    render(
+      <div data-testid="scroller" style={{ overflowY: "auto" }}>
+        <FloatingActionButton aria-label="Inner" />
+      </div>,
+    );
+    const outer = screen.getByRole("button", { name: "Inner" }).parentElement!;
+    const scroller = screen.getByTestId("scroller");
+
+    scroller.scrollTop = 200;
+    fireEvent.scroll(scroller);
+    expect(outer.className).toContain("translate-y-24");
+
+    scroller.scrollTop = 120;
+    fireEvent.scroll(scroller);
+    expect(outer.className).not.toContain("translate-y-24");
+  });
+
+  it("лишає резерв під собою, коли ховається від прокрутки", () => {
+    render(<FloatingActionButton aria-label="Keep" />);
+    Object.defineProperty(window, "scrollY", {
+      value: 300,
+      configurable: true,
+    });
+    fireEvent.scroll(window);
+    expect(
+      document.documentElement.style.getPropertyValue("--sgt-fab-inset"),
+    ).toMatch(/^\d+px$/);
+  });
+
   // Перенесено з `RoutineBottomNav.test.tsx`: після уніфікації FAB
   // (spec fab-and-manual-income §5-6) center-docked кнопка з nav-а переїхала
   // сюди, а keyboard-hide поїхав разом із нею — `useVisualKeyboardInset` тут,
