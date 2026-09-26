@@ -108,6 +108,32 @@ describe("MealStrip", () => {
     }
   });
 
+  it("малює частку прийому тонкою смугою знизу, а не заливкою на всю висоту колонки", () => {
+    // Regression: full-height напівпрозорий прямокутник на темному героєвому
+    // фоні читався як зламаний рендер, не як прогрес (design-critique).
+    const segments: MealStripSegment[] = [
+      { type: "breakfast", label: "Сніданок", kcal: 500, count: 1 },
+      { type: "lunch", label: "Обід", kcal: 500, count: 1 },
+      { type: "dinner", label: "Вечеря", kcal: 0, count: 0 },
+      { type: "snack", label: "Перекус", kcal: 0, count: 0 },
+    ];
+    const { container } = render(
+      <MealStrip
+        onPickMeal={vi.fn()}
+        segments={segments}
+        goalKcal={2000}
+        remainingLabel="лишилось на вечерю"
+        macros={MACROS}
+      />,
+    );
+    const fill = container.querySelector(
+      '[data-testid="meal-strip-fill"]',
+    ) as HTMLElement;
+    expect(fill.className).toContain("bottom-0");
+    expect(fill.className).toContain("h-1");
+    expect(fill.className).not.toContain("inset-y-0");
+  });
+
   it("accents only the segment that crosses the norm boundary", () => {
     const segments: MealStripSegment[] = [
       { type: "breakfast", label: "Сніданок", kcal: 500, count: 1 },
