@@ -82,6 +82,15 @@ export const STORAGE_KEYS = {
   FINYK_IMPORT_REMINDER: "finyk_import_reminder_v1",
   FIZRUK_QUICK_STATS: "fizruk_quick_stats",
   ROUTINE_QUICK_STATS: "routine_quick_stats",
+  /**
+   * Моменти петлі винагороди (ADR-0096), показані сьогодні:
+   * `{ dayKey, byTarget }`. Живуть до кінця доби пристрою (ADR-0078) і
+   * лише в цьому браузері: інший пристрій того ж дня покаже момент удруге,
+   * і це прийнято свідомо (спека `reward-loop-and-reminders.md`, § Ризики).
+   * Один ключ із днем усередині, а не ключ на кожен день: так учорашні
+   * записи не накопичуються.
+   */
+  MOMENTS_TODAY: "hub_moments_today_v1",
   NUTRITION_QUICK_STATS: "nutrition_quick_stats",
 
   // PWA / install prompts
