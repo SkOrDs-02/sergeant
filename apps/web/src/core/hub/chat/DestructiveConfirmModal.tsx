@@ -67,7 +67,7 @@ export function DestructiveConfirmModal({
                 >
                   • {LABEL_BY_ID.get(item.name) ?? item.name}
                   {item.summary && (
-                    <span className="block text-style-caption text-content-secondary">
+                    <span className="block text-style-caption text-muted">
                       {item.summary}
                     </span>
                   )}

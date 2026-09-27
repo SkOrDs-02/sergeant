@@ -169,13 +169,17 @@ function HubChat({
         loading={loading}
         onSpeak={() => setSpeaking(true)}
         onCancel={cancelInFlight}
-        onPickSuggestion={(text) => {
-          setInput(text);
-          // Затримка, щоб React встиг змонтувати оновлений value у
-          // input перед тим, як ми поставимо focus — той самий
-          // pattern, що в `<ChatQuickActions onPrefill>`.
-          setTimeout(() => focusInputRef.current?.(), 0);
-        }}
+        onPickSuggestion={
+          signedOut
+            ? undefined
+            : (text) => {
+                setInput(text);
+                // Затримка, щоб React встиг змонтувати оновлений value у
+                // input перед тим, як ми поставимо focus — той самий
+                // pattern, що в `<ChatQuickActions onPrefill>`.
+                setTimeout(() => focusInputRef.current?.(), 0);
+              }
+        }
       />
 
       {signedOut ? (

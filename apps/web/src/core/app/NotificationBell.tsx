@@ -58,6 +58,12 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
   // Outside click — спільний хук; Esc лишається окремим ефектом, бо
   // повертає фокус на тригер (outside-click цього навмисно не робить).
   useOutsideClick([menuRef, buttonRef], close, { enabled: menuOpen });
+  // Панель — disclosure з кнопками, а не `role=menu`: пункти меню не можуть
+  // містити вкладених кнопок. Тож фокус переносимо на першу дію самі.
+  useEffect(() => {
+    if (!menuOpen) return;
+    menuRef.current?.querySelector<HTMLElement>("button")?.focus();
+  }, [menuOpen]);
   useEffect(() => {
     if (!menuOpen) return;
     const handleKey = (event: KeyboardEvent) => {
@@ -77,7 +83,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
       <button
         ref={buttonRef}
         type="button"
-        aria-haspopup="menu"
+        aria-haspopup="dialog"
         aria-expanded={menuOpen}
         aria-controls={menuId}
         aria-label={`Сповіщення: ${count}`}
@@ -91,7 +97,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
         <Icon name="bell" size="lg" />
         <span
           aria-hidden="true"
-          className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-strong text-white text-xs font-bold leading-[18px] text-center" /* glyph scales with container, not a type role */
+          className="absolute top-1.5 right-1.5 min-w-[18px] h-[18px] px-1 rounded-full bg-brand-strong text-white dark:bg-brand-400 dark:text-bg text-xs font-bold leading-[18px] text-center" /* glyph scales with container, not a type role */
         >
           {count}
         </span>
@@ -101,55 +107,56 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
         <div
           ref={menuRef}
           id={menuId}
-          role="menu"
+          role="dialog"
           // eslint-disable-next-line sergeant-design/no-cyrillic-jsx-literal -- single-use a11y label; i18n catalog reserves entries for strings on ≥2 surfaces
           aria-label="Сповіщення"
           className="absolute right-0 mt-2 w-80 max-w-[calc(100vw-2rem)] rounded-2xl border border-line bg-panel shadow-float p-1.5 z-50"
         >
-          {notifications.map((n) => (
-            <div
-              key={n.id}
-              role="menuitem"
-              className="flex items-start gap-3 px-2.5 py-2.5 rounded-xl"
-            >
-              <span className="shrink-0 mt-0.5 w-8 h-8 inline-flex items-center justify-center rounded-md border border-line bg-panel/60">
-                <Icon name={n.icon} size="md" />
-              </span>
-              <div className="flex-1 min-w-0">
-                <p className="text-style-label text-text leading-tight">
-                  {n.title}
-                </p>
-                {n.description && (
-                  <p className="text-style-caption text-muted leading-snug mt-0.5">
-                    {n.description}
+          <ul>
+            {notifications.map((n) => (
+              <li
+                key={n.id}
+                className="flex items-start gap-3 px-2.5 py-2.5 rounded-xl"
+              >
+                <span className="shrink-0 mt-0.5 w-8 h-8 inline-flex items-center justify-center rounded-md border border-line bg-panel/60">
+                  <Icon name={n.icon} size="md" />
+                </span>
+                <div className="flex-1 min-w-0">
+                  <p className="text-style-label text-text leading-tight">
+                    {n.title}
                   </p>
-                )}
-                <div className="flex items-center gap-2 mt-2">
-                  <Button
-                    variant="outline"
-                    size="xs"
-                    onClick={() => {
-                      n.onAction();
-                      close();
-                    }}
-                    className="font-semibold"
-                  >
-                    {n.actionLabel}
-                  </Button>
-                  {n.onDismiss && (
-                    <Button
-                      variant="ghost"
-                      size="xs"
-                      onClick={() => n.onDismiss?.()}
-                      className="text-muted hover:text-text"
-                    >
-                      {messages.actions.later}
-                    </Button>
+                  {n.description && (
+                    <p className="text-style-caption text-muted leading-snug mt-0.5">
+                      {n.description}
+                    </p>
                   )}
+                  <div className="flex items-center gap-2 mt-2">
+                    <Button
+                      variant="outline"
+                      size="xs"
+                      onClick={() => {
+                        n.onAction();
+                        close();
+                      }}
+                      className="font-semibold"
+                    >
+                      {n.actionLabel}
+                    </Button>
+                    {n.onDismiss && (
+                      <Button
+                        variant="ghost"
+                        size="xs"
+                        onClick={() => n.onDismiss?.()}
+                        className="text-muted hover:text-text"
+                      >
+                        {messages.actions.later}
+                      </Button>
+                    )}
+                  </div>
                 </div>
-              </div>
-            </div>
-          ))}
+              </li>
+            ))}
+          </ul>
         </div>
       )}
     </div>

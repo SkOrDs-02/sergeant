@@ -23,9 +23,10 @@ export interface HubChatBodyProps {
   /**
    * PR-26: викликається при тапі на suggestion-chip у `<ChatEmpty>`.
    * Parent (HubChat) пробрасує `setInput` + setTimeout-focus, як це
-   * робить `<ChatQuickActions onPrefill>` у composer-і.
+   * робить `<ChatQuickActions onPrefill>` у composer-і. Гостю не
+   * передається: поля для вставки в нього немає.
    */
-  onPickSuggestion: (text: string) => void;
+  onPickSuggestion?: ((text: string) => void) | undefined;
 }
 
 /**

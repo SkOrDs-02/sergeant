@@ -186,13 +186,22 @@ export const BentoCard = memo(function BentoCard({
     moduleHasRealEntry(config.module as DashboardModuleId);
   const dormantCopy = dormantCopyFor(config.module);
   const showHandle = !!editMode;
+  // aria-label кнопки перекриває все всередині, тож видимі тренд і причина
+  // підказки мають бути в ньому явно, інакше скрінрідер їх не чує.
+  const trend = config.trendDelta;
+  const trendPart =
+    trend != null && Number.isFinite(trend) && trend !== 0
+      ? `зміна ${trend > 0 ? "+" : "−"}${Math.abs(Math.round(trend * 100))} %`
+      : null;
+  const extraParts = [trendPart, adaptiveReason].filter(
+    (part): part is string => typeof part === "string" && part.length > 0,
+  );
 
   return (
     <div
       className={cn(
         "relative h-full",
         isDragging && "opacity-70 z-50",
-        inactive && "opacity-60",
         // Edit-mode wiggle. Suppressed while a card is being dragged so
         // the pointer drag is not fighting the rotation keyframes.
         editMode && !isDragging && "motion-safe:animate-wiggle",
@@ -205,9 +214,9 @@ export const BentoCard = memo(function BentoCard({
         {...primaryProps}
         aria-label={
           inactive
-            ? `${config.label}: неактивний модуль. Увімкнути в налаштуваннях Hub.`
+            ? `${config.label}: неактивний модуль. Увімкнути в налаштуваннях.`
             : hasData
-              ? `${config.label}: ${previewParts.join(", ")}`
+              ? `${config.label}: ${[...previewParts, ...extraParts].join(", ")}`
               : dormant
                 ? `${config.label}: ${dormantCopy.label}. ${dormantCopy.hint}`
                 : `${config.label}: ${config.emptyLabel}`
@@ -223,7 +232,9 @@ export const BentoCard = memo(function BentoCard({
           "pointer-fine:hover:shadow-float pointer-fine:hover:-translate-y-0.5",
           "pointer-fine:hover:border-brand-200/50 dark:pointer-fine:hover:border-line/80",
           "active:scale-[0.98] pointer-coarse:active:scale-[0.97]",
-          inactive ? "bg-panel grayscale" : config.cardBg,
+          // Неактивність — пунктир і сірий тон, не opacity: прозорість
+          // на всій картці тягнула `text-muted` нижче AA.
+          inactive ? "bg-panel grayscale border-dashed" : config.cardBg,
           isDragging && "shadow-float cursor-grabbing",
         )}
       >

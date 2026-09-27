@@ -295,8 +295,9 @@ export function TodayFocusCard({
           <button
             type="button"
             onClick={primary.run}
+            aria-label={`${primary.label}: ${focus.title}`}
             className={cn(
-              "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl touch-target",
+              "inline-flex items-center gap-1.5 px-3 py-2 rounded-xl touch-target focus-ring",
               "bg-primary text-bg text-style-label font-semibold",
               "hover:brightness-110 active:scale-[0.98] transition-[filter,opacity,transform]",
             )}
@@ -330,7 +331,7 @@ export function TodayFocusCard({
               onClick={secondary.run}
               className={cn(
                 "text-style-caption text-muted hover:text-text",
-                "px-2.5 py-2 rounded-xl touch-target hover:bg-panelHi transition-colors",
+                "px-2.5 py-2 rounded-xl touch-target focus-ring hover:bg-panelHi transition-colors",
               )}
             >
               {secondary.label}

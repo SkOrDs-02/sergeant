@@ -52,7 +52,7 @@ describe("BentoCard stories — drift guard against BentoCard.tsx", () => {
     render(<BentoCard {...composeArgs(stories.Inactive)} />);
     expect(
       screen.getByRole("button", {
-        name: "Фінік: неактивний модуль. Увімкнути в налаштуваннях Hub.",
+        name: "Фінік: неактивний модуль. Увімкнути в налаштуваннях.",
       }),
     ).toHaveAttribute("data-inactive", "true");
     expect(

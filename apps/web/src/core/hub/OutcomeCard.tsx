@@ -76,6 +76,7 @@ export function OutcomeCard({
           variant="solid"
           size="sm"
           onClick={() => onOpenModule(preferred.id)}
+          aria-label={`Відкрити: ${preferred.title}`}
         >
           Відкрити
           <Icon name="chevron-right" size="sm" className="ml-1" />
@@ -91,11 +92,13 @@ export function OutcomeCard({
               type="button"
               onClick={() => onOpenModule(module.id)}
               aria-label={`${module.title}: ${module.body}`}
+              // Обраний модуль — той, що відкриє «Відкрити» вгорі; досі це
+              // було видно лише кольором рамки.
+              aria-current={selected ? "true" : undefined}
               className={cn(
-                "text-left rounded-xl border p-3 transition-colors",
-                "focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-brand-500",
+                "text-left rounded-xl border p-3 transition-colors focus-ring",
                 selected
-                  ? "border-brand-500 bg-brand/10"
+                  ? "border-brand-strong dark:border-brand-400 bg-brand-soft"
                   : "border-line bg-bg hover:bg-panelHi",
               )}
             >

@@ -100,7 +100,7 @@ describe("BentoCard", () => {
 
     expect(
       screen.getByRole("button", {
-        name: "Рутина: неактивний модуль. Увімкнути в налаштуваннях Hub.",
+        name: "Рутина: неактивний модуль. Увімкнути в налаштуваннях.",
       }),
     ).toHaveAttribute("data-inactive", "true");
     expect(

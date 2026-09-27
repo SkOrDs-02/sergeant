@@ -144,9 +144,13 @@ export function OfflineBanner() {
 
   const content = (
     <>
+      {/* Оголошення стану — окремим текстовим status-вузлом: зміну
+          aria-label у live-регіоні на кнопці скрінрідери не читали. */}
+      <span role="status" className="sr-only">
+        {view.label}
+      </span>
       <button
         type="button"
-        aria-live="polite"
         data-testid="offline-banner"
         data-state={state}
         onClick={() => setSheetOpen(true)}

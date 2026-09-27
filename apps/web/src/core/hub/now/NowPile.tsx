@@ -117,6 +117,10 @@ function NowRow({
   askAiDisabled,
   onDismiss,
 }: NowRowProps) {
+  const runLabel =
+    item.action.kind === "module_action"
+      ? coreMessages.hub.nowPile.doIt
+      : coreMessages.hub.nowPile.open;
   return (
     <div
       data-testid="now-row"
@@ -150,11 +154,12 @@ function NowRow({
           <button
             type="button"
             onClick={() => onRun(item)}
-            className="inline-flex items-center gap-1 touch-target text-style-label font-semibold text-text hover:text-primary transition-colors"
+            // Кожен рядок мав однакову назву «Зробити»/«Відкрити», і в
+            // списку кнопок скрінрідера їх не можна було розрізнити.
+            aria-label={`${runLabel}: ${item.title}`}
+            className="inline-flex items-center gap-1 touch-target rounded-lg focus-ring text-style-label font-semibold text-text hover:text-primary transition-colors"
           >
-            {item.action.kind === "module_action"
-              ? coreMessages.hub.nowPile.doIt
-              : coreMessages.hub.nowPile.open}
+            {runLabel}
             <Icon name="chevron-right" size="xs" strokeWidth={2.5} />
           </button>
           {onAskAi && item.askAiPrompt && (
@@ -277,7 +282,7 @@ export function NowPile({ onOpenTarget }: NowPileProps) {
               type="button"
               onClick={() => setTailOpen(true)}
               aria-expanded={false}
-              className="w-full touch-target rounded-xl border border-dashed border-line px-3 text-style-caption font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
+              className="w-full touch-target rounded-xl focus-ring border border-dashed border-line px-3 text-style-caption font-semibold text-muted hover:text-text hover:bg-panelHi transition-colors"
             >
               {coreMessages.hub.nowPile.more} {tail.length}
             </button>
