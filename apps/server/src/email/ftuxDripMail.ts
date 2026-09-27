@@ -52,10 +52,18 @@ import {
  * фронтовий `VITE_POSTHOG_KEY`.
  */
 
+// `has_push` їде тим самим запитом, а не окремим: листам дня 1 і 3 треба
+// знати, чи людина взагалі може отримати нагадування (спека
+// `reward-loop-and-reminders.md`, дірка з новачками).
 const FTUX_DRIP_LOOKUP_USER_QUERY = `
-  SELECT id, email, name
-  FROM "user"
-  WHERE id = $1
+  SELECT u.id, u.email, u.name,
+         (EXISTS (SELECT 1 FROM push_subscriptions s
+                   WHERE s.user_id = u.id AND s.deleted_at IS NULL)
+          OR EXISTS (SELECT 1 FROM push_devices d
+                      WHERE d.user_id = u.id AND d.deleted_at IS NULL)
+         ) AS has_push
+  FROM "user" u
+  WHERE u.id = $1
   LIMIT 1
 `;
 
@@ -79,6 +87,7 @@ interface UserRow {
   id: string;
   email: string;
   name: string | null;
+  has_push?: boolean;
 }
 
 function emailFingerprint(email: string): string {
@@ -390,6 +399,10 @@ async function dispatchFtuxDripEmail(data: FtuxDripJobData): Promise<void> {
     recipientName: user.name?.trim() || null,
     unsubscribeUrl,
     appUrl,
+    // Нудж відсутності будить лише тих, хто вже підписаний на push, тож
+    // новачок без підписки, що зник на третій день, інакше не почув би
+    // нічого. Лист лишається єдиним каналом, яким його ще можна покликати.
+    pushInvite: user.has_push !== true,
   });
 
   // Claim уже стоїть. Якщо Resend ЯВНО відмовив (не-2xx), відкочуємо його —

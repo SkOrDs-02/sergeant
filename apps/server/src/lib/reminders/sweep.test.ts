@@ -26,38 +26,64 @@ interface FakeRows {
   skips?: { user_id: string; skip_key: string }[];
   fizruk?: { user_id: string; data: unknown }[];
   nutrition?: { user_id: string; prefs_json: unknown }[];
+  /** Рядки `user_preferences` зі стелею (міграція 148). Нема рядка = 2. */
+  caps?: { user_id: string; push_daily_cap: number }[] | undefined;
+  /** Кандидати нуджа Сержанта (`selectNudgeCandidates`). */
+  nudge?: Record<string, unknown>[];
 }
 
 interface FakePool {
   pool: Pool;
-  /** Кожен `INSERT INTO push_reminder_log` — один запис тут. */
+  /** Кожен виграний claim приводу (не слота бюджету) — один запис тут. */
   claims: { userId: string; dedupKey: string; module: string }[];
+  /** Виграні слоти бюджету, `${userId}|${key}`. */
+  budget: string[];
   deletes: string[];
 }
 
 /**
  * Підроблений `Pool`, що роздає відповіді за назвою таблиці в SQL.
  *
- * `claimWins` дозволяє змоделювати програш дедупу (інша репліка встигла
- * першою) або падіння claim-у, не піднімаючи Postgres.
+ * Журнал `push_reminder_log` змодельовано множиною ключів, як справжній
+ * `ON CONFLICT DO NOTHING`: повторний прохід тієї ж хвилини програє дедуп
+ * рівно так, як у Postgres. `claimWins` дозволяє змоделювати програш
+ * дедупу приводу (інша репліка встигла першою) або падіння claim-у, не
+ * піднімаючи Postgres.
  */
 function fakePool(
   rows: FakeRows = {},
   claimWins: (n: number) => boolean | "throw" = () => true,
 ): FakePool {
   const claims: FakePool["claims"] = [];
+  const budget: string[] = [];
   const deletes: string[] = [];
+  const taken = new Set<string>();
   let claimCount = 0;
 
   const query = vi.fn(async (sql: string, params?: unknown[]) => {
     if (sql.includes("INSERT INTO push_reminder_log")) {
+      const [userId, dedupKey, third] = (params ?? []) as string[];
+      const key = `${userId}|${dedupKey}`;
+      if (sql.includes("'budget'")) {
+        if (taken.has(key)) return { rows: [], rowCount: 0 };
+        taken.add(key);
+        budget.push(key);
+        return { rows: [], rowCount: 1 };
+      }
       claimCount += 1;
       const verdict = claimWins(claimCount);
       if (verdict === "throw") throw new Error("db down");
-      const [userId, dedupKey, module] = (params ?? []) as string[];
-      if (verdict)
-        claims.push({ userId: userId!, dedupKey: dedupKey!, module: module! });
-      return { rows: [], rowCount: verdict ? 1 : 0 };
+      if (!verdict || taken.has(key)) return { rows: [], rowCount: 0 };
+      taken.add(key);
+      claims.push({ userId: userId!, dedupKey: dedupKey!, module: third! });
+      return { rows: [], rowCount: 1 };
+    }
+    if (sql.includes("DELETE FROM push_reminder_log WHERE user_id")) {
+      const [userId, dedupKey] = (params ?? []) as string[];
+      const key = `${userId}|${dedupKey}`;
+      taken.delete(key);
+      budget.splice(budget.indexOf(key), 1);
+      return { rows: [], rowCount: 1 };
     }
     if (sql.includes("DELETE FROM push_reminder_log")) {
       deletes.push(((params ?? []) as string[])[0]!);
@@ -87,10 +113,18 @@ function fakePool(
     if (sql.includes("FROM nutrition_prefs")) {
       return { rows: rows.nutrition ?? [], rowCount: 0 };
     }
+    // Запит стелі читає лише `user_preferences`; запит нуджа теж джойнить
+    // її, але починається з `FROM "user"`, тож перевіряємо його першим.
+    if (sql.includes('FROM "user"')) {
+      return { rows: rows.nudge ?? [], rowCount: 0 };
+    }
+    if (sql.includes("FROM user_preferences")) {
+      return { rows: rows.caps ?? [], rowCount: 0 };
+    }
     throw new Error(`unexpected query: ${sql.slice(0, 60)}`);
   });
 
-  return { pool: { query } as unknown as Pool, claims, deletes };
+  return { pool: { query } as unknown as Pool, claims, budget, deletes };
 }
 
 function habitDbRow(
@@ -303,6 +337,120 @@ describe("гнучка звичка («N разів на тиждень») у sw
 
     expect(result).toMatchObject({ due: 1, sent: 1 });
     expect(claims).toHaveLength(1);
+  });
+});
+
+/**
+ * Спільний бюджет (спека `reward-loop-and-reminders.md`, § Верифікація 5).
+ * Модулі більше не шлють пуші незалежно: усі приводи доби ділять стелю,
+ * а приводи понад неї згортаються в одне сповіщення, а не губляться.
+ */
+describe("спільний бюджет нагадувань", () => {
+  beforeEach(() => sendToUserQuietly.mockClear());
+
+  // Звичка о 08:00 і їжа о 12:00: два модулі з приводом того самого дня.
+  const twoModules = (caps: FakeRows["caps"]): FakeRows => ({
+    routineHabits: [habitDbRow()],
+    nutrition: [
+      {
+        user_id: "u1",
+        prefs_json: { reminderEnabled: true, reminderHour: 12 },
+      },
+    ],
+    caps,
+  });
+  /** Київський час улітку = UTC+3. */
+  const at = (hmUtc: string) => new Date(`2026-08-03T${hmUtc}:00Z`);
+
+  it("стеля 1: два приводи дають одне сповіщення в компромісний час", async () => {
+    const { pool } = fakePool(
+      twoModules([{ user_id: "u1", push_daily_cap: 1 }]),
+    );
+
+    // 08:00 і 12:00 за Києвом: окремих відправок більше немає.
+    expect((await runReminderSweep(pool, at("05:00"))).sent).toBe(0);
+    expect((await runReminderSweep(pool, at("09:00"))).sent).toBe(0);
+
+    // 10:00 за Києвом, середина між 08:00 і 12:00.
+    const result = await runReminderSweep(pool, at("07:00"));
+    expect(result).toMatchObject({ hm: "10:00", due: 2, sent: 1 });
+    expect(sendToUserQuietly).toHaveBeenCalledTimes(1);
+    expect(sendToUserQuietly.mock.calls[0]?.[1]).toMatchObject({
+      title: "Нагадування",
+      body: "Сьогодні: Зарядка, запис їжі.",
+    });
+  });
+
+  it("стеля 0: не приходить нічого", async () => {
+    const { pool, budget } = fakePool(
+      twoModules([{ user_id: "u1", push_daily_cap: 0 }]),
+    );
+    for (const t of ["05:00", "07:00", "09:00"]) {
+      await runReminderSweep(pool, at(t));
+    }
+    expect(sendToUserQuietly).not.toHaveBeenCalled();
+    expect(budget).toHaveLength(0);
+  });
+
+  it("без рядка налаштувань діє дефолт 2: кожен привід у свій час", async () => {
+    const { pool } = fakePool(twoModules(undefined));
+    expect((await runReminderSweep(pool, at("05:00"))).sent).toBe(1);
+    expect((await runReminderSweep(pool, at("09:00"))).sent).toBe(1);
+  });
+
+  it("дві звички на одну хвилину дають одне сповіщення", async () => {
+    const { pool } = fakePool({
+      routineHabits: [habitDbRow(), habitDbRow({ id: "hab_2", name: "Вода" })],
+    });
+    const result = await runReminderSweep(pool, NOW);
+    expect(result).toMatchObject({ due: 2, sent: 1 });
+    expect(sendToUserQuietly.mock.calls[0]?.[1]).toMatchObject({
+      body: "Сьогодні: Зарядка, Вода.",
+    });
+  });
+
+  it("відмічена звичка випадає зі згорнутого сповіщення, решта йде", async () => {
+    const { pool } = fakePool({
+      ...twoModules([{ user_id: "u1", push_daily_cap: 1 }]),
+      completions: [{ user_id: "u1", habit_id: "hab_1", state: "done" }],
+    });
+    const result = await runReminderSweep(pool, at("07:00"));
+    expect(result).toMatchObject({ due: 1, sent: 1 });
+    expect(sendToUserQuietly.mock.calls[0]?.[1]).toMatchObject({
+      title: "Їжа",
+    });
+  });
+
+  it("повторний прохід тієї ж хвилини не шле вдруге і не зʼїдає слот", async () => {
+    const { pool, budget } = fakePool({ routineHabits: [habitDbRow()] });
+    await runReminderSweep(pool, NOW);
+    const second = await runReminderSweep(pool, NOW);
+    expect(second).toMatchObject({ sent: 0, deduped: 1 });
+    expect(sendToUserQuietly).toHaveBeenCalledTimes(1);
+    expect(budget).toEqual(["u1|push-budget-2026-08-03-1"]);
+  });
+
+  it("нудж Сержанта ділить стелю з модулями і згортається з ними", async () => {
+    // Нудж о 09:00 і звичка о 08:00 при стелі 1: одне сповіщення о 08:30,
+    // заголовок веде Сержант.
+    const { pool } = fakePool({
+      routineHabits: [habitDbRow()],
+      caps: [{ user_id: "u1", push_daily_cap: 1 }],
+      nudge: [
+        {
+          user_id: "u1",
+          last_seen_at: new Date("2026-08-01T12:00:00Z"),
+          cached_body: null,
+          cached_generated_at: null,
+        },
+      ],
+    });
+    const result = await runReminderSweep(pool, at("05:30"));
+    expect(result).toMatchObject({ hm: "08:30", due: 2, sent: 1 });
+    expect(sendToUserQuietly.mock.calls[0]?.[1]).toMatchObject({
+      title: "Сержант",
+      body: "Заглянь, я подивлюся на твій тиждень\nСьогодні: Зарядка.",
+    });
   });
 });
 

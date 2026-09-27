@@ -50,6 +50,7 @@ const BASE_PREFS: UserPreferences = {
   aiMemory: false,
   pushNotifications: false,
   sergeantNudges: false,
+  pushDailyCap: 2,
   healthDataConsent: false,
   activeModules: null,
   hubPrefs: null,
@@ -73,10 +74,14 @@ describe("useServerPreference — L-14 GET/PUT race", () => {
     });
 
     const { result } = renderHook(() =>
-      useServerPreference("sergeantNudges", {
-        saveError: "Не вдалося зберегти",
-        authRequired: "Потрібен вхід",
-      }),
+      useServerPreference(
+        "sergeantNudges",
+        {
+          saveError: "Не вдалося зберегти",
+          authRequired: "Потрібен вхід",
+        },
+        false,
+      ),
     );
 
     // Юзер клацає тумблер ще ДО того, як початковий GET відповів.
@@ -110,10 +115,14 @@ describe("useServerPreference — L-14 GET/PUT race", () => {
     updatePreferencesMock.mockRejectedValue(new Error("network down"));
 
     const { result } = renderHook(() =>
-      useServerPreference("sergeantNudges", {
-        saveError: "Не вдалося зберегти",
-        authRequired: "Потрібен вхід",
-      }),
+      useServerPreference(
+        "sergeantNudges",
+        {
+          saveError: "Не вдалося зберегти",
+          authRequired: "Потрібен вхід",
+        },
+        false,
+      ),
     );
 
     // Клік ДО того, як початковий GET відповів — PUT падає мережевою
@@ -153,10 +162,14 @@ describe("useServerPreference — L-14 GET/PUT race", () => {
 
     const { result, rerender } = renderHook(
       (props: { authRequired: string }) =>
-        useServerPreference("sergeantNudges", {
-          saveError: "Не вдалося зберегти",
-          authRequired: props.authRequired,
-        }),
+        useServerPreference(
+          "sergeantNudges",
+          {
+            saveError: "Не вдалося зберегти",
+            authRequired: props.authRequired,
+          },
+          false,
+        ),
       { initialProps: { authRequired: "Потрібен вхід" } },
     );
 
@@ -196,10 +209,14 @@ describe("useServerPreference — L-14 GET/PUT race", () => {
 
     const { result, rerender } = renderHook(
       (props: { key: "aiMemory" | "pushNotifications" }) =>
-        useServerPreference(props.key, {
-          saveError: "Не вдалося зберегти",
-          authRequired: "Потрібен вхід",
-        }),
+        useServerPreference(
+          props.key,
+          {
+            saveError: "Не вдалося зберегти",
+            authRequired: "Потрібен вхід",
+          },
+          false,
+        ),
       { initialProps: { key: "aiMemory" } },
     );
 

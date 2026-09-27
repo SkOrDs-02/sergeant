@@ -32,6 +32,7 @@ vi.mock("@shared/api", () => {
     aiMemory: true,
     pushNotifications: false,
     sergeantNudges: false,
+    pushDailyCap: 2,
     healthDataConsent: false,
     activeModules: null,
     hubPrefs: null,

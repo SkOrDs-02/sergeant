@@ -109,7 +109,7 @@
     "sergeant-module-push": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "1b786ed5ebd70cd46ad04593071b3ab0e087bba5b9c9b4e9f69f853a27ace4d2"
+      "computedHash": "f8178e313e4e5eae1f6f89215ffadc0efc7c3efe7e481c2ae690cae115601f93"
     },
     "sergeant-module-routine": {
       "source": "local",

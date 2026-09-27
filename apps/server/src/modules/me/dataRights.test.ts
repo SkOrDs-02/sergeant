@@ -58,6 +58,7 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       // Проактивний канал Сержанта — opt-in, вимкнений і для нових акаунтів
       // (міграція 100). Дефолт тут — частина контракту, не деталь реалізації.
       sergeantNudges: false,
+      pushDailyCap: 2,
       // GDPR Art. 9 health-data consent — explicit opt-in only (migration 111).
       healthDataConsent: false,
       // Міграція 116 (знахідка B2): `null`, а не `[]`. Дефолт `[]`
@@ -76,6 +77,7 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
         ai_memory: true,
         push_notifications: true,
         sergeant_nudges: true,
+        push_daily_cap: 3,
         health_data_consent: true,
         active_modules: ["nutrition", "finyk"],
         hub_prefs: { calmMode: true },
@@ -88,6 +90,7 @@ describe("getUserPreferences — contract fixture (Hard Rule #3)", () => {
       aiMemory: true,
       pushNotifications: true,
       sergeantNudges: true,
+      pushDailyCap: 3,
       healthDataConsent: true,
       // Порядок вибору зберігається наскрізь: `TEXT[]` у 116 → `pg` →
       // серіалізатор. Це не косметика — на хабі плитки шикуються саме

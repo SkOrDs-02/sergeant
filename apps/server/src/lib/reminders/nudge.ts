@@ -37,11 +37,10 @@
  * б у ретеншені й у правилах київської доби.
  */
 
-import { toLocalISODate, kyivCalendarDaysBetween } from "@sergeant/shared";
+import { kyivCalendarDaysBetween } from "@sergeant/shared";
 import type { Pool } from "pg";
 
-import { logger, serializeError } from "../../obs/logger.js";
-import { sendToUserQuietly } from "../../push/send.js";
+import type { DueReminder } from "./due.js";
 
 /**
  * На яку добу відсутності будимо. Затухаюча послідовність, а не «щодня»:
@@ -58,7 +57,11 @@ export const NUDGE_ABSENCE_DAYS: readonly number[] = [2, 4, 7];
  */
 export const NUDGE_CACHE_TTL_MS = 48 * 60 * 60_000;
 
-/** Тихі години у київському часі: [22:00, 08:00). */
+/**
+ * Тихі години у київському часі: [22:00, 08:00). Слот нуджа (09:00) у них
+ * не потрапляє за конструкцією; межі читає план бюджету (`./budget.ts`),
+ * щоб компромісний час згорнутого сповіщення не впав у ніч.
+ */
 export const QUIET_HOURS_START_KYIV = 22;
 export const QUIET_HOURS_END_KYIV = 8;
 
@@ -69,29 +72,6 @@ export const NUDGE_TITLE = "Сержант";
  * тверджень про конкретний період — вона має бути правдивою й через тиждень.
  */
 export const NUDGE_NEUTRAL_BODY = "Заглянь, я подивлюся на твій тиждень";
-
-const KYIV_HOUR_FORMATTER = new Intl.DateTimeFormat("en-GB", {
-  timeZone: "Europe/Kyiv",
-  hour: "2-digit",
-  hour12: false,
-});
-
-/** Година доби (0–23) у Europe/Kyiv. */
-export function kyivHour(now: Date): number {
-  return Number(KYIV_HOUR_FORMATTER.format(now)) % 24;
-}
-
-/**
- * Чи потрапляє момент у тихі години.
- *
- * Прохід, що дійшов до виконання всередині вікна (процес перезапустився після
- * нічного деплою і надолужує), СКАСОВУЄТЬСЯ, а не переноситься: краще
- * пропустити день, ніж розбудити людину о третій ночі.
- */
-export function isQuietHour(now: Date): boolean {
-  const hour = kyivHour(now);
-  return hour >= QUIET_HOURS_START_KYIV || hour < QUIET_HOURS_END_KYIV;
-}
 
 export interface NudgeCandidate {
   userId: string;
@@ -160,8 +140,11 @@ export function nudgeDedupKey(dayKey: string): string {
 /**
  * Кандидати на пуш за поточну київську добу.
  *
- * Фільтри, що дешевше зробити в SQL, лишаються в SQL: opt-in, наявність
- * активної web-підписки, відсутність уже надісланого сьогодні. Арифметика
+ * Фільтри, що дешевше зробити в SQL, лишаються в SQL: opt-in і наявність
+ * активної web-підписки. «Уже надіслано сьогодні» тут НЕ фільтрується:
+ * кандидати входять у план дня (`./budget.ts`), який перераховується
+ * щохвилини, і зникнення нуджа одразу після відправки зсунуло б решту
+ * слотів. Повтор відсікає claim у `push_reminder_log`. Арифметика
  * діб рахується у JS через `kyivCalendarDaysBetween` — вона DST-коректна і є
  * єдиним джерелом правди щодо київських меж доби; дублювати її в SQL означало
  * б завести другу, тихо розбіжну реалізацію.
@@ -171,11 +154,10 @@ export function nudgeDedupKey(dayKey: string): string {
  * акаунт виглядав би як «відсутній нескінченно довго».
  */
 export async function selectNudgeCandidates(
-  db: NudgeDb,
+  db: NudgeDb | Pool,
   now: Date,
 ): Promise<NudgeCandidate[]> {
-  const today = toLocalISODate(now);
-  const { rows } = await db.query(
+  const { rows } = await (db as NudgeDb).query(
     `SELECT u.id            AS user_id,
             u.last_seen_at  AS last_seen_at,
             c.body          AS cached_body,
@@ -189,12 +171,7 @@ export async function selectNudgeCandidates(
         AND EXISTS (
               SELECT 1 FROM push_subscriptions s
                WHERE s.user_id = u.id AND s.deleted_at IS NULL
-            )
-        AND NOT EXISTS (
-              SELECT 1 FROM push_reminder_log l
-               WHERE l.user_id = u.id AND l.dedup_key = $1
             )`,
-    [nudgeDedupKey(today)],
   );
 
   const candidates: NudgeCandidate[] = [];
@@ -223,109 +200,30 @@ export async function selectNudgeCandidates(
 }
 
 /**
- * Резервує добу для юзера. `true` — резерв наш, можна слати.
+ * Слот нуджа, 09:00 Europe/Kyiv (спека D5).
  *
- * Claim-before-send навмисно: вставка з `ON CONFLICT DO NOTHING` атомарна, тож
- * дві репліки конкурують за один рядок і виграє рівно одна. Зворотний порядок
- * («надіслати, потім записати») дав би вікно на подвійне сповіщення. Ціна
- * такого вибору — якщо відправка після резерву впаде, користувач пропустить
- * цей день; це свідомо кращий бік помилки.
+ * Нудж більше не має власного проходу: він привід у спільному плані дня
+ * (`./sweep.ts`), тож ділить стелю з нагадуваннями модулів і згортається з
+ * ними в одне сповіщення, коли приводів більше за стелю.
  */
-export async function claimNudgeSlot(
-  db: NudgeDb,
-  userId: string,
+export const NUDGE_AT_HM = "09:00";
+
+/** Кандидат нуджа як привід у плані дня. */
+export function nudgeReason(
+  candidate: NudgeCandidate,
   dayKey: string,
-): Promise<boolean> {
-  const result = await db.query(
-    `INSERT INTO push_reminder_log (user_id, dedup_key, module, day_key)
-       VALUES ($1, $2, 'sergeant', $3)
-       ON CONFLICT (user_id, dedup_key) DO NOTHING`,
-    [userId, nudgeDedupKey(dayKey), dayKey],
-  );
-  return (result.rowCount ?? 0) > 0;
-}
-
-export interface NudgeSweepSummary {
-  candidates: number;
-  sent: number;
-  skippedQuietHours: boolean;
-}
-
-export interface NudgeSweepDeps {
-  now?: Date;
-  /** Інʼєкція відправника — тести не піднімають push-стек. */
-  send?: (
-    userId: string,
-    payload: { title: string; body: string; tag: string; url: string },
-  ) => Promise<void>;
-}
-
-async function defaultSend(
-  userId: string,
-  payload: { title: string; body: string; tag: string; url: string },
-): Promise<void> {
-  await sendToUserQuietly(userId, payload, { module: "sergeant" });
-}
-
-/**
- * Один прохід. Публічний і чистий від планувальника, щоб тести ганяли логіку
- * без таймерів.
- */
-export async function runSergeantNudgeSweep(
-  db: NudgeDb | Pool,
-  deps: NudgeSweepDeps = {},
-): Promise<NudgeSweepSummary> {
-  const now = deps.now ?? new Date();
-  const send = deps.send ?? defaultSend;
-
-  if (isQuietHour(now)) {
-    logger.info({ msg: "sergeant_nudge_sweep_skipped_quiet_hours" });
-    return { candidates: 0, sent: 0, skippedQuietHours: true };
-  }
-
-  const today = toLocalISODate(now);
-  const candidates = await selectNudgeCandidates(db as NudgeDb, now);
-  let sent = 0;
-
-  // Послідовний цикл. При базі в десятки тисяч активних opt-in юзерів це
-  // стане вузьким місцем — тоді прохід має розбиватись на батчі, а не слати
-  // все підряд в одному тіку.
-  for (const candidate of candidates) {
-    let claimed = false;
-    try {
-      claimed = await claimNudgeSlot(db as NudgeDb, candidate.userId, today);
-    } catch (err) {
-      // Не змогли застовпити — НЕ шлемо. Без резерву обіцянка «рівно один
-      // раз» не тримається, а мовчання дешевше за щоденний дубль.
-      logger.warn({
-        msg: "sergeant_nudge_claim_failed",
-        err: serializeError(err, { includeStack: false }),
-      });
-      continue;
-    }
-    if (!claimed) continue;
-    try {
-      await send(candidate.userId, {
-        title: NUDGE_TITLE,
-        body: buildNudgeBody(candidate, now),
-        // Стабільний tag: браузер склеює повтори в одне сповіщення, тож
-        // навіть збій дедупу вище лишається невидимим для юзера.
-        tag: nudgeDedupKey(today),
-        url: "/",
-      });
-      sent++;
-    } catch (err) {
-      logger.warn({
-        msg: "sergeant_nudge_send_failed",
-        err: serializeError(err, { includeStack: false }),
-      });
-    }
-  }
-
-  logger.info({
-    msg: "sergeant_nudge_sweep_done",
-    candidates: candidates.length,
-    sent,
-  });
-  return { candidates: candidates.length, sent, skippedQuietHours: false };
+  now: Date,
+): DueReminder {
+  return {
+    userId: candidate.userId,
+    module: "sergeant",
+    // Стабільний tag: браузер склеює повтори в одне сповіщення, тож навіть
+    // збій дедупу лишається невидимим для людини.
+    dedupKey: nudgeDedupKey(dayKey),
+    title: NUDGE_TITLE,
+    body: buildNudgeBody(candidate, now),
+    url: "/",
+    at: NUDGE_AT_HM,
+    label: NUDGE_TITLE,
+  };
 }

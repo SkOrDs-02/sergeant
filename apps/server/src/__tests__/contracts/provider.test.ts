@@ -444,6 +444,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
       aiMemory: boolean;
       pushNotifications: boolean;
       sergeantNudges: boolean;
+      pushDailyCap: number;
       healthDataConsent: boolean;
       activeModules: string[] | null;
       hubPrefs: Record<string, unknown> | null;
@@ -458,6 +459,7 @@ describe("Pact provider replay — consumer=sergeant-api-client, provider=sergea
           ai_memory: expected.aiMemory,
           push_notifications: expected.pushNotifications,
           sergeant_nudges: expected.sergeantNudges,
+          push_daily_cap: expected.pushDailyCap,
           health_data_consent: expected.healthDataConsent,
           // Nullable-колонка без DEFAULT (міграція 116): персона pact-а
           // ще не робила вибору модулів, тож `pg` віддає `null`, а

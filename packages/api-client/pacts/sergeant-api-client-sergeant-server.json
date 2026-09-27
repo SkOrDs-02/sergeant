@@ -666,6 +666,7 @@
           "analytics": false,
           "healthDataConsent": true,
           "hubPrefs": null,
+          "pushDailyCap": 3,
           "pushNotifications": true,
           "sergeantNudges": false,
           "updatedAt": "2026-08-01T12:00:00.000Z"

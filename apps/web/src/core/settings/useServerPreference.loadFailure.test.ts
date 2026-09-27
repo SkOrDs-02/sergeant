@@ -39,7 +39,7 @@ const COPY = {
 };
 
 const mount = () =>
-  renderHook(() => useServerPreference("sergeantNudges", COPY));
+  renderHook(() => useServerPreference("sergeantNudges", COPY, false));
 
 beforeEach(() => {
   getPreferencesMock.mockReset();
