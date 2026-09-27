@@ -5,6 +5,7 @@
 import { cn } from "@shared/lib/ui/cn";
 import { Icon } from "@shared/components/ui/Icon";
 import { IconButton } from "@shared/components/ui/IconButton";
+import { formatDayMonth } from "@shared/lib/time/formatDate";
 import {
   addDays,
   dateKeyFromDate,
@@ -79,7 +80,7 @@ export function WeekDayStrip({
               key={k}
               type="button"
               aria-pressed={isSel}
-              aria-label={`${full[i]}, ${k}${isToday ? " (сьогодні)" : ""}`}
+              aria-label={`${full[i]}, ${formatDayMonth(parseDateKey(k))}${isToday ? " (сьогодні)" : ""}`}
               onClick={() => onSelectDay(k)}
               className={cn(
                 // Розміру шрифта на кнопці НЕМАЄ навмисно: обидва вкладені

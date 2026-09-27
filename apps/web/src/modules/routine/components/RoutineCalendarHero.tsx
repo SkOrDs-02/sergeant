@@ -165,7 +165,11 @@ export function RoutineCalendarHero({
             onClick={onOpenDayReport}
           />
         </div>
-        <div className="min-w-0 flex-1 pr-12">
+        {/* Місце під вогник лише тоді, коли він є: без серії 48px фантому
+            на 320-360px загортали дату в 2-3 рядки. */}
+        <div
+          className={flame.visible ? "min-w-0 flex-1 pr-12" : "min-w-0 flex-1"}
+        >
           <p className="text-style-caption font-semibold text-hero-ink/95">
             {SLICE_LABEL[timeMode]}
           </p>

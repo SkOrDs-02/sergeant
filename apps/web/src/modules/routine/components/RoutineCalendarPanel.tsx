@@ -338,7 +338,6 @@ export function RoutineCalendarPanel({
                             : e.habitId
                               ? C.habitRowAccent
                               : "border-l-transparent",
-                        e.completed && e.habitId && "opacity-90",
                       )}
                     >
                       <div className="flex items-start justify-between gap-3 sm:gap-2">
@@ -346,7 +345,7 @@ export function RoutineCalendarPanel({
                           className={cn(
                             "min-w-0 flex-1 flex flex-col justify-center",
                             (e.habitId || e.fizruk) &&
-                              "cursor-pointer min-h-[44px]",
+                              "cursor-pointer min-h-[44px] rounded-lg focus-ring",
                           )}
                           role={e.habitId || e.fizruk ? "button" : undefined}
                           tabIndex={e.habitId || e.fizruk ? 0 : undefined}
@@ -480,7 +479,7 @@ export function RoutineCalendarPanel({
                           return (
                             <button
                               type="button"
-                              className="text-style-caption text-subtle min-h-[44px] min-w-[44px] px-1 text-left focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-ring"
+                              className="text-style-caption text-subtle min-h-[44px] min-w-[44px] px-1 text-left rounded-lg focus-ring"
                               onClick={() =>
                                 setNoteExpanded((p) => ({
                                   ...p,
