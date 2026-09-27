@@ -41,7 +41,7 @@ export interface Insight {
   detail: string;
 }
 
-interface Workout {
+export interface Workout {
   startedAt: string;
   endedAt?: string;
 }
@@ -58,7 +58,7 @@ function safeLS<T>(key: string, fallback: T): T {
   return safeReadLS<T>(key, fallback) ?? fallback;
 }
 
-function parseFizrukWorkouts(): Workout[] {
+export function parseFizrukWorkouts(): Workout[] {
   // Canonical workouts — SQLite warm cache (`fizruk_workouts_v1` tombstoned).
   // Cold cache (`refreshedAt === null`) = no data. The insights only read
   // `startedAt` / `endedAt`, so map the domain `Workout` to the loose shape.
@@ -104,13 +104,19 @@ export const HABIT_INSIGHT_MIN_COMPLETIONS = 28;
 export const HABIT_INSIGHT_MIN_WEEKS = 4;
 /** Найкращий місяць має з чим порівнюватись лише від двох місяців історії. */
 export const HABIT_INSIGHT_MIN_MONTHS = 2;
+/** Калорії в дні тренувань проти днів відпочинку (інсайт 4). */
+export const KCAL_INSIGHT_MIN_DAYS = 20;
+export const KCAL_INSIGHT_MIN_PER_GROUP = 7;
+export const KCAL_INSIGHT_MIN_DIFF = 50;
 
 /**
  * Insight 1: Best day-of-week for workouts.
  * Requires ≥ 20 completed workouts (satisfies both "4 weeks" and "20+ events").
  */
-function workoutDayInsight(): Insight | null {
-  const workouts = parseFizrukWorkouts().filter((w) => w.endedAt);
+export function workoutDayInsight(
+  all: Workout[] = parseFizrukWorkouts(),
+): Insight | null {
+  const workouts = all.filter((w) => w.endedAt);
   if (workouts.length < WORKOUT_INSIGHT_MIN_WORKOUTS) return null;
 
   const dowCount = Array<number>(7).fill(0);
@@ -322,12 +328,17 @@ export function bestHabitMonthInsight(
  * Requires ≥ 20 total nutrition-logged days (satisfies "20+ events" spec threshold)
  * AND ≥ 7 days in each group (workout / rest).
  */
-function workoutKcalInsight(): Insight | null {
-  const workouts = parseFizrukWorkouts().filter((w) => w.endedAt);
-  const log = loadNutritionLog();
+type NutritionLogShape = ReturnType<typeof loadNutritionLog>;
 
+/** Дні з калоріями, розкладені на дні тренувань і дні відпочинку. */
+export function workoutKcalGroups(
+  all: Workout[],
+  log: NutritionLogShape,
+): { kcalWorkout: number[]; kcalRest: number[] } {
   const workoutDays = new Set<string>(
-    workouts.map((w) => getKyivDayKey(new Date(w.startedAt))),
+    all
+      .filter((w) => w.endedAt)
+      .map((w) => getKyivDayKey(new Date(w.startedAt))),
   );
 
   const kcalWorkout: number[] = [];
@@ -343,9 +354,26 @@ function workoutKcalInsight(): Insight | null {
       kcalRest.push(kcal);
     }
   }
+  return { kcalWorkout, kcalRest };
+}
 
-  if (kcalWorkout.length + kcalRest.length < 20) return null;
-  if (kcalWorkout.length < 7 || kcalRest.length < 7) return null;
+/**
+ * Дані приймаються параметрами з тієї ж причини, що й у
+ * `bestHabitMonthInsight`: момент «поріг перетнуто» питає рушій про стан
+ * до і після запису, а запис у сховище доїжджає асинхронно.
+ */
+export function workoutKcalInsight(
+  all: Workout[] = parseFizrukWorkouts(),
+  log: NutritionLogShape = loadNutritionLog(),
+): Insight | null {
+  const { kcalWorkout, kcalRest } = workoutKcalGroups(all, log);
+
+  if (kcalWorkout.length + kcalRest.length < KCAL_INSIGHT_MIN_DAYS) return null;
+  if (
+    kcalWorkout.length < KCAL_INSIGHT_MIN_PER_GROUP ||
+    kcalRest.length < KCAL_INSIGHT_MIN_PER_GROUP
+  )
+    return null;
 
   const avgWorkout = Math.round(
     kcalWorkout.reduce((s, k) => s + k, 0) / kcalWorkout.length,
@@ -355,7 +383,7 @@ function workoutKcalInsight(): Insight | null {
   );
 
   const diff = avgWorkout - avgRest;
-  if (Math.abs(diff) < 50) return null;
+  if (Math.abs(diff) < KCAL_INSIGHT_MIN_DIFF) return null;
 
   const sign = diff > 0 ? "+" : "";
   return {

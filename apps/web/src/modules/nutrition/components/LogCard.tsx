@@ -22,6 +22,7 @@ import { DayLogSheet } from "./DayLogSheet";
 import { LogCardSearch } from "./LogCardSearch";
 import { LogCardWeeklyTable } from "./LogCardWeeklyTable";
 import { LogCardAnalytics } from "./LogCardAnalytics";
+import { MealMomentLine } from "./MealMomentLine";
 
 interface LogCardProps {
   log: NutritionLog;
@@ -166,6 +167,8 @@ export function LogCard({
             onEditMeal={onEditMeal}
           />
         )}
+
+        <MealMomentLine date={selectedDate} />
 
         <button
           type="button"

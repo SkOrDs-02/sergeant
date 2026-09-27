@@ -27,9 +27,17 @@ import type { Moment } from "./moments";
 const KEY = STORAGE_KEYS.MOMENTS_TODAY;
 
 const MomentSchema = z.object({
-  kind: z.enum(["threshold", "streak", "freeze", "dayClosed", "approach"]),
+  kind: z.enum([
+    "threshold",
+    "link",
+    "streak",
+    "freeze",
+    "dayClosed",
+    "approach",
+  ]),
   target: z.string(),
   value: z.number().optional(),
+  detail: z.string().optional(),
 });
 
 const StoredSchema = z.object({

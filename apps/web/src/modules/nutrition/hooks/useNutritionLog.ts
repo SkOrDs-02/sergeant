@@ -30,6 +30,7 @@ import {
 } from "../lib/nutritionStorage";
 import { deleteMealThumbnail, gcMealThumbnails } from "../lib/mealPhotoStorage";
 import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
+import { clearMealMoment, recordMealMoment } from "../lib/mealMoments";
 import { useNutritionSqliteReadTick } from "../lib/sqliteReadGate";
 
 /**
@@ -141,6 +142,14 @@ export function useNutritionLog() {
   const handleAddMeal = (meal: Partial<Meal>) => {
     setNutritionLog((log) => addLogEntry(log, selectedDate, meal));
     setAddMealSheetOpen(false);
+    // Момент рахується з поточного стану хука, а не всередині оновлювача:
+    // оновлювач React кличе пізніше і може кликати двічі. `addLogEntry`
+    // тут чистий, тож «після» для моменту збігається з тим, що ляже в лог.
+    recordMealMoment(
+      nutritionLog,
+      addLogEntry(nutritionLog, selectedDate, meal),
+      selectedDate,
+    );
     // Телеметрія (Хвиля 2, `nutrition_meal_logged`). Fire-and-forget поза
     // state-updater-ом: `setNutritionLog` — оновлювач, і сайд-ефект у ньому
     // виконався б у render-фазі (та сама пастка, що в routine).
@@ -190,6 +199,7 @@ export function useNutritionLog() {
     }, 6000);
     pendingThumbDeletesRef.current.set(id, t);
     setNutritionLog((log) => removeLogEntry(log, date, id));
+    clearMealMoment(date);
   };
 
   const handleRestoreMeal = (

@@ -42,6 +42,7 @@ import {
 import type { WorkoutFinishSummary } from "@sergeant/fizruk-domain";
 import type { RestTimerState } from "../../hooks/useFizrukRestSound";
 import { trackFizrukWorkoutDiscarded } from "../../lib/workoutTelemetry";
+import { recordWorkoutMoment } from "../../lib/workoutMoments";
 
 /**
  * Local view state used to drive the post-finish flash card. The shape merges
@@ -233,6 +234,8 @@ export function WorkoutJournalSection({
                 sum === null ? null : Math.round(sum.durationSec / 60),
               ...readSignalContext("fizruk"),
             });
+            // До `endWorkout`: кеш ще тримає стан «до» (ADR-0096, момент).
+            recordWorkoutMoment(wid, activeWorkout.startedAt);
             endWorkout(wid);
             // Confirm the action visually + with haptic so the user does
             // not have to read the modal to know the session was saved.
