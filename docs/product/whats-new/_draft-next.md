@@ -19,7 +19,7 @@
 ## Пункти-кандидати
 
 _Порожньо._ Попередня хвиля випущена як
-[`2026-08-12-easier-meal-entry`](./2026-08-12-easier-meal-entry.md).
+[`2026-09-28-forecasts-and-imports`](./2026-09-28-forecasts-and-imports.md).
 
 ## Джерела
 
