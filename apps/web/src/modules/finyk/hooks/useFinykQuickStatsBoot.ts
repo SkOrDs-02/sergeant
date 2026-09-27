@@ -1,6 +1,7 @@
 import { useEffect } from "react";
 import { buildFinykExcludedTxIds } from "@sergeant/finyk-domain";
 import { manualExpenseToTransaction } from "@sergeant/finyk-domain/domain/transactions";
+import { getLimitBudgets } from "@sergeant/finyk-domain/domain/budget";
 import { useFinykMonoMirrorTick } from "../lib/monoMirrorGate";
 import { getVisibleFinykMonoMirrorState } from "../lib/monoMirrorReader";
 import { useFinykSqliteReadTick } from "../lib/sqliteReadGate";
@@ -48,6 +49,7 @@ export function useFinykQuickStatsBoot(): void {
       excludedTxIds,
       txSplits: storage.txSplits,
       planExpense: Number(storage.monthlyPlan?.expense || 0),
+      limitsCount: getLimitBudgets(storage.budgets).length,
     });
   }, [monoMirrorTick, sqliteTick]);
 }
