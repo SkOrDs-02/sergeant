@@ -60,9 +60,17 @@ export interface PrBadgeProps {
  * chrome) and `aria-hidden` because the badge is a decorative
  * summary — the underlying PR data is reachable through Progress.
  */
+/**
+ * The hero reserves corner space whenever it gets a `cornerSlot`, so callers
+ * must pass the badge only when it will render (a `null`-returning element is
+ * still truthy and squeezed the kicker into ~120px on first run).
+ */
+export function isPrBadgeVisible(pr: PrLatest | null): pr is PrLatest {
+  return pr != null && pr.daysAgo <= DISPLAY_WINDOW_DAYS;
+}
+
 export function PrBadge({ pr }: PrBadgeProps) {
-  if (!pr) return null;
-  if (pr.daysAgo > DISPLAY_WINDOW_DAYS) return null;
+  if (!isPrBadgeVisible(pr)) return null;
 
   const exerciseShort = shortExerciseName(pr.exerciseName);
   // Round to one decimal so "82.5" stays exact but "80" doesn't show

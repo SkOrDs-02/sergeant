@@ -15,7 +15,7 @@ describe("FizrukHeader", () => {
       "Фізрук",
     );
     const backBtn = screen.getByRole("button", {
-      name: "Назад до Моє тіло",
+      name: "Назад: Моє тіло",
     });
     fireEvent.click(backBtn);
     expect(onContextualBack).toHaveBeenCalledTimes(1);
@@ -78,10 +78,10 @@ describe("FizrukHeader", () => {
   // сторінка згори докладала власну стрілку — два-три виходи поруч
   // (`programs` при цьому не мала жодного).
   it.each([
-    ["catalog", "Назад до Тренування"],
-    ["templates", "Назад до Тренування"],
-    ["history", "Назад до Огляд"],
-    ["programs", "Назад до Огляд"],
+    ["catalog", "Назад: Тренування"],
+    ["templates", "Назад: Тренування"],
+    ["history", "Назад: Огляд"],
+    ["programs", "Назад: Огляд"],
   ] as const)(
     "на '%s' дає РІВНО один вихід — контекстний back «%s»",
     (page, label) => {

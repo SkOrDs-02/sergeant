@@ -17,13 +17,21 @@
  */
 import { formatNumberUk } from "@sergeant/shared";
 
+// Типографський мінус, як у `Measure` на решті екранів: дельта «-0,5 кг» у
+// Замірах стояла поруч із «−2,6 кг» на Тілі.
+function withMinusSign(s: string): string {
+  return s.startsWith("-") ? `−${s.slice(1)}` : s;
+}
+
 export function fmt(n: number | string | null | undefined, digits = 0): string {
   const x = Number(n);
   if (!Number.isFinite(x)) return "—";
-  return formatNumberUk(x, {
-    minimumFractionDigits: digits,
-    maximumFractionDigits: digits,
-  });
+  return withMinusSign(
+    formatNumberUk(x, {
+      minimumFractionDigits: digits,
+      maximumFractionDigits: digits,
+    }),
+  );
 }
 
 /**
@@ -36,5 +44,5 @@ export function fmtLoose(
 ): string {
   const x = Number(n);
   if (!Number.isFinite(x)) return "—";
-  return formatNumberUk(x, { maximumFractionDigits: digits });
+  return withMinusSign(formatNumberUk(x, { maximumFractionDigits: digits }));
 }

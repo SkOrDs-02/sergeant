@@ -189,6 +189,7 @@ vi.mock("../components/dashboard/RecentWorkoutsSection", () => ({
 
 vi.mock("../components/dashboard/PrBadge", () => ({
   PrBadge: () => <div data-testid="pr-badge" />,
+  isPrBadgeVisible: (pr: unknown) => pr != null,
 }));
 
 // ── Imports under test ───────────────────────────────────────────────────────
@@ -588,10 +589,10 @@ describe("Dashboard extended coverage", () => {
     // Click the template button — recovery conflict → plan confirm sheet opens
     fireEvent.click(screen.getByText("Спина"));
 
-    // Sheet title "Увага" should appear
-    expect(screen.getByText("Увага")).toBeInTheDocument();
+    // Sheet title "Мʼязи ще відновлюються" should appear
+    expect(screen.getByText("Мʼязи ще відновлюються")).toBeInTheDocument();
     expect(screen.getByText("Скасувати")).toBeInTheDocument();
-    expect(screen.getByText("Продовжити")).toBeInTheDocument();
+    expect(screen.getByText("Почати все одно")).toBeInTheDocument();
   });
 });
 
@@ -709,11 +710,13 @@ describe("Dashboard — navigation callbacks", () => {
     render(<Dashboard {...defaultProps} />);
     fireEvent.click(screen.getByText("Спина"));
     // Sheet is now open
-    expect(screen.getByText("Увага")).toBeInTheDocument();
+    expect(screen.getByText("Мʼязи ще відновлюються")).toBeInTheDocument();
     // Click Скасувати to dismiss
     fireEvent.click(screen.getByText("Скасувати"));
     // Sheet should be gone
-    expect(screen.queryByText("Увага")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Мʼязи ще відновлюються"),
+    ).not.toBeInTheDocument();
   });
 
   it("calls onNavigate('workouts') when InsightCard is activated", () => {
@@ -820,12 +823,14 @@ describe("Dashboard — Продовжити confirm flow", () => {
 
     render(<Dashboard {...defaultProps} />);
     fireEvent.click(screen.getByText("Руки"));
-    expect(screen.getByText("Увага")).toBeInTheDocument();
+    expect(screen.getByText("Мʼязи ще відновлюються")).toBeInTheDocument();
 
-    fireEvent.click(screen.getByText("Продовжити"));
+    fireEvent.click(screen.getByText("Почати все одно"));
 
     // Sheet closes
-    expect(screen.queryByText("Увага")).not.toBeInTheDocument();
+    expect(
+      screen.queryByText("Мʼязи ще відновлюються"),
+    ).not.toBeInTheDocument();
     // Lands straight in the freshly created session
     expect(mockNavigate).toHaveBeenCalledWith("workout/w-new");
   });

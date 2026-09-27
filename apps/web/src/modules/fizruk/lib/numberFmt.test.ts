@@ -53,8 +53,9 @@ describe("fmt", () => {
   });
 
   it("formats negative numbers", () => {
-    expect(fmt(-3, 0)).toBe("-3");
-    expect(fmt(-1.2, 1)).toBe("-1,2");
+    expect(fmt(-3, 0)).toBe("−3");
+    expect(fmt(-1.2, 1)).toBe("−1,2");
+    expect(fmtLoose(-0.5)).toBe("−0,5");
   });
 });
 

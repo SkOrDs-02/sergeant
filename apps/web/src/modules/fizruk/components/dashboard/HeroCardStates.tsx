@@ -174,12 +174,13 @@ export interface HeroBodyInfo {
 }
 
 /**
- * Renders the `<день тижня, дата> · серія N тижн. · M тренувань` kicker.
+ * Renders the `<день тижня, дата> · серія N тижнів · M тренувань` kicker
+ * (zero segments are dropped, so a first-run hero shows just the date).
  * Shared across all states so the top of the hero always anchors "when am
  * I" — and, since the three-tile streak/week strip that used to render
  * below the hero is gone (спека рішення 3), now also carries that
  * streak/week readout. `greeting` dropped intentionally: the demo mock and
- * click-through checklist both show the kicker as `<дата> · серія N тижн. ·
+ * click-through checklist both show the kicker as `<дата> · серія N тижнів ·
  * M тренувань`, no separate time-of-day greeting segment.
  */
 function HeroKicker({
@@ -192,13 +193,24 @@ function HeroKicker({
     few: "тренування",
     many: "тренувань",
   });
+  const weeksLabel = pluralUa(streakWeeks, {
+    one: "тиждень",
+    few: "тижні",
+    many: "тижнів",
+  });
+  // Нулі не показуємо: «серія 0 тижн. · 0 тренувань» поруч із порожнім
+  // планом — рівно те, що принцип «порожній стан, не нулі» (#17) прибирає.
+  const parts = [
+    today,
+    streakWeeks > 0 ? `серія ${streakWeeks} ${weeksLabel}` : null,
+    weeklyWorkoutsCount > 0 ? `${weeklyWorkoutsCount} ${workoutsLabel}` : null,
+  ].filter(Boolean);
   return (
     // «Чорнило» v3.1 § 3: overrides the light `text-fizruk-strong` (now
     // invisible on the saturated hero gradient) with hero-ink;
     // `dark:text-fizruk-300/70` already reads fine on the dark hero.
     <SectionHeading as="p" size="xs" variant="fizruk" className="text-hero-ink">
-      {today} · серія {streakWeeks} тижн. · {weeklyWorkoutsCount}{" "}
-      {workoutsLabel}
+      {parts.join(" · ")}
     </SectionHeading>
   );
 }
@@ -283,7 +295,7 @@ export function ActiveState({
       <div className="mt-6">
         <button
           type="button"
-          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg dark:bg-fizruk dark:text-bg"
+          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg"
           onClick={onResume}
           aria-label="Повернутись до активного тренування"
         >
@@ -294,7 +306,11 @@ export function ActiveState({
             <PlayIcon />
           </span>
           <span className="min-w-0 flex-1">
-            <SectionHeading as="span" size="xs" className="block text-white/70">
+            <SectionHeading
+              as="span"
+              size="xs"
+              className="block text-white/70 dark:text-bg/70"
+            >
               Продовжити
             </SectionHeading>
             <span className="block text-style-title leading-tight">
@@ -346,7 +362,7 @@ export function TodayState({
       <div className="mt-6">
         <button
           type="button"
-          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg dark:bg-fizruk dark:text-bg"
+          className="w-full py-4 px-5 rounded-2xl bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] flex items-center gap-3 text-left focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg"
           onClick={onStartToday}
           aria-label={`Почати тренування: ${state.label}`}
         >
@@ -357,7 +373,11 @@ export function TodayState({
             <PlayIcon />
           </span>
           <span className="min-w-0 flex-1">
-            <SectionHeading as="span" size="xs" className="block text-white/70">
+            <SectionHeading
+              as="span"
+              size="xs"
+              className="block text-white/70 dark:text-bg/70"
+            >
               Почати
             </SectionHeading>
             <span className="block text-style-title truncate leading-tight">
@@ -479,7 +499,7 @@ export function EmptyState({
         */}
         <button
           type="button"
-          className="w-full py-4 rounded-full font-bold text-base bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg dark:bg-fizruk dark:text-bg"
+          className="w-full py-4 rounded-2xl text-style-label font-bold bg-fizruk-strong text-white transition-[background-color,box-shadow,opacity,transform] active:scale-[0.98] focus:outline-none focus-visible:ring-2 focus-visible:ring-hero-ink focus-visible:ring-offset-0 dark:bg-fizruk dark:text-bg"
           onClick={onQuickStart ?? onOpenTemplates}
         >
           {primaryLabel}

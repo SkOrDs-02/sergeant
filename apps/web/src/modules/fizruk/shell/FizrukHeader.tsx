@@ -85,7 +85,9 @@ function ContextualBackButton({
         "text-style-label text-muted hover:text-text hover:bg-panelHi transition-colors",
         "focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg",
       )}
-      aria-label={`Назад до ${label}`}
+      // «Назад до Огляд» було без відмінка; двокрапка тримає видимий підпис
+      // у назві й не вимагає родового відмінка для кожної вкладки.
+      aria-label={`Назад: ${label}`}
     >
       <svg
         width="18"

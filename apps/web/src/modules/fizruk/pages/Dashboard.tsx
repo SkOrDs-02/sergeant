@@ -22,7 +22,7 @@ import { isFizrukReadBootInFlight } from "../hooks/useFizrukSqliteReadBoot";
 import { useWorkouts } from "../hooks/useWorkouts";
 import { useMonthlyPlan } from "../hooks/useMonthlyPlan";
 import { HeroCard, type HeroCardState } from "../components/dashboard/HeroCard";
-import { PrBadge } from "../components/dashboard/PrBadge";
+import { PrBadge, isPrBadgeVisible } from "../components/dashboard/PrBadge";
 import { RecentWorkoutsSection } from "../components/dashboard/RecentWorkoutsSection";
 import { recoveryConflictsForExercise } from "@sergeant/fizruk-domain";
 import { workoutDurationSec } from "@sergeant/fizruk-domain";
@@ -485,7 +485,9 @@ export function Dashboard({
           onOpenTemplates={openTemplates}
           onOpenPrograms={() => onOpenPrograms?.()}
           {...(onQuickStart ? { onQuickStart } : {})}
-          cornerSlot={<PrBadge pr={prLatest} />}
+          cornerSlot={
+            isPrBadgeVisible(prLatest) ? <PrBadge pr={prLatest} /> : undefined
+          }
         />
 
         {activeInsights.map((insight) => (
@@ -551,11 +553,20 @@ export function Dashboard({
                       <button
                         key={tpl.id}
                         type="button"
-                        className="w-full text-left flex items-center gap-3 rounded-2xl hover:bg-panelHi p-3 min-h-[52px] transition-colors active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg"
+                        className="w-full text-left flex items-center gap-3 rounded-2xl hover:bg-panelHi p-3 min-h-[52px] transition-colors active:scale-[0.99] focus:outline-none focus-visible:ring-2 focus-visible:ring-focus/45 focus-visible:ring-offset-2 focus-visible:ring-offset-bg disabled:cursor-not-allowed disabled:opacity-60 disabled:hover:bg-transparent disabled:active:scale-100"
                         onClick={() => tryStartPlan(picks, tpl.id)}
                         disabled={!picks.length}
                       >
-                        <span className="text-success shrink-0" aria-hidden>
+                        {/* Зелений «play» на шаблоні без вправ обіцяв старт,
+                            якого не буде: вимкнений рядок його не показує. */}
+                        <span
+                          className={
+                            picks.length
+                              ? "text-success shrink-0"
+                              : "text-muted shrink-0"
+                          }
+                          aria-hidden
+                        >
                           <svg
                             width="20"
                             height="20"
@@ -608,7 +619,7 @@ export function Dashboard({
       <Sheet
         open={planConfirmOpen}
         onClose={closePlanConfirm}
-        title="Увага"
+        title="Мʼязи ще відновлюються"
         panelClassName="fizruk-sheet max-w-md"
         zIndex={100}
         footer={
@@ -632,7 +643,7 @@ export function Dashboard({
                 requestWorkoutFromPlan(picks, templateId);
               }}
             >
-              Продовжити
+              Почати все одно
             </Button>
           </div>
         }
