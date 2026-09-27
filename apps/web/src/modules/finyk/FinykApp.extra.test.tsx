@@ -652,7 +652,7 @@ describe("FinykApp (extra) — authError banner onOpenSettings link", () => {
         onOpenSettings={onOpenSettings}
       />,
     );
-    const link = screen.getByText("Оновити токен у Налаштуваннях Hub");
+    const link = screen.getByText("Оновити токен у Налаштуваннях");
     fireEvent.click(link);
     expect(onOpenSettings).toHaveBeenCalledTimes(1);
     expect(onBackToHub).not.toHaveBeenCalled();
@@ -672,7 +672,7 @@ describe("FinykApp (extra) — authError banner onOpenSettings link", () => {
     } as unknown as ReturnType<typeof useMonobank>);
     render(<FinykApp onOpenAuth={NOOP_AUTH} onBackToHub={vi.fn()} />);
     expect(
-      screen.queryByText("Оновити токен у Налаштуваннях Hub"),
+      screen.queryByText("Оновити токен у Налаштуваннях"),
     ).not.toBeInTheDocument();
   });
 });

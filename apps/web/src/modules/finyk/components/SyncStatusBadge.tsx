@@ -82,14 +82,16 @@ function SyncStatusBadgeComponent({
       )}
     >
       <span className={cn("w-2 h-2 rounded-full shrink-0", dotClass)} />
-      <span className="text-text font-medium">{label}</span>
+      <span role="status" className="text-text font-medium">
+        {label}
+      </span>
       {ts && <span className="text-subtle ml-auto tabular-nums">{ts}</span>}
       {(isError || isPartial) && typeof onRetry === "function" && (
         <button
           type="button"
           onClick={onRetry}
           disabled={isLoading}
-          className="ml-1 px-2 py-1 rounded-xl bg-panel border border-line text-style-caption text-text hover:bg-panelHi transition-colors disabled:opacity-50"
+          className="ml-1 px-2 py-1 rounded-xl focus-ring bg-panel border border-line text-style-caption text-text hover:bg-panelHi transition-colors disabled:opacity-50"
         >
           {messages.actions.retry}
         </button>

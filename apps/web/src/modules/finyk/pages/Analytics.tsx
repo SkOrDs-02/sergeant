@@ -20,7 +20,7 @@ import { EmptyState } from "@shared/components/ui/EmptyState";
 import { Money, Delta } from "@shared/components/ui/Money";
 import { cn } from "@shared/lib/ui/cn";
 import { getKyivDateParts } from "@shared/lib/time/kyivTime";
-import { filterToKyivMonth } from "../lib/monthWindow";
+import { filterToKyivFirstDays, filterToKyivMonth } from "../lib/monthWindow";
 import { isMonoNotConnectedError } from "../lib/monoBankErrors";
 import { useAnalytics } from "../hooks/useAnalytics";
 import { CategoryPieChart } from "../components/charts/lazy";
@@ -426,11 +426,17 @@ export function Analytics({
     return [...bankTx, ...manualExpenseTxs];
   }, [bankTx, manualExpenseTxs]);
 
+  // Незавершений місяць міряємо тими ж днями попереднього, а не всім ним:
+  // 27 днів вересня проти 31 дня серпня давали «−33 %» при незмінному темпі,
+  // тоді як картка звітів хаба (#52) на тих самих даних казала «−23 %».
   const prevTx = useMemo(() => {
     const bankTx = filterToKyivMonth(monthCache[prevKey] || [], prevKey);
-    if (prevManualExpenseTxs.length === 0) return bankTx;
-    return [...bankTx, ...prevManualExpenseTxs];
-  }, [monthCache, prevKey, prevManualExpenseTxs]);
+    const all =
+      prevManualExpenseTxs.length === 0
+        ? bankTx
+        : [...bankTx, ...prevManualExpenseTxs];
+    return isCurrentMonth ? filterToKyivFirstDays(all, nowKyiv.day) : all;
+  }, [monthCache, prevKey, prevManualExpenseTxs, isCurrentMonth, nowKyiv.day]);
 
   const analyticsMono = useMemo(
     () => ({ ...mono, realTx: activeTx, loadingTx: mono.loadingTx || loading }),
@@ -616,7 +622,13 @@ export function Analytics({
 
         {/* Comparison */}
         {comparison && (
-          <Section title="Порівняння з попереднім місяцем">
+          <Section
+            title={
+              isCurrentMonth
+                ? "Порівняння з попереднім місяцем за ті ж дні"
+                : "Порівняння з попереднім місяцем"
+            }
+          >
             {comparison.prevTxCount === 0 ? (
               <p className="text-sm text-muted">Немає з чим порівняти</p>
             ) : (
@@ -677,7 +689,13 @@ export function Analytics({
         )}
 
         {categoryDeltas.length > 0 && (
-          <Section title="Категорії проти минулого місяця">
+          <Section
+            title={
+              isCurrentMonth
+                ? "Категорії проти минулого місяця за ті ж дні"
+                : "Категорії проти минулого місяця"
+            }
+          >
             <CategoryDeltaTable
               rows={categoryDeltas}
               showBalance={showBalance}

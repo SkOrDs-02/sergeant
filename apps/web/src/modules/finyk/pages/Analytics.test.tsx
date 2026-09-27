@@ -389,7 +389,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Порівняння з попереднім місяцем"),
+        screen.getByText(/^Порівняння з попереднім місяцем/),
       ).toBeInTheDocument();
     });
   });
@@ -414,7 +414,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Порівняння з попереднім місяцем"),
+        screen.getByText(/^Порівняння з попереднім місяцем/),
       ).toBeInTheDocument();
     });
     // Summary (spent/income/balance) + comparison (2 rows) + merchant list
@@ -436,7 +436,7 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Порівняння з попереднім місяцем"),
+        screen.getByText(/^Порівняння з попереднім місяцем/),
       ).toBeInTheDocument();
     });
     expect(screen.queryByText("••••")).not.toBeInTheDocument();
@@ -460,11 +460,11 @@ describe("Analytics page", () => {
     });
     await waitFor(() => {
       expect(
-        screen.getByText("Порівняння з попереднім місяцем"),
+        screen.getByText(/^Порівняння з попереднім місяцем/),
       ).toBeInTheDocument();
     });
     expect(screen.queryByText(/%/)).not.toBeInTheDocument();
-    const comparisonCard = screen.getByText("Порівняння з попереднім місяцем")
+    const comparisonCard = screen.getByText(/^Порівняння з попереднім місяцем/)
       .parentElement as HTMLElement;
     expect(within(comparisonCard).getByText(/2\s?518/)).toBeInTheDocument();
   });

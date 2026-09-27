@@ -60,10 +60,10 @@ function ImportReminderBannerComponent({
 
   return (
     <Banner role="status" variant="info" className="rounded-2xl">
-      <p className="text-style-body text-content-primary">
+      <p className="text-style-body text-text">
         {`${copy.title[source]} ${daysSince} ${dayWord(daysSince)}`}
       </p>
-      <p className="text-style-caption text-content-secondary mt-1">
+      <p className="text-style-caption text-muted mt-1">
         {`${copy.rhythmPrefix} ${expectedIntervalDays} ${dayWord(expectedIntervalDays)}`}
       </p>
       <div className="mt-3 flex flex-wrap items-center gap-2">
