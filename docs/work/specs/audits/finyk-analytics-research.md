@@ -63,8 +63,9 @@ Copilot: [zenfinanceai](https://zenfinanceai.com/ynab-vs-copilot-ai/), [moneypat
 
 | PR                                                              | Title                                                                               | Merged     |
 | --------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
+| [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                               | 2026-09-26 |
 | [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                        | 2026-09-24 |
 | [#25](https://bitbucket.org/skords01/sergeant/pull-requests/25) | docs(docs): матриця конкурентів на 20 рядках і шортліст аналітики з hands-on заміру | 2026-09-24 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

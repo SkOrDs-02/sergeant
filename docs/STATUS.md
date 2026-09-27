@@ -1,6 +1,6 @@
 # Sergeant — Панель керування
 
-> **Last touched:** 2026-09-26 by docs:gen-status. **Next review:** 2026-10-03.
+> **Last touched:** 2026-09-27 by docs:gen-status. **Next review:** 2026-10-04.
 > **Status:** Reference
 
 <!-- AUTO-GENERATED, ОКРІМ блоку FOCUS. Редагуй лише між `<!-- FOCUS:START -->` / `<!-- FOCUS:END -->`; решту регенеруй через `pnpm docs:gen-status`. -->
@@ -28,6 +28,9 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
+- [#81](https://bitbucket.org/skords01/sergeant/pull-requests/81) — fix(web): рішення власника за аудитом копі сайту _(2026-09-26)_
+- [#78](https://bitbucket.org/skords01/sergeant/pull-requests/78) — fix(web): копі сайту за аудитом: глосарій, жаргон, факт у Політиці приватності _(2026-09-26)_
+- [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
 - [#51](https://bitbucket.org/skords01/sergeant/pull-requests/51) — fix(web): анти-слоп раунд 3: Сержант в інтерфейсі і на сайті, коуч, стенд _(2026-09-26)_
 - [#56](https://bitbucket.org/skords01/sergeant/pull-requests/56) — fix(web): «транзакція» → «операція» у видимій копії, хвости P3 аудиту копі _(2026-09-25)_
 - [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) — fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7) _(2026-09-24)_
@@ -35,9 +38,6 @@
 - [#24](https://bitbucket.org/skords01/sergeant/pull-requests/24) — fix(web): гейти копі: серверні тексти помилок, кнопка «X» існує, картки без сирого e.message _(2026-09-24)_
 - [#30](https://bitbucket.org/skords01/sergeant/pull-requests/30) — fix(web): полірування копі за аудитом: плейсхолдери, плюрали, ₴ і одиниці, тости, legal під лінтом _(2026-09-24)_
 - [#27](https://bitbucket.org/skords01/sergeant/pull-requests/27) — docs(docs): анти-слоп аудит сайту за мірками раунду 2 _(2026-09-24)_
-- [#28](https://bitbucket.org/skords01/sergeant/pull-requests/28) — fix(web): термінологія копі за рішеннями §6 аудиту: AI, Сержант, план, підхід, ціль, операція _(2026-09-24)_
-- [#25](https://bitbucket.org/skords01/sergeant/pull-requests/25) — docs(docs): матриця конкурентів на 20 рядках і шортліст аналітики з hands-on заміру _(2026-09-24)_
-- [#19](https://bitbucket.org/skords01/sergeant/pull-requests/19) — fix(web): хвиля A аудиту UX-копі: збої з дією, без сирого error.message і жаргону _(2026-09-23)_
 
 ## 🔵 В роботі — 78 відкритих документів
 
