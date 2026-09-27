@@ -96,12 +96,22 @@ const MONTHS_UK = [
 ];
 
 /**
+ * Пороги інсайтів. Експортовані, бо момент «поріг перетнуто» і рядок
+ * наближення (ADR-0096) мусять читати ті самі числа, а не власні копії.
+ */
+export const WORKOUT_INSIGHT_MIN_WORKOUTS = 20;
+export const HABIT_INSIGHT_MIN_COMPLETIONS = 28;
+export const HABIT_INSIGHT_MIN_WEEKS = 4;
+/** Найкращий місяць має з чим порівнюватись лише від двох місяців історії. */
+export const HABIT_INSIGHT_MIN_MONTHS = 2;
+
+/**
  * Insight 1: Best day-of-week for workouts.
  * Requires ≥ 20 completed workouts (satisfies both "4 weeks" and "20+ events").
  */
 function workoutDayInsight(): Insight | null {
   const workouts = parseFizrukWorkouts().filter((w) => w.endedAt);
-  if (workouts.length < 20) return null;
+  if (workouts.length < WORKOUT_INSIGHT_MIN_WORKOUTS) return null;
 
   const dowCount = Array<number>(7).fill(0);
   for (const w of workouts) {
@@ -217,35 +227,66 @@ function activeWeeksSpendingInsight(): Insight | null {
   };
 }
 
-/**
- * Insight 3: Best habit-completion month in history.
- * Requires ≥ 28 total completions (≈ 4 weeks × 1 habit/day minimum)
- * AND ≥ 4 distinct ISO weeks with any completion.
- */
-function bestHabitMonthInsight(): Insight | null {
-  const state = loadRoutineState();
+/** Накопичення до інсайту про найпослідовніший місяць. */
+export interface HabitInsightProgress {
+  completions: number;
+  weeks: number;
+  monthDone: Record<string, number>;
+}
 
+type RoutineStateSlice = Pick<
+  ReturnType<typeof loadRoutineState>,
+  "habits" | "completions"
+>;
+
+export function habitInsightProgress(
+  state: RoutineStateSlice,
+): HabitInsightProgress {
   const habits = (state.habits || []).filter((h) => !h.archived);
   const completions = state.completions || {};
-  if (habits.length === 0) return null;
-
   const monthDone: Record<string, number> = {};
   const weekKeys = new Set<string>();
-  let totalCompletions = 0;
+  let total = 0;
 
   for (const h of habits) {
     for (const dk of completions[h.id] || []) {
       monthDone[dk.slice(0, 7)] = (monthDone[dk.slice(0, 7)] || 0) + 1;
-      totalCompletions++;
+      total++;
       const parsed = parseKyivDate(dk);
       if (parsed) weekKeys.add(getKyivWeekStartKey(parsed));
     }
   }
+  return { completions: total, weeks: weekKeys.size, monthDone };
+}
 
-  if (totalCompletions < 28 || weekKeys.size < 4) return null;
+/**
+ * Insight 3: Best habit-completion month in history.
+ * Requires ≥ 28 total completions (≈ 4 weeks × 1 habit/day minimum)
+ * AND ≥ 4 distinct ISO weeks with any completion.
+ *
+ * Стан приймається параметром, щоб момент «поріг перетнуто» міг спитати
+ * рушій про стан до і після запису, а не дублювати його умови.
+ */
+export function bestHabitMonthInsight(
+  state: RoutineStateSlice = loadRoutineState(),
+): Insight | null {
+  const habits = (state.habits || []).filter((h) => !h.archived);
+  if (habits.length === 0) return null;
+
+  const {
+    completions: totalCompletions,
+    weeks,
+    monthDone,
+  } = habitInsightProgress(state);
+
+  if (
+    totalCompletions < HABIT_INSIGHT_MIN_COMPLETIONS ||
+    weeks < HABIT_INSIGHT_MIN_WEEKS
+  )
+    return null;
 
   const months = Object.keys(monthDone);
-  if (months.length < 2) return null;
+  if (months.length < HABIT_INSIGHT_MIN_MONTHS) return null;
 
   let bestMk: string | null = null;
   let bestPct = 0;

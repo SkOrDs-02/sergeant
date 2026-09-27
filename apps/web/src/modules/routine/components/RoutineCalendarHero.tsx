@@ -11,6 +11,8 @@ import {
   trackEvent,
 } from "../../../core/observability/analytics";
 import { DayProgressRing } from "./DayProgressRing";
+import { RoutineMomentLine } from "./RoutineMomentLine";
+import { DAY_TARGET } from "../../../core/insights/moments/moments";
 import type { RoutineTimeMode } from "../context/RoutineCalendarContext";
 import { useStreakFlame } from "../hooks/useStreakFlame";
 import { claimStreakShownOnce, markStreakSeen } from "../lib/streakExposure";
@@ -181,6 +183,12 @@ export function RoutineCalendarHero({
               `useStreakRecordPendingInsight`: без підстановки назви). */}
           {metaText && (
             <p className="mt-1 text-style-label text-hero-ink">{metaText}</p>
+          )}
+          {timeMode === "today" && (
+            <RoutineMomentLine
+              target={DAY_TARGET}
+              className="mt-1 text-hero-ink dark:text-hero-ink"
+            />
           )}
         </div>
       </div>

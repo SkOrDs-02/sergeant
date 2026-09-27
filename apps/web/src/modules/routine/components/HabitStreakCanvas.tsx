@@ -92,20 +92,16 @@ function DayCell({
         />
       );
     case "miss":
+      // F-3 (спека `reward-loop-and-reminders.md`): мовчазний пропуск не
+      // має власного кольору. День без відмітки це просто день без
+      // відмітки; про те, що серія його пережила, людина дізнається
+      // моментом «заморозка спрацювала» в рядку звички, а не плямою тут.
       return (
         <li
           role="img"
           aria-label={`${dateLabel}: ${T.cellGrace}`}
-          className={cn(
-            CELL_BASE,
-            "relative overflow-hidden border border-routine-strong/30 bg-panelHi/40",
-          )}
-        >
-          <span
-            aria-hidden="true"
-            className="absolute inset-x-0 bottom-0 h-1/2 border-t border-routine-strong/40 bg-routine-strong/35"
-          />
-        </li>
+          className={cn(CELL_BASE, MISS_FILL)}
+        />
       );
     case "pause":
       return (
@@ -152,6 +148,13 @@ function DayCell({
   }
 }
 
+/**
+ * Нейтральний сірий, той самий щабель, що й «не виконано» в сітці
+ * активності (`HabitRangeGrid`), тож дві візуалізації на одній сторінці
+ * говорять однією мовою.
+ */
+const MISS_FILL = "bg-line/30";
+
 interface LegendRow {
   kind: StreakDayKind;
   title: string;
@@ -186,17 +189,7 @@ function LegendSwatch({ kind }: { kind: StreakDayKind }) {
         />
       );
     case "miss":
-      return (
-        <span
-          aria-hidden="true"
-          className={cn(
-            fixed,
-            "relative overflow-hidden border border-routine-strong/30 bg-panelHi/40",
-          )}
-        >
-          <span className="absolute inset-x-0 bottom-0 h-1/2 border-t border-routine-strong/40 bg-routine-strong/35" />
-        </span>
-      );
+      return <span aria-hidden="true" className={cn(fixed, MISS_FILL)} />;
     case "pause":
       return (
         <span

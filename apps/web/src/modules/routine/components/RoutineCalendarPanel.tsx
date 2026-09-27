@@ -4,6 +4,7 @@
  */
 import { useEffect, useMemo, useState } from "react";
 import { cn } from "@shared/lib/ui/cn";
+import { RoutineMomentLine } from "./RoutineMomentLine";
 import { SectionHeading } from "@shared/components/ui/SectionHeading";
 import { Button } from "@shared/components/ui/Button";
 import { Input } from "@shared/components/ui/Input";
@@ -433,6 +434,9 @@ export function RoutineCalendarPanel({
                           )}
                         </div>
                       </div>
+                      {habitId && (
+                        <RoutineMomentLine target={habitId} onDate={e.date} />
+                      )}
                       {habitId &&
                         e.completed &&
                         (() => {
