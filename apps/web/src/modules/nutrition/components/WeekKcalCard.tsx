@@ -115,7 +115,7 @@ export function WeekKcalCard({
         <button
           type="button"
           onClick={() => onGoToLog?.(selectedDate ?? undefined)}
-          className="inline-flex items-center gap-0.5 text-style-caption text-nutrition-strong dark:text-nutrition hover:underline"
+          className="inline-flex items-center gap-0.5 rounded-md text-style-caption text-nutrition-strong dark:text-nutrition hover:underline focus-ring"
         >
           {t.logLink}
           <Icon name="chevron-right" size="sm" aria-hidden />
@@ -162,7 +162,7 @@ export function WeekKcalCard({
                   : `${label}, ${fmtKcal(bar.kcal)} ${t.kcalUnit}`
               }
               onClick={() => setSelectedDate(isSelected ? null : bar.date)}
-              className="flex-1 flex flex-col items-center gap-0.5 appearance-none bg-transparent border-0 p-0 cursor-pointer rounded-md focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-nutrition/60"
+              className="flex-1 flex flex-col items-center gap-0.5 appearance-none bg-transparent border-0 p-0 cursor-pointer rounded-md focus-ring"
             >
               <div
                 className="relative w-full flex justify-center items-end"

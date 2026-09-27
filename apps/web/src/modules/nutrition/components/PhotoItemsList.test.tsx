@@ -8,6 +8,7 @@
 import { fireEvent, render, screen } from "@testing-library/react";
 import { describe, expect, it, vi } from "vitest";
 import type { NutritionPhotoItem } from "@shared/api";
+import { messages } from "@shared/i18n/uk";
 
 import { PhotoItemsList } from "./PhotoItemsList";
 
@@ -44,7 +45,9 @@ describe("PhotoItemsList", () => {
       />,
     );
     // Рівно одна позначка — інакше «низька впевненість» перестає виділяти.
-    expect(screen.getAllByText(/AI невпевнений/)).toHaveLength(1);
+    expect(
+      screen.getAllByText(messages.nutrition.photoItems.lowConfidence),
+    ).toHaveLength(1);
   });
 
   it("прибирає позицію за індексом", () => {

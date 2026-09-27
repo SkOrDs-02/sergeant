@@ -21,10 +21,15 @@ vi.mock("../lib/sqliteReadGate", () => ({
   notifyNutritionSqliteCacheRefresh: () => notifyMock(),
 }));
 
-import { useNutritionSqliteReadBoot } from "./useNutritionSqliteReadBoot";
+import {
+  __setNutritionReadBootInFlightForTests,
+  isNutritionReadBootInFlight,
+  useNutritionSqliteReadBoot,
+} from "./useNutritionSqliteReadBoot";
 
 beforeEach(() => {
   vi.clearAllMocks();
+  __setNutritionReadBootInFlightForTests(false);
   bootMock.mockResolvedValue(true);
 });
 afterEach(() => vi.clearAllMocks());
@@ -58,11 +63,31 @@ describe("useNutritionSqliteReadBoot", () => {
     expect(bootMock).toHaveBeenCalledTimes(1);
   });
 
-  it("does not notify when boot reports it was not activated", async () => {
+  it("notifies even when boot was not activated, so the start skeleton clears", async () => {
     bootMock.mockResolvedValue(false);
     useAuthMock.mockReturnValue({ user: { id: "u2" } });
     renderHook(() => useNutritionSqliteReadBoot());
-    await waitFor(() => expect(bootMock).toHaveBeenCalledTimes(1));
-    expect(notifyMock).not.toHaveBeenCalled();
+    await waitFor(() => expect(notifyMock).toHaveBeenCalledTimes(1));
+    expect(isNutritionReadBootInFlight()).toBe(false);
+  });
+
+  it("stays in flight while any boot is pending, even if a latched one returns first", async () => {
+    // Хук стоїть і в NutritionBootCluster, і в NutritionApp; другий бут
+    // упирається в латч і вертається одразу.
+    let finishFirst: (v: boolean) => void = () => {};
+    bootMock
+      .mockReturnValueOnce(
+        new Promise<boolean>((resolve) => {
+          finishFirst = resolve;
+        }),
+      )
+      .mockResolvedValueOnce(false);
+    useAuthMock.mockReturnValue({ user: { id: "u3" } });
+    renderHook(() => useNutritionSqliteReadBoot());
+    renderHook(() => useNutritionSqliteReadBoot());
+    await waitFor(() => expect(notifyMock).toHaveBeenCalledTimes(1));
+    expect(isNutritionReadBootInFlight()).toBe(true);
+    finishFirst(true);
+    await waitFor(() => expect(isNutritionReadBootInFlight()).toBe(false));
   });
 });

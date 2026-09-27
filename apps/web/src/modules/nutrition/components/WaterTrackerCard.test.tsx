@@ -88,6 +88,16 @@ describe("WaterTrackerCard", () => {
     expect(add).not.toHaveBeenCalled();
   });
 
+  it("keeps only digits in the custom amount", () => {
+    render(<WaterTrackerCard goalMl={2000} />);
+    const input = screen.getByLabelText<HTMLInputElement>("Свій обʼєм у мл");
+    fireEvent.change(input, { target: { value: "2,5л" } });
+    expect(input.value).toBe("25");
+    fireEvent.change(input, { target: { value: "абв" } });
+    expect(input.value).toBe("");
+    expect(screen.getByText("+ Додати")).toBeDisabled();
+  });
+
   it("requires a two-tap confirm to reset", () => {
     todayMl = 800;
     render(<WaterTrackerCard goalMl={2000} />);
