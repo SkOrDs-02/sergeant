@@ -147,7 +147,8 @@ describe("Button", () => {
     it("module primary carries the calm dark treatment (accent fill + ink + elevation)", () => {
       // Light keeps `-strong` + white; dark swaps to the luminescent
       // tier-400 accent (`dark:bg-{module}`) + ink text (`dark:text-bg`)
-      // + a quiet elevation shadow. Resting glow is deliberately absent.
+      // + a quiet elevation shadow (base `shadow-sm`; DESIGN.md forbids
+      // `dark:shadow-*`). Resting glow is deliberately absent.
       const { getByRole } = render(
         <Button module="routine" variant="primary">
           Go
@@ -156,7 +157,8 @@ describe("Button", () => {
       const cls = getByRole("button").className;
       expect(cls).toContain("dark:bg-routine");
       expect(cls).toContain("dark:text-bg");
-      expect(cls).toContain("dark:shadow-sm");
+      expect(cls).toContain("shadow-sm");
+      expect(cls).not.toMatch(/dark:shadow-/);
       expect(cls).not.toContain("dark:shadow-glow-accent-rose");
     });
 
