@@ -33,8 +33,10 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const SRC = new URL("../../..", import.meta.url).pathname;
+// `URL.pathname` на Windows дає `/D:/…`, і `join` склеював `D:\D:\…`.
+const SRC = fileURLToPath(new URL("../../..", import.meta.url));
 
 /**
  * Дзеркало `EMPHASIS_TONE_MAP` і `LEGACY_VARIANTS` із `Button.tsx`.

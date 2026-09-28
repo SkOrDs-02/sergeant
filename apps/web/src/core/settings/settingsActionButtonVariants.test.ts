@@ -43,8 +43,10 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, readdirSync, statSync } from "node:fs";
 import { join, relative } from "node:path";
+import { fileURLToPath } from "node:url";
 
-const SRC = new URL("../..", import.meta.url).pathname;
+// `URL.pathname` на Windows дає `/D:/…`, і `join` склеював `D:\D:\…`.
+const SRC = fileURLToPath(new URL("../..", import.meta.url));
 
 /**
  * Поверхні, де кнопка стоїть у секції Налаштувань — тека або окремий файл.

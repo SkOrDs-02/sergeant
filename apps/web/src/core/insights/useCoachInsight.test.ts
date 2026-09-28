@@ -137,7 +137,10 @@ describe("useCoachInsight", () => {
     await waitFor(() => expect(result.current.loading).toBe(false));
 
     expect(result.current.insight).toBeNull();
-    expect(result.current.error).toMatch(/Network error/);
+    // Сирий error.message людині не показуємо (хвиля A аудиту копі).
+    expect(result.current.error).toBe(
+      "Не вдалося завантажити пораду. Спробуй ще раз.",
+    );
   });
 
   it("returns initialData from LS cache when date matches today", async () => {
