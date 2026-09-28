@@ -1,8 +1,8 @@
 ---
 name: sergeant-deploy-and-observability
-description: Use when a Sergeant change touches deploy config, env vars, Coolify/Vercel, health checks, Sentry, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Coolify, Vercel, Sentry.
+description: "Use when a Sergeant change touches deploy config, env vars, Coolify/Vercel, health checks, Sentry, or production verification; also when editing CI/CD or Dockerfile; UA: деплой, env, Coolify, Vercel, Sentry."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Деплой і обсервабіліті в Sergeant

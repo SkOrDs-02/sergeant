@@ -1,8 +1,8 @@
 ---
 name: sergeant-module-billing
-description: Use when the task touches billing — plans, quotas, limits, LiqPay payments, pricing, trial logic; UA: задача про billing/тарифи/квоти/оплату/LiqPay.
+description: "Use when the task touches billing — plans, quotas, limits, LiqPay payments, pricing, trial logic; UA: задача про billing/тарифи/квоти/оплату/LiqPay."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Billing — власник інфра-модуля

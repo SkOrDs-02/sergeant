@@ -1,8 +1,8 @@
 ---
 name: sergeant-module-sync
-description: Use when the task touches the sync layer — sync endpoints, op-log, LWW conflict resolution, dualwrite pipelines, offline persistence; UA: задача про sync/оп-лог/дуалрайт/конфлікти.
+description: "Use when the task touches the sync layer — sync endpoints, op-log, LWW conflict resolution, dualwrite pipelines, offline persistence; UA: задача про sync/оп-лог/дуалрайт/конфлікти."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Sync — власник інфра-модуля

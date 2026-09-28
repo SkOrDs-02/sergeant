@@ -1,6 +1,6 @@
 ---
 name: sergeant-security-audit
-description: Use when running a security review of Sergeant code or API, auditing deps with pnpm audit, or checking PAT/credential safety; before any auth or user-data surface ships; UA: security review, перевірка безпеки, аудит.
+description: "Use when running a security review of Sergeant code or API, auditing deps with pnpm audit, or checking PAT/credential safety; before any auth or user-data surface ships; UA: security review, перевірка безпеки, аудит."
 lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` so UA-only chat routing still resolves the right SKILL.
 ---

@@ -1,8 +1,8 @@
 ---
 name: sergeant-web-ui
-description: Use when editing Sergeant web UI, PWA shell, React screens, Tailwind, accessibility, localStorage flows, or shared web interaction patterns; also for design tokens or theme; UA: правиш веб-UI/PWA/Tailwind.
+description: "Use when editing Sergeant web UI, PWA shell, React screens, Tailwind, accessibility, localStorage flows, or shared web interaction patterns; also for design tokens or theme; UA: правиш веб-UI/PWA/Tailwind."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Web UI у Sergeant

@@ -1,6 +1,6 @@
 ---
 name: sergeant-e2e-testing
-description: Use when writing, reviewing, or debugging Playwright E2E tests in apps/web; for auth fixtures, network mocking, trace debugging, or CI retry config; UA: Playwright, E2E тести, e2e, smoke test.
+description: "Use when writing, reviewing, or debugging Playwright E2E tests in apps/web; for auth fixtures, network mocking, trace debugging, or CI retry config; UA: Playwright, E2E тести, e2e, smoke test."
 lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers (Anthropic, OpenAI, etc.) whose attention bias toward English persists in tool-routing decisions even when prompts are bilingual. The bilingual trigger phrase lives in `description:` so UA-only chat routing still resolves the right SKILL.
 ---

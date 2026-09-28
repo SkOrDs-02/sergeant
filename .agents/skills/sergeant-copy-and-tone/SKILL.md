@@ -1,8 +1,8 @@
 ---
 name: sergeant-copy-and-tone
-description: Use when writing or reviewing Ukrainian user-facing copy — buttons, error messages, empty states, toasts, onboarding texts; UA: пишеш UA-текст інтерфейсу, помилки, тости, кнопки.
+description: "Use when writing or reviewing Ukrainian user-facing copy — buttons, error messages, empty states, toasts, onboarding texts; UA: пишеш UA-текст інтерфейсу, помилки, тости, кнопки."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # UA-копірайтинг у Sergeant

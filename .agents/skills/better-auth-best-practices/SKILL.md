@@ -1,8 +1,8 @@
 ---
 name: better-auth-best-practices
-description: Use when editing Sergeant auth — login, signup, session cookies, middleware, account lifecycle, Better Auth wiring; also when touching protected routes or token refresh; UA: правиш логін, реєстрацію, сесії, авторизацію.
+description: "Use when editing Sergeant auth — login, signup, session cookies, middleware, account lifecycle, Better Auth wiring; also when touching protected routes or token refresh; UA: правиш логін, реєстрацію, сесії, авторизацію."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Better Auth у Sergeant
