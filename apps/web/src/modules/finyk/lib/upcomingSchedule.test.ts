@@ -143,6 +143,16 @@ describe("getSubscriptionDueDate", () => {
     const d = getSubscriptionDueDate(26, today, sec(new Date(2026, 7, 26, 10)));
     expect([d.getMonth(), d.getDate()]).toEqual([8, 26]);
   });
+
+  it("списання на день раніше закриває цикл", () => {
+    const d = getSubscriptionDueDate(27, today, sec(new Date(2026, 8, 26, 9)));
+    expect([d.getMonth(), d.getDate()]).toEqual([9, 27]);
+  });
+
+  it("запізніле списання минулого циклу наступний цикл не закриває", () => {
+    const d = getSubscriptionDueDate(20, today, sec(new Date(2026, 8, 22, 9)));
+    expect([d.getMonth(), d.getDate()]).toEqual([9, 20]);
+  });
 });
 
 describe("formatShortDate", () => {
