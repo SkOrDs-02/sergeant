@@ -43,6 +43,7 @@ import {
 import { messages } from "@shared/i18n/uk";
 import { WorkoutStatTile } from "./WorkoutStatTile";
 import { fmtLoose } from "../../lib/numberFmt";
+import { WorkoutMomentLine } from "./WorkoutMomentLine";
 
 export interface WorkoutSummaryViewProps {
   workout: Workout;
@@ -120,6 +121,7 @@ export function WorkoutSummaryView({
               </span>
             ) : null}
           </div>
+          <WorkoutMomentLine workoutId={workout.id} />
         </div>
       </div>
 

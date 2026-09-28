@@ -4,6 +4,10 @@ import { beforeEach, describe, expect, it } from "vitest";
 // `?raw` вимагає реальне імʼя файлу: без розширення vite його не знайде.
 // eslint-disable-next-line import/extensions
 import momentsSource from "./moments.ts?raw";
+// eslint-disable-next-line import/extensions
+import mealSource from "./mealMoments.ts?raw";
+// eslint-disable-next-line import/extensions
+import workoutSource from "./workoutMoments.ts?raw";
 import { applyMoment, readMoments } from "./momentsStore";
 
 describe("рядок живе до кінця доби", () => {
@@ -47,10 +51,14 @@ describe("рядок живе до кінця доби", () => {
  * частки наближення.
  */
 describe("пороги імпортовані, а не переписані", () => {
-  it("у коді моментів немає чисел порогів", () => {
-    const source = momentsSource
+  it.each([
+    ["moments.ts", momentsSource],
+    ["mealMoments.ts", mealSource],
+    ["workoutMoments.ts", workoutSource],
+  ])("у %s немає чисел порогів", (_name, raw) => {
+    const source = raw
       .replace(/\/\*[\s\S]*?\*\//g, "")
       .replace(/\/\/.*$/gm, "");
-    expect(source).not.toMatch(/\b(7|10|20|28|30|100)\b/);
+    expect(source).not.toMatch(/\b(7|10|16|20|28|30|50|100)\b/);
   });
 });
