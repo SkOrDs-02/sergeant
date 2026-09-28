@@ -1,4 +1,4 @@
-import { MEASUREMENT_BOUNDS } from "@sergeant/shared";
+import { MEASUREMENT_BOUNDS, formatNumberUk } from "@sergeant/shared";
 import { recordBodyWeight } from "../../../profile/recordBodyWeight";
 import {
   deleteFizrukDailyLogEntry,
@@ -16,7 +16,7 @@ export function logWellbeing(action: LogWellbeingAction): ChatActionResult {
   if (Number.isFinite(weight) && weight > 0) {
     const { min, max } = MEASUREMENT_BOUNDS.weightKg;
     if (weight < min || weight > max) {
-      return `Вага має бути від ${min} до ${max} кг. Перевір число і спробуй ще раз.`;
+      return `Вага має бути від ${formatNumberUk(min)} до ${formatNumberUk(max)} кг. Перевір число і спробуй ще раз.`;
     }
   }
   const entry: Record<string, number | string | null> = {
@@ -31,12 +31,12 @@ export function logWellbeing(action: LogWellbeingAction): ChatActionResult {
   const parts: string[] = [];
   if (Number.isFinite(weight) && weight > 0) {
     entry["weightKg"] = weight;
-    parts.push(`вага ${weight} кг`);
+    parts.push(`вага ${formatNumberUk(weight)} кг`);
   }
   const sleep = Number(input.sleep_hours);
   if (Number.isFinite(sleep) && sleep >= 0 && sleep <= 24) {
     entry["sleepHours"] = sleep;
-    parts.push(`сон ${sleep} год`);
+    parts.push(`сон ${formatNumberUk(sleep)} год`);
   }
   const energy = Number(input.energy_level);
   if (Number.isFinite(energy) && energy >= 1 && energy <= 5) {

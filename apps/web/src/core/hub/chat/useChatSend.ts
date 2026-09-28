@@ -358,6 +358,9 @@ export function useChatSend({
 
       const history = next
         .filter((m) => m.role === "user" || m.role === "assistant")
+        // Порожня відповідь (обірваний або скасований синтез) у history
+        // валить zod-валідацію сервера, і вся розмова ламається до «Нова».
+        .filter((m) => m.text.trim() !== "")
         .slice(-10)
         .map((m) => ({ role: m.role, content: m.text }));
 

@@ -6,7 +6,7 @@ import {
 } from "../../../../modules/fizruk/lib/fizrukDualWriteState";
 import { getCachedFizrukSqliteState } from "../../../../modules/fizruk/lib/sqliteReader";
 import type { MeasurementEntry } from "@sergeant/fizruk-domain";
-import { MEASUREMENT_BOUNDS } from "@sergeant/shared";
+import { MEASUREMENT_BOUNDS, formatNumberUk } from "@sergeant/shared";
 import { recordBodyWeight } from "../../../profile/recordBodyWeight";
 import type { LogMeasurementAction, ChatActionResult } from "../types";
 
@@ -22,7 +22,7 @@ export function logMeasurement(action: LogMeasurementAction): ChatActionResult {
     if (Number.isFinite(weightN) && weightN > 0) {
       const { min, max } = MEASUREMENT_BOUNDS.weightKg;
       if (weightN < min || weightN > max) {
-        return `Вага має бути від ${min} до ${max} кг. Перевір число і спробуй ще раз.`;
+        return `Вага має бути від ${formatNumberUk(min)} до ${formatNumberUk(max)} кг. Перевір число і спробуй ще раз.`;
       }
     }
   }

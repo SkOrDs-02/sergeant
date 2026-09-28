@@ -1,5 +1,5 @@
 import { logger } from "@shared/lib";
-import { pluralUa, type UaPluralForms } from "@sergeant/shared";
+import { formatNumberUk, pluralUa, type UaPluralForms } from "@sergeant/shared";
 import {
   buildPlacedItems,
   canonicalFoodKey,
@@ -85,7 +85,7 @@ export function handleNutritionAction(
           },
         }),
       );
-      const result = `Прийом їжі "${name || "Без назви"}" записано: ${Math.round(Number(kcal) || 0)} ккал`;
+      const result = `Прийом їжі "${name || "Без назви"}" записано: ${formatNumberUk(Math.round(Number(kcal) || 0))} ккал`;
       return {
         result,
         // `removeLogEntry` is idempotent (filters by id, drops the day when it
@@ -112,7 +112,7 @@ export function handleNutritionAction(
       const total = prev + ml;
       saveWaterLog({ ...log, [dateKey]: total });
       return {
-        result: `Додано ${ml} мл води (разом за ${dateKey}: ${total} мл)`,
+        result: `Додано ${formatNumberUk(ml)} мл води (разом за ${dateKey}: ${formatNumberUk(total)} мл)`,
         // Undo віднімає рівно свої ml від поточного значення, а не
         // відновлює prev — інакше паралельні +log_water між додаванням
         // і undo втратилися б. Якщо після віднімання лишился 0 — чистимо key.
@@ -332,7 +332,7 @@ export function handleNutritionAction(
       if (partial) {
         const left = stock - asked;
         const unit = item.unit ? ` ${item.unit}` : "";
-        return `Списано ${asked}${unit} «${rawName}», лишилось ${left}${unit} у коморі "${pantry.name}"`;
+        return `Списано ${formatNumberUk(asked)}${unit} «${rawName}», лишилось ${formatNumberUk(left)}${unit} у коморі "${pantry.name}"`;
       }
       return `Продукт "${rawName}" прибрано з комори "${pantry.name}"`;
     }
@@ -390,27 +390,27 @@ export function handleNutritionAction(
       const kcalN = num(kcal);
       if (kcalN !== null) {
         next.dailyTargetKcal = kcalN;
-        parts.push(`ккал ${kcalN}`);
+        parts.push(`ккал ${formatNumberUk(kcalN)}`);
       }
       const proteinN = num(protein_g);
       if (proteinN !== null) {
         next.dailyTargetProtein_g = proteinN;
-        parts.push(`білок ${proteinN} г`);
+        parts.push(`білок ${formatNumberUk(proteinN)} г`);
       }
       const fatN = num(fat_g);
       if (fatN !== null) {
         next.dailyTargetFat_g = fatN;
-        parts.push(`жири ${fatN} г`);
+        parts.push(`жири ${formatNumberUk(fatN)} г`);
       }
       const carbsN = num(carbs_g);
       if (carbsN !== null) {
         next.dailyTargetCarbs_g = carbsN;
-        parts.push(`вуглеводи ${carbsN} г`);
+        parts.push(`вуглеводи ${formatNumberUk(carbsN)} г`);
       }
       const waterN = num(water_ml);
       if (waterN !== null) {
         next.waterGoalMl = waterN;
-        parts.push(`вода ${waterN} мл`);
+        parts.push(`вода ${formatNumberUk(waterN)} мл`);
       }
       if (parts.length === 0) return "Немає полів для оновлення плану.";
       persistNutritionPrefs(next);
@@ -435,7 +435,7 @@ export function handleNutritionAction(
       // W1-WEIGHT-SOT стадія 2: дзеркалення — через спільний funnel.
       persistFizrukDailyLog([entry, ...readFizrukDailyLog()]);
       recordBodyWeight({ weightKg: n, at: entry.at });
-      return `Вагу записано: ${n} кг`;
+      return `Вагу записано: ${formatNumberUk(n)} кг`;
     }
     // ── Фізрук v2 ──────────────────────────────────────────────
     case "suggest_meal": {
@@ -460,8 +460,8 @@ export function handleNutritionAction(
         protein: Math.max(0, target.protein - eaten.protein),
       };
       const parts: string[] = [
-        `Зʼїдено сьогодні: ${Math.round(eaten.kcal)} ккал, ${Math.round(eaten.protein)}г білка`,
-        `Залишилось: ${Math.round(remaining.kcal)} ккал, ${Math.round(remaining.protein)}г білка`,
+        `Зʼїдено сьогодні: ${formatNumberUk(Math.round(eaten.kcal))} ккал, ${formatNumberUk(Math.round(eaten.protein))}г білка`,
+        `Залишилось: ${formatNumberUk(Math.round(remaining.kcal))} ккал, ${formatNumberUk(Math.round(remaining.protein))}г білка`,
       ];
       if (focus) parts.push(`Фокус: ${focus}`);
       if (meal_type) parts.push(`Тип прийому: ${meal_type}`);
@@ -502,7 +502,7 @@ export function handleNutritionAction(
       }
       persistNutritionLog(nextLog);
       const totalKcal = copied.reduce((s, m) => s + (m?.macros?.kcal ?? 0), 0);
-      return `Скопійовано ${copied.length} ${pluralUa(copied.length, { one: "прийом", few: "прийоми", many: "прийомів" })} з ${source_date} (${Math.round(totalKcal)} ккал)`;
+      return `Скопійовано ${copied.length} ${pluralUa(copied.length, { one: "прийом", few: "прийоми", many: "прийомів" })} з ${source_date} (${formatNumberUk(Math.round(totalKcal))} ккал)`;
     }
     case "plan_meals_for_day": {
       const { target_kcal, meals_count, preferences } =
@@ -512,12 +512,14 @@ export function handleNutritionAction(
         Number(target_kcal) || nutritionPrefs.dailyTargetKcal || 2000;
       const count = Number(meals_count) || 3;
       const parts: string[] = [
-        `Планую ${count} прийомів на ${targetKcal} ккал/день`,
-        `Приблизно ${Math.round(targetKcal / count)} ккал на прийом`,
+        `Планую ${count} прийомів на ${formatNumberUk(targetKcal)} ккал/день`,
+        `Приблизно ${formatNumberUk(Math.round(targetKcal / count))} ккал на прийом`,
       ];
       if (preferences) parts.push(`Побажання: ${preferences}`);
       if (nutritionPrefs.dailyTargetProtein_g) {
-        parts.push(`Ціль білка: ${nutritionPrefs.dailyTargetProtein_g}г/день`);
+        parts.push(
+          `Ціль білка: ${formatNumberUk(nutritionPrefs.dailyTargetProtein_g)}г/день`,
+        );
       }
       return (
         parts.join(". ") + ". Рекомендацію сформовано на основі цих даних."

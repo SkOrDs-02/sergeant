@@ -138,6 +138,26 @@ describe("useChatSend (audit 03 F22 — SSE + tool-calls)", () => {
     expect(flat.some((m) => m.text === "Твій баланс — 1000 грн.")).toBe(true);
   });
 
+  it("drops empty assistant replies from history so the server does not 400 the whole thread", async () => {
+    sendMock.mockResolvedValue({ text: "Ок." });
+    const { result } = renderSend([
+      { id: "u1", role: "user", text: "як мої звички" },
+      { id: "a1", role: "assistant", text: "" },
+    ]);
+
+    await act(async () => {
+      await result.current.send("а за місяць?");
+    });
+
+    const payload = sendMock.mock.calls[0]![0] as {
+      messages: Array<{ role: string; content: string }>;
+    };
+    expect(payload.messages).toEqual([
+      { role: "user", content: "як мої звички" },
+      { role: "user", content: "а за місяць?" },
+    ]);
+  });
+
   it("runs a validated tool call through executeActions then streams the follow-up", async () => {
     const setMessages = vi.fn();
     sendMock.mockResolvedValue({

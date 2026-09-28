@@ -28,7 +28,9 @@ describe("createDebt", () => {
       input: { name: "Аренда", amount: 5000 },
     });
     expect(out).toMatchObject({ result: expect.stringContaining("Аренда") });
-    expect(out).toMatchObject({ result: expect.stringContaining("5000") });
+    expect(out).toMatchObject({
+      result: expect.stringContaining("5 000"),
+    });
   });
 
   it("persists the new debt via finykChatWrite", () => {
@@ -138,7 +140,9 @@ describe("createReceivable", () => {
       input: { name: "Іванченко", amount: 2500 },
     });
     expect(out).toMatchObject({ result: expect.stringContaining("Іванченко") });
-    expect(out).toMatchObject({ result: expect.stringContaining("2500") });
+    expect(out).toMatchObject({
+      result: expect.stringContaining("2 500"),
+    });
   });
 
   it("persists via finykChatWrite on finyk_recv key", () => {

@@ -8,6 +8,7 @@ import { getTxStatAmount } from "../../../../modules/finyk/utils";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type { ExportReportAction, ChatActionResult } from "../types";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function exportReport(action: ExportReportAction): ChatActionResult {
   const { period, from, to } = action.input || {};
@@ -53,9 +54,9 @@ export function exportReport(action: ExportReportAction): ChatActionResult {
   const toStr = formatDateNumeric(toDate, { timeZone: KYIV_TIME_ZONE });
   return [
     `Звіт за ${fromStr} – ${toStr}:`,
-    `Дохід: ${Math.round(totalIncome)} грн`,
-    `Витрати: ${Math.round(totalExpense)} грн`,
-    `Баланс: ${Math.round(totalIncome - totalExpense)} грн`,
+    `Дохід: ${formatNumberUk(Math.round(totalIncome))} грн`,
+    `Витрати: ${formatNumberUk(Math.round(totalExpense))} грн`,
+    `Баланс: ${formatNumberUk(Math.round(totalIncome - totalExpense))} грн`,
     `Операцій: ${filtered.length} (витрат: ${expenses.length}, доходів: ${income.length})`,
   ].join("\n");
 }

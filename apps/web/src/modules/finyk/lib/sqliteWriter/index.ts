@@ -25,6 +25,12 @@ import {
   type FinykDualWriteState,
 } from "./diff.js";
 import { probeFinykParity } from "./parity.js";
+import {
+  ackDualWrite,
+  journalDualWrite,
+  pendingDualWrites,
+} from "../../../../core/durability/dualWriteJournal.js";
+import { outboxCheckpoint } from "../../../../core/syncEngine/outboxCheckpoint.js";
 
 /**
  * Orchestrator for the Finyk SQLite writer layer (formerly dual-write).
@@ -103,6 +109,7 @@ export function registerFinykDualWriteContext(
 ): () => void {
   liveContexts.push(ctx);
   registeredContext = ctx;
+  replayFinykJournal(ctx);
   return () => {
     const at = liveContexts.lastIndexOf(ctx);
     if (at === -1) return;
@@ -116,6 +123,8 @@ export function __clearFinykDualWriteContextForTests(): void {
   registeredContext = null;
   liveContexts.length = 0;
   lastIssuedClientTs = null;
+  dualWriteQueue = Promise.resolve();
+  replayedJournalIds.clear();
 }
 
 // DCRUD-108 — last clientTs handed to ANY Finyk dual-write apply, across
@@ -203,19 +212,31 @@ export async function dualWriteFinykState(
   prev: FinykDualWriteState,
   next: FinykDualWriteState,
 ): Promise<DualWriteOutcome> {
-  const outcome = await runDualWriteFinykState(prev, next);
+  const ctx = registeredContext;
+  const outcome = ctx
+    ? await runFinykOps(
+        ctx,
+        diffFinykDualWriteOps(prev, next),
+        nextMonotonicClientTs(ctx),
+        next,
+      )
+    : ({ status: "skipped", reason: "context-unset" } as const);
   recordDualWriteOutcome("finyk", outcome);
   return outcome;
 }
 
-async function runDualWriteFinykState(
-  prev: FinykDualWriteState,
-  next: FinykDualWriteState,
+/**
+ * `clientTs` приходить ззовні, а не береться тут: журнальований запис
+ * відтворюється з ТІЄЮ Ж міткою, що й первинний запуск, інакше пізній
+ * реплей перебив би новішу правку з іншого пристрою. `next` null для
+ * реплею: паритет із повним станом там не має з чим порівнювати.
+ */
+async function runFinykOps(
+  ctx: FinykDualWriteContext,
+  ops: readonly FinykDualWriteOp[],
+  clientTs: string,
+  next: FinykDualWriteState | null,
 ): Promise<DualWriteOutcome> {
-  const ctx = registeredContext;
-  if (!ctx) return { status: "skipped", reason: "context-unset" };
-
-  const ops = diffFinykDualWriteOps(prev, next);
   if (ops.length === 0) return { status: "skipped", reason: "no-ops" };
 
   const userId = ctx.getUserId();
@@ -242,7 +263,7 @@ async function runDualWriteFinykState(
 
   const result = await applyFinykDualWriteOps(client, ops, {
     userId,
-    clientTs: nextMonotonicClientTs(ctx),
+    clientTs,
     logger: ctx.logger,
   });
 
@@ -263,6 +284,7 @@ async function runDualWriteFinykState(
   // (`recordReadFallback`) so triage can tell `SELECT failing` apart
   // from a real LS↔SQLite divergence (`recordParityCheck("…",
   // "mismatch", …)`).
+  if (!next) return { status: "applied", result };
   try {
     const parity = await probeFinykParity(client, userId, next);
     recordParityCheck("finyk", parity.result, parity.details);
@@ -300,10 +322,66 @@ export function triggerFinykDualWrite(
 ): void {
   const ctx = registeredContext;
   if (!ctx) return;
+  // Diff, мітку часу і журнал беремо синхронно, ДО асинхронної межі нижче:
+  // див. `core/durability/dualWriteJournal.ts`.
+  const ops = diffFinykDualWriteOps(prev, next);
+  const clientTs = nextMonotonicClientTs(ctx);
+  const userId = ctx.getUserId();
+  const journalId =
+    ops.length > 0 && userId
+      ? journalDualWrite<FinykJournalPayload>("finyk", userId, {
+          ops,
+          clientTs,
+        })
+      : null;
+  enqueueFinykRun(ctx, ops, clientTs, next, journalId);
+}
+
+interface FinykJournalPayload {
+  readonly ops: readonly FinykDualWriteOp[];
+  readonly clientTs: string;
+}
+
+/** Реплей відбувається раз на запис, хоч реєстрантів контексту кілька. */
+const replayedJournalIds = new Set<string>();
+
+function replayFinykJournal(ctx: FinykDualWriteContext): void {
+  const userId = ctx.getUserId();
+  if (!userId) return;
+  for (const entry of pendingDualWrites<FinykJournalPayload>("finyk", userId)) {
+    if (replayedJournalIds.has(entry.id)) continue;
+    replayedJournalIds.add(entry.id);
+    enqueueFinykRun(
+      ctx,
+      entry.payload.ops,
+      entry.payload.clientTs,
+      null,
+      entry.id,
+    );
+  }
+}
+
+function enqueueFinykRun(
+  ctx: FinykDualWriteContext,
+  ops: readonly FinykDualWriteOp[],
+  clientTs: string,
+  next: FinykDualWriteState | null,
+  journalId: string | null,
+): void {
   __openFinykSqliteMutationWindow();
   dualWriteQueue = dualWriteQueue
     .then(() => new Promise((resolve) => globalThis.setTimeout(resolve, 0)))
-    .then(() => dualWriteFinykState(prev, next))
+    .then(async () => {
+      const outboxSettled = outboxCheckpoint();
+      const outcome = await runFinykOps(ctx, ops, clientTs, next);
+      recordDualWriteOutcome("finyk", outcome);
+      // «sqlite недоступна» лишає запис у журналі для наступного буту.
+      // Рядок outbox, що ще не ліг, теж лишає запис (див. outboxCheckpoint).
+      // Чекаємо поза чергою: завислий outbox не має гальмувати наступні записи.
+      if (journalId && outcome.status === "applied") {
+        void outboxSettled().then((ok) => ok && ackDualWrite(journalId));
+      }
+    })
     .catch((err) => {
       logSafe(ctx, "warn", "dual-write task failed", {
         error: err instanceof Error ? err.message : String(err),

@@ -96,8 +96,9 @@
 
 | PR                                                              | Title                                                                          | Merged     |
 | --------------------------------------------------------------- | ------------------------------------------------------------------------------ | ---------- |
+| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27                     | 2026-09-28 |
 | [#81](https://bitbucket.org/skords01/sergeant/pull-requests/81) | fix(web): рішення власника за аудитом копі сайту                               | 2026-09-26 |
 | [#78](https://bitbucket.org/skords01/sergeant/pull-requests/78) | fix(web): копі сайту за аудитом: глосарій, жаргон, факт у Політиці приватності | 2026-09-26 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 3 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

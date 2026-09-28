@@ -28,6 +28,8 @@
 
 Останні 10 PR, що торкнулися canonical-доків. Повна історія → [`pr-ledger/index.json`](./governance/pr-ledger/index.json).
 
+- [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) — feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу _(2026-09-28)_
+- [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) — fix(web): виправлення за браузерним web-аудитом 2026-09-27 _(2026-09-28)_
 - [#81](https://bitbucket.org/skords01/sergeant/pull-requests/81) — fix(web): рішення власника за аудитом копі сайту _(2026-09-26)_
 - [#78](https://bitbucket.org/skords01/sergeant/pull-requests/78) — fix(web): копі сайту за аудитом: глосарій, жаргон, факт у Політиці приватності _(2026-09-26)_
 - [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) — docs(docs): синк реєстру PR (#41-#64) _(2026-09-26)_
@@ -36,8 +38,6 @@
 - [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) — fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7) _(2026-09-24)_
 - [#26](https://bitbucket.org/skords01/sergeant/pull-requests/26) — feat(server): анти-слоп раунд 2: Сержант у промптах, текст без окликів, гейти _(2026-09-24)_
 - [#24](https://bitbucket.org/skords01/sergeant/pull-requests/24) — fix(web): гейти копі: серверні тексти помилок, кнопка «X» існує, картки без сирого e.message _(2026-09-24)_
-- [#30](https://bitbucket.org/skords01/sergeant/pull-requests/30) — fix(web): полірування копі за аудитом: плейсхолдери, плюрали, ₴ і одиниці, тости, legal під лінтом _(2026-09-24)_
-- [#27](https://bitbucket.org/skords01/sergeant/pull-requests/27) — docs(docs): анти-слоп аудит сайту за мірками раунду 2 _(2026-09-24)_
 
 ## 🔵 В роботі — 78 відкритих документів
 

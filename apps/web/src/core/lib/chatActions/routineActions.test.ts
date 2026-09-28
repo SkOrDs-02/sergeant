@@ -789,6 +789,15 @@ describe("habit_trend", () => {
     expect(out).toContain("не знайдено");
   });
 
+  it("several habits: adds a per-habit breakdown so the model can name the weak one", () => {
+    seedHabit("h1", "Біг");
+    seedHabit("h2", "Читання");
+    const out = call({ name: "habit_trend", input: { period_days: 7 } });
+    expect(out).toContain("По звичках:");
+    expect(out).toMatch(/Біг: \d+\/\d+ \(\d+%\)/);
+    expect(out).toMatch(/Читання: \d+\/\d+ \(\d+%\)/);
+  });
+
   it("shape: result is a non-empty string", () => {
     seedHabit("h1", "X");
     const out = call({ name: "habit_trend", input: { period_days: 14 } });

@@ -204,7 +204,7 @@ describe("set_budget_limit guards", () => {
         input: { category_id: "c_1", limit: 5000 },
       }),
     );
-    expect(out).toContain("5000");
+    expect(out).toContain("5\u00A0000");
     expect(localStorage.getItem("finyk_budgets")).not.toBeNull();
   });
 });

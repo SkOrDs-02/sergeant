@@ -3,6 +3,7 @@
    directly here. Same pattern as queryFinykActions.ts. */
 import { ls } from "../../hubChatUtils";
 import { finykChatWrite } from "./dualWriteBridge";
+import { formatNumberUk } from "@sergeant/shared";
 import type {
   AddAssetAction,
   RecurringExpenseAction,
@@ -38,7 +39,7 @@ export function addAsset(action: AddAssetAction): ChatActionResult {
   };
   finykChatWrite("finyk_assets", [...prevAssets, newEntry]);
   return {
-    result: `Актив "${trimmed}" додано: ${amt} ${cur}`,
+    result: `Актив "${trimmed}" додано: ${formatNumberUk(amt)} ${cur}`,
     undo: () => {
       const list = ls<AssetEntry[]>("finyk_assets", []);
       const next = list.filter((e) => e.id !== assetId);
@@ -77,5 +78,5 @@ export function recurringExpense(
   };
   subs.push(newSub);
   finykChatWrite("finyk_subs", subs);
-  return `Підписку "${trimmed}" створено: ${amt} грн, ${dayN}-го числа (id:${newSub.id})`;
+  return `Підписку "${trimmed}" створено: ${formatNumberUk(amt)} грн, ${dayN}-го числа (id:${newSub.id})`;
 }

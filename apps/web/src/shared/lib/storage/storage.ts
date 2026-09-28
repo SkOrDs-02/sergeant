@@ -306,6 +306,43 @@ export function safeReadStringLSDurable(
   return raw === null ? fallback : raw;
 }
 
+/** JSON-варіант {@link safeWriteStringLSDurable}. */
+export function safeWriteLSDurable(key: string, value: unknown): boolean {
+  let serialized: string;
+  try {
+    serialized = typeof value === "string" ? value : JSON.stringify(value);
+  } catch {
+    return false;
+  }
+  return safeWriteStringLSDurable(key, serialized);
+}
+
+/** JSON-варіант {@link safeReadStringLSDurable}. */
+export function safeReadLSDurable<T = unknown>(
+  key: string,
+  fallback: T | null = null,
+): T | null {
+  const raw = safeReadStringLSDurable(key);
+  if (raw === null) return fallback;
+  try {
+    return (JSON.parse(raw) as T) ?? fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+/** {@link safeReadLSValidated} поверх durable-читання. */
+export function safeReadLSValidatedDurable<T>(
+  key: string,
+  schema: z.ZodType<T>,
+  fallback: T,
+): T {
+  const raw = safeReadLSDurable<unknown>(key);
+  if (raw === null) return fallback;
+  const result = schema.safeParse(raw);
+  return result.success ? result.data : fallback;
+}
+
 /** Remove a key from both the active store and the durable LS mirror. */
 export function safeRemoveLSDurable(key: string): boolean {
   webKVStore.remove(key);

@@ -1,6 +1,7 @@
 import { E1RM_REP_CAP, epley1rm } from "@sergeant/fizruk-domain";
 
 import type { Calculate1rmAction, ChatActionResult } from "../types";
+import { formatNumberUk } from "@sergeant/shared";
 
 /**
  * Формула Еплі, та сама, що рахує PR на екрані Вправи
@@ -17,7 +18,7 @@ export function calculate1rm(action: Calculate1rmAction): ChatActionResult {
   if (!Number.isInteger(r) || r < 1)
     return "Повторення мають бути цілим числом >= 1.";
   if (r === 1) {
-    return `1RM${exercise_name ? ` (${exercise_name})` : ""}: ${w} кг (1 повторення = вже максимум)`;
+    return `1RM${exercise_name ? ` (${exercise_name})` : ""}: ${formatNumberUk(w)} кг (1 повторення = вже максимум)`;
   }
   if (r > E1RM_REP_CAP) {
     return `Оцінка 1RM ненадійна після ${E1RM_REP_CAP} повторень: підхід із ${r} повт. не рахується як рекорд і на екрані Вправи. Спробуй з меншою кількістю повторень.`;
@@ -34,14 +35,14 @@ export function calculate1rm(action: Calculate1rmAction): ChatActionResult {
     { pct: 65, reps: 15 },
   ];
   const parts: string[] = [
-    `1RM${exercise_name ? ` (${exercise_name})` : ""}: ~${epley1rmKg} кг`,
-    `Формула Еплі, базується на: ${w} кг × ${r} повт`,
+    `1RM${exercise_name ? ` (${exercise_name})` : ""}: ~${formatNumberUk(epley1rmKg, { maximumFractionDigits: 1 })} кг`,
+    `Формула Еплі, базується на: ${formatNumberUk(w)} кг × ${r} повт`,
     "",
     "Таблиця відсотків:",
   ];
   for (const p of percentages) {
     parts.push(
-      `  ${p.pct}% = ${Math.round((epley1rmKg * p.pct) / 100)} кг (~${p.reps} повт)`,
+      `  ${p.pct}% = ${formatNumberUk(Math.round((epley1rmKg * p.pct) / 100))} кг (~${p.reps} повт)`,
     );
   }
   return parts.join("\n");

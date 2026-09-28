@@ -32,6 +32,7 @@ import type {
   RecallMemoryRequest,
   RecallMemoryResponse,
 } from "@sergeant/shared";
+import { formatNumberUk } from "@sergeant/shared";
 import { parseKyivDate } from "@shared/lib/time/kyivTime";
 import type {
   ChatAction,
@@ -230,7 +231,7 @@ async function handleCreateTransaction(
       ? resolveExpenseCategoryMeta(category.trim(), getCategories())
       : undefined;
     const label = meta?.label || category?.trim() || "";
-    return `Витрату ${amt} грн${description?.trim() ? ` "${description.trim()}"` : ""}${label ? ` (${label})` : ""} записано на сервері (id:${expense.id})`;
+    return `Витрату ${formatNumberUk(amt)} грн${description?.trim() ? ` "${description.trim()}"` : ""}${label ? ` (${label})` : ""} записано на сервері (id:${expense.id})`;
   } catch {
     // Мережа/401/5xx — не губимо запис: пишемо локально зі старим undo-шляхом.
     const local = createTransactionLocal(action);

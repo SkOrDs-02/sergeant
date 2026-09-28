@@ -1,3 +1,4 @@
+import { pluralDays } from "@sergeant/shared";
 import { chatApi } from "@shared/api";
 import { finykKeys } from "@shared/lib/api/queryKeys";
 import { readJSON, writeJSON } from "../../lib/finykStorage";
@@ -77,13 +78,20 @@ export async function fetchProactiveAdvice({
   pct,
   daysRemaining,
 }: ProactiveItem) {
+  // Ліміт уже може бути пробитий: тоді «щоб не перевищити» і від'ємний
+  // «залишок» суперечать одне одному, і модель радить про неіснуюче.
+  const over = remaining < 0;
+  const balanceLine = over
+    ? `Ліміт перевищено на ${Math.abs(remaining).toLocaleString("uk-UA")} ₴.`
+    : `Залишок: ${remaining.toLocaleString("uk-UA")} ₴.`;
+  const ask = over
+    ? "як до кінця місяця не збільшувати перевищення"
+    : "щоб не перевищити ліміт";
   const prompt = `Категорія бюджету: ${catLabel}. Витрачено: ${spent.toLocaleString(
     "uk-UA",
   )} ₴ (${pct}% від ліміту ${limit.toLocaleString(
     "uk-UA",
-  )} ₴). Залишок: ${remaining.toLocaleString(
-    "uk-UA",
-  )} ₴. До кінця місяця ${daysRemaining} днів. Дай конкретну коротку пораду (1-2 речення) що зробити, щоб не перевищити ліміт. Відповідь виключно українською.`;
+  )} ₴). ${balanceLine} До кінця місяця ${daysRemaining} ${pluralDays(daysRemaining)}. Дай конкретну коротку пораду (1-2 речення), ${ask}. Відповідь виключно українською.`;
   const data = await chatApi.send({
     context: `[Проактивна AI-порада] Категорія: ${catLabel}, витрачено: ${spent} ₴, ліміт: ${limit} ₴, залишок: ${remaining} ₴, днів до кінця місяця: ${daysRemaining}`,
     messages: [{ role: "user", content: prompt }],

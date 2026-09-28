@@ -129,13 +129,13 @@ describe("diffLine", () => {
 
   it("formats negative delta without + sign", () => {
     expect(diffLine("Калорії", 1800, 2200, " ккал")).toBe(
-      "Калорії: 1800 ккал vs 2200 ккал (-400 ккал)",
+      "Калорії: 1 800 ккал vs 2 200 ккал (-400 ккал)",
     );
   });
 
   it("formats zero delta", () => {
     expect(diffLine("Кроки", 5000, 5000, " кр")).toBe(
-      "Кроки: 5000 кр vs 5000 кр (0 кр)",
+      "Кроки: 5 000 кр vs 5 000 кр (0 кр)",
     );
   });
 });

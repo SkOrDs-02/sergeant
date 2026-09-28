@@ -107,7 +107,7 @@ function deferralKey(userId: string): string {
 }
 
 /**
- * Частина збою, адресована людині: `AnonymousMigrationStepError.detail`.
+ * Короткий технічний код збою для екрана: крок + причина без даних рядків.
  *
  * Перевірка структурна, а не `instanceof`: помилку кидає модуль, який
  * приїжджає окремим чанком, а тести підміняють його цілком — на такій межі
@@ -115,11 +115,30 @@ function deferralKey(userId: string): string {
  * якраз і потрібен. Повний `message` (крок + `[vfs=… disk=…]`) від цього не
  * страждає: він їде в Sentry незалежно.
  */
-function migrationFailureDetail(error: unknown): string | null {
-  if (!(error instanceof Error)) return null;
-  if (error.name !== "AnonymousMigrationStepError") return null;
-  const { detail } = error as Error & { detail?: unknown };
-  return typeof detail === "string" ? detail.slice(0, 240) : null;
+function migrationFailureDetail(error: unknown): string {
+  const shape =
+    typeof error === "object" && error !== null
+      ? (error as { name?: unknown; detail?: unknown; step?: unknown })
+      : null;
+  const name =
+    typeof shape?.name === "string" && shape.name.length > 0
+      ? shape.name
+      : error instanceof Error
+        ? error.name
+        : "";
+  if (name !== "AnonymousMigrationStepError") {
+    return `unknown: ${name || typeof error}`;
+  }
+  const { detail, step } = shape ?? {};
+  const safeStep =
+    typeof step === "string" && step.trim().length > 0
+      ? step.trim()
+      : "unknown";
+  const safeDetail =
+    typeof detail === "string" && detail.trim().length > 0
+      ? detail.trim()
+      : "unknown";
+  return `${safeStep}: ${safeDetail}`.slice(0, 240);
 }
 
 function readDeferred(userId: string): boolean {
