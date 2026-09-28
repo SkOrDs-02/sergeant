@@ -1,8 +1,8 @@
 ---
 name: sergeant-council
-description: Use when the founder needs a multi-perspective advisory board — spawns council specialists in parallel (product, ux, growth, tech, critic) and synthesizes recommendations; UA: скликай раду / порадься з командою.
+description: "Use when the founder needs a multi-perspective advisory board — spawns council specialists in parallel (product, ux, growth, tech, critic) and synthesizes recommendations; UA: скликай раду / порадься з командою."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Рада директорів Sergeant

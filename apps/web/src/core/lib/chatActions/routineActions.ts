@@ -505,7 +505,7 @@ export function handleRoutineAction(
       const habit = state.habits.find((h) => h.id === id);
       if (!habit) return `Звичку ${id} не знайдено.`;
       const habitName = habit.name || id;
-      const todayKey = getKyivDayKey();
+      const todayKey = anchoredCompletionBounds().todayKey;
 
       if (!target) {
         const next = applyResumeHabitFrom(state, id, todayKey);

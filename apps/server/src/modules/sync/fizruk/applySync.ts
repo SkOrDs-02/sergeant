@@ -13,6 +13,7 @@ import {
   WORKOUT_SET_WEIGHT_KG_BOUNDS,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
+import { applyIfNewer } from "../applySync-helpers.js";
 
 export async function applyFizrukWorkouts(
   client: PoolClient,
@@ -52,13 +53,13 @@ export async function applyFizrukWorkouts(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_workouts
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const startedAt = parseRequiredDate(row["started_at"]);
@@ -113,7 +114,8 @@ export async function applyFizrukWorkouts(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_workouts
          SET started_at      = $1,
              ended_at        = $2,
@@ -125,7 +127,7 @@ export async function applyFizrukWorkouts(
              kcal_burned     = $8,
              updated_at      = $9,
              deleted_at      = $10
-       WHERE id = $11 AND user_id = $12`,
+       WHERE id = $11 AND user_id = $12 AND updated_at < $9`,
       [
         startedAt,
         endedAt ?? null,
@@ -183,13 +185,13 @@ export async function applyFizrukItems(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_workout_items
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const workoutId =
@@ -273,7 +275,8 @@ export async function applyFizrukItems(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_workout_items
          SET workout_id        = $1,
              exercise_id       = $2,
@@ -288,7 +291,7 @@ export async function applyFizrukItems(
              sort_order        = $11,
              updated_at        = $12,
              deleted_at        = $13
-       WHERE id = $14 AND user_id = $15`,
+       WHERE id = $14 AND user_id = $15 AND updated_at < $12`,
       [
         workoutId,
         exerciseId,
@@ -349,13 +352,13 @@ export async function applyFizrukSets(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_workout_sets
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const workoutItemId =
@@ -410,7 +413,8 @@ export async function applyFizrukSets(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_workout_sets
          SET workout_item_id = $1,
              weight_kg       = $2,
@@ -419,7 +423,7 @@ export async function applyFizrukSets(
              sort_order      = $5,
              updated_at      = $6,
              deleted_at      = $7
-       WHERE id = $8 AND user_id = $9`,
+       WHERE id = $8 AND user_id = $9 AND updated_at < $6`,
       [
         workoutItemId,
         weightKg ?? 0,

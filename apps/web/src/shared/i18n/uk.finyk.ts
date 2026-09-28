@@ -205,7 +205,7 @@ export const finykPageMessages = {
    */
   debtAutoLink: {
     fieldLabel: "Автопривʼязка платежів за словом в описі",
-    placeholder: "Наприклад, приватбанк",
+    placeholder: "Наприклад, ПриватБанк",
     hint: "Кожну майбутню витрату з таким словом в описі привʼяжу як сплату автоматично.",
     matchesFoundPrefix: "Знайдено збігів:",
     noMatches: "Збігів не знайдено",

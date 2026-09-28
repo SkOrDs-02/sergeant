@@ -1,8 +1,8 @@
 ---
 name: sergeant-module-sync
-description: Use when the task touches the sync layer — sync endpoints, op-log, LWW conflict resolution, dualwrite pipelines, offline persistence; UA: задача про sync/оп-лог/дуалрайт/конфлікти.
+description: "Use when the task touches the sync layer — sync endpoints, op-log, LWW conflict resolution, dualwrite pipelines, offline persistence; UA: задача про sync/оп-лог/дуалрайт/конфлікти."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Sync — власник інфра-модуля
@@ -31,6 +31,7 @@ lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); t
 
 | Дата       | Рішення                                                                | Джерело/ADR                                                                                 |
 | ---------- | ---------------------------------------------------------------------- | ------------------------------------------------------------------------------------------- |
+| 2026-09-28 | LWW перевіряє сама база в тому ж SQL, що пише (`WHERE <t>.updated_at < EXCLUDED.updated_at` / `AND updated_at < $clientTs`), а не JS-guard після SELECT-а без блокування: 0 рядків = `lww_conflict` | `applyIfNewer` / `deleteIfNewer` в [`applySync-helpers.ts`](../../../apps/server/src/modules/sync/applySync-helpers.ts), коміт `12df50254` |
 | 2026-09-23 | Читачі оп-логу курсором по `id` віддають лише рядки з `tx_id < pg_snapshot_xmin(...)`: курсор не перескакує оп-и довгої транзакції, ціна — затримка на час старішої відкритої транзакції | міграція 147, `SYNC_OP_LOG_COMMITTED_WATERMARK_SQL` у [`syncV2-core.ts`](../../../apps/server/src/modules/sync/syncV2-core.ts) |
 | 2026-08-28 | Правило `tombstoned` знято: видалення живе за чистим LWW, новіший запис воскрешає soft-deleted рядок | `guardUuidPkApply` в [`applySync-helpers.ts`](../../../apps/server/src/modules/sync/applySync-helpers.ts) (регресія `SERGEANT-WEB-T`) |
 | 2026-07-03 | Дуалрайт — generic framework, спільний для 4 модульних пайплайнів      | [ADR-0073](../../../docs/governance/adr/0073-dualwrite-generic-framework.md)             |

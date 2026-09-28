@@ -1,8 +1,8 @@
 ---
 name: sergeant-module-push
-description: Use when the task touches push notifications — web push, APNs, FCM, notification fan-out, push audit; UA: задача про push/сповіщення/APNs/FCM.
+description: "Use when the task touches push notifications — web push, APNs, FCM, notification fan-out, push audit; UA: задача про push/сповіщення/APNs/FCM."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Push — власник інфра-модуля

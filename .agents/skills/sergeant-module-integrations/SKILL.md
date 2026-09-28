@@ -1,8 +1,8 @@
 ---
 name: sergeant-module-integrations
-description: Use when the task touches external integrations — Silpo receipts import, Telegram bots, audio transcription, inbound webhooks; UA: задача про silpo/telegram/transcribe/webhooks.
+description: "Use when the task touches external integrations — Silpo receipts import, Telegram bots, audio transcription, inbound webhooks; UA: задача про silpo/telegram/transcribe/webhooks."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Integrations — власник інфра-модуля

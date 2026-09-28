@@ -1,8 +1,8 @@
 ---
 name: sergeant-module-fizruk
-description: Use when the task touches the Fizruk fitness module — workouts, recovery, injuries, body weight, training streaks; UA: задача про fizruk/тренування/відновлення/травми/вагу.
+description: "Use when the task touches the Fizruk fitness module — workouts, recovery, injuries, body weight, training streaks; UA: задача про fizruk/тренування/відновлення/травми/вагу."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Fizruk — власник модуля

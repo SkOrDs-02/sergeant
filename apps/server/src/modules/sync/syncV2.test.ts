@@ -233,14 +233,24 @@ describe("syncV2Push · idempotency replay (duplicate-only)", () => {
   }
 
   it("батч із лише duplicate ops → повертає кешовані статуси, без INSERT", async () => {
-    // BEGIN, потім дві SELECT-и, що повертають duplicate-rows, потім COMMIT.
+    // BEGIN, один дедуп-SELECT на весь батч, потім COMMIT.
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
       .mockResolvedValueOnce({
-        rows: [{ id: "11", status: "applied", reject_reason: null }],
-      })
-      .mockResolvedValueOnce({
-        rows: [{ id: "12", status: "rejected", reject_reason: "lww_conflict" }],
+        rows: [
+          {
+            id: "12",
+            status: "rejected",
+            reject_reason: "lww_conflict",
+            idempotency_key: "k_b",
+          },
+          {
+            id: "11",
+            status: "applied",
+            reject_reason: null,
+            idempotency_key: "k_a",
+          },
+        ],
       })
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
@@ -289,7 +299,14 @@ describe("syncV2Push · idempotency replay (duplicate-only)", () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
       .mockResolvedValueOnce({
-        rows: [{ id: "5", status: "duplicate", reject_reason: null }],
+        rows: [
+          {
+            id: "5",
+            status: "duplicate",
+            reject_reason: null,
+            idempotency_key: "k_d",
+          },
+        ],
       })
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
@@ -343,14 +360,14 @@ describe("syncV2Push · new-op apply path", () => {
   function mockInsertPath(insertedId: string, serverTs: Date) {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
-      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({
         rows: [{ id: insertedId, server_ts: serverTs }],
       })
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
   }
 
@@ -395,7 +412,7 @@ describe("syncV2Push · new-op apply path", () => {
     const serverTs = new Date("2026-01-01T00:00:05.000Z");
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
-      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [{ id: "42", server_ts: serverTs }] })
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
@@ -433,7 +450,7 @@ describe("syncV2Push · new-op apply path", () => {
     const serverTs = new Date("2026-01-01T00:00:05.000Z");
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
-      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [{ id: "43", server_ts: serverTs }] })
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
@@ -495,15 +512,15 @@ describe("syncV2Push · new-op apply path", () => {
     applyRoutineEntries.mockRejectedValueOnce(new Error("apply boom"));
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
-      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({
         rows: [{ id: "45", server_ts: new Date("2026-01-01T00:00:05.000Z") }],
       })
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
     const req = makeReq({ body: { ops: [op("apply-throws")] } });
@@ -554,9 +571,8 @@ describe("syncV2Push · op-log write під savepoint", () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
       // --- оп 1: журнал падає ---
-      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockRejectedValueOnce(
         new Error(
@@ -565,13 +581,13 @@ describe("syncV2Push · op-log write під savepoint", () => {
       )
       .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
-      // --- оп 2: цілком здоровий сусід ---
-      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
-      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
+      // --- оп 2: цілком здоровий сусід (дедуп уже зроблено одним SELECT-ом) ---
+      .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [{ id: "77", server_ts: serverTs }] })
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
     const req = makeReq({
@@ -610,15 +626,16 @@ describe("syncV2Push · op-log write під savepoint", () => {
     // унікальний `sync_op_log_user_idem_key`.
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
-      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT — ще порожньо
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча: ще порожньо
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [] }) // INSERT … DO NOTHING → нічого
       .mockResolvedValueOnce({
         rows: [{ id: "88", status: "applied", reject_reason: null }],
       }) // SELECT рядка переможця гонки
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply (гонку програно)
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
     const req = makeReq({ body: { ops: [op("raced-by-second-tab")] } });
@@ -634,20 +651,23 @@ describe("syncV2Push · op-log write під savepoint", () => {
     expect(
       client.query.mock.calls.filter((c) => c[0] === "ROLLBACK"),
     ).toHaveLength(0);
+    // Переможець гонки вже записав цей оп, тож наш apply відкочується.
+    expect(client.query).toHaveBeenCalledWith("ROLLBACK TO SAVEPOINT op_apply");
   });
 
   it("гонка з відхиленим рядком переможця віддає його reason, а не свій", async () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
-      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [] }) // INSERT … DO NOTHING
       .mockResolvedValueOnce({
         rows: [{ id: "89", status: "rejected", reject_reason: "lww_conflict" }],
       })
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply (гонку програно)
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
     const res = makeRes();
@@ -668,13 +688,14 @@ describe("syncV2Push · op-log write під savepoint", () => {
   it("конфлікт без рядка — oplog_write_failed, а не мовчазний applied", async () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
-      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [] }) // INSERT … DO NOTHING
       .mockResolvedValueOnce({ rows: [] }) // SELECT — і рядка немає
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // ROLLBACK TO SAVEPOINT op_apply (гонку програно)
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
     const res = makeRes();
@@ -696,12 +717,12 @@ describe("syncV2Push · op-log write під savepoint", () => {
     const serverTs = new Date("2026-01-01T00:00:05.000Z");
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
-      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({ rows: [{ id: "90", server_ts: serverTs }] })
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 
     await syncV2Push(
@@ -717,6 +738,64 @@ describe("syncV2Push · op-log write під savepoint", () => {
       /ON CONFLICT \(user_id, idempotency_key\) DO NOTHING/,
     );
     expect(insertCall![0]).toMatch(/RETURNING id, server_ts/);
+  });
+
+  function routeQueries() {
+    let nextId = 200;
+    client.query.mockImplementation(async (sql: unknown) =>
+      typeof sql === "string" && sql.includes("INSERT INTO sync_op_log")
+        ? {
+            rows: [{ id: String(nextId++), server_ts: new Date("2026-01-01") }],
+          }
+        : { rows: [] },
+    );
+  }
+
+  const dedupSelects = () =>
+    client.query.mock.calls.filter(
+      (c) =>
+        typeof c[0] === "string" && /SELECT[\s\S]*FROM sync_op_log/.test(c[0]),
+    );
+
+  it("батч із N опів робить рівно один дедуп-SELECT", async () => {
+    routeQueries();
+    const keys = ["n-1", "n-2", "n-3", "n-4", "n-5"];
+
+    const res = makeRes();
+    await syncV2Push(makeReq({ body: { ops: keys.map((k) => op(k)) } }), res);
+
+    expect(res.body).toMatchObject({ accepted: keys.length });
+    const selects = dedupSelects();
+    expect(selects).toHaveLength(1);
+    expect(selects[0]![0]).toMatch(/idempotency_key = ANY\(\$2::text\[\]\)/);
+    expect(selects[0]![1]).toEqual(["u_1", keys]);
+  });
+
+  it("повтор ключа в одному пуші віддає рішення першого опа без другого apply", async () => {
+    routeQueries();
+
+    const res = makeRes();
+    await syncV2Push(
+      makeReq({ body: { ops: [op("same-key"), op("same-key")] } }),
+      res,
+    );
+
+    expect(applyRoutineEntries).toHaveBeenCalledTimes(1);
+    expect(
+      client.query.mock.calls.filter(
+        (c) =>
+          typeof c[0] === "string" && c[0].includes("INSERT INTO sync_op_log"),
+      ),
+    ).toHaveLength(1);
+    expect(res.body).toMatchObject({
+      accepted: 2,
+      last_op_id: 200,
+      results: [
+        { idempotency_key: "same-key", status: "applied" },
+        { idempotency_key: "same-key", status: "applied" },
+      ],
+    });
+    expect(dedupSelects()).toHaveLength(1);
   });
 });
 
@@ -749,14 +828,14 @@ describe("syncV2Push · sync_conflicts_total observability (W4)", () => {
   function mockInsertPath(insertedId: string, serverTs: Date) {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
-      .mockResolvedValueOnce({ rows: [] }) // duplicate SELECT
+      .mockResolvedValueOnce({ rows: [] }) // дедуп-SELECT батча
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_apply
-      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }) // SAVEPOINT op_log_write
       .mockResolvedValueOnce({
         rows: [{ id: insertedId, server_ts: serverTs }],
       })
       .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_log_write
+      .mockResolvedValueOnce({ rows: [] }) // RELEASE SAVEPOINT op_apply
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
   }
 
@@ -799,7 +878,14 @@ describe("syncV2Push · sync_conflicts_total observability (W4)", () => {
     client.query
       .mockResolvedValueOnce({ rows: [] }) // BEGIN
       .mockResolvedValueOnce({
-        rows: [{ id: "99", status: "rejected", reject_reason: "lww_conflict" }],
+        rows: [
+          {
+            id: "99",
+            status: "rejected",
+            reject_reason: "lww_conflict",
+            idempotency_key: "replay-of-conflict",
+          },
+        ],
       })
       .mockResolvedValueOnce({ rows: [] }); // COMMIT
 

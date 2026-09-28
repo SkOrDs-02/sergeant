@@ -1,6 +1,6 @@
 ---
 name: sergeant-verify-before-done
-description: Use before claiming any task done/green/fixed in Sergeant — run the proving command fresh and quote its output, never a scoped-filter or assumed pass; UA: перед «готово/зелено/пофіксив».
+description: "Use before claiming any task done/green/fixed in Sergeant — run the proving command fresh and quote its output, never a scoped-filter or assumed pass; UA: перед «готово/зелено/пофіксив»."
 lang: en
 lang-reason: Agent-runtime SKILL — body kept EN to maximize tool-calling stability across LLM providers whose attention bias toward English persists in tool-routing even when chat is bilingual. The bilingual trigger lives in `description:` so UA-only routing still resolves.
 ---

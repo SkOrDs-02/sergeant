@@ -707,7 +707,9 @@ export async function resolveProTier(
       msg: "pro_tier_plan_lookup_failed",
       err: { message: (e as Error)?.message || String(e) },
     });
-    return premium(); // monetization-safe: a transient blip gives Sonnet, never blocks
+    // Як і збій сесії вище: не блокуємо, але й не даруємо premium кожному
+    // Free-юзеру, поки лежить БД (рішення власника 2026-09-28).
+    return unpaid();
   }
   // Free: кількість капає `assertAiQuota`, модель — standard (див. `unpaid`).
   if (plan !== "pro") return unpaid();

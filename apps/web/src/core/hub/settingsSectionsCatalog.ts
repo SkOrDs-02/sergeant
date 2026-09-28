@@ -84,7 +84,7 @@ export const SETTINGS_SECTIONS_CATALOG: readonly SettingsSectionMeta[] = [
   },
   {
     id: "feedback",
-    title: "Фідбек",
+    title: "Відгук",
     keywords:
       "фідбек feedback відгук ідея баг bug пропозиція nps опитування survey підтримка",
   },

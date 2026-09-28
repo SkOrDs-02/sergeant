@@ -23,7 +23,7 @@ export const ROUTE_TITLES: Readonly<Record<string, string>> = {
   "/status": "Sergeant · Статус системи",
   "/chat": "Sergeant · Чат із Сержантом",
   "/assistant": "Sergeant · Що вміє Сержант",
-  "/capabilities": "Sergeant · Що вміє додаток",
+  "/capabilities": "Sergeant · Що вміє застосунок",
   "/pricing": "Sergeant · Плани",
   "/sign-in": "Sergeant · Вхід",
   "/reset-password": "Sergeant · Скидання пароля",

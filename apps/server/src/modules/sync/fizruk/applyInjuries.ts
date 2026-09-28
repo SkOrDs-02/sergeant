@@ -2,6 +2,7 @@ import type { PoolClient } from "pg";
 import type { SyncV2Op } from "../../../http/schemas.js";
 import type { AppliedStatus } from "../syncV2-types.js";
 import {
+  applyIfNewer,
   assertRowUserId,
   guardUuidPkApply,
   queryOne,
@@ -49,13 +50,13 @@ export async function applyFizrukInjuries(
 
   if (op.op === "delete") {
     if (!existing) return { status: "rejected", reason: "not_found" };
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_injuries
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const site = typeof row["site"] === "string" ? row["site"].trim() : "";
@@ -100,11 +101,12 @@ export async function applyFizrukInjuries(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_injuries
          SET site = $1, started_at = $2, cleared_at = $3, note = $4,
              updated_at = $5, deleted_at = $6
-       WHERE id = $7 AND user_id = $8`,
+       WHERE id = $7 AND user_id = $8 AND updated_at < $5`,
       [
         site,
         startedAt,

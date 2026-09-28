@@ -20,6 +20,8 @@ import { ChevronIcon } from "./RecipesCard.ChevronIcon";
 interface SavedSectionProps {
   saved: SavedRecipe[];
   savedBusy: boolean;
+  savedError?: boolean;
+  onRetry?: () => void;
   savedOpen: boolean;
   setSavedOpen: Dispatch<SetStateAction<boolean>>;
   openSavedId: string | null;
@@ -34,6 +36,8 @@ interface SavedSectionProps {
 export function SavedSection({
   saved,
   savedBusy,
+  savedError = false,
+  onRetry,
   savedOpen,
   setSavedOpen,
   openSavedId,
@@ -68,7 +72,16 @@ export function SavedSection({
 
       {savedOpen && (
         <div className="mt-3">
-          {saved.length === 0 ? (
+          {saved.length === 0 && savedError ? (
+            <div className="flex flex-wrap items-center gap-2">
+              <p className="text-style-body text-danger-strong" role="alert">
+                Не вдалося прочитати збережені рецепти.
+              </p>
+              <Button type="button" variant="ghost" size="sm" onClick={onRetry}>
+                Спробувати ще раз
+              </Button>
+            </div>
+          ) : saved.length === 0 ? (
             <div className="text-style-body text-muted">
               Тут зʼявляться збережені рецепти. Згенеруй рецепти нижче й натисни
               &quot;Зберегти&quot;.

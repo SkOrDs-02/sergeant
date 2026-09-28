@@ -6,6 +6,7 @@ import {
   toNonNegativeInt,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
+import { applyIfNewer } from "../applySync-helpers.js";
 
 /**
  * Apply-шлях для `routine_entries`. Кожна операція — повний UPSERT за
@@ -77,13 +78,13 @@ export async function applyRoutineEntries(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE routine_entries
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const name = typeof row["name"] === "string" ? row["name"] : null;
@@ -118,13 +119,14 @@ export async function applyRoutineEntries(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE routine_entries
          SET name = $1,
              completed_at = $2,
              updated_at = $3,
              deleted_at = $4
-       WHERE id = $5 AND user_id = $6`,
+       WHERE id = $5 AND user_id = $6 AND updated_at < $3`,
       [name, completedAt ?? null, clientTs, deletedAt ?? null, id, userId],
     );
   }
@@ -212,6 +214,17 @@ export async function applyRoutineStreaks(
     return { status: "applied" };
   }
 
+  // AI-DANGER: `routine_streaks` не має `updated_at`, тож LWW іде проти
+  // `sync_op_log`, а цей рядок журналу пише пуш лише ПІСЛЯ apply у тій самій
+  // транзакції. Без блокування старіший паралельний пуш не бачить
+  // незакоміченого новішого і перезаписує його. Advisory lock на
+  // (routine_streaks, user) до кінця транзакції серіалізує такі пуші: після
+  // коміту сусіда наступний оператор бачить його рядок журналу (READ
+  // COMMITTED). Increment вище лок не бере, він атомарний сам.
+  await client.query(
+    `SELECT pg_advisory_xact_lock(hashtext('routine_streaks'), hashtext($1))`,
+    [userId],
+  );
   const lwwGuard = await client.query<{ max_ts: Date | null }>(
     `SELECT MAX(client_ts) AS max_ts
        FROM sync_op_log

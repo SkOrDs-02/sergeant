@@ -30,6 +30,31 @@ describe("SavedSection", () => {
     expect(setSavedOpen).toHaveBeenCalled();
   });
 
+  it("на збій читання показує помилку з повтором, а не порожній стан", () => {
+    const onRetry = vi.fn();
+    render(
+      <SavedSection
+        saved={[]}
+        savedBusy={false}
+        savedError
+        onRetry={onRetry}
+        savedOpen
+        setSavedOpen={vi.fn()}
+        openSavedId={null}
+        setOpenSavedId={vi.fn()}
+        portionById={{}}
+        setPortionById={vi.fn()}
+        onAddToLog={vi.fn()}
+        onDeleteClick={vi.fn()}
+        fmtMacro={(v) => String(v)}
+      />,
+    );
+    expect(screen.getByRole("alert")).toBeTruthy();
+    expect(screen.queryByText(/Тут зʼявляться/)).toBeNull();
+    fireEvent.click(screen.getByRole("button", { name: "Спробувати ще раз" }));
+    expect(onRetry).toHaveBeenCalled();
+  });
+
   it("renders saved recipes and delete trigger", () => {
     const onDeleteClick = vi.fn();
     render(

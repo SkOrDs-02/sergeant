@@ -1,8 +1,8 @@
 ---
 name: sergeant-analytics
-description: Use when adding or changing product analytics — PostHog events, event naming, tracking calls, dashboards-as-code manifests; UA: додаєш чи міняєш аналітичні івенти PostHog.
+description: "Use when adding or changing product analytics — PostHog events, event naming, tracking calls, dashboards-as-code manifests; UA: додаєш чи міняєш аналітичні івенти PostHog."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Продуктова аналітика (PostHog) у Sergeant

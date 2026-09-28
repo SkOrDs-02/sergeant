@@ -2,7 +2,7 @@
 name: sergeant-spec
 description: "Use when writing or updating a spec in docs/work/specs/ before a feature is built — interview the founder first, never invent product decisions; UA: пишеш або оновлюєш спеку на нову фічу."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Як писати спеку в Sergeant

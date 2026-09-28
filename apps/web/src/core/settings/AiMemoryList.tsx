@@ -390,9 +390,19 @@ export function AiMemoryList() {
       return <EmptyState size="sm" description={m.authRequired} />;
     }
     return (
-      <p className="text-style-caption text-danger-strong" role="alert">
-        {m.loadError}
-      </p>
+      <div className="flex flex-wrap items-center gap-2">
+        <p className="text-style-caption text-danger-strong" role="alert">
+          {m.loadError}
+        </p>
+        <Button
+          type="button"
+          variant="ghost"
+          size="sm"
+          onClick={() => void query.refetch()}
+        >
+          {messages.actions.tryAgain}
+        </Button>
+      </div>
     );
   }
 

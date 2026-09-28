@@ -1,8 +1,8 @@
 ---
 name: sergeant-qa-squad
-description: Use when running full QA across all Sergeant surfaces — spawns qa-server, qa-web (incl. landing), qa-mobile, qa-packages in parallel and synthesizes per-surface results; UA: повний QA по всіх surfaces.
+description: "Use when running full QA across all Sergeant surfaces — spawns qa-server, qa-web (incl. landing), qa-mobile, qa-packages in parallel and synthesizes per-surface results; UA: повний QA по всіх surfaces."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # QA squad для повного coverage

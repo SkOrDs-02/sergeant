@@ -1,8 +1,8 @@
 ---
 name: sergeant-module-finyk
-description: Use when the task touches the Finyk personal-finance module — budgets, transactions, receipts, cash on hand, analytics — on any surface; UA: задача про finyk/фінанси/бюджети/транзакції.
+description: "Use when the task touches the Finyk personal-finance module — budgets, transactions, receipts, cash on hand, analytics — on any surface; UA: задача про finyk/фінанси/бюджети/транзакції."
 lang: uk
-lang-reason: Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар.
+lang-reason: "Body is Ukrainian per Hard Rule #15 (internal docs in Ukrainian); the `description:` carries an EN trigger phrase plus the `; UA:` clause so tool-routing stays stable across LLM providers whose attention biases toward English. See `sergeant-writing-skills` § Грамар."
 ---
 
 # Finyk — власник модуля

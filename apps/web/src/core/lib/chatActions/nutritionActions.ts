@@ -1,7 +1,10 @@
 import { logger } from "@shared/lib";
 import { formatNumberUk, pluralUa, type UaPluralForms } from "@sergeant/shared";
-import { getKyivDayKey } from "@shared/lib/time/kyivTime";
-import { buildPlacedItems, canonicalFoodKey } from "@sergeant/nutrition-domain";
+import {
+  buildPlacedItems,
+  canonicalFoodKey,
+  todayISODate,
+} from "@sergeant/nutrition-domain";
 import { saveRecipeToBook } from "../../../modules/nutrition/lib/recipeBook";
 import { recordBodyWeight } from "../../profile/recordBodyWeight";
 import {
@@ -64,7 +67,7 @@ export function handleNutritionAction(
       const { name, kcal, protein_g, fat_g, carbs_g } = (
         action as LogMealAction
       ).input;
-      const todayKey = getKyivDayKey();
+      const todayKey = todayISODate();
       const mealId = `m_${Date.now()}`;
       // `addLogEntry` runs the entry through `normalizeMeal`, filling the
       // canonical Meal shape (mealType/source/macroSource/…) the chat input
@@ -101,7 +104,7 @@ export function handleNutritionAction(
       if (!Number.isFinite(ml) || ml <= 0) {
         return "Некоректна кількість води.";
       }
-      const today = getKyivDayKey();
+      const today = todayISODate();
       const dateKey =
         waterDate && /^\d{4}-\d{2}-\d{2}$/.test(waterDate) ? waterDate : today;
       const log = loadWaterLog();
@@ -439,7 +442,7 @@ export function handleNutritionAction(
       const { focus, meal_type } = (action as SuggestMealAction).input || {};
       const nutritionLog = loadNutritionLog();
       const nutritionPrefs = loadNutritionPrefs();
-      const todayKey = getKyivDayKey();
+      const todayKey = todayISODate();
       const todayData = nutritionLog[todayKey];
       const meals = Array.isArray(todayData?.meals) ? todayData.meals : [];
       const eaten = {
@@ -479,7 +482,7 @@ export function handleNutritionAction(
         sourceDay.meals.length === 0
       )
         return `За ${source_date} немає записів їжі.`;
-      const todayKey = getKyivDayKey();
+      const todayKey = todayISODate();
       let copied: Meal[];
       if (meal_index != null && meal_index !== "") {
         const idx = Number(meal_index);
