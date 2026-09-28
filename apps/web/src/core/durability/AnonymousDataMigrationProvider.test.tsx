@@ -318,6 +318,7 @@ describe("AnonymousDataMigrationProvider", () => {
       ),
       {
         name: "AnonymousMigrationStepError",
+        step: "pull-before",
         detail: "Забагато запитів. Спробуй через 17 секунд.",
       },
     );
@@ -325,20 +326,35 @@ describe("AnonymousDataMigrationProvider", () => {
     renderAt("/", <div>module content</div>);
 
     expect(
-      await screen.findByText("Забагато запитів. Спробуй через 17 секунд."),
+      await screen.findByText(
+        "pull-before: Забагато запитів. Спробуй через 17 секунд.",
+      ),
     ).toBeInTheDocument();
     expect(screen.queryByText(/anon-migration\//)).not.toBeInTheDocument();
     expect(screen.queryByText(/vfs=/)).not.toBeInTheDocument();
   });
 
-  // Зворотний бік: чужа помилка (не з нашого кроку) не має малювати на
-  // екрані випадковий текст рушія.
-  it("не показує код, коли помилка не з переносу", async () => {
+  // Зворотний бік: чужа помилка (не з нашого кроку) має показати технічний
+  // клас збою, але не випадковий текст рушія.
+  it("показує санітизований код, коли помилка не з переносу", async () => {
     migrate.mockRejectedValue(new TypeError("Load failed"));
     renderAt("/", <div>module content</div>);
 
     await screen.findByRole("button", { name: "Повторити" });
+    expect(screen.getByText("unknown: TypeError")).toBeInTheDocument();
     expect(screen.queryByText(/Load failed/)).not.toBeInTheDocument();
+  });
+
+  it("показує крок і fallback, коли StepError має порожню причину", async () => {
+    const error = Object.assign(new Error("anon-migration/claim: "), {
+      name: "AnonymousMigrationStepError",
+      step: "claim",
+      detail: "",
+    });
+    migrate.mockRejectedValue(error);
+    renderAt("/", <div>module content</div>);
+
+    expect(await screen.findByText("claim: unknown")).toBeInTheDocument();
   });
 
   // Юридичні тексти мають лишатись доступними за будь-якого стану синку.

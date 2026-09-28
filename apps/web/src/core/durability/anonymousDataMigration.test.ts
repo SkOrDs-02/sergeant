@@ -64,13 +64,15 @@ describe("anonymous data migration invariants", () => {
   // Звіт власника 2026-09-14 приніс `SQLITE_IOERR`, а цей код в sqlite один
   // на ВСІ дискові біди — переповнений пул, вичерпану квоту й зайнятий файл
   // не розрізнити. Щоб не гадати втретє, помилка несе числа сховища.
+  // Власний таймаут: `describeStorage` уперше тягне граф `../db/sqlite.js`,
+  // і його трансформація у vitest сама з'їдає ~19 с зі стандартних 20.
   it("дописує до помилки заповненість пулу й використання диска", async () => {
     const { migrateAnonymousDataToProfile } =
       await import("./anonymousDataMigration.js");
     await expect(migrateAnonymousDataToProfile("")).rejects.toThrow(
       /^anon-migration\//,
     );
-  });
+  }, 60_000);
 
   it("жене чергу по батчах, доки наші рядки не вирішені", async () => {
     const keys = Array.from({ length: 250 }, (_, i) => `anonv1_op${i}`);
@@ -515,6 +517,45 @@ describe("anonymous data migration invariants", () => {
       ).toBe(0);
       expect(runs).toHaveLength(0);
     });
+  });
+
+  it("reopens a completed claim for the next new account", async () => {
+    const randomUUID = vi
+      .spyOn(crypto, "randomUUID")
+      .mockReturnValue(
+        "batch-user-c" as `${string}-${string}-${string}-${string}-${string}`,
+      );
+    const run = vi.fn(async () => undefined);
+    const client = {
+      all: vi.fn(async () => [
+        {
+          target_user_id: "user-a",
+          batch_id: "batch-user-a",
+          status: "completed",
+        },
+      ]),
+      run,
+      exec: vi.fn(),
+    } as unknown as SqliteMigrationClient;
+
+    try {
+      const claim = await __anonymousMigrationInternals.getOrCreateClaim(
+        client,
+        "user-c",
+      );
+
+      expect(claim).toEqual({
+        target_user_id: "user-c",
+        batch_id: "batch-user-c",
+        status: "pending",
+      });
+      expect(run).toHaveBeenCalledWith(
+        expect.stringContaining("UPDATE anonymous_profile_migrations"),
+        expect.arrayContaining(["user-c", "batch-user-c", "local-anon"]),
+      );
+    } finally {
+      randomUUID.mockRestore();
+    }
   });
 
   it("treats an LWW rejection as an authoritative conflict winner", async () => {
