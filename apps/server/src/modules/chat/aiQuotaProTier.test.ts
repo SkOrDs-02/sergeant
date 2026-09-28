@@ -194,10 +194,10 @@ describe("resolveProTier — bypass paths return premium without touching DB", (
     expect(r.tier).toBe("premium");
   });
 
-  it("fail-open (plan lookup впав) лишається premium, не standard", async () => {
+  it("збій plan lookup дає standard, не premium (як і збій сесії)", async () => {
     getUserPlan.mockRejectedValue(new Error("db down"));
     const r = await resolveProTier(makeReq(), makeRes(), "chat");
-    expect(r.tier).toBe("premium");
+    expect(r.tier).toBe("standard");
   });
 
   // Деградація неоплаченого трафіку стосується ЛИШЕ чату. У коуча розрив
@@ -357,10 +357,10 @@ describe("resolveProTier — fail-open never blocks a paying user", () => {
     expect(r.tier).toBe("premium");
   });
 
-  it("plan lookup throws → premium (monetization-safe)", async () => {
+  it("plan lookup throws → standard, не блокує і не дарує premium", async () => {
     getUserPlan.mockRejectedValue(new Error("subs blip"));
     const r = await resolveProTier(makeReq(), makeRes(), "chat");
-    expect(r.tier).toBe("premium");
+    expect(r.tier).toBe("standard");
     expect(pool.query).not.toHaveBeenCalled();
   });
 
