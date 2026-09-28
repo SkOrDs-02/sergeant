@@ -1,6 +1,6 @@
 # ADR-0085: Free AI quota — п’ять добових одиниць
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0100](./0100-free-premium-weekly-quotas-registry.md)
 - **Last validated:** 2026-09-04 by Codex (звірка графа коду й джерел). **Next review:** 2026-12-03.
 - **Date:** 2026-08-06
 - **Deciders:** @SkOrDs-02
