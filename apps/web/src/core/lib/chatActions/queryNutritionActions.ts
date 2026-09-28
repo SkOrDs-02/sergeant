@@ -18,6 +18,7 @@ import {
 const range = (from: string, to: string): string =>
   formatDayRangeUk(from, to, { todayKey: getKyivDayKey() });
 import { loadNutritionLog } from "@nutrition/lib/nutritionStorage";
+import { formatNumberUk } from "@sergeant/shared";
 import type {
   ChatAction,
   ChatActionResult,
@@ -160,7 +161,8 @@ export function queryNutrition(action: QueryNutritionAction): ChatActionResult {
   const shown = matched.slice(0, limit);
   const list = shown
     .map(
-      (m) => `${m.day}: ${m.name || "Без назви"} · ${round(mealKcal(m))} ккал`,
+      (m) =>
+        `${m.day}: ${m.name || "Без назви"} · ${formatNumberUk(round(mealKcal(m)))} ккал`,
     )
     .join("; ");
   const more =
@@ -168,7 +170,7 @@ export function queryNutrition(action: QueryNutritionAction): ChatActionResult {
       ? ` (показано ${shown.length} з ${matched.length})`
       : "";
 
-  return `Прийомів за ${range(from, to)}: ${matched.length}, разом ${round(totals.kcal)} ккал (Б ${round(totals.protein)}г · Ж ${round(totals.fat)}г · В ${round(totals.carbs)}г)${more}: ${list}`;
+  return `Прийомів за ${range(from, to)}: ${matched.length}, разом ${formatNumberUk(round(totals.kcal))} ккал (Б ${formatNumberUk(round(totals.protein))}г · Ж ${formatNumberUk(round(totals.fat))}г · В ${formatNumberUk(round(totals.carbs))}г)${more}: ${list}`;
 }
 
 export function nutritionAverages(
@@ -227,8 +229,8 @@ export function nutritionAverages(
 
   const lines = [
     `Середнє харчування за ${range(from, to)} (${n} ${n === 1 ? "день" : "днів"} із записами):`,
-    `Калорії: ${round(avg.kcal)} ккал/день`,
-    `Макроси/день: Б ${round(avg.protein)}г · Ж ${round(avg.fat)}г · В ${round(avg.carbs)}г`,
+    `Калорії: ${formatNumberUk(round(avg.kcal))} ккал/день`,
+    `Макроси/день: Б ${formatNumberUk(round(avg.protein))}г · Ж ${formatNumberUk(round(avg.fat))}г · В ${formatNumberUk(round(avg.carbs))}г`,
   ];
 
   // Trend: first half vs second half kcal/day (needs ≥2 days).
@@ -241,7 +243,9 @@ export function nutritionAverages(
     const a = avgOf(firstHalf);
     const b = avgOf(secondHalf);
     const trend = b > a ? "зростає" : b < a ? "спадає" : "стабільно";
-    lines.push(`Тренд калорій: ${trend} (${round(a)} → ${round(b)} ккал/день)`);
+    lines.push(
+      `Тренд калорій: ${trend} (${formatNumberUk(round(a))} → ${formatNumberUk(round(b))} ккал/день)`,
+    );
   }
 
   return lines.join("\n");

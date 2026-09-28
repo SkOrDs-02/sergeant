@@ -9,6 +9,7 @@
 
 import { habitCompletionRate, type Habit } from "@sergeant/routine-domain";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
+import { formatNumberUk } from "@sergeant/shared";
 
 export const DAY_MS = 86_400_000;
 
@@ -99,7 +100,9 @@ export function habitTrendText(
   weeklyData.reverse();
   const parts = [
     `Тренд звичок за ${days} днів (${habits.length} звичок):`,
-    ...weeklyData.map((pct, i) => `  Тиждень ${i + 1}: ${pct}%`),
+    ...weeklyData.map(
+      (pct, i) => `  Тиждень ${i + 1}: ${formatNumberUk(pct)}%`,
+    ),
   ];
   const first = weeklyData[0];
   const last = weeklyData[weeklyData.length - 1];
@@ -110,7 +113,9 @@ export function habitTrendText(
         : last < first
           ? "погіршується"
           : "стабільно";
-    parts.push(`Тренд: ${trend} (${first}% → ${last}%)`);
+    parts.push(
+      `Тренд: ${trend} (${formatNumberUk(first)}% → ${formatNumberUk(last)}%)`,
+    );
   }
   if (habits.length > 1) {
     const todayKey = getKyivDayKey(now);
@@ -124,7 +129,9 @@ export function habitTrendText(
         todayKey,
       );
       const pct = scheduled > 0 ? Math.round((completed / scheduled) * 100) : 0;
-      parts.push(`  ${h.name || h.id}: ${completed}/${scheduled} (${pct}%)`);
+      parts.push(
+        `  ${h.name || h.id}: ${completed}/${scheduled} (${formatNumberUk(pct)}%)`,
+      );
     }
   }
   return parts.join("\n");

@@ -14,6 +14,7 @@ import {
   unknownTransactionMessage,
 } from "./entityLookup";
 import { resolveExpenseCategoryMeta } from "../../../../modules/finyk/utils";
+import { formatNumberUk } from "@sergeant/shared";
 import { getCachedFinykSqliteState } from "../../../../modules/finyk/lib/sqliteReader";
 import { getVisibleFinykMonoMirrorState } from "../../../../modules/finyk/lib/monoMirrorReader";
 import type {
@@ -184,7 +185,7 @@ function formatTxList(items: FinykSearchTx[]): string {
       const category = tx.category ? ` · ${tx.category}` : "";
       const desc = tx.description ? ` · ${tx.description}` : "";
       const source = txSourceOf(tx);
-      return `${tx.id}: ${tx.date || "без дати"} · ${toDisplayAmount(tx, source)} грн${desc}${category}`;
+      return `${tx.id}: ${tx.date || "без дати"} · ${formatNumberUk(toDisplayAmount(tx, source))} грн${desc}${category}`;
     })
     .join("; ");
 }

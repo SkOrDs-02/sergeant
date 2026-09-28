@@ -48,7 +48,7 @@ describe("addAsset", () => {
       input: { name: "Авто", amount: 500000 },
     }) as { result: string };
     expect(result.result).toContain("Авто");
-    expect(result.result).toContain("500000");
+    expect(result.result).toContain("500 000");
     expect(result.result).toContain("UAH");
     expect(mockWrite).toHaveBeenCalledWith(
       "finyk_assets",

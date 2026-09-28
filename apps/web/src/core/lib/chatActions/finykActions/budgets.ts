@@ -11,7 +11,7 @@ import {
   unknownCategoryMessage,
 } from "./entityLookup";
 import { validatePositiveAmount } from "./amountValidation";
-import { toLocalISODate } from "@sergeant/shared";
+import { formatNumberUk, toLocalISODate } from "@sergeant/shared";
 import type {
   SetBudgetLimitAction,
   SetMonthlyPlanAction,
@@ -84,7 +84,7 @@ export function setBudgetLimit(action: SetBudgetLimitAction): ChatActionResult {
       : period === "one_time"
         ? "одноразово"
         : "на місяць";
-  const result = `Ліміт ${cat?.label || categoryId} встановлено: ${limitN}\u202F₴ ${periodLabel}`;
+  const result = `Ліміт ${cat?.label || categoryId} встановлено: ${formatNumberUk(limitN)}\u202F₴ ${periodLabel}`;
   return {
     result,
     undo: () => finykChatWrite("finyk_budgets", prevBudgets),
@@ -116,7 +116,12 @@ export function setMonthlyPlan(action: SetMonthlyPlanAction): ChatActionResult {
     next[key] = String(check.value);
   }
   finykChatWrite("finyk_monthly_plan", next);
-  const result = `План місяця оновлено: дохід ${next.income ?? "—"} / витрати ${next.expense ?? "—"} / заощадження ${next.savings ?? "—"}\u202F₴/міс`;
+  const fmtField = (v: string | undefined): string => {
+    if (v === undefined) return "—";
+    const n = Number(v);
+    return Number.isFinite(n) ? formatNumberUk(n) : v;
+  };
+  const result = `План місяця оновлено: дохід ${fmtField(next.income)} / витрати ${fmtField(next.expense)} / заощадження ${fmtField(next.savings)}\u202F₴/міс`;
   return {
     result,
     undo: () => finykChatWrite("finyk_monthly_plan", prevPlan),
@@ -155,7 +160,7 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
     finykChatWrite("finyk_budgets", budgets);
     const customC = getCachedFinykSqliteState().customCategories;
     const cat = resolveExpenseCategoryMeta(categoryId, customC);
-    const result = `Ліміт ${cat?.label || categoryId} оновлено: ${limitN}\u202F₴`;
+    const result = `Ліміт ${cat?.label || categoryId} оновлено: ${formatNumberUk(limitN)}\u202F₴`;
     return {
       result,
       undo: () => finykChatWrite("finyk_budgets", prevBudgets),
@@ -195,7 +200,7 @@ export function updateBudget(action: UpdateBudgetAction): ChatActionResult {
       });
     }
     finykChatWrite("finyk_budgets", budgets);
-    const result = `Ціль "${goalName}" оновлено: ${saved}/${target}\u202F₴`;
+    const result = `Ціль "${goalName}" оновлено: ${formatNumberUk(saved)}/${formatNumberUk(target)}\u202F₴`;
     return {
       result,
       undo: () => finykChatWrite("finyk_budgets", prevBudgets),

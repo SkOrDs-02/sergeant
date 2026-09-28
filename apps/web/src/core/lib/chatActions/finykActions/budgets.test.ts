@@ -66,7 +66,7 @@ describe("setBudgetLimit", () => {
       input: { category_id: "food", limit: 5000 },
     });
     assertUndoable(out);
-    expect(out.result).toContain("5000\u202F₴");
+    expect(out.result).toContain("5\u00A0000\u202F₴");
     expect(finykChatWrite).toHaveBeenCalledWith(
       "finyk_budgets",
       expect.any(Array),
@@ -177,9 +177,9 @@ describe("setMonthlyPlan", () => {
       input: { income: 50000, expense: 30000, savings: 10000 },
     });
     assertUndoable(out);
-    expect(out.result).toContain("дохід 50000");
-    expect(out.result).toContain("витрати 30000");
-    expect(out.result).toContain("заощадження 10000");
+    expect(out.result).toContain("дохід 50\u00A0000");
+    expect(out.result).toContain("витрати 30\u00A0000");
+    expect(out.result).toContain("заощадження 10\u00A0000");
     const saved = writes.get("finyk_monthly_plan") as {
       income: string;
       expense: string;
@@ -202,8 +202,8 @@ describe("setMonthlyPlan", () => {
       input: { savings: 5000 },
     });
     assertUndoable(out);
-    expect(out.result).toContain("дохід 40000");
-    expect(out.result).toContain("заощадження 5000");
+    expect(out.result).toContain("дохід 40\u00A0000");
+    expect(out.result).toContain("заощадження 5\u00A0000");
     const saved = writes.get("finyk_monthly_plan") as Record<string, string>;
     expect(saved["income"]).toBe("40000");
     expect(saved["savings"]).toBe("5000");
@@ -316,7 +316,7 @@ describe("updateBudget", () => {
       ub({ scope: "limit", category_id: "transport", limit: 1500 }),
     );
     assertUndoable(out);
-    expect(out.result).toContain("1500\u202F₴");
+    expect(out.result).toContain("1\u00A0500\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       categoryId: string;
       limit: number;
@@ -355,7 +355,7 @@ describe("updateBudget", () => {
     );
     assertUndoable(out);
     expect(out.result).toContain('"Авто"');
-    expect(out.result).toContain("0/100000\u202F₴");
+    expect(out.result).toContain("0/100\u00A0000\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       type: string;
       name: string;
@@ -390,7 +390,7 @@ describe("updateBudget", () => {
       }),
     );
     assertUndoable(out);
-    expect(out.result).toContain("20000/80000\u202F₴");
+    expect(out.result).toContain("20\u00A0000/80\u00A0000\u202F₴");
     const saved = writes.get("finyk_budgets") as Array<{
       targetAmount: number;
       contributions: Array<{ amountUah: number; note?: string }>;

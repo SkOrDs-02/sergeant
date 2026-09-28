@@ -179,7 +179,7 @@ describe("aggregate_spending", () => {
       input: { type: "income", date_from: "2026-04-01", date_to: "2026-04-30" },
     });
     expect(out).toContain("Дохід");
-    expect(out).toMatch(/5000/);
+    expect(out).toContain("5\u00A0000");
   });
 
   it("error: empty range returns no-data message", () => {
@@ -390,7 +390,7 @@ describe("канонічний excluded-set і спліти (стадія 2b)", 
       input: { query: "b_split" },
     });
     // Фактичне списання — 1000 грн, а не статистична частка 600.
-    expect(out).toContain("1000 грн");
+    expect(out).toContain("1 000 грн");
   });
 });
 

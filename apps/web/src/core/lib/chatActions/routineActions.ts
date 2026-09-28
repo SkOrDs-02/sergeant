@@ -46,6 +46,7 @@ import {
   normalizeHabitId,
   isDateKey,
 } from "./routineActions.helpers";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function handleRoutineAction(
   action: ChatAction,
@@ -602,7 +603,7 @@ export function handleRoutineAction(
         // Без гліфа: у полі лежить icon-slug, і «droplet Пити воду» в
         // тексті чату виглядало б як помилка рендера.
         `Статистика "${habit.name || id}" за ${days} днів:`,
-        `Виконано: ${completed}/${scheduled} (${pct}%)`,
+        `Виконано: ${completed}/${scheduled} (${formatNumberUk(pct)}%)`,
         `Поточна серія: ${currentStreak} днів`,
         `Макс. серія: ${maxStreak} днів`,
       ];

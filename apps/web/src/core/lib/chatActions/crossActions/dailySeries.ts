@@ -21,7 +21,7 @@ import {
   buildFinykSpendingUniverse,
   calcCategorySpent,
 } from "@sergeant/finyk-domain";
-import { CORRELATION_MIN_N } from "@sergeant/shared";
+import { CORRELATION_MIN_N, formatNumberUk } from "@sergeant/shared";
 import { getKyivDayKey } from "@shared/lib/time/kyivTime";
 import { ls } from "../../hubChatUtils";
 import { getTxStatAmount } from "../../../../modules/finyk/utils";
@@ -635,7 +635,7 @@ function summariseMetric(
     const b = secondHalf.reduce((s, v) => s + v, 0) / secondHalf.length;
     trend = b > a ? " ↑" : b < a ? " ↓" : " →";
   }
-  return `${metric}: середнє ${fmt(mean)} ${METRIC_UNIT[metric]} (${present.length} дн)${trend}`;
+  return `${metric}: середнє ${formatNumberUk(mean, { maximumFractionDigits: 1 })} ${METRIC_UNIT[metric]} (${present.length} дн)${trend}`;
 }
 
 export function formatDailySeries(

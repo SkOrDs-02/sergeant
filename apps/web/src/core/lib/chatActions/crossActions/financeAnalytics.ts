@@ -19,6 +19,7 @@ import type {
 } from "../types";
 import { filterStatTransactions } from "@sergeant/finyk-domain/domain/transactions";
 import { formatDateNumeric } from "@shared/lib/time/formatDate";
+import { formatNumberUk } from "@sergeant/shared";
 
 export function spendingTrend(action: SpendingTrendAction): string {
   const { period_days } = (action as SpendingTrendAction).input || {};
@@ -62,10 +63,10 @@ export function spendingTrend(action: SpendingTrendAction): string {
   const avgPerDay = days > 0 ? Math.round(curExp / days) : 0;
   const parts: string[] = [
     `Тренд витрат за ${days} днів:`,
-    `Витрати: ${Math.round(curExp)} грн (${avgPerDay} грн/день)`,
-    `Дохід: ${Math.round(curInc)} грн`,
-    `Попередній період: ${Math.round(prevExp)} грн`,
-    `Зміна: ${change >= 0 ? "+" : ""}${change}%`,
+    `Витрати: ${formatNumberUk(Math.round(curExp))} грн (${formatNumberUk(avgPerDay)} грн/день)`,
+    `Дохід: ${formatNumberUk(Math.round(curInc))} грн`,
+    `Попередній період: ${formatNumberUk(Math.round(prevExp))} грн`,
+    `Зміна: ${change >= 0 ? "+" : ""}${formatNumberUk(change)}%`,
     `Операцій: ${currentPeriod.length}`,
   ];
   return parts.join("\n");
@@ -115,11 +116,13 @@ export function categoryBreakdown(action: CategoryBreakdownAction): string {
     .sort((a, b) => b.amount - a.amount);
   const total = sorted.reduce((s, c) => s + c.amount, 0);
   const parts: string[] = [
-    `Витрати по категоріях за ${days} днів (${Math.round(total)} грн):`,
+    `Витрати по категоріях за ${days} днів (${formatNumberUk(Math.round(total))} грн):`,
   ];
   for (const c of sorted.slice(0, 15)) {
     const pct = total > 0 ? Math.round((c.amount / total) * 100) : 0;
-    parts.push(`  ${c.label}: ${Math.round(c.amount)} грн (${pct}%)`);
+    parts.push(
+      `  ${c.label}: ${formatNumberUk(Math.round(c.amount))} грн (${formatNumberUk(pct)}%)`,
+    );
   }
   return parts.join("\n");
 }
@@ -162,15 +165,15 @@ export function detectAnomalies(action: DetectAnomaliesAction): string {
     )
     .slice(0, 5);
   if (anomalies.length === 0) {
-    return `За ${days} днів аномалій не виявлено (середня витрата: ${Math.round(avg)} грн, поріг: ${Math.round(avg * threshold)} грн).`;
+    return `За ${days} днів аномалій не виявлено (середня витрата: ${formatNumberUk(Math.round(avg))} грн, поріг: ${formatNumberUk(Math.round(avg * threshold))} грн).`;
   }
   const parts: string[] = [
-    `Аномальні витрати за ${days} днів (середня: ${Math.round(avg)} грн, поріг ×${threshold}):`,
+    `Аномальні витрати за ${days} днів (середня: ${formatNumberUk(Math.round(avg))} грн, поріг ×${threshold}):`,
   ];
   for (const tx of anomalies) {
     const d = tx.time ? formatDateNumeric(new Date(tx.time * 1000)) : "?";
     parts.push(
-      `  ${d}: ${Math.round(getTxStatAmount(tx, anomalySplits))} грн: ${tx.description || "(без опису)"}`,
+      `  ${d}: ${formatNumberUk(Math.round(getTxStatAmount(tx, anomalySplits)))} грн: ${tx.description || "(без опису)"}`,
     );
   }
   return parts.join("\n");
