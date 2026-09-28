@@ -222,7 +222,7 @@ async function expandTodayAndExpect(
 // відрендерений, а адреса лишилась `/sign-in`: така фаза не валиться, але
 // аномалія пишеться з обома версіями адреси (Playwright і сама сторінка).
 async function waitLeftSignIn(page: Page, phase: string, label: string) {
-  const hub = page.getByRole("button", { name: "Головна" }).first();
+  const hub = page.getByRole("tab", { name: "Головна" }).first();
   const left = await expect
     .poll(
       async () =>
