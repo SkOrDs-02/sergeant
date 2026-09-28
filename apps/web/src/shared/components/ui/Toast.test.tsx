@@ -406,6 +406,24 @@ describe("Toast — стек і черга", () => {
     expect(screen.getByText("Четвертий")).toBeInTheDocument();
   });
 
+  it("аркуш, що зникає, тримає слот: трей не стає чотирирядковим", () => {
+    vi.useFakeTimers();
+    const { api } = renderHarness();
+
+    act(() => {
+      api.info("Перший", 1000);
+      api.info("Другий", 5000);
+      api.info("Третій", 5000);
+      api.info("Четвертий", 5000);
+    });
+    act(() => {
+      vi.advanceTimersByTime(1000 + 50);
+    });
+
+    expect(document.querySelectorAll("[data-toast-id]")).toHaveLength(3);
+    expect(screen.queryByText("Четвертий")).toBeNull();
+  });
+
   it("однакові actionless-тости зливаються в один аркуш із бейджем ×N", () => {
     vi.useFakeTimers();
     const { api } = renderHarness();

@@ -427,19 +427,11 @@ export function ToastContainer() {
 
   // Показуємо лише видиме вікно — решта чекає у черзі в провайдері й
   // навіть не має запущеного таймера (див. `MAX_VISIBLE_TOASTS`).
-  // `leaving`-аркуші лишаємо у рендері, інакше exit-анімація не встигне
-  // програтись, але слота вони вже не займають.
-  const visible: ToastItem[] = [];
-  let slots = 0;
-  for (const t of toasts) {
-    if (t.leaving) {
-      visible.push(t);
-      continue;
-    }
-    if (slots >= MAX_VISIBLE_TOASTS) break;
-    slots += 1;
-    visible.push(t);
-  }
+  // `leaving`-аркуш тримає свій слот до кінця exit-анімації: коли слот
+  // звільнявся одразу, наступний із черги вʼїжджав поруч, і трей на
+  // 200 мс ставав чотирирядковим, а потім знову трирядковим — четвертий
+  // тост блимав.
+  const visible = toasts.slice(0, MAX_VISIBLE_TOASTS);
 
   const tray = (
     <div
