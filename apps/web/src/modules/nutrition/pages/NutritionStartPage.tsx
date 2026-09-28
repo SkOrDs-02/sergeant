@@ -19,8 +19,7 @@ import { Skeleton } from "@shared/components/ui/Skeleton";
 import { useLocale } from "@shared/i18n/useLocale";
 import { NutritionDashboard } from "../components/NutritionDashboard";
 import type { useNutritionLog } from "../hooks/useNutritionLog";
-import { isNutritionReadBootInFlight } from "../hooks/useNutritionSqliteReadBoot";
-import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
+import { isNutritionReadCacheSettled } from "../hooks/useNutritionSqliteReadBoot";
 import type { NutritionPage } from "../lib/nutritionRouter";
 
 type LogController = ReturnType<typeof useNutritionLog>;
@@ -40,13 +39,12 @@ export function NutritionStartPage({
   onPickMeal,
 }: NutritionStartPageProps) {
   const { messages } = useLocale();
-  // Поки бут читання везе журнал, а кеш ще порожній, малюємо скелетон:
+  // Поки бут читання не завершився, а кеш ще порожній, малюємо скелетон:
   // інакше холодний старт показував «0 прийомів», повну норму «лишилось» і
-  // «ще немає записів», а за мить підмінював справжніми даними. Гейт саме на
-  // «в польоті», тож провалений бут не лишить скелетон назавжди.
-  const coldLoading =
-    isNutritionReadBootInFlight() &&
-    getCachedNutritionSqliteState().refreshedAt === null;
+  // «ще немає записів», а за мить підмінював справжніми даними. Той самий
+  // гейт береже й тост віхи серії в дашборді: з порожнього журналу нуль
+  // засіяв би віхи, і справжня серія потім святкувалась би як нова.
+  const coldLoading = !isNutritionReadCacheSettled();
   return (
     <SectionErrorBoundary key="page-start" title="Не вдалось показати «Їжа»">
       <>
@@ -67,7 +65,7 @@ export function NutritionStartPage({
             prefs={prefs}
             onPickMeal={onPickMeal}
             onGoToLog={(dateIso) => {
-              // Порядок важливий: спершу день, потім навігація — журнал
+              // Порядок важливий: спершу день, потім навігація. Журнал
               // читає `log.selectedDate` на рендері, тож зворотний порядок
               // дав би кадр із сьогоднішнім днем перед підміною.
               if (dateIso) log.setSelectedDate(dateIso);

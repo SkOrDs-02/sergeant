@@ -126,7 +126,7 @@ export function RoutineCalendarMonthGrid({
                 aria-label={aria}
                 aria-pressed={sel}
                 // data-compact: глобальна сітка 44px на coarse давала клітинці
-                // мінімальну ширину 44px, а колонка на 360px має ~38px — сусідні
+                // мінімальну ширину 44px, а колонка на 360px має ~38px, і сусідні
                 // зони натиску накладались. Висота 44px лишається, ширина = колонка.
                 data-compact
                 className={cn(

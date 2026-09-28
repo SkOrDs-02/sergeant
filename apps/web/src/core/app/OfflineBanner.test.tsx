@@ -56,6 +56,27 @@ describe("OfflineBanner", () => {
     expect(queryByTestId("offline-banner")).toBeNull();
   });
 
+  it("keeps one live region across states and announces state, not the queue count", () => {
+    const { getByRole, rerender } = render(<OfflineBanner />);
+    const region = getByRole("status");
+    expect(region).toHaveTextContent("");
+
+    act(() => {
+      onlineRef.value = false;
+    });
+    rerender(<OfflineBanner />);
+    // Той самий вузол: регіон, змонтований разом із текстом, не озвучується.
+    expect(getByRole("status")).toBe(region);
+    expect(region).toHaveTextContent(/^Офлайн$/);
+
+    act(() => {
+      onlineRef.value = true;
+      syncStatusRef.syncV2PendingCount = 4;
+    });
+    rerender(<OfflineBanner />);
+    expect(region).toHaveTextContent(/^Синхронізація$/);
+  });
+
   it("renders an 'offline' pill with role=status when offline", () => {
     onlineRef.value = false;
     const { getByTestId, getByRole } = render(<OfflineBanner />);

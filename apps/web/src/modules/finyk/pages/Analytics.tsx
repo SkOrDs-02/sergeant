@@ -704,7 +704,13 @@ export function Analytics({
         )}
 
         {/* Merchants */}
-        <Section title="Топ продавці">
+        {/* Дельти продавців рахуються з того ж `prevTx`, що й порівняння
+            вище, тож у незавершеному місяці це теж «ті ж дні». */}
+        <Section
+          title={
+            isCurrentMonth ? "Топ продавці: зміна за ті ж дні" : "Топ продавці"
+          }
+        >
           {pageLoading ? (
             <div className="space-y-2">
               {[0, 1, 2].map((i) => (

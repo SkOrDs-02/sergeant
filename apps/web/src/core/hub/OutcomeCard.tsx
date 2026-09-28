@@ -92,7 +92,7 @@ export function OutcomeCard({
               type="button"
               onClick={() => onOpenModule(module.id)}
               aria-label={`${module.title}: ${module.body}`}
-              // Обраний модуль — той, що відкриє «Відкрити» вгорі; досі це
+              // Обраний модуль - той, що відкриє «Відкрити» вгорі; досі це
               // було видно лише кольором рамки.
               aria-current={selected ? "true" : undefined}
               className={cn(

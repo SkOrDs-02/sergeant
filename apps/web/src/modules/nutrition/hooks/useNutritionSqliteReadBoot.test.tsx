@@ -10,6 +10,7 @@ import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
 const useAuthMock = vi.fn();
 const bootMock = vi.fn();
 const notifyMock = vi.fn();
+const cache = vi.hoisted(() => ({ refreshedAt: null as string | null }));
 
 vi.mock("../../../core/auth/AuthContext", () => ({
   useAuth: () => useAuthMock(),
@@ -20,16 +21,20 @@ vi.mock("../lib/sqliteReadBoot", () => ({
 vi.mock("../lib/sqliteReadGate", () => ({
   notifyNutritionSqliteCacheRefresh: () => notifyMock(),
 }));
+vi.mock("../lib/sqliteReader", () => ({
+  getCachedNutritionSqliteState: () => ({ refreshedAt: cache.refreshedAt }),
+}));
 
 import {
-  __setNutritionReadBootInFlightForTests,
-  isNutritionReadBootInFlight,
+  __setNutritionReadBootSettledForTests,
+  isNutritionReadCacheSettled,
   useNutritionSqliteReadBoot,
 } from "./useNutritionSqliteReadBoot";
 
 beforeEach(() => {
   vi.clearAllMocks();
-  __setNutritionReadBootInFlightForTests(false);
+  __setNutritionReadBootSettledForTests(false);
+  cache.refreshedAt = null;
   bootMock.mockResolvedValue(true);
 });
 afterEach(() => vi.clearAllMocks());
@@ -63,31 +68,27 @@ describe("useNutritionSqliteReadBoot", () => {
     expect(bootMock).toHaveBeenCalledTimes(1);
   });
 
-  it("notifies even when boot was not activated, so the start skeleton clears", async () => {
+  it("is not settled before the first render boots, so the start page shows a skeleton", () => {
+    expect(isNutritionReadCacheSettled()).toBe(false);
+  });
+
+  it("settles and notifies even when boot was not activated", async () => {
     bootMock.mockResolvedValue(false);
     useAuthMock.mockReturnValue({ user: { id: "u2" } });
     renderHook(() => useNutritionSqliteReadBoot());
     await waitFor(() => expect(notifyMock).toHaveBeenCalledTimes(1));
-    expect(isNutritionReadBootInFlight()).toBe(false);
+    expect(isNutritionReadCacheSettled()).toBe(true);
   });
 
-  it("stays in flight while any boot is pending, even if a latched one returns first", async () => {
-    // Хук стоїть і в NutritionBootCluster, і в NutritionApp; другий бут
-    // упирається в латч і вертається одразу.
-    let finishFirst: (v: boolean) => void = () => {};
-    bootMock
-      .mockReturnValueOnce(
-        new Promise<boolean>((resolve) => {
-          finishFirst = resolve;
-        }),
-      )
-      .mockResolvedValueOnce(false);
+  it("settles after a rejected boot instead of holding the skeleton", async () => {
+    bootMock.mockRejectedValue(new Error("no wasm"));
     useAuthMock.mockReturnValue({ user: { id: "u3" } });
     renderHook(() => useNutritionSqliteReadBoot());
-    renderHook(() => useNutritionSqliteReadBoot());
-    await waitFor(() => expect(notifyMock).toHaveBeenCalledTimes(1));
-    expect(isNutritionReadBootInFlight()).toBe(true);
-    finishFirst(true);
-    await waitFor(() => expect(isNutritionReadBootInFlight()).toBe(false));
+    await waitFor(() => expect(isNutritionReadCacheSettled()).toBe(true));
+  });
+
+  it("counts a warm cache as settled while the boot is still running", () => {
+    cache.refreshedAt = "2026-09-28T08:00:00.000Z";
+    expect(isNutritionReadCacheSettled()).toBe(true);
   });
 });

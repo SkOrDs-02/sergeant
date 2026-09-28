@@ -58,7 +58,7 @@ export function NotificationBell({ notifications }: NotificationBellProps) {
   // Outside click — спільний хук; Esc лишається окремим ефектом, бо
   // повертає фокус на тригер (outside-click цього навмисно не робить).
   useOutsideClick([menuRef, buttonRef], close, { enabled: menuOpen });
-  // Панель — disclosure з кнопками, а не `role=menu`: пункти меню не можуть
+  // Панель це disclosure з кнопками, а не `role=menu`: пункти меню не можуть
   // містити вкладених кнопок. Тож фокус переносимо на першу дію самі.
   useEffect(() => {
     if (!menuOpen) return;

@@ -35,7 +35,6 @@ import { mealsByTypeForDay, mealTypeKcalForDay } from "../lib/nutritionStats";
 import { nextMealLabel } from "../lib/nextMealLabel";
 import { WaterTrackerCard } from "./WaterTrackerCard";
 import { WeekKcalCard } from "./WeekKcalCard";
-import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
 import { useToast } from "@shared/hooks/useToast";
 import { useStreakMilestoneCelebration } from "@shared/hooks/useStreakMilestoneCelebration";
 import { safeReadStringLS, safeWriteLS } from "@shared/lib/storage/storage";
@@ -199,14 +198,11 @@ export function NutritionDashboard({
   // чому рахувати. `countKcalStreakDays` дає довжину, і 7-денний інсайт
   // лишається окремою поверхнею зі своїм CTA — дублювання тут немає:
   // інсайт — картка з пропозицією плану, плашка — підтвердження віхи.
-  // До першого прогріву кешу журнал порожній, і нуль засіяв би віхи
-  // порожнечею: справжня серія після бута відсвяткувалась би як щойно
-  // досягнута. `null` хук пропускає.
-  const cacheWarm = getCachedNutritionSqliteState().refreshedAt !== null;
+  // Дашборд монтується лише після бута читання (гейт у
+  // `NutritionStartPage`), тож нуль холодного старту сюди не доходить.
   const kcalStreak = useMemo(
-    () =>
-      cacheWarm ? countKcalStreakDays(log, goalPeriods, todayISODate()) : null,
-    [cacheWarm, log, goalPeriods],
+    () => countKcalStreakDays(log, goalPeriods, todayISODate()),
+    [log, goalPeriods],
   );
   useStreakMilestoneCelebration(
     "nutrition",

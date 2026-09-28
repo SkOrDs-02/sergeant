@@ -65,15 +65,9 @@ vi.mock("../components/NutritionDashboard", () => ({
   ),
 }));
 
-const boot = vi.hoisted(() => ({
-  inFlight: false,
-  refreshedAt: null as string | null,
-}));
+const boot = vi.hoisted(() => ({ settled: true }));
 vi.mock("../hooks/useNutritionSqliteReadBoot", () => ({
-  isNutritionReadBootInFlight: () => boot.inFlight,
-}));
-vi.mock("../lib/sqliteReader", () => ({
-  getCachedNutritionSqliteState: () => ({ refreshedAt: boot.refreshedAt }),
+  isNutritionReadCacheSettled: () => boot.settled,
 }));
 
 // ---------------------------------------------------------------------------
@@ -131,8 +125,7 @@ function renderStartPage(
 
 afterEach(() => {
   cleanup();
-  boot.inFlight = false;
-  boot.refreshedAt = null;
+  boot.settled = true;
 });
 
 describe("NutritionStartPage", () => {
@@ -141,20 +134,13 @@ describe("NutritionStartPage", () => {
     expect(screen.getByTestId("nutrition-dashboard")).toBeTruthy();
   });
 
-  it("показує скелетон, поки бут у польоті, а кеш ще холодний", () => {
-    boot.inFlight = true;
+  it("показує скелетон, поки кеш читання не готовий", () => {
+    boot.settled = false;
     renderStartPage();
     expect(
       screen.getByRole("status", { name: messages.loaders.loadingSection }),
     ).toBeTruthy();
     expect(screen.queryByTestId("nutrition-dashboard")).toBeNull();
-  });
-
-  it("не тримає скелетон, коли кеш уже прогрітий", () => {
-    boot.inFlight = true;
-    boot.refreshedAt = "2026-09-27T08:00:00.000Z";
-    renderStartPage();
-    expect(screen.getByTestId("nutrition-dashboard")).toBeTruthy();
   });
 
   it("'До щоденника' button calls setActivePageAndHash('log')", async () => {

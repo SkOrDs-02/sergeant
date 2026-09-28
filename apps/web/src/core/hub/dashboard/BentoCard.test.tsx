@@ -77,6 +77,32 @@ describe("BentoCard", () => {
     expect(container.querySelector('[style="width: 100%;"]')).toBeTruthy();
   });
 
+  it("names the trend in the card label and badge with one format", () => {
+    render(
+      <BentoCard
+        config={makeConfig({ main: "4/5", sub: null }, { trendDelta: -0.05 })}
+        onClick={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Рутина: 4/5, зміна −5 %" }),
+    ).toBeInTheDocument();
+    expect(screen.getByLabelText("Зміна: −5 %")).toHaveTextContent("5%");
+  });
+
+  it("treats a trend that rounds to zero as no change", () => {
+    render(
+      <BentoCard
+        config={makeConfig({ main: "4/5", sub: null }, { trendDelta: 0.004 })}
+        onClick={vi.fn()}
+      />,
+    );
+    expect(
+      screen.getByRole("button", { name: "Рутина: 4/5" }),
+    ).toBeInTheDocument();
+    expect(screen.queryByLabelText(/^Зміна:/)).toBeNull();
+  });
+
   it("renders empty and inactive states with distinct accessible labels", () => {
     const { rerender } = render(
       <BentoCard

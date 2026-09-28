@@ -53,14 +53,6 @@ export interface PrBadgeProps {
 }
 
 /**
- * Renders nothing when the PR is missing or stale; otherwise emits a
- * compact soft-tone pill positioned absolutely at the top-right of
- * the hero card. The wrapper carries a 44×44 touch-target box (per
- * the design system's touch-target convention even for read-only
- * chrome) and `aria-hidden` because the badge is a decorative
- * summary — the underlying PR data is reachable through Progress.
- */
-/**
  * The hero reserves corner space whenever it gets a `cornerSlot`, so callers
  * must pass the badge only when it will render (a `null`-returning element is
  * still truthy and squeezed the kicker into ~120px on first run).
@@ -69,6 +61,14 @@ export function isPrBadgeVisible(pr: PrLatest | null): pr is PrLatest {
   return pr != null && pr.daysAgo <= DISPLAY_WINDOW_DAYS;
 }
 
+/**
+ * Renders nothing when the PR is missing or stale; otherwise emits a
+ * compact soft-tone pill positioned absolutely at the top-right of
+ * the hero card. The wrapper carries a 44×44 touch-target box (per
+ * the design system's touch-target convention even for read-only
+ * chrome) and `aria-hidden` because the badge is a decorative
+ * summary — the underlying PR data is reachable through Progress.
+ */
 export function PrBadge({ pr }: PrBadgeProps) {
   if (!isPrBadgeVisible(pr)) return null;
 

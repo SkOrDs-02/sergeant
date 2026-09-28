@@ -175,7 +175,7 @@ function HubChat({
             : (text) => {
                 setInput(text);
                 // Затримка, щоб React встиг змонтувати оновлений value у
-                // input перед тим, як ми поставимо focus — той самий
+                // input перед тим, як ми поставимо focus. Той самий
                 // pattern, що в `<ChatQuickActions onPrefill>`.
                 setTimeout(() => focusInputRef.current?.(), 0);
               }

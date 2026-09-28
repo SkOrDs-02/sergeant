@@ -96,8 +96,18 @@ export function OfflineBanner() {
               ? "purged"
               : null;
 
-  // Online and nothing waiting — the happy path needs no chrome.
-  if (state === null) return null;
+  // Живий регіон стоїть у DOM завжди, і коли банера немає: регіон, що
+  // зʼявляється разом зі своїм текстом, скрінрідери не озвучують, тож
+  // перехід в офлайн мовчав. Оголошуємо стан, а не лічильник черги:
+  // «Синхронізація · N» перечитувався б на кожен запис у черзі.
+  const statusRegion = (text: string) => (
+    <span role="status" className="sr-only">
+      {text}
+    </span>
+  );
+
+  // Online and nothing waiting: the happy path needs no chrome.
+  if (state === null) return <>{statusRegion("")}</>;
 
   const view =
     state === "blocked"
@@ -142,13 +152,15 @@ export function OfflineBanner() {
                 label: `Синхронізація · ${queueLabel(pending)}`,
               };
 
+  const announcement =
+    state === "offline"
+      ? "Офлайн"
+      : state === "syncing"
+        ? "Синхронізація"
+        : view.label;
+
   const content = (
     <>
-      {/* Оголошення стану — окремим текстовим status-вузлом: зміну
-          aria-label у live-регіоні на кнопці скрінрідери не читали. */}
-      <span role="status" className="sr-only">
-        {view.label}
-      </span>
       <button
         type="button"
         data-testid="offline-banner"
@@ -178,6 +190,12 @@ export function OfflineBanner() {
     </>
   );
 
-  if (headerSlot === undefined) return null;
-  return headerSlot ? createPortal(content, headerSlot) : content;
+  // Той самий Fragment зі статусом першим, що й у гілці без банера: React
+  // оновлює наявний вузол регіону, а не монтує новий.
+  return (
+    <>
+      {statusRegion(announcement)}
+      {headerSlot ? createPortal(content, headerSlot) : content}
+    </>
+  );
 }

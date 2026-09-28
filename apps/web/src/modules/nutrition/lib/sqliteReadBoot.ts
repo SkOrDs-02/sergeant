@@ -54,20 +54,29 @@ registerRealEntryCounter("nutrition", () => {
 });
 
 let booted = false;
+// Бут кличуть і `NutritionBootCluster`, і `NutritionApp`. `booted` ставиться
+// лише після успіху, тож без спільного промісу обидва виклики проганяли
+// міграцію й читання паралельно, а завершувались у різний час.
+let inFlight: Promise<boolean> | null = null;
 
 /**
- * Initialise the SQLite read path.
+ * Initialise the SQLite read path. Concurrent calls share one run.
  *
  * @param userId - The authenticated user's id (from the `me` query).
  *   When `null` the boot is skipped (pre-auth window).
  * @returns `true` if the SQLite read path was activated.
  */
-export async function bootNutritionSqliteReadPath(
+export function bootNutritionSqliteReadPath(
   userId: string | null,
 ): Promise<boolean> {
-  if (booted) return false;
-  if (!userId) return false;
+  if (booted || !userId) return Promise.resolve(false);
+  inFlight ??= runBoot(userId).finally(() => {
+    inFlight = null;
+  });
+  return inFlight;
+}
 
+async function runBoot(userId: string): Promise<boolean> {
   try {
     const handle = await getSqliteDb();
     const client = handle.migrationClient();
@@ -93,4 +102,5 @@ export async function bootNutritionSqliteReadPath(
 /** Test helper — reset boot state between specs. */
 export function __resetNutritionSqliteReadBootForTests(): void {
   booted = false;
+  inFlight = null;
 }

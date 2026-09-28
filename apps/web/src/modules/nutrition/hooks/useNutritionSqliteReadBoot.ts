@@ -22,31 +22,30 @@ import { logger } from "@shared/lib";
 import { useLocalUserId } from "../../../core/auth/useLocalUserId";
 import { bootNutritionSqliteReadPath } from "../lib/sqliteReadBoot";
 import { notifyNutritionSqliteCacheRefresh } from "../lib/sqliteReadGate";
+import { getCachedNutritionSqliteState } from "../lib/sqliteReader";
+
+let bootSettled = false;
 
 /**
- * Чи бут читання ЗАРАЗ У ПОЛЬОТІ. Той самий контракт, що й
- * `isFizrukReadBootInFlight`: саме «в польоті», а не «відпрацював».
+ * Чи можна малювати дані Їжі: кеш уже прогрітий, АБО бут читання
+ * завершився (успіхом чи провалом, тоді дані йдуть із LS).
  *
- * AI-DANGER: на провалі бута `refreshedAt` лишається `null` назавжди, тож
- * гейт скелетона на ньому самому виходу не мав би. Прапорець стартує з
- * `false`: бут не запустився або впав → споживач малює те, що має, і
- * найгірший випадок — спалах нулів, а не вічний скелетон.
+ * Гейт «бут у польоті» тут не годився: прапорець ставився в ефекті, тобто
+ * вже після першого рендера сторінки, і холодний старт встигав показати
+ * нулі до того, як скелетон узагалі мав шанс зʼявитись.
+ *
+ * AI-DANGER: `refreshedAt` на провалі бута лишається `null` назавжди, тож
+ * гейт лише на ньому тримав би скелетон вічно. Вихід дає `bootSettled`.
+ * Скелетон вічний лише тоді, коли хук не змонтований зовсім: його кличе
+ * сам `NutritionApp`, тож на сторінках Їжі це неможливо.
  */
-//
-// Лічильник, а не булеан: хук стоїть і в `NutritionBootCluster`, і в
-// `NutritionApp`, а другий виклик бута впирається в латч `booted` і
-// вертається одразу. Булеан він скинув би в `false`, поки перший бут ще
-// везе журнал, і скелетон зник би на нулях.
-let bootsInFlight = 0;
-
-/** @see bootsInFlight */
-export function isNutritionReadBootInFlight(): boolean {
-  return bootsInFlight > 0;
+export function isNutritionReadCacheSettled(): boolean {
+  return bootSettled || getCachedNutritionSqliteState().refreshedAt !== null;
 }
 
-/** Тест-хелпер: виставити прапорець польоту (і скинути між специфікаціями). */
-export function __setNutritionReadBootInFlightForTests(value: boolean): void {
-  bootsInFlight = value ? 1 : 0;
+/** Тест-хелпер: виставити «бут завершився» (і скинути між специфікаціями). */
+export function __setNutritionReadBootSettledForTests(value: boolean): void {
+  bootSettled = value;
 }
 
 export function useNutritionSqliteReadBoot(): void {
@@ -63,13 +62,12 @@ export function useNutritionSqliteReadBoot(): void {
     if (didBoot.current || !userId) return;
     didBoot.current = true;
 
-    bootsInFlight += 1;
     const settle = () => {
-      bootsInFlight -= 1;
+      bootSettled = true;
       // Завжди, не лише при успіху: споживачі (useNutritionLog, комора,
       // prefs, рецепти) перемальовуються з SQLite-оверлеєм, а скелетон
-      // старту Їжі тримається на прапорці, і без сигналу про невдачу він не
-      // зник би до релоаду.
+      // старту Їжі тримається на `bootSettled`, і без сигналу про невдачу
+      // він не зник би до релоаду.
       notifyNutritionSqliteCacheRefresh();
     };
 

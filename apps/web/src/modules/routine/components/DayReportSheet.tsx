@@ -130,7 +130,11 @@ export function DayReportSheet({
                       }
                       className="touch-target ml-auto shrink-0 rounded-lg px-2 text-style-caption text-subtle hover:text-text focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-routine-ring/60"
                       aria-expanded={askingFor === h.id}
-                      aria-controls={`skip-reasons-${h.id}`}
+                      // Лише коли група причин у DOM: інакше посилання на
+                      // неіснуючий id.
+                      aria-controls={
+                        askingFor === h.id ? `skip-reasons-${h.id}` : undefined
+                      }
                     >
                       Не зміг
                     </button>
