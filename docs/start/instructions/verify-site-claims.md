@@ -1,6 +1,6 @@
 # Playbook: Звірити твердження лендінга з кодом (дрейф «сайт ↔ код»)
 
-> **Last touched:** 2026-09-19 by @claude. **Next review:** 2026-12-22.
+> **Last touched:** 2026-09-28 by @Skords-01. **Next review:** 2026-12-31.
 > **Status:** Active
 > **Runtime-specific:** no
 
@@ -41,10 +41,10 @@
 | -------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------ |
 | Маршрутизація AI, «хто обробляє» | `apps/server/src/env/chatModels.ts`, `apps/server/src/env/aiRoutingEnv.ts`, `modules/chat/aiQuotaTierModels.ts`, `lib/groq.ts`       |
 | «Дані не передаються третім»     | ті самі + `docs/governance/security/llm-subprocessors.md` + гейт периметра `apps/server/src/lib/llmRedactionCoverage.test.ts`        |
-| Ліміт Free / платний план        | `apps/server/src/modules/billing/effectiveLimits.ts` (число — рішення ADR; змінюється новим ADR, не правкою)                         |
+| Ліміт Free / платний план        | `packages/shared/src/billing/entitlements.ts` (реєстр доступу; число — рішення ADR; змінюється новим ADR, не правкою)                |
 | Експорт і право на дані          | `apps/server/src/modules/me/dataRights.ts`, `apps/web/src/core/settings/DataExportSection.tsx`, `apps/web/src/core/hub/hubBackup.ts` |
 | Корпус продуктів Харчування      | `packages/shared/src/data/genericFoods.ts` + канон `docs/product/modules/nutrition.md`                                               |
-| Pro-гейти на фічах               | `requirePlan(...)` на відповідному роуті                                                                                             |
+| Pro-гейти на фічах               | рядок фічі в `entitlements.ts` + `requireFeature(...)` / `requirePlan(...)` на відповідному роуті                                    |
 | Продуктова механіка модуля       | `docs/product/modules/<module>.md` — канон; розбіжність код ↔ канон сама по собі знахідка                                            |
 
 **Числа перераховуй руками.** В аудиті корпус базових продуктів рахували по файлу, дефолти маршрутизації читали в схемі env, контрасти рахували за WCAG — жодне число не прийнято на віру.
@@ -74,7 +74,7 @@
 Перші два кандидати, названі самим аудитом:
 
 - число корпусу `genericFoods.ts` ↔ сторінка Харчування (наявний тест перевіряє лише «більше за 300» — тобто фактичне число не тримає ніщо);
-- free-ліміт `effectiveLimits.ts` ↔ сторінка AI-помічника (та сама форма).
+- free-ліміт у реєстрі `entitlements.ts` ↔ сторінка AI-помічника (та сама форма).
 
 Зразок для написання — реєстровий гейт маршрутів і гейт консистентності копірайту в `apps/landing/src`: обидва вже парсять реальні джерела, бракує лише ребра «сайт ↔ код».
 

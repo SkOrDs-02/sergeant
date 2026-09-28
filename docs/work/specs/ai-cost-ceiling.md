@@ -10,7 +10,7 @@
 
 Ворожий огляд 2026-09-20 назвав це найбільшим фінансовим ризиком продукту ([рада скептиків § C-1](./audits/2026-09-20-rada-skeptykiv.md)), і перевірка підтвердила кожен пункт.
 
-**Pro безлімітний.** `PRO_LIMITS.aiRequestsPerDay: null` ([`effectiveLimits.ts:18-22`](../../../apps/server/src/modules/billing/effectiveLimits.ts)).
+**Pro безлімітний.** `PRO_LIMITS.aiRequestsPerDay: null` (`effectiveLimits.ts:18-22`).
 
 **Канонна стеля не діє ніде.** Launch-readiness ставить межу «AI cost per user понад ₴10/міс означає відʼємну юніт-економіку», але пошук `est_cost_usd` по модулю чату і по HTTP-шару дає **нуль збігів**: леджер пише витрати, і жоден гейт їх не читає.
 
@@ -46,7 +46,7 @@ Owner-скіл за routing-таблицею `AGENTS.md`: **`sergeant-module-ai`
 
 **Ф3, гейт**
 
-- [`apps/server/src/modules/billing/effectiveLimits.ts`](../../../apps/server/src/modules/billing/effectiveLimits.ts) — стеля витрат поруч із наявними лімітами запитів.
+- [`packages/shared/src/billing/entitlements.ts`](../../../packages/shared/src/billing/entitlements.ts) (раніше `effectiveLimits.ts`, видалено за ADR-0100) — стеля витрат поруч із наявними лімітами запитів.
 - `apps/server/src/modules/chat/` — читання накопиченої вартості перед викликом; перемикання моделі при пробитті через наявний `aiQuotaTierModels.ts`.
 - `apps/web/src/core/` — стан «зараз дешевша модель» там, де людина бачить асистента; копія за [`style-guide.uk.md`](../../product/copy/style-guide.uk.md).
 

@@ -6,7 +6,7 @@
 - **Deciders:** @SkOrDs-02
 - **Supersedes:** —
 - **Related:**
-  - [`apps/server/src/modules/billing/effectiveLimits.ts`](../../../apps/server/src/modules/billing/effectiveLimits.ts)
+  - `apps/server/src/modules/billing/effectiveLimits.ts`
   - [`apps/server/src/modules/chat/aiQuota.ts`](../../../apps/server/src/modules/chat/aiQuota.ts)
   - [ADR-0086](./0086-no-anonymous-ai-sign-in-required.md)
   - [Канон AI-шару](../../product/modules/hub-coach.md)

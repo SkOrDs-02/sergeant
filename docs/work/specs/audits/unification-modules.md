@@ -234,7 +234,7 @@
 
 ### 1.13. Денний free-ліміт AI: клієнт рахує повідомлення, сервер одиниці квоти
 
-- [apps/server/src/modules/billing/effectiveLimits.ts:13](../../../../apps/server/src/modules/billing/effectiveLimits.ts) (`aiRequestsPerDay: 5`, атомарний UPSERT, per-user)
+- apps/server/src/modules/billing/effectiveLimits.ts:13 (`aiRequestsPerDay: 5`, атомарний UPSERT, per-user)
 - [apps/web/src/core/hub/chat/useChatSend.ts:62](../../../../apps/web/src/core/hub/chat/useChatSend.ts) (`FREE_DAILY_AI_CHAT_LIMIT = 5`, localStorage, per-device)
 - [apps/web/src/core/hub/HubChat.tsx:221](../../../../apps/web/src/core/hub/HubChat.tsx) (третя копія числа в UI-копії)
 
