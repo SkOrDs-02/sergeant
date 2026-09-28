@@ -103,4 +103,28 @@ describe("власність локальної бази", () => {
 
     expect(closed).toHaveBeenCalledOnce();
   });
+
+  // D4 аудиту живучості 2026-09-28: вкладка, що віддала базу, лишалась
+  // заблокованою й після закриття сусідки. Тепер вона стає в чергу за локом,
+  // коли людина до неї повертається, але не раніше.
+  it("після поступки стає в чергу лише коли вкладку знову відкрили", async () => {
+    const locks = installLocks();
+    await claimDbOwnership();
+
+    const channel = new BroadcastChannel("sergeant-db-ownership");
+    channel.postMessage({ type: "claim" });
+    await vi.waitFor(() => expect(readDbOwnership()).toBe("follower"));
+    channel.close();
+    const afterYield = locks.requests.length;
+
+    window.dispatchEvent(new Event("blur"));
+    expect(locks.requests).toHaveLength(afterYield);
+
+    window.dispatchEvent(new Event("focus"));
+    expect(locks.requests).toHaveLength(afterYield + 1);
+
+    // Повторний фокус не ставить у чергу вдруге.
+    window.dispatchEvent(new Event("focus"));
+    expect(locks.requests).toHaveLength(afterYield + 1);
+  });
 });

@@ -1,5 +1,5 @@
 /**
- * Last validated: 2026-09-22
+ * Last validated: 2026-09-28
  * Status: Active
  *
  * Хто з відкритих вкладок володіє локальною базою.
@@ -51,6 +51,7 @@ let channel: BroadcastChannel | null = null;
 let claimPromise: Promise<DbOwnership> | null = null;
 let waiting = false;
 let yieldHandler: (() => Promise<void>) | null = null;
+let stopWaitingForReturn: () => void = () => {};
 const listeners = new Set<() => void>();
 
 function setOwnership(next: DbOwnership): void {
@@ -186,13 +187,45 @@ async function yieldOwnership(): Promise<void> {
   setOwnership("follower");
   releaseLock?.();
   releaseLock = null;
-  // У чергу назад НЕ стаємо, і це навмисно. Людина щойно свідомо перенесла
-  // роботу в іншу вкладку; забрати базу назад при першій нагоді означало б
-  // скасувати її рішення. Технічно це ще й знімає зайве перезавантаження:
-  // новий лідер відпускає лок на власному релоуді, і waiter тут спіймав би
-  // саме цю мить (заміряно 2026-09-22 - вкладка, що віддала базу,
-  // перезавантажувалась услід за тією, що її забрала). Повернутись можна
-  // тією самою кнопкою.
+  // Одразу в чергу назад НЕ стаємо, і це навмисно. Людина щойно свідомо
+  // перенесла роботу в іншу вкладку; забрати базу назад при першій нагоді
+  // означало б скасувати її рішення. Технічно це ще й знімає зайве
+  // перезавантаження: новий лідер відпускає лок на власному релоуді, і waiter
+  // тут спіймав би саме цю мить (заміряно 2026-09-22 - вкладка, що віддала
+  // базу, перезавантажувалась услід за тією, що її забрала).
+  requeueOnReturn();
+}
+
+/**
+ * Стати в чергу, щойно людина повернеться до цієї вкладки.
+ *
+ * Черга не відбирає базу в живого лідера: лок звільниться лише тоді, коли та
+ * вкладка закриється. Без цього вкладка, що віддала базу, лишалась на екрані
+ * «відкрито в іншій вкладці» і після закриття сусідки, аж до ручного reload
+ * (аудит живучості 2026-09-28, D4).
+ *
+ * ponytail: повернення в першу секунду після «Працювати тут» у сусідці, поки
+ * вона перезавантажується, спіймає її лок, і перезавантажиться вже вона.
+ * Якщо це стане помітним, чекати в черзі лише після того, як лідер знову
+ * взяв лок (сигнал по `BroadcastChannel` після його буту).
+ */
+function requeueOnReturn(): void {
+  if (typeof document === "undefined") return;
+  stopWaitingForReturn();
+  const onReturn = () => {
+    if (document.visibilityState !== "visible" || ownership !== "follower") {
+      return;
+    }
+    stopWaitingForReturn();
+    waitForOwnership();
+  };
+  document.addEventListener("visibilitychange", onReturn);
+  window.addEventListener("focus", onReturn);
+  stopWaitingForReturn = () => {
+    document.removeEventListener("visibilitychange", onReturn);
+    window.removeEventListener("focus", onReturn);
+    stopWaitingForReturn = () => {};
+  };
 }
 
 /**
@@ -222,4 +255,5 @@ export function __resetDbOwnershipForTests(): void {
   channel?.close();
   channel = null;
   listeners.clear();
+  stopWaitingForReturn();
 }

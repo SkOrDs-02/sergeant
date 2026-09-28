@@ -222,7 +222,7 @@ async function expandTodayAndExpect(
 // відрендерений, а адреса лишилась `/sign-in`: така фаза не валиться, але
 // аномалія пишеться з обома версіями адреси (Playwright і сама сторінка).
 async function waitLeftSignIn(page: Page, phase: string, label: string) {
-  const hub = page.getByRole("button", { name: "Головна" }).first();
+  const hub = page.getByRole("tab", { name: "Головна" }).first();
   const left = await expect
     .poll(
       async () =>
@@ -706,7 +706,12 @@ test("P7 кілька вкладок: запис у другій вкладці 
   await tab2.waitForTimeout(3000);
   await tab2.close();
   shotPage = A.page;
-  await check(ph, "tab1 сама розблокувалась після закриття tab2", async () => {
+  // Людина повертається до першої вкладки: саме це ставить її в чергу за
+  // локом (dbOwnership, D4), а лок вільний, бо tab2 закрита. Playwright
+  // емулює фокус для кожної сторінки, тож `bringToFront()` жодної події не
+  // шле (заміряно 2026-09-28); подію повернення шлемо самі.
+  await A.page.evaluate(() => window.dispatchEvent(new Event("focus")));
+  await check(ph, "tab1 розблокувалась, коли до неї повернулись", async () => {
     await expect(
       A.page.getByText("Sergeant уже відкрито в іншій вкладці"),
     ).toBeHidden({ timeout: 30_000 });
