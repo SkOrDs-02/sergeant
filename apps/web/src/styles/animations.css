@@ -624,7 +624,9 @@
 @keyframes toast-enter {
   0% {
     opacity: 0;
-    transform: translateY(-12px) scale(0.95);
+    /* Знизу вгору: трей прикріплений до низу, і новий аркуш додається
+       останнім. Зсув угору заводив його поверх сусіда вище. */
+    transform: translateY(12px) scale(0.95);
   }
   100% {
     opacity: 1;

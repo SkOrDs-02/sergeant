@@ -104,9 +104,10 @@ export function getNextBillingDate(billingDay: number, now: Date): Date {
 /**
  * Наступна дата списання підписки для всіх поверхонь Фініка (картка
  * підписки, «Найближчі платежі», смуга статистики). Цикл вважається
- * сплаченим, коли останнє привʼязане списання лежить у день списання або
- * пізніше: тоді дата переходить на наступний цикл. `lastChargeSec` у
- * секундах, як `Transaction.time`.
+ * сплаченим, коли останнє привʼязане списання ближче до поточної дати
+ * списання, ніж до попередньої: сервіс може зняти гроші на день-два
+ * раніше, і таке списання закриває цикл, а запізніле списання минулого
+ * циклу ні. `lastChargeSec` у секундах, як `Transaction.time`.
  */
 export function getSubscriptionDueDate(
   billingDay: number,
@@ -114,7 +115,15 @@ export function getSubscriptionDueDate(
   lastChargeSec?: number | null,
 ): Date {
   const due = getNextBillingDate(billingDay, now);
-  if (lastChargeSec == null || lastChargeSec * 1000 < due.getTime()) return due;
+  if (lastChargeSec == null) return due;
+  // Перша дата списання не раніше ніж за 31 день до `due` - це і є
+  // попередня: між сусідніми датами завжди 28-31 день.
+  const prevDue = getNextBillingDate(
+    billingDay,
+    new Date(due.getTime() - 31 * 86400000),
+  );
+  const midpoint = (prevDue.getTime() + due.getTime()) / 2;
+  if (lastChargeSec * 1000 < midpoint) return due;
   return getNextBillingDate(billingDay, new Date(due.getTime() + 86400000));
 }
 

@@ -34,6 +34,8 @@ const defaultMonthlyPlan: MonthlyPlan = {
 };
 
 export interface FinykStorageSlots {
+  /** SQLite-кеш прогрітий; до того слоти показують LS-знімок першого кадру. */
+  storageReady: boolean;
   hiddenAccounts: string[];
   setHiddenAccounts: Dispatch<SetStateAction<string[]>>;
   budgets: Budget[];
@@ -220,6 +222,9 @@ export function useFinykStorageSlots(): FinykStorageSlots {
   }
 
   return {
+    // LS-знімок вище лише перший кадр: у `finyk_tx_cats` більше ніхто не
+    // пише, тож до прогріву SQLite категорії й приховані операції застарілі.
+    storageReady: getCachedFinykSqliteState().refreshedAt !== null,
     hiddenAccounts,
     setHiddenAccounts,
     budgets,

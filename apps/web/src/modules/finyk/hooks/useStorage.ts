@@ -182,6 +182,7 @@ export function useStorage({
   };
 
   return {
+    storageReady: slots.storageReady,
     hiddenAccounts,
     setHiddenAccounts,
     toggleHideAccount: mutations.toggleHideAccount,

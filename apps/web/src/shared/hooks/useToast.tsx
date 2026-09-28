@@ -279,11 +279,10 @@ export function ToastProvider({ children }: { children: ReactNode }) {
    * безпечно смикати і синхронно (`show` / `resume`), і з ефекту нижче.
    */
   const syncTimers = useCallback(() => {
-    let slot = 0;
-    for (const toast of listRef.current) {
+    // `leaving`-аркуш займає слот до `remove()`, так само як у
+    // `ToastContainer`: інакше тост із черги починав «горіти» невидимим.
+    for (const toast of listRef.current.slice(0, MAX_VISIBLE_TOASTS)) {
       if (toast.leaving) continue;
-      if (slot >= MAX_VISIBLE_TOASTS) break;
-      slot += 1;
       if (timersRef.current[toast.id]) continue;
       if (pausedRef.current.has(toast.id)) continue;
       // `null` is the explicit persistent-toast contract. It owns no timer
@@ -383,12 +382,9 @@ export function ToastProvider({ children }: { children: ReactNode }) {
       //    межею видимого вікна) — у нього ще немає ані таймера, ані
       //    бухгалтерії, тож і чистити нічого.
       if (listRef.current.length > MAX_VISIBLE_TOASTS + MAX_QUEUED_TOASTS) {
-        const dropIndex = listRef.current.findIndex(
-          (_, i) => i >= MAX_VISIBLE_TOASTS,
+        listRef.current = listRef.current.filter(
+          (_, i) => i !== MAX_VISIBLE_TOASTS,
         );
-        if (dropIndex >= 0) {
-          listRef.current = listRef.current.filter((_, i) => i !== dropIndex);
-        }
       }
 
       commit();

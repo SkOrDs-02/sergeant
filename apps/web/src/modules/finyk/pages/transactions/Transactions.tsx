@@ -117,6 +117,8 @@ export interface TransactionsMonoSlice {
  * for the same reason as {@link TransactionsMonoSlice}.
  */
 export interface TransactionsStorageSlice {
+  /** `false`, поки SQLite-кеш не прогрітий і `txCategories` ще з LS-знімка. */
+  storageReady?: boolean;
   hiddenTxIds: string[];
   hideTx: (id: string) => void;
   excludedTxIds: Set<string>;
@@ -202,6 +204,7 @@ export function Transactions({
     refresh: monoRefresh,
   } = mono;
   const {
+    storageReady = true,
     hiddenTxIds,
     hideTx,
     excludedTxIds,
@@ -275,6 +278,9 @@ export function Transactions({
   );
 
   const transferSuggestions = useMemo(() => {
+    // До прогріву вже підтверджені перекази ще без категорії й поверталися
+    // б у чергу пропозицій цілою пачкою.
+    if (!storageReady) return [];
     const hidden = new Set(hiddenTxIds);
     const raw = findInternalTransferSuggestions(
       filters.activeTx.filter((tx) => !hidden.has(tx.id)),
@@ -286,6 +292,7 @@ export function Transactions({
       todayKey: getKyivDayKey(),
     });
   }, [
+    storageReady,
     filters.activeTx,
     hiddenTxIds,
     txCategories,
