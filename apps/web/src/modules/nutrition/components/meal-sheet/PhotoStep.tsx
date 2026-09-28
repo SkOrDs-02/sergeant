@@ -62,16 +62,18 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   const [photoErr, setPhotoErr] = useState("");
   // statusText — legacy-канал топ-банера NutritionApp; у кроці sheet-а
   // його роль виконують inline-рядки `isAnalyzing`/`isRefining`.
+  // Фото їжі: квотна фіча (Free 3 на тиждень, спека access-tiers).
+  // `canAccess` false, коли тижневий лічильник вичерпано; тоді
+  // `requireAccess()` відкриває paywall і коротко-замикає мутацію. 429 від
+  // сервера (знімок застарів) відкриває його теж. Modal (z 200) стоїть над
+  // Sheet (z 120), тож рендер прямо звідси коректний.
+  const photoGate = useFeatureGate("ai.photo");
   const photo = usePhotoAnalysis({
     setBusy: setPhotoBusy,
     setErr: setPhotoErr,
     setStatusText: () => {},
+    onQuotaExceeded: photoGate.openPaywall,
   });
-
-  // Phase 7 D2 — AI-аналіз фото за Premium. `requireAccess()` відкриває
-  // paywall для Free і коротко-замикає мутацію; Modal (z 200) стоїть над
-  // Sheet (z 120), тож рендер прямо звідси коректний.
-  const photoGate = useFeatureGate("ai-photo-analysis");
   const { messages } = useLocale();
 
   // Автоаналіз після вибору/заміни фото (рішення founder-а 2026-08-13).
@@ -79,11 +81,11 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   //  · privacy-ack: до «Зрозуміло» кадр НЕ їде сам — нотіс просить
   //    перевірити, що в кадр не потрапило зайве, і ця перевірка має
   //    відбутись до відправлення (founder 2026-07-26);
-  //  · Pro: для Free автозапуск означав би paywall одразу після вибору
-  //    файлу — paywall лишається на явний тап «Аналізувати»;
+  //  · квота: з вичерпаними фото автозапуск означав би paywall одразу
+  //    після вибору файлу, тож paywall лишається на явний тап «Аналізувати»;
   //  · один запуск на кадр (ref по blob-URL): «Замінити фото» дає новий
   //    URL і перезапускає аналіз, а ре-рендери/ack без нового кадру — ні.
-  // Кнопка «Аналізувати» лишається як retry після помилки й вхід для Free.
+  // Кнопка «Аналізувати» лишається як retry після помилки й вхід у paywall.
   const [privacyAcked, setPrivacyAcked] = useState(
     () => safeReadLS<boolean>(PHOTO_PRIVACY_ACK_KEY, false) === true,
   );
@@ -145,9 +147,9 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   // і нічого видимо не змінюється. Лишаємо рівно два випадки, де авто-
   // запуск не спрацює:
   //  · помилка — тоді це retry, і підпис має казати саме це;
-  //  · Free — автозапуск для них навмисно вимкнений (інакше paywall
-  //    вискакував би одразу після вибору файлу), тож кнопка лишається
-  //    входом у paywall.
+  //  · фото тижня вичерпано: автозапуск навмисно вимкнений (інакше
+  //    paywall вискакував би одразу після вибору файлу), тож кнопка
+  //    лишається входом у paywall.
   // Pro без privacy-ack теж лишається без кнопки — навмисно: гейт згоди
   // знімає «Зрозуміло» в нотісі, тож видима тут кнопка вела б у глухий
   // кут (`gatedAnalyzePhoto` її б відсік і нічого видимо не сталось).
@@ -165,7 +167,7 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
   const analyzeLabel = !previewUrl
     ? null
     : !photoGate.canAccess
-      ? // Free: автозапуск вимкнений, кнопка — вхід у paywall.
+      ? // Квота вичерпана: автозапуск вимкнений, кнопка веде в paywall.
         photoErr
         ? "Спробувати ще раз"
         : "Аналізувати"
@@ -256,8 +258,8 @@ export function PhotoStep({ onApply }: PhotoStepProps) {
         open={photoGate.paywallOpen}
         onClose={photoGate.closePaywall}
         surface={photoGate.paywallSurface}
-        title={messages.paywall["ai-photo-analysis"].title}
-        description={messages.paywall["ai-photo-analysis"].description}
+        title={messages.paywall["ai.photo"].title}
+        description={messages.paywall["ai.photo"].description}
       />
     </>
   );

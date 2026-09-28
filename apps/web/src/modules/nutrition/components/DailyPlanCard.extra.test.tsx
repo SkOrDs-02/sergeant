@@ -15,6 +15,13 @@
  *   • Empty pantry hint
  */
 import { describe, it, expect, vi, afterEach } from "vitest";
+
+// Гейт тижневого плану тягне `usePlan` → react-query; поведінку гейта
+// покриває `core/billing/useFeatureGate.test.tsx`.
+vi.mock("../../../core/billing", () => ({
+  useFeatureGate: () => ({ requireAccess: () => true, paywallOpen: false }),
+  PaywallModal: () => null,
+}));
 import { flatMatch } from "@shared/testing/numberText";
 import { render, screen, cleanup, fireEvent } from "@testing-library/react";
 import type { NutritionPrefs } from "@sergeant/nutrition-domain";

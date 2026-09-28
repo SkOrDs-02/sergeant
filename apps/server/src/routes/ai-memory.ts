@@ -2,7 +2,7 @@ import { Router } from "express";
 import type { Pool } from "pg";
 
 import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
-import { requirePlan } from "../modules/billing/index.js";
+import { requireFeature } from "../modules/billing/index.js";
 import { recallMemoryHandler } from "../modules/ai-memory/recallRoute.js";
 import { clearAiMemoryHandler } from "../modules/ai-memory/clearRoute.js";
 import {
@@ -86,7 +86,7 @@ export function createAiMemoryRouter({ pool }: { pool: Pool }): Router {
     heavyPreAuthIp,
     requireSession(),
     heavyRateLimit,
-    requirePlan(pool, "pro"),
+    requireFeature(pool, "ai.memoryRecall"),
     recallMemoryHandler,
   );
   r.delete(

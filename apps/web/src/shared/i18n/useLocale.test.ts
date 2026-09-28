@@ -36,8 +36,8 @@ describe("useLocale", () => {
       string,
       Record<string, string>
     >;
-    expect(paywall["ai-photo-analysis"]?.["title"]).toBe(
-      "AI photo analysis: Premium",
+    expect(paywall["ai.photo"]?.["title"]).toBe(
+      "Unlimited meal photos: Premium",
     );
   });
 

@@ -1,7 +1,7 @@
 import type { NextFunction, Request, RequestHandler, Response } from "express";
 import type { Pool } from "pg";
-import type { BillingPlan } from "@sergeant/shared";
-import { getUserPlan, isFounderUser } from "./getUserPlan.js";
+import { hasFeature, type BillingPlan, type FeatureId } from "@sergeant/shared";
+import { accessStateOf, getUserPlan, isFounderUser } from "./getUserPlan.js";
 import { isBillingEnforced } from "./provider.js";
 
 type AuthedRequest = Request & { user?: { id: string } };
@@ -49,11 +49,10 @@ export function requirePlan(
     }
 
     const planResult = await getUserPlan(pool, userId);
-    const isActive = ["active", "trialing", "past_due"].includes(
-      planResult.status,
-    );
+    // `past_due` пускає лише в межах grace (3 дні, спека access-tiers).
+    const isActive = accessStateOf(planResult) !== "free";
 
-    if (requiredPlan === "pro" && planResult.plan === "pro" && isActive) {
+    if (requiredPlan === "pro" && isActive) {
       next();
       return;
     }
@@ -64,4 +63,16 @@ export function requirePlan(
       requiredPlan,
     });
   };
+}
+
+/**
+ * Гейт за id фічі з реєстру доступу (`@sergeant/shared` `FEATURES`): роут
+ * називає фічу, а не план, тож перенесення фічі між Free і Premium
+ * робиться в реєстрі, а не в роутерах.
+ */
+export function requireFeature(pool: Pool, feature: FeatureId): RequestHandler {
+  if (hasFeature("free", feature)) {
+    return (_req, _res, next) => next();
+  }
+  return requirePlan(pool, "pro");
 }

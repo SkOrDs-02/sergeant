@@ -9,6 +9,13 @@
 //   - lists three goals with the computed kcal/macros when complete,
 //   - calls `setPrefs` with the matching numbers when one is picked.
 import { afterEach, beforeEach, describe, expect, it, vi } from "vitest";
+
+// Гейт тижневого плану тягне `usePlan` → react-query; поведінку гейта
+// покриває `core/billing/useFeatureGate.test.tsx`.
+vi.mock("../../../core/billing", () => ({
+  useFeatureGate: () => ({ requireAccess: () => true, paywallOpen: false }),
+  PaywallModal: () => null,
+}));
 import { flatMatch } from "@shared/testing/numberText";
 import {
   cleanup,

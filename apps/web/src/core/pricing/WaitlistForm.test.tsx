@@ -152,7 +152,7 @@ describe("WaitlistForm — submit flow", () => {
     });
     expect(
       (
-        screen.getByLabelText(/Premium · Чат із Сержантом/, {
+        screen.getByLabelText(/Premium · Сержант без тижневої стелі/, {
           selector: "label",
         }) as HTMLLabelElement
       ).className,
@@ -180,9 +180,12 @@ describe("WaitlistForm — tier label layout", () => {
   it("лейбл тіра має `relative` — інакше sr-only radio-інпут (position: absolute) прив'язується до initial containing block і від'їжджає далеко вниз по документу (Tab виводить фокус за межі екрана)", () => {
     render(<WaitlistForm source="pricing_page" />);
 
-    const label = screen.getByLabelText(/Premium · Чат із Сержантом/, {
-      selector: "label",
-    }) as HTMLLabelElement;
+    const label = screen.getByLabelText(
+      /Premium · Сержант без тижневої стелі/,
+      {
+        selector: "label",
+      },
+    ) as HTMLLabelElement;
     expect(label.className.split(/\s+/)).toContain("relative");
   });
 });
@@ -248,9 +251,12 @@ describe("WaitlistForm — server error mapping", () => {
     // має `peer sr-only`, тобто нативне кільце невидиме, а замінника на
     // лейблі не було — клавіатурний фокус по групі не читався взагалі.
     render(<WaitlistForm source="pricing_page" />);
-    const label = screen.getByLabelText(/Premium · Чат із Сержантом/, {
-      selector: "label",
-    });
+    const label = screen.getByLabelText(
+      /Premium · Сержант без тижневої стелі/,
+      {
+        selector: "label",
+      },
+    );
     const classes = label.className.split(/\s+/);
     expect(classes).toContain("peer-focus-visible:ring-2");
     expect(classes).toContain("peer-focus-visible:ring-focus/45");

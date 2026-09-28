@@ -117,7 +117,9 @@ describe("OpenAPI roundtrip: representative live responses", () => {
 
   it("validates authenticated /api/billing/status (free / no row) against OpenAPI", async () => {
     getSessionUserMock.mockResolvedValueOnce(SESSION_USER);
-    // liqpayProvider.getSubscriptionStatus → SELECT … LIMIT 1 → empty.
+    // liqpayProvider.getSubscriptionStatus → SELECT … LIMIT 1 → empty, далі
+    // `getUserPlan` для знімка доступу → теж порожньо (Free).
+    queryMock.mockResolvedValueOnce({ rows: [] });
     queryMock.mockResolvedValueOnce({ rows: [] });
 
     const response = await request(createApp())
@@ -125,16 +127,16 @@ describe("OpenAPI roundtrip: representative live responses", () => {
       .set("Authorization", "Bearer contract-stub");
 
     expect(response.status).toBe(200);
-    expect(response.body).toEqual({
-      subscription: {
-        id: null,
-        provider: null,
-        plan: null,
-        status: null,
-        active: false,
-        currentPeriodEnd: null,
-      },
+    expect(response.body.subscription).toEqual({
+      id: null,
+      provider: null,
+      plan: null,
+      status: null,
+      active: false,
+      currentPeriodEnd: null,
     });
+    expect(response.body.access.state).toBe("free");
+    expect(response.body.access.meters.aiActions.limit).toBe(20);
     expectMatchesOpenApi("/api/billing/status", 200, response.body);
   });
 
@@ -151,6 +153,19 @@ describe("OpenAPI roundtrip: representative live responses", () => {
         },
       ],
     });
+    // `getUserPlan` для знімка доступу.
+    queryMock.mockResolvedValueOnce({
+      rows: [
+        {
+          plan: "pro",
+          status: "active",
+          current_period_end: new Date("2099-08-01T00:00:00.000Z"),
+          cancel_at_period_end: false,
+          provider: "liqpay",
+          grace_period_ends_at: null,
+        },
+      ],
+    });
 
     const response = await request(createApp())
       .get("/api/billing/status")
@@ -164,6 +179,7 @@ describe("OpenAPI roundtrip: representative live responses", () => {
       status: "active",
       active: true,
     });
+    expect(response.body.access.state).toBe("pro");
     expectMatchesOpenApi("/api/billing/status", 200, response.body);
   });
 

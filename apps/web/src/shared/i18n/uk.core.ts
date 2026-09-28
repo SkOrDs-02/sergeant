@@ -281,16 +281,16 @@ export const coreMessages = {
     // rendered in `HubChatHeader`). Hidden for Pro (unlimited). Numbers are
     // interpolated at the call-site as `${used}/${limit} ${chatUsageUnit}`
     // (no Cyrillic-string placeholders needed for plain digits).
-    // Одиниця — ЗАПИТ до AI, не повідомлення. Копія «5 повідомлень» обіцяла
-    // людині більше, ніж дає ліміт (browser QA 2026-08-23), тож клієнт
-    // говорить тією ж мовою, що сервер. AI-5 рішення 1 (`docs/work/
-    // audits/2026-09-01-product-audit/findings.md`, 2026-09-01) зробило хід
-    // з дією (tool-round-trip) рівно одним запитом (раніше — 2), тож тепер
-    // «запитів» буквально дорівнює «діям», без застережень.
-    chatUsageUnit: "запитів",
+    // Одиниця: ДІЯ Сержанта, не повідомлення: AI-5 рішення 1 (`docs/work/
+    // audits/2026-09-01-product-audit/findings.md`) зробило хід з дією
+    // (tool-round-trip) рівно одним списанням, тож «дія» = один хід.
+    // Відро тижневе (спека access-tiers): 20 дій на ISO-тиждень, скидання в
+    // понеділок 00:00 за Києвом.
+    chatUsageUnit: "дій, оновиться в понеділок",
     chatUsageAriaPrefix: "Використано",
-    chatUsageAriaSuffix: "запитів до Сержанта на сьогодні",
-    chatUsageExhausted: "Ліміт запитів до Сержанта на сьогодні. Подивись плани",
+    chatUsageAriaSuffix:
+      "дій Сержанта цього тижня, ліміт оновиться в понеділок",
+    chatUsageExhausted: "Тижневий ліміт Сержанта вичерпано. Подивись плани",
   },
 
   // Experimental section (PR-36 ux-roast 2026-Q2 / §9.3): banner + opt-in

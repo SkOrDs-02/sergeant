@@ -3,6 +3,7 @@ import { useNavigate } from "react-router-dom";
 import { Button } from "@shared/components/ui/Button";
 import { Modal } from "@shared/components/ui/Modal";
 import { messages } from "@shared/i18n/uk";
+import type { PaywallSurface } from "@sergeant/shared";
 import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
 
 /**
@@ -18,14 +19,9 @@ import { ANALYTICS_EVENTS, trackEvent } from "../observability/analytics";
  * we can tune messaging per surface without forking the component.
  */
 
-export type PaywallSurface =
-  | "ai_chat_limit"
-  | "mono_auto_sync"
-  | "cloud_sync"
-  | "csv_export"
-  | "unlimited_ai_photo"
-  | "themes"
-  | "other";
+// Поверхні живуть у реєстрі доступу (`@sergeant/shared`, поле `surface`
+// рядка фічі), а не окремою мапою тут.
+export type { PaywallSurface };
 
 export interface PaywallModalProps {
   open: boolean;
@@ -48,9 +44,9 @@ export interface PaywallModalProps {
 }
 
 // AI-NOTE: буліт «7 днів trial без привʼязки картки» прибрано 2026-08-05
-// (B4 браузерного аудиту). Сторінка тарифів — джерело правди щодо моделі
-// оплати, і вона прямо каже «без trial-таймера»; обіцянка trial-у тут
-// суперечила їй. Не повертай його, поки trial не зʼявиться у /pricing.
+// (B4 браузерного аудиту) і не повертається: trial дається лише новому
+// акаунту і лише за прапорцем `BILLING_REVERSE_TRIAL_ENABLED`, тож людина
+// перед пейволом його вже або має, або не отримає.
 const COPY = messages.paywallModal;
 
 // Порядок булетів — тут: каталог тримає плоскі ключі, бо `MessageCatalog`

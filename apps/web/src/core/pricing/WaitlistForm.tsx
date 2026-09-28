@@ -28,7 +28,7 @@ const TIER_OPTIONS: ReadonlyArray<{
   {
     value: "pro",
     label: "Premium",
-    hint: "Чат із Сержантом, авто-Mono, повні звіти, cloud sync",
+    hint: "Сержант без тижневої стелі, фото і голос, PDF-звіти",
   },
   {
     value: "free",

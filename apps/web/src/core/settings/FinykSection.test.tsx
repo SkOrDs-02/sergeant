@@ -79,6 +79,7 @@ vi.mock("../../modules/finyk/utils", () => ({
 }));
 
 import { billingApi, monoWebhookApi, silpoApi } from "@shared/api";
+import { accessFixture } from "../../test/helpers/billingAccess";
 import { FinykSection } from "./FinykSection";
 
 const mockedSyncState = monoWebhookApi.syncState as unknown as ReturnType<
@@ -119,6 +120,7 @@ describe("FinykSection", () => {
         active: true,
         currentPeriodEnd: "2026-06-01T10:00:00.000Z",
       },
+      access: accessFixture("pro"),
     });
     mockedSilpoSyncState.mockResolvedValue({
       status: "disconnected",

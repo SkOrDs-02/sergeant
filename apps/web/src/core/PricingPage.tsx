@@ -20,6 +20,7 @@ import { usePlan } from "./billing";
 import { useAuthOptional } from "./auth/AuthContext";
 import { SIGN_IN_PATH } from "./app/appPaths";
 import { WaitlistForm } from "./pricing/WaitlistForm";
+import { buildTiers, type Tier } from "./pricing/pricingTiers";
 import { LegalLinks } from "./legal/LegalLinks";
 
 /**
@@ -37,24 +38,6 @@ import { LegalLinks } from "./legal/LegalLinks";
  * `plan: "pro"`. User-facing label = "Premium" (D3). Перейменування серверного
  * enum — окремий PR на бекенд.
  */
-
-interface Feature {
-  readonly label: string;
-  /** Free-tier limit annotation. Premium = unlocked, тому залишай undefined там. */
-  readonly limit?: string;
-  /** Якщо `false` — рядок стилізується як "недоступно" (Free-only, gated на Premium). */
-  readonly included?: boolean;
-}
-
-interface Tier {
-  readonly id: "free" | "premium";
-  readonly name: string;
-  readonly price: string;
-  readonly cadence: string;
-  readonly tagline: string;
-  readonly features: ReadonlyArray<Feature>;
-  readonly highlight: boolean;
-}
 
 // AI-NOTE: конкретної ціни Premium тут більше немає (B4, браузерний аудит
 // 2026-08-05). Premium ще не запущений, оплата не підключена, а внизу
@@ -98,55 +81,6 @@ function assertAllowedCheckoutUrl(raw: string): string {
     throw new Error(`checkout url host not in allow-list: ${parsed.host}`);
   }
   return parsed.toString();
-}
-
-/**
- * Build the per-locale TIERS array. Lives inside PricingPage so `useLocale`
- * messages can drive every label; memoized on `messages` identity since the
- * resolver returns a frozen reference per locale (the array recomputes only
- * when the user toggles language, not on every parent render).
- */
-function buildTiers(
-  pricing: ReturnType<typeof useLocale>["messages"]["pricing"],
-): ReadonlyArray<Tier> {
-  const limits = pricing.limits;
-  const features = pricing.features;
-  return [
-    {
-      id: "free",
-      name: pricing.tiers.freeName,
-      price: pricing.tiers.freePrice,
-      cadence: pricing.tiers.freeCadence,
-      tagline: pricing.tiers.freeTagline,
-      highlight: false,
-      features: [
-        { label: features.allModules },
-        { label: features.manualTracking },
-        { label: features.aiChat, limit: limits.aiChatPerDay },
-        { label: features.cloudSync2Devices },
-        { label: features.pdfExport, included: false },
-        { label: features.monoAutoSync, included: false },
-      ],
-    },
-    {
-      id: "premium",
-      name: pricing.tiers.premiumName,
-      price: pricing.tiers.premiumPrice,
-      cadence: pricing.tiers.premiumCadence,
-      tagline: pricing.tiers.premiumTagline,
-      highlight: true,
-      features: [
-        { label: features.expensesFinyk, limit: limits.unlimited },
-        { label: features.aiPhotoFoodShort, limit: limits.unlimited },
-        { label: features.workoutTemplates, limit: limits.unlimited },
-        { label: features.habits, limit: limits.unlimited },
-        // B3 (браузерний аудит 2026-08-05): рядок «Активи в іноземній валюті»
-        // прибрано з обох колонок — такої функції в застосунку немає.
-        { label: features.pdfExport },
-        { label: features.cloudSync },
-      ],
-    },
-  ];
 }
 
 export function PricingPage() {

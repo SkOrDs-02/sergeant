@@ -4,7 +4,7 @@ import { ApiError, chatApi, isApiError } from "@shared/api";
 import { useToast } from "@shared/hooks/useToast";
 import { showUndoToast } from "@shared/lib/ui/undoToast";
 import { useOnlineStatus } from "@shared/hooks/useOnlineStatus";
-import { chatKeys, hubKeys } from "@shared/lib/api/queryKeys";
+import { billingKeys, chatKeys, hubKeys } from "@shared/lib/api/queryKeys";
 import { perfMark, perfEnd } from "@shared/lib/ui/perf";
 import { safeReadLS } from "@shared/lib/storage/storage";
 import {
@@ -121,7 +121,7 @@ export interface UseChatSendResult {
   cancelInFlight: () => void;
   paywallOpen: boolean;
   /**
-   * Free-tier денний ліміт AI-запитів (`GET /api/chat/usage::limit`).
+   * Free-tier тижневий ліміт AI-дій (`GET /api/chat/usage::limit`).
    * `null`, поки запит ще не відповів або план Pro — той самий кеш, з
    * якого читає `ChatUsageCounter`, тож пейвол-копія не тримає власного
    * числа.
@@ -164,8 +164,8 @@ export function useChatSend({
   const { isPro } = usePlan();
   const online = useOnlineStatus();
 
-  // Джерело істини для пре-гейту пейволу — той самий `GET /api/chat/usage`,
-  // з якого читає `ChatUsageCounter` (спільний RQ-кеш `chatKeys.usage`).
+  // Джерело істини для пре-гейту пейволу: `GET /api/chat/usage` (тижневе
+  // відро `ai.actions`, те саме, що в знімку доступу для `ChatUsageCounter`).
   // Раніше тут стояв окремий localStorage-лічильник повідомлень: рахував
   // не те (повідомлення, а не одиниці квоти) і не там (per-device, сервер —
   // per-user), тож два ходи з інструментом розходились із серверним
@@ -804,13 +804,13 @@ export function useChatSend({
         if (abortRef.current === ac) abortRef.current = null;
         setLoading(false);
         setHubStreaming(false);
-        // Лічильник квоти (`GET /api/chat/usage`) читався лише на монтуванні
-        // `ChatUsageCounter`, тож пігулка все життя сесії показувала «0/5» —
-        // навіть поруч із 429-помилкою про вичерпаний ліміт; правда
-        // зʼявлялась тільки після перезавантаження сторінки (browser QA
+        // Лічильник квоти читався лише на монтуванні, тож пігулка все життя
+        // сесії показувала «0/5» навіть поруч із 429 (browser QA
         // 2026-08-23). Інвалідовуємо ПІСЛЯ кожного ходу, включно з невдалим:
-        // сервер списує запит і тоді, коли відповідь була помилкою.
+        // сервер списує запит і тоді, коли відповідь була помилкою. Пігулка
+        // читає знімок `billingKeys.status`, пре-гейт читає `chatKeys.usage`.
         queryClient.invalidateQueries({ queryKey: chatKeys.usage });
+        queryClient.invalidateQueries({ queryKey: billingKeys.status });
       }
     },
     [

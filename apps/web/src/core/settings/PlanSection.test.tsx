@@ -13,6 +13,7 @@ import { MemoryRouter } from "react-router-dom";
 import { QueryClient, QueryClientProvider } from "@tanstack/react-query";
 
 import type { BillingStatusResponse } from "@sergeant/shared";
+import { accessFixture } from "../../test/helpers/billingAccess";
 
 const { statusMock, createPortalMock, cancelMock } = vi.hoisted(() => ({
   statusMock:
@@ -73,6 +74,7 @@ const FREE_RESPONSE: BillingStatusResponse = {
     active: false,
     currentPeriodEnd: null,
   },
+  access: accessFixture("free"),
 };
 
 const PRO_ACTIVE_RESPONSE: BillingStatusResponse = {
@@ -84,6 +86,7 @@ const PRO_ACTIVE_RESPONSE: BillingStatusResponse = {
     active: true,
     currentPeriodEnd: "2026-06-01T10:00:00.000Z",
   },
+  access: accessFixture("pro"),
 };
 
 const PRO_CANCELED_RESPONSE: BillingStatusResponse = {
@@ -95,6 +98,7 @@ const PRO_CANCELED_RESPONSE: BillingStatusResponse = {
     active: true,
     currentPeriodEnd: "2026-05-30T10:00:00.000Z",
   },
+  access: accessFixture("pro"),
 };
 
 const PRO_TRIAL_RESPONSE: BillingStatusResponse = {
@@ -106,6 +110,7 @@ const PRO_TRIAL_RESPONSE: BillingStatusResponse = {
     active: true,
     currentPeriodEnd: "2026-06-07T10:00:00.000Z",
   },
+  access: accessFixture("trial"),
 };
 
 describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () => {
@@ -229,6 +234,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
         active: true,
         currentPeriodEnd: "2026-06-01T10:00:00.000Z",
       },
+      access: accessFixture("grace"),
     });
     renderSection();
     await openSection();
@@ -250,6 +256,7 @@ describe("PlanSection (audit P1-6 — Settings plan + manage subscription)", () 
         active: true,
         currentPeriodEnd: "2026-06-01T10:00:00.000Z",
       },
+      access: accessFixture("grace"),
     });
     renderSection();
     await openSection();

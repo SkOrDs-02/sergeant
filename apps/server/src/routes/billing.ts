@@ -30,6 +30,9 @@ import {
   ensurePlataPubkey,
   plataProvider,
 } from "../modules/billing/index.js";
+// Напряму, не через барель: знімок тягне `chat/aiQuota`, а барель імпортують
+// роути, яким цей граф не потрібен.
+import { buildAccessSnapshot } from "../modules/billing/accessSnapshot.js";
 import { emitSecurityEvent } from "../obs/securityEvents.js";
 import { logger } from "../obs/logger.js";
 import { billingCheckoutTotal, billingWebhookTotal } from "../obs/metrics.js";
@@ -153,32 +156,32 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
     requireSession(),
     async (req: AuthedRequest, res: Response) => {
       const userId = req.user!.id;
-      // Founder bypass first — same `isFounderUser` check `requirePlan()`
-      // gates on, so a founder never sees a paywall the status read didn't
-      // also clear (round-2 UI audit S1: these two paths used to diverge
-      // because `getUserPlan()` had the bypass but this route read straight
-      // from `subscriptions` instead).
-      if (isFounderUser(userId)) {
-        res.json(
-          BillingStatusResponseSchema.parse({
-            subscription: {
-              id: null,
-              provider: "manual",
-              plan: "pro",
-              status: "active",
-              active: true,
-              currentPeriodEnd: null,
-            },
-          }),
-        );
-        return;
-      }
-      // Уніфіковано через subscriptions — читаємо будь-яким провайдером
-      // (усі три віддають ту саму serialize-форму з таблиці).
-      const payload = BillingStatusResponseSchema.parse(
-        await liqpayProvider.getSubscriptionStatus(pool, userId),
+      // Founder bypass — same `isFounderUser` check `requirePlan()` gates on,
+      // so a founder never sees a paywall the status read didn't also clear
+      // (round-2 UI audit S1). Інакше рядок підписки читаємо будь-яким
+      // провайдером: усі три віддають ту саму serialize-форму з таблиці.
+      const subscription = isFounderUser(userId)
+        ? {
+            id: null,
+            provider: "manual" as const,
+            plan: "pro" as const,
+            status: "active",
+            active: true,
+            currentPeriodEnd: null,
+          }
+        : (await liqpayProvider.getSubscriptionStatus(pool, userId))
+            .subscription;
+      // Знімок доступу рахується однаково для всіх, включно з founder-ом:
+      // `getUserPlan` усередині віддає йому синтетичний Pro.
+      const access = await buildAccessSnapshot(pool, userId);
+      // `active` дзеркалить стан доступу: сам рядок `trialing` лишається
+      // після кінця trial, і статус без дати казав би `true` вже Free-людині.
+      res.json(
+        BillingStatusResponseSchema.parse({
+          subscription: { ...subscription, active: access.state !== "free" },
+          access,
+        }),
       );
-      res.json(payload);
     },
   );
 

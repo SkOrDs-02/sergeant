@@ -1,12 +1,12 @@
 # ADR-0085: Free AI quota — п’ять добових одиниць
 
-- **Status:** Accepted
+- **Status:** Superseded by [ADR-0100](./0100-free-premium-weekly-quotas-registry.md)
 - **Last validated:** 2026-09-04 by Codex (звірка графа коду й джерел). **Next review:** 2026-12-03.
 - **Date:** 2026-08-06
 - **Deciders:** @SkOrDs-02
 - **Supersedes:** —
 - **Related:**
-  - [`apps/server/src/modules/billing/effectiveLimits.ts`](../../../apps/server/src/modules/billing/effectiveLimits.ts)
+  - `apps/server/src/modules/billing/effectiveLimits.ts`
   - [`apps/server/src/modules/chat/aiQuota.ts`](../../../apps/server/src/modules/chat/aiQuota.ts)
   - [ADR-0086](./0086-no-anonymous-ai-sign-in-required.md)
   - [Канон AI-шару](../../product/modules/hub-coach.md)

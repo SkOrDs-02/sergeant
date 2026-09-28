@@ -86,20 +86,6 @@ export const FLAG_REGISTRY: readonly FlagDefinition[] = [
     defaultValue: false,
     experimental: true,
   },
-  {
-    // Сплячий прапорець без тумблера в UI (не `experimental`): банер про
-    // кінець trial суперечить рішенню D3 («один платний план, без
-    // trial-таймера», phase-7-product-decisions-2026-05-22.md) і копі
-    // `/pricing`. Код лишено на випадок плану Б з D3 (перехід на 14-денний
-    // trial, якщо конверсія Free → Premium буде низькою). Умова зняття:
-    // або D3 переглянуто і банер вмикається дефолтом, або через квартал
-    // рішення не змінилось — тоді видалити разом із `TrialBanner.tsx`.
-    id: "billing_trial_banner",
-    label: "Банер про кінець trial",
-    description:
-      "Плашка «Залишилось N днів trial» на хабі. Вимкнена: у продукті немає trial-таймера (рішення D3).",
-    defaultValue: false,
-  },
   // Stage 13 PR #078: `feature.finyk.sqlite_v2.mono_mirror` retired.
   // Previously defaultValue: true, experimental: true. Mono mirror now
   // triggers unconditionally — see monoMirrorBoot.ts / monoMirrorGate.ts.

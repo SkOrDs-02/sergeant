@@ -2,7 +2,7 @@
 
 > **Поточні статуси перенесених знахідок:** [єдиний реєстр верифікації](verification/findings.json). Цей документ зберігає історичні результати; нові спроби та виправлення ведуться в реєстрі.
 
-> **Last touched:** 2026-09-11 by @claude. **Next review:** 2027-11-13.
+> **Last touched:** 2026-09-28 by @Skords-01. **Next review:** 2027-11-30.
 > **Status:** Active — B1 і B2 закриті кодом у цій же гілці
 > (`claude/sergeant-security-review-h4s302`), з регресійними тестами.
 > Відкриті: B3–B30 (порядок робіт — у кінці). Знімок стану на момент аудиту.
@@ -358,7 +358,7 @@ apps/server/src/env/env.ts:237:  AI_DAILY_USER_LIMIT: coerceInt.nonnegative().op
 Єдине входження — власне оголошення. Реальний ліміт залогіненого юзера приходить
 із `planLimits(plan).aiRequestsPerDay`
 ([`aiQuota.ts:271`](../../../../apps/server/src/modules/chat/aiQuota.ts) →
-[`effectiveLimits.ts:10,16`](../../../../apps/server/src/modules/billing/effectiveLimits.ts)):
+`effectiveLimits.ts:10,16`):
 free = 5, pro = `null` (безліміт).
 
 Тобто в інциденті черговий виконає крок 2, побачить, що анонімів відрізало

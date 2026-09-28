@@ -273,6 +273,7 @@ export {
   BillingCheckoutResponseBodySchema,
   BillingPortalResponseBodySchema,
   BillingStatusResponseBodySchema,
+  type BillingAccess,
   type BillingCheckoutRequest,
   type BillingCheckoutResponse,
   type BillingEndpoints,

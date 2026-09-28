@@ -84,7 +84,7 @@
     "sergeant-module-billing": {
       "source": "local",
       "sourceType": "local",
-      "computedHash": "93dab16ae60a58781e7ad19b0b3b325d81a49f7de199c0cde172c7ad6dde69f3"
+      "computedHash": "7eeae8476ed057579206ea4e7522993dbd69099ac3dc525f4d6ca32a1a847d8a"
     },
     "sergeant-module-finyk": {
       "source": "local",

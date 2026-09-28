@@ -203,7 +203,7 @@ describe("PR-A3 / рецидив B31 — session guard vs. rate limiters", () =>
       assertSessionBeforeLimiter(
         code,
         /r\.use\(\s*["']\/api\/nutrition["']\s*,\s*setModule\(\s*["']nutrition["']\s*\)\s*\)/,
-        /const aiVision/,
+        /const aiText/,
         /requireSession\(\)/,
         /rateLimitExpress\(\s*\{\s*key:\s*["']api:nutrition["']/,
         "/api/nutrition",
@@ -368,7 +368,7 @@ describe("PR-A3 / рецидив B31 — session guard vs. rate limiters", () =>
       assertPreAuthIpBeforeSession(
         code,
         /r\.use\(\s*["']\/api\/nutrition["']\s*,\s*setModule\(\s*["']nutrition["']\s*\)\s*\)/,
-        /const aiVision/,
+        /const aiText/,
         /rateLimitExpress\(\s*\{\s*key:\s*["']api:nutrition:ip["']/,
         /requireSession\(\)/,
         "/api/nutrition",

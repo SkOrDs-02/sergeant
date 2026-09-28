@@ -334,10 +334,10 @@ export const messagesEn: Partial<{
 
     overlayTitle: "AI assistant",
     closeChat: "Close chat",
-    chatUsageUnit: "requests",
+    chatUsageUnit: "actions, resets Monday",
     chatUsageAriaPrefix: "Used",
-    chatUsageAriaSuffix: "AI requests today",
-    chatUsageExhausted: "AI request limit reached for today. See plans",
+    chatUsageAriaSuffix: "AI actions this week, the limit resets on Monday",
+    chatUsageExhausted: "Weekly AI limit reached. See plans",
   },
 
   onboarding: {
@@ -607,16 +607,29 @@ export const messagesEn: Partial<{
   // for the "Unlock {name}" CTA composition; titles/descriptions can flow
   // longer since the modal owns its own viewport space.
   paywall: {
-    "ai-photo-analysis": {
-      name: "AI meal photo analysis",
-      title: "AI photo analysis: Premium",
+    "ai.photo": {
+      name: "Unlimited meal photos",
+      title: "Unlimited meal photos: Premium",
       description:
-        "AI estimates calories, protein, carbs and fat from a meal photo. Available on Premium.",
+        "Free covers 3 AI meal photos a week. The limit resets on Monday, and Premium removes it.",
     },
-    "analytics-export-pdf": {
+    "ai.finykVision": {
+      name: "Unlimited AI scans",
+      title: "Unlimited AI receipt scans: Premium",
+      description:
+        "Free covers 5 AI scans a week for receipts without a QR code and bank screenshots. Receipts with a QR code stay free.",
+    },
+    "export.pdf": {
       name: "PDF export",
       title: "PDF reports: Premium",
-      description: "Cross-module reports and PDF export, available on Premium.",
+      description:
+        "PDF export of reports is part of Premium. Reports and CSV stay free.",
+    },
+    "nutrition.weekPlan": {
+      name: "Weekly meal plan",
+      title: "Weekly meal plan: Premium",
+      description:
+        "Day plans, recipes and shopping lists stay free. A full seven-day plan comes with Premium.",
     },
   },
 
