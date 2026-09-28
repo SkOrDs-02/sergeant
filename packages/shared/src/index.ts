@@ -15,6 +15,10 @@ export * from "./types";
 // беруть корпус підпаточним імпортом `@sergeant/shared/data/genericFoods`:
 // він лишається окремим модулем і не тягне за собою решту барелю.
 
+// Реєстр доступу Free / Premium: одне джерело для серверних гейтів і квот,
+// web-знімка і таблиці `/pricing` (`docs/work/specs/access-tiers.md`).
+export * from "./billing/entitlements";
+
 // Shared, DOM-free constants (storage keys, etc.)
 export * from "./lib/storageKeys";
 export * from "./lib/correlationStandard";

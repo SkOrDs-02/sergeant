@@ -567,9 +567,9 @@ export const ChatRequestSchema = z.object({
 });
 
 /**
- * GET /api/chat/usage (PR-42 chat counter). `limit`/`remaining` are `null`
- * for Pro (unlimited `aiRequestsPerDay` — see `billing/effectiveLimits`);
- * the frontend counter pill hides itself in that case.
+ * GET /api/chat/usage (PR-42 chat counter). Тижневе відро `ai.actions`
+ * реєстру доступу (`billing/entitlements.ts`); `limit`/`remaining` = `null`
+ * для Premium (без ліміту).
  */
 export const ChatUsageResponseSchema = z.object({
   plan: z.enum(["free", "pro"]),
@@ -1760,9 +1760,41 @@ export const BillingSubscriptionSchema = z.object({
 });
 export type BillingSubscription = z.infer<typeof BillingSubscriptionSchema>;
 
-export const BillingStatusResponseSchema = z.object({
+/** Відповідь провайдера білінгу: лише рядок підписки, без знімка доступу. */
+export const BillingSubscriptionStatusSchema = z.object({
   subscription: BillingSubscriptionSchema,
 });
+export type BillingSubscriptionStatus = z.infer<
+  typeof BillingSubscriptionStatusSchema
+>;
+
+const BillingMeterSchema = z.object({
+  used: z.number().int().nonnegative(),
+  limit: z.number().int().nonnegative().nullable(),
+  resetsAt: z.string(),
+});
+export type BillingMeter = z.infer<typeof BillingMeterSchema>;
+
+// Знімок доступу (`docs/work/specs/access-tiers.md`). Сервер обчислює стан і
+// лічильники сам, web нічого не виводить із `plan`: під час trial і grace два
+// місця обчислення розійшлися б.
+export const BillingAccessSchema = z.object({
+  state: z.enum(["free", "trial", "pro", "grace"]),
+  trialEndsAt: z.string().nullable(),
+  graceEndsAt: z.string().nullable(),
+  features: z.record(z.string(), z.boolean()),
+  meters: z.object({
+    aiActions: BillingMeterSchema,
+    aiPhoto: BillingMeterSchema,
+    finykVision: BillingMeterSchema,
+  }),
+});
+export type BillingAccess = z.infer<typeof BillingAccessSchema>;
+
+export const BillingStatusResponseSchema =
+  BillingSubscriptionStatusSchema.extend({
+    access: BillingAccessSchema,
+  });
 export type BillingStatusResponse = z.infer<typeof BillingStatusResponseSchema>;
 
 // `POST /api/billing/portal` — створює manage-session і повертає

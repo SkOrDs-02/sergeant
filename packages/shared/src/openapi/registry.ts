@@ -351,7 +351,7 @@ const BillingCheckoutResponse = schemas.BillingCheckoutResponseSchema.meta({
 const BillingStatusResponse = schemas.BillingStatusResponseSchema.meta({
   id: "BillingStatusResponse",
   description:
-    "Поточний subscription state користувача, серіалізований з subscriptions (m056).",
+    "Поточний subscription state користувача, серіалізований з subscriptions (m056), плюс знімок доступу `access` (стан free/trial/pro/grace, фічі реєстру, тижневі лічильники).",
 });
 const BillingPortalResponse = schemas.BillingPortalResponseSchema.meta({
   id: "BillingPortalResponse",
