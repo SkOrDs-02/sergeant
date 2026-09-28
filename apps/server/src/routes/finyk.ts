@@ -1,5 +1,10 @@
 import { Router } from "express";
-import { rateLimitExpress, requireSession, setModule } from "../http/index.js";
+import {
+  rateLimitExpress,
+  requireAiQuota,
+  requireSession,
+  setModule,
+} from "../http/index.js";
 import { createManualExpense } from "../modules/finyk/manualExpenses.js";
 import lookupReceiptHandler from "../modules/finyk/receipts/lookup.js";
 import analyzeReceiptHandler from "../modules/finyk/receipts/analyze.js";
@@ -47,7 +52,10 @@ import getRecentImportsHandler from "../modules/finyk/import/recent.js";
  *   - `POST /receipts/analyze` — vision-fallback (фото без QR), draft без
  *     запису в БД. Тісніший rate-limit — платний AI-виклик; failMode
  *     closed (ревʼю PR #818): при відмові Redis+PG per-process бакети
- *     множили б дозволений спенд на кількість інстансів.
+ *     множили б дозволений спенд на кількість інстансів. Для Free ще й
+ *     тижневе відро `week:finyk-vision` (5 сканів, спільне зі скрін-імпортом,
+ *     спека `docs/work/specs/access-tiers.md`); QR-шлях вище лишається без
+ *     ліміту, тож вихід у людини, що вперлась, є завжди.
  *   - `POST /receipts` — save: matcher → receipt+items+link (mono) АБО
  *     receipt+items+manual-expense+link (unmatched). Ідемпотентний
  *     повторний скан.
@@ -138,6 +146,7 @@ export function createFinykRouter(): Router {
       windowMs: 60_000,
       failMode: "closed",
     }),
+    requireAiQuota("finyk-vision"),
     analyzeReceiptHandler,
   );
   r.post(
@@ -167,6 +176,7 @@ export function createFinykRouter(): Router {
       windowMs: 60_000,
       failMode: "closed",
     }),
+    requireAiQuota("finyk-vision"),
     screenshotAnalyzeHandler,
   );
   r.post(

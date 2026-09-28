@@ -14,7 +14,7 @@ import type { Pool } from "pg";
 import type {
   BillingCheckoutResponse,
   BillingPortalResponse,
-  BillingStatusResponse,
+  BillingSubscriptionStatus,
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import type {
@@ -50,7 +50,7 @@ export const stripeProvider: BillingProvider = {
   getSubscriptionStatus(
     pool: Pool,
     userId: string,
-  ): Promise<BillingStatusResponse> {
+  ): Promise<BillingSubscriptionStatus> {
     return stripeGetStatus(pool, userId);
   },
 

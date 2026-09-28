@@ -398,6 +398,14 @@ const envSchema = z.object({
 
   LIQPAY_ENABLED: boolFromEnv(false),
 
+  /**
+   * Reverse trial 7 днів Premium для нових акаунтів
+   * (`modules/billing/reverseTrial.ts`). Дефолт false: AI-квоти діють і без
+   * білінгу, тож trial до запуску Premium означав би зміну витрат. Зняти,
+   * коли Premium запущено і trial став постійною політикою.
+   */
+  BILLING_REVERSE_TRIAL_ENABLED: boolFromEnv(false),
+
   LIQPAY_PUBLIC_KEY: z.string().optional(),
   LIQPAY_PRIVATE_KEY: z.string().optional(),
 

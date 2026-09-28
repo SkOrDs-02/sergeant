@@ -6,7 +6,7 @@ import {
   requireSession,
   setModule,
 } from "../http/index.js";
-import { requirePlan } from "../modules/billing/index.js";
+import { requireFeature } from "../modules/billing/index.js";
 import transcribeHandler from "../modules/transcribe/transcribe.js";
 
 /**
@@ -65,7 +65,7 @@ export function createTranscribeRouter({ pool }: { pool: Pool }): Router {
     }),
     requireSession(),
     rateLimitExpress({ key: "api:transcribe", limit: 60, windowMs: 60_000 }),
-    requirePlan(pool, "pro"),
+    requireFeature(pool, "ai.voice"),
     requireGroqKey(),
     transcribeHandler,
   );

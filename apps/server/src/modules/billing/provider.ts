@@ -17,7 +17,7 @@ import type {
   BillingCheckoutResponse,
   BillingPlan,
   BillingPortalResponse,
-  BillingStatusResponse,
+  BillingSubscriptionStatus,
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 
@@ -81,7 +81,7 @@ export interface BillingProvider {
   getSubscriptionStatus(
     pool: Pool,
     userId: string,
-  ): Promise<BillingStatusResponse>;
+  ): Promise<BillingSubscriptionStatus>;
   /** Верифікує підпис вхідного webhook-запиту (provider-specific). */
   verifyWebhookSignature(rawBody: string, signature: string): boolean;
   /** Обробляє верифікований webhook → upsert у `subscriptions`. */

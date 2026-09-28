@@ -8592,11 +8592,145 @@
               "currentPeriodEnd"
             ],
             "additionalProperties": false
+          },
+          "access": {
+            "type": "object",
+            "properties": {
+              "state": {
+                "type": "string",
+                "enum": ["free", "trial", "pro", "grace"]
+              },
+              "trialEndsAt": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "graceEndsAt": {
+                "anyOf": [
+                  {
+                    "type": "string"
+                  },
+                  {
+                    "type": "null"
+                  }
+                ]
+              },
+              "features": {
+                "type": "object",
+                "propertyNames": {
+                  "type": "string"
+                },
+                "additionalProperties": {
+                  "type": "boolean"
+                }
+              },
+              "meters": {
+                "type": "object",
+                "properties": {
+                  "aiActions": {
+                    "type": "object",
+                    "properties": {
+                      "used": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "limit": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "resetsAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["used", "limit", "resetsAt"],
+                    "additionalProperties": false
+                  },
+                  "aiPhoto": {
+                    "type": "object",
+                    "properties": {
+                      "used": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "limit": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "resetsAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["used", "limit", "resetsAt"],
+                    "additionalProperties": false
+                  },
+                  "finykVision": {
+                    "type": "object",
+                    "properties": {
+                      "used": {
+                        "type": "integer",
+                        "minimum": 0,
+                        "maximum": 9007199254740991
+                      },
+                      "limit": {
+                        "anyOf": [
+                          {
+                            "type": "integer",
+                            "minimum": 0,
+                            "maximum": 9007199254740991
+                          },
+                          {
+                            "type": "null"
+                          }
+                        ]
+                      },
+                      "resetsAt": {
+                        "type": "string"
+                      }
+                    },
+                    "required": ["used", "limit", "resetsAt"],
+                    "additionalProperties": false
+                  }
+                },
+                "required": ["aiActions", "aiPhoto", "finykVision"],
+                "additionalProperties": false
+              }
+            },
+            "required": [
+              "state",
+              "trialEndsAt",
+              "graceEndsAt",
+              "features",
+              "meters"
+            ],
+            "additionalProperties": false
           }
         },
-        "required": ["subscription"],
+        "required": ["subscription", "access"],
         "additionalProperties": false,
-        "description": "Поточний subscription state користувача, серіалізований з subscriptions (m056)."
+        "description": "Поточний subscription state користувача, серіалізований з subscriptions (m056), плюс знімок доступу `access` (стан free/trial/pro/grace, фічі реєстру, тижневі лічильники)."
       },
       "BillingPortalResponse": {
         "type": "object",

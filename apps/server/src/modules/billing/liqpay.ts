@@ -20,7 +20,7 @@ import type { Pool, PoolClient } from "pg";
 import type {
   BillingCheckoutResponse,
   BillingPortalResponse,
-  BillingStatusResponse,
+  BillingSubscriptionStatus,
 } from "@sergeant/shared";
 import { env } from "../../env/env.js";
 import { logger } from "../../obs/logger.js";
@@ -164,14 +164,16 @@ interface BillingRow {
   current_period_end: Date | string | null;
 }
 
-function serializeBillingRow(row: BillingRow | null): BillingStatusResponse {
+function serializeBillingRow(
+  row: BillingRow | null,
+): BillingSubscriptionStatus {
   return {
     subscription: row
       ? {
           id: Number(row.id),
           provider:
-            row.provider as BillingStatusResponse["subscription"]["provider"],
-          plan: row.plan as BillingStatusResponse["subscription"]["plan"],
+            row.provider as BillingSubscriptionStatus["subscription"]["provider"],
+          plan: row.plan as BillingSubscriptionStatus["subscription"]["plan"],
           status: row.status,
           active: ACTIVE_STATUSES.has(row.status),
           currentPeriodEnd: isoOrNull(row.current_period_end),
@@ -372,7 +374,7 @@ export const liqpayProvider: BillingProvider = {
   getSubscriptionStatus(
     pool: Pool,
     userId: string,
-  ): Promise<BillingStatusResponse> {
+  ): Promise<BillingSubscriptionStatus> {
     return readLatestSubscription(pool, userId).then(serializeBillingRow);
   },
 

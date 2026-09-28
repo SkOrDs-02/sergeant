@@ -4,11 +4,9 @@
  * Caller-и (`apps/server/src/routes/{ai-memory,billing,nutrition}.ts`)
  * імпортують лише звідси — не з `./{getUserPlan,requirePlan,stripe,plata}.js`.
  */
-export { getUserPlan, isFounderUser } from "./getUserPlan.js";
-export type { Plan, UserPlanResult } from "./getUserPlan.js";
-export { requirePlan } from "./requirePlan.js";
-export { effectiveLimits } from "./effectiveLimits.js";
-export type { EffectiveLimits } from "./effectiveLimits.js";
+export { accessStateOf, getUserPlan, isFounderUser } from "./getUserPlan.js";
+export type { AccessState, Plan, UserPlanResult } from "./getUserPlan.js";
+export { requireFeature, requirePlan } from "./requirePlan.js";
 export {
   createCheckoutSession,
   getSubscriptionStatus,

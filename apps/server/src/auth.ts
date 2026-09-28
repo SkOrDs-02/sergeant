@@ -14,6 +14,8 @@ import { createEncryptingAdapter } from "./auth/encryptingAdapter.js";
 import { drizzleAdapter } from "@better-auth/drizzle-adapter";
 import { parseKeyRing } from "./lib/keyRing.js";
 import { db } from "./drizzle.js";
+import pool from "./db.js";
+import { grantReverseTrial } from "./modules/billing/reverseTrial.js";
 import { sanitizeUserImage } from "./auth/sanitizeUserImage.js";
 import { detectFingerprintDrift, ipPrefix } from "./auth/sessionFingerprint.js";
 import { queueAuthTransactionalEmail } from "./email/authTransactionalMail.js";
@@ -503,6 +505,9 @@ export const auth = betterAuth({
           ) {
             return;
           }
+          // Reverse trial (за прапорцем); сам ловить свої помилки, тож
+          // реєстрацію не валить навіть при збої вставки.
+          await grantReverseTrial(pool, user.id);
           try {
             queueFtuxDripForNewUser({ userId: user.id, email: user.email });
           } catch (err) {

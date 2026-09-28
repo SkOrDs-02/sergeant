@@ -7,7 +7,7 @@ import {
   requireSession,
   setModule,
 } from "../http/index.js";
-import { requirePlan } from "../modules/billing/index.js";
+import { requireFeature } from "../modules/billing/index.js";
 import analyzePhoto from "../modules/nutrition/analyze-photo.js";
 import parsePantry from "../modules/nutrition/parse-pantry.js";
 import refinePhoto from "../modules/nutrition/refine-photo.js";
@@ -37,19 +37,14 @@ import shoppingList from "../modules/nutrition/shopping-list.js";
  * ходять у Anthropic і не мають тратити квоту, тому `requireAnthropicKey` /
  * `requireAiQuota` до них не застосовуємо.
  *
- * Vision-endpoint-и (`analyze-photo` / `refine-photo`) додатково гейтяться за
- * Pro-планом: вони йдуть через Sonnet 4.6 Vision (cost=3) — найдорожчий
- * AI-шлях. Решта nutrition-AI лишається метрованою (free отримує
- * `effectiveLimits.aiRequestsPerDay`), що збігається з клієнтським
- * `useFeatureGate("ai-photo-analysis")` та ADR-0051. `requirePlan` стоїть
- * ПЕРЕД `requireAnthropicKey`/`requireAiQuota`, щоб free-юзер отримав 402 до
- * витрати денної квоти.
- *
- * Байпас гейта тепер прив'язаний до `isBillingEnforced()`, а не до
- * `STRIPE_ENABLED`. Стара умова робила middleware no-op-ом у проді, де
- * Stripe вимкнений, а продають LiqPay і Plata — тобто ці два vision-роути
- * були відкриті безкоштовно. No-op лишився лише для середовищ, де не
- * ввімкнено жодного провайдера.
+ * Пакетування за реєстром доступу (`docs/work/specs/access-tiers.md`):
+ *   - `analyze-photo` списує 1 з окремого тижневого відра фото (`week:photo`,
+ *     Free 3 на тиждень) і не чіпає спільні дії. `refine-photo` того самого
+ *     знімка нічого не списує: це продовження тієї самої дії.
+ *   - `week-plan` тільки для Premium (`requireFeature("nutrition.weekPlan")`),
+ *     гейт стоїть ПЕРЕД квотою, щоб Free отримав 402 до списання.
+ *   - Решта nutrition-AI (денний план, рецепти, покупки, комора) коштує 1 дію
+ *     з тижневих `ai.actions`.
  */
 export function createNutritionRouter({ pool }: { pool: Pool }): Router {
   const r = Router();
@@ -84,7 +79,6 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
   // помилки. Спільний `requireAnthropicKey()` не описував ЖОДЕН із двох
   // випадків: питав про ключ, який під дефолтним шлюзом не використовується.
   // Докстрінг `requireLlmUpstream`, знахідка B31 у решті роутів.
-  const aiVision = [requireLlmUpstream("vision"), requireAiQuota()];
   const aiText = [requireLlmUpstream("nutrition"), requireAiQuota()];
 
   // Vision API call (~5–10s upstream, ~10–20KB image upload). Cost 3 makes
@@ -98,8 +92,8 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
-    requirePlan(pool, "pro"),
-    ...aiVision,
+    requireLlmUpstream("vision"),
+    requireAiQuota("photo"),
     analyzePhoto,
   );
   r.post(
@@ -121,8 +115,9 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
-    requirePlan(pool, "pro"),
-    ...aiVision,
+    // ponytail: refine не має власної квоти, стелю тримає лише rate limit
+    // 20/хв; окреме відро, якщо refine почнуть ганяти без analyze.
+    requireLlmUpstream("vision"),
     refinePhoto,
   );
   // Anthropic text generation — medium-weight (~5–8s, smaller payloads
@@ -148,6 +143,7 @@ export function createNutritionRouter({ pool }: { pool: Pool }): Router {
       windowMs: 60_000,
       cost: () => 3,
     }),
+    requireFeature(pool, "nutrition.weekPlan"),
     ...aiText,
     weekPlan,
   );

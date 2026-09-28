@@ -22,6 +22,23 @@ vi.mock("../auth.js", () => ({
   getSessionUser: getSessionUserMock,
 }));
 
+// Знімок доступу має власні тести (`modules/billing/accessSnapshot.test.ts`);
+// тут перевіряємо лише, що роут кладе його поруч із `subscription`.
+const ACCESS = {
+  state: "free",
+  trialEndsAt: null,
+  graceEndsAt: null,
+  features: { "export.pdf": false },
+  meters: {
+    aiActions: { used: 0, limit: 20, resetsAt: "2026-06-14T21:00:00.000Z" },
+    aiPhoto: { used: 0, limit: 3, resetsAt: "2026-06-14T21:00:00.000Z" },
+    finykVision: { used: 0, limit: 5, resetsAt: "2026-06-14T21:00:00.000Z" },
+  },
+};
+vi.mock("../modules/billing/accessSnapshot.js", () => ({
+  buildAccessSnapshot: vi.fn(async () => ACCESS),
+}));
+
 vi.mock("../env/env.js", () => ({
   env: new Proxy(
     {},
@@ -162,6 +179,7 @@ describe("billing routes", () => {
         active: true,
         currentPeriodEnd: "2026-06-01T00:00:00.000Z",
       },
+      access: ACCESS,
     });
   });
 
@@ -191,6 +209,7 @@ describe("billing routes", () => {
         active: true,
         currentPeriodEnd: null,
       },
+      access: ACCESS,
     });
   });
 
@@ -219,6 +238,7 @@ describe("billing routes", () => {
         active: true,
         currentPeriodEnd: null,
       },
+      access: ACCESS,
     });
     // Founder never needs the DB — same short-circuit as getUserPlan().
     expect(query).not.toHaveBeenCalled();
@@ -246,6 +266,7 @@ describe("billing routes", () => {
         active: false,
         currentPeriodEnd: null,
       },
+      access: ACCESS,
     });
     expect(query).toHaveBeenCalled();
     unsetEnv("AI_QUOTA_FOUNDER_IDS");
