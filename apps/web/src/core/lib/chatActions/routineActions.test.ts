@@ -576,6 +576,13 @@ describe("pause_habit", () => {
     expect(out).toContain("повернуто з паузи");
   });
 
+  it("неявний початок паузи = день ПРИСТРОЮ, коли київська доба вже наступна", () => {
+    vi.setSystemTime(new Date("2026-04-22T22:00:00Z"));
+    seedHabit("h1", "Вода");
+    const out = call({ name: "pause_habit", input: { habit_id: "h1" } });
+    expect(out).toContain("з 2026-04-22");
+  });
+
   it("пише датований інтервал, а не недатований прапор", () => {
     seedHabit("h1", "Вода");
     const out = call({
