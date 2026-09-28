@@ -16,6 +16,7 @@ import {
 import { isHandoffDone } from "./kvvfsHandoff.js";
 import { claimDbOwnership, onYieldRequested } from "./dbOwnership.js";
 import { watchOpfsWipe } from "./opfsWipeGuard.js";
+import { markKvAnonPartition, refreshKvWarmCache } from "./kvStoreBoot.js";
 import {
   makeLocalConnection,
   type SqliteConnection,
@@ -166,6 +167,7 @@ export async function switchSqliteUser(
   });
   activeUserKey = key;
   activeUserId = key === ANON_USER_KEY ? null : (userId ?? null);
+  if (key === ANON_USER_KEY) markKvAnonPartition();
   const stale = resolved;
   resolved = null;
   resolvedKey = null;
@@ -175,6 +177,10 @@ export async function switchSqliteUser(
   if (stale) {
     await stale.close();
   }
+  // KV-кеш заповнено на буті з `anon`: без перечитування залогінений
+  // користувач читав би анонімні значення до кінця сесії. Після `close()`,
+  // бо перечитування відкриває новий handle, а два одночасно не можна.
+  if (key !== ANON_USER_KEY) await refreshKvWarmCache();
 }
 
 /**
