@@ -38,6 +38,7 @@ const ACCESS = {
 vi.mock("../modules/billing/accessSnapshot.js", () => ({
   buildAccessSnapshot: vi.fn(async () => ACCESS),
 }));
+const accessIn = (state: string) => ({ ...ACCESS, state });
 
 vi.mock("../env/env.js", () => ({
   env: new Proxy(
@@ -84,6 +85,7 @@ import {
 } from "@sergeant/shared";
 
 import { createBillingRouter } from "./billing.js";
+import { buildAccessSnapshot } from "../modules/billing/accessSnapshot.js";
 import { getUserPlan } from "../modules/billing/index.js";
 
 function createQueryPool(query: ReturnType<typeof vi.fn>) {
@@ -167,6 +169,9 @@ describe("billing routes", () => {
     });
     const app = createTestApp(createQueryPool(query));
 
+    vi.mocked(buildAccessSnapshot).mockResolvedValueOnce(
+      accessIn("pro") as never,
+    );
     const res = await request(app).get("/api/billing/status");
 
     expect(res.status).toBe(200);
@@ -179,7 +184,7 @@ describe("billing routes", () => {
         active: true,
         currentPeriodEnd: "2026-06-01T00:00:00.000Z",
       },
-      access: ACCESS,
+      access: accessIn("pro"),
     });
   });
 
@@ -197,6 +202,9 @@ describe("billing routes", () => {
     });
     const app = createTestApp(createQueryPool(query));
 
+    vi.mocked(buildAccessSnapshot).mockResolvedValueOnce(
+      accessIn("trial") as never,
+    );
     const res = await request(app).get("/api/billing/status");
 
     expect(res.status).toBe(200);
@@ -209,7 +217,7 @@ describe("billing routes", () => {
         active: true,
         currentPeriodEnd: null,
       },
-      access: ACCESS,
+      access: accessIn("trial"),
     });
   });
 
@@ -217,6 +225,32 @@ describe("billing routes", () => {
   // Root cause was this route reading `subscriptions` directly while
   // `requirePlan()` read `getUserPlan()` — a founder passed the gate but
   // still saw the paywall because this route never checked the allowlist.
+  it("GET /status reports active: false once the trial has lapsed", async () => {
+    // Рядок `trialing` лишається в таблиці після кінця trial; `active`
+    // дзеркалить стан доступу, а не сам статус рядка.
+    const query = vi.fn().mockResolvedValue({
+      rows: [
+        {
+          id: 7,
+          provider: "manual",
+          plan: "pro",
+          status: "trialing",
+          current_period_end: new Date("2026-01-01T00:00:00.000Z"),
+        },
+      ],
+    });
+    const app = createTestApp(createQueryPool(query));
+
+    const res = await request(app).get("/api/billing/status");
+
+    expect(res.status).toBe(200);
+    expect(res.body.subscription).toMatchObject({
+      status: "trialing",
+      active: false,
+    });
+    expect(res.body.access.state).toBe("free");
+  });
+
   it("GET /status grants a synthetic pro subscription to a founder id", async () => {
     setEnv("AI_QUOTA_FOUNDER_IDS", "founder_1,founder_2");
     getSessionUserMock.mockResolvedValue({
@@ -226,6 +260,9 @@ describe("billing routes", () => {
     const query = vi.fn().mockResolvedValue({ rows: [] });
     const app = createTestApp(createQueryPool(query));
 
+    vi.mocked(buildAccessSnapshot).mockResolvedValueOnce(
+      accessIn("pro") as never,
+    );
     const res = await request(app).get("/api/billing/status");
 
     expect(res.status).toBe(200);
@@ -238,7 +275,7 @@ describe("billing routes", () => {
         active: true,
         currentPeriodEnd: null,
       },
-      access: ACCESS,
+      access: accessIn("pro"),
     });
     // Founder never needs the DB — same short-circuit as getUserPlan().
     expect(query).not.toHaveBeenCalled();

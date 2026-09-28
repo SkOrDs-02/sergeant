@@ -174,7 +174,14 @@ export function createBillingRouter({ pool }: { pool: Pool }): Router {
       // Знімок доступу рахується однаково для всіх, включно з founder-ом:
       // `getUserPlan` усередині віддає йому синтетичний Pro.
       const access = await buildAccessSnapshot(pool, userId);
-      res.json(BillingStatusResponseSchema.parse({ subscription, access }));
+      // `active` дзеркалить стан доступу: сам рядок `trialing` лишається
+      // після кінця trial, і статус без дати казав би `true` вже Free-людині.
+      res.json(
+        BillingStatusResponseSchema.parse({
+          subscription: { ...subscription, active: access.state !== "free" },
+          access,
+        }),
+      );
     },
   );
 
