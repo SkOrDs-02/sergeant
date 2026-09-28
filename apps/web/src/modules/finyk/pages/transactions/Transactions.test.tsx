@@ -329,6 +329,16 @@ describe("Transactions page shell", () => {
     ];
   }
 
+  it("holds transfer suggestions until the SQLite storage cache is warm", () => {
+    renderTransactions({
+      mono: { realTx: buildTransferPair() },
+      storage: { storageReady: false },
+    });
+    expect(
+      screen.queryByText("Схоже на внутрішній переказ"),
+    ).not.toBeInTheDocument();
+  });
+
   it("snoozes a transfer suggestion via 'Не зараз', persisted for the current Kyiv day", () => {
     const pair = buildTransferPair();
     const { unmount } = renderTransactions({ mono: { realTx: pair } });
