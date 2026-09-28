@@ -117,3 +117,14 @@ vision не дають імпорту скрінами зʼїсти чат і н
   `apps/server/src/modules/chat/aiQuota.test.ts` (21-ша дія, 4-те фото, 6-й
   скан), `apps/server/src/modules/billing/*.test.ts` (trial, grace, знімок),
   контракт `packages/api-client/src/__tests__/contracts/billing.contract.test.ts`.
+
+<!-- AUTO-GENERATED: PR-BACKLINKS-START -->
+
+## Recent PRs
+
+| PR                                                              | Title                                                            | Merged     |
+| --------------------------------------------------------------- | ---------------------------------------------------------------- | ---------- |
+| [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) | feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу | 2026-09-28 |
+
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+<!-- AUTO-GENERATED: PR-BACKLINKS-END -->

@@ -131,11 +131,11 @@ Requires `gh` CLI on PATH. Commit the resulting `docs/governance/pr-ledger/index
 
 | PR                                                              | Title                                                                            | Merged     |
 | --------------------------------------------------------------- | -------------------------------------------------------------------------------- | ---------- |
+| [#88](https://bitbucket.org/skords01/sergeant/pull-requests/88) | fix(web): виправлення за браузерним web-аудитом 2026-09-27                       | 2026-09-28 |
 | [#61](https://bitbucket.org/skords01/sergeant/pull-requests/61) | docs(docs): синк реєстру PR (#41-#64)                                            | 2026-09-26 |
 | [#42](https://bitbucket.org/skords01/sergeant/pull-requests/42) | fix(web): фаза 0 аналітики Фініка v2: чесність чисел (Р4-Р7)                     | 2026-09-24 |
 | [#13](https://bitbucket.org/skords01/sergeant/pull-requests/13) | docs(agents): вирівняти governance з фактом після переїзду на Bitbucket          | 2026-09-23 |
 | [#50](https://github.com/zaebal-beep/sergeant/pull/50)          | fix(ci): повернути аудити в скоуп Hard Rule #26 і загейтити дрейф чотирьох копій | 2026-09-15 |
-| [#508](https://github.com/SkOrDs-02/sergeant/pull/508)          | fix(docs): reconcile canonical docs with current repo                            | 2026-07-29 |
 
 _Auto-derived from `docs/governance/pr-ledger/index.json`. Top 5 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->

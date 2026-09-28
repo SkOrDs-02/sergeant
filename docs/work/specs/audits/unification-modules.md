@@ -521,9 +521,10 @@
 
 ## Recent PRs
 
-| PR                                                     | Title                                                                               | Merged     |
-| ------------------------------------------------------ | ----------------------------------------------------------------------------------- | ---------- |
-| [#39](https://github.com/zaebal-beep/sergeant/pull/39) | fix(web): уніфікація кнопок Рутини, канон «Скасувати»/«Зберегти» і перезамір аудиту | 2026-09-15 |
+| PR                                                              | Title                                                                               | Merged     |
+| --------------------------------------------------------------- | ----------------------------------------------------------------------------------- | ---------- |
+| [#89](https://bitbucket.org/skords01/sergeant/pull-requests/89) | feat(web): Free і Premium, тижневі квоти і єдиний реєстр доступу                    | 2026-09-28 |
+| [#39](https://github.com/zaebal-beep/sergeant/pull/39)          | fix(web): уніфікація кнопок Рутини, канон «Скасувати»/«Зберегти» і перезамір аудиту | 2026-09-15 |
 
-_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 1 most recent PRs touching this file._
+_Auto-derived from `docs/governance/pr-ledger/index.json`. Top 2 most recent PRs touching this file._
 <!-- AUTO-GENERATED: PR-BACKLINKS-END -->
