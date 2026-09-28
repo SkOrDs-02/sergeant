@@ -143,6 +143,27 @@ describe("fetchProactiveAdvice", () => {
     vi.clearAllMocks();
   });
 
+  it("frames an already-broken limit as overspend, not as «щоб не перевищити»", async () => {
+    vi.mocked(chatApi.send).mockResolvedValueOnce({ text: "ok" });
+
+    await fetchProactiveAdvice({
+      categoryKey: "cafe",
+      monthKey: "2026-09",
+      catLabel: "Кафе",
+      spent: 4256,
+      limit: 3500,
+      remaining: -756,
+      pct: 122,
+      daysRemaining: 2,
+    });
+
+    const content = vi.mocked(chatApi.send).mock.calls[0]![0].messages[0]!
+      .content;
+    expect(content).toContain("Ліміт перевищено на 756 ₴.");
+    expect(content).toContain("До кінця місяця 2 дні.");
+    expect(content).not.toContain("щоб не перевищити");
+  });
+
   it("sends a Ukrainian prompt and caches non-empty AI advice", async () => {
     vi.mocked(chatApi.send).mockResolvedValueOnce({
       text: "Залиш каву на завтра.",

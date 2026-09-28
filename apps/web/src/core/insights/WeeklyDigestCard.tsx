@@ -429,7 +429,21 @@ export function WeeklyDigestCard({
   sectionOpen = true,
 }: WeeklyDigestCardProps = {}) {
   const currentWeekKey = getWeekKey();
-  const [selectedWeekKey, setSelectedWeekKey] = useState(currentWeekKey);
+  const { data: history = [] } = useDigestHistory();
+  // Понеділковий авто-звіт підбиває МИНУЛИЙ тиждень, тож у понеділок новий
+  // тиждень ще порожній і картка казала «звіт зʼявиться в понеділок» поруч
+  // із готовим звітом. Поки людина сама не обрала тиждень, показуємо
+  // свіжий звіт; історія реактивна, тож підхоплюємо і фонову генерацію.
+  const previousWeekKey = getWeekKey(
+    new Date(new Date(currentWeekKey + "T12:00:00").getTime() - 7 * 86_400_000),
+  );
+  const hasDigestFor = (wk: string) => history.some((h) => h.weekKey === wk);
+  const [pickedWeekKey, setSelectedWeekKey] = useState<string | null>(null);
+  const selectedWeekKey =
+    pickedWeekKey ??
+    (!hasDigestFor(currentWeekKey) && hasDigestFor(previousWeekKey)
+      ? previousWeekKey
+      : currentWeekKey);
   const [showHistory, setShowHistory] = useState(false);
   const [storiesOpen, setStoriesOpen] = useState(false);
 
@@ -443,7 +457,6 @@ export function WeeklyDigestCard({
     isCurrentWeek,
     canGenerate,
   } = useWeeklyDigest(selectedWeekKey);
-  const { data: history = [] } = useDigestHistory();
 
   // Автогенерація по понеділках працює у фоні: звіт зʼявлявся мовчки, і
   // користувач дізнавався про нього, лише якщо сам відкривав блок. Бейдж
