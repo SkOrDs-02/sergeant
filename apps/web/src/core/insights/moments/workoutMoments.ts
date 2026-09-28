@@ -11,9 +11,8 @@ import {
   workoutKcalInsight,
   type Workout,
 } from "../../lib/insightsEngine";
+import type { NutritionLog } from "../../../modules/nutrition/lib/nutritionStorage";
 import { approachRemaining, pickRarest, type Moment } from "./moments";
-
-type NutritionLogShape = NonNullable<Parameters<typeof workoutKcalInsight>[1]>;
 
 /** Список «після»: те саме тренування, але вже завершене. */
 export function withWorkoutFinished(
@@ -29,7 +28,7 @@ export function withWorkoutFinished(
 export interface WorkoutMomentInput {
   before: readonly Workout[];
   after: readonly Workout[];
-  log: NutritionLogShape;
+  log: NutritionLog;
   /** Id тренування: рядок живе в його підсумку. */
   target: string;
 }

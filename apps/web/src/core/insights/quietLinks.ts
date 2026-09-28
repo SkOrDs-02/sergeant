@@ -80,7 +80,9 @@ export function recordNotableLinks(
       seenOn: todayKey,
     };
   }
-  safeWriteLS(STORAGE_KEYS.LINKS_REMEMBERED, next);
+  if (JSON.stringify(next) !== JSON.stringify(stored)) {
+    safeWriteLS(STORAGE_KEYS.LINKS_REMEMBERED, next);
+  }
   return next;
 }
 
@@ -127,7 +129,11 @@ export function quietLinks(
   const out: QuietLink[] = [];
   for (const [key, link] of Object.entries(remembered)) {
     if (now.has(key)) continue;
-    for (const metric of [link.a, link.b] as DailyMetric[]) {
+    // Памʼять переживає зміну набору метрик: пару, якої в поточних рядах
+    // нема, пояснити нічим, і «немає записів» про неї було б неправдою.
+    const metrics = [link.a, link.b];
+    if (!metrics.every((m) => m in series.raw)) continue;
+    for (const metric of metrics as DailyMetric[]) {
       const last = lastActiveDay(series, metric);
       if (last === null || last <= cutoff) {
         out.push({

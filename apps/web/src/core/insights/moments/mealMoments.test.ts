@@ -63,6 +63,24 @@ describe("моменти запису їжі", () => {
     });
   });
 
+  it("друга страва за день спільних днів не додає і мовчить", () => {
+    const prev = log(8);
+    const next = log(8);
+    next[DAYS[7]!]!.meals.push({
+      id: "extra",
+      macros: { kcal: 300, protein_g: 0 },
+    } as never);
+    expect(
+      detectMealMoment({
+        prevLog: prev,
+        nextLog: next,
+        workouts: [],
+        series: series(),
+        target: "nutrition:day",
+      }),
+    ).toBeNull();
+  });
+
   it("далеко від порога і після нього рядовий запис мовчить", () => {
     expect(mealOn(3)).toBeNull();
     expect(mealOn(11)).toBeNull();

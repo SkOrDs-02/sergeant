@@ -63,6 +63,14 @@ describe("F-5: звʼязок, чий модуль замовк", () => {
     expect(quietLinks(series(20, 5), [PAIR], remembered)).toEqual([]);
   });
 
+  it("пара з метрикою, якої нема в рядах, не пояснюється", () => {
+    const remembered = recordNotableLinks(
+      [{ ...PAIR, b: "retired_metric" as never }],
+      "2026-09-10",
+    );
+    expect(quietLinks(series(20, 5), [], remembered)).toEqual([]);
+  });
+
   it("звʼязок, бачений раніше за вікно аналізу, забувається", () => {
     recordNotableLinks([PAIR], "2026-06-01");
     expect(recordNotableLinks([], "2026-09-20")).toEqual({});

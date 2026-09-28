@@ -20,6 +20,7 @@ import {
   workoutKcalInsight,
   type Workout,
 } from "../../lib/insightsEngine";
+import type { NutritionLog } from "../../../modules/nutrition/lib/nutritionStorage";
 import { isCrossModule, metricModule } from "../crossModuleLinkData";
 import {
   CURATED_PAIRS,
@@ -27,8 +28,6 @@ import {
   notablePairsFromSeries,
 } from "../digestCorrelations";
 import { approachRemaining, pickRarest, type Moment } from "./moments";
-
-type NutritionLogShape = NonNullable<Parameters<typeof workoutKcalInsight>[1]>;
 
 const NUTRITION_METRICS = ["kcal", "protein"] as const;
 
@@ -54,7 +53,7 @@ function sharedDays(series: DailySeries, a: DailyMetric, b: DailyMetric) {
 /** Ряд із нутрієнтними стовпцями, перерахованими з даного логу. */
 export function seriesWithLog(
   series: DailySeries,
-  log: NutritionLogShape,
+  log: NutritionLog,
 ): DailySeries {
   return NUTRITION_METRICS.reduce(
     (s, metric) =>
@@ -66,8 +65,8 @@ export function seriesWithLog(
 }
 
 export interface MealMomentInput {
-  prevLog: NutritionLogShape;
-  nextLog: NutritionLogShape;
+  prevLog: NutritionLog;
+  nextLog: NutritionLog;
   workouts: Workout[];
   /** Ряди за вікно звʼязків (будь-якого стану їжі: стовпці їжі перераховуються). */
   series: DailySeries;
@@ -106,7 +105,9 @@ export function detectMealMoment({
 
   // Наближення до звʼязку: пара їжі з іншим модулем, якій бракує кількох
   // спільних днів. Про силу тут нічого не кажемо: до порога це не звʼязок
-  // (ADR-0097), тож рядок обіцяє лише перевірку.
+  // (ADR-0097), тож рядок обіцяє лише перевірку. Лише коли цей запис додав
+  // спільний день: друга страва за день чи день без запису в іншому модулі
+  // лічильник не зрушує, і рядку нема що сказати.
   const closest = CURATED_PAIRS.filter(
     (p) =>
       p.a in after.raw &&
@@ -115,7 +116,11 @@ export function detectMealMoment({
       (isNutrition(p.a) || isNutrition(p.b)),
   )
     .map((p) => ({ ...p, n: sharedDays(after, p.a, p.b) }))
-    .filter((p) => approachRemaining(p.n, MIN_N) !== null)
+    .filter(
+      (p) =>
+        approachRemaining(p.n, MIN_N) !== null &&
+        p.n > sharedDays(before, p.a, p.b),
+    )
     .sort((x, y) => y.n - x.n)[0];
   if (closest) {
     const other = isNutrition(closest.a) ? closest.b : closest.a;
@@ -128,15 +133,15 @@ export function detectMealMoment({
   }
 
   // Наближення до висновку про калорії: лише коли в обох групах днів уже
-  // досить і бракує тільки загальної кількості.
+  // досить, бракує тільки загальної кількості і цей запис додав новий день.
   if (!kcalNow) {
     const { kcalWorkout, kcalRest } = workoutKcalGroups(workouts, nextLog);
-    const remaining = approachRemaining(
-      kcalWorkout.length + kcalRest.length,
-      KCAL_INSIGHT_MIN_DAYS,
-    );
+    const days = kcalWorkout.length + kcalRest.length;
+    const prev = workoutKcalGroups(workouts, prevLog);
+    const remaining = approachRemaining(days, KCAL_INSIGHT_MIN_DAYS);
     if (
       remaining !== null &&
+      days > prev.kcalWorkout.length + prev.kcalRest.length &&
       kcalWorkout.length >= KCAL_INSIGHT_MIN_PER_GROUP &&
       kcalRest.length >= KCAL_INSIGHT_MIN_PER_GROUP
     ) {
