@@ -864,5 +864,16 @@ describe("logger", () => {
       expect(result?.code).toBe("ECONNREFUSED");
       expect(result?.status).toBe(502);
     });
+
+    it("підсумовує zod-details у cause замість [object Object]", () => {
+      const err = new Error("Некоректні дані запиту", {
+        cause: {
+          details: [{ path: "messages.5.content", message: "Too small" }],
+        },
+      });
+      expect(serializeError(err)?.cause?.message).toBe(
+        "messages.5.content: Too small",
+      );
+    });
   });
 });

@@ -342,10 +342,24 @@ describe("weekly-digest handler · prompt assembly", () => {
     expect(opts.timeoutMs).toBe(45_000);
     expect(opts.system).toContain("ФІНАНСИ (2026-W01)");
     expect(opts.system).toContain("Витрати: 1200 грн");
-    expect(opts.system).toContain("Місячний бюджет: 8000 грн");
+    expect(opts.system).toContain(
+      "Місячний бюджет: 8000 грн, тижнева частка 1842 грн, у межах",
+    );
     expect(opts.system).toContain("Продукти: 600 грн");
     expect(opts.system).toContain("Операцій: 42");
     expect(res.statusCode).toBe(200);
+  });
+
+  it("finyk: витрати понад тижневу частку бюджету — вердикт із сумою перевищення", async () => {
+    const { handler, provider } = buildHandler();
+    const req = asReq({
+      anthropicKey: "k",
+      body: { finyk: { totalSpent: 2000, monthlyBudget: 8000, txCount: 3 } },
+    });
+    await handler(req, makeRes());
+    expect(provider.calls[0]!.system).toContain(
+      "тижнева частка 1842 грн, перевищено на 158 грн",
+    );
   });
 
   it("finyk без monthlyBudget — рядок 'не встановлено'; пусті topCategories — 'Немає даних'", async () => {

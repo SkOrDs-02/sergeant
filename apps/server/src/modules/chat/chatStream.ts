@@ -362,11 +362,13 @@ export async function streamAnthropicToSse(
   let currentProvider = firstStream.provider as AiProvider | undefined;
   let currentElapsedMs = firstStream.elapsedMs as (() => number) | undefined;
   let continuationsLeft = MAX_TEXT_CONTINUATIONS;
+  let lastOutcome: string | undefined;
 
   try {
     while (true) {
       const iter = await streamOneIterationToSse(res, currentResponse);
       currentRecordEnd(iter.outcome);
+      lastOutcome = iter.outcome;
       if (iter.accumulatedText) accumulatedAllText += iter.accumulatedText;
 
       if (!firstTokenObserved && iter.firstTextAtMs !== null) {
@@ -493,6 +495,25 @@ export async function streamAnthropicToSse(
     }
   } finally {
     clearInterval(heartbeat);
+  }
+
+  // Модель чесно закрила стрім (`outcome: ok`), але не дала жодного символу.
+  // Без цієї гілки клієнт отримував голий [DONE], зберігав порожню відповідь
+  // асистента, і вона ж поверталась в історії наступного запиту, де zod
+  // відхиляє порожній `content`, тож розмова ламалась до «Нова».
+  if (
+    !accumulatedAllText &&
+    lastOutcome !== "error" &&
+    !abortSignal?.aborted &&
+    !res.writableEnded
+  ) {
+    await refundQuotaOnUpstreamFailure(req);
+    logger.warn({
+      msg: "chat_stream_empty_ok",
+      endpoint,
+      model: (payload["model"] as string) || "unknown",
+    });
+    res.write(`data: ${JSON.stringify({ err: SSE_GENERIC_ERROR })}\n\n`);
   }
 
   if (!res.writableEnded) {

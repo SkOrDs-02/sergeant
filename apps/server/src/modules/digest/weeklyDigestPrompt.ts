@@ -26,8 +26,21 @@ export function buildWeeklyDigestPrompt(data: WeeklyDigestRequest): {
   const sections: string[] = [];
 
   if (finyk) {
+    // Темп рахує код, а не модель (як дефіцит калорій нижче): на живому
+    // прогоні 2026-09-28 модель при 4 844 грн за тиждень і бюджеті 38 000 на
+    // місяць написала «витрати вищі за планові на день».
+    const spent = finyk.totalSpent ?? 0;
+    const weeklyShare = finyk.monthlyBudget
+      ? Math.round((finyk.monthlyBudget * 7) / 30.4)
+      : 0;
+    const paceVerdict =
+      weeklyShare <= 0
+        ? ""
+        : spent <= weeklyShare
+          ? `, тижнева частка ${weeklyShare} грн, у межах`
+          : `, тижнева частка ${weeklyShare} грн, перевищено на ${spent - weeklyShare} грн`;
     const budgetLine = finyk.monthlyBudget
-      ? `Місячний бюджет: ${finyk.monthlyBudget} грн`
+      ? `Місячний бюджет: ${finyk.monthlyBudget} грн${paceVerdict}`
       : "Місячний бюджет: не встановлено";
     const topCats =
       Array.isArray(finyk.topCategories) && finyk.topCategories.length
@@ -141,6 +154,11 @@ ${VOICE_RULE_JSON}
 чотирьох із семи, це і є головний висновок блоку «Харчування»: скажи про
 пропуски прямо і не став тижню вищу оцінку, ніж дозволяють дані. Мало даних
 не означає ні дефіциту, ні успіху, це просто мало даних.
+
+ФІНАНСИ: вердикт щодо бюджету вже пораховано в рядку «Місячний бюджет», бери
+його, а не рахуй сам. Надходження за тиждень не показують доходу: зарплата
+приходить раз на місяць, тож 0 надходжень за тиждень не є дефіцитом і не
+привід радити «планувати надходження».
 
 ДАНІ:
 ${dataContext}`;

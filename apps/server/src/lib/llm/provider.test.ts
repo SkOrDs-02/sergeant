@@ -476,6 +476,31 @@ describe("OpenRouterProvider — model precedence", () => {
     await p.generate(opts);
     expect(lastBody?.model).toBe("@preset/sergeant-digest");
   });
+
+  it("HTTP 200 з finish_reason=error (апстрім упав посеред генерації) → ok=false", async () => {
+    global.fetch = vi.fn(
+      async () =>
+        new Response(
+          JSON.stringify({
+            choices: [
+              {
+                message: { content: '{"meals": [{"name": "Йогурт' },
+                finish_reason: "error",
+                error: { code: 429, message: "rate-limited upstream" },
+              },
+            ],
+            usage: { prompt_tokens: 0, completion_tokens: 0 },
+          }),
+          { status: 200, headers: { "content-type": "application/json" } },
+        ),
+    ) as typeof fetch;
+    const r = await new OpenRouterProvider("or-key", "").generate(opts);
+    expect(r.ok).toBe(false);
+    if (!r.ok) {
+      expect(r.code).toBe("rate_limited");
+      expect(r.status).toBe(429);
+    }
+  });
 });
 
 // ─── FallbackProvider ────────────────────────────────────────────────────
