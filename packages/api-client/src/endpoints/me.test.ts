@@ -349,15 +349,19 @@ describe("createMeEndpoints", () => {
   });
 
   it("DELETE /api/me повертає deletion acknowledgement", async () => {
+    // Форма з `dataRights.ts`: `scheduledPurgeAt` = прохання + 30 днів
+    // (`ACCOUNT_DELETION_GRACE_DAYS`, ADR-0098).
     const fetchMock = mockFetchOnce({
       ok: true,
       deletedAt: "2026-06-06T10:15:00.000Z",
+      scheduledPurgeAt: "2026-07-06T10:15:00.000Z",
     });
     const me = createMeEndpoints(createHttpClient());
 
     await expect(me.deleteAccount()).resolves.toEqual({
       ok: true,
       deletedAt: "2026-06-06T10:15:00.000Z",
+      scheduledPurgeAt: "2026-07-06T10:15:00.000Z",
     });
     const init = firstCall(fetchMock)[1] as RequestInit;
     expect(init.method).toBe("DELETE");
