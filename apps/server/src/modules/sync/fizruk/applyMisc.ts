@@ -10,6 +10,7 @@ import {
   toJsonbParam,
 } from "../syncV2-core.js";
 import type { AppliedStatus } from "../syncV2-types.js";
+import { applyIfNewer } from "../applySync-helpers.js";
 
 /**
  * Готові запити для таблиць-JSON-блобів. Тексти зібрані наперед, а не
@@ -23,21 +24,21 @@ const JSON_BLOB_SQL = {
     select:
       "SELECT user_id, updated_at, deleted_at FROM fizruk_custom_exercises WHERE id = $1",
     softDelete:
-      "UPDATE fizruk_custom_exercises SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3",
+      "UPDATE fizruk_custom_exercises SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3 AND updated_at < $1",
     insert:
       "INSERT INTO fizruk_custom_exercises (id, user_id, data_json, created_at, updated_at, deleted_at) VALUES ($1, $2, $3::jsonb, $4, $5, $6)",
     update:
-      "UPDATE fizruk_custom_exercises SET data_json = $1::jsonb, updated_at = $2, deleted_at = $3 WHERE id = $4 AND user_id = $5",
+      "UPDATE fizruk_custom_exercises SET data_json = $1::jsonb, updated_at = $2, deleted_at = $3 WHERE id = $4 AND user_id = $5 AND updated_at < $2",
   },
   fizruk_custom_activities: {
     select:
       "SELECT user_id, updated_at, deleted_at FROM fizruk_custom_activities WHERE id = $1",
     softDelete:
-      "UPDATE fizruk_custom_activities SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3",
+      "UPDATE fizruk_custom_activities SET deleted_at = $1, updated_at = $1 WHERE id = $2 AND user_id = $3 AND updated_at < $1",
     insert:
       "INSERT INTO fizruk_custom_activities (id, user_id, data_json, created_at, updated_at, deleted_at) VALUES ($1, $2, $3::jsonb, $4, $5, $6)",
     update:
-      "UPDATE fizruk_custom_activities SET data_json = $1::jsonb, updated_at = $2, deleted_at = $3 WHERE id = $4 AND user_id = $5",
+      "UPDATE fizruk_custom_activities SET data_json = $1::jsonb, updated_at = $2, deleted_at = $3 WHERE id = $4 AND user_id = $5 AND updated_at < $2",
   },
 } as const;
 
@@ -83,8 +84,7 @@ async function applyFizrukJsonBlobRow(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(sql.softDelete, [clientTs, id, userId]);
-    return { status: "applied" };
+    return applyIfNewer(client, sql.softDelete, [clientTs, id, userId]);
   }
 
   const dataJson = toJsonbParam(row["data_json"]);
@@ -110,7 +110,7 @@ async function applyFizrukJsonBlobRow(
       deletedAt ?? null,
     ]);
   } else {
-    await client.query(sql.update, [
+    return applyIfNewer(client, sql.update, [
       dataJson,
       clientTs,
       deletedAt ?? null,
@@ -236,13 +236,13 @@ export async function applyFizrukMeasurements(
     if (existing.rows.length === 0) {
       return { status: "rejected", reason: "not_found" };
     }
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_measurements
          SET deleted_at = $1, updated_at = $1
-       WHERE id = $2 AND user_id = $3`,
+       WHERE id = $2 AND user_id = $3 AND updated_at < $1`,
       [clientTs, id, userId],
     );
-    return { status: "applied" };
   }
 
   const measuredAt = parseRequiredDate(row["measured_at"]);
@@ -315,7 +315,8 @@ export async function applyFizrukMeasurements(
       ],
     );
   } else {
-    await client.query(
+    return applyIfNewer(
+      client,
       `UPDATE fizruk_measurements
          SET measured_at  = $1,
              weight_kg    = $2,
@@ -338,7 +339,7 @@ export async function applyFizrukMeasurements(
              mood         = $19,
              updated_at   = $20,
              deleted_at   = $21
-       WHERE id = $22 AND user_id = $23`,
+       WHERE id = $22 AND user_id = $23 AND updated_at < $20`,
       [
         measuredAt,
         num["weight_kg"] ?? null,

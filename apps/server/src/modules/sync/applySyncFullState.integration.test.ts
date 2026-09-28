@@ -11,6 +11,7 @@ import {
   type IntegrationHarness,
 } from "../../test/createIntegrationApp.js";
 import type { AppliedStatus } from "./syncV2-types.js";
+import { applyFinykTxCategories } from "./finyk/applySync.js";
 import {
   applyRoutineHabits,
   applyRoutinePrefs,
@@ -30,8 +31,12 @@ const T_NEWER = new Date("2026-07-10T10:00:00.000Z");
 let harness: IntegrationHarness | undefined;
 let dockerAvailable = false;
 
-function op(table: string, row: Record<string, unknown>): SyncV2Op {
-  return { op: "update", table, row } as SyncV2Op;
+function op(
+  table: string,
+  row: Record<string, unknown>,
+  kind: SyncV2Op["op"] = "update",
+): SyncV2Op {
+  return { op: kind, table, row } as SyncV2Op;
 }
 
 type Apply = (
@@ -161,6 +166,47 @@ describe("full-state LWW under concurrent pushes", () => {
       );
       expect(row.rows[0]?.name).toBe("newer");
       expect(row.rows[0]?.updated_at.toISOString()).toBe(T_NEWER.toISOString());
+    },
+    INTEGRATION_TIMEOUT_MS,
+  );
+
+  it(
+    "hard delete: older delete committed after newer upsert does not remove the row",
+    async (ctx) => {
+      if (!harness || !dockerAvailable) return ctx.skip();
+      const pool = harness.pool;
+      const txRow = (categoryId?: string) => ({
+        user_id: USER_ID,
+        transaction_id: "tx-race-1",
+        ...(categoryId ? { category_id: categoryId } : {}),
+      });
+
+      const seed = await pool.connect();
+      try {
+        await applyFinykTxCategories(
+          seed,
+          op("finyk_tx_categories", txRow("cat-t0"), "insert"),
+          USER_ID,
+          T0,
+        );
+      } finally {
+        seed.release();
+      }
+
+      const res = await raceOlderAgainstNewer(
+        applyFinykTxCategories,
+        op("finyk_tx_categories", txRow("cat-newer")),
+        op("finyk_tx_categories", txRow(), "delete"),
+      );
+      expect(res.newer).toEqual({ status: "applied" });
+      expect(res.older).toEqual({ status: "rejected", reason: "lww_conflict" });
+
+      const row = await pool.query<{ category_id: string }>(
+        `SELECT category_id FROM finyk_tx_categories
+          WHERE user_id = $1 AND transaction_id = $2`,
+        [USER_ID, "tx-race-1"],
+      );
+      expect(row.rows[0]?.category_id).toBe("cat-newer");
     },
     INTEGRATION_TIMEOUT_MS,
   );

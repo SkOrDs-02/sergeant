@@ -4,6 +4,7 @@ import type { PoolClient } from "pg";
 import {
   applyIfNewer,
   assertRowUserId,
+  deleteIfNewer,
   guardUuidPkApply,
   queryOne,
   readBoolField,
@@ -199,6 +200,25 @@ describe("softDeleteById", () => {
       },
     );
     expect(result).toEqual({ status: "rejected", reason: "lww_conflict" });
+  });
+});
+
+describe("deleteIfNewer", () => {
+  it("keeps a delete of a row that never existed as applied", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    const client = { query } as unknown as PoolClient;
+    expect(await deleteIfNewer(client, "SQL", [], false)).toEqual({
+      status: "applied",
+    });
+  });
+
+  it("reports lww_conflict when a seen row was updated by a newer push", async () => {
+    const query = vi.fn().mockResolvedValue({ rows: [], rowCount: 0 });
+    const client = { query } as unknown as PoolClient;
+    expect(await deleteIfNewer(client, "SQL", [], true)).toEqual({
+      status: "rejected",
+      reason: "lww_conflict",
+    });
   });
 });
 

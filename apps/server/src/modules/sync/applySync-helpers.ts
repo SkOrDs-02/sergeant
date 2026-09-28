@@ -130,6 +130,21 @@ export async function applyIfNewer(
   return { status: "applied" };
 }
 
+/**
+ * Жорстке видалення з тим самим предикатом `AND updated_at < $clientTs`.
+ * Якщо SELECT рядка не бачив, видаляти нічого і це `applied`, як і раніше;
+ * якщо бачив, а DELETE не зачепив нічого, рядок встиг оновити новіший пуш.
+ */
+export async function deleteIfNewer(
+  client: PoolClient,
+  sql: string,
+  params: unknown[],
+  existed: boolean,
+): Promise<AppliedStatus> {
+  const res = await applyIfNewer(client, sql, params);
+  return existed ? res : { status: "applied" };
+}
+
 /** Accept PG key or SQLite `*_json` alias; coerce to JSONB bind param. */
 export function readJsonbField(
   row: Record<string, unknown>,
